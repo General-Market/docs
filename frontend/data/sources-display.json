@@ -920,16 +920,16 @@
     },
     {
       "sourceId": "tubes",
-      "name": "Tube Video Views",
-      "description": "View-count deltas for trending videos across eight tube sites. Scraped through a self-hosted lustpress instance. Not registered as an active Vision batch market.",
+      "name": "Tube Pornstar Views",
+      "description": "Cumulative profile-level view counts for top pornstars across four tube sites. Pornhub exposes views in its listing pages for free; xvideos/xnxx/eporner require per-profile fetches. Not registered as an active Vision batch market.",
       "category": "entertainment",
       "logo": "/source-imgs/new-tubes.svg",
       "brandBg": "#1a1a1a",
       "prefixes": [
         "tubes_"
       ],
-      "valueLabel": "Views",
-      "valueUnit": "total",
+      "valueLabel": "Total Views",
+      "valueUnit": "lifetime",
       "isPrice": false,
       "internalIds": [
         "tubes"

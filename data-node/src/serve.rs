@@ -1709,9 +1709,11 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
         info!("Chaturbate live cam tracker started");
     }
 
-    // Tubes — requires LUSTPRESS_BASE_URL pointing at the self-hosted lustpress instance
-    // (see docker/testnet/lustpress/). Not registered as an active Vision market batch.
-    if std::env::var("LUSTPRESS_BASE_URL").is_ok() {
+    // Tubes — pornstar total-view tracker (pornhub + xvideos + xnxx + eporner).
+    // Gated behind TUBES_ENABLED=1. Scrapes tube sites directly — no lustpress
+    // intermediary any more, the per-star path parses views cleanly from raw HTML.
+    // Deliberately NOT registered as an active Vision market batch.
+    if std::env::var("TUBES_ENABLED").ok().as_deref() == Some("1") {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
         let pw = price_writer.clone();
@@ -2318,9 +2320,9 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
         if std::env::var("CHATURBATE_WM").is_err() {
             tracker.record_not_started("chaturbate", "Missing CHATURBATE_WM env var");
         }
-        // Tubes — gated on LUSTPRESS_BASE_URL. Deliberately not listed in active batch markets.
-        if std::env::var("LUSTPRESS_BASE_URL").is_err() {
-            tracker.record_not_started("tubes", "Missing LUSTPRESS_BASE_URL env var");
+        // Tubes — gated on TUBES_ENABLED=1. Deliberately not listed in active batch markets.
+        if std::env::var("TUBES_ENABLED").ok().as_deref() != Some("1") {
+            tracker.record_not_started("tubes", "Not enabled (set TUBES_ENABLED=1)");
         }
         // CourtListener — always-on (public API), no not_started needed
         // AirNow
