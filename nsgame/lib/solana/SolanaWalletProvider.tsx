@@ -11,6 +11,7 @@ import {
   TrustWalletAdapter,
 } from '@solana/wallet-adapter-wallets'
 import { activeRpcUrl, activeCluster, adapterNetwork } from './cluster'
+import { SessionProvider } from './SessionContext'
 
 // The Unified Wallet Kit handles the modal UI + Mobile Wallet Adapter
 // (iOS/Android deeplinks) in one import. It sits on top of
@@ -54,7 +55,7 @@ export function SolanaWalletProvider({ children }: { children: ReactNode }) {
             lang: 'en',
           }}
         >
-          {children}
+          <SessionProvider>{children}</SessionProvider>
         </UnifiedWalletProvider>
       </WalletProvider>
     </ConnectionProvider>
