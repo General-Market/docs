@@ -28,7 +28,10 @@
 //! - `TUBES_PH_PAGES` — listing pages to crawl for Pornhub. Default: 1
 //!   (top 120; the first `TUBES_TOP_N` are kept).
 //! - `TUBES_PROFILE_BATCH` — stars per sync for profile sites. Default: 10.
-//! - `TUBES_SYNC_INTERVAL_SECS` — pause between batches. Default: 5.
+//! - `TUBES_SYNC_INTERVAL_SECS` — pause between batches. Default: 300.
+//!   Empirically, upstream view counters do not tick at any finer resolution —
+//!   a 4-minute probe across 20 stars observed zero real changes, so anything
+//!   below ~300 seconds burns requests without improving signal.
 //! - `TUBES_LISTING_REFRESH_HOURS` — how often to re-discover the star list.
 //!   Default: 24.
 
@@ -113,17 +116,31 @@ fn find_site(id: &str) -> Option<&'static SiteSpec> {
 // REGEXES — compiled once, reused.
 // ============================================================================
 
-/// Pornhub listing — each card block.
-///
-/// `<a href="/pornstar/valentina-nappi" ... `Valentina Nappi` ...
-/// `<div class="viewsCount performerCount">546M`
-fn ph_card_re() -> &'static Regex {
+/// Pornhub listing — three narrow regexes applied within a single card's
+/// markup. The HTML is pre-split on the `performerCard` class boundary so
+/// each regex operates on one card at a time; this prevents the cross-card
+/// match bug where a lazy `.*?` would sometimes pair card N's slug with
+/// card N+1's views (observed in the upstream-update-frequency probe).
+fn ph_slug_re() -> &'static Regex {
     static RE: OnceLock<Regex> = OnceLock::new();
     RE.get_or_init(|| {
-        Regex::new(
-            r#"(?s)href="/pornstar/([a-z0-9\-_]+)"[^>]*>.*?<a[^>]*class="performerName"[^>]*>\s*([^<]+?)\s*</a>.*?class="viewsCount performerCount">\s*([\d.]+[KMB]?)"#,
-        )
-        .expect("ph_card_re compile")
+        Regex::new(r#"href="/pornstar/([a-z0-9\-_]+)""#).expect("ph_slug_re")
+    })
+}
+
+fn ph_name_re() -> &'static Regex {
+    static RE: OnceLock<Regex> = OnceLock::new();
+    RE.get_or_init(|| {
+        Regex::new(r#"(?s)class="performerName"[^>]*>\s*([^<]+?)\s*</a>"#)
+            .expect("ph_name_re")
+    })
+}
+
+fn ph_views_re() -> &'static Regex {
+    static RE: OnceLock<Regex> = OnceLock::new();
+    RE.get_or_init(|| {
+        Regex::new(r#"class="viewsCount performerCount">\s*([\d.]+[KMB]?)"#)
+            .expect("ph_views_re")
     })
 }
 
@@ -240,7 +257,7 @@ impl TubesMarketSource {
         let sync_interval_secs = std::env::var("TUBES_SYNC_INTERVAL_SECS")
             .ok()
             .and_then(|s| s.parse().ok())
-            .unwrap_or(5);
+            .unwrap_or(300);
         let listing_refresh_hours = std::env::var("TUBES_LISTING_REFRESH_HOURS")
             .ok()
             .and_then(|s| s.parse().ok())
@@ -321,10 +338,21 @@ impl TubesMarketSource {
                     continue;
                 }
             };
-            for caps in ph_card_re().captures_iter(&html) {
-                let slug = caps[1].to_string();
-                let name = caps[2].trim().to_string();
-                let views_raw = caps[3].to_string();
+            // Split on the card boundary so each chunk holds at most one
+            // performer card's markup — prevents cross-card regex matches.
+            for chunk in html.split(r#"class="performerCard""#).skip(1) {
+                let Some(slug_cap) = ph_slug_re().captures(chunk) else {
+                    continue;
+                };
+                let Some(views_cap) = ph_views_re().captures(chunk) else {
+                    continue;
+                };
+                let slug = slug_cap[1].to_string();
+                let name = ph_name_re()
+                    .captures(chunk)
+                    .map(|c| c[1].trim().to_string())
+                    .unwrap_or_default();
+                let views_raw = views_cap[1].to_string();
                 if let Some(views) = parse_scaled_count(&views_raw) {
                     stars.push(CachedStar {
                         site: "pornhub",
@@ -737,20 +765,47 @@ mod tests {
     #[test]
     fn ph_card_parses_real_fixture() {
         let sample = r#"
-            <li class="performerCard">
-                <a href="/pornstar/valentina-nappi">
-                <span class="rankNumber">30</span>
-                <a href="/pornstar/valentina-nappi" class="performerName">
-                    Valentina Nappi
-                </a>
-                <div class="videosCount performerCount">919<span>Videos</span></div>
-                <div class="viewsCount performerCount">546M<span>Views</span></div>
-            </li>
+            <a href="/pornstar/valentina-nappi">
+            <span class="rankNumber">30</span>
+            <a href="/pornstar/valentina-nappi" class="performerName">
+                Valentina Nappi
+            </a>
+            <div class="videosCount performerCount">919<span>Videos</span></div>
+            <div class="viewsCount performerCount">546M<span>Views</span></div>
         "#;
-        let cap = ph_card_re().captures(sample).expect("match");
-        assert_eq!(&cap[1], "valentina-nappi");
-        assert_eq!(cap[2].trim(), "Valentina Nappi");
-        assert_eq!(&cap[3], "546M");
+        let slug = ph_slug_re().captures(sample).expect("slug");
+        let views = ph_views_re().captures(sample).expect("views");
+        let name = ph_name_re().captures(sample).expect("name");
+        assert_eq!(&slug[1], "valentina-nappi");
+        assert_eq!(name[1].trim(), "Valentina Nappi");
+        assert_eq!(&views[1], "546M");
+    }
+
+    #[test]
+    fn ph_card_split_prevents_cross_card_match() {
+        // Two cards back-to-back — card A has NO views div, card B has views.
+        // The old single-regex version paired slug A with views B.
+        let listing = r#"
+            class="performerCard">
+              <a href="/pornstar/luke-cooper">
+              <a href="/pornstar/luke-cooper" class="performerName">Luke Cooper</a>
+              <div class="videosCount performerCount">5<span>Videos</span></div>
+              <!-- no views block here -->
+            class="performerCard">
+              <a href="/pornstar/johnny-sins">
+              <a href="/pornstar/johnny-sins" class="performerName">Johnny Sins</a>
+              <div class="viewsCount performerCount">2.2B<span>Views</span></div>
+        "#;
+        let mut parsed = Vec::new();
+        for chunk in listing.split(r#"class="performerCard""#).skip(1) {
+            let Some(slug_cap) = ph_slug_re().captures(chunk) else { continue };
+            let Some(views_cap) = ph_views_re().captures(chunk) else { continue };
+            parsed.push((slug_cap[1].to_string(), views_cap[1].to_string()));
+        }
+        // Only Johnny Sins should be parsed — Luke Cooper's card has no views,
+        // so the splitter correctly drops him rather than pairing him with
+        // Johnny's number.
+        assert_eq!(parsed, vec![("johnny-sins".to_string(), "2.2B".to_string())]);
     }
 
     #[test]
