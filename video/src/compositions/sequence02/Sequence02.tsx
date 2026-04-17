@@ -42,7 +42,7 @@ import {
   getContentArea,
 } from "./scenes";
 import { TimedCascadeText } from "./TimedCascadeText";
-import { usePunchZoom } from "./PunchZoom";
+import { useZoom } from "./PunchZoom";
 
 const EASE_OUT = Easing.bezier(0.16, 1, 0.3, 1);
 
@@ -80,7 +80,7 @@ export const Sequence02: React.FC = () => {
   );
   const isRotating = frame >= ROT_START && frame <= ROT_START + ROT_FRAMES;
 
-  const zoomScale = usePunchZoom(PUNCH_EVENTS);
+  const zoomScale = useZoom(PUNCH_EVENTS);
 
   return (
     <AbsoluteFill style={{ background: "#000" }}>
