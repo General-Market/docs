@@ -29,58 +29,30 @@ from pedalboard import (
 )
 from pedalboard.io import AudioFile
 
-# ── FX chains — each layered UNDER the original voice, never replacing it ───
+# ── FX chains — subtle tails only. All sit 10–13 dB under the original voice.
+# The goal is *presence*, not a second voice.
 FX = {
-    "slap": Pedalboard([
-        Delay(delay_seconds=0.06, feedback=0.15, mix=0.55),
-        Gain(gain_db=-4),
+    "tail-short": Pedalboard([
+        Delay(delay_seconds=0.14, feedback=0.12, mix=0.25),
+        Gain(gain_db=-13),
     ]),
-    "echo-short": Pedalboard([
-        Delay(delay_seconds=0.12, feedback=0.30, mix=0.55),
-        Gain(gain_db=-4),
+    "room": Pedalboard([
+        Reverb(room_size=0.40, wet_level=0.20, damping=0.45),
+        Gain(gain_db=-12),
     ]),
-    "echo-verdict": Pedalboard([
-        Delay(delay_seconds=0.18, feedback=0.45, mix=0.65),
-        Reverb(room_size=0.45, wet_level=0.30, damping=0.35),
-        Gain(gain_db=-3),
-    ]),
-    "pitch-drop": Pedalboard([
-        PitchShift(semitones=-3),
-        Delay(delay_seconds=0.08, feedback=0.35, mix=0.55),
-        LowpassFilter(cutoff_frequency_hz=4500),
-        Gain(gain_db=-4),
-    ]),
-    "reverb-medium": Pedalboard([
-        Reverb(room_size=0.55, wet_level=0.45, damping=0.35),
-        Gain(gain_db=-4),
-    ]),
-    "reverb-big": Pedalboard([
-        Reverb(room_size=0.80, wet_level=0.55, damping=0.20),
-        Delay(delay_seconds=0.22, feedback=0.30, mix=0.40),
-        Gain(gain_db=-3),
-    ]),
-    "saturated-double": Pedalboard([
-        PitchShift(semitones=-7),  # octave-ish down — creates a sub body
-        HighpassFilter(cutoff_frequency_hz=80),
-        LowpassFilter(cutoff_frequency_hz=2500),
-        Distortion(drive_db=3),
-        Gain(gain_db=-5),
+    "hall": Pedalboard([
+        Reverb(room_size=0.65, wet_level=0.30, damping=0.30),
+        Gain(gain_db=-11),
     ]),
 }
 
-# ── Word cues — composition-time (already shifted past the 1.92s insert) ────
+# ── Word cues — four words only. Each gets a subtle tail that whispers.
+# If this still feels heavy, drop the gain by another 3–4 dB per chain.
 CUES = [
-    {"start": 1.28,   "end": 1.76,   "fx": "slap",             "label": "booming"},
-    {"start": 6.661,  "end": 7.301,  "fx": "echo-short",       "label": "banality"},
-    {"start": 10.581, "end": 11.301, "fx": "pitch-drop",       "label": "never winning"},
-    {"start": 13.301, "end": 14.181, "fx": "saturated-double", "label": "70%"},
-    {"start": 26.021, "end": 27.141, "fx": "echo-verdict",     "label": "exchanges were RIGGED"},
-    {"start": 28.501, "end": 28.901, "fx": "reverb-medium",    "label": "general market"},
-    {"start": 42.181, "end": 43.301, "fx": "echo-short",       "label": "batches of thousands"},
-    {"start": 49.381, "end": 50.261, "fx": "reverb-medium",    "label": "Quantity has protection"},
-    {"start": 52.821, "end": 53.701, "fx": "reverb-big",       "label": "500"},
-    {"start": 63.461, "end": 64.261, "fx": "slap",             "label": "Never pay spread"},
-    {"start": 66.341, "end": 66.581, "fx": "reverb-big",       "label": "WIN"},
+    {"start": 26.021, "end": 27.141, "fx": "tail-short", "label": "exchanges were RIGGED"},
+    {"start": 28.501, "end": 28.901, "fx": "room",       "label": "general market"},
+    {"start": 52.821, "end": 53.701, "fx": "hall",       "label": "500"},
+    {"start": 66.341, "end": 66.581, "fx": "hall",       "label": "WIN"},
 ]
 
 
