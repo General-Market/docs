@@ -165,6 +165,11 @@ export const CinematicWebcam: React.FC<Props> = ({
           powerPreference: "high-performance",
           alpha: false,
         }}
+        // The canvas is a texture, not interactive. Block pointer events so
+        // R3F doesn't walk the scene graph on pointermove and hit a
+        // circular ref in postprocessing's shader materials (parent/children
+        // cycle), which surfaces as "Converting circular structure to JSON".
+        style={{ pointerEvents: "none" }}
       >
         <VideoPlane
           src={resolved}
