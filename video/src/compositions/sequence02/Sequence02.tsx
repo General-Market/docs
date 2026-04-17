@@ -214,14 +214,12 @@ export const Sequence02: React.FC = () => {
                 maxWidth={paddedW}
                 fontFamily={FONT.display}
                 fontSize={titleSize}
-                fontWeight={900}
+                fontWeight={800}
                 color="#ffffff"
                 letterSpacing="-0.02em"
                 align="left"
-                delayPerWord={3}
-                durationPerWord={22}
-                riseDistance={70}
-                blurPx={12}
+                riseDistance={80}
+                blurPx={14}
               />
               {a.sub && (
                 <div style={{ marginTop: 28 }}>
@@ -230,14 +228,12 @@ export const Sequence02: React.FC = () => {
                     maxWidth={paddedW}
                     fontFamily={FONT.body}
                     fontSize={36}
-                    fontWeight={500}
+                    fontWeight={800}
                     color="rgba(255,255,255,0.82)"
-                    letterSpacing="-0.005em"
+                    letterSpacing="-0.02em"
                     align="left"
-                    delayPerWord={2}
-                    durationPerWord={18}
-                    riseDistance={40}
-                    blurPx={8}
+                    riseDistance={80}
+                    blurPx={14}
                   />
                 </div>
               )}
@@ -270,14 +266,12 @@ export const Sequence02: React.FC = () => {
               maxWidth={1400}
               fontFamily={FONT.display}
               fontSize={c.size ?? 80}
-              fontWeight={900}
+              fontWeight={800}
               color="#ffffff"
               letterSpacing="-0.02em"
               align="center"
-              delayPerWord={3}
-              durationPerWord={22}
-              riseDistance={60}
-              blurPx={12}
+              riseDistance={80}
+              blurPx={14}
             />
           </div>
         );
@@ -296,22 +290,21 @@ export const Sequence02: React.FC = () => {
             alignItems: "center",
             justifyContent: "center",
             padding: "0 48px",
+            textShadow: "0 2px 16px rgba(0,0,0,0.55)",
           }}
         >
-          <span
-            style={{
-              fontFamily: FONT.display,
-              fontSize: 52,
-              fontWeight: 800,
-              color: "#ffffff",
-              letterSpacing: "-0.02em",
-              textShadow: "0 2px 16px rgba(0,0,0,0.55)",
-              textAlign: "center",
-              lineHeight: 1.1,
-            }}
-          >
-            {BOTTOM_LABEL_TEXT}
-          </span>
+          <CascadeText
+            text={BOTTOM_LABEL_TEXT}
+            maxWidth={Math.max(600, rect.w - 96)}
+            fontFamily={FONT.display}
+            fontSize={52}
+            fontWeight={800}
+            color="#ffffff"
+            letterSpacing="-0.02em"
+            align="center"
+            riseDistance={80}
+            blurPx={14}
+          />
         </div>
       )}
 
