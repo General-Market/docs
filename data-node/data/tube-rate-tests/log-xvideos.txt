@@ -1,0 +1,32 @@
+Loaded 27 URLs for site=xvideos
+
+=== Step: 0.50 req/sec for 15s ===
+=== Step done @ 0.50 rps: n=8 ok=0 429=0 403=0 5xx=0 chal=0 (0.0%) neterr=0
+
+=== Step: 1.00 req/sec for 15s ===
+  [2026-04-17T14:50:23.281356+00:00] site=xvideos n=20 ok=0 429=0 403=0 5xx=0 chal=0 neterr=0
+=== Step done @ 1.00 rps: n=15 ok=0 429=0 403=0 5xx=0 chal=0 (0.0%) neterr=0
+
+=== Step: 2.00 req/sec for 15s ===
+  [2026-04-17T14:50:37.319129+00:00] site=xvideos n=40 ok=0 429=0 403=0 5xx=0 chal=0 neterr=0
+=== Step done @ 2.00 rps: n=30 ok=0 429=0 403=0 5xx=0 chal=0 (0.0%) neterr=0
+
+=== Step: 5.00 req/sec for 15s ===
+  [2026-04-17T14:50:47.560840+00:00] site=xvideos n=60 ok=0 429=0 403=0 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:50:51.596612+00:00] site=xvideos n=80 ok=0 429=0 403=0 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:50:55.630568+00:00] site=xvideos n=100 ok=0 429=0 403=0 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:50:59.673395+00:00] site=xvideos n=120 ok=0 429=0 403=0 5xx=0 chal=0 neterr=0
+=== Step done @ 5.00 rps: n=75 ok=0 429=0 403=0 5xx=0 chal=0 (0.0%) neterr=0
+
+=== Step: 10.00 req/sec for 15s ===
+  [2026-04-17T14:51:04.611580+00:00] site=xvideos n=140 ok=0 429=0 403=0 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:51:06.644957+00:00] site=xvideos n=160 ok=0 429=0 403=0 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:51:08.678495+00:00] site=xvideos n=180 ok=0 429=0 403=0 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:51:10.710936+00:00] site=xvideos n=200 ok=0 429=0 403=0 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:51:12.743110+00:00] site=xvideos n=221 ok=0 429=0 403=0 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:51:14.778253+00:00] site=xvideos n=241 ok=0 429=0 403=0 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:51:16.812847+00:00] site=xvideos n=261 ok=0 429=0 403=0 5xx=0 chal=0 neterr=0
+=== Step done @ 10.00 rps: n=148 ok=0 429=0 403=0 5xx=0 chal=0 (0.0%) neterr=0
+
+=== TOTALS: n=276 ok=0 429=0 403=0 5xx=0 chal=0 neterr=0 ===
+CSV: data-node/data/tube-rate-tests/rate-test-xvideos.csv

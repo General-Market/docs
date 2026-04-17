@@ -1,0 +1,32 @@
+Loaded 30 URLs for site=xhamster
+
+=== Step: 0.50 req/sec for 15s ===
+=== Step done @ 0.50 rps: n=8 ok=8 429=0 403=0 5xx=0 chal=0 (0.0%) neterr=0
+
+=== Step: 1.00 req/sec for 15s ===
+  [2026-04-17T14:51:52.702496+00:00] site=xhamster n=20 ok=20 429=0 403=0 5xx=0 chal=0 neterr=0
+=== Step done @ 1.00 rps: n=15 ok=15 429=0 403=0 5xx=0 chal=0 (0.0%) neterr=0
+
+=== Step: 2.00 req/sec for 15s ===
+  [2026-04-17T14:52:06.752495+00:00] site=xhamster n=40 ok=40 429=0 403=0 5xx=0 chal=0 neterr=0
+=== Step done @ 2.00 rps: n=30 ok=30 429=0 403=0 5xx=0 chal=0 (0.0%) neterr=0
+
+=== Step: 5.00 req/sec for 15s ===
+  [2026-04-17T14:52:16.988807+00:00] site=xhamster n=63 ok=61 429=0 403=0 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:52:21.023490+00:00] site=xhamster n=81 ok=80 429=0 403=0 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:52:25.062778+00:00] site=xhamster n=102 ok=100 429=0 403=0 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:52:29.096907+00:00] site=xhamster n=122 ok=120 429=0 403=0 5xx=0 chal=0 neterr=0
+=== Step done @ 5.00 rps: n=75 ok=75 429=0 403=0 5xx=0 chal=0 (0.0%) neterr=0
+
+=== Step: 10.00 req/sec for 15s ===
+  [2026-04-17T14:52:34.032495+00:00] site=xhamster n=146 ok=142 429=0 403=0 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:52:36.067824+00:00] site=xhamster n=163 ok=157 429=0 403=0 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:52:38.106656+00:00] site=xhamster n=186 ok=180 429=0 403=0 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:52:40.150117+00:00] site=xhamster n=204 ok=196 429=0 403=0 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:52:42.178673+00:00] site=xhamster n=223 ok=218 429=0 403=0 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:52:44.209422+00:00] site=xhamster n=249 ok=242 429=0 403=0 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:52:46.245413+00:00] site=xhamster n=264 ok=258 429=0 403=0 5xx=0 chal=0 neterr=0
+=== Step done @ 10.00 rps: n=148 ok=148 429=0 403=0 5xx=0 chal=0 (0.0%) neterr=0
+
+=== TOTALS: n=276 ok=276 429=0 403=0 5xx=0 chal=0 neterr=0 ===
+CSV: data-node/data/tube-rate-tests/rate-test-xhamster.csv

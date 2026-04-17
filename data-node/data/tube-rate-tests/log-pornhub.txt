@@ -1,0 +1,32 @@
+Loaded 36 URLs for site=pornhub
+
+=== Step: 0.50 req/sec for 15s ===
+=== Step done @ 0.50 rps: n=8 ok=8 429=0 403=0 5xx=0 chal=0 (0.0%) neterr=0
+
+=== Step: 1.00 req/sec for 15s ===
+  [2026-04-17T14:48:53.854973+00:00] site=pornhub n=20 ok=20 429=0 403=0 5xx=0 chal=0 neterr=0
+=== Step done @ 1.00 rps: n=15 ok=15 429=0 403=0 5xx=0 chal=0 (0.0%) neterr=0
+
+=== Step: 2.00 req/sec for 15s ===
+  [2026-04-17T14:49:07.931647+00:00] site=pornhub n=40 ok=40 429=0 403=0 5xx=0 chal=0 neterr=0
+=== Step done @ 2.00 rps: n=30 ok=29 429=0 403=1 5xx=0 chal=0 (0.0%) neterr=0
+
+=== Step: 5.00 req/sec for 15s ===
+  [2026-04-17T14:49:18.234019+00:00] site=pornhub n=62 ok=59 429=0 403=1 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:49:22.277910+00:00] site=pornhub n=80 ok=78 429=0 403=2 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:49:26.312999+00:00] site=pornhub n=101 ok=96 429=0 403=3 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:49:30.355440+00:00] site=pornhub n=120 ok=117 429=0 403=3 5xx=0 chal=0 neterr=0
+=== Step done @ 5.00 rps: n=75 ok=73 429=0 403=2 5xx=0 chal=0 (0.0%) neterr=0
+
+=== Step: 10.00 req/sec for 15s ===
+  [2026-04-17T14:49:35.297734+00:00] site=pornhub n=140 ok=134 429=0 403=4 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:49:37.331112+00:00] site=pornhub n=164 ok=155 429=0 403=5 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:49:39.366183+00:00] site=pornhub n=183 ok=173 429=0 403=5 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:49:41.406738+00:00] site=pornhub n=205 ok=198 429=0 403=6 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:49:43.481777+00:00] site=pornhub n=221 ok=211 429=0 403=8 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:49:45.515106+00:00] site=pornhub n=245 ok=232 429=0 403=9 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:49:47.558191+00:00] site=pornhub n=260 ok=251 429=0 403=9 5xx=0 chal=0 neterr=0
+=== Step done @ 10.00 rps: n=147 ok=138 429=0 403=9 5xx=0 chal=0 (0.0%) neterr=0
+
+=== TOTALS: n=275 ok=263 429=0 403=12 5xx=0 chal=0 neterr=0 ===
+CSV: data-node/data/tube-rate-tests/rate-test-pornhub.csv

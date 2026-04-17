@@ -1,0 +1,32 @@
+Loaded 36 URLs for site=xnxx
+
+=== Step: 0.50 req/sec for 15s ===
+=== Step done @ 0.50 rps: n=8 ok=8 429=0 403=0 5xx=0 chal=0 (0.0%) neterr=0
+
+=== Step: 1.00 req/sec for 15s ===
+  [2026-04-17T14:53:22.350232+00:00] site=xnxx n=20 ok=20 429=0 403=0 5xx=0 chal=0 neterr=0
+=== Step done @ 1.00 rps: n=15 ok=15 429=0 403=0 5xx=0 chal=0 (0.0%) neterr=0
+
+=== Step: 2.00 req/sec for 15s ===
+  [2026-04-17T14:53:36.397048+00:00] site=xnxx n=40 ok=40 429=0 403=0 5xx=0 chal=0 neterr=0
+=== Step done @ 2.00 rps: n=30 ok=30 429=0 403=0 5xx=0 chal=0 (0.0%) neterr=0
+
+=== Step: 5.00 req/sec for 15s ===
+  [2026-04-17T14:53:46.635672+00:00] site=xnxx n=60 ok=60 429=0 403=0 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:53:50.673378+00:00] site=xnxx n=81 ok=80 429=0 403=0 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:53:54.708681+00:00] site=xnxx n=100 ok=100 429=0 403=0 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:53:58.745539+00:00] site=xnxx n=121 ok=120 429=0 403=0 5xx=0 chal=0 neterr=0
+=== Step done @ 5.00 rps: n=75 ok=75 429=0 403=0 5xx=0 chal=0 (0.0%) neterr=0
+
+=== Step: 10.00 req/sec for 15s ===
+  [2026-04-17T14:54:03.711447+00:00] site=xnxx n=141 ok=140 429=0 403=0 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:54:06.340649+00:00] site=xnxx n=161 ok=160 429=0 403=0 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:54:08.491410+00:00] site=xnxx n=182 ok=181 429=0 403=0 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:54:10.541196+00:00] site=xnxx n=201 ok=200 429=0 403=0 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:54:12.604613+00:00] site=xnxx n=221 ok=220 429=0 403=0 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:54:14.654508+00:00] site=xnxx n=241 ok=240 429=0 403=0 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:54:16.698884+00:00] site=xnxx n=261 ok=260 429=0 403=0 5xx=0 chal=0 neterr=0
+=== Step done @ 10.00 rps: n=140 ok=140 429=0 403=0 5xx=0 chal=0 (0.0%) neterr=0
+
+=== TOTALS: n=268 ok=268 429=0 403=0 5xx=0 chal=0 neterr=0 ===
+CSV: data-node/data/tube-rate-tests/rate-test-xnxx.csv

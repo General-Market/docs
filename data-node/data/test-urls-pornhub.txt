@@ -1,8 +1,36 @@
-# One URL per line. Replace with real video keys from trending pages before running.
-# Grab them from: curl -s 'https://www.pornhub.com/video?o=tr' | rg -o 'viewkey=[0-9a-f]+' | sort -u
-# Example placeholders below — these WILL return 404; replace before a real test run.
-https://www.pornhub.com/view_video.php?viewkey=ph000000000000001
-https://www.pornhub.com/view_video.php?viewkey=ph000000000000002
-https://www.pornhub.com/view_video.php?viewkey=ph000000000000003
-https://www.pornhub.com/view_video.php?viewkey=ph000000000000004
-https://www.pornhub.com/view_video.php?viewkey=ph000000000000005
+https://www.pornhub.com/view_video.php?viewkey=6508c4fb79eee
+https://www.pornhub.com/view_video.php?viewkey=65092588405f7
+https://www.pornhub.com/view_video.php?viewkey=65a7acb8522a8
+https://www.pornhub.com/view_video.php?viewkey=65c2ca0d20014
+https://www.pornhub.com/view_video.php?viewkey=65fc6593d9c0f
+https://www.pornhub.com/view_video.php?viewkey=65ff4f467da85
+https://www.pornhub.com/view_video.php?viewkey=660efec4c3591
+https://www.pornhub.com/view_video.php?viewkey=6626aa459560a
+https://www.pornhub.com/view_video.php?viewkey=66d6fec376292
+https://www.pornhub.com/view_video.php?viewkey=66e3434fab24b
+https://www.pornhub.com/view_video.php?viewkey=66e34b5d0a54a
+https://www.pornhub.com/view_video.php?viewkey=67cb4955a5e62
+https://www.pornhub.com/view_video.php?viewkey=67ce345ac5264
+https://www.pornhub.com/view_video.php?viewkey=67dc7d9634998
+https://www.pornhub.com/view_video.php?viewkey=67df37880c73c
+https://www.pornhub.com/view_video.php?viewkey=67f41fe38c651
+https://www.pornhub.com/view_video.php?viewkey=67f685985b813
+https://www.pornhub.com/view_video.php?viewkey=67f9492bda407
+https://www.pornhub.com/view_video.php?viewkey=68b780881b806
+https://www.pornhub.com/view_video.php?viewkey=68e8183180967
+https://www.pornhub.com/view_video.php?viewkey=694aefdd3e451
+https://www.pornhub.com/view_video.php?viewkey=694c00e59ffb5
+https://www.pornhub.com/view_video.php?viewkey=695b311b972de
+https://www.pornhub.com/view_video.php?viewkey=695c4bad901b3
+https://www.pornhub.com/view_video.php?viewkey=695c8a085486d
+https://www.pornhub.com/view_video.php?viewkey=6960c04aa6b9f
+https://www.pornhub.com/view_video.php?viewkey=6966c6677db2b
+https://www.pornhub.com/view_video.php?viewkey=69670edbf222a
+https://www.pornhub.com/view_video.php?viewkey=696cdcd3292ea
+https://www.pornhub.com/view_video.php?viewkey=699754e6e7deb
+https://www.pornhub.com/view_video.php?viewkey=699c434a22c57
+https://www.pornhub.com/view_video.php?viewkey=69a68d25142a7
+https://www.pornhub.com/view_video.php?viewkey=69b851c60f1c5
+https://www.pornhub.com/view_video.php?viewkey=69b973f0da339
+https://www.pornhub.com/view_video.php?viewkey=ph623ce25110cb1
+https://www.pornhub.com/view_video.php?viewkey=ph6394f4ec1d0c2

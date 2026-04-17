@@ -1,0 +1,32 @@
+Loaded 40 URLs for site=youporn
+
+=== Step: 0.50 req/sec for 15s ===
+=== Step done @ 0.50 rps: n=8 ok=8 429=0 403=0 5xx=0 chal=0 (0.0%) neterr=0
+
+=== Step: 1.00 req/sec for 15s ===
+  [2026-04-17T14:56:22.287661+00:00] site=youporn n=20 ok=20 429=0 403=0 5xx=0 chal=0 neterr=0
+=== Step done @ 1.00 rps: n=15 ok=15 429=0 403=0 5xx=0 chal=0 (0.0%) neterr=0
+
+=== Step: 2.00 req/sec for 15s ===
+  [2026-04-17T14:56:36.322686+00:00] site=youporn n=40 ok=40 429=0 403=0 5xx=0 chal=0 neterr=0
+=== Step done @ 2.00 rps: n=30 ok=30 429=0 403=0 5xx=0 chal=0 (0.0%) neterr=0
+
+=== Step: 5.00 req/sec for 15s ===
+  [2026-04-17T14:56:46.564587+00:00] site=youporn n=61 ok=59 429=0 403=0 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:56:50.599926+00:00] site=youporn n=81 ok=80 429=0 403=0 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:56:54.663768+00:00] site=youporn n=101 ok=100 429=0 403=0 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:56:58.698791+00:00] site=youporn n=121 ok=120 429=0 403=0 5xx=0 chal=0 neterr=0
+=== Step done @ 5.00 rps: n=75 ok=75 429=0 403=0 5xx=0 chal=0 (0.0%) neterr=0
+
+=== Step: 10.00 req/sec for 15s ===
+  [2026-04-17T14:57:03.640397+00:00] site=youporn n=143 ok=139 429=0 403=0 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:57:05.676941+00:00] site=youporn n=163 ok=160 429=0 403=0 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:57:07.708821+00:00] site=youporn n=183 ok=180 429=0 403=0 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:57:09.741138+00:00] site=youporn n=202 ok=200 429=0 403=0 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:57:11.770970+00:00] site=youporn n=222 ok=220 429=0 403=0 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:57:13.801347+00:00] site=youporn n=243 ok=239 429=0 403=0 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:57:15.845360+00:00] site=youporn n=263 ok=260 429=0 403=0 5xx=0 chal=0 neterr=0
+=== Step done @ 10.00 rps: n=148 ok=148 429=0 403=0 5xx=0 chal=0 (0.0%) neterr=0
+
+=== TOTALS: n=276 ok=276 429=0 403=0 5xx=0 chal=0 neterr=0 ===
+CSV: data-node/data/tube-rate-tests/rate-test-youporn.csv

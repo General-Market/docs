@@ -1,0 +1,31 @@
+Loaded 40 URLs for site=eporner
+
+=== Step: 0.50 req/sec for 15s ===
+=== Step done @ 0.50 rps: n=8 ok=8 429=0 403=0 5xx=0 chal=0 (0.0%) neterr=0
+
+=== Step: 1.00 req/sec for 15s ===
+  [2026-04-17T14:57:51.706682+00:00] site=eporner n=20 ok=20 429=0 403=0 5xx=0 chal=0 neterr=0
+=== Step done @ 1.00 rps: n=15 ok=15 429=0 403=0 5xx=0 chal=0 (0.0%) neterr=0
+
+=== Step: 2.00 req/sec for 15s ===
+  [2026-04-17T14:58:05.816516+00:00] site=eporner n=40 ok=40 429=0 403=0 5xx=0 chal=0 neterr=0
+=== Step done @ 2.00 rps: n=30 ok=30 429=0 403=0 5xx=0 chal=0 (0.0%) neterr=0
+
+=== Step: 5.00 req/sec for 15s ===
+  [2026-04-17T14:58:16.082495+00:00] site=eporner n=60 ok=60 429=0 403=0 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:58:20.183638+00:00] site=eporner n=80 ok=80 429=0 403=0 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:58:24.247239+00:00] site=eporner n=100 ok=100 429=0 403=0 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:58:28.289942+00:00] site=eporner n=120 ok=120 429=0 403=0 5xx=0 chal=0 neterr=0
+=== Step done @ 5.00 rps: n=74 ok=74 429=0 403=0 5xx=0 chal=0 (0.0%) neterr=0
+
+=== Step: 10.00 req/sec for 15s ===
+  [2026-04-17T14:58:33.167741+00:00] site=eporner n=141 ok=140 429=0 403=0 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:58:35.406901+00:00] site=eporner n=161 ok=156 429=4 403=0 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:58:37.954529+00:00] site=eporner n=181 ok=172 429=8 403=0 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:58:40.665666+00:00] site=eporner n=201 ok=189 429=11 403=0 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:58:42.978342+00:00] site=eporner n=221 ok=203 429=17 403=0 5xx=0 chal=0 neterr=0
+  [2026-04-17T14:58:45.241749+00:00] site=eporner n=241 ok=219 429=21 403=0 5xx=0 chal=0 neterr=0
+=== Step done @ 10.00 rps: n=124 ok=102 429=22 403=0 5xx=0 chal=0 (0.0%) neterr=0
+
+=== TOTALS: n=251 ok=229 429=22 403=0 5xx=0 chal=0 neterr=0 ===
+CSV: data-node/data/tube-rate-tests/rate-test-eporner.csv
