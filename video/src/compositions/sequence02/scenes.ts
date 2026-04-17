@@ -88,3 +88,34 @@ export const CENTER_CALLOUTS: CenterCallout[] = [
 ];
 
 export const BOTTOM_LABEL_TEXT = "Never pay spread. Trade where you can win.";
+
+// ── Punch zoom — emotional/key-word moments in the voice track ──────────────
+//
+// Tuned for a launch video: snappy attacks, short holds, fast releases.
+// Seconds are pulled from the parakeet word-level timestamps.
+
+import type { PunchEvent } from "./PunchZoom";
+
+export const PUNCH_EVENTS: PunchEvent[] = [
+  { atSec: 1.28,  scale: 1.10, label: "booming" },
+  { atSec: 3.76,  scale: 1.12, label: "banality" },
+  { atSec: 7.92,  scale: 1.11, label: "never winning" },
+  { atSec: 10.40, scale: 1.14, label: "70%" },
+  { atSec: 13.12, scale: 1.11, label: "insiders" },
+  { atSec: 18.48, scale: 1.08, label: "gave away" },
+  { atSec: 20.08, scale: 1.10, label: "insiders (returned)" },
+  { atSec: 23.84, scale: 1.18, inSec: 0.18, holdSec: 0.35, outSec: 0.85, label: "RIGGED" },
+  { atSec: 25.60, scale: 1.12, label: "general market" },
+  { atSec: 27.20, scale: 1.10, label: "insider proof" },
+  { atSec: 31.20, scale: 1.10, label: "different" },
+  { atSec: 39.28, scale: 1.12, label: "batches" },
+  { atSec: 42.00, scale: 1.08, label: "at once" },
+  { atSec: 45.44, scale: 1.10, label: "edge" },
+  { atSec: 46.80, scale: 1.12, label: "Quantity" },
+  { atSec: 49.92, scale: 1.14, label: "500" },
+  { atSec: 54.24, scale: 1.10, label: "Twitch" },
+  { atSec: 55.68, scale: 1.08, label: "meme coins" },
+  { atSec: 59.84, scale: 1.12, label: "10 minutes" },
+  { atSec: 60.56, scale: 1.12, label: "Never" },
+  { atSec: 63.44, scale: 1.16, inSec: 0.14, holdSec: 0.40, outSec: 0.30, label: "win" },
+];

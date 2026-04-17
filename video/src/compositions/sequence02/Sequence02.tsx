@@ -38,12 +38,13 @@ import {
   SIDE_ACCENTS,
   CENTER_CALLOUTS,
   BOTTOM_LABEL_TEXT,
+  PUNCH_EVENTS,
   getContentArea,
 } from "./scenes";
 import { TimedCascadeText } from "./TimedCascadeText";
+import { usePunchZoom } from "./PunchZoom";
 
 const EASE_OUT = Easing.bezier(0.16, 1, 0.3, 1);
-const EASE_INOUT = Easing.bezier(0.4, 0, 0.6, 1);
 
 // Green ASCII opener (first ~1.7s)
 const GREEN_CUT_IN = 0;
@@ -55,46 +56,6 @@ const GREEN_CUT_OUT = GREEN_SLIDE_START + GREEN_SLIDE_FRAMES;
 // 360° diagonal flip at the centered-bottom → middle-banner handoff
 const ROT_START = toFrames(62.0);
 const ROT_FRAMES = Math.round(0.8 * 30);
-
-// ── Step zoom keyframes ─────────────────────────────────────────────────────
-//
-// Each scene starts at scale 1.00 (10-frame reset window at its start) and
-// slowly creeps to a per-scene target by the end. The reset at the boundary
-// reads as a clean step, the creep as ambient breath.
-const RESET_FRAMES = 10;
-
-const PER_SCENE_ZOOM_TARGET = [
-  1.06, // 1 — hook (centered, slow push)
-  1.04, // 2 — 1 in 2000 (right-medium)
-  1.05, // 3 — rigged (left-medium)
-  1.06, // 4 — introducing GM (centered)
-  1.03, // 5 — normal exchange (right-small)
-  1.04, // 6 — batches (left-small)
-  1.05, // 7 — 500 markets (centered)
-  1.04, // 8 — market list (right-medium)
-  1.03, // 9 — never pay spread (centered-bottom)
-  1.00, // 10 — GM banner (static)
-];
-
-const buildZoomKeyframes = () => {
-  const frames: number[] = [0];
-  const scales: number[] = [1.0];
-  SCENES.forEach((sc, i) => {
-    const startF = toFrames(sc.startSec);
-    const endF = toFrames(sc.endSec);
-    if (i > 0) {
-      // Settle at 1.0 shortly after the scene begins
-      frames.push(startF + RESET_FRAMES);
-      scales.push(1.0);
-    }
-    // Slow creep to the per-scene target by the final frame of the scene
-    frames.push(endF);
-    scales.push(PER_SCENE_ZOOM_TARGET[i]);
-  });
-  return { frames, scales };
-};
-
-const { frames: ZOOM_KF_F, scales: ZOOM_KF_S } = buildZoomKeyframes();
 
 export const Sequence02: React.FC = () => {
   const frame = useCurrentFrame();
@@ -119,11 +80,7 @@ export const Sequence02: React.FC = () => {
   );
   const isRotating = frame >= ROT_START && frame <= ROT_START + ROT_FRAMES;
 
-  const zoomScale = interpolate(frame, ZOOM_KF_F, ZOOM_KF_S, {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-    easing: EASE_INOUT,
-  });
+  const zoomScale = usePunchZoom(PUNCH_EVENTS);
 
   return (
     <AbsoluteFill style={{ background: "#000" }}>
