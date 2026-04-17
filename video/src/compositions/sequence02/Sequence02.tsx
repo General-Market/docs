@@ -5,6 +5,9 @@
  * of Sequence02.mp4. ASCII border traces the rect. Side-panel cascade text
  * lands on the beat. Green ASCII flash opens. 360° flip reveals GM at the end.
  *
+ * Per-scene step zoom breathes the webcam — slow creep inside each scene,
+ * clean reset at every boundary.
+ *
  * Scene timing lives in `scenes.ts` and follows the parakeet transcript.
  */
 
@@ -14,7 +17,6 @@ import {
   Easing,
   Img,
   OffthreadVideo,
-  Sequence,
   Video,
   interpolate,
   staticFile,
@@ -29,7 +31,6 @@ import {
   findSceneIndex,
   getAnimatedRect,
 } from "../endcard/layout";
-import { CascadeText } from "../../lib/components/Text";
 import { FONT } from "../tutorial/designTokens";
 import { SRC, W, toFrames } from "./theme";
 import {
@@ -39,8 +40,10 @@ import {
   BOTTOM_LABEL_TEXT,
   getContentArea,
 } from "./scenes";
+import { TimedCascadeText } from "./TimedCascadeText";
 
 const EASE_OUT = Easing.bezier(0.16, 1, 0.3, 1);
+const EASE_INOUT = Easing.bezier(0.4, 0, 0.6, 1);
 
 // Green ASCII opener (first ~1.7s)
 const GREEN_CUT_IN = 0;
@@ -52,6 +55,46 @@ const GREEN_CUT_OUT = GREEN_SLIDE_START + GREEN_SLIDE_FRAMES;
 // 360° diagonal flip at the centered-bottom → middle-banner handoff
 const ROT_START = toFrames(62.0);
 const ROT_FRAMES = Math.round(0.8 * 30);
+
+// ── Step zoom keyframes ─────────────────────────────────────────────────────
+//
+// Each scene starts at scale 1.00 (10-frame reset window at its start) and
+// slowly creeps to a per-scene target by the end. The reset at the boundary
+// reads as a clean step, the creep as ambient breath.
+const RESET_FRAMES = 10;
+
+const PER_SCENE_ZOOM_TARGET = [
+  1.06, // 1 — hook (centered, slow push)
+  1.04, // 2 — 1 in 2000 (right-medium)
+  1.05, // 3 — rigged (left-medium)
+  1.06, // 4 — introducing GM (centered)
+  1.03, // 5 — normal exchange (right-small)
+  1.04, // 6 — batches (left-small)
+  1.05, // 7 — 500 markets (centered)
+  1.04, // 8 — market list (right-medium)
+  1.03, // 9 — never pay spread (centered-bottom)
+  1.00, // 10 — GM banner (static)
+];
+
+const buildZoomKeyframes = () => {
+  const frames: number[] = [0];
+  const scales: number[] = [1.0];
+  SCENES.forEach((sc, i) => {
+    const startF = toFrames(sc.startSec);
+    const endF = toFrames(sc.endSec);
+    if (i > 0) {
+      // Settle at 1.0 shortly after the scene begins
+      frames.push(startF + RESET_FRAMES);
+      scales.push(1.0);
+    }
+    // Slow creep to the per-scene target by the final frame of the scene
+    frames.push(endF);
+    scales.push(PER_SCENE_ZOOM_TARGET[i]);
+  });
+  return { frames, scales };
+};
+
+const { frames: ZOOM_KF_F, scales: ZOOM_KF_S } = buildZoomKeyframes();
 
 export const Sequence02: React.FC = () => {
   const frame = useCurrentFrame();
@@ -65,11 +108,7 @@ export const Sequence02: React.FC = () => {
     frame,
     [GREEN_SLIDE_START, GREEN_CUT_OUT],
     [0, 1],
-    {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-      easing: EASE_OUT,
-    },
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: EASE_OUT },
   );
 
   const rotation = interpolate(
@@ -79,6 +118,12 @@ export const Sequence02: React.FC = () => {
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
   const isRotating = frame >= ROT_START && frame <= ROT_START + ROT_FRAMES;
+
+  const zoomScale = interpolate(frame, ZOOM_KF_F, ZOOM_KF_S, {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: EASE_INOUT,
+  });
 
   return (
     <AbsoluteFill style={{ background: "#000" }}>
@@ -100,7 +145,7 @@ export const Sequence02: React.FC = () => {
       {/* Cold-blue scrim over the backdrop */}
       <AbsoluteFill style={{ background: "rgba(0, 14, 30, 0.42)" }} />
 
-      {/* Clean speaker video inside the animated rect */}
+      {/* Clean speaker video inside the animated rect — with step zoom */}
       <div
         style={{
           position: "absolute",
@@ -115,7 +160,14 @@ export const Sequence02: React.FC = () => {
       >
         <OffthreadVideo
           src={staticFile(SRC)}
-          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            transform: `scale(${zoomScale})`,
+            transformOrigin: "center center",
+            willChange: "transform",
+          }}
         />
       </div>
 
@@ -183,7 +235,7 @@ export const Sequence02: React.FC = () => {
       {/* ASCII border tracing the animated rect */}
       <AsciiOverlay rect={rect} />
 
-      {/* Side-panel accents — Sequence-wrapped so CascadeText animates from its appearance frame */}
+      {/* Side-panel accents — TimedCascadeText handles the frame reset */}
       {SIDE_ACCENTS.map((a, i) => {
         const appearF = toFrames(a.appearSec);
         const duration = toFrames(a.hideSec) - appearF;
@@ -195,62 +247,60 @@ export const Sequence02: React.FC = () => {
         const titleSize = a.titleSize ?? (a.title.length > 14 ? 88 : 120);
 
         return (
-          <Sequence
+          <div
             key={`sa-${i}`}
-            from={appearF}
-            durationInFrames={duration}
-            layout="none"
+            style={{
+              position: "absolute",
+              left: area.x,
+              top: area.y,
+              width: area.w,
+              height: area.h,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-start",
+              justifyContent: "center",
+              padding: 24,
+              textShadow: "0 2px 24px rgba(0,0,0,0.6)",
+            }}
           >
-            <div
-              style={{
-                position: "absolute",
-                left: area.x,
-                top: area.y,
-                width: area.w,
-                height: area.h,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-start",
-                justifyContent: "center",
-                padding: 24,
-                textShadow: "0 2px 24px rgba(0,0,0,0.6)",
-              }}
-            >
-              <CascadeText
-                text={a.title}
-                maxWidth={paddedW}
-                fontFamily={FONT.display}
-                fontSize={titleSize}
-                fontWeight={800}
-                color="#ffffff"
-                letterSpacing="-0.02em"
-                align="left"
-                riseDistance={80}
-                blurPx={14}
-              />
-              {a.sub && (
-                <div style={{ marginTop: 28 }}>
-                  <CascadeText
-                    text={a.sub}
-                    maxWidth={paddedW}
-                    fontFamily={FONT.body}
-                    fontSize={36}
-                    fontWeight={800}
-                    color="rgba(255,255,255,0.82)"
-                    letterSpacing="-0.02em"
-                    align="left"
-                    riseDistance={80}
-                    blurPx={14}
-                    startDelay={16}
-                  />
-                </div>
-              )}
-            </div>
-          </Sequence>
+            <TimedCascadeText
+              from={appearF}
+              duration={duration}
+              text={a.title}
+              maxWidth={paddedW}
+              fontFamily={FONT.display}
+              fontSize={titleSize}
+              fontWeight={800}
+              color="#ffffff"
+              letterSpacing="-0.02em"
+              align="left"
+              riseDistance={80}
+              blurPx={14}
+            />
+            {a.sub && (
+              <div style={{ marginTop: 28 }}>
+                <TimedCascadeText
+                  from={appearF}
+                  duration={duration}
+                  text={a.sub}
+                  maxWidth={paddedW}
+                  fontFamily={FONT.body}
+                  fontSize={36}
+                  fontWeight={800}
+                  color="rgba(255,255,255,0.82)"
+                  letterSpacing="-0.02em"
+                  align="left"
+                  riseDistance={80}
+                  blurPx={14}
+                  startDelay={16}
+                />
+              </div>
+            )}
+          </div>
         );
       })}
 
-      {/* Centered callouts — Sequence-wrapped top/bottom banners */}
+      {/* Centered callouts — top/bottom banners during centered scenes */}
       {CENTER_CALLOUTS.map((c, i) => {
         const appearF = toFrames(c.appearSec);
         const duration = toFrames(c.hideSec) - appearF;
@@ -268,38 +318,33 @@ export const Sequence02: React.FC = () => {
         else bannerStyle.bottom = 72;
 
         return (
-          <Sequence
-            key={`cc-${i}`}
-            from={appearF}
-            durationInFrames={duration}
-            layout="none"
-          >
-            <div style={bannerStyle}>
-              <CascadeText
-                text={c.text}
-                maxWidth={1400}
-                fontFamily={FONT.display}
-                fontSize={c.size ?? 80}
-                fontWeight={800}
-                color="#ffffff"
-                letterSpacing="-0.02em"
-                align="center"
-                riseDistance={80}
-                blurPx={14}
-              />
-            </div>
-          </Sequence>
+          <div key={`cc-${i}`} style={bannerStyle}>
+            <TimedCascadeText
+              from={appearF}
+              duration={duration}
+              text={c.text}
+              maxWidth={1400}
+              fontFamily={FONT.display}
+              fontSize={c.size ?? 80}
+              fontWeight={800}
+              color="#ffffff"
+              letterSpacing="-0.02em"
+              align="center"
+              riseDistance={80}
+              blurPx={14}
+            />
+          </div>
         );
       })}
 
-      {/* Centered-bottom label — Sequence-wrapped so CascadeText runs from scene start */}
-      {layout === "centered-bottom" && (() => {
-        const cbScene = SCENES.find((s) => s.layout === "centered-bottom");
-        if (!cbScene) return null;
-        const fromF = toFrames(cbScene.startSec);
-        const durF = toFrames(cbScene.endSec) - fromF;
-        return (
-          <Sequence from={fromF} durationInFrames={durF} layout="none">
+      {/* Centered-bottom label */}
+      {layout === "centered-bottom" &&
+        (() => {
+          const cbScene = SCENES.find((s) => s.layout === "centered-bottom");
+          if (!cbScene) return null;
+          const fromF = toFrames(cbScene.startSec);
+          const durF = toFrames(cbScene.endSec) - fromF;
+          return (
             <div
               style={{
                 position: "absolute",
@@ -314,7 +359,9 @@ export const Sequence02: React.FC = () => {
                 textShadow: "0 2px 16px rgba(0,0,0,0.55)",
               }}
             >
-              <CascadeText
+              <TimedCascadeText
+                from={fromF}
+                duration={durF}
                 text={BOTTOM_LABEL_TEXT}
                 maxWidth={Math.max(600, rect.w - 96)}
                 fontFamily={FONT.display}
@@ -327,9 +374,8 @@ export const Sequence02: React.FC = () => {
                 blurPx={14}
               />
             </div>
-          </Sequence>
-        );
-      })()}
+          );
+        })()}
 
       {/* Middle-banner — blackout behind GM lockup */}
       {layout === "middle-banner" && (
