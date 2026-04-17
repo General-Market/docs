@@ -14,6 +14,7 @@
 import React from "react";
 import {
   AbsoluteFill,
+  Audio,
   Easing,
   Img,
   Video,
@@ -85,6 +86,11 @@ export const Sequence02: React.FC = () => {
 
   return (
     <AbsoluteFill style={{ background: "#000" }}>
+      {/* Voice track — CinematicWebcam renders the video as a silent texture,
+          and the backdrop Video is muted. Feed the audio here so the voice
+          lives regardless of how the webcam is rendered. */}
+      <Audio src={staticFile(SRC)} />
+
       {/* Ambient blurred backdrop — same source, crushed */}
       <AbsoluteFill>
         <Video
