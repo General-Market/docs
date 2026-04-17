@@ -89,53 +89,93 @@ export const CENTER_CALLOUTS: CenterCallout[] = [
 
 export const BOTTOM_LABEL_TEXT = "Never pay spread. Trade where you can win.";
 
-// ── Zoom cues — held states, cuts on beats, clean bezier between ────────────
+// ── Zoom cues — 4 held levels + SLAM peaks, cuts on beats ───────────────────
 //
-// Each cue locks the scale at a new level and holds it until the next cue.
-// Hard cuts (easeSec: 0) land instantly on the emotional word; soft eases
-// bridge phrases. No auto-release. The camera stays put — charisma lives
-// in the hold.
+// Four distinct zoom levels the camera rests on. Cuts land on emotional
+// words; eases bridge phrases. Three dramatic-3 moments (three-step hard
+// cut cascades) drive the biggest payoffs: RIGGED, 500, WIN.
+//
+// Max pushed to 1.64 — reserved for the absolute climactic beats.
 
-import type { ZoomCue } from "./PunchZoom";
+import { dramatic3, type ZoomCue } from "./PunchZoom";
+
+/** Four standing levels + a reserved SLAM for the biggest moments. */
+const L = {
+  WIDE: 1.00,
+  MED: 1.16,
+  CLOSE: 1.32,
+  TIGHT: 1.50,
+  SLAM: 1.64,
+} as const;
 
 export const PUNCH_EVENTS: ZoomCue[] = [
-  // ── Opening — push gently, hold through the hook
-  { atSec: 0.00,  scale: 1.00, easeSec: 0,    label: "start wide" },
-  { atSec: 1.28,  scale: 1.10, easeSec: 0.18, label: "ease in on 'booming'" },
+  // ── Scene 1 (0.00–4.56) — open wide, ease to MED on the hook
+  { atSec: 0.00, scale: L.WIDE, easeSec: 0, label: "start wide" },
+  { atSec: 0.16, scale: L.MED, easeSec: 0.55, label: "ease in on hook" },
+  { atSec: 3.76, scale: L.CLOSE, easeSec: 0, label: "cut on 'banality'" },
 
-  // ── Scene 2 — pull back, then cut into the stat
-  { atSec: 4.56,  scale: 1.04, easeSec: 0.50, label: "settle wide" },
-  { atSec: 8.40,  scale: 1.12, easeSec: 0,    label: "cut on 'never winning'" },
-  { atSec: 10.40, scale: 1.22, easeSec: 0,    label: "SLAM on '70%'" },
-  { atSec: 12.80, scale: 1.14, easeSec: 0.35, label: "ease down through 'insiders'" },
+  // ── Scene 2 (4.56–13.92) — drop wide, build into the stat
+  { atSec: 4.56, scale: L.WIDE, easeSec: 0.45, label: "pull back for setup" },
+  { atSec: 6.72, scale: L.MED, easeSec: 0.35, label: "ease in on 'means you'" },
+  { atSec: 8.40, scale: L.CLOSE, easeSec: 0, label: "cut on 'never winning'" },
+  { atSec: 10.40, scale: L.TIGHT, easeSec: 0, label: "SLAM on '70%'" },
+  { atSec: 12.80, scale: L.MED, easeSec: 0.30, label: "ease down on 'insiders'" },
 
-  // ── Scene 3 — breathe wide, drift into RIGGED, slam
-  { atSec: 13.92, scale: 1.04, easeSec: 0.55, label: "pull back for narration" },
-  { atSec: 21.50, scale: 1.10, easeSec: 2.00, label: "slow drift — tension" },
-  { atSec: 23.84, scale: 1.32, easeSec: 0,    label: "SLAM on 'RIGGED'" },
+  // ── Scene 3 (13.92–24.40) — wide for the long beat, dramatic-3 into RIGGED
+  { atSec: 13.92, scale: L.WIDE, easeSec: 0.55, label: "pull for narration" },
+  { atSec: 18.48, scale: L.MED, easeSec: 0.25, label: "push on 'gave away'" },
+  { atSec: 20.08, scale: L.CLOSE, easeSec: 0.20, label: "push on 'insiders'" },
+  // ★ DRAMATIC 3 — "exchanges → were → RIGGED"
+  ...dramatic3(22.80, {
+    levels: [L.CLOSE, L.TIGHT, L.SLAM],
+    stepSec: 0.52,
+    label: "exchanges→rigged",
+  }),
 
-  // ── Scene 4 — GM reveal: pull back, push in cinematically
-  { atSec: 24.40, scale: 1.10, easeSec: 0.45, label: "pull for GM reveal" },
-  { atSec: 25.60, scale: 1.16, easeSec: 0.30, label: "ease in on 'general market'" },
+  // ── Scene 4 (24.40–30.08) — pull back for reveal, ease in on brand
+  { atSec: 24.40, scale: L.MED, easeSec: 0.40, label: "pull for GM reveal" },
+  { atSec: 25.60, scale: L.CLOSE, easeSec: 0.32, label: "ease on 'general market'" },
+  { atSec: 27.20, scale: L.TIGHT, easeSec: 0, label: "cut on 'insider proof'" },
+  { atSec: 29.40, scale: L.MED, easeSec: 0.30, label: "ease down 'edge back'" },
 
-  // ── Scene 5 — wide hold through the explanation
-  { atSec: 30.08, scale: 1.04, easeSec: 0.60, label: "wide for long narration" },
+  // ── Scene 5 (30.08–37.28) — wide with mid-phrase pushes
+  { atSec: 30.08, scale: L.WIDE, easeSec: 0.55, label: "wide for explanation" },
+  { atSec: 33.12, scale: L.MED, easeSec: 0.30, label: "push on 'insiders'" },
+  { atSec: 36.48, scale: L.CLOSE, easeSec: 0, label: "cut on 'insiders' (2nd)" },
 
-  // ── Scene 6 — cut into the solution
-  { atSec: 39.28, scale: 1.20, easeSec: 0,    label: "cut on 'batches'" },
-  { atSec: 42.80, scale: 1.14, easeSec: 0.50, label: "ease down through middle" },
+  // ── Scene 6 (37.28–46.48) — solution punchy, lots of cuts
+  { atSec: 37.28, scale: L.WIDE, easeSec: 0.35, label: "pull back fast" },
+  { atSec: 39.28, scale: L.CLOSE, easeSec: 0, label: "cut on 'batches'" },
+  { atSec: 40.16, scale: L.TIGHT, easeSec: 0.22, label: "push to 'thousands'" },
+  { atSec: 42.80, scale: L.MED, easeSec: 0.35, label: "settle on 'forced'" },
+  { atSec: 45.44, scale: L.TIGHT, easeSec: 0, label: "cut on 'edge'" },
 
-  // ── Scene 7 — ease into the climax, slam on 500
-  { atSec: 46.48, scale: 1.16, easeSec: 0.45, label: "ease in on 'Quantity'" },
-  { atSec: 49.92, scale: 1.28, easeSec: 0,    label: "SLAM on '500'" },
+  // ── Scene 7 (46.48–52.00) — DRAMATIC 3 into SLAM on 500
+  // ★ DRAMATIC 3 — "Quantity → has protection → 500"
+  ...dramatic3(46.48, {
+    levels: [L.CLOSE, L.TIGHT, L.SLAM],
+    stepSec: 1.15, // longer steps — matches the phrase cadence
+    label: "quantity→500",
+  }),
 
-  // ── Scene 8 — settle at medium, cut on 10 minutes
-  { atSec: 52.00, scale: 1.08, easeSec: 0.55, label: "settle for list" },
-  { atSec: 59.84, scale: 1.18, easeSec: 0,    label: "cut on '10 minutes'" },
+  // ── Scene 8 (52.00–60.56) — list rhythm: CLOSE/MED alternation per category
+  { atSec: 52.00, scale: L.MED, easeSec: 0.40, label: "settle for list" },
+  { atSec: 54.24, scale: L.CLOSE, easeSec: 0, label: "cut on 'Twitch'" },
+  { atSec: 55.68, scale: L.MED, easeSec: 0, label: "drop on 'meme coins'" },
+  { atSec: 56.24, scale: L.CLOSE, easeSec: 0, label: "cut on 'animals'" },
+  { atSec: 56.96, scale: L.MED, easeSec: 0, label: "drop on 'movies'" },
+  { atSec: 58.00, scale: L.CLOSE, easeSec: 0, label: "cut on 'parameter settlement'" },
+  { atSec: 59.84, scale: L.TIGHT, easeSec: 0, label: "SLAM on '10 minutes'" },
 
-  // ── Scene 9 — ease into closing beat
-  { atSec: 60.56, scale: 1.14, easeSec: 0.30, label: "ease into 'Never pay spread'" },
+  // ── Scene 9 (60.56–62.40) — ease into the closing
+  { atSec: 60.56, scale: L.MED, easeSec: 0.30, label: "ease down 'Never'" },
+  { atSec: 61.36, scale: L.CLOSE, easeSec: 0, label: "cut on 'spread'" },
 
-  // ── Scene 10 — final slam on WIN
-  { atSec: 63.40, scale: 1.34, easeSec: 0,    label: "FINAL SLAM on 'WIN'" },
+  // ── Scene 10 (62.40–63.80) — DRAMATIC 3 to final SLAM on WIN
+  // ★ DRAMATIC 3 — "trade → where you can → WIN"
+  ...dramatic3(62.40, {
+    levels: [L.CLOSE, L.TIGHT, L.SLAM],
+    stepSec: 0.50,
+    label: "trade→WIN",
+  }),
 ];

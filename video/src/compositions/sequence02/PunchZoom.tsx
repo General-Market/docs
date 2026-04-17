@@ -68,6 +68,32 @@ export const useZoom = (cues: ZoomCue[]): number => {
   return scale;
 };
 
+// ── Dramatic-3 — three hard cuts in sequence building to a slam ─────────────
+//
+// Classic cinematic pattern: three quick zoom-in cuts in a row, each a
+// step tighter. Each step holds instantly with easeSec: 0. Use before
+// the emotional payoff — the third scale stays as the final SLAM.
+
+export const dramatic3 = (
+  atSec: number,
+  opts: {
+    /** Three scales, low → high. Default [1.20, 1.40, 1.60]. */
+    levels?: [number, number, number];
+    /** Time between each step in seconds. Default 0.30. */
+    stepSec?: number;
+    label?: string;
+  } = {},
+): ZoomCue[] => {
+  const levels = opts.levels ?? [1.2, 1.4, 1.6];
+  const step = opts.stepSec ?? 0.3;
+  const label = opts.label ?? "dramatic3";
+  return [
+    { atSec, scale: levels[0], easeSec: 0, label: `${label} ①` },
+    { atSec: atSec + step, scale: levels[1], easeSec: 0, label: `${label} ②` },
+    { atSec: atSec + 2 * step, scale: levels[2], easeSec: 0, label: `${label} ③` },
+  ];
+};
+
 /** Wraps children in a scaled container driven by the cue list. */
 export const PunchZoom: React.FC<{
   cues: ZoomCue[];
