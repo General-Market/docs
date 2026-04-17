@@ -14,6 +14,7 @@ import {
   Easing,
   Img,
   OffthreadVideo,
+  Sequence,
   Video,
   interpolate,
   staticFile,
@@ -25,6 +26,7 @@ import { GreenAsciiScreen } from "../endcard/GreenAsciiScreen";
 import {
   BOTTOM_LABEL_SPACE,
   CORNER_R,
+  findSceneIndex,
   getAnimatedRect,
 } from "../endcard/layout";
 import { CascadeText } from "../../lib/components/Text";
@@ -57,7 +59,6 @@ export const Sequence02: React.FC = () => {
 
   const { rect, scene } = getAnimatedRect(SCENES, frame, fps, 20);
   const layout = scene.layout;
-  const contentArea = getContentArea(layout);
 
   const isGreenVisible = frame >= GREEN_CUT_IN && frame < GREEN_CUT_OUT;
   const greenSlideProgress = interpolate(
@@ -182,25 +183,31 @@ export const Sequence02: React.FC = () => {
       {/* ASCII border tracing the animated rect */}
       <AsciiOverlay rect={rect} />
 
-      {/* Side-panel accents — appear only when a content area exists */}
-      {contentArea &&
-        SIDE_ACCENTS.map((a, i) => {
-          const appearF = toFrames(a.appearSec);
-          const hideF = toFrames(a.hideSec);
-          if (frame < appearF || frame >= hideF) return null;
+      {/* Side-panel accents — Sequence-wrapped so CascadeText animates from its appearance frame */}
+      {SIDE_ACCENTS.map((a, i) => {
+        const appearF = toFrames(a.appearSec);
+        const duration = toFrames(a.hideSec) - appearF;
+        const sceneLayout = SCENES[findSceneIndex(SCENES, a.appearSec)].layout;
+        const area = getContentArea(sceneLayout);
+        if (!area) return null;
 
-          const paddedW = Math.max(0, contentArea.w - 48);
-          const titleSize = a.titleSize ?? (a.title.length > 14 ? 88 : 120);
+        const paddedW = Math.max(0, area.w - 48);
+        const titleSize = a.titleSize ?? (a.title.length > 14 ? 88 : 120);
 
-          return (
+        return (
+          <Sequence
+            key={`sa-${i}`}
+            from={appearF}
+            durationInFrames={duration}
+            layout="none"
+          >
             <div
-              key={`sa-${i}`}
               style={{
                 position: "absolute",
-                left: contentArea.x,
-                top: contentArea.y,
-                width: contentArea.w,
-                height: contentArea.h,
+                left: area.x,
+                top: area.y,
+                width: area.w,
+                height: area.h,
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "flex-start",
@@ -234,18 +241,19 @@ export const Sequence02: React.FC = () => {
                     align="left"
                     riseDistance={80}
                     blurPx={14}
+                    startDelay={16}
                   />
                 </div>
               )}
             </div>
-          );
-        })}
+          </Sequence>
+        );
+      })}
 
-      {/* Centered callouts — top/bottom frame banners during centered scenes */}
+      {/* Centered callouts — Sequence-wrapped top/bottom banners */}
       {CENTER_CALLOUTS.map((c, i) => {
         const appearF = toFrames(c.appearSec);
-        const hideF = toFrames(c.hideSec);
-        if (frame < appearF || frame >= hideF) return null;
+        const duration = toFrames(c.hideSec) - appearF;
 
         const bannerStyle: React.CSSProperties = {
           position: "absolute",
@@ -260,53 +268,68 @@ export const Sequence02: React.FC = () => {
         else bannerStyle.bottom = 72;
 
         return (
-          <div key={`cc-${i}`} style={bannerStyle}>
-            <CascadeText
-              text={c.text}
-              maxWidth={1400}
-              fontFamily={FONT.display}
-              fontSize={c.size ?? 80}
-              fontWeight={800}
-              color="#ffffff"
-              letterSpacing="-0.02em"
-              align="center"
-              riseDistance={80}
-              blurPx={14}
-            />
-          </div>
+          <Sequence
+            key={`cc-${i}`}
+            from={appearF}
+            durationInFrames={duration}
+            layout="none"
+          >
+            <div style={bannerStyle}>
+              <CascadeText
+                text={c.text}
+                maxWidth={1400}
+                fontFamily={FONT.display}
+                fontSize={c.size ?? 80}
+                fontWeight={800}
+                color="#ffffff"
+                letterSpacing="-0.02em"
+                align="center"
+                riseDistance={80}
+                blurPx={14}
+              />
+            </div>
+          </Sequence>
         );
       })}
 
-      {/* Centered-bottom label */}
-      {layout === "centered-bottom" && (
-        <div
-          style={{
-            position: "absolute",
-            left: rect.x,
-            top: rect.y + rect.h,
-            width: rect.w,
-            height: BOTTOM_LABEL_SPACE,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "0 48px",
-            textShadow: "0 2px 16px rgba(0,0,0,0.55)",
-          }}
-        >
-          <CascadeText
-            text={BOTTOM_LABEL_TEXT}
-            maxWidth={Math.max(600, rect.w - 96)}
-            fontFamily={FONT.display}
-            fontSize={52}
-            fontWeight={800}
-            color="#ffffff"
-            letterSpacing="-0.02em"
-            align="center"
-            riseDistance={80}
-            blurPx={14}
-          />
-        </div>
-      )}
+      {/* Centered-bottom label — Sequence-wrapped so CascadeText runs from scene start */}
+      {layout === "centered-bottom" && (() => {
+        const cbScene = SCENES.find((s) => s.layout === "centered-bottom");
+        if (!cbScene) return null;
+        const fromF = toFrames(cbScene.startSec);
+        const durF = toFrames(cbScene.endSec) - fromF;
+        return (
+          <Sequence from={fromF} durationInFrames={durF} layout="none">
+            <div
+              style={{
+                position: "absolute",
+                left: rect.x,
+                top: rect.y + rect.h,
+                width: rect.w,
+                height: BOTTOM_LABEL_SPACE,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "0 48px",
+                textShadow: "0 2px 16px rgba(0,0,0,0.55)",
+              }}
+            >
+              <CascadeText
+                text={BOTTOM_LABEL_TEXT}
+                maxWidth={Math.max(600, rect.w - 96)}
+                fontFamily={FONT.display}
+                fontSize={52}
+                fontWeight={800}
+                color="#ffffff"
+                letterSpacing="-0.02em"
+                align="center"
+                riseDistance={80}
+                blurPx={14}
+              />
+            </div>
+          </Sequence>
+        );
+      })()}
 
       {/* Middle-banner — blackout behind GM lockup */}
       {layout === "middle-banner" && (
