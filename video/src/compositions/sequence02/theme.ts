@@ -19,11 +19,6 @@ export const T = (sec: number) =>
 export const toFrames = (sec: number) => Math.round(T(sec) * FPS);
 
 export const SRC = "sequence02/sequence02_with_insert.mp4";
-/** Voice track — pipeline:
- *    mp4 → WAV
- *    → clean-voice preset (HPF + compressor + gain + limiter)   [base loudness]
- *    → apply_word_fx.py (echo / reverb / pitch-drop accents)    [per-word dynamism]
- *
- *  The accents layer ON TOP of the clean track so the original word hits
- *  first, then a processed tail or doubling trails for punch. */
-export const VOICE_SRC = "sequence02/sequence02_dynamic.wav";
+/** Voice track — extracted from SRC then run through
+ *  `scripts/voice_effects.py clean-voice` (HPF + compressor + gain + limiter). */
+export const VOICE_SRC = "sequence02/sequence02_loud.wav";
