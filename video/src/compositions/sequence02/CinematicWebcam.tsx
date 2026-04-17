@@ -32,7 +32,6 @@ import {
   BrightnessContrast,
   ChromaticAberration,
   HueSaturation,
-  LensFlare,
   Noise,
   ToneMapping,
   Vignette,
@@ -42,7 +41,7 @@ import {
   KernelSize,
   ToneMappingMode,
 } from "postprocessing";
-import { Color, Vector2, Vector3 } from "three";
+import { Vector2 } from "three";
 
 type VideoPlaneProps = {
   src: string;
@@ -215,25 +214,13 @@ const GradeStack: React.FC<{
   // Chromatic aberration — sub-pixel fringe
   const caOffset = lerp(0.0004, 0.0024, punch);
 
-  // Lens flare — anamorphic streak from an off-frame key light
-  const flareOpacity = lerp(0.45, 0.95, punch);
-  const flareGlareSize = lerp(0.2, 0.42, punch);
-  const flareSize = lerp(0.004, 0.012, punch);
-
   // Grain
   const grainOpacity = lerp(0.04, 0.07, punch);
 
-  // Lens flare anchor — upper-right key light, outside the frame.
-  // useMemo keeps the Vector stable across re-renders.
-  const lensPos = useMemo(
-    () => new Vector3(width * 0.45, height * 0.35, 0),
-    [width, height],
-  );
-  const screenRes = useMemo(
-    () => new Vector2(width, height),
-    [width, height],
-  );
-  const flareColor = useMemo(() => new Color(1.0, 0.92, 0.78), []);
+  // width/height are passed so vignette / CA scale with the frame if needed.
+  void width;
+  void height;
+
   const caOffsetVec = useMemo(
     () => new Vector2(caOffset, caOffset),
     [caOffset],
@@ -266,29 +253,7 @@ const GradeStack: React.FC<{
         mipmapBlur
       />
 
-      {/* 5. Anamorphic lens flare — proper cinematic streak.
-           Animated + anamorphic, driven by punch. */}
-      <LensFlare
-        lensPosition={lensPos}
-        screenRes={screenRes}
-        opacity={flareOpacity}
-        glareSize={flareGlareSize}
-        flareSize={flareSize}
-        flareSpeed={0.4}
-        flareShape={0.36}
-        starPoints={6}
-        haloScale={0.55}
-        secondaryGhosts={true}
-        aditionalStreaks={true}
-        ghostScale={0.08}
-        animated={true}
-        anamorphic={false}
-        colorGain={flareColor}
-        starBurst={true}
-        smoothTime={0.08}
-      />
-
-      {/* 6. Chromatic aberration — sub-pixel fringe */}
+      {/* 5. Chromatic aberration — sub-pixel fringe */}
       <ChromaticAberration
         offset={caOffsetVec}
         radialModulation={true}
