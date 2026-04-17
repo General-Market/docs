@@ -64,10 +64,10 @@ def fetch(url: str, timeout: int = 15) -> str | None:
 # Site probes
 # ---------------------------------------------------------------------------
 
-PH_CARD = re.compile(
-    r'href="/pornstar/([a-z0-9\-_]+)"[^>]*>.*?class="performerName"[^>]*>\s*([^<]+?)\s*</a>.*?class="viewsCount performerCount">\s*([\d.]+[KMB]?)',
-    re.DOTALL,
-)
+PH_SLUG = re.compile(r'href="/pornstar/([a-z0-9\-_]+)"')
+PH_NAME = re.compile(r'class="performerName"[^>]*>\s*([^<]+?)\s*</a>', re.DOTALL)
+PH_VIEWS_RE = re.compile(r'class="viewsCount performerCount">\s*([\d.]+[KMB]?)')
+PH_CARD_SPLIT = 'class="performerCard"'
 XV_VIEWS = re.compile(r'<span class="mobile-hide">([\d,]+)</span>[^<]*<span[^>]*>[^<]+</span>\s*video views')
 XN_VIEWS = re.compile(r'class="views">\s*<span[^>]*></span>\s*([\d,]+)\s*video views')
 EP_VIEWS = re.compile(r'Video views:<span>([\d,]+)</span>')
@@ -75,17 +75,28 @@ XV_LIST = re.compile(r'href="/pornstars/([a-zA-Z0-9_\-\.]+)"')
 XN_LIST = re.compile(r'href="(/pornstar/[^"]+)"')
 EP_LIST = re.compile(r'href="(/pornstar/[^"]+)"')
 
+def _iter_pornhub_cards(html: str):
+    """Yield (slug, name, views_raw) for each performer card, one card at a
+    time. Splits on the performerCard class boundary so lazy regex quantifiers
+    can't backtrack across cards."""
+    for chunk in html.split(PH_CARD_SPLIT)[1:]:
+        slug_m = PH_SLUG.search(chunk)
+        views_m = PH_VIEWS_RE.search(chunk)
+        if not (slug_m and views_m):
+            continue
+        name_m = PH_NAME.search(chunk)
+        yield (slug_m.group(1), (name_m.group(1).strip() if name_m else ""), views_m.group(1))
+
 def discover_pornhub(top_n: int) -> list[Target]:
     html = fetch("https://www.pornhub.com/pornstars?o=t")
     if not html: return []
     targets = []
-    for m in PH_CARD.finditer(html):
-        slug = m.group(1)
+    for slug, _name, _views in _iter_pornhub_cards(html):
         targets.append(Target(
             site="pornhub",
             slug=slug,
             url=f"https://www.pornhub.com/pornstar/{slug}",
-            regex=PH_CARD,  # unused — PH uses listing
+            regex=PH_VIEWS_RE,  # unused — PH uses listing
         ))
         if len(targets) >= top_n: break
     return targets
@@ -169,9 +180,8 @@ def fetch_pornhub_batch(targets: list[Target]) -> dict[str, int]:
     html = fetch("https://www.pornhub.com/pornstars?o=t")
     if not html: return {}
     out = {}
-    for m in PH_CARD.finditer(html):
-        slug = m.group(1)
-        v = parse_scaled(m.group(3))
+    for slug, _name, views_raw in _iter_pornhub_cards(html):
+        v = parse_scaled(views_raw)
         if v is not None:
             out[slug] = v
     return out
