@@ -8,7 +8,7 @@ import { ToastProvider } from '@/lib/contexts/ToastContext'
 import { SSEProvider } from '@/hooks/useSSE'
 import { ChainGuard } from '@/components/ChainGuard'
 import { Web3Provider } from '@/lib/contexts/Web3Context'
-import { PhantomWalletProvider } from '@/lib/solana/PhantomWalletProvider'
+import { SolanaWalletProvider } from '@/lib/solana/SolanaWalletProvider'
 import { ReactNode, useMemo, useState } from 'react'
 
 function SSEWrapper({ children }: { children: ReactNode }) {
@@ -40,7 +40,7 @@ export function Web3Providers({ children }: { children: ReactNode }) {
     <Web3Provider>
       <WagmiProvider config={wagmiConfig}>
         <QueryClientProvider client={queryClient}>
-          <PhantomWalletProvider>
+          <SolanaWalletProvider>
             <ToastProvider>
               <SSEWrapper>
                 <ChainGuard>
@@ -48,7 +48,7 @@ export function Web3Providers({ children }: { children: ReactNode }) {
                 </ChainGuard>
               </SSEWrapper>
             </ToastProvider>
-          </PhantomWalletProvider>
+          </SolanaWalletProvider>
         </QueryClientProvider>
       </WagmiProvider>
     </Web3Provider>

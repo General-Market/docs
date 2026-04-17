@@ -1,14 +1,15 @@
 import { clusterApiUrl, Connection, type Cluster } from '@solana/web3.js'
+import { WalletAdapterNetwork } from '@solana/wallet-adapter-base'
 
 export type SolanaCluster = 'mainnet-beta' | 'devnet' | 'testnet' | 'localnet'
 
 // Cluster selection — env-driven so devnet stays default in dev,
-// mainnet-beta flips on for production without a code change.
+// testnet flips on when explicitly requested, mainnet for production.
 export const activeCluster: SolanaCluster =
   (process.env.NEXT_PUBLIC_SOLANA_CLUSTER as SolanaCluster | undefined) ?? 'devnet'
 
-// RPC URL — prefer explicit override, fall back to the public cluster URL.
-// localnet expects the user to run `solana-test-validator` on 8899.
+// RPC URL — explicit override first, then the public cluster URL.
+// localnet expects `solana-test-validator` on 8899.
 function resolveRpcUrl(cluster: SolanaCluster): string {
   const override = process.env.NEXT_PUBLIC_SOLANA_RPC_URL
   if (override) return override
@@ -25,7 +26,19 @@ export const connection = new Connection(activeRpcUrl, {
   wsEndpoint: process.env.NEXT_PUBLIC_SOLANA_WS_URL,
 })
 
-// Block explorers by cluster — Solscan for readability, explorer.solana for raw.
+// Wallet adapter's network enum — maps cluster → adapter network.
+// localnet has no adapter-level counterpart; alias it to devnet so the
+// provider still boots. The RPC endpoint overrides the adapter network
+// once `ConnectionProvider` is given an explicit endpoint.
+export function getAdapterNetwork(cluster: SolanaCluster): WalletAdapterNetwork {
+  if (cluster === 'mainnet-beta') return WalletAdapterNetwork.Mainnet
+  if (cluster === 'testnet') return WalletAdapterNetwork.Testnet
+  return WalletAdapterNetwork.Devnet
+}
+
+export const adapterNetwork = getAdapterNetwork(activeCluster)
+
+// Block explorers by cluster — Solscan for readability.
 export function getExplorerTxUrl(signature: string): string {
   const base = 'https://solscan.io/tx'
   if (activeCluster === 'mainnet-beta') return `${base}/${signature}`
@@ -40,3 +53,4 @@ export function getExplorerAddressUrl(address: string): string {
 
 export const isMainnet = activeCluster === 'mainnet-beta'
 export const isDevnet = activeCluster === 'devnet'
+export const isTestnet = activeCluster === 'testnet'

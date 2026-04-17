@@ -1,73 +1,69 @@
 'use client'
 
 import { useCallback, useMemo } from 'react'
-import { usePhantom, useSolana, AddressType } from '@phantom/react-sdk'
+import { useWallet as useSolanaWalletAdapter, useConnection } from '@solana/wallet-adapter-react'
 import type { VersionedTransaction, Transaction } from '@solana/web3.js'
 import { activeCluster } from '@/lib/solana/cluster'
 
-// Unified wallet hook — every component in the app should read from here.
-// Backed by Phantom Embedded + injected extension. Address is a base58 pubkey,
-// not a 0x-prefixed EVM hex. Components that currently assume EVM format will
-// need a Solana-aware `truncateAddress` pass in Phase 1b.
+// Unified wallet hook — every component in the app reads from here. Backed
+// by @solana/wallet-adapter-react (Phantom, Solflare, Backpack, Ledger,
+// Trust, Torus…) via the Unified Wallet Kit modal. Address is a base58
+// pubkey, not a 0x-prefixed EVM hex. Mobile works via the Mobile Wallet
+// Adapter protocol that ships with wallet-adapter-react.
+
 export function useWallet() {
-  const { isConnected, isConnecting, isLoading, addresses, user } = usePhantom()
-  const { solana, isAvailable } = useSolana()
+  const {
+    publicKey,
+    connected,
+    connecting,
+    disconnecting,
+    signMessage: adapterSignMessage,
+    sendTransaction: adapterSendTransaction,
+    signTransaction: adapterSignTransaction,
+    wallet,
+    disconnect,
+  } = useSolanaWalletAdapter()
+  const { connection } = useConnection()
 
-  // Filter out non-Solana address types. Embedded wallet can expose several;
-  // we surface Solana only.
-  const publicKey = useMemo<string | null>(() => {
-    if (!isConnected) return null
-    const sol = addresses.find(a => String(a.addressType) === String(AddressType.solana))
-    return sol?.address ?? null
-  }, [isConnected, addresses])
+  const address = useMemo<string | null>(() => {
+    return publicKey ? publicKey.toBase58() : null
+  }, [publicKey])
 
-  // Phantom returns a raw Uint8Array signature. Consumers generally want a
-  // base58 string, but signMessage use cases vary — return the raw buffer and
-  // let callers encode as needed.
+  // Returns the raw Uint8Array signature. Consumers encode as base58 where
+  // needed (sign-in-with-Solana, off-chain proofs, etc).
   const signMessage = useCallback(
     async (message: string | Uint8Array): Promise<Uint8Array> => {
-      if (!solana) throw new Error('Solana provider not available')
-      const result = await solana.signMessage(message)
-      return result.signature
+      if (!adapterSignMessage) throw new Error('Wallet does not support signMessage')
+      const bytes = typeof message === 'string' ? new TextEncoder().encode(message) : message
+      return adapterSignMessage(bytes)
     },
-    [solana]
+    [adapterSignMessage]
   )
 
-  // Returns the transaction signature (base58). Callers that need the full
-  // result (publicKey, etc) should use the underlying `solana` handle directly.
+  // Signs + broadcasts in one call using the connection's RPC. Returns the
+  // base58 signature, which is also the tx id for explorer links.
   const signAndSendTransaction = useCallback(
     async (tx: Transaction | VersionedTransaction): Promise<string> => {
-      if (!solana) throw new Error('Solana provider not available')
-      const result = await solana.signAndSendTransaction(tx)
-      return result.signature
+      return adapterSendTransaction(tx, connection)
     },
-    [solana]
-  )
-
-  // Phantom's embedded signer only switches between mainnet and devnet.
-  // testnet/localnet require reconnecting with a different RPC override.
-  const switchCluster = useCallback(
-    async (cluster: 'mainnet' | 'devnet') => {
-      if (!solana) throw new Error('Solana provider not available')
-      await solana.switchNetwork(cluster)
-    },
-    [solana]
+    [adapterSendTransaction, connection]
   )
 
   return {
     // Identity
     publicKey,
-    address: publicKey, // alias for migration ergonomics
-    connected: isConnected,
-    connecting: isConnecting || isLoading,
-    user,
+    address, // base58 string alias for migration ergonomics
+    connected,
+    connecting: connecting || disconnecting,
+    walletName: wallet?.adapter.name ?? null,
     // Cluster
     cluster: activeCluster,
-    isSolanaAvailable: isAvailable,
+    connection,
     // Actions
     signMessage,
     signAndSendTransaction,
-    switchCluster,
+    signTransaction: adapterSignTransaction,
+    disconnect,
   }
 }
 

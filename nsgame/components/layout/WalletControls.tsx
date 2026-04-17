@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/routing'
-import { useDisconnect, useModal } from '@phantom/react-sdk'
+import { useUnifiedWalletContext } from '@jup-ag/wallet-adapter'
 import { truncateAddress } from '@/lib/utils/address'
 import { useWallet } from '@/hooks/useWallet'
 import { usePostHogTracker } from '@/hooks/usePostHog'
@@ -25,9 +25,8 @@ export function WalletControls({ isDark }: WalletControlsProps) {
   const reduced = useReducedMotion()
   const [mounted, setMounted] = useState(false)
 
-  const { address, connected, cluster } = useWallet()
-  const { open } = useModal()
-  const { disconnect } = useDisconnect()
+  const { address, connected, cluster, disconnect } = useWallet()
+  const { setShowModal } = useUnifiedWalletContext()
   const authenticated = connected
 
   const { points } = usePoints(address ?? undefined)
@@ -37,20 +36,20 @@ export function WalletControls({ isDark }: WalletControlsProps) {
   const { capture, identify, reset: resetPostHog } = usePostHogTracker()
   useEffect(() => {
     if (authenticated && address) {
-      identify(address, { login_method: 'phantom', cluster })
+      identify(address, { login_method: 'solana', cluster })
       capture('wallet_connected', { wallet_address: address, cluster })
     }
   }, [authenticated, address, cluster, identify, capture])
 
   const handleLogin = () => {
     capture('login_clicked', { source: 'header' })
-    open()
+    setShowModal(true)
   }
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     capture('wallet_disconnected')
     resetPostHog()
-    disconnect()
+    await disconnect()
   }
 
   const spring = reduced ? { duration: 0 } : springs.entrance
