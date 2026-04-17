@@ -1,0 +1,303 @@
+'use client'
+
+import { useState, useCallback, useEffect, useRef } from 'react'
+import { useTranslations } from 'next-intl'
+import { useAccount, useWaitForTransactionReceipt } from 'wagmi'
+import { parseUnits, formatUnits } from 'viem'
+import { MORPHO_ADDRESSES } from '@/lib/contracts/morpho-addresses'
+import { ERC20_ABI } from '@/lib/contracts/index-protocol-abi'
+import { useChainWriteContract } from '@/hooks/useChainWrite'
+import { useUserState } from '@/hooks/useUserState'
+import { useMorphoPosition } from '@/hooks/useMorphoPosition'
+import { useMorphoActions } from '@/hooks/useMorphoActions'
+import { usePostHogTracker } from '@/hooks/usePostHog'
+import { useToast } from '@/lib/contexts/ToastContext'
+import { getTxUrl } from '@/lib/utils/explorer'
+import type { MorphoMarketEntry } from '@/lib/contracts/morpho-markets-registry'
+
+interface RepayDebtProps {
+  market?: MorphoMarketEntry
+  itpId?: string
+  onSuccess?: () => void
+}
+
+/**
+ * RepayDebt component (AC5)
+ *
+ * Allows users to repay USDC debt.
+ * Handles USDC approval flow if not approved for Morpho.
+ */
+export function RepayDebt({ market, itpId, onSuccess }: RepayDebtProps) {
+  const t = useTranslations('lending')
+  const { address } = useAccount()
+  const { capture } = usePostHogTracker()
+  const { showSuccess, showError } = useToast()
+  const [amount, setAmount] = useState('')
+  const [txError, setTxError] = useState<string | null>(null)
+  const [step, setStep] = useState<'input' | 'approving' | 'repaying' | 'success'>('input')
+  const [pendingRepayAmount, setPendingRepayAmount] = useState<bigint>(0n)
+
+  const loanToken = market?.loanToken ?? MORPHO_ADDRESSES.loanToken
+  const morphoAddress = market?.morpho ?? MORPHO_ADDRESSES.morpho
+
+  const { position, borrowShares, refetch: refetchPosition } = useMorphoPosition(market)
+  const currentDebt = position?.debtAmount ?? 0n
+
+  // Fetch user's USDC balance and allowance from backend
+  const userState = useUserState(itpId)
+  const usdcBalance = userState.usdcBalance
+  const usdcAllowanceMorpho = userState.usdcAllowanceMorpho
+  const refetchBalance = userState.refetch
+
+  // Approval transaction
+  const {
+    writeContract: writeApproval,
+    data: approvalTxHash,
+    isPending: isApprovalPending,
+    error: approvalError,
+    reset: resetApproval,
+  } = useChainWriteContract()
+
+  const {
+    isLoading: isApprovalConfirming,
+    isSuccess: isApprovalConfirmed,
+  } = useWaitForTransactionReceipt({ hash: approvalTxHash })
+
+  const {
+    repay,
+    repayAll,
+    isPending,
+    isConfirming,
+    isSuccess,
+    error: actionError,
+    reset: resetAction,
+    txHash: repayTxHash,
+  } = useMorphoActions(market)
+
+  const [isMaxRepay, setIsMaxRepay] = useState(false)
+
+  const parsedAmount = amount ? parseUnits(amount, 18) : 0n
+  const needsApproval = usdcAllowanceMorpho < parsedAmount
+  const formattedBalance = usdcBalance ? formatUnits(usdcBalance, 18) : '0'
+  const formattedDebt = formatUnits(currentDebt, 18)
+
+  // Track success state
+  const successHandled = useRef(false)
+  const approvalHandled = useRef(false)
+
+  // Handle approval confirmation - proceed to repay
+  useEffect(() => {
+    if (isApprovalConfirmed && step === 'approving' && pendingRepayAmount > 0n && !approvalHandled.current) {
+      approvalHandled.current = true
+      refetchBalance()
+      // Small delay to ensure allowance is updated on-chain
+      setTimeout(() => {
+        setStep('repaying')
+        if (isMaxRepay && borrowShares && borrowShares > 0n) {
+          repayAll(borrowShares)
+        } else {
+          repay(pendingRepayAmount)
+        }
+      }, 500)
+    }
+  }, [isApprovalConfirmed, step, pendingRepayAmount, refetchBalance, repay, repayAll, isMaxRepay, borrowShares])
+
+  useEffect(() => {
+    if (isSuccess && !successHandled.current) {
+      successHandled.current = true
+      setStep('success')
+      const amt = amount || '0'
+      showSuccess(`Repaid ${parseFloat(amt).toFixed(2)} USDC`, repayTxHash ? { url: getTxUrl(repayTxHash, 'l3'), text: 'View tx' } : undefined)
+      capture('lend_completed', { itp_id: itpId, action: 'repay', tx_hash: repayTxHash })
+      refetchPosition()
+      refetchBalance()
+      onSuccess?.()
+      window.dispatchEvent(new Event('lending-refresh'))
+      setTimeout(() => {
+        setStep('input')
+        setAmount('')
+        setPendingRepayAmount(0n)
+        setIsMaxRepay(false)
+        resetAction()
+        resetApproval()
+        successHandled.current = false
+        approvalHandled.current = false
+      }, 2000)
+    }
+  }, [isSuccess, refetchPosition, refetchBalance, onSuccess, resetAction, resetApproval])
+
+  useEffect(() => {
+    if (actionError || approvalError) {
+      const errMsg = (actionError || approvalError)?.message || t('common.transaction_failed')
+      setTxError(errMsg)
+      showError(`Repay failed: ${errMsg.slice(0, 80)}`)
+      capture('lend_failed', { itp_id: itpId, action: 'repay', error_message: errMsg })
+      setStep('input')
+      setPendingRepayAmount(0n)
+      setIsMaxRepay(false)
+      resetAction()
+      resetApproval()
+      approvalHandled.current = false
+    }
+  }, [actionError, approvalError, resetAction, resetApproval])
+
+  const handleRepay = useCallback(() => {
+    if (!amount || parsedAmount === 0n) return
+    successHandled.current = false
+    setTxError(null)
+    setStep('repaying')
+    // Shares-based repay for MAX to avoid dust debt
+    if (isMaxRepay && borrowShares && borrowShares > 0n) {
+      repayAll(borrowShares)
+    } else {
+      repay(parsedAmount)
+    }
+  }, [amount, parsedAmount, repay, repayAll, isMaxRepay, borrowShares])
+
+  const handleApprove = useCallback(() => {
+    if (!amount || parsedAmount === 0n) return
+    setTxError(null)
+    setStep('approving')
+    setPendingRepayAmount(parsedAmount)
+    approvalHandled.current = false
+    // Approve 2x the amount to reduce future approval needs
+    writeApproval({
+      address: loanToken,
+      abi: ERC20_ABI,
+      functionName: 'approve',
+      args: [morphoAddress, parsedAmount * 2n],
+    })
+  }, [amount, parsedAmount, writeApproval, loanToken, morphoAddress])
+
+  const handleSubmit = () => {
+    capture('lend_repay_submitted', { itp_id: itpId, amount: amount })
+    if (needsApproval) {
+      handleApprove()
+    } else {
+      handleRepay()
+    }
+  }
+
+  const handleMax = () => {
+    // Set to min of debt and balance
+    const maxRepay = currentDebt < usdcBalance ? currentDebt : usdcBalance
+    const parsed = parseFloat(formatUnits(maxRepay, 18))
+    // Truncate (floor) to 2 decimals so we never exceed on-chain max
+    setAmount((Math.floor(parsed * 100) / 100).toFixed(2))
+    setIsMaxRepay(true)
+  }
+
+  const [stuckWarning, setStuckWarning] = useState(false)
+
+  // Detect stuck transactions — warn after 30s of confirming
+  useEffect(() => {
+    if (!isConfirming && !isApprovalConfirming) {
+      setStuckWarning(false)
+      return
+    }
+    const timer = setTimeout(() => setStuckWarning(true), 30_000)
+    return () => clearTimeout(timer)
+  }, [isConfirming, isApprovalConfirming])
+
+  const handleCancel = useCallback(() => {
+    resetAction()
+    resetApproval()
+    setStep('input')
+    setTxError(null)
+    setStuckWarning(false)
+    setPendingRepayAmount(0n)
+    setIsMaxRepay(false)
+    successHandled.current = false
+    approvalHandled.current = false
+  }, [resetAction, resetApproval])
+
+  const isProcessing = isPending || isConfirming || isApprovalPending || isApprovalConfirming
+
+  const buttonText = isApprovalPending
+    ? t('repay_debt.button.confirm_approval')
+    : isApprovalConfirming
+    ? t('repay_debt.button.approving_usdc')
+    : isPending
+    ? t('repay_debt.button.confirm_wallet')
+    : isConfirming
+    ? t('repay_debt.button.repaying')
+    : step === 'success'
+    ? t('repay_debt.button.repaid')
+    : needsApproval
+    ? t('repay_debt.button.approve_and_repay')
+    : t('repay_debt.button.repay_debt')
+
+  return (
+      <div className="space-y-4">
+        <div>
+          <div className="flex justify-between items-center mb-2">
+            <label className="text-sm text-text-secondary">{t('repay_debt.amount_label')}</label>
+            <div className="text-xs text-text-muted space-x-2">
+              <span>{t('repay_debt.debt_label', { amount: parseFloat(formattedDebt).toFixed(2) })}</span>
+              <span>|</span>
+              <span>{t('repay_debt.balance_label', { amount: parseFloat(formattedBalance).toFixed(2) })}</span>
+            </div>
+          </div>
+          <div className="relative">
+            <input
+              type="number"
+              inputMode="numeric"
+              value={amount}
+              onChange={(e) => { setAmount(e.target.value); setIsMaxRepay(false) }}
+              placeholder="0.00"
+              min="0"
+              step="1"
+              disabled={isProcessing}
+              className="w-full bg-muted border border-border-medium rounded-lg px-4 py-3 text-text-primary text-lg focus:border-zinc-900 focus:outline-none disabled:opacity-50"
+            />
+            <button
+              onClick={handleMax}
+              disabled={isProcessing || currentDebt === 0n}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-900 font-medium hover:text-zinc-700 disabled:opacity-50"
+            >
+              {t('actions.max')}
+            </button>
+          </div>
+          {amount && parsedAmount > usdcBalance && (
+            <p className="text-color-down text-xs mt-1">{t('repay_debt.insufficient_balance')}</p>
+          )}
+        </div>
+
+        <button
+          onClick={handleSubmit}
+          disabled={!amount || parsedAmount === 0n || isProcessing || parsedAmount > usdcBalance}
+          className={`w-full py-3 font-bold rounded-lg transition-colors ${
+            step === 'success'
+              ? 'bg-color-up text-white'
+              : 'bg-zinc-900 text-white hover:bg-zinc-800 disabled:bg-muted disabled:text-text-muted disabled:cursor-not-allowed'
+          }`}
+        >
+          {buttonText}
+        </button>
+
+        {isProcessing && (
+          <button
+            onClick={handleCancel}
+            className="w-full text-center text-sm text-text-muted hover:text-text-secondary py-2 transition-colors"
+          >
+            {t('actions.cancel')}
+          </button>
+        )}
+
+        {stuckWarning && (
+          <div className="bg-surface-warning border border-orange-300 rounded-xl p-3 text-orange-700 text-sm">
+            <p className="font-bold">{t('common.tx_stuck_title')}</p>
+            <p className="text-xs mt-1">{t('common.tx_stuck_description')}</p>
+          </div>
+        )}
+
+        {txError && (
+          <div className="bg-surface-down border border-red-300 rounded-xl p-3 text-color-down text-sm">
+            {txError.includes('User rejected') || txError.includes('denied')
+              ? t('common.transaction_rejected')
+              : <span className="break-all">{txError}</span>}
+          </div>
+        )}
+      </div>
+  )
+}

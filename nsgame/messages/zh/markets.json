@@ -1,0 +1,380 @@
+{
+  "heading": "跟踪市场",
+  "hero": {
+    "label": "指数跟踪产品",
+    "title": "市场",
+    "description": "探索去中心化指数产品。每个 ITP 跟踪一篮子加密资产，具有实时 NAV (净资产价值) 定价和链上结算。"
+  },
+  "summary": {
+    "types_count": "{count} 种类型",
+    "categories_count": "{count} 个分类"
+  },
+  "types": {
+    "crypto": {
+      "name": "加密货币",
+      "description": "BTC、ETH、SOL 及 100+ 代币",
+      "update_freq": "5 分钟"
+    },
+    "stocks": {
+      "name": "美国股票",
+      "description": "S&P 500、NASDAQ、主要指数",
+      "update_freq": "15 分钟 (交易时段)"
+    },
+    "weather": {
+      "name": "天气",
+      "description": "温度、降水、风力",
+      "update_freq": "30 分钟"
+    },
+    "economic": {
+      "name": "经济指标",
+      "description": "美联储利率、CPI、失业率",
+      "update_freq": "每日/每月"
+    },
+    "fx": {
+      "name": "外汇",
+      "description": "EUR/USD、主要货币对",
+      "update_freq": "每日"
+    },
+    "treasury": {
+      "name": "国债利率",
+      "description": "美国国债收益率",
+      "update_freq": "每日"
+    },
+    "defi": {
+      "name": "DeFi TVL (总锁仓量)",
+      "description": "协议 TVL (总锁仓量) 排名",
+      "update_freq": "1 小时"
+    }
+  },
+  "labels": {
+    "updates": "更新频率:",
+    "categories": "分类:",
+    "sample_assets": "示例资产:",
+    "loading_prices": "加载价格中..."
+  },
+  "footer": {
+    "data_sources": "数据来源: CoinGecko、Finnhub、Open-Meteo、FRED、ECB、Treasury、DefiLlama",
+    "resolution_note": "所有投注均通过链上 Keeper 共识结算"
+  },
+  "filters": {
+    "label": "筛选",
+    "all": "全部 ({count})",
+    "active": "活跃 ({count})",
+    "pending": "待处理 ({count})",
+    "search_placeholder": "按名称或代码搜索基金...",
+    "sort_aum_desc": "排序: 管理规模 从高到低",
+    "sort_aum_asc": "排序: 管理规模 从低到高",
+    "sort_newest": "排序: 最新",
+    "sort_name_az": "排序: 名称 A-Z"
+  },
+  "section_bar": {
+    "title": "数据视图",
+    "subtitle": "基金概览 -- 实时 NAV (净资产价值)",
+    "showing_partial": "显示 {shown} / {total} 个产品",
+    "showing_all": "显示全部 {total} 个产品"
+  },
+  "itp_card": {
+    "loading": "加载 ITP 中...",
+    "no_itps": "暂无已创建的 ITP",
+    "nav_per_share": "NAV (净资产价值) / 份额",
+    "assets": "资产",
+    "balance": "余额",
+    "by": "由 {name} 创建",
+    "pending_fill": "待成交",
+    "buy": "买入",
+    "sell": "卖出",
+    "chart": "图表",
+    "rebalance": "再平衡",
+    "borrow": "借款",
+    "edit_itp_info": "编辑 ITP 信息",
+    "description_placeholder": "描述 (最多 280 字符 / 约 50 词)",
+    "website_placeholder": "网站 URL (最多 128 字符)",
+    "video_placeholder": "YouTube URL (最多 256 字符)",
+    "settlement_erc20": "Settlement ERC20:",
+    "itp_id": "ITP ID:",
+    "minted_supply": "已铸造供应量",
+    "loading_holders": "加载持有人中...",
+    "unable_fetch_holders": "无法获取持有人信息",
+    "no_tracked_holders": "暂无跟踪的持有人",
+    "other_holders": "其他持有人",
+    "source_index": "Index.sol (L3)",
+    "source_bridge": "BridgeProxy",
+    "nonce": "Nonce:",
+    "source": "来源:",
+    "admin": "管理员:",
+    "created": "创建时间:",
+    "settlement_address": "Settlement 地址:",
+    "request_number": "请求 #{number}"
+  },
+  "rebalance": {
+    "title": "再平衡 {name}",
+    "itp_id_label": "ITP ID:",
+    "loading": "加载 ITP 状态中...",
+    "add_asset_label": "添加资产 (篮子中 {count} 个, 可用 {available} 个)",
+    "search_placeholder": "搜索要添加的资产...",
+    "equal_weights": "等权重",
+    "weight_sum": "权重总和",
+    "table": {
+      "asset": "资产",
+      "current_pct": "当前 %",
+      "new_pct": "新 %",
+      "new_tag": "新增"
+    },
+    "status": {
+      "step1_wallet": "步骤 1/2: 请在钱包中确认...",
+      "step1_confirming": "步骤 1/2: 链上确认中...",
+      "step2_executing": "步骤 2/2: 在 L3 上执行再平衡 (发行者共识)...",
+      "tx_label": "Tx:"
+    },
+    "success": {
+      "title": "再平衡完成!",
+      "l3_tx": "L3 Tx:"
+    },
+    "button": {
+      "waiting_wallet": "等待钱包确认...",
+      "confirming": "确认中...",
+      "executing": "在 L3 上执行中...",
+      "rebalanced": "再平衡完成!",
+      "rebalance": "再平衡"
+    },
+    "support": "支持"
+  },
+  "chart": {
+    "nav_ohlc": "NAV OHLC",
+    "loading": "加载 NAV 数据中...",
+    "error": "加载图表数据失败",
+    "no_data": "此时间段暂无 NAV 数据"
+  },
+  "itp_page": {
+    "buy_this_index": "买入此指数",
+    "tabs": {
+      "overview": "概览",
+      "performance": "业绩",
+      "holdings": "持仓",
+      "key_facts": "关键信息"
+    },
+    "key_stats": {
+      "nav_per_share": "NAV / 份额",
+      "one_day_nav_change": "1日NAV变动",
+      "total_value_locked": "总锁仓量",
+      "holdings": "持仓",
+      "as_of": "截至 {date}"
+    },
+    "performance": {
+      "title": "业绩",
+      "as_of": "截至 {date}",
+      "since_inception_return": "成立以来收益率: ",
+      "from_date": "(自 {date})",
+      "no_data": "暂无业绩数据"
+    },
+    "holdings_table": {
+      "title": "持仓",
+      "loading": "持仓数据加载中...",
+      "filter_placeholder": "按名称或代码筛选...",
+      "rank": "#",
+      "name": "名称",
+      "sector": "板块",
+      "weight": "权重",
+      "price": "价格",
+      "change_24h": "24小时",
+      "market_value": "市值",
+      "notional_value": "名义价值",
+      "shares": "份额",
+      "market_cap": "总市值",
+      "cryptocurrency": "加密货币",
+      "range": "{total}个中第{start}~{end}个",
+      "previous": "上一页",
+      "next": "下一页",
+      "as_of": "截至 {date}"
+    },
+    "portfolio": {
+      "title": "投资组合构成",
+      "other": "其他"
+    },
+    "concentration": {
+      "title": "集中度指标",
+      "top_5_weight": "前5权重",
+      "top_10_weight": "前10权重",
+      "hhi_concentration": "HHI集中度",
+      "low": "低",
+      "moderate": "中等",
+      "high": "高"
+    },
+    "founders": {
+      "title": "创始人情报",
+      "subtitle": "基于{companies}家组合公司的{founders}位创始人",
+      "age_distribution": "年龄分布",
+      "gender_split": "性别比例",
+      "top_nationalities": "主要国籍",
+      "top_universities": "顶尖大学",
+      "count": "数量"
+    },
+    "defi": {
+      "title": "DeFi协议健康度",
+      "aggregate_tvl": "总TVL",
+      "avg_tvl_change_7d": "平均TVL变动7天",
+      "coverage": "覆盖率",
+      "coverage_value": "{total}个中{with_data}个",
+      "protocol": "协议",
+      "tvl": "TVL",
+      "change_1d": "1天",
+      "change_7d": "7天"
+    },
+    "funding": {
+      "title": "融资情报",
+      "total_raised": "总融资额",
+      "avg_valuation": "平均估值",
+      "funding_rounds": "融资轮次",
+      "top_investors": "按投资频率排名的投资者",
+      "investments": "投资",
+      "project": "项目",
+      "round": "轮次",
+      "amount": "金额",
+      "lead": "领投方",
+      "date": "日期"
+    },
+    "fund_facts": {
+      "title": "基金详情",
+      "nav_per_share": "NAV / 份额",
+      "chain": "链",
+      "chain_value": "Index L3 (Orbit)",
+      "settlement_address": "Settlement 地址",
+      "rebalance_method": "再平衡方法",
+      "rebalance_value": "等权重",
+      "fund_inception": "基金成立日",
+      "asset_class": "资产类别",
+      "asset_class_value": "加密货币指数",
+      "itp_id": "ITP ID",
+      "number_of_holdings": "持仓数量",
+      "as_of": "截至 {date}",
+      "copy": "复制",
+      "copied": "已复制!",
+      "portfolio_characteristics": "投资组合特征",
+      "top_5_concentration": "前5集中度",
+      "top_10_concentration": "前10集中度",
+      "hhi_index": "HHI指数",
+      "average_market_cap": "平均市值",
+      "fees": "费用",
+      "fees_as_of": "基于当前招募说明书",
+      "management_fee": "管理费",
+      "acquired_fund_fees": "+收购基金费用及开支",
+      "other_expenses": "+其他费用",
+      "expense_ratio": "=费用比率",
+      "fee_disclaimer": "上述费用基于当前招募说明书。网络Gas费用适用于所有链上交易，不包含在费用比率中。"
+    },
+    "trade_cta": {
+      "buy": "买入此指数",
+      "sell": "卖出"
+    },
+    "investment_objective": {
+      "why_title": "为什么选择这个指数？",
+      "objective_title": "投资目标"
+    },
+    "metadata": {
+      "description_title": "关于此指数",
+      "website": "网站",
+      "video": "视频",
+      "creator": "创建者",
+      "community_badge": "社区",
+      "community_index": "社区指数"
+    }
+  },
+  "listing": {
+    "total_net_assets": "净资产总额",
+    "funds_label": "基金",
+    "category_all": "全部",
+    "category_broad_market": "广基市场",
+    "category_factor": "因子",
+    "category_income": "收益",
+    "category_sector": "行业",
+    "category_thematic": "主题",
+    "category_unofficial": "非官方",
+    "community_badge": "社区",
+    "creator_label": "创建者",
+    "table": {
+      "ticker": "代码",
+      "name": "名称",
+      "nav": "NAV",
+      "net_assets": "净资产",
+      "shares_outstanding": "流通份额",
+      "trade": "交易",
+      "buy": "买入",
+      "sell": "卖出"
+    },
+    "loading_funds": "正在加载基金...",
+    "no_funds_filtered": "没有符合筛选条件的基金。",
+    "no_funds": "暂无可用基金。",
+    "pagination": {
+      "first": "首页",
+      "prev": "上一页",
+      "next": "下一页",
+      "last": "末页",
+      "range": "{start}\u2013{end} / {total}"
+    }
+  },
+  "source_detail": {
+    "title": "数据源详情",
+    "loading": "正在加载数据源...",
+    "failed_to_load": "加载失败",
+    "retry": "重试",
+    "total_assets": "总资产",
+    "active": "活跃",
+    "zero_values": "零值",
+    "stale": "过期",
+    "data_regularity": "数据规律性（过去24小时）",
+    "markets_title": "市场（{count}）",
+    "markets_click_hint": ", 点击行查看图表",
+    "table": {
+      "market": "市场",
+      "unit": "单位",
+      "age": "时效",
+      "change": "变动",
+      "records": "记录",
+      "status": "状态"
+    },
+    "no_assets": "该数据源没有资产",
+    "status_zero": "零值",
+    "status_stale": "过期",
+    "status_off": "关闭",
+    "tooltip_zero": "零值",
+    "tooltip_stale": "过期数据",
+    "tooltip_active": "活跃且数据最新",
+    "tooltip_inactive": "未激活",
+    "tooltip_click_show": "点击显示图表",
+    "tooltip_click_hide": "点击隐藏图表",
+    "sparkline_loading": "正在加载历史...",
+    "sparkline_error": "加载失败：{error}",
+    "sparkline_insufficient": "数据点不足（{count}）",
+    "sparkline_label": "7天历史（{count}个数据点）"
+  },
+  "source_health": {
+    "search_placeholder": "搜索数据源...",
+    "no_sources_search": "没有匹配搜索的数据源",
+    "no_sources": "未找到数据源",
+    "no_sources_search_hint": "尝试不同的查询或清除搜索。",
+    "no_sources_hint": "请检查data-node是否正在运行并已采集数据。",
+    "get_key": "获取密钥：{label} \u2192",
+    "dormant_count": "{count}个休眠"
+  },
+  "source_history": {
+    "no_data": "无历史数据",
+    "tooltip_records": "记录：{count}",
+    "tooltip_assets": "资产：{count}",
+    "tooltip_zeros": "零值：{count}",
+    "legend_records": "记录",
+    "legend_zero": "零值"
+  },
+  "orderbook": {
+    "depth": "深度",
+    "loading_depth": "正在加载深度...",
+    "no_orders": "无订单",
+    "assets_priced": "{count}个资产已定价",
+    "price": "价格",
+    "size": "数量",
+    "total": "总计",
+    "bid_total": "买 {value}",
+    "ask_total": "卖 {value}",
+    "assets_count": "{included}/{total} 资产",
+    "per_asset_breakdown": "按资产细分"
+  }
+}

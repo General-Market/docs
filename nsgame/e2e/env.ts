@@ -1,0 +1,93 @@
+/**
+ * Centralized E2E environment configuration.
+ * All E2E helpers and test specs import from here instead of
+ * redeclaring env vars and IS_TESTNET ternaries locally.
+ */
+import { readFileSync, existsSync } from 'fs'
+import { join } from 'path'
+
+// Load .env.local so E2E_* vars are available to Playwright
+const envLocalPath = join(__dirname, '..', '.env.local')
+if (existsSync(envLocalPath)) {
+  const lines = readFileSync(envLocalPath, 'utf-8').split('\n')
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (!trimmed || trimmed.startsWith('#')) continue
+    const eqIdx = trimmed.indexOf('=')
+    if (eqIdx === -1) continue
+    const key = trimmed.slice(0, eqIdx)
+    const val = trimmed.slice(eqIdx + 1)
+    if (!(key in process.env)) {
+      process.env[key] = val
+    }
+  }
+}
+
+// ── URLs ────────────────────────────────────────────────────
+export const L3_RPC = process.env.E2E_L3_RPC_URL || 'http://localhost:8545'
+export const SETTLEMENT_RPC = process.env.E2E_SETTLEMENT_RPC_URL || 'http://localhost:8546'
+export const BACKEND_URL = process.env.E2E_BACKEND_URL || 'http://localhost:8200'
+export const VISION_API = process.env.E2E_VISION_API_URL || 'http://localhost:10001'
+export const FRONTEND_URL = process.env.E2E_FRONTEND_URL || 'http://localhost:3000'
+export const ORACLE_URLS = (
+  process.env.E2E_ORACLE_URLS || 'http://localhost:10001,http://localhost:10002,http://localhost:10003'
+).split(',').map(s => s.trim())
+export const AP_URL = process.env.E2E_AP_URL || process.env.NEXT_PUBLIC_AP_URL || 'http://localhost:9100'
+
+// ── Chain IDs ───────────────────────────────────────────────
+export const CHAIN_ID = Number(process.env.E2E_CHAIN_ID || 111222333)
+export const SETTLEMENT_CHAIN_ID = Number(process.env.E2E_SETTLEMENT_CHAIN_ID || 421611337)
+
+// ── Keys ────────────────────────────────────────────────────
+export const DEPLOYER_KEY = (
+  process.env.E2E_PRIVATE_KEY || '0x107e200b197dc889feba0a1e0538bf51b97b2fc87f27f82783d5d59789dc3537'
+) as `0x${string}`
+export const PLAYER2_KEY = (
+  process.env.E2E_PLAYER2_KEY || '0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6'
+) as `0x${string}`
+
+// Separate nonce space from DEPLOYER_KEY so vision-data and itp-data can run in parallel.
+export const VISION_PLAYER_KEY = (
+  process.env.E2E_VISION_PLAYER_KEY || '0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356'
+) as `0x${string}`
+
+import { privateKeyToAccount } from 'viem/accounts'
+export const VISION_PLAYER_ADDRESS = privateKeyToAccount(VISION_PLAYER_KEY).address
+
+// ── Deployment — single load, crash if missing ──────────────
+export const DEPLOYMENT = (() => {
+  const path = join(__dirname, '..', '..', 'deployments', 'active-deployment.json')
+  return JSON.parse(readFileSync(path, 'utf-8'))
+})()
+
+export const CONTRACTS = DEPLOYMENT.contracts ?? {}
+export const DEPLOYER_ADDRESS = DEPLOYMENT.accounts?.admin ?? '0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4'
+
+// ── Morpho deployment — single load, empty if missing ───────
+export const MORPHO_DEPLOYMENT = (() => {
+  try {
+    const path = join(__dirname, '..', 'lib', 'contracts', 'morpho-deployment.json')
+    return JSON.parse(readFileSync(path, 'utf-8'))
+  } catch {
+    return { contracts: {}, marketParams: {} }
+  }
+})()
+
+export const MORPHO_CONTRACTS = MORPHO_DEPLOYMENT.contracts ?? {}
+export const MORPHO_MARKET_PARAMS = MORPHO_DEPLOYMENT.marketParams ?? {}
+
+// ── Vision batches — single load, empty if missing ──────────
+export const VISION_BATCHES = (() => {
+  try {
+    const path = join(__dirname, '..', '..', 'deployments', 'vision-batches.json')
+    return JSON.parse(readFileSync(path, 'utf-8'))
+  } catch {
+    return { vision: '', batches: {} }
+  }
+})()
+
+// ── Timeouts ────────────────────────────────────────────────
+export const POLL_TIMEOUT = 180_000
+// Settlement needs full tick cycle (120s) + consensus + propagation. 6 min on testnet.
+export const CONSENSUS_TIMEOUT = 360_000
+export const RPC_TIMEOUT = 30_000

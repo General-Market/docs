@@ -1,0 +1,10 @@
+<svg width="800" height="240" viewBox="0 0 800 240" xmlns="http://www.w3.org/2000/svg">
+  <!-- Twitch icon (speech bubble) -->
+  <g transform="translate(60, 10) scale(0.08)">
+    <path d="M500,0L0,500v1800h600v500l500-500h400l900-900V0H500z M2200,1300l-400,400h-400l-350,350v-350H600V200h1600V1300z" fill="#FFFFFF"/>
+    <rect x="1700" y="550" width="200" height="600" fill="#9146FF"/>
+    <rect x="1150" y="550" width="200" height="600" fill="#9146FF"/>
+  </g>
+  <!-- Twitch wordmark -->
+  <text x="300" y="155" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-weight="900" font-size="120" fill="#FFFFFF" letter-spacing="-2">Twitch</text>
+</svg>

@@ -1,0 +1,683 @@
+'use client'
+
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { formatUnits } from 'viem'
+import { useTranslations, useLocale } from 'next-intl'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
+import { useSystemStatus } from '@/hooks/useSystemStatus'
+import { useApBalances } from '@/hooks/useApBalances'
+import { useInventoryRanking } from '@/hooks/useInventoryRanking'
+import type { DeployedItpRef } from '@/components/domain/ItpListing'
+
+const NODE_NAMES = ['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon', 'Zeta']
+const VAULT_PAGE_SIZE = 6
+const VAULT_ROTATE_MS = 2000
+const ORDERS_PAGE_SIZE = 10
+
+/** Value that flashes green/red on change */
+function LiveValue({ value, format, className = '' }: { value: number; format: (v: number) => string; className?: string }) {
+  const prevRef = useRef(value)
+  const [flash, setFlash] = useState<'up' | 'down' | null>(null)
+
+  useEffect(() => {
+    if (prevRef.current !== value && prevRef.current !== 0) {
+      setFlash(value > prevRef.current ? 'up' : 'down')
+      const timer = setTimeout(() => setFlash(null), 600)
+      prevRef.current = value
+      return () => clearTimeout(timer)
+    }
+    prevRef.current = value
+  }, [value])
+
+  return (
+    <span
+      className={className}
+      style={{
+        transition: 'color 0.3s ease, text-shadow 0.3s ease',
+        color: flash === 'up' ? '#16a34a' : flash === 'down' ? '#dc2626' : undefined,
+        textShadow: flash ? `0 0 6px ${flash === 'up' ? 'rgba(22,163,74,0.4)' : 'rgba(220,38,38,0.4)'}` : 'none',
+      }}
+    >
+      {format(value)}
+    </span>
+  )
+}
+
+/** Format large USD values compactly: $1.2B, $345M, $12.3K, $1,234.56 */
+function formatUsdCompact(value: number): string {
+  if (value >= 1e12) return `$${(value / 1e12).toFixed(1)}T`
+  if (value >= 1e9) return `$${(value / 1e9).toFixed(1)}B`
+  if (value >= 1e6) return `$${(value / 1e6).toFixed(1)}M`
+  if (value >= 1e4) return `$${(value / 1e3).toFixed(1)}K`
+  return `$${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
+}
+
+function truncateAddr(addr: string): string {
+  if (!addr || addr.length < 12) return addr || '—'
+  return addr.slice(0, 6) + '…' + addr.slice(-4)
+}
+
+function truncateItpId(itpId: string): string {
+  if (!itpId || itpId.length < 12) return itpId || '—'
+  return itpId.slice(0, 6) + '…' + itpId.slice(-4)
+}
+
+function formatTimestamp(unix: number, locale?: string): string {
+  if (!unix) return '—'
+  return new Date(unix * 1000).toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' })
+}
+
+function formatRelativeOrDate(unix: number, locale?: string): string {
+  if (!unix) return '—'
+  const diffMs = Date.now() - unix * 1000
+  if (diffMs < 0) return 'just now'
+  const secs = Math.floor(diffMs / 1000)
+  if (secs < 60) return `${secs}s ago`
+  const mins = Math.floor(secs / 60)
+  if (mins < 60) return `${mins}m ago`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  if (days < 7) return `${days}d ago`
+  return new Date(unix * 1000).toLocaleDateString(locale, { month: 'short', day: 'numeric' })
+}
+
+function formatAbsolute(unix: number, locale?: string): string {
+  if (!unix) return '—'
+  return new Date(unix * 1000).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'medium' })
+}
+
+function formatFillTime(seconds: number): string {
+  if (seconds < 60) return `${seconds.toFixed(1)}s`
+  if (seconds < 3600) return `${(seconds / 60).toFixed(1)}m`
+  return `${(seconds / 3600).toFixed(1)}h`
+}
+
+function formatUptime(registeredAtUnix: number): string {
+  if (!registeredAtUnix) return '—'
+  const diffMs = Date.now() - registeredAtUnix * 1000
+  if (diffMs < 0) return '—'
+  const totalSec = Math.floor(diffMs / 1000)
+  const days = Math.floor(totalSec / 86400)
+  const hours = Math.floor((totalSec % 86400) / 3600)
+  const mins = Math.floor((totalSec % 3600) / 60)
+  if (days > 0) return `${days}d ${hours}h`
+  if (hours > 0) return `${hours}h ${mins}m`
+  return `${mins}m`
+}
+
+interface SystemStatusSectionProps {
+  deployedItps?: DeployedItpRef[]
+}
+
+export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) {
+  const t = useTranslations('system')
+  const locale = useLocale()
+  const sys = useSystemStatus()
+  const vault = useApBalances()
+  const ranking = useInventoryRanking(650, 0) // fetch once — ratios are frozen, useApBalances handles live prices
+
+  // Coin logos from CoinGecko coin-map
+  const [coinMap, setCoinMap] = useState<Record<string, { id: string; image: string }>>({})
+  useEffect(() => {
+    fetch('/coin-map.json')
+      .then(r => r.ok ? r.json() : {})
+      .then(data => setCoinMap(data))
+      .catch(() => {})
+  }, [])
+
+  // Build ITP name lookup: itpId → display name
+  // Supports both plain number IDs ("1", "2") and bytes32 hex ("0x000...0001")
+  // Falls back to itp-id-names.json for ITPs not in deployedItps
+  const itpNameMap = new Map<string, string>()
+  // Load static names first (fallback)
+  const staticNames: Record<string, { name: string; ticker: string }> = require('@/lib/itp-id-names.json')
+  for (const [hexId, meta] of Object.entries(staticNames)) {
+    itpNameMap.set(hexId.toLowerCase(), `$${meta.ticker}`)
+  }
+  // Override with dynamic names from deployedItps
+  if (deployedItps) {
+    for (const itp of deployedItps) {
+      const key = itp.itpId.toLowerCase()
+      const name = itp.symbol ? `$${itp.symbol}` : itp.name
+      itpNameMap.set(key, name)
+      // Also add bytes32 hex form: pad the numeric ID to 64 hex chars
+      try {
+        const numericId = BigInt(itp.itpId)
+        const hex32 = '0x' + numericId.toString(16).padStart(64, '0')
+        itpNameMap.set(hex32, name)
+      } catch {}
+    }
+  }
+
+  const activeNodes = sys.nodes.filter(n => n.status === 1)
+
+  // Correction ratios — frozen at first load so live price changes flow through.
+  // ratio = ranking_aum / vault_usd_at_that_moment (computed once)
+  // Then: corrected_live = vault_usd_live × ratio
+  //     = vault_usd_live × (ranking_aum / vault_usd_initial)
+  //     = ranking_aum × (live_price / initial_price)   ← ticks with price
+  const ratiosRef = useRef<Map<string, number> | null>(null)
+  if (
+    ratiosRef.current === null &&
+    ranking.snapshots.length > 0 &&
+    vault.assets.length > 0
+  ) {
+    // Aggregate AUM across ALL ITP snapshots, not just the last one
+    const vaultBySymbol = new Map(vault.assets.map(a => [a.symbol, a.usdValue]))
+    const aggregatedAum = new Map<string, number>()
+    for (const snap of ranking.snapshots) {
+      if (!snap?.ranked) continue
+      for (const r of snap.ranked) {
+        aggregatedAum.set(r.symbol, (aggregatedAum.get(r.symbol) || 0) + r.aum)
+      }
+    }
+    const ratios = new Map<string, number>()
+    for (const [symbol, aum] of aggregatedAum) {
+      const vaultUsd = vaultBySymbol.get(symbol)
+      if (vaultUsd && vaultUsd > 0 && aum > 0) {
+        ratios.set(symbol, aum / vaultUsd)
+      }
+    }
+    ratiosRef.current = ratios
+  }
+
+  // Inventory: live vault values × frozen correction ratios = correct AUM with live ticks
+  // Falls back to ranking data directly when vault is unavailable (settlement chain timeouts)
+  const inventoryAssets = useMemo(() => {
+    const ratios = ratiosRef.current
+    if (ratios && vault.assets.length > 0) {
+      const corrected = vault.assets
+        .map(a => {
+          const ratio = ratios.get(a.symbol)
+          if (!ratio) return null
+          return { symbol: a.symbol, usdValue: a.usdValue * ratio }
+        })
+        .filter((a): a is { symbol: string; usdValue: number } => a !== null && a.usdValue > 0)
+        .sort((a, b) => b.usdValue - a.usdValue)
+      if (corrected.length > 0) return corrected
+    }
+    // Fallback: aggregate ranking data across all ITPs (no live price corrections)
+    if (ranking.snapshots.length > 0) {
+      const agg = new Map<string, number>()
+      for (const snap of ranking.snapshots) {
+        if (!snap?.ranked) continue
+        for (const r of snap.ranked) {
+          agg.set(r.symbol, (agg.get(r.symbol) || 0) + r.aum)
+        }
+      }
+      const result = [...agg.entries()]
+        .filter(([, v]) => v > 0)
+        .map(([symbol, usdValue]) => ({ symbol, usdValue }))
+        .sort((a, b) => b.usdValue - a.usdValue)
+      if (result.length > 0) return result
+    }
+    return []
+  }, [vault.assets, ranking.snapshots])
+  const inventoryTotalAum = inventoryAssets.reduce((s, a) => s + a.usdValue, 0)
+
+  // Tick uptime every 60s
+  const [, setUptimeTick] = useState(0)
+  useEffect(() => {
+    const timer = setInterval(() => setUptimeTick(n => n + 1), 60_000)
+    return () => clearInterval(timer)
+  }, [])
+
+  // Auto-rotating vault token pages
+  const [vaultPage, setVaultPage] = useState(0)
+  const vaultTotalPages = Math.max(1, Math.ceil(inventoryAssets.length / VAULT_PAGE_SIZE))
+  const vaultPageAssets = useMemo(() => {
+    const start = vaultPage * VAULT_PAGE_SIZE
+    return inventoryAssets.slice(start, start + VAULT_PAGE_SIZE)
+  }, [inventoryAssets, vaultPage])
+
+  useEffect(() => {
+    if (vaultTotalPages <= 1) return
+    const timer = setInterval(() => {
+      setVaultPage(p => (p + 1) % vaultTotalPages)
+    }, VAULT_ROTATE_MS)
+    return () => clearInterval(timer)
+  }, [vaultTotalPages])
+
+  // Orders pagination — dedupe by orderId, then keep the most-recent block per id
+  const dedupedOrders = useMemo(() => {
+    const byId = new Map<string, typeof sys.recentOrders[number]>()
+    for (const o of sys.recentOrders) {
+      const key = o.orderId.toString()
+      const prev = byId.get(key)
+      if (!prev || o.blockTimestamp > prev.blockTimestamp) byId.set(key, o)
+    }
+    return Array.from(byId.values()).sort((a, b) => b.blockTimestamp - a.blockTimestamp)
+  }, [sys.recentOrders])
+
+  const [ordersPage, setOrdersPage] = useState(0)
+  const ordersTotalPages = Math.max(1, Math.ceil(dedupedOrders.length / ORDERS_PAGE_SIZE))
+  const ordersPageItems = useMemo(() => {
+    const start = ordersPage * ORDERS_PAGE_SIZE
+    return dedupedOrders.slice(start, start + ORDERS_PAGE_SIZE)
+  }, [dedupedOrders, ordersPage])
+
+  // Reset to page 0 if orders change and current page is out of range
+  useEffect(() => {
+    if (ordersPage >= ordersTotalPages && ordersTotalPages > 0) {
+      setOrdersPage(0)
+    }
+  }, [ordersPage, ordersTotalPages])
+
+  const stats = [
+    {
+      label: t('stats.consensus_status'),
+      value: sys.isLoading ? t('consensus_values.checking') : sys.isHealthy ? t('consensus_values.healthy') : t('consensus_values.offline'),
+      color: sys.isLoading ? 'text-text-muted' : sys.isHealthy ? 'text-color-up' : 'text-color-down',
+      fontSize: 'text-heading',
+    },
+    { label: t('stats.active_oracles'), value: `${sys.activeOracles} / ${sys.totalOracles}` },
+    {
+      label: t('stats.avg_fill_speed'),
+      value: sys.avgFillTimeSeconds > 0
+        ? sys.avgFillTimeSeconds < 60 ? `${sys.avgFillTimeSeconds.toFixed(1)}s`
+          : sys.avgFillTimeSeconds < 3600 ? `${(sys.avgFillTimeSeconds / 60).toFixed(1)}m`
+          : `${(sys.avgFillTimeSeconds / 3600).toFixed(1)}h`
+        : '—',
+    },
+    { label: t('stats.orders_total'), value: sys.totalOrders.toLocaleString() },
+    {
+      label: t('stats.l3_block'),
+      value: sys.l3BlockNumber > 0n ? `#${sys.l3BlockNumber.toLocaleString()}` : '—',
+      fontSize: 'text-subhead',
+    },
+  ]
+
+  return (
+    <div>
+      {/* Section header */}
+      <div className="pt-10 pb-0">
+        <p className="text-label font-semibold tracking-[0.08em] uppercase text-text-muted mb-1.5">{t('heading.label')}</p>
+        <h2 className="text-display font-black tracking-tight text-black leading-[1.1]">{t('heading.title')}</h2>
+        <p className="text-body text-text-secondary mt-1.5">{t('heading.description')}</p>
+      </div>
+
+      {/* Stats Row */}
+      <div className="grid grid-cols-2 md:grid-cols-5 py-5 border-b border-border-light mt-0">
+        {stats.map((stat, idx) => (
+          <div
+            key={stat.label}
+            className={`py-3 px-4 md:px-6 ${idx > 0 ? 'md:border-l border-border-light' : 'md:pl-0'} ${idx >= 2 ? 'border-t md:border-t-0 border-border-light' : ''}`}
+          >
+            <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">{stat.label}</p>
+            <p className={`${stat.fontSize || 'text-title'} font-extrabold font-mono tabular-nums ${stat.color || 'text-black'}`}>
+              {stat.value}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      {/* Content area */}
+      <div className="py-5 pb-10">
+
+        {/* ORACLE NETWORK — BLS Consensus Nodes */}
+        <div className="section-bar">
+          <div>
+            <div className="section-bar-title">{t('oracle_network.section_title')}</div>
+            <div className="section-bar-value">{t('oracle_network.section_subtitle')}</div>
+          </div>
+        </div>
+
+        {/* Node grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 border border-border-light" style={{ margin: '20px 0' }}>
+          {activeNodes.length === 0 && (
+            sys.isLoading ? <NodeGridSkeleton /> : (
+              <div className="col-span-full px-5 py-8 text-center text-caption text-text-muted">{t('oracle_network.no_nodes')}</div>
+            )
+          )}
+          {activeNodes.map((node, idx) => (
+            <div key={node.id} className={`px-5 py-4 ${idx < activeNodes.length - 1 ? 'border-r border-border-light' : ''}`}>
+              <div className="text-caption font-extrabold text-black mb-2">
+                <span className="text-color-up">●</span> {t('oracle_network.oracle_label', { name: NODE_NAMES[idx] || node.id })}
+              </div>
+              <div>
+                {[
+                  // Show address only if it's a real hex address, otherwise show node ID
+                  { label: t('oracle_network.node_details.address'), value: node.addr.startsWith('0x') ? truncateAddr(node.addr) : `node-${node.id}` },
+                  { label: t('oracle_network.node_details.bls_pubkey'), value: node.blsPubkeyShort },
+                  { label: t('oracle_network.node_details.registered'), value: formatTimestamp(node.registeredAt, locale) },
+                  { label: t('oracle_network.node_details.status'), value: t('oracle_network.status_active'), color: 'text-color-up' },
+                  { label: t('oracle_network.node_details.uptime'), value: formatUptime(node.registeredAt), color: 'text-color-up' },
+                ].map(row => (
+                  <div key={row.label} className="flex justify-between items-center py-[3px]">
+                    <span className="text-label text-text-muted font-medium">{row.label}</span>
+                    <span className={`text-label font-semibold font-mono ${row.color || 'text-black'}`}>{row.value}</span>
+                  </div>
+                ))}
+                <div className="flex justify-between items-center py-[3px]">
+                  <span className="text-label text-text-muted font-medium">{t('oracle_network.node_details.ap_vault')}</span>
+                  <LiveValue
+                    value={vault.totalUsdValue || sys.vaultUsdValue}
+                    format={formatUsdCompact}
+                    className="text-label font-semibold font-mono text-color-up"
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Charts */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6" style={{ margin: '24px 0' }}>
+          {/* Fill Speed bar chart */}
+          <div>
+            <div className="section-bar">
+              <div>
+                <div className="section-bar-title">{t('fill_speed.section_title')}</div>
+                <div className="section-bar-value">{t('fill_speed.section_subtitle')}</div>
+              </div>
+            </div>
+            <div className="border border-border-light border-t-0 bg-surface h-[220px] flex items-center justify-center overflow-hidden">
+              {sys.fillTimeBuckets.length === 0 ? (
+                sys.isLoading ? <ChartSkeleton bars={8} /> : (
+                  <span className="text-caption text-text-muted">{t('fill_speed.no_data')}</span>
+                )
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={sys.fillTimeBuckets} margin={{ top: 16, right: 16, bottom: 4, left: 0 }}>
+                    <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#888' }} tickLine={false} axisLine={false} />
+                    <YAxis
+                      tick={{ fontSize: 10, fill: '#888' }}
+                      tickLine={false}
+                      axisLine={false}
+                      width={48}
+                      tickFormatter={(v: number) => {
+                        if (v >= 86400) return `${(v / 86400).toFixed(0)}d`
+                        if (v >= 3600) return `${(v / 3600).toFixed(0)}h`
+                        if (v >= 60) return `${(v / 60).toFixed(0)}m`
+                        return `${v}s`
+                      }}
+                    />
+                    <Tooltip
+                      contentStyle={{ fontSize: 12, border: '1px solid #e5e5e5', borderRadius: 4 }}
+                      formatter={(v: number) => [formatFillTime(v), t('fill_speed.tooltip_label')]}
+                    />
+                    <Bar dataKey="seconds" radius={[3, 3, 0, 0]} maxBarSize={32}>
+                      {sys.fillTimeBuckets.map((_, i) => (
+                        <Cell key={i} fill="#22c55e" />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </div>
+
+          {/* Inventory — horizontal bar chart, auto-rotating pages */}
+          <div>
+            <div className="section-bar">
+              <div>
+                <div className="section-bar-title">{t('inventory.section_title')}</div>
+                <div className="section-bar-value flex items-center gap-2">
+                  {inventoryAssets.length > 0
+                    ? <><span>{t('inventory.tokens_page', { count: inventoryAssets.length, current: vaultPage + 1, total: vaultTotalPages })}</span><LiveValue value={inventoryTotalAum} format={(v) => t('inventory.aum_label', { value: formatUsdCompact(v) })} className="text-micro font-mono text-color-up" /></>
+                    : t('inventory.section_subtitle')}
+                </div>
+              </div>
+            </div>
+            <div className="border border-border-light border-t-0 bg-surface h-[220px] flex flex-col overflow-hidden">
+              {inventoryAssets.length === 0 ? (
+                <div className="flex-1 flex items-center justify-center">
+                  {(ranking.isLoading || vault.isLoading) ? <ChartSkeleton bars={6} horizontal /> : (
+                    <span className="text-caption text-text-muted">{t('inventory.no_data')}</span>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <div className="flex-1 overflow-hidden">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={vaultPageAssets} layout="vertical" margin={{ top: 8, right: 24, bottom: 4, left: 4 }}>
+                        <XAxis
+                          type="number"
+                          tick={{ fontSize: 10, fill: '#888' }}
+                          tickLine={false}
+                          axisLine={false}
+                          tickFormatter={(v: number) => formatUsdCompact(v)}
+                        />
+                        <YAxis
+                          type="category"
+                          dataKey="symbol"
+                          tick={<VaultYAxisTick coinMap={coinMap} />}
+                          tickLine={false}
+                          axisLine={false}
+                          width={76}
+                          interval={0}
+                        />
+                        <Tooltip
+                          contentStyle={{ fontSize: 12, border: '1px solid #e5e5e5', borderRadius: 4 }}
+                          formatter={(v: number) => [formatUsdCompact(v), t('inventory.tooltip_label')]}
+                        />
+                        <Bar dataKey="usdValue" radius={[0, 3, 3, 0]} maxBarSize={18} isAnimationActive animationDuration={400} animationEasing="ease-out">
+                          {vaultPageAssets.map((_, i) => (
+                            <Cell key={i} fill="#3b82f6" />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                  {/* Page dots */}
+                  {vaultTotalPages > 1 && (
+                    <div className="flex items-center justify-center gap-1 py-1.5 border-t border-border-light shrink-0">
+                      {Array.from({ length: vaultTotalPages }, (_, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setVaultPage(i)}
+                          className={`w-1.5 h-1.5 rounded-full transition-colors ${i === vaultPage ? 'bg-black' : 'bg-border-light'}`}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* RECENT ACTIVITY — Keeper BLS Signatures */}
+        <div className="section-bar">
+          <div>
+            <div className="section-bar-title">{t('recent_activity.section_title')}</div>
+            <div className="section-bar-value">{t('recent_activity.section_subtitle')}</div>
+          </div>
+        </div>
+
+        {/* Data table */}
+        <div className="overflow-x-auto">
+        <table className="w-full border-collapse text-caption min-w-[640px]">
+          <thead>
+            <tr>
+              {[t('recent_activity.table.time'), t('recent_activity.table.order_id'), t('recent_activity.table.fund'), t('recent_activity.table.type'), t('recent_activity.table.amount'), t('recent_activity.table.fill_time'), t('recent_activity.table.signers'), t('recent_activity.table.status')].map((h, i) => (
+                <th
+                  key={h}
+                  className={`text-left text-label font-bold uppercase tracking-[0.08em] text-text-secondary px-4 py-3 border-b-[3px] border-black whitespace-nowrap ${
+                    i === 4 || i === 5 ? 'text-right' : ''
+                  }`}
+                >
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {dedupedOrders.length === 0 && (
+              sys.isLoading ? <TableRowsSkeleton cols={8} rows={4} /> : (
+                <tr><td colSpan={8} className="px-4 py-8 text-center text-caption text-text-muted">{t('recent_activity.no_data')}</td></tr>
+              )
+            )}
+            {ordersPageItems.map((order) => {
+              const amountFormatted = `$${Number(formatUnits(order.amount, 18)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+              return (
+                <tr key={order.orderId.toString()} className="hover:bg-surface">
+                  <td
+                    className="px-4 py-3 border-b border-border-light font-mono text-text-secondary tabular-nums"
+                    title={formatAbsolute(order.blockTimestamp, locale)}
+                  >
+                    {formatRelativeOrDate(order.blockTimestamp, locale)}
+                  </td>
+                  <td className="px-4 py-3 border-b border-border-light font-mono text-label text-text-secondary">
+                    #{order.orderId.toString()}
+                  </td>
+                  <td className="px-4 py-3 border-b border-border-light font-bold text-black">
+                    {itpNameMap.get(order.itpId.toLowerCase())
+                      // Fallback: try normalizing hex to numeric for lookup
+                      || (() => { try { return itpNameMap.get(BigInt(order.itpId).toString()) } catch { return null } })()
+                      || truncateItpId(order.itpId)}
+                  </td>
+                  <td className="px-4 py-3 border-b border-border-light text-text-secondary">
+                    {order.side === 0 ? t('recent_activity.side_buy') : t('recent_activity.side_sell')}
+                  </td>
+                  <td className="px-4 py-3 border-b border-border-light text-right font-mono tabular-nums text-caption text-text-secondary">
+                    {amountFormatted}
+                  </td>
+                  <td className="px-4 py-3 border-b border-border-light text-right font-mono tabular-nums text-caption text-text-secondary">
+                    {order.fillTimeSeconds != null ? formatFillTime(order.fillTimeSeconds) : '—'}
+                  </td>
+                  <td className="px-4 py-3 border-b border-border-light text-text-secondary">
+                    {order.status === 'filled' ? `${sys.activeOracles}/${sys.totalOracles}` : '—'}
+                  </td>
+                  <td className={`px-4 py-3 border-b border-border-light font-bold ${order.status === 'filled' ? 'text-color-up' : 'text-color-warning'}`}>
+                    {order.status === 'filled' ? t('recent_activity.status_confirmed') : t('recent_activity.status_pending')}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+        </div>
+
+        {/* Pagination controls */}
+        {ordersTotalPages > 1 && (
+          <div className="flex items-center justify-center gap-3 py-3 border-t border-border-light text-caption">
+            <button
+              onClick={() => setOrdersPage(p => Math.max(0, p - 1))}
+              disabled={ordersPage === 0}
+              className={`font-semibold px-2 py-1 ${ordersPage === 0 ? 'text-text-muted cursor-default' : 'text-black hover:text-text-secondary'}`}
+            >
+              {t('recent_activity.pagination.prev')}
+            </button>
+            <span className="text-text-secondary font-mono tabular-nums">
+              {t('recent_activity.pagination.page_of', { current: ordersPage + 1, total: ordersTotalPages })}
+            </span>
+            <button
+              onClick={() => setOrdersPage(p => Math.min(ordersTotalPages - 1, p + 1))}
+              disabled={ordersPage >= ordersTotalPages - 1}
+              className={`font-semibold px-2 py-1 ${ordersPage >= ordersTotalPages - 1 ? 'text-text-muted cursor-default' : 'text-black hover:text-text-secondary'}`}
+            >
+              {t('recent_activity.pagination.next')}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/* ── Custom Y-axis tick with coin logo ── */
+function VaultYAxisTick({ x, y, payload, coinMap }: any) {
+  const symbol: string = payload?.value || ''
+  const entry = coinMap?.[symbol.toUpperCase()]
+  const size = 14
+  return (
+    <foreignObject x={0} y={y - 10} width={76} height={20}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 3, justifyContent: 'flex-start', height: '100%', paddingLeft: 8 }}>
+        {entry?.image ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={entry.image} alt="" width={size} height={size} style={{ borderRadius: '50%', flexShrink: 0 }} />
+        ) : (
+          <span style={{ width: size, height: size, borderRadius: '50%', background: '#e5e5e5', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontFamily: 'monospace', color: '#888', flexShrink: 0 }}>
+            {symbol.slice(0, 2)}
+          </span>
+        )}
+        <span style={{ fontSize: 10, color: '#888', whiteSpace: 'nowrap' }}>{symbol}</span>
+      </div>
+    </foreignObject>
+  )
+}
+
+/* ── Skeleton helpers ── */
+function Bone({ w = 'w-20', h = 'h-4' }: { w?: string; h?: string }) {
+  return <div className={`${w} ${h} bg-border-light rounded animate-pulse`} />
+}
+
+function NodeGridSkeleton() {
+  const skeletonRows = [
+    { w: 'w-24' },
+    { w: 'w-28' },
+    { w: 'w-16' },
+    { w: 'w-16' },
+    { w: 'w-16' },
+  ]
+  return (
+    <>
+      {[0, 1, 2].map(idx => (
+        <div key={idx} className={`px-5 py-4 ${idx < 2 ? 'border-r border-border-light' : ''}`}>
+          <div className="text-caption font-extrabold text-black mb-2 flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full bg-border-light animate-pulse" />
+            <Bone w="w-20" h="h-4" />
+          </div>
+          <div className="space-y-[6px]">
+            {skeletonRows.map((row, i) => (
+              <div key={i} className="flex justify-between items-center py-[3px]">
+                <Bone w="w-16" h="h-3" />
+                <Bone w={row.w} h="h-3" />
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </>
+  )
+}
+
+function ChartSkeleton({ bars, horizontal }: { bars: number; horizontal?: boolean }) {
+  if (horizontal) {
+    return (
+      <div className="w-full h-full flex flex-col justify-center gap-2.5 px-6 py-4">
+        {Array.from({ length: bars }, (_, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <Bone w="w-10" h="h-3" />
+            <div
+              className="h-3 bg-border-light rounded animate-pulse"
+              style={{ width: `${[55, 72, 40, 63, 48, 67, 52, 45][i % 8]}%`, animationDelay: `${i * 100}ms` }}
+            />
+          </div>
+        ))}
+      </div>
+    )
+  }
+  return (
+    <div className="w-full h-full flex items-end justify-around px-6 pb-6 pt-4 gap-1.5">
+      {Array.from({ length: bars }, (_, i) => (
+        <div key={i} className="flex-1 flex flex-col items-center gap-1">
+          <div
+            className="w-full bg-border-light rounded-t animate-pulse"
+            style={{ height: `${[65, 42, 78, 53, 37, 71, 48, 85][i % 8]}%`, animationDelay: `${i * 80}ms` }}
+          />
+          <Bone w="w-6" h="h-2" />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function TableRowsSkeleton({ cols, rows }: { cols: number; rows: number }) {
+  const widths = ['w-16', 'w-10', 'w-20', 'w-12', 'w-16', 'w-14', 'w-16', 'w-20']
+  return (
+    <>
+      {Array.from({ length: rows }, (_, r) => (
+        <tr key={r} className="border-b border-border-light">
+          {Array.from({ length: cols }, (_, c) => (
+            <td key={c} className="px-4 py-3">
+              <Bone w={widths[c] || 'w-16'} />
+            </td>
+          ))}
+        </tr>
+      ))}
+    </>
+  )
+}

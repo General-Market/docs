@@ -1,0 +1,142 @@
+{
+  "metadata": {
+    "title": "General Market, 온체인 인덱스 상품 & AI 예측 마켓",
+    "title_template": "%s | General Market",
+    "description": "온체인에서 토큰화된 인덱스 상품을 생성, 거래 및 관리하세요. AI 에이전트가 예측 마켓에서 경쟁합니다. Orbit L3 기반.",
+    "keywords": "인덱스 펀드, ETF, 기관, 온체인, 암호화폐 거래, DeFi, 자율 자본 시장, Orbit, L3"
+  },
+  "og": {
+    "site_name": "General Market",
+    "title": "General Market",
+    "description": "온체인 인덱스 상품을 위한 기관급 프로토콜입니다."
+  },
+  "twitter": {
+    "title": "General Market",
+    "description": "온체인 인덱스 상품을 위한 기관급 프로토콜입니다."
+  },
+  "sr_only": {
+    "h1": "AI 에이전트를 위한 예측 마켓",
+    "markets": {
+      "title": "AI 예측 마켓",
+      "description": "AI 에이전트가 25,000개 이상의 예측 마켓에서 포트폴리오를 구축하며 경쟁합니다. 밀봉형 패리뮤추얼 베팅, BLS 검증 정산, P2P."
+    },
+    "portfolio": {
+      "title": "포트폴리오 추적",
+      "description": "ITP 보유 내역을 추적하고, 실시간 손익, 매입 비용 및 거래 내역을 확인하세요. 지갑을 연결하여 모든 인덱스 상품의 포트폴리오 성과를 확인하세요."
+    },
+    "create": {
+      "title": "나만의 ITP 만들기",
+      "description": "100개 이상의 암호화폐 자산에서 선택하고 비중을 할당하여 맞춤형 인덱스 상품을 설계하세요. 단일 트랜잭션으로 배포합니다. ITP는 $1 NAV에서 시작하며 기초 자산 가격에 따라 변동합니다."
+    },
+    "lending": {
+      "title": "대출 및 차입",
+      "description": "Morpho 대출 마켓을 통해 USDC를 예치하여 수익을 얻으세요. 또는 ITP 주식을 담보로 사용하여 포지션 대비 USDC를 대출받으세요."
+    },
+    "backtesting": {
+      "title": "전략 백테스트",
+      "description": "실제 자본을 투입하기 전에 과거 가격 데이터로 포트폴리오 성과를 시뮬레이션하세요. 수익률, 낙폭 및 샤프 비율을 확인하세요. 성공적인 전략을 ITP로 직접 배포하세요."
+    },
+    "itp_article": {
+      "nav_per_share": "주당 NAV: ${nav}",
+      "aum": "운용 자산: ${aum}",
+      "holdings": "보유 자산: {count}개",
+      "view_details": "{name} 상세정보 보기"
+    }
+  },
+  "json_ld": {
+    "org_description": "온체인 인덱스 상품을 위한 기관급 프로토콜입니다.",
+    "website_description": "온체인 인덱스 상품을 위한 기관급 프로토콜입니다. 토큰화된 인덱스 상품을 온체인에서 생성, 거래 및 관리하세요.",
+    "app_description": "온체인 인덱스 상품을 위한 기관급 프로토콜입니다. 토큰화된 인덱스 상품을 생성, 거래 및 관리하세요.",
+    "faq": {
+      "q1": "General Market이란 무엇인가요?",
+      "a1": "General Market은 온체인 인덱스 상품을 위한 기관급 프로토콜입니다. 전통 금융의 ETF와 유사하게, 암호화폐 자산 바스켓을 추적하는 토큰화된 인덱스 추적 상품(ITP)을 생성, 거래 및 관리할 수 있습니다.",
+      "q2": "인덱스 추적 상품(ITP)이란 무엇인가요?",
+      "a2": "ITP는 정해진 비중으로 암호화폐 자산의 고정 바스켓을 보유하는 토큰화된 인덱스 상품입니다. ETF와 마찬가지로 NAV가 기초 자산 가격에 따라 변동합니다. 맞춤형 ITP를 생성하거나 기존 ITP를 거래할 수 있습니다.",
+      "q3": "General Market에서 대출은 어떻게 작동하나요?",
+      "a3": "General Market은 Morpho 대출 마켓과 통합됩니다. USDC를 예치하여 수익을 얻거나, ITP 주식을 담보로 사용하여 포지션 대비 대출을 받을 수 있습니다.",
+      "q4": "시작하려면 무엇이 필요한가요?",
+      "a4": "Index L3 네트워크에 연결된 Web3 지갑(MetaMask 등)과 USDC 토큰이 필요합니다. 이후 마켓 탭에서 기존 ITP를 구매하거나 나만의 맞춤 인덱스를 생성할 수 있습니다."
+    },
+    "itp_description": "{name}, {count}개의 암호화폐 자산을 보유한 온체인 인덱스 추적 상품입니다. NAV: ${nav}.",
+    "category_index_fund": "Index Fund"
+  },
+  "pages": {
+    "privacy": {
+      "title": "개인정보처리방침, General Market",
+      "description": "General Market Index 및 Vision 상품의 개인정보처리방침. 데이터 수집, 블록체인 투명성 및 제3자 데이터 사용. IM Standards LLC."
+    },
+    "terms": {
+      "title": "이용약관, General Market",
+      "description": "General Market Index 및 Vision 상품의 이용약관. 위험 경고, 책임 제한 및 사용자 책임. IM Standards LLC."
+    },
+    "about": {
+      "title": "소개, General Market",
+      "description": "General Market의 팀과 기술. Orbit L3 기반 온체인 인덱스 상품 및 AI 예측 마켓."
+    },
+    "vision": {
+      "title": "AI 에이전트 기반 AI 예측 마켓",
+      "description": "AI 에이전트가 25,000개 이상의 예측 마켓에서 포트폴리오를 구축하며 경쟁합니다. Orbit L3에서 BLS 검증 정산을 갖춘 P2P 베팅."
+    },
+    "learn": {
+      "title": "학습, AI 예측 마켓, 봇 & 트레이딩 가이드",
+      "description": "AI 예측 마켓 트레이딩을 위한 튜토리얼 및 가이드. 봇 구축, 플랫폼 비교, 밀봉형 패리뮤추얼 마켓 이해."
+    },
+    "explorer": {
+      "title": "탐색기, 오라클 네트워크",
+      "description": "오라클 합의 네트워크의 실시간 모니터링."
+    },
+    "points": {
+      "title": "포인트, 시즌 1",
+      "description": "Vision 예측 배치에 유동성을 제공하여 포인트를 획득하세요. 포인트는 초기 단계에서 배분으로 전환됩니다."
+    },
+    "sources_monitoring": {
+      "title": "소스 모니터링",
+      "description": "General Market에 마켓 가격을 제공하는 모든 데이터 소스의 실시간 상태."
+    },
+    "source_detail": {
+      "title": "{name} | Vision",
+      "title_not_found": "소스를 찾을 수 없습니다",
+      "description": "{name}, {count}개 마켓 시리즈를 갖춘 실시간 마켓 데이터 피드. 카테고리: {category}. Vision에서 예측 거래.",
+      "og_title": "{name}, Vision 데이터 소스"
+    },
+    "learn_article": {
+      "not_found": "아티클을 찾을 수 없습니다"
+    },
+    "learn_itps": {
+      "title": "인덱스 추적 상품(ITP)이란?, General Market",
+      "description": "ITP는 온체인 토큰화 인덱스 상품으로, ETF의 암호화폐 버전입니다. 하나의 토큰, 암호화폐 자산 바스켓, 실시간 NAV. 작동 방식을 알아보세요."
+    },
+    "itp": {
+      "title": "{name} ({symbol})",
+      "description": "{name} ({symbol}), {count}개의 암호화폐 자산을 보유한 온체인 인덱스 추적 상품. 현재 NAV: ${nav}.",
+      "og_title": "{name} | General Market",
+      "not_found": "ITP를 찾을 수 없습니다",
+      "subtitle": "{symbol}, 온체인 인덱스 추적 상품",
+      "nav_share": "주당 NAV",
+      "aum": "운용 자산",
+      "assets": "자산",
+      "holdings": "보유 내역",
+      "asset_col": "자산",
+      "weight_col": "비중",
+      "price_col": "가격",
+      "trade_this": "이 ITP 거래하기",
+      "learn_about": "ITP에 대해 알아보기",
+      "disclaimer": "NAV는 실시간 가격 피드에서 계산됩니다. 데이터는 60초마다 업데이트됩니다. 과거 성과가 미래 결과를 보장하지 않습니다.",
+      "json_ld_category": "Index Fund"
+    },
+    "legal_vision": {
+      "title": "Vision 법적 고지, General Market",
+      "description": "Vision 예측 마켓 법적 고지. P2P 마켓 구조, 데이터 소스 사용, 지적 재산권 고지 및 위험 공시. IM Standards LLC."
+    },
+    "legal_index": {
+      "title": "인덱스 상품 법적 고지, General Market",
+      "description": "General Market 인덱스 추적 상품(ITP) 법적 고지. 프로토콜 아키텍처, 위험 공시 및 책임 제한. IM Standards LLC."
+    }
+  },
+  "breadcrumbs": {
+    "home": "홈",
+    "markets": "마켓",
+    "documentation": "문서",
+    "data_sources": "데이터 소스"
+  }
+}

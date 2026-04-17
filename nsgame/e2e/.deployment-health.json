@@ -1,0 +1,95 @@
+{
+  "l3Reachable": true,
+  "settlementReachable": true,
+  "coreContracts": [
+    {
+      "name": "Index",
+      "address": "0xd2fdb34127eef74c30d7c4a85e1346d1432c4a57",
+      "hasCode": true,
+      "chain": "l3"
+    },
+    {
+      "name": "OracleRegistry",
+      "address": "0xd4c6b4a1a3579150993edd6b5f46aa45d395480b",
+      "hasCode": true,
+      "chain": "l3"
+    },
+    {
+      "name": "Vision",
+      "address": "0x94d540bb45975bd5a0c7ba9a15a0d34e378f6c61",
+      "hasCode": true,
+      "chain": "l3"
+    },
+    {
+      "name": "L3_WUSDC",
+      "address": "0xaddb799bc1499b224dc4368e92b9042a54908553",
+      "hasCode": true,
+      "chain": "l3"
+    },
+    {
+      "name": "CollateralRegistry",
+      "address": "0x90faa5c094ef1d9c179538a26bd25942f3b05db8",
+      "hasCode": true,
+      "chain": "l3"
+    },
+    {
+      "name": "L3BridgeProxy",
+      "address": "0x2bbefb967913388607a67823b42a7c00fc7728fd",
+      "hasCode": true,
+      "chain": "l3"
+    }
+  ],
+  "optionalContracts": [
+    {
+      "name": "MockBitgetVault",
+      "address": "0x6a57172bc6da8bd75c351377d10f26aab51b6481",
+      "hasCode": true,
+      "chain": "l3"
+    },
+    {
+      "name": "Governance",
+      "address": "0x0253162e2f9bd0137ca6d1337bc69e16704b7d7e",
+      "hasCode": true,
+      "chain": "l3"
+    },
+    {
+      "name": "L3BridgeCustody",
+      "address": "0xc7e65fdf970e3f7d3db8e6a77d354cb9d86e9dc3",
+      "hasCode": true,
+      "chain": "l3"
+    },
+    {
+      "name": "BLSCustody",
+      "address": "0x64eaeb0c7777f50af29dec66893163da174a3f72",
+      "hasCode": true,
+      "chain": "l3"
+    },
+    {
+      "name": "L3BridgedItpFactory",
+      "address": "0xb041123c971973307df592bf8cb40d99f4306916",
+      "hasCode": true,
+      "chain": "l3"
+    }
+  ],
+  "morpho": {
+    "deployed": true,
+    "collateralTokenAlive": true,
+    "oracleAlive": true,
+    "stale": false
+  },
+  "visionBatches": {
+    "count": 47,
+    "firstBatchExists": false
+  },
+  "staleAddresses": [],
+  "preconditions": {
+    "hasVisionBatches": true,
+    "onChainBatchCount": 11603,
+    "deployerHasUsdc": true,
+    "deployerUsdcBalance": "17699911000000000000000000",
+    "dataNodeReachable": true,
+    "dataNodeStatus": "200 OK",
+    "visionApiReachable": true,
+    "visionApiBatchCount": 70
+  }
+}

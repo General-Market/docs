@@ -1,0 +1,189 @@
+{
+  "heading": {
+    "label": "Your Holdings",
+    "title": "Portfolio",
+    "collapsed_title": "Portfolio",
+    "collapsed_description": "Your positions & performance",
+    "subtitle_with_data": "{count} position{plural} \u00b7 ${value} value",
+    "subtitle_empty": "Track your positions, trades & orders"
+  },
+  "stats": {
+    "total_value": "Total Value",
+    "total_invested": "Total Invested",
+    "positions": "Positions",
+    "pnl": "P&L",
+    "usdc_available": "USDC Available",
+    "change_24h": "24h Change",
+    "unrealized_pnl": "Unrealized P&L"
+  },
+  "tabs": {
+    "positions": "Positions",
+    "trades": "Trades",
+    "orders": "Orders",
+    "vaults": "Vaults"
+  },
+  "orders_banner": {
+    "active_orders": "{count} active order{plural} in progress"
+  },
+  "section_bar": {
+    "title": "Positions",
+    "subtitle": "Active Holdings"
+  },
+  "positions_table": {
+    "itp": "ITP",
+    "shares": "Shares",
+    "avg_cost": "Avg Cost",
+    "nav": "NAV",
+    "value": "Value",
+    "pnl": "PnL",
+    "pnl_pct": "PnL%"
+  },
+  "trades_table": {
+    "date": "Date",
+    "itp": "ITP",
+    "side": "Side",
+    "amount": "Amount",
+    "price": "Price",
+    "shares": "Shares",
+    "status": "Status"
+  },
+  "orders_table": {
+    "id": "ID",
+    "side": "Side",
+    "amount": "Amount",
+    "limit_price": "Limit Price",
+    "status": "Status",
+    "time": "Time",
+    "cancel": "Cancel",
+    "cancelling": "Cancelling..."
+  },
+  "empty": {
+    "no_positions_title": "No positions yet",
+    "no_positions_description": "Browse index products above and buy your first ITP to start tracking performance here.",
+    "explore_indexes": "Explore Indexes",
+    "no_trades_title": "No trades yet",
+    "no_trades_description": "Your buy and sell history will appear here once you make your first trade.",
+    "no_orders_title": "No orders",
+    "no_orders_description": "Active and recent orders will appear here when you buy or sell an index product.",
+    "loading_orders": "Loading orders..."
+  },
+  "chart": {
+    "current_value": "Current Value",
+    "chart_pending": "Chart will populate as more data becomes available"
+  },
+  "tooltip": {
+    "value_label": "Value:",
+    "pnl_label": "PnL:"
+  },
+  "skeleton": {
+    "fund": "Fund",
+    "ticker": "Ticker",
+    "nav_per_share": "NAV / Share",
+    "avg_cost": "Avg Cost",
+    "change_24h": "24h"
+  },
+  "cost_basis": {
+    "title": "Your Position",
+    "shares": "Shares",
+    "avg_cost": "Avg Cost",
+    "total_cost": "Total Cost",
+    "current_value": "Current Value",
+    "unrealized_pnl": "Unrealized P&L",
+    "realized_pnl": "Realized P&L",
+    "loading": "Loading cost data...",
+    "fees_title": "Fees Paid",
+    "fee_trading": "Trading",
+    "fee_management": "Management",
+    "fee_bridge": "Bridge",
+    "fee_gas": "Gas",
+    "fee_total": "Total Fees"
+  },
+  "vaults": {
+    "tab": "Vaults",
+    "section_title": "Vision Vaults",
+    "section_subtitle": "Managed Vault Deposits",
+    "vault": "Vault",
+    "shares": "Shares",
+    "nav": "NAV/Share",
+    "value": "Value",
+    "performance": "Perf",
+    "fee": "Fee",
+    "total_value": "Vault Value",
+    "empty_title": "No vault deposits",
+    "empty_description": "Deposit into a Vision Vault to have a managed strategy trade on your behalf.",
+    "explore_vaults": "Explore Vaults",
+    "withdraw": "Withdraw"
+  },
+  "side": {
+    "buy": "BUY",
+    "sell": "SELL"
+  },
+  "usdc_balance": {
+    "title": "{symbol} Balance",
+    "total_balance": "Total Balance",
+    "available_betting": "Available for Betting",
+    "escrowed_bets": "Escrowed in Bets"
+  },
+  "resolution": {
+    "no_data": "No resolution data available yet",
+    "not_resolved": "Bet has not been resolved",
+    "trades_won": "Trades Won",
+    "list_size": "List Size",
+    "bet_amount": "Bet Amount",
+    "outcome": "Outcome",
+    "won_amount": "Won {amount}",
+    "lost_amount": "Lost {amount}",
+    "resolved_date": "Resolved {date}",
+    "resolved_by": "Resolved by",
+    "tie_refund": "Tie - Both parties refunded",
+    "settlement_title": "Settlement Details",
+    "total_pot": "Total Pot",
+    "platform_fee": "Platform Fee (0.1%)",
+    "winner_payout": "Winner Payout",
+    "loser_loss": "Loser Loss",
+    "winner": "Winner:",
+    "loser": "Loser:",
+    "creator": "Creator",
+    "matcher": "Matcher",
+    "view_settlement_tx": "View Settlement Transaction \u2197",
+    "trade_outcomes": "Trade Outcomes",
+    "loading_trades": "Loading trades...",
+    "outcome_tie": "Tie - Both Refunded",
+    "outcome_cancelled": "Cancelled - {reason}",
+    "outcome_unknown_reason": "Unknown reason",
+    "outcome_creator_wins": "Creator Wins",
+    "outcome_matcher_wins": "Matcher Wins",
+    "outcome_pending": "Pending"
+  },
+  "bet_history": {
+    "title": "Bet History",
+    "total_bets": "{count} total bets",
+    "portfolio_size": "Portfolio Size",
+    "amount": "Amount",
+    "status": "Status",
+    "created": "Created",
+    "tx_hash": "Tx Hash",
+    "connect_to_view": "Connect your wallet to view bet history",
+    "error_loading": "Error loading bet history"
+  },
+  "bet_details": {
+    "category": "Category:",
+    "list_size": "List Size:",
+    "horizon": "Horizon:",
+    "snapshot": "Snapshot:",
+    "bet_hash": "Bet Hash:",
+    "filler": "Filler:",
+    "filler_stake": "Filler Stake:",
+    "early_exit_title": "\u2297 Early Exit Executed",
+    "early_exit_description": "Both parties agreed to settle early via mutual EIP-712 signed agreement.",
+    "creator_received": "Creator received:",
+    "filler_received": "Filler received:",
+    "portfolio": "Portfolio:",
+    "positions_count": "{count} positions",
+    "portfolio_hint": "Click \"View Full Portfolio\" below to see all trades with virtual scroll.",
+    "view_full_portfolio": "View Full Portfolio",
+    "view_on_explorer": "View on Explorer",
+    "signature_collection": "Signature Collection",
+    "resolution": "Resolution"
+  }
+}

@@ -1,0 +1,278 @@
+'use client'
+
+import { useState, useCallback, useEffect, useRef } from 'react'
+import { useTranslations } from 'next-intl'
+import { parseUnits, formatUnits } from 'viem'
+import { useMorphoPosition } from '@/hooks/useMorphoPosition'
+import { useMorphoActions } from '@/hooks/useMorphoActions'
+import { useLendingQuote } from '@/hooks/useLendingQuote'
+import { useBundlerExec } from '@/hooks/useBundlerExec'
+import { calculateHealthFactor } from '@/lib/types/morpho'
+import { WalletActionButton } from '@/components/ui/WalletActionButton'
+import { usePostHogTracker } from '@/hooks/usePostHog'
+import { useToast } from '@/lib/contexts/ToastContext'
+import { getTxUrl } from '@/lib/utils/explorer'
+import type { MorphoMarketEntry } from '@/lib/contracts/morpho-markets-registry'
+
+interface BorrowUsdcProps {
+  market?: MorphoMarketEntry
+  onSuccess?: () => void
+}
+
+/**
+ * BorrowUsdc component (AC3, AC4)
+ *
+ * Allows users to borrow USDC against their deposited ITP collateral.
+ * Shows projected health factor and prevents borrowing if health factor < 1.0.
+ */
+export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
+  const t = useTranslations('lending')
+  const { capture } = usePostHogTracker()
+  const { showSuccess, showError } = useToast()
+  const [amount, setAmount] = useState('')
+  const [txError, setTxError] = useState<string | null>(null)
+  const [step, setStep] = useState<'input' | 'borrowing' | 'success'>('input')
+
+  const lltv = market?.lltv ?? BigInt('770000000000000000')
+
+  const { position, oraclePrice, refetch: refetchPosition } = useMorphoPosition(market)
+  const {
+    borrow,
+    isPending,
+    isConfirming,
+    isSuccess,
+    error: actionError,
+    reset: resetAction,
+    txHash: borrowTxHash,
+  } = useMorphoActions(market)
+
+  // Quote API integration (intent-based flow)
+  const [useQuoteMode, setUseQuoteMode] = useState(false)
+  const { quote, isLoading: isQuoteLoading, error: quoteError, isExpired, fetchQuote } = useLendingQuote({
+    itpAddress: market?.collateralToken,
+    collateralAmount: position?.collateralAmount?.toString(),
+    borrowAmount: amount ? parseUnits(amount, 18).toString() : undefined,
+    enabled: useQuoteMode && !!amount,
+  })
+  const {
+    execute: executeBundler,
+    isPending: isBundlerPending,
+    isConfirming: isBundlerConfirming,
+    isSuccess: isBundlerSuccess,
+    error: bundlerError,
+    reset: resetBundler,
+  } = useBundlerExec()
+
+  let parsedAmount = 0n
+  try { if (amount) parsedAmount = parseUnits(amount, 18) } catch { /* invalid input */ }
+  const maxBorrow = position?.maxBorrow ?? 0n
+  const currentDebt = position?.debtAmount ?? 0n
+  const collateralAmount = position?.collateralAmount ?? 0n
+
+  // Calculate projected health factor after borrowing
+  let projectedHealthFactor = Infinity
+  if (oraclePrice && collateralAmount > 0n && parsedAmount > 0n) {
+    const newDebt = currentDebt + parsedAmount
+    projectedHealthFactor = calculateHealthFactor(
+      collateralAmount,
+      oraclePrice,
+      newDebt,
+      lltv
+    )
+  }
+
+  const canBorrow = projectedHealthFactor >= 1.0 && parsedAmount <= maxBorrow
+
+  // Track success state
+  const successHandled = useRef(false)
+
+  useEffect(() => {
+    if (isSuccess && !successHandled.current) {
+      successHandled.current = true
+      setStep('success')
+      const amt = amount || '0'
+      showSuccess(`Borrowed ${parseFloat(amt).toFixed(2)} USDC`, borrowTxHash ? { url: getTxUrl(borrowTxHash, 'l3'), text: 'View tx' } : undefined)
+      capture('lend_completed', { itp_id: market?.collateralToken, action: 'borrow', tx_hash: borrowTxHash })
+      refetchPosition()
+      onSuccess?.()
+      window.dispatchEvent(new Event('lending-refresh'))
+      setTimeout(() => {
+        setStep('input')
+        setAmount('')
+        resetAction()
+        successHandled.current = false
+      }, 2000)
+    }
+  }, [isSuccess, refetchPosition, onSuccess, resetAction])
+
+  useEffect(() => {
+    if (actionError) {
+      const errMsg = actionError.message || t('common.transaction_failed')
+      setTxError(errMsg)
+      showError(`Borrow failed: ${errMsg.slice(0, 80)}`)
+      capture('lend_failed', { itp_id: market?.collateralToken, action: 'borrow', error_message: errMsg })
+      setStep('input')
+      resetAction()
+    }
+  }, [actionError, resetAction])
+
+  const handleBorrow = useCallback(() => {
+    if (!amount || parsedAmount === 0n || !canBorrow) return
+    capture('lend_borrow_submitted', { itp_id: market?.collateralToken, amount: amount })
+    successHandled.current = false
+    setTxError(null)
+    setStep('borrowing')
+    borrow(parsedAmount)
+  }, [amount, parsedAmount, canBorrow, borrow, capture, market?.collateralToken])
+
+  const isProcessing = isPending || isConfirming
+
+  const buttonText = isPending
+    ? t('borrow_usdc.button.confirm_wallet')
+    : isConfirming
+    ? t('borrow_usdc.button.borrowing')
+    : step === 'success'
+    ? t('borrow_usdc.button.borrowed')
+    : t('borrow_usdc.button.borrow_usdc')
+
+  const formatMaxBorrow = maxBorrow ? formatUnits(maxBorrow, 18) : '0'
+
+  return (
+      <div className="space-y-4">
+        <div>
+          <div className="flex justify-between items-center mb-2">
+            <label className="text-sm text-text-secondary">{t('borrow_usdc.amount_label')}</label>
+            <span className="text-xs text-text-muted">
+              {t('borrow_usdc.max_borrow_label', { amount: parseFloat(formatMaxBorrow).toFixed(2) })}
+            </span>
+          </div>
+          <div className="relative">
+            <input
+              type="number"
+              inputMode="numeric"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="0.00"
+              min="0"
+              step="1"
+              disabled={isProcessing}
+              className="w-full bg-muted border border-border-medium rounded-lg px-4 py-3 text-text-primary text-lg focus:border-zinc-900 focus:outline-none disabled:opacity-50"
+            />
+            <button
+              onClick={() => {
+                // Truncate (floor) to 2 decimals to avoid exceeding maxBorrow
+                const raw = parseFloat(formatMaxBorrow)
+                setAmount((Math.floor(raw * 100) / 100).toFixed(2))
+              }}
+              disabled={isProcessing || maxBorrow === 0n}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-900 font-medium hover:text-zinc-700 disabled:opacity-50"
+            >
+              {t('actions.max')}
+            </button>
+          </div>
+        </div>
+
+        {/* Projected Health Factor */}
+        {amount && parsedAmount > 0n && (
+          <div className="bg-muted rounded-xl p-3">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-text-secondary">{t('borrow_usdc.projected_health_factor')}</span>
+              <span className={`font-mono tabular-nums font-bold ${
+                projectedHealthFactor >= 1.5 ? 'text-color-up' :
+                projectedHealthFactor >= 1.0 ? 'text-color-warning' :
+                'text-color-down'
+              }`}>
+                {projectedHealthFactor === Infinity ? '∞' : projectedHealthFactor.toFixed(2)}
+              </span>
+            </div>
+            {projectedHealthFactor < 1.0 && (
+              <p className="text-color-down text-xs mt-2">
+                {t('borrow_usdc.cannot_borrow_health')}
+              </p>
+            )}
+            {projectedHealthFactor >= 1.0 && projectedHealthFactor < 1.5 && (
+              <p className="text-color-warning text-xs mt-2">
+                {t('borrow_usdc.low_health_warning')}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Quote API Terms (when in quote mode) */}
+        {useQuoteMode && quote && !isExpired && (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 space-y-2">
+            <div className="text-xs text-blue-700 font-bold uppercase tracking-[0.08em]">{t('borrow_usdc.quote.title')}</div>
+            <div className="flex justify-between text-sm">
+              <span className="text-text-secondary">{t('borrow_usdc.quote.borrow_apr')}</span>
+              <span className="text-text-primary font-mono tabular-nums">{quote.terms.borrowRate}%</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-text-secondary">{t('borrow_usdc.quote.health_factor')}</span>
+              <span className={`font-mono tabular-nums font-bold ${
+                parseFloat(quote.terms.healthFactor) >= 1.5 ? 'text-color-up' :
+                parseFloat(quote.terms.healthFactor) >= 1.0 ? 'text-color-warning' :
+                'text-color-down'
+              }`}>{quote.terms.healthFactor}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-text-secondary">{t('borrow_usdc.quote.liquidation_price')}</span>
+              <span className="text-text-primary font-mono tabular-nums">${quote.terms.liquidationPrice}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-text-secondary">{t('borrow_usdc.quote.max_borrow')}</span>
+              <span className="text-text-primary font-mono tabular-nums">{t('borrow_usdc.quote.max_borrow_value', { amount: quote.terms.maxBorrow })}</span>
+            </div>
+            <div className="text-xs text-text-muted">
+              {t('borrow_usdc.quote.bundle_steps', { steps: quote.bundler.steps.join(' \u2192 ') })}
+            </div>
+          </div>
+        )}
+
+        {useQuoteMode && isExpired && (
+          <div className="bg-surface-warning border border-orange-300 rounded-xl p-2 text-orange-700 text-xs text-center">
+            {t('borrow_usdc.quote.expired')} <button onClick={fetchQuote} className="underline">{t('borrow_usdc.quote.refresh')}</button>
+          </div>
+        )}
+
+        {/* Borrow button (direct or bundler) */}
+        {useQuoteMode && quote && !isExpired ? (
+          <button
+            onClick={() => executeBundler(quote)}
+            disabled={isBundlerPending || isBundlerConfirming}
+            className="w-full py-3 font-bold rounded-lg transition-colors bg-zinc-900 text-white hover:bg-zinc-800 disabled:bg-muted disabled:text-text-muted disabled:cursor-not-allowed"
+          >
+            {isBundlerPending ? t('borrow_usdc.quote.confirm_wallet') :
+             isBundlerConfirming ? t('borrow_usdc.quote.executing_bundle') :
+             isBundlerSuccess ? t('borrow_usdc.quote.borrowed') :
+             t('borrow_usdc.quote.execute_bundle')}
+          </button>
+        ) : (
+          <WalletActionButton
+            onClick={handleBorrow}
+            disabled={!amount || parsedAmount === 0n || isProcessing || !canBorrow}
+            className={`w-full py-3 font-bold rounded-lg transition-colors ${
+              step === 'success'
+                ? 'bg-color-up text-white'
+                : 'bg-zinc-900 text-white hover:bg-zinc-800 disabled:bg-muted disabled:text-text-muted disabled:cursor-not-allowed'
+            }`}
+          >
+            {buttonText}
+          </WalletActionButton>
+        )}
+
+        {/* Quote mode toggle — hidden, direct borrow is default */}
+
+        {(txError || quoteError || bundlerError) && (
+          <div className="bg-surface-down border border-red-300 rounded-xl p-3 text-color-down text-sm">
+            {(() => {
+              const msg = txError || quoteError?.message || bundlerError?.message || 'Unknown error'
+              if (msg.includes('User rejected') || msg.includes('denied')) return t('common.transaction_rejected')
+              if (quoteError?.isMarketFrozen) return t('common.market_frozen')
+              if (quoteError?.isRateLimited) return t('common.rate_limited', { seconds: quoteError.retryAfter ?? 0 })
+              return <span className="break-all">{msg}</span>
+            })()}
+          </div>
+        )}
+      </div>
+  )
+}

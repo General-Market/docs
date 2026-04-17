@@ -1,0 +1,189 @@
+{
+  "heading": {
+    "label": "您的持仓",
+    "title": "投资组合",
+    "collapsed_title": "投资组合",
+    "collapsed_description": "您的持仓与收益表现",
+    "subtitle_with_data": "{count} 个持仓{plural} · ${value} 价值",
+    "subtitle_empty": "跟踪您的持仓、交易和订单"
+  },
+  "stats": {
+    "total_value": "总价值",
+    "total_invested": "总投入",
+    "positions": "持仓数",
+    "pnl": "盈亏",
+    "usdc_available": "可用 USDC",
+    "change_24h": "24小时变化",
+    "unrealized_pnl": "未实现盈亏"
+  },
+  "tabs": {
+    "positions": "持仓",
+    "trades": "交易",
+    "orders": "订单",
+    "vaults": "金库"
+  },
+  "orders_banner": {
+    "active_orders": "{count} 个活跃订单{plural}正在处理中"
+  },
+  "section_bar": {
+    "title": "持仓",
+    "subtitle": "当前持有"
+  },
+  "positions_table": {
+    "itp": "ITP",
+    "shares": "份额",
+    "avg_cost": "平均成本",
+    "nav": "NAV (净资产价值)",
+    "value": "价值",
+    "pnl": "盈亏",
+    "pnl_pct": "盈亏%"
+  },
+  "trades_table": {
+    "date": "日期",
+    "itp": "ITP",
+    "side": "方向",
+    "amount": "金额",
+    "price": "价格",
+    "shares": "份额",
+    "status": "状态"
+  },
+  "orders_table": {
+    "id": "ID",
+    "side": "方向",
+    "amount": "金额",
+    "limit_price": "限价",
+    "status": "状态",
+    "time": "时间",
+    "cancel": "取消",
+    "cancelling": "取消中..."
+  },
+  "empty": {
+    "no_positions_title": "暂无持仓",
+    "no_positions_description": "浏览上方的指数产品并购买您的第一个 ITP，即可在此跟踪收益表现。",
+    "explore_indexes": "浏览指数",
+    "no_trades_title": "暂无交易",
+    "no_trades_description": "您的买入和卖出记录将在首次交易后显示在此处。",
+    "no_orders_title": "暂无订单",
+    "no_orders_description": "当您买入或卖出指数产品时，活跃和近期订单将显示在此处。",
+    "loading_orders": "加载订单中..."
+  },
+  "chart": {
+    "current_value": "当前价值",
+    "chart_pending": "随着更多数据的积累，图表将逐步生成"
+  },
+  "tooltip": {
+    "value_label": "价值:",
+    "pnl_label": "盈亏:"
+  },
+  "skeleton": {
+    "fund": "基金",
+    "ticker": "代码",
+    "nav_per_share": "NAV (净资产价值) / 份额",
+    "avg_cost": "平均成本",
+    "change_24h": "24小时"
+  },
+  "cost_basis": {
+    "title": "您的持仓",
+    "shares": "份额",
+    "avg_cost": "平均成本",
+    "total_cost": "总成本",
+    "current_value": "当前价值",
+    "unrealized_pnl": "未实现盈亏",
+    "realized_pnl": "已实现盈亏",
+    "loading": "加载成本数据中...",
+    "fees_title": "已付费用",
+    "fee_trading": "交易费",
+    "fee_management": "管理费",
+    "fee_bridge": "跨链费",
+    "fee_gas": "Gas 费",
+    "fee_total": "费用总计"
+  },
+  "vaults": {
+    "tab": "金库",
+    "section_title": "Vision 金库",
+    "section_subtitle": "托管金库存款",
+    "vault": "金库",
+    "shares": "份额",
+    "nav": "NAV/份额",
+    "value": "价值",
+    "performance": "表现",
+    "fee": "费率",
+    "total_value": "金库价值",
+    "empty_title": "暂无金库存款",
+    "empty_description": "存入 Vision 金库，由托管策略为您交易。",
+    "explore_vaults": "浏览金库",
+    "withdraw": "赎回"
+  },
+  "side": {
+    "buy": "买入",
+    "sell": "卖出"
+  },
+  "usdc_balance": {
+    "title": "{symbol} 余额",
+    "total_balance": "总余额",
+    "available_betting": "可用于投注",
+    "escrowed_bets": "投注托管中"
+  },
+  "resolution": {
+    "no_data": "暂无结算数据",
+    "not_resolved": "投注尚未结算",
+    "trades_won": "赢得交易",
+    "list_size": "列表大小",
+    "bet_amount": "投注金额",
+    "outcome": "结果",
+    "won_amount": "赢得 {amount}",
+    "lost_amount": "亏损 {amount}",
+    "resolved_date": "结算于 {date}",
+    "resolved_by": "结算方",
+    "tie_refund": "平局 - 双方退款",
+    "settlement_title": "结算详情",
+    "total_pot": "总奖池",
+    "platform_fee": "平台费用 (0.1%)",
+    "winner_payout": "赢家支付",
+    "loser_loss": "输家损失",
+    "winner": "赢家:",
+    "loser": "输家:",
+    "creator": "创建者",
+    "matcher": "匹配者",
+    "view_settlement_tx": "查看结算交易 ↗",
+    "trade_outcomes": "交易结果",
+    "loading_trades": "加载交易中...",
+    "outcome_tie": "平局 - 双方退款",
+    "outcome_cancelled": "已取消 - {reason}",
+    "outcome_unknown_reason": "原因不明",
+    "outcome_creator_wins": "创建者获胜",
+    "outcome_matcher_wins": "匹配者获胜",
+    "outcome_pending": "待处理"
+  },
+  "bet_history": {
+    "title": "投注历史",
+    "total_bets": "{count} 笔总投注",
+    "portfolio_size": "组合大小",
+    "amount": "金额",
+    "status": "状态",
+    "created": "创建时间",
+    "tx_hash": "交易哈希",
+    "connect_to_view": "连接钱包以查看投注历史",
+    "error_loading": "加载投注历史出错"
+  },
+  "bet_details": {
+    "category": "分类:",
+    "list_size": "列表大小:",
+    "horizon": "期限:",
+    "snapshot": "快照:",
+    "bet_hash": "投注哈希:",
+    "filler": "匹配者:",
+    "filler_stake": "匹配者质押:",
+    "early_exit_title": "⊗ 已执行提前退出",
+    "early_exit_description": "双方通过 EIP-712 签名协议同意提前结算。",
+    "creator_received": "创建者收到:",
+    "filler_received": "匹配者收到:",
+    "portfolio": "组合:",
+    "positions_count": "{count} 个仓位",
+    "portfolio_hint": "点击下方「查看完整组合」以虚拟滚动方式查看所有交易。",
+    "view_full_portfolio": "查看完整组合",
+    "view_on_explorer": "在浏览器中查看",
+    "signature_collection": "签名收集",
+    "resolution": "结算"
+  }
+}

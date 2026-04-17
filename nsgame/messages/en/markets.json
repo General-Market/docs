@@ -1,0 +1,380 @@
+{
+  "heading": "TRACKED MARKETS",
+  "hero": {
+    "label": "Index Tracking Products",
+    "title": "Markets",
+    "description": "Explore decentralized index products. Each ITP tracks a basket of crypto assets with live NAV pricing and on-chain settlement."
+  },
+  "summary": {
+    "types_count": "{count} types",
+    "categories_count": "{count} categories"
+  },
+  "types": {
+    "crypto": {
+      "name": "Cryptocurrency",
+      "description": "BTC, ETH, SOL and 100+ tokens",
+      "update_freq": "5 min"
+    },
+    "stocks": {
+      "name": "US Stocks",
+      "description": "S&P 500, NASDAQ, major indices",
+      "update_freq": "15 min (market hours)"
+    },
+    "weather": {
+      "name": "Weather",
+      "description": "Temperature, precipitation, wind",
+      "update_freq": "30 min"
+    },
+    "economic": {
+      "name": "Economic Indicators",
+      "description": "Fed rates, CPI, unemployment",
+      "update_freq": "Daily/Monthly"
+    },
+    "fx": {
+      "name": "Foreign Exchange",
+      "description": "EUR/USD, major currency pairs",
+      "update_freq": "Daily"
+    },
+    "treasury": {
+      "name": "Treasury Rates",
+      "description": "US Treasury yields",
+      "update_freq": "Daily"
+    },
+    "defi": {
+      "name": "DeFi TVL",
+      "description": "Protocol TVL rankings",
+      "update_freq": "1 hour"
+    }
+  },
+  "labels": {
+    "updates": "Updates:",
+    "categories": "Categories:",
+    "sample_assets": "Sample assets:",
+    "loading_prices": "Loading prices..."
+  },
+  "footer": {
+    "data_sources": "Data sourced from CoinGecko, Finnhub, Open-Meteo, FRED, ECB, Treasury, DefiLlama",
+    "resolution_note": "All bets resolved using on-chain keeper consensus"
+  },
+  "filters": {
+    "label": "Filters",
+    "all": "All ({count})",
+    "active": "Active ({count})",
+    "pending": "Pending ({count})",
+    "search_placeholder": "Search funds by name or ticker...",
+    "sort_aum_desc": "Sort: AUM High \u2192 Low",
+    "sort_aum_asc": "Sort: AUM Low \u2192 High",
+    "sort_newest": "Sort: Newest",
+    "sort_name_az": "Sort: Name A-Z"
+  },
+  "section_bar": {
+    "title": "Data View",
+    "subtitle": "Fund Overview \u2014 Live NAV",
+    "showing_partial": "Showing {shown} of {total} products",
+    "showing_all": "Showing all {total} products"
+  },
+  "itp_card": {
+    "loading": "Loading ITPs...",
+    "no_itps": "No ITPs created yet",
+    "nav_per_share": "NAV / Share",
+    "assets": "Assets",
+    "balance": "Balance",
+    "by": "by {name}",
+    "pending_fill": "Pending Fill",
+    "buy": "Buy",
+    "sell": "Sell",
+    "chart": "Chart",
+    "rebalance": "Rebalance",
+    "borrow": "Borrow",
+    "edit_itp_info": "Edit ITP Info",
+    "description_placeholder": "Description (max 280 chars / ~50 words)",
+    "website_placeholder": "Website URL (max 128)",
+    "video_placeholder": "YouTube URL (max 256)",
+    "settlement_erc20": "Settlement ERC20:",
+    "itp_id": "ITP ID:",
+    "minted_supply": "Minted Supply",
+    "loading_holders": "Loading holders...",
+    "unable_fetch_holders": "Unable to fetch holders",
+    "no_tracked_holders": "No tracked holders",
+    "other_holders": "Other Holders",
+    "source_index": "Index.sol (L3)",
+    "source_bridge": "BridgeProxy",
+    "nonce": "Nonce:",
+    "source": "Source:",
+    "admin": "Admin:",
+    "created": "Created:",
+    "settlement_address": "Settlement Address:",
+    "request_number": "Request #{number}"
+  },
+  "rebalance": {
+    "title": "Rebalance {name}",
+    "itp_id_label": "ITP ID:",
+    "loading": "Loading ITP state...",
+    "add_asset_label": "Add Asset ({count} in basket, {available} available)",
+    "search_placeholder": "Search asset to add...",
+    "equal_weights": "Equal Weights",
+    "weight_sum": "Weight Sum",
+    "table": {
+      "asset": "Asset",
+      "current_pct": "Current %",
+      "new_pct": "New %",
+      "new_tag": "NEW"
+    },
+    "status": {
+      "step1_wallet": "Step 1/2: Confirm in your wallet...",
+      "step1_confirming": "Step 1/2: Confirming on-chain...",
+      "step2_executing": "Step 2/2: Executing rebalance on L3 (oracle consensus)...",
+      "tx_label": "Tx:"
+    },
+    "success": {
+      "title": "Rebalanced!",
+      "l3_tx": "L3 Tx:"
+    },
+    "button": {
+      "waiting_wallet": "Waiting for wallet...",
+      "confirming": "Confirming...",
+      "executing": "Executing on L3...",
+      "rebalanced": "Rebalanced!",
+      "rebalance": "Rebalance"
+    },
+    "support": "Support"
+  },
+  "chart": {
+    "nav_ohlc": "NAV OHLC",
+    "loading": "Loading NAV data...",
+    "error": "Failed to load chart data",
+    "no_data": "No NAV data available for this timeframe"
+  },
+  "itp_page": {
+    "buy_this_index": "Buy This Index",
+    "tabs": {
+      "overview": "Overview",
+      "performance": "Performance",
+      "holdings": "Holdings",
+      "key_facts": "Key Facts"
+    },
+    "key_stats": {
+      "nav_per_share": "NAV / Share",
+      "one_day_nav_change": "1 Day NAV Change",
+      "total_value_locked": "Total Value Locked",
+      "holdings": "Holdings",
+      "as_of": "as of {date}"
+    },
+    "performance": {
+      "title": "Performance",
+      "as_of": "as of {date}",
+      "since_inception_return": "Since Inception Return: ",
+      "from_date": "(from {date})",
+      "no_data": "Performance data not yet available"
+    },
+    "holdings_table": {
+      "title": "Holdings",
+      "loading": "Holdings data loading...",
+      "filter_placeholder": "Filter by name or ticker...",
+      "rank": "#",
+      "name": "Name",
+      "sector": "Sector",
+      "weight": "Weight",
+      "price": "Price",
+      "change_24h": "24h",
+      "market_value": "Market Value",
+      "notional_value": "Notional Value",
+      "shares": "Shares",
+      "market_cap": "Market Cap",
+      "cryptocurrency": "Cryptocurrency",
+      "range": "{start} to {end} of {total}",
+      "previous": "Previous",
+      "next": "Next",
+      "as_of": "as of {date}"
+    },
+    "portfolio": {
+      "title": "Portfolio Composition",
+      "other": "Other"
+    },
+    "concentration": {
+      "title": "Concentration Metrics",
+      "top_5_weight": "TOP 5 WEIGHT",
+      "top_10_weight": "TOP 10 WEIGHT",
+      "hhi_concentration": "HHI CONCENTRATION",
+      "low": "Low",
+      "moderate": "Moderate",
+      "high": "High"
+    },
+    "founders": {
+      "title": "Founder Intelligence",
+      "subtitle": "Based on {founders} founders across {companies} portfolio companies",
+      "age_distribution": "Age Distribution",
+      "gender_split": "Gender Split",
+      "top_nationalities": "Top Nationalities",
+      "top_universities": "Top Universities",
+      "count": "Count"
+    },
+    "defi": {
+      "title": "DeFi Protocol Health",
+      "aggregate_tvl": "AGGREGATE TVL",
+      "avg_tvl_change_7d": "AVG TVL CHANGE 7D",
+      "coverage": "COVERAGE",
+      "coverage_value": "{with_data} of {total}",
+      "protocol": "Protocol",
+      "tvl": "TVL",
+      "change_1d": "1D",
+      "change_7d": "7D"
+    },
+    "funding": {
+      "title": "Funding Intelligence",
+      "total_raised": "TOTAL RAISED",
+      "avg_valuation": "AVG VALUATION",
+      "funding_rounds": "FUNDING ROUNDS",
+      "top_investors": "Top Investors by Frequency",
+      "investments": "Investments",
+      "project": "Project",
+      "round": "Round",
+      "amount": "Amount",
+      "lead": "Lead",
+      "date": "Date"
+    },
+    "fund_facts": {
+      "title": "Fund Details",
+      "nav_per_share": "NAV / Share",
+      "chain": "Chain",
+      "chain_value": "Index L3 (Orbit)",
+      "settlement_address": "Settlement Address",
+      "rebalance_method": "Rebalance Method",
+      "rebalance_value": "Equal Weight",
+      "fund_inception": "Fund Inception",
+      "asset_class": "Asset Class",
+      "asset_class_value": "Crypto Index",
+      "itp_id": "ITP ID",
+      "number_of_holdings": "Number of Holdings",
+      "as_of": "as of {date}",
+      "copy": "Copy",
+      "copied": "Copied!",
+      "portfolio_characteristics": "Portfolio Characteristics",
+      "top_5_concentration": "Top 5 Concentration",
+      "top_10_concentration": "Top 10 Concentration",
+      "hhi_index": "HHI Index",
+      "average_market_cap": "Average Market Cap",
+      "fees": "Fees",
+      "fees_as_of": "as of current prospectus",
+      "management_fee": "Management Fee",
+      "acquired_fund_fees": "+Acquired Fund Fees and Expenses",
+      "other_expenses": "+Other Expenses",
+      "expense_ratio": "=Expense Ratio",
+      "fee_disclaimer": "The fee amounts shown above are as of the current prospectus. Network gas costs apply to all on-chain transactions and are not included in the expense ratio."
+    },
+    "trade_cta": {
+      "buy": "Buy this Index",
+      "sell": "Sell"
+    },
+    "investment_objective": {
+      "why_title": "Why This Index?",
+      "objective_title": "Investment Objective"
+    },
+    "metadata": {
+      "description_title": "About This Index",
+      "website": "Website",
+      "video": "Video",
+      "creator": "Creator",
+      "community_badge": "Community",
+      "community_index": "Community Index"
+    }
+  },
+  "listing": {
+    "total_net_assets": "Total Net Assets",
+    "funds_label": "Funds",
+    "category_all": "All",
+    "category_broad_market": "Broad Market",
+    "category_factor": "Factor",
+    "category_income": "Income",
+    "category_sector": "Sector",
+    "category_thematic": "Thematic",
+    "category_unofficial": "Unofficial",
+    "community_badge": "Community",
+    "creator_label": "Creator",
+    "table": {
+      "ticker": "Ticker",
+      "name": "Name",
+      "nav": "NAV",
+      "net_assets": "Net Assets",
+      "shares_outstanding": "Shares Outstanding",
+      "trade": "Trade",
+      "buy": "Buy",
+      "sell": "Sell"
+    },
+    "loading_funds": "Loading funds...",
+    "no_funds_filtered": "No funds match your filters.",
+    "no_funds": "No funds available.",
+    "pagination": {
+      "first": "First",
+      "prev": "Prev",
+      "next": "Next",
+      "last": "Last",
+      "range": "{start}\u2013{end} of {total}"
+    }
+  },
+  "source_detail": {
+    "title": "Source Detail",
+    "loading": "Loading source data...",
+    "failed_to_load": "Failed to load",
+    "retry": "Retry",
+    "total_assets": "Total Assets",
+    "active": "Active",
+    "zero_values": "Zero Values",
+    "stale": "Stale",
+    "data_regularity": "Data Regularity (Last 24h)",
+    "markets_title": "Markets ({count})",
+    "markets_click_hint": "\u2014 click a row to see history",
+    "table": {
+      "market": "Market",
+      "unit": "Unit",
+      "age": "Age",
+      "change": "Change",
+      "records": "Records",
+      "status": "Status"
+    },
+    "no_assets": "No assets found for this source",
+    "status_zero": "Zero",
+    "status_stale": "Stale",
+    "status_off": "Off",
+    "tooltip_zero": "Zero value",
+    "tooltip_stale": "Stale data",
+    "tooltip_active": "Active with recent data",
+    "tooltip_inactive": "Inactive",
+    "tooltip_click_show": "Click to show chart",
+    "tooltip_click_hide": "Click to hide chart",
+    "sparkline_loading": "Loading history...",
+    "sparkline_error": "Failed to load: {error}",
+    "sparkline_insufficient": "Not enough data points ({count})",
+    "sparkline_label": "7-day history ({count} points)"
+  },
+  "source_health": {
+    "search_placeholder": "Search sources...",
+    "no_sources_search": "No sources match your search",
+    "no_sources": "No sources found",
+    "no_sources_search_hint": "Try a different query or clear the search.",
+    "no_sources_hint": "Check that the data-node is running and has ingested data.",
+    "get_key": "Get key: {label} \u2192",
+    "dormant_count": "{count} dormant"
+  },
+  "source_history": {
+    "no_data": "No history data available",
+    "tooltip_records": "Records: {count}",
+    "tooltip_assets": "Assets: {count}",
+    "tooltip_zeros": "Zeros: {count}",
+    "legend_records": "Records",
+    "legend_zero": "Zero-value"
+  },
+  "orderbook": {
+    "depth": "Depth",
+    "loading_depth": "Loading depth...",
+    "no_orders": "No orders",
+    "assets_priced": "{count} assets priced",
+    "price": "Price",
+    "size": "Size",
+    "total": "Total",
+    "bid_total": "Bid {value}",
+    "ask_total": "Ask {value}",
+    "assets_count": "{included}/{total} assets",
+    "per_asset_breakdown": "Per-asset breakdown"
+  }
+}

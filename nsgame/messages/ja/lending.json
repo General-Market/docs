@@ -1,0 +1,276 @@
+{
+  "heading": {
+    "label": "Morpho Vaults",
+    "title": "レンディング",
+    "description": "USDCを預けて利回りを獲得するか、ITPポジションを担保に借入を行えます。"
+  },
+  "stats": {
+    "vault_tvl": "Vault TVL (預入総額)",
+    "supply_apy": "供給APY (年利回り)",
+    "borrow_apy": "借入APY (年利回り)",
+    "utilization": "稼働率"
+  },
+  "supply_panel": {
+    "title": "供給, USDC Vault",
+    "your_deposits": "あなたの預入額",
+    "accrued_interest": "発生済み利息",
+    "current_apy": "現在のAPY (年利回り)",
+    "est_annual_yield": "推定年間収益",
+    "yield_status": "収益ステータス",
+    "no_borrows_yet": "借入なし",
+    "no_borrows_notice": "ユーザーがITP担保でUSDCを借りるとVault収益が発生します。現在アクティブな借入はありません。"
+  },
+  "borrow_panel": {
+    "title": "借入, ITP担保",
+    "collateral_value": "担保価値（ITP評価額）",
+    "outstanding_debt": "未返済残高",
+    "max_borrow": "最大借入額（{lltv}% LTV）",
+    "change_itp": "変更"
+  },
+  "actions": {
+    "deposit": "預入",
+    "withdraw": "引出",
+    "borrow_usdc": "USDCを借入",
+    "repay": "返済",
+    "borrow": "借入",
+    "manage_position": "ポジション管理",
+    "cancel": "キャンセル",
+    "max": "MAX"
+  },
+  "vault_deposit": {
+    "section_title": "預入",
+    "section_subtitle": "USDCをVaultに供給",
+    "amount_label": "金額（USDC）",
+    "balance_label": "残高：{amount}",
+    "insufficient_balance": "USDC残高が不足しています",
+    "button": {
+      "approving": "USDCを承認中...",
+      "confirm_wallet": "ウォレットで確認してください...",
+      "depositing": "預入中...",
+      "deposited": "預入完了！",
+      "approve_and_deposit": "承認 & 預入",
+      "deposit_usdc": "USDCを預入"
+    }
+  },
+  "vault_position": {
+    "section_title": "ポジション",
+    "section_subtitle": "あなたのVault預入額",
+    "vault_shares": "Vaultシェア",
+    "current_value": "現在の価値",
+    "shares_fallback": "シェア",
+    "button": {
+      "confirm_wallet": "ウォレットで確認してください...",
+      "withdrawing": "引出中...",
+      "withdrawn": "引出完了！",
+      "withdraw_all": "全額引出"
+    }
+  },
+  "borrow_usdc": {
+    "title": "USDCを借入",
+    "description": "ITP担保に対してUSDCを借入",
+    "amount_label": "金額（USDC）",
+    "max_borrow_label": "最大借入額：{amount} USDC",
+    "projected_health_factor": "予測ヘルスファクター",
+    "cannot_borrow_health": "借入不可：ヘルスファクターが1.0を下回ります",
+    "low_health_warning": "警告：低いヘルスファクターは清算リスクを高めます",
+    "button": {
+      "confirm_wallet": "ウォレットで確認してください...",
+      "borrowing": "借入中...",
+      "borrowed": "借入完了！",
+      "borrow_usdc": "USDCを借入"
+    },
+    "quote": {
+      "title": "見積条件",
+      "borrow_apr": "借入APR",
+      "health_factor": "ヘルスファクター",
+      "liquidation_price": "清算価格",
+      "max_borrow": "最大借入額",
+      "max_borrow_value": "{amount} USDC",
+      "bundle_label": "バンドル：",
+      "bundle_steps": "バンドル：{steps}",
+      "expired": "見積期限切れ --",
+      "refresh": "更新",
+      "execute_bundle": "バンドルを実行",
+      "confirm_wallet": "ウォレットで確認してください...",
+      "executing_bundle": "バンドルを実行中...",
+      "borrowed": "借入完了！"
+    }
+  },
+  "deposit_collateral": {
+    "title": "担保を預入",
+    "description": "USDCを借入するためにITPトークンを担保として預入",
+    "amount_label": "金額（ITP）",
+    "balance_label": "残高：{amount} ITP",
+    "insufficient_balance": "ITP残高が不足しています",
+    "button": {
+      "approving_itp": "ITPを承認中...",
+      "confirm_wallet": "ウォレットで確認してください...",
+      "depositing": "預入中...",
+      "deposited": "預入完了！",
+      "approve_and_deposit": "承認 & 預入",
+      "deposit_collateral": "担保を預入"
+    }
+  },
+  "repay_debt": {
+    "title": "債務を返済",
+    "description": "USDC債務を返済してヘルスファクターを改善",
+    "amount_label": "金額（USDC）",
+    "debt_label": "債務：{amount}",
+    "balance_label": "残高：{amount}",
+    "insufficient_balance": "USDC残高が不足しています",
+    "button": {
+      "confirm_approval": "承認を確認中...",
+      "approving_usdc": "USDCを承認中...",
+      "confirm_wallet": "ウォレットで確認してください...",
+      "repaying": "返済中...",
+      "repaid": "返済完了！",
+      "approve_and_repay": "承認 & 返済",
+      "repay_debt": "債務を返済"
+    }
+  },
+  "withdraw_collateral": {
+    "title": "担保を引出",
+    "description_no_debt": "ITP担保を引き出します",
+    "description_with_debt": "引出可能な担保を引き出します（債務により制限あり）",
+    "amount_label": "金額（ITP）",
+    "deposited_label": "預入済み：{amount}",
+    "max_withdraw_label": "最大引出額：{amount}",
+    "projected_health_factor": "予測ヘルスファクター",
+    "cannot_withdraw_health": "引出不可：ヘルスファクターが1.0を下回ります",
+    "close_position_notice": "これによりポジションがクローズされ、すべてのITPがウォレットに返還されます。",
+    "button": {
+      "confirm_wallet": "ウォレットで確認してください...",
+      "withdrawing": "引出中...",
+      "withdrawn": "引出完了！",
+      "withdraw_collateral": "担保を引出"
+    }
+  },
+  "markets_table": {
+    "section_label": "Morphoマーケット",
+    "section_title": "利用可能なレンディングマーケット",
+    "header": {
+      "market": "マーケット",
+      "my_balance": "残高",
+      "borrow_apy": "借入APY (年利回り)",
+      "tvl": "TVL (預入総額)",
+      "available": "利用可能",
+      "lltv": "LLTV",
+      "position": ""
+    },
+    "loading": "マーケットを読み込み中...",
+    "no_markets": "利用可能なマーケットがありません",
+    "market_pair": "{name} / USDC",
+    "coming_soon": "近日公開"
+  },
+  "positions": {
+    "title": "あなたのポジション",
+    "collateral": "担保",
+    "debt": "債務",
+    "health": "ヘルス"
+  },
+  "market_modal": {
+    "title": "{name}",
+    "tab_supply": "供給",
+    "tab_borrow": "借入",
+    "tab_repay": "返済",
+    "tab_withdraw": "引出",
+    "position_summary": "ポジション",
+    "collateral_value": "担保",
+    "debt_value": "債務",
+    "health_factor": "ヘルスファクター",
+    "connect_wallet": "ポジションを管理するにはウォレットを接続してください"
+  },
+  "vault_supply": {
+    "title": "USDC Vault",
+    "description": "借り手の利息から利回りを獲得",
+    "your_deposits": "あなたの預入額",
+    "vault_tvl": "Vault TVL"
+  },
+  "common": {
+    "something_went_wrong": "エラーが発生しました",
+    "please_refresh": "ページを再読み込みしてください。",
+    "transaction_rejected": "トランザクションが拒否されました",
+    "transaction_failed": "トランザクションが失敗しました",
+    "withdrawal_failed": "引出に失敗しました",
+    "tx_stuck_title": "トランザクションが停止している可能性があります",
+    "tx_stuck_description": "30秒経過しても確認されていません。キャンセルして再度お試しいただけます。",
+    "market_frozen": "緊急時のためマーケットは凍結されています",
+    "rate_limited": "レート制限中です。{seconds}秒後に再試行してください",
+    "view_on_explorer": "エクスプローラーで表示"
+  },
+  "collateral_selector": {
+    "title": "担保の選択",
+    "description": "USDCの借入に担保として使用するITPを選択してください",
+    "no_itps": "ウォレットにレンディングマーケット対応のITPがありません",
+    "no_itps_hint": "先にITPを購入してから、担保として借入にお戻りください。",
+    "balance": "残高",
+    "nav": "NAV",
+    "no_market": "レンディングマーケットなし",
+    "select": "選択"
+  },
+  "lend_modal": {
+    "title": "{name}を担保に借入",
+    "description": "Morpho経由で{symbol}担保にUSDCを借入",
+    "connect_wallet": "レンディングにアクセスするにはウォレットを接続してください",
+    "tab_borrow": "借入",
+    "tab_repay": "返済",
+    "no_position": "返済または引出可能なアクティブポジションはありません",
+    "open_position_hint": "借入タブに切り替えてポジションを開設してください",
+    "something_went_wrong": "エラーが発生しました",
+    "please_reopen": "モーダルを閉じて再度開いてください。"
+  },
+  "error": {
+    "title": "エラー"
+  },
+  "position_card": {
+    "title": "あなたのポジション",
+    "collateral": "担保",
+    "debt": "債務",
+    "health_label": "ヘルス: {value}",
+    "liquidation_price": "清算価格",
+    "current_nav": "現在のNAV",
+    "stale": "(古い)",
+    "price_updated": "価格更新",
+    "just_now": "たった今",
+    "min_ago": "{minutes}分前",
+    "available_to_borrow": "借入可能額",
+    "available_to_withdraw": "引出可能額",
+    "health_warning": "ポジションが清算リスクにあります。債務の返済または担保の追加を検討してください。",
+    "health_danger": "ポジションが清算対象です！直ちに債務を返済してください。",
+    "crisis_emergency": "緊急",
+    "crisis_stress": "ストレス",
+    "crisis_warning": "警告"
+  },
+  "vault_stats": {
+    "supply_apy": "供給APY (年利回り)",
+    "total_deposits": "預入総額",
+    "utilization": "稼働率",
+    "vault": "Vault"
+  },
+  "lending_history": {
+    "title": "取引履歴",
+    "loading": "読み込み中...",
+    "type_deposit": "預入",
+    "type_withdraw": "引出",
+    "type_borrow": "借入",
+    "type_repay": "返済",
+    "seconds_ago": "{seconds}秒前",
+    "minutes_ago": "{minutes}分前",
+    "hours_ago": "{hours}時間前",
+    "days_ago": "{days}日前"
+  },
+  "markets_detail": {
+    "itp_markets": "ITPマーケット",
+    "collateral": "担保",
+    "nav_price": "NAV価格",
+    "ltv": "LTV",
+    "utilization": "稼働率",
+    "borrow_apy": "借入APY (年利回り)",
+    "unavailable": "利用不可",
+    "loan_asset": "ローン資産",
+    "max_ltv": "最大LTV",
+    "borrow_rate_serm": "借入金利 (SERM)",
+    "protocol": "プロトコル",
+    "live_data_unavailable": "リアルタイムマーケットデータを利用できません -- 設定パラメータを表示しています"
+  }
+}

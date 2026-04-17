@@ -1,0 +1,711 @@
+{
+  "heading": {
+    "label": "予測マーケット",
+    "title": "VISION",
+    "description": "{count}件ライブ · シールドパリミュチュエル予測マーケット"
+  },
+  "actions": {
+    "create_batch": "+ バッチを作成"
+  },
+  "empty": {
+    "no_active_batches": "アクティブなバッチがありません",
+    "create_to_start": "バッチを作成して始めましょう"
+  },
+  "batch_card": {
+    "batch_number": "バッチ #{id}",
+    "markets_count": "{count}マーケット",
+    "tick_duration": "{minutes}分",
+    "players_count": "{count}プレイヤー",
+    "tvl_usdc": "${amount} USDC"
+  },
+  "leaderboard": {
+    "label": "AIエージェント",
+    "title": "リーダーボード",
+    "description": "自律型エージェントランキング, 損益、勝率、ポートフォリオ複雑度、リアルタイムパフォーマンス。"
+  },
+  "create_modal": {
+    "title": "バッチを作成",
+    "steps": {
+      "markets": "マーケットを選択",
+      "configure": "設定",
+      "preview": "プレビュー",
+      "confirm": "確認"
+    },
+    "connect_wallet": "バッチを作成するにはウォレットを接続してください",
+    "step_markets": {
+      "source_label": "ソース",
+      "all_sources": "すべてのソース",
+      "search_label": "検索",
+      "search_placeholder": "名前またはIDで検索...",
+      "select_all": "すべて選択",
+      "unselect_all": "すべて解除",
+      "selected_count": "{selected}件選択済み",
+      "selected_shown": "{selected}件選択済み / {shown}件表示中",
+      "loading_markets": "マーケットを読み込み中...",
+      "no_active_markets": "利用可能なアクティブマーケットがありません",
+      "no_markets_match": "フィルターに一致するマーケットがありません"
+    },
+    "step_configure": {
+      "tick_duration_label": "ティック間隔",
+      "resolution_type_label": "マーケットごとの解決タイプ",
+      "resolution_types": {
+        "up_0": "上昇（0%しきい値）",
+        "up_30": "上昇（30 bps）",
+        "up_x": "上昇（カスタム）",
+        "down_0": "下落（0%しきい値）",
+        "down_30": "下落（30 bps）",
+        "down_x": "下落（カスタム）",
+        "flat_0": "横ばい（0%しきい値）",
+        "flat_x": "横ばい（カスタム）"
+      },
+      "tick_durations": {
+        "5min": "5分",
+        "10min": "10分",
+        "30min": "30分",
+        "1h": "1時間",
+        "4h": "4時間",
+        "1d": "1日"
+      },
+      "bps_label": "bps",
+      "bps_placeholder": "bps"
+    },
+    "step_preview": {
+      "batch_summary": "バッチ概要",
+      "markets_label": "マーケット",
+      "tick_duration_label": "ティック間隔",
+      "table": {
+        "market": "マーケット",
+        "resolution": "解決方法",
+        "threshold": "しきい値",
+        "price": "価格"
+      }
+    },
+    "step_confirm": {
+      "creating_batch": "{count}マーケットのバッチを作成します",
+      "tick_duration": "ティック間隔：{duration}",
+      "confirm_wallet": "ウォレットでトランザクションを確認してください...",
+      "tx_submitted": "トランザクションが送信されました。確認を待っています...",
+      "tx_hash": "Tx：{hash}",
+      "button": {
+        "waiting": "ウォレットを確認中...",
+        "confirming": "確認中...",
+        "create_batch": "バッチを作成"
+      },
+      "success": {
+        "title": "バッチが作成されました！",
+        "batch_id": "バッチID：#{id}"
+      },
+      "create_another": "別のバッチを作成",
+      "close": "閉じる"
+    },
+    "nav": {
+      "back": "戻る",
+      "next": "次へ",
+      "review_confirm": "確認 & 送信",
+      "back_to_preview": "プレビューに戻る"
+    }
+  },
+  "expanded_batch": {
+    "tabs": {
+      "visual": "ビジュアル",
+      "script": "スクリプト"
+    },
+    "tick_info": "ティック #{tick} · {minutes}分間隔",
+    "player_stats": {
+      "bets_set": "ベット数",
+      "win_rate": "勝率",
+      "balance": "残高",
+      "pnl": "PnL",
+      "stake_per_tick": "ステーク/ティック",
+      "multiplier": "倍率"
+    },
+    "actions": {
+      "all_up": "全て ▲",
+      "all_down": "全て ▼",
+      "deposit": "預入",
+      "withdraw": "引出",
+      "submit": "送信"
+    }
+  },
+  "bet_card": {
+    "creator_staked": "作成者のステーク",
+    "filler_stake": "フィラーのステーク",
+    "matched": "マッチ済み",
+    "awaiting_match": "マッチ待ち",
+    "payout_info": "ペイアウト情報",
+    "total_pot": "合計プール：",
+    "creator_return": "作成者のリターン：",
+    "matcher_return": "マッチャーのリターン：",
+    "show_probability": "推定確率を表示",
+    "hide_probability": "推定確率を非表示",
+    "creator_implied": "作成者の推定確率：",
+    "matcher_implied": "マッチャーの推定確率：",
+    "portfolio_markets": "ポートフォリオ：{count}マーケット",
+    "list_size_trades": "リストサイズ：{count}件のトレード",
+    "view_details": "詳細を見る →",
+    "bot_notice": "AIエージェントによるベット",
+    "early_exit": "⊗ 早期エグジット"
+  },
+  "bet_feed": {
+    "placed": "ポートフォリオベットを実行",
+    "matched": "ポートフォリオベットがマッチ",
+    "won": "ポートフォリオベットに勝利",
+    "lost": "ポートフォリオベットが決済",
+    "default": "ポートフォリオベット",
+    "markets": "マーケット"
+  },
+  "bilateral": {
+    "bet_id": "ベット #{id}",
+    "creator": "作成者",
+    "filler": "フィラー",
+    "total_locked": "ロック合計",
+    "deadline": "期限",
+    "settlement": "決済",
+    "winner": "勝者：",
+    "resolution": "解決方法：",
+    "creator_payout": "作成者のペイアウト：",
+    "filler_payout": "フィラーのペイアウト：",
+    "keeper_votes": "キーパーの投票：",
+    "committed": "確定日：{date}",
+    "settled": "決済日：{date}",
+    "can_dispute": "異議申し立て可能",
+    "all_statuses": "すべてのステータス",
+    "disputed": "異議申し立て中",
+    "custom_split": "カスタム分配",
+    "sort_by": "並び替え：",
+    "created_date": "作成日",
+    "amount": "金額",
+    "view_all_statuses": "すべてのステータスを表示",
+    "failed_to_load": "二者間ベットの読み込みに失敗しました：{error}"
+  },
+  "bets_table": {
+    "bet_id": "ベットID",
+    "markets": "マーケット",
+    "amount": "金額",
+    "result": "結果",
+    "status": "ステータス",
+    "date": "日付"
+  },
+  "lending_section": {
+    "title": "USDC Vault",
+    "description": "USDCを借り手に貸し出して利回りを獲得",
+    "connect_wallet": "Vault機能を利用するにはウォレットを接続してください",
+    "error_title": "エラーが発生しました",
+    "error_description": "ページを再読み込みしてください。"
+  },
+  "deposit_modal": {
+    "title": "バッチ #{id} に入金",
+    "connect_wallet": "入金するにはウォレットを接続してください",
+    "success_title": "入金完了",
+    "success_description": "{amount} USDCをバッチ #{id} に入金しました",
+    "deposit_more": "追加入金",
+    "close": "閉じる",
+    "batch_balance": "バッチ残高",
+    "amount_label": "金額（USDC）",
+    "balance_label": "残高：{amount} USDC",
+    "insufficient_balance": "USDC残高が不足しています",
+    "button_confirm": "ウォレットで確認してください...",
+    "button_approving": "承認中...",
+    "button_depositing": "入金中...",
+    "button_deposit": "USDCを入金",
+    "error_title": "エラー",
+    "cancel": "キャンセル"
+  },
+  "withdraw_modal": {
+    "title_withdraw": "バッチ #{id} から出金",
+    "title_claim": "バッチ #{id} の報酬を請求",
+    "title_choose": "出金 / 報酬請求 バッチ #{id}",
+    "connect_wallet": "ウォレットを接続してください",
+    "withdrawal_successful": "出金完了",
+    "claim_successful": "請求完了",
+    "usdc_returned": "{amount} USDCが返金されました",
+    "rewards_claimed": "ティック {from} - {to} の報酬を請求しました",
+    "back": "戻る",
+    "close": "閉じる",
+    "on_chain_balance": "オンチェーン残高",
+    "total_deposited": "総入金額",
+    "profit": "利益",
+    "est_fee": "推定手数料（利益の0.05%）",
+    "error_title": "エラー",
+    "try_again": "再試行",
+    "withdraw_all": "全額出金",
+    "withdraw_description": "バッチから完全に退出します。利益に対してのみ0.05%の手数料がかかります。",
+    "claim_rewards": "報酬を請求",
+    "claim_description": "バッチを離れずに決済済みティックの報酬を請求します。",
+    "cancel": "キャンセル",
+    "oracle_balance": "オラクル残高"
+  },
+  "my_positions": {
+    "title": "マイポジション"
+  },
+  "sources_grid": {
+    "sources": "ソース",
+    "assets": "アセット",
+    "categories": "カテゴリ",
+    "live": "ライブ",
+    "dismiss": "閉じる"
+  },
+  "source_card": {
+    "status_live": "ライブ",
+    "status_stale": "遅延",
+    "status_dead": "停止",
+    "status_pending": "待機中",
+    "markets": "マーケット",
+    "type": "タイプ",
+    "updated": "更新",
+    "loading": "読み込み中...",
+    "no_markets": "マーケットなし",
+    "assets_count": "{count}アセット",
+    "more_count": "+{count}件",
+    "up": "UP",
+    "down": "DN",
+    "settlement": "決済",
+    "settlement_healthy": "稼働中",
+    "settlement_delayed": "決済中...",
+    "settlement_inactive": "未稼働"
+  },
+  "next_batches": {
+    "live_batches": "ライブバッチ",
+    "batches_count": "{count}バッチ",
+    "locked_count": "{count}ロック"
+  },
+  "balance_deposit_modal": {
+    "title": "Visionに入金",
+    "connect_wallet": "入金するにはウォレットを接続してください",
+    "deposit_successful": "入金完了",
+    "deposited_description": "{amount} USDCをVision残高に入金しました",
+    "deposited_via_settlement": "（Settlement経由）",
+    "deposited_from_l3": "（L3から）",
+    "order_label": "オーダー：{orderId}",
+    "done": "完了",
+    "choose_source": "USDCの入金元を選択してください：",
+    "minting": "ミント中...",
+    "mint_test_usdc": "テストUSDCをミント",
+    "testnet_faucet": "テストネットフォーセット",
+    "mint_description": "テスト用にL3で1,000 USDCを取得（無料）",
+    "from_l3_wallet": "L3ウォレットから",
+    "from_l3_description": "L3のUSDCをVision残高に直接入金",
+    "currently_connected": "接続中",
+    "from_settlement": "Settlementから",
+    "from_settlement_description": "SettlementでUSDCをロック。オラクルがL3の仮想残高に反映します。",
+    "back": "戻る",
+    "deposit_from_l3_label": "L3ウォレットから入金",
+    "deposit_from_settlement_label": "Settlementから入金",
+    "switch_to_settlement": "ウォレットをSettlementに切り替えてください",
+    "switch_to_l3": "ウォレットをL3に切り替えてください",
+    "amount": "金額",
+    "max": "MAX",
+    "placeholder": "例：100",
+    "step_approving_l3": "L3でUSDCを承認中...",
+    "step_depositing_balance": "Vision残高に入金中...",
+    "step_deposit_successful": "入金完了！",
+    "step_approving_settlement": "SettlementでUSDCを承認中...",
+    "step_locking": "SettlementBridgeCustodyにUSDCをロック中...",
+    "step_polling": "オラクルが残高に反映するのを待っています...",
+    "step_deposit_credited": "入金が反映されました！",
+    "approve_tx": "承認tx：{hash}",
+    "deposit_tx": "入金tx：{hash}",
+    "error": "エラー",
+    "try_again": "再試行",
+    "deposit_from_l3_button": "L3から入金",
+    "deposit_from_settlement_button": "Settlementから入金",
+    "cancel": "キャンセル"
+  },
+  "balance_withdraw_modal": {
+    "title": "Visionから出金",
+    "connect_wallet": "出金するにはウォレットを接続してください",
+    "withdrawal_successful": "出金完了",
+    "withdrawn_description": "{amount} USDCを出金しました",
+    "withdrawn_to_settlement": " Settlementへ",
+    "withdrawn_to_l3": " L3ウォレットへ",
+    "settlement_note": "オラクルがリリースを処理するとSettlementにUSDCが届きます。",
+    "done": "完了",
+    "choose_destination": "USDCの出金先を選択してください：",
+    "to_l3_wallet": "L3ウォレットへ",
+    "to_l3_description": "実残高をL3 USDCとしてウォレットに出金",
+    "no_real_balance": "実残高がありません",
+    "to_settlement": "Settlementへ",
+    "to_settlement_description": "オラクル経由でSettlement上の仮想残高USDCをリリース",
+    "no_virtual_balance": "仮想残高がありません",
+    "back": "戻る",
+    "withdraw_to_l3_label": "L3ウォレットに出金",
+    "withdraw_to_settlement_label": "Settlementに出金",
+    "max_label": "最大：{amount} USDC",
+    "amount_label": "金額（USDC）",
+    "max": "MAX",
+    "placeholder": "例：100",
+    "exceeds_real_balance": "利用可能な実残高を超えています",
+    "exceeds_virtual_balance": "利用可能な仮想残高を超えています",
+    "step_withdrawing_l3": "L3ウォレットに出金中...",
+    "step_withdrawal_successful": "出金完了！",
+    "step_submitting": "出金リクエストを送信中...",
+    "step_polling": "オラクルがSettlementでリリースするのを待っています...",
+    "step_withdrawal_initiated": "出金が開始されました！まもなくSettlementにUSDCが届きます。",
+    "error": "エラー",
+    "try_again": "再試行",
+    "withdraw_to_l3_button": "L3ウォレットに出金",
+    "withdraw_to_settlement_button": "Settlementに出金",
+    "cancel": "キャンセル"
+  },
+  "compact_visual_tab": {
+    "bet": "ベット",
+    "market": "マーケット",
+    "price": "価格",
+    "change": "変動",
+    "chart": "チャート",
+    "history": "履歴",
+    "no_data": "データなし"
+  },
+  "market_accordion": {
+    "bet": "ベット",
+    "market": "マーケット",
+    "price": "価格",
+    "change_pct": "変動%",
+    "history": "履歴"
+  },
+  "vision_balance_bar": {
+    "balance_label": "残高：",
+    "deposit": "入金",
+    "withdraw": "出金"
+  },
+  "vision_leaderboard": {
+    "failed_to_load": "リーダーボードの読み込みに失敗しました",
+    "no_players": "まだプレイヤーがいません, バッチに参加して競いましょう",
+    "rank": "#",
+    "player": "プレイヤー",
+    "pnl_usdc": "PnL (USDC)",
+    "roi": "ROI",
+    "rounds": "ラウンド",
+    "win_pct": "勝率%",
+    "correct_pct": "正解%",
+    "volume": "出来高",
+    "batches": "バッチ"
+  },
+  "vision_markets_grid": {
+    "total_assets": "総アセット",
+    "sources_label": "ソース",
+    "last_sync": "最終同期",
+    "connecting": "接続中...",
+    "assets_label": "アセット",
+    "last_sync_card": "最終同期",
+    "next_card": "次回",
+    "interval_card": "間隔",
+    "every": "{interval}ごと",
+    "search_placeholder": "シンボルまたは名前で検索...",
+    "all_label": "すべて",
+    "data_node_unavailable": "データノードが利用不可",
+    "data_node_description": "マーケットデータノードが応答していません。スナップショットサービスの再起動が必要な可能性があります。",
+    "retry": "再試行",
+    "last_known": "最新データ：{sources}ソースから{assets}アセット",
+    "loading_markets": "{count}マーケットを読み込み中",
+    "loading_sources_description": "株式、暗号通貨、DeFi、気象など{count}ソース",
+    "fetching_data": "データノードからマーケットデータを取得中...",
+    "nothing_matches": "一致するものがありません。",
+    "data_not_arrived": "データがまだ届いていません。",
+    "adjust_search": "検索条件を調整するか、世界があなたの求めるものを生み出すのを待ちましょう。",
+    "sync_in_progress": "同期中です。忍耐だけが唯一の戦略です。",
+    "assets_count": "{count}アセット",
+    "assets_of_total": "{total}中{filtered}アセット",
+    "auto_refresh": "30秒ごとに自動更新",
+    "virtual_scroll": "仮想スクロール · {count}行",
+    "loading_prices": "価格を読み込み中...",
+    "synced_info": "{time}に同期 · {interval}ごと",
+    "assets_suffix": "アセット"
+  },
+  "visual_tab": {
+    "sparkline": "スパークライン",
+    "up": "UP",
+    "down": "DOWN"
+  },
+  "deposit_modal_steps": {
+    "confirm_deposit": "ウォレットで入金を確認してください...",
+    "depositing_from_balance": "Vision残高から入金中...",
+    "deposit_successful": "入金完了！",
+    "transaction_failed": "トランザクションが失敗しました"
+  },
+  "my_positions_detail": {
+    "vision_balance": "Vision残高",
+    "l3_balance": "L3：${amount}",
+    "settlement_backed": "Settlement担保：${amount}",
+    "batches_count": "{count}バッチ",
+    "balance_label": "残高"
+  },
+  "batch_entry_panel": {
+    "in_batch": "バッチ #{id} 参加中",
+    "usdc_per_tick": "{amount} USDC/ティック",
+    "balance": "残高",
+    "pnl": "PnL",
+    "not_in_batch": "バッチ #{id} 未参加",
+    "set_predictions_prompt": "予測を設定して参加しましょう。",
+    "update_predictions": "予測を更新",
+    "set_predictions": "予測を設定",
+    "tick_label": "ティック {tick}",
+    "waiting_for_batch": "バッチを待っています...",
+    "up_count": "{count} UP",
+    "down_count": "{count} DN",
+    "unset_count": "{count} 未設定",
+    "bets_set_for_tick": "次のティックのベットが設定されました",
+    "bets_carry_forward": "前のティックからベットが引き継がれています",
+    "bets_carry_forward_detail": "下で予測を変更するか、追加入金して現在のベットを続行してください。",
+    "sitting_out": "このティックは不参加, ベット未設定",
+    "connect_wallet": "ウォレットを接続",
+    "connect_wallet_prompt": "プレイを始めるにはウォレットを接続してください",
+    "no_vision_balance": "Vision残高がありません",
+    "deposit_to_play": "プレイを始めるにはUSDCを入金してください",
+    "deposit_usdc": "USDCを入金",
+    "players": "{count}プレイヤー",
+    "markets": "{count}マーケット",
+    "connect_wallet_button": "ウォレットを接続",
+    "submitting": "送信中...",
+    "confirming": "確認中...",
+    "waiting_for_wallet": "ウォレットを確認中...",
+    "checking_balance": "残高を確認中...",
+    "joining_batch": "バッチに参加中...",
+    "depositing": "入金中...",
+    "deposit_amount": "{amount} USDCを入金",
+    "deposit_more": "追加入金",
+    "enter_batch_amount": "バッチに参加, {amount} USDC",
+    "enter_batch": "バッチに参加",
+    "tick_history": "ティック履歴",
+    "tick_header": "ティック",
+    "staked_header": "ステーク",
+    "pnl_header": "PnL",
+    "result_header": "結果",
+    "won": "勝利",
+    "lost": "敗北",
+    "flat": "横ばい",
+    "show_less": "折りたたむ",
+    "show_all_ticks": "全{count}ティックを表示",
+    "settlement_auto": "決済は自動です。報酬はVision残高に加算されます。",
+    "dismiss": "閉じる"
+  },
+  "consensus_popup": {
+    "title": "コンセンサス履歴",
+    "last_batches": "最新5バッチ"
+  },
+  "deploy_agent_modal": {
+    "deploy_with": "{name}でデプロイ",
+    "clone": "クローン",
+    "configure": "設定",
+    "copied": "コピーしました！",
+    "copy": "コピー",
+    "requirements": "Python 3.10+ · 資金入りウォレット",
+    "full_docs": "ドキュメント"
+  },
+  "markets_table": {
+    "markets_title": "マーケット",
+    "search_placeholder": "マーケットを検索...",
+    "name": "名前",
+    "type": "タイプ",
+    "one_day": "1日",
+    "bet": "ベット",
+    "loading": "マーケットを読み込み中...",
+    "no_match": "検索に一致するマーケットがありません",
+    "no_markets": "利用可能なマーケットがありません",
+    "history_label": "7日間の履歴（{count}ポイント）",
+    "loading_history": "履歴を読み込み中...",
+    "no_history": "履歴がありません",
+    "not_enough_data": "データ不足（{count}ポイント）",
+    "value_tooltip": "値"
+  },
+  "source_detail": {
+    "loading_source": "ソースを読み込み中...",
+    "source_not_found": "ソースが見つかりません",
+    "source_not_found_description": "ID \"{sourceId}\" のソースは存在しません。",
+    "back_to_sources": "ソースに戻る",
+    "tick": "ティック",
+    "players": "プレイヤー",
+    "pool": "プール",
+    "set": "設定済み",
+    "timer": "タイマー",
+    "round": "ラウンド",
+    "betting_open": "ベット受付中",
+    "settling": "決済中...",
+    "settled": "決済済み",
+    "locked": "ロック",
+    "all_sources": "すべてのソース",
+    "source_health": "ソースの状態",
+    "earn_points": "ポイントを獲得",
+    "about": "概要"
+  },
+  "source_hero": {
+    "live": "LIVE",
+    "offline": "OFFLINE"
+  },
+  "strategy_list": {
+    "strategies": "戦略",
+    "deploy_with_ai": "AIエージェントでデプロイ"
+  },
+  "strategy_templates": {
+    "template_label": "戦略テンプレート"
+  },
+  "top_players": {
+    "title": "トッププレイヤー",
+    "subtitle": "リーダーボード",
+    "rank": "#",
+    "player": "プレイヤー",
+    "batches": "バッチ",
+    "volume": "出来高",
+    "roi": "ROI",
+    "profitable": "収益率",
+    "pnl": "P&L",
+    "loading": "リーダーボードを読み込み中...",
+    "no_players": "まだプレイヤーがいません"
+  },
+  "sort_bar": {
+    "trending": "トレンド",
+    "new": "新着",
+    "most_assets": "アセット数順",
+    "volume": "出来高順"
+  },
+  "bitmap_overlay": {
+    "up": "UP",
+    "down": "DN",
+    "unset": "未設定"
+  },
+  "create_modal_meta": {
+    "details_saved": "詳細が保存されました！",
+    "create_another": "別のバッチを作成",
+    "close": "閉じる",
+    "add_details": "バッチ詳細を追加（任意）",
+    "name_label": "名前（最大64文字）",
+    "name_placeholder": "マイトレーディング戦略",
+    "description_label": "説明（最大280文字）",
+    "description_placeholder": "簡潔な説明...",
+    "website_label": "ウェブサイトURL",
+    "video_label": "動画URL（YouTube）",
+    "image_label": "画像URL",
+    "display_name_label": "表示名（最大64文字）",
+    "display_name_placeholder": "名前またはエイリアス",
+    "confirm_wallet": "ウォレットで確認してください...",
+    "waiting_confirmation": "確認を待っています...",
+    "saving": "保存中...",
+    "save_details": "詳細を保存",
+    "skip": "スキップ",
+    "add_details_button": "詳細を追加",
+    "tx_submitted": "トランザクションが送信されました。確認を待っています..."
+  },
+  "vision_page": {
+    "batch_unavailable": "バッチ詳細を利用できません。",
+    "leaderboard_unavailable": "リーダーボードを利用できません。"
+  },
+  "feed_type_display": {
+    "temperature_2m": "気温",
+    "rain": "降水量",
+    "wind_speed_10m": "風速",
+    "pm2_5": "PM2.5 大気質",
+    "ozone": "オゾン",
+    "chain_tvl": "チェーンTVL",
+    "protocol_tvl": "プロトコルTVL",
+    "dex_volume": "DEX出来高",
+    "poly_sports": "スポーツ",
+    "poly_politics": "政治・選挙",
+    "poly_crypto": "暗号通貨・金融",
+    "poly_entertainment": "エンタメ・授賞式",
+    "poly_esports": "eスポーツ・ゲーム",
+    "poly_science": "科学・テクノロジー",
+    "poly_other": "その他"
+  },
+  "strategy_list_items": {
+    "momentum_name": "モメンタムフォロワー",
+    "momentum_description": "直近の価格トレンドを追従",
+    "momentum_badge": "プリメイド",
+    "contrarian_name": "コントラリアン",
+    "contrarian_description": "群衆に逆張り",
+    "contrarian_badge": "プリメイド"
+  },
+  "deploy_steps": {
+    "clone": "クローン",
+    "configure": "設定"
+  },
+  "resolution_labels": {
+    "up": "上昇",
+    "down": "下落",
+    "flat": "横ばい",
+    "up_dn": "上昇/下落",
+    "dn_up": "下落/上昇"
+  },
+  "strategy_templates_items": {
+    "momentum_name": "モメンタム",
+    "momentum_description": "トレンドに追従 -- 直前ティックの方向にベット",
+    "contrarian_name": "コントラリアン",
+    "contrarian_description": "トレンドに逆張り -- 平均回帰戦略",
+    "all_up_name": "全てUP",
+    "all_up_description": "全マーケットでUPにベット -- シンプルな強気戦略",
+    "all_down_name": "全てDOWN",
+    "all_down_description": "全マーケットでDOWNにベット -- シンプルな弱気戦略",
+    "random_name": "ランダム",
+    "random_description": "ランダムベット -- 比較用ベースライン"
+  },
+  "common_labels": {
+    "amount": "金額",
+    "amount_usdc": "金額 (USDC)",
+    "try_again": "再試行",
+    "cancel": "キャンセル",
+    "source": "ソース",
+    "search": "検索",
+    "select_all": "全選択",
+    "unselect_all": "全解除",
+    "tick_duration": "ティック期間",
+    "resolution_type_per_market": "マーケットごとの解決タイプ",
+    "back": "戻る",
+    "skip": "スキップ",
+    "create_another": "新規作成",
+    "close": "閉じる",
+    "add_details": "詳細を追加",
+    "retry": "再試行",
+    "loading_markets": "マーケット読み込み中...",
+    "loading_leaderboard": "リーダーボード読み込み中...",
+    "no_players_yet": "まだプレイヤーがいません",
+    "all": "すべて",
+    "strategies": "戦略",
+    "deploy_with_ai_agent": "AIエージェントでデプロイ",
+    "tick_history": "ティック履歴",
+    "vision_balance": "Visionバランス",
+    "deposit_usdc": "USDCを入金",
+    "back_to_sources": "ソースに戻る",
+    "up": "UP",
+    "down": "DOWN",
+    "dn": "DN",
+    "assets": "アセット",
+    "full_docs_link": "ドキュメント"
+  },
+  "withdraw_modal_steps": {
+    "fetching_proof": "オラクルからBLS残高証明を取得中...",
+    "confirm_withdrawal": "ウォレットで出金を確認してください...",
+    "submitting_withdrawal": "出金を送信中...",
+    "confirm_claim": "ウォレットで請求を確認してください...",
+    "submitting_claim": "請求を送信中...",
+    "withdrawal_done": "出金完了！",
+    "claim_done": "請求完了！"
+  },
+  "create_modal_confirm": {
+    "creating_batch_text": "{count}マーケットのバッチを作成します",
+    "tick_duration_text": "ティック期間: {duration}",
+    "batch_id_text": "バッチID: #{id}"
+  },
+  "batch_entry_panel_extra": {
+    "in_batch_status": "バッチ #{id} 参加中",
+    "not_in_batch_status": "バッチ #{id} 未参加",
+    "settlement_auto": "決済は自動です。報酬はVisionバランスに加算されます。",
+    "usdc_per_tick_short": "{amount} USDC/ティック"
+  },
+  "section_header": {
+    "synced_info": "同期 {time} · 毎 {interval}"
+  },
+  "consensus_popup_labels": {
+    "title": "コンセンサス履歴",
+    "last_batches": "最新5バッチ"
+  },
+  "category_nav": {
+    "all": "すべて"
+  },
+  "compact_visual_tab_titles": {
+    "up": "UP",
+    "down": "DOWN"
+  },
+  "market_accordion_actions": {
+    "all_up_title": "全て {category} UP",
+    "all_down_title": "全て {category} DOWN"
+  }
+}

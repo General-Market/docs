@@ -1,0 +1,8 @@
+# General Market — On-chain Index Products
+User-agent: *
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+
+# Sitemap
+Sitemap: https://www.generalmarket.io/sitemap.xml

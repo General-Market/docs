@@ -1,0 +1,189 @@
+{
+  "heading": {
+    "label": "保有資産",
+    "title": "ポートフォリオ",
+    "collapsed_title": "ポートフォリオ",
+    "collapsed_description": "ポジションとパフォーマンス",
+    "subtitle_with_data": "{count}ポジション · ${value}の価値",
+    "subtitle_empty": "ポジション、取引、注文を追跡"
+  },
+  "stats": {
+    "total_value": "総価値",
+    "total_invested": "投資総額",
+    "positions": "ポジション",
+    "pnl": "損益",
+    "usdc_available": "USDC残高",
+    "change_24h": "24時間変動",
+    "unrealized_pnl": "未実現損益"
+  },
+  "tabs": {
+    "positions": "ポジション",
+    "trades": "取引",
+    "orders": "注文",
+    "vaults": "ヴォールト"
+  },
+  "orders_banner": {
+    "active_orders": "{count}件のアクティブな注文が処理中です"
+  },
+  "section_bar": {
+    "title": "ポジション",
+    "subtitle": "保有中のポジション"
+  },
+  "positions_table": {
+    "itp": "ITP",
+    "shares": "シェア",
+    "avg_cost": "平均取得単価",
+    "nav": "NAV (純資産価値)",
+    "value": "価値",
+    "pnl": "損益",
+    "pnl_pct": "損益%"
+  },
+  "trades_table": {
+    "date": "日付",
+    "itp": "ITP",
+    "side": "売買",
+    "amount": "金額",
+    "price": "価格",
+    "shares": "シェア",
+    "status": "ステータス"
+  },
+  "orders_table": {
+    "id": "ID",
+    "side": "売買",
+    "amount": "金額",
+    "limit_price": "指値",
+    "status": "ステータス",
+    "time": "時間",
+    "cancel": "キャンセル",
+    "cancelling": "キャンセル中..."
+  },
+  "empty": {
+    "no_positions_title": "ポジションがありません",
+    "no_positions_description": "上記のインデックス商品を閲覧し、最初のITPを購入してパフォーマンスの追跡を始めましょう。",
+    "explore_indexes": "インデックスを見る",
+    "no_trades_title": "取引履歴がありません",
+    "no_trades_description": "最初の取引を行うと、売買履歴がここに表示されます。",
+    "no_orders_title": "注文がありません",
+    "no_orders_description": "インデックス商品を売買すると、アクティブな注文と最近の注文がここに表示されます。",
+    "loading_orders": "注文を読み込み中..."
+  },
+  "chart": {
+    "current_value": "現在の価値",
+    "chart_pending": "データが蓄積されるとチャートが表示されます"
+  },
+  "tooltip": {
+    "value_label": "価値：",
+    "pnl_label": "損益："
+  },
+  "skeleton": {
+    "fund": "ファンド",
+    "ticker": "ティッカー",
+    "nav_per_share": "NAV (純資産価値) / シェア",
+    "avg_cost": "平均取得単価",
+    "change_24h": "24時間"
+  },
+  "cost_basis": {
+    "title": "あなたのポジション",
+    "shares": "シェア",
+    "avg_cost": "平均取得単価",
+    "total_cost": "取得総額",
+    "current_value": "現在の価値",
+    "unrealized_pnl": "未実現損益",
+    "realized_pnl": "実現損益",
+    "loading": "コストデータを読み込み中...",
+    "fees_title": "支払済み手数料",
+    "fee_trading": "取引",
+    "fee_management": "運用",
+    "fee_bridge": "ブリッジ",
+    "fee_gas": "ガス",
+    "fee_total": "手数料合計"
+  },
+  "vaults": {
+    "tab": "ヴォールト",
+    "section_title": "Vision ヴォールト",
+    "section_subtitle": "マネージドヴォールト預金",
+    "vault": "ヴォールト",
+    "shares": "シェア",
+    "nav": "NAV/シェア",
+    "value": "価値",
+    "performance": "パフォーマンス",
+    "fee": "手数料",
+    "total_value": "ヴォールト価値",
+    "empty_title": "ヴォールト預金なし",
+    "empty_description": "Vision ヴォールトに預けて、マネージド戦略で取引しましょう。",
+    "explore_vaults": "ヴォールトを探す",
+    "withdraw": "引き出す"
+  },
+  "side": {
+    "buy": "買い",
+    "sell": "売り"
+  },
+  "usdc_balance": {
+    "title": "{symbol} 残高",
+    "total_balance": "総残高",
+    "available_betting": "ベットに利用可能",
+    "escrowed_bets": "ベットにエスクロー中"
+  },
+  "resolution": {
+    "no_data": "決済データはまだありません",
+    "not_resolved": "ベットはまだ決済されていません",
+    "trades_won": "勝利トレード",
+    "list_size": "リストサイズ",
+    "bet_amount": "ベット金額",
+    "outcome": "結果",
+    "won_amount": "{amount}を獲得",
+    "lost_amount": "{amount}を損失",
+    "resolved_date": "{date}に決済",
+    "resolved_by": "決済者",
+    "tie_refund": "引き分け - 双方に返金",
+    "settlement_title": "決済詳細",
+    "total_pot": "合計プール",
+    "platform_fee": "プラットフォーム手数料（0.1%）",
+    "winner_payout": "勝者のペイアウト",
+    "loser_loss": "敗者の損失",
+    "winner": "勝者：",
+    "loser": "敗者：",
+    "creator": "作成者",
+    "matcher": "マッチャー",
+    "view_settlement_tx": "決済トランザクションを表示 ↗",
+    "trade_outcomes": "トレード結果",
+    "loading_trades": "トレードを読み込み中...",
+    "outcome_tie": "引き分け - 双方に返金",
+    "outcome_cancelled": "キャンセル - {reason}",
+    "outcome_unknown_reason": "理由不明",
+    "outcome_creator_wins": "クリエイター勝利",
+    "outcome_matcher_wins": "マッチャー勝利",
+    "outcome_pending": "保留中"
+  },
+  "bet_history": {
+    "title": "ベット履歴",
+    "total_bets": "合計{count}件のベット",
+    "portfolio_size": "ポートフォリオサイズ",
+    "amount": "金額",
+    "status": "ステータス",
+    "created": "作成日",
+    "tx_hash": "Txハッシュ",
+    "connect_to_view": "ベット履歴を見るにはウォレットを接続してください",
+    "error_loading": "ベット履歴の読み込みエラー"
+  },
+  "bet_details": {
+    "category": "カテゴリ：",
+    "list_size": "リストサイズ：",
+    "horizon": "期間：",
+    "snapshot": "スナップショット：",
+    "bet_hash": "ベットハッシュ：",
+    "filler": "フィラー：",
+    "filler_stake": "フィラーのステーク：",
+    "early_exit_title": "⊗ 早期エグジット実行済み",
+    "early_exit_description": "双方がEIP-712署名による相互合意で早期決済に同意しました。",
+    "creator_received": "作成者の受取額：",
+    "filler_received": "フィラーの受取額：",
+    "portfolio": "ポートフォリオ：",
+    "positions_count": "{count}ポジション",
+    "portfolio_hint": "下の「ポートフォリオ全体を表示」をクリックすると、仮想スクロールで全トレードを確認できます。",
+    "view_full_portfolio": "ポートフォリオ全体を表示",
+    "view_on_explorer": "エクスプローラーで表示",
+    "signature_collection": "署名収集",
+    "resolution": "決済"
+  }
+}

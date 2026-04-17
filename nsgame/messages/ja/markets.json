@@ -1,0 +1,380 @@
+{
+  "heading": "追跡中のマーケット",
+  "hero": {
+    "label": "インデックス追跡商品",
+    "title": "マーケット",
+    "description": "分散型インデックス商品をご覧ください。各ITFはリアルタイムのNAV (純資産価値) 価格設定とオンチェーン決済で暗号資産のバスケットを追跡します。"
+  },
+  "summary": {
+    "types_count": "{count}種類",
+    "categories_count": "{count}カテゴリ"
+  },
+  "types": {
+    "crypto": {
+      "name": "暗号通貨",
+      "description": "BTC、ETH、SOLおよび100以上のトークン",
+      "update_freq": "5分"
+    },
+    "stocks": {
+      "name": "米国株式",
+      "description": "S&P 500、NASDAQ、主要指数",
+      "update_freq": "15分（取引時間中）"
+    },
+    "weather": {
+      "name": "気象",
+      "description": "気温、降水量、風速",
+      "update_freq": "30分"
+    },
+    "economic": {
+      "name": "経済指標",
+      "description": "FRB金利、CPI、失業率",
+      "update_freq": "日次/月次"
+    },
+    "fx": {
+      "name": "外国為替",
+      "description": "EUR/USD、主要通貨ペア",
+      "update_freq": "日次"
+    },
+    "treasury": {
+      "name": "米国債金利",
+      "description": "米国債利回り",
+      "update_freq": "日次"
+    },
+    "defi": {
+      "name": "DeFi TVL (預入総額)",
+      "description": "プロトコルTVL (預入総額) ランキング",
+      "update_freq": "1時間"
+    }
+  },
+  "labels": {
+    "updates": "更新：",
+    "categories": "カテゴリ：",
+    "sample_assets": "サンプル資産：",
+    "loading_prices": "価格を読み込み中..."
+  },
+  "footer": {
+    "data_sources": "データソース：CoinGecko、Finnhub、Open-Meteo、FRED、ECB、Treasury、DefiLlama",
+    "resolution_note": "すべてのベットはオンチェーンキーパーコンセンサスにより解決されます"
+  },
+  "filters": {
+    "label": "フィルター",
+    "all": "すべて ({count})",
+    "active": "アクティブ ({count})",
+    "pending": "保留中 ({count})",
+    "search_placeholder": "ファンド名またはティッカーで検索...",
+    "sort_aum_desc": "並び替え：AUM 高い順",
+    "sort_aum_asc": "並び替え：AUM 低い順",
+    "sort_newest": "並び替え：新しい順",
+    "sort_name_az": "並び替え：名前 A-Z"
+  },
+  "section_bar": {
+    "title": "データビュー",
+    "subtitle": "ファンド概要, リアルタイムNAV (純資産価値)",
+    "showing_partial": "{total}件中{shown}件を表示",
+    "showing_all": "全{total}件を表示"
+  },
+  "itp_card": {
+    "loading": "ITTを読み込み中...",
+    "no_itps": "まだITPが作成されていません",
+    "nav_per_share": "NAV (純資産価値) / シェア",
+    "assets": "資産",
+    "balance": "残高",
+    "by": "{name}作成",
+    "pending_fill": "約定待ち",
+    "buy": "購入",
+    "sell": "売却",
+    "chart": "チャート",
+    "rebalance": "リバランス",
+    "borrow": "借入",
+    "edit_itp_info": "ITP情報を編集",
+    "description_placeholder": "説明（最大280文字 / 約50語）",
+    "website_placeholder": "ウェブサイトURL（最大128文字）",
+    "video_placeholder": "YouTube URL（最大256文字）",
+    "settlement_erc20": "Settlement ERC20：",
+    "itp_id": "ITP ID：",
+    "minted_supply": "発行済み供給量",
+    "loading_holders": "保有者を読み込み中...",
+    "unable_fetch_holders": "保有者の取得に失敗しました",
+    "no_tracked_holders": "追跡中の保有者はいません",
+    "other_holders": "その他の保有者",
+    "source_index": "Index.sol (L3)",
+    "source_bridge": "BridgeProxy",
+    "nonce": "ノンス：",
+    "source": "ソース：",
+    "admin": "管理者：",
+    "created": "作成日：",
+    "settlement_address": "Settlementアドレス：",
+    "request_number": "リクエスト #{number}"
+  },
+  "rebalance": {
+    "title": "{name}をリバランス",
+    "itp_id_label": "ITP ID：",
+    "loading": "ITPステートを読み込み中...",
+    "add_asset_label": "資産を追加（バスケット{count}件、利用可能{available}件）",
+    "search_placeholder": "追加する資産を検索...",
+    "equal_weights": "均等ウェイト",
+    "weight_sum": "ウェイト合計",
+    "table": {
+      "asset": "資産",
+      "current_pct": "現在の%",
+      "new_pct": "新しい%",
+      "new_tag": "NEW"
+    },
+    "status": {
+      "step1_wallet": "ステップ1/2：ウォレットで確認してください...",
+      "step1_confirming": "ステップ1/2：オンチェーンで確認中...",
+      "step2_executing": "ステップ2/2：L3でリバランスを実行中（イシュアーコンセンサス）...",
+      "tx_label": "Tx："
+    },
+    "success": {
+      "title": "リバランス完了！",
+      "l3_tx": "L3 Tx："
+    },
+    "button": {
+      "waiting_wallet": "ウォレットを確認中...",
+      "confirming": "確認中...",
+      "executing": "L3で実行中...",
+      "rebalanced": "リバランス完了！",
+      "rebalance": "リバランス"
+    },
+    "support": "サポート"
+  },
+  "chart": {
+    "nav_ohlc": "NAV OHLC",
+    "loading": "NAVデータを読み込み中...",
+    "error": "チャートデータの読み込みに失敗しました",
+    "no_data": "この期間のNAVデータはありません"
+  },
+  "itp_page": {
+    "buy_this_index": "このインデックスを購入",
+    "tabs": {
+      "overview": "概要",
+      "performance": "パフォーマンス",
+      "holdings": "保有銘柄",
+      "key_facts": "主要情報"
+    },
+    "key_stats": {
+      "nav_per_share": "NAV / シェア",
+      "one_day_nav_change": "1日NAV変動",
+      "total_value_locked": "総預入額",
+      "holdings": "保有銘柄",
+      "as_of": "{date}時点"
+    },
+    "performance": {
+      "title": "パフォーマンス",
+      "as_of": "{date}時点",
+      "since_inception_return": "設定来リターン: ",
+      "from_date": "({date}から)",
+      "no_data": "パフォーマンスデータはまだありません"
+    },
+    "holdings_table": {
+      "title": "保有銘柄",
+      "loading": "保有銘柄データを読み込み中...",
+      "filter_placeholder": "名前またはティッカーでフィルター...",
+      "rank": "#",
+      "name": "名前",
+      "sector": "セクター",
+      "weight": "ウェイト",
+      "price": "価格",
+      "change_24h": "24時間",
+      "market_value": "時価",
+      "notional_value": "想定元本",
+      "shares": "シェア",
+      "market_cap": "時価総額",
+      "cryptocurrency": "暗号通貨",
+      "range": "{total}件中{start}〜{end}",
+      "previous": "前へ",
+      "next": "次へ",
+      "as_of": "{date}時点"
+    },
+    "portfolio": {
+      "title": "ポートフォリオ構成",
+      "other": "その他"
+    },
+    "concentration": {
+      "title": "集中度指標",
+      "top_5_weight": "上位5ウェイト",
+      "top_10_weight": "上位10ウェイト",
+      "hhi_concentration": "HHI集中度",
+      "low": "低い",
+      "moderate": "中程度",
+      "high": "高い"
+    },
+    "founders": {
+      "title": "ファウンダーインテリジェンス",
+      "subtitle": "{companies}社のポートフォリオ企業の{founders}名の創業者に基づく",
+      "age_distribution": "年齢分布",
+      "gender_split": "性別比率",
+      "top_nationalities": "上位国籍",
+      "top_universities": "上位大学",
+      "count": "件数"
+    },
+    "defi": {
+      "title": "DeFiプロトコル健全性",
+      "aggregate_tvl": "合計TVL",
+      "avg_tvl_change_7d": "平均TVL変動7日",
+      "coverage": "カバレッジ",
+      "coverage_value": "{total}件中{with_data}件",
+      "protocol": "プロトコル",
+      "tvl": "TVL",
+      "change_1d": "1日",
+      "change_7d": "7日"
+    },
+    "funding": {
+      "title": "ファンディングインテリジェンス",
+      "total_raised": "総調達額",
+      "avg_valuation": "平均バリュエーション",
+      "funding_rounds": "ファンディングラウンド",
+      "top_investors": "投資頻度別上位投資家",
+      "investments": "投資",
+      "project": "プロジェクト",
+      "round": "ラウンド",
+      "amount": "金額",
+      "lead": "リード",
+      "date": "日付"
+    },
+    "fund_facts": {
+      "title": "ファンド詳細",
+      "nav_per_share": "NAV / シェア",
+      "chain": "チェーン",
+      "chain_value": "Index L3 (Orbit)",
+      "settlement_address": "Settlementアドレス",
+      "rebalance_method": "リバランス方法",
+      "rebalance_value": "均等ウェイト",
+      "fund_inception": "ファンド設定日",
+      "asset_class": "資産クラス",
+      "asset_class_value": "暗号通貨インデックス",
+      "itp_id": "ITP ID",
+      "number_of_holdings": "保有銘柄数",
+      "as_of": "{date}時点",
+      "copy": "コピー",
+      "copied": "コピーしました！",
+      "portfolio_characteristics": "ポートフォリオ特性",
+      "top_5_concentration": "上位5集中度",
+      "top_10_concentration": "上位10集中度",
+      "hhi_index": "HHIインデックス",
+      "average_market_cap": "平均時価総額",
+      "fees": "手数料",
+      "fees_as_of": "現在の目論見書に基づく",
+      "management_fee": "運用手数料",
+      "acquired_fund_fees": "+取得ファンド手数料および費用",
+      "other_expenses": "+その他費用",
+      "expense_ratio": "=経費率",
+      "fee_disclaimer": "上記の手数料は現在の目論見書に基づくものです。ネットワークガスコストはすべてのオンチェーン取引に適用され、経費率には含まれません。"
+    },
+    "trade_cta": {
+      "buy": "このインデックスを購入",
+      "sell": "売却"
+    },
+    "investment_objective": {
+      "why_title": "なぜこのインデックス？",
+      "objective_title": "投資目的"
+    },
+    "metadata": {
+      "description_title": "このインデックスについて",
+      "website": "ウェブサイト",
+      "video": "動画",
+      "creator": "作成者",
+      "community_badge": "コミュニティ",
+      "community_index": "コミュニティインデックス"
+    }
+  },
+  "listing": {
+    "total_net_assets": "純資産総額",
+    "funds_label": "ファンド",
+    "category_all": "すべて",
+    "category_broad_market": "ブロードマーケット",
+    "category_factor": "ファクター",
+    "category_income": "インカム",
+    "category_sector": "セクター",
+    "category_thematic": "テーマ",
+    "category_unofficial": "非公式",
+    "community_badge": "コミュニティ",
+    "creator_label": "作成者",
+    "table": {
+      "ticker": "ティッカー",
+      "name": "名称",
+      "nav": "NAV",
+      "net_assets": "純資産",
+      "shares_outstanding": "発行済口数",
+      "trade": "取引",
+      "buy": "購入",
+      "sell": "売却"
+    },
+    "loading_funds": "ファンドを読込中...",
+    "no_funds_filtered": "フィルターに一致するファンドがありません。",
+    "no_funds": "利用可能なファンドがありません。",
+    "pagination": {
+      "first": "最初",
+      "prev": "前へ",
+      "next": "次へ",
+      "last": "最後",
+      "range": "{start}\u2013{end} / {total}"
+    }
+  },
+  "source_detail": {
+    "title": "ソース詳細",
+    "loading": "ソースデータを読込中...",
+    "failed_to_load": "読込失敗",
+    "retry": "再試行",
+    "total_assets": "総アセット",
+    "active": "アクティブ",
+    "zero_values": "ゼロ値",
+    "stale": "古いデータ",
+    "data_regularity": "データ規則性（過去24時間）",
+    "markets_title": "マーケット（{count}）",
+    "markets_click_hint": ", 行をクリックしてチャートを表示",
+    "table": {
+      "market": "マーケット",
+      "unit": "単位",
+      "age": "経過",
+      "change": "変動",
+      "records": "レコード",
+      "status": "ステータス"
+    },
+    "no_assets": "このソースのアセットが見つかりません",
+    "status_zero": "Zero",
+    "status_stale": "Stale",
+    "status_off": "Off",
+    "tooltip_zero": "ゼロ値",
+    "tooltip_stale": "古いデータ",
+    "tooltip_active": "最新データあり",
+    "tooltip_inactive": "非アクティブ",
+    "tooltip_click_show": "クリックしてチャートを表示",
+    "tooltip_click_hide": "クリックしてチャートを非表示",
+    "sparkline_loading": "履歴を読込中...",
+    "sparkline_error": "読込失敗: {error}",
+    "sparkline_insufficient": "データポイント不足（{count}）",
+    "sparkline_label": "7日間の履歴（{count}ポイント）"
+  },
+  "source_health": {
+    "search_placeholder": "ソースを検索...",
+    "no_sources_search": "検索に一致するソースがありません",
+    "no_sources": "ソースが見つかりません",
+    "no_sources_search_hint": "別のクエリを試すか検索をクリアしてください。",
+    "no_sources_hint": "data-nodeが実行中でデータを取得済みか確認してください。",
+    "get_key": "キーを取得: {label} \u2192",
+    "dormant_count": "{count}件休止中"
+  },
+  "source_history": {
+    "no_data": "履歴データがありません",
+    "tooltip_records": "レコード: {count}",
+    "tooltip_assets": "アセット: {count}",
+    "tooltip_zeros": "ゼロ値: {count}",
+    "legend_records": "レコード",
+    "legend_zero": "ゼロ値"
+  },
+  "orderbook": {
+    "depth": "板情報",
+    "loading_depth": "板情報を読込中...",
+    "no_orders": "注文なし",
+    "assets_priced": "{count}アセット価格設定済",
+    "price": "価格",
+    "size": "数量",
+    "total": "合計",
+    "bid_total": "買 {value}",
+    "ask_total": "売 {value}",
+    "assets_count": "{included}/{total} アセット",
+    "per_asset_breakdown": "アセット別内訳"
+  }
+}

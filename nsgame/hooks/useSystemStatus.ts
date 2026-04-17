@@ -1,0 +1,154 @@
+'use client'
+
+import { useMemo } from 'react'
+import { useSSESystem, useSSE, type SystemSnapshot } from '@/hooks/useSSE'
+
+// ── Types ──
+
+export interface OracleNode {
+  id: number
+  addr: string
+  ip: string
+  blsPubkeyShort: string
+  status: number        // 0=inactive, 1=active, 2=suspended
+  registeredAt: number
+}
+
+export interface RecentOrder {
+  orderId: bigint
+  user: string
+  itpId: string
+  side: number
+  amount: bigint
+  blockNumber: bigint
+  blockTimestamp: number
+  status: 'pending' | 'filled'
+  fillTimeSeconds?: number
+  fillCycle?: bigint
+}
+
+export interface FillTimeBucket {
+  label: string   // e.g. "#3"
+  seconds: number // fill time in seconds
+}
+
+export interface VaultAssetBar {
+  symbol: string
+  usdValue: number
+}
+
+export interface UseSystemStatusReturn {
+  isHealthy: boolean
+  activeOracles: number
+  totalOracles: number
+  totalOrders: number
+  lastCycleNumber: number
+  pendingOrders: number
+  l3BlockNumber: bigint
+  avgFillTimeSeconds: number
+  nodes: OracleNode[]
+  recentOrders: RecentOrder[]
+  fillTimeBuckets: FillTimeBucket[]
+  topVaultAssets: VaultAssetBar[]
+  vaultUsdValue: number
+  isLoading: boolean
+}
+
+// ── Transform SSE snapshot to hook return types ──
+
+function snapshotToState(snap: SystemSnapshot): Omit<UseSystemStatusReturn, 'isLoading'> {
+  const nodes: OracleNode[] = snap.nodes.map(n => ({
+    id: n.id,
+    addr: n.addr,
+    ip: n.ip || '—',
+    blsPubkeyShort: n.bls_pubkey_short || '—',
+    status: n.status,
+    registeredAt: n.registered_at,
+  }))
+
+  const recentOrders: RecentOrder[] = snap.recent_orders
+    .filter(o => {
+      // Filter out default/empty orders (zero-address fund, zero amount)
+      const isZeroFund = !o.itp_id || /^0x0+$/.test(o.itp_id)
+      const isZeroAmount = !o.amount || o.amount === '0'
+      return !(isZeroFund && isZeroAmount)
+    })
+    .map(o => {
+      // Cap fill times: data-node may report bogus values when order_timestamp
+      // comes from state reconstruction instead of actual block timestamp.
+      // Anything over 1 hour is almost certainly wrong — discard it.
+      const rawFillTime = o.fill_time_seconds ?? undefined
+      const fillTimeSeconds = rawFillTime != null && rawFillTime <= 3600 ? rawFillTime : undefined
+      return {
+        orderId: BigInt(o.order_id),
+        user: o.user,
+        itpId: o.itp_id,
+        side: o.side,
+        amount: BigInt(o.amount),
+        blockNumber: BigInt(o.block_number),
+        blockTimestamp: o.block_timestamp,
+        status: o.status,
+        fillTimeSeconds,
+        fillCycle: o.fill_cycle != null ? BigInt(o.fill_cycle) : undefined,
+      }
+    })
+
+  const fillTimeBuckets: FillTimeBucket[] = recentOrders
+    .filter(o => o.status === 'filled' && o.fillTimeSeconds != null)
+    .slice(0, 10)
+    .reverse()
+    .map(o => ({ label: `#${o.orderId.toString()}`, seconds: o.fillTimeSeconds! }))
+
+  const topVaultAssets: VaultAssetBar[] = snap.vault_assets.map(a => ({
+    symbol: a.symbol,
+    usdValue: a.usd_value,
+  }))
+
+  return {
+    isHealthy: snap.is_healthy,
+    activeOracles: snap.active_oracles,
+    totalOracles: snap.total_oracles,
+    totalOrders: snap.total_orders,
+    lastCycleNumber: snap.last_cycle_number,
+    pendingOrders: snap.pending_orders,
+    l3BlockNumber: BigInt(snap.l3_block_number),
+    avgFillTimeSeconds: snap.avg_fill_time_seconds,
+    nodes,
+    recentOrders,
+    fillTimeBuckets,
+    topVaultAssets,
+    vaultUsdValue: snap.vault_usd_total,
+  }
+}
+
+const EMPTY_STATE: Omit<UseSystemStatusReturn, 'isLoading'> = {
+  isHealthy: false,
+  activeOracles: 0,
+  totalOracles: 0,
+  totalOrders: 0,
+  lastCycleNumber: 0,
+  pendingOrders: 0,
+  l3BlockNumber: 0n,
+  avgFillTimeSeconds: 0,
+  nodes: [],
+  recentOrders: [],
+  fillTimeBuckets: [],
+  topVaultAssets: [],
+  vaultUsdValue: 0,
+}
+
+// ── Hook ──
+
+export function useSystemStatus(): UseSystemStatusReturn {
+  const snapshot = useSSESystem()
+  const { connectionState: sseState } = useSSE()
+
+  const derived = useMemo(
+    () => (snapshot ? snapshotToState(snapshot) : EMPTY_STATE),
+    [snapshot],
+  )
+
+  const isLoading = snapshot === null && sseState !== 'error'
+
+  return { ...derived, isLoading }
+}
