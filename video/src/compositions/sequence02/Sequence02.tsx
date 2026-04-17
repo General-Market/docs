@@ -43,6 +43,7 @@ import {
 } from "./scenes";
 import { TimedCascadeText } from "./TimedCascadeText";
 import { useZoom } from "./PunchZoom";
+import { DramaticGrade } from "./DramaticGrade";
 
 const EASE_OUT = Easing.bezier(0.16, 1, 0.3, 1);
 
@@ -102,7 +103,7 @@ export const Sequence02: React.FC = () => {
       {/* Cold-blue scrim over the backdrop */}
       <AbsoluteFill style={{ background: "rgba(0, 14, 30, 0.42)" }} />
 
-      {/* Clean speaker video inside the animated rect — with step zoom */}
+      {/* Clean speaker video inside the animated rect — step zoom + cinematic grade */}
       <div
         style={{
           position: "absolute",
@@ -115,17 +116,19 @@ export const Sequence02: React.FC = () => {
           boxShadow: "0 40px 120px rgba(0, 0, 0, 0.55)",
         }}
       >
-        <OffthreadVideo
-          src={staticFile(SRC)}
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            transform: `scale(${zoomScale})`,
-            transformOrigin: "center center",
-            willChange: "transform",
-          }}
-        />
+        <DramaticGrade intensity={1}>
+          <OffthreadVideo
+            src={staticFile(SRC)}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              transform: `scale(${zoomScale})`,
+              transformOrigin: "center center",
+              willChange: "transform",
+            }}
+          />
+        </DramaticGrade>
       </div>
 
       {/* 360° bias-axis flip — front face (video) → back face (GM logo) */}
