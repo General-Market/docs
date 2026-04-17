@@ -1,12 +1,24 @@
 /**
  * HalftoneVideo — full-frame WebGL layer that resamples a video source into a
- * dot-matrix halftone. Cell size and tint are configurable; luminance drives
- * dot radius, color stays close to the source so the B-roll still reads.
+ * dot-matrix halftone. Luminance drives dot radius; tint pushes the palette.
+ *
+ * Dual-mode: Studio preview uses `useVideoTexture` against a hidden <Video>;
+ * headless rendering uses `useOffthreadVideoTexture`. Each path is its own
+ * child component so hook order stays stable on either side of the branch.
  */
 
 import React, { useMemo, useRef } from "react";
-import { ThreeCanvas, useOffthreadVideoTexture } from "@remotion/three";
-import { AbsoluteFill, useVideoConfig } from "remotion";
+import {
+  ThreeCanvas,
+  useOffthreadVideoTexture,
+  useVideoTexture,
+} from "@remotion/three";
+import {
+  AbsoluteFill,
+  Video,
+  useRemotionEnvironment,
+  useVideoConfig,
+} from "remotion";
 import * as THREE from "three";
 
 const VERTEX_SHADER = /* glsl */ `
@@ -87,14 +99,12 @@ const DEFAULTS: HalftoneOptions = {
   bgColor: [0.012, 0.045, 0.075],
 };
 
-const HalftonePlane: React.FC<{
-  src: string;
-  playbackRate: number;
+const ShaderPlane: React.FC<{
+  texture: THREE.Texture | null;
   width: number;
   height: number;
   opts: HalftoneOptions;
-}> = ({ src, playbackRate, width, height, opts }) => {
-  const texture = useOffthreadVideoTexture({ src, playbackRate });
+}> = ({ texture, width, height, opts }) => {
   const matRef = useRef<THREE.ShaderMaterial>(null);
 
   const uniforms = useMemo<HalftoneUniforms>(
@@ -141,6 +151,27 @@ const HalftonePlane: React.FC<{
   );
 };
 
+const StudioPlane: React.FC<{
+  videoRef: React.RefObject<HTMLVideoElement | null>;
+  width: number;
+  height: number;
+  opts: HalftoneOptions;
+}> = ({ videoRef, width, height, opts }) => {
+  const texture = useVideoTexture(videoRef);
+  return <ShaderPlane texture={texture} width={width} height={height} opts={opts} />;
+};
+
+const RenderPlane: React.FC<{
+  src: string;
+  playbackRate: number;
+  width: number;
+  height: number;
+  opts: HalftoneOptions;
+}> = ({ src, playbackRate, width, height, opts }) => {
+  const texture = useOffthreadVideoTexture({ src, playbackRate });
+  return <ShaderPlane texture={texture} width={width} height={height} opts={opts} />;
+};
+
 export type HalftoneVideoProps = {
   src: string;
   playbackRate?: number;
@@ -152,10 +183,34 @@ export const HalftoneVideo: React.FC<HalftoneVideoProps> = ({
   ...overrides
 }) => {
   const { width, height } = useVideoConfig();
+  const { isRendering } = useRemotionEnvironment();
   const opts: HalftoneOptions = { ...DEFAULTS, ...overrides };
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   return (
     <AbsoluteFill>
+      {/* Hidden <Video> driven by Remotion — used as texture source in Studio.
+          Kept offscreen so only the shader output is visible. */}
+      {!isRendering && (
+        <Video
+          ref={videoRef}
+          src={src}
+          playbackRate={playbackRate}
+          muted
+          volume={0}
+          loop
+          style={{
+            position: "absolute",
+            width: 2,
+            height: 2,
+            left: -4,
+            top: -4,
+            opacity: 0,
+            pointerEvents: "none",
+          }}
+        />
+      )}
+
       <ThreeCanvas
         width={width}
         height={height}
@@ -163,13 +218,22 @@ export const HalftoneVideo: React.FC<HalftoneVideoProps> = ({
         style={{ background: "#020406" }}
       >
         <React.Suspense fallback={null}>
-          <HalftonePlane
-            src={src}
-            playbackRate={playbackRate}
-            width={width}
-            height={height}
-            opts={opts}
-          />
+          {isRendering ? (
+            <RenderPlane
+              src={src}
+              playbackRate={playbackRate}
+              width={width}
+              height={height}
+              opts={opts}
+            />
+          ) : (
+            <StudioPlane
+              videoRef={videoRef}
+              width={width}
+              height={height}
+              opts={opts}
+            />
+          )}
         </React.Suspense>
       </ThreeCanvas>
     </AbsoluteFill>
