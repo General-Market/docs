@@ -38,9 +38,14 @@ const TILT_X = 12;
 const GRID_SCALE = 1.15;
 const SCROLL_SPEED = 0.6;
 
-const MegaGridBg: React.FC = () => {
+interface GridBgProps {
+  /** Composition-absolute frame when this segment mounted. */
+  startFrame: number;
+}
+
+const MegaGridBg: React.FC<GridBgProps> = ({ startFrame }) => {
   const frame = useCurrentFrame();
-  const scrollY = frame * SCROLL_SPEED;
+  const scrollY = Math.max(0, frame - startFrame) * SCROLL_SPEED;
   const cols = 10;
   const rows = 10;
   const count = cols * rows;
@@ -100,23 +105,24 @@ const MegaGridBg: React.FC = () => {
         </AbsoluteFill>
       </div>
 
+      {/* Soft vignette — dark edges, clear center so the grid breathes. */}
       <AbsoluteFill
         style={{
           background:
-            "radial-gradient(ellipse at center, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.6) 100%)",
+            "radial-gradient(ellipse at center, rgba(0,0,0,0) 30%, rgba(0,0,0,0.45) 100%)",
         }}
       />
     </>
   );
 };
 
-interface BrollGridBgProps {
+interface BrollGridBgProps extends GridBgProps {
   category: "twitch" | "pumpfun" | "movies" | "animals";
 }
 
-const BrollGridBg: React.FC<BrollGridBgProps> = ({ category }) => {
+const BrollGridBg: React.FC<BrollGridBgProps> = ({ category, startFrame }) => {
   const frame = useCurrentFrame();
-  const scrollY = frame * SCROLL_SPEED;
+  const scrollY = Math.max(0, frame - startFrame) * SCROLL_SPEED;
   const cols = 8;
   const rows = 6;
   const colors = PLACEHOLDER_COLORS[category] ?? ["#444"];
@@ -182,10 +188,11 @@ const BrollGridBg: React.FC<BrollGridBgProps> = ({ category }) => {
         </AbsoluteFill>
       </div>
 
+      {/* Soft vignette only — colored cells stay readable as background. */}
       <AbsoluteFill
         style={{
           background:
-            "radial-gradient(ellipse at center, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.6) 100%)",
+            "radial-gradient(ellipse at center, rgba(0,0,0,0) 30%, rgba(0,0,0,0.45) 100%)",
         }}
       />
     </>
@@ -222,7 +229,7 @@ const WordCascade: React.FC<WordCascadeProps> = ({
   words,
   fontSize,
   fontWeight = 900,
-  color = "#0e0f0c",
+  color = "#ffffff",
   lineHeight,
   entryFrames = 10,
   rise = 40,
@@ -250,7 +257,8 @@ const WordCascade: React.FC<WordCascadeProps> = ({
         letterSpacing: "-0.02em",
         lineHeight: 1.1,
         textAlign: "center",
-        textShadow: "0 4px 40px rgba(255,255,255,0.9)",
+        textShadow:
+          "0 4px 32px rgba(0,0,0,0.85), 0 2px 8px rgba(0,0,0,0.7), 0 0 2px rgba(0,0,0,0.6)",
       }}
     >
       {lines.map((line, li) => (
@@ -403,11 +411,12 @@ const SEGMENTS: Segment[] = [
 ];
 
 const SegmentView: React.FC<{ segment: Segment }> = ({ segment }) => {
+  const startFrame = toFrames(segment.startSec);
   const bg =
     segment.bg === "mega" ? (
-      <MegaGridBg />
+      <MegaGridBg startFrame={startFrame} />
     ) : (
-      <BrollGridBg category={segment.bg} />
+      <BrollGridBg category={segment.bg} startFrame={startFrame} />
     );
   return (
     <AbsoluteFill>
