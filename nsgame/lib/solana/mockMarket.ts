@@ -89,6 +89,10 @@ export interface MockBet {
   amountSol: number
   timestamp: number
   bettor: string
+  // Nonce used to derive the Bet PDA. Needed to redeem the bet later —
+  // PDAs can't be reversed, so the nonce must be remembered client-side.
+  nonce: string
+  betPda: string
 }
 
 // Encodes the bet into a memo the treasury (or any indexer) can parse back.

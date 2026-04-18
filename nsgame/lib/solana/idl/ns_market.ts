@@ -14,6 +14,63 @@ export type NsMarket = {
   },
   "instructions": [
     {
+      "name": "createMarket",
+      "discriminator": [
+        103,
+        226,
+        97,
+        235,
+        200,
+        188,
+        251,
+        254
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "market",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  97,
+                  114,
+                  107,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "marketId"
+              }
+            ]
+          }
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "marketId",
+          "type": "string"
+        },
+        {
+          "name": "question",
+          "type": "string"
+        }
+      ]
+    },
+    {
       "name": "placeBet",
       "discriminator": [
         222,
@@ -30,6 +87,10 @@ export type NsMarket = {
           "name": "bettor",
           "writable": true,
           "signer": true
+        },
+        {
+          "name": "market",
+          "writable": true
         },
         {
           "name": "bet",
@@ -66,16 +127,98 @@ export type NsMarket = {
           "type": "u64"
         },
         {
-          "name": "marketId",
-          "type": "string"
-        },
-        {
           "name": "outcome",
           "type": "u8"
         },
         {
           "name": "amount",
           "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "redeem",
+      "discriminator": [
+        184,
+        12,
+        86,
+        149,
+        70,
+        196,
+        97,
+        225
+      ],
+      "accounts": [
+        {
+          "name": "bettor",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "bet"
+          ]
+        },
+        {
+          "name": "bet",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "bettor"
+              },
+              {
+                "kind": "arg",
+                "path": "nonce"
+              }
+            ]
+          }
+        },
+        {
+          "name": "market",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "nonce",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "resolveMarket",
+      "discriminator": [
+        155,
+        23,
+        80,
+        173,
+        46,
+        74,
+        23,
+        239
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "signer": true
+        },
+        {
+          "name": "market",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "winningOutcome",
+          "type": "u8"
         }
       ]
     }
@@ -93,6 +236,19 @@ export type NsMarket = {
         155,
         32
       ]
+    },
+    {
+      "name": "market",
+      "discriminator": [
+        219,
+        190,
+        213,
+        55,
+        0,
+        227,
+        198,
+        154
+      ]
     }
   ],
   "events": [
@@ -108,6 +264,32 @@ export type NsMarket = {
         32,
         0
       ]
+    },
+    {
+      "name": "betRedeemed",
+      "discriminator": [
+        13,
+        227,
+        66,
+        252,
+        84,
+        177,
+        17,
+        132
+      ]
+    },
+    {
+      "name": "marketResolved",
+      "discriminator": [
+        89,
+        67,
+        230,
+        95,
+        143,
+        106,
+        199,
+        202
+      ]
     }
   ],
   "errors": [
@@ -119,7 +301,7 @@ export type NsMarket = {
     {
       "code": 6001,
       "name": "invalidAmount",
-      "msg": "Bet amount must be greater than zero"
+      "msg": "Amount must be greater than zero"
     },
     {
       "code": 6002,
@@ -130,6 +312,41 @@ export type NsMarket = {
       "code": 6003,
       "name": "marketIdEmpty",
       "msg": "Market id must not be empty"
+    },
+    {
+      "code": 6004,
+      "name": "questionTooLong",
+      "msg": "Question exceeds 200 bytes"
+    },
+    {
+      "code": 6005,
+      "name": "marketResolved",
+      "msg": "Market is already resolved"
+    },
+    {
+      "code": 6006,
+      "name": "marketNotResolved",
+      "msg": "Market is not yet resolved"
+    },
+    {
+      "code": 6007,
+      "name": "alreadyRedeemed",
+      "msg": "Bet has already been redeemed"
+    },
+    {
+      "code": 6008,
+      "name": "losingBet",
+      "msg": "Bet is on the losing outcome"
+    },
+    {
+      "code": 6009,
+      "name": "noWinners",
+      "msg": "No bets on the winning outcome"
+    },
+    {
+      "code": 6010,
+      "name": "unauthorized",
+      "msg": "Caller is not the market authority"
     }
   ],
   "types": [
@@ -143,8 +360,8 @@ export type NsMarket = {
             "type": "pubkey"
           },
           {
-            "name": "marketId",
-            "type": "string"
+            "name": "market",
+            "type": "pubkey"
           },
           {
             "name": "outcome",
@@ -179,8 +396,8 @@ export type NsMarket = {
             "type": "pubkey"
           },
           {
-            "name": "marketId",
-            "type": "string"
+            "name": "market",
+            "type": "pubkey"
           },
           {
             "name": "outcome",
@@ -193,6 +410,94 @@ export type NsMarket = {
           {
             "name": "timestamp",
             "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "betRedeemed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bettor",
+            "type": "pubkey"
+          },
+          {
+            "name": "market",
+            "type": "pubkey"
+          },
+          {
+            "name": "payout",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "market",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "marketId",
+            "type": "string"
+          },
+          {
+            "name": "question",
+            "type": "string"
+          },
+          {
+            "name": "resolved",
+            "type": "bool"
+          },
+          {
+            "name": "winningOutcome",
+            "type": "u8"
+          },
+          {
+            "name": "totalPool",
+            "type": "u64"
+          },
+          {
+            "name": "yesPool",
+            "type": "u64"
+          },
+          {
+            "name": "noPool",
+            "type": "u64"
+          },
+          {
+            "name": "createdAt",
+            "type": "i64"
+          },
+          {
+            "name": "resolvedAt",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "marketResolved",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "market",
+            "type": "pubkey"
+          },
+          {
+            "name": "winningOutcome",
+            "type": "u8"
           }
         ]
       }
