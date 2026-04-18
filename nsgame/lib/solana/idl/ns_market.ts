@@ -67,6 +67,14 @@ export type NsMarket = {
         {
           "name": "question",
           "type": "string"
+        },
+        {
+          "name": "closesAt",
+          "type": "i64"
+        },
+        {
+          "name": "feeBps",
+          "type": "u16"
         }
       ]
     },
@@ -183,6 +191,10 @@ export type NsMarket = {
         },
         {
           "name": "market",
+          "writable": true
+        },
+        {
+          "name": "authority",
           "writable": true
         }
       ],
@@ -347,6 +359,16 @@ export type NsMarket = {
       "code": 6010,
       "name": "unauthorized",
       "msg": "Caller is not the market authority"
+    },
+    {
+      "code": 6011,
+      "name": "marketClosed",
+      "msg": "Market is closed to new bets"
+    },
+    {
+      "code": 6012,
+      "name": "feeTooHigh",
+      "msg": "Fee must be <= 10_000 bps (100%)"
     }
   ],
   "types": [
@@ -430,6 +452,10 @@ export type NsMarket = {
           {
             "name": "payout",
             "type": "u64"
+          },
+          {
+            "name": "fee",
+            "type": "u64"
           }
         ]
       }
@@ -476,8 +502,20 @@ export type NsMarket = {
             "type": "i64"
           },
           {
+            "name": "closesAt",
+            "type": "i64"
+          },
+          {
             "name": "resolvedAt",
             "type": "i64"
+          },
+          {
+            "name": "feeBps",
+            "type": "u16"
+          },
+          {
+            "name": "feeCollected",
+            "type": "u64"
           },
           {
             "name": "bump",

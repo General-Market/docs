@@ -55,10 +55,19 @@ function encodeString(s: string): Buffer {
   return out
 }
 
-function encodeCreateMarket(marketId: string, question: string): Buffer {
+function encodeCreateMarket(
+  marketId: string,
+  question: string,
+  closesAt: bigint,
+  feeBps: number,
+): Buffer {
   const idBuf = encodeString(marketId)
   const qBuf = encodeString(question)
-  return Buffer.concat([Buffer.from(CREATE_MARKET_DISC), idBuf, qBuf])
+  const closesBuf = Buffer.alloc(8)
+  closesBuf.writeBigInt64LE(closesAt, 0)
+  const feeBuf = Buffer.alloc(2)
+  feeBuf.writeUInt16LE(feeBps, 0)
+  return Buffer.concat([Buffer.from(CREATE_MARKET_DISC), idBuf, qBuf, closesBuf, feeBuf])
 }
 
 function encodePlaceBet(nonce: bigint, outcome: number, amountLamports: bigint): Buffer {
@@ -87,10 +96,20 @@ function encodeRedeem(nonce: bigint): Buffer {
 
 // --- Instruction builders --------------------------------------------------
 
+export interface CreateMarketOpts {
+  // Unix timestamp (seconds) after which place_bet is rejected.
+  // 0 means never.
+  closesAt?: bigint
+  // Protocol fee in basis points, deducted from each redeem and sent to
+  // the market authority. 200 = 2%. 0 = no fee.
+  feeBps?: number
+}
+
 export function buildCreateMarketTx(
   authority: PublicKey,
   marketId: string,
   question: string,
+  opts: CreateMarketOpts = {},
 ): { tx: Transaction; marketPda: PublicKey } {
   if (marketId.length === 0 || marketId.length > 32) {
     throw new Error(`market_id must be 1..=32 bytes, got ${marketId.length}`)
@@ -98,6 +117,12 @@ export function buildCreateMarketTx(
   if (question.length > 200) {
     throw new Error(`question must be <=200 bytes, got ${question.length}`)
   }
+  const feeBps = opts.feeBps ?? 0
+  if (feeBps < 0 || feeBps > 10_000) {
+    throw new Error(`fee_bps must be 0..=10000, got ${feeBps}`)
+  }
+  const closesAt = opts.closesAt ?? 0n
+
   const [marketPda] = deriveMarketPda(marketId)
   const ix = new TransactionInstruction({
     keys: [
@@ -106,7 +131,7 @@ export function buildCreateMarketTx(
       { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
     ],
     programId: NS_MARKET_PROGRAM_ID,
-    data: encodeCreateMarket(marketId, question),
+    data: encodeCreateMarket(marketId, question, closesAt, feeBps),
   })
   return { tx: new Transaction().add(ix), marketPda }
 }
@@ -158,6 +183,10 @@ export function buildResolveMarketTx(
 export function buildRedeemTx(
   bettor: PublicKey,
   marketPda: PublicKey,
+  // Authority is the market's creator — enforced on chain by address
+  // equality with market.authority. Callers can read it via fetchMarket
+  // if they only know the market_id.
+  authority: PublicKey,
   nonce: bigint,
 ): { tx: Transaction; betPda: PublicKey } {
   const [betPda] = deriveBetPda(bettor, nonce)
@@ -166,6 +195,7 @@ export function buildRedeemTx(
       { pubkey: bettor, isSigner: true, isWritable: true },
       { pubkey: betPda, isSigner: false, isWritable: true },
       { pubkey: marketPda, isSigner: false, isWritable: true },
+      { pubkey: authority, isSigner: false, isWritable: true },
     ],
     programId: NS_MARKET_PROGRAM_ID,
     data: encodeRedeem(nonce),
@@ -185,7 +215,10 @@ export interface MarketAccount {
   yesPool: bigint
   noPool: bigint
   createdAt: bigint
+  closesAt: bigint          // 0 = never closes
   resolvedAt: bigint
+  feeBps: number             // basis points, 200 = 2%
+  feeCollected: bigint       // lamports sent to authority so far
   bump: number
 }
 
@@ -216,9 +249,16 @@ function decodeMarket(data: Buffer): MarketAccount {
   const yesPool = data.readBigUInt64LE(o); o += 8
   const noPool = data.readBigUInt64LE(o); o += 8
   const createdAt = data.readBigInt64LE(o); o += 8
+  const closesAt = data.readBigInt64LE(o); o += 8
   const resolvedAt = data.readBigInt64LE(o); o += 8
+  const feeBps = data.readUInt16LE(o); o += 2
+  const feeCollected = data.readBigUInt64LE(o); o += 8
   const bump = data.readUInt8(o)
-  return { authority, marketId, question, resolved, winningOutcome, totalPool, yesPool, noPool, createdAt, resolvedAt, bump }
+  return {
+    authority, marketId, question, resolved, winningOutcome,
+    totalPool, yesPool, noPool, createdAt, closesAt, resolvedAt,
+    feeBps, feeCollected, bump,
+  }
 }
 
 function decodeBet(data: Buffer): BetAccount {

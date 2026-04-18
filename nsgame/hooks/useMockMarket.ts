@@ -140,7 +140,13 @@ export function useMockMarket() {
           continue
         }
         try {
-          const { tx } = buildCreateMarketTx(publicKey, m.id, m.question)
+          // 2% protocol fee, no close time. Tune here if you want the
+          // demo to reflect different market params.
+          const closesAt = m.closesAt ? BigInt(Math.floor(m.closesAt / 1000)) : 0n
+          const { tx } = buildCreateMarketTx(publicKey, m.id, m.question, {
+            closesAt,
+            feeBps: 200,
+          })
           const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash()
           tx.recentBlockhash = blockhash
           tx.feePayer = publicKey
@@ -234,7 +240,18 @@ export function useMockMarket() {
       const bettorKey = new PublicKey(bet.bettor)
       const [marketPda] = deriveMarketPda(bet.marketId)
       const nonce = BigInt(bet.nonce)
-      const { tx } = buildRedeemTx(bettorKey, marketPda, nonce)
+
+      // The program credits the protocol fee to market.authority. We pull
+      // the authority from cached market state; fall back to fetching if
+      // the cache is cold.
+      let authority = marketStates[bet.marketId]?.authority
+      if (!authority) {
+        const fresh = await fetchMarket(connection, bet.marketId)
+        if (!fresh) throw new Error(`Market ${bet.marketId} not on chain`)
+        authority = fresh.authority
+      }
+
+      const { tx } = buildRedeemTx(bettorKey, marketPda, authority, nonce)
 
       // Whoever is the bettor must sign. If the session key placed the bet
       // and is still live, the session signs; otherwise fall through to
@@ -250,7 +267,7 @@ export function useMockMarket() {
       await refreshBets()
       return { signature, explorerUrl: getExplorerTxUrl(signature) }
     },
-    [publicKey, signAndSend, refreshMarkets, refreshBets, persistRecentBets],
+    [publicKey, signAndSend, refreshMarkets, refreshBets, persistRecentBets, connection, marketStates],
   )
 
   return {

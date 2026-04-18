@@ -24,4 +24,8 @@ pub enum NsMarketError {
     NoWinners,
     #[msg("Caller is not the market authority")]
     Unauthorized,
+    #[msg("Market is closed to new bets")]
+    MarketClosed,
+    #[msg("Fee must be <= 10_000 bps (100%)")]
+    FeeTooHigh,
 }

@@ -61,6 +61,14 @@
         {
           "name": "question",
           "type": "string"
+        },
+        {
+          "name": "closes_at",
+          "type": "i64"
+        },
+        {
+          "name": "fee_bps",
+          "type": "u16"
         }
       ]
     },
@@ -177,6 +185,10 @@
         },
         {
           "name": "market",
+          "writable": true
+        },
+        {
+          "name": "authority",
           "writable": true
         }
       ],
@@ -341,6 +353,16 @@
       "code": 6010,
       "name": "Unauthorized",
       "msg": "Caller is not the market authority"
+    },
+    {
+      "code": 6011,
+      "name": "MarketClosed",
+      "msg": "Market is closed to new bets"
+    },
+    {
+      "code": 6012,
+      "name": "FeeTooHigh",
+      "msg": "Fee must be <= 10_000 bps (100%)"
     }
   ],
   "types": [
@@ -424,6 +446,10 @@
           {
             "name": "payout",
             "type": "u64"
+          },
+          {
+            "name": "fee",
+            "type": "u64"
           }
         ]
       }
@@ -470,8 +496,20 @@
             "type": "i64"
           },
           {
+            "name": "closes_at",
+            "type": "i64"
+          },
+          {
             "name": "resolved_at",
             "type": "i64"
+          },
+          {
+            "name": "fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "fee_collected",
+            "type": "u64"
           },
           {
             "name": "bump",
