@@ -16,7 +16,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { COLOR, TYPE, PANEL, FONT } from "../../tutorial/designTokens";
+import { COLOR, TYPE, PANEL, FONT, SPACE } from "../../tutorial/designTokens";
 import { Sfx } from "../../tutorial/components/Sfx";
 import {
   PLOB,
@@ -693,6 +693,29 @@ const anchorToScreen = (
 
 const CULPRITS_ANCHOR = { pctX: 0.62, pctY: 0.12 };
 const INSIDERS_ANCHOR = { pctX: 0.62, pctY: 0.62 };
+const EXCHANGES_ANCHOR = { pctX: 0.22, pctY: 0.48 };
+
+// Shared card shadow — softer Wise baseline (hairline ring + long diffuse lift).
+const CARD_SHADOW =
+  "rgba(14,15,12,0.12) 0px 0px 0px 1px, 0 20px 48px rgba(0,0,0,0.22)";
+
+// Six exchanges — blurred hard. The viewer recognises the silhouette,
+// the trademark stays unreproduced. Two real PNGs carried over from
+// the crypto folder; binance + hyperliquid fetched from their own
+// product icons; kalshi + robinhood are brand-colour SVG placeholders
+// (signature hue only — under 14px blur, indistinguishable).
+const EXCHANGES: ReadonlyArray<{ name: string; src: string }> = [
+  { name: "Binance", src: "logos/exchanges/binance.png" },
+  { name: "Polymarket", src: "logos/exchanges/polymarket.png" },
+  { name: "Kalshi", src: "logos/exchanges/kalshi.svg" },
+  { name: "Pump.fun", src: "logos/exchanges/pumpfun.png" },
+  { name: "Hyperliquid", src: "logos/exchanges/hyperliquid.png" },
+  { name: "Robinhood", src: "logos/exchanges/robinhood.svg" },
+];
+
+// Scene-local frame where the "all exchanges do this" beat lands.
+// Scene 3 starts 13.92s; voice beat estimated 18.9–19.0s → frame ~150.
+const EXCHANGES_REVEAL = 150;
 
 const CulpritsCard: React.FC<{ cam: IcebergCamState }> = ({ cam }) => {
   const frame = useCurrentFrame();
@@ -712,10 +735,10 @@ const CulpritsCard: React.FC<{ cam: IcebergCamState }> = ({ cam }) => {
   const avatarSize = 64;
   const glyphSize = 34;
   const strikeH = 4;
-  const rowPadV = 18;
-  const padV = 32;
-  const padH = 40;
-  const headerGap = 22;
+  const rowPadV = SPACE.md; // 16 — Wise 8px grid
+  const padV = SPACE.xl;    // 32
+  const padH = SPACE.xxl - SPACE.sm; // 40 — one notch wider than xl
+  const headerGap = SPACE.lg; // 24
   const rowHeight = avatarSize + rowPadV * 2; // fixed row → skeleton keeps card stable
 
   return (
@@ -735,8 +758,7 @@ const CulpritsCard: React.FC<{ cam: IcebergCamState }> = ({ cam }) => {
           background: COLOR.white,
           padding: `${padV}px ${padH}px`,
           borderRadius: 28,
-          boxShadow:
-            "rgba(14,15,12,0.12) 0px 0px 0px 1px, 0 30px 70px rgba(0,0,0,0.35)",
+          boxShadow: CARD_SHADOW,
         }}
       >
         {/* Header row — Wise activity screen style */}
@@ -948,8 +970,8 @@ const InsidersCard: React.FC<{ cam: IcebergCamState }> = ({ cam }) => {
   const insidersFontSize = 132;
   const pillFontSize = 22;
   const captionSize = 26;
-  const padV = 44;
-  const padH = 52;
+  const padV = SPACE.xxl;            // 48
+  const padH = SPACE.xxl + SPACE.xs; // 52
 
   return (
     <div
@@ -968,8 +990,7 @@ const InsidersCard: React.FC<{ cam: IcebergCamState }> = ({ cam }) => {
           background: COLOR.white,
           padding: `${padV}px ${padH}px`,
           borderRadius: 34,
-          boxShadow:
-            "rgba(14,15,12,0.12) 0px 0px 0px 1px, 0 30px 70px rgba(0,0,0,0.35)",
+          boxShadow: CARD_SHADOW,
           display: "flex",
           flexDirection: "column",
           alignItems: "stretch",
@@ -983,7 +1004,7 @@ const InsidersCard: React.FC<{ cam: IcebergCamState }> = ({ cam }) => {
               fontSize: pillFontSize,
               background: COLOR.danger,
               color: COLOR.white,
-              padding: "9px 18px",
+              padding: `${SPACE.sm + 2}px ${SPACE.md + 2}px`,
               borderRadius: 9999,
               letterSpacing: "0.08em",
               lineHeight: 1,
@@ -1013,7 +1034,7 @@ const InsidersCard: React.FC<{ cam: IcebergCamState }> = ({ cam }) => {
         <div
           style={{
             height: 1,
-            background: "rgba(14,15,12,0.1)",
+            background: "rgba(14,15,12,0.08)",
             marginBottom: Math.round(captionSize * 0.7),
           }}
         />
@@ -1029,6 +1050,132 @@ const InsidersCard: React.FC<{ cam: IcebergCamState }> = ({ cam }) => {
           }}
         >
           70% of winnings · every batch
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// "Every exchange" card — six heavily-blurred logo tiles. Pinned to
+// the left flank of the iceberg. Enters on the voice beat, stays put.
+// Same map-pin model as the other two cards: image-space anchor,
+// constant pixel size, no zoom scaling.
+const ExchangesCard: React.FC<{ cam: IcebergCamState }> = ({ cam }) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+
+  const CARD_WIDTH = 520;
+  const { x: centerX, y: centerY } = anchorToScreen(
+    cam,
+    EXCHANGES_ANCHOR.pctX,
+    EXCHANGES_ANCHOR.pctY,
+  );
+
+  // Spring entrance on the voice beat. Returns 0 before the reveal
+  // frame (Math.max clamp), so opacity handles "hidden" on its own.
+  const reveal = spring({
+    frame: Math.max(0, frame - EXCHANGES_REVEAL),
+    fps,
+    durationInFrames: 16,
+    config: { damping: 14, stiffness: 180, mass: 0.7 },
+  });
+  const opacity = frame < EXCHANGES_REVEAL ? 0 : reveal;
+  const translateY = (1 - reveal) * 12;
+
+  const TILE = 56;
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: centerX - CARD_WIDTH / 2,
+        top: centerY,
+        width: CARD_WIDTH,
+        pointerEvents: "none",
+        transform: "translateY(-50%)",
+        opacity,
+      }}
+    >
+      <div
+        style={{
+          ...PANEL.white,
+          background: COLOR.white,
+          padding: `${SPACE.lg}px ${SPACE.xl}px`,
+          borderRadius: 28,
+          boxShadow: CARD_SHADOW,
+          transform: `translateY(${translateY}px)`,
+        }}
+      >
+        {/* Label */}
+        <div
+          style={{
+            ...TYPE.label,
+            fontSize: 20,
+            color: COLOR.gray,
+            marginBottom: SPACE.md,
+          }}
+        >
+          Every exchange
+        </div>
+
+        {/* Six blurred logo tiles */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: SPACE.sm,
+          }}
+        >
+          {EXCHANGES.map((ex) => (
+            <div
+              key={ex.name}
+              style={{
+                width: TILE,
+                height: TILE,
+                borderRadius: "50%",
+                background: COLOR.white,
+                border: `1px solid ${COLOR.border}`,
+                boxShadow: "0 2px 6px rgba(14,15,12,0.08)",
+                overflow: "hidden",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <Img
+                src={staticFile(ex.src)}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  filter: "blur(14px) saturate(1.15)",
+                  transform: "scale(1.15)", // compensate for blur edge-fade
+                }}
+              />
+            </div>
+          ))}
+        </div>
+
+        {/* Divider + caption */}
+        <div
+          style={{
+            height: 1,
+            background: "rgba(14,15,12,0.08)",
+            marginTop: SPACE.md,
+            marginBottom: SPACE.md,
+          }}
+        />
+        <div
+          style={{
+            ...TYPE.caption,
+            fontSize: 22,
+            color: COLOR.gray,
+            lineHeight: 1.3,
+          }}
+        >
+          Same hand · different sleeve.
         </div>
       </div>
     </div>
@@ -1078,6 +1225,10 @@ const IcebergBeats: React.FC<{ area: Rect; duration: number }> = ({
           Culprits reveal on voice, get slashed shortly after. */}
       <CulpritsCard cam={camState} />
 
+      {/* "every exchange" card — six blurred logo tiles on the left
+          flank. Reveals on the "all exchanges do this" beat. */}
+      <ExchangesCard cam={camState} />
+
       {/* "INSIDERS" card — pinned to the submerged mass. Rises into
           frame as the camera descends past the waterline. */}
       <InsidersCard cam={camState} />
@@ -1093,6 +1244,9 @@ const IcebergBeats: React.FC<{ area: Rect; duration: number }> = ({
           />
         </React.Fragment>
       ))}
+
+      {/* "every exchange" reveal — soft plob on the voice beat. */}
+      <Sfx sound={PLOB_BG} delay={EXCHANGES_REVEAL} />
     </AbsoluteFill>
   );
 };
