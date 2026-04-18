@@ -9,7 +9,7 @@ import { Config } from "@remotion/cli/config";
 
 Config.setVideoImageFormat("jpeg");
 Config.setOverwriteOutput(true);
-Config.setNumberOfSharedAudioTags(20);
+Config.setNumberOfSharedAudioTags(40);
 
 // WebGL 3D rendering: limit to 1 concurrent tab to avoid
 // "WebGL context lost" errors from too many GPU contexts.
