@@ -8,9 +8,11 @@ import React from "react";
 import {
   AbsoluteFill,
   Easing,
+  Img,
   Sequence,
   interpolate,
   spring,
+  staticFile,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
@@ -471,79 +473,349 @@ const PyramidBeats: React.FC<{ area: Rect; duration: number }> = ({
 };
 
 // ═════════════════════════════════════════════════════════════════════════
-// Scene 3 — The losses sankey → RIGGED stamp (left-medium, content on right)
+// Scene 3 — Iceberg: three false culprits crossed out on the tip,
+// camera pulls back, INSIDERS stamps the submerged mass (full-bleed on
+// the right of the frame; webcam stays on the left).
 // ═════════════════════════════════════════════════════════════════════════
 
-const STREAMS = [
-  { label: "Strategy", loss: 1200, color: "#868685" },
-  { label: "Fees", loss: 400, color: "#868685" },
-  { label: "Risk Mgmt", loss: 900, color: "#868685" },
+// Iceberg image geometry — mirrors iceberg/IcebergScene.tsx. Source image
+// carries a watermark on the bottom 10%; crop it out.
+const ICE_NATIVE_W = 1200;
+const ICE_NATIVE_H = 836;
+const ICE_CROP_BOTTOM = 0.1;
+const ICE_CROPPED_H = ICE_NATIVE_H * (1 - ICE_CROP_BOTTOM);
+const ICE_AR = ICE_NATIVE_W / ICE_CROPPED_H;
+// Waterline ≈ y=270 in the cropped image.
+const ICE_WATERLINE = 270 / ICE_CROPPED_H;
+
+type Cam = { fx: number; fy: number; scale: number };
+
+const ilerp = (a: number, b: number, t: number) => a + (b - a) * t;
+const iease = (t: number) =>
+  t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+const lerpCam = (a: Cam, b: Cam, t: number): Cam => ({
+  fx: ilerp(a.fx, b.fx, t),
+  fy: ilerp(a.fy, b.fy, t),
+  scale: ilerp(a.scale, b.scale, t),
+});
+
+// Tip ≈ y=0.10 (cropped). Push in on the top.
+const CAM_TOP: Cam = { fx: 0.44, fy: 0.31, scale: 1.95 };
+// Submerged mass — bulk below the waterline.
+const CAM_BOTTOM: Cam = { fx: 0.47, fy: 0.6, scale: 1.8 };
+
+// Region camera pan — computes min-cover scale from the region dimensions,
+// then lerps through TOP → FULL → BOTTOM at supplied beat frames.
+const IcebergCamera: React.FC<{
+  frame: number;
+  regionW: number;
+  regionH: number;
+  p1End: number; // tip hold ends
+  p2End: number; // full view settled
+  p3Settle: number; // submerged settle frame
+}> = ({ frame, regionW, regionH, p1End, p2End, p3Settle }) => {
+  const MIN_COVER = regionW / (regionH * ICE_AR);
+  const camFull: Cam = { fx: 0.5, fy: 0.5, scale: MIN_COVER + 0.06 };
+
+  let cam: Cam;
+  if (frame < p1End) {
+    cam = CAM_TOP;
+  } else if (frame < p2End) {
+    const t = iease((frame - p1End) / (p2End - p1End));
+    cam = lerpCam(CAM_TOP, camFull, t);
+  } else {
+    const raw = (frame - p2End) / Math.max(1, p3Settle - p2End);
+    cam = lerpCam(camFull, CAM_BOTTOM, iease(Math.min(1, Math.max(0, raw))));
+  }
+
+  const swayX = Math.sin(frame * 0.055) * 6 + Math.sin(frame * 0.021) * 2;
+  const swayY = Math.sin(frame * 0.041 + 1.1) * 3;
+
+  const imgH = regionH * cam.scale;
+  const imgW = imgH * ICE_AR;
+
+  let imgLeft = regionW / 2 - cam.fx * imgW + swayX;
+  let imgTop = regionH / 2 - cam.fy * imgH + swayY;
+
+  imgLeft = Math.min(0, Math.max(regionW - imgW, imgLeft));
+  imgTop = Math.min(0, Math.max(regionH - imgH, imgTop));
+
+  const fullImgH = imgH / (1 - ICE_CROP_BOTTOM);
+  const waterY = imgTop + ICE_WATERLINE * imgH;
+
+  return (
+    <>
+      <div
+        style={{
+          position: "absolute",
+          left: imgLeft,
+          top: imgTop,
+          width: imgW,
+          height: imgH,
+          overflow: "hidden",
+        }}
+      >
+        <Img
+          src={staticFile("iceberg.webp")}
+          style={{
+            width: imgW,
+            height: fullImgH,
+            display: "block",
+          }}
+        />
+      </div>
+      <IcebergShimmer y={waterY} width={regionW} frame={frame} />
+    </>
+  );
+};
+
+// Moving glint on the sea surface — soft glow + sharp crest.
+const IcebergShimmer: React.FC<{
+  y: number;
+  width: number;
+  frame: number;
+}> = ({ y, width, frame }) => {
+  const phase = frame * 2.6;
+  const steps = 120;
+  const amp = 5;
+  const pts: string[] = [];
+  for (let i = 0; i <= steps; i++) {
+    const x = (i / steps) * width;
+    const yy =
+      Math.sin(((x + phase) / 360) * Math.PI * 2) * amp +
+      Math.sin(((x - phase * 0.7) / 160) * Math.PI * 2) * amp * 0.45 +
+      Math.sin(((x + phase * 1.3) / 78) * Math.PI * 2) * amp * 0.22;
+    pts.push(`${x.toFixed(1)},${yy.toFixed(2)}`);
+  }
+  const line = pts.join(" ");
+  const BAND = 80;
+  const common: React.CSSProperties = {
+    position: "absolute",
+    left: 0,
+    top: y - BAND / 2,
+    width,
+    height: BAND,
+    pointerEvents: "none",
+    mixBlendMode: "screen",
+  };
+  return (
+    <>
+      <svg
+        style={{ ...common, filter: "blur(6px)", opacity: 0.75 }}
+        viewBox={`0 ${-BAND / 2} ${width} ${BAND}`}
+      >
+        <polyline
+          points={line}
+          stroke="rgba(175, 220, 242, 1)"
+          strokeWidth="6"
+          fill="none"
+        />
+      </svg>
+      <svg
+        style={{ ...common, filter: "blur(1.2px)" }}
+        viewBox={`0 ${-BAND / 2} ${width} ${BAND}`}
+      >
+        <polyline
+          points={line}
+          stroke="rgba(250, 252, 255, 0.9)"
+          strokeWidth="1.6"
+          fill="none"
+        />
+      </svg>
+    </>
+  );
+};
+
+// ── Culprit labels on the tip ─────────────────────────────────────────────
+// Three sans-bold words hovering above the tip, each struck through in red
+// on land. Positions are in region-local percentages (tip pinched at top).
+
+const CULPRITS = ["Strategy", "Fees", "Discipline"] as const;
+const CULPRIT_POS: Array<{ xPct: number; yPct: number; rot: number }> = [
+  { xPct: 0.22, yPct: 0.16, rot: -4 },
+  { xPct: 0.60, yPct: 0.11, rot: 3 },
+  { xPct: 0.40, yPct: 0.32, rot: -2 },
 ];
 
-const SankeyBeats: React.FC<{ area: Rect; duration: number }> = ({
-  area,
+const CulpritLabel: React.FC<{
+  frame: number;
+  fps: number;
+  text: string;
+  landFrame: number;
+  xPct: number;
+  yPct: number;
+  rot: number;
+  regionH: number;
+  fadeStartFrame: number;
+  fadeEndFrame: number;
+}> = ({
+  frame,
+  fps,
+  text,
+  landFrame,
+  xPct,
+  yPct,
+  rot,
+  regionH,
+  fadeStartFrame,
+  fadeEndFrame,
+}) => {
+  const enter = spring({
+    frame: Math.max(0, frame - landFrame),
+    fps,
+    config: { damping: 12, stiffness: 180, mass: 0.8 },
+  });
+  const enterOpacity = interpolate(enter, [0, 1], [0, 1], clamp);
+  const fade = interpolate(
+    frame,
+    [fadeStartFrame, fadeEndFrame],
+    [1, 0],
+    clamp,
+  );
+  const opacity = enterOpacity * fade;
+  if (opacity < 0.01) return null;
+
+  // Strike-through: a red line that wipes across the word starting ~8 frames
+  // after land.
+  const strikeStart = landFrame + 8;
+  const strikeEnd = landFrame + 22;
+  const strike = interpolate(frame, [strikeStart, strikeEnd], [0, 1], clamp);
+
+  const y = interpolate(enter, [0, 1], [-18, 0], clamp);
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: `${xPct * 100}%`,
+        top: `${yPct * 100}%`,
+        transform: `translate(-50%, -50%) translateY(${y}px) rotate(${rot}deg)`,
+        opacity,
+        pointerEvents: "none",
+        filter: "drop-shadow(0 4px 16px rgba(0,0,0,0.55))",
+      }}
+    >
+      <div
+        style={{
+          position: "relative",
+          display: "inline-block",
+          ...TYPE.displayHero,
+          fontSize: Math.round(regionH * 0.075),
+          color: COLOR.white,
+          letterSpacing: "-0.02em",
+          padding: "0 6px",
+          lineHeight: 1,
+        }}
+      >
+        {text}
+        {/* red strike-through line */}
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: "52%",
+            height: Math.round(regionH * 0.012),
+            background: COLOR.danger,
+            transformOrigin: "left center",
+            transform: `scaleX(${strike})`,
+            borderRadius: 2,
+            boxShadow: "0 0 18px rgba(208,50,56,0.75)",
+          }}
+        />
+      </div>
+    </div>
+  );
+};
+
+const IcebergBeats: React.FC<{ area: Rect; duration: number }> = ({
   duration,
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  const B1_DRAW = interpolate(frame, [sec(0.4), sec(2.6)], [0, 1], {
+  // Scene 3 runs ~10.13s (304f). The webcam occupies left-medium; the
+  // iceberg eats the entire right slab. We full-bleed there.
+  // MED_W=800 + 48 margin + 48 gap → iceberg region starts at x=896.
+  // To give the shot weight, we also bleed slightly under the webcam with
+  // an opaque band below (keeping webcam rect untouched).
+  const REGION_X = 848; // margin(48) + MED_W(800)
+  const REGION_Y = 0;
+  const REGION_W = 1920 - REGION_X;
+  const REGION_H = 1080;
+
+  // Camera beat frames (scene-local).
+  const P1_END = sec(4.0);
+  const P2_END = sec(7.0);
+  const P3_SETTLE = sec(9.0);
+
+  // Culprit label land + fade timings.
+  const LAND_1 = sec(0.6);
+  const LAND_2 = sec(1.5);
+  const LAND_3 = sec(2.4);
+  const FADE_START = sec(4.6); // during P1→P2
+  const FADE_END = sec(6.0);
+
+  // INSIDERS stamp — lands at scene-local ~8.55s to sync with RIGGED slam
+  // (voice 22.80s). Stamp held until end of scene.
+  const STAMP_LAND = sec(8.55);
+  const stampSpring = spring({
+    frame: Math.max(0, frame - STAMP_LAND),
+    fps,
+    config: { damping: 8, stiffness: 160, mass: 1.15 },
+  });
+  const stampBlur = interpolate(stampSpring, [0, 1], [12, 0], clamp);
+  const stampShake = (() => {
+    const t = Math.max(0, frame - STAMP_LAND);
+    if (t > 14) return 0;
+    const decay = interpolate(t, [0, 14], [1, 0], clamp);
+    return Math.sin(t * 2.4) * 6 * decay;
+  })();
+
+  // Gentle red vignette when submerged — pools the frame toward the stamp.
+  const redWash = interpolate(
+    frame,
+    [STAMP_LAND - sec(0.3), STAMP_LAND + sec(0.4)],
+    [0, 0.22],
+    clamp,
+  );
+
+  // Outer card fade (mirrors ContentAreaCard entrance/exit on the full region).
+  const enter = interpolate(frame, [0, 16], [0, 1], {
     ...clamp,
     easing: EASE_OUT,
   });
+  const exit = interpolate(frame, [duration - 16, duration], [1, 0], clamp);
+  const regionOpacity = enter * exit;
 
-  const B2_START = sec(3.8);
-  const B2_REROUTE = interpolate(
-    frame,
-    [B2_START, B2_START + sec(1.8)],
-    [0, 1],
-    { ...clamp, easing: EASE_OUT },
-  );
-  const insidersCounter = interpolate(
-    frame,
-    [B2_START + sec(0.6), B2_START + sec(2.2)],
-    [0, 2500],
-    { ...clamp, easing: EASE_OUT },
-  );
-
-  const B3_START = sec(7.2);
-  const redWash = interpolate(
-    frame,
-    [B3_START, B3_START + sec(0.5)],
-    [0, 0.14],
-    clamp,
-  );
-  const stampSpring = spring({
-    frame: Math.max(0, frame - (B3_START + sec(0.3))),
-    fps,
-    config: { damping: 7, stiffness: 180, mass: 1.2 },
-  });
-  const stampBlur = interpolate(stampSpring, [0, 1], [8, 0], clamp);
-
-  // SVG geometry — sankey within a 760×420 region
-  const SVG_W = 760;
-  const SVG_H = 420;
-  const LEFT_X = 40;
-  const MID_X = 380;
-  const RIGHT_X = 680;
-  const endpoints = [
-    { y: 80 }, // Strategy
-    { y: 210 }, // Fees
-    { y: 340 }, // Risk Mgmt
-  ];
-  const convergedY = 210;
-  const expectedBoxY = 190;
-  const insidersBoxY = 190;
-
-  const pathFor = (startY: number, endY: number) => {
-    const c1x = MID_X - 60;
-    const c2x = MID_X + 20;
-    return `M ${LEFT_X + 180} ${startY} C ${c1x} ${startY}, ${c2x} ${endY}, ${RIGHT_X - 60} ${endY}`;
-  };
+  // INSIDERS block size — dominates the lower half of the region when
+  // submerged. Sized relative to region width for a square block.
+  const BLOCK_W = Math.round(REGION_W * 0.74);
+  const BLOCK_H = Math.round(BLOCK_W * 0.58);
 
   return (
-    <ContentAreaCard area={area} duration={duration}>
-      {/* Red wash behind everything (beat 3) */}
+    <div
+      style={{
+        position: "absolute",
+        left: REGION_X,
+        top: REGION_Y,
+        width: REGION_W,
+        height: REGION_H,
+        overflow: "hidden",
+        opacity: regionOpacity,
+        background: "#081826",
+      }}
+    >
+      <IcebergCamera
+        frame={frame}
+        regionW={REGION_W}
+        regionH={REGION_H}
+        p1End={P1_END}
+        p2End={P2_END}
+        p3Settle={P3_SETTLE}
+      />
+
+      {/* Red wash on stamp — colors the water at the payoff frame */}
       {redWash > 0 && (
         <div
           style={{
@@ -551,255 +823,91 @@ const SankeyBeats: React.FC<{ area: Rect; duration: number }> = ({
             inset: 0,
             background: `rgba(208, 50, 56, ${redWash})`,
             pointerEvents: "none",
+            mixBlendMode: "multiply",
           }}
         />
       )}
 
-      <Header big="Your story" small="three culprits" bigSize={72} />
+      {/* Three false culprits — land on the tip, red strike, fade on pull-back */}
+      {CULPRITS.map((word, i) => {
+        const land = [LAND_1, LAND_2, LAND_3][i];
+        const pos = CULPRIT_POS[i];
+        return (
+          <CulpritLabel
+            key={word}
+            frame={frame}
+            fps={fps}
+            text={word}
+            landFrame={land}
+            xPct={pos.xPct}
+            yPct={pos.yPct}
+            rot={pos.rot}
+            regionH={REGION_H}
+            fadeStartFrame={FADE_START}
+            fadeEndFrame={FADE_END}
+          />
+        );
+      })}
 
-      <div
-        style={{
-          position: "relative",
-          flex: 1,
-        }}
-      >
-        <svg width={SVG_W} height={SVG_H} style={{ overflow: "visible" }}>
-          <defs>
-            <marker
-              id="arrow-gray"
-              viewBox="0 0 10 10"
-              refX="8"
-              refY="5"
-              markerWidth="8"
-              markerHeight="8"
-              orient="auto"
-            >
-              <path d="M 0 0 L 10 5 L 0 10 z" fill={COLOR.gray} />
-            </marker>
-            <marker
-              id="arrow-red"
-              viewBox="0 0 10 10"
-              refX="8"
-              refY="5"
-              markerWidth="8"
-              markerHeight="8"
-              orient="auto"
-            >
-              <path d="M 0 0 L 10 5 L 0 10 z" fill={COLOR.danger} />
-            </marker>
-          </defs>
-
-          {/* Left: source labels + amount pills */}
-          {STREAMS.map((s, i) => {
-            const y = endpoints[i].y;
-            const fadeIn = interpolate(
-              frame,
-              [sec(0.2 + i * 0.3), sec(0.6 + i * 0.3)],
+      {/* INSIDERS stamp — red square planted below the waterline */}
+      {stampSpring > 0.01 && (
+        <div
+          style={{
+            position: "absolute",
+            left: "50%",
+            top: "66%",
+            transform: `translate(-50%, -50%) translate(${stampShake}px, 0) rotate(-3deg) scale(${interpolate(
+              stampSpring,
               [0, 1],
+              [2.3, 1],
               clamp,
-            );
-            return (
-              <g key={s.label} opacity={fadeIn}>
-                <rect
-                  x={LEFT_X}
-                  y={y - 26}
-                  width={180}
-                  height={52}
-                  rx={12}
-                  fill={COLOR.lightSurface}
-                  stroke={COLOR.border}
-                />
-                <text
-                  x={LEFT_X + 90}
-                  y={y - 2}
-                  textAnchor="middle"
-                  fill={COLOR.nearBlack}
-                  fontSize={22}
-                  fontWeight={700}
-                  fontFamily="Inter"
-                >
-                  {s.label}
-                </text>
-                <text
-                  x={LEFT_X + 90}
-                  y={y + 18}
-                  textAnchor="middle"
-                  fill={COLOR.danger}
-                  fontSize={20}
-                  fontWeight={700}
-                  fontFamily="Inter"
-                  style={{ fontVariantNumeric: "tabular-nums" }}
-                >
-                  −${s.loss}
-                </text>
-              </g>
-            );
-          })}
-
-          {/* Flowing streams — gray during B1, lerp to converged+red in B2 */}
-          {STREAMS.map((s, i) => {
-            const srcY = endpoints[i].y;
-            const destY = B2_REROUTE > 0 ? insidersBoxY + 30 : expectedBoxY + 30;
-            const animY =
-              B2_REROUTE > 0
-                ? srcY + (destY - srcY) * B2_REROUTE
-                : srcY + (convergedY - srcY) * B1_DRAW;
-            const strokeW = interpolate(B2_REROUTE, [0, 1], [6, 14], clamp);
-            const stroke = B2_REROUTE > 0.2 ? COLOR.danger : COLOR.gray;
-            const drawOpacity = B1_DRAW;
-            const d = pathFor(srcY, animY);
-            return (
-              <path
-                key={`stream-${i}`}
-                d={d}
-                fill="none"
-                stroke={stroke}
-                strokeWidth={strokeW}
-                strokeLinecap="round"
-                opacity={drawOpacity * 0.65}
-                markerEnd={
-                  B2_REROUTE > 0.5 ? "url(#arrow-red)" : "url(#arrow-gray)"
-                }
-              />
-            );
-          })}
-
-          {/* Right: "What you thought" box (fades during B2) */}
-          <g
-            opacity={interpolate(
-              frame,
-              [sec(2.0), sec(2.6), B2_START, B2_START + sec(0.8)],
-              [0, 1, 1, 0],
-              clamp,
-            )}
-            transform={`translate(${RIGHT_X - 60}, ${expectedBoxY})`}
-          >
-            <rect
-              x={-40}
-              y={0}
-              width={180}
-              height={60}
-              rx={14}
-              fill={COLOR.lightSurface}
-              stroke={COLOR.gray}
-              strokeDasharray="6 4"
-            />
-            <text
-              x={50}
-              y={36}
-              textAnchor="middle"
-              fill={COLOR.gray}
-              fontSize={20}
-              fontWeight={700}
-              fontFamily="Inter"
-            >
-              What you thought
-            </text>
-          </g>
-
-          {/* Right: "Insiders" box (beat 2+) */}
-          {B2_REROUTE > 0.1 && (
-            <g
-              opacity={B2_REROUTE}
-              transform={`translate(${RIGHT_X - 60}, ${insidersBoxY})`}
-            >
-              <rect
-                x={-50}
-                y={-4}
-                width={210}
-                height={68}
-                rx={16}
-                fill={COLOR.danger}
-                opacity={0.95}
-              />
-              <text
-                x={55}
-                y={28}
-                textAnchor="middle"
-                fill={COLOR.white}
-                fontSize={22}
-                fontWeight={800}
-                fontFamily="Inter"
-              >
-                Insiders
-              </text>
-              <text
-                x={55}
-                y={52}
-                textAnchor="middle"
-                fill={COLOR.white}
-                fontSize={22}
-                fontWeight={700}
-                fontFamily="Inter"
-                style={{ fontVariantNumeric: "tabular-nums" }}
-              >
-                −${Math.round(insidersCounter).toLocaleString()}
-              </text>
-            </g>
-          )}
-        </svg>
-
-        {/* RIGGED stamp */}
-        {stampSpring > 0.01 && (
+            )})`,
+            opacity: stampSpring,
+            filter: `blur(${stampBlur}px)`,
+            pointerEvents: "none",
+          }}
+        >
           <div
             style={{
-              position: "absolute",
-              left: "50%",
-              top: "58%",
-              transform: `translate(-50%, -50%) rotate(-7deg) scale(${interpolate(
-                stampSpring,
-                [0, 1],
-                [2.1, 1],
-                clamp,
-              )})`,
-              opacity: stampSpring,
-              filter: `blur(${stampBlur}px)`,
-              pointerEvents: "none",
+              width: BLOCK_W,
+              height: BLOCK_H,
+              background: COLOR.danger,
+              border: `8px solid rgba(255,255,255,0.92)`,
+              borderRadius: 10,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              boxShadow:
+                "0 30px 80px rgba(0,0,0,0.55), 0 0 0 4px rgba(208,50,56,0.35)",
             }}
           >
             <div
               style={{
-                ...TYPE.displayHero,
-                fontSize: 180,
-                color: COLOR.danger,
-                letterSpacing: "-0.04em",
-                border: `10px solid ${COLOR.danger}`,
-                padding: "8px 32px",
-                borderRadius: 12,
-                textShadow: "0 4px 24px rgba(208,50,56,0.4)",
-                background: "rgba(255,255,255,0.88)",
+                ...TYPE.displayMega,
+                fontSize: Math.round(BLOCK_H * 0.44),
+                fontWeight: 900,
+                color: COLOR.white,
+                letterSpacing: "-0.03em",
                 lineHeight: 0.85,
-              }}
-            >
-              RIGGED
-            </div>
-            <div
-              style={{
-                ...TYPE.caption,
-                fontSize: 22,
                 textAlign: "center",
-                color: COLOR.danger,
-                marginTop: 12,
-                letterSpacing: "0.2em",
-                textTransform: "uppercase",
-                fontWeight: 700,
+                textShadow: "0 6px 24px rgba(0,0,0,0.45)",
               }}
             >
-              since the start
+              INSIDERS
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* SFX */}
+      {/* SFX — a tick per culprit land, a reveal on pull-back, impact+land on stamp */}
       <Sfx sound={TEXT_IN} delay={0} />
-      <Sfx sound={TICK} delay={sec(0.4)} />
-      <Sfx sound={TICK} delay={sec(0.7)} />
-      <Sfx sound={TICK} delay={sec(1.0)} />
-      <Sfx sound={REVEAL} delay={B2_START} />
-      <Sfx sound={MONEY} delay={B2_START + sec(0.6)} />
-      <Sfx sound={IMPACT} delay={B3_START + sec(0.3)} />
-    </ContentAreaCard>
+      <Sfx sound={TICK} delay={LAND_1} />
+      <Sfx sound={TICK} delay={LAND_2} />
+      <Sfx sound={TICK} delay={LAND_3} />
+      <Sfx sound={REVEAL} delay={P1_END} />
+      <Sfx sound={IMPACT} delay={STAMP_LAND} />
+      <Sfx sound={LAND} delay={STAMP_LAND + 6} />
+    </div>
   );
 };
 
@@ -1714,7 +1822,7 @@ export const Sequence02Diagrams: React.FC = () => {
         from={toFrames(SCENE3_START) + MOUNT_OFFSET}
         durationInFrames={dur(SCENE3_START, SCENE3_END)}
       >
-        <SankeyBeats
+        <IcebergBeats
           area={area3}
           duration={dur(SCENE3_START, SCENE3_END)}
         />
