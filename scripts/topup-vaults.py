@@ -16,7 +16,7 @@ logging.basicConfig(
 log = logging.getLogger("topup")
 
 TARGET = 10_000 * 10**18  # 10,000 USDC
-USDC = Web3.to_checksum_address("0x2710e49EBb807A0cB9369F13Ba24Bd809809a827")
+USDC = Web3.to_checksum_address("0xADDb799BC1499b224DC4368E92b9042a54908553")
 RPC = "http://142.132.164.24/"
 ROOT = Path(__file__).resolve().parent.parent
 BRANDING_PATH = ROOT / "frontend" / "data" / "fund-branding.json"
