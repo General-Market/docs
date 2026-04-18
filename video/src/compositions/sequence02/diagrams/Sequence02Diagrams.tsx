@@ -648,10 +648,10 @@ const IcebergShimmer: React.FC<{
 };
 
 // ── Culprit labels on the tip ─────────────────────────────────────────────
-// Three sans-bold words hovering above the waterline. Anchors are given in
+// Three Wise-style dark pills hovering above the waterline. Anchors are in
 // IMAGE-SPACE percentages (of the cropped iceberg), so labels track the
 // iceberg through sway, pan, and zoom instead of floating over screen.
-// Strike-through wipes left-to-right in red, ~0.25s after the word lands.
+// Strike-through wipes left-to-right in red, ~0.27s after the word lands.
 
 const CULPRITS = ["Strategy", "Fees", "Discipline"] as const;
 // Image-space positions on the visible tip (waterline ≈ 0.36).
@@ -705,7 +705,7 @@ const CulpritLabel: React.FC<{
   const opacity = enterOpacity * fade;
   if (opacity < 0.01) return null;
 
-  // Strike-through wipes in ~0.25s (7.5f @ 30fps) after the word has
+  // Strike-through wipes in ~0.27s (8f @ 30fps) after the word has
   // visually settled (land + 4f spring breath).
   const strikeStart = landFrame + 4;
   const strikeEnd = strikeStart + 8;
@@ -717,14 +717,14 @@ const CulpritLabel: React.FC<{
   const screenX = imgLeft + pctX * imgW;
   const screenY = imgTop + pctY * imgH;
 
-  // Scale label with the iceberg: cropped image is 752.4px tall at
-  // scale=1; grow/shrink the label in lockstep. Baseline ≈ 82px at full
-  // zoom-in; clamp to keep it readable without overwhelming the tip.
+  // Scale the pill with the iceberg so it breathes during the dezoom.
   const imageScale = imgH / ICE_REGION_H;
   const fontSize = Math.round(
-    Math.max(48, Math.min(110, ICE_REGION_H * 0.078 * (imageScale / 1.6))),
+    Math.max(40, Math.min(92, ICE_REGION_H * 0.066 * (imageScale / 1.6))),
   );
-  const strikeH = Math.max(2, Math.round(fontSize * 0.07));
+  const padV = Math.round(fontSize * 0.30);
+  const padH = Math.round(fontSize * 0.62);
+  const strikeH = Math.max(3, Math.round(fontSize * 0.065));
 
   return (
     <div
@@ -735,33 +735,40 @@ const CulpritLabel: React.FC<{
         transform: `translate(-50%, -50%) translateY(${liftY}px) rotate(${rot}deg)`,
         opacity,
         pointerEvents: "none",
-        filter: "drop-shadow(0 4px 16px rgba(0,0,0,0.55))",
       }}
     >
       <div
         style={{
+          ...PANEL.dark,
           position: "relative",
           display: "inline-block",
-          fontFamily: FONT.display,
-          fontWeight: 800,
-          fontSize,
-          color: COLOR.white,
-          letterSpacing: "-0.02em",
-          padding: "0 6px",
-          lineHeight: 1,
-          WebkitTextStroke: "1.5px rgba(255,255,255,0.35)",
+          padding: `${padV}px ${padH}px`,
+          borderRadius: 30,
+          boxShadow:
+            "rgba(14,15,12,0.12) 0px 0px 0px 1px, 0 24px 60px rgba(0,0,0,0.55)",
         }}
       >
-        {text}
+        <span
+          style={{
+            ...TYPE.sectionHeadingDark,
+            fontSize,
+            letterSpacing: "-0.02em",
+            lineHeight: 1,
+            display: "inline-block",
+          }}
+        >
+          {text}
+        </span>
         {/* red strike-through line — left-to-right wipe */}
         <div
           style={{
             position: "absolute",
-            left: 0,
-            right: 0,
-            top: "52%",
+            left: padH * 0.55,
+            right: padH * 0.55,
+            top: "60%",
             height: strikeH,
-            background: "#D03238",
+            background: COLOR.danger,
+            borderRadius: strikeH / 2,
             transformOrigin: "left center",
             transform: `scaleX(${strike})`,
             boxShadow: "0 0 18px rgba(208,50,56,0.75)",
@@ -797,27 +804,48 @@ const IcebergBeats: React.FC<{ area: Rect; duration: number }> = ({
   const FADE_START = sec(4.6); // during P1→P2
   const FADE_END = sec(6.0);
 
-  // INSIDERS stamp — lands at scene-local ~8.55s to sync with RIGGED slam
-  // (voice 22.80s). Stamp held until end of scene.
-  const STAMP_LAND = sec(8.55);
-  const stampSpring = spring({
-    frame: Math.max(0, frame - STAMP_LAND),
-    fps,
-    config: { damping: 8, stiffness: 160, mass: 1.15 },
-  });
-  const stampBlur = interpolate(stampSpring, [0, 1], [10, 0], clamp);
-  const stampShake = (() => {
-    const t = Math.max(0, frame - STAMP_LAND);
-    if (t > 14) return 0;
-    const decay = interpolate(t, [0, 14], [1, 0], clamp);
-    return Math.sin(t * 2.4) * 5 * decay;
+  // INSIDERS card — now present for the entire pull-back. Fades in across
+  // P2 (scene-local 4.0–7.0s), rising from 1.2× to 1.0× as the camera
+  // dezooms; holds through early P3; at the RIGGED slam (8.88s) it gets a
+  // short impact pulse (shake + 1.08× bump). Reinforcement beat, not the
+  // first entrance.
+  const REVEAL_START = sec(4.0); // P2 begins
+  const REVEAL_END = sec(7.0); // P2 ends — card fully settled
+  const SLAM_FRAME = sec(8.88); // absolute 22.80s → scene-local 8.88s
+
+  const revealT = interpolate(
+    frame,
+    [REVEAL_START, REVEAL_END],
+    [0, 1],
+    { ...clamp, easing: EASE_OUT },
+  );
+  const revealOpacity = revealT;
+  const revealScale = interpolate(revealT, [0, 1], [1.2, 1.0], clamp);
+  const revealBlur = interpolate(revealT, [0, 1], [6, 0], clamp);
+
+  // Impact pulse at RIGGED slam — 14-frame shake decay + brief scale bump.
+  const slamT = Math.max(0, frame - SLAM_FRAME);
+  const slamShake = (() => {
+    if (slamT <= 0 || slamT > 14) return 0;
+    const decay = interpolate(slamT, [0, 14], [1, 0], clamp);
+    return Math.sin(slamT * 2.4) * 5 * decay;
+  })();
+  const slamScaleBump = (() => {
+    if (slamT <= 0 || slamT > 14) return 1;
+    // 0→7f ramps up to 1.08×, 7→14f settles back to 1.0×.
+    if (slamT <= 7) return interpolate(slamT, [0, 7], [1.0, 1.08], clamp);
+    return interpolate(slamT, [7, 14], [1.08, 1.0], clamp);
   })();
 
-  // Gentle red wash when submerged — tints the water around the stamp.
+  const cardOpacity = revealOpacity;
+  const cardScale = revealScale * slamScaleBump;
+  const cardShakeX = slamShake;
+
+  // Red wash on the water — lighter now, lands with the slam.
   const redWash = interpolate(
     frame,
-    [STAMP_LAND - sec(0.3), STAMP_LAND + sec(0.4)],
-    [0, 0.18],
+    [SLAM_FRAME - sec(0.2), SLAM_FRAME + sec(0.4)],
+    [0, 0.12],
     clamp,
   );
 
@@ -829,15 +857,20 @@ const IcebergBeats: React.FC<{ area: Rect; duration: number }> = ({
   const exit = interpolate(frame, [duration - 16, duration], [1, 0], clamp);
   const regionOpacity = enter * exit;
 
-  // INSIDERS block — stamped into the submerged mass. Sized in
-  // image-space so it grows with the iceberg; anchored to pctY ≈ 0.68.
-  // Aspect ~3.4:1 — a sign nailed to the ice, wider than tall.
+  // INSIDERS block — image-space anchored so it breathes with the iceberg.
+  // Aspect ~4:1, width ~60% of imgW.
   const STAMP_PCT_X = 0.50;
   const STAMP_PCT_Y = 0.68;
   const stampCenterX = imgLeft + STAMP_PCT_X * imgW;
   const stampCenterY = imgTop + STAMP_PCT_Y * imgH;
-  const BLOCK_W = Math.round(imgW * 0.52);
-  const BLOCK_H = Math.round(BLOCK_W / 3.4);
+  const BLOCK_W = Math.round(imgW * 0.60);
+  const BLOCK_H = Math.round(BLOCK_W / 4.0);
+  // Scale the type with the iceberg so it reads from any zoom.
+  const imageScale = imgH / ICE_REGION_H;
+  const insidersFontSize = Math.round(
+    Math.max(72, Math.min(180, 120 * (imageScale / 1.3))),
+  );
+  const subFontSize = Math.max(14, Math.round(insidersFontSize * 0.14));
 
   return (
     <AbsoluteFill
@@ -886,62 +919,69 @@ const IcebergBeats: React.FC<{ area: Rect; duration: number }> = ({
         );
       })}
 
-      {/* INSIDERS stamp — red rectangle driven into the submerged mass */}
-      {stampSpring > 0.01 && (
+      {/* INSIDERS card — Wise danger panel, present across the pull-back */}
+      {cardOpacity > 0.01 && (
         <div
           style={{
             position: "absolute",
             left: stampCenterX,
             top: stampCenterY,
-            transform: `translate(-50%, -50%) translate(${stampShake}px, 0) rotate(-3deg) scale(${interpolate(
-              stampSpring,
-              [0, 1],
-              [1.6, 1],
-              clamp,
-            )})`,
-            opacity: stampSpring,
-            filter: `blur(${stampBlur}px)`,
+            transform: `translate(-50%, -50%) translate(${cardShakeX}px, 0) rotate(-3deg) scale(${cardScale})`,
+            opacity: cardOpacity,
+            filter: revealBlur > 0.05 ? `blur(${revealBlur}px)` : "none",
             pointerEvents: "none",
           }}
         >
           <div
             style={{
+              ...PANEL.dark,
               width: BLOCK_W,
               height: BLOCK_H,
-              background: "#D03238",
+              padding: 0,
+              borderRadius: 30,
               boxShadow:
-                "inset 0 0 0 3px rgba(255,255,255,0.98), 0 30px 80px rgba(0,0,0,0.6)",
+                "inset 0 0 0 3px #d03238, rgba(14,15,12,0.25) 0px 0px 0px 1px, 0 40px 100px rgba(208,50,56,0.35)",
               display: "flex",
+              flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
+              gap: Math.round(insidersFontSize * 0.08),
             }}
           >
             <div
               style={{
-                fontFamily: FONT.display,
-                fontWeight: 900,
-                fontSize: Math.round(BLOCK_H * 0.58),
+                ...TYPE.displayMega,
+                fontSize: insidersFontSize,
                 color: COLOR.white,
                 letterSpacing: "-0.02em",
                 lineHeight: 0.85,
                 textAlign: "center",
-                textTransform: "uppercase",
               }}
             >
               INSIDERS
+            </div>
+            <div
+              style={{
+                ...TYPE.labelDark,
+                fontSize: subFontSize,
+                color: "rgba(255,255,255,0.6)",
+                textAlign: "center",
+              }}
+            >
+              the real thing
             </div>
           </div>
         </div>
       )}
 
-      {/* SFX — a tick per culprit land, a reveal on pull-back, impact+land on stamp */}
+      {/* SFX — ticks per culprit, reveal at pull-back, impact at RIGGED slam */}
       <Sfx sound={TEXT_IN} delay={0} />
       <Sfx sound={TICK} delay={LAND_1} />
       <Sfx sound={TICK} delay={LAND_2} />
       <Sfx sound={TICK} delay={LAND_3} />
-      <Sfx sound={REVEAL} delay={P1_END} />
-      <Sfx sound={IMPACT} delay={STAMP_LAND} />
-      <Sfx sound={LAND} delay={STAMP_LAND + 6} />
+      <Sfx sound={REVEAL} delay={REVEAL_START} />
+      <Sfx sound={IMPACT} delay={SLAM_FRAME} />
+      <Sfx sound={LAND} delay={SLAM_FRAME + 6} />
     </AbsoluteFill>
   );
 };
