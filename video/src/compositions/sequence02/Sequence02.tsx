@@ -18,6 +18,7 @@ import {
   Easing,
   Img,
   OffthreadVideo,
+  Sequence,
   Video,
   interpolate,
   staticFile,
@@ -33,7 +34,7 @@ import {
   getAnimatedRect,
 } from "../endcard/layout";
 import { FONT } from "../tutorial/designTokens";
-import { SRC, VOICE_SRC, W, toFrames } from "./theme";
+import { SRC, VOICE_SRC, W, FPS, toFrames } from "./theme";
 import {
   SCENES,
   SIDE_ACCENTS,
@@ -46,6 +47,7 @@ import { TimedCascadeText } from "./TimedCascadeText";
 import { useZoom } from "./PunchZoom";
 import { Sequence02Diagrams } from "./diagrams/Sequence02Diagrams";
 import { FullscreenMarkets } from "./FullscreenMarkets";
+import { EndLogoReveal } from "./EndLogoReveal";
 
 const EASE_OUT = Easing.bezier(0.16, 1, 0.3, 1);
 
@@ -92,6 +94,43 @@ export const Sequence02: React.FC = () => {
           backdrop Video is muted. Volume 1.5 for extra presence — limiter
           in the WAV prevents clipping. */}
       <Audio src={staticFile(VOICE_SRC)} volume={1.5} />
+
+      {/* Music bed — Launch30's track under the voice. Fades in, rides at
+          ~0.15, fades out as the piano drop takes the end. */}
+      <Sequence from={0} durationInFrames={toFrames(62.4)} layout="none">
+        <Audio
+          src={staticFile("music/launch-track.mp3")}
+          startFrom={Math.round(15 * FPS)}
+          volume={(f) => {
+            const fadeIn = interpolate(f, [0, toFrames(1.5)], [0, 1], {
+              extrapolateLeft: "clamp",
+              extrapolateRight: "clamp",
+            });
+            const fadeOut = interpolate(
+              f,
+              [toFrames(60.5), toFrames(62.4)],
+              [1, 0],
+              { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+            );
+            return 0.15 * fadeIn * fadeOut;
+          }}
+        />
+      </Sequence>
+
+      {/* Piano drop — leads into the end card, same cue Launch30 uses. */}
+      <Sequence from={toFrames(61.0)} durationInFrames={toFrames(6.0)} layout="none">
+        <Audio
+          src={staticFile("music/launch-track.mp3")}
+          startFrom={Math.round(112 * FPS)}
+          volume={(f) => {
+            const fadeIn = interpolate(f, [0, toFrames(2.5)], [0, 1], {
+              extrapolateLeft: "clamp",
+              extrapolateRight: "clamp",
+            });
+            return 0.42 * fadeIn;
+          }}
+        />
+      </Sequence>
 
       {/* Ambient blurred backdrop — same source, crushed */}
       <AbsoluteFill>
@@ -349,55 +388,10 @@ export const Sequence02: React.FC = () => {
           );
         })()}
 
-      {/* Middle-banner — blackout behind GM lockup */}
-      {layout === "middle-banner" && (
-        <>
-          <div
-            style={{
-              position: "absolute",
-              left: rect.x,
-              top: rect.y,
-              width: rect.w,
-              height: rect.h,
-              background: "#0a1a0a",
-              borderRadius: CORNER_R,
-              boxShadow: "inset 0 0 80px rgba(159,232,112,0.22)",
-            }}
-          />
-          <div
-            style={{
-              position: "absolute",
-              left: rect.x,
-              top: rect.y,
-              width: rect.w,
-              height: rect.h,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
-              <Img
-                src={staticFile("gm-logo.svg")}
-                style={{ width: 112, height: 112 }}
-              />
-              <span
-                style={{
-                  fontFamily: FONT.display,
-                  fontSize: 88,
-                  fontWeight: 800,
-                  color: "#ffffff",
-                  letterSpacing: "-0.02em",
-                  textShadow: "0 2px 16px rgba(0,0,0,0.5)",
-                  lineHeight: 1,
-                }}
-              >
-                General Market
-              </span>
-            </div>
-          </div>
-        </>
-      )}
+      {/* Middle-banner — broll mosaic + LogoReveal card. The dark-green
+          lockup is gone; broll carries the exit and the piano drop lands
+          on the logo pop. */}
+      {layout === "middle-banner" && <EndLogoReveal />}
 
       {/* Fullscreen market grids — scenes 7+8 (46.48–60.56s). Renders after
           every other UI layer so the webcam, ASCII border, diagrams, and
