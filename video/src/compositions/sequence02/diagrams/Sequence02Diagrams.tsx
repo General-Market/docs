@@ -647,133 +647,188 @@ const IcebergShimmer: React.FC<{
   );
 };
 
-// ── Culprit labels on the tip ─────────────────────────────────────────────
-// Three Wise-style dark pills hovering above the waterline. Anchors are in
-// IMAGE-SPACE percentages (of the cropped iceberg), so labels track the
-// iceberg through sway, pan, and zoom instead of floating over screen.
-// Strike-through wipes left-to-right in red, ~0.27s after the word lands.
+// ── Overlay cards — all on the LEFT of the iceberg ───────────────────────
+// Two white Wise cards, anchored in image-space (0..1 on the cropped image)
+// so they track the iceberg through sway, pan, and zoom. Both are present
+// from frame 0 — discovery is camera-driven, not time-driven. No rotation,
+// no fade-ins, no strike-through wipes. The strike is drawn static.
 
 const CULPRITS = ["Strategy", "Fees", "Discipline"] as const;
-// Image-space positions on the visible tip (waterline ≈ 0.36).
-const CULPRIT_POS: Array<{ pctX: number; pctY: number; rot: number }> = [
-  { pctX: 0.30, pctY: 0.10, rot: -3 },
-  { pctX: 0.60, pctY: 0.07, rot: 2 },
-  { pctX: 0.44, pctY: 0.24, rot: -2 },
-];
 
-const CulpritLabel: React.FC<{
-  frame: number;
-  fps: number;
-  text: string;
-  landFrame: number;
-  pctX: number;
-  pctY: number;
-  rot: number;
+// Image-space anchor for the upper-left "what you blamed" card.
+const CULPRITS_CARD = {
+  pctX: 0.18, // horizontal center on the cropped image
+  pctY: 0.22, // vertical center, above the waterline (~0.36)
+  pctW: 0.30, // width as fraction of imgW
+};
+
+// Image-space anchor for the lower-left "INSIDERS" card.
+const INSIDERS_CARD = {
+  pctX: 0.22, // horizontal center
+  pctY: 0.62, // vertical center, well below the waterline
+  pctW: 0.38,
+};
+
+const CulpritsCard: React.FC<{
   imgLeft: number;
   imgTop: number;
   imgW: number;
   imgH: number;
-  fadeStartFrame: number;
-  fadeEndFrame: number;
-}> = ({
-  frame,
-  fps,
-  text,
-  landFrame,
-  pctX,
-  pctY,
-  rot,
-  imgLeft,
-  imgTop,
-  imgW,
-  imgH,
-  fadeStartFrame,
-  fadeEndFrame,
-}) => {
-  const enter = spring({
-    frame: Math.max(0, frame - landFrame),
-    fps,
-    config: { damping: 12, stiffness: 180, mass: 0.8 },
-  });
-  const enterOpacity = interpolate(enter, [0, 1], [0, 1], clamp);
-  const fade = interpolate(
-    frame,
-    [fadeStartFrame, fadeEndFrame],
-    [1, 0],
-    clamp,
-  );
-  const opacity = enterOpacity * fade;
-  if (opacity < 0.01) return null;
+}> = ({ imgLeft, imgTop, imgW, imgH }) => {
+  const centerX = imgLeft + CULPRITS_CARD.pctX * imgW;
+  const centerY = imgTop + CULPRITS_CARD.pctY * imgH;
+  const width = Math.round(imgW * CULPRITS_CARD.pctW);
 
-  // Strike-through wipes in ~0.27s (8f @ 30fps) after the word has
-  // visually settled (land + 4f spring breath).
-  const strikeStart = landFrame + 4;
-  const strikeEnd = strikeStart + 8;
-  const strike = interpolate(frame, [strikeStart, strikeEnd], [0, 1], clamp);
-
-  const liftY = interpolate(enter, [0, 1], [-18, 0], clamp);
-
-  // Image-space → screen-space.
-  const screenX = imgLeft + pctX * imgW;
-  const screenY = imgTop + pctY * imgH;
-
-  // Scale the pill with the iceberg so it breathes during the dezoom.
+  // Scale type with the iceberg so it reads from any zoom.
   const imageScale = imgH / ICE_REGION_H;
-  const fontSize = Math.round(
-    Math.max(40, Math.min(92, ICE_REGION_H * 0.066 * (imageScale / 1.6))),
+  const headingSize = Math.round(
+    Math.max(44, Math.min(96, 72 * (imageScale / 1.6))),
   );
-  const padV = Math.round(fontSize * 0.30);
-  const padH = Math.round(fontSize * 0.62);
-  const strikeH = Math.max(3, Math.round(fontSize * 0.065));
+  const labelSize = Math.max(14, Math.round(headingSize * 0.24));
+  const strikeH = Math.max(3, Math.round(headingSize * 0.07));
+  const rowGap = Math.round(headingSize * 0.34);
+  const padV = Math.round(headingSize * 0.55);
+  const padH = Math.round(headingSize * 0.62);
 
   return (
     <div
       style={{
         position: "absolute",
-        left: screenX,
-        top: screenY,
-        transform: `translate(-50%, -50%) translateY(${liftY}px) rotate(${rot}deg)`,
-        opacity,
+        left: centerX,
+        top: centerY,
+        width,
+        transform: "translate(-50%, -50%)",
         pointerEvents: "none",
       }}
     >
       <div
         style={{
-          ...PANEL.dark,
-          position: "relative",
-          display: "inline-block",
+          ...PANEL.white,
           padding: `${padV}px ${padH}px`,
           borderRadius: 30,
           boxShadow:
-            "rgba(14,15,12,0.12) 0px 0px 0px 1px, 0 24px 60px rgba(0,0,0,0.55)",
+            "rgba(14,15,12,0.12) 0px 0px 0px 1px, 0 30px 80px rgba(0,0,0,0.35)",
         }}
       >
-        <span
-          style={{
-            ...TYPE.sectionHeadingDark,
-            fontSize,
-            letterSpacing: "-0.02em",
-            lineHeight: 1,
-            display: "inline-block",
-          }}
-        >
-          {text}
-        </span>
-        {/* red strike-through line — left-to-right wipe */}
         <div
           style={{
-            position: "absolute",
-            left: padH * 0.55,
-            right: padH * 0.55,
-            top: "60%",
-            height: strikeH,
-            background: COLOR.danger,
-            borderRadius: strikeH / 2,
-            transformOrigin: "left center",
-            transform: `scaleX(${strike})`,
-            boxShadow: "0 0 18px rgba(208,50,56,0.75)",
+            ...TYPE.label,
+            fontSize: labelSize,
+            color: COLOR.gray,
+            marginBottom: rowGap,
           }}
-        />
+        >
+          what you blamed
+        </div>
+        {CULPRITS.map((word, i) => (
+          <div
+            key={word}
+            style={{
+              position: "relative",
+              display: "flex",
+              alignItems: "center",
+              marginTop: i === 0 ? 0 : rowGap,
+            }}
+          >
+            <span
+              style={{
+                ...TYPE.sectionHeading,
+                fontSize: headingSize,
+                letterSpacing: "-0.02em",
+                lineHeight: 1,
+                color: COLOR.nearBlack,
+                display: "inline-block",
+              }}
+            >
+              {word}
+            </span>
+            {/* Static strike-through — no wipe, drawn at frame 0. */}
+            <div
+              style={{
+                position: "absolute",
+                left: 0,
+                right: 0,
+                top: "55%",
+                height: strikeH,
+                background: COLOR.danger,
+                borderRadius: strikeH / 2,
+                transform: "translateY(-50%)",
+              }}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const InsidersCard: React.FC<{
+  imgLeft: number;
+  imgTop: number;
+  imgW: number;
+  imgH: number;
+}> = ({ imgLeft, imgTop, imgW, imgH }) => {
+  const centerX = imgLeft + INSIDERS_CARD.pctX * imgW;
+  const centerY = imgTop + INSIDERS_CARD.pctY * imgH;
+  const width = Math.round(imgW * INSIDERS_CARD.pctW);
+
+  const imageScale = imgH / ICE_REGION_H;
+  const insidersFontSize = Math.round(
+    Math.max(72, Math.min(180, 120 * (imageScale / 1.3))),
+  );
+  const pillFontSize = Math.max(14, Math.round(insidersFontSize * 0.16));
+  const padV = Math.round(insidersFontSize * 0.32);
+  const padH = Math.round(insidersFontSize * 0.42);
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: centerX,
+        top: centerY,
+        width,
+        transform: "translate(-50%, -50%)",
+        pointerEvents: "none",
+      }}
+    >
+      <div
+        style={{
+          ...PANEL.white,
+          padding: `${padV}px ${padH}px`,
+          borderRadius: 30,
+          boxShadow:
+            "rgba(14,15,12,0.12) 0px 0px 0px 1px, 0 30px 80px rgba(0,0,0,0.35)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "flex-start",
+          gap: Math.round(pillFontSize * 0.9),
+        }}
+      >
+        <div
+          style={{
+            ...TYPE.label,
+            fontSize: pillFontSize,
+            background: COLOR.danger,
+            color: COLOR.white,
+            padding: `${Math.max(4, Math.round(pillFontSize * 0.35))}px ${Math.round(pillFontSize * 0.9)}px`,
+            borderRadius: 9999,
+            letterSpacing: "0.08em",
+          }}
+        >
+          what it was
+        </div>
+        <div
+          style={{
+            ...TYPE.displayMega,
+            fontSize: insidersFontSize,
+            color: COLOR.nearBlack,
+            letterSpacing: "-0.02em",
+            lineHeight: 0.85,
+            textAlign: "left",
+          }}
+        >
+          INSIDERS
+        </div>
       </div>
     </div>
   );
@@ -783,94 +838,29 @@ const IcebergBeats: React.FC<{ area: Rect; duration: number }> = ({
   duration,
 }) => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
 
   // Scene 3 (10.48s) occupies the full 1920×1080 frame. Webcam beneath is
   // covered wholesale for this stretch — the iceberg carries the beat.
+  //
+  // Content is static from frame 0. The reveal is camera-driven: CAM_TOP
+  // shows the culprits card on the upper-left; the pull-back descends to
+  // CAM_BOTTOM which exposes the INSIDERS card below the waterline. The
+  // viewer discovers, not waits.
 
-  // Camera beat frames (scene-local).
   const P1_END = sec(4.0);
   const P2_END = sec(7.0);
   const P3_SETTLE = sec(9.0);
 
-  // Shared camera state — driven once, consumed by image, labels, stamp.
   const camState = resolveIcebergCam(frame, P1_END, P2_END, P3_SETTLE);
   const { imgLeft, imgTop, imgW, imgH } = camState;
 
-  // Culprit label land + fade timings.
-  const LAND_1 = sec(0.6);
-  const LAND_2 = sec(1.5);
-  const LAND_3 = sec(2.4);
-  const FADE_START = sec(4.6); // during P1→P2
-  const FADE_END = sec(6.0);
-
-  // INSIDERS card — now present for the entire pull-back. Fades in across
-  // P2 (scene-local 4.0–7.0s), rising from 1.2× to 1.0× as the camera
-  // dezooms; holds through early P3; at the RIGGED slam (8.88s) it gets a
-  // short impact pulse (shake + 1.08× bump). Reinforcement beat, not the
-  // first entrance.
-  const REVEAL_START = sec(4.0); // P2 begins
-  const REVEAL_END = sec(7.0); // P2 ends — card fully settled
-  const SLAM_FRAME = sec(8.88); // absolute 22.80s → scene-local 8.88s
-
-  const revealT = interpolate(
-    frame,
-    [REVEAL_START, REVEAL_END],
-    [0, 1],
-    { ...clamp, easing: EASE_OUT },
-  );
-  const revealOpacity = revealT;
-  const revealScale = interpolate(revealT, [0, 1], [1.2, 1.0], clamp);
-  const revealBlur = interpolate(revealT, [0, 1], [6, 0], clamp);
-
-  // Impact pulse at RIGGED slam — 14-frame shake decay + brief scale bump.
-  const slamT = Math.max(0, frame - SLAM_FRAME);
-  const slamShake = (() => {
-    if (slamT <= 0 || slamT > 14) return 0;
-    const decay = interpolate(slamT, [0, 14], [1, 0], clamp);
-    return Math.sin(slamT * 2.4) * 5 * decay;
-  })();
-  const slamScaleBump = (() => {
-    if (slamT <= 0 || slamT > 14) return 1;
-    // 0→7f ramps up to 1.08×, 7→14f settles back to 1.0×.
-    if (slamT <= 7) return interpolate(slamT, [0, 7], [1.0, 1.08], clamp);
-    return interpolate(slamT, [7, 14], [1.08, 1.0], clamp);
-  })();
-
-  const cardOpacity = revealOpacity;
-  const cardScale = revealScale * slamScaleBump;
-  const cardShakeX = slamShake;
-
-  // Red wash on the water — lighter now, lands with the slam.
-  const redWash = interpolate(
-    frame,
-    [SLAM_FRAME - sec(0.2), SLAM_FRAME + sec(0.4)],
-    [0, 0.12],
-    clamp,
-  );
-
-  // Outer fade (mirrors the webcam panel entrance/exit so the cover is clean).
+  // Outer fade — mirrors the webcam panel entrance/exit so the cover is clean.
   const enter = interpolate(frame, [0, 16], [0, 1], {
     ...clamp,
     easing: EASE_OUT,
   });
   const exit = interpolate(frame, [duration - 16, duration], [1, 0], clamp);
   const regionOpacity = enter * exit;
-
-  // INSIDERS block — image-space anchored so it breathes with the iceberg.
-  // Aspect ~4:1, width ~60% of imgW.
-  const STAMP_PCT_X = 0.50;
-  const STAMP_PCT_Y = 0.68;
-  const stampCenterX = imgLeft + STAMP_PCT_X * imgW;
-  const stampCenterY = imgTop + STAMP_PCT_Y * imgH;
-  const BLOCK_W = Math.round(imgW * 0.60);
-  const BLOCK_H = Math.round(BLOCK_W / 4.0);
-  // Scale the type with the iceberg so it reads from any zoom.
-  const imageScale = imgH / ICE_REGION_H;
-  const insidersFontSize = Math.round(
-    Math.max(72, Math.min(180, 120 * (imageScale / 1.3))),
-  );
-  const subFontSize = Math.max(14, Math.round(insidersFontSize * 0.14));
 
   return (
     <AbsoluteFill
@@ -882,106 +872,24 @@ const IcebergBeats: React.FC<{ area: Rect; duration: number }> = ({
     >
       <IcebergCameraView state={camState} frame={frame} />
 
-      {/* Red wash on stamp — colors the water at the payoff frame */}
-      {redWash > 0 && (
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background: `rgba(208, 50, 56, ${redWash})`,
-            pointerEvents: "none",
-            mixBlendMode: "multiply",
-          }}
-        />
-      )}
+      {/* "what you blamed" card — upper-left, above the waterline */}
+      <CulpritsCard
+        imgLeft={imgLeft}
+        imgTop={imgTop}
+        imgW={imgW}
+        imgH={imgH}
+      />
 
-      {/* Three false culprits — anchored to the tip in image-space */}
-      {CULPRITS.map((word, i) => {
-        const land = [LAND_1, LAND_2, LAND_3][i];
-        const pos = CULPRIT_POS[i];
-        return (
-          <CulpritLabel
-            key={word}
-            frame={frame}
-            fps={fps}
-            text={word}
-            landFrame={land}
-            pctX={pos.pctX}
-            pctY={pos.pctY}
-            rot={pos.rot}
-            imgLeft={imgLeft}
-            imgTop={imgTop}
-            imgW={imgW}
-            imgH={imgH}
-            fadeStartFrame={FADE_START}
-            fadeEndFrame={FADE_END}
-          />
-        );
-      })}
+      {/* "INSIDERS" card — lower-left, below the waterline */}
+      <InsidersCard
+        imgLeft={imgLeft}
+        imgTop={imgTop}
+        imgW={imgW}
+        imgH={imgH}
+      />
 
-      {/* INSIDERS card — Wise danger panel, present across the pull-back */}
-      {cardOpacity > 0.01 && (
-        <div
-          style={{
-            position: "absolute",
-            left: stampCenterX,
-            top: stampCenterY,
-            transform: `translate(-50%, -50%) translate(${cardShakeX}px, 0) rotate(-3deg) scale(${cardScale})`,
-            opacity: cardOpacity,
-            filter: revealBlur > 0.05 ? `blur(${revealBlur}px)` : "none",
-            pointerEvents: "none",
-          }}
-        >
-          <div
-            style={{
-              ...PANEL.dark,
-              width: BLOCK_W,
-              height: BLOCK_H,
-              padding: 0,
-              borderRadius: 30,
-              boxShadow:
-                "inset 0 0 0 3px #d03238, rgba(14,15,12,0.25) 0px 0px 0px 1px, 0 40px 100px rgba(208,50,56,0.35)",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: Math.round(insidersFontSize * 0.08),
-            }}
-          >
-            <div
-              style={{
-                ...TYPE.displayMega,
-                fontSize: insidersFontSize,
-                color: COLOR.white,
-                letterSpacing: "-0.02em",
-                lineHeight: 0.85,
-                textAlign: "center",
-              }}
-            >
-              INSIDERS
-            </div>
-            <div
-              style={{
-                ...TYPE.labelDark,
-                fontSize: subFontSize,
-                color: "rgba(255,255,255,0.6)",
-                textAlign: "center",
-              }}
-            >
-              the real thing
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* SFX — ticks per culprit, reveal at pull-back, impact at RIGGED slam */}
+      {/* One soft marker at scene start. The camera carries the rest. */}
       <Sfx sound={TEXT_IN} delay={0} />
-      <Sfx sound={TICK} delay={LAND_1} />
-      <Sfx sound={TICK} delay={LAND_2} />
-      <Sfx sound={TICK} delay={LAND_3} />
-      <Sfx sound={REVEAL} delay={REVEAL_START} />
-      <Sfx sound={IMPACT} delay={SLAM_FRAME} />
-      <Sfx sound={LAND} delay={SLAM_FRAME + 6} />
     </AbsoluteFill>
   );
 };
