@@ -112,13 +112,19 @@ export function useVaults() {
 
   const chunksEnabled = addresses.length > 0
 
-  // Up to 4 chunks × 50 = 200 vaults. Add more hooks if needed.
+  // Up to 10 chunks × 50 = 500 vaults. Add more hooks if needed.
   const chunk0 = useVaultChunk(addresses, 0, chunksEnabled)
   const chunk1 = useVaultChunk(addresses, 1, chunksEnabled)
   const chunk2 = useVaultChunk(addresses, 2, chunksEnabled)
   const chunk3 = useVaultChunk(addresses, 3, chunksEnabled)
+  const chunk4 = useVaultChunk(addresses, 4, chunksEnabled)
+  const chunk5 = useVaultChunk(addresses, 5, chunksEnabled)
+  const chunk6 = useVaultChunk(addresses, 6, chunksEnabled)
+  const chunk7 = useVaultChunk(addresses, 7, chunksEnabled)
+  const chunk8 = useVaultChunk(addresses, 8, chunksEnabled)
+  const chunk9 = useVaultChunk(addresses, 9, chunksEnabled)
 
-  const chunks = [chunk0, chunk1, chunk2, chunk3]
+  const chunks = [chunk0, chunk1, chunk2, chunk3, chunk4, chunk5, chunk6, chunk7, chunk8, chunk9]
   const isLoadingData = chunks.some(c => c.isLoading)
 
   // Merge chunk results progressively — each chunk parses its own slice
