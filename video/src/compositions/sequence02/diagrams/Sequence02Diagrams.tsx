@@ -474,8 +474,8 @@ const PyramidBeats: React.FC<{ area: Rect; duration: number }> = ({
 
 // ═════════════════════════════════════════════════════════════════════════
 // Scene 3 — Iceberg: three false culprits crossed out on the tip,
-// camera pulls back, INSIDERS stamps the submerged mass (full-bleed on
-// the right of the frame; webcam stays on the left).
+// camera pulls back, INSIDERS stamps the submerged mass. Full-frame
+// 1920×1080 — occludes the webcam for its 10.48s run.
 // ═════════════════════════════════════════════════════════════════════════
 
 // Iceberg image geometry — mirrors iceberg/IcebergScene.tsx. Source image
@@ -487,6 +487,14 @@ const ICE_CROPPED_H = ICE_NATIVE_H * (1 - ICE_CROP_BOTTOM);
 const ICE_AR = ICE_NATIVE_W / ICE_CROPPED_H;
 // Waterline ≈ y=270 in the cropped image.
 const ICE_WATERLINE = 270 / ICE_CROPPED_H;
+
+// Full-frame region. Scene 3 covers the webcam entirely.
+const ICE_REGION_W = 1920;
+const ICE_REGION_H = 1080;
+
+// Min-cover scale on the full frame — the smallest scale at which the
+// cropped image still covers 1920×1080 on every edge.
+const ICE_MIN_COVER = ICE_REGION_W / (ICE_REGION_H * ICE_AR);
 
 type Cam = { fx: number; fy: number; scale: number };
 
@@ -501,48 +509,61 @@ const lerpCam = (a: Cam, b: Cam, t: number): Cam => ({
 
 // Tip ≈ y=0.10 (cropped). Push in on the top.
 const CAM_TOP: Cam = { fx: 0.44, fy: 0.31, scale: 1.95 };
+// Full view — just above min cover so sway has headroom on all sides.
+const CAM_FULL: Cam = { fx: 0.5, fy: 0.5, scale: ICE_MIN_COVER + 0.08 };
 // Submerged mass — bulk below the waterline.
 const CAM_BOTTOM: Cam = { fx: 0.47, fy: 0.6, scale: 1.8 };
 
-// Region camera pan — computes min-cover scale from the region dimensions,
-// then lerps through TOP → FULL → BOTTOM at supplied beat frames.
-const IcebergCamera: React.FC<{
-  frame: number;
-  regionW: number;
-  regionH: number;
-  p1End: number; // tip hold ends
-  p2End: number; // full view settled
-  p3Settle: number; // submerged settle frame
-}> = ({ frame, regionW, regionH, p1End, p2End, p3Settle }) => {
-  const MIN_COVER = regionW / (regionH * ICE_AR);
-  const camFull: Cam = { fx: 0.5, fy: 0.5, scale: MIN_COVER + 0.06 };
-
+/**
+ * Camera math — derives current image geometry from scene-local frame.
+ * Shared between the image render and the label anchors so labels track
+ * the iceberg in image-space rather than screen-space.
+ */
+const resolveIcebergCam = (
+  frame: number,
+  p1End: number,
+  p2End: number,
+  p3Settle: number,
+) => {
   let cam: Cam;
   if (frame < p1End) {
     cam = CAM_TOP;
   } else if (frame < p2End) {
     const t = iease((frame - p1End) / (p2End - p1End));
-    cam = lerpCam(CAM_TOP, camFull, t);
+    cam = lerpCam(CAM_TOP, CAM_FULL, t);
   } else {
     const raw = (frame - p2End) / Math.max(1, p3Settle - p2End);
-    cam = lerpCam(camFull, CAM_BOTTOM, iease(Math.min(1, Math.max(0, raw))));
+    cam = lerpCam(CAM_FULL, CAM_BOTTOM, iease(Math.min(1, Math.max(0, raw))));
   }
 
   const swayX = Math.sin(frame * 0.055) * 6 + Math.sin(frame * 0.021) * 2;
   const swayY = Math.sin(frame * 0.041 + 1.1) * 3;
 
-  const imgH = regionH * cam.scale;
+  const imgH = ICE_REGION_H * cam.scale;
   const imgW = imgH * ICE_AR;
 
-  let imgLeft = regionW / 2 - cam.fx * imgW + swayX;
-  let imgTop = regionH / 2 - cam.fy * imgH + swayY;
+  let imgLeft = ICE_REGION_W / 2 - cam.fx * imgW + swayX;
+  let imgTop = ICE_REGION_H / 2 - cam.fy * imgH + swayY;
 
-  imgLeft = Math.min(0, Math.max(regionW - imgW, imgLeft));
-  imgTop = Math.min(0, Math.max(regionH - imgH, imgTop));
+  // Clamp so the cropped image never exits the frame. CAM_FULL.scale is
+  // deliberately ≥ ICE_MIN_COVER + headroom — this clamp can't push into
+  // void unless sway would break cover, which the headroom prevents.
+  imgLeft = Math.min(0, Math.max(ICE_REGION_W - imgW, imgLeft));
+  imgTop = Math.min(0, Math.max(ICE_REGION_H - imgH, imgTop));
 
   const fullImgH = imgH / (1 - ICE_CROP_BOTTOM);
   const waterY = imgTop + ICE_WATERLINE * imgH;
 
+  return { cam, imgLeft, imgTop, imgW, imgH, fullImgH, waterY };
+};
+
+type IcebergCamState = ReturnType<typeof resolveIcebergCam>;
+
+const IcebergCameraView: React.FC<{ state: IcebergCamState; frame: number }> = ({
+  state,
+  frame,
+}) => {
+  const { imgLeft, imgTop, imgW, imgH, fullImgH, waterY } = state;
   return (
     <>
       <div
@@ -564,7 +585,7 @@ const IcebergCamera: React.FC<{
           }}
         />
       </div>
-      <IcebergShimmer y={waterY} width={regionW} frame={frame} />
+      <IcebergShimmer y={waterY} width={ICE_REGION_W} frame={frame} />
     </>
   );
 };
@@ -627,14 +648,17 @@ const IcebergShimmer: React.FC<{
 };
 
 // ── Culprit labels on the tip ─────────────────────────────────────────────
-// Three sans-bold words hovering above the tip, each struck through in red
-// on land. Positions are in region-local percentages (tip pinched at top).
+// Three sans-bold words hovering above the waterline. Anchors are given in
+// IMAGE-SPACE percentages (of the cropped iceberg), so labels track the
+// iceberg through sway, pan, and zoom instead of floating over screen.
+// Strike-through wipes left-to-right in red, ~0.25s after the word lands.
 
 const CULPRITS = ["Strategy", "Fees", "Discipline"] as const;
-const CULPRIT_POS: Array<{ xPct: number; yPct: number; rot: number }> = [
-  { xPct: 0.22, yPct: 0.16, rot: -4 },
-  { xPct: 0.60, yPct: 0.11, rot: 3 },
-  { xPct: 0.40, yPct: 0.32, rot: -2 },
+// Image-space positions on the visible tip (waterline ≈ 0.36).
+const CULPRIT_POS: Array<{ pctX: number; pctY: number; rot: number }> = [
+  { pctX: 0.30, pctY: 0.10, rot: -3 },
+  { pctX: 0.60, pctY: 0.07, rot: 2 },
+  { pctX: 0.44, pctY: 0.24, rot: -2 },
 ];
 
 const CulpritLabel: React.FC<{
@@ -642,10 +666,13 @@ const CulpritLabel: React.FC<{
   fps: number;
   text: string;
   landFrame: number;
-  xPct: number;
-  yPct: number;
+  pctX: number;
+  pctY: number;
   rot: number;
-  regionH: number;
+  imgLeft: number;
+  imgTop: number;
+  imgW: number;
+  imgH: number;
   fadeStartFrame: number;
   fadeEndFrame: number;
 }> = ({
@@ -653,10 +680,13 @@ const CulpritLabel: React.FC<{
   fps,
   text,
   landFrame,
-  xPct,
-  yPct,
+  pctX,
+  pctY,
   rot,
-  regionH,
+  imgLeft,
+  imgTop,
+  imgW,
+  imgH,
   fadeStartFrame,
   fadeEndFrame,
 }) => {
@@ -675,21 +705,34 @@ const CulpritLabel: React.FC<{
   const opacity = enterOpacity * fade;
   if (opacity < 0.01) return null;
 
-  // Strike-through: a red line that wipes across the word starting ~8 frames
-  // after land.
-  const strikeStart = landFrame + 8;
-  const strikeEnd = landFrame + 22;
+  // Strike-through wipes in ~0.25s (7.5f @ 30fps) after the word has
+  // visually settled (land + 4f spring breath).
+  const strikeStart = landFrame + 4;
+  const strikeEnd = strikeStart + 8;
   const strike = interpolate(frame, [strikeStart, strikeEnd], [0, 1], clamp);
 
-  const y = interpolate(enter, [0, 1], [-18, 0], clamp);
+  const liftY = interpolate(enter, [0, 1], [-18, 0], clamp);
+
+  // Image-space → screen-space.
+  const screenX = imgLeft + pctX * imgW;
+  const screenY = imgTop + pctY * imgH;
+
+  // Scale label with the iceberg: cropped image is 752.4px tall at
+  // scale=1; grow/shrink the label in lockstep. Baseline ≈ 82px at full
+  // zoom-in; clamp to keep it readable without overwhelming the tip.
+  const imageScale = imgH / ICE_REGION_H;
+  const fontSize = Math.round(
+    Math.max(48, Math.min(110, ICE_REGION_H * 0.078 * (imageScale / 1.6))),
+  );
+  const strikeH = Math.max(2, Math.round(fontSize * 0.07));
 
   return (
     <div
       style={{
         position: "absolute",
-        left: `${xPct * 100}%`,
-        top: `${yPct * 100}%`,
-        transform: `translate(-50%, -50%) translateY(${y}px) rotate(${rot}deg)`,
+        left: screenX,
+        top: screenY,
+        transform: `translate(-50%, -50%) translateY(${liftY}px) rotate(${rot}deg)`,
         opacity,
         pointerEvents: "none",
         filter: "drop-shadow(0 4px 16px rgba(0,0,0,0.55))",
@@ -699,27 +742,28 @@ const CulpritLabel: React.FC<{
         style={{
           position: "relative",
           display: "inline-block",
-          ...TYPE.displayHero,
-          fontSize: Math.round(regionH * 0.075),
+          fontFamily: FONT.display,
+          fontWeight: 800,
+          fontSize,
           color: COLOR.white,
           letterSpacing: "-0.02em",
           padding: "0 6px",
           lineHeight: 1,
+          WebkitTextStroke: "1.5px rgba(255,255,255,0.35)",
         }}
       >
         {text}
-        {/* red strike-through line */}
+        {/* red strike-through line — left-to-right wipe */}
         <div
           style={{
             position: "absolute",
             left: 0,
             right: 0,
             top: "52%",
-            height: Math.round(regionH * 0.012),
-            background: COLOR.danger,
+            height: strikeH,
+            background: "#D03238",
             transformOrigin: "left center",
             transform: `scaleX(${strike})`,
-            borderRadius: 2,
             boxShadow: "0 0 18px rgba(208,50,56,0.75)",
           }}
         />
@@ -734,20 +778,17 @@ const IcebergBeats: React.FC<{ area: Rect; duration: number }> = ({
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  // Scene 3 runs ~10.13s (304f). The webcam occupies left-medium; the
-  // iceberg eats the entire right slab. We full-bleed there.
-  // MED_W=800 + 48 margin + 48 gap → iceberg region starts at x=896.
-  // To give the shot weight, we also bleed slightly under the webcam with
-  // an opaque band below (keeping webcam rect untouched).
-  const REGION_X = 848; // margin(48) + MED_W(800)
-  const REGION_Y = 0;
-  const REGION_W = 1920 - REGION_X;
-  const REGION_H = 1080;
+  // Scene 3 (10.48s) occupies the full 1920×1080 frame. Webcam beneath is
+  // covered wholesale for this stretch — the iceberg carries the beat.
 
   // Camera beat frames (scene-local).
   const P1_END = sec(4.0);
   const P2_END = sec(7.0);
   const P3_SETTLE = sec(9.0);
+
+  // Shared camera state — driven once, consumed by image, labels, stamp.
+  const camState = resolveIcebergCam(frame, P1_END, P2_END, P3_SETTLE);
+  const { imgLeft, imgTop, imgW, imgH } = camState;
 
   // Culprit label land + fade timings.
   const LAND_1 = sec(0.6);
@@ -764,23 +805,23 @@ const IcebergBeats: React.FC<{ area: Rect; duration: number }> = ({
     fps,
     config: { damping: 8, stiffness: 160, mass: 1.15 },
   });
-  const stampBlur = interpolate(stampSpring, [0, 1], [12, 0], clamp);
+  const stampBlur = interpolate(stampSpring, [0, 1], [10, 0], clamp);
   const stampShake = (() => {
     const t = Math.max(0, frame - STAMP_LAND);
     if (t > 14) return 0;
     const decay = interpolate(t, [0, 14], [1, 0], clamp);
-    return Math.sin(t * 2.4) * 6 * decay;
+    return Math.sin(t * 2.4) * 5 * decay;
   })();
 
-  // Gentle red vignette when submerged — pools the frame toward the stamp.
+  // Gentle red wash when submerged — tints the water around the stamp.
   const redWash = interpolate(
     frame,
     [STAMP_LAND - sec(0.3), STAMP_LAND + sec(0.4)],
-    [0, 0.22],
+    [0, 0.18],
     clamp,
   );
 
-  // Outer card fade (mirrors ContentAreaCard entrance/exit on the full region).
+  // Outer fade (mirrors the webcam panel entrance/exit so the cover is clean).
   const enter = interpolate(frame, [0, 16], [0, 1], {
     ...clamp,
     easing: EASE_OUT,
@@ -788,32 +829,25 @@ const IcebergBeats: React.FC<{ area: Rect; duration: number }> = ({
   const exit = interpolate(frame, [duration - 16, duration], [1, 0], clamp);
   const regionOpacity = enter * exit;
 
-  // INSIDERS block size — dominates the lower half of the region when
-  // submerged. Sized relative to region width for a square block.
-  const BLOCK_W = Math.round(REGION_W * 0.74);
-  const BLOCK_H = Math.round(BLOCK_W * 0.58);
+  // INSIDERS block — stamped into the submerged mass. Sized in
+  // image-space so it grows with the iceberg; anchored to pctY ≈ 0.68.
+  // Aspect ~3.4:1 — a sign nailed to the ice, wider than tall.
+  const STAMP_PCT_X = 0.50;
+  const STAMP_PCT_Y = 0.68;
+  const stampCenterX = imgLeft + STAMP_PCT_X * imgW;
+  const stampCenterY = imgTop + STAMP_PCT_Y * imgH;
+  const BLOCK_W = Math.round(imgW * 0.52);
+  const BLOCK_H = Math.round(BLOCK_W / 3.4);
 
   return (
-    <div
+    <AbsoluteFill
       style={{
-        position: "absolute",
-        left: REGION_X,
-        top: REGION_Y,
-        width: REGION_W,
-        height: REGION_H,
         overflow: "hidden",
         opacity: regionOpacity,
         background: "#081826",
       }}
     >
-      <IcebergCamera
-        frame={frame}
-        regionW={REGION_W}
-        regionH={REGION_H}
-        p1End={P1_END}
-        p2End={P2_END}
-        p3Settle={P3_SETTLE}
-      />
+      <IcebergCameraView state={camState} frame={frame} />
 
       {/* Red wash on stamp — colors the water at the payoff frame */}
       {redWash > 0 && (
@@ -828,7 +862,7 @@ const IcebergBeats: React.FC<{ area: Rect; duration: number }> = ({
         />
       )}
 
-      {/* Three false culprits — land on the tip, red strike, fade on pull-back */}
+      {/* Three false culprits — anchored to the tip in image-space */}
       {CULPRITS.map((word, i) => {
         const land = [LAND_1, LAND_2, LAND_3][i];
         const pos = CULPRIT_POS[i];
@@ -839,27 +873,30 @@ const IcebergBeats: React.FC<{ area: Rect; duration: number }> = ({
             fps={fps}
             text={word}
             landFrame={land}
-            xPct={pos.xPct}
-            yPct={pos.yPct}
+            pctX={pos.pctX}
+            pctY={pos.pctY}
             rot={pos.rot}
-            regionH={REGION_H}
+            imgLeft={imgLeft}
+            imgTop={imgTop}
+            imgW={imgW}
+            imgH={imgH}
             fadeStartFrame={FADE_START}
             fadeEndFrame={FADE_END}
           />
         );
       })}
 
-      {/* INSIDERS stamp — red square planted below the waterline */}
+      {/* INSIDERS stamp — red rectangle driven into the submerged mass */}
       {stampSpring > 0.01 && (
         <div
           style={{
             position: "absolute",
-            left: "50%",
-            top: "66%",
+            left: stampCenterX,
+            top: stampCenterY,
             transform: `translate(-50%, -50%) translate(${stampShake}px, 0) rotate(-3deg) scale(${interpolate(
               stampSpring,
               [0, 1],
-              [2.3, 1],
+              [1.6, 1],
               clamp,
             )})`,
             opacity: stampSpring,
@@ -871,26 +908,24 @@ const IcebergBeats: React.FC<{ area: Rect; duration: number }> = ({
             style={{
               width: BLOCK_W,
               height: BLOCK_H,
-              background: COLOR.danger,
-              border: `8px solid rgba(255,255,255,0.92)`,
-              borderRadius: 10,
+              background: "#D03238",
+              boxShadow:
+                "inset 0 0 0 3px rgba(255,255,255,0.98), 0 30px 80px rgba(0,0,0,0.6)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              boxShadow:
-                "0 30px 80px rgba(0,0,0,0.55), 0 0 0 4px rgba(208,50,56,0.35)",
             }}
           >
             <div
               style={{
-                ...TYPE.displayMega,
-                fontSize: Math.round(BLOCK_H * 0.44),
+                fontFamily: FONT.display,
                 fontWeight: 900,
+                fontSize: Math.round(BLOCK_H * 0.58),
                 color: COLOR.white,
-                letterSpacing: "-0.03em",
+                letterSpacing: "-0.02em",
                 lineHeight: 0.85,
                 textAlign: "center",
-                textShadow: "0 6px 24px rgba(0,0,0,0.45)",
+                textTransform: "uppercase",
               }}
             >
               INSIDERS
@@ -907,7 +942,7 @@ const IcebergBeats: React.FC<{ area: Rect; duration: number }> = ({
       <Sfx sound={REVEAL} delay={P1_END} />
       <Sfx sound={IMPACT} delay={STAMP_LAND} />
       <Sfx sound={LAND} delay={STAMP_LAND + 6} />
-    </div>
+    </AbsoluteFill>
   );
 };
 

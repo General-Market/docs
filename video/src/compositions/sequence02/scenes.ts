@@ -61,8 +61,7 @@ export interface SideAccent {
 export const SIDE_ACCENTS: SideAccent[] = [
   // scene 2 (4.56–13.92, right-medium) — stat
   { appearSec: T(9.2),  hideSec: T(13.5), title: "1 in 2000", sub: "take 70%", titleSize: 128 },
-  // scene 3 (13.92–24.40, left-medium) — condemnation
-  { appearSec: T(21.0), hideSec: T(24.2), title: "Rigged", titleSize: 220 },
+  // scene 3 (13.92–24.40) — iceberg diagram occludes the full frame; no side accent.
   // scene 5 (30.08–37.28, right-small) — the flaw
   { appearSec: T(31.4), hideSec: T(36.8), title: "Normal exchange", sub: "insiders pick the markets they own", titleSize: 64 },
   // scene 6 (37.28–46.48, left-small) — the fix
