@@ -648,12 +648,17 @@ const IcebergShimmer: React.FC<{
   );
 };
 
-// ── Overlay cards — screen-space, flush to the right edge ───────────────
-// The iceberg image still sways, pans and zooms in the background. The
-// cards are floating Wise-app UI in front of it, anchored in viewport
-// coordinates so they are always fully inside 1920×1080 regardless of
-// camera level. A barely-there parallax keeps them weather-connected to
-// the scene without ever threatening the edge.
+// ── Overlay cards — anchored to the iceberg image like map pins ─────────
+// Each card has an (pctX, pctY) anchor in image-space. As the camera
+// pans, sways, and zooms, the anchor translates with the image. The
+// card's PIXEL SIZE stays constant — only its position follows the
+// image. This is the map-pin model: drop a pin, pan the map, pin moves
+// with the map but the pin itself never grows.
+//
+// Anchors chosen so both cards remain inside 1920×1080 at CAM_TOP (the
+// most zoomed-in camera, where imgW is largest). At pctX=0.62 and
+// CAM_TOP (imgLeft=-518, imgW=3359), the card center sits at x≈1565 —
+// a 560-wide card clears the right edge with ~75px of headroom.
 
 const CULPRITS: ReadonlyArray<{
   word: string;
@@ -675,28 +680,31 @@ const SLASH_WIPE_FRAMES = 8; // ≈0.28s
 
 const DIVIDER = "1px solid rgba(14,15,12,0.08)";
 
-// Subtle parallax — drift the cards by a small fraction of the iceberg's
-// sway. Capped amplitude (≤ 6px) so the card never eats into the gutter.
-const parallax = (frame: number) => {
-  const swayX = Math.sin(frame * 0.055) * 6 + Math.sin(frame * 0.021) * 2;
-  const swayY = Math.sin(frame * 0.041 + 1.1) * 3;
-  return {
-    dx: Math.max(-6, Math.min(6, swayX * 0.15)),
-    dy: Math.max(-6, Math.min(6, swayY * 0.15)),
-  };
-};
+// Image-space anchor → screen-space pixel position. Card size is
+// constant in 1920-space; only the top/left follows the image.
+const anchorToScreen = (
+  cam: IcebergCamState,
+  pctX: number,
+  pctY: number,
+) => ({
+  x: cam.imgLeft + pctX * cam.imgW,
+  y: cam.imgTop + pctY * cam.imgH,
+});
 
-const CulpritsCard: React.FC = () => {
+const CULPRITS_ANCHOR = { pctX: 0.62, pctY: 0.12 };
+const INSIDERS_ANCHOR = { pctX: 0.62, pctY: 0.62 };
+
+const CulpritsCard: React.FC<{ cam: IcebergCamState }> = ({ cam }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const { dx, dy } = parallax(frame);
 
-  // Fixed screen-space geometry. Upper-right quadrant, flush to the
-  // right gutter. Iceberg body sits left-of-center at every cam level,
-  // so the right edge stays clear.
+  // Constant screen-space card size. Only its position tracks the image.
   const CARD_WIDTH = 560;
-  const CARD_RIGHT = 56;
-  const CARD_TOP = 120;
+  const { x: centerX, y: centerY } = anchorToScreen(
+    cam,
+    CULPRITS_ANCHOR.pctX,
+    CULPRITS_ANCHOR.pctY,
+  );
 
   const rowFontSize = 44;
   const labelSize = 22;
@@ -714,10 +722,11 @@ const CulpritsCard: React.FC = () => {
     <div
       style={{
         position: "absolute",
-        right: CARD_RIGHT - dx,
-        top: CARD_TOP + dy,
+        left: centerX - CARD_WIDTH / 2,
+        top: centerY,
         width: CARD_WIDTH,
         pointerEvents: "none",
+        transform: "translateY(-50%)",
       }}
     >
       <div
@@ -926,17 +935,17 @@ const CulpritsCard: React.FC = () => {
   );
 };
 
-const InsidersCard: React.FC = () => {
-  const frame = useCurrentFrame();
-  const { dx, dy } = parallax(frame);
-
-  // Fixed screen-space geometry. Lower-right quadrant, flush to the
-  // right gutter. Present from frame 0.
+const InsidersCard: React.FC<{ cam: IcebergCamState }> = ({ cam }) => {
+  // Constant screen-space card size. Anchored into the submerged mass
+  // of the iceberg — the card rises into frame as the camera descends.
   const CARD_WIDTH = 600;
-  const CARD_RIGHT = 56;
-  const CARD_BOTTOM = 72;
+  const { x: centerX, y: centerY } = anchorToScreen(
+    cam,
+    INSIDERS_ANCHOR.pctX,
+    INSIDERS_ANCHOR.pctY,
+  );
 
-  const insidersFontSize = 148;
+  const insidersFontSize = 132;
   const pillFontSize = 22;
   const captionSize = 26;
   const padV = 44;
@@ -946,10 +955,11 @@ const InsidersCard: React.FC = () => {
     <div
       style={{
         position: "absolute",
-        right: CARD_RIGHT - dx,
-        bottom: CARD_BOTTOM - dy,
+        left: centerX - CARD_WIDTH / 2,
+        top: centerY,
         width: CARD_WIDTH,
         pointerEvents: "none",
+        transform: "translateY(-50%)",
       }}
     >
       <div
@@ -1033,11 +1043,12 @@ const IcebergBeats: React.FC<{ area: Rect; duration: number }> = ({
   // Scene 3 (10.48s) occupies the full 1920×1080 frame. Webcam beneath is
   // covered wholesale for this stretch — the iceberg carries the beat.
   //
-  // The iceberg image pans and zooms in the background. The overlay cards
-  // live in screen-space, flush to the right gutter; the three culprits
-  // reveal on voice beats and get slashed ~0.55s later. INSIDERS stays
-  // visible the whole time — discovered as the camera descends below the
-  // waterline.
+  // The iceberg image pans and zooms in the background. The two cards
+  // are pinned to points on the image: their position tracks the pan
+  // and sway, but they never grow or shrink with the zoom. Map pins, not
+  // decals. The three culprits reveal on voice beats and get slashed
+  // ~0.55s later. INSIDERS stays visible the whole time — discovered
+  // as the camera descends below the waterline.
 
   const P1_END = sec(4.0);
   const P2_END = sec(7.0);
@@ -1063,12 +1074,13 @@ const IcebergBeats: React.FC<{ area: Rect; duration: number }> = ({
     >
       <IcebergCameraView state={camState} frame={frame} />
 
-      {/* "what you blamed" card — upper-right, flush to gutter.
+      {/* "what you blamed" card — pinned to the iceberg tip area.
           Culprits reveal on voice, get slashed shortly after. */}
-      <CulpritsCard />
+      <CulpritsCard cam={camState} />
 
-      {/* "INSIDERS" card — lower-right, flush to gutter. */}
-      <InsidersCard />
+      {/* "INSIDERS" card — pinned to the submerged mass. Rises into
+          frame as the camera descends past the waterline. */}
+      <InsidersCard cam={camState} />
 
       {/* SFX — voice-synced reveals and slashes for the three culprits.
           Reveal: soft plob. Slash: quick swish. */}
