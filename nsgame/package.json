@@ -40,6 +40,7 @@
     "check-translations": "npx tsx scripts/check-translations.ts"
   },
   "dependencies": {
+    "@coral-xyz/anchor": "^0.32.1",
     "@jup-ag/wallet-adapter": "^0.2.6",
     "@mdx-js/react": "^3.1.1",
     "@metamask/sdk": "^0.33.1",

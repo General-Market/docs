@@ -1,0 +1,21 @@
+[toolchain]
+package_manager = "yarn"
+
+[features]
+resolution = true
+skip-lint = false
+
+[programs.devnet]
+ns_market = "4zwmmKAL83VQADqRwfXERvPU2e1K3vcPpqPN7DmTR7MT"
+
+[programs.localnet]
+ns_market = "4zwmmKAL83VQADqRwfXERvPU2e1K3vcPpqPN7DmTR7MT"
+
+[provider]
+cluster = "devnet"
+wallet = "~/.config/solana/nsgame-dev1.json"
+
+[scripts]
+test = "cargo test"
+
+[hooks]

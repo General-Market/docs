@@ -4,12 +4,17 @@ import { useCallback, useState } from 'react'
 import { PublicKey } from '@solana/web3.js'
 import { useSession } from '@/lib/solana/SessionContext'
 import { useWallet } from '@/hooks/useWallet'
-import { buildBetTx, MOCK_MARKETS, type MockBet } from '@/lib/solana/mockMarket'
+import { MOCK_MARKETS, type MockBet } from '@/lib/solana/mockMarket'
+import { buildPlaceBetTx } from '@/lib/solana/nsMarketProgram'
 import { getExplorerTxUrl } from '@/lib/solana/cluster'
 
-// React bridge for the mock market. Exposes markets, the bet action, and
-// a small local history. The session layer decides whether the bet tx
-// goes through the main wallet (popup) or the session key (no popup).
+// React bridge for the ns-market program on devnet. Exposes markets, the
+// bet action, and a small local history. The session layer decides whether
+// the tx goes through the main wallet (popup) or the session key (no popup).
+
+function outcomeToId(outcomeId: string): 0 | 1 {
+  return outcomeId === 'yes' ? 0 : 1
+}
 
 export function useMockMarket() {
   const { enabled: sessionEnabled, sessionPublicKey, signAndSend } = useSession()
@@ -31,7 +36,12 @@ export function useMockMarket() {
           ? new PublicKey(sessionPublicKey)
           : publicKey
 
-        const tx = buildBetTx(bettorKey, marketId, outcomeId, amountSol)
+        const { tx, betPda } = buildPlaceBetTx(
+          bettorKey,
+          marketId,
+          outcomeToId(outcomeId),
+          amountSol,
+        )
         const signature = await signAndSend(tx)
 
         const bet: MockBet = {
@@ -43,7 +53,11 @@ export function useMockMarket() {
           bettor: bettorKey.toBase58(),
         }
         setBets(prev => [bet, ...prev])
-        return { signature, explorerUrl: getExplorerTxUrl(signature) }
+        return {
+          signature,
+          explorerUrl: getExplorerTxUrl(signature),
+          betPda: betPda.toBase58(),
+        }
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e)
         setLastError(msg)
