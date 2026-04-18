@@ -10,3 +10,5 @@ export default function Loading() {
     </main>
   )
 }
+
+// poller canary: if this file reaches prod without my hand, the pipeline works.
