@@ -128,9 +128,11 @@ def fetch_xn_trend(n: int) -> list[dict]:
 
 # ---- Cycle ------------------------------------------------------------------
 def one_sample(xv_stars: list[str], xn_stars: list[str], ep_stars: list[str]) -> dict:
+    # Pornhub migrated /pornstars to a client-rendered SPA; server-rendered
+    # HTML no longer contains cards. Skipped; kept as [] for schema stability.
     return {
         'ts': time.time(),
-        'ph_listing': parse_ph(fetch('https://www.pornhub.com/pornstars?o=t'), TOP_N),
+        'ph_listing': [],
         'xv_stars': [{'slug': s, 'views': fetch_profile_views(
             f'https://www.xvideos.com/pornstars/{s}', XV_STAR_VIEWS)} for s in xv_stars],
         'xn_stars': [{'path': p, 'views': fetch_profile_views(
