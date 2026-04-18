@@ -66,8 +66,7 @@ export const SIDE_ACCENTS: SideAccent[] = [
   { appearSec: T(31.4), hideSec: T(36.8), title: "Normal exchange", sub: "insiders pick the markets they own", titleSize: 64 },
   // scene 6 (37.28–46.48, left-small) — the fix
   { appearSec: T(38.8), hideSec: T(46.0), title: "Batches of thousands", sub: "insiders forced into markets where they have no edge", titleSize: 60 },
-  // scene 8 (52.00–60.56, right-medium) — market categories
-  { appearSec: T(53.4), hideSec: T(60.2), title: "Twitch, memes, animals, movies.", sub: "Settlement every 10 minutes.", titleSize: 76 },
+  // scene 8 (52.00–60.56) — now covered by FullscreenMarkets (per-category BrollGrids)
 ];
 
 export interface CenterCallout {
@@ -82,8 +81,7 @@ export interface CenterCallout {
 export const CENTER_CALLOUTS: CenterCallout[] = [
   // scene 4 — "Introducing General Market"
   { appearSec: T(25.2), hideSec: T(29.8), text: "Insider-proof", position: "top", size: 76 },
-  // scene 7 — "Quantity has protection. Trade 500 exclusive markets."
-  { appearSec: T(47.0), hideSec: T(51.6), text: "500 exclusive markets", position: "bottom", size: 88 },
+  // scene 7 — "Trade 500,000 exclusive markets" is now rendered by FullscreenMarkets
 ];
 
 export const BOTTOM_LABEL_TEXT = "Never pay spread. Trade where you can win.";

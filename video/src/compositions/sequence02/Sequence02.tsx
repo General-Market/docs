@@ -17,6 +17,7 @@ import {
   Audio,
   Easing,
   Img,
+  OffthreadVideo,
   Video,
   interpolate,
   staticFile,
@@ -32,7 +33,7 @@ import {
   getAnimatedRect,
 } from "../endcard/layout";
 import { FONT } from "../tutorial/designTokens";
-import { SRC, W, toFrames } from "./theme";
+import { SRC, VOICE_SRC, W, toFrames } from "./theme";
 import {
   SCENES,
   SIDE_ACCENTS,
@@ -43,8 +44,8 @@ import {
 } from "./scenes";
 import { TimedCascadeText } from "./TimedCascadeText";
 import { useZoom } from "./PunchZoom";
-import { CinematicWebcam } from "./CinematicWebcam";
 import { Sequence02Diagrams } from "./diagrams/Sequence02Diagrams";
+import { FullscreenMarkets } from "./FullscreenMarkets";
 
 const EASE_OUT = Easing.bezier(0.16, 1, 0.3, 1);
 
@@ -86,10 +87,11 @@ export const Sequence02: React.FC = () => {
 
   return (
     <AbsoluteFill style={{ background: "#000" }}>
-      {/* Voice track — CinematicWebcam renders the video as a silent texture,
-          and the backdrop Video is muted. Feed the audio here so the voice
-          lives regardless of how the webcam is rendered. */}
-      <Audio src={staticFile(SRC)} />
+      {/* Voice track — dedicated boosted WAV (clean-voice preset: HPF +
+          compressor + gain + limiter). CinematicWebcam renders silent;
+          backdrop Video is muted. Volume 1.5 for extra presence — limiter
+          in the WAV prevents clipping. */}
+      <Audio src={staticFile(VOICE_SRC)} volume={1.5} />
 
       {/* Ambient blurred backdrop — same source, crushed */}
       <AbsoluteFill>
@@ -109,7 +111,7 @@ export const Sequence02: React.FC = () => {
       {/* Cold-blue scrim over the backdrop */}
       <AbsoluteFill style={{ background: "rgba(0, 14, 30, 0.42)" }} />
 
-      {/* Clean speaker video — ThreeCanvas + postprocessing (bloom, ACES, saturation, grain) */}
+      {/* Clean speaker video inside the animated rect — raw, step-zoomed */}
       <div
         style={{
           position: "absolute",
@@ -122,11 +124,17 @@ export const Sequence02: React.FC = () => {
           boxShadow: "0 40px 120px rgba(0, 0, 0, 0.55)",
         }}
       >
-        <CinematicWebcam
-          src={SRC}
-          width={rect.w}
-          height={rect.h}
-          zoom={zoomScale}
+        <OffthreadVideo
+          src={staticFile(SRC)}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            transform: `scale(${zoomScale})`,
+            transformOrigin: "center center",
+            willChange: "transform",
+          }}
+          muted
         />
       </div>
 
@@ -390,6 +398,11 @@ export const Sequence02: React.FC = () => {
           </div>
         </>
       )}
+
+      {/* Fullscreen market grids — scenes 7+8 (46.48–60.56s). Renders after
+          every other UI layer so the webcam, ASCII border, diagrams, and
+          callouts are fully occluded for the duration. */}
+      <FullscreenMarkets />
 
       {/* Green ASCII opener */}
       {isGreenVisible && <GreenAsciiScreen slideOut={greenSlideProgress} />}
