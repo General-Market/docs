@@ -28,9 +28,9 @@ import {
 // leaks into React devtools). Closing the tab terminates the session.
 
 interface SessionMeta {
-  spendingCap: bigint
-  tokenMint: string
-  userTokenAccount: string
+  spendingCap: bigint | null
+  tokenMint: string | null
+  userTokenAccount: string | null
   expiresAt: number | null
   enabledAt: number
 }
@@ -76,9 +76,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
         sessionRef.current = kp
         setMeta({
-          spendingCap: config.spendingCap,
-          tokenMint: config.tokenMint.toBase58(),
-          userTokenAccount: config.userTokenAccount.toBase58(),
+          spendingCap: config.spendingCap ?? null,
+          tokenMint: config.tokenMint?.toBase58() ?? null,
+          userTokenAccount: config.userTokenAccount?.toBase58() ?? null,
           expiresAt: opts?.durationMs ? Date.now() + opts.durationMs : null,
           enabledAt: Date.now(),
         })
@@ -98,7 +98,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     }
     setDisabling(true)
     try {
-      const tx = buildDisableSessionTx(publicKey, new PublicKey(meta.userTokenAccount))
+      const ata = meta.userTokenAccount ? new PublicKey(meta.userTokenAccount) : undefined
+      const tx = buildDisableSessionTx(publicKey, ata)
       const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash()
       tx.recentBlockhash = blockhash
       tx.feePayer = publicKey
