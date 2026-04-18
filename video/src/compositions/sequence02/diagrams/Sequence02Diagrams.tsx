@@ -30,6 +30,7 @@ import {
   REVEAL,
   IMPACT,
   RAPID_POP,
+  SWOOSH,
 } from "../../tutorial/sfxMap";
 import { getContentArea } from "../scenes";
 import type { Rect } from "../../endcard/layout";
@@ -647,88 +648,86 @@ const IcebergShimmer: React.FC<{
   );
 };
 
-// ── Overlay cards — both on the RIGHT of the iceberg ────────────────────
-// Two white Wise cards, anchored in image-space (0..1 on the cropped image)
-// so they track the iceberg through sway, pan, and zoom. Both are present
-// from frame 0 — discovery is camera-driven, not time-driven. No rotation,
-// no fade-ins, no strike-through wipes. Lifted straight from the Wise
-// mobile app: activity-style list for the culprits, account-style feature
-// card for INSIDERS.
+// ── Overlay cards — screen-space, flush to the right edge ───────────────
+// The iceberg image still sways, pans and zooms in the background. The
+// cards are floating Wise-app UI in front of it, anchored in viewport
+// coordinates so they are always fully inside 1920×1080 regardless of
+// camera level. A barely-there parallax keeps them weather-connected to
+// the scene without ever threatening the edge.
 
 const CULPRITS: ReadonlyArray<{
   word: string;
   amount: string;
   glyph: string;
+  /** Scene-local frame at which the word lands in voice. */
+  revealAt: number;
 }> = [
-  { word: "Strategy", amount: "−$1,240", glyph: "📉" },
-  { word: "Fees", amount: "−$420", glyph: "💸" },
-  { word: "Discipline", amount: "−$960", glyph: "⏱️" },
+  // Scene 3 starts 13.92s. Voice lands at ≈14.9 / 16.0 / 17.2 — scene-local
+  // frames 29 / 62 / 98 at 30fps. Estimates, not listened-verified.
+  { word: "Strategy", amount: "−$1,240", glyph: "📉", revealAt: 29 },
+  { word: "Fees", amount: "−$420", glyph: "💸", revealAt: 62 },
+  { word: "Discipline", amount: "−$960", glyph: "⏱️", revealAt: 98 },
 ];
 
-// Image-space anchor for the upper-right "what you blamed" card.
-// Iceberg body at full view occupies roughly pctX ∈ [0.20, 0.70];
-// this card's left edge stays at ≥ 0.63 (pctX − pctW/2 = 0.78 − 0.15).
-const CULPRITS_CARD = {
-  pctX: 0.78,
-  pctY: 0.22,
-  pctW: 0.30,
-};
-
-// Image-space anchor for the lower-right "INSIDERS" feature card.
-// Left edge stays at 0.57 (0.76 − 0.19) — clear of the submerged mass
-// which in CAM_BOTTOM occupies the center-left.
-const INSIDERS_CARD = {
-  pctX: 0.76,
-  pctY: 0.62,
-  pctW: 0.38,
-};
+const REVEAL_SPRING_FRAMES = 12;
+const SLASH_DELAY_FRAMES = 17; // ≈0.55s after word lands
+const SLASH_WIPE_FRAMES = 8; // ≈0.28s
 
 const DIVIDER = "1px solid rgba(14,15,12,0.08)";
 
-const CulpritsCard: React.FC<{
-  imgLeft: number;
-  imgTop: number;
-  imgW: number;
-  imgH: number;
-}> = ({ imgLeft, imgTop, imgW, imgH }) => {
-  const centerX = imgLeft + CULPRITS_CARD.pctX * imgW;
-  const centerY = imgTop + CULPRITS_CARD.pctY * imgH;
-  const width = Math.round(imgW * CULPRITS_CARD.pctW);
+// Subtle parallax — drift the cards by a small fraction of the iceberg's
+// sway. Capped amplitude (≤ 6px) so the card never eats into the gutter.
+const parallax = (frame: number) => {
+  const swayX = Math.sin(frame * 0.055) * 6 + Math.sin(frame * 0.021) * 2;
+  const swayY = Math.sin(frame * 0.041 + 1.1) * 3;
+  return {
+    dx: Math.max(-6, Math.min(6, swayX * 0.15)),
+    dy: Math.max(-6, Math.min(6, swayY * 0.15)),
+  };
+};
 
-  // Scale with the iceberg — size the list off the full card width so
-  // every row reads at any camera zoom.
-  const imageScale = imgH / ICE_REGION_H;
-  const rowFontSize = Math.round(
-    Math.max(22, Math.min(52, 34 * (imageScale / 1.2))),
-  );
-  const labelSize = Math.max(14, Math.round(rowFontSize * 0.58));
-  const amountSize = Math.round(rowFontSize * 0.92);
-  const avatarSize = Math.round(rowFontSize * 1.55);
-  const glyphSize = Math.round(avatarSize * 0.58);
-  const strikeH = Math.max(3, Math.round(rowFontSize * 0.09));
-  const rowPadV = Math.round(rowFontSize * 0.55);
-  const padV = Math.round(rowFontSize * 0.75);
-  const padH = Math.round(rowFontSize * 0.95);
-  const headerGap = Math.round(rowFontSize * 0.55);
+const CulpritsCard: React.FC = () => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const { dx, dy } = parallax(frame);
+
+  // Fixed screen-space geometry. Upper-right quadrant, flush to the
+  // right gutter. Iceberg body sits left-of-center at every cam level,
+  // so the right edge stays clear.
+  const CARD_WIDTH = 560;
+  const CARD_RIGHT = 56;
+  const CARD_TOP = 120;
+
+  const rowFontSize = 44;
+  const labelSize = 22;
+  const amountSize = 38;
+  const avatarSize = 64;
+  const glyphSize = 34;
+  const strikeH = 4;
+  const rowPadV = 18;
+  const padV = 32;
+  const padH = 40;
+  const headerGap = 22;
+  const rowHeight = avatarSize + rowPadV * 2; // fixed row → skeleton keeps card stable
 
   return (
     <div
       style={{
         position: "absolute",
-        left: centerX,
-        top: centerY,
-        width,
-        transform: "translate(-50%, -50%)",
+        right: CARD_RIGHT - dx,
+        top: CARD_TOP + dy,
+        width: CARD_WIDTH,
         pointerEvents: "none",
       }}
     >
       <div
         style={{
           ...PANEL.white,
+          background: COLOR.white,
           padding: `${padV}px ${padH}px`,
-          borderRadius: 24,
+          borderRadius: 28,
           boxShadow:
-            "rgba(14,15,12,0.12) 0px 0px 0px 1px, 0 18px 48px rgba(0,0,0,0.25)",
+            "rgba(14,15,12,0.12) 0px 0px 0px 1px, 0 30px 70px rgba(0,0,0,0.35)",
         }}
       >
         {/* Header row — Wise activity screen style */}
@@ -762,133 +761,205 @@ const CulpritsCard: React.FC<{
           </span>
         </div>
 
-        {/* List rows */}
-        {CULPRITS.map((row, i) => (
-          <div
-            key={row.word}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: Math.round(rowFontSize * 0.45),
-              paddingTop: i === 0 ? 0 : rowPadV,
-              paddingBottom: rowPadV,
-              borderBottom: i === CULPRITS.length - 1 ? "none" : DIVIDER,
-            }}
-          >
-            {/* Leading avatar — flat gray disc with emoji glyph. Emoji
-                chosen over colored dots to mirror the categorized-icon
-                convention in Wise's activity feed. */}
+        {/* List rows — each row holds its height via a skeleton, then
+            springs in on the voice beat, then the strike wipes across. */}
+        {CULPRITS.map((row, i) => {
+          const revealT = spring({
+            frame: frame - row.revealAt,
+            fps,
+            durationInFrames: REVEAL_SPRING_FRAMES,
+            config: { damping: 14, stiffness: 180, mass: 0.6 },
+          });
+          const revealed = frame >= row.revealAt;
+          const slashStart = row.revealAt + SLASH_DELAY_FRAMES;
+          const slashT = interpolate(
+            frame,
+            [slashStart, slashStart + SLASH_WIPE_FRAMES],
+            [0, 1],
+            clamp,
+          );
+
+          return (
             <div
+              key={row.word}
               style={{
-                width: avatarSize,
-                height: avatarSize,
-                borderRadius: "50%",
-                background: COLOR.lightSurface,
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center",
-                fontSize: glyphSize,
-                lineHeight: 1,
-                flexShrink: 0,
+                gap: 16,
+                paddingTop: i === 0 ? 0 : rowPadV,
+                paddingBottom: rowPadV,
+                borderBottom: i === CULPRITS.length - 1 ? "none" : DIVIDER,
+                minHeight: rowHeight,
+                position: "relative",
               }}
             >
-              {row.glyph}
-            </div>
-
-            {/* Middle — label with static red strike-through. The strike
-                sits inside an inline-block wrapper so it matches the word
-                width exactly, not the amount. */}
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <span
-                style={{
-                  position: "relative",
-                  display: "inline-block",
-                }}
-              >
-                <span
-                  style={{
-                    ...TYPE.bodySemibold,
-                    fontSize: rowFontSize,
-                    color: COLOR.nearBlack,
-                    lineHeight: 1.1,
-                  }}
-                >
-                  {row.word}
-                </span>
-                <span
+              {/* Skeleton state — thin gray pill occupying the row until
+                  the voice beat hits. Keeps the card height stable. */}
+              {!revealed && (
+                <div
                   style={{
                     position: "absolute",
                     left: 0,
                     right: 0,
                     top: "50%",
-                    height: strikeH,
-                    background: COLOR.danger,
-                    borderRadius: strikeH / 2,
-                    transform: `translateY(-50%) rotate(-6deg)`,
-                    transformOrigin: "50% 50%",
+                    transform: "translateY(-50%)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 16,
                   }}
-                />
-              </span>
-            </div>
+                >
+                  <div
+                    style={{
+                      width: avatarSize,
+                      height: avatarSize,
+                      borderRadius: "50%",
+                      background: "rgba(14,15,12,0.06)",
+                      flexShrink: 0,
+                    }}
+                  />
+                  <div
+                    style={{
+                      flex: 1,
+                      height: rowFontSize * 0.55,
+                      borderRadius: 999,
+                      background: "rgba(14,15,12,0.06)",
+                    }}
+                  />
+                  <div
+                    style={{
+                      width: 96,
+                      height: rowFontSize * 0.5,
+                      borderRadius: 999,
+                      background: "rgba(14,15,12,0.06)",
+                      flexShrink: 0,
+                    }}
+                  />
+                </div>
+              )}
 
-            {/* Right — red outgoing amount, tabular nums */}
-            <span
-              style={{
-                fontFamily: FONT.body,
-                fontSize: amountSize,
-                fontWeight: 700,
-                color: COLOR.danger,
-                fontVariantNumeric: "tabular-nums",
-                letterSpacing: "-0.01em",
-                flexShrink: 0,
-              }}
-            >
-              {row.amount}
-            </span>
-          </div>
-        ))}
+              {/* Revealed content */}
+              {revealed && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 16,
+                    width: "100%",
+                    opacity: revealT,
+                    transform: `translateY(${(1 - revealT) * 8}px)`,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: avatarSize,
+                      height: avatarSize,
+                      borderRadius: "50%",
+                      background: COLOR.lightSurface,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: glyphSize,
+                      lineHeight: 1,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {row.glyph}
+                  </div>
+
+                  {/* Word + animated strike. The strike wipes left→right
+                      exactly across the word — not the amount. */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <span
+                      style={{
+                        position: "relative",
+                        display: "inline-block",
+                      }}
+                    >
+                      <span
+                        style={{
+                          ...TYPE.bodySemibold,
+                          fontSize: rowFontSize,
+                          color: COLOR.nearBlack,
+                          lineHeight: 1.1,
+                        }}
+                      >
+                        {row.word}
+                      </span>
+                      {slashT > 0 && (
+                        <span
+                          style={{
+                            position: "absolute",
+                            left: 0,
+                            top: "50%",
+                            width: `${slashT * 100}%`,
+                            height: strikeH,
+                            background: COLOR.danger,
+                            borderRadius: strikeH / 2,
+                            transform: "translateY(-50%)",
+                            transformOrigin: "0 50%",
+                          }}
+                        />
+                      )}
+                    </span>
+                  </div>
+
+                  <span
+                    style={{
+                      fontFamily: FONT.body,
+                      fontSize: amountSize,
+                      fontWeight: 700,
+                      color: COLOR.danger,
+                      fontVariantNumeric: "tabular-nums",
+                      letterSpacing: "-0.01em",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {row.amount}
+                  </span>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 };
 
-const InsidersCard: React.FC<{
-  imgLeft: number;
-  imgTop: number;
-  imgW: number;
-  imgH: number;
-}> = ({ imgLeft, imgTop, imgW, imgH }) => {
-  const centerX = imgLeft + INSIDERS_CARD.pctX * imgW;
-  const centerY = imgTop + INSIDERS_CARD.pctY * imgH;
-  const width = Math.round(imgW * INSIDERS_CARD.pctW);
+const InsidersCard: React.FC = () => {
+  const frame = useCurrentFrame();
+  const { dx, dy } = parallax(frame);
 
-  const imageScale = imgH / ICE_REGION_H;
-  const insidersFontSize = Math.round(
-    Math.max(72, Math.min(180, 120 * (imageScale / 1.3))),
-  );
-  const pillFontSize = Math.max(14, Math.round(insidersFontSize * 0.14));
-  const captionSize = Math.max(14, Math.round(insidersFontSize * 0.17));
-  const padV = Math.round(insidersFontSize * 0.34);
-  const padH = Math.round(insidersFontSize * 0.42);
+  // Fixed screen-space geometry. Lower-right quadrant, flush to the
+  // right gutter. Present from frame 0.
+  const CARD_WIDTH = 600;
+  const CARD_RIGHT = 56;
+  const CARD_BOTTOM = 72;
+
+  const insidersFontSize = 148;
+  const pillFontSize = 22;
+  const captionSize = 26;
+  const padV = 44;
+  const padH = 52;
 
   return (
     <div
       style={{
         position: "absolute",
-        left: centerX,
-        top: centerY,
-        width,
-        transform: "translate(-50%, -50%)",
+        right: CARD_RIGHT - dx,
+        bottom: CARD_BOTTOM - dy,
+        width: CARD_WIDTH,
         pointerEvents: "none",
       }}
     >
       <div
         style={{
           ...PANEL.white,
+          background: COLOR.white,
           padding: `${padV}px ${padH}px`,
-          borderRadius: 30,
+          borderRadius: 34,
           boxShadow:
-            "rgba(14,15,12,0.12) 0px 0px 0px 1px, 0 18px 48px rgba(0,0,0,0.25)",
+            "rgba(14,15,12,0.12) 0px 0px 0px 1px, 0 30px 70px rgba(0,0,0,0.35)",
           display: "flex",
           flexDirection: "column",
           alignItems: "stretch",
@@ -902,7 +973,7 @@ const InsidersCard: React.FC<{
               fontSize: pillFontSize,
               background: COLOR.danger,
               color: COLOR.white,
-              padding: `${Math.max(4, Math.round(pillFontSize * 0.4))}px ${Math.round(pillFontSize * 0.95)}px`,
+              padding: "9px 18px",
               borderRadius: 9999,
               letterSpacing: "0.08em",
               lineHeight: 1,
@@ -962,17 +1033,17 @@ const IcebergBeats: React.FC<{ area: Rect; duration: number }> = ({
   // Scene 3 (10.48s) occupies the full 1920×1080 frame. Webcam beneath is
   // covered wholesale for this stretch — the iceberg carries the beat.
   //
-  // Content is static from frame 0. The reveal is camera-driven: CAM_TOP
-  // frames the culprits card on the upper-right (sky); the pull-back
-  // descends to CAM_BOTTOM which exposes the INSIDERS card on the lower-
-  // right, below the waterline. The viewer discovers, not waits.
+  // The iceberg image pans and zooms in the background. The overlay cards
+  // live in screen-space, flush to the right gutter; the three culprits
+  // reveal on voice beats and get slashed ~0.55s later. INSIDERS stays
+  // visible the whole time — discovered as the camera descends below the
+  // waterline.
 
   const P1_END = sec(4.0);
   const P2_END = sec(7.0);
   const P3_SETTLE = sec(9.0);
 
   const camState = resolveIcebergCam(frame, P1_END, P2_END, P3_SETTLE);
-  const { imgLeft, imgTop, imgW, imgH } = camState;
 
   // Outer fade — mirrors the webcam panel entrance/exit so the cover is clean.
   const enter = interpolate(frame, [0, 16], [0, 1], {
@@ -992,23 +1063,24 @@ const IcebergBeats: React.FC<{ area: Rect; duration: number }> = ({
     >
       <IcebergCameraView state={camState} frame={frame} />
 
-      {/* "what you blamed" card — upper-right, above the waterline */}
-      <CulpritsCard
-        imgLeft={imgLeft}
-        imgTop={imgTop}
-        imgW={imgW}
-        imgH={imgH}
-      />
+      {/* "what you blamed" card — upper-right, flush to gutter.
+          Culprits reveal on voice, get slashed shortly after. */}
+      <CulpritsCard />
 
-      {/* "INSIDERS" card — lower-right, below the waterline */}
-      <InsidersCard
-        imgLeft={imgLeft}
-        imgTop={imgTop}
-        imgW={imgW}
-        imgH={imgH}
-      />
+      {/* "INSIDERS" card — lower-right, flush to gutter. */}
+      <InsidersCard />
 
-      {/* No SFX. No content beats — the camera is the entire punctuation. */}
+      {/* SFX — voice-synced reveals and slashes for the three culprits.
+          Reveal: soft plob. Slash: quick swish. */}
+      {CULPRITS.map((row) => (
+        <React.Fragment key={row.word}>
+          <Sfx sound={PLOB_BG} delay={row.revealAt} />
+          <Sfx
+            sound={SWOOSH}
+            delay={row.revealAt + SLASH_DELAY_FRAMES}
+          />
+        </React.Fragment>
+      ))}
     </AbsoluteFill>
   );
 };
