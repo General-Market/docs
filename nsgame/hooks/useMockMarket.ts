@@ -37,7 +37,7 @@ export interface OnChainBet {
 }
 
 export function useMockMarket() {
-  const { enabled: sessionEnabled, sessionPublicKey, signAndSend } = useSession()
+  const { enabled: sessionEnabled, sessionPublicKey, signAndSend, refreshSessionBalance } = useSession()
   const { publicKey, address, signAndSendTransaction, connection } = useWallet()
 
   const [marketStates, setMarketStates] = useState<Record<string, MarketAccount | null>>({})
@@ -190,6 +190,7 @@ export function useMockMarket() {
         // Refresh chain state in the background — don't block the UI on it.
         void refreshMarkets()
         void refreshBets()
+        void refreshSessionBalance()
         return {
           signature,
           explorerUrl: getExplorerTxUrl(signature),
@@ -203,7 +204,7 @@ export function useMockMarket() {
         setPlacing(false)
       }
     },
-    [publicKey, address, sessionEnabled, sessionPublicKey, signAndSend, refreshMarkets, refreshBets, persistRecentBets],
+    [publicKey, address, sessionEnabled, sessionPublicKey, signAndSend, refreshMarkets, refreshBets, persistRecentBets, refreshSessionBalance],
   )
 
   const resolveMarket = useCallback(

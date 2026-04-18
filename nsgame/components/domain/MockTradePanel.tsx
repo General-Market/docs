@@ -103,9 +103,20 @@ export function MockTradePanel() {
           </>
         ) : session.enabled ? (
           <>
-            <span className="inline-block w-2 h-2 rounded-full bg-emerald-400" />
+            <span className={`inline-block w-2 h-2 rounded-full ${
+              session.sessionLamports !== null && session.sessionLamports < 0.005 * LAMPORTS_PER_SOL
+                ? 'bg-amber-400 animate-pulse'
+                : 'bg-emerald-400'
+            }`} />
             <div className="flex-1">
-              <div className="text-sm font-medium">1-click is on</div>
+              <div className="text-sm font-medium">
+                1-click is on
+                {session.sessionLamports !== null && (
+                  <span className="ml-2 text-xs font-mono text-zinc-500">
+                    ({(session.sessionLamports / LAMPORTS_PER_SOL).toFixed(4)} SOL left)
+                  </span>
+                )}
+              </div>
               <div className="text-xs text-zinc-500 font-mono">
                 session: {session.sessionPublicKey ? truncateAddress(session.sessionPublicKey) : '—'} · you: {address ? truncateAddress(address) : '—'}
               </div>

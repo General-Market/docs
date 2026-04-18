@@ -4,6 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -46,12 +47,19 @@ interface SessionContextValue {
   enabling: boolean
   disabling: boolean
   sessionPublicKey: string | null
+  // Session key's on-chain SOL balance in lamports. Polled while the
+  // session is active; null when no session. The UI reads this to warn
+  // when the session is nearly out of gas.
+  sessionLamports: number | null
   meta: SessionMeta | null
   enable: (config: SessionConfig, opts?: { durationMs?: number }) => Promise<string | null>
   disable: () => Promise<string | null>
   // Sign + broadcast with the session key if one is active, otherwise fall
   // through to the main wallet. Returns the signature (tx id).
   signAndSend: (tx: Transaction | VersionedTransaction) => Promise<string>
+  // Force a balance re-fetch — call after a bet lands so the UI updates
+  // without waiting for the next poll tick.
+  refreshSessionBalance: () => Promise<void>
 }
 
 const SessionContext = createContext<SessionContextValue | null>(null)
@@ -62,6 +70,36 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [meta, setMeta] = useState<SessionMeta | null>(null)
   const [enabling, setEnabling] = useState(false)
   const [disabling, setDisabling] = useState(false)
+  const [sessionLamports, setSessionLamports] = useState<number | null>(null)
+
+  // Fetches the session key's on-chain balance. Safe to call with no
+  // session — it just clears the value.
+  const refreshSessionBalance = useCallback(async () => {
+    const session = sessionRef.current
+    if (!session) {
+      setSessionLamports(null)
+      return
+    }
+    try {
+      const lamports = await connection.getBalance(session.publicKey, 'confirmed')
+      setSessionLamports(lamports)
+    } catch {
+      // Network hiccup — keep the last value, don't flash null.
+    }
+  }, [connection])
+
+  // Poll the session balance while a session is live. 8s cadence — slow
+  // enough to not hammer the RPC, fast enough that the UI reflects bets
+  // within a couple seconds of confirmation.
+  useEffect(() => {
+    if (!meta) {
+      setSessionLamports(null)
+      return
+    }
+    void refreshSessionBalance()
+    const id = window.setInterval(refreshSessionBalance, 8000)
+    return () => window.clearInterval(id)
+  }, [meta, refreshSessionBalance])
 
   const enable = useCallback(
     async (config: SessionConfig, opts?: { durationMs?: number }): Promise<string | null> => {
@@ -146,23 +184,25 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         return signAndSendTransaction(tx)
       }
 
-      // VersionedTransaction requires a different signing path. For now the
-      // session flow supports legacy Transaction only; trade builders can
-      // opt out by using the main wallet when they need v0 tables.
+      // VersionedTransaction path — the message must have been built with
+      // the session key as fee payer / required signer. We don't mutate
+      // the message; the caller is responsible for shape.
       if (!(tx instanceof Transaction)) {
-        return signAndSendTransaction(tx)
+        tx.sign([session])
+        const raw = tx.serialize()
+        return sendAndConfirmRawTransaction(connection, Buffer.from(raw), {
+          commitment: 'confirmed',
+        })
       }
 
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash()
+      const { blockhash } = await connection.getLatestBlockhash()
       tx.recentBlockhash = blockhash
       tx.feePayer = session.publicKey
       tx.sign(session)
       const raw = tx.serialize()
-      const signature = await sendAndConfirmRawTransaction(connection, Buffer.from(raw), {
+      return sendAndConfirmRawTransaction(connection, Buffer.from(raw), {
         commitment: 'confirmed',
       })
-      void lastValidBlockHeight
-      return signature
     },
     [meta, connection, signAndSendTransaction],
   )
@@ -173,12 +213,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       enabling,
       disabling,
       sessionPublicKey: sessionRef.current?.publicKey.toBase58() ?? null,
+      sessionLamports,
       meta,
       enable,
       disable,
       signAndSend,
+      refreshSessionBalance,
     }),
-    [meta, enabling, disabling, enable, disable, signAndSend],
+    [meta, enabling, disabling, sessionLamports, enable, disable, signAndSend, refreshSessionBalance],
   )
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>
