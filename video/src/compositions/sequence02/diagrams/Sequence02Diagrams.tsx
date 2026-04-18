@@ -647,27 +647,43 @@ const IcebergShimmer: React.FC<{
   );
 };
 
-// ── Overlay cards — all on the LEFT of the iceberg ───────────────────────
+// ── Overlay cards — both on the RIGHT of the iceberg ────────────────────
 // Two white Wise cards, anchored in image-space (0..1 on the cropped image)
 // so they track the iceberg through sway, pan, and zoom. Both are present
 // from frame 0 — discovery is camera-driven, not time-driven. No rotation,
-// no fade-ins, no strike-through wipes. The strike is drawn static.
+// no fade-ins, no strike-through wipes. Lifted straight from the Wise
+// mobile app: activity-style list for the culprits, account-style feature
+// card for INSIDERS.
 
-const CULPRITS = ["Strategy", "Fees", "Discipline"] as const;
+const CULPRITS: ReadonlyArray<{
+  word: string;
+  amount: string;
+  glyph: string;
+}> = [
+  { word: "Strategy", amount: "−$1,240", glyph: "📉" },
+  { word: "Fees", amount: "−$420", glyph: "💸" },
+  { word: "Discipline", amount: "−$960", glyph: "⏱️" },
+];
 
-// Image-space anchor for the upper-left "what you blamed" card.
+// Image-space anchor for the upper-right "what you blamed" card.
+// Iceberg body at full view occupies roughly pctX ∈ [0.20, 0.70];
+// this card's left edge stays at ≥ 0.63 (pctX − pctW/2 = 0.78 − 0.15).
 const CULPRITS_CARD = {
-  pctX: 0.18, // horizontal center on the cropped image
-  pctY: 0.22, // vertical center, above the waterline (~0.36)
-  pctW: 0.30, // width as fraction of imgW
+  pctX: 0.78,
+  pctY: 0.22,
+  pctW: 0.30,
 };
 
-// Image-space anchor for the lower-left "INSIDERS" card.
+// Image-space anchor for the lower-right "INSIDERS" feature card.
+// Left edge stays at 0.57 (0.76 − 0.19) — clear of the submerged mass
+// which in CAM_BOTTOM occupies the center-left.
 const INSIDERS_CARD = {
-  pctX: 0.22, // horizontal center
-  pctY: 0.62, // vertical center, well below the waterline
+  pctX: 0.76,
+  pctY: 0.62,
   pctW: 0.38,
 };
+
+const DIVIDER = "1px solid rgba(14,15,12,0.08)";
 
 const CulpritsCard: React.FC<{
   imgLeft: number;
@@ -679,16 +695,21 @@ const CulpritsCard: React.FC<{
   const centerY = imgTop + CULPRITS_CARD.pctY * imgH;
   const width = Math.round(imgW * CULPRITS_CARD.pctW);
 
-  // Scale type with the iceberg so it reads from any zoom.
+  // Scale with the iceberg — size the list off the full card width so
+  // every row reads at any camera zoom.
   const imageScale = imgH / ICE_REGION_H;
-  const headingSize = Math.round(
-    Math.max(44, Math.min(96, 72 * (imageScale / 1.6))),
+  const rowFontSize = Math.round(
+    Math.max(22, Math.min(52, 34 * (imageScale / 1.2))),
   );
-  const labelSize = Math.max(14, Math.round(headingSize * 0.24));
-  const strikeH = Math.max(3, Math.round(headingSize * 0.07));
-  const rowGap = Math.round(headingSize * 0.34);
-  const padV = Math.round(headingSize * 0.55);
-  const padH = Math.round(headingSize * 0.62);
+  const labelSize = Math.max(14, Math.round(rowFontSize * 0.58));
+  const amountSize = Math.round(rowFontSize * 0.92);
+  const avatarSize = Math.round(rowFontSize * 1.55);
+  const glyphSize = Math.round(avatarSize * 0.58);
+  const strikeH = Math.max(3, Math.round(rowFontSize * 0.09));
+  const rowPadV = Math.round(rowFontSize * 0.55);
+  const padV = Math.round(rowFontSize * 0.75);
+  const padH = Math.round(rowFontSize * 0.95);
+  const headerGap = Math.round(rowFontSize * 0.55);
 
   return (
     <div
@@ -705,56 +726,125 @@ const CulpritsCard: React.FC<{
         style={{
           ...PANEL.white,
           padding: `${padV}px ${padH}px`,
-          borderRadius: 30,
+          borderRadius: 24,
           boxShadow:
-            "rgba(14,15,12,0.12) 0px 0px 0px 1px, 0 30px 80px rgba(0,0,0,0.35)",
+            "rgba(14,15,12,0.12) 0px 0px 0px 1px, 0 18px 48px rgba(0,0,0,0.25)",
         }}
       >
+        {/* Header row — Wise activity screen style */}
         <div
           style={{
-            ...TYPE.label,
-            fontSize: labelSize,
-            color: COLOR.gray,
-            marginBottom: rowGap,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: headerGap,
           }}
         >
-          what you blamed
-        </div>
-        {CULPRITS.map((word, i) => (
-          <div
-            key={word}
+          <span
             style={{
-              position: "relative",
-              display: "flex",
-              alignItems: "center",
-              marginTop: i === 0 ? 0 : rowGap,
+              ...TYPE.label,
+              fontSize: labelSize,
+              color: COLOR.gray,
             }}
           >
-            <span
-              style={{
-                ...TYPE.sectionHeading,
-                fontSize: headingSize,
-                letterSpacing: "-0.02em",
-                lineHeight: 1,
-                color: COLOR.nearBlack,
-                display: "inline-block",
-              }}
-            >
-              {word}
-            </span>
-            {/* Static strike-through — no wipe, drawn at frame 0. */}
+            What you blamed
+          </span>
+          <span
+            style={{
+              ...TYPE.bodySemibold,
+              fontSize: labelSize,
+              color: COLOR.gray,
+              lineHeight: 1,
+              letterSpacing: "0.04em",
+            }}
+          >
+            ···
+          </span>
+        </div>
+
+        {/* List rows */}
+        {CULPRITS.map((row, i) => (
+          <div
+            key={row.word}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: Math.round(rowFontSize * 0.45),
+              paddingTop: i === 0 ? 0 : rowPadV,
+              paddingBottom: rowPadV,
+              borderBottom: i === CULPRITS.length - 1 ? "none" : DIVIDER,
+            }}
+          >
+            {/* Leading avatar — flat gray disc with emoji glyph. Emoji
+                chosen over colored dots to mirror the categorized-icon
+                convention in Wise's activity feed. */}
             <div
               style={{
-                position: "absolute",
-                left: 0,
-                right: 0,
-                top: "55%",
-                height: strikeH,
-                background: COLOR.danger,
-                borderRadius: strikeH / 2,
-                transform: "translateY(-50%)",
+                width: avatarSize,
+                height: avatarSize,
+                borderRadius: "50%",
+                background: COLOR.lightSurface,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: glyphSize,
+                lineHeight: 1,
+                flexShrink: 0,
               }}
-            />
+            >
+              {row.glyph}
+            </div>
+
+            {/* Middle — label with static red strike-through. The strike
+                sits inside an inline-block wrapper so it matches the word
+                width exactly, not the amount. */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <span
+                style={{
+                  position: "relative",
+                  display: "inline-block",
+                }}
+              >
+                <span
+                  style={{
+                    ...TYPE.bodySemibold,
+                    fontSize: rowFontSize,
+                    color: COLOR.nearBlack,
+                    lineHeight: 1.1,
+                  }}
+                >
+                  {row.word}
+                </span>
+                <span
+                  style={{
+                    position: "absolute",
+                    left: 0,
+                    right: 0,
+                    top: "50%",
+                    height: strikeH,
+                    background: COLOR.danger,
+                    borderRadius: strikeH / 2,
+                    transform: `translateY(-50%) rotate(-6deg)`,
+                    transformOrigin: "50% 50%",
+                  }}
+                />
+              </span>
+            </div>
+
+            {/* Right — red outgoing amount, tabular nums */}
+            <span
+              style={{
+                fontFamily: FONT.body,
+                fontSize: amountSize,
+                fontWeight: 700,
+                color: COLOR.danger,
+                fontVariantNumeric: "tabular-nums",
+                letterSpacing: "-0.01em",
+                flexShrink: 0,
+              }}
+            >
+              {row.amount}
+            </span>
           </div>
         ))}
       </div>
@@ -776,8 +866,9 @@ const InsidersCard: React.FC<{
   const insidersFontSize = Math.round(
     Math.max(72, Math.min(180, 120 * (imageScale / 1.3))),
   );
-  const pillFontSize = Math.max(14, Math.round(insidersFontSize * 0.16));
-  const padV = Math.round(insidersFontSize * 0.32);
+  const pillFontSize = Math.max(14, Math.round(insidersFontSize * 0.14));
+  const captionSize = Math.max(14, Math.round(insidersFontSize * 0.17));
+  const padV = Math.round(insidersFontSize * 0.34);
   const padH = Math.round(insidersFontSize * 0.42);
 
   return (
@@ -797,26 +888,31 @@ const InsidersCard: React.FC<{
           padding: `${padV}px ${padH}px`,
           borderRadius: 30,
           boxShadow:
-            "rgba(14,15,12,0.12) 0px 0px 0px 1px, 0 30px 80px rgba(0,0,0,0.35)",
+            "rgba(14,15,12,0.12) 0px 0px 0px 1px, 0 18px 48px rgba(0,0,0,0.25)",
           display: "flex",
           flexDirection: "column",
-          alignItems: "flex-start",
-          gap: Math.round(pillFontSize * 0.9),
+          alignItems: "stretch",
         }}
       >
-        <div
-          style={{
-            ...TYPE.label,
-            fontSize: pillFontSize,
-            background: COLOR.danger,
-            color: COLOR.white,
-            padding: `${Math.max(4, Math.round(pillFontSize * 0.35))}px ${Math.round(pillFontSize * 0.9)}px`,
-            borderRadius: 9999,
-            letterSpacing: "0.08em",
-          }}
-        >
-          what it was
+        {/* Top-left red pill — Wise feature card accent */}
+        <div style={{ display: "flex" }}>
+          <div
+            style={{
+              ...TYPE.label,
+              fontSize: pillFontSize,
+              background: COLOR.danger,
+              color: COLOR.white,
+              padding: `${Math.max(4, Math.round(pillFontSize * 0.4))}px ${Math.round(pillFontSize * 0.95)}px`,
+              borderRadius: 9999,
+              letterSpacing: "0.08em",
+              lineHeight: 1,
+            }}
+          >
+            the real thing
+          </div>
         </div>
+
+        {/* INSIDERS — the feature word */}
         <div
           style={{
             ...TYPE.displayMega,
@@ -825,9 +921,33 @@ const InsidersCard: React.FC<{
             letterSpacing: "-0.02em",
             lineHeight: 0.85,
             textAlign: "left",
+            marginTop: Math.round(insidersFontSize * 0.22),
+            marginBottom: Math.round(insidersFontSize * 0.2),
           }}
         >
           INSIDERS
+        </div>
+
+        {/* Divider */}
+        <div
+          style={{
+            height: 1,
+            background: "rgba(14,15,12,0.1)",
+            marginBottom: Math.round(captionSize * 0.7),
+          }}
+        />
+
+        {/* Caption — factual, understated */}
+        <div
+          style={{
+            ...TYPE.caption,
+            fontSize: captionSize,
+            color: COLOR.gray,
+            fontVariantNumeric: "tabular-nums",
+            lineHeight: 1.3,
+          }}
+        >
+          70% of winnings · every batch
         </div>
       </div>
     </div>
@@ -843,9 +963,9 @@ const IcebergBeats: React.FC<{ area: Rect; duration: number }> = ({
   // covered wholesale for this stretch — the iceberg carries the beat.
   //
   // Content is static from frame 0. The reveal is camera-driven: CAM_TOP
-  // shows the culprits card on the upper-left; the pull-back descends to
-  // CAM_BOTTOM which exposes the INSIDERS card below the waterline. The
-  // viewer discovers, not waits.
+  // frames the culprits card on the upper-right (sky); the pull-back
+  // descends to CAM_BOTTOM which exposes the INSIDERS card on the lower-
+  // right, below the waterline. The viewer discovers, not waits.
 
   const P1_END = sec(4.0);
   const P2_END = sec(7.0);
@@ -872,7 +992,7 @@ const IcebergBeats: React.FC<{ area: Rect; duration: number }> = ({
     >
       <IcebergCameraView state={camState} frame={frame} />
 
-      {/* "what you blamed" card — upper-left, above the waterline */}
+      {/* "what you blamed" card — upper-right, above the waterline */}
       <CulpritsCard
         imgLeft={imgLeft}
         imgTop={imgTop}
@@ -880,7 +1000,7 @@ const IcebergBeats: React.FC<{ area: Rect; duration: number }> = ({
         imgH={imgH}
       />
 
-      {/* "INSIDERS" card — lower-left, below the waterline */}
+      {/* "INSIDERS" card — lower-right, below the waterline */}
       <InsidersCard
         imgLeft={imgLeft}
         imgTop={imgTop}
@@ -888,8 +1008,7 @@ const IcebergBeats: React.FC<{ area: Rect; duration: number }> = ({
         imgH={imgH}
       />
 
-      {/* One soft marker at scene start. The camera carries the rest. */}
-      <Sfx sound={TEXT_IN} delay={0} />
+      {/* No SFX. No content beats — the camera is the entire punctuation. */}
     </AbsoluteFill>
   );
 };
