@@ -236,7 +236,7 @@ export function MockTradePanel() {
           <div className="space-y-1">
             {market.bets.map(b => {
               const mState = market.marketStates[b.marketId]
-              const canRedeem = mState?.resolved && mState.winningOutcome === (b.outcomeId === 'yes' ? 0 : 1)
+              const canRedeem = !b.redeemed && mState?.resolved && mState.winningOutcome === (b.outcomeId === 'yes' ? 0 : 1)
               return (
                 <div
                   key={b.signature}

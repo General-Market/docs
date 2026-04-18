@@ -11,6 +11,7 @@ import {
 } from 'react'
 import {
   Keypair,
+  LAMPORTS_PER_SOL,
   PublicKey,
   Transaction,
   VersionedTransaction,
@@ -20,9 +21,14 @@ import { useWallet } from '@/hooks/useWallet'
 import {
   buildDisableSessionTx,
   buildEnableSessionTx,
-  generateSessionKeypair,
+  deriveSessionKeypair,
   type SessionConfig,
 } from './session'
+
+// Skip the funding transaction if the session key already has at least
+// this fraction of the requested funding on chain. Lets reloads rehydrate
+// without paying a second on-chain tx.
+const REHYDRATE_THRESHOLD = 0.5
 
 // Session state lives only in memory (a useRef holds the Keypair so it never
 // leaks into React devtools). Closing the tab terminates the session.
@@ -41,7 +47,7 @@ interface SessionContextValue {
   disabling: boolean
   sessionPublicKey: string | null
   meta: SessionMeta | null
-  enable: (config: SessionConfig, opts?: { durationMs?: number }) => Promise<string>
+  enable: (config: SessionConfig, opts?: { durationMs?: number }) => Promise<string | null>
   disable: () => Promise<string | null>
   // Sign + broadcast with the session key if one is active, otherwise fall
   // through to the main wallet. Returns the signature (tx id).
@@ -51,28 +57,41 @@ interface SessionContextValue {
 const SessionContext = createContext<SessionContextValue | null>(null)
 
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const { publicKey, signAndSendTransaction, connection } = useWallet()
+  const { publicKey, signMessage, signAndSendTransaction, connection } = useWallet()
   const sessionRef = useRef<Keypair | null>(null)
   const [meta, setMeta] = useState<SessionMeta | null>(null)
   const [enabling, setEnabling] = useState(false)
   const [disabling, setDisabling] = useState(false)
 
   const enable = useCallback(
-    async (config: SessionConfig, opts?: { durationMs?: number }): Promise<string> => {
+    async (config: SessionConfig, opts?: { durationMs?: number }): Promise<string | null> => {
       if (!publicKey) throw new Error('Connect a wallet first')
       setEnabling(true)
       try {
-        const kp = generateSessionKeypair()
-        const tx = buildEnableSessionTx(publicKey, kp.publicKey, config)
-        const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash()
-        tx.recentBlockhash = blockhash
-        tx.feePayer = publicKey
+        // Derive a deterministic session keypair from a wallet-signed
+        // message. Same wallet + same message = same key on every reload.
+        const kp = await deriveSessionKeypair(publicKey, signMessage)
 
-        const signature = await signAndSendTransaction(tx)
-        await connection.confirmTransaction(
-          { signature, blockhash, lastValidBlockHeight },
-          'confirmed',
-        )
+        // If the session key already has enough SOL on chain (a previous
+        // tab funded it), skip the funding tx. One signature, no chain tx.
+        const currentLamports = await connection.getBalance(kp.publicKey, 'confirmed')
+        const neededLamports = Math.floor(config.solFunding * LAMPORTS_PER_SOL)
+        const skipFunding =
+          neededLamports === 0 ||
+          currentLamports >= Math.floor(neededLamports * REHYDRATE_THRESHOLD)
+
+        let signature: string | null = null
+        if (!skipFunding) {
+          const tx = buildEnableSessionTx(publicKey, kp.publicKey, config)
+          const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash()
+          tx.recentBlockhash = blockhash
+          tx.feePayer = publicKey
+          signature = await signAndSendTransaction(tx)
+          await connection.confirmTransaction(
+            { signature, blockhash, lastValidBlockHeight },
+            'confirmed',
+          )
+        }
 
         sessionRef.current = kp
         setMeta({
@@ -87,7 +106,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         setEnabling(false)
       }
     },
-    [publicKey, signAndSendTransaction, connection],
+    [publicKey, signMessage, signAndSendTransaction, connection],
   )
 
   const disable = useCallback(async (): Promise<string | null> => {

@@ -47,6 +47,40 @@ export function useMockMarket() {
   const [seeding, setSeeding] = useState(false)
   const [lastError, setLastError] = useState<string | null>(null)
 
+  // Persist recentBets to localStorage, keyed by main wallet pubkey, so
+  // redeem still works after a reload. Only bet metadata (nonce + PDA)
+  // lands on disk — the session keypair itself stays in memory.
+  const storageKey = address ? `nsmarket:recent-bets:${address}` : null
+  useEffect(() => {
+    if (!storageKey || typeof window === 'undefined') {
+      setRecentBets([])
+      return
+    }
+    const raw = window.localStorage.getItem(storageKey)
+    if (raw) {
+      try {
+        setRecentBets(JSON.parse(raw) as MockBet[])
+      } catch {
+        setRecentBets([])
+      }
+    } else {
+      setRecentBets([])
+    }
+  }, [storageKey])
+
+  const persistRecentBets = useCallback(
+    (updater: (prev: MockBet[]) => MockBet[]) => {
+      setRecentBets(prev => {
+        const next = updater(prev)
+        if (storageKey && typeof window !== 'undefined') {
+          window.localStorage.setItem(storageKey, JSON.stringify(next))
+        }
+        return next
+      })
+    },
+    [storageKey],
+  )
+
   // Pull the on-chain state for every mock market. Runs once on mount and
   // again after any write that might have mutated state.
   const refreshMarkets = useCallback(async () => {
@@ -152,7 +186,7 @@ export function useMockMarket() {
           nonce: nonce.toString(),
           betPda: betPda.toBase58(),
         }
-        setRecentBets(prev => [bet, ...prev])
+        persistRecentBets(prev => [bet, ...prev])
         // Refresh chain state in the background — don't block the UI on it.
         void refreshMarkets()
         void refreshBets()
@@ -169,7 +203,7 @@ export function useMockMarket() {
         setPlacing(false)
       }
     },
-    [publicKey, address, sessionEnabled, sessionPublicKey, signAndSend, refreshMarkets, refreshBets],
+    [publicKey, address, sessionEnabled, sessionPublicKey, signAndSend, refreshMarkets, refreshBets, persistRecentBets],
   )
 
   const resolveMarket = useCallback(
@@ -205,11 +239,17 @@ export function useMockMarket() {
       // and is still live, the session signs; otherwise fall through to
       // the main wallet. signAndSend handles that routing.
       const signature = await signAndSend(tx)
+      // Clear the Redeem button on the local record so the UI stays honest
+      // even before the chain refresh lands. Chain state catches up on the
+      // next refresh anyway.
+      persistRecentBets(prev =>
+        prev.map(b => (b.signature === bet.signature ? { ...b, redeemed: true } : b)),
+      )
       await refreshMarkets()
       await refreshBets()
       return { signature, explorerUrl: getExplorerTxUrl(signature) }
     },
-    [publicKey, signAndSend, refreshMarkets, refreshBets],
+    [publicKey, signAndSend, refreshMarkets, refreshBets, persistRecentBets],
   )
 
   return {

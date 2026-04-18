@@ -93,6 +93,7 @@ export interface MockBet {
   // PDAs can't be reversed, so the nonce must be remembered client-side.
   nonce: string
   betPda: string
+  redeemed?: boolean
 }
 
 // Encodes the bet into a memo the treasury (or any indexer) can parse back.

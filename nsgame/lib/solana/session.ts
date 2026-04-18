@@ -48,6 +48,26 @@ export function generateSessionKeypair(): Keypair {
   return Keypair.generate()
 }
 
+// Deterministic session keypair — derived from a wallet-signed message.
+// Same wallet + same message = same Keypair, across tabs and reloads.
+// The signature never leaves the browser; its SHA-256 seeds the Keypair.
+// The key is never written to disk — if the tab dies, the user signs the
+// same message again to rehydrate.
+export async function deriveSessionKeypair(
+  ownerPubkey: PublicKey,
+  signMessage: (msg: Uint8Array) => Promise<Uint8Array>,
+): Promise<Keypair> {
+  const message = `ns-market session v1 for ${ownerPubkey.toBase58()}`
+  const messageBytes = new TextEncoder().encode(message)
+  const signature = await signMessage(messageBytes)
+  // SHA-256 the signature down to a 32-byte Ed25519 seed. We feed the
+  // underlying ArrayBuffer to keep TypeScript's SharedArrayBuffer guards
+  // happy — Uint8Array.buffer is ArrayBufferLike in newer lib.dom.
+  const sigCopy = new Uint8Array(signature).slice()
+  const seedBuffer = await crypto.subtle.digest('SHA-256', sigCopy.buffer as ArrayBuffer)
+  return Keypair.fromSeed(new Uint8Array(seedBuffer))
+}
+
 // Builds the tx the user signs to enable their session. feePayer and
 // recentBlockhash are set by the caller before signing.
 export function buildEnableSessionTx(
