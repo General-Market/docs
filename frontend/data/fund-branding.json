@@ -385,7 +385,7 @@
     {
       "name": "Coupon",
       "symbol": "CUPN",
-      "source": "bonds",
+      "source": "treasury",
       "strategy": "momentum",
       "params": {},
       "tagline": "Yield curves trend for months. Coupon follows the direction of rates because the bond market is slow but relentless.",
@@ -397,7 +397,7 @@
     {
       "name": "Inversion",
       "symbol": "INVR",
-      "source": "bonds",
+      "source": "treasury",
       "strategy": "contrarian",
       "params": {},
       "tagline": "Yield spikes attract buyers. Inversion fades extreme moves, betting that bonds always find their natural level.",
@@ -409,7 +409,7 @@
     {
       "name": "Duration",
       "symbol": "DURN",
-      "source": "bonds",
+      "source": "treasury",
       "strategy": "momentum_threshold",
       "params": {
         "min_change_pct": 0.5
@@ -423,7 +423,7 @@
     {
       "name": "Maturity",
       "symbol": "MTRT",
-      "source": "bonds",
+      "source": "treasury",
       "strategy": "regime",
       "params": {},
       "tagline": "Bond markets operate in regimes. Maturity detects the shift between risk-on and risk-off and positions accordingly.",
@@ -435,7 +435,7 @@
     {
       "name": "Par",
       "symbol": "PARR",
-      "source": "bonds",
+      "source": "treasury",
       "strategy": "mean_reversion",
       "params": {},
       "tagline": "Bond prices oscillate around par value. Every premium compresses, every discount narrows. Par bets on the gravitational pull of face value.",
@@ -689,7 +689,7 @@
     {
       "name": "Lockflow",
       "symbol": "LOCK",
-      "source": "defi",
+      "source": "defillama",
       "strategy": "momentum",
       "params": {},
       "tagline": "DeFi TVL moves slowly and with conviction. Lockflow bets when TVL shifts, ignoring the noise between.",
@@ -701,7 +701,7 @@
     {
       "name": "Unlock",
       "symbol": "ULCK",
-      "source": "defi",
+      "source": "defillama",
       "strategy": "contrarian",
       "params": {},
       "tagline": "Every TVL surge gets withdrawn. Unlock fades the deposits, because yield farmers are constitutionally incapable of patience.",
@@ -713,7 +713,7 @@
     {
       "name": "Yield",
       "symbol": "YILD",
-      "source": "defi",
+      "source": "defillama",
       "strategy": "mean_reversion",
       "params": {},
       "tagline": "APYs oscillate around equilibrium. High yields attract capital that compresses them. Yield bets on the convergence.",
@@ -725,7 +725,7 @@
     {
       "name": "Exploit",
       "symbol": "XPLT",
-      "source": "defi",
+      "source": "defillama",
       "strategy": "volatility_fade",
       "params": {},
       "tagline": "DeFi volatility follows exploit cycles. Every hack creates panic that subsides. Exploit bets on the normalization after protocol drama.",
@@ -983,7 +983,7 @@
     {
       "name": "Cascade",
       "symbol": "CSCD",
-      "source": "gtfs_transit",
+      "source": "gtfs_rt",
       "strategy": "momentum",
       "params": {},
       "tagline": "Transit disruptions cascade. One stuck train creates thirty delayed ones. Cascade bets that disruption persists once it starts.",
@@ -995,7 +995,7 @@
     {
       "name": "Terminal",
       "symbol": "TRMN",
-      "source": "gtfs_transit",
+      "source": "gtfs_rt",
       "strategy": "mean_reversion",
       "params": {},
       "tagline": "Schedules recover. The system was designed to return to normal. Terminal bets on the self-healing property of timetables.",
@@ -1007,7 +1007,7 @@
     {
       "name": "Timetable",
       "symbol": "TMTB",
-      "source": "gtfs_transit",
+      "source": "gtfs_rt",
       "strategy": "time_of_day",
       "params": {},
       "tagline": "Rush hour is rush hour. Peak service runs on a clock that hasn't changed in decades. Timetable trades the certainty.",
@@ -1019,7 +1019,7 @@
     {
       "name": "Delay",
       "symbol": "DLAY",
-      "source": "gtfs_transit",
+      "source": "gtfs_rt",
       "strategy": "cluster",
       "params": {},
       "tagline": "Transit delays cluster by line and time. One failure cascades to connecting routes. Delay trades the contagion of lateness.",
@@ -1605,7 +1605,7 @@
     {
       "name": "Hawkish",
       "symbol": "HAWK",
-      "source": "rates",
+      "source": "fred",
       "strategy": "momentum",
       "params": {
         "min_change_pct": 0.5
@@ -1619,7 +1619,7 @@
     {
       "name": "Dovish",
       "symbol": "DOVE",
-      "source": "rates",
+      "source": "fred",
       "strategy": "contrarian",
       "params": {},
       "tagline": "Rate expectations overshoot after every meeting. Dovish fades the market's overreaction to every basis point.",
@@ -1631,7 +1631,7 @@
     {
       "name": "Tighten",
       "symbol": "TITE",
-      "source": "rates",
+      "source": "fred",
       "strategy": "regime",
       "params": {},
       "tagline": "Monetary policy operates in regimes. Tighten detects the shift between easing and tightening cycles and positions accordingly.",
@@ -1643,7 +1643,7 @@
     {
       "name": "Basis",
       "symbol": "BASS",
-      "source": "rates",
+      "source": "fred",
       "strategy": "momentum_threshold",
       "params": {
         "min_change_pct": 0.25
@@ -1657,7 +1657,7 @@
     {
       "name": "Deadline",
       "symbol": "DDLN",
-      "source": "sec_13f",
+      "source": "sec",
       "strategy": "momentum",
       "params": {},
       "tagline": "SEC filings cluster around quarterly deadlines. Filing volume builds tick-over-tick during disclosure windows. Deadline rides the surge.",
@@ -1669,7 +1669,7 @@
     {
       "name": "Disclosure",
       "symbol": "DSCL",
-      "source": "sec_13f",
+      "source": "sec",
       "strategy": "contrarian",
       "params": {},
       "tagline": "Markets overreact to every 13F drop. Disclosure fades the initial move, because institutional positions are already priced in.",
@@ -1681,7 +1681,7 @@
     {
       "name": "Insider",
       "symbol": "INSD",
-      "source": "sec_13f",
+      "source": "sec",
       "strategy": "momentum_threshold",
       "params": {
         "min_change_pct": 3
@@ -1695,7 +1695,7 @@
     {
       "name": "Holdings",
       "symbol": "HLDG",
-      "source": "sec_13f",
+      "source": "sec",
       "strategy": "regime",
       "params": {},
       "tagline": "Institutional allocation operates in risk-on and risk-off regimes. Holdings detects the shift from 13F filing patterns.",
