@@ -11,4 +11,4 @@ export default function Loading() {
   )
 }
 
-// poller canary: if this file reaches prod without my hand, the pipeline works.
+// poller canary v2: the hook is live, the script exists, the loop is closed.
