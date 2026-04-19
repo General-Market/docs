@@ -1,0 +1,10 @@
+{
+  "_doc": "Legacy source-name aliases. Maps canonical fund.source values to older names the on-chain batches were originally registered under. Fund-manager hashes both the canonical name and every listed alias as keccak(name + '_vN'), then uses the resolved canonical name for matching against fund.sources in funds.toml. Run scripts/probe-source-hashes.py to discover new orphans.",
+  "aliases": {
+    "defillama":  ["defi"],
+    "treasury":   ["bonds"],
+    "gtfs_rt":    ["gtfs_transit"],
+    "fred":       ["rates"],
+    "sec":        ["sec_13f"]
+  }
+}

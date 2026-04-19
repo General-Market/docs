@@ -56,25 +56,79 @@ def load_funds_config(path="funds.toml"):
         return tomllib.load(f)
 
 
-def build_source_id_map(fund_sources):
-    """Build keccak256(source_name_vN) -> source_name for all fund sources.
+def _load_source_aliases(path: str = "source-aliases.json") -> dict[str, list[str]]:
+    """Load alias map: canonical fund.source -> list of legacy names.
 
-    On-chain sourceId = keccak256(name + "_v2") (or _v1, etc.).
-    We map all plausible versions so the API hex matches our fund sources.
+    Lets operators map old batch names to renamed sources without redeploying.
+    Missing file = empty dict, which is fine — fund-manager still hashes the
+    canonical names. Any fund.source without a legacy alias still works via
+    the straight keccak(name_vN) path.
+
+    JSON schema:
+        {
+          "aliases": {
+            "defillama": ["defi"],
+            "treasury": ["bonds"],
+            "gtfs_rt":   ["gtfs_transit"]
+          }
+        }
+    """
+    import os
+
+    search_paths = [
+        path,
+        os.path.join(os.path.dirname(__file__), path),
+        "/app/" + path,
+    ]
+    for p in search_paths:
+        try:
+            with open(p) as f:
+                import json as _json
+                data = _json.load(f)
+                return {k: list(v) for k, v in data.get("aliases", {}).items()}
+        except (FileNotFoundError, PermissionError):
+            continue
+        except Exception as e:
+            log.warning("source-aliases.json unreadable at %s: %s", p, e)
+            return {}
+    return {}
+
+
+def build_source_id_map(fund_sources):
+    """Build keccak256(source_name_vN) -> canonical fund source.
+
+    On-chain sourceId = keccak256(name + "_v2") (or _v1, etc.). We hash every
+    plausible version for every canonical source, plus every known legacy
+    alias (from source-aliases.json), so batches registered under an older
+    naming scheme still resolve to the canonical fund source. This is what
+    makes a renamed source (defi -> defillama) keep trading without forcing
+    a batch redeploy.
     """
     from web3 import Web3
 
-    mapping = {}
-    for name in fund_sources:
-        for version in ["v1", "v2", "v3"]:
-            key = f"{name}_{version}"
-            source_hash = Web3.keccak(text=key).hex()
-            h = source_hash if source_hash.startswith("0x") else "0x" + source_hash
-            mapping[h] = name
-        # Also map plain keccak256(name) as fallback
-        plain = Web3.keccak(text=name).hex()
-        h = plain if plain.startswith("0x") else "0x" + plain
-        mapping[h] = name
+    aliases = _load_source_aliases()
+    mapping: dict[str, str] = {}
+
+    def _add(name_for_hashing: str, canonical: str) -> None:
+        for version in ["v1", "v2", "v3", "v4"]:
+            h = Web3.keccak(text=f"{name_for_hashing}_{version}").hex()
+            h = h if h.startswith("0x") else "0x" + h
+            mapping[h] = canonical
+        # Plain hash fallback (no version suffix).
+        h = Web3.keccak(text=name_for_hashing).hex()
+        h = h if h.startswith("0x") else "0x" + h
+        mapping[h] = canonical
+
+    for canonical in fund_sources:
+        _add(canonical, canonical)
+        for legacy in aliases.get(canonical, []):
+            _add(legacy, canonical)
+
+    if aliases:
+        log.info(
+            "source_id_map: %d hash entries (%d canonical + %d aliases)",
+            len(mapping), len(fund_sources), sum(len(v) for v in aliases.values()),
+        )
     return mapping
 
 
