@@ -44,7 +44,7 @@ const Center: React.FC<{
 // -----------------------------------------------------------------------------
 export const S01Screen: React.FC = () => {
   const { sceneFrame, balance, hit } = useScene();
-  const lossRed = interpolate(balance, [START, END], [0, 1]);
+  const lossRed = interpolate(balance, [END, START], [1, 0]);
   const tint = `rgba(224, 50, 42, ${0.04 + lossRed * 0.18})`;
   return (
     <Stage>
