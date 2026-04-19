@@ -94,7 +94,7 @@
         "nasdaq"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": false
+      "batchEligible": true
     },
     {
       "sourceId": "zillow",
@@ -361,7 +361,7 @@
         "boe"
       ],
       "syncIntervalSecs": 86400,
-      "batchEligible": false
+      "batchEligible": true
     },
     {
       "sourceId": "worldbank",
@@ -574,7 +574,7 @@
         "nyc311"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": false
+      "batchEligible": true
     },
     {
       "sourceId": "github",
@@ -935,7 +935,7 @@
         "tubes"
       ],
       "syncIntervalSecs": 120,
-      "batchEligible": false
+      "batchEligible": true
     },
     {
       "sourceId": "bgg",
@@ -1068,7 +1068,7 @@
         "mcbroken"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": false
+      "batchEligible": true
     },
     {
       "sourceId": "earthquake",
@@ -1163,7 +1163,7 @@
         "openmeteo"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": false
+      "batchEligible": true
     },
     {
       "sourceId": "airnow",
@@ -1790,7 +1790,7 @@
         "lichess"
       ],
       "syncIntervalSecs": 300,
-      "batchEligible": false
+      "batchEligible": true
     }
   ],
   "categories": [
