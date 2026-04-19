@@ -90,10 +90,6 @@ import {
   FPS as CASCADE_FPS,
 } from "./compositions/cascade-text-demo/CascadeTextDemo";
 import { icebergMeta } from "./compositions/iceberg/IcebergScene";
-import {
-  pnlVialsMeta,
-  pnlVialSceneMetas,
-} from "./compositions/pnl-vials/PnLVials";
 
 const SHOW_SCENES = process.env.REMOTION_SHOW_SCENES === "1";
 
@@ -141,29 +137,6 @@ export const RemotionRoot: React.FC = () => {
         width={icebergMeta.width}
         height={icebergMeta.height}
       />
-
-      {/* ═══ PNL VIALS — 20 first-frame propositions ═══ */}
-      <Composition
-        id={pnlVialsMeta.id}
-        component={pnlVialsMeta.component}
-        durationInFrames={pnlVialsMeta.durationInFrames}
-        fps={pnlVialsMeta.fps}
-        width={pnlVialsMeta.width}
-        height={pnlVialsMeta.height}
-      />
-      <Folder name="PnLVials-Scenes">
-        {pnlVialSceneMetas.map((meta) => (
-          <Composition
-            key={meta.id}
-            id={meta.id}
-            component={meta.component}
-            durationInFrames={meta.durationInFrames}
-            fps={meta.fps}
-            width={meta.width}
-            height={meta.height}
-          />
-        ))}
-      </Folder>
 
       {/* ═══ END CARD ═══ */}
       <Composition
