@@ -15,6 +15,7 @@ services:
       - ../../../deployments/active-deployment.json:/app/deployments/active-deployment.json:ro
       - ../../../deployments/vision-batches.json:/app/deployments/vision-batches.json:ro
       - ../../../vision-bot/funds.toml:/app/funds.toml:ro
+      - ../../../vision-bot/source-aliases.json:/app/source-aliases.json:ro
     tmpfs:
       - /tmp
     environment:
