@@ -45,13 +45,13 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
       title: tOg('title'),
       description: tOg('description'),
       locale: locale === 'en' ? 'en_US' : locale,
-      images: [{ url: '/og-image-v3.png', width: 1200, height: 630, alt: tOg('site_name') }],
+      images: [{ url: '/og-image-v4.png', width: 1200, height: 630, alt: tOg('site_name') }],
     },
     twitter: {
       card: 'summary_large_image',
       title: tTw('title'),
       description: tTw('description'),
-      images: ['/og-image-v3.png'],
+      images: ['/og-image-v4.png'],
     },
   }
 }
