@@ -60,10 +60,16 @@ const ARTICLES: Article[] = [
       name: "pump.fun",
       accent: "#18c27a",
     },
+    highlights: [
+      { x: 0.1253, y: 0.5158, w: 0.2653, h: 0.0487 },
+    ],
   },
   {
     image: "insider-trading/articles/6.png",
     brand: { kind: "wordmark", src: "logos/exchanges/kalshi.svg", pad: 22 },
+    highlights: [
+      { x: 0.4819, y: 0.176, w: 0.216, h: 0.0303 },
+    ],
   },
   {
     image: "insider-trading/articles/7.png",
@@ -74,7 +80,10 @@ const ARTICLES: Article[] = [
   },
   {
     image: "insider-trading/articles/8.png",
-    brand: { kind: "wordmark", src: "logos/exchanges/nyse.svg", pad: 32 },
+    brand: { kind: "wordmark", src: "logos/exchanges/sec.svg", pad: 28 },
+    highlights: [
+      { x: 0.0522, y: 0.5101, w: 0.3917, h: 0.0519 },
+    ],
   },
   {
     image: "insider-trading/articles/9.png",
@@ -217,8 +226,23 @@ const HighlightLayer: React.FC<{
                 width: `${(h.w + overshootW) * local * 100}%`,
                 height: `${heightPct * 100}%`,
                 background:
-                  "linear-gradient(180deg, rgba(255,241,82,0.78) 0%, rgba(255,224,38,0.92) 45%, rgba(255,224,38,0.92) 55%, rgba(255,241,82,0.78) 100%)",
+                  "linear-gradient(180deg, rgba(255,241,82,0.55) 0%, rgba(255,224,38,0.72) 45%, rgba(255,224,38,0.72) 55%, rgba(255,241,82,0.55) 100%)",
                 mixBlendMode: "multiply",
+                borderRadius: 3,
+                transform: "skewX(-5deg) rotate(-0.8deg)",
+                transformOrigin: "left center",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: `${(h.x - overshootX) * 100}%`,
+                top: `${top * 100}%`,
+                width: `${(h.w + overshootW) * local * 100}%`,
+                height: `${heightPct * 100}%`,
+                background:
+                  "linear-gradient(180deg, rgba(255,241,82,0.45) 0%, rgba(255,224,38,0.55) 45%, rgba(255,224,38,0.55) 55%, rgba(255,241,82,0.45) 100%)",
+                mixBlendMode: "screen",
                 borderRadius: 3,
                 transform: "skewX(-5deg) rotate(-0.8deg)",
                 transformOrigin: "left center",
@@ -231,11 +255,11 @@ const HighlightLayer: React.FC<{
                 top: `${(h.y + h.h * 0.92) * 100}%`,
                 width: `${(h.w + overshootW * 0.6) * local * 100}%`,
                 height: `${Math.max(0.008, h.h * 0.22) * 100}%`,
-                background: "#e8142c",
-                mixBlendMode: "multiply",
+                background: "#ff2b44",
                 borderRadius: 2,
                 transform: "skewX(-3deg) rotate(-0.4deg)",
                 transformOrigin: "left center",
+                boxShadow: "0 0 6px rgba(255,43,68,0.45)",
               }}
             />
           </React.Fragment>
