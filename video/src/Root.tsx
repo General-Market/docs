@@ -90,6 +90,7 @@ import {
   FPS as CASCADE_FPS,
 } from "./compositions/cascade-text-demo/CascadeTextDemo";
 import { icebergMeta } from "./compositions/iceberg/IcebergScene";
+import { insiderCasesMeta } from "./compositions/insider-trading/InsiderCases";
 
 const SHOW_SCENES = process.env.REMOTION_SHOW_SCENES === "1";
 
@@ -136,6 +137,16 @@ export const RemotionRoot: React.FC = () => {
         fps={icebergMeta.fps}
         width={icebergMeta.width}
         height={icebergMeta.height}
+      />
+
+      {/* ═══ INSIDER CASES ═══ */}
+      <Composition
+        id={insiderCasesMeta.id}
+        component={insiderCasesMeta.component}
+        durationInFrames={insiderCasesMeta.durationInFrames}
+        fps={insiderCasesMeta.fps}
+        width={insiderCasesMeta.width}
+        height={insiderCasesMeta.height}
       />
 
       {/* ═══ END CARD ═══ */}
