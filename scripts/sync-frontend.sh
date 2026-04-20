@@ -6,8 +6,9 @@
 # Builds a tree object from frontend/ (stripping the prefix), parents it
 # on the remote's current HEAD, pushes the synthetic commit.
 #
-# Vercel and the Dokploy poller both watch gm-frontend/main — if this
-# script does not run, mono pushes do not reach production.
+# Dokploy on VPS 2 watches gm-frontend/main (push trigger, nixpacks builder)
+# and rebuilds the production container. If this script does not run,
+# mono pushes do not reach production.
 
 set -e
 

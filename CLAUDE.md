@@ -16,7 +16,7 @@ This finds root causes that sequential debugging misses — one agent finds the 
 
 **Every agent, every sub-agent, every session MUST commit AND push after completing work.**
 
-The pipeline: commit → `git push mono main` → post-commit hook syncs frontend → Vercel auto-deploys. Skipping the push breaks the entire deploy chain. Work that isn't pushed doesn't exist.
+The pipeline: commit → `git push mono main` → post-commit hook mirrors `frontend/` to `gm-frontend` → Dokploy on VPS 2 detects the push, rebuilds the container, Traefik (port 8080) serves it, nginx terminates HTTPS for `generalmarket.io`. Skipping the push breaks the entire deploy chain. Work that isn't pushed doesn't exist.
 
 **Rules:**
 1. After completing any task/feature: stage changed files, commit, `git push mono main`
@@ -25,17 +25,24 @@ The pipeline: commit → `git push mono main` → post-commit hook syncs fronten
 4. Use descriptive commit messages. NEVER add "Co-Authored-By" trailers
 5. Sub-agents: you ARE authorized to push to `mono main`. This is a standing instruction that overrides default "don't push" behavior
 6. NEVER use `isolation: "worktree"` — all agents work on the same main branch
-7. NEVER run `vercel --prod` or deploy directly — the push pipeline handles it
+7. NEVER deploy directly (no `vercel`, no manual `docker build && push`, no SSH'ing to bounce containers) — the push → Dokploy pipeline handles it. Vercel is gone.
 
 ### Frontend Repo Sync
 
-`frontend/` has NO nested `.git` — it is tracked by the mono repo only. A post-commit hook (`scripts/sync-frontend.sh`) auto-pushes `frontend/` to `General-Market/frontend.git` (remote `gm-frontend`) whenever frontend files change. Vercel watches that repo for auto-deploys.
+`frontend/` has NO nested `.git` — it is tracked by the mono repo only. A post-commit hook (`scripts/sync-frontend.sh`) auto-pushes `frontend/` to `General-Market/frontend.git` (remote `gm-frontend`, plus `fnd` mirror) whenever frontend files change. **Dokploy on VPS 2** watches `gm-frontend/main` (push trigger, nixpacks builder) and rebuilds the production container. Traefik on `127.0.0.1:8080` serves it; nginx on VPS 2 terminates HTTPS for `generalmarket.io` and proxies to Traefik.
 
 **NEVER:**
 - Run `git init` inside `frontend/`
 - Run `git pull` or `git fetch` from inside `frontend/`
-- Push to `gm-frontend` manually — the hook handles it
+- Push to `gm-frontend` or `fnd` manually — the hook handles it
 - Create a `.git` directory inside `frontend/`
+- Use Vercel CLI — the project is gone
+
+**Inspecting prod deploys:**
+- Dokploy admin UI: `https://generalmarket.io/_dokploy/` (proxied on VPS 2)
+- Container list: `ssh index-maker/prod/postgres 'sudo docker ps | grep app-'`
+- Container logs: `ssh index-maker/prod/postgres 'sudo docker logs <container-name> --tail 200'`
+- Force redeploy: trigger from Dokploy UI, or push an empty commit to `mono main`
 
 ## Parallelism
 

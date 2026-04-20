@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Validate all deployment addresses have code on-chain.
-# Run before E2E tests or Vercel deploy to catch stale configs early.
+# Run before E2E tests or pushing to mono main (Dokploy redeploys) to catch stale configs early.
 #
 # Usage:
 #   ./scripts/validate-deployment.sh              # uses active env
