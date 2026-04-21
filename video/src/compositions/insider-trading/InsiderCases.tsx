@@ -1,24 +1,81 @@
 import React from "react";
 import {
   AbsoluteFill,
+  Audio,
   Easing,
   Img,
+  Sequence,
+  Video,
   interpolate,
   spring,
   staticFile,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
+import { loadFont as loadInter } from "@remotion/google-fonts/Inter";
 import { SOURCES } from "../launch/data/sources";
 import { InsiderPitch, PITCH_DURATION } from "./InsiderPitch";
+
+const interFamily = loadInter("normal", {
+  subsets: ["latin"],
+  weights: ["300", "400", "500"],
+}).fontFamily;
 
 const FPS = 30;
 const LOGO_REVEAL_START = 260;
 const LOGO_REVEAL_FADE = 18;
 const PITCH_START = LOGO_REVEAL_START + 48; // logo sits ~1.6s, then pitch begins
 const PITCH_FADE_IN = 14;
-const DURATION = PITCH_START + PITCH_DURATION + 6;
+
+// ─── Prologue — 4s. Micro-onsets from librosa (first 3.65s of the track,
+//     30fps comp frames). Each onset = a cut. Advance per cut = gap-since-
+//     previous-onset × acceleration-weight, so drops (sparse onsets) push
+//     the broll forward hard, while fast rolls (dense onsets) still nudge.
+//     startFroms walk monotonically from frame 0 of the full source to
+//     its tail; playbackRates bake in a harsh ramp so the broll itself
+//     visibly accelerates, not just the cuts.
+const PROLOGUE_ONSETS = [1, 5, 20, 32, 45, 58, 80, 96, 100, 103, 107, 109];
+const PROLOGUE_DURATION = 120;
+const PROLOGUE_SOURCE_TOTAL = 1780; // source frames to traverse (1836 total, margin)
+const PROLOGUE_ACCEL_K = 2.2;
+
+const computePrologueCuts = () => {
+  const n = PROLOGUE_ONSETS.length;
+  const weights: number[] = [];
+  for (let i = 0; i < n; i++) {
+    const prev = i === 0 ? 0 : PROLOGUE_ONSETS[i - 1];
+    const gap = Math.max(1, PROLOGUE_ONSETS[i] - prev);
+    const mult = 1 + PROLOGUE_ACCEL_K * (n === 1 ? 0 : i / (n - 1));
+    weights.push(gap * mult);
+  }
+  const sumW = weights.reduce((a, b) => a + b, 0);
+  const scale = PROLOGUE_SOURCE_TOTAL / sumW;
+
+  const starts: number[] = [];
+  const rates: number[] = [];
+  let cum = 0;
+  for (let i = 0; i < n; i++) {
+    starts.push(Math.round(cum));
+    const advance = weights[i] * scale;
+    const nextOnset = i < n - 1 ? PROLOGUE_ONSETS[i + 1] : PROLOGUE_DURATION;
+    const duration = Math.max(1, nextOnset - PROLOGUE_ONSETS[i]);
+    rates.push(Math.max(0.4, Math.min(16, advance / duration)));
+    cum += advance;
+  }
+  return { starts, rates };
+};
+
+const { starts: PROLOGUE_CUT_STARTS, rates: PROLOGUE_CUT_RATES } =
+  computePrologueCuts();
+const HARSH_EASE = Easing.bezier(0.88, 0, 0.08, 1);
+
+const MAIN_DURATION = PITCH_START + PITCH_DURATION + 6;
+const DURATION = PROLOGUE_DURATION + MAIN_DURATION;
 const EASE_OUT = Easing.bezier(0.16, 1, 0.3, 1);
+
+const TYPER_ROSE = [250, 201, 207] as const;
+const easeInPow = (t: number, p: number): number =>
+  Math.pow(Math.max(0, Math.min(1, t)), p);
 
 type Brand =
   | { kind: "wordmark"; src: string; pad?: number }
@@ -41,15 +98,6 @@ const ARTICLES: Article[] = [
       { x: 0.5737, y: 0.1383, w: 0.3183, h: 0.0453 },
     ],
     background: "insider-trading/backgrounds/binance.jpg",
-  },
-  {
-    image: "insider-trading/articles/2.png",
-    brand: { kind: "wordmark", src: "logos/exchanges/coinbase.svg", pad: 40 },
-    highlights: [
-      { x: 0.4075, y: 0.2758, w: 0.1564, h: 0.0352 },
-      { x: 0.6036, y: 0.3375, w: 0.3384, h: 0.0461 },
-    ],
-    background: "insider-trading/backgrounds/coinbase.png",
   },
   {
     image: "insider-trading/articles/3.png",
@@ -76,14 +124,6 @@ const ARTICLES: Article[] = [
       { x: 0.1253, y: 0.5158, w: 0.2653, h: 0.0487 },
     ],
     background: "insider-trading/backgrounds/pumpfun.jpg",
-  },
-  {
-    image: "insider-trading/articles/5.png",
-    brand: { kind: "wordmark", src: "logos/exchanges/cftc.svg", pad: 28 },
-    highlights: [
-      { x: 0.6477, y: 0.3550, w: 0.1375, h: 0.0280 },
-    ],
-    background: "insider-trading/backgrounds/nyse.jpg",
   },
   {
     image: "insider-trading/articles/6.png",
@@ -161,15 +201,16 @@ const BrandPlate: React.FC<{ brand: Brand; appear: number }> = ({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        gap: 28,
-        padding: "0 44px",
+        gap: 18,
+        padding: "0 24px",
         boxSizing: "border-box",
       }}
     >
       <Img
         src={staticFile(brand.icon)}
         style={{
-          height: "72%",
+          height: "62%",
+          maxWidth: "38%",
           width: "auto",
           objectFit: "contain",
         }}
@@ -178,10 +219,11 @@ const BrandPlate: React.FC<{ brand: Brand; appear: number }> = ({
         style={{
           fontFamily: "'Inter', 'Helvetica Neue', system-ui, sans-serif",
           fontWeight: 800,
-          fontSize: 120,
+          fontSize: 52,
           letterSpacing: "-0.03em",
           color: "#0a0a0a",
           opacity: appear,
+          whiteSpace: "nowrap",
         }}
       >
         {brand.name}
@@ -586,14 +628,14 @@ const InsiderLogoReveal: React.FC<{ startFrame: number }> = ({
   );
 };
 
-export const InsiderCases: React.FC = () => {
+const InsiderArticlesPhase: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
   const bgFade = interpolate(frame, [0, 8], [0, 1], {
     extrapolateRight: "clamp",
   });
-  const outroFade = interpolate(frame, [DURATION - 18, DURATION], [1, 0], {
+  const outroFade = interpolate(frame, [MAIN_DURATION - 18, MAIN_DURATION], [1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -655,7 +697,7 @@ export const InsiderCases: React.FC = () => {
 
         const kenBurns = interpolate(
           local,
-          [-10, isLast ? DURATION : ON_STAGE + 14],
+          [-10, isLast ? MAIN_DURATION : ON_STAGE + 14],
           [1.0, 1.03],
           { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
         );
@@ -722,7 +764,7 @@ export const InsiderCases: React.FC = () => {
 
         const lift = interpolate(
           local,
-          [0, isLast ? DURATION : ON_STAGE + 8],
+          [0, isLast ? MAIN_DURATION : ON_STAGE + 8],
           [28, -14],
           { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
         );
@@ -779,6 +821,257 @@ export const InsiderCases: React.FC = () => {
           <InsiderPitch startFrame={PITCH_START} />
         </AbsoluteFill>
       ) : null}
+    </AbsoluteFill>
+  );
+};
+
+/* ─── Prologue typewriter — Ember-style, harsh pow() ease so chars stall
+       then snap in on beat ─────────────────────────────────────────── */
+const TypewriterLine: React.FC<{
+  text: string;
+  typeStart: number;
+  typeEnd: number;
+  wipeStart: number;
+  wipeEnd: number;
+  fontSize?: number;
+  typePower?: number;
+  redRange?: [number, number];
+}> = ({
+  text,
+  typeStart,
+  typeEnd,
+  wipeStart,
+  wipeEnd,
+  fontSize = 64,
+  typePower = 3.4,
+  redRange,
+}) => {
+  const isRed = (i: number) =>
+    !!redRange && i >= redRange[0] && i < redRange[1];
+  const finalRGB = (i: number): [number, number, number] =>
+    isRed(i) ? [255, 75, 95] : [255, 255, 255];
+  const frame = useCurrentFrame();
+  const len = text.length;
+  if (frame < typeStart || frame > wipeEnd) return null;
+
+  let visibleStart = 0;
+  let visibleEnd = 0;
+  let phase: "typing" | "hold" | "wiping" = "hold";
+
+  if (frame < typeEnd) {
+    phase = "typing";
+    const t = (frame - typeStart) / (typeEnd - typeStart);
+    visibleEnd = Math.min(len, Math.max(1, Math.round(len * easeInPow(t, typePower))));
+  } else if (frame < wipeStart) {
+    phase = "hold";
+    visibleEnd = len;
+  } else {
+    phase = "wiping";
+    const t = (frame - wipeStart) / (wipeEnd - wipeStart);
+    const removed = Math.min(len, Math.round(len * easeInPow(t, 2.4)));
+    visibleStart = removed;
+    visibleEnd = len;
+  }
+
+  if (visibleEnd <= visibleStart) return null;
+
+  return (
+    <AbsoluteFill
+      style={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        padding: "0 140px",
+      }}
+    >
+      <div
+        style={{
+          fontFamily: interFamily,
+          fontSize,
+          fontWeight: 400,
+          letterSpacing: "-0.02em",
+          textAlign: "center",
+          lineHeight: 1.12,
+          color: "white",
+          textShadow: "0 6px 30px rgba(0,0,0,0.78)",
+          maxWidth: 1560,
+        }}
+      >
+        {text.split("").map((ch, i) => {
+          if (i < visibleStart || i >= visibleEnd) return null;
+          const display = ch === " " ? " " : ch;
+
+          const [fr, fg, fb] = finalRGB(i);
+
+          if (phase === "typing") {
+            const currentT = (frame - typeStart) / (typeEnd - typeStart);
+            const charThreshold = i / len;
+            const age =
+              (easeInPow(currentT, typePower) - charThreshold) *
+              (typeEnd - typeStart);
+            const colorT = interpolate(age, [0, 5], [0, 1], {
+              extrapolateLeft: "clamp",
+              extrapolateRight: "clamp",
+            });
+            const r = interpolate(colorT, [0, 1], [TYPER_ROSE[0], fr]);
+            const g = interpolate(colorT, [0, 1], [TYPER_ROSE[1], fg]);
+            const b = interpolate(colorT, [0, 1], [TYPER_ROSE[2], fb]);
+            return (
+              <span key={i} style={{ color: `rgb(${r},${g},${b})` }}>
+                {display}
+              </span>
+            );
+          }
+
+          if (phase === "wiping") {
+            const dist = i - visibleStart;
+            const op = interpolate(dist, [0, 2], [0.2, 1], {
+              extrapolateLeft: "clamp",
+              extrapolateRight: "clamp",
+            });
+            return (
+              <span key={i} style={{ color: `rgba(${fr},${fg},${fb},${op})` }}>
+                {display}
+              </span>
+            );
+          }
+
+          return (
+            <span key={i} style={{ color: `rgb(${fr},${fg},${fb})` }}>
+              {display}
+            </span>
+          );
+        })}
+      </div>
+    </AbsoluteFill>
+  );
+};
+
+/* ─── Per-onset broll shot — harsh bezier decay on cut: tremble, jitter,
+       scale punch, blur snap. Each cut carries its own playbackRate so the
+       broll itself accelerates through the prologue. ────────────────── */
+const BeatShot: React.FC<{
+  startFromFrame: number;
+  playbackRate: number;
+}> = ({ startFromFrame, playbackRate }) => {
+  const frame = useCurrentFrame();
+  const t = Math.min(1, frame / 10);
+  const settle = HARSH_EASE(t);
+  const punch = 1 - settle;
+
+  const seed = startFromFrame;
+  const jx = punch * Math.sin(frame * 19.1 + seed * 0.37) * 9;
+  const jy = punch * Math.cos(frame * 15.3 + seed * 0.52) * 9;
+  const rot = punch * Math.sin(frame * 22.7 + seed * 0.11) * 0.9;
+  const scale = 1.04 + punch * 0.12;
+  const blur = punch * 3.2;
+  const contrast = 1.08 + punch * 0.22;
+  const brightness = 0.78 - punch * 0.06;
+
+  return (
+    <AbsoluteFill style={{ overflow: "hidden" }}>
+      <Video
+        src={staticFile("insider-trading/broll/dezoom.mp4")}
+        startFrom={startFromFrame}
+        playbackRate={playbackRate}
+        muted
+        style={{
+          position: "absolute",
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          transform: `translate(${jx}px, ${jy}px) scale(${scale}) rotate(${rot}deg)`,
+          transformOrigin: "50% 50%",
+          filter: `grayscale(0.28) contrast(${contrast}) brightness(${brightness}) blur(${blur}px)`,
+        }}
+      />
+    </AbsoluteFill>
+  );
+};
+
+const InsiderPrologue: React.FC = () => {
+  const frame = useCurrentFrame();
+
+  // Curtain fade in/out — short, so the first cut lands hard.
+  const curtain = interpolate(
+    frame,
+    [0, 3, PROLOGUE_DURATION - 14, PROLOGUE_DURATION],
+    [1, 0, 0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+
+  return (
+    <AbsoluteFill style={{ background: "#000000" }}>
+      {PROLOGUE_ONSETS.map((start, i) => {
+        const end = PROLOGUE_ONSETS[i + 1] ?? PROLOGUE_DURATION;
+        const len = Math.max(end - start + 3, 4);
+        return (
+          <Sequence
+            key={`onset-${i}`}
+            from={start}
+            durationInFrames={len}
+          >
+            <BeatShot
+              startFromFrame={PROLOGUE_CUT_STARTS[i] ?? 0}
+              playbackRate={PROLOGUE_CUT_RATES[i] ?? 1}
+            />
+          </Sequence>
+        );
+      })}
+
+      <AbsoluteFill
+        style={{
+          pointerEvents: "none",
+          background:
+            "linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.22) 44%, rgba(0,0,0,0.82) 100%)",
+        }}
+      />
+
+      {/* Phase 1 — almost instant reveal (8 frames for 32 chars), holds, wipes */}
+      <TypewriterLine
+        text="The average trader loses $50,000"
+        typeStart={2}
+        typeEnd={10}
+        wipeStart={54}
+        wipeEnd={62}
+        fontSize={62}
+        typePower={1.0}
+        redRange={[25, 32]}
+      />
+
+      {/* Phase 2 — normal-paced typewriter, held through prologue end */}
+      <TypewriterLine
+        text="to insider traders in their lifetime."
+        typeStart={66}
+        typeEnd={104}
+        wipeStart={999}
+        wipeEnd={999}
+        fontSize={58}
+        typePower={2.6}
+      />
+
+      {/* Black curtain at both edges */}
+      <AbsoluteFill
+        style={{
+          background: "#000",
+          opacity: curtain,
+          pointerEvents: "none",
+        }}
+      />
+    </AbsoluteFill>
+  );
+};
+
+export const InsiderCases: React.FC = () => {
+  return (
+    <AbsoluteFill style={{ background: "#000000" }}>
+      <Audio src={staticFile("music/insider-cases.mp3")} volume={0.85} />
+      <Sequence from={0} durationInFrames={PROLOGUE_DURATION}>
+        <InsiderPrologue />
+      </Sequence>
+      <Sequence from={PROLOGUE_DURATION} durationInFrames={MAIN_DURATION}>
+        <InsiderArticlesPhase />
+      </Sequence>
     </AbsoluteFill>
   );
 };
