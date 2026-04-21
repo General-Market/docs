@@ -1,0 +1,8 @@
+A5 — CDN flip rate per signal
+============================================================
+
+signal          samples    flips     rate
+xv_stars           3810      207    5.43%
+xn_stars           3810      183    4.80%
+xv_trend           3760      221    5.88%
+xn_trend            381        2    0.52%

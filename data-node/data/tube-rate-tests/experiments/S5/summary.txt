@@ -1,0 +1,12 @@
+S5 — Pornhub / Eporner recovery check
+============================================================
+
+target                          bytes   hits            verdict
+pornhub top                    703906    130             SSR OK
+pornhub alpha                  709345    130             SSR OK
+pornhub trend video           1110715     33             SSR OK
+pornhub fr                     716481    134             SSR OK
+eporner stars                   62383     74             SSR OK
+eporner top-videos             102631    112             SSR OK
+xvideos trend                  111641     27             SSR OK
+xnxx trend                     205579     36             SSR OK

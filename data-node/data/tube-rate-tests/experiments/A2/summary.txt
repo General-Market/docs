@@ -1,0 +1,6 @@
+A2 — Rollover timing in /best/last-24
+============================================================
+
+cycles scanned: 381
+rollovers detected: 1
+  cycle  213  2026-04-19T14:08:30.985345+00:00  UTC hour=14:08  overlap 0/10  new[:5]=['ouaeakf2e1f', 'ouaphlk5164', 'ouchcbu9990', 'ouchtid9430', 'oucopuh9f0a']

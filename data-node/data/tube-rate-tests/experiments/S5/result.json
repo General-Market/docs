@@ -1,0 +1,50 @@
+{
+  "pornhub top": {
+    "url": "https://www.pornhub.com/pornstars?o=t",
+    "bytes": 703906,
+    "hits": 130,
+    "verdict": "SSR OK"
+  },
+  "pornhub alpha": {
+    "url": "https://www.pornhub.com/pornstars?o=a",
+    "bytes": 709345,
+    "hits": 130,
+    "verdict": "SSR OK"
+  },
+  "pornhub trend video": {
+    "url": "https://www.pornhub.com/video?o=tr",
+    "bytes": 1110715,
+    "hits": 33,
+    "verdict": "SSR OK"
+  },
+  "pornhub fr": {
+    "url": "https://fr.pornhub.com/pornstars",
+    "bytes": 716481,
+    "hits": 134,
+    "verdict": "SSR OK"
+  },
+  "eporner stars": {
+    "url": "https://www.eporner.com/pornstars/",
+    "bytes": 62383,
+    "hits": 74,
+    "verdict": "SSR OK"
+  },
+  "eporner top-videos": {
+    "url": "https://www.eporner.com/top-rated/",
+    "bytes": 102631,
+    "hits": 112,
+    "verdict": "SSR OK"
+  },
+  "xvideos trend": {
+    "url": "https://www.xvideos.com/best/last-24",
+    "bytes": 111641,
+    "hits": 27,
+    "verdict": "SSR OK"
+  },
+  "xnxx trend": {
+    "url": "https://www.xnxx.com/best/last-year",
+    "bytes": 205579,
+    "hits": 36,
+    "verdict": "SSR OK"
+  }
+}
