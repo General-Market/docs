@@ -2031,8 +2031,11 @@ dependencies = [
  "litesvm-token",
  "rand 0.8.6",
  "solana-clock",
+ "solana-instruction",
+ "solana-instructions-sysvar",
  "solana-keypair",
  "solana-message",
+ "solana-sdk-ids",
  "solana-signer",
  "solana-transaction",
 ]

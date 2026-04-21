@@ -11,6 +11,7 @@ use anchor_lang::prelude::*;
 pub mod error;
 pub mod instructions;
 pub mod math;
+pub mod oracle;
 pub mod state;
 
 use instructions::*;
@@ -99,5 +100,21 @@ pub mod prediction_market {
         args: BatchBetsArgs,
     ) -> Result<()> {
         batch_bets::handler(ctx, args)
+    }
+
+    // -------------------------------------------------------------------------
+    // Oracle-signed resolution (MR4) + permissionless claim (MR5)
+    // -------------------------------------------------------------------------
+
+    pub fn close_market(ctx: Context<CloseMarket>, args: CloseMarketArgs) -> Result<()> {
+        close_market::handler(ctx, args)
+    }
+
+    pub fn resolve_market(ctx: Context<ResolveMarket>, args: ResolveMarketArgs) -> Result<()> {
+        resolve_market::handler(ctx, args)
+    }
+
+    pub fn claim(ctx: Context<Claim>) -> Result<()> {
+        claim::handler(ctx)
     }
 }

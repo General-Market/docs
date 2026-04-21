@@ -1,8 +1,11 @@
 pub mod admin;
 pub mod batch_bets;
+pub mod claim;
+pub mod close_market;
 pub mod exit_bet;
 pub mod initialize;
 pub mod place_bet;
+pub mod resolve_market;
 
 // Glob re-exports propagate the Anchor-generated helper modules
 // (`__cpi_client_accounts_*`, `__client_accounts_*`) up to the crate root so
@@ -14,8 +17,14 @@ pub use admin::*;
 #[allow(ambiguous_glob_reexports)]
 pub use batch_bets::*;
 #[allow(ambiguous_glob_reexports)]
+pub use claim::*;
+#[allow(ambiguous_glob_reexports)]
+pub use close_market::*;
+#[allow(ambiguous_glob_reexports)]
 pub use exit_bet::*;
 #[allow(ambiguous_glob_reexports)]
 pub use initialize::*;
 #[allow(ambiguous_glob_reexports)]
 pub use place_bet::*;
+#[allow(ambiguous_glob_reexports)]
+pub use resolve_market::*;

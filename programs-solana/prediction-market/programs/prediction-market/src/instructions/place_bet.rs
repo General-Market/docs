@@ -24,14 +24,14 @@ pub struct PlaceBetArgs {
 #[instruction(args: PlaceBetArgs)]
 pub struct PlaceBet<'info> {
     #[account(seeds = [b"config"], bump = config.bump)]
-    pub config: Account<'info, GlobalConfig>,
+    pub config: Box<Account<'info, GlobalConfig>>,
 
     #[account(
         seeds = [b"source".as_ref(), &args.source_id.to_le_bytes()[..]],
         bump = source.bump,
         constraint = source.enabled @ ErrorCode::SourceDisabled,
     )]
-    pub source: Account<'info, Source>,
+    pub source: Box<Account<'info, Source>>,
 
     #[account(
         init_if_needed,
@@ -46,7 +46,7 @@ pub struct PlaceBet<'info> {
         ],
         bump,
     )]
-    pub market: Account<'info, Market>,
+    pub market: Box<Account<'info, Market>>,
 
     #[account(
         init_if_needed,
@@ -55,7 +55,7 @@ pub struct PlaceBet<'info> {
         seeds = [b"position", market.key().as_ref(), user.key().as_ref()],
         bump,
     )]
-    pub position: Account<'info, Position>,
+    pub position: Box<Account<'info, Position>>,
 
     #[account(
         init_if_needed,
@@ -65,10 +65,10 @@ pub struct PlaceBet<'info> {
         seeds = [b"vault", market.key().as_ref()],
         bump,
     )]
-    pub vault: Account<'info, TokenAccount>,
+    pub vault: Box<Account<'info, TokenAccount>>,
 
     #[account(address = config.stake_mint)]
-    pub stake_mint: Account<'info, Mint>,
+    pub stake_mint: Box<Account<'info, Mint>>,
 
     /// Auto-init user ATA if missing (SA7).
     #[account(
@@ -77,7 +77,7 @@ pub struct PlaceBet<'info> {
         associated_token::mint = stake_mint,
         associated_token::authority = user,
     )]
-    pub user_ata: Account<'info, TokenAccount>,
+    pub user_ata: Box<Account<'info, TokenAccount>>,
 
     #[account(mut)]
     pub user: Signer<'info>,
