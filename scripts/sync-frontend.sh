@@ -4,9 +4,11 @@
 # Called by the post-commit hook whenever frontend/ files change.
 #
 # Builds a tree object from frontend/ (stripping the prefix), parents it
-# on the remote's current HEAD, pushes the synthetic commit.
+# on the remote's current HEAD, pushes the synthetic commit, then pings
+# Dokploy's deploy webhook so the rebuild kicks without waiting for a
+# GitHub-side trigger (custom-Git source in Dokploy has no auto-poll).
 #
-# Dokploy on VPS 2 watches gm-frontend/main (push trigger, nixpacks builder)
+# Dokploy on VPS 3 watches gm-frontend/main (push + webhook, nixpacks builder)
 # and rebuilds the production container. If this script does not run,
 # mono pushes do not reach production.
 
@@ -33,3 +35,12 @@ fi
 
 git push "$REMOTE" "${COMMIT}:refs/heads/${BRANCH}" 2>&1
 git push "$REMOTE2" "${COMMIT}:refs/heads/${BRANCH}" 2>&1 || echo "warn: push to ${REMOTE2} failed (non-fatal)"
+
+# Kick Dokploy rebuild. Custom-Git source has no auto-poll; this is how VPS 3
+# hears about the new commit. Backgrounded — we don't block the commit on it.
+DOKPLOY_HOOK="https://generalmarket.io/_dokploy/api/deploy/hDH6dhH6bGa-P0sbD684_"
+(curl -s -X POST "$DOKPLOY_HOOK" \
+  -H 'Content-Type: application/json' \
+  -H 'X-GitHub-Event: push' \
+  -d '{"ref":"refs/heads/main"}' -m 10 > /dev/null 2>&1 &) \
+  && echo "[sync-frontend] Dokploy rebuild triggered"

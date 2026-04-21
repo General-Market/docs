@@ -26,6 +26,7 @@
     "dev": "next dev",
     "prebuild": "npx tsx scripts/build-founders-lookup.ts",
     "build": "next build",
+    "postbuild": "node scripts/compress-static.mjs",
     "start": "next start",
     "lint": "next lint",
     "test": "bun test",
