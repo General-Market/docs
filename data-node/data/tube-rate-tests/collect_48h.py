@@ -127,12 +127,28 @@ def fetch_xn_trend(n: int) -> list[dict]:
     return out
 
 # ---- Cycle ------------------------------------------------------------------
+def parse_ph_listing(html: str | None, top_n: int) -> list[dict]:
+    """Parse the Pornhub /pornstars?o=t SSR HTML into structured cards."""
+    if not html: return []
+    out = []
+    for chunk in html.split(PH_CARD_SPLIT)[1:]:
+        s = PH_SLUG.search(chunk); v = PH_VIEWS.search(chunk); r = PH_RANK.search(chunk)
+        if not (s and v): continue
+        na = PH_NAME.search(chunk)
+        out.append({
+            'slug': s.group(1),
+            'name': (na.group(1).strip() if na else ''),
+            'views_raw': v.group(1),
+            'rank': int(r.group(1)) if r else None,
+        })
+        if len(out) >= top_n: break
+    return out
+
 def one_sample(xv_stars: list[str], xn_stars: list[str], ep_stars: list[str]) -> dict:
-    # Pornhub migrated /pornstars to a client-rendered SPA; server-rendered
-    # HTML no longer contains cards. Skipped; kept as [] for schema stability.
     return {
         'ts': time.time(),
-        'ph_listing': [],
+        # Pornhub listing is back SSR as of 2026-04-21 recovery check.
+        'ph_listing': parse_ph_listing(fetch('https://www.pornhub.com/pornstars?o=t'), TOP_N),
         'xv_stars': [{'slug': s, 'views': fetch_profile_views(
             f'https://www.xvideos.com/pornstars/{s}', XV_STAR_VIEWS)} for s in xv_stars],
         'xn_stars': [{'path': p, 'views': fetch_profile_views(
@@ -151,9 +167,8 @@ def main() -> int:
     print('Discovering stars per site...', flush=True)
     xv_stars = discover_slugs('https://www.xvideos.com/pornstars', XV_STAR_LIST, TOP_N)
     xn_stars = discover_slugs('https://www.xnxx.com/pornstars', XN_STAR_LIST, TOP_N)
-    # Eporner now serves an age-gate wall to unauthenticated clients; skipped.
-    ep_stars: list[str] = []
-    print(f'  xv: {len(xv_stars)}  xn: {len(xn_stars)}  ep: {len(ep_stars)} (skipped)', flush=True)
+    ep_stars = discover_slugs('https://www.eporner.com/pornstars/', EP_STAR_LIST, TOP_N)
+    print(f'  xv: {len(xv_stars)}  xn: {len(xn_stars)}  ep: {len(ep_stars)}', flush=True)
     if not (xv_stars and xn_stars):
         print('WARN: star list empty for at least one site', flush=True)
 

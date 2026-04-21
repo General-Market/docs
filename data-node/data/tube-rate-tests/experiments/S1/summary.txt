@@ -1,0 +1,8 @@
+S1 — Video page raw view cadence
+============================================================
+
+video.oulhtif7da0      samples= 23 ticks=  1 Δ=   20,963 flips=0/23
+video.oudltli3a63      samples= 11 ticks=  0 Δ=        0 flips=0/23
+video.ouchcbu9990      samples= 23 ticks=  2 Δ=        0 flips=0/23
+video.ouaeakf2e1f      samples= 23 ticks=  1 Δ=    5,194 flips=0/23
+video.oucopuh9f0a      samples= 23 ticks=  0 Δ=        0 flips=0/23
