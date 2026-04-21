@@ -43,7 +43,6 @@
     "@coral-xyz/anchor": "^0.32.1",
     "@jup-ag/wallet-adapter": "^0.2.6",
     "@mdx-js/react": "^3.1.1",
-    "@metamask/sdk": "^0.33.1",
     "@next/mdx": "^16.1.6",
     "@phantom/react-sdk": "^2.0.1",
     "@react-three/drei": "^10.7.7",
@@ -58,11 +57,9 @@
     "@tanstack/react-virtual": "^3.13.18",
     "@upstash/redis": "^1.37.0",
     "@vercel/og": "^0.8.6",
-    "@walletconnect/ethereum-provider": "^2.23.4",
     "bs58": "^6.0.0",
     "clsx": "^2.1.1",
     "destr": "^2.0.5",
-    "elliptic": "^6.6.1",
     "framer-motion": "^12.29.0",
     "geist": "^1.7.0",
     "gray-matter": "^4.0.3",
@@ -75,7 +72,6 @@
     "next-mdx-remote": "^6.0.0",
     "pino": "^10.3.0",
     "pngjs": "^7.0.0",
-    "porto": "^0.2.37",
     "posthog-js": "^1.352.1",
     "qrcode.react": "^4.0.0",
     "react": "^19",
@@ -88,9 +84,7 @@
     "swr": "^2.4.1",
     "tailwind-merge": "^3.5.0",
     "three": "^0.183.2",
-    "valtio": "^2.3.0",
-    "viem": "^2.45.0",
-    "wagmi": "^3.4.1"
+    "valtio": "^2.3.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",
