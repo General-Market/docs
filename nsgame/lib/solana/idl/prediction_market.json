@@ -1,0 +1,357 @@
+{
+  "address": "PredMarkTBD11111111111111111111111111111111",
+  "metadata": {
+    "name": "prediction_market",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Per-bet prediction market. Source whitelist, parimutuel pools, oracle-signed close + resolve, permissionless claim."
+  },
+  "instructions": [
+    {
+      "name": "initialize_config",
+      "discriminator": [0, 0, 0, 0, 0, 0, 0, 0],
+      "accounts": [
+        { "name": "config", "writable": true },
+        { "name": "fee_vault", "writable": true },
+        { "name": "stake_mint" },
+        { "name": "admin", "writable": true, "signer": true },
+        { "name": "token_program" },
+        { "name": "system_program" },
+        { "name": "rent" }
+      ],
+      "args": [
+        { "name": "fee_bps", "type": "u16" }
+      ]
+    },
+    {
+      "name": "upsert_source",
+      "discriminator": [0, 0, 0, 0, 0, 0, 0, 0],
+      "accounts": [
+        { "name": "config" },
+        { "name": "source", "writable": true },
+        { "name": "admin", "writable": true, "signer": true },
+        { "name": "system_program" }
+      ],
+      "args": [
+        { "name": "source_id", "type": "u32" },
+        { "name": "name", "type": { "array": ["u8", 32] } },
+        { "name": "enabled", "type": "bool" }
+      ]
+    },
+    {
+      "name": "set_pause",
+      "discriminator": [0, 0, 0, 0, 0, 0, 0, 0],
+      "accounts": [
+        { "name": "config", "writable": true },
+        { "name": "admin", "signer": true }
+      ],
+      "args": [
+        { "name": "paused", "type": "bool" }
+      ]
+    },
+    {
+      "name": "set_fee_bps",
+      "discriminator": [0, 0, 0, 0, 0, 0, 0, 0],
+      "accounts": [
+        { "name": "config", "writable": true },
+        { "name": "admin", "signer": true }
+      ],
+      "args": [
+        { "name": "fee_bps", "type": "u16" }
+      ]
+    },
+    {
+      "name": "propose_admin",
+      "discriminator": [0, 0, 0, 0, 0, 0, 0, 0],
+      "accounts": [
+        { "name": "config", "writable": true },
+        { "name": "admin", "signer": true }
+      ],
+      "args": [
+        { "name": "new_admin", "type": "pubkey" }
+      ]
+    },
+    {
+      "name": "accept_admin",
+      "discriminator": [0, 0, 0, 0, 0, 0, 0, 0],
+      "accounts": [
+        { "name": "config", "writable": true },
+        { "name": "new_admin", "signer": true }
+      ],
+      "args": []
+    },
+    {
+      "name": "withdraw_fees",
+      "discriminator": [0, 0, 0, 0, 0, 0, 0, 0],
+      "accounts": [
+        { "name": "config" },
+        { "name": "fee_vault", "writable": true },
+        { "name": "destination", "writable": true },
+        { "name": "admin", "signer": true },
+        { "name": "token_program" }
+      ],
+      "args": [
+        { "name": "amount", "type": "u64" }
+      ]
+    },
+    {
+      "name": "propose_oracle_signers",
+      "discriminator": [0, 0, 0, 0, 0, 0, 0, 0],
+      "accounts": [
+        { "name": "config" },
+        { "name": "oracle_config", "writable": true },
+        { "name": "admin", "signer": true },
+        { "name": "system_program" }
+      ],
+      "args": [
+        { "name": "signers", "type": { "vec": "pubkey" } },
+        { "name": "threshold", "type": "u8" }
+      ]
+    },
+    {
+      "name": "activate_oracle_signers",
+      "discriminator": [0, 0, 0, 0, 0, 0, 0, 0],
+      "accounts": [
+        { "name": "oracle_config", "writable": true },
+        { "name": "cranker", "writable": true, "signer": true }
+      ],
+      "args": []
+    },
+    {
+      "name": "place_bet",
+      "discriminator": [0, 0, 0, 0, 0, 0, 0, 0],
+      "accounts": [
+        { "name": "config" },
+        { "name": "source" },
+        { "name": "market", "writable": true },
+        { "name": "position", "writable": true },
+        { "name": "vault", "writable": true },
+        { "name": "stake_mint" },
+        { "name": "user_ata", "writable": true },
+        { "name": "user", "writable": true, "signer": true },
+        { "name": "token_program" },
+        { "name": "associated_token_program" },
+        { "name": "system_program" },
+        { "name": "rent" }
+      ],
+      "args": [
+        { "name": "source_id", "type": "u32" },
+        { "name": "close_time", "type": "i64" },
+        { "name": "settlement_time", "type": "i64" },
+        { "name": "threshold_bps", "type": "i32" },
+        { "name": "side", "type": { "defined": { "name": "Side" } } },
+        { "name": "amount", "type": "u64" }
+      ]
+    },
+    {
+      "name": "exit_bet",
+      "discriminator": [0, 0, 0, 0, 0, 0, 0, 0],
+      "accounts": [
+        { "name": "market", "writable": true },
+        { "name": "position", "writable": true },
+        { "name": "vault", "writable": true },
+        { "name": "user_ata", "writable": true },
+        { "name": "user", "writable": true, "signer": true },
+        { "name": "token_program" }
+      ],
+      "args": [
+        { "name": "side", "type": { "defined": { "name": "Side" } } },
+        { "name": "amount", "type": "u64" }
+      ]
+    },
+    {
+      "name": "batch_bets",
+      "discriminator": [0, 0, 0, 0, 0, 0, 0, 0],
+      "accounts": [
+        { "name": "config" },
+        { "name": "user", "writable": true, "signer": true },
+        { "name": "token_program" },
+        { "name": "associated_token_program" },
+        { "name": "system_program" },
+        { "name": "rent" }
+      ],
+      "args": [
+        { "name": "entries", "type": { "vec": { "defined": { "name": "BatchEntry" } } } }
+      ]
+    },
+    {
+      "name": "close_market",
+      "discriminator": [0, 0, 0, 0, 0, 0, 0, 0],
+      "accounts": [
+        { "name": "market", "writable": true },
+        { "name": "oracle_config" },
+        { "name": "ix_sysvar" },
+        { "name": "cranker", "writable": true, "signer": true }
+      ],
+      "args": [
+        { "name": "baseline_price", "type": "u128" },
+        { "name": "signatures", "type": { "vec": { "array": ["u8", 64] } } }
+      ]
+    },
+    {
+      "name": "resolve_market",
+      "discriminator": [0, 0, 0, 0, 0, 0, 0, 0],
+      "accounts": [
+        { "name": "market", "writable": true },
+        { "name": "oracle_config" },
+        { "name": "ix_sysvar" },
+        { "name": "cranker", "writable": true, "signer": true }
+      ],
+      "args": [
+        { "name": "final_price", "type": "u128" },
+        { "name": "signatures", "type": { "vec": { "array": ["u8", 64] } } }
+      ]
+    },
+    {
+      "name": "admin_force_resolve",
+      "discriminator": [0, 0, 0, 0, 0, 0, 0, 0],
+      "accounts": [
+        { "name": "config" },
+        { "name": "market", "writable": true },
+        { "name": "admin", "signer": true }
+      ],
+      "args": [
+        { "name": "baseline_price", "type": "u128" },
+        { "name": "final_price", "type": "u128" }
+      ]
+    },
+    {
+      "name": "claim",
+      "discriminator": [0, 0, 0, 0, 0, 0, 0, 0],
+      "accounts": [
+        { "name": "config" },
+        { "name": "market", "writable": true },
+        { "name": "position", "writable": true },
+        { "name": "vault", "writable": true },
+        { "name": "fee_vault", "writable": true },
+        { "name": "stake_mint" },
+        { "name": "owner", "writable": true },
+        { "name": "owner_ata", "writable": true },
+        { "name": "cranker", "writable": true, "signer": true },
+        { "name": "token_program" },
+        { "name": "associated_token_program" },
+        { "name": "system_program" },
+        { "name": "rent" }
+      ],
+      "args": []
+    }
+  ],
+  "accounts": [
+    { "name": "GlobalConfig", "discriminator": [0, 0, 0, 0, 0, 0, 0, 0] },
+    { "name": "OracleConfig", "discriminator": [0, 0, 0, 0, 0, 0, 0, 0] },
+    { "name": "Source", "discriminator": [0, 0, 0, 0, 0, 0, 0, 0] },
+    { "name": "Market", "discriminator": [0, 0, 0, 0, 0, 0, 0, 0] },
+    { "name": "Position", "discriminator": [0, 0, 0, 0, 0, 0, 0, 0] }
+  ],
+  "events": [
+    { "name": "MarketInstantiated", "discriminator": [0, 0, 0, 0, 0, 0, 0, 0] },
+    { "name": "BetPlaced", "discriminator": [0, 0, 0, 0, 0, 0, 0, 0] },
+    { "name": "BetExited", "discriminator": [0, 0, 0, 0, 0, 0, 0, 0] },
+    { "name": "MarketClosed", "discriminator": [0, 0, 0, 0, 0, 0, 0, 0] },
+    { "name": "MarketResolved", "discriminator": [0, 0, 0, 0, 0, 0, 0, 0] },
+    { "name": "Claimed", "discriminator": [0, 0, 0, 0, 0, 0, 0, 0] },
+    { "name": "OracleSignersActivated", "discriminator": [0, 0, 0, 0, 0, 0, 0, 0] }
+  ],
+  "types": [
+    {
+      "name": "Side",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          { "name": "Yes" },
+          { "name": "No" }
+        ]
+      }
+    },
+    {
+      "name": "BatchEntry",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "source_id", "type": "u32" },
+          { "name": "close_time", "type": "i64" },
+          { "name": "settlement_time", "type": "i64" },
+          { "name": "threshold_bps", "type": "i32" },
+          { "name": "side", "type": { "defined": { "name": "Side" } } },
+          { "name": "amount", "type": "u64" }
+        ]
+      }
+    },
+    {
+      "name": "GlobalConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "admin", "type": "pubkey" },
+          { "name": "pending_admin", "type": { "option": "pubkey" } },
+          { "name": "stake_mint", "type": "pubkey" },
+          { "name": "fee_bps", "type": "u16" },
+          { "name": "paused", "type": "bool" },
+          { "name": "fee_vault_bump", "type": "u8" },
+          { "name": "bump", "type": "u8" }
+        ]
+      }
+    },
+    {
+      "name": "OracleConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "active_signers", "type": { "vec": "pubkey" } },
+          { "name": "active_threshold", "type": "u8" },
+          { "name": "pending_signers", "type": { "vec": "pubkey" } },
+          { "name": "pending_threshold", "type": "u8" },
+          { "name": "pending_activation_ts", "type": "i64" },
+          { "name": "bump", "type": "u8" }
+        ]
+      }
+    },
+    {
+      "name": "Source",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "source_id", "type": "u32" },
+          { "name": "name", "type": { "array": ["u8", 32] } },
+          { "name": "enabled", "type": "bool" },
+          { "name": "bump", "type": "u8" }
+        ]
+      }
+    },
+    {
+      "name": "Market",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "source_id", "type": "u32" },
+          { "name": "close_time", "type": "i64" },
+          { "name": "settlement_time", "type": "i64" },
+          { "name": "threshold_bps", "type": "i32" },
+          { "name": "total_yes", "type": "u64" },
+          { "name": "total_no", "type": "u64" },
+          { "name": "baseline_price", "type": "u128" },
+          { "name": "final_price", "type": "u128" },
+          { "name": "resolved", "type": "bool" },
+          { "name": "outcome_yes", "type": "bool" },
+          { "name": "force_resolved", "type": "bool" },
+          { "name": "vault", "type": "pubkey" },
+          { "name": "bump", "type": "u8" }
+        ]
+      }
+    },
+    {
+      "name": "Position",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "market", "type": "pubkey" },
+          { "name": "owner", "type": "pubkey" },
+          { "name": "yes_amount", "type": "u64" },
+          { "name": "no_amount", "type": "u64" },
+          { "name": "claimed", "type": "bool" },
+          { "name": "bump", "type": "u8" }
+        ]
+      }
+    }
+  ]
+}
