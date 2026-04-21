@@ -1,12 +1,8 @@
 import type { Metadata } from 'next'
-import { QueryClient, dehydrate, HydrationBoundary } from '@tanstack/react-query'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
-import { SourceDetailV2 } from '@/components/domain/vision/detail/SourceDetailV2'
 import { getSourceDisplayServer } from '@/lib/vision/sources-server'
 import { getCategoryLabel } from '@/lib/vision/source-categories'
-import { prefetchSourceSnapshot, prefetchBatchConfigBySource, prefetchSnapshotMeta, prefetchBatches, prefetchRounds, prefetchSourceHistory } from '@/lib/vision/prefetch'
-import { toInternalId } from '@/lib/vision/source-ids'
 
 export const revalidate = 60
 
@@ -43,7 +39,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title: `${source.name} — Vision Data Source`,
       description,
-      // OG image generated dynamically by opengraph-image.tsx in this route segment
     },
     twitter: {
       card: 'summary_large_image',
@@ -58,76 +53,18 @@ export default async function SourcePage({ params }: Props) {
   const { sourceId } = await params
   const source = await getSourceDisplayServer(sourceId)
 
-  // Server-side prefetch: snapshot + batch config + meta in parallel.
-  // Hydrated into React Query cache — client hooks find warm data on mount.
-  const queryClient = new QueryClient()
-  const dataNodeId = toInternalId(sourceId)
-  await Promise.allSettled([
-    queryClient.prefetchQuery({
-      queryKey: ['source-snapshot', dataNodeId],
-      queryFn: () => prefetchSourceSnapshot(dataNodeId),
-    }),
-    queryClient.prefetchQuery({
-      queryKey: ['batch-config-source', sourceId],
-      queryFn: () => prefetchBatchConfigBySource(sourceId),
-    }),
-    queryClient.prefetchQuery({
-      queryKey: ['market-snapshot-meta'],
-      queryFn: prefetchSnapshotMeta,
-    }),
-    queryClient.prefetchQuery({
-      queryKey: ['vision-batches'],
-      queryFn: prefetchBatches,
-    }),
-    queryClient.prefetchQuery({
-      queryKey: ['vision-rounds', sourceId],
-      queryFn: () => prefetchRounds(sourceId),
-    }),
-    queryClient.prefetchQuery({
-      queryKey: ['source-history', sourceId, 1],
-      queryFn: () => prefetchSourceHistory(sourceId),
-    }),
-  ])
-
-  const category = source ? getCategoryLabel(source.category) : undefined
-
-  const jsonLd = source ? [
-    {
-      '@context': 'https://schema.org',
-      '@type': 'Dataset',
-      name: `${source.name} — Vision Market Data`,
-      description: `Live prediction market data feed for ${source.name}. ${source.prefixes?.length ?? 0} market series in the ${category} category. Updated in real-time on Vision (General Market).`,
-      creator: {
-        '@type': 'Organization',
-        name: 'General Market',
-        url: 'https://www.generalmarket.io',
-      },
-      temporalCoverage: '2025/..',
-      license: 'https://www.generalmarket.io/terms',
-      keywords: [source.name, category, 'prediction market', 'market data', 'Vision'],
-    },
-    {
-      '@context': 'https://schema.org',
-      '@type': 'BreadcrumbList',
-      itemListElement: [
-        { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.generalmarket.io' },
-        { '@type': 'ListItem', position: 2, name: source.name },
-      ],
-    },
-  ] : []
-
   return (
-    <HydrationBoundary state={dehydrate(queryClient)}>
-      <main className="min-h-screen bg-page flex flex-col">
-        <Header />
-        {jsonLd.map((ld, i) => (
-          <script key={i} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} />
-        ))}
-        <div className="flex-1 overflow-x-clip">
-          <SourceDetailV2 sourceId={sourceId} initialSource={source} />
+    <main className="min-h-screen bg-page flex flex-col">
+      <Header />
+      <div className="flex-1 overflow-x-clip">
+        <div className="px-6 lg:px-12 py-24">
+          <div className="max-w-site mx-auto text-center text-text-muted">
+            {/* Source detail UI is waiting on the Solana rebuild. */}
+            {source ? source.name : 'Source'}
+          </div>
         </div>
-        <Footer />
-      </main>
-    </HydrationBoundary>
+      </div>
+      <Footer />
+    </main>
   )
 }

@@ -14,12 +14,7 @@ export const CSP_CONNECT_EXTRA = (process.env.CSP_CONNECT_EXTRA || '').trim()
 
 // ── Server-only URLs (API route handlers) ──
 // Exported as functions — call them, don't reference them as bare values.
-//   Before: fetch(`${ISSUER_VISION_URL}/path`)
-//   After:  fetch(`${getIssuerVisionUrl()}/path`)
 export function getAaDataNodeUrl(): string {
-  // Chain through every env var that could plausibly point at the data-node.
-  // Vercel deployments historically only had DATA_NODE_URL set; without the
-  // fallback the topbar fetch hits localhost and silently returns 0.
   return (
     process.env['AA_DATA_NODE_URL'] ||
     process.env['DATA_NODE_URL'] ||
@@ -32,20 +27,9 @@ export function getDataNodeServer(): string {
   return process.env['DATA_NODE_URL'] || 'http://localhost:8200'
 }
 
-export function getIssuerVisionUrl(): string {
-  return process.env['ISSUER_VISION_URL'] || process.env['ORACLE_VISION_URL'] || 'http://localhost:10001'
-}
-
-export function getL3RpcServer(): string {
-  return process.env['L3_RPC_URL'] || process.env['NEXT_PUBLIC_L3_RPC_URL'] || 'http://localhost:8545'
-}
-
 // Backward-compat aliases — kept for any remaining import sites.
-// These read at module load but use bracket access so webpack won't inline them.
 export const AA_DATA_NODE_URL = process.env['AA_DATA_NODE_URL'] || 'http://localhost:8200'
 export const DATA_NODE_SERVER = process.env['DATA_NODE_URL'] || 'http://localhost:8200'
-export const ISSUER_VISION_URL = process.env['ISSUER_VISION_URL'] || process.env['ORACLE_VISION_URL'] || 'http://localhost:10001'
-export const L3_RPC_SERVER = process.env['L3_RPC_URL'] || process.env['NEXT_PUBLIC_L3_RPC_URL'] || 'http://localhost:8545'
 
 // ── Isomorphic URLs (browser → proxy, server → direct) ──
 export const DATA_NODE_URL = typeof window !== 'undefined'
@@ -55,31 +39,3 @@ export const DATA_NODE_URL = typeof window !== 'undefined'
 export const ORACLE_URL = typeof window !== 'undefined'
   ? '/api/oracle'
   : (process.env['ORACLE_URL'] || 'http://localhost:9001')
-
-// Vision API — browser goes through catch-all proxy, server goes direct.
-// Accepts VISION_API_URL or ORACLE_VISION_URL (post issuer→oracle rename).
-export const VISION_API_URL = typeof window !== 'undefined'
-  ? '/api'
-  : (process.env['VISION_API_URL'] || process.env['ORACLE_VISION_URL'] || 'http://localhost:10001')
-
-// ── Client-side URLs ──
-// L3 RPC: browser always routes through the same-origin proxy. The upstream
-// nginx at the L3 endpoint does not answer CORS preflight (OPTIONS → 500),
-// so any cross-origin POST with application/json is aborted before it leaves
-// the browser. The proxy sidesteps CORS and mixed-content in one move.
-export const L3_RPC_URL = typeof window !== 'undefined'
-  ? '/api/rpc'
-  : (process.env.NEXT_PUBLIC_L3_RPC_URL || 'http://localhost:8545')
-export const SETTLEMENT_RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8546'
-export const AP_URL = process.env.NEXT_PUBLIC_AP_URL || 'http://localhost:9100'
-export const AP_ADDRESS = (process.env.NEXT_PUBLIC_AP_ADDRESS || '0x20A85a164C64B603037F647eb0E0aDeEce0BE5AC') as `0x${string}`
-export const L3_EXPLORER_URL = process.env.NEXT_PUBLIC_L3_EXPLORER_URL || ''
-export const SETTLEMENT_EXPLORER_URL = process.env.NEXT_PUBLIC_SETTLEMENT_EXPLORER_URL || 'https://testnet.sonicscan.org'
-
-// Vision oracle URLs — for bitmap submission, balance proofs, withdrawals.
-// Accepts NEXT_PUBLIC_ISSUER_URLS or NEXT_PUBLIC_ORACLE_URLS (post rename).
-export const VISION_ISSUER_URLS = (
-  process.env.NEXT_PUBLIC_ISSUER_URLS ||
-  process.env.NEXT_PUBLIC_ORACLE_URLS ||
-  'http://localhost:10001,http://localhost:10002,http://localhost:10003'
-).split(',').map(s => s.trim())

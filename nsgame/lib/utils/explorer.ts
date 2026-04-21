@@ -1,38 +1,39 @@
 /**
- * Block Explorer URL utilities for Index L3 (Orbit) and Settlement (Sonic)
+ * Block explorer URL utilities.
  *
- * All explorer links go through these functions — never construct URLs manually.
- * L3: Blockscout on VPS 2 (GET requests to same host as RPC)
- * Settlement: Sonic testnet explorer (sonicscan.org)
+ * The EVM chains (Index L3, Sonic settlement) are gone. What remains is a
+ * Solana-shaped shim: one chain, Solscan by default. The `ExplorerChain`
+ * type is kept so existing consumers (HowItWorks, BilateralBetCard,
+ * SignatureProgress, useTransactionNotification) keep compiling while the
+ * Solana integration agent swaps in a richer cluster-aware implementation.
  */
 
-import { L3_EXPLORER_URL, SETTLEMENT_EXPLORER_URL } from '@/lib/config'
+// 'l3' / 'settlement' / 'evm' remain as string aliases so the lingering
+// callers keep compiling while their code paths get rewritten.
+export type ExplorerChain = 'solana' | 'l3' | 'settlement' | 'evm'
 
-export type ExplorerChain = 'settlement' | 'l3'
+const SOLANA_EXPLORER_BASE =
+  process.env.NEXT_PUBLIC_SOLANA_EXPLORER_URL || 'https://solscan.io'
 
-function explorerBase(chain: ExplorerChain): string {
-  return chain === 'settlement' ? SETTLEMENT_EXPLORER_URL : L3_EXPLORER_URL
+function explorerBase(_chain: ExplorerChain = 'solana'): string {
+  return SOLANA_EXPLORER_BASE
 }
 
-export function getTxUrl(txHash: string, chain: ExplorerChain = 'l3'): string {
-  const base = explorerBase(chain)
-  return base ? `${base}/tx/${txHash}` : '#'
+export function getTxUrl(txSignature: string, _chain: ExplorerChain = 'solana'): string {
+  const base = explorerBase()
+  return base ? `${base}/tx/${txSignature}` : '#'
 }
 
-export function getAddressUrl(address: string, chain: ExplorerChain = 'l3'): string {
-  const base = explorerBase(chain)
-  return base ? `${base}/address/${address}` : '#'
+export function getAddressUrl(address: string, _chain: ExplorerChain = 'solana'): string {
+  const base = explorerBase()
+  return base ? `${base}/account/${address}` : '#'
 }
 
-export function getContractUrl(address: string, chain: ExplorerChain = 'l3'): string {
-  const base = explorerBase(chain)
-  return base ? `${base}/address/${address}#code` : '#'
+export function getContractUrl(address: string, _chain: ExplorerChain = 'solana'): string {
+  const base = explorerBase()
+  return base ? `${base}/account/${address}` : '#'
 }
 
-/**
- * Get the raw explorer base URL for a chain.
- * Use when you need the base URL directly (e.g. linking to the explorer homepage).
- */
-export function getExplorerBaseUrl(chain: ExplorerChain = 'l3'): string {
-  return explorerBase(chain)
+export function getExplorerBaseUrl(_chain: ExplorerChain = 'solana'): string {
+  return explorerBase()
 }

@@ -6,7 +6,7 @@ import { Link, usePathname, useRouter } from '@/i18n/routing'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { springs } from '@/components/ui/spring'
 import { useWeb3Available } from '@/lib/contexts/Web3Context'
-import { useAccount } from '@/lib/wallet-shim'
+import { useWallet } from '@/hooks/useWallet'
 import { usePostHogTracker } from '@/hooks/usePostHog'
 import { LanguageSwitcher } from './LanguageSwitcher'
 import dynamic from 'next/dynamic'
@@ -38,10 +38,10 @@ type PageId = typeof PRIMARY_NAV[number]['id']
 // Pages whose mood darkens the header
 const DARK_PAGES = new Set<string>(['vision'])
 
-/** Renders nothing, exists solely to call useAccount() inside the provider boundary and lift wallet state up. */
+/** Renders nothing, exists solely to call useWallet() inside the provider boundary and lift wallet state up. */
 function WalletStateBridge({ onState }: { onState: (address: string | undefined, connected: boolean) => void }) {
-  const { address, isConnected } = useAccount()
-  useEffect(() => { onState(address, isConnected) }, [address, isConnected, onState])
+  const { address, connected } = useWallet()
+  useEffect(() => { onState(address ?? undefined, connected) }, [address, connected, onState])
   return null
 }
 

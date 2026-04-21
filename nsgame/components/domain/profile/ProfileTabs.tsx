@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl'
 import { SpringTabs, SpringTab } from '@/components/ui/spring'
 
-export type ProfileTabId = 'vision' | 'index' | 'vaults'
+export type ProfileTabId = 'vision' | 'index'
 
 interface ProfileTabsProps {
   activeTab: ProfileTabId
@@ -14,7 +14,6 @@ export function ProfileTabs({ activeTab, onTabChange }: ProfileTabsProps) {
   const t = useTranslations('common')
 
   const tabs = [
-    { id: 'vaults' as const, label: t('profile.tab_vaults') },
     { id: 'vision' as const, label: t('profile.tab_vision') },
     { id: 'index' as const, label: t('profile.tab_index') },
   ]

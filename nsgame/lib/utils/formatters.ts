@@ -2,7 +2,9 @@
  * Utility functions for formatting display values
  */
 
-import { COLLATERAL_DECIMALS } from '@/lib/contracts/addresses'
+// Solana USDC uses 6 decimals. Kept as a local constant so this file no
+// longer reaches into the deleted EVM contracts layer.
+const COLLATERAL_DECIMALS = 6
 
 /**
  * Safely converts a string/number amount to BigInt base units.
