@@ -4,23 +4,6 @@ import { Link } from "@/i18n/routing";
 import { Callout } from "./Callout";
 import { ComparisonTable } from "./ComparisonTable";
 import { CodeBlock } from "./CodeBlock";
-import { FadeInSection } from "@/components/learn/FadeInSection";
-import {
-  FoundersStats,
-  FoundersAgeTimeline,
-  TGEAgePerformance,
-  TeamCompPerformanceGrid,
-  TeamGenderPerformance,
-  TeamNatPerformance,
-  TeamAgeSpreadPerformance,
-  TeamEduPerformance,
-  FoundersDashboard,
-  PodcastDistribution,
-  PodcastATHPerformance,
-  PodcastSurvival,
-  PodcastMarketCap,
-  PodcastTop500,
-} from "@/components/learn/diagrams/founders";
 
 function extractTextFromReactNode(node: ReactNode): string {
   if (typeof node === "string") return node;
@@ -54,14 +37,12 @@ export const mdxComponents: MDXComponents = {
     const text = extractTextFromReactNode(children);
     const id = slugify(text);
     return (
-      <FadeInSection>
-        <h2
-          id={id}
-          className="scroll-mt-24 pt-8 mt-14 mb-5 text-[24px] md:text-[28px] font-bold tracking-tight text-black leading-[1.15]"
-        >
-          {children}
-        </h2>
-      </FadeInSection>
+      <h2
+        id={id}
+        className="scroll-mt-24 pt-8 mt-14 mb-5 text-[24px] md:text-[28px] font-bold tracking-tight text-black leading-[1.15]"
+      >
+        {children}
+      </h2>
     );
   },
   h3: ({ children }) => (
@@ -159,20 +140,4 @@ export const mdxComponents: MDXComponents = {
   Callout,
   ComparisonTable,
   CodeBlock,
-  // Founders demographics article
-  FoundersStats,
-  FoundersAgeTimeline,
-  TGEAgePerformance,
-  TeamCompPerformanceGrid,
-  TeamGenderPerformance,
-  TeamNatPerformance,
-  TeamAgeSpreadPerformance,
-  TeamEduPerformance,
-  FoundersDashboard,
-  // Podcast visibility article
-  PodcastDistribution,
-  PodcastATHPerformance,
-  PodcastSurvival,
-  PodcastMarketCap,
-  PodcastTop500,
 };
