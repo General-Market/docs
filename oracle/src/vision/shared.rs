@@ -275,9 +275,19 @@ pub fn source_max_age_secs(source_id: &str, tick_duration_secs: u64) -> u64 {
 }
 
 /// Record settlements to data-node for threshold feedback loop.
+///
+/// `source_id` is the human-readable source name (e.g. "twitch", "crypto").
+/// The data-node keys `batch_settlements.source_id` on this string and the
+/// threshold feedback queries filter by it — an empty string makes every row
+/// invisible to the source it belongs to.
+///
+/// `change_pct` is percent (2.5 = 2.5%). The oracle carries bps internally
+/// (`pct_change_bps: i64`); we convert here so data-node's
+/// `sanitize_threshold_bps(abs * 100)` lands in the right range.
 pub async fn record_settlements(
     data_node_url: &str,
     admin_token: &str,
+    source_id: &str,
     result: &super::types::TickResult,
     config_hash: &H256,
 ) {
@@ -287,12 +297,12 @@ pub async fn record_settlements(
         .filter(|r| !matches!(r.outcome, super::types::MarketOutcome::Cancelled))
         .map(|r| {
             serde_json::json!({
-                "sourceId": "",
+                "sourceId": source_id,
                 "assetId": r.asset_id,
                 "configHash": format!("0x{}", hex::encode(config_hash)),
                 "startPrice": r.start_price,
                 "endPrice": r.end_price,
-                "changeBps": r.pct_change_bps,
+                "changePct": (r.pct_change_bps as f64) / 100.0,
             })
         })
         .collect();

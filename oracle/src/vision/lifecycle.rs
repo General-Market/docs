@@ -312,7 +312,7 @@ impl BatchLifecycleManager {
                             // Don't clear previous_batch_id — will retry next heartbeat
                         } else {
                         match mgr.resolve_and_settle(prev_id, &source_name).await {
-                            Ok((settlement, tick_result)) => {
+                            Ok((settlement, tick_result, config_hash)) => {
                                 info!(
                                     source = %source_name,
                                     batch_id = prev_id,
@@ -327,6 +327,16 @@ impl BatchLifecycleManager {
                                     error!(batch_id = prev_id, error = %e, "Failed to record market ratios");
                                 }
                                 mgr.broadcast_settlement_event(prev_id, &source_name, &tick_result);
+                                // Feed settlement data back to data-node for threshold recalibration.
+                                // Without this, batch_settlements stays empty and the settlement
+                                // distribution endpoint returns count:0 for every source.
+                                super::shared::record_settlements(
+                                    &mgr.config.data_node_url,
+                                    mgr.config.data_node_token.as_deref().unwrap_or(""),
+                                    &source_name,
+                                    &tick_result,
+                                    &config_hash,
+                                ).await;
                                 let bls_ok = match mgr.sign_and_aggregate_settlement(&settlement).await {
                                     Ok(()) => true,
                                     Err(e) => {
@@ -497,11 +507,14 @@ impl BatchLifecycleManager {
     }
 
     /// Resolve a completed round: fetch snapshot, run resolver, compute settlement.
+    ///
+    /// Third tuple element is the batch's pinned `config_hash` — needed by
+    /// `record_settlements` for data-node's threshold feedback loop.
     async fn resolve_and_settle(
         &self,
         batch_id: u64,
         source_name: &str,
-    ) -> Result<(RoundSettlement, super::types::TickResult), Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<(RoundSettlement, super::types::TickResult, H256), Box<dyn std::error::Error + Send + Sync>> {
         // Get batch state from scheduler
         let (batch, players) = self
             .scheduler
@@ -525,7 +538,7 @@ impl BatchLifecycleManager {
                 player_balances: vec![],
                 voided_players: vec![],
             };
-            return Ok((empty_settlement, empty_tick));
+            return Ok((empty_settlement, empty_tick, batch.config_hash));
         }
 
         // Fetch market config by the batch's PINNED config hash — not the current
@@ -782,7 +795,7 @@ impl BatchLifecycleManager {
             .collect();
         let settlement = compute_settlement(&tick_result, &player_deposits);
 
-        Ok((settlement, tick_result))
+        Ok((settlement, tick_result, batch.config_hash))
     }
 
     /// Create a new round batch for a source.
