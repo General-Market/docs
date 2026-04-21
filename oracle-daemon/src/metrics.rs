@@ -12,7 +12,7 @@ use hyper::service::service_fn;
 use hyper::{Request, Response};
 use hyper_util::rt::TokioIo;
 use http_body_util::Full;
-use prometheus::{Encoder, Gauge, Registry, TextEncoder};
+use prometheus::{Counter, Encoder, Gauge, Registry, TextEncoder};
 use solana_pubkey::Pubkey;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 use std::net::SocketAddr;
@@ -28,7 +28,7 @@ pub struct Metrics {
     pub markets_awaiting_resolve: Gauge,
     pub markets_awaiting_claim: Gauge,
     pub last_tx_success_ts: Gauge,
-    pub tx_failures_total: Gauge,
+    pub tx_failures_total: Counter,
 }
 
 impl Metrics {
@@ -55,7 +55,7 @@ impl Metrics {
             "last_tx_success_ts",
             "Unix timestamp of the last successfully-confirmed transaction.",
         )?;
-        let tx_failures_total = Gauge::new(
+        let tx_failures_total = Counter::new(
             "tx_failures_total",
             "Cumulative transaction failures since process boot.",
         )?;

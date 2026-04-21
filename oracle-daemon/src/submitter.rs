@@ -108,10 +108,6 @@ fn vault_pda(program_id: &Pubkey, market: &Pubkey) -> Pubkey {
     Pubkey::find_program_address(&[b"vault", market.as_ref()], program_id).0
 }
 
-fn ed25519_program_id() -> Pubkey {
-    ED25519_PROGRAM_ID
-}
-
 fn system_program_id() -> Pubkey {
     solana_sdk_ids::system_program::ID
 }
