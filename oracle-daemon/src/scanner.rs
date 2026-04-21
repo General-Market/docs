@@ -87,6 +87,8 @@ impl Scanner {
             with_context: Some(false),
             sort_results: None,
         };
+        // TODO: migrate to get_program_ui_accounts_with_config (returns UiAccount, non-trivial reshape).
+        #[allow(deprecated)]
         let accounts = self
             .rpc
             .get_program_accounts_with_config(&self.program_id, cfg)
@@ -164,6 +166,8 @@ impl Scanner {
             with_context: Some(false),
             sort_results: None,
         };
+        // TODO: migrate to get_program_ui_accounts_with_config (returns UiAccount, non-trivial reshape).
+        #[allow(deprecated)]
         let accounts = self
             .rpc
             .get_program_accounts_with_config(&self.program_id, cfg)
