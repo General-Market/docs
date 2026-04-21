@@ -949,71 +949,27 @@ The production Python bot that trades every batch on Vision lives at `vision-bot
 
 ### Decimals, deployments, addresses
 
-The live testnet endpoints (verified reachable over public HTTP — no VPN, no DNS):
-
 ```python
-# L3 RPC (VPS 2) and chain
-VISION_RPC = "http://142.132.164.24/"
-CHAIN_ID   = 111222333
-
-# Core on-chain contract. The addresses in envs/testnet/deployment.json are
-# stale — they describe the *intended* deployment, not the live one. Trust
-# the chain, not the JSON: call `vision.USDC()` to discover the real USDC
-# token, and cross-check `eth_getCode(vision_address)` is non-empty before
-# using a hard-coded address.
-VISION_ADDRESS  = "0x94d540bb45975bd5a0c7ba9a15a0d34e378f6c61"
-
 # L3 USDC: 18 decimals. Never divide on-chain amounts by 1e6 here.
-# Self-discoverable via `vision.functions.USDC().call()`.
-L3_USDC_ADDRESS    = "0xADDb799BC1499b224DC4368E92b9042a54908553"
-L3_USDC_DECIMALS   = 18
+L3_USDC_DECIMALS = 18
 
-# Data-node (VPS 1, nginx-proxied). Serves batch configs and price snapshots.
-DATA_NODE = "http://116.203.156.98/data-node"
+# Addresses from envs/testnet/deployment.json. Confirm on every redeploy.
+VISION_ADDRESS = "0x80Ab4ebDF79dEa442b54DECdcEd16D6654470544"
+L3_USDC_ADDRESS = "0x2710e49EBb807A0cB9369F13Ba24Bd809809a827"
 
-# Three oracles, BFT quorum = ceil(2/3 * 3) = 2.
+VISION_RPC = "http://142.132.164.24/"
+CHAIN_ID = 111222333
+
+# One data-node per environment; it serves batch configs and price snapshots.
+DATA_NODE = "https://api.generalmarket.io"
+
+# One oracle quorum. In testnet this is typically 3 nodes at 10001/10002/10003.
 ORACLES = [
-    "http://116.203.156.98/oracle1",
-    "http://116.203.156.98/oracle2",
-    "http://116.203.156.98/oracle3",
+    "http://oracle-1.generalmarket.io",
+    "http://oracle-2.generalmarket.io",
+    "http://oracle-3.generalmarket.io",
 ]
-
-# The Twitch batch id is fixed at 19 on the current deployment. Verify by
-# calling vision.getBatch(19) and confirming tick_duration == 60.
-TWITCH_BATCH_ID = 19
-
-# Protocol constants read from chain (see Vision ABI):
-#   MIN_DEPOSIT         = 1e17 wei = 0.1 L3 USDC
-#   MIN_TICK_DURATION   = 60
-#   MAX_TICK_DURATION   = 604800
-#   PROTOCOL_FEE_BPS    = 5
 ```
-
-**Smoke test before writing any trading code** — confirm everything answers:
-
-```bash
-# 1. RPC alive, chainId matches
-curl -s -X POST -H "Content-Type: application/json" \
-  --data '{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":1}' \
-  http://142.132.164.24/
-# → {"jsonrpc":"2.0","id":1,"result":"0x6a11e3d"}   (111222333)
-
-# 2. Vision contract has bytecode
-curl -s -X POST -H "Content-Type: application/json" \
-  --data '{"jsonrpc":"2.0","method":"eth_getCode","params":["0x94d540bb45975bd5a0c7ba9a15a0d34e378f6c61","latest"],"id":1}' \
-  http://142.132.164.24/ | head -c 120
-# → 0x608060405260043610... (non-empty)
-
-# 3. Data-node healthy
-curl -s http://116.203.156.98/data-node/health
-# → {"status":"healthy",...}
-
-# 4. Oracle healthy
-curl -s http://116.203.156.98/oracle1/
-# → {"status":"healthy", "is_leader":..., "connected_peers":3, ...}
-```
-
-If any of the four fails, stop — the bot won't trade until the infra is up.
 
 ### Bitmap encoding — the one thing you must not get wrong
 
@@ -1113,64 +1069,15 @@ class VisionBot:
             "settled":         bool(b[7]),
         }
 
-    def discover_source(self, source_id: str = "twitch") -> dict:
-        """Ask the data-node which config the oracle leader is currently
-        proposing for this source. Returns a dict with keys:
-            configHash, sourceId, displayName, markets, tickDurationSecs,
-            lockOffsetSecs, createdAt.
-
-        This is the authoritative market list — its order defines the bit
-        positions in the bitmap.
-        """
+    def fetch_markets(self, config_hash: bytes) -> list[dict]:
+        """Pull authoritative market list from the data-node. Each market
+        has an `assetId` field — their order defines the bitmap bit positions."""
         r = requests.get(
-            f"{self.data_node_url}/batches/recommended", timeout=20,
+            f"{self.data_node_url}/batches/config/0x{config_hash.hex()}",
+            timeout=10,
         )
         r.raise_for_status()
-        all_batches = r.json()["batches"]
-        for b in all_batches:
-            if b.get("sourceId") == source_id:
-                return b
-        raise RuntimeError(
-            f"No recommended batch for sourceId={source_id!r}. "
-            f"Available: {sorted({b.get('sourceId','?') for b in all_batches})}"
-        )
-
-    def find_active_batch_id(self, config_hash: bytes) -> int:
-        """Given the configHash from discover_source, find the live on-chain
-        batchId by querying the oracle's /vision/batches and matching by
-        config_hash. Oracle batch records include `id`, `config_hash`,
-        `source_id`, `market_count`, `player_count`, `paused`, `tvl`,
-        `tick_duration`.
-        """
-        target = "0x" + config_hash.hex()
-        for url in self.oracles:
-            try:
-                r = requests.get(f"{url}/vision/batches", timeout=10)
-                if r.status_code != 200:
-                    continue
-                for b in r.json().get("batches", []):
-                    if b.get("config_hash", "").lower() == target.lower():
-                        return int(b["id"])
-            except requests.RequestException:
-                continue
-        raise RuntimeError(
-            f"No active batch found for configHash={target}. "
-            f"The oracle's /vision/batches did not return a match."
-        )
-
-    def fetch_markets(self, config_hash: bytes) -> list[dict]:
-        """Deprecated in favour of `discover_source`. Kept for API parity.
-        If you already have the markets from `discover_source`, use them
-        directly rather than re-fetching.
-        """
-        source = self.discover_source()
-        if bytes.fromhex(source["configHash"][2:]) != config_hash:
-            raise RuntimeError(
-                f"configHash drift: on-chain says 0x{config_hash.hex()}, "
-                f"data-node recommends {source['configHash']}. Did the "
-                f"oracle just propose a new config? Retry in a few seconds."
-            )
-        return source["markets"]
+        return r.json()["markets"]
 
     # ── write: approve + join ──
     def _build_tx(self, gas: int) -> dict:
@@ -1282,42 +1189,41 @@ class VisionBot:
 bot = VisionBot(
     rpc_url=VISION_RPC,
     vision_address=VISION_ADDRESS,
-    private_key="0x...",          # your L3 testnet wallet, funded with L3 USDC
+    usdc_address=L3_USDC_ADDRESS,
+    private_key="0x...",          # your L3 testnet wallet
     data_node_url=DATA_NODE,
     oracles=ORACLES,
 )
 
-deposit = int(10 * 10**18)       # 10 L3 USDC (above MIN_DEPOSIT 0.1)
+batch_id = 19                    # twitch
+deposit = int(10 * 10**18)       # 10 L3 USDC
 
-# 1. Discover the current Twitch batch from the data-node
-source = bot.discover_source("twitch")
-config_hash = bytes.fromhex(source["configHash"][2:])
-markets = source["markets"]
+# 1. Read batch config
+info = bot.get_batch(batch_id)
+config_hash = info["config_hash"]
+markets = bot.fetch_markets(config_hash)
 n = len(markets)
-print(f"Source twitch: {source['displayName']} — {n} markets, tick {source['tickDurationSecs']}s")
+print(f"Batch {batch_id} has {n} markets, tick = {info['tick_duration']}s")
 
-# 2. Find the on-chain batchId for this config
-batch_id = bot.find_active_batch_id(config_hash)
-print(f"Active batchId = {batch_id}")
-
-# 3. Build picks — one per market. Your ML model lives here.
-# Trivial baseline: everything UP.
+# 2. Build picks — one pick per market.
+# The strategy logic that assigns UP/DOWN is YOUR ML model's job.
+# Here, a trivial "everything YES" baseline.
 picks = ["UP"] * n
 
-# 4. Encode + hash the bitmap (1024-byte padded, MSB-first, keccak commitment)
+# 3. Encode + hash the bitmap
 bitmap = encode_bitmap(picks, n)
 bitmap_hash = hash_bitmap(bitmap)
 
-# 5. Approve USDC (one-time per allowance) + join on-chain
+# 4. Approve + join on-chain
 bot.approve_usdc(deposit)
 tx_hash = bot.join_batch(batch_id, config_hash, deposit, bitmap_hash)
 print(f"Joined batch {batch_id} in tx {tx_hash.hex()}")
 
-# 6. Reveal the bitmap bytes to oracles
+# 5. Reveal bitmap to oracles (must match the commitment exactly)
 accepted = bot.submit_bitmap(batch_id, bitmap, bitmap_hash)
 print(f"Oracles accepted: {accepted}/{len(ORACLES)}")
 
-# 7. Poll for settlement
+# 6. Wait for settlement (tick + lock_offset + oracle confirm)
 while True:
     payout = bot.get_payout(batch_id)
     if payout > 0:
@@ -1336,39 +1242,6 @@ while True:
 5. **L3 USDC is 18 decimals.** `int(10 * 10**18)` for 10 USDC. Writing `10 * 10**6` will buy you 0.0000000001 USDC of exposure, which on a parimutuel rounds to nothing.
 6. **Pool totals are not queryable.** You trade blind — your edge must come from your model, not from reading the crowd. Settlement telling you the split after the fact is all you get.
 7. **Missing a tick is cheaper than burning gas on a guaranteed revert.** If `now + 10s > tick_end - lock_offset`, skip the tick.
-8. **The JSON deployment files lie.** `envs/testnet/deployment.json` claims a Vision address that currently has no bytecode on the RPC. The oracle's compose override has the live address (`0x94d540bb…`). Always cross-check with `eth_getCode` before hard-coding.
-9. **Self-discover the USDC address.** `vision.functions.USDC().call()` returns the token the Vision contract actually accepts. Anchor on-chain truth, not JSON.
-10. **Minimum deposit is 0.1 USDC** (= `1e17` wei). Lower joins revert; `MIN_DEPOSIT` is exposed as a public constant on the Vision contract.
-
-### ABI bundles — paste these next to your code
-
-Save as `abi/ERC20.json`:
-
-```json
-{
-  "abi": [
-    {"type":"function","name":"approve","stateMutability":"nonpayable","inputs":[{"name":"spender","type":"address"},{"name":"amount","type":"uint256"}],"outputs":[{"type":"bool"}]},
-    {"type":"function","name":"allowance","stateMutability":"view","inputs":[{"name":"owner","type":"address"},{"name":"spender","type":"address"}],"outputs":[{"type":"uint256"}]},
-    {"type":"function","name":"balanceOf","stateMutability":"view","inputs":[{"name":"account","type":"address"}],"outputs":[{"type":"uint256"}]},
-    {"type":"function","name":"decimals","stateMutability":"view","inputs":[],"outputs":[{"type":"uint8"}]},
-    {"type":"function","name":"symbol","stateMutability":"view","inputs":[],"outputs":[{"type":"string"}]}
-  ]
-}
-```
-
-Save as `abi/Vision.json` — use the **full** Foundry output (too large to paste here). Fetch it from the mono repo at `contracts/out/Vision.sol/Vision.json`, or extract the `abi` key into its own file. The critical entries your bot uses:
-
-- **`nextBatchId() → uint256`** — sanity check the contract is alive.
-- **`USDC() → address`** — self-discover the wrapped USDC token.
-- **`MIN_DEPOSIT() → uint256`** — 1e17 wei on the current deployment.
-- **`getBatch(uint256) → (address creator, bytes32 sourceId, bytes32 configHash, uint256 tickDuration, uint256 lockOffset, uint256 createdAtTick, bool paused, bool settled)`** — batch metadata.
-- **`currentTickId(uint256) → uint256`** — current absolute tick for this batch.
-- **`joinBatchDirect(uint256 batchId, bytes32 configHash, uint256 depositAmount, bytes32 bitmapHash)`** — the actual join transaction.
-- **`updateBitmap(uint256 batchId, bytes32 configHash, bytes32 newHash)`** — change your pick before the tick locks.
-- **`event PlayerSettled(uint256 indexed batchId, address indexed player, uint256 payout, uint256 fee)`** — read your PnL.
-- **`event BatchJoined(uint256 indexed batchId, address indexed player, uint256 deposit, bytes32 bitmapHash)`** — observe other participants, if you want to.
-
-If you do not have access to the mono repo: any Foundry-compiled Vision contract from the same git commit works. Selectors are deterministic given the source.
 
 ### Reading historical settlement prices (for backtests)
 

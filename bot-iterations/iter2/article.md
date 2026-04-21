@@ -1113,64 +1113,15 @@ class VisionBot:
             "settled":         bool(b[7]),
         }
 
-    def discover_source(self, source_id: str = "twitch") -> dict:
-        """Ask the data-node which config the oracle leader is currently
-        proposing for this source. Returns a dict with keys:
-            configHash, sourceId, displayName, markets, tickDurationSecs,
-            lockOffsetSecs, createdAt.
-
-        This is the authoritative market list — its order defines the bit
-        positions in the bitmap.
-        """
+    def fetch_markets(self, config_hash: bytes) -> list[dict]:
+        """Pull authoritative market list from the data-node. Each market
+        has an `assetId` field — their order defines the bitmap bit positions."""
         r = requests.get(
-            f"{self.data_node_url}/batches/recommended", timeout=20,
+            f"{self.data_node_url}/batches/config/0x{config_hash.hex()}",
+            timeout=10,
         )
         r.raise_for_status()
-        all_batches = r.json()["batches"]
-        for b in all_batches:
-            if b.get("sourceId") == source_id:
-                return b
-        raise RuntimeError(
-            f"No recommended batch for sourceId={source_id!r}. "
-            f"Available: {sorted({b.get('sourceId','?') for b in all_batches})}"
-        )
-
-    def find_active_batch_id(self, config_hash: bytes) -> int:
-        """Given the configHash from discover_source, find the live on-chain
-        batchId by querying the oracle's /vision/batches and matching by
-        config_hash. Oracle batch records include `id`, `config_hash`,
-        `source_id`, `market_count`, `player_count`, `paused`, `tvl`,
-        `tick_duration`.
-        """
-        target = "0x" + config_hash.hex()
-        for url in self.oracles:
-            try:
-                r = requests.get(f"{url}/vision/batches", timeout=10)
-                if r.status_code != 200:
-                    continue
-                for b in r.json().get("batches", []):
-                    if b.get("config_hash", "").lower() == target.lower():
-                        return int(b["id"])
-            except requests.RequestException:
-                continue
-        raise RuntimeError(
-            f"No active batch found for configHash={target}. "
-            f"The oracle's /vision/batches did not return a match."
-        )
-
-    def fetch_markets(self, config_hash: bytes) -> list[dict]:
-        """Deprecated in favour of `discover_source`. Kept for API parity.
-        If you already have the markets from `discover_source`, use them
-        directly rather than re-fetching.
-        """
-        source = self.discover_source()
-        if bytes.fromhex(source["configHash"][2:]) != config_hash:
-            raise RuntimeError(
-                f"configHash drift: on-chain says 0x{config_hash.hex()}, "
-                f"data-node recommends {source['configHash']}. Did the "
-                f"oracle just propose a new config? Retry in a few seconds."
-            )
-        return source["markets"]
+        return r.json()["markets"]
 
     # ── write: approve + join ──
     def _build_tx(self, gas: int) -> dict:
@@ -1282,42 +1233,41 @@ class VisionBot:
 bot = VisionBot(
     rpc_url=VISION_RPC,
     vision_address=VISION_ADDRESS,
-    private_key="0x...",          # your L3 testnet wallet, funded with L3 USDC
+    usdc_address=L3_USDC_ADDRESS,
+    private_key="0x...",          # your L3 testnet wallet
     data_node_url=DATA_NODE,
     oracles=ORACLES,
 )
 
-deposit = int(10 * 10**18)       # 10 L3 USDC (above MIN_DEPOSIT 0.1)
+batch_id = 19                    # twitch
+deposit = int(10 * 10**18)       # 10 L3 USDC
 
-# 1. Discover the current Twitch batch from the data-node
-source = bot.discover_source("twitch")
-config_hash = bytes.fromhex(source["configHash"][2:])
-markets = source["markets"]
+# 1. Read batch config
+info = bot.get_batch(batch_id)
+config_hash = info["config_hash"]
+markets = bot.fetch_markets(config_hash)
 n = len(markets)
-print(f"Source twitch: {source['displayName']} — {n} markets, tick {source['tickDurationSecs']}s")
+print(f"Batch {batch_id} has {n} markets, tick = {info['tick_duration']}s")
 
-# 2. Find the on-chain batchId for this config
-batch_id = bot.find_active_batch_id(config_hash)
-print(f"Active batchId = {batch_id}")
-
-# 3. Build picks — one per market. Your ML model lives here.
-# Trivial baseline: everything UP.
+# 2. Build picks — one pick per market.
+# The strategy logic that assigns UP/DOWN is YOUR ML model's job.
+# Here, a trivial "everything YES" baseline.
 picks = ["UP"] * n
 
-# 4. Encode + hash the bitmap (1024-byte padded, MSB-first, keccak commitment)
+# 3. Encode + hash the bitmap
 bitmap = encode_bitmap(picks, n)
 bitmap_hash = hash_bitmap(bitmap)
 
-# 5. Approve USDC (one-time per allowance) + join on-chain
+# 4. Approve + join on-chain
 bot.approve_usdc(deposit)
 tx_hash = bot.join_batch(batch_id, config_hash, deposit, bitmap_hash)
 print(f"Joined batch {batch_id} in tx {tx_hash.hex()}")
 
-# 6. Reveal the bitmap bytes to oracles
+# 5. Reveal bitmap to oracles (must match the commitment exactly)
 accepted = bot.submit_bitmap(batch_id, bitmap, bitmap_hash)
 print(f"Oracles accepted: {accepted}/{len(ORACLES)}")
 
-# 7. Poll for settlement
+# 6. Wait for settlement (tick + lock_offset + oracle confirm)
 while True:
     payout = bot.get_payout(batch_id)
     if payout > 0:
