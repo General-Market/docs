@@ -70,6 +70,10 @@ litesvm = { version = "0.11.0", features = ["precompiles"] }
 litesvm-token = "0.11.0"
 solana-clock = "3.0"
 solana-ed25519-program = "3.0"
+# The program uses anchor-spl for SPL Token CPIs; the integration test
+# needs the same crate to construct the place_bet ix account list and
+# derive ATAs. Pinned to the program's version.
+anchor-spl = "1.0.0"
 tempfile = "3"
 axum = "0.7"
 

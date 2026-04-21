@@ -10,14 +10,7 @@
 use anyhow::Result;
 use tracing::{error, info};
 
-mod config;
-mod feed;
-mod identity;
-mod metrics;
-mod payload;
-mod scanner;
-mod scheduler;
-mod submitter;
+use prediction_market_oracle::{config, identity, feed, metrics, scheduler};
 
 use solana_commitment_config::CommitmentConfig;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;

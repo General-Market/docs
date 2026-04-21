@@ -1,0 +1,50 @@
+[Unit]
+Description=Prediction Market Oracle Daemon (stateless close + resolve + claim)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=oracle
+Group=oracle
+WorkingDirectory=/var/lib/prediction-oracle
+
+# SA14: refuse to start below the SOL balance floor. Systemd's restart loop
+# then makes the outage visible instead of quietly-failing transactions.
+ExecStartPre=/usr/local/bin/oracle-preflight-balance.sh
+
+# Binary lives under /usr/local/bin after `cargo install` (or artifact drop).
+ExecStart=/usr/local/bin/prediction-market-oracle
+
+# Environment: either an EnvironmentFile or inline Environment= lines. Keep
+# the keypair readable only by the oracle user (mode 0400).
+Environment=RPC_URL=https://api.devnet.solana.com
+Environment=PROGRAM_ID=DQwMnwQGYuLDvciSFZNgUvcHkA3Buyhk3ejgbACvSydA
+Environment=ORACLE_KEYPAIR=/var/lib/prediction-oracle/oracle-keypair.json
+Environment=DATA_NODE_URL=http://127.0.0.1:8080
+Environment=METRICS_PORT=9091
+Environment=POLL_INTERVAL_SECS=30
+Environment=MIN_SOL_BALANCE=0.1
+Environment=RUST_LOG=info,prediction_market_oracle=debug
+
+# Restart aggressively — with the balance floor as a hard gate, a restart
+# loop means the operator must refund before the daemon becomes useful.
+Restart=always
+RestartSec=5
+StartLimitBurst=0
+
+# Hardening.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/prediction-oracle
+CapabilityBoundingSet=
+AmbientCapabilities=
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=prediction-oracle
+
+[Install]
+WantedBy=multi-user.target
