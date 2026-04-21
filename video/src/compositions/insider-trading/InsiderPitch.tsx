@@ -2,16 +2,11 @@ import React from "react";
 import {
   AbsoluteFill,
   Img,
-  Sequence,
   interpolate,
-  spring,
   staticFile,
   useCurrentFrame,
-  useVideoConfig,
 } from "remotion";
 import { loadFont as loadInter } from "@remotion/google-fonts/Inter";
-import { CascadeText } from "../../lib/components/Text";
-import type { CascadeTextProps } from "../../lib/components/Text";
 
 const { fontFamily: INTER } = loadInter("normal", {
   subsets: ["latin"],
@@ -19,125 +14,80 @@ const { fontFamily: INTER } = loadInter("normal", {
 });
 
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
+const ease3 = (t: number) => 1 - Math.pow(1 - t, 3);
 
 const BLACK = "#000000";
 const WHITE = "#ffffff";
-const DIM = "rgba(255,255,255,0.42)";
 
 // ─── Scene timings ───────────────────────────────────────────────────────
 export const PITCH_SCENES = {
   intro: { start: 0, end: 96 },
-  contrast: { start: 96, end: 216 },
-  point1: { start: 216, end: 356 },
-  point2: { start: 356, end: 496 },
-  point3: { start: 496, end: 636 },
+  contrast: { start: 96, end: 220 },
+  point1: { start: 220, end: 360 },
+  point2: { start: 360, end: 500 },
+  point3: { start: 500, end: 636 },
   stat: { start: 636, end: 748 },
   closing: { start: 748, end: 860 },
 } as const;
 
 export const PITCH_DURATION = PITCH_SCENES.closing.end;
 
-// ─── TimedCascadeText — Sequence-wrapped CascadeText ─────────────────────
-
-interface TimedCascadeProps extends CascadeTextProps {
-  from: number;
-  duration: number;
-}
-
-const TimedCascade: React.FC<TimedCascadeProps> = ({
-  from,
-  duration,
-  ...rest
-}) => (
-  <Sequence from={from} durationInFrames={duration} layout="none">
-    <CascadeText {...rest} />
-  </Sequence>
-);
-
-// BlendText — everything typographic flows through here. White text with
-// mix-blend-mode: difference. Over the black page: visible as white. Over
-// a white shape: inverts to black. Works with the cascade animation.
-const BlendText: React.FC<TimedCascadeProps> = (props) => (
-  <div
-    style={{
-      mixBlendMode: "difference",
-      color: WHITE,
-      isolation: "isolate",
-    }}
-  >
-    <TimedCascade {...props} color={WHITE} />
-  </div>
-);
-
-// ─── Ambient chrome — corner labels + timecode ───────────────────────────
-
-const Chrome: React.FC<{ pitchLocal: number }> = ({ pitchLocal }) => {
-  const totalSeconds = Math.floor(pitchLocal / 30);
-  const mm = String(Math.floor(totalSeconds / 60));
-  const ss = String(totalSeconds % 60).padStart(2, "0");
-
-  const labelStyle: React.CSSProperties = {
-    position: "absolute",
-    fontFamily: INTER,
-    fontWeight: 700,
-    fontSize: 16,
-    letterSpacing: "0.36em",
-    color: WHITE,
-    mixBlendMode: "difference",
-    textTransform: "uppercase",
-  };
-
-  return (
-    <AbsoluteFill style={{ pointerEvents: "none" }}>
-      <div style={{ ...labelStyle, top: 48, left: 56 }}>
-        Insider Trading · 2026
-      </div>
-      <div style={{ ...labelStyle, top: 48, right: 56, letterSpacing: "0.5em" }}>
-        GM / 01
-      </div>
-      <div
-        style={{
-          ...labelStyle,
-          bottom: 48,
-          left: "50%",
-          transform: "translateX(-50%)",
-          letterSpacing: "0.5em",
-          fontVariantNumeric: "tabular-nums",
-        }}
-      >
-        {mm}:{ss}
-      </div>
-      <div style={{ ...labelStyle, bottom: 48, left: 56, letterSpacing: "0.4em" }}>
-        generalmarket.io
-      </div>
-    </AbsoluteFill>
-  );
+// Shared static text styles. Text is white; difference blend handles inversion.
+const textBase: React.CSSProperties = {
+  fontFamily: INTER,
+  color: WHITE,
+  mixBlendMode: "difference",
 };
 
-// ─── Scene 1: INTRO — single circle opens ────────────────────────────────
+const Title = (style: React.CSSProperties): React.CSSProperties => ({
+  ...textBase,
+  fontWeight: 900,
+  letterSpacing: "-0.03em",
+  lineHeight: 0.95,
+  ...style,
+});
 
-const IntroScene: React.FC<{
-  local: number;
-  sceneStart: number;
-  duration: number;
-}> = ({ local, sceneStart, duration }) => {
-  const circleR = interpolate(local, [0, 46], [0, 620], {
+const Label = (style: React.CSSProperties): React.CSSProperties => ({
+  ...textBase,
+  fontWeight: 700,
+  letterSpacing: "0.3em",
+  textTransform: "uppercase",
+  ...style,
+});
+
+const Body = (style: React.CSSProperties): React.CSSProperties => ({
+  ...textBase,
+  fontWeight: 600,
+  letterSpacing: "-0.01em",
+  ...style,
+});
+
+// ─── Scene 1: INTRO — "General Market fights back" ───────────────────────
+
+const IntroScene: React.FC<{ local: number; duration: number }> = ({
+  local,
+  duration,
+}) => {
+  const circleR = interpolate(local, [0, 50], [0, 620], {
     ...clamp,
-    easing: (t) => 1 - Math.pow(1 - t, 3),
+    easing: ease3,
   });
-  const circleExit = interpolate(local, [duration - 20, duration], [1, 0], clamp);
-  const barWidth = interpolate(local, [50, 72], [0, 1200], clamp);
+  const barWidth = interpolate(local, [48, 78], [0, 1400], {
+    ...clamp,
+    easing: ease3,
+  });
+  const textIn = interpolate(local, [12, 28], [0, 1], clamp);
+  const kickerIn = interpolate(local, [58, 74], [0, 1], clamp);
   const fadeOut = interpolate(local, [duration - 14, duration], [1, 0], clamp);
 
   return (
     <AbsoluteFill style={{ opacity: fadeOut }}>
-      {/* Shape layer — white circle growing */}
+      {/* Shape — circle grows from center */}
       <AbsoluteFill
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          opacity: circleExit,
         }}
       >
         <div
@@ -150,112 +100,101 @@ const IntroScene: React.FC<{
         />
       </AbsoluteFill>
 
-      {/* Text layer — inverts where shapes are white */}
+      {/* Shape — kicker bar */}
+      <AbsoluteFill
+        style={{
+          display: "flex",
+          alignItems: "flex-end",
+          justifyContent: "center",
+          paddingBottom: 260,
+        }}
+      >
+        <div
+          style={{
+            width: barWidth,
+            height: 150,
+            background: WHITE,
+          }}
+        />
+      </AbsoluteFill>
+
+      {/* Text */}
       <AbsoluteFill
         style={{
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          gap: 48,
+          gap: 10,
         }}
       >
-        <BlendText
-          from={sceneStart + 6}
-          duration={duration}
-          text="GENERAL MARKET"
-          maxWidth={1600}
-          fontFamily={INTER}
-          fontSize={184}
-          fontWeight={900}
-          letterSpacing="-0.04em"
-          align="center"
-          riseDistance={80}
-          blurPx={14}
-          delayPerWord={5}
-          durationPerWord={26}
-        />
+        <div
+          style={{
+            ...Title({ fontSize: 176, opacity: textIn, textAlign: "center" }),
+          }}
+        >
+          General Market
+        </div>
+      </AbsoluteFill>
 
-        <div style={{ position: "relative", height: 140 }}>
-          <div
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              width: barWidth,
-              height: 130,
-              background: WHITE,
-            }}
-          />
-          <div style={{ position: "relative", zIndex: 2 }}>
-            <BlendText
-              from={sceneStart + 54}
-              duration={duration - 54}
-              text="fights back"
-              maxWidth={1200}
-              fontFamily={INTER}
-              fontSize={108}
-              fontWeight={900}
-              letterSpacing="-0.03em"
-              align="center"
-              riseDistance={60}
-              blurPx={12}
-              delayPerWord={4}
-              durationPerWord={22}
-            />
-          </div>
+      <AbsoluteFill
+        style={{
+          display: "flex",
+          alignItems: "flex-end",
+          justifyContent: "center",
+          paddingBottom: 286,
+        }}
+      >
+        <div
+          style={{
+            ...Title({
+              fontSize: 128,
+              opacity: kickerIn,
+              textAlign: "center",
+            }),
+          }}
+        >
+          fights back.
         </div>
       </AbsoluteFill>
     </AbsoluteFill>
   );
 };
 
-// ─── Scene 2: CONTRAST — many small circles vs one big circle ───────────
+// ─── Scene 2: CONTRAST ───────────────────────────────────────────────────
 
-const ContrastScene: React.FC<{
-  local: number;
-  sceneStart: number;
-  duration: number;
-  fps: number;
-}> = ({ local, sceneStart, duration, fps }) => {
-  const leftIn = spring({
-    frame: local,
-    fps,
-    config: { damping: 18, stiffness: 130 },
-  });
-  const rightIn = spring({
-    frame: Math.max(0, local - 42),
-    fps,
-    config: { damping: 16, stiffness: 110 },
-  });
-  const bigCircle = interpolate(local, [42, 96], [0, 460], {
+const ContrastScene: React.FC<{ local: number; duration: number }> = ({
+  local,
+  duration,
+}) => {
+  const bigCircle = interpolate(local, [40, 100], [0, 520], {
     ...clamp,
-    easing: (t) => 1 - Math.pow(1 - t, 3),
+    easing: ease3,
   });
+  const leftIn = interpolate(local, [0, 18], [0, 1], clamp);
+  const rightIn = interpolate(local, [40, 60], [0, 1], clamp);
   const fadeOut = interpolate(local, [duration - 18, duration], [1, 0], clamp);
 
-  const smallRs = [60, 48, 72, 54, 66];
-  const positions = [
-    { x: 0.18, y: 0.32 },
-    { x: 0.32, y: 0.58 },
-    { x: 0.08, y: 0.68 },
-    { x: 0.26, y: 0.42 },
-    { x: 0.14, y: 0.50 },
+  const scatter = [
+    { x: 0.14, y: 0.32, r: 62 },
+    { x: 0.28, y: 0.52, r: 44 },
+    { x: 0.08, y: 0.62, r: 72 },
+    { x: 0.32, y: 0.72, r: 36 },
+    { x: 0.20, y: 0.44, r: 54 },
+    { x: 0.40, y: 0.38, r: 30 },
   ];
 
   return (
     <AbsoluteFill style={{ opacity: fadeOut }}>
-      {/* LEFT — scattered small circles, fighting each other */}
+      {/* Shapes — left: scattered circles */}
       <AbsoluteFill>
-        {positions.map((p, i) => {
+        {scatter.map((p, i) => {
           const appear = interpolate(
             local,
-            [i * 4, 18 + i * 4],
+            [i * 3, 14 + i * 3],
             [0, 1],
             clamp,
           );
-          const rOsc = smallRs[i] + Math.sin((local + i * 10) * 0.08) * 4;
           return (
             <div
               key={i}
@@ -263,177 +202,121 @@ const ContrastScene: React.FC<{
                 position: "absolute",
                 left: `${p.x * 100}%`,
                 top: `${p.y * 100}%`,
-                width: rOsc * 2 * appear,
-                height: rOsc * 2 * appear,
+                width: p.r * 2 * appear,
+                height: p.r * 2 * appear,
                 transform: "translate(-50%, -50%)",
                 borderRadius: "50%",
                 background: WHITE,
-                opacity: leftIn,
               }}
             />
           );
         })}
       </AbsoluteFill>
 
-      {/* RIGHT — one giant circle */}
+      {/* Shapes — right: one giant circle */}
       <AbsoluteFill>
         <div
           style={{
             position: "absolute",
-            right: -40,
+            right: -60,
             top: "50%",
             transform: "translateY(-50%)",
             width: bigCircle * 2,
             height: bigCircle * 2,
             borderRadius: "50%",
             background: WHITE,
-            opacity: rightIn,
           }}
         />
       </AbsoluteFill>
 
-      {/* Text layer — left column then right column */}
+      {/* Text */}
       <AbsoluteFill
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
           alignItems: "center",
-          padding: "140px 120px",
+          padding: "140px 140px",
           boxSizing: "border-box",
           gap: 80,
         }}
       >
-        <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
-          <BlendText
-            from={sceneStart}
-            duration={duration}
-            text="EVERY EXCHANGE"
-            maxWidth={640}
-            fontFamily={INTER}
-            fontSize={26}
-            fontWeight={700}
-            letterSpacing="0.32em"
-            align="left"
-            riseDistance={24}
-            blurPx={6}
-            delayPerWord={2}
-            durationPerWord={16}
-          />
-          <BlendText
-            from={sceneStart + 6}
-            duration={duration - 6}
-            text="lets insiders eat first."
-            maxWidth={720}
-            fontFamily={INTER}
-            fontSize={88}
-            fontWeight={900}
-            letterSpacing="-0.03em"
-            align="left"
-            riseDistance={70}
-            blurPx={14}
-            delayPerWord={3}
-            durationPerWord={24}
-          />
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 24,
+            opacity: leftIn,
+          }}
+        >
+          <div style={Label({ fontSize: 24 })}>Every exchange</div>
+          <div style={Title({ fontSize: 84 })}>
+            allows insider trading.
+          </div>
         </div>
 
         <div
           style={{
             display: "flex",
             flexDirection: "column",
-            gap: 28,
-            alignItems: "flex-start",
+            gap: 24,
+            opacity: rightIn,
           }}
         >
-          <BlendText
-            from={sceneStart + 36}
-            duration={duration - 36}
-            text="GENERAL MARKET"
-            maxWidth={640}
-            fontFamily={INTER}
-            fontSize={26}
-            fontWeight={700}
-            letterSpacing="0.32em"
-            align="left"
-            riseDistance={24}
-            blurPx={6}
-            delayPerWord={2}
-            durationPerWord={16}
-          />
-          <BlendText
-            from={sceneStart + 42}
-            duration={duration - 42}
-            text="the first market to eliminate them."
-            maxWidth={760}
-            fontFamily={INTER}
-            fontSize={88}
-            fontWeight={900}
-            letterSpacing="-0.03em"
-            align="left"
-            riseDistance={70}
-            blurPx={14}
-            delayPerWord={3}
-            durationPerWord={24}
-          />
+          <div style={Label({ fontSize: 24 })}>General Market</div>
+          <div style={Title({ fontSize: 84 })}>
+            the first to eliminate insiders.
+          </div>
         </div>
       </AbsoluteFill>
     </AbsoluteFill>
   );
 };
 
-// ─── Scene 3: DERIVATIVE — two circles overlap, labels sit inside ────────
+// ─── Scene 3: POINT 1 — Derivative on top of every market ────────────────
 
-const Point1Scene: React.FC<{
-  local: number;
-  sceneStart: number;
-  duration: number;
-  fps: number;
-}> = ({ local, sceneStart, duration, fps }) => {
-  const headIn = spring({
-    frame: local,
-    fps,
-    config: { damping: 18, stiffness: 120 },
-  });
-  const leftCircle = interpolate(local, [14, 56], [0, 320], {
+const Point1Scene: React.FC<{ local: number; duration: number }> = ({
+  local,
+  duration,
+}) => {
+  const leftC = interpolate(local, [10, 60], [0, 280], {
     ...clamp,
-    easing: (t) => 1 - Math.pow(1 - t, 3),
+    easing: ease3,
   });
-  const rightCircle = interpolate(local, [40, 88], [0, 320], {
+  const rightC = interpolate(local, [36, 86], [0, 280], {
     ...clamp,
-    easing: (t) => 1 - Math.pow(1 - t, 3),
+    easing: ease3,
   });
-  const drift = interpolate(local, [60, duration], [0, 120], clamp);
+  const headIn = interpolate(local, [6, 26], [0, 1], clamp);
+  const labelsIn = interpolate(local, [70, 92], [0, 1], clamp);
+  const captionIn = interpolate(local, [98, 118], [0, 1], clamp);
   const fadeOut = interpolate(local, [duration - 18, duration], [1, 0], clamp);
 
   return (
     <AbsoluteFill style={{ opacity: fadeOut }}>
-      {/* Headline — above circles, blends with whatever's behind */}
+      {/* Headline */}
       <AbsoluteFill
         style={{
           display: "flex",
+          alignItems: "flex-start",
           justifyContent: "center",
           paddingTop: 140,
         }}
       >
-        <div style={{ opacity: headIn }}>
-          <BlendText
-            from={sceneStart + 6}
-            duration={duration - 6}
-            text="A derivative on top of every market."
-            maxWidth={1500}
-            fontFamily={INTER}
-            fontSize={84}
-            fontWeight={900}
-            letterSpacing="-0.03em"
-            align="center"
-            riseDistance={70}
-            blurPx={14}
-            delayPerWord={3}
-            durationPerWord={22}
-          />
+        <div
+          style={{
+            ...Title({
+              fontSize: 72,
+              textAlign: "center",
+              maxWidth: 1400,
+              opacity: headIn,
+            }),
+          }}
+        >
+          1. A derivative on top of every market.
         </div>
       </AbsoluteFill>
 
-      {/* Two overlapping white circles — classic venn */}
+      {/* Shapes — two overlapping circles */}
       <AbsoluteFill
         style={{
           display: "flex",
@@ -441,14 +324,14 @@ const Point1Scene: React.FC<{
           justifyContent: "center",
         }}
       >
-        <div style={{ position: "relative", width: 900, height: 500 }}>
+        <div style={{ position: "relative", width: 900, height: 560 }}>
           <div
             style={{
               position: "absolute",
-              left: 120 - drift,
-              top: 60,
-              width: leftCircle * 2,
-              height: leftCircle * 2,
+              left: 100,
+              top: 280 - leftC,
+              width: leftC * 2,
+              height: leftC * 2,
               borderRadius: "50%",
               background: WHITE,
               transform: "translate(-50%, 0)",
@@ -457,10 +340,10 @@ const Point1Scene: React.FC<{
           <div
             style={{
               position: "absolute",
-              right: 120 - drift,
-              top: 60,
-              width: rightCircle * 2,
-              height: rightCircle * 2,
+              right: 100,
+              top: 280 - rightC,
+              width: rightC * 2,
+              height: rightC * 2,
               borderRadius: "50%",
               background: WHITE,
               transform: "translate(50%, 0)",
@@ -481,60 +364,33 @@ const Point1Scene: React.FC<{
           style={{
             position: "relative",
             width: 900,
-            height: 500,
-            display: "flex",
-            alignItems: "center",
+            height: 560,
+            opacity: labelsIn,
           }}
         >
           <div
             style={{
               position: "absolute",
-              left: 10 - drift,
-              top: 240,
-              width: 340,
+              left: 0,
+              top: 260,
+              width: 260,
               textAlign: "center",
+              ...Title({ fontSize: 56 }),
             }}
           >
-            <BlendText
-              from={sceneStart + 32}
-              duration={duration - 32}
-              text="ORIGINAL"
-              maxWidth={340}
-              fontFamily={INTER}
-              fontSize={64}
-              fontWeight={900}
-              letterSpacing="-0.02em"
-              align="center"
-              riseDistance={40}
-              blurPx={10}
-              delayPerWord={2}
-              durationPerWord={18}
-            />
+            Original
           </div>
           <div
             style={{
               position: "absolute",
-              right: 10 - drift,
-              top: 240,
-              width: 360,
+              right: 0,
+              top: 260,
+              width: 300,
               textAlign: "center",
+              ...Title({ fontSize: 56 }),
             }}
           >
-            <BlendText
-              from={sceneStart + 58}
-              duration={duration - 58}
-              text="DERIVATIVE"
-              maxWidth={360}
-              fontFamily={INTER}
-              fontSize={64}
-              fontWeight={900}
-              letterSpacing="-0.02em"
-              align="center"
-              riseDistance={40}
-              blurPx={10}
-              delayPerWord={2}
-              durationPerWord={18}
-            />
+            Derivative
           </div>
         </div>
       </AbsoluteFill>
@@ -543,60 +399,55 @@ const Point1Scene: React.FC<{
       <AbsoluteFill
         style={{
           display: "flex",
-          justifyContent: "center",
           alignItems: "flex-end",
-          paddingBottom: 160,
+          justifyContent: "center",
+          paddingBottom: 140,
         }}
       >
-        <BlendText
-          from={sceneStart + 100}
-          duration={duration - 100}
-          text="Same assets. No edge leaks through."
-          maxWidth={1400}
-          fontFamily={INTER}
-          fontSize={36}
-          fontWeight={600}
-          letterSpacing="-0.01em"
-          align="center"
-          riseDistance={30}
-          blurPx={8}
-          delayPerWord={3}
-          durationPerWord={22}
-        />
+        <div
+          style={{
+            ...Body({
+              fontSize: 38,
+              textAlign: "center",
+              maxWidth: 1400,
+              opacity: captionIn,
+            }),
+          }}
+        >
+          You trade the same assets — without insiders.
+        </div>
       </AbsoluteFill>
     </AbsoluteFill>
   );
 };
 
-// ─── Scene 4: 1,000 CLUSTERS — one big circle full of dots ───────────────
+// ─── Scene 4: POINT 2 — Clusters of 1,000 ────────────────────────────────
 
-const Point2Scene: React.FC<{
-  local: number;
-  sceneStart: number;
-  duration: number;
-  fps: number;
-}> = ({ local, sceneStart, duration, fps }) => {
-  const headIn = spring({
-    frame: local,
-    fps,
-    config: { damping: 18, stiffness: 120 },
-  });
-  const circleR = interpolate(local, [20, 80], [0, 380], {
+const Point2Scene: React.FC<{ local: number; duration: number }> = ({
+  local,
+  duration,
+}) => {
+  const circleR = interpolate(local, [14, 74], [0, 380], {
     ...clamp,
-    easing: (t) => 1 - Math.pow(1 - t, 3),
+    easing: ease3,
   });
-  const insiderAppear = interpolate(local, [100, 124], [0, 1], clamp);
+  const insiderDot = interpolate(local, [86, 108], [0, 1], clamp);
+  const headIn = interpolate(local, [6, 24], [0, 1], clamp);
+  const numberIn = interpolate(local, [46, 66], [0, 1], clamp);
+  const labelIn = interpolate(local, [74, 92], [0, 1], clamp);
+  const pointerIn = interpolate(local, [100, 122], [0, 1], clamp);
+  const captionIn = interpolate(local, [118, 136], [0, 1], clamp);
   const fadeOut = interpolate(local, [duration - 18, duration], [1, 0], clamp);
 
-  // 80 scattered mini-dots OUTSIDE the circle (black field decoration)
+  // 60 tiny white dots scattered in the black field
   const fieldDots = React.useMemo(() => {
     const out: { x: number; y: number; r: number }[] = [];
     for (let i = 0; i < 60; i++) {
       const angle = (i / 60) * Math.PI * 2;
-      const dist = 560 + ((i * 83) % 260);
+      const dist = 540 + ((i * 97) % 260);
       out.push({
         x: Math.cos(angle) * dist,
-        y: Math.sin(angle) * dist * 0.56,
+        y: Math.sin(angle) * dist * 0.54,
         r: 2 + ((i * 17) % 4),
       });
     }
@@ -605,34 +456,30 @@ const Point2Scene: React.FC<{
 
   return (
     <AbsoluteFill style={{ opacity: fadeOut }}>
-      {/* Headline at top */}
+      {/* Headline */}
       <AbsoluteFill
         style={{
           display: "flex",
+          alignItems: "flex-start",
           justifyContent: "center",
-          paddingTop: 130,
+          paddingTop: 120,
         }}
       >
-        <div style={{ opacity: headIn }}>
-          <BlendText
-            from={sceneStart + 6}
-            duration={duration - 6}
-            text="every trade spread across"
-            maxWidth={1500}
-            fontFamily={INTER}
-            fontSize={56}
-            fontWeight={600}
-            letterSpacing="-0.01em"
-            align="center"
-            riseDistance={40}
-            blurPx={10}
-            delayPerWord={3}
-            durationPerWord={20}
-          />
+        <div
+          style={{
+            ...Title({
+              fontSize: 72,
+              textAlign: "center",
+              maxWidth: 1500,
+              opacity: headIn,
+            }),
+          }}
+        >
+          2. Trades clustered in 1,000.
         </div>
       </AbsoluteFill>
 
-      {/* Field dots (tiny white dots scattered) */}
+      {/* Field dots */}
       <AbsoluteFill
         style={{
           display: "flex",
@@ -644,7 +491,7 @@ const Point2Scene: React.FC<{
           {fieldDots.map((d, i) => {
             const show = interpolate(
               local,
-              [20 + i * 0.4, 36 + i * 0.4],
+              [16 + i * 0.4, 30 + i * 0.4],
               [0, 1],
               clamp,
             );
@@ -659,7 +506,7 @@ const Point2Scene: React.FC<{
                   height: d.r * 2 * show,
                   borderRadius: "50%",
                   background: WHITE,
-                  opacity: 0.8,
+                  opacity: 0.85,
                 }}
               />
             );
@@ -667,7 +514,7 @@ const Point2Scene: React.FC<{
         </div>
       </AbsoluteFill>
 
-      {/* Big central white circle */}
+      {/* Big central circle */}
       <AbsoluteFill
         style={{
           display: "flex",
@@ -684,14 +531,13 @@ const Point2Scene: React.FC<{
             position: "relative",
           }}
         >
-          {/* Insider dot — a black void inside the white */}
           <div
             style={{
               position: "absolute",
-              right: "22%",
+              right: "24%",
               top: "38%",
-              width: 22 * insiderAppear,
-              height: 22 * insiderAppear,
+              width: 22 * insiderDot,
+              height: 22 * insiderDot,
               borderRadius: "50%",
               background: BLACK,
               transform: "translate(50%, -50%)",
@@ -700,146 +546,7 @@ const Point2Scene: React.FC<{
         </div>
       </AbsoluteFill>
 
-      {/* Big "1,000" on top of the circle, inverts */}
-      <AbsoluteFill
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <BlendText
-          from={sceneStart + 46}
-          duration={duration - 46}
-          text="1,000"
-          maxWidth={800}
-          fontFamily={INTER}
-          fontSize={280}
-          fontWeight={900}
-          letterSpacing="-0.05em"
-          align="center"
-          riseDistance={80}
-          blurPx={18}
-          delayPerWord={0}
-          durationPerWord={28}
-        />
-      </AbsoluteFill>
-
-      {/* "CLUSTERS" label under 1,000 */}
-      <AbsoluteFill
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          paddingTop: 340,
-        }}
-      >
-        <BlendText
-          from={sceneStart + 70}
-          duration={duration - 70}
-          text="clusters per trade"
-          maxWidth={900}
-          fontFamily={INTER}
-          fontSize={38}
-          fontWeight={600}
-          letterSpacing="0.24em"
-          align="center"
-          riseDistance={30}
-          blurPx={8}
-          delayPerWord={2}
-          durationPerWord={18}
-        />
-      </AbsoluteFill>
-
-      {/* Insider pointer — small callout */}
-      <AbsoluteFill
-        style={{
-          display: "flex",
-          justifyContent: "flex-end",
-          alignItems: "flex-start",
-          paddingTop: 280,
-          paddingRight: 200,
-          opacity: insiderAppear,
-        }}
-      >
-        <div style={{ textAlign: "left" }}>
-          <BlendText
-            from={sceneStart + 104}
-            duration={duration - 104}
-            text="INSIDER · 1 OF 1,000"
-            maxWidth={400}
-            fontFamily={INTER}
-            fontSize={18}
-            fontWeight={700}
-            letterSpacing="0.28em"
-            align="left"
-            riseDistance={20}
-            blurPx={6}
-            delayPerWord={2}
-            durationPerWord={14}
-          />
-        </div>
-      </AbsoluteFill>
-    </AbsoluteFill>
-  );
-};
-
-// ─── Scene 5: BOT vs INDUSTRY — two circles, sized ───────────────────────
-
-const Point3Scene: React.FC<{
-  local: number;
-  sceneStart: number;
-  duration: number;
-  fps: number;
-}> = ({ local, sceneStart, duration, fps }) => {
-  const headIn = spring({
-    frame: local,
-    fps,
-    config: { damping: 18, stiffness: 120 },
-  });
-  const smallR = interpolate(local, [20, 50], [0, 72], {
-    ...clamp,
-    easing: (t) => 1 - Math.pow(1 - t, 3),
-  });
-  const bigR = interpolate(local, [44, 106], [0, 420], {
-    ...clamp,
-    easing: (t) => 1 - Math.pow(1 - t, 3),
-  });
-  const fadeOut = interpolate(local, [duration - 18, duration], [1, 0], clamp);
-
-  const industryLabel = "48,000";
-  const gmLabel = "520,000";
-
-  return (
-    <AbsoluteFill style={{ opacity: fadeOut }}>
-      {/* Top headline */}
-      <AbsoluteFill
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          paddingTop: 130,
-        }}
-      >
-        <div style={{ opacity: headIn }}>
-          <BlendText
-            from={sceneStart + 6}
-            duration={duration - 6}
-            text="one bot · more than the entire industry"
-            maxWidth={1500}
-            fontFamily={INTER}
-            fontSize={56}
-            fontWeight={600}
-            letterSpacing="-0.01em"
-            align="center"
-            riseDistance={40}
-            blurPx={10}
-            delayPerWord={3}
-            durationPerWord={20}
-          />
-        </div>
-      </AbsoluteFill>
-
-      {/* Circles positioned */}
+      {/* 1,000 */}
       <AbsoluteFill
         style={{
           display: "flex",
@@ -849,16 +556,135 @@ const Point3Scene: React.FC<{
       >
         <div
           style={{
-            position: "relative",
-            width: 1500,
-            height: 640,
+            ...Title({
+              fontSize: 260,
+              textAlign: "center",
+              opacity: numberIn,
+            }),
           }}
         >
-          {/* Small — industry */}
+          1,000
+        </div>
+      </AbsoluteFill>
+
+      {/* Under-circle label */}
+      <AbsoluteFill
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          paddingTop: 340,
+        }}
+      >
+        <div
+          style={{
+            ...Label({ fontSize: 30, opacity: labelIn }),
+          }}
+        >
+          Clusters per trade
+        </div>
+      </AbsoluteFill>
+
+      {/* Insider pointer */}
+      <AbsoluteFill
+        style={{
+          display: "flex",
+          justifyContent: "flex-end",
+          alignItems: "flex-start",
+          paddingTop: 300,
+          paddingRight: 220,
+          opacity: pointerIn,
+        }}
+      >
+        <div style={Label({ fontSize: 18 })}>
+          Insider · 1 of 1,000
+        </div>
+      </AbsoluteFill>
+
+      {/* Caption */}
+      <AbsoluteFill
+        style={{
+          display: "flex",
+          alignItems: "flex-end",
+          justifyContent: "center",
+          paddingBottom: 120,
+        }}
+      >
+        <div
+          style={{
+            ...Body({
+              fontSize: 36,
+              textAlign: "center",
+              maxWidth: 1500,
+              opacity: captionIn,
+            }),
+          }}
+        >
+          Insiders control 1 asset. Not 1,000.
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── Scene 5: POINT 3 — Bot vs industry ──────────────────────────────────
+
+const Point3Scene: React.FC<{ local: number; duration: number }> = ({
+  local,
+  duration,
+}) => {
+  const smallR = interpolate(local, [16, 48], [0, 72], {
+    ...clamp,
+    easing: ease3,
+  });
+  const bigR = interpolate(local, [44, 104], [0, 420], {
+    ...clamp,
+    easing: ease3,
+  });
+  const headIn = interpolate(local, [6, 24], [0, 1], clamp);
+  const smallLabelIn = interpolate(local, [38, 56], [0, 1], clamp);
+  const bigLabelIn = interpolate(local, [84, 104], [0, 1], clamp);
+  const captionIn = interpolate(local, [116, 136], [0, 1], clamp);
+  const fadeOut = interpolate(local, [duration - 18, duration], [1, 0], clamp);
+
+  return (
+    <AbsoluteFill style={{ opacity: fadeOut }}>
+      {/* Headline */}
+      <AbsoluteFill
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "center",
+          paddingTop: 120,
+        }}
+      >
+        <div
+          style={{
+            ...Title({
+              fontSize: 64,
+              textAlign: "center",
+              maxWidth: 1600,
+              opacity: headIn,
+            }),
+          }}
+        >
+          3. More positions than the entire prediction market industry.
+        </div>
+      </AbsoluteFill>
+
+      {/* Circles */}
+      <AbsoluteFill
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <div style={{ position: "relative", width: 1500, height: 620 }}>
           <div
             style={{
               position: "absolute",
-              left: 180,
+              left: 200,
               top: 320 - smallR,
               width: smallR * 2,
               height: smallR * 2,
@@ -866,11 +692,10 @@ const Point3Scene: React.FC<{
               background: WHITE,
             }}
           />
-          {/* Big — GM bot */}
           <div
             style={{
               position: "absolute",
-              right: 120,
+              right: 140,
               top: 320 - bigR,
               width: bigR * 2,
               height: bigR * 2,
@@ -881,7 +706,7 @@ const Point3Scene: React.FC<{
         </div>
       </AbsoluteFill>
 
-      {/* Labels aligned to circles */}
+      {/* Labels */}
       <AbsoluteFill
         style={{
           display: "flex",
@@ -889,138 +714,85 @@ const Point3Scene: React.FC<{
           justifyContent: "center",
         }}
       >
-        <div style={{ position: "relative", width: 1500, height: 640 }}>
-          {/* Industry label — below small circle */}
+        <div style={{ position: "relative", width: 1500, height: 620 }}>
+          {/* Industry */}
           <div
             style={{
               position: "absolute",
-              left: 80,
-              top: 460,
-              width: 260,
+              left: 100,
+              top: 440,
+              width: 300,
+              textAlign: "center",
+              opacity: smallLabelIn,
             }}
           >
-            <BlendText
-              from={sceneStart + 40}
-              duration={duration - 40}
-              text="INDUSTRY · PER DAY"
-              maxWidth={260}
-              fontFamily={INTER}
-              fontSize={16}
-              fontWeight={700}
-              letterSpacing="0.28em"
-              align="center"
-              riseDistance={20}
-              blurPx={6}
-              delayPerWord={2}
-              durationPerWord={14}
-            />
-            <div style={{ marginTop: 12 }}>
-              <BlendText
-                from={sceneStart + 44}
-                duration={duration - 44}
-                text={industryLabel}
-                maxWidth={260}
-                fontFamily={INTER}
-                fontSize={48}
-                fontWeight={900}
-                letterSpacing="-0.02em"
-                align="center"
-                riseDistance={28}
-                blurPx={8}
-                delayPerWord={2}
-                durationPerWord={18}
-              />
+            <div style={Label({ fontSize: 18 })}>Industry · per day</div>
+            <div style={{ ...Title({ fontSize: 52 }), marginTop: 10 }}>
+              48,000
             </div>
           </div>
 
-          {/* GM label — inside the big circle */}
+          {/* GM — inside big circle */}
           <div
             style={{
               position: "absolute",
-              right: 120,
-              top: 280,
-              width: 620,
+              right: 140,
+              top: 260,
+              width: 500,
               transform: "translateX(50%)",
-              marginRight: -310,
+              marginRight: -250,
+              textAlign: "center",
+              opacity: bigLabelIn,
             }}
           >
-            <BlendText
-              from={sceneStart + 82}
-              duration={duration - 82}
-              text={gmLabel}
-              maxWidth={620}
-              fontFamily={INTER}
-              fontSize={140}
-              fontWeight={900}
-              letterSpacing="-0.04em"
-              align="center"
-              riseDistance={60}
-              blurPx={14}
-              delayPerWord={2}
-              durationPerWord={22}
-            />
-            <div style={{ marginTop: 6 }}>
-              <BlendText
-                from={sceneStart + 100}
-                duration={duration - 100}
-                text="GM BOT · PER DAY"
-                maxWidth={620}
-                fontFamily={INTER}
-                fontSize={18}
-                fontWeight={700}
-                letterSpacing="0.32em"
-                align="center"
-                riseDistance={20}
-                blurPx={6}
-                delayPerWord={2}
-                durationPerWord={14}
-              />
+            <div style={Title({ fontSize: 128 })}>520,000</div>
+            <div style={{ ...Label({ fontSize: 20 }), marginTop: 8 }}>
+              GM bot · per day
             </div>
           </div>
         </div>
       </AbsoluteFill>
 
-      {/* Caption bottom */}
+      {/* Caption */}
       <AbsoluteFill
         style={{
           display: "flex",
-          justifyContent: "center",
           alignItems: "flex-end",
-          paddingBottom: 140,
+          justifyContent: "center",
+          paddingBottom: 130,
         }}
       >
-        <BlendText
-          from={sceneStart + 120}
-          duration={duration - 120}
-          text="more positions in a day than every prediction market combined."
-          maxWidth={1400}
-          fontFamily={INTER}
-          fontSize={30}
-          fontWeight={500}
-          letterSpacing="-0.005em"
-          align="center"
-          riseDistance={30}
-          blurPx={8}
-          delayPerWord={3}
-          durationPerWord={22}
-        />
+        <div
+          style={{
+            ...Body({
+              fontSize: 32,
+              textAlign: "center",
+              maxWidth: 1400,
+              opacity: captionIn,
+            }),
+          }}
+        >
+          One General Market bot. More trades than every platform combined.
+        </div>
       </AbsoluteFill>
     </AbsoluteFill>
   );
 };
 
-// ─── Scene 6: STAT — huge circle with 90% inside ─────────────────────────
+// ─── Scene 6: STAT — 90% ─────────────────────────────────────────────────
 
-const StatScene: React.FC<{
-  local: number;
-  sceneStart: number;
-  duration: number;
-  fps: number;
-}> = ({ local, sceneStart, duration, fps }) => {
-  const circleR = interpolate(local, [0, 60], [0, 380], {
+const StatScene: React.FC<{ local: number; duration: number }> = ({
+  local,
+  duration,
+}) => {
+  const circleR = interpolate(local, [0, 60], [0, 400], {
     ...clamp,
-    easing: (t) => 1 - Math.pow(1 - t, 3),
+    easing: ease3,
   });
+  const numIn = interpolate(local, [22, 44], [0, 1], clamp);
+  const labelIn = interpolate(local, [48, 68], [0, 1], clamp);
+  const captionIn = interpolate(local, [70, 90], [0, 1], clamp);
+  const asterIn = interpolate(local, [86, 100], [0, 1], clamp);
   const fadeOut = interpolate(local, [duration - 20, duration], [1, 0], clamp);
 
   return (
@@ -1043,7 +815,7 @@ const StatScene: React.FC<{
         />
       </AbsoluteFill>
 
-      {/* 90% text */}
+      {/* 90% */}
       <AbsoluteFill
         style={{
           display: "flex",
@@ -1051,74 +823,46 @@ const StatScene: React.FC<{
           justifyContent: "center",
         }}
       >
-        <BlendText
-          from={sceneStart + 18}
-          duration={duration - 18}
-          text="90%"
-          maxWidth={800}
-          fontFamily={INTER}
-          fontSize={340}
-          fontWeight={900}
-          letterSpacing="-0.05em"
-          align="center"
-          riseDistance={80}
-          blurPx={18}
-          delayPerWord={0}
-          durationPerWord={28}
-        />
+        <div
+          style={{
+            ...Title({ fontSize: 340, opacity: numIn }),
+          }}
+        >
+          90%
+        </div>
       </AbsoluteFill>
 
-      {/* Sub-caption below */}
+      {/* Caption block */}
       <AbsoluteFill
         style={{
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "flex-end",
-          paddingBottom: 160,
-          gap: 10,
+          paddingBottom: 150,
+          gap: 16,
         }}
       >
-        <BlendText
-          from={sceneStart + 44}
-          duration={duration - 44}
-          text="LOSS CUT"
-          maxWidth={700}
-          fontFamily={INTER}
-          fontSize={28}
-          fontWeight={700}
-          letterSpacing="0.4em"
-          align="center"
-          riseDistance={24}
-          blurPx={6}
-          delayPerWord={2}
-          durationPerWord={16}
-        />
-        <BlendText
-          from={sceneStart + 68}
-          duration={duration - 68}
-          text="insider bleed, reduced by up to 90%."
-          maxWidth={1300}
-          fontFamily={INTER}
-          fontSize={38}
-          fontWeight={600}
-          letterSpacing="-0.01em"
-          align="center"
-          riseDistance={30}
-          blurPx={8}
-          delayPerWord={3}
-          durationPerWord={22}
-        />
+        <div style={Label({ fontSize: 28, opacity: labelIn })}>Loss cut</div>
         <div
           style={{
-            marginTop: 10,
-            fontFamily: INTER,
-            fontSize: 15,
-            fontWeight: 500,
-            color: DIM,
-            letterSpacing: "0.28em",
-            textTransform: "uppercase",
-            mixBlendMode: "difference",
+            ...Body({
+              fontSize: 38,
+              textAlign: "center",
+              maxWidth: 1300,
+              opacity: captionIn,
+            }),
+          }}
+        >
+          Reducing insider loss up to 90%.
+        </div>
+        <div
+          style={{
+            ...Label({
+              fontSize: 15,
+              opacity: asterIn * 0.7,
+              letterSpacing: "0.3em",
+            }),
           }}
         >
           * modelled on replayed insider events across five exchanges
@@ -1128,24 +872,26 @@ const StatScene: React.FC<{
   );
 };
 
-// ─── Scene 7: CLOSING — rectangle sweeps across, logo lands ──────────────
+// ─── Scene 7: CLOSING ────────────────────────────────────────────────────
 
-const ClosingScene: React.FC<{
-  local: number;
-  sceneStart: number;
-  duration: number;
-}> = ({ local, sceneStart, duration }) => {
+const ClosingScene: React.FC<{ local: number; duration: number }> = ({
+  local,
+  duration,
+}) => {
   const sweep = interpolate(local, [0, 40], [0, 1], {
     ...clamp,
-    easing: (t) => 1 - Math.pow(1 - t, 3),
+    easing: ease3,
   });
-  const shrink = interpolate(local, [70, duration], [1, 0.35], clamp);
-  const logoShow = interpolate(local, [80, 100], [0, 1], clamp);
-  const fadeOut = interpolate(local, [duration - 20, duration], [1, 0], clamp);
+  const shrink = interpolate(local, [70, duration - 4], [1, 0.3], clamp);
+  const firstIn = interpolate(local, [10, 24], [0, 1], clamp);
+  const firstOut = interpolate(local, [60, 74], [1, 0], clamp);
+  const secondIn = interpolate(local, [64, 82], [0, 1], clamp);
+  const logoIn = interpolate(local, [86, 106], [0, 1], clamp);
+  const fadeOut = interpolate(local, [duration - 18, duration], [1, 0], clamp);
 
   return (
     <AbsoluteFill style={{ opacity: fadeOut }}>
-      {/* Rectangle sweep then contract into a small bar */}
+      {/* Rectangle sweeps, then contracts */}
       <AbsoluteFill
         style={{
           display: "flex",
@@ -1163,42 +909,60 @@ const ClosingScene: React.FC<{
         />
       </AbsoluteFill>
 
-      {/* First statement — inside the rectangle while it's big */}
+      {/* First statement */}
       <AbsoluteFill
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          opacity: interpolate(local, [10, 20, 64, 76], [0, 1, 1, 0], clamp),
+          opacity: firstIn * firstOut,
         }}
       >
-        <BlendText
-          from={sceneStart + 10}
-          duration={76 - 10}
-          text="a new trading standard."
-          maxWidth={1500}
-          fontFamily={INTER}
-          fontSize={128}
-          fontWeight={900}
-          letterSpacing="-0.04em"
-          align="center"
-          riseDistance={80}
-          blurPx={16}
-          delayPerWord={3}
-          durationPerWord={24}
-        />
+        <div
+          style={{
+            ...Title({
+              fontSize: 96,
+              textAlign: "center",
+              maxWidth: 1600,
+            }),
+          }}
+        >
+          Not just insider protection.
+        </div>
       </AbsoluteFill>
 
-      {/* Final GM lockup below the contracted bar */}
+      {/* Second statement */}
+      <AbsoluteFill
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          opacity: secondIn,
+        }}
+      >
+        <div
+          style={{
+            ...Title({
+              fontSize: 120,
+              textAlign: "center",
+              maxWidth: 1600,
+            }),
+          }}
+        >
+          A new trading standard.
+        </div>
+      </AbsoluteFill>
+
+      {/* GM logo lockup */}
       <AbsoluteFill
         style={{
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          paddingTop: 240,
+          paddingTop: 260,
           gap: 24,
-          opacity: logoShow,
+          opacity: logoIn,
         }}
       >
         <Img
@@ -1209,21 +973,7 @@ const ClosingScene: React.FC<{
             mixBlendMode: "difference",
           }}
         />
-        <BlendText
-          from={sceneStart + 84}
-          duration={duration - 84}
-          text="generalmarket.io"
-          maxWidth={700}
-          fontFamily={INTER}
-          fontSize={32}
-          fontWeight={700}
-          letterSpacing="0.1em"
-          align="center"
-          riseDistance={24}
-          blurPx={6}
-          delayPerWord={2}
-          durationPerWord={16}
-        />
+        <div style={Label({ fontSize: 22 })}>generalmarket.io</div>
       </AbsoluteFill>
     </AbsoluteFill>
   );
@@ -1235,7 +985,6 @@ export const InsiderPitch: React.FC<{ startFrame: number }> = ({
   startFrame,
 }) => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
   const local = frame - startFrame;
 
   if (local < 0 || local > PITCH_DURATION) return null;
@@ -1253,67 +1002,31 @@ export const InsiderPitch: React.FC<{ startFrame: number }> = ({
 
   const scene = PITCH_SCENES[activeKey];
   const sceneLocal = local - scene.start;
-  const sceneStartAbs = startFrame + scene.start;
   const sceneDuration = scene.end - scene.start;
 
   return (
     <AbsoluteFill style={{ background: BLACK, isolation: "isolate" }}>
       {activeKey === "intro" ? (
-        <IntroScene
-          local={sceneLocal}
-          sceneStart={sceneStartAbs}
-          duration={sceneDuration}
-        />
+        <IntroScene local={sceneLocal} duration={sceneDuration} />
       ) : null}
       {activeKey === "contrast" ? (
-        <ContrastScene
-          local={sceneLocal}
-          sceneStart={sceneStartAbs}
-          duration={sceneDuration}
-          fps={fps}
-        />
+        <ContrastScene local={sceneLocal} duration={sceneDuration} />
       ) : null}
       {activeKey === "point1" ? (
-        <Point1Scene
-          local={sceneLocal}
-          sceneStart={sceneStartAbs}
-          duration={sceneDuration}
-          fps={fps}
-        />
+        <Point1Scene local={sceneLocal} duration={sceneDuration} />
       ) : null}
       {activeKey === "point2" ? (
-        <Point2Scene
-          local={sceneLocal}
-          sceneStart={sceneStartAbs}
-          duration={sceneDuration}
-          fps={fps}
-        />
+        <Point2Scene local={sceneLocal} duration={sceneDuration} />
       ) : null}
       {activeKey === "point3" ? (
-        <Point3Scene
-          local={sceneLocal}
-          sceneStart={sceneStartAbs}
-          duration={sceneDuration}
-          fps={fps}
-        />
+        <Point3Scene local={sceneLocal} duration={sceneDuration} />
       ) : null}
       {activeKey === "stat" ? (
-        <StatScene
-          local={sceneLocal}
-          sceneStart={sceneStartAbs}
-          duration={sceneDuration}
-          fps={fps}
-        />
+        <StatScene local={sceneLocal} duration={sceneDuration} />
       ) : null}
       {activeKey === "closing" ? (
-        <ClosingScene
-          local={sceneLocal}
-          sceneStart={sceneStartAbs}
-          duration={sceneDuration}
-        />
+        <ClosingScene local={sceneLocal} duration={sceneDuration} />
       ) : null}
-
-      <Chrome pitchLocal={local} />
     </AbsoluteFill>
   );
 };
