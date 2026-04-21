@@ -16,7 +16,7 @@ This finds root causes that sequential debugging misses — one agent finds the 
 
 **Every agent, every sub-agent, every session MUST commit AND push after completing work.**
 
-The pipeline: commit → `git push mono main` → post-commit hook mirrors `frontend/` to `gm-frontend` → Dokploy on VPS 2 detects the push, rebuilds the container, Traefik (port 8080) serves it, nginx terminates HTTPS for `generalmarket.io`. Skipping the push breaks the entire deploy chain. Work that isn't pushed doesn't exist.
+The pipeline: commit → `git push mono main` → post-commit hook mirrors `frontend/` to `gm-frontend` → Dokploy on **VPS 3** (`178.104.243.94`, alias `vps3` or `index-maker/prod/fe`) detects the push, rebuilds the container, Traefik (port 8080) serves it, nginx on VPS 3 terminates HTTPS for `generalmarket.io`. Skipping the push breaks the entire deploy chain. Work that isn't pushed doesn't exist.
 
 **Rules:**
 1. After completing any task/feature: stage changed files, commit, `git push mono main`
@@ -29,7 +29,7 @@ The pipeline: commit → `git push mono main` → post-commit hook mirrors `fron
 
 ### Frontend Repo Sync
 
-`frontend/` has NO nested `.git` — it is tracked by the mono repo only. A post-commit hook (`scripts/sync-frontend.sh`) auto-pushes `frontend/` to `General-Market/frontend.git` (remote `gm-frontend`, plus `fnd` mirror) whenever frontend files change. **Dokploy on VPS 2** watches `gm-frontend/main` (push trigger, nixpacks builder) and rebuilds the production container. Traefik on `127.0.0.1:8080` serves it; nginx on VPS 2 terminates HTTPS for `generalmarket.io` and proxies to Traefik.
+`frontend/` has NO nested `.git` — it is tracked by the mono repo only. A post-commit hook (`scripts/sync-frontend.sh`) auto-pushes `frontend/` to `General-Market/frontend.git` (remote `gm-frontend`, plus `fnd` mirror) whenever frontend files change. **Dokploy on VPS 3** (`178.104.243.94`) watches `gm-frontend/main` (push trigger, nixpacks builder using `frontend/nixpacks.toml`) and rebuilds the production container. Traefik on `127.0.0.1:8080` serves it; nginx on VPS 3 terminates HTTPS (Let's Encrypt, DNS-01 via Cloudflare) for `generalmarket.io` and proxies to Traefik.
 
 **NEVER:**
 - Run `git init` inside `frontend/`
@@ -39,9 +39,10 @@ The pipeline: commit → `git push mono main` → post-commit hook mirrors `fron
 - Use Vercel CLI — the project is gone
 
 **Inspecting prod deploys:**
-- Dokploy admin UI: `https://generalmarket.io/_dokploy/` (proxied on VPS 2)
-- Container list: `ssh index-maker/prod/postgres 'sudo docker ps | grep app-'`
-- Container logs: `ssh index-maker/prod/postgres 'sudo docker logs <container-name> --tail 200'`
+- Dokploy admin UI: `https://generalmarket.io/_dokploy/` (proxied on VPS 3)
+- Container list: `ssh vps3 'docker service ls'` (VPS 3 — the frontend lives here, not VPS 2)
+- Container logs: `ssh vps3 'docker service logs <service-name> --tail 200'`
+- Build logs: `ssh vps3 'ls -t /etc/dokploy/logs/app-*/ | head -1'`
 - Force redeploy: trigger from Dokploy UI, or push an empty commit to `mono main`
 
 ## Parallelism
