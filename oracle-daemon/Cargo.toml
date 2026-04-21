@@ -1,0 +1,78 @@
+[package]
+name = "prediction-market-oracle"
+version = "0.1.0"
+edition = "2021"
+description = "Stateless oracle daemon for the Solana prediction-market program (close + resolve + claim)."
+
+# Standalone workspace — deliberately NOT a member of the root /index workspace.
+# That workspace pins ethers/web3 deps incompatible with the Solana 3.x stack
+# the program requires. Sibling to programs-solana/, self-contained.
+[workspace]
+
+[dependencies]
+# Reuse the program's types directly. `no-entrypoint` strips the BPF
+# entrypoint so the crate links cleanly as a host-side library. Payload
+# builders, account layouts, and Anchor instruction structs come from here.
+prediction-market = { path = "../programs-solana/prediction-market/programs/prediction-market", features = ["no-entrypoint"] }
+
+# Anchor must match the program's version exactly. Drift in the discriminator
+# algorithm is a silent failure mode.
+anchor-lang = "1.0.0"
+anchor-client = { version = "1.0.0", features = ["async"] }
+
+# Solana runtime surface. Pinned to the 3.x line the program depends on via
+# anchor-lang 1.0. Explicit pins — drift across minors breaks wire formats.
+solana-sdk = "3.0"
+solana-program = "3.0"
+solana-client = "3.0"
+solana-keypair = "3.0"
+solana-signer = "3.0"
+solana-instruction = "3.4"
+solana-message = "3.0"
+solana-transaction = "3.0"
+solana-commitment-config = "3.0"
+solana-sdk-ids = "3.1"
+solana-rpc-client = "3.0"
+solana-rpc-client-api = "3.0"
+solana-account-decoder-client-types = "3.0"
+solana-pubkey = "3.0"
+
+# Crypto — pubkeys are ed25519 verifying keys; signing is raw ed25519.
+ed25519-dalek = "2.1"
+
+# Async runtime + HTTP + JSON.
+tokio = { version = "1", features = ["full", "signal"] }
+reqwest = { version = "0.12", features = ["json"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Diagnostics.
+anyhow = "1"
+thiserror = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+prometheus = "0.13"
+hyper = { version = "1", features = ["server", "http1"] }
+hyper-util = { version = "0.1", features = ["tokio"] }
+http-body-util = "0.1"
+
+# CLI + misc.
+clap = { version = "4", features = ["derive", "env"] }
+bytemuck = { version = "1.14", features = ["derive"] }
+bs58 = "0.5"
+futures = "0.3"
+
+[dev-dependencies]
+hex = "0.4"
+rand = "0.8"
+# LiteSVM for the integration harness — identical stack to the program's tests.
+litesvm = { version = "0.11.0", features = ["precompiles"] }
+litesvm-token = "0.11.0"
+solana-clock = "3.0"
+solana-ed25519-program = "3.0"
+tempfile = "3"
+axum = "0.7"
+
+[[bin]]
+name = "prediction-market-oracle"
+path = "src/main.rs"
