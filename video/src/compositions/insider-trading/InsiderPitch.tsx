@@ -8,7 +8,7 @@ import {
   useCurrentFrame,
 } from "remotion";
 import { loadFont as loadInter } from "@remotion/google-fonts/Inter";
-import { RandomRevealText } from "../endcard/RandomRevealText";
+import { CascadeText } from "../../lib/components/Text";
 
 const { fontFamily: INTER } = loadInter("normal", {
   subsets: ["latin"],
@@ -34,9 +34,9 @@ export const PITCH_SCENES = {
 
 export const PITCH_DURATION = PITCH_SCENES.closing.end;
 
-// ─── Reveal — letters pop in random order (EndCard style), wrapped in a
-//      Sequence so useCurrentFrame resets to the mount moment, and wrapped
-//      in a difference-blend div so every letter auto-inverts against any
+// ─── Reveal — words rise from below, blur dissolves (CascadeText).
+//      Wrapped in a Sequence so useCurrentFrame resets to the mount moment,
+//      and in a difference-blend div so every word auto-inverts against any
 //      white shape behind it.
 
 const Reveal: React.FC<{
@@ -44,26 +44,58 @@ const Reveal: React.FC<{
   duration: number;
   text: string;
   style?: React.CSSProperties;
+  /** Ignored — kept for call-site stability */
   revealDuration?: number;
+  /** Ignored — kept for call-site stability */
   seed?: number;
-}> = ({ from, duration, text, style, revealDuration = 32, seed = 7 }) => (
-  <Sequence from={from} durationInFrames={duration} layout="none">
-    <div
-      style={{
-        mixBlendMode: "difference",
-        color: WHITE,
-        fontFamily: INTER,
-        ...style,
-      }}
-    >
-      <RandomRevealText
-        text={text}
-        revealDuration={revealDuration}
-        seed={seed}
-      />
-    </div>
-  </Sequence>
-);
+}> = ({ from, duration, text, style }) => {
+  const s = style ?? {};
+  const fontSize = typeof s.fontSize === "number" ? s.fontSize : 48;
+  const fontWeight =
+    typeof s.fontWeight === "number" ? s.fontWeight : 700;
+  const letterSpacing =
+    typeof s.letterSpacing === "string" ? s.letterSpacing : undefined;
+  const lineHeight =
+    typeof s.lineHeight === "number" ? s.lineHeight * fontSize : undefined;
+  const maxWidth =
+    typeof s.maxWidth === "number" ? s.maxWidth : 1600;
+  const align =
+    s.textAlign === "center"
+      ? "center"
+      : s.textAlign === "right"
+      ? "right"
+      : "left";
+  const uppercase = s.textTransform === "uppercase";
+  const displayText = uppercase ? text.toUpperCase() : text;
+
+  return (
+    <Sequence from={from} durationInFrames={duration} layout="none">
+      <div
+        style={{
+          mixBlendMode: "difference",
+          color: WHITE,
+          opacity: typeof s.opacity === "number" ? s.opacity : undefined,
+        }}
+      >
+        <CascadeText
+          text={displayText}
+          fontFamily={INTER}
+          fontSize={fontSize}
+          fontWeight={fontWeight}
+          letterSpacing={letterSpacing}
+          lineHeight={lineHeight}
+          maxWidth={maxWidth}
+          align={align}
+          color={WHITE}
+          riseDistance={Math.max(40, fontSize * 0.55)}
+          blurPx={Math.min(16, fontSize / 8)}
+          delayPerWord={3}
+          durationPerWord={22}
+        />
+      </div>
+    </Sequence>
+  );
+};
 
 // ─── Scene 1: INTRO ──────────────────────────────────────────────────────
 
