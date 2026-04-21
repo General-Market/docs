@@ -201,29 +201,31 @@ const BrandPlate: React.FC<{ brand: Brand; appear: number }> = ({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        gap: 18,
-        padding: "0 24px",
+        gap: 16,
         boxSizing: "border-box",
       }}
     >
       <Img
         src={staticFile(brand.icon)}
         style={{
-          height: "62%",
-          maxWidth: "38%",
+          height: "64%",
+          maxWidth: "36%",
           width: "auto",
           objectFit: "contain",
+          display: "block",
         }}
       />
       <span
         style={{
           fontFamily: "'Inter', 'Helvetica Neue', system-ui, sans-serif",
           fontWeight: 800,
-          fontSize: 52,
+          fontSize: 54,
+          lineHeight: 1,
           letterSpacing: "-0.03em",
           color: "#0a0a0a",
           opacity: appear,
           whiteSpace: "nowrap",
+          transform: "translateY(-2px)",
         }}
       >
         {brand.name}
