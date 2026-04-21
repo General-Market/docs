@@ -2,6 +2,7 @@ import React from "react";
 import {
   AbsoluteFill,
   Img,
+  Sequence,
   interpolate,
   spring,
   staticFile,
@@ -9,6 +10,8 @@ import {
   useVideoConfig,
 } from "remotion";
 import { loadFont as loadInter } from "@remotion/google-fonts/Inter";
+import { CascadeText } from "../../lib/components/Text";
+import type { CascadeTextProps } from "../../lib/components/Text";
 
 const { fontFamily: INTER } = loadInter("normal", {
   subsets: ["latin"],
@@ -26,38 +29,35 @@ const PAPER = "#f3f2ec";
 
 // ─── Scene timings (local frames relative to pitch start) ─────────────────
 export const PITCH_SCENES = {
-  intro: { start: 0, end: 72 }, // "General Market fights back"
-  contrast: { start: 72, end: 192 }, // Every exchange vs GM
-  point1: { start: 192, end: 332 }, // Derivatives on top
-  point2: { start: 332, end: 472 }, // 1,000-cluster grid
-  point3: { start: 472, end: 612 }, // Bot volume
-  stat: { start: 612, end: 712 }, // 90% reduction
-  closing: { start: 712, end: 820 }, // New trading standard
+  intro: { start: 0, end: 72 },
+  contrast: { start: 72, end: 192 },
+  point1: { start: 192, end: 332 },
+  point2: { start: 332, end: 472 },
+  point3: { start: 472, end: 612 },
+  stat: { start: 612, end: 712 },
+  closing: { start: 712, end: 820 },
 } as const;
 
 export const PITCH_DURATION = PITCH_SCENES.closing.end;
 
-// ─── Small primitives ────────────────────────────────────────────────────
+// ─── TimedCascadeText — resets CascadeText's frame clock to `from` ────────
 
-const Label: React.FC<{
-  children: React.ReactNode;
-  color?: string;
-  size?: number;
-}> = ({ children, color = DIM, size = 20 }) => (
-  <div
-    style={{
-      fontFamily: INTER,
-      fontWeight: 600,
-      fontSize: size,
-      letterSpacing: "0.28em",
-      textTransform: "uppercase",
-      color,
-      fontFeatureSettings: '"calt" 1',
-    }}
-  >
-    {children}
-  </div>
+interface TimedCascadeProps extends CascadeTextProps {
+  from: number;
+  duration: number;
+}
+
+const TimedCascade: React.FC<TimedCascadeProps> = ({
+  from,
+  duration,
+  ...rest
+}) => (
+  <Sequence from={from} durationInFrames={duration} layout="none">
+    <CascadeText {...rest} />
+  </Sequence>
 );
+
+// ─── Small primitives ────────────────────────────────────────────────────
 
 const StepBadge: React.FC<{ n: number; total: number; appear: number }> = ({
   n,
@@ -98,30 +98,14 @@ const StepBadge: React.FC<{ n: number; total: number; appear: number }> = ({
 
 // ─── Scene 1: Intro "General Market fights back" ─────────────────────────
 
-const IntroScene: React.FC<{ local: number; fps: number }> = ({
-  local,
-  fps,
-}) => {
-  const titleIn = spring({
-    frame: local,
-    fps,
-    config: { damping: 20, stiffness: 140, mass: 0.8 },
-    durationInFrames: 28,
-  });
-  const kickerIn = spring({
-    frame: Math.max(0, local - 18),
-    fps,
-    config: { damping: 22, stiffness: 120, mass: 0.9 },
-    durationInFrames: 28,
-  });
-  const strikeReveal = interpolate(local, [24, 46], [0, 1], clamp);
+const IntroScene: React.FC<{
+  local: number;
+  sceneStart: number;
+  duration: number;
+}> = ({ local, sceneStart, duration }) => {
+  const strikeReveal = interpolate(local, [28, 58], [0, 1], clamp);
   const lineSweep = interpolate(local, [6, 34], [0, 1], clamp);
-  const fadeOut = interpolate(
-    local,
-    [PITCH_SCENES.intro.end - PITCH_SCENES.intro.start - 14, PITCH_SCENES.intro.end - PITCH_SCENES.intro.start],
-    [1, 0],
-    clamp,
-  );
+  const fadeOut = interpolate(local, [duration - 14, duration], [1, 0], clamp);
 
   return (
     <AbsoluteFill
@@ -140,7 +124,6 @@ const IntroScene: React.FC<{ local: number; fps: number }> = ({
           gap: 40,
         }}
       >
-        {/* Brand hairline */}
         <div
           style={{
             width: 540 * lineSweep,
@@ -149,45 +132,40 @@ const IntroScene: React.FC<{ local: number; fps: number }> = ({
           }}
         />
 
-        <div
-          style={{
-            fontFamily: INTER,
-            fontWeight: 900,
-            fontSize: 168,
-            lineHeight: 0.9,
-            letterSpacing: "-0.03em",
-            color: WHITE,
-            textAlign: "center",
-            opacity: titleIn,
-            transform: `translateY(${interpolate(titleIn, [0, 1], [24, 0])}px) scale(${interpolate(titleIn, [0, 1], [0.92, 1])})`,
-            textShadow: "0 2px 40px rgba(0,0,0,0.6)",
-          }}
-        >
-          GENERAL MARKET
-        </div>
+        <TimedCascade
+          from={sceneStart}
+          duration={duration}
+          text="GENERAL MARKET"
+          maxWidth={1600}
+          fontFamily={INTER}
+          fontSize={168}
+          fontWeight={900}
+          color={WHITE}
+          letterSpacing="-0.03em"
+          align="center"
+          riseDistance={90}
+          blurPx={16}
+          delayPerWord={5}
+          durationPerWord={26}
+        />
 
-        <div
-          style={{
-            position: "relative",
-            opacity: kickerIn,
-            transform: `translateY(${interpolate(kickerIn, [0, 1], [18, 0])}px)`,
-          }}
-        >
-          <div
-            style={{
-              fontFamily: INTER,
-              fontWeight: 900,
-              fontSize: 120,
-              lineHeight: 0.9,
-              letterSpacing: "-0.02em",
-              color: DANGER,
-              fontStyle: "italic",
-              textShadow: `0 0 60px ${DANGER}55`,
-            }}
-          >
-            fights back.
-          </div>
-          {/* Underline strike */}
+        <div style={{ position: "relative" }}>
+          <TimedCascade
+            from={sceneStart + 18}
+            duration={duration - 18}
+            text="fights back."
+            maxWidth={900}
+            fontFamily={INTER}
+            fontSize={120}
+            fontWeight={900}
+            color={DANGER}
+            letterSpacing="-0.02em"
+            align="center"
+            riseDistance={80}
+            blurPx={14}
+            delayPerWord={4}
+            durationPerWord={24}
+          />
           <div
             style={{
               position: "absolute",
@@ -217,11 +195,12 @@ const IntroScene: React.FC<{ local: number; fps: number }> = ({
 
 // ─── Scene 2: Contrast — Every exchange vs GM ────────────────────────────
 
-const ContrastScene: React.FC<{ local: number; fps: number }> = ({
-  local,
-  fps,
-}) => {
-  const duration = PITCH_SCENES.contrast.end - PITCH_SCENES.contrast.start;
+const ContrastScene: React.FC<{
+  local: number;
+  sceneStart: number;
+  duration: number;
+  fps: number;
+}> = ({ local, sceneStart, duration, fps }) => {
   const leftIn = spring({
     frame: local,
     fps,
@@ -272,21 +251,39 @@ const ContrastScene: React.FC<{ local: number; fps: number }> = ({
             transform: `translateX(${interpolate(leftIn, [0, 1], [-40, 0])}px)`,
           }}
         >
-          <Label color={DANGER}>Every exchange</Label>
-          <div
-            style={{
-              fontFamily: INTER,
-              fontWeight: 800,
-              fontSize: 72,
-              lineHeight: 0.95,
-              color: WHITE,
-              letterSpacing: "-0.02em",
-            }}
-          >
-            allows insiders
-            <br />
-            to eat first.
-          </div>
+          <TimedCascade
+            from={sceneStart}
+            duration={duration}
+            text="EVERY EXCHANGE"
+            maxWidth={640}
+            fontFamily={INTER}
+            fontSize={26}
+            fontWeight={700}
+            color={DANGER}
+            letterSpacing="0.28em"
+            align="left"
+            riseDistance={30}
+            blurPx={8}
+            delayPerWord={3}
+            durationPerWord={18}
+          />
+
+          <TimedCascade
+            from={sceneStart + 6}
+            duration={duration - 6}
+            text="allows insiders to eat first."
+            maxWidth={720}
+            fontFamily={INTER}
+            fontSize={72}
+            fontWeight={800}
+            color={WHITE}
+            letterSpacing="-0.02em"
+            align="left"
+            riseDistance={70}
+            blurPx={12}
+            delayPerWord={3}
+            durationPerWord={22}
+          />
 
           <div
             style={{
@@ -329,7 +326,6 @@ const ContrastScene: React.FC<{ local: number; fps: number }> = ({
                       objectFit: "contain",
                     }}
                   />
-                  {/* Red X overlay */}
                   <svg
                     viewBox="0 0 100 100"
                     style={{
@@ -389,21 +385,48 @@ const ContrastScene: React.FC<{ local: number; fps: number }> = ({
             transform: `translateX(${interpolate(rightIn, [0, 1], [40, 0])}px)`,
           }}
         >
-          <Label color={BRAND}>General Market</Label>
-          <div
-            style={{
-              fontFamily: INTER,
-              fontWeight: 800,
-              fontSize: 72,
-              lineHeight: 0.95,
-              color: WHITE,
-              letterSpacing: "-0.02em",
+          <TimedCascade
+            from={sceneStart + 30}
+            duration={duration - 30}
+            text="GENERAL MARKET"
+            maxWidth={640}
+            fontFamily={INTER}
+            fontSize={26}
+            fontWeight={700}
+            color={BRAND}
+            letterSpacing="0.28em"
+            align="left"
+            riseDistance={30}
+            blurPx={8}
+            delayPerWord={3}
+            durationPerWord={18}
+          />
+
+          <TimedCascade
+            from={sceneStart + 36}
+            duration={duration - 36}
+            text="The first market to eliminate insiders."
+            maxWidth={780}
+            fontFamily={INTER}
+            fontSize={72}
+            fontWeight={800}
+            color={WHITE}
+            letterSpacing="-0.02em"
+            align="left"
+            riseDistance={70}
+            blurPx={12}
+            delayPerWord={3}
+            durationPerWord={22}
+            boxStyle={{
+              bg: "rgba(0,200,83,0.14)",
+              color: BRAND,
+              paddingX: 18,
+              paddingY: 4,
+              borderRadius: 12,
+              glowColor: BRAND,
+              glowRadius: 120,
             }}
-          >
-            The first market
-            <br />
-            <span style={{ color: BRAND }}>to eliminate insiders.</span>
-          </div>
+          />
 
           <div
             style={{
@@ -426,17 +449,23 @@ const ContrastScene: React.FC<{ local: number; fps: number }> = ({
                 filter: "drop-shadow(0 0 20px rgba(0,200,83,0.45))",
               }}
             />
-            <div
-              style={{
-                flex: 1,
-                fontFamily: INTER,
-                fontWeight: 700,
-                fontSize: 28,
-                color: WHITE,
-                letterSpacing: "-0.01em",
-              }}
-            >
-              Every trader lands at the same moment.
+            <div style={{ flex: 1 }}>
+              <TimedCascade
+                from={sceneStart + 60}
+                duration={duration - 60}
+                text="Every trader lands at the same moment."
+                maxWidth={560}
+                fontFamily={INTER}
+                fontSize={28}
+                fontWeight={700}
+                color={WHITE}
+                letterSpacing="-0.01em"
+                align="left"
+                riseDistance={40}
+                blurPx={8}
+                delayPerWord={2}
+                durationPerWord={18}
+              />
             </div>
             <svg
               viewBox="0 0 64 64"
@@ -465,11 +494,12 @@ const ContrastScene: React.FC<{ local: number; fps: number }> = ({
 
 // ─── Scene 3: Point 1 — Derivative on top of every market ────────────────
 
-const Point1Scene: React.FC<{ local: number; fps: number }> = ({
-  local,
-  fps,
-}) => {
-  const duration = PITCH_SCENES.point1.end - PITCH_SCENES.point1.start;
+const Point1Scene: React.FC<{
+  local: number;
+  sceneStart: number;
+  duration: number;
+  fps: number;
+}> = ({ local, sceneStart, duration, fps }) => {
   const headIn = spring({
     frame: local,
     fps,
@@ -487,10 +517,8 @@ const Point1Scene: React.FC<{ local: number; fps: number }> = ({
     config: { damping: 16, stiffness: 130 },
   });
   const insiderBlocked = interpolate(local, [78, 104], [0, 1], clamp);
-  const captionIn = interpolate(local, [96, 120], [0, 1], clamp);
   const fadeOut = interpolate(local, [duration - 16, duration], [1, 0], clamp);
 
-  // Sparkline data shared between markets
   const sparkData = [40, 55, 48, 72, 65, 82, 76, 90, 85, 102, 95, 110];
   const spark = (width: number, height: number, color: string) => {
     const max = Math.max(...sparkData);
@@ -540,19 +568,22 @@ const Point1Scene: React.FC<{ local: number; fps: number }> = ({
         }}
       >
         <StepBadge n={1} total={3} appear={headIn} />
-        <div
-          style={{
-            fontFamily: INTER,
-            fontWeight: 900,
-            fontSize: 84,
-            lineHeight: 0.95,
-            color: WHITE,
-            letterSpacing: "-0.02em",
-            textAlign: "center",
-          }}
-        >
-          A derivative on top of every market.
-        </div>
+        <TimedCascade
+          from={sceneStart + 6}
+          duration={duration - 6}
+          text="A derivative on top of every market."
+          maxWidth={1500}
+          fontFamily={INTER}
+          fontSize={84}
+          fontWeight={900}
+          color={WHITE}
+          letterSpacing="-0.02em"
+          align="center"
+          riseDistance={70}
+          blurPx={14}
+          delayPerWord={3}
+          durationPerWord={22}
+        />
       </div>
 
       <div
@@ -584,28 +615,58 @@ const Point1Scene: React.FC<{ local: number; fps: number }> = ({
               alignItems: "baseline",
               justifyContent: "space-between",
               marginBottom: 14,
+              height: 22,
             }}
           >
-            <Label color="rgba(0,0,0,0.45)" size={14}>
-              Original market
-            </Label>
-            <Label color="rgba(0,0,0,0.45)" size={14}>
-              Insider zone
-            </Label>
+            <TimedCascade
+              from={sceneStart + 14}
+              duration={duration - 14}
+              text="ORIGINAL MARKET"
+              maxWidth={280}
+              fontFamily={INTER}
+              fontSize={14}
+              fontWeight={700}
+              color="rgba(0,0,0,0.45)"
+              letterSpacing="0.26em"
+              align="left"
+              riseDistance={18}
+              blurPx={5}
+              delayPerWord={2}
+              durationPerWord={14}
+            />
+            <TimedCascade
+              from={sceneStart + 20}
+              duration={duration - 20}
+              text="INSIDER ZONE"
+              maxWidth={200}
+              fontFamily={INTER}
+              fontSize={14}
+              fontWeight={700}
+              color="rgba(0,0,0,0.45)"
+              letterSpacing="0.26em"
+              align="right"
+              riseDistance={18}
+              blurPx={5}
+              delayPerWord={2}
+              durationPerWord={14}
+            />
           </div>
-          <div
-            style={{
-              fontFamily: INTER,
-              fontWeight: 800,
-              fontSize: 40,
-              color: INK,
-              marginBottom: 8,
-            }}
-          >
-            BTC / USD
-          </div>
-          {spark(400, 140, DANGER)}
-          {/* Insider blob */}
+          <TimedCascade
+            from={sceneStart + 18}
+            duration={duration - 18}
+            text="BTC / USD"
+            maxWidth={360}
+            fontFamily={INTER}
+            fontSize={40}
+            fontWeight={800}
+            color={INK}
+            align="left"
+            riseDistance={30}
+            blurPx={8}
+            delayPerWord={2}
+            durationPerWord={18}
+          />
+          <div style={{ marginTop: 8 }}>{spark(400, 140, DANGER)}</div>
           <div
             style={{
               position: "absolute",
@@ -631,13 +692,14 @@ const Point1Scene: React.FC<{ local: number; fps: number }> = ({
           </div>
         </div>
 
-        {/* Middle — derivative arrow */}
+        {/* Middle — arrow */}
         <div
           style={{
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             gap: 14,
+            position: "relative",
           }}
         >
           <svg width={160} height={140} viewBox="0 0 160 140">
@@ -664,10 +726,19 @@ const Point1Scene: React.FC<{ local: number; fps: number }> = ({
               strokeLinecap="round"
             />
           </svg>
-          <Label color={BRAND} size={14}>
+          <div
+            style={{
+              fontFamily: INTER,
+              fontWeight: 700,
+              fontSize: 14,
+              color: BRAND,
+              letterSpacing: "0.28em",
+              textTransform: "uppercase",
+              opacity: arrowDraw,
+            }}
+          >
             WRAPS →
-          </Label>
-          {/* Shield blocking insider */}
+          </div>
           <div
             style={{
               position: "absolute",
@@ -713,27 +784,58 @@ const Point1Scene: React.FC<{ local: number; fps: number }> = ({
               alignItems: "baseline",
               justifyContent: "space-between",
               marginBottom: 14,
+              height: 22,
             }}
           >
-            <Label color={BRAND} size={14}>
-              GM Derivative
-            </Label>
-            <Label color={BRAND} size={14}>
-              Sealed
-            </Label>
+            <TimedCascade
+              from={sceneStart + 56}
+              duration={duration - 56}
+              text="GM DERIVATIVE"
+              maxWidth={260}
+              fontFamily={INTER}
+              fontSize={14}
+              fontWeight={700}
+              color={BRAND}
+              letterSpacing="0.26em"
+              align="left"
+              riseDistance={18}
+              blurPx={5}
+              delayPerWord={2}
+              durationPerWord={14}
+            />
+            <TimedCascade
+              from={sceneStart + 60}
+              duration={duration - 60}
+              text="SEALED"
+              maxWidth={140}
+              fontFamily={INTER}
+              fontSize={14}
+              fontWeight={700}
+              color={BRAND}
+              letterSpacing="0.26em"
+              align="right"
+              riseDistance={18}
+              blurPx={5}
+              delayPerWord={2}
+              durationPerWord={14}
+            />
           </div>
-          <div
-            style={{
-              fontFamily: INTER,
-              fontWeight: 800,
-              fontSize: 40,
-              color: WHITE,
-              marginBottom: 8,
-            }}
-          >
-            gm-BTC
-          </div>
-          {spark(400, 140, BRAND)}
+          <TimedCascade
+            from={sceneStart + 58}
+            duration={duration - 58}
+            text="gm-BTC"
+            maxWidth={320}
+            fontFamily={INTER}
+            fontSize={40}
+            fontWeight={800}
+            color={WHITE}
+            align="left"
+            riseDistance={30}
+            blurPx={8}
+            delayPerWord={2}
+            durationPerWord={18}
+          />
+          <div style={{ marginTop: 8 }}>{spark(400, 140, BRAND)}</div>
           <div
             style={{
               position: "absolute",
@@ -761,30 +863,33 @@ const Point1Scene: React.FC<{ local: number; fps: number }> = ({
         </div>
       </div>
 
-      <div
-        style={{
-          fontFamily: INTER,
-          fontWeight: 500,
-          fontSize: 28,
-          color: DIM,
-          opacity: captionIn,
-          transform: `translateY(${interpolate(captionIn, [0, 1], [10, 0])}px)`,
-          textAlign: "center",
-        }}
-      >
-        Same assets. No informational edge leaks through.
-      </div>
+      <TimedCascade
+        from={sceneStart + 96}
+        duration={duration - 96}
+        text="Same assets. No informational edge leaks through."
+        maxWidth={1400}
+        fontFamily={INTER}
+        fontSize={28}
+        fontWeight={500}
+        color={DIM}
+        align="center"
+        riseDistance={40}
+        blurPx={8}
+        delayPerWord={3}
+        durationPerWord={22}
+      />
     </AbsoluteFill>
   );
 };
 
 // ─── Scene 4: Point 2 — Clusters of 1,000 ────────────────────────────────
 
-const Point2Scene: React.FC<{ local: number; fps: number }> = ({
-  local,
-  fps,
-}) => {
-  const duration = PITCH_SCENES.point2.end - PITCH_SCENES.point2.start;
+const Point2Scene: React.FC<{
+  local: number;
+  sceneStart: number;
+  duration: number;
+  fps: number;
+}> = ({ local, sceneStart, duration, fps }) => {
   const headIn = spring({
     frame: local,
     fps,
@@ -792,13 +897,12 @@ const Point2Scene: React.FC<{ local: number; fps: number }> = ({
   });
   const COLS = 40;
   const ROWS = 25;
-  const TOTAL = COLS * ROWS; // 1000
-  const INSIDER_INDEX = 17 * COLS + 22; // row 17, col 22
+  const TOTAL = COLS * ROWS;
+  const INSIDER_INDEX = 17 * COLS + 22;
 
   const fillProgress = interpolate(local, [20, 94], [0, 1], clamp);
   const insiderReveal = interpolate(local, [90, 112], [0, 1], clamp);
   const zoomIn = interpolate(local, [110, 130], [0, 1], clamp);
-  const captionIn = interpolate(local, [120, 140], [0, 1], clamp);
   const fadeOut = interpolate(local, [duration - 16, duration], [1, 0], clamp);
 
   const CELL = 26;
@@ -806,7 +910,7 @@ const Point2Scene: React.FC<{ local: number; fps: number }> = ({
   const GRID_W = COLS * CELL + (COLS - 1) * GAP;
   const GRID_H = ROWS * CELL + (ROWS - 1) * GAP;
 
-  const scale = interpolate(zoomIn, [0, 1], [1, 1.25]);
+  const scale = interpolate(zoomIn, [0, 1], [1, 1.18]);
   const insiderRow = Math.floor(INSIDER_INDEX / COLS);
   const insiderCol = INSIDER_INDEX % COLS;
   const insiderX = insiderCol * (CELL + GAP);
@@ -814,12 +918,12 @@ const Point2Scene: React.FC<{ local: number; fps: number }> = ({
   const zoomOffsetX = interpolate(
     zoomIn,
     [0, 1],
-    [0, (GRID_W / 2 - insiderX - CELL / 2) * 0.25],
+    [0, (GRID_W / 2 - insiderX - CELL / 2) * 0.2],
   );
   const zoomOffsetY = interpolate(
     zoomIn,
     [0, 1],
-    [0, (GRID_H / 2 - insiderY - CELL / 2) * 0.25],
+    [0, (GRID_H / 2 - insiderY - CELL / 2) * 0.2],
   );
 
   const counterValue = Math.floor(fillProgress * TOTAL);
@@ -846,19 +950,31 @@ const Point2Scene: React.FC<{ local: number; fps: number }> = ({
         }}
       >
         <StepBadge n={2} total={3} appear={headIn} />
-        <div
-          style={{
-            fontFamily: INTER,
-            fontWeight: 900,
-            fontSize: 84,
-            lineHeight: 0.95,
-            color: WHITE,
-            letterSpacing: "-0.02em",
-            textAlign: "center",
+        <TimedCascade
+          from={sceneStart + 6}
+          duration={duration - 6}
+          text="Trades clustered in [1,000]."
+          maxWidth={1500}
+          fontFamily={INTER}
+          fontSize={84}
+          fontWeight={900}
+          color={WHITE}
+          letterSpacing="-0.02em"
+          align="center"
+          riseDistance={70}
+          blurPx={14}
+          delayPerWord={3}
+          durationPerWord={22}
+          boxStyle={{
+            bg: "rgba(0,200,83,0.18)",
+            color: BRAND,
+            paddingX: 22,
+            paddingY: 4,
+            borderRadius: 16,
+            glowColor: BRAND,
+            glowRadius: 180,
           }}
-        >
-          Trades clustered in <span style={{ color: BRAND }}>1,000</span>.
-        </div>
+        />
       </div>
 
       <div
@@ -907,7 +1023,6 @@ const Point2Scene: React.FC<{ local: number; fps: number }> = ({
           })}
         </div>
 
-        {/* Callout arrow to the insider cell */}
         <svg
           width={GRID_W}
           height={GRID_H}
@@ -927,33 +1042,60 @@ const Point2Scene: React.FC<{ local: number; fps: number }> = ({
             strokeWidth="2"
             strokeDasharray="4 4"
           />
-          <text
-            x={insiderX + CELL + 34}
-            y={insiderY - 46}
-            fill={DANGER}
-            fontFamily={INTER}
-            fontWeight={700}
-            fontSize={18}
-            letterSpacing="0.2em"
-          >
-            INSIDER — controls 1 of 1,000
-          </text>
         </svg>
+
+        {/* Callout label via CascadeText, positioned absolutely */}
+        <div
+          style={{
+            position: "absolute",
+            left: insiderX + CELL + 34,
+            top: insiderY - 72,
+            opacity: insiderReveal,
+          }}
+        >
+          <TimedCascade
+            from={sceneStart + 90}
+            duration={duration - 90}
+            text="INSIDER — controls 1 of 1,000"
+            maxWidth={520}
+            fontFamily={INTER}
+            fontSize={18}
+            fontWeight={700}
+            color={DANGER}
+            letterSpacing="0.2em"
+            align="left"
+            riseDistance={20}
+            blurPx={6}
+            delayPerWord={2}
+            durationPerWord={16}
+          />
+        </div>
       </div>
 
       <div
         style={{
           display: "flex",
           gap: 80,
-          alignItems: "center",
-          opacity: captionIn,
-          transform: `translateY(${interpolate(captionIn, [0, 1], [10, 0])}px)`,
+          alignItems: "flex-end",
         }}
       >
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <Label color={DIM} size={16}>
-            Cells assembled
-          </Label>
+          <TimedCascade
+            from={sceneStart + 118}
+            duration={duration - 118}
+            text="CELLS ASSEMBLED"
+            maxWidth={280}
+            fontFamily={INTER}
+            fontSize={16}
+            fontWeight={700}
+            color={DIM}
+            letterSpacing="0.26em"
+            align="left"
+            riseDistance={20}
+            blurPx={6}
+            delayPerWord={2}
+            durationPerWord={14}
+          />
           <div
             style={{
               fontFamily: INTER,
@@ -962,6 +1104,7 @@ const Point2Scene: React.FC<{ local: number; fps: number }> = ({
               color: WHITE,
               fontVariantNumeric: "tabular-nums",
               lineHeight: 0.9,
+              opacity: interpolate(local, [90, 110], [0, 1], clamp),
             }}
           >
             {counterValue.toLocaleString()}
@@ -972,12 +1115,26 @@ const Point2Scene: React.FC<{ local: number; fps: number }> = ({
             width: 2,
             height: 80,
             background: "rgba(255,255,255,0.15)",
+            opacity: interpolate(local, [100, 120], [0, 1], clamp),
           }}
         />
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <Label color={DIM} size={16}>
-            Insider influence
-          </Label>
+          <TimedCascade
+            from={sceneStart + 124}
+            duration={duration - 124}
+            text="INSIDER INFLUENCE"
+            maxWidth={300}
+            fontFamily={INTER}
+            fontSize={16}
+            fontWeight={700}
+            color={DIM}
+            letterSpacing="0.26em"
+            align="left"
+            riseDistance={20}
+            blurPx={6}
+            delayPerWord={2}
+            durationPerWord={14}
+          />
           <div
             style={{
               fontFamily: INTER,
@@ -986,6 +1143,7 @@ const Point2Scene: React.FC<{ local: number; fps: number }> = ({
               color: BRAND,
               fontVariantNumeric: "tabular-nums",
               lineHeight: 0.9,
+              opacity: interpolate(local, [108, 126], [0, 1], clamp),
             }}
           >
             0.1%
@@ -998,11 +1156,12 @@ const Point2Scene: React.FC<{ local: number; fps: number }> = ({
 
 // ─── Scene 5: Point 3 — Bot vs industry ──────────────────────────────────
 
-const Point3Scene: React.FC<{ local: number; fps: number }> = ({
-  local,
-  fps,
-}) => {
-  const duration = PITCH_SCENES.point3.end - PITCH_SCENES.point3.start;
+const Point3Scene: React.FC<{
+  local: number;
+  sceneStart: number;
+  duration: number;
+  fps: number;
+}> = ({ local, sceneStart, duration, fps }) => {
   const headIn = spring({
     frame: local,
     fps,
@@ -1020,7 +1179,6 @@ const Point3Scene: React.FC<{ local: number; fps: number }> = ({
     config: { damping: 16, stiffness: 120 },
   });
   const gmBar = interpolate(local, [74, 118], [0, 1], clamp);
-  const captionIn = interpolate(local, [120, 140], [0, 1], clamp);
   const fadeOut = interpolate(local, [duration - 16, duration], [1, 0], clamp);
 
   const INDUSTRY_TARGET = 48_000;
@@ -1050,19 +1208,22 @@ const Point3Scene: React.FC<{ local: number; fps: number }> = ({
         }}
       >
         <StepBadge n={3} total={3} appear={headIn} />
-        <div
-          style={{
-            fontFamily: INTER,
-            fontWeight: 900,
-            fontSize: 84,
-            lineHeight: 0.95,
-            color: WHITE,
-            letterSpacing: "-0.02em",
-            textAlign: "center",
-          }}
-        >
-          One bot out-trades the entire industry.
-        </div>
+        <TimedCascade
+          from={sceneStart + 6}
+          duration={duration - 6}
+          text="One bot out-trades the entire industry."
+          maxWidth={1500}
+          fontFamily={INTER}
+          fontSize={84}
+          fontWeight={900}
+          color={WHITE}
+          letterSpacing="-0.02em"
+          align="center"
+          riseDistance={70}
+          blurPx={14}
+          delayPerWord={3}
+          durationPerWord={22}
+        />
       </div>
 
       <div
@@ -1085,13 +1246,26 @@ const Point3Scene: React.FC<{ local: number; fps: number }> = ({
             style={{
               display: "flex",
               justifyContent: "space-between",
-              alignItems: "baseline",
+              alignItems: "flex-end",
               marginBottom: 14,
             }}
           >
-            <Label color={DIM} size={18}>
-              Prediction market industry · per day
-            </Label>
+            <TimedCascade
+              from={sceneStart + 20}
+              duration={duration - 20}
+              text="PREDICTION MARKET INDUSTRY · PER DAY"
+              maxWidth={800}
+              fontFamily={INTER}
+              fontSize={18}
+              fontWeight={700}
+              color={DIM}
+              letterSpacing="0.24em"
+              align="left"
+              riseDistance={20}
+              blurPx={6}
+              delayPerWord={2}
+              durationPerWord={16}
+            />
             <div
               style={{
                 fontFamily: INTER,
@@ -1136,13 +1310,26 @@ const Point3Scene: React.FC<{ local: number; fps: number }> = ({
             style={{
               display: "flex",
               justifyContent: "space-between",
-              alignItems: "baseline",
+              alignItems: "flex-end",
               marginBottom: 14,
             }}
           >
-            <Label color={BRAND} size={18}>
-              General Market bot · per day
-            </Label>
+            <TimedCascade
+              from={sceneStart + 60}
+              duration={duration - 60}
+              text="GENERAL MARKET BOT · PER DAY"
+              maxWidth={800}
+              fontFamily={INTER}
+              fontSize={18}
+              fontWeight={700}
+              color={BRAND}
+              letterSpacing="0.24em"
+              align="left"
+              riseDistance={20}
+              blurPx={6}
+              delayPerWord={2}
+              durationPerWord={16}
+            />
             <div
               style={{
                 fontFamily: INTER,
@@ -1174,7 +1361,6 @@ const Point3Scene: React.FC<{ local: number; fps: number }> = ({
                 position: "relative",
               }}
             >
-              {/* Moving shimmer */}
               <div
                 style={{
                   position: "absolute",
@@ -1190,38 +1376,39 @@ const Point3Scene: React.FC<{ local: number; fps: number }> = ({
         </div>
       </div>
 
-      <div
-        style={{
-          fontFamily: INTER,
-          fontWeight: 500,
-          fontSize: 28,
-          color: DIM,
-          opacity: captionIn,
-          transform: `translateY(${interpolate(captionIn, [0, 1], [10, 0])}px)`,
-          textAlign: "center",
-          maxWidth: 1000,
-        }}
-      >
-        More open positions in 24 hours than every prediction market, combined.
-      </div>
+      <TimedCascade
+        from={sceneStart + 120}
+        duration={duration - 120}
+        text="More open positions in 24 hours than every prediction market, combined."
+        maxWidth={1400}
+        fontFamily={INTER}
+        fontSize={28}
+        fontWeight={500}
+        color={DIM}
+        align="center"
+        riseDistance={40}
+        blurPx={8}
+        delayPerWord={3}
+        durationPerWord={22}
+      />
     </AbsoluteFill>
   );
 };
 
 // ─── Scene 6: Stat — 90% reduction ───────────────────────────────────────
 
-const StatScene: React.FC<{ local: number; fps: number }> = ({
-  local,
-  fps,
-}) => {
-  const duration = PITCH_SCENES.stat.end - PITCH_SCENES.stat.start;
+const StatScene: React.FC<{
+  local: number;
+  sceneStart: number;
+  duration: number;
+  fps: number;
+}> = ({ local, sceneStart, duration, fps }) => {
   const headIn = spring({
     frame: local,
     fps,
     config: { damping: 20, stiffness: 130 },
   });
   const dialProgress = interpolate(local, [18, 68], [0, 1], clamp);
-  const captionIn = interpolate(local, [70, 92], [0, 1], clamp);
   const fadeOut = interpolate(local, [duration - 18, duration], [1, 0], clamp);
 
   const percentValue = Math.round(dialProgress * 90);
@@ -1240,9 +1427,22 @@ const StatScene: React.FC<{ local: number; fps: number }> = ({
         gap: 40,
       }}
     >
-      <Label color={DIM} size={20}>
-        THE RESULT
-      </Label>
+      <TimedCascade
+        from={sceneStart}
+        duration={duration}
+        text="THE RESULT"
+        maxWidth={600}
+        fontFamily={INTER}
+        fontSize={22}
+        fontWeight={700}
+        color={DIM}
+        letterSpacing="0.36em"
+        align="center"
+        riseDistance={24}
+        blurPx={6}
+        delayPerWord={3}
+        durationPerWord={18}
+      />
 
       <div
         style={{
@@ -1309,6 +1509,7 @@ const StatScene: React.FC<{ local: number; fps: number }> = ({
               color: DIM,
               letterSpacing: "0.3em",
               textTransform: "uppercase",
+              opacity: interpolate(local, [40, 60], [0, 1], clamp),
             }}
           >
             loss cut
@@ -1318,28 +1519,49 @@ const StatScene: React.FC<{ local: number; fps: number }> = ({
 
       <div
         style={{
-          fontFamily: INTER,
-          fontWeight: 700,
-          fontSize: 36,
-          color: WHITE,
-          opacity: captionIn,
-          transform: `translateY(${interpolate(captionIn, [0, 1], [12, 0])}px)`,
-          textAlign: "center",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 10,
         }}
       >
-        Insider bleed, reduced by up to 90%.
-        <span
+        <TimedCascade
+          from={sceneStart + 66}
+          duration={duration - 66}
+          text="Insider bleed, reduced by up to [90%]."
+          maxWidth={1400}
+          fontFamily={INTER}
+          fontSize={36}
+          fontWeight={700}
+          color={WHITE}
+          align="center"
+          riseDistance={40}
+          blurPx={10}
+          delayPerWord={3}
+          durationPerWord={20}
+          boxStyle={{
+            bg: "rgba(0,200,83,0.18)",
+            color: BRAND,
+            paddingX: 14,
+            paddingY: 2,
+            borderRadius: 10,
+            glowColor: BRAND,
+            glowRadius: 100,
+          }}
+        />
+        <div
           style={{
-            display: "block",
             marginTop: 10,
+            fontFamily: INTER,
             fontSize: 16,
             fontWeight: 500,
             color: "rgba(255,255,255,0.35)",
             letterSpacing: "0.2em",
+            opacity: interpolate(local, [80, 96], [0, 1], clamp),
           }}
         >
           * modelled on replayed insider events across five exchanges
-        </span>
+        </div>
       </div>
     </AbsoluteFill>
   );
@@ -1347,22 +1569,12 @@ const StatScene: React.FC<{ local: number; fps: number }> = ({
 
 // ─── Scene 7: Closing ────────────────────────────────────────────────────
 
-const ClosingScene: React.FC<{ local: number; fps: number }> = ({
-  local,
-  fps,
-}) => {
-  const duration = PITCH_SCENES.closing.end - PITCH_SCENES.closing.start;
-  const firstIn = spring({
-    frame: local,
-    fps,
-    config: { damping: 22, stiffness: 120 },
-  });
-  const firstOut = interpolate(local, [32, 48], [1, 0], clamp);
-  const secondIn = spring({
-    frame: Math.max(0, local - 46),
-    fps,
-    config: { damping: 22, stiffness: 120 },
-  });
+const ClosingScene: React.FC<{
+  local: number;
+  sceneStart: number;
+  duration: number;
+}> = ({ local, sceneStart, duration }) => {
+  const firstOut = interpolate(local, [38, 52], [1, 0], clamp);
   const logoIn = interpolate(local, [70, 94], [0, 1], clamp);
   const fadeOut = interpolate(local, [duration - 22, duration], [1, 0], clamp);
 
@@ -1390,34 +1602,72 @@ const ClosingScene: React.FC<{ local: number; fps: number }> = ({
         <div
           style={{
             position: "absolute",
-            fontFamily: INTER,
-            fontWeight: 800,
-            fontSize: 84,
-            color: WHITE,
-            textAlign: "center",
-            opacity: firstIn * firstOut,
-            letterSpacing: "-0.02em",
-            lineHeight: 1,
+            width: "100%",
+            display: "flex",
+            justifyContent: "center",
+            opacity: firstOut,
           }}
         >
-          Not insider <span style={{ color: DANGER }}>protection.</span>
+          <TimedCascade
+            from={sceneStart}
+            duration={52}
+            text="Not insider [protection]."
+            maxWidth={1400}
+            fontFamily={INTER}
+            fontSize={84}
+            fontWeight={800}
+            color={WHITE}
+            letterSpacing="-0.02em"
+            align="center"
+            riseDistance={70}
+            blurPx={14}
+            delayPerWord={3}
+            durationPerWord={22}
+            boxStyle={{
+              bg: "rgba(255,58,76,0.16)",
+              color: DANGER,
+              paddingX: 18,
+              paddingY: 4,
+              borderRadius: 12,
+              glowColor: DANGER,
+              glowRadius: 120,
+            }}
+          />
         </div>
 
         <div
           style={{
             position: "absolute",
-            fontFamily: INTER,
-            fontWeight: 900,
-            fontSize: 108,
-            color: WHITE,
-            textAlign: "center",
-            opacity: secondIn,
-            transform: `translateY(${interpolate(secondIn, [0, 1], [14, 0])}px)`,
-            letterSpacing: "-0.03em",
-            lineHeight: 1,
+            width: "100%",
+            display: "flex",
+            justifyContent: "center",
           }}
         >
-          A new <span style={{ color: BRAND }}>trading standard.</span>
+          <TimedCascade
+            from={sceneStart + 46}
+            duration={duration - 46}
+            text="A new [trading standard]."
+            maxWidth={1500}
+            fontFamily={INTER}
+            fontSize={108}
+            fontWeight={900}
+            color={WHITE}
+            letterSpacing="-0.03em"
+            align="center"
+            riseDistance={80}
+            blurPx={16}
+            delayPerWord={3}
+            durationPerWord={24}
+            boxStyle={{
+              bg: "rgba(0,200,83,0.18)",
+              color: BRAND,
+              paddingX: 22,
+              paddingY: 4,
+              borderRadius: 14,
+              glowColor: BRAND,
+              glowRadius: 180,
+            }}
+          />
         </div>
       </div>
 
@@ -1438,17 +1688,22 @@ const ClosingScene: React.FC<{ local: number; fps: number }> = ({
             filter: `drop-shadow(0 0 24px ${BRAND}88)`,
           }}
         />
-        <div
-          style={{
-            fontFamily: INTER,
-            fontWeight: 700,
-            fontSize: 32,
-            color: WHITE,
-            letterSpacing: "0.06em",
-          }}
-        >
-          generalmarket.io
-        </div>
+        <TimedCascade
+          from={sceneStart + 70}
+          duration={duration - 70}
+          text="generalmarket.io"
+          maxWidth={600}
+          fontFamily={INTER}
+          fontSize={32}
+          fontWeight={700}
+          color={WHITE}
+          letterSpacing="0.06em"
+          align="left"
+          riseDistance={30}
+          blurPx={8}
+          delayPerWord={2}
+          durationPerWord={18}
+        />
       </div>
     </AbsoluteFill>
   );
@@ -1496,53 +1751,78 @@ export const InsiderPitch: React.FC<{ startFrame: number }> = ({
 
   if (local < 0 || local > PITCH_DURATION) return null;
 
-  const activeScene = (() => {
-    if (local < PITCH_SCENES.intro.end) {
-      return { key: "intro", sceneStart: PITCH_SCENES.intro.start };
-    }
-    if (local < PITCH_SCENES.contrast.end) {
-      return { key: "contrast", sceneStart: PITCH_SCENES.contrast.start };
-    }
-    if (local < PITCH_SCENES.point1.end) {
-      return { key: "point1", sceneStart: PITCH_SCENES.point1.start };
-    }
-    if (local < PITCH_SCENES.point2.end) {
-      return { key: "point2", sceneStart: PITCH_SCENES.point2.start };
-    }
-    if (local < PITCH_SCENES.point3.end) {
-      return { key: "point3", sceneStart: PITCH_SCENES.point3.start };
-    }
-    if (local < PITCH_SCENES.stat.end) {
-      return { key: "stat", sceneStart: PITCH_SCENES.stat.start };
-    }
-    return { key: "closing", sceneStart: PITCH_SCENES.closing.start };
+  type SceneKey = keyof typeof PITCH_SCENES;
+  const activeKey: SceneKey = (() => {
+    if (local < PITCH_SCENES.intro.end) return "intro";
+    if (local < PITCH_SCENES.contrast.end) return "contrast";
+    if (local < PITCH_SCENES.point1.end) return "point1";
+    if (local < PITCH_SCENES.point2.end) return "point2";
+    if (local < PITCH_SCENES.point3.end) return "point3";
+    if (local < PITCH_SCENES.stat.end) return "stat";
+    return "closing";
   })();
 
-  const sceneLocal = local - activeScene.sceneStart;
+  const scene = PITCH_SCENES[activeKey];
+  const sceneLocal = local - scene.start;
+  const sceneStartAbs = startFrame + scene.start;
+  const sceneDuration = scene.end - scene.start;
 
   return (
     <AbsoluteFill>
       <PitchAmbient />
-      {activeScene.key === "intro" ? (
-        <IntroScene local={sceneLocal} fps={fps} />
+      {activeKey === "intro" ? (
+        <IntroScene
+          local={sceneLocal}
+          sceneStart={sceneStartAbs}
+          duration={sceneDuration}
+        />
       ) : null}
-      {activeScene.key === "contrast" ? (
-        <ContrastScene local={sceneLocal} fps={fps} />
+      {activeKey === "contrast" ? (
+        <ContrastScene
+          local={sceneLocal}
+          sceneStart={sceneStartAbs}
+          duration={sceneDuration}
+          fps={fps}
+        />
       ) : null}
-      {activeScene.key === "point1" ? (
-        <Point1Scene local={sceneLocal} fps={fps} />
+      {activeKey === "point1" ? (
+        <Point1Scene
+          local={sceneLocal}
+          sceneStart={sceneStartAbs}
+          duration={sceneDuration}
+          fps={fps}
+        />
       ) : null}
-      {activeScene.key === "point2" ? (
-        <Point2Scene local={sceneLocal} fps={fps} />
+      {activeKey === "point2" ? (
+        <Point2Scene
+          local={sceneLocal}
+          sceneStart={sceneStartAbs}
+          duration={sceneDuration}
+          fps={fps}
+        />
       ) : null}
-      {activeScene.key === "point3" ? (
-        <Point3Scene local={sceneLocal} fps={fps} />
+      {activeKey === "point3" ? (
+        <Point3Scene
+          local={sceneLocal}
+          sceneStart={sceneStartAbs}
+          duration={sceneDuration}
+          fps={fps}
+        />
       ) : null}
-      {activeScene.key === "stat" ? (
-        <StatScene local={sceneLocal} fps={fps} />
+      {activeKey === "stat" ? (
+        <StatScene
+          local={sceneLocal}
+          sceneStart={sceneStartAbs}
+          duration={sceneDuration}
+          fps={fps}
+        />
       ) : null}
-      {activeScene.key === "closing" ? (
-        <ClosingScene local={sceneLocal} fps={fps} />
+      {activeKey === "closing" ? (
+        <ClosingScene
+          local={sceneLocal}
+          sceneStart={sceneStartAbs}
+          duration={sceneDuration}
+        />
       ) : null}
     </AbsoluteFill>
   );
