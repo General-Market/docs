@@ -1,35 +1,41 @@
 'use client'
 
-// Historical bet stream for a specific wallet. The old implementation
-// fetched from an EVM backend; the new program emits its own events
-// (`BetPlaced`, `BetExited`, `MarketInstantiated`, `MarketClosed`,
-// `MarketResolved`, `Claimed`). Until an indexer subscribes to them,
-// this hook returns empty arrays so consumers keep compiling.
-//
-// TODO: wire to a Solana event indexer (Helius or custom) once the
-// program is deployed. Backend shape is intentionally unspecified here
-// — the indexer layer will dictate it.
+// Historical bet stream for a specific wallet. Fetches from the
+// indexer's /api/events/history/[owner] route and exposes the subset
+// of fields the UI layer cares about.
+
+import { useEffect, useState, useCallback, useRef } from 'react'
+import type {
+  HistoryRow,
+  BetPlacedRow,
+  BetExitedRow,
+  ClaimedRow,
+} from '@/lib/indexer/types'
 
 export type BetStatus = 'placed' | 'exited' | 'resolved' | 'claimed'
 
 export interface BetRecord {
-  /** On-chain Position PDA. */
-  positionPda: string
+  /** On-chain Position PDA — not provided by the indexer; left undefined until needed. */
+  positionPda?: string
   /** On-chain Market PDA. */
   marketPda: string
-  /** Market params, as signed into the Market PDA seeds. */
-  sourceId: number
-  thresholdBps: number
-  closeTime: bigint
-  settlementTime: bigint
-  /** Raw position amounts (lamports of the stake mint). */
-  yesAmount: bigint
-  noAmount: bigint
+  sourceId: number | null
+  thresholdBps: number | null
+  closeTime: string | null
+  settlementTime: string | null
+  /** 0 = YES, 1 = NO — applicable for BetPlaced/BetExited. */
+  side: number | null
+  /** Amount in raw stake-mint lamports (u64 as decimal string). */
+  amount: string | null
+  /** For Claimed rows. */
+  netClaimed: string | null
+  feePaid: string | null
+  stranded: boolean | null
   claimed: boolean
   status: BetStatus
-  /** Transaction signature of the most recent tx touching this position. */
-  lastTxSignature?: string
-  timestamp: number
+  lastTxSignature: string
+  /** Unix seconds (bigint-as-string) or null when the slot's block time is unknown. */
+  blockTime: string | null
 }
 
 interface UseBetHistoryOptions {
@@ -45,13 +51,106 @@ interface UseBetHistoryReturn {
   refetch: () => void
 }
 
-export function useBetHistory(_opts: UseBetHistoryOptions): UseBetHistoryReturn {
-  // Intentional no-op until an indexer ships.
+interface ApiResponse {
+  events?: HistoryRow[]
+  error?: string
+}
+
+function rowToRecord(r: HistoryRow): BetRecord {
+  const meta = r.marketMeta
+  const base = {
+    marketPda: r.market,
+    sourceId: meta?.sourceId ?? null,
+    thresholdBps: meta?.thresholdBps ?? null,
+    closeTime: meta?.closeTime ?? null,
+    settlementTime: meta?.settlementTime ?? null,
+    lastTxSignature: r.signature,
+    blockTime: r.blockTime,
+  }
+  if (r.type === 'BetPlaced') {
+    const p = r as BetPlacedRow
+    return {
+      ...base,
+      side: p.side,
+      amount: p.amount,
+      netClaimed: null,
+      feePaid: null,
+      stranded: null,
+      claimed: false,
+      status: 'placed',
+    }
+  }
+  if (r.type === 'BetExited') {
+    const e = r as BetExitedRow
+    return {
+      ...base,
+      side: e.side,
+      amount: e.amount,
+      netClaimed: null,
+      feePaid: null,
+      stranded: null,
+      claimed: false,
+      status: 'exited',
+    }
+  }
+  const c = r as ClaimedRow
   return {
-    bets: [],
-    isLoading: false,
-    isError: false,
-    error: null,
-    refetch: () => { /* no-op */ },
+    ...base,
+    side: null,
+    amount: null,
+    netClaimed: c.net,
+    feePaid: c.fee,
+    stranded: c.stranded,
+    claimed: true,
+    status: 'claimed',
+  }
+}
+
+export function useBetHistory(opts: UseBetHistoryOptions): UseBetHistoryReturn {
+  const { address, enabled = true } = opts
+  const [bets, setBets] = useState<BetRecord[]>([])
+  const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [error, setError] = useState<Error | null>(null)
+  const abortRef = useRef<AbortController | null>(null)
+
+  const fetchNow = useCallback(async () => {
+    if (!address || !enabled) {
+      setBets([])
+      return
+    }
+    abortRef.current?.abort()
+    const ctrl = new AbortController()
+    abortRef.current = ctrl
+    setIsLoading(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/events/history/${encodeURIComponent(address)}`, {
+        cache: 'no-store',
+        signal: ctrl.signal,
+      })
+      if (!res.ok) throw new Error(`history fetch failed: ${res.status}`)
+      const body = (await res.json()) as ApiResponse
+      const rows = body.events ?? []
+      setBets(rows.map(rowToRecord))
+    } catch (e) {
+      if ((e as { name?: string }).name === 'AbortError') return
+      setError(e instanceof Error ? e : new Error(String(e)))
+      setBets([])
+    } finally {
+      setIsLoading(false)
+    }
+  }, [address, enabled])
+
+  useEffect(() => {
+    fetchNow()
+    return () => { abortRef.current?.abort() }
+  }, [fetchNow])
+
+  return {
+    bets,
+    isLoading,
+    isError: error !== null,
+    error,
+    refetch: fetchNow,
   }
 }

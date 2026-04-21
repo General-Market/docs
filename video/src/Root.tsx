@@ -77,19 +77,12 @@ import {
   FPS as ENDCARD_FPS,
 } from "./compositions/endcard/theme";
 import { Sequence02 } from "./compositions/sequence02/Sequence02";
-import { Sequence02Compare } from "./compositions/sequence02/Sequence02Compare";
 import {
   TOTAL_FRAMES as SEQ02_DURATION,
   FPS as SEQ02_FPS,
   W as SEQ02_W,
   H as SEQ02_H,
 } from "./compositions/sequence02/theme";
-import {
-  CascadeTextDemo,
-  TOTAL_FRAMES as CASCADE_DURATION,
-  FPS as CASCADE_FPS,
-} from "./compositions/cascade-text-demo/CascadeTextDemo";
-import { icebergMeta } from "./compositions/iceberg/IcebergScene";
 import { insiderCasesMeta } from "./compositions/insider-trading/InsiderCases";
 
 const SHOW_SCENES = process.env.REMOTION_SHOW_SCENES === "1";
@@ -129,16 +122,6 @@ export const RemotionRoot: React.FC = () => {
         height={500}
       />
 
-      {/* ═══ ICEBERG ═══ */}
-      <Composition
-        id={icebergMeta.id}
-        component={icebergMeta.component}
-        durationInFrames={icebergMeta.durationInFrames}
-        fps={icebergMeta.fps}
-        width={icebergMeta.width}
-        height={icebergMeta.height}
-      />
-
       {/* ═══ INSIDER CASES ═══ */}
       <Composition
         id={insiderCasesMeta.id}
@@ -167,26 +150,6 @@ export const RemotionRoot: React.FC = () => {
         fps={SEQ02_FPS}
         width={SEQ02_W}
         height={SEQ02_H}
-      />
-
-      {/* ═══ SEQUENCE 02 · A/B COMPARE ═══ */}
-      <Composition
-        id="Sequence02Compare"
-        component={Sequence02Compare}
-        durationInFrames={SEQ02_DURATION}
-        fps={SEQ02_FPS}
-        width={SEQ02_W}
-        height={SEQ02_H}
-      />
-
-      {/* ═══ CASCADE TEXT DEMO ═══ */}
-      <Composition
-        id="CascadeTextDemo"
-        component={CascadeTextDemo}
-        durationInFrames={CASCADE_DURATION}
-        fps={CASCADE_FPS}
-        width={1920}
-        height={1080}
       />
 
       {/* ═══ TUTORIAL ═══ */}
