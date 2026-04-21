@@ -55,8 +55,8 @@ export default async function RootLayout({
     <html lang={locale} className={`${GeistSans.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://us.i.posthog.com" />
-        <link rel="preconnect" href="http://116.203.156.98" />
-        <link rel="preconnect" href="http://142.132.164.24" />
+        <link rel="dns-prefetch" href="//116.203.156.98" />
+        <link rel="dns-prefetch" href="//142.132.164.24" />
         <link rel="dns-prefetch" href="https://us-assets.i.posthog.com" />
         <link rel="dns-prefetch" href="https://relay.walletconnect.com" />
         <link rel="dns-prefetch" href="https://rpc.walletconnect.org" />
