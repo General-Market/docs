@@ -2,11 +2,13 @@ import React from "react";
 import {
   AbsoluteFill,
   Img,
+  Sequence,
   interpolate,
   staticFile,
   useCurrentFrame,
 } from "remotion";
 import { loadFont as loadInter } from "@remotion/google-fonts/Inter";
+import { RandomRevealText } from "../endcard/RandomRevealText";
 
 const { fontFamily: INTER } = loadInter("normal", {
   subsets: ["latin"],
@@ -32,42 +34,44 @@ export const PITCH_SCENES = {
 
 export const PITCH_DURATION = PITCH_SCENES.closing.end;
 
-// Shared static text styles. Text is white; difference blend handles inversion.
-const textBase: React.CSSProperties = {
-  fontFamily: INTER,
-  color: WHITE,
-  mixBlendMode: "difference",
-};
+// ─── Reveal — letters pop in random order (EndCard style), wrapped in a
+//      Sequence so useCurrentFrame resets to the mount moment, and wrapped
+//      in a difference-blend div so every letter auto-inverts against any
+//      white shape behind it.
 
-const Title = (style: React.CSSProperties): React.CSSProperties => ({
-  ...textBase,
-  fontWeight: 900,
-  letterSpacing: "-0.03em",
-  lineHeight: 0.95,
-  ...style,
-});
+const Reveal: React.FC<{
+  from: number;
+  duration: number;
+  text: string;
+  style?: React.CSSProperties;
+  revealDuration?: number;
+  seed?: number;
+}> = ({ from, duration, text, style, revealDuration = 32, seed = 7 }) => (
+  <Sequence from={from} durationInFrames={duration} layout="none">
+    <div
+      style={{
+        mixBlendMode: "difference",
+        color: WHITE,
+        fontFamily: INTER,
+        ...style,
+      }}
+    >
+      <RandomRevealText
+        text={text}
+        revealDuration={revealDuration}
+        seed={seed}
+      />
+    </div>
+  </Sequence>
+);
 
-const Label = (style: React.CSSProperties): React.CSSProperties => ({
-  ...textBase,
-  fontWeight: 700,
-  letterSpacing: "0.3em",
-  textTransform: "uppercase",
-  ...style,
-});
+// ─── Scene 1: INTRO ──────────────────────────────────────────────────────
 
-const Body = (style: React.CSSProperties): React.CSSProperties => ({
-  ...textBase,
-  fontWeight: 600,
-  letterSpacing: "-0.01em",
-  ...style,
-});
-
-// ─── Scene 1: INTRO — "General Market fights back" ───────────────────────
-
-const IntroScene: React.FC<{ local: number; duration: number }> = ({
-  local,
-  duration,
-}) => {
+const IntroScene: React.FC<{
+  local: number;
+  sceneStart: number;
+  duration: number;
+}> = ({ local, sceneStart, duration }) => {
   const circleR = interpolate(local, [0, 50], [0, 620], {
     ...clamp,
     easing: ease3,
@@ -76,13 +80,11 @@ const IntroScene: React.FC<{ local: number; duration: number }> = ({
     ...clamp,
     easing: ease3,
   });
-  const textIn = interpolate(local, [12, 28], [0, 1], clamp);
-  const kickerIn = interpolate(local, [58, 74], [0, 1], clamp);
   const fadeOut = interpolate(local, [duration - 14, duration], [1, 0], clamp);
 
   return (
     <AbsoluteFill style={{ opacity: fadeOut }}>
-      {/* Shape — circle grows from center */}
+      {/* SHAPES — rendered first so all text sits above them */}
       <AbsoluteFill
         style={{
           display: "flex",
@@ -99,8 +101,6 @@ const IntroScene: React.FC<{ local: number; duration: number }> = ({
           }}
         />
       </AbsoluteFill>
-
-      {/* Shape — kicker bar */}
       <AbsoluteFill
         style={{
           display: "flex",
@@ -118,23 +118,27 @@ const IntroScene: React.FC<{ local: number; duration: number }> = ({
         />
       </AbsoluteFill>
 
-      {/* Text */}
+      {/* TEXT */}
       <AbsoluteFill
         style={{
           display: "flex",
-          flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          gap: 10,
         }}
       >
-        <div
+        <Reveal
+          from={sceneStart + 4}
+          duration={duration}
+          text="General Market"
+          revealDuration={36}
+          seed={11}
           style={{
-            ...Title({ fontSize: 176, opacity: textIn, textAlign: "center" }),
+            fontSize: 176,
+            fontWeight: 900,
+            letterSpacing: "-0.03em",
+            textAlign: "center",
           }}
-        >
-          General Market
-        </div>
+        />
       </AbsoluteFill>
 
       <AbsoluteFill
@@ -145,17 +149,19 @@ const IntroScene: React.FC<{ local: number; duration: number }> = ({
           paddingBottom: 286,
         }}
       >
-        <div
+        <Reveal
+          from={sceneStart + 54}
+          duration={duration - 54}
+          text="fights back."
+          revealDuration={28}
+          seed={23}
           style={{
-            ...Title({
-              fontSize: 128,
-              opacity: kickerIn,
-              textAlign: "center",
-            }),
+            fontSize: 128,
+            fontWeight: 900,
+            letterSpacing: "-0.03em",
+            textAlign: "center",
           }}
-        >
-          fights back.
-        </div>
+        />
       </AbsoluteFill>
     </AbsoluteFill>
   );
@@ -163,16 +169,15 @@ const IntroScene: React.FC<{ local: number; duration: number }> = ({
 
 // ─── Scene 2: CONTRAST ───────────────────────────────────────────────────
 
-const ContrastScene: React.FC<{ local: number; duration: number }> = ({
-  local,
-  duration,
-}) => {
+const ContrastScene: React.FC<{
+  local: number;
+  sceneStart: number;
+  duration: number;
+}> = ({ local, sceneStart, duration }) => {
   const bigCircle = interpolate(local, [40, 100], [0, 520], {
     ...clamp,
     easing: ease3,
   });
-  const leftIn = interpolate(local, [0, 18], [0, 1], clamp);
-  const rightIn = interpolate(local, [40, 60], [0, 1], clamp);
   const fadeOut = interpolate(local, [duration - 18, duration], [1, 0], clamp);
 
   const scatter = [
@@ -186,7 +191,7 @@ const ContrastScene: React.FC<{ local: number; duration: number }> = ({
 
   return (
     <AbsoluteFill style={{ opacity: fadeOut }}>
-      {/* Shapes — left: scattered circles */}
+      {/* SHAPES */}
       <AbsoluteFill>
         {scatter.map((p, i) => {
           const appear = interpolate(
@@ -212,8 +217,6 @@ const ContrastScene: React.FC<{ local: number; duration: number }> = ({
           );
         })}
       </AbsoluteFill>
-
-      {/* Shapes — right: one giant circle */}
       <AbsoluteFill>
         <div
           style={{
@@ -229,7 +232,7 @@ const ContrastScene: React.FC<{ local: number; duration: number }> = ({
         />
       </AbsoluteFill>
 
-      {/* Text */}
+      {/* TEXT */}
       <AbsoluteFill
         style={{
           display: "grid",
@@ -240,44 +243,73 @@ const ContrastScene: React.FC<{ local: number; duration: number }> = ({
           gap: 80,
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 24,
-            opacity: leftIn,
-          }}
-        >
-          <div style={Label({ fontSize: 24 })}>Every exchange</div>
-          <div style={Title({ fontSize: 84 })}>
-            allows insider trading.
-          </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+          <Reveal
+            from={sceneStart}
+            duration={duration}
+            text="EVERY EXCHANGE"
+            revealDuration={28}
+            seed={3}
+            style={{
+              fontSize: 26,
+              fontWeight: 700,
+              letterSpacing: "0.3em",
+            }}
+          />
+          <Reveal
+            from={sceneStart + 8}
+            duration={duration - 8}
+            text="allows insider trading."
+            revealDuration={36}
+            seed={5}
+            style={{
+              fontSize: 84,
+              fontWeight: 900,
+              letterSpacing: "-0.03em",
+              lineHeight: 1,
+            }}
+          />
         </div>
 
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 24,
-            opacity: rightIn,
-          }}
-        >
-          <div style={Label({ fontSize: 24 })}>General Market</div>
-          <div style={Title({ fontSize: 84 })}>
-            the first to eliminate insiders.
-          </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+          <Reveal
+            from={sceneStart + 44}
+            duration={duration - 44}
+            text="GENERAL MARKET"
+            revealDuration={28}
+            seed={13}
+            style={{
+              fontSize: 26,
+              fontWeight: 700,
+              letterSpacing: "0.3em",
+            }}
+          />
+          <Reveal
+            from={sceneStart + 52}
+            duration={duration - 52}
+            text="the first to eliminate insiders."
+            revealDuration={40}
+            seed={17}
+            style={{
+              fontSize: 84,
+              fontWeight: 900,
+              letterSpacing: "-0.03em",
+              lineHeight: 1,
+            }}
+          />
         </div>
       </AbsoluteFill>
     </AbsoluteFill>
   );
 };
 
-// ─── Scene 3: POINT 1 — Derivative on top of every market ────────────────
+// ─── Scene 3: POINT 1 — Derivative on top ────────────────────────────────
 
-const Point1Scene: React.FC<{ local: number; duration: number }> = ({
-  local,
-  duration,
-}) => {
+const Point1Scene: React.FC<{
+  local: number;
+  sceneStart: number;
+  duration: number;
+}> = ({ local, sceneStart, duration }) => {
   const leftC = interpolate(local, [10, 60], [0, 280], {
     ...clamp,
     easing: ease3,
@@ -286,37 +318,11 @@ const Point1Scene: React.FC<{ local: number; duration: number }> = ({
     ...clamp,
     easing: ease3,
   });
-  const headIn = interpolate(local, [6, 26], [0, 1], clamp);
-  const labelsIn = interpolate(local, [70, 92], [0, 1], clamp);
-  const captionIn = interpolate(local, [98, 118], [0, 1], clamp);
   const fadeOut = interpolate(local, [duration - 18, duration], [1, 0], clamp);
 
   return (
     <AbsoluteFill style={{ opacity: fadeOut }}>
-      {/* Headline */}
-      <AbsoluteFill
-        style={{
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "center",
-          paddingTop: 140,
-        }}
-      >
-        <div
-          style={{
-            ...Title({
-              fontSize: 72,
-              textAlign: "center",
-              maxWidth: 1400,
-              opacity: headIn,
-            }),
-          }}
-        >
-          1. A derivative on top of every market.
-        </div>
-      </AbsoluteFill>
-
-      {/* Shapes — two overlapping circles */}
+      {/* SHAPES */}
       <AbsoluteFill
         style={{
           display: "flex",
@@ -352,7 +358,32 @@ const Point1Scene: React.FC<{ local: number; duration: number }> = ({
         </div>
       </AbsoluteFill>
 
-      {/* Circle labels */}
+      {/* TEXT */}
+      <AbsoluteFill
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "center",
+          paddingTop: 140,
+        }}
+      >
+        <Reveal
+          from={sceneStart + 6}
+          duration={duration - 6}
+          text="1. A derivative on top of every market."
+          revealDuration={50}
+          seed={31}
+          style={{
+            fontSize: 72,
+            fontWeight: 900,
+            letterSpacing: "-0.03em",
+            textAlign: "center",
+            maxWidth: 1400,
+            lineHeight: 1,
+          }}
+        />
+      </AbsoluteFill>
+
       <AbsoluteFill
         style={{
           display: "flex",
@@ -365,7 +396,6 @@ const Point1Scene: React.FC<{ local: number; duration: number }> = ({
             position: "relative",
             width: 900,
             height: 560,
-            opacity: labelsIn,
           }}
         >
           <div
@@ -375,10 +405,21 @@ const Point1Scene: React.FC<{ local: number; duration: number }> = ({
               top: 260,
               width: 260,
               textAlign: "center",
-              ...Title({ fontSize: 56 }),
             }}
           >
-            Original
+            <Reveal
+              from={sceneStart + 70}
+              duration={duration - 70}
+              text="Original"
+              revealDuration={26}
+              seed={41}
+              style={{
+                fontSize: 56,
+                fontWeight: 900,
+                letterSpacing: "-0.02em",
+                display: "inline-block",
+              }}
+            />
           </div>
           <div
             style={{
@@ -387,15 +428,25 @@ const Point1Scene: React.FC<{ local: number; duration: number }> = ({
               top: 260,
               width: 300,
               textAlign: "center",
-              ...Title({ fontSize: 56 }),
             }}
           >
-            Derivative
+            <Reveal
+              from={sceneStart + 86}
+              duration={duration - 86}
+              text="Derivative"
+              revealDuration={28}
+              seed={47}
+              style={{
+                fontSize: 56,
+                fontWeight: 900,
+                letterSpacing: "-0.02em",
+                display: "inline-block",
+              }}
+            />
           </div>
         </div>
       </AbsoluteFill>
 
-      {/* Caption */}
       <AbsoluteFill
         style={{
           display: "flex",
@@ -404,18 +455,20 @@ const Point1Scene: React.FC<{ local: number; duration: number }> = ({
           paddingBottom: 140,
         }}
       >
-        <div
+        <Reveal
+          from={sceneStart + 100}
+          duration={duration - 100}
+          text="You trade the same assets — without insiders."
+          revealDuration={46}
+          seed={53}
           style={{
-            ...Body({
-              fontSize: 38,
-              textAlign: "center",
-              maxWidth: 1400,
-              opacity: captionIn,
-            }),
+            fontSize: 38,
+            fontWeight: 600,
+            letterSpacing: "-0.01em",
+            textAlign: "center",
+            maxWidth: 1400,
           }}
-        >
-          You trade the same assets — without insiders.
-        </div>
+        />
       </AbsoluteFill>
     </AbsoluteFill>
   );
@@ -423,23 +476,18 @@ const Point1Scene: React.FC<{ local: number; duration: number }> = ({
 
 // ─── Scene 4: POINT 2 — Clusters of 1,000 ────────────────────────────────
 
-const Point2Scene: React.FC<{ local: number; duration: number }> = ({
-  local,
-  duration,
-}) => {
+const Point2Scene: React.FC<{
+  local: number;
+  sceneStart: number;
+  duration: number;
+}> = ({ local, sceneStart, duration }) => {
   const circleR = interpolate(local, [14, 74], [0, 380], {
     ...clamp,
     easing: ease3,
   });
   const insiderDot = interpolate(local, [86, 108], [0, 1], clamp);
-  const headIn = interpolate(local, [6, 24], [0, 1], clamp);
-  const numberIn = interpolate(local, [46, 66], [0, 1], clamp);
-  const labelIn = interpolate(local, [74, 92], [0, 1], clamp);
-  const pointerIn = interpolate(local, [100, 122], [0, 1], clamp);
-  const captionIn = interpolate(local, [118, 136], [0, 1], clamp);
   const fadeOut = interpolate(local, [duration - 18, duration], [1, 0], clamp);
 
-  // 60 tiny white dots scattered in the black field
   const fieldDots = React.useMemo(() => {
     const out: { x: number; y: number; r: number }[] = [];
     for (let i = 0; i < 60; i++) {
@@ -456,30 +504,7 @@ const Point2Scene: React.FC<{ local: number; duration: number }> = ({
 
   return (
     <AbsoluteFill style={{ opacity: fadeOut }}>
-      {/* Headline */}
-      <AbsoluteFill
-        style={{
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "center",
-          paddingTop: 120,
-        }}
-      >
-        <div
-          style={{
-            ...Title({
-              fontSize: 72,
-              textAlign: "center",
-              maxWidth: 1500,
-              opacity: headIn,
-            }),
-          }}
-        >
-          2. Trades clustered in 1,000.
-        </div>
-      </AbsoluteFill>
-
-      {/* Field dots */}
+      {/* SHAPES */}
       <AbsoluteFill
         style={{
           display: "flex",
@@ -513,8 +538,6 @@ const Point2Scene: React.FC<{ local: number; duration: number }> = ({
           })}
         </div>
       </AbsoluteFill>
-
-      {/* Big central circle */}
       <AbsoluteFill
         style={{
           display: "flex",
@@ -546,110 +569,7 @@ const Point2Scene: React.FC<{ local: number; duration: number }> = ({
         </div>
       </AbsoluteFill>
 
-      {/* 1,000 */}
-      <AbsoluteFill
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <div
-          style={{
-            ...Title({
-              fontSize: 260,
-              textAlign: "center",
-              opacity: numberIn,
-            }),
-          }}
-        >
-          1,000
-        </div>
-      </AbsoluteFill>
-
-      {/* Under-circle label */}
-      <AbsoluteFill
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          paddingTop: 340,
-        }}
-      >
-        <div
-          style={{
-            ...Label({ fontSize: 30, opacity: labelIn }),
-          }}
-        >
-          Clusters per trade
-        </div>
-      </AbsoluteFill>
-
-      {/* Insider pointer */}
-      <AbsoluteFill
-        style={{
-          display: "flex",
-          justifyContent: "flex-end",
-          alignItems: "flex-start",
-          paddingTop: 300,
-          paddingRight: 220,
-          opacity: pointerIn,
-        }}
-      >
-        <div style={Label({ fontSize: 18 })}>
-          Insider · 1 of 1,000
-        </div>
-      </AbsoluteFill>
-
-      {/* Caption */}
-      <AbsoluteFill
-        style={{
-          display: "flex",
-          alignItems: "flex-end",
-          justifyContent: "center",
-          paddingBottom: 120,
-        }}
-      >
-        <div
-          style={{
-            ...Body({
-              fontSize: 36,
-              textAlign: "center",
-              maxWidth: 1500,
-              opacity: captionIn,
-            }),
-          }}
-        >
-          Insiders control 1 asset. Not 1,000.
-        </div>
-      </AbsoluteFill>
-    </AbsoluteFill>
-  );
-};
-
-// ─── Scene 5: POINT 3 — Bot vs industry ──────────────────────────────────
-
-const Point3Scene: React.FC<{ local: number; duration: number }> = ({
-  local,
-  duration,
-}) => {
-  const smallR = interpolate(local, [16, 48], [0, 72], {
-    ...clamp,
-    easing: ease3,
-  });
-  const bigR = interpolate(local, [44, 104], [0, 420], {
-    ...clamp,
-    easing: ease3,
-  });
-  const headIn = interpolate(local, [6, 24], [0, 1], clamp);
-  const smallLabelIn = interpolate(local, [38, 56], [0, 1], clamp);
-  const bigLabelIn = interpolate(local, [84, 104], [0, 1], clamp);
-  const captionIn = interpolate(local, [116, 136], [0, 1], clamp);
-  const fadeOut = interpolate(local, [duration - 18, duration], [1, 0], clamp);
-
-  return (
-    <AbsoluteFill style={{ opacity: fadeOut }}>
-      {/* Headline */}
+      {/* TEXT */}
       <AbsoluteFill
         style={{
           display: "flex",
@@ -658,21 +578,139 @@ const Point3Scene: React.FC<{ local: number; duration: number }> = ({
           paddingTop: 120,
         }}
       >
-        <div
+        <Reveal
+          from={sceneStart + 6}
+          duration={duration - 6}
+          text="2. Trades clustered in 1,000."
+          revealDuration={46}
+          seed={59}
           style={{
-            ...Title({
-              fontSize: 64,
-              textAlign: "center",
-              maxWidth: 1600,
-              opacity: headIn,
-            }),
+            fontSize: 72,
+            fontWeight: 900,
+            letterSpacing: "-0.03em",
+            textAlign: "center",
+            maxWidth: 1500,
+            lineHeight: 1,
           }}
-        >
-          3. More positions than the entire prediction market industry.
-        </div>
+        />
       </AbsoluteFill>
 
-      {/* Circles */}
+      <AbsoluteFill
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Reveal
+          from={sceneStart + 46}
+          duration={duration - 46}
+          text="1,000"
+          revealDuration={24}
+          seed={67}
+          style={{
+            fontSize: 260,
+            fontWeight: 900,
+            letterSpacing: "-0.04em",
+            textAlign: "center",
+          }}
+        />
+      </AbsoluteFill>
+
+      <AbsoluteFill
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          paddingTop: 340,
+        }}
+      >
+        <Reveal
+          from={sceneStart + 72}
+          duration={duration - 72}
+          text="Clusters per trade"
+          revealDuration={30}
+          seed={71}
+          style={{
+            fontSize: 30,
+            fontWeight: 700,
+            letterSpacing: "0.3em",
+            textTransform: "uppercase",
+          }}
+        />
+      </AbsoluteFill>
+
+      <AbsoluteFill
+        style={{
+          display: "flex",
+          justifyContent: "flex-end",
+          alignItems: "flex-start",
+          paddingTop: 300,
+          paddingRight: 220,
+        }}
+      >
+        <Reveal
+          from={sceneStart + 108}
+          duration={duration - 108}
+          text="Insider · 1 of 1,000"
+          revealDuration={26}
+          seed={73}
+          style={{
+            fontSize: 18,
+            fontWeight: 700,
+            letterSpacing: "0.28em",
+            textTransform: "uppercase",
+          }}
+        />
+      </AbsoluteFill>
+
+      <AbsoluteFill
+        style={{
+          display: "flex",
+          alignItems: "flex-end",
+          justifyContent: "center",
+          paddingBottom: 120,
+        }}
+      >
+        <Reveal
+          from={sceneStart + 116}
+          duration={duration - 116}
+          text="Insiders control 1 asset. Not 1,000."
+          revealDuration={42}
+          seed={79}
+          style={{
+            fontSize: 36,
+            fontWeight: 600,
+            letterSpacing: "-0.01em",
+            textAlign: "center",
+            maxWidth: 1500,
+          }}
+        />
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── Scene 5: POINT 3 — Bot vs industry ──────────────────────────────────
+
+const Point3Scene: React.FC<{
+  local: number;
+  sceneStart: number;
+  duration: number;
+}> = ({ local, sceneStart, duration }) => {
+  const smallR = interpolate(local, [16, 48], [0, 72], {
+    ...clamp,
+    easing: ease3,
+  });
+  const bigR = interpolate(local, [44, 104], [0, 420], {
+    ...clamp,
+    easing: ease3,
+  });
+  const fadeOut = interpolate(local, [duration - 18, duration], [1, 0], clamp);
+
+  return (
+    <AbsoluteFill style={{ opacity: fadeOut }}>
+      {/* SHAPES */}
       <AbsoluteFill
         style={{
           display: "flex",
@@ -706,7 +744,32 @@ const Point3Scene: React.FC<{ local: number; duration: number }> = ({
         </div>
       </AbsoluteFill>
 
-      {/* Labels */}
+      {/* TEXT */}
+      <AbsoluteFill
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "center",
+          paddingTop: 120,
+        }}
+      >
+        <Reveal
+          from={sceneStart + 6}
+          duration={duration - 6}
+          text="3. More positions than the entire prediction market industry."
+          revealDuration={56}
+          seed={83}
+          style={{
+            fontSize: 64,
+            fontWeight: 900,
+            letterSpacing: "-0.03em",
+            textAlign: "center",
+            maxWidth: 1600,
+            lineHeight: 1,
+          }}
+        />
+      </AbsoluteFill>
+
       <AbsoluteFill
         style={{
           display: "flex",
@@ -715,7 +778,6 @@ const Point3Scene: React.FC<{ local: number; duration: number }> = ({
         }}
       >
         <div style={{ position: "relative", width: 1500, height: 620 }}>
-          {/* Industry */}
           <div
             style={{
               position: "absolute",
@@ -723,16 +785,37 @@ const Point3Scene: React.FC<{ local: number; duration: number }> = ({
               top: 440,
               width: 300,
               textAlign: "center",
-              opacity: smallLabelIn,
             }}
           >
-            <div style={Label({ fontSize: 18 })}>Industry · per day</div>
-            <div style={{ ...Title({ fontSize: 52 }), marginTop: 10 }}>
-              48,000
+            <Reveal
+              from={sceneStart + 40}
+              duration={duration - 40}
+              text="Industry · per day"
+              revealDuration={28}
+              seed={89}
+              style={{
+                fontSize: 18,
+                fontWeight: 700,
+                letterSpacing: "0.28em",
+                textTransform: "uppercase",
+              }}
+            />
+            <div style={{ marginTop: 10 }}>
+              <Reveal
+                from={sceneStart + 44}
+                duration={duration - 44}
+                text="48,000"
+                revealDuration={22}
+                seed={97}
+                style={{
+                  fontSize: 52,
+                  fontWeight: 900,
+                  letterSpacing: "-0.02em",
+                }}
+              />
             </div>
           </div>
 
-          {/* GM — inside big circle */}
           <div
             style={{
               position: "absolute",
@@ -742,18 +825,39 @@ const Point3Scene: React.FC<{ local: number; duration: number }> = ({
               transform: "translateX(50%)",
               marginRight: -250,
               textAlign: "center",
-              opacity: bigLabelIn,
             }}
           >
-            <div style={Title({ fontSize: 128 })}>520,000</div>
-            <div style={{ ...Label({ fontSize: 20 }), marginTop: 8 }}>
-              GM bot · per day
+            <Reveal
+              from={sceneStart + 84}
+              duration={duration - 84}
+              text="520,000"
+              revealDuration={30}
+              seed={101}
+              style={{
+                fontSize: 128,
+                fontWeight: 900,
+                letterSpacing: "-0.04em",
+              }}
+            />
+            <div style={{ marginTop: 8 }}>
+              <Reveal
+                from={sceneStart + 104}
+                duration={duration - 104}
+                text="GM bot · per day"
+                revealDuration={26}
+                seed={103}
+                style={{
+                  fontSize: 20,
+                  fontWeight: 700,
+                  letterSpacing: "0.3em",
+                  textTransform: "uppercase",
+                }}
+              />
             </div>
           </div>
         </div>
       </AbsoluteFill>
 
-      {/* Caption */}
       <AbsoluteFill
         style={{
           display: "flex",
@@ -762,18 +866,20 @@ const Point3Scene: React.FC<{ local: number; duration: number }> = ({
           paddingBottom: 130,
         }}
       >
-        <div
+        <Reveal
+          from={sceneStart + 120}
+          duration={duration - 120}
+          text="One General Market bot. More trades than every platform combined."
+          revealDuration={54}
+          seed={107}
           style={{
-            ...Body({
-              fontSize: 32,
-              textAlign: "center",
-              maxWidth: 1400,
-              opacity: captionIn,
-            }),
+            fontSize: 32,
+            fontWeight: 600,
+            letterSpacing: "-0.01em",
+            textAlign: "center",
+            maxWidth: 1400,
           }}
-        >
-          One General Market bot. More trades than every platform combined.
-        </div>
+        />
       </AbsoluteFill>
     </AbsoluteFill>
   );
@@ -781,23 +887,20 @@ const Point3Scene: React.FC<{ local: number; duration: number }> = ({
 
 // ─── Scene 6: STAT — 90% ─────────────────────────────────────────────────
 
-const StatScene: React.FC<{ local: number; duration: number }> = ({
-  local,
-  duration,
-}) => {
+const StatScene: React.FC<{
+  local: number;
+  sceneStart: number;
+  duration: number;
+}> = ({ local, sceneStart, duration }) => {
   const circleR = interpolate(local, [0, 60], [0, 400], {
     ...clamp,
     easing: ease3,
   });
-  const numIn = interpolate(local, [22, 44], [0, 1], clamp);
-  const labelIn = interpolate(local, [48, 68], [0, 1], clamp);
-  const captionIn = interpolate(local, [70, 90], [0, 1], clamp);
-  const asterIn = interpolate(local, [86, 100], [0, 1], clamp);
   const fadeOut = interpolate(local, [duration - 20, duration], [1, 0], clamp);
 
   return (
     <AbsoluteFill style={{ opacity: fadeOut }}>
-      {/* Circle */}
+      {/* SHAPES */}
       <AbsoluteFill
         style={{
           display: "flex",
@@ -815,7 +918,7 @@ const StatScene: React.FC<{ local: number; duration: number }> = ({
         />
       </AbsoluteFill>
 
-      {/* 90% */}
+      {/* TEXT */}
       <AbsoluteFill
         style={{
           display: "flex",
@@ -823,16 +926,21 @@ const StatScene: React.FC<{ local: number; duration: number }> = ({
           justifyContent: "center",
         }}
       >
-        <div
+        <Reveal
+          from={sceneStart + 22}
+          duration={duration - 22}
+          text="90%"
+          revealDuration={22}
+          seed={109}
           style={{
-            ...Title({ fontSize: 340, opacity: numIn }),
+            fontSize: 340,
+            fontWeight: 900,
+            letterSpacing: "-0.04em",
+            textAlign: "center",
           }}
-        >
-          90%
-        </div>
+        />
       </AbsoluteFill>
 
-      {/* Caption block */}
       <AbsoluteFill
         style={{
           display: "flex",
@@ -843,30 +951,47 @@ const StatScene: React.FC<{ local: number; duration: number }> = ({
           gap: 16,
         }}
       >
-        <div style={Label({ fontSize: 28, opacity: labelIn })}>Loss cut</div>
-        <div
+        <Reveal
+          from={sceneStart + 48}
+          duration={duration - 48}
+          text="Loss cut"
+          revealDuration={22}
+          seed={113}
           style={{
-            ...Body({
-              fontSize: 38,
-              textAlign: "center",
-              maxWidth: 1300,
-              opacity: captionIn,
-            }),
+            fontSize: 28,
+            fontWeight: 700,
+            letterSpacing: "0.36em",
+            textTransform: "uppercase",
           }}
-        >
-          Reducing insider loss up to 90%.
-        </div>
-        <div
+        />
+        <Reveal
+          from={sceneStart + 70}
+          duration={duration - 70}
+          text="Reducing insider loss up to 90%."
+          revealDuration={44}
+          seed={127}
           style={{
-            ...Label({
-              fontSize: 15,
-              opacity: asterIn * 0.7,
-              letterSpacing: "0.3em",
-            }),
+            fontSize: 38,
+            fontWeight: 600,
+            letterSpacing: "-0.01em",
+            textAlign: "center",
+            maxWidth: 1300,
           }}
-        >
-          * modelled on replayed insider events across five exchanges
-        </div>
+        />
+        <Reveal
+          from={sceneStart + 88}
+          duration={duration - 88}
+          text="* modelled on replayed insider events across five exchanges"
+          revealDuration={38}
+          seed={131}
+          style={{
+            fontSize: 15,
+            fontWeight: 600,
+            letterSpacing: "0.28em",
+            textTransform: "uppercase",
+            opacity: 0.65,
+          }}
+        />
       </AbsoluteFill>
     </AbsoluteFill>
   );
@@ -874,24 +999,23 @@ const StatScene: React.FC<{ local: number; duration: number }> = ({
 
 // ─── Scene 7: CLOSING ────────────────────────────────────────────────────
 
-const ClosingScene: React.FC<{ local: number; duration: number }> = ({
-  local,
-  duration,
-}) => {
+const ClosingScene: React.FC<{
+  local: number;
+  sceneStart: number;
+  duration: number;
+}> = ({ local, sceneStart, duration }) => {
   const sweep = interpolate(local, [0, 40], [0, 1], {
     ...clamp,
     easing: ease3,
   });
   const shrink = interpolate(local, [70, duration - 4], [1, 0.3], clamp);
-  const firstIn = interpolate(local, [10, 24], [0, 1], clamp);
-  const firstOut = interpolate(local, [60, 74], [1, 0], clamp);
-  const secondIn = interpolate(local, [64, 82], [0, 1], clamp);
+  const firstOut = interpolate(local, [58, 74], [1, 0], clamp);
   const logoIn = interpolate(local, [86, 106], [0, 1], clamp);
   const fadeOut = interpolate(local, [duration - 18, duration], [1, 0], clamp);
 
   return (
     <AbsoluteFill style={{ opacity: fadeOut }}>
-      {/* Rectangle sweeps, then contracts */}
+      {/* SHAPE */}
       <AbsoluteFill
         style={{
           display: "flex",
@@ -909,51 +1033,56 @@ const ClosingScene: React.FC<{ local: number; duration: number }> = ({
         />
       </AbsoluteFill>
 
-      {/* First statement */}
+      {/* FIRST STATEMENT */}
       <AbsoluteFill
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          opacity: firstIn * firstOut,
+          opacity: firstOut,
         }}
       >
-        <div
+        <Reveal
+          from={sceneStart + 10}
+          duration={64}
+          text="Not just insider protection."
+          revealDuration={40}
+          seed={137}
           style={{
-            ...Title({
-              fontSize: 96,
-              textAlign: "center",
-              maxWidth: 1600,
-            }),
+            fontSize: 96,
+            fontWeight: 900,
+            letterSpacing: "-0.03em",
+            textAlign: "center",
+            maxWidth: 1600,
           }}
-        >
-          Not just insider protection.
-        </div>
+        />
       </AbsoluteFill>
 
-      {/* Second statement */}
+      {/* SECOND STATEMENT */}
       <AbsoluteFill
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          opacity: secondIn,
         }}
       >
-        <div
+        <Reveal
+          from={sceneStart + 64}
+          duration={duration - 64}
+          text="A new trading standard."
+          revealDuration={38}
+          seed={149}
           style={{
-            ...Title({
-              fontSize: 120,
-              textAlign: "center",
-              maxWidth: 1600,
-            }),
+            fontSize: 120,
+            fontWeight: 900,
+            letterSpacing: "-0.04em",
+            textAlign: "center",
+            maxWidth: 1600,
           }}
-        >
-          A new trading standard.
-        </div>
+        />
       </AbsoluteFill>
 
-      {/* GM logo lockup */}
+      {/* LOGO + URL */}
       <AbsoluteFill
         style={{
           display: "flex",
@@ -973,7 +1102,19 @@ const ClosingScene: React.FC<{ local: number; duration: number }> = ({
             mixBlendMode: "difference",
           }}
         />
-        <div style={Label({ fontSize: 22 })}>generalmarket.io</div>
+        <Reveal
+          from={sceneStart + 90}
+          duration={duration - 90}
+          text="generalmarket.io"
+          revealDuration={28}
+          seed={151}
+          style={{
+            fontSize: 22,
+            fontWeight: 700,
+            letterSpacing: "0.3em",
+            textTransform: "uppercase",
+          }}
+        />
       </AbsoluteFill>
     </AbsoluteFill>
   );
@@ -1002,30 +1143,59 @@ export const InsiderPitch: React.FC<{ startFrame: number }> = ({
 
   const scene = PITCH_SCENES[activeKey];
   const sceneLocal = local - scene.start;
+  const sceneStartAbs = startFrame + scene.start;
   const sceneDuration = scene.end - scene.start;
 
   return (
     <AbsoluteFill style={{ background: BLACK, isolation: "isolate" }}>
       {activeKey === "intro" ? (
-        <IntroScene local={sceneLocal} duration={sceneDuration} />
+        <IntroScene
+          local={sceneLocal}
+          sceneStart={sceneStartAbs}
+          duration={sceneDuration}
+        />
       ) : null}
       {activeKey === "contrast" ? (
-        <ContrastScene local={sceneLocal} duration={sceneDuration} />
+        <ContrastScene
+          local={sceneLocal}
+          sceneStart={sceneStartAbs}
+          duration={sceneDuration}
+        />
       ) : null}
       {activeKey === "point1" ? (
-        <Point1Scene local={sceneLocal} duration={sceneDuration} />
+        <Point1Scene
+          local={sceneLocal}
+          sceneStart={sceneStartAbs}
+          duration={sceneDuration}
+        />
       ) : null}
       {activeKey === "point2" ? (
-        <Point2Scene local={sceneLocal} duration={sceneDuration} />
+        <Point2Scene
+          local={sceneLocal}
+          sceneStart={sceneStartAbs}
+          duration={sceneDuration}
+        />
       ) : null}
       {activeKey === "point3" ? (
-        <Point3Scene local={sceneLocal} duration={sceneDuration} />
+        <Point3Scene
+          local={sceneLocal}
+          sceneStart={sceneStartAbs}
+          duration={sceneDuration}
+        />
       ) : null}
       {activeKey === "stat" ? (
-        <StatScene local={sceneLocal} duration={sceneDuration} />
+        <StatScene
+          local={sceneLocal}
+          sceneStart={sceneStartAbs}
+          duration={sceneDuration}
+        />
       ) : null}
       {activeKey === "closing" ? (
-        <ClosingScene local={sceneLocal} duration={sceneDuration} />
+        <ClosingScene
+          local={sceneLocal}
+          sceneStart={sceneStartAbs}
+          duration={sceneDuration}
+        />
       ) : null}
     </AbsoluteFill>
   );
