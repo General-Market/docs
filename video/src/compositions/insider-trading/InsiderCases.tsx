@@ -80,7 +80,7 @@ const ARTICLES: Article[] = [
   },
   {
     image: "insider-trading/articles/8.png",
-    brand: { kind: "wordmark", src: "logos/exchanges/sec.svg", pad: 28 },
+    brand: { kind: "wordmark", src: "logos/exchanges/nyse.svg", pad: 32 },
     highlights: [
       { x: 0.0522, y: 0.5101, w: 0.3917, h: 0.0519 },
     ],
