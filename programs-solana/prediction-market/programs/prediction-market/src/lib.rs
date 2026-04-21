@@ -81,4 +81,23 @@ pub mod prediction_market {
     ) -> Result<()> {
         admin::admin_force_resolve(ctx, baseline_price, final_price)
     }
+
+    // -------------------------------------------------------------------------
+    // User-facing bet surface
+    // -------------------------------------------------------------------------
+
+    pub fn place_bet(ctx: Context<PlaceBet>, args: PlaceBetArgs) -> Result<()> {
+        place_bet::handler(ctx, args)
+    }
+
+    pub fn exit_bet(ctx: Context<ExitBet>, args: ExitBetArgs) -> Result<()> {
+        exit_bet::handler(ctx, args)
+    }
+
+    pub fn batch_bets<'info>(
+        ctx: Context<'info, BatchBets<'info>>,
+        args: BatchBetsArgs,
+    ) -> Result<()> {
+        batch_bets::handler(ctx, args)
+    }
 }
