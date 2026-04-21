@@ -88,6 +88,9 @@ const ARTICLES: Article[] = [
   {
     image: "insider-trading/articles/9.png",
     brand: { kind: "wordmark", src: "logos/exchanges/robinhood.svg", pad: 40 },
+    highlights: [
+      { x: 0.4119, y: 0.1968, w: 0.2831, h: 0.042 },
+    ],
   },
 ];
 
