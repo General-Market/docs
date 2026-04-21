@@ -71,8 +71,14 @@ After deploying on testnet, `testnet.sh` syncs back to `envs/testnet/`.
 ## Network
 | Network | Chain ID | RPC | Collateral |
 |---------|----------|-----|------------|
-| Index L3 (Orbit) | 111222333 | http://142.132.164.24/ | GM (18 dec) |
+| Index L3 (Orbit) | 111222333 | https://rpc.generalmarket.io/ (via nginx+LE on VPS 2, or http://142.132.164.24/ direct) | GM (18 dec) |
 | Local Settlement (Anvil) | 421611337 | http://localhost:8546 | — |
+
+**Frontend-accessible HTTPS origins** (added 2026-04-21 to let browsers preconnect + avoid mixed-content):
+- `https://rpc.generalmarket.io` → VPS 2 L3 RPC / Blockscout, `/ap` route → AP service on :9100
+- `https://api.generalmarket.io` → VPS 1 data-node/oracle1-3/explorer (same routes as the port-80 default site)
+
+Both use Let's Encrypt DNS-01 via the Cloudflare token at `/root/.secrets/cloudflare-dns.ini`. DNS-only (gray-cloud). Renewals are on `certbot.timer`.
 
 ## USDC Decimals by Chain
 
