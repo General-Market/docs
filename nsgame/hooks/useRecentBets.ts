@@ -1,41 +1,29 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
+// Global feed of recent bet events. The old implementation pulled from
+// an EVM backend that doesn't exist for the Solana build. The new
+// program emits events the indexer can surface; until it ships, this
+// hook is a no-op.
+//
+// TODO: wire to the Solana event indexer.
 
-/**
- * Event types for recent bet feed
- * Story 14-1: Added 'settled' for early exit events
- */
-export type BetEventType = 'placed' | 'matched' | 'won' | 'lost' | 'settled'
+export type BetEventType =
+  | 'BetPlaced'
+  | 'BetExited'
+  | 'MarketInstantiated'
+  | 'MarketClosed'
+  | 'MarketResolved'
+  | 'Claimed'
 
-/**
- * Recent bet event interface matching backend API response
- * Updated for Story 7-12: Includes odds fields for asymmetric betting
- */
 export interface RecentBetEvent {
-  /** Bet ID (string representation of bigint) */
-  betId: string
-  /** Wallet address (0x... format) */
-  walletAddress: string
-  /** Type of event (placed/matched/won/lost) */
   eventType: BetEventType
-  /** Number of markets in portfolio */
-  portfolioSize: number
-  /** Bet amount in USDC (creator stake) */
-  amount: string // Decimal as string from API
-  /** Odds in basis points: 10000 = 1.00x, 20000 = 2.00x */
-  oddsBps?: number
-  /** P&L result for won/lost events (null for placed/matched) */
-  result: string | null // Decimal as string from API
-  /** ISO timestamp of event */
+  marketPda: string
+  walletAddress: string
+  sourceId: number
+  thresholdBps: number
+  amount: string
   timestamp: string
-}
-
-/**
- * Response from GET /api/bets/recent
- */
-export interface RecentBetsResponse {
-  events: RecentBetEvent[]
+  signature: string
 }
 
 interface UseRecentBetsReturn {
@@ -46,54 +34,12 @@ interface UseRecentBetsReturn {
   refetch: () => void
 }
 
-/**
- * Fetches recent bet events from backend API
- * Throws error if backend is unavailable - NO MOCK FALLBACKS IN PRODUCTION
- */
-async function fetchRecentBets(limit: number = 20): Promise<RecentBetsResponse> {
-  const response = await fetch(`/api/bets/recent?limit=${limit}`)
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch recent bets: ${response.status} ${response.statusText}`)
-  }
-
-  const data = await response.json()
-  // Map backend tradeCount -> portfolioSize for frontend compatibility
-  if (data.events) {
-    data.events = data.events.map((e: RecentBetEvent & { tradeCount?: number }) => ({
-      ...e,
-      portfolioSize: e.tradeCount ?? e.portfolioSize ?? 0,
-    }))
-  }
-  return data
-}
-
-/**
- * Hook for fetching recent bet events
- * Auto-refreshes every 60 seconds (60000ms)
- * @param limit - Maximum number of events to fetch (default: 20)
- * @returns Recent bet events, loading state, and error state
- */
-export function useRecentBets(limit: number = 20): UseRecentBetsReturn {
-  const {
-    data,
-    isLoading,
-    isError,
-    error,
-    refetch
-  } = useQuery({
-    queryKey: ['recent-bets', limit],
-    queryFn: () => fetchRecentBets(limit),
-    retry: false,
-    refetchInterval: 60000,
-    staleTime: 30000
-  })
-
+export function useRecentBets(_limit: number = 20): UseRecentBetsReturn {
   return {
-    events: data?.events ?? [],
-    isLoading,
-    isError,
-    error: error as Error | null,
-    refetch
+    events: [],
+    isLoading: false,
+    isError: false,
+    error: null,
+    refetch: () => { /* no-op */ },
   }
 }

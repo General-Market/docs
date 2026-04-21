@@ -1,49 +1,78 @@
 'use client'
 
-import type { SSEConnectionState } from '@/hooks/useSSEConnection'
+// SSE stream of live bet events from the event indexer. No transport
+// exists yet — this hook exists so consumers have a stable import path.
+//
+// TODO: wire to the indexer's SSE once the event shapes stabilize.
 
-export type BetSSEState = SSEConnectionState
+export type BetSSEState = 'disconnected' | 'connecting' | 'connected' | 'error'
 
-/**
- * SSE event types from backend (Story 6-1)
- */
-export interface BetPlacedEvent {
+export interface BetPlacedSSEEvent {
   type: 'BetPlaced'
-  betId: string
-  creator: string
-  portfolioSize: number
-  tradeCount?: number
+  marketPda: string
+  owner: string
+  sourceId: number
+  thresholdBps: number
   amount: string
+  signature: string
   timestamp: string
 }
 
-export interface BetMatchedEvent {
-  type: 'BetMatched'
-  betId: string
-  matcher: string
+export interface BetExitedSSEEvent {
+  type: 'BetExited'
+  marketPda: string
+  owner: string
   amount: string
+  signature: string
   timestamp: string
 }
 
-export interface BetSettledEvent {
-  type: 'BetSettled'
-  betId: string
-  winner: string
-  pnl: string
-  portfolioSize: number
-  tradeCount?: number
+export interface MarketInstantiatedSSEEvent {
+  type: 'MarketInstantiated'
+  marketPda: string
+  sourceId: number
+  thresholdBps: number
+  closeTime: string
+  settlementTime: string
+  signature: string
   timestamp: string
 }
 
-export interface BetEarlyExitEvent {
-  type: 'BetEarlyExit'
-  betId: string
-  creator: string
-  filler: string
-  creatorAmount: string
-  fillerAmount: string
+export interface MarketClosedSSEEvent {
+  type: 'MarketClosed'
+  marketPda: string
+  baselinePrice: string
+  signature: string
   timestamp: string
 }
+
+export interface MarketResolvedSSEEvent {
+  type: 'MarketResolved'
+  marketPda: string
+  finalPrice: string
+  outcomeYes: boolean
+  forceResolved: boolean
+  signature: string
+  timestamp: string
+}
+
+export interface ClaimedSSEEvent {
+  type: 'Claimed'
+  marketPda: string
+  owner: string
+  netAmount: string
+  feeAmount: string
+  signature: string
+  timestamp: string
+}
+
+export type BetSSEEvent =
+  | BetPlacedSSEEvent
+  | BetExitedSSEEvent
+  | MarketInstantiatedSSEEvent
+  | MarketClosedSSEEvent
+  | MarketResolvedSSEEvent
+  | ClaimedSSEEvent
 
 export interface UseBetsSSEReturn {
   state: BetSSEState
@@ -53,15 +82,9 @@ export interface UseBetsSSEReturn {
   isPolling: boolean
 }
 
-/**
- * SSE hook for the global bet feed — currently disabled.
- * The backend SSE endpoint never existed. Recent bets now come from
- * the on-chain API route (/api/bets/recent) via useRecentBets polling.
- * This hook is a no-op until a real SSE transport is built.
- */
 export function useBetsSSE(): UseBetsSSEReturn {
   return {
-    state: 'disconnected' as BetSSEState,
+    state: 'disconnected',
     isConnected: false,
     isEnabled: false,
     reconnectAttempt: 0,
