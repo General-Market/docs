@@ -17,6 +17,8 @@ mod config;
 mod feed;
 mod identity;
 mod metrics;
+mod payload;
+mod submitter;
 
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 
