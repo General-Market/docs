@@ -9,6 +9,7 @@ import {
 } from "remotion";
 import { loadFont as loadInter } from "@remotion/google-fonts/Inter";
 import { CascadeText } from "../../lib/components/Text";
+import { SourceCardsWall } from "./SourceCardsWall";
 
 const { fontFamily: INTER } = loadInter("normal", {
   subsets: ["latin"],
@@ -367,8 +368,31 @@ const Point1Scene: React.FC<{
   });
   const fadeOut = interpolate(local, [duration - 18, duration], [1, 0], clamp);
 
+  // Wall of homepage-style source cards — fades in under the headline,
+  // slowly drifts upward. Proof of "500,000 markets" sitting under the claim.
+  const wallIn = interpolate(local, [0, 36], [0, 1], {
+    ...clamp,
+    easing: ease3,
+  });
+  const wallScroll = local * 0.9;
+
   return (
     <AbsoluteFill style={{ opacity: fadeOut }}>
+      {/* BACKGROUND — cards wall, dimmed so the headline stays legible */}
+      <AbsoluteFill style={{ opacity: wallIn * 0.78 }}>
+        <SourceCardsWall scrollY={wallScroll} />
+      </AbsoluteFill>
+      {/* Vignette darkens the edges so "500,000" never competes with a
+          bright card directly behind it */}
+      <AbsoluteFill
+        style={{
+          background:
+            "radial-gradient(ellipse 70% 55% at 50% 50%, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.85) 60%, rgba(0,0,0,0.95) 100%)",
+          opacity: wallIn,
+          pointerEvents: "none",
+        }}
+      />
+
       {/* SHAPE — slim horizontal accent slab, mid-screen only */}
       <AbsoluteFill
         style={{
