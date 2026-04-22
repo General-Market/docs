@@ -27,7 +27,7 @@ git clone --quiet --depth 1 "$REMOTE_URL" "$TMP"
 
 for d in $PUBLIC_DIRS; do
   if [ -d "$MONO_ROOT/docs/$d" ]; then
-    rsync -a --delete-after=no "$MONO_ROOT/docs/$d/" "$TMP/$d/"
+    rsync -a "$MONO_ROOT/docs/$d/" "$TMP/$d/"
   fi
 done
 
