@@ -619,30 +619,33 @@ const ArticlesTitle: React.FC<{ hide: number }> = ({ hide }) => {
       <div
         style={{
           display: "inline-flex",
+          flexDirection: "column",
           alignItems: "center",
+          gap: 6,
           background: WISE.nearBlack,
-          borderRadius: 9999,
-          padding: "20px 44px 22px",
+          borderRadius: 40,
+          padding: "34px 64px 38px",
           boxShadow:
-            "0 0 0 1px rgba(14,15,12,0.12), 0 18px 48px rgba(0,0,0,0.45), 0 2px 10px rgba(0,0,0,0.30)",
+            "0 0 0 1px rgba(14,15,12,0.12), 0 22px 60px rgba(0,0,0,0.5), 0 2px 10px rgba(0,0,0,0.35)",
           transform: `translateY(${lift}px)`,
           fontFamily: interFamily,
           fontFeatureSettings: '"calt" 1',
           fontWeight: 900,
-          fontSize: 58,
+          fontSize: 120,
           lineHeight: 0.85,
-          letterSpacing: "-0.015em",
+          letterSpacing: "-0.03em",
           color: WISE.white,
           whiteSpace: "nowrap",
+          textAlign: "center",
         }}
       >
-        <span>Every Exchanges Concede&nbsp;</span>
+        <span>Every Exchanges Concede</span>
         <span
           style={{
             position: "relative",
             color: WISE.darkGreen,
             display: "inline-block",
-            padding: "0 6px",
+            padding: "0 10px",
           }}
         >
           <span
@@ -650,11 +653,11 @@ const ArticlesTitle: React.FC<{ hide: number }> = ({ hide }) => {
             style={{
               position: "absolute",
               left: 0,
-              top: "-6%",
-              bottom: "-6%",
+              top: "-4%",
+              bottom: "-8%",
               width: `${highlight * 100}%`,
               background: WISE.wiseGreen,
-              borderRadius: 6,
+              borderRadius: 10,
               zIndex: 0,
             }}
           />
