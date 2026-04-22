@@ -43,12 +43,11 @@ const GM_LOGO_PATHS = [
 // long enough for its remaining reveals to land and breathe.
 export const PITCH_SCENES = {
   intro: { start: 0, end: 96 },
-  contrast: { start: 96, end: 220 },
+  stat: { start: 96, end: 220 },
   point1: { start: 220, end: 340 },
   point2: { start: 340, end: 440 },
   point3: { start: 440, end: 540 },
-  stat: { start: 540, end: 636 },
-  closing: { start: 636, end: 748 },
+  closing: { start: 540, end: 652 },
 } as const;
 
 export const PITCH_DURATION = PITCH_SCENES.closing.end;
@@ -229,188 +228,7 @@ const IntroScene: React.FC<{
   );
 };
 
-// ─── Asset grid — 4×2 of tradeable classes under the top contrast line.
-//      Each tile animates in on a short stagger so the grid builds left-
-//      to-right, top-to-bottom without feeling like a spreadsheet drop.
-const ASSET_CLASSES = [
-  "Stocks",
-  "Perps",
-  "Options",
-  "Crypto",
-  "Predictions",
-  "Forex",
-  "Commodities",
-  "Bonds",
-];
-
-const AssetGrid: React.FC<{ local: number }> = ({ local }) => {
-  return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(4, 1fr)",
-        gap: 22,
-        width: 1360,
-        marginTop: 28,
-      }}
-    >
-      {ASSET_CLASSES.map((name, i) => {
-        const start = 44 + i * 4;
-        const t = interpolate(local, [start, start + 22], [0, 1], clamp);
-        return (
-          <div
-            key={name}
-            style={{
-              height: 128,
-              border: "1.5px solid rgba(255,255,255,0.22)",
-              borderRadius: 18,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontFamily: INTER,
-              fontSize: 46,
-              fontWeight: 700,
-              letterSpacing: "-0.02em",
-              color: WHITE,
-              opacity: t,
-              transform: `translateY(${(1 - t) * 22}px)`,
-              background: `rgba(255,255,255,${0.03 * t})`,
-            }}
-          >
-            {name}
-          </div>
-        );
-      })}
-    </div>
-  );
-};
-
-// ─── Scene 2: CONTRAST ───────────────────────────────────────────────────
-
-const ContrastScene: React.FC<{
-  local: number;
-  sceneStart: number;
-  duration: number;
-}> = ({ local, sceneStart, duration }) => {
-  const fadeOut = interpolate(local, [duration - 18, duration], [1, 0], clamp);
-  // Thin horizontal rule slides out between the two halves.
-  const dividerW = interpolate(local, [46, 86], [0, 1400], {
-    ...clamp,
-    easing: ease3,
-  });
-
-  return (
-    <AbsoluteFill style={{ opacity: fadeOut }}>
-      {/* DIVIDER — one clean line separating the two statements */}
-      <AbsoluteFill
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <div
-          style={{
-            width: dividerW,
-            height: 2,
-            background: WHITE,
-            opacity: 0.35,
-          }}
-        />
-      </AbsoluteFill>
-
-      {/* TOP HALF — Every exchange concedes */}
-      <AbsoluteFill
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          paddingBottom: 560,
-          gap: 20,
-          padding: "0 140px 560px",
-          boxSizing: "border-box",
-        }}
-      >
-        <Reveal
-          from={sceneStart}
-          duration={duration}
-          text="EVERY EXCHANGE"
-          revealDuration={28}
-          seed={3}
-          style={{
-            fontSize: 28,
-            fontWeight: 700,
-            letterSpacing: "0.32em",
-            textAlign: "center",
-            maxWidth: 1500,
-          }}
-        />
-        <Reveal
-          from={sceneStart + 10}
-          duration={duration - 10}
-          text="concedes to insiders"
-          revealDuration={36}
-          seed={5}
-          style={{
-            fontSize: 108,
-            fontWeight: 900,
-            letterSpacing: "-0.03em",
-            lineHeight: 1,
-            textAlign: "center",
-            maxWidth: 1640,
-          }}
-        />
-        <AssetGrid local={local} />
-      </AbsoluteFill>
-
-      {/* BOTTOM HALF — General Market removes their edge */}
-      <AbsoluteFill
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "560px 140px 0",
-          boxSizing: "border-box",
-          gap: 20,
-        }}
-      >
-        <Reveal
-          from={sceneStart + 56}
-          duration={duration - 56}
-          text="GENERAL MARKET"
-          revealDuration={28}
-          seed={13}
-          style={{
-            fontSize: 28,
-            fontWeight: 700,
-            letterSpacing: "0.32em",
-            textAlign: "center",
-            maxWidth: 1500,
-          }}
-        />
-        <Reveal
-          from={sceneStart + 66}
-          duration={duration - 66}
-          text="removes their edge"
-          revealDuration={40}
-          seed={17}
-          style={{
-            fontSize: 108,
-            fontWeight: 900,
-            letterSpacing: "-0.03em",
-            lineHeight: 1,
-            textAlign: "center",
-            maxWidth: 1640,
-          }}
-        />
-      </AbsoluteFill>
-    </AbsoluteFill>
-  );
-};
-
-// ─── Scene 3: POINT 1 — 500,000 active markets ───────────────────────────
+// ─── Scene 2: POINT 1 — 500,000 active markets ───────────────────────────
 
 const Point1Scene: React.FC<{
   local: number;
@@ -959,11 +777,10 @@ export const InsiderPitch: React.FC<{ startFrame: number }> = ({
   type SceneKey = keyof typeof PITCH_SCENES;
   const activeKey: SceneKey = (() => {
     if (local < PITCH_SCENES.intro.end) return "intro";
-    if (local < PITCH_SCENES.contrast.end) return "contrast";
+    if (local < PITCH_SCENES.stat.end) return "stat";
     if (local < PITCH_SCENES.point1.end) return "point1";
     if (local < PITCH_SCENES.point2.end) return "point2";
     if (local < PITCH_SCENES.point3.end) return "point3";
-    if (local < PITCH_SCENES.stat.end) return "stat";
     return "closing";
   })();
 
@@ -976,13 +793,6 @@ export const InsiderPitch: React.FC<{ startFrame: number }> = ({
     <AbsoluteFill style={{ background: BLACK, isolation: "isolate" }}>
       {activeKey === "intro" ? (
         <IntroScene
-          local={sceneLocal}
-          sceneStart={sceneStartAbs}
-          duration={sceneDuration}
-        />
-      ) : null}
-      {activeKey === "contrast" ? (
-        <ContrastScene
           local={sceneLocal}
           sceneStart={sceneStartAbs}
           duration={sceneDuration}
