@@ -2,6 +2,7 @@ import React from "react";
 import {
   AbsoluteFill,
   Img,
+  OffthreadVideo,
   Sequence,
   interpolate,
   staticFile,
@@ -99,6 +100,57 @@ const Reveal: React.FC<{
   );
 };
 
+// ─── "fights back." video incrust ───────────────────────────────────────
+//     Revealed the same frame as the text. B&W, framed, tied to the word.
+
+const FIGHT_BACK_TILE_START = 54;
+
+const FightBackTile: React.FC<{ local: number; duration: number }> = ({
+  local,
+  duration,
+}) => {
+  if (local < FIGHT_BACK_TILE_START - 2) return null;
+
+  const fadeIn = interpolate(
+    local,
+    [FIGHT_BACK_TILE_START, FIGHT_BACK_TILE_START + 10],
+    [0, 1],
+    clamp,
+  );
+  const fadeOut = interpolate(local, [duration - 14, duration], [1, 0], clamp);
+  const opacity = Math.min(fadeIn, fadeOut);
+  const scale = interpolate(
+    local,
+    [FIGHT_BACK_TILE_START, FIGHT_BACK_TILE_START + 14],
+    [0.94, 1],
+    { ...clamp, easing: ease3 },
+  );
+
+  return (
+    <div
+      style={{
+        width: 960,
+        height: 540,
+        opacity,
+        transform: `scale(${scale})`,
+        overflow: "hidden",
+        background: BLACK,
+        boxShadow: "0 0 0 3px #ffffff",
+      }}
+    >
+      <OffthreadVideo
+        src={staticFile("insider-trading/broll/fischer-tal-fightback.mp4")}
+        style={{
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          filter: "grayscale(1) contrast(1.25) brightness(1.04)",
+        }}
+      />
+    </div>
+  );
+};
+
 // ─── Scene 1: INTRO ──────────────────────────────────────────────────────
 
 const IntroScene: React.FC<{
@@ -173,6 +225,17 @@ const IntroScene: React.FC<{
             textAlign: "center",
           }}
         />
+      </AbsoluteFill>
+
+      <AbsoluteFill
+        style={{
+          display: "flex",
+          alignItems: "flex-end",
+          justifyContent: "center",
+          paddingBottom: 180,
+        }}
+      >
+        <FightBackTile local={local} duration={duration} />
       </AbsoluteFill>
 
       <AbsoluteFill
