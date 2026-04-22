@@ -583,63 +583,6 @@ const InsiderLogoReveal: React.FC<{ startFrame: number }> = ({
   );
 };
 
-// Wise-style pill title — near-black background, Inter 900 white text,
-// wiseGreen highlight on the accent phrase. Full pill radius, ring shadow.
-// Sits above the article card so it reads against any background.
-const ArticlesTitle: React.FC<{ hide: number }> = ({ hide }) => {
-  const frame = useCurrentFrame();
-  const appear = interpolate(frame, [6, 24], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-    easing: EASE_OUT,
-  });
-  const lift = interpolate(frame, [6, 24], [18, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-    easing: EASE_OUT,
-  });
-
-  return (
-    <AbsoluteFill
-      style={{
-        pointerEvents: "none",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "flex-start",
-        paddingTop: 56,
-        opacity: appear * hide,
-      }}
-    >
-      <div
-        style={{
-          display: "inline-flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 6,
-          background: WISE.nearBlack,
-          borderRadius: 40,
-          padding: "34px 64px 38px",
-          boxShadow:
-            "0 0 0 1px rgba(14,15,12,0.12), 0 22px 60px rgba(0,0,0,0.5), 0 2px 10px rgba(0,0,0,0.35)",
-          transform: `translateY(${lift}px)`,
-          fontFamily: interFamily,
-          fontFeatureSettings: '"calt" 1',
-          fontWeight: 900,
-          fontSize: 120,
-          lineHeight: 0.85,
-          letterSpacing: "-0.03em",
-          color: WISE.white,
-          whiteSpace: "nowrap",
-          textAlign: "center",
-        }}
-      >
-        <span>Every Exchanges Concede</span>
-        <span>Insider Trading</span>
-      </div>
-    </AbsoluteFill>
-  );
-};
-
 const InsiderArticlesPhase: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -835,8 +778,6 @@ const InsiderArticlesPhase: React.FC = () => {
           opacity: articleHide,
         }}
       />
-
-      <ArticlesTitle hide={articleHide} />
 
       {frame >= LOGO_REVEAL_START && frame < PITCH_START + PITCH_FADE_IN + 2 ? (
         <AbsoluteFill style={{ opacity: logoHide }}>
