@@ -59,6 +59,8 @@ function ProfileContent({ address }: { address: string }) {
   const displayCount = showingVaults
     ? vaultTotals.count
     : profile?.stats.totalBatches ?? 0
+  const totalTrades =
+    profile?.batches.reduce((sum, b) => sum + (b.tickCount ?? 0), 0) ?? 0
   const pnlColor = displayPnl >= 0 ? 'text-color-up' : 'text-color-down'
 
   const stats = [
@@ -68,6 +70,9 @@ function ProfileContent({ address }: { address: string }) {
       label: showingVaults ? t('vaults') : t('rounds'),
       value: String(displayCount),
     },
+    ...(showingVaults
+      ? []
+      : [{ label: t('trades'), value: totalTrades.toLocaleString() }]),
     { label: t('volume'), value: formatVolume(displayVolume) },
     { label: t('points'), value: formatPoints(points.total), color: 'text-color-up' },
   ]
