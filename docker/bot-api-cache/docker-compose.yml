@@ -1,0 +1,26 @@
+services:
+  varnish:
+    image: varnish:7.5
+    container_name: bot-api-varnish
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6081:80"
+    volumes:
+      - ./default.vcl:/etc/varnish/default.vcl:ro
+    environment:
+      # 512 MB RAM cache — bot-api JSON payloads are tiny; this easily
+      # holds every cacheable endpoint for every (asset, from=) combination.
+      VARNISH_SIZE: 512m
+    tmpfs:
+      - /var/lib/varnish:exec
+    healthcheck:
+      test: ["CMD", "varnishadm", "backend.list"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
