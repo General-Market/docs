@@ -305,6 +305,21 @@ const ContrastScene: React.FC<{
             maxWidth: 1640,
           }}
         />
+        <Reveal
+          from={sceneStart + 40}
+          duration={duration - 40}
+          text="stocks, perps, options, crypto, predictions, forex and 2 others"
+          revealDuration={40}
+          seed={9}
+          style={{
+            fontSize: 26,
+            fontWeight: 500,
+            letterSpacing: "-0.005em",
+            textAlign: "center",
+            opacity: 0.62,
+            maxWidth: 1500,
+          }}
+        />
       </AbsoluteFill>
 
       {/* BOTTOM HALF — General Market removes their edge */}
