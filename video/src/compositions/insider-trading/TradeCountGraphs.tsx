@@ -35,92 +35,140 @@ const DRAW_END = 176;
 const PAYOFF_START = 180;
 const PAYOFF_SLAM = 212;
 
-// ─── Beats ─── frame anchors, ~120 BPM (beat every 15 frames at 30fps).
-// Ticker cards enter on beats 0..4; chart pulses on every beat.
 const BEATS = [30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180, 195, 210];
-
 const EASE_OUT = Easing.bezier(0.16, 1, 0.3, 1);
 
 // ─── Line model ───
-// One day of cumulative trades. Five lines, all starting at (0, 0).
-// X = time elapsed in the day; 0 → X_MAX = one day.
-const X_MAX = 100;
-
+// Each line is a staircase of (xFrac, cumulative) points, where xFrac is the
+// fraction of the day elapsed. The "tx" of each venue lands at evenly spaced
+// xFrac positions; the jump at each tx is a random draw from [stepMin, stepMax].
+// General Market's defining trait: each tx batches 10k–100k trades. The other
+// venues process trades one-or-few at a time.
 type LineSpec = {
   id: string;
   label: string;
-  fn: (x: number) => number;
   strokeWidth: number;
   dash?: string;
   bold?: boolean;
+  steps: number;
+  stepMin: number;
+  stepMax: number;
 };
 
 const LINES: LineSpec[] = [
   {
     id: "predictions",
     label: "Predictions",
-    fn: (x) => x * 1.8,
     strokeWidth: 2.5,
     dash: "2 9",
+    steps: 600,
+    stepMin: 1,
+    stepMax: 6,
   },
   {
     id: "perps",
     label: "Perps",
-    fn: (x) => x * 3.4,
     strokeWidth: 2.5,
     dash: "8 10",
+    steps: 600,
+    stepMin: 8,
+    stepMax: 40,
   },
   {
     id: "options",
     label: "Options",
-    fn: (x) => x * 5.2,
     strokeWidth: 2.5,
+    steps: 600,
+    stepMin: 80,
+    stepMax: 350,
   },
   {
     id: "memecoins",
     label: "Memecoins",
-    fn: (x) => x * 8.7,
     strokeWidth: 2.5,
     dash: "14 4",
+    steps: 600,
+    stepMin: 600,
+    stepMax: 2400,
   },
   {
     id: "gm",
     label: "General Market",
-    fn: (x) => Math.pow(x / X_MAX, 1.5) * 10_000_000,
     strokeWidth: 5,
     bold: true,
+    steps: 40,
+    stepMin: 10_000,
+    stepMax: 100_000,
   },
 ];
 
-const MIN_X = 0.25;
-
-const samplePoints = (
-  fn: (x: number) => number,
-  currentMaxX: number,
-  n: number,
-): Array<[number, number]> => {
-  const pts: Array<[number, number]> = [];
-  for (let i = 0; i <= n; i++) {
-    const x = (i / n) * currentMaxX;
-    pts.push([x, fn(x)]);
+// ─── Deterministic per-id PRNG so the staircase is stable across renders ──
+const seedFromId = (s: string): number => {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
   }
-  return pts;
+  return h >>> 0;
 };
 
-const fmt = (n: number): string => {
-  if (n >= 1_000_000) return n.toLocaleString("en-US");
-  return Math.round(n).toLocaleString("en-US");
+const prng = (n: number): number => {
+  const x = Math.sin(n * 12.9898) * 43758.5453;
+  return x - Math.floor(x);
 };
 
-const formatAxis = (v: number): string => {
+// Build the cumulative staircase for one line: array of (xFrac, value).
+const buildSteps = (spec: LineSpec): Array<[number, number]> => {
+  const base = seedFromId(spec.id);
+  const out: Array<[number, number]> = [[0, 0]];
+  let cum = 0;
+  for (let i = 1; i <= spec.steps; i++) {
+    const x = i / spec.steps;
+    const r = prng(base + i * 17);
+    const delta = spec.stepMin + r * (spec.stepMax - spec.stepMin);
+    cum += delta;
+    out.push([x, cum]);
+  }
+  return out;
+};
+
+const STAIRS: Array<{ spec: LineSpec; data: Array<[number, number]> }> =
+  LINES.map((spec) => ({ spec, data: buildSteps(spec) }));
+
+const FINALS: Record<string, number> = Object.fromEntries(
+  STAIRS.map((s) => [s.spec.id, s.data[s.data.length - 1][1]]),
+);
+
+// Fixed log ceiling — picked above GM final so the line doesn't graze the top.
+const Y_MAX = Math.max(3_500_000, FINALS.gm * 1.6);
+const Y_LOG_DEN = Math.log10(Y_MAX + 1);
+
+// 0..1 vertical fraction on log scale.
+const logY = (v: number): number =>
+  Math.log10(Math.max(0, v) + 1) / Y_LOG_DEN;
+
+// Last cumulative value at or before xFrac (linear scan; staircase is short).
+const valueAt = (
+  data: Array<[number, number]>,
+  xFrac: number,
+): number => {
+  let last = 0;
+  for (let i = 0; i < data.length; i++) {
+    if (data[i][0] > xFrac) break;
+    last = data[i][1];
+  }
+  return last;
+};
+
+const fmt = (n: number): string => Math.round(n).toLocaleString("en-US");
+
+const formatTick = (v: number): string => {
   if (v <= 0.5) return "0";
-  if (v >= 1_000_000)
-    return `${(v / 1_000_000).toFixed(v >= 10_000_000 ? 0 : 1)}M`;
+  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(0)}M`;
   if (v >= 1_000) return `${(v / 1_000).toFixed(0)}K`;
   return `${Math.round(v)}`;
 };
 
-// Most-recent beat → 0..1 pulse that decays over 8 frames.
 const beatPulse = (frame: number): number => {
   for (let i = BEATS.length - 1; i >= 0; i--) {
     if (frame >= BEATS[i]) {
@@ -132,7 +180,7 @@ const beatPulse = (frame: number): number => {
   return 0;
 };
 
-// ─── Paper-grain via SVG turbulence, reseeded every frame so it crawls. ─
+// ─── Paper grain ──────────────────────────────────────────────────────────
 const GrainOverlay: React.FC = () => {
   const frame = useCurrentFrame();
   const fid = `tcg-grain-${frame}`;
@@ -163,7 +211,9 @@ const GrainOverlay: React.FC = () => {
   );
 };
 
-// ─── Chart ───
+// ─── Chart ────────────────────────────────────────────────────────────────
+const LOG_TICKS = [0, 1_000, 10_000, 100_000, 1_000_000];
+
 const Chart: React.FC<{
   progress: number;
   appear: number;
@@ -174,43 +224,54 @@ const Chart: React.FC<{
 }> = ({ progress, appear, payoff, slam, gmJitterX, gmJitterY }) => {
   const W = 1720;
   const H = 640;
-  const padL = 96;
-  const padR = 300;
+  const padL = 110;
+  const padR = 320;
   const padT = 40;
-  const padB = 48;
+  const padB = 56;
   const innerW = W - padL - padR;
   const innerH = H - padT - padB;
 
-  const drawMaxX = Math.max(MIN_X * 0.4, progress * X_MAX);
-
-  const sampled = LINES.map((l) => ({
-    spec: l,
-    points: samplePoints(l.fn, drawMaxX, 90),
-  }));
-
-  const yMax = Math.max(
-    1,
-    ...sampled.map((s) => s.points[s.points.length - 1][1]),
-  );
-
-  const toSvg = (p: [number, number]): { x: number; y: number } => ({
-    x: padL + (p[0] / X_MAX) * innerW,
-    y: padT + innerH - (p[1] / yMax) * innerH,
+  const toSvg = (xFrac: number, val: number): { x: number; y: number } => ({
+    x: padL + xFrac * innerW,
+    y: padT + innerH - logY(val) * innerH,
   });
 
-  const mkPath = (pts: Array<[number, number]>): string =>
-    pts
-      .map((p, i) => {
-        const s = toSvg(p);
-        return `${i === 0 ? "M" : "L"}${s.x},${s.y}`;
-      })
-      .join(" ");
+  // Stepped path for one staircase, clipped horizontally to `progress`.
+  const buildPath = (data: Array<[number, number]>): string => {
+    let d = "";
+    let prevV = 0;
+    let started = false;
+    for (let i = 0; i < data.length; i++) {
+      const [x, v] = data[i];
+      if (x > progress) {
+        if (started) {
+          const s = toSvg(progress, prevV);
+          d += ` L ${s.x.toFixed(2)},${s.y.toFixed(2)}`;
+        }
+        return d;
+      }
+      if (!started) {
+        const s = toSvg(x, v);
+        d = `M ${s.x.toFixed(2)},${s.y.toFixed(2)}`;
+        started = true;
+      } else {
+        const s1 = toSvg(x, prevV);
+        const s2 = toSvg(x, v);
+        d += ` L ${s1.x.toFixed(2)},${s1.y.toFixed(2)} L ${s2.x.toFixed(2)},${s2.y.toFixed(2)}`;
+      }
+      prevV = v;
+    }
+    return d;
+  };
 
-  const yTicks = [0, yMax * 0.5, yMax];
-
-  // Axis/tick dim during payoff — the chart becomes the GM line alone.
   const chromeOp = 1 - payoff * 0.55;
-  const ghostOp = 1 - payoff * 0.94;
+  const ghostOp = 1 - payoff * 0.92;
+
+  // End-position for each line at current progress.
+  const ends = STAIRS.map(({ spec, data }) => {
+    const v = valueAt(data, progress);
+    return { spec, value: v, pos: toSvg(progress, v) };
+  });
 
   return (
     <svg
@@ -222,7 +283,10 @@ const Chart: React.FC<{
     >
       <defs>
         <filter id="gm-glow" x="-20%" y="-60%" width="140%" height="220%">
-          <feGaussianBlur stdDeviation={1.2 + payoff * 5 + slam * 6} result="b" />
+          <feGaussianBlur
+            stdDeviation={1.4 + payoff * 5 + slam * 6}
+            result="b"
+          />
           <feMerge>
             <feMergeNode in="b" />
             <feMergeNode in="SourceGraphic" />
@@ -230,8 +294,9 @@ const Chart: React.FC<{
         </filter>
       </defs>
 
-      {yTicks.map((v, i) => {
-        const y = padT + innerH - (v / yMax) * innerH;
+      {/* Log-scale grid lines + Y labels */}
+      {LOG_TICKS.map((v, i) => {
+        const y = padT + innerH - logY(v) * innerH;
         return (
           <g key={`yg-${i}`} opacity={chromeOp}>
             <line
@@ -243,7 +308,7 @@ const Chart: React.FC<{
               strokeDasharray={i === 0 ? undefined : "3 7"}
             />
             <text
-              x={padL - 16}
+              x={padL - 18}
               y={y + 6}
               textAnchor="end"
               fontFamily={interFamily}
@@ -252,7 +317,7 @@ const Chart: React.FC<{
               fill={INK_MUTED}
               style={{ fontVariantNumeric: "tabular-nums" }}
             >
-              {formatAxis(v)}
+              {formatTick(v)}
             </text>
           </g>
         );
@@ -268,55 +333,50 @@ const Chart: React.FC<{
         opacity={chromeOp}
       />
 
-      {/* Non-bold lines — dim to nothing in payoff */}
-      {sampled
-        .filter(({ spec }) => !spec.bold)
-        .map(({ spec, points }) => (
+      {/* Non-bold staircases */}
+      {STAIRS.filter(({ spec }) => !spec.bold).map(({ spec, data }) => (
+        <path
+          key={spec.id}
+          d={buildPath(data)}
+          fill="none"
+          stroke={INK_FAINT}
+          strokeWidth={spec.strokeWidth}
+          strokeDasharray={spec.dash}
+          strokeLinecap="square"
+          strokeLinejoin="miter"
+          opacity={ghostOp}
+        />
+      ))}
+
+      {/* GM staircase — chunky 10k–100k jumps, glow, jitter on slam */}
+      {STAIRS.filter(({ spec }) => spec.bold).map(({ spec, data }) => (
+        <g
+          key={spec.id}
+          transform={`translate(${gmJitterX}, ${gmJitterY})`}
+          filter="url(#gm-glow)"
+        >
           <path
-            key={spec.id}
-            d={mkPath(points)}
+            d={buildPath(data)}
             fill="none"
-            stroke={INK_FAINT}
-            strokeWidth={spec.strokeWidth}
-            strokeDasharray={spec.dash}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            opacity={ghostOp}
+            stroke={INK}
+            strokeWidth={spec.strokeWidth + payoff * 4 + slam * 3}
+            strokeLinecap="square"
+            strokeLinejoin="miter"
           />
-        ))}
+        </g>
+      ))}
 
-      {/* GM line — thickens and glows through payoff, jitters on slam */}
-      {sampled
-        .filter(({ spec }) => spec.bold)
-        .map(({ spec, points }) => (
-          <g
-            key={spec.id}
-            transform={`translate(${gmJitterX}, ${gmJitterY})`}
-            filter="url(#gm-glow)"
-          >
-            <path
-              d={mkPath(points)}
-              fill="none"
-              stroke={INK}
-              strokeWidth={spec.strokeWidth + payoff * 4 + slam * 3}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </g>
-        ))}
-
-      {/* End labels */}
-      {sampled.map(({ spec, points }) => {
-        const end = toSvg(points[points.length - 1]);
+      {/* End markers + labels */}
+      {ends.map(({ spec, pos }) => {
         const isBold = !!spec.bold;
         if (!isBold) {
           if (ghostOp <= 0) return null;
           return (
             <g key={`end-${spec.id}`} opacity={ghostOp}>
-              <circle cx={end.x} cy={end.y} r={4} fill={INK_FAINT} />
+              <circle cx={pos.x} cy={pos.y} r={4} fill={INK_FAINT} />
               <text
-                x={end.x + 14}
-                y={end.y + 5}
+                x={pos.x + 14}
+                y={pos.y + 5}
                 fontFamily={interFamily}
                 fontSize={16}
                 fontWeight={600}
@@ -334,14 +394,14 @@ const Chart: React.FC<{
             transform={`translate(${gmJitterX}, ${gmJitterY})`}
           >
             <circle
-              cx={end.x}
-              cy={end.y}
+              cx={pos.x}
+              cy={pos.y}
               r={7 + payoff * 8 + slam * 3}
               fill={INK}
             />
             <text
-              x={end.x + 18}
-              y={end.y + (-2 - payoff * 6)}
+              x={pos.x + 18}
+              y={pos.y + (-2 - payoff * 6)}
               fontFamily={interFamily}
               fontSize={labelSize}
               fontWeight={800}
@@ -350,6 +410,19 @@ const Chart: React.FC<{
             >
               {spec.label}
             </text>
+            {/* Sub-label: the per-tx batch claim */}
+            <text
+              x={pos.x + 18}
+              y={pos.y + 18 + payoff * 10}
+              fontFamily={interFamily}
+              fontSize={13 + payoff * 4}
+              fontWeight={600}
+              fill={INK_MUTED}
+              letterSpacing={1.6}
+              style={{ textTransform: "uppercase" }}
+            >
+              10k–100k trades / tx
+            </text>
           </g>
         );
       })}
@@ -357,7 +430,7 @@ const Chart: React.FC<{
   );
 };
 
-// ─── Ticker cards — beat-staggered spring entry, GM card swells in payoff.
+// ─── Ticker cards ─────────────────────────────────────────────────────────
 const TickerRow: React.FC<{
   progress: number;
   appear: number;
@@ -367,7 +440,6 @@ const TickerRow: React.FC<{
 }> = ({ progress, appear, payoff, beatVal, slam }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const currentMaxX = progress * X_MAX;
 
   return (
     <div
@@ -378,7 +450,7 @@ const TickerRow: React.FC<{
         opacity: appear,
       }}
     >
-      {LINES.map((l, i) => {
+      {STAIRS.map(({ spec, data }, i) => {
         const entryBeat = BEATS[Math.min(i, 4)];
         const entry = spring({
           frame: Math.max(0, frame - entryBeat),
@@ -386,20 +458,19 @@ const TickerRow: React.FC<{
           config: { damping: 16, mass: 0.9, stiffness: 140 },
           durationInFrames: 22,
         });
-        const value =
-          l.id === "gm"
-            ? Math.floor(l.fn(currentMaxX) / 10_000) * 10_000
-            : Math.floor(l.fn(currentMaxX));
-        const isBold = !!l.bold;
+        const value = valueAt(data, progress);
+        const isBold = !!spec.bold;
         const cardOp = isBold ? 1 : 1 - payoff * 0.9;
         if (cardOp <= 0.02) return null;
 
         const pulseScale = isBold ? 1 + beatVal * 0.018 + slam * 0.03 : 1;
         const gmFlex = isBold ? 2 + payoff * 6 : 1;
+        const display =
+          isBold && value >= 10_000 ? Math.floor(value / 1000) * 1000 : value;
 
         return (
           <div
-            key={l.id}
+            key={spec.id}
             style={{
               flex: gmFlex,
               background: "#ffffff",
@@ -428,7 +499,7 @@ const TickerRow: React.FC<{
                 textTransform: "uppercase",
               }}
             >
-              {l.label}
+              {spec.label}
             </div>
             <div
               style={{
@@ -441,7 +512,7 @@ const TickerRow: React.FC<{
                 fontVariantNumeric: "tabular-nums",
               }}
             >
-              {fmt(value)}
+              {fmt(display)}
             </div>
           </div>
         );
@@ -453,7 +524,6 @@ const TickerRow: React.FC<{
 export const TradeCountGraphs: React.FC = () => {
   const frame = useCurrentFrame();
 
-  // Title
   const titleOp = interpolate(
     frame,
     [0, TITLE_IN_END, TITLE_HOLD_END, TITLE_OUT_END],
@@ -467,28 +537,23 @@ export const TradeCountGraphs: React.FC = () => {
     extrapolateRight: "clamp",
   });
 
-  // Chart draw + camera pull-back — pushed harder than before.
+  // Chart progress 0..1, eased so early time is denser than late (lines show
+  // their identity in the first half, GM keeps stepping in the second).
   const rawProgress = interpolate(frame, [DRAW_START, DRAW_END], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const progress = 1 - Math.pow(1 - rawProgress, 2.2);
+  const progress = 1 - Math.pow(1 - rawProgress, 1.8);
 
-  // Payoff ramp 0→1 from PAYOFF_START → PAYOFF_SLAM.
   const payoff = interpolate(frame, [PAYOFF_START, PAYOFF_SLAM], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: EASE_OUT,
   });
 
-  // Terminal slam — single impulse at PAYOFF_SLAM, decays over 14 frames.
   const slam =
-    frame < PAYOFF_SLAM
-      ? 0
-      : Math.max(0, 1 - (frame - PAYOFF_SLAM) / 14);
+    frame < PAYOFF_SLAM ? 0 : Math.max(0, 1 - (frame - PAYOFF_SLAM) / 14);
 
-  // Pre-slam anticipation — a tiny dip just before the impulse, so the slam
-  // reads as a release and not as a jump from nowhere.
   const anticip = interpolate(
     frame,
     [PAYOFF_SLAM - 8, PAYOFF_SLAM - 1, PAYOFF_SLAM],
@@ -498,26 +563,16 @@ export const TradeCountGraphs: React.FC = () => {
 
   const beatVal = beatPulse(frame);
 
-  // Stage-wide: breathe on beats, flash on slam, micro-scale on impulse.
   const stageFilter = `saturate(${1 + beatVal * 0.08 + slam * 0.15}) contrast(${1 + beatVal * 0.04 + slam * 0.12 + payoff * 0.04}) brightness(${1 + beatVal * 0.02 + slam * 0.05 - anticip * 0.03})`;
   const stageScale =
     1 + beatVal * 0.004 + slam * 0.012 - anticip * 0.006 + payoff * 0.003;
 
-  // GM-line jitter on slam only — chart is sharpest before impact, shakes on.
   const jx = slam * Math.sin(frame * 21.1 + 2.3) * 5;
   const jy = slam * Math.cos(frame * 17.7 + 1.1) * 5;
 
   return (
-    <AbsoluteFill
-      style={{
-        background: PAGE_BG,
-        fontFamily: interFamily,
-      }}
-    >
-      {/* Paper grain — crawls every frame */}
+    <AbsoluteFill style={{ background: PAGE_BG, fontFamily: interFamily }}>
       <GrainOverlay />
-
-      {/* Vignette — keeps focus centred, darkens corners subtly */}
       <AbsoluteFill
         style={{
           pointerEvents: "none",
@@ -586,7 +641,6 @@ export const TradeCountGraphs: React.FC = () => {
         </AbsoluteFill>
       ) : null}
 
-      {/* Slam flash — white bloom over everything on the impulse frame */}
       {slam > 0 ? (
         <AbsoluteFill
           style={{
