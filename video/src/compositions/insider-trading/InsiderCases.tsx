@@ -22,10 +22,14 @@ const interFamily = loadInter("normal", {
 }).fontFamily;
 
 const FPS = 30;
-const LOGO_REVEAL_START = 260;
-const LOGO_REVEAL_FADE = 18;
-const PITCH_START = LOGO_REVEAL_START + 48; // logo sits ~1.6s, then pitch begins
-const PITCH_FADE_IN = 14;
+// Beat-synced anchors (articles-phase-local frames). Derived from the 143.5 BPM
+// track; each value is a beat timestamp shifted by -PROLOGUE_DURATION (the
+// articles phase lives in a Sequence from=PROLOGUE_DURATION, so its local
+// frame 0 == music time 4.0s).
+const LOGO_REVEAL_START = 184; // music beat at 6.124s (comp ~0:10.1)
+const LOGO_REVEAL_FADE = 7;    // fast crossover — articles → logo
+const PITCH_START = 223;       // music beat at 7.424s — logo dwells ~1.3s
+const PITCH_FADE_IN = 10;
 
 // ─── Prologue — 4s. Micro-onsets from librosa (first 3.65s of the track,
 //     30fps comp frames). Each onset = a cut. Advance per cut = gap-since-
@@ -163,6 +167,15 @@ const INTRO_FRAMES = 10;
 const STRIDE = 26;
 const ON_STAGE = 34;
 
+// Article entrances land every other beat (~0.84s apart). Stride between
+// entries stays near the old STRIDE=26, but now snapped to the music.
+const ARTICLE_STARTS = [4, 29, 55, 81, 106, 132, 158];
+// Beats (articles-local frames) used for per-beat punch on the article row.
+// Trimmed at LOGO_REVEAL_START — after that the logo reveal owns the canvas.
+const ARTICLE_BEATS = [
+  4, 17, 29, 42, 55, 68, 81, 94, 106, 119, 132, 145, 158, 170, 184,
+];
+
 const BrandPlate: React.FC<{ brand: Brand; appear: number }> = ({
   brand,
   appear,
@@ -234,97 +247,27 @@ const BrandPlate: React.FC<{ brand: Brand; appear: number }> = ({
   );
 };
 
-const InfoPanel: React.FC<{
-  brand: Brand;
-  appear: number;
-  index: number;
-  total: number;
-}> = ({ brand, appear, index, total }) => {
+const LogoCard: React.FC<{ brand: Brand; appear: number }> = ({
+  brand,
+  appear,
+}) => {
   return (
     <div
       style={{
-        width: 460,
-        alignSelf: "stretch",
-        background: "rgba(10,10,10,0.82)",
-        border: "1px solid rgba(255,255,255,0.09)",
-        borderRadius: 18,
-        padding: "44px 40px",
+        width: 560,
+        height: 360,
+        background: "#fafaf7",
+        borderRadius: 16,
+        padding: 34,
         display: "flex",
-        flexDirection: "column",
-        justifyContent: "space-between",
-        gap: 32,
-        boxShadow: `0 ${42 * appear}px ${82 * appear}px rgba(0,0,0,${
-          0.55 * appear
-        })`,
-        fontFamily: "'Inter', 'Helvetica Neue', system-ui, sans-serif",
+        alignItems: "center",
+        justifyContent: "center",
+        boxShadow: `0 ${46 * appear}px ${90 * appear}px rgba(0,0,0,${
+          0.5 * appear
+        }), 0 2px 10px rgba(0,0,0,${0.3 * appear})`,
       }}
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        <div
-          style={{
-            display: "inline-flex",
-            alignSelf: "flex-start",
-            alignItems: "center",
-            gap: 10,
-            background: "rgba(255,43,68,0.16)",
-            border: "1px solid rgba(255,43,68,0.55)",
-            color: "#ff5566",
-            padding: "9px 16px",
-            borderRadius: 999,
-            fontSize: 17,
-            fontWeight: 700,
-            letterSpacing: 2.4,
-          }}
-        >
-          <span
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: "50%",
-              background: "#ff2b44",
-              boxShadow: "0 0 8px #ff2b44",
-            }}
-          />
-          INSIDER TRADING
-        </div>
-        <div
-          style={{
-            color: "rgba(255,255,255,0.45)",
-            fontSize: 15,
-            fontWeight: 500,
-            letterSpacing: 3.2,
-          }}
-        >
-          CASE {String(index + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
-        </div>
-      </div>
-      <div
-        style={{
-          flex: 1,
-          background: "#fafaf7",
-          borderRadius: 14,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          minHeight: 220,
-          padding: 18,
-        }}
-      >
-        <BrandPlate brand={brand} appear={appear} />
-      </div>
-      <div
-        style={{
-          color: "rgba(255,255,255,0.38)",
-          fontSize: 13,
-          fontWeight: 500,
-          letterSpacing: 2.6,
-          borderTop: "1px solid rgba(255,255,255,0.09)",
-          paddingTop: 18,
-          textAlign: "center",
-        }}
-      >
-        EXCHANGE · REGULATORY RECORD
-      </div>
+      <BrandPlate brand={brand} appear={appear} />
     </div>
   );
 };
@@ -412,15 +355,15 @@ const ArticleFrame: React.FC<{
   highlightReveal: number;
   index: number;
   total: number;
-}> = ({ article, appear, tilt, highlightReveal, index, total }) => {
-  const maxH = 820;
+}> = ({ article, appear, tilt, highlightReveal }) => {
+  const maxH = 960;
   return (
     <div
       style={{
         display: "flex",
-        alignItems: "stretch",
+        alignItems: "center",
         justifyContent: "center",
-        gap: 44,
+        gap: 68,
         transform: `rotate(${tilt * 0.25}deg)`,
       }}
     >
@@ -428,11 +371,11 @@ const ArticleFrame: React.FC<{
         style={{
           position: "relative",
           background: "#fafaf7",
-          padding: 18,
+          padding: 20,
           borderRadius: 14,
-          boxShadow: `0 ${40 * appear}px ${80 * appear}px rgba(0,0,0,${
+          boxShadow: `0 ${46 * appear}px ${92 * appear}px rgba(0,0,0,${
             0.55 * appear
-          }), 0 2px 8px rgba(0,0,0,${0.3 * appear})`,
+          }), 0 2px 10px rgba(0,0,0,${0.3 * appear})`,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -444,7 +387,7 @@ const ArticleFrame: React.FC<{
             style={{
               height: maxH,
               width: "auto",
-              maxWidth: 980,
+              maxWidth: 1180,
               objectFit: "contain",
               display: "block",
               borderRadius: 4,
@@ -458,12 +401,7 @@ const ArticleFrame: React.FC<{
           ) : null}
         </div>
       </div>
-      <InfoPanel
-        brand={article.brand}
-        appear={appear}
-        index={index}
-        total={total}
-      />
+      <LogoCard brand={article.brand} appear={appear} />
     </div>
   );
 };
@@ -630,11 +568,54 @@ const InsiderLogoReveal: React.FC<{ startFrame: number }> = ({
   );
 };
 
+const ArticlesTitle: React.FC<{ hide: number }> = ({ hide }) => {
+  const frame = useCurrentFrame();
+  const appear = interpolate(frame, [6, 22], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: EASE_OUT,
+  });
+  const lift = interpolate(frame, [6, 22], [14, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: EASE_OUT,
+  });
+
+  return (
+    <AbsoluteFill
+      style={{
+        pointerEvents: "none",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "flex-start",
+        paddingTop: 68,
+        opacity: appear * hide,
+      }}
+    >
+      <div
+        style={{
+          fontFamily: interFamily,
+          fontWeight: 300,
+          fontSize: 56,
+          letterSpacing: "-0.025em",
+          color: "#ffffff",
+          textAlign: "center",
+          lineHeight: 1.1,
+          textShadow: "0 4px 28px rgba(0,0,0,0.7)",
+          transform: `translateY(${lift}px)`,
+        }}
+      >
+        Every Exchanges Concede Insider Trading
+      </div>
+    </AbsoluteFill>
+  );
+};
+
 const InsiderArticlesPhase: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  const bgFade = interpolate(frame, [0, 8], [0, 1], {
+  const bgFade = interpolate(frame, [0, 3], [0, 1], {
     extrapolateRight: "clamp",
   });
   const outroFade = interpolate(frame, [MAIN_DURATION - 18, MAIN_DURATION], [1, 0], {
@@ -660,6 +641,19 @@ const InsiderArticlesPhase: React.FC = () => {
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
 
+  // Per-beat punch on the articles backdrop: find the most recent beat
+  // still within a short decay window and raise contrast/brightness. Subtle
+  // enough not to fight the entrance springs; enough to feel the music.
+  let beatPunch = 0;
+  for (let i = ARTICLE_BEATS.length - 1; i >= 0; i--) {
+    const b = ARTICLE_BEATS[i];
+    if (frame >= b) {
+      const d = frame - b;
+      if (d < 6) beatPunch = Math.pow(1 - d / 6, 1.4);
+      break;
+    }
+  }
+
   return (
     <AbsoluteFill
       style={{
@@ -669,11 +663,13 @@ const InsiderArticlesPhase: React.FC = () => {
     >
       <AbsoluteFill
         style={{
-          filter: "grayscale(1) contrast(1.08) brightness(0.96)",
+          filter: `saturate(${1.04 + beatPunch * 0.15}) contrast(${1.08 + beatPunch * 0.08}) brightness(${0.96 + beatPunch * 0.09})`,
+          transform: `scale(${1 + beatPunch * 0.006})`,
+          transformOrigin: "50% 50%",
         }}
       >
       {ARTICLES.map((article, i) => {
-        const start = INTRO_FRAMES + i * STRIDE;
+        const start = ARTICLE_STARTS[i] ?? (INTRO_FRAMES + i * STRIDE);
         const local = frame - start;
         const isLast = i === ARTICLES.length - 1;
 
@@ -724,7 +720,7 @@ const InsiderArticlesPhase: React.FC = () => {
                 objectFit: "cover",
                 transform: `scale(${kenBurns})`,
                 transformOrigin: "center",
-                filter: `blur(4px) saturate(0.95) brightness(${bgBrightness})`,
+                filter: `grayscale(1) blur(4px) saturate(0.9) brightness(${bgBrightness})`,
               }}
             />
           </AbsoluteFill>
@@ -740,7 +736,7 @@ const InsiderArticlesPhase: React.FC = () => {
       />
 
       {ARTICLES.map((article, i) => {
-        const start = INTRO_FRAMES + i * STRIDE;
+        const start = ARTICLE_STARTS[i] ?? (INTRO_FRAMES + i * STRIDE);
         const local = frame - start;
         const isLast = i === ARTICLES.length - 1;
 
@@ -810,6 +806,8 @@ const InsiderArticlesPhase: React.FC = () => {
           opacity: articleHide,
         }}
       />
+
+      <ArticlesTitle hide={articleHide} />
 
       {frame >= LOGO_REVEAL_START && frame < PITCH_START + PITCH_FADE_IN + 2 ? (
         <AbsoluteFill style={{ opacity: logoHide }}>
@@ -950,8 +948,8 @@ const TypewriterLine: React.FC<{
 };
 
 /* ─── Per-onset broll shot — harsh bezier decay on cut: tremble, jitter,
-       scale punch, blur snap. Each cut carries its own playbackRate so the
-       broll itself accelerates through the prologue. ────────────────── */
+       scale punch, heavy Gaussian blur snap, chromatic fringe. Each cut
+       carries its own playbackRate so the broll itself accelerates. ─── */
 const BeatShot: React.FC<{
   startFromFrame: number;
   playbackRate: number;
@@ -962,13 +960,27 @@ const BeatShot: React.FC<{
   const punch = 1 - settle;
 
   const seed = startFromFrame;
-  const jx = punch * Math.sin(frame * 19.1 + seed * 0.37) * 9;
-  const jy = punch * Math.cos(frame * 15.3 + seed * 0.52) * 9;
-  const rot = punch * Math.sin(frame * 22.7 + seed * 0.11) * 0.9;
-  const scale = 1.04 + punch * 0.12;
-  const blur = punch * 3.2;
-  const contrast = 1.08 + punch * 0.22;
-  const brightness = 0.78 - punch * 0.06;
+  const jx = punch * Math.sin(frame * 19.1 + seed * 0.37) * 10;
+  const jy = punch * Math.cos(frame * 15.3 + seed * 0.52) * 10;
+  const rot = punch * Math.sin(frame * 22.7 + seed * 0.11) * 1.1;
+  const scale = 1.04 + punch * 0.14;
+  // Gaussian blur snap: strong on impact, zero by the time it settles.
+  const blur = punch * 9;
+  // Chromatic aberration — red/cyan fringe that pulses with the cut.
+  const chroma = punch * 5;
+  const contrast = 1.08 + punch * 0.28;
+  const brightness = 0.76 - punch * 0.08;
+  const saturation = 0.85 + punch * 0.5;
+
+  const filter = [
+    "grayscale(0.28)",
+    `contrast(${contrast})`,
+    `brightness(${brightness})`,
+    `saturate(${saturation})`,
+    `blur(${blur}px)`,
+    `drop-shadow(${chroma}px 0 0 rgba(255,50,90,0.35))`,
+    `drop-shadow(${-chroma}px 0 0 rgba(60,200,255,0.32))`,
+  ].join(" ");
 
   return (
     <AbsoluteFill style={{ overflow: "hidden" }}>
@@ -984,20 +996,54 @@ const BeatShot: React.FC<{
           objectFit: "cover",
           transform: `translate(${jx}px, ${jy}px) scale(${scale}) rotate(${rot}deg)`,
           transformOrigin: "50% 50%",
-          filter: `grayscale(0.28) contrast(${contrast}) brightness(${brightness}) blur(${blur}px)`,
+          filter,
         }}
       />
     </AbsoluteFill>
   );
 };
 
+/* ─── Animated film grain via SVG turbulence — reseeds every frame so the
+       noise texture crawls. Cheap at 1920×1080, only used in the prologue. */
+const PrologueGrain: React.FC = () => {
+  const frame = useCurrentFrame();
+  const filterId = `prologue-grain-${frame}`;
+  return (
+    <svg
+      style={{
+        position: "absolute",
+        inset: 0,
+        width: "100%",
+        height: "100%",
+        pointerEvents: "none",
+        mixBlendMode: "overlay",
+        opacity: 0.22,
+      }}
+    >
+      <filter id={filterId}>
+        <feTurbulence
+          type="fractalNoise"
+          baseFrequency="0.92"
+          numOctaves="2"
+          seed={frame}
+          stitchTiles="stitch"
+        />
+        <feColorMatrix
+          values="0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 1.2 0"
+        />
+      </filter>
+      <rect width="100%" height="100%" filter={`url(#${filterId})`} />
+    </svg>
+  );
+};
+
 const InsiderPrologue: React.FC = () => {
   const frame = useCurrentFrame();
 
-  // Curtain fade in/out — short, so the first cut lands hard.
+  // Curtain fade in/out — tight on the tail so the cut into articles snaps.
   const curtain = interpolate(
     frame,
-    [0, 3, PROLOGUE_DURATION - 14, PROLOGUE_DURATION],
+    [0, 3, PROLOGUE_DURATION - 4, PROLOGUE_DURATION],
     [1, 0, 0, 1],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
@@ -1029,6 +1075,18 @@ const InsiderPrologue: React.FC = () => {
         }}
       />
 
+      {/* Radial vignette — crushes the corners, pushes focus to centre */}
+      <AbsoluteFill
+        style={{
+          pointerEvents: "none",
+          background:
+            "radial-gradient(ellipse 95% 75% at 50% 50%, transparent 28%, rgba(0,0,0,0.35) 70%, rgba(0,0,0,0.75) 100%)",
+        }}
+      />
+
+      {/* Animated film grain */}
+      <PrologueGrain />
+
       {/* Phase 1 — almost instant reveal (8 frames for 32 chars), holds, wipes */}
       <TypewriterLine
         text="The average trader loses $50,000"
@@ -1041,15 +1099,15 @@ const InsiderPrologue: React.FC = () => {
         redRange={[25, 32]}
       />
 
-      {/* Phase 2 — normal-paced typewriter, held through prologue end */}
+      {/* Phase 2 — quick type (20 frames for 37 chars), then long hold */}
       <TypewriterLine
         text="to insider traders in their lifetime."
-        typeStart={66}
-        typeEnd={104}
+        typeStart={64}
+        typeEnd={84}
         wipeStart={999}
         wipeEnd={999}
         fontSize={58}
-        typePower={2.6}
+        typePower={1.4}
       />
 
       {/* Black curtain at both edges */}
