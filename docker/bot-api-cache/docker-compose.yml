@@ -7,12 +7,11 @@ services:
       - "127.0.0.1:6081:80"
     volumes:
       - ./default.vcl:/etc/varnish/default.vcl:ro
+      - varnish-workdir:/var/lib/varnish
     environment:
       # 512 MB RAM cache — bot-api JSON payloads are tiny; this easily
       # holds every cacheable endpoint for every (asset, from=) combination.
       VARNISH_SIZE: 512m
-    tmpfs:
-      - /var/lib/varnish:exec
     healthcheck:
       test: ["CMD", "varnishadm", "backend.list"]
       interval: 30s
@@ -24,3 +23,6 @@ services:
       options:
         max-size: "50m"
         max-file: "5"
+
+volumes:
+  varnish-workdir: {}

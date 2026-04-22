@@ -36,7 +36,7 @@ Four public HTTP endpoints, no authentication for reads:
 RPC        http://142.132.164.24/
 Vision     0x94d540bb45975bd5a0c7ba9a15a0d34e378f6c61
 L3_WUSDC   self-discovered via vision.USDC() — 18 decimals
-Data-node  http://116.203.156.98/data-node
+Data-node  https://generalmarket.io/bot-api
 Oracles    http://116.203.156.98/oracle{1,2,3}
 ```
 
