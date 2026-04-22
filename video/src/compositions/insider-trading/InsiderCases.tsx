@@ -47,10 +47,11 @@ const PITCH_FADE_IN = 10;
 //     startFroms walk monotonically from frame 0 of the full source to
 //     its tail; playbackRates bake in a harsh ramp so the broll itself
 //     visibly accelerates, not just the cuts.
-// Lead the audio by ~2 frames (~66ms). Visual cuts that land a touch before
-// the beat read as punchy; dead-on-beat cuts feel late. Onsets originally
-// sat at [1,5,20,32,45,58,80,96,100,103,107,109].
-const PROLOGUE_ONSETS = [0, 3, 18, 30, 43, 56, 78, 94, 98, 101, 105, 107];
+// Onsets from librosa on public/music/insider-cases.mp3 (30fps, first 4s).
+// Uses the actual detected onsets — 13 transients — not a guessed subset.
+// Cuts sit exactly on the onset; impact FX have been moved off frame 0 so
+// the image is sharpest AT the cut, not blurriest.
+const PROLOGUE_ONSETS = [1, 5, 16, 20, 32, 45, 58, 80, 96, 100, 103, 107, 109];
 const PROLOGUE_DURATION = 120;
 const PROLOGUE_SOURCE_TOTAL = 1780; // source frames to traverse (1836 total, margin)
 const PROLOGUE_ACCEL_K = 2.2;
@@ -970,27 +971,27 @@ const BeatShot: React.FC<{
   playbackRate: number;
 }> = ({ startFromFrame, playbackRate }) => {
   const frame = useCurrentFrame();
-  // Tighter settle window (10 → 6 frames) so the punch concentrates at t=0.
-  const t = Math.min(1, frame / 6);
-  const settle = HARSH_EASE(t);
-  const punch = 1 - settle;
 
-  // Single-frame brightness slam on the very first frame of the cut — reads
-  // as a flash that syncs the eye to the beat.
-  const slam = frame === 0 ? 1 : 0;
+  // Two independent curves:
+  //  slam   — 1 at t=0, decays fast (3 frames). Bright flash AT the cut.
+  //  echo   — 0 at t=0, rises to 1 at t=1 and then decays by t=5. Motion
+  //           artefacts (jitter, blur) live here, so they read as the *echo*
+  //           of the hit, not its precursor. This is the fix for "lag":
+  //           the image is SHARPEST on the cut frame.
+  const slam = Math.max(0, 1 - frame / 3);
+  const echo = frame <= 0 ? 0 : Math.max(0, 1 - (frame - 1) / 4);
 
   const seed = startFromFrame;
-  const jx = punch * Math.sin(frame * 19.1 + seed * 0.37) * 14;
-  const jy = punch * Math.cos(frame * 15.3 + seed * 0.52) * 14;
-  const rot = punch * Math.sin(frame * 22.7 + seed * 0.11) * 1.4;
-  const scale = 1.05 + punch * 0.18;
-  // Gaussian blur snap: strong on impact, zero by the time it settles.
-  const blur = punch * 12;
-  // Chromatic aberration — red/cyan fringe that pulses with the cut.
-  const chroma = punch * 7;
-  const contrast = 1.08 + punch * 0.34;
-  const brightness = 0.76 - punch * 0.1 + slam * 0.22;
-  const saturation = 0.85 + punch * 0.6;
+  const jx = echo * Math.sin(frame * 19.1 + seed * 0.37) * 8;
+  const jy = echo * Math.cos(frame * 15.3 + seed * 0.52) * 8;
+  const rot = echo * Math.sin(frame * 22.7 + seed * 0.11) * 0.7;
+  // Scale pulse — subtle, only on slam, so the image doesn't zoom at impact.
+  const scale = 1.02 + slam * 0.03;
+  // Light blur on the echo frames only — never on the cut itself.
+  const blur = echo * 3;
+  const contrast = 1.08 + slam * 0.18;
+  const brightness = 0.82 + slam * 0.26;
+  const saturation = 0.9 + slam * 0.2;
 
   const filter = [
     "grayscale(0.28)",
@@ -998,8 +999,6 @@ const BeatShot: React.FC<{
     `brightness(${brightness})`,
     `saturate(${saturation})`,
     `blur(${blur}px)`,
-    `drop-shadow(${chroma}px 0 0 rgba(255,50,90,0.35))`,
-    `drop-shadow(${-chroma}px 0 0 rgba(60,200,255,0.32))`,
   ].join(" ");
 
   return (
