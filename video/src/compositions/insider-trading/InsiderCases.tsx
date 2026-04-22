@@ -47,7 +47,10 @@ const PITCH_FADE_IN = 10;
 //     startFroms walk monotonically from frame 0 of the full source to
 //     its tail; playbackRates bake in a harsh ramp so the broll itself
 //     visibly accelerates, not just the cuts.
-const PROLOGUE_ONSETS = [1, 5, 20, 32, 45, 58, 80, 96, 100, 103, 107, 109];
+// Lead the audio by ~2 frames (~66ms). Visual cuts that land a touch before
+// the beat read as punchy; dead-on-beat cuts feel late. Onsets originally
+// sat at [1,5,20,32,45,58,80,96,100,103,107,109].
+const PROLOGUE_ONSETS = [0, 3, 18, 30, 43, 56, 78, 94, 98, 101, 105, 107];
 const PROLOGUE_DURATION = 120;
 const PROLOGUE_SOURCE_TOTAL = 1780; // source frames to traverse (1836 total, margin)
 const PROLOGUE_ACCEL_K = 2.2;
@@ -967,22 +970,27 @@ const BeatShot: React.FC<{
   playbackRate: number;
 }> = ({ startFromFrame, playbackRate }) => {
   const frame = useCurrentFrame();
-  const t = Math.min(1, frame / 10);
+  // Tighter settle window (10 → 6 frames) so the punch concentrates at t=0.
+  const t = Math.min(1, frame / 6);
   const settle = HARSH_EASE(t);
   const punch = 1 - settle;
 
+  // Single-frame brightness slam on the very first frame of the cut — reads
+  // as a flash that syncs the eye to the beat.
+  const slam = frame === 0 ? 1 : 0;
+
   const seed = startFromFrame;
-  const jx = punch * Math.sin(frame * 19.1 + seed * 0.37) * 10;
-  const jy = punch * Math.cos(frame * 15.3 + seed * 0.52) * 10;
-  const rot = punch * Math.sin(frame * 22.7 + seed * 0.11) * 1.1;
-  const scale = 1.04 + punch * 0.14;
+  const jx = punch * Math.sin(frame * 19.1 + seed * 0.37) * 14;
+  const jy = punch * Math.cos(frame * 15.3 + seed * 0.52) * 14;
+  const rot = punch * Math.sin(frame * 22.7 + seed * 0.11) * 1.4;
+  const scale = 1.05 + punch * 0.18;
   // Gaussian blur snap: strong on impact, zero by the time it settles.
-  const blur = punch * 9;
+  const blur = punch * 12;
   // Chromatic aberration — red/cyan fringe that pulses with the cut.
-  const chroma = punch * 5;
-  const contrast = 1.08 + punch * 0.28;
-  const brightness = 0.76 - punch * 0.08;
-  const saturation = 0.85 + punch * 0.5;
+  const chroma = punch * 7;
+  const contrast = 1.08 + punch * 0.34;
+  const brightness = 0.76 - punch * 0.1 + slam * 0.22;
+  const saturation = 0.85 + punch * 0.6;
 
   const filter = [
     "grayscale(0.28)",
