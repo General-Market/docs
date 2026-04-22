@@ -122,65 +122,92 @@ const IntroScene: React.FC<{
   sceneStart: number;
   duration: number;
 }> = ({ local, sceneStart, duration }) => {
-  const logoIn = interpolate(local, [10, 52], [0, 1], {
+  const logoScale = interpolate(local, [4, 44], [0.4, 1], {
     ...clamp,
     easing: ease3,
   });
+  const logoOpacity = interpolate(local, [4, 44], [0, 1], clamp);
   const fadeOut = interpolate(local, [duration - 14, duration], [1, 0], clamp);
+
+  // Icon + wordmark live in one horizontal lockup, sized off a shared
+  // rhythm: plate edge = 0.9 × cap height of the wordmark. Keeps the
+  // mark from feeling slapped on.
+  const fontSize = 120;
+  const plateEdge = 132;
 
   return (
     <AbsoluteFill style={{ opacity: fadeOut }}>
-      {/* LOGO — right column, night-mode inversion (white bars, no plate) */}
+      {/* LOCKUP — centered horizontally + vertically */}
       <AbsoluteFill
         style={{
           display: "flex",
           alignItems: "center",
-          justifyContent: "flex-end",
-          paddingRight: 200,
+          justifyContent: "center",
         }}
       >
-        <svg
-          width={540 * logoIn}
-          height={540 * logoIn}
-          viewBox="0 0 102 102"
+        <div
           style={{
-            opacity: logoIn,
-            filter: `drop-shadow(0 0 28px rgba(255,255,255,${0.25 * logoIn}))`,
+            display: "flex",
+            alignItems: "center",
+            gap: 32,
           }}
         >
-          {GM_LOGO_PATHS.map((d, i) => (
-            <path key={i} d={d} fill="#ffffff" />
-          ))}
-        </svg>
+          {/* Icon plate — rounded square, white bars on a lifted-black
+              plate so it reads as its own shape against the stage. */}
+          <div
+            style={{
+              width: plateEdge,
+              height: plateEdge,
+              background: "#1a1a1a",
+              borderRadius: 22,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transform: `scale(${logoScale})`,
+              transformOrigin: "center",
+              opacity: logoOpacity,
+              boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.06)",
+            }}
+          >
+            <svg
+              width={plateEdge * 0.82}
+              height={plateEdge * 0.82}
+              viewBox="0 0 102 102"
+            >
+              {GM_LOGO_PATHS.map((d, i) => (
+                <path key={i} d={d} fill="#ffffff" />
+              ))}
+            </svg>
+          </div>
+
+          {/* Wordmark */}
+          <Reveal
+            from={sceneStart + 4}
+            duration={duration - 4}
+            text="General Market"
+            revealDuration={34}
+            seed={11}
+            style={{
+              fontSize,
+              fontWeight: 900,
+              letterSpacing: "-0.03em",
+              textAlign: "left",
+              lineHeight: 1,
+              maxWidth: 1400,
+            }}
+          />
+        </div>
       </AbsoluteFill>
 
-      {/* TEXT — left column, stacked headline */}
+      {/* Tagline — fights back, sitting below the lockup */}
       <AbsoluteFill
         style={{
           display: "flex",
-          flexDirection: "column",
-          alignItems: "flex-start",
+          alignItems: "center",
           justifyContent: "center",
-          padding: "0 160px",
-          boxSizing: "border-box",
-          gap: 18,
+          paddingTop: 260,
         }}
       >
-        <Reveal
-          from={sceneStart + 4}
-          duration={duration - 4}
-          text="General Market"
-          revealDuration={36}
-          seed={11}
-          style={{
-            fontSize: 132,
-            fontWeight: 900,
-            letterSpacing: "-0.03em",
-            textAlign: "left",
-            lineHeight: 1,
-            maxWidth: 960,
-          }}
-        />
         <Reveal
           from={sceneStart + 48}
           duration={duration - 48}
@@ -188,12 +215,12 @@ const IntroScene: React.FC<{
           revealDuration={28}
           seed={23}
           style={{
-            fontSize: 132,
-            fontWeight: 900,
-            letterSpacing: "-0.03em",
-            textAlign: "left",
+            fontSize: 68,
+            fontWeight: 500,
+            letterSpacing: "-0.01em",
+            textAlign: "center",
             lineHeight: 1,
-            maxWidth: 960,
+            maxWidth: 1400,
           }}
         />
       </AbsoluteFill>
