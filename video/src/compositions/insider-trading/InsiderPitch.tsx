@@ -23,6 +23,19 @@ const ease3 = (t: number) => 1 - Math.pow(1 - t, 3);
 const BLACK = "#0e0f0c";
 const WHITE = "#ffffff";
 
+// GM lockup — seven stacked bars in a 102×102 viewBox. Lifted from
+// /frontend/public/logo.svg. Rendered in white for the night-mode
+// inversion on the intro.
+const GM_LOGO_PATHS = [
+  "M15.2794 49.5703C15.2794 49.1458 15.4181 48.7941 15.6956 48.5155C15.9731 48.2369 16.3233 48.0976 16.7462 48.0976H28.7186C29.1414 48.0976 29.4916 48.2369 29.7691 48.5155C30.0466 48.7941 30.1854 49.1458 30.1854 49.5703V52.5955C30.1854 53.0201 30.0466 53.3717 29.7691 53.6503C29.4916 53.929 29.1414 54.0683 28.7186 54.0683H16.7462C16.3233 54.0683 15.9731 53.929 15.6956 53.6503C15.4181 53.3717 15.2794 53.0201 15.2794 52.5955V49.5703Z",
+  "M26.6227 49.5703C26.6227 49.1458 26.7615 48.7941 27.039 48.5155C27.3165 48.2369 27.6667 48.0976 28.0895 48.0976H40.0619C40.4848 48.0976 40.835 48.2369 41.1125 48.5155C41.39 48.7941 41.5288 49.1458 41.5288 49.5703V52.5955C41.5288 53.0201 41.39 53.3717 41.1125 53.6503C40.835 53.929 40.4848 54.0683 40.0619 54.0683H28.0895C27.6667 54.0683 27.3165 53.929 27.039 53.6503C26.7615 53.3717 26.6227 53.0201 26.6227 52.5955V49.5703Z",
+  "M37.9661 49.5703C37.9661 49.1458 38.1048 48.7941 38.3824 48.5155C38.6599 48.2369 39.01 48.0976 39.4329 48.0976H51.4053C51.8282 48.0976 52.1784 48.2369 52.4559 48.5155C52.7334 48.7941 52.8721 49.1458 52.8721 49.5703V52.5955C52.8721 53.0201 52.7334 53.3717 52.4559 53.6503C52.1784 53.929 51.8282 54.0683 51.4053 54.0683H39.4329C39.01 54.0683 38.6599 53.929 38.3824 53.6503C38.1048 53.3717 37.9661 53.0201 37.9661 52.5955V49.5703Z",
+  "M49.3095 49.5703C49.3095 49.1458 49.4482 48.7941 49.7257 48.5155C50.0032 48.2369 50.3534 48.0976 50.7763 48.0976H62.7487C63.1716 48.0976 63.5217 48.2369 63.7992 48.5155C64.0768 48.7941 64.2155 49.1458 64.2155 49.5703V52.5955C64.2155 53.0201 64.0768 53.3717 63.7992 53.6503C63.5217 53.929 63.1716 54.0683 62.7487 54.0683H50.7763C50.3534 54.0683 50.0032 53.929 49.7257 53.6503C49.4482 53.3717 49.3095 53.0201 49.3095 52.5955V49.5703Z",
+  "M60.6528 49.5902C60.6528 49.1657 60.7916 48.814 61.0691 48.5354C61.3466 48.2568 61.6968 48.1175 62.1197 48.1175H68.423C68.8459 48.1175 69.1961 48.2568 69.4736 48.5354C69.7511 48.814 69.8898 49.1657 69.8898 49.5902V52.5955C69.8898 53.0201 69.7511 53.3717 69.4736 53.6503C69.1961 53.929 68.8459 54.0683 68.423 54.0683H62.1197C61.6968 54.0683 61.3466 53.929 61.0691 53.6503C60.7916 53.3717 60.6528 53.0201 60.6528 52.5955V49.5902Z",
+  "M66.3245 49.5703C66.3245 49.1458 66.4633 48.7941 66.7408 48.5155C67.0183 48.2369 67.3685 48.0976 67.7913 48.0976H79.7637C80.1866 48.0976 80.5368 48.2369 80.8143 48.5155C81.0918 48.7941 81.2306 49.1458 81.2306 49.5703V52.5955C81.2306 53.0201 81.0918 53.3717 80.8143 53.6503C80.5368 53.929 80.1866 54.0683 79.7637 54.0683H67.7913C67.3685 54.0683 67.0183 53.929 66.7408 53.6503C66.4633 53.3717 66.3245 53.0201 66.3245 52.5955V49.5703Z",
+  "M77.6679 49.5902C77.6679 49.1657 77.8066 48.814 78.0841 48.5354C78.3617 48.2568 78.7118 48.1175 79.1347 48.1175H85.4381C85.8609 48.1175 86.2111 48.2568 86.4886 48.5354C86.7661 48.814 86.9049 49.1657 86.9049 49.5902V52.5955C86.9049 53.0201 86.7661 53.3717 86.4886 53.6503C86.2111 53.929 85.8609 54.0683 85.4381 54.0683H79.1347C78.7118 54.0683 78.3617 53.929 78.0841 53.6503C77.8066 53.3717 77.6679 53.0201 77.6679 52.5955V49.5902Z",
+];
+
 // ─── Scene timings ───────────────────────────────────────────────────────
 // Compressed after the sub-text removals. Point2 and Point3 lose their
 // bottom lines; Stat loses its LOSS CUT label. Each scene now holds just
@@ -109,11 +122,7 @@ const IntroScene: React.FC<{
   sceneStart: number;
   duration: number;
 }> = ({ local, sceneStart, duration }) => {
-  const circleR = interpolate(local, [0, 50], [0, 620], {
-    ...clamp,
-    easing: ease3,
-  });
-  const barWidth = interpolate(local, [48, 78], [0, 1400], {
+  const logoIn = interpolate(local, [10, 52], [0, 1], {
     ...clamp,
     easing: ease3,
   });
@@ -121,82 +130,70 @@ const IntroScene: React.FC<{
 
   return (
     <AbsoluteFill style={{ opacity: fadeOut }}>
-      {/* SHAPES — rendered first so all text sits above them */}
+      {/* LOGO — right column, night-mode inversion (white bars, no plate) */}
       <AbsoluteFill
         style={{
           display: "flex",
           alignItems: "center",
-          justifyContent: "center",
+          justifyContent: "flex-end",
+          paddingRight: 200,
         }}
       >
-        <div
+        <svg
+          width={540 * logoIn}
+          height={540 * logoIn}
+          viewBox="0 0 102 102"
           style={{
-            width: circleR * 2,
-            height: circleR * 2,
-            borderRadius: "50%",
-            background: WHITE,
+            opacity: logoIn,
+            filter: `drop-shadow(0 0 28px rgba(255,255,255,${0.25 * logoIn}))`,
           }}
-        />
-      </AbsoluteFill>
-      <AbsoluteFill
-        style={{
-          display: "flex",
-          alignItems: "flex-end",
-          justifyContent: "center",
-          paddingBottom: 260,
-        }}
-      >
-        <div
-          style={{
-            width: barWidth,
-            height: 150,
-            background: WHITE,
-          }}
-        />
+        >
+          {GM_LOGO_PATHS.map((d, i) => (
+            <path key={i} d={d} fill="#ffffff" />
+          ))}
+        </svg>
       </AbsoluteFill>
 
-      {/* TEXT */}
+      {/* TEXT — left column, stacked headline */}
       <AbsoluteFill
         style={{
           display: "flex",
-          alignItems: "center",
+          flexDirection: "column",
+          alignItems: "flex-start",
           justifyContent: "center",
+          padding: "0 160px",
+          boxSizing: "border-box",
+          gap: 18,
         }}
       >
         <Reveal
           from={sceneStart + 4}
-          duration={duration}
+          duration={duration - 4}
           text="General Market"
           revealDuration={36}
           seed={11}
           style={{
-            fontSize: 176,
+            fontSize: 132,
             fontWeight: 900,
             letterSpacing: "-0.03em",
-            textAlign: "center",
+            textAlign: "left",
+            lineHeight: 1,
+            maxWidth: 960,
           }}
         />
-      </AbsoluteFill>
-
-      <AbsoluteFill
-        style={{
-          display: "flex",
-          alignItems: "flex-end",
-          justifyContent: "center",
-          paddingBottom: 286,
-        }}
-      >
         <Reveal
-          from={sceneStart + 54}
-          duration={duration - 54}
+          from={sceneStart + 48}
+          duration={duration - 48}
           text="fights back"
           revealDuration={28}
           seed={23}
           style={{
-            fontSize: 128,
+            fontSize: 132,
             fontWeight: 900,
             letterSpacing: "-0.03em",
-            textAlign: "center",
+            textAlign: "left",
+            lineHeight: 1,
+            maxWidth: 960,
           }}
         />
       </AbsoluteFill>
