@@ -318,7 +318,7 @@ const HighlightLayer: React.FC<{
                 width: `${(h.w + overshootW) * local * 100}%`,
                 height: `${heightPct * 100}%`,
                 background:
-                  "linear-gradient(180deg, rgba(159,232,112,0.60) 0%, rgba(159,232,112,0.78) 45%, rgba(159,232,112,0.78) 55%, rgba(159,232,112,0.60) 100%)",
+                  "linear-gradient(180deg, rgba(255,241,82,0.55) 0%, rgba(255,224,38,0.72) 45%, rgba(255,224,38,0.72) 55%, rgba(255,241,82,0.55) 100%)",
                 mixBlendMode: "multiply",
                 borderRadius: 3,
                 transform: "skewX(-5deg) rotate(-0.8deg)",
@@ -333,7 +333,7 @@ const HighlightLayer: React.FC<{
                 width: `${(h.w + overshootW) * local * 100}%`,
                 height: `${heightPct * 100}%`,
                 background:
-                  "linear-gradient(180deg, rgba(226,246,213,0.50) 0%, rgba(159,232,112,0.60) 45%, rgba(159,232,112,0.60) 55%, rgba(226,246,213,0.50) 100%)",
+                  "linear-gradient(180deg, rgba(255,241,82,0.45) 0%, rgba(255,224,38,0.55) 45%, rgba(255,224,38,0.55) 55%, rgba(255,241,82,0.45) 100%)",
                 mixBlendMode: "screen",
                 borderRadius: 3,
                 transform: "skewX(-5deg) rotate(-0.8deg)",
@@ -347,11 +347,11 @@ const HighlightLayer: React.FC<{
                 top: `${(h.y + h.h * 0.92) * 100}%`,
                 width: `${(h.w + overshootW * 0.6) * local * 100}%`,
                 height: `${Math.max(0.008, h.h * 0.22) * 100}%`,
-                background: WISE.darkGreen,
+                background: "#ff2b44",
                 borderRadius: 2,
                 transform: "skewX(-3deg) rotate(-0.4deg)",
                 transformOrigin: "left center",
-                boxShadow: "0 0 6px rgba(22,51,0,0.45)",
+                boxShadow: "0 0 6px rgba(255,43,68,0.45)",
               }}
             />
           </React.Fragment>
