@@ -598,12 +598,6 @@ const ArticlesTitle: React.FC<{ hide: number }> = ({ hide }) => {
     extrapolateRight: "clamp",
     easing: EASE_OUT,
   });
-  // Green highlight block grows left-to-right just after the pill lands.
-  const highlight = interpolate(frame, [18, 34], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-    easing: EASE_OUT,
-  });
 
   return (
     <AbsoluteFill
@@ -640,31 +634,7 @@ const ArticlesTitle: React.FC<{ hide: number }> = ({ hide }) => {
         }}
       >
         <span>Every Exchanges Concede</span>
-        <span
-          style={{
-            position: "relative",
-            color: WISE.darkGreen,
-            display: "inline-block",
-            padding: "0 10px",
-          }}
-        >
-          <span
-            aria-hidden
-            style={{
-              position: "absolute",
-              left: 0,
-              top: "-4%",
-              bottom: "-8%",
-              width: `${highlight * 100}%`,
-              background: WISE.wiseGreen,
-              borderRadius: 10,
-              zIndex: 0,
-            }}
-          />
-          <span style={{ position: "relative", zIndex: 1 }}>
-            Insider Trading
-          </span>
-        </span>
+        <span>Insider Trading</span>
       </div>
     </AbsoluteFill>
   );
