@@ -18,8 +18,17 @@ import { InsiderPitch, PITCH_DURATION } from "./InsiderPitch";
 
 const interFamily = loadInter("normal", {
   subsets: ["latin"],
-  weights: ["300", "400", "500"],
+  weights: ["300", "400", "500", "600", "900"],
 }).fontFamily;
+
+// Wise design tokens — near-black + wiseGreen lime, Inter 900 as Wise Sans
+// fallback, line-height 0.85, calt feature on. Matches the tutorial theme.
+const WISE = {
+  nearBlack: "#0e0f0c",
+  wiseGreen: "#9fe870",
+  darkGreen: "#163300",
+  white: "#ffffff",
+} as const;
 
 const FPS = 30;
 // Beat-synced anchors (articles-phase-local frames). Derived from the 143.5 BPM
@@ -77,7 +86,9 @@ const MAIN_DURATION = PITCH_START + PITCH_DURATION + 6;
 const DURATION = PROLOGUE_DURATION + MAIN_DURATION;
 const EASE_OUT = Easing.bezier(0.16, 1, 0.3, 1);
 
-const TYPER_ROSE = [250, 201, 207] as const;
+// Wise lime used for the typer character entry animation, replacing the old
+// rose tone. Characters flare wiseGreen, then settle to white.
+const TYPER_ENTRY: [number, number, number] = [159, 232, 112];
 const easeInPow = (t: number, p: number): number =>
   Math.pow(Math.max(0, Math.min(1, t)), p);
 
@@ -256,15 +267,17 @@ const LogoCard: React.FC<{ brand: Brand; appear: number }> = ({
       style={{
         width: 560,
         height: 360,
-        background: "#fafaf7",
-        borderRadius: 16,
+        background: "#ffffff",
+        borderRadius: 30,
         padding: 34,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        boxShadow: `0 ${46 * appear}px ${90 * appear}px rgba(0,0,0,${
-          0.5 * appear
-        }), 0 2px 10px rgba(0,0,0,${0.3 * appear})`,
+        boxShadow: `0 0 0 1px rgba(14,15,12,0.12), 0 ${46 * appear}px ${
+          90 * appear
+        }px rgba(0,0,0,${0.5 * appear}), 0 2px 10px rgba(0,0,0,${
+          0.3 * appear
+        })`,
       }}
     >
       <BrandPlate brand={brand} appear={appear} />
@@ -305,7 +318,7 @@ const HighlightLayer: React.FC<{
                 width: `${(h.w + overshootW) * local * 100}%`,
                 height: `${heightPct * 100}%`,
                 background:
-                  "linear-gradient(180deg, rgba(255,241,82,0.55) 0%, rgba(255,224,38,0.72) 45%, rgba(255,224,38,0.72) 55%, rgba(255,241,82,0.55) 100%)",
+                  "linear-gradient(180deg, rgba(159,232,112,0.60) 0%, rgba(159,232,112,0.78) 45%, rgba(159,232,112,0.78) 55%, rgba(159,232,112,0.60) 100%)",
                 mixBlendMode: "multiply",
                 borderRadius: 3,
                 transform: "skewX(-5deg) rotate(-0.8deg)",
@@ -320,7 +333,7 @@ const HighlightLayer: React.FC<{
                 width: `${(h.w + overshootW) * local * 100}%`,
                 height: `${heightPct * 100}%`,
                 background:
-                  "linear-gradient(180deg, rgba(255,241,82,0.45) 0%, rgba(255,224,38,0.55) 45%, rgba(255,224,38,0.55) 55%, rgba(255,241,82,0.45) 100%)",
+                  "linear-gradient(180deg, rgba(226,246,213,0.50) 0%, rgba(159,232,112,0.60) 45%, rgba(159,232,112,0.60) 55%, rgba(226,246,213,0.50) 100%)",
                 mixBlendMode: "screen",
                 borderRadius: 3,
                 transform: "skewX(-5deg) rotate(-0.8deg)",
@@ -334,11 +347,11 @@ const HighlightLayer: React.FC<{
                 top: `${(h.y + h.h * 0.92) * 100}%`,
                 width: `${(h.w + overshootW * 0.6) * local * 100}%`,
                 height: `${Math.max(0.008, h.h * 0.22) * 100}%`,
-                background: "#ff2b44",
+                background: WISE.darkGreen,
                 borderRadius: 2,
                 transform: "skewX(-3deg) rotate(-0.4deg)",
                 transformOrigin: "left center",
-                boxShadow: "0 0 6px rgba(255,43,68,0.45)",
+                boxShadow: "0 0 6px rgba(22,51,0,0.45)",
               }}
             />
           </React.Fragment>
@@ -370,12 +383,14 @@ const ArticleFrame: React.FC<{
       <div
         style={{
           position: "relative",
-          background: "#fafaf7",
+          background: "#ffffff",
           padding: 20,
-          borderRadius: 14,
-          boxShadow: `0 ${46 * appear}px ${92 * appear}px rgba(0,0,0,${
-            0.55 * appear
-          }), 0 2px 10px rgba(0,0,0,${0.3 * appear})`,
+          borderRadius: 30,
+          boxShadow: `0 0 0 1px rgba(14,15,12,0.12), 0 ${46 * appear}px ${
+            92 * appear
+          }px rgba(0,0,0,${0.55 * appear}), 0 2px 10px rgba(0,0,0,${
+            0.3 * appear
+          })`,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -568,14 +583,23 @@ const InsiderLogoReveal: React.FC<{ startFrame: number }> = ({
   );
 };
 
+// Wise-style pill title — near-black background, Inter 900 white text,
+// wiseGreen highlight on the accent phrase. Full pill radius, ring shadow.
+// Sits above the article card so it reads against any background.
 const ArticlesTitle: React.FC<{ hide: number }> = ({ hide }) => {
   const frame = useCurrentFrame();
-  const appear = interpolate(frame, [6, 22], [0, 1], {
+  const appear = interpolate(frame, [6, 24], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: EASE_OUT,
   });
-  const lift = interpolate(frame, [6, 22], [14, 0], {
+  const lift = interpolate(frame, [6, 24], [18, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: EASE_OUT,
+  });
+  // Green highlight block grows left-to-right just after the pill lands.
+  const highlight = interpolate(frame, [18, 34], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: EASE_OUT,
@@ -588,24 +612,56 @@ const ArticlesTitle: React.FC<{ hide: number }> = ({ hide }) => {
         display: "flex",
         justifyContent: "center",
         alignItems: "flex-start",
-        paddingTop: 68,
+        paddingTop: 56,
         opacity: appear * hide,
       }}
     >
       <div
         style={{
-          fontFamily: interFamily,
-          fontWeight: 300,
-          fontSize: 56,
-          letterSpacing: "-0.025em",
-          color: "#ffffff",
-          textAlign: "center",
-          lineHeight: 1.1,
-          textShadow: "0 4px 28px rgba(0,0,0,0.7)",
+          display: "inline-flex",
+          alignItems: "center",
+          background: WISE.nearBlack,
+          borderRadius: 9999,
+          padding: "20px 44px 22px",
+          boxShadow:
+            "0 0 0 1px rgba(14,15,12,0.12), 0 18px 48px rgba(0,0,0,0.45), 0 2px 10px rgba(0,0,0,0.30)",
           transform: `translateY(${lift}px)`,
+          fontFamily: interFamily,
+          fontFeatureSettings: '"calt" 1',
+          fontWeight: 900,
+          fontSize: 58,
+          lineHeight: 0.85,
+          letterSpacing: "-0.015em",
+          color: WISE.white,
+          whiteSpace: "nowrap",
         }}
       >
-        Every Exchanges Concede Insider Trading
+        <span>Every Exchanges Concede&nbsp;</span>
+        <span
+          style={{
+            position: "relative",
+            color: WISE.darkGreen,
+            display: "inline-block",
+            padding: "0 6px",
+          }}
+        >
+          <span
+            aria-hidden
+            style={{
+              position: "absolute",
+              left: 0,
+              top: "-6%",
+              bottom: "-6%",
+              width: `${highlight * 100}%`,
+              background: WISE.wiseGreen,
+              borderRadius: 6,
+              zIndex: 0,
+            }}
+          />
+          <span style={{ position: "relative", zIndex: 1 }}>
+            Insider Trading
+          </span>
+        </span>
       </div>
     </AbsoluteFill>
   );
@@ -825,51 +881,75 @@ const InsiderArticlesPhase: React.FC = () => {
   );
 };
 
-/* ─── Prologue typewriter — Ember-style, harsh pow() ease so chars stall
-       then snap in on beat ─────────────────────────────────────────── */
-const TypewriterLine: React.FC<{
+/* ─── Beat-stepped typewriter — chars hold still between onsets, then burst
+       in via the same harsh bezier that drives the broll cuts. Each beat
+       lifts the visible char count from charsAtBeat[i-1] to charsAtBeat[i]
+       over burstFrames. The rose→final color age is derived from the per-
+       char appearance frame, so later chars stay warmer longer. ──────── */
+const BeatTypewriter: React.FC<{
   text: string;
-  typeStart: number;
-  typeEnd: number;
-  wipeStart: number;
-  wipeEnd: number;
+  revealBeats: number[];
+  charsAtBeat: number[];
+  burstFrames?: number;
+  wipeStart?: number;
+  wipeEnd?: number;
   fontSize?: number;
-  typePower?: number;
   redRange?: [number, number];
 }> = ({
   text,
-  typeStart,
-  typeEnd,
+  revealBeats,
+  charsAtBeat,
+  burstFrames = 4,
   wipeStart,
   wipeEnd,
   fontSize = 64,
-  typePower = 3.4,
   redRange,
 }) => {
-  const isRed = (i: number) =>
-    !!redRange && i >= redRange[0] && i < redRange[1];
-  const finalRGB = (i: number): [number, number, number] =>
-    isRed(i) ? [255, 75, 95] : [255, 255, 255];
   const frame = useCurrentFrame();
   const len = text.length;
-  if (frame < typeStart || frame > wipeEnd) return null;
+  const ws = wipeStart ?? 9999;
+  const we = wipeEnd ?? 9999;
+  if (frame < revealBeats[0] || frame > we) return null;
 
+  // Wise palette: highlighted range → Wise darkGreen text on wiseGreen block.
+  const isHot = (i: number) =>
+    !!redRange && i >= redRange[0] && i < redRange[1];
+  const finalRGB = (i: number): [number, number, number] =>
+    isHot(i) ? [22, 51, 0] : [255, 255, 255];
+
+  const appearFrame = (i: number): number => {
+    for (let b = 0; b < revealBeats.length; b++) {
+      const prev = b === 0 ? 0 : charsAtBeat[b - 1];
+      const target = charsAtBeat[b];
+      if (i >= prev && i < target) {
+        const span = Math.max(1, target - prev);
+        const fraction = (i - prev + 0.5) / span;
+        return revealBeats[b] + fraction * burstFrames;
+      }
+    }
+    return revealBeats[revealBeats.length - 1] + burstFrames;
+  };
+
+  let beatIdx = 0;
+  for (let i = revealBeats.length - 1; i >= 0; i--) {
+    if (frame >= revealBeats[i]) {
+      beatIdx = i;
+      break;
+    }
+  }
+  const prevTarget = beatIdx === 0 ? 0 : charsAtBeat[beatIdx - 1];
+  const target = charsAtBeat[beatIdx];
+  const timeIn = frame - revealBeats[beatIdx];
+  const tBurst = Math.max(0, Math.min(1, timeIn / burstFrames));
+  const harshT = HARSH_EASE(tBurst);
+  let visibleEnd = Math.round(prevTarget + (target - prevTarget) * harshT);
   let visibleStart = 0;
-  let visibleEnd = 0;
-  let phase: "typing" | "hold" | "wiping" = "hold";
+  let wiping = false;
 
-  if (frame < typeEnd) {
-    phase = "typing";
-    const t = (frame - typeStart) / (typeEnd - typeStart);
-    visibleEnd = Math.min(len, Math.max(1, Math.round(len * easeInPow(t, typePower))));
-  } else if (frame < wipeStart) {
-    phase = "hold";
-    visibleEnd = len;
-  } else {
-    phase = "wiping";
-    const t = (frame - wipeStart) / (wipeEnd - wipeStart);
-    const removed = Math.min(len, Math.round(len * easeInPow(t, 2.4)));
-    visibleStart = removed;
+  if (frame >= ws) {
+    wiping = true;
+    const t = (frame - ws) / Math.max(1, we - ws);
+    visibleStart = Math.min(len, Math.round(len * easeInPow(t, 2.4)));
     visibleEnd = len;
   }
 
@@ -887,11 +967,12 @@ const TypewriterLine: React.FC<{
       <div
         style={{
           fontFamily: interFamily,
+          fontFeatureSettings: '"calt" 1',
           fontSize,
-          fontWeight: 400,
-          letterSpacing: "-0.02em",
+          fontWeight: 900,
+          letterSpacing: "-0.03em",
           textAlign: "center",
-          lineHeight: 1.12,
+          lineHeight: 0.9,
           color: "white",
           textShadow: "0 6px 30px rgba(0,0,0,0.78)",
           maxWidth: 1560,
@@ -899,45 +980,61 @@ const TypewriterLine: React.FC<{
       >
         {text.split("").map((ch, i) => {
           if (i < visibleStart || i >= visibleEnd) return null;
-          const display = ch === " " ? " " : ch;
-
+          const display = ch === " " ? " " : ch;
           const [fr, fg, fb] = finalRGB(i);
+          const hot = isHot(i);
+          const edgeLeft = hot && !isHot(i - 1);
+          const edgeRight = hot && !isHot(i + 1);
 
-          if (phase === "typing") {
-            const currentT = (frame - typeStart) / (typeEnd - typeStart);
-            const charThreshold = i / len;
-            const age =
-              (easeInPow(currentT, typePower) - charThreshold) *
-              (typeEnd - typeStart);
-            const colorT = interpolate(age, [0, 5], [0, 1], {
-              extrapolateLeft: "clamp",
-              extrapolateRight: "clamp",
-            });
-            const r = interpolate(colorT, [0, 1], [TYPER_ROSE[0], fr]);
-            const g = interpolate(colorT, [0, 1], [TYPER_ROSE[1], fg]);
-            const b = interpolate(colorT, [0, 1], [TYPER_ROSE[2], fb]);
-            return (
-              <span key={i} style={{ color: `rgb(${r},${g},${b})` }}>
-                {display}
-              </span>
-            );
-          }
+          const highlightBg = hot
+            ? {
+                background: WISE.wiseGreen,
+                padding: "0.06em 0.02em",
+                borderTopLeftRadius: edgeLeft ? 8 : 0,
+                borderBottomLeftRadius: edgeLeft ? 8 : 0,
+                borderTopRightRadius: edgeRight ? 8 : 0,
+                borderBottomRightRadius: edgeRight ? 8 : 0,
+                paddingLeft: edgeLeft ? "0.18em" : undefined,
+                paddingRight: edgeRight ? "0.18em" : undefined,
+                textShadow: "none",
+                boxShadow: edgeLeft
+                  ? "-2px 0 0 0 rgba(159,232,112,0)"
+                  : undefined,
+              }
+            : null;
 
-          if (phase === "wiping") {
+          if (wiping) {
             const dist = i - visibleStart;
             const op = interpolate(dist, [0, 2], [0.2, 1], {
               extrapolateLeft: "clamp",
               extrapolateRight: "clamp",
             });
             return (
-              <span key={i} style={{ color: `rgba(${fr},${fg},${fb},${op})` }}>
+              <span
+                key={i}
+                style={{
+                  color: `rgba(${fr},${fg},${fb},${op})`,
+                  ...highlightBg,
+                }}
+              >
                 {display}
               </span>
             );
           }
 
+          const age = frame - appearFrame(i);
+          const colorT = interpolate(age, [0, 4], [0, 1], {
+            extrapolateLeft: "clamp",
+            extrapolateRight: "clamp",
+          });
+          const r = interpolate(colorT, [0, 1], [TYPER_ENTRY[0], fr]);
+          const g = interpolate(colorT, [0, 1], [TYPER_ENTRY[1], fg]);
+          const b = interpolate(colorT, [0, 1], [TYPER_ENTRY[2], fb]);
           return (
-            <span key={i} style={{ color: `rgb(${fr},${fg},${fb})` }}>
+            <span
+              key={i}
+              style={{ color: `rgb(${r},${g},${b})`, ...highlightBg }}
+            >
               {display}
             </span>
           );
@@ -946,6 +1043,7 @@ const TypewriterLine: React.FC<{
     </AbsoluteFill>
   );
 };
+
 
 /* ─── Per-onset broll shot — harsh bezier decay on cut: tremble, jitter,
        scale punch, heavy Gaussian blur snap, chromatic fringe. Each cut
@@ -1088,26 +1186,29 @@ const InsiderPrologue: React.FC = () => {
       <PrologueGrain />
 
       {/* Phase 1 — almost instant reveal (8 frames for 32 chars), holds, wipes */}
-      <TypewriterLine
+      {/* Phase 1 — chars stall, then burst in on onsets 1, 5, 20. Holds,
+          then wipes left-to-right across the 45→58 beat window. */}
+      <BeatTypewriter
         text="The average trader loses $50,000"
-        typeStart={2}
-        typeEnd={10}
-        wipeStart={54}
-        wipeEnd={62}
+        revealBeats={[1, 5, 20]}
+        charsAtBeat={[12, 22, 32]}
+        burstFrames={4}
+        wipeStart={45}
+        wipeEnd={58}
         fontSize={62}
-        typePower={1.0}
         redRange={[25, 32]}
       />
 
       {/* Phase 2 — quick type (20 frames for 37 chars), then long hold */}
-      <TypewriterLine
+      {/* Phase 2 — larger first beats carry the sentence, the drop cluster
+          (onsets 100,103,107,109) fires the last few chars in a rapid tail.
+          Hold through the end of the prologue; curtain fades it out. */}
+      <BeatTypewriter
         text="to insider traders in their lifetime."
-        typeStart={64}
-        typeEnd={84}
-        wipeStart={999}
-        wipeEnd={999}
+        revealBeats={[58, 80, 96, 100, 103, 107, 109]}
+        charsAtBeat={[3, 12, 22, 26, 30, 34, 37]}
+        burstFrames={4}
         fontSize={58}
-        typePower={1.4}
       />
 
       {/* Black curtain at both edges */}

@@ -18,8 +18,11 @@ const { fontFamily: INTER } = loadInter("normal", {
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 const ease3 = (t: number) => 1 - Math.pow(1 - t, 3);
 
-const BLACK = "#000000";
+// Wise palette — near-black ground, lime-green shapes, white text that
+// auto-inverts against the shapes via mix-blend-mode: difference.
+const BLACK = "#0e0f0c";
 const WHITE = "#ffffff";
+const WISE_GREEN = "#9fe870";
 
 // ─── Scene timings ───────────────────────────────────────────────────────
 export const PITCH_SCENES = {
@@ -129,7 +132,7 @@ const IntroScene: React.FC<{
             width: circleR * 2,
             height: circleR * 2,
             borderRadius: "50%",
-            background: WHITE,
+            background: WISE_GREEN,
           }}
         />
       </AbsoluteFill>
@@ -145,7 +148,7 @@ const IntroScene: React.FC<{
           style={{
             width: barWidth,
             height: 150,
-            background: WHITE,
+            background: WISE_GREEN,
           }}
         />
       </AbsoluteFill>
@@ -243,7 +246,7 @@ const ContrastScene: React.FC<{
                 height: p.r * 2 * appear,
                 transform: "translate(-50%, -50%)",
                 borderRadius: "50%",
-                background: WHITE,
+                background: WISE_GREEN,
               }}
             />
           );
@@ -259,7 +262,7 @@ const ContrastScene: React.FC<{
             width: bigCircle * 2,
             height: bigCircle * 2,
             borderRadius: "50%",
-            background: WHITE,
+            background: WISE_GREEN,
           }}
         />
       </AbsoluteFill>
@@ -371,7 +374,7 @@ const Point1Scene: React.FC<{
               width: leftC * 2,
               height: leftC * 2,
               borderRadius: "50%",
-              background: WHITE,
+              background: WISE_GREEN,
               transform: "translate(-50%, 0)",
             }}
           />
@@ -383,7 +386,7 @@ const Point1Scene: React.FC<{
               width: rightC * 2,
               height: rightC * 2,
               borderRadius: "50%",
-              background: WHITE,
+              background: WISE_GREEN,
               transform: "translate(50%, 0)",
             }}
           />
@@ -562,7 +565,7 @@ const Point2Scene: React.FC<{
                   width: d.r * 2 * show,
                   height: d.r * 2 * show,
                   borderRadius: "50%",
-                  background: WHITE,
+                  background: WISE_GREEN,
                   opacity: 0.85,
                 }}
               />
@@ -582,7 +585,7 @@ const Point2Scene: React.FC<{
             width: circleR * 2,
             height: circleR * 2,
             borderRadius: "50%",
-            background: WHITE,
+            background: WISE_GREEN,
             position: "relative",
           }}
         >
@@ -759,7 +762,7 @@ const Point3Scene: React.FC<{
               width: smallR * 2,
               height: smallR * 2,
               borderRadius: "50%",
-              background: WHITE,
+              background: WISE_GREEN,
             }}
           />
           <div
@@ -770,7 +773,7 @@ const Point3Scene: React.FC<{
               width: bigR * 2,
               height: bigR * 2,
               borderRadius: "50%",
-              background: WHITE,
+              background: WISE_GREEN,
             }}
           />
         </div>
@@ -945,7 +948,7 @@ const StatScene: React.FC<{
             width: circleR * 2,
             height: circleR * 2,
             borderRadius: "50%",
-            background: WHITE,
+            background: WISE_GREEN,
           }}
         />
       </AbsoluteFill>
@@ -1059,7 +1062,7 @@ const ClosingScene: React.FC<{
           style={{
             width: 1920 * sweep * shrink,
             height: 360 * shrink,
-            background: WHITE,
+            background: WISE_GREEN,
             borderRadius: 4 + (1 - shrink) * 60,
           }}
         />
