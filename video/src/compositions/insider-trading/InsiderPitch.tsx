@@ -229,6 +229,62 @@ const IntroScene: React.FC<{
   );
 };
 
+// ─── Asset grid — 4×2 of tradeable classes under the top contrast line.
+//      Each tile animates in on a short stagger so the grid builds left-
+//      to-right, top-to-bottom without feeling like a spreadsheet drop.
+const ASSET_CLASSES = [
+  "Stocks",
+  "Perps",
+  "Options",
+  "Crypto",
+  "Predictions",
+  "Forex",
+  "Commodities",
+  "Bonds",
+];
+
+const AssetGrid: React.FC<{ local: number }> = ({ local }) => {
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(4, 1fr)",
+        gap: 22,
+        width: 1360,
+        marginTop: 28,
+      }}
+    >
+      {ASSET_CLASSES.map((name, i) => {
+        const start = 44 + i * 4;
+        const t = interpolate(local, [start, start + 22], [0, 1], clamp);
+        return (
+          <div
+            key={name}
+            style={{
+              height: 128,
+              border: "1.5px solid rgba(255,255,255,0.22)",
+              borderRadius: 18,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontFamily: INTER,
+              fontSize: 46,
+              fontWeight: 700,
+              letterSpacing: "-0.02em",
+              color: WHITE,
+              opacity: t,
+              transform: `translateY(${(1 - t) * 22}px)`,
+              background: `rgba(255,255,255,${0.03 * t})`,
+            }}
+          >
+            {name}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 // ─── Scene 2: CONTRAST ───────────────────────────────────────────────────
 
 const ContrastScene: React.FC<{
@@ -305,21 +361,7 @@ const ContrastScene: React.FC<{
             maxWidth: 1640,
           }}
         />
-        <Reveal
-          from={sceneStart + 40}
-          duration={duration - 40}
-          text="stocks, perps, options, crypto, predictions, forex and 2 others"
-          revealDuration={40}
-          seed={9}
-          style={{
-            fontSize: 26,
-            fontWeight: 500,
-            letterSpacing: "-0.005em",
-            textAlign: "center",
-            opacity: 0.62,
-            maxWidth: 1500,
-          }}
-        />
+        <AssetGrid local={local} />
       </AbsoluteFill>
 
       {/* BOTTOM HALF — General Market removes their edge */}
