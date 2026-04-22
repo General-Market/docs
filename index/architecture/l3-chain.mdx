@@ -1,0 +1,155 @@
+---
+title: "Index L3 Chain"
+description: "An Arbitrum Orbit L3 purpose-built for the Index protocol"
+---
+
+# Index L3 Chain
+
+An entire blockchain for one protocol. The extravagance of dedication -- or the necessity of control. When you depend on shared infrastructure, you inherit shared failures. The L3 exists to eliminate that dependency.
+
+## Identity
+
+| Property | Value |
+|----------|-------|
+| **Type** | Arbitrum Orbit L3 (Nitro / ArbOS) |
+| **Chain ID** | `111222333` |
+| **Parent Chain** | Sonic Testnet (Chain ID `14601`) |
+| **Gas Token** | GM (18 decimals) |
+| **Sequencer** | Single operator (the team) |
+| **Contract Size Limit** | 49,152 bytes (2x standard) |
+
+## Why a Dedicated Chain
+
+Every design decision is a confession of what you fear. These are ours.
+
+### Dedicated Block Space
+
+No competition with other applications. No mempool congestion from an NFT mint consuming your gas budget. The chain processes Index transactions and nothing else. Block space is a finite resource -- owning it is the only way to guarantee access.
+
+### Sub-Second Finality
+
+Orders submitted to the protocol confirm within a block. Oracle consensus cycles run on 1-second intervals. The speed is not a luxury -- it is a requirement for real-time price feeds and batch resolution.
+
+### Near-Zero Gas Costs
+
+The team controls gas pricing. Transaction fees exist to prevent spam, not to extract rent. A buy order, a Vision bet, a bitmap submission -- each costs fractions of a cent. The economics of participation should not punish participation.
+
+### Custom Gas Token (GM)
+
+GM is a custom ERC-20 token that serves as the native currency on L3. It originates on the Settlement chain (Sonic Testnet) and is deposited to L3 via the ERC20Inbox as the chain's gas token. The team mints GM and distributes it through the faucet. Gas economics are fully controlled -- no exposure to external token markets.
+
+<Info>
+The `native-token: 0x0000000000000000000000000000000000000000` convention in Orbit configuration means "custom ERC-20 gas token," not ETH. GM is that token.
+</Info>
+
+### Enlarged Contract Size Limit
+
+The standard EVM contract size limit is 24,576 bytes. Index contracts -- particularly `Index.sol` with its order management, ITP creation, NAV computation, and BLS verification -- exceed this. The L3 doubles the limit to 49,152 bytes. Complex systems require complex contracts. The alternative was splitting logic across proxies, adding indirection and gas cost for the sake of a constraint that no longer applies.
+
+### BN254 Precompiles
+
+The L3 provides native precompiles for elliptic curve operations on BN254 (alt-bn128): `ecAdd`, `ecMul`, and `ecPairing` at addresses `0x06`, `0x07`, and `0x08`. These enable efficient on-chain BLS signature verification -- the foundation of the oracle consensus mechanism. Without hardware-accelerated curve arithmetic, every batch confirmation would be prohibitively expensive.
+
+## What Lives on L3
+
+Everything that matters to the protocol runs here.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                    INDEX L3 (Chain 111222333)             │
+│                                                          │
+│  CORE PROTOCOL                                           │
+│  ┌──────────┐  ┌────────────────┐  ┌─────────────────┐  │
+│  │  Index    │  │  Governance    │  │  OracleRegistry │  │
+│  │  .sol     │  │  .sol          │  │  .sol           │  │
+│  └──────────┘  └────────────────┘  └─────────────────┘  │
+│                                                          │
+│  ITP ECOSYSTEM                                           │
+│  ┌──────────────────┐  ┌──────────────────────────────┐  │
+│  │  ITP Vaults       │  │  Bridged ITP Factory        │  │
+│  │  (ERC-4626)       │  │  (share token deployment)   │  │
+│  └──────────────────┘  └──────────────────────────────┘  │
+│                                                          │
+│  PREDICTION MARKETS                                      │
+│  ┌──────────────────────────────────────────────────┐    │
+│  │  Vision                                          │    │
+│  │  (batches, bitmaps, ticks, bot registry)         │    │
+│  └──────────────────────────────────────────────────┘    │
+│                                                          │
+│  LENDING                                                 │
+│  ┌──────────────────┐  ┌──────────────────────────────┐  │
+│  │  Morpho           │  │  ITP NAV Oracle             │  │
+│  │  (core protocol)  │  │  (collateral pricing)       │  │
+│  └──────────────────┘  └──────────────────────────────┘  │
+│                                                          │
+│  BRIDGE                                                  │
+│  ┌──────────────────┐  ┌──────────────────────────────┐  │
+│  │  L3BridgeCustody  │  │  L3BridgeProxy             │  │
+│  └──────────────────┘  └──────────────────────────────┘  │
+└──────────────────────────────────────────────────────────┘
+```
+
+- **Core protocol contracts** -- Index, Governance, OracleRegistry. The entry points for order management, ITP creation, and BLS key registration.
+- **Vision prediction markets** -- Batch creation, player operations, tick resolution, bot registry. All prediction market activity lives here.
+- **ITP vaults** -- ERC-4626 tokenized vaults for each Index Tracking Product.
+- **Morpho lending markets** -- Borrow USDC against ITP collateral. The NAV oracle feeds Morpho with BLS-verified prices.
+- **Bridge endpoints** -- Custody contracts and proxy for cross-chain operations with the Settlement chain.
+
+## USDC on L3
+
+<Warning>
+USDC on Index L3 uses **18 decimals**, not the standard 6. This is not negotiable, not configurable, and not a mistake. All contract interactions, all balance reads, all amount parameters use 18-decimal precision. 100 USDC = `100_000_000_000_000_000_000` (1e20). Forget this once and your transaction does something you did not intend.
+</Warning>
+
+## Adding L3 to Your Wallet
+
+| Parameter | Value |
+|-----------|-------|
+| **Network Name** | Index L3 |
+| **RPC URL** | `http://142.132.164.24/` |
+| **Chain ID** | `111222333` |
+| **Currency Symbol** | GM |
+| **Block Explorer** | -- |
+
+Or connect at [generalmarket.io](https://generalmarket.io) and your wallet will be prompted automatically.
+
+## Getting GM for Gas
+
+GM tokens are available from the faucet at [generalmarket.io](https://generalmarket.io) or by bridging from the Settlement chain. Gas costs on L3 are negligible -- a small amount of GM covers thousands of transactions.
+
+## Architecture Characteristics
+
+### Rollup Mode
+
+The L3 operates as a rollup, not a Data Availability Committee (DAC). Transaction data is posted to the parent chain (Sonic Testnet), inheriting its security guarantees. The tradeoff is higher data costs for stronger finality assurances. For a protocol that handles real money, the tradeoff is not a tradeoff.
+
+### Cross-Chain Messages
+
+Messages between L3 and Settlement use Arbitrum's retryable ticket system with a 7-day lifetime. If a cross-chain message fails on the destination, it can be retried within this window. The bridge contracts handle retries automatically for standard operations.
+
+### Upgradeability
+
+All protocol contracts use the UUPS (Universal Upgradeable Proxy Standard) pattern. Proxy addresses are permanent -- only the implementation behind them changes. This allows the protocol to evolve without requiring users to migrate to new contract addresses. The proxy is the identity; the implementation is the behavior.
+
+### Oracle Consensus
+
+Three oracle nodes produce BLS-signed attestations every second. Price feeds, batch confirmations, NAV updates, and Vision tick resolutions all flow through this consensus layer. The BN254 precompiles on L3 make on-chain verification of aggregated BLS signatures gas-efficient. Without the L3's native curve support, each consensus round would cost orders of magnitude more.
+
+## What's Next
+
+The chain is infrastructure. What runs on it is the point.
+
+<CardGroup cols={2}>
+  <Card title="Architecture Overview" icon="sitemap" href="/index/architecture/overview">
+    How all the pieces fit together -- contracts, oracles, data nodes, and the bridge.
+  </Card>
+  <Card title="Oracle Nodes" icon="tower-broadcast" href="/index/architecture/oracle-nodes">
+    The consensus layer. BLS signing, batch confirmation, and price attestation.
+  </Card>
+  <Card title="Bridge Architecture" icon="bridge" href="/index/architecture/bridge">
+    Cross-chain operations between L3 and Settlement.
+  </Card>
+  <Card title="Contract Addresses" icon="map-pin" href="/index/reference/contract-addresses">
+    Every deployed address on both chains.
+  </Card>
+</CardGroup>

@@ -1,11 +1,15 @@
 ---
 title: "Resolution Types"
-description: "The 8 resolution types that determine how Vision markets are settled"
+description: "The 14 resolution types that determine how Vision markets are settled"
 ---
+
+How much must a price move to count as movement? This page answers that question. The market answers a different one -- whether anyone was right about the direction. The resolution type is the threshold between noise and signal, between a refund and a reckoning.
 
 A **resolution type** defines the win condition for a market within a batch. Each market in a batch has its own resolution type, stored as a `uint8` in the `resolutionTypes` array. The resolution type determines how much the price must move for a market to resolve as UP, DOWN, or FLAT.
 
 ## Resolution Type Table
+
+### Standard Types (0-7)
 
 | Value | Name | Threshold | UP Wins When | DOWN Wins When | FLAT When |
 |-------|------|-----------|-------------|---------------|-----------|
@@ -18,30 +22,60 @@ A **resolution type** defines the win condition for a market within a batch. Eac
 | 6 | `FLAT_0` | 0.01% | price > +0.01% | price < -0.01% | abs(price) < 0.01% |
 | 7 | `FLAT_X` | Custom | price > +X% | price < -X% | abs(price) < X% |
 
+### Extended Types (8-13)
+
+| Value | Name | Threshold | UP Wins When | DOWN Wins When | FLAT When |
+|-------|------|-----------|-------------|---------------|-----------|
+| 8 | `UP_300` | 3% | price > +3% | price <= +3% | — |
+| 9 | `UP_3000` | 30% | price > +30% | price <= +30% | — |
+| 10 | `DOWN_300` | 3% | price >= -3% | price < -3% | — |
+| 11 | `DOWN_3000` | 30% | price >= -30% | price < -30% | — |
+| 12 | `FLAT_300` | 3% | price > +3% | price < -3% | abs(price) < 3% |
+| 13 | `FLAT_3000` | 30% | price > +30% | price < -30% | abs(price) < 30% |
+
+<Info>
+Extended types (8-13) are hardcoded thresholds — they don't use the `customThresholds` array. They exist as convenience presets for common volatility bands.
+</Info>
+
 <Info>
 `UP_0` and `DOWN_0` produce identical results. They are separate enum values for semantic clarity -- `UP_0` is named to suggest "will it go up?" while `DOWN_0` suggests "will it go down?". The resolution logic is the same.
 </Info>
 
-## Enum Definition
+## Resolution Decision Flow
 
-In the Solidity interface:
+```mermaid
+flowchart TD
+    A[Price Change %] --> B{Threshold Type}
+    B -->|UP_0 / DOWN_0| C{pct > 0?}
+    C -->|Yes| D[UP Wins]
+    C -->|No| E[DOWN Wins]
+    C -->|= 0| F[FLAT — Refund]
+    B -->|UP_30 / DOWN_30| G{abs pct > 0.3%?}
+    G -->|pct > +0.3%| D
+    G -->|pct < -0.3%| E
+    G -->|Within band| F
+    B -->|FLAT_X| H{abs pct < threshold?}
+    H -->|Yes| F
+    H -->|No, pct > 0| D
+    H -->|No, pct < 0| E
+```
+
+## Storage
+
+Resolution types are stored as raw `uint8` values on-chain. The Solidity enum defines the first 8 types; extended types (8-13) are handled by the oracle resolver:
 
 ```solidity
+// IVision.sol — first 8 types
 enum ResolutionType {
-    UP_0,     // 0
-    UP_30,    // 1
-    UP_X,     // 2
-    DOWN_0,   // 3
-    DOWN_30,  // 4
-    DOWN_X,   // 5
-    FLAT_0,   // 6
-    FLAT_X    // 7
+    UP_0, UP_30, UP_X, DOWN_0, DOWN_30, DOWN_X, FLAT_0, FLAT_X
 }
+// Types 8-13 (UP_300, UP_3000, DOWN_300, DOWN_3000, FLAT_300, FLAT_3000)
+// are stored as uint8 and resolved by the oracle
 ```
 
 ## How Resolution Works
 
-At tick resolution, the issuer computes the percentage change for each market:
+At tick resolution, the oracle computes the percentage change for each market. The arithmetic is simple. The consequences are not:
 
 ```
 pct_change = (end_price - start_price) / start_price * 100
@@ -51,18 +85,27 @@ Then applies the resolution type's threshold to determine the outcome:
 
 ```rust
 match resolution_type {
-    UP_0  => if pct > 0.0 { Up } else if pct < 0.0 { Down } else { Flat },
-    UP_30 => if pct > 0.3 { Up } else if pct < -0.3 { Down } else { Flat },
-    UP_X  => if pct > threshold { Up } else if pct < -threshold { Down } else { Flat },
-    // DOWN types work identically
-    FLAT_0 => if pct.abs() < 0.01 { Flat } else if pct > 0.0 { Up } else { Down },
-    FLAT_X => if pct.abs() < threshold { Flat } else if pct > 0.0 { Up } else { Down },
+    UP_0     => if pct > 0   { Up } else if pct < 0   { Down } else { Flat },
+    UP_30    => if pct > 30  { Up } else { Down },
+    UP_X     => if pct > X   { Up } else { Down },
+    DOWN_0   => if pct < 0   { Down } else if pct > 0  { Up } else { Flat },
+    DOWN_30  => if pct < -30 { Down } else { Up },
+    DOWN_X   => if pct < -X  { Down } else { Up },
+    FLAT_0   => if pct.abs() < 1    { Flat } else if pct > 0 { Up } else { Down },
+    FLAT_X   => if pct.abs() < X    { Flat } else if pct > 0 { Up } else { Down },
+    UP_300   => if pct > 300  { Up } else { Down },
+    UP_3000  => if pct > 3000 { Up } else { Down },
+    DOWN_300 => if pct < -300  { Down } else { Up },
+    DOWN_3000=> if pct < -3000 { Down } else { Up },
+    FLAT_300 => if pct.abs() < 300  { Flat } else if pct > 0 { Up } else { Down },
+    FLAT_3000=> if pct.abs() < 3000 { Flat } else if pct > 0 { Up } else { Down },
 }
+// Note: pct is in basis points (1 bps = 0.01%)
 ```
 
 ## Custom Thresholds
 
-Resolution types ending in `_X` (`UP_X`, `DOWN_X`, `FLAT_X`) use custom thresholds. These are passed in the `customThresholds` array when creating a batch, stored as **basis points** (1/100th of a percent).
+Resolution types ending in `_X` (`UP_X`, `DOWN_X`, `FLAT_X`) use custom thresholds -- you define what counts as movement. This is a power that should be exercised with care, because the threshold you choose determines who wins, who loses, and how often everyone gets refunded. These are passed in the `customThresholds` array when creating a batch, stored as **basis points** (1/100th of a percent).
 
 | Basis Points | Percentage |
 |-------------|------------|
@@ -97,6 +140,8 @@ The `customThresholds` array must be parallel to `marketIds`. Each entry corresp
 </Warning>
 
 ## Examples with Real Price Movements
+
+Theory is comfortable. Numbers make it real. Here is what resolution looks like when applied to actual prices -- the moment where abstraction meets consequence:
 
 ### Example 1: UP_0 (Any Movement)
 
@@ -145,11 +190,13 @@ BTC-USD moves from $60,000 to $60,200 (+0.333%):
 
 ## Choosing a Resolution Type
 
+The choice of resolution type is the choice of what counts. A high threshold means most ticks end in a refund -- the price moved, but not enough. A low threshold means every tremor is a verdict. Neither is correct. Both are honest.
+
 <Tip>
 Higher thresholds mean more FLAT outcomes and fewer winning/losing rounds. Choose based on the expected volatility of your markets and the tick duration:
 
 - **Short ticks (1-10 min)**: Use `UP_0` or `DOWN_0` for maximum action. Small price movements still produce winners.
 - **Medium ticks (1 hour)**: Use `UP_30` or `DOWN_30` to filter out noise. Only meaningful moves count.
 - **Long ticks (1 day+)**: Use custom thresholds (`UP_X`) to require substantial moves, since daily volatility is higher.
-- **Flat markets**: Use `FLAT_0` or `FLAT_X` when you want the game to reward stability detection.
+- **Flat markets**: Use `FLAT_0` or `FLAT_X` when you want the game to reward those who predict that nothing will happen -- which is, more often than not, the correct prediction.
 </Tip>

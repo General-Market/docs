@@ -33,7 +33,7 @@ Response:
 
 ## GET /vision/markets
 
-List the issuer-curated whitelist of supported markets.
+List the oracle-curated whitelist of supported markets.
 
 Parameters: None
 
@@ -85,7 +85,7 @@ Errors:
 
 ## POST /vision/bitmap
 
-Submit a prediction bitmap off-chain. Issuer verifies keccak256(bitmap) matches on-chain commitment.
+Submit a prediction bitmap off-chain. Oracle verifies keccak256(bitmap) matches on-chain commitment.
 
 Request body:
 {
@@ -131,7 +131,7 @@ Response:
   "stake_per_tick": "string -- Amount risked per tick per market, in wei"
 }
 
-Note: In production, this endpoint will also return BLS signature fields (bls_signature, issuer_id, pubkey) for on-chain withdrawal proofs. Players aggregate signatures from 2/3+ issuers.
+Note: In production, this endpoint will also return BLS signature fields (bls_signature, oracle_id, pubkey) for on-chain withdrawal proofs. Players aggregate signatures from 2/3+ oracles.
 
 Errors:
 - 400: Invalid player address format
@@ -261,11 +261,11 @@ Response:
 
 ---
 
-## Smart Contract: Vision (0x0BFC626B583e93A5F793Bc2cAa195BDBB2ED9F20)
+## Smart Contract: Vision (0x4F1BDD073932828bf2822F6dCAD1121Da41ED1Ef)
 
 Chain ID: 421611337
 Collateral: USDC (6 decimals)
-Fee: 0.3% on profits (30 bps)
+Fee: 0.05% on profits (5 bps)
 Min stake: 100000 (0.1 USDC)
 
 ### createBatch(bytes32[] marketIds, uint8[] resolutionTypes, uint256 tickDuration, uint256[] customThresholds) returns (uint256 batchId)
@@ -281,7 +281,7 @@ Change bitmap commitment. Takes effect next tick.
 Add funds to existing position.
 
 ### claimRewards(uint256 batchId, uint256 fromTick, uint256 toTick, uint256 newBalance, bytes blsSignature)
-Claim winnings. Requires aggregated BLS signature from 2/3+ issuers.
+Claim winnings. Requires aggregated BLS signature from 2/3+ oracles.
 
 ### withdraw(uint256 batchId, uint256 finalBalance, bytes blsSignature)
 Full exit. Deletes position, transfers remaining USDC.
@@ -338,7 +338,7 @@ Example: 5 markets [UP, DOWN, UP, UP, DOWN] = bits 10110000 = 0xB0
 
 InvalidBLSSignature: BLS verification failed. Re-fetch balance proof.
 BatchNotFound: batchId does not exist.
-BatchPaused: Batch suspended by issuers.
+BatchPaused: Batch suspended by oracles.
 Unauthorized: Caller not batch creator or fee collector.
 InsufficientDeposit: depositAmount < stakePerTick.
 StakeBelowMinimum: stakePerTick < 100000 (0.1 USDC).

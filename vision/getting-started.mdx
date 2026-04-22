@@ -5,32 +5,34 @@ description: "Place your first bet on Vision in under 5 minutes"
 
 # Getting Started
 
-This guide walks you through placing your first prediction on Vision. By the end, you will have joined a batch, placed UP/DOWN bets on real markets, and understand how to claim rewards.
+Your first prediction. It will probably be wrong. All first predictions are. The protocol does not care. It treats the novice and the veteran with the same indifference -- which is, if you think about it, a form of respect.
+
+By the end of this page, you will have joined a batch, placed UP/DOWN bets on real markets, and understood how to claim rewards. Whether you deserve rewards is between you and the price feeds.
 
 ## Prerequisites
 
-You need:
-- An **Arbitrum wallet** (MetaMask, Rabby, or any EVM-compatible wallet)
-- **USDC on Arbitrum** (6 decimals -- this is standard Arbitrum USDC)
+Before you can wager against the future, you need two things:
+- An **EVM-compatible wallet** (MetaMask, Rabby, or similar) connected to **Index L3**
+- **WUSDC on Index L3** (18 decimals -- this is bridged USDC on the L3 Orbit chain)
 
 <Warning>
-Vision runs on **Arbitrum** (chain ID 421611337), not the Index L3 chain. Make sure your wallet is connected to Arbitrum and you have USDC there.
+Vision runs on **Index L3** (chain ID `111222333`), an Arbitrum Orbit chain. Add it to your wallet: RPC `http://142.132.164.24/`, chain ID `111222333`, symbol ETH. WUSDC on L3 uses **18 decimals**, not 6.
 </Warning>
 
 ## Step 1: Browse Active Batches
 
-Navigate to [generalmarket.io/vision](https://generalmarket.io/vision). The Vision page lists all active batches. Each batch shows:
+Navigate to [generalmarket.io/vision](https://generalmarket.io/vision). The Vision page lists all active batches -- each one a small arena where strangers pool money against each other's opinions. Each batch shows:
 
 - **Markets** -- the assets being tracked (e.g., BTC/USD, ETH/USD, SOL/USD)
 - **Tick duration** -- how often the batch resolves (5 min, 1 hour, 1 day, etc.)
-- **Player count** -- how many players are currently in the batch
+- **Player count** -- how many people have decided, independently, that they know something
 - **TVL** -- total USDC deposited across all players
 
 Click on any batch to expand its details and see per-market stats.
 
 ## Step 2: Understand a Batch
 
-Each batch is a self-contained prediction game with these parameters:
+Each batch is a self-contained prediction game. Like a parlay. Like a prayer -- multiple requests, one outcome, usually disappointing. Its parameters:
 
 | Parameter | Description |
 |-----------|-------------|
@@ -40,19 +42,21 @@ Each batch is a self-contained prediction game with these parameters:
 | **Min stake** | Minimum USDC per tick (0.1 USDC) |
 
 <Tip>
-Start with a batch that has a longer tick duration (1 hour or 1 day) so you have time to observe how resolution works before trying faster intervals.
+Start with a batch that has a longer tick duration (1 hour or 1 day). Fast intervals punish hesitation, and you will hesitate. Everyone does the first time.
 </Tip>
 
 ## Step 3: Place Your Predictions
 
-For each market in the batch, choose **UP** or **DOWN**:
+For each market in the batch, choose **UP** or **DOWN**. That is the entire decision. The universe, reduced to binary:
 
 - **UP** -- you predict the asset price will be higher at the end of the tick
 - **DOWN** -- you predict the asset price will be lower at the end of the tick
 
-Your predictions are combined into a **bitmap** -- a compact binary encoding where 1 = UP and 0 = DOWN. The bitmap is hashed and submitted on-chain so nobody can see your bets before the tick closes.
+Your predictions are combined into a **bitmap** -- a compact binary encoding where 1 = UP and 0 = DOWN. The bitmap is hashed and submitted on-chain so nobody can see your bets before the tick closes. Your convictions are sealed. You cannot take them back.
 
 ## Step 4: Deposit USDC and Join
+
+Now you must put money behind your opinions. This is the step that separates conviction from commentary.
 
 1. Set your **deposit amount** -- the total USDC to allocate to this batch.
 2. Set your **stake per tick** -- how much USDC to wager per tick interval. Your deposit covers multiple ticks.
@@ -60,35 +64,35 @@ Your predictions are combined into a **bitmap** -- a compact binary encoding whe
 4. **Confirm** the join transaction. Your bitmap hash and deposit are recorded on-chain.
 
 <Info>
-Your deposit is split across ticks automatically. If you deposit 10 USDC with a 1 USDC stake per tick, you are covered for 10 ticks. You can top up or withdraw at any time.
+Your deposit is split across ticks automatically. If you deposit 10 USDC with a 1 USDC stake per tick, you are covered for 10 ticks. You can top up or withdraw at any time. The protocol is patient with those who are not.
 </Info>
 
 ## Step 5: Wait for Tick Resolution
 
-At the end of each tick interval, issuers fetch live prices and determine the outcome for each market:
+Now comes the part no one enjoys: waiting. The tick ends. The world is measured. Oracles fetch live prices and determine the outcome for each market:
 
 - If the price went **up** and you bet **UP**, you win that market.
 - If the price went **down** and you bet **DOWN**, you win that market.
-- Winners on each market **split the losers' stakes** proportionally, minus a 0.3% fee on profits.
+- Winners on each market **split the losers' stakes** proportionally, minus a 0.05% fee on profits.
 
-Your balance updates automatically after each tick. Check the batch detail page to see per-tick results and your running PnL.
+Your balance updates automatically after each tick. Check the batch detail page to see per-tick results and your running PnL. The numbers do not lie, though you may wish they would.
 
 ## Step 6: Claim Rewards
 
-When you are ready to cash out:
+If you have won -- and someone must, that is the mathematics of it -- you may collect:
 
 1. Navigate to **My Positions** in the Vision page.
 2. Click **Withdraw** on the batch you want to exit.
-3. The issuer network generates a **BLS-signed balance proof** for your current balance.
+3. The oracle network generates a **BLS-signed balance proof** for your current balance. Three machines sign your balance. If two agree, you can claim.
 4. Confirm the withdrawal transaction. Your USDC is returned to your wallet.
 
 <Info>
-You can also claim partial amounts -- you do not need to exit the batch entirely. Withdrawn funds are available in your wallet immediately.
+You can also claim partial amounts -- you do not need to exit the batch entirely. Withdrawn funds are available in your wallet immediately. The protocol does not ask why you are leaving.
 </Info>
 
 ## Programmatic Access
 
-Vision has a full REST API for bots and scripts. Here are two common operations:
+For those who prefer their despair automated, Vision has a full REST API. Here are two common operations:
 
 ### Fetch Active Batches
 
@@ -145,7 +149,7 @@ Vision has a full REST API for bots and scripts. Here are two common operations:
         f"https://generalmarket.io/api/vision/balance/{batch_id}/{player}"
     )
     balance = resp.json()
-    print(f"Balance: {balance['balance']} (USDC raw, 6 decimals)")
+    print(f"Balance: {balance['balance']} (WUSDC raw, 18 decimals)")
     ```
   </Tab>
   <Tab title="TypeScript">
@@ -156,21 +160,23 @@ Vision has a full REST API for bots and scripts. Here are two common operations:
       `https://generalmarket.io/api/vision/balance/${batchId}/${player}`
     );
     const balance = await res.json();
-    console.log(`Balance: ${balance.balance} (USDC raw, 6 decimals)`);
+    console.log(`Balance: ${balance.balance} (WUSDC raw, 18 decimals)`);
     ```
   </Tab>
 </Tabs>
 
 ## What's Next?
 
+You have placed a prediction. You have committed money to an opinion about the future. The future has not yet arrived. In the meantime, you might as well understand the machinery that will judge you.
+
 <CardGroup cols={2}>
   <Card title="Concepts: Batches & Bitmaps" icon="book" href="/vision/concepts/batches">
-    Deep dive into how batches are created, how bitmaps encode predictions, and how tick resolution works.
+    How batches are created, how bitmaps encode predictions, and how tick resolution works. The mechanics of organized uncertainty.
   </Card>
   <Card title="Build a Bot" icon="robot" href="/vision/bots/quickstart">
-    Register a bot on-chain and automate your prediction strategy with the Vision API.
+    Register a bot on-chain and automate your prediction strategy. The machine will not second-guess itself. Whether that is wisdom or blindness depends on the market.
   </Card>
   <Card title="API Reference" icon="code" href="/vision/api/overview">
-    Full endpoint documentation: batches, bitmaps, balances, ticks, leaderboard.
+    Full endpoint documentation: batches, bitmaps, balances, ticks, leaderboard. Everything the protocol knows, which is everything except what happens next.
   </Card>
 </CardGroup>

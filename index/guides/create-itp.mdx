@@ -3,7 +3,9 @@ title: "Create an ITP"
 description: "Design and deploy a custom Index Tracking Product on General Market"
 ---
 
-Anyone can create an Index Tracking Product (ITP) on General Market. An ITP is a tokenized basket of crypto assets -- like an on-chain ETF. The creator chooses the assets, sets the weights, and deploys the ITP in a single transaction. Once live, anyone can buy and sell shares of the ITP.
+You are about to create a financial product. The market will price it. The market has no feelings about your intentions.
+
+An ITP is a tokenized basket of crypto assets -- an on-chain ETF. You choose the assets, set the weights, and deploy in a single transaction. After that, anyone can buy and sell shares. The product is no longer yours. It belongs to the market.
 
 <Snippet file="chain-info.mdx" />
 
@@ -13,15 +15,13 @@ Anyone can create an Index Tracking Product (ITP) on General Market. An ITP is a
 
 <Steps>
   <Step title="Select Assets">
-    Choose from **100+ available crypto tokens** to include in the index. Assets are organized by category (Layer 1, DeFi, AI, Memecoins, etc.) for easy discovery.
+    Choose from **100+ available crypto tokens**. They are organized by category (Layer 1, DeFi, AI, Memecoins, etc.).
 
-    The protocol has no minimum or maximum number of assets, but a well-diversified ITP typically holds between 5 and 50 assets.
+    The protocol imposes no minimum or maximum count. A well-diversified ITP holds between 5 and 50 assets. Diversification is the admission that you do not know which one will fail.
   </Step>
 
   <Step title="Set Weights">
-    Assign a percentage weight to each selected asset. Weights must sum to exactly **100%**.
-
-    For example, a simple three-asset ITP might look like:
+    Assign a percentage weight to each asset. Weights must sum to exactly **100%**. The weights are your thesis expressed as numbers.
 
     | Asset | Weight |
     |-------|--------|
@@ -30,23 +30,25 @@ Anyone can create an Index Tracking Product (ITP) on General Market. An ITP is a
     | SOL   | 20%    |
 
     <Tip>
-    Use the **Equal Weight** button to distribute weights evenly across all selected assets. Individual weights can then be fine-tuned manually.
+    The **Equal Weight** button distributes weights evenly. It is the most honest allocation -- the one that admits you have no edge. Fine-tune from there.
     </Tip>
   </Step>
 
   <Step title="Add Metadata">
-    Give the ITP a name and description so that buyers know what the ITP tracks and why. Creators can also add:
+    Give the ITP a name and description. Buyers will read the name. Some will read the description. Few will read the holdings. Name it well.
     - **Website URL** -- link to a project page, blog post, or research document
     - **YouTube video** -- embed an explainer or thesis video on the ITP's market page
   </Step>
 
   <Step title="Deploy">
-    Click **Create ITP** to deploy. The wallet will prompt for a single transaction confirmation via the BridgeProxy contract. The deployment transaction:
+    Click **Create ITP**. One transaction. One confirmation. After this, there is no undo.
+
+    The deployment transaction:
     1. Registers the ITP on the Index contract on L3
-    2. Converts the percentage weights into fixed per-share quantities
+    2. Converts percentage weights into fixed per-share quantities
     3. Sets the initial NAV to **$1.00**
 
-    Once confirmed, the ITP is live and appears on the **Markets** page.
+    The ITP is live. It appears on the **Markets** page. The market begins forming an opinion.
   </Step>
 </Steps>
 
@@ -54,13 +56,13 @@ Anyone can create an Index Tracking Product (ITP) on General Market. An ITP is a
 
 ## How Weights Become Quantities
 
-At creation time, percentage weights are converted into fixed per-share quantities using the current price of each asset:
+Weights are intentions. Quantities are commitments. At creation, the protocol converts one into the other:
 
 ```text
 qty[i] = (weight[i] * 1e18) / price[i]
 ```
 
-These quantities define how much of each asset one ITP share represents. The quantities are stored on-chain and **do not change** unless the ITP creator triggers a rebalance.
+These quantities define how much of each asset one ITP share represents. They are stored on-chain and **do not change** unless the creator triggers a rebalance. The quantities are permanent. The prices are not.
 
 ### Example
 
@@ -74,17 +76,17 @@ Each share of the ITP holds 0.01 of each token. The NAV starts at exactly $1.00:
 
 <Snippet file="nav-formula.mdx" />
 
-As asset prices move, the NAV drifts from the $1.00 starting point -- that price movement is the entire point of an index product.
+As asset prices move, the NAV drifts from $1.00. That drift is the entire point. You built the basket. The market decides what it is worth.
 
 <Info>
-The NAV formula is the same everywhere in the protocol: on-chain in the Index contract, in the issuer nodes, and in the frontend. Quantities are the source of truth, not weights.
+The NAV formula is identical everywhere: on-chain in the Index contract, in the oracle nodes, and in the frontend. Quantities are the source of truth. Weights are a memory.
 </Info>
 
 ---
 
 ## Deployer Fees
 
-As the creator of an ITP, the deployer earns a fee on every buy and sell transaction. The fee incentivizes high-quality index design and curation.
+The deployer earns a fee on every buy and sell transaction. Design a good index and the market pays you. Design a bad one and nobody trades it. The incentive is simple. The execution is not.
 
 Fees are denominated in USDC and credited to the deployer's wallet automatically as trades settle.
 
@@ -92,13 +94,13 @@ Fees are denominated in USDC and credited to the deployer's wallet automatically
 
 ## After Deployment
 
-Once the ITP is live:
+The ITP is live. What you intended no longer matters. What you built does.
 
 - The ITP appears on the **Markets** page alongside all other ITPs
 - Anyone with USDC can buy and sell shares
-- The creator can view real-time NAV, price charts, and trading volume on the ITP's detail page
-- The deployer earns deployer fees on every trade
+- Real-time NAV, price charts, and trading volume are visible on the ITP's detail page
+- The deployer earns fees on every trade
 
 <Note>
-ITP creation is a single, irreversible transaction. Verify the asset selection and weights before deploying. The deployer can rebalance weights later, but the ITP itself cannot be deleted.
+ITP creation is irreversible. Verify the asset selection and weights before deploying. You can rebalance weights later. You cannot delete the ITP. What is deployed stays deployed.
 </Note>

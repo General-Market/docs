@@ -1,11 +1,35 @@
 ---
 title: "Contract Addresses"
-description: "Deployed Vision contract addresses on Arbitrum"
+description: "Deployed Vision contract addresses on Index L3"
 ---
 
 # Deployed Contract Addresses
 
-Vision contracts are deployed on a custom Arbitrum chain (chain ID `421611337`).
+The addresses. Where the contracts live on-chain. Verify them before sending money -- trust is a luxury smart contract users cannot afford.
+
+Vision contracts are deployed on the **Index L3** Arbitrum Orbit chain (chain ID `111222333`).
+
+```
+┌─────────────────────────────────────────────────┐
+│              INDEX L3 (Chain 111222333)          │
+│                                                 │
+│  ┌───────────────────────────────────────────┐  │
+│  │              Vision Contract              │  │
+│  │  0x4F1BDD073932828bf2822F6dCAD1121Da41ED1Ef│  │
+│  │                                           │  │
+│  │  ┌─────────┐ ┌──────────┐ ┌────────────┐ │  │
+│  │  │ Batches │ │ Players  │ │ Bot Reg.   │ │  │
+│  │  └─────────┘ └──────────┘ └────────────┘ │  │
+│  └───────────────────────────────────────────┘  │
+│                      │                          │
+│              ┌───────┴───────┐                  │
+│              │               │                  │
+│  ┌───────────────┐  ┌────────────────────────┐  │
+│  │  L3 WUSDC     │  │  OracleRegistry        │  │
+│  │  (18 decimals)│  │  (BLS verification)    │  │
+│  └───────────────┘  └────────────────────────┘  │
+└─────────────────────────────────────────────────┘
+```
 
 <Warning>
 Contract addresses are loaded from `deployments/vision-deployment.json` and may differ between environments (testnet, staging, production). Always verify addresses against the deployment file before interacting with contracts directly.
@@ -15,17 +39,18 @@ Contract addresses are loaded from `deployments/vision-deployment.json` and may 
 
 | Property | Value |
 |----------|-------|
-| **Chain Name** | Arbitrum (Vision) |
-| **Chain ID** | `421611337` |
-| **Collateral Token** | USDC (6 decimals) |
-| **Consensus** | BLS issuer consensus |
+| **Chain Name** | Index L3 (Arbitrum Orbit) |
+| **Chain ID** | `111222333` |
+| **RPC Endpoint** | `http://142.132.164.24/` |
+| **Collateral Token** | WUSDC (18 decimals on L3) |
+| **Consensus** | BLS oracle consensus |
 
 ## Deployed Contracts
 
 | Contract | Address | Description |
 |----------|---------|-------------|
-| **Vision** | `0x0BFC626B583e93A5F793Bc2cAa195BDBB2ED9F20` | Main entry point for batch management, player operations, bot registry, and fee collection. |
-| **Deployer** | `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266` | The address that deployed the Vision contract. |
+| **Vision** | `0x4F1BDD073932828bf2822F6dCAD1121Da41ED1Ef` | Main entry point for batch management, player operations, bot registry, and fee collection. |
+| **Deployer** | `0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4` | The address that deployed the Vision contract. |
 
 ## Key Contract Parameters
 
@@ -33,7 +58,7 @@ These constants are set at deployment and cannot be changed:
 
 | Parameter | Value | Description |
 |-----------|-------|-------------|
-| `PROTOCOL_FEE_BPS` | 30 (0.3%) | Fee charged on player profits |
+| `PROTOCOL_FEE_BPS` | 5 (0.05%) | Fee charged on player profits |
 | `MIN_STAKE_PER_TICK` | 100,000 (0.1 USDC) | Minimum stake per tick to join a batch |
 | `BPS_DENOMINATOR` | 10,000 | Basis point denominator |
 | `MAX_TICK_DURATION` | 30 days | Maximum allowed tick duration when creating a batch |
@@ -44,17 +69,17 @@ These constants are set at deployment and cannot be changed:
 | `MAX_IMAGE_URL_LENGTH` | 256 bytes | Maximum image URL length |
 | `MAX_DEPLOYER_NAME_LENGTH` | 64 bytes | Maximum deployer name length |
 
-## USDC on Arbitrum
+## USDC on Index L3
 
-Vision uses USDC with **6 decimal places** as its settlement token. All amounts in the contract (deposits, stakes, balances, fees) are denominated in USDC's 6-decimal format.
+Vision uses WUSDC with **18 decimal places** on the Index L3 chain. All amounts in the contract (deposits, stakes, balances, fees) are denominated in WUSDC's 18-decimal format.
 
 | Amount | Raw Value |
 |--------|-----------|
-| 0.1 USDC | `100000` |
-| 1 USDC | `1000000` |
-| 10 USDC | `10000000` |
-| 100 USDC | `100000000` |
-| 1,000 USDC | `1000000000` |
+| 0.1 USDC | `100000000000000000` (1e17) |
+| 1 USDC | `1000000000000000000` (1e18) |
+| 10 USDC | `10000000000000000000` (1e19) |
+| 100 USDC | `100000000000000000000` (1e20) |
+| 1,000 USDC | `1000000000000000000000` (1e21) |
 
 ## Retrieving Addresses
 
@@ -68,10 +93,10 @@ cat deployments/vision-deployment.json
 
 ```json
 {
-  "chainId": 421611337,
-  "deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "chainId": 111222333,
+  "deployer": "0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4",
   "contracts": {
-    "Vision": "0x0BFC626B583e93A5F793Bc2cAa195BDBB2ED9F20"
+    "Vision": "0x4F1BDD073932828bf2822F6dCAD1121Da41ED1Ef"
   }
 }
 ```
@@ -106,8 +131,9 @@ To interact with Vision contracts from a wallet like MetaMask:
 
 1. Open your wallet's network settings.
 2. Add a custom network with the following details:
-   - **Network Name**: Arbitrum (Vision)
-   - **Chain ID**: `421611337`
+   - **Network Name**: Index L3
+   - **RPC URL**: `http://142.132.164.24/`
+   - **Chain ID**: `111222333`
    - **Currency Symbol**: ETH
 
 ## Immutable Contract References
@@ -117,15 +143,15 @@ The Vision contract holds two immutable references set at deployment:
 | Reference | Description |
 |-----------|-------------|
 | `USDC` | The IERC20 token used for all deposits, stakes, and payouts. |
-| `issuerRegistry` | The IssuerRegistry contract that stores BLS public keys for signature verification. |
+| `oracleRegistry` | The OracleRegistry contract that stores BLS public keys for signature verification. |
 | `feeCollector` | The address authorized to call `collectFees()` and withdraw accumulated protocol fees. |
 
 These values are set in the constructor and cannot be changed after deployment:
 
 ```solidity
-constructor(address _usdc, address _issuerRegistry, address _feeCollector) {
+constructor(address _usdc, address _oracleRegistry, address _feeCollector) {
     USDC = IERC20(_usdc);
-    issuerRegistry = _issuerRegistry;
+    oracleRegistry = _oracleRegistry;
     feeCollector = _feeCollector;
 }
 ```

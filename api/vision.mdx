@@ -5,10 +5,10 @@ description: "P2Pool prediction market API endpoints"
 
 # Vision API
 
-The Vision API is served by the P2Pool issuer nodes (default port `10001`). Market data endpoints are served by the data node (default port `8200`).
+The Vision API is served by the P2Pool oracle nodes (default port `10001`). Market data endpoints are served by the data node (default port `8200`).
 
 Base URLs:
-- **P2Pool API**: `https://generalmarket.io/p2pool` (proxied to issuer node)
+- **P2Pool API**: `https://generalmarket.io/p2pool` (proxied to oracle node)
 - **Data Node API**: `https://generalmarket.io/api` (proxied to data node)
 
 ## Get Active Batches
@@ -67,12 +67,12 @@ batches = response.json()["batches"]
 | `id` | number | Unique batch identifier |
 | `creator` | string | Ethereum address of the batch creator |
 | `market_ids` | string[] | Asset identifiers for each market in the batch |
-| `resolution_types` | number[] | Resolution type per market (0=UP_0, 1=UP_30, ..., 7=FLAT_X) |
+| `resolution_types` | number[] | Resolution type per market (0=UP_0, 1=UP_30, 2=UP_X, 3=DOWN_0, 4=DOWN_30, 5=DOWN_X, 6=FLAT_0, 7=FLAT_X, 8=UP_300, 9=UP_3000, 10=DOWN_300, 11=DOWN_3000, 12=FLAT_300, 13=FLAT_3000) |
 | `tick_duration` | number | Seconds between tick resolutions |
 | `market_count` | number | Number of markets in the batch |
 | `player_count` | number | Number of active players |
 | `tvl` | string | Total value locked in USDC (18-decimal wei string) |
-| `paused` | boolean | Whether the batch is currently paused by issuers |
+| `paused` | boolean | Whether the batch is currently paused by oracles |
 
 ---
 
@@ -183,7 +183,7 @@ history = response.json()
 
 ## Submit Bitmap
 
-Submit the revealed bitmap to an issuer node after committing the hash on-chain. The bitmap must be submitted to each issuer node individually.
+Submit the revealed bitmap to an oracle node after committing the hash on-chain. The bitmap must be submitted to each oracle node individually.
 
 <Tabs>
 
@@ -239,7 +239,7 @@ response = requests.post("https://generalmarket.io/p2pool/bitmap", json={
 
 ### Response
 
-Returns `200 OK` if the issuer accepts the bitmap. Returns `400` if the hash does not match the on-chain commitment.
+Returns `200 OK` if the oracle accepts the bitmap. Returns `400` if the hash does not match the on-chain commitment.
 
 ---
 
@@ -313,7 +313,7 @@ When `fromTick` and `toTick` are omitted, the endpoint returns the player's fina
 | Field | Type | Description |
 |-------|------|-------------|
 | `balance` | string | Player's USDC balance (18-decimal wei string) |
-| `bls_sig` | string | Aggregated BLS signature from issuer nodes |
+| `bls_sig` | string | Aggregated BLS signature from oracle nodes |
 
 ---
 

@@ -5,25 +5,28 @@ description: "Set up your wallet and make your first ITP trade"
 
 # Getting Started
 
-This guide walks you through connecting to General Market and buying your first Index Tracking Product (ITP) in under 5 minutes.
+Five minutes. That is all it takes to go from idle curiosity to financial exposure. Most regrets begin with less.
 
 ## Prerequisites
 
-You need:
+You need two things. Only two. The simplicity is part of the trap.
+
 - A browser wallet (MetaMask, Rabby, or any EVM-compatible wallet)
 - USDC on the Index L3 network
 
 ## Step 1: Install a Wallet
 
-If you do not already have a browser wallet, install [MetaMask](https://metamask.io/download/). Create a new wallet or import an existing one.
+Connect your wallet. A small act. The beginning of most financial regret is a small act.
+
+If you do not have one, install [MetaMask](https://metamask.io/download/). Create a new wallet or import an existing one.
 
 <Tip>
-Rabby Wallet and other EVM-compatible wallets also work with General Market. Any wallet that supports custom networks will do.
+Rabby and other EVM-compatible wallets work too. Any wallet that supports custom networks will do. The tool matters less than the hand that holds it.
 </Tip>
 
 ## Step 2: Add the Index L3 Network
 
-General Market runs on an Arbitrum Orbit L3 chain. Add it to your wallet with these details:
+General Market runs on its own chain. You must tell your wallet it exists. The chain does not care whether you do.
 
 | Parameter | Value |
 |-----------|-------|
@@ -34,35 +37,35 @@ General Market runs on an Arbitrum Orbit L3 chain. Add it to your wallet with th
 | **Block Explorer** | -- |
 
 <Tip>
-When you visit [generalmarket.io](https://generalmarket.io) and connect your wallet, the app will prompt you to add the Index L3 network automatically. You can skip the manual setup.
+Visit [generalmarket.io](https://generalmarket.io) and connect your wallet. It will prompt you to add the network automatically. One less decision to make. You will have enough of those soon.
 </Tip>
 
 ## Step 3: Get USDC on Index L3
 
-USDC is the settlement currency for all ITP trades on General Market. To get USDC on the Index L3 network:
+USDC is the only currency that matters here. Everything settles in it.
 
-1. **Bridge from Arbitrum** -- Use the built-in bridge at [generalmarket.io](https://generalmarket.io) to move USDC from Arbitrum One to Index L3.
-2. **Direct transfer** -- If you already have USDC on Index L3, you are ready to go.
+1. **Bridge from Arbitrum** -- Use the bridge at [generalmarket.io](https://generalmarket.io) to move USDC from Arbitrum One to Index L3.
+2. **Direct transfer** -- If you already have USDC on Index L3, skip ahead.
 
 <Warning>
-USDC on Index L3 uses **18 decimals** (not the standard 6). The bridge handles this conversion automatically. Do not send USDC directly to the L3 contract address -- always use the bridge interface.
+USDC on Index L3 uses **18 decimals**, not the standard 6. The bridge handles the conversion. Do not send USDC directly to the L3 contract address. The contract will not return what it does not understand.
 </Warning>
 
 ## Step 4: Browse Available ITPs
 
-Navigate to the **Markets** tab on General Market. The Markets tab lists all available ITPs, each showing:
+Open the **Markets** tab. Here is what the market has produced. Each ITP shows:
 
 - **Name and ticker** -- e.g., "Top 100 Crypto" (TOP100)
-- **NAV (Net Asset Value)** -- the current price per share, calculated from underlying asset prices
-- **24h change** -- how the NAV has moved in the last 24 hours
-- **Composition** -- the assets and weights that make up the ITP
-- **Total supply** -- how many shares are currently outstanding
+- **NAV (Net Asset Value)** -- what one share is worth right now, computed from underlying prices
+- **24h change** -- how much the world has moved since yesterday
+- **Composition** -- the assets inside the basket, and their weights
+- **Total supply** -- how many shares exist
 
-Click on any ITP to view its full details, including the complete asset breakdown and historical NAV chart.
+Click any ITP for the full breakdown. Study the composition. Or do not. Most people do not.
 
 ## Step 5: Buy Your First ITP
 
-Once you have selected an ITP to buy:
+You have chosen. Now commit.
 
 1. Click **Buy** on the ITP card or detail page.
 2. Enter the USDC amount you want to spend.
@@ -70,36 +73,40 @@ Once you have selected an ITP to buy:
 4. Click **Confirm** and approve the transaction in your wallet.
 
 <Info>
-The buy order goes through the full [order lifecycle](/index/concepts/order-lifecycle): the order is batched by issuer nodes, executed on a centralized exchange, and ITP tokens are minted to the buyer's wallet. This process typically completes within a few seconds.
+Behind the button: three oracle nodes reach [consensus](/index/concepts/order-lifecycle), a real exchange executes real trades, and ITP tokens are minted to your wallet. This takes a few seconds. The machinery is invisible by design.
 </Info>
 
-The transaction involves two wallet interactions:
+Two wallet interactions:
 
-1. **Approve** -- Allow the contract to spend your USDC (first time only, or if allowance is insufficient).
-2. **Submit Order** -- Place the buy order. The USDC is escrowed until the order fills.
+1. **Approve** -- Allow the contract to spend your USDC. First time only.
+2. **Submit Order** -- Place the buy order. Your USDC is escrowed until it fills. In that moment between submission and settlement, you are neither buyer nor owner. You are waiting. This is the human condition, compressed into seconds.
 
 ## Step 6: Track Your Portfolio
 
-After the buy order fills, ITP tokens appear in the **Portfolio** section. From the Portfolio section you can:
+The order fills. Tokens appear in **Portfolio**. You now own a piece of a basket of assets that will appreciate or depreciate regardless of your attention.
 
-- View your current holdings and their USDC value
+From here you can:
+
+- View your holdings and their USDC value
 - Track profit/loss per position
-- Sell any position back to USDC
-- Deposit ITP tokens into [lending markets](/index/concepts/lending) to earn yield or borrow against them
+- Sell back to USDC when conviction fades
+- Deposit ITP tokens into [lending markets](/index/concepts/lending) — to earn yield, or to borrow against what you own but cannot part with
 
-## What's Next?
+## What Now
+
+You have bought something. The question is whether you understand what you bought. These pages will not make you comfortable, but they will make you informed. The difference matters.
 
 <CardGroup cols={2}>
   <Card title="How ITPs Work" icon="book" href="/index/concepts/itps">
-    Understand the NAV pricing model and how baskets are constructed.
+    The NAV formula. Per-share quantities. The math behind the basket you now hold.
   </Card>
   <Card title="Order Lifecycle" icon="arrows-spin" href="/index/concepts/order-lifecycle">
-    Learn how ITP orders flow from submission through BLS consensus to settlement.
+    What happened between your click and your tokens. Consensus, execution, settlement.
   </Card>
   <Card title="Create Your Own ITP" icon="sliders" href="/index/guides/create-itp">
-    Build a custom index with your own asset selection and weights.
+    Build your own basket. Choose the assets. Set the weights. Own the outcome.
   </Card>
   <Card title="Lending" icon="hand-holding-dollar" href="/index/concepts/lending">
-    Earn yield or leverage ITP positions through Morpho lending markets.
+    Earn yield. Borrow against positions. Leverage is a door that opens in both directions.
   </Card>
 </CardGroup>

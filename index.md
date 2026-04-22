@@ -12,7 +12,7 @@
 | **Primary Language** | Rust (Tokio async), Solidity 0.8.24 |
 | **Architecture** | Multi-node BLS consensus network |
 | **Chain** | Arbitrum Orbit L3 (Chain ID: 111222333) |
-| **Entry Points** | `issuer/src/main.rs`, `ap/src/main.rs` |
+| **Entry Points** | `oracle/src/main.rs`, `ap/src/main.rs` |
 
 ---
 
@@ -20,7 +20,7 @@
 
 ```
 index/
-├── issuer/                 # Rust issuer node (consensus, batching, P2P)
+├── oracle/                 # Rust oracle node (consensus, batching, P2P)
 │   ├── src/
 │   │   ├── consensus/      # BLS signature aggregation
 │   │   ├── cycle/          # 1-second cycle manager
@@ -51,14 +51,13 @@ index/
 ├── contracts/              # Solidity smart contracts (Foundry)
 │   ├── src/
 │   │   ├── core/           # Index.sol, ITP.sol, BLSCustody.sol
-│   │   ├── registry/       # Issuer, Collateral, Asset, Fee registries
+│   │   ├── registry/       # Oracle, Collateral, Asset, Fee registries
 │   │   ├── interfaces/     # Contract interfaces
 │   │   └── libraries/      # TypesLib, ErrorsLib, BLSLib
 │   ├── script/             # Deployment scripts
 │   └── test/               # Foundry tests
 │
 ├── scripts/                # Shell scripts (e2e, deployment)
-├── monitoring/             # Prometheus + Grafana config
 ├── deployments/            # Contract addresses per network
 └── docs/                   # This documentation
 ```
@@ -82,7 +81,7 @@ index/
 ### Implementation Artifacts
 - [Epic 1: Foundation](../_bmad-output/implementation-artifacts/) - Stories 1.1-1.6
 - [Epic 2: Smart Contracts](../_bmad-output/implementation-artifacts/) - Stories 2.1-2.15
-- [Epic 3: Issuer Node](../_bmad-output/implementation-artifacts/) - Stories 3.1-3.17
+- [Epic 3: Oracle Node](../_bmad-output/implementation-artifacts/) - Stories 3.1-3.17
 - [Epic 4: AP Service](../_bmad-output/implementation-artifacts/) - Stories 4.1-4.10
 - [Epic 5: Integrations](../_bmad-output/implementation-artifacts/) - Stories 5.1-5.12
 - [Epic 6: Deployment & E2E](../_bmad-output/implementation-artifacts/) - Stories 6.1-6.19
@@ -114,11 +113,11 @@ cd contracts && forge test
 
 ### CLI Reference
 
-**Issuer Node:**
+**Oracle Node:**
 ```bash
-issuer --node-id 1 --port 9001 --rpc http://localhost:8545
-issuer --real-p2p --peer 192.168.1.10:9002  # Production mode
-issuer --mock --skip-reconstruction          # Development mode
+oracle --node-id 1 --port 9001 --rpc http://localhost:8545
+oracle --real-p2p --peer 192.168.1.10:9002  # Production mode
+oracle --mock --skip-reconstruction          # Development mode
 ```
 
 **AP Service:**

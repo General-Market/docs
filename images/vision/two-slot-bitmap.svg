@@ -1,0 +1,121 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 580" width="960" height="580" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-opacity="0.03"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="960" height="580" fill="white"/>
+
+  <!-- Decorative circles -->
+  <circle cx="80" cy="520" r="160" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="900" cy="60" r="150" fill="#0A0A0A" opacity="0.02"/>
+
+  <!-- ==================== PENDING SLOT CARD ==================== -->
+  <rect x="40" y="32" width="430" height="240" rx="12" fill="#0A0A0A" fill-opacity="0.03" filter="url(#shadow)"/>
+  <!-- Emerald left border -->
+  <rect x="40" y="32" width="3" height="240" rx="1.5" fill="#10B981"/>
+
+  <text x="68" y="68" fill="#0A0A0A" font-size="18" font-weight="700">PENDING SLOT</text>
+  <text x="68" y="88" fill="#0A0A0A" font-size="10" opacity="0.35">Submitted during tick N · For tick N+1</text>
+
+  <!-- Separator -->
+  <line x1="60" y1="100" x2="450" y2="100" stroke="#0A0A0A" stroke-opacity="0.06" stroke-width="1"/>
+
+  <!-- Field rows — alternating fills -->
+  <rect x="52" y="108" width="406" height="30" rx="4" fill="#0A0A0A" fill-opacity="0.02"/>
+  <text x="68" y="128" fill="#0A0A0A" font-size="10" font-weight="600" font-family="'SF Mono', 'Fira Code', monospace">bitmap_data</text>
+  <text x="260" y="128" fill="#0A0A0A" font-size="11" opacity="0.5">[bytes]</text>
+
+  <rect x="52" y="140" width="406" height="30" rx="4" fill="transparent"/>
+  <text x="68" y="160" fill="#0A0A0A" font-size="10" font-weight="600" font-family="'SF Mono', 'Fira Code', monospace">bitmap_hash</text>
+  <text x="260" y="160" fill="#0A0A0A" font-size="11" opacity="0.5">keccak256</text>
+
+  <rect x="52" y="172" width="406" height="30" rx="4" fill="#0A0A0A" fill-opacity="0.02"/>
+  <text x="68" y="192" fill="#0A0A0A" font-size="10" font-weight="600" font-family="'SF Mono', 'Fira Code', monospace">config_hash</text>
+  <text x="260" y="192" fill="#0A0A0A" font-size="11" opacity="0.5">0xabc...</text>
+
+  <rect x="52" y="204" width="406" height="30" rx="4" fill="transparent"/>
+  <text x="68" y="224" fill="#0A0A0A" font-size="10" font-weight="600" font-family="'SF Mono', 'Fira Code', monospace">submitted_at</text>
+  <text x="260" y="224" fill="#0A0A0A" font-size="11" opacity="0.5">tick N</text>
+
+  <!-- ==================== ACTIVE SLOT CARD ==================== -->
+  <rect x="502" y="32" width="430" height="240" rx="12" fill="url(#darkGrad)" filter="url(#shadow)"/>
+
+  <text x="530" y="68" fill="white" font-size="18" font-weight="700">ACTIVE SLOT</text>
+  <text x="530" y="88" fill="white" font-size="10" opacity="0.35">Submitted during tick N-1 · Resolving now</text>
+
+  <!-- Separator -->
+  <line x1="522" y1="100" x2="912" y2="100" stroke="white" stroke-opacity="0.08" stroke-width="1"/>
+
+  <!-- Field rows -->
+  <rect x="514" y="108" width="406" height="30" rx="4" fill="white" fill-opacity="0.04"/>
+  <text x="530" y="128" fill="white" font-size="10" font-weight="600" font-family="'SF Mono', 'Fira Code', monospace" opacity="0.6">bitmap_data</text>
+  <text x="722" y="128" fill="white" font-size="11" opacity="0.4">[bytes]</text>
+
+  <rect x="514" y="140" width="406" height="30" rx="4" fill="transparent"/>
+  <text x="530" y="160" fill="white" font-size="10" font-weight="600" font-family="'SF Mono', 'Fira Code', monospace" opacity="0.6">bitmap_hash</text>
+  <text x="722" y="160" fill="white" font-size="11" opacity="0.4">keccak256</text>
+
+  <rect x="514" y="172" width="406" height="30" rx="4" fill="white" fill-opacity="0.04"/>
+  <text x="530" y="192" fill="white" font-size="10" font-weight="600" font-family="'SF Mono', 'Fira Code', monospace" opacity="0.6">config_hash</text>
+  <text x="722" y="192" fill="white" font-size="11" opacity="0.4">0xabc...</text>
+
+  <rect x="514" y="204" width="406" height="30" rx="4" fill="transparent"/>
+  <text x="530" y="224" fill="white" font-size="10" font-weight="600" font-family="'SF Mono', 'Fira Code', monospace" opacity="0.6">submitted_at</text>
+  <text x="722" y="224" fill="white" font-size="11" opacity="0.4">tick N-1</text>
+
+  <!-- ==================== TRANSITION AREA ==================== -->
+  <text x="480" y="310" text-anchor="middle" fill="#0A0A0A" font-size="10" font-weight="600" letter-spacing="2" opacity="0.4">AT TICK BOUNDARY</text>
+
+  <!-- Curved arrow: PENDING → ACTIVE -->
+  <path d="M300,272 C300,310 420,330 480,330" stroke="#0A0A0A" stroke-opacity="0.12" stroke-width="1.2" fill="none"/>
+  <circle cx="300" cy="272" r="3" fill="#0A0A0A" opacity="0.2"/>
+  <!-- Emerald pill: Becomes ACTIVE -->
+  <rect x="404" y="320" width="152" height="28" rx="14" fill="#10B981"/>
+  <text x="480" y="339" text-anchor="middle" fill="white" font-size="10" font-weight="600">Becomes ACTIVE</text>
+
+  <!-- Curved arrow: ACTIVE → Resolved -->
+  <path d="M680,272 C680,310 560,360 480,370" stroke="#0A0A0A" stroke-opacity="0.12" stroke-width="1.2" fill="none"/>
+  <circle cx="680" cy="272" r="3" fill="#0A0A0A" opacity="0.2"/>
+  <!-- Muted pill: Resolved -->
+  <rect x="374" y="362" width="212" height="28" rx="14" fill="#0A0A0A" fill-opacity="0.05"/>
+  <text x="480" y="381" text-anchor="middle" fill="#0A0A0A" font-size="10" font-weight="600" opacity="0.4">Resolved (PnL applied)</text>
+
+  <!-- ==================== CONFIG-SAFE DECODING ==================== -->
+  <line x1="40" y1="420" x2="920" y2="420" stroke="#0A0A0A" stroke-opacity="0.06" stroke-width="1"/>
+
+  <text x="480" y="450" text-anchor="middle" fill="#0A0A0A" font-size="10" font-weight="600" letter-spacing="2" opacity="0.4">CONFIG-SAFE DECODING</text>
+
+  <!-- Card 1: Player submits -->
+  <rect x="60" y="466" width="250" height="56" rx="12" fill="#0A0A0A" fill-opacity="0.03" filter="url(#shadow)"/>
+  <text x="80" y="490" fill="#0A0A0A" font-size="12" font-weight="600">Player submits</text>
+  <text x="80" y="506" fill="#0A0A0A" font-size="11" opacity="0.5">with config C1</text>
+
+  <!-- Arrow 1→2 -->
+  <line x1="310" y1="494" x2="348" y2="494" stroke="#0A0A0A" stroke-opacity="0.12" stroke-width="1.2"/>
+  <path d="M344,490 L352,494 L344,498" fill="#0A0A0A" opacity="0.12"/>
+
+  <!-- Card 2: Config updates — amber left border -->
+  <rect x="355" y="466" width="250" height="56" rx="12" fill="#0A0A0A" fill-opacity="0.03" filter="url(#shadow)"/>
+  <rect x="355" y="466" width="3" height="56" rx="1.5" fill="#F59E0B"/>
+  <text x="375" y="490" fill="#0A0A0A" font-size="12" font-weight="600">Config updates</text>
+  <text x="375" y="506" fill="#0A0A0A" font-size="11" opacity="0.5">to C2</text>
+
+  <!-- Arrow 2→3 -->
+  <line x1="605" y1="494" x2="643" y2="494" stroke="#0A0A0A" stroke-opacity="0.12" stroke-width="1.2"/>
+  <path d="M639,490 L647,494 L639,498" fill="#0A0A0A" opacity="0.12"/>
+
+  <!-- Card 3: Resolver loads -->
+  <rect x="650" y="466" width="250" height="56" rx="12" fill="#0A0A0A" fill-opacity="0.03" filter="url(#shadow)"/>
+  <text x="670" y="490" fill="#0A0A0A" font-size="12" font-weight="600">Resolver loads C1</text>
+  <text x="670" y="506" fill="#0A0A0A" font-size="11" opacity="0.5">from stored hash</text>
+
+  <!-- Emerald confirmation -->
+  <text x="480" y="548" text-anchor="middle" fill="#10B981" font-size="11" font-weight="600">Correct markets matched ✓</text>
+</svg>

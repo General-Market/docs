@@ -5,7 +5,7 @@ description: "Player rankings across all Vision batches"
 
 # Leaderboard
 
-Retrieve the global player leaderboard, ranked by PnL across all Vision batches.
+Who has been least wrong. The global player leaderboard, ranked by PnL across all Vision batches.
 
 ---
 
@@ -13,9 +13,7 @@ Retrieve the global player leaderboard, ranked by PnL across all Vision batches.
 
 `GET /vision/leaderboard`
 
-Returns player rankings aggregated across all active batches. Players are ranked by total PnL (current balance minus initial deposit). Statistics include ROI, total volume, and portfolio metrics.
-
-No parameters required.
+Returns player rankings aggregated across all active batches. Ranked by total PnL -- current balance minus initial deposit. The hierarchy of those who have, so far, been more right than wrong.
 
 <Tabs>
 <Tab title="cURL">
@@ -110,7 +108,7 @@ for (const entry of data.leaderboard.slice(0, 10)) {
 | `largestPortfolio` | number | Largest number of markets in any single batch the player joined |
 
 <Info>
-The leaderboard is computed in real-time from in-memory player positions and Postgres deposit records. Rankings update after every tick resolution.
+Computed in real-time from in-memory positions and Postgres deposit records. Rankings update after every tick resolution. Fame is transient -- one bad tick can rearrange the hierarchy.
 </Info>
 
 <Note>

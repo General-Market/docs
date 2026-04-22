@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 820" width="960" height="820" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadow" x="-4%" y="-4%" width="108%" height="116%">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-opacity="0.03"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="960" height="820" fill="#FFFFFF"/>
+
+  <!-- Vertical divider -->
+  <line x1="480" y1="95" x2="480" y2="720" stroke="#0A0A0A" stroke-width="1" opacity="0.04" stroke-dasharray="6 4"/>
+
+  <!-- ===== CHAIN HEADERS ===== -->
+  <rect x="40" y="24" width="410" height="52" rx="12" fill="url(#darkGrad)" filter="url(#shadow)"/>
+  <text x="245" y="50" text-anchor="middle" fill="white" font-size="15" font-weight="700">INDEX L3</text>
+  <text x="245" y="68" text-anchor="middle" fill="white" font-size="10" opacity="0.4">Chain 111222333 · USDC 18 decimals</text>
+
+  <rect x="510" y="24" width="410" height="52" rx="12" fill="url(#darkGrad)" filter="url(#shadow)"/>
+  <text x="715" y="50" text-anchor="middle" fill="white" font-size="15" font-weight="700">SETTLEMENT</text>
+  <text x="715" y="68" text-anchor="middle" fill="white" font-size="10" opacity="0.4">Chain 14601 · USDC 6 decimals</text>
+
+  <!-- ===== STEP 1: Submit Order (L3 side) ===== -->
+  <rect x="60" y="110" width="370" height="86" rx="12" fill="#0A0A0A" opacity="0.03" filter="url(#shadow)"/>
+  <circle cx="84" cy="134" r="12" fill="#0A0A0A" opacity="0.08"/>
+  <text x="84" y="139" text-anchor="middle" fill="#0A0A0A" font-size="12" font-weight="700">1</text>
+  <text x="106" y="139" fill="#0A0A0A" font-size="14" font-weight="600">User Submits Buy on L3</text>
+  <text x="84" y="162" fill="#0A0A0A" font-size="10" font-family="JetBrains Mono, monospace" opacity="0.4">submitOrder(itpId, amount, BUY)</text>
+  <text x="84" y="182" fill="#0A0A0A" font-size="11" opacity="0.5">USDC escrowed in Index.sol</text>
+
+  <!-- Connection: Step 1 → Step 2 -->
+  <path d="M 245 196 Q 245 222, 370 238" stroke="#0A0A0A" stroke-width="0.75" opacity="0.12" fill="none"/>
+  <circle cx="245" cy="196" r="3" fill="#0A0A0A" opacity="0.2"/>
+
+  <!-- ===== STEP 2: Oracle Consensus (center, dark) ===== -->
+  <rect x="290" y="234" width="380" height="82" rx="14" fill="url(#darkGrad)" filter="url(#shadow)"/>
+  <circle cx="600" cy="256" r="120" fill="white" opacity="0.015"/>
+  <text x="480" y="264" text-anchor="middle" fill="white" font-size="14" font-weight="600">2. Oracle BLS Consensus</text>
+  <text x="480" y="286" text-anchor="middle" fill="white" font-size="11" opacity="0.5">Round #1: submit order · Round #2: batch order</text>
+  <text x="480" y="304" text-anchor="middle" fill="white" font-size="11" opacity="0.3">ceil(2n/3) signatures aggregated</text>
+
+  <!-- Connection: Step 2 → Step 3 -->
+  <path d="M 580 316 Q 640 342, 715 350" stroke="#0A0A0A" stroke-width="0.75" opacity="0.12" fill="none"/>
+  <circle cx="580" cy="316" r="3" fill="#0A0A0A" opacity="0.2"/>
+
+  <!-- ===== STEP 3: completeBuyOrder (Settlement side, emerald border) ===== -->
+  <rect x="530" y="346" width="370" height="100" rx="12" fill="#0A0A0A" opacity="0.03" filter="url(#shadow)"/>
+  <rect x="530" y="346" width="3" height="100" rx="1.5" fill="#10B981"/>
+  <circle cx="556" cy="372" r="12" fill="#10B981" opacity="0.15"/>
+  <text x="556" y="377" text-anchor="middle" fill="#10B981" font-size="12" font-weight="700">3</text>
+  <text x="578" y="377" fill="#0A0A0A" font-size="14" font-weight="600">completeBuyOrder()</text>
+  <text x="556" y="400" fill="#0A0A0A" font-size="10" font-family="JetBrains Mono, monospace" opacity="0.4">SettlementBridgeCustody · BLS round #3</text>
+  <text x="556" y="420" fill="#0A0A0A" font-size="11" opacity="0.5">Releases escrowed USDC to AP vault</text>
+  <circle cx="564" cy="436" r="3" fill="#10B981"/>
+  <text x="578" y="440" fill="#10B981" font-size="10" font-weight="500">Backing invariant enforced here</text>
+
+  <!-- Connection: Step 3 → Step 4 -->
+  <path d="M 715 446 Q 715 472, 580 480" stroke="#0A0A0A" stroke-width="0.75" opacity="0.12" fill="none"/>
+  <circle cx="715" cy="446" r="3" fill="#0A0A0A" opacity="0.2"/>
+
+  <!-- ===== STEP 4: AP Buys (center, dark) ===== -->
+  <rect x="290" y="476" width="380" height="68" rx="14" fill="url(#darkGrad)" filter="url(#shadow)"/>
+  <text x="480" y="506" text-anchor="middle" fill="white" font-size="14" font-weight="600">4. AP Buys Underlying Assets</text>
+  <text x="480" y="526" text-anchor="middle" fill="white" font-size="11" opacity="0.4">Real trades on Bitget · Real order books</text>
+
+  <!-- Connection: Step 4 → Step 5 (left) and Step 6 (right) -->
+  <path d="M 380 544 Q 310 568, 245 576" stroke="#0A0A0A" stroke-width="0.75" opacity="0.12" fill="none"/>
+  <path d="M 580 544 Q 650 568, 715 576" stroke="#0A0A0A" stroke-width="0.75" opacity="0.12" fill="none"/>
+  <circle cx="380" cy="544" r="3" fill="#0A0A0A" opacity="0.2"/>
+  <circle cx="580" cy="544" r="3" fill="#0A0A0A" opacity="0.2"/>
+
+  <!-- ===== STEP 5: confirmFills (L3 side) ===== -->
+  <rect x="60" y="572" width="370" height="86" rx="12" fill="#0A0A0A" opacity="0.03" filter="url(#shadow)"/>
+  <circle cx="84" cy="596" r="12" fill="#0A0A0A" opacity="0.08"/>
+  <text x="84" y="601" text-anchor="middle" fill="#0A0A0A" font-size="12" font-weight="700">5</text>
+  <text x="106" y="601" fill="#0A0A0A" font-size="14" font-weight="600">confirmFills() on L3</text>
+  <text x="84" y="624" fill="#0A0A0A" font-size="10" font-family="JetBrains Mono, monospace" opacity="0.4">Index.sol · BLS round #4</text>
+  <text x="84" y="644" fill="#0A0A0A" font-size="11" opacity="0.5">ITP shares minted to user · 0.1% price tolerance</text>
+
+  <!-- ===== STEP 6: mintBridgedShares (Settlement side) ===== -->
+  <rect x="530" y="572" width="370" height="86" rx="12" fill="#0A0A0A" opacity="0.03" filter="url(#shadow)"/>
+  <circle cx="554" cy="596" r="12" fill="#0A0A0A" opacity="0.08"/>
+  <text x="554" y="601" text-anchor="middle" fill="#0A0A0A" font-size="12" font-weight="700">6</text>
+  <text x="576" y="601" fill="#0A0A0A" font-size="14" font-weight="600">mintBridgedShares()</text>
+  <text x="554" y="624" fill="#0A0A0A" font-size="10" font-family="JetBrains Mono, monospace" opacity="0.4">BridgeProxy · BLS-verified</text>
+  <text x="554" y="644" fill="#0A0A0A" font-size="11" opacity="0.5">BridgedITP (ERC-20 replica) minted on Settlement</text>
+
+  <!-- Connection: Steps 5 & 6 → Result -->
+  <path d="M 245 658 Q 245 694, 360 712" stroke="#0A0A0A" stroke-width="0.75" opacity="0.12" fill="none"/>
+  <path d="M 715 658 Q 715 694, 600 712" stroke="#0A0A0A" stroke-width="0.75" opacity="0.12" fill="none"/>
+  <circle cx="245" cy="658" r="3" fill="#0A0A0A" opacity="0.2"/>
+  <circle cx="715" cy="658" r="3" fill="#0A0A0A" opacity="0.2"/>
+
+  <!-- ===== RESULT ===== -->
+  <rect x="200" y="708" width="560" height="72" rx="12" fill="#0A0A0A" opacity="0.03" filter="url(#shadow)"/>
+  <rect x="200" y="708" width="3" height="72" rx="1.5" fill="#10B981"/>
+  <text x="480" y="738" text-anchor="middle" fill="#0A0A0A" font-size="14" font-weight="600">User Holds Both</text>
+  <text x="480" y="760" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.5">ITP shares on L3 (Index.sol) + BridgedITP on Settlement (ERC-20 replica)</text>
+
+</svg>

@@ -5,7 +5,9 @@ description: "On-chain contract architecture for the Index protocol"
 
 # On-Chain Contract Architecture
 
-The Index protocol's on-chain layer is built in Solidity (~7.3K LOC) and deployed on an Arbitrum Orbit L3 (Chain ID `111222333`). Contracts follow a UUPS proxy pattern (OpenZeppelin 5.x) and enforce BLS signature verification on all critical paths -- no test modes, no owner overrides.
+The contracts are the truth. Everything else is commentary.
+
+7,300 lines of Solidity on an Arbitrum Orbit L3. UUPS proxies. BLS verification on every path that matters. No test modes, no owner overrides -- because the moment you add a bypass, you have admitted the system does not believe in itself.
 
 ## ITP Core Contracts
 
@@ -16,13 +18,13 @@ The Index protocol's on-chain layer is built in Solidity (~7.3K LOC) and deploye
 | **BridgeProxy.sol** | Cross-chain order routing between Arbitrum L1/L2 and the L3. Relays user orders submitted on Arbitrum down to the Index contract on L3. |
 | **BridgedItpFactory.sol** | Factory that creates ERC-20 representations of ITP shares on Arbitrum, enabling L1/L2 composability without requiring users to interact with L3 directly. |
 | **Governance.sol** | Administrative controls including global pause, per-ITP pause, and role management. |
-| **BLSCustody.sol** | Executes custody operations (deposits, withdrawals) gated by BLS-signed consensus from issuer nodes. |
+| **BLSCustody.sol** | Executes custody operations (deposits, withdrawals) gated by BLS-signed consensus from oracle nodes. |
 
 ## Registry Contracts
 
 | Contract | Description |
 |---|---|
-| **IssuerRegistry.sol** | Stores issuer node BLS public keys, manages the aggregated public key, and handles key rotation. New issuer nodes must register in IssuerRegistry before participating in consensus. |
+| **OracleRegistry.sol** | Stores oracle node BLS public keys, manages the aggregated public key, and handles key rotation. New oracle nodes must register in OracleRegistry before participating in consensus. |
 | **CollateralRegistry.sol** | Maintains the whitelist of accepted collateral tokens (currently USDC). Controls which tokens can back ITP creation and order settlement. |
 | **AssetPairRegistry.sol** | Configures trading pairs available on the protocol -- maps asset identifiers to on-chain and off-chain parameters. |
 | **FeeRegistry.sol** | Defines fee tiers for different operations and manages deployer fee claiming. Protocol fees are accrued in FeeRegistry and claimable by authorized addresses. |
@@ -34,19 +36,19 @@ The Index protocol's on-chain layer is built in Solidity (~7.3K LOC) and deploye
 | **TypesLib.sol** | Shared struct definitions used across the protocol: `LimitOrder`, `Fill`, `ITP`, batch metadata, and more. |
 | **ErrorsLib.sol** | Custom error definitions ranging from `E001` through `E069+`. Every revert in the protocol uses a typed error from ErrorsLib. |
 | **EventsLib.sol** | Event definitions emitted by core contracts -- `OrderSubmitted`, `BatchConfirmed`, `FillExecuted`, `ITPCreated`, `WeightsUpdated`, etc. |
-| **BLSLib.sol** | BLS signature verification using EVM precompiles on the BN254 curve. Called by every path that validates issuer node consensus. |
+| **BLSLib.sol** | BLS signature verification using EVM precompiles on the BN254 curve. Called by every path that validates oracle node consensus. |
 
 ## Storage Layout
 
 <Info>
-  **IndexStorage.sol** holds `_itpInventory[itpId]`, the mapping that stores fixed per-share quantities for each asset in an ITP. The per-share quantities are set at ITP creation and only change on rebalance -- buy/sell operations mint or burn shares proportionally without modifying the inventory.
+  `IndexStorage.sol` holds `_itpInventory[itpId]` -- the fixed per-share quantities for each asset. Set at creation. Changed only on rebalance. Buy and sell do not touch it. This is the invariant that makes everything else possible.
 </Info>
 
-All upgradeable contracts use the **UUPS proxy pattern** from OpenZeppelin 5.x. Storage slots are carefully managed to avoid collisions across upgrades.
+All upgradeable contracts use UUPS proxies (OpenZeppelin 5.x). Storage slots are managed to survive upgrades. The proxy address is permanent. Only the implementation changes.
 
 ## ITP NAV Pricing Model
 
-ITPs follow an ETF-like pricing model. At creation, each ITP starts at \$1 (`1e18` in fixed-point):
+Every ITP starts at \$1. Then the market takes over. The price drifts as underlying assets move -- this is the point.
 
 ```solidity
 // At creation (or rebalance), weights become fixed quantities:
@@ -56,22 +58,24 @@ qty[i] = (weight[i] * 1e18) / price[i]
 NAV = sum(qty[i] * price[i]) / 1e18
 ```
 
-**Key invariants:**
-- Per-share quantities are stored on-chain in `_itpInventory` and **only change on rebalance**
-- Buy and sell operations mint/burn proportional shares -- buy/sell never modify per-share quantities
-- Rebalance recalculates quantities to preserve NAV: `qty_new[i] = (w_new[i] * currentNAV) / price[i]`
-- NAV drifts from \$1 over time as underlying asset prices move -- price drift is the intended behavior
+**Invariants -- violate any of these and the system is lying:**
+- Per-share quantities live in `_itpInventory`. They change only on rebalance.
+- Buy and sell mint or burn shares proportionally. They never touch quantities.
+- Rebalance preserves NAV: `qty_new[i] = (w_new[i] * currentNAV) / price[i]`
+- NAV drifts from \$1 as underlying prices move. Drift is the product, not a bug.
 
 ## BLS Signature Security
 
+Every state change that matters requires cryptographic proof that the machines agreed. There is no alternative path.
+
 <Warning>
-  BLS verification is **never bypassed**. There are no test modes, no `onlyOwner` admin overrides, no `aggregatedPubkey.length == 0` short-circuit paths. Every batch confirmation requires a valid aggregated BLS signature from issuer nodes.
+  BLS verification is **never bypassed**. No test modes. No `onlyOwner` overrides. No `aggregatedPubkey.length == 0` short circuits. If BLS is in the way, fix the BLS pipeline. Do not carve a hole in the wall.
 </Warning>
 
-- **Curve:** BN254 (alt_bn128), compatible with Ethereum precompiles at addresses `0x06`, `0x07`, `0x08`
-- **Threshold:** Requires signatures from at least `ceil(2n/3)` registered issuer nodes
-- **Key management:** Aggregated public key stored in `IssuerRegistry.sol`, updated on issuer node join/leave/rotation
-- **Verification flow:** `BLSLib.verify(message, signature, aggregatedPubkey)` is called in `confirmBatch()` before any state changes are applied
+- **Curve:** BN254 (alt_bn128) -- precompiles at `0x06`, `0x07`, `0x08`
+- **Threshold:** `ceil(2n/3)` of registered oracle nodes
+- **Key management:** Aggregated public key in `OracleRegistry.sol`, updated on join/leave/rotation
+- **Verification:** `BLSLib.verify(message, signature, aggregatedPubkey)` in `confirmBatch()`, before any state change
 
 ## ITP Order Lifecycle
 
@@ -82,7 +86,7 @@ User submits order (L3 or via BridgeProxy)
   Index.sol stores pending order
         │
         ▼
-  Issuer nodes batch orders off-chain
+  Oracle nodes batch orders off-chain
         │
         ▼
   confirmBatch() called with BLS signature
@@ -102,7 +106,7 @@ User submits order (L3 or via BridgeProxy)
 
 ## Vision Prediction Market Contracts
 
-Vision is a parimutuel prediction market where users and bots place directional bets on real-world outcomes.
+Vision turns opinions into positions and positions into outcomes. Parimutuel -- winners take from losers, and the pool does not lie about who was right.
 
 | Contract | Description |
 |---|---|

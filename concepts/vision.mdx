@@ -5,7 +5,7 @@ description: "Sealed parimutuel prediction market for binary price bets"
 
 # Vision (Prediction Market)
 
-Vision is a sealed parimutuel prediction market built on the General Market L3 chain. Traders bet on whether asset prices move UP or DOWN over fixed time intervals called ticks. All bets within a tick share a common pool — winners split the losers' stakes, minus a 0.3% protocol fee on profits.
+Vision is a sealed parimutuel prediction market built on the General Market L3 chain. Traders bet on whether asset prices move UP or DOWN over fixed time intervals called ticks. All bets within a tick share a common pool — winners split the losers' stakes, minus a 0.05% protocol fee on profits.
 
 <Info>
 Vision uses the internal technical name "P2Pool" in contract code and API endpoints. User-facing references use "Vision."
@@ -35,7 +35,7 @@ Bitmaps use big-endian bit ordering: bit 0 is the MSB of byte 0, bit 7 is the LS
 Bitmaps follow a commit-reveal scheme:
 
 1. **Commit** — the player submits `keccak256(bitmap)` on-chain when joining the batch. The hash is stored in the Vision contract.
-2. **Reveal** — the player sends the actual bitmap bytes to issuer nodes via `POST /p2pool/bitmap`. Issuers verify the hash matches the on-chain commitment.
+2. **Reveal** — the player sends the actual bitmap bytes to oracle nodes via `POST /p2pool/bitmap`. Oracles verify the hash matches the on-chain commitment.
 
 The sealed commitment prevents front-running: other players cannot see bet directions until after the commitment deadline.
 
@@ -43,7 +43,7 @@ The sealed commitment prevents front-running: other players cannot see bet direc
 
 A tick is one resolution interval within a batch. At the end of each tick:
 
-1. Issuer nodes fetch closing prices for all markets in the batch
+1. Oracle nodes fetch closing prices for all markets in the batch
 2. Each market resolves to a binary outcome based on price movement and the configured resolution type
 3. Each player's bitmap is compared against the actual outcomes
 4. The tick pool (sum of all players' `stakePerTick`) is distributed to winners proportionally
@@ -68,24 +68,24 @@ Each market in a batch has a resolution type that determines the price movement 
 
 ## Balance Proofs
 
-Player balances are tracked off-chain by issuer nodes and verified on-chain via BLS signatures. To claim rewards or withdraw funds, a player requests a **balance proof** from the issuer network:
+Player balances are tracked off-chain by oracle nodes and verified on-chain via BLS signatures. To claim rewards or withdraw funds, a player requests a **balance proof** from the oracle network:
 
 1. Player calls `GET /p2pool/balance/{batchId}/{player}`
-2. Issuer nodes compute the player's current balance (deposits + winnings - losses - fees)
-3. Issuers produce a BLS-signed message containing the balance
+2. Oracle nodes compute the player's current balance (deposits + winnings - losses - fees)
+3. Oracles produce a BLS-signed message containing the balance
 4. Player submits the balance and BLS signature to the Vision contract
-5. The contract verifies the BLS signature against the registered issuer keys and updates the player's on-chain balance
+5. The contract verifies the BLS signature against the registered oracle keys and updates the player's on-chain balance
 
 <Warning>
-BLS verification is never bypassed in Vision. Every claim and withdrawal requires a valid aggregated BLS signature from the issuer network — no test modes, no admin overrides.
+BLS verification is never bypassed in Vision. Every claim and withdrawal requires a valid aggregated BLS signature from the oracle network — no test modes, no admin overrides.
 </Warning>
 
 ## Fee Structure
 
-Vision charges a **0.3% fee (30 basis points) on profits only**. Players who lose a tick pay no fee. The fee is deducted from winnings before payout.
+Vision charges a **0.05% fee (5 basis points) on profits only**. Players who lose a tick pay no fee. The fee is deducted from winnings before payout.
 
 ```
-fee = (winnings * 30) / 10000
+fee = (winnings * 5) / 10000
 payout = winnings - fee
 ```
 

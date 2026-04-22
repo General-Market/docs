@@ -5,7 +5,7 @@ description: "Real-time and historical asset price data"
 
 # Price Endpoints
 
-Retrieve real-time and historical price data for supported assets. Multiple endpoints are available depending on your use case: single asset lookups, bulk fetches, and low-latency trading prices.
+Prices. The only fact the market agrees on, and only for an instant. Four endpoints, each with a different tradeoff between freshness and speed.
 
 ---
 
@@ -15,7 +15,7 @@ Retrieve real-time and historical price data for supported assets. Multiple endp
   Asset ticker symbol (e.g., `BTC`, `ETH`, `SOL`).
 </ParamField>
 
-Returns the latest price for the specified asset, including the data source and timestamp.
+One asset. One price. The source and timestamp are included so you know where the number came from and how old it is.
 
 <CodeGroup>
 ```bash cURL
@@ -57,7 +57,7 @@ data = resp.json()
 
 ## Get All Latest Prices
 
-Returns the latest price for every supported asset.
+Every supported asset. One call.
 
 <CodeGroup>
 ```bash cURL
@@ -97,7 +97,7 @@ data = resp.json()
 
 ## Get Latest Prices (Bulk Map)
 
-Optimized bulk fetch that returns a map of asset tickers to prices. More efficient than `/prices` when you need to look up prices by asset name.
+Same data as `/prices`, but keyed by ticker for direct lookup. Use this when you know what you are looking for.
 
 <CodeGroup>
 ```bash cURL
@@ -131,13 +131,13 @@ print(price_map["BTC"])  # 97432.15
 ```
 </Expandable>
 
-The response body is a JSON object where each key is an asset ticker and each value is the latest USD price for that asset.
+Keys are tickers. Values are USD prices.
 
 ---
 
 ## Get Fast Prices
 
-Low-latency price endpoint optimized for trading. Fast prices may be slightly stale compared to `/price`, but the `/fast-prices` response is faster, making the endpoint suitable for UI display and order previews.
+Cached. Possibly a few seconds stale. Faster to serve. Use this for UI display and order previews -- not for final execution pricing.
 
 <CodeGroup>
 ```bash cURL

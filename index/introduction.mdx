@@ -1,72 +1,275 @@
 ---
 title: "Introduction"
-description: "Decentralized protocol for on-chain index products"
+description: "General Market — on-chain ETFs, prediction markets across 90+ data sources, and DeFi lending"
 ---
 
-# Index
+```text
+   ____                           _   __  __            _        _
+  / ___| ___ _ __   ___ _ __ __ _| | |  \/  | __ _ _ __| | _____| |_
+ | |  _ / _ \ '_ \ / _ \ '__/ _` | | | |\/| |/ _` | '__| |/ / _ \ __|
+ | |_| |  __/ | | |  __/ | | (_| | | | |  | | (_| | |  |   <  __/ |_
+  \____|\___|_| |_|\___|_|  \__,_|_| |_|  |_|\__,_|_|  |_|\_\___|\__|
 
-General Market Index lets anyone create, buy, and sell **Index Tracking Products (ITPs)** -- tokenized baskets of crypto assets, functioning like on-chain ETFs. Built on an Arbitrum Orbit L3, each ITP is backed by real exchange execution and priced via a Net Asset Value (NAV) formula.
+  On-chain ETFs  ·  Prediction Markets  ·  DeFi Lending
+  ────────────────────────────────────────────────────────
+  90+ data sources  ·  BLS consensus  ·  Real execution
+```
 
-## What Index Does
+# General Market
 
-Index Tracking Products (ITPs) are tokenized baskets of up to 100 crypto assets. Each ITP is backed by real exchange execution and priced via a Net Asset Value (NAV) formula. You buy one token and get diversified exposure to an entire basket.
+You will lose money here. Everyone does, everywhere. The difference is that here, the math is visible.
 
-<Info>
-ITPs work like ETFs. You buy one token and get diversified exposure to an entire basket. The NAV floats with underlying asset prices -- that is the whole point.
-</Info>
+General Market is a protocol for **index products**, **prediction markets**, and **DeFi lending** — running on a custom Arbitrum Orbit L3 with sub-second finality and near-zero gas. It is 8 services, 29 smart contracts, 2 EVM chains, 90+ real-world data sources, and a bot framework. One does not build all this because it is wise. One builds it because the alternative — trusting someone else's spreadsheet — is worse.
 
-## Key Features
+```text
+ ┌─────────────────────────────────────────────────────────────────────────────┐
+ │                                                                             │
+ │                    THE  THREE  PILLARS                                      │
+ │                                                                             │
+ │    ┌───────────────────┐  ┌───────────────────┐  ┌───────────────────┐     │
+ │    │                   │  │                   │  │                   │     │
+ │    │   I N D E X       │  │  V I S I O N      │  │  L E N D I N G   │     │
+ │    │                   │  │                   │  │                   │     │
+ │    │  On-chain ETFs    │  │  Prediction       │  │  Morpho-powered  │     │
+ │    │  (ITPs)           │  │  markets across   │  │  lending         │     │
+ │    │                   │  │  90+ real-world   │  │                   │     │
+ │    │  ┌─────────────┐  │  │  data sources     │  │  ┌─────────────┐ │     │
+ │    │  │ BTC   12.5% │  │  │                   │  │  │ Supply USDC │ │     │
+ │    │  │ ETH   10.0% │  │  │  ┌─────────────┐  │  │  │ to earn     │ │     │
+ │    │  │ SOL    8.0% │  │  │  │ Will the    │  │  │  │ yield       │ │     │
+ │    │  │ ...   69.5% │  │  │  │ Paris Metro │  │  │  │             │ │     │
+ │    │  │ ═══════════ │  │  │  │ be late     │  │  │  │ Borrow USDC │ │     │
+ │    │  │ NAV: $1.34  │  │  │  │ today?      │  │  │  │ against ITP │ │     │
+ │    │  └─────────────┘  │  │  └─────────────┘  │  │  │ collateral  │ │     │
+ │    │                   │  │                   │  │  └─────────────┘ │     │
+ │    │  Up to 100 assets │  │  Sealed bets,     │  │                   │     │
+ │    │  per basket.      │  │  parimutuel       │  │  ITP shares as   │     │
+ │    │  Real exchange    │  │  payouts,          │  │  collateral on   │     │
+ │    │  execution via    │  │  BLS-verified     │  │  Arbitrum.        │     │
+ │    │  Bitget + BLS     │  │  resolution.      │  │  On-chain NAV    │     │
+ │    │  consensus.       │  │                   │  │  oracle pricing. │     │
+ │    │                   │  │                   │  │                   │     │
+ │    └───────────────────┘  └───────────────────┘  └───────────────────┘     │
+ │                                                                             │
+ └─────────────────────────────────────────────────────────────────────────────┘
+```
 
-<CardGroup cols={2}>
-  <Card title="Index Tracking Products" icon="chart-pie">
-    Buy and sell tokenized baskets of up to 100 crypto assets. Each ITP is an ERC-4626 vault token with transparent NAV pricing.
+---
+
+## The Three Pillars
+
+<CardGroup cols={3}>
+  <Card title="Index (ITPs)" icon="chart-pie" href="/index/concepts/itps">
+    Baskets of up to 100 crypto assets. Each ITP is an ERC-4626 vault priced by a NAV formula that hides nothing. Orders pass through BLS consensus and execute on real exchanges. No AMM. No slippage. No illusions about liquidity.
   </Card>
-  <Card title="Create Custom Indexes" icon="sliders">
-    Build your own ITP with custom weights and asset selection. Set a fee tier and earn protocol fees as the deployer.
+  <Card title="Vision" icon="eye" href="/vision/introduction">
+    Prediction markets on 90+ real-world data sources. Transport delays, power outages, weather, GitHub commits, energy prices. You bet on whether the Paris Metro will be late. It usually is. Sealed bets, parimutuel payouts, BLS-verified resolution.
   </Card>
-  <Card title="Lending (Morpho)" icon="building-columns">
-    Deposit USDC to earn yield from borrowers, or use your ITP shares as collateral to borrow USDC through Morpho-powered lending markets.
-  </Card>
-  <Card title="Backtesting" icon="clock-rotate-left">
-    Simulate ITP performance against historical price data before committing real capital. Test your thesis before you deploy.
-  </Card>
-  <Card title="Exchange-Backed Execution" icon="shield-check">
-    Orders are batched by issuer nodes with BLS consensus, then executed on Bitget by Authorized Participants (APs) -- no AMM slippage.
-  </Card>
-  <Card title="On-Chain Settlement" icon="link">
-    All ITP tokens are ERC-4626 vault tokens on the Index L3. Fully composable with other DeFi protocols.
+  <Card title="Lending" icon="building-columns" href="/index/concepts/lending">
+    Morpho-powered lending on Arbitrum. Deposit USDC to earn yield from borrowers who believe their collateral will hold. Use ITP shares to borrow USDC against positions you cannot bring yourself to sell.
   </Card>
 </CardGroup>
 
-## Who Is Index For?
+---
 
-| Audience | Use Case |
-|----------|----------|
-| **Individual traders** | Buy diversified crypto exposure with a single transaction instead of managing dozens of positions |
-| **Fund managers** | Create and manage custom indexes with configurable weights, earn deployer fees |
-| **DAOs & treasuries** | Diversify treasury holdings into on-chain index products with NAV-based pricing |
-| **DeFi power users** | Use ITP positions as collateral for lending, combine with other DeFi strategies |
+## What Happens Here
 
-## How It Works (30-Second Version)
+```text
+  YOU                          GENERAL MARKET                         REAL WORLD
+  ═══                          ══════════════                         ══════════
 
-1. **Browse** available ITPs on the Markets tab -- each ITP shows live NAV, composition, and performance.
-2. **Buy** with USDC. The buy order is batched by issuer nodes, executed on a real exchange, and ITP tokens are minted to the buyer's wallet.
-3. **Hold or sell** anytime. The ITP's NAV tracks the underlying basket. Sell to redeem USDC at the current NAV.
-4. **Earn more** by depositing ITP tokens as collateral in lending markets, or supply USDC to earn yield.
+   │                                │                                     │
+   │   "Buy the Top-100 ITP"       │                                     │
+   ├───────────────────────────────►│                                     │
+   │                                │  Oracle consensus (BLS, 1s cycle)   │
+   │                                │  ─────────────────────────────────  │
+   │                                │  3 nodes agree on price + batch     │
+   │                                │                                     │
+   │                                │         Execute on Bitget ─────────►│
+   │                                │◄──────────── Fill confirmed ────────│
+   │   ITP shares in your wallet    │                                     │
+   │◄───────────────────────────────│                                     │
+   │                                │                                     │
+   │   "Bet: RATP Line 13 late"    │                                     │
+   ├───────────────────────────────►│                                     │
+   │                                │  Sealed bet placed (nobody sees it) │
+   │                                │                                     │
+   │                                │◄──────── Actual delay data ─────────│
+   │                                │  BLS-verified tick resolution       │
+   │                                │                                     │
+   │   Payout if you were right     │                                     │
+   │◄───────────────────────────────│                                     │
+   │                                │                                     │
+   │   "Supply USDC to lending"    │                                     │
+   ├───────────────────────────────►│                                     │
+   │                                │  Morpho vault accepts deposit       │
+   │   Earn yield from borrowers    │                                     │
+   │◄───────────────────────────────│                                     │
+   │                                │                                     │
+```
 
-## Quick Links
+---
+
+## The Infrastructure Beneath
+
+Every system is an act of faith in its own plumbing. These are the pipes.
+
+<CardGroup cols={2}>
+  <Card title="Data Node" icon="database">
+    A Rust service that aggregates 90+ data sources into one API. Crypto prices, transport delays, energy grids, weather stations, GitHub activity. It feeds NAV computation, market resolution, backtesting, and anomaly detection. The nervous system of the protocol. It never sleeps, because the world does not.
+  </Card>
+  <Card title="Bridge" icon="bridge">
+    Moves assets between the Index L3 and Arbitrum. ITP shares cross as standard ERC-20 tokens, composable with DeFi on the other side. Two chains, one position. The bridge is the part you forget about until it matters.
+  </Card>
+  <Card title="Explorer" icon="magnifying-glass-chart">
+    System health dashboard. Oracle node status, consensus metrics, data source monitoring, fee tracking. The control tower. The place you visit when things are working, to reassure yourself they still are.
+  </Card>
+  <Card title="Bot Framework" icon="robot">
+    Python trading bots for Vision markets. Register on-chain through the BotRegistry. Build strategies programmatically. The machines trade while you sleep, which is either a comfort or a terror.
+  </Card>
+  <Card title="Points System" icon="star">
+    Season 1 rewards. Earn points for trading ITPs, placing bets, supplying liquidity. Points track engagement. Whether engagement deserves tracking is a question the protocol does not ask.
+  </Card>
+  <Card title="Social Bot" icon="bullhorn">
+    Anomaly detection across 90+ sources. When something unusual happens — a transit collapse, a grid failure, a weather event — it posts to Twitter/X. Attention follows catastrophe. Markets follow attention.
+  </Card>
+</CardGroup>
+
+---
+
+## Architecture
+
+```text
+ ┌──────────────────────────────────────────────────────────────────────────────┐
+ │                                                                              │
+ │   USERS / BOTS                                                               │
+ │       │                                                                      │
+ │       ▼                                                                      │
+ │   ┌──────────────────────────────────────────────┐                           │
+ │   │            FRONTEND  (Next.js / Vercel)       │                           │
+ │   │   Trading · Vision · Lending · Explorer       │                           │
+ │   │   Points · Backtesting · Learning Content     │                           │
+ │   └──────────┬───────────────────────┬────────────┘                           │
+ │              │                       │                                        │
+ │         SSE + REST              RPC calls                                    │
+ │              │                       │                                        │
+ │   ┌──────────▼──────────┐    ┌───────▼───────────────────────────────────┐   │
+ │   │     DATA NODE        │    │              INDEX L3 (Orbit)             │   │
+ │   │      (Rust)          │    │          Chain ID: 111222333              │   │
+ │   │                      │    │                                           │   │
+ │   │  90+ sources         │    │  Index.sol ── ITP trading                │   │
+ │   │  PostgreSQL          │    │  Vision.sol ─ Prediction markets         │   │
+ │   │  NAV engine          │    │  BotRegistry ─ Automated trading         │   │
+ │   │  Backtesting         │    │  29 contracts total                      │   │
+ │   └──────────┬───────────┘    └───────┬──────────────────┬───────────────┘   │
+ │              │                        │                  │                    │
+ │              │                   BLS-signed          Bridge                  │
+ │              │                     txs                   │                    │
+ │              │                        │                  │                    │
+ │   ┌──────────▼───────┐    ┌──────────▼──────┐   ┌──────▼────────────────┐   │
+ │   │  ORACLE NODES    │    │   AP / KEEPER    │   │    SETTLEMENT         │   │
+ │   │  (3x Rust)       │    │    (Rust)        │   │    (Arbitrum)         │   │
+ │   │                  │    │                  │   │                       │   │
+ │   │  BLS consensus   │    │  Bitget trade    │   │  Morpho lending      │   │
+ │   │  1s cycles       │    │  execution       │   │  Bridged ITP shares  │   │
+ │   │  Round-robin     │    │  Bridge relay    │   │  NAV oracle          │   │
+ │   └──────────────────┘    └──────────────────┘   └───────────────────────┘   │
+ │                                                                              │
+ │   ┌──────────────────┐    ┌──────────────────┐   ┌───────────────────────┐   │
+ │   │   VISION BOT     │    │   SOCIAL BOT     │   │      CURATOR          │   │
+ │   │   (Python)       │    │   (Python)       │   │      (Rust)           │   │
+ │   │                  │    │                  │   │                       │   │
+ │   │  Automated       │    │  Anomaly detect  │   │  NAV oracle updates  │   │
+ │   │  prediction      │    │  98 sources      │   │  Morpho allocation   │   │
+ │   │  market trading  │    │  Twitter / X     │   │  Health monitoring   │   │
+ │   └──────────────────┘    └──────────────────┘   └───────────────────────┘   │
+ │                                                                              │
+ └──────────────────────────────────────────────────────────────────────────────┘
+```
+
+<Info>
+  The full architecture — contract inventory, data flows, infrastructure layout — lives on the [System Architecture](/index/architecture/overview) page. It is longer than this one. Most architectures are.
+</Info>
+
+---
+
+## Who Comes Here
+
+| Audience | What you do |
+|----------|-------------|
+| **Traders** | Buy diversified crypto exposure through ITPs with a single transaction. Bet on real-world outcomes in Vision markets. |
+| **Bot developers** | Build Python strategies for automated Vision market trading. Register bots on-chain through the BotRegistry. |
+| **Fund managers** | Create custom indexes with configurable weights and up to 100 assets. Earn deployer fees on every trade. |
+| **Data scientists** | Backtest ITP compositions against historical data. Analyze 90+ data sources for prediction market edges. |
+| **Quant researchers** | Exploit inefficiencies in sealed parimutuel markets. Build signal pipelines from transport, energy, and weather data. |
+| **DeFi power users** | Use ITP shares as collateral in Morpho lending markets. Supply USDC to earn yield. Compose across Arbitrum DeFi. |
+
+---
+
+## Convictions
+
+Every protocol is a set of opinions disguised as infrastructure. These are ours.
+
+```text
+ ┌──────────────────────────────────────────────────────────────────┐
+ │                                                                  │
+ │  BLS CONSENSUS ON EVERYTHING                                    │
+ │  ══════════════════════════                                     │
+ │                                                                  │
+ │  Every ITP trade, every Vision tick resolution, every            │
+ │  bridge relay — verified by multi-party BLS signatures.          │
+ │  No test modes. No owner overrides. No bypass flags.             │
+ │                                                                  │
+ │  REAL EXCHANGE EXECUTION                                        │
+ │  ═══════════════════════                                        │
+ │                                                                  │
+ │  ITP orders are executed on Bitget by Authorized Participants.   │
+ │  No AMM pools. No virtual liquidity. Real order books.           │
+ │                                                                  │
+ │  SEALED PARIMUTUEL BETTING                                      │
+ │  ═════════════════════════                                      │
+ │                                                                  │
+ │  Vision bets are sealed — nobody sees what you bet until         │
+ │  resolution. Parimutuel payouts: no house edge, winners          │
+ │  split the pool proportionally.                                  │
+ │                                                                  │
+ │  90+ REAL-WORLD DATA SOURCES                                    │
+ │  ════════════════════════════                                   │
+ │                                                                  │
+ │  Not just crypto. Transport delays across 4 countries,           │
+ │  power outages, weather stations, GitHub repos, energy           │
+ │  grids, sports, and more. All feeding into Vision markets.       │
+ │                                                                  │
+ └──────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Where to Go Next
 
 <CardGroup cols={2}>
   <Card title="Getting Started" icon="rocket" href="/index/getting-started">
-    Set up your wallet and make your first ITP trade in under 5 minutes.
+    Connect a wallet. Buy something. The rest follows.
   </Card>
   <Card title="How ITPs Work" icon="book" href="/index/concepts/itps">
-    Understand the NAV pricing model, per-share quantities, and rebalancing mechanics.
+    NAV pricing, per-share quantities, rebalancing. The formula that decides what your basket is worth.
+  </Card>
+  <Card title="Vision Markets" icon="eye" href="/vision/introduction">
+    Sealed bets on real-world outcomes. The data resolves it. Not you. Not us.
   </Card>
   <Card title="Order Lifecycle" icon="arrows-spin" href="/index/concepts/order-lifecycle">
-    Follow an ITP order from submission through BLS consensus to settlement.
+    The path an order takes from your wallet through consensus to settlement. It is shorter than you think.
   </Card>
   <Card title="Lending" icon="hand-holding-dollar" href="/index/concepts/lending">
-    Earn yield or borrow against ITP positions via Morpho.
+    Earn yield on USDC. Borrow against positions. The usual Faustian bargain, but on-chain.
+  </Card>
+  <Card title="System Architecture" icon="sitemap" href="/index/architecture/overview">
+    All 8 services, 29 contracts, 2 chains. The full diagram for those who need to see the machine.
+  </Card>
+  <Card title="Explorer" icon="magnifying-glass-chart" href="/index/concepts/explorer">
+    System health. Consensus metrics. The dashboard you check when you want to believe everything is fine.
+  </Card>
+  <Card title="Points & Rewards" icon="star" href="/index/concepts/points">
+    Season 1. Earn points for using the protocol. A reward for doing what you were going to do anyway.
   </Card>
 </CardGroup>

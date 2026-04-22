@@ -5,13 +5,13 @@ description: "Key terms and definitions for Vision prediction markets"
 
 # Glossary
 
-Key terms and definitions used throughout the Vision documentation.
+The vocabulary of Vision. Every system invents its own language -- these are the words you will need to speak it.
 
 <dl>
 
 ### Balance Proof
 
-A BLS-signed message from the issuer network that attests to a player's current USDC balance in a Vision batch. Balance proofs are required to claim rewards or withdraw funds. The player submits the proof on-chain, and the Vision contract verifies the BLS signature before updating the player's balance. Proofs are fetched via `GET /vision/balance/{batchId}/{player}`.
+A BLS-signed message from the oracle network that attests to a player's current USDC balance in a Vision batch. Balance proofs are required to claim rewards or withdraw funds. The player submits the proof on-chain, and the Vision contract verifies the BLS signature before updating the player's balance. Proofs are fetched via `GET /vision/balance/{batchId}/{player}`.
 
 ### Batch
 
@@ -23,15 +23,19 @@ Optional descriptive information attached to a batch by its creator. Includes a 
 
 ### Bitmap
 
-A packed binary representation of a player's bets across all markets in a batch. Each market gets exactly 1 bit: `1` = UP (price increases), `0` = DOWN (price decreases or stays flat). Bitmaps use big-endian bit ordering. The bitmap is committed on-chain as a `keccak256` hash (sealed commitment) and later revealed to issuer nodes for resolution.
+A packed binary representation of a player's bets across all markets in a batch. Each market gets exactly 1 bit: `1` = UP (price increases), `0` = DOWN (price decreases or stays flat). Bitmaps use big-endian bit ordering. The bitmap is committed on-chain as a `keccak256` hash (sealed commitment) and later revealed to oracle nodes for resolution.
 
 ### BLS Signature
 
-A Boneh-Lynn-Shacham cryptographic signature used for issuer consensus in Vision. Multiple issuer signatures are aggregated into a single signature that is verified on-chain against the aggregated public key stored in the IssuerRegistry. BLS signatures are required for claims, withdrawals, batch pausing/unpausing, market updates, and force withdrawals.
+A Boneh-Lynn-Shacham cryptographic signature used for oracle consensus in Vision. Multiple oracle signatures are aggregated into a single signature that is verified on-chain against the aggregated public key stored in the OracleRegistry. BLS signatures are required for claims, withdrawals, batch pausing/unpausing, market updates, and force withdrawals.
 
 ### Bot Registry
 
-An on-chain registry in the Vision contract where automated trading bots register their endpoint URL and public key hash. Registration is free and requires no collateral. Registered bots are discoverable by issuer nodes via `getAllActiveBots()`. Each address can register at most one bot.
+An on-chain registry in the Vision contract where automated trading bots register their endpoint URL and public key hash. Registration is free and requires no collateral. Registered bots are discoverable by oracle nodes via `getAllActiveBots()`. Each address can register at most one bot.
+
+### Commitment Multiplier
+
+A logarithmic bonus applied to a player's effective stake based on the number of ticks they commit to when joining a batch. Longer commitments receive a higher multiplier, increasing the player's share of the winning pool relative to their raw stake. This incentivizes sustained participation and deeper liquidity.
 
 ### Commitment Offset
 
@@ -41,13 +45,25 @@ The time window between when a player commits their bitmap hash on-chain and whe
 
 A user-defined basis point value used with resolution types ending in `_X` (UP_X, DOWN_X, FLAT_X). The threshold specifies how much the price must move for the market to resolve as UP or DOWN instead of FLAT. Set per market in the `customThresholds` array when creating a batch. 1 basis point = 0.01%.
 
+### Data Node
+
+The backend Rust service that provides market prices for Vision tick resolution. The data node aggregates 90+ external sources (CoinGecko, USGS, TFL, Deutsche Bahn, etc.) into a unified API. Oracle nodes query the data node at the end of each tick to fetch closing prices for all markets in active batches.
+
 ### Deployer Name
 
 A human-readable name that a batch creator can assign to their address via `setDeployerName`. This name is displayed in the frontend next to all batches created by that address. Maximum 64 bytes.
 
+### Early Multiplier
+
+A bonus applied to a player's effective stake for committing their bitmap before the tick deadline. The earlier the commitment relative to the tick start, the higher the multiplier. This rewards decisive action and discourages last-second sniping of price movements.
+
 ### Fee Collector
 
 The address authorized to call `collectFees()` on the Vision contract and withdraw accumulated protocol fees. Set at contract deployment and stored as an immutable reference. Only this address can drain the fee accumulator.
+
+### Market ID
+
+An identifier combining a source prefix and an asset name that uniquely identifies a market across Vision. For example, `crypto_btc` refers to Bitcoin from the crypto source, `usgs_earthquake` refers to earthquake data from the USGS source. Market IDs are used in batch creation, data node queries, and frontend routing.
 
 ### Market Outcome
 
@@ -55,19 +71,27 @@ The resolved result of a single market within a tick. Each market resolves to on
 
 ### Parimutuel
 
-The betting model used by Vision. All stakes for a given tick are pooled together, and winners split the losers' stakes proportionally based on their `stakePerTick`. There is no counterparty or market maker -- the protocol is zero-sum (minus the 0.3% fee on profits). Winners receive a share of the pool proportional to their stake relative to the total winning stake.
+The betting model used by Vision. All stakes for a given tick are pooled together, and winners split the losers' stakes proportionally based on their `stakePerTick`. There is no counterparty or market maker -- the protocol is zero-sum (minus the 0.05% fee on profits). Winners receive a share of the pool proportional to their stake relative to the total winning stake.
+
+### Points
+
+Season 1 rewards earned by providing liquidity in Vision batches. Players accumulate points based on their stake, commitment duration, and activity across batches. Points serve as a measure of protocol participation and may translate into future rewards.
 
 ### Resolution Type
 
-A configuration parameter for each market in a batch that defines the price movement threshold for determining the outcome. There are 8 resolution types: UP_0 (any increase), UP_30 (>= 0.30% increase), UP_X (>= custom increase), DOWN_0 (any decrease), DOWN_30 (>= 0.30% decrease), DOWN_X (>= custom decrease), FLAT_0 (no change), FLAT_X (within custom range). See [Resolution Types](/vision/reference/resolution-types) for the full reference.
+A configuration parameter for each market in a batch that defines the price movement threshold for determining the outcome. There are 14 resolution types: UP_0 (any increase), UP_30 (>= 0.30%), UP_X (>= custom), DOWN_0 (any decrease), DOWN_30 (>= 0.30%), DOWN_X (>= custom), FLAT_0 (no change), FLAT_X (within custom range), UP_300 (>= 3%), UP_3000 (>= 30%), DOWN_300 (>= 3% decrease), DOWN_3000 (>= 30% decrease), FLAT_300 (within 3%), FLAT_3000 (within 30%). Types 0-7 are standard; types 8-13 are hardcoded convenience presets. See [Resolution Types](/vision/reference/resolution-types) for the full reference.
 
 ### Reveal Window
 
-The period after a tick ends during which players must reveal their actual bitmap bytes to the issuer nodes. The issuer verifies the revealed bitmap against the on-chain `keccak256` hash. If a player fails to reveal within the window, their bitmap is treated as all-zeros (all DOWN bets) for that tick.
+The period after a tick ends during which players must reveal their actual bitmap bytes to the oracle nodes. The oracle verifies the revealed bitmap against the on-chain `keccak256` hash. If a player fails to reveal within the window, their bitmap is treated as all-zeros (all DOWN bets) for that tick.
 
 ### Sealed Commitment
 
-A `keccak256` hash of a player's bitmap submitted on-chain before the actual bitmap bytes are revealed. The sealed commitment prevents front-running: other players cannot see bet directions until after the commitment deadline. The bitmap is later revealed to issuer nodes, who verify the hash matches the on-chain commitment stored in `PlayerPosition.bitmapHash`.
+A `keccak256` hash of a player's bitmap submitted on-chain before the actual bitmap bytes are revealed. The sealed commitment prevents front-running: other players cannot see bet directions until after the commitment deadline. The bitmap is later revealed to oracle nodes, who verify the hash matches the on-chain commitment stored in `PlayerPosition.bitmapHash`.
+
+### Source
+
+An external data provider that feeds market prices into Vision via the data node. Sources include CoinGecko (crypto prices), USGS (earthquake data), TFL (London transport), Deutsche Bahn (German rail), and 90+ others. Each source has a unique prefix (e.g., `crypto`, `usgs`, `tfl`) used in market IDs. Source configuration lives in `data-node/src/config/`.
 
 ### Stake Per Tick
 
@@ -75,7 +99,11 @@ The amount of USDC (6 decimals) a player wagers on each tick within a batch. Set
 
 ### Tick
 
-A single resolution interval within a Vision batch. At the end of each tick, issuer nodes fetch closing prices, resolve each market to a binary outcome, compare each player's bitmap against outcomes, and distribute the tick pool to winners. Tick durations range from 1 second to 30 days and are immutable once the batch is created. Ticks are computed as `block.timestamp / tickDuration`.
+A single resolution interval within a Vision batch. At the end of each tick, oracle nodes fetch closing prices, resolve each market to a binary outcome, compare each player's bitmap against outcomes, and distribute the tick pool to winners. Tick durations range from 1 second to 30 days and are immutable once the batch is created. Ticks are computed as `block.timestamp / tickDuration`.
+
+### Tick Duration
+
+The fixed time interval between resolution cycles in a Vision batch, set at batch creation and immutable thereafter. Tick durations range from 60 seconds to 30 days. Shorter ticks (e.g., 60s, 5min) suit high-frequency trading; longer ticks (e.g., 1 day, 7 days) suit macro bets. The duration determines how frequently prices are sampled and the pool is redistributed.
 
 ### TVL (Total Value Locked)
 
@@ -83,6 +111,6 @@ The total amount of USDC deposited across all active player positions in a Visio
 
 ### Vision
 
-The sealed parimutuel prediction market built on Arbitrum. Traders bet on whether asset prices move UP or DOWN over fixed time intervals (ticks). All bets within a tick share a common pool -- winners split the losers' stakes, minus a 0.3% protocol fee on profits. The smart contract is `Vision.sol` and the internal technical name used in some code paths is "P2Pool."
+The sealed parimutuel prediction market built on Arbitrum. Traders bet on whether asset prices move UP or DOWN over fixed time intervals (ticks). All bets within a tick share a common pool -- winners split the losers' stakes, minus a 0.05% protocol fee on profits. The smart contract is `Vision.sol` and the internal technical name used in some code paths is "P2Pool."
 
 </dl>

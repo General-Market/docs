@@ -5,21 +5,79 @@ description: "Introduction to the General Market API"
 
 # API Endpoints Index
 
-The General Market API provides read access to real-time price data, Index Tracking Product (ITP) pricing, portfolio tracking, backtesting simulation, and lending position data.
+The API returns JSON. It does not return meaning. That is your problem.
+
+Read access to prices, ITP NAV, portfolios, backtesting, and lending positions. No authentication for read endpoints. No opinions in the response body.
+
+## Architecture
+
+Every request from the browser passes through a Next.js proxy. The browser never touches the backend directly. This is not paranoia -- it is HTTPS.
+
+```
+    +------------------+          +------------------------+
+    |                  |   HTTPS  |    Next.js API Routes   |
+    |     Browser      +--------->+    (Vercel / localhost)  |
+    |                  |          |                          |
+    +------------------+          +-----+------+------+-----+
+                                        |      |      |
+                          +-------------+      |      +-------------+
+                          |                    |                    |
+                          v                    v                    v
+                  +-------+-------+    +-------+-------+   +-------+-------+
+                  |  Data Node    |    |    L3 RPC     |   | Oracle API    |
+                  |  (port 8200)  |    | (chain reads) |   | (port 10001)  |
+                  |               |    |               |   |               |
+                  | - prices      |    | - getITPState |   | - /vision/*   |
+                  | - snapshots   |    | - balanceOf   |   | - batches     |
+                  | - sim engine  |    | - totalSupply |   | - bitmap      |
+                  | - portfolio   |    |               |   | - leaderboard |
+                  | - explorer    |    +---------------+   +---------------+
+                  | - market hist |
+                  +---------------+
+```
+
+**Why the proxy layer?**
+
+```
+  The data node speaks HTTP. The browser demands HTTPS.
+  Mixed content is blocked. The proxy resolves the contradiction.
+
+            Browser ---- HTTPS ----> /api/itp-price
+                                         |
+                                     (server-side)
+                                         |
+                                     HTTP -----> data-node:8200/itp-price
+                                     HTTP -----> L3 RPC (fallback)
+```
+
+Two proxy patterns:
+
+```
+  1. DEDICATED ROUTES          Each has its own logic, caching, validation
+     /api/itp-price            Tries data-node, falls back to on-chain RPC
+     /api/itp-enrichment       Aggregates data-node + CoinGecko + DeFiLlama
+     /api/deployment           Reads deployment JSON from filesystem
+     /api/faucet               Directly calls L3 + Settlement RPC (writes)
+     /api/explorer/health      Token-authenticated proxy to data-node
+     /api/market/history       Proxy to data-node market price history
+
+  2. CATCH-ALL PROXY           Transparent pass-through for any path
+     /api/dn/[...path]         Forwards to DATA_NODE:8200/{path}
+                               Supports SSE streaming (backtest progress)
+                               5-minute timeout for long simulations
+```
 
 ## Base URL
-
-In production, the API is proxied through Next.js rewrites at:
 
 ```text
 https://generalmarket.io/api
 ```
 
-The underlying data-node runs on port 8200. All paths documented in the API reference are relative to the base URL above.
+The data node runs on port 8200 behind this proxy. All paths in this reference are relative to the base URL above.
 
 ## Response Format
 
-All endpoints return JSON. A successful response contains the requested data directly in the response body:
+JSON. No wrappers. No envelopes. The data is the response.
 
 ```json
 {
@@ -29,7 +87,7 @@ All endpoints return JSON. A successful response contains the requested data dir
 }
 ```
 
-Error responses return an appropriate HTTP status code with a JSON body:
+Errors return an HTTP status code and a JSON body with `error`:
 
 ```json
 {
@@ -39,35 +97,62 @@ Error responses return an appropriate HTTP status code with a JSON body:
 
 ## Authentication
 
-No authentication is required for read endpoints. The API is publicly accessible.
+None. Read endpoints are public. The explorer health endpoint uses a server-side token, injected by the proxy -- invisible to callers.
 
 ## Rate Limiting
 
-No strict rate limits are enforced, but excessive request volume may result in temporary throttling.
+No strict limits. Abuse will be throttled.
 
-## Available Endpoint Groups
+## Complete Endpoint Table
+
+```
+  METHOD   PATH                          UPSTREAM          DESCRIPTION
+  ------   ----------------------------  ----------------  --------------------------------
+  GET      /api/itp-price                Data Node + RPC   ITP NAV with on-chain fallback
+  GET      /api/itp-enrichment           DN + CG + DeFi    Holdings, founders, TVL, funding
+  GET      /api/deployment               Filesystem        Contract deployment addresses
+  GET      /api/market/history           Data Node         Historical market price series
+  GET      /api/explorer/health          Data Node (auth)  System health metrics
+  POST     /api/faucet                   L3 + Settlement   Testnet USDC mint + gas drip
+  GET      /api/dn/{path}                Data Node          Catch-all proxy (supports SSE)
+```
+
+Vision-specific routes (see [Vision API Reference](/vision/api/overview)):
+
+```
+  METHOD   PATH                          UPSTREAM          DESCRIPTION
+  ------   ----------------------------  ----------------  --------------------------------
+  GET      /api/vision/batches           Oracle API        List active prediction batches
+  POST     /api/vision/bitmap            All Oracles       Fan-out bitmap submission
+  GET      /api/vision/leaderboard       Oracle API        Player PnL rankings
+  GET      /api/vision/snapshot          Data Node         Market price snapshots
+  GET      /api/vision/snapshot/meta     Data Node         Source health + asset counts
+```
+
+## Endpoint Groups
 
 <CardGroup cols={2}>
   <Card title="Prices" icon="chart-line" href="/index/api/prices">
-    Real-time and historical asset price data. Single asset lookups, bulk fetches, and low-latency trading prices.
+    What things cost right now. Single assets, bulk fetches, low-latency trading prices.
   </Card>
   <Card title="ITPs" icon="layer-group" href="/index/api/itps">
-    ITP NAV (Net Asset Value) computation, historical NAV series, AUM rankings, and ITP state snapshots.
+    NAV, enrichment data, AUM rankings, state snapshots. The index products, dissected.
   </Card>
   <Card title="Portfolio" icon="wallet" href="/index/api/portfolio">
-    User portfolio summaries, historical value tracking, and trade history.
+    Positions, historical value, trade history. A record of your decisions and their consequences.
   </Card>
   <Card title="Simulation" icon="flask" href="/index/api/simulation">
-    Backtest simulation engine with configurable parameters and streaming results.
+    Backtesting engine. Ask what would have happened. The answer is always humbling.
   </Card>
   <Card title="Morpho" icon="building-columns" href="/index/api/morpho">
-    Lending positions and operation history via Morpho integration.
+    Lending positions and history. Borrow against your ITP shares. Monitor your health factor.
+  </Card>
+  <Card title="Infrastructure" icon="server" href="/index/api/infrastructure">
+    Deployment config, explorer health, testnet faucet, data-node proxy. The plumbing.
   </Card>
 </CardGroup>
 
 ## Quick Start
-
-Fetch the latest price for Bitcoin:
 
 <CodeGroup>
 ```bash cURL

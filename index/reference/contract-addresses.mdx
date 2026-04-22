@@ -1,11 +1,52 @@
 ---
 title: "Contract Addresses"
-description: "Deployed contract addresses on Index L3"
+description: "Deployed contract addresses on Index L3 and Settlement"
 ---
 
 # Deployed Contract Addresses
 
-All General Market protocol contracts are deployed on the Index L3 Arbitrum Orbit chain.
+The addresses are the protocol. Everything else -- the code, the documentation, the diagrams -- is explanation. These are the facts on-chain, across two chains.
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                  INDEX L3 (Chain 111222333)              │
+│                                                         │
+│  ┌──────────┐  ┌────────────────┐  ┌─────────────────┐  │
+│  │  Index    │  │  Governance    │  │  OracleRegistry │  │
+│  └──────────┘  └────────────────┘  └─────────────────┘  │
+│  ┌──────────────────┐  ┌───────────────────────────┐    │
+│  │ CollateralRegistry│  │  BLSCustody              │    │
+│  └──────────────────┘  └───────────────────────────┘    │
+│  ┌──────────────────┐  ┌───────────────────────────┐    │
+│  │ L3BridgeCustody  │  │  L3BridgeProxy            │    │
+│  └──────────────────┘  └───────────────────────────┘    │
+│  ┌──────────────────┐  ┌───────────────────────────┐    │
+│  │ L3BridgedItpFact.│  │  Vision                   │    │
+│  └──────────────────┘  └───────────────────────────┘    │
+│  ┌──────────────────┐  ┌───────────────────────────┐    │
+│  │  ITP Vault #1    │  │  ITP Vault #2             │    │
+│  └──────────────────┘  └───────────────────────────┘    │
+│  ┌──────────────────┐                                   │
+│  │  L3 WUSDC (18d)  │                                   │
+│  └──────────────────┘                                   │
+│                          │                              │
+│                          │ Bridge                       │
+│                          │                              │
+├──────────────────────────┼──────────────────────────────┤
+│                          │                              │
+│              SETTLEMENT (Chain 14601)                   │
+│                                                         │
+│  ┌──────────────────────────┐  ┌──────────────────────┐ │
+│  │ SettlementBridgeProxy    │  │ SettlementBridgeCust.│ │
+│  └──────────────────────────┘  └──────────────────────┘ │
+│  ┌──────────────────────────┐  ┌──────────────────────┐ │
+│  │ SettlementBridgedItpFact.│  │ SettlementOracleReg. │ │
+│  └──────────────────────────┘  └──────────────────────┘ │
+│  ┌──────────────────────────┐                           │
+│  │ Settlement USDC (6d)     │                           │
+│  └──────────────────────────┘                           │
+└─────────────────────────────────────────────────────────┘
+```
 
 <Warning>
   Contract addresses are loaded from `deployments/active-deployment.json` and may differ between
@@ -15,48 +56,109 @@ All General Market protocol contracts are deployed on the Index L3 Arbitrum Orbi
 
 ## Network Information
 
+### Index L3
+
 | Property | Value |
 |----------|-------|
 | **Chain Name** | Index L3 (Arbitrum Orbit) |
 | **Chain ID** | `111222333` |
 | **RPC Endpoint** | `http://142.132.164.24/` |
-| **Collateral Token** | USDC (18 decimals on L3) |
-| **Consensus** | Arbitrum Orbit with BLS issuer consensus |
+| **Collateral Token** | WUSDC (18 decimals on L3) |
+| **Consensus** | Arbitrum Orbit with BLS oracle consensus |
 
-## Core Contracts
+### Settlement
 
-| Contract | Description |
-|----------|-------------|
-| **Index.sol** | Main entry point for order management, Index Tracking Product (ITP) creation, and NAV computation. Handles buy/sell order submission, weight updates, and rebalancing. |
-| **BridgeProxy.sol** | Cross-chain order routing between Arbitrum L2 and the Index L3. Relays orders and settlement messages across the bridge. |
-| **BridgedItpFactory.sol** | Factory contract on Arbitrum that deploys ERC-4626 ITP share tokens, enabling L2 representation of L3 ITPs. |
-| **IssuerRegistry.sol** | Manages issuer node registration and BLS public key storage. Maintains the aggregated public key used for batch signature verification. |
-| **CollateralRegistry.sol** | Whitelist of accepted collateral tokens. Controls which tokens can be escrowed for order placement. |
-| **FeeRegistry.sol** | Configures protocol fee parameters including creation fees, trading fees, and AP compensation rates. |
-| **Governance.sol** | Administrative controls for pausing contracts, updating parameters, and managing protocol upgrades via UUPS proxies. |
+| Property | Value |
+|----------|-------|
+| **Chain Name** | Settlement |
+| **Chain ID** | `14601` |
+| **Collateral Token** | USDC (6 decimals) |
+
+## L3 Contracts (Chain 111222333)
+
+### Core Protocol
+
+| Contract | Address | Description |
+|----------|---------|-------------|
+| **Index** | `0xc405a458b63b5ee8E19eB5C4ECf86fAD41F2E902` | Main entry point for order management, ITP creation, and NAV computation. |
+| **Governance** | `0xE0A07455F9e92FFf3e8DF8EBd64BB68463D3bcEC` | Administrative controls for pausing, parameter updates, and UUPS upgrades. |
+| **OracleRegistry** | `0xB2b2c21Fa066b216a583493aE0e82eb16A37f275` | Manages oracle node registration and BLS public key storage. |
+| **CollateralRegistry** | `0x907eCdB6AD282122893D2Ea0f733421497b693a7` | Whitelist of accepted collateral tokens for order placement. |
+
+### Bridge & Custody
+
+| Contract | Address | Description |
+|----------|---------|-------------|
+| **L3BridgeProxy** | `0x45014B4d25df82a99a47926D8EfcabA0427a5Eac` | L3-side bridge proxy for cross-chain order routing. |
+| **L3BridgeCustody** | `0xb7a4B6Dc1bB9Cf2b63E74aE06a8aB0a00df0d475` | Holds escrowed assets on L3 during cross-chain operations. |
+| **BLSCustody** | `0x1d7bab069f8D161622B0bd12e6D010C1f05b14cC` | Custody contract for BLS-verified operations. |
+| **L3BridgedItpFactory** | `0x53C5d94c48b1d276cA5dB1f759b5765e3F546efE` | Factory that deploys ERC-4626 ITP share tokens on L3. |
+
+### Vision
+
+| Contract | Address | Description |
+|----------|---------|-------------|
+| **Vision** | `0x8aF92d1D6397c0073f47D1f754983A2Da51C06C8` | Prediction market contract for batch management and player operations. |
+
+### ITP Vaults
+
+| Contract | Address | Description |
+|----------|---------|-------------|
+| **ITP Vault #1** | `0x069c34442E40dD574E90e568710d2fbDAfeEb5dB` | First Index Tracking Product vault (BridgedITP). |
+| **ITP Vault #2** | `0x87E53b1A665864a1385Fc080259B0e81DC7f5713` | Second Index Tracking Product vault. |
+
+### Tokens
+
+| Token | Address | Decimals |
+|-------|---------|----------|
+| **L3 WUSDC** | `0xE24D18004EAAB5E771684679846D6d5EE7a9663c` | 18 |
+| **Mock USDT** | `0xAC5c355b7cD34572AFE96d82e5AEC91EC4F9367B` | — |
+
+### Morpho Lending
+
+| Contract | Address | Description |
+|----------|---------|-------------|
+| **Morpho** | `0x2b43723840e5935a4E4b832d18C7c033a1C15074` | Morpho core lending protocol. |
+| **Adaptive IRM** | `0x095e7F85a7569B64cdEA8d4b5F148ff77f371907` | Interest rate model for the USDC/ITP market. |
+| **MirrorOracleRegistry** | `0xB2b2c21Fa066b216a583493aE0e82eb16A37f275` | Mirror of OracleRegistry used as oracle registry. |
+| **ITP NAV Oracle** | `0x172D6F3330CD4c993C4F49341E38f8d551E1c5d3` | Oracle providing ITP NAV for Morpho liquidation pricing. |
+| **MetaMorpho Vault** | `0xB4FF430878a980cf23d06CC31EEE2f26AbD1bbb2` | Curated vault for USDC lending against ITP collateral. |
+
+## Settlement Contracts (Chain 14601)
+
+| Contract | Address | Description |
+|----------|---------|-------------|
+| **SettlementBridgeProxy** | `0x8026b02F341248339C65a2c07727a0fB34F8f36f` | Settlement-side bridge proxy for cross-chain order routing. |
+| **SettlementBridgeCustody** | `0x774095bC7E274Bb3e9A42f481Eeb6D636354E937` | Holds escrowed USDC on Settlement during bridge operations. |
+| **SettlementBridgedItpFactory** | `0x86169A8852e99f98d1C3b9412fD01f0f4fE5eE11` | Factory that deploys ITP share tokens on Settlement. |
+| **SettlementOracleRegistry** | `0xe880B2E9c546cBe478C05bcb551AC97B1EC89371` | Oracle registry mirror on Settlement for BLS verification. |
+
+### Tokens
+
+| Token | Address | Decimals |
+|-------|---------|----------|
+| **Settlement USDC** | `0xae7DacD7a5192193f726E94e5BCF3bd37C251DbE` | 6 |
 
 ## Retrieving Addresses
 
 ### From the Deployment File
 
-The canonical source of truth for deployed addresses is the deployment JSON:
+The deployment JSON is the source of truth. This page is a convenience.
 
 ```bash
 cat deployments/active-deployment.json
 ```
 
-The deployment JSON file is updated by the deploy scripts after each deployment and contains all contract addresses along with deployment metadata.
+Updated by deploy scripts after each deployment.
 
 ### In the Frontend
-
-The frontend imports addresses from a typed module that reads the deployment JSON:
 
 ```typescript
 import deployment from "@/lib/contracts/deployment.json";
 
 // Access individual contract addresses
-const indexAddress = deployment.Index;
-const issuerRegistry = deployment.IssuerRegistry;
+const indexAddress = deployment.contracts.Index;
+const oracleRegistry = deployment.contracts.OracleRegistry;
 ```
 
 ### Adding to a Wallet
@@ -72,4 +174,4 @@ To interact with the Index L3 chain from a wallet like MetaMask:
 
 ## Contract Upgrade Policy
 
-All core contracts use the UUPS (Universal Upgradeable Proxy Standard) pattern. Proxy addresses remain stable across upgrades -- only the implementation addresses change. The addresses listed in the deployment file always refer to the proxy addresses.
+UUPS proxies. The addresses on this page are permanent. Only the implementation behind them changes. The proxy is the identity; the implementation is the behavior.

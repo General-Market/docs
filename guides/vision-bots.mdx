@@ -28,7 +28,7 @@ For each new batch:
     ├── Compute keccak256(bitmap) hash
     ├── Approve USDC to Vision contract
     ├── Call joinBatch(batchId, deposit, stakePerTick, bitmapHash)
-    └── POST bitmap to all issuer nodes
+    └── POST bitmap to all oracle nodes
     │
     ▼
 Periodically claim rewards via BLS balance proofs
@@ -36,7 +36,7 @@ Periodically claim rewards via BLS balance proofs
 
 ## Step 1: Register the Bot
 
-Register the bot on-chain so issuer nodes can identify automated participants:
+Register the bot on-chain so oracle nodes can identify automated participants:
 
 <CodeGroup>
 
@@ -215,14 +215,14 @@ await walletClient.writeContract({
 
 </CodeGroup>
 
-## Step 4: Submit Bitmap to Issuers
+## Step 4: Submit Bitmap to Oracles
 
-After the on-chain `joinBatch` transaction confirms, reveal the bitmap to all issuer nodes:
+After the on-chain `joinBatch` transaction confirms, reveal the bitmap to all oracle nodes:
 
 <CodeGroup>
 
 ```python Python
-ISSUER_URLS = [
+ORACLE_URLS = [
     "http://localhost:10001",
     "http://localhost:10002",
     "http://localhost:10003",
@@ -232,7 +232,7 @@ bitmap_hex = "0x" + bitmap.hex()
 expected_hash = bitmap_hash.hex()
 
 accepted = 0
-for url in ISSUER_URLS:
+for url in ORACLE_URLS:
     try:
         resp = requests.post(f"{url}/p2pool/bitmap", json={
             "player": bot_address,
@@ -243,13 +243,13 @@ for url in ISSUER_URLS:
         if resp.status_code == 200:
             accepted += 1
     except Exception as e:
-        print(f"Issuer {url} failed: {e}")
+        print(f"Oracle {url} failed: {e}")
 
-print(f"Bitmap accepted by {accepted}/{len(ISSUER_URLS)} issuers")
+print(f"Bitmap accepted by {accepted}/{len(ORACLE_URLS)} oracles")
 ```
 
 ```typescript TypeScript
-const ISSUER_URLS = [
+const ORACLE_URLS = [
   'http://localhost:10001',
   'http://localhost:10002',
   'http://localhost:10003',
@@ -258,7 +258,7 @@ const ISSUER_URLS = [
 const bitmapHex = `0x${Buffer.from(bitmap).toString('hex')}`;
 
 let accepted = 0;
-await Promise.all(ISSUER_URLS.map(async (url) => {
+await Promise.all(ORACLE_URLS.map(async (url) => {
   try {
     const res = await fetch(`${url}/p2pool/bitmap`, {
       method: 'POST',
@@ -272,11 +272,11 @@ await Promise.all(ISSUER_URLS.map(async (url) => {
     });
     if (res.ok) accepted++;
   } catch (e) {
-    console.error(`Issuer ${url} failed:`, e);
+    console.error(`Oracle ${url} failed:`, e);
   }
 }));
 
-console.log(`Bitmap accepted by ${accepted}/${ISSUER_URLS.length} issuers`);
+console.log(`Bitmap accepted by ${accepted}/${ORACLE_URLS.length} oracles`);
 ```
 
 </CodeGroup>
@@ -289,7 +289,7 @@ Periodically fetch BLS-signed balance proofs and claim on-chain:
 
 ```python Python
 def claim_rewards(batch_id: int, from_tick: int, to_tick: int):
-    # Fetch BLS-signed balance proof from issuer
+    # Fetch BLS-signed balance proof from oracle
     resp = requests.get(
         f"{P2POOL_API}/p2pool/balance/{batch_id}/{bot_address}",
         params={"fromTick": from_tick, "toTick": to_tick}
@@ -308,7 +308,7 @@ def claim_rewards(batch_id: int, from_tick: int, to_tick: int):
 
 ```typescript TypeScript
 async function claimRewards(batchId: number, fromTick: number, toTick: number) {
-  // Fetch BLS-signed balance proof from issuer
+  // Fetch BLS-signed balance proof from oracle
   const res = await fetch(
     `${P2POOL_API}/p2pool/balance/${batchId}/${botAddress}` +
     `?fromTick=${fromTick}&toTick=${toTick}`

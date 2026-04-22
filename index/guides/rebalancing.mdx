@@ -1,0 +1,436 @@
+---
+title: "Rebalancing"
+description: "Change ITP asset weights while preserving NAV — formula, worked examples, and step-by-step guide"
+---
+
+Rebalancing preserves NAV. It does not preserve hope. The weights change. The disappointment is redistributed.
+
+An ITP's per-share quantities are fixed at creation. As prices move, the actual dollar weight of each asset drifts from the original target. Rebalancing lets the deployer reassign weights -- and even add or remove assets -- while keeping the NAV per share unchanged.
+
+<Snippet file="chain-info.mdx" />
+
+---
+
+## What Is Rebalancing?
+
+Rebalancing recalculates per-share quantities so the basket matches new target weights. The invariant is absolute: **NAV does not change**. You rearrange the furniture. The room stays the same size.
+
+```text
+ ┌─────────────────────────────────────────────────────────────────────┐
+ │                     REBALANCING IN ONE PICTURE                     │
+ │                                                                    │
+ │   BEFORE                                    AFTER                  │
+ │   ┌──────────────────────┐                  ┌──────────────────────┐│
+ │   │ Asset  Wt     Qty    │                  │ Asset  Wt     Qty    ││
+ │   │ ───── ─────  ─────── │   updateWeights  │ ───── ─────  ─────── ││
+ │   │ BTC   33%   0.000007 │ ────────────────►│ BTC   50%   0.000010 ││
+ │   │ ETH   33%   0.000111 │                  │ ETH   30%   0.000102 ││
+ │   │ SOL   34%   0.003334 │                  │ SOL   20%   0.001982 ││
+ │   │                      │                  │                      ││
+ │   │ NAV = $1.19          │                  │ NAV = $1.19          ││
+ │   └──────────────────────┘                  └──────────────────────┘│
+ │                                                                    │
+ │              Weights change. Quantities change. NAV stays.         │
+ └─────────────────────────────────────────────────────────────────────┘
+```
+
+Quantities are the only thing stored on-chain (in `_itpInventory`). Buying and selling shares never touch quantities -- they mint or burn proportionally. Only a rebalance changes quantities. Everything else is noise around this fact.
+
+---
+
+## Why Rebalance?
+
+Prices move. Weights drift. The index you created stops being the index you intended. This is not a flaw. It is the cost of having a thesis in a market that does not share it.
+
+```text
+  CREATION (all prices = $1)           6 MONTHS LATER
+  ┌────────────────────────┐           ┌────────────────────────┐
+  │ Target   Effective     │           │ Target   Effective     │
+  │ Weight   Weight        │           │ Weight   Weight        │
+  │ ──────   ─────────     │           │ ──────   ─────────     │
+  │ BTC 50%  ████████ 50%  │           │ BTC 50%  ██████████ 62%│
+  │ ETH 30%  █████    30%  │           │ ETH 30%  ████      25% │
+  │ SOL 20%  ████     20%  │           │ SOL 20%  ██        13% │
+  └────────────────────────┘           └────────────────────────┘
+                                        BTC outperformed → its
+                                        effective weight grew.
+                                        The ITP no longer matches
+                                        the deployer's thesis.
+```
+
+Reasons to rebalance:
+
+- **Weight drift** -- prices moved enough that effective weights diverge from targets
+- **Thesis change** -- you want to increase exposure to one sector and reduce another
+- **Asset rotation** -- remove a delisted or underperforming token, add a new one
+- **Scheduled discipline** -- some deployers rebalance on a fixed cadence, monthly or quarterly, because discipline is cheaper than judgment
+
+---
+
+## The Rebalance Formula
+
+The core formula recalculates quantities from the new weights and the current NAV:
+
+```text
+  ┌─────────────────────────────────────────────────┐
+  │                                                 │
+  │   qty_new[i] = (w_new[i] * currentNAV)          │
+  │                ─────────────────────────         │
+  │                      price[i]                    │
+  │                                                 │
+  │   where:                                        │
+  │     w_new[i]    = new target weight (sums to 1) │
+  │     currentNAV  = NAV at moment of rebalance    │
+  │     price[i]    = current price of asset i      │
+  │                                                 │
+  └─────────────────────────────────────────────────┘
+```
+
+The formula is the same as at creation, except `currentNAV` replaces the initial `1e18` ($1.00). The math guarantees NAV preservation. New quantities, multiplied by current prices and summed, yield the same NAV. Arithmetic does not lie. It is the only participant that does not.
+
+---
+
+## NAV Preservation: Worked Example
+
+A proof. Not a promise -- a proof.
+
+### Setup
+
+An ITP was created with three assets at equal weight. Prices have since moved:
+
+```text
+  ┌──────────────────────────────────────────────────────────┐
+  │ CURRENT STATE (before rebalance)                         │
+  │                                                          │
+  │ Asset   Price       Qty/Share       Dollar Value         │
+  │ ─────   ─────────   ─────────────   ────────────         │
+  │ BTC     $60,000     0.000006666     $0.3999              │
+  │ ETH     $3,500      0.000111100     $0.3889              │
+  │ SOL     $120        0.003334000     $0.4001              │
+  │                                     ────────             │
+  │                              NAV =  $1.1889              │
+  └──────────────────────────────────────────────────────────┘
+```
+
+### Rebalance to New Weights
+
+The deployer changes weights to BTC 50%, ETH 30%, SOL 20%:
+
+```text
+  ┌──────────────────────────────────────────────────────────┐
+  │ COMPUTING NEW QUANTITIES                                 │
+  │                                                          │
+  │ qty_new[BTC] = (0.50 * 1.1889) / 60000 = 0.000009908    │
+  │ qty_new[ETH] = (0.30 * 1.1889) / 3500  = 0.000101906    │
+  │ qty_new[SOL] = (0.20 * 1.1889) / 120   = 0.001981500    │
+  └──────────────────────────────────────────────────────────┘
+```
+
+### Verification: NAV After Rebalance
+
+```text
+  ┌──────────────────────────────────────────────────────────┐
+  │ POST-REBALANCE NAV CHECK                                 │
+  │                                                          │
+  │ Asset   Price       New Qty         Dollar Value         │
+  │ ─────   ─────────   ─────────────   ────────────         │
+  │ BTC     $60,000     0.000009908     $0.5945              │
+  │ ETH     $3,500      0.000101906     $0.3567              │
+  │ SOL     $120        0.001981500     $0.2378              │
+  │                                     ────────             │
+  │                              NAV =  $1.1890              │
+  │                                                          │
+  │         Before: $1.1889  |  After: $1.1890               │
+  │         Difference: $0.0001 (rounding only)              │
+  └──────────────────────────────────────────────────────────┘
+```
+
+NAV preserved within rounding precision. Shareholders hold the same dollar value per share. Only the exposure changes. The value stays. The conviction shifts.
+
+```text
+  BEFORE                              AFTER
+
+  BTC ████████████  33.6%             BTC ██████████████████  50.0%
+  ETH ████████████  32.7%             ETH ███████████        30.0%
+  SOL ████████████  33.7%             SOL ███████            20.0%
+       ▲                                   ▲
+       roughly equal                       deployer's new thesis
+```
+
+---
+
+## Rebalancing Step-by-Step (UI)
+
+<Steps>
+  <Step title="Open the Rebalance Modal">
+    Navigate to the ITP's detail page. If you are the deployer, the **Rebalance** button appears in the management section. Click it to open the rebalance modal.
+
+    <Note>
+    Only the deployer's wallet can initiate a rebalance. The button does not appear for other users. You created this. You maintain it. No one else will.
+    </Note>
+  </Step>
+
+  <Step title="Adjust Weights">
+    The modal shows every asset with its current weight. Edit the percentages. Weights must sum to exactly **100%**. The contract enforces what your spreadsheet does not.
+
+    ```text
+     ┌─────────────────────────────────────────────┐
+     │  Rebalance: DeFi Blue Chips                 │
+     │                                              │
+     │  Asset        Current    New                 │
+     │  ─────        ───────    ───                 │
+     │  BTC          33.3%      [ 50.0% ]           │
+     │  ETH          33.3%      [ 30.0% ]           │
+     │  SOL          33.4%      [ 20.0% ]           │
+     │                                              │
+     │  Total: 100.0%              [Rebalance]      │
+     └─────────────────────────────────────────────┘
+    ```
+  </Step>
+
+  <Step title="Add or Remove Assets (Optional)">
+    Use the search bar to add new assets. To remove one, set its weight to 0% or click remove.
+
+    The contract supports adding and removing in a single transaction. One rebalance. One decision. All consequences at once.
+  </Step>
+
+  <Step title="Submit the Request">
+    Click **Rebalance**. The wallet prompts for a transaction on the Settlement chain. This calls `requestRebalance` on the BridgeProxy, which emits a `RebalanceRequested` event. The event is heard by machines. They do not hesitate.
+
+    ```text
+     ┌──────────────────────────────────────────────────────────┐
+     │                  REBALANCE PIPELINE                      │
+     │                                                          │
+     │  Deployer                                                │
+     │    │                                                     │
+     │    ▼                                                     │
+     │  requestRebalance()  ─── Settlement chain (MetaMask tx)  │
+     │    │                                                     │
+     │    ▼                                                     │
+     │  RebalanceRequested event emitted                        │
+     │    │                                                     │
+     │    ▼                                                     │
+     │  Oracle nodes detect the event                           │
+     │    │                                                     │
+     │    ▼                                                     │
+     │  Oracles verify weights + fetch prices                   │
+     │    │                                                     │
+     │    ▼                                                     │
+     │  BLS consensus among oracles                             │
+     │    │                                                     │
+     │    ▼                                                     │
+     │  rebalance() called on L3 (with BLS signature)           │
+     │    │                                                     │
+     │    ▼                                                     │
+     │  On-chain: new quantities computed + stored              │
+     │    │                                                     │
+     │    ▼                                                     │
+     │  AssetTradeRequest events emitted for each delta         │
+     │    │                                                     │
+     │    ▼                                                     │
+     │  AP executes trades to match new inventory               │
+     │                                                          │
+     └──────────────────────────────────────────────────────────┘
+    ```
+  </Step>
+
+  <Step title="Wait for Execution">
+    Oracle nodes detect the event, validate the new weights, fetch current prices, and reach BLS consensus. Once consensus is achieved, the oracles call `rebalance()` on L3 with the aggregated BLS signature. You wait. The oracles compute.
+
+    The on-chain `rebalance()` function:
+    1. Snapshots old inventory
+    2. Removes assets (if any indices specified)
+    3. Adds new assets (if any addresses specified)
+    4. Validates weights sum to 100% and each weight >= 0.25%
+    5. Computes new quantities: `qty[i] = (weight[i] * NAV) / price[i]`
+    6. Emits `Rebalanced` event with final state
+    7. Emits `AssetTradeRequest` events for each inventory delta
+  </Step>
+
+  <Step title="AP Settles Trades">
+    The Authorized Participant (AP) receives `AssetTradeRequest` events and executes the trades to align actual holdings with the new quantities. Assets with increased quantities are bought. Assets with decreased quantities are sold. The portfolio becomes what you said it should be.
+  </Step>
+</Steps>
+
+---
+
+## On-Chain Mechanics
+
+The rebalance logic lives in `RebalanceLib.sol`, called via `delegatecall` from `Investment`. The contract does not negotiate. It computes:
+
+```text
+  ┌──────────────────────────────────────────────────────────┐
+  │                 RebalanceLib.rebalance()                  │
+  │                                                          │
+  │  Step 1:  Read current NAV from _itpNavs[itpId]          │
+  │                                                          │
+  │  Step 2:  Snapshot old assets + inventory (for deltas)   │
+  │                                                          │
+  │  Step 3:  Swap-and-pop removed assets (descending order) │
+  │           ┌─────────────────────────────────────┐        │
+  │           │ assets:  [A, B, C, D, E]            │        │
+  │           │ remove:  [3, 1]  (D, then B)        │        │
+  │           │                                     │        │
+  │           │ remove idx 3: swap D↔E, pop         │        │
+  │           │   → [A, B, C, E]                    │        │
+  │           │ remove idx 1: swap B↔E, pop         │        │
+  │           │   → [A, E, C]                       │        │
+  │           └─────────────────────────────────────┘        │
+  │                                                          │
+  │  Step 4:  Push new assets to end of arrays               │
+  │                                                          │
+  │  Step 5:  Validate weights (sum = 1e18, each >= 0.25%)   │
+  │                                                          │
+  │  Step 6:  Compute new inventory for ALL assets           │
+  │           inventory[i] = (newWeights[i] * nav) / price[i]│
+  │                                                          │
+  │  Step 7:  Update metadata, write NAV (preserved)         │
+  │                                                          │
+  │  Step 8:  Emit Rebalanced + AssetTradeRequest events     │
+  └──────────────────────────────────────────────────────────┘
+```
+
+### Asset Trade Deltas
+
+After computing new quantities, the contract compares old vs. new inventory and emits `AssetTradeRequest` events. The delta is the distance between what you had and what you wanted:
+
+```text
+  Asset   Old Qty       New Qty       Delta         Action
+  ─────   ──────────    ──────────    ──────────    ──────
+  BTC     0.000006666   0.000009908   +0.000003242  BUY
+  ETH     0.000111100   0.000101906   -0.000009194  SELL
+  SOL     0.003334000   0.001981500   -0.001352500  SELL
+```
+
+The AP executes these deltas. Physical backing aligns with on-chain inventory. Theory meets reality at the exchange.
+
+---
+
+## Who Can Rebalance?
+
+```text
+  ┌─────────────────────────────────────────────────┐
+  │                                                 │
+  │  requestRebalance()     Anyone can call          │
+  │        │                (permissionless)         │
+  │        ▼                                        │
+  │  Oracle verification    Oracles check that the  │
+  │        │                caller is the ITP        │
+  │        │                deployer before signing  │
+  │        ▼                                        │
+  │  rebalance()            Requires BLS consensus  │
+  │                         (oracle nodes only)      │
+  │                                                 │
+  └─────────────────────────────────────────────────┘
+```
+
+`requestRebalance()` is technically permissionless. Anyone can emit the event. But the oracle nodes verify the caller is the ITP's deployer before signing. The door is open. The bouncer is not.
+
+<Warning>
+BLS signature verification is never bypassed. Not in local dev. Not in tests. Not anywhere. This is not a policy. It is a constraint that cannot be removed without destroying the protocol.
+</Warning>
+
+---
+
+## When to Rebalance
+
+There is no right answer. Only tradeoffs. Each strategy is a different way of being wrong:
+
+| Strategy | Description | Typical Cadence |
+|----------|-------------|-----------------|
+| **Threshold-based** | Rebalance when any asset's effective weight deviates by more than X% from target | When drift > 5-10% |
+| **Calendar-based** | Rebalance on a fixed schedule regardless of drift | Monthly or quarterly |
+| **Event-driven** | Rebalance in response to market events (delistings, new token launches, thesis changes) | As needed |
+| **Hybrid** | Calendar-based with threshold overrides for large moves | Monthly + 10% drift trigger |
+
+```text
+  Weight drift over time (no rebalance)
+  ──────────────────────────────────────
+  65% ┤                               ╭── BTC effective weight
+      │                          ╭───╯
+  55% ┤                     ╭───╯
+      │                ╭───╯
+  50% ┤───────── target ────────────────────────────────────
+      │           ╰───╮
+  45% ┤                ╰───╮
+      │                     ╰───╮         ETH + SOL drift
+  35% ┤                          ╰───╮    down accordingly
+      │                               ╰──
+  25% ┤
+      └──┬──────┬──────┬──────┬──────┬──
+        M1     M2     M3     M4     M5
+                                     ▲
+                              rebalance here
+                              (drift exceeded threshold)
+```
+
+---
+
+## Costs of Rebalancing
+
+Rebalancing is not free. Nothing is free. The question is whether the cost of rebalancing is less than the cost of drift:
+
+| Cost | Description |
+|------|-------------|
+| **Gas** | The `requestRebalance()` transaction on Settlement costs gas. The `rebalance()` execution on L3 is paid by oracles. |
+| **Trading fees** | The AP must buy and sell assets to match the new inventory. Each trade incurs exchange fees and slippage. |
+| **Spread/slippage** | Larger inventory deltas mean larger trades, which may move the market -- especially for less liquid assets. |
+
+```text
+  ┌──────────────────────────────────────────────────────┐
+  │              REBALANCE COST TRADEOFF                 │
+  │                                                      │
+  │  Rebalance     Too frequent           Too infrequent │
+  │  Frequency     ────────────           ──────────────  │
+  │                                                      │
+  │  Gas costs     High (many txs)        Low             │
+  │  Trade fees    High (many trades)     Low             │
+  │  Weight drift  Low (stays on target)  High (drifts)   │
+  │  Tracking err  Low                    High            │
+  │                                                      │
+  │  Sweet spot: rebalance when drift is meaningful      │
+  │  but not so often that costs eat into returns.       │
+  └──────────────────────────────────────────────────────┘
+```
+
+<Tip>
+For most ITPs, rebalance when any asset drifts more than 5-10% from target weight. This is the compromise between precision and cost. Perfection would require infinite rebalances. Negligence requires zero. The answer is somewhere between the two.
+</Tip>
+
+---
+
+## Constraints
+
+The contract enforces what judgment cannot:
+
+- **Minimum weight**: Each asset must have at least **0.25%** weight (25e14 in contract math)
+- **Weight sum**: Weights must sum to exactly **100%** (1e18)
+- **No zero prices**: Every asset must have a non-zero price at rebalance time
+- **No duplicate assets**: Cannot add an asset that already exists in the basket
+- **Remove indices descending**: When removing multiple assets, indices must be sorted in descending order (the contract uses swap-and-pop)
+- **ITP must be active**: Cannot rebalance a paused or inactive ITP
+
+---
+
+## Quick Reference
+
+```text
+  ┌──────────────────────────────────────────────────┐
+  │              REBALANCE CHEAT SHEET               │
+  │                                                  │
+  │  Formula:                                        │
+  │    qty[i] = (weight[i] * NAV) / price[i]         │
+  │                                                  │
+  │  Preserves:  NAV per share                       │
+  │  Changes:    per-share quantities, weights       │
+  │  Can also:   add new assets, remove assets       │
+  │  Who:        ITP deployer only                   │
+  │  How:        requestRebalance → BLS → rebalance  │
+  │  Min weight: 0.25% per asset                     │
+  │  Max assets: 100 per ITP                         │
+  │                                                  │
+  │  Contract:   RebalanceLib.sol                     │
+  │  Entry:      Investment.sol → rebalance()        │
+  │  Storage:    _itpInventory[itpId]                 │
+  └──────────────────────────────────────────────────┘
+```

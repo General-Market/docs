@@ -5,7 +5,9 @@ description: "Vision smart contract error codes with actionable resolutions"
 
 # Error Codes
 
-Vision uses custom Solidity errors for gas-efficient reverts. Unlike numbered error codes, these are named errors defined directly in `Vision.sol`. Each error below includes the revert condition and a concrete fix.
+The many ways a transaction can fail. Each error is the contract saying no -- and unlike human refusals, these come with exact reasons and actionable fixes.
+
+Vision uses named errors in `IVision.sol` and numbered errors (`E200+`) in `ErrorsLib.sol`. Each entry below includes the revert condition and a concrete fix.
 
 <Info>
 Custom errors are decoded from transaction revert data using the contract ABI. If you see a raw hex revert, decode it with `decodeErrorResult` from viem or ethers to get the error name.
@@ -17,7 +19,7 @@ Custom errors are decoded from transaction revert data using the contract ABI. I
 
 **Reverts when:** BLS signature verification fails during `claimRewards`, `withdraw`, `forceWithdraw`, `pause`, `unpause`, or `updateBatchMarkets`.
 
-**Fix:** Request a fresh balance proof from `GET /vision/balance/{batchId}/{player}`. BLS proofs can become stale if issuers have rotated their keys or the aggregated public key has been updated in the IssuerRegistry. Always fetch the proof immediately before submitting the on-chain transaction. If the error persists, verify that the chain ID in the signed message matches the chain you are submitting to (chain ID `421611337`).
+**Fix:** Request a fresh balance proof from `GET /vision/balance/{batchId}/{player}`. BLS proofs can become stale if oracles have rotated their keys or the aggregated public key has been updated in the OracleRegistry. Always fetch the proof immediately before submitting the on-chain transaction. If the error persists, verify that the chain ID in the signed message matches the chain you are submitting to (chain ID `111222333`).
 
 ---
 
@@ -33,9 +35,17 @@ Custom errors are decoded from transaction revert data using the contract ABI. I
 
 ### BatchPaused
 
-**Reverts when:** A player tries to call `joinBatch` on a batch that has been paused by the issuer network.
+**Reverts when:** A player tries to call `joinBatch` on a batch that has been paused by the oracle network.
 
-**Fix:** The batch has been temporarily suspended by issuer consensus (via BLS-signed `pause`). Wait for the issuers to unpause the batch. You can monitor batch status by polling `getBatch(batchId)` and checking the `paused` field. If you believe the pause is in error, contact the batch creator or the issuer operators.
+**Fix:** The batch has been temporarily suspended by oracle consensus (via BLS-signed `pause`). Wait for the oracles to unpause the batch. You can monitor batch status by polling `getBatch(batchId)` and checking the `paused` field. If you believe the pause is in error, contact the batch creator or the oracle operators.
+
+---
+
+### BatchAlreadyExists
+
+**Reverts when:** A batch creation is attempted with a `sourceId` that already has an associated batch.
+
+**Fix:** Each source can only have one batch. Check if a batch already exists for this source by looking up the sourceId mapping. If you need to update the batch configuration, use `updateBatchConfig` on the existing batch instead of creating a new one.
 
 ---
 
@@ -70,6 +80,22 @@ Custom errors are decoded from transaction revert data using the contract ABI. I
 
 ---
 
+### InsufficientBalance
+
+**Reverts when:** The amount passed to `withdrawBalance` or `withdrawToSettlement` exceeds the caller's available balance in the contract.
+
+**Fix:** Check your current balance by calling `getPosition(batchId, yourAddress)` and reading the `balance` field. Only withdraw up to that amount. If you recently claimed rewards, the balance may have changed.
+
+---
+
+### ZeroAmount
+
+**Reverts when:** A zero amount is passed to `depositBalance`, `withdrawBalance`, or `withdrawToSettlement`.
+
+**Fix:** Provide a non-zero amount. The minimum meaningful deposit is the `stakePerTick` value for your batch.
+
+---
+
 ## Player Position Errors
 
 ### AlreadyJoined
@@ -94,7 +120,7 @@ Custom errors are decoded from transaction revert data using the contract ABI. I
 
 **Reverts when:** The `fromTick` parameter in `claimRewards` is less than or equal to the player's `lastClaimedTick` (when `lastClaimedTick != 0`). This prevents double-claiming the same tick range.
 
-**Fix:** Read the player's current position with `getPosition(batchId, playerAddress)` and check the `lastClaimedTick` field. Set `fromTick` to `lastClaimedTick + 1`. If you are using the issuer API, request a balance proof for the tick range starting after your last claimed tick.
+**Fix:** Read the player's current position with `getPosition(batchId, playerAddress)` and check the `lastClaimedTick` field. Set `fromTick` to `lastClaimedTick + 1`. If you are using the oracle API, request a balance proof for the tick range starting after your last claimed tick.
 
 ---
 
@@ -114,13 +140,47 @@ Custom errors are decoded from transaction revert data using the contract ABI. I
 
 ---
 
+### TickLocked
+
+**Reverts when:** A player attempts to place a bet or update their position during the lock window at the end of a tick. The lock window starts at `tickEnd - lockOffset` seconds before the tick boundary.
+
+**Fix:** Wait until the current tick ends and the next tick begins before submitting your transaction. The lock window prevents last-second position changes that could exploit information asymmetry. You can check the current tick timing by computing `block.timestamp % tickDuration` relative to the `lockOffset`.
+
+---
+
+### InvalidLockOffset
+
+**Reverts when:** The `lockOffset` parameter is greater than or equal to `tickDuration`. The lock window cannot be longer than the tick itself.
+
+**Fix:** Set `lockOffset` to a value strictly less than `tickDuration`. For example, if your tick duration is 300 seconds (5 minutes), a lock offset of 60 seconds (1 minute) means positions are locked for the final minute of each tick.
+
+---
+
 ## Solvency Errors
 
 ### InsolventPayout
 
 **Reverts when:** The Vision contract does not hold enough USDC to cover the payout plus accumulated fees. Checked by `USDC.balanceOf(address(this)) < payout + accumulatedFees`.
 
-**Fix:** This error indicates a critical solvency issue in the contract. Under normal operation, this should never happen because deposits from losers fund payouts to winners. If you encounter this error, it may indicate a bug in balance proof computation by the issuers. Do not retry the transaction -- report the issue to the protocol operators with the batch ID, your address, and the claim parameters.
+**Fix:** This error indicates a critical solvency issue in the contract. Under normal operation, this should never happen because deposits from losers fund payouts to winners. If you encounter this error, it may indicate a bug in balance proof computation by the oracles. Do not retry the transaction -- report the issue to the protocol operators with the batch ID, your address, and the claim parameters.
+
+---
+
+## Deposit Processing Errors
+
+### AlreadyProcessed
+
+**Reverts when:** A deposit has already been processed (`depositProcessed[depositId]` is already `true`). This is replay protection for deposit crediting.
+
+**Fix:** This deposit has already been credited to the user's balance. No action is needed. If you believe the deposit was not actually credited, check the transaction history for the original processing transaction.
+
+---
+
+### ZeroAddress
+
+**Reverts when:** A zero address (`address(0)`) is passed to `creditBalance` or similar functions that require a valid user address.
+
+**Fix:** Provide a valid non-zero Ethereum address.
 
 ---
 
@@ -173,6 +233,59 @@ Note: The limit is in **bytes**, not characters. Multi-byte characters (e.g., CJ
 
 ---
 
+## Bilateral P2P Errors (E200 - E226)
+
+These numbered errors are defined in `ErrorsLib.sol` and are used by the bilateral peer-to-peer betting system.
+
+### Collateral and Bet Errors (E200 - E209)
+
+| Code | Name | Description |
+|------|------|-------------|
+| `E200` | `InsufficientCollateral` | User does not have enough available collateral for the bet. |
+| `E201` | `BetAlreadyExists` | A bet with this ID already exists. |
+| `E202` | `InvalidBetSignature` | Invalid EIP-712 signature for bet commitment. |
+| `E203` | `BetNotFound` | The specified bet ID was not found. |
+| `E204` | `BetNotActive` | The bet is not in Active status (may be settled, cancelled, or arbitrated). |
+| `E205` | `DeadlineNotPassed` | Bet deadline has not passed yet (required for settlement). |
+| `E206` | `ArbitrationNotRequested` | Arbitration has not been requested for this bet. |
+| `E207` | `InsufficientKeeperSignatures` | Not enough valid keeper signatures to meet the arbitration threshold. |
+| `E208` | `NotBetParty` | Caller is not a party (creator or filler) to this bet. |
+| `E209` | `PayoutExceedsPot` | Custom payout amounts exceed the total pot (creator + filler collateral). |
+
+### Bot Registration Errors (E210 - E212)
+
+| Code | Name | Description |
+|------|------|-------------|
+| `E210` | `BotAlreadyRegistered` | Bot address is already registered. |
+| `E211` | `BotNotActive` | Bot is not registered or is inactive. |
+| `E212` | `InsufficientBotStake` | Insufficient stake provided for bot registration. |
+
+### Keeper Registry Errors (E213 - E222)
+
+| Code | Name | Description |
+|------|------|-------------|
+| `E213` | `KeeperAlreadyRegistered` | Keeper address is already registered. |
+| `E214` | `InvalidKeeperPubkey` | Invalid BLS public key length (must be 128 bytes for G2). |
+| `E215` | `KeeperNotActive` | Keeper is not found or is inactive. |
+| `E216` | `KeeperSuspended` | Keeper is suspended. |
+| `E217` | `NoRotationPending` | No pending key rotation for this keeper. |
+| `E218` | `RotationThresholdNotMet` | Key rotation approval threshold not met. |
+| `E219` | `CannotSelfApprove` | A keeper cannot approve their own key rotation. |
+| `E220` | `AlreadyApproved` | Key rotation already approved by this keeper. |
+| `E221` | `ForceRotationTooEarly` | Force rotation timeout not reached (must wait for the timeout period). |
+| `E222` | `InvalidEndpoint` | Invalid endpoint (empty string). |
+
+### Referral Errors (E223 - E226)
+
+| Code | Name | Description |
+|------|------|-------------|
+| `E223` | `EpochAlreadySet` | Referral epoch already has a Merkle root set. |
+| `E224` | `AlreadyClaimed` | Referral reward already claimed for this epoch. |
+| `E225` | `InvalidMerkleProof` | Invalid Merkle proof for referral claim. |
+| `E226` | `InsufficientBalance` | Withdraw amount exceeds available balance. |
+
+---
+
 ## Decoding Errors in the Frontend
 
 Custom errors are decoded using the contract ABI. Here is an example using viem:
@@ -189,7 +302,8 @@ try {
     data: err.data,
   });
   console.error(`Contract reverted: ${decoded.errorName}`);
-  // decoded.errorName -> "StakeBelowMinimum", "BatchNotFound", etc.
+  // Named errors: "StakeBelowMinimum", "BatchNotFound", etc.
+  // Numbered errors: "E200_InsufficientCollateral", "E203_BetNotFound", etc.
 }
 ```
 

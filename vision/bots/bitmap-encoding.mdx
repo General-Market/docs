@@ -5,7 +5,9 @@ description: "Technical reference for Vision prediction bitmap format, encoding,
 
 # Bitmap Encoding
 
-Vision predictions are encoded as packed bitmaps -- one bit per market. This page is the definitive reference for the bitmap wire format, encoding algorithm, hashing, and edge cases.
+Bits. The smallest possible opinion. One bit per market -- UP or DOWN, 1 or 0, conviction or its absence. There is no room for nuance in a single bit, which is perhaps why it works.
+
+This page is the definitive reference for the bitmap wire format, encoding algorithm, hashing, and edge cases.
 
 ## Bit Layout
 
@@ -148,7 +150,7 @@ function decodeBitmap(bitmap: Uint8Array, marketCount: number): ('UP' | 'DOWN')[
 
 ## Hashing
 
-The on-chain commitment is `keccak256(bitmap_bytes)`. This hash is what you pass to `joinBatch()` as the `bitmapHash` parameter. It is also what issuers verify when you submit the actual bitmap.
+The on-chain commitment is `keccak256(bitmap_bytes)`. You publish the hash before revealing the opinion. A sealed confession -- the blockchain knows you have a view but not what it is. This hash is what you pass to `joinBatch()` as `bitmapHash`, and what oracles verify when you later reveal the actual bitmap.
 
 <CodeGroup>
 
@@ -175,24 +177,24 @@ const bitmapHex = toHex(bitmap)        // 0x-prefixed hex string
 </CodeGroup>
 
 <Info>
-The hash function is **keccak256** (Ethereum's variant), not SHA-256. Using the wrong hash function will cause `joinBatch` to succeed with an incorrect commitment, but bitmap verification by issuers will fail.
+The hash function is **keccak256** (Ethereum's variant), not SHA-256. The wrong hash function produces a valid commitment to nothing -- `joinBatch` succeeds but bitmap verification fails. A commitment that cannot be honored is worse than no commitment at all.
 </Info>
 
 ## Verification
 
-The seal-then-reveal scheme works as follows:
+The seal-then-reveal scheme -- first commit, then confess:
 
 ```
 1. Bot computes:  bitmapHash = keccak256(bitmap_bytes)
 2. Bot calls:     joinBatch(batchId, deposit, stake, bitmapHash)
                   → bitmapHash stored on-chain in PlayerPosition.bitmapHash
 3. Bot submits:   POST /vision/bitmap { bitmap_hex, expected_hash }
-4. Issuer checks: keccak256(decode_hex(bitmap_hex)) == expected_hash
-5. Issuer checks: expected_hash == on-chain PlayerPosition.bitmapHash
+4. Oracle checks: keccak256(decode_hex(bitmap_hex)) == expected_hash
+5. Oracle checks: expected_hash == on-chain PlayerPosition.bitmapHash
 6. Both match → bitmap accepted for tick resolution
 ```
 
-If any verification step fails, the bitmap is rejected. The player's stake still ticks (they lose each tick by default since they have no valid prediction on file).
+If any verification step fails, the bitmap is rejected. The player's stake still ticks -- they lose each tick by default, punished not for being wrong but for failing to be anything at all.
 
 ## Edge Cases
 
@@ -229,7 +231,7 @@ Full:     0xB280
 
 ### Missing Bets Default to DOWN
 
-If `len(bets) < market_count`, the remaining bits are left as 0 (DOWN). This is safe and intentional -- it means you can submit predictions for only the markets you have a view on.
+If `len(bets) < market_count`, the remaining bits are left as 0 (DOWN). Silence is interpreted as pessimism. You can submit predictions for only the markets you have a view on -- the rest default to doubt.
 
 ### All UP / All DOWN
 

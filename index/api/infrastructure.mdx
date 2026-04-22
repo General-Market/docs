@@ -1,0 +1,438 @@
+---
+title: "Infrastructure Endpoints"
+description: "Deployment config, explorer health, testnet faucet, market history, and the data-node proxy"
+---
+
+# Infrastructure Endpoints
+
+The plumbing. Contract addresses, health checks, testnet faucet, market history, and the catch-all proxy. Not glamorous. Essential.
+
+```
+  +------------------------------------------------------------------+
+  |                     Infrastructure Routes                         |
+  +------------------------------------------------------------------+
+  |                                                                    |
+  |   /api/deployment ------> reads JSON from server filesystem        |
+  |                                                                    |
+  |   /api/explorer/health -> Data Node /explorer/health/{endpoint}    |
+  |                           (injects EXPLORER_TOKEN server-side)     |
+  |                                                                    |
+  |   /api/market/history --> Data Node /market/prices/{source}/{id}   |
+  |                                                                    |
+  |   /api/faucet ----------> L3 RPC (mint USDC)                       |
+  |                    +----> Settlement RPC (drip gas)                 |
+  |                                                                    |
+  |   /api/dn/{...path} ---> Data Node /{path} (catch-all, SSE ok)    |
+  |                                                                    |
+  +------------------------------------------------------------------+
+```
+
+---
+
+## Get Deployment Config
+
+Where the contracts live. The frontend reads this at runtime to know which addresses to call.
+
+```
+GET /api/deployment?file={filename}
+```
+
+<ParamField query="file" type="string" required>
+  Deployment file name. Must be one of:
+  - `active-deployment.json`
+  - `morpho-e2e.json`
+  - `local-e2e.json`
+  - `local-frontend.json`
+</ParamField>
+
+<CodeGroup>
+```bash cURL
+curl "https://generalmarket.io/api/deployment?file=active-deployment.json"
+```
+
+```javascript JavaScript
+const res = await fetch("/api/deployment?file=active-deployment.json");
+const deployment = await res.json();
+console.log(deployment.contracts.Index); // "0x..."
+```
+
+```python Python
+import requests
+
+resp = requests.get(
+    "https://generalmarket.io/api/deployment",
+    params={"file": "active-deployment.json"}
+)
+deployment = resp.json()
+print(deployment["contracts"]["Index"])
+```
+</CodeGroup>
+
+<Expandable title="Response">
+```json
+{
+  "chainId": 111222333,
+  "contracts": {
+    "Index": "0x1234...abcd",
+    "L3_WUSDC": "0xabcd...1234",
+    "VisionReserve": "0x5678...ef00",
+    "OracleRegistry": "0xef00...5678"
+  }
+}
+```
+</Expandable>
+
+```
+  Resolution path:
+
+  1. Try   ../deployments/{file}     (local dev: monorepo root)
+  2. Fall  public/deployment.json    (Vercel prod, active-deployment.json only)
+  3. 404   if both fail
+```
+
+| Status | Meaning |
+|--------|---------|
+| `200` | File found, JSON returned |
+| `400` | Invalid or missing `file` parameter |
+| `404` | Deployment file not found on server |
+
+---
+
+## Get Explorer Health
+
+Consensus metrics, peer counts, order throughput. The pulse of the system. Token-authenticated, but the proxy handles that for you.
+
+```
+GET /api/explorer/health?endpoint={endpoint}&range={range}
+```
+
+<ParamField query="endpoint" type="string">
+  One of `history` or `latest`. Default: `history`.
+</ParamField>
+
+<ParamField query="range" type="string">
+  Time range for history. One of: `1h`, `6h`, `24h`, `7d`, `30d`. Default: `24h`.
+</ParamField>
+
+<CodeGroup>
+```bash cURL
+# Latest health snapshot
+curl "https://generalmarket.io/api/explorer/health?endpoint=latest"
+
+# Health history over 7 days
+curl "https://generalmarket.io/api/explorer/health?endpoint=history&range=7d"
+```
+
+```javascript JavaScript
+// Latest snapshot
+const res = await fetch("/api/explorer/health?endpoint=latest");
+const { network } = await res.json();
+console.log(`Peers: ${network.total_peers}, Quorum: ${network.quorum_met}`);
+```
+
+```python Python
+import requests
+
+resp = requests.get(
+    "https://generalmarket.io/api/explorer/health",
+    params={"endpoint": "latest"}
+)
+network = resp.json()["network"]
+print(f"Consensus success: {network['consensus_success_total']}")
+```
+</CodeGroup>
+
+<Expandable title="Response (endpoint=latest)">
+```json
+{
+  "network": {
+    "poll_batch_ts": "2026-03-14T12:00:00Z",
+    "quorum_met": true,
+    "worst_status": "healthy",
+    "consensus_rounds_total": 1542,
+    "consensus_success_total": 1538,
+    "consensus_failed_total": 4,
+    "signatures_collected": 3,
+    "avg_consensus_time_ms": 245,
+    "avg_cycle_duration_ms": 5012,
+    "orders_processed_last_60s": 12,
+    "pending_order_count": 0,
+    "total_peers": 3,
+    "p2p_messages_received": 48210,
+    "p2p_messages_sent": 48195,
+    "total_peers_healthy": 3,
+    "total_peers_unhealthy": 0
+  }
+}
+```
+</Expandable>
+
+<Expandable title="Response (endpoint=history)">
+```json
+{
+  "snapshots": [
+    {
+      "poll_batch_ts": "2026-03-14T11:55:00Z",
+      "quorum_met": true,
+      "worst_status": "healthy",
+      "consensus_rounds_total": 1540,
+      "consensus_success_total": 1536,
+      "consensus_failed_total": 4,
+      "total_peers": 3,
+      "total_peers_healthy": 3,
+      "total_peers_unhealthy": 0
+    }
+  ]
+}
+```
+</Expandable>
+
+**Whitelisted response fields** (all other fields are stripped server-side):
+
+```
+  poll_batch_ts              Timestamp of the health poll
+  quorum_met                 Whether BLS quorum was achieved
+  worst_status               Worst status across all oracles
+  consensus_rounds_total     Total consensus rounds attempted
+  consensus_success_total    Rounds that reached quorum
+  consensus_failed_total     Rounds that failed quorum
+  signatures_collected       BLS signatures in latest round
+  avg_consensus_time_ms      Average consensus latency
+  avg_cycle_duration_ms      Average full cycle time
+  orders_processed_last_60s  Recent order throughput
+  pending_order_count        Orders waiting for processing
+  total_peers                Number of oracle peers
+  p2p_messages_received      P2P messages received
+  p2p_messages_sent          P2P messages sent
+  total_peers_healthy        Peers reporting healthy
+  total_peers_unhealthy      Peers reporting unhealthy
+```
+
+| Status | Meaning |
+|--------|---------|
+| `200` | Health data returned |
+| `400` | Invalid `endpoint` or `range` parameter |
+| `502` | Data-node upstream unavailable |
+| `503` | `EXPLORER_TOKEN` not configured on server |
+
+---
+
+## Get Market Price History
+
+Historical prices for a specific source and asset. The raw material for charts and analysis.
+
+```
+GET /api/market/history?source={source}&asset={assetId}&from={ts}&to={ts}
+```
+
+<ParamField query="source" type="string" required>
+  Data source identifier (e.g., `earthquake`, `crypto`, `weather`).
+</ParamField>
+
+<ParamField query="asset" type="string" required>
+  Asset identifier within the source (e.g., `USGS/us7000abc1`, `BTC`).
+</ParamField>
+
+<ParamField query="from" type="string">
+  Start timestamp (Unix seconds). Optional.
+</ParamField>
+
+<ParamField query="to" type="string">
+  End timestamp (Unix seconds). Optional.
+</ParamField>
+
+<CodeGroup>
+```bash cURL
+curl "https://generalmarket.io/api/market/history?source=crypto&asset=BTC&from=1708000000&to=1708600000"
+```
+
+```javascript JavaScript
+const params = new URLSearchParams({
+  source: "crypto",
+  asset: "BTC",
+  from: "1708000000",
+  to: "1708600000",
+});
+const res = await fetch(`/api/market/history?${params}`);
+const data = await res.json();
+```
+
+```python Python
+import requests
+
+resp = requests.get(
+    "https://generalmarket.io/api/market/history",
+    params={"source": "crypto", "asset": "BTC", "from": "1708000000", "to": "1708600000"}
+)
+history = resp.json()
+```
+</CodeGroup>
+
+<Expandable title="Response">
+```json
+{
+  "prices": [
+    { "timestamp": 1708000000, "value": 97100.50 },
+    { "timestamp": 1708003600, "value": 97250.80 },
+    { "timestamp": 1708007200, "value": 97432.15 }
+  ]
+}
+```
+</Expandable>
+
+| Status | Meaning |
+|--------|---------|
+| `200` | Price history returned |
+| `400` | Missing `source` or `asset` parameter |
+| `502` | Data-node upstream unavailable |
+
+<Note>
+  Responses are cached at the CDN for 60 seconds with a 5-minute stale-while-revalidate window.
+</Note>
+
+---
+
+## Testnet Faucet
+
+Free money. Testnet only. Mints USDC on L3 and optionally drips gas on Settlement.
+
+```
+POST /api/faucet
+```
+
+<ParamField body="address" type="string" required>
+  Recipient wallet address (checksummed hex, `0x...`).
+</ParamField>
+
+<ParamField body="amount" type="string">
+  USDC amount to mint. Default: `100`. Maximum: `10000`.
+</ParamField>
+
+<ParamField body="gas" type="boolean">
+  When `true`, also sends 0.5 S (Sonic testnet native token) for settlement gas. Default: `false`.
+</ParamField>
+
+<CodeGroup>
+```bash cURL
+curl -X POST "https://generalmarket.io/api/faucet" \
+  -H "Content-Type: application/json" \
+  -d '{"address": "0xYourAddress", "amount": "1000", "gas": true}'
+```
+
+```javascript JavaScript
+const res = await fetch("/api/faucet", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    address: "0xYourAddress",
+    amount: "1000",
+    gas: true,
+  }),
+});
+const result = await res.json();
+```
+
+```python Python
+import requests
+
+resp = requests.post(
+    "https://generalmarket.io/api/faucet",
+    json={"address": "0xYourAddress", "amount": "1000", "gas": True}
+)
+result = resp.json()
+```
+</CodeGroup>
+
+<Expandable title="Response">
+```json
+{
+  "success": true,
+  "to": "0xYourAddress",
+  "usdc": {
+    "hash": "0xabc123...def",
+    "amount": "1000 USDC"
+  },
+  "gas": {
+    "hash": "0x789ghi...jkl",
+    "amount": "0.5 S"
+  }
+}
+```
+</Expandable>
+
+```
+  Faucet flow:
+
+  1. Validate address format (0x + 40 hex chars)
+  2. Clamp amount to [0, 10000]
+  3. Call L3_WUSDC.mint(address, amount * 1e18) on L3 chain
+  4. Wait for L3 tx receipt
+  5. If gas=true:
+     a. Check deployer balance on Settlement chain
+     b. If sufficient, send 0.5 S to address
+     c. Wait for Settlement tx receipt
+  6. Return tx hashes
+```
+
+| Status | Meaning |
+|--------|---------|
+| `200` | Mint successful (check individual `usdc` and `gas` fields) |
+| `400` | Invalid address format or amount |
+| `500` | Transaction failed |
+
+<Warning>
+  L3 USDC uses **18 decimals** (not 6). The faucet handles this conversion internally. The `amount` parameter is in human-readable USDC (e.g., `"1000"` = 1000 USDC).
+</Warning>
+
+---
+
+## Data Node Proxy (Catch-All)
+
+Everything that does not have its own route goes through here. Transparent pass-through to the data node, with SSE streaming support.
+
+```
+GET /api/dn/{...path}
+```
+
+Everything after `/api/dn/` is forwarded to the data node, with all query parameters intact.
+
+```
+  Browser request                     Upstream request
+  ---------------------------------   -----------------------------------
+  /api/dn/sim/run-stream?top_n=10    DATA_NODE:8200/sim/run-stream?top_n=10
+  /api/dn/sim/categories              DATA_NODE:8200/sim/categories
+  /api/dn/portfolio?address=0x...    DATA_NODE:8200/portfolio?address=0x...
+  /api/dn/snapshot?itp_id=0x...      DATA_NODE:8200/snapshot?itp_id=0x...
+```
+
+**SSE streaming support:**
+
+```
+  Regular JSON response:
+    Browser --GET--> /api/dn/sim/categories
+    Proxy   --GET--> DATA_NODE:8200/sim/categories
+    Proxy   <--200-- { "categories": [...] }
+    Browser <--200-- { "categories": [...] }
+
+  SSE streaming response (backtest progress):
+    Browser --GET--> /api/dn/sim/run-stream?...
+    Proxy   --GET--> DATA_NODE:8200/sim/run-stream?...
+    Proxy   <--200-- Content-Type: text/event-stream
+    Browser <--200-- data: {"type":"progress","pct":10}
+                     data: {"type":"progress","pct":50}
+                     data: {"type":"progress","pct":100}
+                     data: {"type":"result","stats":{...}}
+```
+
+Behaviors:
+
+- **5-minute timeout** for long-running simulations
+- **SSE pass-through** with `X-Accel-Buffering: no` to bypass nginx buffering
+- **No caching** at the proxy layer
+- **502 on failure** when the data node is unreachable
+
+| Status | Meaning |
+|--------|---------|
+| `200` | Upstream response forwarded successfully |
+| `502` | Data-node unreachable or timed out |
+| Other | Upstream HTTP status forwarded as-is |

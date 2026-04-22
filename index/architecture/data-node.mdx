@@ -1,153 +1,653 @@
 ---
 title: "Data Node"
-description: "Backend service providing market data, NAV computation, and analytics"
+description: "90+ data source aggregation, market data API, backtesting engine, and real-time feeds"
 ---
 
 # Data Node
 
-The Data Node is a Rust backend service that provides real-time market data, NAV computation, portfolio analytics, and backtesting capabilities. The Data Node serves as the primary data layer for the Index protocol's frontend and issuer nodes.
+Ninety-one sources. One database. The world reduced to rows.
 
-## Data Node Configuration
+76,000 lines of Rust that watch earthquakes, train delays, crypto prices, Congressional stock trades, and McDonald's ice cream machine outages -- then store the results in PostgreSQL and serve them through 50+ endpoints. Every price the protocol touches passes through this service. It is the single data backbone for frontend, oracles, Vision, and the explorer. If it stops, everything stops.
+
+```
+ ╔══════════════════════════════════════════════════════════════════════════════╗
+ ║                              DATA NODE                                      ║
+ ║               91 Sources  •  REST  •  WebSocket  •  SSE                     ║
+ ╠══════════════════════════════════════════════════════════════════════════════╣
+ ║                                                                              ║
+ ║  EXTERNAL DATA               COLLECTORS              STORAGE                ║
+ ║  ┌─────────────┐         ┌────────────────┐      ┌────────────────────┐     ║
+ ║  │ Earthquakes │────┐    │ Market Data    │─────►│ market_prices      │     ║
+ ║  │ Weather     │────┤    │ (91 sources)   │      │ market_prices_     │     ║
+ ║  │ Trains      │────┤    ├────────────────┤      │   latest           │     ║
+ ║  │ Flights     │────┤    │ CoinGecko      │─────►│ coingecko_mcaps    │     ║
+ ║  │ Crypto      │────┤    │ (mcap/cats)    │      │ coingecko_cats     │     ║
+ ║  │ Stocks      │────┼───►├────────────────┤      ├────────────────────┤     ║
+ ║  │ DeFi        │────┤    │ DeFi Llama     │─────►│ dl_protocols       │     ║
+ ║  │ Esports     │────┤    │ (TVL/fees)     │      │ dl_metrics         │     ║
+ ║  │ Reddit      │────┤    ├────────────────┤      ├────────────────────┤     ║
+ ║  │ Steam       │────┤    │ Kline/OHLCV    │─────►│ klines             │     ║
+ ║  │ Twitch      │────┤    ├────────────────┤      ├────────────────────┤     ║
+ ║  │ Nuclear     │────┤    │ Trade          │─────►│ trades             │     ║
+ ║  │ Volcanoes   │────┤    ├────────────────┤      ├────────────────────┤     ║
+ ║  │ Space       │────┤    │ Liquidity      │─────►│ liquidity          │     ║
+ ║  │ Animals     │────┤    ├────────────────┤      ├────────────────────┤     ║
+ ║  │ ...87 more  │────┘    │ Chain Pollers  │─────►│ itp_snapshots      │     ║
+ ║  └─────────────┘         │ (L3 + Settl.)  │      │ oracle_health      │     ║
+ ║                          ├────────────────┤      ├────────────────────┤     ║
+ ║                          │ FNG / Oracle   │─────►│ fng_index          │     ║
+ ║                          │ Health / GitHub │      │ github_metrics     │     ║
+ ║                          └────────────────┘      └─────────┬──────────┘     ║
+ ║                                                            │                ║
+ ║                                                            ▼                ║
+ ║  CONSUMERS                                        ┌────────────────────┐    ║
+ ║  ┌─────────────┐     ┌──────────────────┐         │     REST API       │    ║
+ ║  │  Frontend   │◄────│  /price /prices   │◄────────│   50+ endpoints    │    ║
+ ║  │  (Next.js)  │     │  /itp-price /nav  │         │   Axum + Tower     │    ║
+ ║  ├─────────────┤     │  /portfolio       │         └────────────────────┘    ║
+ ║  │  Oracles    │◄────│  /sim/run-stream  │                  │               ║
+ ║  │  (Rust)     │     │  /vision/ws       │                  ▼               ║
+ ║  ├─────────────┤     │  /market/prices   │         ┌────────────────────┐   ║
+ ║  │  Explorer   │◄────│  /explorer/*      │         │  WebSocket + SSE   │   ║
+ ║  │  Dashboard  │     │  /batches/*       │         │  Real-time streams │   ║
+ ║  └─────────────┘     └──────────────────┘         └────────────────────┘   ║
+ ║                                                                              ║
+ ╚══════════════════════════════════════════════════════════════════════════════╝
+```
+
+## Configuration
 
 | Property | Detail |
 |---|---|
-| **Language** | Rust with Tokio async runtime |
-| **Database** | PostgreSQL (price history, portfolio snapshots) |
+| **Language** | Rust (76K lines) with Tokio async runtime |
+| **Database** | PostgreSQL — 25 migrations, 15+ tables |
 | **Default Port** | 8200 |
-| **Transport** | REST API + Server-Sent Events (SSE) for real-time streaming |
+| **Transport** | REST + WebSocket + SSE |
+| **Concurrency** | 91 source engines + 8 internal collectors, all concurrent Tokio tasks |
+| **Connection Pool** | 80 max connections, 10s acquire timeout |
 
-## Data Node Capabilities
+---
 
-### Price Feeds
+## Collector Architecture
 
-The Data Node aggregates prices for **100+ crypto assets** from multiple sources with automatic fallback:
+Every source is an independent Tokio task. When one panics, `spawn_resilient` restarts it. The source does not know it died. All writes flow through a shared `BatchWriter` channel that coalesces inserts -- because PostgreSQL has limits, even if the world does not.
 
-| Source | Type | Notes |
+```
+     Source APIs          spawn_resilient           BatchWriter          PostgreSQL
+    ┌───────────┐       ┌───────────────┐       ┌──────────────┐     ┌──────────┐
+    │ finnhub   │──────►│  SyncEngine   │──┐    │              │     │          │
+    │ earthquake│──────►│  SyncEngine   │──┤    │   Batched    │     │ market_  │
+    │ twitch    │──────►│  SyncEngine   │──┤    │   INSERT     │     │ prices   │
+    │ volcano   │──────►│  SyncEngine   │──┼───►│   Channel    │────►│          │
+    │ reddit    │──────►│  SyncEngine   │──┤    │              │     │ market_  │
+    │ steam     │──────►│  SyncEngine   │──┤    │  (mpsc +     │     │ prices_  │
+    │ ...       │──────►│  SyncEngine   │──┘    │   coalesce)  │     │ latest   │
+    └───────────┘       └───────┬───────┘       └──────┬───────┘     └──────────┘
+                                │                      │
+                                │                      ▼
+                                │               ┌──────────────┐
+                                │               │  Broadcast   │
+                                └──────────────►│  Hub (WS)    │
+                                                └──────────────┘
+```
+
+Each `SyncEngine` owns:
+- A source-specific client (HTTP, WebSocket, or gRPC)
+- A config JSON defining assets, poll interval, and schedules
+- Rate limiting per source API
+- Error tracking via global `ErrorTracker`
+- Registration in the `SyncRegistry` for health monitoring
+
+### Internal Collectors
+
+Beyond the 91 external sources, the data node runs its own collectors -- polling chains, computing NAV, tracking oracle health. The system watches itself.
+
+| Collector | Module | Responsibility | Poll Interval |
+|---|---|---|---|
+| **Price Collector** | `collector.rs` | Bitget spot prices for ITP-eligible assets | 30s |
+| **ITP Collector** | `itp_collector.rs` | On-chain ITP state (NAV, supply, inventory) from L3 | 30s |
+| **Trade Collector** | `trade_collector.rs` | On-chain order fills and trade events from L3 | 30s |
+| **Kline Collector** | `kline_collector.rs` | OHLCV candles from Bitget for chart display | Continuous |
+| **Liquidity Collector** | `liquidity_collector.rs` | Order book depth snapshots per trading pair | 1h |
+| **CoinGecko Collector** | `cg_collector.rs` | Market caps, categories, coin logos | 24h |
+| **DeFi Llama Collector** | `dl_collector.rs` | Protocol TVL, fees, volume, raises | 24h |
+| **FNG Collector** | `fng_collector.rs` | Fear & Greed Index readings | 6h |
+| **Oracle Health** | `oracle_health_collector.rs` | Oracle node status, latency, consensus health | 5m |
+| **Listing Sync** | `listing_sync.rs` | Bitget listing/delisting dates | 24h |
+| **Chain Pollers** | `chain_pollers.rs` | L3 + Settlement chain state (balances, orders, Morpho) | 30s |
+| **Chain Event Scanner** | `chain_event_scanner.rs` | Historical event scanning (fills, deposits) | On-demand |
+| **Batch Engine** | `batch_engine.rs` | Vision batch lifecycle management | Continuous |
+
+### Chain Pollers Detail
+
+Two chains, polled simultaneously. The results are cached in memory and served by the API. The chain is the source of truth; the cache is the speed.
+
+```
+    L3 Orbit Chain (111222333)              Settlement Chain
+    ┌──────────────────────────┐           ┌──────────────────┐
+    │  Index.sol               │           │  USDC balances   │
+    │  ├─ getITPState()        │           │  Allowances      │
+    │  ├─ getUserShares()      │           │  Morpho positions│
+    │  ├─ getOrder()           │           │  Bridge proxy    │
+    │  ├─ nextOrderId()        │           └──────────────────┘
+    │  ├─ FillConfirmed events │                    │
+    │  Oracle.sol              │                    │
+    │  ├─ currentPrice()       │                    │
+    │  ├─ lastCycleNumber()    │                    │
+    │  OracleRegistry          │                    │
+    │  ├─ oracle status        │                    │
+    └────────────┬─────────────┘                    │
+                 │                                  │
+                 ▼                                  ▼
+         ┌─────────────────────────────────────────────┐
+         │              ChainCache (in-memory)          │
+         │  NavSnapshot, UserBalances, UserOrders,      │
+         │  MorphoPositions, FillRecords, Oracles       │
+         └──────────────────────┬──────────────────────┘
+                                │
+                                ▼
+                          REST API serves
+                          cached chain state
+```
+
+---
+
+## The 91 Market Data Sources
+
+Every source has its own Rust client, config JSON, and SyncEngine. Sixteen categories. From the Federal Reserve to Chaturbate. The protocol does not judge what is tradeable.
+
+### Finance & Markets
+
+| Source | Config | What It Tracks |
 |---|---|---|
-| **CoinGecko** | REST API | Primary source for broad coverage |
-| **Binance** | WebSocket + REST | High-frequency updates for major pairs |
-| **Exchange APIs** | REST | Additional coverage for mid/long-tail assets |
-| **1inch DEX** | On-chain quotes | Fallback for assets without CEX listings |
+| `finnhub` | `stocks.json` | US/EU stock prices, earnings, splits |
+| `fred` | `rates.json` | Federal Reserve economic indicators |
+| `bls` | `bls.json` | Bureau of Labor Statistics (CPI, employment) |
+| `treasury` | `bonds.json` | US Treasury yields (2Y, 10Y, 30Y) |
+| `ecb` | `ecb.json` | European Central Bank rates, EUR/USD |
+| `finra` | `finra.json` | FINRA margin debt, credit balances |
+| `finra_short_vol` | `finra.json` | Short volume by ticker |
+| `twse` | `twse.json` | Taiwan Stock Exchange index |
+| `nasdaq` | -- | NASDAQ composite data |
+| `zillow` | `zillow.json` | US housing market (Zillow Home Value Index) |
+| `cftc` | `cftc.json` | CFTC Commitments of Traders |
+| `imf` | `imf.json` | IMF global economic indicators |
+| `opec` | `opec.json` | OPEC oil production, basket price |
+| `eia` | `eia.json` | Energy Information Administration (oil, gas, coal) |
 
-Each asset is configured with a priority-ordered list of sources. If the primary source fails or returns stale data, the Data Node pipeline automatically falls back to the next source.
+### Crypto & DeFi
 
-### NAV Computation
+| Source | Config | What It Tracks |
+|---|---|---|
+| `coingecko` | `crypto.json` | 2000+ crypto prices, market caps |
+| `defillama_market` | `defi.json` | DeFi protocol TVL, fees, volume |
+| `pumpfun` | `pumpfun.json` | Pump.fun memecoin launches/metrics |
+| `polymarket` | `polymarket.json` | Polymarket prediction market odds |
+| `bchain` | `bchain.json` | Bitcoin on-chain metrics (hashrate, tx count) |
+
+### Government & Regulation
+
+| Source | Config | What It Tracks |
+|---|---|---|
+| `sec_edgar` | -- | SEC EDGAR filings (10-K, 10-Q) |
+| `sec_efts` | -- | SEC EFTS full-text search |
+| `sec_insider` | `sec_13f.json` | SEC insider trading (Form 4) |
+| `congress` | `congress.json` | US Congress stock trades |
+| `usa_spending` | `usa_spending.json` | Federal contract awards |
+| `courtlistener` | `courtlistener.json` | Federal court opinions |
+
+### Weather & Environment
+
+| Source | Config | What It Tracks |
+|---|---|---|
+| `openmeteo` | `weather.json` | Global weather forecasts (temp, wind, precip) |
+| `weather_alerts` | `weather_alerts.json` | NWS severe weather alerts |
+| `noaa_met` | `noaa_met.json` | NOAA meteorological observations |
+| `noaa_tides` | `noaa_tides.json` | NOAA tide levels and predictions |
+| `ndbc` | `ndbc.json` | NOAA ocean buoy data (waves, SST) |
+| `nwps` | `nwps.json` | National Water Prediction Service |
+| `airnow` | `airnow.json` | EPA air quality index (AQI) |
+| `usgs_water` | `usgs_water.json` | USGS river/stream flow gauges |
+
+### Natural Disasters
+
+| Source | Config | What It Tracks |
+|---|---|---|
+| `earthquake` | `earthquake.json` | USGS earthquake feed (magnitude, location) |
+| `volcano` | `volcano.json` | Smithsonian GVP volcano alerts |
+| `wildfire` | `wildfire.json` | NIFC active wildfire incidents |
+| `epidemic` | `epidemic.json` | WHO/CDC disease outbreak reports |
+| `spaceweather` | `spaceweather.json` | NOAA solar flares, geomagnetic storms |
+
+### Transportation
+
+| Source | Config | What It Tracks |
+|---|---|---|
+| `flights` | `flights.json` | Live flight delays (FlightAware) |
+| `faa_delays` | `faa_delays.json` | FAA airport delay programs |
+| `ryanair` | `ryanair.json` | Ryanair route prices |
+| `db_trains` | `db_trains.json` | Deutsche Bahn train delays (IRIS-TTS) |
+| `tfl_tube` | `tfl_tube.json` | London Underground line status |
+| `paris_metro` | `paris_metro.json` | Paris Metro / RATP disruptions |
+| `mta_subway` | `mta_subway.json` | NYC MTA subway delays |
+| `gtfs_rt` | `gtfs_rt.json` | GTFS Realtime transit feeds |
+| `maritime` | `maritime.json` | AIS vessel tracking |
+| `aisstream` | `aisstream.json` | Real-time AIS ship positions |
+| `mil_aircraft` | `mil_aircraft.json` | Military aircraft transponders |
+| `tomtom_traffic` | `tomtom_traffic.json` | TomTom traffic congestion index |
+| `citybikes` | `citybikes.json` | Bike-share station availability |
+| `parking` | `parking.json` | Real-time parking garage occupancy |
+
+### Technology & Developer
+
+| Source | Config | What It Tracks |
+|---|---|---|
+| `github` | `github.json` | GitHub repo stars, commits, contributors |
+| `npm` | `npm.json` | NPM package weekly downloads |
+| `pypi` | `pypi.json` | PyPI package downloads |
+| `crates_io` | `crates_io.json` | Crates.io Rust package downloads |
+| `cloudflare` | `cloudflare.json` | Cloudflare Radar internet traffic |
+| `hackernews` | `hackernews.json` | Hacker News top story scores |
+| `stackexchange` | `stackexchange.json` | Stack Overflow question activity |
+
+### Entertainment & Media
+
+| Source | Config | What It Tracks |
+|---|---|---|
+| `twitch` | `twitch.json` | Twitch streamer viewer counts |
+| `tmdb` | `tmdb.json` | Movie/TV popularity (TMDB) |
+| `anilist` | `anilist.json` | Anime/manga popularity (AniList) |
+| `lastfm` | `lastfm.json` | Last.fm artist play counts |
+| `steam` | `steam.json` | Steam concurrent player counts |
+| `bgg` | `bgg.json` | BoardGameGeek game rankings |
+
+### Gaming & Virtual Economies
+
+| Source | Config | What It Tracks |
+|---|---|---|
+| `backpacktf` | `backpacktf.json` | TF2 item prices (Backpack.tf) |
+| `pandascore` | `pandascore.json` | Esports match results and odds |
+| `queue_times` | `queue_times.json` | Theme park ride wait times |
+
+### Social & Community
+
+| Source | Config | What It Tracks |
+|---|---|---|
+| `reddit` | `reddit.json` | Subreddit subscriber/activity metrics |
+| `fourchan` | `fourchan.json` | 4chan board post velocity |
+| `chaturbate` | `chaturbate.json` | Chaturbate streamer viewer counts |
+
+### Science & Research
+
+| Source | Config | What It Tracks |
+|---|---|---|
+| `openalex` | `openalex.json` | Academic paper citation counts |
+| `crossref` | `crossref.json` | DOI registration velocity |
+| `pubmed` | `pubmed.json` | PubMed publication counts by topic |
+
+### Wildlife & Nature
+
+| Source | Config | What It Tracks |
+|---|---|---|
+| `animals` | `animals.json` | Zoo/wildlife population counts |
+| `movebank` | `movebank.json` | Animal migration GPS tracking |
+| `ebird` | `ebird.json` | eBird species observation hotspots |
+
+### Infrastructure & Energy
+
+| Source | Config | What It Tracks |
+|---|---|---|
+| `nrc_nuclear` | `nrc_nuclear.json` | US nuclear reactor status (NRC) |
+| `power_outages` | `power_outages.json` | US power outage counts by utility |
+| `ioda` | `ioda.json` | Internet outage detection (IODA) |
+| `iss` | `iss.json` | ISS position and crew count |
+| `tomtom_evcharge` | `tomtom_evcharge.json` | EV charging station availability |
+
+### Commerce & Consumer
+
+| Source | Config | What It Tracks |
+|---|---|---|
+| `bestbuy` | `bestbuy.json` | Best Buy product pricing |
+| `yahoo_drinks` | `yahoo_drinks.json` | Beverage commodity prices |
+| `mcbroken` | `mcbroken.json` | McDonald's ice cream machine status |
+| `shelter` | `shelter.json` | Animal shelter intake/adoption rates |
+| `adzuna` | `adzuna.json` | Job listing counts by category |
+| `cbp_border` | `cbp_border.json` | US border crossing wait times |
+| `nyc311` | `nyc311.json` | NYC 311 complaint volume |
+
+---
+
+## Database Schema
+
+Twenty-five migrations. Fifteen tables. Five groups. The schema is a fossil record of every feature that survived.
+
+```
+    ┌─────────────────────────────────────────────────────────────────────┐
+    │                        PostgreSQL Schema                            │
+    ├─────────────────────────────────────────────────────────────────────┤
+    │                                                                     │
+    │  MARKET DATA (Vision sources)           ITP / PORTFOLIO             │
+    │  ┌──────────────────────┐              ┌──────────────────────┐    │
+    │  │ market_prices        │              │ itp_snapshots        │    │
+    │  │   source, asset_id,  │              │   itp_id, nav,       │    │
+    │  │   value, change_pct, │              │   supply, weights    │    │
+    │  │   volume, fetched_at │              ├──────────────────────┤    │
+    │  ├──────────────────────┤              │ trades               │    │
+    │  │ market_prices_latest │              │   order fills,       │    │
+    │  │   (materialized      │              │   prices, amounts    │    │
+    │  │    latest per asset) │              ├──────────────────────┤    │
+    │  ├──────────────────────┤              │ klines               │    │
+    │  │ market_assets        │              │   OHLCV candles      │    │
+    │  │   (source registry)  │              ├──────────────────────┤    │
+    │  └──────────────────────┘              │ liquidity            │    │
+    │                                        │   orderbook depth    │    │
+    │  COINGECKO                             └──────────────────────┘    │
+    │  ┌──────────────────────┐                                          │
+    │  │ coingecko_market_caps│              DEFI LLAMA                  │
+    │  │ coingecko_categories │              ┌──────────────────────┐    │
+    │  │ bitget_listings      │              │ defillama_protocols  │    │
+    │  └──────────────────────┘              │ defillama_metrics    │    │
+    │                                        │ defillama_raises     │    │
+    │  SIMULATION & MISC                     └──────────────────────┘    │
+    │  ┌──────────────────────┐                                          │
+    │  │ simulations          │              SYSTEM                      │
+    │  │ fng_index             │              ┌──────────────────────┐    │
+    │  │ github_metrics       │              │ collector_cursors    │    │
+    │  │ batch_tables         │              │ oracle_health_snaps  │    │
+    │  └──────────────────────┘              └──────────────────────┘    │
+    │                                                                     │
+    └─────────────────────────────────────────────────────────────────────┘
+```
+
+### Key Tables
+
+| Table | Migration | Purpose |
+|---|---|---|
+| `market_prices` | 001 | Full price history for all 91 sources, partitioned by source |
+| `market_prices_latest` | 025 | Materialized "latest price per asset" for fast reads |
+| `market_assets` | 021 | Source registry (which assets each source tracks) |
+| `itp_snapshots` | 002 | ITP NAV/supply/weight snapshots from chain poller |
+| `trades` | 004 | On-chain trade fills (orderId, price, amount) |
+| `klines` | 005 | OHLCV candle data from Bitget |
+| `liquidity` | 006 | Order book depth snapshots |
+| `coingecko_market_caps` | 007 | Monthly market cap snapshots per coin |
+| `coingecko_categories` | 008 | CoinGecko category membership |
+| `bitget_listings` | 009 | Bitget listing/delisting dates |
+| `simulations` | 010 | Cached backtester simulation results |
+| `defillama_protocols` | 015 | DeFi Llama protocol metadata |
+| `defillama_metrics` | 016 | TVL, fees, volume time series |
+| `defillama_raises` | 017 | Fundraising rounds |
+| `fng_index` | 019 | Fear & Greed Index history |
+| `github_metrics` | 020 | GitHub repo star/commit counts |
+| `collector_cursors` | 023 | Last processed block per chain collector |
+| `batch_tables` | 024 | Vision batch state and lifecycle |
+
+---
+
+## REST API
+
+Axum. 50+ endpoints. Six groups. CORS and gzip via Tower middleware. The API returns data. What you do with it is your problem.
+
+### Pricing & NAV
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/health` | GET | Service health check |
+| `/price` | GET | Single asset price |
+| `/prices` | GET | Multi-asset prices |
+| `/fast-prices` | GET | In-memory cached prices (2s refresh) |
+| `/fast-prices-by-address` | GET | Same, keyed by contract address |
+| `/latest-prices` | GET | Latest prices from `market_prices_latest` |
+| `/prices-by-address` | GET | Prices keyed by on-chain address |
+| `/itp-price` | GET | ITP NAV (inventory-based computation) |
+| `/verify-nav` | GET | Cross-check NAV against on-chain |
+| `/nav-series` | GET | Historical NAV time series |
+| `/itp-bid-ask` | GET | ITP bid/ask spread from orderbook |
+| `/itp-orderbook` | GET | Full aggregated ITP orderbook |
+
+### Portfolio & User State
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/portfolio` | GET | User holdings, P&L, cost basis |
+| `/portfolio/history` | GET | Historical portfolio value |
+| `/portfolio/trades` | GET | User trade history |
+| `/user-state` | GET | Combined balance + order + position state |
+| `/order` | GET | Single order status |
+| `/vault-balances` | GET | Protocol vault TVL breakdown |
+| `/morpho-position` | GET | User's Morpho lending position |
+| `/morpho-history` | GET | Morpho position history |
+| `/fill-speed` | GET | Average order fill latency |
+| `/aum-ranking` | GET | ITP ranking by AUM |
+| `/liquidity` | GET | Liquidity depth per pair |
+| `/liquidity/alerts` | GET | Low liquidity warnings |
+
+### Market Data (Vision Sources)
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/market/prices/:source` | GET | All asset prices for a source |
+| `/market/prices/:source/:asset_id` | GET | Single asset price |
+| `/market/prices/:source/:asset_id/history` | GET | Price history for an asset |
+| `/market/assets/:source` | GET | All tracked assets for a source |
+| `/market/stats` | GET | Bulk health stats across all sources |
+| `/market/stats/:source` | GET | Health stats for one source |
+| `/market/batch-history` | GET | Batch-level price history |
+
+### Simulation (Backtester)
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/sim/categories` | GET | Available backtest categories |
+| `/sim/run` | GET | Run simulation, return JSON result |
+| `/sim/run-stream` | GET | Run simulation, stream results via SSE |
+| `/sim/sweep-stream` | GET | Parameter sweep, stream via SSE |
+| `/sim/results` | GET | Retrieve cached simulation results |
+| `/sim/compare` | GET | Compare multiple simulation runs |
+| `/sim/holdings` | GET | Simulated portfolio holdings over time |
+| `/sim/invalidate` | GET | Invalidate cached simulation |
+| `/sim/benchmarks` | GET | Benchmark indices (BTC, ETH, S&P 500) |
+| `/sim/reload-cache` | GET | Force reload simulation data cache |
+
+### Vision
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/vision/snapshot` | GET | Current Vision system state |
+| `/vision/markets/active` | GET | Active Vision markets with prices |
+| `/vision/batch/:batch_id/history` | GET | Price history for a batch |
+| `/vision/ws` | GET | WebSocket upgrade for live prices |
+| `/batches/recommended` | GET | Recommended batches for new users |
+| `/batches/config/:hash` | GET | Batch configuration by content hash |
+| `/batches/signed` | GET | Signed batch attestations |
+
+### CoinGecko & DeFi Llama
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/cg/categories` | GET | CoinGecko category list |
+| `/cg/category-coins/:category_id` | GET | Coins in a CoinGecko category |
+| `/cg/coin-categories/:coin_id` | GET | Categories for a specific coin |
+| `/coin-map` | GET | CoinGecko ID to symbol mapping |
+| `/logo/:coin_id` | GET | Serve cached CoinGecko logo |
+| `/listings` | GET | Bitget-listed coins |
+| `/listings/unsafe` | GET | All coins including unlisted |
+| `/listing` | GET | Single coin listing data |
+| `/dl/investors` | GET | DeFi Llama investor/raise data |
+| `/fng/latest` | GET | Latest Fear & Greed reading |
+
+### Explorer (Authenticated)
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/explorer/health` | GET | Aggregated source health (token-gated) |
+| `/explorer/history` | GET | Historical health data (token-gated) |
+
+<Warning>
+Explorer endpoints require a `x-explorer-token` header. Authentication uses SHA-256 hash comparison with constant-time equality to prevent timing attacks.
+</Warning>
+
+### Snapshots
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/snapshot` | GET | Full system state snapshot |
+| `/snapshot/meta` | GET | Snapshot metadata only |
+
+---
+
+## WebSocket Support
+
+Subscribe to batch IDs. Receive prices as they arrive. Unsubscribe when you have had enough.
+
+```
+    Client                    Data Node                     Source Engines
+    ┌──────┐                 ┌──────────┐                  ┌──────────┐
+    │      │── subscribe ───►│          │                  │          │
+    │      │   [42, 77]      │  WS      │◄── broadcast ───│ SyncEng  │
+    │      │                 │  Handler  │    PriceBatch    │ (91x)   │
+    │      │◄── prices ─────│          │                  │          │
+    │      │   {batchId:42,  │          │                  │          │
+    │      │    markets:[..]}│          │                  │          │
+    │      │── unsubscribe ─►│          │                  │          │
+    │      │   [42]          │          │                  │          │
+    └──────┘                 └──────────┘                  └──────────┘
+```
+
+**Protocol:**
+- Client sends `{"subscribe": [42, 77]}` to start receiving prices for batch IDs 42 and 77
+- Client sends `{"unsubscribe": [42]}` to stop receiving prices for batch 42
+- Server pushes `{"type": "prices", "batchId": 42, "ts": "...", "markets": [...]}` on each source tick
+
+---
+
+## Simulation Engine
+
+2,759 lines that answer the question every investor asks after the fact: "What if I had done it differently?"
+
+- **Category-based selection** — pick from CoinGecko or DeFi Llama categories
+- **Market cap weighting** — equal weight, cap-weighted, or inverse-cap
+- **Rebalance schedules** — daily, weekly, monthly, or custom
+- **Benchmark comparison** — BTC, ETH, S&P 500 overlays
+- **Parameter sweeps** — grid search over rebalance frequency and weighting schemes
+- **SSE streaming** — results stream to the frontend as they compute
+
+The `SimDataCache` loads into memory at startup and reloads every 24 hours. Everything the backtester needs, always warm:
+
+```
+    SimDataCache (in-memory)
+    ┌──────────────────────────────────────────┐
+    │  all_dates:        Vec<NaiveDate>        │
+    │  category_coins:   HashMap<cat, coins>   │
+    │  coin_symbol_map:  HashMap<id, symbol>   │
+    │  bitget_lookup:    HashMap<symbol, pair>  │
+    │  prices:           HashMap<(coin,date),f> │
+    │  mcap_rankings:    HashMap<date, ranks>   │
+    │  categories:       Vec<Category>          │
+    │  defi_metrics:     HashMap<proto, tvl>    │
+    │  defi_history:     HashMap<proto, ts>     │
+    │  fng_index:        HashMap<date, score>   │
+    │  btc_dominance:    HashMap<date, pct>     │
+    │  eth_dominance:    HashMap<date, pct>     │
+    └──────────────────────────────────────────┘
+```
+
+---
+
+## NAV Computation
 
 <Info>
-  NAV computation follows the same formula used on-chain in `Index.sol._getCurrentPrice()`. The Data Node reads `_itpInventory` directly from the L3 chain to ensure consistency.
+The same formula as `Index.sol._getCurrentPrice()`. The Data Node reads `_itpInventory` directly from L3. One formula. Two implementations. They must agree.
 </Info>
 
-For each ITP, the NAV is computed as:
+For each ITP:
 
 ```text
 NAV = sum(qty[i] * price[i]) / 1e18
 ```
 
-Where:
-- `qty[i]` — per-share quantity for asset `i`, read from `_itpInventory[itpId]` on-chain
-- `price[i]` — latest validated price for asset `i` from the data pipeline
+Where `qty[i]` is the per-share quantity from `_itpInventory[itpId]` on-chain, and `price[i]` is the latest validated price from the data pipeline.
 
-The Data Node continuously recomputes NAV as new prices arrive and streams updates to connected frontends via SSE.
+The chain poller reads inventory via `getITPState()`, multiplies by prices, caches in `ChainCache`. The API serves it. Sub-second latency.
 
-### Historical Data & Backtesting
+---
 
-- All price data is persisted to PostgreSQL with timestamps
-- Supports historical NAV reconstruction for any ITP configuration
-- Backtesting engine simulates ITP performance against historical data
-- Used by the frontend's backtest section to show projected returns for custom portfolios
+## CLI Reference
 
-### Portfolio Tracking
+Six subcommands. One binary. Most of the time you only need `serve`.
 
-- Tracks per-user-address holdings across all ITPs
-- Computes unrealized P&L based on entry price vs current NAV
-- Streams portfolio value updates in real-time
-
-## Data Pipeline
-
-```text
-  Price Sources                  Data Node                    Consumers
-  ┌───────────┐            ┌─────────────────┐           ┌───────────┐
-  │ CoinGecko │──┐         │                 │──REST──►  │ Frontend  │
-  │ Binance   │──┤────►    │  Validation &   │           │           │
-  │ Exchanges │──┤         │  Normalization   │──SSE───►  │ Frontend  │
-  │ 1inch     │──┘         │       │         │           │ (realtime)│
-  │           │            │       ▼         │           └───────────┘
-  │           │            │  PostgreSQL     │           ┌───────────┐
-  │           │            │  (persistence)  │──REST──►  │  Issuer   │
-  │           │            │       │         │           │  Nodes    │
-  │           │            │       ▼         │           └───────────┘
-  │           │            │  NAV Engine     │
-  └───────────┘            └─────────────────┘
+```
+    data-node
+    ├── serve           Run HTTP server + all collectors
+    ├── backfill        Backfill historical Bitget prices + ITP snapshots
+    ├── cg-backfill     Backfill CoinGecko monthly market caps
+    ├── sync-logos      Download missing CoinGecko coin logos
+    ├── sync-listings   Fetch Bitget listing/delisting dates
+    └── dl-backfill     Backfill DeFi Llama TVL/fees/volume history
 ```
 
-**Pipeline stages:**
+### `serve`
 
-1. **Ingestion** — Price data fetched from configured sources on a per-asset schedule
-2. **Validation** — Outlier detection, staleness checks, cross-source consistency
-3. **Storage** — Validated prices written to PostgreSQL with source metadata
-4. **Computation** — NAV engine reads latest prices + on-chain inventory to compute NAV
-5. **Distribution** — Results served via REST endpoints and pushed through SSE streams
+The only command that matters in production. Starts the HTTP server and all collectors.
 
-## SSE Streaming Endpoints
+| Flag | Env Var | Default | Description |
+|---|---|---|---|
+| `--port` | `DATA_NODE_PORT` | 8200 | HTTP server port |
+| `--database-url` | `DATABASE_URL` | -- | PostgreSQL connection string |
+| `--assets-file` | `DATA_NODE_ASSETS_FILE` | `assets.json` | ITP-eligible asset definitions |
+| `--poll-interval` | `DATA_NODE_POLL_INTERVAL_SECS` | 30 | Price collector interval |
+| `--rpc-url` | `INDEX_RPC_URL` | `http://142.132.164.24/` | L3 chain RPC |
+| `--index-address` | `INDEX_ADDRESS` | -- | Index.sol contract address |
+| `--settlement-rpc-url` | `SETTLEMENT_RPC_URL` | `http://localhost:8546` | Settlement chain RPC |
+| `--fast-poll-secs` | `DATA_NODE_FAST_POLL_SECS` | 2 | In-memory ticker cache interval |
+| `--coingecko-api-key` | `COINGECKO_API_KEY` | -- | CoinGecko Pro key (optional) |
+| `--reset-session` | -- | false | Truncate session tables on startup |
+| `--log-level` | `DATA_NODE_LOG_LEVEL` | `info` | Tracing filter |
 
-The Data Node uses Server-Sent Events for real-time frontend updates:
+### `backfill`
 
-| Endpoint | Payload | Use Case |
-|---|---|---|
-| **NAV snapshots** | Current NAV for each ITP, updated on every price tick | Dashboard cards, portfolio value |
-| **Order updates** | Order status changes (pending, confirmed, filled) | Transaction tracking, order history |
-| **Balance changes** | User collateral and share balance updates | Wallet display, post-trade confirmation |
+Backfills historical OHLCV data from Bitget for all assets in `assets.json`. Used to seed the database before first `serve` run.
 
-<Info>
-  SSE was chosen over WebSockets for SSE's simplicity, automatic reconnection semantics, and compatibility with HTTP/2 multiplexing. The frontend hooks `useLeaderboardSSE.ts` and related hooks consume the SSE streams.
-</Info>
+### `cg-backfill`
 
-## NAV Calculation Detail
+Backfills monthly market cap snapshots from CoinGecko for all tracked coins. Required for the backtester to have historical weighting data.
 
-The Data Node NAV calculation mirrors the on-chain implementation exactly:
+### `dl-backfill`
 
-```rust
-/// Computes NAV for an ITP using on-chain inventory and latest prices.
-/// This is the same formula as Index.sol._getCurrentPrice().
-fn calculate_nav(inventory: &[AssetQuantity], prices: &PriceMap) -> U256 {
-    let mut nav = U256::zero();
-    for asset in inventory {
-        let price = prices.get(&asset.id)
-            .expect("price must exist for all inventory assets");
-        nav += asset.quantity * price;
-    }
-    nav / U256::from(1e18 as u64)
-}
-```
+Backfills DeFi Llama protocol metrics (TVL, fees, volume) for all tracked protocols.
 
-**Inventory-first approach:**
-- The Data Node calls `getITPState()` on `Index.sol` to read `_itpInventory`
-- Per-share quantities from inventory are multiplied by latest prices
-- The inventory-first approach matches the on-chain NAV exactly, avoiding drift between frontend display and contract state
+### `sync-logos`
 
-<Warning>
-  The frontend (`useItpNav.ts`) uses an inventory-first approach with a weight-based fallback only for legacy ITPs that predate the inventory system. All new ITPs must use inventory-based NAV.
-</Warning>
+Downloads CoinGecko coin logo images to the local `data/logos/` directory. The `/logo/:coin_id` endpoint serves these cached images.
+
+### `sync-listings`
+
+Fetches Bitget spot listing and delisting dates and stores them in the `bitget_listings` table. Used by the backtester to avoid survivorship bias.
+
+---
 
 ## Deployment
 
-The production Data Node runs on the backend VPS:
+One binary. One VPS. Behind nginx. The simplicity is earned.
 
 | Property | Detail |
 |---|---|
 | **Binary** | `~/index-data-node` |
 | **Working directory** | `~/index-dn-work/` |
-| **Database** | PostgreSQL on Docker — `datanode:datanode123@localhost:5432/index_prices` |
-| **Port** | 8200 |
+| **Database** | PostgreSQL on Docker |
+| **Port** | 8200 (behind nginx) |
 | **Logs** | `~/index-data-node.log` |
 
 ```bash
 # Start the data node
-cd ~/index-dn-work && ~/index-data-node
+cd ~/index-dn-work && ~/index-data-node serve
 
-# Check logs
-tail -f ~/index-data-node.log
-
-# Verify health
+# Check health
 curl http://localhost:8200/health
+
+# Backfill historical data
+~/index-data-node backfill --database-url $DATABASE_URL
+
+# Tail logs
+tail -f ~/index-data-node.log
 ```

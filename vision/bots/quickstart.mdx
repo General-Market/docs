@@ -5,24 +5,27 @@ description: "Register and run your first Vision bot"
 
 # Bot Quickstart
 
-This guide walks you through building a minimal Vision bot that registers on-chain, joins a batch with random predictions, and submits its sealed bitmap to issuers.
+Register your bot. Fund it. Let it loose. Watch it learn that the future is unkind to algorithms too.
+
+What follows is a minimal bot that registers on-chain, joins a batch with random predictions, and submits its sealed bitmap to oracles. It will not outperform chance. That comes later -- if it comes at all.
 
 ## Prerequisites
 
 - **Python 3.10+** or **Node 18+**
-- An Arbitrum wallet funded with USDC and ETH (for gas)
+- An Index L3 wallet funded with WUSDC (18 decimals) and ETH (for gas)
 - Your wallet's private key exported as an environment variable
+- A willingness to wager money on a machine's guesses
 
 <Warning>
-**USDC uses 6 decimals.** All amounts in contract calls must be scaled by `10^6`. For example, 10 USDC = `10_000_000`.
+**WUSDC on Index L3 uses 18 decimals.** All amounts in contract calls must be scaled by `10^18`. 10 USDC = `10_000_000_000_000_000_000` (1e19). The decimal system, at least, is not adversarial.
 </Warning>
 
 ## Set Environment Variables
 
 ```bash
-export RPC_URL="https://arb1.arbitrum.io/rpc"
+export RPC_URL="http://142.132.164.24/"
 export BOT_PRIVATE_KEY="0xYOUR_PRIVATE_KEY"
-export VISION_ADDRESS="0x0BFC626B583e93A5F793Bc2cAa195BDBB2ED9F20"
+export VISION_ADDRESS="0x4F1BDD073932828bf2822F6dCAD1121Da41ED1Ef"
 export VISION_API_URL="https://generalmarket.io/api/vision"
 ```
 
@@ -40,10 +43,10 @@ from web3 import Web3
 # Config
 RPC_URL = os.environ["RPC_URL"]
 PRIVATE_KEY = os.environ["BOT_PRIVATE_KEY"]
-VISION_ADDR = os.environ.get("VISION_ADDRESS", "0x0BFC626B583e93A5F793Bc2cAa195BDBB2ED9F20")
+VISION_ADDR = os.environ.get("VISION_ADDRESS", "0x4F1BDD073932828bf2822F6dCAD1121Da41ED1Ef")
 API_URL = os.environ.get("VISION_API_URL", "https://generalmarket.io/api/vision")
-DEPOSIT = 10 * 10**6   # 10 USDC (6 decimals)
-STAKE   = 1  * 10**6   # 1 USDC per tick
+DEPOSIT = 10 * 10**18  # 10 WUSDC (18 decimals on L3)
+STAKE   = 1  * 10**18  # 1 WUSDC per tick
 
 w3 = Web3(Web3.HTTPProvider(RPC_URL))
 acct = w3.eth.account.from_key(PRIVATE_KEY)
@@ -61,9 +64,9 @@ ERC20_ABI = [
      "inputs":[{"name":"spender","type":"address"},{"name":"amount","type":"uint256"}],"outputs":[{"type":"bool"}]},
 ]
 
-# Contracts (USDC address on Arbitrum from deployment)
+# Contracts (WUSDC address on Index L3 from deployment.json)
 vision = w3.eth.contract(address=VISION_ADDR, abi=VISION_ABI)
-USDC_ADDR = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831"  # Arbitrum native USDC
+USDC_ADDR = deployment["contracts"]["WUSDC"]  # Read from deployments/vision-deployment.json
 usdc = w3.eth.contract(address=USDC_ADDR, abi=ERC20_ABI)
 
 def send_tx(tx):
@@ -114,7 +117,7 @@ send_tx(vision.functions.joinBatch(
 ).build_transaction({"from": acct.address, "gas": 500_000}))
 print(f"Joined batch {batch_id} on-chain.")
 
-# Step 6: Wait for chain indexer, then submit bitmap to issuers
+# Step 6: Wait for chain indexer, then submit bitmap to oracles
 time.sleep(6)
 resp = requests.post(f"{API_URL}/vision/bitmap", json={
     "player": acct.address,
@@ -128,19 +131,23 @@ print(f"Bitmap submitted: {resp.json()}")
 ```typescript TypeScript
 import { createWalletClient, http, parseAbi, keccak256, toHex, encodeFunctionData } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
-import { arbitrum } from 'viem/chains'
+import { defineChain } from 'viem'
+
+const indexL3 = defineChain({ id: 111222333, name: 'Index L3', nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 }, rpcUrls: { default: { http: [RPC_URL] } } })
 
 // Config
 const RPC_URL = process.env.RPC_URL!
 const PRIVATE_KEY = process.env.BOT_PRIVATE_KEY! as `0x${string}`
-const VISION_ADDR = (process.env.VISION_ADDRESS ?? '0x0BFC626B583e93A5F793Bc2cAa195BDBB2ED9F20') as `0x${string}`
+const VISION_ADDR = (process.env.VISION_ADDRESS ?? '0x4F1BDD073932828bf2822F6dCAD1121Da41ED1Ef') as `0x${string}`
 const API_URL = process.env.VISION_API_URL ?? 'https://generalmarket.io/api/vision'
-const DEPOSIT = 10_000_000n  // 10 USDC (6 decimals)
-const STAKE   = 1_000_000n   // 1 USDC per tick
-const USDC_ADDR = '0xaf88d065e77c8cC2239327C5EDb3A432268e5831' as `0x${string}`
+const DEPOSIT = 10_000_000_000_000_000_000n  // 10 WUSDC (18 decimals on L3)
+const STAKE   = 1_000_000_000_000_000_000n   // 1 WUSDC per tick
+// Read WUSDC address from deployments/vision-deployment.json
+const deployment = JSON.parse(await Bun.file('deployments/vision-deployment.json').text())
+const USDC_ADDR = deployment.contracts.WUSDC as `0x${string}`
 
 const account = privateKeyToAccount(PRIVATE_KEY)
-const client = createWalletClient({ account, chain: arbitrum, transport: http(RPC_URL) })
+const client = createWalletClient({ account, chain: indexL3, transport: http(RPC_URL) })
 
 const visionAbi = parseAbi([
   'function registerBot(string endpoint, bytes32 pubkeyHash)',
@@ -195,7 +202,7 @@ async function main() {
   })
   console.log(`Joined batch ${batchId} on-chain.`)
 
-  // Step 6: Wait for chain indexer, then submit bitmap to issuers
+  // Step 6: Wait for chain indexer, then submit bitmap to oracles
   await new Promise(r => setTimeout(r, 6000))
   const submitRes = await fetch(`${API_URL}/vision/bitmap`, {
     method: 'POST',
@@ -219,12 +226,12 @@ main().catch(console.error)
 
 ### 1. Register Your Bot
 
-Call `registerBot(endpoint, pubkeyHash)` on the Vision contract. This is a one-time operation that stores your bot's metadata on-chain.
+Call `registerBot(endpoint, pubkeyHash)` on the Vision contract. One transaction. Irreversible in the way that all on-chain declarations are irreversible.
 
 - `endpoint` -- a URL where your bot can receive notifications (can be a placeholder)
 - `pubkeyHash` -- keccak256 hash of your bot's public key (used for identity)
 
-Registration is free. The only cost is gas.
+Registration is free. The only cost is gas -- and the quiet commitment to a project whose outcome you cannot know.
 
 ### 2. Poll for Active Batches
 
@@ -241,7 +248,7 @@ Returns an array of `BatchSummary` objects. Each batch includes:
 
 ### 3. Generate Predictions
 
-For each market in the batch, decide UP or DOWN. The quickstart uses random bets. See [Example Strategies](/vision/bots/strategies) for smarter approaches.
+For each market in the batch, decide UP or DOWN. The quickstart uses random bets -- the purest confession of ignorance. See [Example Strategies](/vision/bots/strategies) for approaches that disguise ignorance as method.
 
 ### 4. Encode and Hash the Bitmap
 
@@ -254,12 +261,12 @@ Two transactions:
 2. `Vision.joinBatch(batchId, depositAmount, stakePerTick, bitmapHash)` -- join the batch
 
 <Tip>
-You can approve a larger amount once (e.g., `type(uint256).max`) to avoid repeated approval transactions. This saves gas when joining multiple batches.
+Approve a larger amount once (e.g., `type(uint256).max`) to avoid repeated approvals. One act of trust, amortized across all future gambles.
 </Tip>
 
-### 6. Submit Bitmap to Issuers
+### 6. Submit Bitmap to Oracles
 
-After joining on-chain, wait ~6 seconds for the chain indexer to detect your `PlayerJoined` event. Then POST your actual bitmap bytes to the issuer API:
+After joining on-chain, wait six seconds. Six seconds -- the gap between commitment and consequence, between the hash and the thing itself. Then POST your actual bitmap bytes to the oracle API:
 
 ```
 POST /vision/bitmap
@@ -271,17 +278,18 @@ POST /vision/bitmap
 }
 ```
 
-The issuer verifies that `keccak256(bitmap_bytes) == expected_hash == on-chain bitmapHash`. If verification passes, the bitmap is stored for tick resolution.
+The oracle verifies that `keccak256(bitmap_bytes) == expected_hash == on-chain bitmapHash`. If verification passes, the bitmap is stored for tick resolution.
 
 <Warning>
-If you skip the 6-second wait, the issuer may not yet know about your `PlayerJoined` event and will reject the bitmap with "Player not found in batch."
+Skip the wait and the oracle will not yet know you exist. "Player not found in batch" -- a rejection both technical and existential.
 </Warning>
 
 ## What Happens Next
 
-Once your bitmap is accepted:
-- At each tick interval, issuers fetch real market prices and determine UP/DOWN outcomes.
-- Your bitmap is compared against actual outcomes. Correct predictions earn proportional shares of incorrect players' stakes.
+Once your bitmap is accepted, the machine waits. That is most of what machines do -- wait for the world to prove them right or wrong.
+
+- At each tick interval, oracles fetch real market prices and determine UP/DOWN outcomes.
+- Your bitmap is compared against reality. Correct predictions earn proportional shares of incorrect players' stakes. The universe redistributes conviction.
 - Use `GET /vision/balance/{batch_id}/{player}` to fetch your BLS-signed balance proof.
 - Call `claimRewards()` or `withdraw()` on-chain with the BLS proof to collect winnings.
 
@@ -291,9 +299,9 @@ See [Bot Lifecycle](/vision/bots/lifecycle) for the full claim and withdrawal fl
 
 <CardGroup cols={2}>
   <Card title="Python Example" icon="python" href="https://github.com/General-Market/examples/tree/main/vision-bot-python">
-    Full Python bot with configurable strategies, retry logic, and claim automation.
+    Full Python bot with strategies, retry logic, and claim automation. The machine, fully assembled.
   </Card>
   <Card title="TypeScript Example" icon="js" href="https://github.com/General-Market/examples/tree/main/vision-bot-typescript">
-    Full TypeScript bot using viem with type-safe contract interactions.
+    The same ambition in TypeScript. Type-safe, as if types could make the future safe.
   </Card>
 </CardGroup>

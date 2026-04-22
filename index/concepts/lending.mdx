@@ -3,19 +3,48 @@ title: "Lending"
 description: "Earn yield or borrow against ITP positions using Morpho"
 ---
 
-# Lending and Borrowing Concepts
+# Lending and Borrowing
 
-General Market integrates with **Morpho** to offer lending and borrowing on Index Tracking Product (ITP) positions. Lenders can deposit USDC to earn yield from borrowers, or borrowers can use ITP shares as collateral to borrow USDC.
+You deposit USDC to earn yield. The yield comes from people who believe their ITP collateral will not collapse. They are sometimes right.
+
+## Quick Start: Earn Yield on USDC
+
+1. Go to the **Lending** section on [generalmarket.io](https://generalmarket.io)
+2. Pick a lending market (each corresponds to an ITP)
+3. Deposit USDC — interest begins immediately
+4. Withdraw anytime — no lock-up
+
+See [Lending Guide](/index/guides/lending) for the full walkthrough.
+
+## How It Works
+
+```
+  +------------+                                      +------------+
+  |            |         +------------------+         |            |
+  |   LENDER   | ------> |                  | <------ |  BORROWER  |
+  |            | deposit |   MORPHO MARKET   | deposit |            |
+  |  Deposits  |  USDC   |                  |  ITP    |  Deposits  |
+  |  USDC      |         |  Matches lenders |  shares |  ITP as    |
+  |            |         |  with borrowers  |         |  collateral|
+  |  Earns     | <------ |                  | ------> |  Borrows   |
+  |  interest  | yield   |  Isolated risk   |  USDC   |  USDC      |
+  |            |         |  per ITP market  |         |            |
+  +------------+         +------------------+         +------------+
+                              |        ^
+                              |        |
+                         interest   repay +
+                         accrues    interest
+```
 
 <Info>
-Morpho lending markets are available for select Index Tracking Products (ITPs) that have been configured with a Morpho market. Not all ITPs have lending enabled -- check the ITP detail page to see if a Morpho market is available for a given ITP.
+Not all ITPs have lending markets. Only those configured with a Morpho market. Check the ITP detail page. If there is no market, there is no market. Some things cannot be borrowed against.
 </Info>
 
 ## How Morpho Lending Works
 
-General Market's lending is powered by [Morpho](https://morpho.org/), a decentralized lending protocol. Morpho markets are permissionless and isolated -- each ITP lending market is a separate Morpho market with its own parameters, so risk does not spill across ITPs.
+Lending is powered by [Morpho](https://morpho.org/). Each ITP has its own isolated market with its own parameters. Risk does not spill across ITPs. One basket's collapse is not another basket's problem. This is the design. Whether reality respects the design is an open question.
 
-There are two sides to every lending market:
+Two sides to every market:
 
 | Role | What You Do | What You Earn/Pay |
 |------|-------------|-------------------|
@@ -24,42 +53,64 @@ There are two sides to every lending market:
 
 ## Supplying USDC (Lending)
 
-Lenders deposit USDC into a Morpho lending pool. The deposited USDC is lent to borrowers who post ITP collateral.
+You deposit USDC. Someone else borrows it. They pay you for the privilege. The simplicity is deceptive.
 
 ### How to Supply
 
-1. Navigate to the **Lending** section on General Market.
-2. Select a lending market (each corresponds to an ITP).
-3. Enter the amount of USDC to deposit.
-4. Approve and confirm the transaction.
+1. Navigate to the **Lending** section.
+2. Select a lending market.
+3. Enter the USDC amount.
+4. Approve and confirm.
 
 ### Key Details
 
-- **Yield** -- Lenders earn variable interest paid by borrowers. The interest rate adjusts based on utilization (how much of the Morpho pool is borrowed).
-- **Withdraw anytime** -- Lenders can withdraw deposited USDC at any time, subject to available liquidity. If utilization is very high, lenders may need to wait for borrowers to repay or get liquidated.
-- **No lock-up** -- The Morpho pool has no minimum deposit period.
+- **Yield** -- Variable interest, paid by borrowers. The rate adjusts with utilization. More borrowing, higher rates. The market prices its own desperation.
+- **Withdraw anytime** -- Subject to available liquidity. If every USDC is borrowed, you wait. Patience is occasionally mandatory.
+- **No lock-up** -- No minimum deposit period. You can leave whenever you want. The protocol does not hold grudges.
 
 <Tip>
-Lending is a good option for earning USDC yield without exposure to ITP price movements. The lender's principal stays in USDC -- lenders earn interest but do not participate in basket performance.
+Lending earns USDC yield without ITP price exposure. Your principal stays in USDC. You earn interest but do not ride the basket. A spectator's income.
 </Tip>
 
 ## Borrowing Against ITPs
 
-Borrowers who hold ITP tokens and want USDC liquidity without selling the ITP position can use ITP shares as collateral to borrow USDC from the Morpho market.
+You hold ITP tokens. You want USDC. You do not want to sell. This is the classic dilemma of the attached investor — wanting liquidity without surrender. Morpho solves it, at a price.
 
 ### How to Borrow
 
-1. Navigate to the **Lending** section and select the Morpho market for the ITP.
+1. Navigate to the **Lending** section and select the market for your ITP.
 2. **Deposit collateral** -- transfer ITP tokens into the Morpho market.
-3. **Borrow USDC** -- draw USDC up to the allowed loan-to-value (LTV) ratio.
-4. Use the borrowed USDC freely -- trade, provide liquidity, or withdraw.
+3. **Borrow USDC** -- draw up to the allowed loan-to-value (LTV) ratio.
+4. Use the USDC. Trade, provide liquidity, withdraw. The protocol does not ask why.
 
 ### Health Factor
 
-The **health factor** measures how safe a borrow position is. The health factor is determined by:
+The **health factor** is a single number that measures how close you are to losing your collateral. It is the number you will check too often.
 
-```text
-Health Factor = (Collateral Value * Liquidation Threshold) / Debt Value
+```
+  Health Factor = (Collateral Value * LLTV) / Debt
+
+  Where:
+  - Collateral Value = ITP shares * NAV oracle price
+  - LLTV = Liquidation Loan-To-Value (e.g., 77%)
+  - Debt = borrowed USDC + accrued interest
+```
+
+```
+  HEALTH FACTOR SCALE
+  ====================
+
+    0.0         1.0         1.5         2.0         3.0+
+     |           |           |           |           |
+     +-----------+-----------+-----------+-----------+---->
+     |XXXXXXXXXXX|           |           |           |
+     | LIQUIDAT- |  CAUTION  | MODERATE  |   SAFE    |
+     |   ABLE    |  Monitor  |           |           |
+     |XXXXXXXXXXX|  closely  |           |           |
+     +-----------+-----------+-----------+-----------+
+                 ^
+                 |
+          Liquidation threshold
 ```
 
 | Health Factor | Status |
@@ -69,34 +120,99 @@ Health Factor = (Collateral Value * Liquidation Threshold) / Debt Value
 | <= 1.0 | Liquidatable -- the ITP collateral can be seized |
 
 <Warning>
-If the health factor drops to **1.0 or below**, the borrow position becomes eligible for liquidation. A liquidator can repay part of the borrower's debt and seize the ITP collateral at a discount. Borrowers should monitor the health factor carefully, especially during volatile markets.
+At **1.0 or below**, your position can be liquidated. A liquidator repays part of your debt and takes your collateral at a discount. The protocol is indifferent to your plans. Monitor the health factor, especially during volatility. The market does not send warnings. The number is the warning.
 </Warning>
 
-### What Affects the Health Factor
+### What Moves the Number
 
-The health factor can decline in two ways:
+```
+  DECREASES (dangerous)              INCREASES (safer)
+  =====================              ==================
 
-1. **ITP NAV drops** -- If the underlying assets in the ITP basket lose value, the collateral is worth less.
-2. **Interest accrues** -- The debt grows over time as interest accumulates.
+  +-------------------------+        +-------------------------+
+  | ITP NAV drops           |        | ITP NAV rises           |
+  | (assets in basket fall) |        | (assets in basket rise) |
+  +-------------------------+        +-------------------------+
+  | Interest accrues        |        | Borrower repays debt    |
+  | (debt grows over time)  |        | (debt decreases)        |
+  +-------------------------+        +-------------------------+
+  | Borrower withdraws     |        | Borrower deposits more  |
+  | collateral              |        | collateral              |
+  +-------------------------+        +-------------------------+
+```
 
-To improve the health factor:
+Two ways to save yourself:
 
-- **Deposit more collateral** -- Add more ITP tokens to the Morpho market position.
-- **Repay debt** -- Pay back some or all of the borrowed USDC.
+- **Deposit more collateral** -- Add more ITP tokens. Feed the position.
+- **Repay debt** -- Return USDC. Reduce what you owe. The oldest solution to the oldest problem.
 
 ## Liquidation
 
-When a borrower's health factor falls to 1.0 or below, anyone can **liquidate** the borrow position:
+When the health factor touches 1.0, the position is exposed. Anyone can liquidate it. Liquidation is not punishment. It is the protocol protecting itself. The distinction will not comfort you.
 
-1. The liquidator repays a portion of the borrower's USDC debt.
-2. In return, the liquidator receives an equivalent value of the borrower's ITP collateral, plus a **liquidation bonus** (a percentage discount on the collateral).
-3. The borrower keeps any remaining collateral and borrowed USDC, minus the liquidated portion.
+```
+  LIQUIDATION FLOW
+  ================
+
+  +----------------+                     +------------------+
+  |   Liquidator   |     liquidate()     |   Morpho Blue    |
+  |                | ------------------> |                  |
+  |  Repays $X of  |   (borrower addr,   |  1. Check HF<1   |
+  |  borrower's    |    amount, data)    |  2. Compute ITP  |
+  |  USDC debt     |                     |     to seize     |
+  |                |                     |  3. Add bonus    |
+  |  Receives ITP  | <------------------ |  4. Transfer     |
+  |  collateral    |   ITP + bonus       |                  |
+  |  at discount   |                     +--------+---------+
+  +----------------+                              |
+                                                  v
+                                         +--------+---------+
+                                         |   Borrower's     |
+                                         |   Position       |
+                                         |                  |
+                                         |  collateral -= X |
+                                         |  debt -= Y       |
+                                         |  HF improves     |
+                                         +------------------+
+```
+
+### How It Works
+
+1. A liquidator repays part of your USDC debt.
+2. In return, they take an equivalent value of your ITP collateral, plus a **liquidation bonus** — a discount on what they seize. Generosity to the vultures is how the system stays healthy.
+3. You keep whatever remains. It is less than you had. It is more than nothing.
+
+### Key Properties
+
+- **Partial, not full** -- Only enough collateral is seized to restore HF above 1.0. You are not wiped out. You are trimmed.
+- **Permissionless** -- Any address can call `liquidate()`. No gatekeepers. The market polices itself.
+- **Liquidation bonus** -- Collateral at a discount. The incentive that ensures someone will always show up when you fall.
+- **No grace period** -- HF < 1.0 and liquidation is immediate. The protocol does not wait for you to notice.
+- **Oracle-dependent** -- Health factor uses the ITPNAVOracle. If the oracle is stale, `price()` reverts and liquidation is blocked. Even the executioner needs fresh data.
+
+```
+  PARTIAL LIQUIDATION EXAMPLE
+  ============================
+
+  BEFORE                           AFTER
+  ======                           =====
+  Collateral: 10,000 ITP           Collateral: 7,900 ITP
+  Debt:       $8,000 USDC          Debt:       $6,000 USDC
+  HF:         0.96                 HF:         1.01
+
+              Liquidator
+              repays $2,000 USDC
+              receives 2,100 ITP
+              (5% bonus)
+```
 
 <Note>
-Liquidation is partial -- only enough collateral is seized to bring the health factor back above 1.0. The borrower's entire position is not wiped out in a single liquidation event.
+Partial liquidation. Enough to restore health, not to destroy the borrower. The protocol is surgical, not vengeful. See the [Lending Guide](/index/guides/lending#liquidation) for the full math.
 </Note>
 
-## Risk Considerations
+## Risks
+
+Everything here can hurt you. The table below names how. Naming the danger is not the same as preventing it, but it is the beginning.
 
 | Risk | Description | Mitigation |
 |------|-------------|------------|
@@ -105,16 +221,56 @@ Liquidation is partial -- only enough collateral is seized to bring the health f
 | **Smart contract** | Morpho or ITP contract vulnerabilities | Morpho is well-audited; ITP contracts are audited |
 | **Oracle** | Price feed delays or inaccuracies | NAV is computed from multiple price sources with validation |
 
-## Example Workflow
+## Example: Leveraged ITP Position
 
-The following is a typical leveraged strategy using Morpho lending:
+Leverage is the art of multiplying your conviction and your exposure in equal measure. The following is a 1.5x loop. It is elegant. It is also how most people learn what liquidation means.
 
-1. Buy $10,000 of "Top 100 Crypto" ITP.
-2. Deposit the ITP tokens as collateral in the lending market.
-3. Borrow $5,000 USDC (50% LTV).
-4. Buy another $5,000 of the same ITP -- you now have $15,000 exposure on $10,000 capital.
-5. Monitor the health factor. If the ITP NAV rises, the effective leverage decreases (safer). If the NAV falls, consider repaying some debt.
+```
+  STEP-BY-STEP LEVERAGE
+  =====================
+
+  1. Buy $10,000 of T100 ITP
+     +----------+    buy     +---------+
+     | $10,000  | ---------> | 10,000  |
+     |  USDC    |            | T100 ITP|
+     +----------+            +---------+
+
+  2. Deposit ITP as collateral
+     +---------+   deposit   +------------------+
+     | 10,000  | ----------> | Morpho Market    |
+     | T100 ITP|             | collateral=10,000|
+     +---------+             +------------------+
+
+  3. Borrow $5,000 USDC (50% LTV)
+     +------------------+   borrow   +----------+
+     | Morpho Market    | ---------> | $5,000   |
+     | debt = $5,000    |            | USDC     |
+     | HF = 1.54        |            +----------+
+     +------------------+
+
+  4. Buy more ITP with borrowed USDC
+     +----------+    buy     +---------+
+     | $5,000   | ---------> |  5,000  |
+     |  USDC    |            | T100 ITP|
+     +----------+            +---------+
+
+  RESULT:
+  +------------------------------------------+
+  | Capital invested:  $10,000               |
+  | ITP exposure:      $15,000 (1.5x lever.) |
+  | Debt:              $5,000 USDC           |
+  | Health Factor:     1.54                  |
+  +------------------------------------------+
+
+  If ITP +10%: portfolio = $16,500, profit = $1,500 (15% on capital)
+  If ITP -10%: portfolio = $13,500, loss   = $1,500 (15% on capital)
+```
 
 <Warning>
-Leveraged positions amplify both gains and losses. A 10% NAV decline on a 1.5x leveraged position results in a 15% loss on the deposited capital. Only use leverage with a clear understanding of liquidation risk.
+Leverage amplifies everything. A 10% NAV decline at 1.5x becomes a 15% loss on capital. The math is symmetric, but human psychology is not. Gains feel earned. Losses feel stolen. Use leverage only if you can endure the symmetry.
 </Warning>
+
+## Further Reading
+
+- [Lending Guide](/index/guides/lending) -- The step-by-step. Every button, every transaction.
+- [Morpho API Reference](/index/api/morpho) -- Endpoints, health factor computation, interest rate model, liquidation mechanics. The full machinery, for those who prefer to see the gears.

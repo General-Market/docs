@@ -1,0 +1,733 @@
+---
+title: "Bot Development"
+description: "Build automated Vision trading bots with the Python framework — strategies, risk management, and lifecycle"
+---
+
+# Bot Development
+
+The framework has four modules. Core, Chain, Feed, Tracker. Four ways to interact with uncertainty.
+
+The Vision Bot Python framework (`vision-bot/`) does the tedious work -- RPC calls, bitmap encoding, position tracking -- so you can focus on the only part that matters: the `predict()` method. One function. A list of markets in, a list of UP/DOWN strings out. Everything else is plumbing around that single act of hubris.
+
+## Framework Architecture
+
+```
+    +-------------------------------------------------------------------+
+    |                         VISION BOT (bot.py)                       |
+    |                                                                   |
+    |   +----------+     +----------+     +-----------+                 |
+    |   |          |     |          |     |           |                 |
+    |   |   Feed   +---->+   Core   +---->+   Chain   |                 |
+    |   | (feed.py)|     |(core.py) |     |(chain.py) |                 |
+    |   |          |     |          |     |           |                 |
+    |   +----+-----+     +----+-----+     +-----+-----+                 |
+    |        |                |                 |                       |
+    |        |  WebSocket     |  Bitmap         |  On-chain             |
+    |        |  prices        |  encoding       |  transactions         |
+    |        |                |  + hashing      |  + oracle API         |
+    |        |                |                 |                       |
+    |        |           +----+------+    +-----+-------+              |
+    |        |           |           |    |             |              |
+    |        |           | Strategy  |    |   Tracker   |              |
+    |        |           | (yours!)  |    |(tracker.py) |              |
+    |        |           |           |    |             |              |
+    |        |           +-----------+    +-----+-------+              |
+    |        |                                  |                       |
+    |        |                                  |  PnL file             |
+    |        v                                  v  (pnl.json)           |
+    |   +---------+                        +---------+                  |
+    |   |data-node|                        |L3 chain |                  |
+    |   |   WS    |                        | (RPC)   |                  |
+    |   +---------+                        +---------+                  |
+    +-------------------------------------------------------------------+
+```
+
+Four modules, one responsibility each. Separation of concerns -- that dream of order imposed upon chaos:
+
+| Module | File | Role |
+|--------|------|------|
+| **Core** | `framework/core.py` | Bitmap encoding, `Strategy` ABC, `RiskCheck`, config loading |
+| **Chain** | `framework/chain.py` | `Executor` (all on-chain reads/writes), oracle discovery, bitmap submission |
+| **Feed** | `framework/feed.py` | WebSocket price feed with HTTP fallback, history caching |
+| **Tracker** | `framework/tracker.py` | Position lifecycle, auto-claim, auto-withdraw, PnL persistence |
+
+## Core Components
+
+### core.py -- Primitives and Strategy ABC
+
+The core module provides three things: bitmap helpers, the `Strategy` base class, and `RiskCheck`. The alphabet of prediction -- encoding, commitment, and the illusion of control.
+
+**Bitmap encoding** converts a list of `"UP"` / `"DOWN"` strings into packed bytes. Each prediction is one bit (1 = UP, 0 = DOWN), big-endian order:
+
+```python
+from framework.core import encode_bitmap, hash_bitmap
+
+bets = ["UP", "DOWN", "UP", "UP", "DOWN"]
+bitmap = encode_bitmap(bets, count=5)   # b'\xb0' (10110 000)
+bm_hash = hash_bitmap(bitmap)           # keccak256(bitmap) -> bytes32
+```
+
+```
+  Bit layout (big-endian):
+  +---+---+---+---+---+---+---+---+
+  | 7 | 6 | 5 | 4 | 3 | 2 | 1 | 0 |   byte index 0
+  +---+---+---+---+---+---+---+---+
+  |UP |DN |UP |UP |DN | 0 | 0 | 0 |   (padding zeros for 5 markets)
+  | 1 | 0 | 1 | 1 | 0 | 0 | 0 | 0 |   = 0xB0
+  +---+---+---+---+---+---+---+---+
+```
+
+**Strategy ABC** -- every strategy must subclass `Strategy` and implement `predict()`. One method. The rest is ceremony:
+
+```python
+from framework.core import Strategy
+
+class MyStrategy(Strategy):
+    name = "my-strategy"  # matches config.toml strategy field
+
+    def predict(self, markets: list[dict]) -> list[str]:
+        # markets[i] = {"id": str, "price": float,
+        #                "change": float|None, "volume": float|None,
+        #                "market_cap": float|None}
+        return ["UP" if m["price"] > 100 else "DOWN" for m in markets]
+```
+
+**RiskCheck** enforces two limits: maximum concurrent batches and maximum total USDC exposure.
+
+```python
+from framework.core import RiskCheck
+
+risk = RiskCheck(max_batches=10, max_exposure=500 * 10**18)
+risk.can_join(deposit=50 * 10**18)   # True if under limits
+risk.record_join(batch_id=1, deposit=50 * 10**18)
+risk.record_exit(batch_id=1)
+```
+
+### chain.py -- Executor and On-Chain Interaction
+
+The `Executor` class wraps all contract calls behind a clean interface. One wallet, two contracts -- Vision and USDC. The bridge between your intentions and the immutable record of their consequences.
+
+```
+    Executor
+    +---------------------------------------------------+
+    |                                                   |
+    |  READ methods:             WRITE methods:         |
+    |  .usdc_balance()           .approve_usdc()        |
+    |  .get_position()           .deposit_balance()     |
+    |  .get_batch_info()         .join_batch()           |
+    |  .next_batch_id()          .register_bot()        |
+    |  .vision_balance()         .claim_rewards()       |
+    |                            .withdraw()            |
+    |                            .update_bitmap()       |
+    |                            .deposit_more()        |
+    |                                                   |
+    +---------------------------------------------------+
+            |                           |
+            v                           v
+    +---------------+          +------------------+
+    | Vision.sol    |          | L3_WUSDC (ERC20) |
+    | (L3 chain)    |          | (18 decimals)    |
+    +---------------+          +------------------+
+```
+
+<Warning>
+Vision runs on L3 where **USDC uses 18 decimals**, not 6. A 10 USDC deposit is `10 * 10**18`, not `10 * 10**6`. The framework handles this with `DECIMALS = 18`. Get it wrong and you deposit dust -- twelve orders of magnitude between intention and reality.
+</Warning>
+
+Key chain functions beyond the Executor:
+
+| Function | Purpose |
+|----------|---------|
+| `fetch_batches(api_url)` | Get active batches (oracle API -> vision-batches.json fallback -> on-chain scan) |
+| `fetch_batch_config(data_node_url, config_hash)` | Fetch market list for a batch from the data-node |
+| `fetch_markets(data_node_url, market_ids)` | Get price snapshots for specific markets |
+| `submit_bitmap(oracle_urls, player, batch_id, bitmap, bitmap_hash)` | POST bitmap to all oracles with retry |
+| `discover_oracles(mode, static_urls, w3)` | Resolve oracle endpoints (static list or on-chain registry) |
+
+### feed.py -- Real-Time Price Feed
+
+`VisionFeed` maintains a background WebSocket connection to the data-node, receiving live market prices. The world, streaming in as numbers. It auto-reconnects with exponential backoff and falls back to HTTP -- because the connection to reality is always intermittent.
+
+```
+    +------------------+       WebSocket        +------------+
+    |   VisionFeed     | <--------------------> | data-node  |
+    |                  |   {"subscribe":["1"]}  | /vision/ws |
+    |  .subscribe()    | <-- price messages ---  |            |
+    |  .prices("1")    |                        +------+-----+
+    |  .history("1",   |       HTTP fallback           |
+    |     "bitcoin")   | ---GET /vision/batch/1/----> |
+    |  .unsubscribe()  |        history?days=7         |
+    |  .close()        |                               |
+    +------------------+                               |
+          |                                            |
+          |  Background thread                         |
+          |  _listen_loop()                            |
+          |  - auto-reconnect                          |
+          |  - exponential backoff (1s -> 30s max)     |
+          |  - re-subscribes on reconnect              |
+          +--------------------------------------------+
+```
+
+Usage in the bot:
+
+```python
+feed = VisionFeed(
+    ws_url="ws://localhost:8200/vision/ws",
+    http_url="http://localhost:8200",
+)
+feed.subscribe(["1", "3"], history_days=7)
+
+# In the loop:
+prices = feed.prices("1")
+# {"bitcoin": {"price": 67234.5, "change_pct": 2.1, "volume_24h": 1234567}}
+```
+
+### tracker.py -- Position Lifecycle
+
+The `Tracker` monitors all active positions each poll cycle. It fetches balances, computes PnL, auto-claims rewards, auto-withdraws depleted positions. It is the accountant -- the one who tallies what the strategist refuses to see.
+
+```
+    Tracker.check_all()  (called every poll cycle)
+    |
+    |  For each active position:
+    |
+    +---> GET /vision/balance/{batch_id}/{player}
+    |         from oracle API
+    |
+    +---> Update balance + PnL
+    |
+    +---> PnL > claim_above?  ----YES----> GET BLS signature
+    |         |                            from oracle
+    |         NO                           |
+    |         |                            +---> claimRewards() on-chain
+    |         v
+    +---> balance < withdraw_below? --YES--> GET BLS signature
+    |         |                              from oracle
+    |         NO                             |
+    |         |                              +---> withdraw() on-chain
+    |         v                                    |
+    +---> Save to pnl.json                         +---> Remove from active
+```
+
+Key config knobs:
+
+| Config Key | Default | Effect |
+|------------|---------|--------|
+| `auto_claim` | `true` | Automatically claim when PnL exceeds threshold |
+| `auto_withdraw` | `true` | Automatically withdraw depleted positions |
+| `claim_above` | `5` | Claim when profit exceeds N USDC |
+| `withdraw_below` | `2` | Withdraw when balance drops below N USDC |
+| `pnl_file` | `pnl.json` | File to persist position state across restarts |
+
+## Bot Lifecycle
+
+Poll. Predict. Join. Monitor. Claim. Sleep. Repeat. The main loop in `bot.py` calls `run_cycle()` on a fixed interval. The lifecycle of a bot is the lifecycle of hope -- endlessly renewed, endlessly tested:
+
+```
+    +============================================================+
+    |                    MAIN LOOP (bot.py)                       |
+    |                                                            |
+    |    +--------+     +----------+     +--------+              |
+    |    |  POLL  |---->| PREDICT  |---->|  JOIN  |              |
+    |    +--------+     +----------+     +--------+              |
+    |        |               |               |                   |
+    |        |  fetch_       |  strategy     |  1. approve USDC  |
+    |        |  batches()    |  .predict()   |  2. depositBalance|
+    |        |               |               |  3. joinBatch()   |
+    |        |  fetch_       |  encode_      |  4. submit_bitmap |
+    |        |  batch_config |  bitmap()     |     to oracles    |
+    |        |               |               |                   |
+    |        |  feed.        |  hash_        |  tracker          |
+    |        |  subscribe()  |  bitmap()     |  .on_join()       |
+    |        |               |               |                   |
+    |    +--------+     +----------+     +--------+              |
+    |    |MONITOR |---->|  CLAIM   |---->| SLEEP  |---+          |
+    |    +--------+     +----------+     +--------+   |          |
+    |        |               |                        |          |
+    |        |  tracker      |  BLS-signed            |          |
+    |        |  .check_all() |  balance proofs        |          |
+    |        |               |                        |          |
+    |        |  fetch PnL    |  claimRewards()        |  poll_   |
+    |        |  from oracles |  or withdraw()         |  interval|
+    |        |               |  on-chain              |          |
+    |        |               |                        |          |
+    |        +---------------+------------------------+          |
+    |                                                   (loop)   |
+    +============================================================+
+```
+
+### Phase 1: Poll
+
+Each cycle begins with the question: what is there to bet on? The framework tries three sources in order:
+
+1. **Oracle API** -- `GET /vision/batches`
+2. **vision-batches.json** -- static file from contract deployment
+3. **On-chain scan** -- read `nextBatchId()` and iterate
+
+Batches are filtered by:
+- Already joined (`tracker.active_ids`)
+- Already joined on-chain (previous run)
+- Batch paused
+- `batch_ids` allowlist (if set)
+- `min_batch_id` floor
+- `max_batches` capacity
+
+### Phase 2: Predict
+
+The moment of truth -- or rather, the moment of opinion. For each eligible batch, the framework fetches the market list, subscribes to the WebSocket feed for live prices, and calls `strategy.predict(markets)`.
+
+The returned `["UP", "DOWN", ...]` list is encoded into a bitmap and hashed. Your theory about the future, compressed into bits.
+
+### Phase 3: Join
+
+Joining requires four transactions -- the bureaucracy of commitment, all handled automatically:
+
+```
+    USDC.approve(Vision, amount)
+         |
+         v
+    Vision.depositBalance(amount)    <-- credits your Vision balance
+         |
+         v
+    Vision.joinBatch(                <-- locks deposit + records bitmap hash
+        batchId, configHash,
+        depositAmount, stakePerTick,
+        bitmapHash
+    )
+         |
+         v
+    POST /vision/bitmap              <-- reveals actual bitmap to oracles
+         to all oracle nodes
+         (with retry + backoff)
+```
+
+### Phase 4: Monitor
+
+`tracker.check_all()` runs every cycle. The reckoning:
+- Fetches current balance from oracle API
+- Computes PnL = current_balance - deposited. A number that tells you everything and nothing.
+- Auto-claims if profitable (requires BLS signature from oracle)
+- Auto-withdraws if balance too low -- the machine knows when to quit, which is more than most of us can say
+
+### Phase 5: Sleep
+
+The bot sleeps for `poll_interval` seconds (default 30), then loops. Even machines need intervals of non-existence.
+
+## Strategy Development
+
+A strategy is a theory about the future expressed in code. All theories about the future are wrong. Some are useful. Here is how to write yours.
+
+### Creating a New Strategy
+
+1. Create a file in `vision-bot/strategies/`:
+
+```python
+# strategies/mean_reversion.py
+from framework.core import Strategy
+
+
+class MeanReversionStrategy(Strategy):
+    name = "mean-reversion"
+
+    def predict(self, markets: list[dict]) -> list[str]:
+        """Bet against recent momentum -- contrarian approach."""
+        bets = []
+        for m in markets:
+            change = m.get("change") or 0
+            # If it went up recently, bet DOWN (expect reversion)
+            if change > 0:
+                bets.append("DOWN")
+            else:
+                bets.append("UP")
+        return bets
+```
+
+2. Set `strategy = "mean-reversion"` in your `config.toml` (or `STRATEGY` env var).
+
+That is all. The loader in `core.py` scans every module in `strategies/`, finds the class whose `name` matches, and instantiates it. Your conviction, summoned by a string.
+
+### Strategy Stack
+
+```
+    config.toml
+    strategy = "momentum"
+         |
+         v
+    +-------------------+
+    | load_strategy()   |   core.py
+    |                   |
+    | Scans strategies/ |
+    | for name match    |
+    +--------+----------+
+             |
+             v
+    strategies/
+    +---------------------------------------------+
+    |                                             |
+    |  random_strategy.py   name = "random"       |
+    |  momentum.py          name = "momentum"  <--+-- match!
+    |  mean_reversion.py    name = "mean-reversion"|
+    |  your_strategy.py     name = "your-name"    |
+    |                                             |
+    +---------------------------------------------+
+             |
+             v
+    +-------------------+
+    | Strategy instance |
+    |                   |
+    | .predict(markets) |---> ["UP","DOWN","UP",...]
+    +-------------------+          |
+                                   v
+                          encode_bitmap() -> bytes
+                                   |
+                                   v
+                          hash_bitmap()   -> keccak256
+```
+
+### The `predict()` Contract
+
+Your `predict()` method receives a list of market dicts and must return a list of `"UP"` or `"DOWN"` strings, one per market, in the same order. Binary. No nuance, no hedging, no "perhaps." The market demands a verdict.
+
+**Input** -- each market dict:
+
+```python
+{
+    "id": "bitcoin",          # asset identifier
+    "price": 67234.50,        # current price (float)
+    "change": 2.1,            # percent change (float or None)
+    "volume": 1234567890.0,   # 24h volume (float or None)
+    "market_cap": None,       # market cap (float or None)
+}
+```
+
+**Output** -- list of strings:
+
+```python
+["UP", "DOWN", "UP", "UP", "DOWN", "UP", ...]
+```
+
+The framework handles everything after `predict()` returns: encoding, hashing, on-chain submission, bitmap reveal. You provide the opinion. The machine provides the consequences.
+
+### Bundled Strategies
+
+| Name | Logic |
+|------|-------|
+| `random` | `random.choice(["UP", "DOWN"])` for each market. Baseline. |
+| `momentum` | UP if `change >= 0`, else DOWN. Follow the trend. |
+
+### Using the Feed in Strategies
+
+For strategies that need historical data, the `VisionFeed` is available in the bot's main loop. To access it from your strategy, you can accept it as a constructor argument:
+
+```python
+class HistoryStrategy(Strategy):
+    name = "history-aware"
+
+    def __init__(self, feed=None):
+        self.feed = feed
+
+    def predict(self, markets):
+        bets = []
+        for m in markets:
+            if self.feed:
+                hist = self.feed.history("current_batch", m["id"])
+                if len(hist) > 10:
+                    avg = sum(p["price"] for p in hist[-10:]) / 10
+                    bets.append("UP" if m["price"] < avg else "DOWN")
+                    continue
+            bets.append("UP")
+        return bets
+```
+
+## Configuration
+
+### config.toml
+
+The framework loads configuration from `config.toml` with environment variable overrides. Here is the full reference:
+
+```toml
+# Strategy
+strategy = "momentum"         # Name of strategy class to load
+
+# Deposit sizing
+deposit = 10                   # USDC per batch (whole tokens, scaled to 18 dec internally)
+stake = 1                      # USDC staked per tick
+
+# Risk limits
+max_batches = 50               # Max concurrent batch positions
+max_exposure = 1000            # Max total USDC across all positions
+
+# Polling
+poll_interval = 30             # Seconds between cycles
+
+# Auto-lifecycle
+auto_claim = true              # Claim rewards automatically
+auto_withdraw = true           # Withdraw depleted positions
+claim_above = 5                # Claim when profit exceeds N USDC
+withdraw_below = 2             # Withdraw when balance drops below N USDC
+
+# Endpoints
+rpc_url = "http://localhost:8545"
+vision_api = "http://localhost:10001"
+data_node = "http://localhost:8200"
+
+# Oracle discovery
+oracle_discovery = "static"    # "static" or "dynamic" (on-chain registry)
+oracle_urls = [
+    "http://localhost:10001",
+    "http://localhost:10002",
+    "http://localhost:10003",
+]
+
+# Batch filtering
+batch_ids = []                 # Empty = join any batch. [1, 3, 7] = only these.
+
+# Persistence
+pnl_file = "pnl.json"
+```
+
+### Environment Variable Overrides
+
+Every config key can be overridden with an environment variable:
+
+```
+    config.toml                     Environment Variable
+    +-----------------------+       +-------------------------+
+    | strategy = "random"   | <---- | STRATEGY=momentum       |
+    | deposit = 10          | <---- | DEPOSIT_AMOUNT=25       |
+    | stake = 1             | <---- | STAKE_PER_TICK=2        |
+    | max_batches = 50      | <---- | MAX_BATCHES=10          |
+    | max_exposure = 1000   | <---- | MAX_EXPOSURE=200        |
+    | poll_interval = 30    | <---- | POLL_INTERVAL=60        |
+    | rpc_url = "..."       | <---- | L3_RPC_URL=https://...  |
+    | vision_api = "..."    | <---- | VISION_API_URL=https:// |
+    | data_node = "..."     | <---- | DATA_NODE_URL=https://  |
+    | pnl_file = "pnl.json" | <---- | PNL_FILE=my-pnl.json   |
+    +-----------------------+       +-------------------------+
+
+    Special env vars (no config.toml equivalent):
+    +----------------------------+
+    | BOT_PRIVATE_KEY=0x...      |  Required. Wallet private key.
+    | BATCH_IDS=1,3,7            |  Comma-separated batch filter.
+    | MIN_BATCH_ID=10            |  Skip batches below this ID.
+    +----------------------------+
+```
+
+Env vars always win over config.toml values.
+
+### markets.json
+
+The `markets.json` file maps sources to their market configurations. It is consumed by the deployment scripts and data-node, not directly by the bot. The bot fetches market lists dynamically via `fetch_batch_config()`.
+
+```json
+{
+  "updated_at": "2026-03-11T22:52:13Z",
+  "total_sources": 14,
+  "categories": ["crypto", "transport", "weather", ...],
+  "sources": [
+    {
+      "id": "crypto_top10",
+      "markets": ["bitcoin", "ethereum", "solana", ...],
+      "tick_duration": 3600,
+      "lock_offset": 300
+    }
+  ]
+}
+```
+
+## Risk Management
+
+Risk management is the discipline of acknowledging that you might be wrong -- permanently and at scale.
+
+### RiskCheck
+
+The `RiskCheck` class enforces two hard limits that cannot be bypassed:
+
+```
+    RiskCheck
+    +--------------------------------------------------+
+    |                                                  |
+    |   max_batches = 10        max_exposure = 500     |
+    |                                                  |
+    |   .can_join(deposit) checks:                     |
+    |     1. active_count < max_batches?               |
+    |     2. total_exposure + deposit <= max_exposure?  |
+    |                                                  |
+    |   Both must pass. Otherwise the batch is skipped.|
+    |                                                  |
+    +--------------------------------------------------+
+    |   Active positions:                              |
+    |   +--------+----------+                          |
+    |   |Batch ID| Deposit  |                          |
+    |   +--------+----------+                          |
+    |   |   1    | 50 USDC  |                          |
+    |   |   3    | 50 USDC  |                          |
+    |   |   7    | 50 USDC  |                          |
+    |   +--------+----------+                          |
+    |   Total: 150 / 500 USDC                          |
+    |   Count: 3 / 10 batches                          |
+    +--------------------------------------------------+
+```
+
+### Additional Safety Checks in bot.py
+
+Beyond `RiskCheck`, the main loop applies several more guards before joining a batch:
+
+```
+    New batch candidate
+         |
+         v
+    +-- batch_id < min_batch_id? -----> SKIP
+    |
+    +-- batch_id in tracker.active? --> SKIP (already tracking)
+    |
+    +-- batch_ids set and batch_id
+    |   not in allowlist? ------------> SKIP
+    |
+    +-- batch.paused? ----------------> SKIP
+    |
+    +-- tracker.active >= max_batches?-> SKIP (at capacity)
+    |
+    +-- Already joined on-chain? -----> SKIP (previous run)
+    |
+    +-- risk.can_join(deposit)? ------> SKIP (exposure limit)
+    |
+    +-- usdc_balance < deposit? ------> SKIP (insufficient funds)
+    |
+    v
+    PROCEED TO JOIN
+```
+
+<Warning>
+**Capital is at risk.** Every USDC deposited is staked against other players. If your predictions are consistently wrong, your balance trends to zero. The `auto_withdraw` feature exits positions before they are fully depleted, but losses are real, irreversible, and indifferent to your intentions.
+</Warning>
+
+### Recommended Risk Settings
+
+For a new bot with limited capital -- which is to say, a bot whose failures you can still afford:
+
+```toml
+deposit = 5            # Small deposits while testing
+stake = 1              # Minimum viable stake
+max_batches = 3        # Few concurrent positions
+max_exposure = 50      # Hard cap on total exposure
+auto_claim = true      # Take profits automatically
+auto_withdraw = true   # Exit losing positions
+claim_above = 3        # Claim small profits early
+withdraw_below = 2     # Cut losses quickly
+```
+
+For a production bot with a proven strategy (a phrase one should utter with appropriate skepticism):
+
+```toml
+deposit = 50
+stake = 5
+max_batches = 20
+max_exposure = 2000
+auto_claim = true
+auto_withdraw = true
+claim_above = 10
+withdraw_below = 5
+```
+
+## Running the Bot
+
+### Basic Usage
+
+```bash
+# Set required env var
+export BOT_PRIVATE_KEY="0xYOUR_PRIVATE_KEY"
+
+# Run with default config.toml
+cd vision-bot
+python bot.py
+
+# Run with a specific config file
+python bot.py --config path/to/config.toml
+
+# Run a single cycle (useful for testing / cron jobs)
+python bot.py --once
+```
+
+### Startup Output
+
+When the bot starts, it logs all active configuration:
+
+```
+12:00:00 [INFO] Vision Bot starting
+12:00:00 [INFO]   Strategy:     momentum
+12:00:00 [INFO]   Bot address:  0x1234...abcd
+12:00:00 [INFO]   RPC:          http://142.132.164.24/
+12:00:00 [INFO]   Deposit:      10 USDC
+12:00:00 [INFO]   Stake/tick:   1 USDC
+12:00:00 [INFO]   Max batches:  50
+12:00:00 [INFO]   Chain ID:     111222333
+12:00:00 [INFO]   USDC balance: 500
+```
+
+### Full System Diagram
+
+```
+    YOU (developer)
+     |
+     |  write strategy + config
+     v
+    +------------------------------------------------------+
+    |  vision-bot/                                         |
+    |                                                      |
+    |  strategies/           framework/                    |
+    |  +----------------+   +----------------------------+ |
+    |  | momentum.py    |   | core.py    Strategy ABC    | |
+    |  | random.py      |   |            RiskCheck       | |
+    |  | YOUR_STRAT.py  |   |            encode_bitmap   | |
+    |  +-------+--------+   |            hash_bitmap     | |
+    |          |             |            load_strategy   | |
+    |          |             |            load_config     | |
+    |          +------------>+----------------------------+ |
+    |                        | chain.py   Executor        | |
+    |  config.toml --------->|            fetch_batches   | |
+    |                        |            submit_bitmap   | |
+    |  bot.py (main loop) <--+----------------------------+ |
+    |          |             | feed.py    VisionFeed      | |
+    |          |             |            WS + HTTP       | |
+    |          |             +----------------------------+ |
+    |          |             | tracker.py Tracker         | |
+    |          |             |            auto-claim      | |
+    |          |             |            auto-withdraw   | |
+    |          |             |            pnl.json        | |
+    |          |             +----------------------------+ |
+    +---------|------------------------------------------------+
+              |
+              |  RPC calls + HTTP API
+              v
+    +---------+-------+     +-------------------+
+    | L3 Chain        |     | Data Node         |
+    | Vision.sol      |     | /vision/ws        |
+    | L3_WUSDC        |     | /vision/snapshot   |
+    +-----------------+     | /batches/config/   |
+              ^             +-------------------+
+              |                      ^
+              |  BLS proofs          |  price data
+              |                      |
+    +---------+-------+     +-------------------+
+    | Oracle Nodes    |<--->| External Sources  |
+    | (x3, on VPS)    |     | (APIs, feeds)     |
+    +-----------------+     +-------------------+
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/vision/bots/quickstart">
+    Ten minutes from nothing to a machine with opinions about the future.
+  </Card>
+  <Card title="Bitmap Encoding" icon="binary" href="/vision/bots/bitmap-encoding">
+    The bit-level encoding spec. Opinions, reduced to their atomic form.
+  </Card>
+  <Card title="Lifecycle" icon="arrows-spin" href="/vision/bots/lifecycle">
+    Join, claim, withdraw, and BLS proofs. The full anatomy of automated conviction.
+  </Card>
+  <Card title="Strategies" icon="brain" href="/vision/bots/strategies">
+    Momentum, mean reversion, random. Three ways to be wrong with style.
+  </Card>
+</CardGroup>

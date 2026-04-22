@@ -1,11 +1,11 @@
 ---
 title: "Bitmap Submission"
-description: "Submit prediction bitmaps off-chain to the issuer"
+description: "Submit prediction bitmaps off-chain to the oracle"
 ---
 
 # Bitmap Submission
 
-Submit your sealed prediction bitmap to the issuer node. The bitmap must match the keccak256 hash you committed on-chain when joining the batch.
+Reveal what you committed to. Submit your prediction bitmap to the oracle node. The bitmap must match the keccak256 hash you sealed on-chain -- the moment where commitment becomes confession.
 
 ---
 
@@ -13,7 +13,7 @@ Submit your sealed prediction bitmap to the issuer node. The bitmap must match t
 
 `POST /vision/bitmap`
 
-Submits a player's prediction bitmap off-chain. The issuer verifies that:
+Submits a player's prediction bitmap off-chain. The oracle verifies that:
 
 1. The player is registered in the specified batch.
 2. `keccak256(bitmap_bytes)` matches the `expected_hash`.

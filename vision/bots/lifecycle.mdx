@@ -5,7 +5,9 @@ description: "Complete step-by-step lifecycle of a Vision bot from registration 
 
 # Bot Lifecycle
 
-This page documents every step a Vision bot performs, from initial registration through reward claiming and withdrawal. Each step includes the exact function call or API request, expected behavior, and error handling.
+Poll. Predict. Join. Monitor. Claim. Repeat. The lifecycle of a bot is the lifecycle of hope -- automated, relentless, and indifferent to its own record.
+
+Every step below includes the exact function call, expected behavior, and error handling. The machine deserves precise instructions. It will follow them faithfully, which is more than can be said for the markets.
 
 ## Lifecycle Diagram
 
@@ -55,7 +57,7 @@ This page documents every step a Vision bot performs, from initial registration 
          ▼
 ┌──────────────────────────────────┐
 │  9. Update Bitmap (optional)     │  ← On-chain: updateBitmap()
-│     + resubmit to issuers        │    + POST /vision/bitmap
+│     + resubmit to oracles        │    + POST /vision/bitmap
 └────────┬─────────────────────────┘
          │
          ▼
@@ -73,7 +75,7 @@ This page documents every step a Vision bot performs, from initial registration 
 
 ## Step 1: Register Bot
 
-Register your bot on the Vision contract. This is a one-time operation.
+Register your bot on the Vision contract. A one-time declaration of intent -- the moment the machine announces itself to the blockchain.
 
 ```python
 def register_bot(vision_contract, account, w3):
@@ -116,7 +118,7 @@ Check if your bot is already registered before calling `registerBot()`. You can 
 
 ## Step 2: Poll Batches
 
-Poll the issuer API for active batches on a loop.
+Poll the oracle API for active batches on a loop. The machine asks the same question every thirty seconds: is there something to bet on? The answer is almost always yes.
 
 ```python
 import requests
@@ -160,15 +162,15 @@ GET /vision/batches
 
 | Error | Cause | Fix |
 |-------|-------|-----|
-| HTTP 500 | Database error on issuer | Retry after backoff |
-| Timeout | Issuer unreachable | Check `VISION_API_URL`, retry |
+| HTTP 500 | Database error on oracle | Retry after backoff |
+| Timeout | Oracle unreachable | Check `VISION_API_URL`, retry |
 | Empty `batches` array | No active batches exist | Sleep and retry |
 
 ---
 
 ## Step 3: Generate Predictions
 
-For each market in the batch, decide UP or DOWN. See [Example Strategies](/vision/bots/strategies) for algorithms.
+For each market, decide UP or DOWN. The act that gives the machine its purpose -- and, tick by tick, its verdict. See [Example Strategies](/vision/bots/strategies) for algorithms.
 
 ```python
 import random
@@ -298,7 +300,7 @@ function joinBatch(
 
 ## Step 7: Wait for Indexer
 
-The issuer's chain listener needs time to detect the `PlayerJoined` event before it will accept your bitmap submission.
+Six seconds of limbo. The oracle's chain listener needs time to detect the `PlayerJoined` event before it will accept your bitmap.
 
 ```python
 import time
@@ -307,17 +309,17 @@ import time
 time.sleep(6)
 ```
 
-**Why 6 seconds?** The issuer's chain listener polls for new events on a ~3-5 second interval. A 6-second wait gives comfortable margin.
+**Why 6 seconds?** The chain listener polls every 3-5 seconds. Six gives margin. In trading, as in life, the margin between working and not is narrower than one expects.
 
 <Info>
-If you submit the bitmap too early, the issuer responds with HTTP 404: "Player not found in batch." Retry after a few seconds.
+If you submit the bitmap too early, the oracle responds with HTTP 404: "Player not found in batch." Retry after a few seconds.
 </Info>
 
 ---
 
-## Step 8: Submit Bitmap to Issuers
+## Step 8: Submit Bitmap to Oracles
 
-Submit the actual bitmap bytes to the issuer API. The issuer verifies `keccak256(bitmap) == on-chain bitmapHash`.
+Now reveal what you committed to. Submit the actual bitmap bytes to the oracle API. The oracle verifies `keccak256(bitmap) == on-chain bitmapHash`. The seal is broken. Your opinions are on the record.
 
 ```python
 def submit_bitmap(api_url, player, batch_id, bitmap_hex, expected_hash, retries=3):
@@ -393,7 +395,7 @@ POST /vision/bitmap
 
 ## Step 9: Update Bitmap (Optional)
 
-You can change your predictions mid-batch by updating the on-chain hash and resubmitting the bitmap.
+You can change your mind. Update the on-chain hash and resubmit the bitmap. The blockchain accommodates indecision, for a gas fee.
 
 ```python
 def update_bitmap(vision_contract, batch_id, new_bitmap_hash, account, w3):
@@ -415,7 +417,7 @@ new_bets = generate_predictions(market_count)
 new_bitmap = encode_bitmap(new_bets, market_count)
 new_hash = Web3.keccak(new_bitmap)
 
-# Update on-chain, then resubmit to issuers
+# Update on-chain, then resubmit to oracles
 update_bitmap(vision, batch_id, new_hash, account, w3)
 time.sleep(6)
 submit_bitmap(API_URL, account.address, batch_id,
@@ -428,7 +430,7 @@ submit_bitmap(API_URL, account.address, batch_id,
 function updateBitmap(uint256 batchId, bytes32 newBitmapHash) external;
 ```
 
-**On-chain effect:** Overwrites `PlayerPosition.bitmapHash` with the new hash. The old bitmap is discarded by issuers when the new one is submitted.
+**On-chain effect:** Overwrites `PlayerPosition.bitmapHash` with the new hash. The old bitmap is discarded by oracles when the new one is submitted.
 
 **Errors:**
 
@@ -437,14 +439,14 @@ function updateBitmap(uint256 batchId, bytes32 newBitmapHash) external;
 | `NotJoined` | No position in this batch | Join first with `joinBatch()` |
 
 <Tip>
-Updating your bitmap mid-batch lets you adapt to changing market conditions. However, the update only takes effect for the next tick -- the current tick uses the previously submitted bitmap.
+The update only takes effect for the next tick -- the current tick uses the previously submitted bitmap. The past is immutable. Only the next mistake can be corrected.
 </Tip>
 
 ---
 
 ## Step 10: Claim Rewards
 
-Periodically claim rewards using BLS-signed balance proofs from issuers.
+Periodically claim rewards using BLS-signed balance proofs from oracles. The machine was right. Collect the proof of it.
 
 ```python
 def claim_rewards(vision_contract, batch_id, from_tick, to_tick,
@@ -492,8 +494,8 @@ function claimRewards(
 ```
 
 **On-chain effect:**
-- BLS signature is verified against the issuer registry's aggregated public key.
-- If `newBalance > oldBalance`, the difference (minus 0.3% fee on profit) is transferred to the player.
+- BLS signature is verified against the oracle registry's aggregated public key.
+- If `newBalance > oldBalance`, the difference (minus 0.05% fee on profit) is transferred to the player.
 - If `newBalance <= oldBalance`, losses are recorded (balance decreases, no payout).
 - `lastClaimedTick` is updated to `toTick`.
 
@@ -504,14 +506,14 @@ function claimRewards(
 | `NotJoined` | No position in this batch | Cannot claim without joining |
 | `TickAlreadyClaimed` | `fromTick <= lastClaimedTick` | Use a later `fromTick` |
 | `InvalidTickRange` | `toTick < fromTick` | Fix tick ordering |
-| `InvalidBLSSignature` | Bad or insufficient BLS signatures | Re-fetch proof from issuers |
+| `InvalidBLSSignature` | Bad or insufficient BLS signatures | Re-fetch proof from oracles |
 | `InsolventPayout` | Contract USDC balance too low | Wait for other deposits or contact operators |
 
 ---
 
 ## Step 11: Withdraw
 
-Exit a batch entirely and recover your remaining balance.
+Exit a batch entirely. Recover what remains. The balance -- whatever it is -- is the final verdict on your theory about the future.
 
 ```python
 def withdraw(vision_contract, batch_id, final_balance,
@@ -547,7 +549,7 @@ function withdraw(
 
 **On-chain effect:**
 - BLS signature verified.
-- Fee (0.3%) charged on profit only: if `finalBalance > totalDeposited`, fee is on the difference.
+- Fee (0.05%) charged on profit only: if `finalBalance > totalDeposited`, fee is on the difference.
 - Remaining balance (after fee) transferred to player.
 - Position is deleted (`delete _positions[batchId][player]`).
 
@@ -563,7 +565,7 @@ function withdraw(
 
 ## Complete Bot Loop
 
-Here is the full lifecycle assembled into a single polling loop:
+The full lifecycle assembled into a single polling loop. An automaton of conviction, running until stopped or depleted:
 
 ```python
 import time
@@ -618,7 +620,7 @@ class VisionBot:
 ```
 
 <Info>
-The bot maintains a local `joined_batches` set to avoid duplicate joins. On restart, it checks on-chain positions via `getPosition()` to rebuild this set.
+The bot maintains a local `joined_batches` set to avoid duplicate joins. On restart, it checks on-chain positions via `getPosition()` to rebuild this set. The machine remembers where it has already placed its faith.
 </Info>
 
 ## Deposit Additional USDC
@@ -661,5 +663,5 @@ function deposit(uint256 batchId, uint256 amount) external;
 | Join | `InsufficientDeposit` | Fund wallet, retry |
 | Submit bitmap | 404 Player not found | Wait longer, retry |
 | Submit bitmap | 400 Hash mismatch | Recompute bitmap and hash |
-| Claim | `InvalidBLSSignature` | Re-fetch proof from issuers |
+| Claim | `InvalidBLSSignature` | Re-fetch proof from oracles |
 | Withdraw | `InsolventPayout` | Wait for contract to be funded |

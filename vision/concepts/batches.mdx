@@ -3,43 +3,44 @@ title: "Batches"
 description: "How prediction market batches work in Vision"
 ---
 
-A **batch** is a collection of prediction markets that share the same tick duration and resolve together. Batches are the fundamental organizational unit in Vision -- every player joins a batch, stakes USDC, and competes against other players in that batch.
+A batch groups markets together. Like a parlay. Like a prayer -- multiple requests, one outcome, usually disappointing. And yet people create them, join them, fund them with real money. The persistence of hope in the face of arithmetic is the most human thing about this protocol.
+
+## Quick Start: Join a Batch
+
+Fetch active batches and join one with a USDC deposit:
+
+```bash
+# 1. List active batches
+curl https://generalmarket.io/api/vision/batches
+
+# 2. Join on-chain (Solidity)
+vision.joinBatch(batchId, depositAmount, stakePerTick, bitmapHash)
+```
+
+See [Bot Quickstart](/vision/bots/quickstart) for a full working example.
+
+## Batch Lifecycle
+
+```mermaid
+flowchart LR
+    A[Create Batch] --> B[Players Join]
+    B --> C[Tick Resolves]
+    C --> D{More Ticks?}
+    D -->|Yes| C
+    D -->|Paused| E[Paused]
+    E --> C
+    C --> F[Claim / Withdraw]
+```
 
 ## What Is a Batch?
 
 A batch groups multiple markets (e.g., BTC-USD, ETH-USD, SOL-USD) into a single prediction game. Every tick, all markets in the batch resolve simultaneously, and players win or lose based on how many markets they predicted correctly.
 
-Think of it like a sports parlay card: you pick UP or DOWN for each market, and your payout depends on how your picks compare to other players' picks across all markets.
-
-## Batch Struct
-
-On-chain, a batch is stored as:
-
-```solidity
-struct Batch {
-    address creator;           // Wallet that created the batch
-    bytes32[] marketIds;       // keccak256 hashes of asset IDs (e.g., keccak256("BTC-USD"))
-    uint8[] resolutionTypes;   // How each market is resolved (see Resolution Types)
-    uint256 tickDuration;      // Seconds between resolutions
-    uint256[] customThresholds; // Custom thresholds in basis points (for _X types)
-    uint256 createdAtTick;     // block.timestamp / tickDuration at creation
-    bool paused;               // Whether the batch is currently paused
-}
-```
-
-| Field | Description |
-|-------|-------------|
-| `creator` | The address that called `createBatch`. Only the creator can set metadata and update markets. |
-| `marketIds` | Array of `bytes32` market identifiers. Each is `keccak256(assetId)` where `assetId` is a UTF-8 string like `"BTC-USD"`. |
-| `resolutionTypes` | Parallel array to `marketIds`. Each entry is a `uint8` from the `ResolutionType` enum (0-7). See [Resolution Types](/vision/concepts/resolution-types). |
-| `tickDuration` | How often the batch resolves, in seconds. Must be between 1 second and 30 days (`MAX_TICK_DURATION`). |
-| `customThresholds` | Parallel array for resolution types that use custom thresholds (`UP_X`, `DOWN_X`, `FLAT_X`). Values are in basis points. |
-| `createdAtTick` | The tick number when the batch was created, computed as `block.timestamp / tickDuration`. |
-| `paused` | When `true`, no new players can join. Requires a BLS-signed issuer consensus to pause or unpause. |
+You pick UP or DOWN for each market. Your payout depends on how your picks compare to other players' picks across all markets. It is a contest of opinions, settled by reality, which is indifferent to both sides.
 
 ## Creating a Batch
 
-Anyone can create a batch by calling `createBatch`:
+Anyone can create a batch. This is a freedom that carries weight -- you are constructing a small arena where strangers will lose money to each other, and you are responsible for choosing the terms. Call `createBatch`:
 
 ```solidity
 function createBatch(
@@ -74,7 +75,7 @@ const tx = await vision.createBatch(
 
 ## Tick Duration Options
 
-The tick duration controls how often markets in the batch resolve. Common configurations:
+The tick duration controls how often the world is measured and judgment is passed. Common configurations:
 
 | Duration | Use Case |
 |----------|----------|
@@ -88,9 +89,9 @@ The tick duration controls how often markets in the batch resolve. Common config
 `tickDuration` must be greater than 0 and at most `MAX_TICK_DURATION` (30 days = 2,592,000 seconds). Passing 0 or exceeding the maximum reverts with `InvalidTickDuration`.
 </Warning>
 
-## Batch Lifecycle
+## Batch States
 
-A batch moves through the following states:
+A batch moves through states, as all things do. Unlike most things, its states are well-defined:
 
 ```
 Created --> Running --> Paused (optional) --> Running
@@ -98,16 +99,78 @@ Created --> Running --> Paused (optional) --> Running
 
 1. **Created**: The batch is registered on-chain. Players can immediately join.
 2. **Running**: Ticks resolve at every `tickDuration` interval. Players can join, deposit, update bitmaps, and claim rewards.
-3. **Paused**: Issuers can pause a batch via BLS consensus (e.g., if a price feed is unreliable). While paused, no new players can join. Existing players retain their positions.
-4. **Unpaused**: Issuers unpause the batch via BLS consensus. Normal operation resumes.
+3. **Paused**: Oracles can pause a batch via BLS consensus (e.g., if a price feed is unreliable). While paused, no new players can join. Existing players retain their positions.
+4. **Unpaused**: Oracles unpause the batch via BLS consensus. Normal operation resumes.
 
 <Info>
-Pausing and unpausing require BLS signatures from 2/3+ of registered issuers. This prevents any single party from disrupting a batch.
+Pausing and unpausing require BLS signatures from 2/3+ of registered oracles. This prevents any single party from disrupting a batch.
 </Info>
 
-## Batch Metadata
+## Updating Markets
 
-Batch creators can attach metadata to make their batch discoverable:
+A batch creator can change which markets are included, but not unilaterally. Altering the rules of a game that people have already entered requires BLS oracle consensus -- the closest thing to democratic oversight a smart contract can offer:
+
+```solidity
+function updateBatchMarkets(
+    uint256 batchId,
+    bytes32[] calldata marketIds,
+    uint8[] calldata resolutionTypes,
+    bytes calldata blsSig
+) external;
+```
+
+The BLS signature must cover the batch ID, new market IDs, new resolution types, and the current tick number. This ensures oracles have reviewed and approved the change.
+
+## Joining a Batch
+
+To join is to commit -- money and opinion, simultaneously. Players deposit USDC and commit a bitmap hash:
+
+```solidity
+function joinBatch(
+    uint256 batchId,
+    uint256 depositAmount,    // Initial USDC deposit
+    uint256 stakePerTick,     // Amount risked per tick per market
+    bytes32 bitmapHash        // keccak256 of the player's bitmap
+) external;
+```
+
+<Tip>
+`stakePerTick` must be at least `MIN_STAKE_PER_TICK` (0.1 USDC = 100,000 in 6-decimal USDC). The initial deposit must be at least equal to `stakePerTick`.
+</Tip>
+
+See [Bitmaps](/vision/concepts/bitmaps) for how to construct and commit predictions.
+
+## Technical Details
+
+### Batch Struct
+
+On-chain, a batch is stored as the following struct. Every field is a constraint. Every constraint is a promise the protocol makes to strangers who will never meet:
+
+```solidity
+struct Batch {
+    address creator;           // Wallet that created the batch
+    bytes32[] marketIds;       // keccak256 hashes of asset IDs (e.g., keccak256("BTC-USD"))
+    uint8[] resolutionTypes;   // How each market is resolved (see Resolution Types)
+    uint256 tickDuration;      // Seconds between resolutions
+    uint256[] customThresholds; // Custom thresholds in basis points (for _X types)
+    uint256 createdAtTick;     // block.timestamp / tickDuration at creation
+    bool paused;               // Whether the batch is currently paused
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `creator` | The address that called `createBatch`. Only the creator can set metadata and update markets. |
+| `marketIds` | Array of `bytes32` market identifiers. Each is `keccak256(assetId)` where `assetId` is a UTF-8 string like `"BTC-USD"`. |
+| `resolutionTypes` | Parallel array to `marketIds`. Each entry is a `uint8` from the `ResolutionType` enum (0-7). See [Resolution Types](/vision/concepts/resolution-types). |
+| `tickDuration` | How often the batch resolves, in seconds. Must be between 1 second and 30 days (`MAX_TICK_DURATION`). |
+| `customThresholds` | Parallel array for resolution types that use custom thresholds (`UP_X`, `DOWN_X`, `FLAT_X`). Values are in basis points. |
+| `createdAtTick` | The tick number when the batch was created, computed as `block.timestamp / tickDuration`. |
+| `paused` | When `true`, no new players can join. Requires a BLS-signed oracle consensus to pause or unpause. |
+
+### Batch Metadata
+
+Batch creators can attach metadata to make their batch discoverable. A name, a description, an image -- the small vanities that make a contract feel inhabited:
 
 ```solidity
 function setBatchMetadata(
@@ -127,37 +190,3 @@ Creators can also set a display name for themselves:
 ```solidity
 function setDeployerName(string calldata name) external; // max 64 bytes
 ```
-
-## Updating Markets
-
-A batch creator can change which markets are included in the batch, but this requires BLS issuer consensus to prevent manipulation:
-
-```solidity
-function updateBatchMarkets(
-    uint256 batchId,
-    bytes32[] calldata marketIds,
-    uint8[] calldata resolutionTypes,
-    bytes calldata blsSig
-) external;
-```
-
-The BLS signature must cover the batch ID, new market IDs, new resolution types, and the current tick number. This ensures issuers have reviewed and approved the change.
-
-## Joining a Batch
-
-Players join a batch by depositing USDC and committing a bitmap hash:
-
-```solidity
-function joinBatch(
-    uint256 batchId,
-    uint256 depositAmount,    // Initial USDC deposit
-    uint256 stakePerTick,     // Amount risked per tick per market
-    bytes32 bitmapHash        // keccak256 of the player's bitmap
-) external;
-```
-
-<Tip>
-`stakePerTick` must be at least `MIN_STAKE_PER_TICK` (0.1 USDC = 100,000 in 6-decimal USDC). The initial deposit must be at least equal to `stakePerTick`.
-</Tip>
-
-See [Bitmaps](/vision/concepts/bitmaps) for how to construct and commit predictions.

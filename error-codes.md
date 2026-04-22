@@ -6,7 +6,7 @@ This document is the canonical reference for all error codes in the Index L3 pro
 
 | Range | Category | Defined In |
 |-------|----------|------------|
-| E001-E010 | Core Protocol | `ErrorsLib.sol` + `common/src/errors.rs` |
+| E001-E006 | Core Protocol | `ErrorsLib.sol` + `common/src/errors.rs` |
 | E011-E018 | ITP Configuration | `ErrorsLib.sol` |
 | E019-E024 | Batch & Fill | `ErrorsLib.sol` |
 | E025-E032 | BLS Custody & Whitelist | `ErrorsLib.sol` |
@@ -28,7 +28,7 @@ This document is the canonical reference for all error codes in the Index L3 pro
 
 ---
 
-## Core Protocol Errors (E001-E010)
+## Core Protocol Errors (E001-E006)
 
 These errors exist in both Solidity (`ErrorsLib.sol`) and Rust (`common/src/errors.rs`).
 
@@ -103,54 +103,6 @@ These errors exist in both Solidity (`ErrorsLib.sol`) and Rust (`common/src/erro
 | **Triggering Condition** | Reference to an ITP that has not been registered |
 | **Components** | `Index.sol` |
 | **Resolution** | Verify the ITP ID is correct and has been registered on-chain |
-
-### E007 - AssetDelisting
-
-| Field | Value |
-|-------|-------|
-| **Code** | E007 |
-| **Name** | `E007_AssetDelisting` (Solidity) / `AssetDelisting` (Rust) |
-| **Description** | Asset in this ITP is being delisted |
-| **Parameters** | `asset: address/String` - the asset being delisted |
-| **Triggering Condition** | New order placed for an asset that is in the delisting process |
-| **Components** | `Index.sol` |
-| **Resolution** | No new orders accepted for delisting assets. Wait for delisting to complete or use a different ITP |
-
-### E008 - SourceUnavailable
-
-| Field | Value |
-|-------|-------|
-| **Code** | E008 |
-| **Name** | `E008_SourceUnavailable` (Solidity) / `SourceUnavailable` (Rust) |
-| **Description** | Liquidity source is currently unavailable |
-| **Parameters** | `sourceId: bytes32/String` - the unavailable source identifier |
-| **Triggering Condition** | External liquidity source (AP, DEX) is offline, unreachable, or suspended |
-| **Components** | `Index.sol`, AP event monitor, AP source failure handler, AP queue manager |
-| **Resolution** | The system will auto-restore when the source becomes available. Operators should check source connectivity and AP health endpoints |
-
-### E009 - OrderExpired
-
-| Field | Value |
-|-------|-------|
-| **Code** | E009 |
-| **Name** | `E009_OrderExpired` (Solidity) / `OrderExpired` (Rust) |
-| **Description** | Order has expired past its deadline |
-| **Parameters** | `orderId: uint256/u128` - the expired order; `deadline: uint256/u64` - expiration timestamp; `currentTime: uint256/u64` - current timestamp |
-| **Triggering Condition** | Order's deadline has passed (default: 1 hour) without being filled |
-| **Components** | `Index.sol`, AP timeout handler, AP source failure handler |
-| **Resolution** | User receives a full automatic refund. Resubmit the order if desired |
-
-### E010 - FillIncomplete
-
-| Field | Value |
-|-------|-------|
-| **Code** | E010 |
-| **Name** | `E010_FillIncomplete` (Solidity) / `FillIncomplete` (Rust) |
-| **Description** | Order was only partially filled |
-| **Parameters** | `orderId: uint256/u128` - the order; `requested: uint256/u128` - original amount; `filled: uint256/u128` - amount actually filled |
-| **Triggering Condition** | Available liquidity was insufficient to fully fill the order |
-| **Components** | `Index.sol`, AP fill reporter, issuer netting |
-| **Resolution** | Remainder is automatically refunded. The filled portion is processed normally |
 
 ---
 
@@ -444,17 +396,17 @@ These errors exist in both Solidity (`ErrorsLib.sol`) and Rust (`common/src/erro
 | **Components** | `Index.sol` |
 | **Resolution** | Wait until the deadline passes, or the order may be filled before then |
 
-### E035 - IssuerRegistryNotSet
+### E035 - OracleRegistryNotSet
 
 | Field | Value |
 |-------|-------|
 | **Code** | E035 |
-| **Name** | `E035_IssuerRegistryNotSet` |
-| **Description** | IssuerRegistry not configured |
+| **Name** | `E035_OracleRegistryNotSet` |
+| **Description** | OracleRegistry not configured |
 | **Parameters** | None |
-| **Triggering Condition** | Batch submission attempted before IssuerRegistry is configured |
+| **Triggering Condition** | Batch submission attempted before OracleRegistry is configured |
 | **Components** | `Index.sol` |
-| **Resolution** | Admin must set the IssuerRegistry address via `setIssuerRegistry()` |
+| **Resolution** | Admin must set the OracleRegistry address via `setOracleRegistry()` |
 
 ### E036 - FillCycleMismatch
 
@@ -544,17 +496,17 @@ These errors exist in both Solidity (`ErrorsLib.sol`) and Rust (`common/src/erro
 | **Components** | `BLSCustody.sol` |
 | **Resolution** | Wait until `unlockTime` has passed |
 
-### E043 - ZeroIssuerRegistry
+### E043 - ZeroOracleRegistry
 
 | Field | Value |
 |-------|-------|
 | **Code** | E043 |
-| **Name** | `E043_ZeroIssuerRegistry` |
-| **Description** | Zero address not allowed for issuer registry |
+| **Name** | `E043_ZeroOracleRegistry` |
+| **Description** | Zero address not allowed for oracle registry |
 | **Parameters** | None |
-| **Triggering Condition** | Setting issuer registry to `address(0)` |
+| **Triggering Condition** | Setting oracle registry to `address(0)` |
 | **Components** | `BLSCustody.sol` |
-| **Resolution** | Provide a valid non-zero IssuerRegistry address |
+| **Resolution** | Provide a valid non-zero OracleRegistry address |
 
 ### E044 - StandardUpgradePending
 
@@ -824,7 +776,7 @@ These errors exist in both Solidity (`ErrorsLib.sol`) and Rust (`common/src/erro
 
 ## Infrastructure Errors (INFRA-001 to INFRA-013)
 
-These errors are defined in `common/src/error.rs` and cover system-level failures in Rust services. They use the `INFRA-XXX` prefix to distinguish from protocol errors (E001-E010).
+These errors are defined in `common/src/error.rs` and cover system-level failures in Rust services. They use the `INFRA-XXX` prefix to distinguish from protocol errors (E001-E006).
 
 ### INFRA-001 - ChainRead
 
@@ -835,7 +787,7 @@ These errors are defined in `common/src/error.rs` and cover system-level failure
 | **Description** | Chain read error (RPC query failure) |
 | **Parameters** | `message: String` - error details |
 | **Triggering Condition** | RPC call to read on-chain state fails (network timeout, node error) |
-| **Components** | AP event monitor, issuer chain reader, common RPC client |
+| **Components** | AP event monitor, oracle chain reader, common RPC client |
 | **Resolution** | Check RPC endpoint connectivity and node health |
 
 ### INFRA-002 - ChainWrite
@@ -847,7 +799,7 @@ These errors are defined in `common/src/error.rs` and cover system-level failure
 | **Description** | Chain write error (transaction submission failure) |
 | **Parameters** | `message: String` - error details |
 | **Triggering Condition** | Transaction submission fails (nonce issues, gas estimation, signing) |
-| **Components** | Issuer chain writer, AP fill reporter |
+| **Components** | Oracle chain writer, AP fill reporter |
 | **Resolution** | Check wallet balance, nonce state, and gas price settings |
 
 ### INFRA-003 - TransactionFailed
@@ -859,7 +811,7 @@ These errors are defined in `common/src/error.rs` and cover system-level failure
 | **Description** | Transaction failed on-chain |
 | **Parameters** | `message: String` - error details |
 | **Triggering Condition** | Transaction was mined but reverted |
-| **Components** | Issuer chain writer |
+| **Components** | Oracle chain writer |
 | **Resolution** | Check transaction revert reason in explorer. Likely a contract-level error (E001-E064) |
 
 ### INFRA-004 - BlsSigning
@@ -871,7 +823,7 @@ These errors are defined in `common/src/error.rs` and cover system-level failure
 | **Description** | BLS signing error |
 | **Parameters** | `message: String` - error details |
 | **Triggering Condition** | BLS private key operation fails |
-| **Components** | Issuer consensus module |
+| **Components** | Oracle consensus module |
 | **Resolution** | Check BLS key configuration and key file integrity |
 
 ### INFRA-005 - BlsVerification
@@ -883,8 +835,8 @@ These errors are defined in `common/src/error.rs` and cover system-level failure
 | **Description** | BLS verification failed |
 | **Parameters** | `message: String` - error details |
 | **Triggering Condition** | BLS signature verification on received message fails |
-| **Components** | Issuer consensus module |
-| **Resolution** | Verify the signing issuer's public key is registered correctly |
+| **Components** | Oracle consensus module |
+| **Resolution** | Verify the signing oracle's public key is registered correctly |
 
 ### INFRA-006 - SignatureAggregation
 
@@ -895,7 +847,7 @@ These errors are defined in `common/src/error.rs` and cover system-level failure
 | **Description** | Signature aggregation failed |
 | **Parameters** | `message: String` - error details |
 | **Triggering Condition** | Combining multiple BLS signatures into an aggregate fails |
-| **Components** | Issuer consensus module |
+| **Components** | Oracle consensus module |
 | **Resolution** | Verify all individual signatures are valid before aggregation |
 
 ### INFRA-007 - P2PConnection
@@ -906,8 +858,8 @@ These errors are defined in `common/src/error.rs` and cover system-level failure
 | **Name** | `P2PConnection` |
 | **Description** | P2P connection error |
 | **Parameters** | `message: String` - error details |
-| **Triggering Condition** | Failed to establish or maintain connection to a peer issuer |
-| **Components** | Issuer P2P networking |
+| **Triggering Condition** | Failed to establish or maintain connection to a peer oracle |
+| **Components** | Oracle P2P networking |
 | **Resolution** | Check peer address, port, and firewall settings |
 
 ### INFRA-008 - P2PBroadcast
@@ -919,7 +871,7 @@ These errors are defined in `common/src/error.rs` and cover system-level failure
 | **Description** | P2P broadcast failed |
 | **Parameters** | `message: String` - error details |
 | **Triggering Condition** | Failed to send a message to one or more peers |
-| **Components** | Issuer P2P networking |
+| **Components** | Oracle P2P networking |
 | **Resolution** | Check peer connectivity and network configuration |
 
 ### INFRA-009 - P2PReceive
@@ -931,7 +883,7 @@ These errors are defined in `common/src/error.rs` and cover system-level failure
 | **Description** | P2P message receive error |
 | **Parameters** | `message: String` - error details |
 | **Triggering Condition** | Error receiving or deserializing a peer message |
-| **Components** | Issuer P2P networking |
+| **Components** | Oracle P2P networking |
 | **Resolution** | Check message format compatibility between peers |
 
 ### INFRA-010 - ApClient
@@ -943,7 +895,7 @@ These errors are defined in `common/src/error.rs` and cover system-level failure
 | **Description** | AP client error |
 | **Parameters** | `message: String` - error details |
 | **Triggering Condition** | Internal AP client communication failure |
-| **Components** | Issuer AP client |
+| **Components** | Oracle AP client |
 | **Resolution** | Check AP service availability and endpoint configuration |
 
 ### INFRA-011 - Authentication
@@ -998,10 +950,6 @@ The following errors are defined in both languages with matching names, paramete
 | E004 | `E004_SystemPaused()` | `IndexError::SystemPaused` | Yes (no params) |
 | E005 | `E005_LimitOutOfBounds(uint256, uint256, uint256)` | `IndexError::LimitOutOfBounds { limit_price, current_price, max_deviation }` | Yes |
 | E006 | `E006_ITPNotFound(bytes32)` | `IndexError::ITPNotFound { itp_id }` | Yes (bytes32 -> String) |
-| E007 | `E007_AssetDelisting(address)` | `IndexError::AssetDelisting { asset }` | Yes (address -> String) |
-| E008 | `E008_SourceUnavailable(bytes32)` | `IndexError::SourceUnavailable { source_id }` | Yes (bytes32 -> String) |
-| E009 | `E009_OrderExpired(uint256, uint256, uint256)` | `IndexError::OrderExpired { order_id, deadline, current_time }` | Yes |
-| E010 | `E010_FillIncomplete(uint256, uint256, uint256)` | `IndexError::FillIncomplete { order_id, requested, filled }` | Yes |
 
 ### Solidity-Only Errors (E011-E064)
 
@@ -1017,49 +965,18 @@ The `APError` enum in `ap/src/error.rs` provides additional AP-specific error ty
 
 | AP Error | Protocol Code | Description |
 |----------|---------------|-------------|
-| `APError::Subscription` | E008 | Event subscription failure |
-| `APError::SourceUnavailable` | E008 | Liquidity source offline |
-| `APError::APSuspended` | E008 | AP suspended due to source failure |
-| `APError::OrderAutoRefunded` | E009 | Order pending timeout triggered refund |
-| `APError::OrderExpired` | E009 | Order age exceeded limit |
-| `APError::OrderTimeout` | E009 | Order execution timeout (60s) |
+| `APError::Subscription` | INFRA | Event subscription failure |
+| `APError::SourceUnavailable` | INFRA | Liquidity source offline |
+| `APError::APSuspended` | INFRA | AP suspended due to source failure |
+| `APError::OrderAutoRefunded` | INFRA | Order pending timeout triggered refund |
+| `APError::OrderExpired` | INFRA | Order age exceeded limit |
+| `APError::OrderTimeout` | INFRA | Order execution timeout (60s) |
 
 ---
 
 ## Log Examples
 
 All services use the `tracing` crate with JSON output. Error codes appear as structured fields.
-
-### ERROR Level - Source Unavailable (E008)
-
-```json
-{
-  "timestamp": "2025-01-15T14:30:00.000Z",
-  "level": "ERROR",
-  "code": "E008",
-  "source": "uniswap-v3",
-  "message": "Liquidity source unavailable",
-  "target": "ap::event_monitor",
-  "span": {
-    "cycle_number": 12345
-  }
-}
-```
-
-### WARN Level - Order Timeout (E009)
-
-```json
-{
-  "timestamp": "2025-01-15T14:30:05.000Z",
-  "level": "WARN",
-  "code": "E009",
-  "order_id": "67890",
-  "pending_secs": 3600,
-  "timeout_secs": 3600,
-  "message": "Order pending timeout exceeded, marking for refund",
-  "target": "ap::source_failure::handler"
-}
-```
 
 ### WARN Level - Limit Violation (E005)
 
@@ -1086,7 +1003,7 @@ All services use the `tracing` crate with JSON output. Error codes appear as str
   "cycle_number": 12345,
   "message": "Failed to submit batch transaction",
   "error": "nonce too low",
-  "target": "issuer::chain::writer"
+  "target": "oracle::chain::writer"
 }
 ```
 
@@ -1100,7 +1017,7 @@ All services use the `tracing` crate with JSON output. Error codes appear as str
   "peer_id": "0xabc123",
   "message": "Failed to connect to peer",
   "error": "connection refused",
-  "target": "issuer::consensus::p2p"
+  "target": "oracle::consensus::p2p"
 }
 ```
 
@@ -1128,7 +1045,7 @@ All services use the `tracing` crate with JSON output. Error codes appear as str
   "orders_processed": 15,
   "orders_refunded": 0,
   "message": "Cycle completed successfully",
-  "target": "issuer::cycle"
+  "target": "oracle::cycle"
 }
 ```
 

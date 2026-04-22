@@ -5,89 +5,333 @@ description: "Smart contract error codes reference"
 
 # Smart Contract Error Codes
 
-The General Market protocol uses custom Solidity errors for gas-efficient reverts. Error codes follow the format `E001` through `E069+` and are defined in `ErrorsLib.sol`.
+Every error has a code. The code tells you what went wrong. It does not tell you why you tried.
 
-<Note>
-  This page documents a representative subset of error codes. For the complete list, see
-  [`ErrorsLib.sol`](https://github.com/example/index/blob/main/contracts/libraries/ErrorsLib.sol) in the contracts source.
-</Note>
+Custom Solidity errors for gas-efficient reverts. All defined in `ErrorsLib.sol`. Format: `EXXX_Name(params)`.
 
-## Order Errors (E001 - E010)
+## Order Errors (E001 - E012)
 
 Errors raised during order creation, validation, and lifecycle management.
 
 | Code | Name | Description |
 |------|------|-------------|
-| `E001` | Invalid order amount | The order amount is zero or negative. |
-| `E002` | Insufficient collateral balance | The caller does not have enough collateral escrowed to cover the order amount. |
-| `E003` | Order already exists | An order with the specified ID has already been submitted. |
-| `E004` | Order not found | The referenced order ID does not exist in storage. |
-| `E005` | Order already batched | The referenced order has already been included in a batch and cannot be modified. |
-| `E006` | Order already filled | The referenced order has already been fully executed. |
-| `E007` | Order timeout | The referenced order exceeded the time-to-live window and has expired. |
-| `E008` | Invalid ITP ID | The target ITP does not exist or the ID is malformed. |
-| `E009` | Order amount below minimum | The order amount is below the protocol-defined minimum threshold. |
-| `E010` | Invalid order type | The order type flag is not a recognized value (e.g., not buy or sell). |
+| `E001` | `OrderBelowMin` | Order amount is below the minimum threshold (0.001 USDC = 1e15 wei with 18 decimals). |
+| `E002` | `InsufficientBalance` | User has insufficient USDC balance to cover the order amount. |
+| `E003` | `ITPPaused` | The specified ITP is currently paused by governance. |
+| `E004` | `SystemPaused` | The entire system is in emergency pause mode. All operations are blocked. |
+| `E006` | `ITPNotFound` | The specified ITP identifier does not exist. ITP must be registered before orders can be placed. |
+| `E007` | `AssetDelisting` | An asset in this ITP is being delisted. No new orders accepted during delisting. |
+| `E008` | `SourceUnavailable` | External liquidity source (AP, DEX) is offline or unreachable. |
+| `E009` | `OrderExpired` | Order has expired past its deadline. Orders auto-cancel after 1 hour (default) and the user receives a full refund. |
+| `E010` | `FillIncomplete` | Order was only partially filled. The remainder is automatically refunded to the user. |
+| `E011` | `InvalidSlippageTier` | Invalid slippage tier specified. Valid tiers: 0 (0.3%), 1 (1%), or 2 (3%). |
+| `E012` | `InvalidDeadline` | Order deadline is invalid. Must be in the future and within 24 hours. |
 
-## Batch Errors (E011 - E020)
-
-Errors raised during batch construction, signature verification, and confirmation.
-
-| Code | Name | Description |
-|------|------|-------------|
-| `E011` | Invalid batch | The batch structure is malformed or contains no orders. |
-| `E012` | Batch already confirmed | The referenced batch has already been confirmed on-chain and cannot be resubmitted. |
-| `E013` | Invalid BLS signature | The aggregated BLS signature failed verification against the registered public key. |
-| `E014` | Insufficient signatures | The number of issuer signatures does not meet the required quorum. |
-| `E015` | Batch contains invalid orders | One or more orders in the batch failed individual validation checks. |
-
-## ITP Errors (E021 - E030)
+## ITP Creation Errors (E013 - E018, E051)
 
 Errors raised during ITP creation, configuration, and weight management.
 
 | Code | Name | Description |
 |------|------|-------------|
-| `E021` | ITP not found | The specified ITP ID does not correspond to any registered Index Tracking Product. |
-| `E022` | ITP paused | The specified ITP is currently paused and not accepting orders. |
-| `E023` | Invalid ITP weights | ITP asset weights must sum to exactly 100% (1e18 in fixed-point). |
-| `E024` | Too many assets | A single ITP cannot contain more than 100 underlying assets. |
-| `E025` | Invalid asset address | One of the provided asset addresses is the zero address or not a valid token. |
-| `E026` | Duplicate asset in ITP | The same asset address appears more than once in the asset list. |
+| `E013` | `WeightBelowMinimum` | ITP weight is below the minimum threshold of 0.25% (2.5e15 with 18 decimals). |
+| `E014` | `InvalidWeightSum` | ITP weights do not sum to exactly 100% (1e18). |
+| `E015` | `LengthMismatch` | Assets and weights arrays have different lengths. |
+| `E016` | `NoAssets` | ITP must have at least one asset. |
+| `E017` | `DuplicateAsset` | Duplicate asset address in ITP creation. |
+| `E018` | `ZeroAssetAddress` | Zero address not allowed for an asset. |
+| `E051` | `TooManyAssets` | ITP has too many assets (exceeds maximum). |
 
-## Fill Errors (E031 - E040)
+## Batch and Fill Errors (E019 - E024, E036 - E037)
 
-Errors raised when Authorized Participants (APs) report trade fills.
-
-| Code | Name | Description |
-|------|------|-------------|
-| `E031` | Fill price out of tolerance | The reported fill price deviates more than 0.1% from the oracle reference price. |
-| `E032` | Fill amount exceeds order | The fill amount is greater than the remaining unfilled quantity on the order. |
-| `E033` | Invalid fill reporter | The caller is not a registered AP in the AP registry. |
-
-## Registry Errors (E041 - E050)
-
-Errors raised by the issuer, collateral, and asset registry contracts.
+Errors raised during batch construction, signature verification, fill processing, and confirmation.
 
 | Code | Name | Description |
 |------|------|-------------|
-| `E041` | Issuer not registered | The signing address is not registered in `IssuerRegistry`. |
-| `E042` | Invalid BLS public key | The provided BLS public key is malformed or does not lie on the BN254 curve. |
-| `E043` | Collateral not whitelisted | The token address is not in the `CollateralRegistry` whitelist. |
-| `E044` | Asset pair not registered | The asset/collateral trading pair is not registered for AP execution. |
+| `E019` | `CycleAlreadyProcessed` | The cycle has already been processed. |
+| `E020` | `InvalidBLSSignature` | BLS signature verification failed. |
+| `E021` | `OrderAlreadyBatched` | Order has already been batched or processed. |
+| `E022` | `OrderNotFound` | The specified order ID was not found. |
+| `E023` | `FillExceedsOrder` | Fill amount exceeds the original order amount. |
+| `E024` | `InvalidOrderStatus` | Order is not in the correct status for this operation. |
+| `E036` | `FillCycleMismatch` | Fill cycle number does not match the expected cycle number. |
+| `E037` | `ZeroSharesCalculated` | Shares calculation resulted in zero (fill amount or price too small). |
 
-## Governance Errors (E051 - E060)
+## BLS Custody Errors (E025 - E027)
 
-Errors raised by administrative and governance operations.
+Errors raised by the BLS-verified custody contract for USDC operations.
 
 | Code | Name | Description |
 |------|------|-------------|
-| `E051` | Not authorized | The caller does not have the required role or permission. |
-| `E052` | Contract paused | The target contract is paused and the called function is unavailable. |
-| `E053` | Invalid pause target | The specified contract address is not a valid pausable target. |
+| `E025` | `NonceAlreadyUsed` | The nonce has already been used (replay protection). |
+| `E026` | `TargetNotWhitelisted` | The target address is not in the whitelist. |
+| `E027` | `ExecutionFailed` | The execution call to the target address failed. |
+
+## Whitelist Errors (E028 - E032, E034 - E035)
+
+Errors raised by the timelock-based whitelist management system.
+
+| Code | Name | Description |
+|------|------|-------------|
+| `E028` | `WhitelistAlreadyProposed` | A whitelist proposal already exists for this target. |
+| `E029` | `WhitelistNotProposed` | No whitelist proposal found for this target. |
+| `E030` | `TimelockNotExpired` | The timelock has not expired yet. Must wait until unlock time. |
+| `E031` | `TargetAlreadyWhitelisted` | The target is already in the whitelist. |
+| `E032` | `TargetNotCurrentlyWhitelisted` | The target is not currently in the whitelist. |
+| `E034` | `OrderNotYetExpired` | Order deadline has not passed yet (still in the future). |
+| `E035` | `OracleRegistryNotSet` | OracleRegistry is not configured (required for BLS verification in production). |
+
+## Upgrade Errors (E038 - E044)
+
+Errors raised during contract upgrade proposals, timelocks, and execution.
+
+| Code | Name | Description |
+|------|------|-------------|
+| `E038` | `ZeroImplementation` | Zero address not allowed for implementation. |
+| `E039` | `UpgradeAlreadyPending` | An upgrade is already pending. |
+| `E040` | `NoPendingUpgrade` | No pending upgrade to execute. |
+| `E041` | `ImplementationMismatch` | Implementation address does not match the expected address. |
+| `E042` | `UpgradeTimelockActive` | Upgrade timelock has not expired yet. |
+| `E043` | `ZeroOracleRegistry` | Zero address not allowed for oracle registry. |
+| `E044` | `StandardUpgradePending` | Cannot use emergency upgrade when a standard upgrade is already pending. |
+
+## L3 Bridge Custody Errors (E045 - E053)
+
+Errors raised by the L3 bridge custody contract for cross-chain USDC locking and releasing.
+
+| Code | Name | Description |
+|------|------|-------------|
+| `E045` | `LockAlreadyReleased` | The lock has already been released. |
+| `E046` | `LockAlreadyReversed` | The lock has already been reversed. |
+| `E047` | `LockTimeoutNotReached` | Lock timeout has not been reached yet (cannot force-reverse). |
+| `E048` | `InsufficientSignerCount` | Not enough signers for emergency operation. |
+| `E049` | `LockNotFound` | Lock not found (nonce does not exist). |
+| `E050` | `ZeroUSDCAddress` | Zero address not allowed for USDC token. |
+| `E052` | `ZeroAmount` | Zero amount not allowed for bridge operations. |
+| `E053` | `InvalidDestChainId` | Invalid destination chain ID. |
+
+## Settlement Bridge Custody Errors (E054 - E060)
+
+Errors raised by the settlement-side bridge custody contract.
+
+| Code | Name | Description |
+|------|------|-------------|
+| `E054` | `BridgeAlreadyCompleted` | Bridge already completed for this source chain + nonce combination. |
+| `E055` | `InvalidSourceChainId` | Invalid source chain ID (zero or same as current chain). |
+| `E056` | `ZeroL3IndexAddress` | Zero address not allowed for L3 Investment contract. |
+| `E057` | `InvalidProof` | Invalid proof (zero values not allowed). |
+| `E058` | `InvalidDeadline` | Invalid deadline for cross-chain order (outside min/max bounds). |
+| `E059` | `CrossChainOrderZeroAmount` | Zero amount for cross-chain order. |
+| `E060` | `ZeroITPId` | Zero ITP ID for cross-chain order. |
+
+## Authorization and Initialization Errors (E061 - E064)
+
+General protocol-level errors for access control and initialization.
+
+| Code | Name | Description |
+|------|------|-------------|
+| `E061` | `Unauthorized` | Caller is not authorized (admin-only function). |
+| `E062` | `AlreadyInitialized` | Contract or field has already been initialized. |
+| `E063` | `MintFailed` | External call to mint ITP tokens failed. |
+| `E064` | `StringTooLong` | String exceeds the maximum bytes32 length (32 bytes). |
+
+## Rebalance Errors (E065 - E069)
+
+Errors raised during ITP rebalance proposals and execution.
+
+| Code | Name | Description |
+|------|------|-------------|
+| `E065` | `NotITPCreator` | Caller is not the ITP creator (required for proposeRebalance). |
+| `E066` | `ITPNotActive` | ITP is not in active status (required for rebalance). |
+| `E067` | `RebalanceAlreadyPending` | A pending rebalance already exists for this ITP. |
+| `E068` | `NoActiveRebalance` | No active pending rebalance for this ITP. |
+| `E069` | `WeightsMismatch` | Submitted weights do not match the pending rebalance target. |
+
+## Bridge Proxy Errors (E070 - E07E)
+
+Errors raised by the BridgeProxy for cross-chain ITP creation, BLS verification, and bridged token management.
+
+| Code | Name | Description |
+|------|------|-------------|
+| `E070` | `AlreadyCompleted` | ITP creation request has already been completed. |
+| `E071` | `InvalidBLSSignature` | BLS signature verification failed on the bridge proxy. |
+| `E072` | `CreationNotFound` | No pending creation request found for this nonce. |
+| `E073` | `InvalidWeightsSum` | Weights do not sum to 1e18 (100%). |
+| `E074` | `WeightBelowMinimum` | Weight below minimum threshold (0.25% = 2.5e15). |
+| `E075` | `BridgeLengthMismatch` | Weights and assets arrays have different lengths. |
+| `E076` | `NoAssets` | No assets provided in ITP creation request. |
+| `E077` | `TooManyAssets` | Too many assets in ITP creation request (max 50). |
+| `E078` | `DuplicateAsset` | Duplicate asset address in ITP creation request. |
+| `E079` | `ZeroAddressAsset` | Zero address not allowed in assets array. |
+| `E07A` | `NameTooLong` | Name exceeds maximum length (32 bytes). |
+| `E07B` | `SymbolTooLong` | Symbol exceeds maximum length (10 bytes). |
+| `E07C` | `OrbitItpAlreadyMapped` | OrbitItpId already has a mapped BridgedITP. |
+| `E07D` | `InsufficientSigners` | Insufficient signers for threshold BLS verification. |
+| `E07E` | `InvalidAggregatedPubkeyLength` | Invalid aggregated pubkey length (must be 128 bytes for G2). |
+
+## Decimal Conversion Errors (E07F - E080)
+
+Errors raised during USDC decimal conversion between L3 (18 decimals) and Settlement (6 decimals).
+
+| Code | Name | Description |
+|------|------|-------------|
+| `E07F` | `UsdcAmountTooSmall` | USDC amount too small (must be at least 0.001 USDC = 1000 units in 6 decimals). |
+| `E080` | `InvalidUsdcDecimals` | Invalid USDC decimals (expected 18 for L3, 6 for Settlement). |
+
+## Sell Order Errors (E081)
+
+| Code | Name | Description |
+|------|------|-------------|
+| `E081` | `InsufficientShares` | User has insufficient ITP shares for the sell order. |
+
+## Production Hardening Errors (E082 - E089)
+
+Errors added for production hardening: queue depth limits, price staleness checks, and BLS key rotation.
+
+| Code | Name | Description |
+|------|------|-------------|
+| `E082` | `BelowMinBuyAmount` | Order amount is below the per-asset minimum buy amount. |
+| `E083` | `QueueFull` | Order queue is full (too many pending orders). |
+| `E084` | `InvalidBLSPriceSignature` | BLS signature verification failed for price update. |
+| `E085` | `StalePrice` | Asset price is stale (timestamp exceeds maximum allowed age). |
+| `E086` | `InvalidRotationSignature` | Invalid BLS signature for key rotation request. |
+| `E087` | `InvalidApprovalSignature` | Invalid BLS signature for rotation approval. |
+| `E088` | `InvalidIpUpdateSignature` | Invalid BLS signature for IP update. |
+| `E089` | `InvalidQueueThresholds` | Queue thresholds invalid (warning must be <= pause when pause > 0). |
+
+## Mirror Registry Errors (E090 - E093)
+
+Errors raised by the MirrorOracleRegistry contract on the settlement chain.
+
+| Code | Name | Description |
+|------|------|-------------|
+| `E090` | `StaleNonce` | Sync nonce is not greater than current registry nonce. |
+| `E091` | `InvalidAggPubkey` | Aggregated pubkey has invalid length (must be 128 bytes for G2). |
+| `E092` | `ZeroAdmin` | Admin address cannot be zero. |
+| `E093` | `InvalidThreshold` | Invalid threshold configuration (must be > 0 and <= activeCount). |
+
+## NAV Oracle Errors (E094 - E098)
+
+Errors raised by the NAV Oracle for price submissions and staleness checks.
+
+| Code | Name | Description |
+|------|------|-------------|
+| `E094` | `StaleCycleNumber` | Cycle number is stale (must be greater than last processed). |
+| `E095` | `InvalidOraclePrice` | Oracle price cannot be zero. |
+| `E096` | `StaleOraclePrice` | Oracle price is stale (exceeds MAX_STALENESS). |
+| `E097` | `NotActiveOracle` | Caller is not a registered active oracle. |
+| `E098` | `ZeroBeneficiary` | Beneficiary address cannot be zero. |
+
+## Cross-Chain Rebalance Errors (E099 - E115)
+
+Errors raised during cross-chain ITP rebalance operations, including asset additions and removals.
+
+| Code | Name | Description |
+|------|------|-------------|
+| `E099` | `BridgeItpNotFound` | ITP not found in bridge deployer tracking. |
+| `E100` | `NotBridgeDeployer` | Caller is not the ITP deployer on the bridge. |
+| `E101` | `EmptyRebalanceWeights` | Rebalance request has empty weights array. |
+| `E102` | `RebalanceWeightTooLow` | Rebalance weight below minimum (0.25%). |
+| `E103` | `RebalanceWeightsSumInvalid` | Rebalance weights do not sum to 1e18. |
+| `E104` | `RebalanceNotFound` | Rebalance request not found for nonce. |
+| `E105` | `RebalanceAlreadyCompleted` | Rebalance request already completed. |
+| `E106` | `ZeroAddressNotAllowed` | Zero address not allowed. |
+| `E107` | `NotAuthorizedBridge` | Caller is not the authorized bridge. |
+| `E108` | `RebalanceWeightsLengthMismatch` | Rebalance weights length does not match ITP asset count. |
+| `E109` | `RemoveIndicesNotDescending` | Remove indices must be sorted in descending order. |
+| `E110` | `RemoveIndexOutOfBounds` | Remove index out of bounds for current asset list. |
+| `E111` | `FinalAssetCountMismatch` | New weights length does not match final asset count after removals/additions. |
+| `E112` | `PricesLengthMismatch` | Prices array length does not match new weights length. |
+| `E113` | `ZeroPriceInRebalance` | Price cannot be zero for NAV/inventory computation. |
+| `E114` | `DuplicateAssetInRebalance` | Duplicate asset in add list or already exists in ITP. |
+| `E115` | `RebalanceResultsInNoAssets` | ITP must have at least one asset after rebalance. |
+
+## Cross-Chain Sell Errors (E116 - E120)
+
+Errors raised during cross-chain sell order processing.
+
+| Code | Name | Description |
+|------|------|-------------|
+| `E116` | `BridgedItpNotFound` | BridgedITP address not found for this ITP ID. |
+| `E117` | `CrossChainSellZeroAmount` | Zero amount for cross-chain sell order. |
+| `E118` | `ZeroBridgeProxy` | Zero address for BridgeProxy. |
+| `E119` | `SellOrderNotFound` | Sell order not found. |
+| `E120` | `SellOrderAlreadyCompleted` | Sell order already completed or refunded. |
+
+## ITP Metadata Errors (E121 - E127)
+
+Errors raised when setting ITP descriptions, URLs, and deployer names.
+
+| Code | Name | Description |
+|------|------|-------------|
+| `E121` | `DescriptionTooLong` | ITP description exceeds maximum length (280 bytes). |
+| `E122` | `UrlTooLong` | ITP website URL exceeds maximum length (128 bytes). |
+| `E123` | `VideoUrlTooLong` | ITP video URL exceeds maximum length (256 bytes). |
+| `E124` | `NotItpDeployer` | Caller is not the deployer of this ITP. |
+| `E125` | `BuyOrderNotFound` | Buy order not found (orderId has no cross-chain order). |
+| `E126` | `FillPriceViolatesLimit` | Fill price violates the order's limit price. Side 0 = BUY (fill too high), 1 = SELL (fill too low). |
+| `E127` | `DeployerNameTooLong` | Deployer name exceeds maximum length. |
+
+## Security Audit Errors (E128 - E130)
+
+Errors added during security audits for cycle confirmation, order ownership, and batch timeout enforcement.
+
+| Code | Name | Description |
+|------|------|-------------|
+| `E128` | `CycleNotConfirmed` | Cycle has not been confirmed yet. |
+| `E129` | `NotOrderOwner` | Caller is not the order owner. |
+| `E130` | `BatchedTimeoutNotReached` | Batched timeout has not been reached (cannot force-cancel yet). |
+
+## Vision Deposit/Withdraw Errors (E131 - E134)
+
+Errors raised during Vision deposit and withdrawal processing on the L3 bridge.
+
+| Code | Name | Description |
+|------|------|-------------|
+| `E131` | `VisionDepositNotFound` | Vision deposit not found (orderId has no deposit or was already processed). |
+| `E132` | `VisionWithdrawAlreadyProcessed` | Vision withdrawal already processed (replay protection). |
+| `E133` | `CycleGapTooLarge` | Cycle gap too large (cycleNumber > lastCycleNumber + MAX_CYCLE_GAP). |
+| `E134` | `PriceDeviationTooHigh` | Price deviation too high (exceeds MAX_DEVIATION_BPS from current price). |
+
+## Mirror Registry Phase 2B Errors (E135 - E138)
+
+Errors for oracle pubkey validation, missed count authorization, and order cancellation.
+
+| Code | Name | Description |
+|------|------|-------------|
+| `E135` | `MissingOraclePubkey` | Missing individual oracle pubkey (expected 128 bytes, got 0). |
+| `E136` | `NotAuthorizedMissedCountCaller` | Caller not authorized for incrementMissedCounts. |
+| `E137` | `PubkeysIdsLengthMismatch` | Oracle pubkeys and IDs array length mismatch. |
+| `E138` | `OrderNotCancellable` | Order cannot be cancelled (not in PENDING status). |
+
+## Replay Protection Errors (E139 - E143)
+
+Errors for mint/burn replay protection on the BridgeProxy.
+
+| Code | Name | Description |
+|------|------|-------------|
+| `E139` | `MintAlreadyProcessed` | Mint already processed for this order. |
+| `E140` | `BurnAlreadyProcessed` | Burn already processed for this order. |
+| `E141` | `OnlyCustody` | Only the settlement custody contract can call this function. |
+| `E142` | `MintNotYetProcessed` | Cannot clear pending mint before mint is processed on BridgeProxy. |
+| `E143` | `BridgeProxyAlreadySet` | BridgeProxy already set (one-shot setter). |
+
+## Sell Flow V5 Errors (E147 - E153)
+
+Errors for the V5 sell flow: burn sequencing, remint delays, and minimum sell amounts.
+
+| Code | Name | Description |
+|------|------|-------------|
+| `E147` | `SellOrderAlreadyBurned` | Sell order shares have already been burned. |
+| `E148` | `SellSharesNotBurned` | Sell order shares have not yet been burned (completeSellOrder requires burn first). |
+| `E149` | `UseBurnFromCustody` | burnBridgedShares cannot burn custody-held tokens (use burnFromCustody instead). |
+| `E150` | `MintNotProcessed` | Cannot clear pending mint before mint is processed. |
+| `E151` | `RemintTooEarly` | Remint too early -- must wait MIN_REMINT_DELAY after burn. |
+| `E152` | `BelowMinSellAmount` | Sell amount is below the minimum threshold. |
+| `E153` | `RefundTooEarly` | Vision deposit refund attempted before timeout. |
 
 ## Decoding Errors in the Frontend
 
-Custom errors are decoded using the contract ABI. The frontend maps error codes to user-friendly messages:
+The ABI decodes the error. The developer decides what to tell the user.
 
 ```typescript
 import { decodeErrorResult } from "viem";
@@ -100,7 +344,7 @@ try {
     abi: indexAbi,
     data: err.data,
   });
-  // decoded.errorName → "E002"
-  // Map to user message: "Insufficient collateral balance"
+  // decoded.errorName -> "E002_InsufficientBalance"
+  // decoded.args -> [userAddress, requiredAmount, availableAmount]
 }
 ```

@@ -5,24 +5,49 @@ description: "How ITPs work -- the on-chain equivalent of ETFs"
 
 # Index Tracking Products (ITPs)
 
-An Index Tracking Product (ITP) is a tokenized basket of crypto assets -- the on-chain equivalent of an ETF. When you hold an ITP token, you hold proportional exposure to every asset in the ITP's basket. The token's value (the ITP's NAV) floats with the underlying asset prices.
+An ITP is a basket. Like all baskets, it holds things that will disappoint you at different rates. The virtue of the basket is that the disappointments cancel each other out — sometimes. The NAV tells you how the cancellation is going.
+
+## Quick Start: Buy an ITP
+
+```bash
+# Check ITP price (NAV)
+curl https://generalmarket.io/api/prices/{itpId}
+
+# Buy on-chain
+index.submitOrder(itpId, usdcAmount, OrderType.BUY)
+```
+
+See [Buy & Sell Guide](/index/guides/buy-sell) for the full step-by-step.
+
+## ITP Lifecycle
+
+```mermaid
+flowchart LR
+    A[Create ITP] -->|"weights → quantities"| B[ITP Live]
+    B --> C[Buy / Sell]
+    C -->|"mint / burn shares"| B
+    B --> D[NAV Floats]
+    D -->|"prices change"| B
+    B --> E[Rebalance]
+    E -->|"new quantities, same NAV"| B
+```
 
 ## What Makes Up an ITP
 
-Each ITP consists of:
+An ITP is four things. No more.
 
 - **A basket of assets** -- up to 100 crypto assets with defined weights
 - **Fixed per-share quantities** -- each share represents a fixed amount of each underlying asset
-- **An ERC-4626 vault token** -- standard vault interface for composability with other DeFi protocols
-- **A deployer** -- the address that configured the basket and earns protocol fees
+- **An ERC-4626 vault token** -- the standard vault interface, so it composes with everything else in DeFi
+- **A deployer** -- the address that built the basket and earns fees for the trouble
 
 <Info>
-ITPs support up to **100 assets** per basket. This enables broad-market indexes (like a "Top 100 Crypto" product) or focused sector plays (like a "DeFi Blue Chips" basket with 10 assets).
+Up to **100 assets** per basket. You can build a market-wide index or a narrow conviction play. The protocol does not judge your allocation. The market will.
 </Info>
 
 ## NAV Pricing
 
-Every ITP has a **Net Asset Value (NAV)** -- the fair value of one share based on the current prices of all underlying assets. NAV is the core pricing mechanism for ITPs.
+Every ITP has a **Net Asset Value (NAV)**. It is the fair value of one share, computed from the prices of everything inside the basket. NAV is the only number that matters. It is also the only number that never stops moving.
 
 ### NAV Computation Formula
 
@@ -35,11 +60,11 @@ Where:
 - `price[i]` is the current market price of asset `i`
 - The division by `1e18` normalizes to a human-readable value
 
-NAV is computed identically across all layers of the system: on-chain in `Index.sol`, off-chain in the issuer nodes, and in the frontend. The NAV formula is the single source of truth for ITP pricing.
+The same formula runs on-chain in `Index.sol`, off-chain in the oracle nodes, and in the frontend. Three places, one truth. If they ever disagree, something is very wrong.
 
 ## ITP Creation: How Quantities Are Set
 
-When an ITP is created, the ITP starts at a NAV of **$1** (represented as `1e18` in contract math). The deployer specifies percentage weights for each asset, and the protocol converts those weights into fixed per-share quantities:
+Every ITP begins its life worth exactly **$1** (`1e18` in contract math). A deployer chooses weights. The protocol converts those weights into fixed per-share quantities. From this moment on, the dollar figure is a memory. The quantities are the reality.
 
 ```solidity
 qty[i] = (weight[i] * 1e18) / price[i]
@@ -47,7 +72,7 @@ qty[i] = (weight[i] * 1e18) / price[i]
 
 ### Three-Asset Creation Example
 
-Suppose a deployer creates an ITP with 3 assets at equal weight:
+Three assets, equal weight. The most optimistic allocation: the belief that you cannot choose, so you choose equally.
 
 | Asset | Weight | Price | Quantity per Share |
 |-------|--------|-------|--------------------|
@@ -55,7 +80,7 @@ Suppose a deployer creates an ITP with 3 assets at equal weight:
 | ETH | 33.33% | $3,000 | 0.000111100 ETH |
 | SOL | 33.34% | $100 | 0.003334000 SOL |
 
-At creation, the ITP's NAV = $1.00. Each share represents exactly these quantities of each asset.
+At creation, NAV = $1.00. Each share represents exactly these quantities. The precision is comforting. The future will not be.
 
 ```solidity
 NAV = (0.000006666 * 50000) + (0.000111100 * 3000) + (0.003334000 * 100)
@@ -65,21 +90,21 @@ NAV = (0.000006666 * 50000) + (0.000111100 * 3000) + (0.003334000 * 100)
 
 ## ITP Key Invariants
 
-These rules are fundamental to how ITPs work:
+Three rules. They do not bend.
 
 <Note>
-**Quantities only change on rebalance.** Buying and selling ITP shares does NOT alter the per-share quantities. Buy/sell operations mint or burn shares proportionally -- the basket composition stays the same.
+**Quantities only change on rebalance.** Buying and selling does not alter per-share quantities. Buy/sell mints or burns shares proportionally. The basket composition stays the same. This is the invariant that makes everything else possible.
 </Note>
 
-1. **Buy/sell = mint/burn shares.** When a buyer purchases $100 of an ITP at NAV $1.05, the buyer receives ~95.24 shares. The per-share quantities do not change.
+1. **Buy/sell = mint/burn shares.** You buy $100 at NAV $1.05, you receive ~95.24 shares. The quantities per share do not move.
 
-2. **NAV drifts from $1 over time.** If the basket appreciates, the ITP's NAV goes above $1. If the basket drops, the NAV goes below $1. The NAV reflects real market movement of the underlying assets.
+2. **NAV drifts from $1 over time.** The basket appreciates, NAV rises. The basket falls, NAV falls. This is the point. An ITP that stays at $1 forever has failed at its only job.
 
-3. **Quantities are stored on-chain.** The `_itpInventory` mapping in `IndexStorage.sol` stores the definitive per-share quantities for each ITP.
+3. **Quantities are stored on-chain.** The `_itpInventory` mapping in `IndexStorage.sol` is the canonical truth. Everything else is a reflection.
 
 ## ITP Rebalancing
 
-A rebalance changes the per-share quantities to reflect new target weights while preserving the current NAV. Rebalancing adjusts an ITP's composition without affecting the ITP's value per share.
+A rebalance reshuffles the deck without changing the value of the hand. New quantities, same NAV. The deployer adjusts the composition — the value per share does not flinch.
 
 ### Rebalance Quantity Formula
 
@@ -94,7 +119,7 @@ Where:
 
 ### Rebalance Worked Example
 
-Continuing the earlier creation example, suppose BTC has risen to $60,000, ETH to $3,500, and SOL to $120. The ITP's current NAV is now:
+Time passes. Prices move. BTC rises to $60,000, ETH to $3,500, SOL to $120. The ITP's NAV is now:
 
 ```solidity
 NAV = (0.000006666 * 60000) + (0.000111100 * 3500) + (0.003334000 * 120)
@@ -102,7 +127,7 @@ NAV = (0.000006666 * 60000) + (0.000111100 * 3500) + (0.003334000 * 120)
     = $1.1889
 ```
 
-The deployer rebalances to new weights: BTC 50%, ETH 30%, SOL 20%.
+The deployer decides the future looks different. New weights: BTC 50%, ETH 30%, SOL 20%.
 
 | Asset | New Weight | Price | New Quantity |
 |-------|-----------|-------|-------------|
@@ -119,21 +144,23 @@ NAV = (0.000009908 * 60000) + (0.000101906 * 3500) + (0.001981500 * 120)
 ```
 
 <Warning>
-Rebalancing preserves NAV but changes the per-share quantities. After a rebalance, the ITP has different exposure to each asset even though the total value per share is unchanged.
+NAV is preserved. Exposure is not. After a rebalance, you hold the same dollar value but a different bet on the future. The value did not change. The conviction did.
 </Warning>
 
 ## ITP ERC-4626 Vault Tokens
 
-Every ITP is implemented as an [ERC-4626](https://eips.ethereum.org/EIPS/eip-4626) vault. The ERC-4626 standard interface means ITPs are composable with any DeFi protocol that supports ERC-4626 -- including lending protocols like Morpho.
+Every ITP is an [ERC-4626](https://eips.ethereum.org/EIPS/eip-4626) vault. A standard interface. Standards are dull. They are also the reason your tokens work everywhere.
 
-Key properties of ITP tokens:
+- **Fungible** -- all shares of the same ITP are identical. Your share and my share are the same share.
+- **Transferable** -- send ITP tokens to any address. Ownership is portable.
+- **Collateralizable** -- use ITP tokens as collateral in [lending markets](/index/concepts/lending). Borrow against what you believe in.
+- **18 decimals** -- matching ERC-20 conventions. Precision beyond what any human needs.
 
-- **Fungible** -- all shares of the same ITP are identical
-- **Transferable** -- you can send ITP tokens to any address
-- **Collateralizable** -- ITP tokens can be used as collateral in [lending markets](/index/concepts/lending)
-- **Decimal precision** -- 18 decimals, matching standard ERC-20 conventions
+## Technical Details
 
-## Implementation Reference
+Where the formula lives, for those who need to see the source. Trust, but verify. Or rather — do not trust, and verify.
+
+### Implementation Reference
 
 | Layer | Location | Function |
 |-------|----------|----------|
@@ -141,5 +168,5 @@ Key properties of ITP tokens:
 | Contract | `Index.sol` | `_getCurrentPrice()` -- computes NAV from stored inventory |
 | Contract | `Index.sol` | `updateWeights()` -- rebalance: recalculates quantities preserving NAV |
 | Storage | `IndexStorage.sol` | `_itpInventory[itpId]` -- canonical per-share quantities |
-| Issuer | `nav.rs` | `calculate_nav()` -- reads inventory via `getITPState` |
+| Oracle | `nav.rs` | `calculate_nav()` -- reads inventory via `getITPState` |
 | Frontend | `useItpNav.ts` | Inventory-first calculation, weight fallback for legacy ITPs |

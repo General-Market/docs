@@ -5,7 +5,59 @@ description: "Vision prediction market REST API reference"
 
 # Vision API
 
-The Vision API provides programmatic access to the prediction market system. Use it to list batches, submit bitmaps, query balances, backtest strategies, and read tick history.
+The API is public. No authentication. No rate limiting. We trust you. This may be a mistake.
+
+Use it to list batches, submit bitmaps, query balances, backtest strategies, and read tick history. Everything the prediction market knows, it will tell you.
+
+## Architecture
+
+Vision API routes are split across two proxy targets depending on the type of data:
+
+```
+                            +------------------------------+
+                            |   Next.js API Routes         |
+                            |   /api/vision/*              |
+     +----------+           |                              |
+     |          |  HTTPS    |  /batches ----+              |
+     | Browser  +---------->+  /leaderboard |              |
+     |          |           |  /bitmap -----+-- fan-out    |
+     +----------+           |               |              |
+                            |               v              |
+                            |     +---------+---------+    |
+                            |     | Oracle API        |    |
+                            |     | (port 10001)      |    |
+                            |     | Batch state,      |    |
+                            |     | player balances,   |    |
+                            |     | bitmap processing  |    |
+                            |     +-------------------+    |
+                            |                              |
+                            |  /snapshot -------+          |
+                            |  /snapshot/meta --+          |
+                            |                   |          |
+                            |                   v          |
+                            |     +-------------+-----+    |
+                            |     | Data Node         |    |
+                            |     | (port 8200)       |    |
+                            |     | Market prices,    |    |
+                            |     | source health,    |    |
+                            |     | asset counts      |    |
+                            |     +-------------------+    |
+                            +------------------------------+
+```
+
+**Bitmap fan-out pattern:**
+
+```
+  Browser POSTs bitmap to /api/vision/bitmap (same-origin, no CORS)
+
+                   +-- POST --> Oracle 1 (10001) --> accepted
+                   |
+  /api/vision/ ----+-- POST --> Oracle 2 (10002) --> accepted
+  bitmap           |
+                   +-- POST --> Oracle 3 (10003) --> rejected (error)
+
+  Response: { acceptedCount: 2, totalCount: 3, results: [...] }
+```
 
 ## Base URL
 
@@ -15,11 +67,11 @@ All Vision endpoints are served under:
 https://generalmarket.io/api/vision
 ```
 
-Requests are proxied to the issuer node running Vision on port 10001.
+Requests are proxied to the oracle node running Vision on port 10001, or to the data-node on port 8200 for snapshot data.
 
 ## Authentication
 
-The Vision API is **public** -- no API key or authentication is required. Player identity is determined by Ethereum addresses passed as parameters.
+None. The Vision API is **public**. Player identity is determined by Ethereum addresses passed as parameters. No keys, no tokens, no gatekeepers. The data belongs to everyone -- the losses, unfortunately, are personal.
 
 ## Endpoints
 
@@ -28,23 +80,29 @@ The Vision API is **public** -- no API key or authentication is required. Player
 | `GET` | [`/vision/batches`](/vision/api/batches#list-batches) | List all active batches |
 | `GET` | [`/vision/markets`](/vision/api/batches#list-markets) | List supported markets |
 | `GET` | [`/vision/batch/{id}/state`](/vision/api/state#get-batch-state) | Full state for a single batch |
-| `POST` | [`/vision/bitmap`](/vision/api/bitmap#submit-bitmap) | Submit a prediction bitmap |
+| `POST` | [`/vision/bitmap`](/vision/api/bitmap#submit-bitmap) | Submit a prediction bitmap (fan-out to all oracles) |
 | `GET` | [`/vision/balance/{batch_id}/{player}`](/vision/api/balance#get-player-balance) | Player balance with BLS proof |
 | `GET` | [`/vision/batch/{id}/history`](/vision/api/ticks#get-tick-history) | Tick result history for a batch |
 | `GET` | [`/vision/reveal/{batch_id}/{tick_id}`](/vision/api/ticks#get-revealed-bitmaps) | Revealed bitmaps after tick closes |
 | `POST` | [`/vision/backtest`](/vision/api/ticks#backtest-a-strategy) | Backtest a bitmap strategy |
 | `GET` | [`/vision/leaderboard`](/vision/api/leaderboard#get-leaderboard) | Player rankings by PnL |
+| `GET` | [`/vision/snapshot`](/vision/api/snapshot#get-market-snapshot) | Market price snapshot for all or one source |
+| `GET` | [`/vision/snapshot/meta`](/vision/api/snapshot#get-source-metadata) | Source health, asset counts, sync status |
 
 ## Common Patterns
 
 ### Wei-Encoded Values
 
-All token amounts (balances, TVL, stake) are returned as **string-encoded wei values** to avoid floating-point precision loss. For USDC (6 decimals), divide by `1e6` to get the human-readable amount. For WIND (18 decimals), divide by `1e18`.
+All token amounts (balances, TVL, stake) are returned as **string-encoded wei values** to avoid floating-point precision loss. For L3 USDC (18 decimals), divide by `1e18` to get the human-readable amount.
 
 ```python
 balance_wei = "5000000000000000000"
-balance_usdc = int(balance_wei) / 1e6  # 5000000000000.0 -- this is WIND (18 dec)
+balance_usdc = int(balance_wei) / 1e18  # 5.0 USDC (L3 uses 18 decimals)
 ```
+
+<Warning>
+  L3 USDC uses **18 decimals**, not 6. This applies to all Vision balances, TVL, PnL, and batch pool values.
+</Warning>
 
 ### Error Responses
 
@@ -65,6 +123,7 @@ Common HTTP status codes:
 | `403` | Forbidden (e.g., reveal window not yet expired) |
 | `404` | Resource not found (batch or player does not exist) |
 | `500` | Internal server error (database failure) |
+| `502` | Upstream service (oracle or data-node) unavailable |
 
 ### Addresses
 
@@ -72,7 +131,7 @@ Ethereum addresses in responses are formatted as checksummed hex strings with th
 
 ## Rate Limits
 
-There are currently no rate limits on the Vision API. This may change as usage scales.
+There are currently no rate limits. Generosity, or negligence -- the distinction matters less than you think.
 
 ## Quick Start
 

@@ -59,8 +59,11 @@
       "pages": [
         "index/guides/buy-sell",
         "index/guides/create-itp",
+        "index/guides/rebalancing",
         "index/guides/backtesting",
         "index/guides/lending",
+        "index/guides/settlement",
+        "index/guides/explorer",
         "index/guides/risks"
       ]
     },
@@ -72,15 +75,19 @@
         "index/api/itps",
         "index/api/portfolio",
         "index/api/simulation",
-        "index/api/morpho"
+        "index/api/morpho",
+        "index/api/infrastructure"
       ]
     },
     {
       "group": "Architecture",
       "pages": [
+        "index/architecture/overview",
         "index/architecture/contracts",
-        "index/architecture/issuer-nodes",
-        "index/architecture/data-node"
+        "index/architecture/oracle-nodes",
+        "index/architecture/data-node",
+        "index/architecture/bridge",
+        "index/architecture/curator"
       ]
     },
     {
@@ -103,7 +110,9 @@
         "vision/concepts/ticks",
         "vision/concepts/resolution-types",
         "vision/concepts/balance-proofs",
-        "vision/concepts/fees"
+        "vision/concepts/fees",
+        "vision/concepts/sources",
+        "vision/concepts/points"
       ]
     },
     {
@@ -111,9 +120,17 @@
       "pages": [
         "vision/bots/overview",
         "vision/bots/quickstart",
+        "vision/bots/development",
         "vision/bots/bitmap-encoding",
         "vision/bots/strategies",
         "vision/bots/lifecycle"
+      ]
+    },
+    {
+      "group": "Guides",
+      "pages": [
+        "vision/guides/sources-browser",
+        "vision/guides/adding-sources"
       ]
     },
     {
@@ -125,16 +142,26 @@
         "vision/api/bitmap",
         "vision/api/balance",
         "vision/api/ticks",
-        "vision/api/leaderboard"
+        "vision/api/leaderboard",
+        "vision/api/snapshot"
       ]
     },
     {
       "group": "Reference",
       "pages": [
         "vision/reference/resolution-types",
+        "vision/reference/contracts",
         "vision/reference/contract-addresses",
         "vision/reference/error-codes",
         "vision/reference/glossary"
+      ]
+    },
+    {
+      "group": "Architecture",
+      "pages": [
+        "vision/architecture/overview",
+        "vision/architecture/batch-lifecycle",
+        "vision/architecture/continuous-betting"
       ]
     },
     {

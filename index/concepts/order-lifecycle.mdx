@@ -5,93 +5,115 @@ description: "How orders are processed -- from submission to settlement"
 
 # Order Lifecycle
 
-Every buy or sell on General Market goes through a multi-step lifecycle: from order submission, through decentralized consensus, to real exchange execution and on-chain settlement. This page traces the full journey.
+You click a button. Behind that click, three machines decide whether to trust each other. They agree in under a second. A real exchange executes a real trade. Tokens appear in your wallet. The entire journey takes less time than reading this paragraph. Here is what happens in that silence.
 
-## Buy Flow: The 10 Steps
+## Buy Flow
 
-The following is the complete path of a buy order from the moment the buyer clicks "Buy" to the moment ITP tokens land in the buyer's wallet.
+Six steps between your USDC and your tokens. Each one can fail. None of them do, almost always.
 
 <Steps>
-  <Step title="USDC Approval">
-    The wallet approves the Index contract to spend USDC on the buyer's behalf. The USDC approval is a one-time action (or per-transaction, depending on the wallet's approval settings).
+  <Step title="User Submits Buy on L3">
+    `submitOrder(itpId, amount, BUY)`. Your USDC is **escrowed** on L3. It is no longer yours. It is not yet theirs. It belongs to the protocol until the machines have finished agreeing.
   </Step>
-  <Step title="Submit Order">
-    The buyer calls `submitOrder(itpId, amount, BUY)`. The buyer's USDC is transferred to the contract and **escrowed** -- the USDC is locked until the order fills or times out.
+  <Step title="Oracle Bridges Buy to Settlement">
+    The oracle nodes detect the pending buy order, reach BLS consensus, and relay it to the Settlement chain. Your USDC intent crosses the chain boundary — cryptographically signed, not optimistically assumed.
   </Step>
-  <Step title="Order is PENDING">
-    The order is recorded on-chain with status `PENDING`. The order is now visible to the issuer nodes.
+  <Step title="completeBuyOrder Releases USDC to AP">
+    `completeBuyOrder()` is called on Settlement with a valid BLS signature. The contract verifies the signature and releases the escrowed USDC to the AP vault. The money is now in the hands of the entity that will spend it. This step **must succeed** before any shares are minted. The backing invariant is enforced here, nowhere else.
   </Step>
-  <Step title="COLLECT Phase">
-    The issuer nodes detect the new pending order during the **COLLECT** phase of the current cycle (200ms). All pending orders are gathered into a candidate batch.
+  <Step title="AP Buys Underlying Assets">
+    The Authorized Participant receives the USDC and buys the underlying assets on **Bitget**. Real order books. Real counterparties. The abstraction ends here.
   </Step>
-  <Step title="PROPOSE Phase">
-    The cycle's **leader** (determined by round-robin election) proposes a batch containing all collected orders. The batch includes order IDs and the computed batch hash.
+  <Step title="confirmFills Mints Shares on L3">
+    `confirmFills()` is called on L3. The contract checks each fill against the **0.1% price tolerance**. If it passes, ITP shares are **minted** to your wallet. The exposure begins.
   </Step>
-  <Step title="BLS Signing">
-    Peer issuer nodes **validate** the proposed batch -- checking order data, prices, and consistency. Each validating issuer node signs the batch hash with the node's BLS private key.
-  </Step>
-  <Step title="Signature Aggregation">
-    The leader collects BLS signatures from peer issuer nodes. Once the threshold is met (`ceil(2n/3)` of registered issuers), the leader aggregates the BLS signatures into a single compact proof.
-  </Step>
-  <Step title="Batch Confirmation">
-    The leader calls `confirmBatch()` on-chain with the aggregated BLS signature. The contract verifies the signature against the registered aggregated public key. Orders move to `BATCHED` status.
-  </Step>
-  <Step title="Exchange Execution">
-    The Authorized Participant (AP) detects `TradeRequest` events from the batch confirmation. The AP executes the corresponding trades on **Bitget** exchange, buying the underlying assets.
-  </Step>
-  <Step title="Fill Confirmation">
-    The Authorized Participant (AP) calls `confirmFills()` on-chain with execution details. The contract validates fills against the **0.1% price tolerance**, then **mints ITP tokens** to the buyer's wallet. The order status becomes `FILLED`.
+  <Step title="BridgedITP Minted on Settlement">
+    `mintBridgedShares()` is called on Settlement with BLS verification. A BridgedITP token — an ERC-20 replica of your L3 shares — is minted to your wallet on Settlement. You now hold the same position on both chains.
   </Step>
 </Steps>
+
+### Buy Flow — Full Infrastructure Diagram
+
+<img src="/images/index/buy-flow.svg" alt="Buy flow infrastructure diagram — USDC escrowed on L3, oracle BLS consensus bridges to Settlement, completeBuyOrder releases USDC to AP, AP buys on Bitget, confirmFills mints shares on L3, mintBridgedShares creates BridgedITP on Settlement" />
+
+<Info>
+The buy flow touches two chains and requires four BLS consensus rounds. The critical invariant: `completeBuyOrder` on Settlement must succeed before shares are minted anywhere. If it fails, `refundBuyOrder` returns your USDC. No shares minted, no damage done. See the [Bridge Architecture](/index/architecture/bridge) for the full cross-chain diagram.
+</Info>
 
 ## Sell Flow
 
-The sell flow mirrors the buy flow in reverse:
+Selling is the buy flow in reverse — except the money must cross a chain boundary before it reaches you. The same consensus, the same execution, the same refusal to cut corners. Only the direction changes, and with it, the emotion.
 
 <Steps>
-  <Step title="Submit Sell Order">
-    The seller calls `submitOrder(itpId, amount, SELL)`. The seller's ITP tokens are escrowed by the contract.
+  <Step title="Submit Sell Order on L3">
+    `submitOrder(itpId, amount, SELL)`. Your ITP shares are **escrowed** on L3. They are no longer yours. They are not yet gone. You have decided to leave, but the protocol has not yet agreed.
   </Step>
-  <Step title="Consensus and Batching">
-    The sell order goes through the same COLLECT, PROPOSE, and BLS signing phases as a buy order.
+  <Step title="Oracle Bridges Sell to Settlement">
+    The oracle nodes detect the pending sell order, reach BLS consensus, and relay it to the Settlement chain. The sell intent crosses the chain boundary — cryptographically signed, not optimistically assumed.
   </Step>
-  <Step title="Exchange Execution">
-    The AP sells the underlying assets on Bitget.
+  <Step title="AP Sells Underlying Assets">
+    The Authorized Participant receives the `TradeRequest` and sells the underlying assets on **Bitget**. Real order books, real counterparties. The abstraction ends here, as it does for buys.
   </Step>
-  <Step title="Settlement">
-    `confirmFills()` is called. The contract **burns** the seller's ITP tokens and **returns USDC** to the seller's wallet at the execution price.
+  <Step title="AP Returns USDC to Settlement Custody">
+    The AP deposits the USDC proceeds into the Settlement custody contract. The money exists. It is accounted for. It is not yet yours.
+  </Step>
+  <Step title="completeSellOrder Transfers USDC to User">
+    `completeSellOrder()` is called on Settlement with a valid BLS signature. The contract verifies the signature, transfers USDC from the AP vault to your wallet on Settlement. You are whole again. Or less than whole. The math will tell you.
+  </Step>
+  <Step title="confirmFills Burns Shares on L3">
+    `confirmFills()` is called on L3. The escrowed ITP shares are **burned**. The position ceases to exist on both chains simultaneously. What was yours is now no one's.
   </Step>
 </Steps>
 
+### Sell Flow — Full Infrastructure Diagram
+
+<img src="/images/index/sell-flow.svg" alt="Sell flow infrastructure diagram — ITP shares escrowed on L3, oracle BLS consensus batches order, AP sells on Bitget, USDC returned to Settlement custody, completeSellOrder pays user, confirmFills burns shares on L3" />
+
+<Info>
+The sell flow touches two chains and requires four BLS consensus rounds. The USDC arrives on Settlement, not on L3. If you deposited from Settlement, this is where you expect it. If you traded natively on L3, the bridge handles the conversion. See the [Bridge Architecture](/index/architecture/bridge) for the full cross-chain diagram.
+</Info>
+
 ## Cycle Timing
 
-The issuer nodes operate in continuous **1-second cycles**, each divided into 5 phases:
+One second. Five phases. The oracle nodes run this cycle continuously, without pause, without weekends. The machines do not tire. That is their advantage over you.
 
-```text
-|--- COLLECT ---|--- PROPOSE ---|--- SIGN_SUBMIT ---|--- CONFIRM ---|--- REBALANCE ---|
-     200ms           200ms            200ms              200ms            200ms
+```mermaid
+gantt
+    title 1-Second Consensus Cycle
+    dateFormat X
+    axisFormat %L ms
+    section Phases
+    COLLECT    :a, 0, 200
+    PROPOSE    :b, 200, 400
+    SIGN       :c, 400, 600
+    CONFIRM    :d, 600, 800
+    REBALANCE  :e, 800, 1000
 ```
 
 | Phase | Duration | What Happens |
 |-------|----------|--------------|
-| **COLLECT** | 200ms | Issuer nodes scan for new pending orders on-chain |
+| **COLLECT** | 200ms | Oracle nodes scan for new pending orders on-chain |
 | **PROPOSE** | 200ms | Leader proposes a batch of collected orders |
-| **SIGN_SUBMIT** | 200ms | Peer issuer nodes validate and BLS-sign the batch; leader aggregates and submits |
+| **SIGN_SUBMIT** | 200ms | Peer oracle nodes validate and BLS-sign the batch; leader aggregates and submits |
 | **CONFIRM** | 200ms | Batch confirmation transaction is processed on-chain |
 | **REBALANCE** | 200ms | Any pending rebalance operations are executed |
 
 <Info>
-The 1-second cycle means an order is typically batched within 1-2 seconds of submission. End-to-end settlement (including exchange execution) usually completes in under 10 seconds.
+An order is batched within 1-2 seconds. Full settlement, including exchange execution, completes in under 10 seconds. Fast enough that you cannot change your mind. Which is, perhaps, the point.
 </Info>
 
 ## Order States
 
-Each order transitions through these states:
+Four states. An order is born, batched, filled, or abandoned. There is no fifth state. There is no ambiguity.
 
-```text
-PENDING  -->  BATCHED  -->  FILLED
-   |
-   +-------->  TIMEOUT  (after 60s, up to 3 retries)
+```mermaid
+stateDiagram-v2
+    [*] --> PENDING: submitOrder()
+    PENDING --> BATCHED: BLS consensus
+    BATCHED --> FILLED: AP confirms fills
+    PENDING --> TIMEOUT: 60s elapsed
+    TIMEOUT --> PENDING: retry (up to 3x)
+    TIMEOUT --> [*]: refund after 3 retries
 ```
 
 | State | Description |
@@ -103,17 +125,19 @@ PENDING  -->  BATCHED  -->  FILLED
 
 ## Safeguards
 
+What stands between your money and catastrophe.
+
 ### BLS Consensus
 
-Every batch must be approved by a supermajority of the issuer nodes. The threshold is `ceil(2n/3)` -- for example, with 3 issuer nodes, at least 2 must sign. With 20 issuer nodes, at least 14 must sign.
+Every batch requires a supermajority: `ceil(2n/3)` of registered oracles. Three nodes, at least two must sign. Twenty nodes, at least fourteen. The math is simple. The discipline is not.
 
 <Warning>
-BLS verification is **never bypassed** -- not in production, not in testing, not in local development. This is a core security invariant of the protocol.
+BLS verification is **never bypassed**. Not in production. Not in testing. Not in local development. There is no test mode. There is no override. This is the one rule the protocol will not negotiate.
 </Warning>
 
 ### Price Tolerance
 
-The AP must execute trades within **0.1%** of the reference price. The `confirmFills()` function on-chain validates every fill against the tolerance. If the AP reports a price outside the band, the fill is rejected.
+The AP must execute within **0.1%** of the reference price. `confirmFills()` validates every fill on-chain. Report a price outside the band and the fill is rejected. The tolerance is narrow because trust should be narrow.
 
 ```text
 |reference_price - fill_price| / reference_price <= 0.001
@@ -121,20 +145,20 @@ The AP must execute trades within **0.1%** of the reference price. The `confirmF
 
 ### Order Timeout
 
-Orders that are not filled within **60 seconds** enter a timeout flow:
+Sixty seconds. If the world has not responded by then, the order enters timeout.
 
-1. First timeout: order is automatically retried (re-enters PENDING).
-2. Second timeout: retried again.
-3. Third timeout: order is cancelled. Escrowed USDC or ITP tokens are returned to the user.
+1. First timeout: automatic retry. The protocol is patient.
+2. Second timeout: another retry. The protocol is stubborn.
+3. Third timeout: the order is cancelled. Your USDC or ITP tokens are returned. The protocol is not foolish.
 
 <Note>
-Timeouts are rare under normal conditions. They primarily protect against exchange downtime or network congestion.
+Timeouts are rare. They exist for the moments when exchanges go dark or networks congest. The safety net you never think about until the floor disappears.
 </Note>
 
-### Issuer-AP Separation
+### Oracle-AP Separation
 
-Issuer nodes and the Authorized Participant (AP) operate independently. Issuer nodes **cannot** communicate directly with the AP -- issuer nodes only read on-chain fill data. The issuer-AP separation prevents collusion between the consensus layer and the execution layer.
+Oracle nodes and the Authorized Participant cannot speak to each other. The oracles read on-chain fill data and nothing more. This separation exists because the consensus layer and the execution layer must not collude. Systems fail when the watchers and the doers become friends.
 
 ## Netting
 
-When the issuer nodes collect orders in a cycle, the netting engine applies **netting** before sending trade requests to the AP. If there are $10,000 in buys and $7,000 in sells for the same ITP, only the net $3,000 buy needs to be executed on the exchange. Netting reduces trading costs and exchange exposure.
+Buyers and sellers in the same cycle cancel each other out. $10,000 in buys, $7,000 in sells — only the net $3,000 goes to the exchange. The protocol matches what it can internally. Less trading, less cost, less exposure to the exchange. Elegance is the elimination of the unnecessary.

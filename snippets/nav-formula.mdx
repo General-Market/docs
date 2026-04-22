@@ -1,0 +1,9 @@
+<Note>
+**NAV Formula**
+
+```
+NAV = sum(qty[i] * price[i]) / 1e18
+```
+
+Where `qty[i]` is the fixed per-share quantity of asset `i` and `price[i]` is its current market price. NAV is computed identically on-chain, in oracle nodes, and in the frontend. See [ITPs](/index/concepts/itps) for the full pricing model.
+</Note>

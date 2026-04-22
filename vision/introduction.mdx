@@ -1,67 +1,278 @@
 ---
 title: "Introduction"
-description: "Sealed parimutuel prediction market on Arbitrum"
+description: "Vision — sealed parimutuel prediction markets across 90+ real-world data sources"
 ---
 
 # Vision
 
-Vision is a **sealed parimutuel prediction market** where players bet on whether asset prices move UP or DOWN over fixed time intervals. Winners split the losers' stakes, minus a 0.3% fee. All commitments are sealed on-chain to prevent front-running, and every claim is verified with BLS aggregate signatures.
+You are about to bet on whether German trains will be late. They will be. The question is whether enough other people agree with you. This is Vision.
+
+```
+  ┌──────────────────────────────────────────────────────────────────────────────┐
+  │                                                                              │
+  │                         V   I   S   I   O   N                                │
+  │                                                                              │
+  │                    Predict Anything. Win USDC.                                │
+  │                                                                              │
+  │   ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐     │
+  │   │  Crypto  │  │ Weather  │  │  Trains  │  │  Quakes  │  │  GitHub  │     │
+  │   │  9,963   │  │ 161,125  │  │  1,200   │  │   300    │  │  1,500   │     │
+  │   │ markets  │  │ markets  │  │ markets  │  │ markets  │  │ markets  │     │
+  │   └──────────┘  └──────────┘  └──────────┘  └──────────┘  └──────────┘     │
+  │   ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐     │
+  │   │   npm    │  │  Twitch  │  │  Movies  │  │  Steam   │  │  Flights │     │
+  │   │  9,183   │  │  57,523  │  │  37,502  │  │  5,000   │  │  2,400   │     │
+  │   │ markets  │  │ markets  │  │ markets  │  │ markets  │  │ markets  │     │
+  │   └──────────┘  └──────────┘  └──────────┘  └──────────┘  └──────────┘     │
+  │   ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐     │
+  │   │  Stocks  │  │  Reddit  │  │  DeFi    │  │  Buoys   │  │ Nuclear  │     │
+  │   │  3,200   │  │  4,800   │  │  2,100   │  │   850    │  │    63    │     │
+  │   │ markets  │  │ markets  │  │ markets  │  │ markets  │  │ markets  │     │
+  │   └──────────┘  └──────────┘  └──────────┘  └──────────┘  └──────────┘     │
+  │                                                                              │
+  │        90+ Sources   *   400,000+ Markets   *   Sealed Bets                  │
+  │                                                                              │
+  └──────────────────────────────────────────────────────────────────────────────┘
+```
+
+Vision is a **sealed parimutuel prediction market**. Players bet on whether values move UP or DOWN over fixed time intervals. The subject matter is almost comically vast -- **90+ real-world data sources** spanning earthquakes, ice cream machines, train delays, npm downloads, Twitch viewership, nuclear reactor output, and hundreds more. The universe reduced to a binary wager, repeated every ten minutes, across four hundred thousand markets.
+
+Winners split the losers' stakes, minus a 0.05% fee. All commitments are sealed on-chain to prevent front-running. Every claim is verified with BLS aggregate signatures. The mechanism is elegant. Whether the participants deserve elegance is another question entirely.
 
 ## How It Works
 
-1. **Pick a batch** -- Browse active batches, each tracking a set of markets (crypto pairs, stocks, etc.) with a fixed tick duration.
-2. **Place your bets** -- For each market in the batch, predict UP or DOWN. Your predictions are encoded into a compact bitmap and sealed as a hash on-chain.
-3. **Tick resolves** -- At the end of each tick interval, issuers fetch real prices and determine outcomes. Winners on each market split the losers' stakes proportionally.
-4. **Claim rewards** -- Withdraw your winnings at any time with a BLS-verified balance proof.
+Four steps separate you from the consequences of your convictions.
+
+```
+    ┌─────────────────────────────────────────────────────────────────────────┐
+    │                         THE FOUR STEPS                                  │
+    └─────────────────────────────────────────────────────────────────────────┘
+
+    STEP 1                 STEP 2                 STEP 3                 STEP 4
+    Browse                 Seal                   Resolve                Claim
+    ~~~~~~                 ~~~~                   ~~~~~~~                ~~~~~
+
+    ┌─────────────┐       ┌─────────────┐       ┌─────────────┐       ┌─────────────┐
+    │             │       │             │       │             │       │             │
+    │  Pick a     │       │  Predict    │       │  Tick ends  │       │  Withdraw   │
+    │  batch from │──────>│  UP or DOWN │──────>│  Oracles    │──────>│  winnings   │
+    │  90+ source │       │  per market │       │  fetch real │       │  with BLS   │
+    │  categories │       │  Sealed as  │       │  data and   │       │  verified   │
+    │             │       │  hash on-   │       │  resolve    │       │  balance    │
+    │  Crypto?    │       │  chain      │       │  outcomes   │       │  proof      │
+    │  Weather?   │       │             │       │             │       │             │
+    │  Trains?    │       │  keccak256  │       │  Winners    │       │  Claim any  │
+    │  Quakes?    │       │  (bitmap)   │       │  split the  │       │  time. No   │
+    │             │       │             │       │  losers'    │       │  lockup.    │
+    │             │       │  No one can │       │  stakes     │       │             │
+    │             │       │  see your   │       │             │       │             │
+    │             │       │  bets       │       │  2/3+       │       │             │
+    │             │       │             │       │  consensus  │       │             │
+    └─────────────┘       └─────────────┘       └─────────────┘       └─────────────┘
+         |                      |                      |                      |
+         v                      v                      v                      v
+    Browse active          Encode into a          Real prices from       BLS aggregate
+    batches across         compact bitmap         external APIs          signature from
+    all categories         and commit hash        determine UP/DOWN      oracle network
+```
 
 <Info>
-Your predictions are **sealed** -- you submit a hash of your bitmap on-chain, then reveal the actual bytes to issuers off-chain. Nobody can see or copy your bets before the tick closes.
+Your predictions are **sealed** -- you submit a hash of your bitmap on-chain, then reveal the actual bytes to oracles off-chain. Nobody can see or copy your bets before the tick closes. Your folly is your own until the moment of reckoning.
 </Info>
 
-## Key Features
+## What Makes Vision Different
+
+Most prediction markets let you bet on elections and football. Vision lets you bet on whether an ice cream machine in Chicago is broken. This is not a limitation of imagination but an excess of it.
+
+```
+    ┌─────────────────────────────────────────────────────────────────────────┐
+    │                                                                         │
+    │   TYPICAL PREDICTION MARKET              VISION                        │
+    │   ~~~~~~~~~~~~~~~~~~~~~~~~~~             ~~~~~~                        │
+    │                                                                         │
+    │   Categories:                            Categories:                   │
+    │     - Politics                             - Finance (14 sources)      │
+    │     - Sports                               - Economic (11 sources)    │
+    │     - Crypto (maybe)                       - Regulatory (4 sources)   │
+    │                                            - Tech (8 sources)         │
+    │                                            - Entertainment (14)       │
+    │   Markets: ~500                            - Geophysical (15)         │
+    │                                            - Transport (16 sources)   │
+    │   Bets visible to all                      - Nature (4 sources)       │
+    │                                            - Academic (3 sources)     │
+    │   Manual only                              - Space (3 sources)        │
+    │                                                                         │
+    │   High fees                              Markets: 400,000+            │
+    │                                                                         │
+    │                                          Sealed commitments            │
+    │                                                                         │
+    │                                          Bot framework included        │
+    │                                                                         │
+    │                                          0.05% fee on profits only     │
+    │                                                                         │
+    └─────────────────────────────────────────────────────────────────────────┘
+```
 
 <CardGroup cols={2}>
+  <Card title="90+ Data Sources" icon="database">
+    Crypto, weather, earthquakes, train delays, Twitch streams, npm downloads, nuclear reactors, ice cream machines, military aircraft. The catalogue of measurable phenomena is vast. The catalogue of predictable ones is smaller. See the [full source directory](/vision/concepts/sources).
+  </Card>
   <Card title="Sealed Commitments" icon="lock">
-    Players submit `keccak256(bitmap)` on-chain before revealing actual predictions to issuers. No front-running, no copying.
+    Players submit `keccak256(bitmap)` on-chain before revealing actual predictions to oracles. No front-running, no copying. Your mistakes are at least original.
   </Card>
   <Card title="Bot-Friendly" icon="robot">
-    Free registration with `registerBot()`. Poll for batches, encode bitmaps, and join programmatically -- no collateral required to register.
+    Free registration with `registerBot()`. Poll for batches, encode bitmaps, and join programmatically. Delegate your hubris to a machine -- it will lose money faster and without complaint.
   </Card>
   <Card title="Low Fees" icon="percent">
-    0.3% fee on profits only. If you lose, you pay nothing extra. If you win, the fee is deducted from your winnings before payout.
+    0.05% fee on profits only. If you lose, you pay nothing extra. The protocol taxes fortune, not misfortune.
   </Card>
   <Card title="BLS-Verified Claims" icon="shield-check">
-    Every claim and withdrawal requires a valid aggregated BLS signature from the issuer network. Cryptographic proof that your balance is correct.
+    Every claim and withdrawal requires a valid aggregated BLS signature from the oracle network. Trust is a threshold, not an emotion.
+  </Card>
+  <Card title="Points (Season 1)" icon="star">
+    Earn points for every tick you participate in. Season 1 is live. Points accrue for presence, not for being right. The protocol rewards those who show up.
   </Card>
   <Card title="Flexible Batches" icon="layer-group">
-    Anyone can create a batch with custom market selections, tick durations (5 minutes to 30 days), and resolution types. Trade what matters to you.
+    Anyone can create a batch with custom market selections, tick durations (5 minutes to 30 days), and resolution types. The freedom to construct your own instrument of ruin.
   </Card>
   <Card title="Backtesting" icon="clock-rotate-left">
-    Test your prediction strategies against historical price data before committing real USDC. Simulate bitmap outcomes over past ticks.
+    Test your prediction strategies against historical data before committing real USDC. The past is the only place where certainty exists, and even there it is debatable.
   </Card>
 </CardGroup>
 
+## What Can You Predict?
+
+The breadth is the point. Anything that produces a number can become a wager. Here are some real markets live on Vision right now -- each one a small confession that someone, somewhere, believes they know what happens next:
+
+```
+    ┌──────────────────────────────────────────────────────────────────────┐
+    │                                                                      │
+    │   "Will Bitcoin be higher in 5 minutes?"          crypto_BTC-USD     │
+    │                                                                      │
+    │   "Will it rain more in Tokyo tomorrow?"          weather_tokyo      │
+    │                                                                      │
+    │   "Will an earthquake hit California?"            earthquake_calif   │
+    │                                                                      │
+    │   "Will the Northern Line have disruptions?"      tfl_tube_northern  │
+    │                                                                      │
+    │   "Will Counter-Strike 2 gain players?"           steam_cs2          │
+    │                                                                      │
+    │   "Will npm react downloads increase?"            npm_react          │
+    │                                                                      │
+    │   "Will McDonald's ice cream break in Chicago?"   mcbroken_chicago   │
+    │                                                                      │
+    │   "Will this GitHub repo get more stars?"         github_rust-lang   │
+    │                                                                      │
+    │   "Will Deutsche Bahn trains be late in Berlin?"  db_trains_berlin   │
+    │                                                                      │
+    │   "Will Palo Verde nuclear output change?"        nrc_palo-verde-1   │
+    │                                                                      │
+    │   "Will wave height increase at buoy 41002?"      ndbc_41002         │
+    │                                                                      │
+    │   "Will LA air quality worsen?"                   airnow_los-angeles │
+    │                                                                      │
+    └──────────────────────────────────────────────────────────────────────┘
+```
+
+Every market follows the same mechanic: a data source produces a number, you predict whether it goes UP or DOWN, and the outcome is resolved from real-world data. The universe does not care about your prediction. It moves, or it does not. You are paid accordingly.
+
+## The Data Pipeline
+
+Ninety-eight APIs feed numbers into a Rust process that feeds them into a database that feeds them into smart contracts that redistribute money between strangers. The architecture is sound. The premise is absurd. Both things are true.
+
+```
+    External APIs (90+ sources)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        │         │         │         │         │
+        │ USGS    │ CoinGecko│ TFL    │ GitHub  │ ...
+        │         │         │         │         │
+        └────┬────┘    ┌────┘    ┌────┘    ┌────┘
+             │         │         │         │
+             ▼         ▼         ▼         ▼
+        ┌────────────────────────────────────────┐
+        │          DATA NODE  (Rust)             │
+        │                                        │
+        │   Collect ──> Validate ──> Store       │
+        │     HTTP       bounds      Postgres    │
+        │                staleness               │
+        └──────────────────┬─────────────────────┘
+                           │
+                           ▼
+        ┌────────────────────────────────────────┐
+        │            ORACLES (3x)                │
+        │                                        │
+        │   Read prices ──> Resolve ticks        │
+        │                ──> BLS sign            │
+        │                ──> 2/3+ consensus      │
+        └──────────────────┬─────────────────────┘
+                           │
+                           ▼
+        ┌────────────────────────────────────────┐
+        │          SMART CONTRACTS               │
+        │                                        │
+        │   VisionPool.sol  ──  sealed bitmaps   │
+        │   VisionClaim.sol ──  BLS claims       │
+        │   VisionReserve   ──  USDC custody     │
+        └──────────────────────────────────────── ┘
+```
+
 ## Who Is Vision For?
 
-| Audience | Use Case |
-|----------|----------|
-| **Bot developers** | Build automated prediction strategies. Free registration, full API access, programmatic bitmap encoding and batch joining. |
-| **Manual traders** | Browse batches in the web UI, pick UP/DOWN per market, and deposit USDC. No coding required. |
-| **Quant researchers** | Backtest bitmap strategies against historical tick data. Validate edge before deploying capital. |
+Everyone who has ever looked at a number and felt, with irrational certainty, that they knew which way it would go next.
+
+```
+    ┌────────────────────┬───────────────────────────────────────────────────┐
+    │  AUDIENCE          │  USE CASE                                         │
+    ├────────────────────┼───────────────────────────────────────────────────┤
+    │                    │                                                   │
+    │  Bot developers    │  Build automated prediction strategies.           │
+    │                    │  Free registration, full API access,              │
+    │                    │  programmatic bitmap encoding and batch joining.  │
+    │                    │  Python framework included.                       │
+    │                    │                                                   │
+    ├────────────────────┼───────────────────────────────────────────────────┤
+    │                    │                                                   │
+    │  Manual traders    │  Browse batches in the web UI, pick UP/DOWN       │
+    │                    │  per market, and deposit USDC.                    │
+    │                    │  No coding required.                              │
+    │                    │                                                   │
+    ├────────────────────┼───────────────────────────────────────────────────┤
+    │                    │                                                   │
+    │  Quant researchers │  Backtest bitmap strategies against historical    │
+    │                    │  tick data across 90+ sources.                    │
+    │                    │  Validate edge before deploying capital.          │
+    │                    │                                                   │
+    ├────────────────────┼───────────────────────────────────────────────────┤
+    │                    │                                                   │
+    │  Data enthusiasts  │  Explore 400,000+ real-world data feeds.          │
+    │                    │  Discover obscure markets (ocean buoys,           │
+    │                    │  bird observations, nuclear output).              │
+    │                    │  Find alpha where nobody else is looking.         │
+    │                    │                                                   │
+    └────────────────────┴───────────────────────────────────────────────────┘
+```
 
 ## Quick Links
 
+You have read this far, which means either curiosity or recklessness. Both are welcome here.
+
 <CardGroup cols={2}>
   <Card title="Getting Started" icon="rocket" href="/vision/getting-started">
-    Place your first bet in under 5 minutes.
+    Your first prediction. It will probably be wrong. All first predictions are.
+  </Card>
+  <Card title="Data Sources" icon="database" href="/vision/concepts/sources">
+    Ninety-eight ways to measure the world. The absurdity is the point.
   </Card>
   <Card title="Batches & Bitmaps" icon="book" href="/vision/concepts/batches">
-    Understand how batches, bitmaps, and ticks work together.
+    How markets are grouped, predictions encoded, and outcomes determined.
   </Card>
   <Card title="Build a Bot" icon="robot" href="/vision/bots/quickstart">
-    Register a bot and automate your prediction strategy.
+    Automate your strategy. The machine will not hesitate where you would.
+  </Card>
+  <Card title="Points & Rewards" icon="star" href="/vision/concepts/points">
+    Points accrue for participation, not for being right. Presence is its own reward.
   </Card>
   <Card title="API Reference" icon="code" href="/vision/api/overview">
-    Full endpoint documentation for programmatic access.
+    The full endpoint documentation, for those who prefer to commune with the protocol directly.
   </Card>
 </CardGroup>

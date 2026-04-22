@@ -5,7 +5,7 @@ description: "List active batches and supported markets"
 
 # Batches & Markets
 
-Retrieve active prediction batches and the issuer-curated list of supported markets.
+What is there to bet on, and who is already betting. Two endpoints, two answers.
 
 ---
 
@@ -13,9 +13,7 @@ Retrieve active prediction batches and the issuer-curated list of supported mark
 
 `GET /vision/batches`
 
-Returns all active (non-paused) batches with live player counts and TVL. Results are ordered by batch ID descending, limited to the 100 most recent batches.
-
-No parameters required.
+Returns all active batches with live player counts and TVL. Ordered by batch ID descending, capped at 100. The arena, enumerated.
 
 <Tabs>
 <Tab title="cURL">
@@ -86,7 +84,7 @@ for (const batch of batches) {
 | `tick_duration` | number | Seconds between tick resolutions |
 | `player_count` | number | Current number of active players (from live in-memory state) |
 | `tvl` | string | Total value locked across all players, in wei |
-| `paused` | boolean | Whether the batch is currently paused by issuer consensus |
+| `paused` | boolean | Whether the batch is currently paused by oracle consensus |
 
 ---
 
@@ -94,9 +92,7 @@ for (const batch of batches) {
 
 `GET /vision/markets`
 
-Returns the issuer-curated whitelist of supported markets. Batch creators must select markets from this list when creating new batches.
-
-No parameters required.
+Returns the oracle-curated whitelist of supported markets. The menu of measurable things.
 
 <Tabs>
 <Tab title="cURL">

@@ -5,24 +5,24 @@
 ## Required Environment
 
 ```
-RPC_URL=<Arbitrum RPC endpoint>
+RPC_URL=http://142.132.164.24/
 VISION_API_URL=https://generalmarket.io/api/vision
-VISION_ADDRESS=0x0BFC626B583e93A5F793Bc2cAa195BDBB2ED9F20
-BOT_PRIVATE_KEY=<wallet private key with funded USDC>
-USDC_ADDRESS=0xaf88d065e77c8cC2239327C5EDb3A432268e5831
-CHAIN_ID=421611337
+VISION_ADDRESS=0x4F1BDD073932828bf2822F6dCAD1121Da41ED1Ef
+BOT_PRIVATE_KEY=<wallet private key with funded WUSDC>
+USDC_ADDRESS=<WUSDC address from deployments/vision-deployment.json>
+CHAIN_ID=111222333
 ```
 
-## CRITICAL: USDC uses 6 decimals (not 18)
+## CRITICAL: WUSDC on L3 uses 18 decimals (not 6)
 
 ```
-0.1  USDC =       100_000   (1e5)
-1    USDC =     1_000_000   (1e6)
-10   USDC =    10_000_000   (1e7)
-100  USDC =   100_000_000   (1e8)
+0.1  USDC =       100_000_000_000_000_000   (1e17)
+1    USDC =     1_000_000_000_000_000_000   (1e18)
+10   USDC =    10_000_000_000_000_000_000   (1e19)
+100  USDC =   100_000_000_000_000_000_000   (1e20)
 ```
 
-Min stake per tick: 100000 (0.1 USDC).
+Min stake per tick: 100000000000000000 (0.1 USDC, 1e17).
 
 ## Dependencies
 
@@ -192,8 +192,8 @@ See [vision-bitmap.md](./vision-bitmap.md) for full encoding spec.
 ## Step 5: Approve USDC + Join Batch
 
 ```python
-DEPOSIT = 10_000_000   # 10 USDC (6 decimals)
-STAKE   = 1_000_000    # 1 USDC per tick per market
+DEPOSIT = 10_000_000_000_000_000_000   # 10 WUSDC (18 decimals on L3)
+STAKE   = 1_000_000_000_000_000_000    # 1 WUSDC per tick per market
 
 def sign_and_send(tx):
     signed = account.sign_transaction(tx)
@@ -231,7 +231,7 @@ def join_batch(batch_id, market_count):
     return bitmap_hex, "0x" + bitmap_hash.hex()
 ```
 
-## Step 6: Submit Bitmap to Issuers
+## Step 6: Submit Bitmap to Oracles
 
 Must happen AFTER on-chain join is confirmed. Wait a few seconds for chain indexer to detect the join event.
 
@@ -280,13 +280,13 @@ def update_bitmap(batch_id, new_predictions):
     })
     sign_and_send(tx)
 
-    # 2. Submit new bitmap to issuers
+    # 2. Submit new bitmap to oracles
     submit_bitmap(batch_id, bitmap_hex, "0x" + new_hash.hex())
 ```
 
 ## Step 8: Claim Rewards
 
-Requires BLS-signed balance proof from issuers. The claim flow:
+Requires BLS-signed balance proof from oracles. The claim flow:
 
 ```python
 def check_balance(batch_id):
@@ -301,7 +301,7 @@ def check_balance(batch_id):
 # In production, also returns bls_signature for on-chain claim.
 ```
 
-On-chain claim requires aggregated BLS signatures from 2/3+ issuers:
+On-chain claim requires aggregated BLS signatures from 2/3+ oracles:
 
 ```python
 # When BLS proofs are available:
@@ -337,7 +337,7 @@ while True:
     # Check balances for joined batches
     for batch_id in joined_batches:
         balance_info = check_balance(batch_id)
-        balance_usdc = int(balance_info["balance"]) / 1e6
+        balance_usdc = int(balance_info["balance"]) / 1e18
         print(f"Batch {batch_id}: {balance_usdc:.2f} USDC")
 
     time.sleep(POLL_INTERVAL)
@@ -349,7 +349,7 @@ while True:
 |-------|-------|-----|
 | `AlreadyJoined` | Already in batch | Use `deposit()` to add funds or `updateBitmap()` to change predictions |
 | `InsufficientDeposit` | depositAmount < stakePerTick | Increase deposit amount |
-| `StakeBelowMinimum` | stakePerTick < 100000 | Set stake >= 0.1 USDC (100000) |
+| `StakeBelowMinimum` | stakePerTick < 1e17 | Set stake >= 0.1 USDC (1e17) |
 | `BatchNotFound` | Invalid batch ID | Re-fetch batches from API |
 | `BatchPaused` | Batch suspended | Skip this batch, try another |
 | `BotAlreadyRegistered` | Already registered | Skip registration step |

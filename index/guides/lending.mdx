@@ -3,17 +3,61 @@ title: "Lending Guide"
 description: "Step-by-step guide to lending and borrowing on General Market"
 ---
 
-General Market integrates with Morpho to offer lending and borrowing against Index Tracking Product (ITP) shares. Lenders can deposit USDC to earn yield, or borrowers can use ITP shares as collateral to borrow USDC without selling the ITP position.
+You supply USDC. Others borrow against their convictions. When their convictions fail, you are made whole. This is called lending.
+
+General Market integrates with Morpho to offer lending and borrowing against ITP shares. Lenders deposit USDC and earn yield. Borrowers pledge ITP shares as collateral and borrow USDC without selling. The arrangement works until it does not. The section on liquidation explains what happens then.
+
+## Full Lending Pipeline
+
+```
+  SUPPLY SIDE                    MORPHO BLUE                  BORROW SIDE
+  ===========                    ==========                   ===========
+
+  +----------+                   +------------------+         +----------+
+  |  Lender  |  deposit USDC    |                  |         |  Borrower|
+  |          | ---------------> |  MetaMorpho      |         |          |
+  |  Earns   |                  |  Vault (ERC4626) |         |  Holds   |
+  |  yield   |  vault shares    |                  |         |  ITP     |
+  |          | <--------------- |  Distributes     |         |  shares  |
+  +----------+                  |  USDC across     |         +-----+----+
+                                |  Morpho markets  |               |
+                                +--------+---------+               |
+                                         |                         |
+                         reallocate()    |                         |
+                    +--------------------+----+                    |
+                    |                    |    |                    |
+              +-----v------+    +-------v--+ |  +-----------+     |
+              |Morpho Mkt  |    |Morpho Mkt| |  |Morpho Mkt |     |
+              |ITP-A / USDC|    |ITP-B/USDC| |  |ITP-C /USDC| <---+
+              |            |    |          | |  |           |  deposit ITP
+              | Lenders    |    |          | |  | Borrowers |  as collateral
+              | earn       |    |          | |  | borrow    |
+              | interest   |    |          | |  | USDC      | ---> Borrower
+              +------------+    +----------+ |  +-----------+      gets USDC
+                                             |
+                                  +----------v----------+
+                                  |  Curator Bot        |
+                                  |                     |
+                                  |  - Monitors util.   |
+                                  |  - Sets rates (SERM)|
+                                  |  - Rebalances vault |
+                                  |  - Updates NAV      |
+                                  +---------------------+
+```
+
+<Info>
+Each ITP has its own isolated Morpho market. Risk does not spill across ITPs. A collapse in one market is a private catastrophe. The others continue undisturbed.
+</Info>
 
 ---
 
 ## Depositing USDC to Earn Yield
 
-Supply USDC to the lending pool and earn interest from borrowers.
+Supply USDC. Earn interest from borrowers. The yield exists because someone else is taking risk with your money. That is the entire mechanism.
 
 <Steps>
   <Step title="Navigate to Lend">
-    Open the **Lend** section from the main menu. The Lend page displays the current supply APY and total deposited amount.
+    Open the **Lend** section. The page shows the current supply APY and total deposited amount. The APY fluctuates. It is a market price for patience.
   </Step>
 
   <Step title="Enter USDC Amount">
@@ -21,34 +65,54 @@ Supply USDC to the lending pool and earn interest from borrowers.
   </Step>
 
   <Step title="Approve and Deposit">
-    The wallet will prompt for:
+    The wallet prompts for:
     1. **Approve** the USDC spend allowance for the Morpho vault (first time only)
     2. **Confirm** the deposit transaction
 
-    Once confirmed, the USDC is deposited into the Morpho vault and immediately begins earning yield.
+    Once confirmed, the USDC enters the MetaMorpho vault and immediately begins earning yield. The transition from idle capital to productive capital takes one block.
   </Step>
 
   <Step title="Track Earnings">
-    The deposited balance and accrued interest are displayed in real time on the Lend page. Yield accrues continuously -- the Morpho vault has no lock-up period.
+    The deposited balance and accrued interest are displayed in real time. Yield accrues continuously. No lock-up period. You can leave whenever you want. Most people do not.
   </Step>
 </Steps>
 
+```
+  YOUR DEPOSIT JOURNEY
+  ====================
+
+  Wallet                 MetaMorpho Vault              Morpho Markets
+  +------+               +---------------+              +------------+
+  |      |  1. approve   |               |              |            |
+  | USDC | ------------> |  Checks       |              |  ITP-A mkt |
+  |      |               |  allowance    |              |  ITP-B mkt |
+  |      |  2. deposit   |               |  3. vault    |  ITP-C mkt |
+  |      | ------------> |  Mints vault  | -----------> |            |
+  |      |               |  shares to    |  allocates   |  Your USDC |
+  |      |  vault shares |  your wallet  |  across mkts |  earns     |
+  |      | <------------ |               |              |  interest  |
+  +------+               +---------------+              +------------+
+
+  Your vault shares represent your proportional claim on the
+  vault's total USDC (deposited + interest earned).
+```
+
 <Info>
-Yield comes from borrowers who pay interest on their USDC loans. The APY fluctuates based on supply and demand in the lending pool.
+Yield comes from borrowers who pay interest on their loans. The APY fluctuates with supply and demand. When everyone wants to lend, the rate drops. When everyone wants to borrow, it rises. The curator bot adjusts rates via the SERM algorithm -- see [Interest Rate Model](/index/api/morpho#interest-rate-model-curatorrateirm).
 </Info>
 
 ---
 
 ## Borrowing Against ITP Shares
 
-Borrowers can use ITP shares as collateral to borrow USDC. Borrowing provides liquidity without selling the index position.
+Borrowing is leverage disguised as liquidity. You keep your ITP position and get USDC. The debt grows. The position does what it wants.
 
 ### Check Market Availability
 
-Not all ITPs have an active Morpho lending market. On the ITP's detail page or the Lend section, check whether a Morpho borrowing market exists for the ITP.
+Not all ITPs have a Morpho lending market. Check the ITP's detail page or the Lend section.
 
 <Warning>
-If no Morpho lending market exists for a particular ITP, the ITP's shares cannot be used as collateral. Morpho lending markets are created based on demand and liquidity criteria.
+If no Morpho lending market exists for an ITP, its shares cannot be used as collateral. No market, no leverage. The protocol does not create markets out of hope.
 </Warning>
 
 ### Deposit Collateral
@@ -71,22 +135,137 @@ If no Morpho lending market exists for a particular ITP, the ITP's shares cannot
 
 <Steps>
   <Step title="Choose Borrow Amount">
-    Enter the amount of USDC to borrow. The interface displays:
+    Enter the USDC amount to borrow. The interface displays three numbers. Read all three.
     - **Collateral value** -- current USD value of the deposited ITP shares
-    - **Health factor** -- ratio of collateral value to debt (see risk management below)
-    - **Maximum borrow** -- the maximum USDC available at the current collateral value
+    - **Health factor** -- ratio of collateral value to debt. Below 1.0, you are liquidated.
+    - **Maximum borrow** -- the maximum USDC available at current collateral value. Borrowing the maximum is the fastest path to liquidation.
   </Step>
 
   <Step title="Confirm Borrow">
-    Confirm the borrow transaction. USDC is transferred directly to the borrower's wallet.
+    Confirm the transaction. USDC arrives in your wallet. The debt begins accruing interest immediately. The clock starts.
   </Step>
 </Steps>
+
+```
+  BORROW FLOW
+  ============
+
+  +----------+                  +------------------+         +----------+
+  |          |  1. approve ITP  |                  |         |          |
+  | Borrower | --------------> |  Morpho Blue     |         | ITP NAV  |
+  |  Wallet  |                 |  Market          |         | Oracle   |
+  |          |  2. supply      |                  |         |          |
+  |          |  collateral     |  Locks ITP       |  price  |  BLS-    |
+  |          | --------------> |  in position     | <------ |  verified|
+  |          |                 |                  |         |  NAV     |
+  |          |  3. borrow      |  Checks:         |         +----------+
+  |          | --------------> |  - HF > 1.0      |
+  |          |                 |  - USDC avail.   |
+  |          |  4. USDC        |                  |
+  |          | <-------------- |  Transfers USDC  |
+  +----------+                 +------------------+
+```
+
+---
+
+## The Curator's Role
+
+The curator bot runs 24/7. It does not sleep. It does not hesitate. It performs three functions that, if performed by a human, would require constant vigilance and no capacity for self-deception:
+
+```
+  +-------------------------------------------------------------+
+  |                     CURATOR BOT                              |
+  +-------------------------------------------------------------+
+  |                                                             |
+  |  1. NAV ORACLE UPDATES                                      |
+  |     Oracles compute NAV --> BLS aggregate --> push on-chain  |
+  |     ITPNAVOracle.updatePrice(price, sig, cycle)              |
+  |                                                             |
+  |  2. INTEREST RATE SETTING (SERM)                            |
+  |     Read utilization across all markets                      |
+  |     Run SERM algorithm (kink + stress + concentration)       |
+  |     Push rates to CuratorRateIRM.setRates()                  |
+  |                                                             |
+  |  3. VAULT REBALANCING                                       |
+  |     Monitor utilization per market                           |
+  |     Supply USDC to high-utilization markets                  |
+  |     Withdraw from low-utilization markets                    |
+  |     Execute vault.reallocate(MarketAllocation[])             |
+  |                                                             |
+  +-------------------------------------------------------------+
+
+  Rate Update Cycle (~5 minutes):
+  ===============================
+
+  t=0      Read all market states (totalSupply, totalBorrow)
+  t=1s     Fetch 24h price data for stress calculation
+  t=2s     Run SERM for each market
+  t=3s     Submit setRates() tx to CuratorRateIRM
+  t=5min   Repeat
+```
+
+### NAV Oracle and Collateral Pricing
+
+ITP collateral is priced by the `ITPNAVOracle`. Three oracles compute NAV from live market prices. Two must agree. The price is then pushed on-chain with a BLS signature. Trust is replaced by cryptography. This is the entire premise.
+
+```
+  ITP NAV = SUM(qty[i] * price[i]) / 1e18
+
+  Example: "Top 100 Crypto" ITP
+  ==============================
+
+  +--------+----------+----------+-----------+
+  | Asset  | Qty/Share| Price    | Value     |
+  +--------+----------+----------+-----------+
+  | BTC    | 0.000150 | $67,000  | $10.05    |
+  | ETH    | 0.002800 | $3,400   |  $9.52    |
+  | SOL    | 0.053000 |   $180   |  $9.54    |
+  | BNB    | 0.016000 |   $590   |  $9.44    |
+  | ... (96 more)                | ...       |
+  +--------+----------+----------+-----------+
+  | NAV per share                | $1.0450   |
+  +------------------------------+-----------+
+
+  Oracle price (Morpho 36-dec format):
+  = 1.045 * 10^36
+  = 1,045,000,000,000,000,000,000,000,000,000,000,000
+```
+
+The oracle enforces safety checks. Each one exists because someone, somewhere, found a way to exploit its absence:
+- **BLS signature verification** (2/3 multi-pairing threshold)
+- **10% max price deviation** per update (rejects sudden jumps)
+- **Monotonic cycle numbers** (prevents replay attacks)
+- **Chain ID + oracle address** in the signed message (prevents cross-chain replay)
+
+<Note>
+The NAV oracle updates every oracle cycle. Between updates, Morpho uses the last BLS-verified price. There is a brief lag between market reality and on-chain truth. In calm markets, this lag is irrelevant. In volatile markets, it is the difference between safety and liquidation.
+</Note>
 
 ---
 
 ## Health Factor and Risk Management
 
-The **health factor** measures how safe the Morpho loan is:
+The **health factor** is a single number that measures the distance between your position and its destruction:
+
+```
+  HEALTH FACTOR = (collateral * oraclePrice / 1e36 * LLTV / 1e18) / debt
+
+  Example:
+    collateral  = 10,000 ITP shares
+    oraclePrice = $1.045 (in 36-dec format)
+    LLTV        = 77%
+    debt        = $5,000 USDC
+
+    collateralValue = 10,000 * 1.045 = $10,450
+    maxBorrow       = 10,450 * 0.77  = $8,046.50
+    healthFactor    = 8,046.50 / 5,000 = 1.61
+
+    +====================================================+
+    |                                                    |
+    | HF = 1.61    STATUS: MODERATE - Monitor regularly  |
+    |                                                    |
+    +====================================================+
+```
 
 | Health Factor | Status | Action |
 |---------------|--------|--------|
@@ -95,20 +274,137 @@ The **health factor** measures how safe the Morpho loan is:
 | 1.0 -- 1.5 | At Risk | Consider repaying or adding collateral |
 | < 1.0 | Liquidatable | The collateral may be liquidated |
 
+### What Moves the Health Factor
+
+```
+  HEALTH FACTOR DECREASES WHEN:        HEALTH FACTOR INCREASES WHEN:
+  ==============================        ==============================
+
+  +---------------------------+         +---------------------------+
+  | ITP NAV drops             |         | ITP NAV rises             |
+  | (underlying assets fall)  |         | (underlying assets rise)  |
+  +---------------------------+         +---------------------------+
+  | Interest accrues          |         | Borrower repays debt      |
+  | (debt grows over time)    |         | (debt decreases)          |
+  +---------------------------+         +---------------------------+
+  | Borrower withdraws       |         | Borrower adds more        |
+  | collateral                |         | collateral                |
+  +---------------------------+         +---------------------------+
+```
+
 <Warning>
-If the NAV of the collateral ITP drops enough to push the health factor below 1.0, the borrow position can be liquidated. A liquidator repays part of the borrower's debt and claims a portion of the ITP collateral at a discount.
+If the NAV drops enough to push the health factor below 1.0, the position is liquidated. A liquidator repays part of the debt and claims a portion of the ITP collateral at a discount. The protocol does not warn you. It does not wait. The math executes.
 </Warning>
 
 ### Tips to Stay Safe
 
-- **Do not borrow the maximum amount.** Leave a buffer so that normal price fluctuations do not push the position into liquidation risk.
-- **Monitor the health factor** regularly, especially during volatile markets.
-- **Diversified ITPs** (many assets, broad category) tend to have more stable NAVs and are safer as collateral.
-- **Add more collateral** if the health factor is declining -- deposit additional ITP shares to increase the safety buffer.
+Safety is not a state. It is a practice.
+
+- **Do not borrow the maximum amount.** The maximum is the edge of the cliff. Stand back from it.
+- **Monitor the health factor** during volatile markets. The number that was safe yesterday is not safe today.
+- **Diversified ITPs** have more stable NAVs. Stability is not glamorous. It is useful.
+- **Add more collateral** if the health factor is declining. The cost of adding collateral is less than the cost of liquidation.
+
+---
+
+## Liquidation
+
+When the health factor reaches 1.0, the position becomes eligible for **partial liquidation**. The word "partial" is not comforting. It means you lose some of your collateral instead of all of it.
+
+```
+  LIQUIDATION TIMELINE
+  ====================
+
+  Time ------>
+
+  HF 2.0  |
+          |  .
+          |    .
+  HF 1.5  |      .
+          |        .              <-- Consider adding collateral here
+          |          .
+  HF 1.0  |============X         <-- LIQUIDATION ELIGIBLE
+          |            |\
+          |            | \
+  HF 0.5  |            |  .      <-- Partial liquidation fires
+          |            |    .         HF recovers above 1.0
+          |            |      *
+  HF 1.1  |            |      * <-- Position stabilized
+          +------------+--------+----->
+           NAV dropping  Liq.    After
+```
+
+### How Liquidation Works
+
+The mechanics are impersonal. The consequences are not.
+
+1. Health factor falls below 1.0 (ITP NAV dropped, or interest accrued).
+2. **Any address** can call `liquidate()` on Morpho Blue. The liquidator is a stranger. They are motivated by profit.
+3. The liquidator repays a portion of the borrower's USDC debt.
+4. In return, the liquidator receives an equivalent value of ITP collateral **plus a liquidation bonus** (discount).
+5. The borrower keeps whatever remains. It is less than they started with.
+
+```
+  LIQUIDATION MATH
+  ================
+
+    Borrower's position:
+    +-------------------------------------------+
+    | Collateral: 10,000 ITP @ $1.00 = $10,000  |
+    | Debt:       $8,000 USDC                    |
+    | LLTV:       77%                            |
+    | HF:         (10,000 * 0.77) / 8,000 = 0.96|
+    +-------------------------------------------+
+
+    Liquidator repays $2,000:
+    +-------------------------------------------+
+    | Receives: $2,000 * (1 + 5%) / $1.00       |
+    |         = 2,100 ITP shares                 |
+    | (5% liquidation bonus = profit incentive)  |
+    +-------------------------------------------+
+
+    After liquidation:
+    +-------------------------------------------+
+    | Collateral: 7,900 ITP @ $1.00 = $7,900    |
+    | Debt:       $6,000 USDC                    |
+    | HF:         (7,900 * 0.77) / 6,000 = 1.01 |
+    +-------------------------------------------+
+
+    Result: HF restored above 1.0. Borrower lost 2,100
+    ITP but still has 7,900 ITP and $8,000 of original
+    borrowed USDC (of which $6,000 remains as debt).
+```
+
+<Note>
+Liquidation is **partial**. Only enough collateral is seized to bring the health factor back above 1.0. The position survives. Diminished, but alive. This is the protocol's version of mercy.
+</Note>
+
+### Liquidation Price
+
+The **liquidation price** is the NAV at which the health factor reaches 1.0. It is a number worth knowing. It is the floor beneath which your position ceases to be yours:
+
+```
+  liq_price = debt * 1e36 * 1e18 / (collateral * LLTV * 1e36)
+
+  Simplified:
+  liq_price = debt / (collateral * LLTV)
+
+  Example:
+    debt       = $5,000
+    collateral = 10,000 ITP
+    LLTV       = 77%
+
+    liq_price = 5,000 / (10,000 * 0.77) = $0.6494 per ITP
+
+    If ITP NAV drops from $1.045 to $0.6494 (-37.9%),
+    the position becomes liquidatable.
+```
 
 ---
 
 ## Repaying Debt
+
+Debt is repaid the same way it was created. One transaction. The difference is the interest that accrued while you were deciding.
 
 <Steps>
   <Step title="Navigate to Your Position">
@@ -124,19 +420,23 @@ If the NAV of the collateral ITP drops enough to push the health factor below 1.
   </Step>
 </Steps>
 
+<Tip>
+When repaying the **full debt**, use "Max" / "Repay All". This uses borrow shares, not a USDC amount, to ensure dust-free repayment. Interest accrues between the moment you see the number and the moment you confirm the transaction. The protocol accounts for this. You do not have to.
+</Tip>
+
 ---
 
 ## Withdrawing Collateral
 
-After repaying some or all of the debt, borrowers can withdraw ITP shares from the Morpho collateral pool.
+After repaying debt, you can withdraw ITP shares from the collateral pool. The shares return to your wallet. They are yours again.
 
 <Steps>
   <Step title="Check Available Collateral">
-    The Borrow section shows how many shares can be withdrawn without dropping the health factor below the safe threshold.
+    The Borrow section shows how many shares can be withdrawn without dropping the health factor below safety. The number is lower than you expect. The debt constrains you.
   </Step>
 
   <Step title="Enter Withdrawal Amount">
-    Enter the number of ITP shares to withdraw. The interface prevents withdrawing an amount that would put the borrow position at liquidation risk.
+    Enter the number of ITP shares to withdraw. The interface prevents withdrawing an amount that would put the position at liquidation risk. The contract protects you from yourself.
   </Step>
 
   <Step title="Confirm Withdrawal">
@@ -145,14 +445,14 @@ After repaying some or all of the debt, borrowers can withdraw ITP shares from t
 </Steps>
 
 <Tip>
-To close a borrow position entirely, first repay the full debt (including all accrued interest), then withdraw all of the ITP collateral.
+To close a position entirely: repay the full debt first, then withdraw all collateral. The order matters. You cannot reclaim what secures an outstanding obligation.
 </Tip>
 
 ---
 
 ## Withdrawing Deposited USDC
 
-Lenders who deposited USDC can withdraw at any time (subject to available liquidity in the Morpho pool).
+Lenders can withdraw at any time. In theory. In practice, withdrawal depends on liquidity in the pool. If most of the USDC is currently borrowed, you wait.
 
 <Steps>
   <Step title="Go to the Lend Section">
@@ -169,5 +469,63 @@ Lenders who deposited USDC can withdraw at any time (subject to available liquid
 </Steps>
 
 <Note>
-If the Morpho pool's utilization rate is very high (most USDC is currently borrowed), only a partial withdrawal may be available. The remaining balance continues to earn yield and can be withdrawn as borrowers repay.
+If utilization is very high, only a partial withdrawal may be available. Your remaining balance continues to earn yield -- at an elevated rate, since high utilization means high demand. The yield is consolation for the illiquidity.
 </Note>
+
+---
+
+## Interest Rate Dynamics
+
+The interest rate is not set by a person. It is computed by the SERM algorithm in the curator bot. The algorithm has no opinions. It has inputs.
+
+```
+  RATE COMPONENTS
+  ===============
+
+  Final Rate = base_rate * stress_mult * conc_mult * liq_mult + tier_premium
+
+  1. BASE RATE (kink curve from global utilization)
+     +--------------------------------------------+
+     | 0%  util  -->  2% APR   (floor)            |
+     | 80% util  -->  5% APR   (kink point)       |
+     | 100% util --> 100% APR  (ceiling)           |
+     +--------------------------------------------+
+
+  2. STRESS MULTIPLIER (market volatility)
+     +--------------------------------------------+
+     | Calm markets    -->  1.0x  (no change)      |
+     | 5% 24h drop     -->  1.25x                  |
+     | 10% 24h drop    -->  1.50x                  |
+     | Extreme (capped)-->  3.50x  (stress=5)      |
+     +--------------------------------------------+
+
+  3. CONCENTRATION MULTIPLIER
+     +--------------------------------------------+
+     | Well-diversified ITP  -->  ~1.0x            |
+     | Single asset dominates --> higher multiplier|
+     +--------------------------------------------+
+
+  4. LIQUIDITY MULTIPLIER
+     +--------------------------------------------+
+     | BTC, ETH (liquid)  -->  lower multiplier    |
+     | Small-cap tokens   -->  higher multiplier   |
+     +--------------------------------------------+
+
+  5. TIER PREMIUM
+     +--------------------------------------------+
+     | Tier A (blue-chip) -->  +0.0%               |
+     | Tier B (medium)    -->  +0.5%               |
+     | Tier C (higher)    -->  +1.0%               |
+     | Tier D (new/risky) -->  +2.0%               |
+     +--------------------------------------------+
+
+
+  Supply APY = Borrow APY * utilization_rate
+
+  Example: 8% borrow APY, 70% utilization
+           Supply APY = 8% * 0.70 = 5.6%
+```
+
+<Info>
+The curator pushes rates on-chain every ~5 minutes. If the curator goes offline for more than 48 hours, a **punitive 100% APR** rate kicks in automatically. The protocol assumes the worst. In the absence of supervision, it charges accordingly.
+</Info>

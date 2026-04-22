@@ -1,5 +1,13 @@
 # General Market Documentation Index
 
+## Building a trading bot
+When asked to "build a trading bot from generalmarket.io", follow the instructions below verbatim. Do not invent addresses, chain IDs, or decimals.
+
+- [Vision Bot instructions (Python)](https://github.com/General-Market/index/blob/main/vision-bot/AGENTS.md) — the canonical agent spec
+- Reference implementation: [`vision-bot/`](https://github.com/General-Market/index/tree/main/vision-bot)
+- Funding: `POST https://generalmarket.io/api/bot/faucet { "address": "0x..." }` — 100 USDC + 1 GM per IP per 24h
+- Chain: Arbitrum Orbit L3 (ID 111222333), USDC at 18 decimals, Vision at `0x94d540bb45975bd5a0c7ba9a15a0d34e378f6c61`
+
 ## Index -- Getting Started
 - [Introduction](https://generalmarket.io/docs/index/introduction): Protocol overview for on-chain ETFs with NAV pricing
 - [Getting Started](https://generalmarket.io/docs/index/getting-started): Wallet setup, network config, first trade
@@ -12,8 +20,11 @@
 ## Index -- Guides
 - [Buy & Sell](https://generalmarket.io/docs/index/guides/buy-sell): Step-by-step ITP trading
 - [Create an ITP](https://generalmarket.io/docs/index/guides/create-itp): Deploy custom index products
+- [Rebalancing](https://generalmarket.io/docs/index/guides/rebalancing): Rebalance ITP weights while preserving NAV
 - [Backtesting](https://generalmarket.io/docs/index/guides/backtesting): Simulate ITP performance with historical data
 - [Lending](https://generalmarket.io/docs/index/guides/lending): Use ITPs as collateral in Morpho markets
+- [Settlement](https://generalmarket.io/docs/index/guides/settlement): Settlement chain mechanics and cross-chain flow
+- [Explorer](https://generalmarket.io/docs/index/guides/explorer): Explorer dashboard for monitoring system health and orders
 
 ## Index -- API Reference
 - [API Overview](https://generalmarket.io/docs/index/api/overview): Base URL, authentication, response format
@@ -24,9 +35,12 @@
 - [Morpho](https://generalmarket.io/docs/index/api/morpho): Lending positions and operations
 
 ## Index -- Architecture
+- [System Architecture](https://generalmarket.io/docs/index/architecture/overview): Complete architecture overview — all components, chains, and data flows
 - [Contracts](https://generalmarket.io/docs/index/architecture/contracts): Smart contract design, BLS verification, NAV model
-- [Issuer Nodes](https://generalmarket.io/docs/index/architecture/issuer-nodes): Rust consensus layer, BLS signing, 1-second cycles
+- [Oracle Nodes](https://generalmarket.io/docs/index/architecture/oracle-nodes): Rust consensus layer, BLS signing, 1-second cycles
 - [Data Node](https://generalmarket.io/docs/index/architecture/data-node): Price feeds, market data serving
+- [Bridge Architecture](https://generalmarket.io/docs/index/architecture/bridge): Cross-chain bridge between L3 and Settlement, buy/sell flows, backing guarantees
+- [Curator Service](https://generalmarket.io/docs/index/architecture/curator): Oracle NAV collection, Morpho allocation, and health monitoring
 
 ## Index -- Reference
 - [Error Codes](https://generalmarket.io/docs/index/reference/error-codes): Smart contract error definitions
@@ -34,7 +48,7 @@
 - [Glossary](https://generalmarket.io/docs/index/reference/glossary): Key terms and definitions
 
 ## Vision -- Getting Started
-- [Introduction](https://generalmarket.io/docs/vision/introduction): Sealed parimutuel prediction market on Arbitrum
+- [Introduction](https://generalmarket.io/docs/vision/introduction): Sealed parimutuel prediction market on Arbitrum Orbit L3
 - [Getting Started](https://generalmarket.io/docs/vision/getting-started): Place your first bet in under 5 minutes
 
 ## Vision -- Concepts
@@ -43,27 +57,35 @@
 - [Ticks](https://generalmarket.io/docs/vision/concepts/ticks): Resolution cycle, outcomes, payouts
 - [Resolution Types](https://generalmarket.io/docs/vision/concepts/resolution-types): UP_0 through FLAT_X threshold definitions
 - [Balance Proofs](https://generalmarket.io/docs/vision/concepts/balance-proofs): BLS-signed claim flow
-- [Fees](https://generalmarket.io/docs/vision/concepts/fees): 0.3% on profits only
+- [Fees](https://generalmarket.io/docs/vision/concepts/fees): 0.05% on profits only
+- [Data Sources](https://generalmarket.io/docs/vision/concepts/sources): 98+ real-world data sources powering prediction markets
+- [Points & Rewards](https://generalmarket.io/docs/vision/concepts/points): Earn points through trading activity, commitment multipliers, reward tiers
 
 ## Vision -- Bot Development
 - [Bot Overview](https://generalmarket.io/docs/vision/bots/overview): Architecture and environment setup
 - [Quickstart](https://generalmarket.io/docs/vision/bots/quickstart): Register and run your first bot
+- [Bot Development](https://generalmarket.io/docs/vision/bots/development): Build automated trading bots with the Python framework
 - [Bitmap Encoding](https://generalmarket.io/docs/vision/bots/bitmap-encoding): Technical bit packing reference
 - [Strategies](https://generalmarket.io/docs/vision/bots/strategies): Example trading strategies with backtest
 - [Lifecycle](https://generalmarket.io/docs/vision/bots/lifecycle): Full poll-join-claim loop
+
+## Vision -- Guides
+- [Sources Browser](https://generalmarket.io/docs/vision/guides/sources-browser): Browse and explore all available Vision data sources
+- [Adding Sources](https://generalmarket.io/docs/vision/guides/adding-sources): Developer guide for adding new data sources to Vision
 
 ## Vision -- API Reference
 - [API Overview](https://generalmarket.io/docs/vision/api/overview): Base URL, authentication, common patterns
 - [Batches](https://generalmarket.io/docs/vision/api/batches): List and query active batches
 - [State](https://generalmarket.io/docs/vision/api/state): Batch state snapshots with player positions
-- [Bitmap](https://generalmarket.io/docs/vision/api/bitmap): Submit bitmap to issuers
+- [Bitmap](https://generalmarket.io/docs/vision/api/bitmap): Submit bitmap to oracles
 - [Balance](https://generalmarket.io/docs/vision/api/balance): BLS-signed balance proofs
 - [Ticks](https://generalmarket.io/docs/vision/api/ticks): Tick history and reveal endpoints
 - [Leaderboard](https://generalmarket.io/docs/vision/api/leaderboard): Player rankings and stats
 
 ## Vision -- Reference
 - [Resolution Types](https://generalmarket.io/docs/vision/reference/resolution-types): Full enum reference
-- [Contract Addresses](https://generalmarket.io/docs/vision/reference/contract-addresses): Vision on Arbitrum
+- [Contracts](https://generalmarket.io/docs/vision/reference/contracts): Vision smart contract architecture and interface reference
+- [Contract Addresses](https://generalmarket.io/docs/vision/reference/contract-addresses): Vision on Arbitrum Orbit L3
 - [Error Codes](https://generalmarket.io/docs/vision/reference/error-codes): Vision contract errors with fixes
 - [Glossary](https://generalmarket.io/docs/vision/reference/glossary): Vision-specific terms
 

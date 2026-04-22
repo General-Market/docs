@@ -5,7 +5,7 @@ description: "Query player balances and BLS-signed withdrawal proofs"
 
 # Balance & Proofs
 
-Retrieve a player's current balance within a batch. In the full implementation, this endpoint also returns a BLS-signed balance proof that enables on-chain withdrawals.
+What remains. A player's current balance within a batch -- the arithmetic verdict on their predictions. In production, this endpoint also returns a BLS-signed proof that enables on-chain withdrawals.
 
 ---
 
@@ -13,7 +13,7 @@ Retrieve a player's current balance within a batch. In the full implementation, 
 
 `GET /vision/balance/{batch_id}/{player}`
 
-Returns the player's current balance and stake configuration in the specified batch. The balance reflects all tick resolutions processed so far (wins, losses, and fees).
+Returns the player's current balance and stake configuration. The balance reflects all tick resolutions processed so far -- wins, losses, and fees. A running tally of how well your machine understood the world.
 
 <ParamField path="batch_id" type="number" required>
   The batch ID to query the balance for.
@@ -86,11 +86,11 @@ console.log(`Stake per tick: ${data.stake_per_tick}`);
 <Info>
 In the production release, this endpoint will also return BLS signature fields for on-chain withdrawal proofs:
 
-- `bls_signature` -- The issuer's BLS signature over the balance proof message
-- `issuer_id` -- The issuer node ID that produced the signature
-- `pubkey` -- The issuer's BLS public key
+- `bls_signature` -- The oracle's BLS signature over the balance proof message
+- `oracle_id` -- The oracle node ID that produced the signature
+- `pubkey` -- The oracle's BLS public key
 
-Players aggregate signatures from 2/3+ issuers and submit them on-chain to withdraw. See [Balance Proofs](/vision/concepts/balance-proofs) for details on the verification flow.
+Players aggregate signatures from 2/3+ oracles and submit them on-chain to withdraw. See [Balance Proofs](/vision/concepts/balance-proofs) for details on the verification flow.
 </Info>
 
 ### Errors

@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 580" width="960" height="580" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <linearGradient id="emeraldBorder" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#10B981"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+    <filter id="shadow" x="-4%" y="-4%" width="108%" height="116%">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-opacity="0.03"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="960" height="580" fill="#FFFFFF"/>
+
+  <!-- ==================== SECTION 1: PLAYER CONTROLS ==================== -->
+
+  <rect x="40" y="24" width="880" height="156" rx="12" fill="#0A0A0A" opacity="0.02"/>
+  <!-- Emerald gradient left border -->
+  <rect x="40" y="24" width="3" height="156" rx="1.5" fill="url(#emeraldBorder)"/>
+
+  <!-- Header row -->
+  <text x="64" y="52" fill="#0A0A0A" font-size="10" font-weight="600" letter-spacing="2" opacity="0.4">PLAYER CONTROLS</text>
+
+  <!-- Pill: On-chain, trustless -->
+  <rect x="220" y="38" width="120" height="22" rx="14" fill="#10B981" opacity="0.1"/>
+  <text x="280" y="53" text-anchor="middle" fill="#10B981" font-size="10" font-weight="600">On-chain, trustless</text>
+
+  <!-- Row 1 -->
+  <circle cx="72" cy="82" r="3.5" fill="#10B981"/>
+  <text x="86" y="86" fill="#0A0A0A" font-size="12" font-weight="600">Deposit USDC</text>
+  <text x="190" y="86" fill="#0A0A0A" font-size="11" opacity="0.4">&#x2014; Only player's wallet can call</text>
+
+  <!-- Row 2 -->
+  <circle cx="72" cy="108" r="3.5" fill="#10B981"/>
+  <text x="86" y="112" fill="#0A0A0A" font-size="12" font-weight="600">Commit bitmap hash</text>
+  <text x="228" y="112" fill="#0A0A0A" font-size="11" opacity="0.4">&#x2014; Immutable once on-chain</text>
+
+  <!-- Row 3 -->
+  <circle cx="72" cy="134" r="3.5" fill="#10B981"/>
+  <text x="86" y="138" fill="#0A0A0A" font-size="12" font-weight="600">Claim rewards</text>
+  <text x="186" y="138" fill="#0A0A0A" font-size="11" opacity="0.4">&#x2014; Requires valid BLS proof</text>
+
+  <!-- Row 4 -->
+  <circle cx="72" cy="160" r="3.5" fill="#10B981"/>
+  <text x="86" y="164" fill="#0A0A0A" font-size="12" font-weight="600">Withdraw funds</text>
+  <text x="198" y="164" fill="#0A0A0A" font-size="11" opacity="0.4">&#x2014; Only player's wallet can call</text>
+
+  <!-- ==================== SECTION 2: ORACLE CONTROLS ==================== -->
+
+  <rect x="40" y="212" width="880" height="156" rx="12" fill="#0A0A0A" opacity="0.02"/>
+  <!-- Blue left border -->
+  <rect x="40" y="212" width="3" height="156" rx="1.5" fill="#3B82F6"/>
+
+  <!-- Header row -->
+  <text x="64" y="240" fill="#0A0A0A" font-size="10" font-weight="600" letter-spacing="2" opacity="0.4">ORACLE CONTROLS</text>
+
+  <!-- Pill: BLS consensus required -->
+  <rect x="218" y="226" width="148" height="22" rx="14" fill="#3B82F6" opacity="0.1"/>
+  <text x="292" y="241" text-anchor="middle" fill="#3B82F6" font-size="10" font-weight="600">BLS consensus required</text>
+
+  <!-- Row 1 -->
+  <circle cx="72" cy="270" r="3.5" fill="#3B82F6"/>
+  <text x="86" y="274" fill="#0A0A0A" font-size="12" font-weight="600">Tick resolution</text>
+  <text x="198" y="274" fill="#0A0A0A" font-size="11" opacity="0.4">&#x2014; 2/3+ must agree on prices and outcomes</text>
+
+  <!-- Row 2 -->
+  <circle cx="72" cy="296" r="3.5" fill="#3B82F6"/>
+  <text x="86" y="300" fill="#0A0A0A" font-size="12" font-weight="600">Balance proofs</text>
+  <text x="194" y="300" fill="#0A0A0A" font-size="11" opacity="0.4">&#x2014; 2/3+ must sign identical proof</text>
+
+  <!-- Row 3 -->
+  <circle cx="72" cy="322" r="3.5" fill="#3B82F6"/>
+  <text x="86" y="326" fill="#0A0A0A" font-size="12" font-weight="600">Config updates</text>
+  <text x="196" y="326" fill="#0A0A0A" font-size="11" opacity="0.4">&#x2014; 2/3+ must approve market changes</text>
+
+  <!-- Row 4 -->
+  <circle cx="72" cy="348" r="3.5" fill="#3B82F6"/>
+  <text x="86" y="352" fill="#0A0A0A" font-size="12" font-weight="600">Batch creation</text>
+  <text x="196" y="352" fill="#0A0A0A" font-size="11" opacity="0.4">&#x2014; 2/3+ must approve new batches</text>
+
+  <!-- ==================== SECTION 3: ORACLES CANNOT ==================== -->
+
+  <rect x="40" y="400" width="880" height="164" rx="12" fill="#EF4444" opacity="0.02"/>
+  <!-- Red left border -->
+  <rect x="40" y="400" width="3" height="164" rx="1.5" fill="#EF4444"/>
+
+  <!-- Header -->
+  <text x="64" y="428" fill="#0A0A0A" font-size="10" font-weight="600" letter-spacing="2" opacity="0.4">ORACLES CANNOT</text>
+
+  <!-- Row 1 -->
+  <text x="72" y="458" fill="#EF4444" font-size="14" font-weight="700" text-anchor="middle">&#x00D7;</text>
+  <text x="86" y="458" fill="#0A0A0A" font-size="12" font-weight="600">Move player funds</text>
+  <text x="218" y="458" fill="#0A0A0A" font-size="11" opacity="0.4">&#x2014; Deposits/withdrawals are player-only</text>
+
+  <!-- Row 2 -->
+  <text x="72" y="484" fill="#EF4444" font-size="14" font-weight="700" text-anchor="middle">&#x00D7;</text>
+  <text x="86" y="484" fill="#0A0A0A" font-size="12" font-weight="600">Change player bets</text>
+  <text x="224" y="484" fill="#0A0A0A" font-size="11" opacity="0.4">&#x2014; Bitmap hash committed on-chain first</text>
+
+  <!-- Row 3 -->
+  <text x="72" y="510" fill="#EF4444" font-size="14" font-weight="700" text-anchor="middle">&#x00D7;</text>
+  <text x="86" y="510" fill="#0A0A0A" font-size="12" font-weight="600">Forge payouts</text>
+  <text x="182" y="510" fill="#0A0A0A" font-size="11" opacity="0.4">&#x2014; BLS sig verified against registered keys</text>
+
+  <!-- Row 4 -->
+  <text x="72" y="536" fill="#EF4444" font-size="14" font-weight="700" text-anchor="middle">&#x00D7;</text>
+  <text x="86" y="536" fill="#0A0A0A" font-size="12" font-weight="600">Act alone</text>
+  <text x="152" y="536" fill="#0A0A0A" font-size="11" opacity="0.4">&#x2014; Threshold prevents unilateral action</text>
+
+  <!-- Row 5 -->
+  <text x="72" y="554" fill="#EF4444" font-size="14" font-weight="700" text-anchor="middle">&#x00D7;</text>
+  <text x="86" y="554" fill="#0A0A0A" font-size="12" font-weight="600">See bets before commit</text>
+  <text x="246" y="554" fill="#0A0A0A" font-size="11" opacity="0.4">&#x2014; Commit-reveal scheme</text>
+
+</svg>

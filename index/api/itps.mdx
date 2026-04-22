@@ -5,7 +5,7 @@ description: "ITP pricing, NAV, and ranking data"
 
 # ITP Endpoints
 
-Retrieve Index Tracking Product (ITP) pricing data, historical NAV series, AUM rankings, and state snapshots. ITPs are on-chain index products that track a basket of underlying assets.
+An ITP is a basket of assets with a price. These endpoints tell you what that price is, what it was, and what the basket contains. The rest is your decision.
 
 ---
 
@@ -15,7 +15,7 @@ Retrieve Index Tracking Product (ITP) pricing data, historical NAV series, AUM r
   The on-chain ITP identifier (hex address, e.g., `0x...`).
 </ParamField>
 
-Returns the current NAV (Net Asset Value) for the specified ITP, including a breakdown of priced assets and AUM.
+Returns the current NAV per share, priced asset count, and AUM. Tries the data node first; falls back to on-chain if needed.
 
 <CodeGroup>
 ```bash cURL
@@ -68,6 +68,28 @@ data = resp.json()
   NAV is computed as `sum(qty[i] * price[i]) / 1e18` where quantities are the fixed per-share amounts stored on-chain. See the pricing model documentation for details.
 </Note>
 
+**Dual-source resolution -- the API trusts no single source:**
+
+```
+  Request: GET /api/itp-price?itp_id=0x...
+
+  1. Try data-node first (has live API prices, more accurate NAV)
+     GET DATA_NODE:8200/itp-price?itp_id=0x...
+         |
+         +-- success + nav != 0 --> return { source: "data-node", ... }
+         |
+         +-- fail / nav == 0 ----> fall through
+
+  2. Fallback: read NAV from on-chain Index contract
+     eth_call to Index.getITPState(bytes32)
+         |
+         +-- decode ABI: skip creator, read totalSupply, NAV
+         +-- count assets from dynamic array
+         +-- return { source: "onchain", ... }
+
+  The "source" field in the response indicates which path was used.
+```
+
 ---
 
 ## Get NAV Time Series
@@ -80,7 +102,7 @@ data = resp.json()
   Time range for the series. One of: `1d`, `7d`, `30d`, `90d`, `1y`.
 </ParamField>
 
-Returns historical NAV data points for the specified ITP over the requested time range.
+NAV over time. The chart tells the story. The numbers are the evidence.
 
 <CodeGroup>
 ```bash cURL
@@ -128,7 +150,7 @@ series = resp.json()
 
 ## Get AUM Ranking
 
-Returns all ITPs ranked by total assets under management (AUM), from highest to lowest.
+All ITPs, ranked by AUM. The market votes with capital.
 
 <CodeGroup>
 ```bash cURL
@@ -187,7 +209,7 @@ ranking = resp.json()
 
 ## Get Snapshot
 
-Returns the current state of all ITPs, or of a single ITP when `itp_id` is provided.
+The current state of an ITP -- or all of them. Weights, quantities, NAV, supply.
 
 <ParamField query="itp_id" type="string">
   Optional. When provided, the endpoint returns the snapshot for only the specified ITP.
@@ -246,3 +268,195 @@ itp_snapshot = resp.json()
 }
 ```
 </Expandable>
+
+---
+
+## Get ITP Enrichment
+
+Beyond prices: who founded the projects in this basket, how much venture money they raised, what their TVL looks like, and how the market values them. Four upstream sources, aggregated into one response.
+
+```
+GET /api/itp-enrichment?itp_id={itp_id}
+```
+
+<ParamField query="itp_id" type="string" required>
+  The on-chain ITP identifier (66-character hex string: `0x` + 64 hex chars).
+</ParamField>
+
+```
+  Data aggregation pipeline:
+
+  +-------------------+     +------------------+     +------------------+
+  | Data Node         |     | CoinGecko API    |     | DeFiLlama API    |
+  | /snapshot?itp_id= |     | /simple/price    |     | /protocols       |
+  +--------+----------+     +--------+---------+     | /raises          |
+           |                         |                +--------+---------+
+           v                         v                         |
+      raw holdings             market data                     v
+      (symbol, weight,        (price, mcap,              TVL + funding
+       price, name)            24h change)               round data
+           |                         |                         |
+           +------------+------------+-------------------------+
+                        |
+                        v
+              +---------+----------+
+              | Founders Lookup    |
+              | (local JSON file)  |
+              | age, gender,       |
+              | nationality, uni   |
+              +--------+-----------+
+                       |
+                       v
+              Combined enrichment response
+```
+
+<CodeGroup>
+```bash cURL
+curl "https://generalmarket.io/api/itp-enrichment?itp_id=0x1234abcd..."
+```
+
+```javascript JavaScript
+const res = await fetch(
+  "/api/itp-enrichment?itp_id=0x1234abcd..."
+);
+const enrichment = await res.json();
+console.log(`${enrichment.holdings.length} holdings`);
+console.log(`${enrichment.founders?.total_founders} founders mapped`);
+```
+
+```python Python
+import requests
+
+resp = requests.get(
+    "https://generalmarket.io/api/itp-enrichment",
+    params={"itp_id": "0x1234abcd..."}
+)
+data = resp.json()
+for h in data["holdings"][:5]:
+    print(f"{h['symbol']:>6s}  {h['weight']:.2%}  ${h.get('price', 0):.2f}")
+```
+</CodeGroup>
+
+<Expandable title="Response">
+```json
+{
+  "itpId": "0x1234abcd...",
+  "holdings": [
+    {
+      "symbol": "BTC",
+      "weight": 0.25,
+      "price": 97432.15,
+      "name": "Bitcoin",
+      "image": "https://assets.coingecko.com/.../bitcoin.png",
+      "coingecko_id": "bitcoin",
+      "market_cap": 1920000000000,
+      "change_24h": 2.45
+    }
+  ],
+  "founders": {
+    "total_founders": 142,
+    "total_companies_matched": 85,
+    "age_distribution": [
+      { "bucket": "20-29", "count": 12 },
+      { "bucket": "30-39", "count": 68 },
+      { "bucket": "40-49", "count": 45 },
+      { "bucket": "50-59", "count": 14 },
+      { "bucket": "60+", "count": 3 }
+    ],
+    "gender_split": [
+      { "label": "Male", "count": 130 },
+      { "label": "Female", "count": 12 }
+    ],
+    "top_nationalities": [
+      { "label": "United States", "count": 42 },
+      { "label": "Russia", "count": 15 },
+      { "label": "China", "count": 12 }
+    ],
+    "top_universities": [
+      { "label": "Stanford University", "count": 8 },
+      { "label": "MIT", "count": 6 }
+    ]
+  },
+  "defi": {
+    "total_tvl": 45200000000,
+    "avg_tvl_change_7d": 3.2,
+    "protocols_with_data": 22,
+    "total_holdings": 100,
+    "top_by_tvl": [
+      { "symbol": "AAVE", "name": "Aave", "tvl": 12400000000, "change_7d": 2.1 }
+    ]
+  },
+  "funding": {
+    "total_raised_m": 8420.5,
+    "avg_valuation_m": 2150.0,
+    "total_rounds": 312,
+    "top_investors": [
+      { "name": "a16z", "count": 18 },
+      { "name": "Paradigm", "count": 12 }
+    ],
+    "recent_raises": [
+      {
+        "project": "LayerZero",
+        "round": "Series B",
+        "amount_m": 120.0,
+        "lead": "a16z",
+        "date": "2025-11-15"
+      }
+    ]
+  }
+}
+```
+</Expandable>
+
+**Holdings fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `symbol` | string | Asset ticker |
+| `weight` | number | Portfolio weight (0-1) |
+| `price` | number | Latest price in USD |
+| `name` | string | Human-readable name |
+| `image` | string | CoinGecko image URL |
+| `coingecko_id` | string | CoinGecko identifier |
+| `market_cap` | number | Market capitalization in USD |
+| `change_24h` | number | 24-hour price change (%) |
+
+**Founders aggregate** (present when founder data exists for holdings):
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `total_founders` | number | Total founders matched |
+| `total_companies_matched` | number | Holdings with founder data |
+| `age_distribution` | array | Age buckets: 20-29, 30-39, 40-49, 50-59, 60+ |
+| `gender_split` | array | Gender distribution |
+| `top_nationalities` | array | Top 12 nationalities by count |
+| `top_universities` | array | Top 10 universities by count |
+
+**DeFi aggregate** (present when holdings have DeFiLlama protocol data):
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `total_tvl` | number | Combined TVL of matched protocols |
+| `avg_tvl_change_7d` | number | Average 7-day TVL change (%) |
+| `protocols_with_data` | number | Holdings with DeFiLlama data |
+| `top_by_tvl` | array | Top 10 protocols by TVL |
+
+**Funding aggregate** (present when holdings have DeFiLlama raise data):
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `total_raised_m` | number | Total raised in millions USD |
+| `avg_valuation_m` | number | Average valuation in millions USD |
+| `total_rounds` | number | Total funding rounds |
+| `top_investors` | array | Top 10 investors by deal count |
+| `recent_raises` | array | 10 most recent raises |
+
+| Status | Meaning |
+|--------|---------|
+| `200` | Enrichment data returned (cached 5 min when holdings present) |
+| `400` | Invalid `itp_id` format |
+| `500` | Enrichment computation failed |
+
+<Note>
+  Enrichment results are cached at the CDN for 5 minutes when meaningful data is available. Empty results (no holdings found) are not cached.
+</Note>

@@ -99,7 +99,7 @@ LeaderboardEntry {
 ## Token Encoding
 
 All `balance`, `tvl`, `stake_per_tick`, `total_matched` fields are string-encoded wei.
-USDC uses 6 decimals: 1 USDC = "1000000".
+WUSDC uses 18 decimals on L3: 1 USDC = "1000000000000000000".
 
 ## Error Format
 
@@ -111,7 +111,7 @@ Status codes: 200 (success), 400 (bad request), 403 (forbidden), 404 (not found)
 
 ## Contract
 
-Address: 0x0BFC626B583e93A5F793Bc2cAa195BDBB2ED9F20
-Chain ID: 421611337
-USDC: 6 decimals
-Fee: 0.3% on profits
+Address: 0x4F1BDD073932828bf2822F6dCAD1121Da41ED1Ef
+Chain ID: 111222333 (Index L3 Arbitrum Orbit)
+WUSDC: 18 decimals
+Fee: 0.05% on profits

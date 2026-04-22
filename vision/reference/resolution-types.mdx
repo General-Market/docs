@@ -5,20 +5,37 @@ description: "Complete reference for Vision batch resolution types"
 
 # Resolution Types
 
-Each market in a Vision batch has a resolution type that determines how price movement is evaluated at the end of each tick. The resolution type defines the threshold a price must cross for the UP outcome to win.
+How much must the world move before it counts as having moved? That is the question each resolution type answers.
+
+Each market has a resolution type that defines the threshold a price must cross for UP to win. Fourteen types -- fourteen definitions of "enough."
 
 ## Type Reference
 
-| Enum Value | Name | Threshold | UP Wins When | DOWN Wins When |
-|-----------|------|-----------|--------------|----------------|
+### Standard Types (0-7)
+
+| Value | Name | Threshold | UP Wins When | DOWN Wins When |
+|-------|------|-----------|--------------|----------------|
 | 0 | **UP_0** | 0% | Price increases by any amount (> 0%) | Price stays flat or decreases |
-| 1 | **UP_30** | 0.30% | Price increases by at least 30 basis points (>= 0.30%) | Price increases less than 30 bps, stays flat, or decreases |
-| 2 | **UP_X** | Custom | Price increases by at least X basis points | Price increases less than X bps, stays flat, or decreases |
+| 1 | **UP_30** | 0.30% | Price increases by > 30 bps | Price does not exceed +30 bps |
+| 2 | **UP_X** | Custom | Price increases by > X bps | Price does not exceed +X bps |
 | 3 | **DOWN_0** | 0% | Price decreases by any amount (< 0%) | Price stays flat or increases |
-| 4 | **DOWN_30** | 0.30% | Price decreases by at least 30 basis points (>= 0.30% drop) | Price decreases less than 30 bps, stays flat, or increases |
-| 5 | **DOWN_X** | Custom | Price decreases by at least X basis points | Price decreases less than X bps, stays flat, or increases |
-| 6 | **FLAT_0** | 0% | Price does not change (exactly 0% movement) | Price changes by any amount |
-| 7 | **FLAT_X** | Custom | Price stays within X basis points of the opening price | Price moves more than X bps in either direction |
+| 4 | **DOWN_30** | 0.30% | Price decreases by > 30 bps | Price does not exceed -30 bps |
+| 5 | **DOWN_X** | Custom | Price decreases by > X bps | Price does not exceed -X bps |
+| 6 | **FLAT_0** | 0% | Price does not change (exactly 0%) | Price changes by any amount |
+| 7 | **FLAT_X** | Custom | Price stays within X bps | Price moves more than X bps |
+
+### Extended Types (8-13)
+
+These are hardcoded convenience presets for common volatility bands. They don't use the `customThresholds` array.
+
+| Value | Name | Threshold | UP Wins When | DOWN Wins When | FLAT When |
+|-------|------|-----------|--------------|----------------|-----------|
+| 8 | **UP_300** | 3% | Price increases by > 300 bps (3%) | Otherwise | — |
+| 9 | **UP_3000** | 30% | Price increases by > 3000 bps (30%) | Otherwise | — |
+| 10 | **DOWN_300** | 3% | Otherwise | Price decreases by > 300 bps (3%) | — |
+| 11 | **DOWN_3000** | 30% | Otherwise | Price decreases by > 3000 bps (30%) | — |
+| 12 | **FLAT_300** | 3% | Price > +3% | Price < -3% | abs(change) < 3% |
+| 13 | **FLAT_3000** | 30% | Price > +30% | Price < -30% | abs(change) < 30% |
 
 ## Custom Thresholds
 
@@ -37,7 +54,7 @@ For non-custom types (UP_0, UP_30, DOWN_0, DOWN_30, FLAT_0), the threshold value
 
 ## Resolution Logic
 
-At the end of each tick, the issuer network computes the price change percentage for each market:
+At the end of each tick, the oracle network computes the price change percentage for each market:
 
 ```
 priceChange = (closePrice - openPrice) / openPrice * 10000  // in basis points
@@ -48,30 +65,23 @@ The outcome for each market is then determined by the resolution type:
 | Resolution Type | UP Outcome (bitmap bit = 1) | DOWN Outcome (bitmap bit = 0) |
 |----------------|---------------------------|-------------------------------|
 | UP_0 | `priceChange > 0` | `priceChange <= 0` |
-| UP_30 | `priceChange >= 30` | `priceChange < 30` |
-| UP_X | `priceChange >= X` | `priceChange < X` |
+| UP_30 | `priceChange > 30` | `priceChange <= 30` |
+| UP_X | `priceChange > X` | `priceChange <= X` |
 | DOWN_0 | `priceChange < 0` | `priceChange >= 0` |
-| DOWN_30 | `priceChange <= -30` | `priceChange > -30` |
-| DOWN_X | `priceChange <= -X` | `priceChange > -X` |
+| DOWN_30 | `priceChange < -30` | `priceChange >= -30` |
+| DOWN_X | `priceChange < -X` | `priceChange >= -X` |
 | FLAT_0 | `priceChange == 0` | `priceChange != 0` |
-| FLAT_X | `abs(priceChange) <= X` | `abs(priceChange) > X` |
+| FLAT_X | `abs(priceChange) < X` | `abs(priceChange) >= X` |
+| UP_300 | `priceChange > 300` | `priceChange <= 300` |
+| UP_3000 | `priceChange > 3000` | `priceChange <= 3000` |
+| DOWN_300 | `priceChange < -300` | `priceChange >= -300` |
+| DOWN_3000 | `priceChange < -3000` | `priceChange >= -3000` |
+| FLAT_300 | `abs(priceChange) < 300` | `abs(priceChange) >= 300` |
+| FLAT_3000 | `abs(priceChange) < 3000` | `abs(priceChange) >= 3000` |
 
-## Solidity Enum
+## Storage
 
-The resolution types are defined in `IVision.sol`:
-
-```solidity
-enum ResolutionType {
-    UP_0,     // 0
-    UP_30,    // 1
-    UP_X,     // 2
-    DOWN_0,   // 3
-    DOWN_30,  // 4
-    DOWN_X,   // 5
-    FLAT_0,   // 6
-    FLAT_X    // 7
-}
-```
+Resolution types are stored as raw `uint8` values in the off-chain batch config (never stored on-chain). The oracle resolver interprets them at tick resolution time. The Solidity enum in `IVision.sol` defines the first 8 types for reference; types 8-13 are oracle-level extensions.
 
 ## Choosing a Resolution Type
 

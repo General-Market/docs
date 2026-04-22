@@ -3,11 +3,23 @@ title: "Ticks"
 description: "How tick-based resolution cycles work in Vision"
 ---
 
-A **tick** is one resolution interval in a Vision batch. At the end of each tick, issuers fetch prices, determine market outcomes, match winning and losing sides, and update player balances. Ticks are the heartbeat of the Vision system.
+Every ten minutes, the world is measured. Prices move or they do not. Winners are paid with losers' money. The protocol takes 0.05%. Time continues.
+
+## What Happens Every Tick
+
+Every tick, the system resolves all markets in a batch. It is a small reckoning, repeated endlessly:
+
+1. Fetch start/end prices for each market
+2. Determine outcome (UP / DOWN / FLAT)
+3. Match winners against losers (parimutuel)
+4. Update player balances
+5. BLS-sign results across oracles
+
+Check your balance after resolution: `GET /vision/balance/{batchId}/{playerAddress}`
 
 ## What Is a Tick?
 
-A tick is a discrete time window defined by the batch's `tickDuration`. Tick numbering starts from `createdAtTick` (the tick number when the batch was created).
+A tick is a discrete time window -- a unit of waiting. The batch's `tickDuration` defines how long each window lasts. Tick numbering starts from `createdAtTick` (the tick number when the batch was created). Time is sliced into intervals, and in each interval, reality delivers its verdict.
 
 ```
 Tick N starts at: (createdAtTick + N) * tickDuration
@@ -28,30 +40,20 @@ Tick numbers are computed from Unix timestamps: `currentTick = block.timestamp /
 
 ## Resolution Cycle
 
-When a tick becomes due for resolution, the issuer engine runs the following pipeline:
+When a tick becomes due for resolution, the oracle engine runs its pipeline. It is mechanical, deterministic, and utterly fair -- which is to say, it has no mercy:
 
-```
-1. Check due batches
-       |
-2. Filter active players (balance > 0)
-       |
-3. Check bitmap reveals (unrevealed -> voided)
-       |
-4. Compute multipliers (early + commitment)
-       |
-5. For each market:
-   a. Fetch start/end prices
-   b. Check staleness
-   c. Compute % change
-   d. Determine outcome (Up/Down/Flat/Cancelled)
-   e. Decode bitmaps to player sides
-   f. Run parimutuel side matching
-       |
-6. Aggregate per-player balance changes
-       |
-7. BLS consensus with other issuers
-       |
-8. Submit signed result on-chain
+```mermaid
+flowchart TD
+    A[Tick Ends] --> B[Filter Active Players]
+    B --> C[Check Bitmap Reveals]
+    C --> D[Compute Multipliers]
+    D --> E[For Each Market]
+    E --> F[Fetch Prices]
+    F --> G[Determine Outcome]
+    G --> H[Parimutuel Matching]
+    H --> I[Aggregate Balance Changes]
+    I --> J[BLS Consensus]
+    J --> K[Submit On-Chain]
 ```
 
 ### Step by Step
@@ -60,7 +62,7 @@ When a tick becomes due for resolution, the issuer engine runs the following pip
 
 **2. Filter active players.** Only players with a non-zero balance participate. Zero-balance players are skipped.
 
-**3. Check bitmap reveals.** Each active player's bitmap must have been revealed to the issuer (submitted via `POST /vision/bitmap`). Players who did not reveal are **voided** -- their balance stays unchanged and they do not participate in side matching.
+**3. Check bitmap reveals.** Each active player's bitmap must have been revealed to the oracle (submitted via `POST /vision/bitmap`). Players who did not reveal are **voided** -- their balance stays unchanged and they do not participate in side matching.
 
 **4. Compute multipliers.** Each revealed player gets an early multiplier and a commitment multiplier applied to their stake. See [Multipliers](#multipliers) below.
 
@@ -74,11 +76,11 @@ When a tick becomes due for resolution, the issuer engine runs the following pip
 
 **6. Aggregate balance changes.** Sum each player's deltas across all markets to produce a single net balance change per player.
 
-**7-8. BLS consensus and on-chain submission.** Issuers sign the results with BLS keys and submit on-chain for claiming.
+**7-8. BLS consensus and on-chain submission.** Oracles sign the results with BLS keys and submit on-chain for claiming.
 
 ## Market Outcomes
 
-Each market in a tick resolves to one of these outcomes:
+Each market in a tick resolves to one of six outcomes. Most are self-explanatory. All are final:
 
 | Outcome | Meaning | Effect |
 |---------|---------|--------|
@@ -91,7 +93,7 @@ Each market in a tick resolves to one of these outcomes:
 
 ### Parimutuel Side Matching
 
-For markets with a clear winner (Up or Down), the parimutuel matching algorithm distributes the pot:
+For markets with a clear winner (Up or Down), the parimutuel matching algorithm distributes the pot. The word "parimutuel" comes from the French -- *pari mutuel*, mutual betting. Everyone stakes against everyone. The house merely facilitates the redistribution of confidence:
 
 1. Split players into UP and DOWN sides based on their bitmap bits.
 2. Compute total effective stake for each side.
@@ -118,12 +120,12 @@ DOWN player (100 stake):
 ```
 
 <Info>
-The total payout across all players always equals the total effective stakes. No USDC is created or destroyed during matching -- it is purely redistributed between winners and losers.
+The total payout across all players always equals the total effective stakes. No USDC is created or destroyed during matching -- it is purely redistributed between winners and losers. Money does not appear or vanish. It merely changes hands, as it has always done.
 </Info>
 
 ### AllSameSide
 
-If every player in a market picks the same side, there are no opponents to match against. In this case, all stakes are returned as a full refund. This prevents the edge case where a unanimous correct prediction results in nobody winning.
+If every player in a market picks the same side, there are no opponents to match against. All stakes are returned as a full refund. Unanimity, it turns out, is unprofitable. A market needs disagreement to function. Without dissent, there is no game -- only a crowd pointing in the same direction, which is not a market but a procession.
 
 ### AllLosers
 
@@ -131,11 +133,11 @@ If a resolution type with a threshold (e.g., UP_30) produces a result where neit
 
 ## Multipliers
 
-Vision rewards early participation and long-term commitment through stake multipliers:
+Vision rewards the early and the persistent. Those who commit before the tick opens, and those who stay through many ticks, receive amplified stakes. Loyalty and punctuality -- the only virtues a protocol can measure:
 
 ### Early Multiplier
 
-Rewards players who commit their bitmap before the tick opens:
+Rewards those who commit before the tick opens. The earlier you arrive, the more your stake is amplified. Conviction rewarded, hesitation penalized:
 
 ```
 early_mult = 1 + min(time_before_tick, tick_duration)^2 / tick_duration^2
@@ -150,7 +152,7 @@ early_mult = 1 + min(time_before_tick, tick_duration)^2 / tick_duration^2
 
 ### Commitment Multiplier
 
-Rewards players who stay in the batch longer:
+Rewards those who stay. The logarithmic curve means that persistence is rewarded but never extravagantly -- a slow, asymptotic acknowledgment that you are still here:
 
 ```
 commitment_mult = log10(ticks_committed + offset)
@@ -171,7 +173,7 @@ With the default offset of 9:
 effective_stake = stake_per_tick * early_mult * commitment_mult
 ```
 
-The effective stake is capped at the player's current balance. A player cannot risk more than they have deposited.
+The effective stake is capped at the player's current balance. A player cannot risk more than they have deposited. The protocol, unlike life, will not let you lose what you do not have.
 
 ## Commitment Offset
 
@@ -179,7 +181,7 @@ The default **commitment offset** is 9. This parameter shifts the commitment mul
 
 ## Reveal Window
 
-After a tick ends, issuers wait for the **reveal window** (default: 600 seconds / 10 minutes) before resolving. This gives players time to submit their bitmap reveals to issuers.
+After a tick ends, there is a pause. Ten minutes of grace. Oracles wait for the **reveal window** (default: 600 seconds) before resolving. This gives players time to submit their bitmap reveals to oracles.
 
 ```
 Tick ends at: T
@@ -188,7 +190,7 @@ Resolution happens after: T + 600 seconds
 ```
 
 <Warning>
-If a player does not reveal their bitmap before the reveal window closes, they are voided for that tick. Their balance is unchanged, but they miss out on potential winnings.
+If a player does not reveal their bitmap before the reveal window closes, they are voided for that tick. Their balance is unchanged, but they miss out on potential winnings. The protocol does not wait.
 </Warning>
 
 After the reveal window expires, bitmaps become public and can be queried via the API:
@@ -197,4 +199,4 @@ After the reveal window expires, bitmaps become public and can be queried via th
 GET /vision/reveal/{batch_id}/{tick_id}
 ```
 
-This only returns data after the reveal deadline has passed. Before that, the endpoint returns `403 Forbidden`.
+This only returns data after the reveal deadline has passed. Before that, the endpoint returns `403 Forbidden`. Some things are not yet ready to be known.

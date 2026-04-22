@@ -1,0 +1,543 @@
+---
+title: "Curator Service"
+description: "Oracle NAV collection, Morpho allocation, and health monitoring — the bridge between consensus and DeFi"
+---
+
+# Curator Service
+
+The curator watches everything. It intervenes only when necessary. The best curators are the ones you forget exist.
+
+A Rust service that bridges BLS consensus and Morpho lending. It collects signed NAV prices from oracles, pushes them to on-chain oracles, rebalances vault capital, monitors health factors, and serves lending quotes. Four jobs. One process. Silent until something goes wrong.
+
+```
+    ┌─────────────────────────────────────────────────────────────────────────────┐
+    │                            CURATOR SERVICE                                 │
+    │                                                                            │
+    │   ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │
+    │   │    Oracle     │  │  Allocation  │  │    Health    │  │   Quote API  │  │
+    │   │  Collector    │  │     Bot      │  │   Monitor    │  │   (HTTP)     │  │
+    │   │              │  │              │  │              │  │              │  │
+    │   │ Collect NAV  │  │  Rebalance   │  │  Scan HF,   │  │ POST /quote  │  │
+    │   │ from oracles │  │  vault USDC  │  │  oracles,   │  │ SERM rates   │  │
+    │   │ BLS aggregate│  │  across mkts │  │  positions  │  │ Bundler data │  │
+    │   └──────┬───────┘  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘  │
+    │          │                 │                  │                 │          │
+    └──────────┼─────────────────┼──────────────────┼─────────────────┼──────────┘
+               │                 │                  │                 │
+               ▼                 ▼                  ▼                 ▼
+          ITPNAVOracle     MetaMorpho Vault    Telegram Bot     CuratorRateIRM
+          (Settlement)      (Settlement)        (Alerts)        (Settlement)
+```
+
+## Operational Modes
+
+The Curator supports four mutually exclusive launch modes selected by CLI flags:
+
+| Mode | Flag | Description |
+|---|---|---|
+| **Oracle Collector** | *(default)* | Collects BLS-signed NAV from oracles, pushes to `ITPNAVOracle` |
+| **Allocation Bot** | `--allocation-mode` | Rebalances vault supply across Morpho markets |
+| **Health Monitor** | `--health-monitor-mode` | Scans positions, oracles, mirrors, vault metrics |
+| **Unified** | `--unified-mode` | Runs all three + Quote API concurrently in one process |
+
+<Info>
+  In production, the Curator runs in **unified mode**. Tasks that lack required config are automatically skipped. Each task runs as an independent `tokio::spawn` with a shared `AtomicBool` shutdown signal for graceful Ctrl+C handling.
+</Info>
+
+## Oracle Collector
+
+The primary function. Poll the oracles. Validate consensus. Aggregate signatures. Push to chain. Repeat. The oracle is only as fresh as the last push.
+
+### NAV Oracle Flow
+
+```
+    Oracle 1            Oracle 2            Oracle 3
+    ┌─────────┐         ┌─────────┐         ┌─────────┐
+    │ Compute │         │ Compute │         │ Compute │
+    │   NAV   │         │   NAV   │         │   NAV   │
+    │         │         │         │         │         │
+    │ BLS-sign│         │ BLS-sign│         │ BLS-sign│
+    │ (price, │         │ (price, │         │ (price, │
+    │  cycle,  │         │  cycle,  │         │  cycle,  │
+    │  time)  │         │  time)  │         │  time)  │
+    └────┬────┘         └────┬────┘         └────┬────┘
+         │                   │                   │
+         │    GET /api/nav-sign?itp=0x...        │
+         ▼                   ▼                   ▼
+    ┌────────────────────────────────────────────────┐
+    │              NavCollector                      │
+    │                                                │
+    │  1. HTTP GET to each oracle (parallel)         │
+    │  2. Parse NavSignResponse (price, sig, id)     │
+    │  3. Validate consensus:                        │
+    │     - All prices must agree                    │
+    │     - All cycle numbers must agree             │
+    │     - Threshold: ceil(2n/3) responses needed   │
+    │  4. Aggregate BLS signatures into one          │
+    │  5. Build signer bitmask                       │
+    └────────────────────┬───────────────────────────┘
+                         │
+                         │  aggregated signature
+                         │  + price + cycle + bitmask
+                         ▼
+    ┌────────────────────────────────────────────────┐
+    │              OraclePusher                      │
+    │                                                │
+    │  1. Read lastCycleNumber from chain            │
+    │     (via data-node cache or direct RPC)        │
+    │  2. Skip if cycle <= on-chain cycle            │
+    │  3. pushPrice(price, timestamp, cycle,         │
+    │               aggregatedSig, bitmask)          │
+    │  4. Wait for tx confirmation                   │
+    └────────────────────┬───────────────────────────┘
+                         │
+                         ▼
+    ┌────────────────────────────────────────────────┐
+    │           ITPNAVOracle.sol                     │
+    │           (Settlement Chain)                   │
+    │                                                │
+    │  - Verifies BLS signature on-chain             │
+    │  - Stores latest price + timestamp             │
+    │  - Morpho reads price via oracle interface     │
+    └────────────────────────────────────────────────┘
+```
+
+### Consensus Validation
+
+No price reaches the oracle without unanimous agreement from a quorum. Disagreement is rejection.
+
+| Check | Requirement | Error |
+|---|---|---|
+| **Threshold** | `>= ceil(2n/3)` responses from `n` oracles | `ThresholdNotMet` |
+| **Price agreement** | All responding oracles report identical price | `PriceDisagreement` |
+| **Cycle agreement** | All responding oracles report identical cycle number | `CycleNumberDisagreement` |
+| **Freshness** | New cycle number must exceed on-chain `lastCycleNumber` | Skip (no error) |
+
+<Warning>
+  The collector uses raw TCP with manual HTTP/1.1 request construction (no `reqwest`) to minimize dependencies. Response size is capped at 1 MB (`MAX_RESPONSE_SIZE`) to prevent OOM from malicious oracles. Chunked transfer encoding is rejected.
+</Warning>
+
+### Collection Loop Timing
+
+```
+    ┌───────────┐     ┌───────────┐     ┌───────────┐     ┌───────────┐
+    │  Collect  │────►│ Validate  │────►│   Push    │────►│   Sleep   │
+    │  from all │     │ consensus │     │  to chain │     │ interval  │
+    │  oracles  │     │  + agg    │     │  (if new) │     │  (config) │
+    └───────────┘     └───────────┘     └───────────┘     └─────┬─────┘
+         ▲                                                      │
+         └──────────────────────────────────────────────────────┘
+                           repeat until shutdown
+```
+
+## Allocation Bot
+
+Capital must go where it is needed. The allocation bot watches utilization across all markets and moves USDC accordingly. It respects concentration limits because unchecked optimism is how vaults fail.
+
+### Utilization Targets
+
+```
+    0%              50%         70%    85%    90%         100%
+    ├────────────────┼───────────┼──────┼──────┼───────────┤
+    │                │           │      │      │           │
+    │  CRITICAL LOW  │   BELOW   │      │      │ CRITICAL  │
+    │  Strong pull   │  TARGET   │TARGET│      │   HIGH    │
+    │  candidate     │           │ ZONE │      │ Priority  │
+    │                │           │      │      │  supply   │
+    └────────────────┴───────────┴──────┴──────┴───────────┘
+```
+
+| Constant | Value | Meaning |
+|---|---|---|
+| `TARGET_UTILIZATION_MIN` | 70% | Below this, market is a withdrawal candidate |
+| `TARGET_UTILIZATION_MAX` | 85% | Above this, market needs more supply |
+| `UTILIZATION_CRITICAL_HIGH` | 90% | Urgent supply needed |
+| `UTILIZATION_CRITICAL_LOW` | 50% | Strong candidate for capital withdrawal |
+
+### Risk Tiers
+
+Every ITP market is assigned a risk tier that controls maximum concentration (percentage of vault assets allowed in that market):
+
+```
+    ┌─────────────────────────────────────────────────────────┐
+    │                    RISK TIERS                           │
+    │                                                         │
+    │   Tier A ████████████████████████████████  30% max cap  │
+    │   Blue-chip, diversified ITPs                           │
+    │                                                         │
+    │   Tier B ████████████████████            20% max cap    │
+    │   Medium risk ITPs                                      │
+    │                                                         │
+    │   Tier C ██████████                     10% max cap     │
+    │   Higher risk ITPs                                      │
+    │                                                         │
+    │   Tier D █████                           5% max cap     │
+    │   Watch list, new ITPs (default)                        │
+    │                                                         │
+    └─────────────────────────────────────────────────────────┘
+```
+
+<Tip>
+  New markets default to **Tier D** (5% cap) — the most restrictive tier. This prevents a freshly created ITP from absorbing excessive vault capital before it has been reviewed.
+</Tip>
+
+### Allocation Cycle
+
+Each cycle follows this sequence:
+
+```
+    ┌──────────────────┐
+    │  Detect new      │  Read vault.supplyQueue()
+    │  markets from    │  Compare against known set
+    │  supply queue    │  Add any new market IDs
+    └────────┬─────────┘
+             │
+             ▼
+    ┌──────────────────┐
+    │  Read market     │  For each market:
+    │  state from      │  - morpho.market(id) -> totals
+    │  Morpho Blue     │  - morpho.position(id, vault) -> vault supply
+    │                  │  - Compute utilization %
+    └────────┬─────────┘
+             │
+             ▼
+    ┌──────────────────┐
+    │  Compute         │  Identify over/under-utilized markets
+    │  reallocation    │  Respect tier concentration caps
+    │  decisions       │  Min allocation = 1 USDC (avoid dust)
+    └────────┬─────────┘
+             │
+             ▼
+        ┌────┴────┐
+        │ Needed? │
+        └────┬────┘
+         No  │  Yes
+         │   │
+         ▼   ▼
+       Skip  ┌──────────────────┐
+             │  vault.reallocate │  Submit MarketAllocation[]
+             │  (on-chain tx)    │  to MetaMorpho vault
+             └──────────────────┘
+```
+
+## Health Monitor
+
+The health monitor scans everything, constantly, looking for the thing that is about to go wrong. It generates structured reports. It classifies alerts by severity. It sends them to Telegram. Vigilance is the only strategy against entropy.
+
+### Monitoring Loop
+
+```
+    ┌──────────────────────────────────────────────────────────────────┐
+    │                    HEALTH MONITOR SCAN CYCLE                    │
+    │                                                                  │
+    │   ┌─────────────┐  ┌─────────────┐  ┌─────────────┐            │
+    │   │  Position   │  │   Oracle    │  │   Mirror    │            │
+    │   │  Health     │  │  Freshness  │  │  Registry   │            │
+    │   │  Factors    │  │  Check      │  │  Sync       │            │
+    │   │             │  │             │  │             │            │
+    │   │ For each    │  │ For each    │  │ L3 nonce vs │            │
+    │   │ borrower:   │  │ oracle:     │  │ Settlement  │            │
+    │   │ collateral  │  │ lastUpdated │  │ activeCount │            │
+    │   │ / debt      │  │ vs now      │  │             │            │
+    │   │ = HF        │  │ > cadence?  │  │ Synced?     │            │
+    │   └──────┬──────┘  └──────┬──────┘  └──────┬──────┘            │
+    │          │                │                 │                    │
+    │          ▼                ▼                 ▼                    │
+    │   ┌─────────────┐  ┌─────────────┐  ┌─────────────┐            │
+    │   │   Vault     │  │   Crisis    │  │    SERM     │            │
+    │   │  Metrics    │  │   Levels    │  │   Stress    │            │
+    │   │             │  │             │  │   Scoring   │            │
+    │   │ totalAssets │  │ Per-market: │  │             │            │
+    │   │ totalSupply │  │ Normal      │  │ Per-asset   │            │
+    │   │ idle        │  │ Elevated    │  │ volatility  │            │
+    │   │ utilization │  │ Stress      │  │ scoring     │            │
+    │   │             │  │ Emergency   │  │             │            │
+    │   └──────┬──────┘  └──────┬──────┘  └──────┬──────┘            │
+    │          │                │                 │                    │
+    │          └────────────────┼─────────────────┘                   │
+    │                          ▼                                      │
+    │                  ┌──────────────┐                                │
+    │                  │ HealthReport │                                │
+    │                  │              │                                │
+    │                  │ .positions[] │                                │
+    │                  │ .oracles[]   │                                │
+    │                  │ .alerts[]    │                                │
+    │                  │ .vault_metrics│                               │
+    │                  │ .mirror_sync │                                │
+    │                  │ .crisis_levels│                               │
+    │                  └──────┬───────┘                                │
+    │                         │                                       │
+    └─────────────────────────┼───────────────────────────────────────┘
+                              │
+              ┌───────────────┼───────────────┐
+              ▼               ▼               ▼
+        ┌──────────┐   ┌──────────┐   ┌──────────────┐
+        │ Telegram │   │ Log File │   │ SharedState   │
+        │ Alerts   │   │ (JSON)   │   │ (unified mode)│
+        │          │   │          │   │               │
+        │ Crisis   │   │ Full     │   │ crisis_levels │
+        │ changes  │   │ report   │   │ asset_stress  │
+        │ Critical │   │ dump     │   │ -> Quote API  │
+        │ warnings │   │          │   │ -> Alloc Bot  │
+        └──────────┘   └──────────┘   └──────────────┘
+```
+
+### Alert System
+
+Alerts are classified by severity and category:
+
+| Severity | Meaning | Example |
+|---|---|---|
+| `Info` | Routine status | "All oracles within cadence" |
+| `Warning` | Needs attention | HF between 1.05 and 1.2 |
+| `Critical` | Immediate action | HF below 1.05, oracle stale >24h |
+
+| Category | What it monitors |
+|---|---|
+| `Position` | Borrower health factors approaching liquidation |
+| `Oracle` | NAV oracle staleness per risk-tier cadence |
+| `Mirror` | L3 registry vs settlement mirror sync status |
+| `Vault` | MetaMorpho vault utilization, idle capital |
+
+### Health Factor Thresholds
+
+```
+    1.0           1.05          1.2               ∞
+     ├──────────────┼──────────────┼────────────────►
+     │              │              │
+     │ LIQUIDATABLE │   CRITICAL   │    HEALTHY
+     │   HF < 1.0   │  1.0 <= HF  │   HF >= 1.2
+     │              │   < 1.2      │
+     │  ██████████  │  ▓▓▓▓▓▓▓▓   │
+     │  Immediate   │  Alert sent  │  No action
+     │  liquidation │  to Telegram │
+```
+
+### Oracle Freshness Cadences
+
+A stale oracle is a lying oracle. Each risk tier defines the maximum acceptable age:
+
+| Tier | Max Staleness | Description |
+|---|---|---|
+| **Tier A** | 4 hours | Blue-chip ITPs, tightest freshness |
+| **Tier B** | 6 hours | Medium risk |
+| **Tier C** | 12 hours | Higher risk |
+| **Tier D** | 24 hours | Watch list (also hard maximum) |
+
+### Crisis Levels
+
+Four states, each worse than the last. The crisis level feeds into the Quote API and Allocation Bot. A market in EMERGENCY does not receive new capital.
+
+```
+    NORMAL ──────► ELEVATED ──────► STRESS ──────► EMERGENCY
+      │               │               │               │
+      │  Utilization   │  HF warnings  │  Critical HF  │
+      │  in range,     │  or oracle    │  or stale     │
+      │  oracles       │  approaching  │  oracle past  │
+      │  fresh         │  staleness    │  max cadence  │
+      │               │               │               │
+      │  Quote API:    │  Quote API:   │  Quote API:   │
+      │  Normal HF     │  Higher min   │  Much higher  │
+      │  requirements  │  HF enforced  │  min HF or    │
+      │               │               │  reject quote │
+```
+
+<Warning>
+  Crisis level transitions trigger Telegram alerts. The alert dispatcher tracks previous levels and only fires on transitions (Normal -> Elevated, Stress -> Emergency, etc.), not on every scan cycle.
+</Warning>
+
+## Quote API
+
+A lending quote is a promise with conditions. The Quote API computes the conditions -- rate, health factor requirement, calldata -- and returns them. The borrower decides whether to accept.
+
+### Quote Flow
+
+```
+    Frontend                   Curator Quote API              Settlement Chain
+    ┌────────┐                ┌──────────────────┐           ┌────────────────┐
+    │        │   POST /quote  │                  │           │                │
+    │ Borrow │───────────────►│ 1. Authenticate  │           │                │
+    │  Form  │                │    (X-API-Key)   │           │                │
+    │        │                │                  │           │                │
+    │        │                │ 2. Look up market│           │                │
+    │        │                │    config for ITP│           │                │
+    │        │                │                  │           │                │
+    │        │                │ 3. Get BLS data  │           │                │
+    │        │                │    (from shared  │           │                │
+    │        │                │     state cache) │           │                │
+    │        │                │                  │  read     │                │
+    │        │                │ 4. Read on-chain ├──────────►│ Oracle price   │
+    │        │                │    state         │◄──────────┤ Market state   │
+    │        │                │                  │           │                │
+    │        │                │ 5. SERM: compute │           │                │
+    │        │                │    borrow rate   │  push     │                │
+    │        │                │                  ├──────────►│ CuratorRateIRM │
+    │        │                │ 6. Check crisis  │           │ .setRate()     │
+    │        │                │    level, enforce│           │                │
+    │        │                │    min HF        │           │                │
+    │        │                │                  │           │                │
+    │        │  QuoteResponse │ 7. Build Morpho  │           │                │
+    │        │◄───────────────┤    Bundler       │           │                │
+    │        │  terms, rate,  │    calldata      │           │                │
+    │        │  calldata      │                  │           │                │
+    └────────┘                └──────────────────┘           └────────────────┘
+```
+
+### SERM (Shared Exposure Rate Model)
+
+Risk has a price. The SERM algorithm computes it by weighing utilization, volatility, concentration, liquidity, and tier -- then producing a single number: the borrow rate.
+
+```
+    rate = kink(global_util) * (1 + stress * 0.5) * (1 + concentration) * liquidity_mult + tier_premium
+```
+
+| Parameter | Source | Description |
+|---|---|---|
+| `global_util` | On-chain market state | Aggregate utilization across all markets |
+| `stress` | Health monitor (shared state) | Per-asset volatility score, capped at 5x |
+| `concentration` | ITP composition weights | How concentrated the collateral basket is |
+| `liquidity_mult` | Asset config | Penalty for illiquid underlying assets |
+| `tier_premium` | Risk tier (A/B/C/D) | Fixed premium per tier |
+
+Rate parameters:
+
+| Point | Rate |
+|---|---|
+| 0% utilization | 2% APR |
+| 80% utilization (kink) | 5% APR |
+| 100% utilization | 100% APR |
+
+<Tip>
+  Rates are pushed to `CuratorRateIRM.sol` on-demand — not on a fixed cadence. A push happens before returning a quote, before liquidation, and on crisis detection. This ensures the on-chain rate always reflects the latest risk assessment.
+</Tip>
+
+## Shared State (Unified Mode)
+
+Four tasks in one process need to share what they know. `SharedCuratorState` -- an `Arc<RwLock<>>` -- is the shared memory. Writers produce. Readers consume. The lock mediates.
+
+```
+    ┌──────────────┐          ┌──────────────────────────┐          ┌──────────────┐
+    │    Health    │  write   │    SharedCuratorState    │  read    │  Quote API   │
+    │   Monitor   ├─────────►│                          ├─────────►│              │
+    │              │          │  crisis_levels:          │          │ Enforce min  │
+    │ run_scan()   │          │    { mkt_id: Level }     │          │ HF per level │
+    │              │          │                          │          │              │
+    └──────────────┘          │  asset_stress:           │          └──────────────┘
+                              │    { addr: score }       │
+    ┌──────────────┐          │                          │          ┌──────────────┐
+    │    Oracle    │  write   │  cached_bls:             │  read    │  Allocation  │
+    │  Collector   ├─────────►│    { price, sig,         ├─────────►│     Bot      │
+    │              │          │      cycle, bitmask,     │          │              │
+    │ collect_all()│          │      cached_at }         │          │ Stress-aware │
+    │              │          │                          │          │ rebalancing  │
+    └──────────────┘          └──────────────────────────┘          └──────────────┘
+```
+
+| Field | Writer | Reader(s) | Purpose |
+|---|---|---|---|
+| `crisis_levels` | Health Monitor | Quote API, Allocation Bot | Per-market crisis classification |
+| `asset_stress` | Health Monitor | Quote API (SERM) | Per-asset volatility scores |
+| `cached_bls` | Oracle Collector | Quote API | Latest BLS data for oracle updates in quotes |
+
+## Key Contracts
+
+| Contract | Chain | Role |
+|---|---|---|
+| `ITPNAVOracle.sol` | Settlement | Receives BLS-signed NAV prices, provides Morpho oracle interface |
+| `CuratorRateIRM.sol` | Settlement | Dynamic interest rate model, receives SERM-computed rates from Curator |
+| `MetaMorpho` (vault) | Settlement | Vault whose allocations the bot manages across markets |
+| `Morpho Blue` | Settlement | Core lending protocol — markets, positions, liquidations |
+| `MirrorRegistry.sol` | Settlement | Mirror of L3 registry, health monitor checks sync status |
+
+## Source Modules
+
+| Module | File | Responsibility |
+|---|---|---|
+| `collector` | `collector.rs` | HTTP collection from oracles, BLS aggregation, oracle push |
+| `allocator` | `allocator.rs` | Market utilization monitoring, tier-aware rebalancing |
+| `health_monitor` | `health_monitor.rs` | Position HF, oracle freshness, mirror sync, vault metrics |
+| `quote_server` | `quote_server.rs` | Axum HTTP server for `POST /api/lending/quote` |
+| `quote` | `quote.rs` | Quote computation, crisis levels, rate limiting |
+| `serm` | `serm.rs` | Shared Exposure Rate Model — global risk-based rate computation |
+| `rate_pusher` | `rate_pusher.rs` | Push SERM rates to `CuratorRateIRM` on-chain |
+| `alerting` | `alerting.rs` | Telegram + log-based alert dispatching |
+| `shared_state` | `shared_state.rs` | `Arc<RwLock<>>` state for cross-task communication |
+| `tier_config` | `tier_config.rs` | Risk tier definitions and concentration cap loading |
+| `market_config` | `market_config.rs` | Market registry: ITP -> Morpho market mapping |
+| `liquidator` | `liquidator.rs` | Liquidation bot (triggers when HF < 1.0) |
+| `data_node_client` | `data_node_client.rs` | Client for data-node RPC cache (avoids direct chain reads) |
+
+## Alerting
+
+Alerts fire on transitions, not on every scan. A market that has been in crisis for an hour does not need to announce it every five minutes. The dispatcher remembers what it already said.
+
+```
+    ┌──────────────────┐
+    │  HealthReport    │
+    │                  │
+    │  alerts[]        │
+    │  crisis_levels   │
+    └────────┬─────────┘
+             │
+             ▼
+    ┌──────────────────┐     ┌─────────────────────────────────────┐
+    │ AlertDispatcher  │     │  Alerter trait                      │
+    │                  │     │                                     │
+    │ Tracks previous  ├────►│  TelegramAlerter                   │
+    │ crisis levels    │     │    POST to api.telegram.org         │
+    │                  │     │    bot_token + chat_id              │
+    │ Fires only on    │     │                                     │
+    │ transitions      │     │  LogAlerter (fallback)              │
+    │ (not every scan) │     │    tracing::warn / tracing::error   │
+    └──────────────────┘     └─────────────────────────────────────┘
+```
+
+<Info>
+  If no Telegram credentials are configured (`--telegram-bot-token`, `--telegram-chat-id`), the Curator falls back to `LogAlerter` which outputs alerts via the structured logging system. No alerts are silently dropped.
+</Info>
+
+## End-to-End Data Flow
+
+From oracle NAV computation to a lending quote in the user's browser. Every arrow is a dependency. Every dependency is a risk.
+
+```
+    ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+    │  Oracle 1   │     │  Oracle 2   │     │  Oracle 3   │
+    │  Compute NAV│     │  Compute NAV│     │  Compute NAV│
+    │  BLS sign   │     │  BLS sign   │     │  BLS sign   │
+    └──────┬──────┘     └──────┬──────┘     └──────┬──────┘
+           │                   │                   │
+           └───────────────────┼───────────────────┘
+                               │
+                               ▼
+                   ┌───────────────────────┐
+                   │   CURATOR (unified)   │
+                   │                       │
+                   │   NavCollector        │
+                   │     │                 │
+                   │     ▼                 │
+                   │   OraclePusher ───────┼──────► ITPNAVOracle.sol
+                   │     │                 │          │
+                   │     ▼                 │          │ Morpho reads
+                   │   SharedState ◄───────┼──────────┘ oracle price
+                   │     │                 │
+                   │     ├──► QuoteAPI     │
+                   │     │     │           │
+                   │     │     ▼           │
+                   │     │   SERM ─────────┼──────► CuratorRateIRM.sol
+                   │     │     │           │          │
+                   │     │     ▼           │          │ Morpho uses
+                   │     │   QuoteResponse │          │ for interest
+                   │     │                 │          │
+                   │     ├──► HealthMonitor│
+                   │     │     │           │
+                   │     │     ▼           │
+                   │     │   Alerts ───────┼──────► Telegram
+                   │     │                 │
+                   │     └──► AllocBot     │
+                   │           │           │
+                   │           ▼           │
+                   │         reallocate ───┼──────► MetaMorpho Vault
+                   │                       │
+                   └───────────────────────┘
+```

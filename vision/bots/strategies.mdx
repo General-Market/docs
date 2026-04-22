@@ -5,7 +5,9 @@ description: "Prediction strategies for Vision bots with code examples and backt
 
 # Example Strategies
 
-This page provides three baseline prediction strategies -- random, momentum, and mean reversion -- each with complete Python code. Use the backtest API to evaluate your strategy against historical data before deploying capital.
+A strategy is a theory about the future expressed in code. All theories about the future are wrong. Some are useful.
+
+Three baseline strategies follow -- random, momentum, and mean reversion -- each with complete Python code. Use the backtest API to test your theory against history before wagering on it. History, of course, is not obligated to repeat itself.
 
 <Info>
 All strategies here generate a list of `"UP"` / `"DOWN"` bets per market. Pass the result to `encode_bitmap()` from the [Bitmap Encoding](/vision/bots/bitmap-encoding) reference to produce the packed bytes.
@@ -13,7 +15,7 @@ All strategies here generate a list of `"UP"` / `"DOWN"` bets per market. Pass t
 
 ## Random (Baseline)
 
-The simplest strategy: pick UP or DOWN with equal probability for each market. This is the baseline against which to compare all other strategies. Expected win rate over time: ~50%.
+The purest strategy: a coin flip for each market. No knowledge, no pretension, no edge. Expected win rate: ~50%. This is not a strategy -- it is a confession of ignorance, and the baseline against which all pretensions to knowledge are measured.
 
 ```python
 import random
@@ -27,11 +29,11 @@ bets = random_strategy(10)
 # e.g. ['UP', 'DOWN', 'UP', 'UP', 'DOWN', 'DOWN', 'UP', 'DOWN', 'UP', 'DOWN']
 ```
 
-**When to use:** As a benchmark. If your strategy cannot consistently beat random, it has no edge.
+**When to use:** As a benchmark. If your strategy cannot consistently beat random, it has no edge -- only complexity.
 
 ## Momentum
 
-Bet that the current trend continues. If an asset has been going UP recently, bet UP. If DOWN, bet DOWN. The lookback window controls sensitivity.
+The world was going up. Therefore the world will continue going up. This is the momentum thesis -- a bet on inertia, on the universe's reluctance to change its mind. The lookback window controls sensitivity.
 
 ```python
 import requests
@@ -74,11 +76,11 @@ def momentum_strategy(
 bets = momentum_strategy(["BTC-USD", "ETH-USD", "SOL-USD"])
 ```
 
-**When to use:** Works well in trending markets. Underperforms in choppy / mean-reverting conditions.
+**When to use:** Works well in trending markets. Destroyed by chop -- the market's way of punishing those who believe the present explains the future.
 
 ## Mean Reversion
 
-Bet against the recent trend, expecting prices to snap back. If an asset has been going UP, bet DOWN. If DOWN, bet UP.
+The contrarian's creed: what went up must come down. Bet against the trend, expecting prices to snap back to some equilibrium that may or may not exist. If an asset has been going UP, bet DOWN. If DOWN, bet UP.
 
 ```python
 import requests
@@ -135,7 +137,7 @@ bets = mean_reversion_strategy(
 )
 ```
 
-**When to use:** Works well in range-bound / choppy markets. Underperforms in strong trends.
+**When to use:** Works well in range-bound markets. Annihilated by strong trends -- the market's way of punishing those who believe the future contradicts the present.
 
 ## Strategy Comparison
 
@@ -146,12 +148,12 @@ bets = mean_reversion_strategy(
 | **Mean Reversion** | Low | Range-bound markets | Strong trends blow through |
 
 <Tip>
-Combine strategies: use momentum when volatility is low (trending) and mean reversion when volatility spikes (choppy). Detect regime using a rolling standard deviation of recent price changes.
+Combine strategies: momentum when volatility is low, mean reversion when it spikes. Detect the regime with a rolling standard deviation. Of course, detecting the regime is itself a prediction about the future -- turtles all the way down.
 </Tip>
 
 ## Backtesting
 
-Use the Vision backtest API to simulate a bitmap against historical tick outcomes before committing real capital.
+Backtesting: the art of discovering you would have been right, had you known what was going to happen. Use the Vision backtest API to simulate a bitmap against historical tick outcomes before committing real capital.
 
 ### Request
 
@@ -226,12 +228,12 @@ for name, strategy_fn in [
 ```
 
 <Warning>
-Backtests use deterministic pseudo-random market outcomes seeded from market IDs and tick indices. They indicate whether a bitmap has structural edge (e.g., correctly correlated predictions), but do not perfectly predict live performance.
+Backtests use deterministic pseudo-random outcomes seeded from market IDs and tick indices. They reveal structural edge, not prophetic power. The past cooperates with hindsight. The future is under no such obligation.
 </Warning>
 
 ## Building Your Own Strategy
 
-A strategy function takes market metadata and returns a list of bets. The interface is simple:
+A strategy function takes market metadata and returns a list of bets. The interface is simple -- it is the content of the function that is impossible:
 
 ```python
 def my_strategy(market_ids: list[str], market_count: int, **kwargs) -> list[str]:
@@ -265,9 +267,9 @@ bitmap_hash = Web3.keccak(bitmap)
 
 <CardGroup cols={2}>
   <Card title="Python Strategy Examples" icon="python" href="https://github.com/General-Market/examples/tree/main/vision-bot-python">
-    Full strategy implementations with backtesting, logging, and configuration.
+    Full strategy implementations. Theories about the future, ready to be tested against it.
   </Card>
   <Card title="TypeScript Strategy Examples" icon="js" href="https://github.com/General-Market/examples/tree/main/vision-bot-typescript">
-    Type-safe strategy framework with viem integration and test harness.
+    The same theories, type-checked. Types prevent runtime errors but not epistemic ones.
   </Card>
 </CardGroup>
