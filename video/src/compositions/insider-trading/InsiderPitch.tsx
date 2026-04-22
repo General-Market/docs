@@ -212,115 +212,117 @@ const ContrastScene: React.FC<{
   duration: number;
 }> = ({ local, sceneStart, duration }) => {
   const fadeOut = interpolate(local, [duration - 18, duration], [1, 0], clamp);
-
-  // Dots kept in the outer gutter only — top corners and the vertical
-  // divider. They can no longer wander across the text columns.
-  const dots = [
-    { x: 0.08, y: 0.14, r: 28 },
-    { x: 0.5, y: 0.12, r: 14 },
-    { x: 0.92, y: 0.18, r: 24 },
-    { x: 0.5, y: 0.88, r: 10 },
-    { x: 0.08, y: 0.86, r: 20 },
-    { x: 0.92, y: 0.82, r: 32 },
-  ];
+  // Thin horizontal rule slides out between the two halves.
+  const dividerW = interpolate(local, [46, 86], [0, 1400], {
+    ...clamp,
+    easing: ease3,
+  });
 
   return (
     <AbsoluteFill style={{ opacity: fadeOut }}>
-      {/* SHAPES — gutter dots only, no full-height circle */}
-      <AbsoluteFill>
-        {dots.map((p, i) => {
-          const appear = interpolate(
-            local,
-            [i * 3, 14 + i * 3],
-            [0, 1],
-            clamp,
-          );
-          return (
-            <div
-              key={i}
-              style={{
-                position: "absolute",
-                left: `${p.x * 100}%`,
-                top: `${p.y * 100}%`,
-                width: p.r * 2 * appear,
-                height: p.r * 2 * appear,
-                transform: "translate(-50%, -50%)",
-                borderRadius: "50%",
-                background: WHITE,
-              }}
-            />
-          );
-        })}
-      </AbsoluteFill>
-
-      {/* TEXT */}
+      {/* DIVIDER — one clean line separating the two statements */}
       <AbsoluteFill
         style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
+          display: "flex",
           alignItems: "center",
-          padding: "140px 160px",
-          boxSizing: "border-box",
-          gap: 120,
+          justifyContent: "center",
         }}
       >
-        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-          <Reveal
-            from={sceneStart}
-            duration={duration}
-            text="EVERY EXCHANGE"
-            revealDuration={28}
-            seed={3}
-            style={{
-              fontSize: 26,
-              fontWeight: 700,
-              letterSpacing: "0.3em",
-            }}
-          />
-          <Reveal
-            from={sceneStart + 8}
-            duration={duration - 8}
-            text="concedes to insiders"
-            revealDuration={36}
-            seed={5}
-            style={{
-              fontSize: 76,
-              fontWeight: 900,
-              letterSpacing: "-0.03em",
-              lineHeight: 1,
-              maxWidth: 720,
-            }}
-          />
-        </div>
+        <div
+          style={{
+            width: dividerW,
+            height: 2,
+            background: WHITE,
+            opacity: 0.35,
+          }}
+        />
+      </AbsoluteFill>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-          <Reveal
-            from={sceneStart + 44}
-            duration={duration - 44}
-            text="GENERAL MARKET"
-            revealDuration={28}
-            seed={13}
-            style={{
-              fontSize: 26,
-              fontWeight: 700,
-              letterSpacing: "0.3em",
-            }}
-          />
-          <Reveal
-            from={sceneStart + 52}
-            duration={duration - 52}
-            text="removes their edge"
-            revealDuration={40}
-            seed={17}
-            style={{
-              fontSize: 76,
-              fontWeight: 900,
-              letterSpacing: "-0.03em",
-              lineHeight: 1,
-              maxWidth: 720,
-            }}
-          />
-        </div>
+      {/* TOP HALF — Every exchange concedes */}
+      <AbsoluteFill
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          paddingBottom: 560,
+          gap: 20,
+          padding: "0 140px 560px",
+          boxSizing: "border-box",
+        }}
+      >
+        <Reveal
+          from={sceneStart}
+          duration={duration}
+          text="EVERY EXCHANGE"
+          revealDuration={28}
+          seed={3}
+          style={{
+            fontSize: 28,
+            fontWeight: 700,
+            letterSpacing: "0.32em",
+            textAlign: "center",
+            maxWidth: 1500,
+          }}
+        />
+        <Reveal
+          from={sceneStart + 10}
+          duration={duration - 10}
+          text="concedes to insiders"
+          revealDuration={36}
+          seed={5}
+          style={{
+            fontSize: 108,
+            fontWeight: 900,
+            letterSpacing: "-0.03em",
+            lineHeight: 1,
+            textAlign: "center",
+            maxWidth: 1640,
+          }}
+        />
+      </AbsoluteFill>
+
+      {/* BOTTOM HALF — General Market removes their edge */}
+      <AbsoluteFill
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "560px 140px 0",
+          boxSizing: "border-box",
+          gap: 20,
+        }}
+      >
+        <Reveal
+          from={sceneStart + 56}
+          duration={duration - 56}
+          text="GENERAL MARKET"
+          revealDuration={28}
+          seed={13}
+          style={{
+            fontSize: 28,
+            fontWeight: 700,
+            letterSpacing: "0.32em",
+            textAlign: "center",
+            maxWidth: 1500,
+          }}
+        />
+        <Reveal
+          from={sceneStart + 66}
+          duration={duration - 66}
+          text="removes their edge"
+          revealDuration={40}
+          seed={17}
+          style={{
+            fontSize: 108,
+            fontWeight: 900,
+            letterSpacing: "-0.03em",
+            lineHeight: 1,
+            textAlign: "center",
+            maxWidth: 1640,
+          }}
+        />
       </AbsoluteFill>
     </AbsoluteFill>
   );
@@ -361,51 +363,42 @@ const Point1Scene: React.FC<{
         />
       </AbsoluteFill>
 
-      {/* TITLE — kept to a short lead-in so it doesn't echo the number */}
+      {/* HEADLINE — the sentence itself, no enumeration prefix */}
       <AbsoluteFill
         style={{
           display: "flex",
-          alignItems: "flex-start",
+          flexDirection: "column",
+          alignItems: "center",
           justifyContent: "center",
-          paddingTop: 150,
+          gap: 14,
         }}
       >
         <Reveal
           from={sceneStart + 4}
           duration={duration - 4}
-          text="01 · ACTIVE MARKETS"
-          revealDuration={32}
-          seed={31}
-          style={{
-            fontSize: 28,
-            fontWeight: 700,
-            letterSpacing: "0.32em",
-            textAlign: "center",
-            textTransform: "uppercase",
-            maxWidth: 1500,
-          }}
-        />
-      </AbsoluteFill>
-
-      {/* THE NUMBER — owns the middle */}
-      <AbsoluteFill
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Reveal
-          from={sceneStart + 32}
-          duration={duration - 32}
           text="500,000"
-          revealDuration={24}
+          revealDuration={28}
           seed={37}
           style={{
-            fontSize: 260,
+            fontSize: 240,
             fontWeight: 900,
             letterSpacing: "-0.04em",
             textAlign: "center",
+            maxWidth: 1700,
+          }}
+        />
+        <Reveal
+          from={sceneStart + 30}
+          duration={duration - 30}
+          text="active markets"
+          revealDuration={26}
+          seed={31}
+          style={{
+            fontSize: 52,
+            fontWeight: 700,
+            letterSpacing: "-0.02em",
+            textAlign: "center",
+            maxWidth: 1500,
           }}
         />
       </AbsoluteFill>
@@ -498,7 +491,7 @@ const Point2Scene: React.FC<{
         <Reveal
           from={sceneStart + 4}
           duration={duration - 4}
-          text="2. 100% privacy until settlement"
+          text="100% privacy until settlement"
           revealDuration={38}
           seed={59}
           style={{
@@ -586,7 +579,7 @@ const Point3Scene: React.FC<{
         <Reveal
           from={sceneStart + 4}
           duration={duration - 4}
-          text="3. 100,000 trades per second"
+          text="100,000 trades per second"
           revealDuration={38}
           seed={83}
           style={{
