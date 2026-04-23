@@ -1420,93 +1420,12 @@ const ClosingScene: React.FC<{
   local: number;
   sceneStart: number;
   duration: number;
-}> = ({ local, sceneStart, duration }) => {
-  const sweep = interpolate(local, [0, 40], [0, 1], {
-    ...clamp,
-    easing: ease3,
-  });
-  // Sweep keeps its original 70→108 shrink window, independent of scene
-  // length — the extra frames at the tail are reserved for the lockup
-  // reveal, not more sweep motion.
-  const shrink = interpolate(local, [70, 108], [1, 0.3], clamp);
-  const firstOut = interpolate(local, [58, 74], [1, 0], clamp);
-  // Second statement holds until the lockup starts forming, then steps
-  // aside so the wordmark reveal owns the frame.
-  const secondOut = interpolate(local, [104, 118], [1, 0], clamp);
+}> = ({ local, duration }) => {
   const fadeOut = interpolate(local, [duration - 18, duration], [1, 0], clamp);
 
   return (
     <AbsoluteFill style={{ opacity: fadeOut }}>
-      {/* BACKGROUND — inverted grid/logo dezoom */}
       <ClosingLogoGrid local={local} />
-
-      {/* SHAPE */}
-      <AbsoluteFill
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <div
-          style={{
-            width: 1920 * sweep * shrink,
-            height: 360 * shrink,
-            background: WHITE,
-            borderRadius: 4 + (1 - shrink) * 60,
-          }}
-        />
-      </AbsoluteFill>
-
-      {/* FIRST STATEMENT */}
-      <AbsoluteFill
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          opacity: firstOut,
-        }}
-      >
-        <Reveal
-          from={sceneStart + 10}
-          duration={64}
-          text="Not just insider protection"
-          revealDuration={40}
-          seed={137}
-          style={{
-            fontSize: 96,
-            fontWeight: 900,
-            letterSpacing: "-0.03em",
-            textAlign: "center",
-            maxWidth: 1600,
-          }}
-        />
-      </AbsoluteFill>
-
-      {/* SECOND STATEMENT */}
-      <AbsoluteFill
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          opacity: secondOut,
-        }}
-      >
-        <Reveal
-          from={sceneStart + 64}
-          duration={54}
-          text="A new trading standard"
-          revealDuration={38}
-          seed={149}
-          style={{
-            fontSize: 120,
-            fontWeight: 900,
-            letterSpacing: "-0.04em",
-            textAlign: "center",
-            maxWidth: 1600,
-          }}
-        />
-      </AbsoluteFill>
     </AbsoluteFill>
   );
 };
