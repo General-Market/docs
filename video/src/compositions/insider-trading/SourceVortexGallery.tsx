@@ -30,10 +30,10 @@ const INSTANCE_COUNT = 600;
 const CIRCLE_COUNT = Math.floor(HEIGHT / 3);
 const CIRCLE_HEIGHT = HEIGHT / CIRCLE_COUNT;
 
-// Original VortexGallery ran 0.06. 2× faster → 0.12.
-const SCROLL_SPEED = 0.12;
-// Original VortexGallery ran 0.4. 3× slower → 0.4 / 3.
-const ANGULAR_SPEED = 0.1333;
+// Slowed down both axes so background cards are readable at rest.
+// Original 0.06 → 0.04 (scroll), original 0.4 → 0.05 (rotation).
+const SCROLL_SPEED = 0.04;
+const ANGULAR_SPEED = 0.05;
 
 // Atlas tile — one tile per FEATURED_SOURCE. Match the real card's
 // aspect ratio (~380×460 rendered) at 400×520 so detail survives.
