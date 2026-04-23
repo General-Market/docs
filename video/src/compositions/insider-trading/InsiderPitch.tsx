@@ -820,6 +820,17 @@ const p3Hash = (i: number, seed: number): number => {
   return h - Math.floor(h);
 };
 
+// Round-frame icons — the homepage's small source logos, copied verbatim
+// from frontend/public/source-imgs/icons/. Each one is a square logo that
+// we drop into a circular white frame so the grid reads as a field of
+// branded round coins rising together.
+const P3_ICONS = [
+  "coingecko", "twitch", "polymarket", "db_trains", "steam", "github",
+  "reddit", "flights", "earthquake", "nasdaq", "openmeteo", "cftc",
+  "weather", "spaceweather", "mta_subway", "noaa_new", "iss", "defillama",
+  "tmdb", "lastfm", "anilist", "sports", "lichess", "pumpfun",
+] as const;
+
 const Point3Scene: React.FC<{
   local: number;
   sceneStart: number;
@@ -1049,24 +1060,94 @@ const Point3Scene: React.FC<{
           </div>
         </div>
 
-        {/* Structured grid of dots — lines of points flowing upward, tiled
-            by a repeating radial-gradient. Masked so the spawn zone stays
-            invisible; only the upper band reads as a dense, organised
-            stream reaching the top. */}
+        {/* Structured grid of round-framed homepage source icons. Each
+            cell is a circular white coin with the source logo centred
+            inside — lifted verbatim from the homepage's FeaturedCard
+            header. Two tiles rendered back-to-back and scrolled with a
+            modulo translate, so the loop is seamless. Masked so only
+            the upper band shows; the spawn zone never reads. */}
         <div
           style={{
             position: "absolute",
             inset: 0,
             opacity: flowOpacity,
-            backgroundImage:
-              "radial-gradient(circle, #ffffff 30%, transparent 32%)",
-            backgroundSize: "22px 28px",
-            backgroundRepeat: "repeat",
-            backgroundPosition: `50% ${-local * RISE_SPEED}px`,
+            overflow: "hidden",
             WebkitMaskImage: STREAM_MASK,
             maskImage: STREAM_MASK,
           }}
-        />
+        >
+          {(() => {
+            const ICON = 40;
+            const GAP_X = 16;
+            const GAP_Y = 18;
+            const CELL_W = ICON + GAP_X;
+            const CELL_H = ICON + GAP_Y;
+            const COLS = 8;
+            const TILE_ROWS = 24;
+            const TILE_HEIGHT = TILE_ROWS * CELL_H;
+            const scrollY =
+              (((local * RISE_SPEED) % TILE_HEIGHT) + TILE_HEIGHT) %
+              TILE_HEIGHT;
+            // Two tiles stacked so the wrap from -TILE_HEIGHT back to 0
+            // lands on identical content — no visible jump.
+            const rows: number[] = [];
+            for (let r = 0; r < TILE_ROWS * 2; r++) rows.push(r);
+            const gridW = COLS * CELL_W - GAP_X;
+            return (
+              <div
+                style={{
+                  position: "absolute",
+                  left: "50%",
+                  top: 0,
+                  width: gridW,
+                  transform: `translate(-50%, ${-scrollY}px)`,
+                }}
+              >
+                {rows.map((r) =>
+                  Array.from({ length: COLS }).map((_, c) => {
+                    const tileRow = r % TILE_ROWS;
+                    const iconIdx =
+                      Math.floor(p3Hash(tileRow * 17 + c * 7, 31) *
+                        P3_ICONS.length) % P3_ICONS.length;
+                    const name = P3_ICONS[iconIdx];
+                    return (
+                      <div
+                        key={`${r}-${c}`}
+                        style={{
+                          position: "absolute",
+                          left: c * CELL_W,
+                          top: r * CELL_H,
+                          width: ICON,
+                          height: ICON,
+                          borderRadius: "50%",
+                          background: "#ffffff",
+                          boxShadow:
+                            "0 2px 8px rgba(0,0,0,0.25), inset 0 0 0 1px rgba(0,0,0,0.04)",
+                          padding: 5,
+                          boxSizing: "border-box",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <Img
+                          src={staticFile(
+                            `source-imgs/icons/${name}.png`,
+                          )}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "contain",
+                          }}
+                        />
+                      </div>
+                    );
+                  }),
+                )}
+              </div>
+            );
+          })()}
+        </div>
       </div>
     </AbsoluteFill>
   );
