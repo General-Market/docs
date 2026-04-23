@@ -470,14 +470,18 @@ pub fn ix_admin_force_resolve(
 
 pub fn ix_batch_bets(
     user: &Pubkey,
+    stake_mint: &Pubkey,
     remaining: Vec<AccountMeta>,
     args: prediction_market::instructions::BatchBetsArgs,
 ) -> Instruction {
     let data = prediction_market::instruction::BatchBets { args }.data();
     let mut accounts = prediction_market::accounts::BatchBets {
         config: config_pda(),
+        stake_mint: *stake_mint,
         user: *user,
         token_program: anchor_spl::token::ID,
+        system_program: solana_sdk_ids::system_program::ID,
+        rent: solana_sdk_ids::sysvar::rent::ID,
     }
     .to_account_metas(None);
     accounts.extend(remaining);

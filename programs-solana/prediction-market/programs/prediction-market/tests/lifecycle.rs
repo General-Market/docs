@@ -606,7 +606,7 @@ fn batch_bets_rejects_forged_market() {
         &[],
     );
 
-    // Now craft a forged stride-4 where the "market" account is actually
+    // Now craft a forged stride-5 where the "market" account is actually
     // the Source PDA — the manual PDA-derivation check in batch_bets must
     // reject it.
     let fake_market = source_pda(source_id);
@@ -616,15 +616,21 @@ fn batch_bets_rejects_forged_market() {
         AccountMeta::new(position_pda(&real_market, &mm.pubkey()), false),
         AccountMeta::new(vault_pda(&real_market), false),
         AccountMeta::new(ata_for(&mm.pubkey(), &mint), false),
+        AccountMeta::new_readonly(source_pda(source_id), false),
     ];
 
     let err = try_send_ix(
         &mut svm,
         &[ix_batch_bets(
             &mm.pubkey(),
+            &mint,
             remaining,
             prediction_market::instructions::BatchBetsArgs {
                 entries: vec![prediction_market::instructions::BatchEntry {
+                    source_id,
+                    close_time: close,
+                    settlement_time: settle,
+                    threshold_bps,
                     side: Side::Yes,
                     amount: 1_000,
                 }],
