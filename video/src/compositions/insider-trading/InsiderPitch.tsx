@@ -243,6 +243,8 @@ const IntroScene: React.FC<{
 
 // ─── Scene 2: POINT 1 — 500,000 active markets ───────────────────────────
 
+const POINT1_CENTER_SEQUENCE = ["twitch", "db_trains", "tmdb"] as const;
+
 const Point1Scene: React.FC<{
   local: number;
   sceneStart: number;
@@ -254,11 +256,21 @@ const Point1Scene: React.FC<{
     easing: ease3,
   });
 
+  // Split the scene into equal thirds and pick the center card accordingly.
+  const phase = Math.min(
+    POINT1_CENTER_SEQUENCE.length - 1,
+    Math.max(
+      0,
+      Math.floor((local / duration) * POINT1_CENTER_SEQUENCE.length),
+    ),
+  );
+  const centerSourceId = POINT1_CENTER_SEQUENCE[phase];
+
   return (
     <AbsoluteFill style={{ opacity: fadeOut, background: "#000000" }}>
       {/* VORTEX — source-card variant of the WebGLPicks VortexGallery */}
       <AbsoluteFill style={{ opacity: vortexIn }}>
-        <SourceVortexGallery />
+        <SourceVortexGallery centerSourceId={centerSourceId} />
       </AbsoluteFill>
 
       {/* CENTER — the headline number and its tagline. Solid white, no
@@ -1175,13 +1187,15 @@ const StatScene: React.FC<{
 // back in lockstep with the shape.
 const CLOSING_GRID_COLS = 12;
 const CLOSING_GRID_ROWS = 12;
-// Final form — icon size + wordmark width used for the "General Market"
-// lockup that snaps into place at the end of the closing. Tuned so the
-// row feels balanced on a 1920-wide stage.
-const CLOSING_ICON_FINAL = 340;
-const CLOSING_WORDMARK_W = 820;
-const CLOSING_WORDMARK_FONT = 176;
-const CLOSING_LOCKUP_GAP = 36;
+// Final lockup sizing — icon + wordmark. Tuned to balance on a
+// 1920-wide stage: icon ~200 px, wordmark Inter-900 at 160, 28 px gap.
+const CLOSING_ICON_FINAL = 200;
+const CLOSING_WORDMARK_FONT = 160;
+const CLOSING_LOCKUP_GAP = 28;
+// Measured width of "General Market" at the font/tracking above.
+// Used for placement only; the text itself sizes to its content.
+const CLOSING_WORDMARK_W = 1080;
+const CLOSING_STAGE_W = 1920;
 
 const ClosingLogoGrid: React.FC<{ local: number }> = ({ local }) => {
   // Phase 1 — dezoom: fills the frame then retracts to hero size.

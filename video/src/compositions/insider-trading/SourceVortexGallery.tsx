@@ -46,7 +46,6 @@ const ATLAS_ROWS = Math.ceil(IMAGE_COUNT / ATLAS_COLS);
 // Card palette — mirrors the FeaturedCard constants so the atlas
 // doesn't drift away from the on-site look when the source updates.
 const CHART_COLORS = ["#2563EB", "#059669", "#D97706", "#7C3AED"] as const;
-const BORDER = "#E4E4E7";
 const LOGO_BG = "#F4F4F5";
 const NAME_COLOR = "#0A0A0A";
 const MARKET_COLOR = "#A1A1AA";
@@ -299,6 +298,12 @@ async function buildSourceAtlas(): Promise<{
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
 
+  // Fill the whole atlas white so the 3D box's side faces and any
+  // atlas-edge sampling at mipmap boundaries never grab transparent or
+  // dark pixels — that was the source of the black fringe around cards.
+  ctx.fillStyle = "#FFFFFF";
+  ctx.fillRect(0, 0, atlasW, atlasH);
+
   const tiles: TileUV[] = [];
 
   for (let i = 0; i < IMAGE_COUNT; i++) {
@@ -308,48 +313,36 @@ async function buildSourceAtlas(): Promise<{
     const ox = col * TILE_W;
     const oy = row * TILE_H;
 
-    // Inset the actual card so it doesn't bleed into its neighbours.
-    const pad = 6;
-    const cx = ox + pad;
-    const cy = oy + pad;
-    const cw = TILE_W - pad * 2;
-    const ch = TILE_H - pad * 2;
+    // Draw card edge-to-edge. No rounded corners, no inset, no stroke —
+    // clean flat rectangles like the original VortexGallery tiles.
+    const cx = ox;
+    const cy = oy;
+    const cw = TILE_W;
+    const ch = TILE_H;
 
-    // ─ Card body
-    ctx.fillStyle = "#FFFFFF";
-    drawRoundedRect(ctx, cx, cy, cw, ch, 12);
-    ctx.fill();
-    ctx.strokeStyle = BORDER;
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    // ─ Accent gradient bar (3px)
-    ctx.save();
-    drawRoundedRect(ctx, cx, cy, cw, 4, 12);
-    ctx.clip();
+    // ─ Accent gradient bar (4px, flat)
     const accentGrad = ctx.createLinearGradient(cx, cy, cx + cw, cy);
     accentGrad.addColorStop(0, source.accent);
     accentGrad.addColorStop(1, source.accent + "44");
     ctx.fillStyle = accentGrad;
-    ctx.fillRect(cx, cy, cw, 4);
-    ctx.restore();
+    ctx.fillRect(cx, cy, cw, 5);
 
-    // ─ Header row — 48px tall: logo | name+markets | live pill
-    const headerY = cy + 16;
-    const padX = 16;
+    // ─ Header row. Logo box bumped to 64×64 per request — much more
+    //   prominent brand mark when seen on the cylinder.
+    const headerY = cy + 22;
+    const padX = 18;
 
-    // Logo box 42×42 with light gray bg + rounded corners
-    const logoSize = 42;
+    const logoSize = 64;
     const logoX = cx + padX;
     const logoY = headerY;
     ctx.fillStyle = LOGO_BG;
-    drawRoundedRect(ctx, logoX, logoY, logoSize, logoSize, 7);
+    drawRoundedRect(ctx, logoX, logoY, logoSize, logoSize, 10);
     ctx.fill();
 
-    // Logo image — center-fit at 86% of the box
+    // Logo image — center-fit at 88% of the box
     const logoImg = logos[i];
     if (logoImg && logoImg.width > 0 && logoImg.height > 0) {
-      const maxDim = logoSize * 0.82;
+      const maxDim = logoSize * 0.86;
       const ratio = Math.min(
         maxDim / logoImg.width,
         maxDim / logoImg.height,
@@ -366,55 +359,53 @@ async function buildSourceAtlas(): Promise<{
     }
 
     // Source name
-    const textX = logoX + logoSize + 12;
+    const textX = logoX + logoSize + 14;
     ctx.fillStyle = NAME_COLOR;
-    ctx.font = `800 22px ${CARD_FONT}`;
+    ctx.font = `800 26px ${CARD_FONT}`;
     ctx.textAlign = "left";
-    ctx.fillText(source.name, textX, headerY + 20);
+    ctx.fillText(source.name, textX, headerY + 28);
 
     // LIVE pill (top-right)
-    const pillW = 66;
-    const pillH = 22;
+    const pillW = 70;
+    const pillH = 24;
     const pillX = cx + cw - padX - pillW;
-    const pillY = headerY + 4;
+    const pillY = headerY + 6;
     ctx.fillStyle = source.accent + "22";
-    drawRoundedRect(ctx, pillX, pillY, pillW, pillH, 11);
+    drawRoundedRect(ctx, pillX, pillY, pillW, pillH, 12);
     ctx.fill();
-    // Pill dot
     ctx.fillStyle = source.accent;
     ctx.beginPath();
-    ctx.arc(pillX + 11, pillY + pillH / 2, 3.5, 0, Math.PI * 2);
+    ctx.arc(pillX + 12, pillY + pillH / 2, 4, 0, Math.PI * 2);
     ctx.fill();
-    // Pill text
-    ctx.font = `700 12px ${CARD_FONT}`;
+    ctx.font = `700 13px ${CARD_FONT}`;
     ctx.textAlign = "left";
-    ctx.fillText("Live", pillX + 20, pillY + 15);
+    ctx.fillText("Live", pillX + 22, pillY + 17);
 
     // Markets subline
     ctx.fillStyle = MARKET_COLOR;
-    ctx.font = `600 13px ${MONO_FONT}`;
+    ctx.font = `600 14px ${MONO_FONT}`;
     ctx.textAlign = "left";
     const marketsStr = formatMarkets(source.markets);
-    ctx.fillText(marketsStr, textX, headerY + 40);
-    ctx.font = `500 13px ${CARD_FONT}`;
+    ctx.fillText(marketsStr, textX, headerY + 54);
+    ctx.font = `500 14px ${CARD_FONT}`;
     const marketsWidth = ctx.measureText(marketsStr).width;
     ctx.fillText(
       ` markets · ${source.unit}`,
       textX + marketsWidth,
-      headerY + 40,
+      headerY + 54,
     );
 
     // ─ Top divider
     ctx.strokeStyle = ROW_DIVIDER;
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(cx, cy + 80);
-    ctx.lineTo(cx + cw, cy + 80);
+    ctx.moveTo(cx + padX, cy + 106);
+    ctx.lineTo(cx + cw - padX, cy + 106);
     ctx.stroke();
 
     // ─ Stat rows — up to 4
-    const rowH = 26;
-    const rowStart = cy + 90;
+    const rowH = 28;
+    const rowStart = cy + 118;
     const rows = source.subs.slice(0, 4);
     rows.forEach((sub, j) => {
       const rowY = rowStart + j * rowH;
@@ -771,7 +762,8 @@ const VortexScene: React.FC<{
   fps: number;
   atlas: THREE.CanvasTexture;
   tiles: TileUV[];
-}> = ({ frame, fps, atlas, tiles }) => {
+  centerIndex: number;
+}> = ({ frame, fps, atlas, tiles, centerIndex }) => {
   const time = frame / fps;
 
   const scrollProgress = frame / 480;
@@ -785,8 +777,6 @@ const VortexScene: React.FC<{
   const speedY = scrollY;
   const direction = 1;
 
-  const textureIndex = Math.floor(speedY % IMAGE_COUNT);
-
   return (
     <>
       <CameraRig />
@@ -798,14 +788,17 @@ const VortexScene: React.FC<{
         time={time}
         direction={direction}
       />
-      <CenterPlane atlas={atlas} tiles={tiles} textureIndex={textureIndex} />
+      <CenterPlane atlas={atlas} tiles={tiles} textureIndex={centerIndex} />
     </>
   );
 };
 
 // ── Remotion composition export ─────────────────────────────────────────
 
-export const SourceVortexGallery: React.FC = () => {
+export const SourceVortexGallery: React.FC<{
+  /** Source ID to show on the center card. Defaults to cycling by scroll. */
+  centerSourceId?: string;
+}> = ({ centerSourceId }) => {
   const frame = useCurrentFrame();
   const { fps, width, height } = useVideoConfig();
 
@@ -838,6 +831,17 @@ export const SourceVortexGallery: React.FC = () => {
     return <AbsoluteFill style={{ background: "#0a0a0a" }} />;
   }
 
+  // Resolve centerIndex: an explicit source ID wins; otherwise cycle.
+  let centerIndex = 0;
+  if (centerSourceId) {
+    const idx = FEATURED_SOURCES.findIndex((s) => s.id === centerSourceId);
+    if (idx >= 0) centerIndex = idx;
+  } else {
+    centerIndex = Math.floor(
+      (frame * SCROLL_SPEED) % FEATURED_SOURCES.length,
+    );
+  }
+
   return (
     <AbsoluteFill style={{ background: "#0a0a0a" }}>
       <ThreeCanvas
@@ -851,6 +855,7 @@ export const SourceVortexGallery: React.FC = () => {
           fps={fps}
           atlas={atlasState.texture}
           tiles={atlasState.tiles}
+          centerIndex={centerIndex}
         />
       </ThreeCanvas>
     </AbsoluteFill>
