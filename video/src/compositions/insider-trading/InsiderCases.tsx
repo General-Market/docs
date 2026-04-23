@@ -34,7 +34,9 @@ const FPS = 30;
 // track; each value is a beat timestamp shifted by -PROLOGUE_DURATION (the
 // articles phase lives in a Sequence from=PROLOGUE_DURATION, so its local
 // frame 0 == music time 4.0s).
-const PITCH_START = 223;       // music beat at 7.424s
+// Was 223 (music beat at 7.424s); cut 20 frames of dead hold on the last
+// article so the articles → pitch handover snaps instead of waiting.
+const PITCH_START = 203;
 const PITCH_FADE_IN = 10;
 
 // ─── Prologue — 4s. Micro-onsets from librosa (first 3.65s of the track,

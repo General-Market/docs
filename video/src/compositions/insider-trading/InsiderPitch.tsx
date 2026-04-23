@@ -1,7 +1,6 @@
 import React from "react";
 import {
   AbsoluteFill,
-  Easing,
   Img,
   Sequence,
   interpolate,
@@ -26,12 +25,6 @@ const ease3 = (t: number) => 1 - Math.pow(1 - t, 3);
 // auto-inverts against the shapes via mix-blend-mode: difference.
 const BLACK = "#0e0f0c";
 const WHITE = "#ffffff";
-
-// Gemini palette, ported for the tagline halo. Kept local to the intro.
-const PURPLE = "#8B5CF6";
-const PINK = "#EC4899";
-const BLUE = "#3B82F6";
-const BACK_OUT = Easing.out(Easing.back(2.5));
 
 // GM lockup — seven stacked bars in a 102×102 viewBox. Lifted from
 // /frontend/public/logo.svg. Rendered in white for the night-mode
@@ -126,117 +119,6 @@ const Reveal: React.FC<{
   );
 };
 
-// ─── Fights-back tagline — gradient-clipped pop-in with a 4-point sparkle
-//      halo and a violet wash. Echoes Scene05's "Our most capable AI"
-//      treatment, scaled down so the GM lockup above it keeps primacy.
-const FightsBackTagline: React.FC<{ duration: number }> = ({ duration }) => {
-  const frame = useCurrentFrame();
-  const words = ["fights", "back"];
-
-  const halo = interpolate(
-    frame,
-    [0, 12, duration - 14, duration],
-    [0, 1, 1, 0],
-    clamp,
-  );
-
-  return (
-    <AbsoluteFill
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        paddingTop: 260,
-        pointerEvents: "none",
-      }}
-    >
-      <div style={{ position: "relative", width: 460, height: 460 }}>
-        <svg
-          width={460}
-          height={460}
-          viewBox="0 0 600 600"
-          style={{
-            position: "absolute",
-            inset: 0,
-            opacity: halo * 0.35,
-          }}
-        >
-          <defs>
-            <linearGradient id="fb-sparkle" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor={PURPLE} />
-              <stop offset="50%" stopColor={PINK} />
-              <stop offset="100%" stopColor={BLUE} />
-            </linearGradient>
-          </defs>
-          <path
-            d="M300 20 C300 165, 165 300, 20 300 C165 300, 300 435, 300 580 C300 435, 435 300, 580 300 C435 300, 300 165, 300 20Z"
-            fill="none"
-            stroke="url(#fb-sparkle)"
-            strokeWidth={2.2}
-            opacity={0.8}
-          />
-        </svg>
-
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background:
-              "radial-gradient(ellipse at 50% 50%, rgba(139,92,246,0.22) 0%, transparent 58%)",
-            opacity: halo,
-          }}
-        />
-
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "0.28em",
-            fontFamily: INTER,
-            fontSize: 72,
-            fontWeight: 500,
-            letterSpacing: "-0.02em",
-            lineHeight: 1,
-            whiteSpace: "nowrap",
-          }}
-        >
-          {words.map((word, i) => {
-            const wordStart = i * 5;
-            const popIn = interpolate(frame - wordStart, [0, 14], [0, 1], {
-              ...clamp,
-              easing: BACK_OUT,
-            });
-            const appear = interpolate(frame - wordStart, [0, 10], [0, 1], clamp);
-            const y = (1 - popIn) * 10;
-            const scale = 0.88 + popIn * 0.12;
-            return (
-              <span
-                key={i}
-                style={{
-                  display: "inline-block",
-                  opacity: appear,
-                  transform: `translateY(${y}px) scale(${scale})`,
-                  background: `linear-gradient(90deg, ${PINK}, ${PURPLE})`,
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text" as const,
-                  filter:
-                    "drop-shadow(0 0 14px rgba(236,72,153,0.55)) drop-shadow(0 0 4px rgba(236,72,153,0.45))",
-                }}
-              >
-                {word}
-              </span>
-            );
-          })}
-        </div>
-      </div>
-    </AbsoluteFill>
-  );
-};
-
 // ─── Scene 1: INTRO ──────────────────────────────────────────────────────
 
 const IntroScene: React.FC<{
@@ -321,14 +203,31 @@ const IntroScene: React.FC<{
         </div>
       </AbsoluteFill>
 
-      {/* Tagline — gradient pop-in with sparkle halo, ported from Scene05. */}
-      <Sequence
-        from={sceneStart + 48}
-        durationInFrames={duration - 48}
-        layout="none"
+      {/* Tagline — fights back, sitting below the lockup */}
+      <AbsoluteFill
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          paddingTop: 260,
+        }}
       >
-        <FightsBackTagline duration={duration - 48} />
-      </Sequence>
+        <Reveal
+          from={sceneStart + 48}
+          duration={duration - 48}
+          text="fights back"
+          revealDuration={28}
+          seed={23}
+          style={{
+            fontSize: 68,
+            fontWeight: 500,
+            letterSpacing: "-0.01em",
+            textAlign: "center",
+            lineHeight: 1,
+            maxWidth: 1400,
+          }}
+        />
+      </AbsoluteFill>
     </AbsoluteFill>
   );
 };
@@ -1178,6 +1077,52 @@ const Point3Scene: React.FC<{
   );
 };
 
+// Footnote pop-cut. Whole line snaps in on a hard cut; the leading
+// asterisk gets a brief scale punch so the eye registers it before the
+// rest of the words. No cascade, no per-word reveal.
+const FootnotePopcut: React.FC<{ text: string }> = ({ text }) => {
+  const frame = useCurrentFrame();
+  const op = interpolate(frame, [0, 2], [0, 1], clamp);
+  const star = text.startsWith("* ") ? "*" : null;
+  const rest = star ? text.slice(2) : text;
+  const starScale = interpolate(frame, [0, 3, 8], [1.45, 1.05, 1], {
+    ...clamp,
+    easing: ease3,
+  });
+  return (
+    <div
+      style={{
+        fontFamily: INTER,
+        fontSize: 15,
+        fontWeight: 600,
+        letterSpacing: "0.28em",
+        textTransform: "uppercase",
+        color: WHITE,
+        opacity: op * 0.65,
+        textAlign: "center",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {star ? (
+        <>
+          <span
+            style={{
+              display: "inline-block",
+              transform: `scale(${starScale})`,
+              transformOrigin: "center",
+            }}
+          >
+            {star}
+          </span>{" "}
+          {rest}
+        </>
+      ) : (
+        text
+      )}
+    </div>
+  );
+};
+
 // ─── Scene 6: STAT — 90% ─────────────────────────────────────────────────
 
 const StatScene: React.FC<{
@@ -1258,20 +1203,13 @@ const StatScene: React.FC<{
             maxWidth: 1300,
           }}
         />
-        <Reveal
+        <Sequence
           from={sceneStart + 70}
-          duration={duration - 70}
-          text="* modelled on replayed insider events across five exchanges"
-          revealDuration={32}
-          seed={131}
-          style={{
-            fontSize: 15,
-            fontWeight: 600,
-            letterSpacing: "0.28em",
-            textTransform: "uppercase",
-            opacity: 0.65,
-          }}
-        />
+          durationInFrames={duration - 70}
+          layout="none"
+        >
+          <FootnotePopcut text="* modelled on replayed insider events across five exchanges" />
+        </Sequence>
       </AbsoluteFill>
     </AbsoluteFill>
   );
@@ -1338,8 +1276,17 @@ const ClosingLogoGrid: React.FC<{ local: number }> = ({ local }) => {
   // is a pure shape-morph, not a moving target. Values are percentages
   // of the grid's own box, so they scale with the container as it
   // shrinks.
-  const scrollTime = Math.min(local, 112);
-  const scrollPct = (scrollTime / 112) * 26;
+  // Grid drifts top-right across the full scene — phase A owns the
+  // bulk of the travel, phase B adds a small residual so the tiles
+  // don't freeze while the container is still morphing, then holds
+  // through C/D/E. Capped at 24% so nothing ever exposes an empty
+  // edge inside the 25% grid buffer.
+  const scrollPct = interpolate(
+    local,
+    [0, 112, 138, 172],
+    [0, 22, 24, 24],
+    clamp,
+  );
 
   // White bar reads thicker during phase A — stripes are scaled vertically
   // 2.4× while the container is stage-sized, then ease back to natural
@@ -1355,8 +1302,8 @@ const ClosingLogoGrid: React.FC<{ local: number }> = ({ local }) => {
     easing: ease3,
   });
 
-  // Final 3 frames before the scene fade — black field flashes white.
-  const gridToWhite = interpolate(local, [151, 154], [0, 1], clamp);
+  // Final 6 frames before the scene fade — black field flashes white.
+  const gridToWhite = interpolate(local, [148, 154], [0, 1], clamp);
 
   const count = CLOSING_GRID_COLS * CLOSING_GRID_ROWS;
 
@@ -1380,10 +1327,10 @@ const ClosingLogoGrid: React.FC<{ local: number }> = ({ local }) => {
         <div
           style={{
             position: "absolute",
-            top: "-40%",
-            left: "-40%",
-            width: "180%",
-            height: "180%",
+            top: "-50%",
+            left: "-50%",
+            width: "200%",
+            height: "200%",
             display: "grid",
             gridTemplateColumns: `repeat(${CLOSING_GRID_COLS}, 1fr)`,
             gridTemplateRows: `repeat(${CLOSING_GRID_ROWS}, 1fr)`,
