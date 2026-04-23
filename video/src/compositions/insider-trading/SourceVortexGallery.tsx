@@ -280,10 +280,13 @@ async function buildSourceAtlas(): Promise<{
   texture: THREE.CanvasTexture;
   tiles: TileUV[];
 }> {
-  // Kick off all logo loads in parallel. Any that fail resolve to null.
+  // Kick off all logo loads in parallel. Use the round-framed homepage
+  // icons (/source-imgs/icons/<id>.png) rather than the raw brand
+  // logomarks — they already sit in circular accent-tinted frames and
+  // read cleanly on the vortex cards. Any failure resolves to null.
   const logos = await Promise.all(
     FEATURED_SOURCES.map((s) =>
-      loadImage(staticFile(`source-imgs/${s.logo}`)),
+      loadImage(staticFile(`source-imgs/icons/${s.id}.png`)),
     ),
   );
 
@@ -335,17 +338,14 @@ async function buildSourceAtlas(): Promise<{
     const logoSize = 64;
     const logoX = cx + padX;
     const logoY = headerY;
-    ctx.fillStyle = LOGO_BG;
-    drawRoundedRect(ctx, logoX, logoY, logoSize, logoSize, 10);
-    ctx.fill();
 
-    // Logo image — center-fit at 88% of the box
+    // The icons already carry their own circular accent frame — draw
+    // them straight onto the white card, no gray plate underneath.
     const logoImg = logos[i];
     if (logoImg && logoImg.width > 0 && logoImg.height > 0) {
-      const maxDim = logoSize * 0.86;
       const ratio = Math.min(
-        maxDim / logoImg.width,
-        maxDim / logoImg.height,
+        logoSize / logoImg.width,
+        logoSize / logoImg.height,
       );
       const lw = logoImg.width * ratio;
       const lh = logoImg.height * ratio;
@@ -356,6 +356,12 @@ async function buildSourceAtlas(): Promise<{
         lw,
         lh,
       );
+    } else {
+      // Fallback: a subtle placeholder so the layout doesn't collapse
+      // if an icon happens to be missing.
+      ctx.fillStyle = LOGO_BG;
+      drawRoundedRect(ctx, logoX, logoY, logoSize, logoSize, 12);
+      ctx.fill();
     }
 
     // Source name
