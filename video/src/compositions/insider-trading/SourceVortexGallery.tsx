@@ -772,7 +772,8 @@ const VortexScene: React.FC<{
   atlas: THREE.CanvasTexture;
   tiles: TileUV[];
   centerIndex: number;
-}> = ({ frame, fps, atlas, tiles, centerIndex }) => {
+  hideCenter: boolean;
+}> = ({ frame, fps, atlas, tiles, centerIndex, hideCenter }) => {
   const time = frame / fps;
 
   const scrollProgress = frame / 480;
@@ -797,7 +798,9 @@ const VortexScene: React.FC<{
         time={time}
         direction={direction}
       />
-      <CenterPlane atlas={atlas} tiles={tiles} textureIndex={centerIndex} />
+      {!hideCenter && (
+        <CenterPlane atlas={atlas} tiles={tiles} textureIndex={centerIndex} />
+      )}
     </>
   );
 };
@@ -807,7 +810,9 @@ const VortexScene: React.FC<{
 export const SourceVortexGallery: React.FC<{
   /** Source ID to show on the center card. Defaults to cycling by scroll. */
   centerSourceId?: string;
-}> = ({ centerSourceId }) => {
+  /** Hide the center plane entirely (e.g. when a 3D phone sits there). */
+  hideCenter?: boolean;
+}> = ({ centerSourceId, hideCenter = false }) => {
   const frame = useCurrentFrame();
   const { fps, width, height } = useVideoConfig();
 
@@ -865,6 +870,7 @@ export const SourceVortexGallery: React.FC<{
           atlas={atlasState.texture}
           tiles={atlasState.tiles}
           centerIndex={centerIndex}
+          hideCenter={hideCenter}
         />
       </ThreeCanvas>
     </AbsoluteFill>

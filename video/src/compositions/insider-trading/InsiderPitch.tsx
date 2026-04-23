@@ -12,6 +12,7 @@ import { CascadeText } from "../../lib/components/Text";
 import { SOURCES } from "../launch/data/sources";
 import { FEATURED_SOURCES, FeaturedCard } from "./SourceCardsWall";
 import { SourceVortexGallery } from "./SourceVortexGallery";
+import { PhoneWithCard } from "./PhoneWithCard";
 
 const { fontFamily: INTER } = loadInter("normal", {
   subsets: ["latin"],
@@ -268,9 +269,16 @@ const Point1Scene: React.FC<{
 
   return (
     <AbsoluteFill style={{ opacity: fadeOut, background: "#000000" }}>
-      {/* VORTEX — source-card variant of the WebGLPicks VortexGallery */}
+      {/* VORTEX — background cylinder without a center plane; the 3D
+          phone below owns the middle. */}
       <AbsoluteFill style={{ opacity: vortexIn }}>
-        <SourceVortexGallery centerSourceId={centerSourceId} />
+        <SourceVortexGallery centerSourceId={centerSourceId} hideCenter />
+      </AbsoluteFill>
+
+      {/* PHONE — iPhone from Worldcoin, screen painted with the current
+          phase's source card. Cycles Twitch → Deutsche Bahn → Movies & TV. */}
+      <AbsoluteFill style={{ opacity: vortexIn }}>
+        <PhoneWithCard cardSourceId={centerSourceId} />
       </AbsoluteFill>
 
       {/* CENTER — the headline number and its tagline. Solid white, no

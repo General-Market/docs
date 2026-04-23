@@ -1,0 +1,541 @@
+// iPhone with a source card painted onto its screen. Uses the same GLB
+// and camera setup as the Worldcoin phone — swaps the broll video for
+// a canvas-rasterised card (Twitch / Deutsche Bahn / Movies & TV).
+//
+// Renders as its own ThreeCanvas so it can stack over the vortex
+// without sharing a Three.js scene or camera with it.
+
+import React, { useState, useEffect, useMemo } from "react";
+import {
+  AbsoluteFill,
+  delayRender,
+  continueRender,
+  staticFile,
+} from "remotion";
+import { ThreeCanvas } from "@remotion/three";
+import { useThree } from "@react-three/fiber";
+import { useGLTF, Environment } from "@react-three/drei";
+import * as THREE from "three";
+import { FEATURED_SOURCES } from "./SourceCardsWall";
+
+const MODEL_URL = staticFile("models/tabletop_macbook_iphone.opt.glb");
+useGLTF.preload(MODEL_URL);
+
+// Defaults copied from DeviceBroll — these are the only camera + phone
+// positions proven to render the screen flush to the viewer.
+const PHONE_CAM_POS = new THREE.Vector3(-2.8, 2.375, -4.44);
+const PHONE_CAM_TARGET = new THREE.Vector3(-2.921, 2.475, -1.564);
+const PHONE_POS = new THREE.Vector3(-3, 2.5, 0);
+const PHONE_QUAT = new THREE.Quaternion(0, 0, 0, 1);
+const PHONE_SCALE = 22.486;
+
+const SCREEN_ASPECT = 9 / 19.5;
+
+// ── Card canvas ─────────────────────────────────────────────────────────
+
+const CARD_FONT =
+  "'Inter', 'Helvetica Neue', -apple-system, BlinkMacSystemFont, system-ui, sans-serif";
+const MONO_FONT = "'JetBrains Mono', ui-monospace, monospace";
+
+const CHART_COLORS = ["#2563EB", "#059669", "#D97706", "#7C3AED"] as const;
+const LOGO_BG = "#F4F4F5";
+const NAME_COLOR = "#0A0A0A";
+const MARKET_COLOR = "#A1A1AA";
+const ROW_DIVIDER = "#F4F4F5";
+
+async function loadImage(url: string): Promise<HTMLImageElement | null> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    const objUrl = URL.createObjectURL(blob);
+    return await new Promise<HTMLImageElement | null>((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = objUrl;
+    });
+  } catch {
+    return null;
+  }
+}
+
+function drawRoundedRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function formatMarkets(n: number): string {
+  return n >= 1000 ? n.toLocaleString() : String(n);
+}
+
+function pctColor(pct: number): string {
+  if (pct > 0.001) return "#059669";
+  if (pct < -0.001) return "#DC2626";
+  return "#6B7280";
+}
+
+function pctText(pct: number): string {
+  if (Math.abs(pct) < 0.01) return "0.00%";
+  return `${pct > 0 ? "+" : ""}${pct.toFixed(2)}%`;
+}
+
+function hashStr(s: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+function seededRand(seed: number): () => number {
+  let s = seed || 1;
+  return () => {
+    s = (s * 1664525 + 1013904223) >>> 0;
+    return s / 0xffffffff;
+  };
+}
+
+function sparklineValues(id: string, count: number, salt: number): number[] {
+  const rnd = seededRand(hashStr(id + "_" + salt));
+  const out: number[] = [];
+  let v = 0.5 + (rnd() - 0.5) * 0.2;
+  for (let i = 0; i < count; i++) {
+    v += (rnd() - 0.5) * 0.1;
+    if (v < 0.12) v = 0.12;
+    if (v > 0.9) v = 0.9;
+    out.push(v);
+  }
+  return out;
+}
+
+// Portrait-oriented canvas matching the iPhone screen aspect. Larger
+// than the vortex tiles so the texture reads sharp on a full-screen
+// iPhone. Content adapted to the taller frame: bigger header, more
+// rows, a larger chart area.
+function buildCardCanvas(
+  sourceId: string,
+  logo: HTMLImageElement | null,
+): HTMLCanvasElement {
+  const W = 720;
+  const H = Math.round(W / SCREEN_ASPECT);
+  const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext("2d")!;
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+
+  const source = FEATURED_SOURCES.find((s) => s.id === sourceId);
+  if (!source) {
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillRect(0, 0, W, H);
+    return canvas;
+  }
+
+  // Background
+  ctx.fillStyle = "#FFFFFF";
+  ctx.fillRect(0, 0, W, H);
+
+  const padX = 36;
+
+  // Accent bar
+  const accentGrad = ctx.createLinearGradient(0, 0, W, 0);
+  accentGrad.addColorStop(0, source.accent);
+  accentGrad.addColorStop(1, source.accent + "44");
+  ctx.fillStyle = accentGrad;
+  ctx.fillRect(0, 0, W, 10);
+
+  // Header — logo + name + LIVE pill
+  const headerY = 48;
+  const logoSize = 116;
+  const logoX = padX;
+  const logoY = headerY;
+
+  if (logo && logo.width > 0 && logo.height > 0) {
+    const ratio = Math.min(logoSize / logo.width, logoSize / logo.height);
+    const lw = logo.width * ratio;
+    const lh = logo.height * ratio;
+    ctx.drawImage(
+      logo,
+      logoX + (logoSize - lw) / 2,
+      logoY + (logoSize - lh) / 2,
+      lw,
+      lh,
+    );
+  } else {
+    ctx.fillStyle = LOGO_BG;
+    drawRoundedRect(ctx, logoX, logoY, logoSize, logoSize, 18);
+    ctx.fill();
+  }
+
+  // Name
+  const textX = logoX + logoSize + 24;
+  ctx.fillStyle = NAME_COLOR;
+  ctx.font = `800 52px ${CARD_FONT}`;
+  ctx.textAlign = "left";
+  ctx.fillText(source.name, textX, headerY + 58);
+
+  // LIVE pill
+  const pillW = 124;
+  const pillH = 42;
+  const pillX = W - padX - pillW;
+  const pillY = headerY + 10;
+  ctx.fillStyle = source.accent + "22";
+  drawRoundedRect(ctx, pillX, pillY, pillW, pillH, 21);
+  ctx.fill();
+  ctx.fillStyle = source.accent;
+  ctx.beginPath();
+  ctx.arc(pillX + 22, pillY + pillH / 2, 7, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.font = `700 22px ${CARD_FONT}`;
+  ctx.textAlign = "left";
+  ctx.fillText("Live", pillX + 40, pillY + 30);
+
+  // Markets subline
+  ctx.fillStyle = MARKET_COLOR;
+  ctx.font = `600 26px ${MONO_FONT}`;
+  ctx.textAlign = "left";
+  const mStr = formatMarkets(source.markets);
+  ctx.fillText(mStr, textX, headerY + 102);
+  ctx.font = `500 26px ${CARD_FONT}`;
+  const mW = ctx.measureText(mStr).width;
+  ctx.fillText(` markets · ${source.unit}`, textX + mW, headerY + 102);
+
+  // Divider
+  const dividerTopY = headerY + 138;
+  ctx.strokeStyle = ROW_DIVIDER;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(padX, dividerTopY);
+  ctx.lineTo(W - padX, dividerTopY);
+  ctx.stroke();
+
+  // Stat rows — show up to 4
+  const rows = source.subs.slice(0, 4);
+  const rowH = 82;
+  const rowsStart = dividerTopY + 22;
+  rows.forEach((sub, j) => {
+    const rowY = rowsStart + j * rowH;
+    const rowCY = rowY + rowH / 2;
+
+    ctx.fillStyle = CHART_COLORS[j % 4];
+    ctx.beginPath();
+    ctx.arc(padX + 10, rowCY, 10, 0, Math.PI * 2);
+    ctx.fill();
+
+    const badgeSize = 46;
+    const badgeX = padX + 32;
+    const badgeY = rowCY - badgeSize / 2;
+    if (sub.badge) {
+      const bw = Math.max(badgeSize, 64);
+      ctx.fillStyle = sub.badgeBg ?? "#71717A";
+      drawRoundedRect(ctx, badgeX, badgeY, bw, badgeSize, 8);
+      ctx.fill();
+      ctx.fillStyle = "#FFFFFF";
+      ctx.font = `800 22px ${CARD_FONT}`;
+      ctx.textAlign = "center";
+      ctx.fillText(sub.badge, badgeX + bw / 2, rowCY + 8);
+    } else {
+      ctx.fillStyle = "#E4E4E7";
+      ctx.beginPath();
+      ctx.arc(
+        badgeX + badgeSize / 2,
+        rowCY,
+        badgeSize / 2,
+        0,
+        Math.PI * 2,
+      );
+      ctx.fill();
+      ctx.fillStyle = "#71717A";
+      ctx.font = `800 24px ${CARD_FONT}`;
+      ctx.textAlign = "center";
+      ctx.fillText(
+        sub.name.charAt(0).toUpperCase(),
+        badgeX + badgeSize / 2,
+        rowCY + 8,
+      );
+    }
+
+    // Name
+    const nameX = badgeX + 70;
+    const pctX = W - padX;
+    const valueX = pctX - 160;
+    const nameMaxW = valueX - nameX - 14;
+
+    ctx.fillStyle = NAME_COLOR;
+    ctx.font = `600 28px ${CARD_FONT}`;
+    ctx.textAlign = "left";
+    let name = sub.name;
+    while (ctx.measureText(name).width > nameMaxW && name.length > 4) {
+      name = name.slice(0, -1);
+    }
+    if (name !== sub.name) name = name.slice(0, -1) + "…";
+    ctx.fillText(name, nameX, rowCY + 10);
+
+    // Value
+    ctx.fillStyle = NAME_COLOR;
+    ctx.font = `600 28px ${MONO_FONT}`;
+    ctx.textAlign = "right";
+    ctx.fillText(sub.value, valueX + 150, rowCY + 10);
+
+    // Pct
+    ctx.fillStyle = pctColor(sub.pct);
+    ctx.font = `600 26px ${MONO_FONT}`;
+    ctx.textAlign = "right";
+    ctx.fillText(pctText(sub.pct), pctX, rowCY + 10);
+  });
+  ctx.textAlign = "left";
+
+  // Chart
+  const chartTopY = rowsStart + rows.length * rowH + 20;
+  ctx.strokeStyle = ROW_DIVIDER;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(padX, chartTopY);
+  ctx.lineTo(W - padX, chartTopY);
+  ctx.stroke();
+
+  const chartX = padX;
+  const chartY = chartTopY + 24;
+  const chartW = W - padX * 2;
+  const chartH = H - chartY - 40;
+
+  // Accent gradient background
+  const chartBgGrad = ctx.createLinearGradient(
+    chartX,
+    chartY,
+    chartX,
+    chartY + chartH,
+  );
+  chartBgGrad.addColorStop(0, "rgba(255,255,255,0)");
+  chartBgGrad.addColorStop(1, source.accent + "18");
+  ctx.fillStyle = chartBgGrad;
+  ctx.fillRect(chartX, chartY, chartW, chartH);
+
+  const series = [
+    { color: CHART_COLORS[0], values: sparklineValues(source.id, 48, 0) },
+    { color: source.accent, values: sparklineValues(source.id, 48, 3) },
+  ];
+  for (const { color, values } of series) {
+    const pts = values.map((v, k) => ({
+      x: chartX + (k / (values.length - 1)) * chartW,
+      y: chartY + (1 - v) * chartH,
+    }));
+
+    const areaGrad = ctx.createLinearGradient(
+      chartX,
+      chartY,
+      chartX,
+      chartY + chartH,
+    );
+    areaGrad.addColorStop(0, color + "33");
+    areaGrad.addColorStop(1, color + "00");
+    ctx.fillStyle = areaGrad;
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, chartY + chartH);
+    for (const p of pts) ctx.lineTo(p.x, p.y);
+    ctx.lineTo(pts[pts.length - 1].x, chartY + chartH);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 3;
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let k = 1; k < pts.length; k++) ctx.lineTo(pts[k].x, pts[k].y);
+    ctx.stroke();
+
+    const end = pts[pts.length - 1];
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(end.x, end.y, 6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  return canvas;
+}
+
+// ── Three.js phone setup ────────────────────────────────────────────────
+
+function findScreenMesh(root: THREE.Object3D): THREE.Mesh | null {
+  let found: THREE.Mesh | null = null;
+  root.traverse((child) => {
+    if (found) return;
+    const mesh = child as THREE.Mesh;
+    if (!mesh.isMesh) return;
+    if (Array.isArray(mesh.material)) return;
+    const mat = mesh.material as THREE.MeshStandardMaterial | undefined;
+    if (mat && mat.emissiveMap && !mat.map) {
+      mesh.material = mat.clone();
+      found = mesh;
+    }
+  });
+  return found;
+}
+
+function applyCoverFit(
+  texture: THREE.Texture,
+  srcAspect: number,
+  dstAspect: number,
+) {
+  texture.wrapS = THREE.ClampToEdgeWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
+  if (srcAspect > dstAspect) {
+    const r = dstAspect / srcAspect;
+    texture.repeat.set(r, 1);
+    texture.offset.set((1 - r) / 2, 0);
+  } else {
+    const r = srcAspect / dstAspect;
+    texture.repeat.set(1, r);
+    texture.offset.set(0, (1 - r) / 2);
+  }
+  texture.needsUpdate = true;
+}
+
+const PhoneScene: React.FC<{ texture: THREE.CanvasTexture }> = ({
+  texture,
+}) => {
+  const { camera } = useThree();
+  const gltf = useGLTF(MODEL_URL);
+
+  const iphone = useMemo(
+    () => gltf.scene.getObjectByName("iphone") ?? null,
+    [gltf],
+  );
+  const screenMesh = useMemo(
+    () => (iphone ? findScreenMesh(iphone) : null),
+    [iphone],
+  );
+
+  // Hide everything except the iPhone
+  useMemo(() => {
+    const iphoneNode = gltf.scene.getObjectByName("iphone");
+    const inPhone = new Set<THREE.Object3D>();
+    if (iphoneNode) iphoneNode.traverse((c) => inPhone.add(c));
+    gltf.scene.traverse((child) => {
+      if (!inPhone.has(child) && child !== gltf.scene) {
+        if ((child as THREE.Mesh).isMesh) {
+          child.visible = false;
+        }
+      }
+    });
+  }, [gltf]);
+
+  // Paint the card canvas onto the phone screen
+  if (screenMesh && texture) {
+    const srcAspect =
+      (texture.image as HTMLCanvasElement).width /
+      (texture.image as HTMLCanvasElement).height;
+    applyCoverFit(texture, srcAspect, SCREEN_ASPECT);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    const mat = screenMesh.material as THREE.MeshStandardMaterial;
+    if (mat.map !== texture) {
+      mat.map = texture;
+      mat.emissive = new THREE.Color(0xffffff);
+      mat.emissiveMap = texture;
+      mat.emissiveIntensity = 1.0;
+      mat.needsUpdate = true;
+    }
+  }
+
+  if (iphone) {
+    iphone.position.copy(PHONE_POS);
+    iphone.quaternion.copy(PHONE_QUAT);
+    iphone.scale.setScalar(PHONE_SCALE);
+  }
+
+  const perspCam = camera as THREE.PerspectiveCamera;
+  perspCam.position.copy(PHONE_CAM_POS);
+  perspCam.lookAt(PHONE_CAM_TARGET);
+  perspCam.fov = 50;
+  perspCam.near = 0.1;
+  perspCam.far = 200;
+  perspCam.updateProjectionMatrix();
+
+  return (
+    <>
+      <primitive object={gltf.scene} />
+      <Environment preset="studio" environmentIntensity={1.8} />
+      <ambientLight intensity={0.3} />
+      <directionalLight position={[5, 8, -5]} intensity={2.5} />
+      <directionalLight
+        position={[-4, 4, 3]}
+        intensity={0.6}
+        color="#c0d8e8"
+      />
+    </>
+  );
+};
+
+// ── Exported composition ────────────────────────────────────────────────
+
+export const PhoneWithCard: React.FC<{
+  /** FEATURED_SOURCES.id of the card to paint onto the screen. */
+  cardSourceId: string;
+  width?: number;
+  height?: number;
+}> = ({ cardSourceId, width = 1920, height = 1080 }) => {
+  const [texture, setTexture] = useState<THREE.CanvasTexture | null>(null);
+  const [handle] = useState(() => delayRender(`phone-card-${cardSourceId}`));
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const logo = await loadImage(
+        staticFile(`source-imgs/icons/${cardSourceId}.png`),
+      );
+      if (cancelled) return;
+      const canvas = buildCardCanvas(cardSourceId, logo);
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.needsUpdate = true;
+      tex.magFilter = THREE.LinearFilter;
+      tex.minFilter = THREE.LinearMipmapLinearFilter;
+      tex.generateMipmaps = true;
+      tex.anisotropy = 8;
+      setTexture(tex);
+      continueRender(handle);
+    })().catch(() => {
+      if (!cancelled) continueRender(handle);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [cardSourceId, handle]);
+
+  if (!texture) {
+    return <AbsoluteFill style={{ background: "transparent" }} />;
+  }
+
+  return (
+    <AbsoluteFill style={{ background: "transparent" }}>
+      <ThreeCanvas
+        width={width}
+        height={height}
+        style={{ width: "100%", height: "100%" }}
+        camera={{ position: [-2.8, 2.375, -4.44], fov: 50, near: 0.1, far: 200 }}
+      >
+        <PhoneScene texture={texture} />
+      </ThreeCanvas>
+    </AbsoluteFill>
+  );
+};
