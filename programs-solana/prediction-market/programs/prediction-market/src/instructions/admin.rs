@@ -145,11 +145,23 @@ pub struct ActivateOracleSigners<'info> {
     pub oracle_config: Account<'info, OracleConfig>,
 }
 
+/// Activate the pending oracle signer set.
+///
+/// The 24h timelock exists to protect an *existing* active set against
+/// malicious or accidental rotation — it gives observers a window to notice
+/// and yell. When `active_signers` is empty, the chain is in fresh-bootstrap
+/// state: there is nothing to protect, nothing to rotate away from. The
+/// timer in that case is ceremony pretending to be security. We skip it.
+///
+/// For every subsequent rotation — by definition `active_signers` is
+/// non-empty — the 24h wait is enforced in full.
 pub fn activate_oracle_signers(ctx: Context<ActivateOracleSigners>) -> Result<()> {
     let oc = &mut ctx.accounts.oracle_config;
     require!(!oc.pending_signers.is_empty(), ErrorCode::NoPending);
+    let now = Clock::get()?.unix_timestamp;
+    let bootstrap = oc.active_signers.is_empty();
     require!(
-        Clock::get()?.unix_timestamp >= oc.pending_activation_ts,
+        bootstrap || now >= oc.pending_activation_ts,
         ErrorCode::PendingNotReady
     );
     oc.active_signers = std::mem::take(&mut oc.pending_signers);

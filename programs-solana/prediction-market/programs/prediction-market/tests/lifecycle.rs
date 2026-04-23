@@ -98,22 +98,61 @@ fn upsert_source_toggles_enabled() {
 }
 
 #[test]
-fn oracle_rotation_waits_24h() {
+fn bootstrap_activation_skips_delay() {
+    // First oracle signer activation has nothing to protect — an empty
+    // `active_signers` set leaves no previous custody to rotate away from.
+    // The 24h wait is ceremony in that moment. We skip it.
     let (mut svm, admin, mint) = genesis();
     init_config(&mut svm, &admin, &mint, 50);
-    let oracle = MockOracle::new(3);
+    upsert_source(&mut svm, &admin, 1, true);
+    let oracle = MockOracle::new(1);
 
-    let ix = ix_propose_oracle_signers(&admin.pubkey(), oracle.pubkeys(), 2);
-    send_ix(&mut svm, &[ix], &admin, &[]);
+    let propose = ix_propose_oracle_signers(&admin.pubkey(), oracle.pubkeys(), 1);
+    send_ix(&mut svm, &[propose], &admin, &[]);
 
-    // Too early.
+    // No time warp. Activation must still succeed on bootstrap.
+    send_ix(&mut svm, &[ix_activate_oracle_signers()], &admin, &[]);
+
+    let oc: OracleConfig = fetch(&svm, &oracle_config_pda());
+    assert_eq!(oc.active_signers.len(), 1);
+    assert_eq!(oc.active_threshold, 1);
+    assert!(oc.pending_signers.is_empty());
+}
+
+#[test]
+fn rotation_still_waits_24h() {
+    // Bootstrap bypasses the delay; every rotation after it does not.
+    let (mut svm, admin, mint) = genesis();
+    init_config(&mut svm, &admin, &mint, 50);
+
+    // Bootstrap — immediate activation.
+    let first = MockOracle::new(1);
+    send_ix(
+        &mut svm,
+        &[ix_propose_oracle_signers(&admin.pubkey(), first.pubkeys(), 1)],
+        &admin,
+        &[],
+    );
+    send_ix(&mut svm, &[ix_activate_oracle_signers()], &admin, &[]);
+
+    // Now rotate to a new set. Active is non-empty, so the timelock reasserts.
+    let second = MockOracle::new(3);
+    send_ix(
+        &mut svm,
+        &[ix_propose_oracle_signers(&admin.pubkey(), second.pubkeys(), 2)],
+        &admin,
+        &[],
+    );
+
+    // Too early — the door is locked.
     warp_unix(&mut svm, 3_600);
     let err = try_send_ix(&mut svm, &[ix_activate_oracle_signers()], &admin, &[]);
-    assert!(err.is_err(), "activation must fail before 24h");
+    assert!(err.is_err(), "rotation must fail before 24h");
 
     // Past the delay.
     warp_unix(&mut svm, 86_401 - 3_600);
     send_ix(&mut svm, &[ix_activate_oracle_signers()], &admin, &[]);
+
     let oc: OracleConfig = fetch(&svm, &oracle_config_pda());
     assert_eq!(oc.active_signers.len(), 3);
     assert_eq!(oc.active_threshold, 2);
