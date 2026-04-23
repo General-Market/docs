@@ -1237,6 +1237,104 @@ const StatScene: React.FC<{
   );
 };
 
+// Inverted echo of the old 0:10 reveal. Grid is now the outer — the area
+// around the lockup — and the lockup itself is solid white. The grid
+// and the lockup dezoom in sync: the lockup retracts from filling the
+// frame to its final 620 px size, the grid pulls back from scale 2.4
+// to 1.0, so the tiles never hang static while the shape shrinks.
+const CLOSING_GRID_COLS = 12;
+const CLOSING_GRID_ROWS = 12;
+const CLOSING_GRID_TILT_X = 14;
+const CLOSING_GRID_SCROLL = 0.7;
+
+const ClosingLogoGrid: React.FC<{ local: number }> = ({ local }) => {
+  const zoomT = interpolate(local, [0, 90], [0, 1], {
+    ...clamp,
+    easing: ease3,
+  });
+
+  const logoSize = interpolate(zoomT, [0, 1], [2600, 620]);
+  const gridScale = interpolate(zoomT, [0, 1], [2.4, 1.0]);
+  const scrollY = local * CLOSING_GRID_SCROLL;
+  const count = CLOSING_GRID_COLS * CLOSING_GRID_ROWS;
+
+  return (
+    <AbsoluteFill style={{ background: BLACK }}>
+      <AbsoluteFill
+        style={{
+          perspective: 1800,
+          perspectiveOrigin: "50% 48%",
+        }}
+      >
+        <AbsoluteFill
+          style={{
+            display: "grid",
+            gridTemplateColumns: `repeat(${CLOSING_GRID_COLS}, 1fr)`,
+            gridTemplateRows: `repeat(${CLOSING_GRID_ROWS}, 1fr)`,
+            gap: 2,
+            padding: 2,
+            transform: `rotateX(${CLOSING_GRID_TILT_X}deg) scale(${1.25 * gridScale}) translateY(${-scrollY}px)`,
+            transformStyle: "preserve-3d",
+            filter: "saturate(0.92) brightness(0.95)",
+          }}
+        >
+          {Array.from({ length: count }).map((_, i) => {
+            const source = SOURCES[i % SOURCES.length];
+            const logoSrc = source.logo.startsWith("/")
+              ? source.logo.slice(1)
+              : source.logo;
+            return (
+              <div
+                key={i}
+                style={{
+                  background: source.bg,
+                  borderRadius: 3,
+                  overflow: "hidden",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  padding: 4,
+                }}
+              >
+                <Img
+                  src={staticFile(logoSrc)}
+                  style={{
+                    maxWidth: "82%",
+                    maxHeight: "82%",
+                    objectFit: "contain",
+                  }}
+                />
+              </div>
+            );
+          })}
+        </AbsoluteFill>
+      </AbsoluteFill>
+
+      <AbsoluteFill
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <svg
+          width={logoSize}
+          height={logoSize}
+          viewBox="0 0 102 102"
+          style={{
+            filter:
+              "drop-shadow(0 0 24px rgba(255,255,255,0.35)) drop-shadow(0 8px 48px rgba(0,0,0,0.6))",
+          }}
+        >
+          {GM_LOGO_PATHS.map((d, i) => (
+            <path key={i} d={d} fill="#ffffff" />
+          ))}
+        </svg>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
 // ─── Scene 7: CLOSING ────────────────────────────────────────────────────
 
 const ClosingScene: React.FC<{
@@ -1255,6 +1353,9 @@ const ClosingScene: React.FC<{
 
   return (
     <AbsoluteFill style={{ opacity: fadeOut }}>
+      {/* BACKGROUND — inverted grid/logo dezoom */}
+      <ClosingLogoGrid local={local} />
+
       {/* SHAPE */}
       <AbsoluteFill
         style={{
