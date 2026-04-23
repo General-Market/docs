@@ -1598,37 +1598,29 @@ const SharedPhoneLayer: React.FC<{ local: number }> = ({ local }) => {
   }
 
   // Overlay mode. Plain through Point 1. In Point 2 the phone enters
-  // clean, crosses the vault at the midpoint (where "SEALED" appears
-  // inside the vault shape) and exits with the sealed overlay active.
+  // clean from the left, crosses the vault's centre at the midpoint of
+  // the scene, and exits to the right with the sealed overlay active.
   // Point 3 uses the speed overlay — rapid trade feed.
   let overlayMode: "plain" | "sealed" | "speed" = "plain";
   if (local >= point2Start && local < point3Start) {
-    // switch to sealed as the phone crosses the vault's centre
-    const sealStart = point2Start + 42;
+    const sealStart = (point2Start + point3Start) / 2;
     overlayMode = local >= sealStart ? "sealed" : "plain";
   } else if (local >= point3Start) {
     overlayMode = "speed";
   }
 
-  // Barrel-roll between Stat and Point 1 (90 frames centred on the cut),
-  // half-roll between Point 1 → Point 2 (60 frames, 0→180°, eased),
-  // full fade-and-flash between Point 2 → Point 3 (phone blinks out).
-  let yAxisExtraDeg = 0;
+  // Single 360° barrel roll between Stat and Point 1, centred on the
+  // cut across 90 frames. That's it — no further rolls later. Earlier
+  // versions added a half-roll between Point 1 → Point 2, which stacked
+  // to 540° (= 180° mod 360) and left the phone backwards for the rest
+  // of the pitch.
   const rollSP1 = interpolate(
     local,
     [point1Start - 45, point1Start + 45],
     [0, 1],
     clamp,
   );
-  yAxisExtraDeg += rollSP1 * 360;
-
-  const rollP1P2 = interpolate(
-    local,
-    [point2Start - 30, point2Start + 30],
-    [0, 1],
-    clamp,
-  );
-  yAxisExtraDeg += rollP1P2 * 180;
+  const yAxisExtraDeg = rollSP1 * 360;
 
   // Point 2 → Point 3 transition: phone disappears for ~12 frames, then
   // reappears on the speed scene. During the flash, we keep the phone
@@ -1656,6 +1648,15 @@ const SharedPhoneLayer: React.FC<{ local: number }> = ({ local }) => {
     return envelope * flash;
   })();
 
+  // Point 2 "pass through the vault". Phone enters the scene from off to
+  // the left, crosses the vault at the midpoint (where the sealed
+  // overlay kicks in), exits stage-right still marked sealed.
+  let xTranslate = 0;
+  if (local >= point2Start && local < point3Start) {
+    const t = (local - point2Start) / (point3Start - point2Start);
+    xTranslate = interpolate(t, [0, 0.5, 1], [-680, 0, 680], clamp);
+  }
+
   // Subtle jitter on the speed scene to sell "the device is vibrating
   // under the load of 100,000 orders per second".
   let xJitter = 0;
@@ -1672,7 +1673,7 @@ const SharedPhoneLayer: React.FC<{ local: number }> = ({ local }) => {
       style={{
         opacity,
         pointerEvents: "none",
-        transform: `translate(${xJitter}px, ${yJitter}px)`,
+        transform: `translate(${xTranslate + xJitter}px, ${yJitter}px)`,
       }}
     >
       <PhoneWithCard
