@@ -460,59 +460,227 @@ const Point1Scene: React.FC<{
 
 // ─── Scene 4: POINT 2 — 100% privacy until settlement ────────────────────
 
+// Five watchers, each watching an encrypted feed. None of them reads a
+// thing. The privacy argument, rendered literally.
+
+const PRIVACY_WATCHERS: readonly string[] = [
+  "INSIDER TRADER",
+  "HEDGE FUND",
+  "GOVERNMENT",
+  "MARKET MANIPULATOR",
+  "FRONT RUNNER",
+];
+
+const CIPHER_GLYPHS = "▓▒░█▌▄■□◆◇●0123456789abcdef";
+
+const seededCipher = (seed: number, len: number): string => {
+  let s = (seed * 2654435761) >>> 0;
+  let out = "";
+  for (let i = 0; i < len; i++) {
+    s = (s * 1664525 + 1013904223) >>> 0;
+    out += CIPHER_GLYPHS[s % CIPHER_GLYPHS.length];
+  }
+  return out;
+};
+
+const MONO_FAMILY =
+  'ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace';
+
+const CipherMonitor: React.FC<{ seed: number; local: number }> = ({
+  seed,
+  local,
+}) => {
+  const buffer = React.useMemo(() => seededCipher(seed, 480), [seed]);
+  const cols = 22;
+  const rows = 10;
+
+  const speed = 0.85 + ((seed * 13) % 40) / 100;
+  const scroll = Math.floor(local * speed);
+
+  const lines: string[] = [];
+  for (let r = 0; r < rows; r++) {
+    const base =
+      ((scroll + r * 37 + seed * 11) % (buffer.length - cols) + buffer.length) %
+      (buffer.length - cols);
+    lines.push(buffer.slice(base, base + cols));
+  }
+
+  const sweepY = ((local * 1.8) % 160) - 20;
+
+  return (
+    <div
+      style={{
+        position: "relative",
+        flex: 1,
+        background: "#05070a",
+        overflow: "hidden",
+        padding: "14px 14px",
+        fontFamily: MONO_FAMILY,
+        fontSize: 15,
+        lineHeight: 1.35,
+        color: "#3ef0a0",
+        textShadow: "0 0 10px rgba(62,240,160,0.35)",
+      }}
+    >
+      {lines.map((l, i) => (
+        <div
+          key={i}
+          style={{
+            whiteSpace: "pre",
+            opacity: 0.55 + 0.35 * Math.sin(local * 0.12 + i * 0.9),
+          }}
+        >
+          {l}
+        </div>
+      ))}
+
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background:
+            "repeating-linear-gradient(0deg, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 2px, rgba(0,0,0,0.42) 3px)",
+          pointerEvents: "none",
+          mixBlendMode: "multiply",
+        }}
+      />
+
+      <div
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          top: `${sweepY}%`,
+          height: 3,
+          background: "rgba(255,59,59,0.55)",
+          boxShadow: "0 0 14px rgba(255,59,59,0.7)",
+          pointerEvents: "none",
+        }}
+      />
+    </div>
+  );
+};
+
+const WatcherCard: React.FC<{
+  role: string;
+  index: number;
+  total: number;
+  local: number;
+}> = ({ role, index, total, local }) => {
+  const stagger = 10 + index * 3;
+  const entry = interpolate(local, [stagger, stagger + 16], [0, 1], {
+    ...clamp,
+    easing: ease3,
+  });
+  const lift = (1 - entry) * 42;
+  const mid = (total - 1) / 2;
+  const fan = ((index - mid) / mid) * 7;
+
+  const denialBlink =
+    0.55 + 0.45 * Math.max(0, Math.sin(local * 0.38 + index * 1.7));
+
+  return (
+    <div
+      style={{
+        width: 270,
+        height: 420,
+        background: "#0e0f0c",
+        borderRadius: 22,
+        overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
+        transform: `perspective(1600px) rotateY(${fan}deg) translateY(${lift}px) scale(${
+          0.94 + 0.06 * entry
+        })`,
+        transformOrigin: "50% 100%",
+        opacity: entry,
+        boxShadow:
+          "0 34px 70px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06) inset",
+      }}
+    >
+      <div
+        style={{
+          background: "#9fe870",
+          color: "#0e0f0c",
+          padding: "14px 10px",
+          fontFamily: INTER,
+          fontWeight: 900,
+          fontSize: 17,
+          letterSpacing: "0.08em",
+          textAlign: "center",
+          lineHeight: 1.05,
+          textTransform: "uppercase",
+        }}
+      >
+        {role}
+      </div>
+
+      <CipherMonitor seed={index + 1} local={local} />
+
+      <div
+        style={{
+          background: "#0e0f0c",
+          color: "#ff3b3b",
+          padding: "12px 12px 14px",
+          fontFamily: INTER,
+          fontWeight: 800,
+          fontSize: 12,
+          letterSpacing: "0.26em",
+          textAlign: "center",
+          opacity: denialBlink,
+          borderTop: "1px solid rgba(255,59,59,0.25)",
+        }}
+      >
+        DECRYPTION&nbsp;FAILED
+      </div>
+    </div>
+  );
+};
+
 const Point2Scene: React.FC<{
   local: number;
   sceneStart: number;
   duration: number;
 }> = ({ local, sceneStart, duration }) => {
-  // Vault metaphor — a rounded square grows, then its inner cavity seals
-  // shut (the "privacy" moment). Square chosen over a circle so the
-  // closing chamber reads as structure, not just another hole.
-  const size = interpolate(local, [8, 50], [0, 520], {
-    ...clamp,
-    easing: ease3,
-  });
-  const sealT = interpolate(local, [50, 78], [0, 1], clamp);
   const fadeOut = interpolate(local, [duration - 18, duration], [1, 0], clamp);
 
   return (
     <AbsoluteFill style={{ opacity: fadeOut }}>
-      {/* SHAPE — sealed vault */}
       <AbsoluteFill
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
+          paddingTop: 180,
         }}
       >
         <div
           style={{
-            position: "relative",
-            width: size,
-            height: size,
-            background: WHITE,
-            borderRadius: 36,
+            display: "flex",
+            gap: 24,
+            alignItems: "center",
+            justifyContent: "center",
+            transform: "perspective(1600px) rotateX(4deg)",
           }}
         >
-          {/* inner cavity — shrinks to nothing as it "seals" */}
-          <div
-            style={{
-              position: "absolute",
-              inset: interpolate(sealT, [0, 1], [70, size * 0.48], clamp),
-              background: BLACK,
-              borderRadius: 14,
-            }}
-          />
+          {PRIVACY_WATCHERS.map((role, i) => (
+            <WatcherCard
+              key={role}
+              role={role}
+              index={i}
+              total={PRIVACY_WATCHERS.length}
+              local={local}
+            />
+          ))}
         </div>
       </AbsoluteFill>
 
-      {/* TITLE */}
       <AbsoluteFill
         style={{
           display: "flex",
           alignItems: "flex-start",
           justifyContent: "center",
-          paddingTop: 120,
+          paddingTop: 70,
         }}
       >
         <Reveal
@@ -528,29 +696,6 @@ const Point2Scene: React.FC<{
             textAlign: "center",
             maxWidth: 1500,
             lineHeight: 1,
-          }}
-        />
-      </AbsoluteFill>
-
-      {/* LABEL inside the vault */}
-      <AbsoluteFill
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Reveal
-          from={sceneStart + 46}
-          duration={duration - 46}
-          text="SEALED"
-          revealDuration={22}
-          seed={67}
-          style={{
-            fontSize: 72,
-            fontWeight: 900,
-            letterSpacing: "0.24em",
-            textAlign: "center",
           }}
         />
       </AbsoluteFill>
