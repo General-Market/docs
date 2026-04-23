@@ -133,8 +133,16 @@ export function VaultsTab({ address }: VaultsTabProps) {
 
   if (!isSelf) {
     return (
-      <div className="py-16 text-center text-caption text-text-muted">
-        Vault positions are only visible on your own profile.
+      <div className="py-16 flex flex-col items-center gap-3">
+        <div className="text-caption text-text-muted">
+          Vault positions are only visible on your own profile.
+        </div>
+        <Link
+          href={`/profile/${address}?tab=vision`}
+          className="text-body font-semibold underline underline-offset-4 decoration-dotted hover:text-color-up transition-colors"
+        >
+          → See this wallet's Vision positions
+        </Link>
       </div>
     )
   }

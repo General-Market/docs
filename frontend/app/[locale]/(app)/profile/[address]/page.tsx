@@ -28,10 +28,21 @@ function ProfileContent({ address }: { address: string }) {
   const router = useRouter()
   const t = useTranslations('pages.profile')
   const tabParam = searchParams.get('tab')
-  // Vaults is the primary surface — default to it when no tab query is set.
-  const tab: ProfileTabId =
-    tabParam === 'vision' ? 'vision' : tabParam === 'index' ? 'index' : 'vaults'
   const { profile, isLoading } = usePlayerProfile(address)
+  // Tab default: if the wallet actually has Vision batches, land on Vision
+  // so the user sees their positions. Otherwise fall back to Vaults (the
+  // primary surface for non-Vision users).
+  const hasVisionBatches = (profile?.stats.totalBatches ?? 0) > 0
+  const tab: ProfileTabId =
+    tabParam === 'vision'
+      ? 'vision'
+      : tabParam === 'index'
+        ? 'index'
+        : tabParam === 'vaults'
+          ? 'vaults'
+          : hasVisionBatches
+            ? 'vision'
+            : 'vaults'
   const { points } = usePoints(address)
   const { address: connectedAddress } = useAccount()
   const isSelf =
@@ -122,7 +133,11 @@ function ProfileContent({ address }: { address: string }) {
         pnlHistory={showingVaults ? [] : profile?.pnlHistory ?? []}
         pnlOverride={showingVaults ? vaultTotals.totalPnl : undefined}
       />
-      <ProfileTabs activeTab={tab} onTabChange={handleTabChange} />
+      <ProfileTabs
+        activeTab={tab}
+        onTabChange={handleTabChange}
+        visionCount={profile?.stats.totalBatches ?? 0}
+      />
       <div className="px-6 lg:px-12">
         <div className="max-w-site mx-auto py-8">
           {tab === 'vision' && profile ? (
