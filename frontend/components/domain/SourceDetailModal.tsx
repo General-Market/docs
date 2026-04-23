@@ -487,12 +487,15 @@ function getRowBg(asset: SourceAsset): string {
 
 // ── Asset Sparkline ──
 
-function AssetSparkline({ sourceId, assetId }: { sourceId: string; assetId: string }) {
+function AssetSparkline({ sourceId, assetId, dark = false }: { sourceId: string; assetId: string; dark?: boolean }) {
   const t = useTranslations('markets')
   const locale = useLocale()
   const [points, setPoints] = useState<PriceHistoryPoint[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const mutedText = dark ? 'text-white/50' : 'text-text-muted'
+  const axisStroke = dark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)'
 
   useEffect(() => {
     let cancelled = false
@@ -534,7 +537,7 @@ function AssetSparkline({ sourceId, assetId }: { sourceId: string; assetId: stri
   if (loading) {
     return (
       <div className="h-[80px] flex items-center justify-center">
-        <div className="text-label text-text-muted">{t('source_detail.sparkline_loading')}</div>
+        <div className={`text-label ${mutedText}`}>{t('source_detail.sparkline_loading')}</div>
       </div>
     )
   }
@@ -550,7 +553,7 @@ function AssetSparkline({ sourceId, assetId }: { sourceId: string; assetId: stri
   if (points.length < 2) {
     return (
       <div className="h-[80px] flex items-center justify-center">
-        <div className="text-label text-text-muted">{t('source_detail.sparkline_insufficient', { count: points.length })}</div>
+        <div className={`text-label ${mutedText}`}>{t('source_detail.sparkline_insufficient', { count: points.length })}</div>
       </div>
     )
   }
@@ -563,8 +566,8 @@ function AssetSparkline({ sourceId, assetId }: { sourceId: string; assetId: stri
   return (
     <div className="px-2">
       <div className="flex items-center justify-between mb-1">
-        <span className="text-micro text-text-muted">{t('source_detail.sparkline_label', { count: points.length })}</span>
-        <span className="text-micro font-mono text-text-muted">
+        <span className={`text-micro ${mutedText}`}>{t('source_detail.sparkline_label', { count: points.length })}</span>
+        <span className={`text-micro font-mono ${mutedText}`}>
           {formatValue(points[0].value)} &rarr; {formatValue(points[points.length - 1].value)}
         </span>
       </div>
@@ -573,7 +576,7 @@ function AssetSparkline({ sourceId, assetId }: { sourceId: string; assetId: stri
           <XAxis
             dataKey="fetchedAt"
             tick={false}
-            axisLine={{ stroke: 'rgba(0,0,0,0.1)' }}
+            axisLine={{ stroke: axisStroke }}
             tickLine={false}
           />
           <YAxis
@@ -705,6 +708,26 @@ export function SourceDetailModal({ sourceId, onClose, dark = false }: SourceDet
   const staleCount = assets.filter(a => a.isStale).length
   const valueLabel = getValueLabel(sourceId)
 
+  // ── Dark-mode class branches ──
+  const cardCls = dark
+    ? 'glass-surface-dark border border-white/[0.08] rounded-xl p-3'
+    : `${glass.section} p-3`
+  const chartCardCls = dark
+    ? 'glass-surface-dark border border-white/[0.08] rounded-xl p-4'
+    : `${glass.section} p-4`
+  const mutedTextCls = dark ? 'text-white/50' : 'text-text-muted'
+  const sectionHeadCls = dark ? 'text-white/70' : 'text-text-secondary'
+  const headingValueCls = dark ? 'text-white' : ''
+  const tableBorderCls = dark ? 'border border-white/10' : 'border border-border-light'
+  const expandedRowCls = dark
+    ? 'bg-white/[0.04] border-t border-white/10'
+    : 'bg-muted border-t border-border-light'
+  const expandedHighlightCls = dark ? 'bg-white/[0.08]' : 'bg-surface-info'
+  const hoverCls = dark ? 'hover:bg-white/[0.04]' : 'hover:bg-surface'
+  const errorCardCls = dark
+    ? 'bg-color-down/15 border border-color-down/30 rounded-xl px-4 py-3 mb-4'
+    : `${glass.error} px-4 py-3 mb-4`
+
   return (
     <SpringBackdrop
       className="fixed inset-0 glass-overlay flex items-start justify-center z-50 p-4 pt-[5vh] overflow-y-auto"
@@ -719,7 +742,7 @@ export function SourceDetailModal({ sourceId, onClose, dark = false }: SourceDet
           <div className="flex justify-between items-center mb-5">
             <div>
               <h2 className={`text-lg font-bold ${dark ? 'text-white' : ''}`}>{t('source_detail.title')}</h2>
-              <p className="text-caption font-mono text-text-muted mt-0.5">{sourceId}</p>
+              <p className={`text-caption font-mono mt-0.5 ${mutedTextCls}`}>{sourceId}</p>
             </div>
             <ModalClose onClick={onClose} />
           </div>
@@ -727,15 +750,15 @@ export function SourceDetailModal({ sourceId, onClose, dark = false }: SourceDet
           {/* Loading state */}
           {loading && (
             <div className="flex items-center justify-center py-16">
-              <div className="text-text-muted text-sm">{t('source_detail.loading')}</div>
+              <div className={`text-sm ${mutedTextCls}`}>{t('source_detail.loading')}</div>
             </div>
           )}
 
           {/* Error state */}
           {error && !loading && (
-            <div className={`${glass.error} px-4 py-3 mb-4`}>
+            <div className={errorCardCls}>
               <p className="text-color-down text-caption font-semibold">{t('source_detail.failed_to_load')}</p>
-              <p className="text-text-secondary text-caption mt-0.5">{error}</p>
+              <p className={`text-caption mt-0.5 ${dark ? 'text-white/70' : 'text-text-secondary'}`}>{error}</p>
               <button
                 onClick={() => fetchData(sourceId)}
                 className="mt-2 text-caption font-bold text-color-info underline hover:no-underline"
@@ -749,35 +772,35 @@ export function SourceDetailModal({ sourceId, onClose, dark = false }: SourceDet
             <div className="space-y-6">
               {/* Summary stats */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className={`${glass.section} p-3`}>
-                  <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">
+                <div className={cardCls}>
+                  <p className={`text-micro font-semibold uppercase tracking-[0.08em] mb-0.5 ${mutedTextCls}`}>
                     {t('source_detail.total_assets')}
                   </p>
-                  <p className="text-heading font-extrabold font-mono tabular-nums">
+                  <p className={`text-heading font-extrabold font-mono tabular-nums ${headingValueCls}`}>
                     {totalAssets}
                   </p>
                 </div>
-                <div className={`${glass.section} p-3`}>
-                  <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">
+                <div className={cardCls}>
+                  <p className={`text-micro font-semibold uppercase tracking-[0.08em] mb-0.5 ${mutedTextCls}`}>
                     {t('source_detail.active')}
                   </p>
                   <p className="text-heading font-extrabold font-mono tabular-nums text-color-up">
                     {activeAssets}
                   </p>
                 </div>
-                <div className={`${glass.section} p-3`}>
-                  <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">
+                <div className={cardCls}>
+                  <p className={`text-micro font-semibold uppercase tracking-[0.08em] mb-0.5 ${mutedTextCls}`}>
                     {t('source_detail.zero_values')}
                   </p>
-                  <p className={`text-heading font-extrabold font-mono tabular-nums ${zeroCount > 0 ? 'text-color-down' : ''}`}>
+                  <p className={`text-heading font-extrabold font-mono tabular-nums ${zeroCount > 0 ? 'text-color-down' : headingValueCls}`}>
                     {zeroCount}
                   </p>
                 </div>
-                <div className={`${glass.section} p-3`}>
-                  <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">
+                <div className={cardCls}>
+                  <p className={`text-micro font-semibold uppercase tracking-[0.08em] mb-0.5 ${mutedTextCls}`}>
                     {t('source_detail.stale')}
                   </p>
-                  <p className={`text-heading font-extrabold font-mono tabular-nums ${staleCount > 0 ? 'text-color-warning' : ''}`}>
+                  <p className={`text-heading font-extrabold font-mono tabular-nums ${staleCount > 0 ? 'text-color-warning' : headingValueCls}`}>
                     {staleCount}
                   </p>
                 </div>
@@ -785,20 +808,20 @@ export function SourceDetailModal({ sourceId, onClose, dark = false }: SourceDet
 
               {/* Regularity chart */}
               <div>
-                <h3 className="text-label font-bold uppercase tracking-[0.08em] text-text-secondary mb-3">
+                <h3 className={`text-label font-bold uppercase tracking-[0.08em] mb-3 ${sectionHeadCls}`}>
                   {t('source_detail.data_regularity')}
                 </h3>
-                <div className={`${glass.section} p-4`}>
+                <div className={chartCardCls}>
                   <SourceHistoryChart buckets={buckets} />
                 </div>
               </div>
 
               {/* Asset table */}
               <div>
-                <h3 className="text-label font-bold uppercase tracking-[0.08em] text-text-secondary mb-3">
-                  {t('source_detail.markets_title', { count: totalAssets })} <span className="font-normal text-text-muted">{t('source_detail.markets_click_hint')}</span>
+                <h3 className={`text-label font-bold uppercase tracking-[0.08em] mb-3 ${sectionHeadCls}`}>
+                  {t('source_detail.markets_title', { count: totalAssets })} <span className={`font-normal ${mutedTextCls}`}>{t('source_detail.markets_click_hint')}</span>
                 </h3>
-                <div className="border border-border-light overflow-hidden rounded-lg">
+                <div className={`${tableBorderCls} overflow-hidden rounded-lg`}>
                   <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
                     <Table aria-label="Source Assets">
                       <TableHeader>
@@ -826,7 +849,7 @@ export function SourceDetailModal({ sourceId, onClose, dark = false }: SourceDet
                             return (
                               <React.Fragment key={asset.assetId}>
                                 <TableRow
-                                  className={`cursor-pointer transition-colors ${isExpanded ? 'bg-surface-info' : getRowBg(asset)} hover:bg-surface`}
+                                  className={`cursor-pointer transition-colors ${isExpanded ? expandedHighlightCls : getRowBg(asset)} ${hoverCls}`}
                                   onClick={() => setExpandedAssetId(isExpanded ? null : asset.assetId)}
                                 >
                                   {/* Market name */}
@@ -912,8 +935,8 @@ export function SourceDetailModal({ sourceId, onClose, dark = false }: SourceDet
                                 {/* Expanded sparkline row */}
                                 {isExpanded && (
                                   <tr>
-                                    <td colSpan={7} className="bg-muted border-t border-border-light p-3">
-                                      <AssetSparkline sourceId={sourceId} assetId={asset.assetId} />
+                                    <td colSpan={7} className={`${expandedRowCls} p-3`}>
+                                      <AssetSparkline sourceId={sourceId} assetId={asset.assetId} dark={dark} />
                                     </td>
                                   </tr>
                                 )}
