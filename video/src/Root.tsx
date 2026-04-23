@@ -55,6 +55,7 @@ import { emberMeta } from "./compositions/replicates/ember/EmberComposition";
 import { emberSideBySideMeta } from "./compositions/replicates/ember/EmberSideBySide";
 import { worldcoinMeta } from "./compositions/replicates/worldcoin/WorldcoinComposition";
 import { worldcoinSideBySideMeta } from "./compositions/replicates/worldcoin/WorldcoinSideBySide";
+import { worldcoin2Meta } from "./compositions/replicates/worldcoin/Worldcoin2Composition";
 import { riddMeta } from "./compositions/replicates/ridd/RiddComposition";
 import { riddSideBySideMeta } from "./compositions/replicates/ridd/RiddSideBySide";
 import { wabiMeta } from "./compositions/replicates/wabi/WabiComposition";
@@ -257,6 +258,14 @@ export const RemotionRoot: React.FC = () => {
           fps={worldcoinSideBySideMeta.fps}
           width={worldcoinSideBySideMeta.width}
           height={worldcoinSideBySideMeta.height}
+        />
+        <Composition
+          id={worldcoin2Meta.id}
+          component={worldcoin2Meta.component}
+          durationInFrames={worldcoin2Meta.durationInFrames}
+          fps={worldcoin2Meta.fps}
+          width={worldcoin2Meta.width}
+          height={worldcoin2Meta.height}
         />
 
         {/* --- Ridd --- */}

@@ -494,11 +494,14 @@ const IPhoneScene: React.FC<{
   return (
     <>
       <primitive object={gltf.scene} />
-      {env.isRendering ? (
-        <RenderedScreen mesh={screenMesh} />
-      ) : (
-        <PreviewScreen mesh={screenMesh} videoRef={videoRef} />
-      )}
+      {/* Isolated boundary — a suspending video texture must never swallow the phone. */}
+      <React.Suspense fallback={null}>
+        {env.isRendering ? (
+          <RenderedScreen mesh={screenMesh} />
+        ) : (
+          <PreviewScreen mesh={screenMesh} videoRef={videoRef} />
+        )}
+      </React.Suspense>
       <Environment preset="studio" environmentIntensity={1.8} />
       <ambientLight intensity={0.3} />
       <directionalLight position={[5, 8, -5]} intensity={2.5} castShadow />
