@@ -47,9 +47,20 @@ services:
     env_file:
       - ./sfdata-node.env
     environment:
-      # DATABASE_URL built from secret at runtime; override here if pointing
-      # at a remote Postgres.
       RUST_LOG: "info,sqlx=warn"
+      # Scrape-only binary — bitget feed is irrelevant, accept mock prices
+      # so the startup guard does not refuse to launch.
+      DATA_NODE_MOCK_PRICES: "true"
+    volumes:
+      # Minimum config files the data-node binary expects even in SF_MODE.
+      - ../../deployments/active-deployment.json:/app/deployments/active-deployment.json:ro
+      - ../../deployments/morpho-e2e.json:/app/deployments/morpho-e2e.json:ro
+      - ../../deployments/vision-batches.json:/app/deployments/vision-batches.json:ro
+      - ../../deployments/batch-markets.json:/app/deployments/batch-markets.json:ro
+      - ../../data/symbol-map.json:/app/data/symbol-map.json:ro
+      - ../../assets.json:/app/assets.json:ro
+      - ../../config/sources-display.json:/app/config/sources-display.json:ro
+      - ../../config/fund-branding.json:/app/config/fund-branding.json:ro
     networks:
       - sf-internal
       - sf-public
@@ -57,12 +68,19 @@ services:
       # Internal API port — expose ONLY on a private interface if possible.
       # Firewall this to VPS 1 only via ufw / iptables on the host.
       - "127.0.0.1:8200:8200"
+    # Read the docker-mounted secret at container start, compose DATABASE_URL
+    # in a shell owned by the container, then exec the Rust binary. The
+    # doubled dollar signs ($$) prevent compose from interpolating the vars
+    # at parse time — they're meant for the runtime shell.
+    entrypoint: ["/bin/sh", "-c"]
     command:
-      - serve
-      - --postgres-url
-      - "postgres://sfdata:$${PG_PASSWORD}@sf-postgres:5432/sfdata"
+      - |
+        export DATABASE_URL="postgres://sfdata:$$(cat /run/secrets/pg_password)@sf-postgres:5432/sfdata"
+        exec /usr/local/bin/sfdata-node serve
     secrets:
-      - pg_password
+      - source: pg_password
+        target: pg_password
+        mode: 0444
     deploy:
       resources:
         limits:
