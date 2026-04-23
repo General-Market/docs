@@ -266,9 +266,10 @@ fn stateless_daemon_closes_resolves_and_claims() {
             .unwrap();
     }
 
+    // Grid-align to 60s per program constraint.
     let now = now_unix(&svm);
-    let close = now + 150;
-    let settle = close + 150;
+    let close = ((now + 150) / 60 + 1) * 60;
+    let settle = close + 180;
     let threshold_bps = 50i32;
 
     let yes_args = PlaceBetArgs {
