@@ -91,9 +91,9 @@ const HARSH_EASE = Easing.bezier(0.88, 0, 0.08, 1);
 const MAIN_DURATION = PITCH_START + PITCH_DURATION;
 const DURATION = PROLOGUE_DURATION + MAIN_DURATION;
 
-// Wise lime used for the typer character entry animation, replacing the old
-// rose tone. Characters flare wiseGreen, then settle to white.
-const TYPER_ENTRY: [number, number, number] = [159, 232, 112];
+// Character entry tone — white on white. The prologue is strict b&w; no
+// lime flare, no green hot range. Chars fade in via the burst window only.
+const TYPER_ENTRY: [number, number, number] = [255, 255, 255];
 const easeInPow = (t: number, p: number): number =>
   Math.pow(Math.max(0, Math.min(1, t)), p);
 

@@ -187,13 +187,10 @@ function buildSpeedCanvas(
   // inside the feed too.
   ctx.fillStyle = "#0b0e14";
   ctx.fillRect(0, 0, W, SPEED_HEADER_H);
-  ctx.fillStyle = "#FFFFFF";
-  ctx.font = `900 92px ${CARD_FONT}`;
-  ctx.textAlign = "center";
-  ctx.fillText("100,000 / s", W / 2, 110);
   ctx.fillStyle = "#7c8699";
   ctx.font = `700 22px ${CARD_FONT}`;
-  ctx.fillText("LIVE TRADE FEED", W / 2, 142);
+  ctx.textAlign = "center";
+  ctx.fillText("LIVE TRADE FEED", W / 2, 110);
 
   const rnd = seededRand(hashStr(sourceId + "_speed"));
   const tickers = [

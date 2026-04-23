@@ -933,41 +933,44 @@ const Point3Scene: React.FC<{
         <div
           style={{
             position: "absolute",
-            top: 160,
+            top: 120,
             left: 0,
             right: 0,
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            gap: 10,
+            gap: 18,
             zIndex: 5,
             opacity: panelIntro,
             transform: `translateX(${leftTitleX}px)`,
           }}
         >
-          <div
-            style={{
-              fontFamily: INTER,
-              fontSize: 15,
-              fontWeight: 600,
-              letterSpacing: "0.32em",
-              textTransform: "uppercase",
-              color: "rgba(255,255,255,0.45)",
-            }}
-          >
-            single trades
-          </div>
           <Reveal
-            from={sceneStart + 16}
-            duration={duration - 16}
+            from={sceneStart + 6}
+            duration={duration - 6}
+            text="Others"
+            revealDuration={24}
+            seed={77}
+            solid
+            style={{
+              fontSize: 96,
+              fontWeight: 900,
+              letterSpacing: "-0.03em",
+              textAlign: "center",
+              lineHeight: 1,
+            }}
+          />
+          <Reveal
+            from={sceneStart + 20}
+            duration={duration - 20}
             text="100 / s"
-            revealDuration={22}
+            revealDuration={26}
             seed={79}
             solid
             style={{
-              fontSize: 104,
+              fontSize: 168,
               fontWeight: 900,
-              letterSpacing: "-0.03em",
+              letterSpacing: "-0.04em",
               textAlign: "center",
               lineHeight: 1,
             }}
@@ -1025,73 +1028,88 @@ const Point3Scene: React.FC<{
         <div
           style={{
             position: "absolute",
-            top: 92,
+            top: 120,
             left: 0,
             right: 0,
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            gap: 14,
+            gap: 18,
             zIndex: 5,
             opacity: panelIntro,
             transform: `translateX(${rightTitleX}px)`,
           }}
         >
-          <div style={{ width: 60, height: 60 }}>
-            <svg viewBox="0 0 102 102" width="60" height="60">
-              {GM_LOGO_PATHS.map((d, i) => (
-                <path key={i} d={d} fill={WHITE} />
-              ))}
-            </svg>
-          </div>
           <Reveal
-            from={sceneStart + 14}
-            duration={duration - 14}
-            text="Cluster Trading"
-            revealDuration={28}
-            seed={83}
+            from={sceneStart + 6}
+            duration={duration - 6}
+            text="General Market"
+            revealDuration={26}
+            seed={81}
             solid
             style={{
-              fontSize: 68,
+              fontSize: 88,
               fontWeight: 900,
               letterSpacing: "-0.03em",
               textAlign: "center",
               lineHeight: 1,
             }}
           />
-          <div
+          <Reveal
+            from={sceneStart + 20}
+            duration={duration - 20}
+            text="100k / s"
+            revealDuration={26}
+            seed={83}
+            solid
             style={{
-              fontFamily: INTER,
-              fontSize: 22,
-              fontWeight: 600,
-              letterSpacing: "-0.005em",
-              color: "rgba(255,255,255,0.72)",
+              fontSize: 168,
+              fontWeight: 900,
+              letterSpacing: "-0.04em",
+              textAlign: "center",
+              lineHeight: 1,
             }}
-          >
-            100,000 / s · 10,000 per block
-          </div>
+          />
         </div>
 
-        {/* Dot sheet — a repeating 2px dot at 4px cells, scrolled by
-            backgroundPosition. Panel-wide pattern: ~240 dots per row,
-            ~630 rows per second pass a visible line → ~150,000 dots/s
-            flowing through. Masked so only the upper band reads; the
-            spawn zone never shows. */}
+        {/* Dot sheet — two nested masks. Outer div fades top/bottom so the
+            spawn zone stays hidden. Inner div paints rainbow stripes and
+            is mask-cut by the dot pattern; the stripes scroll faster than
+            the dot grid so colours visibly cycle through each dot as it
+            rises — turns the monochrome stream into a chromatic blur
+            that reads as speed rather than a still texture. */}
         <div
           style={{
             position: "absolute",
             inset: 0,
             opacity: flowOpacity,
             overflow: "hidden",
-            backgroundImage:
-              "radial-gradient(circle, #ffffff 38%, transparent 40%)",
-            backgroundSize: "4px 4px",
-            backgroundRepeat: "repeat",
-            backgroundPosition: `0 ${-local * RISE_SPEED}px`,
             WebkitMaskImage: STREAM_MASK,
             maskImage: STREAM_MASK,
           }}
-        />
+        >
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              backgroundImage:
+                "linear-gradient(180deg, #ff3b6e 0%, #ff8a00 14%, #ffd60a 28%, #3cff8f 42%, #00d5ff 57%, #6b6bff 71%, #c36cff 85%, #ff3b6e 100%)",
+              backgroundSize: "100% 240px",
+              backgroundRepeat: "repeat",
+              backgroundPosition: `0 ${-local * RISE_SPEED * 1.6}px`,
+              WebkitMaskImage:
+                "radial-gradient(circle, #000 38%, transparent 40%)",
+              WebkitMaskSize: "4px 4px",
+              WebkitMaskRepeat: "repeat",
+              WebkitMaskPosition: `0 ${-local * RISE_SPEED}px`,
+              maskImage:
+                "radial-gradient(circle, #000 38%, transparent 40%)",
+              maskSize: "4px 4px",
+              maskRepeat: "repeat",
+              maskPosition: `0 ${-local * RISE_SPEED}px`,
+            }}
+          />
+        </div>
       </div>
     </AbsoluteFill>
   );
