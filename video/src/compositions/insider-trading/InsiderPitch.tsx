@@ -10,6 +10,7 @@ import {
 import { loadFont as loadInter } from "@remotion/google-fonts/Inter";
 import { CascadeText } from "../../lib/components/Text";
 import { SOURCES } from "../launch/data/sources";
+import { FEATURED_SOURCES, FeaturedCard } from "./SourceCardsWall";
 import { SourceVortexGallery } from "./SourceVortexGallery";
 
 const { fontFamily: INTER } = loadInter("normal", {
@@ -48,7 +49,7 @@ export const PITCH_SCENES = {
   point1: { start: 220, end: 340 },
   point2: { start: 340, end: 440 },
   point3: { start: 440, end: 540 },
-  closing: { start: 540, end: 652 },
+  closing: { start: 540, end: 712 },
 } as const;
 
 export const PITCH_DURATION = PITCH_SCENES.closing.end;
@@ -1160,16 +1161,38 @@ const StatScene: React.FC<{
 // back in lockstep with the shape.
 const CLOSING_GRID_COLS = 12;
 const CLOSING_GRID_ROWS = 12;
-const CLOSING_GRID_SCROLL = 0.7;
+// Final form — icon size + wordmark width used for the "General Market"
+// lockup that snaps into place at the end of the closing. Tuned so the
+// row feels balanced on a 1920-wide stage.
+const CLOSING_ICON_FINAL = 340;
+const CLOSING_WORDMARK_W = 820;
+const CLOSING_WORDMARK_FONT = 176;
+const CLOSING_LOCKUP_GAP = 36;
 
 const ClosingLogoGrid: React.FC<{ local: number }> = ({ local }) => {
-  const zoomT = interpolate(local, [0, 90], [0, 1], {
+  // Phase 1 — dezoom: fills the frame then retracts to hero size.
+  // Phase 2 — lockup form: icon shrinks to its final size and the
+  //   wordmark grows in from zero width. Because both live in a
+  //   flex row centered on the frame, the icon slides left of its
+  //   own accord as the wordmark takes width.
+  const iconSize = interpolate(
+    local,
+    [0, 90, 108, 128],
+    [3200, 620, 620, CLOSING_ICON_FINAL],
+    { ...clamp, easing: ease3 },
+  );
+  const wordmarkWidth = interpolate(
+    local,
+    [108, 132],
+    [0, CLOSING_WORDMARK_W],
+    { ...clamp, easing: ease3 },
+  );
+  const wordmarkOpacity = interpolate(local, [116, 136], [0, 1], clamp);
+  const wordmarkRise = interpolate(local, [116, 136], [18, 0], {
     ...clamp,
     easing: ease3,
   });
 
-  const logoSize = interpolate(zoomT, [0, 1], [3200, 620]);
-  const scrollY = local * CLOSING_GRID_SCROLL;
   const count = CLOSING_GRID_COLS * CLOSING_GRID_ROWS;
 
   return (
@@ -1183,72 +1206,107 @@ const ClosingLogoGrid: React.FC<{ local: number }> = ({ local }) => {
     >
       <div
         style={{
-          position: "relative",
-          width: logoSize,
-          height: logoSize,
-          overflow: "hidden",
-          background: BLACK,
-          boxShadow:
-            "0 0 0 1px rgba(255,255,255,0.04), 0 24px 80px rgba(0,0,0,0.55)",
+          display: "flex",
+          alignItems: "center",
+          gap: CLOSING_LOCKUP_GAP,
         }}
       >
-        {/* Grid fills the logo square — the "black" part of the lockup. */}
+        {/* Icon — the whole lockup treated as one atom: grid fills the
+            black field, white stripes sit on top, both shrink together
+            so they read as a single logo, not a grid behind a bar. */}
         <div
           style={{
-            position: "absolute",
-            inset: 0,
-            display: "grid",
-            gridTemplateColumns: `repeat(${CLOSING_GRID_COLS}, 1fr)`,
-            gridTemplateRows: `repeat(${CLOSING_GRID_ROWS}, 1fr)`,
-            gap: 2,
-            padding: 2,
-            transform: `translateY(${-scrollY}px)`,
-            filter: "saturate(0.92) brightness(0.95)",
+            position: "relative",
+            width: iconSize,
+            height: iconSize,
+            flex: "none",
+            overflow: "hidden",
+            background: BLACK,
+            boxShadow:
+              "0 0 0 1px rgba(255,255,255,0.04), 0 24px 80px rgba(0,0,0,0.55)",
           }}
         >
-          {Array.from({ length: count }).map((_, i) => {
-            const source = SOURCES[i % SOURCES.length];
-            const logoSrc = source.logo.startsWith("/")
-              ? source.logo.slice(1)
-              : source.logo;
-            return (
-              <div
-                key={i}
-                style={{
-                  background: source.bg,
-                  borderRadius: 3,
-                  overflow: "hidden",
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  padding: 4,
-                }}
-              >
-                <Img
-                  src={staticFile(logoSrc)}
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              display: "grid",
+              gridTemplateColumns: `repeat(${CLOSING_GRID_COLS}, 1fr)`,
+              gridTemplateRows: `repeat(${CLOSING_GRID_ROWS}, 1fr)`,
+              gap: 2,
+              padding: 2,
+              filter: "saturate(0.92) brightness(0.95)",
+            }}
+          >
+            {Array.from({ length: count }).map((_, i) => {
+              const source = SOURCES[i % SOURCES.length];
+              const logoSrc = source.logo.startsWith("/")
+                ? source.logo.slice(1)
+                : source.logo;
+              return (
+                <div
+                  key={i}
                   style={{
-                    maxWidth: "82%",
-                    maxHeight: "82%",
-                    objectFit: "contain",
+                    background: source.bg,
+                    borderRadius: 3,
+                    overflow: "hidden",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    padding: 4,
                   }}
-                />
-              </div>
-            );
-          })}
+                >
+                  <Img
+                    src={staticFile(logoSrc)}
+                    style={{
+                      maxWidth: "82%",
+                      maxHeight: "82%",
+                      objectFit: "contain",
+                    }}
+                  />
+                </div>
+              );
+            })}
+          </div>
+
+          <svg
+            width="100%"
+            height="100%"
+            viewBox="0 0 102 102"
+            preserveAspectRatio="none"
+            style={{ position: "absolute", inset: 0 }}
+          >
+            {GM_LOGO_PATHS.map((d, i) => (
+              <path key={i} d={d} fill="#ffffff" />
+            ))}
+          </svg>
         </div>
 
-        {/* White stripes — the middle of the lockup, laid over the grid. */}
-        <svg
-          width="100%"
-          height="100%"
-          viewBox="0 0 102 102"
-          preserveAspectRatio="none"
-          style={{ position: "absolute", inset: 0 }}
+        {/* Wordmark — width animates from 0 so the flex row pushes the
+            icon left as "General Market" fills in on the right. */}
+        <div
+          style={{
+            width: wordmarkWidth,
+            overflow: "hidden",
+            flex: "none",
+            opacity: wordmarkOpacity,
+            transform: `translateY(${wordmarkRise}px)`,
+          }}
         >
-          {GM_LOGO_PATHS.map((d, i) => (
-            <path key={i} d={d} fill="#ffffff" />
-          ))}
-        </svg>
+          <div
+            style={{
+              fontFamily: INTER,
+              fontSize: CLOSING_WORDMARK_FONT,
+              fontWeight: 900,
+              letterSpacing: "-0.035em",
+              lineHeight: 0.95,
+              color: WHITE,
+              whiteSpace: "nowrap",
+            }}
+          >
+            General Market
+          </div>
+        </div>
       </div>
     </AbsoluteFill>
   );
@@ -1265,9 +1323,14 @@ const ClosingScene: React.FC<{
     ...clamp,
     easing: ease3,
   });
-  const shrink = interpolate(local, [70, duration - 4], [1, 0.3], clamp);
+  // Sweep keeps its original 70→108 shrink window, independent of scene
+  // length — the extra frames at the tail are reserved for the lockup
+  // reveal, not more sweep motion.
+  const shrink = interpolate(local, [70, 108], [1, 0.3], clamp);
   const firstOut = interpolate(local, [58, 74], [1, 0], clamp);
-  const logoIn = interpolate(local, [86, 106], [0, 1], clamp);
+  // Second statement holds until the lockup starts forming, then steps
+  // aside so the wordmark reveal owns the frame.
+  const secondOut = interpolate(local, [104, 118], [1, 0], clamp);
   const fadeOut = interpolate(local, [duration - 18, duration], [1, 0], clamp);
 
   return (
@@ -1324,11 +1387,12 @@ const ClosingScene: React.FC<{
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
+          opacity: secondOut,
         }}
       >
         <Reveal
           from={sceneStart + 64}
-          duration={duration - 64}
+          duration={54}
           text="A new trading standard"
           revealDuration={38}
           seed={149}
@@ -1338,41 +1402,6 @@ const ClosingScene: React.FC<{
             letterSpacing: "-0.04em",
             textAlign: "center",
             maxWidth: 1600,
-          }}
-        />
-      </AbsoluteFill>
-
-      {/* LOGO + URL */}
-      <AbsoluteFill
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          paddingTop: 260,
-          gap: 24,
-          opacity: logoIn,
-        }}
-      >
-        <Img
-          src={staticFile("gm-logo.svg")}
-          style={{
-            width: 72,
-            height: 72,
-            mixBlendMode: "difference",
-          }}
-        />
-        <Reveal
-          from={sceneStart + 90}
-          duration={duration - 90}
-          text="generalmarket.io"
-          revealDuration={28}
-          seed={151}
-          style={{
-            fontSize: 22,
-            fontWeight: 700,
-            letterSpacing: "0.3em",
-            textTransform: "uppercase",
           }}
         />
       </AbsoluteFill>
