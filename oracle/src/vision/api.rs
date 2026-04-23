@@ -789,23 +789,64 @@ async fn batch_ratios(
 // GET /vision/vault/:address/history — TVL + NAV snapshots for a vault
 // ---------------------------------------------------------------------------
 
+#[derive(Debug, Deserialize, Default)]
+struct VaultHistoryQuery {
+    /// "1d" | "1w" | "1m" | "all". Defaults to "all".
+    range: Option<String>,
+}
+
 async fn vault_history(
     State(state): State<Arc<VisionState>>,
     Path(address): Path<String>,
+    Query(q): Query<VaultHistoryQuery>,
 ) -> impl IntoResponse {
-    let rows = sqlx::query_as::<_, (f64, f64, chrono::DateTime<chrono::Utc>)>(
-        "SELECT nav_per_share, tvl_usd, created_at
-         FROM vault_snapshots
-         WHERE vault_address = $1
-         ORDER BY created_at ASC
-         LIMIT 200",
-    )
-    .bind(&address.to_lowercase())
-    .fetch_all(&state.pool)
-    .await;
+    // Window + bucket per range. Buckets collapse raw rows into ~200–300 points
+    // so the chart stays dense but doesn't ship megabytes. The fund-manager
+    // writes one snapshot per vault every ~4.5 minutes.
+    //
+    //   range  window    bucket     approx points
+    //   1d     1 day     5 min      ~288
+    //   1w     7 days    35 min     ~288
+    //   1m     30 days   3 hours    ~240
+    //   all    inception 6 hours    capped
+    let range = q.range.as_deref().unwrap_or("all").to_lowercase();
+    let (interval_sql, bucket_secs): (&str, i64) = match range.as_str() {
+        "1d" => ("created_at >= NOW() - INTERVAL '1 day'", 300),
+        "1w" => ("created_at >= NOW() - INTERVAL '7 days'", 35 * 60),
+        "1m" => ("created_at >= NOW() - INTERVAL '30 days'", 3 * 3600),
+        _    => ("TRUE", 6 * 3600),
+    };
+
+    let addr = address.to_lowercase();
+    // to_timestamp(floor(epoch / bucket) * bucket) gives a canonical bucket
+    // start. Take the latest row per bucket (DISTINCT ON) so NAV is the
+    // end-of-bucket value, which is what charts want (current state, not
+    // retroactive averages).
+    let sql = format!(
+        "SELECT DISTINCT ON (bucket) nav_per_share, tvl_usd, created_at
+         FROM (
+            SELECT nav_per_share, tvl_usd, created_at,
+                   to_timestamp(floor(extract(epoch from created_at) / {bucket}) * {bucket}) AS bucket
+            FROM vault_snapshots
+            WHERE vault_address = $1 AND {interval}
+         ) t
+         ORDER BY bucket ASC, created_at DESC
+         LIMIT 500",
+        bucket = bucket_secs,
+        interval = interval_sql,
+    );
+
+    let rows = sqlx::query_as::<_, (f64, f64, chrono::DateTime<chrono::Utc>)>(&sql)
+        .bind(&addr)
+        .fetch_all(&state.pool)
+        .await;
 
     match rows {
-        Ok(rows) => {
+        Ok(mut rows) => {
+            // DISTINCT ON picks the latest row per bucket, but to_timestamp
+            // rounding isn't monotone across the ORDER BY bucket ASC output
+            // without a secondary sort — guarantee chronological order.
+            rows.sort_by_key(|r| r.2);
             let snapshots: Vec<serde_json::Value> = rows
                 .into_iter()
                 .map(|(nav, tvl, ts)| {

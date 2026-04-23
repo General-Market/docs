@@ -8,15 +8,19 @@ export interface VaultSnapshot {
   ts: number
 }
 
+export type VaultHistoryRange = '1d' | '1w' | '1m' | 'all'
+
 /**
  * Fetches historical TVL + NAV snapshots for a vault.
- * Falls back to empty array if the API isn't available yet.
+ * The oracle windows + buckets rows server-side per range so the chart gets
+ * ~200–300 dense points regardless of inception age. Falls back to an empty
+ * array if the API isn't available yet.
  */
-export function useVaultHistory(vaultAddress: string) {
+export function useVaultHistory(vaultAddress: string, range: VaultHistoryRange = 'all') {
   const { data, isLoading } = useQuery<{ snapshots: VaultSnapshot[] }>({
-    queryKey: ['vault-history', vaultAddress],
+    queryKey: ['vault-history', vaultAddress, range],
     queryFn: async () => {
-      const res = await fetch(`/api/vision/vault/${vaultAddress}/history`)
+      const res = await fetch(`/api/vision/vault/${vaultAddress}/history?range=${range}`)
       if (!res.ok) return { snapshots: [] }
       return res.json()
     },

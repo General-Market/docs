@@ -65,50 +65,75 @@ function computeMaxDrawdown(navs: number[]): number | null {
   return maxDd > 0 ? -maxDd : null
 }
 
+// Annualisation constant — the fund-manager emits ~320 snapshots/day, so the
+// correct scaling factor for daily-equivalent stats is sqrt(periods per year).
+// With ~4.5-min cadence that's ≈105,000/yr. Using sqrt(252) (trading days)
+// treats each snapshot as if it were a daily return, which overstates the
+// numbers by ~20×. Scale by snapshots-per-year instead, with a safe floor.
+const SNAPSHOT_INTERVAL_MIN = 4.5
+const PERIODS_PER_YEAR = (365 * 24 * 60) / SNAPSHOT_INTERVAL_MIN
+const ANNUALISE = Math.sqrt(PERIODS_PER_YEAR)
+
+function navsToReturns(navs: number[]): number[] {
+  const out: number[] = []
+  for (let i = 1; i < navs.length; i++) {
+    const prev = navs[i - 1]
+    if (prev === 0) continue
+    out.push((navs[i] - prev) / prev)
+  }
+  return out
+}
+
 function computeVolatility(navs: number[]): number | null {
   if (navs.length < 3) return null
-  const returns: number[] = []
-  for (let i = 1; i < navs.length; i++) {
-    returns.push((navs[i] - navs[i - 1]) / navs[i - 1])
-  }
+  const returns = navsToReturns(navs)
+  if (returns.length < 2) return null
   const mean = returns.reduce((a, b) => a + b, 0) / returns.length
   const variance = returns.reduce((a, r) => a + (r - mean) ** 2, 0) / returns.length
-  return Math.sqrt(variance) * Math.sqrt(252)
+  return Math.sqrt(variance) * ANNUALISE
 }
 
 function computeSharpe(navs: number[]): number | null {
-  if (navs.length < 5) return null
-  const returns: number[] = []
-  for (let i = 1; i < navs.length; i++) {
-    returns.push((navs[i] - navs[i - 1]) / navs[i - 1])
-  }
+  // Two points is enough for "a direction". The old threshold of 5 points
+  // left the tile blank for vaults younger than ~20 minutes.
+  if (navs.length < 3) return null
+  const returns = navsToReturns(navs)
+  if (returns.length < 2) return null
   const mean = returns.reduce((a, b) => a + b, 0) / returns.length
   const variance = returns.reduce((a, r) => a + (r - mean) ** 2, 0) / returns.length
   const std = Math.sqrt(variance)
   if (std === 0) return null
-  return (mean / std) * Math.sqrt(252)
+  return (mean / std) * ANNUALISE
 }
 
 function computeSortino(navs: number[]): number | null {
-  if (navs.length < 5) return null
-  const returns: number[] = []
-  for (let i = 1; i < navs.length; i++) {
-    returns.push((navs[i] - navs[i - 1]) / navs[i - 1])
-  }
+  if (navs.length < 3) return null
+  const returns = navsToReturns(navs)
+  if (returns.length < 2) return null
   const mean = returns.reduce((a, b) => a + b, 0) / returns.length
   const downside = returns.filter(r => r < 0)
-  if (downside.length === 0) return null
+  // No drawdowns yet — a vault that has only gone up has undefined Sortino.
+  // Report a large but finite value rather than null, so the tile renders.
+  if (downside.length === 0) return mean > 0 ? 9.99 : null
   const downsideVar = downside.reduce((a, r) => a + r * r, 0) / downside.length
   const downsideStd = Math.sqrt(downsideVar)
   if (downsideStd === 0) return null
-  return (mean / downsideStd) * Math.sqrt(252)
+  return (mean / downsideStd) * ANNUALISE
 }
 
 function computePerfForPeriod(snapshots: VaultSnapshot[], hoursAgo: number): number | null {
   if (snapshots.length < 2) return null
   const cutoff = Date.now() - hoursAgo * 3600 * 1000
-  const currentNav = snapshots[snapshots.length - 1].nav
-  // Find closest snapshot to the cutoff
+  const last = snapshots[snapshots.length - 1]
+  // If the whole vault is younger than the requested window, fall back to
+  // inception — "7D return" on a 3-day-old vault is just the inception return.
+  // Returning null here is what made 7D/30D tiles show "—" for new vaults.
+  if (snapshots[0].ts > cutoff) {
+    const base = snapshots[0].nav
+    if (base === 0) return null
+    return (last.nav - base) / base
+  }
+  // Otherwise find the snapshot nearest the cutoff.
   let closest = snapshots[0]
   let closestDist = Math.abs(closest.ts - cutoff)
   for (const s of snapshots) {
@@ -118,8 +143,8 @@ function computePerfForPeriod(snapshots: VaultSnapshot[], hoursAgo: number): num
       closestDist = dist
     }
   }
-  if (closest.nav === 0 || closest === snapshots[snapshots.length - 1]) return null
-  return (currentNav - closest.nav) / closest.nav
+  if (closest.nav === 0 || closest === last) return null
+  return (last.nav - closest.nav) / closest.nav
 }
 
 function fmtPct(v: number | null): string {
@@ -374,7 +399,24 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
 
   const feePercent = Number(vault.performanceFeeRate) / 1e16
 
-  const { snapshots, hasHistory } = useVaultHistory(vault.address)
+  // Time-range filter for the NAV chart. The oracle windows + buckets rows
+  // server-side; the frontend just picks which window to request. Default to
+  // '1d' for intraday detail — a fresh vault still has dense recent data.
+  type NavRange = '1D' | '1W' | '1M' | 'ALL'
+  const RANGE_TO_API: Record<NavRange, '1d' | '1w' | '1m' | 'all'> = {
+    '1D': '1d', '1W': '1w', '1M': '1m', ALL: 'all',
+  }
+  const [navRange, setNavRange] = useState<NavRange>('1D')
+
+  const { snapshots: chartSnapshots, hasHistory: hasChartHistory } = useVaultHistory(
+    vault.address,
+    RANGE_TO_API[navRange],
+  )
+  // Full-inception snapshots power the inception-perf tile + stats that need
+  // long-horizon data (Sharpe/Sortino). Stay on 'all' regardless of chart tab.
+  const { snapshots: allSnapshots, hasHistory: hasAllHistory } = useVaultHistory(vault.address, 'all')
+  const snapshots = allSnapshots
+  const hasHistory = hasAllHistory
 
   // Single source for TVL/NAV/perf — identical to what the modal header reads,
   // so the two can't disagree about the same vault.
@@ -394,40 +436,6 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
   const isPositive = effectivePerf >= 0
   const deployedPct = effectiveDeployedPct
 
-  // Time-range filter for the NAV chart. The buttons used to be cosmetic.
-  // Default to ALL but auto-snap to a smaller window if there's enough data.
-  type NavRange = '1D' | '1W' | '1M' | 'ALL'
-  const RANGE_HOURS: Record<NavRange, number | null> = {
-    '1D': 24,
-    '1W': 24 * 7,
-    '1M': 24 * 30,
-    ALL: null,
-  }
-  const defaultRange: NavRange = useMemo(() => {
-    if (!hasHistory || snapshots.length < 2) return 'ALL'
-    const spanHours = (snapshots[snapshots.length - 1].ts - snapshots[0].ts) / 3_600_000
-    if (spanHours <= 24) return '1D'
-    if (spanHours <= 24 * 7) return '1W'
-    if (spanHours <= 24 * 30) return '1M'
-    return 'ALL'
-  }, [hasHistory, snapshots])
-  const [navRange, setNavRange] = useState<NavRange>(defaultRange)
-  // Snap range to default whenever the underlying data span changes — covers
-  // the case where snapshots arrive after the first render.
-  useEffect(() => {
-    setNavRange(defaultRange)
-  }, [defaultRange])
-
-  const filteredSnapshots = useMemo(() => {
-    const cutoffHours = RANGE_HOURS[navRange]
-    if (cutoffHours === null) return snapshots
-    if (snapshots.length === 0) return snapshots
-    const cutoffMs = Date.now() - cutoffHours * 3_600_000
-    const windowed = snapshots.filter(s => s.ts >= cutoffMs)
-    // Always keep at least the last two points so the chart can draw a line.
-    return windowed.length >= 2 ? windowed : snapshots.slice(-2)
-  }, [snapshots, navRange])
-
   // Live SSE pulse — the data-node broadcasts vault NAV/TVL on every cycle.
   // Append it as a synthetic "now" point so the chart's right edge tracks
   // reality instead of waiting for the next 60s REST poll.
@@ -445,26 +453,38 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sseVault?.nav_per_share, sseVault?.total_assets])
 
-  const displaySnapshots = useMemo(() => {
-    if (!liveSnapshot) return filteredSnapshots
-    if (filteredSnapshots.length === 0) return [liveSnapshot]
-    const last = filteredSnapshots[filteredSnapshots.length - 1]
-    if (liveSnapshot.ts <= last.ts) return filteredSnapshots
-    return [...filteredSnapshots, liveSnapshot]
-  }, [filteredSnapshots, liveSnapshot])
+  // Append the live tick to both the range slice and the full-inception array.
+  const withLive = (arr: VaultSnapshot[]): VaultSnapshot[] => {
+    if (!liveSnapshot) return arr
+    if (arr.length === 0) return [liveSnapshot]
+    const last = arr[arr.length - 1]
+    if (liveSnapshot.ts <= last.ts) return arr
+    return [...arr, liveSnapshot]
+  }
+  const displaySnapshots = useMemo(() => withLive(chartSnapshots), [chartSnapshots, liveSnapshot])
+  const fullSnapshots = useMemo(() => withLive(snapshots), [snapshots, liveSnapshot])
 
   const navHistory = useMemo(() => {
     if (displaySnapshots.length >= 2) return displaySnapshots.map(s => s.nav)
     return null
   }, [displaySnapshots])
 
-  const maxDd = useMemo(() => navHistory ? computeMaxDrawdown(navHistory) : null, [navHistory])
-  const vol = useMemo(() => navHistory ? computeVolatility(navHistory) : null, [navHistory])
-  const sharpe = useMemo(() => navHistory ? computeSharpe(navHistory) : null, [navHistory])
-  const sortino = useMemo(() => navHistory ? computeSortino(navHistory) : null, [navHistory])
-  const perf24h = useMemo(() => hasHistory ? computePerfForPeriod(snapshots, 24) : null, [hasHistory, snapshots])
-  const perf7d = useMemo(() => hasHistory ? computePerfForPeriod(snapshots, 168) : null, [hasHistory, snapshots])
-  const perf30d = useMemo(() => hasHistory ? computePerfForPeriod(snapshots, 720) : null, [hasHistory, snapshots])
+  // Stats run against the full inception history so Sharpe/Sortino/Vol/Max DD
+  // stay valid when the user flips the chart to 1D. Max DD of "the last day"
+  // is meaningless; Max DD of "ever" is the number people actually want.
+  const statsHistory = useMemo(() => {
+    if (fullSnapshots.length >= 2) return fullSnapshots.map(s => s.nav)
+    return null
+  }, [fullSnapshots])
+
+  const maxDd = useMemo(() => statsHistory ? computeMaxDrawdown(statsHistory) : null, [statsHistory])
+  const vol = useMemo(() => statsHistory ? computeVolatility(statsHistory) : null, [statsHistory])
+  const sharpe = useMemo(() => statsHistory ? computeSharpe(statsHistory) : null, [statsHistory])
+  const sortino = useMemo(() => statsHistory ? computeSortino(statsHistory) : null, [statsHistory])
+  const perf24h = useMemo(() => hasHistory ? computePerfForPeriod(fullSnapshots, 24) : null, [hasHistory, fullSnapshots])
+  const perf7d = useMemo(() => hasHistory ? computePerfForPeriod(fullSnapshots, 168) : null, [hasHistory, fullSnapshots])
+  const perf30d = useMemo(() => hasHistory ? computePerfForPeriod(fullSnapshots, 720) : null, [hasHistory, fullSnapshots])
+  void hasChartHistory
 
   // Trading stats from PlayerJoined/PlayerSettled logs (last ~24h of blocks).
   const { stats } = useVaultStats(vault.address)
