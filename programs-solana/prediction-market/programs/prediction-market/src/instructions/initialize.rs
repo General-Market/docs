@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 
 use crate::error::ErrorCode;
-use crate::state::GlobalConfig;
+use crate::state::{ConfigInitialized, GlobalConfig};
 
 #[derive(Accounts)]
 pub struct InitializeConfig<'info> {
@@ -48,5 +48,12 @@ pub fn handler(ctx: Context<InitializeConfig>, fee_bps: u16) -> Result<()> {
     cfg.fee_vault_bump = ctx.bumps.fee_vault;
     cfg.paused = false;
     cfg.bump = ctx.bumps.config;
+
+    emit!(ConfigInitialized {
+        admin: cfg.admin,
+        stake_mint: cfg.stake_mint,
+        fee_vault: cfg.fee_vault,
+        fee_bps: cfg.fee_bps,
+    });
     Ok(())
 }

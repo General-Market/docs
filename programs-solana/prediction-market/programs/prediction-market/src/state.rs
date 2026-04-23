@@ -198,3 +198,56 @@ pub struct Claimed {
     pub fee: u64,
     pub stranded: bool,
 }
+
+// -----------------------------------------------------------------------------
+// Admin-surface events (MR10 — every config mutation surfaces an event so
+// indexers can reconstruct governance history without polling the PDA)
+// -----------------------------------------------------------------------------
+
+#[event]
+pub struct ConfigInitialized {
+    pub admin: Pubkey,
+    pub stake_mint: Pubkey,
+    pub fee_vault: Pubkey,
+    pub fee_bps: u16,
+}
+
+#[event]
+pub struct Paused {
+    pub paused: bool,
+}
+
+#[event]
+pub struct FeeBpsChanged {
+    pub fee_bps: u16,
+}
+
+#[event]
+pub struct SourceUpserted {
+    pub source_id: u32,
+    pub name: [u8; 32],
+    pub enabled: bool,
+}
+
+#[event]
+pub struct AdminProposed {
+    pub new_admin: Pubkey,
+}
+
+#[event]
+pub struct AdminAccepted {
+    pub new_admin: Pubkey,
+}
+
+#[event]
+pub struct FeesWithdrawn {
+    pub destination: Pubkey,
+    pub amount: u64,
+}
+
+#[event]
+pub struct OracleSignersProposed {
+    pub signers: Vec<Pubkey>,
+    pub threshold: u8,
+    pub activation_ts: i64,
+}

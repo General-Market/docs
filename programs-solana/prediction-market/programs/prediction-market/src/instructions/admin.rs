@@ -10,7 +10,10 @@ use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 
 use crate::error::ErrorCode;
 use crate::math::outcome_yes;
-use crate::state::{GlobalConfig, Market, MarketResolved, OracleConfig, Source};
+use crate::state::{
+    AdminAccepted, AdminProposed, FeeBpsChanged, FeesWithdrawn, GlobalConfig, Market,
+    MarketResolved, OracleConfig, OracleSignersProposed, Paused, Source, SourceUpserted,
+};
 
 pub const MULTISIG_DELAY: i64 = 86_400;
 
@@ -53,6 +56,11 @@ pub fn upsert_source(
     if s.bump == 0 {
         s.bump = ctx.bumps.source;
     }
+    emit!(SourceUpserted {
+        source_id,
+        name,
+        enabled,
+    });
     Ok(())
 }
 
@@ -101,6 +109,11 @@ pub fn propose_oracle_signers(
         oc.pending_signers = Vec::new();
         oc.pending_threshold = 0;
         oc.pending_activation_ts = 0;
+        emit!(OracleSignersProposed {
+            signers: Vec::new(),
+            threshold: 0,
+            activation_ts: 0,
+        });
         return Ok(());
     }
 
@@ -118,6 +131,11 @@ pub fn propose_oracle_signers(
     oc.pending_signers = signers;
     oc.pending_threshold = threshold;
     oc.pending_activation_ts = Clock::get()?.unix_timestamp + MULTISIG_DELAY;
+    emit!(OracleSignersProposed {
+        signers: oc.pending_signers.clone(),
+        threshold: oc.pending_threshold,
+        activation_ts: oc.pending_activation_ts,
+    });
     Ok(())
 }
 
@@ -156,6 +174,7 @@ pub struct SetPause<'info> {
 
 pub fn set_pause(ctx: Context<SetPause>, paused: bool) -> Result<()> {
     ctx.accounts.config.paused = paused;
+    emit!(Paused { paused });
     Ok(())
 }
 
@@ -169,6 +188,7 @@ pub struct SetFeeBps<'info> {
 pub fn set_fee_bps(ctx: Context<SetFeeBps>, fee_bps: u16) -> Result<()> {
     require!(fee_bps <= 10_000, ErrorCode::FeeTooHigh);
     ctx.accounts.config.fee_bps = fee_bps;
+    emit!(FeeBpsChanged { fee_bps });
     Ok(())
 }
 
@@ -185,6 +205,7 @@ pub struct ProposeAdmin<'info> {
 
 pub fn propose_admin(ctx: Context<ProposeAdmin>, new_admin: Pubkey) -> Result<()> {
     ctx.accounts.config.pending_admin = new_admin;
+    emit!(AdminProposed { new_admin });
     Ok(())
 }
 
@@ -201,6 +222,7 @@ pub fn accept_admin(ctx: Context<AcceptAdmin>) -> Result<()> {
     require!(cfg.pending_admin != Pubkey::default(), ErrorCode::NoPending);
     cfg.admin = cfg.pending_admin;
     cfg.pending_admin = Pubkey::default();
+    emit!(AdminAccepted { new_admin: cfg.admin });
     Ok(())
 }
 
@@ -224,6 +246,7 @@ pub fn withdraw_fees(ctx: Context<WithdrawFees>, amount: u64) -> Result<()> {
     let bump = ctx.accounts.config.fee_vault_bump;
     let seeds: &[&[u8]] = &[b"fee_vault", std::slice::from_ref(&bump)];
     let signer_seeds: &[&[&[u8]]] = &[seeds];
+    let destination = ctx.accounts.destination.key();
     token::transfer(
         CpiContext::new_with_signer(
             ctx.accounts.token_program.key(),
@@ -236,6 +259,10 @@ pub fn withdraw_fees(ctx: Context<WithdrawFees>, amount: u64) -> Result<()> {
         ),
         amount,
     )?;
+    emit!(FeesWithdrawn {
+        destination,
+        amount,
+    });
     Ok(())
 }
 
