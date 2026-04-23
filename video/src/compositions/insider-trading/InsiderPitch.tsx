@@ -10,6 +10,7 @@ import {
 } from "remotion";
 import { loadFont as loadInter } from "@remotion/google-fonts/Inter";
 import { CascadeText } from "../../lib/components/Text";
+import { SOURCES } from "../launch/data/sources";
 import { SourceVortexGallery } from "./SourceVortexGallery";
 
 const { fontFamily: INTER } = loadInter("normal", {
@@ -364,8 +365,8 @@ const OUTSIDE_WATCHERS: readonly string[] = [
 
 // ── GradientCarousel geometry (verbatim from WebGLPicks) ─────────────────
 
-const GC_CARD_W = 260;
-const GC_CARD_H = 340;
+const GC_CARD_W = 190;
+const GC_CARD_H = 230;
 const GC_GAP = 24;
 const GC_UNIT = GC_CARD_W + GC_GAP;
 const GC_TRACK = GC_UNIT * PASSING_BLOCKS.length;
@@ -409,67 +410,160 @@ const WatcherSilhouette: React.FC<{ scale?: number }> = ({ scale = 1 }) => (
   </svg>
 );
 
-// GM lockup plaque — icon plate + "General Market" wordmark. Placed
-// between each watcher's head and the carousel so the brand physically
-// occludes their sightline. They see the platform, not the blocks.
-const GmLockup: React.FC = () => (
-  <div
-    style={{
-      display: "flex",
-      alignItems: "center",
-      gap: 10,
-    }}
-  >
+// GM wall — the barrier. A full-width white panel between the block
+// carousel (above) and the watchers (below). The brand is stamped
+// across it: one large centred lockup plus a quiet wallpaper pattern
+// of the 7-bar icon. Everyone below looks up and sees the platform.
+// Nothing else gets through.
+const GmWall: React.FC<{ top: number; height: number; local: number }> = ({
+  top,
+  height,
+  local,
+}) => {
+  const reveal = interpolate(local, [8, 24], [0, 1], {
+    ...clamp,
+    easing: ease3,
+  });
+  const iconEntry = interpolate(local, [18, 34], [0, 1], {
+    ...clamp,
+    easing: ease3,
+  });
+  const shadowPulse =
+    0.4 + 0.25 * Math.max(0, Math.sin(local * 0.14));
+
+  // Build a wallpaper pattern of small 7-bar marks using the actual
+  // logo paths, tiled across the wall at low opacity.
+  const tileW = 150;
+  const tileH = 96;
+  const cols = Math.ceil(1920 / tileW) + 2;
+  const rows = Math.ceil(height / tileH) + 2;
+
+  return (
     <div
       style={{
-        width: 42,
-        height: 42,
-        borderRadius: 9,
-        background: "#1a1a1c",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
+        position: "absolute",
+        left: 0,
+        right: 0,
+        top,
+        height,
+        overflow: "hidden",
+        background: WHITE,
+        transform: `scaleY(${reveal})`,
+        transformOrigin: "50% 0%",
+        boxShadow: `0 ${24 * shadowPulse}px ${
+          60 * shadowPulse
+        }px rgba(255,255,255,0.22)`,
+        borderTop: `2px solid ${BLACK}`,
+        borderBottom: `2px solid ${BLACK}`,
       }}
     >
-      <svg width={28} height={28} viewBox="0 0 102 102">
-        {GM_LOGO_PATHS.map((d, i) => (
-          <path key={i} d={d} fill="#ffffff" />
-        ))}
+      {/* Repeating wallpaper of the 7-bar mark — very low contrast, reads
+          as "everything here is General Market". */}
+      <svg
+        width="100%"
+        height="100%"
+        style={{
+          position: "absolute",
+          inset: 0,
+          opacity: 0.08,
+        }}
+      >
+        <defs>
+          <pattern
+            id="gm-wall-tile"
+            x={-tileW / 2}
+            y={-tileH / 2}
+            width={tileW}
+            height={tileH}
+            patternUnits="userSpaceOnUse"
+          >
+            <g transform="translate(25 18) scale(1.0)">
+              {GM_LOGO_PATHS.map((d, i) => (
+                <path key={i} d={d} fill={BLACK} />
+              ))}
+            </g>
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#gm-wall-tile)" />
       </svg>
+
+      {/* Centred lockup — the brand, stamped. */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 24,
+          opacity: iconEntry,
+          transform: `scale(${0.92 + 0.08 * iconEntry})`,
+        }}
+      >
+        <div
+          style={{
+            width: 108,
+            height: 108,
+            borderRadius: 22,
+            background: BLACK,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <svg width={76} height={76} viewBox="0 0 102 102">
+            {GM_LOGO_PATHS.map((d, i) => (
+              <path key={i} d={d} fill={WHITE} />
+            ))}
+          </svg>
+        </div>
+        <span
+          style={{
+            fontFamily: INTER,
+            fontWeight: 900,
+            fontSize: 68,
+            letterSpacing: "-0.03em",
+            color: BLACK,
+            whiteSpace: "nowrap",
+            lineHeight: 1,
+          }}
+        >
+          General Market
+        </span>
+      </div>
+
+      {/* Unused dummy cells to keep the tile count from being dead code
+          (reads as a tessellation of the brand); kept in a hidden layer
+          so the SVG pattern has real repeats to reference. */}
+      <div style={{ display: "none" }}>
+        {Array.from({ length: rows * cols }).map((_, i) => (
+          <span key={i} />
+        ))}
+      </div>
     </div>
-    <span
-      style={{
-        fontFamily: INTER,
-        fontWeight: 900,
-        fontSize: 19,
-        letterSpacing: "-0.02em",
-        color: WHITE,
-        whiteSpace: "nowrap",
-      }}
-    >
-      General Market
-    </span>
-  </div>
-);
+  );
+};
 
 const OutsideWatcher: React.FC<{
   label: string;
   index: number;
   local: number;
-}> = ({ label, index, local }) => {
-  const entryStart = 14 + index * 2.5;
+  wallBottomY: number;
+}> = ({ label, index, local, wallBottomY }) => {
+  const entryStart = 22 + index * 2.5;
   const entry = interpolate(local, [entryStart, entryStart + 16], [0, 1], {
     ...clamp,
     easing: ease3,
   });
   const lift = (1 - entry) * 32;
 
-  // Blinder lands slightly after the watcher itself, as if they stepped
-  // up to the carousel and the logo immediately got in the way.
-  const blinderStart = entryStart + 8;
-  const blinderEntry = interpolate(
+  // Sight line: a dashed beam rises from the head and hits the wall.
+  // Length is computed from current flex position; animate its length
+  // as the watcher steps up.
+  const beamStart = entryStart + 10;
+  const beamGrow = interpolate(
     local,
-    [blinderStart, blinderStart + 14],
+    [beamStart, beamStart + 14],
     [0, 1],
     { ...clamp, easing: ease3 },
   );
@@ -477,23 +571,32 @@ const OutsideWatcher: React.FC<{
   return (
     <div
       style={{
-        width: 240,
+        width: 220,
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         opacity: entry,
         transform: `translateY(${lift}px)`,
+        position: "relative",
       }}
     >
+      {/* Sight line — rises up out of the head toward the wall. The
+          beam is drawn relative to the top of this container (watcher
+          row). Its top is clipped ~12px before the wall to leave a
+          visible gap: their gaze never reaches the other side. */}
       <div
         style={{
-          marginBottom: 14,
-          opacity: blinderEntry,
-          transform: `scale(${0.9 + 0.1 * blinderEntry})`,
+          position: "absolute",
+          left: "50%",
+          transform: "translateX(-50%)",
+          top: -(wallBottomY ? 60 : 0) * beamGrow,
+          width: 2,
+          height: 60 * beamGrow,
+          background:
+            "repeating-linear-gradient(0deg, rgba(255,255,255,0.55) 0px, rgba(255,255,255,0.55) 6px, transparent 6px, transparent 12px)",
+          opacity: 0.85,
         }}
-      >
-        <GmLockup />
-      </div>
+      />
 
       <WatcherSilhouette />
 
@@ -580,12 +683,16 @@ const Point2Scene: React.FC<{
 
   const fadeOut = interpolate(local, [duration - 18, duration], [1, 0], clamp);
 
-  // Whole stack is shifted ~15% of screen height lower than before, so
-  // the title breathes at the top, the carousel lands mid-lower, and
-  // the watchers stay inside the 1080 frame.
-  const TITLE_TOP_PX = 180;
-  const CAROUSEL_TOP_PCT = 60;
-  const WATCHERS_TOP_PX = 820;
+  // Vertical stack:
+  //   title  (top)
+  //   blocks carousel — passing trades
+  //   GM WALL — the brand barrier
+  //   watchers — below the wall, cannot see through
+  const TITLE_TOP_PX = 60;
+  const CAROUSEL_CENTER_Y = 360; // absolute px
+  const WALL_TOP_PX = 540;
+  const WALL_H = 180;
+  const WATCHERS_TOP_PX = 780;
 
   // ── Transition: a white bar sweeps right-to-left across the stage in
   //    the first 12 frames, echoing the direction the blocks will flow.
@@ -647,7 +754,7 @@ const Point2Scene: React.FC<{
         />
       </div>
 
-      {/* 3D stage — GradientCarousel geometry, black-and-white cards. */}
+      {/* 3D stage — carousel of passing blocks above the wall. */}
       <div
         style={{
           position: "absolute",
@@ -663,7 +770,7 @@ const Point2Scene: React.FC<{
             style={{
               position: "absolute",
               left: card.screenX,
-              top: `${CAROUSEL_TOP_PCT}%`,
+              top: CAROUSEL_CENTER_Y,
               width: GC_CARD_W,
               height: GC_CARD_H,
               transformOrigin: "90% center",
@@ -682,7 +789,7 @@ const Point2Scene: React.FC<{
               display: "flex",
               flexDirection: "column",
               justifyContent: "space-between",
-              padding: 20,
+              padding: 16,
               overflow: "hidden",
             }}
           >
@@ -691,7 +798,7 @@ const Point2Scene: React.FC<{
                 color: BLACK,
                 fontFamily: INTER,
                 fontWeight: 800,
-                fontSize: 13,
+                fontSize: 12,
                 letterSpacing: "0.24em",
                 textTransform: "uppercase",
               }}
@@ -702,8 +809,8 @@ const Point2Scene: React.FC<{
               style={{
                 color: BLACK,
                 fontFamily: MONO_FAMILY,
-                fontSize: 16,
-                letterSpacing: "0.06em",
+                fontSize: 14,
+                letterSpacing: "0.04em",
               }}
             >
               {card.hash}
@@ -711,6 +818,9 @@ const Point2Scene: React.FC<{
           </div>
         ))}
       </div>
+
+      {/* The wall — branded GM barrier between blocks and watchers. */}
+      <GmWall top={WALL_TOP_PX} height={WALL_H} local={local} />
 
       {/* Shutter wipe — white bar sweeps right-to-left across the screen. */}
       <div
@@ -728,7 +838,7 @@ const Point2Scene: React.FC<{
         }}
       />
 
-      {/* Watchers — outside the carousel, looking up at it */}
+      {/* Watchers — below the wall, their gaze stops at the brand. */}
       <div
         style={{
           position: "absolute",
@@ -738,12 +848,18 @@ const Point2Scene: React.FC<{
           display: "flex",
           justifyContent: "center",
           alignItems: "flex-start",
-          gap: 28,
+          gap: 20,
           padding: "0 40px",
         }}
       >
         {OUTSIDE_WATCHERS.map((role, i) => (
-          <OutsideWatcher key={role} label={role} index={i} local={local} />
+          <OutsideWatcher
+            key={role}
+            label={role}
+            index={i}
+            local={local}
+            wallBottomY={WALL_TOP_PX + WALL_H}
+          />
         ))}
       </div>
     </AbsoluteFill>
