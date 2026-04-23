@@ -342,16 +342,16 @@ const Point1Scene: React.FC<{
 // at it. Each head wears a thought bubble of ciphertext and a "?" that
 // never resolves. They watch. They do not read.
 
-type PassingBlock = { from: string; to: string; hash: string };
+type PassingBlock = { hash: string };
 
 const PASSING_BLOCKS: PassingBlock[] = [
-  { from: "#667eea", to: "#764ba2", hash: "0x7f3a••1e92" },
-  { from: "#f093fb", to: "#f5576c", hash: "0x2d18••0b45" },
-  { from: "#4facfe", to: "#00f2fe", hash: "0xa2b7••c3d8" },
-  { from: "#43e97b", to: "#38f9d7", hash: "0xe4f1••6a9c" },
-  { from: "#fa709a", to: "#fee140", hash: "0x9c2e••4d7f" },
-  { from: "#a18cd1", to: "#fbc2eb", hash: "0x5a8b••31f0" },
-  { from: "#ffecd2", to: "#fcb69f", hash: "0xb37d••8e1a" },
+  { hash: "0x7f3a••1e92" },
+  { hash: "0x2d18••0b45" },
+  { hash: "0xa2b7••c3d8" },
+  { hash: "0xe4f1••6a9c" },
+  { hash: "0x9c2e••4d7f" },
+  { hash: "0x5a8b••31f0" },
+  { hash: "0xb37d••8e1a" },
 ];
 
 const OUTSIDE_WATCHERS: readonly string[] = [
@@ -386,25 +386,6 @@ const GC_SCROLL_SPEED = 259; // px / s
 const gcMod = (n: number, m: number) => ((n % m) + m) % m;
 const gcClamp = (v: number, lo: number, hi: number) =>
   Math.min(hi, Math.max(lo, v));
-
-const hexToRgb = (hex: string): [number, number, number] => {
-  const h = hex.replace("#", "");
-  return [
-    parseInt(h.slice(0, 2), 16),
-    parseInt(h.slice(2, 4), 16),
-    parseInt(h.slice(4, 6), 16),
-  ];
-};
-
-const lerpColor = (
-  a: [number, number, number],
-  b: [number, number, number],
-  t: number,
-): [number, number, number] => [
-  Math.round(a[0] + (b[0] - a[0]) * t),
-  Math.round(a[1] + (b[1] - a[1]) * t),
-  Math.round(a[2] + (b[2] - a[2]) * t),
-];
 
 const gcEasePower3Out = Easing.out(Easing.poly(3));
 
@@ -471,11 +452,11 @@ const OutsideWatcher: React.FC<{
       <div
         style={{
           position: "relative",
-          background: "rgba(14,15,12,0.78)",
-          border: "1px solid rgba(255,255,255,0.14)",
+          background: WHITE,
+          border: `1px solid ${BLACK}`,
           borderRadius: 14,
           padding: "8px 14px",
-          color: "#9fe870",
+          color: BLACK,
           fontFamily: MONO_FAMILY,
           fontSize: 16,
           letterSpacing: "0.12em",
@@ -488,7 +469,7 @@ const OutsideWatcher: React.FC<{
         <span>{bubbleText}</span>
         <span
           style={{
-            color: "#ff3b3b",
+            color: BLACK,
             fontFamily: INTER,
             fontWeight: 900,
             fontSize: 20,
@@ -505,9 +486,9 @@ const OutsideWatcher: React.FC<{
             marginLeft: -6,
             width: 12,
             height: 12,
-            background: "rgba(14,15,12,0.78)",
-            borderRight: "1px solid rgba(255,255,255,0.14)",
-            borderBottom: "1px solid rgba(255,255,255,0.14)",
+            background: WHITE,
+            borderRight: `1px solid ${BLACK}`,
+            borderBottom: `1px solid ${BLACK}`,
             transform: "rotate(45deg)",
           }}
         />
@@ -542,41 +523,10 @@ const Point2Scene: React.FC<{
 }> = ({ local, sceneStart, duration }) => {
   const SCENE_FPS = 30;
   const STAGE_W = 1920;
-  const STAGE_H = 1080;
   const halfW = STAGE_W / 2;
 
   const time = local / SCENE_FPS;
   const scrollOffset = time * GC_SCROLL_SPEED;
-
-  // Lissajous blob centres — verbatim from GradientCarousel.
-  const timeFactor = time * 0.2;
-  const maxDim = Math.max(STAGE_W, STAGE_H);
-  const minDim = Math.min(STAGE_W, STAGE_H);
-  const amp1 = minDim * 0.35;
-  const amp2 = minDim * 0.28;
-  const rad1 = maxDim * 0.75;
-  const rad2 = maxDim * 0.65;
-  const cx1 = STAGE_W / 2 + Math.sin(timeFactor * 1.3) * amp1;
-  const cy1 = STAGE_H / 2 + Math.cos(timeFactor * 0.9) * amp1;
-  const cx2 = STAGE_W / 2 + Math.sin(timeFactor * 0.7 + 2) * amp2;
-  const cy2 = STAGE_H / 2 + Math.cos(timeFactor * 1.1 + 1) * amp2;
-
-  // Centre card drives the background-tint interpolation.
-  const centerProgress = scrollOffset / GC_UNIT;
-  const centerIdx = Math.floor(centerProgress);
-  const centerFrac = centerProgress - centerIdx;
-  const cardA = PASSING_BLOCKS[gcMod(centerIdx, PASSING_BLOCKS.length)];
-  const cardB = PASSING_BLOCKS[gcMod(centerIdx + 1, PASSING_BLOCKS.length)];
-  const fromRgb = lerpColor(
-    hexToRgb(cardA.from),
-    hexToRgb(cardB.from),
-    centerFrac,
-  );
-  const toRgb = lerpColor(
-    hexToRgb(cardA.to),
-    hexToRgb(cardB.to),
-    centerFrac,
-  );
 
   // Card transforms — verbatim from GradientCarousel.
   const cards = PASSING_BLOCKS.map((card, i) => {
@@ -636,22 +586,8 @@ const Point2Scene: React.FC<{
   const WATCHERS_TOP_PX = 740;
 
   return (
-    <AbsoluteFill style={{ opacity: fadeOut, background: "#0a0a0a" }}>
-      {/* Animated gradient background — Lissajous blobs, tinted by centre card. */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          filter: "blur(28px) saturate(1.05)",
-          background: [
-            `radial-gradient(circle ${rad1}px at ${cx1}px ${cy1}px, rgba(${fromRgb[0]},${fromRgb[1]},${fromRgb[2]},0.55), transparent 70%)`,
-            `radial-gradient(circle ${rad2}px at ${cx2}px ${cy2}px, rgba(${toRgb[0]},${toRgb[1]},${toRgb[2]},0.40), transparent 65%)`,
-            "#0a0a0a",
-          ].join(", "),
-        }}
-      />
-
-      {/* 3D stage — GradientCarousel geometry, pastel gradient cards. */}
+    <AbsoluteFill style={{ opacity: fadeOut, background: BLACK }}>
+      {/* 3D stage — GradientCarousel geometry, black-and-white cards. */}
       <div
         style={{
           position: "absolute",
@@ -677,11 +613,11 @@ const Point2Scene: React.FC<{
                 `scale(${card.scale})`,
               ].join(" "),
               borderRadius: GC_BORDER_RADIUS,
-              background: `linear-gradient(135deg, ${card.from}, ${card.to})`,
+              background: WHITE,
               filter: card.blur > 0.1 ? `blur(${card.blur}px)` : undefined,
               opacity: card.entryOpacity,
               zIndex: card.zIndex,
-              boxShadow: `0 20px 60px ${card.from}55`,
+              boxShadow: "0 20px 60px rgba(0,0,0,0.55)",
               display: "flex",
               flexDirection: "column",
               justifyContent: "space-between",
@@ -691,7 +627,7 @@ const Point2Scene: React.FC<{
           >
             <span
               style={{
-                color: "rgba(255,255,255,0.82)",
+                color: BLACK,
                 fontFamily: INTER,
                 fontWeight: 800,
                 fontSize: 13,
@@ -703,7 +639,7 @@ const Point2Scene: React.FC<{
             </span>
             <span
               style={{
-                color: "rgba(255,255,255,0.9)",
+                color: BLACK,
                 fontFamily: MONO_FAMILY,
                 fontSize: 16,
                 letterSpacing: "0.06em",
