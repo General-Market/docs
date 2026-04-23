@@ -623,6 +623,8 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/points/leaderboard", get(crate::points::get_leaderboard))
         // Source registry
         .route("/sources/registry", get(sources_registry))
+        // Solana oracle daemon feed — numeric source_id → 1e18-scaled price
+        .route("/v1/sources/:source_id/price", get(source_price))
         // Batch config endpoints
         .route("/batches/recommended", get(batches_recommended))
         .route("/batches/config/:hash", get(batch_config_by_hash))
@@ -2460,6 +2462,106 @@ async fn fast_prices_by_address(
     }
 
     Ok(Json(FastPricesByAddressResponse { prices: result, age_ms }))
+}
+
+// ---- /v1/sources/:source_id/price ----
+//
+// Feed endpoint for the Solana oracle daemon (`oracle-daemon/src/feed.rs`).
+// Numeric `source_id: u32` — the same identifier registered on-chain via
+// `upsert_source`. Response shape is fixed by the daemon's deserializer:
+// `{ "price": "<u128 decimal>", "ts": <epoch_seconds> }`.
+//
+// The price is scaled to 1e18 decimals. We serialize u128 as a decimal
+// string — serde_json's default Number cannot hold values above 2^53
+// without the `arbitrary_precision` feature, and the daemon's feed
+// deserializer accepts strings natively.
+
+#[derive(Serialize)]
+struct SourcePriceResponse {
+    /// u128 as decimal string. JSON numbers lose precision above 2^53.
+    price: String,
+    /// Unix epoch seconds of the observation.
+    ts: i64,
+}
+
+/// Map the numeric source_id used by the Solana oracle daemon to the
+/// Bitget symbol the data-node indexes internally. Extend as more sources
+/// are registered on-chain via `upsert_source`.
+fn source_id_to_symbol(source_id: u32) -> Option<&'static str> {
+    match source_id {
+        1 => Some("BTCUSDT"),
+        2 => Some("ETHUSDT"),
+        3 => Some("SOLUSDT"),
+        _ => None,
+    }
+}
+
+/// Scale a USD f64 price to u128 with 1e18 precision, saturating on overflow.
+/// Negative and non-finite values collapse to 0 — the chain does not
+/// negotiate with NaN.
+fn scale_price_1e18(price_usd: f64) -> u128 {
+    if !price_usd.is_finite() || price_usd <= 0.0 {
+        return 0;
+    }
+    let scaled = price_usd * 1e18_f64;
+    // f64 can represent u128::MAX only approximately; clamp defensively.
+    if scaled >= u128::MAX as f64 {
+        return u128::MAX;
+    }
+    scaled as u128
+}
+
+async fn source_price(
+    AxumPath(source_id): AxumPath<u32>,
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<SourcePriceResponse>, (StatusCode, Json<ErrorResponse>)> {
+    let symbol = source_id_to_symbol(source_id).ok_or_else(|| {
+        (
+            StatusCode::NOT_FOUND,
+            Json(ErrorResponse {
+                error: format!("Unknown source_id: {}", source_id),
+            }),
+        )
+    })?;
+
+    // Prefer the live cache — it holds the freshest tick and a real
+    // observation timestamp. Fall back to DB (prices + klines) for symbols
+    // that slipped out of the poller window.
+    let (price_str, ts_secs) = {
+        let live = state.live_cache.get_prices(&[symbol]).await;
+        if let Some(ticker) = live.get(symbol) {
+            (
+                ticker.last_price.clone(),
+                (ticker.timestamp_ms / 1000) as i64,
+            )
+        } else {
+            let rows = db::query_freshest_prices_batch(&state.pool, &[symbol])
+                .await
+                .map_err(|e| db_error(e))?;
+            match rows.into_iter().next() {
+                Some(row) => (row.price, row.fetched_at.timestamp()),
+                None => {
+                    return Err((
+                        StatusCode::SERVICE_UNAVAILABLE,
+                        Json(ErrorResponse {
+                            error: format!(
+                                "No price observation available for source_id {} ({})",
+                                source_id, symbol
+                            ),
+                        }),
+                    ));
+                }
+            }
+        }
+    };
+
+    let price_f64: f64 = price_str.parse().unwrap_or(0.0);
+    let price_u128 = scale_price_1e18(price_f64);
+
+    Ok(Json(SourcePriceResponse {
+        price: price_u128.to_string(),
+        ts: ts_secs,
+    }))
 }
 
 // ---- /itp-bid-ask ----
@@ -7646,4 +7748,65 @@ async fn chain_itp_requesters(
 async fn sources_registry(State(state): State<Arc<AppState>>) -> Json<serde_json::Value> {
     let registry = &state.source_registry;
     Json(serde_json::to_value(registry).unwrap_or_default())
+}
+
+#[cfg(test)]
+mod source_price_tests {
+    use super::{scale_price_1e18, source_id_to_symbol, SourcePriceResponse};
+
+    #[test]
+    fn maps_known_ids() {
+        assert_eq!(source_id_to_symbol(1), Some("BTCUSDT"));
+        assert_eq!(source_id_to_symbol(2), Some("ETHUSDT"));
+        assert_eq!(source_id_to_symbol(3), Some("SOLUSDT"));
+    }
+
+    #[test]
+    fn rejects_unknown_id() {
+        assert_eq!(source_id_to_symbol(0), None);
+        assert_eq!(source_id_to_symbol(4), None);
+        assert_eq!(source_id_to_symbol(u32::MAX), None);
+    }
+
+    #[test]
+    fn scales_one_to_1e18() {
+        assert_eq!(scale_price_1e18(1.0), 1_000_000_000_000_000_000u128);
+    }
+
+    #[test]
+    fn scales_typical_btc_price() {
+        // 65_000.0 USD → 6.5e22. f64 precision at this magnitude is ~8M,
+        // so we accept the cast being within 1e7 of the exact value.
+        let got = scale_price_1e18(65_000.0);
+        let want = 65_000u128 * 1_000_000_000_000_000_000u128;
+        let diff = if got > want { got - want } else { want - got };
+        assert!(diff < 10_000_000, "diff too large: got={} want={}", got, want);
+    }
+
+    #[test]
+    fn zero_and_negative_collapse_to_zero() {
+        assert_eq!(scale_price_1e18(0.0), 0);
+        assert_eq!(scale_price_1e18(-1.0), 0);
+        assert_eq!(scale_price_1e18(f64::NAN), 0);
+        assert_eq!(scale_price_1e18(f64::NEG_INFINITY), 0);
+    }
+
+    #[test]
+    fn saturates_on_overflow() {
+        assert_eq!(scale_price_1e18(f64::INFINITY), 0); // non-finite → 0
+        // A price so large that price * 1e18 exceeds u128::MAX saturates.
+        let huge = 1e24_f64; // 1e24 * 1e18 = 1e42, far above u128::MAX (~3.4e38)
+        assert_eq!(scale_price_1e18(huge), u128::MAX);
+    }
+
+    #[test]
+    fn response_serializes_price_as_string() {
+        let r = SourcePriceResponse {
+            price: "1000000000000000000".to_string(),
+            ts: 1_700_000_000,
+        };
+        let json = serde_json::to_string(&r).unwrap();
+        assert!(json.contains(r#""price":"1000000000000000000""#), "got: {}", json);
+        assert!(json.contains(r#""ts":1700000000"#), "got: {}", json);
+    }
 }
