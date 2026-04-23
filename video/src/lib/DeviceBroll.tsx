@@ -41,7 +41,12 @@ import { useGLTF, Environment, ContactShadows } from "@react-three/drei";
 import * as THREE from "three";
 
 // ── Model ──
-const MODEL_URL = staticFile("models/tabletop_macbook_iphone.glb");
+// `.opt.glb` is the WebP-compressed version — 33% smaller (8.3 MB vs
+// 12.4 MB), identical node graph, identical visual output. The original
+// lives at `tabletop_macbook_iphone.original.glb` and is still used by
+// WorldcoinComposition / Worldcoin2Composition as a fallback. To revert,
+// swap the filename back to `tabletop_macbook_iphone.glb`.
+const MODEL_URL = staticFile("models/tabletop_macbook_iphone.opt.glb");
 useGLTF.preload(MODEL_URL);
 
 // ── Defaults ──
