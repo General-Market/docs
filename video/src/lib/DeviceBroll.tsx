@@ -39,13 +39,22 @@ import {
 import { useThree } from "@react-three/fiber";
 import { useGLTF, Environment, ContactShadows } from "@react-three/drei";
 import * as THREE from "three";
-
 // ── Model ──
-// `.opt.glb` is the WebP-compressed version — 33% smaller (8.3 MB vs
-// 12.4 MB), identical node graph, identical visual output. The original
-// lives at `tabletop_macbook_iphone.original.glb` and is still used by
-// WorldcoinComposition / Worldcoin2Composition as a fallback. To revert,
-// swap the filename back to `tabletop_macbook_iphone.glb`.
+// `.opt.glb` — WebP-compressed textures. 8.3 MB, down from 12.4 MB
+// (33%). Node graph and materials identical to the original; textures
+// decoded natively by three.js via EXT_texture_webp — no custom loader
+// setup. Safe to use anywhere.
+//
+// A further-compressed `tabletop_macbook_iphone.ktx2.glb` variant
+// (5.6 MB, 55% reduction, meshopt + KTX2/Basis) also exists in public/
+// but requires KTX2Loader + transcoder + meshopt decoder wired through
+// `extendLoader` — and Remotion's headless render pipeline did not
+// transcode basis data cleanly during my test. Keep the .ktx2.glb for
+// a future pass when we have time to debug the transcoder path; today
+// WebP is the safe win.
+//
+// Revert to the original by pointing MODEL_URL at
+// `tabletop_macbook_iphone.glb`.
 const MODEL_URL = staticFile("models/tabletop_macbook_iphone.opt.glb");
 useGLTF.preload(MODEL_URL);
 
