@@ -10,6 +10,7 @@ import {
 import { loadFont as loadInter } from "@remotion/google-fonts/Inter";
 import { CascadeText } from "../../lib/components/Text";
 import { SOURCES } from "../launch/data/sources";
+import { FEATURED_SOURCES, FeaturedCard } from "./SourceCardsWall";
 import { SourceVortexGallery } from "./SourceVortexGallery";
 
 const { fontFamily: INTER } = loadInter("normal", {
@@ -839,18 +840,17 @@ const Point2Scene: React.FC<{
 
 // ─── Scene 5: POINT 3 — cluster trading vs single trades ─────────────────
 //
-// Dual-panel split. Same upward flow on both sides, fast rise. LEFT:
-// 100 single points per second — the old world, literal throughput.
-// RIGHT: 10 clusters per second, each cluster a packed grid of 10,000
-// points rising as one body — 100,000 trades/s. The eye counts twice
-// and gives up.
+// Dual-panel split. Opens with a curtain: a bright vertical bar blooms
+// at centre, holds, then recedes into a hairline divider — covering the
+// Point2 → Point3 handover. LEFT: 100 dots per second, single trades.
+// RIGHT: ten 1:1 homepage FeaturedCards per second, each card a block
+// of 10,000 trades. Titles sit high above the rise path so nothing
+// writes on top of anything else.
 
-const P3_RISE_BOTTOM = 1020;
-const P3_RISE_TOP = 380;
-const P3_RISE_DURATION = 28;
+const P3_RISE_BOTTOM = 1220;
+const P3_RISE_TOP = 560;
+const P3_RISE_DURATION = 32;
 
-// Deterministic jitter — a seeded unit-interval hash so the particle
-// x-positions look random but stay stable across frames.
 const p3Hash = (i: number, seed: number): number => {
   const h = Math.sin(i * 12.9898 + seed * 78.233) * 43758.5453;
   return h - Math.floor(h);
@@ -859,8 +859,8 @@ const p3Hash = (i: number, seed: number): number => {
 const p3Rise = (age: number) => {
   const progress = Math.min(1, Math.max(0, age / P3_RISE_DURATION));
   const y = P3_RISE_BOTTOM + (P3_RISE_TOP - P3_RISE_BOTTOM) * progress;
-  const fadeIn = Math.min(1, progress / 0.08);
-  const fadeOut = progress > 0.88 ? 1 - (progress - 0.88) / 0.12 : 1;
+  const fadeIn = Math.min(1, progress / 0.1);
+  const fadeOut = progress > 0.85 ? 1 - (progress - 0.85) / 0.15 : 1;
   const opacity = Math.max(0, Math.min(fadeIn, fadeOut));
   return { y, opacity, alive: progress < 1 };
 };
@@ -872,27 +872,46 @@ const Point3Scene: React.FC<{
 }> = ({ local, sceneStart, duration }) => {
   const fadeOut = interpolate(local, [duration - 18, duration], [1, 0], clamp);
 
-  // Divider — hairline between the two panels, draws from centre
-  const dividerProgress = interpolate(local, [6, 34], [0, 1], {
+  // Opening curtain → divider. One element, three acts: bloom, hold,
+  // recede. The bright phase covers the Point2 → Point3 handover; the
+  // recession settles into the hairline divider for the rest of the scene.
+  const curtainHeight = interpolate(local, [0, 12], [0, 1], {
     ...clamp,
     easing: ease3,
   });
+  const curtainOpacity = interpolate(
+    local,
+    [0, 10, 22, 30],
+    [0, 1, 0.9, 0.18],
+    clamp,
+  );
+  const curtainThickness = interpolate(
+    local,
+    [0, 10, 26],
+    [0, 4, 1],
+    clamp,
+  );
 
-  // LEFT cadence — 100 points per second, literal. At 30fps that's
-  // 10 new points every 3 frames; the spawnFrame spacing is fractional
-  // so points don't line up in rigid rows.
-  const LEFT_SPAWN_START = 14;
-  const LEFT_PARTICLES_PER_FRAME = 100 / 30; // ≈ 3.333
-  const LEFT_SPAWN_DT = 1 / LEFT_PARTICLES_PER_FRAME; // ≈ 0.3 frames
+  // Panel title intro — each title stack slides inward from its edge.
+  const panelIntro = interpolate(local, [10, 28], [0, 1], {
+    ...clamp,
+    easing: ease3,
+  });
+  const leftTitleX = (1 - panelIntro) * -36;
+  const rightTitleX = (1 - panelIntro) * 36;
+
+  // LEFT cadence — 100 dots per second, literal.
+  const LEFT_SPAWN_START = 24;
+  const LEFT_PARTICLES_PER_FRAME = 100 / 30;
+  const LEFT_SPAWN_DT = 1 / LEFT_PARTICLES_PER_FRAME;
   const leftCount = Math.max(
     0,
     Math.floor((local - LEFT_SPAWN_START) * LEFT_PARTICLES_PER_FRAME),
   );
 
-  // RIGHT cadence — one 10,000-trade cluster every 3 frames (= 10/s).
-  // 10 × 10,000 = 100,000 trades per second. Starts slightly later so
-  // the left is legible before the right lands on top of it.
-  const RIGHT_SPAWN_START = 18;
+  // RIGHT cadence — one FeaturedCard every 3 frames (= 10/s). Each card
+  // is a 10,000-trade block; 10 × 10,000 = 100,000 trades/s.
+  const RIGHT_SPAWN_START = 28;
   const RIGHT_SPAWN_INTERVAL = 3;
   const rightCount = Math.max(
     0,
@@ -901,21 +920,21 @@ const Point3Scene: React.FC<{
 
   return (
     <AbsoluteFill style={{ opacity: fadeOut, background: BLACK }}>
-      {/* Divider — drops from centre outward */}
+      {/* Curtain → divider. One element. */}
       <div
         style={{
           position: "absolute",
           left: "50%",
           top: "50%",
-          width: 1,
-          height: `${dividerProgress * 86}%`,
+          width: curtainThickness,
+          height: `${curtainHeight * 100}%`,
           transform: "translate(-50%, -50%)",
           background: WHITE,
-          opacity: 0.18,
+          opacity: curtainOpacity,
         }}
       />
 
-      {/* LEFT PANEL — single points */}
+      {/* LEFT PANEL — single trades */}
       <div
         style={{
           position: "absolute",
@@ -926,57 +945,58 @@ const Point3Scene: React.FC<{
           overflow: "hidden",
         }}
       >
-        {/* Title */}
         <div
           style={{
             position: "absolute",
-            top: 96,
+            top: 160,
             left: 0,
             right: 0,
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            gap: 14,
+            gap: 10,
             zIndex: 5,
+            opacity: panelIntro,
+            transform: `translateX(${leftTitleX}px)`,
           }}
         >
-          <Reveal
-            from={sceneStart + 8}
-            duration={duration - 8}
-            text="100 trades / s"
-            revealDuration={26}
-            seed={79}
-            solid
-            style={{
-              fontSize: 56,
-              fontWeight: 900,
-              letterSpacing: "-0.02em",
-              textAlign: "center",
-              lineHeight: 1,
-            }}
-          />
           <div
             style={{
               fontFamily: INTER,
-              fontSize: 18,
+              fontSize: 15,
               fontWeight: 600,
-              letterSpacing: "0.26em",
+              letterSpacing: "0.32em",
               textTransform: "uppercase",
-              color: "rgba(255,255,255,0.55)",
+              color: "rgba(255,255,255,0.45)",
             }}
           >
             single trades
           </div>
+          <Reveal
+            from={sceneStart + 16}
+            duration={duration - 16}
+            text="100 / s"
+            revealDuration={22}
+            seed={79}
+            solid
+            style={{
+              fontSize: 104,
+              fontWeight: 900,
+              letterSpacing: "-0.03em",
+              textAlign: "center",
+              lineHeight: 1,
+            }}
+          />
         </div>
 
-        {/* Rising single points — 100 per second, 28-frame rise. */}
+        {/* Rising single dots — 100 per second, 32-frame rise. */}
         {Array.from({ length: leftCount }).map((_, i) => {
           const spawnFrame = LEFT_SPAWN_START + i * LEFT_SPAWN_DT;
           const age = local - spawnFrame;
           if (age < 0) return null;
           const { y, opacity, alive } = p3Rise(age);
           if (!alive) return null;
-          const jitter = (p3Hash(i, 1) - 0.5) * 340;
+          const jitter = (p3Hash(i, 1) - 0.5) * 360;
           return (
             <div
               key={i}
@@ -1007,11 +1027,10 @@ const Point3Scene: React.FC<{
           overflow: "hidden",
         }}
       >
-        {/* Title */}
         <div
           style={{
             position: "absolute",
-            top: 72,
+            top: 92,
             left: 0,
             right: 0,
             display: "flex",
@@ -1019,74 +1038,57 @@ const Point3Scene: React.FC<{
             alignItems: "center",
             gap: 14,
             zIndex: 5,
+            opacity: panelIntro,
+            transform: `translateX(${rightTitleX}px)`,
           }}
         >
-          {/* GM sigil — rises + fades in a beat before the wordmark */}
-          <div
-            style={{
-              width: 76,
-              height: 76,
-              opacity: interpolate(local, [0, 20], [0, 1], clamp),
-              transform: `translateY(${interpolate(local, [0, 24], [18, 0], {
-                ...clamp,
-                easing: ease3,
-              })}px)`,
-            }}
-          >
-            <svg viewBox="0 0 102 102" width="76" height="76">
+          <div style={{ width: 60, height: 60 }}>
+            <svg viewBox="0 0 102 102" width="60" height="60">
               {GM_LOGO_PATHS.map((d, i) => (
                 <path key={i} d={d} fill={WHITE} />
               ))}
             </svg>
           </div>
           <Reveal
-            from={sceneStart + 4}
-            duration={duration - 4}
+            from={sceneStart + 14}
+            duration={duration - 14}
             text="Cluster Trading"
-            revealDuration={30}
+            revealDuration={28}
             seed={83}
             solid
             style={{
-              fontSize: 72,
+              fontSize: 68,
               fontWeight: 900,
               letterSpacing: "-0.03em",
               textAlign: "center",
               lineHeight: 1,
             }}
           />
-          <Reveal
-            from={sceneStart + 22}
-            duration={duration - 22}
-            text="100,000 trades / s"
-            revealDuration={24}
-            seed={97}
-            solid
+          <div
             style={{
-              fontSize: 34,
+              fontFamily: INTER,
+              fontSize: 22,
               fontWeight: 600,
-              letterSpacing: "-0.01em",
-              textAlign: "center",
-              lineHeight: 1,
-              opacity: 0.78,
+              letterSpacing: "-0.005em",
+              color: "rgba(255,255,255,0.72)",
             }}
-          />
+          >
+            100,000 / s · 10,000 per block
+          </div>
         </div>
 
-        {/* Rising clusters — each block is a 100 × 100 grid = 10,000 points
-            at 3px cells so the texture actually reads on screen. A faint
-            tint + 1px border keep the block legible even when the gradient
-            gets sub-pixel-crushed. */}
+        {/* Rising FeaturedCards — 1:1 homepage. Each card = one 10,000-
+            trade block, cycled through FEATURED_SOURCES. p3Rise owns the
+            opacity curve so cards never collide with the title. */}
         {Array.from({ length: rightCount }).map((_, i) => {
           const spawnFrame = RIGHT_SPAWN_START + i * RIGHT_SPAWN_INTERVAL;
           const age = local - spawnFrame;
           if (age < 0) return null;
           const { y, opacity, alive } = p3Rise(age);
           if (!alive) return null;
-          const jitter = (p3Hash(i, 7) - 0.5) * 120;
-          // 100 × 100 = 10,000 points. 3px cell → 300 × 300 block.
-          const CELL = 3;
-          const COLS = 100;
-          const ROWS = 100;
+          const jitter = (p3Hash(i, 7) - 0.5) * 180;
+          const source = FEATURED_SOURCES[i % FEATURED_SOURCES.length];
+          const CARD_W = 300;
           return (
             <div
               key={i}
@@ -1094,19 +1096,16 @@ const Point3Scene: React.FC<{
                 position: "absolute",
                 left: `calc(50% + ${jitter}px)`,
                 top: y,
-                width: CELL * COLS,
-                height: CELL * ROWS,
+                width: CARD_W,
                 opacity,
                 transform: "translate(-50%, -50%)",
-                background: "rgba(255,255,255,0.05)",
-                backgroundImage:
-                  "radial-gradient(circle, #ffffff 48%, transparent 49%)",
-                backgroundSize: `${CELL}px ${CELL}px`,
-                backgroundPosition: "0 0",
-                border: "1px solid rgba(255,255,255,0.18)",
+                boxShadow: "0 18px 40px rgba(0,0,0,0.5)",
                 borderRadius: 4,
+                overflow: "hidden",
               }}
-            />
+            >
+              <FeaturedCard source={source} />
+            </div>
           );
         })}
       </div>
