@@ -1341,9 +1341,6 @@ const ClosingLogoGrid: React.FC<{ local: number }> = ({ local }) => {
   const scrollTime = Math.min(local, 112);
   const scrollPct = (scrollTime / 112) * 10;
 
-  // White stripes come in as the container squares up.
-  const stripesOpacity = interpolate(local, [114, 132], [0, 1], clamp);
-
   const wordmarkOpacity = interpolate(local, [122, 146], [0, 1], clamp);
   const wordmarkRise = interpolate(local, [122, 146], [26, 0], {
     ...clamp,
@@ -1430,20 +1427,19 @@ const ClosingLogoGrid: React.FC<{ local: number }> = ({ local }) => {
           }}
         />
 
-        {/* White stripes — fade in during phase B as the container
-            squares up. preserveAspectRatio="xMidYMid meet" keeps the
-            stripes correctly proportioned even during the morph from
-            stage aspect to square. */}
+        {/* White stripes — visible throughout. preserveAspectRatio="none"
+            stretches the 102×102 viewBox to the container's current
+            aspect, so in phase A the bar reads as a wide horizontal
+            white band across the middle of the stage; as the container
+            squares up in phase B it resolves into the GM logo's seven
+            stripes. Bar and grid share the same parent, so they dezoom
+            together by construction. */}
         <svg
           width="100%"
           height="100%"
           viewBox="0 0 102 102"
-          preserveAspectRatio="xMidYMid meet"
-          style={{
-            position: "absolute",
-            inset: 0,
-            opacity: stripesOpacity,
-          }}
+          preserveAspectRatio="none"
+          style={{ position: "absolute", inset: 0 }}
         >
           {GM_LOGO_PATHS.map((d, i) => (
             <path key={i} d={d} fill="#ffffff" />
