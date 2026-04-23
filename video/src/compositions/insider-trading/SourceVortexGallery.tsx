@@ -1,26 +1,28 @@
 // Fork of video/src/compositions/backgrounds/webgl-picks/VortexGallery.tsx.
 //
 // Keeps every shader, the 600-instance cylinder, the per-circle angular
-// speeds and continuous scroll — only the atlas changes. Instead of a
-// procedural color grid, we rasterise a simplified FeaturedCard into a
-// 2D canvas per source, stitch them into an atlas texture, and hand
-// that to the same cylinder material. Cards now carry source name,
-// market count, unit, four stat rows and a mock chart — legible at
-// rest, shuffled as they spiral past.
+// speeds and continuous scroll. The atlas is a 2D canvas rasterisation
+// of the real homepage FeaturedCard — logo box, name, LIVE pill, market
+// count, stat rows with letter badges, and a sparkline chart. Logos
+// load async via delayRender so the atlas is complete before the first
+// Three.js frame touches it.
 
-import React, { useRef, useMemo, useEffect } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   AbsoluteFill,
   useCurrentFrame,
   useVideoConfig,
   interpolate,
+  delayRender,
+  continueRender,
+  staticFile,
 } from "remotion";
 import { ThreeCanvas } from "@remotion/three";
 import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { FEATURED_SOURCES } from "./SourceCardsWall";
 
-// ── Configuration (same as original) ────────────────────────────────────
+// ── Configuration ───────────────────────────────────────────────────────
 
 const RADIUS = 6;
 const HEIGHT = 120;
@@ -28,19 +30,31 @@ const INSTANCE_COUNT = 600;
 const CIRCLE_COUNT = Math.floor(HEIGHT / 3);
 const CIRCLE_HEIGHT = HEIGHT / CIRCLE_COUNT;
 
-// Original VortexGallery ran 0.06. Requested 2× faster → 0.12.
+// Original VortexGallery ran 0.06. 2× faster → 0.12.
 const SCROLL_SPEED = 0.12;
-// Original VortexGallery ran 0.4. Requested 3× slower → 0.4 / 3.
+// Original VortexGallery ran 0.4. 3× slower → 0.4 / 3.
 const ANGULAR_SPEED = 0.1333;
 
-// Atlas — one tile per FEATURED_SOURCE. Tiles are 3:4 portrait like
-// the real cards. Atlas dims fall out of IMAGE_COUNT rounded up to the
-// column grid.
-const TILE_W = 288;
-const TILE_H = 384;
+// Atlas tile — one tile per FEATURED_SOURCE. Match the real card's
+// aspect ratio (~380×460 rendered) at 400×520 so detail survives.
+const TILE_W = 400;
+const TILE_H = 520;
 const ATLAS_COLS = 5;
 const IMAGE_COUNT = FEATURED_SOURCES.length;
 const ATLAS_ROWS = Math.ceil(IMAGE_COUNT / ATLAS_COLS);
+
+// Card palette — mirrors the FeaturedCard constants so the atlas
+// doesn't drift away from the on-site look when the source updates.
+const CHART_COLORS = ["#2563EB", "#059669", "#D97706", "#7C3AED"] as const;
+const BORDER = "#E4E4E7";
+const LOGO_BG = "#F4F4F5";
+const NAME_COLOR = "#0A0A0A";
+const MARKET_COLOR = "#A1A1AA";
+const ROW_DIVIDER = "#F4F4F5";
+
+const CARD_FONT =
+  "'Inter', 'Helvetica Neue', -apple-system, BlinkMacSystemFont, system-ui, sans-serif";
+const MONO_FONT = "'JetBrains Mono', ui-monospace, monospace";
 
 // ── Shaders — identical to VortexGallery ─────────────────────────────────
 
@@ -78,7 +92,7 @@ void main() {
   float minZ = uMaxZ - uZrange;
   zPos = mod(zPos - minZ, zRange) + minZ;
 
-  float theta = aAngle + uSpeedY * ${ANGULAR_SPEED.toFixed(1)} * aSpeed;
+  float theta = aAngle + uSpeedY * ${ANGULAR_SPEED.toFixed(4)} * aSpeed;
 
   vec3 instancePosition = vec3(
     cos(theta) * aRadius,
@@ -153,7 +167,7 @@ void main() {
 }
 `;
 
-// ── Source-card atlas — canvas-rasterised mini FeaturedCards ─────────────
+// ── Tile types + helpers ────────────────────────────────────────────────
 
 interface TileUV {
   xStart: number;
@@ -162,9 +176,6 @@ interface TileUV {
   yEnd: number;
   aspectRatio: number;
 }
-
-const CARD_FONT =
-  "-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif";
 
 function drawRoundedRect(
   ctx: CanvasRenderingContext2D,
@@ -187,10 +198,75 @@ function drawRoundedRect(
   ctx.closePath();
 }
 
-function buildSourceAtlas(): {
+function loadImage(url: string): Promise<HTMLImageElement | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = url;
+  });
+}
+
+function formatMarkets(n: number): string {
+  if (n >= 1000) return n.toLocaleString();
+  return String(n);
+}
+
+function pctColor(pct: number): string {
+  if (pct > 0.001) return "#059669";
+  if (pct < -0.001) return "#DC2626";
+  return "#6B7280";
+}
+
+function pctText(pct: number): string {
+  if (Math.abs(pct) < 0.01) return "0.00%";
+  const sign = pct > 0 ? "+" : "";
+  return `${sign}${pct.toFixed(2)}%`;
+}
+
+// Deterministic hash → seeded PRNG for the sparkline shape.
+function hashStr(s: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+function seededRand(seed: number): () => number {
+  let s = seed || 1;
+  return () => {
+    s = (s * 1664525 + 1013904223) >>> 0;
+    return s / 0xffffffff;
+  };
+}
+function sparklineValues(id: string, count: number, seedSalt: number): number[] {
+  const rnd = seededRand(hashStr(id + "_" + seedSalt));
+  const raw: number[] = [];
+  let v = 0.5 + (rnd() - 0.5) * 0.2;
+  for (let i = 0; i < count; i++) {
+    v += (rnd() - 0.5) * 0.12;
+    if (v < 0.1) v = 0.1;
+    if (v > 0.9) v = 0.9;
+    raw.push(v);
+  }
+  return raw;
+}
+
+// ── Atlas builder — loads logos then rasterises each source card ────────
+
+async function buildSourceAtlas(): Promise<{
   texture: THREE.CanvasTexture;
   tiles: TileUV[];
-} {
+}> {
+  // Kick off all logo loads in parallel. Any that fail resolve to null.
+  const logos = await Promise.all(
+    FEATURED_SOURCES.map((s) =>
+      loadImage(staticFile(`source-imgs/${s.logo}`)),
+    ),
+  );
+
   const atlasW = ATLAS_COLS * TILE_W;
   const atlasH = ATLAS_ROWS * TILE_H;
   const canvas = document.createElement("canvas");
@@ -200,6 +276,7 @@ function buildSourceAtlas(): {
 
   ctx.textBaseline = "alphabetic";
   ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
 
   const tiles: TileUV[] = [];
 
@@ -210,115 +287,281 @@ function buildSourceAtlas(): {
     const ox = col * TILE_W;
     const oy = row * TILE_H;
 
-    // ─ Card background + inset so neighbouring tiles don't bleed
+    // Inset the actual card so it doesn't bleed into its neighbours.
     const pad = 6;
     const cx = ox + pad;
     const cy = oy + pad;
     const cw = TILE_W - pad * 2;
     const ch = TILE_H - pad * 2;
 
+    // ─ Card body
     ctx.fillStyle = "#FFFFFF";
-    drawRoundedRect(ctx, cx, cy, cw, ch, 16);
+    drawRoundedRect(ctx, cx, cy, cw, ch, 12);
     ctx.fill();
+    ctx.strokeStyle = BORDER;
+    ctx.lineWidth = 1;
+    ctx.stroke();
 
-    // ─ Accent top-bar
+    // ─ Accent gradient bar (3px)
     ctx.save();
-    drawRoundedRect(ctx, cx, cy, cw, 10, 16);
+    drawRoundedRect(ctx, cx, cy, cw, 4, 12);
     ctx.clip();
-    ctx.fillStyle = source.accent;
-    ctx.fillRect(cx, cy, cw, 10);
+    const accentGrad = ctx.createLinearGradient(cx, cy, cx + cw, cy);
+    accentGrad.addColorStop(0, source.accent);
+    accentGrad.addColorStop(1, source.accent + "44");
+    ctx.fillStyle = accentGrad;
+    ctx.fillRect(cx, cy, cw, 4);
     ctx.restore();
 
-    // ─ Header: source name + LIVE pill
-    ctx.fillStyle = "#0A0A0A";
-    ctx.font = `800 32px ${CARD_FONT}`;
-    ctx.textAlign = "left";
-    ctx.fillText(source.name, cx + 18, cy + 58);
+    // ─ Header row — 48px tall: logo | name+markets | live pill
+    const headerY = cy + 16;
+    const padX = 16;
 
-    // LIVE pill
-    const pillW = 58;
+    // Logo box 42×42 with light gray bg + rounded corners
+    const logoSize = 42;
+    const logoX = cx + padX;
+    const logoY = headerY;
+    ctx.fillStyle = LOGO_BG;
+    drawRoundedRect(ctx, logoX, logoY, logoSize, logoSize, 7);
+    ctx.fill();
+
+    // Logo image — center-fit at 86% of the box
+    const logoImg = logos[i];
+    if (logoImg && logoImg.width > 0 && logoImg.height > 0) {
+      const maxDim = logoSize * 0.82;
+      const ratio = Math.min(
+        maxDim / logoImg.width,
+        maxDim / logoImg.height,
+      );
+      const lw = logoImg.width * ratio;
+      const lh = logoImg.height * ratio;
+      ctx.drawImage(
+        logoImg,
+        logoX + (logoSize - lw) / 2,
+        logoY + (logoSize - lh) / 2,
+        lw,
+        lh,
+      );
+    }
+
+    // Source name
+    const textX = logoX + logoSize + 12;
+    ctx.fillStyle = NAME_COLOR;
+    ctx.font = `800 22px ${CARD_FONT}`;
+    ctx.textAlign = "left";
+    ctx.fillText(source.name, textX, headerY + 20);
+
+    // LIVE pill (top-right)
+    const pillW = 66;
     const pillH = 22;
-    const pillX = cx + cw - 18 - pillW;
-    const pillY = cy + 34;
-    ctx.fillStyle = "rgba(16,169,106,0.12)";
+    const pillX = cx + cw - padX - pillW;
+    const pillY = headerY + 4;
+    ctx.fillStyle = source.accent + "22";
     drawRoundedRect(ctx, pillX, pillY, pillW, pillH, 11);
     ctx.fill();
-    ctx.fillStyle = "#10A96A";
-    ctx.font = `700 13px ${CARD_FONT}`;
-    ctx.textAlign = "center";
-    ctx.fillText("LIVE", pillX + pillW / 2, pillY + 15);
-
-    // ─ Markets count + unit
+    // Pill dot
+    ctx.fillStyle = source.accent;
+    ctx.beginPath();
+    ctx.arc(pillX + 11, pillY + pillH / 2, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+    // Pill text
+    ctx.font = `700 12px ${CARD_FONT}`;
     ctx.textAlign = "left";
-    ctx.fillStyle = "#0A0A0A";
-    ctx.font = `800 28px ${CARD_FONT}`;
+    ctx.fillText("Live", pillX + 20, pillY + 15);
+
+    // Markets subline
+    ctx.fillStyle = MARKET_COLOR;
+    ctx.font = `600 13px ${MONO_FONT}`;
+    ctx.textAlign = "left";
+    const marketsStr = formatMarkets(source.markets);
+    ctx.fillText(marketsStr, textX, headerY + 40);
+    ctx.font = `500 13px ${CARD_FONT}`;
+    const marketsWidth = ctx.measureText(marketsStr).width;
     ctx.fillText(
-      `${source.markets.toLocaleString()} markets`,
-      cx + 18,
-      cy + 106,
+      ` markets · ${source.unit}`,
+      textX + marketsWidth,
+      headerY + 40,
     );
-    ctx.fillStyle = "#888";
-    ctx.font = `500 17px ${CARD_FONT}`;
-    ctx.fillText(`• ${source.unit}`, cx + 18, cy + 132);
+
+    // ─ Top divider
+    ctx.strokeStyle = ROW_DIVIDER;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy + 80);
+    ctx.lineTo(cx + cw, cy + 80);
+    ctx.stroke();
 
     // ─ Stat rows — up to 4
+    const rowH = 26;
+    const rowStart = cy + 90;
     const rows = source.subs.slice(0, 4);
     rows.forEach((sub, j) => {
-      const rowY = cy + 176 + j * 36;
+      const rowY = rowStart + j * rowH;
+      const rowCenterY = rowY + rowH / 2;
 
-      // Dot
-      ctx.fillStyle = source.accent;
+      // Color dot (left)
+      const dotColor = CHART_COLORS[j % 4];
+      ctx.fillStyle = dotColor;
       ctx.beginPath();
-      ctx.arc(cx + 26, rowY, 5, 0, Math.PI * 2);
+      ctx.arc(cx + padX + 4, rowCenterY, 4.5, 0, Math.PI * 2);
       ctx.fill();
 
-      // Name (truncate to fit)
-      const name =
-        sub.name.length > 18 ? sub.name.slice(0, 16) + "…" : sub.name;
-      ctx.fillStyle = "#1A1A1A";
-      ctx.font = `600 17px ${CARD_FONT}`;
+      // Letter badge / sub badge
+      const badgeSize = 20;
+      const badgeX = cx + padX + 16;
+      const badgeY = rowCenterY - badgeSize / 2;
+      if (sub.badge) {
+        ctx.fillStyle = sub.badgeBg ?? "#71717A";
+        drawRoundedRect(
+          ctx,
+          badgeX,
+          badgeY,
+          Math.max(badgeSize, 28),
+          badgeSize,
+          4,
+        );
+        ctx.fill();
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = `800 10px ${CARD_FONT}`;
+        ctx.textAlign = "center";
+        ctx.fillText(
+          sub.badge,
+          badgeX + Math.max(badgeSize, 28) / 2,
+          rowCenterY + 3,
+        );
+      } else {
+        ctx.fillStyle = "#E4E4E7";
+        ctx.beginPath();
+        ctx.arc(
+          badgeX + badgeSize / 2,
+          rowCenterY,
+          badgeSize / 2,
+          0,
+          Math.PI * 2,
+        );
+        ctx.fill();
+        ctx.fillStyle = "#71717A";
+        ctx.font = `800 11px ${CARD_FONT}`;
+        ctx.textAlign = "center";
+        ctx.fillText(
+          sub.name.charAt(0).toUpperCase(),
+          badgeX + badgeSize / 2,
+          rowCenterY + 4,
+        );
+      }
+
+      // Market name (middle, ellipsis)
+      const nameX = badgeX + 30;
+      const valueX = cx + cw - padX - 62;
+      const pctX = cx + cw - padX;
+      const nameMaxW = valueX - nameX - 10;
+
+      ctx.fillStyle = NAME_COLOR;
+      ctx.font = `500 13px ${CARD_FONT}`;
       ctx.textAlign = "left";
-      ctx.fillText(name, cx + 42, rowY + 5);
+      let displayName = sub.name;
+      while (
+        ctx.measureText(displayName).width > nameMaxW &&
+        displayName.length > 4
+      ) {
+        displayName = displayName.slice(0, -1);
+      }
+      if (displayName !== sub.name) displayName = displayName.slice(0, -1) + "…";
+      ctx.fillText(displayName, nameX, rowCenterY + 4);
 
-      // Value
-      ctx.fillStyle = "#0A0A0A";
-      ctx.font = `700 16px ${CARD_FONT}`;
+      // Value (monospace, right-aligned to 62px before pct)
+      ctx.fillStyle = NAME_COLOR;
+      ctx.font = `600 13px ${MONO_FONT}`;
       ctx.textAlign = "right";
-      ctx.fillText(sub.value, cx + cw - 74, rowY + 5);
+      ctx.fillText(sub.value, valueX + 58, rowCenterY + 4);
 
-      // Pct
-      ctx.fillStyle = sub.pct >= 0 ? "#10A96A" : "#DC2626";
-      ctx.font = `700 14px ${CARD_FONT}`;
-      ctx.fillText(
-        `${sub.pct >= 0 ? "+" : ""}${sub.pct.toFixed(1)}%`,
-        cx + cw - 18,
-        rowY + 5,
-      );
+      // Pct (monospace, right-aligned, colored)
+      ctx.fillStyle = pctColor(sub.pct);
+      ctx.font = `600 12px ${MONO_FONT}`;
+      ctx.textAlign = "right";
+      ctx.fillText(pctText(sub.pct), pctX, rowCenterY + 4);
     });
     ctx.textAlign = "left";
 
-    // ─ Chart strip at the bottom
-    const chartY = cy + ch - 44;
-    const chartH = 34;
-    const points = 18;
-    ctx.strokeStyle = source.accent;
-    ctx.lineWidth = 2.2;
+    // ─ Bottom divider above chart
+    const chartTop = rowStart + rows.length * rowH + 4;
+    ctx.strokeStyle = ROW_DIVIDER;
+    ctx.lineWidth = 1;
     ctx.beginPath();
-    for (let t = 0; t < points; t++) {
-      const px = cx + 18 + (t / (points - 1)) * (cw - 36);
-      const phase = t * 0.62 + i * 0.73;
-      const py = chartY + chartH * 0.5 + Math.sin(phase) * 12 + Math.cos(phase * 1.7 + i) * 5;
-      if (t === 0) ctx.moveTo(px, py);
-      else ctx.lineTo(px, py);
-    }
+    ctx.moveTo(cx, chartTop);
+    ctx.lineTo(cx + cw, chartTop);
     ctx.stroke();
+
+    // ─ Chart — 2 series, area fill + line
+    const chartX = cx + 12;
+    const chartY = chartTop + 10;
+    const chartW = cw - 24;
+    const chartH = cy + ch - chartY - 10;
+
+    // Subtle accent tint on the chart background
+    const chartBgGrad = ctx.createLinearGradient(
+      chartX,
+      chartY,
+      chartX,
+      chartY + chartH,
+    );
+    chartBgGrad.addColorStop(0, "rgba(255,255,255,0)");
+    chartBgGrad.addColorStop(1, source.accent + "10");
+    ctx.fillStyle = chartBgGrad;
+    ctx.fillRect(chartX, chartY, chartW, chartH);
+
+    const series: { color: string; values: number[] }[] = [
+      { color: CHART_COLORS[0], values: sparklineValues(source.id, 36, 0) },
+      { color: source.accent, values: sparklineValues(source.id, 36, 3) },
+    ];
+
+    for (let s = 0; s < series.length; s++) {
+      const { color, values } = series[s];
+      const pts = values.map((v, k) => ({
+        x: chartX + (k / (values.length - 1)) * chartW,
+        y: chartY + (1 - v) * chartH,
+      }));
+
+      // Area fill
+      const areaGrad = ctx.createLinearGradient(
+        chartX,
+        chartY,
+        chartX,
+        chartY + chartH,
+      );
+      areaGrad.addColorStop(0, color + "33");
+      areaGrad.addColorStop(1, color + "00");
+      ctx.fillStyle = areaGrad;
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, chartY + chartH);
+      for (const p of pts) ctx.lineTo(p.x, p.y);
+      ctx.lineTo(pts[pts.length - 1].x, chartY + chartH);
+      ctx.closePath();
+      ctx.fill();
+
+      // Line
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.8;
+      ctx.lineJoin = "round";
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y);
+      for (let k = 1; k < pts.length; k++) ctx.lineTo(pts[k].x, pts[k].y);
+      ctx.stroke();
+
+      // End dot
+      const end = pts[pts.length - 1];
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(end.x, end.y, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     // ─ Tile UVs (OpenGL Y=0 at bottom)
     const xStart = ox / atlasW;
     const xEnd = (ox + TILE_W) / atlasW;
     const yStart = 1 - oy / atlasH;
     const yEnd = 1 - (oy + TILE_H) / atlasH;
-
     tiles.push({
       xStart,
       xEnd,
@@ -333,7 +576,7 @@ function buildSourceAtlas(): {
   texture.magFilter = THREE.LinearFilter;
   texture.minFilter = THREE.LinearMipmapLinearFilter;
   texture.generateMipmaps = true;
-  texture.anisotropy = 4;
+  texture.anisotropy = 8;
 
   return { texture, tiles };
 }
@@ -352,7 +595,7 @@ const VortexCylinder: React.FC<{
   const meshRef = useRef<THREE.InstancedMesh>(null);
 
   const { geometry } = useMemo(() => {
-    // Base geometry 1.5 × 1.5 (per VortexGallery); scaled 1.4× per request.
+    // Base 1.5 × 1.5 from VortexGallery, 1.4× per request.
     const geo = new THREE.BoxGeometry(2.1, 2.1, 0.075);
 
     const angles = new Float32Array(INSTANCE_COUNT);
@@ -433,7 +676,7 @@ const VortexCylinder: React.FC<{
   );
 };
 
-// ── Center plane — shows the "current" card ─────────────────────────────
+// ── Center plane ────────────────────────────────────────────────────────
 
 const CenterPlane: React.FC<{
   atlas: THREE.CanvasTexture;
@@ -502,10 +745,12 @@ const CameraRig: React.FC = () => {
 
 // ── Scene root ──────────────────────────────────────────────────────────
 
-const VortexScene: React.FC<{ frame: number; fps: number }> = ({
-  frame,
-  fps,
-}) => {
+const VortexScene: React.FC<{
+  frame: number;
+  fps: number;
+  atlas: THREE.CanvasTexture;
+  tiles: TileUV[];
+}> = ({ frame, fps, atlas, tiles }) => {
   const time = frame / fps;
 
   const scrollProgress = frame / 480;
@@ -520,8 +765,6 @@ const VortexScene: React.FC<{ frame: number; fps: number }> = ({
   const direction = 1;
 
   const textureIndex = Math.floor(speedY % IMAGE_COUNT);
-
-  const { texture: atlas, tiles } = useMemo(() => buildSourceAtlas(), []);
 
   return (
     <>
@@ -545,6 +788,35 @@ export const SourceVortexGallery: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps, width, height } = useVideoConfig();
 
+  const [atlasState, setAtlasState] = useState<{
+    texture: THREE.CanvasTexture;
+    tiles: TileUV[];
+  } | null>(null);
+  const [handle] = useState(() => delayRender("source-vortex-atlas"));
+
+  useEffect(() => {
+    let cancelled = false;
+    buildSourceAtlas()
+      .then((result) => {
+        if (cancelled) return;
+        setAtlasState(result);
+        continueRender(handle);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        // eslint-disable-next-line no-console
+        console.error("Failed to build source vortex atlas:", err);
+        continueRender(handle);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [handle]);
+
+  if (!atlasState) {
+    return <AbsoluteFill style={{ background: "#0a0a0a" }} />;
+  }
+
   return (
     <AbsoluteFill style={{ background: "#0a0a0a" }}>
       <ThreeCanvas
@@ -553,7 +825,12 @@ export const SourceVortexGallery: React.FC = () => {
         style={{ width: "100%", height: "100%" }}
         camera={{ position: [0, 0, 5], fov: 50, near: 0.1, far: 200 }}
       >
-        <VortexScene frame={frame} fps={fps} />
+        <VortexScene
+          frame={frame}
+          fps={fps}
+          atlas={atlasState.texture}
+          tiles={atlasState.tiles}
+        />
       </ThreeCanvas>
     </AbsoluteFill>
   );
