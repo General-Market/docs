@@ -509,6 +509,17 @@ function buildCardCanvas(
 
 // ── Three.js phone setup ────────────────────────────────────────────────
 
+// Screen-mesh fingerprint. The iPhone display is the only material in
+// the iPhone subtree that ships with an emissiveMap. On first mount we
+// clone the material (so our mutations don't leak into the shared GLB
+// cache) and tag the clone. On remount/replay the clone is still in
+// place, so we recognise it by the tag and reuse it — the old version
+// of this function keyed off "has emissiveMap and no baseColorMap",
+// which fails after the first session because by then the material
+// DOES have a baseColorMap (our card texture), and the screen would
+// silently stop updating.
+const SCREEN_CLONE_TAG = "__pwcScreenClone";
+
 function findScreenMesh(root: THREE.Object3D): THREE.Mesh | null {
   let found: THREE.Mesh | null = null;
   root.traverse((child) => {
@@ -517,10 +528,13 @@ function findScreenMesh(root: THREE.Object3D): THREE.Mesh | null {
     if (!mesh.isMesh) return;
     if (Array.isArray(mesh.material)) return;
     const mat = mesh.material as THREE.MeshStandardMaterial | undefined;
-    if (mat && mat.emissiveMap && !mat.map) {
-      mesh.material = mat.clone();
-      found = mesh;
+    if (!mat || !mat.emissiveMap) return;
+    if (!mat.userData[SCREEN_CLONE_TAG]) {
+      const cloned = mat.clone();
+      cloned.userData[SCREEN_CLONE_TAG] = true;
+      mesh.material = cloned;
     }
+    found = mesh;
   });
   return found;
 }
