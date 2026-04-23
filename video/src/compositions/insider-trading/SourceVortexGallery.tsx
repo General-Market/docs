@@ -28,8 +28,10 @@ const INSTANCE_COUNT = 600;
 const CIRCLE_COUNT = Math.floor(HEIGHT / 3);
 const CIRCLE_HEIGHT = HEIGHT / CIRCLE_COUNT;
 
-const SCROLL_SPEED = 0.06;
-const ANGULAR_SPEED = 0.4;
+// Original VortexGallery ran 0.06. Requested 2× faster → 0.12.
+const SCROLL_SPEED = 0.12;
+// Original VortexGallery ran 0.4. Requested 3× slower → 0.4 / 3.
+const ANGULAR_SPEED = 0.1333;
 
 // Atlas — one tile per FEATURED_SOURCE. Tiles are 3:4 portrait like
 // the real cards. Atlas dims fall out of IMAGE_COUNT rounded up to the
@@ -350,7 +352,8 @@ const VortexCylinder: React.FC<{
   const meshRef = useRef<THREE.InstancedMesh>(null);
 
   const { geometry } = useMemo(() => {
-    const geo = new THREE.BoxGeometry(1.5, 1.5, 0.075);
+    // Base geometry 1.5 × 1.5 (per VortexGallery); scaled 1.4× per request.
+    const geo = new THREE.BoxGeometry(2.1, 2.1, 0.075);
 
     const angles = new Float32Array(INSTANCE_COUNT);
     const heights = new Float32Array(INSTANCE_COUNT);
@@ -467,7 +470,7 @@ const CenterPlane: React.FC<{
 
   return (
     <mesh>
-      <planeGeometry args={[1.7, 2.3]} />
+      <planeGeometry args={[2.38, 3.22]} />
       <shaderMaterial
         ref={matRef}
         vertexShader={CENTER_VERTEX}
