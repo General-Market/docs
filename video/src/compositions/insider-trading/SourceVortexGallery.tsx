@@ -198,14 +198,35 @@ function drawRoundedRect(
   ctx.closePath();
 }
 
-function loadImage(url: string): Promise<HTMLImageElement | null> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => resolve(img);
-    img.onerror = () => resolve(null);
-    img.src = url;
-  });
+// Load an image via fetch + blob URL so the canvas isn't tainted by
+// cross-origin concerns. Remotion's staticFile URLs sometimes refuse
+// canvas readback when loaded via `new Image()` with crossOrigin set;
+// a same-origin fetch sidesteps the issue entirely.
+async function loadImage(url: string): Promise<HTMLImageElement | null> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) {
+      // eslint-disable-next-line no-console
+      console.warn(`[vortex-atlas] logo fetch failed ${res.status}: ${url}`);
+      return null;
+    }
+    const blob = await res.blob();
+    const objUrl = URL.createObjectURL(blob);
+    return await new Promise<HTMLImageElement | null>((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => {
+        // eslint-disable-next-line no-console
+        console.warn(`[vortex-atlas] logo decode failed: ${url}`);
+        resolve(null);
+      };
+      img.src = objUrl;
+    });
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.warn(`[vortex-atlas] logo load error:`, url, err);
+    return null;
+  }
 }
 
 function formatMarkets(n: number): string {
