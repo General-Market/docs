@@ -1,6 +1,7 @@
 import React from "react";
 import {
   AbsoluteFill,
+  Easing,
   Img,
   Sequence,
   interpolate,
@@ -25,6 +26,12 @@ const ease3 = (t: number) => 1 - Math.pow(1 - t, 3);
 // auto-inverts against the shapes via mix-blend-mode: difference.
 const BLACK = "#0e0f0c";
 const WHITE = "#ffffff";
+
+// Gemini palette, ported for the tagline halo. Kept local to the intro.
+const PURPLE = "#8B5CF6";
+const PINK = "#EC4899";
+const BLUE = "#3B82F6";
+const BACK_OUT = Easing.out(Easing.back(2.5));
 
 // GM lockup — seven stacked bars in a 102×102 viewBox. Lifted from
 // /frontend/public/logo.svg. Rendered in white for the night-mode
@@ -119,6 +126,117 @@ const Reveal: React.FC<{
   );
 };
 
+// ─── Fights-back tagline — gradient-clipped pop-in with a 4-point sparkle
+//      halo and a violet wash. Echoes Scene05's "Our most capable AI"
+//      treatment, scaled down so the GM lockup above it keeps primacy.
+const FightsBackTagline: React.FC<{ duration: number }> = ({ duration }) => {
+  const frame = useCurrentFrame();
+  const words = ["fights", "back"];
+
+  const halo = interpolate(
+    frame,
+    [0, 12, duration - 14, duration],
+    [0, 1, 1, 0],
+    clamp,
+  );
+
+  return (
+    <AbsoluteFill
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        paddingTop: 260,
+        pointerEvents: "none",
+      }}
+    >
+      <div style={{ position: "relative", width: 460, height: 460 }}>
+        <svg
+          width={460}
+          height={460}
+          viewBox="0 0 600 600"
+          style={{
+            position: "absolute",
+            inset: 0,
+            opacity: halo * 0.35,
+          }}
+        >
+          <defs>
+            <linearGradient id="fb-sparkle" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor={PURPLE} />
+              <stop offset="50%" stopColor={PINK} />
+              <stop offset="100%" stopColor={BLUE} />
+            </linearGradient>
+          </defs>
+          <path
+            d="M300 20 C300 165, 165 300, 20 300 C165 300, 300 435, 300 580 C300 435, 435 300, 580 300 C435 300, 300 165, 300 20Z"
+            fill="none"
+            stroke="url(#fb-sparkle)"
+            strokeWidth={2.2}
+            opacity={0.8}
+          />
+        </svg>
+
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "radial-gradient(ellipse at 50% 50%, rgba(139,92,246,0.22) 0%, transparent 58%)",
+            opacity: halo,
+          }}
+        />
+
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "0.28em",
+            fontFamily: INTER,
+            fontSize: 72,
+            fontWeight: 500,
+            letterSpacing: "-0.02em",
+            lineHeight: 1,
+            whiteSpace: "nowrap",
+          }}
+        >
+          {words.map((word, i) => {
+            const wordStart = i * 5;
+            const popIn = interpolate(frame - wordStart, [0, 14], [0, 1], {
+              ...clamp,
+              easing: BACK_OUT,
+            });
+            const appear = interpolate(frame - wordStart, [0, 10], [0, 1], clamp);
+            const y = (1 - popIn) * 10;
+            const scale = 0.88 + popIn * 0.12;
+            return (
+              <span
+                key={i}
+                style={{
+                  display: "inline-block",
+                  opacity: appear,
+                  transform: `translateY(${y}px) scale(${scale})`,
+                  background: `linear-gradient(90deg, ${PINK}, ${PURPLE})`,
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text" as const,
+                  filter:
+                    "drop-shadow(0 0 14px rgba(236,72,153,0.55)) drop-shadow(0 0 4px rgba(236,72,153,0.45))",
+                }}
+              >
+                {word}
+              </span>
+            );
+          })}
+        </div>
+      </div>
+    </AbsoluteFill>
+  );
+};
+
 // ─── Scene 1: INTRO ──────────────────────────────────────────────────────
 
 const IntroScene: React.FC<{
@@ -203,31 +321,14 @@ const IntroScene: React.FC<{
         </div>
       </AbsoluteFill>
 
-      {/* Tagline — fights back, sitting below the lockup */}
-      <AbsoluteFill
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          paddingTop: 260,
-        }}
+      {/* Tagline — gradient pop-in with sparkle halo, ported from Scene05. */}
+      <Sequence
+        from={sceneStart + 48}
+        durationInFrames={duration - 48}
+        layout="none"
       >
-        <Reveal
-          from={sceneStart + 48}
-          duration={duration - 48}
-          text="fights back"
-          revealDuration={28}
-          seed={23}
-          style={{
-            fontSize: 68,
-            fontWeight: 500,
-            letterSpacing: "-0.01em",
-            textAlign: "center",
-            lineHeight: 1,
-            maxWidth: 1400,
-          }}
-        />
-      </AbsoluteFill>
+        <FightsBackTagline duration={duration - 48} />
+      </Sequence>
     </AbsoluteFill>
   );
 };
@@ -871,13 +972,15 @@ const Point3Scene: React.FC<{
   // visible they already contain a full, mid-flight stream.
   const flowOpacity = interpolate(local, [22, 44], [0, 1], clamp);
 
-  // Rise speed shared by both panels — the left dots use it to walk their
-  // individual y, the right grid uses it as background-position velocity.
-  const RISE_SPEED = 18;
+  // Rise speed shared by both panels. Aggressive — the right grid has
+  // to feel like 100,000 trades/s, not 100. The left single-dot stream
+  // rides the same velocity so the scales remain comparable.
+  const RISE_SPEED = 80;
 
-  // LEFT cadence — 100 dots per second, pre-seeded 40 frames before frame 0
-  // so the stream looks already in motion the instant the curtain opens.
-  const LEFT_SPAWN_START = -40;
+  // LEFT cadence — 100 dots per second, pre-seeded 60 frames before frame 0
+  // so the stream is mid-flight the instant the curtain opens (the faster
+  // rise burns through dots quickly, needs more pre-seed).
+  const LEFT_SPAWN_START = -60;
   const LEFT_PARTICLES_PER_FRAME = 100 / 30;
   const LEFT_SPAWN_DT = 1 / LEFT_PARTICLES_PER_FRAME;
   const leftCount = Math.max(
@@ -987,8 +1090,8 @@ const Point3Scene: React.FC<{
                   position: "absolute",
                   left: `calc(50% + ${jitter}px)`,
                   top: y,
-                  width: 7,
-                  height: 7,
+                  width: 4,
+                  height: 4,
                   borderRadius: "50%",
                   background: WHITE,
                   transform: "translate(-50%, -50%)",
@@ -1077,13 +1180,13 @@ const Point3Scene: React.FC<{
           }}
         >
           {(() => {
-            const ICON = 40;
-            const GAP_X = 16;
-            const GAP_Y = 18;
+            const ICON = 20;
+            const GAP_X = 6;
+            const GAP_Y = 6;
             const CELL_W = ICON + GAP_X;
             const CELL_H = ICON + GAP_Y;
-            const COLS = 8;
-            const TILE_ROWS = 24;
+            const COLS = 24;
+            const TILE_ROWS = 44;
             const TILE_HEIGHT = TILE_ROWS * CELL_H;
             const scrollY =
               (((local * RISE_SPEED) % TILE_HEIGHT) + TILE_HEIGHT) %
@@ -1122,8 +1225,8 @@ const Point3Scene: React.FC<{
                           borderRadius: "50%",
                           background: "#ffffff",
                           boxShadow:
-                            "0 2px 8px rgba(0,0,0,0.25), inset 0 0 0 1px rgba(0,0,0,0.04)",
-                          padding: 5,
+                            "0 1px 3px rgba(0,0,0,0.28), inset 0 0 0 1px rgba(0,0,0,0.04)",
+                          padding: 2,
                           boxSizing: "border-box",
                           display: "flex",
                           alignItems: "center",
@@ -1420,12 +1523,68 @@ const ClosingScene: React.FC<{
   local: number;
   sceneStart: number;
   duration: number;
-}> = ({ local, duration }) => {
+}> = ({ local, sceneStart, duration }) => {
+  const firstOut = interpolate(local, [58, 74], [1, 0], clamp);
+  // Second statement holds until the lockup starts forming, then steps
+  // aside so the wordmark reveal owns the frame.
+  const secondOut = interpolate(local, [98, 112], [1, 0], clamp);
   const fadeOut = interpolate(local, [duration - 18, duration], [1, 0], clamp);
 
   return (
     <AbsoluteFill style={{ opacity: fadeOut }}>
       <ClosingLogoGrid local={local} />
+
+      {/* FIRST STATEMENT — rides over the dezooming logo via mix-blend
+          difference, so it inverts to black against the white stripes
+          and stays white against the black field. */}
+      <AbsoluteFill
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          opacity: firstOut,
+        }}
+      >
+        <Reveal
+          from={sceneStart + 10}
+          duration={64}
+          text="Not just insider protection"
+          revealDuration={40}
+          seed={137}
+          style={{
+            fontSize: 96,
+            fontWeight: 900,
+            letterSpacing: "-0.03em",
+            textAlign: "center",
+            maxWidth: 1600,
+          }}
+        />
+      </AbsoluteFill>
+
+      {/* SECOND STATEMENT */}
+      <AbsoluteFill
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          opacity: secondOut,
+        }}
+      >
+        <Reveal
+          from={sceneStart + 64}
+          duration={48}
+          text="A new trading standard"
+          revealDuration={38}
+          seed={149}
+          style={{
+            fontSize: 120,
+            fontWeight: 900,
+            letterSpacing: "-0.04em",
+            textAlign: "center",
+            maxWidth: 1600,
+          }}
+        />
+      </AbsoluteFill>
     </AbsoluteFill>
   );
 };
