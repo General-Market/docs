@@ -1666,10 +1666,14 @@ const SharedPhoneLayer: React.FC<{ local: number }> = ({ local }) => {
     return envelope * flash;
   })();
 
-  // Point 2 keeps the phone centred — it stays in place as the sealed
-  // overlay kicks in at the midpoint. No sweep; the phone reading as
-  // a small drifting prop in the privacy scene was confusing.
-  const xTranslate = 0;
+  // Point 2 — the small compact phone passes through the vault filter.
+  // Enters from the left, crosses the vault at the midpoint (where the
+  // sealed overlay kicks in), exits stage-right sealed.
+  let xTranslate = 0;
+  if (local >= point2Start && local < point3Start) {
+    const t = (local - point2Start) / (point3Start - point2Start);
+    xTranslate = interpolate(t, [0, 0.5, 1], [-520, 0, 520], clamp);
+  }
 
   // Subtle jitter on the speed scene to sell "the device is vibrating
   // under the load of 100,000 orders per second".
@@ -1695,15 +1699,7 @@ const SharedPhoneLayer: React.FC<{ local: number }> = ({ local }) => {
         preloadSourceIds={SHARED_PHONE_PRELOAD as unknown as string[]}
         yAxisExtraDeg={yAxisExtraDeg}
         overlayMode={overlayMode}
-        compact={(() => {
-          // Tourbillon (Point 1, the cylindrical vortex of cards) is the
-          // only scene where the phone should shrink to match a vortex
-          // tile and lose its idle bob. Everything else (Stat, Privacy
-          // P2, Speed P3) keeps the full-size phone.
-          const inTourbillon =
-            local >= point1Start && local < point1End;
-          return inTourbillon;
-        })()}
+        compact={local >= point2Start && local < point3Start}
       />
     </AbsoluteFill>
   );
