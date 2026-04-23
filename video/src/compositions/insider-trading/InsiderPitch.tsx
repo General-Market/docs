@@ -461,17 +461,73 @@ const Point1Scene: React.FC<{
 };
 
 // ─── Scene 4: POINT 2 — 100% privacy until settlement ────────────────────
+//
+// Animation copied from WebGLPicks / GradientCarousel
+// (src/compositions/backgrounds/webgl-picks/GradientCarousel.tsx, after
+// the Tympanus "3D Gradient Carousel" reference). Same geometry,
+// perspective, entry stagger, lissajous-blob background. The gradient
+// panel has been replaced with a surveillance card — a watcher's name
+// at the top, a stream of encrypted blocks scrolling where they expect
+// to read the trade. Five cards: the parties who would normally be
+// reading you. None of them reads anything.
 
-// Five watchers, each watching an encrypted feed. None of them reads a
-// thing. The privacy argument, rendered literally.
+type PrivacyWatcher = { label: string; from: string; to: string };
 
-const PRIVACY_WATCHERS: readonly string[] = [
-  "INSIDER TRADER",
-  "HEDGE FUND",
-  "GOVERNMENT",
-  "MARKET MANIPULATOR",
-  "FRONT RUNNER",
+const PRIVACY_CARDS: PrivacyWatcher[] = [
+  { label: "INSIDER TRADER", from: "#3a1a1a", to: "#0e0f0c" },
+  { label: "HEDGE FUND", from: "#1a2a3a", to: "#0e0f0c" },
+  { label: "GOVERNMENT", from: "#1a3a2a", to: "#0e0f0c" },
+  { label: "MARKET MANIPULATOR", from: "#3a1a3a", to: "#0e0f0c" },
+  { label: "FRONT RUNNER", from: "#3a2a1a", to: "#0e0f0c" },
 ];
+
+// ── GradientCarousel geometry (verbatim from WebGLPicks) ─────────────────
+
+const GC_CARD_W = 340;
+const GC_CARD_H = 460;
+const GC_GAP = 28;
+const GC_UNIT = GC_CARD_W + GC_GAP;
+const GC_TRACK = GC_UNIT * PRIVACY_CARDS.length;
+const GC_BORDER_RADIUS = 18;
+
+const GC_PERSPECTIVE = 1800;
+const GC_MAX_ROTATION = 28;
+const GC_MAX_DEPTH = 140;
+const GC_SCALE_BASE = 0.92;
+const GC_SCALE_RANGE = 0.1;
+
+const GC_ENTRY_DURATION = 18;
+const GC_ENTRY_STAGGER = 1.5;
+const GC_ENTRY_VIEWPORT_RATIO = 0.6;
+
+const GC_SCROLL_SPEED = 259; // px / s
+
+const gcMod = (n: number, m: number) => ((n % m) + m) % m;
+const gcClamp = (v: number, lo: number, hi: number) =>
+  Math.min(hi, Math.max(lo, v));
+
+const hexToRgb = (hex: string): [number, number, number] => {
+  const h = hex.replace("#", "");
+  return [
+    parseInt(h.slice(0, 2), 16),
+    parseInt(h.slice(2, 4), 16),
+    parseInt(h.slice(4, 6), 16),
+  ];
+};
+
+const lerpColor = (
+  a: [number, number, number],
+  b: [number, number, number],
+  t: number,
+): [number, number, number] => [
+  Math.round(a[0] + (b[0] - a[0]) * t),
+  Math.round(a[1] + (b[1] - a[1]) * t),
+  Math.round(a[2] + (b[2] - a[2]) * t),
+];
+
+const gcEasePower3Out = Easing.out(Easing.poly(3));
+
+// ── Ciphertext monitor — "the blocks that pass" the watchers cannot read.
 
 const CIPHER_GLYPHS = "▓▒░█▌▄■□◆◇●0123456789abcdef";
 
@@ -493,17 +549,18 @@ const CipherMonitor: React.FC<{ seed: number; local: number }> = ({
   local,
 }) => {
   const buffer = React.useMemo(() => seededCipher(seed, 480), [seed]);
-  const cols = 22;
-  const rows = 10;
+  const cols = 26;
+  const rows = 14;
 
   const speed = 0.85 + ((seed * 13) % 40) / 100;
   const scroll = Math.floor(local * speed);
 
   const lines: string[] = [];
   for (let r = 0; r < rows; r++) {
-    const base =
-      ((scroll + r * 37 + seed * 11) % (buffer.length - cols) + buffer.length) %
-      (buffer.length - cols);
+    const base = gcMod(
+      scroll + r * 37 + seed * 11,
+      Math.max(1, buffer.length - cols),
+    );
     lines.push(buffer.slice(base, base + cols));
   }
 
@@ -516,7 +573,7 @@ const CipherMonitor: React.FC<{ seed: number; local: number }> = ({
         flex: 1,
         background: "#05070a",
         overflow: "hidden",
-        padding: "14px 14px",
+        padding: "16px 18px",
         fontFamily: MONO_FAMILY,
         fontSize: 15,
         lineHeight: 1.35,
@@ -563,119 +620,195 @@ const CipherMonitor: React.FC<{ seed: number; local: number }> = ({
   );
 };
 
-const WatcherCard: React.FC<{
-  role: string;
-  index: number;
-  total: number;
-  local: number;
-}> = ({ role, index, total, local }) => {
-  const stagger = 10 + index * 3;
-  const entry = interpolate(local, [stagger, stagger + 16], [0, 1], {
-    ...clamp,
-    easing: ease3,
-  });
-  const lift = (1 - entry) * 42;
-  const mid = (total - 1) / 2;
-  const fan = ((index - mid) / mid) * 7;
-
-  const denialBlink =
-    0.55 + 0.45 * Math.max(0, Math.sin(local * 0.38 + index * 1.7));
-
-  return (
-    <div
-      style={{
-        width: 270,
-        height: 420,
-        background: "#0e0f0c",
-        borderRadius: 22,
-        overflow: "hidden",
-        display: "flex",
-        flexDirection: "column",
-        transform: `perspective(1600px) rotateY(${fan}deg) translateY(${lift}px) scale(${
-          0.94 + 0.06 * entry
-        })`,
-        transformOrigin: "50% 100%",
-        opacity: entry,
-        boxShadow:
-          "0 34px 70px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06) inset",
-      }}
-    >
-      <div
-        style={{
-          background: "#9fe870",
-          color: "#0e0f0c",
-          padding: "14px 10px",
-          fontFamily: INTER,
-          fontWeight: 900,
-          fontSize: 17,
-          letterSpacing: "0.08em",
-          textAlign: "center",
-          lineHeight: 1.05,
-          textTransform: "uppercase",
-        }}
-      >
-        {role}
-      </div>
-
-      <CipherMonitor seed={index + 1} local={local} />
-
-      <div
-        style={{
-          background: "#0e0f0c",
-          color: "#ff3b3b",
-          padding: "12px 12px 14px",
-          fontFamily: INTER,
-          fontWeight: 800,
-          fontSize: 12,
-          letterSpacing: "0.26em",
-          textAlign: "center",
-          opacity: denialBlink,
-          borderTop: "1px solid rgba(255,59,59,0.25)",
-        }}
-      >
-        DECRYPTION&nbsp;FAILED
-      </div>
-    </div>
-  );
-};
+// ── Scene — GradientCarousel motion driving PRIVACY_CARDS ────────────────
 
 const Point2Scene: React.FC<{
   local: number;
   sceneStart: number;
   duration: number;
 }> = ({ local, sceneStart, duration }) => {
+  const SCENE_FPS = 30;
+  const STAGE_W = 1920;
+  const STAGE_H = 1080;
+  const halfW = STAGE_W / 2;
+
+  const time = local / SCENE_FPS;
+  const scrollOffset = time * GC_SCROLL_SPEED;
+
+  // Lissajous blob centres — verbatim from GradientCarousel.
+  const timeFactor = time * 0.2;
+  const maxDim = Math.max(STAGE_W, STAGE_H);
+  const minDim = Math.min(STAGE_W, STAGE_H);
+  const amp1 = minDim * 0.35;
+  const amp2 = minDim * 0.28;
+  const rad1 = maxDim * 0.75;
+  const rad2 = maxDim * 0.65;
+  const cx1 = STAGE_W / 2 + Math.sin(timeFactor * 1.3) * amp1;
+  const cy1 = STAGE_H / 2 + Math.cos(timeFactor * 0.9) * amp1;
+  const cx2 = STAGE_W / 2 + Math.sin(timeFactor * 0.7 + 2) * amp2;
+  const cy2 = STAGE_H / 2 + Math.cos(timeFactor * 1.1 + 1) * amp2;
+
+  // Centre card drives the background-tint interpolation.
+  const centerProgress = scrollOffset / GC_UNIT;
+  const centerIdx = Math.floor(centerProgress);
+  const centerFrac = centerProgress - centerIdx;
+  const cardA = PRIVACY_CARDS[gcMod(centerIdx, PRIVACY_CARDS.length)];
+  const cardB = PRIVACY_CARDS[gcMod(centerIdx + 1, PRIVACY_CARDS.length)];
+  const fromRgb = lerpColor(
+    hexToRgb(cardA.from),
+    hexToRgb(cardB.from),
+    centerFrac,
+  );
+  const toRgb = lerpColor(
+    hexToRgb(cardA.to),
+    hexToRgb(cardB.to),
+    centerFrac,
+  );
+
+  // Card transforms — verbatim from GradientCarousel.
+  const cards = PRIVACY_CARDS.map((card, i) => {
+    const rawX =
+      gcMod(i * GC_UNIT - scrollOffset + GC_TRACK / 2, GC_TRACK) -
+      GC_TRACK / 2;
+    const screenX = rawX + halfW - GC_CARD_W / 2;
+
+    const norm = gcClamp(rawX / halfW, -1, 1);
+    const absNorm = Math.abs(norm);
+
+    const rotateY = -norm * GC_MAX_ROTATION;
+    const translateZ = (1 - absNorm) * GC_MAX_DEPTH;
+    const scale = GC_SCALE_BASE + (1 - absNorm) * GC_SCALE_RANGE;
+    const blur = absNorm < 0.15 ? 0 : 2 * Math.pow(absNorm, 1.1);
+
+    const withinEntryViewport =
+      Math.abs(rawX) < STAGE_W * GC_ENTRY_VIEWPORT_RATIO * 0.5;
+    const entryDelay = i * GC_ENTRY_STAGGER;
+    let entryOpacity = 1;
+    let entryTranslateY = 0;
+    let entryScale = 1;
+    if (local < GC_ENTRY_DURATION + entryDelay + 5 && withinEntryViewport) {
+      const entryProgress = gcClamp(
+        (local - entryDelay) / GC_ENTRY_DURATION,
+        0,
+        1,
+      );
+      const eased = gcEasePower3Out(entryProgress);
+      entryOpacity = eased;
+      entryTranslateY = (1 - eased) * 40;
+      entryScale = 0.92 + eased * 0.08;
+    }
+
+    const zIndex = Math.round((1 - absNorm) * 100);
+
+    return {
+      ...card,
+      index: i,
+      screenX,
+      rotateY,
+      translateZ,
+      scale: scale * entryScale,
+      blur,
+      entryOpacity,
+      entryTranslateY,
+      zIndex,
+    };
+  });
+
   const fadeOut = interpolate(local, [duration - 18, duration], [1, 0], clamp);
 
   return (
-    <AbsoluteFill style={{ opacity: fadeOut }}>
-      <AbsoluteFill
+    <AbsoluteFill style={{ opacity: fadeOut, background: "#0a0a0a" }}>
+      {/* Animated gradient background — Lissajous blobs, tinted by centre card. */}
+      <div
         style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          paddingTop: 180,
+          position: "absolute",
+          inset: 0,
+          filter: "blur(28px) saturate(1.05)",
+          background: [
+            `radial-gradient(circle ${rad1}px at ${cx1}px ${cy1}px, rgba(${fromRgb[0]},${fromRgb[1]},${fromRgb[2]},0.85), transparent 70%)`,
+            `radial-gradient(circle ${rad2}px at ${cx2}px ${cy2}px, rgba(${toRgb[0]},${toRgb[1]},${toRgb[2]},0.70), transparent 65%)`,
+            "#0a0a0a",
+          ].join(", "),
+        }}
+      />
+
+      {/* 3D stage — GradientCarousel geometry, card body rewritten. */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          perspective: GC_PERSPECTIVE,
+          transformStyle: "preserve-3d",
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            gap: 24,
-            alignItems: "center",
-            justifyContent: "center",
-            transform: "perspective(1600px) rotateX(4deg)",
-          }}
-        >
-          {PRIVACY_WATCHERS.map((role, i) => (
-            <WatcherCard
-              key={role}
-              role={role}
-              index={i}
-              total={PRIVACY_WATCHERS.length}
-              local={local}
-            />
-          ))}
-        </div>
-      </AbsoluteFill>
+        {cards.map((card) => (
+          <div
+            key={card.index}
+            style={{
+              position: "absolute",
+              left: card.screenX,
+              top: "50%",
+              width: GC_CARD_W,
+              height: GC_CARD_H,
+              transformOrigin: "90% center",
+              transform: [
+                `translateY(calc(-50% + ${card.entryTranslateY}px))`,
+                `translateZ(${card.translateZ}px)`,
+                `rotateY(${card.rotateY}deg)`,
+                `scale(${card.scale})`,
+              ].join(" "),
+              borderRadius: GC_BORDER_RADIUS,
+              overflow: "hidden",
+              background: `linear-gradient(135deg, ${card.from}, ${card.to})`,
+              filter: card.blur > 0.1 ? `blur(${card.blur}px)` : undefined,
+              opacity: card.entryOpacity,
+              zIndex: card.zIndex,
+              boxShadow: `0 24px 70px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.06) inset`,
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            <div
+              style={{
+                background: "#9fe870",
+                color: "#0e0f0c",
+                padding: "14px 10px",
+                fontFamily: INTER,
+                fontWeight: 900,
+                fontSize: 18,
+                letterSpacing: "0.08em",
+                textAlign: "center",
+                lineHeight: 1.05,
+                textTransform: "uppercase",
+              }}
+            >
+              {card.label}
+            </div>
+
+            <CipherMonitor seed={card.index + 1} local={local} />
+
+            <div
+              style={{
+                background: "#0e0f0c",
+                color: "#ff3b3b",
+                padding: "12px 12px 14px",
+                fontFamily: INTER,
+                fontWeight: 800,
+                fontSize: 12,
+                letterSpacing: "0.26em",
+                textAlign: "center",
+                borderTop: "1px solid rgba(255,59,59,0.25)",
+                opacity:
+                  0.6 +
+                  0.4 *
+                    Math.max(0, Math.sin(local * 0.38 + card.index * 1.7)),
+              }}
+            >
+              DECRYPTION&nbsp;FAILED
+            </div>
+          </div>
+        ))}
+      </div>
 
       <AbsoluteFill
         style={{
