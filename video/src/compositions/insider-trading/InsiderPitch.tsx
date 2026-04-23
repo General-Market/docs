@@ -752,13 +752,15 @@ const Point2Scene: React.FC<{
 
 // ─── Scene 5: POINT 3 — cluster trading vs single trades ─────────────────
 //
-// Dual-panel split. Same upward flow on both sides. LEFT: single points
-// rise one by one — the old world. RIGHT: blocks of ~1,000 packed points
-// rise together — Cluster Trading. The eye counts twice and gives up.
+// Dual-panel split. Same upward flow on both sides, fast rise. LEFT:
+// 100 single points per second — the old world, literal throughput.
+// RIGHT: 10 clusters per second, each cluster a packed grid of 10,000
+// points rising as one body — 100,000 trades/s. The eye counts twice
+// and gives up.
 
-const P3_RISE_BOTTOM = 960;
-const P3_RISE_TOP = 260;
-const P3_RISE_DURATION = 70;
+const P3_RISE_BOTTOM = 1020;
+const P3_RISE_TOP = 380;
+const P3_RISE_DURATION = 28;
 
 // Deterministic jitter — a seeded unit-interval hash so the particle
 // x-positions look random but stay stable across frames.
@@ -789,18 +791,22 @@ const Point3Scene: React.FC<{
     easing: ease3,
   });
 
-  // LEFT cadence — one point every 2 frames. Each rises on its own path.
-  const LEFT_SPAWN_START = 24;
-  const LEFT_SPAWN_INTERVAL = 2;
+  // LEFT cadence — 100 points per second, literal. At 30fps that's
+  // 10 new points every 3 frames; the spawnFrame spacing is fractional
+  // so points don't line up in rigid rows.
+  const LEFT_SPAWN_START = 14;
+  const LEFT_PARTICLES_PER_FRAME = 100 / 30; // ≈ 3.333
+  const LEFT_SPAWN_DT = 1 / LEFT_PARTICLES_PER_FRAME; // ≈ 0.3 frames
   const leftCount = Math.max(
     0,
-    Math.floor((local - LEFT_SPAWN_START) / LEFT_SPAWN_INTERVAL) + 1,
+    Math.floor((local - LEFT_SPAWN_START) * LEFT_PARTICLES_PER_FRAME),
   );
 
-  // RIGHT cadence — one cluster (= many points travelling as one) every
-  // 9 frames. Sparser in count, denser in mass. Starts slightly later.
-  const RIGHT_SPAWN_START = 32;
-  const RIGHT_SPAWN_INTERVAL = 9;
+  // RIGHT cadence — one 10,000-trade cluster every 3 frames (= 10/s).
+  // 10 × 10,000 = 100,000 trades per second. Starts slightly later so
+  // the left is legible before the right lands on top of it.
+  const RIGHT_SPAWN_START = 18;
+  const RIGHT_SPAWN_INTERVAL = 3;
   const rightCount = Math.max(
     0,
     Math.floor((local - RIGHT_SPAWN_START) / RIGHT_SPAWN_INTERVAL) + 1,
@@ -876,14 +882,14 @@ const Point3Scene: React.FC<{
           </div>
         </div>
 
-        {/* Rising single points */}
+        {/* Rising single points — 100 per second, 28-frame rise. */}
         {Array.from({ length: leftCount }).map((_, i) => {
-          const spawnFrame = LEFT_SPAWN_START + i * LEFT_SPAWN_INTERVAL;
+          const spawnFrame = LEFT_SPAWN_START + i * LEFT_SPAWN_DT;
           const age = local - spawnFrame;
           if (age < 0) return null;
           const { y, opacity, alive } = p3Rise(age);
           if (!alive) return null;
-          const jitter = (p3Hash(i, 1) - 0.5) * 260;
+          const jitter = (p3Hash(i, 1) - 0.5) * 340;
           return (
             <div
               key={i}
@@ -961,7 +967,7 @@ const Point3Scene: React.FC<{
           />
         </div>
 
-        {/* Rising clusters — each block is a packed grid of ~1,000 points,
+        {/* Rising clusters — each block is a 125 × 80 grid = 10,000 points,
             painted as a dot pattern so the eye reads mass, not individuals */}
         {Array.from({ length: rightCount }).map((_, i) => {
           const spawnFrame = RIGHT_SPAWN_START + i * RIGHT_SPAWN_INTERVAL;
@@ -969,11 +975,11 @@ const Point3Scene: React.FC<{
           if (age < 0) return null;
           const { y, opacity, alive } = p3Rise(age);
           if (!alive) return null;
-          const jitter = (p3Hash(i, 7) - 0.5) * 200;
-          // 36 × 28 grid ≈ 1,008 points. 4px cell → 144 × 112 block.
-          const CELL = 4;
-          const COLS = 36;
-          const ROWS = 28;
+          const jitter = (p3Hash(i, 7) - 0.5) * 160;
+          // 125 × 80 = 10,000 points. 2px cell → 250 × 160 block.
+          const CELL = 2;
+          const COLS = 125;
+          const ROWS = 80;
           return (
             <div
               key={i}
