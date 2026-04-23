@@ -276,11 +276,17 @@ const Point1Scene: React.FC<{
       </AbsoluteFill>
 
       {/* PHONE — iPhone from Worldcoin, screen painted with the current
-          phase's source card. Cycles Twitch → Deutsche Bahn → Movies & TV. */}
+          phase's source card. Cycles Twitch → Deutsche Bahn → Movies & TV.
+          The entry 0..20 frames completes the roll carried over from the
+          Stat scene's 360° outro — phone comes in mid-spin and settles. */}
       <AbsoluteFill style={{ opacity: vortexIn }}>
         <PhoneWithCard
           cardSourceId={centerSourceId}
           preloadSourceIds={POINT1_CENTER_SEQUENCE as unknown as string[]}
+          yAxisExtraDeg={interpolate(local, [0, 20], [360, 0], {
+            ...clamp,
+            easing: ease3,
+          })}
         />
       </AbsoluteFill>
 
@@ -513,6 +519,33 @@ const SourceCardFrame: React.FC<{
   </div>
 );
 
+// GM-as-padlock — the seven stripes of the GM logo become the face of a
+// lock body, with a shackle arched above. Stamped onto every BlockCard so
+// the emerging block reads as the locked form of the source card that
+// entered the GM column.
+const GmLockMark: React.FC<{ size?: number }> = ({ size = 170 }) => (
+  <svg
+    width={size}
+    height={size * 1.25}
+    viewBox="0 0 120 150"
+    fill="none"
+  >
+    <path
+      d="M35 56 V32 a25 22 0 0 1 50 0 V56"
+      stroke={BLACK}
+      strokeWidth={11}
+      strokeLinecap="round"
+      fill="none"
+    />
+    <rect x={10} y={52} width={100} height={90} rx={14} fill={BLACK} />
+    <g transform="translate(9 44)">
+      {GM_LOGO_PATHS.map((d, i) => (
+        <path key={i} d={d} fill={WHITE} />
+      ))}
+    </g>
+  </svg>
+);
+
 const BlockCard: React.FC<{ hash: string; w: number; h: number }> = ({
   hash,
   w,
@@ -527,7 +560,7 @@ const BlockCard: React.FC<{ hash: string; w: number; h: number }> = ({
       display: "flex",
       flexDirection: "column",
       justifyContent: "space-between",
-      alignItems: "flex-start",
+      alignItems: "stretch",
       padding: "20px 22px",
       boxShadow: "0 18px 50px rgba(0,0,0,0.55)",
     }}
@@ -544,6 +577,18 @@ const BlockCard: React.FC<{ hash: string; w: number; h: number }> = ({
     >
       Block
     </span>
+    <div
+      style={{
+        flex: 1,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        marginTop: 6,
+        marginBottom: 6,
+      }}
+    >
+      <GmLockMark size={170} />
+    </div>
     <span
       style={{
         color: BLACK,
@@ -1112,84 +1157,151 @@ const FootnotePopcut: React.FC<{ text: string }> = ({ text }) => {
 
 // ─── Scene 6: STAT — 90% ─────────────────────────────────────────────────
 
+// Phone in StatScene carries a source card behind the "Reducing insider
+// loss up to 70%" claim. Picked polymarket since it's the most
+// on-topic for insider-loss framing, but easy to swap.
+const STAT_PHONE_CARD = "polymarket";
+
 const StatScene: React.FC<{
   local: number;
   sceneStart: number;
   duration: number;
 }> = ({ local, sceneStart, duration }) => {
-  const circleR = interpolate(local, [0, 60], [0, 400], {
+  const fadeOut = interpolate(local, [duration - 20, duration], [1, 0], clamp);
+
+  // Roll-out: last 30 frames the phone performs a full Y-axis turn to
+  // sell the transition into Point1. Eased so it accelerates into the
+  // cut rather than spinning at a constant rate.
+  const rollStart = duration - 30;
+  const rollT = interpolate(local, [rollStart, duration], [0, 1], {
     ...clamp,
     easing: ease3,
   });
-  const fadeOut = interpolate(local, [duration - 20, duration], [1, 0], clamp);
+  const yAxisExtraDeg = rollT * 360;
 
   return (
     <AbsoluteFill style={{ opacity: fadeOut }}>
-      {/* SHAPES */}
-      <AbsoluteFill
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <div
-          style={{
-            width: circleR * 2,
-            height: circleR * 2,
-            borderRadius: "50%",
-            background: WHITE,
-          }}
+      {/* PHONE — centered, holds the middle. Flanking text wraps it. */}
+      <AbsoluteFill>
+        <PhoneWithCard
+          cardSourceId={STAT_PHONE_CARD}
+          preloadSourceIds={[STAT_PHONE_CARD]}
+          yAxisExtraDeg={yAxisExtraDeg}
         />
       </AbsoluteFill>
 
-      {/* TEXT */}
-      <AbsoluteFill
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Reveal
-          from={sceneStart + 22}
-          duration={duration - 22}
-          text="70%"
-          revealDuration={22}
-          seed={109}
-          style={{
-            fontSize: 340,
-            fontWeight: 900,
-            letterSpacing: "-0.04em",
-            textAlign: "center",
-          }}
-        />
-      </AbsoluteFill>
-
+      {/* LEFT — "Reducing insider loss" broken across three lines */}
       <AbsoluteFill
         style={{
           display: "flex",
           flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "flex-end",
-          paddingBottom: 150,
-          gap: 16,
+          alignItems: "flex-start",
+          justifyContent: "center",
+          paddingLeft: 120,
+          gap: 6,
         }}
       >
         <Reveal
-          from={sceneStart + 48}
-          duration={duration - 48}
-          text="Reducing insider loss up to 70%"
-          revealDuration={36}
-          seed={127}
+          from={sceneStart + 4}
+          duration={duration - 4}
+          text="Reducing"
+          revealDuration={26}
+          seed={121}
+          solid
           style={{
-            fontSize: 38,
-            fontWeight: 600,
-            letterSpacing: "-0.01em",
-            textAlign: "center",
-            maxWidth: 1300,
+            fontSize: 124,
+            fontWeight: 900,
+            letterSpacing: "-0.035em",
+            lineHeight: 1,
+            maxWidth: 780,
           }}
         />
+        <Reveal
+          from={sceneStart + 14}
+          duration={duration - 14}
+          text="insider"
+          revealDuration={26}
+          seed={123}
+          solid
+          style={{
+            fontSize: 124,
+            fontWeight: 900,
+            letterSpacing: "-0.035em",
+            lineHeight: 1,
+            maxWidth: 780,
+          }}
+        />
+        <Reveal
+          from={sceneStart + 24}
+          duration={duration - 24}
+          text="loss"
+          revealDuration={26}
+          seed={125}
+          solid
+          style={{
+            fontSize: 124,
+            fontWeight: 900,
+            letterSpacing: "-0.035em",
+            lineHeight: 1,
+            maxWidth: 780,
+          }}
+        />
+      </AbsoluteFill>
+
+      {/* RIGHT — "up to 70%" with 70% set much bigger than "up to" */}
+      <AbsoluteFill
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "flex-end",
+          justifyContent: "center",
+          paddingRight: 120,
+          gap: 6,
+        }}
+      >
+        <Reveal
+          from={sceneStart + 34}
+          duration={duration - 34}
+          text="up to"
+          revealDuration={26}
+          seed={129}
+          solid
+          style={{
+            fontSize: 80,
+            fontWeight: 700,
+            letterSpacing: "-0.02em",
+            lineHeight: 1,
+            textAlign: "right",
+            maxWidth: 600,
+          }}
+        />
+        <Reveal
+          from={sceneStart + 44}
+          duration={duration - 44}
+          text="70%"
+          revealDuration={28}
+          seed={131}
+          solid
+          style={{
+            fontSize: 260,
+            fontWeight: 900,
+            letterSpacing: "-0.045em",
+            lineHeight: 1,
+            textAlign: "right",
+            maxWidth: 600,
+          }}
+        />
+      </AbsoluteFill>
+
+      {/* FOOTNOTE — same as before, kept at the bottom */}
+      <AbsoluteFill
+        style={{
+          display: "flex",
+          alignItems: "flex-end",
+          justifyContent: "center",
+          paddingBottom: 70,
+        }}
+      >
         <Sequence
           from={sceneStart + 70}
           durationInFrames={duration - 70}

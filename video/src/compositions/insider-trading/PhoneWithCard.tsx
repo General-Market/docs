@@ -416,7 +416,9 @@ function applyCoverFit(
 const PhoneScene: React.FC<{
   texture: THREE.CanvasTexture;
   frame: number;
-}> = ({ texture, frame }) => {
+  /** Extra Y-axis rotation in degrees, added on top of the sine pivot. */
+  yAxisExtraDeg: number;
+}> = ({ texture, frame, yAxisExtraDeg }) => {
   const { camera } = useThree();
   const gltf = useGLTF(MODEL_URL);
 
@@ -464,7 +466,9 @@ const PhoneScene: React.FC<{
   // ~1 cycle per ~2.3s). Y-axis pivot is a slow sine (±6°).
   const t = frame / 30; // seconds assuming 30fps comp
   const bobY = Math.sin(t * 2.7) * 0.12;
-  const pivotY = Math.sin(t * 1.6) * (6 * Math.PI) / 180; // ±6°
+  const pivotY =
+    Math.sin(t * 1.6) * (6 * Math.PI) / 180 +
+    (yAxisExtraDeg * Math.PI) / 180;
 
   if (iphone) {
     iphone.position.set(PHONE_POS.x, PHONE_POS.y + bobY, PHONE_POS.z);
@@ -505,11 +509,14 @@ export const PhoneWithCard: React.FC<{
   cardSourceId: string;
   /** Optional list of IDs to prebuild so swaps are instant (no render gap). */
   preloadSourceIds?: string[];
+  /** Extra Y-axis rotation in degrees, stacked on top of the idle pivot. */
+  yAxisExtraDeg?: number;
   width?: number;
   height?: number;
 }> = ({
   cardSourceId,
   preloadSourceIds,
+  yAxisExtraDeg = 0,
   width = 1920,
   height = 1080,
 }) => {
@@ -584,7 +591,11 @@ export const PhoneWithCard: React.FC<{
           far: 200,
         }}
       >
-        <PhoneScene texture={active} frame={frame} />
+        <PhoneScene
+          texture={active}
+          frame={frame}
+          yAxisExtraDeg={yAxisExtraDeg}
+        />
       </ThreeCanvas>
     </AbsoluteFill>
   );
