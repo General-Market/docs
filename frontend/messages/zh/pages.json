@@ -893,6 +893,9 @@
     "vaults": "金库",
     "volume": "交易量",
     "points": "积分",
+    "positions_value": "仓位价值",
+    "biggest_win": "最大盈利",
+    "predictions": "预测次数",
     "no_profile": "未找到该地址的个人资料。"
   }
 }

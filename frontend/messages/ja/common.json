@@ -381,6 +381,7 @@
     "deposited_amount": "${amount}入金済み",
     "round_title": "ラウンド #{tickId}: {sign}${pnl}",
     "last_active": "最終アクティブ {time}",
+    "share": "プロフィールを共有",
     "points_title": "ポイント",
     "points_vision": "Vision",
     "points_creator": "作成者",

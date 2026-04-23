@@ -893,6 +893,9 @@
     "vaults": "ボールト",
     "volume": "取引量",
     "points": "ポイント",
+    "positions_value": "ポジション評価額",
+    "biggest_win": "最大利益",
+    "predictions": "予測数",
     "no_profile": "このアドレスのプロフィールデータが見つかりません。"
   }
 }

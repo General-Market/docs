@@ -381,6 +381,7 @@
     "deposited_amount": "已存入 ${amount}",
     "round_title": "回合 #{tickId}: {sign}${pnl}",
     "last_active": "最近活跃 {time}",
+    "share": "分享个人资料",
     "points_title": "积分",
     "points_vision": "Vision",
     "points_creator": "创建者",

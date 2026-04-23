@@ -903,6 +903,9 @@
     "vaults": "Vaults",
     "volume": "Volume",
     "points": "Points",
+    "positions_value": "Positions Value",
+    "biggest_win": "Biggest Win",
+    "predictions": "Predictions",
     "no_profile": "No profile data found for this address."
   }
 }

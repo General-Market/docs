@@ -19,6 +19,8 @@ interface ProfileStat {
 interface ProfileHeroProps {
   address: string
   lastActiveAt?: string
+  /** "Joined Apr 2026" — pre-formatted label derived from earliest tick. */
+  joined?: string | null
   stats: ProfileStat[]
   pnlHistory: PnlPoint[]
   /** Optional override for the headline P&L figure — used by tabs (e.g. vaults)
@@ -57,9 +59,37 @@ function StatCell({ stat }: { stat: ProfileStat }) {
   )
 }
 
+function ShareButton({ address }: { address: string }) {
+  const t = useTranslations('common')
+  const onClick = () => {
+    const url = typeof window !== 'undefined'
+      ? `${window.location.origin}/profile/${address}`
+      : `/profile/${address}`
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      void navigator.clipboard.writeText(url)
+    }
+  }
+  return (
+    <button
+      onClick={onClick}
+      aria-label={t('profile.share')}
+      title={t('profile.share')}
+      className="p-1.5 rounded-md text-text-muted hover:text-black hover:bg-surface transition-colors"
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7" strokeLinecap="round" />
+        <path d="M16 6l-4-4-4 4" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M12 2v14" strokeLinecap="round" />
+      </svg>
+    </button>
+  )
+}
+
+
 export function ProfileHero({
   address,
   lastActiveAt,
+  joined,
   stats,
   pnlHistory,
   pnlOverride,
@@ -96,18 +126,23 @@ export function ProfileHero({
               variants={item}
               transition={springs.page}
             >
-              <div className="flex items-center gap-4 mb-5">
+              <div className="flex items-start gap-4 mb-5">
                 <GradientAvatar address={address} />
-                <div>
-                  <div className="text-[20px] font-bold font-mono tracking-tight text-black">
+                <div className="flex-1 min-w-0">
+                  <div className="text-[20px] font-bold font-mono tracking-tight text-black truncate">
                     {truncateAddress(address)}
                   </div>
-                  {lastActiveAt && (
-                    <div className="text-caption text-text-muted mt-0.5">
-                      {t('profile.last_active', { time: formatRelativeTime(lastActiveAt) })}
-                    </div>
-                  )}
+                  <div className="text-caption text-text-muted mt-0.5 flex items-center gap-2 flex-wrap">
+                    {joined && <span>{joined}</span>}
+                    {joined && lastActiveAt && <span className="text-text-muted/50">·</span>}
+                    {lastActiveAt && (
+                      <span>
+                        {t('profile.last_active', { time: formatRelativeTime(lastActiveAt) })}
+                      </span>
+                    )}
+                  </div>
                 </div>
+                <ShareButton address={address} />
               </div>
 
               {/* Stats grid — 2 rows on mobile, single row on desktop */}

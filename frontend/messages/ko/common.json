@@ -381,6 +381,7 @@
     "deposited_amount": "${amount} 입금됨",
     "round_title": "라운드 #{tickId}: {sign}${pnl}",
     "last_active": "최근 활동 {time}",
+    "share": "프로필 공유",
     "points_title": "포인트",
     "points_vision": "Vision",
     "points_creator": "생성자",

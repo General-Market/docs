@@ -14,7 +14,8 @@ import { VaultsTab } from '@/components/domain/profile/VaultsTab'
 import { usePlayerProfile } from '@/hooks/usePlayerProfile'
 import { usePoints } from '@/hooks/usePoints'
 import { useVaultsTotals } from '@/hooks/useVaultsTotals'
-import { formatPnL, formatROI, formatVolume } from '@/lib/utils/formatters'
+import { formatPnL, formatVolume } from '@/lib/utils/formatters'
+import { computeDerivedMetrics, formatJoined } from '@/lib/utils/profile-metrics'
 
 function formatPoints(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
@@ -59,34 +60,55 @@ function ProfileContent({ address }: { address: string }) {
   // vision P&L — different accounting, same hero slot.
   const showingVaults = tab === 'vaults' && isSelf
   const displayPnl = showingVaults ? vaultTotals.totalPnl : profile?.stats.pnl ?? 0
-  const displayVolume = showingVaults
-    ? vaultTotals.totalValue
-    : profile?.stats.totalDeposited ?? 0
-  const displayRoi = showingVaults
-    ? vaultTotals.totalValue > 0
-      ? (vaultTotals.totalPnl / vaultTotals.totalValue) * 100
-      : 0
-    : profile?.stats.roi ?? 0
-  const displayCount = showingVaults
-    ? vaultTotals.count
-    : profile?.stats.totalBatches ?? 0
-  const totalTrades =
-    profile?.batches.reduce((sum, b) => sum + (b.tickCount ?? 0), 0) ?? 0
   const pnlColor = displayPnl >= 0 ? 'text-color-up' : 'text-color-down'
 
-  const stats = [
-    { label: t('pnl'), value: formatPnL(displayPnl), color: pnlColor },
-    { label: t('roi'), value: formatROI(displayRoi) },
-    {
-      label: showingVaults ? t('vaults') : t('rounds'),
-      value: String(displayCount),
-    },
-    ...(showingVaults
-      ? []
-      : [{ label: t('trades'), value: totalTrades.toLocaleString() }]),
-    { label: t('volume'), value: formatVolume(displayVolume) },
-    { label: t('points'), value: formatPoints(points.total), color: 'text-color-up' },
-  ]
+  // Polymarket-parity derived metrics — positions value, biggest win,
+  // predictions count, joined date — all computed from the profile data
+  // we already fetch.
+  const derived = computeDerivedMetrics(profile)
+  const joinedLabel = formatJoined(derived.firstSeenUnixSec)
+
+  const stats = showingVaults
+    ? [
+        {
+          label: t('positions_value'),
+          value: formatVolume(vaultTotals.totalValue),
+        },
+        {
+          label: t('pnl'),
+          value: formatPnL(vaultTotals.totalPnl),
+          color: pnlColor,
+        },
+        {
+          label: t('vaults'),
+          value: String(vaultTotals.count),
+        },
+        {
+          label: t('points'),
+          value: formatPoints(points.total),
+          color: 'text-color-up',
+        },
+      ]
+    : [
+        {
+          label: t('positions_value'),
+          value: formatVolume(derived.positionsValue),
+        },
+        {
+          label: t('biggest_win'),
+          value: formatPnL(derived.biggestWin),
+          color: derived.biggestWin > 0 ? 'text-color-up' : undefined,
+        },
+        {
+          label: t('predictions'),
+          value: derived.predictions.toLocaleString(),
+        },
+        {
+          label: t('points'),
+          value: formatPoints(points.total),
+          color: 'text-color-up',
+        },
+      ]
 
   if (isLoading) {
     return (
@@ -129,6 +151,7 @@ function ProfileContent({ address }: { address: string }) {
       <ProfileHero
         address={address}
         lastActiveAt={profile?.stats.lastActiveAt ?? undefined}
+        joined={joinedLabel}
         stats={stats}
         pnlHistory={showingVaults ? [] : profile?.pnlHistory ?? []}
         pnlOverride={showingVaults ? vaultTotals.totalPnl : undefined}
