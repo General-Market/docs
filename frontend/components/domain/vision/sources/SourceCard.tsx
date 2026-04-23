@@ -8,6 +8,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import type { VisionSource } from '@/lib/vision/sources'
 import { toInternalId } from '@/lib/vision/source-ids'
 import { getCategoryLabel } from '@/lib/vision/source-categories'
+import { SOURCE_BROLLS } from '@/lib/vision/source-brolls'
 import type { BitmapEditor } from '@/hooks/vision/useBitmapEditor'
 import { useSourceSnapshot } from '@/hooks/vision/useMarketSnapshot'
 import { getFundCountForSource } from '@/hooks/vaults/useFundBranding'
@@ -139,6 +140,9 @@ export function SourceCard({ source, bitmapEditor, index = 99, metaAssetCount, m
     ? { background: source.brandBg }
     : { backgroundColor: source.brandBg }
 
+  // Ambient b-roll (if mapped). Plays muted + looping behind the logo.
+  const broll = SOURCE_BROLLS[source.id]
+
   // Detect light backgrounds — logos need a subtle vignette to stay visible
   const isLightBg = hexLuminance(source.brandBg) > 200
 
@@ -181,6 +185,19 @@ export function SourceCard({ source, bitmapEditor, index = 99, metaAssetCount, m
             className={`absolute inset-0 flex items-center justify-center ${isLightBg ? 'border-b border-border-light' : ''}`}
             style={{ ...brandStyle, viewTransitionName: `source-brand-${source.id}` } as React.CSSProperties}
           >
+            {broll && (
+              <video
+                src={broll}
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload={index < 12 ? 'auto' : 'metadata'}
+                aria-hidden
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            )}
+            {broll && <div className="absolute inset-0 bg-black/35" />}
             <Image
               src={source.logo}
               alt={source.name}
@@ -188,7 +205,7 @@ export function SourceCard({ source, bitmapEditor, index = 99, metaAssetCount, m
               height={logoSize.h}
               priority={index < 12}
               loading={index < 12 ? 'eager' : 'lazy'}
-              className="max-w-[80%] object-contain"
+              className="relative max-w-[80%] object-contain"
               style={{ maxHeight: logoSize.maxH }}
             />
             <span className="absolute top-2.5 right-2.5 text-micro font-bold tracking-[0.08em] uppercase px-2 py-0.5 rounded glass-badge text-white/90">

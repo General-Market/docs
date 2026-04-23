@@ -88,6 +88,8 @@ data/symbol-map-local.json
 *.mp3
 *.wav
 *.mp4
+# Exception: source b-roll videos ship to production
+!frontend/public/source-video/*.mp4
 
 # Stress test reports
 scripts/stress-test/reports/
