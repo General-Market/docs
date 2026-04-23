@@ -580,13 +580,92 @@ const Point2Scene: React.FC<{
   const fadeOut = interpolate(local, [duration - 18, duration], [1, 0], clamp);
 
   // Carousel band sits in the upper-middle of the stage; the watchers
-  // stand across the lower band. The spatial relation is literal — blocks
-  // pass above, the actors watch them from below and fail to read.
-  const CAROUSEL_TOP_PCT = 42;
+  // stand across the lower band. Title sits in its own banner above
+  // both. The spatial relation is literal — blocks pass through, the
+  // actors watch them from below and fail to read.
+  const TITLE_TOP_PX = 60;
+  const TITLE_DIVIDER_Y = 220;
+  const CAROUSEL_TOP_PCT = 48;
   const WATCHERS_TOP_PX = 740;
+
+  // ── Transition: a white bar sweeps right-to-left across the stage in
+  //    the first 12 frames, echoing the direction the blocks will flow.
+  //    The bar enters from the right edge, crosses the full stage, then
+  //    exits to the left. Behind it the carousel is already live — the
+  //    wipe uncovers it rather than introducing it.
+  const WIPE_FRAMES = 12;
+  const wipeT = interpolate(local, [0, WIPE_FRAMES], [0, 1], {
+    ...clamp,
+    easing: ease3,
+  });
+  const WIPE_BAR_W = 260;
+  const wipeX = interpolate(wipeT, [0, 1], [1920 + 120, -WIPE_BAR_W - 40]);
+  const wipeOpacity = interpolate(
+    local,
+    [0, 2, WIPE_FRAMES - 2, WIPE_FRAMES],
+    [0, 1, 1, 0],
+    clamp,
+  );
+
+  // Carousel is held back until the wipe has crossed centre — feels like
+  // the wipe is dragging the blocks in behind it.
+  const carouselReveal = interpolate(
+    local,
+    [WIPE_FRAMES * 0.5, WIPE_FRAMES + 2],
+    [0, 1],
+    clamp,
+  );
 
   return (
     <AbsoluteFill style={{ opacity: fadeOut, background: BLACK }}>
+      {/* Title banner — explicit position above the animation. */}
+      <div
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          top: TITLE_TOP_PX,
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <Reveal
+          from={sceneStart + 2}
+          duration={duration - 2}
+          text="100% privacy until settlement"
+          revealDuration={34}
+          seed={59}
+          solid
+          style={{
+            fontSize: 76,
+            fontWeight: 900,
+            letterSpacing: "-0.03em",
+            textAlign: "center",
+            maxWidth: 1500,
+            lineHeight: 1,
+          }}
+        />
+      </div>
+
+      {/* Hairline divider — separates the title from the animation band. */}
+      <div
+        style={{
+          position: "absolute",
+          left: "14%",
+          right: "14%",
+          top: TITLE_DIVIDER_Y,
+          height: 2,
+          background: WHITE,
+          opacity: interpolate(local, [14, 28], [0, 0.25], clamp),
+          transformOrigin: "50% 50%",
+          transform: `scaleX(${interpolate(local, [14, 28], [0, 1], {
+            ...clamp,
+            easing: ease3,
+          })})`,
+        }}
+      />
+
       {/* 3D stage — GradientCarousel geometry, black-and-white cards. */}
       <div
         style={{
@@ -594,6 +673,7 @@ const Point2Scene: React.FC<{
           inset: 0,
           perspective: GC_PERSPECTIVE,
           transformStyle: "preserve-3d",
+          opacity: carouselReveal,
         }}
       >
         {cards.map((card) => (
@@ -651,6 +731,22 @@ const Point2Scene: React.FC<{
         ))}
       </div>
 
+      {/* Shutter wipe — white bar sweeps right-to-left across the screen. */}
+      <div
+        style={{
+          position: "absolute",
+          left: wipeX,
+          top: 0,
+          bottom: 0,
+          width: WIPE_BAR_W,
+          background: WHITE,
+          opacity: wipeOpacity,
+          boxShadow:
+            "0 0 160px 40px rgba(255,255,255,0.35), -40px 0 80px rgba(255,255,255,0.2)",
+          zIndex: 500,
+        }}
+      />
+
       {/* Watchers — outside the carousel, looking up at it */}
       <div
         style={{
@@ -669,31 +765,6 @@ const Point2Scene: React.FC<{
           <OutsideWatcher key={role} label={role} index={i} local={local} />
         ))}
       </div>
-
-      <AbsoluteFill
-        style={{
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "center",
-          paddingTop: 70,
-        }}
-      >
-        <Reveal
-          from={sceneStart + 4}
-          duration={duration - 4}
-          text="100% privacy until settlement"
-          revealDuration={38}
-          seed={59}
-          style={{
-            fontSize: 72,
-            fontWeight: 900,
-            letterSpacing: "-0.03em",
-            textAlign: "center",
-            maxWidth: 1500,
-            lineHeight: 1,
-          }}
-        />
-      </AbsoluteFill>
     </AbsoluteFill>
   );
 };
