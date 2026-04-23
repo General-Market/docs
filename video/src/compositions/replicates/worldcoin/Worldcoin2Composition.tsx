@@ -116,26 +116,22 @@ function applyCoverFitTextureUV(
   }
 }
 
-// A laptop screen is a self-lit panel — it should not also be lit by
-// the scene's environment map or directional lights, or the footage
-// ends up exposed twice. Route the video exclusively through the
-// emissive channel, kill the diffuse contribution, and opt the screen
-// material out of tone mapping so ACES doesn't crush the highlights.
+// Match the iPhone treatment: route the video through both diffuse
+// and emissive channels so the screen glows gently without the double
+// exposure that pure diffuse + environment reflection was producing.
+// Tone mapping is left on — ACES gives the slight warmth the phone has.
 function bindVideoTextureToScreen(
   mesh: THREE.Mesh,
   texture: THREE.Texture,
   intensity: number,
 ) {
   const mat = mesh.material as THREE.MeshStandardMaterial;
-  if (mat.emissiveMap === texture && mat.map === null) return;
-  mat.map = null;
-  mat.color = new THREE.Color(0x000000);
+  if (mat.map === texture && mat.emissiveMap === texture) return;
+  mat.map = texture;
+  mat.color = new THREE.Color(0xffffff);
   mat.emissive = new THREE.Color(0xffffff);
   mat.emissiveMap = texture;
   mat.emissiveIntensity = intensity;
-  mat.toneMapped = false;
-  mat.metalness = 0;
-  mat.roughness = 1;
   mat.needsUpdate = true;
 }
 
