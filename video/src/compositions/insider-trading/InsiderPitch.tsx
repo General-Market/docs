@@ -50,7 +50,7 @@ export const PITCH_SCENES = {
   point1: { start: 190, end: 310 },
   point2: { start: 310, end: 410 },
   point3: { start: 410, end: 510 },
-  closing: { start: 510, end: 682 },
+  closing: { start: 510, end: 658 },
 } as const;
 
 export const PITCH_DURATION = PITCH_SCENES.closing.end;
@@ -1307,20 +1307,19 @@ const ClosingLogoGrid: React.FC<{ local: number }> = ({ local }) => {
   // Phase B [112, 138] — Grid container shrinks from stage to the icon
   //   square AND slides to the lockup x. White stripes fade in — the
   //   GM logo crystallises out of the scrolling wall. Wordmark fades
-  //   in from 122.
-  // Phase C [138, 151] — Hold the full lockup.
-  // Phase D [151, 154] — Icon's black field flashes to solid white.
-  // Phase E [154, 172] — Scene-level fadeOut (owned by ClosingScene).
+  //   in from 114.
+  // Phase C [130, 148] — Hold the full lockup. Scene cuts at 148
+  //   (global frame 981 = 32:21 at 30fps). No whiting, no local fade.
 
   const containerW = interpolate(
     local,
-    [112, 138],
+    [112, 130],
     [CLOSING_STAGE_W, CLOSING_ICON_FINAL],
     { ...clamp, easing: ease3 },
   );
   const containerH = interpolate(
     local,
-    [112, 138],
+    [112, 130],
     [CLOSING_STAGE_H, CLOSING_ICON_FINAL],
     { ...clamp, easing: ease3 },
   );
@@ -1333,43 +1332,35 @@ const ClosingLogoGrid: React.FC<{ local: number }> = ({ local }) => {
 
   const iconCx = interpolate(
     local,
-    [112, 138],
+    [112, 130],
     [CLOSING_STAGE_W / 2, iconFinalCx],
     { ...clamp, easing: ease3 },
   );
 
-  // Grid scroll — top-right diagonal. Freezes at local=112 so phase B
-  // is a pure shape-morph, not a moving target. Values are percentages
-  // of the grid's own box, so they scale with the container as it
-  // shrinks.
   // Grid drifts top-right across the full scene — phase A owns the
-  // bulk of the travel, phase B adds a small residual so the tiles
-  // don't freeze while the container is still morphing, then holds
-  // through C/D/E. Capped at 24% so nothing ever exposes an empty
-  // edge inside the 25% grid buffer.
+  // bulk of the travel, phase B adds a small residual while the
+  // container is morphing, then holds through C. Capped at 24% so
+  // nothing ever exposes an empty edge inside the 25% grid buffer.
   const scrollPct = interpolate(
     local,
-    [0, 112, 138, 172],
+    [0, 112, 130, 148],
     [0, 22, 24, 24],
     clamp,
   );
 
-  // White bar reads thicker during phase A — stripes are scaled vertically
-  // 2.4× while the container is stage-sized, then ease back to natural
-  // proportions as the container squares up for the logo lockup.
-  const barScaleY = interpolate(local, [112, 138], [2.4, 1], {
+  // White bar reads thicker during phase A — stripes are scaled
+  // vertically 2.4× while the container is stage-sized, then ease back
+  // to natural proportions as the container squares up for the logo.
+  const barScaleY = interpolate(local, [112, 130], [2.4, 1], {
     ...clamp,
     easing: ease3,
   });
 
-  const wordmarkOpacity = interpolate(local, [122, 146], [0, 1], clamp);
-  const wordmarkRise = interpolate(local, [122, 146], [26, 0], {
+  const wordmarkOpacity = interpolate(local, [114, 130], [0, 1], clamp);
+  const wordmarkRise = interpolate(local, [114, 130], [26, 0], {
     ...clamp,
     easing: ease3,
   });
-
-  // Final 6 frames before the scene fade — black field flashes white.
-  const gridToWhite = interpolate(local, [148, 154], [0, 1], clamp);
 
   const count = CLOSING_GRID_COLS * CLOSING_GRID_ROWS;
 
@@ -1437,17 +1428,6 @@ const ClosingLogoGrid: React.FC<{ local: number }> = ({ local }) => {
           })}
         </div>
 
-        {/* White flash — sits above the grid and below the stripes so
-            the black field blanks to white for the final three frames. */}
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background: WHITE,
-            opacity: gridToWhite,
-          }}
-        />
-
         {/* White stripes — visible throughout. preserveAspectRatio="none"
             stretches the 102×102 viewBox to the container's current
             aspect, so in phase A the bar reads as a wide horizontal
@@ -1504,15 +1484,17 @@ const ClosingScene: React.FC<{
   local: number;
   sceneStart: number;
   duration: number;
-}> = ({ local, sceneStart, duration }) => {
+}> = ({ local, sceneStart }) => {
   const firstOut = interpolate(local, [58, 74], [1, 0], clamp);
   // Second statement holds until the lockup starts forming, then steps
   // aside so the wordmark reveal owns the frame.
   const secondOut = interpolate(local, [98, 112], [1, 0], clamp);
-  const fadeOut = interpolate(local, [duration - 18, duration], [1, 0], clamp);
+
+  // No local fadeOut — the scene hard-cuts at 148 (32:21) and the
+  // composition's outroFade tapers the last frames of the whole pitch.
 
   return (
-    <AbsoluteFill style={{ opacity: fadeOut }}>
+    <AbsoluteFill>
       <ClosingLogoGrid local={local} />
 
       {/* FIRST STATEMENT — rides over the dezooming logo via mix-blend

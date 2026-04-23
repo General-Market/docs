@@ -85,7 +85,10 @@ const { starts: PROLOGUE_CUT_STARTS, rates: PROLOGUE_CUT_RATES } =
   computePrologueCuts();
 const HARSH_EASE = Easing.bezier(0.88, 0, 0.08, 1);
 
-const MAIN_DURATION = PITCH_START + PITCH_DURATION + 6;
+// Comp ends exactly at pitch end (global frame 981 = 32:21 at 30fps).
+// The outroFade runs [MAIN_DURATION - 18, MAIN_DURATION], so the last
+// 18 frames of the closing taper to zero and the cut lands clean.
+const MAIN_DURATION = PITCH_START + PITCH_DURATION;
 const DURATION = PROLOGUE_DURATION + MAIN_DURATION;
 
 // Wise lime used for the typer character entry animation, replacing the old
