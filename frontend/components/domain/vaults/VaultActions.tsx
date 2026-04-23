@@ -408,7 +408,7 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
   }
   const [navRange, setNavRange] = useState<NavRange>('1D')
 
-  const { snapshots: chartSnapshots, hasHistory: hasChartHistory } = useVaultHistory(
+  const { snapshots: chartSnapshots } = useVaultHistory(
     vault.address,
     RANGE_TO_API[navRange],
   )
@@ -484,7 +484,6 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
   const perf24h = useMemo(() => hasHistory ? computePerfForPeriod(fullSnapshots, 24) : null, [hasHistory, fullSnapshots])
   const perf7d = useMemo(() => hasHistory ? computePerfForPeriod(fullSnapshots, 168) : null, [hasHistory, fullSnapshots])
   const perf30d = useMemo(() => hasHistory ? computePerfForPeriod(fullSnapshots, 720) : null, [hasHistory, fullSnapshots])
-  void hasChartHistory
 
   // Trading stats from PlayerJoined/PlayerSettled logs (last ~24h of blocks).
   const { stats } = useVaultStats(vault.address)
