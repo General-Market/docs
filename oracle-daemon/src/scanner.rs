@@ -134,8 +134,92 @@ impl Scanner {
     }
 
     /// Positions attached to resolved markets — cranker should claim each.
+    ///
+    /// Two-phase scan:
+    ///   1. `getProgramAccounts(Market, resolved=1)` — returns only markets
+    ///      whose positions are claimable right now.
+    ///   2. For each such market, `getProgramAccounts(Position, market=..)`
+    ///      using a memcmp on offset 8. Returns only the positions that
+    ///      belong to that one market.
+    ///
+    /// Work is proportional to the number of unclaimed markets, not the
+    /// total lifetime count of positions on the program. The old
+    /// program-wide Position sweep survives as a test-only fallback; see
+    /// `positions_needing_claim_legacy`.
     pub async fn positions_needing_claim(&self) -> Result<Vec<PositionRecord>> {
-        // Step 1: find resolved markets.
+        let resolved_flag = RpcFilterType::Memcmp(Memcmp::new_raw_bytes(
+            MARKET_OFFSET_RESOLVED as usize,
+            vec![1u8],
+        ));
+        let resolved = self.get_markets_with_filters(vec![resolved_flag]).await?;
+        if resolved.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let mut out = Vec::new();
+        for market in &resolved {
+            let positions = self.positions_for_market(&market.address).await?;
+            out.extend(positions);
+        }
+        Ok(out)
+    }
+
+    /// Fetch every Position account whose `market` field matches the given
+    /// pubkey. One `getProgramAccounts` call, filtered by discriminator +
+    /// memcmp on the market pubkey at offset 8.
+    async fn positions_for_market(
+        &self,
+        market: &Pubkey,
+    ) -> Result<Vec<PositionRecord>> {
+        let filters = vec![
+            RpcFilterType::Memcmp(Memcmp::new_raw_bytes(
+                0,
+                Position::DISCRIMINATOR.to_vec(),
+            )),
+            RpcFilterType::Memcmp(Memcmp::new_raw_bytes(
+                POSITION_OFFSET_MARKET as usize,
+                market.to_bytes().to_vec(),
+            )),
+        ];
+        let cfg = RpcProgramAccountsConfig {
+            filters: Some(filters),
+            account_config: RpcAccountInfoConfig {
+                encoding: Some(UiAccountEncoding::Base64),
+                data_slice: None,
+                commitment: Some(self.rpc.commitment()),
+                min_context_slot: None,
+            },
+            with_context: Some(false),
+            sort_results: None,
+        };
+        // TODO: migrate to get_program_ui_accounts_with_config (returns UiAccount, non-trivial reshape).
+        #[allow(deprecated)]
+        let accounts = self
+            .rpc
+            .get_program_accounts_with_config(&self.program_id, cfg)
+            .await
+            .with_context(|| format!("getProgramAccounts(Position, market={market})"))?;
+
+        let mut out = Vec::with_capacity(accounts.len());
+        for (pk, acct) in accounts {
+            match Position::try_deserialize(&mut acct.data.as_slice()) {
+                Ok(p) => out.push(PositionRecord {
+                    address: pk,
+                    market_address: *market,
+                    position: p,
+                }),
+                Err(e) => debug!(address = %pk, error = %e, "skipped un-deserializable Position"),
+            }
+        }
+        Ok(out)
+    }
+
+    /// Legacy single-round-trip scan: pull every Position for the program,
+    /// filter in memory against the resolved-market set. Kept for
+    /// comparison in tests; production code uses `positions_needing_claim`.
+    #[cfg(test)]
+    #[allow(dead_code)]
+    pub async fn positions_needing_claim_legacy(&self) -> Result<Vec<PositionRecord>> {
         let resolved_flag = RpcFilterType::Memcmp(Memcmp::new_raw_bytes(
             MARKET_OFFSET_RESOLVED as usize,
             vec![1u8],
@@ -147,10 +231,6 @@ impl Scanner {
         let resolved_set: std::collections::HashSet<Pubkey> =
             resolved.iter().map(|m| m.address).collect();
 
-        // Step 2: pull every Position for the program. For a small market
-        // count this is fine; if the daemon ever sees tens of thousands of
-        // positions we can move to per-market memcmp queries (offset 8 ==
-        // market pubkey). For now, one round-trip is enough.
         let filters = vec![RpcFilterType::Memcmp(Memcmp::new_raw_bytes(
             0,
             Position::DISCRIMINATOR.to_vec(),
@@ -166,7 +246,6 @@ impl Scanner {
             with_context: Some(false),
             sort_results: None,
         };
-        // TODO: migrate to get_program_ui_accounts_with_config (returns UiAccount, non-trivial reshape).
         #[allow(deprecated)]
         let accounts = self
             .rpc
