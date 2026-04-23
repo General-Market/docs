@@ -20,8 +20,8 @@ export function ProfileTabs({
   const t = useTranslations('common')
 
   const tabs = [
-    { id: 'vaults' as const, label: t('profile.tab_vaults'), count: 0 },
     { id: 'vision' as const, label: t('profile.tab_vision'), count: visionCount },
+    { id: 'vaults' as const, label: t('profile.tab_vaults'), count: 0 },
     { id: 'index' as const, label: t('profile.tab_index'), count: 0 },
   ]
 

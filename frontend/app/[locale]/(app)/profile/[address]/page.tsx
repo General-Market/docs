@@ -30,11 +30,8 @@ function ProfileContent({ address }: { address: string }) {
   const t = useTranslations('pages.profile')
   const tabParam = searchParams.get('tab')
   const { profile, isLoading } = usePlayerProfile(address)
-  // Vaults is the primary surface — default to it unless the caller
-  // explicitly asked for another tab via ?tab=. Bots that want to land
-  // a user on Vision pass ?tab=vision directly.
   const tab: ProfileTabId =
-    tabParam === 'vision' ? 'vision' : tabParam === 'index' ? 'index' : 'vaults'
+    tabParam === 'vaults' ? 'vaults' : tabParam === 'index' ? 'index' : 'vision'
   const { points } = usePoints(address)
   const { address: connectedAddress } = useAccount()
   const isSelf =
