@@ -8,6 +8,10 @@ license.workspace = true
 name = "data-node"
 path = "src/main.rs"
 
+[[bin]]
+name = "sfdata-node"
+path = "src/sf_main.rs"
+
 # Vendored OpenSSL for cross-compilation (transitive dep from solana-sdk)
 [target.'cfg(target_os = "linux")'.dependencies]
 openssl = { version = "0.10", features = ["vendored"] }

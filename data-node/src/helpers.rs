@@ -14,7 +14,22 @@ pub(crate) fn load_tracked_symbols(assets_file: &str) -> Result<HashSet<String>,
     Ok(symbols)
 }
 
-/// Spawn a source with panic recovery.
+/// Sources that are allowed to spawn when `SF_MODE=1`. Everything else is
+/// silently skipped (with a single info log per skipped source).
+///
+/// SF_MODE is how the sfdata-node binary signals that this process should
+/// only run scrape-heavy adult-content sources; every other source stays
+/// on the main data-node instance. See sf_main.rs and docker/sfdata-node/.
+const SF_MODE_ALLOWED: &[&str] = &["tubes", "chaturbate"];
+
+pub(crate) fn sf_mode() -> bool {
+    matches!(std::env::var("SF_MODE").ok().as_deref(), Some("1"))
+}
+
+/// Spawn a source with panic recovery. If `SF_MODE=1` is set and the source
+/// is not in `SF_MODE_ALLOWED`, the spawn is skipped entirely — no task is
+/// created, no futures run, no restart loop spins. This is what isolates
+/// the sfdata-node process to only its assigned sources.
 pub(crate) fn spawn_resilient<F, Fut>(
     name: &'static str,
     write_channel: market_data::write_channel::PriceWriteChannel,
@@ -24,6 +39,10 @@ where
     F: Fn() -> Fut + Send + Sync + 'static,
     Fut: std::future::Future<Output = ()> + Send + 'static,
 {
+    if sf_mode() && !SF_MODE_ALLOWED.contains(&name) {
+        info!("[{}] skipped (SF_MODE: not in allow-list)", name);
+        return;
+    }
     tokio::spawn(async move {
         let mut restart_count = 0u32;
         loop {

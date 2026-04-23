@@ -1,0 +1,94 @@
+# sfdata-node deployment for VPS 3.
+#
+# Runs the scrape-heavy data-node (tubes, chaturbate) in total isolation
+# from VPS 1's main data-node. SF_MODE=1 is set by the binary itself (see
+# data-node/src/sf_main.rs) so any source not in the SF_MODE_ALLOWED list
+# is silently skipped at spawn time.
+#
+# Database: uses its own Postgres instance on the same host. If you'd rather
+# share VPS 2's Postgres, replace `sf-postgres` with a remote URL in the
+# DATABASE_URL env.
+
+services:
+  sf-postgres:
+    image: postgres:16-alpine
+    container_name: sfdata-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sfdata
+      POSTGRES_USER: sfdata
+      POSTGRES_PASSWORD_FILE: /run/secrets/pg_password
+    volumes:
+      - sf-pg-data:/var/lib/postgresql/data
+    secrets:
+      - pg_password
+    networks:
+      - sf-internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sfdata -d sfdata"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+  sfdata-node:
+    build:
+      context: ../..
+      dockerfile: docker/sfdata-node/Dockerfile
+    container_name: sfdata-node
+    restart: unless-stopped
+    depends_on:
+      sf-postgres:
+        condition: service_healthy
+    env_file:
+      - ./sfdata-node.env
+    environment:
+      # DATABASE_URL built from secret at runtime; override here if pointing
+      # at a remote Postgres.
+      RUST_LOG: "info,sqlx=warn"
+    networks:
+      - sf-internal
+      - sf-public
+    ports:
+      # Internal API port — expose ONLY on a private interface if possible.
+      # Firewall this to VPS 1 only via ufw / iptables on the host.
+      - "127.0.0.1:8200:8200"
+    command:
+      - serve
+      - --postgres-url
+      - "postgres://sfdata:$${PG_PASSWORD}@sf-postgres:5432/sfdata"
+    secrets:
+      - pg_password
+    deploy:
+      resources:
+        limits:
+          memory: 2g
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8200/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+networks:
+  sf-internal:
+    driver: bridge
+    internal: true
+  sf-public:
+    driver: bridge
+
+volumes:
+  sf-pg-data:
+
+secrets:
+  pg_password:
+    file: ./pg_password.secret
