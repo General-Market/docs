@@ -1198,143 +1198,144 @@ const CLOSING_WORDMARK_W = 1080;
 const CLOSING_STAGE_W = 1920;
 
 const ClosingLogoGrid: React.FC<{ local: number }> = ({ local }) => {
-  // Phase 1 — dezoom: fills the frame then retracts to hero size.
-  // Phase 2 — lockup form: icon shrinks to its final size and the
-  //   wordmark grows in from zero width. Because both live in a
-  //   flex row centered on the frame, the icon slides left of its
-  //   own accord as the wordmark takes width.
+  // Icon dezooms to hero at 90, holds briefly, then shrinks to the
+  // lockup size. Shrink + slide-left are chained so the motion reads
+  // as one move rather than two.
   const iconSize = interpolate(
     local,
-    [0, 90, 108, 128],
+    [0, 90, 98, 122],
     [3200, 620, 620, CLOSING_ICON_FINAL],
     { ...clamp, easing: ease3 },
   );
-  const wordmarkWidth = interpolate(
+
+  const lockupWidth =
+    CLOSING_ICON_FINAL + CLOSING_LOCKUP_GAP + CLOSING_WORDMARK_W;
+  const lockupLeft = (CLOSING_STAGE_W - lockupWidth) / 2;
+  const iconFinalCx = lockupLeft + CLOSING_ICON_FINAL / 2;
+  const wordmarkLeft = lockupLeft + CLOSING_ICON_FINAL + CLOSING_LOCKUP_GAP;
+
+  const iconCx = interpolate(
     local,
-    [108, 132],
-    [0, CLOSING_WORDMARK_W],
+    [98, 122],
+    [CLOSING_STAGE_W / 2, iconFinalCx],
     { ...clamp, easing: ease3 },
   );
-  const wordmarkOpacity = interpolate(local, [116, 136], [0, 1], clamp);
-  const wordmarkRise = interpolate(local, [116, 136], [18, 0], {
+
+  const wordmarkOpacity = interpolate(local, [106, 130], [0, 1], clamp);
+  const wordmarkRise = interpolate(local, [106, 130], [26, 0], {
     ...clamp,
     easing: ease3,
   });
 
+  // Final 3 frames before the scene fade starts (duration-18 = 154).
+  // Grid blanks to pure white so the icon exits as a clean mark.
+  const gridToWhite = interpolate(local, [151, 154], [0, 1], clamp);
+
   const count = CLOSING_GRID_COLS * CLOSING_GRID_ROWS;
 
   return (
-    <AbsoluteFill
-      style={{
-        background: BLACK,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
+    <AbsoluteFill style={{ background: BLACK }}>
       <div
         style={{
-          display: "flex",
-          alignItems: "center",
-          gap: CLOSING_LOCKUP_GAP,
+          position: "absolute",
+          top: "50%",
+          left: iconCx,
+          width: iconSize,
+          height: iconSize,
+          transform: "translate(-50%, -50%)",
+          overflow: "hidden",
+          background: BLACK,
+          boxShadow:
+            "0 0 0 1px rgba(255,255,255,0.04), 0 24px 80px rgba(0,0,0,0.55)",
         }}
       >
-        {/* Icon — the whole lockup treated as one atom: grid fills the
-            black field, white stripes sit on top, both shrink together
-            so they read as a single logo, not a grid behind a bar. */}
         <div
           style={{
-            position: "relative",
-            width: iconSize,
-            height: iconSize,
-            flex: "none",
-            overflow: "hidden",
-            background: BLACK,
-            boxShadow:
-              "0 0 0 1px rgba(255,255,255,0.04), 0 24px 80px rgba(0,0,0,0.55)",
+            position: "absolute",
+            inset: 0,
+            display: "grid",
+            gridTemplateColumns: `repeat(${CLOSING_GRID_COLS}, 1fr)`,
+            gridTemplateRows: `repeat(${CLOSING_GRID_ROWS}, 1fr)`,
+            gap: 2,
+            padding: 2,
+            filter: "saturate(0.92) brightness(0.95)",
           }}
         >
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              display: "grid",
-              gridTemplateColumns: `repeat(${CLOSING_GRID_COLS}, 1fr)`,
-              gridTemplateRows: `repeat(${CLOSING_GRID_ROWS}, 1fr)`,
-              gap: 2,
-              padding: 2,
-              filter: "saturate(0.92) brightness(0.95)",
-            }}
-          >
-            {Array.from({ length: count }).map((_, i) => {
-              const source = SOURCES[i % SOURCES.length];
-              const logoSrc = source.logo.startsWith("/")
-                ? source.logo.slice(1)
-                : source.logo;
-              return (
-                <div
-                  key={i}
+          {Array.from({ length: count }).map((_, i) => {
+            const source = SOURCES[i % SOURCES.length];
+            const logoSrc = source.logo.startsWith("/")
+              ? source.logo.slice(1)
+              : source.logo;
+            return (
+              <div
+                key={i}
+                style={{
+                  background: source.bg,
+                  borderRadius: 3,
+                  overflow: "hidden",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  padding: 4,
+                }}
+              >
+                <Img
+                  src={staticFile(logoSrc)}
                   style={{
-                    background: source.bg,
-                    borderRadius: 3,
-                    overflow: "hidden",
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    padding: 4,
+                    maxWidth: "82%",
+                    maxHeight: "82%",
+                    objectFit: "contain",
                   }}
-                >
-                  <Img
-                    src={staticFile(logoSrc)}
-                    style={{
-                      maxWidth: "82%",
-                      maxHeight: "82%",
-                      objectFit: "contain",
-                    }}
-                  />
-                </div>
-              );
-            })}
-          </div>
-
-          <svg
-            width="100%"
-            height="100%"
-            viewBox="0 0 102 102"
-            preserveAspectRatio="none"
-            style={{ position: "absolute", inset: 0 }}
-          >
-            {GM_LOGO_PATHS.map((d, i) => (
-              <path key={i} d={d} fill="#ffffff" />
-            ))}
-          </svg>
+                />
+              </div>
+            );
+          })}
         </div>
 
-        {/* Wordmark — width animates from 0 so the flex row pushes the
-            icon left as "General Market" fills in on the right. */}
+        {/* White flash — sits above the grid and below the stripes so
+            the black field blanks to white for the final three frames. */}
         <div
           style={{
-            width: wordmarkWidth,
-            overflow: "hidden",
-            flex: "none",
-            opacity: wordmarkOpacity,
-            transform: `translateY(${wordmarkRise}px)`,
+            position: "absolute",
+            inset: 0,
+            background: WHITE,
+            opacity: gridToWhite,
           }}
+        />
+
+        <svg
+          width="100%"
+          height="100%"
+          viewBox="0 0 102 102"
+          preserveAspectRatio="none"
+          style={{ position: "absolute", inset: 0 }}
         >
-          <div
-            style={{
-              fontFamily: INTER,
-              fontSize: CLOSING_WORDMARK_FONT,
-              fontWeight: 900,
-              letterSpacing: "-0.035em",
-              lineHeight: 0.95,
-              color: WHITE,
-              whiteSpace: "nowrap",
-            }}
-          >
-            General Market
-          </div>
-        </div>
+          {GM_LOGO_PATHS.map((d, i) => (
+            <path key={i} d={d} fill="#ffffff" />
+          ))}
+        </svg>
+      </div>
+
+      {/* Wordmark — absolutely anchored at its final x, fades in with a
+          subtle rise. No width clipping → no mid-letter cuts. */}
+      <div
+        style={{
+          position: "absolute",
+          top: "50%",
+          left: wordmarkLeft,
+          transform: `translate(0, calc(-50% + ${wordmarkRise}px))`,
+          opacity: wordmarkOpacity,
+          fontFamily: INTER,
+          fontSize: CLOSING_WORDMARK_FONT,
+          fontWeight: 900,
+          letterSpacing: "-0.03em",
+          lineHeight: 1,
+          color: WHITE,
+          whiteSpace: "nowrap",
+          pointerEvents: "none",
+        }}
+      >
+        General Market
       </div>
     </AbsoluteFill>
   );
