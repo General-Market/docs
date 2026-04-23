@@ -807,29 +807,17 @@ const Point2Scene: React.FC<{
 
 // ─── Scene 5: POINT 3 — cluster trading vs single trades ─────────────────
 //
-// Dual-panel split. Opens with a curtain: a bright vertical bar blooms
-// at centre, holds, then recedes into a hairline divider — covering the
-// Point2 → Point3 handover. LEFT: 100 dots per second, single trades.
-// RIGHT: ten 1:1 homepage FeaturedCards per second, each card a block
-// of 10,000 trades. Titles sit high above the rise path so nothing
-// writes on top of anything else.
-
-const P3_RISE_BOTTOM = 1220;
-const P3_RISE_TOP = 560;
-const P3_RISE_DURATION = 32;
+// Dual-panel split. Opens with a curtain that covers the Point2 → Point3
+// handover, then recedes into a hairline divider. Both panels stream the
+// same upward motion at the same speed. LEFT: jittered single dots, one
+// per literal trade, 100/s. RIGHT: a structured grid of dots — full rows
+// of points stacked into a continuous sheet, flowing upward as a single
+// organism. A gradient mask hides the bottom of both panels so the spawn
+// zone never shows; the stream only appears as it reaches the top.
 
 const p3Hash = (i: number, seed: number): number => {
   const h = Math.sin(i * 12.9898 + seed * 78.233) * 43758.5453;
   return h - Math.floor(h);
-};
-
-const p3Rise = (age: number) => {
-  const progress = Math.min(1, Math.max(0, age / P3_RISE_DURATION));
-  const y = P3_RISE_BOTTOM + (P3_RISE_TOP - P3_RISE_BOTTOM) * progress;
-  const fadeIn = Math.min(1, progress / 0.1);
-  const fadeOut = progress > 0.85 ? 1 - (progress - 0.85) / 0.15 : 1;
-  const opacity = Math.max(0, Math.min(fadeIn, fadeOut));
-  return { y, opacity, alive: progress < 1 };
 };
 
 const Point3Scene: React.FC<{
@@ -867,8 +855,18 @@ const Point3Scene: React.FC<{
   const leftTitleX = (1 - panelIntro) * -36;
   const rightTitleX = (1 - panelIntro) * 36;
 
-  // LEFT cadence — 100 dots per second, literal.
-  const LEFT_SPAWN_START = 24;
+  // Stream opacity — the flow fades in as the curtain recedes, so the
+  // dots never pop. Pre-seeded below, so by the time the panels are
+  // visible they already contain a full, mid-flight stream.
+  const flowOpacity = interpolate(local, [22, 44], [0, 1], clamp);
+
+  // Rise speed shared by both panels — the left dots use it to walk their
+  // individual y, the right grid uses it as background-position velocity.
+  const RISE_SPEED = 18;
+
+  // LEFT cadence — 100 dots per second, pre-seeded 40 frames before frame 0
+  // so the stream looks already in motion the instant the curtain opens.
+  const LEFT_SPAWN_START = -40;
   const LEFT_PARTICLES_PER_FRAME = 100 / 30;
   const LEFT_SPAWN_DT = 1 / LEFT_PARTICLES_PER_FRAME;
   const leftCount = Math.max(
@@ -876,14 +874,11 @@ const Point3Scene: React.FC<{
     Math.floor((local - LEFT_SPAWN_START) * LEFT_PARTICLES_PER_FRAME),
   );
 
-  // RIGHT cadence — one FeaturedCard every 3 frames (= 10/s). Each card
-  // is a 10,000-trade block; 10 × 10,000 = 100,000 trades/s.
-  const RIGHT_SPAWN_START = 28;
-  const RIGHT_SPAWN_INTERVAL = 3;
-  const rightCount = Math.max(
-    0,
-    Math.floor((local - RIGHT_SPAWN_START) / RIGHT_SPAWN_INTERVAL) + 1,
-  );
+  // Mask — reveals a narrow strip just below the title and hides the
+  // bottom of the panel entirely. The spawn zone never shows; only the
+  // dots "reaching the top" are on screen.
+  const STREAM_MASK =
+    "linear-gradient(to bottom, transparent 0%, transparent 28%, black 34%, black 62%, transparent 74%)";
 
   return (
     <AbsoluteFill style={{ opacity: fadeOut, background: BLACK }}>
@@ -956,31 +951,41 @@ const Point3Scene: React.FC<{
           />
         </div>
 
-        {/* Rising single dots — 100 per second, 32-frame rise. */}
-        {Array.from({ length: leftCount }).map((_, i) => {
-          const spawnFrame = LEFT_SPAWN_START + i * LEFT_SPAWN_DT;
-          const age = local - spawnFrame;
-          if (age < 0) return null;
-          const { y, opacity, alive } = p3Rise(age);
-          if (!alive) return null;
-          const jitter = (p3Hash(i, 1) - 0.5) * 360;
-          return (
-            <div
-              key={i}
-              style={{
-                position: "absolute",
-                left: `calc(50% + ${jitter}px)`,
-                top: y,
-                width: 7,
-                height: 7,
-                borderRadius: "50%",
-                background: WHITE,
-                opacity,
-                transform: "translate(-50%, -50%)",
-              }}
-            />
-          );
-        })}
+        {/* Rising single dots — jittered, 100 per second, pre-seeded.
+            Stream is masked so we only see the upper band. */}
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            opacity: flowOpacity,
+            WebkitMaskImage: STREAM_MASK,
+            maskImage: STREAM_MASK,
+          }}
+        >
+          {Array.from({ length: leftCount }).map((_, i) => {
+            const spawnFrame = LEFT_SPAWN_START + i * LEFT_SPAWN_DT;
+            const age = local - spawnFrame;
+            if (age < 0) return null;
+            const y = 1180 - age * RISE_SPEED;
+            if (y < -40) return null;
+            const jitter = (p3Hash(i, 1) - 0.5) * 360;
+            return (
+              <div
+                key={i}
+                style={{
+                  position: "absolute",
+                  left: `calc(50% + ${jitter}px)`,
+                  top: y,
+                  width: 7,
+                  height: 7,
+                  borderRadius: "50%",
+                  background: WHITE,
+                  transform: "translate(-50%, -50%)",
+                }}
+              />
+            );
+          })}
+        </div>
       </div>
 
       {/* RIGHT PANEL — cluster trading */}
@@ -1044,37 +1049,24 @@ const Point3Scene: React.FC<{
           </div>
         </div>
 
-        {/* Rising FeaturedCards — 1:1 homepage. Each card = one 10,000-
-            trade block, cycled through FEATURED_SOURCES. p3Rise owns the
-            opacity curve so cards never collide with the title. */}
-        {Array.from({ length: rightCount }).map((_, i) => {
-          const spawnFrame = RIGHT_SPAWN_START + i * RIGHT_SPAWN_INTERVAL;
-          const age = local - spawnFrame;
-          if (age < 0) return null;
-          const { y, opacity, alive } = p3Rise(age);
-          if (!alive) return null;
-          const jitter = (p3Hash(i, 7) - 0.5) * 180;
-          const source = FEATURED_SOURCES[i % FEATURED_SOURCES.length];
-          const CARD_W = 300;
-          return (
-            <div
-              key={i}
-              style={{
-                position: "absolute",
-                left: `calc(50% + ${jitter}px)`,
-                top: y,
-                width: CARD_W,
-                opacity,
-                transform: "translate(-50%, -50%)",
-                boxShadow: "0 18px 40px rgba(0,0,0,0.5)",
-                borderRadius: 4,
-                overflow: "hidden",
-              }}
-            >
-              <FeaturedCard source={source} />
-            </div>
-          );
-        })}
+        {/* Structured grid of dots — lines of points flowing upward, tiled
+            by a repeating radial-gradient. Masked so the spawn zone stays
+            invisible; only the upper band reads as a dense, organised
+            stream reaching the top. */}
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            opacity: flowOpacity,
+            backgroundImage:
+              "radial-gradient(circle, #ffffff 30%, transparent 32%)",
+            backgroundSize: "22px 28px",
+            backgroundRepeat: "repeat",
+            backgroundPosition: `50% ${-local * RISE_SPEED}px`,
+            WebkitMaskImage: STREAM_MASK,
+            maskImage: STREAM_MASK,
+          }}
+        />
       </div>
     </AbsoluteFill>
   );
