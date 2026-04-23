@@ -9,14 +9,27 @@ binary markets on Twitch streamer and game viewership, settled every 60s.
 Reference implementation: https://github.com/General-Market/vision-bot-examples
 
 A fully-documented template exists at `twitch/` in that repo. A fresh agent
-can go from clone → live trading with one command:
+can go from clone → one real on-chain join in UNDER 3 MINUTES:
 
 ```bash
 git clone https://github.com/General-Market/vision-bot-examples
 cd vision-bot-examples/twitch
 ./setup.sh --auto-fund
-.venv/bin/python live_trader.py --strategy momentum --deposit 0.1
+.venv/bin/python live_trader.py --strategy momentum --deposit 0.1 --max-joins 1
 ```
+
+`setup.sh --auto-fund`:
+- creates venv (Python 3.11+)
+- installs core deps only (~30 s; ML stack is opt-in via --with-ml)
+- generates BOT_PRIVATE_KEY into .env
+- seeds the wallet from the L3 public faucet (1 USDC + 0.01 ETH)
+- prints the generated wallet address in a banner
+
+`--max-joins 1` on live_trader exits after the first real join, so the
+whole path terminates in ≈ 2.5 min. Evidence of success:
+  - tx status=1 with gasUsed > 100k
+  - logs[] non-empty (Transfer + Vision join event)
+  - wallet USDC balance dropped by 0.1
 
 Canonical guide: `AGENTS.md` at the repo root. It documents key generation,
 auto-funding from the L3 testnet faucet, live trading, ML model training,
