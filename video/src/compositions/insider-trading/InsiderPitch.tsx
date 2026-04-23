@@ -771,11 +771,29 @@ const Point2Scene: React.FC<{
 
 // ─── Scene 5: POINT 3 — cluster trading vs single trades ─────────────────
 //
-// Dual-panel split. LEFT: the old world — 100 trades per second, each
-// trade a lonely tick dropping into a column. RIGHT: Cluster Trading —
-// 100,000 per second, stamped in blocks of 10,000 that slam down at
-// roughly 10× the cadence of the other side. The throughput delta is
-// read, not explained.
+// Dual-panel split. Same upward flow on both sides. LEFT: single points
+// rise one by one — the old world. RIGHT: blocks of ~1,000 packed points
+// rise together — Cluster Trading. The eye counts twice and gives up.
+
+const P3_RISE_BOTTOM = 960;
+const P3_RISE_TOP = 260;
+const P3_RISE_DURATION = 70;
+
+// Deterministic jitter — a seeded unit-interval hash so the particle
+// x-positions look random but stay stable across frames.
+const p3Hash = (i: number, seed: number): number => {
+  const h = Math.sin(i * 12.9898 + seed * 78.233) * 43758.5453;
+  return h - Math.floor(h);
+};
+
+const p3Rise = (age: number) => {
+  const progress = Math.min(1, Math.max(0, age / P3_RISE_DURATION));
+  const y = P3_RISE_BOTTOM + (P3_RISE_TOP - P3_RISE_BOTTOM) * progress;
+  const fadeIn = Math.min(1, progress / 0.08);
+  const fadeOut = progress > 0.88 ? 1 - (progress - 0.88) / 0.12 : 1;
+  const opacity = Math.max(0, Math.min(fadeIn, fadeOut));
+  return { y, opacity, alive: progress < 1 };
+};
 
 const Point3Scene: React.FC<{
   local: number;
@@ -784,29 +802,27 @@ const Point3Scene: React.FC<{
 }> = ({ local, sceneStart, duration }) => {
   const fadeOut = interpolate(local, [duration - 18, duration], [1, 0], clamp);
 
-  // Divider — hairline between the two panels, draws down from centre
+  // Divider — hairline between the two panels, draws from centre
   const dividerProgress = interpolate(local, [6, 34], [0, 1], {
     ...clamp,
     easing: ease3,
   });
 
-  // LEFT cadence — a single trade every 2 frames (reads as constant drip,
-  // never overwhelming). Starts a few frames after the title reveal.
-  const LEFT_TRADE_START = 26;
-  const LEFT_TRADE_INTERVAL = 2;
-  const leftTradesCount = Math.max(
+  // LEFT cadence — one point every 2 frames. Each rises on its own path.
+  const LEFT_SPAWN_START = 24;
+  const LEFT_SPAWN_INTERVAL = 2;
+  const leftCount = Math.max(
     0,
-    Math.floor((local - LEFT_TRADE_START) / LEFT_TRADE_INTERVAL) + 1,
+    Math.floor((local - LEFT_SPAWN_START) / LEFT_SPAWN_INTERVAL) + 1,
   );
 
-  // RIGHT cadence — a 10k block every 4 frames (~7.5 blocks/sec, roughly
-  // ten times the rate the eye counts on the left). Hero side, starts
-  // slightly later so the left gets established first.
-  const RIGHT_BLOCK_START = 34;
-  const RIGHT_BLOCK_INTERVAL = 4;
-  const rightBlocksCount = Math.max(
+  // RIGHT cadence — one cluster (= many points travelling as one) every
+  // 9 frames. Sparser in count, denser in mass. Starts slightly later.
+  const RIGHT_SPAWN_START = 32;
+  const RIGHT_SPAWN_INTERVAL = 9;
+  const rightCount = Math.max(
     0,
-    Math.floor((local - RIGHT_BLOCK_START) / RIGHT_BLOCK_INTERVAL) + 1,
+    Math.floor((local - RIGHT_SPAWN_START) / RIGHT_SPAWN_INTERVAL) + 1,
   );
 
   return (
@@ -825,7 +841,7 @@ const Point3Scene: React.FC<{
         }}
       />
 
-      {/* LEFT PANEL — single trades */}
+      {/* LEFT PANEL — single points */}
       <div
         style={{
           position: "absolute",
@@ -833,19 +849,21 @@ const Point3Scene: React.FC<{
           top: 0,
           bottom: 0,
           width: "50%",
+          overflow: "hidden",
         }}
       >
-        {/* Title stack */}
+        {/* Title */}
         <div
           style={{
             position: "absolute",
-            top: 86,
+            top: 96,
             left: 0,
             right: 0,
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             gap: 14,
+            zIndex: 5,
           }}
         >
           <Reveal
@@ -877,44 +895,31 @@ const Point3Scene: React.FC<{
           </div>
         </div>
 
-        {/* Trade drip — small bars stack from the bottom up */}
-        <div
-          style={{
-            position: "absolute",
-            left: "50%",
-            bottom: 90,
-            transform: "translateX(-50%)",
-            width: 260,
-            height: 560,
-            overflow: "hidden",
-            display: "flex",
-            flexDirection: "column-reverse",
-            alignItems: "center",
-            gap: 5,
-          }}
-        >
-          {Array.from({ length: leftTradesCount }).map((_, i) => {
-            const spawnFrame = LEFT_TRADE_START + i * LEFT_TRADE_INTERVAL;
-            const age = local - spawnFrame;
-            const scaleX = Math.min(1, Math.max(0, age / 5));
-            const opacity = Math.min(1, Math.max(0, age / 6));
-            return (
-              <div
-                key={i}
-                style={{
-                  width: 180,
-                  height: 8,
-                  background: WHITE,
-                  borderRadius: 2,
-                  opacity,
-                  transform: `scaleX(${scaleX})`,
-                  transformOrigin: "center",
-                  flexShrink: 0,
-                }}
-              />
-            );
-          })}
-        </div>
+        {/* Rising single points */}
+        {Array.from({ length: leftCount }).map((_, i) => {
+          const spawnFrame = LEFT_SPAWN_START + i * LEFT_SPAWN_INTERVAL;
+          const age = local - spawnFrame;
+          if (age < 0) return null;
+          const { y, opacity, alive } = p3Rise(age);
+          if (!alive) return null;
+          const jitter = (p3Hash(i, 1) - 0.5) * 260;
+          return (
+            <div
+              key={i}
+              style={{
+                position: "absolute",
+                left: `calc(50% + ${jitter}px)`,
+                top: y,
+                width: 7,
+                height: 7,
+                borderRadius: "50%",
+                background: WHITE,
+                opacity,
+                transform: "translate(-50%, -50%)",
+              }}
+            />
+          );
+        })}
       </div>
 
       {/* RIGHT PANEL — cluster trading */}
@@ -925,19 +930,21 @@ const Point3Scene: React.FC<{
           top: 0,
           bottom: 0,
           width: "50%",
+          overflow: "hidden",
         }}
       >
-        {/* Title stack */}
+        {/* Title */}
         <div
           style={{
             position: "absolute",
-            top: 76,
+            top: 86,
             left: 0,
             right: 0,
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             gap: 10,
+            zIndex: 5,
           }}
         >
           <Reveal
@@ -973,76 +980,38 @@ const Point3Scene: React.FC<{
           />
         </div>
 
-        {/* Block stack — each block = 10,000 trades, slams in from top */}
-        <div
-          style={{
-            position: "absolute",
-            left: "50%",
-            bottom: 90,
-            transform: "translateX(-50%)",
-            width: 520,
-            height: 560,
-            overflow: "hidden",
-            display: "flex",
-            flexDirection: "column-reverse",
-            alignItems: "center",
-            gap: 10,
-          }}
-        >
-          {Array.from({ length: rightBlocksCount }).map((_, i) => {
-            const spawnFrame = RIGHT_BLOCK_START + i * RIGHT_BLOCK_INTERVAL;
-            const age = local - spawnFrame;
-            const entry = Math.min(1, Math.max(0, age / 8));
-            const eased = ease3(entry);
-            const translateY = (1 - eased) * -22;
-            const scale = 0.94 + eased * 0.06;
-            const opacity = Math.min(1, Math.max(0, age / 5));
-            return (
-              <div
-                key={i}
-                style={{
-                  width: 460,
-                  height: 84,
-                  background: WHITE,
-                  borderRadius: 6,
-                  opacity,
-                  transform: `translateY(${translateY}px) scale(${scale})`,
-                  flexShrink: 0,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  padding: "0 28px",
-                  boxShadow: "0 10px 30px rgba(0,0,0,0.35)",
-                }}
-              >
-                <span
-                  style={{
-                    color: BLACK,
-                    fontFamily: INTER,
-                    fontSize: 14,
-                    fontWeight: 800,
-                    letterSpacing: "0.26em",
-                    textTransform: "uppercase",
-                    opacity: 0.6,
-                  }}
-                >
-                  Cluster
-                </span>
-                <span
-                  style={{
-                    color: BLACK,
-                    fontFamily: INTER,
-                    fontSize: 34,
-                    fontWeight: 900,
-                    letterSpacing: "-0.02em",
-                  }}
-                >
-                  10,000 trades
-                </span>
-              </div>
-            );
-          })}
-        </div>
+        {/* Rising clusters — each block is a packed grid of ~1,000 points,
+            painted as a dot pattern so the eye reads mass, not individuals */}
+        {Array.from({ length: rightCount }).map((_, i) => {
+          const spawnFrame = RIGHT_SPAWN_START + i * RIGHT_SPAWN_INTERVAL;
+          const age = local - spawnFrame;
+          if (age < 0) return null;
+          const { y, opacity, alive } = p3Rise(age);
+          if (!alive) return null;
+          const jitter = (p3Hash(i, 7) - 0.5) * 200;
+          // 36 × 28 grid ≈ 1,008 points. 4px cell → 144 × 112 block.
+          const CELL = 4;
+          const COLS = 36;
+          const ROWS = 28;
+          return (
+            <div
+              key={i}
+              style={{
+                position: "absolute",
+                left: `calc(50% + ${jitter}px)`,
+                top: y,
+                width: CELL * COLS,
+                height: CELL * ROWS,
+                opacity,
+                transform: "translate(-50%, -50%)",
+                backgroundImage:
+                  "radial-gradient(circle, #ffffff 42%, transparent 43%)",
+                backgroundSize: `${CELL}px ${CELL}px`,
+                backgroundPosition: "0 0",
+              }}
+            />
+          );
+        })}
       </div>
     </AbsoluteFill>
   );
