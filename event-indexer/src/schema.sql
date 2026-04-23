@@ -113,6 +113,19 @@ CREATE TABLE IF NOT EXISTS __SCHEMA__.claimed (
 CREATE INDEX IF NOT EXISTS claimed_market_idx ON __SCHEMA__.claimed (market);
 CREATE INDEX IF NOT EXISTS claimed_owner_idx  ON __SCHEMA__.claimed (owner);
 
+-- Backfill cursor. One row, one pointer. The newest signature we've
+-- durably written to Postgres. `getSignaturesForAddress(.., { until: cursor })`
+-- on reconnect reconciles whatever the websocket missed.
+--
+-- A check constraint pins id to 1 so the table can never grow past one row —
+-- simpler than enforcing it in application code.
+CREATE TABLE IF NOT EXISTS __SCHEMA__.indexer_cursor (
+    id             SMALLINT    PRIMARY KEY CHECK (id = 1),
+    tx_signature   TEXT        NOT NULL,
+    slot           BIGINT      NOT NULL,
+    updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- Postgres LISTEN/NOTIFY channel for the SSE route. Notifies fire on
 -- inserts the frontend cares about — bet_placed, market_resolved,
 -- claimed. The payload is the signature; consumers re-query for detail.

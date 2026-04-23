@@ -2,22 +2,25 @@
 //! every tx that mentions the program. Logs plus signature and slot are
 //! pushed to the writer channel.
 //!
-//! Reconnect policy: exponential backoff, unbounded retries. Packet
-//! loss during a reconnect window is a tolerable lossy edge — the
-//! re-subscription restarts near-realtime. A proper backfill path is
-//! out of scope here; if strict historical completeness is required
-//! later, a periodic `getSignaturesForAddress` sweep can reconcile gaps.
+//! Reconnect policy: exponential backoff, unbounded retries. Every
+//! reconnect — and the first subscribe — kicks off an RPC backfill pass
+//! so events that dropped during the disconnect window still land in
+//! Postgres. See `backfill::reconcile`.
 
 use anyhow::{Context, Result};
 use backoff::{backoff::Backoff, ExponentialBackoffBuilder};
+use deadpool_postgres::Pool;
 use futures_util::StreamExt;
 use solana_client::nonblocking::pubsub_client::PubsubClient;
+use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_client::rpc_config::{RpcTransactionLogsConfig, RpcTransactionLogsFilter};
 use solana_commitment_config::CommitmentConfig;
+use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::mpsc::Sender;
 use tracing::{error, info, warn};
 
+use crate::backfill;
 use crate::config::Config;
 
 /// One transaction worth of logs, paired with the metadata we'll need
@@ -30,7 +33,12 @@ pub struct RawLog {
     pub err: Option<String>,
 }
 
-pub async fn run(cfg: Config, tx: Sender<RawLog>) -> Result<()> {
+pub async fn run(
+    cfg: Config,
+    pool: Pool,
+    rpc: Arc<RpcClient>,
+    tx: Sender<RawLog>,
+) -> Result<()> {
     let mut backoff = ExponentialBackoffBuilder::new()
         .with_initial_interval(Duration::from_secs(1))
         .with_max_interval(Duration::from_secs(30))
@@ -38,6 +46,14 @@ pub async fn run(cfg: Config, tx: Sender<RawLog>) -> Result<()> {
         .build();
 
     loop {
+        // Reconcile before every subscription. On the first pass this
+        // closes the startup gap; on reconnect it closes whatever the
+        // websocket dropped while we were away. Errors here are logged
+        // but not fatal — the live stream is still worth attempting.
+        if let Err(e) = backfill::reconcile(&cfg, &pool, &rpc, &tx).await {
+            warn!(error = %e, "backfill reconcile failed; proceeding to subscribe anyway");
+        }
+
         match subscribe_once(&cfg, &tx).await {
             Ok(()) => {
                 // Subscription ended gracefully — rare, but retry anyway.

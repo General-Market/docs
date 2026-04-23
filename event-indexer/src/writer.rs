@@ -9,7 +9,6 @@
 
 use anyhow::{Context, Result};
 use deadpool_postgres::Pool;
-use solana_commitment_config::CommitmentConfig;
 use solana_client::nonblocking::rpc_client::RpcClient;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -19,17 +18,14 @@ use tokio::sync::Mutex;
 use tracing::{debug, error, warn};
 
 use crate::config::Config;
+use crate::db;
 use crate::parser::{self, Event};
 use crate::subscriber::RawLog;
 
-pub async fn run(cfg: Config, pool: Pool, mut rx: Receiver<RawLog>) -> Result<()> {
+pub async fn run(cfg: Config, pool: Pool, rpc: Arc<RpcClient>, mut rx: Receiver<RawLog>) -> Result<()> {
     // Block-time cache — logsSubscribe delivers slots but not timestamps.
     // We fetch on demand and memoize the result so a burst of events
     // from the same slot hits Postgres once.
-    let rpc = Arc::new(RpcClient::new_with_commitment(
-        cfg.rpc_http_url.clone(),
-        CommitmentConfig::confirmed(),
-    ));
     let block_time_cache: Arc<Mutex<HashMap<u64, Option<i64>>>> =
         Arc::new(Mutex::new(HashMap::new()));
 
@@ -43,16 +39,29 @@ pub async fn run(cfg: Config, pool: Pool, mut rx: Receiver<RawLog>) -> Result<()
         }
 
         let events = parser::parse_logs(&raw.logs);
-        if events.is_empty() {
-            continue;
+        // Even if a tx has no decodable events (e.g. admin instructions),
+        // we still want to advance the cursor so the backfill doesn't
+        // re-fetch it on the next reconnect.
+        let block_time = if events.is_empty() {
+            None
+        } else {
+            fetch_block_time(&rpc, &block_time_cache, raw.slot).await
+        };
+
+        if !events.is_empty() {
+            if let Err(e) = write_batch(&pool, &raw, block_time, &events).await {
+                error!(sig = %raw.signature, error = %e, "failed to write event batch");
+                // Don't bail — keep processing. Don't advance the cursor
+                // either, so the backfill re-tries this signature next
+                // reconnect.
+                continue;
+            }
         }
 
-        let block_time = fetch_block_time(&rpc, &block_time_cache, raw.slot).await;
-
-        if let Err(e) = write_batch(&pool, &raw, block_time, &events).await {
-            error!(sig = %raw.signature, error = %e, "failed to write event batch");
-            // Don't bail — keep processing. The offending batch can be
-            // reconciled from on-chain logs later.
+        if let Err(e) = db::save_cursor(&pool, &cfg.postgres_schema, &raw.signature, raw.slot).await {
+            // Cursor failure is not write-blocking — data is already in
+            // Postgres, only replay efficiency suffers on next reconnect.
+            warn!(sig = %raw.signature, error = %e, "failed to save cursor");
         }
     }
     Ok(())

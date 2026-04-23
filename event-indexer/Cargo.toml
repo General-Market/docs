@@ -22,6 +22,7 @@ solana-program = "3.0"
 solana-pubkey = "3.0"
 solana-commitment-config = "3.0"
 solana-rpc-client-api = "3.0"
+solana-transaction-status-client-types = "3.0"
 
 # Postgres. tokio-postgres is the async client; deadpool-postgres wraps
 # it in a pool so writers and the SSE path can share a handle without
