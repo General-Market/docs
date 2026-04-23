@@ -266,31 +266,6 @@ function SubMarketRow({ market, displaySourceId, prefixes, isPrice, valueUnit, c
 // crosshair, animated endpoint values, proper reduced-motion.
 // 48 data points, monotone cubic spline.
 
-function hashStr(s: string): number {
-  let h = 0
-  for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0
-  return Math.abs(h)
-}
-
-function generateSeriesData(seed: number, count: number): number[] {
-  let s = seed
-  const rand = () => { s = (s * 16807 + 0) % 2147483647; return (s & 0x7fffffff) / 0x7fffffff }
-  const drift = (rand() - 0.5) * 0.15
-  const jumpProb = 0.06 + rand() * 0.04
-  const values: number[] = []
-  let val = 0.15 + rand() * 0.7
-  for (let i = 0; i < count; i++) {
-    const isJump = rand() < jumpProb
-    const step = isJump
-      ? (rand() - 0.5) * 0.18
-      : (rand() - 0.5 + drift) * 0.025
-    val += step
-    val = Math.max(0.02, Math.min(0.98, val))
-    values.push(val)
-  }
-  return values
-}
-
 // Monotone cubic spline — Fritsch-Carlson (d3.curveMonotoneX)
 function monotonePath(pts: { x: number; y: number }[]): string {
   if (pts.length < 2) return ''
@@ -371,70 +346,55 @@ function MultiLineChart({ marketIds, markets, valueLabel, historyData }: {
     const plotH = H - padT - padB
     const POINTS = 48
 
-    // Use real history if available, fall back to procedural generation
-    const hasReal = historyData && marketIds.some(id => (historyData[id]?.length ?? 0) >= 2)
-
-    let rawSeries: { id: string; values: number[]; color: string; timestamps: number[] }[]
-
-    if (hasReal) {
-      // Find global time range across all series for time-based downsampling
-      let globalMinTs = Infinity, globalMaxTs = -Infinity
-      for (const id of marketIds.slice(0, 4)) {
-        const pts = historyData![id]
-        if (!pts || pts.length < 2) continue
-        globalMinTs = Math.min(globalMinTs, pts[0].ts)
-        globalMaxTs = Math.max(globalMaxTs, pts[pts.length - 1].ts)
-      }
-
-      rawSeries = marketIds.slice(0, 4).map((id, i) => {
-        const pts = historyData![id]
-        if (!pts || pts.length < 2) {
-          return { id, values: generateSeriesData(hashStr(id), POINTS), color: CHART_COLORS[i], timestamps: [] }
-        }
-        // Time-based downsampling: evenly spaced across the full time range.
-        // If no data point exists within GAP_THRESHOLD of a bucket, value = 0
-        // (e.g. Twitch streamer offline). This prevents interpolation across gaps.
-        const GAP_THRESHOLD = 30 * 60 * 1000 // 30 minutes
-        const tMin = isFinite(globalMinTs) ? globalMinTs : pts[0].ts
-        const tMax = isFinite(globalMaxTs) ? globalMaxTs : pts[pts.length - 1].ts
-        const tRange = tMax - tMin || 1
-        const values: number[] = []
-        const timestamps: number[] = []
-        let cursor = 0
-        for (let j = 0; j < POINTS; j++) {
-          const targetTs = tMin + (j / (POINTS - 1)) * tRange
-          // Advance cursor to nearest point
-          while (cursor < pts.length - 1 && pts[cursor + 1].ts <= targetTs) cursor++
-          const nearest = pts[cursor]
-          const dist = Math.abs(nearest.ts - targetTs)
-          // If next point is closer, use it instead
-          if (cursor < pts.length - 1 && Math.abs(pts[cursor + 1].ts - targetTs) < dist) {
-            values.push(pts[cursor + 1].value)
-            timestamps.push(targetTs)
-          } else if (dist <= GAP_THRESHOLD) {
-            values.push(nearest.value)
-            timestamps.push(targetTs)
-          } else {
-            values.push(0)
-            timestamps.push(targetTs)
-          }
-        }
-        return { id, values, color: CHART_COLORS[i], timestamps }
-      })
-    } else {
-      rawSeries = marketIds.slice(0, 4).map((id, i) => ({
-        id,
-        values: generateSeriesData(hashStr(id), POINTS),
-        color: CHART_COLORS[i],
-        timestamps: [],
-      }))
+    // Find global time range across all series for time-based downsampling
+    let globalMinTs = Infinity, globalMaxTs = -Infinity
+    for (const id of marketIds.slice(0, 4)) {
+      const pts = historyData?.[id]
+      if (!pts || pts.length < 2) continue
+      globalMinTs = Math.min(globalMinTs, pts[0].ts)
+      globalMaxTs = Math.max(globalMaxTs, pts[pts.length - 1].ts)
     }
+
+    // Only keep series with real history. Anything without data is dropped,
+    // never replaced with procedural noise.
+    const rawSeries: { id: string; values: number[]; color: string; timestamps: number[] }[] = []
+    marketIds.slice(0, 4).forEach((id, i) => {
+      const pts = historyData?.[id]
+      if (!pts || pts.length < 2) return
+      // Time-based downsampling: evenly spaced across the full time range.
+      // If no data point exists within GAP_THRESHOLD of a bucket, value = 0
+      // (e.g. Twitch streamer offline). This prevents interpolation across gaps.
+      const GAP_THRESHOLD = 30 * 60 * 1000 // 30 minutes
+      const tMin = isFinite(globalMinTs) ? globalMinTs : pts[0].ts
+      const tMax = isFinite(globalMaxTs) ? globalMaxTs : pts[pts.length - 1].ts
+      const tRange = tMax - tMin || 1
+      const values: number[] = []
+      const timestamps: number[] = []
+      let cursor = 0
+      for (let j = 0; j < POINTS; j++) {
+        const targetTs = tMin + (j / (POINTS - 1)) * tRange
+        while (cursor < pts.length - 1 && pts[cursor + 1].ts <= targetTs) cursor++
+        const nearest = pts[cursor]
+        const dist = Math.abs(nearest.ts - targetTs)
+        if (cursor < pts.length - 1 && Math.abs(pts[cursor + 1].ts - targetTs) < dist) {
+          values.push(pts[cursor + 1].value)
+          timestamps.push(targetTs)
+        } else if (dist <= GAP_THRESHOLD) {
+          values.push(nearest.value)
+          timestamps.push(targetTs)
+        } else {
+          values.push(0)
+          timestamps.push(targetTs)
+        }
+      }
+      rawSeries.push({ id, values, color: CHART_COLORS[i], timestamps })
+    })
 
     // Normalize all series — if data contains zeros (gap-filled offline periods),
     // map to 0%-85% so zeros sit at chart bottom; otherwise 15%-85%
     const allVals = rawSeries.flatMap(s => s.values)
-    const gMin = Math.min(...allVals)
-    const gMax = Math.max(...allVals)
+    const gMin = allVals.length ? Math.min(...allVals) : 0
+    const gMax = allVals.length ? Math.max(...allVals) : 1
     const gRange = gMax - gMin || 1
     const hasZeros = gMin === 0
     const normFloor = hasZeros ? 0 : 0.15
@@ -761,6 +721,7 @@ function FeaturedSourceCard({
   // Fetch 7-day price history for top markets once we know which they are
   const [historyData, setHistoryData] = useState<Record<string, { value: number; ts: number }[]>>({})
   const [historyIds, setHistoryIds] = useState<string[]>([])
+  const [historyLoaded, setHistoryLoaded] = useState(false)
 
   // Pick top 4 markets — source-specific filtering
   const topMarkets = useMemo(() => {
@@ -818,6 +779,7 @@ function FeaturedSourceCard({
   useEffect(() => {
     if (topIds.length === 0 || topIdsKey === historyIds.join(',')) return
     setHistoryIds(topIds)
+    setHistoryLoaded(false)
 
     let cancelled = false
     fetch(`/api/market/batch-history?assets=${encodeURIComponent(topIds.join(','))}`, {
@@ -837,11 +799,16 @@ function FeaturedSourceCard({
           })).sort((a, b) => a.ts - b.ts)
         }
         setHistoryData(parsed)
+        setHistoryLoaded(true)
       })
-      .catch(() => { /* silent — chart falls back to procedural */ })
+      .catch(() => { if (!cancelled) setHistoryLoaded(true) })
 
     return () => { cancelled = true }
   }, [topIdsKey]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // True once fetch has resolved AND at least one shown market has real history.
+  // Without this, the chart would paint procedurally-generated noise.
+  const hasRealHistory = historyLoaded && topIds.some(id => (historyData[id]?.length ?? 0) >= 2)
 
   // Brand background style
   const brandStyle: React.CSSProperties = source.brandBg.startsWith('linear-gradient')
@@ -918,8 +885,9 @@ function FeaturedSourceCard({
           )}
         </div>
 
-        {/* Chart area — Polymarket-style with grid, fills, smooth curves */}
-        {topMarkets.length > 0 ? (
+        {/* Chart area — Polymarket-style with grid, fills, smooth curves.
+            Only renders once real history arrives; otherwise a loading shell. */}
+        {topMarkets.length > 0 && hasRealHistory ? (
           <div className="border-t border-zinc-100 px-2 pt-2 pb-1 flex-1" style={{ background: `linear-gradient(180deg, transparent 0%, ${accentColor}06 100%)` }}>
             <div className="relative h-[140px] w-full">
               <MultiLineChart
@@ -931,7 +899,12 @@ function FeaturedSourceCard({
             </div>
           </div>
         ) : (
-          <div className="border-t border-zinc-100 flex-1 min-h-[140px] animate-pulse bg-gradient-to-b from-transparent to-zinc-50/50" />
+          <div className="border-t border-zinc-100 flex-1 min-h-[140px] relative" style={{ background: `linear-gradient(180deg, transparent 0%, ${accentColor}06 100%)` }}>
+            <div className="absolute inset-0 animate-pulse bg-gradient-to-b from-transparent to-zinc-50/50" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-[11px] font-medium text-zinc-400 tracking-wide">Loading chart…</span>
+            </div>
+          </div>
         )}
       </Link>
     </div>
