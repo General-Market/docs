@@ -924,16 +924,34 @@ const Point3Scene: React.FC<{
         <div
           style={{
             position: "absolute",
-            top: 86,
+            top: 72,
             left: 0,
             right: 0,
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            gap: 10,
+            gap: 14,
             zIndex: 5,
           }}
         >
+          {/* GM sigil — rises + fades in a beat before the wordmark */}
+          <div
+            style={{
+              width: 76,
+              height: 76,
+              opacity: interpolate(local, [0, 20], [0, 1], clamp),
+              transform: `translateY(${interpolate(local, [0, 24], [18, 0], {
+                ...clamp,
+                easing: ease3,
+              })}px)`,
+            }}
+          >
+            <svg viewBox="0 0 102 102" width="76" height="76">
+              {GM_LOGO_PATHS.map((d, i) => (
+                <path key={i} d={d} fill={WHITE} />
+              ))}
+            </svg>
+          </div>
           <Reveal
             from={sceneStart + 4}
             duration={duration - 4}
