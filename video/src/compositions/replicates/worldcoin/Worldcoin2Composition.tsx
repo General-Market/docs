@@ -116,18 +116,34 @@ function applyCoverFitTextureUV(
   }
 }
 
+// A laptop screen is a self-lit panel — it should not also be lit by
+// the scene's environment map or directional lights, or the footage
+// ends up exposed twice. Route the video exclusively through the
+// emissive channel, kill the diffuse contribution, and opt the screen
+// material out of tone mapping so ACES doesn't crush the highlights.
+function bindVideoTextureToScreen(
+  mesh: THREE.Mesh,
+  texture: THREE.Texture,
+  intensity: number,
+) {
+  const mat = mesh.material as THREE.MeshStandardMaterial;
+  if (mat.emissiveMap === texture && mat.map === null) return;
+  mat.map = null;
+  mat.color = new THREE.Color(0x000000);
+  mat.emissive = new THREE.Color(0xffffff);
+  mat.emissiveMap = texture;
+  mat.emissiveIntensity = intensity;
+  mat.toneMapped = false;
+  mat.metalness = 0;
+  mat.roughness = 1;
+  mat.needsUpdate = true;
+}
+
 const RenderedScreen: React.FC<{ mesh: THREE.Mesh | null }> = ({ mesh }) => {
   const texture = useOffthreadVideoTexture({ src: BROLL_SRC });
   if (mesh && texture) {
     applyCoverFitTextureUV(texture, BROLL_ASPECT, SCREEN_ASPECT);
-    const mat = mesh.material as THREE.MeshStandardMaterial;
-    if (mat.map !== texture || mat.emissiveMap !== texture) {
-      mat.map = texture;
-      mat.emissive = new THREE.Color(0xffffff);
-      mat.emissiveMap = texture;
-      mat.emissiveIntensity = 0.9;
-      mat.needsUpdate = true;
-    }
+    bindVideoTextureToScreen(mesh, texture, 1.0);
   }
   return null;
 };
@@ -165,12 +181,7 @@ const PreviewScreen: React.FC<{
   // Bind the canvas texture to the screen material — once, stable.
   useEffect(() => {
     if (!mesh || !textureRef.current) return;
-    const mat = mesh.material as THREE.MeshStandardMaterial;
-    mat.map = textureRef.current;
-    mat.emissive = new THREE.Color(0xffffff);
-    mat.emissiveMap = textureRef.current;
-    mat.emissiveIntensity = 0.9;
-    mat.needsUpdate = true;
+    bindVideoTextureToScreen(mesh, textureRef.current, 1.0);
   }, [mesh]);
 
   // Per-frame: draw the video element into the canvas.

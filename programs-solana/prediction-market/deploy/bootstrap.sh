@@ -19,17 +19,14 @@ if ! command -v npx >/dev/null 2>&1; then
   exit 1
 fi
 
-cd "${PROJECT_ROOT}"
+cd "${SCRIPT_DIR}"
 
-# Install deps on first run. Subsequent runs reuse node_modules.
-if [[ ! -d node_modules/@coral-xyz/anchor ]] || [[ ! -d node_modules/@solana/web3.js ]]; then
-  echo "==> installing bootstrap dependencies"
-  npm install --no-save \
-    @coral-xyz/anchor@^0.31.0 \
-    @solana/web3.js@^1.95.0 \
-    @solana/spl-token@^0.4.0 \
-    ts-node@^10.9.0 \
-    typescript@^5.4.0
+# Install deps on first run. Subsequent runs reuse node_modules. Versions are
+# pinned in deploy/package.json — the client must match the program's
+# anchor-lang crate exactly.
+if [[ ! -d node_modules/@anchor-lang/core ]] || [[ ! -d node_modules/@solana/web3.js ]]; then
+  echo "==> installing bootstrap dependencies (from deploy/package.json)"
+  npm install
 fi
 
 echo "==> running bootstrap"

@@ -26,7 +26,7 @@ import {
   Program,
   Wallet,
   type Idl,
-} from "@coral-xyz/anchor";
+} from "@anchor-lang/core";
 import {
   Connection,
   Keypair,
@@ -134,7 +134,7 @@ async function main(): Promise<void> {
   } else {
     const sig = await (program.methods as any)
       .initializeConfig(FEE_BPS)
-      .accounts({
+      .accountsPartial({
         config: configPda,
         feeVault: feeVaultPda,
         stakeMint: STAKE_MINT,
@@ -158,7 +158,7 @@ async function main(): Promise<void> {
     console.log(`==> upsert_source id=${s.id} name=${s.name}`);
     const sig = await (program.methods as any)
       .upsertSource(s.id, pad32(s.name), true)
-      .accounts({
+      .accountsPartial({
         config: configPda,
         source: sourcePda(s.id),
         admin: wallet.publicKey,
@@ -172,7 +172,7 @@ async function main(): Promise<void> {
   console.log("==> propose_oracle_signers");
   const sig = await (program.methods as any)
     .proposeOracleSigners([ORACLE_PUBKEY], 1)
-    .accounts({
+    .accountsPartial({
       config: configPda,
       oracleConfig: oracleConfigPda,
       admin: wallet.publicKey,

@@ -5,7 +5,7 @@ Scripts for landing the prediction-market program on devnet and arming its admin
 ## prerequisites
 
 - Solana CLI (`solana --version`)
-- Anchor CLI — version must match the workspace in `Anchor.toml`
+- Anchor 1.0 — both the CLI and the TS client. The program is built against `anchor-lang = "1.0.0"`; this folder's `package.json` pins `@anchor-lang/core@1.0.0` to match
 - Node.js >= 18 (for `npx ts-node`)
 - A funded devnet keypair at `~/.config/solana/id.json` with at least 2 SOL
 - An SPL mint on the target cluster to serve as `stake_mint` (USDC devnet, or a mint you control)
@@ -19,6 +19,12 @@ anchor --version
 solana address
 solana balance
 ```
+
+### version lockstep
+
+The TS client talks to the on-chain program through the IDL. Different Anchor majors generate different IDL shapes, different account-resolution semantics, different event discriminators. A 0.30 client speaking to a 1.0 program fails quietly and then catastrophically.
+
+If anyone ever bumps `anchor-lang` in `programs/prediction-market/Cargo.toml`, `deploy/package.json` MUST be bumped to the same version in the same commit. No exceptions. The program and its deploy client are a single artifact wearing two masks.
 
 ## run order
 
