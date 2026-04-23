@@ -12,15 +12,13 @@ import { Link } from '@/i18n/routing'
 
 const VIDEO_SRC: string | null = null
 const VIDEO_POSTER: string | null = null
-const REPO_URL = 'https://github.com/General-Market/vision-bot'
+const REPO_URL = 'https://github.com/General-Market/vision-bot-examples'
 const COMMAND = `claude "clone ${REPO_URL} and deploy a Vision trading bot"`
 
 const LONG_WAY = `git clone ${REPO_URL}
-cd vision-bot
-cp .env.example .env
-# add BOT_PRIVATE_KEY, set DEPOSIT_AMOUNT
-pip install -r requirements.txt
-python bot.py`
+cd vision-bot-examples/twitch
+./setup.sh --auto-fund
+.venv/bin/python live_trader.py --strategy momentum --deposit 0.1 --max-joins 1`
 
 const EASE_OUT_EXPO: [number, number, number, number] = [0.16, 1, 0.3, 1]
 
@@ -368,7 +366,7 @@ export function BuildBotVSL() {
 
             <div className="mt-12 flex flex-col sm:flex-row gap-6 sm:gap-10 sm:items-center">
               <a
-                href="https://docs.generalmarket.io/guides/vision-bots"
+                href="https://github.com/General-Market/vision-bot-examples/blob/main/AGENTS.md"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group inline-flex items-center gap-3 text-[13px] font-black tracking-[0.06em] uppercase text-text-primary"

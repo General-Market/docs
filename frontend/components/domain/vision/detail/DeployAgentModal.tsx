@@ -107,12 +107,12 @@ export default function DeployAgentModal({ agentId, onClose }: DeployAgentModalP
     {
       number: 1,
       title: t('deploy_steps.clone'),
-      code: 'git clone https://github.com/General-Market/vision-bot\ncd vision-bot',
+      code: 'git clone https://github.com/General-Market/vision-bot-examples\ncd vision-bot-examples/twitch',
     },
     {
       number: 2,
       title: t('deploy_steps.configure'),
-      code: 'cp .env.example .env\n# Add BOT_PRIVATE_KEY and set DEPOSIT_AMOUNT\npip install -r requirements.txt',
+      code: './setup.sh --auto-fund\n# generates + funds a wallet, installs deps',
     },
     {
       number: 3,
@@ -155,7 +155,7 @@ export default function DeployAgentModal({ agentId, onClose }: DeployAgentModalP
         <div className="px-5 py-3 border-t border-black/[0.06] flex items-center justify-between text-label text-neutral-400">
           <span>{t('deploy_agent_modal.requirements')}</span>
           <a
-            href="https://docs.generalmarket.io/guides/vision-bots"
+            href="https://github.com/General-Market/vision-bot-examples/blob/main/AGENTS.md"
             target="_blank"
             rel="noopener noreferrer"
             className="text-neutral-900 hover:text-neutral-600 transition-colors font-medium"
