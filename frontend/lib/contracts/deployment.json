@@ -10,18 +10,18 @@
     "MockBitgetVault": "0x635c5f2380c6BA688DD9db8A40d8a5f928AFD2e5",
     "BridgeProxy": "0x19d9F7A778A30f8a73158Be5028C19571D9102d5",
     "BridgedItpFactory": "0x429F258229C0E3e9438c208af50347abE63B4A0D",
-    "L3_WUSDC": "0x2710e49EBb807A0cB9369F13Ba24Bd809809a827",
+    "L3_WUSDC": "0xADDb799BC1499b224DC4368E92b9042a54908553",
     "L3_WUSDC_DECIMALS": "18",
     "SETTLEMENT_USDC": "0x7124c493571397383CE2102441Ca740309E3438D",
     "SETTLEMENT_USDC_DECIMALS": "6",
     "MOCK_USDT": "0xa126494e43d2F3A5f8c311297E2Aef59Cb9f2145",
-    "USDC": "0x2710e49EBb807A0cB9369F13Ba24Bd809809a827",
+    "USDC": "0xADDb799BC1499b224DC4368E92b9042a54908553",
     "L3BridgedItpFactory": "0xC7f7A091201e613d24A185166846fB2f3cfbC410",
     "SettlementBridgedItpFactory": "0xC7f7A091201e613d24A185166846fB2f3cfbC410",
     "SettlementOracleRegistry": "0xa6A9aF04C13eC5748FE6F8035B6Ac9ba4527E60C",
     "L3BridgeProxy": "0x9395cDfbb0ff99d2400471c4515B1893e6699CFB",
     "SettlementBridgeProxy": "0x19d9F7A778A30f8a73158Be5028C19571D9102d5",
-    "Vision": "0x80Ab4ebDF79dEa442b54DECdcEd16D6654470544",
+    "Vision": "0x94d540bb45975bd5a0c7ba9a15a0d34e378f6c61",
     "VisionVault": "0x7437F064E416C93aC4EaB882e9A488443FaE03c0",
     "VisionVaultFactory": "0xA0FD597A1Bf2b5A4f6B283f09DC512F6F8B4589e"
   },
@@ -350,5 +350,8 @@
     "0xfEc498B5D34Dc717ea0BDeB51438BeF14856d376",
     "0xfca4aB6A00105E89670a9D0B7d6bF214d149Edb3",
     "0xfd51bc4cB8C4eeCdD1b1aEE49609b8adcEe24B7C"
-  ]
+  ],
+  "_botReference": "https://github.com/General-Market/vision-bot-examples",
+  "_llms": "https://generalmarket.io/llms.txt",
+  "_selfDiscover": "Verify bytecode via eth_getCode(address); call vision.USDC() on the live Vision contract for the authoritative token. Many entries in `contracts` are historical and may have been replaced \u2014 bytecode of zero means the address is no longer deployed. Trust the chain."
 }
