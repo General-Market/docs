@@ -1,15 +1,16 @@
 // Worldcoin2 — MacBook companion to the iPhone scene.
 //
-// Same GLB, same material-fingerprint trick. The MacBook display mesh
-// lives under the `Bevels_2` lid subtree and is the only mesh in that
-// subtree whose material has a baseColorMap. Clone the material, swap
-// both map and emissiveMap to a Remotion video texture, cover-fit the
-// UVs for 16:9 source on a 16:10 screen.
+// Broll playback on the laptop display. The screen mesh lives inside
+// the Bevels_2 lid subtree; it is the only mesh there whose material
+// carries a baseColorMap — that fingerprint is what MacbookWithScreen
+// already relies on and what we reuse here.
 //
-// Camera matches the DeviceShowcase "macbook" view at the 1:15 pose
-// (lid fully open). A gentle idle breath keeps the frame alive.
+// Preview uses a CanvasTexture fed by drawImage(videoElement, …) each
+// frame — robust against useVideoTexture's readiness race, which is
+// what was leaving the screen stuck on the GLB's baked wallpaper.
+// Render uses useOffthreadVideoTexture, same as the phone.
 
-import React, { useMemo, useRef } from "react";
+import React, { useMemo, useRef, useEffect } from "react";
 import {
   AbsoluteFill,
   useCurrentFrame,
@@ -20,7 +21,6 @@ import {
 import {
   ThreeCanvas,
   useOffthreadVideoTexture,
-  useVideoTexture,
 } from "@remotion/three";
 import { useThree } from "@react-three/fiber";
 import { useGLTF, ContactShadows, Environment } from "@react-three/drei";
@@ -29,26 +29,29 @@ import * as THREE from "three";
 const MODEL_URL = staticFile("models/tabletop_macbook_iphone.glb");
 useGLTF.preload(MODEL_URL);
 
-const BROLL_SRC = staticFile("broll/mountains-aerial.mp4");
-const BROLL_ASPECT = 1280 / 720;
-// MacBook display aspect ≈ 16:10
+const BROLL_SRC = staticFile("broll/glacier-drone.mp4");
+const BROLL_ASPECT = 1920 / 1080;
 const SCREEN_ASPECT = 16 / 10;
+
+// Internal canvas resolution used in preview. 1280×800 keeps the
+// MacBook 16:10 ratio without resampling loss from the 1280×720 source.
+const CANVAS_W = 1280;
+const CANVAS_H = 800;
 
 const FPS = 60;
 const DURATION_SEC = 10;
 const DURATION = FPS * DURATION_SEC;
 
-// ── Camera — the "macbook" view from DeviceShowcase (1:15 pose) ──
+// ── Camera — DeviceShowcase "macbook" view (the 1:15 pose) ──
 const CAM_POS = new THREE.Vector3(3.031, 4.096, -6.179);
 const CAM_TARGET = new THREE.Vector3(3.001, 2.780, 0.829);
 const CAM_ZOOM = 1.2;
 
-// Lid fully open — identical to DeviceShowcase LID_OPEN
 const LID_OPEN = new THREE.Quaternion(-0.78333, 0, 0, 0.62161);
 const BEVELS_POS = new THREE.Vector3(-0.00012, 0.00824, -0.10401);
 const BEVELS_SCALE = new THREE.Vector3(0.27471, 0.27471, 0.27471);
 
-// ── Screen injection ──
+// ── Screen mesh identification ──
 
 function findMacbookScreenMesh(lidRoot: THREE.Object3D): THREE.Mesh | null {
   let found: THREE.Mesh | null = null;
@@ -58,7 +61,6 @@ function findMacbookScreenMesh(lidRoot: THREE.Object3D): THREE.Mesh | null {
     if (!mesh.isMesh) return;
     if (Array.isArray(mesh.material)) return;
     const mat = mesh.material as THREE.MeshStandardMaterial | undefined;
-    // The display mesh is the only one in the lid subtree with a baseColorMap.
     if (mat && mat.map) {
       mesh.material = mat.clone();
       found = mesh;
@@ -67,7 +69,35 @@ function findMacbookScreenMesh(lidRoot: THREE.Object3D): THREE.Mesh | null {
   return found;
 }
 
-function applyCoverFit(
+// ── Cover-fit: draw a source (video/img) onto a target canvas with
+//    cover behaviour — fills the whole canvas, crops the overflow axis.
+function coverDraw(
+  ctx: CanvasRenderingContext2D,
+  src: CanvasImageSource,
+  srcW: number,
+  srcH: number,
+  dstW: number,
+  dstH: number,
+) {
+  const srcA = srcW / srcH;
+  const dstA = dstW / dstH;
+  let sx = 0, sy = 0, sw = srcW, sh = srcH;
+  if (srcA > dstA) {
+    // Source wider — crop width
+    const cropW = srcH * dstA;
+    sx = (srcW - cropW) / 2;
+    sw = cropW;
+  } else {
+    const cropH = srcW / dstA;
+    sy = (srcH - cropH) / 2;
+    sh = cropH;
+  }
+  ctx.drawImage(src, sx, sy, sw, sh, 0, 0, dstW, dstH);
+}
+
+// ── Render-mode screen: useOffthreadVideoTexture, proven path ──
+
+function applyCoverFitTextureUV(
   texture: THREE.Texture,
   videoAspect: number,
   screenAspect: number,
@@ -84,37 +114,75 @@ function applyCoverFit(
     texture.repeat.set(1, r);
     texture.offset.set(0, (1 - r) / 2);
   }
-  texture.needsUpdate = true;
-}
-
-function injectScreenTexture(
-  screenMesh: THREE.Mesh | null,
-  texture: THREE.Texture | null,
-) {
-  if (!screenMesh || !texture) return;
-  applyCoverFit(texture, BROLL_ASPECT, SCREEN_ASPECT);
-  const mat = screenMesh.material as THREE.MeshStandardMaterial;
-  if (mat.map !== texture || mat.emissiveMap !== texture) {
-    mat.map = texture;
-    mat.emissive = new THREE.Color(0xffffff);
-    mat.emissiveMap = texture;
-    mat.emissiveIntensity = 0.85;
-    mat.needsUpdate = true;
-  }
 }
 
 const RenderedScreen: React.FC<{ mesh: THREE.Mesh | null }> = ({ mesh }) => {
   const texture = useOffthreadVideoTexture({ src: BROLL_SRC });
-  injectScreenTexture(mesh, texture ?? null);
+  if (mesh && texture) {
+    applyCoverFitTextureUV(texture, BROLL_ASPECT, SCREEN_ASPECT);
+    const mat = mesh.material as THREE.MeshStandardMaterial;
+    if (mat.map !== texture || mat.emissiveMap !== texture) {
+      mat.map = texture;
+      mat.emissive = new THREE.Color(0xffffff);
+      mat.emissiveMap = texture;
+      mat.emissiveIntensity = 0.9;
+      mat.needsUpdate = true;
+    }
+  }
   return null;
 };
+
+// ── Preview-mode screen: Canvas + drawImage per frame ──
+// Works regardless of useVideoTexture's internal readiness state.
+// If the video hasn't buffered yet, the canvas just shows black (initial
+// fill), never the baked GLB wallpaper — so the bug is invisible to the
+// viewer even during the first few frames.
 
 const PreviewScreen: React.FC<{
   mesh: THREE.Mesh | null;
   videoRef: React.RefObject<HTMLVideoElement | null>;
-}> = ({ mesh, videoRef }) => {
-  const texture = useVideoTexture(videoRef);
-  injectScreenTexture(mesh, texture ?? null);
+  frame: number;
+}> = ({ mesh, videoRef, frame }) => {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const textureRef = useRef<THREE.CanvasTexture | null>(null);
+
+  if (!canvasRef.current) {
+    const c = document.createElement("canvas");
+    c.width = CANVAS_W;
+    c.height = CANVAS_H;
+    // Paint black immediately so first frames never leak the baked wallpaper.
+    const ctx0 = c.getContext("2d");
+    if (ctx0) {
+      ctx0.fillStyle = "#000";
+      ctx0.fillRect(0, 0, CANVAS_W, CANVAS_H);
+    }
+    canvasRef.current = c;
+    const tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    textureRef.current = tex;
+  }
+
+  // Bind the canvas texture to the screen material — once, stable.
+  useEffect(() => {
+    if (!mesh || !textureRef.current) return;
+    const mat = mesh.material as THREE.MeshStandardMaterial;
+    mat.map = textureRef.current;
+    mat.emissive = new THREE.Color(0xffffff);
+    mat.emissiveMap = textureRef.current;
+    mat.emissiveIntensity = 0.9;
+    mat.needsUpdate = true;
+  }, [mesh]);
+
+  // Per-frame: draw the video element into the canvas.
+  const ctx = canvasRef.current.getContext("2d");
+  const video = videoRef.current;
+  if (ctx && video && video.readyState >= 2 && video.videoWidth > 0) {
+    coverDraw(ctx, video, video.videoWidth, video.videoHeight, CANVAS_W, CANVAS_H);
+    if (textureRef.current) textureRef.current.needsUpdate = true;
+  }
+  // Touch frame so React re-invokes this component every tick.
+  void frame;
+
   return null;
 };
 
@@ -138,7 +206,7 @@ const MacbookScene: React.FC<{
     [bevels],
   );
 
-  // Hide the iPhone — only the MacBook participates in this scene.
+  // Hide iPhone — only the MacBook in this scene.
   useMemo(() => {
     const iphoneNode = gltf.scene.getObjectByName("iphone");
     if (iphoneNode) {
@@ -150,14 +218,13 @@ const MacbookScene: React.FC<{
     }
   }, [gltf]);
 
-  // Lid open, breathing slightly — life without distraction.
   if (bevels) {
     bevels.position.copy(BEVELS_POS);
     bevels.quaternion.copy(LID_OPEN);
     bevels.scale.copy(BEVELS_SCALE);
   }
 
-  // Camera: macbook view with idle float
+  // Camera: macbook view with slow idle drift.
   const driftX = Math.sin(frame * 0.008) * 0.05;
   const driftY = Math.cos(frame * 0.011) * 0.03;
   const perspCam = camera as THREE.PerspectiveCamera;
@@ -174,7 +241,7 @@ const MacbookScene: React.FC<{
         {env.isRendering ? (
           <RenderedScreen mesh={screenMesh} />
         ) : (
-          <PreviewScreen mesh={screenMesh} videoRef={videoRef} />
+          <PreviewScreen mesh={screenMesh} videoRef={videoRef} frame={frame} />
         )}
       </React.Suspense>
       <Environment preset="studio" environmentIntensity={1.8} />
@@ -233,6 +300,7 @@ export const Worldcoin2Composition: React.FC = () => {
           muted
           loop
           playsInline
+          preload="auto"
           style={{
             position: "absolute",
             width: 1,
