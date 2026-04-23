@@ -10,7 +10,6 @@ import {
 import { loadFont as loadInter } from "@remotion/google-fonts/Inter";
 import { CascadeText } from "../../lib/components/Text";
 import { SOURCES } from "../launch/data/sources";
-import { FEATURED_SOURCES, FeaturedCard } from "./SourceCardsWall";
 import { SourceVortexGallery } from "./SourceVortexGallery";
 
 const { fontFamily: INTER } = loadInter("normal", {
@@ -366,6 +365,27 @@ const OUTSIDE_WATCHERS: readonly string[] = [
 const MONO_FAMILY =
   'ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace';
 
+// ── GradientCarousel geometry (verbatim from WebGLPicks, direction flipped)
+//    Cards loop through a track. scrollOffset is ADDED (not subtracted) so
+//    motion is left-to-right: sources enter from the left, pass through
+//    the GM column, emerge on the right as blocks.
+const GC_CARD_W = 210;
+const GC_CARD_H = 280;
+const GC_GAP = 36;
+const GC_UNIT = GC_CARD_W + GC_GAP;
+const GC_BORDER_RADIUS = 18;
+
+const GC_PERSPECTIVE = 1800;
+const GC_MAX_ROTATION = 28;
+const GC_MAX_DEPTH = 140;
+const GC_SCALE_BASE = 0.92;
+const GC_SCALE_RANGE = 0.1;
+const GC_SCROLL_SPEED = 1400; // px / s — fast but still readable in 3D
+
+const gcMod = (n: number, m: number) => ((n % m) + m) % m;
+const gcClamp = (v: number, lo: number, hi: number) =>
+  Math.min(hi, Math.max(lo, v));
+
 // ── Outside watchers — silhouettes beneath the carousel, looking up ──────
 
 const WatcherSilhouette: React.FC<{ scale?: number }> = ({ scale = 1 }) => (
@@ -632,6 +652,17 @@ const OutsideWatcher: React.FC<{
 
 // ── Scene — carousel of passing blocks + outside watchers ───────────────
 
+// Stream pool — each entry gets both a source identity (for before the
+// column) and a hash (for after). Looping carousel cycles through them.
+const STREAM_CARDS = Array.from(
+  { length: Math.max(SOURCE_NAMES.length, PASSING_BLOCKS.length) + 2 },
+  (_, i) => ({
+    source: SOURCE_NAMES[i % SOURCE_NAMES.length],
+    hash: PASSING_BLOCKS[i % PASSING_BLOCKS.length].hash,
+  }),
+);
+const GC_TRACK_LEN = GC_UNIT * STREAM_CARDS.length;
+
 const Point2Scene: React.FC<{
   local: number;
   sceneStart: number;
@@ -639,83 +670,110 @@ const Point2Scene: React.FC<{
 }> = ({ local, sceneStart, duration }) => {
   const SCENE_FPS = 30;
   const STAGE_W = 1920;
+  const halfW = STAGE_W / 2;
 
   const time = local / SCENE_FPS;
   const fadeOut = interpolate(local, [duration - 18, duration], [1, 0], clamp);
 
   // ── Layout ────────────────────────────────────────────────────────────
-  const COL_LEFT = 60;
-  const COL_WIDTH = 260;
+  const COL_LEFT = 80;
+  const COL_WIDTH = 280;
   const COL_TOP = 100;
   const COL_HEIGHT = 620;
   const COL_RIGHT = COL_LEFT + COL_WIDTH;
+  const COL_CENTER_X = COL_LEFT + COL_WIDTH / 2;
 
-  const TRACK_Y = 460; // vertical centre of the card stream
-  const WATCHERS_TOP_PX = 780;
+  const TRACK_Y = 480;
+  const WATCHERS_TOP_PX = 800;
 
-  // ── Card stream ───────────────────────────────────────────────────────
-  // Cards start off-screen left, fly right across the stage, and pass
-  // through the column. Before the column → source-branded card. After
-  // the column → anonymised block. Inside the column → hidden behind
-  // the opaque GM tower, so the switch happens under cover.
-  const CARD_W = 150;
-  const CARD_H = 190;
-  const CARD_SPEED = 1100; // px / s
-  const CARD_INTERVAL = 0.32; // s between spawns
-  const CARD_LEAD = 420; // start x before screen
+  // ── 3D coverflow — GradientCarousel math, direction flipped ────────────
+  // scrollOffset is ADDED to the index position so motion is left-to-right.
+  // The coverflow focal point is the stage centre (halfW); cards rotate,
+  // scale, and blur as they drift away from it.
+  const scrollOffset = time * GC_SCROLL_SPEED;
 
-  const activeCards: {
-    i: number;
-    x: number;
-    source: string;
-    hash: string;
-  }[] = [];
-  for (let i = 0; i < 40; i++) {
-    const spawnT = i * CARD_INTERVAL;
-    if (time < spawnT) continue;
-    const age = time - spawnT;
-    const x = -CARD_LEAD + age * CARD_SPEED;
-    if (x > STAGE_W + 80) continue;
-    activeCards.push({
-      i,
-      x,
-      source: SOURCE_NAMES[i % SOURCE_NAMES.length],
-      hash: PASSING_BLOCKS[i % PASSING_BLOCKS.length].hash,
+  const cards = STREAM_CARDS.map((card, i) => {
+    const rawX =
+      gcMod(i * GC_UNIT + scrollOffset + GC_TRACK_LEN / 2, GC_TRACK_LEN) -
+      GC_TRACK_LEN / 2;
+    const screenX = rawX + halfW - GC_CARD_W / 2;
+    const screenCenterX = screenX + GC_CARD_W / 2;
+
+    const norm = gcClamp(rawX / halfW, -1, 1);
+    const absNorm = Math.abs(norm);
+
+    const rotateY = -norm * GC_MAX_ROTATION;
+    const translateZ = (1 - absNorm) * GC_MAX_DEPTH;
+    const scale = GC_SCALE_BASE + (1 - absNorm) * GC_SCALE_RANGE;
+    const blur = absNorm < 0.15 ? 0 : 2 * Math.pow(absNorm, 1.1);
+    const opacity = interpolate(absNorm, [0, 0.85, 1], [1, 0.72, 0], {
+      ...clamp,
     });
-  }
+    const zIndex = Math.round((1 - absNorm) * 100);
+
+    const isBlock = screenCenterX > COL_CENTER_X;
+
+    return {
+      card,
+      index: i,
+      screenX,
+      rotateY,
+      translateZ,
+      scale,
+      blur,
+      opacity,
+      zIndex,
+      isBlock,
+    };
+  });
 
   return (
     <AbsoluteFill style={{ opacity: fadeOut, background: BLACK }}>
-      {/* Card stream — under the column (z defaults to 0). Before the
-          column the card is its Source identity; past the column's
-          centre it is a Block. While inside the column it's covered. */}
-      {activeCards.map((c) => {
-        const cardCenter = c.x + CARD_W / 2;
-        const columnCenter = COL_LEFT + COL_WIDTH / 2;
-        const isBlock = cardCenter > columnCenter;
-        return (
+      {/* 3D coverflow stage — same perspective as WebGLPicks GradientCarousel.
+          Cards loop left-to-right; the GM column below catches them and
+          changes their identity from source to block. */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          perspective: GC_PERSPECTIVE,
+          transformStyle: "preserve-3d",
+        }}
+      >
+        {cards.map((c) => (
           <div
-            key={c.i}
+            key={c.index}
             style={{
               position: "absolute",
-              left: c.x,
-              top: TRACK_Y - CARD_H / 2,
-              width: CARD_W,
-              height: CARD_H,
+              left: c.screenX,
+              top: TRACK_Y,
+              width: GC_CARD_W,
+              height: GC_CARD_H,
+              transformOrigin: "50% center",
+              transform: [
+                `translateY(calc(-50%))`,
+                `translateZ(${c.translateZ}px)`,
+                `rotateY(${c.rotateY}deg)`,
+                `scale(${c.scale})`,
+              ].join(" "),
+              borderRadius: GC_BORDER_RADIUS,
+              overflow: "hidden",
+              filter: c.blur > 0.1 ? `blur(${c.blur}px)` : undefined,
+              opacity: c.opacity,
+              zIndex: c.zIndex,
             }}
           >
-            {isBlock ? (
-              <BlockCard hash={c.hash} w={CARD_W} h={CARD_H} />
+            {c.isBlock ? (
+              <BlockCard hash={c.card.hash} w={GC_CARD_W} h={GC_CARD_H} />
             ) : (
-              <SourceCard name={c.source} w={CARD_W} h={CARD_H} />
+              <SourceCard name={c.card.source} w={GC_CARD_W} h={GC_CARD_H} />
             )}
           </div>
-        );
-      })}
+        ))}
+      </div>
 
-      {/* GM column — the filter. Sits on the left, opaque, so cards
-          entering are hidden and the transformation reads as "passed
-          through". */}
+      {/* GM column — opaque filter. Sits over the coverflow on the left,
+          hiding the card identity switch inside its surface. */}
       <GmColumn
         left={COL_LEFT}
         top={COL_TOP}
@@ -730,11 +788,12 @@ const Point2Scene: React.FC<{
           position: "absolute",
           left: COL_RIGHT + 80,
           right: 80,
-          top: 160,
+          top: 140,
           height: 260,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
+          zIndex: 450,
         }}
       >
         <Reveal
@@ -755,7 +814,7 @@ const Point2Scene: React.FC<{
         />
       </div>
 
-      {/* Watchers — bottom band, readable labels (2× the old size). */}
+      {/* Watchers — bottom band, labels doubled from the old size. */}
       <div
         style={{
           position: "absolute",
@@ -767,6 +826,7 @@ const Point2Scene: React.FC<{
           alignItems: "flex-start",
           gap: 12,
           padding: "0 40px",
+          zIndex: 450,
         }}
       >
         {OUTSIDE_WATCHERS.map((role, i) => (
