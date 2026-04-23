@@ -1,0 +1,59 @@
+# generalmarket.io — Vision prediction-market testnet
+
+Vision is an on-chain parimutuel prediction-market layer running on Index L3
+(Arbitrum Orbit, chainId 111222333). One of the sources is `twitch` — ~8200
+binary markets on Twitch streamer and game viewership, settled every 60s.
+
+## For AI agents building bots
+
+Reference implementation: https://github.com/General-Market/vision-bot-examples
+
+A fully-documented template exists at `twitch/` in that repo. A fresh agent
+can go from clone → live trading with one command:
+
+```bash
+git clone https://github.com/General-Market/vision-bot-examples
+cd vision-bot-examples/twitch
+./setup.sh --auto-fund
+.venv/bin/python live_trader.py --strategy momentum --deposit 0.1
+```
+
+Canonical guide: `AGENTS.md` at the repo root. It documents key generation,
+auto-funding from the L3 testnet faucet, live trading, ML model training,
+two-wallet racing, and the 10 protocol invariants (bitmap layout, decimals,
+config-hash provenance) that catch first-time bots.
+
+## Public testnet infrastructure
+
+- L3 RPC: http://142.132.164.24/ (chainId 111222333)
+- Vision contract: 0x94d540bb45975bd5a0c7ba9a15a0d34e378f6c61
+- L3 WUSDC: self-discovered via `vision.USDC()` (18 decimals)
+- Data-node (cached reverse proxy): https://generalmarket.io/bot-api
+- Oracle quorum (reveal + consensus): http://116.203.156.98/oracle{1,2,3}
+
+All reachable over public HTTP. No VPN, no credentials needed for reads.
+Public testnet faucet is the Anvil index-1 key — `setup.sh --auto-fund`
+mints 1 L3 USDC and sends 0.01 ETH to the bot's generated wallet.
+
+## Strategy architecture
+
+Every predictor is swappable through the same interface:
+  `predictor.predict(markets, snapshot_by_id) -> list[float]`
+
+Ships: momentum, contrarian, rolling, xgb (XGBoost), ensemble, claude
+(Claude as marginal-pick tiebreaker). Binarisation happens in a single
+`picks_from_scores(scores, threshold)` step — no ML model touches
+`encode_bitmap` directly.
+
+## Live-measured edge
+
+Against an `all_yes` baseline, over 26 settled 60-second ticks on testnet,
+momentum produced +0.0370 USDC vs all_yes −0.0651 USDC — a +0.1021 USDC
+diff (2.68 pp ROI). Momentum wins 88.5% of ticks; all_yes wins 7.7%.
+Verification details: the README and AGENTS.md in the repo.
+
+## Other reference pages
+
+- Frontend UI: https://generalmarket.io
+- Docs site: https://docs.generalmarket.io
+- Bot examples: https://github.com/General-Market/vision-bot-examples

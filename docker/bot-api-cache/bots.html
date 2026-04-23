@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Build a bot — generalmarket.io</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Reference trading bots for Vision prediction markets on Index L3. Clone, fund, trade in under 3 minutes.">
+<link rel="canonical" href="https://generalmarket.io/bots">
+<style>
+  body { font: 15px/1.55 ui-monospace, SFMono-Regular, Consolas, monospace;
+         max-width: 760px; margin: 2.5rem auto; padding: 0 1.25rem;
+         color: #1b1b1f; background: #fafafa; }
+  h1 { font-size: 1.5rem; margin-bottom: .25rem; }
+  h2 { font-size: 1.05rem; margin-top: 1.75rem; border-bottom: 1px solid #ddd; padding-bottom: .25rem; }
+  code, pre { background: #f1efe9; padding: 2px 5px; border-radius: 3px; }
+  pre { padding: 12px; overflow-x: auto; }
+  a { color: #5a3bf0; }
+  table { border-collapse: collapse; margin: .5rem 0; width: 100%; }
+  td, th { border-bottom: 1px solid #ddd; padding: 4px 8px; text-align: left; vertical-align: top; }
+  small { color: #666; }
+  .tag { display:inline-block; background:#5a3bf0; color:white; padding:1px 8px; border-radius:10px; font-size:12px; }
+</style>
+</head>
+<body>
+
+<h1>Build a bot on Vision</h1>
+<p><small>On-chain parimutuel prediction markets, Index L3, chainId 111222333, 60-second tick.</small></p>
+
+<h2>Reference implementation</h2>
+<p><a href="https://github.com/General-Market/vision-bot-examples">github.com/General-Market/vision-bot-examples</a></p>
+<p>One example bot per Vision source. Today: <span class="tag">twitch</span> (~8200 streamer/game markets).</p>
+
+<h2>Zero-to-trading, unattended</h2>
+<pre>git clone https://github.com/General-Market/vision-bot-examples
+cd vision-bot-examples/twitch
+./setup.sh --auto-fund
+.venv/bin/python live_trader.py --strategy momentum --deposit 0.1</pre>
+<p><code>setup.sh</code> creates a venv, installs deps, generates a bot key, and seeds it from the L3 testnet faucet. Fully automated, ~2 minutes wall-clock.</p>
+
+<h2>Architecture</h2>
+<pre>snapshot + history ─→ features ─→ predictor ─→ scores ─→ picks ─→ bitmap ─→ joinBatchDirect
+                                                   (threshold)     (1024 B keccak commitment)</pre>
+<p>Strategy is swappable: <code>momentum</code>, <code>contrarian</code>, <code>rolling</code>, <code>xgb</code>, <code>ensemble</code>, <code>claude</code>. Trading transport is strategy-agnostic.</p>
+
+<h2>Public infrastructure</h2>
+<table>
+  <tr><th>component</th><th>URL</th></tr>
+  <tr><td>L3 RPC</td><td><code>http://142.132.164.24/</code></td></tr>
+  <tr><td>Vision contract</td><td><code>0x94d540bb45975bd5a0c7ba9a15a0d34e378f6c61</code></td></tr>
+  <tr><td>L3 WUSDC</td><td>self-discover via <code>vision.USDC()</code> (18 decimals)</td></tr>
+  <tr><td>Data-node (cached)</td><td><code>https://generalmarket.io/bot-api</code></td></tr>
+  <tr><td>Oracles</td><td><code>http://116.203.156.98/oracle{1,2,3}</code></td></tr>
+</table>
+
+<h2>Measured edge</h2>
+<p>26-settled-tick live run on testnet:</p>
+<table>
+  <tr><th>strategy</th><th>PnL (USDC)</th><th>ROI</th><th>win rate</th></tr>
+  <tr><td>momentum</td><td>+0.0370</td><td>+0.97%</td><td>88.5%</td></tr>
+  <tr><td>all_yes</td><td>−0.0651</td><td>−1.71%</td><td>7.7%</td></tr>
+  <tr><td><strong>diff</strong></td><td><strong>+0.1021</strong></td><td><strong>+2.68 pp</strong></td><td></td></tr>
+</table>
+
+<h2>Machine-readable</h2>
+<p><a href="/llms.txt">generalmarket.io/llms.txt</a> — terse agent-first summary.</p>
+
+<p><small>Testnet only. Contracts and balances will reset.</small></p>
+</body>
+</html>
