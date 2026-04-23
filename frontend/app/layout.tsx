@@ -54,6 +54,14 @@ export default async function RootLayout({
   return (
     <html lang={locale} className={`${GeistSans.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
       <head>
+        {/* AI-agent signposts. Both llms.txt files survive a curl without
+            JS; /bots is the human landing and bot.link points at the
+            reference repo. Follows emerging llms.txt convention. */}
+        <link rel="alternate" type="text/plain" title="LLM-readable summary" href="/llms.txt" />
+        <link rel="alternate" type="text/plain" title="LLM-readable full context" href="/llms-full.txt" />
+        <link rel="bot" type="text/x-github" title="Reference trading bot" href="https://github.com/General-Market/vision-bot-examples" />
+        <meta name="llms-txt" content="/llms.txt" />
+        <meta name="bot-examples" content="https://github.com/General-Market/vision-bot-examples" />
         <link rel="preconnect" href="https://rpc.generalmarket.io" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://api.generalmarket.io" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://us.i.posthog.com" />
