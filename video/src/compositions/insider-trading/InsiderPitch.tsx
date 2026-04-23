@@ -243,12 +243,12 @@ type VortexCardSlot = {
   key: number;
 };
 
-const VORTEX_CARDS_PER_RING = 12;
-const VORTEX_RINGS = 7;
-const VORTEX_HEIGHT = 2600; // total cylinder Y range the cards wrap inside
-const VORTEX_RADIUS = 900;
-const VORTEX_CARD_W = 300;
-const VORTEX_CARD_H = 400;
+const VORTEX_CARDS_PER_RING = 14;
+const VORTEX_RINGS = 11;
+const VORTEX_HEIGHT = 3400; // total cylinder Y range the cards wrap inside
+const VORTEX_RADIUS = 1150;
+const VORTEX_CARD_W = 240;
+const VORTEX_CARD_H = 320;
 
 const buildVortexSlots = (): VortexCardSlot[] => {
   const slots: VortexCardSlot[] = [];
@@ -285,14 +285,16 @@ const CardVortex: React.FC<{ local: number }> = ({ local }) => {
   // Global rotation (deg/frame) + scroll (px/frame). Scroll pushes cards
   // downward through the cylinder; the angular component makes the whole
   // column spiral as it falls.
-  const rotationBase = local * 0.9;
-  const scrollY = local * 16;
-  const tilt = 6;
+  const rotationBase = local * 0.7;
+  const scrollY = local * 22;
+  const tilt = 10;
+  const frontCutoff = VORTEX_RADIUS * 0.45;
+  const frontRange = VORTEX_RADIUS * 0.35;
 
   return (
     <AbsoluteFill
       style={{
-        perspective: 2200,
+        perspective: 1800,
         perspectiveOrigin: "50% 50%",
         overflow: "hidden",
       }}
@@ -315,8 +317,22 @@ const CardVortex: React.FC<{ local: number }> = ({ local }) => {
 
           // Fade cards as they approach the top/bottom of the wrap range
           // so respawning doesn't pop visibly. Symmetric triangle falloff.
-          const edgeT = Math.min(1, (VORTEX_HEIGHT / 2 - Math.abs(y)) / 260);
+          const edgeT = Math.min(1, (VORTEX_HEIGHT / 2 - Math.abs(y)) / 320);
           const edgeFade = Math.max(0, edgeT);
+
+          // Front fade — cards crossing toward the camera (high +Z)
+          // would block the "500,000" headline, so fade them out before
+          // they reach the front of the cylinder. cos(angle) approximates
+          // the z-component of the card's position on the wall.
+          const cardZ =
+            VORTEX_RADIUS * Math.cos((angle * Math.PI) / 180);
+          const frontFade =
+            cardZ > frontCutoff
+              ? Math.max(0, 1 - (cardZ - frontCutoff) / frontRange)
+              : 1;
+
+          const opacity = edgeFade * frontFade * 0.94;
+          if (opacity < 0.015) return null;
 
           return (
             <div
@@ -328,9 +344,9 @@ const CardVortex: React.FC<{ local: number }> = ({ local }) => {
                 width: VORTEX_CARD_W,
                 height: VORTEX_CARD_H,
                 transform: `translateY(${y}px) rotateY(${angle}deg) translateZ(${VORTEX_RADIUS}px)`,
-                opacity: edgeFade,
+                opacity,
                 backfaceVisibility: "hidden",
-                boxShadow: "0 32px 80px rgba(0,0,0,0.55)",
+                boxShadow: "0 24px 64px rgba(0,0,0,0.5)",
                 borderRadius: 14,
                 overflow: "hidden",
               }}
