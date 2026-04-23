@@ -15,7 +15,7 @@
   },
   "nav": {
     "investment": "투자",
-    "vision": "Vision",
+    "vision": "예측 시장",
     "docs": "문서",
     "support": "지원",
     "markets": "마켓",
@@ -31,7 +31,7 @@
     "points": "포인트",
     "about": "소개",
     "sections": "섹션",
-    "itps": "ITPs"
+    "itps": "인덱스 펀드"
   },
   "footer": {
     "product": "상품",

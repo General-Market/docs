@@ -15,7 +15,7 @@
   },
   "nav": {
     "investment": "Investment",
-    "vision": "Vision",
+    "vision": "Prediction Market",
     "docs": "Docs",
     "support": "Support",
     "markets": "Markets",
@@ -31,7 +31,7 @@
     "points": "Points",
     "about": "About",
     "sections": "Sections",
-    "itps": "ITPs"
+    "itps": "Index Funds"
   },
   "footer": {
     "product": "Product",

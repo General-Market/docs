@@ -15,7 +15,7 @@
   },
   "nav": {
     "investment": "投资",
-    "vision": "Vision",
+    "vision": "预测市场",
     "docs": "文档",
     "support": "支持",
     "markets": "市场",
@@ -31,7 +31,7 @@
     "points": "积分",
     "about": "关于",
     "sections": "板块",
-    "itps": "ITPs"
+    "itps": "指数基金"
   },
   "footer": {
     "product": "产品",
