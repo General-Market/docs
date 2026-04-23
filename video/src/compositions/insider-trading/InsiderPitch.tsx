@@ -409,17 +409,48 @@ const WatcherSilhouette: React.FC<{ scale?: number }> = ({ scale = 1 }) => (
   </svg>
 );
 
-const BUBBLE_GLYPHS = "▓▒░█■□◆◇0123456789";
-
-const seededBubbleText = (seed: number, len: number): string => {
-  let s = (seed * 2654435761) >>> 0;
-  let out = "";
-  for (let i = 0; i < len; i++) {
-    s = (s * 1664525 + 1013904223) >>> 0;
-    out += BUBBLE_GLYPHS[s % BUBBLE_GLYPHS.length];
-  }
-  return out;
-};
+// GM lockup plaque — icon plate + "General Market" wordmark. Placed
+// between each watcher's head and the carousel so the brand physically
+// occludes their sightline. They see the platform, not the blocks.
+const GmLockup: React.FC = () => (
+  <div
+    style={{
+      display: "flex",
+      alignItems: "center",
+      gap: 10,
+    }}
+  >
+    <div
+      style={{
+        width: 42,
+        height: 42,
+        borderRadius: 9,
+        background: "#1a1a1c",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <svg width={28} height={28} viewBox="0 0 102 102">
+        {GM_LOGO_PATHS.map((d, i) => (
+          <path key={i} d={d} fill="#ffffff" />
+        ))}
+      </svg>
+    </div>
+    <span
+      style={{
+        fontFamily: INTER,
+        fontWeight: 900,
+        fontSize: 19,
+        letterSpacing: "-0.02em",
+        color: WHITE,
+        whiteSpace: "nowrap",
+      }}
+    >
+      General Market
+    </span>
+  </div>
+);
 
 const OutsideWatcher: React.FC<{
   label: string;
@@ -433,10 +464,15 @@ const OutsideWatcher: React.FC<{
   });
   const lift = (1 - entry) * 32;
 
-  const bubbleSeed = index * 7919 + Math.floor(local / 10);
-  const bubbleText = seededBubbleText(bubbleSeed, 9);
-  const quPulse =
-    0.55 + 0.45 * Math.max(0, Math.sin(local * 0.32 + index * 1.1));
+  // Blinder lands slightly after the watcher itself, as if they stepped
+  // up to the carousel and the logo immediately got in the way.
+  const blinderStart = entryStart + 8;
+  const blinderEntry = interpolate(
+    local,
+    [blinderStart, blinderStart + 14],
+    [0, 1],
+    { ...clamp, easing: ease3 },
+  );
 
   return (
     <div
@@ -451,47 +487,12 @@ const OutsideWatcher: React.FC<{
     >
       <div
         style={{
-          position: "relative",
-          background: WHITE,
-          border: `1px solid ${BLACK}`,
-          borderRadius: 14,
-          padding: "8px 14px",
-          color: BLACK,
-          fontFamily: MONO_FAMILY,
-          fontSize: 16,
-          letterSpacing: "0.12em",
           marginBottom: 14,
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
+          opacity: blinderEntry,
+          transform: `scale(${0.9 + 0.1 * blinderEntry})`,
         }}
       >
-        <span>{bubbleText}</span>
-        <span
-          style={{
-            color: BLACK,
-            fontFamily: INTER,
-            fontWeight: 900,
-            fontSize: 20,
-            opacity: quPulse,
-          }}
-        >
-          ?
-        </span>
-        <span
-          style={{
-            position: "absolute",
-            left: "50%",
-            bottom: -7,
-            marginLeft: -6,
-            width: 12,
-            height: 12,
-            background: WHITE,
-            borderRight: `1px solid ${BLACK}`,
-            borderBottom: `1px solid ${BLACK}`,
-            transform: "rotate(45deg)",
-          }}
-        />
+        <GmLockup />
       </div>
 
       <WatcherSilhouette />
@@ -579,14 +580,12 @@ const Point2Scene: React.FC<{
 
   const fadeOut = interpolate(local, [duration - 18, duration], [1, 0], clamp);
 
-  // Carousel band sits in the upper-middle of the stage; the watchers
-  // stand across the lower band. Title sits in its own banner above
-  // both. The spatial relation is literal — blocks pass through, the
-  // actors watch them from below and fail to read.
-  const TITLE_TOP_PX = 60;
-  const TITLE_DIVIDER_Y = 220;
-  const CAROUSEL_TOP_PCT = 48;
-  const WATCHERS_TOP_PX = 740;
+  // Whole stack is shifted ~15% of screen height lower than before, so
+  // the title breathes at the top, the carousel lands mid-lower, and
+  // the watchers stay inside the 1080 frame.
+  const TITLE_TOP_PX = 180;
+  const CAROUSEL_TOP_PCT = 60;
+  const WATCHERS_TOP_PX = 820;
 
   // ── Transition: a white bar sweeps right-to-left across the stage in
   //    the first 12 frames, echoing the direction the blocks will flow.
@@ -638,33 +637,15 @@ const Point2Scene: React.FC<{
           seed={59}
           solid
           style={{
-            fontSize: 76,
+            fontSize: 114,
             fontWeight: 900,
             letterSpacing: "-0.03em",
             textAlign: "center",
-            maxWidth: 1500,
+            maxWidth: 1700,
             lineHeight: 1,
           }}
         />
       </div>
-
-      {/* Hairline divider — separates the title from the animation band. */}
-      <div
-        style={{
-          position: "absolute",
-          left: "14%",
-          right: "14%",
-          top: TITLE_DIVIDER_Y,
-          height: 2,
-          background: WHITE,
-          opacity: interpolate(local, [14, 28], [0, 0.25], clamp),
-          transformOrigin: "50% 50%",
-          transform: `scaleX(${interpolate(local, [14, 28], [0, 1], {
-            ...clamp,
-            easing: ease3,
-          })})`,
-        }}
-      />
 
       {/* 3D stage — GradientCarousel geometry, black-and-white cards. */}
       <div
