@@ -9,7 +9,7 @@ import {
 } from "remotion";
 import { loadFont as loadInter } from "@remotion/google-fonts/Inter";
 import { CascadeText } from "../../lib/components/Text";
-import { SourceCardsWall } from "./SourceCardsWall";
+import { FeaturedCard, FEATURED_SOURCES } from "./SourceCardsWall";
 
 const { fontFamily: INTER } = loadInter("normal", {
   subsets: ["latin"],
@@ -228,6 +228,104 @@ const IntroScene: React.FC<{
   );
 };
 
+// ─── Card vortex — cylindrical helix of source cards orbiting the camera.
+//      Port of the WebGLPicks VortexGallery concept, in plain CSS 3D so it
+//      costs a fraction of a Three.js canvas and keeps each card as live,
+//      readable HTML. Rings stagger angularly so cards don't line up in
+//      straight vertical columns on every rotation.
+type VortexCardSlot = {
+  angle: number;
+  yOffset: number;
+  sourceIdx: number;
+  key: number;
+};
+
+const buildVortexSlots = (): VortexCardSlot[] => {
+  const CARDS_PER_RING = 10;
+  const RINGS = 3;
+  const RING_SPACING = 440;
+  const slots: VortexCardSlot[] = [];
+  for (let r = 0; r < RINGS; r++) {
+    const ringOffset = (r * 18) % 360; // half-step offset per ring
+    for (let c = 0; c < CARDS_PER_RING; c++) {
+      const angle = (c / CARDS_PER_RING) * 360 + ringOffset;
+      const yOffset = (r - (RINGS - 1) / 2) * RING_SPACING;
+      const key = r * CARDS_PER_RING + c;
+      slots.push({
+        angle,
+        yOffset,
+        sourceIdx: key % FEATURED_SOURCES.length,
+        key,
+      });
+    }
+  }
+  return slots;
+};
+
+const VORTEX_SLOTS = buildVortexSlots();
+const VORTEX_RADIUS = 880;
+const VORTEX_CARD_W = 320;
+const VORTEX_CARD_H = 420;
+
+const CardVortex: React.FC<{ local: number }> = ({ local }) => {
+  // Continuous rotation + mild vertical drift. The camera also tilts down
+  // a few degrees for a more cinematic read on the cylinder.
+  const rotation = local * 1.1;
+  const tilt = 8;
+
+  return (
+    <AbsoluteFill
+      style={{
+        perspective: 2400,
+        perspectiveOrigin: "50% 50%",
+        overflow: "hidden",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          left: "50%",
+          top: "50%",
+          width: 0,
+          height: 0,
+          transformStyle: "preserve-3d",
+          transform: `rotateX(${tilt}deg) rotateY(${rotation}deg)`,
+        }}
+      >
+        {VORTEX_SLOTS.map((slot, i) => {
+          const appearT = interpolate(
+            local,
+            [2 + i * 0.6, 26 + i * 0.6],
+            [0, 1],
+            clamp,
+          );
+          const source = FEATURED_SOURCES[slot.sourceIdx];
+          return (
+            <div
+              key={slot.key}
+              style={{
+                position: "absolute",
+                left: -VORTEX_CARD_W / 2,
+                top: -VORTEX_CARD_H / 2,
+                width: VORTEX_CARD_W,
+                height: VORTEX_CARD_H,
+                transform: `translateY(${slot.yOffset}px) rotateY(${slot.angle}deg) translateZ(${VORTEX_RADIUS}px)`,
+                opacity: appearT,
+                backfaceVisibility: "hidden",
+                boxShadow: "0 32px 80px rgba(0,0,0,0.55)",
+                borderRadius: 14,
+                overflow: "hidden",
+              }}
+            >
+              <FeaturedCard source={source} />
+            </div>
+          );
+        })}
+      </div>
+    </AbsoluteFill>
+  );
+};
+
 // ─── Scene 2: POINT 1 — 500,000 active markets ───────────────────────────
 
 const Point1Scene: React.FC<{
@@ -235,58 +333,30 @@ const Point1Scene: React.FC<{
   sceneStart: number;
   duration: number;
 }> = ({ local, sceneStart, duration }) => {
-  // Thin accent bar behind the big number — signals scale without
-  // crossing title or subtitle zones.
-  const barW = interpolate(local, [10, 60], [0, 1200], {
-    ...clamp,
-    easing: ease3,
-  });
   const fadeOut = interpolate(local, [duration - 18, duration], [1, 0], clamp);
-
-  // Wall of homepage-style source cards — fades in under the headline,
-  // slowly drifts upward. Proof of "500,000 markets" sitting under the claim.
-  const wallIn = interpolate(local, [0, 36], [0, 1], {
+  const vortexIn = interpolate(local, [0, 30], [0, 1], {
     ...clamp,
     easing: ease3,
   });
-  const wallScroll = local * 0.9;
 
   return (
-    <AbsoluteFill style={{ opacity: fadeOut }}>
-      {/* BACKGROUND — cards wall, dimmed so the headline stays legible */}
-      <AbsoluteFill style={{ opacity: wallIn * 0.78 }}>
-        <SourceCardsWall scrollY={wallScroll} />
+    <AbsoluteFill style={{ opacity: fadeOut, background: "#000000" }}>
+      {/* VORTEX — cylinder of live source cards rotating around the center */}
+      <AbsoluteFill style={{ opacity: vortexIn }}>
+        <CardVortex local={local} />
       </AbsoluteFill>
-      {/* Vignette darkens the edges so "500,000" never competes with a
-          bright card directly behind it */}
+
+      {/* Radial vignette — holds focus at the center where the number lives */}
       <AbsoluteFill
         style={{
           background:
-            "radial-gradient(ellipse 70% 55% at 50% 50%, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.85) 60%, rgba(0,0,0,0.95) 100%)",
-          opacity: wallIn,
+            "radial-gradient(ellipse 55% 45% at 50% 50%, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.75) 55%, rgba(0,0,0,0.95) 100%)",
+          opacity: vortexIn,
           pointerEvents: "none",
         }}
       />
 
-      {/* SHAPE — slim horizontal accent slab, mid-screen only */}
-      <AbsoluteFill
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <div
-          style={{
-            width: barW,
-            height: 18,
-            background: WHITE,
-            borderRadius: 3,
-          }}
-        />
-      </AbsoluteFill>
-
-      {/* HEADLINE — the sentence itself, no enumeration prefix */}
+      {/* CENTER — the headline number and its tagline */}
       <AbsoluteFill
         style={{
           display: "flex",
@@ -297,13 +367,13 @@ const Point1Scene: React.FC<{
         }}
       >
         <Reveal
-          from={sceneStart + 4}
-          duration={duration - 4}
+          from={sceneStart + 8}
+          duration={duration - 8}
           text="500,000"
           revealDuration={28}
           seed={37}
           style={{
-            fontSize: 240,
+            fontSize: 260,
             fontWeight: 900,
             letterSpacing: "-0.04em",
             textAlign: "center",
@@ -311,8 +381,8 @@ const Point1Scene: React.FC<{
           }}
         />
         <Reveal
-          from={sceneStart + 30}
-          duration={duration - 30}
+          from={sceneStart + 34}
+          duration={duration - 34}
           text="active markets"
           revealDuration={26}
           seed={31}
@@ -332,12 +402,12 @@ const Point1Scene: React.FC<{
           display: "flex",
           alignItems: "flex-end",
           justifyContent: "center",
-          paddingBottom: 150,
+          paddingBottom: 110,
         }}
       >
         <Reveal
-          from={sceneStart + 62}
-          duration={duration - 62}
+          from={sceneStart + 66}
+          duration={duration - 66}
           text="Only on GM — Twitch, weather, trains, elections…"
           revealDuration={42}
           seed={53}

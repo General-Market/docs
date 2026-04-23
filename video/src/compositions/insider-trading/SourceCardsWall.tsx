@@ -349,7 +349,8 @@ function pctText(pct: number): string {
   return `${sign}${pct.toFixed(2)}%`;
 }
 
-const FeaturedCard: React.FC<{ source: FeaturedSource }> = ({ source }) => {
+export const FEATURED_SOURCES = FEATURED;
+export const FeaturedCard: React.FC<{ source: FeaturedSource }> = ({ source }) => {
   const chart = CHART_CACHE[source.id];
   const logoPath = `source-imgs/${source.logo}`;
 
