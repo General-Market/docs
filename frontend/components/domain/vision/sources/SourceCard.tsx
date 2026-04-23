@@ -9,6 +9,7 @@ import type { VisionSource } from '@/lib/vision/sources'
 import { toInternalId } from '@/lib/vision/source-ids'
 import { getCategoryLabel } from '@/lib/vision/source-categories'
 import { SOURCE_BROLLS } from '@/lib/vision/source-brolls'
+import { getHdBrollPath } from '@/lib/vision/source-brolls-hd'
 import type { BitmapEditor } from '@/hooks/vision/useBitmapEditor'
 import { useSourceSnapshot } from '@/hooks/vision/useMarketSnapshot'
 import { getFundCountForSource } from '@/hooks/vaults/useFundBranding'
@@ -141,7 +142,21 @@ export function SourceCard({ source, bitmapEditor, index = 99, metaAssetCount, m
     : { backgroundColor: source.brandBg }
 
   // Ambient b-roll (if mapped). Plays muted + looping behind the logo.
-  const broll = SOURCE_BROLLS[source.id]
+  // SD (256x144) loads everywhere; HD (≤720p) upgrades on desktop after mount
+  // for sources that have a /source-video/hd/ variant. Default isDesktop=false
+  // so mobile never speculatively fetches the heavier file.
+  const sdBroll = SOURCE_BROLLS[source.id]
+  const [isDesktop, setIsDesktop] = useState(false)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const mq = window.matchMedia('(min-width: 768px)')
+    setIsDesktop(mq.matches)
+    const onChange = (e: MediaQueryListEvent) => setIsDesktop(e.matches)
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+  const hdBroll = sdBroll && isDesktop ? getHdBrollPath(source.id, sdBroll) : undefined
+  const broll = hdBroll ?? sdBroll
 
   // Detect light backgrounds — logos need a subtle vignette to stay visible
   const isLightBg = hexLuminance(source.brandBg) > 200
@@ -187,6 +202,7 @@ export function SourceCard({ source, bitmapEditor, index = 99, metaAssetCount, m
           >
             {broll && (
               <video
+                key={broll}
                 src={broll}
                 autoPlay
                 muted
