@@ -150,11 +150,26 @@ Not a concern. Break interfaces, change function signatures, remove deprecated s
 
 ## Oracles
 
-Oracles **only run on VPS** — never locally. Don't create local oracle startup scripts, don't test oracles on localhost. All oracle infrastructure lives in `docker/testnet/oracle/` and runs via Docker Compose on the VPS.
+Oracles **only run on VPS** — never locally. Don't create local oracle startup scripts, don't test oracles on localhost.
 
-- SSH to VPS: `ssh index-maker/prod/be`
-- Oracle logs: `docker logs oracle-1 --tail 100` (oracle-1, oracle-2, oracle-3)
+**Two oracle stacks, two homes — do not mix.**
+
+### Ethereum L3 BLS oracles (existing)
+All EVM-side oracle infrastructure lives in `docker/testnet/oracle/` and runs via Docker Compose on **VPS 1**.
+- SSH: `ssh index-maker/prod/be`
+- Logs: `docker logs oracle-1 --tail 100` (oracle-1, oracle-2, oracle-3)
 - Restart: `cd /home/max/index && docker compose -f docker/testnet/oracle/docker-compose.yml restart`
+
+### Solana oracle + indexer + Postgres — **VPS 3 only**
+The full Solana stack (oracle daemon, event indexer, its Postgres) runs on **VPS 3 exclusively**. No Solana component runs on VPS 1 or VPS 2 — ever. If you catch a deploy targeting either, stop and re-target.
+- SSH: `ssh vps3` (direct, no bastion; user `root`, port 3189) or `ssh index-maker/prod/fe`
+- Oracle daemon logs: `journalctl -u prediction-oracle -f`
+- Indexer logs: `journalctl -u prediction-indexer -f`
+- Postgres: `psql -h 127.0.0.1 -U indexer prediction_market_indexer`
+- Binaries built on VPS 3 from `/home/max/index/oracle-daemon/` and `/home/max/index/event-indexer/` (clone or git-pull the mono repo on VPS 3)
+- Devnet program: `DQwMnwQGYuLDvciSFZNgUvcHkA3Buyhk3ejgbACvSydA`
+
+Full inventory, env vars, and deploy paths are in `vps.md` under the "VPS 3" section.
 
 ## Contracts
 
