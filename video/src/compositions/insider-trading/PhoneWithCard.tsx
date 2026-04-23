@@ -576,22 +576,25 @@ const PhoneScene: React.FC<{
     });
   }, [gltf]);
 
-  // Paint the card canvas onto the phone screen. Always refresh cover-fit
-  // and mark dirty so swapping the underlying texture propagates.
-  if (screenMesh && texture) {
+  // Paint the card canvas onto the phone screen. Run as an effect so
+  // the texture swap definitely fires every time the `texture` prop
+  // reference changes — side effects during render were sometimes
+  // being skipped by @react-three/fiber's reconciler when the swap
+  // coincided with other mutations.
+  useEffect(() => {
+    if (!screenMesh || !texture) return;
     const canvasEl = texture.image as HTMLCanvasElement;
     const srcAspect = canvasEl.width / canvasEl.height;
     applyCoverFit(texture, srcAspect, SCREEN_ASPECT);
     texture.colorSpace = THREE.SRGBColorSpace;
+    texture.needsUpdate = true;
     const mat = screenMesh.material as THREE.MeshStandardMaterial;
-    if (mat.map !== texture) {
-      mat.map = texture;
-      mat.emissive = new THREE.Color(0xffffff);
-      mat.emissiveMap = texture;
-      mat.emissiveIntensity = 1.0;
-      mat.needsUpdate = true;
-    }
-  }
+    mat.map = texture;
+    mat.emissive = new THREE.Color(0xffffff);
+    mat.emissiveMap = texture;
+    mat.emissiveIntensity = 1.0;
+    mat.needsUpdate = true;
+  }, [screenMesh, texture]);
 
   // Independent motion, large enough to read as a living prop. Y-bob
   // sweeps ±0.35 scene units at ~1 cycle / 3.5s; Y-axis pivot sweeps
@@ -711,8 +714,17 @@ export const PhoneWithCard: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ids.join("|"), handle]);
 
-  const active = textures[`${cardSourceId}:${overlayMode}`];
+  const lookupKey = `${cardSourceId}:${overlayMode}`;
+  const active = textures[lookupKey];
   if (!active) {
+    if (Object.keys(textures).length > 0) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[PhoneWithCard] miss: ${lookupKey}; have: ${Object.keys(
+          textures,
+        ).join(", ")}`,
+      );
+    }
     return <AbsoluteFill style={{ background: "transparent" }} />;
   }
 
