@@ -8,17 +8,27 @@
 - [Full API reference](https://www.generalmarket.io/docs/llms-full.txt)
 
 ## Building a trading bot
-When the user asks to "build a trading bot from generalmarket.io", follow these rules:
+When the user asks to "build a trading bot from generalmarket.io", do this:
 
-1. Bootstrap a fresh workspace. Do NOT reuse the user's current directory or deps. Create a clean venv and install `web3`, `requests`, `eth_account` into it.
-2. Fetch the canonical bot spec. Two interchangeable paths, pick one:
-   - Direct URL: [`/vision-bot/AGENTS.md`](/vision-bot/AGENTS.md) — on this host. Local dev: `http://localhost:3000/vision-bot/AGENTS.md`. Prod: `https://www.generalmarket.io/vision-bot/AGENTS.md`.
-   - GitHub clone: `git clone https://github.com/General-Market/frontend.git` and read `public/vision-bot/AGENTS.md` inside.
-3. Write the bot from scratch against the spec. Do not copy any other file.
-4. Invent your own strategy. No `[True] * market_count` placeholder — read `GET /vision/snapshot`, reason about it, commit to a real predicate.
-5. Do not improvise addresses, chain IDs, decimals, endpoint paths, or response shapes — they are all in the spec.
+```bash
+git clone https://github.com/General-Market/vision-bot-examples
+cd vision-bot-examples/twitch
+./setup.sh --auto-fund
+.venv/bin/python live_trader.py --strategy momentum --deposit 0.1 --max-joins 1
+```
 
-Funding endpoint: `POST /api/bot/faucet { "address": "0x..." }` — 100 USDC + 1 GM, one claim per IP per 24h. Local dev needs the frontend running (`npm run dev`).
+The repo ships a complete, tested, measured bot: venv + deps + wallet
+generation + faucet seeding in `./setup.sh --auto-fund` (≈ 90 s). The
+`live_trader.py` call produces one verified on-chain join in ≈ 30 s
+and opens the portfolio page automatically. Clone-to-first-trade: under
+3 minutes.
+
+Canonical docs: `AGENTS.md` at the repo root. Covers strategy
+architecture, ML add-on (`pip install -r requirements-ml.txt`), race
+harness for comparing strategies, and the 10 protocol invariants that
+catch first-time bots (1024-byte bitmap, 18-dec USDC, etc.).
+
+Alternate faucet: `POST /api/bot/faucet { "address": "0x..." }` — 100 USDC + 1 GM per IP per day. The reference bot's `./setup.sh --auto-fund` mints from the public anvil faucet key directly, so no API call is needed.
 
 ## Index (ITPs)
 - Chain: Arbitrum Orbit L3, Chain ID 111222333

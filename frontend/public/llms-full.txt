@@ -198,24 +198,27 @@ payout = winnings - fee
 
 ### Building a Vision Bot
 
-The protocol supports automated trading bots. Reference implementation: `vision-bot/bot.py`.
+Reference implementation (maintained, tested, measured):
+**https://github.com/General-Market/vision-bot-examples** — clone, run `./setup.sh --auto-fund`, trade. Zero-to-on-chain-join in under 3 minutes. See `AGENTS.md` in the repo for the canonical flow, protocol invariants, strategy architecture, and measured edge numbers.
 
 Bot lifecycle:
 1. Register via `registerBot(endpoint, pubkeyHash)` — free, no collateral
-2. Poll `GET /vision/batches` for active batches
-3. For each batch: generate bets → encode bitmap → compute keccak256 hash → approve USDC → call `joinBatch()` → POST bitmap to all oracle nodes
-4. Periodically claim rewards via BLS balance proofs
+2. Poll `GET /vision/batches` (or `/batches/recommended` on the data-node) for active batches
+3. For each batch: generate bets → encode bitmap → compute keccak256 hash → approve USDC → call `joinBatchDirect(batchId, configHash, deposit, bitmapHash)` → POST bitmap to all oracle nodes for reveal
+4. Settlement and payout happen automatically at the tick boundary; query `PlayerSettled(batchId, player, payout, fee)` for PnL
 
-Bitmap encoding (Python):
+Bitmap encoding — CRITICAL: always 1024 bytes, padded with zeros, MSB-first per byte. Short bitmaps hash to the wrong commitment and oracles silently reject:
+
 ```python
+MAX_BITMAP_BYTES = 1024  # covers 8192 markets
+
 def encode_bitmap(bets: list[str], market_count: int) -> bytes:
-    byte_count = (market_count + 7) // 8
-    bitmap = bytearray(byte_count)
+    if len(bets) < market_count:
+        raise ValueError("short bitmap = silent loss")
+    bitmap = bytearray(MAX_BITMAP_BYTES)
     for i in range(market_count):
-        if i < len(bets) and bets[i] == "UP":
-            byte_idx = i // 8
-            bit_idx = 7 - (i % 8)  # big-endian
-            bitmap[byte_idx] |= 1 << bit_idx
+        if bets[i] == "UP":
+            bitmap[i // 8] |= 1 << (7 - (i % 8))
     return bytes(bitmap)
 ```
 
