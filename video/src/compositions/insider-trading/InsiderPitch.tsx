@@ -1294,15 +1294,30 @@ const CLOSING_LOCKUP_GAP = 28;
 // Used for placement only; the text itself sizes to its content.
 const CLOSING_WORDMARK_W = 1080;
 const CLOSING_STAGE_W = 1920;
+const CLOSING_STAGE_H = 1080;
 
 const ClosingLogoGrid: React.FC<{ local: number }> = ({ local }) => {
-  // Icon dezooms to hero at 90, holds briefly, then shrinks to the
-  // lockup size. Shrink + slide-left are chained so the motion reads
-  // as one move rather than two.
-  const iconSize = interpolate(
+  // Phase A [0, 112]  — Grid fills the whole frame and scrolls top-right.
+  //   White stripes hidden, wordmark hidden. The two text statements
+  //   play over this backdrop (see ClosingScene).
+  // Phase B [112, 138] — Grid container shrinks from stage to the icon
+  //   square AND slides to the lockup x. White stripes fade in — the
+  //   GM logo crystallises out of the scrolling wall. Wordmark fades
+  //   in from 122.
+  // Phase C [138, 151] — Hold the full lockup.
+  // Phase D [151, 154] — Icon's black field flashes to solid white.
+  // Phase E [154, 172] — Scene-level fadeOut (owned by ClosingScene).
+
+  const containerW = interpolate(
     local,
-    [0, 90, 98, 122],
-    [3200, 620, 620, CLOSING_ICON_FINAL],
+    [112, 138],
+    [CLOSING_STAGE_W, CLOSING_ICON_FINAL],
+    { ...clamp, easing: ease3 },
+  );
+  const containerH = interpolate(
+    local,
+    [112, 138],
+    [CLOSING_STAGE_H, CLOSING_ICON_FINAL],
     { ...clamp, easing: ease3 },
   );
 
@@ -1314,19 +1329,28 @@ const ClosingLogoGrid: React.FC<{ local: number }> = ({ local }) => {
 
   const iconCx = interpolate(
     local,
-    [98, 122],
+    [112, 138],
     [CLOSING_STAGE_W / 2, iconFinalCx],
     { ...clamp, easing: ease3 },
   );
 
-  const wordmarkOpacity = interpolate(local, [106, 130], [0, 1], clamp);
-  const wordmarkRise = interpolate(local, [106, 130], [26, 0], {
+  // Grid scroll — top-right diagonal. Freezes at local=112 so phase B
+  // is a pure shape-morph, not a moving target. Values are percentages
+  // of the grid's own box, so they scale with the container as it
+  // shrinks.
+  const scrollTime = Math.min(local, 112);
+  const scrollPct = (scrollTime / 112) * 10;
+
+  // White stripes come in as the container squares up.
+  const stripesOpacity = interpolate(local, [114, 132], [0, 1], clamp);
+
+  const wordmarkOpacity = interpolate(local, [122, 146], [0, 1], clamp);
+  const wordmarkRise = interpolate(local, [122, 146], [26, 0], {
     ...clamp,
     easing: ease3,
   });
 
-  // Final 3 frames before the scene fade starts (duration-18 = 154).
-  // Grid blanks to pure white so the icon exits as a clean mark.
+  // Final 3 frames before the scene fade — black field flashes white.
   const gridToWhite = interpolate(local, [151, 154], [0, 1], clamp);
 
   const count = CLOSING_GRID_COLS * CLOSING_GRID_ROWS;
@@ -1338,25 +1362,30 @@ const ClosingLogoGrid: React.FC<{ local: number }> = ({ local }) => {
           position: "absolute",
           top: "50%",
           left: iconCx,
-          width: iconSize,
-          height: iconSize,
+          width: containerW,
+          height: containerH,
           transform: "translate(-50%, -50%)",
           overflow: "hidden",
           background: BLACK,
-          boxShadow:
-            "0 0 0 1px rgba(255,255,255,0.04), 0 24px 80px rgba(0,0,0,0.55)",
         }}
       >
+        {/* Grid — oversized inside the container so the scroll has
+            buffer on both axes. Translate is in percent of the grid's
+            own box, so it scales naturally as the container shrinks. */}
         <div
           style={{
             position: "absolute",
-            inset: 0,
+            top: "-15%",
+            left: "-15%",
+            width: "130%",
+            height: "130%",
             display: "grid",
             gridTemplateColumns: `repeat(${CLOSING_GRID_COLS}, 1fr)`,
             gridTemplateRows: `repeat(${CLOSING_GRID_ROWS}, 1fr)`,
             gap: 2,
             padding: 2,
             filter: "saturate(0.92) brightness(0.95)",
+            transform: `translate(${scrollPct}%, ${-scrollPct}%)`,
           }}
         >
           {Array.from({ length: count }).map((_, i) => {
@@ -1401,12 +1430,20 @@ const ClosingLogoGrid: React.FC<{ local: number }> = ({ local }) => {
           }}
         />
 
+        {/* White stripes — fade in during phase B as the container
+            squares up. preserveAspectRatio="xMidYMid meet" keeps the
+            stripes correctly proportioned even during the morph from
+            stage aspect to square. */}
         <svg
           width="100%"
           height="100%"
           viewBox="0 0 102 102"
-          preserveAspectRatio="none"
-          style={{ position: "absolute", inset: 0 }}
+          preserveAspectRatio="xMidYMid meet"
+          style={{
+            position: "absolute",
+            inset: 0,
+            opacity: stripesOpacity,
+          }}
         >
           {GM_LOGO_PATHS.map((d, i) => (
             <path key={i} d={d} fill="#ffffff" />
