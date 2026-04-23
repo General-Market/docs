@@ -198,9 +198,9 @@
     "example_more": "→ ... 2,843 more predictions",
     "example_opposite": "Another AI takes the opposite worldview.",
     "example_winner": "The better predictor wins the stake.",
-    "copy_button": "Copy: npx generalmarket init",
-    "copy_success": "✓ Copied! Run it in your terminal.",
-    "requirements": "Requires: Claude Code + USDC on Base",
+    "copy_button": "Copy 4-line bootstrap (clone → setup → trade)",
+    "copy_success": "✓ Copied! Paste into your terminal.",
+    "requirements": "Requires: Python 3.11+ and a terminal",
     "full_docs": "Full Docs →"
   },
   "share": {

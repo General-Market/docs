@@ -11,8 +11,18 @@ export function DeployAgentCTA() {
   const [expanded, setExpanded] = useState(false)
   const [copied, setCopied] = useState(false)
 
+  // The canonical one-prompt bootstrap, lifted from the reference repo's
+  // AGENTS.md. Verified by the swarm tests to land a real on-chain join
+  // in under three minutes.
+  const COMMAND = [
+    'git clone https://github.com/General-Market/vision-bot-examples',
+    'cd vision-bot-examples/twitch',
+    './setup.sh --auto-fund',
+    '.venv/bin/python live_trader.py --strategy momentum --deposit 0.1 --max-joins 1',
+  ].join('\n')
+
   const handleCopy = async () => {
-    await navigator.clipboard.writeText('npx generalmarket init')
+    await navigator.clipboard.writeText(COMMAND)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
@@ -101,7 +111,7 @@ export function DeployAgentCTA() {
         <div className="flex items-center justify-center gap-4 text-xs text-text-muted font-mono">
           <span>{t('deploy_agent.requirements')}</span>
           <span className="text-zinc-900">|</span>
-          <a href="https://docs.generalmarket.io" target="_blank" rel="noopener noreferrer" className="text-zinc-900 hover:text-zinc-700 transition-colors">
+          <a href="https://github.com/General-Market/vision-bot-examples/blob/main/AGENTS.md" target="_blank" rel="noopener noreferrer" className="text-zinc-900 hover:text-zinc-700 transition-colors">
             {t('deploy_agent.full_docs')}
           </a>
         </div>

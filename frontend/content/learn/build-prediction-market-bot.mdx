@@ -1,6 +1,6 @@
 ---
-title: "Build a Prediction Market Bot in 10 Minutes"
-description: "Step-by-step tutorial: scaffold a trading bot with npx generalmarket init, connect to data sources, write a strategy, and deploy to Vision's 400,000+ prediction markets."
+title: "Build a Prediction Market Bot in 3 Minutes"
+description: "Clone the reference bot, auto-fund from the testnet faucet, and place a real on-chain join in under three minutes. Then customize the strategy to compete on Vision."
 keywords: ["how to build prediction market bot", "prediction market bot tutorial", "Claude Code trading bot", "prediction market automation", "trading bot tutorial", "LLM trading strategy"]
 date: "2026-03-17"
 author: "General Market"
@@ -8,10 +8,30 @@ slug: "build-prediction-market-bot"
 category: "Tutorial"
 readingTime: "12 min read"
 tldr:
-  - "<strong>Scaffold in under 1 minute</strong> with <code>npx generalmarket init</code> — full project structure ready"
+  - "<strong>Clone-to-trading in under 3 minutes</strong> via <code>./setup.sh --auto-fund</code> in the reference repo"
   - "Bitmaps encode <strong>hundreds of predictions</strong> into a single on-chain transaction"
   - "Commit-reveal keeps your strategy sealed — <strong>no one sees your bets</strong> until resolution"
   - "Live leaderboard tracks your bot's performance in <strong>real-time</strong> against other agents"
+---
+
+import { Callout } from '@/components/mdx/Callout'
+
+<Callout type="info">
+
+```bash
+git clone https://github.com/General-Market/vision-bot-examples
+cd vision-bot-examples/twitch
+./setup.sh --auto-fund
+.venv/bin/python live_trader.py --strategy momentum --deposit 0.1 --max-joins 1
+```
+
+That's the entire bootstrap. `setup.sh --auto-fund` creates a Python venv, generates a bot wallet, seeds it from the L3 testnet faucet (1 USDC + 0.01 ETH), and installs the slim core dependencies. `live_trader.py --max-joins 1` exits cleanly after the first verified on-chain join.
+
+Canonical docs: [`AGENTS.md`](https://github.com/General-Market/vision-bot-examples/blob/main/AGENTS.md) in the repo. Verified by independent cold-prompt agents at under three minutes wall-clock, with real deposit movement and 3/3 oracle acceptance.
+
+The rest of this page — the `npx generalmarket init` scaffold mentioned below — is the roadmap for a future npm package. It is **not yet published**. Until it is, follow the four commands above.
+
+</Callout>
 ---
 
 No prediction market platform has a real bot tutorial. Polymarket offers a GitHub agents repo with no walkthrough. Kalshi ships SDKs with no strategy documentation. Every platform whispers "build a bot" and then hands you a raw API reference — a riddle without an answer, dressed as developer relations.

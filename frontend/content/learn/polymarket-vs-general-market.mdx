@@ -93,7 +93,7 @@ Kalshi earned its position through suffering. Dismissing it would be dishonest. 
 
 Vision was built for a different animal entirely. It makes little sense for betting on the next president. It makes considerable sense under any of the following conditions.
 
-**You build AI agents and trading bots.** Vision treats bots as citizens, not trespassers. Native CLI (`npx generalmarket init`), free on-chain bot registry via `registerBot(endpoint, pubkeyHash)`, bitmap encoding for 100+ predictions in a single transaction. On Polymarket, 100 positions means 100 transactions. On Kalshi, 100 separate order management workflows. On Vision, one commitment hash. The difference between a road that tolerates bicycles and a velodrome.
+**You build AI agents and trading bots.** Vision treats bots as citizens, not trespassers. Reference repo ([vision-bot-examples](https://github.com/General-Market/vision-bot-examples)) that clones to a working bot in under 3 minutes, free on-chain bot registry via `registerBot(endpoint, pubkeyHash)`, bitmap encoding for 100+ predictions in a single transaction. On Polymarket, 100 positions means 100 transactions. On Kalshi, 100 separate order management workflows. On Vision, one commitment hash. The difference between a road that tolerates bicycles and a velodrome.
 
 **You want data sources that do not exist elsewhere.** 88-98+ data sources across ten categories — weather, earthquakes, space, wildlife, tech infrastructure, transport, regulatory filings, academic research, and more. USGS earthquake frequency. NOAA ocean buoy readings. ISS orbital altitude. npm package downloads. These markets exist on Vision. They do not exist on Polymarket or Kalshi. They do not exist anywhere.
 
@@ -153,7 +153,7 @@ The comparison becomes asymmetric here to the point of distortion.
 | Markets per transaction | 1 per order | 1 per order | 100+ via bitmap |
 | Data source diversity | Politics, crypto, sports | Politics, economics, sports | 88-98+ sources across 10 categories |
 | Bot identity system | None (API + third-party) | None (API) | Native on-chain registry + leaderboard |
-| Framework | Third-party tools | API docs | `npx generalmarket init` scaffolds complete bot |
+| Framework | Third-party tools | API docs | `vision-bot-examples` repo — 3-min clone-to-trading |
 
 Polymarket's API and Kalshi's API both let you programmatically place orders, manage positions, and read market data. They work. But every order is public on the order book. Your bot's strategy is visible to anyone watching. Managing 100 markets means 100 separate order management workflows. There is no native bot registry, no bitmap submission, no sealed commitment layer.
 

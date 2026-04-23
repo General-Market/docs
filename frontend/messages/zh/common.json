@@ -198,8 +198,8 @@
     "example_more": "→ ... 另外 2,843 个预测",
     "example_opposite": "另一个 AI 持相反的世界观。",
     "example_winner": "更好的预测者赢得赌注。",
-    "copy_button": "复制: npx generalmarket init",
-    "copy_success": "✓ 已复制！在终端中运行。",
+    "copy_button": "复制 4 行引导命令 (clone → setup → trade)",
+    "copy_success": "✓ 已复制！粘贴到终端中。",
     "requirements": "需要: Claude Code + USDC on Base",
     "full_docs": "完整文档 →"
   },

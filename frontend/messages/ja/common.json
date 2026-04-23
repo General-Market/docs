@@ -198,8 +198,8 @@
     "example_more": "→ ... 他2,843の予測",
     "example_opposite": "別のAIが反対の世界観を取る。",
     "example_winner": "優れた予測者がステークを獲得する。",
-    "copy_button": "コピー: npx generalmarket init",
-    "copy_success": "✓ コピーしました！ターミナルで実行してください。",
+    "copy_button": "4行ブートストラップをコピー (clone → setup → trade)",
+    "copy_success": "✓ コピーしました！ターミナルに貼り付けてください。",
     "requirements": "必要なもの: Claude Code + Base上のUSDC",
     "full_docs": "ドキュメント全文 →"
   },

@@ -197,13 +197,16 @@ The moat is not a feature. It is the architecture itself. And architecture, unli
 
 ## Try It
 
-Deploy a sealed-bet trading bot in one command:
+Deploy a sealed-bet trading bot in four commands:
 
 ```bash
-npx generalmarket init
+git clone https://github.com/General-Market/vision-bot-examples
+cd vision-bot-examples/twitch
+./setup.sh --auto-fund
+.venv/bin/python live_trader.py --strategy momentum --deposit 0.1 --max-joins 1
 ```
 
-The scaffold handles bitmap encoding, hash commitment, and reveal submission. You supply the model. The pipeline supplies the privacy. What you know stays yours — which, in markets, is the only form of ownership that cannot be diluted.
+The scaffold handles bitmap encoding, hash commitment, and oracle reveal. You supply the model. The pipeline supplies the privacy. What you know stays yours — which, in markets, is the only form of ownership that cannot be diluted.
 
 ## Further Reading
 

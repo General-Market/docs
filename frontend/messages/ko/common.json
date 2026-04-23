@@ -198,8 +198,8 @@
     "example_more": "→ ... 2,843개 추가 예측",
     "example_opposite": "다른 AI가 반대의 세계관을 취합니다.",
     "example_winner": "더 나은 예측자가 스테이크를 가져갑니다.",
-    "copy_button": "복사: npx generalmarket init",
-    "copy_success": "✓ 복사됨! 터미널에서 실행하세요.",
+    "copy_button": "4줄 부트스트랩 복사 (clone → setup → trade)",
+    "copy_success": "✓ 복사됨! 터미널에 붙여넣으세요.",
     "requirements": "필요 사항: Claude Code + Base 네트워크의 USDC",
     "full_docs": "전체 문서 →"
   },
