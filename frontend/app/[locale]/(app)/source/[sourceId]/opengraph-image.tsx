@@ -4,6 +4,7 @@ import { getAaDataNodeUrl } from '@/lib/config'
 import { getCategoryLabel } from '@/lib/vision/source-categories'
 import { allInternalIds } from '@/lib/vision/source-ids'
 import { logoAsDataUrl } from '@/lib/og/logo'
+import { geistFonts } from '@/lib/og/fonts'
 
 export const runtime = 'nodejs'
 export const alt = 'Vision Market Data'
@@ -77,19 +78,18 @@ export default async function OGImage({ params }: { params: Promise<{ sourceId: 
     )
   }
 
-  const { movers, total: count } = await getMovers(sourceId)
-  const brand = solidColor(source.brandBg)
-  const cat = getCategoryLabel(source.category)
-  const [logo, gmLogo] = await Promise.all([
-    logoAsDataUrl(source.logo, 720),
-    logoAsDataUrl('/logo.svg', 96),
+  const [{ movers }, [logo, gmLogo], fonts] = await Promise.all([
+    getMovers(sourceId),
+    Promise.all([logoAsDataUrl(source.logo, 720), logoAsDataUrl('/logo.svg', 96)]),
+    geistFonts(),
   ])
+  const brand = solidColor(source.brandBg)
   // What we measure — the hero label
   const measure = source.valueLabel.toUpperCase()
   const unit = source.valueUnit ? `(${source.valueUnit.toUpperCase()})` : ''
 
   return new ImageResponse(
-    <div style={{ display: 'flex', width: 1200, height: 630 }}>
+    <div style={{ display: 'flex', width: 1200, height: 630, fontFamily: 'Geist' }}>
       {/* LEFT 600px: brand + logo */}
       <div style={{ display: 'flex', width: 600, height: 630, background: brand, alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
         {logo && <img src={logo} width={540} height={540} style={{ objectFit: 'contain' }} />}
@@ -161,6 +161,6 @@ export default async function OGImage({ params }: { params: Promise<{ sourceId: 
         </div>
       </div>
     </div>,
-    size,
+    { ...size, fonts },
   )
 }
