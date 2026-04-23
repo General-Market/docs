@@ -3,6 +3,7 @@ import { getSourceDisplayServer } from '@/lib/vision/sources-server'
 import { getAaDataNodeUrl } from '@/lib/config'
 import { getCategoryLabel } from '@/lib/vision/source-categories'
 import { allInternalIds } from '@/lib/vision/source-ids'
+import { logoAsDataUrl } from '@/lib/og/logo'
 
 export const runtime = 'nodejs'
 export const alt = 'Vision Market'
@@ -27,11 +28,6 @@ function solidColor(bg: string): string {
   if (bg.startsWith('#')) return bg
   const m = bg.match(/#[0-9a-fA-F]{3,8}/)
   return m ? m[0] : '#6366f1'
-}
-
-function ogLogo(logoPath: string): string {
-  const pngPath = logoPath.replace(/\.webp$/, '.png')
-  return pngPath.startsWith('http') ? pngPath : `https://www.generalmarket.io${pngPath}`
 }
 
 function cleanName(name: string, prefixes: string[]): string {
@@ -147,11 +143,14 @@ export default async function OGImage({ params }: { params: Promise<{ sourceId: 
     )
   }
 
-  const [history, current] = await Promise.all([fetchHistory(sourceId, decoded), fetchCurrent(sourceId, decoded)])
+  const [history, current, logo, gmLogo] = await Promise.all([
+    fetchHistory(sourceId, decoded),
+    fetchCurrent(sourceId, decoded),
+    logoAsDataUrl(source.logo, 720),
+    logoAsDataUrl('/logo.svg', 96),
+  ])
   const brand = solidColor(source.brandBg)
   const cat = getCategoryLabel(source.category)
-  const logo = ogLogo(source.logo)
-  const gmLogo = 'https://www.generalmarket.io/logo.svg'
 
   const marketName = cleanName(current?.name || decoded, source.prefixes)
   const priceStr = current ? fmtPrice(current.value, source.isPrice) : '--'
@@ -170,7 +169,7 @@ export default async function OGImage({ params }: { params: Promise<{ sourceId: 
     <div style={{ display: 'flex', width: 1200, height: 630 }}>
       {/* LEFT 600px: source brand + large logo */}
       <div style={{ display: 'flex', width: 600, height: 630, background: brand, alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-        <img src={logo} width={540} height={540} style={{ objectFit: 'contain' }} />
+        {logo && <img src={logo} width={540} height={540} style={{ objectFit: 'contain' }} />}
       </div>
 
       {/* RIGHT 600px: white panel — market data + chart */}
@@ -181,7 +180,7 @@ export default async function OGImage({ params }: { params: Promise<{ sourceId: 
             PREDICTION MARKET
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <img src={gmLogo} width={24} height={24} />
+            {gmLogo && <img src={gmLogo} width={24} height={24} />}
             <div style={{ display: 'flex', fontSize: 16, fontWeight: 700, color: '#18181b' }}>General Market</div>
           </div>
         </div>
