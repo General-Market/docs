@@ -56,6 +56,10 @@ import { emberSideBySideMeta } from "./compositions/replicates/ember/EmberSideBy
 import { worldcoinMeta } from "./compositions/replicates/worldcoin/WorldcoinComposition";
 import { worldcoinSideBySideMeta } from "./compositions/replicates/worldcoin/WorldcoinSideBySide";
 import { worldcoin2Meta } from "./compositions/replicates/worldcoin/Worldcoin2Composition";
+import {
+  phoneBrollDemoMeta,
+  laptopBrollDemoMeta,
+} from "./compositions/replicates/worldcoin/DeviceBrollDemo";
 import { riddMeta } from "./compositions/replicates/ridd/RiddComposition";
 import { riddSideBySideMeta } from "./compositions/replicates/ridd/RiddSideBySide";
 import { wabiMeta } from "./compositions/replicates/wabi/WabiComposition";
@@ -266,6 +270,22 @@ export const RemotionRoot: React.FC = () => {
           fps={worldcoin2Meta.fps}
           width={worldcoin2Meta.width}
           height={worldcoin2Meta.height}
+        />
+        <Composition
+          id={phoneBrollDemoMeta.id}
+          component={phoneBrollDemoMeta.component}
+          durationInFrames={phoneBrollDemoMeta.durationInFrames}
+          fps={phoneBrollDemoMeta.fps}
+          width={phoneBrollDemoMeta.width}
+          height={phoneBrollDemoMeta.height}
+        />
+        <Composition
+          id={laptopBrollDemoMeta.id}
+          component={laptopBrollDemoMeta.component}
+          durationInFrames={laptopBrollDemoMeta.durationInFrames}
+          fps={laptopBrollDemoMeta.fps}
+          width={laptopBrollDemoMeta.width}
+          height={laptopBrollDemoMeta.height}
         />
 
         {/* --- Ridd --- */}
