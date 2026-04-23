@@ -1237,14 +1237,14 @@ const StatScene: React.FC<{
   );
 };
 
-// Inverted echo of the old 0:10 reveal. Grid is now the outer — the area
-// around the lockup — and the lockup itself is solid white. The grid
-// and the lockup dezoom in sync: the lockup retracts from filling the
-// frame to its final 620 px size, the grid pulls back from scale 2.4
-// to 1.0, so the tiles never hang static while the shape shrinks.
+// The closing background is the IndexMarket lockup itself — a bounded
+// square on a dark ground. Inside the square, the black field is
+// replaced by a grid of source logos; the seven white stripes stay
+// white. The square dezooms from filling the frame down to its final
+// 620 px size; the grid lives inside the square, so the tiles pull
+// back in lockstep with the shape.
 const CLOSING_GRID_COLS = 12;
 const CLOSING_GRID_ROWS = 12;
-const CLOSING_GRID_TILT_X = 14;
 const CLOSING_GRID_SCROLL = 0.7;
 
 const ClosingLogoGrid: React.FC<{ local: number }> = ({ local }) => {
@@ -1253,28 +1253,41 @@ const ClosingLogoGrid: React.FC<{ local: number }> = ({ local }) => {
     easing: ease3,
   });
 
-  const logoSize = interpolate(zoomT, [0, 1], [2600, 620]);
-  const gridScale = interpolate(zoomT, [0, 1], [2.4, 1.0]);
+  const logoSize = interpolate(zoomT, [0, 1], [3200, 620]);
   const scrollY = local * CLOSING_GRID_SCROLL;
   const count = CLOSING_GRID_COLS * CLOSING_GRID_ROWS;
 
   return (
-    <AbsoluteFill style={{ background: BLACK }}>
-      <AbsoluteFill
+    <AbsoluteFill
+      style={{
+        background: BLACK,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <div
         style={{
-          perspective: 1800,
-          perspectiveOrigin: "50% 48%",
+          position: "relative",
+          width: logoSize,
+          height: logoSize,
+          overflow: "hidden",
+          background: BLACK,
+          boxShadow:
+            "0 0 0 1px rgba(255,255,255,0.04), 0 24px 80px rgba(0,0,0,0.55)",
         }}
       >
-        <AbsoluteFill
+        {/* Grid fills the logo square — the "black" part of the lockup. */}
+        <div
           style={{
+            position: "absolute",
+            inset: 0,
             display: "grid",
             gridTemplateColumns: `repeat(${CLOSING_GRID_COLS}, 1fr)`,
             gridTemplateRows: `repeat(${CLOSING_GRID_ROWS}, 1fr)`,
             gap: 2,
             padding: 2,
-            transform: `rotateX(${CLOSING_GRID_TILT_X}deg) scale(${1.25 * gridScale}) translateY(${-scrollY}px)`,
-            transformStyle: "preserve-3d",
+            transform: `translateY(${-scrollY}px)`,
             filter: "saturate(0.92) brightness(0.95)",
           }}
         >
@@ -1307,30 +1320,21 @@ const ClosingLogoGrid: React.FC<{ local: number }> = ({ local }) => {
               </div>
             );
           })}
-        </AbsoluteFill>
-      </AbsoluteFill>
+        </div>
 
-      <AbsoluteFill
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
+        {/* White stripes — the middle of the lockup, laid over the grid. */}
         <svg
-          width={logoSize}
-          height={logoSize}
+          width="100%"
+          height="100%"
           viewBox="0 0 102 102"
-          style={{
-            filter:
-              "drop-shadow(0 0 24px rgba(255,255,255,0.35)) drop-shadow(0 8px 48px rgba(0,0,0,0.6))",
-          }}
+          preserveAspectRatio="none"
+          style={{ position: "absolute", inset: 0 }}
         >
           {GM_LOGO_PATHS.map((d, i) => (
             <path key={i} d={d} fill="#ffffff" />
           ))}
         </svg>
-      </AbsoluteFill>
+      </div>
     </AbsoluteFill>
   );
 };
