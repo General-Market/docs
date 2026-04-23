@@ -228,32 +228,43 @@ const IntroScene: React.FC<{
   );
 };
 
-// ─── Card vortex — cylindrical helix of source cards orbiting the camera.
-//      Port of the WebGLPicks VortexGallery concept, in plain CSS 3D so it
-//      costs a fraction of a Three.js canvas and keeps each card as live,
-//      readable HTML. Rings stagger angularly so cards don't line up in
-//      straight vertical columns on every rotation.
+// ─── Card vortex — helix of source cards continuously scrolling past the
+//      camera, directly ported from the WebGLPicks VortexGallery behaviour.
+//      Each card owns a baseAngle + baseY; the rendered angle adds the
+//      scene rotation scaled by a per-ring speed factor (so cards don't
+//      travel in lockstep), and Y is offset by a global scroll then
+//      wrapped modulo the cylinder height. Result: cards spiral past
+//      continuously, some faster than others, never repeating exactly.
 type VortexCardSlot = {
-  angle: number;
-  yOffset: number;
+  baseAngle: number;
+  baseY: number;
+  ringSpeed: number;
   sourceIdx: number;
   key: number;
 };
 
+const VORTEX_CARDS_PER_RING = 12;
+const VORTEX_RINGS = 7;
+const VORTEX_HEIGHT = 2600; // total cylinder Y range the cards wrap inside
+const VORTEX_RADIUS = 900;
+const VORTEX_CARD_W = 300;
+const VORTEX_CARD_H = 400;
+
 const buildVortexSlots = (): VortexCardSlot[] => {
-  const CARDS_PER_RING = 10;
-  const RINGS = 3;
-  const RING_SPACING = 440;
   const slots: VortexCardSlot[] = [];
-  for (let r = 0; r < RINGS; r++) {
-    const ringOffset = (r * 18) % 360; // half-step offset per ring
-    for (let c = 0; c < CARDS_PER_RING; c++) {
-      const angle = (c / CARDS_PER_RING) * 360 + ringOffset;
-      const yOffset = (r - (RINGS - 1) / 2) * RING_SPACING;
-      const key = r * CARDS_PER_RING + c;
+  for (let r = 0; r < VORTEX_RINGS; r++) {
+    const ringSpeed = 0.8 + ((r * 97) % 100) / 220; // 0.8..~1.25
+    const ringAngleOffset = ((r * 360) / VORTEX_CARDS_PER_RING) / 2;
+    for (let c = 0; c < VORTEX_CARDS_PER_RING; c++) {
+      const baseAngle =
+        (c / VORTEX_CARDS_PER_RING) * 360 + ringAngleOffset;
+      const baseY =
+        (r / VORTEX_RINGS) * VORTEX_HEIGHT - VORTEX_HEIGHT / 2;
+      const key = r * VORTEX_CARDS_PER_RING + c;
       slots.push({
-        angle,
-        yOffset,
+        baseAngle,
+        baseY,
+        ringSpeed,
         sourceIdx: key % FEATURED_SOURCES.length,
         key,
       });
@@ -263,20 +274,25 @@ const buildVortexSlots = (): VortexCardSlot[] => {
 };
 
 const VORTEX_SLOTS = buildVortexSlots();
-const VORTEX_RADIUS = 880;
-const VORTEX_CARD_W = 320;
-const VORTEX_CARD_H = 420;
+
+const wrapY = (y: number): number => {
+  const range = VORTEX_HEIGHT;
+  const half = range / 2;
+  return ((((y + half) % range) + range) % range) - half;
+};
 
 const CardVortex: React.FC<{ local: number }> = ({ local }) => {
-  // Continuous rotation + mild vertical drift. The camera also tilts down
-  // a few degrees for a more cinematic read on the cylinder.
-  const rotation = local * 1.1;
-  const tilt = 8;
+  // Global rotation (deg/frame) + scroll (px/frame). Scroll pushes cards
+  // downward through the cylinder; the angular component makes the whole
+  // column spiral as it falls.
+  const rotationBase = local * 0.9;
+  const scrollY = local * 16;
+  const tilt = 6;
 
   return (
     <AbsoluteFill
       style={{
-        perspective: 2400,
+        perspective: 2200,
         perspectiveOrigin: "50% 50%",
         overflow: "hidden",
       }}
@@ -289,17 +305,19 @@ const CardVortex: React.FC<{ local: number }> = ({ local }) => {
           width: 0,
           height: 0,
           transformStyle: "preserve-3d",
-          transform: `rotateX(${tilt}deg) rotateY(${rotation}deg)`,
+          transform: `rotateX(${tilt}deg)`,
         }}
       >
-        {VORTEX_SLOTS.map((slot, i) => {
-          const appearT = interpolate(
-            local,
-            [2 + i * 0.6, 26 + i * 0.6],
-            [0, 1],
-            clamp,
-          );
+        {VORTEX_SLOTS.map((slot) => {
+          const angle = slot.baseAngle + rotationBase * slot.ringSpeed;
+          const y = wrapY(slot.baseY + scrollY * slot.ringSpeed);
           const source = FEATURED_SOURCES[slot.sourceIdx];
+
+          // Fade cards as they approach the top/bottom of the wrap range
+          // so respawning doesn't pop visibly. Symmetric triangle falloff.
+          const edgeT = Math.min(1, (VORTEX_HEIGHT / 2 - Math.abs(y)) / 260);
+          const edgeFade = Math.max(0, edgeT);
+
           return (
             <div
               key={slot.key}
@@ -309,8 +327,8 @@ const CardVortex: React.FC<{ local: number }> = ({ local }) => {
                 top: -VORTEX_CARD_H / 2,
                 width: VORTEX_CARD_W,
                 height: VORTEX_CARD_H,
-                transform: `translateY(${slot.yOffset}px) rotateY(${slot.angle}deg) translateZ(${VORTEX_RADIUS}px)`,
-                opacity: appearT,
+                transform: `translateY(${y}px) rotateY(${angle}deg) translateZ(${VORTEX_RADIUS}px)`,
+                opacity: edgeFade,
                 backfaceVisibility: "hidden",
                 boxShadow: "0 32px 80px rgba(0,0,0,0.55)",
                 borderRadius: 14,
