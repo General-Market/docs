@@ -1572,16 +1572,20 @@ const SharedPhoneLayer: React.FC<{ local: number }> = ({ local }) => {
   const statEnd = PITCH_SCENES.stat.end;
   const point1Start = PITCH_SCENES.point1.start;
   const point1End = PITCH_SCENES.point1.end;
+  const point2Start = PITCH_SCENES.point2.start;
+  const point3Start = PITCH_SCENES.point3.start;
+  const point3End = PITCH_SCENES.point3.end;
 
-  // Visible only during stat + point1
-  if (local < statStart || local >= point1End) return null;
+  if (local < statStart || local >= point3End) return null;
 
-  // Resolve the card. Stat holds polymarket; point1 cycles through the
-  // phase sequence in equal thirds.
+  // Resolve the card id. Stat → polymarket. Point 1 cycles the phase
+  // triplet in thirds. Point 2 keeps the last phase card (movies) as
+  // the object passing through the vault. Point 3 uses the same card
+  // but with the speed overlay — the identity stays, the state changes.
   let cardId: string;
   if (local < statEnd) {
     cardId = "polymarket";
-  } else {
+  } else if (local < point1End) {
     const p1Local = local - point1Start;
     const p1Duration = point1End - point1Start;
     const phase = Math.min(
@@ -1589,28 +1593,93 @@ const SharedPhoneLayer: React.FC<{ local: number }> = ({ local }) => {
       Math.max(0, Math.floor((p1Local / p1Duration) * POINT1_PHASE_IDS.length)),
     );
     cardId = POINT1_PHASE_IDS[phase];
+  } else {
+    cardId = "tmdb";
   }
 
-  // Roll: 90 frames centred on the cut. Half before, half after.
-  const rollStart = point1Start - 45;
-  const rollEnd = point1Start + 45;
-  const rollT = interpolate(local, [rollStart, rollEnd], [0, 1], clamp);
-  const yAxisExtraDeg = rollT * 360;
+  // Overlay mode. Plain through Point 1. In Point 2 the phone enters
+  // clean, crosses the vault at the midpoint (where "SEALED" appears
+  // inside the vault shape) and exits with the sealed overlay active.
+  // Point 3 uses the speed overlay — rapid trade feed.
+  let overlayMode: "plain" | "sealed" | "speed" = "plain";
+  if (local >= point2Start && local < point3Start) {
+    // switch to sealed as the phone crosses the vault's centre
+    const sealStart = point2Start + 42;
+    overlayMode = local >= sealStart ? "sealed" : "plain";
+  } else if (local >= point3Start) {
+    overlayMode = "speed";
+  }
 
-  // Fade in on stat entry, fade out on point1 exit.
-  const opacity = interpolate(
+  // Barrel-roll between Stat and Point 1 (90 frames centred on the cut),
+  // half-roll between Point 1 → Point 2 (60 frames, 0→180°, eased),
+  // full fade-and-flash between Point 2 → Point 3 (phone blinks out).
+  let yAxisExtraDeg = 0;
+  const rollSP1 = interpolate(
     local,
-    [statStart, statStart + 18, point1End - 18, point1End],
-    [0, 1, 1, 0],
+    [point1Start - 45, point1Start + 45],
+    [0, 1],
     clamp,
   );
+  yAxisExtraDeg += rollSP1 * 360;
+
+  const rollP1P2 = interpolate(
+    local,
+    [point2Start - 30, point2Start + 30],
+    [0, 1],
+    clamp,
+  );
+  yAxisExtraDeg += rollP1P2 * 180;
+
+  // Point 2 → Point 3 transition: phone disappears for ~12 frames, then
+  // reappears on the speed scene. During the flash, we keep the phone
+  // mounted but set opacity to 0 so the inner Three.js + texture state
+  // survives the cut cleanly.
+  const flashStart = point3Start - 6;
+  const flashEnd = point3Start + 6;
+
+  // Fade-in at stat entry, fade-out at point 3 exit, and the flash gap
+  // between point 2 and point 3.
+  const opacity = (() => {
+    // entry + exit envelope
+    const envelope = interpolate(
+      local,
+      [statStart, statStart + 18, point3End - 18, point3End],
+      [0, 1, 1, 0],
+      clamp,
+    );
+    const flash = interpolate(
+      local,
+      [flashStart, flashStart + 3, flashEnd - 3, flashEnd],
+      [1, 0, 0, 1],
+      clamp,
+    );
+    return envelope * flash;
+  })();
+
+  // Subtle jitter on the speed scene to sell "the device is vibrating
+  // under the load of 100,000 orders per second".
+  let xJitter = 0;
+  let yJitter = 0;
+  if (local >= point3Start && local < point3End) {
+    const t = (local - point3Start) / (point3End - point3Start);
+    const a = (1 - t) * 0.6 + 0.4; // taper slightly
+    xJitter = Math.sin(local * 3.7) * 6 * a;
+    yJitter = Math.cos(local * 4.3) * 4 * a;
+  }
 
   return (
-    <AbsoluteFill style={{ opacity, pointerEvents: "none" }}>
+    <AbsoluteFill
+      style={{
+        opacity,
+        pointerEvents: "none",
+        transform: `translate(${xJitter}px, ${yJitter}px)`,
+      }}
+    >
       <PhoneWithCard
         cardSourceId={cardId}
         preloadSourceIds={SHARED_PHONE_PRELOAD as unknown as string[]}
         yAxisExtraDeg={yAxisExtraDeg}
+        overlayMode={overlayMode}
       />
     </AbsoluteFill>
   );

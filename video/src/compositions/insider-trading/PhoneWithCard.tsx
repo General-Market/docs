@@ -127,6 +127,129 @@ function sparklineValues(id: string, count: number, salt: number): number[] {
   return out;
 }
 
+export type CardOverlayMode = "plain" | "sealed" | "speed";
+
+function drawSealedOverlay(
+  ctx: CanvasRenderingContext2D,
+  W: number,
+  H: number,
+) {
+  // Dim the card so the watermark dominates
+  ctx.fillStyle = "rgba(10, 10, 10, 0.62)";
+  ctx.fillRect(0, 0, W, H);
+
+  // Diagonal SEALED watermark
+  ctx.save();
+  ctx.translate(W / 2, H / 2);
+  ctx.rotate(-Math.PI / 8);
+  ctx.fillStyle = "rgba(255, 255, 255, 0.96)";
+  ctx.font = `900 180px ${CARD_FONT}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("SEALED", 0, 0);
+
+  // Subtitle beneath
+  ctx.font = `600 36px ${CARD_FONT}`;
+  ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+  ctx.fillText("visible at settlement", 0, 130);
+  ctx.restore();
+
+  // Top + bottom accent rules
+  ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+  ctx.fillRect(60, H * 0.32, W - 120, 3);
+  ctx.fillRect(60, H * 0.68, W - 120, 3);
+}
+
+function drawSpeedOverlay(
+  ctx: CanvasRenderingContext2D,
+  W: number,
+  H: number,
+  sourceId: string,
+) {
+  // Darken everything but the rows we're about to draw, so the card
+  // visibly switches to "firehose" mode.
+  ctx.fillStyle = "rgba(6, 8, 14, 0.78)";
+  ctx.fillRect(0, 0, W, H);
+
+  // Header strip — single line reading "100,000 / s"
+  const headerH = 150;
+  ctx.fillStyle = "#0b0e14";
+  ctx.fillRect(0, 0, W, headerH);
+  ctx.fillStyle = "#FFFFFF";
+  ctx.font = `900 84px ${CARD_FONT}`;
+  ctx.textAlign = "center";
+  ctx.fillText("100,000 / s", W / 2, 100);
+
+  // Ticker rows — fake trade prints. Deterministic per source.
+  const rnd = seededRand(hashStr(sourceId + "_ticker"));
+  const tickers = [
+    "VIS",
+    "GM",
+    "ITP",
+    "WEA",
+    "TWI",
+    "STM",
+    "POL",
+    "NAS",
+    "SEC",
+    "CNG",
+  ];
+  const rowH = 56;
+  const rowsStart = headerH + 20;
+  const rowCount = Math.floor((H - rowsStart - 20) / rowH);
+  for (let i = 0; i < rowCount; i++) {
+    const y = rowsStart + i * rowH;
+    const tkr = tickers[Math.floor(rnd() * tickers.length)];
+    const price = (1 + rnd() * 400).toFixed(2);
+    const qty = Math.floor(rnd() * 9999) + 1;
+    const up = rnd() > 0.45;
+
+    // Row background, alternating lightness for readability
+    ctx.fillStyle =
+      i % 2 === 0 ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.06)";
+    ctx.fillRect(16, y, W - 32, rowH - 4);
+
+    // Direction dot
+    ctx.fillStyle = up ? "#10A96A" : "#DC2626";
+    ctx.beginPath();
+    ctx.arc(48, y + rowH / 2, 7, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Ticker
+    ctx.fillStyle = "#FFFFFF";
+    ctx.font = `800 26px ${MONO_FONT}`;
+    ctx.textAlign = "left";
+    ctx.fillText(tkr, 72, y + rowH / 2 + 10);
+
+    // Price
+    ctx.fillStyle = up ? "#34D399" : "#F87171";
+    ctx.font = `700 26px ${MONO_FONT}`;
+    ctx.textAlign = "right";
+    ctx.fillText(`$${price}`, W - 200, y + rowH / 2 + 10);
+
+    // Qty
+    ctx.fillStyle = "#B8BCC6";
+    ctx.font = `600 22px ${MONO_FONT}`;
+    ctx.textAlign = "right";
+    ctx.fillText(`×${qty.toLocaleString()}`, W - 36, y + rowH / 2 + 10);
+  }
+
+  // Motion-trail streaks — six diagonals suggesting the feed is flying
+  // past faster than can be read. Kept subtle so ticker text survives.
+  ctx.save();
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.14)";
+  ctx.lineWidth = 6;
+  ctx.lineCap = "round";
+  for (let i = 0; i < 6; i++) {
+    const streakY = rowsStart + (i + 0.5) * (H - rowsStart) / 6;
+    ctx.beginPath();
+    ctx.moveTo(16, streakY);
+    ctx.lineTo(W - 16, streakY + 24);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
 // Portrait-oriented canvas matching the iPhone screen aspect. Larger
 // than the vortex tiles so the texture reads sharp on a full-screen
 // iPhone. Content adapted to the taller frame: bigger header, more
@@ -134,6 +257,7 @@ function sparklineValues(id: string, count: number, salt: number): number[] {
 function buildCardCanvas(
   sourceId: string,
   logo: HTMLImageElement | null,
+  overlay: CardOverlayMode = "plain",
 ): HTMLCanvasElement {
   const W = 720;
   const H = Math.round(W / SCREEN_ASPECT);
@@ -373,6 +497,13 @@ function buildCardCanvas(
     ctx.fill();
   }
 
+  // Apply the requested overlay on top of the fully-drawn base card.
+  if (overlay === "sealed") {
+    drawSealedOverlay(ctx, W, H);
+  } else if (overlay === "speed") {
+    drawSpeedOverlay(ctx, W, H, sourceId);
+  }
+
   return canvas;
 }
 
@@ -462,12 +593,13 @@ const PhoneScene: React.FC<{
     }
   }
 
-  // Gentle independent motion. Y-bob is a soft sine (±0.12 scene units,
-  // ~1 cycle per ~2.3s). Y-axis pivot is a slow sine (±6°).
+  // Independent motion, large enough to read as a living prop. Y-bob
+  // sweeps ±0.35 scene units at ~1 cycle / 3.5s; Y-axis pivot sweeps
+  // ±15° at ~1 cycle / 5.2s.
   const t = frame / 30; // seconds assuming 30fps comp
-  const bobY = Math.sin(t * 2.7) * 0.12;
+  const bobY = Math.sin(t * 1.8) * 0.35;
   const pivotY =
-    Math.sin(t * 1.6) * (6 * Math.PI) / 180 +
+    (Math.sin(t * 1.2) * 15 * Math.PI) / 180 +
     (yAxisExtraDeg * Math.PI) / 180;
 
   if (iphone) {
@@ -511,12 +643,15 @@ export const PhoneWithCard: React.FC<{
   preloadSourceIds?: string[];
   /** Extra Y-axis rotation in degrees, stacked on top of the idle pivot. */
   yAxisExtraDeg?: number;
+  /** Overlay applied on top of the card. Prebuilt alongside the base. */
+  overlayMode?: CardOverlayMode;
   width?: number;
   height?: number;
 }> = ({
   cardSourceId,
   preloadSourceIds,
   yAxisExtraDeg = 0,
+  overlayMode = "plain",
   width = 1920,
   height = 1080,
 }) => {
@@ -543,21 +678,24 @@ export const PhoneWithCard: React.FC<{
     let cancelled = false;
     (async () => {
       const built: Record<string, THREE.CanvasTexture> = {};
+      const overlays: CardOverlayMode[] = ["plain", "sealed", "speed"];
       await Promise.all(
-        ids.map(async (id) => {
-          const logo = await loadImage(
-            staticFile(`source-imgs/icons/${id}.png`),
-          );
-          if (cancelled) return;
-          const canvas = buildCardCanvas(id, logo);
-          const tex = new THREE.CanvasTexture(canvas);
-          tex.needsUpdate = true;
-          tex.magFilter = THREE.LinearFilter;
-          tex.minFilter = THREE.LinearMipmapLinearFilter;
-          tex.generateMipmaps = true;
-          tex.anisotropy = 8;
-          built[id] = tex;
-        }),
+        ids.flatMap((id) =>
+          overlays.map(async (mode) => {
+            const logo = await loadImage(
+              staticFile(`source-imgs/icons/${id}.png`),
+            );
+            if (cancelled) return;
+            const canvas = buildCardCanvas(id, logo, mode);
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.needsUpdate = true;
+            tex.magFilter = THREE.LinearFilter;
+            tex.minFilter = THREE.LinearMipmapLinearFilter;
+            tex.generateMipmaps = true;
+            tex.anisotropy = 8;
+            built[`${id}:${mode}`] = tex;
+          }),
+        ),
       );
       if (cancelled) return;
       setTextures(built);
@@ -573,7 +711,7 @@ export const PhoneWithCard: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ids.join("|"), handle]);
 
-  const active = textures[cardSourceId];
+  const active = textures[`${cardSourceId}:${overlayMode}`];
   if (!active) {
     return <AbsoluteFill style={{ background: "transparent" }} />;
   }
