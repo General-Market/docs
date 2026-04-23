@@ -180,6 +180,13 @@ export type PredictionMarket = {
           }
         },
         {
+          "name": "stakeMint",
+          "docs": [
+            "Stake mint — required for vault initialization when a fresh market",
+            "instantiates inside the loop."
+          ]
+        },
+        {
           "name": "user",
           "writable": true,
           "signer": true
@@ -187,6 +194,14 @@ export type PredictionMarket = {
         {
           "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
         }
       ],
       "args": [
@@ -1392,6 +1407,32 @@ export type PredictionMarket = {
   ],
   "events": [
     {
+      "name": "adminAccepted",
+      "discriminator": [
+        174,
+        12,
+        76,
+        139,
+        158,
+        99,
+        110,
+        254
+      ]
+    },
+    {
+      "name": "adminProposed",
+      "discriminator": [
+        129,
+        249,
+        226,
+        227,
+        199,
+        82,
+        110,
+        243
+      ]
+    },
+    {
       "name": "betExited",
       "discriminator": [
         254,
@@ -1431,6 +1472,45 @@ export type PredictionMarket = {
       ]
     },
     {
+      "name": "configInitialized",
+      "discriminator": [
+        181,
+        49,
+        200,
+        156,
+        19,
+        167,
+        178,
+        91
+      ]
+    },
+    {
+      "name": "feeBpsChanged",
+      "discriminator": [
+        144,
+        58,
+        93,
+        170,
+        102,
+        68,
+        12,
+        232
+      ]
+    },
+    {
+      "name": "feesWithdrawn",
+      "discriminator": [
+        234,
+        15,
+        0,
+        119,
+        148,
+        241,
+        40,
+        21
+      ]
+    },
+    {
       "name": "marketClosed",
       "discriminator": [
         86,
@@ -1467,6 +1547,45 @@ export type PredictionMarket = {
         106,
         199,
         202
+      ]
+    },
+    {
+      "name": "oracleSignersProposed",
+      "discriminator": [
+        202,
+        61,
+        148,
+        253,
+        93,
+        42,
+        110,
+        202
+      ]
+    },
+    {
+      "name": "paused",
+      "discriminator": [
+        172,
+        248,
+        5,
+        253,
+        49,
+        255,
+        255,
+        232
+      ]
+    },
+    {
+      "name": "sourceUpserted",
+      "discriminator": [
+        183,
+        227,
+        201,
+        105,
+        199,
+        12,
+        96,
+        182
       ]
     }
   ],
@@ -1604,6 +1723,30 @@ export type PredictionMarket = {
   ],
   "types": [
     {
+      "name": "adminAccepted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "newAdmin",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "adminProposed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "newAdmin",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
       "name": "batchBetsArgs",
       "type": {
         "kind": "struct",
@@ -1626,6 +1769,22 @@ export type PredictionMarket = {
       "type": {
         "kind": "struct",
         "fields": [
+          {
+            "name": "sourceId",
+            "type": "u32"
+          },
+          {
+            "name": "closeTime",
+            "type": "i64"
+          },
+          {
+            "name": "settlementTime",
+            "type": "i64"
+          },
+          {
+            "name": "thresholdBps",
+            "type": "i32"
+          },
           {
             "name": "side",
             "type": {
@@ -1741,6 +1900,30 @@ export type PredictionMarket = {
       }
     },
     {
+      "name": "configInitialized",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "stakeMint",
+            "type": "pubkey"
+          },
+          {
+            "name": "feeVault",
+            "type": "pubkey"
+          },
+          {
+            "name": "feeBps",
+            "type": "u16"
+          }
+        ]
+      }
+    },
+    {
       "name": "exitBetArgs",
       "type": {
         "kind": "struct",
@@ -1752,6 +1935,34 @@ export type PredictionMarket = {
                 "name": "side"
               }
             }
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "feeBpsChanged",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "feeBps",
+            "type": "u16"
+          }
+        ]
+      }
+    },
+    {
+      "name": "feesWithdrawn",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "destination",
+            "type": "pubkey"
           },
           {
             "name": "amount",
@@ -1969,6 +2180,40 @@ export type PredictionMarket = {
       }
     },
     {
+      "name": "oracleSignersProposed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "signers",
+            "type": {
+              "vec": "pubkey"
+            }
+          },
+          {
+            "name": "threshold",
+            "type": "u8"
+          },
+          {
+            "name": "activationTs",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "paused",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "paused",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
       "name": "placeBetArgs",
       "type": {
         "kind": "struct",
@@ -2094,6 +2339,31 @@ export type PredictionMarket = {
           {
             "name": "bump",
             "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "sourceUpserted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "sourceId",
+            "type": "u32"
+          },
+          {
+            "name": "name",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "enabled",
+            "type": "bool"
           }
         ]
       }

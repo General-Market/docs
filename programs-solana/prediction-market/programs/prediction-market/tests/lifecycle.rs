@@ -136,8 +136,9 @@ fn setup_market(
     let oracle = MockOracle::new(1);
     install_oracle(svm, admin, &oracle, 1);
     let now = now_unix(svm);
-    let close = now + 150;
-    let settle = close + 150;
+    // Grid-aligned (60s) close + settle, safely beyond MR3's 10s floor.
+    let close = ((now + 180) / 60) * 60;
+    let settle = close + 180;
     (close, settle, oracle)
 }
 

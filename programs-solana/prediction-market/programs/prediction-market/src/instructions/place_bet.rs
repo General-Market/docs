@@ -107,6 +107,12 @@ pub fn handler(ctx: Context<PlaceBet>, args: PlaceBetArgs) -> Result<()> {
         args.settlement_time - now <= 30 * 86_400,
         ErrorCode::BadTime
     );
+    // Grid alignment — 60s stride prevents sparse-pool fragmentation from
+    // scripted callers. Human users snap their bets; bots honour the grid.
+    require!(
+        args.close_time % 60 == 0 && args.settlement_time % 60 == 0,
+        ErrorCode::BadTime
+    );
     require!(args.amount > 0, ErrorCode::InsufficientBalance);
 
     let market = &mut ctx.accounts.market;
