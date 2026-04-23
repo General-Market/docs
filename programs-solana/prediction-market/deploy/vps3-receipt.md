@@ -60,7 +60,7 @@ Password lives only in `/etc/prediction-indexer.env` on VPS 3. Rotate via `sudo 
 | Unit | Enabled | State | Source |
 |---|---|---|---|
 | `prediction-indexer.service` | yes | **active** | custom inline (not the shipped unit — adapted for root + EnvironmentFile) |
-| `prediction-oracle.service` | yes | **inactive** (deliberate) | custom inline |
+| `prediction-oracle.service` | yes | **active** (started 2026-04-23 19:44 UTC) | custom inline |
 
 Both units run as `User=root` with hardening flags (`NoNewPrivileges`, `ProtectSystem=strict`, `ProtectHome`, `PrivateTmp`). The shipped units under `deploy/systemd/` assume separate `oracle` / `indexer` users with different paths — left alone; VPS 3 runs the inline variants.
 
@@ -84,10 +84,9 @@ Full PDA list: `devnet-receipt.md`.
 
 ## Next steps
 
-1. **Wait** for oracle signer activation window (24h from `propose_oracle_signers` tx; see `devnet-receipt.md`).
-2. On the Mac: `cd programs-solana/prediction-market/deploy && ./activate-oracle.sh` with admin keypair.
-3. On VPS 3: `sudo systemctl start prediction-oracle`. Tail `journalctl -u prediction-oracle -f` and confirm it sees resolved markets.
-4. **Decide nsgame Postgres access.** Postgres on VPS 3 listens only on `127.0.0.1`. The `nsgame/app/api/events/*` routes read from it. Options:
+1. ~~Wait 24h~~ — bypassed. Bootstrap activation patch shipped to chain (upgrade tx `3FLq6eRK…1XM35H`), `activate_oracle_signers` ran instantly (tx `WajqHKhH…oEtYPj`). Next rotation from this state will still wait 24h — bypass is one-shot for fresh bootstrap.
+2. ~~Activate + start daemon~~ — done.
+3. **Decide nsgame Postgres access.** Postgres on VPS 3 listens only on `127.0.0.1`. The `nsgame/app/api/events/*` routes read from it. Options:
    - (A) Migrate `nsgame` to Dokploy on VPS 3 — cleanest, matches the existing frontend pattern.
    - (B) Cloudflare Tunnel or Tailscale to expose Postgres to Vercel.
    - (C) Stand up a read-only HTTP proxy on VPS 3 that serves the indexer tables to whoever hosts nsgame.

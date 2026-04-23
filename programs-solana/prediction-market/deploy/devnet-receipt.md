@@ -83,3 +83,18 @@ cd /Users/maxguillabert/Downloads/index/programs-solana/prediction-market/deploy
 ```
 
 Do not start the oracle daemon before activation completes. The daemon without an active signer set is a fact without consequences.
+
+---
+
+## 2026-04-23 — Bootstrap bypass upgrade + instant activation
+
+Program upgraded on-chain. Fresh-bootstrap activation no longer waits 24h (empty `active_signers` → bypass). Rotations still require the full delay.
+
+| Event | Signature |
+|---|---|
+| Program upgrade tx | `3FLq6eRKiiNcohW9dLpJKcWnY8CKqFYe3dxEYwgMHDesAMHQtmRhd4PSXiMwqV681RtkLtrJKtkvKAjpe21XM35H` |
+| `activate_oracle_signers` (instant, under the patched rule) | `WajqHKhHk9B8mgG9Mz75Zh5bdmK8kCWkn6FkMTX5HaB2rvJHLmuNeqbaGT9i6CDqRxuBTGhTXDMUoYkBZoEtYPj` |
+
+`OracleConfig.active_signers = [FRGz1weU6eWnqX1nnfd8ZtsixcdVgpmE3PiiQnVdcGLH]`, `active_threshold = 1`. Daemon on VPS 3 started via `systemctl start prediction-oracle` — active, identity verified, boot balance check passed, metrics listening on 9091, scheduler polling every 30s.
+
+The next rotation from this state will need the full 24h delay. The bypass was one-shot by design.
