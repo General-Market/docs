@@ -40,21 +40,20 @@ import { useThree } from "@react-three/fiber";
 import { useGLTF, Environment, ContactShadows } from "@react-three/drei";
 import * as THREE from "three";
 // ── Model ──
-// `.opt.glb` — WebP-compressed textures. 8.3 MB, down from 12.4 MB
-// (33%). Node graph and materials identical to the original; textures
-// decoded natively by three.js via EXT_texture_webp — no custom loader
-// setup. Safe to use anywhere.
+// `.opt.glb` — WebP-compressed textures. 8.3 MB (down from 12.4 MB,
+// −33%). Node graph and materials identical to the original; WebP
+// textures are decoded natively by three.js via EXT_texture_webp — no
+// custom loader setup, no WASM decoder, no `/basis/` folder.
 //
-// A further-compressed `tabletop_macbook_iphone.ktx2.glb` variant
-// (5.6 MB, 55% reduction, meshopt + KTX2/Basis) also exists in public/
-// but requires KTX2Loader + transcoder + meshopt decoder wired through
-// `extendLoader` — and Remotion's headless render pipeline did not
-// transcode basis data cleanly during my test. Keep the .ktx2.glb for
-// a future pass when we have time to debug the transcoder path; today
-// WebP is the safe win.
+// A further-compressed `tabletop_macbook_iphone.ktx2.glb` (5.6 MB,
+// −55%, meshopt + KTX2/BasisU) also ships in public/models/ along
+// with the Basis transcoder in public/basis/. Everything needed to
+// wire KTX2Loader is present, all decoders verify ready in Remotion's
+// render context, yet GLTFLoader silently hangs on parse — a deeper
+// issue than a one-afternoon fix. Keep it for a future pass.
 //
-// Revert to the original by pointing MODEL_URL at
-// `tabletop_macbook_iphone.glb`.
+// Fallback order if the WebP variant ever misbehaves:
+//   `tabletop_macbook_iphone.glb` — 12.4 MB original, Draco + PNG.
 const MODEL_URL = staticFile("models/tabletop_macbook_iphone.opt.glb");
 useGLTF.preload(MODEL_URL);
 
