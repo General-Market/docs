@@ -1339,7 +1339,15 @@ const ClosingLogoGrid: React.FC<{ local: number }> = ({ local }) => {
   // of the grid's own box, so they scale with the container as it
   // shrinks.
   const scrollTime = Math.min(local, 112);
-  const scrollPct = (scrollTime / 112) * 10;
+  const scrollPct = (scrollTime / 112) * 26;
+
+  // White bar reads thicker during phase A — stripes are scaled vertically
+  // 2.4× while the container is stage-sized, then ease back to natural
+  // proportions as the container squares up for the logo lockup.
+  const barScaleY = interpolate(local, [112, 138], [2.4, 1], {
+    ...clamp,
+    easing: ease3,
+  });
 
   const wordmarkOpacity = interpolate(local, [122, 146], [0, 1], clamp);
   const wordmarkRise = interpolate(local, [122, 146], [26, 0], {
@@ -1372,10 +1380,10 @@ const ClosingLogoGrid: React.FC<{ local: number }> = ({ local }) => {
         <div
           style={{
             position: "absolute",
-            top: "-15%",
-            left: "-15%",
-            width: "130%",
-            height: "130%",
+            top: "-40%",
+            left: "-40%",
+            width: "180%",
+            height: "180%",
             display: "grid",
             gridTemplateColumns: `repeat(${CLOSING_GRID_COLS}, 1fr)`,
             gridTemplateRows: `repeat(${CLOSING_GRID_ROWS}, 1fr)`,
@@ -1439,7 +1447,12 @@ const ClosingLogoGrid: React.FC<{ local: number }> = ({ local }) => {
           height="100%"
           viewBox="0 0 102 102"
           preserveAspectRatio="none"
-          style={{ position: "absolute", inset: 0 }}
+          style={{
+            position: "absolute",
+            inset: 0,
+            transform: `scaleY(${barScaleY})`,
+            transformOrigin: "center center",
+          }}
         >
           {GM_LOGO_PATHS.map((d, i) => (
             <path key={i} d={d} fill="#ffffff" />
