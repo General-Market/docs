@@ -1101,19 +1101,21 @@ const Point3Scene: React.FC<{
           />
         </div>
 
-        {/* Rising clusters — each block is a 125 × 80 grid = 10,000 points,
-            painted as a dot pattern so the eye reads mass, not individuals */}
+        {/* Rising clusters — each block is a 100 × 100 grid = 10,000 points
+            at 3px cells so the texture actually reads on screen. A faint
+            tint + 1px border keep the block legible even when the gradient
+            gets sub-pixel-crushed. */}
         {Array.from({ length: rightCount }).map((_, i) => {
           const spawnFrame = RIGHT_SPAWN_START + i * RIGHT_SPAWN_INTERVAL;
           const age = local - spawnFrame;
           if (age < 0) return null;
           const { y, opacity, alive } = p3Rise(age);
           if (!alive) return null;
-          const jitter = (p3Hash(i, 7) - 0.5) * 160;
-          // 125 × 80 = 10,000 points. 2px cell → 250 × 160 block.
-          const CELL = 2;
-          const COLS = 125;
-          const ROWS = 80;
+          const jitter = (p3Hash(i, 7) - 0.5) * 120;
+          // 100 × 100 = 10,000 points. 3px cell → 300 × 300 block.
+          const CELL = 3;
+          const COLS = 100;
+          const ROWS = 100;
           return (
             <div
               key={i}
@@ -1125,10 +1127,13 @@ const Point3Scene: React.FC<{
                 height: CELL * ROWS,
                 opacity,
                 transform: "translate(-50%, -50%)",
+                background: "rgba(255,255,255,0.05)",
                 backgroundImage:
-                  "radial-gradient(circle, #ffffff 42%, transparent 43%)",
+                  "radial-gradient(circle, #ffffff 48%, transparent 49%)",
                 backgroundSize: `${CELL}px ${CELL}px`,
                 backgroundPosition: "0 0",
+                border: "1px solid rgba(255,255,255,0.18)",
+                borderRadius: 4,
               }}
             />
           );
