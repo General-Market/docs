@@ -339,32 +339,42 @@ const Point1Scene: React.FC<{
 // ─── Scene 4: POINT 2 — 100% privacy until settlement ────────────────────
 //
 // Animation copied from WebGLPicks / GradientCarousel
-// (src/compositions/backgrounds/webgl-picks/GradientCarousel.tsx, after
-// the Tympanus "3D Gradient Carousel" reference). Same geometry,
-// perspective, entry stagger, lissajous-blob background. The gradient
-// panel has been replaced with a surveillance card — a watcher's name
-// at the top, a stream of encrypted blocks scrolling where they expect
-// to read the trade. Five cards: the parties who would normally be
-// reading you. None of them reads anything.
+// (src/compositions/backgrounds/webgl-picks/GradientCarousel.tsx). The
+// carousel itself stays clean — pastel gradient cards are the blocks
+// flowing through the chain. The five parties who would normally read
+// those blocks — Insider Trader, Hedge Fund, Government, Market
+// Manipulator, Front Runner — stand outside the animation, looking up
+// at it. Each head wears a thought bubble of ciphertext and a "?" that
+// never resolves. They watch. They do not read.
 
-type PrivacyWatcher = { label: string; from: string; to: string };
+type PassingBlock = { from: string; to: string; hash: string };
 
-const PRIVACY_CARDS: PrivacyWatcher[] = [
-  { label: "INSIDER TRADER", from: "#3a1a1a", to: "#0e0f0c" },
-  { label: "HEDGE FUND", from: "#1a2a3a", to: "#0e0f0c" },
-  { label: "GOVERNMENT", from: "#1a3a2a", to: "#0e0f0c" },
-  { label: "MARKET MANIPULATOR", from: "#3a1a3a", to: "#0e0f0c" },
-  { label: "FRONT RUNNER", from: "#3a2a1a", to: "#0e0f0c" },
+const PASSING_BLOCKS: PassingBlock[] = [
+  { from: "#667eea", to: "#764ba2", hash: "0x7f3a••1e92" },
+  { from: "#f093fb", to: "#f5576c", hash: "0x2d18••0b45" },
+  { from: "#4facfe", to: "#00f2fe", hash: "0xa2b7••c3d8" },
+  { from: "#43e97b", to: "#38f9d7", hash: "0xe4f1••6a9c" },
+  { from: "#fa709a", to: "#fee140", hash: "0x9c2e••4d7f" },
+  { from: "#a18cd1", to: "#fbc2eb", hash: "0x5a8b••31f0" },
+  { from: "#ffecd2", to: "#fcb69f", hash: "0xb37d••8e1a" },
+];
+
+const OUTSIDE_WATCHERS: readonly string[] = [
+  "INSIDER TRADER",
+  "HEDGE FUND",
+  "GOVERNMENT",
+  "MARKET MANIPULATOR",
+  "FRONT RUNNER",
 ];
 
 // ── GradientCarousel geometry (verbatim from WebGLPicks) ─────────────────
 
-const GC_CARD_W = 340;
-const GC_CARD_H = 460;
-const GC_GAP = 28;
+const GC_CARD_W = 260;
+const GC_CARD_H = 340;
+const GC_GAP = 24;
 const GC_UNIT = GC_CARD_W + GC_GAP;
-const GC_TRACK = GC_UNIT * PRIVACY_CARDS.length;
-const GC_BORDER_RADIUS = 18;
+const GC_TRACK = GC_UNIT * PASSING_BLOCKS.length;
+const GC_BORDER_RADIUS = 16;
 
 const GC_PERSPECTIVE = 1800;
 const GC_MAX_ROTATION = 28;
@@ -403,100 +413,132 @@ const lerpColor = (
 
 const gcEasePower3Out = Easing.out(Easing.poly(3));
 
-// ── Ciphertext monitor — "the blocks that pass" the watchers cannot read.
+const MONO_FAMILY =
+  'ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace';
 
-const CIPHER_GLYPHS = "▓▒░█▌▄■□◆◇●0123456789abcdef";
+// ── Outside watchers — silhouettes beneath the carousel, looking up ──────
 
-const seededCipher = (seed: number, len: number): string => {
+const WatcherSilhouette: React.FC<{ scale?: number }> = ({ scale = 1 }) => (
+  <svg
+    width={96 * scale}
+    height={110 * scale}
+    viewBox="0 0 96 110"
+    fill="none"
+  >
+    <circle cx="48" cy="32" r="22" fill="#f6f7f9" />
+    <path
+      d="M8 108 C 8 76, 32 62, 48 62 C 64 62, 88 76, 88 108 Z"
+      fill="#f6f7f9"
+    />
+  </svg>
+);
+
+const BUBBLE_GLYPHS = "▓▒░█■□◆◇0123456789";
+
+const seededBubbleText = (seed: number, len: number): string => {
   let s = (seed * 2654435761) >>> 0;
   let out = "";
   for (let i = 0; i < len; i++) {
     s = (s * 1664525 + 1013904223) >>> 0;
-    out += CIPHER_GLYPHS[s % CIPHER_GLYPHS.length];
+    out += BUBBLE_GLYPHS[s % BUBBLE_GLYPHS.length];
   }
   return out;
 };
 
-const MONO_FAMILY =
-  'ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace';
+const OutsideWatcher: React.FC<{
+  label: string;
+  index: number;
+  local: number;
+}> = ({ label, index, local }) => {
+  const entryStart = 14 + index * 2.5;
+  const entry = interpolate(local, [entryStart, entryStart + 16], [0, 1], {
+    ...clamp,
+    easing: ease3,
+  });
+  const lift = (1 - entry) * 32;
 
-const CipherMonitor: React.FC<{ seed: number; local: number }> = ({
-  seed,
-  local,
-}) => {
-  const buffer = React.useMemo(() => seededCipher(seed, 480), [seed]);
-  const cols = 26;
-  const rows = 14;
-
-  const speed = 0.85 + ((seed * 13) % 40) / 100;
-  const scroll = Math.floor(local * speed);
-
-  const lines: string[] = [];
-  for (let r = 0; r < rows; r++) {
-    const base = gcMod(
-      scroll + r * 37 + seed * 11,
-      Math.max(1, buffer.length - cols),
-    );
-    lines.push(buffer.slice(base, base + cols));
-  }
-
-  const sweepY = ((local * 1.8) % 160) - 20;
+  const bubbleSeed = index * 7919 + Math.floor(local / 10);
+  const bubbleText = seededBubbleText(bubbleSeed, 9);
+  const quPulse =
+    0.55 + 0.45 * Math.max(0, Math.sin(local * 0.32 + index * 1.1));
 
   return (
     <div
       style={{
-        position: "relative",
-        flex: 1,
-        background: "#05070a",
-        overflow: "hidden",
-        padding: "16px 18px",
-        fontFamily: MONO_FAMILY,
-        fontSize: 15,
-        lineHeight: 1.35,
-        color: "#3ef0a0",
-        textShadow: "0 0 10px rgba(62,240,160,0.35)",
+        width: 240,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        opacity: entry,
+        transform: `translateY(${lift}px)`,
       }}
     >
-      {lines.map((l, i) => (
-        <div
-          key={i}
+      <div
+        style={{
+          position: "relative",
+          background: "rgba(14,15,12,0.78)",
+          border: "1px solid rgba(255,255,255,0.14)",
+          borderRadius: 14,
+          padding: "8px 14px",
+          color: "#9fe870",
+          fontFamily: MONO_FAMILY,
+          fontSize: 16,
+          letterSpacing: "0.12em",
+          marginBottom: 14,
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+        }}
+      >
+        <span>{bubbleText}</span>
+        <span
           style={{
-            whiteSpace: "pre",
-            opacity: 0.55 + 0.35 * Math.sin(local * 0.12 + i * 0.9),
+            color: "#ff3b3b",
+            fontFamily: INTER,
+            fontWeight: 900,
+            fontSize: 20,
+            opacity: quPulse,
           }}
         >
-          {l}
-        </div>
-      ))}
+          ?
+        </span>
+        <span
+          style={{
+            position: "absolute",
+            left: "50%",
+            bottom: -7,
+            marginLeft: -6,
+            width: 12,
+            height: 12,
+            background: "rgba(14,15,12,0.78)",
+            borderRight: "1px solid rgba(255,255,255,0.14)",
+            borderBottom: "1px solid rgba(255,255,255,0.14)",
+            transform: "rotate(45deg)",
+          }}
+        />
+      </div>
+
+      <WatcherSilhouette />
 
       <div
         style={{
-          position: "absolute",
-          inset: 0,
-          background:
-            "repeating-linear-gradient(0deg, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 2px, rgba(0,0,0,0.42) 3px)",
-          pointerEvents: "none",
-          mixBlendMode: "multiply",
+          marginTop: 10,
+          fontFamily: INTER,
+          fontWeight: 800,
+          fontSize: 15,
+          letterSpacing: "0.18em",
+          color: WHITE,
+          textAlign: "center",
+          textTransform: "uppercase",
         }}
-      />
-
-      <div
-        style={{
-          position: "absolute",
-          left: 0,
-          right: 0,
-          top: `${sweepY}%`,
-          height: 3,
-          background: "rgba(255,59,59,0.55)",
-          boxShadow: "0 0 14px rgba(255,59,59,0.7)",
-          pointerEvents: "none",
-        }}
-      />
+      >
+        {label}
+      </div>
     </div>
   );
 };
 
-// ── Scene — GradientCarousel motion driving PRIVACY_CARDS ────────────────
+// ── Scene — carousel of passing blocks + outside watchers ───────────────
 
 const Point2Scene: React.FC<{
   local: number;
@@ -528,8 +570,8 @@ const Point2Scene: React.FC<{
   const centerProgress = scrollOffset / GC_UNIT;
   const centerIdx = Math.floor(centerProgress);
   const centerFrac = centerProgress - centerIdx;
-  const cardA = PRIVACY_CARDS[gcMod(centerIdx, PRIVACY_CARDS.length)];
-  const cardB = PRIVACY_CARDS[gcMod(centerIdx + 1, PRIVACY_CARDS.length)];
+  const cardA = PASSING_BLOCKS[gcMod(centerIdx, PASSING_BLOCKS.length)];
+  const cardB = PASSING_BLOCKS[gcMod(centerIdx + 1, PASSING_BLOCKS.length)];
   const fromRgb = lerpColor(
     hexToRgb(cardA.from),
     hexToRgb(cardB.from),
@@ -542,7 +584,7 @@ const Point2Scene: React.FC<{
   );
 
   // Card transforms — verbatim from GradientCarousel.
-  const cards = PRIVACY_CARDS.map((card, i) => {
+  const cards = PASSING_BLOCKS.map((card, i) => {
     const rawX =
       gcMod(i * GC_UNIT - scrollOffset + GC_TRACK / 2, GC_TRACK) -
       GC_TRACK / 2;
@@ -592,6 +634,12 @@ const Point2Scene: React.FC<{
 
   const fadeOut = interpolate(local, [duration - 18, duration], [1, 0], clamp);
 
+  // Carousel band sits in the upper-middle of the stage; the watchers
+  // stand across the lower band. The spatial relation is literal — blocks
+  // pass above, the actors watch them from below and fail to read.
+  const CAROUSEL_TOP_PCT = 42;
+  const WATCHERS_TOP_PX = 740;
+
   return (
     <AbsoluteFill style={{ opacity: fadeOut, background: "#0a0a0a" }}>
       {/* Animated gradient background — Lissajous blobs, tinted by centre card. */}
@@ -601,14 +649,14 @@ const Point2Scene: React.FC<{
           inset: 0,
           filter: "blur(28px) saturate(1.05)",
           background: [
-            `radial-gradient(circle ${rad1}px at ${cx1}px ${cy1}px, rgba(${fromRgb[0]},${fromRgb[1]},${fromRgb[2]},0.85), transparent 70%)`,
-            `radial-gradient(circle ${rad2}px at ${cx2}px ${cy2}px, rgba(${toRgb[0]},${toRgb[1]},${toRgb[2]},0.70), transparent 65%)`,
+            `radial-gradient(circle ${rad1}px at ${cx1}px ${cy1}px, rgba(${fromRgb[0]},${fromRgb[1]},${fromRgb[2]},0.55), transparent 70%)`,
+            `radial-gradient(circle ${rad2}px at ${cx2}px ${cy2}px, rgba(${toRgb[0]},${toRgb[1]},${toRgb[2]},0.40), transparent 65%)`,
             "#0a0a0a",
           ].join(", "),
         }}
       />
 
-      {/* 3D stage — GradientCarousel geometry, card body rewritten. */}
+      {/* 3D stage — GradientCarousel geometry, pastel gradient cards. */}
       <div
         style={{
           position: "absolute",
@@ -623,7 +671,7 @@ const Point2Scene: React.FC<{
             style={{
               position: "absolute",
               left: card.screenX,
-              top: "50%",
+              top: `${CAROUSEL_TOP_PCT}%`,
               width: GC_CARD_W,
               height: GC_CARD_H,
               transformOrigin: "90% center",
@@ -634,55 +682,60 @@ const Point2Scene: React.FC<{
                 `scale(${card.scale})`,
               ].join(" "),
               borderRadius: GC_BORDER_RADIUS,
-              overflow: "hidden",
               background: `linear-gradient(135deg, ${card.from}, ${card.to})`,
               filter: card.blur > 0.1 ? `blur(${card.blur}px)` : undefined,
               opacity: card.entryOpacity,
               zIndex: card.zIndex,
-              boxShadow: `0 24px 70px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.06) inset`,
+              boxShadow: `0 20px 60px ${card.from}55`,
               display: "flex",
               flexDirection: "column",
+              justifyContent: "space-between",
+              padding: 20,
+              overflow: "hidden",
             }}
           >
-            <div
+            <span
               style={{
-                background: "#9fe870",
-                color: "#0e0f0c",
-                padding: "14px 10px",
+                color: "rgba(255,255,255,0.82)",
                 fontFamily: INTER,
-                fontWeight: 900,
-                fontSize: 18,
-                letterSpacing: "0.08em",
-                textAlign: "center",
-                lineHeight: 1.05,
+                fontWeight: 800,
+                fontSize: 13,
+                letterSpacing: "0.24em",
                 textTransform: "uppercase",
               }}
             >
-              {card.label}
-            </div>
-
-            <CipherMonitor seed={card.index + 1} local={local} />
-
-            <div
+              Block
+            </span>
+            <span
               style={{
-                background: "#0e0f0c",
-                color: "#ff3b3b",
-                padding: "12px 12px 14px",
-                fontFamily: INTER,
-                fontWeight: 800,
-                fontSize: 12,
-                letterSpacing: "0.26em",
-                textAlign: "center",
-                borderTop: "1px solid rgba(255,59,59,0.25)",
-                opacity:
-                  0.6 +
-                  0.4 *
-                    Math.max(0, Math.sin(local * 0.38 + card.index * 1.7)),
+                color: "rgba(255,255,255,0.9)",
+                fontFamily: MONO_FAMILY,
+                fontSize: 16,
+                letterSpacing: "0.06em",
               }}
             >
-              DECRYPTION&nbsp;FAILED
-            </div>
+              {card.hash}
+            </span>
           </div>
+        ))}
+      </div>
+
+      {/* Watchers — outside the carousel, looking up at it */}
+      <div
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          top: WATCHERS_TOP_PX,
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "flex-start",
+          gap: 28,
+          padding: "0 40px",
+        }}
+      >
+        {OUTSIDE_WATCHERS.map((role, i) => (
+          <OutsideWatcher key={role} label={role} index={i} local={local} />
         ))}
       </div>
 
