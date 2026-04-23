@@ -1681,6 +1681,7 @@ const SharedPhoneLayer: React.FC<{ local: number }> = ({ local }) => {
         preloadSourceIds={SHARED_PHONE_PRELOAD as unknown as string[]}
         yAxisExtraDeg={yAxisExtraDeg}
         overlayMode={overlayMode}
+        compact={local >= point1Start && local < point1End}
       />
     </AbsoluteFill>
   );

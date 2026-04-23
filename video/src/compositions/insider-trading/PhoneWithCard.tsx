@@ -160,28 +160,42 @@ function drawSealedOverlay(
   ctx.fillRect(60, H * 0.68, W - 120, 3);
 }
 
-function drawSpeedOverlay(
-  ctx: CanvasRenderingContext2D,
-  W: number,
-  H: number,
+// Build a speed-mode canvas that's multiple screens tall — the phone
+// shows a scrolling window through it, so the feed visibly streams
+// past. Canvas is used as a dedicated texture; the base card is
+// never shown in speed mode.
+const SPEED_ROW_H = 58;
+const SPEED_ROW_COUNT = 60; // ~3-4 viewports worth of content
+const SPEED_HEADER_H = 160;
+
+function buildSpeedCanvas(
   sourceId: string,
-) {
-  // Darken everything but the rows we're about to draw, so the card
-  // visibly switches to "firehose" mode.
-  ctx.fillStyle = "rgba(6, 8, 14, 0.78)";
+): HTMLCanvasElement {
+  const W = 720;
+  const H = SPEED_HEADER_H + SPEED_ROW_H * SPEED_ROW_COUNT;
+  const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext("2d")!;
+
+  // Background
+  ctx.fillStyle = "#06080e";
   ctx.fillRect(0, 0, W, H);
 
-  // Header strip — single line reading "100,000 / s"
-  const headerH = 150;
+  // Header — pinned to the top of the canvas; the phone window only
+  // shows a fraction of H at a time, so we repeat the header visually
+  // inside the feed too.
   ctx.fillStyle = "#0b0e14";
-  ctx.fillRect(0, 0, W, headerH);
+  ctx.fillRect(0, 0, W, SPEED_HEADER_H);
   ctx.fillStyle = "#FFFFFF";
-  ctx.font = `900 84px ${CARD_FONT}`;
+  ctx.font = `900 92px ${CARD_FONT}`;
   ctx.textAlign = "center";
-  ctx.fillText("100,000 / s", W / 2, 100);
+  ctx.fillText("100,000 / s", W / 2, 110);
+  ctx.fillStyle = "#7c8699";
+  ctx.font = `700 22px ${CARD_FONT}`;
+  ctx.fillText("LIVE TRADE FEED", W / 2, 142);
 
-  // Ticker rows — fake trade prints. Deterministic per source.
-  const rnd = seededRand(hashStr(sourceId + "_ticker"));
+  const rnd = seededRand(hashStr(sourceId + "_speed"));
   const tickers = [
     "VIS",
     "GM",
@@ -193,61 +207,49 @@ function drawSpeedOverlay(
     "NAS",
     "SEC",
     "CNG",
+    "BTC",
+    "ETH",
+    "TRN",
+    "MOV",
+    "USD",
+    "EUR",
   ];
-  const rowH = 56;
-  const rowsStart = headerH + 20;
-  const rowCount = Math.floor((H - rowsStart - 20) / rowH);
-  for (let i = 0; i < rowCount; i++) {
-    const y = rowsStart + i * rowH;
+  for (let i = 0; i < SPEED_ROW_COUNT; i++) {
+    const y = SPEED_HEADER_H + i * SPEED_ROW_H;
     const tkr = tickers[Math.floor(rnd() * tickers.length)];
     const price = (1 + rnd() * 400).toFixed(2);
     const qty = Math.floor(rnd() * 9999) + 1;
-    const up = rnd() > 0.45;
+    const up = rnd() > 0.48;
 
-    // Row background, alternating lightness for readability
-    ctx.fillStyle =
-      i % 2 === 0 ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.06)";
-    ctx.fillRect(16, y, W - 32, rowH - 4);
+    ctx.fillStyle = i % 2 === 0 ? "#0a0c14" : "#0d1120";
+    ctx.fillRect(0, y, W, SPEED_ROW_H);
 
     // Direction dot
     ctx.fillStyle = up ? "#10A96A" : "#DC2626";
     ctx.beginPath();
-    ctx.arc(48, y + rowH / 2, 7, 0, Math.PI * 2);
+    ctx.arc(40, y + SPEED_ROW_H / 2, 7, 0, Math.PI * 2);
     ctx.fill();
 
     // Ticker
     ctx.fillStyle = "#FFFFFF";
-    ctx.font = `800 26px ${MONO_FONT}`;
+    ctx.font = `800 30px ${MONO_FONT}`;
     ctx.textAlign = "left";
-    ctx.fillText(tkr, 72, y + rowH / 2 + 10);
+    ctx.fillText(tkr, 66, y + SPEED_ROW_H / 2 + 10);
 
     // Price
     ctx.fillStyle = up ? "#34D399" : "#F87171";
-    ctx.font = `700 26px ${MONO_FONT}`;
+    ctx.font = `700 30px ${MONO_FONT}`;
     ctx.textAlign = "right";
-    ctx.fillText(`$${price}`, W - 200, y + rowH / 2 + 10);
+    ctx.fillText(`$${price}`, W - 200, y + SPEED_ROW_H / 2 + 10);
 
     // Qty
     ctx.fillStyle = "#B8BCC6";
-    ctx.font = `600 22px ${MONO_FONT}`;
+    ctx.font = `600 24px ${MONO_FONT}`;
     ctx.textAlign = "right";
-    ctx.fillText(`×${qty.toLocaleString()}`, W - 36, y + rowH / 2 + 10);
+    ctx.fillText(`×${qty.toLocaleString()}`, W - 28, y + SPEED_ROW_H / 2 + 10);
   }
 
-  // Motion-trail streaks — six diagonals suggesting the feed is flying
-  // past faster than can be read. Kept subtle so ticker text survives.
-  ctx.save();
-  ctx.strokeStyle = "rgba(255, 255, 255, 0.14)";
-  ctx.lineWidth = 6;
-  ctx.lineCap = "round";
-  for (let i = 0; i < 6; i++) {
-    const streakY = rowsStart + (i + 0.5) * (H - rowsStart) / 6;
-    ctx.beginPath();
-    ctx.moveTo(16, streakY);
-    ctx.lineTo(W - 16, streakY + 24);
-    ctx.stroke();
-  }
-  ctx.restore();
+  return canvas;
 }
 
 // Portrait-oriented canvas matching the iPhone screen aspect. Larger
@@ -501,7 +503,10 @@ function buildCardCanvas(
   if (overlay === "sealed") {
     drawSealedOverlay(ctx, W, H);
   } else if (overlay === "speed") {
-    drawSpeedOverlay(ctx, W, H, sourceId);
+    // Speed mode: discard the base card entirely and return a tall
+    // dedicated speed canvas. PhoneScene scrolls through it via
+    // texture.offset.y animation per frame.
+    return buildSpeedCanvas(sourceId);
   }
 
   return canvas;
@@ -563,7 +568,11 @@ const PhoneScene: React.FC<{
   frame: number;
   /** Extra Y-axis rotation in degrees, added on top of the sine pivot. */
   yAxisExtraDeg: number;
-}> = ({ texture, frame, yAxisExtraDeg }) => {
+  /** When true, scroll texture.offset.y per frame (speed-mode feed). */
+  scrollTexture: boolean;
+  /** Compact mode: no idle bob/pivot, reduced scale. */
+  compact: boolean;
+}> = ({ texture, frame, yAxisExtraDeg, scrollTexture, compact }) => {
   const { camera } = useThree();
   const gltf = useGLTF(MODEL_URL);
 
@@ -610,14 +619,35 @@ const PhoneScene: React.FC<{
     mat.needsUpdate = true;
   }, [screenMesh, texture]);
 
+  // Speed-mode per-frame scroll: the texture is taller than the phone
+  // window, and we advance the V offset each frame so the trade feed
+  // streams upward past the viewer. Wraps cleanly when it exits.
+  if (scrollTexture && texture) {
+    const canvasEl = texture.image as HTMLCanvasElement;
+    const srcAspect = canvasEl.width / canvasEl.height;
+    // cover-fit reserves a window of size `r` in Y starting at (1-r)/2.
+    const r =
+      srcAspect < SCREEN_ASPECT ? srcAspect / SCREEN_ASPECT : 1;
+    const baseCenter = (1 - r) / 2;
+    // Scroll speed: 0.024 of texture height per frame. Negative because
+    // lower offset.y shows content further down the image (= trades
+    // appear to stream upward).
+    const scrollProgress = (-frame * 0.024) % r;
+    texture.offset.y = baseCenter + scrollProgress;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.needsUpdate = true;
+  }
+
   // Independent motion, large enough to read as a living prop. Y-bob
   // sweeps ±0.35 scene units at ~1 cycle / 3.5s; Y-axis pivot sweeps
-  // ±15° at ~1 cycle / 5.2s.
-  const t = frame / 30; // seconds assuming 30fps comp
-  const bobY = Math.sin(t * 1.8) * 0.35;
+  // ±15° at ~1 cycle / 5.2s. Compact mode skips both and locks scale
+  // down so the phone reads as one of the vortex cards.
+  const t = frame / 30;
+  const bobY = compact ? 0 : Math.sin(t * 1.8) * 0.35;
   const pivotY =
-    (Math.sin(t * 1.2) * 15 * Math.PI) / 180 +
+    (compact ? 0 : (Math.sin(t * 1.2) * 15 * Math.PI) / 180) +
     (yAxisExtraDeg * Math.PI) / 180;
+  const scale = compact ? PHONE_SCALE * 0.42 : PHONE_SCALE;
 
   if (iphone) {
     iphone.position.set(PHONE_POS.x, PHONE_POS.y + bobY, PHONE_POS.z);
@@ -625,7 +655,7 @@ const PhoneScene: React.FC<{
       new THREE.Euler(0, pivotY, 0, "YXZ"),
     );
     iphone.quaternion.copy(PHONE_QUAT).multiply(animQuat);
-    iphone.scale.setScalar(PHONE_SCALE);
+    iphone.scale.setScalar(scale);
   }
 
   const perspCam = camera as THREE.PerspectiveCamera;
@@ -662,6 +692,8 @@ export const PhoneWithCard: React.FC<{
   yAxisExtraDeg?: number;
   /** Overlay applied on top of the card. Prebuilt alongside the base. */
   overlayMode?: CardOverlayMode;
+  /** Shrink the phone and lock out the idle bob/pivot. */
+  compact?: boolean;
   width?: number;
   height?: number;
 }> = ({
@@ -669,6 +701,7 @@ export const PhoneWithCard: React.FC<{
   preloadSourceIds,
   yAxisExtraDeg = 0,
   overlayMode = "plain",
+  compact = false,
   width = 1920,
   height = 1080,
 }) => {
@@ -759,6 +792,8 @@ export const PhoneWithCard: React.FC<{
           texture={active}
           frame={frame}
           yAxisExtraDeg={yAxisExtraDeg}
+          scrollTexture={overlayMode === "speed"}
+          compact={compact}
         />
       </ThreeCanvas>
     </AbsoluteFill>
