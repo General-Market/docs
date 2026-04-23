@@ -355,14 +355,6 @@ const PASSING_BLOCKS: PassingBlock[] = [
   { hash: "0xb37d••8e1a" },
 ];
 
-const OUTSIDE_WATCHERS: readonly string[] = [
-  "INSIDER TRADER",
-  "HEDGE FUND",
-  "GOVERNMENT",
-  "MARKET MANIPULATOR",
-  "FRONT RUNNER",
-];
-
 const MONO_FAMILY =
   'ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace';
 
@@ -370,9 +362,9 @@ const MONO_FAMILY =
 //    Cards loop through a track. scrollOffset is ADDED (not subtracted) so
 //    motion is left-to-right: sources enter from the left, pass through
 //    the GM column, emerge on the right as blocks.
-const GC_CARD_W = 210;
-const GC_CARD_H = 280;
-const GC_GAP = 36;
+const GC_CARD_W = 280;
+const GC_CARD_H = 380;
+const GC_GAP = 44;
 const GC_UNIT = GC_CARD_W + GC_GAP;
 const GC_BORDER_RADIUS = 18;
 
@@ -381,28 +373,11 @@ const GC_MAX_ROTATION = 28;
 const GC_MAX_DEPTH = 140;
 const GC_SCALE_BASE = 0.92;
 const GC_SCALE_RANGE = 0.1;
-const GC_SCROLL_SPEED = 1400; // px / s — fast but still readable in 3D
+const GC_SCROLL_SPEED = 460; // px / s — slow enough to read each card clearly
 
 const gcMod = (n: number, m: number) => ((n % m) + m) % m;
 const gcClamp = (v: number, lo: number, hi: number) =>
   Math.min(hi, Math.max(lo, v));
-
-// ── Outside watchers — silhouettes beneath the carousel, looking up ──────
-
-const WatcherSilhouette: React.FC<{ scale?: number }> = ({ scale = 1 }) => (
-  <svg
-    width={96 * scale}
-    height={110 * scale}
-    viewBox="0 0 96 110"
-    fill="none"
-  >
-    <circle cx="48" cy="32" r="22" fill="#f6f7f9" />
-    <path
-      d="M8 108 C 8 76, 32 62, 48 62 C 64 62, 88 76, 88 108 Z"
-      fill="#f6f7f9"
-    />
-  </svg>
-);
 
 // GM vertical column — the privacy filter. Source-branded cards enter
 // from the left, cross the column, and emerge on the right anonymised
@@ -518,48 +493,24 @@ const GmColumn: React.FC<{
   );
 };
 
-// Source cards — what the cards look like before they hit the column.
-// Specific, identifiable, dark-plated. The pool mirrors the Point 1
-// vortex narrative so the stream reads as "the feed from before,
-// continued".
-const SOURCE_NAMES: readonly string[] = [
-  "TWITCH",
-  "ELECTIONS",
-  "WEATHER",
-  "TRAINS",
-  "NFL",
-  "BTC",
-  "GOLD",
-  "OPEC",
-];
-
-const SourceCard: React.FC<{ name: string; w: number; h: number }> = ({
-  name,
-  w,
-  h,
-}) => (
+// Source cards — pull the real FeaturedCard from SourceCardsWall so the
+// stream visibly continues from Point 1. Each card is wrapped in a
+// fixed-size frame with soft shadow, matching the block cards' footprint.
+const SourceCardFrame: React.FC<{
+  source: (typeof FEATURED_SOURCES)[number];
+  w: number;
+  h: number;
+}> = ({ source, w, h }) => (
   <div
     style={{
       width: w,
       height: h,
-      background: "#1a1a1c",
-      borderRadius: 16,
-      border: `1px solid rgba(255,255,255,0.12)`,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: "0 14px",
-      color: WHITE,
-      fontFamily: INTER,
-      fontWeight: 900,
-      fontSize: 22,
-      letterSpacing: "0.12em",
-      textAlign: "center",
-      textTransform: "uppercase",
-      boxShadow: "0 14px 40px rgba(0,0,0,0.5)",
+      borderRadius: 18,
+      overflow: "hidden",
+      boxShadow: "0 18px 50px rgba(0,0,0,0.55)",
     }}
   >
-    {name}
+    <FeaturedCard source={source} />
   </div>
 );
 
@@ -573,13 +524,13 @@ const BlockCard: React.FC<{ hash: string; w: number; h: number }> = ({
       width: w,
       height: h,
       background: WHITE,
-      borderRadius: 16,
+      borderRadius: 18,
       display: "flex",
       flexDirection: "column",
       justifyContent: "space-between",
       alignItems: "flex-start",
-      padding: "14px 16px",
-      boxShadow: "0 14px 40px rgba(0,0,0,0.55)",
+      padding: "20px 22px",
+      boxShadow: "0 18px 50px rgba(0,0,0,0.55)",
     }}
   >
     <span
@@ -587,7 +538,7 @@ const BlockCard: React.FC<{ hash: string; w: number; h: number }> = ({
         color: BLACK,
         fontFamily: INTER,
         fontWeight: 800,
-        fontSize: 12,
+        fontSize: 14,
         letterSpacing: "0.28em",
         textTransform: "uppercase",
       }}
@@ -598,7 +549,7 @@ const BlockCard: React.FC<{ hash: string; w: number; h: number }> = ({
       style={{
         color: BLACK,
         fontFamily: MONO_FAMILY,
-        fontSize: 14,
+        fontSize: 18,
         letterSpacing: "0.04em",
       }}
     >
@@ -607,62 +558,35 @@ const BlockCard: React.FC<{ hash: string; w: number; h: number }> = ({
   </div>
 );
 
-const OutsideWatcher: React.FC<{
-  label: string;
-  index: number;
-  local: number;
-}> = ({ label, index, local }) => {
-  const entryStart = 22 + index * 2.5;
-  const entry = interpolate(local, [entryStart, entryStart + 16], [0, 1], {
-    ...clamp,
-    easing: ease3,
-  });
-  const lift = (1 - entry) * 32;
+// ── Scene — carousel of passing blocks + rotating consequences ─────────
 
-  return (
-    <div
-      style={{
-        width: 260,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        opacity: entry,
-        transform: `translateY(${lift}px)`,
-      }}
-    >
-      <WatcherSilhouette scale={1.3} />
-
-      <div
-        style={{
-          marginTop: 14,
-          fontFamily: INTER,
-          fontWeight: 800,
-          fontSize: 30,
-          letterSpacing: "0.12em",
-          color: WHITE,
-          textAlign: "center",
-          textTransform: "uppercase",
-          lineHeight: 1.05,
-        }}
-      >
-        {label}
-      </div>
-    </div>
-  );
-};
-
-// ── Scene — carousel of passing blocks + outside watchers ───────────────
-
-// Stream pool — each entry gets both a source identity (for before the
-// column) and a hash (for after). Looping carousel cycles through them.
+// Stream pool — each entry pairs a real Point-1 source with a block hash,
+// so the same card that entered as "Twitch" emerges as "0x7f3a••1e92".
 const STREAM_CARDS = Array.from(
-  { length: Math.max(SOURCE_NAMES.length, PASSING_BLOCKS.length) + 2 },
+  {
+    length: Math.max(FEATURED_SOURCES.length, PASSING_BLOCKS.length),
+  },
   (_, i) => ({
-    source: SOURCE_NAMES[i % SOURCE_NAMES.length],
+    source: FEATURED_SOURCES[i % FEATURED_SOURCES.length],
     hash: PASSING_BLOCKS[i % PASSING_BLOCKS.length].hash,
   }),
 );
 const GC_TRACK_LEN = GC_UNIT * STREAM_CARDS.length;
+
+// Rotating privacy consequences — one appears, holds, leaves, the next
+// takes its place. Scene duration is 100 frames; each message owns a
+// third of the run.
+const PRIVACY_CONSEQUENCES: readonly string[] = [
+  "No copy trading",
+  "No front runner",
+  "No market manipulation",
+];
+
+const MESSAGE_WINDOWS: readonly { start: number; end: number }[] = [
+  { start: 18, end: 50 },
+  { start: 50, end: 76 },
+  { start: 76, end: 100 },
+];
 
 const Point2Scene: React.FC<{
   local: number;
@@ -676,21 +600,21 @@ const Point2Scene: React.FC<{
   const time = local / SCENE_FPS;
   const fadeOut = interpolate(local, [duration - 18, duration], [1, 0], clamp);
 
-  // ── Layout ────────────────────────────────────────────────────────────
+  // ── Layout — three bands, no overlap ────────────────────────────────
+  //   title  (top, headline)
+  //   carousel + GM column  (middle)
+  //   rotating consequence  (bottom)
+  const TITLE_TOP = 70;
+  const TITLE_H = 180;
+  const TRACK_Y = 510;
   const COL_LEFT = 80;
-  const COL_WIDTH = 280;
-  const COL_TOP = 100;
-  const COL_HEIGHT = 620;
-  const COL_RIGHT = COL_LEFT + COL_WIDTH;
+  const COL_WIDTH = 300;
+  const COL_TOP = 310;
+  const COL_HEIGHT = 400;
   const COL_CENTER_X = COL_LEFT + COL_WIDTH / 2;
+  const MESSAGE_Y = 820;
 
-  const TRACK_Y = 480;
-  const WATCHERS_TOP_PX = 800;
-
-  // ── 3D coverflow — GradientCarousel math, direction flipped ────────────
-  // scrollOffset is ADDED to the index position so motion is left-to-right.
-  // The coverflow focal point is the stage centre (halfW); cards rotate,
-  // scale, and blur as they drift away from it.
+  // ── 3D coverflow — GradientCarousel math, direction flipped ────────
   const scrollOffset = time * GC_SCROLL_SPEED;
 
   const cards = STREAM_CARDS.map((card, i) => {
@@ -711,7 +635,6 @@ const Point2Scene: React.FC<{
       ...clamp,
     });
     const zIndex = Math.round((1 - absNorm) * 100);
-
     const isBlock = screenCenterX > COL_CENTER_X;
 
     return {
@@ -730,9 +653,39 @@ const Point2Scene: React.FC<{
 
   return (
     <AbsoluteFill style={{ opacity: fadeOut, background: BLACK }}>
-      {/* 3D coverflow stage — same perspective as WebGLPicks GradientCarousel.
-          Cards loop left-to-right; the GM column below catches them and
-          changes their identity from source to block. */}
+      {/* Title — full-width banner at the top. */}
+      <div
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          top: TITLE_TOP,
+          height: TITLE_H,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 450,
+        }}
+      >
+        <Reveal
+          from={sceneStart + 2}
+          duration={duration - 2}
+          text="100% privacy until settlement"
+          revealDuration={34}
+          seed={59}
+          solid
+          style={{
+            fontSize: 108,
+            fontWeight: 900,
+            letterSpacing: "-0.03em",
+            textAlign: "center",
+            maxWidth: 1700,
+            lineHeight: 1,
+          }}
+        />
+      </div>
+
+      {/* 3D coverflow stage — WebGLPicks GradientCarousel perspective. */}
       <div
         style={{
           position: "absolute",
@@ -752,7 +705,7 @@ const Point2Scene: React.FC<{
               height: GC_CARD_H,
               transformOrigin: "50% center",
               transform: [
-                `translateY(calc(-50%))`,
+                "translateY(-50%)",
                 `translateZ(${c.translateZ}px)`,
                 `rotateY(${c.rotateY}deg)`,
                 `scale(${c.scale})`,
@@ -767,14 +720,17 @@ const Point2Scene: React.FC<{
             {c.isBlock ? (
               <BlockCard hash={c.card.hash} w={GC_CARD_W} h={GC_CARD_H} />
             ) : (
-              <SourceCard name={c.card.source} w={GC_CARD_W} h={GC_CARD_H} />
+              <SourceCardFrame
+                source={c.card.source}
+                w={GC_CARD_W}
+                h={GC_CARD_H}
+              />
             )}
           </div>
         ))}
       </div>
 
-      {/* GM column — opaque filter. Sits over the coverflow on the left,
-          hiding the card identity switch inside its surface. */}
+      {/* GM column — opaque filter. Hides the card identity swap. */}
       <GmColumn
         left={COL_LEFT}
         top={COL_TOP}
@@ -783,57 +739,56 @@ const Point2Scene: React.FC<{
         local={local}
       />
 
-      {/* Title — middle band, right of the GM column. */}
-      <div
-        style={{
-          position: "absolute",
-          left: COL_RIGHT + 80,
-          right: 80,
-          top: 140,
-          height: 260,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 450,
-        }}
-      >
-        <Reveal
-          from={sceneStart + 2}
-          duration={duration - 2}
-          text="100% privacy until settlement"
-          revealDuration={34}
-          seed={59}
-          solid
-          style={{
-            fontSize: 104,
-            fontWeight: 900,
-            letterSpacing: "-0.03em",
-            textAlign: "center",
-            maxWidth: STAGE_W - COL_RIGHT - 160,
-            lineHeight: 1.02,
-          }}
-        />
-      </div>
-
-      {/* Watchers — bottom band, labels doubled from the old size. */}
-      <div
-        style={{
-          position: "absolute",
-          left: 0,
-          right: 0,
-          top: WATCHERS_TOP_PX,
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "flex-start",
-          gap: 12,
-          padding: "0 40px",
-          zIndex: 450,
-        }}
-      >
-        {OUTSIDE_WATCHERS.map((role, i) => (
-          <OutsideWatcher key={role} label={role} index={i} local={local} />
-        ))}
-      </div>
+      {/* Rotating consequence — single line at the bottom, appears and
+          leaves before the next one shows. */}
+      {PRIVACY_CONSEQUENCES.map((msg, i) => {
+        const { start, end } = MESSAGE_WINDOWS[i];
+        const isLast = i === PRIVACY_CONSEQUENCES.length - 1;
+        const op = interpolate(
+          local,
+          isLast ? [start, start + 8] : [start, start + 8, end - 8, end],
+          isLast ? [0, 1] : [0, 1, 1, 0],
+          clamp,
+        );
+        if (op <= 0) return null;
+        const rise = interpolate(
+          local,
+          [start, start + 12],
+          [28, 0],
+          { ...clamp, easing: ease3 },
+        );
+        return (
+          <div
+            key={i}
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              top: MESSAGE_Y,
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              opacity: op,
+              transform: `translateY(${rise}px)`,
+              zIndex: 460,
+            }}
+          >
+            <span
+              style={{
+                fontFamily: INTER,
+                fontWeight: 900,
+                fontSize: 84,
+                letterSpacing: "-0.03em",
+                color: WHITE,
+                textAlign: "center",
+                lineHeight: 1,
+              }}
+            >
+              {msg}
+            </span>
+          </div>
+        );
+      })}
     </AbsoluteFill>
   );
 };
