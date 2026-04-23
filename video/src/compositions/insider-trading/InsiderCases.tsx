@@ -20,15 +20,6 @@ const interFamily = loadInter("normal", {
   weights: ["300", "400", "500", "600", "900"],
 }).fontFamily;
 
-// Wise design tokens — near-black + wiseGreen lime, Inter 900 as Wise Sans
-// fallback, line-height 0.85, calt feature on. Matches the tutorial theme.
-const WISE = {
-  nearBlack: "#0e0f0c",
-  wiseGreen: "#9fe870",
-  darkGreen: "#163300",
-  white: "#ffffff",
-} as const;
-
 const FPS = 30;
 // Beat-synced anchors (articles-phase-local frames). Derived from the 143.5 BPM
 // track; each value is a beat timestamp shifted by -PROLOGUE_DURATION (the
@@ -641,7 +632,6 @@ const BeatTypewriter: React.FC<{
   wipeStart?: number;
   wipeEnd?: number;
   fontSize?: number;
-  redRange?: [number, number];
 }> = ({
   text,
   revealBeats,
@@ -650,7 +640,6 @@ const BeatTypewriter: React.FC<{
   wipeStart,
   wipeEnd,
   fontSize = 64,
-  redRange,
 }) => {
   const frame = useCurrentFrame();
   const len = text.length;
@@ -658,11 +647,8 @@ const BeatTypewriter: React.FC<{
   const we = wipeEnd ?? 9999;
   if (frame < revealBeats[0] || frame > we) return null;
 
-  // Wise palette: highlighted range → Wise darkGreen text on wiseGreen block.
-  const isHot = (i: number) =>
-    !!redRange && i >= redRange[0] && i < redRange[1];
-  const finalRGB = (i: number): [number, number, number] =>
-    isHot(i) ? [22, 51, 0] : [255, 255, 255];
+  // Monochrome only — every char lands on white.
+  const finalRGB = (): [number, number, number] => [255, 255, 255];
 
   const appearFrame = (i: number): number => {
     for (let b = 0; b < revealBeats.length; b++) {
@@ -728,27 +714,7 @@ const BeatTypewriter: React.FC<{
         {text.split("").map((ch, i) => {
           if (i < visibleStart || i >= visibleEnd) return null;
           const display = ch === " " ? " " : ch;
-          const [fr, fg, fb] = finalRGB(i);
-          const hot = isHot(i);
-          const edgeLeft = hot && !isHot(i - 1);
-          const edgeRight = hot && !isHot(i + 1);
-
-          const highlightBg = hot
-            ? {
-                background: WISE.wiseGreen,
-                padding: "0.06em 0.02em",
-                borderTopLeftRadius: edgeLeft ? 8 : 0,
-                borderBottomLeftRadius: edgeLeft ? 8 : 0,
-                borderTopRightRadius: edgeRight ? 8 : 0,
-                borderBottomRightRadius: edgeRight ? 8 : 0,
-                paddingLeft: edgeLeft ? "0.18em" : undefined,
-                paddingRight: edgeRight ? "0.18em" : undefined,
-                textShadow: "none",
-                boxShadow: edgeLeft
-                  ? "-2px 0 0 0 rgba(159,232,112,0)"
-                  : undefined,
-              }
-            : null;
+          const [fr, fg, fb] = finalRGB();
 
           if (wiping) {
             const dist = i - visibleStart;
@@ -759,10 +725,7 @@ const BeatTypewriter: React.FC<{
             return (
               <span
                 key={i}
-                style={{
-                  color: `rgba(${fr},${fg},${fb},${op})`,
-                  ...highlightBg,
-                }}
+                style={{ color: `rgba(${fr},${fg},${fb},${op})` }}
               >
                 {display}
               </span>
@@ -778,10 +741,7 @@ const BeatTypewriter: React.FC<{
           const g = interpolate(colorT, [0, 1], [TYPER_ENTRY[1], fg]);
           const b = interpolate(colorT, [0, 1], [TYPER_ENTRY[2], fb]);
           return (
-            <span
-              key={i}
-              style={{ color: `rgb(${r},${g},${b})`, ...highlightBg }}
-            >
+            <span key={i} style={{ color: `rgb(${r},${g},${b})` }}>
               {display}
             </span>
           );
@@ -946,7 +906,6 @@ const InsiderPrologue: React.FC = () => {
         wipeStart={45}
         wipeEnd={58}
         fontSize={62}
-        redRange={[25, 32]}
       />
 
       {/* Phase 2 — quick type (20 frames for 37 chars), then long hold */}

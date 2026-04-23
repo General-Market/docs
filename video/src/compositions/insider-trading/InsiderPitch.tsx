@@ -930,6 +930,7 @@ const Point3Scene: React.FC<{
           overflow: "hidden",
         }}
       >
+        {/* Top label — "Others" */}
         <div
           style={{
             position: "absolute",
@@ -937,9 +938,7 @@ const Point3Scene: React.FC<{
             left: 0,
             right: 0,
             display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 18,
+            justifyContent: "center",
             zIndex: 5,
             opacity: panelIntro,
             transform: `translateX(${leftTitleX}px)`,
@@ -960,6 +959,22 @@ const Point3Scene: React.FC<{
               lineHeight: 1,
             }}
           />
+        </div>
+
+        {/* Bottom rate — "100 / s" */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: 140,
+            left: 0,
+            right: 0,
+            display: "flex",
+            justifyContent: "center",
+            zIndex: 5,
+            opacity: panelIntro,
+            transform: `translateX(${leftTitleX}px)`,
+          }}
+        >
           <Reveal
             from={sceneStart + 20}
             duration={duration - 20}
@@ -1025,6 +1040,7 @@ const Point3Scene: React.FC<{
           overflow: "hidden",
         }}
       >
+        {/* Top label — "General Market" */}
         <div
           style={{
             position: "absolute",
@@ -1032,9 +1048,7 @@ const Point3Scene: React.FC<{
             left: 0,
             right: 0,
             display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 18,
+            justifyContent: "center",
             zIndex: 5,
             opacity: panelIntro,
             transform: `translateX(${rightTitleX}px)`,
@@ -1055,6 +1069,22 @@ const Point3Scene: React.FC<{
               lineHeight: 1,
             }}
           />
+        </div>
+
+        {/* Bottom rate — "100k / s" */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: 140,
+            left: 0,
+            right: 0,
+            display: "flex",
+            justifyContent: "center",
+            zIndex: 5,
+            opacity: panelIntro,
+            transform: `translateX(${rightTitleX}px)`,
+          }}
+        >
           <Reveal
             from={sceneStart + 20}
             duration={duration - 20}
