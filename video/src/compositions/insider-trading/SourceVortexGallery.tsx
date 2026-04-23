@@ -30,10 +30,13 @@ const INSTANCE_COUNT = 600;
 const CIRCLE_COUNT = Math.floor(HEIGHT / 3);
 const CIRCLE_HEIGHT = HEIGHT / CIRCLE_COUNT;
 
-// Slowed down both axes so background cards are readable at rest.
-// Original 0.06 → 0.04 (scroll), original 0.4 → 0.05 (rotation).
+// Slow scroll so cards stay readable, but keep a gentle visible
+// rotation. The shader does `theta += uSpeedY * ANGULAR_SPEED` so
+// cutting SCROLL_SPEED already dampens rotation twice — bump
+// ANGULAR_SPEED up to compensate. Result: ~30-40° rotation across
+// Point 1's 120 frames, readable and visibly moving.
 const SCROLL_SPEED = 0.04;
-const ANGULAR_SPEED = 0.05;
+const ANGULAR_SPEED = 0.18;
 
 // Atlas tile — one tile per FEATURED_SOURCE. Match the real card's
 // aspect ratio (~380×460 rendered) at 400×520 so detail survives.

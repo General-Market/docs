@@ -136,6 +136,83 @@ daemon's own builders.
 - Below the SOL balance floor the process exits immediately. Systemd restarts
   it; the restart loop is visible to operators.
 
+## ALT management for MMs
+
+A second binary lives alongside the daemon: `alt`. Market makers batch hundreds
+of bets into a single versioned transaction by referencing accounts through an
+Address Lookup Table. This CLI is the only tool they need to run the ALT
+lifecycle.
+
+```bash
+cargo build --release --bin alt
+```
+
+Every subcommand reads the RPC endpoint from `RPC_URL`. The authority keypair
+path is passed per-invocation — no ambient key, no config file. The operator
+keeps the key somewhere safe and points at it.
+
+### Subcommands
+
+```
+alt create     --authority <keypair_path> [--max-addresses <N>]
+alt extend     --alt <pubkey> --authority <keypair_path> --addresses <path|csv>
+alt freeze     --alt <pubkey> --authority <keypair_path>
+alt deactivate --alt <pubkey> --authority <keypair_path>
+alt close      --alt <pubkey> --authority <keypair_path> --recipient <pubkey>
+alt show       --alt <pubkey>
+```
+
+- `create` — derives the table PDA from `(authority, recent_slot)`, submits the
+  program instruction, prints the ALT address. The table becomes usable only
+  after the creation slot falls out of the recent-slots window. Extend now,
+  use a few slots later.
+- `extend` — `--addresses` may be a file path (one base58 pubkey per line,
+  blank lines and `#` comments ignored) or an inline comma-separated list.
+  The list is chunked into transactions of 20 addresses each — Solana's
+  1232-byte packet budget admits no more per `extend_lookup_table` ix. A
+  chunk progress line prints after each confirmed tx.
+- `freeze` — irreversibly revokes the authority. Nothing can be added, nothing
+  removed, the table is eternal until closed. Only frozen or still-authoritative
+  tables can be closed; frozen tables cannot.
+- `deactivate` — starts the cool-down. The table remains in a deactivating
+  status until ~512 slots have passed (a few minutes on mainnet). `close`
+  before cool-down expires will revert on-chain.
+- `close` — deallocates the account and streams the reclaimed rent to
+  `--recipient`. Only valid after deactivation cool-down.
+- `show` — fetches the account, decodes the header, prints authority,
+  deactivation state, and every stored pubkey with its index.
+
+### Typical workflow
+
+```bash
+export RPC_URL=https://api.mainnet-beta.solana.com
+
+# 1. Create. Returns an address; note it.
+alt create --authority ./mm-authority.json
+
+# 2. Extend in as many invocations as you need. Chunks of 20 happen internally.
+alt extend --alt <ALT> --authority ./mm-authority.json --addresses ./markets.txt
+
+# 3. Freeze once the set is final.
+alt freeze --alt <ALT> --authority ./mm-authority.json
+
+# — time passes, the markets expire —
+
+# 4. Deactivate, wait out the cool-down, close.
+alt deactivate --alt <ALT> --authority ./mm-authority.json
+# sleep ~512 slots
+alt close --alt <ALT> --authority ./mm-authority.json --recipient <TREASURY>
+```
+
+### Tests
+
+Unit tests cover the chunking arithmetic and the address-list parser. An
+integration test against `solana-test-validator` or LiteSVM is intentionally
+omitted: ALT ixs hit the runtime, not user-space program code, and a local
+validator run adds minutes to the test cycle for what is effectively SDK
+round-trip coverage. Market makers dry-run against devnet before touching
+mainnet.
+
 ## What this daemon does not do
 
 - No local baseline cache. Baselines live on the `Market` account between

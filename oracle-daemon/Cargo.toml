@@ -40,6 +40,11 @@ solana-pubkey = "3.0"
 # Crypto — pubkeys are ed25519 verifying keys; signing is raw ed25519.
 ed25519-dalek = "2.1"
 
+# Address Lookup Table program interface. The instruction builders live here;
+# `solana-sdk` 3.x stopped re-exporting them. Features enable bincode-based ix
+# encoding and bytemuck-backed deserialization of stored account data.
+solana-address-lookup-table-interface = { version = "3.1", features = ["bincode", "bytemuck"] }
+
 # Async runtime + HTTP + JSON.
 tokio = { version = "1", features = ["full", "signal"] }
 reqwest = { version = "0.12", features = ["json"] }
@@ -80,3 +85,7 @@ axum = "0.7"
 [[bin]]
 name = "prediction-market-oracle"
 path = "src/main.rs"
+
+[[bin]]
+name = "alt"
+path = "src/bin/alt.rs"
