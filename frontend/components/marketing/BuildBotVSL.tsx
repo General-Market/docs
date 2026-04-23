@@ -13,10 +13,11 @@ import { Link } from '@/i18n/routing'
 const VIDEO_SRC: string | null = null
 const VIDEO_POSTER: string | null = null
 const REPO_URL = 'https://github.com/General-Market/vision-bot-examples'
-const COMMAND = `claude "clone ${REPO_URL} and deploy a Vision trading bot"`
+const SOURCE = 'twitch'
+const COMMAND = `claude "build a ${SOURCE} trading bot on generalmarket.io"`
 
 const LONG_WAY = `git clone ${REPO_URL}
-cd vision-bot-examples/twitch
+cd vision-bot-examples/${SOURCE}
 ./setup.sh --auto-fund
 .venv/bin/python live_trader.py --strategy momentum --deposit 0.1 --max-joins 1`
 
@@ -163,7 +164,7 @@ function VideoFrame() {
         REC · 00:00
       </div>
       <div className="absolute top-4 right-4 text-[9px] font-mono text-white/30 tracking-wider">
-        VISION / BOT
+        VISION / TWITCH
       </div>
       <div className="absolute bottom-4 left-4 text-[9px] font-mono text-white/30 tracking-wider">
         CLAUDE-CODE
@@ -213,17 +214,18 @@ export function BuildBotVSL() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.9, ease: EASE_OUT_EXPO }}
           >
-            <Eyebrow>Build a Vision Bot</Eyebrow>
+            <Eyebrow>Build a Twitch trading bot · ~3 min</Eyebrow>
 
             <h1 className="mt-6 font-black leading-[0.92] tracking-[-0.035em] text-[clamp(2.5rem,8vw,6rem)]">
               Paste a sentence.
               <br />
-              <span className="text-text-muted">A bot appears.</span>
+              <span className="text-text-muted">A Twitch bot appears.</span>
             </h1>
 
             <p className="mt-8 max-w-2xl text-[15px] lg:text-[17px] leading-[1.6] text-text-secondary">
-              Claude Code reads the repository, configures your keys, picks markets, places trades.
-              The whole ceremony takes longer to describe than to perform.
+              Eight thousand Twitch markets, a sixty-second tick, an on-chain parimutuel. Claude Code clones the reference repo,
+              seeds a wallet from the L3 testnet faucet, and places the first verified join in under three minutes.
+              Other sources ship next.
             </p>
           </motion.div>
         </div>
@@ -386,10 +388,10 @@ export function BuildBotVSL() {
               </a>
 
               <Link
-                href="/source/steam"
+                href={`/source/${SOURCE}`}
                 className="group inline-flex items-center gap-3 text-[13px] font-black tracking-[0.06em] uppercase text-text-secondary hover:text-text-primary transition-colors"
               >
-                <span className="border-b border-current pb-0.5">Browse markets first</span>
+                <span className="border-b border-current pb-0.5">Browse Twitch markets first</span>
                 <span className="transition-transform group-hover:translate-x-1">→</span>
               </Link>
             </div>

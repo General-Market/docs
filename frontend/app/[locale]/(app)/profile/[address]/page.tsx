@@ -30,20 +30,11 @@ function ProfileContent({ address }: { address: string }) {
   const t = useTranslations('pages.profile')
   const tabParam = searchParams.get('tab')
   const { profile, isLoading } = usePlayerProfile(address)
-  // Tab default: if the wallet actually has Vision batches, land on Vision
-  // so the user sees their positions. Otherwise fall back to Vaults (the
-  // primary surface for non-Vision users).
-  const hasVisionBatches = (profile?.stats.totalBatches ?? 0) > 0
+  // Vaults is the primary surface — default to it unless the caller
+  // explicitly asked for another tab via ?tab=. Bots that want to land
+  // a user on Vision pass ?tab=vision directly.
   const tab: ProfileTabId =
-    tabParam === 'vision'
-      ? 'vision'
-      : tabParam === 'index'
-        ? 'index'
-        : tabParam === 'vaults'
-          ? 'vaults'
-          : hasVisionBatches
-            ? 'vision'
-            : 'vaults'
+    tabParam === 'vision' ? 'vision' : tabParam === 'index' ? 'index' : 'vaults'
   const { points } = usePoints(address)
   const { address: connectedAddress } = useAccount()
   const isSelf =
