@@ -12,17 +12,9 @@ import { VisionTab } from '@/components/domain/profile/VisionTab'
 import { IndexTab } from '@/components/domain/profile/IndexTab'
 import { VaultsTab } from '@/components/domain/profile/VaultsTab'
 import { usePlayerProfile } from '@/hooks/usePlayerProfile'
-import { usePoints } from '@/hooks/usePoints'
 import { useVaultsTotals } from '@/hooks/useVaultsTotals'
 import { formatPnL, formatVolume } from '@/lib/utils/formatters'
 import { computeDerivedMetrics, formatJoined } from '@/lib/utils/profile-metrics'
-
-function formatPoints(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
-  if (n >= 1) return Math.floor(n).toLocaleString()
-  return '0'
-}
 
 function ProfileContent({ address }: { address: string }) {
   const searchParams = useSearchParams()
@@ -32,7 +24,6 @@ function ProfileContent({ address }: { address: string }) {
   const { profile, isLoading } = usePlayerProfile(address)
   const tab: ProfileTabId =
     tabParam === 'vaults' ? 'vaults' : tabParam === 'index' ? 'index' : 'vision'
-  const { points } = usePoints(address)
   const { address: connectedAddress } = useAccount()
   const isSelf =
     !!connectedAddress && connectedAddress.toLowerCase() === address.toLowerCase()
@@ -71,11 +62,6 @@ function ProfileContent({ address }: { address: string }) {
           label: t('vaults'),
           value: String(vaultTotals.count),
         },
-        {
-          label: t('points'),
-          value: formatPoints(points.total),
-          color: 'text-color-up',
-        },
       ]
     : [
         {
@@ -90,11 +76,6 @@ function ProfileContent({ address }: { address: string }) {
         {
           label: t('predictions'),
           value: derived.predictions.toLocaleString(),
-        },
-        {
-          label: t('points'),
-          value: formatPoints(points.total),
-          color: 'text-color-up',
         },
       ]
 

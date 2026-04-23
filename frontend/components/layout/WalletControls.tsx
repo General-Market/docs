@@ -2,13 +2,11 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useTranslations } from 'next-intl'
-import { Link } from '@/i18n/routing'
 import { useAccount, useConnect, useDisconnect, useChainId, useSwitchChain } from 'wagmi'
 import { truncateAddress } from '@/lib/utils/address'
 import { indexL3 } from '@/lib/wagmi'
 import { usePostHogTracker } from '@/hooks/usePostHog'
 import { HeaderBalanceBar } from './HeaderBalanceBar'
-import { usePoints } from '@/hooks/usePoints'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { springs } from '@/components/ui/spring'
 
@@ -33,8 +31,6 @@ export function WalletControls({ isDark }: WalletControlsProps) {
   const chainId = useChainId()
   const { switchChain, isPending: isSwitching } = useSwitchChain()
   const isWrongNetwork = isConnected && chainId !== indexL3.id
-
-  const { points } = usePoints(address)
 
   useEffect(() => { setMounted(true) }, [])
 
@@ -99,16 +95,6 @@ export function WalletControls({ isDark }: WalletControlsProps) {
           exit={EXIT}
           transition={spring}
         >
-          {/* Points, only when connected */}
-          <Link
-            href="/points"
-            className={`hidden sm:inline text-label font-bold font-mono transition-colors ${
-              isDark ? 'text-text-muted hover:text-white' : 'text-text-muted hover:text-black'
-            }`}
-          >
-            {points.total >= 1000 ? `${(points.total / 1000).toFixed(1)}K` : Math.floor(points.total).toLocaleString()} pts
-          </Link>
-
           {/* Context-aware balance — Vision on /, /source; ITP on /index; both on /profile */}
           <HeaderBalanceBar isDark={isDark} />
 

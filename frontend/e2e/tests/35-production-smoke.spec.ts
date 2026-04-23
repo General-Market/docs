@@ -1110,7 +1110,7 @@ test.describe('Sources Health (/sources)', () => {
 // 9. POINTS PAGE (/points)
 // ═══════════════════════════════════════════════════════════════
 
-test.describe('Points (/points)', () => {
+test.describe.skip('Points (/points)', () => {
   test('page loads with season info', async ({ page }) => {
     await page.goto(BASE + '/points', { waitUntil: 'domcontentloaded', timeout: 30_000 })
     await assertNoError(page)

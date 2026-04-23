@@ -4,7 +4,7 @@
  */
 import { test, expect } from '@playwright/test'
 
-test.describe('Points Page', () => {
+test.describe.skip('Points Page', () => {
   test('page loads without crash', async ({ page }) => {
     test.setTimeout(120_000)
 
