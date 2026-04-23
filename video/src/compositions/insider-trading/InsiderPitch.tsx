@@ -10,7 +10,7 @@ import {
 } from "remotion";
 import { loadFont as loadInter } from "@remotion/google-fonts/Inter";
 import { CascadeText } from "../../lib/components/Text";
-import { VortexGallery } from "../backgrounds/webgl-picks/VortexGallery";
+import { SourceVortexGallery } from "./SourceVortexGallery";
 
 const { fontFamily: INTER } = loadInter("normal", {
   subsets: ["latin"],
@@ -67,7 +67,9 @@ const Reveal: React.FC<{
   revealDuration?: number;
   /** Ignored — kept for call-site stability */
   seed?: number;
-}> = ({ from, duration, text, style }) => {
+  /** Skip the mix-blend-mode: difference so text stays solid white. */
+  solid?: boolean;
+}> = ({ from, duration, text, style, solid }) => {
   const s = style ?? {};
   const fontSize = typeof s.fontSize === "number" ? s.fontSize : 48;
   const fontWeight =
@@ -91,7 +93,7 @@ const Reveal: React.FC<{
     <Sequence from={from} durationInFrames={duration} layout="none">
       <div
         style={{
-          mixBlendMode: "difference",
+          mixBlendMode: solid ? "normal" : "difference",
           color: WHITE,
           opacity: typeof s.opacity === "number" ? s.opacity : undefined,
         }}
@@ -253,22 +255,13 @@ const Point1Scene: React.FC<{
 
   return (
     <AbsoluteFill style={{ opacity: fadeOut, background: "#000000" }}>
-      {/* VORTEX — verbatim WebGLPicks VortexGallery, Three.js canvas */}
+      {/* VORTEX — source-card variant of the WebGLPicks VortexGallery */}
       <AbsoluteFill style={{ opacity: vortexIn }}>
-        <VortexGallery />
+        <SourceVortexGallery />
       </AbsoluteFill>
 
-      {/* Radial vignette — holds focus at the center where the number lives */}
-      <AbsoluteFill
-        style={{
-          background:
-            "radial-gradient(ellipse 55% 45% at 50% 50%, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.75) 55%, rgba(0,0,0,0.95) 100%)",
-          opacity: vortexIn,
-          pointerEvents: "none",
-        }}
-      />
-
-      {/* CENTER — the headline number and its tagline */}
+      {/* CENTER — the headline number and its tagline. Solid white, no
+          difference blend — stands cleanly in front of the vortex. */}
       <AbsoluteFill
         style={{
           display: "flex",
@@ -284,6 +277,7 @@ const Point1Scene: React.FC<{
           text="500,000"
           revealDuration={28}
           seed={37}
+          solid
           style={{
             fontSize: 260,
             fontWeight: 900,
@@ -298,6 +292,7 @@ const Point1Scene: React.FC<{
           text="active markets"
           revealDuration={26}
           seed={31}
+          solid
           style={{
             fontSize: 52,
             fontWeight: 700,
