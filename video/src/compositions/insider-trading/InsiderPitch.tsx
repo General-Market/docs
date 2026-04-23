@@ -381,7 +381,7 @@ const GC_ENTRY_DURATION = 18;
 const GC_ENTRY_STAGGER = 1.5;
 const GC_ENTRY_VIEWPORT_RATIO = 0.6;
 
-const GC_SCROLL_SPEED = 259; // px / s
+const GC_SCROLL_SPEED = 2590; // px / s — 10× the GradientCarousel baseline
 
 const gcMod = (n: number, m: number) => ((n % m) + m) % m;
 const gcClamp = (v: number, lo: number, hi: number) =>
@@ -698,90 +698,281 @@ const Point2Scene: React.FC<{
   );
 };
 
-// ─── Scene 5: POINT 3 — 100,000 trades per second ────────────────────────
+// ─── Scene 5: POINT 3 — cluster trading vs single trades ─────────────────
+//
+// Dual-panel split. LEFT: the old world — 100 trades per second, each
+// trade a lonely tick dropping into a column. RIGHT: Cluster Trading —
+// 100,000 per second, stamped in blocks of 10,000 that slam down at
+// roughly 10× the cadence of the other side. The throughput delta is
+// read, not explained.
 
 const Point3Scene: React.FC<{
   local: number;
   sceneStart: number;
   duration: number;
 }> = ({ local, sceneStart, duration }) => {
-  // A hard horizontal slab sweeps across — speed, throughput, no
-  // prediction-market comparison needed. Keep it to a single gesture.
-  const sweep = interpolate(local, [10, 48], [0, 1], {
+  const fadeOut = interpolate(local, [duration - 18, duration], [1, 0], clamp);
+
+  // Divider — hairline between the two panels, draws down from centre
+  const dividerProgress = interpolate(local, [6, 34], [0, 1], {
     ...clamp,
     easing: ease3,
   });
-  const fadeOut = interpolate(local, [duration - 18, duration], [1, 0], clamp);
+
+  // LEFT cadence — a single trade every 2 frames (reads as constant drip,
+  // never overwhelming). Starts a few frames after the title reveal.
+  const LEFT_TRADE_START = 26;
+  const LEFT_TRADE_INTERVAL = 2;
+  const leftTradesCount = Math.max(
+    0,
+    Math.floor((local - LEFT_TRADE_START) / LEFT_TRADE_INTERVAL) + 1,
+  );
+
+  // RIGHT cadence — a 10k block every 4 frames (~7.5 blocks/sec, roughly
+  // ten times the rate the eye counts on the left). Hero side, starts
+  // slightly later so the left gets established first.
+  const RIGHT_BLOCK_START = 34;
+  const RIGHT_BLOCK_INTERVAL = 4;
+  const rightBlocksCount = Math.max(
+    0,
+    Math.floor((local - RIGHT_BLOCK_START) / RIGHT_BLOCK_INTERVAL) + 1,
+  );
 
   return (
-    <AbsoluteFill style={{ opacity: fadeOut }}>
-      {/* SHAPE — sweeping slab */}
-      <AbsoluteFill
+    <AbsoluteFill style={{ opacity: fadeOut, background: BLACK }}>
+      {/* Divider — drops from centre outward */}
+      <div
         style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
+          position: "absolute",
+          left: "50%",
+          top: "50%",
+          width: 1,
+          height: `${dividerProgress * 86}%`,
+          transform: "translate(-50%, -50%)",
+          background: WHITE,
+          opacity: 0.18,
+        }}
+      />
+
+      {/* LEFT PANEL — single trades */}
+      <div
+        style={{
+          position: "absolute",
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: "50%",
         }}
       >
+        {/* Title stack */}
         <div
           style={{
-            width: 1720 * sweep,
-            height: 320,
-            background: WHITE,
-            borderRadius: 4,
-            transformOrigin: "left center",
+            position: "absolute",
+            top: 86,
+            left: 0,
+            right: 0,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 14,
           }}
-        />
-      </AbsoluteFill>
+        >
+          <Reveal
+            from={sceneStart + 8}
+            duration={duration - 8}
+            text="100 trades / s"
+            revealDuration={26}
+            seed={79}
+            solid
+            style={{
+              fontSize: 56,
+              fontWeight: 900,
+              letterSpacing: "-0.02em",
+              textAlign: "center",
+              lineHeight: 1,
+            }}
+          />
+          <div
+            style={{
+              fontFamily: INTER,
+              fontSize: 18,
+              fontWeight: 600,
+              letterSpacing: "0.26em",
+              textTransform: "uppercase",
+              color: "rgba(255,255,255,0.55)",
+            }}
+          >
+            single trades
+          </div>
+        </div>
 
-      {/* TITLE */}
-      <AbsoluteFill
+        {/* Trade drip — small bars stack from the bottom up */}
+        <div
+          style={{
+            position: "absolute",
+            left: "50%",
+            bottom: 90,
+            transform: "translateX(-50%)",
+            width: 260,
+            height: 560,
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column-reverse",
+            alignItems: "center",
+            gap: 5,
+          }}
+        >
+          {Array.from({ length: leftTradesCount }).map((_, i) => {
+            const spawnFrame = LEFT_TRADE_START + i * LEFT_TRADE_INTERVAL;
+            const age = local - spawnFrame;
+            const scaleX = Math.min(1, Math.max(0, age / 5));
+            const opacity = Math.min(1, Math.max(0, age / 6));
+            return (
+              <div
+                key={i}
+                style={{
+                  width: 180,
+                  height: 8,
+                  background: WHITE,
+                  borderRadius: 2,
+                  opacity,
+                  transform: `scaleX(${scaleX})`,
+                  transformOrigin: "center",
+                  flexShrink: 0,
+                }}
+              />
+            );
+          })}
+        </div>
+      </div>
+
+      {/* RIGHT PANEL — cluster trading */}
+      <div
         style={{
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "center",
-          paddingTop: 120,
+          position: "absolute",
+          right: 0,
+          top: 0,
+          bottom: 0,
+          width: "50%",
         }}
       >
-        <Reveal
-          from={sceneStart + 4}
-          duration={duration - 4}
-          text="100,000 trades per second"
-          revealDuration={38}
-          seed={83}
+        {/* Title stack */}
+        <div
           style={{
-            fontSize: 72,
-            fontWeight: 900,
-            letterSpacing: "-0.03em",
-            textAlign: "center",
-            maxWidth: 1600,
-            lineHeight: 1,
+            position: "absolute",
+            top: 76,
+            left: 0,
+            right: 0,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 10,
           }}
-        />
-      </AbsoluteFill>
+        >
+          <Reveal
+            from={sceneStart + 4}
+            duration={duration - 4}
+            text="Cluster Trading"
+            revealDuration={30}
+            seed={83}
+            solid
+            style={{
+              fontSize: 72,
+              fontWeight: 900,
+              letterSpacing: "-0.03em",
+              textAlign: "center",
+              lineHeight: 1,
+            }}
+          />
+          <Reveal
+            from={sceneStart + 22}
+            duration={duration - 22}
+            text="100,000 trades / s"
+            revealDuration={24}
+            seed={97}
+            solid
+            style={{
+              fontSize: 34,
+              fontWeight: 600,
+              letterSpacing: "-0.01em",
+              textAlign: "center",
+              lineHeight: 1,
+              opacity: 0.78,
+            }}
+          />
+        </div>
 
-      {/* THE NUMBER — sits on the slab, difference-blends to contrast */}
-      <AbsoluteFill
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Reveal
-          from={sceneStart + 46}
-          duration={duration - 46}
-          text="100,000 / s"
-          revealDuration={24}
-          seed={101}
+        {/* Block stack — each block = 10,000 trades, slams in from top */}
+        <div
           style={{
-            fontSize: 200,
-            fontWeight: 900,
-            letterSpacing: "-0.04em",
-            textAlign: "center",
+            position: "absolute",
+            left: "50%",
+            bottom: 90,
+            transform: "translateX(-50%)",
+            width: 520,
+            height: 560,
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column-reverse",
+            alignItems: "center",
+            gap: 10,
           }}
-        />
-      </AbsoluteFill>
+        >
+          {Array.from({ length: rightBlocksCount }).map((_, i) => {
+            const spawnFrame = RIGHT_BLOCK_START + i * RIGHT_BLOCK_INTERVAL;
+            const age = local - spawnFrame;
+            const entry = Math.min(1, Math.max(0, age / 8));
+            const eased = ease3(entry);
+            const translateY = (1 - eased) * -22;
+            const scale = 0.94 + eased * 0.06;
+            const opacity = Math.min(1, Math.max(0, age / 5));
+            return (
+              <div
+                key={i}
+                style={{
+                  width: 460,
+                  height: 84,
+                  background: WHITE,
+                  borderRadius: 6,
+                  opacity,
+                  transform: `translateY(${translateY}px) scale(${scale})`,
+                  flexShrink: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "0 28px",
+                  boxShadow: "0 10px 30px rgba(0,0,0,0.35)",
+                }}
+              >
+                <span
+                  style={{
+                    color: BLACK,
+                    fontFamily: INTER,
+                    fontSize: 14,
+                    fontWeight: 800,
+                    letterSpacing: "0.26em",
+                    textTransform: "uppercase",
+                    opacity: 0.6,
+                  }}
+                >
+                  Cluster
+                </span>
+                <span
+                  style={{
+                    color: BLACK,
+                    fontFamily: INTER,
+                    fontSize: 34,
+                    fontWeight: 900,
+                    letterSpacing: "-0.02em",
+                  }}
+                >
+                  10,000 trades
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </AbsoluteFill>
   );
 };
