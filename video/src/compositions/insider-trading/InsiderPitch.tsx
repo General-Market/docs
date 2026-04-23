@@ -1,6 +1,7 @@
 import React from "react";
 import {
   AbsoluteFill,
+  Easing,
   Img,
   Sequence,
   interpolate,
@@ -243,12 +244,12 @@ type VortexCardSlot = {
   key: number;
 };
 
-const VORTEX_CARDS_PER_RING = 14;
-const VORTEX_RINGS = 11;
-const VORTEX_HEIGHT = 3400; // total cylinder Y range the cards wrap inside
-const VORTEX_RADIUS = 1150;
-const VORTEX_CARD_W = 240;
-const VORTEX_CARD_H = 320;
+const VORTEX_CARDS_PER_RING = 11;
+const VORTEX_RINGS = 10;
+const VORTEX_HEIGHT = 2600; // total cylinder Y range the cards wrap inside
+const VORTEX_RADIUS = 720;
+const VORTEX_CARD_W = 260;
+const VORTEX_CARD_H = 340;
 
 const buildVortexSlots = (): VortexCardSlot[] => {
   const slots: VortexCardSlot[] = [];
@@ -285,16 +286,19 @@ const CardVortex: React.FC<{ local: number }> = ({ local }) => {
   // Global rotation (deg/frame) + scroll (px/frame). Scroll pushes cards
   // downward through the cylinder; the angular component makes the whole
   // column spiral as it falls.
-  const rotationBase = local * 0.7;
-  const scrollY = local * 22;
-  const tilt = 10;
-  const frontCutoff = VORTEX_RADIUS * 0.45;
-  const frontRange = VORTEX_RADIUS * 0.35;
+  const rotationBase = local * 0.55;
+  const scrollY = local * 16;
+  const tilt = 8;
+  // Only the very front slice fades — the cards whose z is high enough
+  // to occlude the centered "500,000". Everything else stays fully
+  // opaque so the cylinder reads as dense.
+  const frontCutoff = VORTEX_RADIUS * 0.78;
+  const frontRange = VORTEX_RADIUS * 0.22;
 
   return (
     <AbsoluteFill
       style={{
-        perspective: 1800,
+        perspective: 1600,
         perspectiveOrigin: "50% 50%",
         overflow: "hidden",
       }}
@@ -316,14 +320,12 @@ const CardVortex: React.FC<{ local: number }> = ({ local }) => {
           const source = FEATURED_SOURCES[slot.sourceIdx];
 
           // Fade cards as they approach the top/bottom of the wrap range
-          // so respawning doesn't pop visibly. Symmetric triangle falloff.
-          const edgeT = Math.min(1, (VORTEX_HEIGHT / 2 - Math.abs(y)) / 320);
+          // so respawning doesn't pop visibly.
+          const edgeT = Math.min(1, (VORTEX_HEIGHT / 2 - Math.abs(y)) / 260);
           const edgeFade = Math.max(0, edgeT);
 
-          // Front fade — cards crossing toward the camera (high +Z)
-          // would block the "500,000" headline, so fade them out before
-          // they reach the front of the cylinder. cos(angle) approximates
-          // the z-component of the card's position on the wall.
+          // Front fade — only kicks in for cards essentially at the
+          // camera-facing front of the cylinder.
           const cardZ =
             VORTEX_RADIUS * Math.cos((angle * Math.PI) / 180);
           const frontFade =
@@ -331,8 +333,8 @@ const CardVortex: React.FC<{ local: number }> = ({ local }) => {
               ? Math.max(0, 1 - (cardZ - frontCutoff) / frontRange)
               : 1;
 
-          const opacity = edgeFade * frontFade * 0.94;
-          if (opacity < 0.015) return null;
+          const opacity = edgeFade * frontFade;
+          if (opacity < 0.02) return null;
 
           return (
             <div
