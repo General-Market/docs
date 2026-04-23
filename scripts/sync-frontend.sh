@@ -37,10 +37,22 @@ git push "$REMOTE" "${COMMIT}:refs/heads/${BRANCH}" 2>&1
 git push "$REMOTE2" "${COMMIT}:refs/heads/${BRANCH}" 2>&1 || echo "warn: push to ${REMOTE2} failed (non-fatal)"
 
 # Kick Dokploy rebuild. Custom-Git source has no auto-poll; this is how VPS 3
-# hears about the new commit. Backgrounded — we don't block the commit on it.
+# hears about the new commit. Run synchronously — the post-commit hook already
+# backgrounds this whole script, so the 10s curl does not delay `git commit`.
+# Previously backgrounded here too, which meant the curl was orphaned on shell
+# exit and silently dropped on ~1 push in 3. Foreground + retry is reliable.
 DOKPLOY_HOOK="https://generalmarket.io/_dokploy/api/deploy/hDH6dhH6bGa-P0sbD684_"
-(curl -s -X POST "$DOKPLOY_HOOK" \
-  -H 'Content-Type: application/json' \
-  -H 'X-GitHub-Event: push' \
-  -d '{"ref":"refs/heads/main"}' -m 10 > /dev/null 2>&1 &) \
-  && echo "[sync-frontend] Dokploy rebuild triggered"
+for attempt in 1 2 3; do
+  CODE=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$DOKPLOY_HOOK" \
+    -H 'Content-Type: application/json' \
+    -H 'X-GitHub-Event: push' \
+    -d '{"ref":"refs/heads/main"}' -m 15) || CODE="000"
+  if [ "$CODE" = "200" ]; then
+    echo "[sync-frontend] Dokploy rebuild triggered (attempt ${attempt})"
+    exit 0
+  fi
+  echo "[sync-frontend] webhook attempt ${attempt} failed: HTTP ${CODE}"
+  sleep 2
+done
+echo "[sync-frontend] ERROR — Dokploy webhook never returned 200. Rebuild not triggered."
+exit 1
