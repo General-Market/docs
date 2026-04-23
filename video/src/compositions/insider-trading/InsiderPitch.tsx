@@ -1,7 +1,6 @@
 import React from "react";
 import {
   AbsoluteFill,
-  Easing,
   Img,
   Sequence,
   interpolate,
@@ -363,33 +362,6 @@ const OUTSIDE_WATCHERS: readonly string[] = [
   "FRONT RUNNER",
 ];
 
-// ── GradientCarousel geometry (verbatim from WebGLPicks) ─────────────────
-
-const GC_CARD_W = 190;
-const GC_CARD_H = 230;
-const GC_GAP = 24;
-const GC_UNIT = GC_CARD_W + GC_GAP;
-const GC_TRACK = GC_UNIT * PASSING_BLOCKS.length;
-const GC_BORDER_RADIUS = 16;
-
-const GC_PERSPECTIVE = 1800;
-const GC_MAX_ROTATION = 28;
-const GC_MAX_DEPTH = 140;
-const GC_SCALE_BASE = 0.92;
-const GC_SCALE_RANGE = 0.1;
-
-const GC_ENTRY_DURATION = 18;
-const GC_ENTRY_STAGGER = 1.5;
-const GC_ENTRY_VIEWPORT_RATIO = 0.6;
-
-const GC_SCROLL_SPEED = 2590; // px / s — 10× the GradientCarousel baseline
-
-const gcMod = (n: number, m: number) => ((n % m) + m) % m;
-const gcClamp = (v: number, lo: number, hi: number) =>
-  Math.min(hi, Math.max(lo, v));
-
-const gcEasePower3Out = Easing.out(Easing.poly(3));
-
 const MONO_FAMILY =
   'ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace';
 
@@ -410,146 +382,214 @@ const WatcherSilhouette: React.FC<{ scale?: number }> = ({ scale = 1 }) => (
   </svg>
 );
 
-// GM wall — the barrier. A full-width white panel between the block
-// carousel (above) and the watchers (below). The brand is stamped
-// across it: one large centred lockup plus a quiet wallpaper pattern
-// of the 7-bar icon. Everyone below looks up and sees the platform.
-// Nothing else gets through.
-const GmWall: React.FC<{ top: number; height: number; local: number }> = ({
-  top,
-  height,
-  local,
-}) => {
-  const reveal = interpolate(local, [8, 24], [0, 1], {
+// GM vertical column — the privacy filter. Source-branded cards enter
+// from the left, cross the column, and emerge on the right anonymised
+// as blocks. Opaque white tower stamped with the General Market icon
+// and a stacked wordmark. Everything that wants to be read passes
+// through it first.
+const GmColumn: React.FC<{
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  local: number;
+}> = ({ left, top, width, height, local }) => {
+  const reveal = interpolate(local, [4, 20], [0, 1], {
     ...clamp,
     easing: ease3,
   });
-  const iconEntry = interpolate(local, [18, 34], [0, 1], {
+  const markEntry = interpolate(local, [14, 30], [0, 1], {
     ...clamp,
     easing: ease3,
   });
-  const shadowPulse =
-    0.4 + 0.25 * Math.max(0, Math.sin(local * 0.14));
-
-  // Build a wallpaper pattern of small 7-bar marks using the actual
-  // logo paths, tiled across the wall at low opacity.
-  const tileW = 150;
-  const tileH = 96;
-  const cols = Math.ceil(1920 / tileW) + 2;
-  const rows = Math.ceil(height / tileH) + 2;
 
   return (
     <div
       style={{
         position: "absolute",
-        left: 0,
-        right: 0,
+        left,
         top,
+        width,
         height,
-        overflow: "hidden",
         background: WHITE,
-        transform: `scaleY(${reveal})`,
-        transformOrigin: "50% 0%",
-        boxShadow: `0 ${24 * shadowPulse}px ${
-          60 * shadowPulse
-        }px rgba(255,255,255,0.22)`,
-        borderTop: `2px solid ${BLACK}`,
-        borderBottom: `2px solid ${BLACK}`,
+        border: `2px solid ${BLACK}`,
+        borderRadius: 22,
+        overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        transform: `scaleX(${reveal})`,
+        transformOrigin: "0% 50%",
+        zIndex: 400,
       }}
     >
-      {/* Repeating wallpaper of the 7-bar mark — very low contrast, reads
-          as "everything here is General Market". */}
       <svg
         width="100%"
         height="100%"
-        style={{
-          position: "absolute",
-          inset: 0,
-          opacity: 0.08,
-        }}
+        style={{ position: "absolute", inset: 0, opacity: 0.08 }}
       >
         <defs>
           <pattern
-            id="gm-wall-tile"
-            x={-tileW / 2}
-            y={-tileH / 2}
-            width={tileW}
-            height={tileH}
+            id="gm-col-tile"
+            x={0}
+            y={0}
+            width={120}
+            height={80}
             patternUnits="userSpaceOnUse"
           >
-            <g transform="translate(25 18) scale(1.0)">
+            <g transform="translate(12 12)">
               {GM_LOGO_PATHS.map((d, i) => (
                 <path key={i} d={d} fill={BLACK} />
               ))}
             </g>
           </pattern>
         </defs>
-        <rect width="100%" height="100%" fill="url(#gm-wall-tile)" />
+        <rect width="100%" height="100%" fill="url(#gm-col-tile)" />
       </svg>
 
-      {/* Centred lockup — the brand, stamped. */}
       <div
         style={{
-          position: "absolute",
-          inset: 0,
+          position: "relative",
           display: "flex",
+          flexDirection: "column",
           alignItems: "center",
-          justifyContent: "center",
-          gap: 24,
-          opacity: iconEntry,
-          transform: `scale(${0.92 + 0.08 * iconEntry})`,
+          gap: 26,
+          opacity: markEntry,
+          transform: `scale(${0.92 + 0.08 * markEntry})`,
         }}
       >
         <div
           style={{
-            width: 108,
-            height: 108,
-            borderRadius: 22,
+            width: 140,
+            height: 140,
+            borderRadius: 28,
             background: BLACK,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <svg width={76} height={76} viewBox="0 0 102 102">
+          <svg width={100} height={100} viewBox="0 0 102 102">
             {GM_LOGO_PATHS.map((d, i) => (
               <path key={i} d={d} fill={WHITE} />
             ))}
           </svg>
         </div>
-        <span
+        <div
           style={{
             fontFamily: INTER,
             fontWeight: 900,
-            fontSize: 68,
-            letterSpacing: "-0.03em",
+            fontSize: 44,
+            letterSpacing: "-0.02em",
             color: BLACK,
-            whiteSpace: "nowrap",
-            lineHeight: 1,
+            lineHeight: 0.95,
+            textAlign: "center",
           }}
         >
-          General Market
-        </span>
-      </div>
-
-      {/* Unused dummy cells to keep the tile count from being dead code
-          (reads as a tessellation of the brand); kept in a hidden layer
-          so the SVG pattern has real repeats to reference. */}
-      <div style={{ display: "none" }}>
-        {Array.from({ length: rows * cols }).map((_, i) => (
-          <span key={i} />
-        ))}
+          GENERAL
+          <br />
+          MARKET
+        </div>
       </div>
     </div>
   );
 };
 
+// Source cards — what the cards look like before they hit the column.
+// Specific, identifiable, dark-plated. The pool mirrors the Point 1
+// vortex narrative so the stream reads as "the feed from before,
+// continued".
+const SOURCE_NAMES: readonly string[] = [
+  "TWITCH",
+  "ELECTIONS",
+  "WEATHER",
+  "TRAINS",
+  "NFL",
+  "BTC",
+  "GOLD",
+  "OPEC",
+];
+
+const SourceCard: React.FC<{ name: string; w: number; h: number }> = ({
+  name,
+  w,
+  h,
+}) => (
+  <div
+    style={{
+      width: w,
+      height: h,
+      background: "#1a1a1c",
+      borderRadius: 16,
+      border: `1px solid rgba(255,255,255,0.12)`,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: "0 14px",
+      color: WHITE,
+      fontFamily: INTER,
+      fontWeight: 900,
+      fontSize: 22,
+      letterSpacing: "0.12em",
+      textAlign: "center",
+      textTransform: "uppercase",
+      boxShadow: "0 14px 40px rgba(0,0,0,0.5)",
+    }}
+  >
+    {name}
+  </div>
+);
+
+const BlockCard: React.FC<{ hash: string; w: number; h: number }> = ({
+  hash,
+  w,
+  h,
+}) => (
+  <div
+    style={{
+      width: w,
+      height: h,
+      background: WHITE,
+      borderRadius: 16,
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      padding: "14px 16px",
+      boxShadow: "0 14px 40px rgba(0,0,0,0.55)",
+    }}
+  >
+    <span
+      style={{
+        color: BLACK,
+        fontFamily: INTER,
+        fontWeight: 800,
+        fontSize: 12,
+        letterSpacing: "0.28em",
+        textTransform: "uppercase",
+      }}
+    >
+      Block
+    </span>
+    <span
+      style={{
+        color: BLACK,
+        fontFamily: MONO_FAMILY,
+        fontSize: 14,
+        letterSpacing: "0.04em",
+      }}
+    >
+      {hash}
+    </span>
+  </div>
+);
+
 const OutsideWatcher: React.FC<{
   label: string;
   index: number;
   local: number;
-  wallBottomY: number;
-}> = ({ label, index, local, wallBottomY }) => {
+}> = ({ label, index, local }) => {
   const entryStart = 22 + index * 2.5;
   const entry = interpolate(local, [entryStart, entryStart + 16], [0, 1], {
     ...clamp,
@@ -557,59 +597,30 @@ const OutsideWatcher: React.FC<{
   });
   const lift = (1 - entry) * 32;
 
-  // Sight line: a dashed beam rises from the head and hits the wall.
-  // Length is computed from current flex position; animate its length
-  // as the watcher steps up.
-  const beamStart = entryStart + 10;
-  const beamGrow = interpolate(
-    local,
-    [beamStart, beamStart + 14],
-    [0, 1],
-    { ...clamp, easing: ease3 },
-  );
-
   return (
     <div
       style={{
-        width: 220,
+        width: 260,
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         opacity: entry,
         transform: `translateY(${lift}px)`,
-        position: "relative",
       }}
     >
-      {/* Sight line — rises up out of the head toward the wall. The
-          beam is drawn relative to the top of this container (watcher
-          row). Its top is clipped ~12px before the wall to leave a
-          visible gap: their gaze never reaches the other side. */}
-      <div
-        style={{
-          position: "absolute",
-          left: "50%",
-          transform: "translateX(-50%)",
-          top: -(wallBottomY ? 60 : 0) * beamGrow,
-          width: 2,
-          height: 60 * beamGrow,
-          background:
-            "repeating-linear-gradient(0deg, rgba(255,255,255,0.55) 0px, rgba(255,255,255,0.55) 6px, transparent 6px, transparent 12px)",
-          opacity: 0.85,
-        }}
-      />
-
-      <WatcherSilhouette />
+      <WatcherSilhouette scale={1.3} />
 
       <div
         style={{
-          marginTop: 10,
+          marginTop: 14,
           fontFamily: INTER,
           fontWeight: 800,
-          fontSize: 15,
-          letterSpacing: "0.18em",
+          fontSize: 30,
+          letterSpacing: "0.12em",
           color: WHITE,
           textAlign: "center",
           textTransform: "uppercase",
+          lineHeight: 1.05,
         }}
       >
         {label}
@@ -627,113 +638,102 @@ const Point2Scene: React.FC<{
 }> = ({ local, sceneStart, duration }) => {
   const SCENE_FPS = 30;
   const STAGE_W = 1920;
-  const halfW = STAGE_W / 2;
 
   const time = local / SCENE_FPS;
-  const scrollOffset = time * GC_SCROLL_SPEED;
-
-  // Card transforms — verbatim from GradientCarousel.
-  const cards = PASSING_BLOCKS.map((card, i) => {
-    const rawX =
-      gcMod(i * GC_UNIT - scrollOffset + GC_TRACK / 2, GC_TRACK) -
-      GC_TRACK / 2;
-    const screenX = rawX + halfW - GC_CARD_W / 2;
-
-    const norm = gcClamp(rawX / halfW, -1, 1);
-    const absNorm = Math.abs(norm);
-
-    const rotateY = -norm * GC_MAX_ROTATION;
-    const translateZ = (1 - absNorm) * GC_MAX_DEPTH;
-    const scale = GC_SCALE_BASE + (1 - absNorm) * GC_SCALE_RANGE;
-    const blur = absNorm < 0.15 ? 0 : 2 * Math.pow(absNorm, 1.1);
-
-    const withinEntryViewport =
-      Math.abs(rawX) < STAGE_W * GC_ENTRY_VIEWPORT_RATIO * 0.5;
-    const entryDelay = i * GC_ENTRY_STAGGER;
-    let entryOpacity = 1;
-    let entryTranslateY = 0;
-    let entryScale = 1;
-    if (local < GC_ENTRY_DURATION + entryDelay + 5 && withinEntryViewport) {
-      const entryProgress = gcClamp(
-        (local - entryDelay) / GC_ENTRY_DURATION,
-        0,
-        1,
-      );
-      const eased = gcEasePower3Out(entryProgress);
-      entryOpacity = eased;
-      entryTranslateY = (1 - eased) * 40;
-      entryScale = 0.92 + eased * 0.08;
-    }
-
-    const zIndex = Math.round((1 - absNorm) * 100);
-
-    return {
-      ...card,
-      index: i,
-      screenX,
-      rotateY,
-      translateZ,
-      scale: scale * entryScale,
-      blur,
-      entryOpacity,
-      entryTranslateY,
-      zIndex,
-    };
-  });
-
   const fadeOut = interpolate(local, [duration - 18, duration], [1, 0], clamp);
 
-  // Vertical stack:
-  //   title  (top)
-  //   blocks carousel — passing trades
-  //   GM WALL — the brand barrier
-  //   watchers — below the wall, cannot see through
-  const TITLE_TOP_PX = 60;
-  const CAROUSEL_CENTER_Y = 360; // absolute px
-  const WALL_TOP_PX = 540;
-  const WALL_H = 180;
+  // ── Layout ────────────────────────────────────────────────────────────
+  const COL_LEFT = 60;
+  const COL_WIDTH = 260;
+  const COL_TOP = 100;
+  const COL_HEIGHT = 620;
+  const COL_RIGHT = COL_LEFT + COL_WIDTH;
+
+  const TRACK_Y = 460; // vertical centre of the card stream
   const WATCHERS_TOP_PX = 780;
 
-  // ── Transition: a white bar sweeps right-to-left across the stage in
-  //    the first 12 frames, echoing the direction the blocks will flow.
-  //    The bar enters from the right edge, crosses the full stage, then
-  //    exits to the left. Behind it the carousel is already live — the
-  //    wipe uncovers it rather than introducing it.
-  const WIPE_FRAMES = 12;
-  const wipeT = interpolate(local, [0, WIPE_FRAMES], [0, 1], {
-    ...clamp,
-    easing: ease3,
-  });
-  const WIPE_BAR_W = 260;
-  const wipeX = interpolate(wipeT, [0, 1], [1920 + 120, -WIPE_BAR_W - 40]);
-  const wipeOpacity = interpolate(
-    local,
-    [0, 2, WIPE_FRAMES - 2, WIPE_FRAMES],
-    [0, 1, 1, 0],
-    clamp,
-  );
+  // ── Card stream ───────────────────────────────────────────────────────
+  // Cards start off-screen left, fly right across the stage, and pass
+  // through the column. Before the column → source-branded card. After
+  // the column → anonymised block. Inside the column → hidden behind
+  // the opaque GM tower, so the switch happens under cover.
+  const CARD_W = 150;
+  const CARD_H = 190;
+  const CARD_SPEED = 1100; // px / s
+  const CARD_INTERVAL = 0.32; // s between spawns
+  const CARD_LEAD = 420; // start x before screen
 
-  // Carousel is held back until the wipe has crossed centre — feels like
-  // the wipe is dragging the blocks in behind it.
-  const carouselReveal = interpolate(
-    local,
-    [WIPE_FRAMES * 0.5, WIPE_FRAMES + 2],
-    [0, 1],
-    clamp,
-  );
+  const activeCards: {
+    i: number;
+    x: number;
+    source: string;
+    hash: string;
+  }[] = [];
+  for (let i = 0; i < 40; i++) {
+    const spawnT = i * CARD_INTERVAL;
+    if (time < spawnT) continue;
+    const age = time - spawnT;
+    const x = -CARD_LEAD + age * CARD_SPEED;
+    if (x > STAGE_W + 80) continue;
+    activeCards.push({
+      i,
+      x,
+      source: SOURCE_NAMES[i % SOURCE_NAMES.length],
+      hash: PASSING_BLOCKS[i % PASSING_BLOCKS.length].hash,
+    });
+  }
 
   return (
     <AbsoluteFill style={{ opacity: fadeOut, background: BLACK }}>
-      {/* Title banner — explicit position above the animation. */}
+      {/* Card stream — under the column (z defaults to 0). Before the
+          column the card is its Source identity; past the column's
+          centre it is a Block. While inside the column it's covered. */}
+      {activeCards.map((c) => {
+        const cardCenter = c.x + CARD_W / 2;
+        const columnCenter = COL_LEFT + COL_WIDTH / 2;
+        const isBlock = cardCenter > columnCenter;
+        return (
+          <div
+            key={c.i}
+            style={{
+              position: "absolute",
+              left: c.x,
+              top: TRACK_Y - CARD_H / 2,
+              width: CARD_W,
+              height: CARD_H,
+            }}
+          >
+            {isBlock ? (
+              <BlockCard hash={c.hash} w={CARD_W} h={CARD_H} />
+            ) : (
+              <SourceCard name={c.source} w={CARD_W} h={CARD_H} />
+            )}
+          </div>
+        );
+      })}
+
+      {/* GM column — the filter. Sits on the left, opaque, so cards
+          entering are hidden and the transformation reads as "passed
+          through". */}
+      <GmColumn
+        left={COL_LEFT}
+        top={COL_TOP}
+        width={COL_WIDTH}
+        height={COL_HEIGHT}
+        local={local}
+      />
+
+      {/* Title — middle band, right of the GM column. */}
       <div
         style={{
           position: "absolute",
-          left: 0,
-          right: 0,
-          top: TITLE_TOP_PX,
+          left: COL_RIGHT + 80,
+          right: 80,
+          top: 160,
+          height: 260,
           display: "flex",
-          justifyContent: "center",
           alignItems: "center",
+          justifyContent: "center",
         }}
       >
         <Reveal
@@ -744,101 +744,17 @@ const Point2Scene: React.FC<{
           seed={59}
           solid
           style={{
-            fontSize: 114,
+            fontSize: 104,
             fontWeight: 900,
             letterSpacing: "-0.03em",
             textAlign: "center",
-            maxWidth: 1700,
-            lineHeight: 1,
+            maxWidth: STAGE_W - COL_RIGHT - 160,
+            lineHeight: 1.02,
           }}
         />
       </div>
 
-      {/* 3D stage — carousel of passing blocks above the wall. */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          perspective: GC_PERSPECTIVE,
-          transformStyle: "preserve-3d",
-          opacity: carouselReveal,
-        }}
-      >
-        {cards.map((card) => (
-          <div
-            key={card.index}
-            style={{
-              position: "absolute",
-              left: card.screenX,
-              top: CAROUSEL_CENTER_Y,
-              width: GC_CARD_W,
-              height: GC_CARD_H,
-              transformOrigin: "90% center",
-              transform: [
-                `translateY(calc(-50% + ${card.entryTranslateY}px))`,
-                `translateZ(${card.translateZ}px)`,
-                `rotateY(${card.rotateY}deg)`,
-                `scale(${card.scale})`,
-              ].join(" "),
-              borderRadius: GC_BORDER_RADIUS,
-              background: WHITE,
-              filter: card.blur > 0.1 ? `blur(${card.blur}px)` : undefined,
-              opacity: card.entryOpacity,
-              zIndex: card.zIndex,
-              boxShadow: "0 20px 60px rgba(0,0,0,0.55)",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "space-between",
-              padding: 16,
-              overflow: "hidden",
-            }}
-          >
-            <span
-              style={{
-                color: BLACK,
-                fontFamily: INTER,
-                fontWeight: 800,
-                fontSize: 12,
-                letterSpacing: "0.24em",
-                textTransform: "uppercase",
-              }}
-            >
-              Block
-            </span>
-            <span
-              style={{
-                color: BLACK,
-                fontFamily: MONO_FAMILY,
-                fontSize: 14,
-                letterSpacing: "0.04em",
-              }}
-            >
-              {card.hash}
-            </span>
-          </div>
-        ))}
-      </div>
-
-      {/* The wall — branded GM barrier between blocks and watchers. */}
-      <GmWall top={WALL_TOP_PX} height={WALL_H} local={local} />
-
-      {/* Shutter wipe — white bar sweeps right-to-left across the screen. */}
-      <div
-        style={{
-          position: "absolute",
-          left: wipeX,
-          top: 0,
-          bottom: 0,
-          width: WIPE_BAR_W,
-          background: WHITE,
-          opacity: wipeOpacity,
-          boxShadow:
-            "0 0 160px 40px rgba(255,255,255,0.35), -40px 0 80px rgba(255,255,255,0.2)",
-          zIndex: 500,
-        }}
-      />
-
-      {/* Watchers — below the wall, their gaze stops at the brand. */}
+      {/* Watchers — bottom band, readable labels (2× the old size). */}
       <div
         style={{
           position: "absolute",
@@ -848,18 +764,12 @@ const Point2Scene: React.FC<{
           display: "flex",
           justifyContent: "center",
           alignItems: "flex-start",
-          gap: 20,
+          gap: 12,
           padding: "0 40px",
         }}
       >
         {OUTSIDE_WATCHERS.map((role, i) => (
-          <OutsideWatcher
-            key={role}
-            label={role}
-            index={i}
-            local={local}
-            wallBottomY={WALL_TOP_PX + WALL_H}
-          />
+          <OutsideWatcher key={role} label={role} index={i} local={local} />
         ))}
       </div>
     </AbsoluteFill>
