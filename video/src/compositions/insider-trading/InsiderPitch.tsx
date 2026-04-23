@@ -45,12 +45,12 @@ const GM_LOGO_PATHS = [
 // bottom lines; Stat loses its LOSS CUT label. Each scene now holds just
 // long enough for its remaining reveals to land and breathe.
 export const PITCH_SCENES = {
-  intro: { start: 0, end: 96 },
-  stat: { start: 96, end: 220 },
-  point1: { start: 220, end: 340 },
-  point2: { start: 340, end: 440 },
-  point3: { start: 440, end: 540 },
-  closing: { start: 540, end: 712 },
+  intro: { start: 0, end: 66 },
+  stat: { start: 66, end: 190 },
+  point1: { start: 190, end: 310 },
+  point2: { start: 310, end: 410 },
+  point3: { start: 410, end: 510 },
+  closing: { start: 510, end: 682 },
 } as const;
 
 export const PITCH_DURATION = PITCH_SCENES.closing.end;
@@ -127,12 +127,12 @@ const IntroScene: React.FC<{
   sceneStart: number;
   duration: number;
 }> = ({ local, sceneStart, duration }) => {
-  const logoScale = interpolate(local, [4, 44], [0.4, 1], {
+  const logoScale = interpolate(local, [3, 30], [0.4, 1], {
     ...clamp,
     easing: ease3,
   });
-  const logoOpacity = interpolate(local, [4, 44], [0, 1], clamp);
-  const fadeOut = interpolate(local, [duration - 14, duration], [1, 0], clamp);
+  const logoOpacity = interpolate(local, [3, 30], [0, 1], clamp);
+  const fadeOut = interpolate(local, [duration - 10, duration], [1, 0], clamp);
 
   // Icon + wordmark live in one horizontal lockup, sized off a shared
   // rhythm: plate edge = 0.9 × cap height of the wordmark. Keeps the
@@ -187,10 +187,10 @@ const IntroScene: React.FC<{
 
           {/* Wordmark */}
           <Reveal
-            from={sceneStart + 4}
-            duration={duration - 4}
+            from={sceneStart + 3}
+            duration={duration - 3}
             text="General Market"
-            revealDuration={34}
+            revealDuration={22}
             seed={11}
             style={{
               fontSize,
@@ -214,10 +214,10 @@ const IntroScene: React.FC<{
         }}
       >
         <Reveal
-          from={sceneStart + 48}
-          duration={duration - 48}
+          from={sceneStart + 30}
+          duration={duration - 30}
           text="fights back"
-          revealDuration={28}
+          revealDuration={18}
           seed={23}
           style={{
             fontSize: 68,
@@ -278,7 +278,10 @@ const Point1Scene: React.FC<{
       {/* PHONE — iPhone from Worldcoin, screen painted with the current
           phase's source card. Cycles Twitch → Deutsche Bahn → Movies & TV. */}
       <AbsoluteFill style={{ opacity: vortexIn }}>
-        <PhoneWithCard cardSourceId={centerSourceId} />
+        <PhoneWithCard
+          cardSourceId={centerSourceId}
+          preloadSourceIds={POINT1_CENTER_SEQUENCE as unknown as string[]}
+        />
       </AbsoluteFill>
 
       {/* CENTER — the headline number and its tagline. Solid white, no
@@ -324,30 +327,6 @@ const Point1Scene: React.FC<{
         />
       </AbsoluteFill>
 
-      {/* SUBTITLE — only-on-GM examples */}
-      <AbsoluteFill
-        style={{
-          display: "flex",
-          alignItems: "flex-end",
-          justifyContent: "center",
-          paddingBottom: 110,
-        }}
-      >
-        <Reveal
-          from={sceneStart + 66}
-          duration={duration - 66}
-          text="Only on GM — Twitch, weather, trains, elections…"
-          revealDuration={42}
-          seed={53}
-          style={{
-            fontSize: 34,
-            fontWeight: 600,
-            letterSpacing: "-0.01em",
-            textAlign: "center",
-            maxWidth: 1500,
-          }}
-        />
-      </AbsoluteFill>
     </AbsoluteFill>
   );
 };

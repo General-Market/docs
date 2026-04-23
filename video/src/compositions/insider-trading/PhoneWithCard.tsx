@@ -11,6 +11,7 @@ import {
   delayRender,
   continueRender,
   staticFile,
+  useCurrentFrame,
 } from "remotion";
 import { ThreeCanvas } from "@remotion/three";
 import { useThree } from "@react-three/fiber";
@@ -412,9 +413,10 @@ function applyCoverFit(
   texture.needsUpdate = true;
 }
 
-const PhoneScene: React.FC<{ texture: THREE.CanvasTexture }> = ({
-  texture,
-}) => {
+const PhoneScene: React.FC<{
+  texture: THREE.CanvasTexture;
+  frame: number;
+}> = ({ texture, frame }) => {
   const { camera } = useThree();
   const gltf = useGLTF(MODEL_URL);
 
@@ -441,11 +443,11 @@ const PhoneScene: React.FC<{ texture: THREE.CanvasTexture }> = ({
     });
   }, [gltf]);
 
-  // Paint the card canvas onto the phone screen
+  // Paint the card canvas onto the phone screen. Always refresh cover-fit
+  // and mark dirty so swapping the underlying texture propagates.
   if (screenMesh && texture) {
-    const srcAspect =
-      (texture.image as HTMLCanvasElement).width /
-      (texture.image as HTMLCanvasElement).height;
+    const canvasEl = texture.image as HTMLCanvasElement;
+    const srcAspect = canvasEl.width / canvasEl.height;
     applyCoverFit(texture, srcAspect, SCREEN_ASPECT);
     texture.colorSpace = THREE.SRGBColorSpace;
     const mat = screenMesh.material as THREE.MeshStandardMaterial;
@@ -458,9 +460,18 @@ const PhoneScene: React.FC<{ texture: THREE.CanvasTexture }> = ({
     }
   }
 
+  // Gentle independent motion. Y-bob is a soft sine (±0.12 scene units,
+  // ~1 cycle per ~2.3s). Y-axis pivot is a slow sine (±6°).
+  const t = frame / 30; // seconds assuming 30fps comp
+  const bobY = Math.sin(t * 2.7) * 0.12;
+  const pivotY = Math.sin(t * 1.6) * (6 * Math.PI) / 180; // ±6°
+
   if (iphone) {
-    iphone.position.copy(PHONE_POS);
-    iphone.quaternion.copy(PHONE_QUAT);
+    iphone.position.set(PHONE_POS.x, PHONE_POS.y + bobY, PHONE_POS.z);
+    const animQuat = new THREE.Quaternion().setFromEuler(
+      new THREE.Euler(0, pivotY, 0, "YXZ"),
+    );
+    iphone.quaternion.copy(PHONE_QUAT).multiply(animQuat);
     iphone.scale.setScalar(PHONE_SCALE);
   }
 
@@ -490,29 +501,59 @@ const PhoneScene: React.FC<{ texture: THREE.CanvasTexture }> = ({
 // ── Exported composition ────────────────────────────────────────────────
 
 export const PhoneWithCard: React.FC<{
-  /** FEATURED_SOURCES.id of the card to paint onto the screen. */
+  /** FEATURED_SOURCES.id of the card currently painted on the screen. */
   cardSourceId: string;
+  /** Optional list of IDs to prebuild so swaps are instant (no render gap). */
+  preloadSourceIds?: string[];
   width?: number;
   height?: number;
-}> = ({ cardSourceId, width = 1920, height = 1080 }) => {
-  const [texture, setTexture] = useState<THREE.CanvasTexture | null>(null);
-  const [handle] = useState(() => delayRender(`phone-card-${cardSourceId}`));
+}> = ({
+  cardSourceId,
+  preloadSourceIds,
+  width = 1920,
+  height = 1080,
+}) => {
+  const frame = useCurrentFrame();
+  // Textures keyed by source ID. Built once per instance; swapping
+  // cardSourceId picks from this map instead of rebuilding.
+  const [textures, setTextures] = useState<
+    Record<string, THREE.CanvasTexture>
+  >({});
+  const [handle] = useState(() => delayRender("phone-card-atlas"));
+
+  // Resolve the full list of IDs we need textures for. Include
+  // cardSourceId itself so the currently-displayed phase is always
+  // prebuilt too.
+  const ids = useMemo(() => {
+    const set = new Set<string>(
+      preloadSourceIds ? [...preloadSourceIds] : [],
+    );
+    set.add(cardSourceId);
+    return Array.from(set);
+  }, [preloadSourceIds, cardSourceId]);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const logo = await loadImage(
-        staticFile(`source-imgs/icons/${cardSourceId}.png`),
+      const built: Record<string, THREE.CanvasTexture> = {};
+      await Promise.all(
+        ids.map(async (id) => {
+          const logo = await loadImage(
+            staticFile(`source-imgs/icons/${id}.png`),
+          );
+          if (cancelled) return;
+          const canvas = buildCardCanvas(id, logo);
+          const tex = new THREE.CanvasTexture(canvas);
+          tex.needsUpdate = true;
+          tex.magFilter = THREE.LinearFilter;
+          tex.minFilter = THREE.LinearMipmapLinearFilter;
+          tex.generateMipmaps = true;
+          tex.anisotropy = 8;
+          built[id] = tex;
+        }),
       );
       if (cancelled) return;
-      const canvas = buildCardCanvas(cardSourceId, logo);
-      const tex = new THREE.CanvasTexture(canvas);
-      tex.needsUpdate = true;
-      tex.magFilter = THREE.LinearFilter;
-      tex.minFilter = THREE.LinearMipmapLinearFilter;
-      tex.generateMipmaps = true;
-      tex.anisotropy = 8;
-      setTexture(tex);
+      setTextures(built);
       continueRender(handle);
     })().catch(() => {
       if (!cancelled) continueRender(handle);
@@ -520,9 +561,13 @@ export const PhoneWithCard: React.FC<{
     return () => {
       cancelled = true;
     };
-  }, [cardSourceId, handle]);
+    // ids is a stable memoised array; changes only when the user passes a
+    // different preload list.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ids.join("|"), handle]);
 
-  if (!texture) {
+  const active = textures[cardSourceId];
+  if (!active) {
     return <AbsoluteFill style={{ background: "transparent" }} />;
   }
 
@@ -532,9 +577,14 @@ export const PhoneWithCard: React.FC<{
         width={width}
         height={height}
         style={{ width: "100%", height: "100%" }}
-        camera={{ position: [-2.8, 2.375, -4.44], fov: 50, near: 0.1, far: 200 }}
+        camera={{
+          position: [-2.8, 2.375, -4.44],
+          fov: 50,
+          near: 0.1,
+          far: 200,
+        }}
       >
-        <PhoneScene texture={texture} />
+        <PhoneScene texture={active} frame={frame} />
       </ThreeCanvas>
     </AbsoluteFill>
   );
