@@ -275,20 +275,8 @@ const Point1Scene: React.FC<{
         <SourceVortexGallery centerSourceId={centerSourceId} hideCenter />
       </AbsoluteFill>
 
-      {/* PHONE — iPhone from Worldcoin, screen painted with the current
-          phase's source card. Cycles Twitch → Deutsche Bahn → Movies & TV.
-          The entry 0..20 frames completes the roll carried over from the
-          Stat scene's 360° outro — phone comes in mid-spin and settles. */}
-      <AbsoluteFill style={{ opacity: vortexIn }}>
-        <PhoneWithCard
-          cardSourceId={centerSourceId}
-          preloadSourceIds={POINT1_CENTER_SEQUENCE as unknown as string[]}
-          yAxisExtraDeg={interpolate(local, [0, 20], [360, 0], {
-            ...clamp,
-            easing: ease3,
-          })}
-        />
-      </AbsoluteFill>
+      {/* The phone now lives at the InsiderPitch wrapper level so it
+          persists across the stat → point1 cut. See SharedPhoneLayer. */}
 
       {/* CENTER — the headline number and its tagline. Solid white, no
           difference blend — stands cleanly in front of the vortex. */}
@@ -1157,11 +1145,6 @@ const FootnotePopcut: React.FC<{ text: string }> = ({ text }) => {
 
 // ─── Scene 6: STAT — 90% ─────────────────────────────────────────────────
 
-// Phone in StatScene carries a source card behind the "Reducing insider
-// loss up to 70%" claim. Picked polymarket since it's the most
-// on-topic for insider-loss framing, but easy to swap.
-const STAT_PHONE_CARD = "polymarket";
-
 const StatScene: React.FC<{
   local: number;
   sceneStart: number;
@@ -1169,26 +1152,10 @@ const StatScene: React.FC<{
 }> = ({ local, sceneStart, duration }) => {
   const fadeOut = interpolate(local, [duration - 20, duration], [1, 0], clamp);
 
-  // Roll-out: last 30 frames the phone performs a full Y-axis turn to
-  // sell the transition into Point1. Eased so it accelerates into the
-  // cut rather than spinning at a constant rate.
-  const rollStart = duration - 30;
-  const rollT = interpolate(local, [rollStart, duration], [0, 1], {
-    ...clamp,
-    easing: ease3,
-  });
-  const yAxisExtraDeg = rollT * 360;
-
   return (
     <AbsoluteFill style={{ opacity: fadeOut }}>
-      {/* PHONE — centered, holds the middle. Flanking text wraps it. */}
-      <AbsoluteFill>
-        <PhoneWithCard
-          cardSourceId={STAT_PHONE_CARD}
-          preloadSourceIds={[STAT_PHONE_CARD]}
-          yAxisExtraDeg={yAxisExtraDeg}
-        />
-      </AbsoluteFill>
+      {/* Phone rendered by SharedPhoneLayer at the InsiderPitch level,
+          so it survives the cut into Point 1 as one continuous prop. */}
 
       {/* LEFT — "Reducing insider loss" broken across three lines */}
       <AbsoluteFill
@@ -1603,6 +1570,70 @@ const ClosingScene: React.FC<{
   );
 };
 
+// ─── Shared phone layer ──────────────────────────────────────────────────
+// One PhoneWithCard instance for both the Stat scene and Point 1. Mounted
+// once as long as we're in either scene, so the 3D phone and all its
+// state survive the scene cut at local=190. The card texture switches
+// mid-spin; the roll is spread across 90 frames centred on the cut so
+// the transition reads as a slow barrel roll, not a whip.
+
+const SHARED_PHONE_PRELOAD = [
+  "polymarket",
+  "twitch",
+  "db_trains",
+  "tmdb",
+] as const;
+const POINT1_PHASE_IDS = ["twitch", "db_trains", "tmdb"] as const;
+
+const SharedPhoneLayer: React.FC<{ local: number }> = ({ local }) => {
+  const statStart = PITCH_SCENES.stat.start;
+  const statEnd = PITCH_SCENES.stat.end;
+  const point1Start = PITCH_SCENES.point1.start;
+  const point1End = PITCH_SCENES.point1.end;
+
+  // Visible only during stat + point1
+  if (local < statStart || local >= point1End) return null;
+
+  // Resolve the card. Stat holds polymarket; point1 cycles through the
+  // phase sequence in equal thirds.
+  let cardId: string;
+  if (local < statEnd) {
+    cardId = "polymarket";
+  } else {
+    const p1Local = local - point1Start;
+    const p1Duration = point1End - point1Start;
+    const phase = Math.min(
+      POINT1_PHASE_IDS.length - 1,
+      Math.max(0, Math.floor((p1Local / p1Duration) * POINT1_PHASE_IDS.length)),
+    );
+    cardId = POINT1_PHASE_IDS[phase];
+  }
+
+  // Roll: 90 frames centred on the cut. Half before, half after.
+  const rollStart = point1Start - 45;
+  const rollEnd = point1Start + 45;
+  const rollT = interpolate(local, [rollStart, rollEnd], [0, 1], clamp);
+  const yAxisExtraDeg = rollT * 360;
+
+  // Fade in on stat entry, fade out on point1 exit.
+  const opacity = interpolate(
+    local,
+    [statStart, statStart + 18, point1End - 18, point1End],
+    [0, 1, 1, 0],
+    clamp,
+  );
+
+  return (
+    <AbsoluteFill style={{ opacity, pointerEvents: "none" }}>
+      <PhoneWithCard
+        cardSourceId={cardId}
+        preloadSourceIds={SHARED_PHONE_PRELOAD as unknown as string[]}
+        yAxisExtraDeg={yAxisExtraDeg}
+      />
+    </AbsoluteFill>
+  );
+};
+
 // ─── Pitch wrapper ───────────────────────────────────────────────────────
 
 export const InsiderPitch: React.FC<{ startFrame: number }> = ({
@@ -1672,6 +1703,10 @@ export const InsiderPitch: React.FC<{ startFrame: number }> = ({
           duration={sceneDuration}
         />
       ) : null}
+
+      {/* Single phone instance spanning Stat → Point 1, rolling across
+          the cut instead of hard-mounting twice. */}
+      <SharedPhoneLayer local={local} />
     </AbsoluteFill>
   );
 };
