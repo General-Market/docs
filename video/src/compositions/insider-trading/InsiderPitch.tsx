@@ -136,6 +136,9 @@ const IntroContent: React.FC<{
   logoScale: number;
   logoOpacity: number;
   pulse: number;
+  /** True inside the day clone — the logo double-inverts to stay dark-plate
+      with white bars, immune to the ancestor's filter: invert(1). */
+  dayMode?: boolean;
 }> = ({
   local: _local,
   sceneStart,
@@ -146,6 +149,7 @@ const IntroContent: React.FC<{
   logoScale,
   logoOpacity,
   pulse,
+  dayMode,
 }) => (
   <>
     {/* Vignette — edges crushed, center clean */}
@@ -176,31 +180,41 @@ const IntroContent: React.FC<{
       >
         <div
           style={{
-            position: "relative",
-            width: plateEdge,
-            height: plateEdge,
-            background: BLACK,
-            borderRadius: 38,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            transform: `scale(${logoScale})`,
-            transformOrigin: "center",
-            opacity: logoOpacity,
-            boxShadow:
-              "inset 0 0 0 1px rgba(255,255,255,0.08), 0 24px 70px rgba(0,0,0,0.55)",
-            overflow: "hidden",
+            // Double-invert in day mode — cancels the ancestor's invert(1)
+            // so the badge remains a dark plate with white bars on the
+            // white ground, keeping its corners crisp and the bars legible.
+            filter: dayMode ? "invert(1)" : undefined,
+            isolation: "isolate",
           }}
         >
-          <svg
-            width={plateEdge * 0.82}
-            height={plateEdge * 0.82}
-            viewBox="0 0 102 102"
+          <div
+            style={{
+              position: "relative",
+              width: plateEdge,
+              height: plateEdge,
+              background: BLACK,
+              borderRadius: 38,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transform: `scale(${logoScale})`,
+              transformOrigin: "center",
+              opacity: logoOpacity,
+              boxShadow:
+                "inset 0 0 0 1px rgba(255,255,255,0.08), 0 24px 70px rgba(0,0,0,0.55)",
+              overflow: "hidden",
+            }}
           >
-            {GM_LOGO_PATHS.map((d, i) => (
-              <path key={i} d={d} fill="#ffffff" />
-            ))}
-          </svg>
+            <svg
+              width={plateEdge * 0.82}
+              height={plateEdge * 0.82}
+              viewBox="0 0 102 102"
+            >
+              {GM_LOGO_PATHS.map((d, i) => (
+                <path key={i} d={d} fill="#ffffff" />
+              ))}
+            </svg>
+          </div>
         </div>
 
         <Reveal
@@ -330,13 +344,13 @@ const IntroScene: React.FC<{
         }}
       >
         <AbsoluteFill style={{ background: BLACK }}>
-          <IntroContent {...contentProps} />
+          <IntroContent {...contentProps} dayMode />
         </AbsoluteFill>
       </AbsoluteFill>
 
-      {/* SLIDER — the handle the user sees travel across. Not inverted;
-          it's a UI element above both layers. Left half dark (contrasts
-          day bg behind it), right half light (contrasts night bg). */}
+      {/* SLIDER — a bare vertical line travelling across. No thumb; the
+          sweep itself is the gesture. Left-rendered edge sits against the
+          day plane, right against night, so the line reads on both sides. */}
       <AbsoluteFill style={{ pointerEvents: "none" }}>
         <div
           style={{
@@ -351,23 +365,7 @@ const IntroScene: React.FC<{
             boxShadow:
               "0 0 10px rgba(255,255,255,0.35), 0 0 10px rgba(0,0,0,0.4)",
           }}
-        >
-          <div
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              width: 76,
-              height: 108,
-              borderRadius: 54,
-              background:
-                "linear-gradient(90deg, #1a1a1a 0%, #1a1a1a 50%, #f2f2f2 50%, #f2f2f2 100%)",
-              boxShadow:
-                "0 10px 44px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(255,255,255,0.18)",
-            }}
-          />
-        </div>
+        />
       </AbsoluteFill>
     </AbsoluteFill>
   );
@@ -578,8 +576,11 @@ const P2_COL_WIDTH = 300;
 const P2_COL_CENTER_X = P2_COL_LEFT + P2_COL_WIDTH / 2;
 // Index in STREAM_CARDS that the phone takes over in Point 2. The phone
 // rides at that slot's exact rawX and the underlying card is skipped so
-// the phone replaces it cleanly — no overlap, no stacking.
-const P2_PHONE_CAROUSEL_INDEX = 2;
+// the phone replaces it cleanly — no overlap, no stacking. Chosen so the
+// slot starts off-screen left at p2local=0, enters visible around frame
+// 22, crosses the GM column around frame 37 (plain → sealed), then
+// continues right — phone follows the source → seal → block arc.
+const P2_PHONE_CAROUSEL_INDEX = 16;
 
 const gcMod = (n: number, m: number) => ((n % m) + m) % m;
 const gcClamp = (v: number, lo: number, hi: number) =>
