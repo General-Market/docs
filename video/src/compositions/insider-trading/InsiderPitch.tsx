@@ -576,10 +576,10 @@ const P2_TRACK_Y = 510;
 const P2_COL_LEFT = 80;
 const P2_COL_WIDTH = 300;
 const P2_COL_CENTER_X = P2_COL_LEFT + P2_COL_WIDTH / 2;
-// Initial rawX for the phone card — -1100 places its right edge at the
-// left edge of the visible frame at local=0, so the phone enters from
-// outside the stage rather than materialising in view.
-const P2_PHONE_START_RAW_X = -1100;
+// Index in STREAM_CARDS that the phone takes over in Point 2. The phone
+// rides at that slot's exact rawX and the underlying card is skipped so
+// the phone replaces it cleanly — no overlap, no stacking.
+const P2_PHONE_CAROUSEL_INDEX = 2;
 
 const gcMod = (n: number, m: number) => ((n % m) + m) % m;
 const gcClamp = (v: number, lo: number, hi: number) =>
@@ -923,6 +923,7 @@ const Point2Scene: React.FC<{
             textAlign: "center",
             maxWidth: 1800,
             lineHeight: 1,
+            color: BLACK,
           }}
         />
       </div>
@@ -936,7 +937,9 @@ const Point2Scene: React.FC<{
           transformStyle: "preserve-3d",
         }}
       >
-        {cards.map((c) => (
+        {cards
+          .filter((c) => c.index !== P2_PHONE_CAROUSEL_INDEX)
+          .map((c) => (
           <div
             key={c.index}
             style={{
@@ -1883,7 +1886,7 @@ const SharedPhoneLayer: React.FC<{ local: number }> = ({ local }) => {
   const p2ScrollOffset = (p2Local / 30) * GC_SCROLL_SPEED;
   const p2PhoneRawX =
     gcMod(
-      P2_PHONE_START_RAW_X + p2ScrollOffset + GC_TRACK_LEN / 2,
+      P2_PHONE_CAROUSEL_INDEX * GC_UNIT + p2ScrollOffset + GC_TRACK_LEN / 2,
       GC_TRACK_LEN,
     ) - GC_TRACK_LEN / 2;
   const p2PhoneScreenX = p2PhoneRawX + P2_HALF_W - GC_CARD_W / 2;
