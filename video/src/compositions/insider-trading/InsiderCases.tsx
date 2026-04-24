@@ -673,6 +673,12 @@ const InsiderArticlesPhase: React.FC = () => {
 
       </AbsoluteFill>
 
+      {/* Shared-element bleed — the last prologue line rides through the
+          cut. Broll zoom-blurs out, articles zoom-blur in, but the text
+          stays sharp and continues its own scale, so the boundary reads
+          as a single thought rather than two stitched sequences. */}
+      <PrologueEcho />
+
       {frame >= PITCH_START ? (
         <AbsoluteFill
           style={{
@@ -902,6 +908,62 @@ const PrologueZoomFinale: React.FC<{
         <div>{line1.slice(0, count1)}</div>
         <div style={{ marginTop: fontSize * 0.12 }}>
           {line2.slice(0, count2)}
+        </div>
+      </div>
+    </AbsoluteFill>
+  );
+};
+
+/* ─── Echo of the final prologue pair, rendered at the head of the
+       articles phase. Matches PrologueZoomFinale's layout so the text
+       appears to continue its own motion unimpeded. Line 1 ("~$50,000")
+       fades first, line 2 ("per trader") holds a beat longer. The scale
+       continues from the finale's 2.4× up to 3.6× as the whole thing
+       fades. Pointer-events off — pure visual bleed. */
+const PrologueEcho: React.FC = () => {
+  const frame = useCurrentFrame();
+  if (frame > 16) return null;
+
+  const t = Math.max(0, Math.min(1, frame / 16));
+  const scale = 2.4 + t * 1.2;
+  const line1Opacity = interpolate(frame, [0, 8], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const line2Opacity = interpolate(frame, [0, 10, 16], [1, 0.9, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const fontSize = 88;
+  return (
+    <AbsoluteFill
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
+        pointerEvents: "none",
+      }}
+    >
+      <div
+        style={{
+          fontFamily: interFamily,
+          fontFeatureSettings: '"calt" 1',
+          fontSize,
+          fontWeight: 900,
+          letterSpacing: "-0.03em",
+          textAlign: "center",
+          lineHeight: 1,
+          color: "white",
+          textShadow: "0 6px 30px rgba(0,0,0,0.78)",
+          transform: `scale(${scale})`,
+          transformOrigin: "50% 50%",
+          whiteSpace: "nowrap",
+        }}
+      >
+        <div style={{ opacity: line1Opacity }}>~$50,000</div>
+        <div style={{ marginTop: fontSize * 0.12, opacity: line2Opacity }}>
+          per trader
         </div>
       </div>
     </AbsoluteFill>
