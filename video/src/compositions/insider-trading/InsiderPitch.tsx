@@ -1748,18 +1748,23 @@ const SharedPhoneLayer: React.FC<{ local: number }> = ({ local }) => {
     overlayMode = "speed";
   }
 
-  // Single 360° barrel roll between Stat and Point 1, centred on the
-  // cut across 90 frames. That's it — no further rolls later. Earlier
-  // versions added a half-roll between Point 1 → Point 2, which stacked
-  // to 540° (= 180° mod 360) and left the phone backwards for the rest
-  // of the pitch.
+  // 360° barrel roll between Stat and Point 1 — tightened from 90 frames
+  // to 36 so the spin reads as a snap, not a drift. The phone also
+  // swings horizontally during the flip so it's clearly travelling and
+  // not pirouetting in place.
   const rollSP1 = interpolate(
     local,
-    [point1Start - 45, point1Start + 45],
+    [point1Start - 18, point1Start + 18],
     [0, 1],
     clamp,
   );
   const yAxisExtraDeg = rollSP1 * 360;
+  // Sine arc peaking mid-spin — 0 at both ends of the flip window, up
+  // to +140 px at the halfway point. Adds to whatever xTranslate the
+  // Stat / Point 1 branches compute, so the horizontal motion is a
+  // genuine coordinated move, not a competing animation.
+  const flipSwingX =
+    rollSP1 > 0 && rollSP1 < 1 ? Math.sin(rollSP1 * Math.PI) * 140 : 0;
 
   // Entry/exit envelope only. The Point 2 → Point 3 flash has been
   // deleted; the phone now glides between scenes via a pose blend
@@ -1866,9 +1871,9 @@ const SharedPhoneLayer: React.FC<{ local: number }> = ({ local }) => {
       style={{
         opacity: opacity * carouselOpacity,
         pointerEvents: "none",
-        transform: `translate(${xTranslate + xJitter}px, ${
-          yTranslate + yJitter
-        }px) scale(${carouselScale})`,
+        transform: `translate(${
+          xTranslate + xJitter + flipSwingX
+        }px, ${yTranslate + yJitter}px) scale(${carouselScale})`,
         transformOrigin: "50% 50%",
       }}
     >
