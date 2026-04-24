@@ -1127,16 +1127,41 @@ const InsiderPrologue: React.FC = () => {
   );
 };
 
+// Global grade — one consistent LUT across the whole piece. Cool and
+// slightly crushed through the prologue (anxiety of reported fact),
+// neutral through the case montage, warmer into the pitch (resolution).
+// Uniformity of grade is most of what separates "cinematic" from "made
+// in a browser".
+const GlobalGrade: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const frame = useCurrentFrame();
+  const t = Math.max(0, Math.min(1, frame / DURATION));
+  const hueShift = interpolate(t, [0, 0.3, 0.7, 1], [-6, -2, 3, 7]);
+  const sat = interpolate(t, [0, 0.4, 1], [0.92, 1.02, 1.06]);
+  const contrast = interpolate(t, [0, 0.5, 1], [1.06, 1.02, 1.03]);
+  const brightness = interpolate(t, [0, 0.5, 1], [0.98, 1.0, 1.02]);
+  return (
+    <AbsoluteFill
+      style={{
+        filter: `hue-rotate(${hueShift}deg) saturate(${sat}) contrast(${contrast}) brightness(${brightness})`,
+      }}
+    >
+      {children}
+    </AbsoluteFill>
+  );
+};
+
 export const InsiderCases: React.FC = () => {
   return (
     <AbsoluteFill style={{ background: "#000000" }}>
       <Audio src={staticFile("music/insider-cases.mp3")} volume={0.85} />
-      <Sequence from={0} durationInFrames={PROLOGUE_DURATION}>
-        <InsiderPrologue />
-      </Sequence>
-      <Sequence from={PROLOGUE_DURATION} durationInFrames={MAIN_DURATION}>
-        <InsiderArticlesPhase />
-      </Sequence>
+      <GlobalGrade>
+        <Sequence from={0} durationInFrames={PROLOGUE_DURATION}>
+          <InsiderPrologue />
+        </Sequence>
+        <Sequence from={PROLOGUE_DURATION} durationInFrames={MAIN_DURATION}>
+          <InsiderArticlesPhase />
+        </Sequence>
+      </GlobalGrade>
     </AbsoluteFill>
   );
 };
