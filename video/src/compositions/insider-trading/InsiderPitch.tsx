@@ -179,7 +179,7 @@ const IntroContent: React.FC<{
             position: "relative",
             width: plateEdge,
             height: plateEdge,
-            background: "#2a2a2a",
+            background: BLACK,
             borderRadius: 38,
             display: "flex",
             alignItems: "center",
@@ -1674,7 +1674,7 @@ const ClosingLogoGrid: React.FC<{ local: number }> = ({ local }) => {
           height: containerH,
           transform: "translate(-50%, -50%)",
           overflow: "hidden",
-          background: WHITE,
+          background: BLACK,
         }}
       >
         {/* Grid — oversized inside the container so the scroll has
@@ -1747,7 +1747,7 @@ const ClosingLogoGrid: React.FC<{ local: number }> = ({ local }) => {
           }}
         >
           {GM_LOGO_PATHS.map((d, i) => (
-            <path key={i} d={d} fill={BLACK} />
+            <path key={i} d={d} fill={WHITE} />
           ))}
         </svg>
       </div>
