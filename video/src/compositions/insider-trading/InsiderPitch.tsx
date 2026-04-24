@@ -318,13 +318,12 @@ const IntroScene: React.FC<{
       </AbsoluteFill>
 
       {/* DAY — same tree inside filter: invert(1), clipped by slider
-          progress. Sweep goes right → left: day mode grows from the
-          right edge as the handle travels leftward. The left inset
-          shrinks with sliderP so more of the right side stays visible. */}
+          progress. Clips from the right so the left portion (already
+          swept) shows day mode; the right portion stays night. */}
       <AbsoluteFill
         style={{
-          clipPath: `inset(0 0 0 ${(1 - sliderP) * 100}%)`,
-          WebkitClipPath: `inset(0 0 0 ${(1 - sliderP) * 100}%)`,
+          clipPath: `inset(0 ${(1 - sliderP) * 100}% 0 0)`,
+          WebkitClipPath: `inset(0 ${(1 - sliderP) * 100}% 0 0)`,
           filter: "invert(1)",
           isolation: "isolate",
         }}
@@ -335,16 +334,14 @@ const IntroScene: React.FC<{
       </AbsoluteFill>
 
       {/* SLIDER — the handle the user sees travel across. Not inverted;
-          sits above both layers as a UI element. Sweep is right → left,
-          so the LEFT side of the knob is on the still-night bg and must
-          be light to contrast; the RIGHT side is on the already-day bg
-          and must be dark. */}
+          it's a UI element above both layers. Left half dark (contrasts
+          day bg behind it), right half light (contrasts night bg). */}
       <AbsoluteFill style={{ pointerEvents: "none" }}>
         <div
           style={{
             position: "absolute",
             top: 0,
-            left: `${(1 - sliderP) * 100}%`,
+            left: `${sliderP * 100}%`,
             transform: "translateX(-50%)",
             width: 3,
             height: "100%",
@@ -364,7 +361,7 @@ const IntroScene: React.FC<{
               height: 108,
               borderRadius: 54,
               background:
-                "linear-gradient(90deg, #f2f2f2 0%, #f2f2f2 50%, #1a1a1a 50%, #1a1a1a 100%)",
+                "linear-gradient(90deg, #1a1a1a 0%, #1a1a1a 50%, #f2f2f2 50%, #f2f2f2 100%)",
               boxShadow:
                 "0 10px 44px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(255,255,255,0.18)",
             }}
@@ -2060,68 +2057,54 @@ export const InsiderPitch: React.FC<{ startFrame: number }> = ({
   const sceneStartAbs = startFrame + scene.start;
   const sceneDuration = scene.end - scene.start;
 
-  const isIntro = activeKey === "intro";
-
   return (
     <AbsoluteFill style={{ background: BLACK, isolation: "isolate" }}>
-      {isIntro ? (
+      {activeKey === "intro" ? (
         <IntroScene
           local={sceneLocal}
           sceneStart={sceneStartAbs}
           duration={sceneDuration}
         />
-      ) : (
-        // Everything after intro lives inside a persistent filter:invert(1)
-        // so the whole remainder of the pitch renders in day mode. The
-        // intro scene already completes its own night → day sweep; stat
-        // picks up where intro left off, in full light mode.
-        <AbsoluteFill
-          style={{ filter: "invert(1)", isolation: "isolate" }}
-        >
-          <AbsoluteFill style={{ background: BLACK }}>
-            {activeKey === "stat" ? (
-              <StatScene
-                local={sceneLocal}
-                sceneStart={sceneStartAbs}
-                duration={sceneDuration}
-              />
-            ) : null}
-            {activeKey === "point1" ? (
-              <Point1Scene
-                local={sceneLocal}
-                sceneStart={sceneStartAbs}
-                duration={sceneDuration}
-              />
-            ) : null}
-            {activeKey === "point2" ? (
-              <Point2Scene
-                local={sceneLocal}
-                sceneStart={sceneStartAbs}
-                duration={sceneDuration}
-              />
-            ) : null}
-            {activeKey === "point3" ? (
-              <Point3Scene
-                local={sceneLocal}
-                sceneStart={sceneStartAbs}
-                duration={sceneDuration}
-              />
-            ) : null}
-            {activeKey === "closing" ? (
-              <ClosingScene
-                local={sceneLocal}
-                sceneStart={sceneStartAbs}
-                duration={sceneDuration}
-              />
-            ) : null}
+      ) : null}
+      {activeKey === "point1" ? (
+        <Point1Scene
+          local={sceneLocal}
+          sceneStart={sceneStartAbs}
+          duration={sceneDuration}
+        />
+      ) : null}
+      {activeKey === "point2" ? (
+        <Point2Scene
+          local={sceneLocal}
+          sceneStart={sceneStartAbs}
+          duration={sceneDuration}
+        />
+      ) : null}
+      {activeKey === "point3" ? (
+        <Point3Scene
+          local={sceneLocal}
+          sceneStart={sceneStartAbs}
+          duration={sceneDuration}
+        />
+      ) : null}
+      {activeKey === "stat" ? (
+        <StatScene
+          local={sceneLocal}
+          sceneStart={sceneStartAbs}
+          duration={sceneDuration}
+        />
+      ) : null}
+      {activeKey === "closing" ? (
+        <ClosingScene
+          local={sceneLocal}
+          sceneStart={sceneStartAbs}
+          duration={sceneDuration}
+        />
+      ) : null}
 
-            {/* Single phone instance spanning Stat → Point 1, rolling
-                across the cut. Lives inside the invert so it stays in
-                day mode like the rest of the pitch. */}
-            <SharedPhoneLayer local={local} />
-          </AbsoluteFill>
-        </AbsoluteFill>
-      )}
+      {/* Single phone instance spanning Stat → Point 1, rolling across
+          the cut instead of hard-mounting twice. */}
+      <SharedPhoneLayer local={local} />
     </AbsoluteFill>
   );
 };
