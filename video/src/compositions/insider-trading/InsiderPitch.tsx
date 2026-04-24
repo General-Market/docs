@@ -122,6 +122,144 @@ const Reveal: React.FC<{
 
 // ─── Scene 1: INTRO ──────────────────────────────────────────────────────
 
+// IntroContent — the full lockup tree. Rendered twice: once as the
+// night base layer, once inside a filter: invert(1) clone that the
+// slider reveals left-to-right to produce the day mode.
+const IntroContent: React.FC<{
+  local: number;
+  sceneStart: number;
+  duration: number;
+  plateEdge: number;
+  fontSize: number;
+  lockupGap: number;
+  logoScale: number;
+  logoOpacity: number;
+  pulse: number;
+}> = ({
+  local: _local,
+  sceneStart,
+  duration,
+  plateEdge,
+  fontSize,
+  lockupGap,
+  logoScale,
+  logoOpacity,
+  pulse,
+}) => (
+  <>
+    {/* Vignette — edges crushed, center clean */}
+    <AbsoluteFill
+      style={{
+        background:
+          "radial-gradient(ellipse at center, rgba(0,0,0,0) 42%, rgba(0,0,0,0.55) 100%)",
+        pointerEvents: "none",
+      }}
+    />
+
+    {/* LOCKUP — centered, breathing once on the downbeat */}
+    <AbsoluteFill
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: lockupGap,
+          transform: `scale(${pulse})`,
+          transformOrigin: "center",
+        }}
+      >
+        <div
+          style={{
+            position: "relative",
+            width: plateEdge,
+            height: plateEdge,
+            background: "#2a2a2a",
+            borderRadius: 38,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transform: `scale(${logoScale})`,
+            transformOrigin: "center",
+            opacity: logoOpacity,
+            boxShadow:
+              "inset 0 0 0 1px rgba(255,255,255,0.08), 0 24px 70px rgba(0,0,0,0.55)",
+            overflow: "hidden",
+          }}
+        >
+          <svg
+            width={plateEdge * 0.82}
+            height={plateEdge * 0.82}
+            viewBox="0 0 102 102"
+          >
+            {GM_LOGO_PATHS.map((d, i) => (
+              <path key={i} d={d} fill="#ffffff" />
+            ))}
+          </svg>
+        </div>
+
+        <Reveal
+          from={sceneStart + 3}
+          duration={duration - 3}
+          text="General Market"
+          revealDuration={22}
+          seed={11}
+          style={{
+            fontSize,
+            fontWeight: 900,
+            letterSpacing: "-0.03em",
+            textAlign: "left",
+            lineHeight: 1,
+            maxWidth: 1800,
+          }}
+        />
+      </div>
+    </AbsoluteFill>
+
+    {/* Tagline — fights back, below the enlarged lockup */}
+    <AbsoluteFill
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        paddingTop: 340,
+      }}
+    >
+      <Reveal
+        from={sceneStart + 30}
+        duration={duration - 30}
+        text="fights back"
+        revealDuration={18}
+        seed={23}
+        style={{
+          fontSize: 104,
+          fontWeight: 500,
+          letterSpacing: "-0.01em",
+          textAlign: "center",
+          lineHeight: 1,
+          maxWidth: 1600,
+        }}
+      />
+    </AbsoluteFill>
+
+    {/* Grain — SVG fractal noise, low opacity, overlay blend */}
+    <AbsoluteFill
+      style={{
+        pointerEvents: "none",
+        opacity: 0.07,
+        mixBlendMode: "overlay",
+        backgroundImage:
+          "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='160' height='160' filter='url(%23n)' opacity='0.6'/></svg>\")",
+        backgroundSize: "320px 320px",
+      }}
+    />
+  </>
+);
+
 const IntroScene: React.FC<{
   local: number;
   sceneStart: number;
@@ -134,8 +272,6 @@ const IntroScene: React.FC<{
   const logoOpacity = interpolate(local, [3, 30], [0, 1], clamp);
   const fadeOut = interpolate(local, [duration - 10, duration], [1, 0], clamp);
 
-  // Lockup now owns ~80% of the canvas width. Plate, gap, and type
-  // scale together so the rhythm holds.
   const fontSize = 164;
   const plateEdge = 240;
   const lockupGap = 44;
@@ -146,143 +282,92 @@ const IntroScene: React.FC<{
     easing: ease3,
   });
 
-  // Scan-line — a bright vertical band crosses the bars left-to-right,
-  // igniting them. Visible only during the 12-frame crossing.
-  const scanX = interpolate(local, [50, 62], [-12, plateEdge + 12], clamp);
-  const scanOp = interpolate(local, [49, 52, 60, 63], [0, 1, 1, 0], clamp);
+  // Slider sweep — night → day over frames 28-52. Pixels to the left
+  // of the thumb flip to day mode via a filter: invert(1) clone clipped
+  // to the swept region.
+  const sliderP = interpolate(local, [28, 52], [0, 1], {
+    ...clamp,
+    easing: ease3,
+  });
+  // Thumb visibility — fades in before the sweep, out after clearing
+  // the right edge.
+  const thumbOp = interpolate(
+    local,
+    [24, 30, 54, 58],
+    [0, 1, 1, 0],
+    clamp,
+  );
+
+  const contentProps = {
+    local,
+    sceneStart,
+    duration,
+    plateEdge,
+    fontSize,
+    lockupGap,
+    logoScale,
+    logoOpacity,
+    pulse,
+  };
 
   return (
-    <AbsoluteFill style={{ opacity: fadeOut, background: BLACK }}>
-      {/* Vignette — edges crushed, center clean */}
-      <AbsoluteFill
-        style={{
-          background:
-            "radial-gradient(ellipse at center, rgba(0,0,0,0) 42%, rgba(0,0,0,0.55) 100%)",
-          pointerEvents: "none",
-        }}
-      />
+    <AbsoluteFill style={{ opacity: fadeOut }}>
+      {/* NIGHT — base layer, always visible */}
+      <AbsoluteFill style={{ background: BLACK, isolation: "isolate" }}>
+        <IntroContent {...contentProps} />
+      </AbsoluteFill>
 
-      {/* LOCKUP — centered, breathing once on the downbeat */}
+      {/* DAY — same tree inside filter: invert(1), clipped by slider
+          progress. Clips from the right so the left portion (already
+          swept) shows day mode; the right portion stays night. */}
       <AbsoluteFill
         style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
+          clipPath: `inset(0 ${(1 - sliderP) * 100}% 0 0)`,
+          WebkitClipPath: `inset(0 ${(1 - sliderP) * 100}% 0 0)`,
+          filter: "invert(1)",
+          isolation: "isolate",
         }}
       >
+        <AbsoluteFill style={{ background: BLACK }}>
+          <IntroContent {...contentProps} />
+        </AbsoluteFill>
+      </AbsoluteFill>
+
+      {/* SLIDER — the handle the user sees travel across. Not inverted;
+          it's a UI element above both layers. Left half dark (contrasts
+          day bg behind it), right half light (contrasts night bg). */}
+      <AbsoluteFill style={{ pointerEvents: "none" }}>
         <div
           style={{
-            display: "flex",
-            alignItems: "center",
-            gap: lockupGap,
-            transform: `scale(${pulse})`,
-            transformOrigin: "center",
+            position: "absolute",
+            top: 0,
+            left: `${sliderP * 100}%`,
+            transform: "translateX(-50%)",
+            width: 3,
+            height: "100%",
+            background: "rgba(180,180,180,0.85)",
+            opacity: thumbOp,
+            boxShadow:
+              "0 0 10px rgba(255,255,255,0.35), 0 0 10px rgba(0,0,0,0.4)",
           }}
         >
-          {/* Icon plate — lifted black, rounded, with an internal scan
-              line that crosses the bars once on the downbeat. */}
           <div
             style={{
-              position: "relative",
-              width: plateEdge,
-              height: plateEdge,
-              background: "#2a2a2a",
-              borderRadius: 38,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              transform: `scale(${logoScale})`,
-              transformOrigin: "center",
-              opacity: logoOpacity,
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: 76,
+              height: 108,
+              borderRadius: 54,
+              background:
+                "linear-gradient(90deg, #1a1a1a 0%, #1a1a1a 50%, #f2f2f2 50%, #f2f2f2 100%)",
               boxShadow:
-                "inset 0 0 0 1px rgba(255,255,255,0.08), 0 24px 70px rgba(0,0,0,0.55)",
-              overflow: "hidden",
-            }}
-          >
-            <svg
-              width={plateEdge * 0.82}
-              height={plateEdge * 0.82}
-              viewBox="0 0 102 102"
-            >
-              {GM_LOGO_PATHS.map((d, i) => (
-                <path key={i} d={d} fill="#ffffff" />
-              ))}
-            </svg>
-            {/* Scan-line — fluorescent tube igniting across the bars */}
-            <div
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: 10,
-                height: "100%",
-                transform: `translateX(${scanX}px)`,
-                opacity: scanOp,
-                background:
-                  "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.95) 50%, transparent 100%)",
-                mixBlendMode: "plus-lighter",
-                filter: "blur(1.2px)",
-                pointerEvents: "none",
-              }}
-            />
-          </div>
-
-          {/* Wordmark */}
-          <Reveal
-            from={sceneStart + 3}
-            duration={duration - 3}
-            text="General Market"
-            revealDuration={22}
-            seed={11}
-            style={{
-              fontSize,
-              fontWeight: 900,
-              letterSpacing: "-0.03em",
-              textAlign: "left",
-              lineHeight: 1,
-              maxWidth: 1800,
+                "0 10px 44px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(255,255,255,0.18)",
             }}
           />
         </div>
       </AbsoluteFill>
-
-      {/* Tagline — fights back, below the enlarged lockup */}
-      <AbsoluteFill
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          paddingTop: 340,
-        }}
-      >
-        <Reveal
-          from={sceneStart + 30}
-          duration={duration - 30}
-          text="fights back"
-          revealDuration={18}
-          seed={23}
-          style={{
-            fontSize: 104,
-            fontWeight: 500,
-            letterSpacing: "-0.01em",
-            textAlign: "center",
-            lineHeight: 1,
-            maxWidth: 1600,
-          }}
-        />
-      </AbsoluteFill>
-
-      {/* Grain — SVG fractal noise, low opacity, overlay blend */}
-      <AbsoluteFill
-        style={{
-          pointerEvents: "none",
-          opacity: 0.07,
-          mixBlendMode: "overlay",
-          backgroundImage:
-            "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='160' height='160' filter='url(%23n)' opacity='0.6'/></svg>\")",
-          backgroundSize: "320px 320px",
-        }}
-      />
     </AbsoluteFill>
   );
 };
