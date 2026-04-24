@@ -13,6 +13,7 @@ import {
   useVideoConfig,
 } from "remotion";
 import { loadFont as loadInter } from "@remotion/google-fonts/Inter";
+import { CameraMotionBlur } from "@remotion/motion-blur";
 import { InsiderPitch, PITCH_DURATION } from "./InsiderPitch";
 
 const interFamily = loadInter("normal", {
@@ -28,7 +29,6 @@ const FPS = 30;
 // Was 223 (music beat at 7.424s); cut 20 frames of dead hold on the last
 // article so the articles → pitch handover snaps instead of waiting.
 const PITCH_START = 203;
-const PITCH_FADE_IN = 10;
 
 // ─── Prologue — 4s. Micro-onsets from librosa (first 3.65s of the track,
 //     30fps comp frames). Each onset = a cut. Advance per cut = gap-since-
@@ -420,24 +420,46 @@ const InsiderArticlesPhase: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  const bgFade = interpolate(frame, [0, 3], [0, 1], {
+  // Entry whip — the prologue exits by zoom-blurring out, the articles
+  // enter by zoom-blurring in. Reads as a single camera punch through the
+  // boundary instead of two cuts separated by black.
+  const entryT = interpolate(frame, [0, 10], [0, 1], {
+    extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
+  const entryScale = interpolate(entryT, [0, 1], [1.14, 1]);
+  const entryBlur = interpolate(entryT, [0, 1], [14, 0]);
+
   const outroFade = interpolate(frame, [MAIN_DURATION - 18, MAIN_DURATION], [1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  // Articles hand off directly to the pitch — they dim out as the pitch
-  // fades in over the same window. No bridge animation between.
+  // Articles push away (scale + blur) while the pitch scales in from
+  // slight over-zoom. Both phases are travelling the same axis — a single
+  // sustained forward motion instead of a crossfade.
+  const articleExitT = interpolate(
+    frame,
+    [PITCH_START, PITCH_START + 14],
+    [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const articleExitScale = 1 - articleExitT * 0.10;
+  const articleExitBlur = articleExitT * 10;
   const articleHide = interpolate(
     frame,
-    [PITCH_START, PITCH_START + PITCH_FADE_IN],
+    [PITCH_START + 4, PITCH_START + 14],
     [1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const pitchEntryScale = interpolate(
+    frame,
+    [PITCH_START, PITCH_START + 14],
+    [1.08, 1],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
   const pitchFadeIn = interpolate(
     frame,
-    [PITCH_START, PITCH_START + PITCH_FADE_IN],
+    [PITCH_START + 2, PITCH_START + 14],
     [0, 1],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
@@ -869,21 +891,25 @@ const BeatShot: React.FC<{
 
   return (
     <AbsoluteFill style={{ overflow: "hidden" }}>
-      <Video
-        src={staticFile("insider-trading/broll/dezoom.mp4")}
-        startFrom={startFromFrame}
-        playbackRate={playbackRate}
-        muted
-        style={{
-          position: "absolute",
-          width: "100%",
-          height: "100%",
-          objectFit: "cover",
-          transform: `translate(${jx}px, ${jy}px) scale(${scale}) rotate(${rot}deg)`,
-          transformOrigin: "50% 50%",
-          filter,
-        }}
-      />
+      <CameraMotionBlur shutterAngle={180} samples={5}>
+        <AbsoluteFill>
+          <Video
+            src={staticFile("insider-trading/broll/dezoom.mp4")}
+            startFrom={startFromFrame}
+            playbackRate={playbackRate}
+            muted
+            style={{
+              position: "absolute",
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              transform: `translate(${jx}px, ${jy}px) scale(${scale}) rotate(${rot}deg)`,
+              transformOrigin: "50% 50%",
+              filter,
+            }}
+          />
+        </AbsoluteFill>
+      </CameraMotionBlur>
     </AbsoluteFill>
   );
 };
@@ -925,52 +951,74 @@ const PrologueGrain: React.FC = () => {
 const InsiderPrologue: React.FC = () => {
   const frame = useCurrentFrame();
 
-  // Curtain fade in/out — tight on the tail so the cut into articles snaps.
-  const curtain = interpolate(
+  // Opening curtain only — the closing cut is now a zoom-blur whip, not a
+  // fade to black. Black curtains are what you use when you have given up.
+  const openCurtain = interpolate(
     frame,
-    [0, 3, PROLOGUE_DURATION - 4, PROLOGUE_DURATION],
-    [1, 0, 0, 1],
+    [0, 3],
+    [1, 0],
+    { extrapolateRight: "clamp" },
+  );
+
+  // Exit ramp on the broll layer only. Text layers stay sharp so they can
+  // bleed through the phase cut.
+  const exitT = interpolate(
+    frame,
+    [PROLOGUE_DURATION - 10, PROLOGUE_DURATION],
+    [0, 1],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
+  const exitScale = 1 + exitT * 0.38;
+  const exitBlur = exitT * 16;
+  const exitBrollOpacity = 1 - exitT * 0.45;
 
   return (
     <AbsoluteFill style={{ background: "#000000" }}>
-      {PROLOGUE_ONSETS.map((start, i) => {
-        const end = PROLOGUE_ONSETS[i + 1] ?? PROLOGUE_DURATION;
-        const len = Math.max(end - start + 3, 4);
-        return (
-          <Sequence
-            key={`onset-${i}`}
-            from={start}
-            durationInFrames={len}
-          >
-            <BeatShot
-              startFromFrame={PROLOGUE_CUT_STARTS[i] ?? 0}
-              playbackRate={PROLOGUE_CUT_RATES[i] ?? 1}
-            />
-          </Sequence>
-        );
-      })}
-
       <AbsoluteFill
         style={{
-          pointerEvents: "none",
-          background:
-            "linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.22) 44%, rgba(0,0,0,0.82) 100%)",
+          transform: `scale(${exitScale})`,
+          transformOrigin: "50% 50%",
+          filter: `blur(${exitBlur}px)`,
+          opacity: exitBrollOpacity,
         }}
-      />
+      >
+        {PROLOGUE_ONSETS.map((start, i) => {
+          const end = PROLOGUE_ONSETS[i + 1] ?? PROLOGUE_DURATION;
+          const len = Math.max(end - start + 3, 4);
+          return (
+            <Sequence
+              key={`onset-${i}`}
+              from={start}
+              durationInFrames={len}
+            >
+              <BeatShot
+                startFromFrame={PROLOGUE_CUT_STARTS[i] ?? 0}
+                playbackRate={PROLOGUE_CUT_RATES[i] ?? 1}
+              />
+            </Sequence>
+          );
+        })}
 
-      {/* Radial vignette — crushes the corners, pushes focus to centre */}
-      <AbsoluteFill
-        style={{
-          pointerEvents: "none",
-          background:
-            "radial-gradient(ellipse 95% 75% at 50% 50%, transparent 28%, rgba(0,0,0,0.35) 70%, rgba(0,0,0,0.75) 100%)",
-        }}
-      />
+        <AbsoluteFill
+          style={{
+            pointerEvents: "none",
+            background:
+              "linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.22) 44%, rgba(0,0,0,0.82) 100%)",
+          }}
+        />
 
-      {/* Animated film grain */}
-      <PrologueGrain />
+        {/* Radial vignette — crushes the corners, pushes focus to centre */}
+        <AbsoluteFill
+          style={{
+            pointerEvents: "none",
+            background:
+              "radial-gradient(ellipse 95% 75% at 50% 50%, transparent 28%, rgba(0,0,0,0.35) 70%, rgba(0,0,0,0.75) 100%)",
+          }}
+        />
+
+        {/* Animated film grain */}
+        <PrologueGrain />
+      </AbsoluteFill>
 
       {/* Stmt 1 — "1 in 2500 trader is an insider". Three onsets carry
           the 30 chars, wipe clears before stmt 2 starts typing at 32. */}
@@ -1010,11 +1058,11 @@ const InsiderPrologue: React.FC = () => {
         fontSize={88}
       />
 
-      {/* Black curtain at both edges */}
+      {/* Opening curtain only — the closing cut is handled by zoom-blur. */}
       <AbsoluteFill
         style={{
           background: "#000",
-          opacity: curtain,
+          opacity: openCurtain,
           pointerEvents: "none",
         }}
       />

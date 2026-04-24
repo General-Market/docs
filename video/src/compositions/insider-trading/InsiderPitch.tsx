@@ -368,6 +368,19 @@ const GC_SCALE_BASE = 0.92;
 const GC_SCALE_RANGE = 0.1;
 const GC_SCROLL_SPEED = 460; // px / s — slow enough to read each card clearly
 
+// Point 2 stage geometry — shared with SharedPhoneLayer so the phone
+// can ride the carousel track at the same x/y as a regular card.
+const P2_STAGE_W = 1920;
+const P2_HALF_W = P2_STAGE_W / 2;
+const P2_TRACK_Y = 510;
+const P2_COL_LEFT = 80;
+const P2_COL_WIDTH = 300;
+const P2_COL_CENTER_X = P2_COL_LEFT + P2_COL_WIDTH / 2;
+// Initial rawX for the phone card — -1100 places its right edge at the
+// left edge of the visible frame at local=0, so the phone enters from
+// outside the stage rather than materialising in view.
+const P2_PHONE_START_RAW_X = -1100;
+
 const gcMod = (n: number, m: number) => ((n % m) + m) % m;
 const gcClamp = (v: number, lo: number, hi: number) =>
   Math.min(hi, Math.max(lo, v));
@@ -624,8 +637,7 @@ const Point2Scene: React.FC<{
   duration: number;
 }> = ({ local, sceneStart, duration }) => {
   const SCENE_FPS = 30;
-  const STAGE_W = 1920;
-  const halfW = STAGE_W / 2;
+  const halfW = P2_HALF_W;
 
   const time = local / SCENE_FPS;
   const fadeOut = interpolate(local, [duration - 18, duration], [1, 0], clamp);
@@ -636,12 +648,12 @@ const Point2Scene: React.FC<{
   //   rotating consequence  (bottom)
   const TITLE_TOP = 70;
   const TITLE_H = 180;
-  const TRACK_Y = 510;
-  const COL_LEFT = 80;
-  const COL_WIDTH = 300;
+  const TRACK_Y = P2_TRACK_Y;
+  const COL_LEFT = P2_COL_LEFT;
+  const COL_WIDTH = P2_COL_WIDTH;
   const COL_TOP = 310;
   const COL_HEIGHT = 400;
-  const COL_CENTER_X = COL_LEFT + COL_WIDTH / 2;
+  const COL_CENTER_X = P2_COL_CENTER_X;
   const MESSAGE_Y = 820;
 
   // ── 3D coverflow — GradientCarousel math, direction flipped ────────
@@ -1650,14 +1662,34 @@ const SharedPhoneLayer: React.FC<{ local: number }> = ({ local }) => {
     cardId = "tmdb";
   }
 
-  // Overlay mode. Plain through Point 1. In Point 2 the phone enters
-  // clean from the left, crosses the vault's centre at the midpoint of
-  // the scene, and exits to the right with the sealed overlay active.
+  // Point 2 — phone rides the card carousel. Same scroll speed, same
+  // track, same math as STREAM_CARDS. Starts off-screen left at the
+  // scene opening, passes through the GM column mid-journey, exits
+  // right carrying the sealed overlay. Spatial — not time-based.
+  const p2Local = local - point2Start;
+  const p2ScrollOffset = (p2Local / 30) * GC_SCROLL_SPEED;
+  const p2PhoneRawX =
+    gcMod(
+      P2_PHONE_START_RAW_X + p2ScrollOffset + GC_TRACK_LEN / 2,
+      GC_TRACK_LEN,
+    ) - GC_TRACK_LEN / 2;
+  const p2PhoneScreenX = p2PhoneRawX + P2_HALF_W - GC_CARD_W / 2;
+  const p2PhoneCenterX = p2PhoneScreenX + GC_CARD_W / 2;
+  const p2PhoneAbsNorm = Math.abs(gcClamp(p2PhoneRawX / P2_HALF_W, -1, 1));
+  const p2PhoneScale = GC_SCALE_BASE + (1 - p2PhoneAbsNorm) * GC_SCALE_RANGE;
+  const p2PhoneCarouselOpacity = interpolate(
+    p2PhoneAbsNorm,
+    [0, 0.85, 1],
+    [1, 0.72, 0],
+    clamp,
+  );
+
+  // Overlay mode. Plain through Point 1. In Point 2 sealed activates
+  // the frame the phone's centre crosses COL_CENTER_X — the GM gate.
   // Point 3 uses the speed overlay — rapid trade feed.
   let overlayMode: "plain" | "sealed" | "speed" = "plain";
   if (local >= point2Start && local < point3Start) {
-    const sealStart = (point2Start + point3Start) / 2;
-    overlayMode = local >= sealStart ? "sealed" : "plain";
+    overlayMode = p2PhoneCenterX > P2_COL_CENTER_X ? "sealed" : "plain";
   } else if (local >= point3Start) {
     overlayMode = "speed";
   }
@@ -1701,13 +1733,19 @@ const SharedPhoneLayer: React.FC<{ local: number }> = ({ local }) => {
     return envelope * flash;
   })();
 
-  // Point 2 — the small compact phone passes through the vault filter.
-  // Enters from the left, crosses the vault at the midpoint (where the
-  // sealed overlay kicks in), exits stage-right sealed.
+  // Point 2 — phone slots into the carousel. xTranslate shifts the
+  // 1920×1080 phone canvas so the phone (whose natural centre sits near
+  // screen x=960) lands at the computed carousel screenX. yTranslate
+  // drops the phone to TRACK_Y so it sits on the same row as the cards.
   let xTranslate = 0;
+  let yTranslate = 0;
+  let carouselScale = 1;
+  let carouselOpacity = 1;
   if (local >= point2Start && local < point3Start) {
-    const t = (local - point2Start) / (point3Start - point2Start);
-    xTranslate = interpolate(t, [0, 0.5, 1], [-520, 0, 520], clamp);
+    xTranslate = p2PhoneCenterX - P2_HALF_W;
+    yTranslate = P2_TRACK_Y - 540;
+    carouselScale = p2PhoneScale;
+    carouselOpacity = p2PhoneCarouselOpacity;
   }
 
   // Subtle jitter on the speed scene to sell "the device is vibrating
@@ -1724,9 +1762,12 @@ const SharedPhoneLayer: React.FC<{ local: number }> = ({ local }) => {
   return (
     <AbsoluteFill
       style={{
-        opacity,
+        opacity: opacity * carouselOpacity,
         pointerEvents: "none",
-        transform: `translate(${xTranslate + xJitter}px, ${yJitter}px)`,
+        transform: `translate(${xTranslate + xJitter}px, ${
+          yTranslate + yJitter
+        }px) scale(${carouselScale})`,
+        transformOrigin: "50% 50%",
       }}
     >
       <PhoneWithCard
