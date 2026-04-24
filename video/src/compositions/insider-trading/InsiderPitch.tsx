@@ -91,12 +91,13 @@ const Reveal: React.FC<{
   const uppercase = s.textTransform === "uppercase";
   const displayText = uppercase ? text.toUpperCase() : text;
 
+  const resolvedColor = (s.color as string) || WHITE;
   return (
     <Sequence from={from} durationInFrames={duration} layout="none">
       <div
         style={{
           mixBlendMode: solid ? "normal" : "difference",
-          color: WHITE,
+          color: resolvedColor,
           opacity: typeof s.opacity === "number" ? s.opacity : undefined,
         }}
       >
@@ -109,7 +110,7 @@ const Reveal: React.FC<{
           lineHeight={lineHeight}
           maxWidth={maxWidth}
           align={align}
-          color={WHITE}
+          color={resolvedColor}
           riseDistance={Math.max(40, fontSize * 0.55)}
           blurPx={Math.min(16, fontSize / 8)}
           delayPerWord={3}
@@ -447,7 +448,7 @@ const Point1Scene: React.FC<{
   );
 
   return (
-    <AbsoluteFill style={{ opacity: fadeOut, background: "#000000" }}>
+    <AbsoluteFill style={{ opacity: fadeOut, background: "#ffffff" }}>
       {/* VORTEX — background cylinder without a center plane; the 3D
           phone below owns the middle. */}
       <AbsoluteFill style={{ opacity: vortexIn }}>
@@ -491,6 +492,7 @@ const Point1Scene: React.FC<{
               textAlign: "right",
               maxWidth: 900,
               lineHeight: 0.95,
+              color: BLACK,
             }}
           />
         </div>
@@ -513,6 +515,7 @@ const Point1Scene: React.FC<{
               letterSpacing: "-0.02em",
               textAlign: "right",
               maxWidth: 900,
+              color: BLACK,
             }}
           />
         </div>
@@ -611,8 +614,8 @@ const GmColumn: React.FC<{
         top,
         width,
         height,
-        background: WHITE,
-        border: `2px solid ${BLACK}`,
+        background: BLACK,
+        border: "none",
         borderRadius: 22,
         overflow: "hidden",
         display: "flex",
@@ -640,7 +643,7 @@ const GmColumn: React.FC<{
           >
             <g transform="translate(12 12)">
               {GM_LOGO_PATHS.map((d, i) => (
-                <path key={i} d={d} fill={BLACK} />
+                <path key={i} d={d} fill={WHITE} />
               ))}
             </g>
           </pattern>
@@ -664,7 +667,7 @@ const GmColumn: React.FC<{
             width: 140,
             height: 140,
             borderRadius: 28,
-            background: BLACK,
+            background: WHITE,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -672,7 +675,7 @@ const GmColumn: React.FC<{
         >
           <svg width={100} height={100} viewBox="0 0 102 102">
             {GM_LOGO_PATHS.map((d, i) => (
-              <path key={i} d={d} fill={WHITE} />
+              <path key={i} d={d} fill={BLACK} />
             ))}
           </svg>
         </div>
@@ -682,7 +685,7 @@ const GmColumn: React.FC<{
             fontWeight: 900,
             fontSize: 44,
             letterSpacing: "-0.02em",
-            color: BLACK,
+            color: WHITE,
             lineHeight: 0.95,
             textAlign: "center",
           }}
@@ -730,15 +733,15 @@ const GmLockMark: React.FC<{ size?: number }> = ({ size = 170 }) => (
   >
     <path
       d="M35 56 V32 a25 22 0 0 1 50 0 V56"
-      stroke={BLACK}
+      stroke={WHITE}
       strokeWidth={11}
       strokeLinecap="round"
       fill="none"
     />
-    <rect x={10} y={52} width={100} height={90} rx={14} fill={BLACK} />
+    <rect x={10} y={52} width={100} height={90} rx={14} fill={WHITE} />
     <g transform="translate(9 44)">
       {GM_LOGO_PATHS.map((d, i) => (
-        <path key={i} d={d} fill={WHITE} />
+        <path key={i} d={d} fill={BLACK} />
       ))}
     </g>
   </svg>
@@ -753,7 +756,7 @@ const BlockCard: React.FC<{ hash: string; w: number; h: number }> = ({
     style={{
       width: w,
       height: h,
-      background: WHITE,
+      background: BLACK,
       borderRadius: 18,
       display: "flex",
       flexDirection: "column",
@@ -765,7 +768,7 @@ const BlockCard: React.FC<{ hash: string; w: number; h: number }> = ({
   >
     <span
       style={{
-        color: BLACK,
+        color: WHITE,
         fontFamily: INTER,
         fontWeight: 800,
         fontSize: 14,
@@ -789,7 +792,7 @@ const BlockCard: React.FC<{ hash: string; w: number; h: number }> = ({
     </div>
     <span
       style={{
-        color: BLACK,
+        color: WHITE,
         fontFamily: MONO_FAMILY,
         fontSize: 18,
         letterSpacing: "0.04em",
@@ -891,7 +894,7 @@ const Point2Scene: React.FC<{
   });
 
   return (
-    <AbsoluteFill style={{ opacity: fadeOut, background: BLACK }}>
+    <AbsoluteFill style={{ opacity: fadeOut, background: WHITE }}>
       {/* Title — full-width banner at the top. */}
       <div
         style={{
@@ -1018,7 +1021,7 @@ const Point2Scene: React.FC<{
                 fontWeight: 900,
                 fontSize: 84,
                 letterSpacing: "-0.03em",
-                color: WHITE,
+                color: BLACK,
                 textAlign: "center",
                 lineHeight: 1,
               }}
@@ -1111,7 +1114,7 @@ const Point3Scene: React.FC<{
     "linear-gradient(to bottom, transparent 0%, transparent 28%, black 34%, black 62%, transparent 74%)";
 
   return (
-    <AbsoluteFill style={{ opacity: fadeOut, background: BLACK }}>
+    <AbsoluteFill style={{ opacity: fadeOut, background: WHITE }}>
       {/* Curtain → divider. One element. */}
       <div
         style={{
@@ -1121,7 +1124,7 @@ const Point3Scene: React.FC<{
           width: curtainThickness,
           height: `${curtainHeight * 100}%`,
           transform: "translate(-50%, -50%)",
-          background: WHITE,
+          background: BLACK,
           opacity: curtainOpacity,
         }}
       />
@@ -1152,6 +1155,7 @@ const Point3Scene: React.FC<{
             textAlign: "center",
             lineHeight: 1,
             maxWidth: 1800,
+            color: BLACK,
           }}
         />
       </div>
@@ -1194,6 +1198,7 @@ const Point3Scene: React.FC<{
               letterSpacing: "-0.03em",
               textAlign: "center",
               lineHeight: 1,
+              color: BLACK,
             }}
           />
         </div>
@@ -1225,6 +1230,7 @@ const Point3Scene: React.FC<{
               letterSpacing: "-0.04em",
               textAlign: "center",
               lineHeight: 1,
+              color: BLACK,
             }}
           />
         </div>
@@ -1257,7 +1263,7 @@ const Point3Scene: React.FC<{
                   width: 2,
                   height: 2,
                   borderRadius: "50%",
-                  background: WHITE,
+                  background: BLACK,
                   transform: "translate(-50%, -50%)",
                 }}
               />
@@ -1304,6 +1310,7 @@ const Point3Scene: React.FC<{
               letterSpacing: "-0.03em",
               textAlign: "center",
               lineHeight: 1,
+              color: BLACK,
             }}
           />
         </div>
@@ -1335,6 +1342,7 @@ const Point3Scene: React.FC<{
               letterSpacing: "-0.04em",
               textAlign: "center",
               lineHeight: 1,
+              color: BLACK,
             }}
           />
         </div>
@@ -1351,6 +1359,7 @@ const Point3Scene: React.FC<{
             inset: 0,
             opacity: flowOpacity,
             overflow: "hidden",
+            filter: "brightness(0.85) saturate(0.95)",
             WebkitMaskImage: STREAM_MASK,
             maskImage: STREAM_MASK,
           }}
@@ -1402,7 +1411,7 @@ const FootnotePopcut: React.FC<{ text: string }> = ({ text }) => {
         fontWeight: 600,
         letterSpacing: "0.28em",
         textTransform: "uppercase",
-        color: WHITE,
+        color: BLACK,
         opacity: op * 0.65,
         textAlign: "center",
         whiteSpace: "nowrap",
@@ -1466,6 +1475,7 @@ const StatScene: React.FC<{
             letterSpacing: "-0.035em",
             lineHeight: 1,
             maxWidth: 900,
+            color: BLACK,
           }}
         />
         <Reveal
@@ -1481,6 +1491,7 @@ const StatScene: React.FC<{
             letterSpacing: "-0.035em",
             lineHeight: 1,
             maxWidth: 900,
+            color: BLACK,
           }}
         />
         <Reveal
@@ -1496,6 +1507,7 @@ const StatScene: React.FC<{
             letterSpacing: "-0.035em",
             lineHeight: 1,
             maxWidth: 900,
+            color: BLACK,
           }}
         />
       </AbsoluteFill>
@@ -1525,6 +1537,7 @@ const StatScene: React.FC<{
             lineHeight: 1,
             textAlign: "right",
             maxWidth: 600,
+            color: BLACK,
           }}
         />
         <Reveal
@@ -1541,6 +1554,7 @@ const StatScene: React.FC<{
             lineHeight: 1,
             textAlign: "right",
             maxWidth: 600,
+            color: BLACK,
           }}
         />
       </AbsoluteFill>
@@ -1650,7 +1664,7 @@ const ClosingLogoGrid: React.FC<{ local: number }> = ({ local }) => {
   const count = CLOSING_GRID_COLS * CLOSING_GRID_ROWS;
 
   return (
-    <AbsoluteFill style={{ background: BLACK }}>
+    <AbsoluteFill style={{ background: WHITE }}>
       <div
         style={{
           position: "absolute",
@@ -1660,7 +1674,7 @@ const ClosingLogoGrid: React.FC<{ local: number }> = ({ local }) => {
           height: containerH,
           transform: "translate(-50%, -50%)",
           overflow: "hidden",
-          background: BLACK,
+          background: WHITE,
         }}
       >
         {/* Grid — oversized inside the container so the scroll has
@@ -1733,7 +1747,7 @@ const ClosingLogoGrid: React.FC<{ local: number }> = ({ local }) => {
           }}
         >
           {GM_LOGO_PATHS.map((d, i) => (
-            <path key={i} d={d} fill="#ffffff" />
+            <path key={i} d={d} fill={BLACK} />
           ))}
         </svg>
       </div>
@@ -1752,7 +1766,7 @@ const ClosingLogoGrid: React.FC<{ local: number }> = ({ local }) => {
           fontWeight: 900,
           letterSpacing: "-0.03em",
           lineHeight: 1,
-          color: WHITE,
+          color: BLACK,
           whiteSpace: "nowrap",
           pointerEvents: "none",
         }}
@@ -2058,7 +2072,12 @@ export const InsiderPitch: React.FC<{ startFrame: number }> = ({
   const sceneDuration = scene.end - scene.start;
 
   return (
-    <AbsoluteFill style={{ background: BLACK, isolation: "isolate" }}>
+    <AbsoluteFill
+      style={{
+        background: activeKey === "intro" ? BLACK : WHITE,
+        isolation: "isolate",
+      }}
+    >
       {activeKey === "intro" ? (
         <IntroScene
           local={sceneLocal}
