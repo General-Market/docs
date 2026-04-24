@@ -1217,7 +1217,7 @@ export const InsiderCases: React.FC = () => {
     <AbsoluteFill style={{ background: "#000000" }}>
       <Audio src={staticFile("music/insider-cases.mp3")} volume={0.85} />
       <GlobalGrade>
-        <Sequence from={0} durationInFrames={PROLOGUE_DURATION}>
+        <Sequence durationInFrames={PROLOGUE_DURATION}>
           <InsiderPrologue />
         </Sequence>
         <Sequence from={PROLOGUE_DURATION} durationInFrames={MAIN_DURATION}>
