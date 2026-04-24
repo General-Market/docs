@@ -705,10 +705,21 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
                             </div>
                           ))}
                         </div>
-                        <div className={`mt-3 pt-3 border-t border-border-light flex justify-between text-sm ${isValidWeights ? 'text-color-up' : 'text-color-down'}`}>
-                          <span>{t('configure_weights.total', { value: totalWeight })}</span>
-                          <span className="font-mono tabular-nums font-medium">{isValidWeights ? '' : hasZeroWeight ? 'No 0% weights' : t('configure_weights.must_be_100')}</span>
-                        </div>
+                        {(() => {
+                          const missingPriceCount = priceCheckDone ? unpricedAssets.size : 0
+                          const gateOpen = isValidWeights && missingPriceCount === 0
+                          const reason = !isValidWeights
+                            ? (hasZeroWeight ? 'No 0% weights' : t('configure_weights.must_be_100'))
+                            : missingPriceCount > 0
+                              ? `${missingPriceCount} asset${missingPriceCount === 1 ? ' has' : 's have'} no price — remove to continue`
+                              : ''
+                          return (
+                            <div className={`mt-3 pt-3 border-t border-border-light flex justify-between text-sm ${gateOpen ? 'text-color-up' : 'text-color-down'}`}>
+                              <span>{t('configure_weights.total', { value: totalWeight })}</span>
+                              <span className="font-mono tabular-nums font-medium">{reason}</span>
+                            </div>
+                          )
+                        })()}
 
                         {/* Continue to finalize */}
                         <div className="flex justify-end mt-4">

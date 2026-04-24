@@ -2466,12 +2466,14 @@ _start_oracles_docker() {
       - "--itp-id"
       - "0x0000000000000000000000000000000000000000000000000000000000000001"
 CMD
-        [ -n "$BRIDGE_PROXY" ] && cat <<CMD
-      - "--bridge-proxy"
-      - "$BRIDGE_PROXY"
-      - "--settlement-custody"
-      - "$VISION_SETTLEMENT_CUSTODY"
-CMD
+        # --bridge-proxy and --settlement-custody are intentionally NOT emitted.
+        # The oracle reads both from --deployment-file (SettlementBridgeProxy,
+        # SettlementBridgeCustody keys). Embedding them here caused the
+        # 2026-04-23 incident: the override was generated once, the contracts
+        # were later redeployed, the JSON on VPS was refreshed, but the CLI
+        # flags kept pointing at the dead address. Silent, hours-long void.
+        # Vision-side flags still live here because the Rust side has no
+        # deployment.json fallback for them yet (tracked separately).
         if [ -n "$VISION_ADDR" ]; then
             cat <<CMD
       - "--vision-enabled"
