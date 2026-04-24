@@ -842,7 +842,7 @@ export const SourceVortexGallery: React.FC<{
   }, [handle]);
 
   if (!atlasState) {
-    return <AbsoluteFill style={{ background: "#0a0a0a" }} />;
+    return <AbsoluteFill style={{ background: "transparent" }} />;
   }
 
   // Resolve centerIndex: an explicit source ID wins; otherwise cycle.
@@ -857,7 +857,7 @@ export const SourceVortexGallery: React.FC<{
   }
 
   return (
-    <AbsoluteFill style={{ background: "#0a0a0a" }}>
+    <AbsoluteFill style={{ background: "transparent" }}>
       <ThreeCanvas
         width={width}
         height={height}

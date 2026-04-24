@@ -1184,13 +1184,34 @@ const InsiderPrologue: React.FC = () => {
 // neutral through the case montage, warmer into the pitch (resolution).
 // Uniformity of grade is most of what separates "cinematic" from "made
 // in a browser".
+//
+// After the night→day cut, the scenes render on a pure-white ground —
+// any hue-rotate tints it, any contrast/brightness drift greys it.
+// So past the boundary we flatten: no hue shift, neutral contrast and
+// brightness, a whisper of saturation. A 12-frame crossfade around the
+// cut keeps the transition from snapping.
+const LIGHT_GRADE_BOUNDARY = PROLOGUE_DURATION + PITCH_START + 66;
 const GlobalGrade: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const frame = useCurrentFrame();
   const t = Math.max(0, Math.min(1, frame / DURATION));
-  const hueShift = interpolate(t, [0, 0.3, 0.7, 1], [-6, -2, 3, 7]);
-  const sat = interpolate(t, [0, 0.4, 1], [0.92, 1.02, 1.06]);
-  const contrast = interpolate(t, [0, 0.5, 1], [1.06, 1.02, 1.03]);
-  const brightness = interpolate(t, [0, 0.5, 1], [0.98, 1.0, 1.02]);
+  const darkHue = interpolate(t, [0, 0.3, 0.7, 1], [-6, -2, 3, 7]);
+  const darkSat = interpolate(t, [0, 0.4, 1], [0.92, 1.02, 1.06]);
+  const darkContrast = interpolate(t, [0, 0.5, 1], [1.06, 1.02, 1.03]);
+  const darkBrightness = interpolate(t, [0, 0.5, 1], [0.98, 1.0, 1.02]);
+  const lightHue = 0;
+  const lightSat = 1.02;
+  const lightContrast = 1.0;
+  const lightBrightness = 1.0;
+  const blend = interpolate(
+    frame,
+    [LIGHT_GRADE_BOUNDARY - 6, LIGHT_GRADE_BOUNDARY + 6],
+    [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const hueShift = darkHue + (lightHue - darkHue) * blend;
+  const sat = darkSat + (lightSat - darkSat) * blend;
+  const contrast = darkContrast + (lightContrast - darkContrast) * blend;
+  const brightness = darkBrightness + (lightBrightness - darkBrightness) * blend;
   return (
     <AbsoluteFill
       style={{
