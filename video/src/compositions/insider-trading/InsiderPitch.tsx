@@ -2,6 +2,7 @@ import React from "react";
 import {
   AbsoluteFill,
   Img,
+  OffthreadVideo,
   Sequence,
   interpolate,
   staticFile,
@@ -11,8 +12,7 @@ import { loadFont as loadInter } from "@remotion/google-fonts/Inter";
 import { CascadeText } from "../../lib/components/Text";
 import { SOURCES } from "../launch/data/sources";
 import { FEATURED_SOURCES, FeaturedCard } from "./SourceCardsWall";
-import { SourceVortexGallery } from "./SourceVortexGallery";
-import { PhoneWithCard } from "./PhoneWithCard";
+import { PhoneWithCard, BINARY_MARKET_IDS } from "./PhoneWithCard";
 
 const { fontFamily: INTER } = loadInter("normal", {
   subsets: ["latin"],
@@ -382,7 +382,20 @@ const IntroScene: React.FC<{
 
 // ─── Scene 2: POINT 1 — 500,000 active markets ───────────────────────────
 
-const POINT1_CENTER_SEQUENCE = ["twitch", "db_trains", "tmdb"] as const;
+// Three binary-market phases cycled through the phone during Point 1.
+// IDs match BINARY_MARKET_IDS exported from PhoneWithCard; b-roll files
+// live under /insider-trading/broll/markets/{csgo,twitch,berlin}.mp4.
+const POINT1_CENTER_SEQUENCE = [
+  "csgo-market",
+  "twitch-market",
+  "berlin-market",
+] as const;
+
+const POINT1_BROLL: Record<(typeof POINT1_CENTER_SEQUENCE)[number], string> = {
+  "csgo-market": "insider-trading/broll/markets/csgo.mp4",
+  "twitch-market": "insider-trading/broll/markets/twitch.mp4",
+  "berlin-market": "insider-trading/broll/markets/berlin.mp4",
+};
 
 const Point1Scene: React.FC<{
   local: number;
@@ -394,16 +407,6 @@ const Point1Scene: React.FC<{
     ...clamp,
     easing: ease3,
   });
-
-  // Split the scene into equal thirds and pick the center card accordingly.
-  const phase = Math.min(
-    POINT1_CENTER_SEQUENCE.length - 1,
-    Math.max(
-      0,
-      Math.floor((local / duration) * POINT1_CENTER_SEQUENCE.length),
-    ),
-  );
-  const centerSourceId = POINT1_CENTER_SEQUENCE[phase];
 
   // Staggered enter/exit for the two text lines. Both enter from behind
   // the phone (left) and slide right into position. On exit they keep
@@ -447,10 +450,61 @@ const Point1Scene: React.FC<{
 
   return (
     <AbsoluteFill style={{ opacity: fadeOut, background: "#ffffff" }}>
-      {/* VORTEX — background cylinder without a center plane; the 3D
-          phone below owns the middle. */}
+      {/* B-ROLL — one video per phase, darkened so the phone and text
+          still dominate. Each video is wrapped in its own Sequence so
+          its source-time resets to 0 at the phase start; the phase
+          opacity cross-fades at the boundary so the imagery dissolves
+          instead of cutting. */}
       <AbsoluteFill style={{ opacity: vortexIn }}>
-        <SourceVortexGallery centerSourceId={centerSourceId} hideCenter />
+        {POINT1_CENTER_SEQUENCE.map((id, i) => {
+          const phaseCount = POINT1_CENTER_SEQUENCE.length;
+          const phaseDur = duration / phaseCount;
+          const phaseStart = Math.round(i * phaseDur);
+          const phaseEnd = Math.round((i + 1) * phaseDur);
+          const phaseOp = interpolate(
+            local,
+            [
+              phaseStart - 10,
+              phaseStart + 10,
+              phaseEnd - 10,
+              phaseEnd + 10,
+            ],
+            [0, 1, 1, 0],
+            clamp,
+          );
+          if (phaseOp <= 0) return null;
+          return (
+            <Sequence
+              key={id}
+              from={sceneStart + phaseStart - 12}
+              durationInFrames={phaseEnd - phaseStart + 24}
+              layout="none"
+            >
+              <AbsoluteFill
+                style={{ opacity: phaseOp, pointerEvents: "none" }}
+              >
+                <OffthreadVideo
+                  src={staticFile(POINT1_BROLL[id])}
+                  muted
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    filter: "brightness(0.55) saturate(1.1)",
+                  }}
+                />
+              </AbsoluteFill>
+            </Sequence>
+          );
+        })}
+        {/* Soft left gradient so the right-side "500,000" text reads
+            against the imagery without needing a mix-blend trick. */}
+        <AbsoluteFill
+          style={{
+            background:
+              "linear-gradient(to right, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.55) 38%, rgba(255,255,255,0) 72%)",
+          }}
+        />
       </AbsoluteFill>
 
       {/* The phone now lives at the InsiderPitch wrapper level so it
@@ -1843,11 +1897,14 @@ const ClosingScene: React.FC<{
 
 const SHARED_PHONE_PRELOAD = [
   "polymarket",
-  "twitch",
-  "db_trains",
   "tmdb",
+  ...BINARY_MARKET_IDS,
 ] as const;
-const POINT1_PHASE_IDS = ["twitch", "db_trains", "tmdb"] as const;
+const POINT1_PHASE_IDS = [
+  "csgo-market",
+  "twitch-market",
+  "berlin-market",
+] as const;
 
 const SharedPhoneLayer: React.FC<{ local: number }> = ({ local }) => {
   const statStart = PITCH_SCENES.stat.start;

@@ -61,6 +61,83 @@ async function loadImage(url: string): Promise<HTMLImageElement | null> {
   }
 }
 
+async function loadJson<T>(url: string): Promise<T | null> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    return (await res.json()) as T;
+  } catch {
+    return null;
+  }
+}
+
+// ── Binary-market cards ────────────────────────────────────────────────
+// A parallel card variant painted with a market question, YES/NO odds,
+// and a real time-series chart fetched from our data-node. Keyed by its
+// own id set (BINARY_MARKET_IDS) so the atlas build loop can branch cleanly.
+
+type MarketPoint = { t: string; v: number };
+type MarketSeries = {
+  market: string;
+  question: string;
+  source: string;
+  unit: string;
+  points: MarketPoint[];
+};
+
+type BinaryMarketDef = {
+  id: string;
+  question: string;
+  brand: string;
+  unit: string;
+  dataFile: string;
+  logoFile: string;
+  accent: string;
+  format: (v: number) => string;
+  yesOdds: number;
+};
+
+const BINARY_MARKETS: Record<string, BinaryMarketDef> = {
+  "csgo-market": {
+    id: "csgo-market",
+    question: "Will CS:GO have more\nplayers in 10 min?",
+    brand: "Steam · CS:GO",
+    unit: "players",
+    dataFile: "data/markets/csgo_players.json",
+    logoFile: "source-imgs/icons/steam.png",
+    accent: "#1B2838",
+    format: (v) =>
+      v >= 1e6 ? `${(v / 1e6).toFixed(2)}M` : `${Math.round(v / 1e2) / 10}K`,
+    yesOdds: 0.58,
+  },
+  "twitch-market": {
+    id: "twitch-market",
+    question: "Will Twitch have more\nviewers in 10 min?",
+    brand: "Twitch · xQc",
+    unit: "viewers",
+    dataFile: "data/markets/twitch_viewers.json",
+    logoFile: "source-imgs/icons/twitch.png",
+    accent: "#9146FF",
+    format: (v) =>
+      v >= 1e3 ? `${Math.round(v / 1e2) / 10}K` : `${Math.round(v)}`,
+    yesOdds: 0.63,
+  },
+  "berlin-market": {
+    id: "berlin-market",
+    question: "Will Berlin trains have\na delay in 10 min?",
+    brand: "Deutsche Bahn · Berlin Hbf",
+    unit: "min avg delay",
+    dataFile: "data/markets/berlin_delay.json",
+    logoFile: "source-imgs/icons/db_trains.png",
+    accent: "#EC0016",
+    format: (v) => `${v.toFixed(1)} min`,
+    yesOdds: 0.71,
+  },
+};
+
+export const BINARY_MARKET_IDS = Object.keys(BINARY_MARKETS);
+const isBinaryMarketId = (id: string): boolean => id in BINARY_MARKETS;
+
 function drawRoundedRect(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -245,6 +322,256 @@ function buildSpeedCanvas(
     ctx.textAlign = "right";
     ctx.fillText(`×${qty.toLocaleString()}`, W - 28, y + SPEED_ROW_H / 2 + 10);
   }
+
+  return canvas;
+}
+
+// Binary-market card. A question headline, YES/NO pills with implied
+// odds, and a chart painted from the real time-series we pulled from
+// the data-node. Dimensions match buildCardCanvas so the texture slots
+// into the same iPhone screen mesh without re-fit.
+function buildBinaryMarketCanvas(
+  def: BinaryMarketDef,
+  logo: HTMLImageElement | null,
+  series: MarketSeries | null,
+): HTMLCanvasElement {
+  const W = 720;
+  const H = Math.round(W / SCREEN_ASPECT);
+  const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext("2d")!;
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+
+  // Background
+  ctx.fillStyle = "#FFFFFF";
+  ctx.fillRect(0, 0, W, H);
+
+  // Accent bar
+  const accentGrad = ctx.createLinearGradient(0, 0, W, 0);
+  accentGrad.addColorStop(0, def.accent);
+  accentGrad.addColorStop(1, def.accent + "33");
+  ctx.fillStyle = accentGrad;
+  ctx.fillRect(0, 0, W, 10);
+
+  const padX = 36;
+
+  // Header — logo + brand + LIVE pill
+  const headerY = 44;
+  const logoSize = 86;
+  const logoX = padX;
+  const logoY = headerY;
+
+  if (logo && logo.width > 0 && logo.height > 0) {
+    const ratio = Math.min(logoSize / logo.width, logoSize / logo.height);
+    const lw = logo.width * ratio;
+    const lh = logo.height * ratio;
+    ctx.drawImage(
+      logo,
+      logoX + (logoSize - lw) / 2,
+      logoY + (logoSize - lh) / 2,
+      lw,
+      lh,
+    );
+  } else {
+    ctx.fillStyle = LOGO_BG;
+    drawRoundedRect(ctx, logoX, logoY, logoSize, logoSize, 16);
+    ctx.fill();
+  }
+
+  // Brand line
+  const textX = logoX + logoSize + 20;
+  ctx.fillStyle = "#52525B";
+  ctx.font = `600 24px ${CARD_FONT}`;
+  ctx.textAlign = "left";
+  ctx.fillText(def.brand, textX, headerY + 34);
+
+  // Unit subline
+  ctx.fillStyle = MARKET_COLOR;
+  ctx.font = `500 20px ${MONO_FONT}`;
+  ctx.fillText(def.unit, textX, headerY + 62);
+
+  // LIVE pill
+  const pillW = 104;
+  const pillH = 38;
+  const pillX = W - padX - pillW;
+  const pillY = headerY + 4;
+  ctx.fillStyle = def.accent + "1E";
+  drawRoundedRect(ctx, pillX, pillY, pillW, pillH, 19);
+  ctx.fill();
+  ctx.fillStyle = def.accent;
+  ctx.beginPath();
+  ctx.arc(pillX + 20, pillY + pillH / 2, 6, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.font = `700 20px ${CARD_FONT}`;
+  ctx.fillText("Live", pillX + 36, pillY + 26);
+
+  // Question headline — wrap on the embedded newline
+  const questionY = 200;
+  ctx.fillStyle = NAME_COLOR;
+  ctx.font = `800 58px ${CARD_FONT}`;
+  ctx.textAlign = "left";
+  const lines = def.question.split("\n");
+  lines.forEach((line, i) => {
+    ctx.fillText(line, padX, questionY + i * 68);
+  });
+
+  // Current value — big mono readout
+  const currentVal =
+    series && series.points.length > 0
+      ? series.points[series.points.length - 1].v
+      : 0;
+  const valueY = questionY + lines.length * 68 + 50;
+  ctx.fillStyle = "#71717A";
+  ctx.font = `600 22px ${CARD_FONT}`;
+  ctx.fillText("NOW", padX, valueY);
+  ctx.fillStyle = NAME_COLOR;
+  ctx.font = `800 72px ${MONO_FONT}`;
+  ctx.fillText(def.format(currentVal), padX, valueY + 72);
+
+  // YES / NO pills — side by side, right-aligned with the value
+  const yes = def.yesOdds;
+  const no = 1 - yes;
+  const pillsY = valueY - 6;
+  const pillWide = 170;
+  const pillTall = 96;
+  const pillsX = W - padX - pillWide * 2 - 12;
+  const drawOddsPill = (
+    x: number,
+    label: string,
+    cents: number,
+    bg: string,
+    fg: string,
+  ) => {
+    ctx.fillStyle = bg;
+    drawRoundedRect(ctx, x, pillsY, pillWide, pillTall, 14);
+    ctx.fill();
+    ctx.fillStyle = fg;
+    ctx.font = `800 22px ${CARD_FONT}`;
+    ctx.textAlign = "left";
+    ctx.fillText(label, x + 18, pillsY + 34);
+    ctx.font = `900 48px ${MONO_FONT}`;
+    ctx.textAlign = "right";
+    ctx.fillText(`${Math.round(cents * 100)}¢`, x + pillWide - 18, pillsY + 78);
+  };
+  drawOddsPill(pillsX, "YES", yes, "#059669", "#FFFFFF");
+  drawOddsPill(pillsX + pillWide + 12, "NO", no, "#F4F4F5", "#18181B");
+  ctx.textAlign = "left";
+
+  // Chart — painted from the real series
+  const chartTopY = valueY + 110;
+  ctx.strokeStyle = ROW_DIVIDER;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(padX, chartTopY);
+  ctx.lineTo(W - padX, chartTopY);
+  ctx.stroke();
+
+  const chartX = padX;
+  const chartY = chartTopY + 36;
+  const chartW = W - padX * 2;
+  const chartH = H - chartY - 96;
+
+  // "Last 48 samples" caption above chart area
+  ctx.fillStyle = MARKET_COLOR;
+  ctx.font = `600 20px ${CARD_FONT}`;
+  ctx.fillText(
+    series ? `last ${series.points.length} samples · live` : "loading…",
+    padX,
+    chartTopY + 26,
+  );
+
+  // Accent gradient background behind the chart
+  const chartBgGrad = ctx.createLinearGradient(
+    chartX,
+    chartY,
+    chartX,
+    chartY + chartH,
+  );
+  chartBgGrad.addColorStop(0, "rgba(255,255,255,0)");
+  chartBgGrad.addColorStop(1, def.accent + "14");
+  ctx.fillStyle = chartBgGrad;
+  ctx.fillRect(chartX, chartY, chartW, chartH);
+
+  if (series && series.points.length >= 2) {
+    const vals = series.points.map((p) => p.v);
+    const vMin = Math.min(...vals);
+    const vMax = Math.max(...vals);
+    const vSpan = vMax - vMin || 1;
+    const n = vals.length;
+    const pts = vals.map((v, i) => ({
+      x: chartX + (i / (n - 1)) * chartW,
+      y: chartY + (1 - (v - vMin) / vSpan) * chartH,
+    }));
+
+    // Filled area
+    const areaGrad = ctx.createLinearGradient(
+      chartX,
+      chartY,
+      chartX,
+      chartY + chartH,
+    );
+    areaGrad.addColorStop(0, def.accent + "40");
+    areaGrad.addColorStop(1, def.accent + "00");
+    ctx.fillStyle = areaGrad;
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, chartY + chartH);
+    for (const p of pts) ctx.lineTo(p.x, p.y);
+    ctx.lineTo(pts[pts.length - 1].x, chartY + chartH);
+    ctx.closePath();
+    ctx.fill();
+
+    // Line
+    ctx.strokeStyle = def.accent;
+    ctx.lineWidth = 4;
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let k = 1; k < pts.length; k++) ctx.lineTo(pts[k].x, pts[k].y);
+    ctx.stroke();
+
+    // End dot + pulse ring
+    const end = pts[pts.length - 1];
+    ctx.fillStyle = def.accent + "33";
+    ctx.beginPath();
+    ctx.arc(end.x, end.y, 16, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = def.accent;
+    ctx.beginPath();
+    ctx.arc(end.x, end.y, 8, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Min/max rail labels
+    ctx.fillStyle = MARKET_COLOR;
+    ctx.font = `500 18px ${MONO_FONT}`;
+    ctx.textAlign = "right";
+    ctx.fillText(def.format(vMax), W - padX - 4, chartY + 18);
+    ctx.fillText(def.format(vMin), W - padX - 4, chartY + chartH - 4);
+    ctx.textAlign = "left";
+  }
+
+  // Timeline footer — past ← now → +10m
+  const footY = chartY + chartH + 42;
+  ctx.strokeStyle = ROW_DIVIDER;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(padX, footY - 24);
+  ctx.lineTo(W - padX, footY - 24);
+  ctx.stroke();
+
+  ctx.fillStyle = MARKET_COLOR;
+  ctx.font = `600 20px ${CARD_FONT}`;
+  ctx.textAlign = "left";
+  ctx.fillText("past", padX, footY);
+  ctx.textAlign = "center";
+  ctx.fillText("now", W / 2, footY);
+  ctx.textAlign = "right";
+  ctx.fillStyle = def.accent;
+  ctx.font = `800 22px ${CARD_FONT}`;
+  ctx.fillText("resolves in 10m", W - padX, footY);
+  ctx.textAlign = "left";
 
   return canvas;
 }
@@ -737,24 +1064,42 @@ export const PhoneWithCard: React.FC<{
     let cancelled = false;
     (async () => {
       const built: Record<string, THREE.CanvasTexture> = {};
+      const register = (key: string, canvas: HTMLCanvasElement) => {
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.needsUpdate = true;
+        tex.magFilter = THREE.LinearFilter;
+        tex.minFilter = THREE.LinearMipmapLinearFilter;
+        tex.generateMipmaps = true;
+        tex.anisotropy = 8;
+        built[key] = tex;
+      };
       const overlays: CardOverlayMode[] = ["plain", "sealed", "speed"];
       await Promise.all(
-        ids.flatMap((id) =>
-          overlays.map(async (mode) => {
+        ids.flatMap((id) => {
+          if (isBinaryMarketId(id)) {
+            // Binary-market ids build a single canvas at mode=plain.
+            const def = BINARY_MARKETS[id];
+            return [
+              (async () => {
+                const [logo, series] = await Promise.all([
+                  loadImage(staticFile(def.logoFile)),
+                  loadJson<MarketSeries>(staticFile(def.dataFile)),
+                ]);
+                if (cancelled) return;
+                const canvas = buildBinaryMarketCanvas(def, logo, series);
+                register(`${id}:plain`, canvas);
+              })(),
+            ];
+          }
+          return overlays.map(async (mode) => {
             const logo = await loadImage(
               staticFile(`source-imgs/icons/${id}.png`),
             );
             if (cancelled) return;
             const canvas = buildCardCanvas(id, logo, mode);
-            const tex = new THREE.CanvasTexture(canvas);
-            tex.needsUpdate = true;
-            tex.magFilter = THREE.LinearFilter;
-            tex.minFilter = THREE.LinearMipmapLinearFilter;
-            tex.generateMipmaps = true;
-            tex.anisotropy = 8;
-            built[`${id}:${mode}`] = tex;
-          }),
-        ),
+            register(`${id}:${mode}`, canvas);
+          });
+        }),
       );
       if (cancelled) return;
       setTextures(built);
