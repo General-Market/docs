@@ -134,15 +134,35 @@ const IntroScene: React.FC<{
   const logoOpacity = interpolate(local, [3, 30], [0, 1], clamp);
   const fadeOut = interpolate(local, [duration - 10, duration], [1, 0], clamp);
 
-  // Icon + wordmark live in one horizontal lockup, sized off a shared
-  // rhythm: plate edge = 0.9 × cap height of the wordmark. Keeps the
-  // mark from feeling slapped on.
-  const fontSize = 120;
-  const plateEdge = 132;
+  // Lockup now owns ~80% of the canvas width. Plate, gap, and type
+  // scale together so the rhythm holds.
+  const fontSize = 164;
+  const plateEdge = 240;
+  const lockupGap = 44;
+
+  // Downbeat pulse — whole lockup breathes once across frames 48-58.
+  const pulse = interpolate(local, [48, 53, 58], [1, 1.035, 1], {
+    ...clamp,
+    easing: ease3,
+  });
+
+  // Scan-line — a bright vertical band crosses the bars left-to-right,
+  // igniting them. Visible only during the 12-frame crossing.
+  const scanX = interpolate(local, [50, 62], [-12, plateEdge + 12], clamp);
+  const scanOp = interpolate(local, [49, 52, 60, 63], [0, 1, 1, 0], clamp);
 
   return (
-    <AbsoluteFill style={{ opacity: fadeOut }}>
-      {/* LOCKUP — centered horizontally + vertically */}
+    <AbsoluteFill style={{ opacity: fadeOut, background: BLACK }}>
+      {/* Vignette — edges crushed, center clean */}
+      <AbsoluteFill
+        style={{
+          background:
+            "radial-gradient(ellipse at center, rgba(0,0,0,0) 42%, rgba(0,0,0,0.55) 100%)",
+          pointerEvents: "none",
+        }}
+      />
+
+      {/* LOCKUP — centered, breathing once on the downbeat */}
       <AbsoluteFill
         style={{
           display: "flex",
@@ -154,24 +174,29 @@ const IntroScene: React.FC<{
           style={{
             display: "flex",
             alignItems: "center",
-            gap: 32,
+            gap: lockupGap,
+            transform: `scale(${pulse})`,
+            transformOrigin: "center",
           }}
         >
-          {/* Icon plate — rounded square, white bars on a lifted-black
-              plate so it reads as its own shape against the stage. */}
+          {/* Icon plate — lifted black, rounded, with an internal scan
+              line that crosses the bars once on the downbeat. */}
           <div
             style={{
+              position: "relative",
               width: plateEdge,
               height: plateEdge,
-              background: "#1a1a1a",
-              borderRadius: 22,
+              background: "#2a2a2a",
+              borderRadius: 38,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               transform: `scale(${logoScale})`,
               transformOrigin: "center",
               opacity: logoOpacity,
-              boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.06)",
+              boxShadow:
+                "inset 0 0 0 1px rgba(255,255,255,0.08), 0 24px 70px rgba(0,0,0,0.55)",
+              overflow: "hidden",
             }}
           >
             <svg
@@ -183,6 +208,23 @@ const IntroScene: React.FC<{
                 <path key={i} d={d} fill="#ffffff" />
               ))}
             </svg>
+            {/* Scan-line — fluorescent tube igniting across the bars */}
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: 10,
+                height: "100%",
+                transform: `translateX(${scanX}px)`,
+                opacity: scanOp,
+                background:
+                  "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.95) 50%, transparent 100%)",
+                mixBlendMode: "plus-lighter",
+                filter: "blur(1.2px)",
+                pointerEvents: "none",
+              }}
+            />
           </div>
 
           {/* Wordmark */}
@@ -198,19 +240,19 @@ const IntroScene: React.FC<{
               letterSpacing: "-0.03em",
               textAlign: "left",
               lineHeight: 1,
-              maxWidth: 1400,
+              maxWidth: 1800,
             }}
           />
         </div>
       </AbsoluteFill>
 
-      {/* Tagline — fights back, sitting below the lockup */}
+      {/* Tagline — fights back, below the enlarged lockup */}
       <AbsoluteFill
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          paddingTop: 260,
+          paddingTop: 340,
         }}
       >
         <Reveal
@@ -220,15 +262,27 @@ const IntroScene: React.FC<{
           revealDuration={18}
           seed={23}
           style={{
-            fontSize: 68,
+            fontSize: 104,
             fontWeight: 500,
             letterSpacing: "-0.01em",
             textAlign: "center",
             lineHeight: 1,
-            maxWidth: 1400,
+            maxWidth: 1600,
           }}
         />
       </AbsoluteFill>
+
+      {/* Grain — SVG fractal noise, low opacity, overlay blend */}
+      <AbsoluteFill
+        style={{
+          pointerEvents: "none",
+          opacity: 0.07,
+          mixBlendMode: "overlay",
+          backgroundImage:
+            "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='160' height='160' filter='url(%23n)' opacity='0.6'/></svg>\")",
+          backgroundSize: "320px 320px",
+        }}
+      />
     </AbsoluteFill>
   );
 };
