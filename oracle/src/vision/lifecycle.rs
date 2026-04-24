@@ -1649,25 +1649,45 @@ impl BatchLifecycleManager {
             }
         };
 
-        // lastSnapshotNonce() selector = keccak256("lastSnapshotNonce()")[..4] = 0xa776590c
-        let selector = ethers::utils::keccak256(b"lastSnapshotNonce()");
-        let calldata = selector[..4].to_vec();
+        // Try registryNonce() first, fall back to lastSnapshotNonce(). On some Orbit
+        // deploys the public state-variable getter `lastSnapshotNonce()` returns
+        // empty bytes through the sequencer's proxy-call path even though the
+        // explicit `registryNonce()` view function responds correctly. A nonce of
+        // 0 is near-fatal: it points at the oldest snapshot, whose blockNumber
+        // is almost certainly past the 86400-block staleness window, which trips
+        // `BLSVerifier__SnapshotTooOld` on every createBatch / settleBatch.
+        // See 2026-04-24 testnet incident.
+        let reg_nonce_sel = ethers::utils::keccak256(b"registryNonce()");
+        let last_snap_sel = ethers::utils::keccak256(b"lastSnapshotNonce()");
+        let candidates: [(&str, &[u8]); 2] = [
+            ("registryNonce()", &reg_nonce_sel[..4]),
+            ("lastSnapshotNonce()", &last_snap_sel[..4]),
+        ];
 
-        let call_result: Result<Vec<u8>, _> = writer.static_call(registry_addr, calldata).await;
-        match call_result {
-            Ok(bytes) if bytes.len() >= 32 => {
-                let nonce = ethers::types::U256::from_big_endian(&bytes[..32]).as_u64();
-                Some(nonce)
-            }
-            Ok(_) => {
-                warn!("lastSnapshotNonce() returned unexpected data length — defaulting to 0");
-                Some(0)
-            }
-            Err(e) => {
-                warn!(error = %e, "Failed to read lastSnapshotNonce — defaulting to 0");
-                Some(0)
+        let mut last_error: Option<String> = None;
+        for (name, sel) in candidates {
+            match writer.static_call(registry_addr, sel.to_vec()).await {
+                Ok(bytes) if bytes.len() >= 32 => {
+                    let nonce = ethers::types::U256::from_big_endian(&bytes[..32]).as_u64();
+                    debug!(selector = name, nonce, "Read snapshot nonce from registry");
+                    return Some(nonce);
+                }
+                Ok(_) => {
+                    last_error = Some(format!("{name}: short response"));
+                    continue;
+                }
+                Err(e) => {
+                    last_error = Some(format!("{name}: {e}"));
+                    continue;
+                }
             }
         }
+
+        warn!(
+            error = last_error.as_deref().unwrap_or("unknown"),
+            "Both registryNonce() and lastSnapshotNonce() returned no usable data — defaulting to 0"
+        );
+        Some(0)
     }
 
     // =========================================================================
