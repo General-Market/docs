@@ -13,7 +13,6 @@ import {
   useVideoConfig,
 } from "remotion";
 import { loadFont as loadInter } from "@remotion/google-fonts/Inter";
-import { CameraMotionBlur } from "@remotion/motion-blur";
 import { InsiderPitch, PITCH_DURATION } from "./InsiderPitch";
 
 const interFamily = loadInter("normal", {
@@ -1015,25 +1014,21 @@ const BeatShot: React.FC<{
 
   return (
     <AbsoluteFill style={{ overflow: "hidden" }}>
-      <CameraMotionBlur shutterAngle={180} samples={3}>
-        <AbsoluteFill>
-          <Video
-            src={staticFile("insider-trading/broll/dezoom.mp4")}
-            startFrom={startFromFrame}
-            playbackRate={playbackRate}
-            muted
-            style={{
-              position: "absolute",
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              transform: `translate(${jx}px, ${jy}px) scale(${scale}) rotate(${rot}deg)`,
-              transformOrigin: "50% 50%",
-              filter,
-            }}
-          />
-        </AbsoluteFill>
-      </CameraMotionBlur>
+      <Video
+        src={staticFile("insider-trading/broll/dezoom.mp4")}
+        startFrom={startFromFrame}
+        playbackRate={playbackRate}
+        muted
+        style={{
+          position: "absolute",
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          transform: `translate(${jx}px, ${jy}px) scale(${scale}) rotate(${rot}deg)`,
+          transformOrigin: "50% 50%",
+          filter,
+        }}
+      />
     </AbsoluteFill>
   );
 };
