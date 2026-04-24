@@ -41,7 +41,9 @@ const PITCH_START = 203;
 // Uses the actual detected onsets — 13 transients — not a guessed subset.
 // Cuts sit exactly on the onset; impact FX have been moved off frame 0 so
 // the image is sharpest AT the cut, not blurriest.
-const PROLOGUE_ONSETS = [1, 5, 16, 20, 32, 45, 58, 80, 96, 100, 103, 107, 109];
+// First onset pinned to 0 so the broll is present on frame 0 — otherwise
+// the video opens on a black hold before the first beat.
+const PROLOGUE_ONSETS = [0, 5, 16, 20, 32, 45, 58, 80, 96, 100, 103, 107, 109];
 const PROLOGUE_DURATION = 120;
 const PROLOGUE_SOURCE_TOTAL = 1780; // source frames to traverse (1836 total, margin)
 const PROLOGUE_ACCEL_K = 2.2;
@@ -1070,14 +1072,8 @@ const PrologueGrain: React.FC = () => {
 const InsiderPrologue: React.FC = () => {
   const frame = useCurrentFrame();
 
-  // Opening curtain only — the closing cut is now a zoom-blur whip, not a
-  // fade to black. Black curtains are what you use when you have given up.
-  const openCurtain = interpolate(
-    frame,
-    [0, 3],
-    [1, 0],
-    { extrapolateRight: "clamp" },
-  );
+  // No opening curtain. The broll fires on frame 0; starting on black
+  // would be theatre without payoff. Exit is handled by zoom-blur.
 
   // Exit ramp on the broll layer only. Text layers stay sharp so they can
   // bleed through the phase cut.
@@ -1177,14 +1173,6 @@ const InsiderPrologue: React.FC = () => {
         fontSize={88}
       />
 
-      {/* Opening curtain only — the closing cut is handled by zoom-blur. */}
-      <AbsoluteFill
-        style={{
-          background: "#000",
-          opacity: openCurtain,
-          pointerEvents: "none",
-        }}
-      />
     </AbsoluteFill>
   );
 };
