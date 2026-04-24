@@ -7572,10 +7572,17 @@ async fn chain_l3_consensus_paused(
     Json(serde_json::json!({ "paused": paused }))
 }
 
-// lastSnapshotNonce on OracleRegistry
+// Both accessors — on Orbit L3, the public-state-variable getter
+// `lastSnapshotNonce()` can return empty bytes through the sequencer's
+// proxy-call path even when the explicit view function `registryNonce()`
+// answers correctly. The oracle's mirror_sync task polls this endpoint; if
+// it 500s, refreshSnapshot() never runs and BLSVerifier__SnapshotTooOld
+// bricks every BLS-verified call after 86400 blocks. See 2026-04-24
+// testnet incident.
 abigen!(
     RegistryNonceReader,
     r#"[
+        function registryNonce() external view returns (uint256)
         function lastSnapshotNonce() external view returns (uint256)
     ]"#
 );
@@ -7593,11 +7600,27 @@ async fn chain_l3_registry_nonce(
     })?;
 
     let contract = RegistryNonceReader::new(registry_addr, state.l3_provider.clone());
-    let nonce = contract.last_snapshot_nonce().call().await.map_err(|e| {
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(ErrorResponse { error: format!("lastSnapshotNonce failed: {e}") }))
-    })?;
 
-    Ok(Json(serde_json::json!({ "nonce": nonce.as_u64() })))
+    // Try registryNonce() first — it's the explicit view function and answers
+    // reliably on Orbit. Fall back to lastSnapshotNonce() if it errors.
+    let (nonce, selector) = match contract.registry_nonce().call().await {
+        Ok(n) => (n, "registryNonce"),
+        Err(e1) => match contract.last_snapshot_nonce().call().await {
+            Ok(n) => (n, "lastSnapshotNonce"),
+            Err(e2) => {
+                return Err((
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ErrorResponse {
+                        error: format!(
+                            "both registryNonce() and lastSnapshotNonce() failed: registryNonce: {e1}; lastSnapshotNonce: {e2}"
+                        ),
+                    }),
+                ));
+            }
+        },
+    };
+
+    Ok(Json(serde_json::json!({ "nonce": nonce.as_u64(), "selector": selector })))
 }
 
 // getITPState ABI — generated manually for data-node (no abigen! here)
