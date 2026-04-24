@@ -481,13 +481,13 @@ const InsiderArticlesPhase: React.FC = () => {
     <AbsoluteFill
       style={{
         background: "#000000",
-        opacity: bgFade * outroFade,
+        opacity: outroFade,
       }}
     >
       <AbsoluteFill
         style={{
-          filter: `saturate(${1.04 + beatPunch * 0.15}) contrast(${1.08 + beatPunch * 0.08}) brightness(${0.96 + beatPunch * 0.09})`,
-          transform: `scale(${1 + beatPunch * 0.006})`,
+          filter: `saturate(${1.04 + beatPunch * 0.15}) contrast(${1.08 + beatPunch * 0.08}) brightness(${0.96 + beatPunch * 0.09}) blur(${entryBlur + articleExitBlur}px)`,
+          transform: `scale(${(1 + beatPunch * 0.006) * entryScale * articleExitScale})`,
           transformOrigin: "50% 50%",
         }}
       >
@@ -633,7 +633,13 @@ const InsiderArticlesPhase: React.FC = () => {
       </AbsoluteFill>
 
       {frame >= PITCH_START ? (
-        <AbsoluteFill style={{ opacity: pitchFadeIn }}>
+        <AbsoluteFill
+          style={{
+            opacity: pitchFadeIn,
+            transform: `scale(${pitchEntryScale})`,
+            transformOrigin: "50% 50%",
+          }}
+        >
           <InsiderPitch startFrame={PITCH_START} />
         </AbsoluteFill>
       ) : null}
