@@ -752,6 +752,83 @@ const BeatTypewriter: React.FC<{
 };
 
 
+/* ─── Two-line zoomed finale for the prologue. Line 1 reveals at line1Beat,
+       line 2 at line2Beat (both HARSH_EASE char-burst over revealBurst
+       frames). From zoomStart to zoomEnd the whole stack scales from 1.0
+       to ~2.4 on a smoothstep — the Ember "on" move, retuned for a longer
+       string. White chars, same drop-shadow the typewriter uses. */
+const PrologueZoomFinale: React.FC<{
+  line1: string;
+  line2: string;
+  line1Beat: number;
+  line2Beat: number;
+  zoomStart: number;
+  zoomEnd: number;
+  revealBurst: number;
+  fontSize: number;
+}> = ({
+  line1,
+  line2,
+  line1Beat,
+  line2Beat,
+  zoomStart,
+  zoomEnd,
+  revealBurst,
+  fontSize,
+}) => {
+  const frame = useCurrentFrame();
+  if (frame < line1Beat) return null;
+
+  const charsRevealed = (text: string, beat: number): number => {
+    if (frame < beat) return 0;
+    const t = Math.max(0, Math.min(1, (frame - beat) / revealBurst));
+    return Math.round(text.length * HARSH_EASE(t));
+  };
+
+  const count1 = charsRevealed(line1, line1Beat);
+  const count2 = charsRevealed(line2, line2Beat);
+
+  const zoomT = Math.max(
+    0,
+    Math.min(1, (frame - zoomStart) / Math.max(1, zoomEnd - zoomStart)),
+  );
+  const smooth = zoomT * zoomT * (3 - 2 * zoomT);
+  const scale = 1 + 1.4 * smooth;
+
+  return (
+    <AbsoluteFill
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
+      }}
+    >
+      <div
+        style={{
+          fontFamily: interFamily,
+          fontFeatureSettings: '"calt" 1',
+          fontSize,
+          fontWeight: 900,
+          letterSpacing: "-0.03em",
+          textAlign: "center",
+          lineHeight: 1,
+          color: "white",
+          textShadow: "0 6px 30px rgba(0,0,0,0.78)",
+          transform: `scale(${scale})`,
+          transformOrigin: "50% 50%",
+          whiteSpace: "nowrap",
+        }}
+      >
+        <div>{line1.slice(0, count1)}</div>
+        <div style={{ marginTop: fontSize * 0.12 }}>
+          {line2.slice(0, count2)}
+        </div>
+      </div>
+    </AbsoluteFill>
+  );
+};
+
 /* ─── Per-onset broll shot — harsh bezier decay on cut: tremble, jitter,
        scale punch, heavy Gaussian blur snap, chromatic fringe. Each cut
        carries its own playbackRate so the broll itself accelerates. ─── */
@@ -895,29 +972,42 @@ const InsiderPrologue: React.FC = () => {
       {/* Animated film grain */}
       <PrologueGrain />
 
-      {/* Phase 1 — almost instant reveal (8 frames for 32 chars), holds, wipes */}
-      {/* Phase 1 — chars stall, then burst in on onsets 1, 5, 20. Holds,
-          then wipes left-to-right across the 45→58 beat window. */}
+      {/* Stmt 1 — "1 in 2500 trader is an insider". Three onsets carry
+          the 30 chars, wipe clears before stmt 2 starts typing at 32. */}
       <BeatTypewriter
-        text="The average trader loses $50,000"
-        revealBeats={[1, 5, 20]}
-        charsAtBeat={[12, 22, 32]}
+        text="1 in 2500 trader is an insider"
+        revealBeats={[1, 5, 16]}
+        charsAtBeat={[10, 20, 30]}
         burstFrames={4}
-        wipeStart={45}
-        wipeEnd={58}
+        wipeStart={22}
+        wipeEnd={30}
         fontSize={62}
       />
 
-      {/* Phase 2 — quick type (20 frames for 37 chars), then long hold */}
-      {/* Phase 2 — larger first beats carry the sentence, the drop cluster
-          (onsets 100,103,107,109) fires the last few chars in a rapid tail.
-          Hold through the end of the prologue; curtain fades it out. */}
+      {/* Stmt 2 — "Collecting 70% profits of the 2499". Onsets 32, 45, 58
+          carry the 34 chars; wipe clears just before stmt 3 begins at 80. */}
       <BeatTypewriter
-        text="to insider traders in their lifetime."
-        revealBeats={[58, 80, 96, 100, 103, 107, 109]}
-        charsAtBeat={[3, 12, 22, 26, 30, 34, 37]}
+        text="Collecting 70% profits of the 2499"
+        revealBeats={[32, 45, 58]}
+        charsAtBeat={[12, 24, 34]}
         burstFrames={4}
-        fontSize={58}
+        wipeStart={64}
+        wipeEnd={78}
+        fontSize={62}
+      />
+
+      {/* Stmt 3 — "~$50,000 / per trader" on two lines, the whole stack
+          scales up as the closing ramp. The drop cluster (100,103,107,
+          109) powers the zoom; curtain at 116 swallows it. */}
+      <PrologueZoomFinale
+        line1="~$50,000"
+        line2="per trader"
+        line1Beat={80}
+        line2Beat={96}
+        zoomStart={100}
+        zoomEnd={116}
+        revealBurst={6}
+        fontSize={88}
       />
 
       {/* Black curtain at both edges */}

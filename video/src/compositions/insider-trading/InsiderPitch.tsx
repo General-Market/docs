@@ -307,16 +307,16 @@ const Point1Scene: React.FC<{
         <Reveal
           from={sceneStart + 34}
           duration={duration - 34}
-          text="active markets"
+          text="shielded markets from insiders"
           revealDuration={26}
           seed={31}
           solid
           style={{
-            fontSize: 52,
+            fontSize: 46,
             fontWeight: 700,
             letterSpacing: "-0.02em",
             textAlign: "center",
-            maxWidth: 1500,
+            maxWidth: 1700,
           }}
         />
       </AbsoluteFill>
@@ -609,15 +609,13 @@ const GC_TRACK_LEN = GC_UNIT * STREAM_CARDS.length;
 // takes its place. Scene duration is 100 frames; each message owns a
 // third of the run.
 const PRIVACY_CONSEQUENCES: readonly string[] = [
-  "No copy trading",
-  "No front runner",
-  "No market manipulation",
+  "No insider copying trades",
+  "No insider front running trades",
 ];
 
 const MESSAGE_WINDOWS: readonly { start: number; end: number }[] = [
-  { start: 18, end: 50 },
-  { start: 50, end: 76 },
-  { start: 76, end: 100 },
+  { start: 20, end: 58 },
+  { start: 58, end: 100 },
 ];
 
 const Point2Scene: React.FC<{
@@ -702,16 +700,16 @@ const Point2Scene: React.FC<{
         <Reveal
           from={sceneStart + 2}
           duration={duration - 2}
-          text="100% privacy until settlement"
+          text="100% privacy so even we cannot be an insider"
           revealDuration={34}
           seed={59}
           solid
           style={{
-            fontSize: 108,
+            fontSize: 74,
             fontWeight: 900,
             letterSpacing: "-0.03em",
             textAlign: "center",
-            maxWidth: 1700,
+            maxWidth: 1800,
             lineHeight: 1,
           }}
         />
@@ -919,6 +917,36 @@ const Point3Scene: React.FC<{
         }}
       />
 
+      {/* Headline — spans the full frame above the split panels. */}
+      <div
+        style={{
+          position: "absolute",
+          top: 60,
+          left: 0,
+          right: 0,
+          display: "flex",
+          justifyContent: "center",
+          zIndex: 20,
+        }}
+      >
+        <Reveal
+          from={sceneStart + 4}
+          duration={duration - 4}
+          text="Speed to allow you to drown insiders in numbers"
+          revealDuration={32}
+          seed={73}
+          solid
+          style={{
+            fontSize: 50,
+            fontWeight: 900,
+            letterSpacing: "-0.03em",
+            textAlign: "center",
+            lineHeight: 1,
+            maxWidth: 1800,
+          }}
+        />
+      </div>
+
       {/* LEFT PANEL — single trades */}
       <div
         style={{
@@ -934,7 +962,7 @@ const Point3Scene: React.FC<{
         <div
           style={{
             position: "absolute",
-            top: 120,
+            top: 220,
             left: 0,
             right: 0,
             display: "flex",
@@ -952,7 +980,7 @@ const Point3Scene: React.FC<{
             seed={77}
             solid
             style={{
-              fontSize: 96,
+              fontSize: 88,
               fontWeight: 900,
               letterSpacing: "-0.03em",
               textAlign: "center",
@@ -961,7 +989,7 @@ const Point3Scene: React.FC<{
           />
         </div>
 
-        {/* Bottom rate — "100 / s" */}
+        {/* Bottom rate — "100 trades / s" */}
         <div
           style={{
             position: "absolute",
@@ -978,12 +1006,12 @@ const Point3Scene: React.FC<{
           <Reveal
             from={sceneStart + 20}
             duration={duration - 20}
-            text="100 / s"
+            text="100 trades / s"
             revealDuration={26}
             seed={79}
             solid
             style={{
-              fontSize: 168,
+              fontSize: 116,
               fontWeight: 900,
               letterSpacing: "-0.04em",
               textAlign: "center",
@@ -1044,7 +1072,7 @@ const Point3Scene: React.FC<{
         <div
           style={{
             position: "absolute",
-            top: 120,
+            top: 220,
             left: 0,
             right: 0,
             display: "flex",
@@ -1062,7 +1090,7 @@ const Point3Scene: React.FC<{
             seed={81}
             solid
             style={{
-              fontSize: 88,
+              fontSize: 80,
               fontWeight: 900,
               letterSpacing: "-0.03em",
               textAlign: "center",
@@ -1071,7 +1099,7 @@ const Point3Scene: React.FC<{
           />
         </div>
 
-        {/* Bottom rate — "100k / s" */}
+        {/* Bottom rate — "100k trades / s" */}
         <div
           style={{
             position: "absolute",
@@ -1088,12 +1116,12 @@ const Point3Scene: React.FC<{
           <Reveal
             from={sceneStart + 20}
             duration={duration - 20}
-            text="100k / s"
+            text="100k trades / s"
             revealDuration={26}
             seed={83}
             solid
             style={{
-              fontSize: 168,
+              fontSize: 116,
               fontWeight: 900,
               letterSpacing: "-0.04em",
               textAlign: "center",
@@ -1205,7 +1233,7 @@ const StatScene: React.FC<{
       {/* Phone rendered by SharedPhoneLayer at the InsiderPitch level,
           so it survives the cut into Point 1 as one continuous prop. */}
 
-      {/* LEFT — "Reducing insider loss" broken across three lines */}
+      {/* LEFT — "Earning back your losses from insiders" on three lines */}
       <AbsoluteFill
         style={{
           display: "flex",
@@ -1219,46 +1247,46 @@ const StatScene: React.FC<{
         <Reveal
           from={sceneStart + 4}
           duration={duration - 4}
-          text="Reducing"
+          text="Earning back"
           revealDuration={26}
           seed={121}
           solid
           style={{
-            fontSize: 124,
+            fontSize: 108,
             fontWeight: 900,
             letterSpacing: "-0.035em",
             lineHeight: 1,
-            maxWidth: 780,
+            maxWidth: 900,
           }}
         />
         <Reveal
           from={sceneStart + 14}
           duration={duration - 14}
-          text="insider"
+          text="your losses"
           revealDuration={26}
           seed={123}
           solid
           style={{
-            fontSize: 124,
+            fontSize: 108,
             fontWeight: 900,
             letterSpacing: "-0.035em",
             lineHeight: 1,
-            maxWidth: 780,
+            maxWidth: 900,
           }}
         />
         <Reveal
           from={sceneStart + 24}
           duration={duration - 24}
-          text="loss"
+          text="from insiders"
           revealDuration={26}
           seed={125}
           solid
           style={{
-            fontSize: 124,
+            fontSize: 108,
             fontWeight: 900,
             letterSpacing: "-0.035em",
             lineHeight: 1,
-            maxWidth: 780,
+            maxWidth: 900,
           }}
         />
       </AbsoluteFill>
@@ -1533,10 +1561,10 @@ const ClosingScene: React.FC<{
   sceneStart: number;
   duration: number;
 }> = ({ local, sceneStart }) => {
-  const firstOut = interpolate(local, [58, 74], [1, 0], clamp);
-  // Second statement holds until the lockup starts forming, then steps
-  // aside so the wordmark reveal owns the frame.
-  const secondOut = interpolate(local, [98, 112], [1, 0], clamp);
+  // Statement holds longer now that it's the only one before the
+  // lockup asserts itself. Fades out just before the wordmark
+  // appears at local=114.
+  const firstOut = interpolate(local, [100, 114], [1, 0], clamp);
 
   // No local fadeOut — the scene hard-cuts at 148 (32:21) and the
   // composition's outroFade tapers the last frames of the whole pitch.
@@ -1545,9 +1573,11 @@ const ClosingScene: React.FC<{
     <AbsoluteFill>
       <ClosingLogoGrid local={local} />
 
-      {/* FIRST STATEMENT — rides over the dezooming logo via mix-blend
+      {/* STATEMENT — rides over the dezooming logo via mix-blend
           difference, so it inverts to black against the white stripes
-          and stays white against the black field. */}
+          and stays white against the black field. The second beat
+          ("General Market") is carried by the lockup's wordmark
+          reveal, so no second Reveal is needed here. */}
       <AbsoluteFill
         style={{
           display: "flex",
@@ -1558,39 +1588,14 @@ const ClosingScene: React.FC<{
       >
         <Reveal
           from={sceneStart + 10}
-          duration={64}
-          text="Not just insider protection"
+          duration={108}
+          text="Where being an outsider wins"
           revealDuration={40}
           seed={137}
           style={{
             fontSize: 96,
             fontWeight: 900,
             letterSpacing: "-0.03em",
-            textAlign: "center",
-            maxWidth: 1600,
-          }}
-        />
-      </AbsoluteFill>
-
-      {/* SECOND STATEMENT */}
-      <AbsoluteFill
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          opacity: secondOut,
-        }}
-      >
-        <Reveal
-          from={sceneStart + 64}
-          duration={48}
-          text="A new trading standard"
-          revealDuration={38}
-          seed={149}
-          style={{
-            fontSize: 120,
-            fontWeight: 900,
-            letterSpacing: "-0.04em",
             textAlign: "center",
             maxWidth: 1600,
           }}
