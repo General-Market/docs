@@ -639,6 +639,38 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         ethers::providers::Provider::<ethers::providers::Http>::try_from(&vision_rpc_url)
                             .expect("valid Vision RPC URL for chain listener")
                     );
+
+                    // Preflight: Vision must have bytecode. 2026-04-23 incident: a stale
+                    // active-deployment.json pointed the oracle at an empty account. Every
+                    // createBatch tx "succeeded" with no BatchCreated event because EVM
+                    // accepts calls to codeless addresses as no-ops. Eighteen hours of
+                    // silent failure followed. Refuse to boot if the pattern repeats.
+                    {
+                        use ethers::providers::Middleware;
+                        match cl_provider.get_code(vision_address, None).await {
+                            Ok(code) if code.0.is_empty() => {
+                                error!(
+                                    ?vision_address,
+                                    rpc = %vision_rpc_url,
+                                    "Vision contract has no bytecode — refusing to boot. \
+                                     Check --vision-address / ORACLE_VISION_ADDRESS against the \
+                                     live deployment. See 2026-04-23 incident notes."
+                                );
+                                std::process::exit(1);
+                            }
+                            Ok(code) => info!(
+                                ?vision_address,
+                                code_bytes = code.0.len(),
+                                "Vision contract code verified at startup"
+                            ),
+                            Err(e) => warn!(
+                                ?vision_address,
+                                error = %e,
+                                "eth_getCode failed during Vision startup verification — proceeding"
+                            ),
+                        }
+                    }
+
                     let chain_listener = oracle::vision::chain_listener::ChainListener::new(
                         cl_provider,
                         vision_address,
