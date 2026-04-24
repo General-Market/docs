@@ -47,10 +47,13 @@ const GM_LOGO_PATHS = [
 export const PITCH_SCENES = {
   intro: { start: 0, end: 66 },
   stat: { start: 66, end: 190 },
-  point1: { start: 190, end: 310 },
-  point2: { start: 310, end: 410 },
-  point3: { start: 410, end: 510 },
-  closing: { start: 510, end: 658 },
+  // Point 1 now holds for the full length of each b-roll clip — 120
+  // frames × 3 phases = 360 frames (12 s). Downstream scenes shift by
+  // +240 to preserve their own durations.
+  point1: { start: 190, end: 550 },
+  point2: { start: 550, end: 650 },
+  point3: { start: 650, end: 750 },
+  closing: { start: 750, end: 898 },
 } as const;
 
 export const PITCH_DURATION = PITCH_SCENES.closing.end;
@@ -411,16 +414,18 @@ const Point1Scene: React.FC<{
   // Staggered enter/exit for the two text lines. Both enter from behind
   // the phone (left) and slide right into position. On exit they keep
   // going right. Order: upper enters first, lower follows. Exit: lower
-  // leaves first, upper second — the reverse of the entrance.
+  // leaves first, upper second — the reverse of the entrance. Exit
+  // timings are anchored to the scene tail so the headline holds all
+  // the way through the three-phase card cycle.
   const upperEnterStart = 6;
   const upperEnterEnd = 32;
-  const upperExitStart = 100;
-  const upperExitEnd = 118;
+  const upperExitEnd = duration - 2;
+  const upperExitStart = upperExitEnd - 18;
 
   const lowerEnterStart = 30;
   const lowerEnterEnd = 54;
-  const lowerExitStart = 88;
-  const lowerExitEnd = 104;
+  const lowerExitEnd = duration - 16;
+  const lowerExitStart = lowerExitEnd - 16;
 
   const upperX = interpolate(
     local,

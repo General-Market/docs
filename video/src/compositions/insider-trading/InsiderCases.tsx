@@ -1226,7 +1226,7 @@ const GlobalGrade: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 export const InsiderCases: React.FC = () => {
   return (
     <AbsoluteFill style={{ background: "#000000" }}>
-      <Audio src={staticFile("music/insider-cases.mp3")} volume={0.85} />
+      <Audio src={staticFile("music/insider-cases.mp3")} volume={0.85} loop />
       <GlobalGrade>
         <Sequence durationInFrames={PROLOGUE_DURATION}>
           <InsiderPrologue />
