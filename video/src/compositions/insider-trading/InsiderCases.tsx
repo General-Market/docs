@@ -590,8 +590,17 @@ const InsiderArticlesPhase: React.FC = () => {
           { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
         );
 
-        const tilt = (i % 2 === 0 ? 1 : -1) * 0.6;
+        // Idle breath on the held shot. Big-co films never leave a frame
+        // static — tiny continuous motion keeps the eye engaged while the
+        // headline is read. Phase-offset per article so they don't all
+        // drift in lockstep.
+        const idlePhase = i * 1.37;
+        const idleY = Math.sin(local * 0.075 + idlePhase) * 2.8;
+        const tilt =
+          (i % 2 === 0 ? 1 : -1) *
+          (0.6 + 0.5 * Math.sin(local * 0.055 + idlePhase));
         const scale = 0.92 + 0.08 * entrance;
+        const breath = 1 + 0.004 * Math.sin(local * 0.065 + idlePhase);
 
         const highlightReveal = interpolate(local, [10, 22], [0, 1], {
           extrapolateLeft: "clamp",
@@ -637,7 +646,7 @@ const InsiderArticlesPhase: React.FC = () => {
               alignItems: "center",
               justifyContent: "center",
               opacity: opacity * (isLast ? articleHide : 1),
-              transform: `translateY(${lift}px) scale(${scale * detailZoom})`,
+              transform: `translateY(${lift + idleY}px) scale(${scale * detailZoom * breath})`,
               transformOrigin: `${originXPct}% ${originYPct}%`,
             }}
           >
