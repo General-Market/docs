@@ -567,9 +567,14 @@ const PhoneScene: React.FC<{
   yAxisExtraDeg: number;
   /** When true, scroll texture.offset.y per frame (speed-mode feed). */
   scrollTexture: boolean;
-  /** Compact mode: no idle bob/pivot, reduced scale. */
-  compact: boolean;
-}> = ({ texture, frame, yAxisExtraDeg, scrollTexture, compact }) => {
+  /**
+   * Compactness 0..1. 0 = full phone with idle bob/pivot at PHONE_SCALE.
+   * 1 = locked (no bob/pivot) at PHONE_SCALE * 0.42. Values between
+   * lerp smoothly so callers can slide the phone in and out of the
+   * carousel pose without a visible pop.
+   */
+  compactness: number;
+}> = ({ texture, frame, yAxisExtraDeg, scrollTexture, compactness }) => {
   const { camera } = useThree();
   const gltf = useGLTF(MODEL_URL);
 
@@ -637,14 +642,18 @@ const PhoneScene: React.FC<{
 
   // Independent motion, large enough to read as a living prop. Y-bob
   // sweeps ±0.35 scene units at ~1 cycle / 3.5s; Y-axis pivot sweeps
-  // ±15° at ~1 cycle / 5.2s. Compact mode skips both and locks scale
-  // down so the phone reads as one of the vortex cards.
+  // ±15° at ~1 cycle / 5.2s. Compactness 1 flattens both and shrinks
+  // scale toward 0.42× so the phone reads as one of the vortex cards.
+  // Intermediate values lerp linearly — lets the caller glide between
+  // the two poses without a pop at the scene cut.
   const t = frame / 30;
-  const bobY = compact ? 0 : Math.sin(t * 1.8) * 0.35;
+  const activeC = Math.max(0, Math.min(1, compactness));
+  const openness = 1 - activeC;
+  const bobY = openness * Math.sin(t * 1.8) * 0.35;
   const pivotY =
-    (compact ? 0 : (Math.sin(t * 1.2) * 15 * Math.PI) / 180) +
+    openness * ((Math.sin(t * 1.2) * 15 * Math.PI) / 180) +
     (yAxisExtraDeg * Math.PI) / 180;
-  const scale = compact ? PHONE_SCALE * 0.42 : PHONE_SCALE;
+  const scale = PHONE_SCALE * (1 - activeC * 0.58);
 
   if (iphone) {
     iphone.position.set(PHONE_POS.x, PHONE_POS.y + bobY, PHONE_POS.z);
@@ -689,8 +698,11 @@ export const PhoneWithCard: React.FC<{
   yAxisExtraDeg?: number;
   /** Overlay applied on top of the card. Prebuilt alongside the base. */
   overlayMode?: CardOverlayMode;
-  /** Shrink the phone and lock out the idle bob/pivot. */
-  compact?: boolean;
+  /**
+   * Compactness 0..1 — 0 = full phone with idle bob/pivot, 1 = locked
+   * tiny carousel pose. Values between lerp smoothly. Defaults to 0.
+   */
+  compactness?: number;
   width?: number;
   height?: number;
 }> = ({
@@ -698,7 +710,7 @@ export const PhoneWithCard: React.FC<{
   preloadSourceIds,
   yAxisExtraDeg = 0,
   overlayMode = "plain",
-  compact = false,
+  compactness = 0,
   width = 1920,
   height = 1080,
 }) => {
@@ -790,7 +802,7 @@ export const PhoneWithCard: React.FC<{
           frame={frame}
           yAxisExtraDeg={yAxisExtraDeg}
           scrollTexture={overlayMode === "speed"}
-          compact={compact}
+          compactness={compactness}
         />
       </ThreeCanvas>
     </AbsoluteFill>

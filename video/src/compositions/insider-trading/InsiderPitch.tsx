@@ -267,6 +267,46 @@ const Point1Scene: React.FC<{
   );
   const centerSourceId = POINT1_CENTER_SEQUENCE[phase];
 
+  // Staggered enter/exit for the two text lines. Both enter from behind
+  // the phone (left) and slide right into position. On exit they keep
+  // going right. Order: upper enters first, lower follows. Exit: lower
+  // leaves first, upper second — the reverse of the entrance.
+  const upperEnterStart = 6;
+  const upperEnterEnd = 32;
+  const upperExitStart = 100;
+  const upperExitEnd = 118;
+
+  const lowerEnterStart = 30;
+  const lowerEnterEnd = 54;
+  const lowerExitStart = 88;
+  const lowerExitEnd = 104;
+
+  const upperX = interpolate(
+    local,
+    [upperEnterStart, upperEnterEnd, upperExitStart, upperExitEnd],
+    [-360, 0, 0, 360],
+    { ...clamp, easing: ease3 },
+  );
+  const upperOp = interpolate(
+    local,
+    [upperEnterStart, upperEnterEnd - 6, upperExitStart + 4, upperExitEnd],
+    [0, 1, 1, 0],
+    clamp,
+  );
+
+  const lowerX = interpolate(
+    local,
+    [lowerEnterStart, lowerEnterEnd, lowerExitStart, lowerExitEnd],
+    [-280, 0, 0, 320],
+    { ...clamp, easing: ease3 },
+  );
+  const lowerOp = interpolate(
+    local,
+    [lowerEnterStart, lowerEnterEnd - 6, lowerExitStart + 4, lowerExitEnd],
+    [0, 1, 1, 0],
+    clamp,
+  );
+
   return (
     <AbsoluteFill style={{ opacity: fadeOut, background: "#000000" }}>
       {/* VORTEX — background cylinder without a center plane; the 3D
@@ -278,47 +318,65 @@ const Point1Scene: React.FC<{
       {/* The phone now lives at the InsiderPitch wrapper level so it
           persists across the stat → point1 cut. See SharedPhoneLayer. */}
 
-      {/* CENTER — the headline number and its tagline. Solid white, no
-          difference blend — stands cleanly in front of the vortex. */}
+      {/* RIGHT — headline number and subtitle, right-aligned so the
+          phone owns the left half. Each line is wrapped in a div that
+          slides in from behind the phone and, later, slides further
+          right to exit. */}
       <AbsoluteFill
         style={{
           display: "flex",
           flexDirection: "column",
-          alignItems: "center",
+          alignItems: "flex-end",
           justifyContent: "center",
+          paddingRight: 140,
           gap: 14,
         }}
       >
-        <Reveal
-          from={sceneStart + 8}
-          duration={duration - 8}
-          text="500,000"
-          revealDuration={28}
-          seed={37}
-          solid
+        <div
           style={{
-            fontSize: 260,
-            fontWeight: 900,
-            letterSpacing: "-0.04em",
-            textAlign: "center",
-            maxWidth: 1700,
+            transform: `translateX(${upperX}px)`,
+            opacity: upperOp,
           }}
-        />
-        <Reveal
-          from={sceneStart + 34}
-          duration={duration - 34}
-          text="shielded markets from insiders"
-          revealDuration={26}
-          seed={31}
-          solid
+        >
+          <Reveal
+            from={sceneStart + upperEnterStart}
+            duration={duration - upperEnterStart}
+            text="500,000"
+            revealDuration={28}
+            seed={37}
+            solid
+            style={{
+              fontSize: 220,
+              fontWeight: 900,
+              letterSpacing: "-0.04em",
+              textAlign: "right",
+              maxWidth: 900,
+              lineHeight: 0.95,
+            }}
+          />
+        </div>
+        <div
           style={{
-            fontSize: 46,
-            fontWeight: 700,
-            letterSpacing: "-0.02em",
-            textAlign: "center",
-            maxWidth: 1700,
+            transform: `translateX(${lowerX}px)`,
+            opacity: lowerOp,
           }}
-        />
+        >
+          <Reveal
+            from={sceneStart + lowerEnterStart}
+            duration={duration - lowerEnterStart}
+            text="shielded markets from insiders"
+            revealDuration={26}
+            seed={31}
+            solid
+            style={{
+              fontSize: 42,
+              fontWeight: 700,
+              letterSpacing: "-0.02em",
+              textAlign: "right",
+              maxWidth: 900,
+            }}
+          />
+        </div>
       </AbsoluteFill>
 
     </AbsoluteFill>
@@ -1437,9 +1495,9 @@ const ClosingLogoGrid: React.FC<{ local: number }> = ({ local }) => {
   );
 
   // White bar reads thicker during phase A — stripes are scaled
-  // vertically 2.4× while the container is stage-sized, then ease back
+  // vertically 4× while the container is stage-sized, then ease back
   // to natural proportions as the container squares up for the logo.
-  const barScaleY = interpolate(local, [112, 130], [2.4, 1], {
+  const barScaleY = interpolate(local, [112, 130], [4, 1], {
     ...clamp,
     easing: ease3,
   });
@@ -1573,10 +1631,12 @@ const ClosingScene: React.FC<{
   sceneStart: number;
   duration: number;
 }> = ({ local, sceneStart }) => {
-  // Statement holds longer now that it's the only one before the
-  // lockup asserts itself. Fades out just before the wordmark
-  // appears at local=114.
-  const firstOut = interpolate(local, [100, 114], [1, 0], clamp);
+  // Statement holds, then leaves before the container starts to shrink.
+  // Fade window closes at local=108 — a clean 4-frame gap before the
+  // shrink begins at 112, so the text is never half-alive inside the
+  // morph. No transform on the wrapper — opacity-only preserves the
+  // Reveal's mix-blend-mode: difference against the white band.
+  const firstOut = interpolate(local, [92, 108], [1, 0], clamp);
 
   // No local fadeOut — the scene hard-cuts at 148 (32:21) and the
   // composition's outroFade tapers the last frames of the whole pitch.
@@ -1600,16 +1660,16 @@ const ClosingScene: React.FC<{
       >
         <Reveal
           from={sceneStart + 10}
-          duration={108}
+          duration={100}
           text="Where being an outsider wins"
           revealDuration={40}
           seed={137}
           style={{
-            fontSize: 96,
+            fontSize: 78,
             fontWeight: 900,
             letterSpacing: "-0.03em",
             textAlign: "center",
-            maxWidth: 1600,
+            maxWidth: 1500,
           }}
         />
       </AbsoluteFill>
@@ -1677,12 +1737,6 @@ const SharedPhoneLayer: React.FC<{ local: number }> = ({ local }) => {
   const p2PhoneCenterX = p2PhoneScreenX + GC_CARD_W / 2;
   const p2PhoneAbsNorm = Math.abs(gcClamp(p2PhoneRawX / P2_HALF_W, -1, 1));
   const p2PhoneScale = GC_SCALE_BASE + (1 - p2PhoneAbsNorm) * GC_SCALE_RANGE;
-  const p2PhoneCarouselOpacity = interpolate(
-    p2PhoneAbsNorm,
-    [0, 0.85, 1],
-    [1, 0.72, 0],
-    clamp,
-  );
 
   // Overlay mode. Plain through Point 1. In Point 2 sealed activates
   // the frame the phone's centre crosses COL_CENTER_X — the GM gate.
@@ -1707,31 +1761,15 @@ const SharedPhoneLayer: React.FC<{ local: number }> = ({ local }) => {
   );
   const yAxisExtraDeg = rollSP1 * 360;
 
-  // Point 2 → Point 3 transition: phone disappears for ~12 frames, then
-  // reappears on the speed scene. During the flash, we keep the phone
-  // mounted but set opacity to 0 so the inner Three.js + texture state
-  // survives the cut cleanly.
-  const flashStart = point3Start - 6;
-  const flashEnd = point3Start + 6;
-
-  // Fade-in at stat entry, fade-out at point 3 exit, and the flash gap
-  // between point 2 and point 3.
-  const opacity = (() => {
-    // entry + exit envelope
-    const envelope = interpolate(
-      local,
-      [statStart, statStart + 18, point3End - 18, point3End],
-      [0, 1, 1, 0],
-      clamp,
-    );
-    const flash = interpolate(
-      local,
-      [flashStart, flashStart + 3, flashEnd - 3, flashEnd],
-      [1, 0, 0, 1],
-      clamp,
-    );
-    return envelope * flash;
-  })();
+  // Entry/exit envelope only. The Point 2 → Point 3 flash has been
+  // deleted; the phone now glides between scenes via a pose blend
+  // instead of disappearing for twelve frames.
+  const opacity = interpolate(
+    local,
+    [statStart, statStart + 18, point3End - 18, point3End],
+    [0, 1, 1, 0],
+    clamp,
+  );
 
   // Point 2 — phone slots into the carousel. xTranslate shifts the
   // 1920×1080 phone canvas so the phone (whose natural centre sits near
@@ -1741,22 +1779,86 @@ const SharedPhoneLayer: React.FC<{ local: number }> = ({ local }) => {
   let yTranslate = 0;
   let carouselScale = 1;
   let carouselOpacity = 1;
+  // Point 1 — phone surrenders the centre to the right-aligned text,
+  // shifting left so "500,000" reads clean. A tiny backtrack (+24 px
+  // right) fires at the cut as anticipation before the leftward slide —
+  // every UI motion toward a target first recoils the opposite way.
+  if (local >= point1Start && local < point2Start) {
+    xTranslate = interpolate(
+      local - point1Start,
+      [-6, 0, 6, 34],
+      [0, 24, 0, -450],
+      { ...clamp, easing: ease3 },
+    );
+  }
   if (local >= point2Start && local < point3Start) {
     xTranslate = p2PhoneCenterX - P2_HALF_W;
     yTranslate = P2_TRACK_Y - 540;
     carouselScale = p2PhoneScale;
-    carouselOpacity = p2PhoneCarouselOpacity;
+    // Phone is the hero element. It does not fade at the carousel edges
+    // the way regular cards do — presence on screen is purely spatial.
+    carouselOpacity = 1;
+  }
+
+  // Shared-element pose blends — the phone never leaves the stage
+  // between scenes. It glides from one scene's anchor to the next
+  // across a short window straddling the cut. No fade, no flash.
+  const smoothstep = (t: number) => t * t * (3 - 2 * t);
+
+  // Point 1 → Point 2. P1 leaves the phone at xTranslate=-450 (screen
+  // x≈510). Lerp into the P2 carousel pose so the motion across the cut
+  // is pixel-continuous.
+  const p1p2Start = point2Start - 4;
+  const p1p2End = point2Start + 12;
+  if (local >= p1p2Start && local <= p1p2End) {
+    const bT = smoothstep(
+      (local - p1p2Start) / (p1p2End - p1p2Start),
+    );
+    const fromX = -450;
+    const toX = p2PhoneCenterX - P2_HALF_W;
+    const toY = P2_TRACK_Y - 540;
+    const toS = p2PhoneScale;
+    xTranslate = fromX + (toX - fromX) * bT;
+    yTranslate = 0 + (toY - 0) * bT;
+    carouselScale = 1 + (toS - 1) * bT;
+    carouselOpacity = 1;
+  }
+
+  // Point 2 → Point 3. Phone flies from wherever it sits on the
+  // carousel to the centre of the frame where the speed scene owns it.
+  // A single continuous arc. The overlay swaps mid-motion (sealed →
+  // speed) but the phone itself never disappears.
+  const p2p3Start = point3Start - 14;
+  const p2p3End = point3Start + 8;
+  if (local >= p2p3Start && local <= p2p3End) {
+    const bT = smoothstep(
+      (local - p2p3Start) / (p2p3End - p2p3Start),
+    );
+    const fromX = p2PhoneCenterX - P2_HALF_W;
+    const fromY = P2_TRACK_Y - 540;
+    const fromS = p2PhoneScale;
+    xTranslate = fromX + (0 - fromX) * bT;
+    yTranslate = fromY + (0 - fromY) * bT;
+    carouselScale = fromS + (1 - fromS) * bT;
+    carouselOpacity = 1;
   }
 
   // Subtle jitter on the speed scene to sell "the device is vibrating
-  // under the load of 100,000 orders per second".
+  // under the load of 100,000 orders per second". Ramps in across the
+  // P2→P3 blend window so it doesn't slam on at the scene boundary.
   let xJitter = 0;
   let yJitter = 0;
-  if (local >= point3Start && local < point3End) {
-    const t = (local - point3Start) / (point3End - point3Start);
-    const a = (1 - t) * 0.6 + 0.4; // taper slightly
-    xJitter = Math.sin(local * 3.7) * 6 * a;
-    yJitter = Math.cos(local * 4.3) * 4 * a;
+  if (local >= p2p3Start && local < point3End) {
+    const jitterRamp = interpolate(
+      local,
+      [p2p3Start, point3Start + 4],
+      [0, 1],
+      clamp,
+    );
+    const t = Math.max(0, (local - point3Start) / (point3End - point3Start));
+    const a = (1 - Math.min(1, t)) * 0.6 + 0.4;
+    xJitter = Math.sin(local * 3.7) * 6 * a * jitterRamp;
+    yJitter = Math.cos(local * 4.3) * 4 * a * jitterRamp;
   }
 
   return (
@@ -1775,7 +1877,12 @@ const SharedPhoneLayer: React.FC<{ local: number }> = ({ local }) => {
         preloadSourceIds={SHARED_PHONE_PRELOAD as unknown as string[]}
         yAxisExtraDeg={yAxisExtraDeg}
         overlayMode={overlayMode}
-        compact={local >= point2Start && local < point3Start}
+        compactness={interpolate(
+          local,
+          [p1p2Start, p1p2End, p2p3Start, p2p3End],
+          [0, 1, 1, 0],
+          clamp,
+        )}
       />
     </AbsoluteFill>
   );
