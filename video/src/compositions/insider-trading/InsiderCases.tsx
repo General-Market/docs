@@ -430,7 +430,10 @@ const InsiderArticlesPhase: React.FC = () => {
     extrapolateRight: "clamp",
   });
   const entryScale = interpolate(entryT, [0, 1], [1.14, 1]);
-  const entryBlur = interpolate(entryT, [0, 1], [14, 0]);
+  // Large-radius blur on a 1920×1080 element is expensive. Keep the
+  // entry blur modest so the first second of the articles phase doesn't
+  // choke the GPU on every playback.
+  const entryBlur = interpolate(entryT, [0, 1], [8, 0]);
 
   const outroFade = interpolate(frame, [MAIN_DURATION - 18, MAIN_DURATION], [1, 0], {
     extrapolateLeft: "clamp",
@@ -446,7 +449,7 @@ const InsiderArticlesPhase: React.FC = () => {
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
   const articleExitScale = 1 - articleExitT * 0.10;
-  const articleExitBlur = articleExitT * 10;
+  const articleExitBlur = articleExitT * 6;
   const articleHide = interpolate(
     frame,
     [PITCH_START + 4, PITCH_START + 14],
@@ -545,7 +548,7 @@ const InsiderArticlesPhase: React.FC = () => {
                 objectFit: "cover",
                 transform: `scale(${kenBurns})`,
                 transformOrigin: "center",
-                filter: `grayscale(1) blur(4px) saturate(0.9) brightness(${bgBrightness})`,
+                filter: `grayscale(1) blur(2px) saturate(0.9) brightness(${bgBrightness})`,
               }}
             />
           </AbsoluteFill>
@@ -1012,7 +1015,7 @@ const BeatShot: React.FC<{
 
   return (
     <AbsoluteFill style={{ overflow: "hidden" }}>
-      <CameraMotionBlur shutterAngle={180} samples={5}>
+      <CameraMotionBlur shutterAngle={180} samples={3}>
         <AbsoluteFill>
           <Video
             src={staticFile("insider-trading/broll/dezoom.mp4")}
@@ -1036,10 +1039,14 @@ const BeatShot: React.FC<{
 };
 
 /* ─── Animated film grain via SVG turbulence — reseeds every frame so the
-       noise texture crawls. Cheap at 1920×1080, only used in the prologue. */
+       noise texture crawls. feTurbulence is expensive at 1920×1080 so we
+       reseed every 6 frames, not every one — the eye does not distinguish
+       between 30fps and 5fps noise churn, and the filter rebuild cost is
+       cut by six. */
 const PrologueGrain: React.FC = () => {
   const frame = useCurrentFrame();
-  const filterId = `prologue-grain-${frame}`;
+  const seedStep = Math.floor(frame / 6);
+  const filterId = `prologue-grain-${seedStep}`;
   return (
     <svg
       style={{
@@ -1057,7 +1064,7 @@ const PrologueGrain: React.FC = () => {
           type="fractalNoise"
           baseFrequency="0.92"
           numOctaves="2"
-          seed={frame}
+          seed={seedStep}
           stitchTiles="stitch"
         />
         <feColorMatrix
