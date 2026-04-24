@@ -598,6 +598,37 @@ const InsiderArticlesPhase: React.FC = () => {
           extrapolateRight: "clamp",
         });
 
+        // Detail push — after the highlight lands at local 22, camera
+        // moves into the article. For non-final articles it ramps for
+        // the remaining on-stage window; for the last it holds past the
+        // fade so the handoff to the pitch feels continuous.
+        const detailWindowEnd = isLast
+          ? Math.max(28, PITCH_START - start)
+          : ON_STAGE;
+        const detailZoom = interpolate(
+          local,
+          [22, 28, detailWindowEnd],
+          [1, 1.28, 1.42],
+          { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+        );
+
+        // Bias the scale origin toward the average highlight position —
+        // the camera pushes INTO the damning phrase rather than the
+        // middle of the page.
+        const hs = article.highlights ?? [];
+        const avgXFrac = hs.length
+          ? hs.reduce((s, h) => s + h.x + h.w / 2, 0) / hs.length
+          : 0.5;
+        const avgYFrac = hs.length
+          ? hs.reduce((s, h) => s + h.y + h.h / 2, 0) / hs.length
+          : 0.5;
+        // Image card sits left of comp centre (logo card takes the right
+        // half of the frame). These constants match ArticleFrame's
+        // 1180×960 image + 20px card padding within a flex row of total
+        // ≈1848px, centred in a 1920×1080 comp.
+        const originXPct = ((36 + 20 + avgXFrac * 1180) / 1920) * 100;
+        const originYPct = ((60 + avgYFrac * 960) / 1080) * 100;
+
         return (
           <AbsoluteFill
             key={i}
@@ -606,7 +637,8 @@ const InsiderArticlesPhase: React.FC = () => {
               alignItems: "center",
               justifyContent: "center",
               opacity: opacity * (isLast ? articleHide : 1),
-              transform: `translateY(${lift}px) scale(${scale})`,
+              transform: `translateY(${lift}px) scale(${scale * detailZoom})`,
+              transformOrigin: `${originXPct}% ${originYPct}%`,
             }}
           >
             <ArticleFrame
@@ -821,7 +853,17 @@ const PrologueZoomFinale: React.FC<{
     Math.min(1, (frame - zoomStart) / Math.max(1, zoomEnd - zoomStart)),
   );
   const smooth = zoomT * zoomT * (3 - 2 * zoomT);
-  const scale = 1 + 1.4 * smooth;
+  // Anticipation — the stack pulls back (scales down ~5%) in the 6
+  // frames before the forward zoom, then snaps back to 1.0 at zoomStart
+  // and commits to the scale-up. Any UI moving toward the viewer first
+  // recoils the opposite direction.
+  const anticipation = interpolate(
+    frame,
+    [zoomStart - 6, zoomStart - 2, zoomStart],
+    [1, 0.95, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const scale = anticipation * (1 + 1.4 * smooth);
 
   return (
     <AbsoluteFill
