@@ -11,7 +11,6 @@ import {
   formatLabel,
 } from '@/lib/markets/hooks'
 import { CountdownTimer, useNowSecs } from './CountdownTimer'
-import { PulseDot } from './PulseDot'
 import { SourceIcon } from './SourceIcon'
 
 // Card with two competitor rows. The pattern is what every betting
@@ -55,6 +54,14 @@ function profileUrl(sourceId: number, slug: string): string {
   if (sourceId === 1) return `https://www.xvideos.com/pornstar-channels/${slug}`
   if (sourceId === 4) return `https://chaturbate.com/${slug}/`
   return '#'
+}
+
+// Slug to human label. Industry being what it is, the slugs read like
+// internal codes — we surface a name a person can recognize.
+function sourceLabel(sourceId: number, sourceName: string): string {
+  if (sourceId === 1) return 'XVIDEOS'
+  if (sourceId === 4) return 'CHATURBATE'
+  return sourceName.replace(/^tubes_/, '').toUpperCase()
 }
 
 function initials(name: string): string {
@@ -138,17 +145,17 @@ function CompetitorRow({
   const yes = side === 'yes'
   const sideUnderline = yes ? 'decoration-emerald-400' : 'decoration-rose-400'
   const pillBase = yes
-    ? 'border-emerald-400/60 text-emerald-200'
-    : 'border-rose-400/60 text-rose-200'
+    ? 'border-emerald-400/70 text-emerald-300 group-hover:border-emerald-400'
+    : 'border-rose-400/70 text-rose-300 group-hover:border-rose-400'
   const pillActive = yes
-    ? 'border-emerald-400 bg-emerald-500/15 text-emerald-100 shadow-[0_0_0_1px_rgb(16_185_129/0.55)]'
-    : 'border-rose-400 bg-rose-500/15 text-rose-100 shadow-[0_0_0_1px_rgb(244_63_94/0.55)]'
+    ? 'border-emerald-400 bg-emerald-500/20 text-emerald-100 shadow-[0_0_0_1px_rgb(16_185_129/0.6)]'
+    : 'border-rose-400 bg-rose-500/20 text-rose-100 shadow-[0_0_0_1px_rgb(244_63_94/0.6)]'
 
   const rowSurface = active
-    ? 'bg-zinc-900/70 hover:bg-zinc-900/90'
+    ? 'bg-zinc-900/70'
     : inactive
-      ? 'bg-transparent hover:bg-zinc-900/40'
-      : 'bg-transparent hover:bg-zinc-900/40'
+      ? 'bg-transparent hover:bg-zinc-900/50'
+      : 'bg-transparent hover:bg-zinc-900/50'
 
   const dim = resolved && isLoser
 
@@ -170,7 +177,7 @@ function CompetitorRow({
         <span className="flex items-center gap-2">
           <span
             className={[
-              'truncate text-[14px] font-semibold leading-tight tracking-tight text-zinc-100 underline decoration-2 underline-offset-[6px]',
+              'truncate text-[15px] font-semibold leading-tight tracking-tight text-zinc-100 underline decoration-2 underline-offset-[6px]',
               sideUnderline,
             ].join(' ')}
           >
@@ -196,13 +203,13 @@ function CompetitorRow({
         </a>
       </span>
 
-      <span className="hidden shrink-0 sm:inline-flex h-9 items-center gap-1.5 rounded-md border border-zinc-800 bg-zinc-900/60 px-2 font-mono text-[11px] tabular-nums text-zinc-400">
+      <span className="hidden shrink-0 sm:inline-flex h-9 items-center gap-1.5 rounded-md border border-zinc-700 bg-transparent px-2.5 text-[12px] tabular-nums text-zinc-300">
         <span className="text-zinc-200">{compactAudience(audience)}</span>
-        <span className="text-zinc-600">{audienceLabel.split(' ')[0]}</span>
+        <span className="text-zinc-500">{audienceLabel.split(' ')[0]}</span>
       </span>
 
       {oneSidedRefund || refund ? (
-        <span className="ml-auto inline-flex h-10 min-w-[64px] items-center justify-center rounded-full border border-zinc-700 px-3 text-[12px] italic text-zinc-500">
+        <span className="ml-auto inline-flex h-10 min-w-[72px] items-center justify-center rounded-full border-2 border-zinc-700 px-4 text-[12px] italic text-zinc-500">
           refund
         </span>
       ) : (
@@ -212,7 +219,7 @@ function CompetitorRow({
           </span>
           <span
             className={[
-              'inline-flex h-10 min-w-[64px] items-center justify-center rounded-full border px-3 text-[15px] font-semibold tabular-nums tracking-tight transition-colors duration-150',
+              'inline-flex h-10 min-w-[72px] items-center justify-center rounded-full border-2 px-4 text-[16px] font-semibold tabular-nums tracking-tight transition-colors duration-150',
               active ? pillActive : pillBase,
             ].join(' ')}
           >
@@ -293,7 +300,11 @@ export function MarketRow({ slot, state, selected, selectedSide, onSelectSide }:
   const sourceIconId = (slot.sourceId === 1 || slot.sourceId === 4
     ? (slot.sourceId as 1 | 4)
     : null)
-  const sourceShort = slot.sourceName.replace(/^tubes_/, '').toLowerCase()
+  const sourceLbl = sourceLabel(slot.sourceId, slot.sourceName)
+
+  // Live means a market accepting money. Cams are theatrically live. The
+  // rest are merely open. The distinction is small but worth a different word.
+  const showLive = !resolved && !closed && (isLive || isLiveCam)
 
   return (
     <article
@@ -309,44 +320,48 @@ export function MarketRow({ slot, state, selected, selectedSide, onSelectSide }:
       aria-label={slot.label}
     >
       <header className="relative flex items-start justify-between gap-3">
-        <span className="flex min-w-0 items-center gap-2">
+        <span className="flex min-w-0 items-center gap-2.5">
           {sourceIconId ? (
             <SourceIcon sourceId={sourceIconId} className="h-7 w-7 rounded-md" />
           ) : null}
-          <span className="flex flex-col leading-tight">
-            <span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-zinc-200">
-              {sourceShort}
-            </span>
-            <span className="text-[11px] text-zinc-500">
-              {windowLabel(slot.windowSecs)} · {formatLabel(slot.format)}
-            </span>
+          <span className="truncate text-[12px] font-semibold uppercase tracking-[0.12em] text-zinc-100">
+            {sourceLbl}
           </span>
         </span>
 
-        <span className="flex items-center gap-2 text-[11px] text-zinc-500">
-          {(isLiveCam || isLive) ? (
-            <span className="inline-flex items-center gap-1 rounded-full border border-red-500/40 bg-red-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-red-400">
-              <PulseDot active color="amber" />
-              live
-            </span>
-          ) : closed ? (
-            <span className="text-zinc-500">settling</span>
-          ) : resolved ? (
-            <span className="text-zinc-300">resolved</span>
-          ) : (
-            <span className="text-zinc-500">open</span>
-          )}
-          {!closed && !resolved ? (
-            <span className="tabular-nums text-zinc-400">
-              <CountdownTimer target={slot.closeTime} closedLabel="closed" />
-            </span>
-          ) : null}
+        <span className="shrink-0 text-[13px] text-zinc-500">
+          {windowLabel(slot.windowSecs)} {formatLabel(slot.format)}
         </span>
       </header>
 
-      <h3 className="relative mt-3 text-[15px] font-semibold leading-snug tracking-tight text-zinc-100 sm:text-[16px]">
+      <h3 className="relative mt-3 text-[18px] font-semibold leading-snug tracking-tight text-zinc-100">
         {slot.label}
       </h3>
+
+      <div className="relative mt-3 flex items-center gap-2">
+        {showLive ? (
+          <>
+            <span className="relative inline-flex h-[7px] w-[7px] shrink-0" aria-hidden>
+              <span className="absolute inset-0 inline-flex animate-ping rounded-full bg-red-500 opacity-60" />
+              <span className="relative inline-flex h-[7px] w-[7px] rounded-full bg-red-500" />
+            </span>
+            <span className="text-[12px] font-bold uppercase tracking-[0.1em] text-red-400">
+              live
+            </span>
+            <span className="text-[13px] tabular-nums text-zinc-500">
+              · Closes in <CountdownTimer target={slot.closeTime} closedLabel="0:00" />
+            </span>
+          </>
+        ) : resolved ? (
+          <span className="text-[13px] text-zinc-500">Resolved</span>
+        ) : closed ? (
+          <span className="text-[13px] text-zinc-500">Settling</span>
+        ) : (
+          <span className="text-[13px] tabular-nums text-zinc-500">
+            Closes in <CountdownTimer target={slot.closeTime} closedLabel="0:00" />
+          </span>
+        )}
+      </div>
 
       <div className="relative mt-3 flex flex-col">
         <CompetitorRow
@@ -387,11 +402,11 @@ export function MarketRow({ slot, state, selected, selectedSide, onSelectSide }:
         />
       </div>
 
-      <footer className="relative mt-3 flex items-center justify-between gap-3 border-t border-zinc-800/60 pt-3 text-[12px] text-zinc-500">
+      <footer className="relative mt-4 flex items-center justify-between gap-3 border-t border-zinc-800/60 pt-3 text-[12px] text-zinc-500">
         <span>
           ${formatPoolFloat(totalPoolFloat)} pool
         </span>
-        <span className="text-[11px] text-zinc-600">
+        <span className="text-zinc-600">
           settles {windowLabel(slot.windowSecs)} after open
         </span>
       </footer>
