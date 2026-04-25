@@ -1137,3 +1137,53 @@ input[type="number"] {
     scroll-behavior: auto !important;
   }
 }
+
+/* ── CALENDAR REFERENCE TOKENS — additive only. Do not migrate components yet.
+   The colliding names (--surface, --ease-out-quart) live under [data-calendar-tokens]
+   so legacy explorer pages keep their values. Migration is a separate phase. ── */
+:root {
+  --surface-soft: #FAFAFA;
+  --surface-pressed: #F4F4F5;
+  --border-hairline: rgba(228, 228, 231, 0.8);
+  --text-strong: #18181B;
+  --text-soft: #71717A;
+  --text-faint: #A1A1AA;
+}
+[data-calendar-tokens] {
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --surface: #FFFFFF;
+  --surface-soft: #FAFAFA;
+  --surface-pressed: #F4F4F5;
+  --border-hairline: rgba(228, 228, 231, 0.8);
+  --text-strong: #18181B;
+  --text-soft: #71717A;
+  --text-faint: #A1A1AA;
+}
+
+/* CSS-only price flash — replaces the JS-driven version. Wired separately. */
+@keyframes flash-up {
+  0% { background: rgb(236 253 245); }
+  100% { background: transparent; }
+}
+@keyframes flash-down {
+  0% { background: rgb(255 241 242); }
+  100% { background: transparent; }
+}
+.flash-up {
+  animation: flash-up 0.6s ease-out;
+}
+.flash-down {
+  animation: flash-down 0.6s ease-out;
+}
+
+/* Entrance fade — only for users who haven't asked motion to stop. */
+@keyframes motionSafeFadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .motion-safe-fade-in {
+    animation: motionSafeFadeIn 200ms ease-out;
+  }
+}

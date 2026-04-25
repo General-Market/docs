@@ -70,9 +70,27 @@ module.exports = {
           '0%': { transform: 'translateX(-100%)' },
           '40%, 100%': { transform: 'translateX(150%)' },
         },
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        slideUp: {
+          '0%': { opacity: '0', transform: 'translateY(8px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
       },
       animation: {
         shimmer: 'shimmer 3s ease infinite',
+        'fade-in': 'fadeIn 200ms ease-out',
+        'slide-up': 'slideUp 220ms cubic-bezier(0.16, 1, 0.3, 1)',
+      },
+      transitionTimingFunction: {
+        'out-quart': 'cubic-bezier(0.25, 1, 0.5, 1)',
+        'out-expo': 'cubic-bezier(0.16, 1, 0.3, 1)',
+      },
+      transitionDuration: {
+        '120': '120ms',
+        '220': '220ms',
       },
     },
   },
