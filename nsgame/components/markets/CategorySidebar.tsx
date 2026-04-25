@@ -1,19 +1,16 @@
 'use client'
 
 import { useMemo } from 'react'
-import { SourceIcon } from './SourceIcon'
-import type { SourceFilter, HorizonFilter } from './FilterBar'
+import type { BoardFilter, HorizonFilter } from './FilterBar'
 import type { UpcomingSlot } from '@/lib/markets/hooks'
 
-// Left rail. Sources, horizons, status. The list of axes the user is
+// Left rail. Boards, horizons, status. The list of axes the user is
 // allowed to slice along — nothing here is novel, only quiet.
 
-const SOURCES: Array<{ id: 1 | 2 | 3 | 4 | 5; label: string }> = [
-  { id: 1, label: 'xvideos' },
-  { id: 2, label: 'xnxx' },
-  { id: 3, label: 'pornhub' },
-  { id: 4, label: 'chaturbate' },
-  { id: 5, label: 'eporner' },
+const BOARDS: Array<{ id: BoardFilter; label: string; sub: string }> = [
+  { id: 'all', label: 'all', sub: '25 fights' },
+  { id: 'stars', label: 'stars', sub: '4h gain race' },
+  { id: 'cams', label: 'cams', sub: '2m gain / total' },
 ]
 
 const HORIZONS: Array<{ id: HorizonFilter; label: string }> = [
@@ -31,11 +28,11 @@ const STATUSES: Array<{ id: StatusFilter; label: string }> = [
 ]
 
 export interface CategorySidebarProps {
-  source: SourceFilter
+  board: BoardFilter
   horizon: HorizonFilter
   statuses: StatusFilter[]
   slots: UpcomingSlot[]
-  onSourceChange: (s: SourceFilter) => void
+  onBoardChange: (b: BoardFilter) => void
   onHorizonChange: (h: HorizonFilter) => void
   onStatusToggle: (s: StatusFilter) => void
   className?: string
@@ -56,20 +53,20 @@ function sectionLabelClasses(): string {
 }
 
 export function CategorySidebar({
-  source,
+  board,
   horizon,
   statuses,
   slots,
-  onSourceChange,
+  onBoardChange,
   onHorizonChange,
   onStatusToggle,
   className = '',
 }: CategorySidebarProps) {
-  const sourceCounts = useMemo(() => {
-    const out: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
+  const boardCounts = useMemo(() => {
+    const out = { stars: 0, cams: 0 }
     for (const s of slots) {
-      if (out[s.sourceId] === undefined) continue
-      out[s.sourceId] += 1
+      if (s.board === 'stars') out.stars += 1
+      else if (s.board === 'cams') out.cams += 1
     }
     return out
   }, [slots])
@@ -85,37 +82,26 @@ export function CategorySidebar({
       aria-label="Categories"
     >
       <div>
-        <p className={sectionLabelClasses()}>Sources</p>
+        <p className={sectionLabelClasses()}>Boards</p>
         <div className="space-y-0.5">
-          <button
-            type="button"
-            onClick={() => onSourceChange('all')}
-            aria-pressed={source === 'all'}
-            className={rowClasses(source === 'all')}
-          >
-            <span className="flex items-center gap-2.5">
-              <span className="grid h-4 w-4 place-items-center text-zinc-500">
-                <span className="block h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
-              </span>
-              <span className="text-[13.5px]">All</span>
-            </span>
-            <span className="text-[12px] tabular-nums text-zinc-500 group-hover:text-zinc-300">
-              {totalCount}
-            </span>
-          </button>
-          {SOURCES.map(s => {
-            const active = source === s.id
+          {BOARDS.map(b => {
+            const active = board === b.id
+            const count = b.id === 'all'
+              ? totalCount
+              : b.id === 'stars'
+                ? boardCounts.stars
+                : boardCounts.cams
             return (
               <button
-                key={s.id}
+                key={b.id}
                 type="button"
-                onClick={() => onSourceChange(s.id)}
+                onClick={() => onBoardChange(b.id)}
                 aria-pressed={active}
                 className={rowClasses(active)}
               >
-                <span className="flex items-center gap-2.5">
-                  <SourceIcon sourceId={s.id} className="h-4 w-4" />
-                  <span className="text-[13.5px] capitalize">{s.label}</span>
+                <span className="flex flex-col items-start">
+                  <span className="text-[13.5px] capitalize text-zinc-200">{b.label}</span>
+                  <span className="text-[11px] text-zinc-500">{b.sub}</span>
                 </span>
                 <span
                   className={[
@@ -123,7 +109,7 @@ export function CategorySidebar({
                     active ? 'text-zinc-300' : 'text-zinc-500 group-hover:text-zinc-300',
                   ].join(' ')}
                 >
-                  {sourceCounts[s.id] ?? 0}
+                  {count}
                 </span>
               </button>
             )

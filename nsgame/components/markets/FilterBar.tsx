@@ -1,23 +1,26 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { SourceIcon } from './SourceIcon'
 import { StatusSheet } from './StatusSheet'
 import type { StatusFilter } from './CategorySidebar'
 
-// Two chip groups, one trigger. Source. Horizon. A button that admits
-// what filters always are: more rooms behind another door.
+// Board filter + horizon + filters trigger. Source rows are gone — the
+// world has narrowed to two boards: stars (4h) and cams (2m).
 
-export type SourceFilter = 'all' | 1 | 2 | 3 | 4 | 5
+export type BoardFilter = 'all' | 'stars' | 'cams'
 export type HorizonFilter = 'today' | '7d' | 'all'
 
-const SOURCES: Array<{ id: SourceFilter; label: string }> = [
+/**
+ * Legacy alias — kept so NavBar (out of scope for PvP refactor) still
+ * compiles. PvP routes use BoardFilter; NavBar's source tabs are not
+ * wired by CalendarPageClient anymore, so the type only satisfies imports.
+ */
+export type SourceFilter = 'all' | 1 | 2 | 3 | 4 | 5
+
+const BOARDS: Array<{ id: BoardFilter; label: string }> = [
   { id: 'all', label: 'all' },
-  { id: 1, label: 'xv' },
-  { id: 2, label: 'xn' },
-  { id: 3, label: 'ph' },
-  { id: 4, label: 'cb' },
-  { id: 5, label: 'ep' },
+  { id: 'stars', label: 'stars' },
+  { id: 'cams', label: 'cams' },
 ]
 
 const HORIZONS: Array<{ id: HorizonFilter; label: string }> = [
@@ -27,12 +30,11 @@ const HORIZONS: Array<{ id: HorizonFilter; label: string }> = [
 ]
 
 export interface FilterBarProps {
-  source: SourceFilter
+  board: BoardFilter
   horizon: HorizonFilter
-  onSourceChange: (s: SourceFilter) => void
+  onBoardChange: (b: BoardFilter) => void
   onHorizonChange: (h: HorizonFilter) => void
   // Optional — the parent may not yet wire status into the bar.
-  // The sheet trigger still renders, just with an empty list.
   statuses?: StatusFilter[]
   onStatusToggle?: (s: StatusFilter) => void
 }
@@ -52,19 +54,19 @@ function groupLabelClasses(): string {
 }
 
 export function FilterBar({
-  source,
+  board,
   horizon,
-  onSourceChange,
+  onBoardChange,
   onHorizonChange,
   statuses = [],
   onStatusToggle,
 }: FilterBarProps) {
   const [sheetOpen, setSheetOpen] = useState(false)
 
-  const sourceChips = useMemo(() => SOURCES.map(s => ({
-    ...s,
-    active: source === s.id,
-  })), [source])
+  const boardChips = useMemo(() => BOARDS.map(b => ({
+    ...b,
+    active: board === b.id,
+  })), [board])
 
   const horizonChips = useMemo(() => HORIZONS.map(h => ({
     ...h,
@@ -80,23 +82,17 @@ export function FilterBar({
           <div
             className="flex snap-x snap-mandatory items-center gap-2 overflow-x-auto scrollbar-hide"
             role="group"
-            aria-label="Source filter"
+            aria-label="Board filter"
           >
-            <span className={groupLabelClasses()}>Source</span>
-            {sourceChips.map(c => (
+            <span className={groupLabelClasses()}>Board</span>
+            {boardChips.map(c => (
               <button
-                key={String(c.id)}
+                key={c.id}
                 type="button"
-                onClick={() => onSourceChange(c.id)}
+                onClick={() => onBoardChange(c.id)}
                 aria-pressed={c.active}
                 className={chipClasses(c.active)}
               >
-                {typeof c.id === 'number' ? (
-                  <SourceIcon
-                    sourceId={c.id as 1 | 2 | 3 | 4 | 5}
-                    className="h-3 w-3"
-                  />
-                ) : null}
                 <span>{c.label}</span>
               </button>
             ))}

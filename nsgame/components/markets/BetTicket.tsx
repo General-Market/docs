@@ -8,21 +8,23 @@ import {
   useMarketState,
   usePlaceBet,
   useStakeBalance,
-  useSourcePrice,
-  useSourceHistory,
   useRecentBets,
   payoutMultiplier,
   formatMultiplier,
+  formatLabel,
+  windowLabel,
+  compactAudience,
+  audienceUnit,
 } from '@/lib/markets/hooks'
 import { CountdownTimer } from './CountdownTimer'
-import { SourceIcon } from './SourceIcon'
-import { SparkLine } from './SparkLine'
 import FaucetButton from './FaucetButton'
 import { MyPositions } from './MyPositions'
 import type { Side } from './MarketRow'
 
 // Right rail. Sticky. The bet ticket — same logic as the bottom sheet,
-// laid out as a column. Empty until a market is picked.
+// laid out as a column. A and B sit side-by-side; pick one, type a
+// number, sign. The wallet adapter still bets YES (=A wins) or NO
+// (=B wins); the labels just admit which name they belong to.
 
 const USDC_DECIMALS = 6
 
@@ -60,13 +62,13 @@ export function BetTicket({ slot, side, onSideChange, className = '' }: BetTicke
       <div className={['flex flex-col gap-3', className].join(' ')}>
         <MyPositions />
         <aside
-          className="rounded-md border border-dashed border-zinc-300 bg-white p-6"
+          className="rounded-md border border-dashed border-zinc-700 bg-zinc-900 placeholder:text-zinc-600 p-6"
           aria-label="Bet ticket"
         >
           <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500">
             ticket
           </p>
-          <p className="mt-2 text-[13px] text-zinc-600">pick a market to bet.</p>
+          <p className="mt-2 text-[13px] text-zinc-400">pick a market to bet.</p>
         </aside>
       </div>
     )
@@ -85,6 +87,51 @@ export function BetTicket({ slot, side, onSideChange, className = '' }: BetTicke
   )
 }
 
+interface NameButtonProps {
+  side: Side
+  name: string
+  audience: bigint
+  audienceLabel: string
+  multiplier: number | null
+  active: boolean
+}
+
+function NameButton({ side, name, audience, audienceLabel, multiplier, active }: NameButtonProps) {
+  const yes = side === 'yes'
+  let surface: string
+  if (active) {
+    surface = yes
+      ? 'border-emerald-500 bg-emerald-500/15 text-emerald-100 shadow-[inset_0_0_24px_rgb(16_185_129/0.18)]'
+      : 'border-rose-500 bg-rose-500/15 text-rose-100 shadow-[inset_0_0_24px_rgb(244_63_94/0.18)]'
+  } else {
+    surface = yes
+      ? 'border-zinc-800 bg-zinc-900 text-zinc-200 hover:border-emerald-500/50'
+      : 'border-zinc-800 bg-zinc-900 text-zinc-200 hover:border-rose-500/50'
+  }
+  const accent = yes ? 'text-emerald-400' : 'text-rose-400'
+  return (
+    <span
+      className={[
+        'flex h-full flex-col items-start gap-0.5 rounded-md border px-3 py-2.5 text-left transition-colors',
+        surface,
+      ].join(' ')}
+    >
+      <span className="flex w-full items-center gap-2">
+        <span aria-hidden className={['inline-block h-2 w-2 shrink-0 rounded-full', yes ? 'bg-emerald-400' : 'bg-rose-400'].join(' ')} />
+        <span className="truncate text-[13px] font-semibold leading-tight tracking-tight">
+          {name}
+        </span>
+      </span>
+      <span className="text-[11px] tabular-nums text-zinc-500">
+        {compactAudience(audience)} {audienceLabel}
+      </span>
+      <span className={['text-[11px] tabular-nums', active ? 'text-zinc-100' : accent].join(' ')}>
+        {formatMultiplier(multiplier)} if wins
+      </span>
+    </span>
+  )
+}
+
 function BetTicketActive({
   slot,
   side,
@@ -96,22 +143,7 @@ function BetTicketActive({
   const state = useMarketState(slot.marketPda)
   const placeBetCtl = usePlaceBet()
   const stakeBalance = useStakeBalance()
-  const price = useSourcePrice(slot.sourceId)
-  const history = useSourceHistory(slot.sourceId)
   const recentBets = useRecentBets(slot.marketPda)
-
-  const sparkValues = useMemo(
-    () => history.points.map(p => Number(p.raw)),
-    [history.points],
-  )
-  const sparkTrend: 'up' | 'down' | 'flat' = useMemo(() => {
-    if (sparkValues.length < 2) return 'flat'
-    const first = sparkValues[0]!
-    const last = sparkValues[sparkValues.length - 1]!
-    if (last > first) return 'up'
-    if (last < first) return 'down'
-    return 'flat'
-  }, [sparkValues])
 
   const [amount, setAmount] = useState<string>(PRESETS[0])
   const [lastSig, setLastSig] = useState<string | null>(null)
@@ -141,7 +173,6 @@ function BetTicketActive({
   const estPayoutUnits = useMemo(() => {
     if (activeMult === null || !Number.isFinite(activeMult)) return null
     if (parsedUnits <= 0n) return 0n
-    // multiplier is a Number; multiply via Number then back to bigint.
     const units = Number(parsedUnits) * activeMult
     if (!Number.isFinite(units)) return null
     return BigInt(Math.floor(units))
@@ -166,56 +197,45 @@ function BetTicketActive({
   const insufficientBalance =
     connected && parsedUnits > 0n && stakeBalance.raw < parsedUnits
 
-  const sourceShort = slot.sourceName.toLowerCase()
-  const iconId = (slot.sourceId >= 1 && slot.sourceId <= 5
-    ? (slot.sourceId as 1 | 2 | 3 | 4 | 5)
-    : null)
+  const audienceLbl = audienceUnit(slot.board)
+  const pickedName = side === 'yes' ? slot.displayA : slot.displayB
 
   return (
     <aside
       className={[
-        'flex flex-col rounded-md border border-zinc-200 bg-white',
+        'flex flex-col rounded-md border border-zinc-800 bg-zinc-900',
         className,
       ].join(' ')}
       aria-label="Bet ticket"
     >
-      <header className="border-b border-zinc-200 px-4 py-3">
-        <div className="flex items-center justify-between gap-2">
-          <span className="flex items-center gap-2 text-zinc-700">
-            {iconId ? <SourceIcon sourceId={iconId} className="h-4 w-4" /> : null}
-            <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em]">
-              {sourceShort}
-            </span>
+      <header className="border-b border-zinc-800 px-4 py-3">
+        <div className="flex flex-wrap items-center gap-2 text-zinc-400">
+          <span className="font-mono text-[10px] tabular-nums text-zinc-500">
+            pair #{String(slot.pairIndex).padStart(2, '0')}
           </span>
-          <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-zinc-500">
-            closes in <CountdownTimer target={slot.closeTime} closedLabel="closed" />
+          <span className="text-zinc-700">·</span>
+          <span
+            className={[
+              'inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.1em]',
+              slot.board === 'stars'
+                ? 'bg-amber-500/10 text-amber-300'
+                : 'bg-sky-500/10 text-sky-300',
+            ].join(' ')}
+          >
+            {slot.board}
+          </span>
+          <span className="inline-flex items-center rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.1em] text-zinc-400">
+            {windowLabel(slot.windowSecs)} {formatLabel(slot.format)}
           </span>
         </div>
-        <h3 className="mt-2 text-[14px] font-semibold leading-snug text-zinc-900">
-          {slot.label}
+        <h3 className="mt-2 text-[14px] font-semibold leading-snug text-zinc-100">
+          {slot.displayA} <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-zinc-500">vs</span> {slot.displayB}
         </h3>
-        <div className="mt-1 flex items-center justify-between gap-2">
-          <p className="font-mono text-[11px] text-zinc-500">
-            {sourceShort}: <span className="tabular-nums text-zinc-700">{price.raw === null ? '—' : price.display}</span>
-            {price.changeBp !== null && price.changeBp !== 0 ? (
-              <span
-                className={[
-                  'ml-1.5',
-                  price.changeBp > 0 ? 'text-emerald-700' : 'text-rose-700',
-                ].join(' ')}
-              >
-                {price.changeBp > 0 ? '+' : ''}{price.changeBp} bp
-              </span>
-            ) : null}
-          </p>
-          <SparkLine
-            values={sparkValues}
-            width={80}
-            height={20}
-            trend={sparkTrend}
-            aria-label="30-min trend"
-          />
-        </div>
+        <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.1em] text-zinc-500">
+          closes in <CountdownTimer target={slot.closeTime} closedLabel="closed" />
+          {' · '}
+          settles in <CountdownTimer target={slot.settlementTime} closedLabel="ready" />
+        </p>
       </header>
 
       <div className="space-y-4 px-4 py-4">
@@ -227,56 +247,33 @@ function BetTicketActive({
           <button
             type="button"
             onClick={() => onSideChange('yes')}
-            className={[
-              'h-12 rounded-md border text-sm font-semibold transition-colors',
-              side === 'yes'
-                ? 'border-emerald-500 bg-emerald-500 text-white'
-                : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50',
-            ].join(' ')}
+            aria-pressed={side === 'yes'}
+            className="rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60"
           >
-            YES
+            <NameButton
+              side="yes"
+              name={slot.displayA}
+              audience={slot.audienceA}
+              audienceLabel={audienceLbl}
+              multiplier={yesMult}
+              active={side === 'yes'}
+            />
           </button>
           <button
             type="button"
             onClick={() => onSideChange('no')}
-            className={[
-              'h-12 rounded-md border text-sm font-semibold transition-colors',
-              side === 'no'
-                ? 'border-rose-500 bg-rose-500 text-white'
-                : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50',
-            ].join(' ')}
+            aria-pressed={side === 'no'}
+            className="rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/60"
           >
-            NO
+            <NameButton
+              side="no"
+              name={slot.displayB}
+              audience={slot.audienceB}
+              audienceLabel={audienceLbl}
+              multiplier={noMult}
+              active={side === 'no'}
+            />
           </button>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2 rounded-md border border-zinc-200 bg-zinc-50 p-3">
-          <div className="space-y-0.5">
-            <p className="font-mono text-[10px] uppercase tracking-[0.08em] text-emerald-700">
-              if YES
-            </p>
-            <p
-              className={[
-                'font-mono tabular-nums',
-                side === 'yes' ? 'text-xl font-semibold text-emerald-700' : 'text-base text-zinc-700',
-              ].join(' ')}
-            >
-              {formatMultiplier(yesMult)}
-            </p>
-          </div>
-          <div className="space-y-0.5">
-            <p className="font-mono text-[10px] uppercase tracking-[0.08em] text-rose-700">
-              if NO
-            </p>
-            <p
-              className={[
-                'font-mono tabular-nums',
-                side === 'no' ? 'text-xl font-semibold text-rose-700' : 'text-base text-zinc-700',
-              ].join(' ')}
-            >
-              {formatMultiplier(noMult)}
-            </p>
-          </div>
         </div>
 
         <div className="space-y-2">
@@ -292,7 +289,7 @@ function BetTicketActive({
             inputMode="decimal"
             value={amount}
             onChange={e => setAmount(e.target.value)}
-            className="h-11 w-full rounded-md border border-zinc-300 bg-white px-3 font-mono text-sm focus:border-zinc-900 focus:outline-none"
+            className="h-11 w-full rounded-md border border-zinc-700 bg-zinc-900 placeholder:text-zinc-600 px-3 font-mono text-sm focus:border-zinc-500 focus:outline-none"
             placeholder="0.00"
           />
           <div className="grid grid-cols-3 gap-2">
@@ -304,8 +301,8 @@ function BetTicketActive({
                 className={[
                   'h-9 rounded-md border font-mono text-xs',
                   amount === p
-                    ? 'border-zinc-900 bg-zinc-900 text-white'
-                    : 'border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50',
+                    ? 'border-zinc-600 bg-zinc-800 text-zinc-100'
+                    : 'border-zinc-800 bg-zinc-900 text-zinc-400 hover:bg-zinc-800',
                 ].join(' ')}
               >
                 {p}
@@ -328,34 +325,34 @@ function BetTicketActive({
 
         {estPayoutUnits !== null && parsedUnits > 0n ? (
           <p className="font-mono text-[11px] text-zinc-500">
-            payout if you win ·{' '}
-            <span className="tabular-nums text-zinc-900">
+            payout if {pickedName} wins ·{' '}
+            <span className="tabular-nums text-zinc-100">
               {formatUsdcUnits(estPayoutUnits)} USDC
             </span>
           </p>
         ) : null}
 
         {insufficientBalance ? (
-          <p className="font-mono text-[11px] text-rose-700">insufficient balance.</p>
+          <p className="font-mono text-[11px] text-rose-400">insufficient balance.</p>
         ) : null}
         {error ? (
-          <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
+          <div className="rounded-md border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-300">
             {error}
           </div>
         ) : null}
         {lastSig ? (
-          <div className="break-all rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 font-mono text-[11px] text-emerald-800">
+          <div className="break-all rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 font-mono text-[11px] text-emerald-300">
             bet placed · {lastSig.slice(0, 8)}…{lastSig.slice(-8)}
           </div>
         ) : null}
       </div>
 
-      <div className="border-t border-zinc-200 px-4 py-3">
+      <div className="border-t border-zinc-800 px-4 py-3">
         {!connected ? (
           <button
             type="button"
             onClick={() => setShowModal(true)}
-            className="h-12 w-full rounded-md bg-zinc-900 text-sm font-semibold text-white transition-colors hover:bg-zinc-800"
+            className="h-12 w-full rounded-md bg-emerald-400 text-sm font-semibold text-zinc-950 transition-colors hover:bg-emerald-300"
           >
             connect wallet to bet
           </button>
@@ -366,19 +363,21 @@ function BetTicketActive({
               onClick={handleSubmit}
               disabled={placeBetCtl.placing || parsedUnits <= 0n || insufficientBalance}
               className={[
-                'h-12 w-full rounded-md text-sm font-semibold text-white transition-colors',
+                'h-12 w-full rounded-md text-sm font-semibold text-zinc-950 transition-colors',
                 'disabled:cursor-not-allowed disabled:opacity-40',
-                'bg-zinc-900 hover:bg-zinc-800',
+                side === 'yes'
+                  ? 'bg-emerald-400 hover:bg-emerald-300'
+                  : 'bg-rose-400 hover:bg-rose-300',
               ].join(' ')}
             >
               {placeBetCtl.placing
                 ? 'sending…'
-                : `place bet · ${side.toUpperCase()} ${amount || '0'} USDC`}
+                : `bet on ${pickedName} · ${amount || '0'} USDC`}
             </button>
             <button
               type="button"
               onClick={() => disconnect()}
-              className="h-7 w-full font-mono text-[10px] uppercase tracking-[0.12em] text-zinc-400 transition-colors hover:text-zinc-700"
+              className="h-7 w-full font-mono text-[10px] uppercase tracking-[0.12em] text-zinc-400 transition-colors hover:text-zinc-200"
             >
               disconnect wallet
             </button>
@@ -387,7 +386,7 @@ function BetTicketActive({
       </div>
 
       {recentBets.length > 0 ? (
-        <div className="border-t border-zinc-200 px-4 py-3">
+        <div className="border-t border-zinc-800 px-4 py-3">
           <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500">
             recent bets
           </p>
@@ -397,20 +396,21 @@ function BetTicketActive({
                 key={b.sig}
                 className="flex items-center justify-between gap-2 font-mono text-[11px]"
               >
-                <span className="truncate text-zinc-600">
+                <span className="truncate text-zinc-400">
                   {b.owner.slice(0, 4)}…{b.owner.slice(-4)}
                 </span>
                 <span
                   className={[
                     'inline-flex h-4 items-center rounded px-1 text-[10px] font-semibold uppercase',
                     b.side === 'yes'
-                      ? 'bg-emerald-50 text-emerald-700'
-                      : 'bg-rose-50 text-rose-700',
+                      ? 'bg-emerald-500/20 text-emerald-300'
+                      : 'bg-rose-500/20 text-rose-300',
                   ].join(' ')}
+                  title={b.side === 'yes' ? slot.displayA : slot.displayB}
                 >
-                  {b.side}
+                  {b.side === 'yes' ? 'A' : 'B'}
                 </span>
-                <span className="tabular-nums text-zinc-700">
+                <span className="tabular-nums text-zinc-200">
                   {formatUsdcUnits(b.amount)}
                 </span>
               </li>

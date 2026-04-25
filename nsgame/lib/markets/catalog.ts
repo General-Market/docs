@@ -1,138 +1,119 @@
 /**
- * Site-aggregate catalog. Spans all five tube sources, chaturbate
- * (id=4) included — the data-node collector for cb is now running.
- * Every entry resolves to a question of the form: "did the site
- * total grow by N bps in T seconds?". Per-asset markets (per-star,
- * per-model, per-video) wait on a program-side asset_id seed; see
- * PLAN.md §3.
+ * PvP catalog. 25 head-to-head markets — 15 on Stars (4h gain race),
+ * 10 on Cams (2m, alternating gain race / viewer total). Each entry
+ * carries a `pairIndex` that doubles as the on-chain `threshold_bps`.
  *
- * The on-chain Market PDA is keyed by `(source_id, close_time,
- * settlement_time, threshold_bps)`. There is no asset selector. Every
- * market here is therefore a site-wide aggregate — by construction.
+ * The on-chain Market PDA is keyed by
+ *   (source_id, threshold_bps, close_time, settlement_time)
+ * with no asset_id seed. To encode pair identity we route it through
+ * threshold_bps. Stars use 1..15, Cams 16..25 — all comfortably under
+ * the program's |threshold| <= 10_000 cap.
  *
- * Microcopy is project voice: short, dry, no enthusiasm. Do not embellish.
+ * The display `label` reads "<displayA> vs <displayB>" so existing list
+ * code that key off a string still works without modification.
  */
+
+import {
+  PAIR_REGISTRY,
+  type Board,
+  type PvpFormat,
+  type PvpPair,
+  formatPillLabel,
+} from './pairs'
 
 export interface CatalogEntry {
   /** Stable identifier; must not change between deploys. */
   id: string
   /** Admin-registered Source.source_id on-chain. */
   sourceId: number
-  /** Display label for the source (e.g. "Pornhub"). Cosmetic. */
+  /** Display label for the source. Cosmetic. */
   sourceName: string
-  /** Signed bps threshold. Positive = YES on rise, negative = YES on drop. */
+  /** PvP pair index (1..25). On-chain this is the threshold_bps. */
+  pairIndex: number
+  /** Carried for slot/PDA derivation; numerically equal to pairIndex. */
   thresholdBps: number
-  /** Seconds from click-time until the Market stops accepting bets. */
+  /** Seconds from now until the Market stops accepting bets. */
   closeOffsetSecs: number
-  /** Seconds from click-time until the Market becomes resolvable. */
+  /** Seconds from now until the Market becomes resolvable. */
   settleOffsetSecs: number
-  /** One-line catalog-card label. */
+  /** "<displayA> vs <displayB>" — used by every list/sidebar that reads label. */
   label: string
-  /** Longer explanation of what YES means. */
+  /** Long-form prose. The bet sheet renders it under the title. */
   description: string
+  // PvP-specific cosmetics, lifted to the catalog so consumers don't
+  // need a second lookup against the pair registry.
+  board: Board
+  format: PvpFormat
+  displayA: string
+  displayB: string
+  slugA: string
+  slugB: string
+  audienceA: bigint
+  audienceB: bigint
+  tightness: number
+  windowSecs: number
 }
 
 const SOURCE_LABELS: Record<number, string> = {
-  1: 'Xvideos',
-  2: 'Xnxx',
-  3: 'Pornhub',
-  4: 'Chaturbate',
-  5: 'Eporner',
+  1: 'tubes_xv',
+  4: 'tubes_cb',
 }
 
-interface BuildOpts {
-  sourceId: number
-  thresholdBps: number
-  closeOffsetSecs: number
+// Settlement is gated behind a small cushion past close. The data-node
+// needs T+window data to resolve; the cushion absorbs collector lag.
+const STARS_SETTLE_DELAY_SECS = 60
+const CAMS_SETTLE_DELAY_SECS = 30
+
+function describeFormat(format: PvpFormat): string {
+  return format === 'f1-gain-race'
+    ? 'who gains more during the window'
+    : 'who has more viewers at the closing instant'
 }
 
-const SETTLE_DELAY_SECS = 60
-
-function describeWindow(secs: number): string {
-  if (secs < 3600) return `${Math.round(secs / 60)} min`
-  if (secs < 86_400) return `${Math.round(secs / 3600)} h`
-  return `${Math.round(secs / 86_400)} d`
-}
-
-function thresholdLabel(bps: number): string {
-  // bps to a human-readable percentage. +1bps = 0.01%, +50 = 0.5%, +100 = 1%.
-  const pct = bps / 100
-  const sign = bps >= 0 ? '+' : ''
-  if (Math.abs(bps) < 10) return `${sign}${bps} bps`
-  return `${sign}${pct}%`
-}
-
-function entryFor({ sourceId, thresholdBps, closeOffsetSecs }: BuildOpts): CatalogEntry {
-  const sourceName = SOURCE_LABELS[sourceId] ?? `source_${sourceId}`
-  const slug = sourceName.toLowerCase()
-  const win = describeWindow(closeOffsetSecs)
-  const winSlug = win.replace(/\s+/g, '')
-  const threshLabel = thresholdLabel(thresholdBps)
-  const direction = thresholdBps >= 0 ? 'up' : 'down'
-  const id = `${slug}-${direction}-${Math.abs(thresholdBps)}bps-${winSlug}`
-
-  // Cioran-tinged microcopy. Setup → pivot → no embellishment.
-  const verb = thresholdBps >= 0 ? 'rises by' : 'falls by'
-  const absPct = Math.abs(thresholdBps) / 100
-  const pctText = Math.abs(thresholdBps) < 10
-    ? `${Math.abs(thresholdBps)} bps`
-    : `${absPct}%`
-
-  const label = `${sourceName} aggregate ${verb} ${pctText} in ${win}`
+function entryFromPair(pair: PvpPair): CatalogEntry {
+  const sourceName = SOURCE_LABELS[pair.sourceId] ?? `source_${pair.sourceId}`
+  const closeOffsetSecs = pair.windowSecs
+  const settleDelay = pair.board === 'stars'
+    ? STARS_SETTLE_DELAY_SECS
+    : CAMS_SETTLE_DELAY_SECS
+  const settleOffsetSecs = closeOffsetSecs + settleDelay
+  const id = `${sourceName}_pvp_${pair.format === 'f1-gain-race' ? 'f1' : 'f2'}_${pair.slugA}__vs__${pair.slugB}`
+  const label = `${pair.displayA} vs ${pair.displayB}`
   const description =
-    `YES pays if ${sourceName}'s site-wide aggregate signal `
-    + `(summed across the source's tracked markets) is ${thresholdBps >= 0 ? 'higher' : 'lower'} `
-    + `at settlement than at close, by at least ${threshLabel}.`
+    `${formatPillLabel(pair)}. Resolves on ${describeFormat(pair.format)}. `
+    + `A win pays the side you picked; tie or both flat refunds.`
 
   return {
     id,
-    sourceId,
+    sourceId: pair.sourceId,
     sourceName,
-    thresholdBps,
+    pairIndex: pair.pairIndex,
+    thresholdBps: pair.pairIndex,
     closeOffsetSecs,
-    settleOffsetSecs: closeOffsetSecs + SETTLE_DELAY_SECS,
+    settleOffsetSecs,
     label,
     description,
+    board: pair.board,
+    format: pair.format,
+    displayA: pair.displayA,
+    displayB: pair.displayB,
+    slugA: pair.slugA,
+    slugB: pair.slugB,
+    audienceA: pair.audienceA,
+    audienceB: pair.audienceB,
+    tightness: pair.tightness,
+    windowSecs: pair.windowSecs,
   }
 }
 
-// Generate one entry per (source, threshold, window). All five sources are
-// live. Five thresholds × four windows × five sources would be 100 entries;
-// we trim to a representative twenty (four windows × five sources).
-const SOURCES_ENABLED = [1, 2, 3, 4, 5] as const
-const WINDOWS_SECS = [60, 300, 1800, 3600] as const
-const THRESHOLDS_BPS = [1, 50, 100] as const
-
-function buildCatalog(): readonly CatalogEntry[] {
-  const out: CatalogEntry[] = []
-  // For each source, pick a varied subset rather than the full cross-product.
-  // Rotation of (window, threshold) keeps the catalog wide without bloating.
-  for (const sourceId of SOURCES_ENABLED) {
-    // 1m / 1bps — the cheapest proof-of-life market per source.
-    out.push(entryFor({ sourceId, thresholdBps: 1, closeOffsetSecs: 60 }))
-    // 5m / 50bps — a half-percent move in five minutes.
-    out.push(entryFor({ sourceId, thresholdBps: 50, closeOffsetSecs: 300 }))
-    // 30m / 100bps — a one-percent move in half an hour.
-    out.push(entryFor({ sourceId, thresholdBps: 100, closeOffsetSecs: 1800 }))
-    // 1h / 50bps — a half-percent move on the hour.
-    out.push(entryFor({ sourceId, thresholdBps: 50, closeOffsetSecs: 3600 }))
-  }
-  return out
-}
-
-export const CATALOG: readonly CatalogEntry[] = buildCatalog()
+export const CATALOG: readonly CatalogEntry[] = PAIR_REGISTRY.map(entryFromPair)
 
 export function getCatalogEntry(id: string): CatalogEntry | null {
   return CATALOG.find(e => e.id === id) ?? null
 }
 
-// Re-exported helpers for symmetry with `nsgame/lib/solana/catalog.ts`.
-// The unused vars hint silences if the compiler eventually whines.
-export const SOURCE_LABELS_BY_ID = SOURCE_LABELS
+export function getCatalogEntryByPairIndex(pairIndex: number): CatalogEntry | null {
+  return CATALOG.find(e => e.pairIndex === pairIndex) ?? null
+}
 
-// Suppress unused warnings for the rotation seeds; kept exported for tests.
-export const _CATALOG_BUILD_PARAMS = {
-  SOURCES_ENABLED,
-  WINDOWS_SECS,
-  THRESHOLDS_BPS,
-} as const
+export const SOURCE_LABELS_BY_ID = SOURCE_LABELS

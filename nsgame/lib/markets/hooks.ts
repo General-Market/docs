@@ -26,12 +26,15 @@ import {
 } from '@/lib/solana/predictionMarket'
 import { CATALOG, type CatalogEntry } from './catalog'
 import { generateSlots, type UpcomingSlot } from './slots'
+import type { Board } from './pairs'
 
 // Re-export so consumers can import from a single module.
 export type { UpcomingSlot } from './slots'
 export type { CatalogEntry } from './catalog'
+export type { Board, PvpFormat, PvpPair } from './pairs'
 export type { UserPosition, PositionState } from './positions'
 export { useUserPositions } from './positions'
+export { PAIR_REGISTRY, pairById, pairsForBoard, formatLabel, formatPillLabel, windowLabel, compactAudience, audienceUnit } from './pairs'
 
 export interface MarketState {
   totalYes: bigint
@@ -50,7 +53,8 @@ export interface RecentBet {
 }
 
 export interface UseUpcomingSlotsOpts {
-  source?: number | 'all'
+  /** Board filter — `all` includes both stars and cams. */
+  board?: Board | 'all'
   horizonDays?: number
 }
 
@@ -108,7 +112,7 @@ function stakeMintFromEnv(): PublicKey {
 // ── useUpcomingSlots ────────────────────────────────────────────────────
 
 export function useUpcomingSlots(opts?: UseUpcomingSlotsOpts): UpcomingSlot[] {
-  const { source = 'all', horizonDays = 7 } = opts ?? {}
+  const { board = 'all', horizonDays = 7 } = opts ?? {}
 
   // Pin "now" to a minute boundary and refresh once per minute. Slots
   // themselves are deterministic given (catalog, now) — re-computing more
@@ -124,15 +128,15 @@ export function useUpcomingSlots(opts?: UseUpcomingSlotsOpts): UpcomingSlot[] {
     return generateSlots({
       // Hard cap: render the next few slots per catalog entry. The free
       // tier of Helius cannot survive hundreds of getAccountInfo polls
-      // every minute. The user can paginate by horizon when we add it.
+      // every minute.
       maxSlotsPerEntry: 4,
       catalog: CATALOG,
       nowSecs,
       horizonDays,
       programId: PREDICTION_MARKET_PROGRAM_ID,
-      source,
+      board,
     })
-  }, [nowSecs, horizonDays, source])
+  }, [nowSecs, horizonDays, board])
 }
 
 // ── useMarketState ──────────────────────────────────────────────────────

@@ -1,16 +1,20 @@
 /**
- * Slot generator. Walks each catalog entry forward by its `closeOffsetSecs`
- * stride from `nowSecs`, snaps every close-time to the 60s grid the program
- * enforces, and derives the deterministic Market PDA for each slot. The
- * resulting list is the universe of upcoming windows the UI can offer.
+ * Slot generator. Walks each catalog entry forward by its
+ * `closeOffsetSecs` stride from `nowSecs`, snaps every close-time to the
+ * 60s grid the program enforces, and derives the deterministic Market
+ * PDA for each slot.
  *
- * The PDA derivation matches `programs-solana/.../place-test-bet.ts`:
+ * The PDA derivation is unchanged from the pre-PvP build — the program
+ * still sees `(source_id, close, settle, threshold_bps)`. Pair identity
+ * is smuggled in via `threshold_bps == pairIndex`.
+ *
  *   seeds = [b"market", source_id_le_u32, close_le_i64, settle_le_i64,
  *            threshold_le_i32]
  */
 
 import { PublicKey } from '@solana/web3.js'
 import type { CatalogEntry } from './catalog'
+import type { Board, PvpFormat } from './pairs'
 
 export interface UpcomingSlot {
   catalogId: string
@@ -18,10 +22,21 @@ export interface UpcomingSlot {
   sourceName: string
   label: string
   description: string
+  /** thresholdBps == pairIndex for PvP markets. */
   thresholdBps: number
+  pairIndex: number
+  board: Board
+  format: PvpFormat
+  displayA: string
+  displayB: string
+  slugA: string
+  slugB: string
+  audienceA: bigint
+  audienceB: bigint
+  windowSecs: number
   /** unix seconds, snapped to the 60s grid. */
   closeTime: number
-  /** unix seconds. settlementTime = closeTime + (settleOffsetSecs - closeOffsetSecs). */
+  /** unix seconds. settle = close + (settleOffsetSecs - closeOffsetSecs). */
   settlementTime: number
   /** base58 of the deterministic Market PDA. */
   marketPda: string
@@ -29,21 +44,18 @@ export interface UpcomingSlot {
 
 export interface GenerateSlotsOpts {
   catalog: readonly CatalogEntry[]
-  /** Unix seconds. The starting point for slot generation. */
+  /** Unix seconds. Starting point for slot generation. */
   nowSecs: number
   /** How far ahead to project, in days. Default 7. */
   horizonDays?: number
   /** The on-chain program id, used for PDA derivation. */
   programId: PublicKey
   /**
-   * Optional source filter. If set, only slots for this source id are
-   * returned. Defaults to no filter ("all").
+   * Board filter. `all` includes both stars and cams. Internally maps to
+   * source_id 1 (stars) or 4 (cams).
    */
-  source?: number | 'all'
-  /**
-   * Soft cap on slots-per-catalog-entry to keep the output bounded for
-   * short windows (60s × 7d = 10,080 slots). Default 200.
-   */
+  board?: Board | 'all'
+  /** Soft cap on slots per catalog entry. Default 200. */
   maxSlotsPerEntry?: number
 }
 
@@ -95,7 +107,7 @@ export function generateSlots(opts: GenerateSlotsOpts): UpcomingSlot[] {
     nowSecs,
     horizonDays = DEFAULT_HORIZON_DAYS,
     programId,
-    source = 'all',
+    board = 'all',
     maxSlotsPerEntry = DEFAULT_MAX_SLOTS_PER_ENTRY,
   } = opts
 
@@ -103,7 +115,7 @@ export function generateSlots(opts: GenerateSlotsOpts): UpcomingSlot[] {
   const out: UpcomingSlot[] = []
 
   for (const entry of catalog) {
-    if (source !== 'all' && entry.sourceId !== source) continue
+    if (board !== 'all' && entry.board !== board) continue
     if (entry.closeOffsetSecs <= 0) continue
 
     // First close: snap up so the program's `closeTime - now >= 10` and
@@ -113,7 +125,6 @@ export function generateSlots(opts: GenerateSlotsOpts): UpcomingSlot[] {
 
     let count = 0
     for (let close = firstClose; close <= horizonSecs; close += entry.closeOffsetSecs) {
-      // Belt-and-braces: the program rejects close_time not aligned to 60s.
       if (close % 60 !== 0) continue
       const settle = close + settleDelta
       const pda = deriveMarketPdaSync(programId, {
@@ -129,6 +140,16 @@ export function generateSlots(opts: GenerateSlotsOpts): UpcomingSlot[] {
         label: entry.label,
         description: entry.description,
         thresholdBps: entry.thresholdBps,
+        pairIndex: entry.pairIndex,
+        board: entry.board,
+        format: entry.format,
+        displayA: entry.displayA,
+        displayB: entry.displayB,
+        slugA: entry.slugA,
+        slugB: entry.slugB,
+        audienceA: entry.audienceA,
+        audienceB: entry.audienceB,
+        windowSecs: entry.windowSecs,
         closeTime: close,
         settlementTime: settle,
         marketPda: pda.toBase58(),
@@ -138,7 +159,6 @@ export function generateSlots(opts: GenerateSlotsOpts): UpcomingSlot[] {
     }
   }
 
-  // Sort by closeTime ascending — the soonest market first.
   out.sort((a, b) => a.closeTime - b.closeTime)
   return out
 }

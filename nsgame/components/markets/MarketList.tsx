@@ -9,7 +9,7 @@ import {
 import { MarketRow, type Side } from './MarketRow'
 import { MarketRowSkeleton } from './MarketRowSkeleton'
 import { CountdownTickProvider, useNowSecs } from './CountdownTimer'
-import type { SourceFilter, HorizonFilter } from './FilterBar'
+import type { BoardFilter, HorizonFilter } from './FilterBar'
 import type { StatusFilter } from './CategorySidebar'
 
 const SKELETON_COUNT = 6
@@ -19,7 +19,7 @@ const SKELETON_COUNT = 6
 // future view.
 
 export interface MarketListProps {
-  source: SourceFilter
+  board: BoardFilter
   horizon: HorizonFilter
   statuses: StatusFilter[]
   selectedPda: string | null
@@ -37,7 +37,7 @@ export function MarketList(props: MarketListProps) {
 }
 
 function MarketListInner({
-  source,
+  board,
   horizon,
   statuses,
   selectedPda,
@@ -47,7 +47,7 @@ function MarketListInner({
 }: MarketListProps) {
   const horizonDays = horizon === 'today' ? 1 : horizon === '7d' ? 7 : 30
   const slots = useUpcomingSlots({
-    source: source === 'all' ? 'all' : source,
+    board,
     horizonDays,
   })
 

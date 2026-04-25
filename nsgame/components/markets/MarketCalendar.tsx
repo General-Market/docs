@@ -10,7 +10,7 @@ import {
 import { MarketCard } from './MarketCard'
 import { BetSheet } from './BetSheet'
 import { CountdownTickProvider } from './CountdownTimer'
-import type { SourceFilter, HorizonFilter } from './FilterBar'
+import type { BoardFilter, HorizonFilter } from './FilterBar'
 
 // Calendar of upcoming closes. Desktop: a seven-column wall of dates.
 // Mobile: a vertical reading. The data is the same — only the geometry
@@ -87,14 +87,14 @@ function CardWithState({
 }
 
 export interface MarketCalendarProps {
-  source: SourceFilter
+  board: BoardFilter
   horizon: HorizonFilter
 }
 
-export function MarketCalendar({ source, horizon }: MarketCalendarProps) {
+export function MarketCalendar({ board, horizon }: MarketCalendarProps) {
   const horizonDays = horizon === 'today' ? 1 : horizon === '7d' ? 7 : 30
   const slots = useUpcomingSlots({
-    source: source === 'all' ? 'all' : source,
+    board,
     horizonDays,
   })
 

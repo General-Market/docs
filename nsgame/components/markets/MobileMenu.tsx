@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useWallet } from '@/hooks/useWallet'
 import { PulseDot } from './PulseDot'
 import { CategorySidebar, type StatusFilter } from './CategorySidebar'
-import type { SourceFilter, HorizonFilter } from './FilterBar'
+import type { BoardFilter, HorizonFilter } from './FilterBar'
 import type { UpcomingSlot } from '@/lib/markets/hooks'
 
 // A drawer that opens, then closes. Carries the same filters the
@@ -15,11 +15,11 @@ import type { UpcomingSlot } from '@/lib/markets/hooks'
 interface MobileMenuProps {
   open: boolean
   onClose: () => void
-  source: SourceFilter
+  board: BoardFilter
   horizon: HorizonFilter
   statuses: StatusFilter[]
   slots: UpcomingSlot[]
-  onSourceChange: (s: SourceFilter) => void
+  onBoardChange: (b: BoardFilter) => void
   onHorizonChange: (h: HorizonFilter) => void
   onStatusToggle: (s: StatusFilter) => void
 }
@@ -27,11 +27,11 @@ interface MobileMenuProps {
 export function MobileMenu({
   open,
   onClose,
-  source,
+  board,
   horizon,
   statuses,
   slots,
-  onSourceChange,
+  onBoardChange,
   onHorizonChange,
   onStatusToggle,
 }: MobileMenuProps) {
@@ -51,9 +51,9 @@ export function MobileMenu({
     return () => window.removeEventListener('keydown', onKey)
   }, [open, onClose])
 
-  // Wrap callbacks so the drawer auto-closes when a source/horizon is
+  // Wrap callbacks so the drawer auto-closes when a board/horizon is
   // chosen — choice is the signal the user is done picking.
-  const handleSource = (s: SourceFilter) => { onSourceChange(s); onClose() }
+  const handleBoard = (b: BoardFilter) => { onBoardChange(b); onClose() }
   const handleHorizon = (h: HorizonFilter) => { onHorizonChange(h); onClose() }
 
   return (
@@ -81,13 +81,8 @@ export function MobileMenu({
             transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
           >
             <div className="flex items-center justify-between gap-2 border-b border-zinc-800/80 px-5 py-4">
-              <span className="inline-flex items-baseline gap-2">
-                <span className="font-sans text-[18px] font-bold leading-none tracking-[-0.025em] text-zinc-100">
-                  nsgame
-                </span>
-                <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500">
-                  calendar
-                </span>
+              <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-zinc-500">
+                Categories
               </span>
               <button
                 type="button"
@@ -103,11 +98,11 @@ export function MobileMenu({
 
             <div className="flex-1 overflow-y-auto px-3 py-5">
               <CategorySidebar
-                source={source}
+                board={board}
                 horizon={horizon}
                 statuses={statuses}
                 slots={slots}
-                onSourceChange={handleSource}
+                onBoardChange={handleBoard}
                 onHorizonChange={handleHorizon}
                 onStatusToggle={onStatusToggle}
               />
