@@ -3,8 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { UpcomingSlot, MarketState } from '@/lib/markets/hooks'
 import {
-  payoutMultiplier,
-  formatMultiplier,
   windowLabel,
   compactAudience,
   audienceUnit,
@@ -71,17 +69,33 @@ function initials(name: string): string {
   return (parts[0]![0]! + parts[1]![0]!).toUpperCase()
 }
 
-function Avatar({ slug, name, side, dim }: { slug: string; name: string; side: Side; dim: boolean }) {
+function Avatar({
+  slug,
+  name,
+  side,
+  dim,
+  profileHref,
+}: {
+  slug: string
+  name: string
+  side: Side
+  dim: boolean
+  profileHref: string
+}) {
   const yes = side === 'yes'
   const ringTone = yes ? 'ring-emerald-500/40' : 'ring-rose-500/40'
   return (
-    <span
+    <a
+      href={profileHref}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={(e) => e.stopPropagation()}
+      aria-label={`Open ${name}'s profile in a new tab`}
       className={[
-        'relative inline-flex h-10 w-10 shrink-0 overflow-hidden rounded-full ring-2',
+        'relative inline-flex h-12 w-12 shrink-0 overflow-hidden rounded-md ring-2 transition-transform duration-200 hover:scale-[1.04]',
         ringTone,
         dim ? 'opacity-50' : '',
       ].join(' ')}
-      aria-hidden
     >
       <img
         src={`/models/${slug}.jpg`}
@@ -97,11 +111,11 @@ function Avatar({ slug, name, side, dim }: { slug: string; name: string; side: S
         }}
       />
       <span
-        className="absolute inset-0 hidden items-center justify-center bg-zinc-800 text-[12px] font-semibold tracking-tight text-zinc-300"
+        className="absolute inset-0 hidden items-center justify-center bg-zinc-800 text-[13px] font-semibold tracking-tight text-zinc-300"
       >
         {initials(name)}
       </span>
-    </span>
+    </a>
   )
 }
 
@@ -112,7 +126,6 @@ interface CompetitorRowProps {
   audience: bigint
   audienceLabel: string
   pct: number | null
-  multiplier: number | null
   active: boolean
   inactive: boolean
   resolved: boolean
@@ -131,7 +144,6 @@ function CompetitorRow({
   audience,
   audienceLabel,
   pct,
-  multiplier,
   active,
   inactive,
   resolved,
@@ -143,10 +155,11 @@ function CompetitorRow({
   onClick,
 }: CompetitorRowProps) {
   const yes = side === 'yes'
-  const sideUnderline = yes ? 'decoration-emerald-400' : 'decoration-rose-400'
-  const pillBase = yes
-    ? 'border-emerald-400/70 text-emerald-300 group-hover:border-emerald-400'
-    : 'border-rose-400/70 text-rose-300 group-hover:border-rose-400'
+  // Side identity is carried by the line under the name. The pill wears
+  // one color for both rows — Kalshi's pattern. Active fill takes the
+  // side hue so a click still flashes a confirmation.
+  const lineColor = yes ? 'bg-emerald-400' : 'bg-rose-400'
+  const pillBase = 'border-emerald-400/60 text-emerald-300 group-hover:border-emerald-400'
   const pillActive = yes
     ? 'border-emerald-400 bg-emerald-500/20 text-emerald-100 shadow-[0_0_0_1px_rgb(16_185_129/0.6)]'
     : 'border-rose-400 bg-rose-500/20 text-rose-100 shadow-[0_0_0_1px_rgb(244_63_94/0.6)]'
@@ -159,6 +172,10 @@ function CompetitorRow({
 
   const dim = resolved && isLoser
 
+  // Audience text — one number, no units inside the box. Kalshi shows
+  // just the score; units belong elsewhere.
+  void audienceLabel
+
   return (
     <button
       type="button"
@@ -166,21 +183,16 @@ function CompetitorRow({
       aria-pressed={active}
       disabled={resolved}
       className={[
-        'group flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left transition-colors duration-150',
+        'group flex w-full items-center gap-4 rounded-lg px-2 py-3 text-left transition-colors duration-150',
         rowSurface,
         dim ? 'opacity-60' : '',
       ].join(' ')}
     >
-      <Avatar slug={slug} name={name} side={side} dim={dim} />
+      <Avatar slug={slug} name={name} side={side} dim={dim} profileHref={profileHref} />
 
-      <span className="flex min-w-0 flex-1 flex-col">
+      <span className="flex min-w-0 flex-1 flex-col gap-1.5">
         <span className="flex items-center gap-2">
-          <span
-            className={[
-              'truncate text-[15px] font-semibold leading-tight tracking-tight text-zinc-100 underline decoration-2 underline-offset-[6px]',
-              sideUnderline,
-            ].join(' ')}
-          >
+          <span className="truncate text-[15px] font-semibold leading-tight tracking-tight text-zinc-100">
             {name}
           </span>
           {resolved && isWinner ? (
@@ -189,23 +201,18 @@ function CompetitorRow({
             </span>
           ) : null}
         </span>
-        <a
-          href={profileHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={(e) => e.stopPropagation()}
-          className="mt-1 inline-flex w-fit items-center gap-1 text-[10px] uppercase tracking-[0.1em] text-zinc-500 hover:text-zinc-300"
-        >
-          profile
-          <svg width="9" height="9" viewBox="0 0 9 9" aria-hidden fill="none">
-            <path d="M2 7L7 2M7 2H3M7 2V6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </a>
+        <span
+          aria-hidden
+          className={[
+            'block h-[2px] w-full rounded-full',
+            lineColor,
+            dim ? 'opacity-30' : '',
+          ].join(' ')}
+        />
       </span>
 
-      <span className="hidden shrink-0 sm:inline-flex h-9 items-center gap-1.5 rounded-md border border-zinc-700 bg-transparent px-2.5 text-[12px] tabular-nums text-zinc-300">
-        <span className="text-zinc-200">{compactAudience(audience)}</span>
-        <span className="text-zinc-500">{audienceLabel.split(' ')[0]}</span>
+      <span className="hidden shrink-0 sm:inline-flex h-9 min-w-[44px] items-center justify-center rounded-md border border-zinc-700 bg-transparent px-2.5 text-[13px] font-medium tabular-nums text-zinc-200">
+        {compactAudience(audience)}
       </span>
 
       {oneSidedRefund || refund ? (
@@ -213,10 +220,7 @@ function CompetitorRow({
           refund
         </span>
       ) : (
-        <span className="ml-auto flex shrink-0 items-center gap-2">
-          <span className="hidden text-[12px] tabular-nums text-zinc-500 sm:inline">
-            {formatMultiplier(multiplier)}
-          </span>
+        <span className="ml-auto flex shrink-0 items-center">
           <span
             className={[
               'inline-flex h-10 min-w-[72px] items-center justify-center rounded-full border-2 px-4 text-[16px] font-semibold tabular-nums tracking-tight transition-colors duration-150',
@@ -234,15 +238,6 @@ function CompetitorRow({
 export function MarketRow({ slot, state, selected, selectedSide, onSelectSide }: MarketRowProps) {
   const yesPct = useMemo(() => computeYesPct(state), [state])
   const noPct = yesPct === null ? null : 100 - yesPct
-
-  const yesMult = useMemo(
-    () => state ? payoutMultiplier(state.totalYes, state.totalNo, 'yes') : null,
-    [state],
-  )
-  const noMult = useMemo(
-    () => state ? payoutMultiplier(state.totalYes, state.totalNo, 'no') : null,
-    [state],
-  )
 
   const oneSided = !!state && (
     (state.totalYes === 0n && state.totalNo > 0n) ||
@@ -371,7 +366,6 @@ export function MarketRow({ slot, state, selected, selectedSide, onSelectSide }:
           audience={slot.audienceA}
           audienceLabel={audienceLbl}
           pct={yesPct}
-          multiplier={yesMult}
           active={selected && selectedSide === 'yes'}
           inactive={selected && selectedSide !== 'yes'}
           resolved={resolved}
@@ -389,7 +383,6 @@ export function MarketRow({ slot, state, selected, selectedSide, onSelectSide }:
           audience={slot.audienceB}
           audienceLabel={audienceLbl}
           pct={noPct}
-          multiplier={noMult}
           active={selected && selectedSide === 'no'}
           inactive={selected && selectedSide !== 'no'}
           resolved={resolved}
@@ -404,11 +397,11 @@ export function MarketRow({ slot, state, selected, selectedSide, onSelectSide }:
 
       <footer className="relative mt-4 flex items-center justify-between gap-3 border-t border-zinc-800/60 pt-3 text-[12px] text-zinc-500">
         <span>
-          ${formatPoolFloat(totalPoolFloat)} pool
+          <span className="tabular-nums text-zinc-300">${formatPoolFloat(totalPoolFloat)}</span> pool
         </span>
-        <span className="text-zinc-600">
-          settles {windowLabel(slot.windowSecs)} after open
-        </span>
+        {!resolved && !closed ? (
+          <span className="text-zinc-600">{windowLabel(slot.windowSecs)} window</span>
+        ) : null}
       </footer>
     </article>
   )
