@@ -625,6 +625,7 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/sources/registry", get(sources_registry))
         // Solana oracle daemon feed — numeric source_id → 1e18-scaled price
         .route("/v1/sources/:source_id/price", get(source_price))
+        .route("/v1/sources/:source_id/history", get(source_history))
         // Batch config endpoints
         .route("/batches/recommended", get(batches_recommended))
         .route("/batches/config/:hash", get(batch_config_by_hash))
@@ -2561,6 +2562,78 @@ async fn source_price(
         price: price_u128.to_string(),
         ts: fetched_at.timestamp(),
     }))
+}
+
+// ---- /v1/sources/:source_id/history ----
+//
+// Per-minute time-bucketed history of the same SUM-of-prefix signal that
+// `source_price` returns instantaneously. Frontend sparkline seed.
+
+#[derive(Deserialize)]
+struct HistoryQuery {
+    minutes: Option<u32>,
+}
+
+#[derive(Serialize)]
+struct HistoryPoint {
+    ts: i64,
+    raw: String,
+}
+
+#[derive(Serialize)]
+struct HistoryResponse {
+    points: Vec<HistoryPoint>,
+}
+
+async fn source_history(
+    AxumPath(source_id): AxumPath<u32>,
+    Query(q): Query<HistoryQuery>,
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<HistoryResponse>, (StatusCode, Json<ErrorResponse>)> {
+    let (source, prefix) = source_id_to_tube(source_id).ok_or_else(|| {
+        (
+            StatusCode::NOT_FOUND,
+            Json(ErrorResponse {
+                error: format!("Unknown source_id: {}", source_id),
+            }),
+        )
+    })?;
+
+    let minutes = q.minutes.unwrap_or(30).clamp(1, 1440);
+
+    // Time-bucket per minute. Sum across asset_ids in the prefix at each
+    // bucket. Frontend takes ~30 points; minute-buckets at 30 min = 30
+    // rows. The interval is built from $3 minutes — Postgres rejects
+    // parameterized intervals, so we cast to text first.
+    let rows: Vec<(i64, rust_decimal::Decimal)> = sqlx::query_as(
+        r#"
+        SELECT
+            (date_part('epoch', date_trunc('minute', fetched_at)))::bigint AS bucket_ts,
+            COALESCE(SUM(value), 0)::numeric AS total
+        FROM market_prices
+        WHERE source = $1
+          AND asset_id LIKE $2
+          AND fetched_at >= NOW() - ($3::int || ' minutes')::interval
+        GROUP BY bucket_ts
+        ORDER BY bucket_ts ASC
+        "#,
+    )
+    .bind(source)
+    .bind(format!("{}%", prefix))
+    .bind(minutes as i32)
+    .fetch_all(&state.pool)
+    .await
+    .map_err(db_error)?;
+
+    let points = rows
+        .into_iter()
+        .map(|(ts, total)| {
+            let raw = decimal_to_u128_saturating(&total).to_string();
+            HistoryPoint { ts, raw }
+        })
+        .collect();
+
+    Ok(Json(HistoryResponse { points }))
 }
 
 /// Saturating cast: tube view counts are raw integers, already at the
