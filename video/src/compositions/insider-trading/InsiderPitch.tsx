@@ -51,9 +51,12 @@ export const PITCH_SCENES = {
   // frames × 3 phases = 360 frames (12 s). Downstream scenes shift by
   // +240 to preserve their own durations.
   point1: { start: 190, end: 550 },
-  point2: { start: 550, end: 650 },
-  point3: { start: 650, end: 750 },
-  closing: { start: 750, end: 898 },
+  // Point 2 doubled (100 → 200 frames). The phone needs the runway to
+  // traverse the carousel fully to the right edge, and the two bottom
+  // consequence lines need room to land instead of clipping each other.
+  point2: { start: 550, end: 750 },
+  point3: { start: 750, end: 850 },
+  closing: { start: 850, end: 998 },
 } as const;
 
 export const PITCH_DURATION = PITCH_SCENES.closing.end;
@@ -879,16 +882,16 @@ const STREAM_CARDS = Array.from(
 const GC_TRACK_LEN = GC_UNIT * STREAM_CARDS.length;
 
 // Rotating privacy consequences — one appears, holds, leaves, the next
-// takes its place. Scene duration is 100 frames; each message owns a
-// third of the run.
+// takes its place. Scene duration is 200 frames; each message owns half
+// the run so both have time to be read.
 const PRIVACY_CONSEQUENCES: readonly string[] = [
   "No insider copying trades",
   "No insider front running trades",
 ];
 
 const MESSAGE_WINDOWS: readonly { start: number; end: number }[] = [
-  { start: 20, end: 58 },
-  { start: 58, end: 100 },
+  { start: 24, end: 112 },
+  { start: 112, end: 200 },
 ];
 
 const Point2Scene: React.FC<{
