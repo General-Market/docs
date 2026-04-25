@@ -25,7 +25,7 @@ The phrase *"build a twitch trading bot on generalmarket.io"* triggers nothing l
 | File | Purpose |
 |---|---|
 | `enter-demo.sh` | Spawns an interactive sub-shell with `PROMPT='demo %~ %# '`, terminal title `demo`, cwd `/tmp/blank`, neutral git envs. Exit returns to parent. **Primary entry point.** |
-| `.zshrc` | Loaded by the sub-shell via `ZDOTDIR=/tmp/gm-demo`. Sets prompt and title. |
+| `.zshrc` | Loaded by the sub-shell via `ZDOTDIR=/tmp/gm-demo`. Sets prompt, title, and aliases `claude` → `claude --permission-mode bypassPermissions` so WebFetch and Bash execute without prompts. The global `dontAsk` policy stays in force outside the sub-shell. |
 | `setup.sh` / `restore.sh` | Macos-level hostname swap. Cosmetic — supplanted by `enter-demo.sh`'s prompt override. Kept for paranoia. |
 | `scan.sh` | Read-only grep for identifying strings. |
 
