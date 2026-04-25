@@ -99,3 +99,36 @@ Full PDA list: `devnet-receipt.md`.
 - `activate-oracle.sh` not executed (24h on-chain timer).
 - nsgame Postgres connectivity not wired (needs decision above).
 - No cross-VPS networking — daemon reads data-node over the public internet via `https://api.generalmarket.io`, not a private socket.
+
+---
+
+## 2026-04-25 — Helius RPC switch + tube source migration
+
+Two operational changes recorded after the Apr 23 deploy.
+
+### Helius free-tier RPC
+
+`/etc/prediction-oracle.env` `RPC_URL` switched from public devnet to Helius free tier. Backup at `/etc/prediction-oracle.env.bak-2026-04-25`. Daemon restarted via `systemctl restart prediction-oracle`; boot passed (identity verified, `boot balance check passed sol=1.0`, scheduler started 30s polling). Reason: public devnet was throttling `getProgramAccounts` (errors visible in `journalctl -u prediction-oracle` from Apr 24). Helius key reused from `.env.data-node` at the mono-repo root — no new credential.
+
+```
+RPC_URL=https://devnet.helius-rpc.com/?api-key=<key>
+```
+
+### On-chain source migration
+
+The three crypto-named PDAs from bootstrap (`BTC/USD`, `ETH/USD`, `SOL/USD`) were repurposed for tube sources via `upsert_source`. Two new PDAs created. Idempotent — PDA addresses do not change, only the stored name. Run from `~/.config/solana/id.json` (admin keypair `FdmxwdK1nSGqp4r14YZyGjyxs6HgZ3opEdnLZBUQViQK`).
+
+| id | name | PDA | tx | action |
+|---:|---|---|---|---|
+| 1 | `tubes_xv` | `EarX1BfphjYgjAKrhGxfE5Maxd347gscYPCddz7avoD1` | `4V8bHAFqqJq9qYanEfGwYgzugCsQz5TACi4Ect8CMCbTvUjRRcVVgakQj1SW7m569yEQN8Zi2vEr5pEKJUcx8kdn` | repurpose (was BTC/USD) |
+| 2 | `tubes_xn` | `A4pb4ToWVXmjZFqPSdqMsyjeepH1dLujXVeM2nS8QyWj` | `3aL2HfU7eVMEYzqmmnHtA2gXGYyeRS4w5FLpU55pnxQz77eGf2V9YYwNXijENEb1zFRZQDmEfsMEze13FybMxgLc` | repurpose (was ETH/USD) |
+| 3 | `tubes_ph` | `71iQEg1SkMdV1bK2y5y569JReP2TtCz9wteVxZyUYLXT` | `3bkQyWazoh6SSMpbccLZnT3WrsQkMJSCQ8RQvsywGZZq5oCUWpUH2uzMRamhrhts17VZshpn1bVEASsxjz2Msd13` | repurpose (was SOL/USD) |
+| 4 | `tubes_cb` | `BmJZewV4cc6AzKdsF7ASZAjf7S1coJ2HdEgmXYrW4dR7` | `43cNFcc7HZxWBxCBjMpd3oSAhQks48GHJ15sVq2HoTuc69HNh89gb5du17R56VyhgtW1bzuZUpCuAmrZfiofpg92` | create |
+| 5 | `tubes_ep` | `4xbHGV1SMJSq4BNe5PzJkWHCy5T8pjgR6AMg6oUKsDmy` | `hRzVez2oVbptLTrJECyzm2h3nDovV6UkYaPrf6m7Nr8fX9RMTHrXMSoyifzvMUGvvwDeddpXjzXnNbnkMci1CM8` | create |
+
+Hex-dump verified for id=1: bytes 0x0c-0x13 read `tubes_xv`. Script: `programs-solana/prediction-market/deploy/migrate-tube-sources.ts`. Re-run is safe (idempotent).
+
+### Still pending after this entry
+
+- nsgame data-node binary on VPS 3 — not yet built. The oracle's `DATA_NODE_URL` still points at the financial data-node. First call to `close_market` will fail with a 405 from the wrong host until the new instance is up.
+- Frontend ↔ Postgres — same as before. Phase 0 SSH tunnel for local dev; Phase 1 Dokploy deferred.
