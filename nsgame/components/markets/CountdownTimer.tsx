@@ -5,12 +5,15 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 // One tick. Many countdowns. Spawning fifty intervals to display the same
 // second is a small kind of waste, but it adds up.
 
-const TickContext = createContext<number>(Math.floor(Date.now() / 1000))
+// 0 means "not yet mounted" — SSR and the first client render both emit it,
+// so the markup matches. The real time is set inside useEffect.
+const TickContext = createContext<number>(0)
 
 export function CountdownTickProvider({ children }: { children: ReactNode }) {
-  const [now, setNow] = useState<number>(() => Math.floor(Date.now() / 1000))
+  const [now, setNow] = useState<number>(0)
 
   useEffect(() => {
+    setNow(Math.floor(Date.now() / 1000))
     const id = window.setInterval(() => {
       setNow(Math.floor(Date.now() / 1000))
     }, 1000)
@@ -20,13 +23,14 @@ export function CountdownTickProvider({ children }: { children: ReactNode }) {
   return <TickContext.Provider value={now}>{children}</TickContext.Provider>
 }
 
-function useNowSecs(): number {
+export function useNowSecs(): number {
   // If the provider is missing, fall back to a local clock so the
   // component still renders. Slightly more setIntervals; no breakage.
   const ctx = useContext(TickContext)
-  const [local, setLocal] = useState<number>(() => Math.floor(Date.now() / 1000))
+  const [local, setLocal] = useState<number>(0)
   useEffect(() => {
     if (ctx) return
+    setLocal(Math.floor(Date.now() / 1000))
     const id = window.setInterval(() => setLocal(Math.floor(Date.now() / 1000)), 1000)
     return () => window.clearInterval(id)
   }, [ctx])
@@ -57,12 +61,14 @@ export function CountdownTimer({ target, closedLabel = 'closed', className }: Co
   const now = useNowSecs()
   const remaining = target - now
   const text = useMemo(() => {
+    // Stable placeholder until the client clock is live — keeps SSR markup steady.
+    if (now === 0) return '—'
     if (remaining <= 0) return closedLabel
     return formatRemaining(remaining)
-  }, [remaining, closedLabel])
+  }, [now, remaining, closedLabel])
 
   return (
-    <span className={className} aria-live="polite">
+    <span className={className} aria-live="polite" suppressHydrationWarning>
       {text}
     </span>
   )

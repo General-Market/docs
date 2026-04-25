@@ -105,6 +105,10 @@ export function useUpcomingSlots(opts?: UseUpcomingSlotsOpts): UpcomingSlot[] {
 
   return useMemo(() => {
     return generateSlots({
+      // Hard cap: render the next few slots per catalog entry. The free
+      // tier of Helius cannot survive hundreds of getAccountInfo polls
+      // every minute. The user can paginate by horizon when we add it.
+      maxSlotsPerEntry: 4,
       catalog: CATALOG,
       nowSecs,
       horizonDays,
@@ -116,7 +120,12 @@ export function useUpcomingSlots(opts?: UseUpcomingSlotsOpts): UpcomingSlot[] {
 
 // ── useMarketState ──────────────────────────────────────────────────────
 
-const MARKET_POLL_MS = 15_000
+// Devnet Helius free tier rate-limits hard at burst > ~50 req/s. With
+// dozens of cards calling this hook in parallel, 15s polls would 429 the
+// account-info endpoint within the first minute. 60s is enough for a
+// market that closes in minutes; the close/resolve cadence is on the
+// chain, not on this poll.
+const MARKET_POLL_MS = 60_000
 
 export function useMarketState(marketPda: string | null): MarketState | null {
   const { connection } = useWallet()

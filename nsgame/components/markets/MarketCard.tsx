@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react'
 import type { UpcomingSlot, MarketState } from '@/lib/markets/hooks.stub'
-import { CountdownTimer } from './CountdownTimer'
+import { CountdownTimer, useNowSecs } from './CountdownTimer'
 
 // One tile. One market. Question, source, countdown, odds, click.
 
@@ -38,7 +38,9 @@ export function MarketCard({ slot, state, onSelect }: MarketCardProps) {
     [state],
   )
 
-  const closed = slot.closeTime <= Math.floor(Date.now() / 1000)
+  // Avoid Date.now() at render — it diverges between SSR and hydration.
+  const now = useNowSecs()
+  const closed = now > 0 && slot.closeTime <= now
 
   return (
     <button

@@ -11,6 +11,7 @@ import {
 } from '@/lib/markets/hooks.stub'
 import { useStakeBalance } from '@/lib/markets/hooks'
 import { CountdownTimer } from './CountdownTimer'
+import FaucetButton from './FaucetButton'
 
 // Bottom sheet on mobile. Right drawer on desktop. The size of the
 // commitment is small; the framing should match.
@@ -240,15 +241,18 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
                     </button>
                   ))}
                 </div>
-                <p className="font-mono text-[10px] uppercase tracking-[0.08em] text-zinc-500">
-                  {!connected
-                    ? 'Connect a wallet to see balance.'
-                    : stakeBalance.loading && stakeBalance.raw === 0n
-                      ? 'balance: —'
-                      : stakeBalance.error
-                        ? `balance: ${stakeBalance.error.toLowerCase()}`
-                        : `balance: ${stakeBalance.display} USDC`}
-                </p>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.08em] text-zinc-500">
+                    {!connected
+                      ? 'Connect a wallet to see balance.'
+                      : stakeBalance.loading && stakeBalance.raw === 0n
+                        ? 'balance: —'
+                        : stakeBalance.error
+                          ? `balance: ${stakeBalance.error.toLowerCase()}`
+                          : `balance: ${stakeBalance.display} USDC`}
+                  </p>
+                  {connected && stakeBalance.raw === 0n && <FaucetButton />}
+                </div>
               </div>
 
               {insufficientBalance && (

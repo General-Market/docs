@@ -1,10 +1,9 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   type UpcomingSlot,
   useUpcomingSlots,
-  useMarketState,
 } from '@/lib/markets/hooks.stub'
 import { MarketCard } from './MarketCard'
 import { BetSheet } from './BetSheet'
@@ -73,8 +72,11 @@ function bucketize(slots: UpcomingSlot[], days: number): DayBucket[] {
 // Per-card market state lookup. A small wrapper so the parent doesn't have
 // to call the hook in a loop (rules of hooks).
 function CardWithState({ slot, onSelect }: { slot: UpcomingSlot; onSelect: (s: UpcomingSlot) => void }) {
-  const state = useMarketState(slot.marketPda)
-  return <MarketCard slot={slot} state={state} onSelect={onSelect} />
+  // Live state is fetched on-click in BetSheet, not eagerly per card.
+  // Most cards are un-instantiated PDAs anyway — every poll would be a
+  // wasted RPC. The card renders the "make first bet" empty state by
+  // default; once a market exists, BetSheet fills in the totals.
+  return <MarketCard slot={slot} state={null} onSelect={onSelect} />
 }
 
 export interface MarketCalendarProps {
@@ -91,10 +93,18 @@ export function MarketCalendar({ source, horizon }: MarketCalendarProps) {
 
   const [selected, setSelected] = useState<UpcomingSlot | null>(null)
 
-  const days = horizon === 'today' ? 1 : 7
-  const buckets = useMemo(() => bucketize(slots, days), [slots, days])
+  // bucketize() reads `new Date()` for "today/tomorrow" labels — defer it to
+  // post-mount so SSR and the first client render emit the same shell.
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => { setMounted(true) }, [])
 
-  const isEmpty = buckets.every(b => b.slots.length === 0)
+  const days = horizon === 'today' ? 1 : 7
+  const buckets = useMemo(
+    () => (mounted ? bucketize(slots, days) : []),
+    [mounted, slots, days],
+  )
+
+  const isEmpty = mounted && buckets.every(b => b.slots.length === 0)
 
   return (
     <CountdownTickProvider>
@@ -120,7 +130,7 @@ export function MarketCalendar({ source, horizon }: MarketCalendarProps) {
                   </header>
                   <div className="space-y-3">
                     {b.slots.map(s => (
-                      <CardWithState key={s.marketPda} slot={s} onSelect={setSelected} />
+                      <CardWithState key={`${s.catalogId}:${s.closeTime}`} slot={s} onSelect={setSelected} />
                     ))}
                   </div>
                 </section>
@@ -148,7 +158,7 @@ export function MarketCalendar({ source, horizon }: MarketCalendarProps) {
                     <p className="text-[11px] text-zinc-400">—</p>
                   ) : (
                     b.slots.map(s => (
-                      <CardWithState key={s.marketPda} slot={s} onSelect={setSelected} />
+                      <CardWithState key={`${s.catalogId}:${s.closeTime}`} slot={s} onSelect={setSelected} />
                     ))
                   )}
                 </div>
