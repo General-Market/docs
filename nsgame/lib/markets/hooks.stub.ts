@@ -9,14 +9,18 @@
 export {
   useUpcomingSlots,
   useMarketState,
+  useMarketStatesBatch,
   useRecentBets,
   usePlaceBet,
+  useSourcePrice,
 } from './hooks'
 
 export type {
   UpcomingSlot,
   MarketState,
+  MarketStateMap,
   RecentBet,
+  SourcePrice,
   UseUpcomingSlotsOpts,
   UsePlaceBetReturn,
 } from './hooks'

@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
+import { SourceIcon } from './SourceIcon'
 
 // Two chip groups. Source. Horizon. The state lives in the parent — URL
 // sync is left as a TODO so deep links work the day Agent B wants them.
@@ -19,7 +20,7 @@ const SOURCES: Array<{ id: SourceFilter; label: string }> = [
 
 const HORIZONS: Array<{ id: HorizonFilter; label: string }> = [
   { id: 'today', label: 'today' },
-  { id: '7d', label: '7 days' },
+  { id: '7d', label: '7d' },
   { id: 'all', label: 'all' },
 ]
 
@@ -32,8 +33,8 @@ export interface FilterBarProps {
 
 function chipClasses(active: boolean): string {
   return [
-    'inline-flex h-9 items-center rounded-full border px-3 text-[12px] font-medium uppercase tracking-[0.08em] transition-colors',
-    'min-w-[44px] justify-center',
+    'inline-flex h-8 items-center gap-1.5 rounded-full border px-3 font-mono text-[12px] tracking-tight transition-colors',
+    'min-w-[44px] justify-center snap-start shrink-0',
     active
       ? 'border-zinc-900 bg-zinc-900 text-white'
       : 'border-zinc-200 bg-white text-zinc-600 hover:border-zinc-400 hover:text-zinc-900',
@@ -52,39 +53,55 @@ export function FilterBar({ source, horizon, onSourceChange, onHorizonChange }: 
   })), [horizon])
 
   return (
-    <div className="flex flex-col gap-3 border-b border-zinc-200 bg-white py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
-      <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide" role="group" aria-label="Source filter">
-        <span className="shrink-0 text-[10px] font-mono uppercase tracking-[0.12em] text-zinc-500">
-          source
-        </span>
-        {sourceChips.map(c => (
-          <button
-            key={String(c.id)}
-            type="button"
-            onClick={() => onSourceChange(c.id)}
-            aria-pressed={c.active}
-            className={chipClasses(c.active)}
-          >
-            {c.label}
-          </button>
-        ))}
-      </div>
+    <div className="sticky top-14 z-20 -mx-4 border-b border-zinc-200/60 bg-white/80 px-4 backdrop-blur-md sm:top-16 sm:mx-0 sm:px-0">
+      <div className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+        <div
+          className="flex snap-x snap-mandatory items-center gap-2 overflow-x-auto scrollbar-hide"
+          role="group"
+          aria-label="Source filter"
+        >
+          <span className="shrink-0 font-mono text-[11px] uppercase tracking-[0.14em] text-zinc-500">
+            source
+          </span>
+          {sourceChips.map(c => (
+            <button
+              key={String(c.id)}
+              type="button"
+              onClick={() => onSourceChange(c.id)}
+              aria-pressed={c.active}
+              className={chipClasses(c.active)}
+            >
+              {typeof c.id === 'number' ? (
+                <SourceIcon
+                  sourceId={c.id as 1 | 2 | 3 | 4 | 5}
+                  className="h-3 w-3"
+                />
+              ) : null}
+              <span>{c.label}</span>
+            </button>
+          ))}
+        </div>
 
-      <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide" role="group" aria-label="Horizon filter">
-        <span className="shrink-0 text-[10px] font-mono uppercase tracking-[0.12em] text-zinc-500">
-          horizon
-        </span>
-        {horizonChips.map(c => (
-          <button
-            key={c.id}
-            type="button"
-            onClick={() => onHorizonChange(c.id)}
-            aria-pressed={c.active}
-            className={chipClasses(c.active)}
-          >
-            {c.label}
-          </button>
-        ))}
+        <div
+          className="flex snap-x snap-mandatory items-center gap-2 overflow-x-auto scrollbar-hide"
+          role="group"
+          aria-label="Horizon filter"
+        >
+          <span className="shrink-0 font-mono text-[11px] uppercase tracking-[0.14em] text-zinc-500">
+            horizon
+          </span>
+          {horizonChips.map(c => (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => onHorizonChange(c.id)}
+              aria-pressed={c.active}
+              className={chipClasses(c.active)}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   )

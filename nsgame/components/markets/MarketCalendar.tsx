@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   type UpcomingSlot,
+  type MarketState,
   useUpcomingSlots,
+  useMarketStatesBatch,
 } from '@/lib/markets/hooks.stub'
 import { MarketCard } from './MarketCard'
 import { BetSheet } from './BetSheet'
@@ -69,14 +71,19 @@ function bucketize(slots: UpcomingSlot[], days: number): DayBucket[] {
   return buckets
 }
 
-// Per-card market state lookup. A small wrapper so the parent doesn't have
-// to call the hook in a loop (rules of hooks).
-function CardWithState({ slot, onSelect }: { slot: UpcomingSlot; onSelect: (s: UpcomingSlot) => void }) {
-  // Live state is fetched on-click in BetSheet, not eagerly per card.
-  // Most cards are un-instantiated PDAs anyway — every poll would be a
-  // wasted RPC. The card renders the "make first bet" empty state by
-  // default; once a market exists, BetSheet fills in the totals.
-  return <MarketCard slot={slot} state={null} onSelect={onSelect} />
+// Per-card pass-through. The parent batches all visible PDAs into a single
+// getMultipleAccountsInfo call (every 30s) and threads each slot's snapshot
+// down by prop. Cards stay dumb — they read state, they do not poll.
+function CardWithState({
+  slot,
+  state,
+  onSelect,
+}: {
+  slot: UpcomingSlot
+  state: MarketState | null
+  onSelect: (s: UpcomingSlot) => void
+}) {
+  return <MarketCard slot={slot} state={state} onSelect={onSelect} />
 }
 
 export interface MarketCalendarProps {
@@ -104,6 +111,15 @@ export function MarketCalendar({ source, horizon }: MarketCalendarProps) {
     [mounted, slots, days],
   )
 
+  // One batched account-info call for every visible slot. The hook handles
+  // chunking (max 100 per call), polls every 30s, skips the network when
+  // membership doesn't change.
+  const visiblePdas = useMemo(
+    () => slots.map(s => s.marketPda),
+    [slots],
+  )
+  const stateMap = useMarketStatesBatch(visiblePdas)
+
   const isEmpty = mounted && buckets.every(b => b.slots.length === 0)
 
   return (
@@ -130,7 +146,7 @@ export function MarketCalendar({ source, horizon }: MarketCalendarProps) {
                   </header>
                   <div className="space-y-3">
                     {b.slots.map(s => (
-                      <CardWithState key={`${s.catalogId}:${s.closeTime}`} slot={s} onSelect={setSelected} />
+                      <CardWithState key={`${s.catalogId}:${s.closeTime}`} slot={s} state={stateMap[s.marketPda] ?? null} onSelect={setSelected} />
                     ))}
                   </div>
                 </section>
@@ -158,7 +174,7 @@ export function MarketCalendar({ source, horizon }: MarketCalendarProps) {
                     <p className="text-[11px] text-zinc-400">—</p>
                   ) : (
                     b.slots.map(s => (
-                      <CardWithState key={`${s.catalogId}:${s.closeTime}`} slot={s} onSelect={setSelected} />
+                      <CardWithState key={`${s.catalogId}:${s.closeTime}`} slot={s} state={stateMap[s.marketPda] ?? null} onSelect={setSelected} />
                     ))
                   )}
                 </div>

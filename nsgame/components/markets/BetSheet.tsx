@@ -9,7 +9,12 @@ import {
   useMarketState,
   usePlaceBet,
 } from '@/lib/markets/hooks.stub'
-import { useStakeBalance } from '@/lib/markets/hooks'
+import {
+  useStakeBalance,
+  useSourcePrice,
+  payoutMultiplier,
+  formatMultiplier,
+} from '@/lib/markets/hooks'
 import { CountdownTimer } from './CountdownTimer'
 import FaucetButton from './FaucetButton'
 
@@ -42,6 +47,7 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
   const state = useMarketState(slot?.marketPda ?? null)
   const placeBetCtl = usePlaceBet()
   const stakeBalance = useStakeBalance()
+  const price = useSourcePrice(slot?.sourceId ?? null)
 
   const [side, setSide] = useState<Side>('yes')
   const [amount, setAmount] = useState<string>(PRESETS[0])
@@ -86,6 +92,19 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
     if (total === 0n) return null
     return Number((state.totalYes * 1000n) / total) / 10
   }, [state])
+
+  const yesMult = useMemo(
+    () => state ? payoutMultiplier(state.totalYes, state.totalNo, 'yes') : null,
+    [state],
+  )
+  const noMult = useMemo(
+    () => state ? payoutMultiplier(state.totalYes, state.totalNo, 'no') : null,
+    [state],
+  )
+  const oneSided = !!state && (
+    (state.totalYes === 0n && state.totalNo > 0n) ||
+    (state.totalNo === 0n && state.totalYes > 0n)
+  )
 
   async function handleSubmit() {
     if (!slot) return
@@ -145,6 +164,20 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
                 <h2 className="text-base font-semibold leading-snug text-zinc-900">
                   {slot.label}
                 </h2>
+                <p className="font-mono text-[11px] text-zinc-600">
+                  {slot.sourceName.replace(/^tubes_/, '')}:{' '}
+                  <span className="text-zinc-900">{price.raw === null ? '—' : price.display}</span>
+                  {price.changeBp !== null && price.changeBp !== 0 && (
+                    <span
+                      className={[
+                        'ml-2',
+                        price.changeBp > 0 ? 'text-emerald-700' : 'text-rose-700',
+                      ].join(' ')}
+                    >
+                      {price.changeBp > 0 ? '+' : ''}{price.changeBp} bp
+                    </span>
+                  )}
+                </p>
               </div>
               <button
                 type="button"
@@ -183,6 +216,54 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
                   </>
                 )}
               </div>
+
+              {state && (
+                <div className="rounded-md border border-zinc-200 bg-white p-3">
+                  <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.08em] text-zinc-500">
+                    if you win
+                  </p>
+                  {oneSided ? (
+                    <p className="text-sm italic text-zinc-600">
+                      refund · no opposing side
+                    </p>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div
+                        className={[
+                          'rounded px-3 py-2 transition-colors',
+                          side === 'yes' ? 'bg-emerald-50' : 'bg-transparent',
+                        ].join(' ')}
+                      >
+                        <p className="font-mono text-[10px] uppercase tracking-[0.08em] text-emerald-700">
+                          if YES
+                        </p>
+                        <p className={[
+                          'font-mono tabular-nums',
+                          side === 'yes' ? 'text-2xl font-semibold text-emerald-700' : 'text-lg text-zinc-700',
+                        ].join(' ')}>
+                          {formatMultiplier(yesMult)}
+                        </p>
+                      </div>
+                      <div
+                        className={[
+                          'rounded px-3 py-2 transition-colors',
+                          side === 'no' ? 'bg-rose-50' : 'bg-transparent',
+                        ].join(' ')}
+                      >
+                        <p className="font-mono text-[10px] uppercase tracking-[0.08em] text-rose-700">
+                          if NO
+                        </p>
+                        <p className={[
+                          'font-mono tabular-nums',
+                          side === 'no' ? 'text-2xl font-semibold text-rose-700' : 'text-lg text-zinc-700',
+                        ].join(' ')}>
+                          {formatMultiplier(noMult)}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-2">
                 <button
