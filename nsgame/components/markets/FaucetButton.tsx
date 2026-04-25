@@ -79,8 +79,8 @@ export default function FaucetButton({ onMinted }: FaucetButtonProps) {
         className={[
           'h-7 rounded-md border px-2.5 font-mono text-[10px] uppercase tracking-[0.08em] transition-colors',
           pending
-            ? 'cursor-not-allowed border-zinc-200 bg-zinc-100 text-zinc-400'
-            : 'border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50',
+            ? 'cursor-not-allowed border-zinc-800 bg-zinc-900 text-zinc-600'
+            : 'border-zinc-700 bg-transparent text-zinc-300 hover:bg-zinc-800',
         ].join(' ')}
       >
         {pending ? 'Minting…' : 'Mint 100 USDC'}

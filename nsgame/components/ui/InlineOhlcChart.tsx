@@ -55,35 +55,35 @@ export function InlineOhlcChart({ itpId, height = 200, createdAt }: InlineOhlcCh
         width: chartContainerRef.current.clientWidth,
         height,
         layout: {
-          background: { color: '#fafafa' },
-          textColor: '#71717a',
+          background: { color: '#09090b' },
+          textColor: '#a1a1aa',
           fontFamily: 'sans-serif',
         },
         grid: {
-          vertLines: { color: '#f4f4f5' },
-          horzLines: { color: '#f4f4f5' },
+          vertLines: { color: '#27272a' },
+          horzLines: { color: '#27272a' },
         },
         crosshair: {
-          vertLine: { color: '#18181b', width: 1, style: 2 },
-          horzLine: { color: '#18181b', width: 1, style: 2 },
+          vertLine: { color: '#a1a1aa', width: 1, style: 2 },
+          horzLine: { color: '#a1a1aa', width: 1, style: 2 },
         },
         timeScale: {
-          borderColor: '#e4e4e7',
+          borderColor: '#3f3f46',
           timeVisible: true,
           secondsVisible: false,
         },
         rightPriceScale: {
-          borderColor: '#e4e4e7',
+          borderColor: '#3f3f46',
         },
       })
 
       const series = chart.addSeries(lc.CandlestickSeries, {
-        upColor: '#16a34a',
-        downColor: '#dc2626',
-        borderUpColor: '#16a34a',
-        borderDownColor: '#dc2626',
-        wickUpColor: '#16a34a',
-        wickDownColor: '#dc2626',
+        upColor: '#34d399',
+        downColor: '#fb7185',
+        borderUpColor: '#34d399',
+        borderDownColor: '#fb7185',
+        wickUpColor: '#34d399',
+        wickDownColor: '#fb7185',
         priceFormat: {
           type: 'price',
           precision: 6,
@@ -190,7 +190,7 @@ export function InlineOhlcChart({ itpId, height = 200, createdAt }: InlineOhlcCh
   }, [chartReady, data, timeframe, itpId])
 
   return (
-    <div className="relative rounded-lg overflow-hidden border border-border-light mb-2">
+    <div className="relative rounded-lg overflow-hidden border border-zinc-800 mb-2 bg-zinc-950">
       {/* Timeframe selector */}
       <div className="flex items-center gap-1 px-3 pt-2 pb-1">
         {TIMEFRAMES.map(tf => (
@@ -199,8 +199,8 @@ export function InlineOhlcChart({ itpId, height = 200, createdAt }: InlineOhlcCh
             onClick={() => setTimeframe(tf.value)}
             className={`px-2.5 py-0.5 text-[11px] font-semibold rounded transition-colors ${
               timeframe === tf.value
-                ? 'bg-zinc-900 text-white'
-                : 'text-text-muted hover:text-text-primary hover:bg-zinc-100'
+                ? 'bg-zinc-100 text-zinc-950'
+                : 'text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800'
             }`}
           >
             {tf.label}
@@ -213,13 +213,13 @@ export function InlineOhlcChart({ itpId, height = 200, createdAt }: InlineOhlcCh
 
       {/* Loading / error overlays */}
       {isLoading && data.length === 0 && (
-        <div className="absolute inset-0 flex items-center justify-center bg-[#fafafa]">
-          <div className="w-5 h-5 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin" />
+        <div className="absolute inset-0 flex items-center justify-center bg-zinc-950">
+          <div className="w-5 h-5 border-2 border-zinc-600 border-t-transparent rounded-full animate-spin" />
         </div>
       )}
       {error && (
-        <div className="absolute inset-0 flex items-center justify-center bg-[#fafafa]">
-          <p className="text-xs text-color-down">{error}</p>
+        <div className="absolute inset-0 flex items-center justify-center bg-zinc-950">
+          <p className="text-xs text-rose-400">{error}</p>
         </div>
       )}
     </div>

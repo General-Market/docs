@@ -69,7 +69,7 @@ function LoaderCaption({ context = 'default', className }: { context?: string; c
 
   return (
     <p className={cn(
-      'font-mono text-[12px] text-text-muted transition-opacity duration-300 h-[18px]',
+      'font-mono text-[12px] text-zinc-500 transition-opacity duration-300 h-[18px]',
       visible ? 'opacity-100' : 'opacity-0',
       className
     )}>
@@ -93,7 +93,7 @@ export function BatchCardsSkeleton() {
         {Array.from({ length: 6 }).map((_, i) => (
           <div
             key={i}
-            className="bg-card border border-border-light rounded-card p-4"
+            className="bg-zinc-900 border border-zinc-800 rounded-card p-4"
             style={{ animationDelay: `${i * 80}ms` }}
           >
             {/* Thumbnail area */}
@@ -125,11 +125,11 @@ export function BatchCardsSkeleton() {
 export function SourceCardsSkeleton() {
   return (
     <div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 border border-border-light">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 border border-zinc-800">
         {Array.from({ length: 8 }).map((_, i) => (
           <div
             key={i}
-            className="bg-white border-r border-b border-border-light overflow-hidden"
+            className="bg-zinc-900 border-r border-b border-zinc-800 overflow-hidden"
             style={{ animationDelay: `${i * 60}ms` }}
           >
             {/* Brand area, aspect-video */}
@@ -145,9 +145,9 @@ export function SourceCardsSkeleton() {
                 <Shimmer className="h-[14px] w-12 shrink-0" />
               </div>
               {/* Metrics row */}
-              <div className="grid grid-cols-3 border-t border-b border-border-light -mx-5 px-5 mt-3">
+              <div className="grid grid-cols-3 border-t border-b border-zinc-800 -mx-5 px-5 mt-3">
                 {[0, 1, 2].map(j => (
-                  <div key={j} className={cn('py-2.5', j > 0 && 'pl-3 border-l border-border-light')}>
+                  <div key={j} className={cn('py-2.5', j > 0 && 'pl-3 border-l border-zinc-800')}>
                     <Shimmer className="h-[10px] w-14 mb-1.5" />
                     <Shimmer className="h-[14px] w-10" />
                   </div>
@@ -171,7 +171,7 @@ export function ItpTableSkeleton() {
   return (
     <div>
       {/* Table header skeleton */}
-      <div className="border-b-[3px] border-black flex items-center py-3 px-4 gap-4">
+      <div className="border-b border-zinc-700 flex items-center py-3 px-4 gap-4">
         <Shimmer className="h-[11px] w-14" />
         <Shimmer className="h-[11px] w-32 flex-1" />
         <Shimmer className="h-[11px] w-16" />
@@ -184,8 +184,8 @@ export function ItpTableSkeleton() {
         <div
           key={i}
           className={cn(
-            'flex items-center py-3 px-4 gap-4 border-b border-[#eee]',
-            i % 2 === 1 ? 'bg-[#fafafa]' : 'bg-white'
+            'flex items-center py-3 px-4 gap-4 border-b border-zinc-800',
+            i % 2 === 1 ? 'bg-zinc-900/40' : 'bg-zinc-900'
           )}
           style={{ animationDelay: `${i * 50}ms` }}
         >
@@ -225,7 +225,7 @@ export function LeaderboardSkeleton({ rows = 5 }: { rows?: number }) {
   return (
     <div className="py-6">
       {/* Header */}
-      <div className="flex items-center gap-4 pb-3 border-b border-border-medium">
+      <div className="flex items-center gap-4 pb-3 border-b border-zinc-700">
         <Shimmer className="h-[10px] w-6" />
         <Shimmer className="h-[10px] w-24" />
         <div className="flex-1" />
@@ -240,7 +240,7 @@ export function LeaderboardSkeleton({ rows = 5 }: { rows?: number }) {
       {Array.from({ length: rows }).map((_, i) => (
         <div
           key={i}
-          className="flex items-center gap-4 py-3 border-b border-border-light"
+          className="flex items-center gap-4 py-3 border-b border-zinc-800"
           style={{ animationDelay: `${i * 60}ms` }}
         >
           <Shimmer className="h-[12px] w-6" />
@@ -266,9 +266,9 @@ export function LeaderboardSkeleton({ rows = 5 }: { rows?: number }) {
  * ═══════════════════════════════════════════════════════════════════ */
 export function TopPlayersSkeleton() {
   return (
-    <div className="bg-white border border-t-0 border-border-light overflow-hidden">
+    <div className="bg-zinc-900 border border-t-0 border-zinc-800 overflow-hidden">
       {/* Header row */}
-      <div className="grid grid-cols-[36px_1fr_60px_70px_80px_90px] items-center px-4 py-2 border-b border-border-light">
+      <div className="grid grid-cols-[36px_1fr_60px_70px_80px_90px] items-center px-4 py-2 border-b border-zinc-800">
         <Shimmer className="h-[10px] w-5" />
         <Shimmer className="h-[10px] w-16" />
         <Shimmer className="h-[10px] w-12 ml-auto" />
@@ -281,8 +281,8 @@ export function TopPlayersSkeleton() {
         <div
           key={i}
           className={cn(
-            'grid grid-cols-[36px_1fr_60px_70px_80px_90px] items-center px-4 py-2.5 border-b border-border-light',
-            i % 2 === 1 ? 'bg-surface/40' : ''
+            'grid grid-cols-[36px_1fr_60px_70px_80px_90px] items-center px-4 py-2.5 border-b border-zinc-800',
+            i % 2 === 1 ? 'bg-zinc-950/40' : ''
           )}
           style={{ animationDelay: `${i * 70}ms` }}
         >
@@ -309,7 +309,7 @@ export function SourceDetailSkeleton() {
     <div className="px-6 lg:px-12 py-6">
       <div className="max-w-site mx-auto">
         {/* Hero, mimics SourceHero */}
-        <div className="border border-border-light overflow-hidden bg-white flex">
+        <div className="border border-zinc-800 overflow-hidden bg-zinc-900 flex">
           <div className="flex-1 px-5 py-4">
             <div className="flex items-center gap-2 mb-2">
               <Shimmer className="h-[16px] w-20 !rounded" />
@@ -323,7 +323,7 @@ export function SourceDetailSkeleton() {
         </div>
 
         {/* Stats bar */}
-        <div className="mt-4 bg-[var(--surface)] border border-border-light px-5 py-3 flex items-center gap-6">
+        <div className="mt-4 bg-zinc-900/60 border border-zinc-800 px-5 py-3 flex items-center gap-6">
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i}>
               <Shimmer className="h-[10px] w-14 mb-1.5" />
@@ -344,9 +344,9 @@ export function SourceDetailSkeleton() {
             <div className="section-bar">
               <Shimmer className="h-[14px] w-32" style={{ background: 'rgba(255,255,255,0.1)' }} />
             </div>
-            <div className="border border-t-0 border-border-light bg-white">
+            <div className="border border-t-0 border-zinc-800 bg-zinc-900">
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="flex items-center px-4 py-3 border-b border-border-light gap-4" style={{ animationDelay: `${i * 50}ms` }}>
+                <div key={i} className="flex items-center px-4 py-3 border-b border-zinc-800 gap-4" style={{ animationDelay: `${i * 50}ms` }}>
                   <Shimmer className="h-[13px] w-6" />
                   <Shimmer className="h-[13px] w-40 flex-1" />
                   <Shimmer className="h-[13px] w-16" />
@@ -357,7 +357,7 @@ export function SourceDetailSkeleton() {
           </div>
           {/* Right: entry panel placeholder */}
           <div className="w-full lg:w-[300px] shrink-0">
-            <div className="border border-border-light bg-white p-4">
+            <div className="border border-zinc-800 bg-zinc-900 p-4">
               <Shimmer className="h-[16px] w-32 mb-4" />
               <Shimmer className="h-[40px] w-full mb-3 !rounded" />
               <Shimmer className="h-[40px] w-full mb-3 !rounded" />

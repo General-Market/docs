@@ -20,7 +20,7 @@ function ReloadButton({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="text-[12px] text-zinc-700 underline-offset-4 hover:underline focus:outline-none focus-visible:underline"
+      className="text-[12px] text-zinc-300 underline-offset-4 hover:underline focus:outline-none focus-visible:underline"
     >
       Reload
     </button>

@@ -49,7 +49,7 @@ export function Skeleton({
     return (
       <div
         className={cn(
-          'relative overflow-hidden bg-zinc-200/70',
+          'relative overflow-hidden bg-zinc-800/60',
           rounded && 'rounded-md',
           className,
         )}
@@ -57,7 +57,7 @@ export function Skeleton({
         aria-hidden="true"
       >
         <div
-          className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/60 to-transparent"
+          className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/10 to-transparent"
           style={{ animationDuration: '1.5s' }}
         />
       </div>

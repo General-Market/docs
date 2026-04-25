@@ -15,8 +15,8 @@ import Image from 'next/image'
 const WalletControls = dynamic(() => import('./WalletControls').then(m => ({ default: m.WalletControls })), {
   ssr: false,
   loading: () => (
-    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold rounded border border-zinc-300 text-zinc-400">
-      <span className="w-1.5 h-1.5 rounded-full bg-zinc-300" />
+    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold rounded border border-zinc-700 text-zinc-500">
+      <span className="w-1.5 h-1.5 rounded-full bg-zinc-700" />
       ...
     </span>
   ),
@@ -35,8 +35,9 @@ const PRIMARY_NAV = [
 
 type PageId = typeof PRIMARY_NAV[number]['id']
 
-// Pages whose mood darkens the header
-const DARK_PAGES = new Set<string>(['vision'])
+// Pages whose mood darkens the header. Every page is dark now — kept for
+// future light-mode pages that may return.
+const DARK_PAGES = new Set<string>(['vision', 'portfolio'])
 
 /** Renders nothing, exists solely to call useWallet() inside the provider boundary and lift wallet state up. */
 function WalletStateBridge({ onState }: { onState: (address: string | undefined, connected: boolean) => void }) {
@@ -101,7 +102,7 @@ export function Header() {
           className={`border-b transition-colors duration-500 ${
             isDark
               ? 'bg-zinc-900 border-zinc-800'
-              : 'bg-white border-border-light'
+              : 'bg-zinc-950 border-zinc-800'
           }`}
           style={{ transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)' }}
         >
@@ -118,7 +119,7 @@ export function Header() {
                   className="w-9 h-9"
                 />
                 <span className={`text-[19px] sm:text-[22px] font-black tracking-[-0.03em] transition-colors duration-500 ${
-                  isDark ? 'text-white' : 'text-black'
+                  isDark ? 'text-white' : 'text-zinc-100'
                 }`}>
                   {t('brand.logo_text')}
                 </span>
@@ -139,17 +140,17 @@ export function Header() {
                       aria-current={activePage === item.id ? 'page' : undefined}
                       className={`relative px-5 py-5 text-[14px] font-semibold transition-colors duration-300 ${
                         activePage === item.id
-                          ? isDark ? 'text-white' : 'text-black'
+                          ? isDark ? 'text-white' : 'text-zinc-100'
                           : isDark
                             ? 'text-zinc-400 hover:text-zinc-200'
-                            : 'text-text-secondary hover:text-black'
+                            : 'text-zinc-400 hover:text-zinc-100'
                       }`}
                     >
                       {t(item.labelKey)}
                       {activePage === item.id && (
                         <motion.div
                           className={`absolute bottom-0 left-0 right-0 h-0.5 ${
-                            isDark ? 'bg-white' : 'bg-black'
+                            isDark ? 'bg-white' : 'bg-zinc-100'
                           }`}
                           layoutId="header-nav-indicator"
                           transition={reduced ? { duration: 0 } : springs.indicator}
@@ -175,7 +176,7 @@ export function Header() {
                 <div className="relative md:hidden">
                   <button
                     className={`p-3 -m-1 transition-colors ${
-                      isDark ? 'text-zinc-400 hover:text-white' : 'text-text-muted hover:text-text-primary'
+                      isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-100'
                     }`}
                     onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                     aria-label={t('aria.toggle_menu')}
@@ -227,8 +228,8 @@ export function Header() {
                       >
                         {/* Section scroll-to links (contextual) */}
                         {sectionNav && (
-                          <div className={`px-2 py-1.5 mb-1 border-b ${isDark ? 'border-white/10' : 'border-border-light'}`}>
-                            <div className={`px-1 mb-1 text-micro font-semibold uppercase tracking-[0.08em] ${isDark ? 'text-zinc-500' : 'text-text-muted'}`}>
+                          <div className={`px-2 py-1.5 mb-1 border-b ${isDark ? 'border-white/10' : 'border-zinc-800'}`}>
+                            <div className={`px-1 mb-1 text-micro font-semibold uppercase tracking-[0.08em] ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>
                               {t('nav.sections')}
                             </div>
                             {sectionNav.map((link) => (
@@ -238,7 +239,7 @@ export function Header() {
                                 className={`block w-full text-left px-2 py-2 text-caption rounded transition-colors ${
                                   isDark
                                     ? 'text-zinc-300 hover:text-white hover:bg-white/10'
-                                    : 'text-text-secondary hover:text-black hover:bg-surface'
+                                    : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800'
                                 }`}
                               >
                                 {link.label}
@@ -260,14 +261,14 @@ export function Header() {
                             className={`block px-3 py-2.5 text-caption transition-colors ${
                               isDark
                                 ? 'text-zinc-400 hover:text-white hover:bg-white/10'
-                                : 'text-text-secondary hover:text-black hover:bg-surface'
+                                : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800'
                             }`}
                           >
                             {item.label}
                           </a>
                         ))}
 
-                        <div className={`px-3 pt-2 mt-1 border-t ${isDark ? 'border-white/10' : 'border-border-light'}`}>
+                        <div className={`px-3 pt-2 mt-1 border-t ${isDark ? 'border-white/10' : 'border-zinc-800'}`}>
                           <LanguageSwitcher />
                         </div>
                       </motion.div>

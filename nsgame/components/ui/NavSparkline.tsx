@@ -49,10 +49,10 @@ export function NavSparkline({ itpId, height = 120 }: NavSparklineProps) {
       })
 
       const series = chart.addSeries(lc.AreaSeries, {
-        lineColor: '#18181b',
+        lineColor: '#e4e4e7',
         lineWidth: 2,
-        topColor: 'rgba(24,24,27,0.12)',
-        bottomColor: 'rgba(24,24,27,0.02)',
+        topColor: 'rgba(228,228,231,0.18)',
+        bottomColor: 'rgba(228,228,231,0.02)',
         crosshairMarkerVisible: false,
         priceLineVisible: false,
         lastValueVisible: false,
@@ -94,9 +94,9 @@ export function NavSparkline({ itpId, height = 120 }: NavSparklineProps) {
     const first = sorted[0].close
     const last = sorted[sorted.length - 1].close
     const up = last >= first
-    const lineColor = up ? '#16a34a' : '#dc2626'
-    const topColor = up ? 'rgba(22,163,74,0.12)' : 'rgba(220,38,38,0.12)'
-    const bottomColor = up ? 'rgba(22,163,74,0.02)' : 'rgba(220,38,38,0.02)'
+    const lineColor = up ? '#34d399' : '#fb7185'
+    const topColor = up ? 'rgba(52,211,153,0.16)' : 'rgba(251,113,133,0.16)'
+    const bottomColor = up ? 'rgba(52,211,153,0.02)' : 'rgba(251,113,133,0.02)'
 
     seriesRef.current.applyOptions({ lineColor, topColor, bottomColor })
     seriesRef.current.setData(
@@ -109,11 +109,11 @@ export function NavSparkline({ itpId, height = 120 }: NavSparklineProps) {
   }, [data, ready, TZ_OFFSET_SEC])
 
   return (
-    <div className="relative rounded-lg overflow-hidden border border-border-light mb-4">
+    <div className="relative rounded-lg overflow-hidden border border-zinc-800 mb-4">
       <div ref={containerRef} style={{ height }} />
       {isLoading && data.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-4 h-4 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin" />
+          <div className="w-4 h-4 border-2 border-zinc-600 border-t-transparent rounded-full animate-spin" />
         </div>
       )}
     </div>

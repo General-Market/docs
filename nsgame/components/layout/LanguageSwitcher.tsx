@@ -37,7 +37,7 @@ export function LanguageSwitcher({ variant = 'light' }: LanguageSwitcherProps) {
         className={`text-[11px] font-medium tracking-wide uppercase px-2 py-1 ${
           isDark
             ? 'text-zinc-400 border border-white/10 hover:text-white hover:border-white/20'
-            : 'text-zinc-500 border border-zinc-200 hover:text-black hover:border-zinc-400'
+            : 'text-zinc-400 border border-zinc-800 hover:text-zinc-100 hover:border-zinc-700'
         } rounded-md transition-colors cursor-pointer`}
       >
         {locale.toUpperCase()}
@@ -47,7 +47,7 @@ export function LanguageSwitcher({ variant = 'light' }: LanguageSwitcherProps) {
         <div className={`absolute right-0 top-full mt-1 z-50 min-w-[120px] rounded-md border shadow-lg py-1 ${
           isDark
             ? 'bg-zinc-900 border-white/10'
-            : 'bg-white border-zinc-200'
+            : 'bg-zinc-900 border-zinc-800'
         }`}>
           {locales.map(l => (
             <button
@@ -55,8 +55,8 @@ export function LanguageSwitcher({ variant = 'light' }: LanguageSwitcherProps) {
               onClick={() => switchLocale(l)}
               className={`w-full text-left px-3 py-1.5 text-[12px] font-medium transition-colors ${
                 l === locale
-                  ? isDark ? 'text-white bg-white/5' : 'text-black bg-zinc-50'
-                  : isDark ? 'text-zinc-400 hover:text-white hover:bg-white/5' : 'text-zinc-600 hover:text-black hover:bg-zinc-50'
+                  ? isDark ? 'text-white bg-white/5' : 'text-zinc-100 bg-white/5'
+                  : isDark ? 'text-zinc-400 hover:text-white hover:bg-white/5' : 'text-zinc-400 hover:text-zinc-100 hover:bg-white/5'
               }`}
             >
               {LOCALE_LABELS[l]}

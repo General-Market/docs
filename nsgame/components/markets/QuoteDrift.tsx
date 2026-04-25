@@ -67,7 +67,7 @@ export function QuoteDrift({ entries, className = '', limit = 6 }: QuoteDriftPro
   const visible = entries.slice(0, limit)
 
   return (
-    <div className={['border-t border-zinc-200 px-4 py-3', className].join(' ')}>
+    <div className={['border-t border-zinc-800 px-4 py-3', className].join(' ')}>
       <div className="mb-2 flex items-center justify-between">
         <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500">
           quote drift
@@ -86,26 +86,26 @@ export function QuoteDrift({ entries, className = '', limit = 6 }: QuoteDriftPro
               className={[
                 'inline-flex h-4 items-center rounded px-1 text-[10px] font-semibold uppercase',
                 e.side === 'yes'
-                  ? 'bg-emerald-50 text-emerald-700'
-                  : 'bg-rose-50 text-rose-700',
+                  ? 'bg-emerald-500/10 text-emerald-300'
+                  : 'bg-rose-500/10 text-rose-300',
               ].join(' ')}
             >
               {e.side}
             </span>
-            <span className="tabular-nums text-zinc-700">{formatUsdcUnits(e.amount)}</span>
+            <span className="tabular-nums text-zinc-300">{formatUsdcUnits(e.amount)}</span>
             <span className="truncate text-zinc-500">
               {e.owner.slice(0, 4)}…{e.owner.slice(-4)}
             </span>
-            <span className="ml-auto whitespace-nowrap tabular-nums text-zinc-400">
+            <span className="ml-auto whitespace-nowrap tabular-nums text-zinc-600">
               {now > 0 ? timeAgo(e.ts, now) : '—'}
             </span>
             <span
               className={[
                 'w-12 text-right tabular-nums',
                 e.yesPctAfter > 50
-                  ? 'text-emerald-700'
+                  ? 'text-emerald-300'
                   : e.yesPctAfter < 50
-                    ? 'text-rose-700'
+                    ? 'text-rose-300'
                     : 'text-zinc-500',
               ].join(' ')}
             >

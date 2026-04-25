@@ -1,6 +1,6 @@
 /**
  * Card component following Shadcn/ui patterns
- * Institutional style: white card surface on dark page background
+ * Dark surface that survives on bg-zinc-950.
  */
 
 import { forwardRef } from 'react'
@@ -18,7 +18,7 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
   ({ className = '', children, interactive = false, ...props }, ref) => (
     <div
       ref={ref}
-      className={`rounded-md border border-border-light bg-card shadow-card text-text-primary ${interactive ? 'card-interactive cursor-pointer' : ''} ${className}`}
+      className={`rounded-md border border-zinc-800 bg-zinc-900 text-zinc-100 ${interactive ? 'card-interactive cursor-pointer' : ''} ${className}`}
       {...props}
     >
       {children}
@@ -58,7 +58,7 @@ export const CardTitle = forwardRef<HTMLHeadingElement, CardTitleProps>(
   ({ className = '', children, ...props }, ref) => (
     <h3
       ref={ref}
-      className={`text-xs uppercase tracking-[0.08em] text-text-muted font-medium ${className}`}
+      className={`text-xs uppercase tracking-[0.08em] text-zinc-500 font-medium ${className}`}
       {...props}
     >
       {children}
@@ -76,7 +76,7 @@ interface CardContentProps extends React.HTMLAttributes<HTMLDivElement> {
  */
 export const CardContent = forwardRef<HTMLDivElement, CardContentProps>(
   ({ className = '', children, ...props }, ref) => (
-    <div ref={ref} className={`p-6 pt-0 text-text-secondary ${className}`} {...props}>
+    <div ref={ref} className={`p-6 pt-0 text-zinc-400 ${className}`} {...props}>
       {children}
     </div>
   )
@@ -94,7 +94,7 @@ export const CardFooter = forwardRef<HTMLDivElement, CardFooterProps>(
   ({ className = '', children, ...props }, ref) => (
     <div
       ref={ref}
-      className={`flex items-center p-6 pt-0 text-text-secondary ${className}`}
+      className={`flex items-center p-6 pt-0 text-zinc-400 ${className}`}
       {...props}
     >
       {children}

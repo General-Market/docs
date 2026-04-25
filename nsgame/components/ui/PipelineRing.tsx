@@ -113,7 +113,7 @@ export function PipelineRing({
           cy={CENTER}
           r={OUTER_R}
           fill="none"
-          stroke="rgb(0 0 0 / 0.06)"
+          stroke="rgb(255 255 255 / 0.06)"
           strokeWidth={2}
         />
         {/* Outer time-budget ring progress */}
@@ -122,7 +122,7 @@ export function PipelineRing({
           cy={CENTER}
           r={OUTER_R}
           fill="none"
-          stroke="rgb(24 24 27 / 0.35)"
+          stroke="rgb(228 228 231 / 0.45)"
           strokeWidth={2}
           strokeLinecap="round"
           pathLength={1}
@@ -141,11 +141,11 @@ export function PipelineRing({
           const bgPath = describeArc(CENTER, CENTER, INNER_R, start, end)
           const fgEnd = start + sweep * state.fill
           const fgPath = describeArc(CENTER, CENTER, INNER_R, start, fgEnd)
-          const fgStroke = state.isPast ? '#10b981' /* emerald-500 */ : '#18181b' /* zinc-900 */
+          const fgStroke = state.isPast ? '#34d399' /* emerald-400 */ : '#e4e4e7' /* zinc-200 */
 
           return (
             <g key={p.key}>
-              <path d={bgPath} stroke="rgb(0 0 0 / 0.08)" strokeWidth={8} strokeLinecap="round" fill="none" />
+              <path d={bgPath} stroke="rgb(255 255 255 / 0.08)" strokeWidth={8} strokeLinecap="round" fill="none" />
               <motion.path
                 d={fgPath}
                 stroke={fgStroke}
@@ -159,7 +159,7 @@ export function PipelineRing({
               {state.isCurrent && !done && !reduced && (
                 <motion.path
                   d={bgPath}
-                  stroke="#18181b"
+                  stroke="#e4e4e7"
                   strokeWidth={10}
                   strokeLinecap="round"
                   fill="none"
@@ -178,12 +178,12 @@ export function PipelineRing({
           const lit = allLit || i < keepersLit
           return (
             <g key={`k${i}`}>
-              <circle cx={p.x} cy={p.y} r={5.5} fill="white" stroke="rgb(0 0 0 / 0.15)" strokeWidth={1} />
+              <circle cx={p.x} cy={p.y} r={5.5} fill="#18181b" stroke="rgb(255 255 255 / 0.15)" strokeWidth={1} />
               <motion.circle
                 cx={p.x}
                 cy={p.y}
                 r={4}
-                fill={lit ? '#10b981' : 'rgb(0 0 0 / 0.12)'}
+                fill={lit ? '#34d399' : 'rgb(255 255 255 / 0.12)'}
                 initial={false}
                 animate={reduced ? { opacity: 1 } : { scale: lit ? [0.8, 1.1, 1] : 1 }}
                 transition={reduced ? { duration: 0 } : { duration: 0.5, delay: i * 0.12, ease: 'easeOut' }}
@@ -195,7 +195,7 @@ export function PipelineRing({
                   cy={p.y}
                   r={4}
                   fill="none"
-                  stroke="#10b981"
+                  stroke="#34d399"
                   strokeWidth={1.5}
                   initial={{ opacity: 0.6, r: 4 }}
                   animate={{ opacity: 0, r: 11 }}
@@ -207,22 +207,22 @@ export function PipelineRing({
         })}
 
         {/* Centre medallion */}
-        <circle cx={CENTER} cy={CENTER} r={64} fill="white" stroke="rgb(0 0 0 / 0.05)" />
+        <circle cx={CENTER} cy={CENTER} r={64} fill="#18181b" stroke="rgb(255 255 255 / 0.06)" />
       </svg>
 
       {/* Centre text overlaps the medallion via absolute positioning */}
       <div className="-mt-[162px] h-[128px] w-[128px] flex flex-col items-center justify-center text-center px-2 pointer-events-none">
-        <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-text-muted">
+        <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-zinc-500">
           {done ? 'Done' : 'In flight'}
         </span>
-        <span className="mt-1 text-[13px] font-medium text-text-primary leading-tight line-clamp-2">
+        <span className="mt-1 text-[13px] font-medium text-zinc-100 leading-tight line-clamp-2">
           {topText}
         </span>
-        <span className="mt-2 text-[10px] font-mono tabular-nums text-text-muted">
+        <span className="mt-2 text-[10px] font-mono tabular-nums text-zinc-500">
           {formatClock(elapsedMs)} <span className="opacity-50">·</span> {formatClock(typicalMs)}
         </span>
         {subLabel && (
-          <span className="mt-1 text-[10px] font-mono text-text-muted line-clamp-1 max-w-full">
+          <span className="mt-1 text-[10px] font-mono text-zinc-500 line-clamp-1 max-w-full">
             {subLabel}
           </span>
         )}

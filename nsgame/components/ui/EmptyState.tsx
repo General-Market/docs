@@ -86,7 +86,7 @@ export function EmptyState({
   return (
     <div
       className={`
-        rounded-xl border border-zinc-200/70 bg-white
+        rounded-xl border border-zinc-800 bg-zinc-900/50
         py-16 px-6 text-center
         motion-safe:transition-opacity motion-safe:duration-200
         ${shown ? 'opacity-100' : 'opacity-0'}
@@ -94,12 +94,12 @@ export function EmptyState({
       `}
     >
       {icon !== null && (
-        <div className="mb-4 flex justify-center text-zinc-400">
+        <div className="mb-4 flex justify-center text-zinc-600">
           <LineIcon variant={icon} />
         </div>
       )}
 
-      <p className="text-[14px] text-zinc-700">{title}</p>
+      <p className="text-[14px] text-zinc-200">{title}</p>
 
       {description && (
         <p className="mt-1 text-[12px] text-zinc-500">{description}</p>

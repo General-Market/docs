@@ -34,21 +34,21 @@ function visualTone(type: ToastType): 'success' | 'error' | 'info' {
 }
 
 const ACCENT: Record<'success' | 'error' | 'info', string> = {
-  success: 'bg-emerald-500',
-  error: 'bg-rose-500',
-  info: 'bg-zinc-400',
+  success: 'bg-emerald-400',
+  error: 'bg-rose-400',
+  info: 'bg-zinc-500',
 }
 
 const PROGRESS: Record<'success' | 'error' | 'info', string> = {
-  success: 'bg-emerald-500/60',
-  error: 'bg-rose-500/60',
-  info: 'bg-zinc-400/60',
+  success: 'bg-emerald-400/60',
+  error: 'bg-rose-400/60',
+  info: 'bg-zinc-500/60',
 }
 
 const LINK: Record<'success' | 'error' | 'info', string> = {
-  success: 'text-emerald-700',
-  error: 'text-rose-700',
-  info: 'text-zinc-700',
+  success: 'text-emerald-300',
+  error: 'text-rose-300',
+  info: 'text-zinc-300',
 }
 
 /**
@@ -87,7 +87,7 @@ export function Toast({ toast, onDismiss }: ToastProps) {
       role="alert"
       className={`
         relative overflow-hidden
-        bg-white border border-zinc-200/70 rounded-xl shadow-sm
+        bg-zinc-900 border border-zinc-800 rounded-xl shadow-lg
         motion-safe:transition-all motion-safe:duration-200 ease-out
         ${isExiting
           ? 'opacity-0 translate-y-1'
@@ -104,7 +104,7 @@ export function Toast({ toast, onDismiss }: ToastProps) {
 
       <div className="flex items-start justify-between gap-3 pl-4 pr-3 py-3">
         <div className="flex-1 min-w-0">
-          <p className="text-[13px] leading-snug text-zinc-800">
+          <p className="text-[13px] leading-snug text-zinc-100">
             {toast.message}
           </p>
           {toast.link && (
@@ -121,7 +121,7 @@ export function Toast({ toast, onDismiss }: ToastProps) {
         <button
           type="button"
           onClick={handleDismiss}
-          className="text-zinc-400 hover:text-zinc-700 transition-colors"
+          className="text-zinc-500 hover:text-zinc-200 transition-colors"
           aria-label={t('aria.dismiss')}
         >
           <svg

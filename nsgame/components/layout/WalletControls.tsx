@@ -16,12 +16,12 @@ export function WalletControls({ isDark = false }: WalletControlsProps) {
 
   const tone = isDark
     ? 'border-zinc-700 text-zinc-300 hover:text-white'
-    : 'border-zinc-300 text-zinc-700 hover:text-black'
+    : 'border-zinc-700 text-zinc-300 hover:text-zinc-100'
 
   if (connecting) {
     return (
       <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold rounded border ${tone}`}>
-        <span className="w-1.5 h-1.5 rounded-full bg-zinc-400 animate-pulse" />
+        <span className="w-1.5 h-1.5 rounded-full bg-zinc-500 animate-pulse" />
         ...
       </span>
     )
@@ -39,7 +39,7 @@ export function WalletControls({ isDark = false }: WalletControlsProps) {
           if (typeof window !== 'undefined') window.dispatchEvent(new Event('uwk-open-modal'))
         }}
       >
-        <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
+        <span className="w-1.5 h-1.5 rounded-full bg-zinc-500" />
         Connect
       </button>
     )
@@ -54,7 +54,7 @@ export function WalletControls({ isDark = false }: WalletControlsProps) {
       className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold rounded border ${tone}`}
       title={walletName ? `${walletName} — click to disconnect` : 'Disconnect'}
     >
-      <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
       {short}
     </button>
   )

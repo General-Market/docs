@@ -125,9 +125,9 @@ export function MarketCalendar({ board, horizon }: MarketCalendarProps) {
   return (
     <CountdownTickProvider>
       {isEmpty ? (
-        <div className="rounded-md border border-dashed border-zinc-300 bg-white px-6 py-16 text-center">
-          <p className="text-sm text-zinc-500">Nothing closes here today.</p>
-          <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.08em] text-zinc-400">
+        <div className="rounded-md border border-dashed border-zinc-700 bg-zinc-900/50 px-6 py-16 text-center">
+          <p className="text-sm text-zinc-400">Nothing closes here today.</p>
+          <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.08em] text-zinc-500">
             try a wider horizon
           </p>
         </div>
@@ -139,7 +139,7 @@ export function MarketCalendar({ board, horizon }: MarketCalendarProps) {
               b.slots.length === 0 ? null : (
                 <section key={b.key}>
                   <header className="mb-3 flex items-baseline justify-between">
-                    <h2 className="text-sm font-semibold text-zinc-900">{b.label}</h2>
+                    <h2 className="text-sm font-semibold text-zinc-100">{b.label}</h2>
                     <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-zinc-500">
                       {b.slots.length} {b.slots.length === 1 ? 'market' : 'markets'}
                     </span>
@@ -163,15 +163,15 @@ export function MarketCalendar({ board, horizon }: MarketCalendarProps) {
           >
             {buckets.map(b => (
               <section key={b.key} className="flex min-w-0 flex-col gap-3">
-                <header className="border-b border-zinc-200 pb-2">
-                  <h2 className="text-[13px] font-semibold text-zinc-900">{b.label}</h2>
+                <header className="border-b border-zinc-800 pb-2">
+                  <h2 className="text-[13px] font-semibold text-zinc-100">{b.label}</h2>
                   <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-zinc-500">
                     {b.slots.length} {b.slots.length === 1 ? 'market' : 'markets'}
                   </p>
                 </header>
                 <div className="space-y-3">
                   {b.slots.length === 0 ? (
-                    <p className="text-[11px] text-zinc-400">—</p>
+                    <p className="text-[11px] text-zinc-600">—</p>
                   ) : (
                     b.slots.map(s => (
                       <CardWithState key={`${s.catalogId}:${s.closeTime}`} slot={s} state={stateMap[s.marketPda] ?? null} onSelect={setSelected} />

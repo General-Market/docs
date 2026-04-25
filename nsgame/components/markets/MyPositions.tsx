@@ -58,17 +58,17 @@ function PositionRow({ position, now }: RowProps) {
     : null)
 
   const sideClass = position.side === 'yes'
-    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-    : 'border-rose-200 bg-rose-50 text-rose-700'
+    ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+    : 'border-rose-500/30 bg-rose-500/10 text-rose-300'
 
   const isLive = position.state === 'open' && now < position.closeTime
   const settlementLeft = Math.max(0, position.settlementTime - now)
 
   return (
-    <div className="flex items-center gap-2 rounded-md border border-zinc-200 bg-white px-2.5 py-2">
-      <span className="flex shrink-0 items-center gap-1.5 text-zinc-700">
+    <div className="flex items-center gap-2 rounded-md border border-zinc-800 bg-zinc-900 px-2.5 py-2">
+      <span className="flex shrink-0 items-center gap-1.5 text-zinc-300">
         {iconId ? <SourceIcon sourceId={iconId} className="h-3.5 w-3.5" /> : null}
-        <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-zinc-600">
+        <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-zinc-400">
           {sourceShortName(position.sourceId)}
         </span>
       </span>
@@ -84,18 +84,18 @@ function PositionRow({ position, now }: RowProps) {
         {position.side}
       </span>
       <span className="ml-auto flex items-center gap-2">
-        <span className="font-mono text-[11px] tabular-nums text-zinc-900">
+        <span className="font-mono text-[11px] tabular-nums text-zinc-100">
           {formatUsdcUnits(position.amount)}
         </span>
         {position.state === 'open' && isLive ? (
-          <span className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.08em] text-emerald-700">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" aria-hidden />
+          <span className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.08em] text-emerald-300">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" aria-hidden />
             live
           </span>
         ) : null}
         {position.state === 'settling' ? (
-          <span className="flex items-center gap-1 font-mono text-[10px] tabular-nums text-amber-700">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500" aria-hidden />
+          <span className="flex items-center gap-1 font-mono text-[10px] tabular-nums text-amber-300">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-400" aria-hidden />
             settles in {formatRemaining(settlementLeft)}
           </span>
         ) : null}
@@ -115,10 +115,10 @@ function ResolvedRow({ position, now }: RowProps) {
   const refund = position.state === 'stranded-refund'
 
   const pillClass = won
-    ? 'bg-emerald-600 text-white'
+    ? 'bg-emerald-500 text-zinc-950'
     : refund
-      ? 'bg-zinc-200 text-zinc-700'
-      : 'bg-rose-600 text-white'
+      ? 'bg-zinc-800 text-zinc-300'
+      : 'bg-rose-500 text-zinc-950'
   const pillLabel = won ? 'won' : refund ? 'refund' : 'lost'
 
   const claimNet = position.claimNet
@@ -133,10 +133,10 @@ function ResolvedRow({ position, now }: RowProps) {
     : undefined
 
   const row = (
-    <div className="flex items-center gap-2 rounded-md border border-zinc-200 bg-white px-2.5 py-2">
-      <span className="flex shrink-0 items-center gap-1.5 text-zinc-700">
+    <div className="flex items-center gap-2 rounded-md border border-zinc-800 bg-zinc-900 px-2.5 py-2">
+      <span className="flex shrink-0 items-center gap-1.5 text-zinc-300">
         {iconId ? <SourceIcon sourceId={iconId} className="h-3.5 w-3.5" /> : null}
-        <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-zinc-600">
+        <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-zinc-400">
           {sourceShortName(position.sourceId)}
         </span>
       </span>
@@ -152,14 +152,14 @@ function ResolvedRow({ position, now }: RowProps) {
         {pillLabel}
       </span>
       <span className="ml-auto flex flex-col items-end gap-0.5">
-        <span className="font-mono text-[11px] tabular-nums text-zinc-700">
+        <span className="font-mono text-[11px] tabular-nums text-zinc-300">
           {formatUsdcUnits(position.amount)} in
         </span>
         {winningsLine ? (
           <span
             className={[
               'font-mono text-[10px] tabular-nums',
-              won ? 'text-emerald-700' : 'text-zinc-500',
+              won ? 'text-emerald-300' : 'text-zinc-500',
             ].join(' ')}
           >
             {winningsLine}
@@ -216,7 +216,7 @@ export function MyPositions({ compact = false, className = '' }: MyPositionsProp
       return (
         <div
           className={[
-            'rounded-md border border-zinc-200 bg-white px-3 py-2',
+            'rounded-md border border-zinc-800 bg-zinc-900 px-3 py-2',
             className,
           ].join(' ')}
         >
@@ -229,7 +229,7 @@ export function MyPositions({ compact = false, className = '' }: MyPositionsProp
     return (
       <div
         className={[
-          'rounded-md border border-zinc-200 bg-white',
+          'rounded-md border border-zinc-800 bg-zinc-900',
           className,
         ].join(' ')}
       >
@@ -242,12 +242,12 @@ export function MyPositions({ compact = false, className = '' }: MyPositionsProp
           <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-zinc-500">
             my positions
           </span>
-          <span className="font-mono text-[10px] text-zinc-700">
+          <span className="font-mono text-[10px] text-zinc-300">
             {buckets.open.length} open · {buckets.settling.length} settling · {wonCount} won
           </span>
         </button>
         {expanded ? (
-          <div className="space-y-3 border-t border-zinc-100 px-3 py-3">
+          <div className="space-y-3 border-t border-zinc-800 px-3 py-3">
             <PositionsBody buckets={buckets} now={now} />
           </div>
         ) : null}
@@ -259,17 +259,17 @@ export function MyPositions({ compact = false, className = '' }: MyPositionsProp
   return (
     <section
       className={[
-        'flex flex-col rounded-md border border-zinc-200 bg-white',
+        'flex flex-col rounded-md border border-zinc-800 bg-zinc-900',
         className,
       ].join(' ')}
       aria-label="My positions"
     >
-      <header className="flex items-center justify-between border-b border-zinc-200 px-4 py-3">
+      <header className="flex items-center justify-between border-b border-zinc-800 px-4 py-3">
         <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500">
           my positions
         </span>
         {!empty ? (
-          <span className="rounded-full bg-zinc-100 px-2 py-0.5 font-mono text-[10px] tabular-nums text-zinc-700">
+          <span className="rounded-full bg-zinc-800 px-2 py-0.5 font-mono text-[10px] tabular-nums text-zinc-300">
             {total}
           </span>
         ) : null}

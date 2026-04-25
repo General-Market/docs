@@ -104,7 +104,7 @@ export function TransactionStepper({
   const nodes = [...visibleSteps.map((s, i) => ({ label: s.label, index: i })), { label: tc('stepper.done'), index: visibleSteps.length }]
 
   return (
-    <div className="bg-muted border border-border-light rounded-xl p-5">
+    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
       {/* Step circles + connectors, centered layout */}
       <div className="flex items-center">
         {nodes.map((node, i) => {
@@ -123,14 +123,14 @@ export function TransactionStepper({
                   <div
                     className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
                       stepDone || stepDoneNode
-                        ? 'bg-zinc-900 text-white'
+                        ? 'bg-zinc-100 text-zinc-950'
                         : stepCurrent
-                        ? 'bg-zinc-900 text-white ring-2 ring-zinc-400'
-                        : 'bg-white text-text-muted border-2 border-border-light'
+                        ? 'bg-zinc-100 text-zinc-950 ring-2 ring-zinc-600'
+                        : 'bg-zinc-950 text-zinc-500 border border-zinc-800'
                     } ${stepDoneNode ? 'animate-done-ring' : ''}`}
                   >
                     {isDoneNode ? (
-                      <svg className={`w-4 h-4 ${stepDoneNode ? '' : 'text-text-muted'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <svg className={`w-4 h-4 ${stepDoneNode ? '' : 'text-zinc-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                         <path className={stepDoneNode ? 'animate-checkmark-draw' : ''} strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
                     ) : stepDone ? (
@@ -144,15 +144,15 @@ export function TransactionStepper({
                     )}
                   </div>
                   {stepCurrent && (
-                    <span className="absolute inset-0 rounded-full animate-ping bg-zinc-600/20" />
+                    <span className="absolute inset-0 rounded-full animate-ping bg-zinc-300/20" />
                   )}
                 </div>
                 {/* Label */}
                 <span
                   className={`text-micro mt-1.5 text-center leading-tight font-medium whitespace-nowrap ${
                     stepDone || stepDoneNode || stepCurrent
-                      ? 'text-text-primary'
-                      : 'text-text-muted'
+                      ? 'text-zinc-100'
+                      : 'text-zinc-500'
                   }`}
                 >
                   {node.label}
@@ -162,9 +162,9 @@ export function TransactionStepper({
               {/* Connector line between circles */}
               {!isLast && (
                 <div className="relative h-0.5 flex-1 -mx-0.5" style={{ marginTop: -12 }}>
-                  <div className="absolute inset-0 bg-border-light rounded-full" />
+                  <div className="absolute inset-0 bg-zinc-800 rounded-full" />
                   <div
-                    className="absolute inset-y-0 left-0 bg-zinc-900 rounded-full transition-all duration-500 ease-out"
+                    className="absolute inset-y-0 left-0 bg-zinc-100 rounded-full transition-all duration-500 ease-out"
                     style={{ width: `${getConnectorFill(i) * 100}%` }}
                   />
                 </div>
@@ -175,14 +175,14 @@ export function TransactionStepper({
       </div>
 
       {/* Animated micro-step label area */}
-      <div className="mt-4 pt-3 border-t border-border-light min-h-[28px] flex items-center justify-center">
+      <div className="mt-4 pt-3 border-t border-zinc-800 min-h-[28px] flex items-center justify-center">
         {isDone ? (
-          <p className="text-sm font-medium text-color-up text-center">
+          <p className="text-sm font-medium text-emerald-300 text-center">
             {displayedLabel || tc('stepper.complete')}
           </p>
         ) : (
           <p
-            className={`text-sm text-text-muted text-center transition-opacity duration-300 ${
+            className={`text-sm text-zinc-500 text-center transition-opacity duration-300 ${
               isTransitioning ? 'opacity-0' : 'opacity-100'
             }`}
           >
@@ -193,16 +193,16 @@ export function TransactionStepper({
 
       {/* Completed tx hash links */}
       {completedTxLinks.length > 0 && (
-        <div className="mt-2 flex justify-center gap-3 flex-wrap text-micro font-mono text-text-muted">
+        <div className="mt-2 flex justify-center gap-3 flex-wrap text-micro font-mono text-zinc-500">
           {completedTxLinks.map((tx, i) => (
             <a
               key={i}
               href={tx.explorerUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-text-primary transition-colors flex items-center gap-1"
+              className="hover:text-zinc-100 transition-colors flex items-center gap-1"
             >
-              <span className={`inline-block w-1.5 h-1.5 rounded-full ${tx.chain === 'settlement' ? 'bg-blue-400' : 'bg-emerald-400'}`} />
+              <span className={`inline-block w-1.5 h-1.5 rounded-full ${tx.chain === 'settlement' ? 'bg-sky-400' : 'bg-emerald-400'}`} />
               {truncateHash(tx.hash)}
             </a>
           ))}
@@ -211,10 +211,10 @@ export function TransactionStepper({
 
       {/* Tx refs (order IDs) */}
       {txRefs && txRefs.length > 0 && (
-        <div className="mt-2 flex justify-center gap-4 text-micro font-mono text-text-muted">
+        <div className="mt-2 flex justify-center gap-4 text-micro font-mono text-zinc-500">
           {txRefs.map((ref, i) => (
             ref.explorerUrl ? (
-              <a key={i} href={ref.explorerUrl} target="_blank" rel="noopener noreferrer" className="hover:text-text-primary transition-colors">
+              <a key={i} href={ref.explorerUrl} target="_blank" rel="noopener noreferrer" className="hover:text-zinc-100 transition-colors">
                 {ref.label} {ref.value}
               </a>
             ) : (
@@ -226,7 +226,7 @@ export function TransactionStepper({
 
       {/* Error */}
       {error && (
-        <div className="mt-3 bg-surface-down border border-color-down/30 rounded-lg p-3 text-color-down">
+        <div className="mt-3 bg-rose-500/10 border border-rose-500/30 rounded-lg p-3 text-rose-300">
           <p className="text-sm break-all">{error}</p>
         </div>
       )}

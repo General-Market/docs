@@ -69,18 +69,18 @@ export function DualTimer({
           <span
             className={[
               'tabular-nums',
-              closed ? 'text-zinc-400' : 'text-zinc-700',
+              closed ? 'text-zinc-600' : 'text-zinc-300',
             ].join(' ')}
             suppressHydrationWarning
           >
             {closeText}
           </span>
         </div>
-        <div className="h-[2px] w-full overflow-hidden rounded-full bg-zinc-100">
+        <div className="h-[2px] w-full overflow-hidden rounded-full bg-zinc-800">
           <div
             className={[
               'h-full transition-[width] duration-1000 ease-linear',
-              closed ? 'bg-zinc-300' : 'bg-amber-400',
+              closed ? 'bg-zinc-700' : 'bg-amber-400',
             ].join(' ')}
             style={{ width: `${closePct}%` }}
             aria-hidden
@@ -94,18 +94,18 @@ export function DualTimer({
           <span
             className={[
               'tabular-nums',
-              settled ? 'text-zinc-400' : 'text-zinc-700',
+              settled ? 'text-zinc-600' : 'text-zinc-300',
             ].join(' ')}
             suppressHydrationWarning
           >
             {settleText}
           </span>
         </div>
-        <div className="h-[2px] w-full overflow-hidden rounded-full bg-zinc-100">
+        <div className="h-[2px] w-full overflow-hidden rounded-full bg-zinc-800">
           <div
             className={[
               'h-full transition-[width] duration-1000 ease-linear',
-              settled ? 'bg-zinc-300' : closed ? 'bg-amber-400' : 'bg-zinc-300',
+              settled ? 'bg-zinc-700' : closed ? 'bg-amber-400' : 'bg-zinc-700',
             ].join(' ')}
             style={{ width: `${settlePct}%` }}
             aria-hidden
