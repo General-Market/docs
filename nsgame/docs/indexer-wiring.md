@@ -1,7 +1,11 @@
 # nsgame ↔ Solana Indexer Wiring
 
 How nsgame reaches the event indexer's Postgres on VPS 3. A choice between
-proximity and theatre. We choose proximity.
+proximity and theatre. We choose proximity — but not yet at production scale.
+
+Decided 2026-04-25: no domain, single monorepo. Dokploy stays on the shelf
+until nsgame has a place to live publicly. For now, local development reaches
+production data through an SSH tunnel.
 
 ---
 
@@ -14,84 +18,124 @@ that database. They cannot, from elsewhere, query what they cannot
 reach.
 
 Postgres listens where we told it to listen. The service that needs it
-must come to it. So nsgame moves to VPS 3.
+must come to it. Today, "the service" is a developer's laptop. Tomorrow,
+it will be a deployment on VPS 3 itself. The path matters less than the
+fact that it exists.
 
 ---
 
-## 2. Option A (recommended) — nsgame on Dokploy on VPS 3
+## 2. Phase 0 — SSH tunnel for local development (now)
 
-VPS 3 already runs the production frontend under Dokploy. The pattern
-is proven: mono → mirror repo → Dokploy webhook → Traefik → nginx
-terminates HTTPS. nsgame inherits the same pipeline. Same surface,
-same operator muscle memory, same renewal timer.
+Cheapest possible door. No new daemon, no new tunnel daemon, no new
+service to monitor, no new git remote, no Dokploy config. Forty seconds
+of typing.
 
-### 2.1 Git mirror — `nsgame-frontend.git`
+### 2.1 Tunnel command
 
-The mono repo holds `nsgame/`. Dokploy reads from a single-purpose
-GitHub remote. The link between them is a post-commit hook that mirrors
-`nsgame/` whenever its files change.
+On the developer's laptop, in a long-lived shell:
 
-**Reference:** the existing hook at
-`/Users/maxguillabert/Downloads/index/scripts/sync-frontend.sh` mirrors
-`frontend/` to `gm-frontend`. The new hook does the same for `nsgame/`.
+```bash
+ssh -N -L 5433:127.0.0.1:5432 vps3
+```
 
-**Proposed file:** `/Users/maxguillabert/Downloads/index/scripts/sync-nsgame.sh`
+Flags:
 
-What it must do:
+- `-N` — no remote command. The session exists only to forward the port.
+- `-L 5433:127.0.0.1:5432` — bind local `5433` and forward to `127.0.0.1:5432`
+  on VPS 3. Local `5433` is chosen to avoid colliding with any local
+  Postgres on `5432`.
 
-1. From the mono root, build a tree object from `nsgame/` only:
-   `git ls-tree HEAD -- nsgame/ | sed 's|\tnsgame/|\t|' | git mktree`
-2. Fetch the remote head from `nsgame-frontend` (proposed remote name).
-   Parent the new tree on `FETCH_HEAD` if it exists; orphan it
-   otherwise.
-3. Push the synthetic commit to `nsgame-frontend/main`.
-4. POST to the Dokploy webhook for the nsgame app. Custom-Git sources
-   in Dokploy do not auto-poll — without the POST, nothing rebuilds.
-5. Foreground the curl with three retries and a 15s timeout, exactly as
-   `sync-frontend.sh` does. Backgrounded curls die with the post-commit
-   shell.
+Leave it running in a terminal. Reconnect when the SSH session drops —
+`autossh -M 0 -N -L 5433:127.0.0.1:5432 vps3` if you want it persistent.
 
-**Wire-up:** add a hook line that runs `sync-nsgame.sh` only when
-`nsgame/` files changed in `HEAD`. The existing `.git/hooks/post-commit`
-should pattern-match `git diff-tree --name-only HEAD` against `^nsgame/`.
+### 2.2 nsgame env
 
-The mono push remains the only deploy gesture. Push triggers both
-mirrors. Both mirrors trigger their respective Dokploy apps. One
-keystroke, two production rebuilds.
+In `nsgame/.env.local` (already gitignored):
 
-### 2.2 Dokploy app — provisioning checklist
+```ini
+POSTGRES_URL=postgres://indexer:<password>@127.0.0.1:5433/prediction_market_indexer
+POSTGRES_SCHEMA=prediction_market
+NEXT_PUBLIC_RPC_URL=https://devnet.helius-rpc.com/?api-key=<key>
+NEXT_PUBLIC_PROGRAM_ID=DQwMnwQGYuLDvciSFZNgUvcHkA3Buyhk3ejgbACvSydA
+```
 
-Open the Dokploy admin UI:
-`https://generalmarket.io/_dokploy/`
+The `<password>` is the same value already in `/etc/prediction-indexer.env`
+on VPS 3 (`POSTGRES_URL=postgres://indexer:<...>@127.0.0.1:5432/prediction_market_indexer`).
+Read it via `ssh vps3 'cat /etc/prediction-indexer.env'` and paste once.
+The `<key>` is the Helius free-tier key already saved in
+`.env.data-node` at the mono-repo root.
 
-Create a new application. Suggested fields:
+### 2.3 Run
+
+```bash
+cd nsgame
+npm install
+npm run dev
+```
+
+The `app/api/events/*` routes now resolve through the tunnel. SSE streams
+work. `LISTEN/NOTIFY` works because Postgres treats the tunneled
+connection as local.
+
+### 2.4 Caveats
+
+- The tunnel is single-tenant. Two developers running `npm run dev`
+  cannot share one tunnel — each runs their own.
+- If the SSH session breaks, queries hang until the tunnel is restored.
+  `autossh` papers over flaky links.
+- This is a development-time crutch. Do not point a production frontend
+  at it.
+
+---
+
+## 3. Phase 1 — Dokploy on VPS 3 from a monorepo subpath (deferred)
+
+Same machine as Postgres, no tunnel, but blocked on a public domain
+nsgame does not yet own. Documented now so the work is easy when the
+domain question is answered.
+
+### 3.1 The mono-only constraint
+
+Decided 2026-04-25: nsgame ships from this monorepo. No
+`nsgame-frontend.git` mirror. No second remote. Dokploy supports
+custom-Git sources with a build context path; we point it at the mono
+repo and tell it to build only `nsgame/`.
+
+This rules out the elegance of a single-purpose mirror but it ends the
+hook-and-fetch dance the existing `frontend/` deployment runs. One
+remote, one push, one build context per app.
+
+### 3.2 Dokploy app — provisioning checklist
+
+Open the Dokploy admin UI: `https://generalmarket.io/_dokploy/`
 
 | Field | Value |
 |---|---|
 | Project | reuse existing project, or create `nsgame` |
 | App name | `nsgame` |
 | Source type | Custom Git |
-| Repo URL | `git@github.com:<owner>/nsgame-frontend.git` (see open questions) |
+| Repo URL | `git@github.com:General-Market/mono.git` |
 | Branch | `main` |
+| Build context path | `nsgame/` |
 | Build type | Nixpacks |
-| Nixpacks config path | `nixpacks.toml` (root) |
+| Nixpacks config path | `nsgame/nixpacks.toml` |
 | Healthcheck path | `/api/health` if added; otherwise `/` |
 
 After first deploy, capture the webhook URL from the Dokploy UI under
-the app's *Deployments → Webhook* panel. That URL goes into
-`sync-nsgame.sh`.
+the app's *Deployments → Webhook* panel. The existing
+`scripts/sync-frontend.sh` already triggers a Dokploy deploy after every
+mono push for the `frontend/` app; extend it (or fork
+`scripts/sync-nsgame.sh`) to POST a second webhook for the `nsgame` app
+when `nsgame/` files change. No new git mirror; just a second curl.
 
-**Environment variables.** From `nsgame/package.json` and `next.config.ts`,
-the runtime needs at minimum:
+### 3.3 Environment variables
 
 | Var | Value | Source |
 |---|---|---|
 | `POSTGRES_URL` | `postgres://indexer:<password>@host.docker.internal:5432/prediction_market_indexer` | matches `/etc/prediction-indexer.env` on VPS 3 |
 | `POSTGRES_SCHEMA` | `prediction_market` | indexer default |
-| `NEXT_PUBLIC_RPC_URL` | `https://api.devnet.solana.com` | devnet for now |
+| `NEXT_PUBLIC_RPC_URL` | `https://devnet.helius-rpc.com/?api-key=<key>` | Helius free tier |
 | `NEXT_PUBLIC_PROGRAM_ID` | `DQwMnwQGYuLDvciSFZNgUvcHkA3Buyhk3ejgbACvSydA` | from `vps3-receipt.md` |
-| `DOCS_URL` | `https://docs.generalmarket.io` (or nsgame-specific docs host) | `next.config.ts` |
-| `BACKEND_URL` | `https://api.generalmarket.io` | data-node passthrough |
 | `NODE_ENV` | `production` | — |
 
 The Postgres password lives only in `/etc/prediction-indexer.env` on
@@ -113,13 +157,11 @@ Postgres itself must accept the bridge. Confirm `pg_hba.conf` allows
 the `indexer` role from `127.0.0.1/32` and `172.17.0.0/16`. Add the
 bridge line if missing.
 
-### 2.3 `nixpacks.toml` — draft
+### 3.4 `nsgame/nixpacks.toml` — draft
 
 Mirror the existing `frontend/nixpacks.toml` discipline: pin Node 20,
 prefer `npm install` over `npm ci` because lockfiles drift between
 local and CI faster than they should.
-
-Place at `nsgame/nixpacks.toml`:
 
 ```toml
 [phases.install]
@@ -129,100 +171,38 @@ cmds = ["npm install --no-audit --no-fund"]
 NIXPACKS_NODE_VERSION = "20"
 ```
 
-`package.json` already pins `"engines": { "node": "20.x" }` — this only
+`package.json` already pins `"engines": { "node": "20.x" }` — this
 restates the pin where Nixpacks reads it. The `prebuild` script in
-`package.json` (`npx tsx scripts/build-founders-lookup.ts`) runs as part
-of `npm run build` automatically. Nothing to add for it.
+`package.json` runs as part of `npm run build` automatically. Nothing
+to add for it.
 
-### 2.4 Domain & nginx
+### 3.5 Domain & nginx — deferred
 
-Dokploy assigns Traefik routing internally on VPS 3. nginx on VPS 3
-terminates HTTPS publicly and reverse-proxies to Traefik on
-`127.0.0.1:8080`. Same pattern as `generalmarket.io`.
+Not buying a domain today. When one exists, the nginx vhost on VPS 3
+mirrors the existing `frontend/` block: HTTPS via Let's Encrypt DNS-01
+(Cloudflare token at `/root/.secrets/cloudflare-dns.ini`), HTTP/2 +
+HTTP/3, SSE buffering disabled on `/api/events/stream`. The pattern is
+copy-paste from the existing vhost; no new design needed.
 
-**Proposed domain:** `nsgame.dev` (apex), with `play.nsgame.dev` as a
-candidate if the apex must remain marketing. The decision is in *Open
-Questions*.
-
-DNS: A record on the chosen domain points to `178.104.243.94`. Cloudflare
-gray cloud (DNS-only) — same posture as `generalmarket.io` because LE
-DNS-01 lives at `/root/.secrets/cloudflare-dns.ini` and orange cloud
-breaks the WebSocket-style SSE buffering nsgame's `/api/events/stream`
-needs.
-
-**LE issuance:**
-
-```bash
-certbot certonly --dns-cloudflare \
-  --dns-cloudflare-credentials /root/.secrets/cloudflare-dns.ini \
-  -d nsgame.dev -d www.nsgame.dev \
-  --agree-tos -m ops@nsgame.dev --non-interactive
-```
-
-`certbot.timer` already exists on VPS 3 — renewals are automatic.
-
-**Draft nginx vhost** at `/etc/nginx/sites-available/nsgame.dev`:
-
-```nginx
-server {
-    listen 443 ssl http2;
-    listen 443 quic reuseport;
-    server_name nsgame.dev www.nsgame.dev;
-
-    ssl_certificate     /etc/letsencrypt/live/nsgame.dev/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/nsgame.dev/privkey.pem;
-    add_header Alt-Svc 'h3=":443"; ma=86400' always;
-
-    # SSE: never buffer event streams. /api/events/stream must flush.
-    location /api/events/stream {
-        proxy_pass http://127.0.0.1:8080;
-        proxy_http_version 1.1;
-        proxy_set_header Host            $host;
-        proxy_set_header Connection      "";
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_buffering off;
-        proxy_cache off;
-        proxy_read_timeout 24h;
-    }
-
-    location / {
-        proxy_pass http://127.0.0.1:8080;
-        proxy_http_version 1.1;
-        proxy_set_header Host            $host;
-        proxy_set_header Upgrade         $http_upgrade;
-        proxy_set_header Connection      "upgrade";
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    }
-}
-
-server {
-    listen 80;
-    server_name nsgame.dev www.nsgame.dev;
-    return 301 https://$host$request_uri;
-}
-```
-
-`ln -s` into `sites-enabled/`, `nginx -t`, reload.
-
-### 2.5 Deploy trigger
-
-The pattern is settled. The script does the work. No human clicks
-*Rebuild* in Dokploy after the first capture.
+### 3.6 Deploy trigger — when Phase 1 lands
 
 ```
 mono push → post-commit hook detects nsgame/ change
-          → sync-nsgame.sh builds tree, pushes to nsgame-frontend/main
-          → POST https://generalmarket.io/_dokploy/api/deploy/<token>
-          → Dokploy pulls, nixpacks builds, Traefik routes, nginx serves
+         → POST https://generalmarket.io/_dokploy/api/deploy/<token>
+         → Dokploy pulls mono main, builds nsgame/ subdir via nixpacks
+         → Traefik routes, nginx serves
 ```
 
-The Dokploy refresh token sits in the Dokploy UI under the app's
-deployment settings. Capture it once, paste into `sync-nsgame.sh`, treat
-it as the rotation pivot if the app is ever recreated.
+One push, one rebuild. Same shape as the existing `frontend/` flow,
+minus the mirror.
 
 ---
 
-## 3. Option B — Cloudflare Tunnel or Tailscale
+## 4. Phase 2 — alternatives, if Phase 1 ever doesn't fit
+
+Kept here for future reference. Today both lose to Phase 0 + 1.
+
+### 4.1 Cloudflare Tunnel or Tailscale
 
 Expose `127.0.0.1:5432` over a tunnel. Vercel (or any host) connects to
 the tunnel endpoint as if it were a local Postgres.
@@ -234,17 +214,13 @@ the tunnel endpoint as if it were a local Postgres.
 | Latency | every query crosses the public network twice |
 | Failure mode | tunnel hiccup → frontend serves empty event lists silently |
 
-Viable, second choice. More moving parts to break, more accounts to
-own. The chain is longer and every link is one we did not have to add.
+Viable. More moving parts to break, more accounts to own.
 
----
-
-## 4. Option C — read-only HTTP proxy on VPS 3
+### 4.2 Read-only HTTP proxy on VPS 3
 
 A small service on VPS 3 — a hundred lines of Rust or Node — wraps the
 indexer tables behind HTTPS endpoints. nsgame, hosted anywhere, calls
-those endpoints. The proxy reads only; writes are impossible by
-construction.
+those endpoints. Reads only; writes are impossible by construction.
 
 Cheapest external surface, since it speaks HTTPS and nothing else. Most
 new code, since every endpoint nsgame currently writes against
@@ -255,44 +231,45 @@ disguise.
 
 ---
 
-## 5. Decision & rationale
+## 5. Decision
 
-Choose A. The frontend deployment pattern already exists on VPS 3 and
-runs in production. Adding a sibling app reuses Dokploy, Traefik,
-nginx, the LE timer, and the post-commit-hook discipline. No new
-service, no new tunnel, no new ACL. The Postgres stays on loopback.
-nsgame just moves into the same building.
-
-**Proceed with A unless user overrides.**
+- **Now (2026-04-25):** Phase 0 — SSH tunnel for local development.
+  Section 2 is what you implement today.
+- **Next:** Phase 1 — Dokploy on VPS 3 from a mono-repo subpath, when
+  a domain exists. Section 3 is the work.
+- **Never (unless Phase 1 fails):** Phase 2.
 
 ---
 
 ## 6. Open questions
 
-1. **Production domain.** `nsgame.dev` apex, or `play.nsgame.dev`? The
-   apex is cleaner; `play.` leaves room for a marketing site later. DNS
-   and certbot issuance depend on the answer.
-2. **GitHub ownership.** Does `nsgame-frontend.git` live under the
-   existing `General-Market` org alongside `frontend.git`, or under a
-   new `nsgame`-named org / personal account? Ownership decides who can
-   rotate the Dokploy deploy key.
-3. **Dokploy project.** Cohabit with the existing `frontend` Dokploy
-   app under one project, or carve a separate `nsgame` project? Same
-   project means shared env-var clipboard hygiene. Separate project
-   means cleaner rollback blast radius.
+What was here and is now resolved:
+
+- ~~Production domain.~~ Deferred per `PLAN.md` §3. No domain.
+- ~~GitHub ownership of `nsgame-frontend.git`.~~ No mirror. nsgame ships
+  from this monorepo.
+- ~~Dokploy project layout.~~ Punt to Phase 1 — one Dokploy app per
+  product, build context path keeps them isolated regardless of
+  project grouping.
+
+What remains:
+
+1. **Phase 1 trigger.** When does nsgame need to be reachable from
+   somewhere other than a developer's laptop? The answer determines
+   when Phase 0 retires.
 
 ---
 
 ## 7. Rollback
 
-Blast radius is small. Postgres is read-only from nsgame's perspective
-— no schema to undo, no row to retract.
+Phase 0 has nothing to roll back — close the SSH session and the
+tunnel dies. No infrastructure outlives the developer's terminal.
+
+Phase 1, when it exists, rolls back the way the existing frontend does:
 
 1. In the Dokploy UI, *Stop* the nsgame app. Traefik stops routing.
-2. If users are hitting it mid-incident, flip the `nsgame.dev` A record
-   off `178.104.243.94`. Cloudflare propagates within a minute.
-3. Leave indexer, Postgres, and mirror repo untouched. None depend on
-   nsgame being up.
-4. To re-enable: start the app, re-point DNS. No replay.
+2. If users are hitting it mid-incident, flip the chosen DNS record.
+3. Leave indexer, Postgres, and mono untouched. None depend on nsgame
+   being up.
 
 What rolls back, rolls back. What stays running, stays running.

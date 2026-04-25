@@ -1,10 +1,12 @@
 # nsgame Data-Node — Operational Specification
 
-A second instance of the existing `data-node` binary, restricted to tube sources, deployed on VPS 3, exposed at its own HTTPS origin. The oracle on VPS 3 reads from it. Nothing else does.
+A second instance of the existing `data-node` binary, restricted to tube sources, deployed on VPS 3, bound to localhost. The oracle on VPS 3 reads from it over loopback. Nothing else does, yet.
 
 ## 1. Objective
 
-nsgame must be unable to die because generalmarket.io died. That is the whole point of giving it its own price feed. Today the Solana oracle on VPS 3 calls `https://api.generalmarket.io/v1/sources/{id}/price` — the financial data-node on VPS 1, fifty sources of cross-asset noise the tube product does not need and should not depend on. nsgame gets its own subdomain, its own systemd unit, its own port, its own metrics, its own failure surface. An independent project that borrows its neighbor's nameservers is independent only in the brochure.
+nsgame must be unable to die because generalmarket.io died. That is the whole point of giving it its own price feed. Today the Solana oracle on VPS 3 calls `https://api.generalmarket.io/v1/sources/{id}/price` — the financial data-node on VPS 1, fifty sources of cross-asset noise the tube product does not need and should not depend on. nsgame gets its own systemd unit, its own port, its own metrics, its own failure surface. Public HTTPS exposure waits — the oracle is already on the same host, and the frontend does not yet need a public price endpoint.
+
+Decided 2026-04-25: no domain yet. The data-node binds to `127.0.0.1:8201`. When the frontend later needs direct access from the browser, an nginx vhost and an LE cert are a one-hour task; we will buy them then. Until then, the only client is the oracle, sitting two milliseconds away on loopback.
 
 ## 2. Architecture choice — (a) vs (b)
 
@@ -149,34 +151,27 @@ VPS 3 ports already in use, per `vps.md`:
 
 ## 6. Networking
 
+Today: localhost only.
+
 - Binds to `127.0.0.1:8201`. Never to `0.0.0.0`. The internet does not need to reach Rust directly.
-- New nginx vhost on VPS 3 reverse-proxies `https://<host>` → `http://127.0.0.1:8201`.
-- Let's Encrypt cert via DNS-01 using the existing Cloudflare token at `/root/.secrets/cloudflare-dns.ini`. Same renewal mechanism (`certbot.timer`) the frontend already uses.
-- CORS enabled on the nginx layer for the nsgame frontend's origin (the Vercel/Dokploy host of nsgame's web app, TBD per Open Question 3 below).
-- HTTP/2 on. HTTP/3 optional, copy the listener block from the existing `generalmarket.io` vhost if wanted.
+- The oracle on VPS 3 reads via `http://127.0.0.1:8201` — same host, no nginx, no TLS, no CORS, no domain. Two-millisecond loopback.
+- No nginx vhost. No Let's Encrypt cert. No Cloudflare zone. No domain registration. Skipped on purpose.
 
-### Domain — two candidates
-
-| Candidate | Pros | Cons |
-|---|---|---|
-| `api.nsgame.dev` (or `.com`, `.app`) | clean separation, independent zone, independent DNS, independent cert, independent failure | requires buying the domain and creating the zone |
-| `/nsgame/` path on existing `api.generalmarket.io` | zero new infra, zero cost | violates the independence the project was built to assert; one DNS outage takes both products down; reads as "nsgame is a generalmarket sub-product" to anyone who looks |
-
-Recommend the subdomain. The whole exercise is buying ourselves a separate failure mode; sharing a hostname destroys it on day one.
+Tomorrow (deferred — track separately, do not implement now): when the frontend leaves local dev for production, the same data-node grows an nginx vhost + LE cert via DNS-01 (existing Cloudflare token at `/root/.secrets/cloudflare-dns.ini`). The candidate hostname will be picked at that time. The architecture below survives that change unchanged — only the front door gets installed.
 
 ## 7. Oracle integration
 
-Two changes on VPS 3, one verification:
+Two changes on VPS 3, one verification. The oracle reads over loopback.
 
 ```bash
 # 1. Edit /etc/prediction-oracle.env
-sed -i 's|^DATA_NODE_URL=.*|DATA_NODE_URL=https://<new-host>|' /etc/prediction-oracle.env
+sed -i 's|^DATA_NODE_URL=.*|DATA_NODE_URL=http://127.0.0.1:8201|' /etc/prediction-oracle.env
 
 # 2. Restart
 systemctl restart prediction-oracle
 
-# 3. Verify
-curl -s https://<new-host>/v1/sources/4/price
+# 3. Verify (from VPS 3)
+curl -s http://127.0.0.1:8201/v1/sources/4/price
 # expected: {"price":"<u128 decimal string>","ts":<epoch>}
 ```
 
@@ -202,27 +197,23 @@ Until that exists, `curl localhost:9092/metrics` is the manual surface. Same sha
 |---:|---|---|
 | 1 | Implement `SOURCE_ALLOWLIST` parsing + per-source skip in `data-node/src/serve.rs` | [CODE] |
 | 2 | Extend `source_id_to_symbol` and `source_price` in `data-node/src/api.rs` to dispatch tube ids 1–5 against the data-node's own DB rows | [CODE] |
-| 3 | Pick the nsgame domain. Create the DNS zone (Cloudflare). Add the `A` record pointing at `178.104.243.94` | [DEPLOY] |
-| 4 | SSH `vps3`. `cd /root/index && git pull && cd data-node && cargo build --release` | [BUILD] |
-| 5 | `install -m 0755 target/release/data-node /usr/local/bin/nsgame-data-node` | [DEPLOY] |
-| 6 | Create Postgres role + database `nsgame_data_node` on VPS 3 | [DEPLOY] |
-| 7 | Write `/etc/nsgame-data-node.env` (mode 0600) and `/etc/systemd/system/nsgame-data-node.service` | [DEPLOY] |
-| 8 | `systemctl daemon-reload && systemctl enable --now nsgame-data-node` | [DEPLOY] |
-| 9 | Issue Let's Encrypt cert for the new host via DNS-01; install nginx vhost; reload nginx | [DEPLOY] |
-| 10 | `curl -s https://<new-host>/v1/sources/4/price` returns `{price, ts}` | [VERIFY] |
-| 11 | Update `/etc/prediction-oracle.env` `DATA_NODE_URL` to the new host; `systemctl restart prediction-oracle` | [DEPLOY] |
-| 12 | Watch `journalctl -u prediction-oracle -f` for one full poll cycle without `data-node fetch failed` errors | [VERIFY] |
+| 3 | SSH `vps3`. `cd /root/index && git pull && cd data-node && cargo build --release` | [BUILD] |
+| 4 | `install -m 0755 target/release/data-node /usr/local/bin/nsgame-data-node` | [DEPLOY] |
+| 5 | Create Postgres role + database `nsgame_data_node` on VPS 3 | [DEPLOY] |
+| 6 | Write `/etc/nsgame-data-node.env` (mode 0600) and `/etc/systemd/system/nsgame-data-node.service` | [DEPLOY] |
+| 7 | `systemctl daemon-reload && systemctl enable --now nsgame-data-node` | [DEPLOY] |
+| 8 | `curl -s http://127.0.0.1:8201/v1/sources/4/price` returns `{price, ts}` | [VERIFY] |
+| 9 | Update `/etc/prediction-oracle.env` `DATA_NODE_URL` to `http://127.0.0.1:8201`; `systemctl restart prediction-oracle` | [DEPLOY] |
+| 10 | Watch `journalctl -u prediction-oracle -f` for one full poll cycle without `data-node fetch failed` errors | [VERIFY] |
 
-Twelve steps. Anything more is gold-plating.
+Ten steps. The DNS zone, the cert, and the nginx vhost will rejoin this list when the frontend leaves local dev. Until then, anything more is gold-plating.
 
 ## 10. Open questions
 
-1. **Domain.** `api.nsgame.dev` vs `api.nsgame.com` vs `api.nsgame.app` — pick one. The path-on-shared-host option is rejected on independence grounds.
-2. **Domain registration.** Whichever name wins, someone has to buy it and add the Cloudflare zone. Until that exists, the oracle keeps reading from `api.generalmarket.io` and nsgame remains a tenant.
-3. **Frontend host (for CORS).** Where does nsgame's web app live — Dokploy on VPS 3 (Option A in `vps3-receipt.md`), Vercel, somewhere else? The CORS allow-list on the new nginx vhost cannot be written until this is decided.
-4. **Solana RPC quality.** Per `journalctl -u prediction-oracle` on VPS 3, the public devnet RPC throttles the daemon. A paid RPC (Helius, Triton, QuickNode) removes that drag. Out of scope for this spec but blocking the same product, so logged here.
-5. **Bitget env vars.** The startup guard added in 2026-04 forces `BITGET_READONLY_*` to be present even when Bitget sources are excluded. Cleanup: gate the guard on whether any Bitget source is actually allowlisted. Out of scope for this ship.
+1. **Bitget env vars.** The startup guard added in 2026-04 forces `BITGET_READONLY_*` to be present even when Bitget sources are excluded. Cleanup: gate the guard on whether any Bitget source is actually allowlisted. Out of scope for this ship — paste placeholder values into `/etc/nsgame-data-node.env` and move on.
+
+What was here and is now resolved: the domain question (deferred — no domain), the frontend-CORS question (deferred — no public exposure yet), and the Solana RPC question (Helius free tier, applied 2026-04-25, see `PLAN.md` §3).
 
 ## 11. Rollback
 
-`systemctl disable --now nsgame-data-node`, remove the nginx vhost (`rm /etc/nginx/sites-enabled/nsgame-*` and reload), and point `DATA_NODE_URL` in `/etc/prediction-oracle.env` back at `https://api.generalmarket.io`. No chain state to undo — the oracle is stateless and the daemon does not cache.
+`systemctl disable --now nsgame-data-node`, and point `DATA_NODE_URL` in `/etc/prediction-oracle.env` back at `https://api.generalmarket.io` (which still returns 405 — but the oracle's bad-fetch behavior is the same as today's). No chain state to undo. No nginx vhost to remove. No DNS to flip. The blast radius shrinks with every piece of public infrastructure we did not yet build.
