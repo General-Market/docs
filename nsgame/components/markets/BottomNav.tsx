@@ -7,7 +7,7 @@ import { useWallet } from '@/hooks/useWallet'
 // reminder of where the screen begins.
 
 interface BottomNavProps {
-  onMenuClick: () => void
+  onMenuClick?: () => void
   onTicketClick?: () => void
   hasTicket?: boolean
 }
