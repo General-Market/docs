@@ -1,92 +1,72 @@
-# Demo Mode + `/gm-bot` Command — Design
+# Demo Mode — Cold-Start Bot Build
 
-**Date:** 2026-04-25
-**Author:** dev
+**Date:** 2026-04-25 (rev 2 — pre-staging removed)
 **Status:** approved
 
-## Problem
+## Intent
 
-Record a demo of a Twitch trading bot on generalmarket.io being scaffolded and run from a blank Claude Code session, using a single line. Two constraints: no identifying information must appear on screen, and any new Claude Code agent receiving the same line must execute without asking questions.
+Record a Claude Code session that, from a blank slate, builds and runs a Twitch trading bot on generalmarket.io. The viewer must believe nothing was prepared. Any agent given the same prompt on any machine must produce the same result.
 
-## Non-goals
+## What already exists publicly
 
-- Public installer hosted on a domain (`curl gm.io/install`). Out of scope. Local-machine demo only.
-- New macOS user. Out of scope. Same user, neutral path.
-- Editing global git config or global `CLAUDE.md`. Out of scope. Per-repo and per-command overrides only.
-- Production hardening of the bot itself. The bot is `example-vision-bot/bot.py`, unchanged.
+The website carries the entire contract:
 
-## Design
+- `https://generalmarket.io/llms.txt` — 3 KB, points at the public repo, names the strategy interface, gives a three-minute happy path.
+- `https://github.com/General-Market/vision-bot-examples` — public, contains `twitch/` with `setup.sh --auto-fund`, `live_trader.py`, ABI, predictors.
+- `https://generalmarket.io/api/vision/batches` — open, returns live batch ids by `source_id`.
+- L3 testnet faucet, Vision contract address, RPC URL — all in `llms.txt`.
 
-Three artifacts. All reversible by deletion.
+The phrase *"build a twitch trading bot on generalmarket.io"* triggers nothing local. Claude reads `llms.txt`, clones the repo, runs `setup.sh --auto-fund`, runs `live_trader.py --strategy momentum --max-joins 1`. Three minutes to one on-chain join.
 
-### 1. Demo workspace at `/tmp/gm-demo`
+## What stays local — anti-doxing only
 
-Path resolves to `/private/tmp/gm-demo`. Contains no username segment. `/tmp` is wiped on reboot, which is the cheapest reset.
+`/tmp/gm-demo/` keeps three scripts. None of them know anything about the bot:
 
-Initial contents:
-- `.git/` with per-repo identity `dev <dev@localhost>`. The user's global git identity is untouched.
-- `setup.sh` — backs up current hostname and sets it to `demo`. Idempotent.
-- `restore.sh` — restores the original hostname from backup. Idempotent.
-- `scan.sh` — greps for known identifying strings under a target directory and prints hits.
+| Script | Purpose |
+|---|---|
+| `setup.sh` | Backs up `HostName` / `ComputerName` / `LocalHostName`, sets all three to `demo`. Run once before recording. |
+| `restore.sh` | Restores from backup. Run once after recording. |
+| `scan.sh` | Greps a directory for identifying strings. Read-only audit. |
 
-### 2. Global slash command at `~/.claude/commands/gm-bot.md`
+What was removed in this revision:
 
-Markdown with YAML frontmatter. When the user types `/gm-bot twitch`, the command body is loaded directly into the agent's context as an imperative. Slash commands sit above skill routing — brainstorming does not trigger.
+- `~/.claude/commands/gm-bot.md` — the natural-language prompt was triggering a pre-staged skill. Theatre.
+- `/tmp/gm-demo/gm-bot.sh` — pre-staged scaffolder. Theatre.
+- `/tmp/gm-demo/template/` — local copy of the bot. Theatre.
 
-The command body:
-1. Resolves source name from `$ARGUMENTS`. Default `twitch`.
-2. Copies `~/Downloads/index/example-vision-bot/.` into the current working directory. The `~` expansion silently passes through the username path; nothing prints to screen.
-3. Writes `config.toml` with `batch_ids = [19]` for `twitch`. (Other sources: empty list, trade all.)
-4. Creates a Python venv, installs `web3` and `requests`.
-5. Generates a fresh testnet wallet via `eth_account.Account.create()` and writes `BOT_PRIVATE_KEY` to `.env`.
-6. Runs `python bot.py` in the foreground. The bot auto-faucets, joins batches, and prints predictions.
+## The recording, in order
 
-Reversible: `rm ~/.claude/commands/gm-bot.md`.
+```bash
+# Pre-recording, off-camera:
+cd /tmp/gm-demo
+./setup.sh                      # hostname → demo
 
-### 3. Helper scripts in `/tmp/gm-demo/`
+mkdir -p /tmp/blank && cd /tmp/blank
+# (cwd is now /tmp/blank — no username segment)
 
-- `setup.sh`:
-  - Reads current `HostName`, `ComputerName`, `LocalHostName` via `scutil`.
-  - Saves all three to `/tmp/gm-demo/.hostname-backup`.
-  - Sets all three to `demo`.
-  - Requires `sudo`. Prints what it changed.
-- `restore.sh`:
-  - Reads `/tmp/gm-demo/.hostname-backup`.
-  - Restores all three. Requires `sudo`.
-  - Prints what it restored.
-- `scan.sh`:
-  - `grep -r -i -E 'max guillabert|maxguillabert|max-otc|maxgctr' "$1"`
-  - Prints hits. No mutation.
+# Start recording. Open a new shell so the prompt picks up the new hostname.
+claude
+> build a twitch trading bot on generalmarket.io
+# Claude WebFetches https://generalmarket.io/llms.txt
+# Clones github.com/General-Market/vision-bot-examples
+# Runs ./setup.sh --auto-fund
+# Runs live_trader.py --strategy momentum --max-joins 1
+# First on-chain join lands within 3 minutes.
 
-## The recording, end-to-end
-
-```
-$ cd /tmp/gm-demo
-$ ./setup.sh                         # one-time before recording
-$ claude
-> /gm-bot twitch
-[claude scaffolds, faucets, runs bot]
-[bot prints joined batch 19, predictions stream]
-^C                                   # stop the recording
-$ ./restore.sh                       # restore hostname
+# Stop recording.
+cd /tmp/gm-demo && ./restore.sh
 ```
 
-Anyone else on a different machine: `git clone <reference>` + `python bot.py` works. Slash command is a local convenience, not a portability requirement.
+## Why this is reproducible across agents
+
+Determinism comes from `llms.txt` and the public repo, not from any prompt-engineering. Any agent capable of WebFetch + git clone + Python venv arrives at the same set of files and the same first transaction. The bot's wallet is generated fresh on each run, so two recordings produce two different addresses but identical UX.
 
 ## Reversal
 
 | Artifact | How to remove |
 |---|---|
-| `/tmp/gm-demo/` | `rm -rf /tmp/gm-demo` (or reboot) |
-| `~/.claude/commands/gm-bot.md` | `rm ~/.claude/commands/gm-bot.md` |
-| Hostname change | `./restore.sh` |
-| Per-repo git identity | Lives inside `/tmp/gm-demo/.git/config`. Removed with the workspace. |
+| Hostname change | `cd /tmp/gm-demo && ./restore.sh` |
+| Anti-dox scripts | `rm -rf /tmp/gm-demo` (or reboot) |
+| `/tmp/blank` recording cwd | `rm -rf /tmp/blank` (or reboot) |
 
-Nothing under `~/.gitconfig`, `~/.claude/CLAUDE.md`, or the index repo is modified.
-
-## Out-of-band notes
-
-- The user's global `~/.claude/CLAUDE.md` does not contain identifying strings. Verified.
-- The user's email (`maxgctr@gmail.com`) is known to the agent through the system prompt. It does not appear on screen unless the user explicitly asks for it. Avoid asking during the recording.
-- The bot uses 18-decimal L3 USDC. The faucet endpoint at `https://generalmarket.io/api/faucet` mints 1000 testnet USDC plus gas tokens.
-- If testnet is redeployed, the Twitch batch ID may shift from 19. Verify with `curl https://generalmarket.io/api/vision/batches | jq '.batches[] | select(.name | contains("twitch"))'`.
+Nothing under `~/.gitconfig`, `~/.claude/`, or the index repo was modified. The earlier revision created `~/.claude/commands/gm-bot.md` — that file has been removed.
