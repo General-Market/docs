@@ -23,10 +23,10 @@
     }
   },
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --port 3001",
     "prebuild": "npx tsx scripts/build-founders-lookup.ts",
     "build": "next build",
-    "start": "next start",
+    "start": "next start --port 3001",
     "lint": "next lint",
     "test": "bun test",
     "test:watch": "bun test --watch",
