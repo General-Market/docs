@@ -24,6 +24,15 @@ Settled 2026-04-25 — recorded here so no one relitigates them in another conve
 
 Open question that did not survive the day: whether to fork a `tube-data-node` crate. Rejected — second binary, double maintenance, no win. Spec assumes a single binary, allowlist-gated.
 
+**Known gap surfaced 2026-04-25 — site-aggregate vs per-asset markets.** The data-node patch dispatches each on-chain `source_id` to `SUM(value)` over a site-prefix in `market_prices_latest`. This is per-site (xv/xn/ph/cb/ep), not per-star, not per-model, not per-video. The on-chain `Market` PDA is keyed only by `(source_id, threshold, close_time, settlement_time)` — there is no `asset_id` field. The frozen catalog (`lib/solana/catalog.ts`) was written assuming per-model semantics for cam markets (Type F: "model X still online", Type G: "top-1 model viewer count over N"); against the current dispatch those markets settle on a site-aggregate, not the named model.
+
+Two coherent paths forward:
+
+- **(i) Site-aggregate first.** Rewrite the catalog to match what the data-node returns: site-wide totals (`tubes_cb` total active users), site-wide rollovers (Type D), site-wide trending. Catalog shrinks to the markets MARKETS_LIST.md already lists as aggregates: G15 (`tubes_cb_total_tokens_ou_proxy`), the rollover types (D8–D10), maybe a custom "site total grew by N" type. The end-to-end cycle ships against this.
+- **(ii) Extend the program.** Add `asset_id: [u8; 32]` to the Market PDA seeds and to the close/resolve oracle payloads. The data-node grows a `?asset_id=` query param. The oracle's payload domain tag changes; signers re-sign. This is days of program work, a re-deploy, and a reset of every PDA.
+
+Decision deferred until the rest of the stack proves itself end-to-end on (i). The site-aggregate path is enough to settle one bet, which is what this round is for.
+
 ## 4. Current state
 
 Ground truth as of 2026-04-25. Read this before changing anything else.
