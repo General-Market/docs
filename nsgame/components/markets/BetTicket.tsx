@@ -11,6 +11,7 @@ import {
   payoutMultiplier,
 } from '@/lib/markets/hooks'
 import FaucetButton from './FaucetButton'
+import { GlobalActivity } from './GlobalActivity'
 import { MyPositions } from './MyPositions'
 import { SourceIcon } from './SourceIcon'
 import type { Side } from './MarketRow'
@@ -43,6 +44,7 @@ export function BetTicket({ slot, side, onSideChange, className = '' }: BetTicke
     return (
       <div className={['flex flex-col gap-3', className].join(' ')}>
         <MyPositions />
+        <GlobalActivity />
         <aside
           className="rounded-md border border-dashed border-zinc-700 bg-zinc-900 p-6"
           aria-label="Bet ticket"
@@ -56,6 +58,7 @@ export function BetTicket({ slot, side, onSideChange, className = '' }: BetTicke
   return (
     <div className={['flex flex-col gap-3', className].join(' ')}>
       <MyPositions />
+      <GlobalActivity />
       <BetTicketActive slot={slot} side={side} onSideChange={onSideChange} />
     </div>
   )
@@ -336,12 +339,12 @@ interface SidePillProps {
 
 function SidePill({ side, label, pct, active, onClick }: SidePillProps) {
   const yes = side === 'yes'
+  // Idle: both pills wear emerald (Kalshi pattern). Active: side hue
+  // takes over so the click still confirms which side won the press.
   const activeClasses = yes
     ? 'bg-emerald-500/20 text-emerald-100 border border-emerald-400 ring-1 ring-emerald-400/40'
     : 'bg-rose-500/20 text-rose-100 border border-rose-400 ring-1 ring-rose-400/40'
-  const idleClasses = yes
-    ? 'border-2 border-emerald-400/60 text-emerald-300 hover:bg-emerald-500/10'
-    : 'border-2 border-rose-400/60 text-rose-300 hover:bg-rose-500/10'
+  const idleClasses = 'border-2 border-emerald-400/60 text-emerald-300 hover:bg-emerald-500/10'
   const pctText = pct === null ? '—' : `${Math.round(pct * 100)}¢`
   return (
     <button
