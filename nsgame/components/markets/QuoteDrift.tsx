@@ -3,7 +3,17 @@
 import { useMemo } from 'react'
 import { useNowSecs } from './CountdownTimer'
 import { SparkLine } from './SparkLine'
-import type { QuoteDriftEntry } from '@/lib/markets/hooks'
+
+// Shape produced by useQuoteDrift in lib/markets/hooks.ts.
+export interface QuoteDriftEntry {
+  sig: string
+  ts: number
+  side: 'yes' | 'no'
+  owner: string
+  amount: bigint
+  yesPctAtMoment: number
+  yesPctAfter: number
+}
 
 // Quote history. Newest first. Each row carries the implied YES odds at
 // the instant the bet landed — the trail of how the pool got to where it

@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import { useUnifiedWalletContext } from '@jup-ag/wallet-adapter'
 import { useWallet } from '@/hooks/useWallet'
@@ -18,10 +19,15 @@ export function NavBar() {
   return (
     <header className="sticky top-0 z-40 border-b border-zinc-200/60 bg-white/85 backdrop-blur supports-[backdrop-filter]:bg-white/70">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:h-16 sm:px-6">
-        <a href="/" className="flex items-center gap-1.5 shrink-0">
-          <span className="text-[18px] font-semibold tracking-[-0.02em] text-zinc-900">
-            nsgame
-          </span>
+        <a href="/" className="flex items-center gap-2 shrink-0" aria-label="nsgame home">
+          <Image
+            src="/brand/nsgame-logo.svg"
+            alt="nsgame"
+            width={150}
+            height={40}
+            priority
+            className="h-5 w-auto sm:h-6"
+          />
           <span className="hidden font-mono text-[11px] font-light text-zinc-300 sm:inline">
             ·
           </span>

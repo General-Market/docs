@@ -17,6 +17,7 @@ import {
 } from '@/lib/markets/hooks'
 import { CountdownTimer } from './CountdownTimer'
 import FaucetButton from './FaucetButton'
+import { MyPositions } from './MyPositions'
 
 // Bottom sheet on mobile. Right drawer on desktop. The size of the
 // commitment is small; the framing should match.
@@ -155,8 +156,10 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
             exit={{ y: '100%', opacity: 0 }}
             transition={{ type: 'spring', stiffness: 320, damping: 32 }}
           >
-            <div className="flex items-start justify-between gap-3 border-b border-zinc-200 px-5 py-4">
-              <div className="space-y-1">
+            <div className="border-b border-zinc-200 px-5 pb-4 pt-3">
+              <MyPositions compact className="mb-3" />
+              <div className="flex items-start justify-between gap-3">
+                <div className="space-y-1">
                 <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-zinc-500">
                   {slot.sourceName.replace(/^tubes_/, '')} · closes in{' '}
                   <CountdownTimer target={slot.closeTime} closedLabel="closed" />
@@ -189,6 +192,7 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M6 18L18 6" />
                 </svg>
               </button>
+              </div>
             </div>
 
             <div className="flex-1 space-y-5 overflow-y-auto px-5 py-5">

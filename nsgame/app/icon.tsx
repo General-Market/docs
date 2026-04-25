@@ -3,8 +3,7 @@ import { ImageResponse } from 'next/og'
 export const size = { width: 32, height: 32 }
 export const contentType = 'image/png'
 
-// Favicon — charcoal tile, uniform 8px corners, single teal lowercase n.
-// Mirrors /public/brand/nsgame-icon.svg.
+// Favicon — geometric n monogram, teal on charcoal. Mirrors /public/brand/nsgame-icon.svg.
 export default function Icon() {
   return new ImageResponse(
     (
@@ -12,20 +11,19 @@ export default function Icon() {
         style={{
           width: '100%',
           height: '100%',
-          background: '#0F0F10',
-          borderRadius: 4,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: '#06B6D4',
-          fontSize: 22,
-          fontWeight: 800,
-          letterSpacing: -1,
-          lineHeight: 1,
-          fontFamily: 'system-ui, -apple-system, sans-serif',
+          background: '#0F0F10',
+          borderRadius: 6,
         }}
       >
-        n
+        <svg width="32" height="32" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+          <rect width="64" height="64" rx="12" ry="12" fill="#0F0F10" />
+          <rect x="16" y="14" width="32" height="12" fill="#06B6D4" />
+          <rect x="16" y="14" width="12" height="36" fill="#06B6D4" />
+          <rect x="36" y="18" width="12" height="32" fill="#06B6D4" />
+        </svg>
       </div>
     ),
     { ...size },
