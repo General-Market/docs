@@ -9,24 +9,12 @@ import {
   useMarketState,
   usePlaceBet,
   useStakeBalance,
-  usePairHistory,
-  usePairScore,
-  payoutMultiplier,
-  formatMultiplier,
-  formatPairScore,
-  formatLabel,
-  windowLabel,
-  compactAudience,
-  audienceUnit,
 } from '@/lib/markets/hooks'
-import { CountdownTimer } from './CountdownTimer'
-import FaucetButton from './FaucetButton'
 import { MyPositions } from './MyPositions'
-import { SparkLine } from './SparkLine'
+import { BetBody, computePercents } from './BetTicket'
 
-// Bottom sheet on mobile. Right drawer on desktop. Same VS layout as
-// MarketRow + BetTicket — A on top, B below, vertical stack on narrow
-// widths so each name button gets full width.
+// Bottom sheet on mobile. Right drawer on desktop. Same body BetTicket
+// renders, dressed in slide-up chrome and a close affordance.
 
 const USDC_DECIMALS = 6
 
@@ -39,8 +27,6 @@ function displayToUsdcUnits(value: string): bigint {
   return BigInt(whole || '0') * 10n ** BigInt(USDC_DECIMALS) + BigInt(paddedFrac || '0')
 }
 
-const PRESETS = ['1', '5', '25']
-
 export interface BetSheetProps {
   slot: UpcomingSlot | null
   onClose: () => void
@@ -48,78 +34,15 @@ export interface BetSheetProps {
 
 type Side = 'yes' | 'no'
 
-interface NameButtonProps {
-  side: Side
-  name: string
-  audience: bigint
-  audienceLabel: string
-  multiplier: number | null
-  active: boolean
-  onClick: () => void
-}
-
-function NameButton({ side, name, audience, audienceLabel, multiplier, active, onClick }: NameButtonProps) {
-  const yes = side === 'yes'
-  let surface: string
-  if (active) {
-    surface = yes
-      ? 'border-emerald-600 bg-emerald-500/15 text-emerald-100 shadow-[inset_0_0_24px_rgb(16_185_129/0.18)]'
-      : 'border-rose-600 bg-rose-500/15 text-rose-100 shadow-[inset_0_0_24px_rgb(244_63_94/0.18)]'
-  } else {
-    surface = yes
-      ? 'border-zinc-800 bg-zinc-900 text-zinc-100 hover:border-emerald-400'
-      : 'border-zinc-800 bg-zinc-900 text-zinc-100 hover:border-rose-400'
-  }
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={[
-        'flex w-full flex-col items-start gap-0.5 rounded-md border px-3 py-2.5 text-left transition-colors',
-        surface,
-      ].join(' ')}
-    >
-      <span className="flex w-full items-center gap-2">
-        <span aria-hidden className={['inline-block h-2 w-2 shrink-0 rounded-full', yes ? 'bg-emerald-500' : 'bg-rose-500'].join(' ')} />
-        <span className="truncate text-[14px] font-semibold leading-tight tracking-tight">
-          {name}
-        </span>
-      </span>
-      <span className="text-[11px] tabular-nums text-zinc-400">
-        {compactAudience(audience)} {audienceLabel}
-      </span>
-      <span className={['text-[11px] tabular-nums', active ? (yes ? 'text-emerald-700' : 'text-rose-700') : 'text-zinc-400'].join(' ')}>
-        {formatMultiplier(multiplier)} if wins
-      </span>
-    </button>
-  )
-}
-
 export function BetSheet({ slot, onClose }: BetSheetProps) {
-  const { connected } = useWallet()
+  const { connected, disconnect } = useWallet()
   const { setShowModal } = useUnifiedWalletContext()
   const state = useMarketState(slot?.marketPda ?? null)
   const placeBetCtl = usePlaceBet()
   const stakeBalance = useStakeBalance()
-  const pairScore = usePairScore(slot?.pairIndex ?? null)
-  const pairHistory = usePairHistory(slot?.pairIndex ?? null, 30)
-
-  const sparkValues = useMemo(
-    () => pairHistory.points.map(p => Number(p.score)),
-    [pairHistory.points],
-  )
-  const sparkTrend: 'up' | 'down' | 'flat' =
-    pairScore.direction === 'up' ? 'up'
-      : pairScore.direction === 'down' ? 'down'
-      : 'flat'
-  const arrow =
-    pairScore.direction === 'up' ? '↑'
-      : pairScore.direction === 'down' ? '↓'
-      : ''
 
   const [side, setSide] = useState<Side>('yes')
-  const [amount, setAmount] = useState<string>(PRESETS[0])
+  const [amount, setAmount] = useState<string>('')
   const [lastSig, setLastSig] = useState<string | null>(null)
   const [localError, setLocalError] = useState<string | null>(null)
 
@@ -127,15 +50,14 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
   useEffect(() => {
     if (slot) {
       setSide('yes')
-      setAmount(PRESETS[0])
+      setAmount('')
       setLastSig(null)
       setLocalError(null)
     }
   }, [slot?.marketPda])
 
-  // Lock body scroll while open. Only on mobile — on desktop the sheet
-  // is hidden by `lg:hidden` on the parent, but React still mounts this
-  // component and would otherwise freeze scrolling on the lit-up rail.
+  // Lock body scroll on mobile only. Desktop keeps the page scrollable
+  // because the sheet lives in a side rail there.
   useEffect(() => {
     if (!slot) return
     if (typeof window !== 'undefined' &&
@@ -145,7 +67,7 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
     return () => { document.body.style.overflow = prev }
   }, [slot])
 
-  // Close on Escape.
+  // Escape closes.
   useEffect(() => {
     if (!slot) return
     function onKey(e: KeyboardEvent) {
@@ -159,14 +81,7 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
     try { return displayToUsdcUnits(amount) } catch { return 0n }
   }, [amount])
 
-  const yesMult = useMemo(
-    () => state ? payoutMultiplier(state.totalYes, state.totalNo, 'yes') : null,
-    [state],
-  )
-  const noMult = useMemo(
-    () => state ? payoutMultiplier(state.totalYes, state.totalNo, 'no') : null,
-    [state],
-  )
+  const { yesPct, noPct } = useMemo(() => computePercents(state), [state])
 
   async function handleSubmit() {
     if (!slot) return
@@ -189,8 +104,8 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
   const insufficientBalance =
     connected && parsedUnits > 0n && stakeBalance.raw < parsedUnits
 
-  const audienceLbl = slot ? audienceUnit(slot.board) : ''
   const pickedName = slot ? (side === 'yes' ? slot.displayA : slot.displayB) : ''
+  const isOpen = slot ? slot.closeTime * 1000 > Date.now() : false
 
   return (
     <AnimatePresence>
@@ -210,207 +125,81 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
             role="dialog"
             aria-modal="true"
             aria-label="Place bet"
-            className="absolute inset-x-0 bottom-0 flex max-h-[92vh] flex-col rounded-t-2xl bg-zinc-900 shadow-modal lg:inset-y-0 lg:right-0 lg:left-auto lg:h-full lg:w-[420px] lg:max-h-none lg:rounded-none lg:border-l lg:border-zinc-800"
+            className="absolute inset-x-0 bottom-0 flex max-h-[92vh] flex-col rounded-t-2xl border-t border-zinc-800 bg-zinc-900 shadow-modal lg:inset-y-0 lg:right-0 lg:left-auto lg:h-full lg:w-[420px] lg:max-h-none lg:rounded-none lg:border-l lg:border-t-0"
             initial={{ y: '100%', x: 0, opacity: 0 }}
             animate={{ y: 0, x: 0, opacity: 1 }}
             exit={{ y: '100%', opacity: 0 }}
             transition={{ type: 'spring', stiffness: 320, damping: 32 }}
           >
-            <div className="border-b border-zinc-800 px-5 pb-4 pt-3">
+            <div className="border-b border-zinc-800 px-4 pt-3">
               <MyPositions compact className="mb-3" />
-              <div className="flex items-start justify-between gap-3">
-                <div className="space-y-1">
-                  <p className="flex flex-wrap items-center gap-2 font-mono text-[10px] uppercase tracking-[0.12em] text-zinc-500">
-                    <span className="tabular-nums">pair #{String(slot.pairIndex).padStart(2, '0')}</span>
-                    <span className="text-zinc-300">·</span>
-                    <span
-                      className={[
-                        'inline-flex items-center rounded px-1.5 py-0.5 text-[10px]',
-                        slot.board === 'stars' ? 'bg-amber-500/15 text-amber-300' : 'bg-red-500/15 text-red-300',
-                      ].join(' ')}
-                    >
-                      {slot.board}
-                    </span>
-                    <span className="inline-flex items-center rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] text-zinc-300">
-                      {windowLabel(slot.windowSecs)} {formatLabel(slot.format)}
-                    </span>
-                  </p>
-                  <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.1em] text-zinc-500">
-                    <span>score</span>
-                    <span className="text-zinc-300">·</span>
-                    <span
-                      className={[
-                        'tabular-nums',
-                        pairScore.score === null
-                          ? 'text-zinc-500'
-                          : pairScore.score > 0n
-                            ? 'text-emerald-700'
-                            : pairScore.score < 0n
-                              ? 'text-rose-700'
-                              : 'text-zinc-300',
-                      ].join(' ')}
-                    >
-                      {formatPairScore(pairScore.score)}
-                    </span>
-                    {arrow ? (
-                      <span aria-hidden className={pairScore.direction === 'up' ? 'text-emerald-600' : 'text-rose-600'}>
-                        {arrow}
-                      </span>
-                    ) : null}
-                    {sparkValues.length >= 2 ? (
-                      <SparkLine
-                        values={sparkValues}
-                        width={60}
-                        height={16}
-                        trend={sparkTrend}
-                        aria-label="pair score, last 30 min"
-                      />
-                    ) : null}
-                  </div>
-                  <h2 className="text-base font-semibold leading-snug text-zinc-100">
-                    {slot.displayA} <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-zinc-500">vs</span> {slot.displayB}
-                  </h2>
-                  <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-zinc-500">
-                    closes in <CountdownTimer target={slot.closeTime} closedLabel="closed" />
-                    {' · '}
-                    settles in <CountdownTimer target={slot.settlementTime} closedLabel="ready" />
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="-m-2 grid h-11 w-11 place-items-center rounded-md text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
-                  aria-label="Close"
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M6 18L18 6" />
-                  </svg>
-                </button>
-              </div>
             </div>
 
-            <div className="flex-1 space-y-5 overflow-y-auto px-5 py-5">
-              {slot.description && (
-                <p className="text-sm text-zinc-400">{slot.description}</p>
-              )}
-
-              <div className="space-y-2">
-                <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500">
-                  pick a side
-                </p>
-                <div className="flex flex-col gap-2">
-                  <NameButton
-                    side="yes"
-                    name={slot.displayA}
-                    audience={slot.audienceA}
-                    audienceLabel={audienceLbl}
-                    multiplier={yesMult}
-                    active={side === 'yes'}
-                    onClick={() => setSide('yes')}
-                  />
-                  <span aria-hidden className="self-center font-mono text-[11px] uppercase tracking-[0.16em] text-zinc-400">
-                    vs
-                  </span>
-                  <NameButton
-                    side="no"
-                    name={slot.displayB}
-                    audience={slot.audienceB}
-                    audienceLabel={audienceLbl}
-                    multiplier={noMult}
-                    active={side === 'no'}
-                    onClick={() => setSide('no')}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label htmlFor="bet-amount" className="block text-[11px] font-mono uppercase tracking-[0.08em] text-zinc-500">
-                  amount (USDC)
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    id="bet-amount"
-                    type="text"
-                    inputMode="decimal"
-                    value={amount}
-                    onChange={e => setAmount(e.target.value)}
-                    className="h-11 flex-1 rounded-md border border-zinc-700 bg-zinc-900 px-3 font-mono text-sm focus:border-zinc-900 focus:outline-none"
-                    placeholder="0.00"
-                  />
-                  {PRESETS.map(p => (
-                    <button
-                      key={p}
-                      type="button"
-                      onClick={() => setAmount(p)}
-                      className={[
-                        'h-11 min-w-[44px] rounded-md border px-3 font-mono text-xs',
-                        amount === p
-                          ? 'border-zinc-900 bg-zinc-900 text-white'
-                          : 'border-zinc-800 bg-zinc-900 text-zinc-400 hover:bg-zinc-900',
-                      ].join(' ')}
-                    >
-                      {p}
-                    </button>
-                  ))}
-                </div>
-                <div className="flex items-center justify-between gap-2">
-                  <p className="font-mono text-[10px] uppercase tracking-[0.08em] text-zinc-500">
-                    {!connected
-                      ? 'connect a wallet to see balance.'
-                      : stakeBalance.loading && stakeBalance.raw === 0n
-                        ? 'balance: —'
-                        : stakeBalance.error
-                          ? `balance: ${stakeBalance.error.toLowerCase()}`
-                          : `balance: ${stakeBalance.display} USDC`}
-                  </p>
-                  {connected && stakeBalance.raw === 0n && <FaucetButton />}
-                </div>
-              </div>
-
-              {insufficientBalance && (
-                <p className="font-mono text-[11px] text-rose-700">
-                  insufficient balance.
-                </p>
-              )}
-              {error && (
-                <div className="rounded-md border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-300">
-                  {error}
-                </div>
-              )}
-              {lastSig && (
-                <div className="break-all rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 font-mono text-[11px] text-emerald-800">
-                  bet placed. {lastSig.slice(0, 8)}…{lastSig.slice(-8)}
-                </div>
-              )}
+            <div className="flex-1 overflow-y-auto">
+              <BetBody
+                slot={slot}
+                side={side}
+                onSideChange={setSide}
+                amount={amount}
+                setAmount={setAmount}
+                connected={connected}
+                stakeBalance={stakeBalance}
+                yesPct={yesPct}
+                noPct={noPct}
+                pickedName={pickedName}
+                isOpen={isOpen}
+                showClose
+                onClose={onClose}
+              />
             </div>
 
-            <div className="border-t border-zinc-800 bg-zinc-900 px-5 py-4">
+            <div className="border-t border-zinc-800 px-4 py-3">
               {!connected ? (
                 <button
                   type="button"
                   onClick={() => setShowModal(true)}
-                  className="h-12 w-full rounded-md bg-zinc-900 text-sm font-semibold text-white transition-colors hover:bg-zinc-800"
+                  className="h-12 w-full rounded-md bg-emerald-400 font-semibold text-zinc-950 transition-colors hover:bg-emerald-300"
                 >
-                  connect a wallet to bet.
+                  Connect wallet to bet
                 </button>
               ) : (
                 <button
                   type="button"
                   onClick={handleSubmit}
                   disabled={placeBetCtl.placing || parsedUnits <= 0n || insufficientBalance}
-                  className={[
-                    'h-12 w-full rounded-md text-sm font-semibold text-white transition-colors',
-                    'disabled:cursor-not-allowed disabled:opacity-40',
-                    side === 'yes'
-                      ? 'bg-emerald-600 hover:bg-emerald-700'
-                      : 'bg-rose-600 hover:bg-rose-700',
-                  ].join(' ')}
+                  className="h-12 w-full rounded-md bg-emerald-400 font-semibold text-zinc-950 transition-colors hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {placeBetCtl.placing
-                    ? 'sending…'
-                    : `bet on ${pickedName} · ${amount || '0'} USDC`}
+                    ? 'Sending…'
+                    : `Buy ${pickedName} · $${amount || '0'}`}
                 </button>
               )}
+
+              <div className="mt-2 min-h-[16px]">
+                {insufficientBalance ? (
+                  <p className="text-[11px] text-rose-400">Insufficient balance.</p>
+                ) : null}
+                {error ? (
+                  <div className="mt-1 rounded-md border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-[11px] text-rose-300">
+                    {error}
+                  </div>
+                ) : null}
+                {lastSig ? (
+                  <div className="mt-1 break-all rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 font-mono text-[11px] text-emerald-300">
+                    Bet placed · {lastSig.slice(0, 8)}…{lastSig.slice(-8)}
+                  </div>
+                ) : null}
+              </div>
+
+              {connected ? (
+                <button
+                  type="button"
+                  onClick={() => disconnect()}
+                  className="mt-2 block w-full text-[10px] text-zinc-600 transition-colors hover:text-zinc-400"
+                >
+                  disconnect
+                </button>
+              ) : null}
             </div>
           </motion.aside>
         </div>
