@@ -54,17 +54,17 @@ export function StatStrip({
   ]
 
   return (
-    <div className="border-b border-zinc-200/60">
-      <div className="-mx-4 flex snap-x snap-mandatory items-stretch gap-6 overflow-x-auto px-4 py-3 scrollbar-hide sm:mx-0 sm:gap-10 sm:px-0">
+    <div className="border-b border-zinc-200/70">
+      <div className="-mx-4 flex snap-x snap-mandatory items-stretch gap-8 overflow-x-auto px-4 py-4 scrollbar-hide sm:mx-0 sm:gap-12 sm:px-0">
         {cells.map((c) => (
           <div
             key={c.label}
             className="flex shrink-0 snap-start flex-col gap-1"
           >
-            <span className="text-[11px] font-mono uppercase tracking-[0.12em] text-zinc-500">
+            <span className="text-[11px] font-medium tracking-tight text-zinc-400">
               {c.label}
             </span>
-            <span className="text-[15px] font-mono tabular-nums text-zinc-900">
+            <span className="text-[18px] font-semibold tabular-nums tracking-tight text-zinc-900">
               {c.value}
             </span>
           </div>

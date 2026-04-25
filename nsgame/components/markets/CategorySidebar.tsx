@@ -43,16 +43,16 @@ export interface CategorySidebarProps {
 
 function rowClasses(active: boolean): string {
   return [
-    'group flex w-full items-center justify-between gap-2 rounded-md px-2.5 py-2 text-left transition-colors',
-    'min-h-[40px]',
+    'group flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left transition-colors',
+    'min-h-[36px]',
     active
-      ? 'bg-zinc-900 text-white'
-      : 'text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900',
+      ? 'bg-zinc-100 text-zinc-900'
+      : 'text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900',
   ].join(' ')
 }
 
 function sectionLabelClasses(): string {
-  return 'mb-2 font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500'
+  return 'mb-1.5 px-3 text-[11px] font-medium tracking-tight text-zinc-400'
 }
 
 export function CategorySidebar({
@@ -80,23 +80,13 @@ export function CategorySidebar({
   return (
     <aside
       className={[
-        'border-r border-zinc-200 pr-4',
-        'space-y-6',
+        'pr-4 space-y-7',
         className,
       ].join(' ')}
       aria-label="Categories"
     >
       <div>
-        <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-emerald-700">
-          what&apos;s next
-        </p>
-        <p className="mt-1 text-[13px] text-zinc-600">
-          Markets that close soon. Pick a side.
-        </p>
-      </div>
-
-      <div>
-        <p className={sectionLabelClasses()}>sources</p>
+        <p className={sectionLabelClasses()}>Sources</p>
         <div className="space-y-0.5">
           <button
             type="button"
@@ -104,13 +94,13 @@ export function CategorySidebar({
             aria-pressed={source === 'all'}
             className={rowClasses(source === 'all')}
           >
-            <span className="flex items-center gap-2">
+            <span className="flex items-center gap-2.5">
               <span className="grid h-4 w-4 place-items-center text-zinc-400">
                 <span className="block h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
               </span>
-              <span className="text-[13px] font-medium">all sources</span>
+              <span className="text-[13.5px]">All</span>
             </span>
-            <span className="font-mono text-[11px] tabular-nums text-zinc-400 group-hover:text-zinc-600">
+            <span className="text-[12px] tabular-nums text-zinc-400 group-hover:text-zinc-500">
               {totalCount}
             </span>
           </button>
@@ -124,14 +114,14 @@ export function CategorySidebar({
                 aria-pressed={active}
                 className={rowClasses(active)}
               >
-                <span className="flex items-center gap-2">
+                <span className="flex items-center gap-2.5">
                   <SourceIcon sourceId={s.id} className="h-4 w-4" />
-                  <span className="text-[13px] font-medium">{s.label}</span>
+                  <span className="text-[13.5px] capitalize">{s.label}</span>
                 </span>
                 <span
                   className={[
-                    'font-mono text-[11px] tabular-nums',
-                    active ? 'text-white/70' : 'text-zinc-400 group-hover:text-zinc-600',
+                    'text-[12px] tabular-nums',
+                    active ? 'text-zinc-700' : 'text-zinc-400 group-hover:text-zinc-500',
                   ].join(' ')}
                 >
                   {sourceCounts[s.id] ?? 0}
@@ -143,7 +133,7 @@ export function CategorySidebar({
       </div>
 
       <div>
-        <p className={sectionLabelClasses()}>horizons</p>
+        <p className={sectionLabelClasses()}>Horizon</p>
         <div className="space-y-0.5">
           {HORIZONS.map(h => {
             const active = horizon === h.id
@@ -155,8 +145,8 @@ export function CategorySidebar({
                 aria-pressed={active}
                 className={rowClasses(active)}
               >
-                <span className="text-[13px] font-medium">{h.label}</span>
-                <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-zinc-400 group-hover:text-zinc-600">
+                <span className="text-[13.5px] capitalize">{h.label}</span>
+                <span className="text-[11px] tabular-nums text-zinc-400 group-hover:text-zinc-500">
                   {h.id}
                 </span>
               </button>
@@ -166,7 +156,7 @@ export function CategorySidebar({
       </div>
 
       <div>
-        <p className={sectionLabelClasses()}>status</p>
+        <p className={sectionLabelClasses()}>Status</p>
         <div className="space-y-0.5">
           {STATUSES.map(s => {
             const active = statuses.includes(s.id)
@@ -174,8 +164,8 @@ export function CategorySidebar({
               <label
                 key={s.id}
                 className={[
-                  'flex min-h-[40px] cursor-pointer items-center gap-2 rounded-md px-2.5 py-2 transition-colors',
-                  active ? 'text-zinc-900' : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900',
+                  'flex min-h-[36px] cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 transition-colors',
+                  active ? 'bg-zinc-100 text-zinc-900' : 'text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900',
                 ].join(' ')}
               >
                 <input
@@ -184,7 +174,7 @@ export function CategorySidebar({
                   onChange={() => onStatusToggle(s.id)}
                   className="h-3.5 w-3.5 rounded border-zinc-300 text-zinc-900 focus:ring-1 focus:ring-zinc-900"
                 />
-                <span className="text-[13px] font-medium">{s.label}</span>
+                <span className="text-[13.5px] capitalize">{s.label}</span>
               </label>
             )
           })}

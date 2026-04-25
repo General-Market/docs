@@ -98,7 +98,7 @@ function MarketListInner({
   return (
     <section aria-label="Markets" className="min-w-0">
       <Heading liveCount={liveCount} />
-      <div className="space-y-3">
+      <div className="space-y-2.5">
         {filteredSlots.map(slot => (
           <MarketRow
             key={`${slot.catalogId}:${slot.closeTime}`}
@@ -116,17 +116,18 @@ function MarketListInner({
 
 function Heading({ liveCount }: { liveCount: number }) {
   return (
-    <header className="mb-4 flex items-baseline justify-between gap-3">
+    <header className="mb-5 flex items-baseline justify-between gap-3">
       <div>
-        <h2 className="text-[15px] font-semibold tracking-tight text-zinc-900 sm:text-base">
-          markets that close soon
+        <h2 className="text-[18px] font-semibold tracking-tight text-zinc-900">
+          Closing soon
         </h2>
-        <p className="mt-0.5 text-[12px] text-zinc-500">
+        <p className="mt-1 text-[13px] text-zinc-500">
           Pick a side. The keeper pays out when the answer arrives.
         </p>
       </div>
-      <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-zinc-500">
-        showing · <span className="tabular-nums text-zinc-900">{liveCount}</span>
+      <span className="text-[12px] tabular-nums text-zinc-500">
+        <span className="font-medium text-zinc-900">{liveCount}</span>
+        {liveCount === 1 ? ' market' : ' markets'}
       </span>
     </header>
   )
@@ -134,8 +135,8 @@ function Heading({ liveCount }: { liveCount: number }) {
 
 function EmptyState({ text }: { text: string }) {
   return (
-    <div className="rounded-md border border-dashed border-zinc-300 bg-white px-6 py-16 text-center">
-      <p className="text-sm text-zinc-500">{text}</p>
+    <div className="rounded-xl border border-zinc-200/80 bg-white px-6 py-16 text-center">
+      <p className="text-[14px] text-zinc-500">{text}</p>
     </div>
   )
 }
