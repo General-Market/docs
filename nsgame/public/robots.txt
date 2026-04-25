@@ -1,8 +1,8 @@
-# General Market — On-chain Index Products
+# nsgame — session-wallet prediction market on Solana
 User-agent: *
 Allow: /
 Allow: /llms.txt
 Allow: /llms-full.txt
 
 # Sitemap
-Sitemap: https://www.generalmarket.io/sitemap.xml
+Sitemap: https://nsgame.io/sitemap.xml
