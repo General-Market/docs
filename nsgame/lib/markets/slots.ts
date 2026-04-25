@@ -125,8 +125,14 @@ export function generateSlots(opts: GenerateSlotsOpts): UpcomingSlot[] {
     // oracle settles. Past cohorts are resolved; future cohorts do
     // not exist on chain until the next rotation.
     const settleDelta = entry.settleOffsetSecs - entry.closeOffsetSecs
-    const cohortEnd = Math.ceil(nowSecs / entry.windowSecs) * entry.windowSecs
-    if (cohortEnd <= nowSecs) continue
+    // Strict next-boundary. Math.ceil collapses to nowSecs when nowSecs
+    // sits exactly on a windowSecs boundary, hiding the cohort for a
+    // tick. Floor + window is always strictly in the future.
+    const cohortEnd = Math.floor(nowSecs / entry.windowSecs) * entry.windowSecs + entry.windowSecs
+    // Program enforces `close_time - now >= 10`. If we're inside the last
+    // 10s of a cohort, the bet would be rejected anyway — skip and let
+    // the user see the next cohort fresh.
+    if (cohortEnd - nowSecs < 10) continue
     if (cohortEnd > horizonSecs) continue
 
     const close = cohortEnd

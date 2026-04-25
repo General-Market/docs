@@ -70,6 +70,18 @@ function getConnection(): Connection {
 }
 
 async function loadKeypair(): Promise<Keypair | null> {
+  // Env-injected JSON wins. Useful in containers where bind-mounting a
+  // file is a separate ritual; pasting the keypair contents into a
+  // single env var ships through Dokploy without touching volumes.
+  const inline = process.env.FAUCET_KEYPAIR_JSON
+  if (inline) {
+    try {
+      const arr = JSON.parse(inline)
+      if (Array.isArray(arr)) return Keypair.fromSecretKey(Uint8Array.from(arr))
+    } catch {
+      /* fall through to the file path */
+    }
+  }
   const raw = process.env.FAUCET_KEYPAIR_PATH ?? '~/.config/solana/id.json'
   const file = expandHome(raw)
   try {

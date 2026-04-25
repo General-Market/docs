@@ -61,8 +61,10 @@ const SOURCE_LABELS: Record<number, string> = {
 
 // Settlement is gated behind a small cushion past close. The data-node
 // needs T+window data to resolve; the cushion absorbs collector lag.
+// Both must be multiples of 60 — the program enforces
+// `settlement_time % 60 == 0` and rejects every bet otherwise.
 const STARS_SETTLE_DELAY_SECS = 60
-const CAMS_SETTLE_DELAY_SECS = 30
+const CAMS_SETTLE_DELAY_SECS = 60
 
 function describeFormat(format: PvpFormat): string {
   return format === 'f1-gain-race'
