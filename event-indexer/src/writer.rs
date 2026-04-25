@@ -121,22 +121,22 @@ async fn write_batch(
                 tx.execute(
                     "INSERT INTO bet_placed \
                      (signature, slot, block_time, log_index, market, owner, side, amount) \
-                     VALUES ($1,$2,$3,$4,$5,$6,$7,$8::numeric) \
+                     VALUES ($1,$2,$3,$4,$5,$6,$7,$8) \
                      ON CONFLICT (signature) DO NOTHING",
                     &[&raw.signature, &(raw.slot as i64), &block_time, &log_index,
                       &bs58_encode(market), &bs58_encode(owner), &(*side as i16),
-                      &u64_to_numeric_string(*amount)],
+                      &(*amount as i64)],
                 ).await?;
             }
             Event::BetExited { market, owner, side, amount } => {
                 tx.execute(
                     "INSERT INTO bet_exited \
                      (signature, slot, block_time, log_index, market, owner, side, amount) \
-                     VALUES ($1,$2,$3,$4,$5,$6,$7,$8::numeric) \
+                     VALUES ($1,$2,$3,$4,$5,$6,$7,$8) \
                      ON CONFLICT (signature) DO NOTHING",
                     &[&raw.signature, &(raw.slot as i64), &block_time, &log_index,
                       &bs58_encode(market), &bs58_encode(owner), &(*side as i16),
-                      &u64_to_numeric_string(*amount)],
+                      &(*amount as i64)],
                 ).await?;
             }
             Event::MarketInstantiated { market, source_id, close_time, settlement_time, threshold_bps, creator } => {
@@ -154,22 +154,22 @@ async fn write_batch(
                 tx.execute(
                     "INSERT INTO market_closed \
                      (signature, slot, block_time, log_index, market, baseline_price) \
-                     VALUES ($1,$2,$3,$4,$5,$6::numeric) \
+                     VALUES ($1,$2,$3,$4,$5,$6) \
                      ON CONFLICT (signature) DO NOTHING",
                     &[&raw.signature, &(raw.slot as i64), &block_time, &log_index,
-                      &bs58_encode(market), &u128_to_numeric_string(*baseline_price)],
+                      &bs58_encode(market), &(*baseline_price as i64)],
                 ).await?;
             }
             Event::MarketResolved { market, baseline_price, final_price, outcome_yes, force_resolved } => {
                 tx.execute(
                     "INSERT INTO market_resolved \
                      (signature, slot, block_time, log_index, market, baseline_price, final_price, outcome_yes, force_resolved) \
-                     VALUES ($1,$2,$3,$4,$5,$6::numeric,$7::numeric,$8,$9) \
+                     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) \
                      ON CONFLICT (signature) DO NOTHING",
                     &[&raw.signature, &(raw.slot as i64), &block_time, &log_index,
                       &bs58_encode(market),
-                      &u128_to_numeric_string(*baseline_price),
-                      &u128_to_numeric_string(*final_price),
+                      &(*baseline_price as i64),
+                      &(*final_price as i64),
                       outcome_yes, force_resolved],
                 ).await?;
             }
@@ -177,11 +177,11 @@ async fn write_batch(
                 tx.execute(
                     "INSERT INTO claimed \
                      (signature, slot, block_time, log_index, market, owner, net, fee, stranded) \
-                     VALUES ($1,$2,$3,$4,$5,$6,$7::numeric,$8::numeric,$9) \
+                     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) \
                      ON CONFLICT (signature) DO NOTHING",
                     &[&raw.signature, &(raw.slot as i64), &block_time, &log_index,
                       &bs58_encode(market), &bs58_encode(owner),
-                      &u64_to_numeric_string(*net), &u64_to_numeric_string(*fee),
+                      &(*net as i64), &(*fee as i64),
                       stranded],
                 ).await?;
             }
@@ -197,12 +197,10 @@ fn bs58_encode(bytes: &[u8; 32]) -> String {
     bs58::encode(bytes).into_string()
 }
 
-/// tokio-postgres has no built-in u64 / u128 binding for NUMERIC. We
-/// send the value as a stringified decimal, which Postgres casts to
-/// NUMERIC at insert time. Clean; avoids pulling in rust_decimal just
-/// to shuttle unsigned 64/128-bit integers across the wire.
-fn u64_to_numeric_string(v: u64) -> String { v.to_string() }
-fn u128_to_numeric_string(v: u128) -> String { v.to_string() }
+// Numeric values bind as i64 (postgres bigint, implicit-cast to numeric at
+// insert). Tube view counts and stake amounts both stay well under
+// i64::MAX. If a future event ever carries a u64/u128 above 2^63, switch
+// to rust_decimal::Decimal with the with-rust-decimal-1 feature.
 
 // Silence unused import if this module is compiled with no Event variants.
 #[allow(dead_code)]
