@@ -1,5 +1,8 @@
 # Tube Markets — Canonical Ship List
 
+> **Historical reference. Not the launch catalog.**
+> The launch catalog is the 25 PvP pairs in `MARKETS_PVP_25.md`. Decision recorded in `nsgame/docs/twenty-five-forever.md`. This file's 8-type, 100-instance spec is preserved as the original ambition; nothing here ships today.
+
 Eight market types, 10–20 concrete instances each. Every market below is backed by a measured signal (baseline values pulled from the 48h collector's latest cycle) and has a deterministic resolution path.
 
 **Cadence assumptions empirically verified:**

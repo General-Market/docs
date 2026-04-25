@@ -2604,6 +2604,10 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
         info!("Points engine started (all pools hourly)");
     }
 
+    // PvP cohort rotation — writes pvp_resolutions every minute. Idempotent.
+    crate::pvp_cohort::spawn(app_state.pool.clone());
+    info!("PvP cohort worker started (60s tick, 25 pairs)");
+
     // Clone pool for explorer API before app_state is moved into the main router
     let explorer_pool = app_state.pool.clone();
     let mut app = crate::api::router(app_state);

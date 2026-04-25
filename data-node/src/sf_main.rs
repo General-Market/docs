@@ -51,6 +51,8 @@ mod trade_collector;
 mod work_queue;
 mod market_data;
 mod points;
+mod pvp;
+mod pvp_cohort;
 mod vision_api;
 mod vision_batch_cache;
 mod vision_ws;

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { NavBar } from '@/components/markets/NavBar'
 import { CategorySidebar, type StatusFilter } from '@/components/markets/CategorySidebar'
 import { MarketList } from '@/components/markets/MarketList'
@@ -11,6 +11,9 @@ import { BottomNav } from '@/components/markets/BottomNav'
 import type { BoardFilter, HorizonFilter } from '@/components/markets/FilterBar'
 import type { Side } from '@/components/markets/MarketRow'
 import type { UpcomingSlot } from '@/lib/markets/hooks'
+import { useWallet } from '@/hooks/useWallet'
+import { identify } from '@/lib/analytics/track'
+import { activeCluster } from '@/lib/solana/cluster'
 
 // Three columns on desktop. Sidebar, list, ticket. The world is two
 // boards now — stars and cams — so the top bar drops the source tabs and
@@ -27,6 +30,18 @@ export function CalendarPageClient() {
 
   const [allSlots, setAllSlots] = useState<UpcomingSlot[]>([])
   const [menuOpen, setMenuOpen] = useState(false)
+
+  // Tie product analytics to the wallet pubkey. Identifying once per
+  // connection is enough — posthog stores the distinct id in
+  // localStorage and re-uses it on subsequent events.
+  const { address } = useWallet()
+  const lastIdentifiedRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (!address) return
+    if (lastIdentifiedRef.current === address) return
+    lastIdentifiedRef.current = address
+    identify(address, { cluster: activeCluster, wallet_address: address })
+  }, [address])
 
   const handleStatusToggle = useCallback((s: StatusFilter) => {
     setStatuses(prev =>

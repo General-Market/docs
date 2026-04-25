@@ -6,7 +6,7 @@ A Solana program landed on devnet. A daemon talks to the wrong data source. A fr
 
 ## 1. What nsgame is
 
-A prediction-market frontend on Solana devnet, settling bets on adult-tube-site signals: star view counts, listing ranks, cam-room viewer counts. Eight market types, roughly one hundred concrete instances waiting to ship. The program is on-chain. The catalog is not yet connected to it.
+A prediction-market frontend on Solana devnet, settling bets on adult-tube-site signals: star view counts and cam-room viewer counts. Twenty-five PvP pairs — fifty named subjects, no duplicates, no rotation. The program is on-chain. The catalog is frozen in code. The wires between them are still being run.
 
 ## 2. What nsgame is not
 
@@ -19,19 +19,9 @@ Settled 2026-04-25 — recorded here so no one relitigates them in another conve
 - **No new domain yet.** `nsgame.dev` and `api.nsgame.dev` are deferred. Until a domain exists, the data-node binds to localhost on VPS 3 and the oracle reaches it via `http://127.0.0.1:8201`. The frontend stays on local development. Public HTTPS for nsgame is a problem we will buy when we need it, not before.
 - **Single monorepo.** No `nsgame-frontend.git` mirror, no second remote, no second deploy pipeline. nsgame ships from this mono repo or it does not ship.
 - **Solana RPC: Helius free tier.** Oracle on VPS 3 switched 2026-04-25 from public devnet to `https://devnet.helius-rpc.com/?api-key=…` (key reused from `.env.data-node`). Backup of the previous env file at `/etc/prediction-oracle.env.bak-2026-04-25`. Boot verified, scheduler restarted.
-- **Frontend catalog rewritten.** `lib/solana/catalog.ts` now holds 35 cam-room markets (Types F + G from `MARKETS_LIST.md`). Crypto placeholders gone.
-- **Catalog rewrite intentionally narrow.** Types A, B, C, D, E, H stay in the roadmap. The first cycle ships on cams because Chaturbate already returns clean integers in seconds.
+- **Frontend catalog: 25 PvP pairs, hardcoded.** `lib/markets/pairs.ts` holds 15 stars + 10 cams. Pair index encoded into `threshold_bps` because the on-chain `Market` PDA has no `asset_id` seed. Live decision record: [`docs/twenty-five-forever.md`](docs/twenty-five-forever.md). Option not chosen (asset_id program extension): [`docs/program-extension.md`](docs/program-extension.md).
 
 Open question that did not survive the day: whether to fork a `tube-data-node` crate. Rejected — second binary, double maintenance, no win. Spec assumes a single binary, allowlist-gated.
-
-**Known gap surfaced 2026-04-25 — site-aggregate vs per-asset markets.** The data-node patch dispatches each on-chain `source_id` to `SUM(value)` over a site-prefix in `market_prices_latest`. This is per-site (xv/xn/ph/cb/ep), not per-star, not per-model, not per-video. The on-chain `Market` PDA is keyed only by `(source_id, threshold, close_time, settlement_time)` — there is no `asset_id` field. The frozen catalog (`lib/solana/catalog.ts`) was written assuming per-model semantics for cam markets (Type F: "model X still online", Type G: "top-1 model viewer count over N"); against the current dispatch those markets settle on a site-aggregate, not the named model.
-
-Two coherent paths forward:
-
-- **(i) Site-aggregate first.** Rewrite the catalog to match what the data-node returns: site-wide totals (`tubes_cb` total active users), site-wide rollovers (Type D), site-wide trending. Catalog shrinks to the markets MARKETS_LIST.md already lists as aggregates: G15 (`tubes_cb_total_tokens_ou_proxy`), the rollover types (D8–D10), maybe a custom "site total grew by N" type. The end-to-end cycle ships against this.
-- **(ii) Extend the program.** Add `asset_id: [u8; 32]` to the Market PDA seeds and to the close/resolve oracle payloads. The data-node grows a `?asset_id=` query param. The oracle's payload domain tag changes; signers re-sign. This is days of program work, a re-deploy, and a reset of every PDA.
-
-Decision deferred until the rest of the stack proves itself end-to-end on (i). The site-aggregate path is enough to settle one bet, which is what this round is for.
 
 ## 4. Current state
 
@@ -45,7 +35,7 @@ Ground truth as of 2026-04-25. Read this before changing anything else.
 | Postgres (indexer DB)      | RUNNING   | VPS 3, `127.0.0.1:5432`, 8 tables, all empty                          |
 | Registered on-chain sources| WRONG     | id=1 BTC/USD, id=2 ETH/USD, id=3 SOL/USD — crypto placeholders         |
 | Oracle `DATA_NODE_URL`     | WRONG     | Points at `https://api.generalmarket.io` — the L3 RPC, returns HTTP 405|
-| Frontend catalog           | DONE      | `lib/solana/catalog.ts` — 35 cam markets (F1–F20, G1–G15)             |
+| Frontend catalog           | DONE      | 25 PvP pairs (15 stars + 10 cams), per `nsgame/docs/twenty-five-forever.md` |
 | nsgame ↔ Postgres wiring   | UNRESOLVED| Postgres bound to localhost; SSH tunnel for local dev, Dokploy later   |
 | Independent tube data-node | MISSING   | Oracle has nothing valid to read                                       |
 | End-to-end cycle           | UNTRIED   | Zero markets, zero bets, zero closes, zero claims                     |
@@ -54,29 +44,16 @@ Three correct components, three missing wires, one corrected. The program works;
 
 ## 5. Market catalog overview
 
-Eight market types, one hundred-plus instances. Full spec lives in [`/Users/maxguillabert/Downloads/index/data-node/data/tube-rate-tests/MARKETS_LIST.md`](../data-node/data/tube-rate-tests/MARKETS_LIST.md). Do not duplicate it here.
+Twenty-five PvP pairs, two boards, no rotation. Full spec: [`/Users/maxguillabert/Downloads/index/data-node/data/tube-rate-tests/MARKETS_PVP_25.md`](../data-node/data/tube-rate-tests/MARKETS_PVP_25.md). Decision record: [`docs/twenty-five-forever.md`](docs/twenty-five-forever.md).
 
-| Type | Subject                                  | Horizon   | Source       | Count |
-|------|------------------------------------------|-----------|--------------|------:|
-| A    | Star gains ≥ N views in 24 h             | 24 h      | Xvideos      | 16    |
-| B    | Star A vs Star B — who gains more in 24 h| 24 h      | Xvideos      | 15    |
-| C    | Pornhub rank moves up or down in 24 h    | 24 h      | Pornhub      | 10    |
-| D    | Will today's xvideos #1 survive rollover | up to 26 h| Xvideos      | 11    |
-| E    | Video view count at next rollover (range)| ~14 h     | Xvideos      | 15    |
-| F    | Cam model still online in 10 min         | 10 min    | Chaturbate   | 20    |
-| G    | Top cam model viewer count over/under N  | 5 min     | Chaturbate   | 15    |
-| H    | Video gains ≥ N views in 2 h             | 2 h       | Xvideos      | 15    |
+| Board | Window | Markets | Format(s)                         | Pair index range |
+|-------|--------|--------:|-----------------------------------|------------------|
+| Stars | 4 h    |      15 | F1 gain race                       | 1..15            |
+| Cams  | 2 m    |      10 | F1 gain race + F2 viewer total     | 16..25           |
 
-**Ship order** — preserved from `MARKETS_LIST.md` and `MARKET_DESIGN.md`:
+Total: 25 live markets, 50 names, no duplicates. Pair index doubles as on-chain `threshold_bps` — the program enforces |threshold_bps| ≤ 10_000, so 1..25 is safe.
 
-1. **F / G** — cam markets. Chaturbate source already exists; least new infrastructure.
-2. **H** — 2 h video view threshold. Smallest data-node addition; validates the bulletproof per-video signal (zero CDN flips).
-3. **E** — same per-video data as H, longer horizon.
-4. **A / B** — star view threshold and head-to-head. Reuses existing star scrapers.
-5. **C** — Pornhub rank. Requires re-enabling the PH source with an SSR/headless path.
-6. **D** — rollover survival. Needs rollover-detection trigger.
-
-What we deliberately do not ship: tier-A markets on tubes (the data does not move at seconds), Xnxx head-to-head involving the four bot accounts (`candice-price-model`, `cedric-extra-model`, `johnny-liberty-model`, `violet-haze-extra-model`), Pornhub markets without a headless-browser path, Eporner markets without an age-gate bypass.
+The original 8-type, 100-instance ambition (`MARKETS_LIST.md` Types A–H) is preserved as historical reference. Nothing from that table ships in this cycle.
 
 ## 6. Architecture
 
@@ -115,15 +92,15 @@ A small picture of what talks to what — with the wires that are not yet connec
 +--------------------------------------------+    |
 |  nsgame frontend                           +----+
 |  Next.js, hosting TBD                      |
-|  lib/solana/catalog.ts (today: wrong)      |
+|  lib/markets/pairs.ts (frozen, 25 pairs)   |
 +--------------------------------------------+
 ```
 
-Three components live on VPS 3 and only on VPS 3: oracle daemon, event indexer, Postgres. The data-node will join them. The frontend will reach into Postgres through one of three doors — see punch-list item 5.
+Three components live on VPS 3 and only on VPS 3: oracle daemon, event indexer, Postgres. The data-node will join them. The frontend will reach into Postgres through one of three doors — see punch-list item 4.
 
 ## 7. Punch list
 
-Five items now that the catalog is rewritten and the RPC is settled. Item 5 is the only proof that any of this works.
+The catalog is frozen; the RPC is settled. What remains:
 
 ### 1. Stand up the independent tube-only data-node on VPS 3
 
@@ -133,7 +110,7 @@ Five items now that the catalog is rewritten and the RPC is settled. Item 5 is t
 
 **Where.** Spec: [`docs/data-node-spec.md`](docs/data-node-spec.md).
 
-**Blocking.** Required by items 3 and 5. Nothing downstream resolves correctly until this exists. Public exposure deferred until the frontend needs to call it directly — today only the oracle does, and the oracle lives on the same machine.
+**Blocking.** Required by items 3 and 5. Nothing downstream resolves correctly until this exists.
 
 ### 2. Register the on-chain source-id mapping
 
@@ -149,31 +126,41 @@ Five items now that the catalog is rewritten and the RPC is settled. Item 5 is t
 
 **What.** Edit `/etc/prediction-oracle.env`, replace `DATA_NODE_URL=https://api.generalmarket.io` with `http://127.0.0.1:8201`, `systemctl restart prediction-oracle`.
 
-**Why.** Single config line stands between a working oracle and a confused one.
-
 **Where.** Daemon env file documented in [`programs-solana/prediction-market/deploy/vps3-receipt.md`](../programs-solana/prediction-market/deploy/vps3-receipt.md).
 
 **Blocking.** Depends on item 1. Trivial once the data-node is up.
 
 ### 4. Wire nsgame frontend to the indexer Postgres — local dev first
 
-**What.** For now: SSH tunnel from a developer laptop to VPS 3 Postgres. `ssh -L 5433:127.0.0.1:5432 vps3` and point local `POSTGRES_URL` at `localhost:5433`. nsgame runs on `npm run dev`. No production hosting, no Dokploy app, no domain.
-
-**Why.** Postgres listens where we told it to listen. The service that needs it must come to it. A tunnel is the cheapest door.
+**What.** SSH tunnel from a developer laptop to VPS 3 Postgres. `ssh -L 5433:127.0.0.1:5432 vps3` and point local `POSTGRES_URL` at `localhost:5433`. nsgame runs on `npm run dev`. No production hosting, no Dokploy app, no domain.
 
 **Where.** Spec: [`docs/indexer-wiring.md`](docs/indexer-wiring.md). Phase 0 is the SSH tunnel; Phase 1 (Dokploy from a mono-repo subpath) waits until a domain exists.
 
 **Blocking.** Required by item 5. Independent of items 1–3 in implementation order.
 
-### 5. Run one full bet → close → settle → claim cycle on devnet
+### 5. data-node PvP endpoints + cohort worker — IN FLIGHT
 
-**What.** Create one market via the frontend (or a script), place a bet, let close time pass, let the oracle resolve it, claim. The first time end-to-end works, write down every PDA, every signature, every error you hit. Stop tracking estimates after that — track invariants.
+**What.** Per-pair price endpoints for the 25 frozen pairs, plus the cohort worker that opens a new market instance every window close, snapshots T0 prices, and writes resolution rows into `pvp_resolutions` for the historical record.
 
-**Why.** No piece of this stack has ever served a real bet. Until one does, the system is a sequence of plausibly-correct artifacts. Writing software that has never been used is a private hobby.
+**Why.** The pair set is fixed; the cohorts are not. Every 4 hours (stars) and every 2 minutes (cams), a new instance fires. The worker is what makes the catalog feel alive against a frozen schema.
+
+### 6. Operational hygiene pass — IN FLIGHT
+
+**What.** Logs, metrics, restart behaviour, env-var hygiene on the VPS 3 services. Dead audits removed. The two stale audit files (`ACTION-PLAN.md`, `FULL-AUDIT-REPORT.md`) deleted once everyone has read this plan.
+
+### 7. Run one full bet → close → settle → claim cycle on devnet
+
+**What.** Create one market via the frontend, place a bet, let close time pass, let the oracle resolve it, claim. Write down every PDA, every signature, every error.
+
+**Why.** No piece of this stack has ever served a real bet. Until one does, the system is a sequence of plausibly-correct artifacts.
 
 **Where.** Frontend at `nsgame/` (run locally), program at devnet `DQwMnwQGYuLDvciSFZNgUvc...`, daemon at VPS 3.
 
-**Blocking.** Depends on items 1, 2, 3, 4. The cycle is the integration test — and the only way to discover the bugs we have not yet noticed.
+**Blocking.** Depends on items 1, 2, 3, 4, 5.
+
+### 8. Mobile QA + analytics + profile + leaderboard — QUEUED
+
+Surface work. After one bet has settled end-to-end and not before.
 
 ## 8. Addresses & receipts
 
@@ -197,7 +184,9 @@ Both are still readable for their bundle-size observations on non-Solana code, b
 | Concern                                  | Path                                                                                       |
 |------------------------------------------|--------------------------------------------------------------------------------------------|
 | Master plan (this file)                  | `nsgame/PLAN.md`                                                                           |
-| Frontend catalog (to be rewritten)       | `nsgame/lib/solana/catalog.ts`                                                             |
+| Frontend catalog (frozen, 25 PvP pairs)  | `nsgame/lib/markets/pairs.ts`                                                              |
+| Live decision: 25 hardcoded pairs        | `nsgame/docs/twenty-five-forever.md`                                                       |
+| Option not chosen: program extension     | `nsgame/docs/program-extension.md`                                                         |
 | Solana program IDL                       | `nsgame/lib/solana/idl/prediction_market.json`                                             |
 | Program source                           | `programs-solana/prediction-market/programs/prediction-market/`                            |
 | Deploy scripts and bootstrap docs        | `programs-solana/prediction-market/deploy/`                                                |
@@ -206,7 +195,8 @@ Both are still readable for their bundle-size observations on non-Solana code, b
 | Oracle daemon source                     | `oracle-daemon/`                                                                           |
 | Event indexer source                     | `event-indexer/`                                                                           |
 | Market design and tier rationale         | `data-node/data/tube-rate-tests/MARKET_DESIGN.md`                                          |
-| Canonical ship list (100+ markets)       | `data-node/data/tube-rate-tests/MARKETS_LIST.md`                                           |
+| Launch catalog spec (25 PvP pairs)       | `data-node/data/tube-rate-tests/MARKETS_PVP_25.md`                                         |
+| Historical 8-type ship list (not active) | `data-node/data/tube-rate-tests/MARKETS_LIST.md`                                           |
 | Rate-limit empirics                      | `data-node/data/tube-rate-tests/FINDINGS.md`                                               |
 | Update-cadence empirics (3 runs)         | `data-node/data/tube-rate-tests/UPDATE_FREQUENCY_V3.md`                                    |
 | Trending rollover behaviour              | `data-node/data/tube-rate-tests/TRENDING_CADENCE.md`                                       |
@@ -218,4 +208,4 @@ Both are still readable for their bundle-size observations on non-Solana code, b
 
 ---
 
-The program is on devnet. The daemon polls. The indexer waits for an event that has not yet happened. None of this matters until the wires meet — and the wires meet through six small unfinished tasks. There is no rollback. There is only forward.
+The program is on devnet. The daemon polls. The indexer waits for an event that has not yet happened. None of this matters until the wires meet — and the wires meet through the punch list above. There is no rollback. There is only forward.

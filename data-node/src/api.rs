@@ -626,6 +626,10 @@ pub fn router(state: Arc<AppState>) -> Router {
         // Solana oracle daemon feed — numeric source_id → 1e18-scaled price
         .route("/v1/sources/:source_id/price", get(source_price))
         .route("/v1/sources/:source_id/history", get(source_history))
+        // PvP head-to-head pairs — see data/tube-rate-tests/MARKETS_PVP_25.md
+        .route("/v1/pairs/:pair_index/price", get(pair_price))
+        .route("/v1/pairs/:pair_index/history", get(pair_history))
+        .route("/v1/pairs/:pair_index/resolutions", get(pair_resolutions))
         // Batch config endpoints
         .route("/batches/recommended", get(batches_recommended))
         .route("/batches/config/:hash", get(batch_config_by_hash))
@@ -2648,6 +2652,428 @@ fn decimal_to_u128_saturating(d: &rust_decimal::Decimal) -> u128 {
     // string to dodge the i128 bound.
     let truncated = d.trunc();
     truncated.to_string().parse::<u128>().unwrap_or(u128::MAX)
+}
+
+// ---- /v1/pairs/:pair_index/price ----
+//
+// Per-pair signed score for the PvP head-to-head markets defined in
+// `data/tube-rate-tests/MARKETS_PVP_25.md`. The score is what the on-chain
+// oracle uses to decide a winner: positive => A wins, negative => B wins,
+// zero => tie. F1 (gain race) returns ΔA − ΔB across the window. F2
+// (viewer total) returns value_a − value_b at the closing instant.
+//
+// Scores are returned as decimal strings (with leading '-' when negative)
+// because JSON numbers lose precision past 2^53 and lifetime-view
+// differences blow past that bound for popular performers.
+
+#[derive(Serialize)]
+struct PairSide {
+    slug: String,
+    /// Latest observed value (raw int, not scaled). u128 → decimal string.
+    value: Option<String>,
+    /// Unix-seconds of the freshest observation.
+    ts: Option<i64>,
+}
+
+#[derive(Serialize)]
+struct PairPriceResponse {
+    pair_index: u32,
+    board: &'static str,
+    format: &'static str,
+    window_secs: i64,
+    cohort_start: i64,
+    cohort_end: i64,
+    side_a: PairSide,
+    side_b: PairSide,
+    /// F1 only: ΔA over the cohort window. None if baseline missing.
+    delta_a: Option<String>,
+    /// F1 only: ΔB over the cohort window.
+    delta_b: Option<String>,
+    /// Signed decimal string. None if either side has no current observation.
+    score: Option<String>,
+    /// Sides whose latest observation is missing. Empty when score is Some.
+    /// Possible entries: "a", "b". Both missing => ["a","b"].
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    missing: Vec<&'static str>,
+}
+
+/// Fetch the freshest `(value, fetched_at)` for one (source, asset_id).
+async fn fetch_latest_value(
+    pool: &PgPool,
+    source: &str,
+    asset_id: &str,
+) -> Result<Option<(rust_decimal::Decimal, DateTime<Utc>)>, sqlx::Error> {
+    sqlx::query_as::<_, (rust_decimal::Decimal, DateTime<Utc>)>(
+        r#"
+        SELECT value, fetched_at
+        FROM market_prices_latest
+        WHERE source = $1 AND asset_id = $2
+        "#,
+    )
+    .bind(source)
+    .bind(asset_id)
+    .fetch_optional(pool)
+    .await
+}
+
+/// Fetch the value closest to (and at or before) `at_ts` for a single
+/// `(source, asset_id)`. Returns `None` if no row exists in that window.
+/// Uses `market_prices` history; falls back across the whole table if
+/// there's no row in the window — useful when the cohort just started
+/// and the only baseline is the most recent row before it.
+async fn fetch_value_at_or_before(
+    pool: &PgPool,
+    source: &str,
+    asset_id: &str,
+    at_ts: DateTime<Utc>,
+) -> Result<Option<(rust_decimal::Decimal, DateTime<Utc>)>, sqlx::Error> {
+    sqlx::query_as::<_, (rust_decimal::Decimal, DateTime<Utc>)>(
+        r#"
+        SELECT value, fetched_at
+        FROM market_prices
+        WHERE source = $1 AND asset_id = $2 AND fetched_at <= $3
+        ORDER BY fetched_at DESC
+        LIMIT 1
+        "#,
+    )
+    .bind(source)
+    .bind(asset_id)
+    .bind(at_ts)
+    .fetch_optional(pool)
+    .await
+}
+
+/// Subtract two non-negative `Decimal`s into a signed string. Saturates
+/// the absolute value at u128::MAX. The signed representation lets the
+/// oracle's signing path treat A-wins / B-wins symmetrically.
+fn signed_diff_string(lhs: &rust_decimal::Decimal, rhs: &rust_decimal::Decimal) -> String {
+    let diff = lhs - rhs;
+    if diff.is_sign_negative() {
+        let abs = -diff;
+        let v = decimal_to_u128_saturating(&abs);
+        format!("-{}", v)
+    } else {
+        decimal_to_u128_saturating(&diff).to_string()
+    }
+}
+
+async fn pair_price(
+    AxumPath(pair_index): AxumPath<u32>,
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<PairPriceResponse>, (StatusCode, Json<ErrorResponse>)> {
+    let spec = crate::pvp::lookup(pair_index).ok_or_else(|| {
+        (
+            StatusCode::NOT_FOUND,
+            Json(ErrorResponse {
+                error: format!("Unknown pair_index: {}", pair_index),
+            }),
+        )
+    })?;
+
+    let (source, asset_a, asset_b) = spec.db_keys();
+    let now = Utc::now();
+    let cohort_start = spec.cohort_start_at(now.timestamp());
+    let cohort_end = cohort_start + spec.window_secs;
+    let cohort_start_dt = DateTime::from_timestamp(cohort_start, 0).unwrap_or(now);
+
+    let latest_a = fetch_latest_value(&state.pool, source, &asset_a)
+        .await
+        .map_err(db_error)?;
+    let latest_b = fetch_latest_value(&state.pool, source, &asset_b)
+        .await
+        .map_err(db_error)?;
+
+    let mut missing: Vec<&'static str> = Vec::new();
+    if latest_a.is_none() {
+        missing.push("a");
+    }
+    if latest_b.is_none() {
+        missing.push("b");
+    }
+
+    let side_a = PairSide {
+        slug: spec.slug_a.to_string(),
+        value: latest_a
+            .as_ref()
+            .map(|(v, _)| decimal_to_u128_saturating(v).to_string()),
+        ts: latest_a.as_ref().map(|(_, t)| t.timestamp()),
+    };
+    let side_b = PairSide {
+        slug: spec.slug_b.to_string(),
+        value: latest_b
+            .as_ref()
+            .map(|(v, _)| decimal_to_u128_saturating(v).to_string()),
+        ts: latest_b.as_ref().map(|(_, t)| t.timestamp()),
+    };
+
+    if !missing.is_empty() {
+        return Ok(Json(PairPriceResponse {
+            pair_index,
+            board: spec.board.as_str(),
+            format: spec.format.as_str(),
+            window_secs: spec.window_secs,
+            cohort_start,
+            cohort_end,
+            side_a,
+            side_b,
+            delta_a: None,
+            delta_b: None,
+            score: None,
+            missing,
+        }));
+    }
+
+    let (val_a, _) = latest_a.unwrap();
+    let (val_b, _) = latest_b.unwrap();
+
+    let (delta_a, delta_b, score) = match spec.format {
+        crate::pvp::Format::F2ViewerTotal => (None, None, Some(signed_diff_string(&val_a, &val_b))),
+        crate::pvp::Format::F1GainRace => {
+            let base_a = fetch_value_at_or_before(&state.pool, source, &asset_a, cohort_start_dt)
+                .await
+                .map_err(db_error)?;
+            let base_b = fetch_value_at_or_before(&state.pool, source, &asset_b, cohort_start_dt)
+                .await
+                .map_err(db_error)?;
+            match (base_a, base_b) {
+                (Some((ba, _)), Some((bb, _))) => {
+                    // Render deltas as signed strings (rare for views to drop, but possible).
+                    let da_s = signed_diff_string(&val_a, &ba);
+                    let db_s = signed_diff_string(&val_b, &bb);
+                    let score = signed_diff_string(&(&val_a - &ba), &(&val_b - &bb));
+                    (Some(da_s), Some(db_s), Some(score))
+                }
+                _ => (None, None, None),
+            }
+        }
+    };
+
+    Ok(Json(PairPriceResponse {
+        pair_index,
+        board: spec.board.as_str(),
+        format: spec.format.as_str(),
+        window_secs: spec.window_secs,
+        cohort_start,
+        cohort_end,
+        side_a,
+        side_b,
+        delta_a,
+        delta_b,
+        score,
+        missing,
+    }))
+}
+
+// ---- /v1/pairs/:pair_index/history?minutes=N ----
+//
+// Per-minute score timeseries for a pair. Frontend `<SparkLine>` consumes
+// the `points` array as `(ts, score)` pairs. Both sides are bucketed in
+// parallel, then joined on bucket_ts in Rust because Postgres does not
+// know how to compute "delta from window start" in a single join cheaply.
+
+#[derive(Serialize)]
+struct PairHistoryPoint {
+    ts: i64,
+    score: String,
+}
+
+#[derive(Serialize)]
+struct PairHistoryResponse {
+    points: Vec<PairHistoryPoint>,
+}
+
+/// Per-minute MAX(value) per asset for the lookback window. We use MAX
+/// rather than AVG because views are a monotonically increasing counter
+/// and we want the latest reading inside each bucket (matching what the
+/// oracle would see at minute close).
+async fn fetch_minute_buckets(
+    pool: &PgPool,
+    source: &str,
+    asset_id: &str,
+    minutes: i32,
+) -> Result<Vec<(i64, rust_decimal::Decimal)>, sqlx::Error> {
+    sqlx::query_as::<_, (i64, rust_decimal::Decimal)>(
+        r#"
+        SELECT
+            (date_part('epoch', date_trunc('minute', fetched_at)))::bigint AS bucket_ts,
+            MAX(value)::numeric AS v
+        FROM market_prices
+        WHERE source = $1
+          AND asset_id = $2
+          AND fetched_at >= NOW() - ($3::int || ' minutes')::interval
+        GROUP BY bucket_ts
+        ORDER BY bucket_ts ASC
+        "#,
+    )
+    .bind(source)
+    .bind(asset_id)
+    .bind(minutes)
+    .fetch_all(pool)
+    .await
+}
+
+async fn pair_history(
+    AxumPath(pair_index): AxumPath<u32>,
+    Query(q): Query<HistoryQuery>,
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<PairHistoryResponse>, (StatusCode, Json<ErrorResponse>)> {
+    let spec = crate::pvp::lookup(pair_index).ok_or_else(|| {
+        (
+            StatusCode::NOT_FOUND,
+            Json(ErrorResponse {
+                error: format!("Unknown pair_index: {}", pair_index),
+            }),
+        )
+    })?;
+
+    let (source, asset_a, asset_b) = spec.db_keys();
+    let minutes = q.minutes.unwrap_or(60).clamp(1, 1440) as i32;
+
+    let rows_a = fetch_minute_buckets(&state.pool, source, &asset_a, minutes)
+        .await
+        .map_err(db_error)?;
+    let rows_b = fetch_minute_buckets(&state.pool, source, &asset_b, minutes)
+        .await
+        .map_err(db_error)?;
+
+    // Index by bucket_ts. We only emit a point when both sides have a
+    // bucket for that minute — partial buckets would lie about the score.
+    let mut map_a: std::collections::BTreeMap<i64, rust_decimal::Decimal> =
+        std::collections::BTreeMap::new();
+    for (ts, v) in rows_a {
+        map_a.insert(ts, v);
+    }
+    let mut map_b: std::collections::BTreeMap<i64, rust_decimal::Decimal> =
+        std::collections::BTreeMap::new();
+    for (ts, v) in rows_b {
+        map_b.insert(ts, v);
+    }
+
+    // For F1 we score the delta-vs-baseline at each minute; the baseline
+    // is the first available reading on either side of the lookback. For
+    // F2 we just take A − B at each shared minute.
+    let baseline_a = map_a.values().next().cloned();
+    let baseline_b = map_b.values().next().cloned();
+
+    let mut points: Vec<PairHistoryPoint> = Vec::new();
+    for (ts, va) in map_a.iter() {
+        if let Some(vb) = map_b.get(ts) {
+            let score = match spec.format {
+                crate::pvp::Format::F2ViewerTotal => signed_diff_string(va, vb),
+                crate::pvp::Format::F1GainRace => match (&baseline_a, &baseline_b) {
+                    (Some(ba), Some(bb)) => {
+                        signed_diff_string(&(va - ba), &(vb - bb))
+                    }
+                    _ => continue,
+                },
+            };
+            points.push(PairHistoryPoint { ts: *ts, score });
+        }
+    }
+
+    Ok(Json(PairHistoryResponse { points }))
+}
+
+// ---- /v1/pairs/:pair_index/resolutions?limit=N ----
+
+#[derive(Deserialize)]
+struct ResolutionsQuery {
+    limit: Option<u32>,
+}
+
+#[derive(Serialize)]
+struct PairResolution {
+    cohort_start: i64,
+    cohort_end: i64,
+    slug_a: String,
+    slug_b: String,
+    baseline_a: Option<String>,
+    baseline_b: Option<String>,
+    final_a: Option<String>,
+    final_b: Option<String>,
+    score: Option<String>,
+    winner: Option<String>,
+    resolved_at: i64,
+}
+
+#[derive(Serialize)]
+struct PairResolutionsResponse {
+    resolutions: Vec<PairResolution>,
+}
+
+fn dec_to_signed_string(d: &rust_decimal::Decimal) -> String {
+    if d.is_sign_negative() {
+        let abs = -d;
+        format!("-{}", decimal_to_u128_saturating(&abs))
+    } else {
+        decimal_to_u128_saturating(d).to_string()
+    }
+}
+
+async fn pair_resolutions(
+    AxumPath(pair_index): AxumPath<u32>,
+    Query(q): Query<ResolutionsQuery>,
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<PairResolutionsResponse>, (StatusCode, Json<ErrorResponse>)> {
+    if crate::pvp::lookup(pair_index).is_none() {
+        return Err((
+            StatusCode::NOT_FOUND,
+            Json(ErrorResponse {
+                error: format!("Unknown pair_index: {}", pair_index),
+            }),
+        ));
+    }
+
+    let limit = q.limit.unwrap_or(20).clamp(1, 200) as i64;
+
+    let rows: Vec<(
+        i64,
+        i64,
+        String,
+        String,
+        Option<rust_decimal::Decimal>,
+        Option<rust_decimal::Decimal>,
+        Option<rust_decimal::Decimal>,
+        Option<rust_decimal::Decimal>,
+        Option<rust_decimal::Decimal>,
+        Option<String>,
+        DateTime<Utc>,
+    )> = sqlx::query_as(
+        r#"
+        SELECT cohort_start, cohort_end, slug_a, slug_b,
+               baseline_a, baseline_b, final_a, final_b, score, winner, resolved_at
+        FROM pvp_resolutions
+        WHERE pair_index = $1
+        ORDER BY cohort_start DESC
+        LIMIT $2
+        "#,
+    )
+    .bind(pair_index as i32)
+    .bind(limit)
+    .fetch_all(&state.pool)
+    .await
+    .map_err(db_error)?;
+
+    let resolutions = rows
+        .into_iter()
+        .map(
+            |(cs, ce, sa, sb, ba, bb, fa, fb, sc, win, ra)| PairResolution {
+                cohort_start: cs,
+                cohort_end: ce,
+                slug_a: sa,
+                slug_b: sb,
+                baseline_a: ba.as_ref().map(dec_to_signed_string),
+                baseline_b: bb.as_ref().map(dec_to_signed_string),
+                final_a: fa.as_ref().map(dec_to_signed_string),
+                final_b: fb.as_ref().map(dec_to_signed_string),
+                score: sc.as_ref().map(dec_to_signed_string),
+                winner: win,
+                resolved_at: ra.timestamp(),
+            },
+        )
+        .collect();
+
+    Ok(Json(PairResolutionsResponse { resolutions }))
 }
 
 // ---- /itp-bid-ask ----

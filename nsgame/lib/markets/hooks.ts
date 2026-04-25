@@ -27,6 +27,8 @@ import {
 import { CATALOG, type CatalogEntry } from './catalog'
 import { generateSlots, type UpcomingSlot } from './slots'
 import type { Board } from './pairs'
+import { track } from '@/lib/analytics/track'
+import { activeCluster } from '@/lib/solana/cluster'
 
 // Re-export so consumers can import from a single module.
 export type { UpcomingSlot } from './slots'
@@ -310,6 +312,27 @@ export function usePlaceBet(): UsePlaceBetReturn {
 
         const signature = await signAndSend(tx)
         void refreshSessionBalance()
+
+        // Fire-and-forget product analytics. The 'a' / 'b' wire labels
+        // outlive the program's Yes/No naming — the markets are PvP
+        // pairs, not boolean propositions.
+        track('bet_placed', {
+          pair_index: slot.pairIndex,
+          board: slot.board,
+          format: slot.format,
+          side: side === 'yes' ? 'a' : 'b',
+          amount_raw: amount.toString(),
+          amount_display: formatStake(amount, STAKE_DECIMALS_FALLBACK),
+          slug_a: slot.slugA,
+          slug_b: slot.slugB,
+          source_id: slot.sourceId,
+          source_name: slot.sourceName,
+          market_pda: slot.marketPda,
+          close_time: slot.closeTime,
+          signature,
+          cluster: activeCluster,
+        })
+
         return signature
       } catch (e) {
         const raw = e instanceof Error ? e.message : String(e)
