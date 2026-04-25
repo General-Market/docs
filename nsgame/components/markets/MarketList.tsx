@@ -168,7 +168,7 @@ function Heading({ liveCount }: { liveCount: number }) {
   return (
     <header className="mb-5 flex items-baseline justify-between gap-3">
       <div>
-        <h2 className="text-[18px] font-semibold tracking-tight text-zinc-900">
+        <h2 className="text-[18px] font-semibold tracking-tight text-zinc-100">
           Closing soon
         </h2>
         <p className="mt-1 text-[13px] text-zinc-500">
@@ -176,7 +176,7 @@ function Heading({ liveCount }: { liveCount: number }) {
         </p>
       </div>
       <span className="text-[12px] tabular-nums text-zinc-500">
-        <span className="font-medium text-zinc-900">{liveCount}</span>
+        <span className="font-medium text-zinc-200">{liveCount}</span>
         {liveCount === 1 ? ' market' : ' markets'}
       </span>
     </header>
@@ -185,8 +185,8 @@ function Heading({ liveCount }: { liveCount: number }) {
 
 function EmptyState({ text }: { text: string }) {
   return (
-    <div className="rounded-xl border border-zinc-200/80 bg-white px-6 py-16 text-center">
-      <p className="text-[14px] text-zinc-500">{text}</p>
+    <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 px-6 py-16 text-center">
+      <p className="text-[14px] text-zinc-400">{text}</p>
     </div>
   )
 }

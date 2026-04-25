@@ -1,22 +1,39 @@
 'use client'
 
-import { Skeleton } from '@/components/ui/Skeleton'
+// Static skeleton mirroring MarketRow geometry — header, two-line title,
+// two outcome buttons, footer. A gradient sweep rides the surface every
+// 1.5s. Dark surface, hairline border. The page admits it does not yet
+// know what it will be.
 
-// Static skeleton mirroring MarketRow. Same outer geometry, same inner
-// rhythm — header → title → two outcome buttons → footer. The shimmer
-// rides the tailwind `animate-shimmer` keyframe at 1.5s.
+function Bar({ w, h, className = '' }: { w: number | string; h: number | string; className?: string }) {
+  return (
+    <span
+      className={[
+        'relative inline-block overflow-hidden rounded-md bg-zinc-800/60',
+        className,
+      ].join(' ')}
+      style={{ width: typeof w === 'number' ? `${w}px` : w, height: typeof h === 'number' ? `${h}px` : h }}
+      aria-hidden="true"
+    >
+      <span
+        className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-zinc-700/60 to-transparent"
+        style={{ animationDuration: '1.6s' }}
+      />
+    </span>
+  )
+}
 
 function OutcomeButtonSkeleton() {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-lg border border-zinc-200 bg-white px-4 py-3">
-      <div className="flex min-w-0 flex-col gap-2">
-        <Skeleton variant="shimmer" width={42} height={10} />
-        <Skeleton variant="shimmer" width={56} height={22} />
-      </div>
-      <div className="flex flex-col items-end gap-1.5">
-        <Skeleton variant="shimmer" width={36} height={9} />
-        <Skeleton variant="shimmer" width={44} height={13} />
-      </div>
+    <div className="flex items-center justify-between gap-4 rounded-lg border border-zinc-800 bg-zinc-900/70 px-4 py-3">
+      <span className="flex min-w-0 flex-col gap-2">
+        <Bar w={42} h={10} />
+        <Bar w={62} h={22} />
+      </span>
+      <span className="flex flex-col items-end gap-1.5">
+        <Bar w={36} h={9} />
+        <Bar w={44} h={13} />
+      </span>
     </div>
   )
 }
@@ -24,24 +41,24 @@ function OutcomeButtonSkeleton() {
 export function MarketRowSkeleton() {
   return (
     <article
-      className="rounded-xl border border-zinc-200/80 bg-white p-5"
+      className="rounded-xl border border-zinc-800 bg-[linear-gradient(180deg,rgb(24,24,27)_0%,rgb(20,20,23)_100%)] p-5"
       aria-hidden="true"
     >
       <header className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Skeleton variant="shimmer" width={16} height={16} className="rounded-full" />
-          <Skeleton variant="shimmer" width={70} height={12} />
-          <Skeleton variant="shimmer" width={48} height={11} />
-        </div>
-        <div className="flex items-center gap-1.5">
-          <Skeleton variant="shimmer" width={48} height={11} />
-          <Skeleton variant="shimmer" width={56} height={11} />
-        </div>
+        <span className="flex items-center gap-2">
+          <Bar w={16} h={16} className="rounded-full" />
+          <Bar w={70} h={12} />
+          <Bar w={48} h={11} />
+        </span>
+        <span className="flex items-center gap-1.5">
+          <Bar w={48} h={11} />
+          <Bar w={56} h={11} />
+        </span>
       </header>
 
       <div className="mt-3 flex flex-col gap-2">
-        <Skeleton variant="shimmer" height={16} className="w-3/4" />
-        <Skeleton variant="shimmer" height={16} className="w-1/2" />
+        <Bar w="75%" h={16} />
+        <Bar w="50%" h={16} />
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
@@ -50,8 +67,8 @@ export function MarketRowSkeleton() {
       </div>
 
       <footer className="mt-4 flex items-center justify-between gap-3">
-        <Skeleton variant="shimmer" width={80} height={12} />
-        <Skeleton variant="shimmer" width={120} height={12} />
+        <Bar w={88} h={12} />
+        <Bar w={132} h={12} />
       </footer>
     </article>
   )

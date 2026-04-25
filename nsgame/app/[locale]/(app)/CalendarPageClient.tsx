@@ -8,11 +8,13 @@ import { MarketList } from '@/components/markets/MarketList'
 import { BetTicket } from '@/components/markets/BetTicket'
 import { BetSheet } from '@/components/markets/BetSheet'
 import { StatStrip } from '@/components/markets/StatStrip'
+import { MobileMenu } from '@/components/markets/MobileMenu'
 import type { Side } from '@/components/markets/MarketRow'
 import type { UpcomingSlot } from '@/lib/markets/hooks'
 
-// Three columns on desktop. Sidebar, list, ticket. The bottom sheet is
-// kept for mobile only — same logic, different geometry.
+// Three columns on desktop. Sidebar, list, ticket. On mobile a drawer
+// holds the sidebar and a bottom sheet holds the ticket — same logic,
+// different geometry.
 
 export function CalendarPageClient() {
   const [source, setSource] = useState<SourceFilter>('all')
@@ -24,6 +26,7 @@ export function CalendarPageClient() {
   const [sheetSlot, setSheetSlot] = useState<UpcomingSlot | null>(null)
 
   const [allSlots, setAllSlots] = useState<UpcomingSlot[]>([])
+  const [menuOpen, setMenuOpen] = useState(false)
 
   const handleStatusToggle = useCallback((s: StatusFilter) => {
     setStatuses(prev =>
@@ -35,29 +38,43 @@ export function CalendarPageClient() {
     setSelectedSlot(slot)
     setSelectedSide(side)
     // On mobile the right rail isn't visible — open the bottom sheet too.
-    // CSS hides the sheet on lg+, so this is harmless on desktop.
     setSheetSlot(slot)
   }, [])
 
   const closeSheet = useCallback(() => setSheetSlot(null), [])
+  const openMenu = useCallback(() => setMenuOpen(true), [])
+  const closeMenu = useCallback(() => setMenuOpen(false), [])
 
   return (
-    <main className="min-h-screen bg-zinc-50 text-zinc-900">
-      <NavBar />
+    <main className="min-h-screen bg-zinc-950 text-zinc-100">
+      <NavBar onMenuClick={openMenu} />
+
+      <MobileMenu
+        open={menuOpen}
+        onClose={closeMenu}
+        source={source}
+        horizon={horizon}
+        statuses={statuses}
+        slots={allSlots}
+        onSourceChange={setSource}
+        onHorizonChange={setHorizon}
+        onStatusToggle={handleStatusToggle}
+      />
+
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
-        <section className="pb-4 pt-6 sm:pb-5 sm:pt-8">
-          <h1 className="text-[24px] font-semibold tracking-tight sm:text-[28px]">
-            Markets that close soon.
+        <section className="pb-6 pt-8 sm:pb-8 sm:pt-12">
+          <h1 className="text-[28px] font-semibold tracking-tight text-zinc-100 sm:text-[34px]">
+            Calendar
           </h1>
-          <p className="mt-0.5 text-[13px] text-zinc-500">
-            Pick a side. The keeper pays out when the answer arrives.
+          <p className="mt-1.5 text-[14px] text-zinc-400">
+            Markets that close soon. Pick a side. The keeper pays out when the answer arrives.
           </p>
         </section>
 
         <StatStrip network="devnet" />
 
-        {/* Mobile keeps the chip-style filter bar. Hidden on desktop where
-            the sidebar takes over. */}
+        {/* Mobile keeps the chip-style filter bar. Desktop hides it —
+            the sidebar takes over there. */}
         <div className="lg:hidden">
           <FilterBar
             source={source}

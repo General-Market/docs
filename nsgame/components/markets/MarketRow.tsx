@@ -8,9 +8,10 @@ import { SourceIcon } from './SourceIcon'
 import { PulseDot } from './PulseDot'
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber'
 
-// Fat market row. Header, title, two outcome buttons, footer. Cards
-// breathe a little — gradients, soft rings, numbers that roll. The
-// motion is a confession: the price means something to someone.
+// Fat market row, dark surface. Header, title, two outcome buttons,
+// footer. Cards breathe a little — gradients, soft rings, numbers that
+// roll. The motion is a confession: the price means something to
+// someone.
 
 export type Side = 'yes' | 'no'
 
@@ -25,18 +26,8 @@ export interface MarketRowProps {
 const USDC_DECIMALS = 6
 const FLASH_MS = 700
 
-function formatPool(units: bigint): string {
-  if (units === 0n) return '0'
-  const whole = units / 10n ** BigInt(USDC_DECIMALS)
-  if (units < 10n ** BigInt(USDC_DECIMALS)) return '<1'
-  if (whole >= 1_000_000n) return `${(Number(whole) / 1_000_000).toFixed(1)}M`
-  if (whole >= 1_000n) return `${(Number(whole) / 1_000).toFixed(1)}k`
-  return whole.toString()
-}
-
 function poolUnitsToFloat(units: bigint): number {
   if (units === 0n) return 0
-  // Float only — used by AnimatedNumber. Truncate to whole USDC.
   return Number(units / 10n ** BigInt(USDC_DECIMALS))
 }
 
@@ -80,27 +71,28 @@ function OutcomeButton({ side, label, pct, multiplier, active, oneSided, onClick
     return () => window.clearTimeout(id)
   }, [pct])
 
+  // Base: dark zinc surface with a faint diagonal sweep into the side hue.
   const baseGradient = yes
-    ? 'bg-[linear-gradient(135deg,rgb(255,255,255)_0%,rgb(255,255,255)_55%,rgb(236,253,245)_100%)]'
-    : 'bg-[linear-gradient(135deg,rgb(255,255,255)_0%,rgb(255,255,255)_55%,rgb(255,241,242)_100%)]'
+    ? 'bg-[linear-gradient(135deg,rgb(24,24,27)_0%,rgb(24,24,27)_55%,rgb(6,40,30)_100%)]'
+    : 'bg-[linear-gradient(135deg,rgb(24,24,27)_0%,rgb(24,24,27)_55%,rgb(50,15,25)_100%)]'
 
   const hoverGradient = yes
-    ? 'hover:bg-[linear-gradient(135deg,rgb(255,255,255)_0%,rgb(236,253,245)_60%,rgb(209,250,229)_100%)]'
-    : 'hover:bg-[linear-gradient(135deg,rgb(255,255,255)_0%,rgb(255,241,242)_60%,rgb(254,205,211)_100%)]'
+    ? 'hover:bg-[linear-gradient(135deg,rgb(24,24,27)_0%,rgb(8,52,40)_60%,rgb(8,72,52)_100%)]'
+    : 'hover:bg-[linear-gradient(135deg,rgb(24,24,27)_0%,rgb(60,18,30)_60%,rgb(80,22,38)_100%)]'
 
   const activeGradient = yes
-    ? 'bg-[linear-gradient(135deg,rgb(236,253,245)_0%,rgb(209,250,229)_55%,rgb(167,243,208)_100%)]'
-    : 'bg-[linear-gradient(135deg,rgb(255,241,242)_0%,rgb(254,205,211)_55%,rgb(253,164,175)_100%)]'
+    ? 'bg-[linear-gradient(135deg,rgb(8,52,40)_0%,rgb(8,72,52)_55%,rgb(10,90,66)_100%)]'
+    : 'bg-[linear-gradient(135deg,rgb(60,18,30)_0%,rgb(80,22,38)_55%,rgb(100,28,44)_100%)]'
 
   const ringColor = yes
-    ? 'ring-emerald-400/70 shadow-[0_0_0_1px_rgb(16_185_129/0.5),inset_0_0_24px_rgb(16_185_129/0.12)]'
-    : 'ring-rose-400/70 shadow-[0_0_0_1px_rgb(244_63_94/0.5),inset_0_0_24px_rgb(244_63_94/0.12)]'
+    ? 'ring-emerald-400/60 shadow-[0_0_0_1px_rgb(16_185_129/0.55),inset_0_0_28px_rgb(16_185_129/0.18)]'
+    : 'ring-rose-400/60 shadow-[0_0_0_1px_rgb(244_63_94/0.55),inset_0_0_28px_rgb(244_63_94/0.18)]'
 
   const flashTint =
-    moved === 'up' && yes ? 'before:bg-emerald-200/60'
-    : moved === 'down' && yes ? 'before:bg-rose-200/40'
-    : moved === 'up' && !yes ? 'before:bg-rose-200/60'
-    : moved === 'down' && !yes ? 'before:bg-emerald-200/40'
+    moved === 'up' && yes ? 'before:bg-emerald-400/20'
+    : moved === 'down' && yes ? 'before:bg-rose-400/15'
+    : moved === 'up' && !yes ? 'before:bg-rose-400/20'
+    : moved === 'down' && !yes ? 'before:bg-emerald-400/15'
     : 'before:bg-transparent'
 
   return (
@@ -114,16 +106,16 @@ function OutcomeButton({ side, label, pct, multiplier, active, oneSided, onClick
         'before:pointer-events-none before:absolute before:inset-0 before:transition-[background] before:duration-700 before:ease-out',
         flashTint,
         active
-          ? `${activeGradient} ${ringColor} ${yes ? 'border-emerald-500' : 'border-rose-500'} ring-1`
-          : `${baseGradient} ${hoverGradient} ${yes ? 'border-zinc-200 hover:border-emerald-300' : 'border-zinc-200 hover:border-rose-300'} hover:-translate-y-px hover:shadow-card`,
+          ? `${activeGradient} ${ringColor} ${yes ? 'border-emerald-500/70' : 'border-rose-500/70'} ring-1`
+          : `${baseGradient} ${hoverGradient} ${yes ? 'border-zinc-800 hover:border-emerald-500/50' : 'border-zinc-800 hover:border-rose-500/50'} hover:-translate-y-px hover:shadow-[0_8px_20px_-12px_rgb(0_0_0/0.7)]`,
       ].join(' ')}
     >
       <span className="relative flex min-w-0 flex-col">
         <span
           className={[
             'text-[11px] font-medium uppercase tracking-[0.12em] transition-colors duration-200',
-            yes ? 'text-emerald-700' : 'text-rose-700',
-            active ? 'opacity-100' : 'opacity-80 group-hover:opacity-100',
+            yes ? 'text-emerald-400' : 'text-rose-400',
+            active ? 'opacity-100' : 'opacity-90 group-hover:opacity-100',
           ].join(' ')}
         >
           {label}
@@ -132,7 +124,11 @@ function OutcomeButton({ side, label, pct, multiplier, active, oneSided, onClick
           <span
             className={[
               'text-[24px] font-semibold tabular-nums leading-none tracking-tight transition-colors duration-300',
-              pct === null ? 'text-zinc-300' : yes ? 'text-emerald-700' : 'text-rose-700',
+              pct === null
+                ? 'text-zinc-700'
+                : yes
+                  ? active ? 'text-emerald-200' : 'text-emerald-300'
+                  : active ? 'text-rose-200' : 'text-rose-300',
             ].join(' ')}
           >
             {pct === null ? (
@@ -144,7 +140,7 @@ function OutcomeButton({ side, label, pct, multiplier, active, oneSided, onClick
           <span
             className={[
               'text-[13px] font-medium transition-colors duration-300',
-              pct === null ? 'text-zinc-300' : yes ? 'text-emerald-600/80' : 'text-rose-600/80',
+              pct === null ? 'text-zinc-700' : yes ? 'text-emerald-400/80' : 'text-rose-400/80',
             ].join(' ')}
           >
             ¢
@@ -153,16 +149,18 @@ function OutcomeButton({ side, label, pct, multiplier, active, oneSided, onClick
       </span>
       <span className="relative flex flex-col items-end">
         {oneSided ? (
-          <span className="text-[11px] italic text-zinc-400">refund</span>
+          <span className="text-[11px] italic text-zinc-500">refund</span>
         ) : (
           <>
-            <span className="text-[10px] uppercase tracking-[0.1em] text-zinc-400">
+            <span className="text-[10px] uppercase tracking-[0.1em] text-zinc-500">
               payout
             </span>
             <span
               className={[
                 'mt-0.5 text-[13px] font-medium tabular-nums transition-colors duration-300',
-                active ? (yes ? 'text-emerald-700' : 'text-rose-700') : 'text-zinc-700',
+                active
+                  ? yes ? 'text-emerald-200' : 'text-rose-200'
+                  : 'text-zinc-300',
               ].join(' ')}
             >
               {formatMultiplier(multiplier)}
@@ -197,7 +195,6 @@ export function MarketRow({ slot, state, selected, selectedSide, onSelectSide }:
     [state],
   )
 
-  // Detect pool moves for a card-wide tint sweep.
   const [poolFlash, setPoolFlash] = useState<'up' | 'down' | null>(null)
   const prevPoolRef = useRef<bigint | null>(null)
   useEffect(() => {
@@ -212,7 +209,6 @@ export function MarketRow({ slot, state, selected, selectedSide, onSelectSide }:
 
   const price = useSourcePrice(slot.sourceId)
 
-  // Flash on price tick.
   const [priceFlash, setPriceFlash] = useState<'up' | 'down' | null>(null)
   useEffect(() => {
     if (!price.ts || (price.direction !== 'up' && price.direction !== 'down')) return
@@ -247,14 +243,13 @@ export function MarketRow({ slot, state, selected, selectedSide, onSelectSide }:
     ? (slot.sourceId as 1 | 2 | 3 | 4 | 5)
     : null)
 
-  // Card surface gradient — base, hover, selected.
   const cardSurface = selected
-    ? 'bg-[linear-gradient(180deg,rgb(255,255,255)_0%,rgb(250,250,250)_100%)] border-zinc-900/80 shadow-[0_0_0_1px_rgb(24_24_27/0.4),0_8px_24px_-12px_rgb(24_24_27/0.25)]'
-    : 'bg-[linear-gradient(180deg,rgb(255,255,255)_0%,rgb(250,250,250)_100%)] border-zinc-200/80 hover:border-zinc-300 hover:shadow-[0_4px_16px_-8px_rgb(24_24_27/0.18)]'
+    ? 'bg-[linear-gradient(180deg,rgb(28,28,32)_0%,rgb(20,20,23)_100%)] border-zinc-600 shadow-[0_0_0_1px_rgb(82_82_91/0.4),0_12px_28px_-12px_rgb(0_0_0/0.7)]'
+    : 'bg-[linear-gradient(180deg,rgb(24,24,27)_0%,rgb(20,20,23)_100%)] border-zinc-800 hover:border-zinc-700 hover:shadow-[0_8px_24px_-12px_rgb(0_0_0/0.7)]'
 
   const cardFlash =
-    poolFlash === 'up' ? 'after:bg-emerald-200/35'
-    : poolFlash === 'down' ? 'after:bg-rose-200/35'
+    poolFlash === 'up' ? 'after:bg-emerald-500/10'
+    : poolFlash === 'down' ? 'after:bg-rose-500/10'
     : 'after:bg-transparent'
 
   return (
@@ -269,12 +264,12 @@ export function MarketRow({ slot, state, selected, selectedSide, onSelectSide }:
       aria-label={slot.label}
     >
       <header className="relative flex items-center justify-between gap-3">
-        <span className="flex items-center gap-2 text-zinc-600">
+        <span className="flex items-center gap-2 text-zinc-400">
           {iconId ? <SourceIcon sourceId={iconId} className="h-4 w-4" /> : null}
-          <span className="text-[12px] font-medium tracking-tight text-zinc-700">
+          <span className="text-[12px] font-medium tracking-tight text-zinc-300">
             {sourceShort}
           </span>
-          <span className="text-zinc-300">·</span>
+          <span className="text-zinc-700">·</span>
           <span className="text-[11px] tabular-nums text-zinc-500">
             {slot.thresholdBps >= 0 ? '+' : ''}{slot.thresholdBps} bp
           </span>
@@ -284,11 +279,11 @@ export function MarketRow({ slot, state, selected, selectedSide, onSelectSide }:
           <span
             className={
               statusTone === 'live'
-                ? 'font-medium text-amber-700'
+                ? 'font-medium text-amber-400'
                 : statusTone === 'closed'
                   ? 'text-zinc-500'
                   : statusTone === 'resolved'
-                    ? 'text-zinc-700'
+                    ? 'text-zinc-300'
                     : 'text-zinc-500'
             }
           >
@@ -296,8 +291,8 @@ export function MarketRow({ slot, state, selected, selectedSide, onSelectSide }:
           </span>
           {!closed && !resolved ? (
             <>
-              <span className="text-zinc-300">·</span>
-              <span className="tabular-nums text-zinc-500">
+              <span className="text-zinc-700">·</span>
+              <span className="tabular-nums text-zinc-400">
                 <CountdownTimer target={slot.closeTime} closedLabel="closed" />
               </span>
             </>
@@ -305,7 +300,7 @@ export function MarketRow({ slot, state, selected, selectedSide, onSelectSide }:
         </span>
       </header>
 
-      <h3 className="relative mt-3 text-[16px] font-semibold leading-snug tracking-tight text-zinc-900">
+      <h3 className="relative mt-3 text-[16px] font-semibold leading-snug tracking-tight text-zinc-100">
         {slot.label}
       </h3>
 
@@ -333,27 +328,27 @@ export function MarketRow({ slot, state, selected, selectedSide, onSelectSide }:
       <footer className="relative mt-4 flex items-center justify-between gap-3 text-[12px] text-zinc-500">
         <span>
           Pool{' '}
-          <span className="tabular-nums text-zinc-800">
+          <span className="tabular-nums text-zinc-200">
             $<AnimatedNumber value={totalPoolFloat} decimals={0} duration={600} formatFn={formatPoolFloat} />
           </span>
         </span>
         <span
           className={[
             'flex items-center gap-1.5 rounded px-1.5 py-0.5 -mx-1.5 transition-[background] duration-700 ease-out',
-            priceFlash === 'up' ? 'bg-emerald-50' : priceFlash === 'down' ? 'bg-rose-50' : 'bg-transparent',
+            priceFlash === 'up' ? 'bg-emerald-500/10' : priceFlash === 'down' ? 'bg-rose-500/10' : 'bg-transparent',
           ].join(' ')}
         >
           {price.raw === null ? (
-            <span className="text-zinc-400">—</span>
+            <span className="text-zinc-600">—</span>
           ) : (
             <>
               <span className="text-zinc-500">{sourceShort}</span>
-              <span className="tabular-nums text-zinc-800">{price.display}</span>
+              <span className="tabular-nums text-zinc-200">{price.display}</span>
               {price.changeBp !== null && price.changeBp !== 0 ? (
                 <span
                   className={[
                     'tabular-nums transition-colors duration-300',
-                    price.changeBp > 0 ? 'text-emerald-600' : 'text-rose-600',
+                    price.changeBp > 0 ? 'text-emerald-400' : 'text-rose-400',
                   ].join(' ')}
                 >
                   {price.changeBp > 0 ? '+' : ''}{price.changeBp}bp

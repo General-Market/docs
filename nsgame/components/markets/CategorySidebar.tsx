@@ -43,16 +43,16 @@ export interface CategorySidebarProps {
 
 function rowClasses(active: boolean): string {
   return [
-    'group flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left transition-colors',
+    'group flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left transition-colors duration-150',
     'min-h-[36px]',
     active
-      ? 'bg-zinc-100 text-zinc-900'
-      : 'text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900',
+      ? 'bg-zinc-800/80 text-zinc-100 ring-1 ring-zinc-700'
+      : 'text-zinc-400 hover:bg-zinc-900/60 hover:text-zinc-100',
   ].join(' ')
 }
 
 function sectionLabelClasses(): string {
-  return 'mb-1.5 px-3 text-[11px] font-medium tracking-tight text-zinc-400'
+  return 'mb-1.5 px-3 text-[11px] font-medium tracking-tight text-zinc-500'
 }
 
 export function CategorySidebar({
@@ -65,7 +65,6 @@ export function CategorySidebar({
   onStatusToggle,
   className = '',
 }: CategorySidebarProps) {
-  // Per-source slot counts. Cheap — slots is already capped by the hook.
   const sourceCounts = useMemo(() => {
     const out: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
     for (const s of slots) {
@@ -95,12 +94,12 @@ export function CategorySidebar({
             className={rowClasses(source === 'all')}
           >
             <span className="flex items-center gap-2.5">
-              <span className="grid h-4 w-4 place-items-center text-zinc-400">
+              <span className="grid h-4 w-4 place-items-center text-zinc-500">
                 <span className="block h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
               </span>
               <span className="text-[13.5px]">All</span>
             </span>
-            <span className="text-[12px] tabular-nums text-zinc-400 group-hover:text-zinc-500">
+            <span className="text-[12px] tabular-nums text-zinc-500 group-hover:text-zinc-300">
               {totalCount}
             </span>
           </button>
@@ -121,7 +120,7 @@ export function CategorySidebar({
                 <span
                   className={[
                     'text-[12px] tabular-nums',
-                    active ? 'text-zinc-700' : 'text-zinc-400 group-hover:text-zinc-500',
+                    active ? 'text-zinc-300' : 'text-zinc-500 group-hover:text-zinc-300',
                   ].join(' ')}
                 >
                   {sourceCounts[s.id] ?? 0}
@@ -146,7 +145,7 @@ export function CategorySidebar({
                 className={rowClasses(active)}
               >
                 <span className="text-[13.5px] capitalize">{h.label}</span>
-                <span className="text-[11px] tabular-nums text-zinc-400 group-hover:text-zinc-500">
+                <span className="text-[11px] tabular-nums text-zinc-500 group-hover:text-zinc-300">
                   {h.id}
                 </span>
               </button>
@@ -164,15 +163,15 @@ export function CategorySidebar({
               <label
                 key={s.id}
                 className={[
-                  'flex min-h-[36px] cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 transition-colors',
-                  active ? 'bg-zinc-100 text-zinc-900' : 'text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900',
+                  'flex min-h-[36px] cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 transition-colors duration-150',
+                  active ? 'bg-zinc-800/80 text-zinc-100 ring-1 ring-zinc-700' : 'text-zinc-400 hover:bg-zinc-900/60 hover:text-zinc-100',
                 ].join(' ')}
               >
                 <input
                   type="checkbox"
                   checked={active}
                   onChange={() => onStatusToggle(s.id)}
-                  className="h-3.5 w-3.5 rounded border-zinc-300 text-zinc-900 focus:ring-1 focus:ring-zinc-900"
+                  className="h-3.5 w-3.5 rounded border-zinc-700 bg-zinc-900 text-zinc-100 focus:ring-1 focus:ring-zinc-500"
                 />
                 <span className="text-[13.5px] capitalize">{s.label}</span>
               </label>

@@ -42,13 +42,13 @@ function chipClasses(active: boolean): string {
     'inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-[12px] tracking-tight transition-all duration-150',
     'min-w-[44px] justify-center snap-start shrink-0',
     active
-      ? 'bg-zinc-100 text-zinc-900'
-      : 'text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900',
+      ? 'bg-zinc-800 text-zinc-100 ring-1 ring-zinc-700'
+      : 'text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100',
   ].join(' ')
 }
 
 function groupLabelClasses(): string {
-  return 'shrink-0 text-[11px] font-medium tracking-tight text-zinc-400'
+  return 'shrink-0 text-[11px] font-medium tracking-tight text-zinc-500'
 }
 
 export function FilterBar({
@@ -75,7 +75,7 @@ export function FilterBar({
 
   return (
     <>
-      <div className="sticky top-14 z-20 -mx-4 border-b border-zinc-200/60 bg-white/80 px-4 backdrop-blur-md sm:top-16 sm:mx-0 sm:px-0">
+      <div className="sticky top-14 z-20 -mx-4 border-b border-zinc-800/70 bg-zinc-950/80 px-4 backdrop-blur-md sm:top-16 sm:mx-0 sm:px-0">
         <div className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
           <div
             className="flex snap-x snap-mandatory items-center gap-2 overflow-x-auto scrollbar-hide"
@@ -127,13 +127,13 @@ export function FilterBar({
               onClick={() => setSheetOpen(true)}
               aria-haspopup="dialog"
               aria-expanded={sheetOpen}
-              className="relative inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-[12px] font-medium tracking-tight text-zinc-700 transition-all duration-150 hover:border-zinc-300 hover:text-zinc-900"
+              className="relative inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900 px-3 text-[12px] font-medium tracking-tight text-zinc-300 transition-all duration-150 hover:border-zinc-700 hover:text-zinc-100"
             >
               <span>Filters</span>
               {hasStatusFilter ? (
                 <span
                   aria-hidden
-                  className="inline-block h-1.5 w-1.5 rounded-full bg-zinc-900"
+                  className="inline-block h-1.5 w-1.5 rounded-full bg-zinc-100"
                 />
               ) : null}
               <span className="sr-only">
