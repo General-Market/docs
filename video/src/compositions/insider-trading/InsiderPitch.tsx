@@ -167,7 +167,10 @@ const IntroContent: React.FC<{
       }}
     />
 
-    {/* LOCKUP — centered, breathing once on the downbeat */}
+    {/* LOCKUP — shifted right of centre by 120 px so the title isn't
+        crowded by the logo plate hanging off its left side. The plate
+        still owns the left half; the wordmark now reads against the
+        right two thirds, where the eye lands first. */}
     <AbsoluteFill
       style={{
         display: "flex",
@@ -180,7 +183,7 @@ const IntroContent: React.FC<{
           display: "flex",
           alignItems: "center",
           gap: lockupGap,
-          transform: `scale(${pulse})`,
+          transform: `translateX(120px) scale(${pulse})`,
           transformOrigin: "center",
         }}
       >
@@ -241,7 +244,8 @@ const IntroContent: React.FC<{
       </div>
     </AbsoluteFill>
 
-    {/* Tagline — fights back, below the enlarged lockup */}
+    {/* Tagline — fights back. Shifts right with the lockup so the two
+        lines stay vertically aligned at the same x. */}
     <AbsoluteFill
       style={{
         display: "flex",
@@ -250,21 +254,23 @@ const IntroContent: React.FC<{
         paddingTop: 340,
       }}
     >
-      <Reveal
-        from={sceneStart + 30}
-        duration={duration - 30}
-        text="fights back"
-        revealDuration={18}
-        seed={23}
-        style={{
-          fontSize: 104,
-          fontWeight: 500,
-          letterSpacing: "-0.01em",
-          textAlign: "center",
-          lineHeight: 1,
-          maxWidth: 1600,
-        }}
-      />
+      <div style={{ transform: "translateX(120px)" }}>
+        <Reveal
+          from={sceneStart + 30}
+          duration={duration - 30}
+          text="fights back"
+          revealDuration={18}
+          seed={23}
+          style={{
+            fontSize: 104,
+            fontWeight: 500,
+            letterSpacing: "-0.01em",
+            textAlign: "center",
+            lineHeight: 1,
+            maxWidth: 1600,
+          }}
+        />
+      </div>
     </AbsoluteFill>
 
     {/* Grain — SVG fractal noise, low opacity, overlay blend */}
@@ -291,7 +297,19 @@ const IntroScene: React.FC<{
     easing: ease3,
   });
   const logoOpacity = interpolate(local, [3, 30], [0, 1], clamp);
-  const fadeOut = interpolate(local, [duration - 10, duration], [1, 0], clamp);
+  // Tightened from 10 → 6 frames and eased so the intro evaporates
+  // instead of dimming. Combined with StatScene's matching fade-in, the
+  // boundary reads as a single dissolve through white rather than a cut.
+  const fadeOut = interpolate(local, [duration - 6, duration], [1, 0], {
+    ...clamp,
+    easing: ease3,
+  });
+  // Subtle pull-back on the way out — the lockup recedes a touch so the
+  // dissolve carries depth, not just opacity.
+  const exitScale = interpolate(local, [duration - 6, duration], [1, 1.04], {
+    ...clamp,
+    easing: ease3,
+  });
 
   const fontSize = 164;
   const plateEdge = 240;
@@ -332,7 +350,13 @@ const IntroScene: React.FC<{
   };
 
   return (
-    <AbsoluteFill style={{ opacity: fadeOut }}>
+    <AbsoluteFill
+      style={{
+        opacity: fadeOut,
+        transform: `scale(${exitScale})`,
+        transformOrigin: "50% 50%",
+      }}
+    >
       {/* NIGHT — base layer, always visible */}
       <AbsoluteFill style={{ background: BLACK, isolation: "isolate" }}>
         <IntroContent {...contentProps} />
@@ -1511,9 +1535,28 @@ const StatScene: React.FC<{
   duration: number;
 }> = ({ local, sceneStart, duration }) => {
   const fadeOut = interpolate(local, [duration - 20, duration], [1, 0], clamp);
+  // Match the IntroScene's 6-frame exit. Both scenes share the white
+  // wrapper now, so this is a true crossfade through a single ground —
+  // no flash, no grey hold, no scene-cut hiccup.
+  const fadeIn = interpolate(local, [0, 6], [0, 1], {
+    ...clamp,
+    easing: ease3,
+  });
+  // Mirror the intro's pull-back: enter at 1.04× and settle to 1× so the
+  // motion feels continuous through the boundary.
+  const entryScale = interpolate(local, [0, 6], [1.04, 1], {
+    ...clamp,
+    easing: ease3,
+  });
 
   return (
-    <AbsoluteFill style={{ opacity: fadeOut }}>
+    <AbsoluteFill
+      style={{
+        opacity: fadeOut * fadeIn,
+        transform: `scale(${entryScale})`,
+        transformOrigin: "50% 50%",
+      }}
+    >
       {/* Phone rendered by SharedPhoneLayer at the InsiderPitch level,
           so it survives the cut into Point 1 as one continuous prop. */}
 
@@ -2143,7 +2186,12 @@ export const InsiderPitch: React.FC<{ startFrame: number }> = ({
   return (
     <AbsoluteFill
       style={{
-        background: activeKey === "intro" ? BLACK : WHITE,
+        // Wrapper held BLACK during intro previously — when the IntroScene
+        // faded out, the black bled through and produced a dirty grey hold
+        // before the stat scene's clean white snapped in. White everywhere
+        // means the intro fades through its own daylit endstate into the
+        // stat without ever touching the black ground again.
+        background: WHITE,
         isolation: "isolate",
       }}
     >
