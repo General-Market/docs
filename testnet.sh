@@ -2552,24 +2552,22 @@ _start_oracles_docker() {
     if [ -n "$VISION_SETTLEMENT_CUSTODY" ]; then
         local SBC_CODE_LEN=$(cast code --rpc-url "$SETTLEMENT_RPC_URL" "$VISION_SETTLEMENT_CUSTODY" 2>/dev/null | wc -c | tr -d ' ')
         if [ "$SBC_CODE_LEN" -lt 10 ]; then
-            echo -e "  ${RED}FATAL: SettlementBridgeCustody ($VISION_SETTLEMENT_CUSTODY) has NO CODE on Settlement chain${NC}"
-            echo -e "  ${RED}  This address is stale. Update active-deployment.json with the correct address.${NC}"
-            echo -e "  ${RED}  Check: deployments/e2e-full-system-sonic.json for the current Sonic deployment.${NC}"
-            # Attempt auto-fix from Sonic deployment
+            # Attempt auto-fix from Sonic deployment first
             local SONIC_SBC=$(python3 -c "import json; print(json.load(open('deployments/e2e-full-system-sonic.json'))['contracts']['SettlementBridgeCustody'])" 2>/dev/null || echo "")
-            if [ -n "$SONIC_SBC" ]; then
-                local SONIC_SBC_CODE=$(cast code --rpc-url "$SETTLEMENT_RPC_URL" "$SONIC_SBC" 2>/dev/null | wc -c | tr -d ' ')
-                if [ "$SONIC_SBC_CODE" -gt 10 ]; then
-                    echo -e "  ${YELLOW}Auto-fixing from Sonic deployment: $SONIC_SBC${NC}"
-                    python3 -c "import json; d=json.load(open('$DEPLOYMENT_FILE')); d['contracts']['SettlementBridgeCustody']='$SONIC_SBC'; json.dump(d,open('$DEPLOYMENT_FILE','w'),indent=2)"
-                    VISION_SETTLEMENT_CUSTODY="$SONIC_SBC"
-                    echo -e "  ${GREEN}Fixed SettlementBridgeCustody → $SONIC_SBC${NC}"
-                else
-                    echo -e "  ${RED}Sonic SBC ($SONIC_SBC) also has no code. Full redeploy needed.${NC}"
-                    exit 1
-                fi
+            local SONIC_SBC_CODE=0
+            [ -n "$SONIC_SBC" ] && SONIC_SBC_CODE=$(cast code --rpc-url "$SETTLEMENT_RPC_URL" "$SONIC_SBC" 2>/dev/null | wc -c | tr -d ' ')
+            if [ "$SONIC_SBC_CODE" -gt 10 ]; then
+                echo -e "  ${YELLOW}Auto-fixing SettlementBridgeCustody from Sonic deployment: $SONIC_SBC${NC}"
+                python3 -c "import json; d=json.load(open('$DEPLOYMENT_FILE')); d['contracts']['SettlementBridgeCustody']='$SONIC_SBC'; json.dump(d,open('$DEPLOYMENT_FILE','w'),indent=2)"
+                VISION_SETTLEMENT_CUSTODY="$SONIC_SBC"
+                echo -e "  ${GREEN}Fixed SettlementBridgeCustody → $SONIC_SBC${NC}"
             else
-                exit 1
+                # Sonic-side missing — degrade gracefully. Oracles start without Sonic-bridge
+                # capabilities. NAV/rebalance/ITP listing still work; only cross-chain Sonic
+                # buy/sell will fail. Re-run `./testnet.sh deploy` to deploy Sonic side.
+                echo -e "  ${YELLOW}WARNING: SettlementBridgeCustody ($VISION_SETTLEMENT_CUSTODY) has no code on Sonic.${NC}"
+                echo -e "  ${YELLOW}  Sonic-side bridge ops will fail until phase 3c is re-run.${NC}"
+                echo -e "  ${YELLOW}  Continuing — oracles start without Sonic verification.${NC}"
             fi
         fi
     fi
