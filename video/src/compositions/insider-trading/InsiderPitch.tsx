@@ -1125,15 +1125,14 @@ const Point2Scene: React.FC<{
   );
 };
 
-// ─── Scene 5: POINT 3 — cluster trading vs single trades ─────────────────
+// ─── Scene 5: POINT 3 — speed comparison, horizontal sandwich ────────────
 //
-// Dual-panel split. Opens with a curtain that covers the Point2 → Point3
-// handover, then recedes into a hairline divider. Both panels stream the
-// same upward motion at the same speed. LEFT: jittered single dots, one
-// per literal trade, 100/s. RIGHT: a structured grid of dots — full rows
-// of points stacked into a continuous sheet, flowing upward as a single
-// organism. A gradient mask hides the bottom of both panels so the spawn
-// zone never shows; the stream only appears as it reaches the top.
+// Phone holds the left dock (set in SharedPhoneLayer). Right two-thirds
+// run a temporal sandwich: OTHERS row enters first with a sparse
+// horizontal stream and "100 / sec". The middle title cascades in and
+// holds. After a beat, the OTHERS row slides up and out under motion
+// blur while GENERAL MARKET rises into the upper slot from below — a
+// cinematic teleprompter swap, ending on title + GM + 100,000 / sec.
 
 const p3Hash = (i: number, seed: number): number => {
   const h = Math.sin(i * 12.9898 + seed * 78.233) * 43758.5453;
@@ -1148,210 +1147,174 @@ const Point3Scene: React.FC<{
 }> = ({ local, sceneStart, duration }) => {
   const fadeOut = interpolate(local, [duration - 18, duration], [1, 0], clamp);
 
-  // Opening curtain → divider. One element, three acts: bloom, hold,
-  // recede. The bright phase covers the Point2 → Point3 handover; the
-  // recession settles into the hairline divider for the rest of the scene.
-  const curtainHeight = interpolate(local, [0, 12], [0, 1], {
+  // ── Temporal beats ────────────────────────────────────────────────────
+  // 0   — phone settles into left dock (handled in SharedPhoneLayer)
+  // 4   — OTHERS row cascades in (label, dots, "100 / sec")
+  // 28  — title appears in middle ("Speed drowns insiders in numbers")
+  // 44  — pause; both visible, dots flowing
+  // 56  — cinematic swap begins: OTHERS slides up + blurs, GM rises
+  // 74  — swap settles; title + GM hold
+  // duration-18 → duration — fadeOut
+
+  const SWAP_START = 56;
+  const SWAP_END = 74;
+  const swapT = interpolate(local, [SWAP_START, SWAP_END], [0, 1], {
     ...clamp,
     easing: ease3,
   });
-  const curtainOpacity = interpolate(
+
+  // OTHERS is fully present from frame 12 to SWAP_START, fades during swap.
+  const othersOpacity = interpolate(
     local,
-    [0, 10, 22, 30],
-    [0, 1, 0.9, 0.18],
+    [0, 8, SWAP_START - 2, SWAP_END - 4],
+    [0, 1, 1, 0],
     clamp,
   );
-  const curtainThickness = interpolate(
+  // GM enters at SWAP_START, holds to fadeOut.
+  const gmOpacity = interpolate(
     local,
-    [0, 10, 26],
-    [0, 4, 1],
+    [SWAP_START, SWAP_END, duration - 14, duration],
+    [0, 1, 1, 0],
+    clamp,
+  );
+  // Title appears between the two acts.
+  const titleOpacity = interpolate(
+    local,
+    [22, 38, duration - 14, duration],
+    [0, 1, 1, 0],
+    clamp,
+  );
+  // Title cinematic dolly — slight push during the swap to feel like the
+  // camera leans in on the transition. Returns to 1 after.
+  const titlePush = 1 + interpolate(
+    local,
+    [SWAP_START, (SWAP_START + SWAP_END) / 2, SWAP_END],
+    [0, 0.04, 0],
     clamp,
   );
 
-  // Panel title intro — each title stack slides inward from its edge.
-  const panelIntro = interpolate(local, [10, 28], [0, 1], {
-    ...clamp,
-    easing: ease3,
-  });
-  const leftTitleX = (1 - panelIntro) * -36;
-  const rightTitleX = (1 - panelIntro) * 36;
+  // ── Stream geometry ───────────────────────────────────────────────────
+  // Right column: x ∈ [880, 1880]. The OTHERS / GM rows live inside this
+  // column, the phone owns x ∈ [60, 760] from the left dock.
+  const COL_LEFT = 880;
+  const COL_RIGHT = 1880;
+  const COL_WIDTH = COL_RIGHT - COL_LEFT;
+  const ROW_TOP_Y = 240;     // OTHERS row band top
+  const ROW_BAND_H = 200;    // visible band height for the dot stream
+  const TITLE_Y = 510;       // sandwich title vertical anchor
+  const ROW_BOTTOM_Y = 740;  // GM row band top after swap (= where OTHERS was)
 
-  // Stream opacity — the flow fades in as the curtain recedes, so the
-  // dots never pop. Pre-seeded below, so by the time the panels are
-  // visible they already contain a full, mid-flight stream.
-  const flowOpacity = interpolate(local, [22, 44], [0, 1], clamp);
+  // Cinematic slide — OTHERS rolls up off frame, GM rises from below.
+  const OTHERS_LIFT = -380 * swapT;
+  const GM_LIFT = (1 - swapT) * 380;
+  const swapBlur = Math.sin(Math.PI * swapT) * 8;
 
-  // Rise speed shared by both panels. Aggressive — the right grid has
-  // to feel like 100,000 trades/s, not 100. The left single-dot stream
-  // rides the same velocity so the scales remain comparable.
-  const RISE_SPEED = 80;
-
-  // LEFT cadence — 100 dots per second, pre-seeded 60 frames before frame 0
-  // so the stream is mid-flight the instant the curtain opens (the faster
-  // rise burns through dots quickly, needs more pre-seed).
-  const LEFT_SPAWN_START = -60;
-  const LEFT_PARTICLES_PER_FRAME = 100 / 30;
-  const LEFT_SPAWN_DT = 1 / LEFT_PARTICLES_PER_FRAME;
-  const leftCount = Math.max(
+  // ── Horizontal stream cadence ─────────────────────────────────────────
+  // OTHERS — 100 dots / sec flowing left → right. Pre-seeded 50 frames
+  // before frame 0 so the stream is mid-flight the moment OTHERS appears.
+  const RIGHT_SPEED = 14; // px / frame
+  const OTHERS_SPAWN_START = -50;
+  const OTHERS_PER_FRAME = 100 / 30;
+  const OTHERS_SPAWN_DT = 1 / OTHERS_PER_FRAME;
+  const othersCount = Math.max(
     0,
-    Math.floor((local - LEFT_SPAWN_START) * LEFT_PARTICLES_PER_FRAME),
+    Math.floor((local - OTHERS_SPAWN_START) * OTHERS_PER_FRAME),
   );
 
-  // Mask — reveals a narrow strip just below the title and hides the
-  // bottom of the panel entirely. The spawn zone never shows; only the
-  // dots "reaching the top" are on screen.
+  // Horizontal mask — fade left/right edges so the spawn and exit zones
+  // bleed instead of popping at a hard boundary.
   const STREAM_MASK =
-    "linear-gradient(to bottom, transparent 0%, transparent 28%, black 34%, black 62%, transparent 74%)";
+    "linear-gradient(to right, transparent 0%, black 8%, black 88%, transparent 100%)";
 
   return (
     <AbsoluteFill style={{ opacity: fadeOut, background: WHITE }}>
-      {/* Curtain → divider. One element. */}
+      {/* OTHERS BAND — slides up and out under motion blur during swap */}
       <div
         style={{
           position: "absolute",
-          left: "50%",
-          top: "50%",
-          width: curtainThickness,
-          height: `${curtainHeight * 100}%`,
-          transform: "translate(-50%, -50%)",
-          background: BLACK,
-          opacity: curtainOpacity,
-        }}
-      />
-
-      {/* Headline — spans the full frame above the split panels. */}
-      <div
-        style={{
-          position: "absolute",
-          top: 60,
-          left: 0,
-          right: 0,
-          display: "flex",
-          justifyContent: "center",
-          zIndex: 20,
+          left: COL_LEFT,
+          top: ROW_TOP_Y,
+          width: COL_WIDTH,
+          height: ROW_BAND_H + 110,
+          opacity: othersOpacity,
+          transform: `translateY(${OTHERS_LIFT}px)`,
+          filter: swapBlur > 0.05 ? `blur(${swapBlur}px)` : undefined,
+          willChange: "transform, opacity, filter",
         }}
       >
-        <Reveal
-          from={sceneStart + 4}
-          duration={duration - 4}
-          text="Speed to allow you to drown insiders in numbers"
-          revealDuration={32}
-          seed={73}
-          solid
-          style={{
-            fontSize: 50,
-            fontWeight: 900,
-            letterSpacing: "-0.03em",
-            textAlign: "center",
-            lineHeight: 1,
-            maxWidth: 1800,
-            color: BLACK,
-          }}
-        />
-      </div>
-
-      {/* LEFT PANEL — single trades */}
-      <div
-        style={{
-          position: "absolute",
-          left: 0,
-          top: 0,
-          bottom: 0,
-          width: "50%",
-          overflow: "hidden",
-        }}
-      >
-        {/* Top label — "Others" */}
+        {/* Label row — "Others" left + "100 / sec" right */}
         <div
           style={{
             position: "absolute",
-            top: 220,
+            top: 0,
             left: 0,
             right: 0,
             display: "flex",
-            justifyContent: "center",
-            zIndex: 5,
-            opacity: panelIntro,
-            transform: `translateX(${leftTitleX}px)`,
+            justifyContent: "space-between",
+            alignItems: "baseline",
+            paddingRight: 24,
           }}
         >
           <Reveal
-            from={sceneStart + 6}
-            duration={duration - 6}
+            from={sceneStart + 4}
+            duration={SWAP_END}
             text="Others"
-            revealDuration={24}
+            revealDuration={22}
             seed={77}
             solid
             style={{
-              fontSize: 88,
+              fontSize: 92,
               fontWeight: 900,
               letterSpacing: "-0.03em",
-              textAlign: "center",
               lineHeight: 1,
               color: BLACK,
             }}
           />
-        </div>
-
-        {/* Bottom rate — "100 trades / s" */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: 140,
-            left: 0,
-            right: 0,
-            display: "flex",
-            justifyContent: "center",
-            zIndex: 5,
-            opacity: panelIntro,
-            transform: `translateX(${leftTitleX}px)`,
-          }}
-        >
           <Reveal
-            from={sceneStart + 20}
-            duration={duration - 20}
-            text="100 trades / s"
-            revealDuration={26}
+            from={sceneStart + 12}
+            duration={SWAP_END - 12}
+            text="100 / sec"
+            revealDuration={20}
             seed={79}
             solid
             style={{
-              fontSize: 116,
-              fontWeight: 900,
-              letterSpacing: "-0.04em",
-              textAlign: "center",
+              fontSize: 60,
+              fontWeight: 800,
+              letterSpacing: "-0.03em",
               lineHeight: 1,
-              color: BLACK,
+              color: "#7a7a7a",
             }}
           />
         </div>
 
-        {/* Rising single dots — jittered, 100 per second, pre-seeded.
-            Stream is masked so we only see the upper band. */}
+        {/* Sparse dot stream — flows left → right inside the band. */}
         <div
           style={{
             position: "absolute",
-            inset: 0,
-            opacity: flowOpacity,
+            left: 0,
+            top: 110,
+            width: COL_WIDTH,
+            height: ROW_BAND_H,
             WebkitMaskImage: STREAM_MASK,
             maskImage: STREAM_MASK,
           }}
         >
-          {Array.from({ length: leftCount }).map((_, i) => {
-            const spawnFrame = LEFT_SPAWN_START + i * LEFT_SPAWN_DT;
+          {Array.from({ length: othersCount }).map((_, i) => {
+            const spawnFrame = OTHERS_SPAWN_START + i * OTHERS_SPAWN_DT;
             const age = local - spawnFrame;
             if (age < 0) return null;
-            const y = 1180 - age * RISE_SPEED;
-            if (y < -40) return null;
-            const jitter = (p3Hash(i, 1) - 0.5) * 360;
+            const x = age * RIGHT_SPEED;
+            if (x > COL_WIDTH + 40) return null;
+            const yJitter = p3Hash(i, 1) * (ROW_BAND_H - 20);
             return (
               <div
                 key={i}
                 style={{
                   position: "absolute",
-                  left: `calc(50% + ${jitter}px)`,
-                  top: y,
-                  width: 2,
-                  height: 2,
+                  left: x,
+                  top: yJitter,
+                  width: 3,
+                  height: 3,
                   borderRadius: "50%",
                   background: BLACK,
                   transform: "translate(-50%, -50%)",
@@ -1362,94 +1325,61 @@ const Point3Scene: React.FC<{
         </div>
       </div>
 
-      {/* RIGHT PANEL — cluster trading */}
+      {/* SANDWICH TITLE — middle, anchored, slight push during swap */}
       <div
         style={{
           position: "absolute",
-          right: 0,
-          top: 0,
-          bottom: 0,
-          width: "50%",
-          overflow: "hidden",
+          left: COL_LEFT,
+          top: TITLE_Y,
+          width: COL_WIDTH,
+          opacity: titleOpacity,
+          transform: `scale(${titlePush})`,
+          transformOrigin: "0% 50%",
+          willChange: "transform, opacity",
         }}
       >
-        {/* Top label — "General Market" */}
-        <div
+        <Reveal
+          from={sceneStart + 22}
+          duration={duration - 22}
+          text="Speed drowns insiders in numbers"
+          revealDuration={28}
+          seed={73}
+          solid
           style={{
-            position: "absolute",
-            top: 220,
-            left: 0,
-            right: 0,
-            display: "flex",
-            justifyContent: "center",
-            zIndex: 5,
-            opacity: panelIntro,
-            transform: `translateX(${rightTitleX}px)`,
+            fontSize: 78,
+            fontWeight: 900,
+            letterSpacing: "-0.035em",
+            lineHeight: 1.02,
+            color: BLACK,
+            display: "block",
           }}
-        >
-          <Reveal
-            from={sceneStart + 6}
-            duration={duration - 6}
-            text="General Market"
-            revealDuration={26}
-            seed={81}
-            solid
-            style={{
-              fontSize: 80,
-              fontWeight: 900,
-              letterSpacing: "-0.03em",
-              textAlign: "center",
-              lineHeight: 1,
-              color: BLACK,
-            }}
-          />
-        </div>
+        />
+      </div>
 
-        {/* Bottom rate — "100k trades / s" */}
+      {/* GENERAL MARKET BAND — rises from below into the upper slot */}
+      <div
+        style={{
+          position: "absolute",
+          left: COL_LEFT,
+          top: ROW_BOTTOM_Y,
+          width: COL_WIDTH,
+          height: ROW_BAND_H + 130,
+          opacity: gmOpacity,
+          transform: `translateY(${-GM_LIFT}px)`,
+          filter: swapBlur > 0.05 ? `blur(${swapBlur}px)` : undefined,
+          willChange: "transform, opacity, filter",
+        }}
+      >
+        {/* Chromatic dot sheet — flows left → right, dense, fast. */}
         <div
           style={{
             position: "absolute",
-            bottom: 140,
             left: 0,
-            right: 0,
-            display: "flex",
-            justifyContent: "center",
-            zIndex: 5,
-            opacity: panelIntro,
-            transform: `translateX(${rightTitleX}px)`,
-          }}
-        >
-          <Reveal
-            from={sceneStart + 20}
-            duration={duration - 20}
-            text="100k trades / s"
-            revealDuration={26}
-            seed={83}
-            solid
-            style={{
-              fontSize: 116,
-              fontWeight: 900,
-              letterSpacing: "-0.04em",
-              textAlign: "center",
-              lineHeight: 1,
-              color: BLACK,
-            }}
-          />
-        </div>
-
-        {/* Dot sheet — two nested masks. Outer div fades top/bottom so the
-            spawn zone stays hidden. Inner div paints rainbow stripes and
-            is mask-cut by the dot pattern; the stripes scroll faster than
-            the dot grid so colours visibly cycle through each dot as it
-            rises — turns the monochrome stream into a chromatic blur
-            that reads as speed rather than a still texture. */}
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            opacity: flowOpacity,
+            top: 0,
+            width: COL_WIDTH,
+            height: ROW_BAND_H,
             overflow: "hidden",
-            filter: "brightness(0.85) saturate(0.95)",
+            filter: "brightness(0.92) saturate(1.05)",
             WebkitMaskImage: STREAM_MASK,
             maskImage: STREAM_MASK,
           }}
@@ -1459,20 +1389,65 @@ const Point3Scene: React.FC<{
               position: "absolute",
               inset: 0,
               backgroundImage:
-                "linear-gradient(180deg, #ff3b6e 0%, #ff8a00 14%, #ffd60a 28%, #3cff8f 42%, #00d5ff 57%, #6b6bff 71%, #c36cff 85%, #ff3b6e 100%)",
-              backgroundSize: "100% 240px",
+                "linear-gradient(90deg, #ff3b6e 0%, #ff8a00 14%, #ffd60a 28%, #3cff8f 42%, #00d5ff 57%, #6b6bff 71%, #c36cff 85%, #ff3b6e 100%)",
+              backgroundSize: "240px 100%",
               backgroundRepeat: "repeat",
-              backgroundPosition: `0 ${-local * RISE_SPEED * 1.6}px`,
+              backgroundPosition: `${local * RIGHT_SPEED * 2.4}px 0`,
               WebkitMaskImage:
                 "radial-gradient(circle, #000 38%, transparent 40%)",
               WebkitMaskSize: "4px 4px",
               WebkitMaskRepeat: "repeat",
-              WebkitMaskPosition: `0 ${-local * RISE_SPEED}px`,
+              WebkitMaskPosition: `${local * RIGHT_SPEED}px 0`,
               maskImage:
                 "radial-gradient(circle, #000 38%, transparent 40%)",
               maskSize: "4px 4px",
               maskRepeat: "repeat",
-              maskPosition: `0 ${-local * RISE_SPEED}px`,
+              maskPosition: `${local * RIGHT_SPEED}px 0`,
+            }}
+          />
+        </div>
+
+        {/* Label row — "General Market" left + "100,000 / sec" right */}
+        <div
+          style={{
+            position: "absolute",
+            top: ROW_BAND_H + 24,
+            left: 0,
+            right: 0,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "baseline",
+            paddingRight: 24,
+          }}
+        >
+          <Reveal
+            from={sceneStart + SWAP_START}
+            duration={duration - SWAP_START}
+            text="General Market"
+            revealDuration={22}
+            seed={81}
+            solid
+            style={{
+              fontSize: 92,
+              fontWeight: 900,
+              letterSpacing: "-0.03em",
+              lineHeight: 1,
+              color: BLACK,
+            }}
+          />
+          <Reveal
+            from={sceneStart + SWAP_START + 8}
+            duration={duration - SWAP_START - 8}
+            text="100,000 / sec"
+            revealDuration={20}
+            seed={83}
+            solid
+            style={{
+              fontSize: 60,
+              fontWeight: 800,
+              letterSpacing: "-0.03em",
+              lineHeight: 1,
+              color: BLACK,
             }}
           />
         </div>
@@ -1588,7 +1563,7 @@ const StatScene: React.FC<{
           so it survives the cut into Point 1 as one continuous prop.
           Left text shrinks back into the left third so the phone owns
           its own column; weight and scale shift across the three lines
-          give the stack rhythm instead of three identical 108pt slabs. */}
+          gives the stack rhythm instead of three identical 108pt slabs. */}
 
       {/* LEFT — light setup → loud emphasis → solid resolution. Each
           line owns a different weight/scale. "your losses" carries a
@@ -2143,9 +2118,13 @@ const SharedPhoneLayer: React.FC<{ local: number }> = ({ local }) => {
   }
 
   // Point 2 → Point 3. Phone flies from wherever it sits on the
-  // carousel to the centre of the frame where the speed scene owns it.
-  // A single continuous arc. The overlay swaps mid-motion (sealed →
-  // speed) but the phone itself never disappears.
+  // carousel to its left dock — Point 3 gives the right two-thirds to
+  // the speed comparison stack. A single continuous arc. The overlay
+  // swaps mid-motion (sealed → speed) but the phone itself never
+  // disappears.
+  const POINT3_PHONE_X = -560;
+  const POINT3_PHONE_Y = 0;
+  const POINT3_PHONE_SCALE = 0.86;
   const p2p3Start = point3Start - 14;
   const p2p3End = point3Start + 8;
   if (local >= p2p3Start && local <= p2p3End) {
@@ -2155,9 +2134,23 @@ const SharedPhoneLayer: React.FC<{ local: number }> = ({ local }) => {
     const fromX = p2PhoneCenterX - P2_HALF_W;
     const fromY = P2_TRACK_Y - 540;
     const fromS = p2PhoneScale;
-    xTranslate = fromX + (0 - fromX) * bT;
-    yTranslate = fromY + (0 - fromY) * bT;
-    carouselScale = fromS + (1 - fromS) * bT;
+    xTranslate = fromX + (POINT3_PHONE_X - fromX) * bT;
+    yTranslate = fromY + (POINT3_PHONE_Y - fromY) * bT;
+    carouselScale = fromS + (POINT3_PHONE_SCALE - fromS) * bT;
+    carouselOpacity = 1;
+  } else if (local > p2p3End && local < point3End) {
+    // Holds the left dock for the rest of Point 3. A subtle dolly
+    // pulse (≈3%) lands on the OTHERS → GM swap window so the phone
+    // breathes with the cinematic transition rather than freezing.
+    const swapPulse = interpolate(
+      local - point3Start,
+      [54, 64, 74],
+      [0, 1, 0],
+      clamp,
+    );
+    xTranslate = POINT3_PHONE_X;
+    yTranslate = POINT3_PHONE_Y;
+    carouselScale = POINT3_PHONE_SCALE + swapPulse * 0.03;
     carouselOpacity = 1;
   }
 
