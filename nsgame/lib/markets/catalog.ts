@@ -1,9 +1,10 @@
 /**
- * Site-aggregate catalog. Spans all five tube sources except chaturbate
- * (id=4) — the data-node collector for cb is not yet running. Every entry
- * resolves to a question of the form: "did the site total grow by N bps in
- * T seconds?". Per-asset markets (per-star, per-model, per-video) wait on
- * a program-side asset_id seed; see PLAN.md §3.
+ * Site-aggregate catalog. Spans all five tube sources, chaturbate
+ * (id=4) included — the data-node collector for cb is now running.
+ * Every entry resolves to a question of the form: "did the site
+ * total grow by N bps in T seconds?". Per-asset markets (per-star,
+ * per-model, per-video) wait on a program-side asset_id seed; see
+ * PLAN.md §3.
  *
  * The on-chain Market PDA is keyed by `(source_id, close_time,
  * settlement_time, threshold_bps)`. There is no asset selector. Every
@@ -35,6 +36,7 @@ const SOURCE_LABELS: Record<number, string> = {
   1: 'Xvideos',
   2: 'Xnxx',
   3: 'Pornhub',
+  4: 'Chaturbate',
   5: 'Eporner',
 }
 
@@ -94,10 +96,10 @@ function entryFor({ sourceId, thresholdBps, closeOffsetSecs }: BuildOpts): Catal
   }
 }
 
-// Generate one entry per (source, threshold, window). Skip chaturbate (id=4)
-// — collector not running. Five thresholds × four windows × four sources
-// would be 80 entries; we trim to a representative twenty.
-const SOURCES_ENABLED = [1, 2, 3, 5] as const
+// Generate one entry per (source, threshold, window). All five sources are
+// live. Five thresholds × four windows × five sources would be 100 entries;
+// we trim to a representative twenty (four windows × five sources).
+const SOURCES_ENABLED = [1, 2, 3, 4, 5] as const
 const WINDOWS_SECS = [60, 300, 1800, 3600] as const
 const THRESHOLDS_BPS = [1, 50, 100] as const
 

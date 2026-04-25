@@ -16,6 +16,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { PublicKey } from '@solana/web3.js'
+import { getAssociatedTokenAddressSync } from '@solana/spl-token'
 import { useWallet } from '@/hooks/useWallet'
 import { useSession } from '@/lib/solana/SessionContext'
 import {
@@ -55,6 +56,17 @@ export interface UsePlaceBetReturn {
   placing: boolean
   error: string | null
   placeBet: (slot: UpcomingSlot, side: 'yes' | 'no', amount: bigint) => Promise<string>
+}
+
+export interface StakeBalance {
+  /** Raw u64, in token-ladder units. */
+  raw: bigint
+  /** Formatted decimal string, trimmed of trailing zeros. */
+  display: string
+  /** Mint decimals — 6 for the devnet USDC proxy. */
+  decimals: number
+  loading: boolean
+  error: string | null
 }
 
 // The Side enum the program expects, expressed as the string variants the
@@ -283,6 +295,92 @@ export function usePlaceBet(): UsePlaceBetReturn {
   )
 
   return { placing, error, placeBet }
+}
+
+// ── useStakeBalance ─────────────────────────────────────────────────────
+
+const STAKE_BALANCE_POLL_MS = 10_000
+const STAKE_DECIMALS_FALLBACK = 6
+
+function formatStake(raw: bigint, decimals: number): string {
+  if (raw === 0n) return '0'
+  const base = 10n ** BigInt(decimals)
+  const whole = raw / base
+  const frac = raw % base
+  if (frac === 0n) return whole.toString()
+  const fracStr = frac.toString().padStart(decimals, '0').replace(/0+$/, '')
+  return fracStr ? `${whole.toString()}.${fracStr}` : whole.toString()
+}
+
+export function useStakeBalance(): StakeBalance {
+  const { publicKey, connection } = useWallet()
+  const stakeMint = useMemo(() => stakeMintFromEnv(), [])
+
+  const [raw, setRaw] = useState<bigint>(0n)
+  const [decimals, setDecimals] = useState<number>(STAKE_DECIMALS_FALLBACK)
+  const [loading, setLoading] = useState<boolean>(false)
+  const [error, setError] = useState<string | null>(null)
+
+  // Track latest owner so a late RPC response from a previous wallet can't
+  // overwrite the current one.
+  const lastOwnerRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (!publicKey) {
+      lastOwnerRef.current = null
+      setRaw(0n)
+      setDecimals(STAKE_DECIMALS_FALLBACK)
+      setLoading(false)
+      setError(null)
+      return
+    }
+
+    const owner = publicKey.toBase58()
+    lastOwnerRef.current = owner
+    let cancelled = false
+
+    const ata = getAssociatedTokenAddressSync(stakeMint, publicKey, true)
+
+    const fetchOnce = async () => {
+      try {
+        const bal = await connection.getTokenAccountBalance(ata, 'confirmed')
+        if (cancelled || lastOwnerRef.current !== owner) return
+        setRaw(BigInt(bal.value.amount))
+        setDecimals(bal.value.decimals)
+        setError(null)
+      } catch (e) {
+        if (cancelled || lastOwnerRef.current !== owner) return
+        const msg = e instanceof Error ? e.message : String(e)
+        // ATA not yet created — treat as zero, no error surfaced.
+        if (
+          msg.includes('could not find account') ||
+          msg.includes('Invalid param: could not find account') ||
+          msg.includes('AccountNotFound')
+        ) {
+          setRaw(0n)
+          setError(null)
+          return
+        }
+        setError('Failed to read balance.')
+      } finally {
+        if (!cancelled && lastOwnerRef.current === owner) {
+          setLoading(false)
+        }
+      }
+    }
+
+    setLoading(true)
+    void fetchOnce()
+    const id = window.setInterval(fetchOnce, STAKE_BALANCE_POLL_MS)
+    return () => {
+      cancelled = true
+      window.clearInterval(id)
+    }
+  }, [publicKey, connection, stakeMint])
+
+  const display = useMemo(() => formatStake(raw, decimals), [raw, decimals])
+
+  return { raw, display, decimals, loading, error }
 }
 
 function normaliseError(raw: string): string {

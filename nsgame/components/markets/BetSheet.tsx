@@ -9,6 +9,7 @@ import {
   useMarketState,
   usePlaceBet,
 } from '@/lib/markets/hooks.stub'
+import { useStakeBalance } from '@/lib/markets/hooks'
 import { CountdownTimer } from './CountdownTimer'
 
 // Bottom sheet on mobile. Right drawer on desktop. The size of the
@@ -39,6 +40,7 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
   const { setShowModal } = useUnifiedWalletContext()
   const state = useMarketState(slot?.marketPda ?? null)
   const placeBetCtl = usePlaceBet()
+  const stakeBalance = useStakeBalance()
 
   const [side, setSide] = useState<Side>('yes')
   const [amount, setAmount] = useState<string>(PRESETS[0])
@@ -106,6 +108,8 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
 
   const open = !!slot
   const error = localError ?? placeBetCtl.error
+  const insufficientBalance =
+    connected && parsedUnits > 0n && stakeBalance.raw < parsedUnits
 
   return (
     <AnimatePresence>
@@ -236,12 +240,22 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
                     </button>
                   ))}
                 </div>
-                {/* TODO(agent-b): show wallet stake-mint balance once a useStakeBalance hook exists. */}
                 <p className="font-mono text-[10px] uppercase tracking-[0.08em] text-zinc-500">
-                  balance: not wired yet
+                  {!connected
+                    ? 'Connect a wallet to see balance.'
+                    : stakeBalance.loading && stakeBalance.raw === 0n
+                      ? 'balance: —'
+                      : stakeBalance.error
+                        ? `balance: ${stakeBalance.error.toLowerCase()}`
+                        : `balance: ${stakeBalance.display} USDC`}
                 </p>
               </div>
 
+              {insufficientBalance && (
+                <p className="font-mono text-[11px] text-rose-700">
+                  insufficient balance.
+                </p>
+              )}
               {error && (
                 <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
                   {error}
@@ -267,7 +281,7 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
                 <button
                   type="button"
                   onClick={handleSubmit}
-                  disabled={placeBetCtl.placing || parsedUnits <= 0n}
+                  disabled={placeBetCtl.placing || parsedUnits <= 0n || insufficientBalance}
                   className={[
                     'h-12 w-full rounded-md text-sm font-semibold text-white transition-colors',
                     'disabled:cursor-not-allowed disabled:opacity-40',

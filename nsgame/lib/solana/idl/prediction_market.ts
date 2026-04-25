@@ -4,6 +4,34 @@
  * Note that this is only a type helper and is not the actual IDL. The original
  * IDL can be found at `target/idl/prediction_market.json`.
  */
+
+// String-union form. The hand-rolled client serializes to the Anchor enum byte
+// (Yes=0, No=1) at the wire boundary; consumers stay in TS-land strings.
+export type Side = 'Yes' | 'No'
+
+export interface PlaceBetArgs {
+  sourceId: number
+  closeTime: bigint
+  settlementTime: bigint
+  thresholdBps: number
+  side: Side
+  amount: bigint
+}
+
+export interface ExitBetArgs {
+  side: Side
+  amount: bigint
+}
+
+export interface BatchEntry {
+  sourceId: number
+  closeTime: bigint
+  settlementTime: bigint
+  thresholdBps: number
+  side: Side
+  amount: bigint
+}
+
 export type PredictionMarket = {
   "address": "DQwMnwQGYuLDvciSFZNgUvcHkA3Buyhk3ejgbACvSydA",
   "metadata": {
