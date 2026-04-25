@@ -43,6 +43,7 @@ const IDL_PATH = path.join(PROJECT_ROOT, "target", "idl", "prediction_market.jso
 const RPC_URL = process.env.SOLANA_URL ?? "https://api.devnet.solana.com";
 const SOURCE_ID = Number(process.env.SOURCE_ID ?? "3");
 const BET_AMOUNT = BigInt(process.env.BET_AMOUNT ?? "1000000");
+const SIDE = (process.env.SIDE ?? "yes").toLowerCase() === "no" ? "no" : "yes";
 
 function loadKeypair(): Keypair {
   const kpPath = process.env.ANCHOR_WALLET
@@ -139,11 +140,11 @@ async function main(): Promise<void> {
     closeTime: new BN(closeTime),
     settlementTime: new BN(settlementTime),
     thresholdBps,
-    side: { yes: {} },
+    side: { [SIDE]: {} },
     amount: new BN(BET_AMOUNT.toString()),
   };
 
-  console.log(`==> place_bet source_id=${SOURCE_ID} side=Yes amount=${BET_AMOUNT}`);
+  console.log(`==> place_bet source_id=${SOURCE_ID} side=${SIDE.toUpperCase()} amount=${BET_AMOUNT}`);
   const sig = await (program.methods as any)
     .placeBet(args)
     .accountsPartial({
