@@ -10,6 +10,7 @@ interface SparkLineProps {
   height?: number
   trend?: 'up' | 'down' | 'flat'
   className?: string
+  'aria-label'?: string
 }
 
 const STROKE: Record<NonNullable<SparkLineProps['trend']>, string> = {
@@ -24,6 +25,7 @@ export function SparkLine({
   height = 16,
   trend = 'flat',
   className = '',
+  'aria-label': ariaLabel = '24h trend',
 }: SparkLineProps) {
   if (!values || values.length < 2) return null
 
@@ -54,7 +56,7 @@ export function SparkLine({
       viewBox={`0 0 ${width} ${height}`}
       className={className}
       role="img"
-      aria-label="24h trend"
+      aria-label={ariaLabel}
     >
       <polyline
         points={points}

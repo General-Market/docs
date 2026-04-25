@@ -572,6 +572,119 @@ export function useSourcePrice(sourceId: number | null): SourcePrice {
   return { raw, display, ts, loading, direction, changeBp }
 }
 
+// ── useSourceHistory ────────────────────────────────────────────────────
+
+export interface SourceHistoryPoint {
+  /** Unix seconds the observation was recorded. */
+  ts: number
+  /** Source aggregate value, raw integer. */
+  raw: bigint
+}
+
+export interface UseSourceHistory {
+  points: SourceHistoryPoint[]
+  /** True only on the very first render — flips false after the seed call. */
+  loading: boolean
+}
+
+/**
+ * Rolling 30-minute history of source observations.
+ *
+ * On mount: fetches `/api/sources/{id}/history?minutes=30` and seeds the
+ * buffer. The data-node may not implement that route yet — the proxy
+ * returns `{ points: [] }` in that case and we degrade to live-only.
+ *
+ * Then: piggybacks on `useSourcePrice` ticks. Each tick with a fresh `ts`
+ * pushes a new point. Buffer capped at MAX_POINTS so we don't grow without
+ * bound across long sessions.
+ */
+const HISTORY_MAX_POINTS = 360
+
+interface SourceHistoryDTO {
+  points?: Array<{ ts?: number; raw?: number | string }>
+}
+
+export function useSourceHistory(sourceId: number | null): UseSourceHistory {
+  const live = useSourcePrice(sourceId)
+  const [points, setPoints] = useState<SourceHistoryPoint[]>([])
+  const [loading, setLoading] = useState<boolean>(true)
+  const lastTsRef = useRef<number | null>(null)
+  const lastSourceRef = useRef<number | null>(null)
+
+  // Seed from the proxy on mount / source change.
+  useEffect(() => {
+    if (sourceId == null) {
+      setPoints([])
+      setLoading(false)
+      lastTsRef.current = null
+      lastSourceRef.current = null
+      return
+    }
+
+    if (lastSourceRef.current !== sourceId) {
+      setPoints([])
+      lastTsRef.current = null
+      lastSourceRef.current = sourceId
+      setLoading(true)
+    }
+
+    let cancelled = false
+
+    const seed = async () => {
+      try {
+        const res = await fetch(`/api/sources/${sourceId}/history?minutes=30`, {
+          cache: 'no-store',
+        })
+        if (cancelled || lastSourceRef.current !== sourceId) return
+        if (!res.ok) {
+          setLoading(false)
+          return
+        }
+        const payload = (await res.json()) as SourceHistoryDTO
+        if (cancelled || lastSourceRef.current !== sourceId) return
+        const parsed: SourceHistoryPoint[] = []
+        for (const p of payload.points ?? []) {
+          if (typeof p.ts !== 'number') continue
+          const raw = toBigIntOrNull(p.raw ?? null)
+          if (raw === null) continue
+          parsed.push({ ts: p.ts, raw })
+        }
+        // Keep oldest-first, trim to cap.
+        parsed.sort((a, b) => a.ts - b.ts)
+        const seeded = parsed.slice(-HISTORY_MAX_POINTS)
+        setPoints(seeded)
+        lastTsRef.current = seeded.length > 0 ? seeded[seeded.length - 1]!.ts : null
+      } catch {
+        // Silent — empty buffer is acceptable.
+      } finally {
+        if (!cancelled && lastSourceRef.current === sourceId) {
+          setLoading(false)
+        }
+      }
+    }
+
+    void seed()
+    return () => { cancelled = true }
+  }, [sourceId])
+
+  // Append fresh ticks from useSourcePrice.
+  useEffect(() => {
+    if (sourceId == null) return
+    if (live.raw === null || live.ts === null) return
+    if (lastTsRef.current !== null && live.ts <= lastTsRef.current) return
+    lastTsRef.current = live.ts
+    const next: SourceHistoryPoint = { ts: live.ts, raw: live.raw }
+    setPoints(prev => {
+      const merged = [...prev, next]
+      return merged.length > HISTORY_MAX_POINTS
+        ? merged.slice(-HISTORY_MAX_POINTS)
+        : merged
+    })
+  }, [sourceId, live.raw, live.ts])
+
+  return { points, loading }
+}
+
 // ── useMarketStatesBatch ────────────────────────────────────────────────
 
 const MARKET_BATCH_POLL_MS = 30_000

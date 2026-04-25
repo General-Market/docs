@@ -12,10 +12,12 @@ import {
 import {
   useStakeBalance,
   useSourcePrice,
+  useSourceHistory,
   payoutMultiplier,
   formatMultiplier,
 } from '@/lib/markets/hooks'
 import { CountdownTimer } from './CountdownTimer'
+import { SparkLine } from './SparkLine'
 import FaucetButton from './FaucetButton'
 import { MyPositions } from './MyPositions'
 
@@ -49,6 +51,20 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
   const placeBetCtl = usePlaceBet()
   const stakeBalance = useStakeBalance()
   const price = useSourcePrice(slot?.sourceId ?? null)
+  const history = useSourceHistory(slot?.sourceId ?? null)
+
+  const sparkValues = useMemo(
+    () => history.points.map(p => Number(p.raw)),
+    [history.points],
+  )
+  const sparkTrend: 'up' | 'down' | 'flat' = useMemo(() => {
+    if (sparkValues.length < 2) return 'flat'
+    const first = sparkValues[0]!
+    const last = sparkValues[sparkValues.length - 1]!
+    if (last > first) return 'up'
+    if (last < first) return 'down'
+    return 'flat'
+  }, [sparkValues])
 
   const [side, setSide] = useState<Side>('yes')
   const [amount, setAmount] = useState<string>(PRESETS[0])
@@ -167,20 +183,29 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
                 <h2 className="text-base font-semibold leading-snug text-zinc-900">
                   {slot.label}
                 </h2>
-                <p className="font-mono text-[11px] text-zinc-600">
-                  {slot.sourceName.replace(/^tubes_/, '')}:{' '}
-                  <span className="text-zinc-900">{price.raw === null ? '—' : price.display}</span>
-                  {price.changeBp !== null && price.changeBp !== 0 && (
-                    <span
-                      className={[
-                        'ml-2',
-                        price.changeBp > 0 ? 'text-emerald-700' : 'text-rose-700',
-                      ].join(' ')}
-                    >
-                      {price.changeBp > 0 ? '+' : ''}{price.changeBp} bp
-                    </span>
-                  )}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="font-mono text-[11px] text-zinc-600">
+                    {slot.sourceName.replace(/^tubes_/, '')}:{' '}
+                    <span className="text-zinc-900">{price.raw === null ? '—' : price.display}</span>
+                    {price.changeBp !== null && price.changeBp !== 0 && (
+                      <span
+                        className={[
+                          'ml-2',
+                          price.changeBp > 0 ? 'text-emerald-700' : 'text-rose-700',
+                        ].join(' ')}
+                      >
+                        {price.changeBp > 0 ? '+' : ''}{price.changeBp} bp
+                      </span>
+                    )}
+                  </p>
+                  <SparkLine
+                    values={sparkValues}
+                    width={60}
+                    height={16}
+                    trend={sparkTrend}
+                    aria-label="30-min trend"
+                  />
+                </div>
               </div>
               <button
                 type="button"

@@ -9,12 +9,14 @@ import {
   usePlaceBet,
   useStakeBalance,
   useSourcePrice,
+  useSourceHistory,
   useRecentBets,
   payoutMultiplier,
   formatMultiplier,
 } from '@/lib/markets/hooks'
 import { CountdownTimer } from './CountdownTimer'
 import { SourceIcon } from './SourceIcon'
+import { SparkLine } from './SparkLine'
 import FaucetButton from './FaucetButton'
 import { MyPositions } from './MyPositions'
 import type { Side } from './MarketRow'
@@ -95,7 +97,21 @@ function BetTicketActive({
   const placeBetCtl = usePlaceBet()
   const stakeBalance = useStakeBalance()
   const price = useSourcePrice(slot.sourceId)
+  const history = useSourceHistory(slot.sourceId)
   const recentBets = useRecentBets(slot.marketPda)
+
+  const sparkValues = useMemo(
+    () => history.points.map(p => Number(p.raw)),
+    [history.points],
+  )
+  const sparkTrend: 'up' | 'down' | 'flat' = useMemo(() => {
+    if (sparkValues.length < 2) return 'flat'
+    const first = sparkValues[0]!
+    const last = sparkValues[sparkValues.length - 1]!
+    if (last > first) return 'up'
+    if (last < first) return 'down'
+    return 'flat'
+  }, [sparkValues])
 
   const [amount, setAmount] = useState<string>(PRESETS[0])
   const [lastSig, setLastSig] = useState<string | null>(null)
@@ -178,19 +194,28 @@ function BetTicketActive({
         <h3 className="mt-2 text-[14px] font-semibold leading-snug text-zinc-900">
           {slot.label}
         </h3>
-        <p className="mt-1 font-mono text-[11px] text-zinc-500">
-          {sourceShort}: <span className="tabular-nums text-zinc-700">{price.raw === null ? '—' : price.display}</span>
-          {price.changeBp !== null && price.changeBp !== 0 ? (
-            <span
-              className={[
-                'ml-1.5',
-                price.changeBp > 0 ? 'text-emerald-700' : 'text-rose-700',
-              ].join(' ')}
-            >
-              {price.changeBp > 0 ? '+' : ''}{price.changeBp} bp
-            </span>
-          ) : null}
-        </p>
+        <div className="mt-1 flex items-center justify-between gap-2">
+          <p className="font-mono text-[11px] text-zinc-500">
+            {sourceShort}: <span className="tabular-nums text-zinc-700">{price.raw === null ? '—' : price.display}</span>
+            {price.changeBp !== null && price.changeBp !== 0 ? (
+              <span
+                className={[
+                  'ml-1.5',
+                  price.changeBp > 0 ? 'text-emerald-700' : 'text-rose-700',
+                ].join(' ')}
+              >
+                {price.changeBp > 0 ? '+' : ''}{price.changeBp} bp
+              </span>
+            ) : null}
+          </p>
+          <SparkLine
+            values={sparkValues}
+            width={80}
+            height={20}
+            trend={sparkTrend}
+            aria-label="30-min trend"
+          />
+        </div>
       </header>
 
       <div className="space-y-4 px-4 py-4">
