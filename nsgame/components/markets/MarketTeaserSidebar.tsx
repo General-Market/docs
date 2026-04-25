@@ -64,16 +64,20 @@ export interface MarketTeaserSidebarProps {
   className?: string
 }
 
+// Stars only on the rails. Cams settle every two minutes — the cadence
+// is too tight to read as a teaser, and the avatars repeat. Xvideos
+// (stars board) gives a longer dwell and a bigger pool of headshots.
+const TEASERS_PER_SIDE = 5
+
 function pickTeasers(slots: UpcomingSlot[], side: 'left' | 'right'): UpcomingSlot[] {
-  // Soonest closing first — the teaser is a pressure tool, not a catalogue.
-  // Pre-filter open slots only; resolved or already-closed entries don't
-  // belong on a "bet now" rail.
   const now = Math.floor(Date.now() / 1000)
   const open = slots
-    .filter(s => s.closeTime > now)
+    .filter(s => s.board === 'stars' && s.closeTime > now)
     .slice()
     .sort((a, b) => a.closeTime - b.closeTime)
-  return side === 'left' ? open.slice(0, 3) : open.slice(3, 6)
+  return side === 'left'
+    ? open.slice(0, TEASERS_PER_SIDE)
+    : open.slice(TEASERS_PER_SIDE, TEASERS_PER_SIDE * 2)
 }
 
 function formatDateTime(unixSecs: number): { date: string; time: string } {
