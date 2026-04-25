@@ -41,11 +41,23 @@ function formatPoolFloat(n: number): string {
   return Math.round(n).toString()
 }
 
-function computeYesPct(state: MarketState | null): number | null {
-  if (!state) return null
-  const total = state.totalYes + state.totalNo
-  if (total === 0n) return null
-  return Number((state.totalYes * 1000n) / total) / 10
+// Three-tier prior. Pool-implied probability when bets exist. Otherwise
+// fall back to the audience baseline — the side with more views or
+// viewers is the prior favourite. Last fallback: 50/50, which is the
+// market admitting it has heard absolutely nothing.
+function deriveYesPct(state: MarketState | null, audA: bigint, audB: bigint): number {
+  if (state) {
+    const total = state.totalYes + state.totalNo
+    if (total > 0n) return Number((state.totalYes * 1000n) / total) / 10
+  }
+  const totalAud = audA + audB
+  if (totalAud > 0n) {
+    const raw = Number((audA * 1000n) / totalAud) / 10
+    // Clamp the audience prior so a heavy favourite never reads as
+    // "already over". Users still need a reason to take the other side.
+    return Math.max(15, Math.min(85, raw))
+  }
+  return 50
 }
 
 function profileUrl(sourceId: number, slug: string): string {
@@ -125,7 +137,7 @@ interface CompetitorRowProps {
   slug: string
   audience: bigint
   audienceLabel: string
-  pct: number | null
+  pct: number
   active: boolean
   inactive: boolean
   resolved: boolean
@@ -201,14 +213,16 @@ function CompetitorRow({
             </span>
           ) : null}
         </span>
-        <span
-          aria-hidden
-          className={[
-            'block h-[2px] w-full rounded-full',
-            lineColor,
-            dim ? 'opacity-30' : '',
-          ].join(' ')}
-        />
+        <span aria-hidden className="relative block h-[2px] w-full overflow-hidden rounded-full bg-zinc-800/70">
+          <span
+            className={[
+              'absolute left-0 top-0 h-full rounded-full transition-[width] duration-500 ease-out',
+              lineColor,
+              dim ? 'opacity-30' : '',
+            ].join(' ')}
+            style={{ width: `${Math.max(2, Math.min(100, pct))}%` }}
+          />
+        </span>
       </span>
 
       <span className="hidden shrink-0 sm:inline-flex h-9 min-w-[44px] items-center justify-center rounded-md border border-zinc-700 bg-transparent px-2.5 text-[13px] font-medium tabular-nums text-zinc-200">
@@ -227,7 +241,7 @@ function CompetitorRow({
               active ? pillActive : pillBase,
             ].join(' ')}
           >
-            {pct === null ? '—' : `${pct.toFixed(0)}%`}
+            {pct.toFixed(0)}%
           </span>
         </span>
       )}
@@ -236,8 +250,11 @@ function CompetitorRow({
 }
 
 export function MarketRow({ slot, state, selected, selectedSide, onSelectSide }: MarketRowProps) {
-  const yesPct = useMemo(() => computeYesPct(state), [state])
-  const noPct = yesPct === null ? null : 100 - yesPct
+  const yesPct = useMemo(
+    () => deriveYesPct(state, slot.audienceA, slot.audienceB),
+    [state, slot.audienceA, slot.audienceB],
+  )
+  const noPct = 100 - yesPct
 
   const oneSided = !!state && (
     (state.totalYes === 0n && state.totalNo > 0n) ||

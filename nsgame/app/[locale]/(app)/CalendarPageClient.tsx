@@ -8,6 +8,7 @@ import { BetTicket } from '@/components/markets/BetTicket'
 import { BetSheet } from '@/components/markets/BetSheet'
 import { MobileMenu } from '@/components/markets/MobileMenu'
 import { BottomNav } from '@/components/markets/BottomNav'
+import { MarketTeaserSidebar } from '@/components/markets/MarketTeaserSidebar'
 import type { BoardFilter, HorizonFilter } from '@/components/markets/FilterBar'
 import type { Side } from '@/components/markets/MarketRow'
 import type { UpcomingSlot } from '@/lib/markets/hooks'
@@ -55,6 +56,14 @@ export function CalendarPageClient() {
     setSheetSlot(slot)
   }, [])
 
+  // Teaser sidebars share the bet-sheet entry point. Default side is yes —
+  // the user picks a competitor inside the sheet.
+  const handleTeaserSelect = useCallback((slot: UpcomingSlot) => {
+    setSelectedSlot(slot)
+    setSelectedSide('yes')
+    setSheetSlot(slot)
+  }, [])
+
   const closeSheet = useCallback(() => setSheetSlot(null), [])
   const openMenu = useCallback(() => setMenuOpen(true), [])
   const closeMenu = useCallback(() => setMenuOpen(false), [])
@@ -75,36 +84,50 @@ export function CalendarPageClient() {
         onStatusToggle={handleStatusToggle}
       />
 
-      <div className="mx-auto max-w-7xl px-4 sm:px-6">
-        <div className="grid gap-6 py-6 sm:py-8 lg:grid-cols-[220px_minmax(0,1fr)_320px]">
-          <CategorySidebar
-            board={board}
-            horizon={horizon}
-            statuses={statuses}
-            slots={allSlots}
-            onBoardChange={setBoard}
-            onHorizonChange={setHorizon}
-            onStatusToggle={handleStatusToggle}
-            className="hidden lg:block lg:sticky lg:top-20 lg:self-start"
-          />
+      <div className="xl:flex xl:items-start xl:justify-center xl:gap-6 xl:px-4 xl:py-8">
+        <MarketTeaserSidebar
+          slots={allSlots}
+          side="left"
+          onSelect={handleTeaserSelect}
+        />
 
-          <MarketList
-            board={board}
-            horizon={horizon}
-            statuses={statuses}
-            selectedPda={selectedSlot?.marketPda ?? null}
-            selectedSide={selectedSide}
-            onSelectSide={handleSelectSide}
-            onSlotsChange={setAllSlots}
-          />
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 xl:mx-0 xl:px-0">
+          <div className="grid gap-6 py-6 sm:py-8 xl:py-0 lg:grid-cols-[220px_minmax(0,1fr)_320px]">
+            <CategorySidebar
+              board={board}
+              horizon={horizon}
+              statuses={statuses}
+              slots={allSlots}
+              onBoardChange={setBoard}
+              onHorizonChange={setHorizon}
+              onStatusToggle={handleStatusToggle}
+              className="hidden lg:block lg:sticky lg:top-20 lg:self-start"
+            />
 
-          <BetTicket
-            slot={selectedSlot}
-            side={selectedSide}
-            onSideChange={setSelectedSide}
-            className="hidden lg:flex lg:sticky lg:top-20 lg:self-start"
-          />
+            <MarketList
+              board={board}
+              horizon={horizon}
+              statuses={statuses}
+              selectedPda={selectedSlot?.marketPda ?? null}
+              selectedSide={selectedSide}
+              onSelectSide={handleSelectSide}
+              onSlotsChange={setAllSlots}
+            />
+
+            <BetTicket
+              slot={selectedSlot}
+              side={selectedSide}
+              onSideChange={setSelectedSide}
+              className="hidden lg:flex lg:sticky lg:top-20 lg:self-start"
+            />
+          </div>
         </div>
+
+        <MarketTeaserSidebar
+          slots={allSlots}
+          side="right"
+          onSelect={handleTeaserSelect}
+        />
       </div>
 
       {/* Mobile bottom sheet for the bet ticket */}
