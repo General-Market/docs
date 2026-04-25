@@ -9,8 +9,11 @@ import {
   useMarketState,
   usePlaceBet,
   useStakeBalance,
+  usePairHistory,
+  usePairScore,
   payoutMultiplier,
   formatMultiplier,
+  formatPairScore,
   formatLabel,
   windowLabel,
   compactAudience,
@@ -19,6 +22,7 @@ import {
 import { CountdownTimer } from './CountdownTimer'
 import FaucetButton from './FaucetButton'
 import { MyPositions } from './MyPositions'
+import { SparkLine } from './SparkLine'
 
 // Bottom sheet on mobile. Right drawer on desktop. Same VS layout as
 // MarketRow + BetTicket — A on top, B below, vertical stack on narrow
@@ -59,12 +63,12 @@ function NameButton({ side, name, audience, audienceLabel, multiplier, active, o
   let surface: string
   if (active) {
     surface = yes
-      ? 'border-emerald-600 bg-emerald-50 text-emerald-900'
-      : 'border-rose-600 bg-rose-50 text-rose-900'
+      ? 'border-emerald-600 bg-emerald-500/15 text-emerald-100 shadow-[inset_0_0_24px_rgb(16_185_129/0.18)]'
+      : 'border-rose-600 bg-rose-500/15 text-rose-100 shadow-[inset_0_0_24px_rgb(244_63_94/0.18)]'
   } else {
     surface = yes
-      ? 'border-zinc-200 bg-white text-zinc-900 hover:border-emerald-400'
-      : 'border-zinc-200 bg-white text-zinc-900 hover:border-rose-400'
+      ? 'border-zinc-800 bg-zinc-900 text-zinc-100 hover:border-emerald-400'
+      : 'border-zinc-800 bg-zinc-900 text-zinc-100 hover:border-rose-400'
   }
   return (
     <button
@@ -82,10 +86,10 @@ function NameButton({ side, name, audience, audienceLabel, multiplier, active, o
           {name}
         </span>
       </span>
-      <span className="text-[11px] tabular-nums text-zinc-600">
+      <span className="text-[11px] tabular-nums text-zinc-400">
         {compactAudience(audience)} {audienceLabel}
       </span>
-      <span className={['text-[11px] tabular-nums', active ? (yes ? 'text-emerald-700' : 'text-rose-700') : 'text-zinc-600'].join(' ')}>
+      <span className={['text-[11px] tabular-nums', active ? (yes ? 'text-emerald-700' : 'text-rose-700') : 'text-zinc-400'].join(' ')}>
         {formatMultiplier(multiplier)} if wins
       </span>
     </button>
@@ -98,6 +102,21 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
   const state = useMarketState(slot?.marketPda ?? null)
   const placeBetCtl = usePlaceBet()
   const stakeBalance = useStakeBalance()
+  const pairScore = usePairScore(slot?.pairIndex ?? null)
+  const pairHistory = usePairHistory(slot?.pairIndex ?? null, 30)
+
+  const sparkValues = useMemo(
+    () => pairHistory.points.map(p => Number(p.score)),
+    [pairHistory.points],
+  )
+  const sparkTrend: 'up' | 'down' | 'flat' =
+    pairScore.direction === 'up' ? 'up'
+      : pairScore.direction === 'down' ? 'down'
+      : 'flat'
+  const arrow =
+    pairScore.direction === 'up' ? '↑'
+      : pairScore.direction === 'down' ? '↓'
+      : ''
 
   const [side, setSide] = useState<Side>('yes')
   const [amount, setAmount] = useState<string>(PRESETS[0])
@@ -114,9 +133,13 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
     }
   }, [slot?.marketPda])
 
-  // Lock body scroll while open.
+  // Lock body scroll while open. Only on mobile — on desktop the sheet
+  // is hidden by `lg:hidden` on the parent, but React still mounts this
+  // component and would otherwise freeze scrolling on the lit-up rail.
   useEffect(() => {
     if (!slot) return
+    if (typeof window !== 'undefined' &&
+        window.matchMedia('(min-width: 1024px)').matches) return
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     return () => { document.body.style.overflow = prev }
@@ -187,13 +210,13 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
             role="dialog"
             aria-modal="true"
             aria-label="Place bet"
-            className="absolute inset-x-0 bottom-0 flex max-h-[92vh] flex-col rounded-t-2xl bg-white shadow-modal lg:inset-y-0 lg:right-0 lg:left-auto lg:h-full lg:w-[420px] lg:max-h-none lg:rounded-none lg:border-l lg:border-zinc-200"
+            className="absolute inset-x-0 bottom-0 flex max-h-[92vh] flex-col rounded-t-2xl bg-zinc-900 shadow-modal lg:inset-y-0 lg:right-0 lg:left-auto lg:h-full lg:w-[420px] lg:max-h-none lg:rounded-none lg:border-l lg:border-zinc-800"
             initial={{ y: '100%', x: 0, opacity: 0 }}
             animate={{ y: 0, x: 0, opacity: 1 }}
             exit={{ y: '100%', opacity: 0 }}
             transition={{ type: 'spring', stiffness: 320, damping: 32 }}
           >
-            <div className="border-b border-zinc-200 px-5 pb-4 pt-3">
+            <div className="border-b border-zinc-800 px-5 pb-4 pt-3">
               <MyPositions compact className="mb-3" />
               <div className="flex items-start justify-between gap-3">
                 <div className="space-y-1">
@@ -203,16 +226,48 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
                     <span
                       className={[
                         'inline-flex items-center rounded px-1.5 py-0.5 text-[10px]',
-                        slot.board === 'stars' ? 'bg-amber-100 text-amber-800' : 'bg-sky-100 text-sky-800',
+                        slot.board === 'stars' ? 'bg-amber-500/15 text-amber-300' : 'bg-red-500/15 text-red-300',
                       ].join(' ')}
                     >
                       {slot.board}
                     </span>
-                    <span className="inline-flex items-center rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] text-zinc-700">
+                    <span className="inline-flex items-center rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] text-zinc-300">
                       {windowLabel(slot.windowSecs)} {formatLabel(slot.format)}
                     </span>
                   </p>
-                  <h2 className="text-base font-semibold leading-snug text-zinc-900">
+                  <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.1em] text-zinc-500">
+                    <span>score</span>
+                    <span className="text-zinc-300">·</span>
+                    <span
+                      className={[
+                        'tabular-nums',
+                        pairScore.score === null
+                          ? 'text-zinc-500'
+                          : pairScore.score > 0n
+                            ? 'text-emerald-700'
+                            : pairScore.score < 0n
+                              ? 'text-rose-700'
+                              : 'text-zinc-300',
+                      ].join(' ')}
+                    >
+                      {formatPairScore(pairScore.score)}
+                    </span>
+                    {arrow ? (
+                      <span aria-hidden className={pairScore.direction === 'up' ? 'text-emerald-600' : 'text-rose-600'}>
+                        {arrow}
+                      </span>
+                    ) : null}
+                    {sparkValues.length >= 2 ? (
+                      <SparkLine
+                        values={sparkValues}
+                        width={60}
+                        height={16}
+                        trend={sparkTrend}
+                        aria-label="pair score, last 30 min"
+                      />
+                    ) : null}
+                  </div>
+                  <h2 className="text-base font-semibold leading-snug text-zinc-100">
                     {slot.displayA} <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-zinc-500">vs</span> {slot.displayB}
                   </h2>
                   <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-zinc-500">
@@ -224,7 +279,7 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
                 <button
                   type="button"
                   onClick={onClose}
-                  className="-m-2 grid h-11 w-11 place-items-center rounded-md text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
+                  className="-m-2 grid h-11 w-11 place-items-center rounded-md text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
                   aria-label="Close"
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -236,7 +291,7 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
 
             <div className="flex-1 space-y-5 overflow-y-auto px-5 py-5">
               {slot.description && (
-                <p className="text-sm text-zinc-600">{slot.description}</p>
+                <p className="text-sm text-zinc-400">{slot.description}</p>
               )}
 
               <div className="space-y-2">
@@ -279,7 +334,7 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
                     inputMode="decimal"
                     value={amount}
                     onChange={e => setAmount(e.target.value)}
-                    className="h-11 flex-1 rounded-md border border-zinc-300 bg-white px-3 font-mono text-sm focus:border-zinc-900 focus:outline-none"
+                    className="h-11 flex-1 rounded-md border border-zinc-700 bg-zinc-900 px-3 font-mono text-sm focus:border-zinc-900 focus:outline-none"
                     placeholder="0.00"
                   />
                   {PRESETS.map(p => (
@@ -291,7 +346,7 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
                         'h-11 min-w-[44px] rounded-md border px-3 font-mono text-xs',
                         amount === p
                           ? 'border-zinc-900 bg-zinc-900 text-white'
-                          : 'border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50',
+                          : 'border-zinc-800 bg-zinc-900 text-zinc-400 hover:bg-zinc-900',
                       ].join(' ')}
                     >
                       {p}
@@ -318,7 +373,7 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
                 </p>
               )}
               {error && (
-                <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
+                <div className="rounded-md border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-300">
                   {error}
                 </div>
               )}
@@ -329,7 +384,7 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
               )}
             </div>
 
-            <div className="border-t border-zinc-200 bg-white px-5 py-4">
+            <div className="border-t border-zinc-800 bg-zinc-900 px-5 py-4">
               {!connected ? (
                 <button
                   type="button"
