@@ -16,6 +16,7 @@ import {
 import { CountdownTimer } from './CountdownTimer'
 import { SourceIcon } from './SourceIcon'
 import FaucetButton from './FaucetButton'
+import { MyPositions } from './MyPositions'
 import type { Side } from './MarketRow'
 
 // Right rail. Sticky. The bet ticket — same logic as the bottom sheet,
@@ -54,28 +55,31 @@ export interface BetTicketProps {
 export function BetTicket({ slot, side, onSideChange, className = '' }: BetTicketProps) {
   if (!slot) {
     return (
-      <aside
-        className={[
-          'rounded-md border border-dashed border-zinc-300 bg-white p-6',
-          className,
-        ].join(' ')}
-        aria-label="Bet ticket"
-      >
-        <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500">
-          ticket
-        </p>
-        <p className="mt-2 text-[13px] text-zinc-600">pick a market to bet.</p>
-      </aside>
+      <div className={['flex flex-col gap-3', className].join(' ')}>
+        <MyPositions />
+        <aside
+          className="rounded-md border border-dashed border-zinc-300 bg-white p-6"
+          aria-label="Bet ticket"
+        >
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500">
+            ticket
+          </p>
+          <p className="mt-2 text-[13px] text-zinc-600">pick a market to bet.</p>
+        </aside>
+      </div>
     )
   }
 
   return (
-    <BetTicketActive
-      slot={slot}
-      side={side}
-      onSideChange={onSideChange}
-      className={className}
-    />
+    <div className={['flex flex-col gap-3', className].join(' ')}>
+      <MyPositions />
+      <BetTicketActive
+        slot={slot}
+        side={side}
+        onSideChange={onSideChange}
+        className=""
+      />
+    </div>
   )
 }
 

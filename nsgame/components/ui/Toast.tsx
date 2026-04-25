@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 
+// Public type kept intact for ToastContext compatibility. Visually
+// 'warning' folds into 'info' — three tones, not four.
 export type ToastType = 'success' | 'error' | 'info' | 'warning'
 
 export interface ToastData {
@@ -21,60 +23,88 @@ interface ToastProps {
   onDismiss: (id: string) => void
 }
 
+const EXIT_MS = 200
+
+// Map four exposed tones to three rendered tones. Warning is not a thing
+// the eye needs — calmness already implies caution.
+function visualTone(type: ToastType): 'success' | 'error' | 'info' {
+  if (type === 'success') return 'success'
+  if (type === 'error') return 'error'
+  return 'info'
+}
+
+const ACCENT: Record<'success' | 'error' | 'info', string> = {
+  success: 'bg-emerald-500',
+  error: 'bg-rose-500',
+  info: 'bg-zinc-400',
+}
+
+const PROGRESS: Record<'success' | 'error' | 'info', string> = {
+  success: 'bg-emerald-500/60',
+  error: 'bg-rose-500/60',
+  info: 'bg-zinc-400/60',
+}
+
+const LINK: Record<'success' | 'error' | 'info', string> = {
+  success: 'text-emerald-700',
+  error: 'text-rose-700',
+  info: 'text-zinc-700',
+}
+
 /**
- * Individual toast notification component
- * Institutional style: white card with colored left accent bar
+ * Single toast. Slides up, lingers, leaves. A hairline accent on the left
+ * tells you the temperature without shouting; a 1px line at the bottom
+ * counts down what is left of its life.
  */
 export function Toast({ toast, onDismiss }: ToastProps) {
   const t = useTranslations('common')
   const [isExiting, setIsExiting] = useState(false)
   const [isVisible, setIsVisible] = useState(false)
+  const duration = toast.duration ?? 5000
+  const tone = visualTone(toast.type)
 
   useEffect(() => {
-    const duration = toast.duration ?? 5000
     const timer = setTimeout(() => {
       setIsExiting(true)
-      setTimeout(() => onDismiss(toast.id), 300)
+      setTimeout(() => onDismiss(toast.id), EXIT_MS)
     }, duration)
-
     return () => clearTimeout(timer)
-  }, [toast.id, toast.duration, onDismiss])
+  }, [toast.id, duration, onDismiss])
 
-  // Entrance animation, invisible on mount, visible on next frame
+  // Entrance: invisible on mount, visible next frame.
   useEffect(() => {
-    requestAnimationFrame(() => setIsVisible(true))
+    const id = requestAnimationFrame(() => setIsVisible(true))
+    return () => cancelAnimationFrame(id)
   }, [])
 
   const handleDismiss = () => {
     setIsExiting(true)
-    setTimeout(() => onDismiss(toast.id), 300)
+    setTimeout(() => onDismiss(toast.id), EXIT_MS)
   }
-
-  const accentBar = {
-    success: 'border-l-color-up',
-    error: 'border-l-color-down',
-    warning: 'border-l-color-warning',
-    info: 'border-l-zinc-400',
-  }[toast.type]
-
-  const iconColor = {
-    success: 'text-color-up',
-    error: 'text-color-down',
-    warning: 'text-color-warning',
-    info: 'text-zinc-500',
-  }[toast.type]
 
   return (
     <div
+      role="alert"
       className={`
-        bg-card border border-border-light ${accentBar} border-l-4 text-text-primary p-4 rounded-xl shadow-card
-        transition-all duration-300 ease-in-out
-        ${isExiting ? 'opacity-0 translate-x-4 scale-[0.97]' : isVisible ? 'opacity-100 translate-x-0 scale-100' : 'opacity-0 translate-x-6 scale-[0.97]'}
+        relative overflow-hidden
+        bg-white border border-zinc-200/70 rounded-xl shadow-sm
+        motion-safe:transition-all motion-safe:duration-200 ease-out
+        ${isExiting
+          ? 'opacity-0 translate-y-1'
+          : isVisible
+          ? 'opacity-100 translate-y-0'
+          : 'opacity-0 translate-y-2'}
       `}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1">
-          <p className={toast.type === 'error' ? 'text-color-down' : 'text-text-primary'}>
+      {/* Hairline left-edge accent. 2px. Quiet. */}
+      <span
+        aria-hidden="true"
+        className={`absolute inset-y-0 left-0 w-[2px] ${ACCENT[tone]}`}
+      />
+
+      <div className="flex items-start justify-between gap-3 pl-4 pr-3 py-3">
+        <div className="flex-1 min-w-0">
+          <p className="text-[13px] leading-snug text-zinc-800">
             {toast.message}
           </p>
           {toast.link && (
@@ -82,21 +112,22 @@ export function Toast({ toast, onDismiss }: ToastProps) {
               href={toast.link.url}
               target="_blank"
               rel="noopener noreferrer"
-              className={`mt-1 inline-block text-sm ${iconColor} underline hover:opacity-80`}
+              className={`mt-1 inline-block text-[12px] underline-offset-4 hover:underline ${LINK[tone]}`}
             >
               {toast.link.text}
             </a>
           )}
         </div>
         <button
+          type="button"
           onClick={handleDismiss}
-          className="text-text-muted hover:text-text-primary transition-colors"
+          className="text-zinc-400 hover:text-zinc-700 transition-colors"
           aria-label={t('aria.dismiss')}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
+            width="14"
+            height="14"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -109,6 +140,18 @@ export function Toast({ toast, onDismiss }: ToastProps) {
           </svg>
         </button>
       </div>
+
+      {/* Auto-dismiss progress. 1px line. Width transitions to zero across
+          the toast's lifetime. CSS transition, not keyframes — no global
+          stylesheet touched. */}
+      <span
+        aria-hidden="true"
+        className={`absolute bottom-0 left-0 h-px ${PROGRESS[tone]} motion-safe:transition-[width] ease-linear`}
+        style={{
+          width: isVisible && !isExiting ? '0%' : '100%',
+          transitionDuration: `${duration}ms`,
+        }}
+      />
     </div>
   )
 }
@@ -119,19 +162,21 @@ interface ToastContainerProps {
 }
 
 /**
- * Container for rendering multiple toast notifications
+ * Stack of toasts. 8px gap. Bottom-right anchor.
  */
 export function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
   if (toasts.length === 0) return null
 
   return (
     <div
-      className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm"
+      className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 w-full max-w-sm pointer-events-none"
       role="status"
       aria-live="polite"
     >
       {toasts.map((toast) => (
-        <Toast key={toast.id} toast={toast} onDismiss={onDismiss} />
+        <div key={toast.id} className="pointer-events-auto">
+          <Toast toast={toast} onDismiss={onDismiss} />
+        </div>
       ))}
     </div>
   )

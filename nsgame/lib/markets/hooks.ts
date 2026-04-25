@@ -30,6 +30,8 @@ import { generateSlots, type UpcomingSlot } from './slots'
 // Re-export so consumers can import from a single module.
 export type { UpcomingSlot } from './slots'
 export type { CatalogEntry } from './catalog'
+export type { UserPosition, PositionState } from './positions'
+export { useUserPositions } from './positions'
 
 export interface MarketState {
   totalYes: bigint
