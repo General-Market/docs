@@ -1,15 +1,18 @@
 'use client'
 
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   type UpcomingSlot,
   useUpcomingSlots,
   useMarketStatesBatch,
 } from '@/lib/markets/hooks'
 import { MarketRow, type Side } from './MarketRow'
+import { MarketRowSkeleton } from './MarketRowSkeleton'
 import { CountdownTickProvider, useNowSecs } from './CountdownTimer'
 import type { SourceFilter, HorizonFilter } from './FilterBar'
 import type { StatusFilter } from './CategorySidebar'
+
+const SKELETON_COUNT = 6
 
 // Center column. A list of fat market rows. Replaces the seven-column
 // calendar on the home page; the calendar still exists for any nostalgic
@@ -75,7 +78,26 @@ function MarketListInner({
   // per-source counts that don't oscillate as status toggles flip.
   useNotifyParent(slots, onSlotsChange)
 
+  // Hydration gate. Until the first effect tick fires we cannot trust
+  // `slots.length === 0` to mean "empty" — it might just mean "not yet
+  // computed on the client". Render skeletons in that window.
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => { setMounted(true) }, [])
+
   const liveCount = filteredSlots.length
+
+  if (!mounted) {
+    return (
+      <section aria-label="Markets" className="min-w-0">
+        <Heading liveCount={0} />
+        <div className="space-y-2.5">
+          {Array.from({ length: SKELETON_COUNT }).map((_, i) => (
+            <MarketRowSkeleton key={i} />
+          ))}
+        </div>
+      </section>
+    )
+  }
 
   if (slots.length > 0 && filteredSlots.length === 0) {
     return (
@@ -98,7 +120,7 @@ function MarketListInner({
   return (
     <section aria-label="Markets" className="min-w-0">
       <Heading liveCount={liveCount} />
-      <div className="space-y-2.5">
+      <FadeIn className="space-y-2.5">
         {filteredSlots.map(slot => (
           <MarketRow
             key={`${slot.catalogId}:${slot.closeTime}`}
@@ -109,8 +131,36 @@ function MarketListInner({
             onSelectSide={onSelectSide}
           />
         ))}
-      </div>
+      </FadeIn>
     </section>
+  )
+}
+
+// Fade rows in once. A double-RAF flips opacity 0 → 1 after the browser
+// has committed the initial paint — without it the transition collapses
+// into a single frame and the user sees no fade at all.
+function FadeIn({ children, className }: { children: React.ReactNode; className?: string }) {
+  const [visible, setVisible] = useState(false)
+  useEffect(() => {
+    let raf2 = 0
+    const raf1 = window.requestAnimationFrame(() => {
+      raf2 = window.requestAnimationFrame(() => setVisible(true))
+    })
+    return () => {
+      window.cancelAnimationFrame(raf1)
+      if (raf2) window.cancelAnimationFrame(raf2)
+    }
+  }, [])
+  return (
+    <div
+      className={[
+        'transition-opacity duration-200',
+        visible ? 'opacity-100' : 'opacity-0',
+        className ?? '',
+      ].join(' ')}
+    >
+      {children}
+    </div>
   )
 }
 
