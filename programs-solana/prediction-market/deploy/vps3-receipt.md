@@ -132,3 +132,105 @@ Hex-dump verified for id=1: bytes 0x0c-0x13 read `tubes_xv`. Script: `programs-s
 
 - nsgame data-node binary on VPS 3 — not yet built. The oracle's `DATA_NODE_URL` still points at the financial data-node. First call to `close_market` will fail with a 405 from the wrong host until the new instance is up.
 - Frontend ↔ Postgres — same as before. Phase 0 SSH tunnel for local dev; Phase 1 Dokploy deferred.
+
+---
+
+## 2026-04-25 (later) — nsgame data-node live, oracle re-targeted
+
+### Postgres
+
+| Item | Value |
+|---|---|
+| Role | `nsgame_dn` |
+| Database | `nsgame_data_node` |
+| Listener | `127.0.0.1:5432` |
+| Password file | `/root/.secrets/nsgame_dn.pw` (mode 0600) |
+| Schema | 37 tables (legacy 001–028 applied manually + 029_market_prices_perf via runner) |
+
+The data-node binary's runner pre-seeds 001–027 in `_applied_migrations` (`data-node/src/db.rs:17`), assuming they ran via `sqlx::migrate!()` against an existing financial DB. On a fresh database, the runner skips them and starts at 028 — but the tables they would have created don't exist. Fix: ran 001–029 manually with `psql -f` from `/tmp/nsgame-migrations/`, then `ALTER TABLE … OWNER TO nsgame_dn` on every public table so the binary's later `CREATE INDEX` calls succeed.
+
+### Binary
+
+| Item | Value |
+|---|---|
+| Path | `/usr/local/bin/nsgame-data-node` |
+| Source | `/root/index/data-node` (rsync'd from local mono) |
+| Build | `cargo build --release --bin data-node` on VPS 3 — 6m 33s, zero errors |
+| Workspace | `/root/index/Cargo.toml` trimmed to `[common, data-node]` only |
+| Patch | mono `b677b724` — `SOURCE_ALLOWLIST` env + tube dispatch in `source_price` |
+
+### Env file `/etc/nsgame-data-node.env` (mode 0600)
+
+```
+SOURCE_ALLOWLIST=tubes,chaturbate
+SF_MODE=1
+TUBES_ENABLED=1
+DATABASE_URL=postgres://nsgame_dn:<pw>@127.0.0.1:5432/nsgame_data_node
+DATA_NODE_PORT=8201
+DATA_NODE_ASSETS_FILE=/var/lib/nsgame-data-node/assets.json   # stub: []
+DATA_NODE_SYMBOL_MAP=/var/lib/nsgame-data-node/symbol-map.json # stub: {}
+INDEX_RPC_URL=http://127.0.0.1:1                              # dead-end — nsgame is not L3
+INDEX_ADDRESS=0x0000000000000000000000000000000000000000      # placeholder
+DEPLOYMENT_FILE=/root/index/deployments/active-deployment.json
+MORPHO_DEPLOYMENT_FILE=/root/index/deployments/morpho-e2e.json
+BITGET_READONLY_API_KEY=…                                     # required by startup guard, not exercised
+BITGET_READONLY_API_SECRET=…
+BITGET_READONLY_PASSPHRASE=…
+RUST_LOG=info
+```
+
+`SF_MODE=1` is the project's pre-existing toggle for "tubes + chaturbate only" (per `data-node/src/helpers.rs:24` and `docker/sfdata-node/README.md`). Layered on top of the new `SOURCE_ALLOWLIST` from commit `b677b724` — both trip the same skip path.
+
+### Systemd unit `/etc/systemd/system/nsgame-data-node.service`
+
+```
+[Unit]
+Description=nsgame data-node (tube + chaturbate only, SF_MODE)
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+EnvironmentFile=/etc/nsgame-data-node.env
+WorkingDirectory=/root/index
+ExecStart=/usr/local/bin/nsgame-data-node serve --port 8201
+Restart=on-failure
+RestartSec=10
+StateDirectory=nsgame-data-node
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Hardening flags `ProtectSystem=strict` and `ProtectHome=true` were dropped — `ProtectHome=true` makes `/root` unreachable, which broke `WorkingDirectory`. Acceptable for a process that only reads from the local DB and writes to its own state dir.
+
+### First-cycle smoke
+
+| Check | Result |
+|---|---|
+| `systemctl is-active nsgame-data-node` | `active` |
+| Tube collector boot | `[Tube Pornstar Views] Initial asset sync: 46 assets` across 4 sites |
+| First DB write | `[BatchWriter] Flushed 12 prices (12 inserted)` (eporner + pornhub stars) |
+| `curl 127.0.0.1:8201/v1/sources/3/price` | `{"price":"373000000","ts":...}` (tubes_ph aggregate) |
+| `curl 127.0.0.1:8201/v1/sources/5/price` | `{"price":"2031448279","ts":...}` (tubes_ep aggregate) |
+| `curl 127.0.0.1:8201/v1/sources/1/price` | 503 — xvideos listing refresh returned 0 stars on first cycle |
+| `curl 127.0.0.1:8201/v1/sources/4/price` | 503 — chaturbate has no `CHATURBATE_WM` set |
+
+### Oracle re-target
+
+```
+sed -i 's|^DATA_NODE_URL=.*|DATA_NODE_URL=http://127.0.0.1:8201|' /etc/prediction-oracle.env
+systemctl restart prediction-oracle
+```
+
+Boot verified: identity, balance check, stake mint resolution, scheduler started. The L3-RPC 405 errors that would hit `close_market` are gone — the URL now answers in JSON.
+
+### What is NOT done
+
+- xvideos and xnxx scrapers returned 0 stars on first cycle. Sources 1 and 2 keep returning 503 until that resolves (scraper IP reputation, retry).
+- Chaturbate (`source_id=4`) has no affiliate ID — collector skips. Source 4 returns 503.
+- No bet has been placed end-to-end yet. The oracle CAN now fetch a price; nothing has asked it to.
+- nsgame frontend ↔ indexer Postgres — Phase 0 SSH tunnel documented, not yet exercised.
