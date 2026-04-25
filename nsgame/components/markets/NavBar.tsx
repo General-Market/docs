@@ -74,7 +74,7 @@ export function NavBar({
             width={120}
             height={32}
             priority
-            className="h-5 w-auto invert"
+            className="h-5 w-auto"
           />
         </a>
 

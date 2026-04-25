@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 96" role="img" aria-label="nsgame">
-  <g fill="#0F0F10" shape-rendering="crispEdges">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 372 96" role="img" aria-label="nsgame">
+  <g fill="#FAFAFA" shape-rendering="crispEdges">
     <!-- n -->
     <rect x="0"   y="12" width="48" height="12"/>
     <rect x="0"   y="24" width="12" height="48"/>
@@ -34,6 +34,6 @@
     <rect x="292" y="36" width="36" height="12"/>
     <rect x="292" y="60" width="48" height="12"/>
   </g>
-  <!-- period: brand accent -->
-  <rect x="348" y="60" width="12" height="12" fill="#06B6D4" shape-rendering="crispEdges"/>
+  <!-- period: 24×24 red anchor on baseline -->
+  <rect x="348" y="48" width="24" height="24" fill="#DC2626" shape-rendering="crispEdges"/>
 </svg>
