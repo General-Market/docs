@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use std::sync::OnceLock;
 
 use tracing::info;
 
@@ -26,6 +27,30 @@ pub(crate) fn sf_mode() -> bool {
     matches!(std::env::var("SF_MODE").ok().as_deref(), Some("1"))
 }
 
+/// Comma-separated allowlist of `MarketDataSource::source_id()` strings.
+/// When unset or empty, every source is allowed (legacy behaviour). When
+/// non-empty, only sources whose name appears in the list are spawned.
+/// Whitespace around entries is trimmed; empty entries are ignored.
+fn source_allowlist() -> Option<&'static HashSet<String>> {
+    static CACHE: OnceLock<Option<HashSet<String>>> = OnceLock::new();
+    CACHE
+        .get_or_init(|| {
+            let raw = std::env::var("SOURCE_ALLOWLIST").ok()?;
+            let set: HashSet<String> = raw
+                .split(',')
+                .map(|s| s.trim())
+                .filter(|s| !s.is_empty())
+                .map(|s| s.to_string())
+                .collect();
+            if set.is_empty() {
+                None
+            } else {
+                Some(set)
+            }
+        })
+        .as_ref()
+}
+
 /// Spawn a source with panic recovery. If `SF_MODE=1` is set and the source
 /// is not in `SF_MODE_ALLOWED`, the spawn is skipped entirely — no task is
 /// created, no futures run, no restart loop spins. This is what isolates
@@ -42,6 +67,12 @@ where
     if sf_mode() && !SF_MODE_ALLOWED.contains(&name) {
         info!("[{}] skipped (SF_MODE: not in allow-list)", name);
         return;
+    }
+    if let Some(allow) = source_allowlist() {
+        if !allow.contains(name) {
+            info!("[{}] skipped (SOURCE_ALLOWLIST: not in allow-list)", name);
+            return;
+        }
     }
     tokio::spawn(async move {
         let mut restart_count = 0u32;

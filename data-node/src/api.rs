@@ -2471,10 +2471,11 @@ async fn fast_prices_by_address(
 // `upsert_source`. Response shape is fixed by the daemon's deserializer:
 // `{ "price": "<u128 decimal>", "ts": <epoch_seconds> }`.
 //
-// The price is scaled to 1e18 decimals. We serialize u128 as a decimal
-// string — serde_json's default Number cannot hold values above 2^53
-// without the `arbitrary_precision` feature, and the daemon's feed
-// deserializer accepts strings natively.
+// Ids 1–5 currently map to tube-site signals (xvideos, xnxx, pornhub,
+// chaturbate, eporner — see `nsgame/docs/source-id-mapping.md`). The
+// returned price is the SUM of the freshest per-asset values inside the
+// site's prefix — raw integer view counts, not 1e18-scaled USD. Ids
+// without a registered handler return 404.
 
 #[derive(Serialize)]
 struct SourcePriceResponse {
@@ -2484,38 +2485,34 @@ struct SourcePriceResponse {
     ts: i64,
 }
 
-/// Map the numeric source_id used by the Solana oracle daemon to the
-/// Bitget symbol the data-node indexes internally. Extend as more sources
-/// are registered on-chain via `upsert_source`.
-fn source_id_to_symbol(source_id: u32) -> Option<&'static str> {
+/// Tube-site dispatch: maps the on-chain `source_id` to the
+/// `(market_prices_latest.source, asset_id prefix)` pair the canonical
+/// signal is aggregated over. See `nsgame/docs/source-id-mapping.md`.
+///
+/// The price returned by `source_price` for these ids is the **sum of the
+/// freshest `value` rows** across every asset whose `asset_id` begins with
+/// the given prefix. Tube collectors emit one asset per performer/model;
+/// the on-chain feed is one number per site. Summing total view counts
+/// is monotonically increasing, deterministic, and survives individual
+/// performers churning in and out of the cache. See open-question §10
+/// in `nsgame/docs/data-node-spec.md` — if a per-site canonical asset
+/// is later preferred, narrow the prefix to that single asset_id.
+fn source_id_to_tube(source_id: u32) -> Option<(&'static str, &'static str)> {
     match source_id {
-        1 => Some("BTCUSDT"),
-        2 => Some("ETHUSDT"),
-        3 => Some("SOLUSDT"),
+        1 => Some(("tubes", "tubes_xvideos_star_")),
+        2 => Some(("tubes", "tubes_xnxx_star_")),
+        3 => Some(("tubes", "tubes_pornhub_star_")),
+        4 => Some(("chaturbate", "cb_model_")),
+        5 => Some(("tubes", "tubes_eporner_star_")),
         _ => None,
     }
-}
-
-/// Scale a USD f64 price to u128 with 1e18 precision, saturating on overflow.
-/// Negative and non-finite values collapse to 0 — the chain does not
-/// negotiate with NaN.
-fn scale_price_1e18(price_usd: f64) -> u128 {
-    if !price_usd.is_finite() || price_usd <= 0.0 {
-        return 0;
-    }
-    let scaled = price_usd * 1e18_f64;
-    // f64 can represent u128::MAX only approximately; clamp defensively.
-    if scaled >= u128::MAX as f64 {
-        return u128::MAX;
-    }
-    scaled as u128
 }
 
 async fn source_price(
     AxumPath(source_id): AxumPath<u32>,
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<SourcePriceResponse>, (StatusCode, Json<ErrorResponse>)> {
-    let symbol = source_id_to_symbol(source_id).ok_or_else(|| {
+    let (source, prefix) = source_id_to_tube(source_id).ok_or_else(|| {
         (
             StatusCode::NOT_FOUND,
             Json(ErrorResponse {
@@ -2524,44 +2521,60 @@ async fn source_price(
         )
     })?;
 
-    // Prefer the live cache — it holds the freshest tick and a real
-    // observation timestamp. Fall back to DB (prices + klines) for symbols
-    // that slipped out of the poller window.
-    let (price_str, ts_secs) = {
-        let live = state.live_cache.get_prices(&[symbol]).await;
-        if let Some(ticker) = live.get(symbol) {
-            (
-                ticker.last_price.clone(),
-                (ticker.timestamp_ms / 1000) as i64,
-            )
-        } else {
-            let rows = db::query_freshest_prices_batch(&state.pool, &[symbol])
-                .await
-                .map_err(|e| db_error(e))?;
-            match rows.into_iter().next() {
-                Some(row) => (row.price, row.fetched_at.timestamp()),
-                None => {
-                    return Err((
-                        StatusCode::SERVICE_UNAVAILABLE,
-                        Json(ErrorResponse {
-                            error: format!(
-                                "No price observation available for source_id {} ({})",
-                                source_id, symbol
-                            ),
-                        }),
-                    ));
-                }
-            }
+    // Aggregate the freshest `value` per asset (already a single row in
+    // market_prices_latest), summed across every asset_id starting with
+    // the prefix. MAX(fetched_at) is the freshest contributing tick — the
+    // oracle's `ts` field. Values are integers (raw view counts); we
+    // saturate to u128::MAX defensively if the sum overflows.
+    let row: Option<(rust_decimal::Decimal, DateTime<Utc>)> = sqlx::query_as(
+        r#"
+        SELECT COALESCE(SUM(value), 0)::numeric AS total,
+               COALESCE(MAX(fetched_at), NOW())  AS ts
+        FROM market_prices_latest
+        WHERE source = $1 AND asset_id LIKE $2
+        "#,
+    )
+    .bind(source)
+    .bind(format!("{}%", prefix))
+    .fetch_optional(&state.pool)
+    .await
+    .map_err(db_error)?;
+
+    let (total, fetched_at) = match row {
+        Some((t, ts)) if t > rust_decimal::Decimal::ZERO => (t, ts),
+        _ => {
+            return Err((
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(ErrorResponse {
+                    error: format!(
+                        "No price observation available for source_id {} ({} / {}*)",
+                        source_id, source, prefix
+                    ),
+                }),
+            ));
         }
     };
 
-    let price_f64: f64 = price_str.parse().unwrap_or(0.0);
-    let price_u128 = scale_price_1e18(price_f64);
+    let price_u128 = decimal_to_u128_saturating(&total);
 
     Ok(Json(SourcePriceResponse {
         price: price_u128.to_string(),
-        ts: ts_secs,
+        ts: fetched_at.timestamp(),
     }))
+}
+
+/// Saturating cast: tube view counts are raw integers, already at the
+/// resolution the oracle daemon expects (no 1e18 scaling — these are not
+/// USD prices). Negative or non-integer fractional parts are truncated.
+fn decimal_to_u128_saturating(d: &rust_decimal::Decimal) -> u128 {
+    if d.is_sign_negative() {
+        return 0;
+    }
+    // Decimal's mantissa is i128 with a scale; multiplying away the scale
+    // would overflow on huge sums. We round to integer first, then go via
+    // string to dodge the i128 bound.
+    let truncated = d.trunc();
+    truncated.to_string().parse::<u128>().unwrap_or(u128::MAX)
 }
 
 // ---- /itp-bid-ask ----
@@ -7775,51 +7788,33 @@ async fn sources_registry(State(state): State<Arc<AppState>>) -> Json<serde_json
 
 #[cfg(test)]
 mod source_price_tests {
-    use super::{scale_price_1e18, source_id_to_symbol, SourcePriceResponse};
+    use super::{decimal_to_u128_saturating, source_id_to_tube, SourcePriceResponse};
+    use rust_decimal::Decimal;
+    use std::str::FromStr;
 
     #[test]
-    fn maps_known_ids() {
-        assert_eq!(source_id_to_symbol(1), Some("BTCUSDT"));
-        assert_eq!(source_id_to_symbol(2), Some("ETHUSDT"));
-        assert_eq!(source_id_to_symbol(3), Some("SOLUSDT"));
+    fn maps_tube_ids() {
+        assert_eq!(source_id_to_tube(1), Some(("tubes", "tubes_xvideos_star_")));
+        assert_eq!(source_id_to_tube(2), Some(("tubes", "tubes_xnxx_star_")));
+        assert_eq!(source_id_to_tube(3), Some(("tubes", "tubes_pornhub_star_")));
+        assert_eq!(source_id_to_tube(4), Some(("chaturbate", "cb_model_")));
+        assert_eq!(source_id_to_tube(5), Some(("tubes", "tubes_eporner_star_")));
     }
 
     #[test]
     fn rejects_unknown_id() {
-        assert_eq!(source_id_to_symbol(0), None);
-        assert_eq!(source_id_to_symbol(4), None);
-        assert_eq!(source_id_to_symbol(u32::MAX), None);
+        assert_eq!(source_id_to_tube(0), None);
+        assert_eq!(source_id_to_tube(6), None);
+        assert_eq!(source_id_to_tube(u32::MAX), None);
     }
 
     #[test]
-    fn scales_one_to_1e18() {
-        assert_eq!(scale_price_1e18(1.0), 1_000_000_000_000_000_000u128);
-    }
-
-    #[test]
-    fn scales_typical_btc_price() {
-        // 65_000.0 USD → 6.5e22. f64 precision at this magnitude is ~8M,
-        // so we accept the cast being within 1e7 of the exact value.
-        let got = scale_price_1e18(65_000.0);
-        let want = 65_000u128 * 1_000_000_000_000_000_000u128;
-        let diff = if got > want { got - want } else { want - got };
-        assert!(diff < 10_000_000, "diff too large: got={} want={}", got, want);
-    }
-
-    #[test]
-    fn zero_and_negative_collapse_to_zero() {
-        assert_eq!(scale_price_1e18(0.0), 0);
-        assert_eq!(scale_price_1e18(-1.0), 0);
-        assert_eq!(scale_price_1e18(f64::NAN), 0);
-        assert_eq!(scale_price_1e18(f64::NEG_INFINITY), 0);
-    }
-
-    #[test]
-    fn saturates_on_overflow() {
-        assert_eq!(scale_price_1e18(f64::INFINITY), 0); // non-finite → 0
-        // A price so large that price * 1e18 exceeds u128::MAX saturates.
-        let huge = 1e24_f64; // 1e24 * 1e18 = 1e42, far above u128::MAX (~3.4e38)
-        assert_eq!(scale_price_1e18(huge), u128::MAX);
+    fn decimal_truncates_and_saturates() {
+        assert_eq!(decimal_to_u128_saturating(&Decimal::ZERO), 0);
+        assert_eq!(decimal_to_u128_saturating(&Decimal::from(-5)), 0);
+        assert_eq!(decimal_to_u128_saturating(&Decimal::from(42)), 42);
+        let big = Decimal::from_str("123456789012345678901234567890").unwrap();
+        assert_eq!(decimal_to_u128_saturating(&big), 123_456_789_012_345_678_901_234_567_890u128);
     }
 
     #[test]
