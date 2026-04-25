@@ -144,9 +144,10 @@ contract DeployFullSystemE2E is DeployBLSHelper {
 
     function _deployTokens() internal {
         console.log("Phase 1: Deploy Tokens");
-        // Reuse existing L3_WUSDC if env var set (preserves Vision's immutable USDC binding)
+        // Reuse existing L3_WUSDC ONLY on L3 chain (Vision binds it as immutable there).
+        // On Sonic the L3 address has no code and `decimals()` would revert.
         address existingL3Wusdc = vm.envOr("EXISTING_L3_WUSDC", address(0));
-        if (existingL3Wusdc != address(0)) {
+        if (existingL3Wusdc != address(0) && block.chainid == CHAIN_ID) {
             l3Wusdc = existingL3Wusdc;
             console.log("  L3_WUSDC (REUSED, 18 dec):", l3Wusdc);
         } else {
@@ -177,9 +178,10 @@ contract DeployFullSystemE2E is DeployBLSHelper {
 
     function _deployRegistries() internal {
         console.log("Phase 3: Deploy Registries");
-        // Reuse existing OracleRegistry if env var set (Vision pins it as immutable)
+        // Reuse existing OracleRegistry ONLY on L3 (Vision pins it as immutable there).
+        // On Sonic, deploy a fresh one.
         address existingRegistry = vm.envOr("EXISTING_ORACLE_REGISTRY", address(0));
-        if (existingRegistry != address(0)) {
+        if (existingRegistry != address(0) && block.chainid == CHAIN_ID) {
             oracleRegistry = existingRegistry;
             console.log("  OracleRegistry (REUSED):", oracleRegistry);
         } else {
@@ -280,7 +282,7 @@ contract DeployFullSystemE2E is DeployBLSHelper {
         // When reusing an existing OracleRegistry, do NOT call setGovernance — Vision
         // shares this registry and a governance swap would invalidate any cached references.
         address registryAdmin = OracleRegistry(oracleRegistry).governance().admin();
-        bool reusingRegistry = vm.envOr("EXISTING_ORACLE_REGISTRY", address(0)) != address(0);
+        bool reusingRegistry = vm.envOr("EXISTING_ORACLE_REGISTRY", address(0)) != address(0) && block.chainid == CHAIN_ID;
         if (registryAdmin != admin) {
             if (reusingRegistry) {
                 console.log("  WARNING: reused OracleRegistry has admin mismatch - refusing to setGovernance (Vision shares this registry)");
@@ -310,7 +312,8 @@ contract DeployFullSystemE2E is DeployBLSHelper {
         console.log("Phase 7: Register 3 Oracles");
 
         // Reused OracleRegistry already has these oracles registered; addOracle() reverts on duplicate.
-        if (vm.envOr("EXISTING_ORACLE_REGISTRY", address(0)) != address(0)) {
+        // Only applies on L3 — Sonic always deploys fresh.
+        if (vm.envOr("EXISTING_ORACLE_REGISTRY", address(0)) != address(0) && block.chainid == CHAIN_ID) {
             uint256 existingCount = OracleRegistry(oracleRegistry).activeOracleCount();
             console.log("  Skipping oracle registration (reused registry already has oracles, count =", existingCount, ")");
             return;
