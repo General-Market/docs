@@ -43,8 +43,8 @@ function formatRemaining(secs: number): string {
   const hours = Math.floor((secs % 86_400) / 3600)
   const mins = Math.floor((secs % 3600) / 60)
   const ss = secs % 60
-  if (days > 0) return `${days}d ${hours}h`
-  if (hours > 0) return `${hours}h ${mins}m`
+  if (days > 0) return `${days}d ${hours}h ${mins}m`
+  if (hours > 0) return `${hours}h ${mins}m ${ss}s`
   if (mins > 0) return `${mins}m ${ss}s`
   return `0:${ss.toString().padStart(2, '0')}`
 }
