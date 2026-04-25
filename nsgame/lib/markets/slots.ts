@@ -116,49 +116,80 @@ export function generateSlots(opts: GenerateSlotsOpts): UpcomingSlot[] {
 
   for (const entry of catalog) {
     if (board !== 'all' && entry.board !== board) continue
-    if (entry.closeOffsetSecs <= 0) continue
+    if (entry.windowSecs <= 0) continue
 
-    // First close: snap up so the program's `closeTime - now >= 10` and
-    // 60s-grid invariants both hold.
-    const firstClose = snapUpToMinute(nowSecs + entry.closeOffsetSecs)
+    // PvP cohort alignment. There is exactly one live market per pair:
+    // the current cohort. Cohort end = next windowSecs boundary from
+    // wall-clock now. The program-side cohort_rotation_worker uses the
+    // same arithmetic, so the PDA derived here matches the one the
+    // oracle settles. Past cohorts are resolved; future cohorts do
+    // not exist on chain until the next rotation.
     const settleDelta = entry.settleOffsetSecs - entry.closeOffsetSecs
+    const cohortEnd = Math.ceil(nowSecs / entry.windowSecs) * entry.windowSecs
+    if (cohortEnd <= nowSecs) continue
+    if (cohortEnd > horizonSecs) continue
 
-    let count = 0
-    for (let close = firstClose; close <= horizonSecs; close += entry.closeOffsetSecs) {
-      if (close % 60 !== 0) continue
-      const settle = close + settleDelta
-      const pda = deriveMarketPdaSync(programId, {
-        sourceId: entry.sourceId,
-        closeTime: close,
-        settlementTime: settle,
-        thresholdBps: entry.thresholdBps,
-      })
-      out.push({
-        catalogId: entry.id,
-        sourceId: entry.sourceId,
-        sourceName: entry.sourceName,
-        label: entry.label,
-        description: entry.description,
-        thresholdBps: entry.thresholdBps,
-        pairIndex: entry.pairIndex,
-        board: entry.board,
-        format: entry.format,
-        displayA: entry.displayA,
-        displayB: entry.displayB,
-        slugA: entry.slugA,
-        slugB: entry.slugB,
-        audienceA: entry.audienceA,
-        audienceB: entry.audienceB,
-        windowSecs: entry.windowSecs,
-        closeTime: close,
-        settlementTime: settle,
-        marketPda: pda.toBase58(),
-      })
-      count++
-      if (count >= maxSlotsPerEntry) break
-    }
+    const close = cohortEnd
+    if (close % 60 !== 0) continue
+    const settle = close + settleDelta
+    const pda = deriveMarketPdaSync(programId, {
+      sourceId: entry.sourceId,
+      closeTime: close,
+      settlementTime: settle,
+      thresholdBps: entry.thresholdBps,
+    })
+    out.push({
+      catalogId: entry.id,
+      sourceId: entry.sourceId,
+      sourceName: entry.sourceName,
+      label: entry.label,
+      description: entry.description,
+      thresholdBps: entry.thresholdBps,
+      pairIndex: entry.pairIndex,
+      board: entry.board,
+      format: entry.format,
+      displayA: entry.displayA,
+      displayB: entry.displayB,
+      slugA: entry.slugA,
+      slugB: entry.slugB,
+      audienceA: entry.audienceA,
+      audienceB: entry.audienceB,
+      windowSecs: entry.windowSecs,
+      closeTime: close,
+      settlementTime: settle,
+      marketPda: pda.toBase58(),
+    })
+    void maxSlotsPerEntry
   }
 
-  out.sort((a, b) => a.closeTime - b.closeTime)
-  return out
+  // Sort each board by combined audience descending — most popular first
+  // within its own scale (cams count viewers, stars count views — different
+  // currencies). Then interleave the two boards so the page doesn't open
+  // on a wall of one type. Resolved markets sink to the bottom.
+  const stars: UpcomingSlot[] = []
+  const cams: UpcomingSlot[] = []
+  const others: UpcomingSlot[] = []
+  for (const s of out) {
+    if (s.board === 'stars') stars.push(s)
+    else if (s.board === 'cams') cams.push(s)
+    else others.push(s)
+  }
+  const byPopularityDesc = (a: UpcomingSlot, b: UpcomingSlot) => {
+    const popA = a.audienceA + a.audienceB
+    const popB = b.audienceA + b.audienceB
+    if (popA !== popB) return popB > popA ? 1 : -1
+    return a.closeTime - b.closeTime
+  }
+  stars.sort(byPopularityDesc)
+  cams.sort(byPopularityDesc)
+  others.sort(byPopularityDesc)
+
+  // Round-robin interleave. Cams lead — they're the live-now boards.
+  const interleaved: UpcomingSlot[] = []
+  const max = Math.max(cams.length, stars.length)
+  for (let i = 0; i < max; i++) {
+    if (i < cams.length) interleaved.push(cams[i]!)
+    if (i < stars.length) interleaved.push(stars[i]!)
+  }
+  return [...interleaved, ...others]
 }

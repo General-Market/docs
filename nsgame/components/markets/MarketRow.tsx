@@ -12,10 +12,11 @@ import {
 } from '@/lib/markets/hooks'
 import { CountdownTimer, useNowSecs } from './CountdownTimer'
 import { PulseDot } from './PulseDot'
+import { SourceIcon } from './SourceIcon'
 
-// Two-fighter VS row. The competitor on the left is A (yes); the right
-// is B (no). Center divider holds a small mono "vs". Numbers under each
-// name read the audience tier and the implied payout if that side wins.
+// Card with two competitor rows. The pattern is what every betting
+// market converges on: name, score, percent. We dress it in dark fabric
+// and keep moving.
 
 export type Side = 'yes' | 'no'
 
@@ -43,11 +44,67 @@ function formatPoolFloat(n: number): string {
   return Math.round(n).toString()
 }
 
-interface CompetitorBoxProps {
+function computeYesPct(state: MarketState | null): number | null {
+  if (!state) return null
+  const total = state.totalYes + state.totalNo
+  if (total === 0n) return null
+  return Number((state.totalYes * 1000n) / total) / 10
+}
+
+function profileUrl(sourceId: number, slug: string): string {
+  if (sourceId === 1) return `https://www.xvideos.com/pornstar-channels/${slug}`
+  if (sourceId === 4) return `https://chaturbate.com/${slug}/`
+  return '#'
+}
+
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return '··'
+  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase()
+  return (parts[0]![0]! + parts[1]![0]!).toUpperCase()
+}
+
+function Avatar({ slug, name, side, dim }: { slug: string; name: string; side: Side; dim: boolean }) {
+  const yes = side === 'yes'
+  const ringTone = yes ? 'ring-emerald-500/40' : 'ring-rose-500/40'
+  return (
+    <span
+      className={[
+        'relative inline-flex h-10 w-10 shrink-0 overflow-hidden rounded-full ring-2',
+        ringTone,
+        dim ? 'opacity-50' : '',
+      ].join(' ')}
+      aria-hidden
+    >
+      <img
+        src={`/models/${slug}.jpg`}
+        alt=""
+        loading="lazy"
+        decoding="async"
+        className="h-full w-full object-cover"
+        onError={(e) => {
+          const img = e.currentTarget
+          img.style.display = 'none'
+          const fallback = img.nextElementSibling as HTMLElement | null
+          if (fallback) fallback.style.display = 'flex'
+        }}
+      />
+      <span
+        className="absolute inset-0 hidden items-center justify-center bg-zinc-800 text-[12px] font-semibold tracking-tight text-zinc-300"
+      >
+        {initials(name)}
+      </span>
+    </span>
+  )
+}
+
+interface CompetitorRowProps {
   side: Side
   name: string
+  slug: string
   audience: bigint
   audienceLabel: string
+  pct: number | null
   multiplier: number | null
   active: boolean
   inactive: boolean
@@ -56,14 +113,17 @@ interface CompetitorBoxProps {
   isLoser: boolean
   refund: boolean
   oneSidedRefund: boolean
+  profileHref: string
   onClick: () => void
 }
 
-function CompetitorBox({
+function CompetitorRow({
   side,
   name,
+  slug,
   audience,
   audienceLabel,
+  pct,
   multiplier,
   active,
   inactive,
@@ -72,30 +132,25 @@ function CompetitorBox({
   isLoser,
   refund,
   oneSidedRefund,
+  profileHref,
   onClick,
-}: CompetitorBoxProps) {
+}: CompetitorRowProps) {
   const yes = side === 'yes'
+  const sideUnderline = yes ? 'decoration-emerald-400' : 'decoration-rose-400'
+  const pillBase = yes
+    ? 'border-emerald-400/60 text-emerald-200'
+    : 'border-rose-400/60 text-rose-200'
+  const pillActive = yes
+    ? 'border-emerald-400 bg-emerald-500/15 text-emerald-100 shadow-[0_0_0_1px_rgb(16_185_129/0.55)]'
+    : 'border-rose-400 bg-rose-500/15 text-rose-100 shadow-[0_0_0_1px_rgb(244_63_94/0.55)]'
 
-  let surface: string
-  if (refund) {
-    surface = 'border-zinc-800 bg-zinc-900/60 text-zinc-500'
-  } else if (resolved && isWinner) {
-    surface = 'border-emerald-500/70 bg-emerald-500/10 text-emerald-100 shadow-[0_0_0_1px_rgb(16_185_129/0.45),inset_0_0_24px_rgb(16_185_129/0.12)]'
-  } else if (resolved && isLoser) {
-    surface = 'border-zinc-800 bg-zinc-900/40 text-zinc-500 opacity-70'
-  } else if (active) {
-    surface = yes
-      ? 'border-emerald-500/70 bg-[linear-gradient(135deg,rgb(8,52,40)_0%,rgb(8,72,52)_55%,rgb(10,90,66)_100%)] text-emerald-50 shadow-[0_0_0_1px_rgb(16_185_129/0.55),inset_0_0_28px_rgb(16_185_129/0.18)]'
-      : 'border-rose-500/70 bg-[linear-gradient(135deg,rgb(60,18,30)_0%,rgb(80,22,38)_55%,rgb(100,28,44)_100%)] text-rose-50 shadow-[0_0_0_1px_rgb(244_63_94/0.55),inset_0_0_28px_rgb(244_63_94/0.18)]'
-  } else if (inactive) {
-    surface = 'border-zinc-800 bg-zinc-900/60 text-zinc-300 hover:border-zinc-700'
-  } else {
-    surface = yes
-      ? 'border-zinc-800 bg-[linear-gradient(135deg,rgb(24,24,27)_0%,rgb(24,24,27)_55%,rgb(6,40,30)_100%)] hover:border-emerald-500/50 hover:-translate-y-px hover:shadow-[0_8px_20px_-12px_rgb(0_0_0/0.7)]'
-      : 'border-zinc-800 bg-[linear-gradient(135deg,rgb(24,24,27)_0%,rgb(24,24,27)_55%,rgb(50,15,25)_100%)] hover:border-rose-500/50 hover:-translate-y-px hover:shadow-[0_8px_20px_-12px_rgb(0_0_0/0.7)]'
-  }
+  const rowSurface = active
+    ? 'bg-zinc-900/70 hover:bg-zinc-900/90'
+    : inactive
+      ? 'bg-transparent hover:bg-zinc-900/40'
+      : 'bg-transparent hover:bg-zinc-900/40'
 
-  const accent = yes ? 'text-emerald-400' : 'text-rose-400'
+  const dim = resolved && isLoser
 
   return (
     <button
@@ -104,56 +159,75 @@ function CompetitorBox({
       aria-pressed={active}
       disabled={resolved}
       className={[
-        'group relative flex flex-1 min-w-0 flex-col gap-1.5 overflow-hidden rounded-lg border px-3 py-3 text-left',
-        'transition-[background,box-shadow,border-color,transform] duration-200 ease-out will-change-transform',
-        'min-h-[88px]',
-        surface,
+        'group flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left transition-colors duration-150',
+        rowSurface,
+        dim ? 'opacity-60' : '',
       ].join(' ')}
     >
-      <span className="flex items-center gap-2">
-        <span
-          aria-hidden
-          className={[
-            'inline-block h-2 w-2 shrink-0 rounded-full',
-            yes ? 'bg-emerald-400' : 'bg-rose-400',
-            resolved && isLoser ? 'opacity-30' : '',
-          ].join(' ')}
-        />
-        <span className="truncate text-[14px] font-semibold leading-tight tracking-tight text-zinc-100">
-          {name}
-        </span>
-        {resolved && isWinner ? (
-          <span className="ml-auto inline-flex shrink-0 items-center rounded bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.1em] text-emerald-300">
-            won
+      <Avatar slug={slug} name={name} side={side} dim={dim} />
+
+      <span className="flex min-w-0 flex-1 flex-col">
+        <span className="flex items-center gap-2">
+          <span
+            className={[
+              'truncate text-[14px] font-semibold leading-tight tracking-tight text-zinc-100 underline decoration-2 underline-offset-[6px]',
+              sideUnderline,
+            ].join(' ')}
+          >
+            {name}
           </span>
-        ) : null}
-      </span>
-      <span className="text-[11px] tabular-nums text-zinc-500">
-        {compactAudience(audience)} {audienceLabel}
-      </span>
-      <span className="mt-auto flex items-center justify-between gap-2 text-[11px]">
-        {oneSidedRefund ? (
-          <span className="italic text-zinc-500">refund · no opposing side</span>
-        ) : refund ? (
-          <span className="italic text-zinc-500">refund</span>
-        ) : resolved ? (
-          <span className={isWinner ? 'text-emerald-300' : 'text-zinc-500'}>
-            {isWinner ? `paid ${formatMultiplier(multiplier)}` : 'lost'}
-          </span>
-        ) : (
-          <>
-            <span className="truncate text-zinc-400 group-hover:text-zinc-200">click to bet</span>
-            <span className={['shrink-0 tabular-nums font-medium', active ? 'text-zinc-100' : accent].join(' ')}>
-              {formatMultiplier(multiplier)}
+          {resolved && isWinner ? (
+            <span className="inline-flex shrink-0 items-center rounded bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.1em] text-emerald-300">
+              won
             </span>
-          </>
-        )}
+          ) : null}
+        </span>
+        <a
+          href={profileHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="mt-1 inline-flex w-fit items-center gap-1 text-[10px] uppercase tracking-[0.1em] text-zinc-500 hover:text-zinc-300"
+        >
+          profile
+          <svg width="9" height="9" viewBox="0 0 9 9" aria-hidden fill="none">
+            <path d="M2 7L7 2M7 2H3M7 2V6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </a>
       </span>
+
+      <span className="hidden shrink-0 sm:inline-flex h-9 items-center gap-1.5 rounded-md border border-zinc-800 bg-zinc-900/60 px-2 font-mono text-[11px] tabular-nums text-zinc-400">
+        <span className="text-zinc-200">{compactAudience(audience)}</span>
+        <span className="text-zinc-600">{audienceLabel.split(' ')[0]}</span>
+      </span>
+
+      {oneSidedRefund || refund ? (
+        <span className="ml-auto inline-flex h-10 min-w-[64px] items-center justify-center rounded-full border border-zinc-700 px-3 text-[12px] italic text-zinc-500">
+          refund
+        </span>
+      ) : (
+        <span className="ml-auto flex shrink-0 items-center gap-2">
+          <span className="hidden text-[12px] tabular-nums text-zinc-500 sm:inline">
+            {formatMultiplier(multiplier)}
+          </span>
+          <span
+            className={[
+              'inline-flex h-10 min-w-[64px] items-center justify-center rounded-full border px-3 text-[15px] font-semibold tabular-nums tracking-tight transition-colors duration-150',
+              active ? pillActive : pillBase,
+            ].join(' ')}
+          >
+            {pct === null ? '—' : `${pct.toFixed(0)}%`}
+          </span>
+        </span>
+      )}
     </button>
   )
 }
 
 export function MarketRow({ slot, state, selected, selectedSide, onSelectSide }: MarketRowProps) {
+  const yesPct = useMemo(() => computeYesPct(state), [state])
+  const noPct = yesPct === null ? null : 100 - yesPct
+
   const yesMult = useMemo(
     () => state ? payoutMultiplier(state.totalYes, state.totalNo, 'yes') : null,
     [state],
@@ -192,99 +266,96 @@ export function MarketRow({ slot, state, selected, selectedSide, onSelectSide }:
   const winnerYes = resolved && state?.outcomeYes === true
   const winnerNo = resolved && state?.outcomeYes === false
 
-  let statusLabel: string
-  let statusTone: 'live' | 'open' | 'closed' | 'resolved'
-  if (refund) {
-    statusLabel = 'refund'
-    statusTone = 'resolved'
-  } else if (winnerYes || winnerNo) {
-    statusLabel = winnerYes ? `${slot.displayA} won` : `${slot.displayB} won`
-    statusTone = 'resolved'
-  } else if (closed) {
-    statusLabel = 'settling'
-    statusTone = 'closed'
-  } else if (state && state.totalYes + state.totalNo > 0n) {
-    statusLabel = 'live'
-    statusTone = 'live'
-  } else {
-    statusLabel = 'open'
-    statusTone = 'open'
-  }
+  const audienceLbl = audienceUnit(slot.board)
+  const isLiveCam = slot.board === 'cams' && !resolved && !closed
+  const isLive = !resolved && !closed && state && state.totalYes + state.totalNo > 0n
+
+  // Cams (live cams) wear a red side rail. Stars get amber. Resolved fades.
+  const accentRail = resolved
+    ? 'before:bg-zinc-700'
+    : isLiveCam
+      ? 'before:bg-red-500'
+      : slot.board === 'stars'
+        ? 'before:bg-amber-400/80'
+        : 'before:bg-zinc-700'
 
   const cardSurface = selected
     ? 'bg-[linear-gradient(180deg,rgb(28,28,32)_0%,rgb(20,20,23)_100%)] border-zinc-600 shadow-[0_0_0_1px_rgb(82_82_91/0.4),0_12px_28px_-12px_rgb(0_0_0/0.7)]'
-    : 'bg-[linear-gradient(180deg,rgb(24,24,27)_0%,rgb(20,20,23)_100%)] border-zinc-800 hover:border-zinc-700 hover:shadow-[0_8px_24px_-12px_rgb(0_0_0/0.7)]'
+    : isLiveCam
+      ? 'bg-[linear-gradient(180deg,rgb(24,24,27)_0%,rgb(20,20,23)_100%)] border-red-500/30 hover:border-red-500/50 hover:shadow-[0_8px_24px_-12px_rgb(244_63_94/0.4)]'
+      : 'bg-[linear-gradient(180deg,rgb(24,24,27)_0%,rgb(20,20,23)_100%)] border-zinc-800 hover:border-zinc-700 hover:shadow-[0_8px_24px_-12px_rgb(0_0_0/0.7)]'
 
   const cardFlash =
     poolFlash === 'up' ? 'after:bg-emerald-500/10'
     : poolFlash === 'down' ? 'after:bg-rose-500/10'
     : 'after:bg-transparent'
 
-  const audienceLbl = audienceUnit(slot.board)
+  const sourceIconId = (slot.sourceId === 1 || slot.sourceId === 4
+    ? (slot.sourceId as 1 | 4)
+    : null)
+  const sourceShort = slot.sourceName.replace(/^tubes_/, '').toLowerCase()
 
   return (
     <article
       className={[
-        'group/card relative overflow-hidden rounded-xl border p-5',
+        'relative overflow-hidden rounded-xl border p-4 pl-5 sm:p-5 sm:pl-6',
         'transition-[box-shadow,border-color,transform] duration-300 ease-out',
+        'before:absolute before:inset-y-3 before:left-0 before:w-[3px] before:rounded-r-full before:opacity-90',
         'after:pointer-events-none after:absolute after:inset-0 after:rounded-xl after:transition-[background] after:duration-700 after:ease-out',
+        accentRail,
         cardSurface,
         cardFlash,
       ].join(' ')}
       aria-label={slot.label}
     >
-      <header className="relative flex flex-wrap items-center justify-between gap-2">
-        <span className="flex flex-wrap items-center gap-2 text-zinc-400">
-          <span className="font-mono text-[11px] tabular-nums text-zinc-500">
-            #{String(slot.pairIndex).padStart(2, '0')}
-          </span>
-          <span className="text-zinc-700">·</span>
-          <span
-            className={[
-              'inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.1em]',
-              slot.board === 'stars'
-                ? 'bg-amber-500/10 text-amber-300'
-                : 'bg-sky-500/10 text-sky-300',
-            ].join(' ')}
-          >
-            {slot.board}
-          </span>
-          <span className="inline-flex items-center rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.1em] text-zinc-400">
-            {windowLabel(slot.windowSecs)} {formatLabel(slot.format)}
+      <header className="relative flex items-start justify-between gap-3">
+        <span className="flex min-w-0 items-center gap-2">
+          {sourceIconId ? (
+            <SourceIcon sourceId={sourceIconId} className="h-7 w-7 rounded-md" />
+          ) : null}
+          <span className="flex flex-col leading-tight">
+            <span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-zinc-200">
+              {sourceShort}
+            </span>
+            <span className="text-[11px] text-zinc-500">
+              {windowLabel(slot.windowSecs)} · {formatLabel(slot.format)}
+            </span>
           </span>
         </span>
-        <span className="flex items-center gap-1.5 text-[11px] text-zinc-500">
-          {statusTone === 'live' ? <PulseDot active color="amber" /> : null}
-          <span
-            className={
-              statusTone === 'live'
-                ? 'font-medium text-amber-400'
-                : statusTone === 'closed'
-                  ? 'text-zinc-500'
-                  : statusTone === 'resolved'
-                    ? 'text-zinc-300'
-                    : 'text-zinc-500'
-            }
-          >
-            {statusLabel}
-          </span>
+
+        <span className="flex items-center gap-2 text-[11px] text-zinc-500">
+          {(isLiveCam || isLive) ? (
+            <span className="inline-flex items-center gap-1 rounded-full border border-red-500/40 bg-red-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-red-400">
+              <PulseDot active color="amber" />
+              live
+            </span>
+          ) : closed ? (
+            <span className="text-zinc-500">settling</span>
+          ) : resolved ? (
+            <span className="text-zinc-300">resolved</span>
+          ) : (
+            <span className="text-zinc-500">open</span>
+          )}
           {!closed && !resolved ? (
-            <>
-              <span className="text-zinc-700">·</span>
-              <span className="tabular-nums text-zinc-400">
-                <CountdownTimer target={slot.closeTime} closedLabel="closed" />
-              </span>
-            </>
+            <span className="tabular-nums text-zinc-400">
+              <CountdownTimer target={slot.closeTime} closedLabel="closed" />
+            </span>
           ) : null}
         </span>
       </header>
 
-      <div className="relative mt-4 flex items-stretch gap-2 sm:gap-3">
-        <CompetitorBox
+      <h3 className="relative mt-3 text-[15px] font-semibold leading-snug tracking-tight text-zinc-100 sm:text-[16px]">
+        {slot.label}
+      </h3>
+
+      <div className="relative mt-3 flex flex-col">
+        <CompetitorRow
           side="yes"
           name={slot.displayA}
+          slug={slot.slugA}
           audience={slot.audienceA}
           audienceLabel={audienceLbl}
+          pct={yesPct}
           multiplier={yesMult}
           active={selected && selectedSide === 'yes'}
           inactive={selected && selectedSide !== 'yes'}
@@ -293,19 +364,16 @@ export function MarketRow({ slot, state, selected, selectedSide, onSelectSide }:
           isLoser={winnerNo}
           refund={refund}
           oneSidedRefund={oneSided && state?.totalYes === 0n}
+          profileHref={profileUrl(slot.sourceId, slot.slugA)}
           onClick={() => onSelectSide(slot, 'yes')}
         />
-        <span
-          aria-hidden
-          className="flex shrink-0 items-center justify-center font-mono text-[11px] uppercase tracking-[0.16em] text-zinc-600"
-        >
-          vs
-        </span>
-        <CompetitorBox
+        <CompetitorRow
           side="no"
           name={slot.displayB}
+          slug={slot.slugB}
           audience={slot.audienceB}
           audienceLabel={audienceLbl}
+          pct={noPct}
           multiplier={noMult}
           active={selected && selectedSide === 'no'}
           inactive={selected && selectedSide !== 'no'}
@@ -314,18 +382,16 @@ export function MarketRow({ slot, state, selected, selectedSide, onSelectSide }:
           isLoser={winnerYes}
           refund={refund}
           oneSidedRefund={oneSided && state?.totalNo === 0n}
+          profileHref={profileUrl(slot.sourceId, slot.slugB)}
           onClick={() => onSelectSide(slot, 'no')}
         />
       </div>
 
-      <footer className="relative mt-4 flex items-center justify-between gap-3 text-[12px] text-zinc-500">
+      <footer className="relative mt-3 flex items-center justify-between gap-3 border-t border-zinc-800/60 pt-3 text-[12px] text-zinc-500">
         <span>
-          pool{' '}
-          <span className="tabular-nums text-zinc-200">
-            ${formatPoolFloat(totalPoolFloat)}
-          </span>
+          ${formatPoolFloat(totalPoolFloat)} pool
         </span>
-        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-600">
+        <span className="text-[11px] text-zinc-600">
           settles {windowLabel(slot.windowSecs)} after open
         </span>
       </footer>
