@@ -69,7 +69,9 @@ export async function getItpDetail(itpId: string): Promise<{
   const dnUrl = getDataNodeServer()
   try {
     const priceRes = await fetch(`${dnUrl}/itp-price?itp_id=${encodeURIComponent(itpId)}`, {
-      cache: 'no-store',
+      // ISR-compatible: page sets `revalidate = 300`, this fetch must not opt
+      // out via `no-store` (Next.js then 500s the route as "Dynamic server usage").
+      next: { revalidate: 60 },
       signal: AbortSignal.timeout(10_000),
     })
 
