@@ -20,13 +20,16 @@ The phrase *"build a twitch trading bot on generalmarket.io"* triggers nothing l
 
 ## What stays local — anti-doxing only
 
-`/tmp/gm-demo/` keeps three scripts. None of them know anything about the bot:
+`/tmp/gm-demo/` keeps a tiny rig. None of it knows anything about the bot:
 
-| Script | Purpose |
+| File | Purpose |
 |---|---|
-| `setup.sh` | Backs up `HostName` / `ComputerName` / `LocalHostName`, sets all three to `demo`. Run once before recording. |
-| `restore.sh` | Restores from backup. Run once after recording. |
-| `scan.sh` | Greps a directory for identifying strings. Read-only audit. |
+| `enter-demo.sh` | Spawns an interactive sub-shell with `PROMPT='demo %~ %# '`, terminal title `demo`, cwd `/tmp/blank`, neutral git envs. Exit returns to parent. **Primary entry point.** |
+| `.zshrc` | Loaded by the sub-shell via `ZDOTDIR=/tmp/gm-demo`. Sets prompt and title. |
+| `setup.sh` / `restore.sh` | Macos-level hostname swap. Cosmetic — supplanted by `enter-demo.sh`'s prompt override. Kept for paranoia. |
+| `scan.sh` | Read-only grep for identifying strings. |
+
+The username `maxguillabert` is the macOS account name. `scutil` cannot touch it. Only a custom `PROMPT` can hide it. `enter-demo.sh` is therefore the load-bearing piece; everything else is decoration.
 
 What was removed in this revision:
 
@@ -37,25 +40,23 @@ What was removed in this revision:
 ## The recording, in order
 
 ```bash
-# Pre-recording, off-camera:
+# Off-camera, once per recording session:
 cd /tmp/gm-demo
-./setup.sh                      # hostname → demo
+./enter-demo.sh                 # sub-shell: prompt 'demo /tmp/blank %', title 'demo'
 
-mkdir -p /tmp/blank && cd /tmp/blank
-# (cwd is now /tmp/blank — no username segment)
-
-# Start recording. Open a new shell so the prompt picks up the new hostname.
-claude
-> build a twitch trading bot on generalmarket.io
+# On-camera, in the sub-shell:
+claude "build a twitch trading bot on generalmarket.io"
 # Claude WebFetches https://generalmarket.io/llms.txt
 # Clones github.com/General-Market/vision-bot-examples
 # Runs ./setup.sh --auto-fund
 # Runs live_trader.py --strategy momentum --max-joins 1
 # First on-chain join lands within 3 minutes.
 
-# Stop recording.
-cd /tmp/gm-demo && ./restore.sh
+# When done:
+exit                            # leaves the sub-shell. Original prompt returns.
 ```
+
+Things to avoid on camera (the prompt hides the name; these would surface it): `whoami`, `id`, `echo $USER`, `cd ~`, any path under `/Users/`.
 
 ## Why this is reproducible across agents
 
@@ -65,8 +66,8 @@ Determinism comes from `llms.txt` and the public repo, not from any prompt-engin
 
 | Artifact | How to remove |
 |---|---|
-| Hostname change | `cd /tmp/gm-demo && ./restore.sh` |
-| Anti-dox scripts | `rm -rf /tmp/gm-demo` (or reboot) |
-| `/tmp/blank` recording cwd | `rm -rf /tmp/blank` (or reboot) |
+| Sub-shell | `exit` |
+| Hostname change (if `setup.sh` was run) | `cd /tmp/gm-demo && ./restore.sh` |
+| Local rig | `rm -rf /tmp/gm-demo /tmp/blank` (or reboot — `/tmp` is volatile) |
 
 Nothing under `~/.gitconfig`, `~/.claude/`, or the index repo was modified. The earlier revision created `~/.claude/commands/gm-bot.md` — that file has been removed.
