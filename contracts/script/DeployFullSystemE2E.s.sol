@@ -144,13 +144,20 @@ contract DeployFullSystemE2E is DeployBLSHelper {
 
     function _deployTokens() internal {
         console.log("Phase 1: Deploy Tokens");
-        // Story 7-6b: L3 USDC uses 18 decimals (internal protocol standard)
-        l3Wusdc = address(new MockERC20("L3 Wrapped USDC", "L3_WUSDC", 18));
+        // Reuse existing L3_WUSDC if env var set (preserves Vision's immutable USDC binding)
+        address existingL3Wusdc = vm.envOr("EXISTING_L3_WUSDC", address(0));
+        if (existingL3Wusdc != address(0)) {
+            l3Wusdc = existingL3Wusdc;
+            console.log("  L3_WUSDC (REUSED, 18 dec):", l3Wusdc);
+        } else {
+            // Story 7-6b: L3 USDC uses 18 decimals (internal protocol standard)
+            l3Wusdc = address(new MockERC20("L3 Wrapped USDC", "L3_WUSDC", 18));
+            console.log("  L3_WUSDC (18 dec):", l3Wusdc);
+        }
         // Story 7-6b: Settlement USDC uses 6 decimals (real USDC on Settlement/mainnet)
         settlementUsdc = address(new MockERC20("Settlement USDC", "SETTLEMENT_USDC", 6));
         // MockUSDT for USDT-pair settlement (18 decimals on L3, same as L3_WUSDC)
         mockUsdt = address(new MockERC20("Mock USDT", "MOCK_USDT", 18));
-        console.log("  L3_WUSDC (18 dec):", l3Wusdc);
         console.log("  SETTLEMENT_USDC (6 dec):", settlementUsdc);
         console.log("  MOCK_USDT (18 dec):", mockUsdt);
     }
@@ -170,10 +177,17 @@ contract DeployFullSystemE2E is DeployBLSHelper {
 
     function _deployRegistries() internal {
         console.log("Phase 3: Deploy Registries");
-        OracleRegistry regImpl = new OracleRegistry();
-        oracleRegistry = _deployProxy(address(regImpl), abi.encodeWithSelector(OracleRegistry.initialize.selector, governance));
+        // Reuse existing OracleRegistry if env var set (Vision pins it as immutable)
+        address existingRegistry = vm.envOr("EXISTING_ORACLE_REGISTRY", address(0));
+        if (existingRegistry != address(0)) {
+            oracleRegistry = existingRegistry;
+            console.log("  OracleRegistry (REUSED):", oracleRegistry);
+        } else {
+            OracleRegistry regImpl = new OracleRegistry();
+            oracleRegistry = _deployProxy(address(regImpl), abi.encodeWithSelector(OracleRegistry.initialize.selector, governance));
+            console.log("  OracleRegistry:", oracleRegistry);
+        }
         collateralRegistry = address(new CollateralRegistry(admin, oracleRegistry));
-        console.log("  OracleRegistry:", oracleRegistry);
         console.log("  CollateralRegistry:", collateralRegistry);
     }
 
@@ -249,7 +263,9 @@ contract DeployFullSystemE2E is DeployBLSHelper {
         // Vault approves SettlementBridgeCustody for USDC spending (for completeSellOrder vault→user pull)
         MockBitgetVault(mockBitgetVault).approveSpender(settlementUsdc, settlementBridgeCustodyProxy, type(uint256).max);
         console.log("  MockBitgetVault: approved SettlementBridgeCustody for SETTLEMENT_USDC spending");
-        // Authorize all BLS-verifying contracts for incrementMissedCounts
+        // Authorize all BLS-verifying contracts for incrementMissedCounts.
+        // Adding entries to a reused OracleRegistry is additive — Vision's existing
+        // entries are preserved.
         OracleRegistry(oracleRegistry).setAuthorizedMissedCountCaller(indexProxy, true);
         OracleRegistry(oracleRegistry).setAuthorizedMissedCountCaller(blsCustodyProxy, true);
         OracleRegistry(oracleRegistry).setAuthorizedMissedCountCaller(l3BridgeCustodyProxy, true);
@@ -261,17 +277,26 @@ contract DeployFullSystemE2E is DeployBLSHelper {
         // On Orbit L3, CREATE addresses diverge between forge simulation and broadcast.
         // If _governance points to a stale address, setAggregatedPubkey (onlyAdmin) will
         // permanently fail, and after 86400 blocks BLSVerifier__SnapshotTooOld kills all fills.
+        // When reusing an existing OracleRegistry, do NOT call setGovernance — Vision
+        // shares this registry and a governance swap would invalidate any cached references.
         address registryAdmin = OracleRegistry(oracleRegistry).governance().admin();
+        bool reusingRegistry = vm.envOr("EXISTING_ORACLE_REGISTRY", address(0)) != address(0);
         if (registryAdmin != admin) {
-            console.log("  WARNING: OracleRegistry governance admin mismatch!");
-            console.log("    Expected:", admin);
-            console.log("    Got:", registryAdmin);
-            console.log("  Fixing via setGovernance...");
-            OracleRegistry(oracleRegistry).setGovernance(governance);
-            // Re-verify
-            registryAdmin = OracleRegistry(oracleRegistry).governance().admin();
-            require(registryAdmin == admin, "OracleRegistry governance fix failed");
-            console.log("  OracleRegistry governance fixed");
+            if (reusingRegistry) {
+                console.log("  WARNING: reused OracleRegistry has admin mismatch - refusing to setGovernance (Vision shares this registry)");
+                console.log("    Expected:", admin);
+                console.log("    Got:", registryAdmin);
+                require(false, "Existing OracleRegistry has wrong admin; cannot proceed safely");
+            } else {
+                console.log("  WARNING: OracleRegistry governance admin mismatch!");
+                console.log("    Expected:", admin);
+                console.log("    Got:", registryAdmin);
+                console.log("  Fixing via setGovernance...");
+                OracleRegistry(oracleRegistry).setGovernance(governance);
+                registryAdmin = OracleRegistry(oracleRegistry).governance().admin();
+                require(registryAdmin == admin, "OracleRegistry governance fix failed");
+                console.log("  OracleRegistry governance fixed");
+            }
         } else {
             console.log("  OracleRegistry governance verified (admin matches deployer)");
         }
@@ -283,6 +308,13 @@ contract DeployFullSystemE2E is DeployBLSHelper {
 
     function _registerOracles() internal {
         console.log("Phase 7: Register 3 Oracles");
+
+        // Reused OracleRegistry already has these oracles registered; addOracle() reverts on duplicate.
+        if (vm.envOr("EXISTING_ORACLE_REGISTRY", address(0)) != address(0)) {
+            uint256 existingCount = OracleRegistry(oracleRegistry).activeOracleCount();
+            console.log("  Skipping oracle registration (reused registry already has oracles, count =", existingCount, ")");
+            return;
+        }
 
         // Must snapshot (setAggregatedPubkey) after EACH addOracle due to PendingSnapshot constraint
         _registerOracle(0, oracle1, "127.0.0.1:9001");

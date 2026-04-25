@@ -7,13 +7,10 @@ import "forge-std/console.sol";
 import "../src/mocks/MockERC20.sol";
 
 /// @title DeployAllTokens - Deploy 621 Bitget tokens + fund vault
-/// @dev Uses CREATE2 with deterministic salts to prevent Orbit L3 nonce drift.
-///      Simulation and broadcast produce identical addresses regardless of nonce state.
+/// @dev Uses regular CREATE (not CREATE2). Sequential nonces with --slow guarantee unique addresses.
 contract DeployAllTokens is Script {
     uint256 constant N = 621;
     uint256 constant FUND = 1_000_000 * 1e18;
-
-    // Regular CREATE — no salt. Sequential nonces with --slow guarantee unique addresses.
 
     function run() external {
         uint256 pk = vm.envOr("PRIVATE_KEY", uint256(0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d));

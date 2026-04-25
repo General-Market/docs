@@ -525,11 +525,70 @@ cmd_setup_chain() {
 cmd_deploy() {
     # Parse flags
     local AUTO_SEED=false
+    local SKIP_VISION=false
     for arg in "$@"; do
         case "$arg" in
             --seed) AUTO_SEED=true ;;
+            --skip-vision) SKIP_VISION=true ;;
         esac
     done
+    if [ "$SKIP_VISION" = true ]; then
+        echo -e "${YELLOW}--skip-vision: Vision phases (6/6b/7a) will be skipped, vision_* Postgres tables preserved${NC}"
+    fi
+
+    # ── Pause services that share DEPLOYER_KEY during deploy ──
+    # fund-manager broadcasts vault-reconcile txs every few seconds using
+    # DEPLOYER_KEY. If running concurrently with `forge script --broadcast`,
+    # the on-chain nonce drifts under forge and the broadcast bails with
+    # "EOA nonce changed unexpectedly". Stop it before phase 3 and restart
+    # on script exit (covers success, failure, and Ctrl-C).
+    local _DEPLOY_PAUSED_FUND_MANAGER=false
+    if vps_be_ssh "docker ps --filter name=fund-manager --filter status=running --format '{{.Names}}' 2>/dev/null | grep -q ." 2>/dev/null; then
+        echo -e "${BLUE}Pausing fund-manager (shares DEPLOYER_KEY, would cause nonce drift)...${NC}"
+        if vps_be_ssh "cd $VPS_BE_DIR/docker/testnet/fund-manager && docker compose stop fund-manager" >/dev/null 2>&1; then
+            _DEPLOY_PAUSED_FUND_MANAGER=true
+            echo -e "  ${GREEN}fund-manager stopped${NC}"
+        else
+            echo -e "  ${YELLOW}fund-manager stop failed — deploy may hit nonce drift${NC}"
+        fi
+    fi
+    _restart_fund_manager_on_exit() {
+        if [ "$_DEPLOY_PAUSED_FUND_MANAGER" = true ]; then
+            echo -e "${BLUE}Restarting fund-manager (deploy window closed)...${NC}"
+            vps_be_ssh "cd $VPS_BE_DIR/docker/testnet/fund-manager && docker compose start fund-manager" >/dev/null 2>&1 \
+                && echo -e "  ${GREEN}fund-manager restarted${NC}" \
+                || echo -e "  ${YELLOW}fund-manager restart failed — start manually${NC}"
+        fi
+    }
+    trap _restart_fund_manager_on_exit EXIT
+
+    # ── When --skip-vision: pin to existing OracleRegistry + L3_WUSDC ──
+    # Vision binds OracleRegistry as `immutable` (Vision.sol:29). Redeploying
+    # OracleRegistry would orphan Vision's signature verification. Read the
+    # live values off Vision and export them so DeployFullSystemE2E.s.sol
+    # reuses them instead of creating fresh contracts.
+    if [ "$SKIP_VISION" = true ]; then
+        echo -e "${BLUE}Resolving existing OracleRegistry + L3_WUSDC from live Vision contract...${NC}"
+        local CUR_VISION
+        CUR_VISION=$(read_deployment_addr "Vision" 2>/dev/null || echo "")
+        echo -e "  [debug] Vision=$CUR_VISION"
+        if [ -n "$CUR_VISION" ]; then
+            local LIVE_REG LIVE_USDC
+            LIVE_REG=$(cast call "$CUR_VISION" "oracleRegistry()(address)" --rpc-url "$RPC_URL" 2>/dev/null | tr -d '[:space:]')
+            LIVE_USDC=$(cast call "$CUR_VISION" "USDC()(address)" --rpc-url "$RPC_URL" 2>/dev/null | tr -d '[:space:]')
+            echo -e "  [debug] LIVE_REG=$LIVE_REG LIVE_USDC=$LIVE_USDC"
+            if [ -n "$LIVE_REG" ] && [ "$LIVE_REG" != "0x0000000000000000000000000000000000000000" ]; then
+                export EXISTING_ORACLE_REGISTRY="$LIVE_REG"
+                echo -e "  ${GREEN}reusing OracleRegistry $EXISTING_ORACLE_REGISTRY${NC}"
+            fi
+            if [ -n "$LIVE_USDC" ] && [ "$LIVE_USDC" != "0x0000000000000000000000000000000000000000" ]; then
+                export EXISTING_L3_WUSDC="$LIVE_USDC"
+                echo -e "  ${GREEN}reusing L3_WUSDC $EXISTING_L3_WUSDC${NC}"
+            fi
+        else
+            echo -e "  ${YELLOW}Vision address not found in active-deployment.json — proceeding with fresh deploy${NC}"
+        fi
+    fi
 
     # Opportunistic pre-deploy check: if the current active-deployment.json
     # has dead addresses, say so before we overwrite it. Non-fatal —
@@ -548,50 +607,86 @@ cmd_deploy() {
     # These tables contain state tied to contract addresses that change on redeploy.
     # NEVER add vision_player_points or vision_epoch_log — those are persistent lifetime stats.
     echo -e "${BLUE}Wiping stale deployment data from Postgres...${NC}"
-    vps_be_ssh "psql -U max -d index_prices -c \"
-        TRUNCATE
-            vision_round_players,
-            vision_batch_lifecycle,
-            vision_settlement_proofs,
-            vision_batches,
-            vision_positions,
-            vision_bitmaps,
-            vision_kv_store,
-            vision_reference_prices,
-            itp_snapshots,
-            itp_meta,
-            trades,
-            user_shares,
-            -- points_ledger and points_totals preserved (player lifetime stats, not contract-bound)
-            issuer_health_snapshots,
-            oracle_health_snapshots,
-            collector_cursors,
-            batch_configs,
-            batch_settlements,
-            signed_batch_configs,
-            liquidity_snapshots,
-            sim_nav_series,
-            sim_holdings,
-            sim_trades
-        CASCADE;
-    \" 2>&1" \
-        && echo -e "  ${GREEN}Deployment tables wiped (raw market data preserved)${NC}" \
-        || echo -e "  ${YELLOW}Postgres wipe failed — tables may have stale data${NC}"
+    if [ "$SKIP_VISION" = true ]; then
+        # Index-only redeploy: skip vision_* tables to preserve live Vision rounds/positions
+        vps_be_ssh "psql -U max -d index_prices -c \"
+            TRUNCATE
+                itp_snapshots,
+                itp_meta,
+                trades,
+                user_shares,
+                issuer_health_snapshots,
+                oracle_health_snapshots,
+                collector_cursors,
+                batch_configs,
+                batch_settlements,
+                signed_batch_configs,
+                liquidity_snapshots,
+                sim_nav_series,
+                sim_holdings,
+                sim_trades
+            CASCADE;
+        \" 2>&1" \
+            && echo -e "  ${GREEN}Index tables wiped (vision_* preserved)${NC}" \
+            || echo -e "  ${YELLOW}Postgres wipe failed — tables may have stale data${NC}"
+    else
+        vps_be_ssh "psql -U max -d index_prices -c \"
+            TRUNCATE
+                vision_round_players,
+                vision_batch_lifecycle,
+                vision_settlement_proofs,
+                vision_batches,
+                vision_positions,
+                vision_bitmaps,
+                vision_kv_store,
+                vision_reference_prices,
+                itp_snapshots,
+                itp_meta,
+                trades,
+                user_shares,
+                -- points_ledger and points_totals preserved (player lifetime stats, not contract-bound)
+                issuer_health_snapshots,
+                oracle_health_snapshots,
+                collector_cursors,
+                batch_configs,
+                batch_settlements,
+                signed_batch_configs,
+                liquidity_snapshots,
+                sim_nav_series,
+                sim_holdings,
+                sim_trades
+            CASCADE;
+        \" 2>&1" \
+            && echo -e "  ${GREEN}Deployment tables wiped (raw market data preserved)${NC}" \
+            || echo -e "  ${YELLOW}Postgres wipe failed — tables may have stale data${NC}"
+    fi
 
     # Also wipe data_node vision tables (separate DB) — stale batches from previous
     # deployments confuse the frontend and oracle batch discovery.
-    vps_be_ssh "psql -U max -d data_node -c \"
-        TRUNCATE
-            vision_batches,
-            vision_tick_results,
-            vision_reference_prices,
-            batch_configs,
-            signed_batch_configs,
-            batch_settlements
-        CASCADE;
-    \" 2>&1" \
-        && echo -e "  ${GREEN}Data-node vision tables wiped${NC}" \
-        || echo -e "  ${YELLOW}Data-node wipe failed (tables may not exist yet)${NC}"
+    if [ "$SKIP_VISION" = true ]; then
+        vps_be_ssh "psql -U max -d data_node -c \"
+            TRUNCATE
+                batch_configs,
+                signed_batch_configs,
+                batch_settlements
+            CASCADE;
+        \" 2>&1" \
+            && echo -e "  ${GREEN}Data-node Index tables wiped (vision_* preserved)${NC}" \
+            || echo -e "  ${YELLOW}Data-node wipe failed (tables may not exist yet)${NC}"
+    else
+        vps_be_ssh "psql -U max -d data_node -c \"
+            TRUNCATE
+                vision_batches,
+                vision_tick_results,
+                vision_reference_prices,
+                batch_configs,
+                signed_batch_configs,
+                batch_settlements
+            CASCADE;
+        \" 2>&1" \
+            && echo -e "  ${GREEN}Data-node vision tables wiped${NC}" \
+            || echo -e "  ${YELLOW}Data-node wipe failed (tables may not exist yet)${NC}"
+    fi
 
     echo -e "${CYAN}Deploying contracts to L3 (chain $CHAIN_ID)...${NC}"
 
@@ -764,12 +859,22 @@ for src, key in [('Investment','Index'),('OracleRegistry','OracleRegistry'),
 for name in ('CollateralRegistry','BridgedItpFactory','BridgeProxy','MockBitgetVault'):
     a = plain(name)
     if a: c[name] = a
-# MockERC20 order from Phase 1: L3_WUSDC, SETTLEMENT_USDC, MOCK_USDT
+# MockERC20 order from Phase 1: L3_WUSDC, SETTLEMENT_USDC, MOCK_USDT.
+# When EXISTING_L3_WUSDC is set, the Solidity script skips L3_WUSDC deploy,
+# so the broadcast has only 2 MockERC20s (settlementUsdc, mockUsdt) — shift assignments.
+import os as _os
 mocks = impls.get('MockERC20', [])
-if len(mocks) >= 1:
-    c['L3_WUSDC'] = mocks[0]; c['USDC'] = mocks[0]
-if len(mocks) >= 2: c['SETTLEMENT_USDC'] = mocks[1]
-if len(mocks) >= 3: c['MOCK_USDT'] = mocks[2]
+_existing_l3 = _os.environ.get('EXISTING_L3_WUSDC', '')
+if _existing_l3:
+    c['L3_WUSDC'] = _existing_l3
+    c['USDC'] = _existing_l3
+    if len(mocks) >= 1: c['SETTLEMENT_USDC'] = mocks[0]
+    if len(mocks) >= 2: c['MOCK_USDT'] = mocks[1]
+else:
+    if len(mocks) >= 1:
+        c['L3_WUSDC'] = mocks[0]; c['USDC'] = mocks[0]
+    if len(mocks) >= 2: c['SETTLEMENT_USDC'] = mocks[1]
+    if len(mocks) >= 3: c['MOCK_USDT'] = mocks[2]
 json.dump(dj, open('deployments/e2e-full-system.json','w'), indent=2)
 print(f'Reconciled {len([k for k in c if c[k]])} addresses from broadcast receipts')
 " 2>/dev/null && echo -e "  ${GREEN}Addresses reconciled from broadcast${NC}" \
@@ -815,9 +920,30 @@ print(f'Reconciled {len([k for k in c if c[k]])} addresses from broadcast receip
         fi
     fi
 
-    # Copy fresh deployment to active so subsequent steps read correct addresses
-    cp deployments/e2e-full-system.json "$DEPLOYMENT_FILE"
-    echo -e "  ${GREEN}Deployment JSON updated${NC}"
+    # Copy fresh deployment to active so subsequent steps read correct addresses.
+    # When --skip-vision is set, MERGE so Vision/VisionVault/VisionVaultFactory and
+    # other keys from the prior active-deployment.json are preserved.
+    if [ "$SKIP_VISION" = true ] && [ -f "$DEPLOYMENT_FILE" ]; then
+        python3 -c "
+import json
+prior = json.load(open('$DEPLOYMENT_FILE'))
+fresh = json.load(open('deployments/e2e-full-system.json'))
+prior_contracts = prior.get('contracts', {})
+fresh_contracts = fresh.get('contracts', {})
+# Vision-side keys to preserve from prior deployment
+preserve_keys = ['Vision', 'VisionVault', 'VisionVaultFactory']
+for k in preserve_keys:
+    if k in prior_contracts and k not in fresh_contracts:
+        fresh_contracts[k] = prior_contracts[k]
+fresh['contracts'] = fresh_contracts
+json.dump(fresh, open('$DEPLOYMENT_FILE', 'w'), indent=2)
+print(f'  Merged {sum(1 for k in preserve_keys if k in fresh_contracts)} Vision keys preserved')
+"
+        echo -e "  ${GREEN}Deployment JSON updated (Vision keys preserved)${NC}"
+    else
+        cp deployments/e2e-full-system.json "$DEPLOYMENT_FILE"
+        echo -e "  ${GREEN}Deployment JSON updated${NC}"
+    fi
 
     # Verify critical non-proxy contracts have code (MockBitgetVault, MOCK_USDT, L3_WUSDC)
     # These are needed by subsequent deploy steps (tokens, Morpho) and the auto-fix
@@ -1317,15 +1443,20 @@ print('Injected chainId=$CHAIN_ID deployBlock=$CURRENT_BLOCK into morpho-e2e.jso
     # Lets `testnet.sh deploy` resume after an early-phase failure without blowing away
     # downstream state (factory + 235 funded vaults).
     SKIP_VISION_REDEPLOY=false
-    CUR_VISION=$(read_deployment_addr "Vision" 2>/dev/null || echo "")
-    CUR_VVF=$(read_deployment_addr "VisionVaultFactory" 2>/dev/null || echo "")
-    if [ -n "$CUR_VISION" ] && [ -n "$CUR_VVF" ]; then
-        V_CODE=$(cast code --rpc-url "$RPC_URL" "$CUR_VISION" 2>/dev/null | wc -c | tr -d ' ')
-        F_CODE=$(cast code --rpc-url "$RPC_URL" "$CUR_VVF" 2>/dev/null | wc -c | tr -d ' ')
-        VAULT_COUNT=$(python3 -c "import json; print(len(json.load(open('$DEPLOYMENT_FILE')).get('whitelistedVaults', [])))" 2>/dev/null || echo "0")
-        if [ "$V_CODE" -gt 10 ] && [ "$F_CODE" -gt 10 ] && [ "$VAULT_COUNT" -gt 0 ]; then
-            SKIP_VISION_REDEPLOY=true
-            echo -e "${GREEN}[6/14][6b/14][7a/14] Vision + factory + $VAULT_COUNT vaults already live — skipping redeploy${NC}"
+    if [ "$SKIP_VISION" = true ]; then
+        SKIP_VISION_REDEPLOY=true
+        echo -e "${YELLOW}[6/14][6b/14][7a/14] --skip-vision: forcing Vision deploy skip (preserve live state)${NC}"
+    else
+        CUR_VISION=$(read_deployment_addr "Vision" 2>/dev/null || echo "")
+        CUR_VVF=$(read_deployment_addr "VisionVaultFactory" 2>/dev/null || echo "")
+        if [ -n "$CUR_VISION" ] && [ -n "$CUR_VVF" ]; then
+            V_CODE=$(cast code --rpc-url "$RPC_URL" "$CUR_VISION" 2>/dev/null | wc -c | tr -d ' ')
+            F_CODE=$(cast code --rpc-url "$RPC_URL" "$CUR_VVF" 2>/dev/null | wc -c | tr -d ' ')
+            VAULT_COUNT=$(python3 -c "import json; print(len(json.load(open('$DEPLOYMENT_FILE')).get('whitelistedVaults', [])))" 2>/dev/null || echo "0")
+            if [ "$V_CODE" -gt 10 ] && [ "$F_CODE" -gt 10 ] && [ "$VAULT_COUNT" -gt 0 ]; then
+                SKIP_VISION_REDEPLOY=true
+                echo -e "${GREEN}[6/14][6b/14][7a/14] Vision + factory + $VAULT_COUNT vaults already live — skipping redeploy${NC}"
+            fi
         fi
     fi
     if [ "$SKIP_VISION_REDEPLOY" = "true" ]; then
@@ -1612,15 +1743,30 @@ json.dump(result, sys.stdout)
 
     echo -e "${BLUE}[11/14] Creating ITPs...${NC}"
     INDEX_ADDR_ITP=$(read_deployment_addr "Index")
-    rm -rf contracts/broadcast/Deploy107ITPs_Create.s.sol/$CHAIN_ID/ contracts/cache/Deploy107ITPs_Create.s.sol/$CHAIN_ID/
-    (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" \
-        INDEX_ADDRESS="$INDEX_ADDR_ITP" \
-        forge script script/Deploy107ITPs_Create.s.sol:Deploy107ITPs_Create \
-        --broadcast --slow --legacy --with-gas-price $GAS_PRICE --rpc-url "$RPC_URL" \
-        --private-key "$DEPLOYER_KEY" \
-        --chain-id $CHAIN_ID $FORGE_SIZE_FLAG) \
-        > logs/deploy-itp-create.log 2>&1 || { echo -e "  ${RED}ITP create FAILED — check logs/deploy-itp-create.log${NC}"; tail -10 logs/deploy-itp-create.log 2>/dev/null; exit 1; }
-    echo -e "  ${GREEN}ITPs created${NC}"
+    # Idempotency: skip phase 11 if Index already has the expected ITP count.
+    # Resume after a forge hang or partial broadcast — re-running won't recreate.
+    local _ITP_TOTAL_HEX
+    _ITP_TOTAL_HEX=$(cast call "$INDEX_ADDR_ITP" "getItpCount()(uint256)" --rpc-url "$RPC_URL" 2>/dev/null | awk '{print $1}')
+    local _ITP_TOTAL_DEC=0
+    if [ -n "$_ITP_TOTAL_HEX" ]; then
+        _ITP_TOTAL_DEC=$(python3 -c "v='$_ITP_TOTAL_HEX'; print(int(v,16) if v.startswith('0x') else int(v) if v.isdigit() else 0)" 2>/dev/null || echo 0)
+    fi
+    if [ "$_ITP_TOTAL_DEC" -ge 96 ]; then
+        echo -e "  ${GREEN}Skipping ITP create — Index already has $_ITP_TOTAL_DEC ITPs${NC}"
+    else
+        rm -rf contracts/broadcast/Deploy107ITPs_Create.s.sol/$CHAIN_ID/ contracts/cache/Deploy107ITPs_Create.s.sol/$CHAIN_ID/
+        # Drop --slow: forge --slow + Orbit L3 + 96 createITP calls deadlocks in
+        # simulation (mpmc::recv hang). With fund-manager paused, deployer key is
+        # exclusive so sequential broadcasting won't drift the nonce.
+        (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" \
+            INDEX_ADDRESS="$INDEX_ADDR_ITP" \
+            forge script script/Deploy107ITPs_Create.s.sol:Deploy107ITPs_Create \
+            --broadcast --legacy --with-gas-price $GAS_PRICE --rpc-url "$RPC_URL" \
+            --private-key "$DEPLOYER_KEY" \
+            --chain-id $CHAIN_ID $FORGE_SIZE_FLAG) \
+            > logs/deploy-itp-create.log 2>&1 || { echo -e "  ${RED}ITP create FAILED — check logs/deploy-itp-create.log${NC}"; tail -10 logs/deploy-itp-create.log 2>/dev/null; exit 1; }
+        echo -e "  ${GREEN}ITPs created${NC}"
+    fi
 
     # Verify ITP assets have code on-chain and exist in symbol-map.
     # Orbit nonce drift can cause token deploy addresses to diverge from what
@@ -1658,7 +1804,7 @@ json.dump(result, sys.stdout)
         INDEX_ADDRESS="$INDEX_ADDR_ITP" \
         L3_WUSDC="$L3_USDC" \
         forge script script/Deploy107ITPs_Vaults.s.sol:Deploy107ITPs_Vaults \
-        --broadcast --slow --legacy --with-gas-price $GAS_PRICE --rpc-url "$RPC_URL" \
+        --broadcast --legacy --with-gas-price $GAS_PRICE --rpc-url "$RPC_URL" \
         --private-key "$DEPLOYER_KEY" \
         --chain-id $CHAIN_ID $FORGE_SIZE_FLAG) \
         > logs/deploy-itp-vaults.log 2>&1 || { echo -e "  ${RED}ITP vault deploy FAILED — check logs/deploy-itp-vaults.log${NC}"; tail -10 logs/deploy-itp-vaults.log 2>/dev/null; exit 1; }
@@ -1789,7 +1935,7 @@ json.dump(result, sys.stdout)
             rm -rf contracts/broadcast/DeployBatchMarkets.s.sol/$CHAIN_ID/ contracts/cache/DeployBatchMarkets.s.sol/$CHAIN_ID/
             (cd contracts && DEPLOYER_KEY="$DEPLOYER_KEY" \
                 forge script script/DeployBatchMarkets.s.sol \
-                --rpc-url "$RPC_URL" --broadcast --slow --legacy --with-gas-price $GAS_PRICE \
+                --rpc-url "$RPC_URL" --broadcast --legacy --with-gas-price $GAS_PRICE \
                 --private-key "$DEPLOYER_KEY" \
                 --chain-id $CHAIN_ID $FORGE_SIZE_FLAG) \
                 > logs/deploy-batch-markets.log 2>&1 || echo -e "  ${YELLOW}Batch markets had warnings — check logs/deploy-batch-markets.log${NC}"
@@ -1837,12 +1983,15 @@ json.dump(d, open('deployments/batch-markets.json', 'w'), indent=2)
     # Sync deployment files + token registries
     echo -e "${BLUE}[13/14] Syncing deployment files + token registries...${NC}"
 
-    # Patch any stale addresses from broadcast (catches partial deploys, manual reruns)
+    # Patch any stale addresses from broadcast (catches partial deploys, manual reruns).
+    # sync-deployment.sh writes into envs/testnet/deployment.json. We then take
+    # active-deployment.json as the source of truth (just freshly rebuilt from
+    # e2e-full-system.json with Vision keys preserved), and propagate it out.
+    # NEVER cp envs/testnet/deployment.json -> active-deployment.json: the env
+    # file may carry stale proxy addresses that sync-deployment.sh cannot
+    # reconcile (it only sees impl CREATE txs in the broadcast).
     ./sync-deployment.sh testnet $CHAIN_ID 2>/dev/null || true
-    # Single source of truth: active-deployment.json
-    # Services detect changes via file watcher. Frontend reads via /api/deployment endpoint.
-    cp envs/testnet/deployment.json "$DEPLOYMENT_FILE" 2>/dev/null || true
-    # Keep local copy for switch-env compatibility
+    # Active is canonical → push to envs/testnet
     [ -f "$DEPLOYMENT_FILE" ] && cp "$DEPLOYMENT_FILE" envs/testnet/deployment.json
     # Supplementary JSONs still need one copy each
     [ -f "deployments/morpho-e2e.json" ] && cp deployments/morpho-e2e.json envs/testnet/morpho-deployment.json
