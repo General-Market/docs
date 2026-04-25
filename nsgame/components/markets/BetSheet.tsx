@@ -152,6 +152,8 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
                 isOpen={isOpen}
                 showClose
                 onClose={onClose}
+                sparkWidth={60}
+                sparkHeight={16}
               />
             </div>
 

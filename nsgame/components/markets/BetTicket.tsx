@@ -8,12 +8,16 @@ import {
   useMarketState,
   usePlaceBet,
   useStakeBalance,
+  usePairHistory,
+  usePairScore,
+  formatPairScore,
   payoutMultiplier,
 } from '@/lib/markets/hooks'
 import FaucetButton from './FaucetButton'
 import { GlobalActivity } from './GlobalActivity'
 import { MyPositions } from './MyPositions'
 import { SourceIcon } from './SourceIcon'
+import { SparkLine } from './SparkLine'
 import type { Side } from './MarketRow'
 
 // Right rail. Sticky. Same body the sheet renders, just without the
@@ -140,6 +144,8 @@ function BetTicketActive({
         pickedName={pickedName}
         isOpen={isOpen}
         showClose={false}
+        sparkWidth={84}
+        sparkHeight={20}
       />
 
       <div className="border-t border-zinc-800 px-4 py-3">
@@ -210,6 +216,9 @@ interface BetBodyProps {
   isOpen: boolean
   showClose: boolean
   onClose?: () => void
+  /** Sparkline dimensions. Defaults to 60×16 (the SparkLine default). */
+  sparkWidth?: number
+  sparkHeight?: number
 }
 
 export function BetBody({
@@ -226,10 +235,23 @@ export function BetBody({
   isOpen,
   showClose,
   onClose,
+  sparkWidth,
+  sparkHeight,
 }: BetBodyProps) {
   const verbColor = side === 'yes' ? 'text-emerald-300' : 'text-rose-300'
   const verb = side === 'yes' ? 'Yes' : 'No'
   const showDescription = isOpen && slot.description && slot.description.length <= 220
+
+  // Per-pair signed score: the chain settles on this number, not on the
+  // site-aggregate. Live tick + 30 min trailing history.
+  const pairScore = usePairScore(slot.pairIndex)
+  const pairHistory = usePairHistory(slot.pairIndex)
+  const sparkValues = useMemo(
+    () => pairHistory.points.map(p => Number(p.score)),
+    [pairHistory.points],
+  )
+  const sparkTrend: 'up' | 'down' | 'flat' =
+    pairScore.direction ?? 'flat'
 
   return (
     <>
@@ -245,6 +267,18 @@ export function BetBody({
           <p className="mt-0.5 truncate text-[13px] text-zinc-400">
             <span className={verbColor}>Buy {verb}</span> · {pickedName}
           </p>
+          <div className="mt-1 flex items-center gap-2 text-[12px] text-zinc-500">
+            <span className="tabular-nums">
+              score · {formatPairScore(pairScore.score)}
+            </span>
+            <SparkLine
+              values={sparkValues}
+              width={sparkWidth}
+              height={sparkHeight}
+              trend={sparkTrend}
+              aria-label="Pair score trend"
+            />
+          </div>
           {showDescription ? (
             <p className="mt-2 text-[12px] leading-relaxed text-zinc-500">
               {slot.description}
