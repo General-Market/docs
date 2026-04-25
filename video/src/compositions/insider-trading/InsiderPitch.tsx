@@ -1527,6 +1527,33 @@ const FootnotePopcut: React.FC<{ text: string }> = ({ text }) => {
   );
 };
 
+// Hairline accent under "70%" — a thin red bar that wipes in left-to-
+// right once the digits have landed. Pure decoration; sits at the right
+// edge directly under the numerals, matched to the right padding so it
+// terminates at the same vertical as the "%" glyph.
+const SeventyAccent: React.FC = () => {
+  const frame = useCurrentFrame();
+  const wipe = interpolate(frame, [0, 18], [0, 1], {
+    ...clamp,
+    easing: ease3,
+  });
+  if (wipe <= 0) return null;
+  return (
+    <div
+      style={{
+        width: 360,
+        height: 8,
+        marginTop: 14,
+        background:
+          "linear-gradient(90deg, #d92d20 0%, #f04438 60%, #d92d20 100%)",
+        transform: `scaleX(${wipe})`,
+        transformOrigin: "right center",
+        borderRadius: 2,
+      }}
+    />
+  );
+};
+
 // ─── Scene 6: STAT — 90% ─────────────────────────────────────────────────
 
 const StatScene: React.FC<{
@@ -1558,17 +1585,22 @@ const StatScene: React.FC<{
       }}
     >
       {/* Phone rendered by SharedPhoneLayer at the InsiderPitch level,
-          so it survives the cut into Point 1 as one continuous prop. */}
+          so it survives the cut into Point 1 as one continuous prop.
+          Left text shrinks back into the left third so the phone owns
+          its own column; weight and scale shift across the three lines
+          give the stack rhythm instead of three identical 108pt slabs. */}
 
-      {/* LEFT — "Earning back your losses from insiders" on three lines */}
+      {/* LEFT — light setup → loud emphasis → solid resolution. Each
+          line owns a different weight/scale. "your losses" carries a
+          subtle forward lean so the eye reads downward velocity. */}
       <AbsoluteFill
         style={{
           display: "flex",
           flexDirection: "column",
           alignItems: "flex-start",
           justifyContent: "center",
-          paddingLeft: 120,
-          gap: 6,
+          paddingLeft: 100,
+          gap: 0,
         }}
       >
         <Reveal
@@ -1579,30 +1611,37 @@ const StatScene: React.FC<{
           seed={121}
           solid
           style={{
-            fontSize: 108,
-            fontWeight: 900,
-            letterSpacing: "-0.035em",
-            lineHeight: 1,
-            maxWidth: 900,
-            color: BLACK,
+            fontSize: 76,
+            fontWeight: 400,
+            letterSpacing: "-0.022em",
+            lineHeight: 1.05,
+            maxWidth: 820,
+            color: "#2b2c2a",
           }}
         />
-        <Reveal
-          from={sceneStart + 14}
-          duration={duration - 14}
-          text="your losses"
-          revealDuration={26}
-          seed={123}
-          solid
+        <div
           style={{
-            fontSize: 108,
-            fontWeight: 900,
-            letterSpacing: "-0.035em",
-            lineHeight: 1,
-            maxWidth: 900,
-            color: BLACK,
+            transform: "skewX(-3deg)",
+            transformOrigin: "left center",
           }}
-        />
+        >
+          <Reveal
+            from={sceneStart + 14}
+            duration={duration - 14}
+            text="your losses"
+            revealDuration={26}
+            seed={123}
+            solid
+            style={{
+              fontSize: 132,
+              fontWeight: 900,
+              letterSpacing: "-0.045em",
+              lineHeight: 1,
+              maxWidth: 820,
+              color: BLACK,
+            }}
+          />
+        </div>
         <Reveal
           from={sceneStart + 24}
           duration={duration - 24}
@@ -1611,17 +1650,19 @@ const StatScene: React.FC<{
           seed={125}
           solid
           style={{
-            fontSize: 108,
-            fontWeight: 900,
-            letterSpacing: "-0.035em",
-            lineHeight: 1,
-            maxWidth: 900,
+            fontSize: 88,
+            fontWeight: 800,
+            letterSpacing: "-0.032em",
+            lineHeight: 1.05,
+            maxWidth: 820,
             color: BLACK,
           }}
         />
       </AbsoluteFill>
 
-      {/* RIGHT — "up to 70%" with 70% set much bigger than "up to" */}
+      {/* RIGHT — "up to 70%". A hairline rule draws beneath the digits
+          once they land — small red mark, but it stops the right column
+          from reading as inert mass on white. */}
       <AbsoluteFill
         style={{
           display: "flex",
@@ -1640,13 +1681,13 @@ const StatScene: React.FC<{
           seed={129}
           solid
           style={{
-            fontSize: 80,
-            fontWeight: 700,
-            letterSpacing: "-0.02em",
+            fontSize: 70,
+            fontWeight: 600,
+            letterSpacing: "-0.015em",
             lineHeight: 1,
             textAlign: "right",
             maxWidth: 600,
-            color: BLACK,
+            color: "#2b2c2a",
           }}
         />
         <Reveal
@@ -1657,7 +1698,7 @@ const StatScene: React.FC<{
           seed={131}
           solid
           style={{
-            fontSize: 260,
+            fontSize: 248,
             fontWeight: 900,
             letterSpacing: "-0.045em",
             lineHeight: 1,
@@ -1666,6 +1707,13 @@ const StatScene: React.FC<{
             color: BLACK,
           }}
         />
+        <Sequence
+          from={sceneStart + 60}
+          durationInFrames={duration - 60}
+          layout="none"
+        >
+          <SeventyAccent />
+        </Sequence>
       </AbsoluteFill>
 
       {/* FOOTNOTE — same as before, kept at the bottom */}
