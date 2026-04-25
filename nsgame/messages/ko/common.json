@@ -7,8 +7,8 @@
     "aria_label": "배당률: {display}, 매처에게 {favorability}"
   },
   "brand": {
-    "name": "General Market",
-    "logo_text": "General Market",
+    "name": "nsgame",
+    "logo_text": "nsgame",
     "tagline": "탈중앙화 인덱스 상품",
     "topbar": "500,000개의 독점 예측 시장, Testnet v0.93",
     "description": "디지털 자산 경제를 위한 기관급 인덱스 상품입니다."
@@ -47,7 +47,7 @@
     "discord": "Discord",
     "privacy_policy": "개인정보처리방침",
     "terms_of_service": "이용약관",
-    "copyright": "© 2026 General Market. All rights reserved.",
+    "copyright": "© 2026 nsgame. All rights reserved.",
     "disclaimer": "인덱스 상품에는 위험이 수반됩니다. 과거 성과가 미래 수익을 보장하지 않습니다. 본 플랫폼은 금융 조언을 제공하지 않습니다."
   },
   "aria": {
@@ -327,7 +327,7 @@
   "callout_warning": "경고",
   "callout_tip": "팁",
   "about": {
-    "eyebrow": "General Market",
+    "eyebrow": "nsgame",
     "title": "소개",
     "subtitle": "인덱스 상품과 AI 예측 마켓을 위한 온체인 프로토콜. Orbit L3 기반.",
     "what_we_build": "프로덕트",

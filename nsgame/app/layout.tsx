@@ -23,10 +23,10 @@ export const viewport: Viewport = {
 // Locale-specific metadata (title, description, OG, twitter) is in [locale]/layout.tsx.
 // Root layout keeps only locale-independent metadata.
 export const metadata: Metadata = {
-  metadataBase: new URL("https://www.generalmarket.io"),
-  authors: [{ name: "General Market", url: "https://x.com/otc_max" }],
-  creator: "General Market",
-  publisher: "General Market",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://nsgame.io"),
+  authors: [{ name: "nsgame" }],
+  creator: "nsgame",
+  publisher: "nsgame",
   robots: {
     index: true,
     follow: true,

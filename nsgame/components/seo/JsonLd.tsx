@@ -6,23 +6,18 @@
  * that have access to getTranslations(). No hardcoded English fallbacks.
  */
 
-import type { ItpSummary } from '@/lib/api/server-data'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://nsgame.io'
 
 export function OrganizationJsonLd({ description }: { description: string }) {
   const data = {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: "General Market",
-    url: "https://www.generalmarket.io",
+    name: "nsgame",
+    url: SITE_URL,
     logo: {
       "@type": "ImageObject",
-      url: "https://www.generalmarket.io/logo.svg",
+      url: `${SITE_URL}/logo.svg`,
     },
-    sameAs: [
-      "https://x.com/otc_max",
-      "https://discord.gg/xsfgzwR6",
-      "https://docs.generalmarket.io",
-    ],
     description,
   }
 
@@ -39,8 +34,8 @@ export function WebsiteJsonLd({ description }: { description: string }) {
   const data = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    name: "General Market",
-    url: "https://www.generalmarket.io",
+    name: "nsgame",
+    url: SITE_URL,
     description,
   }
 
@@ -57,7 +52,7 @@ export function SoftwareApplicationJsonLd({ description }: { description: string
   const data = {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
-    name: "General Market",
+    name: "nsgame",
     operatingSystem: "Web",
     applicationCategory: "FinanceApplication",
     description,
@@ -68,8 +63,8 @@ export function SoftwareApplicationJsonLd({ description }: { description: string
     },
     author: {
       "@type": "Organization",
-      name: "General Market",
-      url: "https://www.generalmarket.io",
+      name: "nsgame",
+      url: SITE_URL,
     },
   }
 
@@ -79,38 +74,6 @@ export function SoftwareApplicationJsonLd({ description }: { description: string
       suppressHydrationWarning
       dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
     />
-  )
-}
-
-export function FinancialProductJsonLd({ itps, descriptionTemplate, categoryLabel }: { itps: ItpSummary[]; descriptionTemplate: (itp: ItpSummary) => string; categoryLabel: string }) {
-  if (itps.length === 0) return null
-
-  const data = itps.map((itp) => ({
-    "@context": "https://schema.org",
-    "@type": "FinancialProduct",
-    "category": categoryLabel,
-    name: itp.name,
-    tickerSymbol: itp.symbol,
-    description: descriptionTemplate(itp),
-    url: `https://www.generalmarket.io/itp/${itp.itpId}`,
-    provider: {
-      "@type": "Organization",
-      name: "General Market",
-      url: "https://www.generalmarket.io",
-    },
-  }))
-
-  return (
-    <>
-      {data.map((d, i) => (
-        <script
-          key={i}
-          type="application/ld+json"
-          suppressHydrationWarning
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(d) }}
-        />
-      ))}
-    </>
   )
 }
 

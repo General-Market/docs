@@ -69,7 +69,6 @@ export function Footer() {
           <div>
             <span className="text-white/80 font-semibold text-label uppercase tracking-[0.08em] block mb-3">{t('footer.resources')}</span>
             <ul className="space-y-2">
-              <li><a href="https://docs.generalmarket.io" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">{t('footer.docs')}</a></li>
               <li><a href="https://discord.gg/xsfgzwR6" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">{t('footer.discord')}</a></li>
             </ul>
           </div>

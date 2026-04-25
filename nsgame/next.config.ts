@@ -4,7 +4,7 @@ import { CSP_CONNECT_EXTRA } from "./lib/config";
 
 const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
-const DOCS_URL = process.env.DOCS_URL || "https://docs.generalmarket.io";
+const DOCS_URL = process.env.DOCS_URL || "https://nsgame.io";
 const isDev = process.env.NODE_ENV !== "production";
 
 const nextConfig: NextConfig = {
@@ -70,7 +70,7 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return {
       beforeFiles: [
-        // Docs proxy — must be before locale rewrite (Mintlify at docs.generalmarket.io)
+        // Docs proxy — must be before locale rewrite (set DOCS_URL when docs are wired up)
         { source: "/docs", destination: `${DOCS_URL}/` },
         { source: "/docs/:path*", destination: `${DOCS_URL}/:path*` },
         // Locale routing fallback

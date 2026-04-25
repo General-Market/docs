@@ -7,8 +7,8 @@
     "aria_label": "Odds: {display}, {favorability} for matchers"
   },
   "brand": {
-    "name": "General Market",
-    "logo_text": "General Market",
+    "name": "nsgame",
+    "logo_text": "nsgame",
     "tagline": "Decentralized Index Products",
     "topbar": "500,000 exclusive prediction markets, Testnet v0.93",
     "description": "Institutional-grade index products for the digital asset economy."
@@ -47,7 +47,7 @@
     "discord": "Discord",
     "privacy_policy": "Privacy Policy",
     "terms_of_service": "Terms of Service",
-    "copyright": "© 2026 General Market. All rights reserved.",
+    "copyright": "© 2026 nsgame. All rights reserved.",
     "disclaimer": "Index products involve risk. Past performance does not guarantee future results. This platform does not provide financial advice."
   },
   "aria": {
@@ -327,7 +327,7 @@
   "callout_warning": "Warning",
   "callout_tip": "Tip",
   "about": {
-    "eyebrow": "General Market",
+    "eyebrow": "nsgame",
     "title": "About",
     "subtitle": "On-chain protocol for index products and AI prediction markets. Built on an Orbit L3.",
     "what_we_build": "What We Build",

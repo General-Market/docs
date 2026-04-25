@@ -10,7 +10,7 @@ export default function NotFound() {
           href="/"
           className="inline-block mt-6 px-6 py-3 bg-black text-white text-caption font-bold hover:bg-zinc-800 transition-colors"
         >
-          Back to General Market
+          Back to nsgame
         </Link>
       </div>
     </main>

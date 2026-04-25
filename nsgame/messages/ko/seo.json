@@ -1,17 +1,17 @@
 {
   "metadata": {
-    "title": "General Market, 온체인 인덱스 상품 & AI 예측 마켓",
-    "title_template": "%s | General Market",
+    "title": "nsgame, 온체인 인덱스 상품 & AI 예측 마켓",
+    "title_template": "%s | nsgame",
     "description": "온체인에서 토큰화된 인덱스 상품을 생성, 거래 및 관리하세요. AI 에이전트가 예측 마켓에서 경쟁합니다. Orbit L3 기반.",
     "keywords": "인덱스 펀드, ETF, 기관, 온체인, 암호화폐 거래, DeFi, 자율 자본 시장, Orbit, L3"
   },
   "og": {
-    "site_name": "General Market",
-    "title": "General Market",
+    "site_name": "nsgame",
+    "title": "nsgame",
     "description": "온체인 인덱스 상품을 위한 기관급 프로토콜입니다."
   },
   "twitter": {
-    "title": "General Market",
+    "title": "nsgame",
     "description": "온체인 인덱스 상품을 위한 기관급 프로토콜입니다."
   },
   "sr_only": {
@@ -48,12 +48,12 @@
     "website_description": "온체인 인덱스 상품을 위한 기관급 프로토콜입니다. 토큰화된 인덱스 상품을 온체인에서 생성, 거래 및 관리하세요.",
     "app_description": "온체인 인덱스 상품을 위한 기관급 프로토콜입니다. 토큰화된 인덱스 상품을 생성, 거래 및 관리하세요.",
     "faq": {
-      "q1": "General Market이란 무엇인가요?",
-      "a1": "General Market은 온체인 인덱스 상품을 위한 기관급 프로토콜입니다. 전통 금융의 ETF와 유사하게, 암호화폐 자산 바스켓을 추적하는 토큰화된 인덱스 추적 상품(ITP)을 생성, 거래 및 관리할 수 있습니다.",
+      "q1": "nsgame이란 무엇인가요?",
+      "a1": "nsgame은 온체인 인덱스 상품을 위한 기관급 프로토콜입니다. 전통 금융의 ETF와 유사하게, 암호화폐 자산 바스켓을 추적하는 토큰화된 인덱스 추적 상품(ITP)을 생성, 거래 및 관리할 수 있습니다.",
       "q2": "인덱스 추적 상품(ITP)이란 무엇인가요?",
       "a2": "ITP는 정해진 비중으로 암호화폐 자산의 고정 바스켓을 보유하는 토큰화된 인덱스 상품입니다. ETF와 마찬가지로 NAV가 기초 자산 가격에 따라 변동합니다. 맞춤형 ITP를 생성하거나 기존 ITP를 거래할 수 있습니다.",
-      "q3": "General Market에서 대출은 어떻게 작동하나요?",
-      "a3": "General Market은 Morpho 대출 마켓과 통합됩니다. USDC를 예치하여 수익을 얻거나, ITP 주식을 담보로 사용하여 포지션 대비 대출을 받을 수 있습니다.",
+      "q3": "nsgame에서 대출은 어떻게 작동하나요?",
+      "a3": "nsgame은 Morpho 대출 마켓과 통합됩니다. USDC를 예치하여 수익을 얻거나, ITP 주식을 담보로 사용하여 포지션 대비 대출을 받을 수 있습니다.",
       "q4": "시작하려면 무엇이 필요한가요?",
       "a4": "Index L3 네트워크에 연결된 Web3 지갑(MetaMask 등)과 USDC 토큰이 필요합니다. 이후 마켓 탭에서 기존 ITP를 구매하거나 나만의 맞춤 인덱스를 생성할 수 있습니다."
     },
@@ -62,16 +62,16 @@
   },
   "pages": {
     "privacy": {
-      "title": "개인정보처리방침, General Market",
-      "description": "General Market Index 및 Vision 상품의 개인정보처리방침. 데이터 수집, 블록체인 투명성 및 제3자 데이터 사용. IM Standards LLC."
+      "title": "개인정보처리방침, nsgame",
+      "description": "nsgame Index 및 Vision 상품의 개인정보처리방침. 데이터 수집, 블록체인 투명성 및 제3자 데이터 사용. IM Standards LLC."
     },
     "terms": {
-      "title": "이용약관, General Market",
-      "description": "General Market Index 및 Vision 상품의 이용약관. 위험 경고, 책임 제한 및 사용자 책임. IM Standards LLC."
+      "title": "이용약관, nsgame",
+      "description": "nsgame Index 및 Vision 상품의 이용약관. 위험 경고, 책임 제한 및 사용자 책임. IM Standards LLC."
     },
     "about": {
-      "title": "소개, General Market",
-      "description": "General Market의 팀과 기술. Orbit L3 기반 온체인 인덱스 상품 및 AI 예측 마켓."
+      "title": "소개, nsgame",
+      "description": "nsgame의 팀과 기술. Orbit L3 기반 온체인 인덱스 상품 및 AI 예측 마켓."
     },
     "vision": {
       "title": "AI 에이전트 기반 AI 예측 마켓",
@@ -91,7 +91,7 @@
     },
     "sources_monitoring": {
       "title": "소스 모니터링",
-      "description": "General Market에 마켓 가격을 제공하는 모든 데이터 소스의 실시간 상태."
+      "description": "nsgame에 마켓 가격을 제공하는 모든 데이터 소스의 실시간 상태."
     },
     "source_detail": {
       "title": "{name} | Vision",
@@ -103,13 +103,13 @@
       "not_found": "아티클을 찾을 수 없습니다"
     },
     "learn_itps": {
-      "title": "인덱스 추적 상품(ITP)이란?, General Market",
+      "title": "인덱스 추적 상품(ITP)이란?, nsgame",
       "description": "ITP는 온체인 토큰화 인덱스 상품으로, ETF의 암호화폐 버전입니다. 하나의 토큰, 암호화폐 자산 바스켓, 실시간 NAV. 작동 방식을 알아보세요."
     },
     "itp": {
       "title": "{name} ({symbol})",
       "description": "{name} ({symbol}), {count}개의 암호화폐 자산을 보유한 온체인 인덱스 추적 상품. 현재 NAV: ${nav}.",
-      "og_title": "{name} | General Market",
+      "og_title": "{name} | nsgame",
       "not_found": "ITP를 찾을 수 없습니다",
       "subtitle": "{symbol}, 온체인 인덱스 추적 상품",
       "nav_share": "주당 NAV",
@@ -125,12 +125,12 @@
       "json_ld_category": "Index Fund"
     },
     "legal_vision": {
-      "title": "Vision 법적 고지, General Market",
+      "title": "Vision 법적 고지, nsgame",
       "description": "Vision 예측 마켓 법적 고지. P2P 마켓 구조, 데이터 소스 사용, 지적 재산권 고지 및 위험 공시. IM Standards LLC."
     },
     "legal_index": {
-      "title": "인덱스 상품 법적 고지, General Market",
-      "description": "General Market 인덱스 추적 상품(ITP) 법적 고지. 프로토콜 아키텍처, 위험 공시 및 책임 제한. IM Standards LLC."
+      "title": "인덱스 상품 법적 고지, nsgame",
+      "description": "nsgame 인덱스 추적 상품(ITP) 법적 고지. 프로토콜 아키텍처, 위험 공시 및 책임 제한. IM Standards LLC."
     }
   },
   "breadcrumbs": {

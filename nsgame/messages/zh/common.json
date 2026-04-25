@@ -7,8 +7,8 @@
     "aria_label": "赔率: {display}，对匹配者{favorability}"
   },
   "brand": {
-    "name": "General Market",
-    "logo_text": "General Market",
+    "name": "nsgame",
+    "logo_text": "nsgame",
     "tagline": "去中心化指数产品",
     "topbar": "500,000个独家预测市场, Testnet v0.93",
     "description": "面向数字资产经济的机构级指数产品。"
@@ -47,7 +47,7 @@
     "discord": "Discord",
     "privacy_policy": "隐私政策",
     "terms_of_service": "服务条款",
-    "copyright": "© 2026 General Market. 保留所有权利。",
+    "copyright": "© 2026 nsgame. 保留所有权利。",
     "disclaimer": "指数产品存在风险。过往业绩不代表未来表现。本平台不提供财务建议。"
   },
   "aria": {
@@ -327,7 +327,7 @@
   "callout_warning": "警告",
   "callout_tip": "小贴士",
   "about": {
-    "eyebrow": "General Market",
+    "eyebrow": "nsgame",
     "title": "关于",
     "subtitle": "面向指数产品和 AI 预测市场的链上协议。基于 Orbit L3 构建。",
     "what_we_build": "产品",

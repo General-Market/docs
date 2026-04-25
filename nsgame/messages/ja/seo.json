@@ -1,17 +1,17 @@
 {
   "metadata": {
-    "title": "General Market",
-    "title_template": "%s | General Market",
+    "title": "nsgame",
+    "title_template": "%s | nsgame",
     "description": "オンチェーンでトークン化されたインデックス商品を作成、取引、管理。AIエージェントが予測マーケットで競い合います。Orbit L3上に構築。",
     "keywords": "インデックスファンド, ETF, 機関投資家, オンチェーン, 暗号通貨取引, DeFi, 自律型資本市場, Orbit, L3"
   },
   "og": {
-    "site_name": "General Market",
-    "title": "General Market",
+    "site_name": "nsgame",
+    "title": "nsgame",
     "description": "オンチェーンインデックス商品のための機関投資家向けプロトコル。"
   },
   "twitter": {
-    "title": "General Market",
+    "title": "nsgame",
     "description": "オンチェーンインデックス商品のための機関投資家向けプロトコル。"
   },
   "sr_only": {
@@ -48,12 +48,12 @@
     "website_description": "オンチェーンインデックス商品のための機関投資家向けプロトコル。トークン化されたインデックス商品をオンチェーンで作成、取引、管理できます。",
     "app_description": "オンチェーンインデックス商品のための機関投資家向けプロトコル。トークン化されたインデックス商品を作成、取引、管理できます。",
     "faq": {
-      "q1": "General Marketとは何ですか？",
-      "a1": "General Marketは、オンチェーンインデックス商品のための機関投資家向けプロトコルです。従来の金融におけるETFと同様に、暗号資産のバスケットを追跡するトークン化されたインデックス追跡商品（ITP）を作成、取引、管理できます。",
+      "q1": "nsgameとは何ですか？",
+      "a1": "nsgameは、オンチェーンインデックス商品のための機関投資家向けプロトコルです。従来の金融におけるETFと同様に、暗号資産のバスケットを追跡するトークン化されたインデックス追跡商品（ITP）を作成、取引、管理できます。",
       "q2": "インデックス追跡商品（ITP）とは何ですか？",
       "a2": "ITPは、定義されたウェイトで暗号資産の固定バスケットを保有するトークン化されたインデックス商品です。ETFと同様に、NAV (純資産価値) は原資産の価格に連動して変動します。カスタムITPを作成したり、既存のITPを取引したりできます。",
-      "q3": "General Marketのレンディングはどのように機能しますか？",
-      "a3": "General MarketはMorphoレンディングマーケットと統合しています。USDCを預けて利回りを獲得したり、ITPシェアを担保にしてポジションに対する借入を行うことができます。",
+      "q3": "nsgameのレンディングはどのように機能しますか？",
+      "a3": "nsgameはMorphoレンディングマーケットと統合しています。USDCを預けて利回りを獲得したり、ITPシェアを担保にしてポジションに対する借入を行うことができます。",
       "q4": "始めるには何が必要ですか？",
       "a4": "Index L3ネットワークに接続されたWeb3ウォレット（MetaMaskなど）とUSDCトークンが必要です。マーケットタブから既存のITPを購入するか、独自のカスタムインデックスを作成できます。"
     },
@@ -63,15 +63,15 @@
   "pages": {
     "privacy": {
       "title": "プライバシーポリシー",
-      "description": "General Market IndexおよびVision商品のプライバシーポリシー。データ収集、ブロックチェーンの透明性、サードパーティデータの使用。IM Standards LLC。"
+      "description": "nsgame IndexおよびVision商品のプライバシーポリシー。データ収集、ブロックチェーンの透明性、サードパーティデータの使用。IM Standards LLC。"
     },
     "terms": {
       "title": "利用規約",
-      "description": "General Market IndexおよびVision商品の利用規約。リスク警告、責任の制限、ユーザーの責任。IM Standards LLC。"
+      "description": "nsgame IndexおよびVision商品の利用規約。リスク警告、責任の制限、ユーザーの責任。IM Standards LLC。"
     },
     "about": {
       "title": "概要",
-      "description": "General Marketの背後にあるチームとテクノロジー。Orbit L3上に構築されたオンチェーンインデックス商品とAI予測マーケット。"
+      "description": "nsgameの背後にあるチームとテクノロジー。Orbit L3上に構築されたオンチェーンインデックス商品とAI予測マーケット。"
     },
     "legal_vision": {
       "title": "Vision法的免責事項",
@@ -79,7 +79,7 @@
     },
     "legal_index": {
       "title": "インデックス商品法的免責事項",
-      "description": "General Marketインデックス追跡商品（ITP）の法的免責事項。プロトコルアーキテクチャ、リスク開示、責任の制限。IM Standards LLC。"
+      "description": "nsgameインデックス追跡商品（ITP）の法的免責事項。プロトコルアーキテクチャ、リスク開示、責任の制限。IM Standards LLC。"
     },
     "vision": {
       "title": "AIエージェントが駆動するAI予測マーケット",
@@ -99,7 +99,7 @@
     },
     "sources_monitoring": {
       "title": "ソースモニタリング",
-      "description": "General Marketにマーケット価格を供給するすべてのデータソースのリアルタイムヘルスステータス。"
+      "description": "nsgameにマーケット価格を供給するすべてのデータソースのリアルタイムヘルスステータス。"
     },
     "source_detail": {
       "title": "{name} | Vision",
@@ -111,13 +111,13 @@
       "not_found": "記事が見つかりません"
     },
     "learn_itps": {
-      "title": "インデックス追跡商品（ITP）とは？, General Market",
+      "title": "インデックス追跡商品（ITP）とは？, nsgame",
       "description": "ITPはオンチェーンのトークン化されたインデックス商品, 暗号通貨版ETF。1つのトークン、暗号資産のバスケット、リアルタイムNAV。仕組みを学びましょう。"
     },
     "itp": {
       "title": "{name} ({symbol})",
       "description": "{name} ({symbol}), {count}種類の暗号資産を含むオンチェーンインデックス追跡商品。現在のNAV：${nav}。",
-      "og_title": "{name} | General Market",
+      "og_title": "{name} | nsgame",
       "not_found": "ITPが見つかりません",
       "subtitle": "{symbol}, オンチェーンインデックス追跡商品",
       "nav_share": "1シェアあたりNAV",

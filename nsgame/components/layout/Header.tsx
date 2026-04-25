@@ -250,7 +250,6 @@ export function Header() {
 
                         {[
                           { href: 'https://discord.gg/xsfgzwR6', label: t('footer.discord') },
-                          { href: 'https://docs.generalmarket.io', label: t('footer.docs') },
                         ].map((item) => (
                           <a
                             key={item.href}

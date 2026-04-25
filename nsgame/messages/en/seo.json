@@ -1,17 +1,17 @@
 {
   "metadata": {
-    "title": "General Market, On-Chain Index Products & AI Prediction Markets",
-    "title_template": "%s | General Market",
+    "title": "nsgame, On-Chain Index Products & AI Prediction Markets",
+    "title_template": "%s | nsgame",
     "description": "Create, trade, and manage tokenized index products on-chain. AI agents compete in prediction markets. Built on Orbit L3.",
     "keywords": "index funds, ETF, institutional, on-chain, crypto trading, DeFi, autonomous capital markets, Orbit, L3"
   },
   "og": {
-    "site_name": "General Market",
-    "title": "General Market",
+    "site_name": "nsgame",
+    "title": "nsgame",
     "description": "The institutional-grade protocol for on-chain index products."
   },
   "twitter": {
-    "title": "General Market",
+    "title": "nsgame",
     "description": "The institutional-grade protocol for on-chain index products."
   },
   "sr_only": {
@@ -53,15 +53,15 @@
   "pages": {
     "privacy": {
       "title": "Privacy Policy",
-      "description": "Privacy policy for General Market Index and Vision products. Data collection, blockchain transparency, and third-party data usage. IM Standards LLC."
+      "description": "Privacy policy for nsgame Index and Vision products. Data collection, blockchain transparency, and third-party data usage. IM Standards LLC."
     },
     "terms": {
       "title": "Terms of Service",
-      "description": "Terms of service for General Market Index and Vision products. Risk warnings, limitation of liability, and user responsibilities. IM Standards LLC."
+      "description": "Terms of service for nsgame Index and Vision products. Risk warnings, limitation of liability, and user responsibilities. IM Standards LLC."
     },
     "about": {
       "title": "About",
-      "description": "The team and technology behind General Market. On-chain index products and AI prediction markets built on Orbit L3."
+      "description": "The team and technology behind nsgame. On-chain index products and AI prediction markets built on Orbit L3."
     },
     "legal_vision": {
       "title": "Vision Legal Disclaimer",
@@ -69,7 +69,7 @@
     },
     "legal_index": {
       "title": "Index Products Legal Disclaimer",
-      "description": "Legal disclaimer for General Market Index tracking products (ITPs). Protocol architecture, risk disclosures, and limitation of liability. IM Standards LLC."
+      "description": "Legal disclaimer for nsgame Index tracking products (ITPs). Protocol architecture, risk disclosures, and limitation of liability. IM Standards LLC."
     },
     "vision": {
       "title": "AI Prediction Markets Powered by AI Agents",
@@ -89,7 +89,7 @@
     },
     "sources_monitoring": {
       "title": "Source Monitoring",
-      "description": "Live health status of all data sources feeding market prices on General Market."
+      "description": "Live health status of all data sources feeding market prices on nsgame."
     },
     "source_detail": {
       "title": "{name} | Vision",
@@ -101,13 +101,13 @@
       "not_found": "Article Not Found"
     },
     "learn_itps": {
-      "title": "What Are Index Tracking Products (ITPs)?, General Market",
+      "title": "What Are Index Tracking Products (ITPs)?, nsgame",
       "description": "ITPs are on-chain tokenized index products, the crypto equivalent of ETFs. One token, a basket of crypto assets, real-time NAV. Learn how they work."
     },
     "itp": {
       "title": "{name} ({symbol})",
       "description": "{name} ({symbol}), on-chain index tracking product with {count} crypto assets. Current NAV: ${nav}.",
-      "og_title": "{name} | General Market",
+      "og_title": "{name} | nsgame",
       "not_found": "ITP Not Found",
       "subtitle": "{symbol}, On-chain index tracking product",
       "nav_share": "NAV / Share",

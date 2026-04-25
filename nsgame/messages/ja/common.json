@@ -7,8 +7,8 @@
     "aria_label": "オッズ: {display}、マッチャーにとって{favorability}"
   },
   "brand": {
-    "name": "General Market",
-    "logo_text": "General Market",
+    "name": "nsgame",
+    "logo_text": "nsgame",
     "tagline": "分散型インデックス商品",
     "topbar": "500,000の独占予測市場, Testnet v0.93",
     "description": "デジタル資産経済のための機関投資家向けインデックス商品。"
@@ -47,7 +47,7 @@
     "discord": "Discord",
     "privacy_policy": "プライバシーポリシー",
     "terms_of_service": "利用規約",
-    "copyright": "© 2026 General Market. All rights reserved.",
+    "copyright": "© 2026 nsgame. All rights reserved.",
     "disclaimer": "インデックス商品にはリスクが伴います。過去の実績は将来の結果を保証するものではありません。本プラットフォームは金融アドバイスを提供するものではありません。"
   },
   "aria": {
@@ -327,7 +327,7 @@
   "callout_warning": "警告",
   "callout_tip": "ヒント",
   "about": {
-    "eyebrow": "General Market",
+    "eyebrow": "nsgame",
     "title": "概要",
     "subtitle": "インデックス商品とAI予測マーケットのためのオンチェーンプロトコル。Orbit L3上に構築。",
     "what_we_build": "プロダクト",

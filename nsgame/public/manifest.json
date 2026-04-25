@@ -1,7 +1,7 @@
 {
-  "name": "General Market",
-  "short_name": "GM",
-  "description": "The institutional-grade protocol for on-chain index products.",
+  "name": "nsgame",
+  "short_name": "nsgame",
+  "description": "Session-wallet prediction market on Solana.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#09090B",

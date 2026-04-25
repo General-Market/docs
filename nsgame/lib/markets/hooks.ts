@@ -712,6 +712,232 @@ export function useSourceHistory(sourceId: number | null): UseSourceHistory {
   return { points, loading }
 }
 
+// ── usePairScore / usePairHistory ───────────────────────────────────────
+//
+// The site-aggregate trend is the wrong shape for a head-to-head ticket.
+// What the chain settles on is the per-pair signed score: F1 → Δ_A − Δ_B,
+// F2 → value_A − value_B. Positive favours A, negative favours B.
+
+const PAIR_PRICE_POLL_MS = 5_000
+const PAIR_HISTORY_POLL_MS = 30_000
+const PAIR_HISTORY_MAX_POINTS = 360
+
+interface PairPriceDTO {
+  score?: number | string | null
+  deltaA?: number | string | null
+  deltaB?: number | string | null
+  valueA?: number | string | null
+  valueB?: number | string | null
+  missing?: Array<'a' | 'b'> | null
+  ts?: number | null
+  error?: string
+}
+
+export interface PairScore {
+  score: bigint | null
+  deltaA: bigint | null
+  deltaB: bigint | null
+  valueA: bigint | null
+  valueB: bigint | null
+  missing: Array<'a' | 'b'>
+  ts: number | null
+  loading: boolean
+  direction: 'up' | 'down' | 'flat' | null
+}
+
+export function usePairScore(pairIndex: number | null): PairScore {
+  const [score, setScore] = useState<bigint | null>(null)
+  const [deltaA, setDeltaA] = useState<bigint | null>(null)
+  const [deltaB, setDeltaB] = useState<bigint | null>(null)
+  const [valueA, setValueA] = useState<bigint | null>(null)
+  const [valueB, setValueB] = useState<bigint | null>(null)
+  const [missing, setMissing] = useState<Array<'a' | 'b'>>([])
+  const [ts, setTs] = useState<number | null>(null)
+  const [loading, setLoading] = useState<boolean>(true)
+  const [direction, setDirection] = useState<'up' | 'down' | 'flat' | null>(null)
+
+  const prevScoreRef = useRef<bigint | null>(null)
+  const lastPairRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    if (pairIndex == null) {
+      setScore(null)
+      setDeltaA(null)
+      setDeltaB(null)
+      setValueA(null)
+      setValueB(null)
+      setMissing([])
+      setTs(null)
+      setLoading(false)
+      setDirection(null)
+      prevScoreRef.current = null
+      lastPairRef.current = null
+      return
+    }
+
+    if (lastPairRef.current !== pairIndex) {
+      prevScoreRef.current = null
+      lastPairRef.current = pairIndex
+      setLoading(true)
+      setDirection(null)
+    }
+
+    let cancelled = false
+
+    const fetchOnce = async () => {
+      try {
+        const res = await fetch(`/api/pairs/${pairIndex}/price`, {
+          cache: 'no-store',
+        })
+        if (!res.ok) return
+        const payload = (await res.json()) as PairPriceDTO
+        if (cancelled || lastPairRef.current !== pairIndex) return
+
+        const nextScore = toBigIntOrNull(payload.score ?? null)
+        const prev = prevScoreRef.current
+
+        if (nextScore === null) {
+          // Hold direction — nothing to compare against.
+        } else if (prev === null) {
+          setDirection(null)
+        } else if (nextScore > prev) {
+          setDirection('up')
+        } else if (nextScore < prev) {
+          setDirection('down')
+        } else {
+          setDirection('flat')
+        }
+
+        if (nextScore !== null) prevScoreRef.current = nextScore
+
+        setScore(nextScore)
+        setDeltaA(toBigIntOrNull(payload.deltaA ?? null))
+        setDeltaB(toBigIntOrNull(payload.deltaB ?? null))
+        setValueA(toBigIntOrNull(payload.valueA ?? null))
+        setValueB(toBigIntOrNull(payload.valueB ?? null))
+        setMissing(Array.isArray(payload.missing) ? payload.missing : [])
+        setTs(typeof payload.ts === 'number' ? payload.ts : null)
+      } catch {
+        // Silent — UI degrades to a dash.
+      } finally {
+        if (!cancelled && lastPairRef.current === pairIndex) {
+          setLoading(false)
+        }
+      }
+    }
+
+    void fetchOnce()
+    const id = window.setInterval(fetchOnce, PAIR_PRICE_POLL_MS)
+    return () => {
+      cancelled = true
+      window.clearInterval(id)
+    }
+  }, [pairIndex])
+
+  return { score, deltaA, deltaB, valueA, valueB, missing, ts, loading, direction }
+}
+
+export interface PairHistoryPoint {
+  /** Unix seconds. */
+  ts: number
+  /** Signed pair score. Positive → A wins. */
+  score: bigint
+}
+
+export interface UsePairHistory {
+  points: PairHistoryPoint[]
+  /** True only on the very first render — flips false after the seed call. */
+  loading: boolean
+}
+
+interface PairHistoryDTO {
+  points?: Array<{ ts?: number; score?: number | string }>
+}
+
+/**
+ * Bucketed pair signed-score history. The data-node returns the series
+ * already pre-bucketed; we don't append client-side (as we do for
+ * `useSourceHistory`), we just re-fetch on a poll.
+ */
+export function usePairHistory(
+  pairIndex: number | null,
+  minutes: number = 30,
+): UsePairHistory {
+  const [points, setPoints] = useState<PairHistoryPoint[]>([])
+  const [loading, setLoading] = useState<boolean>(true)
+  const lastPairRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    if (pairIndex == null) {
+      setPoints([])
+      setLoading(false)
+      lastPairRef.current = null
+      return
+    }
+
+    if (lastPairRef.current !== pairIndex) {
+      setPoints([])
+      lastPairRef.current = pairIndex
+      setLoading(true)
+    }
+
+    let cancelled = false
+
+    const fetchOnce = async () => {
+      try {
+        const res = await fetch(
+          `/api/pairs/${pairIndex}/history?minutes=${minutes}`,
+          { cache: 'no-store' },
+        )
+        if (cancelled || lastPairRef.current !== pairIndex) return
+        if (!res.ok) {
+          return
+        }
+        const payload = (await res.json()) as PairHistoryDTO
+        if (cancelled || lastPairRef.current !== pairIndex) return
+
+        const parsed: PairHistoryPoint[] = []
+        for (const p of payload.points ?? []) {
+          if (typeof p.ts !== 'number') continue
+          const score = toBigIntOrNull(p.score ?? null)
+          if (score === null) continue
+          parsed.push({ ts: p.ts, score })
+        }
+        parsed.sort((a, b) => a.ts - b.ts)
+        const capped =
+          parsed.length > PAIR_HISTORY_MAX_POINTS
+            ? parsed.slice(-PAIR_HISTORY_MAX_POINTS)
+            : parsed
+        setPoints(capped)
+      } catch {
+        // Silent — empty buffer is acceptable.
+      } finally {
+        if (!cancelled && lastPairRef.current === pairIndex) {
+          setLoading(false)
+        }
+      }
+    }
+
+    void fetchOnce()
+    const id = window.setInterval(fetchOnce, PAIR_HISTORY_POLL_MS)
+    return () => {
+      cancelled = true
+      window.clearInterval(id)
+    }
+  }, [pairIndex, minutes])
+
+  return { points, loading }
+}
+
+/** Comma-grouped, signed, with the proper unicode minus for symmetry. */
+export function formatPairScore(score: bigint | null): string {
+  if (score === null) return '—'
+  if (score === 0n) return '0'
+  const abs = score < 0n ? -score : score
+  const grouped = abs.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+  return score < 0n ? `−${grouped}` : `+${grouped}`
+}
+
 // ── useMarketStatesBatch ────────────────────────────────────────────────
 
 const MARKET_BATCH_POLL_MS = 30_000
