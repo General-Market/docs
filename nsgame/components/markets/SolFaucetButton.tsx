@@ -1,98 +1,60 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { useToast } from '@/lib/contexts/ToastContext'
 
-// Dev-only SOL airdrop trigger. Companion to FaucetButton: that one mints
-// USDC, this one asks devnet for the SOL the wallet needs to pay fees.
+// Devnet SOL nudge. The public faucet at faucet.solana.com handles the
+// rate-limiting, captchas, and IP throttling far better than we ever
+// could from a single server. We just copy the user's address and open
+// the portal in a new tab.
 
-interface SolFaucetButtonProps {
-  onAirdropped?: () => void
-}
+const FAUCET_URL = 'https://faucet.solana.com/'
 
-type AirdropResponse =
-  | { ok: true; signature: string; lamports: number }
-  | { ok: false; error: string }
-
-export default function SolFaucetButton({ onAirdropped }: SolFaucetButtonProps) {
+export default function SolFaucetButton() {
   const { publicKey, connected } = useWallet()
   const toast = useToast()
-  const [pending, setPending] = useState(false)
-  const [inlineMsg, setInlineMsg] = useState<string | null>(null)
-  const inlineTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  const showInlineMessage = (msg: string) => {
-    setInlineMsg(msg)
-    if (inlineTimer.current) clearTimeout(inlineTimer.current)
-    inlineTimer.current = setTimeout(() => setInlineMsg(null), 3000)
-  }
-
-  useEffect(() => {
-    return () => {
-      if (inlineTimer.current) clearTimeout(inlineTimer.current)
-    }
-  }, [])
 
   if (process.env.NEXT_PUBLIC_FAUCET_ENABLED !== '1') return null
   if (!connected || !publicKey) return null
 
-  async function handleAirdrop() {
+  async function handleClick() {
     if (!publicKey) return
-    setPending(true)
-    setInlineMsg(null)
+    const address = publicKey.toBase58()
     try {
-      const res = await fetch('/api/faucet/sol', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ address: publicKey.toBase58() }),
+      await navigator.clipboard.writeText(address)
+      toast.showSuccess('Address copied. Paste it on the Solana faucet.', {
+        url: FAUCET_URL,
+        text: 'Open faucet',
       })
-      const raw = await res.text()
-      let data: AirdropResponse | null = null
-      try {
-        data = JSON.parse(raw) as AirdropResponse
-      } catch {
-        /* non-JSON body — fall through */
-      }
-      if (!res.ok || !data || !data.ok) {
-        const err =
-          data && !data.ok
-            ? data.error
-            : `Airdrop failed (${res.status}). Try again in a moment.`
-        toast.showError(err)
-        showInlineMessage(err)
-        return
-      }
-      toast.showSuccess('Airdrop sent. Wait a few seconds for confirmation.')
-      showInlineMessage(`Sent. ${data.signature.slice(0, 8)}…`)
-      onAirdropped?.()
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Airdrop failed.'
-      toast.showError(msg)
-      showInlineMessage(msg)
-    } finally {
-      setPending(false)
+    } catch {
+      toast.showInfo('Open the Solana faucet and paste your address there.')
     }
+    window.open(FAUCET_URL, '_blank', 'noopener,noreferrer')
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <span className="faucet-glow inline-block p-px align-middle">
       <button
         type="button"
-        onClick={handleAirdrop}
-        disabled={pending}
-        className={[
-          'h-7 rounded-md border px-2.5 font-mono text-[10px] uppercase tracking-[0.08em] transition-colors',
-          pending
-            ? 'cursor-not-allowed border-zinc-800 bg-zinc-900 text-zinc-600'
-            : 'border-zinc-700 bg-transparent text-zinc-300 hover:bg-zinc-800',
-        ].join(' ')}
+        onClick={handleClick}
+        className="flex h-7 items-center gap-1.5 rounded-[5px] bg-zinc-950 px-2.5 font-mono text-[10px] uppercase tracking-[0.08em] text-emerald-200 transition-colors hover:text-emerald-100"
       >
-        {pending ? 'Requesting…' : 'Get devnet SOL'}
+        Get devnet SOL
+        <svg
+          aria-hidden="true"
+          width="9"
+          height="9"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M7 17L17 7" />
+          <path d="M8 7h9v9" />
+        </svg>
       </button>
-      {inlineMsg && (
-        <span className="font-mono text-[10px] text-zinc-500">{inlineMsg}</span>
-      )}
-    </div>
+    </span>
   )
 }

@@ -517,6 +517,35 @@ input[type="number"] {
 .animate-tooltip-in { animation: tooltip-appear 0.15s var(--ease-out) both; }
 .animate-status-breathe { animation: status-breathe 2s ease-in-out infinite; }
 
+/* Rotating perimeter glow — used by faucet buttons. The wrapper's
+   conic-gradient background spins via @property; an inner element with
+   an opaque background masks everything except a thin rotating ring. */
+@property --faucet-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes faucet-glow-spin {
+  to { --faucet-angle: 360deg; }
+}
+.faucet-glow {
+  position: relative;
+  border-radius: 0.375rem;
+  background: conic-gradient(
+    from var(--faucet-angle),
+    transparent 0deg,
+    rgba(16, 185, 129, 0.95) 50deg,
+    rgba(16, 185, 129, 0) 130deg,
+    transparent 360deg
+  );
+  animation: faucet-glow-spin 2.4s linear infinite;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.25);
+}
+.faucet-glow > * { position: relative; z-index: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .faucet-glow { animation: none; background: rgba(16, 185, 129, 0.45); }
+}
+
 /* Stagger — set --i per child via nth-child */
 .stagger > :nth-child(1) { --i: 0; }
 .stagger > :nth-child(2) { --i: 1; }

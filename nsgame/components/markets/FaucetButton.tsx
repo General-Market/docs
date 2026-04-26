@@ -83,19 +83,21 @@ export default function FaucetButton({ onMinted }: FaucetButtonProps) {
 
   return (
     <div className="flex items-center gap-2">
-      <button
-        type="button"
-        onClick={handleMint}
-        disabled={pending}
-        className={[
-          'h-7 rounded-md border px-2.5 font-mono text-[10px] uppercase tracking-[0.08em] transition-colors',
-          pending
-            ? 'cursor-not-allowed border-zinc-800 bg-zinc-900 text-zinc-600'
-            : 'border-zinc-700 bg-transparent text-zinc-300 hover:bg-zinc-800',
-        ].join(' ')}
-      >
-        {pending ? 'Minting…' : 'Mint 100 USDC'}
-      </button>
+      <span className="faucet-glow inline-block p-px align-middle">
+        <button
+          type="button"
+          onClick={handleMint}
+          disabled={pending}
+          className={[
+            'h-7 rounded-[5px] px-2.5 font-mono text-[10px] uppercase tracking-[0.08em] transition-colors',
+            pending
+              ? 'cursor-not-allowed bg-zinc-900 text-zinc-600'
+              : 'bg-zinc-950 text-emerald-200 hover:text-emerald-100',
+          ].join(' ')}
+        >
+          {pending ? 'Minting…' : 'Mint 100 USDC'}
+        </button>
+      </span>
       {inlineMsg && (
         <span className="font-mono text-[10px] text-zinc-500">{inlineMsg}</span>
       )}
