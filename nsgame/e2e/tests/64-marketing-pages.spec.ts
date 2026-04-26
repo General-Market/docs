@@ -64,11 +64,6 @@ test.describe('Marketing & Legal Pages', () => {
       console.log(`About page content shorter than expected: ${(bodyText ?? '').length} chars`)
     }
 
-    // Verify key structural elements exist (team member, technology grid)
-    const teamVisible = await page.getByText('@otc_max').first().isVisible({ timeout: 10_000 }).catch(() => false)
-    if (!teamVisible) {
-      console.log('Team member @otc_max not found — about page content may have changed')
-    }
   })
 
   test('privacy page renders with heading and content', async ({ page }) => {
