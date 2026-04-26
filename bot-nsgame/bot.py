@@ -82,7 +82,7 @@ BET_QUANTUM = 0.1
 WATCHDOG_PERIOD = 60
 SUMMARY_PERIOD = 1800
 
-RPC_RATE_LIMIT_PER_SEC = 2.0
+RPC_RATE_LIMIT_PER_SEC = 1.0
 RETRY_BASE_SLEEP = 5
 RETRY_MAX_SLEEP = 600
 
@@ -497,31 +497,58 @@ def build_mint_to_ix(
 # Tx send                                                                       #
 # ----------------------------------------------------------------------------- #
 
+def _is_rate_limit(exc: BaseException) -> bool:
+    # Helius (and most RPCs) report rate limiting via 429; the message
+    # text varies — sometimes "429", sometimes "Too Many Requests",
+    # sometimes the entire HTTP body. Match loosely.
+    s = f"{exc!r} {exc!s}".lower()
+    return "429" in s or "too many requests" in s or "rate limit" in s
+
+
 async def _send_versioned_tx(
     client: AsyncClient,
     bucket: TokenBucket,
     payer: Keypair,
     instructions: list[Instruction],
     extra_signers: list[Keypair] | None = None,
+    *,
+    max_attempts: int = 5,
 ) -> str:
     extra = extra_signers or []
-    await bucket.take()
-    bh_resp = await client.get_latest_blockhash(commitment=Confirmed)
-    blockhash: Hash = bh_resp.value.blockhash
-    msg = MessageV0.try_compile(
-        payer=payer.pubkey(),
-        instructions=instructions,
-        address_lookup_table_accounts=[],
-        recent_blockhash=blockhash,
-    )
-    signers = [payer] + [s for s in extra if s.pubkey() != payer.pubkey()]
-    tx = VersionedTransaction(msg, signers)
-    await bucket.take()
-    resp = await client.send_transaction(
-        tx,
-        opts=TxOpts(skip_preflight=False, preflight_commitment=Confirmed),
-    )
-    return str(resp.value)
+    last_exc: BaseException | None = None
+    for attempt in range(max_attempts):
+        try:
+            await bucket.take()
+            bh_resp = await client.get_latest_blockhash(commitment=Confirmed)
+            blockhash: Hash = bh_resp.value.blockhash
+            msg = MessageV0.try_compile(
+                payer=payer.pubkey(),
+                instructions=instructions,
+                address_lookup_table_accounts=[],
+                recent_blockhash=blockhash,
+            )
+            signers = [payer] + [s for s in extra if s.pubkey() != payer.pubkey()]
+            tx = VersionedTransaction(msg, signers)
+            await bucket.take()
+            resp = await client.send_transaction(
+                tx,
+                opts=TxOpts(skip_preflight=False, preflight_commitment=Confirmed),
+            )
+            return str(resp.value)
+        except Exception as exc:
+            last_exc = exc
+            if not _is_rate_limit(exc) or attempt == max_attempts - 1:
+                raise
+            # Exponential backoff with jitter: 2s, 4s, 8s, 16s. Free-tier
+            # send-tx caps recover within seconds — patience costs nothing.
+            delay = (2 ** (attempt + 1)) + random.uniform(0, 1.5)
+            log.warning(
+                "[bot] rate-limited, retry %d/%d in %.1fs",
+                attempt + 1, max_attempts - 1, delay,
+            )
+            await asyncio.sleep(delay)
+    assert last_exc is not None
+    raise last_exc
 
 
 # ----------------------------------------------------------------------------- #
@@ -721,7 +748,7 @@ async def place_one_bet(
             pair.pair_index,
             side,
             amount_raw / USDC_DECIMALS_RAW,
-            exc,
+            repr(exc) or type(exc).__name__,
         )
         return None
     log.info(
