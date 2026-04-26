@@ -24,7 +24,7 @@ import {
   decodeMarket,
   PREDICTION_MARKET_PROGRAM_ID,
 } from '@/lib/solana/predictionMarket'
-import { CATALOG, type CatalogEntry } from './catalog'
+import { CATALOG, getCatalogEntryByPairIndex, type CatalogEntry } from './catalog'
 import { generateSlots, type UpcomingSlot } from './slots'
 import type { Board } from './pairs'
 import { track } from '@/lib/analytics/track'
@@ -1098,4 +1098,126 @@ function normaliseError(raw: string): string {
   if (lower.includes('bad time') || lower.includes('badtime')) return 'Time window rejected by program.'
   if (lower.includes('user rejected')) return 'Signature declined.'
   return 'Bet rejected by program.'
+}
+
+// ── useResolvedSlots ────────────────────────────────────────────────────
+//
+// The forward-only `useUpcomingSlots` cannot answer "show me what already
+// settled" — it walks the cohort grid into the future and stops. Resolved
+// markets are stored in the indexer; this hook fetches them, reconstructs
+// the same `UpcomingSlot` shape the rest of the UI expects (catalog
+// metadata threaded through `threshold_bps == pairIndex`), and pairs each
+// row with a synthetic `MarketState` so the row renders the actual
+// outcome instead of a 50/50 fallback.
+
+const RESOLVED_POLL_MS = 60_000
+const RESOLVED_DEFAULT_LIMIT = 60
+
+interface ResolvedMarketDTO {
+  market: string
+  sourceId: number
+  closeTime: number
+  settlementTime: number
+  thresholdBps: number
+  outcomeYes: boolean
+  baselinePrice: string
+  finalPrice: string
+  resolvedAt: number | null
+  totalYes: string
+  totalNo: string
+}
+
+export interface ResolvedSlotsResult {
+  slots: UpcomingSlot[]
+  states: MarketStateMap
+  loading: boolean
+}
+
+function safeBigInt(s: string | null | undefined): bigint {
+  if (!s) return 0n
+  try { return BigInt(s) } catch { return 0n }
+}
+
+export function useResolvedSlots(opts?: {
+  limit?: number
+  board?: Board | 'all'
+}): ResolvedSlotsResult {
+  const limit = opts?.limit ?? RESOLVED_DEFAULT_LIMIT
+  const board = opts?.board ?? 'all'
+
+  const [slots, setSlots] = useState<UpcomingSlot[]>([])
+  const [states, setStates] = useState<MarketStateMap>({})
+  const [loading, setLoading] = useState<boolean>(true)
+
+  useEffect(() => {
+    let cancelled = false
+
+    const fetchOnce = async () => {
+      try {
+        const res = await fetch(`/api/markets/resolved?limit=${limit}`, {
+          cache: 'no-store',
+        })
+        if (!res.ok) return
+        const payload = (await res.json()) as { markets?: ResolvedMarketDTO[] }
+        if (cancelled) return
+
+        const nextSlots: UpcomingSlot[] = []
+        const nextStates: MarketStateMap = {}
+
+        for (const m of payload.markets ?? []) {
+          const entry = getCatalogEntryByPairIndex(m.thresholdBps)
+          if (!entry) continue
+          if (board !== 'all' && entry.board !== board) continue
+
+          nextSlots.push({
+            catalogId: entry.id,
+            sourceId: entry.sourceId,
+            sourceName: entry.sourceName,
+            label: entry.label,
+            description: entry.description,
+            thresholdBps: entry.thresholdBps,
+            pairIndex: entry.pairIndex,
+            board: entry.board,
+            format: entry.format,
+            displayA: entry.displayA,
+            displayB: entry.displayB,
+            slugA: entry.slugA,
+            slugB: entry.slugB,
+            audienceA: entry.audienceA,
+            audienceB: entry.audienceB,
+            windowSecs: entry.windowSecs,
+            closeTime: m.closeTime,
+            settlementTime: m.settlementTime,
+            marketPda: m.market,
+          })
+
+          nextStates[m.market] = {
+            totalYes: safeBigInt(m.totalYes),
+            totalNo: safeBigInt(m.totalNo),
+            resolved: true,
+            outcomeYes: m.outcomeYes,
+            baselinePrice: safeBigInt(m.baselinePrice),
+            finalPrice: safeBigInt(m.finalPrice),
+          }
+        }
+
+        setSlots(nextSlots)
+        setStates(nextStates)
+      } catch {
+        // Indexer offline or DB unset — keep last snapshot.
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    setLoading(true)
+    void fetchOnce()
+    const id = window.setInterval(fetchOnce, RESOLVED_POLL_MS)
+    return () => {
+      cancelled = true
+      window.clearInterval(id)
+    }
+  }, [limit, board])
+
+  return { slots, states, loading }
 }
