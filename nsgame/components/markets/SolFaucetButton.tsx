@@ -72,7 +72,7 @@ export default function SolFaucetButton() {
       <button
         type="button"
         onClick={handleClick}
-        className="flex h-7 items-center gap-1.5 rounded-[5px] bg-zinc-950 px-2.5 font-mono text-[10px] uppercase tracking-[0.08em] text-emerald-200 transition-colors hover:text-emerald-100"
+        className="flex h-9 items-center gap-1.5 rounded-[5px] bg-terminal-surface-deep px-2.5 font-mono text-micro uppercase tracking-[0.08em] text-emerald-200 transition-colors hover:text-emerald-100"
       >
         Get devnet SOL
         <svg

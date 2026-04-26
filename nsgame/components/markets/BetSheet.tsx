@@ -135,7 +135,7 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
             role="dialog"
             aria-modal="true"
             aria-label="Place bet"
-            className="absolute inset-x-0 bottom-0 flex max-h-[92vh] flex-col rounded-t-2xl border-t border-zinc-800 bg-zinc-900 shadow-modal lg:inset-y-0 lg:right-0 lg:left-auto lg:h-full lg:w-[420px] lg:max-h-none lg:rounded-none lg:border-l lg:border-t-0"
+            className="absolute inset-x-0 bottom-0 flex max-h-[92vh] flex-col rounded-t-2xl border-t border-terminal-border bg-terminal-surface shadow-modal lg:inset-y-0 lg:right-0 lg:left-auto lg:h-full lg:w-[420px] lg:max-h-none lg:rounded-none lg:border-l lg:border-t-0"
             initial={{ y: '100%', x: 0, opacity: 0 }}
             animate={{ y: 0, x: 0, opacity: 1 }}
             exit={{ y: '100%', opacity: 0 }}
@@ -161,7 +161,7 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
               />
             </div>
 
-            <div className="border-t border-zinc-800 px-4 py-3">
+            <div className="border-t border-terminal-border px-4 py-3">
               <div className="mb-3 empty:hidden">
                 <WalletNetworkNotice />
               </div>
@@ -169,7 +169,7 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
                 <button
                   type="button"
                   onClick={() => setShowModal(true)}
-                  className="h-12 w-full rounded-md bg-emerald-400 font-semibold text-zinc-950 transition-colors hover:bg-emerald-300"
+                  className="h-12 w-full rounded-md bg-emerald-400 font-semibold text-terminal-surface-deep transition-colors hover:bg-emerald-300"
                 >
                   Connect wallet to bet
                 </button>
@@ -178,7 +178,7 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
                   type="button"
                   onClick={handleSubmit}
                   disabled={placeBetCtl.placing || parsedUnits <= 0n || insufficientBalance}
-                  className="h-12 w-full rounded-md bg-emerald-400 font-semibold text-zinc-950 transition-colors hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-40"
+                  className="h-12 w-full rounded-md bg-emerald-400 font-semibold text-terminal-surface-deep transition-colors hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {placeBetCtl.placing
                     ? 'Sending…'
@@ -188,15 +188,15 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
 
               <div className="mt-2 min-h-[16px]">
                 {insufficientBalance ? (
-                  <p className="text-[11px] text-rose-400">Insufficient balance.</p>
+                  <p className="text-label text-rose-400">Insufficient balance.</p>
                 ) : null}
                 {error ? (
-                  <div className="mt-1 rounded-md border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-[11px] text-rose-300">
+                  <div className="mt-1 rounded-md border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-label text-rose-300">
                     {error}
                   </div>
                 ) : null}
                 {lastSig ? (
-                  <div className="mt-1 break-all rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 font-mono text-[11px] text-emerald-300">
+                  <div className="mt-1 break-all rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 font-mono text-label text-emerald-300">
                     Bet placed · {lastSig.slice(0, 8)}…{lastSig.slice(-8)}
                   </div>
                 ) : null}
@@ -206,7 +206,7 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
                 <button
                   type="button"
                   onClick={() => disconnect()}
-                  className="mt-2 block w-full text-[10px] text-zinc-600 transition-colors hover:text-zinc-400"
+                  className="mt-2 block w-full text-micro text-terminal-fg-faint transition-colors hover:text-terminal-fg-muted"
                 >
                   disconnect
                 </button>

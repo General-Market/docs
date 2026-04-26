@@ -116,7 +116,7 @@ function BetTicketActive({
 
   return (
     <aside
-      className="flex flex-col rounded-md border border-zinc-800 bg-zinc-900"
+      className="flex flex-col rounded-md border border-terminal-border bg-terminal-surface"
       aria-label="Bet ticket"
     >
       <BetBody
@@ -137,7 +137,7 @@ function BetTicketActive({
         sparkHeight={20}
       />
 
-      <div className="border-t border-zinc-800 px-4 py-3">
+      <div className="border-t border-terminal-border px-4 py-3">
         <div className="mb-3 empty:hidden">
           <WalletNetworkNotice />
         </div>
@@ -145,7 +145,7 @@ function BetTicketActive({
           <button
             type="button"
             onClick={() => setShowModal(true)}
-            className="h-12 w-full rounded-md bg-emerald-400 font-semibold text-zinc-950 transition-colors hover:bg-emerald-300"
+            className="h-12 w-full rounded-md bg-emerald-400 font-semibold text-terminal-surface-deep transition-colors hover:bg-emerald-300"
           >
             Connect wallet to bet
           </button>
@@ -154,7 +154,7 @@ function BetTicketActive({
             type="button"
             onClick={handleSubmit}
             disabled={placeBetCtl.placing || parsedUnits <= 0n || insufficientBalance}
-            className="h-12 w-full rounded-md bg-emerald-400 font-semibold text-zinc-950 transition-colors hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-40"
+            className="h-12 w-full rounded-md bg-emerald-400 font-semibold text-terminal-surface-deep transition-colors hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {placeBetCtl.placing
               ? 'Sending…'
@@ -164,15 +164,15 @@ function BetTicketActive({
 
         <div className="mt-2 min-h-[16px]">
           {insufficientBalance ? (
-            <p className="text-[11px] text-rose-400">Insufficient balance.</p>
+            <p className="text-label text-rose-400">Insufficient balance.</p>
           ) : null}
           {error ? (
-            <div className="mt-1 rounded-md border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-[11px] text-rose-300">
+            <div className="mt-1 rounded-md border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-label text-rose-300">
               {error}
             </div>
           ) : null}
           {lastSig ? (
-            <div className="mt-1 break-all rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 font-mono text-[11px] text-emerald-300">
+            <div className="mt-1 break-all rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 font-mono text-label text-emerald-300">
               Bet placed · {lastSig.slice(0, 8)}…{lastSig.slice(-8)}
             </div>
           ) : null}
@@ -182,7 +182,7 @@ function BetTicketActive({
           <button
             type="button"
             onClick={() => disconnect()}
-            className="mt-2 block w-full text-[10px] text-zinc-600 transition-colors hover:text-zinc-400"
+            className="mt-2 block w-full text-micro text-terminal-fg-faint transition-colors hover:text-terminal-fg-muted"
           >
             disconnect
           </button>
@@ -247,19 +247,19 @@ export function BetBody({
 
   return (
     <>
-      <header className="flex items-start gap-3 border-b border-zinc-800 px-4 py-4">
+      <header className="flex items-start gap-3 border-b border-terminal-border px-4 py-4">
         <SourceIcon
           sourceId={slot.sourceId as 1 | 2 | 3 | 4 | 5}
           className="!h-7 !w-7 shrink-0"
         />
         <div className="min-w-0 flex-1">
-          <h3 className="truncate text-[16px] font-semibold text-zinc-100">
+          <h3 className="truncate text-base font-semibold text-terminal-fg">
             {slot.displayA} vs {slot.displayB}
           </h3>
-          <p className="mt-0.5 truncate text-[13px] text-zinc-400">
+          <p className="mt-0.5 truncate text-body-sm text-terminal-fg-muted">
             <span className={verbColor}>Buy {verb}</span> · {pickedName}
           </p>
-          <div className="mt-1 flex items-center gap-2 text-[12px] text-zinc-500">
+          <div className="mt-1 flex items-center gap-2 text-caption text-terminal-fg-faint">
             <span className="tabular-nums">
               score · {formatPairScore(pairScore.score)}
             </span>
@@ -272,7 +272,7 @@ export function BetBody({
             />
           </div>
           {showDescription ? (
-            <p className="mt-2 text-[12px] leading-relaxed text-zinc-500">
+            <p className="mt-2 text-caption leading-relaxed text-terminal-fg-faint">
               {slot.description}
             </p>
           ) : null}
@@ -281,7 +281,7 @@ export function BetBody({
           <button
             type="button"
             onClick={onClose}
-            className="-m-2 grid h-9 w-9 place-items-center rounded-md text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
+            className="-m-2 grid h-9 w-9 place-items-center rounded-md text-terminal-fg-faint transition-colors hover:bg-terminal-surface-elevated hover:text-terminal-fg"
             aria-label="Close"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -312,8 +312,8 @@ export function BetBody({
         <div>
           <div className="flex items-end justify-between gap-3">
             <div>
-              <p className="text-[12px] text-zinc-500">Amount</p>
-              <p className="text-[11px] text-zinc-600">
+              <p className="text-caption text-terminal-fg-faint" id="bet-amount-label">Amount</p>
+              <p className="text-label text-terminal-fg-faint">
                 {!connected
                   ? 'Connect wallet to see balance'
                   : stakeBalance.loading && stakeBalance.raw === 0n
@@ -339,7 +339,9 @@ export function BetBody({
               value={amount}
               onChange={e => setAmount(e.target.value)}
               placeholder="0"
-              className="h-12 w-32 rounded-md border border-zinc-800 bg-zinc-900/60 px-3 text-right text-[18px] font-semibold tabular-nums text-zinc-100 placeholder:text-zinc-700 focus:border-zinc-600 focus:outline-none sm:w-36"
+              aria-label="Bet amount in USD"
+              aria-labelledby="bet-amount-label"
+              className="h-12 w-32 rounded-md border border-terminal-border bg-terminal-surface/60 px-3 text-right text-title font-semibold tabular-nums text-terminal-fg placeholder:text-terminal-fg-faint focus:border-terminal-border-strong focus:outline-none sm:w-36"
             />
           </div>
           <div className="mt-3 flex gap-2">
@@ -348,7 +350,7 @@ export function BetBody({
                 key={p}
                 type="button"
                 onClick={() => setAmount(p)}
-                className="h-7 rounded-full border border-zinc-800 px-3 text-[12px] text-zinc-400 transition-colors hover:border-zinc-700 hover:text-zinc-100"
+                className="h-9 rounded-full border border-terminal-border px-3 text-caption text-terminal-fg-muted transition-colors hover:border-terminal-border-strong hover:text-terminal-fg"
               >
                 {p}
               </button>
@@ -383,7 +385,7 @@ function SidePill({ side, label, mult, active, onClick }: SidePillProps) {
       onClick={onClick}
       aria-pressed={active}
       className={[
-        'flex h-12 items-center justify-center gap-2 rounded-full text-[14px] font-semibold transition-colors',
+        'flex h-12 items-center justify-center gap-2 rounded-full text-body font-semibold transition-colors',
         active ? activeClasses : idleClasses,
       ].join(' ')}
     >
