@@ -84,6 +84,12 @@ export function CalendarPageClient() {
   const closeMenu = useCallback(() => setMenuOpen(false), [])
   const openPositions = useCallback(() => setPositionsOpen(true), [])
   const closePositions = useCallback(() => setPositionsOpen(false), [])
+  // Dismiss the picked market — the right column drops, the right rail
+  // returns. Same trigger as the ✕ inside the ticket header.
+  const clearPick = useCallback(() => {
+    setSelectedSlot(null)
+    setSheetSlot(null)
+  }, [])
 
   // Two columns when nothing is picked; three when a market opens the
   // ticket. Unmount the right column entirely so the grid reflows.
@@ -142,17 +148,22 @@ export function CalendarPageClient() {
                 slot={selectedSlot}
                 side={selectedSide}
                 onSideChange={setSelectedSide}
+                onClose={clearPick}
                 className="hidden lg:flex lg:sticky lg:top-20 lg:self-start"
               />
             ) : null}
           </div>
         </div>
 
-        <MarketTeaserSidebar
-          slots={allSlots}
-          side="right"
-          onSelect={handleTeaserSelect}
-        />
+        {/* Right rail steps aside when the ticket appears — the ticket
+            takes the slot it would otherwise crowd. */}
+        {hasPick ? null : (
+          <MarketTeaserSidebar
+            slots={allSlots}
+            side="right"
+            onSelect={handleTeaserSelect}
+          />
+        )}
       </div>
 
       {/* Network-wide trade ticker. Closes the page — the markets list

@@ -41,13 +41,15 @@ export interface BetTicketProps {
   slot: UpcomingSlot
   side: Side
   onSideChange: (s: Side) => void
+  /** Dismiss the ticket — typically clears the parent's selectedSlot. */
+  onClose?: () => void
   className?: string
 }
 
-export function BetTicket({ slot, side, onSideChange, className = '' }: BetTicketProps) {
+export function BetTicket({ slot, side, onSideChange, onClose, className = '' }: BetTicketProps) {
   return (
     <div className={['flex flex-col gap-3', className].join(' ')}>
-      <BetTicketActive slot={slot} side={side} onSideChange={onSideChange} />
+      <BetTicketActive slot={slot} side={side} onSideChange={onSideChange} onClose={onClose} />
     </div>
   )
 }
@@ -56,7 +58,8 @@ function BetTicketActive({
   slot,
   side,
   onSideChange,
-}: { slot: UpcomingSlot; side: Side; onSideChange: (s: Side) => void }) {
+  onClose,
+}: { slot: UpcomingSlot; side: Side; onSideChange: (s: Side) => void; onClose?: () => void }) {
   const { connected, disconnect } = useWallet()
   const { setShowModal } = useUnifiedWalletContext()
   const state = useMarketState(slot.marketPda)
@@ -127,7 +130,8 @@ function BetTicketActive({
         noMult={noMult}
         pickedName={pickedName}
         isOpen={isOpen}
-        showClose={false}
+        showClose={!!onClose}
+        onClose={onClose}
         sparkWidth={84}
         sparkHeight={20}
       />
