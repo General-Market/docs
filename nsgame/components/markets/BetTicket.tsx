@@ -19,6 +19,8 @@ import SolFaucetButton from './SolFaucetButton'
 import WalletNetworkNotice from './WalletNetworkNotice'
 import { SourceIcon } from './SourceIcon'
 import { SparkLine } from './SparkLine'
+import { DualTimer } from './DualTimer'
+import { InlineTip } from './InlineTip'
 import type { Side } from './MarketRow'
 
 // Right rail. Sticky. Same body the sheet renders, just without the
@@ -37,6 +39,40 @@ function displayToUsdcUnits(value: string): bigint {
 }
 
 const PRESETS = ['1', '5', '25']
+const STAKE_STORAGE_KEY = 'nsgame_last_stake'
+const DEFAULT_STAKE = '1'
+const STAKE_PATTERN = /^\d+(\.\d{1,6})?$/
+
+/**
+ * The sheet should never open empty. Read the last stake the user
+ * confirmed; fall back to a dollar. Pure read — caller controls when.
+ */
+export function readDefaultStake(): string {
+  if (typeof window === 'undefined') return DEFAULT_STAKE
+  try {
+    const raw = window.localStorage.getItem(STAKE_STORAGE_KEY)
+    if (raw && STAKE_PATTERN.test(raw)) return raw
+  } catch {
+    // localStorage may throw in private mode. Silence is consent.
+  }
+  return DEFAULT_STAKE
+}
+
+export function persistStake(value: string) {
+  if (typeof window === 'undefined') return
+  if (!STAKE_PATTERN.test(value)) return
+  try {
+    window.localStorage.setItem(STAKE_STORAGE_KEY, value)
+  } catch {
+    // Same forgiveness as above.
+  }
+}
+
+function formatDollars(n: number): string {
+  if (!Number.isFinite(n) || n <= 0) return '$0.00'
+  if (n >= 1000) return `$${n.toFixed(0)}`
+  return `$${n.toFixed(2)}`
+}
 
 export interface BetTicketProps {
   slot: UpcomingSlot
@@ -67,12 +103,14 @@ function BetTicketActive({
   const placeBetCtl = usePlaceBet()
   const stakeBalance = useStakeBalance()
 
-  const [amount, setAmount] = useState<string>('')
+  const [amount, setAmount] = useState<string>(DEFAULT_STAKE)
   const [lastSig, setLastSig] = useState<string | null>(null)
   const [localError, setLocalError] = useState<string | null>(null)
 
+  // Hydrate the stake from localStorage once on mount and again when the
+  // slot rotates. The user never types from zero — they correct.
   useEffect(() => {
-    setAmount('')
+    setAmount(readDefaultStake())
     setLastSig(null)
     setLocalError(null)
   }, [slot.marketPda])
@@ -102,6 +140,7 @@ function BetTicketActive({
     try {
       const sig = await placeBetCtl.placeBet(slot, side, parsedUnits)
       setLastSig(sig)
+      persistStake(amount)
     } catch (e) {
       setLocalError(e instanceof Error ? e.message : String(e))
     }
@@ -141,26 +180,15 @@ function BetTicketActive({
         <div className="mb-3 empty:hidden">
           <WalletNetworkNotice />
         </div>
-        {!connected ? (
-          <button
-            type="button"
-            onClick={() => setShowModal(true)}
-            className="h-12 w-full rounded-md bg-emerald-400 font-semibold text-terminal-surface-deep transition-colors hover:bg-emerald-300"
-          >
-            Connect wallet to bet
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={placeBetCtl.placing || parsedUnits <= 0n || insufficientBalance}
-            className="h-12 w-full rounded-md bg-emerald-400 font-semibold text-terminal-surface-deep transition-colors hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            {placeBetCtl.placing
-              ? 'Sending…'
-              : `Buy ${pickedName} · $${amount || '0'}`}
-          </button>
-        )}
+        <PrimaryAction
+          connected={connected}
+          placing={placeBetCtl.placing}
+          disabled={parsedUnits <= 0n || insufficientBalance}
+          amount={amount}
+          mult={side === 'yes' ? yesMult : noMult}
+          onConnect={() => setShowModal(true)}
+          onSubmit={handleSubmit}
+        />
 
         <div className="mt-2 min-h-[16px]">
           {insufficientBalance ? (
@@ -245,6 +273,16 @@ export function BetBody({
   const sparkTrend: 'up' | 'down' | 'flat' =
     pairScore.direction ?? 'flat'
 
+  const stakeNum = Number(amount || '0')
+  const activeMult = side === 'yes' ? yesMult : noMult
+  const winTotal = activeMult && stakeNum > 0 ? stakeNum * activeMult : 0
+  const winNet = winTotal > 0 ? winTotal - stakeNum : 0
+
+  function adjustStake(delta: number) {
+    const next = Math.max(0, Math.round((stakeNum + delta) * 100) / 100)
+    setAmount(next === 0 ? '0' : String(next))
+  }
+
   return (
     <>
       <header className="flex items-start gap-3 border-b border-terminal-border px-4 py-4">
@@ -292,27 +330,36 @@ export function BetBody({
       </header>
 
       <div className="flex flex-col gap-5 px-4 py-5">
-        <div className="grid grid-cols-2 gap-2">
-          <SidePill
-            side="yes"
-            label="Yes"
-            mult={yesMult}
-            active={side === 'yes'}
-            onClick={() => onSideChange('yes')}
-          />
-          <SidePill
-            side="no"
-            label="No"
-            mult={noMult}
-            active={side === 'no'}
-            onClick={() => onSideChange('no')}
-          />
+        <div>
+          <div className="mb-2 flex items-center gap-1.5 text-caption uppercase tracking-[0.1em] text-terminal-fg-faint">
+            <span>Side</span>
+            <InlineTip
+              ariaLabel="What does Yes and No mean"
+              label="Yes pays if the first name wins the score. No pays if the second wins. The market resolves on a signed score, not a vote."
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <SidePill
+              side="yes"
+              label="Yes"
+              mult={yesMult}
+              active={side === 'yes'}
+              onClick={() => onSideChange('yes')}
+            />
+            <SidePill
+              side="no"
+              label="No"
+              mult={noMult}
+              active={side === 'no'}
+              onClick={() => onSideChange('no')}
+            />
+          </div>
         </div>
 
         <div>
           <div className="flex items-end justify-between gap-3">
             <div>
-              <p className="text-caption text-terminal-fg-faint" id="bet-amount-label">Amount</p>
+              <p className="text-caption text-terminal-fg-faint" id="bet-amount-label">Stake</p>
               <p className="text-label text-terminal-fg-faint">
                 {!connected
                   ? 'Connect wallet to see balance'
@@ -333,16 +380,34 @@ export function BetBody({
                 ) : null}
               </p>
             </div>
-            <input
-              type="text"
-              inputMode="decimal"
-              value={amount}
-              onChange={e => setAmount(e.target.value)}
-              placeholder="0"
-              aria-label="Bet amount in USD"
-              aria-labelledby="bet-amount-label"
-              className="h-12 w-32 rounded-md border border-terminal-border bg-terminal-surface/60 px-3 text-right text-title font-semibold tabular-nums text-terminal-fg placeholder:text-terminal-fg-faint focus:border-terminal-border-strong focus:outline-none sm:w-36"
-            />
+            <div className="flex items-stretch overflow-hidden rounded-md border border-terminal-border focus-within:border-terminal-border-strong">
+              <button
+                type="button"
+                onClick={() => adjustStake(-1)}
+                aria-label="Decrease stake"
+                disabled={stakeNum <= 0}
+                className="grid w-9 place-items-center bg-terminal-surface/60 text-title text-terminal-fg-muted transition-colors hover:text-terminal-fg disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                −
+              </button>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={amount}
+                onChange={e => setAmount(e.target.value)}
+                aria-label="Bet amount in USD"
+                aria-labelledby="bet-amount-label"
+                className="h-12 w-20 bg-terminal-surface/60 px-2 text-right text-title font-semibold tabular-nums text-terminal-fg placeholder:text-terminal-fg-faint focus:outline-none sm:w-24"
+              />
+              <button
+                type="button"
+                onClick={() => adjustStake(1)}
+                aria-label="Increase stake"
+                className="grid w-9 place-items-center bg-terminal-surface/60 text-title text-terminal-fg-muted transition-colors hover:text-terminal-fg"
+              >
+                +
+              </button>
+            </div>
           </div>
           <div className="mt-3 flex gap-2">
             {PRESETS.map(p => (
@@ -352,13 +417,125 @@ export function BetBody({
                 onClick={() => setAmount(p)}
                 className="h-9 rounded-full border border-terminal-border px-3 text-caption text-terminal-fg-muted transition-colors hover:border-terminal-border-strong hover:text-terminal-fg"
               >
-                {p}
+                ${p}
               </button>
             ))}
           </div>
         </div>
+
+        <RiskPanel
+          stake={stakeNum}
+          mult={activeMult}
+          winTotal={winTotal}
+          winNet={winNet}
+          side={side}
+        />
+
+        <div>
+          <div className="mb-2 flex items-center gap-1.5 text-caption uppercase tracking-[0.1em] text-terminal-fg-faint">
+            <span>Window</span>
+            <InlineTip
+              ariaLabel="What do the timers mean"
+              label="First number is when betting closes. Second is when the answer arrives."
+            />
+          </div>
+          <DualTimer
+            closeTime={slot.closeTime}
+            settlementTime={slot.settlementTime}
+          />
+        </div>
       </div>
     </>
+  )
+}
+
+interface RiskPanelProps {
+  stake: number
+  mult: number | null
+  winTotal: number
+  winNet: number
+  side: Side
+}
+
+function RiskPanel({ stake, mult, winTotal, winNet, side }: RiskPanelProps) {
+  const hue = side === 'yes' ? 'text-emerald-300' : 'text-rose-300'
+  const multText = mult === null ? '—' : `${mult.toFixed(2)}×`
+  const empty = stake <= 0 || mult === null
+  return (
+    <div className="rounded-md border border-terminal-border bg-terminal-surface-deep/60 px-4 py-3">
+      <div className="mb-1 flex items-center gap-1.5 text-caption uppercase tracking-[0.1em] text-terminal-fg-faint">
+        <span>Payoff</span>
+        <InlineTip
+          ariaLabel="How is payoff calculated"
+          label="Pool-based. Your share of the winners' pool, scaled to your stake. The multiplier shifts as the pool moves."
+        />
+      </div>
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="text-title font-semibold tabular-nums text-terminal-fg">
+          {empty ? (
+            <span className="text-terminal-fg-faint">Set a stake.</span>
+          ) : (
+            <>
+              <span className="text-terminal-fg-muted">Risk {formatDollars(stake)}</span>
+              <span className="mx-2 text-terminal-fg-faint">→</span>
+              <span className={hue}>Win {formatDollars(winTotal)}</span>
+            </>
+          )}
+        </p>
+      </div>
+      <p className="mt-0.5 text-caption text-terminal-fg-faint">
+        {empty
+          ? 'Pool-based. Multiplier moves as others enter.'
+          : (
+            <>
+              <span>{multText}</span>
+              <span className="mx-1.5">·</span>
+              <span>+{formatDollars(winNet)} net</span>
+            </>
+          )}
+      </p>
+    </div>
+  )
+}
+
+export interface PrimaryActionProps {
+  connected: boolean
+  placing: boolean
+  disabled: boolean
+  amount: string
+  mult: number | null
+  onConnect: () => void
+  onSubmit: () => void
+}
+
+export function PrimaryAction({
+  connected,
+  placing,
+  disabled,
+  amount,
+  mult,
+  onConnect,
+  onSubmit,
+}: PrimaryActionProps) {
+  const stakeNum = Number(amount || '0')
+  const winTotal = mult && stakeNum > 0 ? stakeNum * mult : 0
+  const showWin = winTotal > 0
+  const label = !connected
+    ? 'Connect to place bet'
+    : placing
+      ? 'Sending…'
+      : showWin
+        ? `Place bet · ${formatDollars(stakeNum)} → ${formatDollars(winTotal)}`
+        : `Place bet · ${formatDollars(stakeNum)}`
+  return (
+    <button
+      type="button"
+      onClick={connected ? onSubmit : onConnect}
+      disabled={connected && disabled}
+      className="h-12 w-full rounded-md bg-emerald-400 font-semibold text-terminal-surface-deep transition-colors hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-40"
+    >
+      {label}
+    </button>
   )
 }
 
@@ -390,7 +567,7 @@ function SidePill({ side, label, mult, active, onClick }: SidePillProps) {
       ].join(' ')}
     >
       <span>{label}</span>
-      <span className="tabular-nums opacity-80">{multText}</span>
+      <span className="text-caption tabular-nums opacity-70">{multText}</span>
     </button>
   )
 }

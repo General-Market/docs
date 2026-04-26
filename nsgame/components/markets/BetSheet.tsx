@@ -12,11 +12,13 @@ import {
   deriveYesPct,
   pctToDecimalOdd,
 } from '@/lib/markets/hooks'
-import { BetBody } from './BetTicket'
+import { BetBody, PrimaryAction, persistStake, readDefaultStake } from './BetTicket'
 import WalletNetworkNotice from './WalletNetworkNotice'
 
 // Bottom sheet on mobile. Right drawer on desktop. Same body BetTicket
-// renders, dressed in slide-up chrome and a close affordance.
+// renders, dressed in slide-up chrome and a close affordance. The wallet
+// modal opens on top — the sheet stays mounted behind it, so the side
+// and stake survive the connect step.
 
 const USDC_DECIMALS = 6
 
@@ -44,15 +46,16 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
   const stakeBalance = useStakeBalance()
 
   const [side, setSide] = useState<Side>('yes')
-  const [amount, setAmount] = useState<string>('')
+  const [amount, setAmount] = useState<string>('1')
   const [lastSig, setLastSig] = useState<string | null>(null)
   const [localError, setLocalError] = useState<string | null>(null)
 
-  // Reset local state when a different slot opens.
+  // Reset local state when a different slot opens. The stake hydrates
+  // from localStorage so the user never types from zero.
   useEffect(() => {
     if (slot) {
       setSide('yes')
-      setAmount('')
+      setAmount(readDefaultStake())
       setLastSig(null)
       setLocalError(null)
     }
@@ -104,6 +107,7 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
     try {
       const sig = await placeBetCtl.placeBet(slot, side, parsedUnits)
       setLastSig(sig)
+      persistStake(amount)
     } catch (e) {
       setLocalError(e instanceof Error ? e.message : String(e))
     }
@@ -116,6 +120,7 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
 
   const pickedName = slot ? (side === 'yes' ? slot.displayA : slot.displayB) : ''
   const isOpen = slot ? slot.closeTime * 1000 > Date.now() : false
+  const activeMult = side === 'yes' ? yesMult : noMult
 
   return (
     <AnimatePresence>
@@ -165,26 +170,15 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
               <div className="mb-3 empty:hidden">
                 <WalletNetworkNotice />
               </div>
-              {!connected ? (
-                <button
-                  type="button"
-                  onClick={() => setShowModal(true)}
-                  className="h-12 w-full rounded-md bg-emerald-400 font-semibold text-terminal-surface-deep transition-colors hover:bg-emerald-300"
-                >
-                  Connect wallet to bet
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleSubmit}
-                  disabled={placeBetCtl.placing || parsedUnits <= 0n || insufficientBalance}
-                  className="h-12 w-full rounded-md bg-emerald-400 font-semibold text-terminal-surface-deep transition-colors hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  {placeBetCtl.placing
-                    ? 'Sending…'
-                    : `Buy ${pickedName} · $${amount || '0'}`}
-                </button>
-              )}
+              <PrimaryAction
+                connected={connected}
+                placing={placeBetCtl.placing}
+                disabled={parsedUnits <= 0n || insufficientBalance}
+                amount={amount}
+                mult={activeMult}
+                onConnect={() => setShowModal(true)}
+                onSubmit={handleSubmit}
+              />
 
               <div className="mt-2 min-h-[16px]">
                 {insufficientBalance ? (
