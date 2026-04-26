@@ -15,6 +15,7 @@ import {
 import { GlobalActivity } from './GlobalActivity'
 import { MyPositions } from './MyPositions'
 import { BetBody } from './BetTicket'
+import WalletNetworkNotice from './WalletNetworkNotice'
 
 // Bottom sheet on mobile. Right drawer on desktop. Same body BetTicket
 // renders, dressed in slide-up chrome and a close affordance.
@@ -168,6 +169,9 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
             </div>
 
             <div className="border-t border-zinc-800 px-4 py-3">
+              <div className="mb-3 empty:hidden">
+                <WalletNetworkNotice />
+              </div>
               {!connected ? (
                 <button
                   type="button"

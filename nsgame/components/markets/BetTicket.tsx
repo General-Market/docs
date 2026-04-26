@@ -16,6 +16,7 @@ import {
 } from '@/lib/markets/hooks'
 import FaucetButton from './FaucetButton'
 import SolFaucetButton from './SolFaucetButton'
+import WalletNetworkNotice from './WalletNetworkNotice'
 import { SourceIcon } from './SourceIcon'
 import { SparkLine } from './SparkLine'
 import type { Side } from './MarketRow'
@@ -137,6 +138,9 @@ function BetTicketActive({
       />
 
       <div className="border-t border-zinc-800 px-4 py-3">
+        <div className="mb-3 empty:hidden">
+          <WalletNetworkNotice />
+        </div>
         {!connected ? (
           <button
             type="button"
