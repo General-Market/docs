@@ -9,6 +9,7 @@ import { BetSheet } from '@/components/markets/BetSheet'
 import { MobileMenu } from '@/components/markets/MobileMenu'
 import { BottomNav } from '@/components/markets/BottomNav'
 import { MarketTeaserSidebar } from '@/components/markets/MarketTeaserSidebar'
+import { LastTradesTable } from '@/components/markets/LastTradesTable'
 import type { BoardFilter } from '@/components/markets/FilterBar'
 import type { Side } from '@/components/markets/MarketRow'
 import type { UpcomingSlot } from '@/lib/markets/hooks'
@@ -99,6 +100,12 @@ export function CalendarPageClient() {
         onBoardChange={setBoard}
         onStatusChange={setStatus}
       />
+
+      {/* Network-wide trade ticker. Lives above the grid so it spans
+          the same content width — no rails crowding it. */}
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-4 sm:pt-6">
+        <LastTradesTable />
+      </div>
 
       <div className="xl:flex xl:items-start xl:justify-center xl:gap-6 xl:px-4 xl:py-8">
         <MarketTeaserSidebar
