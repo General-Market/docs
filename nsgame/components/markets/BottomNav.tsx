@@ -6,6 +6,7 @@ import { useWallet } from '@/hooks/useWallet'
 import { useTranslations } from 'next-intl'
 import { BottomNavMoreSheet } from './BottomNavMoreSheet'
 import { MyPositionsModal } from './MyPositionsModal'
+import { useResolvedPositions } from '@/hooks/useResolvedPositions'
 
 // Mobile-only fixed bottom bar. Four tabs. The screen ends with a
 // reminder of where the screen begins.
@@ -68,6 +69,7 @@ export function BottomNav({ onMenuClick, onTicketClick, onPositionsClick, hasTic
   const { setShowModal } = useUnifiedWalletContext()
   const [moreOpen, setMoreOpen] = useState(false)
   const [positionsOpenInternal, setPositionsOpenInternal] = useState(false)
+  const { unviewedCount } = useResolvedPositions()
 
   // The wallet button becomes the positions button once a wallet is
   // connected. The parent may own the modal state (CalendarPageClient
@@ -132,6 +134,14 @@ export function BottomNav({ onMenuClick, onTicketClick, onPositionsClick, hasTic
                   showPositions ? 'shadow-[0_0_0_2px_rgb(56_189_248/0.35)]' : '',
                 ].join(' ')}
               />
+            ) : null}
+            {showPositions && unviewedCount > 0 ? (
+              <span
+                aria-label={`${unviewedCount} resolved`}
+                className="absolute right-[20%] top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-400 px-1 font-mono text-[9px] font-semibold leading-none tabular-nums text-zinc-950 shadow-[0_0_0_2px_rgb(9_9_11/1)]"
+              >
+                {unviewedCount > 9 ? '9+' : unviewedCount}
+              </span>
             ) : null}
           </button>
 
