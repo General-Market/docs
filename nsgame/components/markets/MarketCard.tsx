@@ -4,6 +4,7 @@ import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import type { UpcomingSlot, MarketState } from '@/lib/markets/hooks.stub'
 import { useSourcePrice, payoutMultiplier, formatMultiplier } from '@/lib/markets/hooks'
 import { CountdownTimer, useNowSecs } from './CountdownTimer'
+import { PulseDot } from './PulseDot'
 
 // One tile. One market. Question, source, countdown, odds, click.
 
@@ -15,6 +16,9 @@ export interface MarketCardProps {
 
 const USDC_DECIMALS = 6
 const FLASH_MS = 600
+// Distinct from FLASH_MS: the pulse is the room breathing, not a tick.
+// 3s is long enough to register, short enough to not pile up.
+const FILL_PULSE_MS = 3000
 
 function formatUsdc(units: bigint): string {
   if (units === 0n) return '0'
@@ -78,6 +82,25 @@ function MarketCardImpl({ slot, state, onSelect }: MarketCardProps) {
     return undefined
   }, [state])
 
+  // Fill pulse: a 3s halo near the title whenever the pool *grows* —
+  // someone bet, the room breathes, the card admits other people exist.
+  // Driven separately from the numeric pool flash so neighbours can see
+  // the room without parsing the digits.
+  const [filling, setFilling] = useState(false)
+  const prevFillRef = useRef<bigint | null>(null)
+  useEffect(() => {
+    const total = state ? state.totalYes + state.totalNo : null
+    if (total === null) return
+    const prev = prevFillRef.current
+    prevFillRef.current = total
+    if (prev !== null && total > prev) {
+      setFilling(true)
+      const id = window.setTimeout(() => setFilling(false), FILL_PULSE_MS)
+      return () => window.clearTimeout(id)
+    }
+    return undefined
+  }, [state])
+
   // Multipliers for both sides — small, both shown.
   const yesMult = useMemo(
     () => state ? payoutMultiplier(state.totalYes, state.totalNo, 'yes') : null,
@@ -110,7 +133,13 @@ function MarketCardImpl({ slot, state, onSelect }: MarketCardProps) {
       aria-label={`Open bet sheet: ${slot.label}`}
     >
       <div className="flex items-start justify-between gap-2">
-        <span className="font-mono text-label uppercase tracking-[0.1em] text-terminal-fg-faint">
+        <span className="inline-flex items-center gap-1.5 font-mono text-label uppercase tracking-[0.1em] text-terminal-fg-faint">
+          <PulseDot
+            active={filling}
+            color="emerald"
+            size={6}
+            className={filling ? 'opacity-100' : 'opacity-30'}
+          />
           {sourceShort}
         </span>
         <span className="font-mono text-label uppercase tracking-[0.08em] text-terminal-fg-faint">
