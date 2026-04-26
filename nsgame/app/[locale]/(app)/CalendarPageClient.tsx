@@ -10,6 +10,7 @@ import { MobileMenu } from '@/components/markets/MobileMenu'
 import { BottomNav } from '@/components/markets/BottomNav'
 import { MarketTeaserSidebar } from '@/components/markets/MarketTeaserSidebar'
 import { LastTradesTable } from '@/components/markets/LastTradesTable'
+import { MyPositionsModal } from '@/components/markets/MyPositionsModal'
 import type { BoardFilter } from '@/components/markets/FilterBar'
 import type { Side } from '@/components/markets/MarketRow'
 import type { UpcomingSlot } from '@/lib/markets/hooks'
@@ -31,6 +32,7 @@ export function CalendarPageClient() {
 
   const [allSlots, setAllSlots] = useState<UpcomingSlot[]>([])
   const [menuOpen, setMenuOpen] = useState(false)
+  const [positionsOpen, setPositionsOpen] = useState(false)
 
   // Tie product analytics to the wallet pubkey. Identifying once per
   // connection is enough — posthog stores the distinct id in
@@ -79,6 +81,8 @@ export function CalendarPageClient() {
   const closeSheet = useCallback(() => setSheetSlot(null), [])
   const openMenu = useCallback(() => setMenuOpen(true), [])
   const closeMenu = useCallback(() => setMenuOpen(false), [])
+  const openPositions = useCallback(() => setPositionsOpen(true), [])
+  const closePositions = useCallback(() => setPositionsOpen(false), [])
 
   // Two columns when nothing is picked; three when a market opens the
   // ticket. Unmount the right column entirely so the grid reflows.
@@ -99,7 +103,10 @@ export function CalendarPageClient() {
         slots={allSlots}
         onBoardChange={setBoard}
         onStatusChange={setStatus}
+        onOpenPositions={openPositions}
       />
+
+      <MyPositionsModal open={positionsOpen} onClose={closePositions} />
 
       {/* Network-wide trade ticker. Lives above the grid so it spans
           the same content width — no rails crowding it. */}
@@ -107,21 +114,22 @@ export function CalendarPageClient() {
         <LastTradesTable />
       </div>
 
-      <div className="xl:flex xl:items-start xl:justify-center xl:gap-6 xl:px-4 xl:py-8">
+      <div className="xl:grid xl:grid-cols-[260px_minmax(0,1fr)_260px] xl:items-start xl:gap-0">
         <MarketTeaserSidebar
           slots={allSlots}
           side="left"
           onSelect={handleTeaserSelect}
         />
 
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 xl:mx-0 xl:px-0">
-          <div className={['grid gap-6 py-6 sm:py-8 xl:py-0', gridCols].join(' ')}>
+        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 xl:mx-0 xl:max-w-none xl:px-4">
+          <div className={['grid gap-6 py-6 sm:py-8 xl:py-8', gridCols].join(' ')}>
             <CategorySidebar
               board={board}
               status={status}
               slots={allSlots}
               onBoardChange={setBoard}
               onStatusChange={setStatus}
+              onOpenPositions={openPositions}
               className="hidden lg:block lg:sticky lg:top-20 lg:self-start"
             />
 

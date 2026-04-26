@@ -179,10 +179,12 @@ function ResolvedRow({ position, now }: RowProps) {
 export interface MyPositionsProps {
   /** Compact summary mode — single line, click to expand. */
   compact?: boolean
+  /** Suppress the section header (caller already renders one). */
+  hideHeader?: boolean
   className?: string
 }
 
-export function MyPositions({ compact = false, className = '' }: MyPositionsProps) {
+export function MyPositions({ compact = false, hideHeader = false, className = '' }: MyPositionsProps) {
   const { address } = useWallet()
   const { positions } = useUserPositions(address)
   const now = useNowSecs()
@@ -264,16 +266,18 @@ export function MyPositions({ compact = false, className = '' }: MyPositionsProp
       ].join(' ')}
       aria-label="My positions"
     >
-      <header className="flex items-center justify-between border-b border-zinc-800 px-4 py-3">
-        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500">
-          my positions
-        </span>
-        {!empty ? (
-          <span className="rounded-full bg-zinc-800 px-2 py-0.5 font-mono text-[10px] tabular-nums text-zinc-300">
-            {total}
+      {!hideHeader ? (
+        <header className="flex items-center justify-between border-b border-zinc-800 px-4 py-3">
+          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500">
+            my positions
           </span>
-        ) : null}
-      </header>
+          {!empty ? (
+            <span className="rounded-full bg-zinc-800 px-2 py-0.5 font-mono text-[10px] tabular-nums text-zinc-300">
+              {total}
+            </span>
+          ) : null}
+        </header>
+      ) : null}
 
       {empty ? (
         <p className="px-4 py-3 font-mono text-[11px] text-zinc-500">

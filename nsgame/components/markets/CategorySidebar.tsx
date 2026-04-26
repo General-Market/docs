@@ -1,11 +1,10 @@
 'use client'
 
 import { useMemo } from 'react'
-import Link from 'next/link'
 import type { BoardFilter } from './FilterBar'
 import type { UpcomingSlot } from '@/lib/markets/hooks'
 import { useWallet } from '@/hooks/useWallet'
-import { MyPositions } from './MyPositions'
+import { useUserPositions } from '@/lib/markets/positions'
 import { GlobalActivity } from './GlobalActivity'
 
 // Left rail. Positions, activity, boards, status. The horizon column
@@ -31,9 +30,11 @@ export interface CategorySidebarProps {
   slots: UpcomingSlot[]
   onBoardChange: (b: BoardFilter) => void
   onStatusChange: (s: StatusFilter) => void
-  /** Hide the desktop-only widgets (positions + activity) — for the
-   *  mobile drawer, where these live in the sheet instead. */
+  /** Hide the desktop-only widgets (activity rail) — for the mobile
+   *  drawer, where activity lives elsewhere. */
   hideWidgets?: boolean
+  /** Open the positions modal. When omitted, the button is suppressed. */
+  onOpenPositions?: () => void
   className?: string
 }
 
@@ -58,6 +59,7 @@ export function CategorySidebar({
   onBoardChange,
   onStatusChange,
   hideWidgets = false,
+  onOpenPositions,
   className = '',
 }: CategorySidebarProps) {
   const boardCounts = useMemo(() => {
@@ -79,8 +81,9 @@ export function CategorySidebar({
       ].join(' ')}
       aria-label="Categories"
     >
-      {!hideWidgets ? <SidebarPositions /> : null}
       {!hideWidgets ? <GlobalActivity /> : null}
+
+      {onOpenPositions ? <PositionsButton onOpen={onOpenPositions} /> : null}
 
       <div>
         <p className={sectionLabelClasses()}>Status</p>
@@ -163,20 +166,37 @@ function StatusPillRow({
   )
 }
 
-// Sidebar-shaped positions widget. Mounts only when a wallet is connected.
-// Disconnected: returns null so the rail collapses to Activity + Status.
-function SidebarPositions() {
+// Positions trigger. A single line that opens the full ledger in a
+// modal — the side panel had to die so the central UI could breathe.
+function PositionsButton({ onOpen }: { onOpen: () => void }) {
   const { address } = useWallet()
+  const { positions } = useUserPositions(address)
+
   if (!address) return null
+
+  const open = positions.filter(p => p.state === 'open').length
+  const settling = positions.filter(p => p.state === 'settling').length
+  const won = positions.filter(p => p.state === 'resolved-won' || p.state === 'claimed-won').length
+
+  const summary = positions.length === 0
+    ? 'no positions yet'
+    : `${open} open · ${settling} settling · ${won} won`
+
   return (
-    <div className="space-y-1.5">
-      <MyPositions />
-      <Link
-        href={`/u/${address}`}
-        className="block px-1 text-right font-mono text-[10px] uppercase tracking-[0.12em] text-zinc-500 transition-colors hover:text-zinc-300"
-      >
-        view all →
-      </Link>
-    </div>
+    <button
+      type="button"
+      onClick={onOpen}
+      className="group flex w-full items-center justify-between gap-2 rounded-md border border-zinc-800 bg-zinc-900 px-3 py-2.5 text-left transition-colors hover:border-zinc-700 hover:bg-zinc-900/80"
+    >
+      <span className="flex flex-col items-start gap-0.5">
+        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500 group-hover:text-zinc-400">
+          my positions
+        </span>
+        <span className="font-mono text-[11px] tabular-nums text-zinc-200">
+          {summary}
+        </span>
+      </span>
+      <span aria-hidden className="font-mono text-[11px] text-zinc-500 group-hover:text-zinc-200">→</span>
+    </button>
   )
 }

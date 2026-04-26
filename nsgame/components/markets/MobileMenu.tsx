@@ -20,6 +20,7 @@ interface MobileMenuProps {
   slots: UpcomingSlot[]
   onBoardChange: (b: BoardFilter) => void
   onStatusChange: (s: StatusFilter) => void
+  onOpenPositions?: () => void
 }
 
 export function MobileMenu({
@@ -30,6 +31,7 @@ export function MobileMenu({
   slots,
   onBoardChange,
   onStatusChange,
+  onOpenPositions,
 }: MobileMenuProps) {
   const { cluster } = useWallet()
 
@@ -51,6 +53,9 @@ export function MobileMenu({
   // chosen — choice is the signal the user is done picking.
   const handleBoard = (b: BoardFilter) => { onBoardChange(b); onClose() }
   const handleStatus = (s: StatusFilter) => { onStatusChange(s); onClose() }
+  const handlePositions = onOpenPositions
+    ? () => { onClose(); onOpenPositions() }
+    : undefined
 
   return (
     <AnimatePresence>
@@ -99,6 +104,7 @@ export function MobileMenu({
                 slots={slots}
                 onBoardChange={handleBoard}
                 onStatusChange={handleStatus}
+                onOpenPositions={handlePositions}
                 hideWidgets
               />
             </div>
