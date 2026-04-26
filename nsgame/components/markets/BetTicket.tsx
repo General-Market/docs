@@ -11,7 +11,8 @@ import {
   usePairHistory,
   usePairScore,
   formatPairScore,
-  payoutMultiplier,
+  deriveYesPct,
+  pctToDecimalOdd,
 } from '@/lib/markets/hooks'
 import FaucetButton from './FaucetButton'
 import { GlobalActivity } from './GlobalActivity'
@@ -93,16 +94,16 @@ function BetTicketActive({
     try { return displayToUsdcUnits(amount) } catch { return 0n }
   }, [amount])
 
-  const { yesPct, noPct } = useMemo(() => computePercents(state), [state])
-  const yesMult = useMemo(
-    () => state ? payoutMultiplier(state.totalYes, state.totalNo, 'yes') : null,
-    [state],
+  // Same three-tier prior the row pill uses — pool first, then the
+  // audience baseline clamped to [15, 85], then 50/50. The pill always
+  // carries a real multiplier instead of a long mute dash.
+  const yesPct = useMemo(
+    () => deriveYesPct(state, slot.audienceA, slot.audienceB),
+    [state, slot.audienceA, slot.audienceB],
   )
-  const noMult = useMemo(
-    () => state ? payoutMultiplier(state.totalYes, state.totalNo, 'no') : null,
-    [state],
-  )
-  void yesMult; void noMult
+  const noPct = 100 - yesPct
+  const yesMult = useMemo(() => pctToDecimalOdd(yesPct), [yesPct])
+  const noMult = useMemo(() => pctToDecimalOdd(noPct), [noPct])
 
   async function handleSubmit() {
     setLocalError(null)
@@ -139,8 +140,8 @@ function BetTicketActive({
         setAmount={setAmount}
         connected={connected}
         stakeBalance={stakeBalance}
-        yesPct={yesPct}
-        noPct={noPct}
+        yesMult={yesMult}
+        noMult={noMult}
         pickedName={pickedName}
         isOpen={isOpen}
         showClose={false}
@@ -210,8 +211,8 @@ interface BetBodyProps {
   setAmount: (s: string) => void
   connected: boolean
   stakeBalance: { raw: bigint; display: string; loading: boolean; error: string | null }
-  yesPct: number | null
-  noPct: number | null
+  yesMult: number | null
+  noMult: number | null
   pickedName: string
   isOpen: boolean
   showClose: boolean
@@ -229,8 +230,8 @@ export function BetBody({
   setAmount,
   connected,
   stakeBalance,
-  yesPct,
-  noPct,
+  yesMult,
+  noMult,
   pickedName,
   isOpen,
   showClose,
@@ -304,14 +305,14 @@ export function BetBody({
           <SidePill
             side="yes"
             label="Yes"
-            pct={yesPct}
+            mult={yesMult}
             active={side === 'yes'}
             onClick={() => onSideChange('yes')}
           />
           <SidePill
             side="no"
             label="No"
-            pct={noPct}
+            mult={noMult}
             active={side === 'no'}
             onClick={() => onSideChange('no')}
           />
@@ -366,12 +367,12 @@ export function BetBody({
 interface SidePillProps {
   side: Side
   label: string
-  pct: number | null
+  mult: number | null
   active: boolean
   onClick: () => void
 }
 
-function SidePill({ side, label, pct, active, onClick }: SidePillProps) {
+function SidePill({ side, label, mult, active, onClick }: SidePillProps) {
   const yes = side === 'yes'
   // Idle: both pills wear emerald (Kalshi pattern). Active: side hue
   // takes over so the click still confirms which side won the press.
@@ -379,7 +380,7 @@ function SidePill({ side, label, pct, active, onClick }: SidePillProps) {
     ? 'bg-emerald-500/20 text-emerald-100 border border-emerald-400 ring-1 ring-emerald-400/40'
     : 'bg-rose-500/20 text-rose-100 border border-rose-400 ring-1 ring-rose-400/40'
   const idleClasses = 'border-2 border-emerald-400/60 text-emerald-300 hover:bg-emerald-500/10'
-  const pctText = pct === null ? '—' : `${Math.round(pct * 100)}¢`
+  const multText = mult === null ? '—' : `${mult.toFixed(2)}×`
   return (
     <button
       type="button"
@@ -391,19 +392,7 @@ function SidePill({ side, label, pct, active, onClick }: SidePillProps) {
       ].join(' ')}
     >
       <span>{label}</span>
-      <span className="tabular-nums opacity-80">{pctText}</span>
+      <span className="tabular-nums opacity-80">{multText}</span>
     </button>
   )
-}
-
-// Implied probability per side from pool sizes. Same shape MarketRow uses
-// for its inline percent. Empty pool → 50/50.
-export function computePercents(
-  state: { totalYes: bigint; totalNo: bigint } | null,
-): { yesPct: number | null; noPct: number | null } {
-  if (!state) return { yesPct: null, noPct: null }
-  const total = state.totalYes + state.totalNo
-  if (total === 0n) return { yesPct: 0.5, noPct: 0.5 }
-  const yes = Number(state.totalYes) / Number(total)
-  return { yesPct: yes, noPct: 1 - yes }
 }

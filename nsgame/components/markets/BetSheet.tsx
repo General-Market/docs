@@ -9,10 +9,12 @@ import {
   useMarketState,
   usePlaceBet,
   useStakeBalance,
+  deriveYesPct,
+  pctToDecimalOdd,
 } from '@/lib/markets/hooks'
 import { GlobalActivity } from './GlobalActivity'
 import { MyPositions } from './MyPositions'
-import { BetBody, computePercents } from './BetTicket'
+import { BetBody } from './BetTicket'
 
 // Bottom sheet on mobile. Right drawer on desktop. Same body BetTicket
 // renders, dressed in slide-up chrome and a close affordance.
@@ -82,7 +84,15 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
     try { return displayToUsdcUnits(amount) } catch { return 0n }
   }, [amount])
 
-  const { yesPct, noPct } = useMemo(() => computePercents(state), [state])
+  // Same prior chain as BetTicket — empty pools fall back to the
+  // audience baseline so the multiplier is never a dash.
+  const yesPct = useMemo(
+    () => slot ? deriveYesPct(state, slot.audienceA, slot.audienceB) : 50,
+    [state, slot],
+  )
+  const noPct = 100 - yesPct
+  const yesMult = useMemo(() => pctToDecimalOdd(yesPct), [yesPct])
+  const noMult = useMemo(() => pctToDecimalOdd(noPct), [noPct])
 
   async function handleSubmit() {
     if (!slot) return
@@ -146,8 +156,8 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
                 setAmount={setAmount}
                 connected={connected}
                 stakeBalance={stakeBalance}
-                yesPct={yesPct}
-                noPct={noPct}
+                yesMult={yesMult}
+                noMult={noMult}
                 pickedName={pickedName}
                 isOpen={isOpen}
                 showClose
