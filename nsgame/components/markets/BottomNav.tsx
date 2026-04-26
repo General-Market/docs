@@ -94,7 +94,10 @@ export function BottomNav({ onMenuClick, onTicketClick, hasTicket = false }: Bot
             type="button"
             onClick={onTicketClick ?? handleWallet}
             aria-label={connected ? 'Wallet' : 'Connect wallet'}
-            className="relative flex flex-col items-center justify-center gap-0.5 py-2.5 text-zinc-400 transition-colors hover:text-zinc-100"
+            className={[
+              'relative flex flex-col items-center justify-center gap-0.5 py-2.5 transition-colors',
+              connected ? 'text-sky-300 hover:text-sky-200' : 'text-zinc-400 hover:text-zinc-100',
+            ].join(' ')}
           >
             <WalletIcon className="h-5 w-5" />
             <span className="text-[10px] font-medium tracking-tight">
@@ -103,7 +106,10 @@ export function BottomNav({ onMenuClick, onTicketClick, hasTicket = false }: Bot
             {hasTicket ? (
               <span
                 aria-hidden
-                className="absolute right-[28%] top-2 h-1.5 w-1.5 rounded-full bg-emerald-400"
+                className={[
+                  'absolute right-[28%] top-2 h-1.5 w-1.5 rounded-full bg-emerald-400',
+                  connected ? 'shadow-[0_0_0_2px_rgb(56_189_248/0.35)]' : '',
+                ].join(' ')}
               />
             ) : null}
           </button>

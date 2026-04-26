@@ -130,10 +130,10 @@ export function NavBar({
           ) : connected && address ? (
             <button
               onClick={() => disconnect()}
-              className="group inline-flex h-9 items-center gap-2 rounded-md border border-zinc-800 bg-zinc-900 px-3 font-mono text-[12px] text-zinc-200 transition-colors hover:border-rose-500/60 hover:bg-rose-500/10 hover:text-rose-300"
+              className="group inline-flex h-9 items-center gap-2 rounded-md border border-sky-500/40 bg-sky-500/5 px-3 font-mono text-[12px] text-zinc-200 transition-colors hover:border-rose-500/60 hover:bg-rose-500/10 hover:text-rose-300"
               aria-label="Disconnect wallet"
             >
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 group-hover:bg-rose-400" />
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_0_2px_rgb(56_189_248/0.3)] group-hover:bg-rose-400 group-hover:shadow-none" />
               <span className="hidden sm:inline">{truncateAddress(address)}</span>
               <span className="sm:hidden">Wallet</span>
             </button>
