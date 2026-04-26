@@ -193,6 +193,7 @@ function MarketListInner({
             : 'No markets match the current filter.'
     return (
       <section aria-label="Markets" className="min-w-0">
+        <ListHeader status={status} count={0} live={wantsLive} />
         <EmptyState text={text} />
       </section>
     )
@@ -200,6 +201,7 @@ function MarketListInner({
 
   return (
     <section aria-label="Markets" className="min-w-0">
+      <ListHeader status={status} count={filteredSlots.length} live={wantsLive} />
       <FadeIn className="space-y-2">
         {filteredSlots.map(slot => (
           <MarketRow
@@ -333,6 +335,47 @@ function EmptyState({ text }: { text: string }) {
       <p className="text-[14px] text-zinc-400">{text}</p>
     </div>
   )
+}
+
+// Section header — eyebrow + bold declaration with a red period. The
+// title shifts with the status; the live state earns a pulse dot to
+// the right of the eyebrow.
+function ListHeader({
+  status,
+  count,
+  live,
+}: { status: StatusFilter; count: number; live: boolean }) {
+  const meta = HEADER_COPY[status]
+  return (
+    <header className="mb-3 flex items-end justify-between gap-3">
+      <div className="space-y-1">
+        <p className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-500">
+          {meta.eyebrow}
+          {live ? (
+            <span className="relative inline-flex h-[6px] w-[6px]" aria-hidden>
+              <span className="absolute inset-0 inline-flex animate-ping rounded-full bg-red-500 opacity-60" />
+              <span className="relative inline-flex h-[6px] w-[6px] rounded-full bg-red-500" />
+            </span>
+          ) : null}
+        </p>
+        <h2 className="text-[18px] font-semibold tracking-tight text-zinc-100">
+          {meta.title}<span className="text-rose-500">.</span>
+        </h2>
+      </div>
+      {count > 0 ? (
+        <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-zinc-500">
+          {count} {count === 1 ? 'row' : 'rows'}
+        </span>
+      ) : null}
+    </header>
+  )
+}
+
+const HEADER_COPY: Record<StatusFilter, { eyebrow: string; title: string }> = {
+  live:      { eyebrow: 'markets · open',      title: 'Pick a side' },
+  settling:  { eyebrow: 'markets · settling',  title: 'Awaiting the oracle' },
+  resolved:  { eyebrow: 'markets · resolved',  title: 'The book is closed' },
+  positions: { eyebrow: 'you · in flight',     title: 'Skin in the game' },
 }
 
 // Notify the parent of the latest slot universe so the sidebar can show

@@ -30,53 +30,54 @@ export function LastTradesTable({ className = '' }: LastTradesTableProps) {
   }, [])
 
   return (
-    <section
-      className={[
-        'overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/60',
-        className,
-      ].join(' ')}
-      aria-label="Last trades"
-    >
-      <header className="flex items-center justify-between border-b border-zinc-800 px-4 py-3">
-        <h2 className="font-mono text-[11px] uppercase tracking-[0.16em] text-zinc-400">
-          last trades
-        </h2>
-        <span className="relative inline-flex h-[7px] w-[7px]" aria-hidden>
-          <span className="absolute inset-0 inline-flex animate-ping rounded-full bg-emerald-500 opacity-60" />
-          <span className="relative inline-flex h-[7px] w-[7px] rounded-full bg-emerald-500" />
-        </span>
+    <section className={className} aria-label="Last trades">
+      <header className="mb-3 flex items-end justify-between gap-3">
+        <div className="space-y-1">
+          <p className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-500">
+            trades · live ledger
+            <span className="relative inline-flex h-[6px] w-[6px]" aria-hidden>
+              <span className="absolute inset-0 inline-flex animate-ping rounded-full bg-emerald-500 opacity-60" />
+              <span className="relative inline-flex h-[6px] w-[6px] rounded-full bg-emerald-500" />
+            </span>
+          </p>
+          <h2 className="text-[18px] font-semibold tracking-tight text-zinc-100">
+            Money changed hands<span className="text-rose-500">.</span>
+          </h2>
+        </div>
       </header>
 
-      {/* Column titles. Hidden below sm — mobile rows label themselves
-          inline so the table still reads without a header. */}
-      <div className="hidden sm:grid grid-cols-[minmax(0,2.2fr)_minmax(0,1.1fr)_minmax(0,0.9fr)_minmax(0,1.1fr)_minmax(0,0.9fr)_minmax(0,1.2fr)] items-center gap-3 border-b border-zinc-800 bg-zinc-900/80 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500">
-        <span>Game</span>
-        <span>User</span>
-        <span>Time</span>
-        <span className="text-right">Bet</span>
-        <span className="text-right">Multiplier</span>
-        <span className="text-right">Payout</span>
+      <div className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/60">
+        {/* Column titles. Hidden below sm — mobile rows label themselves
+            inline so the table still reads without a header. */}
+        <div className="hidden sm:grid grid-cols-[minmax(0,2.2fr)_minmax(0,1.1fr)_minmax(0,0.9fr)_minmax(0,1.1fr)_minmax(0,0.9fr)_minmax(0,1.2fr)] items-center gap-3 border-b border-zinc-800 bg-zinc-900/80 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500">
+          <span>Game</span>
+          <span>User</span>
+          <span>Time</span>
+          <span className="text-right">Bet</span>
+          <span className="text-right">Multiplier</span>
+          <span className="text-right">Payout</span>
+        </div>
+
+        {events.length === 0 && !isLoading ? (
+          <p className="px-4 py-6 text-center font-mono text-[12px] text-zinc-500">
+            The book is empty. Someone has to be first.
+          </p>
+        ) : null}
+
+        {events.length === 0 && isLoading ? (
+          <div className="divide-y divide-zinc-800/60">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <SkeletonRow key={i} />
+            ))}
+          </div>
+        ) : (
+          <div className="divide-y divide-zinc-800/60">
+            {events.map(ev => (
+              <Row key={ev.signature} event={ev} nowSecs={nowSecs} />
+            ))}
+          </div>
+        )}
       </div>
-
-      {events.length === 0 && !isLoading ? (
-        <p className="px-4 py-6 text-center font-mono text-[12px] text-zinc-500">
-          The book is empty. Someone has to be first.
-        </p>
-      ) : null}
-
-      {events.length === 0 && isLoading ? (
-        <div className="divide-y divide-zinc-800/60">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <SkeletonRow key={i} />
-          ))}
-        </div>
-      ) : (
-        <div className="divide-y divide-zinc-800/60">
-          {events.map(ev => (
-            <Row key={ev.signature} event={ev} nowSecs={nowSecs} />
-          ))}
-        </div>
-      )}
     </section>
   )
 }
