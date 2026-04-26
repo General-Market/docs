@@ -1,13 +1,9 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
-import { useRecentBets } from '@/hooks/useRecentBets'
+import { useEffect, useState } from 'react'
+import { useRecentBets, type RecentBetEvent } from '@/hooks/useRecentBets'
 import { pairById } from '@/lib/markets/pairs'
-import {
-  payoutMultiplier,
-  useMarketStatesBatch,
-  type MarketState,
-} from '@/lib/markets/hooks'
+import { payoutMultiplier } from '@/lib/markets/hooks'
 import { SourceIcon } from './SourceIcon'
 
 // A network-wide ledger of bets placed across every market. The shape
@@ -32,9 +28,6 @@ export function LastTradesTable({ className = '' }: LastTradesTableProps) {
     const id = window.setInterval(() => setNowSecs(Math.floor(Date.now() / 1000)), 30_000)
     return () => window.clearInterval(id)
   }, [])
-
-  const pdas = useMemo(() => events.map(e => e.marketPda), [events])
-  const stateMap = useMarketStatesBatch(pdas)
 
   return (
     <section
@@ -80,12 +73,7 @@ export function LastTradesTable({ className = '' }: LastTradesTableProps) {
       ) : (
         <div className="divide-y divide-zinc-800/60">
           {events.map(ev => (
-            <Row
-              key={ev.signature}
-              event={ev}
-              state={stateMap[ev.marketPda] ?? null}
-              nowSecs={nowSecs}
-            />
+            <Row key={ev.signature} event={ev} nowSecs={nowSecs} />
           ))}
         </div>
       )}
@@ -94,12 +82,11 @@ export function LastTradesTable({ className = '' }: LastTradesTableProps) {
 }
 
 interface RowProps {
-  event: ReturnType<typeof useRecentBets>['events'][number]
-  state: MarketState | null
+  event: RecentBetEvent
   nowSecs: number
 }
 
-function Row({ event, state, nowSecs }: RowProps) {
+function Row({ event, nowSecs }: RowProps) {
   const pair = event.thresholdBps != null ? pairById(event.thresholdBps) : undefined
   const sideLabel = event.side === 0 ? 'yes' : 'no'
   const backedName = pair
@@ -110,10 +97,42 @@ function Row({ event, state, nowSecs }: RowProps) {
     : ''
   const amount = safeBig(event.amount)
 
-  const mult = state
-    ? payoutMultiplier(state.totalYes, state.totalNo, sideLabel)
-    : null
-  const payout = mult !== null ? estimatedPayout(amount, mult) : null
+  // Pools are summed across the whole market — the indexer carries them
+  // even after the on-chain account is closed. payoutMultiplier returns
+  // null when the side is empty, which is what "—" used to mean.
+  const totalYes = safeBig(event.totalYes)
+  const totalNo = safeBig(event.totalNo)
+  const hasPools = totalYes > 0n || totalNo > 0n
+  const mult = hasPools ? payoutMultiplier(totalYes, totalNo, sideLabel) : null
+
+  // Three states for the right-hand columns:
+  //  1. Resolved + winning side → realised payout (green).
+  //  2. Resolved + losing side  → −stake (red), the actual loss.
+  //  3. Live                    → potential payout at current pools.
+  const won = event.resolved && event.outcomeYes !== null
+    && ((sideLabel === 'yes' && event.outcomeYes === true)
+      || (sideLabel === 'no' && event.outcomeYes === false))
+  const lost = event.resolved && event.outcomeYes !== null && !won
+
+  let payout: number | null = null
+  if (event.resolved && event.outcomeYes === null) {
+    // Refund — every side gets its stake back at 1.0×.
+    payout = Number(amount) / 10 ** USDC_DECIMALS
+  } else if (won && mult !== null) {
+    payout = estimatedPayout(amount, mult)
+  } else if (lost) {
+    payout = -(Number(amount) / 10 ** USDC_DECIMALS)
+  } else if (mult !== null) {
+    payout = estimatedPayout(amount, mult)
+  }
+
+  const payoutTone = payout === null
+    ? 'text-zinc-500'
+    : payout < 0
+      ? 'text-rose-300'
+      : event.resolved
+        ? 'text-emerald-300'
+        : 'text-zinc-200'
 
   const tone = sideLabel === 'yes'
     ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
@@ -191,7 +210,7 @@ function Row({ event, state, nowSecs }: RowProps) {
         <span
           className={[
             'block font-mono text-[12px] font-semibold tabular-nums',
-            payout !== null ? 'text-emerald-300' : 'text-zinc-500',
+            payoutTone,
           ].join(' ')}
         >
           {payout !== null ? formatUsdcDecimal(payout) : '—'}

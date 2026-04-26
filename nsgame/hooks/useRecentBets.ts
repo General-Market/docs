@@ -28,6 +28,14 @@ export interface RecentBetEvent {
   signature: string
   /** 0 = YES, 1 = NO */
   side: number
+  /** Cumulative YES pool for this market, in stake-mint units. */
+  totalYes: string | null
+  /** Cumulative NO pool for this market, in stake-mint units. */
+  totalNo: string | null
+  /** True once the indexer has seen the resolved event for this market. */
+  resolved: boolean
+  /** Resolved-only: true if YES won, false if NO won, null on refund/unset. */
+  outcomeYes: boolean | null
 }
 
 interface UseRecentBetsReturn {
@@ -56,6 +64,10 @@ function toRecent(r: BetPlacedRow): RecentBetEvent {
     timestamp: r.blockTime,
     signature: r.signature,
     side: r.side,
+    totalYes: r.marketMeta?.totalYes ?? null,
+    totalNo: r.marketMeta?.totalNo ?? null,
+    resolved: r.marketMeta?.resolved === true,
+    outcomeYes: r.marketMeta?.outcomeYes ?? null,
   }
 }
 

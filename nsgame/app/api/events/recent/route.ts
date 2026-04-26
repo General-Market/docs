@@ -27,6 +27,12 @@ interface RawRow {
   close_time: string | null
   settlement_time: string | null
   creator: string | null
+  total_yes: string | null
+  total_no: string | null
+  resolved: boolean | null
+  outcome_yes: boolean | null
+  final_price: string | null
+  baseline_price: string | null
 }
 
 export async function GET(req: NextRequest) {
@@ -37,6 +43,10 @@ export async function GET(req: NextRequest) {
     : DEFAULT_LIMIT
 
   try {
+    // Pools are summed across every bet on the market — the indexer
+    // outlives the on-chain account (cams settle in two minutes and the
+    // PDA is closed) so this is the only source that survives long
+    // enough to show a multiplier in the ticker.
     const sql = `
       SELECT
         bp.signature,
@@ -47,7 +57,13 @@ export async function GET(req: NextRequest) {
         mi.source_id, mi.threshold_bps,
         mi.close_time::text      AS close_time,
         mi.settlement_time::text AS settlement_time,
-        mi.creator
+        mi.creator,
+        pools.total_yes::text    AS total_yes,
+        pools.total_no::text     AS total_no,
+        (mr.market IS NOT NULL)  AS resolved,
+        mr.outcome_yes           AS outcome_yes,
+        mr.final_price::text     AS final_price,
+        mr.baseline_price::text  AS baseline_price
       FROM __SCHEMA__.bet_placed bp
       LEFT JOIN LATERAL (
         SELECT source_id, threshold_bps, close_time, settlement_time, creator
@@ -55,6 +71,14 @@ export async function GET(req: NextRequest) {
         WHERE market = bp.market
         ORDER BY slot DESC LIMIT 1
       ) mi ON TRUE
+      LEFT JOIN LATERAL (
+        SELECT
+          COALESCE(SUM(CASE WHEN side = 0 THEN amount ELSE 0 END), 0) AS total_yes,
+          COALESCE(SUM(CASE WHEN side = 1 THEN amount ELSE 0 END), 0) AS total_no
+          FROM __SCHEMA__.bet_placed
+         WHERE market = bp.market
+      ) pools ON TRUE
+      LEFT JOIN __SCHEMA__.market_resolved mr ON mr.market = bp.market
       ORDER BY bp.slot DESC, bp.signature
       LIMIT $1
     `
@@ -75,11 +99,13 @@ export async function GET(req: NextRequest) {
         closeTime: r.close_time,
         settlementTime: r.settlement_time,
         creator: r.creator,
-        resolved: false,
-        outcomeYes: null,
-        finalPrice: null,
-        baselinePrice: null,
+        resolved: r.resolved === true,
+        outcomeYes: r.outcome_yes,
+        finalPrice: r.final_price,
+        baselinePrice: r.baseline_price,
         forceResolved: null,
+        totalYes: r.total_yes,
+        totalNo: r.total_no,
       },
     }))
     return Response.json({ events })

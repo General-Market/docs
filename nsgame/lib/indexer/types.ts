@@ -18,6 +18,10 @@ export interface MarketMeta {
   finalPrice: string | null       // u128 as decimal string
   baselinePrice: string | null
   forceResolved: boolean | null
+  /** Cumulative YES pool, summed across every bet on this market. u64 string. */
+  totalYes?: string | null
+  /** Cumulative NO pool, summed across every bet on this market. u64 string. */
+  totalNo?: string | null
 }
 
 export interface BetPlacedRow {
