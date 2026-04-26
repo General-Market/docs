@@ -32,7 +32,11 @@ const FLASH_MS = 700
 
 function poolUnitsToFloat(units: bigint): number {
   if (units === 0n) return 0
-  return Number(units / 10n ** BigInt(USDC_DECIMALS))
+  // Float division — bigint integer division would truncate sub-dollar
+  // amounts to 0 and the footer would falsely read "$0" while the bot
+  // was actively betting in cents. 6-decimal USDC stays well within
+  // f64's safe integer range.
+  return Number(units) / 1e6
 }
 
 function formatPoolFloat(n: number): string {
