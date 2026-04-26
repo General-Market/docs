@@ -377,43 +377,68 @@ export interface PositionAccount {
   bump: number
 }
 
-function readU128LE(buf: Buffer, offset: number): bigint {
-  const lo = buf.readBigUInt64LE(offset)
-  const hi = buf.readBigUInt64LE(offset + 8)
+// Account decoders run in the browser, where `Buffer` is undefined unless
+// every dependency that touches binary data ships its own polyfill. Newer
+// @solana/web3.js returns `info.data` as a Uint8Array; calling
+// `data.readUInt32LE(...)` on it throws, the catch in the hook swallows
+// the error, and every card silently renders "$0 pool" forever.
+//
+// All helpers below are DataView-based — Uint8Array-native, no Buffer
+// dependency, identical wire format. Accepts Buffer too (it inherits
+// from Uint8Array).
+type Bytes = Uint8Array
+
+function dv(b: Bytes): DataView {
+  return new DataView(b.buffer, b.byteOffset, b.byteLength)
+}
+
+function readU128LE(b: Bytes, offset: number): bigint {
+  const view = dv(b)
+  const lo = view.getBigUint64(offset, true)
+  const hi = view.getBigUint64(offset + 8, true)
   return (hi << 64n) | lo
 }
 
-function decodeFixedName(bytes: Buffer): string {
+const _utf8 = typeof TextDecoder !== 'undefined' ? new TextDecoder('utf-8') : null
+
+function decodeFixedName(bytes: Bytes): string {
   // Strip trailing zeros from a [u8; 32] name field.
   let end = bytes.length
   while (end > 0 && bytes[end - 1] === 0) end--
-  return bytes.slice(0, end).toString('utf8')
+  const slice = bytes.subarray(0, end)
+  if (_utf8) return _utf8.decode(slice)
+  // Last-ditch fallback for archaic runtimes — ASCII only.
+  let s = ''
+  for (let i = 0; i < slice.length; i++) s += String.fromCharCode(slice[i]!)
+  return s
 }
 
-export function decodeSource(data: Buffer): SourceAccount {
+export function decodeSource(data: Bytes): SourceAccount {
+  const view = dv(data)
   let o = 8
-  const sourceId = data.readUInt32LE(o); o += 4
-  const name = decodeFixedName(data.slice(o, o + 32)); o += 32
-  const enabled = data.readUInt8(o) !== 0; o += 1
-  const bump = data.readUInt8(o)
+  const sourceId = view.getUint32(o, true); o += 4
+  const name = decodeFixedName(data.subarray(o, o + 32)); o += 32
+  const enabled = data[o] !== 0; o += 1
+  const bump = data[o]!
   return { sourceId, name, enabled, bump }
 }
 
-export function decodeMarket(data: Buffer): MarketAccount {
+export function decodeMarket(data: Bytes): MarketAccount {
+  const view = dv(data)
   let o = 8
-  const sourceId = data.readUInt32LE(o); o += 4
-  const closeTime = data.readBigInt64LE(o); o += 8
-  const settlementTime = data.readBigInt64LE(o); o += 8
-  const thresholdBps = data.readInt32LE(o); o += 4
-  const totalYes = data.readBigUInt64LE(o); o += 8
-  const totalNo = data.readBigUInt64LE(o); o += 8
+  const sourceId = view.getUint32(o, true); o += 4
+  const closeTime = view.getBigInt64(o, true); o += 8
+  const settlementTime = view.getBigInt64(o, true); o += 8
+  const thresholdBps = view.getInt32(o, true); o += 4
+  const totalYes = view.getBigUint64(o, true); o += 8
+  const totalNo = view.getBigUint64(o, true); o += 8
   const baselinePrice = readU128LE(data, o); o += 16
   const finalPrice = readU128LE(data, o); o += 16
-  const resolved = data.readUInt8(o) !== 0; o += 1
-  const outcomeYes = data.readUInt8(o) !== 0; o += 1
-  const forceResolved = data.readUInt8(o) !== 0; o += 1
-  const vault = new PublicKey(data.slice(o, o + 32)); o += 32
-  const bump = data.readUInt8(o)
+  const resolved = data[o] !== 0; o += 1
+  const outcomeYes = data[o] !== 0; o += 1
+  const forceResolved = data[o] !== 0; o += 1
+  const vault = new PublicKey(data.subarray(o, o + 32)); o += 32
+  const bump = data[o]!
   return {
     sourceId, closeTime, settlementTime, thresholdBps,
     totalYes, totalNo, baselinePrice, finalPrice,
@@ -421,14 +446,15 @@ export function decodeMarket(data: Buffer): MarketAccount {
   }
 }
 
-export function decodePosition(data: Buffer): PositionAccount {
+export function decodePosition(data: Bytes): PositionAccount {
+  const view = dv(data)
   let o = 8
-  const market = new PublicKey(data.slice(o, o + 32)); o += 32
-  const owner = new PublicKey(data.slice(o, o + 32)); o += 32
-  const yesAmount = data.readBigUInt64LE(o); o += 8
-  const noAmount = data.readBigUInt64LE(o); o += 8
-  const claimed = data.readUInt8(o) !== 0; o += 1
-  const bump = data.readUInt8(o)
+  const market = new PublicKey(data.subarray(o, o + 32)); o += 32
+  const owner = new PublicKey(data.subarray(o, o + 32)); o += 32
+  const yesAmount = view.getBigUint64(o, true); o += 8
+  const noAmount = view.getBigUint64(o, true); o += 8
+  const claimed = data[o] !== 0; o += 1
+  const bump = data[o]!
   return { market, owner, yesAmount, noAmount, claimed, bump }
 }
 
