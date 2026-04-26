@@ -1,6 +1,8 @@
 'use client'
 
-import { useWallet } from '@solana/wallet-adapter-react'
+import { useEffect, useState } from 'react'
+import { useConnection, useWallet } from '@solana/wallet-adapter-react'
+import { LAMPORTS_PER_SOL } from '@solana/web3.js'
 import { useToast } from '@/lib/contexts/ToastContext'
 
 // Devnet SOL nudge. The public faucet at faucet.solana.com handles the
@@ -10,12 +12,45 @@ import { useToast } from '@/lib/contexts/ToastContext'
 
 const FAUCET_URL = 'https://faucet.solana.com/'
 
+// Hide the button once the wallet holds enough lamports for a bet plus
+// a few retries — ~0.001 SOL covers ~12 typical fees on devnet.
+const SUFFICIENT_LAMPORTS = 0.001 * LAMPORTS_PER_SOL
+
+const POLL_MS = 15_000
+
 export default function SolFaucetButton() {
   const { publicKey, connected } = useWallet()
+  const { connection } = useConnection()
   const toast = useToast()
+  const [lamports, setLamports] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (!connected || !publicKey) {
+      setLamports(null)
+      return
+    }
+    let cancelled = false
+    const read = async () => {
+      try {
+        const value = await connection.getBalance(publicKey, 'confirmed')
+        if (!cancelled) setLamports(value)
+      } catch {
+        // Leave the button visible if the read fails — better to over-show
+        // a faucet button than to hide a fix the user might need.
+        if (!cancelled) setLamports(prev => prev ?? 0)
+      }
+    }
+    read()
+    const id = window.setInterval(read, POLL_MS)
+    return () => {
+      cancelled = true
+      window.clearInterval(id)
+    }
+  }, [connected, publicKey, connection])
 
   if (process.env.NEXT_PUBLIC_FAUCET_ENABLED !== '1') return null
   if (!connected || !publicKey) return null
+  if (lamports !== null && lamports >= SUFFICIENT_LAMPORTS) return null
 
   async function handleClick() {
     if (!publicKey) return
