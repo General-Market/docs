@@ -116,14 +116,13 @@ function Avatar({
         decoding="async"
         className="h-full w-full object-cover"
         onError={(e) => {
-          // Three-step fallback: local file → DiceBear initials avatar
-          // (colored gradient block from a deterministic seed) → static
-          // initials tile. Always shows something.
+          // Local fallback chain. JPG → SVG (deterministic gradient
+          // generated at build time, checked into /public/models) →
+          // static initials tile. Nothing leaves the origin.
           const img = e.currentTarget
           if (!img.dataset.fallback) {
-            img.dataset.fallback = 'dicebear'
-            const seed = encodeURIComponent(name)
-            img.src = `https://api.dicebear.com/7.x/initials/svg?seed=${seed}&backgroundType=gradientLinear&backgroundColor=059669,7c3aed,db2777,d97706&fontFamily=sans-serif&fontWeight=700&textColor=ffffff`
+            img.dataset.fallback = 'svg'
+            img.src = `/models/${slug}.svg`
             return
           }
           img.style.display = 'none'
