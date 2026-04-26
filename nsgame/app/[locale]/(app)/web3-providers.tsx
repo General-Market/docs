@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ToastProvider } from '@/lib/contexts/ToastContext'
 import { SolanaWalletProvider } from '@/lib/solana/SolanaWalletProvider'
+import { PostHogWalletIdentify } from '@/components/PostHogWalletIdentify'
 import { ReactNode, useState } from 'react'
 
 // Solana-only provider chain. The EVM SSE feed (morpho/vision/orders…)
@@ -21,6 +22,7 @@ export function Web3Providers({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <SolanaWalletProvider>
+        <PostHogWalletIdentify />
         <ToastProvider>
           {children}
         </ToastProvider>
