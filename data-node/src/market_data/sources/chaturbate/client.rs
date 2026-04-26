@@ -39,8 +39,11 @@ const PAGE_SIZE: usize = 500;
 /// 10-minute sync interval.
 const MAX_PAGES: usize = 20;
 
-/// Minimum viewer count to include a model
-const MIN_VIEWER_COUNT: u64 = 50;
+/// Minimum viewer count to include a model. Was 50 to focus on the
+/// "main board"; lifted to 1 because nsgame wants the full historical
+/// tape — every active room, not just the popular ones. Backfill is
+/// the long game; you can't backfill a room you never recorded.
+const MIN_VIEWER_COUNT: u64 = 1;
 
 /// Request timeout
 const REQUEST_TIMEOUT_SECS: u64 = 15;
@@ -522,11 +525,13 @@ mod tests {
 
     #[test]
     fn test_min_viewer_count_threshold() {
-        assert_eq!(MIN_VIEWER_COUNT, 50);
-        assert!(25 < MIN_VIEWER_COUNT);
-        assert!(49 < MIN_VIEWER_COUNT);
-        assert!(50 >= MIN_VIEWER_COUNT);
-        assert!(1000 >= MIN_VIEWER_COUNT);
+        // Lifted from 50 → 1: nsgame wants the full historical tape,
+        // not just the popular rooms. The threshold still rules out
+        // empty rooms (zero viewers) so we don't write rows for shows
+        // that opened, drew nobody, and closed.
+        assert_eq!(MIN_VIEWER_COUNT, 1);
+        assert!(0 < MIN_VIEWER_COUNT);
+        assert!(1 >= MIN_VIEWER_COUNT);
     }
 
     #[test]

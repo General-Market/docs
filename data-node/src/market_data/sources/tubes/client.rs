@@ -79,7 +79,12 @@ const SITES: &[SiteSpec] = &[
     },
     SiteSpec {
         id: "xvideos",
-        listing_url_template: "https://www.xvideos.com/pornstars/{page}",
+        // The old `/pornstars/{n}` paginated index was retired (returns 404
+        // on every page now). `/pornstars-index/list` is the replacement —
+        // a flat alphabetical index with ~177 active stars in one page.
+        // No {page} substitution needed; the call site does .replace which
+        // is a no-op when the placeholder is absent.
+        listing_url_template: "https://www.xvideos.com/pornstars-index/list",
         strategy: FetchStrategy::PerProfile,
         profile_url_template: "https://www.xvideos.com/pornstars/{slug}",
     },
@@ -242,10 +247,17 @@ impl TubesMarketSource {
             .filter(|v: &Vec<_>| !v.is_empty())
             .unwrap_or_else(|| SITES.iter().collect());
 
+        // Default 200 — the xvideos /pornstars-index/list page returns
+        // ~177 stars in one shot, the other sites return similar
+        // counts; 200 captures everyone without truncation. Set
+        // TUBES_TOP_N=0 to disable the cap entirely (recorded as
+        // usize::MAX). The original 20 was a "main board" focus that
+        // forfeited the long tail; backfill needs the long tail.
         let top_n = std::env::var("TUBES_TOP_N")
             .ok()
-            .and_then(|s| s.parse().ok())
-            .unwrap_or(20);
+            .and_then(|s| s.parse::<usize>().ok())
+            .map(|n| if n == 0 { usize::MAX } else { n })
+            .unwrap_or(200);
         let ph_pages = std::env::var("TUBES_PH_PAGES")
             .ok()
             .and_then(|s| s.parse().ok())
