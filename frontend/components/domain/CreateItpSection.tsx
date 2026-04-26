@@ -844,6 +844,25 @@ function FinalizeItpModal({
   const isValidForm = name.length > 0 && symbol.length > 0
   const isDeploying = isPending || isConfirming || isFetchingPrices
   const formLocked = isDeploying || isSuccess
+  // Mirror name → symbol until the user edits symbol manually. Saves a step
+  // and stops the silent disabled-button trap when symbol is left blank.
+  const [symbolEdited, setSymbolEdited] = useState(symbol.length > 0)
+  const handleNameChange = (value: string) => {
+    const next = value.slice(0, 32)
+    setName(next)
+    if (!symbolEdited) {
+      setSymbol(next.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10))
+    }
+  }
+  const handleSymbolChange = (value: string) => {
+    setSymbolEdited(true)
+    setSymbol(value.toUpperCase().slice(0, 10))
+  }
+  const missingReason = !name.length
+    ? t('finalize.name_label')
+    : !symbol.length
+      ? t('finalize.symbol_label')
+      : null
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -882,7 +901,7 @@ function FinalizeItpModal({
               <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-1.5 block">{t('finalize.name_label')}</label>
               <input
                 type="text" value={name}
-                onChange={(e) => setName(e.target.value.slice(0, 32))}
+                onChange={(e) => handleNameChange(e.target.value)}
                 placeholder={t('finalize.name_placeholder')}
                 disabled={formLocked}
                 className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none disabled:text-text-muted"
@@ -892,7 +911,7 @@ function FinalizeItpModal({
               <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-1.5 block">{t('finalize.symbol_label')}</label>
               <input
                 type="text" value={symbol}
-                onChange={(e) => setSymbol(e.target.value.toUpperCase().slice(0, 10))}
+                onChange={(e) => handleSymbolChange(e.target.value)}
                 placeholder={t('finalize.symbol_placeholder')}
                 disabled={formLocked}
                 className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none disabled:text-text-muted"
@@ -978,13 +997,18 @@ function FinalizeItpModal({
               {tc('actions.close')}
             </button>
           ) : (
-            <WalletActionButton
-              onClick={onSubmit}
-              disabled={!isValidForm || isPending || isConfirming || isFetchingPrices || hasNonceGap}
-              className="bg-zinc-900 text-white font-medium rounded-lg px-6 py-2.5 hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors fluid-press"
-            >
-              {isFetchingPrices ? t('finalize.submit_fetching') : isPending ? t('finalize.submit_pending') : isConfirming ? t('finalize.submit_confirming') : t('finalize.submit_deploy')}
-            </WalletActionButton>
+            <div className="flex flex-col items-end gap-1">
+              {missingReason && !isDeploying && (
+                <span className="text-[11px] text-text-muted">{missingReason} required</span>
+              )}
+              <WalletActionButton
+                onClick={onSubmit}
+                disabled={!isValidForm || isPending || isConfirming || isFetchingPrices || hasNonceGap}
+                className="bg-zinc-900 text-white font-medium rounded-lg px-6 py-2.5 hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors fluid-press"
+              >
+                {isFetchingPrices ? t('finalize.submit_fetching') : isPending ? t('finalize.submit_pending') : isConfirming ? t('finalize.submit_confirming') : t('finalize.submit_deploy')}
+              </WalletActionButton>
+            </div>
           )}
         </div>
       </SpringModal>
