@@ -1,15 +1,37 @@
 import type { Metadata, Viewport } from "next";
-import { GeistSans } from "geist/font/sans";
-import { JetBrains_Mono } from "next/font/google";
+import { Fraunces, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import { ClientProviders } from "./client-providers";
 import { SequinWaveBackground } from "@/components/ui/SequinWaveBackground";
 import "./globals.css";
 
-const jetbrainsMono = JetBrains_Mono({
+// Editorial serif — display headlines, hero, mastheads. Variable axes give
+// optical sizing and a gentler curve at large sizes; the wonk axis is left
+// at default to keep things institutional, not whimsical.
+const display = Fraunces({
   subsets: ["latin"],
-  variable: "--font-jetbrains-mono",
+  axes: ["opsz", "SOFT"],
+  variable: "--font-display",
+  display: "swap",
+});
+
+// Body / UI sans. Plex carries the IBM research pedigree — distinct from
+// every Geist/Inter SaaS clone, with a slightly mechanical cadence that
+// reads as institutional rather than playful.
+const sans = IBM_Plex_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-sans",
+  display: "swap",
+});
+
+// Tabular data — KPIs, prices, tables. Matched to Plex Sans so the family
+// feels intentional. Replaces JetBrains Mono.
+const mono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-mono",
   display: "swap",
 });
 
@@ -52,7 +74,7 @@ export default async function RootLayout({
   const locale = await getLocale();
   const messages = await getMessages();
   return (
-    <html lang={locale} className={`${GeistSans.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
+    <html lang={locale} className={`${display.variable} ${sans.variable} ${mono.variable}`} suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://us.i.posthog.com" />
       </head>

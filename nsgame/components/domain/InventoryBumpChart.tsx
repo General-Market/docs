@@ -265,7 +265,7 @@ export function InventoryBumpChart() {
               dominantBaseline="central"
               fill="#A1A1AA"
               fontSize={11}
-              fontFamily="var(--font-jetbrains-mono), monospace"
+              fontFamily="var(--font-mono), monospace"
             >
               #{i + 1}
             </text>
@@ -365,7 +365,7 @@ export function InventoryBumpChart() {
                   : '#D4D4D8'
               }
               fontSize={10}
-              fontFamily="var(--font-jetbrains-mono), monospace"
+              fontFamily="var(--font-mono), monospace"
               fontWeight={hoveredAsset === asset.address ? 'bold' : 'normal'}
               style={{ transition: 'fill 0.15s' }}
             >
@@ -387,7 +387,7 @@ export function InventoryBumpChart() {
                   : '#D4D4D8'
               }
               fontSize={10}
-              fontFamily="var(--font-jetbrains-mono), monospace"
+              fontFamily="var(--font-mono), monospace"
               fontWeight={hoveredAsset === asset.address ? 'bold' : 'normal'}
               style={{ transition: 'fill 0.15s' }}
             >
@@ -404,7 +404,7 @@ export function InventoryBumpChart() {
                 textAnchor="middle"
                 fill="#52525B"
                 fontSize={10}
-                fontFamily="var(--font-jetbrains-mono), monospace"
+                fontFamily="var(--font-mono), monospace"
               >
                 {snap.label}
               </text>
@@ -414,7 +414,7 @@ export function InventoryBumpChart() {
                 textAnchor="middle"
                 fill="#A1A1AA"
                 fontSize={9}
-                fontFamily="var(--font-jetbrains-mono), monospace"
+                fontFamily="var(--font-mono), monospace"
               >
                 {eventLabel(snap.eventType)}
               </text>

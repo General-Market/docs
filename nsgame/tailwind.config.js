@@ -37,8 +37,14 @@ module.exports = {
         accent: '#C40000',
       },
       fontFamily: {
-        sans: ['var(--font-geist-sans)', 'system-ui', 'sans-serif'],
-        mono: ['var(--font-jetbrains-mono)', 'JetBrains Mono', 'monospace'],
+        // IBM Plex Sans — institutional UI body. Distinct from Geist/Inter,
+        // carries research-org gravity without reading as nostalgic.
+        sans: ['var(--font-sans)', '-apple-system', 'BlinkMacSystemFont', 'Helvetica Neue', 'sans-serif'],
+        // Fraunces — variable editorial serif for display headlines, hero
+        // mastheads, and any moment that earns Bloomberg/FT energy.
+        display: ['var(--font-display)', 'Georgia', 'Times New Roman', 'serif'],
+        // IBM Plex Mono — tabular data, KPIs, code. Family-matched to Plex Sans.
+        mono: ['var(--font-mono)', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
       },
       fontSize: {
         'micro':   ['0.625rem',  { lineHeight: '1.4' }],                           // 10px — mobile nav, tiny badges

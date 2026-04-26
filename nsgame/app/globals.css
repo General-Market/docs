@@ -11,7 +11,9 @@
   --up: #16A34A;
   --down: #DC2626;
   --brand: #00A36C;
-  --mono: var(--font-jetbrains-mono), 'JetBrains Mono', monospace;
+  /* Type stack — explicit families so tokens read self-documented. */
+  --mono: var(--font-mono), 'IBM Plex Mono', ui-monospace, monospace;
+  --serif: var(--font-display), Georgia, 'Times New Roman', serif;
 
   /* Motion tokens */
   --dur-instant: 100ms;
@@ -25,31 +27,47 @@
   --ease-out-quart: cubic-bezier(0.25, 1, 0.3, 1);
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
-  text-rendering: optimizeLegibility;
-}
+/* Base typography lives in @layer base so Tailwind utilities (font-black,
+   tracking-tight, etc.) keep winning when components opt in to overrides. */
+@layer base {
+  body {
+    color: var(--foreground);
+    background: var(--background);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Plex Sans: kerning, ligatures, contextual alts. */
+    font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
+    font-optical-sizing: auto;
+    text-rendering: optimizeLegibility;
+  }
 
-/* ── INSTITUTIONAL TYPOGRAPHY — tabular numbers + optical sizing ── */
-.font-mono, [class*="font-mono"] {
-  font-feature-settings: 'tnum' 1, 'kern' 1;
-  font-variant-numeric: tabular-nums;
-}
+  .font-mono, [class*="font-mono"] {
+    font-feature-settings: 'tnum' 1, 'kern' 1, 'zero' 1;
+    font-variant-numeric: tabular-nums;
+  }
 
-/* Tight tracking on display/heading text — BlackRock convention */
-h1, h2, h3, .type-display, .type-stat-value,
-[class*="text-display"], [class*="text-heading"], [class*="text-title"] {
-  letter-spacing: -0.025em;
-  font-feature-settings: 'kern' 1, 'liga' 1;
-}
+  /* Sans headings — terminal convention: tight tracking, no serif. */
+  h1, h2, h3, .type-stat-value,
+  [class*="text-heading"], [class*="text-title"] {
+    letter-spacing: -0.022em;
+    font-feature-settings: 'kern' 1, 'liga' 1;
+  }
 
-/* Uppercase labels get wider tracking — prevents cramping at small sizes */
-[class*="uppercase"] {
-  letter-spacing: 0.06em;
+  /* Display text — Fraunces editorial serif with auto optical sizing.
+     Family + features are base-layer so component-level weight/tracking
+     utilities still take precedence when needed. */
+  [class*="text-display"] {
+    font-family: var(--serif);
+    font-optical-sizing: auto;
+    font-variation-settings: 'opsz' 144, 'SOFT' 30;
+    letter-spacing: -0.018em;
+    font-feature-settings: 'kern' 1, 'liga' 1, 'dlig' 1, 'ss01' 1;
+  }
+
+  /* Uppercase labels get wider tracking — prevents cramping at small sizes. */
+  [class*="uppercase"] {
+    letter-spacing: 0.06em;
+  }
 }
 
 /* Bottom nav safe area for notched phones */
@@ -69,12 +87,17 @@ h1, h2, h3, .type-display, .type-stat-value,
   letter-spacing: 0.025em; color: #555555;
 }
 .type-stat-value {
-  font-size: 2rem; line-height: 1.15;
-  font-weight: 900; letter-spacing: -0.03em;
+  font-size: 2rem; line-height: 1.1;
+  font-weight: 700; letter-spacing: -0.028em;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1, 'kern' 1, 'zero' 1;
 }
 .type-display {
-  font-size: clamp(2.25rem, 5vw, 3.5rem); line-height: 1.05;
-  font-weight: 900; letter-spacing: -0.035em;
+  font-family: var(--serif);
+  font-size: clamp(2.5rem, 5.5vw, 4rem); line-height: 1.02;
+  font-weight: 600; letter-spacing: -0.022em;
+  font-optical-sizing: auto;
+  font-variation-settings: 'opsz' 144, 'SOFT' 30;
 }
 
 /* ── SECTION BAR — solid black bar (DATA VIEW pattern) ── */

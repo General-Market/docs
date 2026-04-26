@@ -205,7 +205,7 @@ export function FillSpeedChart() {
                   border: '1px solid #E4E4E7',
                   borderRadius: '12px',
                   fontSize: '12px',
-                  fontFamily: 'var(--font-jetbrains-mono), monospace',
+                  fontFamily: 'var(--font-mono), monospace',
                   boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
                 }}
                 content={({ active, payload }) => {
