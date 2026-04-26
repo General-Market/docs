@@ -38,6 +38,7 @@ const SECTIONS: MenuSection[] = [
       { href: '/trust/data-source-methodology', label: 'Data Sources' },
       { href: '/trust/audit-and-mainnet-roadmap', label: 'Audit Roadmap' },
       { href: '/trust/subject-removal-policy', label: 'Subject Removal' },
+      { href: '/trust/listing-posture', label: 'Listing Posture' },
       { href: '/trust/token-status', label: 'Token Status' },
     ],
   },

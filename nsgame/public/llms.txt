@@ -39,6 +39,7 @@ claiming to be the nsgame token today is fraudulent.
 - [Data Source Methodology](https://nsgame.org/trust/data-source-methodology): What gets scraped, how often, how normalised.
 - [Audit and Mainnet Roadmap](https://nsgame.org/trust/audit-and-mainnet-roadmap): What gates the move from testnet to mainnet.
 - [Subject Removal Policy](https://nsgame.org/trust/subject-removal-policy): UI delisting yes, protocol delisting no. The honest line.
+- [Listing Posture](https://nsgame.org/trust/listing-posture): Why the protocol can list named subjects without explicit consent. Three reasons, none of them "it's legal."
 - [Token Status](https://nsgame.org/trust/token-status): A token is planned. Details will be published when finalised.
 - [Market Integrity](https://nsgame.org/trust/market-integrity): Public data, public chain, public methodology.
 
