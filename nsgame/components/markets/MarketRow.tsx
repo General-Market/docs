@@ -7,6 +7,7 @@ import {
   compactAudience,
   audienceUnit,
   formatLabel,
+  deriveYesPct,
 } from '@/lib/markets/hooks'
 import { CountdownTimer, useNowSecs } from './CountdownTimer'
 import { SourceIcon } from './SourceIcon'
@@ -39,25 +40,6 @@ function formatPoolFloat(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`
   return Math.round(n).toString()
-}
-
-// Three-tier prior. Pool-implied probability when bets exist. Otherwise
-// fall back to the audience baseline — the side with more views or
-// viewers is the prior favourite. Last fallback: 50/50, which is the
-// market admitting it has heard absolutely nothing.
-function deriveYesPct(state: MarketState | null, audA: bigint, audB: bigint): number {
-  if (state) {
-    const total = state.totalYes + state.totalNo
-    if (total > 0n) return Number((state.totalYes * 1000n) / total) / 10
-  }
-  const totalAud = audA + audB
-  if (totalAud > 0n) {
-    const raw = Number((audA * 1000n) / totalAud) / 10
-    // Clamp the audience prior so a heavy favourite never reads as
-    // "already over". Users still need a reason to take the other side.
-    return Math.max(15, Math.min(85, raw))
-  }
-  return 50
 }
 
 function profileUrl(sourceId: number, slug: string): string {

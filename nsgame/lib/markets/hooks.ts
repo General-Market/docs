@@ -475,6 +475,51 @@ export function formatMultiplier(m: number | null): string {
   return `${m.toFixed(2)}×`
 }
 
+/**
+ * Three-tier yes-side probability, in percent (0–100).
+ *
+ *  1. Pool-implied — when bets exist on at least one side.
+ *  2. Audience baseline — clamped to [15, 85] so a heavy favourite
+ *     never reads as "already over". Both sides need a reason.
+ *  3. 50/50 — the market admitting it has heard nothing.
+ *
+ * Used for both the row pill and the sidebar teaser, so the rail and
+ * the list can never disagree about who the market thinks is winning.
+ */
+export function deriveYesPct(
+  state: MarketState | null,
+  audA: bigint,
+  audB: bigint,
+): number {
+  if (state) {
+    const total = state.totalYes + state.totalNo
+    if (total > 0n) return Number((state.totalYes * 1000n) / total) / 10
+  }
+  const totalAud = audA + audB
+  if (totalAud > 0n) {
+    const raw = Number((audA * 1000n) / totalAud) / 10
+    return Math.max(15, Math.min(85, raw))
+  }
+  return 50
+}
+
+/**
+ * Convert a yes-side percent (0–100) to a parimutuel decimal odd that
+ * mirrors `payoutMultiplier`'s fee accounting. Useful when a teaser has
+ * to display odds for an empty pool: the audience-prior pct flows
+ * straight through this and out as a number a bettor recognises.
+ *
+ *   payoutMultiplier = totalPool × (1 − fee) / sidePool
+ *                    = (1 − fee) / (sidePool / totalPool)
+ *                    = (1 − fee) / (pct / 100)
+ *
+ * Returns null at pct ≤ 0 or ≥ 100 — no finite odd at the limits.
+ */
+export function pctToDecimalOdd(pct: number): number | null {
+  if (!Number.isFinite(pct) || pct <= 0 || pct >= 100) return null
+  return ((10_000 - FEE_BPS) / 100) / pct
+}
+
 // ── useSourcePrice ──────────────────────────────────────────────────────
 
 const SOURCE_PRICE_POLL_MS = 5_000

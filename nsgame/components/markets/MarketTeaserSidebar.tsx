@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useRef } from 'react'
 import type { UpcomingSlot } from '@/lib/markets/hooks'
 import {
-  payoutMultiplier,
+  deriveYesPct,
+  pctToDecimalOdd,
   useMarketStatesBatch,
 } from '@/lib/markets/hooks'
 import { useNowSecs } from './CountdownTimer'
@@ -258,8 +259,12 @@ export function MarketTeaserSidebar({
           <div className="relative flex h-full flex-col justify-center gap-3 p-3">
             {teasers.map(slot => {
               const state = stateMap[slot.marketPda] ?? null
-              const yesOdd = state ? payoutMultiplier(state.totalYes, state.totalNo, 'yes') : null
-              const noOdd = state ? payoutMultiplier(state.totalYes, state.totalNo, 'no') : null
+              // Same three-tier prior as the row pill — pool first, then
+              // audience baseline, then 50/50. Empty devnet markets stop
+              // showing "—" and start showing a real number.
+              const yesPct = deriveYesPct(state, slot.audienceA, slot.audienceB)
+              const yesOdd = pctToDecimalOdd(yesPct)
+              const noOdd = pctToDecimalOdd(100 - yesPct)
               return (
                 <TeaserCard
                   key={slot.marketPda}
