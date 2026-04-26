@@ -1359,13 +1359,11 @@ async def fleet_supervisor(
                 except Exception as exc:
                     log.warning("[fleet] %s topup error: %s", m.label, repr(exc)[:120])
 
-            # Spawn replacements — slow drip, not a flood.
+            # Spawn replacements — gradual drip, not a flood. Up to
+            # 5 births per supervisor pass (every FLEET_REVIEW_PERIOD),
+            # spaced FLEET_SPAWN_INTERVAL_SECS apart inside the pass.
             spawned = 0
-            while (
-                len(fleet.members) < FLEET_TARGET_SIZE
-                and now - fleet.last_birth_at >= FLEET_SPAWN_INTERVAL_SECS
-                and spawned < 3
-            ):
+            while len(fleet.members) < FLEET_TARGET_SIZE and spawned < 5:
                 next_label_n += 1
                 label = f"fleet-{next_label_n:04d}"
                 m = await spawn_member(cfg, state, client, bucket, admin_kp, rng, label)
@@ -1376,9 +1374,10 @@ async def fleet_supervisor(
                 start_member_task(m)
                 save_fleet(fleet_path, fleet)
                 spawned += 1
-                now = time.time()
-                # Pace successive births within a single pass.
-                await asyncio.sleep(FLEET_SPAWN_INTERVAL_SECS)
+                # Pace successive births so the chain doesn't see a
+                # synchronous burst of new wallets all at once.
+                if len(fleet.members) < FLEET_TARGET_SIZE and spawned < 5:
+                    await asyncio.sleep(FLEET_SPAWN_INTERVAL_SECS)
 
             log.info(
                 "[fleet] active=%d/%d, retired=%d. (spawned %d this pass)",
