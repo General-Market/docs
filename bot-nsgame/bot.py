@@ -66,12 +66,17 @@ MIN_SOL_LAMPORTS = 50_000_000  # 0.05 SOL
 MIN_USDC_RAW = 200 * USDC_DECIMALS_RAW
 REFILL_USDC_RAW = 100_000 * USDC_DECIMALS_RAW
 
+# Bet sizing + cadence. The user dialled this down after observing the
+# bot melt through ~1.8 SOL/hour at the prior settings — most of which
+# was rent on freshly-instantiated Market PDAs (the bot is the first
+# bettor on every cohort, so the bot pays the rent). Smaller sweeps,
+# longer micro intervals, lighter total burn.
 SWEEP_BET_MIN = 1.0
-SWEEP_BET_MAX = 100.0
+SWEEP_BET_MAX = 25.0
 MICRO_BET_MIN = 0.1
-MICRO_BET_MAX = 5.0
-MICRO_SLEEP_MIN = 20
-MICRO_SLEEP_MAX = 50
+MICRO_BET_MAX = 2.0
+MICRO_SLEEP_MIN = 90
+MICRO_SLEEP_MAX = 180
 BET_QUANTUM = 0.1
 
 WATCHDOG_PERIOD = 60
