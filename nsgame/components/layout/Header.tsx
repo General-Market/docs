@@ -111,12 +111,13 @@ export function Header() {
 
               {/* Logo */}
               <Link href="/" className="shrink-0 flex items-center gap-2.5">
-                <img
+                <Image
                   src="/logo.svg"
                   alt=""
                   width={36}
                   height={36}
                   className="w-9 h-9"
+                  priority
                 />
                 <span className={`text-[19px] sm:text-[22px] font-black tracking-[-0.03em] transition-colors duration-500 ${
                   isDark ? 'text-white' : 'text-zinc-100'

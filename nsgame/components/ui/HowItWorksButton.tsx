@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useCallback, useState, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
+import { useDialogA11y } from '@/hooks/useDialogA11y'
 
 const DISMISS_KEY = 'gm-hiw-dismissed'
 
@@ -19,6 +20,9 @@ export function HowItWorksButton() {
     setDismissed(true)
     localStorage.setItem(DISMISS_KEY, '1')
   }
+
+  const closeModal = useCallback(() => setOpen(false), [])
+  const dialogRef = useDialogA11y(open, closeModal)
 
   if (dismissed) return null
 
@@ -62,21 +66,27 @@ export function HowItWorksButton() {
       {/* Video modal */}
       {open && (
         <div
+          role="presentation"
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
-          onClick={() => setOpen(false)}
+          onClick={closeModal}
         >
           <div
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="How nsgame works"
             className="relative w-full max-w-3xl mx-4"
             onClick={(e) => e.stopPropagation()}
           >
             <button
-              onClick={() => setOpen(false)}
+              onClick={closeModal}
               className="absolute -top-10 right-0 text-white text-sm font-bold hover:opacity-80"
             >
               {`\u2715 ${t('actions.close')}`}
             </button>
             <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
               <iframe
+                title="How nsgame works"
                 className="absolute inset-0 w-full h-full rounded-lg"
                 src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1"
                 allow="autoplay; encrypted-media"

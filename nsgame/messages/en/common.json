@@ -67,6 +67,9 @@
     "twitter": "X (Twitter)",
     "collapse": "Collapse"
   },
+  "a11y": {
+    "calendar_heading": "Open markets"
+  },
   "language": {
     "label": "Language",
     "en": "English",

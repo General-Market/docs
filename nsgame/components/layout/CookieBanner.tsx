@@ -66,8 +66,9 @@ export function CookieBanner() {
   }
 
   return (
-    <div
-      role="dialog"
+    <aside
+      role="region"
+      aria-label="Cookie preferences"
       aria-labelledby="cookie-banner-title"
       className="fixed inset-x-0 bottom-0 z-[60] px-4 pb-4 sm:px-6 sm:pb-6 pointer-events-none"
     >
@@ -158,6 +159,6 @@ export function CookieBanner() {
           )}
         </div>
       </div>
-    </div>
+    </aside>
   )
 }

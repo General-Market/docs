@@ -28,6 +28,7 @@ const SECTIONS: SheetSection[] = [
       { href: '/product/round-mechanics', label: 'Round Mechanics' },
       { href: '/product/fee-schedule', label: 'Fee Schedule' },
       { href: '/product/refund-policy', label: 'Refund' },
+      { href: '/trust/market-integrity', label: 'Market Integrity' },
     ],
   },
   {
@@ -60,6 +61,7 @@ const SECTIONS: SheetSection[] = [
       { href: '/legal/privacy-policy', label: 'Privacy' },
       { href: '/legal/cookie-policy', label: 'Cookie Policy' },
       { href: '/legal/disclaimer', label: 'Disclaimer' },
+      { href: '/legal/acceptable-use-policy', label: 'Acceptable Use' },
       { href: '/legal/risk-disclosure', label: 'Risk Disclosure' },
       { href: '/legal/restricted-territories', label: 'Restricted Territories' },
       { href: '/legal/dmca-policy', label: 'DMCA' },
@@ -144,7 +146,7 @@ export function BottomNavMoreSheet({ open, onClose }: BottomNavMoreSheetProps) {
                 type="button"
                 onClick={onClose}
                 aria-label={t('aria.close')}
-                className="text-zinc-500 hover:text-zinc-100 transition-colors p-1 -m-1"
+                className="-mr-1 inline-flex h-11 w-11 items-center justify-center rounded-md text-zinc-500 hover:bg-zinc-900 hover:text-zinc-100 transition-colors"
               >
                 <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
                   <path d="M4 4l10 10M14 4L4 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />

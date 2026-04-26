@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { NavBar } from '@/components/markets/NavBar'
 import { CategorySidebar, type StatusFilter } from '@/components/markets/CategorySidebar'
 import { MarketList } from '@/components/markets/MarketList'
@@ -24,6 +25,7 @@ import { activeCluster } from '@/lib/solana/cluster'
 // service of the click — without it, the cards fill the space.
 
 export function CalendarPageClient() {
+  const t = useTranslations('common')
   const [board, setBoard] = useState<BoardFilter>('all')
   const [status, setStatus] = useState<StatusFilter>('live')
 
@@ -100,6 +102,7 @@ export function CalendarPageClient() {
 
   return (
     <main className="min-h-screen bg-zinc-950 text-zinc-100 pb-[calc(env(safe-area-inset-bottom,0)+64px)] lg:pb-0">
+      <h1 className="sr-only">{t('a11y.calendar_heading')}</h1>
       <NavBar onMenuClick={openMenu} />
 
       <MobileMenu

@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from '@/i18n/routing'
+import { useDialogA11y } from '@/hooks/useDialogA11y'
 
 const STORAGE_KEY = 'nsgame_age_confirmed'
 
@@ -29,21 +30,25 @@ export function AgeGateModal() {
     if (!readConfirmation()) setVisible(true)
   }, [])
 
+  const leave = useCallback(() => {
+    // Send the visitor somewhere harmless. The protocol does not care.
+    if (typeof window !== 'undefined') {
+      window.location.href = 'https://www.google.com'
+    }
+  }, [])
+
+  const dialogRef = useDialogA11y(visible, leave)
+
   if (!visible) return null
 
   const enter = () => {
     writeConfirmation()
     setVisible(false)
   }
-  const leave = () => {
-    // Send the visitor somewhere harmless. The protocol does not care.
-    if (typeof window !== 'undefined') {
-      window.location.href = 'https://www.google.com'
-    }
-  }
 
   return (
     <div
+      ref={dialogRef}
       role="dialog"
       aria-modal="true"
       aria-labelledby="age-gate-title"
