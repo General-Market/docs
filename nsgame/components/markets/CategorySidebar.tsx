@@ -163,25 +163,11 @@ function StatusPillRow({
   )
 }
 
-// Sidebar-shaped positions widget. Connected: hand off to MyPositions
-// (reused from the bet panel). Disconnected: a single Cioran line.
+// Sidebar-shaped positions widget. Mounts only when a wallet is connected.
+// Disconnected: returns null so the rail collapses to Activity + Status.
 function SidebarPositions() {
   const { address } = useWallet()
-  if (!address) {
-    return (
-      <section
-        className="rounded-md border border-dashed border-zinc-800 bg-zinc-900/40 px-3 py-3"
-        aria-label="My positions"
-      >
-        <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500">
-          my positions
-        </p>
-        <p className="mt-1.5 text-[12px] text-zinc-500">
-          Connect a wallet to see them.
-        </p>
-      </section>
-    )
-  }
+  if (!address) return null
   return (
     <div className="space-y-1.5">
       <MyPositions />

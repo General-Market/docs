@@ -14,7 +14,6 @@ import { MarketRowSkeleton } from './MarketRowSkeleton'
 import { CountdownTickProvider, useNowSecs } from './CountdownTimer'
 import type { BoardFilter } from './FilterBar'
 import type { StatusFilter } from './CategorySidebar'
-import { headerForStatus } from '@/lib/markets/status'
 
 const SKELETON_COUNT = 6
 
@@ -111,13 +110,9 @@ function MarketListInner({
   const [mounted, setMounted] = useState(false)
   useEffect(() => { setMounted(true) }, [])
 
-  const liveCount = filteredSlots.length
-  const headerCopy = headerForStatus(status)
-
   if (!mounted) {
     return (
       <section aria-label="Markets" className="min-w-0">
-        <Heading copy={headerCopy} liveCount={0} />
         <div className="space-y-2">
           {Array.from({ length: SKELETON_COUNT }).map((_, i) => (
             <MarketRowSkeleton key={i} />
@@ -133,7 +128,6 @@ function MarketListInner({
   if (wantsSettling && settling.loading && settlingSlots.length === 0) {
     return (
       <section aria-label="Markets" className="min-w-0">
-        <Heading copy={headerCopy} liveCount={0} />
         <div className="space-y-2">
           {Array.from({ length: SKELETON_COUNT }).map((_, i) => (
             <MarketRowSkeleton key={i} />
@@ -146,7 +140,6 @@ function MarketListInner({
   if (wantsResolved && resolved.loading && resolvedSlots.length === 0) {
     return (
       <section aria-label="Markets" className="min-w-0">
-        <Heading copy={headerCopy} liveCount={0} />
         <div className="space-y-2">
           {Array.from({ length: SKELETON_COUNT }).map((_, i) => (
             <MarketRowSkeleton key={i} />
@@ -166,7 +159,6 @@ function MarketListInner({
           : 'No markets match the current filter.'
     return (
       <section aria-label="Markets" className="min-w-0">
-        <Heading copy={headerCopy} liveCount={0} />
         <EmptyState text={text} />
       </section>
     )
@@ -174,7 +166,6 @@ function MarketListInner({
 
   return (
     <section aria-label="Markets" className="min-w-0">
-      <Heading copy={headerCopy} liveCount={liveCount} />
       <FadeIn className="space-y-2">
         {filteredSlots.map(slot => (
           <MarketRow
@@ -221,25 +212,6 @@ function FadeIn({ children, className }: { children: React.ReactNode; className?
     >
       {children}
     </div>
-  )
-}
-
-function Heading({ copy, liveCount }: { copy: { title: string; subtitle: string }; liveCount: number }) {
-  return (
-    <header className="mb-5 flex items-baseline justify-between gap-3">
-      <div>
-        <h2 className="text-[18px] font-semibold tracking-tight text-zinc-100">
-          {copy.title}
-        </h2>
-        <p className="mt-1 text-[13px] text-zinc-500">
-          {copy.subtitle}
-        </p>
-      </div>
-      <span className="text-[12px] tabular-nums text-zinc-500">
-        <span className="font-medium text-zinc-200">{liveCount}</span>
-        {liveCount === 1 ? ' market' : ' markets'}
-      </span>
-    </header>
   )
 }
 
