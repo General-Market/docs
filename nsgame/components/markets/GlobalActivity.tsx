@@ -86,87 +86,103 @@ interface RowProps {
   nowSecs: number
 }
 
+// Each row carries too many fields for one line at 220px — stack them.
+// Line 1: kind + pair + timestamp. Line 2: actor + amount + outcome.
+// Truncation guards every text node so a long wallet can't blow up
+// the layout.
 function ActivityRow({ event, nowSecs }: RowProps) {
   const iconId = iconSourceId(event.pairIndex)
   const ts = relativeTime(event.blockTime, nowSecs)
   const pair = pairLabel(event.pairIndex)
 
+  let kindLabel: string
+  let kindClass: string
+  let outcomeNode: React.ReactNode = null
+  let amountNode: React.ReactNode = null
+  let actorNode: React.ReactNode = null
+
   if (event.kind === 'bet') {
-    const sideClass = event.side === 'yes'
-      ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
-      : 'border-rose-500/30 bg-rose-500/10 text-rose-300'
-    return (
-      <div className="flex items-center gap-2 px-2.5 py-1.5">
-        <span className="flex shrink-0 items-center gap-1">
-          {iconId ? <SourceIcon sourceId={iconId} className="h-3 w-3" /> : null}
-          <span className="font-mono text-[9px] uppercase tracking-[0.1em] text-zinc-500">bet</span>
-        </span>
-        <span className="font-mono text-[10px] tabular-nums text-zinc-400">
-          {shortAddr(event.owner)}
-        </span>
-        <span className="font-mono text-[10px] tabular-nums text-zinc-200">
-          {formatUsdc(event.amount)} <span className="text-zinc-500">USDC</span>
-        </span>
-        <span
-          className={[
-            'inline-flex items-center rounded border px-1 py-px font-mono text-[9px] font-semibold uppercase tracking-[0.1em]',
-            sideClass,
-          ].join(' ')}
-        >
-          {event.side ?? '—'}
-        </span>
-        <span className="font-mono text-[10px] tabular-nums text-zinc-500">{pair}</span>
-        <span className="ml-auto font-mono text-[10px] tabular-nums text-zinc-600">{ts}</span>
-      </div>
-    )
-  }
-
-  if (event.kind === 'resolved') {
-    const winLabel = event.outcomeYes ? 'A' : 'B'
-    return (
-      <div className="flex items-center gap-2 px-2.5 py-1.5">
-        <span className="flex shrink-0 items-center gap-1">
-          {iconId ? <SourceIcon sourceId={iconId} className="h-3 w-3" /> : null}
-          <span className="font-mono text-[9px] uppercase tracking-[0.1em] text-zinc-500">resolved</span>
-        </span>
-        <span className="font-mono text-[10px] tabular-nums text-zinc-500">{pair}</span>
-        <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.08em] text-zinc-200">
-          {winLabel}
-        </span>
-        <span className="font-mono text-[10px] tabular-nums text-zinc-400">
-          {formatScore(event.finalPrice)}
-        </span>
-        <span className="ml-auto font-mono text-[10px] tabular-nums text-zinc-600">{ts}</span>
-      </div>
-    )
-  }
-
-  // claim
-  const won = event.stranded === false && (event.net ?? 0n) > 0n
-  const refund = event.stranded === true
-  const verb = refund ? 'refund' : won ? 'won' : 'lost'
-  const verbClass = refund
-    ? 'text-zinc-400'
-    : won
-      ? 'text-emerald-300'
-      : 'text-rose-300'
-  return (
-    <div className="flex items-center gap-2 px-2.5 py-1.5">
-      <span className="flex shrink-0 items-center gap-1">
-        {iconId ? <SourceIcon sourceId={iconId} className="h-3 w-3" /> : null}
-        <span className="font-mono text-[9px] uppercase tracking-[0.1em] text-zinc-500">claim</span>
+    kindLabel = 'bet'
+    kindClass = 'text-zinc-400'
+    actorNode = shortAddr(event.owner)
+    amountNode = (
+      <span className="font-mono tabular-nums text-zinc-200">
+        ${formatUsdc(event.amount)}
       </span>
-      <span className="font-mono text-[10px] tabular-nums text-zinc-400">
-        {shortAddr(event.owner)}
+    )
+    outcomeNode = (
+      <span
+        className={[
+          'inline-flex shrink-0 items-center rounded border px-1 py-px font-mono text-[9px] font-semibold uppercase tracking-[0.1em]',
+          event.side === 'yes'
+            ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+            : 'border-rose-500/30 bg-rose-500/10 text-rose-300',
+        ].join(' ')}
+      >
+        {event.side ?? '—'}
       </span>
-      <span className={['font-mono text-[10px] font-semibold uppercase tracking-[0.08em]', verbClass].join(' ')}>
+    )
+  } else if (event.kind === 'resolved') {
+    kindLabel = 'resolved'
+    kindClass = 'text-zinc-400'
+    actorNode = (
+      <span className="font-mono text-zinc-300">
+        {event.outcomeYes ? 'A wins' : 'B wins'}
+      </span>
+    )
+    amountNode = (
+      <span className="font-mono tabular-nums text-zinc-500">
+        {formatScore(event.finalPrice)}
+      </span>
+    )
+  } else {
+    const won = event.stranded === false && (event.net ?? 0n) > 0n
+    const refund = event.stranded === true
+    const verb = refund ? 'refund' : won ? 'won' : 'lost'
+    const verbClass = refund
+      ? 'text-zinc-400'
+      : won
+        ? 'text-emerald-300'
+        : 'text-rose-300'
+    kindLabel = 'claim'
+    kindClass = 'text-zinc-400'
+    actorNode = shortAddr(event.owner)
+    amountNode = (
+      <span className={['font-mono tabular-nums', won ? 'text-emerald-300' : 'text-zinc-200'].join(' ')}>
+        ${formatUsdc(event.net)}
+      </span>
+    )
+    outcomeNode = (
+      <span
+        className={[
+          'inline-flex shrink-0 items-center rounded px-1 py-px font-mono text-[9px] font-semibold uppercase tracking-[0.1em]',
+          verbClass,
+        ].join(' ')}
+      >
         {verb}
       </span>
-      <span className="font-mono text-[10px] tabular-nums text-zinc-200">
-        {formatUsdc(event.net)} <span className="text-zinc-500">USDC</span>
-      </span>
-      <span className="font-mono text-[10px] tabular-nums text-zinc-500">{pair}</span>
-      <span className="ml-auto font-mono text-[10px] tabular-nums text-zinc-600">{ts}</span>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-0.5 px-3 py-2">
+      <div className="flex items-center gap-1.5 text-[9.5px]">
+        {iconId ? <SourceIcon sourceId={iconId} className="h-3 w-3 shrink-0 rounded-sm" /> : null}
+        <span className={['shrink-0 font-mono uppercase tracking-[0.12em]', kindClass].join(' ')}>
+          {kindLabel}
+        </span>
+        <span className="shrink-0 font-mono tabular-nums text-zinc-600">{pair}</span>
+        <span className="ml-auto shrink-0 font-mono tabular-nums text-zinc-600">{ts}</span>
+      </div>
+      <div className="flex min-w-0 items-center gap-1.5 pl-[18px] text-[10.5px]">
+        <span className="min-w-0 truncate font-mono tabular-nums text-zinc-400">
+          {actorNode}
+        </span>
+        {amountNode ? (
+          <span className="ml-auto shrink-0 text-[10.5px]">{amountNode}</span>
+        ) : null}
+        {outcomeNode}
+      </div>
     </div>
   )
 }
