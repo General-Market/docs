@@ -927,14 +927,19 @@ CLAIM_FETCH_PAGE = 200      # positions per indexer page
 
 
 async def fetch_unclaimed_resolved(wallet: Pubkey) -> list[str]:
-    """Hit nsgame's positions API and return market PDAs that have
-    resolved but not been claimed yet. The endpoint paginates by limit,
-    not by status, so we filter client-side. Two-page lookbehind is
-    plenty — the bot drains its backlog within a couple of cycles."""
+    """Hit nsgame's positions API with the unclaimed-only filter. Server
+    returns just the resolved-without-claim rows in slot-DESC order, up
+    to limit per page. We keep dedup client-side because the bot can
+    have multiple bets on the same market (yes + no), and we only need
+    one claim per market to settle both sides."""
     out: list[str] = []
+    seen: set[str] = set()
     async with httpx.AsyncClient(timeout=20.0) as http:
-        for offset in (0, CLAIM_FETCH_PAGE):
-            url = f"{CLAIM_API_BASE}/api/positions/{wallet}?limit={CLAIM_FETCH_PAGE}&offset={offset}"
+        for offset in (0, CLAIM_FETCH_PAGE, CLAIM_FETCH_PAGE * 2):
+            url = (
+                f"{CLAIM_API_BASE}/api/positions/{wallet}"
+                f"?unclaimed=1&limit={CLAIM_FETCH_PAGE}&offset={offset}"
+            )
             try:
                 resp = await http.get(url)
                 resp.raise_for_status()
@@ -944,10 +949,10 @@ async def fetch_unclaimed_resolved(wallet: Pubkey) -> list[str]:
                 return out
             positions = data.get("positions") or []
             for p in positions:
-                if p.get("state") == "resolved" and not p.get("claimSig"):
-                    market = p.get("market")
-                    if market and market not in out:
-                        out.append(market)
+                market = p.get("market")
+                if market and market not in seen:
+                    seen.add(market)
+                    out.append(market)
             if len(positions) < CLAIM_FETCH_PAGE:
                 break
     return out

@@ -115,7 +115,7 @@ function deriveState(row: PositionRow, nowSecs: number): PositionState {
 }
 
 export async function GET(
-  _req: Request,
+  req: Request,
   ctx: { params: Promise<{ wallet: string }> },
 ): Promise<NextResponse> {
   const { wallet } = await ctx.params
@@ -129,7 +129,23 @@ export async function GET(
     return NextResponse.json({ positions: [] satisfies UserPositionDTO[] })
   }
 
+  // Optional filters for cranker bots and pagination. `unclaimed=1` returns
+  // only resolved-but-not-claimed rows so a claimer doesn't have to walk
+  // the entire tape. limit/offset honour explicit pagination instead of
+  // the implicit 100-row cap.
+  const { searchParams } = new URL(req.url)
+  const unclaimedOnly = searchParams.get('unclaimed') === '1'
+  const limitRaw = Number.parseInt(searchParams.get('limit') ?? '', 10)
+  const offsetRaw = Number.parseInt(searchParams.get('offset') ?? '', 10)
+  const limit = Number.isFinite(limitRaw) && limitRaw > 0
+    ? Math.min(limitRaw, 1000)
+    : 100
+  const offset = Number.isFinite(offsetRaw) && offsetRaw >= 0 ? offsetRaw : 0
+
   try {
+    const filterClause = unclaimedOnly
+      ? 'AND mr.market IS NOT NULL AND c.signature IS NULL'
+      : ''
     const sql = `
       SELECT
         bp.market,
@@ -157,10 +173,11 @@ export async function GET(
       LEFT JOIN ${SCHEMA}.market_resolved mr     ON mr.market = bp.market
       LEFT JOIN ${SCHEMA}.claimed c              ON c.market  = bp.market AND c.owner = bp.owner
       WHERE bp.owner = $1
+        ${filterClause}
       ORDER BY bp.slot DESC
-      LIMIT 100
+      LIMIT $2 OFFSET $3
     `
-    const result = await pool.query<PositionRow>(sql, [wallet])
+    const result = await pool.query<PositionRow>(sql, [wallet, limit, offset])
     const nowSecs = Math.floor(Date.now() / 1000)
     const positions: UserPositionDTO[] = result.rows.map(r => ({
       market: r.market,
