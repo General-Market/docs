@@ -39,6 +39,29 @@ from solders.transaction import VersionedTransaction
 import httpx
 from solana.rpc.async_api import AsyncClient
 from solana.rpc.commitment import Confirmed
+
+from solders.system_program import transfer as system_transfer, TransferParams as SystemTransferParams
+
+from fleet import (
+    FLEET_FUND_SOL_LAMPORTS,
+    FLEET_FUND_USDC_RAW,
+    FLEET_REVIEW_PERIOD,
+    FLEET_SOL_TOPUP_AMOUNT,
+    FLEET_SOL_TOPUP_THRESHOLD,
+    FLEET_SPAWN_INTERVAL_SECS,
+    FLEET_TARGET_SIZE,
+    FLEET_USDC_TOPUP_AMOUNT,
+    FLEET_USDC_TOPUP_THRESHOLD,
+    Fleet,
+    Member,
+    Personality,
+    build_spl_transfer_ix,
+    fleet_state_path,
+    load_fleet,
+    random_personality,
+    random_retire_at,
+    save_fleet,
+)
 from solana.rpc.types import TxOpts
 
 
@@ -993,11 +1016,13 @@ async def claim_loop(
                 try:
                     sig = await _send_versioned_tx(client, bucket, bot_kp, [ix])
                 except Exception as exc:
-                    # Position already closed (raced with another claim,
-                    # or the program rejected for whatever reason). Move
-                    # on; the next sweep won't see this market again.
+                    # Position already closed (raced with another claim),
+                    # market still settling, or the program rejected for
+                    # some other reason. Surface the full message — the
+                    # truncation that hid an Anchor error code earlier
+                    # cost an evening of guessing.
                     log.warning(
-                        "[claim] %s failed: %s", raw[:12], repr(exc)[:120],
+                        "[claim] %s failed: %s", raw[:12], repr(exc)[:600],
                     )
                     continue
                 claimed_this_pass += 1
@@ -1014,6 +1039,360 @@ async def claim_loop(
             log.exception("[claim] loop error: %s", exc)
             await asyncio.sleep(backoff)
             backoff = min(backoff * 2, RETRY_MAX_SLEEP)
+
+
+# ----------------------------------------------------------------------------- #
+# Fleet — varied personalities betting at varied cadences                       #
+# ----------------------------------------------------------------------------- #
+
+def _pick_pair_for_personality(
+    pairs: list[Pair], rng: random.Random, personality: Personality,
+) -> Pair | None:
+    # Honest random for now. Personality is expressed via bet size,
+    # cadence, and side bias — not pair selection. Could later filter
+    # by board (whales avoid cams?), but that drifts into theatre.
+    if not pairs:
+        return None
+    return rng.choice(pairs)
+
+
+def _side_for_personality(
+    pair: Pair, rng: random.Random, personality: Personality,
+) -> str:
+    # Blend the audience prior with the personality's side bias.
+    # bias = 0   -> always underdog
+    # bias = 0.5 -> follow the audience prior verbatim
+    # bias = 1   -> always favorite
+    favourite_yes = pair.audience_a >= pair.audience_b
+    bias = personality.side_bias
+    if bias <= 0.0:
+        # underdog
+        return "no" if favourite_yes else "yes"
+    if bias >= 1.0:
+        return "yes" if favourite_yes else "no"
+    # Mix: tilt audience prior toward favorite by `bias` strength.
+    prior_yes = pair.audience_prior_yes
+    tilted = (1 - 2 * bias) * 0.5 + 2 * bias * (prior_yes if favourite_yes else (1 - prior_yes))
+    # Above maps bias=0.5 → prior, bias=0 → 1-prior, bias=1 → prior.
+    # Clamp gently to keep underdog pool alive.
+    tilted = max(0.15, min(0.85, tilted))
+    return "yes" if rng.random() < tilted else "no"
+
+
+async def spawn_member(
+    cfg: BotConfig,
+    state: BotState,
+    client: AsyncClient,
+    bucket: TokenBucket,
+    admin_kp: Keypair,
+    rng: random.Random,
+    label: str,
+) -> Member | None:
+    """Mint a fresh wallet, fund it from admin, return a populated Member.
+    On any funding failure, return None — the supervisor will try again
+    on the next pass."""
+    member_kp = Keypair()
+    member_pk = member_kp.pubkey()
+    personality = random_personality(rng)
+    now = time.time()
+    log.info(
+        "[fleet] spawning %s as %s (%s, bet=$%.1f-$%.1f, sleep=%ds-%ds)",
+        label, personality.name, member_pk,
+        personality.bet_min, personality.bet_max,
+        int(personality.sleep_min), int(personality.sleep_max),
+    )
+
+    member_ata = derive_ata(member_pk, cfg.stake_mint)
+    ix_sol = system_transfer(SystemTransferParams(
+        from_pubkey=admin_kp.pubkey(),
+        to_pubkey=member_pk,
+        lamports=FLEET_FUND_SOL_LAMPORTS,
+    ))
+    ix_create_ata = build_create_ata_idempotent_ix(
+        payer=admin_kp.pubkey(), owner=member_pk, mint=cfg.stake_mint,
+    )
+    ix_mint = build_mint_to_ix(
+        mint=cfg.stake_mint, dest_ata=member_ata,
+        authority=admin_kp.pubkey(), amount_raw=FLEET_FUND_USDC_RAW,
+    )
+
+    try:
+        sig = await _send_versioned_tx(
+            client, bucket, admin_kp,
+            [ix_sol, ix_create_ata, ix_mint],
+        )
+    except Exception as exc:
+        log.error("[fleet] spawn %s failed during funding: %s", label, repr(exc)[:240])
+        return None
+
+    log.info("[fleet] %s funded. sig %s", label, sig[:16])
+    member = Member(
+        label=label,
+        secret_bytes=list(bytes(member_kp)),
+        pubkey=str(member_pk),
+        personality=personality,
+        created_at=now,
+        retire_at=random_retire_at(rng, now),
+    )
+    return member
+
+
+async def topup_member(
+    cfg: BotConfig,
+    member: Member,
+    client: AsyncClient,
+    bucket: TokenBucket,
+    admin_kp: Keypair,
+) -> None:
+    """Replenish a member's SOL or USDC if it has fallen below the
+    threshold. Quiet on the happy path; logs the transfer when it fires."""
+    member_pk = member.keypair().pubkey()
+    member_ata = derive_ata(member_pk, cfg.stake_mint)
+
+    # SOL
+    await bucket.take()
+    sol_bal = (await client.get_balance(member_pk, commitment=Confirmed)).value
+    if sol_bal < FLEET_SOL_TOPUP_THRESHOLD:
+        ix = system_transfer(SystemTransferParams(
+            from_pubkey=admin_kp.pubkey(),
+            to_pubkey=member_pk,
+            lamports=FLEET_SOL_TOPUP_AMOUNT,
+        ))
+        try:
+            await _send_versioned_tx(client, bucket, admin_kp, [ix])
+            log.info("[fleet] %s sol top-up sent.", member.label)
+        except Exception as exc:
+            log.warning("[fleet] %s sol top-up failed: %s", member.label, repr(exc)[:120])
+
+    # USDC
+    usdc_bal = await usdc_balance_raw(client, bucket, member_ata)
+    if usdc_bal < FLEET_USDC_TOPUP_THRESHOLD:
+        ix = build_mint_to_ix(
+            mint=cfg.stake_mint, dest_ata=member_ata,
+            authority=admin_kp.pubkey(), amount_raw=FLEET_USDC_TOPUP_AMOUNT,
+        )
+        try:
+            await _send_versioned_tx(client, bucket, admin_kp, [ix])
+            log.info("[fleet] %s usdc top-up minted.", member.label)
+        except Exception as exc:
+            log.warning("[fleet] %s usdc top-up failed: %s", member.label, repr(exc)[:120])
+
+
+async def drain_member(
+    cfg: BotConfig,
+    member: Member,
+    client: AsyncClient,
+    bucket: TokenBucket,
+    admin_kp: Keypair,
+) -> None:
+    """Send remaining USDC and SOL back to admin, then mark retired.
+    Best-effort. Failures are logged but do not block retirement —
+    the alternative is a member that lives forever past its lifespan."""
+    member_kp = member.keypair()
+    member_pk = member_kp.pubkey()
+    member_ata = derive_ata(member_pk, cfg.stake_mint)
+    admin_ata = derive_ata(admin_kp.pubkey(), cfg.stake_mint)
+
+    # USDC drain
+    usdc_bal = await usdc_balance_raw(client, bucket, member_ata)
+    if usdc_bal > 0:
+        ix_create = build_create_ata_idempotent_ix(
+            payer=member_kp.pubkey(), owner=admin_kp.pubkey(), mint=cfg.stake_mint,
+        )
+        ix_xfer = build_spl_transfer_ix(
+            source_ata=member_ata, dest_ata=admin_ata,
+            owner=member_pk, amount_raw=usdc_bal,
+        )
+        try:
+            await _send_versioned_tx(client, bucket, member_kp, [ix_create, ix_xfer])
+            log.info("[fleet] %s usdc drained ($%.2f).", member.label, usdc_bal / USDC_DECIMALS_RAW)
+        except Exception as exc:
+            log.warning("[fleet] %s usdc drain failed: %s", member.label, repr(exc)[:120])
+
+    # SOL drain — leave 5,000 lamports for the final-tx fee.
+    await bucket.take()
+    sol_bal = (await client.get_balance(member_pk, commitment=Confirmed)).value
+    keep = 10_000
+    if sol_bal > keep:
+        ix = system_transfer(SystemTransferParams(
+            from_pubkey=member_pk,
+            to_pubkey=admin_kp.pubkey(),
+            lamports=sol_bal - keep,
+        ))
+        try:
+            await _send_versioned_tx(client, bucket, member_kp, [ix])
+            log.info("[fleet] %s sol drained (%.4f).", member.label, (sol_bal - keep) / LAMPORTS_PER_SOL)
+        except Exception as exc:
+            log.warning("[fleet] %s sol drain failed: %s", member.label, repr(exc)[:120])
+
+
+async def member_loop(
+    cfg: BotConfig,
+    member: Member,
+    client: AsyncClient,
+    bucket: TokenBucket,
+    pairs: list[Pair],
+    fleet_path: Path,
+    fleet: Fleet,
+    rng: random.Random,
+) -> None:
+    """One member, one async task. Sleeps for personality-defined gaps,
+    sometimes skips, picks a pair, picks a side, places a bet. Exits
+    when retire_at is past — the supervisor handles the drain."""
+    member_kp = member.keypair()
+    while time.time() < member.retire_at:
+        try:
+            sleep_for = rng.uniform(member.personality.sleep_min, member.personality.sleep_max)
+            await asyncio.sleep(sleep_for)
+            if time.time() >= member.retire_at:
+                break
+            if rng.random() < member.personality.cohort_skip_prob:
+                continue
+            pair = _pick_pair_for_personality(pairs, rng, member.personality)
+            if pair is None:
+                continue
+            now_secs = int(time.time())
+            close, settle = cohort_for(pair, now_secs)
+            side = _side_for_personality(pair, rng, member.personality)
+            usdc_amount = rng.uniform(member.personality.bet_min, member.personality.bet_max)
+            amount_raw = _snap_amount(usdc_amount)
+            ix = build_place_bet_ix(
+                program_id=cfg.program_id,
+                user=member_kp.pubkey(),
+                stake_mint=cfg.stake_mint,
+                source_id=pair.source_id,
+                close_time=close,
+                settlement_time=settle,
+                threshold_bps=pair.threshold_bps,
+                side=side,
+                amount_raw=amount_raw,
+            )
+            try:
+                sig = await _send_versioned_tx(client, bucket, member_kp, [ix])
+                member.bet_count += 1
+                member.last_bet_at = time.time()
+                log.info(
+                    "[fleet:%s] %s %.1f USDC pair #%02d. sig %s",
+                    member.label, side, amount_raw / USDC_DECIMALS_RAW,
+                    pair.pair_index, sig[:16],
+                )
+            except Exception as exc:
+                # Quiet on the common failures (insufficient funds, etc).
+                msg = repr(exc)[:160]
+                log.debug("[fleet:%s] bet failed: %s", member.label, msg)
+                # If it's a fund issue, the supervisor's top-up pass will fix it.
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            log.warning("[fleet:%s] loop error: %s", member.label, repr(exc)[:120])
+            await asyncio.sleep(30)
+    log.info("[fleet:%s] retire_at reached. exiting loop.", member.label)
+
+
+async def fleet_supervisor(
+    cfg: BotConfig,
+    state: BotState,
+    client: AsyncClient,
+    bucket: TokenBucket,
+    admin_kp: Keypair,
+    pairs: list[Pair],
+) -> None:
+    """The supervisor owns the fleet's lifecycle. On each pass it
+    retires expired members, spawns replacements (with a min interval
+    between births so the fleet doesn't all flash into existence),
+    and tops up the survivors. Member tasks are tracked here so we can
+    cancel them on retirement."""
+    rng = random.Random()
+    fleet_path = fleet_state_path(cfg.state_path)
+    fleet = load_fleet(fleet_path)
+    log.info(
+        "[fleet] loaded %d active, %d retired members.",
+        len(fleet.members), len(fleet.retired),
+    )
+
+    member_tasks: dict[str, asyncio.Task] = {}
+
+    def start_member_task(m: Member) -> None:
+        if m.label in member_tasks:
+            return
+        t = asyncio.create_task(
+            member_loop(cfg, m, client, bucket, pairs, fleet_path, fleet, rng),
+            name=f"member-{m.label}",
+        )
+        member_tasks[m.label] = t
+
+    for m in list(fleet.members):
+        start_member_task(m)
+
+    next_label_n = max(
+        (int(m.label.split("-")[-1]) for m in fleet.members + fleet.retired
+         if m.label.startswith("fleet-")),
+        default=0,
+    )
+
+    while True:
+        try:
+            now = time.time()
+
+            # Retire expired members.
+            expired = [m for m in fleet.members if m.retire_at <= now]
+            for m in expired:
+                log.info("[fleet] retiring %s (lived %.1fh).",
+                         m.label, (now - m.created_at) / 3600)
+                t = member_tasks.pop(m.label, None)
+                if t and not t.done():
+                    t.cancel()
+                    try:
+                        await asyncio.wait_for(t, timeout=5)
+                    except (asyncio.CancelledError, asyncio.TimeoutError):
+                        pass
+                await drain_member(cfg, m, client, bucket, admin_kp)
+                fleet.members.remove(m)
+                fleet.retired.append(m)
+            if expired:
+                save_fleet(fleet_path, fleet)
+
+            # Top up the survivors.
+            for m in list(fleet.members):
+                try:
+                    await topup_member(cfg, m, client, bucket, admin_kp)
+                except Exception as exc:
+                    log.warning("[fleet] %s topup error: %s", m.label, repr(exc)[:120])
+
+            # Spawn replacements — slow drip, not a flood.
+            spawned = 0
+            while (
+                len(fleet.members) < FLEET_TARGET_SIZE
+                and now - fleet.last_birth_at >= FLEET_SPAWN_INTERVAL_SECS
+                and spawned < 3
+            ):
+                next_label_n += 1
+                label = f"fleet-{next_label_n:04d}"
+                m = await spawn_member(cfg, state, client, bucket, admin_kp, rng, label)
+                if not m:
+                    break
+                fleet.members.append(m)
+                fleet.last_birth_at = time.time()
+                start_member_task(m)
+                save_fleet(fleet_path, fleet)
+                spawned += 1
+                now = time.time()
+                # Pace successive births within a single pass.
+                await asyncio.sleep(FLEET_SPAWN_INTERVAL_SECS)
+
+            log.info(
+                "[fleet] active=%d/%d, retired=%d. (spawned %d this pass)",
+                len(fleet.members), FLEET_TARGET_SIZE, len(fleet.retired), spawned,
+            )
+            await asyncio.sleep(FLEET_REVIEW_PERIOD)
+        except asyncio.CancelledError:
+            log.info("[fleet] supervisor cancelled.")
+            for t in member_tasks.values():
+                t.cancel()
+            raise
+        except Exception as exc:
+            log.exception("[fleet] supervisor error: %s", exc)
+            await asyncio.sleep(60)
 
 
 async def watchdog_loop(
@@ -1093,12 +1472,12 @@ async def run() -> None:
                 name="sweep",
             ),
             asyncio.create_task(
-                micro_loop(cfg, state, client, bucket, bot_kp, pairs),
-                name="micro",
-            ),
-            asyncio.create_task(
                 claim_loop(cfg, state, client, bucket, bot_kp),
                 name="claim",
+            ),
+            asyncio.create_task(
+                fleet_supervisor(cfg, state, client, bucket, admin_kp, pairs),
+                name="fleet",
             ),
             asyncio.create_task(
                 watchdog_loop(cfg, state, client, bucket, bot_kp, admin_kp),
