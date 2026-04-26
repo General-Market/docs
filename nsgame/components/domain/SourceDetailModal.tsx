@@ -563,8 +563,8 @@ function AssetSparkline({ sourceId, assetId }: { sourceId: string; assetId: stri
   return (
     <div className="px-2">
       <div className="flex items-center justify-between mb-1">
-        <span className="text-micro text-text-muted">{t('source_detail.sparkline_label', { count: points.length })}</span>
-        <span className="text-micro font-mono text-text-muted">
+        <span className="text-label text-text-muted">{t('source_detail.sparkline_label', { count: points.length })}</span>
+        <span className="text-label font-mono text-text-muted">
           {formatValue(points[0].value)} &rarr; {formatValue(points[points.length - 1].value)}
         </span>
       </div>
@@ -750,7 +750,7 @@ export function SourceDetailModal({ sourceId, onClose, dark = false }: SourceDet
               {/* Summary stats */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div className={`${glass.section} p-3`}>
-                  <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">
+                  <p className="text-label font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">
                     {t('source_detail.total_assets')}
                   </p>
                   <p className="text-heading font-extrabold font-mono tabular-nums">
@@ -758,7 +758,7 @@ export function SourceDetailModal({ sourceId, onClose, dark = false }: SourceDet
                   </p>
                 </div>
                 <div className={`${glass.section} p-3`}>
-                  <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">
+                  <p className="text-label font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">
                     {t('source_detail.active')}
                   </p>
                   <p className="text-heading font-extrabold font-mono tabular-nums text-color-up">
@@ -766,7 +766,7 @@ export function SourceDetailModal({ sourceId, onClose, dark = false }: SourceDet
                   </p>
                 </div>
                 <div className={`${glass.section} p-3`}>
-                  <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">
+                  <p className="text-label font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">
                     {t('source_detail.zero_values')}
                   </p>
                   <p className={`text-heading font-extrabold font-mono tabular-nums ${zeroCount > 0 ? 'text-color-down' : ''}`}>
@@ -774,7 +774,7 @@ export function SourceDetailModal({ sourceId, onClose, dark = false }: SourceDet
                   </p>
                 </div>
                 <div className={`${glass.section} p-3`}>
-                  <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">
+                  <p className="text-label font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">
                     {t('source_detail.stale')}
                   </p>
                   <p className={`text-heading font-extrabold font-mono tabular-nums ${staleCount > 0 ? 'text-color-warning' : ''}`}>
@@ -837,7 +837,7 @@ export function SourceDetailModal({ sourceId, onClose, dark = false }: SourceDet
                                       <span className="font-semibold text-caption">
                                         {asset.name || asset.symbol}
                                       </span>
-                                      <span className="block font-mono text-micro text-text-muted truncate">
+                                      <span className="block font-mono text-label text-text-muted truncate">
                                         {asset.symbol}
                                       </span>
                                     </div>
@@ -849,7 +849,7 @@ export function SourceDetailModal({ sourceId, onClose, dark = false }: SourceDet
                                   </TableCell>
 
                                   {/* Unit */}
-                                  <TableCell className="text-right text-micro text-text-muted whitespace-nowrap">
+                                  <TableCell className="text-right text-label text-text-muted whitespace-nowrap">
                                     {unit}
                                   </TableCell>
 

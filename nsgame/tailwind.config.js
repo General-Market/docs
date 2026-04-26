@@ -46,17 +46,18 @@ module.exports = {
         // IBM Plex Mono — tabular data, KPIs, code. Family-matched to Plex Sans.
         mono: ['var(--font-mono)', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
       },
+      // Single source of truth for type sizes. Eight tokens, one role each.
+      // Rule: each role consumes exactly one step. No duplication in CSS;
+      // .type-* utilities in globals.css must mirror these values.
       fontSize: {
-        'micro':   ['0.625rem',  { lineHeight: '1.4' }],                           // 10px — mobile nav, tiny badges
-        'label':   ['0.6875rem', { lineHeight: '1.4' }],                           // 11px — uppercase labels, table headers
-        'caption': ['0.75rem',   { lineHeight: '1.5' }],                           // 12px — secondary info, timestamps
-        'body-sm': ['0.8125rem', { lineHeight: '1.55' }],                          // 13px — compact body, sidebar items
-        'body':    ['0.875rem',  { lineHeight: '1.6' }],                           // 14px — default body text
-        'base':    ['1rem',      { lineHeight: '1.6' }],                           // 16px — readable prose
-        'title':   ['1.25rem',   { lineHeight: '1.3', letterSpacing: '-0.02em' }], // 20px — card titles, stat values
-        'stat':    ['2rem',      { lineHeight: '1.15', letterSpacing: '-0.03em' }],// 32px — hero numbers, KPIs
-        'heading': ['1.75rem',   { lineHeight: '1.2', letterSpacing: '-0.025em' }],// 28px — section headings
-        'display': ['clamp(2.25rem, 5vw, 3.5rem)', { lineHeight: '1.05', letterSpacing: '-0.035em' }], // 36–56px fluid — hero
+        'label':   ['0.6875rem', { lineHeight: '1.4' }],                              // 11px — uppercase chrome, table headers, micro labels (tracking via tracking-* utility)
+        'caption': ['0.75rem',   { lineHeight: '1.5' }],                              // 12px — timestamps, helper text, secondary inline
+        'body':    ['0.875rem',  { lineHeight: '1.6' }],                              // 14px — default UI text (rows, controls, labels)
+        'base':    ['1rem',      { lineHeight: '1.6' }],                              // 16px — editorial body, prose, intros
+        'title':   ['1.25rem',   { lineHeight: '1.3', letterSpacing: '-0.018em' }],   // 20px — card titles, KPI labels
+        'heading': ['1.5rem',    { lineHeight: '1.2', letterSpacing: '-0.022em' }],   // 24px — section headings
+        'kpi':     ['2rem',      { lineHeight: '1.1', letterSpacing: '-0.028em' }],   // 32px — large KPI numbers (replaces 'stat')
+        'display': ['clamp(2.25rem, 5vw, 3.5rem)', { lineHeight: '1.05', letterSpacing: '-0.02em' }], // 36–56px fluid — hero serif (Fraunces)
       },
       maxWidth: {
         site: 'none',

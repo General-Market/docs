@@ -149,7 +149,7 @@ export function TransactionStepper({
                 </div>
                 {/* Label */}
                 <span
-                  className={`text-micro mt-1.5 text-center leading-tight font-medium whitespace-nowrap ${
+                  className={`text-label mt-1.5 text-center leading-tight font-medium whitespace-nowrap ${
                     stepDone || stepDoneNode || stepCurrent
                       ? 'text-zinc-100'
                       : 'text-zinc-500'
@@ -193,7 +193,7 @@ export function TransactionStepper({
 
       {/* Completed tx hash links */}
       {completedTxLinks.length > 0 && (
-        <div className="mt-2 flex justify-center gap-3 flex-wrap text-micro font-mono text-zinc-500">
+        <div className="mt-2 flex justify-center gap-3 flex-wrap text-label font-mono text-zinc-500">
           {completedTxLinks.map((tx, i) => (
             <a
               key={i}
@@ -211,7 +211,7 @@ export function TransactionStepper({
 
       {/* Tx refs (order IDs) */}
       {txRefs && txRefs.length > 0 && (
-        <div className="mt-2 flex justify-center gap-4 text-micro font-mono text-zinc-500">
+        <div className="mt-2 flex justify-center gap-4 text-label font-mono text-zinc-500">
           {txRefs.map((ref, i) => (
             ref.explorerUrl ? (
               <a key={i} href={ref.explorerUrl} target="_blank" rel="noopener noreferrer" className="hover:text-zinc-100 transition-colors">

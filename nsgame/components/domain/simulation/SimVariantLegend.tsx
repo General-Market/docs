@@ -54,7 +54,7 @@ export function SimVariantLegend({ variants, onDeployIndex }: SimVariantLegendPr
 
             {isHovered && onDeployIndex && (
               <button
-                className="text-micro font-medium px-2 py-0.5 bg-zinc-900 text-white rounded hover:bg-zinc-800 transition-colors flex-shrink-0 whitespace-nowrap"
+                className="text-label font-medium px-2 py-0.5 bg-zinc-900 text-white rounded hover:bg-zinc-800 transition-colors flex-shrink-0 whitespace-nowrap"
                 onClick={(e) => {
                   e.stopPropagation()
                   onDeployIndex(v.runId, v.label)

@@ -75,29 +75,36 @@
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-/* ── TYPE UTILITIES — composite classes for repeated patterns ── */
-.type-label {
-  font-size: 0.6875rem; line-height: 1.4;
-  font-weight: 600; text-transform: uppercase;
-  letter-spacing: 0.08em; color: #999999;
-}
-.type-table-header {
-  font-size: 0.6875rem; line-height: 1.4;
-  font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.025em; color: #555555;
-}
-.type-stat-value {
-  font-size: 2rem; line-height: 1.1;
-  font-weight: 700; letter-spacing: -0.028em;
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: 'tnum' 1, 'kern' 1, 'zero' 1;
-}
-.type-display {
-  font-family: var(--serif);
-  font-size: clamp(2.5rem, 5.5vw, 4rem); line-height: 1.02;
-  font-weight: 600; letter-spacing: -0.022em;
-  font-optical-sizing: auto;
-  font-variation-settings: 'opsz' 144, 'SOFT' 30;
+/* ── TYPE UTILITIES — composite classes that mirror tailwind tokens ──
+   Each .type-* class @applies its size token so size/leading/tracking
+   stay in sync with tailwind.config.js fontSize. Bespoke values below
+   are role-specific extras (color, weight, font-variant). */
+@layer components {
+  .type-label {
+    @apply text-label uppercase;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: #999999;
+  }
+  .type-table-header {
+    @apply text-label uppercase;
+    font-weight: 700;
+    letter-spacing: 0.025em;
+    color: #555555;
+  }
+  .type-stat-value {
+    @apply text-kpi;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1, 'kern' 1, 'zero' 1;
+  }
+  .type-display {
+    @apply text-display;
+    font-family: var(--serif);
+    font-weight: 600;
+    font-optical-sizing: auto;
+    font-variation-settings: 'opsz' 144, 'SOFT' 30;
+  }
 }
 
 /* ── SECTION BAR — solid black bar (DATA VIEW pattern) ── */

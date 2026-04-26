@@ -229,7 +229,7 @@ export function Header() {
                         {/* Section scroll-to links (contextual) */}
                         {sectionNav && (
                           <div className={`px-2 py-1.5 mb-1 border-b ${isDark ? 'border-white/10' : 'border-zinc-800'}`}>
-                            <div className={`px-1 mb-1 text-micro font-semibold uppercase tracking-[0.08em] ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>
+                            <div className={`px-1 mb-1 text-label font-semibold uppercase tracking-[0.08em] ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>
                               {t('nav.sections')}
                             </div>
                             {sectionNav.map((link) => (

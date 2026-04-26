@@ -57,7 +57,7 @@ export function ItpBrowserCard({
         <div className="relative w-full bg-[#fafafa] overflow-hidden -mb-4 [&>div]:!rounded-none [&>div]:!border-0 [&>div]:!mb-0">
           <NavSparkline itpId={itpId} height={90} />
           {categoryLabel && (
-            <span className="absolute top-2 right-2 text-micro font-bold tracking-[0.08em] uppercase px-2 py-0.5 rounded bg-black/[0.06] text-text-muted">
+            <span className="absolute top-2 right-2 text-label font-bold tracking-[0.08em] uppercase px-2 py-0.5 rounded bg-black/[0.06] text-text-muted">
               {categoryLabel}
             </span>
           )}
@@ -79,13 +79,13 @@ export function ItpBrowserCard({
             </div>
             <div className="text-right shrink-0">
               <div className="text-body font-black font-mono tabular-nums text-black">{formatNav(navPerShare)}</div>
-              <div className="text-micro text-text-muted font-mono tabular-nums">{formatAum(aum)}</div>
+              <div className="text-label text-text-muted font-mono tabular-nums">{formatAum(aum)}</div>
             </div>
           </div>
 
           {/* Description */}
           {description && (
-            <p className="text-micro text-text-muted leading-relaxed mt-2 line-clamp-3 flex-1">{description}</p>
+            <p className="text-label text-text-muted leading-relaxed mt-2 line-clamp-3 flex-1">{description}</p>
           )}
 
           {/* Trade buttons — pinned to bottom */}

@@ -459,7 +459,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
             </button>
           ))}
           <span className="text-xs text-text-muted px-1">|</span>
-          <span className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">{t('filter.defi_label')}</span>
+          <span className="text-label font-semibold uppercase tracking-[0.08em] text-text-muted">{t('filter.defi_label')}</span>
           {STRATEGY_FAMILIES.filter(f => f.group === 'defi').map(fam => (
             <button
               key={fam.id}
@@ -697,11 +697,11 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
               <div className="mt-2 pl-3 border-l-2 border-border-light space-y-2">
                 {(FNG_PRESETS[filters.fng_mode]?.length ?? 0) > 0 && (
                   <div className="flex items-center gap-1">
-                    <span className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">{t('filter.optimized')}</span>
+                    <span className="text-label font-semibold uppercase tracking-[0.08em] text-text-muted">{t('filter.optimized')}</span>
                     {FNG_PRESETS[filters.fng_mode]?.map((p, i) => (
                       <Tip key={i} text={t(`fng_preset.${filters.fng_mode}_${i}` as any)}>
                         <button
-                          className={`px-2 py-0.5 text-micro font-mono border rounded-md transition-colors ${
+                          className={`px-2 py-0.5 text-label font-mono border rounded-md transition-colors ${
                             filters.fng_fear === p.fear && filters.fng_greed === p.greed
                               ? 'bg-emerald-600 text-white border-emerald-600'
                               : 'bg-white text-emerald-700 border-emerald-300 hover:bg-emerald-50'
@@ -773,11 +773,11 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
               <div className="flex flex-wrap items-center gap-2 mt-2 pl-3 border-l-2 border-border-light">
                 {(DOM_PRESETS[filters.dom_mode]?.length ?? 0) > 0 && (
                   <>
-                    <span className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">{t('filter.optimized')}</span>
+                    <span className="text-label font-semibold uppercase tracking-[0.08em] text-text-muted">{t('filter.optimized')}</span>
                     {DOM_PRESETS[filters.dom_mode]?.map((p, i) => (
                       <Tip key={i} text={t(`dom_preset.${filters.dom_mode}_${i}` as any)}>
                         <button
-                          className={`px-2 py-0.5 text-micro font-mono border rounded-md transition-colors ${
+                          className={`px-2 py-0.5 text-label font-mono border rounded-md transition-colors ${
                             filters.dom_lookback === p.lookback
                               ? 'bg-emerald-600 text-white border-emerald-600'
                               : 'bg-white text-emerald-700 border-emerald-300 hover:bg-emerald-50'

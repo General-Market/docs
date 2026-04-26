@@ -33,7 +33,7 @@ export function StatsRow({ stats, className }: StatsRowProps) {
               i === 0 && 'pl-0'
             )}
           >
-            <div className="text-micro font-semibold uppercase tracking-[0.08em] text-zinc-500 mb-1">
+            <div className="text-label font-semibold uppercase tracking-[0.08em] text-zinc-500 mb-1">
               {stat.label}
             </div>
             <div className={cn('text-title font-extrabold font-mono tabular-nums', colorClass(stat.color))}>

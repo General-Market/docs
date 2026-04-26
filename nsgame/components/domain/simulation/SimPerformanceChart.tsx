@@ -107,7 +107,7 @@ function RebalanceItpPicker({ itps, onSelect }: { itps: DeployedItpRef[]; onSele
       {open && (
         <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-border-medium rounded-lg shadow-card-hover min-w-[200px] max-h-60 overflow-y-auto">
           <div className="px-3 py-2 border-b border-border-light">
-            <span className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">{t('chart.rebalance_select')}</span>
+            <span className="text-label font-semibold uppercase tracking-[0.08em] text-text-muted">{t('chart.rebalance_select')}</span>
           </div>
           {itps.map(itp => (
             <button
@@ -175,7 +175,7 @@ export function SimPerformanceChart(props: SimPerformanceChartProps) {
                 {hasBtc && (
                   <button
                     onClick={() => setShowBtc(v => !v)}
-                    className="text-micro font-semibold px-2 py-0.5 rounded border transition-all"
+                    className="text-label font-semibold px-2 py-0.5 rounded border transition-all"
                     style={{
                       color: showBtc ? '#fff' : BTC_COLOR,
                       backgroundColor: showBtc ? BTC_COLOR : 'transparent',
@@ -189,7 +189,7 @@ export function SimPerformanceChart(props: SimPerformanceChartProps) {
                 {hasEth && (
                   <button
                     onClick={() => setShowEth(v => !v)}
-                    className="text-micro font-semibold px-2 py-0.5 rounded border transition-all"
+                    className="text-label font-semibold px-2 py-0.5 rounded border transition-all"
                     style={{
                       color: showEth ? '#fff' : ETH_COLOR,
                       backgroundColor: showEth ? ETH_COLOR : 'transparent',
@@ -282,7 +282,7 @@ export function SimPerformanceChart(props: SimPerformanceChartProps) {
           {hasBtc && (
             <button
               onClick={() => setShowBtc(v => !v)}
-              className="text-micro font-semibold px-2 py-0.5 rounded border transition-all"
+              className="text-label font-semibold px-2 py-0.5 rounded border transition-all"
               style={{
                 color: showBtc ? '#fff' : BTC_COLOR,
                 backgroundColor: showBtc ? BTC_COLOR : 'transparent',
@@ -296,7 +296,7 @@ export function SimPerformanceChart(props: SimPerformanceChartProps) {
           {hasEth && (
             <button
               onClick={() => setShowEth(v => !v)}
-              className="text-micro font-semibold px-2 py-0.5 rounded border transition-all"
+              className="text-label font-semibold px-2 py-0.5 rounded border transition-all"
               style={{
                 color: showEth ? '#fff' : ETH_COLOR,
                 backgroundColor: showEth ? ETH_COLOR : 'transparent',

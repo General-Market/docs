@@ -397,7 +397,7 @@ export function SourceHealthTable({
                             />
                             <div className="flex flex-col">
                               <span>{source.displayName}</span>
-                              <span className="text-micro font-mono text-text-muted font-normal">
+                              <span className="text-label font-mono text-text-muted font-normal">
                                 {source.sourceId}
                               </span>
                             </div>
@@ -466,7 +466,7 @@ export function SourceHealthTable({
                         const freq = getFrequencyLabel(source.syncIntervalSecs)
                         return (
                           <div className="flex flex-col items-end gap-0.5">
-                            <span className={`inline-block px-1.5 py-0 rounded text-micro font-bold uppercase tracking-[0.08em] ${freq.color}`}>
+                            <span className={`inline-block px-1.5 py-0 rounded text-label font-bold uppercase tracking-[0.08em] ${freq.color}`}>
                               {freq.label}
                             </span>
                             <span className="text-[9px] text-text-muted">{formatAge(source.syncIntervalSecs)}</span>
@@ -509,7 +509,7 @@ export function SourceHealthTable({
                           <span className={source.staleActive > 0 ? 'text-color-warning font-semibold' : 'text-muted-foreground'}>
                             {source.staleAssets}
                           </span>
-                          <span className="text-micro text-muted-foreground max-w-[140px] truncate">
+                          <span className="text-label text-muted-foreground max-w-[140px] truncate">
                             {source.staleDormant > 0
                               ? t('source_health.dormant_count', { count: source.staleDormant })
                               : source.staleReason}
