@@ -28,10 +28,12 @@ function parseWindow(raw: string | undefined): LeaderboardWindow {
   return '7d'
 }
 
+// Phrasing follows the lead "Realized PnL across {COPY}." — choose
+// fragments that read as a single sentence with a period at the end.
 const WINDOW_COPY: Record<LeaderboardWindow, string> = {
-  '24h': 'last 24 hours',
-  '7d': 'last seven days',
-  '30d': 'last thirty days',
+  '24h': 'the last 24 hours',
+  '7d': 'the last seven days',
+  '30d': 'the last thirty days',
   all: 'every block since genesis',
 }
 
@@ -74,7 +76,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
               Profit, by wallet<span className="text-rose-500">.</span>
             </h1>
             <p className="text-[13px] text-zinc-400">
-              Realized PnL across the {WINDOW_COPY[window]}. Stake at risk
+              Realized PnL across {WINDOW_COPY[window]}. Stake at risk
               isn't profit yet — it isn't anything yet.
             </p>
           </div>

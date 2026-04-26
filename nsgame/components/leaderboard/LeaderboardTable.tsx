@@ -2,7 +2,6 @@ import Link from 'next/link'
 import type { LeaderboardEntryDTO } from '@/app/api/leaderboard/route'
 import {
   compactUsdcBig,
-  formatUsdcBig,
   relativeFromSecs,
   safeBigInt,
   shortAddress,
@@ -118,7 +117,7 @@ export function LeaderboardTable({ entries, nowSecs }: LeaderboardTableProps) {
                       pnlClass(pnlBig),
                     ].join(' ')}
                   >
-                    {pnlBig === 0n ? '0.00' : signedUsdcBig(pnlBig)}
+                    {signedUsdcBig(pnlBig)}
                   </td>
                   <td
                     className={[
@@ -164,6 +163,3 @@ function Th({ children, className = '' }: { children: React.ReactNode; className
   )
 }
 
-// formatUsdcBig is imported but used through safeBigInt + compact/signed.
-// Suppress unused — kept for future cell variants.
-void formatUsdcBig

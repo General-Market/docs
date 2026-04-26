@@ -1,5 +1,5 @@
 import type { UserSummaryDTO } from '@/app/api/users/[wallet]/summary/route'
-import { compactUsdcBig, formatUsdcBig, safeBigInt, signedUsdcBig } from '@/lib/utils/usdc'
+import { compactUsdcBig, safeBigInt, signedUsdcBig } from '@/lib/utils/usdc'
 import { PnlSparkline } from './PnlSparkline'
 
 // Profile header. One row of stats, one sparkline. Volume, lifetime PnL,
@@ -54,7 +54,7 @@ export function ProfileHeader({ summary }: ProfileHeaderProps) {
       <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-5">
         <Stat label="lifetime pnl">
           <span className={['font-mono text-[18px] tabular-nums tracking-tight', pnlClass].join(' ')}>
-            {pnl === 0n ? formatUsdcBig(0n) : signedUsdcBig(pnl)}
+            {signedUsdcBig(pnl)}
           </span>
         </Stat>
 

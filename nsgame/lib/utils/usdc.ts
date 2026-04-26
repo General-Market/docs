@@ -7,28 +7,39 @@ export const USDC_DECIMALS = 6
 const BASE = 10n ** BigInt(USDC_DECIMALS)
 
 /**
- * Format a 6-decimal USDC bigint to a string like "12345.67". Strips
- * trailing zeros below 2 decimals; keeps at most 6.
+ * Format a 6-decimal USDC bigint to exactly `decimals` digits (default 2),
+ * with banker-friendly half-up rounding on the trailing digit. The output
+ * is column-stable: every cell in the same column has the same width.
+ *
+ * "12345.67". "1.99". "0.00". The fractional length never varies.
  */
 export function formatUsdcBig(units: bigint, opts: { decimals?: number } = {}): string {
-  const minDec = opts.decimals ?? 2
-  if (units === 0n) {
-    return minDec === 0 ? '0' : `0.${'0'.repeat(minDec)}`
-  }
+  const decimals = Math.min(USDC_DECIMALS, Math.max(0, opts.decimals ?? 2))
   const negative = units < 0n
   const abs = negative ? -units : units
-  const whole = abs / BASE
-  const frac = abs % BASE
+
+  // Round to the requested number of decimals. Drop the digits beyond
+  // `decimals`, half-up on the discarded part.
+  const dropDigits = USDC_DECIMALS - decimals
+  let scaled: bigint
+  if (dropDigits === 0) {
+    scaled = abs
+  } else {
+    const divisor = 10n ** BigInt(dropDigits)
+    const quot = abs / divisor
+    const rem = abs % divisor
+    const halfUp = rem * 2n >= divisor ? 1n : 0n
+    scaled = quot + halfUp
+  }
+
+  const factor = 10n ** BigInt(decimals)
+  const whole = scaled / factor
+  const frac = scaled % factor
   const wholeStr = whole.toLocaleString('en-US')
-  if (frac === 0n) {
-    return `${negative ? '-' : ''}${wholeStr}${minDec > 0 ? '.' + '0'.repeat(minDec) : ''}`
-  }
-  let fracStr = frac.toString().padStart(USDC_DECIMALS, '0')
-  // Trim trailing zeros, but keep at least minDec digits.
-  while (fracStr.length > minDec && fracStr.endsWith('0')) {
-    fracStr = fracStr.slice(0, -1)
-  }
-  return `${negative ? '-' : ''}${wholeStr}.${fracStr}`
+  const sign = negative && (whole !== 0n || frac !== 0n) ? '-' : ''
+
+  if (decimals === 0) return `${sign}${wholeStr}`
+  return `${sign}${wholeStr}.${frac.toString().padStart(decimals, '0')}`
 }
 
 /**
@@ -56,12 +67,23 @@ export function compactUsdcBig(units: bigint): string {
 }
 
 /**
- * Sign-bearing PnL string for use directly inside cells. "+12.34" / "-5.00".
+ * Sign-bearing PnL string for cells. "+$12.34" / "-$5.00" / "$0.00".
+ * The dollar lives next to the number, the sign before it. Currency
+ * first, polarity outermost.
  */
 export function signedUsdcBig(units: bigint): string {
-  if (units > 0n) return `+${formatUsdcBig(units)}`
-  if (units < 0n) return formatUsdcBig(units)
-  return formatUsdcBig(0n)
+  if (units > 0n) return `+$${formatUsdcBig(units)}`
+  if (units < 0n) return `-$${formatUsdcBig(-units)}`
+  return `$${formatUsdcBig(0n)}`
+}
+
+/**
+ * Unsigned dollar amount. Use for stake / amount columns where the sign
+ * is implicit. "$12.34" / "$0.00".
+ */
+export function dollarsUsdcBig(units: bigint): string {
+  const abs = units < 0n ? -units : units
+  return `$${formatUsdcBig(abs)}`
 }
 
 /** Relative time, in seconds-ago / minutes-ago form. */

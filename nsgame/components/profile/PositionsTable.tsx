@@ -1,5 +1,5 @@
 import type { UserPositionDTO, PositionState } from '@/app/api/positions/[wallet]/route'
-import { formatUsdcBig, safeBigInt, signedUsdcBig } from '@/lib/utils/usdc'
+import { dollarsUsdcBig, safeBigInt, signedUsdcBig } from '@/lib/utils/usdc'
 import { pairById } from '@/lib/markets/pairs'
 
 // Open / settling / resolved positions, table-shaped, in the spirit of
@@ -63,10 +63,10 @@ function pnlForRow(p: UserPositionDTO): { value: bigint; class: string; label: s
     return { value: -stake, class: 'text-rose-300', label: signedUsdcBig(-stake) }
   }
   if (p.state === 'stranded-refund') {
-    return { value: 0n, class: 'text-zinc-400', label: '0.00' }
+    return { value: 0n, class: 'text-zinc-400', label: '$0.00' }
   }
   // Open or settling: stake at risk, not pnl.
-  return { value: stake, class: 'text-amber-300', label: `at risk ${formatUsdcBig(stake)}` }
+  return { value: stake, class: 'text-amber-300', label: `at risk ${dollarsUsdcBig(stake)}` }
 }
 
 export function PositionsTable({ positions, nowSecs }: PositionsTableProps) {
@@ -125,7 +125,7 @@ export function PositionsTable({ positions, nowSecs }: PositionsTableProps) {
                     </span>
                   </td>
                   <td className="px-3 py-2.5 text-right align-middle font-mono text-[12px] tabular-nums text-zinc-200">
-                    {formatUsdcBig(stake)}
+                    {dollarsUsdcBig(stake)}
                   </td>
                   <td className={['px-3 py-2.5 text-right align-middle font-mono text-[12px] tabular-nums', pnl.class].join(' ')}>
                     {pnl.label}
