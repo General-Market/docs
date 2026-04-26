@@ -27,9 +27,9 @@ The relationship between named subjects and the protocol is documented. The take
 
 ## The law has not caught up
 
-A market named "ALICE vs BOB" wagering on whose view-count grows faster is — arguably — not a use of likeness to sell a product in the traditional right-of-publicity sense. It is wagering on a public metric. Courts have not ruled on this for prediction markets. The pump.fun-era memecoin cases mostly tested fraud and unregistered-securities theories, not publicity rights. Right-of-publicity statutes vary by state and country and were written before any of this existed. The law has not decided.
+A market named "ALICE vs BOB" wagering on whose view-count grows faster is — arguably — not a use of likeness to sell a product in the traditional right-of-publicity sense. It is wagering on a public metric. The pump.fun-era memecoin cases (Hailey Welch, Caitlyn Jenner, the various pornstar-themed tokens) mostly tested fraud and unregistered-securities theories, not publicity rights — and most settled or were dismissed on procedural grounds before merits. **No US court has issued a merits ruling on the use of an adult performer's name in a wagering product.** The settlements and dismissals tell us about appetite for litigation, not about the law itself.
 
-It will. The first major judgment in this area will set precedent that may retroactively reshape a class of markets — perhaps including ours, perhaps including most of them. The documented takedown workflow is the operational answer; the rest is what the courts will decide. We document our current posture and update it when the law moves.
+It will be ruled on. The first major judgment in this area will set precedent that may retroactively reshape a class of markets — perhaps including this one, perhaps including most of them. The documented takedown workflow is the operational answer; the rest is what the courts will decide. We document our current posture and update it when the law moves.
 
 ## Where the analogy fails
 
@@ -63,9 +63,13 @@ The website does not pre-clear every market against every subject's right of pub
 
 ## What we are, in law
 
-Three sentences, one frame each. The protocol is speech and a tool — *Bernstein v. US* established that publishing cryptographic source code is protected expression; *Coin Center v. Yellen* and *Van Loon v. Treasury* (5th Cir., Nov 2024) extended the doctrine to non-custodial smart-contract infrastructure. The website is a curated index of third-party submissions — Section 230(c)(1) of the Communications Decency Act and the *Force v. Facebook* line treat selection among third-party content as immune in many configurations. The wager is on a lawfully-obtained public metric — *Bartnicki v. Vopper*, *Florida Star v. B.J.F.*, and the transformative-use test from *Comedy III v. Saderup* describe the speech surface that wraps a public counter and a probabilistic instrument built on top of it.
+Three sentences, one frame each. The protocol is speech and a tool — *Bernstein v. US Department of Justice*, 176 F.3d 1132 (9th Cir. 1999), established that publishing cryptographic source code is protected expression; *Coin Center v. Yellen* and *Van Loon v. Department of the Treasury*, 122 F.4th 549 (5th Cir. Nov 26, 2024), extended the doctrine to non-custodial smart-contract infrastructure (Tornado Cash sanctions vacated; Treasury delisted the addresses from the SDN list on March 21, 2025). The website is a curated index of third-party submissions — Section 230(c)(1) of the Communications Decency Act and the *Force v. Facebook* line treat selection among third-party content as immune in many configurations. The wager is on a lawfully-obtained public metric — *Bartnicki v. Vopper*, 532 U.S. 514 (2001), and *Florida Star v. B.J.F.*, 491 U.S. 524 (1989), protect publication of truthful, lawfully-obtained information on matters of public concern; the transformative-use test from *Comedy III Productions v. Saderup*, 25 Cal. 4th 387 (2001), describes the speech surface that wraps a public counter and a probabilistic instrument built on top of it.
 
-State right-of-publicity statutes — California Civil Code §3344, New York Civil Rights §50–51, Tennessee's ELVIS Act, the Indiana, Ohio, and Washington analogues — reach name-only commercial use. The posture has not been tested against them. Anti-SLAPP statutes — Cal. Civ. Proc. §425.16, the Texas TCPA, and parallel laws in roughly thirty US jurisdictions — shift fees onto plaintiffs whose suits target speech on matters of public concern. A plaintiff considering suit should know this is part of the geometry.
+The closest doctrinal cousins are not adult-performer cases — there are none on point — but fantasy sports. ***CBC Distribution & Marketing v. MLB Advanced Media*, 505 F.3d 818 (8th Cir. 2007)** held that fantasy sports operators may use Major League players' names and statistics commercially **without licence**, on First Amendment grounds, because names plus public statistics are publicly available factual information. ***Daniels v. FanDuel*, 109 N.E.3d 390 (Ind. 2018)** reached the same conclusion under one of the strictest US right-of-publicity statutes. Tube-site view counts and performer handles are publicly available factual information; the doctrinal mapping is clean even where no court has yet applied it to adult performers.
+
+For the wagering mechanic itself, the strongest recent precedent is ***KalshiEX LLC v. Commodity Futures Trading Commission*, 119 F.4th 58 (D.C. Cir. Sept 12, 2024)** — the D.C. Circuit ruled the CFTC cannot bar event contracts as "gaming." Election contracts allowed. This is the case that says a prediction market on real-world events is not gambling under federal law. The reasoning extends to other measurable public events.
+
+State right-of-publicity statutes — California Civil Code §3344, New York Civil Rights §§50–51, Tennessee's ELVIS Act (TCA 47-25-1101, 2024), the Indiana, Ohio, and Washington analogues — reach name-only commercial use. The posture has not been tested against them. Anti-SLAPP statutes — Cal. Civ. Proc. §425.16, the Texas Citizens Participation Act, and parallel laws in roughly thirty US jurisdictions — shift fees onto plaintiffs whose suits target speech on matters of public concern. A plaintiff considering suit should know this is part of the geometry.
 
 The defences exist. The takedown workflow remains the primary operational answer.
 
@@ -78,6 +82,20 @@ The SLA: any credible NCII report routes to a fast-track removal — within 48 h
 BIPA (740 ILCS 14), the Texas CUBI (Bus. & Com. Code §503.001), and the parallel biometric statutes are not implicated. The protocol processes only handles — strings — and counters — integers. No biometric identifier, no face template, no voice sample, no derived facial geometry. If that ever changes, this paragraph changes first.
 
 A regulator's notice or a court order is honoured at the same speed.
+
+## What is moving against the posture
+
+The 2024-2026 window is mixed. Crypto and protocol-as-tool have won the recent federal cases. Adult content has lost the recent state cases. The product sits in both winds.
+
+**Helpful** (already cited above): *KalshiEX v. CFTC* (D.C. Cir. 2024), *Van Loon v. Treasury* (5th Cir. 2024), Tornado Cash SDN delisting (March 2025), the DOJ "regulation by prosecution" memorandum (April 7, 2025) ending federal crypto-software-developer prosecutions, *SEC v. Coinbase* voluntarily dismissed (February 27, 2025), the SEC Crypto Task Force closing memecoin enforcement files. The federal prosecutorial environment is the most permissive it has been in a decade.
+
+**Harmful** — name them honestly:
+
+- ***Free Speech Coalition v. Paxton*, 145 S. Ct. ___ (June 27, 2025)** — the Supreme Court, 6-3, upheld Texas HB 1181 age-verification requirements against First Amendment challenge. State age-verification laws have proliferated to twenty-plus US states (Texas, Louisiana, Utah, Mississippi, Virginia, Arkansas, Montana, North Carolina, Oklahoma, Indiana, Tennessee, Kentucky, Florida, South Dakota, Alabama, Idaho, Iowa, Nebraska, Kansas, Wyoming, Georgia). Pornhub/Aylo geo-blocks rather than comply. Pattern: comply or block.
+- **The Take It Down Act (Pub. L. 119-12, May 19, 2025)** — federal NCII / AI-deepfake takedown, 48-hour SLA, criminal penalties. Already addressed in [§"What we do for non-consensual content"](#what-we-do-for-non-consensual-content).
+- **The NO FAKES Act (S. 2779)** — bipartisan federal NIL deepfake / synthetic-likeness bill. Pending as of mid-2026. If enacted, would create a federal floor for personality rights against synthetic uses. The product does not generate synthetic media; the bill nonetheless deserves watching.
+
+**The combined position**: federal enforcement is light; state-level adult-content compliance is real and growing. The threats are state attorneys general using AVL laws, performers using right-of-publicity statutes in friendly state forums, and federal NCII reports under the Take It Down Act. The website's response to AVL state laws is geo-blocking those states, the same posture Pornhub and Aylo have taken.
 
 ## The contingency
 
