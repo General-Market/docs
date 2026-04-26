@@ -1,6 +1,6 @@
 ---
 title: "Subject Removal Policy"
-description: "How a market subject can be removed from nsgame.org, why the protocol cannot be made to remove anything, and the workflow we follow when you ask."
+description: "How a market subject can be removed from nsgame.org, why the protocol does not remove anything, and the workflow we follow when you ask."
 slug: "subject-removal-policy"
 category: "Trust"
 date: "2026-04-26"
@@ -11,7 +11,7 @@ If you are a subject of a market on nsgame.org and you want to be removed, this 
 
 Why this policy exists, and what it does not claim, is in [Listing Posture](/trust/listing-posture). This page is the workflow; that page is the argument.
 
-**The website is something we control. The protocol is something we don't.** We can delist a market from nsgame.org. We cannot delist it from the Solana program, because the program does not belong to us — it belongs to the chain, and the chain forgets nothing. A removal request, when granted, removes a subject from this website's catalog. Anyone running a different frontend can keep the market visible. Anyone reading the chain can keep transacting against it. We are honest about this because pretending otherwise would waste your time.
+**The website is something we control. The protocol is something we don't.** We can delist a market from nsgame.org. The protocol does not delist it from the Solana program, because the program does not belong to us — it belongs to the chain, and the chain forgets nothing. A removal request, when granted, removes a subject from this website's catalog. Anyone running a different frontend can keep the market visible. Anyone reading the chain can keep transacting against it. We are honest about this because pretending otherwise would waste your time.
 
 ## What we can do
 
@@ -30,7 +30,7 @@ The honest sentence again: the website is something we control; the protocol is 
 
 ## How to request removal
 
-A four-step workflow. The order is non-negotiable.
+A four-step workflow, plus a separate legal channel for non-ordinary cases. The order is non-negotiable.
 
 1. **Submit the form** at `[FACT TBD: removal form URL — published when available]`. You provide the subject identity (the performer name as listed in the nsgame.org catalog, plus the source platform), a contact email or other channel you control, and a one-line reason. Anonymous submissions are accepted but cannot be processed past step 1, because step 2 needs a contact channel.
 2. **We send a verification link** to the contact you provided. Click it within `[FACT TBD: verification link expiry — e.g. 7 days]`. This step exists to prevent third parties from filing on your behalf without your knowledge. We do not want to delist a subject because someone in a Discord server volunteered to delist them.
@@ -39,7 +39,14 @@ A four-step workflow. The order is non-negotiable.
    - Verified-account proof from the source platform — a screenshot or post from the platform's authenticated account that we can cross-check, or a control message we ask you to publish briefly from the verified profile.
    - Both. Either alone is acceptable.
    The proof is reviewed by the founding team, used once for the verification, and deleted. We do not retain identity documents past the verification step. We are not in the KYC business.
-4. **The website removes the market from the UI.** Best effort within `[FACT TBD: target removal SLA — target 7 days]` of verified proof. The removal is permanent across rounds. We will confirm the removal at the contact channel from step 2.
+4. **The website removes the market from the UI.** Removal SLAs, by report type, from receipt of verified proof:
+   - **Standard subject removal**: target 7 calendar days from ID verification.
+   - **NCII fast-track**: 48 hours from credible report, per the Take It Down Act compliance posture. The form is the same; the priority is different.
+   - **Regulator notice or court order**: 24 hours from receipt.
+
+   The removal is permanent across rounds. We will confirm the removal at the contact channel from step 2.
+
+5. **Legal contact, for matters that bypass the form.** `[FACT TBD: legal@nsgame.org or designated agent email]`. Use this for cease-and-desist letters, court orders, regulator notices, and DSA Art. 16 notice-and-action submissions. The form is faster for ordinary removals. The legal channel exists for the cases that are not ordinary.
 
 ## What the form asks for
 
@@ -53,7 +60,7 @@ A four-step workflow. The order is non-negotiable.
 
 Some removal requests are not from the subject. We treat each differently.
 
-- **Non-consensual content / privacy violation.** Treated with priority. The subject does not need to verify identity in the same way; the verification is whether the depicted person was non-consensually depicted, and the proof is whichever proof you can provide. We err in favor of removal in this category.
+- **Non-consensual content / privacy violation.** Treated with priority. **NCII fast-track**: 48 hours from credible report to UI delisting, per the Take It Down Act compliance posture. The subject does not need to verify identity in the same way; the verification is whether the depicted person was non-consensually depicted, and the proof is whichever proof you can provide. We err in favor of removal in this category.
 - **Reports about a minor.** Removed immediately on report. We do not require verification before removing; the verification follows the removal. If the report is itself bad-faith, the market can be re-listed; in the meantime, no harm is done by the temporary removal.
 - **Estate of a deceased subject.** Treated as an authorized representative request. Proof of representation (death certificate plus next-of-kin documentation) substitutes for identity verification. Permanent.
 - **Court order or law-enforcement request.** Routed to legal review at `[FACT TBD: legal/abuse contact email]`. The website complies with valid orders and informs the requesting party of the protocol-level limitation that this page documents.
