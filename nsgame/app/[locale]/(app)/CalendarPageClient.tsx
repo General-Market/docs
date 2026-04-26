@@ -108,12 +108,6 @@ export function CalendarPageClient() {
 
       <MyPositionsModal open={positionsOpen} onClose={closePositions} />
 
-      {/* Network-wide trade ticker. Lives above the grid so it spans
-          the same content width — no rails crowding it. */}
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-4 sm:pt-6">
-        <LastTradesTable />
-      </div>
-
       <div className="xl:grid xl:grid-cols-[260px_minmax(0,1fr)_260px] xl:items-start xl:gap-0">
         <MarketTeaserSidebar
           slots={allSlots}
@@ -158,6 +152,12 @@ export function CalendarPageClient() {
           side="right"
           onSelect={handleTeaserSelect}
         />
+      </div>
+
+      {/* Network-wide trade ticker. Closes the page — the markets list
+          comes first, the receipts come after. */}
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 pb-8 sm:pb-12">
+        <LastTradesTable />
       </div>
 
       {/* Mobile bottom sheet for the bet ticket */}
