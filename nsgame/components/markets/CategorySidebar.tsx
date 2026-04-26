@@ -43,13 +43,13 @@ function rowClasses(active: boolean): string {
     'group flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left transition-colors duration-150',
     'min-h-[36px]',
     active
-      ? 'bg-zinc-800/80 text-zinc-100 ring-1 ring-zinc-700'
-      : 'text-zinc-400 hover:bg-zinc-900/60 hover:text-zinc-100',
+      ? 'bg-terminal-surface-elevated/80 text-terminal-fg ring-1 ring-terminal-border-strong'
+      : 'text-terminal-fg-muted hover:bg-terminal-surface/60 hover:text-terminal-fg',
   ].join(' ')
 }
 
 function sectionLabelClasses(): string {
-  return 'mb-1.5 px-3 text-[11px] font-medium tracking-tight text-zinc-500'
+  return 'mb-1.5 px-3 text-label font-medium tracking-tight text-terminal-fg-faint'
 }
 
 export function CategorySidebar({
@@ -96,7 +96,7 @@ export function CategorySidebar({
         <button
           type="button"
           onClick={() => onStatusChange('live')}
-          className="-mt-4 px-3 font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500 hover:text-zinc-300"
+          className="-mt-4 px-3 font-mono text-micro uppercase tracking-[0.14em] text-terminal-fg-faint hover:text-terminal-fg-muted"
         >
           ← back to live
         </button>
@@ -126,13 +126,13 @@ export function CategorySidebar({
                 className={rowClasses(active)}
               >
                 <span className="flex flex-col items-start">
-                  <span className="text-[13.5px] capitalize text-zinc-200">{b.label}</span>
-                  <span className="text-[11px] text-zinc-500">{b.sub}</span>
+                  <span className="text-body-sm capitalize text-terminal-fg">{b.label}</span>
+                  <span className="text-label text-terminal-fg-faint">{b.sub}</span>
                 </span>
                 <span
                   className={[
-                    'text-[12px] tabular-nums',
-                    active ? 'text-zinc-300' : 'text-zinc-500 group-hover:text-zinc-300',
+                    'text-caption tabular-nums',
+                    active ? 'text-terminal-fg-muted' : 'text-terminal-fg-faint group-hover:text-terminal-fg-muted',
                   ].join(' ')}
                 >
                   {count}
@@ -157,7 +157,7 @@ function StatusPillRow({
     <div
       role="radiogroup"
       aria-label="Status"
-      className="inline-flex w-full items-center gap-0.5 rounded-md border border-zinc-800 bg-zinc-900/60 p-0.5"
+      className="inline-flex w-full items-center gap-0.5 rounded-md border border-terminal-border bg-terminal-surface/60 p-0.5"
     >
       {STATUSES.map(s => {
         const active = s.id === status
@@ -169,10 +169,10 @@ function StatusPillRow({
             type="button"
             onClick={() => onChange(s.id)}
             className={[
-              'flex-1 inline-flex h-7 items-center justify-center rounded px-2 text-[11px] font-medium tracking-tight transition-colors',
+              'flex-1 inline-flex h-9 items-center justify-center rounded px-2 text-label font-medium tracking-tight transition-colors',
               active
-                ? 'bg-zinc-100 text-zinc-950'
-                : 'text-zinc-400 hover:text-zinc-100',
+                ? 'bg-terminal-fg text-terminal-surface-deep'
+                : 'text-terminal-fg-muted hover:text-terminal-fg',
             ].join(' ')}
           >
             {s.label}
@@ -220,18 +220,18 @@ function PositionsButton({ active, onOpen, onOpenModal }: PositionsButtonProps) 
       onClick={handleClick}
       aria-pressed={active}
       className={[
-        'group relative flex w-full items-center gap-3 overflow-hidden rounded-lg border px-3 py-3 text-left transition-all duration-150',
+        'group relative flex w-full items-center gap-3 overflow-hidden rounded-lg border px-3 py-3 text-left transition-colors duration-150',
         active
-          ? 'border-sky-400/50 bg-gradient-to-br from-sky-500/15 via-sky-500/5 to-transparent shadow-[0_0_0_1px_rgb(56_189_248/0.25),0_8px_24px_-12px_rgb(56_189_248/0.4)]'
-          : 'border-zinc-800 bg-zinc-900/80 hover:border-sky-500/40 hover:bg-zinc-900',
+          ? 'border-sky-400/40 bg-sky-500/10 hover:bg-sky-500/15'
+          : 'border-terminal-border bg-terminal-surface/80 hover:border-sky-500/40 hover:bg-terminal-surface',
       ].join(' ')}
     >
       <span
         className={[
-          'flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[14px] font-bold tabular-nums',
+          'flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-body font-bold tabular-nums',
           active
             ? 'bg-sky-400 text-sky-950'
-            : 'bg-zinc-800 text-zinc-300 group-hover:bg-sky-400 group-hover:text-sky-950',
+            : 'bg-terminal-surface-elevated text-terminal-fg-muted group-hover:bg-sky-400 group-hover:text-sky-950',
         ].join(' ')}
         aria-hidden
       >
@@ -241,22 +241,22 @@ function PositionsButton({ active, onOpen, onOpenModal }: PositionsButtonProps) 
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span
           className={[
-            'font-mono text-[10px] font-semibold uppercase tracking-[0.16em]',
-            active ? 'text-sky-200' : 'text-zinc-400 group-hover:text-zinc-200',
+            'font-mono text-micro font-semibold uppercase tracking-[0.16em]',
+            active ? 'text-sky-200' : 'text-terminal-fg-muted group-hover:text-terminal-fg',
           ].join(' ')}
         >
           my positions
         </span>
-        <span className="flex items-center gap-1.5 font-mono text-[10.5px] tabular-nums text-zinc-500">
+        <span className="flex items-center gap-1.5 font-mono text-micro tabular-nums text-terminal-fg-faint">
           {total === 0 ? (
             <span>nothing yet</span>
           ) : (
             <>
               <span className="text-emerald-300">{open}</span>
-              <span className="text-zinc-700">·</span>
+              <span className="text-terminal-border-strong">·</span>
               <span className="text-amber-300">{settling}</span>
-              <span className="text-zinc-700">·</span>
-              <span className="text-zinc-300">{won}w</span>
+              <span className="text-terminal-border-strong">·</span>
+              <span className="text-terminal-fg-muted">{won}w</span>
             </>
           )}
         </span>
@@ -265,8 +265,8 @@ function PositionsButton({ active, onOpen, onOpenModal }: PositionsButtonProps) 
       <span
         aria-hidden
         className={[
-          'font-mono text-[12px] transition-transform duration-150',
-          active ? 'text-sky-300 translate-x-0.5' : 'text-zinc-600 group-hover:text-sky-300 group-hover:translate-x-0.5',
+          'font-mono text-caption transition-transform duration-150',
+          active ? 'text-sky-300 translate-x-0.5' : 'text-terminal-fg-faint group-hover:text-sky-300 group-hover:translate-x-0.5',
         ].join(' ')}
       >
         →

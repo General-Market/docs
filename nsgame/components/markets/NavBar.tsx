@@ -31,11 +31,11 @@ const SOURCES: Array<{ id: 1 | 2 | 3 | 4 | 5; label: string }> = [
 
 function tabClasses(active: boolean): string {
   return [
-    'inline-flex h-9 shrink-0 items-center gap-2 px-3 text-[13px] font-medium tracking-tight transition-colors duration-150',
+    'inline-flex h-9 shrink-0 items-center gap-2 px-3 text-body-sm font-medium tracking-tight transition-colors duration-150',
     'border-b-2',
     active
-      ? 'border-emerald-400 text-zinc-100'
-      : 'border-transparent text-zinc-500 hover:text-zinc-200',
+      ? 'border-emerald-400 text-terminal-fg'
+      : 'border-transparent text-terminal-fg-faint hover:text-terminal-fg-muted',
   ].join(' ')
 }
 
@@ -53,14 +53,14 @@ export function NavBar({
   useEffect(() => { setMounted(true) }, [])
 
   return (
-    <header className="sticky top-0 z-40 border-b border-zinc-800/80 bg-zinc-950/90 backdrop-blur supports-[backdrop-filter]:bg-zinc-950/70">
+    <header className="sticky top-0 z-40 border-b border-terminal-border/80 bg-terminal-surface-deep/90 backdrop-blur supports-[backdrop-filter]:bg-terminal-surface-deep/70">
       <div className="mx-auto flex h-14 max-w-7xl items-center gap-4 px-4 sm:px-6">
         {onMenuClick ? (
           <button
             type="button"
             onClick={onMenuClick}
             aria-label="Open menu"
-            className="-ml-1 inline-flex h-9 w-9 items-center justify-center rounded-md text-zinc-400 transition-colors hover:bg-zinc-800/80 hover:text-zinc-100 lg:hidden"
+            className="-ml-1 inline-flex h-11 w-11 items-center justify-center rounded-md text-terminal-fg-muted transition-colors hover:bg-terminal-surface-elevated/80 hover:text-terminal-fg lg:hidden"
           >
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
               <path d="M2 5h14M2 9h14M2 13h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -92,7 +92,7 @@ export function NavBar({
             >
               <span>All</span>
               {typeof totalCount === 'number' ? (
-                <span className="text-[11px] tabular-nums text-zinc-600">{totalCount}</span>
+                <span className="text-label tabular-nums text-terminal-fg-faint">{totalCount}</span>
               ) : null}
             </button>
             {SOURCES.map(s => {
@@ -108,7 +108,7 @@ export function NavBar({
                   <SourceIcon sourceId={s.id} className="h-4 w-4" />
                   <span>{s.label}</span>
                   {sourceCounts && typeof sourceCounts[s.id] === 'number' ? (
-                    <span className="text-[11px] tabular-nums text-zinc-600">
+                    <span className="text-label tabular-nums text-terminal-fg-faint">
                       {sourceCounts[s.id]}
                     </span>
                   ) : null}
@@ -123,14 +123,14 @@ export function NavBar({
           {!mounted ? (
             <button
               disabled
-              className="h-9 min-w-[44px] rounded-md bg-zinc-800 px-4 text-[13px] font-medium text-zinc-300 opacity-60"
+              className="h-9 min-w-[44px] rounded-md bg-terminal-surface-elevated px-4 text-body-sm font-medium text-terminal-fg-muted opacity-60"
             >
               …
             </button>
           ) : connected && address ? (
             <button
               onClick={() => disconnect()}
-              className="group inline-flex h-9 items-center gap-2 rounded-md border border-sky-500/40 bg-sky-500/5 px-3 font-mono text-[12px] text-zinc-200 transition-colors hover:border-rose-500/60 hover:bg-rose-500/10 hover:text-rose-300"
+              className="group inline-flex h-9 items-center gap-2 rounded-md border border-sky-500/40 bg-sky-500/5 px-3 font-mono text-caption text-terminal-fg transition-colors hover:border-rose-500/60 hover:bg-rose-500/10 hover:text-rose-300"
               aria-label="Disconnect wallet"
             >
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_0_2px_rgb(56_189_248/0.3)] group-hover:bg-rose-400 group-hover:shadow-none" />
@@ -141,7 +141,7 @@ export function NavBar({
             <button
               onClick={() => setShowModal(true)}
               disabled={connecting}
-              className="inline-flex h-9 items-center rounded-md bg-emerald-400 px-4 text-[13px] font-semibold text-zinc-950 transition-colors hover:bg-emerald-300 disabled:opacity-60"
+              className="inline-flex h-9 items-center rounded-md bg-emerald-400 px-4 text-body-sm font-semibold text-terminal-surface-deep transition-colors hover:bg-emerald-300 disabled:opacity-60"
             >
               {connecting ? 'Opening…' : 'Sign up'}
             </button>
@@ -163,7 +163,7 @@ export function NavBar({
           >
             <span>All</span>
             {typeof totalCount === 'number' ? (
-              <span className="text-[11px] tabular-nums text-zinc-600">{totalCount}</span>
+              <span className="text-label tabular-nums text-terminal-fg-faint">{totalCount}</span>
             ) : null}
           </button>
           {SOURCES.map(s => {

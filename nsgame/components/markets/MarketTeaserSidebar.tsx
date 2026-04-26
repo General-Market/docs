@@ -16,41 +16,39 @@ import { useNowSecs } from './CountdownTimer'
 
 const SIDEBAR_VIDEO = '/source-video/tubes.mp4'
 
-// Two sidebars share one src but buffer independently. Keep the first
-// mounted as master; nudge the others back if they drift more than
-// 100ms. Imperceptible seeks, synced loops.
-const syncedVideos = new Set<HTMLVideoElement>()
-let syncIntervalId: ReturnType<typeof setInterval> | null = null
-
-function ensureSyncLoop() {
-  if (syncIntervalId !== null) return
-  syncIntervalId = setInterval(() => {
-    if (syncedVideos.size < 2) {
-      if (syncIntervalId !== null) clearInterval(syncIntervalId)
-      syncIntervalId = null
-      return
-    }
-    const videos = Array.from(syncedVideos)
-    const master = videos.find(v => v.readyState >= 2)
-    if (!master) return
-    const t = master.currentTime
-    for (const v of videos) {
-      if (v === master || v.readyState < 2) continue
-      if (Math.abs(v.currentTime - t) > 0.1) v.currentTime = t
-    }
-  }, 500)
-}
-
-function useSyncedVideoRef() {
+// Gate playback on visibility. Off-screen video burns decode budget for
+// nothing; reduced-motion users never asked for ambient loops to begin
+// with. The two rails will drift by tens of milliseconds — nobody is
+// counting frames against another sidebar across the fold.
+function useVisibilityGatedVideo() {
   const ref = useRef<HTMLVideoElement>(null)
   useEffect(() => {
     const video = ref.current
     if (!video) return
-    syncedVideos.add(video)
-    ensureSyncLoop()
-    return () => {
-      syncedVideos.delete(video)
+
+    const reduceMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    if (reduceMotion) {
+      video.pause()
+      return
     }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            void video.play().catch(() => { /* autoplay refusal — silent */ })
+          } else {
+            video.pause()
+          }
+        }
+      },
+      { threshold: 0.05 },
+    )
+
+    observer.observe(video)
+    return () => observer.disconnect()
   }, [])
   return ref
 }
@@ -134,7 +132,7 @@ function SideAvatar({ slug, name, side }: SideAvatarProps) {
         }}
       />
       <span
-        className="absolute inset-0 hidden items-center justify-center bg-zinc-800 text-[11px] font-semibold tracking-tight text-zinc-300"
+        className="absolute inset-0 hidden items-center justify-center bg-terminal-surface-elevated text-label font-semibold tracking-tight text-terminal-fg-muted"
       >
         {initials(name)}
       </span>
@@ -156,35 +154,35 @@ function TeaserCard({ slot, yesOdd, noOdd, onClick }: TeaserCardProps) {
     <button
       type="button"
       onClick={onClick}
-      className="group block w-full rounded-lg border border-zinc-800/80 bg-zinc-950/80 p-3 text-left backdrop-blur-md transition-colors duration-150 hover:border-zinc-700 hover:bg-zinc-900/80"
+      className="group block w-full rounded-lg border border-terminal-border/80 bg-terminal-surface-deep/80 p-3 text-left backdrop-blur-md transition-colors duration-150 hover:border-terminal-border-strong hover:bg-terminal-surface/80"
     >
       <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-2">
         <div className="flex min-w-0 flex-col items-center gap-1.5 text-center">
           <SideAvatar slug={slot.slugA} name={slot.displayA} side="a" />
-          <span className="w-full truncate text-[11px] font-bold leading-tight tracking-tight text-zinc-100">
+          <span className="w-full truncate text-label font-bold leading-tight tracking-tight text-terminal-fg">
             {slot.displayA}
           </span>
         </div>
 
         <div className="flex flex-col items-center justify-start pt-2 text-center">
-          <span className="font-mono text-[10px] tabular-nums text-zinc-500">{date}</span>
-          <span className="font-mono text-[14px] font-bold tabular-nums leading-tight text-zinc-100">{time}</span>
+          <span className="font-mono text-micro tabular-nums text-terminal-fg-faint">{date}</span>
+          <span className="font-mono text-body font-bold tabular-nums leading-tight text-terminal-fg">{time}</span>
         </div>
 
         <div className="flex min-w-0 flex-col items-center gap-1.5 text-center">
           <SideAvatar slug={slot.slugB} name={slot.displayB} side="b" />
-          <span className="w-full truncate text-[11px] font-bold leading-tight tracking-tight text-zinc-100">
+          <span className="w-full truncate text-label font-bold leading-tight tracking-tight text-terminal-fg">
             {slot.displayB}
           </span>
         </div>
       </div>
 
       <div className="mt-2.5 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-        <span className="inline-flex h-7 w-full items-center justify-center rounded-md bg-emerald-500/15 text-[13px] font-bold tabular-nums text-emerald-200 ring-1 ring-emerald-400/30 group-hover:bg-emerald-500/25">
+        <span className="inline-flex h-7 w-full items-center justify-center rounded-md bg-emerald-500/15 text-body-sm font-bold tabular-nums text-emerald-200 ring-1 ring-emerald-400/30 group-hover:bg-emerald-500/25">
           {formatOdd(yesOdd)}
         </span>
-        <span aria-hidden className="text-[10px] text-zinc-600">vs</span>
-        <span className="inline-flex h-7 w-full items-center justify-center rounded-md bg-rose-500/15 text-[13px] font-bold tabular-nums text-rose-200 ring-1 ring-rose-400/30 group-hover:bg-rose-500/25">
+        <span aria-hidden className="text-micro text-terminal-fg-faint">vs</span>
+        <span className="inline-flex h-7 w-full items-center justify-center rounded-md bg-rose-500/15 text-body-sm font-bold tabular-nums text-rose-200 ring-1 ring-rose-400/30 group-hover:bg-rose-500/25">
           {formatOdd(noOdd)}
         </span>
       </div>
@@ -198,7 +196,7 @@ export function MarketTeaserSidebar({
   onSelect,
   className = '',
 }: MarketTeaserSidebarProps) {
-  const videoRef = useSyncedVideoRef()
+  const videoRef = useVisibilityGatedVideo()
 
   // Re-tick at minute granularity so the soonest-closing filter doesn't
   // freeze on a stale boundary while the user is staring at the rail.
@@ -230,24 +228,26 @@ export function MarketTeaserSidebar({
       aria-label={side === 'left' ? 'Featured fights — left' : 'Featured fights — right'}
     >
       <div className="sticky top-20 self-start">
-        <div className="relative h-[calc(100vh-6rem)] overflow-hidden rounded-xl border border-zinc-800/60 bg-zinc-950">
+        <div className="relative h-[calc(100vh-6rem)] overflow-hidden rounded-xl border border-terminal-border/60 bg-terminal-surface-deep">
           {/* Ambient broll. Mirrored on the right rail so the two read
-              as a matched pair instead of duplicate footage. */}
+              as a matched pair instead of duplicate footage. Playback is
+              gated to the visible viewport — off-screen video is a tax. */}
           <video
             ref={videoRef}
             src={SIDEBAR_VIDEO}
-            autoPlay
             loop
             muted
             playsInline
-            preload="auto"
+            preload="metadata"
             aria-hidden
             className="absolute inset-0 h-full w-full object-cover opacity-50"
             style={{ transform: side === 'right' ? 'scaleX(-1)' : undefined }}
           />
 
-          {/* Dim gradient. Cards have to read against the broll without
-              the video being murdered by a flat black layer. */}
+          {/* Dim scrim. Cards must read against video — literal black
+              keeps legibility honest when the source is anything but
+              dark. The token surface-deep is itself near-black, so the
+              substitution is a wash; the literal stays. */}
           <div
             aria-hidden
             className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/55 to-black/85"
