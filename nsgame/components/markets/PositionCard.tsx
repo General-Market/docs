@@ -131,8 +131,10 @@ export function PositionCard({ position, state }: PositionCardProps) {
         />
       </header>
 
-      {/* Three-column metrics row — stake / entry / value+pnl */}
-      <div className="mt-3 grid grid-cols-3 gap-2 border-t border-zinc-800/60 pt-3">
+      {/* Two-column metrics — stake on the left, value on the right.
+          The multiplier rides as a small chip in the value's sub-line so
+          the row keeps its hierarchy in narrow side-rails. */}
+      <div className="mt-3 grid grid-cols-2 gap-3 border-t border-zinc-800/60 pt-3">
         <Metric
           label="Stake"
           value={`$${formatMoney(stakeUsdc)}`}
@@ -148,11 +150,6 @@ export function PositionCard({ position, state }: PositionCardProps) {
           }
         />
         <Metric
-          label={isResolved ? 'Final' : 'Live'}
-          value={liveMult !== null ? `${liveMult.toFixed(2)}×` : '—'}
-          sub={entry ? <span className="font-mono text-[10px] text-zinc-500">{compactPct(sidePct)} implied</span> : null}
-        />
-        <Metric
           label={isResolved ? (won ? 'Won' : refund ? 'Refund' : 'Lost') : 'Value'}
           value={valueUsdc !== null ? `$${formatMoney(valueUsdc)}` : '—'}
           valueClass={
@@ -161,20 +158,24 @@ export function PositionCard({ position, state }: PositionCardProps) {
               : 'text-zinc-100'
           }
           sub={
-            pnlUsdc !== null && !refund ? (
-              <span
-                className={[
-                  'font-mono text-[10px] tabular-nums',
-                  pnlUsdc > 0
-                    ? 'text-emerald-300'
-                    : pnlUsdc < 0
-                      ? 'text-rose-300'
-                      : 'text-zinc-500',
-                ].join(' ')}
-              >
-                {signedMoney(pnlUsdc)}
-              </span>
-            ) : null
+            <span className="flex items-center justify-end gap-1.5 font-mono text-[10px] tabular-nums">
+              {pnlUsdc !== null && !refund ? (
+                <span
+                  className={
+                    pnlUsdc > 0
+                      ? 'text-emerald-300'
+                      : pnlUsdc < 0
+                        ? 'text-rose-300'
+                        : 'text-zinc-500'
+                  }
+                >
+                  {signedMoney(pnlUsdc)}
+                </span>
+              ) : null}
+              {!isResolved && liveMult !== null ? (
+                <span className="text-zinc-500">@ {liveMult.toFixed(2)}×</span>
+              ) : null}
+            </span>
           }
           align="right"
         />
@@ -320,7 +321,10 @@ function unitsToFloat(units: bigint): number {
 function formatMoney(value: number): string {
   if (!Number.isFinite(value)) return '—'
   const abs = Math.abs(value)
-  const decimals = abs >= 1000 ? 0 : 2
+  // Cents matter at the small end where a few pennies move the meaning.
+  // Above $10 the column would be too wide to read in a narrow rail —
+  // the integer is sharp enough.
+  const decimals = abs >= 10 ? 0 : 2
   const formatted = abs.toLocaleString('en-US', {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
@@ -332,8 +336,4 @@ function signedMoney(value: number): string {
   if (!Number.isFinite(value)) return '—'
   const sign = value > 0 ? '+' : value < 0 ? '−' : ''
   return `${sign}$${formatMoney(Math.abs(value))}`
-}
-
-function compactPct(pct: number): string {
-  return `${pct.toFixed(0)}%`
 }
