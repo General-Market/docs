@@ -54,7 +54,7 @@ export interface LeaderboardEntryDTO {
 interface LeaderboardRow {
   wallet: string
   volume: string
-  pnl_realized: string
+  pnl_realised: string
   stake_at_risk: string
   resolved_count: string
   win_count: string
@@ -141,6 +141,12 @@ export async function GET(req: Request): Promise<NextResponse> {
     // (per-market) and resolutions (per-market). Win count is markets
     // where this wallet had a positive net claim. Stake at risk is the
     // sum of amounts on markets we have neither resolved nor claimed.
+    // PnL is realized only — we count a market once the wallet has
+    // claimed it. Resolved-but-unclaimed markets stay in stake_at_risk:
+    // the wallet's win is sitting on chain waiting to be collected, and
+    // counting the bet as a full loss until then would slander every
+    // wallet that doesn't auto-claim. (One bot was 484 markets / $10k
+    // unclaimed; its leaderboard line read -$8.5k of pure phantom.)
     const sql = `
       WITH bets AS (
         SELECT bp.owner       AS wallet,
@@ -151,6 +157,11 @@ export async function GET(req: Request): Promise<NextResponse> {
           FROM ${SCHEMA}.bet_placed bp
          WHERE ${windowPredicate}
       ),
+      per_wallet_market_stake AS (
+        SELECT wallet, market, SUM(amount) AS stake
+          FROM bets
+         GROUP BY wallet, market
+      ),
       per_wallet_bets AS (
         SELECT wallet,
                SUM(amount)::text       AS volume,
@@ -159,74 +170,71 @@ export async function GET(req: Request): Promise<NextResponse> {
           FROM bets
          GROUP BY wallet
       ),
-      per_wallet_claims AS (
-        SELECT c.owner                                            AS wallet,
-               SUM(CASE WHEN c.stranded THEN 0 ELSE c.net END)::text AS pnl_claims,
-               COUNT(DISTINCT c.market)                          AS resolved_count,
-               COUNT(DISTINCT c.market) FILTER (
-                 WHERE NOT c.stranded AND c.net::numeric > 0
-               )                                                 AS win_count
-          FROM ${SCHEMA}.claimed c
-          JOIN bets b ON b.market = c.market AND b.wallet = c.owner
-         GROUP BY c.owner
+      claimed_realised AS (
+        -- One row per (wallet, market) the wallet has claimed.
+        -- payout = c.net for non-stranded; full stake refund for stranded.
+        SELECT s.wallet,
+               s.market,
+               s.stake,
+               (CASE WHEN c.stranded THEN s.stake ELSE c.net::numeric END) AS payout,
+               c.stranded
+          FROM per_wallet_market_stake s
+          JOIN ${SCHEMA}.claimed c
+            ON c.market = s.market AND c.owner = s.wallet
       ),
-      per_wallet_resolved AS (
-        -- Subtract the stake on markets that resolved against us. A
-        -- claimed-lost market emits a Claimed row with net = 0, so the
-        -- PnL math has to deduct stake somewhere. We do it here against
-        -- bets on resolved markets — but EXCLUDE stranded refunds. A
-        -- stranded market returns the full stake; counting it as a loss
-        -- turns a no-op refund into a phantom -$X drag. The bot's real
-        -- PnL hovers near zero; the old query buried it under refunds.
-        SELECT b.wallet,
-               SUM(b.amount)::text AS resolved_stake
-          FROM bets b
-          JOIN ${SCHEMA}.market_resolved mr ON mr.market = b.market
-          LEFT JOIN ${SCHEMA}.claimed c
-                 ON c.market = b.market AND c.owner = b.wallet
-         WHERE c.stranded IS NOT TRUE
-         GROUP BY b.wallet
+      per_wallet_realised AS (
+        -- A "win" here is a market where the wallet had a non-stranded
+        -- claim with positive payout — the wallet was on the winning
+        -- side. For wallets that bet only one side per market this
+        -- matches intuition; for self-betting bots it counts the
+        -- markets where their winning-side stake collected something,
+        -- even though the round-trip nets the fee. Either way it tracks
+        -- the row visible to the user.
+        SELECT wallet,
+               SUM(payout - stake)::text         AS pnl_realised,
+               COUNT(*)::text                    AS resolved_count,
+               COUNT(*) FILTER (
+                 WHERE NOT stranded AND payout > 0
+               )::text                           AS win_count
+          FROM claimed_realised
+         GROUP BY wallet
       ),
       per_wallet_open AS (
-        SELECT b.wallet,
-               SUM(b.amount)::text AS stake_at_risk
-          FROM bets b
-          LEFT JOIN ${SCHEMA}.market_resolved mr ON mr.market = b.market
-         WHERE mr.market IS NULL
-         GROUP BY b.wallet
+        -- Stake on every (wallet, market) the wallet has NOT yet claimed,
+        -- regardless of whether the market itself resolved. This bucket
+        -- absorbs both live bets and pending claims.
+        SELECT s.wallet,
+               SUM(s.stake)::text AS stake_at_risk
+          FROM per_wallet_market_stake s
+          LEFT JOIN ${SCHEMA}.claimed c
+                 ON c.market = s.market AND c.owner = s.wallet
+         WHERE c.market IS NULL
+         GROUP BY s.wallet
       )
-      SELECT pwb.wallet                                AS wallet,
-             pwb.volume                                AS volume,
-             COALESCE(pwc.pnl_claims, '0')             AS pnl_claims,
-             COALESCE(pwr.resolved_stake, '0')         AS resolved_stake,
-             COALESCE(pwo.stake_at_risk, '0')          AS stake_at_risk,
-             COALESCE(pwc.resolved_count, 0)::text     AS resolved_count,
-             COALESCE(pwc.win_count, 0)::text          AS win_count,
-             pwb.bets_count                            AS bets_count,
-             pwb.last_active                           AS last_active
+      SELECT pwb.wallet                              AS wallet,
+             pwb.volume                              AS volume,
+             COALESCE(pwr.pnl_realised, '0')         AS pnl_realised,
+             COALESCE(pwo.stake_at_risk, '0')        AS stake_at_risk,
+             COALESCE(pwr.resolved_count, '0')       AS resolved_count,
+             COALESCE(pwr.win_count, '0')            AS win_count,
+             pwb.bets_count                          AS bets_count,
+             pwb.last_active                         AS last_active
         FROM per_wallet_bets pwb
-        LEFT JOIN per_wallet_claims   pwc ON pwc.wallet = pwb.wallet
-        LEFT JOIN per_wallet_resolved pwr ON pwr.wallet = pwb.wallet
+        LEFT JOIN per_wallet_realised pwr ON pwr.wallet = pwb.wallet
         LEFT JOIN per_wallet_open     pwo ON pwo.wallet = pwb.wallet
-       ORDER BY (
-         COALESCE(pwc.pnl_claims, '0')::numeric
-         - COALESCE(pwr.resolved_stake, '0')::numeric
-       ) DESC,
+       ORDER BY COALESCE(pwr.pnl_realised, '0')::numeric DESC,
                 pwb.volume::numeric DESC
        LIMIT $${limitIdx} OFFSET $${offsetIdx}
     `
 
     interface RawRow extends LeaderboardRow {
-      pnl_claims: string
-      resolved_stake: string
+      pnl_realised: string
     }
 
     const result = await pool.query<RawRow>(sql, params)
     const entries: LeaderboardEntryDTO[] = result.rows.map((r, i) => {
       const volumeBig = safeBig(r.volume)
-      const pnlClaims = safeBig(r.pnl_claims)
-      const resolvedStake = safeBig(r.resolved_stake)
-      const pnlRealized = pnlClaims - resolvedStake
+      const pnlRealized = safeBig(r.pnl_realised)
       const resolvedCount = Number.parseInt(r.resolved_count, 10) || 0
       const winCount = Number.parseInt(r.win_count, 10) || 0
       // Percent off volume. Empty volume → 0%, never NaN.

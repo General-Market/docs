@@ -36,6 +36,7 @@ from solders.pubkey import Pubkey
 from solders.system_program import ID as SYSTEM_PROGRAM_ID
 from solders.transaction import VersionedTransaction
 
+import httpx
 from solana.rpc.async_api import AsyncClient
 from solana.rpc.commitment import Confirmed
 from solana.rpc.types import TxOpts
@@ -54,6 +55,7 @@ SYSVAR_RENT_PUBKEY = Pubkey.from_string("SysvarRent11111111111111111111111111111
 
 # place_bet discriminator from the IDL.
 PLACE_BET_DISC = bytes([222, 62, 67, 220, 63, 166, 126, 33])
+CLAIM_DISC = bytes([62, 198, 214, 193, 213, 159, 108, 210])
 
 # spl-token mint_to discriminator — instruction tag 7.
 TOKEN_INSTR_MINT_TO = 7
@@ -302,6 +304,11 @@ def derive_config_pda(program_id: Pubkey) -> Pubkey:
     return pda
 
 
+def derive_fee_vault_pda(program_id: Pubkey) -> Pubkey:
+    pda, _ = Pubkey.find_program_address([b"fee_vault"], program_id)
+    return pda
+
+
 def derive_source_pda(program_id: Pubkey, source_id: int) -> Pubkey:
     pda, _ = Pubkey.find_program_address(
         [b"source", _u32_le(source_id)], program_id
@@ -458,6 +465,41 @@ def build_place_bet_ix(
         amount_raw=amount_raw,
     )
     return Instruction(program_id, data, metas)
+
+
+def build_claim_ix(
+    *,
+    program_id: Pubkey,
+    market: Pubkey,
+    owner: Pubkey,
+    stake_mint: Pubkey,
+    cranker: Pubkey,
+) -> Instruction:
+    # claim() takes no args. The program looks up the position via PDA,
+    # pays out the winning side (or refunds a stranded market), and
+    # closes the position account.
+    config_pda = derive_config_pda(program_id)
+    position_pda = derive_position_pda(program_id, market, owner)
+    vault_pda = derive_vault_pda(program_id, market)
+    fee_vault_pda = derive_fee_vault_pda(program_id)
+    owner_ata = derive_ata(owner, stake_mint)
+
+    metas = [
+        AccountMeta(config_pda,    is_signer=False, is_writable=False),
+        AccountMeta(market,        is_signer=False, is_writable=True),
+        AccountMeta(position_pda,  is_signer=False, is_writable=True),
+        AccountMeta(vault_pda,     is_signer=False, is_writable=True),
+        AccountMeta(fee_vault_pda, is_signer=False, is_writable=True),
+        AccountMeta(owner,         is_signer=False, is_writable=True),
+        AccountMeta(owner_ata,     is_signer=False, is_writable=True),
+        AccountMeta(stake_mint,    is_signer=False, is_writable=False),
+        AccountMeta(cranker,       is_signer=True,  is_writable=True),
+        AccountMeta(TOKEN_PROGRAM_ID, is_signer=False, is_writable=False),
+        AccountMeta(ASSOCIATED_TOKEN_PROGRAM_ID, is_signer=False, is_writable=False),
+        AccountMeta(SYSTEM_PROGRAM_ID, is_signer=False, is_writable=False),
+        AccountMeta(SYSVAR_RENT_PUBKEY, is_signer=False, is_writable=False),
+    ]
+    return Instruction(program_id, CLAIM_DISC, metas)
 
 
 def build_create_ata_idempotent_ix(
@@ -876,6 +918,99 @@ async def micro_loop(
             backoff = min(backoff * 2, RETRY_MAX_SLEEP)
 
 
+CLAIM_API_BASE = os.environ.get(
+    "NSGAME_API_BASE", "https://nsgame.org"
+).rstrip("/")
+CLAIM_BATCH = 20            # claim up to N markets per cycle
+CLAIM_PERIOD = 90           # seconds between claim sweeps
+CLAIM_FETCH_PAGE = 200      # positions per indexer page
+
+
+async def fetch_unclaimed_resolved(wallet: Pubkey) -> list[str]:
+    """Hit nsgame's positions API and return market PDAs that have
+    resolved but not been claimed yet. The endpoint paginates by limit,
+    not by status, so we filter client-side. Two-page lookbehind is
+    plenty — the bot drains its backlog within a couple of cycles."""
+    out: list[str] = []
+    async with httpx.AsyncClient(timeout=20.0) as http:
+        for offset in (0, CLAIM_FETCH_PAGE):
+            url = f"{CLAIM_API_BASE}/api/positions/{wallet}?limit={CLAIM_FETCH_PAGE}&offset={offset}"
+            try:
+                resp = await http.get(url)
+                resp.raise_for_status()
+                data = resp.json()
+            except Exception as exc:
+                log.warning("[claim] positions fetch failed: %s", exc)
+                return out
+            positions = data.get("positions") or []
+            for p in positions:
+                if p.get("state") == "resolved" and not p.get("claimSig"):
+                    market = p.get("market")
+                    if market and market not in out:
+                        out.append(market)
+            if len(positions) < CLAIM_FETCH_PAGE:
+                break
+    return out
+
+
+async def claim_loop(
+    cfg: BotConfig,
+    state: BotState,
+    client: AsyncClient,
+    bucket: TokenBucket,
+    bot_kp: Keypair,
+) -> None:
+    """Drain the bot's pending claims so its leaderboard PnL stops
+    looking like the slow death of a small empire. Each Claim ix
+    settles one market: pays out the winning side (or refunds a stranded
+    market) and closes the position account, returning rent."""
+    backoff = RETRY_BASE_SLEEP
+    while True:
+        try:
+            markets = await fetch_unclaimed_resolved(bot_kp.pubkey())
+            if not markets:
+                await asyncio.sleep(CLAIM_PERIOD)
+                continue
+            log.info("[claim] %d unclaimed resolved markets in queue.", len(markets))
+            claimed_this_pass = 0
+            for raw in markets[:CLAIM_BATCH]:
+                try:
+                    market = Pubkey.from_string(raw)
+                except Exception:
+                    continue
+                ix = build_claim_ix(
+                    program_id=cfg.program_id,
+                    market=market,
+                    owner=bot_kp.pubkey(),
+                    stake_mint=cfg.stake_mint,
+                    cranker=bot_kp.pubkey(),
+                )
+                try:
+                    sig = await _send_versioned_tx(client, bucket, bot_kp, [ix])
+                except Exception as exc:
+                    # Position already closed (raced with another claim,
+                    # or the program rejected for whatever reason). Move
+                    # on; the next sweep won't see this market again.
+                    log.warning(
+                        "[claim] %s failed: %s", raw[:12], repr(exc)[:120],
+                    )
+                    continue
+                claimed_this_pass += 1
+                state.bet_count += 0  # claim is not a bet — keep counters honest
+                log.info("[claim] %s settled. sig %s", raw[:12], sig[:16])
+            if claimed_this_pass:
+                _save_state(cfg.state_path, state)
+            backoff = RETRY_BASE_SLEEP
+            await asyncio.sleep(CLAIM_PERIOD)
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            state.last_error = f"claim: {exc}"[:240]
+            log.exception("[claim] loop error: %s", exc)
+            await asyncio.sleep(backoff)
+            backoff = min(backoff * 2, RETRY_MAX_SLEEP)
+
+
 async def watchdog_loop(
     cfg: BotConfig,
     state: BotState,
@@ -955,6 +1090,10 @@ async def run() -> None:
             asyncio.create_task(
                 micro_loop(cfg, state, client, bucket, bot_kp, pairs),
                 name="micro",
+            ),
+            asyncio.create_task(
+                claim_loop(cfg, state, client, bucket, bot_kp),
+                name="claim",
             ),
             asyncio.create_task(
                 watchdog_loop(cfg, state, client, bucket, bot_kp, admin_kp),
