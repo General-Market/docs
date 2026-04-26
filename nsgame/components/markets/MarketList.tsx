@@ -293,6 +293,7 @@ function positionsToSlots(
       sourceName: entry.sourceName,
       label: entry.label,
       description: entry.description,
+      hook: entry.hook,
       thresholdBps: entry.thresholdBps,
       pairIndex: entry.pairIndex,
       board: entry.board,

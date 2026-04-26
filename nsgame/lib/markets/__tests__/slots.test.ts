@@ -16,6 +16,7 @@ function makeEntry(overrides: Partial<CatalogEntry> = {}): CatalogEntry {
     settleOffsetSecs: 14_460,
     label: 'A vs B',
     description: '—',
+    hook: '—',
     board: 'stars',
     format: 'f1-gain-race',
     displayA: 'A',

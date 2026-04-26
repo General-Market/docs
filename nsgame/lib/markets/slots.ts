@@ -22,6 +22,8 @@ export interface UpcomingSlot {
   sourceName: string
   label: string
   description: string
+  /** Single-line hook rendered on the market card under the title. */
+  hook: string
   /** thresholdBps == pairIndex for PvP markets. */
   thresholdBps: number
   pairIndex: number
@@ -150,6 +152,7 @@ export function generateSlots(opts: GenerateSlotsOpts): UpcomingSlot[] {
       sourceName: entry.sourceName,
       label: entry.label,
       description: entry.description,
+      hook: entry.hook,
       thresholdBps: entry.thresholdBps,
       pairIndex: entry.pairIndex,
       board: entry.board,

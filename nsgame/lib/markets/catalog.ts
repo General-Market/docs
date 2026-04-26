@@ -18,7 +18,8 @@ import {
   type Board,
   type PvpFormat,
   type PvpPair,
-  formatPillLabel,
+  formatDescription,
+  formatHook,
 } from './pairs'
 
 export interface CatalogEntry {
@@ -40,6 +41,8 @@ export interface CatalogEntry {
   label: string
   /** Long-form prose. The bet sheet renders it under the title. */
   description: string
+  /** Single-line hook rendered under the title on the market card. */
+  hook: string
   // PvP-specific cosmetics, lifted to the catalog so consumers don't
   // need a second lookup against the pair registry.
   board: Board
@@ -66,12 +69,6 @@ const SOURCE_LABELS: Record<number, string> = {
 const STARS_SETTLE_DELAY_SECS = 60
 const CAMS_SETTLE_DELAY_SECS = 60
 
-function describeFormat(format: PvpFormat): string {
-  return format === 'f1-gain-race'
-    ? 'who gains more during the window'
-    : 'who has more viewers at the closing instant'
-}
-
 function entryFromPair(pair: PvpPair): CatalogEntry {
   const sourceName = SOURCE_LABELS[pair.sourceId] ?? `source_${pair.sourceId}`
   const closeOffsetSecs = pair.windowSecs
@@ -81,9 +78,8 @@ function entryFromPair(pair: PvpPair): CatalogEntry {
   const settleOffsetSecs = closeOffsetSecs + settleDelay
   const id = `${sourceName}_pvp_${pair.format === 'f1-gain-race' ? 'f1' : 'f2'}_${pair.slugA}__vs__${pair.slugB}`
   const label = `${pair.displayA} vs ${pair.displayB}`
-  const description =
-    `${formatPillLabel(pair)}. Resolves on ${describeFormat(pair.format)}. `
-    + `A win pays the side you picked; tie or both flat refunds.`
+  const description = formatDescription(pair)
+  const hook = formatHook(pair)
 
   return {
     id,
@@ -95,6 +91,7 @@ function entryFromPair(pair: PvpPair): CatalogEntry {
     settleOffsetSecs,
     label,
     description,
+    hook,
     board: pair.board,
     format: pair.format,
     displayA: pair.displayA,

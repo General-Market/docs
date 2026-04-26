@@ -352,6 +352,12 @@ export function MarketRow({ slot, state, selected, selectedSide, onSelectSide }:
         {slot.label}
       </h3>
 
+      {slot.hook ? (
+        <p className="relative mt-1 text-[12px] leading-snug text-zinc-500">
+          {slot.hook}
+        </p>
+      ) : null}
+
       <div className="relative mt-1.5 flex items-center gap-2">
         {showLive ? (
           <>

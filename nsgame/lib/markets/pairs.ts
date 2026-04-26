@@ -192,6 +192,36 @@ export function formatPillLabel(pair: PvpPair): string {
   return `${windowLabel(pair.windowSecs)} ${formatLabel(pair.format)}`
 }
 
+/**
+ * Short, single-line hook rendered on the market card. Tells the user
+ * exactly what they're betting on without arithmetic. Read in the same
+ * breath as the pair label — no more than ~36 chars.
+ */
+export function formatHook(pair: PvpPair): string {
+  const win = windowLabel(pair.windowSecs)
+  if (pair.format === 'f1-gain-race') {
+    if (pair.board === 'cams') return `Most new live viewers in ${win} wins`
+    return `Most new lifetime views in ${win} wins`
+  }
+  return `Most live viewers when the ${win} closes wins`
+}
+
+/**
+ * Long-form description rendered under the title in the bet sheet. Says
+ * the metric, the window, the resolution rule, and the refund condition.
+ * Kept under 220 chars so the BetTicket renderer accepts it.
+ */
+export function formatDescription(pair: PvpPair): string {
+  const win = windowLabel(pair.windowSecs)
+  if (pair.format === 'f1-gain-race') {
+    if (pair.board === 'cams') {
+      return `Live viewer race over the next ${win}. Whoever picks up more new viewers during the window wins. Pick the side you think will spike. Tie or both flat refunds.`
+    }
+    return `Lifetime-views race over the next ${win}. Whoever gains more new views during the window wins. Pick the side you think will surge. Tie or both flat refunds.`
+  }
+  return `Live viewer count at the ${win} close. Whoever has more concurrent viewers when the window expires wins. Pick the side you think will be biggest. Tie or both flat refunds.`
+}
+
 /** Compact audience number for chips. 4_200 → "4.2k", 593_000_000 → "593M". */
 export function compactAudience(n: bigint): string {
   const abs = n < 0n ? -n : n
