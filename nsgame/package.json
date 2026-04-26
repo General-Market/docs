@@ -24,7 +24,8 @@
   },
   "scripts": {
     "dev": "next dev --port 3001",
-    "prebuild": "npx tsx scripts/build-founders-lookup.ts",
+    "prebuild": "npx tsx scripts/build-founders-lookup.ts && npx tsx scripts/sync-avatars.ts",
+    "avatars": "npx tsx scripts/sync-avatars.ts",
     "build": "next build",
     "start": "next start --port 3001",
     "lint": "next lint",
