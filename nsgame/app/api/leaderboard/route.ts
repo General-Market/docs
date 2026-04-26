@@ -174,11 +174,17 @@ export async function GET(req: Request): Promise<NextResponse> {
         -- Subtract the stake on markets that resolved against us. A
         -- claimed-lost market emits a Claimed row with net = 0, so the
         -- PnL math has to deduct stake somewhere. We do it here against
-        -- bets on resolved markets.
+        -- bets on resolved markets — but EXCLUDE stranded refunds. A
+        -- stranded market returns the full stake; counting it as a loss
+        -- turns a no-op refund into a phantom -$X drag. The bot's real
+        -- PnL hovers near zero; the old query buried it under refunds.
         SELECT b.wallet,
                SUM(b.amount)::text AS resolved_stake
           FROM bets b
           JOIN ${SCHEMA}.market_resolved mr ON mr.market = b.market
+          LEFT JOIN ${SCHEMA}.claimed c
+                 ON c.market = b.market AND c.owner = b.wallet
+         WHERE c.stranded IS NOT TRUE
          GROUP BY b.wallet
       ),
       per_wallet_open AS (
