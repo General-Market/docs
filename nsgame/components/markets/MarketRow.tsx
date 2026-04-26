@@ -8,6 +8,7 @@ import {
   audienceUnit,
   formatLabel,
   deriveYesPct,
+  pctToDecimalOdd,
 } from '@/lib/markets/hooks'
 import { CountdownTimer, useNowSecs } from './CountdownTimer'
 import { SourceIcon } from './SourceIcon'
@@ -86,7 +87,7 @@ function Avatar({
       onClick={(e) => e.stopPropagation()}
       aria-label={`Open ${name}'s profile in a new tab`}
       className={[
-        'relative inline-flex h-12 w-12 shrink-0 overflow-hidden rounded-md ring-2 transition-transform duration-200 hover:scale-[1.04]',
+        'relative inline-flex h-9 w-9 shrink-0 overflow-hidden rounded-md ring-2 transition-transform duration-200 hover:scale-[1.04]',
         ringTone,
         dim ? 'opacity-50' : '',
       ].join(' ')}
@@ -185,16 +186,16 @@ function CompetitorRow({
       aria-pressed={active}
       disabled={resolved}
       className={[
-        'group flex w-full items-center gap-4 rounded-lg px-2 py-3 text-left transition-colors duration-150',
+        'group flex w-full items-center gap-3 rounded-lg px-1.5 py-2 text-left transition-colors duration-150',
         rowSurface,
         dim ? 'opacity-60' : '',
       ].join(' ')}
     >
       <Avatar slug={slug} name={name} side={side} dim={dim} profileHref={profileHref} />
 
-      <span className="flex min-w-0 flex-1 flex-col gap-1.5">
+      <span className="flex min-w-0 flex-1 flex-col gap-1">
         <span className="flex items-center gap-2">
-          <span className="truncate text-[15px] font-semibold leading-tight tracking-tight text-zinc-100">
+          <span className="truncate text-[14px] font-semibold leading-tight tracking-tight text-zinc-100">
             {name}
           </span>
           {resolved && isWinner ? (
@@ -215,23 +216,26 @@ function CompetitorRow({
         </span>
       </span>
 
-      <span className="hidden shrink-0 sm:inline-flex h-9 min-w-[44px] items-center justify-center rounded-md border border-zinc-700 bg-transparent px-2.5 text-[13px] font-medium tabular-nums text-zinc-200">
+      <span className="hidden shrink-0 sm:inline-flex h-8 min-w-[40px] items-center justify-center rounded-md border border-zinc-700 bg-transparent px-2 text-[12px] font-medium tabular-nums text-zinc-200">
         {compactAudience(audience)}
       </span>
 
       {oneSidedRefund || refund ? (
-        <span className="ml-auto inline-flex h-10 min-w-[72px] items-center justify-center rounded-full border-2 border-zinc-700 px-4 text-[12px] italic text-zinc-500">
+        <span className="ml-auto inline-flex h-8 min-w-[60px] items-center justify-center rounded-full border-2 border-zinc-700 px-3 text-[11px] italic text-zinc-500">
           refund
         </span>
       ) : (
         <span className="ml-auto flex shrink-0 items-center">
           <span
             className={[
-              'inline-flex h-10 min-w-[72px] items-center justify-center rounded-full border-2 px-4 text-[16px] font-semibold tabular-nums tracking-tight transition-colors duration-150',
+              'inline-flex h-8 min-w-[64px] items-center justify-center rounded-full border-2 px-3 text-[14px] font-semibold tabular-nums tracking-tight transition-colors duration-150',
               active ? pillActive : pillBase,
             ].join(' ')}
           >
-            {pct.toFixed(0)}%
+            {(() => {
+              const m = pctToDecimalOdd(pct)
+              return m === null ? '—' : `${m.toFixed(2)}×`
+            })()}
           </span>
         </span>
       )}
@@ -311,9 +315,9 @@ export function MarketRow({ slot, state, selected, selectedSide, onSelectSide }:
   return (
     <article
       className={[
-        'relative overflow-hidden rounded-xl border p-4 pl-5 sm:p-5 sm:pl-6',
+        'relative overflow-hidden rounded-xl border p-3 pl-4 sm:p-4 sm:pl-5',
         'transition-[box-shadow,border-color,transform] duration-300 ease-out',
-        'before:absolute before:inset-y-3 before:left-0 before:w-[3px] before:rounded-r-full before:opacity-90',
+        'before:absolute before:inset-y-2 before:left-0 before:w-[2px] before:rounded-r-full before:opacity-90',
         'after:pointer-events-none after:absolute after:inset-0 after:rounded-xl after:transition-[background] after:duration-700 after:ease-out',
         accentRail,
         cardSurface,
@@ -322,50 +326,50 @@ export function MarketRow({ slot, state, selected, selectedSide, onSelectSide }:
       aria-label={slot.label}
     >
       <header className="relative flex items-start justify-between gap-3">
-        <span className="flex min-w-0 items-center gap-2.5">
+        <span className="flex min-w-0 items-center gap-2">
           {sourceIconId ? (
-            <SourceIcon sourceId={sourceIconId} className="h-7 w-7 rounded-md" />
+            <SourceIcon sourceId={sourceIconId} className="h-6 w-6 rounded-md" />
           ) : null}
-          <span className="truncate text-[12px] font-semibold uppercase tracking-[0.12em] text-zinc-100">
+          <span className="truncate text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-100">
             {sourceLbl}
           </span>
         </span>
 
-        <span className="shrink-0 text-[13px] text-zinc-500">
+        <span className="shrink-0 text-[12px] text-zinc-500">
           {windowLabel(slot.windowSecs)} {formatLabel(slot.format)}
         </span>
       </header>
 
-      <h3 className="relative mt-3 text-[18px] font-semibold leading-snug tracking-tight text-zinc-100">
+      <h3 className="relative mt-2 text-[16px] font-semibold leading-snug tracking-tight text-zinc-100">
         {slot.label}
       </h3>
 
-      <div className="relative mt-3 flex items-center gap-2">
+      <div className="relative mt-1.5 flex items-center gap-2">
         {showLive ? (
           <>
             <span className="relative inline-flex h-[7px] w-[7px] shrink-0" aria-hidden>
               <span className="absolute inset-0 inline-flex animate-ping rounded-full bg-red-500 opacity-60" />
               <span className="relative inline-flex h-[7px] w-[7px] rounded-full bg-red-500" />
             </span>
-            <span className="text-[12px] font-bold uppercase tracking-[0.1em] text-red-400">
+            <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-red-400">
               live
             </span>
-            <span className="text-[13px] tabular-nums text-zinc-500">
+            <span className="text-[12px] tabular-nums text-zinc-500">
               · Closes in <CountdownTimer target={slot.closeTime} closedLabel="0:00" />
             </span>
           </>
         ) : resolved ? (
-          <span className="text-[13px] text-zinc-500">Resolved</span>
+          <span className="text-[12px] text-zinc-500">Resolved</span>
         ) : closed ? (
-          <span className="text-[13px] text-zinc-500">Settling</span>
+          <span className="text-[12px] text-zinc-500">Settling</span>
         ) : (
-          <span className="text-[13px] tabular-nums text-zinc-500">
+          <span className="text-[12px] tabular-nums text-zinc-500">
             Closes in <CountdownTimer target={slot.closeTime} closedLabel="0:00" />
           </span>
         )}
       </div>
 
-      <div className="relative mt-3 flex flex-col">
+      <div className="relative mt-1.5 flex flex-col">
         <CompetitorRow
           side="yes"
           name={slot.displayA}
@@ -402,7 +406,7 @@ export function MarketRow({ slot, state, selected, selectedSide, onSelectSide }:
         />
       </div>
 
-      <footer className="relative mt-4 flex items-center justify-between gap-3 border-t border-zinc-800/60 pt-3 text-[12px] text-zinc-500">
+      <footer className="relative mt-2 flex items-center justify-between gap-3 pt-2 text-[11px] text-zinc-500">
         <span>
           <span className="tabular-nums text-zinc-300">${formatPoolFloat(totalPoolFloat)}</span> pool
         </span>

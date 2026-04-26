@@ -25,14 +25,17 @@ function Bar({ w, h, className = '' }: { w: number | string; h: number | string;
 
 function OutcomeButtonSkeleton() {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-lg border border-zinc-800 bg-zinc-900/70 px-4 py-3">
-      <span className="flex min-w-0 flex-col gap-2">
-        <Bar w={42} h={10} />
-        <Bar w={62} h={22} />
+    <div className="flex items-center justify-between gap-3 rounded-lg px-1.5 py-2">
+      <span className="flex items-center gap-3">
+        <Bar w={36} h={36} className="rounded-md" />
+        <span className="flex flex-col gap-1.5">
+          <Bar w={90} h={12} />
+          <Bar w={140} h={2} />
+        </span>
       </span>
-      <span className="flex flex-col items-end gap-1.5">
-        <Bar w={36} h={9} />
-        <Bar w={44} h={13} />
+      <span className="flex items-center gap-2">
+        <Bar w={40} h={28} className="rounded-md" />
+        <Bar w={60} h={28} className="rounded-full" />
       </span>
     </div>
   )
@@ -41,34 +44,33 @@ function OutcomeButtonSkeleton() {
 export function MarketRowSkeleton() {
   return (
     <article
-      className="rounded-xl border border-zinc-800 bg-[linear-gradient(180deg,rgb(24,24,27)_0%,rgb(20,20,23)_100%)] p-5"
+      className="rounded-xl border border-zinc-800 bg-[linear-gradient(180deg,rgb(24,24,27)_0%,rgb(20,20,23)_100%)] p-3 pl-4 sm:p-4 sm:pl-5"
       aria-hidden="true"
     >
       <header className="flex items-center justify-between gap-3">
         <span className="flex items-center gap-2">
-          <Bar w={16} h={16} className="rounded-full" />
-          <Bar w={70} h={12} />
-          <Bar w={48} h={11} />
+          <Bar w={24} h={24} className="rounded-md" />
+          <Bar w={70} h={11} />
         </span>
-        <span className="flex items-center gap-1.5">
-          <Bar w={48} h={11} />
-          <Bar w={56} h={11} />
-        </span>
+        <Bar w={70} h={11} />
       </header>
 
-      <div className="mt-3 flex flex-col gap-2">
-        <Bar w="75%" h={16} />
-        <Bar w="50%" h={16} />
+      <div className="mt-2">
+        <Bar w="65%" h={16} />
       </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+      <div className="mt-1.5">
+        <Bar w={120} h={11} />
+      </div>
+
+      <div className="mt-1.5 flex flex-col">
         <OutcomeButtonSkeleton />
         <OutcomeButtonSkeleton />
       </div>
 
-      <footer className="mt-4 flex items-center justify-between gap-3">
-        <Bar w={88} h={12} />
-        <Bar w={132} h={12} />
+      <footer className="mt-2 flex items-center justify-between gap-3 pt-2">
+        <Bar w={70} h={11} />
+        <Bar w={80} h={11} />
       </footer>
     </article>
   )
