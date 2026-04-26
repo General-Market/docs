@@ -330,10 +330,23 @@ class Pair:
     settle_delay_secs: int
     slug_a: str
     slug_b: str
+    audience_a: int = 0
+    audience_b: int = 0
 
     @property
     def threshold_bps(self) -> int:
         return self.pair_index
+
+    @property
+    def audience_prior_yes(self) -> float:
+        # Probability of betting side A ("yes"), clamped so the underdog
+        # side never starves. Without the clamp the heaviest favourites
+        # would attract every bet and the loser pool would round to zero.
+        total = self.audience_a + self.audience_b
+        if total <= 0:
+            return 0.5
+        raw = self.audience_a / total
+        return max(0.20, min(0.80, raw))
 
 
 def load_pairs(path: Path) -> list[Pair]:
@@ -349,6 +362,8 @@ def load_pairs(path: Path) -> list[Pair]:
                 settle_delay_secs=int(r["settle_delay_secs"]),
                 slug_a=str(r["slug_a"]),
                 slug_b=str(r["slug_b"]),
+                audience_a=int(r.get("audience_a", 0) or 0),
+                audience_b=int(r.get("audience_b", 0) or 0),
             )
         )
     if len(pairs) != 25:
@@ -662,7 +677,11 @@ def _random_bet(
     pair: Pair, now_secs: int, *, lo: float, hi: float
 ) -> tuple[int, int, int, str, int]:
     close, settle = cohort_for(pair, now_secs)
-    side = "yes" if random.random() < 0.5 else "no"
+    # Side selection follows the audience prior, not a coin flip. Uniform
+    # randomness over hundreds of bets per market drags every pool to
+    # 50/50 — every multiplier ends up at ~1.99×, and the board reads as
+    # a wall of indifference. Audience-weighted bets let the odds breathe.
+    side = "yes" if random.random() < pair.audience_prior_yes else "no"
     amount = _snap_amount(random.uniform(lo, hi))
     return close, settle, pair.threshold_bps, side, amount
 
