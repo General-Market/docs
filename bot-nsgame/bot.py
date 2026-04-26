@@ -601,24 +601,50 @@ async def ensure_sol(
     client: AsyncClient,
     bucket: TokenBucket,
     bot_pk: Pubkey,
+    admin_kp: Keypair | None = None,
 ) -> None:
     await bucket.take()
     bal = (await client.get_balance(bot_pk, commitment=Confirmed)).value
     if bal >= MIN_SOL_LAMPORTS:
         return
     now = time.time()
-    if now - state.last_airdrop_at < cfg.min_airdrop_interval:
+    if now - state.last_airdrop_at >= cfg.min_airdrop_interval:
+        log.info(
+            "[bot] sol balance %.4f. requesting airdrop.", bal / LAMPORTS_PER_SOL
+        )
+        ok = await request_airdrop(client, bucket, bot_pk, LAMPORTS_PER_SOL)
+        if ok:
+            state.last_airdrop_at = now
+            _save_state(cfg.state_path, state)
+            return
+    # Airdrops are capped (1/hr) and devnet drops often refuse outright.
+    # The admin keypair has been loaded specifically for USDC mint-to —
+    # reuse it as a SOL backstop. Each cohort instantiates ~10 market
+    # PDAs at ~0.002 SOL of rent each; a one-shot top-up keeps the bot
+    # alive until the next airdrop cooldown clears.
+    if admin_kp is None:
         log.warning(
-            "[bot] sol low (%.4f) but airdrop cooldown holds. waiting.",
+            "[bot] sol low (%.4f), airdrop on cooldown, no admin backstop.",
             bal / LAMPORTS_PER_SOL,
         )
         return
-    log.info(
-        "[bot] sol balance %.4f. requesting airdrop.", bal / LAMPORTS_PER_SOL
+    topup = LAMPORTS_PER_SOL  # 1 SOL — covers ~500 PDA instantiations
+    log.warning(
+        "[bot] sol low (%.4f). transferring %.2f SOL from admin.",
+        bal / LAMPORTS_PER_SOL,
+        topup / LAMPORTS_PER_SOL,
     )
-    ok = await request_airdrop(client, bucket, bot_pk, LAMPORTS_PER_SOL)
-    state.last_airdrop_at = now if ok else state.last_airdrop_at
-    _save_state(cfg.state_path, state)
+    try:
+        from solders.system_program import transfer, TransferParams
+        ix = transfer(TransferParams(
+            from_pubkey=admin_kp.pubkey(),
+            to_pubkey=bot_pk,
+            lamports=topup,
+        ))
+        sig = await _send_versioned_tx(client, bucket, admin_kp, [ix])
+        log.info("[bot] admin top-up sent. sig %s", str(sig)[:16])
+    except Exception as exc:
+        log.error("[bot] admin top-up failed: %s", repr(exc))
 
 
 async def usdc_balance_raw(
@@ -861,7 +887,7 @@ async def watchdog_loop(
     last_summary = 0.0
     while True:
         try:
-            await ensure_sol(cfg, state, client, bucket, bot_kp.pubkey())
+            await ensure_sol(cfg, state, client, bucket, bot_kp.pubkey(), admin_kp)
             await ensure_usdc(cfg, state, client, bucket, bot_kp, admin_kp)
             now = time.time()
             if now - last_summary >= SUMMARY_PERIOD:
