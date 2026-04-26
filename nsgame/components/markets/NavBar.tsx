@@ -6,6 +6,7 @@ import { useUnifiedWalletContext } from '@jup-ag/wallet-adapter'
 import { useWallet } from '@/hooks/useWallet'
 import { truncateAddress } from '@/lib/utils/address'
 import { SourceIcon } from './SourceIcon'
+import { NavBarDocsMenu } from './NavBarDocsMenu'
 import type { SourceFilter } from './FilterBar'
 
 // Top bar. A narrow logo, a horizontal strip of source tabs, a wallet
@@ -118,13 +119,7 @@ export function NavBar({
         ) : <div className="flex-1" />}
 
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-          <a
-            href="/help"
-            className="hidden h-9 items-center rounded-md border border-zinc-800 px-3 text-[12px] font-medium tracking-tight text-zinc-300 transition-colors hover:border-zinc-700 hover:bg-zinc-900 hover:text-zinc-100 sm:inline-flex"
-            aria-label="Open the documentation surface — terms, mechanics, trust, help"
-          >
-            Docs
-          </a>
+          <NavBarDocsMenu />
           {!mounted ? (
             <button
               disabled
