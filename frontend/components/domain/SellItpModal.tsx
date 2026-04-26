@@ -182,6 +182,19 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
   })
   const bridgedItpAllowance = (bridgedAllowanceRaw as bigint) ?? 0n
 
+  // Read L3 shares for diagnostics — if the user has L3 shares but no bridged
+  // shares, the bridging pipeline never finished and Sell would silently fail.
+  // Surface that mismatch instead of showing a bare zero.
+  const { data: l3SharesRaw } = useReadContract({
+    address: INDEX_PROTOCOL.index,
+    abi: INDEX_ABI,
+    functionName: 'getUserShares',
+    args: address ? [itpId as `0x${string}`, address] : undefined,
+    chainId: indexL3.id,
+    query: { enabled: !!address && !!itpId, refetchInterval: 5_000 },
+  })
+  const l3Shares = (l3SharesRaw as bigint) ?? 0n
+
   const { costBasis } = useItpCostBasis(itpId, address ?? null)
   const { navPerShare, navPerShareBn, totalAssetCount, pricedAssetCount, isLoading: isNavLoading } = useItpNav(itpId)
 
@@ -206,6 +219,18 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
   const parsedAmount = amount ? parseUnits(amount, 18) : 0n
   const insufficientShares = parsedAmount > 0n && parsedAmount > bridgedItpBalance
   const needsApproval = parsedAmount > 0n && bridgedItpAllowance < parsedAmount
+
+  // Diagnose why YOUR SHARES might be zero. The Sell modal can only burn
+  // BridgedITP on Settlement; L3-only shares can't be sold from here.
+  const sharesDiagnosis: string | null = (() => {
+    if (!address) return null
+    if (bridgedItpBalance > 0n) return null
+    if (!bridgedItpAddress) return 'No bridged token deployed for this ITP yet — buy through the buy flow once and the bridge will deploy it.'
+    if (l3Shares > 0n) {
+      return `You hold ${parseFloat(formatUnits(l3Shares, 18)).toFixed(4)} shares on L3 but none mirrored to Settlement. The bridge mint never landed — refresh, or buy a single share to nudge the pipeline.`
+    }
+    return 'You don\'t own shares of this ITP. Creating an ITP does not seed the creator — buy first.'
+  })()
 
   const handleApprove = useCallback(async () => {
     if (!amount || insufficientShares || !bridgedItpAddress) return
@@ -704,9 +729,14 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
             </div>
           ) : (
             <div className="space-y-2">
-              <div className={`${glass.section} p-3 flex justify-between items-center`}>
-                <span className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">{t('your_shares_label')}</span>
-                <span className="text-2xl font-bold text-text-primary tabular-nums font-mono">{parseFloat(formatUnits(bridgedItpBalance, 18)).toFixed(4)}</span>
+              <div className={`${glass.section} p-3`}>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">{t('your_shares_label')}</span>
+                  <span className="text-2xl font-bold text-text-primary tabular-nums font-mono">{parseFloat(formatUnits(bridgedItpBalance, 18)).toFixed(4)}</span>
+                </div>
+                {sharesDiagnosis && (
+                  <p className="text-xs text-color-down mt-2 leading-relaxed">{sharesDiagnosis}</p>
+                )}
               </div>
 
               <>
