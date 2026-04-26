@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import type { UpcomingSlot, MarketState } from '@/lib/markets/hooks.stub'
 import { useSourcePrice, payoutMultiplier, formatMultiplier } from '@/lib/markets/hooks'
 import { CountdownTimer, useNowSecs } from './CountdownTimer'
@@ -39,7 +39,7 @@ function formatChangeBp(bp: number | null): string {
   return `${sign}${bp} bp`
 }
 
-export function MarketCard({ slot, state, onSelect }: MarketCardProps) {
+function MarketCardImpl({ slot, state, onSelect }: MarketCardProps) {
   const yesPct = useMemo(() => computeYesPct(state), [state])
   const totalUsdc = useMemo(
     () => state ? formatUsdc(state.totalYes + state.totalNo) : null,
@@ -103,38 +103,38 @@ export function MarketCard({ slot, state, onSelect }: MarketCardProps) {
       type="button"
       onClick={() => onSelect(slot)}
       className={[
-        'group flex w-full flex-col gap-3 rounded-md border border-zinc-800 bg-zinc-900 p-3 text-left transition-all',
-        'hover:border-zinc-700 hover:bg-zinc-900/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-600',
+        'group flex w-full flex-col gap-3 rounded-md border border-terminal-border bg-terminal-surface p-3 text-left transition-all',
+        'hover:border-terminal-border-strong hover:bg-terminal-surface/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-terminal-border-strong',
         closed ? 'opacity-60' : '',
       ].join(' ')}
       aria-label={`Open bet sheet: ${slot.label}`}
     >
       <div className="flex items-start justify-between gap-2">
-        <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-zinc-500">
+        <span className="font-mono text-label uppercase tracking-[0.1em] text-terminal-fg-faint">
           {sourceShort}
         </span>
-        <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-zinc-500">
+        <span className="font-mono text-label uppercase tracking-[0.08em] text-terminal-fg-faint">
           <CountdownTimer target={slot.closeTime} closedLabel="closed" />
         </span>
       </div>
 
-      <p className="text-sm font-medium leading-snug text-zinc-100 line-clamp-3 min-h-[2.6em]">
+      <p className="text-body font-medium leading-snug text-terminal-fg line-clamp-3 min-h-[2.6em]">
         {slot.label}
       </p>
 
       <div
         className={[
-          'flex items-center justify-between font-mono text-[10px] rounded px-1.5 py-0.5 -mx-1.5 transition-colors duration-300',
+          'flex items-center justify-between font-mono text-label rounded px-1.5 py-0.5 -mx-1.5 transition-colors duration-300',
           priceFlash === 'up' ? 'bg-emerald-500/10' : priceFlash === 'down' ? 'bg-rose-500/10' : 'bg-transparent',
         ].join(' ')}
       >
-        <span className="text-zinc-400">
-          {sourceShort}: <span className="text-zinc-100">{price.raw === null ? '—' : price.display}</span>
+        <span className="text-terminal-fg-muted">
+          {sourceShort}: <span className="text-terminal-fg">{price.raw === null ? '—' : price.display}</span>
         </span>
         <span
           className={
             price.changeBp === null || price.changeBp === 0
-              ? 'text-zinc-600'
+              ? 'text-terminal-fg-faint'
               : price.changeBp > 0
                 ? 'text-emerald-300'
                 : 'text-rose-300'
@@ -145,17 +145,17 @@ export function MarketCard({ slot, state, onSelect }: MarketCardProps) {
       </div>
 
       {yesPct === null ? (
-        <div className="flex items-center justify-between text-[11px] text-zinc-500">
+        <div className="flex items-center justify-between text-label text-terminal-fg-faint">
           <span className="font-mono uppercase tracking-[0.08em]">no pool yet</span>
-          <span className="text-zinc-300 group-hover:text-zinc-100">make first bet →</span>
+          <span className="text-terminal-fg-muted group-hover:text-terminal-fg">make first bet →</span>
         </div>
       ) : (
         <div className="space-y-1.5">
-          <div className="flex items-center justify-between text-[11px] font-mono">
+          <div className="flex items-center justify-between text-label font-mono">
             <span className="text-emerald-300">YES {yesPct.toFixed(0)}%</span>
             <span className="text-rose-300">NO {(100 - yesPct).toFixed(0)}%</span>
           </div>
-          <div className="flex h-1.5 overflow-hidden rounded-full bg-zinc-800">
+          <div className="flex h-1.5 overflow-hidden rounded-full bg-terminal-border">
             <span
               className="block h-full bg-emerald-500"
               style={{ width: `${yesPct}%` }}
@@ -169,22 +169,24 @@ export function MarketCard({ slot, state, onSelect }: MarketCardProps) {
           </div>
           <div
             className={[
-              'flex items-center justify-between rounded px-1.5 py-0.5 -mx-1.5 font-mono text-[10px] transition-colors duration-300',
+              'flex items-center justify-between rounded px-1.5 py-0.5 -mx-1.5 font-mono text-label transition-colors duration-300',
               poolFlash === 'up' ? 'bg-emerald-500/10' : poolFlash === 'down' ? 'bg-rose-500/10' : 'bg-transparent',
             ].join(' ')}
           >
             {oneSided ? (
-              <span className="italic text-zinc-500">refund · no opposing side</span>
+              <span className="italic text-terminal-fg-faint">refund · no opposing side</span>
             ) : (
-              <span className="text-zinc-300">
+              <span className="text-terminal-fg-muted">
                 <span className="text-emerald-300">{formatMultiplier(yesMult)}</span> yes{' '}
                 <span className="text-rose-300">{formatMultiplier(noMult)}</span> no
               </span>
             )}
-            <span className="text-zinc-500">pool {totalUsdc} USDC</span>
+            <span className="text-terminal-fg-faint">pool {totalUsdc} USDC</span>
           </div>
         </div>
       )}
     </button>
   )
 }
+
+export const MarketCard = memo(MarketCardImpl)

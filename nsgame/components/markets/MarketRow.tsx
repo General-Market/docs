@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import type { UpcomingSlot, MarketState } from '@/lib/markets/hooks'
 import {
   windowLabel,
@@ -29,6 +29,13 @@ export interface MarketRowProps {
 
 const USDC_DECIMALS = 6
 const FLASH_MS = 700
+
+// One gradient. Three border/shadow dressings. Selected, live-cam, default.
+const CARD_GRADIENT = 'bg-[linear-gradient(180deg,rgb(24,24,27)_0%,rgb(20,20,23)_100%)]'
+const CARD_GRADIENT_SELECTED = 'bg-[linear-gradient(180deg,rgb(28,28,32)_0%,rgb(20,20,23)_100%)]'
+const CARD_SURFACE_SELECTED = `${CARD_GRADIENT_SELECTED} border-terminal-border-strong shadow-[0_0_0_1px_rgb(82_82_91/0.4),0_12px_28px_-12px_rgb(0_0_0/0.7)]`
+const CARD_SURFACE_LIVECAM = `${CARD_GRADIENT} border-red-500/30 hover:border-red-500/50 hover:shadow-[0_8px_24px_-12px_rgb(244_63_94/0.4)]`
+const CARD_SURFACE_DEFAULT = `${CARD_GRADIENT} border-terminal-border hover:border-terminal-border-strong hover:shadow-[0_8px_24px_-12px_rgb(0_0_0/0.7)]`
 
 function poolUnitsToFloat(units: bigint): number {
   if (units === 0n) return 0
@@ -99,6 +106,8 @@ function Avatar({
       <img
         src={`/models/${slug}.jpg`}
         alt=""
+        width={36}
+        height={36}
         loading="lazy"
         decoding="async"
         className="h-full w-full object-cover"
@@ -118,7 +127,7 @@ function Avatar({
         }}
       />
       <span
-        className="absolute inset-0 hidden items-center justify-center bg-zinc-800 text-[13px] font-semibold tracking-tight text-zinc-300"
+        className="absolute inset-0 hidden items-center justify-center bg-terminal-surface-elevated text-body font-semibold tracking-tight text-terminal-fg-muted"
       >
         {initials(name)}
       </span>
@@ -174,10 +183,10 @@ function CompetitorRow({
     : 'border-rose-400 bg-rose-500/20 text-rose-100 shadow-[0_0_0_1px_rgb(244_63_94/0.6)]'
 
   const rowSurface = active
-    ? 'bg-zinc-900/70'
+    ? 'bg-terminal-surface/70'
     : inactive
-      ? 'bg-transparent hover:bg-zinc-900/50'
-      : 'bg-transparent hover:bg-zinc-900/50'
+      ? 'bg-transparent hover:bg-terminal-surface/50'
+      : 'bg-transparent hover:bg-terminal-surface/50'
 
   const dim = resolved && isLoser
 
@@ -203,40 +212,43 @@ function CompetitorRow({
 
       <span className="flex min-w-0 flex-1 flex-col gap-1">
         <span className="flex items-center gap-2">
-          <span className="truncate text-[14px] font-semibold leading-tight tracking-tight text-zinc-100">
+          <span className="truncate text-body font-semibold leading-tight tracking-tight text-terminal-fg">
             {name}
           </span>
           {resolved && isWinner ? (
-            <span className="inline-flex shrink-0 items-center rounded bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.1em] text-emerald-300">
+            <span className="inline-flex shrink-0 items-center rounded bg-emerald-500/20 px-1.5 py-0.5 text-label font-medium uppercase tracking-[0.1em] text-emerald-300">
               won
             </span>
           ) : null}
         </span>
-        <span aria-hidden className="relative block h-[2px] w-full overflow-hidden rounded-full bg-zinc-800/70">
+        <span aria-hidden className="relative block h-[2px] w-full overflow-hidden rounded-full bg-terminal-border/70">
           <span
             className={[
-              'absolute left-0 top-0 h-full rounded-full transition-[width] duration-500 ease-out',
+              'absolute left-0 top-0 h-full w-full origin-left rounded-full transition-transform duration-500 ease-out',
               lineColor,
               dim ? 'opacity-30' : '',
             ].join(' ')}
-            style={{ width: `${Math.max(2, Math.min(100, pct))}%` }}
+            style={{ transform: `scaleX(${Math.max(0.02, Math.min(1, pct / 100))})` }}
           />
+        </span>
+        <span className="text-caption text-terminal-fg-muted sm:hidden">
+          {compactAudience(audience)}
         </span>
       </span>
 
-      <span className="hidden shrink-0 sm:inline-flex h-8 min-w-[40px] items-center justify-center rounded-md border border-zinc-700 bg-transparent px-2 text-[12px] font-medium tabular-nums text-zinc-200">
+      <span className="hidden shrink-0 sm:inline-flex h-8 min-w-[40px] items-center justify-center rounded-md border border-terminal-border-strong bg-transparent px-2 text-caption font-medium tabular-nums text-terminal-fg">
         {compactAudience(audience)}
       </span>
 
       {oneSidedRefund || refund ? (
-        <span className="ml-auto inline-flex h-8 min-w-[60px] items-center justify-center rounded-full border-2 border-zinc-700 px-3 text-[11px] italic text-zinc-500">
+        <span className="ml-auto inline-flex h-8 min-w-[60px] items-center justify-center rounded-full border-2 border-terminal-border-strong px-3 text-label italic text-terminal-fg-faint">
           refund
         </span>
       ) : (
         <span className="ml-auto flex shrink-0 items-center">
           <span
             className={[
-              'inline-flex h-8 min-w-[64px] items-center justify-center rounded-full border-2 px-3 text-[14px] font-semibold tabular-nums tracking-tight transition-colors duration-150',
+              'inline-flex h-8 min-w-[64px] items-center justify-center rounded-full border-2 px-3 text-body font-semibold tabular-nums tracking-tight transition-colors duration-150',
               active ? pillActive : pillBase,
             ].join(' ')}
           >
@@ -251,7 +263,7 @@ function CompetitorRow({
   )
 }
 
-export function MarketRow({ slot, state, selected, selectedSide, onSelectSide }: MarketRowProps) {
+function MarketRowImpl({ slot, state, selected, selectedSide, onSelectSide }: MarketRowProps) {
   const yesPct = useMemo(
     () => deriveYesPct(state, slot.audienceA, slot.audienceB),
     [state, slot.audienceA, slot.audienceB],
@@ -293,18 +305,18 @@ export function MarketRow({ slot, state, selected, selectedSide, onSelectSide }:
 
   // Cams (live cams) wear a red side rail. Stars get amber. Resolved fades.
   const accentRail = resolved
-    ? 'before:bg-zinc-700'
+    ? 'before:bg-terminal-border-strong'
     : isLiveCam
       ? 'before:bg-red-500'
       : slot.board === 'stars'
         ? 'before:bg-amber-400/80'
-        : 'before:bg-zinc-700'
+        : 'before:bg-terminal-border-strong'
 
   const cardSurface = selected
-    ? 'bg-[linear-gradient(180deg,rgb(28,28,32)_0%,rgb(20,20,23)_100%)] border-zinc-600 shadow-[0_0_0_1px_rgb(82_82_91/0.4),0_12px_28px_-12px_rgb(0_0_0/0.7)]'
+    ? CARD_SURFACE_SELECTED
     : isLiveCam
-      ? 'bg-[linear-gradient(180deg,rgb(24,24,27)_0%,rgb(20,20,23)_100%)] border-red-500/30 hover:border-red-500/50 hover:shadow-[0_8px_24px_-12px_rgb(244_63_94/0.4)]'
-      : 'bg-[linear-gradient(180deg,rgb(24,24,27)_0%,rgb(20,20,23)_100%)] border-zinc-800 hover:border-zinc-700 hover:shadow-[0_8px_24px_-12px_rgb(0_0_0/0.7)]'
+      ? CARD_SURFACE_LIVECAM
+      : CARD_SURFACE_DEFAULT
 
   const cardFlash =
     poolFlash === 'up' ? 'after:bg-emerald-500/10'
@@ -324,7 +336,7 @@ export function MarketRow({ slot, state, selected, selectedSide, onSelectSide }:
     <article
       className={[
         'relative overflow-hidden rounded-xl border p-3 pl-4 sm:p-4 sm:pl-5',
-        'transition-[box-shadow,border-color,transform] duration-300 ease-out',
+        'transition-[border-color,transform] duration-300 ease-out',
         'before:absolute before:inset-y-2 before:left-0 before:w-[2px] before:rounded-r-full before:opacity-90',
         'after:pointer-events-none after:absolute after:inset-0 after:rounded-xl after:transition-[background] after:duration-700 after:ease-out',
         accentRail,
@@ -338,22 +350,22 @@ export function MarketRow({ slot, state, selected, selectedSide, onSelectSide }:
           {sourceIconId ? (
             <SourceIcon sourceId={sourceIconId} className="h-6 w-6 rounded-md" />
           ) : null}
-          <span className="truncate text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-100">
+          <span className="truncate text-label font-semibold uppercase tracking-[0.12em] text-terminal-fg">
             {sourceLbl}
           </span>
         </span>
 
-        <span className="shrink-0 text-[12px] text-zinc-500">
+        <span className="shrink-0 text-caption text-terminal-fg-faint">
           {windowLabel(slot.windowSecs)} {formatLabel(slot.format)}
         </span>
       </header>
 
-      <h3 className="relative mt-2 text-[16px] font-semibold leading-snug tracking-tight text-zinc-100">
+      <h3 className="relative mt-2 text-base font-semibold leading-snug tracking-tight text-terminal-fg">
         {slot.label}
       </h3>
 
       {slot.hook ? (
-        <p className="relative mt-1 text-[12px] leading-snug text-zinc-500">
+        <p className="relative mt-1 text-caption leading-snug text-terminal-fg-faint">
           {slot.hook}
         </p>
       ) : null}
@@ -365,19 +377,19 @@ export function MarketRow({ slot, state, selected, selectedSide, onSelectSide }:
               <span className="absolute inset-0 inline-flex animate-ping rounded-full bg-red-500 opacity-60" />
               <span className="relative inline-flex h-[7px] w-[7px] rounded-full bg-red-500" />
             </span>
-            <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-red-400">
+            <span className="text-label font-bold uppercase tracking-[0.1em] text-red-400">
               live
             </span>
-            <span className="text-[12px] tabular-nums text-zinc-500">
+            <span className="text-caption tabular-nums text-terminal-fg-faint">
               · Closes in <CountdownTimer target={slot.closeTime} closedLabel="0:00" />
             </span>
           </>
         ) : resolved ? (
-          <span className="text-[12px] text-zinc-500">Resolved</span>
+          <span className="text-caption text-terminal-fg-faint">Resolved</span>
         ) : closed ? (
-          <span className="text-[12px] text-zinc-500">Settling</span>
+          <span className="text-caption text-terminal-fg-faint">Settling</span>
         ) : (
-          <span className="text-[12px] tabular-nums text-zinc-500">
+          <span className="text-caption tabular-nums text-terminal-fg-faint">
             Closes in <CountdownTimer target={slot.closeTime} closedLabel="0:00" />
           </span>
         )}
@@ -422,14 +434,18 @@ export function MarketRow({ slot, state, selected, selectedSide, onSelectSide }:
         />
       </div>
 
-      <footer className="relative mt-2 flex items-center justify-between gap-3 pt-2 text-[11px] text-zinc-500">
+      <footer className="relative mt-2 flex items-center justify-between gap-3 pt-2 text-label text-terminal-fg-faint">
         <span>
-          <span className="tabular-nums text-zinc-300">${formatPoolFloat(totalPoolFloat)}</span> pool
+          <span className="tabular-nums text-terminal-fg-muted">${formatPoolFloat(totalPoolFloat)}</span> pool
         </span>
         {!resolved && !closed ? (
-          <span className="text-zinc-600">{windowLabel(slot.windowSecs)} window</span>
+          <span className="text-terminal-fg-faint">{windowLabel(slot.windowSecs)} window</span>
         ) : null}
       </footer>
     </article>
   )
 }
+
+// Memoised. Props are primitives, refs, or stable references handed
+// down by MarketList — the parent already pins onSelectSide upstream.
+export const MarketRow = memo(MarketRowImpl)

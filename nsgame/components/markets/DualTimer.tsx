@@ -64,50 +64,50 @@ export function DualTimer({
   return (
     <div className={['space-y-2', className].join(' ')}>
       <div className="space-y-1">
-        <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.1em]">
-          <span className="text-zinc-500">closes  in</span>
+        <div className="flex items-center justify-between font-mono text-label uppercase tracking-[0.1em]">
+          <span className="text-terminal-fg-faint">closes  in</span>
           <span
             className={[
               'tabular-nums',
-              closed ? 'text-zinc-600' : 'text-zinc-300',
+              closed ? 'text-terminal-fg-faint' : 'text-terminal-fg-muted',
             ].join(' ')}
             suppressHydrationWarning
           >
             {closeText}
           </span>
         </div>
-        <div className="h-[2px] w-full overflow-hidden rounded-full bg-zinc-800">
+        <div className="h-[2px] w-full overflow-hidden rounded-full bg-terminal-border">
           <div
             className={[
-              'h-full transition-[width] duration-1000 ease-linear',
-              closed ? 'bg-zinc-700' : 'bg-amber-400',
+              'h-full w-full origin-left transition-transform duration-1000 ease-linear',
+              closed ? 'bg-terminal-border-strong' : 'bg-amber-400',
             ].join(' ')}
-            style={{ width: `${closePct}%` }}
+            style={{ transform: `scaleX(${Math.max(0, Math.min(1, closePct / 100))})` }}
             aria-hidden
           />
         </div>
       </div>
 
       <div className="space-y-1">
-        <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.1em]">
-          <span className="text-zinc-500">settles in</span>
+        <div className="flex items-center justify-between font-mono text-label uppercase tracking-[0.1em]">
+          <span className="text-terminal-fg-faint">settles in</span>
           <span
             className={[
               'tabular-nums',
-              settled ? 'text-zinc-600' : 'text-zinc-300',
+              settled ? 'text-terminal-fg-faint' : 'text-terminal-fg-muted',
             ].join(' ')}
             suppressHydrationWarning
           >
             {settleText}
           </span>
         </div>
-        <div className="h-[2px] w-full overflow-hidden rounded-full bg-zinc-800">
+        <div className="h-[2px] w-full overflow-hidden rounded-full bg-terminal-border">
           <div
             className={[
-              'h-full transition-[width] duration-1000 ease-linear',
-              settled ? 'bg-zinc-700' : closed ? 'bg-amber-400' : 'bg-zinc-700',
+              'h-full w-full origin-left transition-transform duration-1000 ease-linear',
+              settled ? 'bg-terminal-border-strong' : closed ? 'bg-amber-400' : 'bg-terminal-border-strong',
             ].join(' ')}
-            style={{ width: `${settlePct}%` }}
+            style={{ transform: `scaleX(${Math.max(0, Math.min(1, settlePct / 100))})` }}
             aria-hidden
           />
         </div>
