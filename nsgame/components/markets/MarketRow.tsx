@@ -141,6 +141,7 @@ interface CompetitorRowProps {
   refund: boolean
   oneSidedRefund: boolean
   profileHref: string
+  showAvatar: boolean
   onClick: () => void
 }
 
@@ -159,6 +160,7 @@ function CompetitorRow({
   refund,
   oneSidedRefund,
   profileHref,
+  showAvatar,
   onClick,
 }: CompetitorRowProps) {
   const yes = side === 'yes'
@@ -195,7 +197,9 @@ function CompetitorRow({
         dim ? 'opacity-60' : '',
       ].join(' ')}
     >
-      <Avatar slug={slug} name={name} side={side} dim={dim} profileHref={profileHref} />
+      {showAvatar ? (
+        <Avatar slug={slug} name={name} side={side} dim={dim} profileHref={profileHref} />
+      ) : null}
 
       <span className="flex min-w-0 flex-1 flex-col gap-1">
         <span className="flex items-center gap-2">
@@ -389,6 +393,7 @@ export function MarketRow({ slot, state, selected, selectedSide, onSelectSide }:
           refund={refund}
           oneSidedRefund={oneSided && state?.totalYes === 0n}
           profileHref={profileUrl(slot.sourceId, slot.slugA)}
+          showAvatar={slot.sourceId !== 4}
           onClick={() => onSelectSide(slot, 'yes')}
         />
         <CompetitorRow
@@ -406,6 +411,7 @@ export function MarketRow({ slot, state, selected, selectedSide, onSelectSide }:
           refund={refund}
           oneSidedRefund={oneSided && state?.totalNo === 0n}
           profileHref={profileUrl(slot.sourceId, slot.slugB)}
+          showAvatar={slot.sourceId !== 4}
           onClick={() => onSelectSide(slot, 'no')}
         />
       </div>
