@@ -11,8 +11,8 @@ import { SourceIcon } from './SourceIcon'
 // because it is a feed and not a dashboard.
 
 const USDC_DECIMALS = 6
-const MAX_DESKTOP = 10
-const MAX_COMPACT = 5
+const MAX_DESKTOP = 4
+const MAX_COMPACT = 4
 
 function formatUsdc(units: bigint | undefined): string {
   if (units === undefined) return '—'

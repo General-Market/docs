@@ -9,6 +9,9 @@ import {
   useResolvedSlots,
   useSettlingSlots,
 } from '@/lib/markets/hooks'
+import { useUserPositions, type UserPosition } from '@/lib/markets/positions'
+import { useWallet } from '@/hooks/useWallet'
+import { getCatalogEntryByPairIndex } from '@/lib/markets/catalog'
 import { MarketRow, type Side } from './MarketRow'
 import { MarketRowSkeleton } from './MarketRowSkeleton'
 import { CountdownTickProvider, useNowSecs } from './CountdownTimer'
@@ -59,9 +62,19 @@ function MarketListInner({
   const wantsLive = status === 'live'
   const wantsSettling = status === 'settling'
   const wantsResolved = status === 'resolved'
+  const wantsPositions = status === 'positions'
 
   const settling = useSettlingSlots({ limit: 60, board })
   const resolved = useResolvedSlots({ limit: 60, board })
+
+  // Positions are derived from the connected wallet's bet history. Only
+  // the rows where the user has skin survive the filter.
+  const { address } = useWallet()
+  const { positions, loading: positionsLoading } = useUserPositions(wantsPositions ? address : null)
+  const positionRows = useMemo<{ slots: UpcomingSlot[]; states: Record<string, MarketState | null> }>(() => {
+    if (!wantsPositions) return { slots: EMPTY_SLOTS, states: EMPTY_STATES }
+    return positionsToSlots(positions, board)
+  }, [wantsPositions, positions, board])
 
   const settlingSlots = wantsSettling ? settling.slots : EMPTY_SLOTS
   const settlingStates = wantsSettling ? settling.states : EMPTY_STATES
@@ -77,17 +90,21 @@ function MarketListInner({
   const now = useNowSecs()
 
   // One status, one source. Live = forward catalog pruned to open windows;
-  // Settling = indexer settling feed; Resolved = indexer resolved feed.
+  // Settling = indexer settling feed; Resolved = indexer resolved feed;
+  // Positions = the wallet's slice across all of the above.
   const filteredSlots = useMemo<UpcomingSlot[]>(() => {
     if (wantsSettling) return settlingSlots
     if (wantsResolved) return resolvedSlots
+    if (wantsPositions) return positionRows.slots
     // live: forward cohort with close still ahead.
     return upcomingSlots.filter(s => now <= 0 || s.closeTime > now)
   }, [
     wantsSettling,
     wantsResolved,
+    wantsPositions,
     settlingSlots,
     resolvedSlots,
+    positionRows.slots,
     upcomingSlots,
     now,
   ])
@@ -95,9 +112,10 @@ function MarketListInner({
   // Merged state map — indexer-sourced rows take precedence over the
   // chain decode (the indexer has the canonical resolved/final values).
   const stateMap = useMemo<Record<string, MarketState | null>>(() => {
+    if (wantsPositions) return { ...upcomingStateMap, ...positionRows.states }
     if (!wantsSettling && !wantsResolved) return upcomingStateMap
     return { ...upcomingStateMap, ...settlingStates, ...resolvedStates }
-  }, [upcomingStateMap, settlingStates, resolvedStates, wantsSettling, wantsResolved])
+  }, [upcomingStateMap, settlingStates, resolvedStates, positionRows.states, wantsSettling, wantsResolved, wantsPositions])
 
   // Lift the *forward* slot universe so the sidebar's per-board counts
   // don't lurch when the user flips the resolved checkbox. Counts read
@@ -149,14 +167,30 @@ function MarketListInner({
     )
   }
 
+  if (wantsPositions && positionsLoading && positionRows.slots.length === 0) {
+    return (
+      <section aria-label="Markets" className="min-w-0">
+        <div className="space-y-2">
+          {Array.from({ length: SKELETON_COUNT }).map((_, i) => (
+            <MarketRowSkeleton key={i} />
+          ))}
+        </div>
+      </section>
+    )
+  }
+
   if (filteredSlots.length === 0) {
     const text = wantsSettling
       ? 'Nothing waiting. Every closed window has been answered.'
       : wantsResolved
         ? 'Nothing has settled yet. Come back after the next window.'
-        : upcomingSlots.length === 0
-          ? 'No markets here. Try a wider source.'
-          : 'No markets match the current filter.'
+        : wantsPositions
+          ? address
+            ? 'No positions yet. Place a bet — the ledger starts empty.'
+            : 'Connect a wallet to see your positions.'
+          : upcomingSlots.length === 0
+            ? 'No markets here. Try a wider source.'
+            : 'No markets match the current filter.'
     return (
       <section aria-label="Markets" className="min-w-0">
         <EmptyState text={text} />
@@ -186,6 +220,84 @@ function MarketListInner({
 // the upstream memo doesn't churn on every render.
 const EMPTY_SLOTS: UpcomingSlot[] = []
 const EMPTY_STATES: Record<string, MarketState | null> = {}
+
+// Map the wallet's positions onto MarketRow's slot/state shape so the
+// central column can render them with the same chrome the live feed
+// uses. Resolved positions carry a synthetic state with the outcome
+// flipped in; open ones leave state null and the row falls back to its
+// audience prior.
+function positionsToSlots(
+  positions: ReadonlyArray<UserPosition>,
+  board: BoardFilter,
+): { slots: UpcomingSlot[]; states: Record<string, MarketState | null> } {
+  const slots: UpcomingSlot[] = []
+  const states: Record<string, MarketState | null> = {}
+
+  for (const p of positions) {
+    const entry = getCatalogEntryByPairIndex(p.thresholdBps)
+    if (!entry) continue
+    if (board !== 'all' && entry.board !== board) continue
+
+    slots.push({
+      catalogId: entry.id,
+      sourceId: entry.sourceId,
+      sourceName: entry.sourceName,
+      label: entry.label,
+      description: entry.description,
+      thresholdBps: entry.thresholdBps,
+      pairIndex: entry.pairIndex,
+      board: entry.board,
+      format: entry.format,
+      displayA: entry.displayA,
+      displayB: entry.displayB,
+      slugA: entry.slugA,
+      slugB: entry.slugB,
+      audienceA: entry.audienceA,
+      audienceB: entry.audienceB,
+      windowSecs: entry.windowSecs,
+      closeTime: p.closeTime,
+      settlementTime: p.settlementTime,
+      marketPda: p.market,
+    })
+
+    const isResolved =
+      p.state === 'resolved-won' ||
+      p.state === 'resolved-lost' ||
+      p.state === 'claimed-won' ||
+      p.state === 'claimed-lost' ||
+      p.state === 'stranded-refund'
+
+    if (isResolved) {
+      // outcomeYes follows the user's bet outcome — won on YES means
+      // YES is the winning side, and so on. Refund leaves it null.
+      const won = p.state === 'resolved-won' || p.state === 'claimed-won'
+      const refund = p.state === 'stranded-refund'
+      const outcomeYes = refund
+        ? null
+        : (p.side === 'yes' ? won : !won)
+
+      states[p.market] = {
+        // Pool sums aren't carried on the position — leave them at the
+        // bet amount as a floor. The MarketRow only needs them for the
+        // tape footer; the row's main signals come from `resolved` and
+        // `outcomeYes`.
+        totalYes: p.side === 'yes' ? p.amount : 0n,
+        totalNo: p.side === 'no' ? p.amount : 0n,
+        resolved: true,
+        outcomeYes,
+        baselinePrice: p.baselinePrice,
+        finalPrice: p.finalPrice,
+      }
+    } else {
+      // open / settling — let the chain-decode batch fill it in.
+      states[p.market] = null
+    }
+  }
+
+  // Newest first — match the resolved/settling feeds.
+  slots.sort((a, b) => b.closeTime - a.closeTime)
+  return { slots, states }
+}
 
 // Fade rows in once. A double-RAF flips opacity 0 → 1 after the browser
 // has committed the initial paint — without it the transition collapses

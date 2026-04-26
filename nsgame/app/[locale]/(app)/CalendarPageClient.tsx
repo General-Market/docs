@@ -10,6 +10,7 @@ import { MobileMenu } from '@/components/markets/MobileMenu'
 import { BottomNav } from '@/components/markets/BottomNav'
 import { MarketTeaserSidebar } from '@/components/markets/MarketTeaserSidebar'
 import { LastTradesTable } from '@/components/markets/LastTradesTable'
+import { HomepageLeaderboard } from '@/components/markets/HomepageLeaderboard'
 import { MyPositionsModal } from '@/components/markets/MyPositionsModal'
 import type { BoardFilter } from '@/components/markets/FilterBar'
 import type { Side } from '@/components/markets/MarketRow'
@@ -108,15 +109,15 @@ export function CalendarPageClient() {
 
       <MyPositionsModal open={positionsOpen} onClose={closePositions} />
 
-      <div className="xl:grid xl:grid-cols-[260px_minmax(0,1fr)_260px] xl:items-start xl:gap-0">
+      <div className="lg:flex lg:items-start lg:justify-center lg:gap-6 lg:px-4 lg:py-8">
         <MarketTeaserSidebar
           slots={allSlots}
           side="left"
           onSelect={handleTeaserSelect}
         />
 
-        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 xl:mx-0 xl:max-w-none xl:px-4">
-          <div className={['grid gap-6 py-6 sm:py-8 xl:py-8', gridCols].join(' ')}>
+        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:mx-0 lg:px-0">
+          <div className={['grid gap-6 py-6 sm:py-8 lg:py-0', gridCols].join(' ')}>
             <CategorySidebar
               board={board}
               status={status}
@@ -156,8 +157,13 @@ export function CalendarPageClient() {
 
       {/* Network-wide trade ticker. Closes the page — the markets list
           comes first, the receipts come after. */}
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 pb-8 sm:pb-12">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 pb-8 sm:pb-10">
         <LastTradesTable />
+      </div>
+
+      {/* Leaderboard. Last word on the page — who actually printed. */}
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 pb-12 sm:pb-16">
+        <HomepageLeaderboard />
       </div>
 
       {/* Mobile bottom sheet for the bet ticket */}

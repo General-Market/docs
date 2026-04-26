@@ -16,7 +16,7 @@ const BOARDS: Array<{ id: BoardFilter; label: string; sub: string }> = [
   { id: 'cams', label: 'cams', sub: '2m gain / total' },
 ]
 
-export type StatusFilter = 'live' | 'settling' | 'resolved'
+export type StatusFilter = 'live' | 'settling' | 'resolved' | 'positions'
 
 const STATUSES: ReadonlyArray<{ id: StatusFilter; label: string }> = [
   { id: 'live', label: 'Live' },
@@ -83,7 +83,24 @@ export function CategorySidebar({
     >
       {!hideWidgets ? <GlobalActivity /> : null}
 
-      {onOpenPositions ? <PositionsButton onOpen={onOpenPositions} /> : null}
+      <PositionsButton
+        active={status === 'positions'}
+        onOpen={() => onStatusChange('positions')}
+        onOpenModal={onOpenPositions}
+      />
+
+      {/* Tiny escape hatch back to the live grid when the user is
+          parked on positions and wants to return. The pill row only
+          renders three of the four states. */}
+      {status === 'positions' ? (
+        <button
+          type="button"
+          onClick={() => onStatusChange('live')}
+          className="-mt-4 px-3 font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500 hover:text-zinc-300"
+        >
+          ← back to live
+        </button>
+      ) : null}
 
       <div>
         <p className={sectionLabelClasses()}>Status</p>
@@ -166,9 +183,18 @@ function StatusPillRow({
   )
 }
 
-// Positions trigger. A single line that opens the full ledger in a
-// modal — the side panel had to die so the central UI could breathe.
-function PositionsButton({ onOpen }: { onOpen: () => void }) {
+// Positions trigger. Switches the central list into a positions-only
+// view — same row format as Settling / Resolved. On mobile the modal
+// trigger still fires for the bottom-sheet experience.
+interface PositionsButtonProps {
+  active: boolean
+  /** Switch the list into positions view (desktop). */
+  onOpen: () => void
+  /** Open the modal (mobile). */
+  onOpenModal?: () => void
+}
+
+function PositionsButton({ active, onOpen, onOpenModal }: PositionsButtonProps) {
   const { address } = useWallet()
   const { positions } = useUserPositions(address)
 
@@ -177,26 +203,74 @@ function PositionsButton({ onOpen }: { onOpen: () => void }) {
   const open = positions.filter(p => p.state === 'open').length
   const settling = positions.filter(p => p.state === 'settling').length
   const won = positions.filter(p => p.state === 'resolved-won' || p.state === 'claimed-won').length
+  const total = positions.length
 
-  const summary = positions.length === 0
-    ? 'no positions yet'
-    : `${open} open · ${settling} settling · ${won} won`
+  const handleClick = () => {
+    onOpen()
+    // Mobile: also open the modal so users without a sidebar see the
+    // ledger. Desktop is unaffected — the list re-renders inline.
+    if (typeof window !== 'undefined' && window.matchMedia('(max-width: 1023px)').matches) {
+      onOpenModal?.()
+    }
+  }
 
   return (
     <button
       type="button"
-      onClick={onOpen}
-      className="group flex w-full items-center justify-between gap-2 rounded-md border border-zinc-800 bg-zinc-900 px-3 py-2.5 text-left transition-colors hover:border-zinc-700 hover:bg-zinc-900/80"
+      onClick={handleClick}
+      aria-pressed={active}
+      className={[
+        'group relative flex w-full items-center gap-3 overflow-hidden rounded-lg border px-3 py-3 text-left transition-all duration-150',
+        active
+          ? 'border-sky-400/50 bg-gradient-to-br from-sky-500/15 via-sky-500/5 to-transparent shadow-[0_0_0_1px_rgb(56_189_248/0.25),0_8px_24px_-12px_rgb(56_189_248/0.4)]'
+          : 'border-zinc-800 bg-zinc-900/80 hover:border-sky-500/40 hover:bg-zinc-900',
+      ].join(' ')}
     >
-      <span className="flex flex-col items-start gap-0.5">
-        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500 group-hover:text-zinc-400">
+      <span
+        className={[
+          'flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[14px] font-bold tabular-nums',
+          active
+            ? 'bg-sky-400 text-sky-950'
+            : 'bg-zinc-800 text-zinc-300 group-hover:bg-sky-400 group-hover:text-sky-950',
+        ].join(' ')}
+        aria-hidden
+      >
+        {total}
+      </span>
+
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span
+          className={[
+            'font-mono text-[10px] font-semibold uppercase tracking-[0.16em]',
+            active ? 'text-sky-200' : 'text-zinc-400 group-hover:text-zinc-200',
+          ].join(' ')}
+        >
           my positions
         </span>
-        <span className="font-mono text-[11px] tabular-nums text-zinc-200">
-          {summary}
+        <span className="flex items-center gap-1.5 font-mono text-[10.5px] tabular-nums text-zinc-500">
+          {total === 0 ? (
+            <span>nothing yet</span>
+          ) : (
+            <>
+              <span className="text-emerald-300">{open}</span>
+              <span className="text-zinc-700">·</span>
+              <span className="text-amber-300">{settling}</span>
+              <span className="text-zinc-700">·</span>
+              <span className="text-zinc-300">{won}w</span>
+            </>
+          )}
         </span>
       </span>
-      <span aria-hidden className="font-mono text-[11px] text-zinc-500 group-hover:text-zinc-200">→</span>
+
+      <span
+        aria-hidden
+        className={[
+          'font-mono text-[12px] transition-transform duration-150',
+          active ? 'text-sky-300 translate-x-0.5' : 'text-zinc-600 group-hover:text-sky-300 group-hover:translate-x-0.5',
+        ].join(' ')}
+      >
+        →
+      </span>
     </button>
   )
 }

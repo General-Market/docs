@@ -224,7 +224,7 @@ export function MarketTeaserSidebar({
   return (
     <aside
       className={[
-        'w-[260px] shrink-0 hidden xl:block',
+        'w-[260px] shrink-0 hidden lg:block',
         className,
       ].join(' ')}
       aria-label={side === 'left' ? 'Featured fights — left' : 'Featured fights — right'}
