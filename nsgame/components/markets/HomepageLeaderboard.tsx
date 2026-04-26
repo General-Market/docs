@@ -54,16 +54,16 @@ export function HomepageLeaderboard({ className = '' }: HomepageLeaderboardProps
     <section className={className} aria-label="Leaderboard">
       <header className="mb-3 flex items-end justify-between gap-3">
         <div className="space-y-1">
-          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-500">
+          <p className="font-mono text-micro uppercase tracking-[0.18em] text-terminal-fg-faint">
             leaderboard · 7d
           </p>
-          <h2 className="text-[18px] font-semibold tracking-tight text-zinc-100">
+          <h2 className="text-title font-semibold tracking-tight text-terminal-fg">
             Profit, by wallet<span className="text-rose-500">.</span>
           </h2>
         </div>
         <Link
           href="/leaderboard"
-          className="font-mono text-[11px] uppercase tracking-[0.14em] text-zinc-500 transition-colors hover:text-zinc-200"
+          className="font-mono text-label uppercase tracking-[0.14em] text-terminal-fg-faint transition-colors hover:text-terminal-fg"
         >
           full board →
         </Link>

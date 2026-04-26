@@ -36,7 +36,7 @@ interface CacheEntry {
 }
 
 // Poll interval and cache TTL — fetch fires once per TTL window
-const POLL_MS = 500
+const POLL_MS = 2_000
 const CACHE_TTL_MS = 1_000
 
 // Module-level cache shared across hook instances
@@ -171,10 +171,48 @@ export function useItpOrderbook(
 
     doFetch()
 
-    const interval = setInterval(doFetch, POLL_MS)
+    // Visibility gating — pause polling while the tab is hidden, re-arm
+    // when it returns. Browsers throttle hidden intervals anyway; this
+    // makes the suspension explicit and stops a backlog of stale fetches
+    // from firing the moment the user returns.
+    let interval: ReturnType<typeof setInterval> | null = null
+
+    const start = () => {
+      if (interval !== null) return
+      interval = setInterval(doFetch, POLL_MS)
+    }
+    const stop = () => {
+      if (interval === null) return
+      clearInterval(interval)
+      interval = null
+    }
+
+    const onVisibility = () => {
+      if (typeof document === 'undefined') return
+      if (document.visibilityState === 'hidden') {
+        stop()
+      } else {
+        // Refresh immediately on return — the cached snapshot may be old.
+        doFetch()
+        start()
+      }
+    }
+
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+      // Don't arm the interval at all while hidden.
+    } else {
+      start()
+    }
+
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', onVisibility)
+    }
 
     return () => {
-      clearInterval(interval)
+      stop()
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', onVisibility)
+      }
       cancel()
     }
   }, [enabled, itpId, levels, aggregationBps, doFetch, cancel])

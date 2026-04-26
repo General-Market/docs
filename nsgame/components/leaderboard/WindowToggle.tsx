@@ -42,7 +42,7 @@ export function WindowToggle({ active }: WindowToggleProps) {
       role="tablist"
       aria-label="Time window"
       className={[
-        'inline-flex items-center gap-0.5 rounded-md border border-zinc-800 bg-zinc-900/60 p-0.5',
+        'inline-flex items-center gap-0.5 rounded-md border border-terminal-border bg-terminal-surface/60 p-0.5',
         pending ? 'opacity-70' : '',
       ].join(' ')}
     >
@@ -56,10 +56,10 @@ export function WindowToggle({ active }: WindowToggleProps) {
             type="button"
             onClick={() => setWindow(opt.id)}
             className={[
-              'inline-flex h-7 min-w-[44px] items-center justify-center rounded px-2 font-mono text-[11px] uppercase tracking-[0.1em] transition-colors',
+              'inline-flex h-9 min-w-[44px] items-center justify-center rounded px-2 font-mono text-label uppercase tracking-[0.1em] transition-colors',
               isActive
-                ? 'bg-zinc-100 text-zinc-950'
-                : 'text-zinc-400 hover:text-zinc-100',
+                ? 'bg-terminal-fg text-terminal-surface-deep'
+                : 'text-terminal-fg-muted hover:text-terminal-fg',
             ].join(' ')}
           >
             {opt.label}

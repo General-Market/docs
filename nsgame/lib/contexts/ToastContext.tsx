@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useCallback, useState, ReactNode } from 'react'
+import { createContext, useContext, useCallback, useMemo, useState, ReactNode } from 'react'
 import { ToastContainer, ToastData, ToastType } from '@/components/ui/Toast'
 import { posthog } from '@/lib/posthog'
 
@@ -76,8 +76,13 @@ export function ToastProvider({ children }: ToastProviderProps) {
     [showToast]
   )
 
+  const value = useMemo<ToastContextValue>(
+    () => ({ showToast, showSuccess, showError, showInfo }),
+    [showToast, showSuccess, showError, showInfo],
+  )
+
   return (
-    <ToastContext.Provider value={{ showToast, showSuccess, showError, showInfo }}>
+    <ToastContext.Provider value={value}>
       {children}
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </ToastContext.Provider>

@@ -63,19 +63,19 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
   const nowSecs = Math.floor(Date.now() / 1000)
 
   return (
-    <main className="min-h-screen bg-zinc-950 text-zinc-100 pb-[calc(env(safe-area-inset-bottom,0)+64px)] lg:pb-0">
+    <main className="min-h-screen bg-terminal-surface-deep text-terminal-fg pb-[calc(env(safe-area-inset-bottom,0)+64px)] lg:pb-0">
       <NavBar />
 
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <header className="flex flex-col gap-3 py-6 sm:flex-row sm:items-end sm:justify-between sm:py-8">
           <div className="space-y-1">
-            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-500">
+            <p className="font-mono text-micro uppercase tracking-[0.18em] text-terminal-fg-faint">
               leaderboard
             </p>
-            <h1 className="text-[26px] font-semibold tracking-tight text-zinc-50">
+            <h1 className="text-[26px] font-semibold tracking-tight text-terminal-fg">
               Profit, by wallet<span className="text-rose-500">.</span>
             </h1>
-            <p className="text-[13px] text-zinc-400">
+            <p className="text-body-sm text-terminal-fg-muted">
               Realized PnL across {WINDOW_COPY[window]}. Stake at risk
               isn't profit yet — it isn't anything yet.
             </p>
@@ -85,7 +85,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
 
         <LeaderboardTable entries={entries} nowSecs={nowSecs} />
 
-        <p className="mt-4 px-1 font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-600">
+        <p className="mt-4 px-1 font-mono text-micro uppercase tracking-[0.14em] text-terminal-fg-faint">
           {entries.length} wallets ranked · pnl in usdc · realized only
         </p>
       </div>
