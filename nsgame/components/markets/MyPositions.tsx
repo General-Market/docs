@@ -6,6 +6,7 @@ import { useUserPositions, type UserPosition } from '@/lib/markets/positions'
 import { useNowSecs } from './CountdownTimer'
 import { SourceIcon } from './SourceIcon'
 import { WinShimmer } from './WinShimmer'
+import { PositionMarketCard } from './PositionMarketCard'
 
 const USDC_DECIMALS = 6
 
@@ -181,10 +182,16 @@ export interface MyPositionsProps {
   compact?: boolean
   /** Suppress the section header (caller already renders one). */
   hideHeader?: boolean
+  /**
+   * Render mode for the body. Cards mirror the main-grid MarketCard with
+   * the close+settlement double timer; rows are the dense one-line
+   * summary kept for the compact sidebar variant.
+   */
+  variant?: 'rows' | 'cards'
   className?: string
 }
 
-export function MyPositions({ compact = false, hideHeader = false, className = '' }: MyPositionsProps) {
+export function MyPositions({ compact = false, hideHeader = false, variant, className = '' }: MyPositionsProps) {
   const { address } = useWallet()
   const { positions } = useUserPositions(address)
   const now = useNowSecs()
@@ -211,6 +218,7 @@ export function MyPositions({ compact = false, hideHeader = false, className = '
 
   const total = positions.length
   const empty = total === 0
+  const bodyVariant: 'rows' | 'cards' = variant ?? (compact ? 'rows' : 'cards')
 
   // Compact mobile mode: a single header row that expands on tap.
   if (compact) {
@@ -250,7 +258,7 @@ export function MyPositions({ compact = false, hideHeader = false, className = '
         </button>
         {expanded ? (
           <div className="space-y-3 border-t border-zinc-800 px-3 py-3">
-            <PositionsBody buckets={buckets} now={now} />
+            <PositionsBody buckets={buckets} now={now} variant={bodyVariant} />
           </div>
         ) : null}
       </div>
@@ -285,7 +293,7 @@ export function MyPositions({ compact = false, hideHeader = false, className = '
         </p>
       ) : (
         <div className="space-y-3 px-3 py-3">
-          <PositionsBody buckets={buckets} now={now} />
+          <PositionsBody buckets={buckets} now={now} variant={bodyVariant} />
         </div>
       )}
     </section>
@@ -299,9 +307,24 @@ interface BodyProps {
     resolved: UserPosition[]
   }
   now: number
+  variant: 'rows' | 'cards'
 }
 
-function PositionsBody({ buckets, now }: BodyProps) {
+function PositionsBody({ buckets, now, variant }: BodyProps) {
+  const renderItem = (p: UserPosition, kind: 'open' | 'settling' | 'resolved') => {
+    if (variant === 'cards') {
+      return <PositionMarketCard key={p.betSig} position={p} now={now} />
+    }
+    if (kind === 'resolved') {
+      return <ResolvedRow key={p.betSig} position={p} now={now} />
+    }
+    return <PositionRow key={p.betSig} position={p} now={now} />
+  }
+
+  // Cards breathe on a one-column stack so the dual timer stays legible;
+  // rows stay tight for the sidebar's compact summary.
+  const listClass = variant === 'cards' ? 'space-y-2' : 'space-y-1.5'
+
   return (
     <>
       {buckets.open.length > 0 ? (
@@ -309,10 +332,8 @@ function PositionsBody({ buckets, now }: BodyProps) {
           <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-zinc-400">
             open
           </p>
-          <div className="space-y-1.5">
-            {buckets.open.map(p => (
-              <PositionRow key={p.betSig} position={p} now={now} />
-            ))}
+          <div className={listClass}>
+            {buckets.open.map(p => renderItem(p, 'open'))}
           </div>
         </div>
       ) : null}
@@ -322,10 +343,8 @@ function PositionsBody({ buckets, now }: BodyProps) {
           <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-zinc-400">
             settling
           </p>
-          <div className="space-y-1.5">
-            {buckets.settling.map(p => (
-              <PositionRow key={p.betSig} position={p} now={now} />
-            ))}
+          <div className={listClass}>
+            {buckets.settling.map(p => renderItem(p, 'settling'))}
           </div>
         </div>
       ) : null}
@@ -335,10 +354,8 @@ function PositionsBody({ buckets, now }: BodyProps) {
           <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-zinc-400">
             resolved
           </p>
-          <div className="space-y-1.5">
-            {buckets.resolved.map(p => (
-              <ResolvedRow key={p.betSig} position={p} now={now} />
-            ))}
+          <div className={listClass}>
+            {buckets.resolved.map(p => renderItem(p, 'resolved'))}
           </div>
         </div>
       ) : null}

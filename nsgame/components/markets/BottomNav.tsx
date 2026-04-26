@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useUnifiedWalletContext } from '@jup-ag/wallet-adapter'
 import { useWallet } from '@/hooks/useWallet'
 import { useTranslations } from 'next-intl'
 import { BottomNavMoreSheet } from './BottomNavMoreSheet'
+import { MyPositionsModal } from './MyPositionsModal'
 
 // Mobile-only fixed bottom bar. Four tabs. The screen ends with a
 // reminder of where the screen begins.
@@ -12,6 +13,7 @@ import { BottomNavMoreSheet } from './BottomNavMoreSheet'
 interface BottomNavProps {
   onMenuClick?: () => void
   onTicketClick?: () => void
+  onPositionsClick?: () => void
   hasTicket?: boolean
 }
 
@@ -50,19 +52,34 @@ function MoreIcon({ className = '' }: { className?: string }) {
   )
 }
 
-export function BottomNav({ onMenuClick, onTicketClick, hasTicket = false }: BottomNavProps) {
+function PositionsIcon({ className = '' }: { className?: string }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className={className} aria-hidden>
+      <rect x="3" y="11.5" width="3" height="5" rx="0.6" stroke="currentColor" strokeWidth="1.4" />
+      <rect x="8.5" y="7.5" width="3" height="9" rx="0.6" stroke="currentColor" strokeWidth="1.4" />
+      <rect x="14" y="3.5" width="3" height="13" rx="0.6" stroke="currentColor" strokeWidth="1.4" />
+    </svg>
+  )
+}
+
+export function BottomNav({ onMenuClick, onTicketClick, onPositionsClick, hasTicket = false }: BottomNavProps) {
   const t = useTranslations('common')
-  const { connected, address, disconnect } = useWallet()
+  const { connected, address } = useWallet()
   const { setShowModal } = useUnifiedWalletContext()
   const [moreOpen, setMoreOpen] = useState(false)
+  const [positionsOpenInternal, setPositionsOpenInternal] = useState(false)
 
-  const handleWallet = () => {
-    if (connected && address) {
-      disconnect()
-    } else {
-      setShowModal(true)
-    }
-  }
+  // The wallet button becomes the positions button once a wallet is
+  // connected. The parent may own the modal state (CalendarPageClient
+  // already does); otherwise we run our own.
+  const showPositions = connected && !!address
+  const openPositions = useCallback(() => {
+    if (onPositionsClick) onPositionsClick()
+    else setPositionsOpenInternal(true)
+  }, [onPositionsClick])
+  const handleConnect = useCallback(() => setShowModal(true), [setShowModal])
+  const handleThird = onTicketClick
+    ?? (showPositions ? openPositions : handleConnect)
 
   return (
     <>
@@ -92,23 +109,27 @@ export function BottomNav({ onMenuClick, onTicketClick, hasTicket = false }: Bot
 
           <button
             type="button"
-            onClick={onTicketClick ?? handleWallet}
-            aria-label={connected ? 'Wallet' : 'Connect wallet'}
+            onClick={handleThird}
+            aria-label={showPositions ? 'My positions' : 'Connect wallet'}
             className={[
               'relative flex flex-col items-center justify-center gap-0.5 py-2.5 transition-colors',
-              connected ? 'text-sky-300 hover:text-sky-200' : 'text-zinc-400 hover:text-zinc-100',
+              showPositions ? 'text-sky-300 hover:text-sky-200' : 'text-zinc-400 hover:text-zinc-100',
             ].join(' ')}
           >
-            <WalletIcon className="h-5 w-5" />
+            {showPositions ? (
+              <PositionsIcon className="h-5 w-5" />
+            ) : (
+              <WalletIcon className="h-5 w-5" />
+            )}
             <span className="text-[10px] font-medium tracking-tight">
-              {connected ? 'Wallet' : 'Connect'}
+              {showPositions ? 'Positions' : 'Connect'}
             </span>
             {hasTicket ? (
               <span
                 aria-hidden
                 className={[
                   'absolute right-[28%] top-2 h-1.5 w-1.5 rounded-full bg-emerald-400',
-                  connected ? 'shadow-[0_0_0_2px_rgb(56_189_248/0.35)]' : '',
+                  showPositions ? 'shadow-[0_0_0_2px_rgb(56_189_248/0.35)]' : '',
                 ].join(' ')}
               />
             ) : null}
@@ -129,6 +150,13 @@ export function BottomNav({ onMenuClick, onTicketClick, hasTicket = false }: Bot
       </nav>
 
       <BottomNavMoreSheet open={moreOpen} onClose={() => setMoreOpen(false)} />
+
+      {onPositionsClick ? null : (
+        <MyPositionsModal
+          open={positionsOpenInternal}
+          onClose={() => setPositionsOpenInternal(false)}
+        />
+      )}
     </>
   )
 }

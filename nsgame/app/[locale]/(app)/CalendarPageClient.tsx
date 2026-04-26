@@ -185,6 +185,7 @@ export function CalendarPageClient() {
       {/* Mobile fixed bottom nav */}
       <BottomNav
         onMenuClick={openMenu}
+        onPositionsClick={openPositions}
         hasTicket={!!selectedSlot}
       />
     </main>

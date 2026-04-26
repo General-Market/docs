@@ -17,7 +17,12 @@ interface MyPositionsModalProps {
 }
 
 export function MyPositionsModal({ open, onClose }: MyPositionsModalProps) {
-  const { address } = useWallet()
+  const { address, disconnect } = useWallet()
+
+  const handleDisconnect = () => {
+    disconnect()
+    onClose()
+  }
 
   useEffect(() => {
     if (!open) return
@@ -61,15 +66,24 @@ export function MyPositionsModal({ open, onClose }: MyPositionsModalProps) {
               <span className="font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-zinc-400">
                 my positions
               </span>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 {address ? (
-                  <Link
-                    href={`/u/${address}`}
-                    onClick={onClose}
-                    className="font-mono text-[10px] uppercase tracking-[0.12em] text-zinc-500 transition-colors hover:text-zinc-200"
-                  >
-                    profile →
-                  </Link>
+                  <>
+                    <Link
+                      href={`/u/${address}`}
+                      onClick={onClose}
+                      className="font-mono text-[10px] uppercase tracking-[0.12em] text-zinc-500 transition-colors hover:text-zinc-200"
+                    >
+                      profile →
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={handleDisconnect}
+                      className="font-mono text-[10px] uppercase tracking-[0.12em] text-zinc-500 transition-colors hover:text-rose-300"
+                    >
+                      disconnect
+                    </button>
+                  </>
                 ) : null}
                 <button
                   type="button"
