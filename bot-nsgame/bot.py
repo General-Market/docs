@@ -498,10 +498,13 @@ def build_mint_to_ix(
 # ----------------------------------------------------------------------------- #
 
 def _is_rate_limit(exc: BaseException) -> bool:
-    # Helius (and most RPCs) report rate limiting via 429; the message
-    # text varies — sometimes "429", sometimes "Too Many Requests",
-    # sometimes the entire HTTP body. Match loosely.
+    # solana-py raises SolanaRpcException() with no message body when
+    # Helius returns 429 — repr() is the bare class name and str() is
+    # empty, so keyword matching never fires. Match by class name too.
+    name = type(exc).__name__
     s = f"{exc!r} {exc!s}".lower()
+    if "rpcexception" in name.lower() or "httpstatuserror" in name.lower():
+        return True
     return "429" in s or "too many requests" in s or "rate limit" in s
 
 
