@@ -70,21 +70,15 @@ export function CookieBanner() {
       role="region"
       aria-label="Cookie preferences"
       aria-labelledby="cookie-banner-title"
-      className="fixed inset-x-0 bottom-0 z-[60] px-4 pb-4 sm:px-6 sm:pb-6 pointer-events-none"
+      className="fixed inset-x-0 bottom-0 z-[60] border-t border-zinc-800 bg-zinc-950/95 backdrop-blur-md"
     >
-      <div className="mx-auto max-w-3xl pointer-events-auto rounded-md border border-zinc-800 bg-zinc-950/95 backdrop-blur-md shadow-xl shadow-black/40 p-5 sm:p-6">
-        <h2
-          id="cookie-banner-title"
-          className="text-[15px] font-semibold text-zinc-50 tracking-tight"
-        >
-          Cookies, briefly.
-        </h2>
-        <p className="mt-2 text-[13px] text-zinc-400 leading-relaxed">
-          The website uses cookies. Three categories, no euphemism.{' '}
-          <strong className="text-zinc-200 font-medium">Essential</strong> for the site to work,{' '}
-          <strong className="text-zinc-200 font-medium">Preferences</strong> so we stop asking,{' '}
-          <strong className="text-zinc-200 font-medium">Analytics</strong> so we see what is broken.
-          The chain knows what your wallet does. The website knows almost nothing else.{' '}
+      <h2 id="cookie-banner-title" className="sr-only">
+        Cookie preferences
+      </h2>
+      <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:px-6">
+        <p className="flex-1 min-w-[200px] text-[12px] sm:text-[13px] text-zinc-400 leading-snug">
+          Cookies. Essential to run, preferences to remember, analytics to
+          see what is broken.{' '}
           <Link
             href="/legal/cookie-policy"
             className="text-emerald-400 hover:text-emerald-300 underline underline-offset-2"
@@ -93,16 +87,31 @@ export function CookieBanner() {
           </Link>
           .
         </p>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowCustom(v => !v)}
+            aria-expanded={showCustom}
+            className="text-[12px] text-zinc-500 underline underline-offset-2 hover:text-zinc-200 transition-colors"
+          >
+            {showCustom ? 'less' : 'more'}
+          </button>
+          <button
+            onClick={accept}
+            className="px-3 py-1.5 rounded-sm text-[12px] font-semibold tracking-tight bg-emerald-400 text-zinc-950 hover:bg-emerald-300 transition-colors"
+          >
+            Accept
+          </button>
+        </div>
 
         {showCustom ? (
-          <div className="mt-4 space-y-2 border-t border-zinc-800 pt-4">
-            <label className="flex items-center gap-3 text-[13px] text-zinc-400">
+          <div className="basis-full border-t border-zinc-800 pt-3 mt-1 space-y-2">
+            <label className="flex items-center gap-3 text-[12px] text-zinc-400">
               <input type="checkbox" checked disabled className="accent-emerald-500" />
               <span>
                 <strong className="text-zinc-200 font-medium">Essential</strong> — required.
               </span>
             </label>
-            <label className="flex items-center gap-3 text-[13px] text-zinc-400 cursor-pointer">
+            <label className="flex items-center gap-3 text-[12px] text-zinc-400 cursor-pointer">
               <input
                 type="checkbox"
                 checked={prefs.preferences}
@@ -113,7 +122,7 @@ export function CookieBanner() {
                 <strong className="text-zinc-200 font-medium">Preferences</strong> — theme, last board, gate state.
               </span>
             </label>
-            <label className="flex items-center gap-3 text-[13px] text-zinc-400 cursor-pointer">
+            <label className="flex items-center gap-3 text-[12px] text-zinc-400 cursor-pointer">
               <input
                 type="checkbox"
                 checked={prefs.analytics}
@@ -124,40 +133,22 @@ export function CookieBanner() {
                 <strong className="text-zinc-200 font-medium">Analytics</strong> — PostHog, aggregated.
               </span>
             </label>
-          </div>
-        ) : null}
-
-        <div className="mt-5 flex flex-wrap gap-2 justify-end">
-          {showCustom ? (
-            <button
-              onClick={saveCustom}
-              className="px-4 py-2 rounded-sm text-[12px] font-semibold tracking-tight bg-emerald-400 text-zinc-950 hover:bg-emerald-300 transition-colors"
-            >
-              Save preferences
-            </button>
-          ) : (
-            <>
-              <button
-                onClick={() => setShowCustom(true)}
-                className="px-4 py-2 rounded-sm text-[12px] font-medium tracking-tight text-zinc-400 hover:text-zinc-100 transition-colors"
-              >
-                Customize
-              </button>
+            <div className="flex gap-2 pt-1">
               <button
                 onClick={reject}
-                className="px-4 py-2 rounded-sm text-[12px] font-medium tracking-tight border border-zinc-800 text-zinc-300 hover:border-zinc-600 hover:text-zinc-100 transition-colors"
+                className="px-3 py-1.5 rounded-sm text-[12px] font-medium tracking-tight border border-zinc-800 text-zinc-300 hover:border-zinc-600 hover:text-zinc-100 transition-colors"
               >
-                Reject
+                Reject all
               </button>
               <button
-                onClick={accept}
-                className="px-4 py-2 rounded-sm text-[12px] font-semibold tracking-tight bg-emerald-400 text-zinc-950 hover:bg-emerald-300 transition-colors"
+                onClick={saveCustom}
+                className="px-3 py-1.5 rounded-sm text-[12px] font-semibold tracking-tight bg-emerald-400 text-zinc-950 hover:bg-emerald-300 transition-colors"
               >
-                Accept
+                Save preferences
               </button>
-            </>
-          )}
-        </div>
+            </div>
+          </div>
+        ) : null}
       </div>
     </aside>
   )

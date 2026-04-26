@@ -25,6 +25,7 @@ function writeConfirmation() {
 
 export function AgeGateModal() {
   const [visible, setVisible] = useState(false)
+  const [showAffirmation, setShowAffirmation] = useState(false)
 
   useEffect(() => {
     if (!readConfirmation()) setVisible(true)
@@ -54,31 +55,16 @@ export function AgeGateModal() {
       aria-labelledby="age-gate-title"
       className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-zinc-950/40 backdrop-blur-xl"
     >
-      <div className="w-full max-w-lg rounded-md border border-zinc-800 bg-zinc-950/90 backdrop-blur-md shadow-2xl shadow-black/60 p-6 sm:p-8">
-        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-500 mb-3">
-          Age affirmation
-        </p>
+      <div className="w-full max-w-md rounded-md border border-zinc-800 bg-zinc-950/90 backdrop-blur-md shadow-2xl shadow-black/60 p-6 sm:p-7">
         <h2
           id="age-gate-title"
-          className="text-[22px] sm:text-[26px] font-bold tracking-tight text-zinc-50 leading-tight mb-4"
+          className="text-[20px] sm:text-[22px] font-bold tracking-tight text-zinc-50 leading-tight mb-3"
         >
           You are about to enter an adult product.
         </h2>
-        <p className="text-[14px] text-zinc-400 leading-relaxed mb-3">
-          The subjects of these markets are adult performers. The signals
-          you bet on come from adult-tube and cam-room platforms. There is
-          no version of nsgame that is not an adult product.
-        </p>
-        <p className="text-[14px] text-zinc-400 leading-relaxed mb-3">
-          We do not check ID. We ask, and we expect an honest answer. The
-          honesty is yours; the consequences of lying are also yours.
-        </p>
-        <p className="text-[13px] text-zinc-300 leading-relaxed mb-6">
-          Clicking <span className="text-zinc-100 font-medium">Enter</span>{' '}
-          affirms that you are at least 18, or the age of majority in your
-          jurisdiction (whichever is greater); that you consent to seeing
-          adult-platform metrics referenced; and that you are accessing
-          nsgame voluntarily, for your own use.
+        <p className="text-[14px] text-zinc-400 leading-relaxed mb-5">
+          Markets on adult performers, signals from adult-tube and cam-room
+          platforms. We do not check ID. The honesty is yours.
         </p>
 
         <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
@@ -96,23 +82,37 @@ export function AgeGateModal() {
           </button>
         </div>
 
-        <p className="mt-6 text-[11px] text-zinc-600 leading-relaxed">
-          The gate is soft. The honesty about it is not. See the{' '}
-          <Link
-            href="/legal/age-gate"
-            className="underline hover:text-zinc-300 transition-colors"
-          >
-            Age Verification
-          </Link>{' '}
-          and{' '}
-          <Link
-            href="/trust/subject-removal-policy"
-            className="underline hover:text-zinc-300 transition-colors"
-          >
-            Subject Removal
-          </Link>{' '}
-          policies.
-        </p>
+        <button
+          type="button"
+          onClick={() => setShowAffirmation(v => !v)}
+          aria-expanded={showAffirmation}
+          className="mt-5 text-[11px] text-zinc-500 underline underline-offset-2 hover:text-zinc-300 transition-colors"
+        >
+          {showAffirmation ? 'Hide what you are affirming' : 'What you are affirming'}
+        </button>
+
+        {showAffirmation ? (
+          <p className="mt-3 text-[12px] text-zinc-400 leading-relaxed">
+            That you are at least 18, or the age of majority in your
+            jurisdiction (whichever is greater); that you consent to seeing
+            adult-platform metrics referenced; and that you are accessing
+            nsgame voluntarily, for your own use. See the{' '}
+            <Link
+              href="/legal/age-gate"
+              className="underline hover:text-zinc-200 transition-colors"
+            >
+              Age Verification
+            </Link>{' '}
+            and{' '}
+            <Link
+              href="/trust/subject-removal-policy"
+              className="underline hover:text-zinc-200 transition-colors"
+            >
+              Subject Removal
+            </Link>{' '}
+            policies.
+          </p>
+        ) : null}
       </div>
     </div>
   )
