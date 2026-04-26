@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRecentBets, type RecentBetEvent } from '@/hooks/useRecentBets'
 import { pairById } from '@/lib/markets/pairs'
-import { payoutMultiplier } from '@/lib/markets/hooks'
+import { realisedMultiplier } from '@/lib/markets/hooks'
 import { SourceIcon } from './SourceIcon'
 
 // A network-wide ledger of bets placed across every market. The shape
@@ -99,12 +99,13 @@ function Row({ event, nowSecs }: RowProps) {
   const amount = safeBig(event.amount)
 
   // Pools are summed across the whole market — the indexer carries them
-  // even after the on-chain account is closed. payoutMultiplier returns
-  // null when the side is empty, which is what "—" used to mean.
+  // even after the on-chain account is closed. realisedMultiplier
+  // returns null when the side is empty and 1.0 when the pool is
+  // one-sided (program refunds rather than charging the fee).
   const totalYes = safeBig(event.totalYes)
   const totalNo = safeBig(event.totalNo)
   const hasPools = totalYes > 0n || totalNo > 0n
-  const mult = hasPools ? payoutMultiplier(totalYes, totalNo, sideLabel) : null
+  const mult = hasPools ? realisedMultiplier(totalYes, totalNo, sideLabel) : null
 
   // Three states for the right-hand columns:
   //  1. Resolved + winning side → realised payout (green).

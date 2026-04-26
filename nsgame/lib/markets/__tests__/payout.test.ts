@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test'
-import { payoutMultiplier, isOneSided, FEE_BPS } from '../hooks'
+import { payoutMultiplier, realisedMultiplier, isOneSided, FEE_BPS } from '../hooks'
 
 describe('payoutMultiplier', () => {
   test('two-sided pool, A (yes) wins — applies 50bps fee', () => {
@@ -40,6 +40,27 @@ describe('payoutMultiplier', () => {
   test('fee correctness — equal pools, multiplier ≈ 2 × (1 − 0.005)', () => {
     const m = payoutMultiplier(1_000_000n, 1_000_000n, 'yes') ?? 0
     expect(m).toBeCloseTo(2 * (1 - FEE_BPS / 10_000), 6)
+  })
+})
+
+describe('realisedMultiplier', () => {
+  test('one-sided pool — bettor side gets 1.0× refund', () => {
+    expect(realisedMultiplier(100n, 0n, 'yes')).toBe(1)
+    expect(realisedMultiplier(0n, 100n, 'no')).toBe(1)
+  })
+
+  test('one-sided pool — empty side returns null', () => {
+    expect(realisedMultiplier(100n, 0n, 'no')).toBeNull()
+    expect(realisedMultiplier(0n, 100n, 'yes')).toBeNull()
+  })
+
+  test('two-sided pool matches payoutMultiplier', () => {
+    expect(realisedMultiplier(60n, 40n, 'no')).toBeCloseTo(2.4875, 6)
+    expect(realisedMultiplier(100n, 100n, 'yes')).toBeCloseTo(1.99, 6)
+  })
+
+  test('both pools zero — returns null', () => {
+    expect(realisedMultiplier(0n, 0n, 'yes')).toBeNull()
   })
 })
 

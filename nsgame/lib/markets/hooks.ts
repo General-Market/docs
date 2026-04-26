@@ -152,13 +152,52 @@ export function useUpcomingSlots(opts?: UseUpcomingSlotsOpts): UpcomingSlot[] {
 // chain, not on this poll.
 const MARKET_POLL_MS = 60_000
 
+// Shared cache so the row pill and the buy panel can never disagree
+// about the same market. `useMarketStatesBatch` and `useMarketState`
+// both publish their decoded state here, and any subscriber for that
+// pda is notified — whichever fetch lands fresher wins.
+const marketStateCache = new Map<string, MarketState | null>()
+const marketStateSubscribers = new Map<string, Set<(s: MarketState | null) => void>>()
+
+function publishMarketState(pda: string, state: MarketState | null): void {
+  marketStateCache.set(pda, state)
+  const subs = marketStateSubscribers.get(pda)
+  if (!subs) return
+  for (const cb of subs) cb(state)
+}
+
+function subscribeMarketState(pda: string, cb: (s: MarketState | null) => void): () => void {
+  let set = marketStateSubscribers.get(pda)
+  if (!set) {
+    set = new Set()
+    marketStateSubscribers.set(pda, set)
+  }
+  set.add(cb)
+  return () => {
+    set!.delete(cb)
+    if (set!.size === 0) marketStateSubscribers.delete(pda)
+  }
+}
+
 export function useMarketState(marketPda: string | null): MarketState | null {
   const { connection } = useWallet()
-  const [state, setState] = useState<MarketState | null>(null)
+  const [state, setState] = useState<MarketState | null>(
+    () => (marketPda ? marketStateCache.get(marketPda) ?? null : null),
+  )
 
   // Track the last requested pda so we don't write stale results after an
   // address change — pyramid-of-doom prevention.
   const lastPdaRef = useRef<string | null>(null)
+
+  // Subscribe to the shared cache: if a sibling hook (typically the
+  // batch poller in MarketList) refreshes this pda, this component sees
+  // it without waiting for its own next interval to fire.
+  useEffect(() => {
+    if (!marketPda) return
+    const cached = marketStateCache.get(marketPda)
+    if (cached !== undefined) setState(cached)
+    return subscribeMarketState(marketPda, setState)
+  }, [marketPda])
 
   useEffect(() => {
     if (!marketPda) {
@@ -184,11 +223,11 @@ export function useMarketState(marketPda: string | null): MarketState | null {
         const info = await connection.getAccountInfo(pubkey, 'confirmed')
         if (cancelled || lastPdaRef.current !== marketPda) return
         if (!info) {
-          setState(null)
+          publishMarketState(marketPda, null)
           return
         }
         const decoded = decodeMarket(info.data)
-        setState({
+        publishMarketState(marketPda, {
           totalYes: decoded.totalYes,
           totalNo: decoded.totalNo,
           resolved: decoded.resolved,
@@ -450,6 +489,10 @@ export const FEE_BPS = 50
  * Returns null when the requested side has zero stake — there is nothing
  * to multiply against. The component shows "—" in that case.
  *
+ * Pure math: applies the formula even for one-sided pools. Display
+ * layers that want the *realised* multiplier (1.0× refund when the
+ * opposite side is empty) should call `realisedMultiplier` instead.
+ *
  * Uses Number for the final division: pool sizes never exceed a few
  * million USDC of a 6-decimal token, well inside f64's safe range.
  */
@@ -470,6 +513,29 @@ export function payoutMultiplier(
 export function isOneSided(totalYes: bigint, totalNo: bigint): boolean {
   if (totalYes === 0n && totalNo === 0n) return false
   return totalYes === 0n || totalNo === 0n
+}
+
+/**
+ * Multiplier the bettor will *actually* receive at current pool sizes.
+ *
+ * Mirrors `payoutMultiplier` except for one-sided pools: the program
+ * refunds rather than applying the parimutuel formula, so showing the
+ * fee-discounted 0.995× would lie. Returns 1 there. Returns null when
+ * the bettor's own side has zero stake — nothing to multiply against.
+ *
+ * Use this for live ledgers, position cards, anywhere the number is
+ * meant to read as "what your stake becomes". Use `payoutMultiplier`
+ * when the math itself is what you want.
+ */
+export function realisedMultiplier(
+  totalYes: bigint,
+  totalNo: bigint,
+  side: 'yes' | 'no',
+): number | null {
+  const sidePool = side === 'yes' ? totalYes : totalNo
+  if (sidePool === 0n) return null
+  if (isOneSided(totalYes, totalNo)) return 1
+  return payoutMultiplier(totalYes, totalNo, side)
 }
 
 export function formatMultiplier(m: number | null): string {
@@ -1062,6 +1128,12 @@ export function useMarketStatesBatch(pdas: readonly string[]): MarketStateMap {
         }
 
         if (cancelled) return
+        // Publish each decoded entry to the shared cache so siblings
+        // (BetTicket, BetSheet, anything calling useMarketState on the
+        // same pda) observe the same snapshot the row pill does.
+        for (const k of list) {
+          publishMarketState(k, next[k] ?? null)
+        }
         setStates(prev => {
           // Merge: keep any keys still in the current set, drop the rest.
           const merged: MarketStateMap = {}

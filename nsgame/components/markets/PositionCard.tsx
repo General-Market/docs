@@ -6,7 +6,7 @@ import { SourceIcon } from './SourceIcon'
 import { type UserPosition } from '@/lib/markets/positions'
 import {
   type MarketState,
-  payoutMultiplier,
+  realisedMultiplier,
   pctToDecimalOdd,
   deriveYesPct,
 } from '@/lib/markets/hooks'
@@ -58,7 +58,7 @@ export function PositionCard({ position, state }: PositionCardProps) {
   )
   const sidePct = sideA ? yesPct : (100 - yesPct)
   const liveMult = state && (state.totalYes + state.totalNo) > 0n
-    ? payoutMultiplier(state.totalYes, state.totalNo, position.side)
+    ? realisedMultiplier(state.totalYes, state.totalNo, position.side)
     : pctToDecimalOdd(sidePct)
 
   const stakeUsdc = unitsToFloat(position.amount)
