@@ -1,0 +1,94 @@
+---
+title: "Round Mechanics"
+description: "Open, lock, resolve. Three breaths. Per-board windows and what each phase does."
+slug: "round-mechanics"
+category: "Product"
+date: "2026-04-26"
+author: "nsgame"
+---
+
+A round opens. A round locks. A round resolves. The choreography is the same on both boards; only the durations differ. There is no fourth step — winners claim, losers do nothing, and the next round opens behind the previous one.
+
+## The three phases
+
+```
+┌──────────┐      ┌──────────┐      ┌──────────┐      ┌────────┐
+│   OPEN   │ ───► │   LOCK   │ ───► │ RESOLVE  │ ───► │ CLAIM  │
+│  betting │      │ no bets  │      │ oracle   │      │  open  │
+│  active  │      │  pool    │      │ signs    │      │ winners│
+│          │      │  frozen  │      │ on-chain │      │ withdraw│
+└──────────┘      └──────────┘      └──────────┘      └────────┘
+   open_time       close_time      settlement_time     onward
+```
+
+Open is where the pool grows. Lock is where it stops growing. Resolve is where the oracle writes the verdict to the chain. Claim is where you ask for what you are owed.
+
+## Per-board windows
+
+| Board | Open duration | Time from lock to resolution |
+|---|---|---|
+| Stars | 4 hours | minutes — bounded by oracle quorum + Solana finality |
+| Cams | 2 minutes | minutes — same bound, faster cadence |
+
+Stars is a slow burn. Cams is a clip. The mechanics are identical; the rhythm is not.
+
+Resolution latency depends on Goldilock signing the close-time reading and the resulting settlement transaction landing on Solana. In practice the gap between lock and resolve is short — minutes, not hours — but the chain decides when a transaction is final, not us.
+
+## Open
+
+The market accepts stakes. Either side. Any amount above $0.10. No upper bound. As stake accumulates on one side, the implied price of that side falls — see [Parimutuel Methodology](/product/parimutuel-methodology) for the math.
+
+You can stake more than once. You cannot stake on both sides of the same market — the program rejects it. Pick a side and stay on it.
+
+You cannot un-stake. A wager placed is a wager committed. If the round voids, you get your stake back; otherwise the only exit is the resolution.
+
+## Lock
+
+The on-chain Market PDA flips a flag. New stakes revert. The pool is the pool.
+
+Lock happens at exactly `close_time`, the timestamp encoded into the Market PDA seeds. There is no grace window. A stake transaction submitted before `close_time` but landing on-chain after `close_time` is rejected. Solana finality is fast; the program is faster than your latency.
+
+At lock, the oracle network begins reading the underlying data source for the close measurement. For F1 markets it reads the closing view counts. For F2 markets it finalises the aggregated viewer total from the readings already taken during the window. See [Resolution Sources](/product/resolution-sources).
+
+## Resolve
+
+The Goldilock oracle network signs a settlement transaction. The transaction declares the winner and unlocks the pool. See [Settlement Rules](/product/settlement-rules) for the signing mechanics — multi-oracle quorum, on-chain verification.
+
+If the oracle cannot resolve — data source unavailable, quorum not reached, reading invalidated — the market voids. Stakes return per the [Refund Policy](/product/refund-policy). The round does not stay in resolution limbo indefinitely; there is a deadline beyond which the market is forced into the void path.
+
+The same chain that lets the oracle resolve lets you verify the resolution. The settlement transaction is public. The reading the oracle used is public. The signature is on-chain. Anyone can re-derive the answer from the same source readings; that is the point.
+
+## Claim
+
+Once resolved, winners can claim. Claims are pull-based — the program does not push payouts to your wallet. You sign a transaction; the program transfers your share of the pool minus the rake. See [Parimutuel Methodology](/product/parimutuel-methodology) for the calculation.
+
+Claims do not expire. A wallet that walked away three months ago can come back, sign, and collect. The chain does not forget. There is no "unclaimed funds" sweep.
+
+Losers are not asked to do anything. The losing stake is already in the pool, and the pool already paid the winners.
+
+## What happens when something breaks
+
+The void path is documented in full at [Refund Policy](/product/refund-policy). The short version:
+
+- Oracle quorum failure → round voids → stakes refunded.
+- Data source returns garbage or rate-limits the oracle → round voids → stakes refunded.
+- Tie at the integer level → round voids → stakes refunded.
+- One-sided round (no opposing stake) → automatic void → stakes refunded.
+
+Refunds are claim-based by default. The program holds your stake; you sign a transaction to retrieve it. Auto-refund is used when it is more ergonomic — for example, on a one-sided round where there is no ambiguity to resolve.
+
+## Cadence in practice
+
+Stars: a new round opens every four hours, twenty-four hours a day. Six rounds per pair per day. Fifteen pairs. Ninety markets per day.
+
+Cams: a new round opens every two minutes, twenty-four hours a day. Seven hundred and twenty rounds per pair per day. Ten pairs. Seven thousand two hundred markets per day.
+
+The chain accommodates both. The frontend is built around both. Whether anyone bets on both is the question we cannot answer without bettors.
+
+## Cross-references
+
+- [How nsgame Works](/product/how-it-works) — the spine.
+- [Market Rules](/product/market-rules) — what counts as winning, per format.
+- [Parimutuel Methodology](/product/parimutuel-methodology) — the math, with numbers.
+- [Settlement Rules](/product/settlement-rules) — how the oracle signs.
+- [Refund Policy](/product/refund-policy) — the void path.

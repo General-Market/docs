@@ -35,7 +35,9 @@
   },
   "footer": {
     "product": "プロダクト",
+    "trust": "Trust",
     "resources": "リソース",
+    "legal": "Legal",
     "indexes": "インデックス商品",
     "vision": "Vision",
     "data_sources": "データソース",

@@ -1,0 +1,73 @@
+---
+title: "Restricted Territories"
+description: "Where the website refuses connections. The protocol checks no passports."
+slug: "restricted-territories"
+category: "Legal"
+date: "2026-04-26"
+author: "nsgame"
+---
+
+The website applies a standard decentralized-protocol blocklist. The protocol applies nothing. The chain does not check geography; the website refuses to load for visitors from certain places.
+
+## 1. Why the list exists
+
+Two reasons. The first is sanctions — jurisdictions where transacting with residents would violate the international rules the website's hosting provider, payment infrastructure, and CDNs are themselves bound by. The second is local prediction-market or gambling regulation — countries that have, for various reasons, decided this kind of activity is not for them. Neither reason is interesting; both are binding on a frontend.
+
+We did not build this list. We adopted the standard one. Other on-chain prediction-market frontends use roughly the same one. It is not a moral statement; it is a compliance posture inherited by anyone running a website out of an ordinary jurisdiction.
+
+## 2. The list
+
+Access from the following jurisdictions is blocked at the website level:
+
+- Belarus
+- Burundi
+- Central African Republic
+- Cuba
+- Democratic Republic of the Congo
+- Iran
+- Iraq
+- Lebanon
+- Libya
+- Myanmar
+- Nicaragua
+- North Korea
+- Russia
+- Somalia
+- South Sudan
+- Sudan
+- Syria
+- Ukraine — Crimea, Donetsk, Luhansk
+- United States — including territories
+- Venezuela
+- Yemen
+- Zimbabwe
+
+Additional jurisdictions may be added without notice if regulatory or sanctions guidance changes. The list above is the operating list as of the date in the frontmatter.
+
+## 3. How the block works
+
+When a request reaches nsgame.org from an IP geolocated to a restricted territory, the page returns a notice and refuses to render the trading interface. The wallet connection prompt does not appear. The site is unreachable through ordinary use.
+
+The block is geo-IP based. Geo-IP is approximate. It is not a sanctions screen, an identity check, or a residency verification. It is a signal sufficient for the website's purposes.
+
+## 4. What the block does not do
+
+The block does not stop you from interacting with the protocol. The protocol is on Solana. The chain is global. Any user with a wallet, an RPC endpoint, and any frontend — including ones nsgame does not run — can submit transactions. The website's blocklist applies to the website only.
+
+This is not a loophole. It is the architecture. We have been honest about it from the first page.
+
+## 5. VPNs
+
+Using a VPN to bypass the block is a violation of these terms and the [Acceptable Use Policy](/legal/acceptable-use-policy). If detected, the website may revoke access from the wallets involved. The protocol will continue to honor those wallets, because that is what the protocol is for.
+
+## 6. Compliance with local law
+
+You are responsible for compliance with the laws of your actual jurisdiction. If your country forbids prediction-market participation, the website's geo-block does not provide you cover; the law applies regardless. Check your own rules. If you do not know them, do not bet.
+
+## 7. Need help?
+
+If you believe you are incorrectly blocked, or your jurisdiction has changed status and the page has not caught up, contact us via the Discord link in the footer. We will respond when we can. The list does not move quickly.
+
+## 8. Closing
+
+The block is a courtesy to the jurisdictions we are willing to serve. It is also a reminder of what a website actually is: a permissioned door in front of a permissionless room.

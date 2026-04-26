@@ -35,7 +35,9 @@
   },
   "footer": {
     "product": "상품",
+    "trust": "Trust",
     "resources": "리소스",
+    "legal": "Legal",
     "indexes": "인덱스 상품",
     "vision": "Vision",
     "data_sources": "데이터 소스",

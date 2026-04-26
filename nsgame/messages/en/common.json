@@ -35,7 +35,9 @@
   },
   "footer": {
     "product": "Product",
+    "trust": "Trust",
     "resources": "Resources",
+    "legal": "Legal",
     "indexes": "Index Products",
     "vision": "Vision",
     "data_sources": "Data Sources",
@@ -47,8 +49,8 @@
     "discord": "Discord",
     "privacy_policy": "Privacy Policy",
     "terms_of_service": "Terms of Service",
-    "copyright": "© 2026 nsgame. All rights reserved.",
-    "disclaimer": "Index products involve risk. Past performance does not guarantee future results. This platform does not provide financial advice."
+    "copyright": "© 2026 nsgame protocol — DAO in formation",
+    "disclaimer": "nsgame.org is a website. The protocol is a Solana program. The website may delist a market; the protocol cannot. The chain is the ledger."
   },
   "aria": {
     "toggle_menu": "Toggle menu",

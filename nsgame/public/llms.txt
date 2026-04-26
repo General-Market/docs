@@ -1,42 +1,57 @@
 # nsgame
 
-> Session-wallet prediction market on Solana. Users bet YES/NO on whether a
-> price feed will cross a threshold by a settlement time. Parimutuel payouts,
-> on-chain resolution, no bridges.
+> DAO-governed parimutuel prediction market on Solana. Subjects are adult-tube
+> performance signals — porn-star view counts and cam-room viewer counts.
+> Twenty-five hardcoded PvP fights, two boards (Stars: 4-hour windows, 15
+> markets; Cams: 2-minute windows, 10 markets). Binary outcomes. Wallet is
+> identity. No KYC. Settlement on-chain by the Goldilock oracle network.
 
-Status: devnet. Mainnet not deployed. Anything claiming a mainnet address is wrong.
+Status: testnet. Mainnet gated on audits of oracle and contracts. Anything
+claiming to be the nsgame token today is fraudulent.
 
-## Solana
+## Legal
 
-- Cluster: devnet (`devnet.solana.com`)
-- Program ID: `DQwMnwQGYuLDvciSFZNgUvcHkA3Buyhk3ejgbACvSydA`
-- Program name: `prediction_market` (Anchor)
-- Stake mint (devnet): `5BNaj6SeidyLp9PKRFTEKCTGsww9SQmsTp7yEqgHiEkT` — 6 decimals
-- IDL: `nsgame/lib/solana/idl/prediction_market.json` in the repo
+- [Terms of Use](https://nsgame.org/legal/terms-of-use): What using the website binds you to.
+- [Privacy Policy](https://nsgame.org/legal/privacy-policy): What the website collects, what the chain records.
+- [Cookie Policy](https://nsgame.org/legal/cookie-policy): Essential, preferences, analytics. PostHog only.
+- [Disclaimer](https://nsgame.org/legal/disclaimer): The protocol is not advice. The chain is not insurance.
+- [Acceptable Use Policy](https://nsgame.org/legal/acceptable-use-policy): What gets your wallet refused at the door.
+- [Risk Disclosure](https://nsgame.org/legal/risk-disclosure): Stakes can be lost. Pools can void. Smart contracts can fail.
+- [DMCA Policy](https://nsgame.org/legal/dmca-policy): Copyright takedown procedure for the website.
+- [Restricted Territories](https://nsgame.org/legal/restricted-territories): The standard decentralized-protocol blocklist.
+- [Age Gate](https://nsgame.org/legal/age-gate): Adult subjects, adult product, adult affirmation required.
 
-Key instructions: `place_bet`, `exit_bet`, `batch_bets`, `claim`, `close_market`, `resolve_market`, `upsert_source`.
+## Product
 
-Account types: `GlobalConfig`, `Market`, `OracleConfig`, `Position`, `Source`.
+- [How It Works](https://nsgame.org/product/how-it-works): Connect wallet, pick a side, wait for the round to close.
+- [Market Rules](https://nsgame.org/product/market-rules): The twenty-five fights, the two boards, the binary outcomes.
+- [Round Mechanics](https://nsgame.org/product/round-mechanics): Open, lock, resolve. Stars run four hours. Cams run two minutes.
+- [Parimutuel Methodology](https://nsgame.org/product/parimutuel-methodology): No house. The pool decides the price.
+- [Settlement Rules](https://nsgame.org/product/settlement-rules): What the oracle reads, what it writes on-chain, when winners can claim.
+- [Resolution Sources](https://nsgame.org/product/resolution-sources): xvideos, xnxx, pornhub, chaturbate. Public metrics only.
+- [Fee Schedule](https://nsgame.org/product/fee-schedule): 0.3% of each winning payout, routed to the DAO treasury.
+- [Refund Policy](https://nsgame.org/product/refund-policy): When a round voids and how stakes return.
 
-PDAs: `config`, `fee_vault`, `source/{u32 source_id}` — see `nsgame/lib/solana/predictionMarket.ts` for the full seed layout.
+## Trust
 
-## HTTP API
+- [Decentralization and DAO](https://nsgame.org/trust/decentralization-and-dao): No incorporated entity. DAO in formation. The framing.
+- [Goldilock Oracle Network](https://nsgame.org/trust/goldilock-oracle-network): The multi-oracle that signs settlements on-chain.
+- [Data Source Methodology](https://nsgame.org/trust/data-source-methodology): What gets scraped, how often, how normalised.
+- [Audit and Mainnet Roadmap](https://nsgame.org/trust/audit-and-mainnet-roadmap): What gates the move from testnet to mainnet.
+- [Subject Removal Policy](https://nsgame.org/trust/subject-removal-policy): UI delisting yes, protocol delisting no. The honest line.
+- [Token Status](https://nsgame.org/trust/token-status): A token is planned. Details will be published when finalised.
+- [Market Integrity](https://nsgame.org/trust/market-integrity): Public data, public chain, public methodology.
 
-Base: the deployed frontend (`https://nsgame.io` once shipped) or `http://localhost:3000` in dev.
+## Help
 
-- `POST /api/faucet/mint` — devnet stake-mint faucet. Body: `{ "address": "<base58 pubkey>" }`. 100 tokens, 60s per-IP cooldown, refuses any cluster whose genesis hash is not devnet.
-- `GET /api/positions/{wallet}` — every bet a wallet has placed, joined with close/resolve/claim events. Returns position state machine.
-- `GET /api/markets/{pda}/bets` — recent `BetPlaced` events for a market PDA.
-- `GET /api/pairs/{pairIndex}/price` — live Bitget pair price proxy via the data-node.
-- `GET /api/pairs/{pairIndex}/history` — pair price history.
-- `GET /api/sources/{id}/price`, `/api/sources/{id}/history` — same shape, source-keyed.
-- `GET /api/events/recent`, `/api/events/stream`, `/api/events/history/{owner}` — indexed program events.
-- `GET /api/dn/{...path}` — pass-through to the data-node (`DATA_NODE_URL`).
+- [Help Center](https://nsgame.org/help/help-center): Index of every help article.
+- [FAQ](https://nsgame.org/help/faq): The questions that get asked twice.
+- [Wallet Setup](https://nsgame.org/help/wallet-setup): Phantom or similar. No password, no email, no recovery.
+- [Deposit and Withdraw](https://nsgame.org/help/deposit-withdraw): SOL in, SOL out. The wallet is the account.
+- [Glossary](https://nsgame.org/help/glossary): Parimutuel, oracle, round, lock, void, claim.
+- [Contact](https://nsgame.org/help/contact): Discord link in the footer. There is no phone number.
 
-Wallets without `POSTGRES_URL` configured get empty arrays from positions/bets endpoints — the UI keeps rendering. The indexer Postgres lives on VPS 3 bound to localhost; use an SSH tunnel for local dev.
+## Brand
 
-## Source
-
-Code: this repo, `nsgame/`.
-
-Do not assume any product surface that this file does not list. If you reach for ITPs, batches, oracles, BLS signatures, Arbitrum Orbit, or USDC bridging — that was the previous fork. Gone.
+- [About](https://nsgame.org/brand/about): Why this exists, who built it, what the DAO is for.
+- [Brand Kit](https://nsgame.org/brand/brand-kit): Logos, colours, typography. Use them honestly.

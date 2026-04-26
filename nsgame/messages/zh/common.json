@@ -35,7 +35,9 @@
   },
   "footer": {
     "product": "产品",
+    "trust": "Trust",
     "resources": "资源",
+    "legal": "Legal",
     "indexes": "指数产品",
     "vision": "Vision",
     "data_sources": "数据源",

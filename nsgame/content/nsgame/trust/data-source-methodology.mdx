@@ -1,0 +1,90 @@
+---
+title: "Data Source Methodology"
+description: "What nsgame reads, from where, how often, and how it is normalized into a market settlement."
+slug: "data-source-methodology"
+category: "Trust"
+date: "2026-04-26"
+author: "nsgame"
+---
+
+A prediction market is only as honest as the thing it reads. nsgame reads four tube sites. The methodology is public, the readings are public, and any third party with the same access can re-derive any result the oracle has ever signed. This page documents the read.
+
+## The sources
+
+Four. No more, no less, no rotation.
+
+- **xvideos** — public profile view-count for star markets.
+- **xnxx** — public profile view-count for star markets.
+- **pornhub** — public profile view-count for star markets.
+- **chaturbate** — public viewer-count on broadcast rooms for cam markets.
+
+Three of the four publish cumulative profile view counts. Chaturbate publishes a live viewer count per room. The two boards in the catalog — Stars (4-hour windows, 15 markets) and Cams (2-minute windows, 10 markets) — map to these signals respectively.
+
+## Where the readings come from
+
+For each source, the data-node fetches the publicly served profile or room page. No private API. No login. No undocumented endpoint that requires a contract. If a member of the public can load the page in a browser, the data-node can read the same number. The exact endpoint per source is documented at the data-node, listed here as `[FACT TBD: per-source endpoint URLs — published from the data-node config]`.
+
+The data-node is the same binary used elsewhere in the monorepo, gated to the `tubes,chaturbate` source allowlist. Its source is in the public repository. There is no proprietary scraper.
+
+## How often
+
+Each source has its own cadence, both in how often the underlying counter actually updates and in how often we can poll without being rate-limited. From the empirical work in `data-node/data/tube-rate-tests/UPDATE_FREQUENCY_V3.md`:
+
+- **xvideos** — counters appear bursty-hourly. Useful poll interval: roughly every minute.
+- **xnxx** — counters tick consistently in the hundreds-to-thousands. Useful poll interval: roughly every minute.
+- **pornhub** — true cadence is sub-hourly; the displayed counter rounds to M-increments. Useful poll interval: 30 to 60 minutes.
+- **chaturbate** — viewer counts update in seconds. Useful poll interval: every few seconds for the duration of a 2-minute Cams round.
+
+Authoritative numbers used in production are `[FACT TBD: production poll-interval table per source, in seconds]`. The intent is to over-sample relative to each source's update cadence, never to under-sample. Over-sampling wastes bandwidth. Under-sampling loses signal. We err on bandwidth.
+
+## How readings become a result
+
+For each market, the program needs a single tuple — `(A_value, B_value, winner)` — at round close. The path from raw readings to that tuple is the same on every node:
+
+1. **Fetch.** Pull the public page for each subject in the market.
+2. **Parse.** Extract the published number — view count for stars, viewer count for cams.
+3. **De-duplicate.** Discard repeated readings within a poll window (the source returned the same number twice; we count it once).
+4. **Snapshot at boundaries.** Record the value at round open (`T0`) and round close (`T1`). For F1 (gain race) markets, the result is `T1 - T0` per side. For F2 (viewer total) markets, the result is `T1` per side.
+5. **Compare.** A wins if A's number is greater. B wins if B's is greater. Ties resolve to `[FACT TBD: tie rule — e.g. earlier-locked side, or refund]`.
+6. **Sign.** A quorum of [Goldilock](/trust/goldilock-oracle-network) nodes co-signs the tuple.
+
+The program verifies the signature and pays the pool minus rake. See [Settlement Rules](/product/settlement-rules) and [Parimutuel Methodology](/product/parimutuel-methodology) for the math from there.
+
+## Normalization
+
+Three corrections are applied so that the raw counter does not lie to the program more than the source already does.
+
+- **Rate-limit gaps.** When a source refuses a poll, the data-node retains the most recent valid reading until a fresh one arrives or the round closes. If no valid reading bracketed the round boundary, the round is voided to refund. We do not interpolate. We do not guess.
+- **Counter resets.** Tube sites occasionally roll a counter backwards, almost always due to a cache fault on their end. A backward step on a profile counter is treated as a missing reading, not a real value. Repeated resets in a single round force the round to refund.
+- **Rounding.** Pornhub publishes M-rounded numbers on the public profile. Where a more precise feed exists for the same star, the more precise feed is preferred. Where it does not, the rounded number is used and the rounding is acknowledged in the published reading.
+
+Beyond these three, no smoothing. No moving averages. No proprietary "normalized score." The number we sign is the number the source published, plus the gap-handling above.
+
+## Reproducibility
+
+Goldilock nodes publish their readings. The published log includes:
+
+- The fetched URL and the timestamp of the fetch.
+- The raw integer extracted from the response.
+- The derived `T0` and `T1` for each market in the round.
+- The signed tuple posted on-chain.
+
+Anyone can poll the same URLs at roughly the same times and re-derive the same answer. They will not match exactly — your laptop is not on the same network as the oracle — but the difference will be negligible compared to the gap between the two sides of any meaningful market. If your re-derivation contradicts the oracle's signed answer in a way that flips the winner, that is a public, on-chain dispute. We would rather you find one than not.
+
+## Failure modes
+
+The methodology fails in well-defined ways. Each one routes to refund, not to a wrong answer.
+
+- **Rate limit through a round.** Source refuses every poll for the duration. Round refunds. See [Refund Policy](/product/refund-policy).
+- **Source change.** A tube site changes its HTML, removes the counter, or relocates the page. The data-node returns no valid reading. Round refunds.
+- **Source shutdown.** A site goes down for maintenance, takedown, or terminal failure. Round refunds.
+- **Disagreement among oracle nodes.** Goldilock nodes return different readings outside an acceptable tolerance. No quorum forms. Settlement does not post. Round refunds at timeout.
+- **Subject removed by source.** The star or room we are watching disappears mid-round. Treated as missing reading. Round refunds.
+
+The protocol does not award a wrong answer to keep a round alive. A refund is the failure mode. The protocol is comfortable with the failure mode. So are we.
+
+## What is not in the read
+
+We do not buy private data from any source. We do not have a relationship with any source. We do not pay for elevated rate limits. We are a public-facing scraper, treated like any other browser, and we are deliberate about staying in that category — because the moment we are special to the source, the source can lie to us specifically.
+
+The data is honest in proportion to its publicness. We keep the read public. The rest is a question for the source.

@@ -1,33 +1,132 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
+import { Link } from '@/i18n/routing'
+
+// Polymarket posture, our doc surface. Four columns plus a thin legal
+// strip. The copy is terse on purpose — the footer is not the place to
+// argue, it is the place to admit what exists.
+
+interface FooterLink {
+  href: string
+  label: string
+  external?: boolean
+}
+
+const PRODUCT_LINKS: FooterLink[] = [
+  { href: '/product/how-it-works', label: 'How It Works' },
+  { href: '/product/market-rules', label: 'Markets' },
+  { href: '/product/round-mechanics', label: 'Round Mechanics' },
+  { href: '/product/fee-schedule', label: 'Fee Schedule' },
+  { href: '/product/refund-policy', label: 'Refund Policy' },
+  { href: '/trust/market-integrity', label: 'Market Integrity' },
+]
+
+const TRUST_LINKS: FooterLink[] = [
+  { href: '/trust/decentralization-and-dao', label: 'Decentralization & DAO' },
+  { href: '/trust/goldilock-oracle-network', label: 'Goldilock' },
+  { href: '/trust/data-source-methodology', label: 'Data Sources' },
+  { href: '/trust/audit-and-mainnet-roadmap', label: 'Audit Roadmap' },
+  { href: '/trust/subject-removal-policy', label: 'Subject Removal' },
+  { href: '/trust/token-status', label: 'Token Status' },
+]
+
+const RESOURCE_LINKS: FooterLink[] = [
+  { href: '/help', label: 'Help Center' },
+  { href: '/help/faq', label: 'FAQ' },
+  { href: '/help/glossary', label: 'Glossary' },
+  { href: '/help/wallet-setup', label: 'Wallet Setup' },
+  { href: '/help/contact', label: 'Contact' },
+  { href: '/brand/brand-kit', label: 'Brand Kit' },
+]
+
+const LEGAL_LINKS: FooterLink[] = [
+  { href: '/legal/terms-of-use', label: 'Terms' },
+  { href: '/legal/privacy-policy', label: 'Privacy' },
+  { href: '/legal/cookie-policy', label: 'Cookie Policy' },
+  { href: '/legal/disclaimer', label: 'Disclaimer' },
+  { href: '/legal/acceptable-use-policy', label: 'Acceptable Use' },
+  { href: '/legal/risk-disclosure', label: 'Risk Disclosure' },
+  { href: '/legal/dmca-policy', label: 'DMCA' },
+  { href: '/legal/restricted-territories', label: 'Restricted Territories' },
+  { href: '/legal/age-gate', label: 'Age Verification' },
+]
+
+const CONTACT_EMAIL = '[FACT TBD: contact email]'
+const DISCORD_URL = '[FACT TBD: Discord URL]'
+const X_URL = 'https://x.com/otc_max'
+
+function FooterColumn({
+  title,
+  links,
+}: {
+  title: string
+  links: FooterLink[]
+}) {
+  return (
+    <div>
+      <span className="text-zinc-200 font-semibold text-[11px] uppercase tracking-[0.12em] block mb-4">
+        {title}
+      </span>
+      <ul className="space-y-2.5">
+        {links.map(link => (
+          <li key={link.href}>
+            {link.external ? (
+              <a
+                href={link.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[13px] text-zinc-500 hover:text-zinc-100 transition-colors"
+              >
+                {link.label}
+              </a>
+            ) : (
+              <Link
+                href={link.href}
+                className="text-[13px] text-zinc-500 hover:text-zinc-100 transition-colors"
+              >
+                {link.label}
+              </Link>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
 
 export function Footer() {
   const t = useTranslations('common')
 
   return (
-    <footer className="bg-zinc-950 text-white/60 pt-12 pb-6 px-6 lg:px-12 text-caption">
-      <div className="max-w-site mx-auto">
-        {/* 3-column grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-10 pb-10 border-b border-white/10">
-          {/* Col 1: Brand */}
-          <div>
-            <span className="text-white font-bold text-body tracking-tight">{t('brand.name')}</span>
-            <p className="mt-2 text-white/40 leading-relaxed text-label">
-              {t('brand.description')}
+    <footer className="bg-zinc-950 border-t border-zinc-900 text-zinc-400 pt-14 pb-8 px-6 sm:px-10 lg:px-14">
+      <div className="max-w-6xl mx-auto">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-10 sm:gap-8 pb-12 border-b border-zinc-900">
+          {/* Col 1 — brand block */}
+          <div className="col-span-2 sm:col-span-1">
+            <Link href="/" className="inline-block">
+              <span className="text-zinc-50 font-black text-[18px] tracking-tight">
+                nsgame
+              </span>
+            </Link>
+            <p className="mt-3 text-[13px] text-zinc-500 leading-relaxed max-w-[18rem]">
+              A DAO-governed parimutuel prediction market on Solana. The
+              chain is the disclosure.
             </p>
-            <a
-              href="mailto:contact@indexmaker.global"
-              className="block mt-3 text-white/40 hover:text-white transition-colors text-label"
-            >
-              contact@indexmaker.global
-            </a>
-            <div className="flex gap-3 mt-3">
+            <div className="mt-4 space-y-1.5">
               <a
-                href="https://discord.gg/xsfgzwR6"
+                href={CONTACT_EMAIL.startsWith('[FACT') ? '#' : `mailto:${CONTACT_EMAIL}`}
+                className="block text-[12px] text-zinc-500 hover:text-zinc-100 transition-colors font-mono"
+              >
+                {CONTACT_EMAIL}
+              </a>
+            </div>
+            <div className="flex gap-3 mt-4">
+              <a
+                href={DISCORD_URL.startsWith('[FACT') ? '#' : DISCORD_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-white/40 hover:text-white transition-colors"
+                className="text-zinc-500 hover:text-zinc-100 transition-colors"
                 aria-label={t('aria.discord')}
               >
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
@@ -35,10 +134,10 @@ export function Footer() {
                 </svg>
               </a>
               <a
-                href="https://x.com/otc_max"
+                href={X_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-white/40 hover:text-white transition-colors"
+                className="text-zinc-500 hover:text-zinc-100 transition-colors"
                 aria-label={t('aria.twitter')}
               >
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
@@ -48,37 +147,44 @@ export function Footer() {
             </div>
           </div>
 
-          {/* Col 2: Explorers */}
-          <div>
-            <span className="text-white/80 font-semibold text-label uppercase tracking-[0.08em] block mb-3">Explorers</span>
-            <ul className="space-y-2">
-              <li>
-                <a href={process.env.NEXT_PUBLIC_L3_EXPLORER_URL || '#'} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
-                  GM Chain
-                </a>
-              </li>
-              <li>
-                <a href={process.env.NEXT_PUBLIC_SETTLEMENT_EXPLORER_URL || '#'} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
-                  Settlement (Sonic)
-                </a>
-              </li>
-            </ul>
-          </div>
+          <FooterColumn title={t('footer.product')} links={PRODUCT_LINKS} />
+          <FooterColumn title={t('footer.trust')} links={TRUST_LINKS} />
+          <FooterColumn title={t('footer.resources')} links={RESOURCE_LINKS} />
+        </div>
 
-          {/* Col 3: Resources */}
-          <div>
-            <span className="text-white/80 font-semibold text-label uppercase tracking-[0.08em] block mb-3">{t('footer.resources')}</span>
-            <ul className="space-y-2">
-              <li><a href="https://discord.gg/xsfgzwR6" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">{t('footer.discord')}</a></li>
-            </ul>
-          </div>
+        {/* Legal strip — all the binding links inline */}
+        <div className="pt-8 flex flex-wrap gap-x-5 gap-y-2 items-center">
+          <span className="text-[11px] uppercase tracking-[0.12em] text-zinc-600 font-semibold">
+            {t('footer.legal')}
+          </span>
+          {LEGAL_LINKS.map(link => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="text-[12px] text-zinc-500 hover:text-zinc-200 transition-colors"
+            >
+              {link.label}
+            </Link>
+          ))}
         </div>
 
         {/* Bottom bar */}
-        <div className="pt-6 flex flex-col sm:flex-row justify-between items-center gap-3">
-          <span className="text-white/30 text-micro">{t('footer.copyright')}</span>
-          <p className="text-white/25 text-micro max-w-xl text-center sm:text-right leading-relaxed">
-            {t('footer.disclaimer')}
+        <div className="mt-8 pt-6 border-t border-zinc-900 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <span className="text-[11px] text-zinc-600 font-mono">
+            © 2026 nsgame protocol — DAO in formation
+          </span>
+          <p className="text-[11px] text-zinc-600 max-w-2xl leading-relaxed">
+            nsgame.org is a website. The protocol is a Solana program. The
+            website may delist a market; the protocol cannot. The chain is
+            the ledger. Read the{' '}
+            <Link href="/legal/disclaimer" className="underline hover:text-zinc-300">
+              Disclaimer
+            </Link>{' '}
+            and the{' '}
+            <Link href="/legal/risk-disclosure" className="underline hover:text-zinc-300">
+              Risk Disclosure
+            </Link>
+            .
           </p>
         </div>
       </div>

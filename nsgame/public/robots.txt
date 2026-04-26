@@ -1,8 +1,5 @@
-# nsgame — session-wallet prediction market on Solana
+# nsgame — DAO-governed parimutuel prediction market on Solana
 User-agent: *
 Allow: /
-Allow: /llms.txt
-Allow: /llms-full.txt
 
-# Sitemap
-Sitemap: https://nsgame.io/sitemap.xml
+Sitemap: https://nsgame.org/sitemap.xml

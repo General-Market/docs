@@ -1,0 +1,96 @@
+---
+title: "Risk Disclosure"
+description: "Every way nsgame can lose your money, plus the resources for when betting becomes the problem."
+slug: "risk-disclosure"
+category: "Legal"
+date: "2026-04-26"
+author: "nsgame"
+---
+
+Most disclosures bury the warning. This one starts with it: you can lose every dollar you stake, and many of the failure modes are outside anyone's control. Read carefully.
+
+## 1. Capital risk
+
+Every bet is at risk of total loss. nsgame is parimutuel — winners are paid from losers' stakes, minus a 0.3% rake to the DAO treasury. If your side loses, your stake is gone. There is no insurance fund. There is no house bankroll to bail out a misfire. There is the pool, the oracle, and the math.
+
+Minimum stake: $0.10. Maximum stake: uncapped. The size of your loss is bounded only by your willingness to deposit more.
+
+## 2. Smart-contract risk
+
+The nsgame protocol is a Solana program — software running on a chain, written by humans, reviewed by humans. Software has bugs. Audits help; audits do not eliminate. The contracts are scheduled for external review before mainnet. Until then they run on devnet, where the asset is test value, not real value.
+
+Possible failure modes include — but are not limited to — settlement-logic errors, rounding bugs, reentry vulnerabilities, signature-verification flaws in the oracle integration, and bugs in upstream dependencies (the Solana runtime itself). A single bug can incinerate a pool. Backward compatibility is not a feature; the protocol may be redeployed to fix flaws, and old positions may not migrate.
+
+## 3. Oracle risk
+
+The Goldilock oracle network reads public adult-industry metrics and posts settlements on-chain. During testnet it is operated by the founding team. At mainnet it transitions to operators elected by the DAO.
+
+Oracle failures look like:
+
+- **Source unreachable.** A tube site returns 503 or rate-limits us mid-round. The reading is incomplete.
+- **Source reading inconsistent across nodes.** Different oracle operators see different numbers. Consensus does not form.
+- **Source schema change.** A site changes its API or HTML, and the parser breaks until patched.
+- **Source data adversarially manipulated.** Someone games the underlying metric — view-bots, sock-puppet viewers — to swing a market. The oracle reports what the source publishes; it does not authenticate it.
+
+When the oracle cannot resolve a round honestly, the round is voided and stakes are refunded. Refunds are claim-based by default and automatic when ergonomically better. A void is an admission, not a feature. They will happen.
+
+## 4. Data-source risk
+
+nsgame depends on the cooperation of external services it does not own — xvideos, xnxx, pornhub, chaturbate. These services may:
+
+- Change their APIs without notice.
+- Begin requiring authentication or per-request fees.
+- Block our IP ranges.
+- Shut down entirely.
+- Discontinue the public counters that feed the markets.
+
+Any of these breaks one or more boards until the oracle adapts or the affected markets are retired. During an outage, affected rounds are voided. If a source disappears permanently, the corresponding markets disappear with it. The 25 hardcoded fights are frozen in code; they are not frozen in time.
+
+## 5. Regulatory risk
+
+Prediction markets sit in legal grey territory. Adult-industry-themed prediction markets are greyer still. Your jurisdiction may treat use of nsgame as gambling, as derivatives trading, as obscenity, as protected speech, or as none of the above. Regulatory treatment can change without warning. A government that allows nsgame today may forbid it tomorrow.
+
+The website applies a standard decentralized-protocol blocklist. The protocol applies nothing — the chain does not check passports. Compliance with your local law is your responsibility, not the protocol's. See [Restricted Territories](/legal/restricted-territories).
+
+## 6. Subject-notoriety risk
+
+Markets reference adult performers by stage name. Their notoriety drives the metric being measured. If a subject leaves the industry, rebrands, deactivates accounts, or retires from the platforms we read, the underlying numbers can move sharply for reasons unrelated to ordinary public attention. We do not know in advance when a subject will quit. Neither do you. Neither does the oracle.
+
+If a subject demands delisting, the website will remove the market from its catalog. The protocol cannot remove it. The remaining pool resolves under the rules that applied when it opened.
+
+## 7. Token risk
+
+A token is planned. Details will be published when finalised. Anything claiming to be the nsgame token today is fraudulent. When the real token launches:
+
+- It may go down rather than up.
+- Liquidity may be thin.
+- The distribution may be subject to vesting, unlocks, and concentration risks common to early protocol tokens.
+- Governance utility does not imply price utility.
+
+Treat the future token as a separate risk surface, not a guaranteed reward.
+
+## 8. Chain risk
+
+Solana, like every chain, can have outages, reorganizations, and consensus pauses. During such events, transactions may not finalize, settlements may stall, and refunds may be delayed. nsgame inherits Solana's reliability; we cannot exceed it.
+
+## 9. Custody risk
+
+nsgame is non-custodial. You hold your keys. If you lose your keys, you lose your funds — no support process can recover them. If a third-party wallet is compromised, the protocol will honor signed transactions from the new key holder. Self-custody is freedom and weight at once.
+
+## 10. UX risk
+
+The website may display stale data, miscount a position, or briefly show wrong odds during oracle settlement. The chain is the ground truth; the UI is an interpretation. When in doubt, read the chain directly.
+
+## 11. Behavioral risk
+
+Short rounds, immediate feedback, frictionless restakes — the parimutuel model is designed to be honest about its math, but honest math does not protect you from yourself. If betting stops being entertainment, get help.
+
+- **GamCare** (UK): gamcare.org.uk — free advice and counselling, freephone 0808 8020 133.
+- **BeGambleAware** (UK): begambleaware.org — confidential support, 0808 8020 133.
+- **National Council on Problem Gambling** (US): ncpgambling.org — 1-800-GAMBLER.
+
+We do not enforce limits. We do not lock accounts. We do not run a self-exclusion register. If those features matter to you, the website is the wrong tool — and we are honest enough to say so.
+
+## 12. Closing
+
+The risks above are not exhaustive. They are the ones we can name. The unnamed ones will be more interesting.
