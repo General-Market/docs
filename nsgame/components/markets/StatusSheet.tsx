@@ -7,10 +7,10 @@ import type { StatusFilter } from './CategorySidebar'
 // statuses you'd like to see. Mobile-only by composition. Plain Tailwind
 // transitions — no framer.
 
-const STATUSES: Array<{ id: StatusFilter; label: string }> = [
-  { id: 'live', label: 'live' },
-  { id: 'open', label: 'open' },
-  { id: 'resolved', label: 'resolved' },
+const STATUSES: Array<{ id: StatusFilter; label: string; sub: string }> = [
+  { id: 'live', label: 'live', sub: 'taking bets' },
+  { id: 'settling', label: 'settling', sub: 'awaiting the keeper' },
+  { id: 'resolved', label: 'resolved', sub: 'paid out' },
 ]
 
 export interface StatusSheetProps {
@@ -119,7 +119,10 @@ export function StatusSheet({ open, statuses, onStatusToggle, onClose }: StatusS
                     onChange={() => onStatusToggle?.(s.id)}
                     className="h-3.5 w-3.5 rounded border-zinc-300 text-zinc-900 focus:ring-1 focus:ring-zinc-900"
                   />
-                  <span className="text-[13.5px] capitalize">{s.label}</span>
+                  <span className="flex flex-col items-start">
+                    <span className="text-[13.5px] capitalize">{s.label}</span>
+                    <span className="text-[11px] text-zinc-500">{s.sub}</span>
+                  </span>
                 </label>
               )
             })}

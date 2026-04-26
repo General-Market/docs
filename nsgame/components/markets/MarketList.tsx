@@ -7,12 +7,14 @@ import {
   useUpcomingSlots,
   useMarketStatesBatch,
   useResolvedSlots,
+  useSettlingSlots,
 } from '@/lib/markets/hooks'
 import { MarketRow, type Side } from './MarketRow'
 import { MarketRowSkeleton } from './MarketRowSkeleton'
 import { CountdownTickProvider, useNowSecs } from './CountdownTimer'
 import type { BoardFilter, HorizonFilter } from './FilterBar'
 import type { StatusFilter } from './CategorySidebar'
+import { headerForStatuses, type MarketStatus } from '@/lib/markets/status'
 
 const SKELETON_COUNT = 6
 
@@ -53,13 +55,17 @@ function MarketListInner({
     horizonDays,
   })
 
-  // Resolved markets live in the indexer, not in the forward-looking
-  // cohort grid. Pull them only when the user actually asked for them.
+  // Settling and resolved both live in the indexer, not in the forward
+  // cohort grid. Pull each only when the user actually asks for it.
+  const wantsLive = statuses.length === 0 || statuses.includes('live')
+  const wantsSettling = statuses.includes('settling')
   const wantsResolved = statuses.includes('resolved')
-  const resolved = useResolvedSlots({
-    limit: 60,
-    board,
-  })
+
+  const settling = useSettlingSlots({ limit: 60, board })
+  const resolved = useResolvedSlots({ limit: 60, board })
+
+  const settlingSlots = wantsSettling ? settling.slots : EMPTY_SLOTS
+  const settlingStates = wantsSettling ? settling.states : EMPTY_STATES
   const resolvedSlots = wantsResolved ? resolved.slots : EMPTY_SLOTS
   const resolvedStates = wantsResolved ? resolved.states : EMPTY_STATES
 
@@ -71,49 +77,59 @@ function MarketListInner({
 
   const now = useNowSecs()
 
-  // Decide which universe powers the row list. Resolved-only swaps the
-  // source. Mixed (resolved + live/open) unions both. Everything else
-  // keeps the forward-only path.
+  // Compose the row universe. Each toggle adds its own source; absence of
+  // any toggle falls back to the forward-only "what's coming next" view.
+  // Dedupe by PDA — a freshly-resolved market may still appear in the
+  // forward cohort until the catalog rolls.
+  const onlySettling = statuses.length === 1 && statuses[0] === 'settling'
   const onlyResolved = statuses.length === 1 && statuses[0] === 'resolved'
+
   const filteredSlots = useMemo<UpcomingSlot[]>(() => {
+    if (onlySettling) return settlingSlots
     if (onlyResolved) return resolvedSlots
-    const forward = statuses.length === 0
-      ? upcomingSlots
-      : upcomingSlots.filter(s => {
-          const st = upcomingStateMap[s.marketPda] ?? null
-          const closed = now > 0 && s.closeTime <= now
-          const isResolved = !!st?.resolved
-          const hasPool = !!st && st.totalYes + st.totalNo > 0n
-          const isLive = !closed && !isResolved && hasPool
-          const isOpen = !closed && !isResolved && !hasPool
-          if (statuses.includes('live') && isLive) return true
-          if (statuses.includes('open') && isOpen) return true
-          if (statuses.includes('resolved') && isResolved) return true
-          return false
-        })
-    if (!wantsResolved || resolvedSlots.length === 0) return forward
-    // Union: forward first (active markets), resolved (history) tail.
-    // Dedupe by PDA in case the indexer has caught up but the chain
-    // account still decodes the same row as the forward universe.
-    const seen = new Set(forward.map(s => s.marketPda))
-    const tail = resolvedSlots.filter(s => !seen.has(s.marketPda))
-    return [...forward, ...tail]
+
+    // The "live" cohort is the forward catalog grid pruned to markets
+    // whose close window has not yet passed (so an instantiated row that
+    // crossed close-time but hasn't reached the indexer's settling fetch
+    // doesn't ghost-render here).
+    const liveSlots = !wantsLive
+      ? EMPTY_SLOTS
+      : statuses.length === 0
+        ? upcomingSlots
+        : upcomingSlots.filter(s => now <= 0 || s.closeTime > now)
+
+    const out: UpcomingSlot[] = []
+    const seen = new Set<string>()
+    const push = (xs: readonly UpcomingSlot[]) => {
+      for (const s of xs) {
+        if (seen.has(s.marketPda)) continue
+        seen.add(s.marketPda)
+        out.push(s)
+      }
+    }
+    push(liveSlots)
+    if (wantsSettling) push(settlingSlots)
+    if (wantsResolved) push(resolvedSlots)
+    return out
   }, [
+    onlySettling,
     onlyResolved,
+    settlingSlots,
     resolvedSlots,
     statuses,
     upcomingSlots,
-    upcomingStateMap,
+    wantsLive,
+    wantsSettling,
     wantsResolved,
     now,
   ])
 
-  // Merged state map — resolved entries come from the indexer fetch;
-  // forward entries come from the on-chain batch read.
+  // Merged state map — indexer-sourced rows take precedence over the
+  // chain decode (the indexer has the canonical resolved/final values).
   const stateMap = useMemo<Record<string, MarketState | null>>(() => {
-    if (!wantsResolved) return upcomingStateMap
-    return { ...upcomingStateMap, ...resolvedStates }
-  }, [upcomingStateMap, resolvedStates, wantsResolved])
+    if (!wantsSettling && !wantsResolved) return upcomingStateMap
+    return { ...upcomingStateMap, ...settlingStates, ...resolvedStates }
+  }, [upcomingStateMap, settlingStates, resolvedStates, wantsSettling, wantsResolved])
 
   // Lift the *forward* slot universe so the sidebar's per-board counts
   // don't lurch when the user flips the resolved checkbox. Counts read
@@ -127,12 +143,16 @@ function MarketListInner({
   useEffect(() => { setMounted(true) }, [])
 
   const liveCount = filteredSlots.length
-  const headingMode: HeadingMode = onlyResolved ? 'resolved' : 'upcoming'
+  // Translate the StatusFilter[] into MarketStatus[] for header copy.
+  // The two enums are isomorphic by design — `lib/markets/status.ts` is
+  // the canonical taxonomy, the UI checkbox values mirror it.
+  const headerStatuses: MarketStatus[] = statuses
+  const headerCopy = headerForStatuses(headerStatuses)
 
   if (!mounted) {
     return (
       <section aria-label="Markets" className="min-w-0">
-        <Heading mode={headingMode} liveCount={0} />
+        <Heading copy={headerCopy} liveCount={0} />
         <div className="space-y-2">
           {Array.from({ length: SKELETON_COUNT }).map((_, i) => (
             <MarketRowSkeleton key={i} />
@@ -142,13 +162,26 @@ function MarketListInner({
     )
   }
 
-  // Resolved-only path: a still-loading indexer should show skeletons,
-  // not "no markets here". The forward universe being non-empty doesn't
-  // help us answer the resolved question.
+  // Indexer-only paths: while the request is in flight, render skeletons
+  // instead of an unhelpful empty state. The forward universe cannot
+  // answer either question.
+  if (onlySettling && settling.loading && settlingSlots.length === 0) {
+    return (
+      <section aria-label="Markets" className="min-w-0">
+        <Heading copy={headerCopy} liveCount={0} />
+        <div className="space-y-2">
+          {Array.from({ length: SKELETON_COUNT }).map((_, i) => (
+            <MarketRowSkeleton key={i} />
+          ))}
+        </div>
+      </section>
+    )
+  }
+
   if (onlyResolved && resolved.loading && resolvedSlots.length === 0) {
     return (
       <section aria-label="Markets" className="min-w-0">
-        <Heading mode={headingMode} liveCount={0} />
+        <Heading copy={headerCopy} liveCount={0} />
         <div className="space-y-2">
           {Array.from({ length: SKELETON_COUNT }).map((_, i) => (
             <MarketRowSkeleton key={i} />
@@ -159,14 +192,16 @@ function MarketListInner({
   }
 
   if (filteredSlots.length === 0) {
-    const text = onlyResolved
-      ? 'Nothing has settled yet. Come back after the next window.'
-      : upcomingSlots.length === 0
-        ? 'No markets here. Try a wider source or horizon.'
-        : 'No markets match the current filter.'
+    const text = onlySettling
+      ? 'Nothing waiting. Every closed window has been answered.'
+      : onlyResolved
+        ? 'Nothing has settled yet. Come back after the next window.'
+        : upcomingSlots.length === 0
+          ? 'No markets here. Try a wider source or horizon.'
+          : 'No markets match the current filter.'
     return (
       <section aria-label="Markets" className="min-w-0">
-        <Heading mode={headingMode} liveCount={0} />
+        <Heading copy={headerCopy} liveCount={0} />
         <EmptyState text={text} />
       </section>
     )
@@ -174,7 +209,7 @@ function MarketListInner({
 
   return (
     <section aria-label="Markets" className="min-w-0">
-      <Heading mode={headingMode} liveCount={liveCount} />
+      <Heading copy={headerCopy} liveCount={liveCount} />
       <FadeIn className="space-y-2">
         {filteredSlots.map(slot => (
           <MarketRow
@@ -224,21 +259,15 @@ function FadeIn({ children, className }: { children: React.ReactNode; className?
   )
 }
 
-type HeadingMode = 'upcoming' | 'resolved'
-
-function Heading({ mode, liveCount }: { mode: HeadingMode; liveCount: number }) {
-  const title = mode === 'resolved' ? 'Already settled' : 'Closing soon'
-  const subtitle = mode === 'resolved'
-    ? 'The window closed. The price decided. The keeper paid.'
-    : 'Pick a side. The keeper pays out when the answer arrives.'
+function Heading({ copy, liveCount }: { copy: { title: string; subtitle: string }; liveCount: number }) {
   return (
     <header className="mb-5 flex items-baseline justify-between gap-3">
       <div>
         <h2 className="text-[18px] font-semibold tracking-tight text-zinc-100">
-          {title}
+          {copy.title}
         </h2>
         <p className="mt-1 text-[13px] text-zinc-500">
-          {subtitle}
+          {copy.subtitle}
         </p>
       </div>
       <span className="text-[12px] tabular-nums text-zinc-500">

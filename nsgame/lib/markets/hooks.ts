@@ -1138,6 +1138,117 @@ function safeBigInt(s: string | null | undefined): bigint {
   try { return BigInt(s) } catch { return 0n }
 }
 
+export interface SettlingSlotsResult {
+  slots: UpcomingSlot[]
+  states: MarketStateMap
+  loading: boolean
+}
+
+interface SettlingMarketDTO {
+  market: string
+  sourceId: number
+  closeTime: number
+  settlementTime: number
+  thresholdBps: number
+  totalYes: string
+  totalNo: string
+}
+
+const SETTLING_POLL_MS = 60_000
+const SETTLING_DEFAULT_LIMIT = 60
+
+/**
+ * Markets in purgatory: bet window has closed, oracle has not yet paid out.
+ *
+ * Same shape contract as `useResolvedSlots` — synthesises an `UpcomingSlot`
+ * per indexer row by routing `threshold_bps` back through the catalog, and
+ * pairs each row with a `MarketState` whose `resolved=false` so the row
+ * still renders the in-flight pool distribution.
+ */
+export function useSettlingSlots(opts?: {
+  limit?: number
+  board?: Board | 'all'
+}): SettlingSlotsResult {
+  const limit = opts?.limit ?? SETTLING_DEFAULT_LIMIT
+  const board = opts?.board ?? 'all'
+
+  const [slots, setSlots] = useState<UpcomingSlot[]>([])
+  const [states, setStates] = useState<MarketStateMap>({})
+  const [loading, setLoading] = useState<boolean>(true)
+
+  useEffect(() => {
+    let cancelled = false
+
+    const fetchOnce = async () => {
+      try {
+        const res = await fetch(`/api/markets/settling?limit=${limit}`, {
+          cache: 'no-store',
+        })
+        if (!res.ok) return
+        const payload = (await res.json()) as { markets?: SettlingMarketDTO[] }
+        if (cancelled) return
+
+        const nextSlots: UpcomingSlot[] = []
+        const nextStates: MarketStateMap = {}
+
+        for (const m of payload.markets ?? []) {
+          const entry = getCatalogEntryByPairIndex(m.thresholdBps)
+          if (!entry) continue
+          if (board !== 'all' && entry.board !== board) continue
+
+          nextSlots.push({
+            catalogId: entry.id,
+            sourceId: entry.sourceId,
+            sourceName: entry.sourceName,
+            label: entry.label,
+            description: entry.description,
+            thresholdBps: entry.thresholdBps,
+            pairIndex: entry.pairIndex,
+            board: entry.board,
+            format: entry.format,
+            displayA: entry.displayA,
+            displayB: entry.displayB,
+            slugA: entry.slugA,
+            slugB: entry.slugB,
+            audienceA: entry.audienceA,
+            audienceB: entry.audienceB,
+            windowSecs: entry.windowSecs,
+            closeTime: m.closeTime,
+            settlementTime: m.settlementTime,
+            marketPda: m.market,
+          })
+
+          nextStates[m.market] = {
+            totalYes: safeBigInt(m.totalYes),
+            totalNo: safeBigInt(m.totalNo),
+            resolved: false,
+            outcomeYes: null,
+            baselinePrice: null,
+            finalPrice: null,
+          }
+        }
+
+        setSlots(nextSlots)
+        setStates(nextStates)
+      } catch {
+        // Indexer offline or DB unset — keep last snapshot.
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    setLoading(true)
+    void fetchOnce()
+    const id = window.setInterval(fetchOnce, SETTLING_POLL_MS)
+    return () => {
+      cancelled = true
+      window.clearInterval(id)
+    }
+  }, [limit, board])
+
+  return { slots, states, loading }
+}
+
 export function useResolvedSlots(opts?: {
   limit?: number
   board?: Board | 'all'

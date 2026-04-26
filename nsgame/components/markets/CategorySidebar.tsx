@@ -19,12 +19,12 @@ const HORIZONS: Array<{ id: HorizonFilter; label: string }> = [
   { id: 'all', label: 'all open' },
 ]
 
-export type StatusFilter = 'live' | 'open' | 'resolved'
+export type StatusFilter = 'live' | 'settling' | 'resolved'
 
-const STATUSES: Array<{ id: StatusFilter; label: string }> = [
-  { id: 'live', label: 'live' },
-  { id: 'open', label: 'open' },
-  { id: 'resolved', label: 'resolved' },
+const STATUSES: Array<{ id: StatusFilter; label: string; sub: string }> = [
+  { id: 'live', label: 'live', sub: 'taking bets' },
+  { id: 'settling', label: 'settling', sub: 'awaiting the keeper' },
+  { id: 'resolved', label: 'resolved', sub: 'paid out' },
 ]
 
 export interface CategorySidebarProps {
@@ -159,7 +159,10 @@ export function CategorySidebar({
                   onChange={() => onStatusToggle(s.id)}
                   className="h-3.5 w-3.5 rounded border-zinc-700 bg-zinc-900 text-zinc-100 focus:ring-1 focus:ring-zinc-500"
                 />
-                <span className="text-[13.5px] capitalize">{s.label}</span>
+                <span className="flex flex-col items-start">
+                  <span className="text-[13.5px] capitalize text-zinc-200">{s.label}</span>
+                  <span className="text-[11px] text-zinc-500">{s.sub}</span>
+                </span>
               </label>
             )
           })}
