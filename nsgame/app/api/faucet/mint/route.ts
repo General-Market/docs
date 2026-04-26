@@ -127,70 +127,79 @@ function validatePubkey(input: unknown): PublicKey | null {
   }
 }
 
+export const runtime = 'nodejs'
+
 export async function POST(req: NextRequest) {
-  let body: unknown
   try {
-    body = await req.json()
-  } catch {
-    return Response.json({ ok: false, error: 'Invalid JSON body.' }, { status: 400 })
-  }
+    let body: unknown
+    try {
+      body = await req.json()
+    } catch {
+      return Response.json({ ok: false, error: 'Invalid JSON body.' }, { status: 400 })
+    }
 
-  const address = (body as { address?: unknown } | null)?.address
-  const userPubkey = validatePubkey(address)
-  if (!userPubkey) {
-    return Response.json({ ok: false, error: 'Invalid wallet address.' }, { status: 400 })
-  }
+    const address = (body as { address?: unknown } | null)?.address
+    const userPubkey = validatePubkey(address)
+    if (!userPubkey) {
+      return Response.json({ ok: false, error: 'Invalid wallet address.' }, { status: 400 })
+    }
 
-  // Per-IP cooldown. Imperfect; sufficient.
-  const ip = clientIp(req)
-  const last = cooldown.get(ip) ?? 0
-  const now = Date.now()
-  const wait = COOLDOWN_MS - (now - last)
-  if (wait > 0) {
-    return Response.json(
-      { ok: false, error: `Cooldown. Try again in ${Math.ceil(wait / 1000)}s.` },
-      { status: 429 },
+    const ip = clientIp(req)
+    const last = cooldown.get(ip) ?? 0
+    const now = Date.now()
+    const wait = COOLDOWN_MS - (now - last)
+    if (wait > 0) {
+      return Response.json(
+        { ok: false, error: `Cooldown. Try again in ${Math.ceil(wait / 1000)}s.` },
+        { status: 429 },
+      )
+    }
+
+    const keypair = await loadKeypair()
+    if (!keypair) {
+      return Response.json(
+        { ok: false, error: 'Faucet keypair not configured.' },
+        { status: 503 },
+      )
+    }
+
+    const connection = getConnection()
+    const onDevnet = await ensureDevnet(connection)
+    if (!onDevnet) {
+      return Response.json(
+        { ok: false, error: 'Faucet is devnet-only.' },
+        { status: 403 },
+      )
+    }
+
+    const stakeMint = resolveStakeMint()
+    const ata = getAssociatedTokenAddressSync(stakeMint, userPubkey)
+
+    const tx = new Transaction().add(
+      createAssociatedTokenAccountIdempotentInstruction(
+        keypair.publicKey,
+        ata,
+        userPubkey,
+        stakeMint,
+      ),
+      createMintToInstruction(stakeMint, ata, keypair.publicKey, MINT_AMOUNT_RAW),
     )
-  }
 
-  const keypair = await loadKeypair()
-  if (!keypair) {
-    return Response.json(
-      { ok: false, error: 'Faucet keypair not configured.' },
-      { status: 503 },
-    )
-  }
-
-  const connection = getConnection()
-  const onDevnet = await ensureDevnet(connection)
-  if (!onDevnet) {
-    return Response.json(
-      { ok: false, error: 'Faucet is devnet-only.' },
-      { status: 403 },
-    )
-  }
-
-  const stakeMint = resolveStakeMint()
-  const ata = getAssociatedTokenAddressSync(stakeMint, userPubkey)
-
-  const tx = new Transaction().add(
-    createAssociatedTokenAccountIdempotentInstruction(
-      keypair.publicKey,
-      ata,
-      userPubkey,
-      stakeMint,
-    ),
-    createMintToInstruction(stakeMint, ata, keypair.publicKey, MINT_AMOUNT_RAW),
-  )
-
-  try {
-    const signature = await sendAndConfirmTransaction(connection, tx, [keypair], {
-      commitment: 'confirmed',
-    })
-    cooldown.set(ip, now)
-    return Response.json({ ok: true, signature, ata: ata.toBase58() })
+    try {
+      const signature = await sendAndConfirmTransaction(connection, tx, [keypair], {
+        commitment: 'confirmed',
+      })
+      cooldown.set(ip, now)
+      return Response.json({ ok: true, signature, ata: ata.toBase58() })
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e)
+      return Response.json({ ok: false, error: msg }, { status: 500 })
+    }
   } catch (e) {
+    // Last-resort guard. Anything that escapes still returns JSON so the
+    // client doesn't choke on plain-text "Internal Server Error".
     const msg = e instanceof Error ? e.message : String(e)
-    return Response.json({ ok: false, error: msg }, { status: 500 })
+    console.error('[faucet/mint] unhandled', e)
+    return Response.json({ ok: false, error: `Faucet error: ${msg}` }, { status: 500 })
   }
 }

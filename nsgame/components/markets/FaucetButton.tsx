@@ -51,9 +51,20 @@ export default function FaucetButton({ onMinted }: FaucetButtonProps) {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ address: publicKey.toBase58() }),
       })
-      const data = (await res.json()) as MintResponse
-      if (!res.ok || !data.ok) {
-        const err = !data.ok ? data.error : 'Mint failed.'
+      // Some upstream errors (nginx timeouts, container restarts) come back
+      // as plain text. Read the body once, then attempt JSON.
+      const raw = await res.text()
+      let data: MintResponse | null = null
+      try {
+        data = JSON.parse(raw) as MintResponse
+      } catch {
+        /* non-JSON body — fall through */
+      }
+      if (!res.ok || !data || !data.ok) {
+        const err =
+          data && !data.ok
+            ? data.error
+            : `Mint failed (${res.status}). Try again in a moment.`
         toast.showError(err)
         showInlineMessage(err)
         return
