@@ -48,50 +48,31 @@ export function deriveStatus({ closeTime, state, nowSecs }: DeriveStatusInput): 
 }
 
 /**
- * Header copy keyed by the active filter set. Header is a separate concern
- * from derivation so we can render it before any rows have arrived.
+ * Header copy keyed by the active status. Status is single-select now —
+ * one mood at a time, no mixed case.
  *
  * Cioran register: short, declarative, no warmth.
- *
- *   ()           — nothing checked, default upcoming framing
- *   (live)       — only live
- *   (settling)   — only settling
- *   (resolved)   — only resolved
- *   (mixed)      — two or three checked, no single mood applies
  */
 export interface HeaderCopy {
   title: string
   subtitle: string
 }
 
-export function headerForStatuses(statuses: readonly MarketStatus[]): HeaderCopy {
-  if (statuses.length === 0) {
+export function headerForStatus(status: MarketStatus): HeaderCopy {
+  if (status === 'live') {
     return {
-      title: 'Closing soon',
-      subtitle: 'Pick a side. The keeper pays out when the answer arrives.',
+      title: 'Open for bets',
+      subtitle: 'The window is still open. Pick a side before it closes.',
     }
   }
-  if (statuses.length === 1) {
-    const only = statuses[0]
-    if (only === 'live') {
-      return {
-        title: 'Open for bets',
-        subtitle: 'The window is still open. Pick a side before it closes.',
-      }
-    }
-    if (only === 'settling') {
-      return {
-        title: 'Awaiting the keeper',
-        subtitle: 'The window closed. Nothing to do but wait for the price.',
-      }
-    }
+  if (status === 'settling') {
     return {
-      title: 'Already settled',
-      subtitle: 'The window closed. The price decided. The keeper paid.',
+      title: 'Awaiting the keeper',
+      subtitle: 'The window closed. Nothing to do but wait for the price.',
     }
   }
   return {
-    title: 'Markets',
-    subtitle: 'Some open, some closing, some already over.',
+    title: 'Already settled',
+    subtitle: 'The window closed. The price decided. The keeper paid.',
   }
 }

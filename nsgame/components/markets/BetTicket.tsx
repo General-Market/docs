@@ -15,14 +15,13 @@ import {
   pctToDecimalOdd,
 } from '@/lib/markets/hooks'
 import FaucetButton from './FaucetButton'
-import { GlobalActivity } from './GlobalActivity'
-import { MyPositions } from './MyPositions'
 import { SourceIcon } from './SourceIcon'
 import { SparkLine } from './SparkLine'
 import type { Side } from './MarketRow'
 
 // Right rail. Sticky. Same body the sheet renders, just without the
-// chrome — pick a side, type a number, sign.
+// chrome — pick a side, type a number, sign. Only mounted when a market
+// is picked; the empty state is the absence of the column.
 
 const USDC_DECIMALS = 6
 
@@ -38,32 +37,15 @@ function displayToUsdcUnits(value: string): bigint {
 const PRESETS = ['1', '5', '25']
 
 export interface BetTicketProps {
-  slot: UpcomingSlot | null
+  slot: UpcomingSlot
   side: Side
   onSideChange: (s: Side) => void
   className?: string
 }
 
 export function BetTicket({ slot, side, onSideChange, className = '' }: BetTicketProps) {
-  if (!slot) {
-    return (
-      <div className={['flex flex-col gap-3', className].join(' ')}>
-        <MyPositions />
-        <GlobalActivity />
-        <aside
-          className="rounded-md border border-dashed border-zinc-700 bg-zinc-900 p-6"
-          aria-label="Bet ticket"
-        >
-          <p className="text-[12px] text-zinc-500">Pick a market to bet.</p>
-        </aside>
-      </div>
-    )
-  }
-
   return (
     <div className={['flex flex-col gap-3', className].join(' ')}>
-      <MyPositions />
-      <GlobalActivity />
       <BetTicketActive slot={slot} side={side} onSideChange={onSideChange} />
     </div>
   )

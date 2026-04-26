@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useWallet } from '@/hooks/useWallet'
 import { PulseDot } from './PulseDot'
 import { CategorySidebar, type StatusFilter } from './CategorySidebar'
-import type { BoardFilter, HorizonFilter } from './FilterBar'
+import type { BoardFilter } from './FilterBar'
 import type { UpcomingSlot } from '@/lib/markets/hooks'
 
 // A drawer that opens, then closes. Carries the same filters the
@@ -16,24 +16,20 @@ interface MobileMenuProps {
   open: boolean
   onClose: () => void
   board: BoardFilter
-  horizon: HorizonFilter
-  statuses: StatusFilter[]
+  status: StatusFilter
   slots: UpcomingSlot[]
   onBoardChange: (b: BoardFilter) => void
-  onHorizonChange: (h: HorizonFilter) => void
-  onStatusToggle: (s: StatusFilter) => void
+  onStatusChange: (s: StatusFilter) => void
 }
 
 export function MobileMenu({
   open,
   onClose,
   board,
-  horizon,
-  statuses,
+  status,
   slots,
   onBoardChange,
-  onHorizonChange,
-  onStatusToggle,
+  onStatusChange,
 }: MobileMenuProps) {
   const { cluster } = useWallet()
 
@@ -51,10 +47,10 @@ export function MobileMenu({
     return () => window.removeEventListener('keydown', onKey)
   }, [open, onClose])
 
-  // Wrap callbacks so the drawer auto-closes when a board/horizon is
+  // Wrap callbacks so the drawer auto-closes when a board or status is
   // chosen — choice is the signal the user is done picking.
   const handleBoard = (b: BoardFilter) => { onBoardChange(b); onClose() }
-  const handleHorizon = (h: HorizonFilter) => { onHorizonChange(h); onClose() }
+  const handleStatus = (s: StatusFilter) => { onStatusChange(s); onClose() }
 
   return (
     <AnimatePresence>
@@ -99,12 +95,11 @@ export function MobileMenu({
             <div className="flex-1 overflow-y-auto px-3 py-5">
               <CategorySidebar
                 board={board}
-                horizon={horizon}
-                statuses={statuses}
+                status={status}
                 slots={slots}
                 onBoardChange={handleBoard}
-                onHorizonChange={handleHorizon}
-                onStatusToggle={onStatusToggle}
+                onStatusChange={handleStatus}
+                hideWidgets
               />
             </div>
 

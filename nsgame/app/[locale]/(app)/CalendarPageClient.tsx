@@ -9,21 +9,20 @@ import { BetSheet } from '@/components/markets/BetSheet'
 import { MobileMenu } from '@/components/markets/MobileMenu'
 import { BottomNav } from '@/components/markets/BottomNav'
 import { MarketTeaserSidebar } from '@/components/markets/MarketTeaserSidebar'
-import type { BoardFilter, HorizonFilter } from '@/components/markets/FilterBar'
+import type { BoardFilter } from '@/components/markets/FilterBar'
 import type { Side } from '@/components/markets/MarketRow'
 import type { UpcomingSlot } from '@/lib/markets/hooks'
 import { useWallet } from '@/hooks/useWallet'
 import { identify } from '@/lib/analytics/track'
 import { activeCluster } from '@/lib/solana/cluster'
 
-// Three columns on desktop. Sidebar, list, ticket. The world is two
-// boards now — stars and cams — so the top bar drops the source tabs and
-// lets the sidebar do the cutting.
+// Three columns when a market is picked, two when none. Sidebar holds
+// positions, activity, status, boards. The right rail only exists in
+// service of the click — without it, the cards fill the space.
 
 export function CalendarPageClient() {
   const [board, setBoard] = useState<BoardFilter>('all')
-  const [horizon, setHorizon] = useState<HorizonFilter>('7d')
-  const [statuses, setStatuses] = useState<StatusFilter[]>([])
+  const [status, setStatus] = useState<StatusFilter>('live')
 
   const [selectedSlot, setSelectedSlot] = useState<UpcomingSlot | null>(null)
   const [selectedSide, setSelectedSide] = useState<Side>('yes')
@@ -44,12 +43,6 @@ export function CalendarPageClient() {
     identify(address, { cluster: activeCluster, wallet_address: address })
   }, [address])
 
-  const handleStatusToggle = useCallback((s: StatusFilter) => {
-    setStatuses(prev =>
-      prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s],
-    )
-  }, [])
-
   const handleSelectSide = useCallback((slot: UpcomingSlot, side: Side) => {
     setSelectedSlot(slot)
     setSelectedSide(side)
@@ -68,6 +61,13 @@ export function CalendarPageClient() {
   const openMenu = useCallback(() => setMenuOpen(true), [])
   const closeMenu = useCallback(() => setMenuOpen(false), [])
 
+  // Two columns when nothing is picked; three when a market opens the
+  // ticket. Unmount the right column entirely so the grid reflows.
+  const hasPick = selectedSlot !== null
+  const gridCols = hasPick
+    ? 'lg:grid-cols-[220px_minmax(0,1fr)_320px]'
+    : 'lg:grid-cols-[220px_minmax(0,1fr)]'
+
   return (
     <main className="min-h-screen bg-zinc-950 text-zinc-100 pb-[calc(env(safe-area-inset-bottom,0)+64px)] lg:pb-0">
       <NavBar onMenuClick={openMenu} />
@@ -76,12 +76,10 @@ export function CalendarPageClient() {
         open={menuOpen}
         onClose={closeMenu}
         board={board}
-        horizon={horizon}
-        statuses={statuses}
+        status={status}
         slots={allSlots}
         onBoardChange={setBoard}
-        onHorizonChange={setHorizon}
-        onStatusToggle={handleStatusToggle}
+        onStatusChange={setStatus}
       />
 
       <div className="xl:flex xl:items-start xl:justify-center xl:gap-6 xl:px-4 xl:py-8">
@@ -92,34 +90,33 @@ export function CalendarPageClient() {
         />
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 xl:mx-0 xl:px-0">
-          <div className="grid gap-6 py-6 sm:py-8 xl:py-0 lg:grid-cols-[220px_minmax(0,1fr)_320px]">
+          <div className={['grid gap-6 py-6 sm:py-8 xl:py-0', gridCols].join(' ')}>
             <CategorySidebar
               board={board}
-              horizon={horizon}
-              statuses={statuses}
+              status={status}
               slots={allSlots}
               onBoardChange={setBoard}
-              onHorizonChange={setHorizon}
-              onStatusToggle={handleStatusToggle}
+              onStatusChange={setStatus}
               className="hidden lg:block lg:sticky lg:top-20 lg:self-start"
             />
 
             <MarketList
               board={board}
-              horizon={horizon}
-              statuses={statuses}
+              status={status}
               selectedPda={selectedSlot?.marketPda ?? null}
               selectedSide={selectedSide}
               onSelectSide={handleSelectSide}
               onSlotsChange={setAllSlots}
             />
 
-            <BetTicket
-              slot={selectedSlot}
-              side={selectedSide}
-              onSideChange={setSelectedSide}
-              className="hidden lg:flex lg:sticky lg:top-20 lg:self-start"
-            />
+            {hasPick ? (
+              <BetTicket
+                slot={selectedSlot}
+                side={selectedSide}
+                onSideChange={setSelectedSide}
+                className="hidden lg:flex lg:sticky lg:top-20 lg:self-start"
+              />
+            ) : null}
           </div>
         </div>
 

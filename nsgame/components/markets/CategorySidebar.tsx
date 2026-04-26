@@ -1,11 +1,15 @@
 'use client'
 
 import { useMemo } from 'react'
-import type { BoardFilter, HorizonFilter } from './FilterBar'
+import Link from 'next/link'
+import type { BoardFilter } from './FilterBar'
 import type { UpcomingSlot } from '@/lib/markets/hooks'
+import { useWallet } from '@/hooks/useWallet'
+import { MyPositions } from './MyPositions'
+import { GlobalActivity } from './GlobalActivity'
 
-// Left rail. Boards, horizons, status. The list of axes the user is
-// allowed to slice along — nothing here is novel, only quiet.
+// Left rail. Positions, activity, boards, status. The horizon column
+// died — Status (live / settling / resolved) is the time axis now.
 
 const BOARDS: Array<{ id: BoardFilter; label: string; sub: string }> = [
   { id: 'all', label: 'all', sub: '25 fights' },
@@ -13,28 +17,23 @@ const BOARDS: Array<{ id: BoardFilter; label: string; sub: string }> = [
   { id: 'cams', label: 'cams', sub: '2m gain / total' },
 ]
 
-const HORIZONS: Array<{ id: HorizonFilter; label: string }> = [
-  { id: 'today', label: 'today' },
-  { id: '7d', label: 'next 7 days' },
-  { id: 'all', label: 'all open' },
-]
-
 export type StatusFilter = 'live' | 'settling' | 'resolved'
 
-const STATUSES: Array<{ id: StatusFilter; label: string; sub: string }> = [
-  { id: 'live', label: 'live', sub: 'taking bets' },
-  { id: 'settling', label: 'settling', sub: 'awaiting the keeper' },
-  { id: 'resolved', label: 'resolved', sub: 'paid out' },
+const STATUSES: ReadonlyArray<{ id: StatusFilter; label: string }> = [
+  { id: 'live', label: 'Live' },
+  { id: 'settling', label: 'Settling' },
+  { id: 'resolved', label: 'Resolved' },
 ]
 
 export interface CategorySidebarProps {
   board: BoardFilter
-  horizon: HorizonFilter
-  statuses: StatusFilter[]
+  status: StatusFilter
   slots: UpcomingSlot[]
   onBoardChange: (b: BoardFilter) => void
-  onHorizonChange: (h: HorizonFilter) => void
-  onStatusToggle: (s: StatusFilter) => void
+  onStatusChange: (s: StatusFilter) => void
+  /** Hide the desktop-only widgets (positions + activity) — for the
+   *  mobile drawer, where these live in the sheet instead. */
+  hideWidgets?: boolean
   className?: string
 }
 
@@ -54,12 +53,11 @@ function sectionLabelClasses(): string {
 
 export function CategorySidebar({
   board,
-  horizon,
-  statuses,
+  status,
   slots,
   onBoardChange,
-  onHorizonChange,
-  onStatusToggle,
+  onStatusChange,
+  hideWidgets = false,
   className = '',
 }: CategorySidebarProps) {
   const boardCounts = useMemo(() => {
@@ -81,6 +79,14 @@ export function CategorySidebar({
       ].join(' ')}
       aria-label="Categories"
     >
+      {!hideWidgets ? <SidebarPositions /> : null}
+      {!hideWidgets ? <GlobalActivity /> : null}
+
+      <div>
+        <p className={sectionLabelClasses()}>Status</p>
+        <StatusPillRow status={status} onChange={onStatusChange} />
+      </div>
+
       <div>
         <p className={sectionLabelClasses()}>Boards</p>
         <div className="space-y-0.5">
@@ -116,58 +122,75 @@ export function CategorySidebar({
           })}
         </div>
       </div>
-
-      <div>
-        <p className={sectionLabelClasses()}>Horizon</p>
-        <div className="space-y-0.5">
-          {HORIZONS.map(h => {
-            const active = horizon === h.id
-            return (
-              <button
-                key={h.id}
-                type="button"
-                onClick={() => onHorizonChange(h.id)}
-                aria-pressed={active}
-                className={rowClasses(active)}
-              >
-                <span className="text-[13.5px] capitalize">{h.label}</span>
-                <span className="text-[11px] tabular-nums text-zinc-500 group-hover:text-zinc-300">
-                  {h.id}
-                </span>
-              </button>
-            )
-          })}
-        </div>
-      </div>
-
-      <div>
-        <p className={sectionLabelClasses()}>Status</p>
-        <div className="space-y-0.5">
-          {STATUSES.map(s => {
-            const active = statuses.includes(s.id)
-            return (
-              <label
-                key={s.id}
-                className={[
-                  'flex min-h-[36px] cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 transition-colors duration-150',
-                  active ? 'bg-zinc-800/80 text-zinc-100 ring-1 ring-zinc-700' : 'text-zinc-400 hover:bg-zinc-900/60 hover:text-zinc-100',
-                ].join(' ')}
-              >
-                <input
-                  type="checkbox"
-                  checked={active}
-                  onChange={() => onStatusToggle(s.id)}
-                  className="h-3.5 w-3.5 rounded border-zinc-700 bg-zinc-900 text-zinc-100 focus:ring-1 focus:ring-zinc-500"
-                />
-                <span className="flex flex-col items-start">
-                  <span className="text-[13.5px] capitalize text-zinc-200">{s.label}</span>
-                  <span className="text-[11px] text-zinc-500">{s.sub}</span>
-                </span>
-              </label>
-            )
-          })}
-        </div>
-      </div>
     </aside>
+  )
+}
+
+function StatusPillRow({
+  status,
+  onChange,
+}: {
+  status: StatusFilter
+  onChange: (s: StatusFilter) => void
+}) {
+  return (
+    <div
+      role="radiogroup"
+      aria-label="Status"
+      className="inline-flex w-full items-center gap-0.5 rounded-md border border-zinc-800 bg-zinc-900/60 p-0.5"
+    >
+      {STATUSES.map(s => {
+        const active = s.id === status
+        return (
+          <button
+            key={s.id}
+            role="radio"
+            aria-checked={active}
+            type="button"
+            onClick={() => onChange(s.id)}
+            className={[
+              'flex-1 inline-flex h-7 items-center justify-center rounded px-2 text-[11px] font-medium tracking-tight transition-colors',
+              active
+                ? 'bg-zinc-100 text-zinc-950'
+                : 'text-zinc-400 hover:text-zinc-100',
+            ].join(' ')}
+          >
+            {s.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+// Sidebar-shaped positions widget. Connected: hand off to MyPositions
+// (reused from the bet panel). Disconnected: a single Cioran line.
+function SidebarPositions() {
+  const { address } = useWallet()
+  if (!address) {
+    return (
+      <section
+        className="rounded-md border border-dashed border-zinc-800 bg-zinc-900/40 px-3 py-3"
+        aria-label="My positions"
+      >
+        <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500">
+          my positions
+        </p>
+        <p className="mt-1.5 text-[12px] text-zinc-500">
+          Connect a wallet to see them.
+        </p>
+      </section>
+    )
+  }
+  return (
+    <div className="space-y-1.5">
+      <MyPositions />
+      <Link
+        href={`/u/${address}`}
+        className="block px-1 text-right font-mono text-[10px] uppercase tracking-[0.12em] text-zinc-500 transition-colors hover:text-zinc-300"
+      >
+        view all →
+      </Link>
+    </div>
   )
 }

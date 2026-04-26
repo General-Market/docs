@@ -12,20 +12,22 @@ import {
 import { MarketRow, type Side } from './MarketRow'
 import { MarketRowSkeleton } from './MarketRowSkeleton'
 import { CountdownTickProvider, useNowSecs } from './CountdownTimer'
-import type { BoardFilter, HorizonFilter } from './FilterBar'
+import type { BoardFilter } from './FilterBar'
 import type { StatusFilter } from './CategorySidebar'
-import { headerForStatuses, type MarketStatus } from '@/lib/markets/status'
+import { headerForStatus } from '@/lib/markets/status'
 
 const SKELETON_COUNT = 6
 
-// Center column. A list of fat market rows. Replaces the seven-column
-// calendar on the home page; the calendar still exists for any nostalgic
-// future view.
+// Center column. A list of fat market rows. Status is the only time axis
+// now — Live, Settling, or Resolved. The horizon concept died with the
+// calendar.
+
+// 30 days. The full forward universe — Status decides what shows.
+const HORIZON_DAYS = 30
 
 export interface MarketListProps {
   board: BoardFilter
-  horizon: HorizonFilter
-  statuses: StatusFilter[]
+  status: StatusFilter
   selectedPda: string | null
   selectedSide: Side | null
   onSelectSide: (slot: UpcomingSlot, side: Side) => void
@@ -42,24 +44,22 @@ export function MarketList(props: MarketListProps) {
 
 function MarketListInner({
   board,
-  horizon,
-  statuses,
+  status,
   selectedPda,
   selectedSide,
   onSelectSide,
   onSlotsChange,
 }: MarketListProps) {
-  const horizonDays = horizon === 'today' ? 1 : horizon === '7d' ? 7 : 30
   const upcomingSlots = useUpcomingSlots({
     board,
-    horizonDays,
+    horizonDays: HORIZON_DAYS,
   })
 
   // Settling and resolved both live in the indexer, not in the forward
   // cohort grid. Pull each only when the user actually asks for it.
-  const wantsLive = statuses.length === 0 || statuses.includes('live')
-  const wantsSettling = statuses.includes('settling')
-  const wantsResolved = statuses.includes('resolved')
+  const wantsLive = status === 'live'
+  const wantsSettling = status === 'settling'
+  const wantsResolved = status === 'resolved'
 
   const settling = useSettlingSlots({ limit: 60, board })
   const resolved = useResolvedSlots({ limit: 60, board })
@@ -77,50 +77,19 @@ function MarketListInner({
 
   const now = useNowSecs()
 
-  // Compose the row universe. Each toggle adds its own source; absence of
-  // any toggle falls back to the forward-only "what's coming next" view.
-  // Dedupe by PDA — a freshly-resolved market may still appear in the
-  // forward cohort until the catalog rolls.
-  const onlySettling = statuses.length === 1 && statuses[0] === 'settling'
-  const onlyResolved = statuses.length === 1 && statuses[0] === 'resolved'
-
+  // One status, one source. Live = forward catalog pruned to open windows;
+  // Settling = indexer settling feed; Resolved = indexer resolved feed.
   const filteredSlots = useMemo<UpcomingSlot[]>(() => {
-    if (onlySettling) return settlingSlots
-    if (onlyResolved) return resolvedSlots
-
-    // The "live" cohort is the forward catalog grid pruned to markets
-    // whose close window has not yet passed (so an instantiated row that
-    // crossed close-time but hasn't reached the indexer's settling fetch
-    // doesn't ghost-render here).
-    const liveSlots = !wantsLive
-      ? EMPTY_SLOTS
-      : statuses.length === 0
-        ? upcomingSlots
-        : upcomingSlots.filter(s => now <= 0 || s.closeTime > now)
-
-    const out: UpcomingSlot[] = []
-    const seen = new Set<string>()
-    const push = (xs: readonly UpcomingSlot[]) => {
-      for (const s of xs) {
-        if (seen.has(s.marketPda)) continue
-        seen.add(s.marketPda)
-        out.push(s)
-      }
-    }
-    push(liveSlots)
-    if (wantsSettling) push(settlingSlots)
-    if (wantsResolved) push(resolvedSlots)
-    return out
+    if (wantsSettling) return settlingSlots
+    if (wantsResolved) return resolvedSlots
+    // live: forward cohort with close still ahead.
+    return upcomingSlots.filter(s => now <= 0 || s.closeTime > now)
   }, [
-    onlySettling,
-    onlyResolved,
-    settlingSlots,
-    resolvedSlots,
-    statuses,
-    upcomingSlots,
-    wantsLive,
     wantsSettling,
     wantsResolved,
+    settlingSlots,
+    resolvedSlots,
+    upcomingSlots,
     now,
   ])
 
@@ -143,11 +112,7 @@ function MarketListInner({
   useEffect(() => { setMounted(true) }, [])
 
   const liveCount = filteredSlots.length
-  // Translate the StatusFilter[] into MarketStatus[] for header copy.
-  // The two enums are isomorphic by design — `lib/markets/status.ts` is
-  // the canonical taxonomy, the UI checkbox values mirror it.
-  const headerStatuses: MarketStatus[] = statuses
-  const headerCopy = headerForStatuses(headerStatuses)
+  const headerCopy = headerForStatus(status)
 
   if (!mounted) {
     return (
@@ -165,7 +130,7 @@ function MarketListInner({
   // Indexer-only paths: while the request is in flight, render skeletons
   // instead of an unhelpful empty state. The forward universe cannot
   // answer either question.
-  if (onlySettling && settling.loading && settlingSlots.length === 0) {
+  if (wantsSettling && settling.loading && settlingSlots.length === 0) {
     return (
       <section aria-label="Markets" className="min-w-0">
         <Heading copy={headerCopy} liveCount={0} />
@@ -178,7 +143,7 @@ function MarketListInner({
     )
   }
 
-  if (onlyResolved && resolved.loading && resolvedSlots.length === 0) {
+  if (wantsResolved && resolved.loading && resolvedSlots.length === 0) {
     return (
       <section aria-label="Markets" className="min-w-0">
         <Heading copy={headerCopy} liveCount={0} />
@@ -192,12 +157,12 @@ function MarketListInner({
   }
 
   if (filteredSlots.length === 0) {
-    const text = onlySettling
+    const text = wantsSettling
       ? 'Nothing waiting. Every closed window has been answered.'
-      : onlyResolved
+      : wantsResolved
         ? 'Nothing has settled yet. Come back after the next window.'
         : upcomingSlots.length === 0
-          ? 'No markets here. Try a wider source or horizon.'
+          ? 'No markets here. Try a wider source.'
           : 'No markets match the current filter.'
     return (
       <section aria-label="Markets" className="min-w-0">
