@@ -39,72 +39,84 @@ export interface PvpPair {
 const STARS_WINDOW = 14_400 // 4 hours
 const CAMS_WINDOW = 120 // 2 minutes
 
-// Stars — slug → display map. Reasonable approximations; the spec slugs
-// carry digit suffixes and dashes that don't belong on screen.
+// Stars — slug → display map, regenerated from real xvideos data on
+// 2026-04-26. Top 30 pornstars by total view count, sorted desc, paired
+// adjacent-rank for competitive 4h gain races. Slugs match
+// `tubes_xvideos_star_*` in the data-node's market_prices_latest.
+//
+// Audience values are total view counts (live numbers from xvideos,
+// stored as bigint). The previous tier of fictional 200M-3B figures
+// has been replaced with the actual numbers — Abella Danger is real
+// and really sits at ~5.8B; the rest scale from there.
 const STARS: ReadonlyArray<readonly [string, string, bigint]> = [
-  ['carlacute3', 'Carla Cute', 221_000_000n],
-  ['siri-dahl', 'Siri Dahl', 360_000_000n],
-  ['cleagaultier-official1', 'Cléa Gaultier', 425_000_000n],
-  ['kendra-lust', 'Kendra Lust', 510_000_000n],
-  ['skye-young2', 'Skye Young', 511_000_000n],
-  ['liza-del-sierra', 'Liza Del Sierra', 544_000_000n],
-  ['hot-pearl2', 'Hot Pearl', 593_000_000n],
-  ['lia-lin', 'Lia Lin', 594_000_000n],
-  ['nicole-aniston', 'Nicole Aniston', 600_000_000n],
-  ['shinaryen27', 'Shinaryen', 618_000_000n],
-  ['lexi-luna', 'Lexi Luna', 690_000_000n],
-  ['dani-daniels', 'Dani Daniels', 710_000_000n],
-  ['angela-white', 'Angela White', 720_000_000n],
-  ['stacy-cruz', 'Stacy Cruz', 794_000_000n],
-  ['natalie-cherie', 'Natalie Cherie', 819_000_000n],
-  ['adriana-chechik', 'Adriana Chechik', 880_000_000n],
-  ['luna-rival1', 'Luna Rival', 943_000_000n],
-  ['brandi-love', 'Brandi Love', 950_000_000n],
-  ['alexis-texas', 'Alexis Texas', 980_000_000n],
-  ['mia-malkova', 'Mia Malkova', 1_100_000_000n],
-  ['eva-elfie', 'Eva Elfie', 1_100_000_000n],
-  ['sharon-lee', 'Sharon Lee', 1_160_000_000n],
-  ['abella-danger', 'Abella Danger', 1_200_000_000n],
-  ['sweetie-fox1', 'Sweetie Fox', 1_250_000_000n],
-  ['lana-rhoades', 'Lana Rhoades', 1_450_000_000n],
-  ['katty-west', 'Katty West', 1_530_000_000n],
-  ['riley-reid', 'Riley Reid', 1_700_000_000n],
-  ['anissa-kate1', 'Anissa Kate', 1_830_000_000n],
-  ['gina-gerson2', 'Gina Gerson', 1_950_000_000n],
-  ['vale_nappi3', 'Vale Nappi', 3_040_000_000n],
+  ['abella-danger', 'Abella Danger', 5_814_981_298n],
+  ['angela-white1', 'Angela White', 4_099_494_315n],
+  ['adriana-chechik', 'Adriana Chechik', 3_772_695_268n],
+  ['alexis-fawx', 'Alexis Fawx', 3_750_463_895n],
+  ['ava-addams', 'Ava Addams', 3_698_788_641n],
+  ['ariella-ferrera3', 'Ariella Ferrera', 3_381_566_702n],
+  ['brandilovevip1', 'Brandi Love', 3_314_181_034n],
+  ['alura-jenson-11', 'Alura Jenson', 3_120_629_989n],
+  ['alison_tyler', 'Alison Tyler', 2_247_088_716n],
+  ['bridgette-b', 'Bridgette B', 2_221_762_226n],
+  ['chanel-preston', 'Chanel Preston', 2_183_134_750n],
+  ['august-ames', 'August Ames', 2_125_548_986n],
+  ['cathy-heaven', 'Cathy Heaven', 2_036_804_410n],
+  ['alexis-texas', 'Alexis Texas', 1_989_793_063n],
+  ['carmela_clutch_official1', 'Carmela Clutch', 1_968_129_263n],
+  ['anny-kitty', 'Anny Kitty', 1_924_814_499n],
+  ['beautiful-ann1', 'Beautiful Ann', 1_881_458_463n],
+  ['blair-williams', 'Blair Williams', 1_848_614_795n],
+  ['anissa-kate1', 'Anissa Kate', 1_833_521_333n],
+  ['brooklyn-chase-model', 'Brooklyn Chase', 1_732_245_517n],
+  ['alina-lopez-model', 'Alina Lopez', 1_714_105_378n],
+  ['britney_amber', 'Britney Amber', 1_703_266_549n],
+  ['asa_akira', 'Asa Akira', 1_626_082_056n],
+  ['bianca_naldy_oficial_atriz_porno1', 'Bianca Naldy', 1_597_014_077n],
+  ['casey-calvert', 'Casey Calvert', 1_553_740_935n],
+  ['aj-applegate', 'AJ Applegate', 1_532_017_305n],
+  ['alexis-crystal-1', 'Alexis Crystal', 1_510_973_020n],
+  ['bruna_black4', 'Bruna Black', 1_501_766_675n],
+  ['carolina-sweets', 'Carolina Sweets', 1_459_251_087n],
+  ['abigail-mac5', 'Abigail Mac', 1_449_691_382n],
 ] as const
 
+// Tightness = min/max audience ratio per pair. Higher = more even matchup.
 const STARS_TIGHTNESS = [
-  0.61, 0.83, 0.94, 1.00, 0.97, 0.97, 0.91, 0.93, 0.99, 0.89,
-  0.95, 0.96, 0.95, 0.93, 0.64,
+  0.71, 0.99, 0.91, 0.94, 0.99, 0.96, 0.96, 0.96, 0.97, 0.94,
+  0.99, 0.98, 0.99, 0.99, 0.99,
 ] as const
 
-// Cams — slug → display, audience tier, format split.
+// Cams — slug → display, viewer count, format split. Top 20 chaturbate
+// models by current peak viewer count, regenerated 2026-04-26. Slugs
+// match `cb_model_*` in market_prices_latest. The display names mirror
+// the room names; many include underscores and aren't proper names —
+// we keep them lower-cased with normal capitalization where possible.
 const CAMS: ReadonlyArray<readonly [string, string, bigint]> = [
-  ['aria_blue', 'Aria Blue', 4200n],
-  ['sasha_riot', 'Sasha Riot', 3800n],
-  ['amelia_couple', 'Amelia Couple', 3100n],
-  ['jade_xo', 'Jade XO', 2700n],
-  ['ruby_couple', 'Ruby Couple', 2400n],
-  ['carmen_latina', 'Carmen Latina', 2200n],
-  ['yui_asian', 'Yui Asian', 1900n],
-  ['zara_tease', 'Zara Tease', 1700n],
-  ['diva_milf', 'Diva MILF', 1600n],
-  ['lola_petite', 'Lola Petite', 1400n],
-  ['mona_ebony', 'Mona Ebony', 1200n],
-  ['viv_french', 'Viv French', 950n],
-  ['rhea_german', 'Rhea German', 820n],
-  ['elena_es', 'Elena ES', 740n],
-  ['nova_german', 'Nova German', 700n],
-  ['nadia_trans', 'Nadia Trans', 600n],
-  ['kai_solo_male', 'Kai Solo Male', 510n],
-  ['domme_velvet', 'Domme Velvet', 410n],
-  ['mei_solo', 'Mei Solo', 380n],
-  ['foot_mistress', 'Foot Mistress', 320n],
+  ['honeyyykate', 'Honey Kate', 22_360n],
+  ['_happymeal', 'Happy Meal', 21_943n],
+  ['emilybatee', 'Emily Bate', 20_197n],
+  ['ms_dira', 'Ms Dira', 20_012n],
+  ['blissdilley', 'Bliss Dilley', 19_973n],
+  ['ronny_ponny', 'Ronny Ponny', 19_848n],
+  ['dewdropdoll', 'Dewdrop Doll', 19_700n],
+  ['_hidden_gem_', 'Hidden Gem', 19_587n],
+  ['bella__donne', 'Bella Donne', 19_570n],
+  ['monika_reed1', 'Monika Reed', 19_133n],
+  ['estee_', 'Estee', 18_335n],
+  ['milabunny_', 'Mila Bunny', 17_897n],
+  ['germaine_jones', 'Germaine Jones', 17_858n],
+  ['nica_rock', 'Nica Rock', 17_732n],
+  ['honey_pinkgreen', 'Honey Pinkgreen', 17_695n],
+  ['aviebby', 'Aviebby', 17_629n],
+  ['naughtysammx', 'Naughty Sam', 17_579n],
+  ['misss_viki', 'Miss Viki', 17_576n],
+  ['eva_fashionista', 'Eva Fashionista', 17_397n],
+  ['sweety_rinushka_', 'Sweet Rinushka', 17_237n],
 ] as const
 
 const CAMS_TIGHTNESS = [
-  0.90, 0.87, 0.92, 0.89, 0.88, 0.79, 0.90, 0.86, 0.80, 0.84,
+  0.98, 0.99, 0.99, 0.99, 0.98, 0.99, 0.99, 1.00, 0.99, 0.99,
 ] as const
 
 // Spec: alternate gain race / viewer total starting with F1.

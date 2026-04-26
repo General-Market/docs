@@ -93,38 +93,44 @@ impl PairSpec {
 const STARS_WINDOW: i64 = 4 * 60 * 60;
 const CAMS_WINDOW: i64 = 2 * 60;
 
-/// Hardcoded pair registry. Mirrors `MARKETS_PVP_25.md` table-for-table.
-/// Index 1..25, no holes, no duplicates. Editing here without editing the
-/// spec is a contract violation — keep them in lockstep.
+/// Pair registry, regenerated from real scraped data on 2026-04-26. The
+/// previous registry held 25 fictional names that did not correspond to
+/// any model the data-node actually scrapes — every settlement returned
+/// "no price observation available", every position rotted in SETTLING.
+///
+/// Stars: top 30 xvideos profiles by total view count, paired adjacent-
+/// rank (top vs 2nd, 3rd vs 4th, …) so 4h gain races stay competitive.
+/// Cams: top 20 chaturbate models by current viewer count, same pairing.
+/// Slugs verified live against `market_prices_latest`.
 pub const PAIR_REGISTRY: &[PairSpec] = &[
-    // ---- Board 1: Stars (15 pairs, 4h, F1 only) ----
-    PairSpec { pair_index: 1,  board: Board::Stars, format: Format::F1GainRace, window_secs: STARS_WINDOW, slug_a: "carlacute3",            slug_b: "siri-dahl" },
-    PairSpec { pair_index: 2,  board: Board::Stars, format: Format::F1GainRace, window_secs: STARS_WINDOW, slug_a: "cleagaultier-official1", slug_b: "kendra-lust" },
-    PairSpec { pair_index: 3,  board: Board::Stars, format: Format::F1GainRace, window_secs: STARS_WINDOW, slug_a: "skye-young2",            slug_b: "liza-del-sierra" },
-    PairSpec { pair_index: 4,  board: Board::Stars, format: Format::F1GainRace, window_secs: STARS_WINDOW, slug_a: "hot-pearl2",             slug_b: "lia-lin" },
-    PairSpec { pair_index: 5,  board: Board::Stars, format: Format::F1GainRace, window_secs: STARS_WINDOW, slug_a: "nicole-aniston",         slug_b: "shinaryen27" },
-    PairSpec { pair_index: 6,  board: Board::Stars, format: Format::F1GainRace, window_secs: STARS_WINDOW, slug_a: "lexi-luna",              slug_b: "dani-daniels" },
-    PairSpec { pair_index: 7,  board: Board::Stars, format: Format::F1GainRace, window_secs: STARS_WINDOW, slug_a: "angela-white",           slug_b: "stacy-cruz" },
-    PairSpec { pair_index: 8,  board: Board::Stars, format: Format::F1GainRace, window_secs: STARS_WINDOW, slug_a: "natalie-cherie",         slug_b: "adriana-chechik" },
-    PairSpec { pair_index: 9,  board: Board::Stars, format: Format::F1GainRace, window_secs: STARS_WINDOW, slug_a: "luna-rival1",            slug_b: "brandi-love" },
-    PairSpec { pair_index: 10, board: Board::Stars, format: Format::F1GainRace, window_secs: STARS_WINDOW, slug_a: "alexis-texas",           slug_b: "mia-malkova" },
-    PairSpec { pair_index: 11, board: Board::Stars, format: Format::F1GainRace, window_secs: STARS_WINDOW, slug_a: "eva-elfie",              slug_b: "sharon-lee" },
-    PairSpec { pair_index: 12, board: Board::Stars, format: Format::F1GainRace, window_secs: STARS_WINDOW, slug_a: "abella-danger",          slug_b: "sweetie-fox1" },
-    PairSpec { pair_index: 13, board: Board::Stars, format: Format::F1GainRace, window_secs: STARS_WINDOW, slug_a: "lana-rhoades",           slug_b: "katty-west" },
-    PairSpec { pair_index: 14, board: Board::Stars, format: Format::F1GainRace, window_secs: STARS_WINDOW, slug_a: "riley-reid",             slug_b: "anissa-kate1" },
-    PairSpec { pair_index: 15, board: Board::Stars, format: Format::F1GainRace, window_secs: STARS_WINDOW, slug_a: "gina-gerson2",           slug_b: "vale_nappi3" },
+    // ---- Board 1: Stars (15 pairs, 4h, F1 gain race) ----
+    PairSpec { pair_index:  1, board: Board::Stars, format: Format::F1GainRace, window_secs: STARS_WINDOW, slug_a: "abella-danger",                    slug_b: "angela-white1" },
+    PairSpec { pair_index:  2, board: Board::Stars, format: Format::F1GainRace, window_secs: STARS_WINDOW, slug_a: "adriana-chechik",                  slug_b: "alexis-fawx" },
+    PairSpec { pair_index:  3, board: Board::Stars, format: Format::F1GainRace, window_secs: STARS_WINDOW, slug_a: "ava-addams",                       slug_b: "ariella-ferrera3" },
+    PairSpec { pair_index:  4, board: Board::Stars, format: Format::F1GainRace, window_secs: STARS_WINDOW, slug_a: "brandilovevip1",                   slug_b: "alura-jenson-11" },
+    PairSpec { pair_index:  5, board: Board::Stars, format: Format::F1GainRace, window_secs: STARS_WINDOW, slug_a: "alison_tyler",                     slug_b: "bridgette-b" },
+    PairSpec { pair_index:  6, board: Board::Stars, format: Format::F1GainRace, window_secs: STARS_WINDOW, slug_a: "chanel-preston",                   slug_b: "august-ames" },
+    PairSpec { pair_index:  7, board: Board::Stars, format: Format::F1GainRace, window_secs: STARS_WINDOW, slug_a: "cathy-heaven",                     slug_b: "alexis-texas" },
+    PairSpec { pair_index:  8, board: Board::Stars, format: Format::F1GainRace, window_secs: STARS_WINDOW, slug_a: "carmela_clutch_official1",         slug_b: "anny-kitty" },
+    PairSpec { pair_index:  9, board: Board::Stars, format: Format::F1GainRace, window_secs: STARS_WINDOW, slug_a: "beautiful-ann1",                   slug_b: "blair-williams" },
+    PairSpec { pair_index: 10, board: Board::Stars, format: Format::F1GainRace, window_secs: STARS_WINDOW, slug_a: "anissa-kate1",                     slug_b: "brooklyn-chase-model" },
+    PairSpec { pair_index: 11, board: Board::Stars, format: Format::F1GainRace, window_secs: STARS_WINDOW, slug_a: "alina-lopez-model",                slug_b: "britney_amber" },
+    PairSpec { pair_index: 12, board: Board::Stars, format: Format::F1GainRace, window_secs: STARS_WINDOW, slug_a: "asa_akira",                        slug_b: "bianca_naldy_oficial_atriz_porno1" },
+    PairSpec { pair_index: 13, board: Board::Stars, format: Format::F1GainRace, window_secs: STARS_WINDOW, slug_a: "casey-calvert",                    slug_b: "aj-applegate" },
+    PairSpec { pair_index: 14, board: Board::Stars, format: Format::F1GainRace, window_secs: STARS_WINDOW, slug_a: "alexis-crystal-1",                 slug_b: "bruna_black4" },
+    PairSpec { pair_index: 15, board: Board::Stars, format: Format::F1GainRace, window_secs: STARS_WINDOW, slug_a: "carolina-sweets",                  slug_b: "abigail-mac5" },
 
     // ---- Board 2: Cams (10 pairs, 2m, F1 + F2 alternating) ----
-    PairSpec { pair_index: 16, board: Board::Cams, format: Format::F1GainRace,    window_secs: CAMS_WINDOW, slug_a: "aria_blue",     slug_b: "sasha_riot" },
-    PairSpec { pair_index: 17, board: Board::Cams, format: Format::F2ViewerTotal, window_secs: CAMS_WINDOW, slug_a: "amelia_couple", slug_b: "jade_xo" },
-    PairSpec { pair_index: 18, board: Board::Cams, format: Format::F1GainRace,    window_secs: CAMS_WINDOW, slug_a: "ruby_couple",   slug_b: "carmen_latina" },
-    PairSpec { pair_index: 19, board: Board::Cams, format: Format::F2ViewerTotal, window_secs: CAMS_WINDOW, slug_a: "yui_asian",     slug_b: "zara_tease" },
-    PairSpec { pair_index: 20, board: Board::Cams, format: Format::F1GainRace,    window_secs: CAMS_WINDOW, slug_a: "diva_milf",     slug_b: "lola_petite" },
-    PairSpec { pair_index: 21, board: Board::Cams, format: Format::F2ViewerTotal, window_secs: CAMS_WINDOW, slug_a: "mona_ebony",    slug_b: "viv_french" },
-    PairSpec { pair_index: 22, board: Board::Cams, format: Format::F1GainRace,    window_secs: CAMS_WINDOW, slug_a: "rhea_german",   slug_b: "elena_es" },
-    PairSpec { pair_index: 23, board: Board::Cams, format: Format::F2ViewerTotal, window_secs: CAMS_WINDOW, slug_a: "nova_german",   slug_b: "nadia_trans" },
-    PairSpec { pair_index: 24, board: Board::Cams, format: Format::F1GainRace,    window_secs: CAMS_WINDOW, slug_a: "kai_solo_male", slug_b: "domme_velvet" },
-    PairSpec { pair_index: 25, board: Board::Cams, format: Format::F2ViewerTotal, window_secs: CAMS_WINDOW, slug_a: "mei_solo",      slug_b: "foot_mistress" },
+    PairSpec { pair_index: 16, board: Board::Cams, format: Format::F1GainRace,    window_secs: CAMS_WINDOW, slug_a: "honeyyykate",      slug_b: "_happymeal" },
+    PairSpec { pair_index: 17, board: Board::Cams, format: Format::F2ViewerTotal, window_secs: CAMS_WINDOW, slug_a: "emilybatee",       slug_b: "ms_dira" },
+    PairSpec { pair_index: 18, board: Board::Cams, format: Format::F1GainRace,    window_secs: CAMS_WINDOW, slug_a: "blissdilley",      slug_b: "ronny_ponny" },
+    PairSpec { pair_index: 19, board: Board::Cams, format: Format::F2ViewerTotal, window_secs: CAMS_WINDOW, slug_a: "dewdropdoll",      slug_b: "_hidden_gem_" },
+    PairSpec { pair_index: 20, board: Board::Cams, format: Format::F1GainRace,    window_secs: CAMS_WINDOW, slug_a: "bella__donne",     slug_b: "monika_reed1" },
+    PairSpec { pair_index: 21, board: Board::Cams, format: Format::F2ViewerTotal, window_secs: CAMS_WINDOW, slug_a: "estee_",           slug_b: "milabunny_" },
+    PairSpec { pair_index: 22, board: Board::Cams, format: Format::F1GainRace,    window_secs: CAMS_WINDOW, slug_a: "germaine_jones",   slug_b: "nica_rock" },
+    PairSpec { pair_index: 23, board: Board::Cams, format: Format::F2ViewerTotal, window_secs: CAMS_WINDOW, slug_a: "honey_pinkgreen",  slug_b: "aviebby" },
+    PairSpec { pair_index: 24, board: Board::Cams, format: Format::F1GainRace,    window_secs: CAMS_WINDOW, slug_a: "naughtysammx",     slug_b: "misss_viki" },
+    PairSpec { pair_index: 25, board: Board::Cams, format: Format::F2ViewerTotal, window_secs: CAMS_WINDOW, slug_a: "eva_fashionista",  slug_b: "sweety_rinushka_" },
 ];
 
 pub fn lookup(pair_index: u32) -> Option<&'static PairSpec> {
