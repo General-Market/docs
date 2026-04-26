@@ -61,7 +61,7 @@ author: "nsgame"
 [Body in MDX. Use ## for sections. Lists welcome. Tables welcome.]
 ```
 
-Pattern matches existing `nsgame/content/learn/*.mdx`. No need for `tldr`, `keywords`, `readingTime`, `image` unless the doc warrants it.
+Pattern matches existing `nsgame/content/nsgame/**/*.mdx`. No need for `tldr`, `keywords`, `readingTime`, `image` unless the doc warrants it.
 
 ## File paths
 
