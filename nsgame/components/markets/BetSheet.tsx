@@ -14,6 +14,7 @@ import {
 } from '@/lib/markets/hooks'
 import { BetBody, PrimaryAction, persistStake, readDefaultStake } from './BetTicket'
 import WalletNetworkNotice from './WalletNetworkNotice'
+import { LAST_BET_STORAGE_KEY, type LastOpenBet } from '@/hooks/useLastBet'
 
 // Bottom sheet on mobile. Right drawer on desktop. Same body BetTicket
 // renders, dressed in slide-up chrome and a close affordance. The wallet
@@ -108,6 +109,20 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
       const sig = await placeBetCtl.placeBet(slot, side, parsedUnits)
       setLastSig(sig)
       persistStake(amount)
+      try {
+        const entry: LastOpenBet = {
+          marketPda: slot.marketPda,
+          side,
+          stake: parsedUnits.toString(),
+          closesAt: slot.closeTime,
+          marketLabel: `${slot.displayA} vs ${slot.displayB}`,
+          pickLabel: side === 'yes' ? slot.displayA : slot.displayB,
+        }
+        window.localStorage.setItem(LAST_BET_STORAGE_KEY, JSON.stringify(entry))
+        window.dispatchEvent(new Event('nsgame:last-bet-changed'))
+      } catch {
+        // localStorage unavailable — pill simply will not appear.
+      }
     } catch (e) {
       setLocalError(e instanceof Error ? e.message : String(e))
     }
