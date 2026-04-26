@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import type { UserPositionDTO, PositionState } from '@/app/api/positions/[wallet]/route'
 import { dollarsUsdcBig, safeBigInt, signedUsdcBig } from '@/lib/utils/usdc'
 import { pairById } from '@/lib/markets/pairs'
@@ -72,10 +73,16 @@ function pnlForRow(p: UserPositionDTO): { value: bigint; class: string; label: s
 export function PositionsTable({ positions, nowSecs }: PositionsTableProps) {
   if (positions.length === 0) {
     return (
-      <div className="rounded-md border border-zinc-800 bg-zinc-900/40 px-4 py-12 text-center">
-        <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-zinc-500">
-          nothing open. either you finished or you never started.
+      <div className="flex flex-col items-center gap-3 rounded-md border border-zinc-800 bg-zinc-900/40 px-4 py-12 text-center">
+        <p className="text-[13px] text-zinc-300">
+          Nothing open. The room is still here.
         </p>
+        <Link
+          href="/"
+          className="inline-flex h-8 items-center rounded-md border border-zinc-700 bg-zinc-900 px-3 font-mono text-[11px] uppercase tracking-[0.12em] text-zinc-200 transition-colors hover:border-zinc-500 hover:bg-zinc-800 hover:text-zinc-50"
+        >
+          See markets
+        </Link>
       </div>
     )
   }

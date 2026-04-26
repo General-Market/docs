@@ -144,6 +144,8 @@ export function CalendarPageClient() {
               selectedSide={selectedSide}
               onSelectSide={handleSelectSide}
               onSlotsChange={setAllSlots}
+              onStatusChange={setStatus}
+              onBoardChange={setBoard}
             />
 
             {hasPick ? (

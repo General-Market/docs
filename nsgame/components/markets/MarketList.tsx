@@ -35,6 +35,10 @@ export interface MarketListProps {
   selectedSide: Side | null
   onSelectSide: (slot: UpcomingSlot, side: Side) => void
   onSlotsChange?: (slots: UpcomingSlot[]) => void
+  /** Optional pivots wired into the empty state — without them the
+   *  invitations degrade to plain copy. */
+  onStatusChange?: (s: StatusFilter) => void
+  onBoardChange?: (b: BoardFilter) => void
 }
 
 export function MarketList(props: MarketListProps) {
@@ -52,6 +56,8 @@ function MarketListInner({
   selectedSide,
   onSelectSide,
   onSlotsChange,
+  onStatusChange,
+  onBoardChange,
 }: MarketListProps) {
   const upcomingSlots = useUpcomingSlots({
     board,
@@ -210,21 +216,46 @@ function MarketListInner({
   }
 
   if (filteredSlots.length === 0) {
-    const text = wantsSettling
-      ? 'Nothing waiting. Every closed window has been answered.'
-      : wantsResolved
-        ? 'Nothing has settled yet. Come back after the next window.'
-        : wantsPositions
-          ? address
-            ? 'No positions yet. Place a bet — the ledger starts empty.'
-            : 'Connect a wallet to see your positions.'
-          : upcomingSlots.length === 0
-            ? 'No markets here. Try a wider source.'
-            : 'No markets match the current filter.'
+    // Empty state as invitation. Copy plus pivots — the user shouldn't
+    // hit a void and turn around.
+    const pivotLive = onStatusChange ? () => onStatusChange('live') : undefined
+    const pivotAllBoards = onBoardChange ? () => onBoardChange('all') : undefined
+
+    let text: string
+    let actions: EmptyAction[] = []
+
+    if (wantsSettling) {
+      text = 'Nothing waiting. Every closed window has been answered.'
+      if (pivotLive) actions.push({ label: 'See live markets', onClick: pivotLive })
+    } else if (wantsResolved) {
+      text = 'Nothing has settled yet. Markets resolve every few hours.'
+      if (pivotLive) actions.push({ label: 'See live markets', onClick: pivotLive })
+    } else if (wantsPositions) {
+      if (address) {
+        text = 'No bets yet. The room is open.'
+        if (pivotLive) actions.push({ label: 'See markets', onClick: pivotLive })
+      } else {
+        text = 'Connect a wallet. Skin enters here.'
+      }
+    } else if (upcomingSlots.length === 0) {
+      text = 'Nothing in this category right now.'
+      if (board !== 'all' && pivotAllBoards) {
+        actions.push({ label: 'All boards', onClick: pivotAllBoards })
+      }
+    } else {
+      text = 'Nothing matches the current filter. Empty for now.'
+      if (board !== 'all' && pivotAllBoards) {
+        actions.push({ label: 'All boards', onClick: pivotAllBoards })
+      }
+      if (pivotLive && status !== 'live') {
+        actions.push({ label: 'Live markets', onClick: pivotLive })
+      }
+    }
+
     return (
       <section aria-label="Markets" className="min-w-0">
         <ListHeader status={status} count={0} live={wantsLive} />
-        <EmptyState text={text} />
+        <EmptyState text={text} actions={actions} />
       </section>
     )
   }
@@ -377,10 +408,29 @@ function FadeIn({ children, className }: { children: React.ReactNode; className?
   )
 }
 
-function EmptyState({ text }: { text: string }) {
+interface EmptyAction {
+  label: string
+  onClick: () => void
+}
+
+function EmptyState({ text, actions = [] }: { text: string; actions?: EmptyAction[] }) {
   return (
     <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 px-6 py-16 text-center">
-      <p className="text-[14px] text-zinc-400">{text}</p>
+      <p className="text-[14px] text-zinc-300">{text}</p>
+      {actions.length > 0 ? (
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+          {actions.map(a => (
+            <button
+              key={a.label}
+              type="button"
+              onClick={a.onClick}
+              className="inline-flex h-8 items-center rounded-md border border-zinc-700 bg-zinc-900 px-3 font-mono text-[11px] uppercase tracking-[0.12em] text-zinc-200 transition-colors hover:border-zinc-500 hover:bg-zinc-800 hover:text-zinc-50"
+            >
+              {a.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
     </div>
   )
 }

@@ -100,11 +100,24 @@ export function MyPositionsModal({ open, onClose }: MyPositionsModalProps) {
 
             <div className="flex-1 overflow-y-auto px-3 py-4 sm:px-5 sm:py-5">
               {address ? (
-                <MyPositions hideHeader className="border-0 bg-transparent" />
+                <MyPositions
+                  hideHeader
+                  className="border-0 bg-transparent"
+                  onEmptyPivot={onClose}
+                />
               ) : (
-                <p className="px-2 py-6 text-center font-mono text-[11px] uppercase tracking-[0.12em] text-zinc-500">
-                  connect a wallet to see positions
-                </p>
+                <div className="flex flex-col items-center gap-3 px-2 py-10 text-center">
+                  <p className="text-[13px] text-zinc-300">
+                    Connect a wallet. Skin enters here.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="inline-flex h-8 items-center rounded-md border border-zinc-700 bg-zinc-900 px-3 font-mono text-[11px] uppercase tracking-[0.12em] text-zinc-200 transition-colors hover:border-zinc-500 hover:bg-zinc-800 hover:text-zinc-50"
+                  >
+                    Back to markets
+                  </button>
+                </div>
               )}
             </div>
           </motion.div>

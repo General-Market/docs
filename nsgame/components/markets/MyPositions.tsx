@@ -188,10 +188,13 @@ export interface MyPositionsProps {
    * summary kept for the compact sidebar variant.
    */
   variant?: 'rows' | 'cards'
+  /** Pivot the user away from the empty state — close the modal, scroll
+   *  to the markets feed, whatever the host needs. */
+  onEmptyPivot?: () => void
   className?: string
 }
 
-export function MyPositions({ compact = false, hideHeader = false, variant, className = '' }: MyPositionsProps) {
+export function MyPositions({ compact = false, hideHeader = false, variant, onEmptyPivot, className = '' }: MyPositionsProps) {
   const { address } = useWallet()
   const { positions } = useUserPositions(address)
   const now = useNowSecs()
@@ -226,13 +229,22 @@ export function MyPositions({ compact = false, hideHeader = false, variant, clas
       return (
         <div
           className={[
-            'rounded-md border border-zinc-800 bg-zinc-900 px-3 py-2',
+            'flex items-center justify-between gap-3 rounded-md border border-zinc-800 bg-zinc-900 px-3 py-2',
             className,
           ].join(' ')}
         >
-          <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-zinc-500">
-            no positions yet · place your first bet
+          <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-zinc-300">
+            No bets yet. The room is open.
           </p>
+          {onEmptyPivot ? (
+            <button
+              type="button"
+              onClick={onEmptyPivot}
+              className="inline-flex h-7 shrink-0 items-center rounded border border-zinc-700 bg-zinc-900 px-2 font-mono text-[10px] uppercase tracking-[0.12em] text-zinc-200 transition-colors hover:border-zinc-500 hover:text-zinc-50"
+            >
+              See markets
+            </button>
+          ) : null}
         </div>
       )
     }
@@ -288,9 +300,20 @@ export function MyPositions({ compact = false, hideHeader = false, variant, clas
       ) : null}
 
       {empty ? (
-        <p className="px-4 py-3 font-mono text-[11px] text-zinc-500">
-          no positions yet · place your first bet
-        </p>
+        <div className="flex flex-col items-start gap-3 px-4 py-6">
+          <p className="text-[13px] text-zinc-300">
+            No bets yet. The room is open.
+          </p>
+          {onEmptyPivot ? (
+            <button
+              type="button"
+              onClick={onEmptyPivot}
+              className="inline-flex h-8 items-center rounded-md border border-zinc-700 bg-zinc-900 px-3 font-mono text-[11px] uppercase tracking-[0.12em] text-zinc-200 transition-colors hover:border-zinc-500 hover:bg-zinc-800 hover:text-zinc-50"
+            >
+              See markets
+            </button>
+          ) : null}
+        </div>
       ) : (
         <div className="space-y-3 px-3 py-3">
           <PositionsBody buckets={buckets} now={now} variant={bodyVariant} />

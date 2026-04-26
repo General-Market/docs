@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import type { UserPositionDTO } from '@/app/api/positions/[wallet]/route'
 import { formatUsdcBig, relativeFromSecs, safeBigInt } from '@/lib/utils/usdc'
 import { pairById } from '@/lib/markets/pairs'
@@ -27,10 +28,16 @@ export function RecentFills({ positions, nowSecs, limit = 25 }: RecentFillsProps
 
   if (sorted.length === 0) {
     return (
-      <div className="rounded-md border border-zinc-800 bg-zinc-900/40 px-4 py-8 text-center">
-        <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-zinc-500">
-          no fills recorded
+      <div className="flex flex-col items-center gap-3 rounded-md border border-zinc-800 bg-zinc-900/40 px-4 py-8 text-center">
+        <p className="text-[13px] text-zinc-300">
+          No fills yet. Empty for now.
         </p>
+        <Link
+          href="/"
+          className="inline-flex h-8 items-center rounded-md border border-zinc-700 bg-zinc-900 px-3 font-mono text-[11px] uppercase tracking-[0.12em] text-zinc-200 transition-colors hover:border-zinc-500 hover:bg-zinc-800 hover:text-zinc-50"
+        >
+          See markets
+        </Link>
       </div>
     )
   }
