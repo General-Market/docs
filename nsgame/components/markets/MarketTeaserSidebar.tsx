@@ -229,7 +229,7 @@ export function MarketTeaserSidebar({
       aria-label={side === 'left' ? 'Featured fights — left' : 'Featured fights — right'}
     >
       <div className="sticky top-20 self-start">
-        <div className="relative overflow-hidden rounded-xl border border-zinc-800/60 bg-zinc-950">
+        <div className="relative h-[calc(100vh-6rem)] overflow-hidden rounded-xl border border-zinc-800/60 bg-zinc-950">
           {/* Ambient broll. Mirrored on the right rail so the two read
               as a matched pair instead of duplicate footage. */}
           <video
@@ -252,7 +252,10 @@ export function MarketTeaserSidebar({
             className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/55 to-black/85"
           />
 
-          <div className="relative flex flex-col gap-3 p-3">
+          {/* Tall rail, three cards centered against the broll — empty
+              space above and below carries the video instead of the
+              cards crowding the top edge. */}
+          <div className="relative flex h-full flex-col justify-center gap-3 p-3">
             {teasers.map(slot => {
               const state = stateMap[slot.marketPda] ?? null
               const yesOdd = state ? payoutMultiplier(state.totalYes, state.totalNo, 'yes') : null
