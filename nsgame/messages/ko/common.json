@@ -31,7 +31,11 @@
     "points": "포인트",
     "about": "소개",
     "sections": "섹션",
-    "itps": "인덱스 펀드"
+    "itps": "인덱스 펀드",
+    "more": "더보기"
+  },
+  "more": {
+    "title": "더보기"
   },
   "footer": {
     "product": "상품",

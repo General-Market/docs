@@ -1,7 +1,6 @@
 import { listDocs } from '@/lib/content/loadDoc'
 import { buildSectionMetadata } from '@/lib/content/metadata'
 import { SectionIndex } from '@/components/docs/SectionIndex'
-import { Footer } from '@/components/layout/Footer'
 
 export function generateMetadata() {
   return buildSectionMetadata(
@@ -14,28 +13,25 @@ export function generateMetadata() {
 export default function TrustIndexPage() {
   const docs = listDocs('trust')
   return (
-    <>
-      <SectionIndex
-        section="trust"
-        title="Trust"
-        description="No operator entity. No KYC. No house. The chain is the ledger. The DAO is in formation. The pages below are the rest of the answer."
-        docs={docs}
-        groups={[
-          {
-            heading: 'Governance',
-            slugs: ['decentralization-and-dao', 'token-status', 'audit-and-mainnet-roadmap'],
-          },
-          {
-            heading: 'Resolution',
-            slugs: ['goldilock-oracle-network', 'data-source-methodology', 'market-integrity'],
-          },
-          {
-            heading: 'Subjects',
-            slugs: ['subject-removal-policy'],
-          },
-        ]}
-      />
-      <Footer />
-    </>
+    <SectionIndex
+      section="trust"
+      title="Trust"
+      description="No operator entity. No KYC. No house. The chain is the ledger. The DAO is in formation. The pages below are the rest of the answer."
+      docs={docs}
+      groups={[
+        {
+          heading: 'Governance',
+          slugs: ['decentralization-and-dao', 'token-status', 'audit-and-mainnet-roadmap'],
+        },
+        {
+          heading: 'Resolution',
+          slugs: ['goldilock-oracle-network', 'data-source-methodology', 'market-integrity'],
+        },
+        {
+          heading: 'Subjects',
+          slugs: ['subject-removal-policy'],
+        },
+      ]}
+    />
   )
 }

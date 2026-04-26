@@ -31,7 +31,11 @@
     "points": "积分",
     "about": "关于",
     "sections": "板块",
-    "itps": "指数基金"
+    "itps": "指数基金",
+    "more": "更多"
+  },
+  "more": {
+    "title": "更多"
   },
   "footer": {
     "product": "产品",

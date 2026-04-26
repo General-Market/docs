@@ -1,7 +1,6 @@
 import { listDocs } from '@/lib/content/loadDoc'
 import { buildSectionMetadata } from '@/lib/content/metadata'
 import { SectionIndex } from '@/components/docs/SectionIndex'
-import { Footer } from '@/components/layout/Footer'
 
 export function generateMetadata() {
   return buildSectionMetadata(
@@ -14,14 +13,11 @@ export function generateMetadata() {
 export default function BrandIndexPage() {
   const docs = listDocs('brand')
   return (
-    <>
-      <SectionIndex
-        section="brand"
-        title="Brand"
-        description="Who we are, what we are not, and how to draw the logo if you must."
-        docs={docs}
-      />
-      <Footer />
-    </>
+    <SectionIndex
+      section="brand"
+      title="Brand"
+      description="Who we are, what we are not, and how to draw the logo if you must."
+      docs={docs}
+    />
   )
 }

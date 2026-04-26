@@ -31,7 +31,11 @@
     "points": "ポイント",
     "about": "概要",
     "sections": "セクション",
-    "itps": "インデックスファンド"
+    "itps": "インデックスファンド",
+    "more": "その他"
+  },
+  "more": {
+    "title": "その他"
   },
   "footer": {
     "product": "プロダクト",

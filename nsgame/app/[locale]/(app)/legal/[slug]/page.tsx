@@ -2,7 +2,6 @@ import { notFound } from 'next/navigation'
 import { listDocSlugs, loadDoc } from '@/lib/content/loadDoc'
 import { buildDocMetadata } from '@/lib/content/metadata'
 import { DocPage } from '@/components/docs/DocPage'
-import { Footer } from '@/components/layout/Footer'
 
 export const dynamicParams = false
 
@@ -31,14 +30,11 @@ export default async function LegalDocPage({
   if (!doc) notFound()
 
   return (
-    <>
-      <DocPage
-        doc={doc}
-        section="legal"
-        sectionLabel="Legal"
-        sectionHref="/legal"
-      />
-      <Footer />
-    </>
+    <DocPage
+      doc={doc}
+      section="legal"
+      sectionLabel="Legal"
+      sectionHref="/legal"
+    />
   )
 }

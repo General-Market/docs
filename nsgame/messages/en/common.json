@@ -31,7 +31,11 @@
     "points": "Points",
     "about": "About",
     "sections": "Sections",
-    "itps": "Index Funds"
+    "itps": "Index Funds",
+    "more": "More"
+  },
+  "more": {
+    "title": "More"
   },
   "footer": {
     "product": "Product",
