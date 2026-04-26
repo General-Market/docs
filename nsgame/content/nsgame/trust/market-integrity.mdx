@@ -41,7 +41,7 @@ This is the surface the protocol defends. It is small, on purpose.
 
 The website is the second layer. It does what a website can do.
 
-- **Catalog presentation.** The website displays the 25 PvP fights from the frozen catalog. It can delist a market from the UI without changing the protocol — see [Subject Removal Policy](/trust/subject-removal-policy).
+- **Catalog presentation.** The website displays the 25 live PvP fights in the curated catalog. It can delist a market from the UI without changing the protocol — see [Subject Removal Policy](/trust/subject-removal-policy). The roster is updated on a regular basis to focus liquidity on the most popular trades; integrity comes from the resolution mechanism, not from the list standing still.
 - **Geographic blocklist.** The website refuses connections from a standard set of jurisdictions. The protocol does not check.
 - **Age gate.** Soft, checkbox-based, plus a confirmation message after entry. The website enforces; the protocol does not see it. See [Age Verification](/legal/age-gate).
 - **UI signal hygiene.** Implied odds, pool sizes, and timers are computed from chain state and shown without editorial filter.
@@ -70,7 +70,7 @@ Honest integrity pages list what does not get defended.
 
 For each round:
 
-1. The catalog is fixed. The market exists in code, not in editorial discretion.
+1. The market exists in code at the moment the round opens. A round resolves under the pair it opened with — roster moves apply to future rounds, never in flight.
 2. Bets accumulate in program-controlled accounts. Custody is the bettor's.
 3. The round closes. The pool is the pool. No further bets.
 4. Goldilock reads the public data, agrees with itself by quorum, signs the result.

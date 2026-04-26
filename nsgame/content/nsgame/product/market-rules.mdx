@@ -1,19 +1,21 @@
 ---
 title: "Market Rules"
-description: "Two market formats, twenty-five fights, no ambiguity. What counts as winning, per format."
+description: "Two market formats, twenty-five live fights today. The roster is curated to focus liquidity on the trades that matter. What counts as winning, per format."
 slug: "market-rules"
 category: "Product"
 date: "2026-04-26"
 author: "nsgame"
 ---
 
-Two formats. Twenty-five fights. The catalog is frozen in code; the rules are frozen with it. A market resolves the way it was deployed to resolve, and that is the only contract that matters.
+Two formats. Twenty-five fights today. A market resolves the way it was deployed to resolve, and that is the only contract that matters. The roster around it moves; the rules under each round do not.
 
-## The frozen catalog
+## The catalog today
 
-Fifty named subjects, paired into twenty-five PvP fights. Stars take fifteen of them on a four-hour cadence. Cams take ten on a two-minute cadence. The list does not rotate. New names mean a redeploy of the on-chain program — see [twenty-five-forever decision](/product/how-it-works) for why we accepted that cost.
+Fifty named subjects, paired into twenty-five PvP fights. Stars take fifteen on a four-hour cadence. Cams take ten on a two-minute cadence. The number is a count, not a promise.
 
-Pair index is encoded into `threshold_bps` on the on-chain Market PDA. That is mechanical; it matters because it is the reason we cannot quietly swap one name for another mid-cycle. The names are the names.
+The catalog is curated. The operating principle is simple: focus liquidity on the most popular trades. The roster grows when a new pair pulls more attention than the worst-performing one it would replace. Pairs that fail to attract a pool are retired. Updates happen on a regular basis. A larger catalog with thin pools is worse than a smaller catalog with deep pools — which is why we grow only when a new pair earns its way in.
+
+Each pair index is encoded into `threshold_bps` on the on-chain Market PDA. That is mechanical; it matters because it is the reason no name is quietly swapped for another mid-cycle. A round resolves under the names it opened with. Roster moves apply to future rounds, never to a round in flight.
 
 ## Format F1 — Gain Race
 
@@ -83,20 +85,20 @@ A round with stake on only one side voids automatically. There is nobody to win 
 
 ## What counts as a "valid" subject
 
-A subject is one of the fifty names hardcoded in the catalog. The list is on-chain via the Market PDA seeds. If a subject is delisted from the website per [Subject Removal Policy](/trust/subject-removal-policy), the website hides the market — but the protocol still resolves rounds that were already open. The chain does not forget; the website can.
+A subject is one of the names in the live catalog at the moment a round opens. The list is on-chain via the Market PDA seeds. If a subject is delisted from the website per [Subject Removal Policy](/trust/subject-removal-policy), the website hides the market — but the protocol still resolves rounds that were already open. The chain does not forget; the website can.
 
 ## What is not in scope
 
-- **Three-way races.** The schema is binary. No A vs B vs C without a redeploy.
+- **Three-way races.** The schema is binary. No A vs B vs C.
 - **Cross-board pairs.** A Stars subject does not race a Cams subject. They live on different sources, different cadences, different resolution methods.
-- **Roster swaps.** A name cannot be substituted into an existing pair index. The pair is the pair.
+- **Mid-round roster swaps.** A name cannot be substituted into an existing pair index. A round resolves under the pair it opened with. New pairs and retirements take effect for future rounds, never in flight.
 - **Manual resolution.** No human decides who wins. The oracle reads, signs, posts. If the oracle cannot read, the round voids. There is no override.
 
 ## Where the rules live
 
 The Market PDA on Solana — `DQwMnwQGYuLDvciSFZNgUvcHkA3Buyhk3ejgbACvSydA`. The seeds are `(source_id, pair_index, close_time, settlement_time)`. The catalog file is `nsgame/lib/markets/pairs.ts`. The resolution code is in the Goldilock oracle daemon.
 
-Rules in three places, all of them readable. None of them mutable without a deploy.
+Rules in three places, all of them readable. The format and resolution logic do not move between deploys; the roster does, on a regular basis, in the direction of liquidity.
 
 ## Cross-references
 
