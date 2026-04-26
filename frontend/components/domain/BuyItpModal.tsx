@@ -6,6 +6,7 @@ import { useAccount, useWaitForTransactionReceipt, useWriteContract, useSwitchCh
 import { parseUnits, formatUnits, decodeEventLog } from 'viem'
 import { INDEX_PROTOCOL, COLLATERAL_DECIMALS } from '@/lib/contracts/addresses'
 import { ERC20_ABI, INDEX_ABI, SETTLEMENT_CUSTODY_ABI } from '@/lib/contracts/index-protocol-abi'
+import { BridgedItpFactoryABI } from '@/lib/contracts/generated/bridged_itp_factory-abi'
 import { ensureCorrectChain } from '@/hooks/useChainWrite'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { PipelineRing, type PipelineRingPhase } from '@/components/ui/PipelineRing'
@@ -93,6 +94,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   const [fillPrice, setFillPrice] = useState<bigint | null>(null)
   const [fillAmount, setFillAmount] = useState<bigint | null>(null)
   const [initialSharesBn, setInitialSharesBn] = useState<bigint | null>(null)
+  const [initialBridgedBn, setInitialBridgedBn] = useState<bigint | null>(null)
   const [skippedApproval, setSkippedApproval] = useState(false)
   const [processStalled, setProcessStalled] = useState(false)
 
@@ -179,6 +181,31 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     query: { enabled: !!address && !!itpId, refetchInterval: 5_000 },
   })
   const userShares = (l3SharesRaw as bigint) ?? 0n
+
+  // BridgedITP balance on Settlement — DONE waits for this to grow.
+  // L3 mint can land but bridge mint can stall (oracle gap, registry auth);
+  // showing success on L3 fill alone is the lie the user already caught.
+  const { data: bridgedItpAddrRaw } = useReadContract({
+    address: INDEX_PROTOCOL.settlementBridgedItpFactory,
+    abi: BridgedItpFactoryABI,
+    functionName: 'deployedItps',
+    args: [itpId as `0x${string}`],
+    chainId: settlementChainId,
+    query: { enabled: !!itpId },
+  })
+  const bridgedItpAddress = (bridgedItpAddrRaw as `0x${string}` | undefined) &&
+    bridgedItpAddrRaw !== '0x0000000000000000000000000000000000000000'
+    ? (bridgedItpAddrRaw as `0x${string}`)
+    : ''
+  const { data: bridgedBalanceRaw } = useReadContract({
+    address: bridgedItpAddress as `0x${string}`,
+    abi: ERC20_ABI,
+    functionName: 'balanceOf',
+    args: address ? [address] : undefined,
+    chainId: settlementChainId,
+    query: { enabled: !!address && !!bridgedItpAddress, refetchInterval: 3_000 },
+  })
+  const bridgedBalance = (bridgedBalanceRaw as bigint) ?? 0n
 
   const { navPerShare, navPerShareBn, totalAssetCount, pricedAssetCount, isLoading: isNavLoading } = useItpNav(itpId)
 
@@ -269,7 +296,8 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
 
   const snapshotBalances = useCallback(() => {
     setInitialSharesBn(userShares)
-  }, [userShares])
+    setInitialBridgedBn(bridgedBalance)
+  }, [userShares, bridgedBalance])
 
   const handleApprove = useCallback(async () => {
     if (!amount || insufficientBalance) return
@@ -442,20 +470,32 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
 
     const status = trackedOrder.status
 
-    if (status >= 2 && micro < BuyMicro.DONE) {
-      // FILLED
+    if (status >= 2 && micro < BuyMicro.FILL) {
+      // FILLED on L3 — capture fill data and hold at FILL until BridgedITP
+      // balance grows on Settlement. The bridge-mint watcher below advances
+      // to DONE; otherwise we'd lie about completion the way the user caught.
       if (trackedOrder.fill_price) {
         try { setFillPrice(BigInt(trackedOrder.fill_price)) } catch {}
       }
       if (trackedOrder.fill_amount) {
         try { setFillAmount(BigInt(trackedOrder.fill_amount)) } catch {}
       }
-      setMicro(BuyMicro.DONE)
-    } else if (status >= 1 && micro < BuyMicro.FILL) {
-      // BATCHED
       setMicro(BuyMicro.FILL)
+    } else if (status >= 1 && micro < BuyMicro.BATCH) {
+      // BATCHED on L3
+      setMicro(BuyMicro.BATCH)
     }
   }, [trackedOrder, micro, orderId])
+
+  // Bridge-mint watcher: only advance to DONE once BridgedITP balance on
+  // Settlement actually grows. Until then the buy is L3-complete but the
+  // sell modal will still show 0 — calling that DONE would repeat the bug.
+  useEffect(() => {
+    if (micro < BuyMicro.FILL || micro >= BuyMicro.DONE) return
+    if (initialBridgedBn !== null && bridgedBalance > initialBridgedBn) {
+      setMicro(BuyMicro.DONE)
+    }
+  }, [micro, bridgedBalance, initialBridgedBn])
 
   // --- PostHog: buy_step_reached ---
   useEffect(() => {
@@ -467,19 +507,19 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     })
   }, [micro]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Detect L3 shares increase, completion signal (fallback when SSE unavailable)
+  // L3-side fallback: detect L3 share increase or recent SSE fill, advance
+  // to FILL (not DONE — DONE waits for the BridgedITP mint on Settlement).
   useEffect(() => {
-    if (micro < BuyMicro.RELAY || micro >= BuyMicro.DONE) return
+    if (micro < BuyMicro.RELAY || micro >= BuyMicro.FILL) return
 
     if (initialSharesBn !== null && userShares > initialSharesBn) {
-      // Clean up pending order
       try {
         const pending = JSON.parse(localStorage.getItem('index-pending-orders') || '[]')
         localStorage.setItem('index-pending-orders', JSON.stringify(
           pending.filter((o: any) => o.txHash !== savedBuyHash)
         ))
       } catch {}
-      setMicro(BuyMicro.DONE)
+      setMicro(BuyMicro.FILL)
       return
     }
 
@@ -494,7 +534,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
       if (filled) {
         if (filled.fill_price) try { setFillPrice(BigInt(filled.fill_price)) } catch {}
         if (filled.fill_amount) try { setFillAmount(BigInt(filled.fill_amount)) } catch {}
-        setMicro(BuyMicro.DONE)
+        setMicro(BuyMicro.FILL)
       }
     }
   }, [micro, userShares, initialSharesBn, savedBuyHash, trackedOrder, sseOrders, itpId])
@@ -580,6 +620,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     setFillPrice(null)
     setFillAmount(null)
     setInitialSharesBn(null)
+    setInitialBridgedBn(null)
     setSkippedApproval(false)
     clearTxHashes()
   }, [clearTxHashes])

@@ -256,6 +256,25 @@ contract DeployFullSystemE2E is DeployBLSHelper {
 
     function _wireContracts() internal {
         console.log("Phase 6: Wire Contracts");
+
+        // Authorize BLS-verifying contracts for incrementMissedCounts FIRST.
+        // If any later wiring call reverts (Sonic-side mocks behave differently
+        // than L3 originals), these auths must already be on-chain — otherwise
+        // every Settlement-side BLS-verified call (completeBuyOrder,
+        // mintBridgedShares, …) reverts with E136 and buys orphan-mint forever.
+        OracleRegistry(oracleRegistry).setAuthorizedMissedCountCaller(indexProxy, true);
+        OracleRegistry(oracleRegistry).setAuthorizedMissedCountCaller(blsCustodyProxy, true);
+        OracleRegistry(oracleRegistry).setAuthorizedMissedCountCaller(l3BridgeCustodyProxy, true);
+        OracleRegistry(oracleRegistry).setAuthorizedMissedCountCaller(bridgeProxyAddr, true);
+        OracleRegistry(oracleRegistry).setAuthorizedMissedCountCaller(settlementBridgeCustodyProxy, true);
+        // Verify each landed — silent failure here is the worst-case bug.
+        require(OracleRegistry(oracleRegistry).authorizedMissedCountCallers(indexProxy), "Auth wire: indexProxy not authorized");
+        require(OracleRegistry(oracleRegistry).authorizedMissedCountCallers(blsCustodyProxy), "Auth wire: blsCustodyProxy not authorized");
+        require(OracleRegistry(oracleRegistry).authorizedMissedCountCallers(l3BridgeCustodyProxy), "Auth wire: l3BridgeCustodyProxy not authorized");
+        require(OracleRegistry(oracleRegistry).authorizedMissedCountCallers(bridgeProxyAddr), "Auth wire: bridgeProxyAddr not authorized");
+        require(OracleRegistry(oracleRegistry).authorizedMissedCountCallers(settlementBridgeCustodyProxy), "Auth wire: settlementBridgeCustodyProxy not authorized");
+        console.log("  OracleRegistry: 5 BLS-verifying contracts authorized + verified");
+
         Investment(indexProxy).setOracleRegistry(oracleRegistry);
         console.log("  Index wired to OracleRegistry");
         Investment(indexProxy).setAuthorizedBridge(bridgeProxyAddr);
@@ -265,15 +284,6 @@ contract DeployFullSystemE2E is DeployBLSHelper {
         // Vault approves SettlementBridgeCustody for USDC spending (for completeSellOrder vault→user pull)
         MockBitgetVault(mockBitgetVault).approveSpender(settlementUsdc, settlementBridgeCustodyProxy, type(uint256).max);
         console.log("  MockBitgetVault: approved SettlementBridgeCustody for SETTLEMENT_USDC spending");
-        // Authorize all BLS-verifying contracts for incrementMissedCounts.
-        // Adding entries to a reused OracleRegistry is additive — Vision's existing
-        // entries are preserved.
-        OracleRegistry(oracleRegistry).setAuthorizedMissedCountCaller(indexProxy, true);
-        OracleRegistry(oracleRegistry).setAuthorizedMissedCountCaller(blsCustodyProxy, true);
-        OracleRegistry(oracleRegistry).setAuthorizedMissedCountCaller(l3BridgeCustodyProxy, true);
-        OracleRegistry(oracleRegistry).setAuthorizedMissedCountCaller(bridgeProxyAddr, true);
-        OracleRegistry(oracleRegistry).setAuthorizedMissedCountCaller(settlementBridgeCustodyProxy, true);
-        console.log("  OracleRegistry: authorized BLS-verifying contracts for incrementMissedCounts");
 
         // Verify governance chain: OracleRegistry._governance must resolve to deployer.
         // On Orbit L3, CREATE addresses diverge between forge simulation and broadcast.
