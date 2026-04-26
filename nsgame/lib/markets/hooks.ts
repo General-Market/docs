@@ -180,14 +180,9 @@ function subscribeMarketState(pda: string, cb: (s: MarketState | null) => void):
 }
 
 export function useMarketState(marketPda: string | null): MarketState | null {
-  const { connection } = useWallet()
   const [state, setState] = useState<MarketState | null>(
     () => (marketPda ? marketStateCache.get(marketPda) ?? null : null),
   )
-
-  // Track the last requested pda so we don't write stale results after an
-  // address change — pyramid-of-doom prevention.
-  const lastPdaRef = useRef<string | null>(null)
 
   // Subscribe to the shared cache: if a sibling hook (typically the
   // batch poller in MarketList) refreshes this pda, this component sees
@@ -202,51 +197,28 @@ export function useMarketState(marketPda: string | null): MarketState | null {
   useEffect(() => {
     if (!marketPda) {
       setState(null)
-      lastPdaRef.current = null
       return
     }
 
-    lastPdaRef.current = marketPda
-    let cancelled = false
-
-    const pubkey = (() => {
-      try { return new PublicKey(marketPda) } catch { return null }
-    })()
-
-    if (!pubkey) {
-      setState(null)
-      return
-    }
-
+    const ctrl = new AbortController()
     const fetchOnce = async () => {
       try {
-        const info = await connection.getAccountInfo(pubkey, 'confirmed')
-        if (cancelled || lastPdaRef.current !== marketPda) return
-        if (!info) {
-          publishMarketState(marketPda, null)
-          return
-        }
-        const decoded = decodeMarket(info.data)
-        publishMarketState(marketPda, {
-          totalYes: decoded.totalYes,
-          totalNo: decoded.totalNo,
-          resolved: decoded.resolved,
-          outcomeYes: decoded.resolved ? decoded.outcomeYes : null,
-          baselinePrice: decoded.baselinePrice ?? null,
-          finalPrice: decoded.resolved ? decoded.finalPrice : null,
-        })
-      } catch {
-        // Network hiccup or layout mismatch — keep the last value.
+        const next = await fetchMarketStateBatch([marketPda], ctrl.signal)
+        if (ctrl.signal.aborted) return
+        publishMarketState(marketPda, next[marketPda] ?? null)
+      } catch (err) {
+        if ((err as { name?: string })?.name === 'AbortError') return
+        // Network hiccup — keep the last value.
       }
     }
 
     void fetchOnce()
     const id = window.setInterval(fetchOnce, MARKET_POLL_MS)
     return () => {
-      cancelled = true
+      ctrl.abort()
       window.clearInterval(id)
     }
-  }, [marketPda, connection])
+  }, [marketPda])
 
   return state
 }
@@ -1053,20 +1025,74 @@ export function formatPairScore(score: bigint | null): string {
 
 // ── useMarketStatesBatch ────────────────────────────────────────────────
 
+// 30 s pool refresh. The API reads from our own Postgres, so we are no
+// longer fighting Helius's rate limit — we could go lower, but a 30 s
+// cadence is fast enough for a 2-minute cohort and easy on the indexer.
 const MARKET_BATCH_POLL_MS = 30_000
-const MARKET_BATCH_CHUNK = 100
+
+// One body, one round trip. The API caps at 200 PDAs per call; we have
+// at most ~25 active markets, so chunking is purely defensive.
+const MARKET_BATCH_CHUNK = 200
 
 export type MarketStateMap = Record<string, MarketState | null>
 
-function chunked<T>(xs: readonly T[], size: number): T[][] {
-  if (size <= 0) return [xs.slice()]
-  const out: T[][] = []
-  for (let i = 0; i < xs.length; i += size) out.push(xs.slice(i, i + size))
+interface MarketStateDTO {
+  totalYes: string
+  totalNo: string
+  resolved: boolean
+  outcomeYes: boolean | null
+  baselinePrice: string | null
+  finalPrice: string | null
+}
+
+function dtoToState(d: MarketStateDTO | null): MarketState | null {
+  if (!d) return null
+  try {
+    return {
+      totalYes: BigInt(d.totalYes),
+      totalNo: BigInt(d.totalNo),
+      resolved: !!d.resolved,
+      outcomeYes: d.resolved ? d.outcomeYes : null,
+      baselinePrice: d.baselinePrice ? BigInt(d.baselinePrice) : null,
+      finalPrice: d.resolved && d.finalPrice ? BigInt(d.finalPrice) : null,
+    }
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Single shared fetch path for both `useMarketState` and
+ * `useMarketStatesBatch`. Hits `/api/markets/state-batch` instead of
+ * Solana RPC — the indexer maintains the rollup off chain so the
+ * browser stops paying Helius's per-credit toll for every poll.
+ */
+async function fetchMarketStateBatch(
+  pdas: readonly string[],
+  signal?: AbortSignal,
+): Promise<MarketStateMap> {
+  const out: MarketStateMap = {}
+  if (pdas.length === 0) return out
+  for (let i = 0; i < pdas.length; i += MARKET_BATCH_CHUNK) {
+    const chunk = pdas.slice(i, i + MARKET_BATCH_CHUNK)
+    const resp = await fetch('/api/markets/state-batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pdas: chunk }),
+      signal,
+      cache: 'no-store',
+    })
+    if (!resp.ok) throw new Error(`state-batch ${resp.status}`)
+    const json = (await resp.json()) as { states?: Record<string, MarketStateDTO | null> }
+    const states = json.states ?? {}
+    for (const p of chunk) {
+      out[p] = dtoToState(states[p] ?? null)
+    }
+  }
   return out
 }
 
 export function useMarketStatesBatch(pdas: readonly string[]): MarketStateMap {
-  const { connection } = useWallet()
   const [states, setStates] = useState<MarketStateMap>({})
 
   // A stable key for the input so we only refetch when the *set* changes.
@@ -1084,50 +1110,12 @@ export function useMarketStatesBatch(pdas: readonly string[]): MarketStateMap {
     }
 
     const list = key.split(',')
-    let cancelled = false
+    const ctrl = new AbortController()
 
     const fetchAll = async () => {
       try {
-        const pubkeys: PublicKey[] = []
-        const labels: string[] = []
-        for (const p of list) {
-          try {
-            pubkeys.push(new PublicKey(p))
-            labels.push(p)
-          } catch {
-            // Skip malformed entries silently.
-          }
-        }
-
-        const next: MarketStateMap = {}
-        let cursor = 0
-        for (const group of chunked(pubkeys, MARKET_BATCH_CHUNK)) {
-          const infos = await connection.getMultipleAccountsInfo(group, 'confirmed')
-          if (cancelled) return
-          infos.forEach((info, i) => {
-            const label = labels[cursor + i]
-            if (!info) {
-              next[label] = null
-              return
-            }
-            try {
-              const decoded = decodeMarket(info.data)
-              next[label] = {
-                totalYes: decoded.totalYes,
-                totalNo: decoded.totalNo,
-                resolved: decoded.resolved,
-                outcomeYes: decoded.resolved ? decoded.outcomeYes : null,
-                baselinePrice: decoded.baselinePrice ?? null,
-                finalPrice: decoded.resolved ? decoded.finalPrice : null,
-              }
-            } catch {
-              next[label] = null
-            }
-          })
-          cursor += group.length
-        }
-
-        if (cancelled) return
+        const next = await fetchMarketStateBatch(list, ctrl.signal)
+        if (ctrl.signal.aborted) return
         // Publish each decoded entry to the shared cache so siblings
         // (BetTicket, BetSheet, anything calling useMarketState on the
         // same pda) observe the same snapshot the row pill does.
@@ -1135,25 +1123,26 @@ export function useMarketStatesBatch(pdas: readonly string[]): MarketStateMap {
           publishMarketState(k, next[k] ?? null)
         }
         setStates(prev => {
-          // Merge: keep any keys still in the current set, drop the rest.
           const merged: MarketStateMap = {}
           for (const k of list) {
             merged[k] = next[k] ?? prev[k] ?? null
           }
           return merged
         })
-      } catch {
-        // Network blip — keep the last snapshot.
+      } catch (err) {
+        // AbortError on unmount is expected; everything else is a
+        // network blip — keep the last snapshot rather than blanking.
+        if ((err as { name?: string })?.name === 'AbortError') return
       }
     }
 
     void fetchAll()
     const id = window.setInterval(fetchAll, MARKET_BATCH_POLL_MS)
     return () => {
-      cancelled = true
+      ctrl.abort()
       window.clearInterval(id)
     }
-  }, [key, connection])
+  }, [key])
 
   return states
 }
