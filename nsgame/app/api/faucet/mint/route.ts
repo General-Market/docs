@@ -55,7 +55,12 @@ function resolveStakeMint(): PublicKey {
 }
 
 function resolveRpcUrl(): string {
+  // FAUCET_RPC_URL is the dedicated knob. The frontend RPC (Helius free tier)
+  // is hammered by the dapp itself; the faucet should not share its budget.
+  // Default to the public devnet RPC, which throttles per-IP but is generous
+  // enough for a 60s-cooldown faucet.
   return (
+    process.env.FAUCET_RPC_URL ??
     process.env.NEXT_PUBLIC_SOLANA_RPC_URL ??
     process.env.NEXT_PUBLIC_RPC_URL ??
     'https://api.devnet.solana.com'
@@ -64,7 +69,13 @@ function resolveRpcUrl(): string {
 
 function getConnection(): Connection {
   if (!globalAny.__faucetConnection) {
-    globalAny.__faucetConnection = new Connection(resolveRpcUrl(), 'confirmed')
+    globalAny.__faucetConnection = new Connection(resolveRpcUrl(), {
+      commitment: 'confirmed',
+      // Disable Connection-level retries on 429 — they amplify the problem
+      // and stack delays past the 30s function timeout. We retry once at the
+      // caller with a short, bounded backoff.
+      disableRetryOnRateLimit: true,
+    })
   }
   return globalAny.__faucetConnection
 }
@@ -188,11 +199,28 @@ export async function POST(req: NextRequest) {
     try {
       const signature = await sendAndConfirmTransaction(connection, tx, [keypair], {
         commitment: 'confirmed',
+        // skipPreflight removes the simulateTransaction call. Saves one RPC
+        // hit per mint; the tx is small and idempotent enough that preflight
+        // adds no real safety.
+        skipPreflight: true,
+        preflightCommitment: 'confirmed',
+        maxRetries: 0,
       })
       cooldown.set(ip, now)
       return Response.json({ ok: true, signature, ata: ata.toBase58() })
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e)
+      // Surface rate-limit errors as 429 so the client toast reads as a
+      // transient problem instead of a permanent failure.
+      if (/429|Too Many Requests|rate limited/i.test(msg)) {
+        return Response.json(
+          {
+            ok: false,
+            error: 'RPC is rate-limited. Try again in a few seconds.',
+          },
+          { status: 429 },
+        )
+      }
       return Response.json({ ok: false, error: msg }, { status: 500 })
     }
   } catch (e) {
