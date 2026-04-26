@@ -12,8 +12,6 @@ import {
   deriveYesPct,
   pctToDecimalOdd,
 } from '@/lib/markets/hooks'
-import { GlobalActivity } from './GlobalActivity'
-import { MyPositions } from './MyPositions'
 import { BetBody } from './BetTicket'
 import WalletNetworkNotice from './WalletNetworkNotice'
 
@@ -143,11 +141,6 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
             exit={{ y: '100%', opacity: 0 }}
             transition={{ type: 'spring', stiffness: 320, damping: 32 }}
           >
-            <div className="border-b border-zinc-800 px-4 pt-3">
-              <GlobalActivity compact className="mb-3" />
-              <MyPositions compact className="mb-3" />
-            </div>
-
             <div className="flex-1 overflow-y-auto">
               <BetBody
                 slot={slot}

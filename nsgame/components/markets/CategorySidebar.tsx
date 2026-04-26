@@ -205,13 +205,13 @@ function PositionsButton({ active, onOpen, onOpenModal }: PositionsButtonProps) 
   const won = positions.filter(p => p.state === 'resolved-won' || p.state === 'claimed-won').length
   const total = positions.length
 
+  // One behaviour everywhere: switch the central list into positions
+  // view. The modal trigger is kept around for the bottom-nav entry
+  // point but the sidebar button no longer fires it — the duplicated
+  // surface that prompted the rewrite was the modal's whole point.
+  void onOpenModal
   const handleClick = () => {
     onOpen()
-    // Mobile: also open the modal so users without a sidebar see the
-    // ledger. Desktop is unaffected — the list re-renders inline.
-    if (typeof window !== 'undefined' && window.matchMedia('(max-width: 1023px)').matches) {
-      onOpenModal?.()
-    }
   }
 
   return (

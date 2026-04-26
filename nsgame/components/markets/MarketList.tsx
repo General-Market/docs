@@ -14,6 +14,7 @@ import { useWallet } from '@/hooks/useWallet'
 import { getCatalogEntryByPairIndex } from '@/lib/markets/catalog'
 import { MarketRow, type Side } from './MarketRow'
 import { MarketRowSkeleton } from './MarketRowSkeleton'
+import { PositionCard } from './PositionCard'
 import { CountdownTickProvider, useNowSecs } from './CountdownTimer'
 import type { BoardFilter } from './FilterBar'
 import type { StatusFilter } from './CategorySidebar'
@@ -68,13 +69,42 @@ function MarketListInner({
   const resolved = useResolvedSlots({ limit: 60, board })
 
   // Positions are derived from the connected wallet's bet history. Only
-  // the rows where the user has skin survive the filter.
+  // the rows where the user has skin survive the filter. The API can
+  // emit duplicates when LEFT JOINs fan out — dedupe by bet signature
+  // before anything downstream sees the list.
   const { address } = useWallet()
   const { positions, loading: positionsLoading } = useUserPositions(wantsPositions ? address : null)
+  const dedupedPositions = useMemo<UserPosition[]>(() => {
+    if (!wantsPositions) return EMPTY_POSITIONS
+    const seen = new Set<string>()
+    const out: UserPosition[] = []
+    for (const p of positions) {
+      if (seen.has(p.betSig)) continue
+      seen.add(p.betSig)
+      const entry = getCatalogEntryByPairIndex(p.thresholdBps)
+      if (board !== 'all' && entry && entry.board !== board) continue
+      out.push(p)
+    }
+    // Newest first — the API already returns this order, but a re-sort
+    // keeps the contract explicit.
+    out.sort((a, b) => b.closeTime - a.closeTime)
+    return out
+  }, [wantsPositions, positions, board])
   const positionRows = useMemo<{ slots: UpcomingSlot[]; states: Record<string, MarketState | null> }>(() => {
     if (!wantsPositions) return { slots: EMPTY_SLOTS, states: EMPTY_STATES }
-    return positionsToSlots(positions, board)
-  }, [wantsPositions, positions, board])
+    return positionsToSlots(dedupedPositions)
+  }, [wantsPositions, dedupedPositions])
+
+  // Live pool data for open positions so PositionCard can compute a
+  // current multiplier. Resolved/settling positions don't need this —
+  // the position itself carries the outcome.
+  const livePositionPdas = useMemo(() => {
+    if (!wantsPositions) return EMPTY_PDAS
+    return dedupedPositions
+      .filter(p => p.state === 'open')
+      .map(p => p.market)
+  }, [wantsPositions, dedupedPositions])
+  const livePositionStates = useMarketStatesBatch(livePositionPdas)
 
   const settlingSlots = wantsSettling ? settling.slots : EMPTY_SLOTS
   const settlingStates = wantsSettling ? settling.states : EMPTY_STATES
@@ -199,6 +229,23 @@ function MarketListInner({
     )
   }
 
+  if (wantsPositions) {
+    return (
+      <section aria-label="Markets" className="min-w-0">
+        <ListHeader status={status} count={dedupedPositions.length} live={false} />
+        <FadeIn className="space-y-2">
+          {dedupedPositions.map(p => (
+            <PositionCard
+              key={p.betSig}
+              position={p}
+              state={livePositionStates[p.market] ?? null}
+            />
+          ))}
+        </FadeIn>
+      </section>
+    )
+  }
+
   return (
     <section aria-label="Markets" className="min-w-0">
       <ListHeader status={status} count={filteredSlots.length} live={wantsLive} />
@@ -222,6 +269,8 @@ function MarketListInner({
 // the upstream memo doesn't churn on every render.
 const EMPTY_SLOTS: UpcomingSlot[] = []
 const EMPTY_STATES: Record<string, MarketState | null> = {}
+const EMPTY_POSITIONS: UserPosition[] = []
+const EMPTY_PDAS: string[] = []
 
 // Map the wallet's positions onto MarketRow's slot/state shape so the
 // central column can render them with the same chrome the live feed
@@ -230,7 +279,6 @@ const EMPTY_STATES: Record<string, MarketState | null> = {}
 // audience prior.
 function positionsToSlots(
   positions: ReadonlyArray<UserPosition>,
-  board: BoardFilter,
 ): { slots: UpcomingSlot[]; states: Record<string, MarketState | null> } {
   const slots: UpcomingSlot[] = []
   const states: Record<string, MarketState | null> = {}
@@ -238,7 +286,6 @@ function positionsToSlots(
   for (const p of positions) {
     const entry = getCatalogEntryByPairIndex(p.thresholdBps)
     if (!entry) continue
-    if (board !== 'all' && entry.board !== board) continue
 
     slots.push({
       catalogId: entry.id,
