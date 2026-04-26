@@ -8,6 +8,9 @@
   --surface: #F4F6F5;
   --border: #E0E0E0;
   --border-strong: #000000;
+  --text-primary: #1A1A1A;
+  --text-secondary: #555555;
+  --text-muted: #737373;
   --up: #16A34A;
   --down: #DC2626;
   --brand: #00A36C;
@@ -84,13 +87,13 @@
     @apply text-label uppercase;
     font-weight: 600;
     letter-spacing: 0.08em;
-    color: #999999;
+    color: var(--text-muted);
   }
   .type-table-header {
     @apply text-label uppercase;
     font-weight: 700;
     letter-spacing: 0.025em;
-    color: #555555;
+    color: var(--text-secondary);
   }
   .type-stat-value {
     @apply text-kpi;
@@ -284,7 +287,7 @@
 
 /* ── SECTION DIVIDER — 3px solid black with breathing room ── */
 .section-divider {
-  border-top: 3px solid #000000;
+  border-top: 3px solid var(--border-strong);
   margin: 48px 0;
 }
 
@@ -294,7 +297,7 @@
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
-  border: 2px solid #000000;
+  border: 2px solid var(--border-strong);
   border-radius: 24px;
   font-size: 0.75rem; /* caption — 12px */
   line-height: 1.5;
@@ -329,7 +332,7 @@
               box-shadow var(--dur-normal) var(--ease-out);
 }
 .card-interactive:hover {
-  border-color: #000000;
+  border-color: var(--border-strong);
   transform: translateY(-2px);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.10);
 }
@@ -417,11 +420,11 @@
 }
 
 .rank-change-up {
-  color: #16A34A;
+  color: var(--up);
   transition: color 0.3s ease-out, background-color 0.3s ease-out;
 }
 .rank-change-down {
-  color: #DC2626;
+  color: var(--down);
   transition: color 0.3s ease-out, background-color 0.3s ease-out;
 }
 
@@ -431,7 +434,7 @@
 
 /* Error state */
 .error-state {
-  border-left: 4px solid #DC2626;
+  border-left: 4px solid var(--down);
   padding-left: 12px;
 }
 
@@ -799,7 +802,7 @@ input[type="number"] {
               box-shadow var(--dur-normal) var(--ease-out);
 }
 .input-animate:focus {
-  border-color: #000;
+  border-color: var(--border-strong);
   box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.06);
 }
 

@@ -14,7 +14,7 @@ module.exports = {
         muted: '#F4F4F5',
         'text-primary': '#1A1A1A',
         'text-secondary': '#555555',
-        'text-muted': '#999999',
+        'text-muted': '#737373',
         'text-inverse': '#FFFFFF',
         'text-inverse-muted': '#D4D4D8',
         'border-light': '#E0E0E0',
@@ -34,6 +34,14 @@ module.exports = {
         brand: { DEFAULT: '#00A36C', light: '#E6F7F0', dark: '#008A5A' },
         // Aliases — terminal dark theme for Markets / ITP cards
         terminal: { DEFAULT: '#18181B', dark: '#0C0C0D' },
+        'terminal-fg': '#F4F4F5',
+        'terminal-fg-muted': '#A1A1AA',
+        'terminal-fg-faint': '#71717A',
+        'terminal-border': '#27272A',
+        'terminal-border-strong': '#3F3F46',
+        'terminal-surface': '#18181B',
+        'terminal-surface-elevated': '#27272A',
+        'terminal-surface-deep': '#0C0C0D',
         accent: '#C40000',
       },
       fontFamily: {
