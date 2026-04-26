@@ -43,6 +43,24 @@ export function CalendarPageClient() {
     identify(address, { cluster: activeCluster, wallet_address: address })
   }, [address])
 
+  // Cohort rotation drags the right rail with it. Without this, the
+  // ticket holds a slot whose closeTime has already crept into the past;
+  // the program then rejects every bet with "closeTime must be at least
+  // 10s in the future". Re-resolve the selected pick to the live cohort
+  // by catalogId every time the universe regenerates. If the pair has
+  // no live cohort (filtered out by the 10s cushion), drop the pick.
+  useEffect(() => {
+    const reseat = (prev: UpcomingSlot | null): UpcomingSlot | null => {
+      if (!prev) return prev
+      const next = allSlots.find(s => s.catalogId === prev.catalogId)
+      if (!next) return null
+      if (next.marketPda === prev.marketPda) return prev
+      return next
+    }
+    setSelectedSlot(prev => reseat(prev))
+    setSheetSlot(prev => reseat(prev))
+  }, [allSlots])
+
   const handleSelectSide = useCallback((slot: UpcomingSlot, side: Side) => {
     setSelectedSlot(slot)
     setSelectedSide(side)

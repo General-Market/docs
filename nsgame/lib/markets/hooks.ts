@@ -116,13 +116,15 @@ function stakeMintFromEnv(): PublicKey {
 export function useUpcomingSlots(opts?: UseUpcomingSlotsOpts): UpcomingSlot[] {
   const { board = 'all', horizonDays = 7 } = opts ?? {}
 
-  // Pin "now" to a minute boundary and refresh once per minute. Slots
-  // themselves are deterministic given (catalog, now) — re-computing more
-  // often would just churn references.
+  // Refresh every 15s. Cams cohorts are 2-minute, so a 60s tick was
+  // wide enough to miss a rotation entirely — the slot stayed stale,
+  // its closeTime crept past, and the program rejected bets with
+  // "closeTime must be at least 10s in the future". 15s gives ~8 ticks
+  // per cams cohort and never lets a live cohort fall off the page.
   const [nowSecs, setNowSecs] = useState<number>(() => Math.floor(Date.now() / 1000))
   useEffect(() => {
     const tick = () => setNowSecs(Math.floor(Date.now() / 1000))
-    const id = window.setInterval(tick, 60_000)
+    const id = window.setInterval(tick, 15_000)
     return () => window.clearInterval(id)
   }, [])
 
