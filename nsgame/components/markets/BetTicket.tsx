@@ -15,6 +15,7 @@ import {
   pctToDecimalOdd,
 } from '@/lib/markets/hooks'
 import FaucetButton from './FaucetButton'
+import SolFaucetButton from './SolFaucetButton'
 import { SourceIcon } from './SourceIcon'
 import { SparkLine } from './SparkLine'
 import type { Side } from './MarketRow'
@@ -315,6 +316,11 @@ export function BetBody({
                 {connected && stakeBalance.raw === 0n ? (
                   <span className="ml-2 inline-block">
                     <FaucetButton />
+                  </span>
+                ) : null}
+                {connected ? (
+                  <span className="ml-2 inline-block">
+                    <SolFaucetButton />
                   </span>
                 ) : null}
               </p>
