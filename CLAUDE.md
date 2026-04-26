@@ -16,7 +16,7 @@ This finds root causes that sequential debugging misses — one agent finds the 
 
 **Every agent, every sub-agent, every session MUST commit AND push after completing work.**
 
-The pipeline: commit → `git push mono main` → post-commit hook mirrors `frontend/` to `gm-frontend` → Dokploy on **VPS 3** (`178.104.243.94`, alias `vps3` or `index-maker/prod/fe`) detects the push, rebuilds the container, Traefik (port 8080) serves it, nginx on VPS 3 terminates HTTPS for `generalmarket.io`. Skipping the push breaks the entire deploy chain. Work that isn't pushed doesn't exist.
+The pipeline: commit → `git push mono main` → post-commit hook pings the Dokploy webhook on **VPS 3** (`178.104.243.94`, alias `vps3` or `index-maker/prod/fe`) → Dokploy clones `General-Market/mono` over SSH (deploy key wired in Dokploy's `ssh-key` table), builds from `/frontend` or `/nsgame` via nixpacks, replaces the container, Traefik (port 8080) serves it, nginx terminates HTTPS for `generalmarket.io` and `nsgame.org`. Public mirrors (`gm-frontend`, `gm-nsgame`) are gone — the only source of truth is mono. Skipping the push breaks the deploy chain. Work that isn't pushed doesn't exist.
 
 **Rules:**
 1. After completing any task/feature: stage changed files, commit, `git push mono main`
@@ -27,15 +27,16 @@ The pipeline: commit → `git push mono main` → post-commit hook mirrors `fron
 6. NEVER use `isolation: "worktree"` — all agents work on the same main branch
 7. NEVER deploy directly (no `vercel`, no manual `docker build && push`, no SSH'ing to bounce containers) — the push → Dokploy pipeline handles it. Vercel is gone.
 
-### Frontend Repo Sync
+### Dokploy Source: mono via SSH (no public mirrors)
 
-`frontend/` has NO nested `.git` — it is tracked by the mono repo only. A post-commit hook (`scripts/sync-frontend.sh`) auto-pushes `frontend/` to `General-Market/frontend.git` (remote `gm-frontend`, plus `fnd` mirror) whenever frontend files change. **Dokploy on VPS 3** (`178.104.243.94`) watches `gm-frontend/main` (push trigger, nixpacks builder using `frontend/nixpacks.toml`) and rebuilds the production container. Traefik on `127.0.0.1:8080` serves it; nginx on VPS 3 terminates HTTPS (Let's Encrypt, DNS-01 via Cloudflare) for `generalmarket.io` and proxies to Traefik.
+Both production apps — `frontend/` (generalmarket.io) and `nsgame/` (nsgame.org) — are sub-paths of the private `General-Market/mono` repo. Dokploy clones mono over SSH using a read-only deploy key (entry `mono-readonly` in Dokploy's `ssh-key` table; public key registered as a deploy key on the GitHub repo). Build paths are `/frontend` and `/nsgame`. The post-commit hook (`scripts/notify-dokploy.sh`) just pings the per-app webhook after each push to mono — Dokploy then re-clones mono and rebuilds.
+
+The old public mirrors (`gm-frontend`, `gm-nsgame`) and their `sync-*.sh` scripts have been removed. Don't recreate them.
 
 **NEVER:**
-- Run `git init` inside `frontend/`
-- Run `git pull` or `git fetch` from inside `frontend/`
-- Push to `gm-frontend` or `fnd` manually — the hook handles it
-- Create a `.git` directory inside `frontend/`
+- Run `git init` inside `frontend/` or `nsgame/`
+- Run `git pull` or `git fetch` from inside those directories
+- Recreate the `gm-frontend` / `gm-nsgame` remotes
 - Use Vercel CLI — the project is gone
 
 **Inspecting prod deploys:**
