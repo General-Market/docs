@@ -4,7 +4,7 @@ import { NavBar } from '@/components/markets/NavBar'
 import { BottomNav } from '@/components/markets/BottomNav'
 import { WindowToggle, type LeaderboardWindow } from '@/components/leaderboard/WindowToggle'
 import { LeaderboardTable } from '@/components/leaderboard/LeaderboardTable'
-import type { LeaderboardEntryDTO } from '@/app/api/leaderboard/route'
+import type { LeaderboardEntryDTO, LeaderboardSort } from '@/app/api/leaderboard/route'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,6 +15,7 @@ export const metadata: Metadata = {
 
 interface PageSearchParams {
   window?: string
+  sort?: string
 }
 
 interface PageProps {
@@ -22,10 +23,16 @@ interface PageProps {
 }
 
 const WINDOWS: ReadonlyArray<LeaderboardWindow> = ['24h', '7d', '30d', 'all']
+const SORTS: ReadonlyArray<LeaderboardSort> = ['volume', 'pnl', 'wins', 'bets', 'recent']
 
 function parseWindow(raw: string | undefined): LeaderboardWindow {
   if (raw && (WINDOWS as readonly string[]).includes(raw)) return raw as LeaderboardWindow
   return '7d'
+}
+
+function parseSort(raw: string | undefined): LeaderboardSort {
+  if (raw && (SORTS as readonly string[]).includes(raw)) return raw as LeaderboardSort
+  return 'volume'
 }
 
 // Phrasing follows the lead "Realized PnL across {COPY}." — choose
@@ -39,13 +46,14 @@ const WINDOW_COPY: Record<LeaderboardWindow, string> = {
 
 async function fetchLeaderboard(
   window: LeaderboardWindow,
+  sort: LeaderboardSort,
 ): Promise<{ entries: LeaderboardEntryDTO[] }> {
   // Build an absolute URL from the request — works inside Next's server
   // component boundary without leaking process.env to the client.
   const h = await headers()
   const proto = h.get('x-forwarded-proto') ?? 'http'
   const host = h.get('host') ?? 'localhost:3001'
-  const url = `${proto}://${host}/api/leaderboard?window=${window}&limit=100`
+  const url = `${proto}://${host}/api/leaderboard?window=${window}&sort=${sort}&limit=100`
 
   try {
     const res = await fetch(url, { cache: 'no-store' })
@@ -59,7 +67,8 @@ async function fetchLeaderboard(
 export default async function LeaderboardPage({ searchParams }: PageProps) {
   const sp = await searchParams
   const window = parseWindow(sp.window)
-  const { entries } = await fetchLeaderboard(window)
+  const sort = parseSort(sp.sort)
+  const { entries } = await fetchLeaderboard(window, sort)
   const nowSecs = Math.floor(Date.now() / 1000)
 
   return (
@@ -69,13 +78,13 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <header className="flex flex-col gap-3 py-6 sm:flex-row sm:items-end sm:justify-between sm:py-8">
           <div className="space-y-1">
-            <p className="font-mono text-micro uppercase tracking-[0.18em] text-terminal-fg-faint">
+            <p className="font-mono text-label uppercase tracking-[0.18em] text-terminal-fg-faint">
               leaderboard
             </p>
             <h1 className="text-[26px] font-semibold tracking-tight text-terminal-fg">
               Profit, by wallet<span className="text-rose-500">.</span>
             </h1>
-            <p className="text-body-sm text-terminal-fg-muted">
+            <p className="text-body text-terminal-fg-muted">
               Realized PnL across {WINDOW_COPY[window]}. Stake at risk
               isn't profit yet — it isn't anything yet.
             </p>
@@ -83,9 +92,9 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
           <WindowToggle active={window} />
         </header>
 
-        <LeaderboardTable entries={entries} nowSecs={nowSecs} />
+        <LeaderboardTable entries={entries} nowSecs={nowSecs} window={window} sort={sort} />
 
-        <p className="mt-4 px-1 font-mono text-micro uppercase tracking-[0.14em] text-terminal-fg-faint">
+        <p className="mt-4 px-1 font-mono text-label uppercase tracking-[0.14em] text-terminal-fg-faint">
           {entries.length} wallets ranked · pnl in usdc · realized only
         </p>
       </div>

@@ -27,6 +27,7 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 export type LeaderboardWindow = '24h' | '7d' | '30d' | 'all'
+export type LeaderboardSort = 'volume' | 'pnl' | 'wins' | 'bets' | 'recent'
 
 export interface LeaderboardEntryDTO {
   rank: number
@@ -99,6 +100,41 @@ function parseWindow(raw: string | null): LeaderboardWindow {
   return '7d'
 }
 
+function parseSort(raw: string | null): LeaderboardSort {
+  if (raw === 'volume' || raw === 'pnl' || raw === 'wins' || raw === 'bets' || raw === 'recent') {
+    return raw
+  }
+  // Volume is the default — almost no realized PnL on a fresh market, so
+  // sorting by PnL up top would put a one-bet lottery winner above a wallet
+  // that traded six figures. Volume tells the truer story until claims pile.
+  return 'volume'
+}
+
+// Map the public sort key to a stable ORDER BY clause. Each sort has
+// a deterministic secondary tiebreaker so refreshes don't shuffle rows
+// that compare equal on the primary metric.
+function orderClauseFor(sort: LeaderboardSort): string {
+  switch (sort) {
+    case 'pnl':
+      return `COALESCE(pwr.pnl_realised, '0')::numeric DESC, pwb.volume::numeric DESC`
+    case 'wins':
+      // Win rate, computed inline. Wallets with no resolved bets sink to
+      // the bottom; among the rest, more resolved bets break ties so a
+      // 1/1 doesn't out-rank a 142/200.
+      return `(CASE WHEN COALESCE(pwr.resolved_count, '0')::int = 0 THEN -1
+                    ELSE COALESCE(pwr.win_count, '0')::numeric / NULLIF(COALESCE(pwr.resolved_count, '0')::numeric, 0) END) DESC,
+              COALESCE(pwr.resolved_count, '0')::int DESC,
+              pwb.volume::numeric DESC`
+    case 'bets':
+      return `pwb.bets_count::int DESC, pwb.volume::numeric DESC`
+    case 'recent':
+      return `COALESCE(pwb.last_active, '0')::bigint DESC, pwb.volume::numeric DESC`
+    case 'volume':
+    default:
+      return `pwb.volume::numeric DESC, COALESCE(pwr.pnl_realised, '0')::numeric DESC`
+  }
+}
+
 function windowSeconds(w: LeaderboardWindow): number | null {
   if (w === '24h') return 24 * 3600
   if (w === '7d') return 7 * 24 * 3600
@@ -109,6 +145,7 @@ function windowSeconds(w: LeaderboardWindow): number | null {
 export async function GET(req: Request): Promise<NextResponse> {
   const { searchParams } = new URL(req.url)
   const window = parseWindow(searchParams.get('window'))
+  const sort = parseSort(searchParams.get('sort'))
   const limit = clampInt(searchParams.get('limit'), DEFAULT_LIMIT, MAX_LIMIT)
   const offset = clampInt(searchParams.get('offset'), 0, 10_000)
 
@@ -116,6 +153,7 @@ export async function GET(req: Request): Promise<NextResponse> {
   if (!pool) {
     return NextResponse.json({
       window,
+      sort,
       entries: [] satisfies LeaderboardEntryDTO[],
     })
   }
@@ -222,8 +260,7 @@ export async function GET(req: Request): Promise<NextResponse> {
         FROM per_wallet_bets pwb
         LEFT JOIN per_wallet_realised pwr ON pwr.wallet = pwb.wallet
         LEFT JOIN per_wallet_open     pwo ON pwo.wallet = pwb.wallet
-       ORDER BY COALESCE(pwr.pnl_realised, '0')::numeric DESC,
-                pwb.volume::numeric DESC
+       ORDER BY ${orderClauseFor(sort)}
        LIMIT $${limitIdx} OFFSET $${offsetIdx}
     `
 
@@ -256,12 +293,12 @@ export async function GET(req: Request): Promise<NextResponse> {
       }
     })
 
-    return NextResponse.json({ window, entries })
+    return NextResponse.json({ window, sort, entries })
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error('[api/leaderboard] query failed:', err)
     return NextResponse.json(
-      { window, entries: [] satisfies LeaderboardEntryDTO[], error: 'query_failed' },
+      { window, sort, entries: [] satisfies LeaderboardEntryDTO[], error: 'query_failed' },
       { status: 500 },
     )
   }

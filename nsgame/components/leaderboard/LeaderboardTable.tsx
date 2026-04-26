@@ -1,5 +1,9 @@
 import Link from 'next/link'
-import type { LeaderboardEntryDTO } from '@/app/api/leaderboard/route'
+import type {
+  LeaderboardEntryDTO,
+  LeaderboardSort,
+  LeaderboardWindow,
+} from '@/app/api/leaderboard/route'
 import {
   compactUsdcBig,
   relativeFromSecs,
@@ -12,11 +16,19 @@ import {
 // md+ screens, a card list below — same data, same semantics, same
 // rank colouring. Top-3 marked with a leading dot — no trophies, no
 // medals.
+//
+// Sortable: each column header is a Link that re-renders the page with
+// the chosen sort. Active column wears an arrow. The sort state lives
+// in the URL — refresh-safe, link-shareable, no client JS.
 
 interface LeaderboardTableProps {
   entries: ReadonlyArray<LeaderboardEntryDTO>
   /** Unix seconds at render time, used for relative timestamps. */
   nowSecs: number
+  /** Current window — preserved in sort links. */
+  window: LeaderboardWindow
+  /** Current sort key — drives the arrow on the active column. */
+  sort: LeaderboardSort
 }
 
 function rankClass(rank: number): string {
@@ -49,7 +61,14 @@ function formatPctSigned(pct: number): string {
   return `${sign}${pct.toFixed(1)}%`
 }
 
-export function LeaderboardTable({ entries, nowSecs }: LeaderboardTableProps) {
+function sortHref(window: LeaderboardWindow, sort: LeaderboardSort): string {
+  const params = new URLSearchParams()
+  params.set('window', window)
+  params.set('sort', sort)
+  return `/leaderboard?${params.toString()}`
+}
+
+export function LeaderboardTable({ entries, nowSecs, window, sort }: LeaderboardTableProps) {
   if (entries.length === 0) {
     return (
       <div className="rounded-md border border-terminal-border bg-terminal-surface/60 px-4 py-12 text-center">
@@ -70,12 +89,12 @@ export function LeaderboardTable({ entries, nowSecs }: LeaderboardTableProps) {
               <tr className="border-b border-terminal-border text-left">
                 <Th className="w-[72px] text-center">rank</Th>
                 <Th>wallet</Th>
-                <Th className="text-right">volume</Th>
-                <Th className="text-right">pnl</Th>
+                <ThSort active={sort === 'volume'} href={sortHref(window, 'volume')} className="text-right">volume</ThSort>
+                <ThSort active={sort === 'pnl'} href={sortHref(window, 'pnl')} className="text-right">pnl</ThSort>
                 <Th className="text-right">pnl %</Th>
-                <Th className="text-right">win rate</Th>
-                <Th className="text-right">bets</Th>
-                <Th className="text-right pr-4">last active</Th>
+                <ThSort active={sort === 'wins'} href={sortHref(window, 'wins')} className="text-right">win rate</ThSort>
+                <ThSort active={sort === 'bets'} href={sortHref(window, 'bets')} className="text-right">bets</ThSort>
+                <ThSort active={sort === 'recent'} href={sortHref(window, 'recent')} className="text-right pr-4">last active</ThSort>
               </tr>
             </thead>
             <tbody>
@@ -134,7 +153,7 @@ export function LeaderboardTable({ entries, nowSecs }: LeaderboardTableProps) {
                     </td>
                     <td className="px-3 py-2.5 text-right align-middle font-mono text-label tabular-nums text-terminal-fg-muted">
                       {formatWinRate(entry.winRate)}
-                      <span className="ml-1 text-micro text-terminal-fg-faint">
+                      <span className="ml-1 text-label text-terminal-fg-faint">
                         {entry.resolvedCount > 0 ? `${entry.winCount}/${entry.resolvedCount}` : ''}
                       </span>
                     </td>
@@ -187,7 +206,7 @@ export function LeaderboardTable({ entries, nowSecs }: LeaderboardTableProps) {
                   </div>
                   <span
                     className={[
-                      'font-mono text-body-sm font-semibold tabular-nums',
+                      'font-mono text-body font-semibold tabular-nums',
                       pnlClass(pnlBig),
                     ].join(' ')}
                   >
@@ -198,14 +217,14 @@ export function LeaderboardTable({ entries, nowSecs }: LeaderboardTableProps) {
                 {/* Metric grid — Volume, Winrate, Bets, Last active. */}
                 <div className="grid grid-cols-2 gap-x-4 gap-y-2 border-t border-terminal-border/60 pt-3">
                   <Metric label="volume">
-                    <span className="font-mono text-body-sm tabular-nums text-terminal-fg">
+                    <span className="font-mono text-body tabular-nums text-terminal-fg">
                       {compactUsdcBig(volumeBig)}
                     </span>
                   </Metric>
                   <Metric label="pnl %">
                     <span
                       className={[
-                        'font-mono text-body-sm tabular-nums',
+                        'font-mono text-body tabular-nums',
                         pnlPctClass(entry.pnlPct),
                       ].join(' ')}
                     >
@@ -213,22 +232,22 @@ export function LeaderboardTable({ entries, nowSecs }: LeaderboardTableProps) {
                     </span>
                   </Metric>
                   <Metric label="win rate">
-                    <span className="font-mono text-body-sm tabular-nums text-terminal-fg-muted">
+                    <span className="font-mono text-body tabular-nums text-terminal-fg-muted">
                       {formatWinRate(entry.winRate)}
                       {entry.resolvedCount > 0 ? (
-                        <span className="ml-1 text-micro text-terminal-fg-faint">
+                        <span className="ml-1 text-label text-terminal-fg-faint">
                           {entry.winCount}/{entry.resolvedCount}
                         </span>
                       ) : null}
                     </span>
                   </Metric>
                   <Metric label="bets">
-                    <span className="font-mono text-body-sm tabular-nums text-terminal-fg-muted">
+                    <span className="font-mono text-body tabular-nums text-terminal-fg-muted">
                       {entry.betsCount}
                     </span>
                   </Metric>
                   <Metric label="last active" full>
-                    <span className="font-mono text-body-sm tabular-nums text-terminal-fg-faint">
+                    <span className="font-mono text-body tabular-nums text-terminal-fg-faint">
                       {relativeFromSecs(entry.lastActive, nowSecs)}
                     </span>
                   </Metric>
@@ -247,11 +266,53 @@ function Th({ children, className = '' }: { children: React.ReactNode; className
     <th
       scope="col"
       className={[
-        'px-3 py-2 font-mono text-micro font-medium uppercase tracking-[0.14em] text-terminal-fg-faint',
+        'px-3 py-2 font-mono text-label font-medium uppercase tracking-[0.14em] text-terminal-fg-faint',
         className,
       ].join(' ')}
     >
       {children}
+    </th>
+  )
+}
+
+function ThSort({
+  children,
+  href,
+  active,
+  className = '',
+}: {
+  children: React.ReactNode
+  href: string
+  active: boolean
+  className?: string
+}) {
+  // Active column wears the arrow and a slight color lift; others stay
+  // muted. All columns DESC-only — clicking a non-active column sorts
+  // by its metric, clicking the active one is a no-op (cleanest UX
+  // for "biggest first" semantics that match the leaderboard genre).
+  return (
+    <th
+      scope="col"
+      className={[
+        'px-3 py-2 font-mono text-label font-medium uppercase tracking-[0.14em]',
+        active ? 'text-terminal-fg-muted' : 'text-terminal-fg-faint',
+        className,
+      ].join(' ')}
+      aria-sort={active ? 'descending' : 'none'}
+    >
+      <Link
+        href={href}
+        className={[
+          'inline-flex items-center gap-1',
+          active ? '' : 'hover:text-terminal-fg-muted',
+        ].join(' ')}
+        scroll={false}
+      >
+        {children}
+        <span aria-hidden className="text-[9px] tracking-normal">
+          {active ? '▼' : '·'}
+        </span>
+      </Link>
     </th>
   )
 }

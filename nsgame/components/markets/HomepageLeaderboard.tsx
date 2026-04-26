@@ -54,7 +54,7 @@ export function HomepageLeaderboard({ className = '' }: HomepageLeaderboardProps
     <section className={className} aria-label="Leaderboard">
       <header className="mb-3 flex items-end justify-between gap-3">
         <div className="space-y-1">
-          <p className="font-mono text-micro uppercase tracking-[0.18em] text-terminal-fg-faint">
+          <p className="font-mono text-label uppercase tracking-[0.18em] text-terminal-fg-faint">
             leaderboard · 7d
           </p>
           <h2 className="text-title font-semibold tracking-tight text-terminal-fg">
@@ -69,7 +69,7 @@ export function HomepageLeaderboard({ className = '' }: HomepageLeaderboardProps
         </Link>
       </header>
 
-      <LeaderboardTable entries={entries} nowSecs={nowSecs} />
+      <LeaderboardTable entries={entries} nowSecs={nowSecs} window="7d" sort="volume" />
     </section>
   )
 }
