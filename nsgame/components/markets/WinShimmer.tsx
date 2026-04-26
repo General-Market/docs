@@ -96,7 +96,7 @@ export function WinShimmer({ active, payout, children }: WinShimmerProps) {
       <span className="ws-sweep" aria-hidden />
       {payout ? (
         <span
-          className="ws-label rounded-md bg-emerald-600 px-2 py-0.5 font-mono text-[11px] font-semibold text-white"
+          className="ws-label rounded-md bg-emerald-600 px-2 py-0.5 font-mono text-label font-semibold text-white"
           aria-hidden
         >
           +{payout} USDC

@@ -96,7 +96,7 @@ export function BottomNav({ onMenuClick, onTicketClick, onPositionsClick, hasTic
             className="flex flex-col items-center justify-center gap-0.5 py-2.5 text-emerald-400"
           >
             <CalendarIcon className="h-5 w-5" />
-            <span className="text-[10px] font-medium tracking-tight">Calendar</span>
+            <span className="text-label font-medium tracking-tight">Calendar</span>
           </button>
 
           <button
@@ -106,7 +106,7 @@ export function BottomNav({ onMenuClick, onTicketClick, onPositionsClick, hasTic
             className="flex flex-col items-center justify-center gap-0.5 py-2.5 text-zinc-400 transition-colors hover:text-zinc-100"
           >
             <FilterIcon className="h-5 w-5" />
-            <span className="text-[10px] font-medium tracking-tight">Filters</span>
+            <span className="text-label font-medium tracking-tight">Filters</span>
           </button>
 
           <button
@@ -123,7 +123,7 @@ export function BottomNav({ onMenuClick, onTicketClick, onPositionsClick, hasTic
             ) : (
               <WalletIcon className="h-5 w-5" />
             )}
-            <span className="text-[10px] font-medium tracking-tight">
+            <span className="text-label font-medium tracking-tight">
               {showPositions ? 'Positions' : 'Connect'}
             </span>
             {hasTicket ? (
@@ -138,7 +138,7 @@ export function BottomNav({ onMenuClick, onTicketClick, onPositionsClick, hasTic
             {showPositions && unviewedCount > 0 ? (
               <span
                 aria-label={`${unviewedCount} resolved`}
-                className="absolute right-[20%] top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-400 px-1 font-mono text-[9px] font-semibold leading-none tabular-nums text-zinc-950 shadow-[0_0_0_2px_rgb(9_9_11/1)]"
+                className="absolute right-[20%] top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-400 px-1 font-mono text-label font-semibold leading-none tabular-nums text-zinc-950 shadow-[0_0_0_2px_rgb(9_9_11/1)]"
               >
                 {unviewedCount > 9 ? '9+' : unviewedCount}
               </span>
@@ -154,7 +154,7 @@ export function BottomNav({ onMenuClick, onTicketClick, onPositionsClick, hasTic
             className="flex flex-col items-center justify-center gap-0.5 py-2.5 text-zinc-400 transition-colors hover:text-zinc-100"
           >
             <MoreIcon className="h-5 w-5" />
-            <span className="text-[10px] font-medium tracking-tight">{t('nav.more')}</span>
+            <span className="text-label font-medium tracking-tight">{t('nav.more')}</span>
           </button>
         </div>
       </nav>

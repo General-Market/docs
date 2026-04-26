@@ -96,7 +96,7 @@ export function CategorySidebar({
         <button
           type="button"
           onClick={() => onStatusChange('live')}
-          className="-mt-4 px-3 font-mono text-micro uppercase tracking-[0.14em] text-terminal-fg-faint hover:text-terminal-fg-muted"
+          className="-mt-4 px-3 font-mono text-label uppercase tracking-[0.14em] text-terminal-fg-faint hover:text-terminal-fg-muted"
         >
           ← back to live
         </button>
@@ -126,7 +126,7 @@ export function CategorySidebar({
                 className={rowClasses(active)}
               >
                 <span className="flex flex-col items-start">
-                  <span className="text-body-sm capitalize text-terminal-fg">{b.label}</span>
+                  <span className="text-body capitalize text-terminal-fg">{b.label}</span>
                   <span className="text-label text-terminal-fg-faint">{b.sub}</span>
                 </span>
                 <span
@@ -241,13 +241,13 @@ function PositionsButton({ active, onOpen, onOpenModal }: PositionsButtonProps) 
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span
           className={[
-            'font-mono text-micro font-semibold uppercase tracking-[0.16em]',
+            'font-mono text-label font-semibold uppercase tracking-[0.16em]',
             active ? 'text-sky-200' : 'text-terminal-fg-muted group-hover:text-terminal-fg',
           ].join(' ')}
         >
           my positions
         </span>
-        <span className="flex items-center gap-1.5 font-mono text-micro tabular-nums text-terminal-fg-faint">
+        <span className="flex items-center gap-1.5 font-mono text-label tabular-nums text-terminal-fg-faint">
           {total === 0 ? (
             <span>nothing yet</span>
           ) : (

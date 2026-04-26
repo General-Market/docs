@@ -43,7 +43,7 @@ export function InlineTip({ label, ariaLabel = 'Explain', className = '' }: Inli
         onClick={() => setOpen(v => !v)}
         aria-label={ariaLabel}
         aria-expanded={open}
-        className="grid h-4 w-4 place-items-center rounded-full border border-terminal-border text-[10px] font-semibold leading-none text-terminal-fg-faint transition-colors hover:border-terminal-border-strong hover:text-terminal-fg-muted"
+        className="grid h-4 w-4 place-items-center rounded-full border border-terminal-border text-label font-semibold leading-none text-terminal-fg-faint transition-colors hover:border-terminal-border-strong hover:text-terminal-fg-muted"
       >
         ?
       </button>

@@ -31,7 +31,7 @@ const SOURCES: Array<{ id: 1 | 2 | 3 | 4 | 5; label: string }> = [
 
 function tabClasses(active: boolean): string {
   return [
-    'inline-flex h-9 shrink-0 items-center gap-2 px-3 text-body-sm font-medium tracking-tight transition-colors duration-150',
+    'inline-flex h-9 shrink-0 items-center gap-2 px-3 text-body font-medium tracking-tight transition-colors duration-150',
     'border-b-2',
     active
       ? 'border-emerald-400 text-terminal-fg'
@@ -123,7 +123,7 @@ export function NavBar({
           {!mounted ? (
             <button
               disabled
-              className="h-9 min-w-[44px] rounded-md bg-terminal-surface-elevated px-4 text-body-sm font-medium text-terminal-fg-muted opacity-60"
+              className="h-9 min-w-[44px] rounded-md bg-terminal-surface-elevated px-4 text-body font-medium text-terminal-fg-muted opacity-60"
             >
               …
             </button>
@@ -141,7 +141,7 @@ export function NavBar({
             <button
               onClick={() => setShowModal(true)}
               disabled={connecting}
-              className="inline-flex h-9 items-center rounded-md bg-emerald-400 px-4 text-body-sm font-semibold text-terminal-surface-deep transition-colors hover:bg-emerald-300 disabled:opacity-60"
+              className="inline-flex h-9 items-center rounded-md bg-emerald-400 px-4 text-body font-semibold text-terminal-surface-deep transition-colors hover:bg-emerald-300 disabled:opacity-60"
             >
               {connecting ? 'Opening…' : 'Sign up'}
             </button>

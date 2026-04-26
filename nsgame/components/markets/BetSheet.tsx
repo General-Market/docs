@@ -215,7 +215,7 @@ export function BetSheet({ slot, onClose }: BetSheetProps) {
                 <button
                   type="button"
                   onClick={() => disconnect()}
-                  className="mt-2 block w-full text-micro text-terminal-fg-faint transition-colors hover:text-terminal-fg-muted"
+                  className="mt-2 block w-full text-label text-terminal-fg-faint transition-colors hover:text-terminal-fg-muted"
                 >
                   disconnect
                 </button>

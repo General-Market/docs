@@ -63,7 +63,7 @@ export function MyPositionsModal({ open, onClose }: MyPositionsModalProps) {
             transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
           >
             <header className="flex items-center justify-between gap-2 border-b border-zinc-800/80 px-5 py-4">
-              <span className="font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-zinc-400">
+              <span className="font-mono text-label font-medium uppercase tracking-[0.14em] text-zinc-400">
                 my positions
               </span>
               <div className="flex items-center gap-3">
@@ -72,14 +72,14 @@ export function MyPositionsModal({ open, onClose }: MyPositionsModalProps) {
                     <Link
                       href={`/u/${address}`}
                       onClick={onClose}
-                      className="font-mono text-[10px] uppercase tracking-[0.12em] text-zinc-500 transition-colors hover:text-zinc-200"
+                      className="font-mono text-label uppercase tracking-[0.12em] text-zinc-500 transition-colors hover:text-zinc-200"
                     >
                       profile →
                     </Link>
                     <button
                       type="button"
                       onClick={handleDisconnect}
-                      className="font-mono text-[10px] uppercase tracking-[0.12em] text-zinc-500 transition-colors hover:text-rose-300"
+                      className="font-mono text-label uppercase tracking-[0.12em] text-zinc-500 transition-colors hover:text-rose-300"
                     >
                       disconnect
                     </button>
@@ -107,13 +107,13 @@ export function MyPositionsModal({ open, onClose }: MyPositionsModalProps) {
                 />
               ) : (
                 <div className="flex flex-col items-center gap-3 px-2 py-10 text-center">
-                  <p className="text-[13px] text-zinc-300">
+                  <p className="text-body text-zinc-300">
                     Connect a wallet. Skin enters here.
                   </p>
                   <button
                     type="button"
                     onClick={onClose}
-                    className="inline-flex h-8 items-center rounded-md border border-zinc-700 bg-zinc-900 px-3 font-mono text-[11px] uppercase tracking-[0.12em] text-zinc-200 transition-colors hover:border-zinc-500 hover:bg-zinc-800 hover:text-zinc-50"
+                    className="inline-flex h-8 items-center rounded-md border border-zinc-700 bg-zinc-900 px-3 font-mono text-label uppercase tracking-[0.12em] text-zinc-200 transition-colors hover:border-zinc-500 hover:bg-zinc-800 hover:text-zinc-50"
                   >
                     Back to markets
                   </button>

@@ -165,7 +165,7 @@ function TeaserCard({ slot, yesOdd, noOdd, onClick }: TeaserCardProps) {
         </div>
 
         <div className="flex flex-col items-center justify-start pt-2 text-center">
-          <span className="font-mono text-micro tabular-nums text-terminal-fg-faint">{date}</span>
+          <span className="font-mono text-label tabular-nums text-terminal-fg-faint">{date}</span>
           <span className="font-mono text-body font-bold tabular-nums leading-tight text-terminal-fg">{time}</span>
         </div>
 
@@ -178,11 +178,11 @@ function TeaserCard({ slot, yesOdd, noOdd, onClick }: TeaserCardProps) {
       </div>
 
       <div className="mt-2.5 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-        <span className="inline-flex h-7 w-full items-center justify-center rounded-md bg-emerald-500/15 text-body-sm font-bold tabular-nums text-emerald-200 ring-1 ring-emerald-400/30 group-hover:bg-emerald-500/25">
+        <span className="inline-flex h-7 w-full items-center justify-center rounded-md bg-emerald-500/15 text-body font-bold tabular-nums text-emerald-200 ring-1 ring-emerald-400/30 group-hover:bg-emerald-500/25">
           {formatOdd(yesOdd)}
         </span>
-        <span aria-hidden className="text-micro text-terminal-fg-faint">vs</span>
-        <span className="inline-flex h-7 w-full items-center justify-center rounded-md bg-rose-500/15 text-body-sm font-bold tabular-nums text-rose-200 ring-1 ring-rose-400/30 group-hover:bg-rose-500/25">
+        <span aria-hidden className="text-label text-terminal-fg-faint">vs</span>
+        <span className="inline-flex h-7 w-full items-center justify-center rounded-md bg-rose-500/15 text-body font-bold tabular-nums text-rose-200 ring-1 ring-rose-400/30 group-hover:bg-rose-500/25">
           {formatOdd(noOdd)}
         </span>
       </div>
@@ -282,7 +282,7 @@ export function MarketTeaserSidebar({
                 const first = teasers[0]
                 if (first) handleSelect(first)
               }}
-              className="mt-1 inline-flex w-full items-center justify-center rounded-lg bg-sky-400 px-4 py-3 text-[15px] font-extrabold uppercase tracking-[0.12em] text-sky-950 transition-colors duration-150 hover:bg-sky-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-200"
+              className="mt-1 inline-flex w-full items-center justify-center rounded-lg bg-sky-400 px-4 py-3 text-base font-extrabold uppercase tracking-[0.12em] text-sky-950 transition-colors duration-150 hover:bg-sky-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-200"
             >
               Bet now
             </button>

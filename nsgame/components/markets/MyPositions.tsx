@@ -69,33 +69,33 @@ function PositionRow({ position, now }: RowProps) {
     <div className="flex items-center gap-2 rounded-md border border-zinc-800 bg-zinc-900 px-2.5 py-2">
       <span className="flex shrink-0 items-center gap-1.5 text-zinc-300">
         {iconId ? <SourceIcon sourceId={iconId} className="h-3.5 w-3.5" /> : null}
-        <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-zinc-400">
+        <span className="font-mono text-label uppercase tracking-[0.1em] text-zinc-400">
           {sourceShortName(position.sourceId)}
         </span>
       </span>
-      <span className="hidden font-mono text-[10px] text-zinc-500 sm:inline">
+      <span className="hidden font-mono text-label text-zinc-500 sm:inline">
         {thresholdLabel(position.thresholdBps)}
       </span>
       <span
         className={[
-          'inline-flex items-center rounded border px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.1em]',
+          'inline-flex items-center rounded border px-1.5 py-0.5 font-mono text-label font-semibold uppercase tracking-[0.1em]',
           sideClass,
         ].join(' ')}
       >
         {position.side}
       </span>
       <span className="ml-auto flex items-center gap-2">
-        <span className="font-mono text-[11px] tabular-nums text-zinc-100">
+        <span className="font-mono text-label tabular-nums text-zinc-100">
           {formatUsdcUnits(position.amount)}
         </span>
         {position.state === 'open' && isLive ? (
-          <span className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.08em] text-emerald-300">
+          <span className="flex items-center gap-1 font-mono text-label uppercase tracking-[0.08em] text-emerald-300">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" aria-hidden />
             live
           </span>
         ) : null}
         {position.state === 'settling' ? (
-          <span className="flex items-center gap-1 font-mono text-[10px] tabular-nums text-amber-300">
+          <span className="flex items-center gap-1 font-mono text-label tabular-nums text-amber-300">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-400" aria-hidden />
             settles in {formatRemaining(settlementLeft)}
           </span>
@@ -137,29 +137,29 @@ function ResolvedRow({ position, now }: RowProps) {
     <div className="flex items-center gap-2 rounded-md border border-zinc-800 bg-zinc-900 px-2.5 py-2">
       <span className="flex shrink-0 items-center gap-1.5 text-zinc-300">
         {iconId ? <SourceIcon sourceId={iconId} className="h-3.5 w-3.5" /> : null}
-        <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-zinc-400">
+        <span className="font-mono text-label uppercase tracking-[0.1em] text-zinc-400">
           {sourceShortName(position.sourceId)}
         </span>
       </span>
-      <span className="hidden font-mono text-[10px] text-zinc-500 sm:inline">
+      <span className="hidden font-mono text-label text-zinc-500 sm:inline">
         {thresholdLabel(position.thresholdBps)}
       </span>
       <span
         className={[
-          'inline-flex items-center rounded px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.1em]',
+          'inline-flex items-center rounded px-1.5 py-0.5 font-mono text-label font-semibold uppercase tracking-[0.1em]',
           pillClass,
         ].join(' ')}
       >
         {pillLabel}
       </span>
       <span className="ml-auto flex flex-col items-end gap-0.5">
-        <span className="font-mono text-[11px] tabular-nums text-zinc-300">
+        <span className="font-mono text-label tabular-nums text-zinc-300">
           {formatUsdcUnits(position.amount)} in
         </span>
         {winningsLine ? (
           <span
             className={[
-              'font-mono text-[10px] tabular-nums',
+              'font-mono text-label tabular-nums',
               won ? 'text-emerald-300' : 'text-zinc-500',
             ].join(' ')}
           >
@@ -233,14 +233,14 @@ export function MyPositions({ compact = false, hideHeader = false, variant, onEm
             className,
           ].join(' ')}
         >
-          <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-zinc-300">
+          <p className="font-mono text-label uppercase tracking-[0.12em] text-zinc-300">
             No bets yet. The room is open.
           </p>
           {onEmptyPivot ? (
             <button
               type="button"
               onClick={onEmptyPivot}
-              className="inline-flex h-7 shrink-0 items-center rounded border border-zinc-700 bg-zinc-900 px-2 font-mono text-[10px] uppercase tracking-[0.12em] text-zinc-200 transition-colors hover:border-zinc-500 hover:text-zinc-50"
+              className="inline-flex h-7 shrink-0 items-center rounded border border-zinc-700 bg-zinc-900 px-2 font-mono text-label uppercase tracking-[0.12em] text-zinc-200 transition-colors hover:border-zinc-500 hover:text-zinc-50"
             >
               See markets
             </button>
@@ -261,10 +261,10 @@ export function MyPositions({ compact = false, hideHeader = false, variant, onEm
           className="flex w-full items-center justify-between px-3 py-2 text-left"
           aria-expanded={expanded}
         >
-          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-zinc-500">
+          <span className="font-mono text-label uppercase tracking-[0.12em] text-zinc-500">
             my positions
           </span>
-          <span className="font-mono text-[10px] text-zinc-300">
+          <span className="font-mono text-label text-zinc-300">
             {buckets.open.length} open · {buckets.settling.length} settling · {wonCount} won
           </span>
         </button>
@@ -288,11 +288,11 @@ export function MyPositions({ compact = false, hideHeader = false, variant, onEm
     >
       {!hideHeader ? (
         <header className="flex items-center justify-between border-b border-zinc-800 px-4 py-3">
-          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500">
+          <span className="font-mono text-label uppercase tracking-[0.14em] text-zinc-500">
             my positions
           </span>
           {!empty ? (
-            <span className="rounded-full bg-zinc-800 px-2 py-0.5 font-mono text-[10px] tabular-nums text-zinc-300">
+            <span className="rounded-full bg-zinc-800 px-2 py-0.5 font-mono text-label tabular-nums text-zinc-300">
               {total}
             </span>
           ) : null}
@@ -301,14 +301,14 @@ export function MyPositions({ compact = false, hideHeader = false, variant, onEm
 
       {empty ? (
         <div className="flex flex-col items-start gap-3 px-4 py-6">
-          <p className="text-[13px] text-zinc-300">
+          <p className="text-body text-zinc-300">
             No bets yet. The room is open.
           </p>
           {onEmptyPivot ? (
             <button
               type="button"
               onClick={onEmptyPivot}
-              className="inline-flex h-8 items-center rounded-md border border-zinc-700 bg-zinc-900 px-3 font-mono text-[11px] uppercase tracking-[0.12em] text-zinc-200 transition-colors hover:border-zinc-500 hover:bg-zinc-800 hover:text-zinc-50"
+              className="inline-flex h-8 items-center rounded-md border border-zinc-700 bg-zinc-900 px-3 font-mono text-label uppercase tracking-[0.12em] text-zinc-200 transition-colors hover:border-zinc-500 hover:bg-zinc-800 hover:text-zinc-50"
             >
               See markets
             </button>
@@ -352,7 +352,7 @@ function PositionsBody({ buckets, now, variant }: BodyProps) {
     <>
       {buckets.open.length > 0 ? (
         <div className="space-y-1.5">
-          <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-zinc-400">
+          <p className="font-mono text-label uppercase tracking-[0.14em] text-zinc-400">
             open
           </p>
           <div className={listClass}>
@@ -363,7 +363,7 @@ function PositionsBody({ buckets, now, variant }: BodyProps) {
 
       {buckets.settling.length > 0 ? (
         <div className="space-y-1.5">
-          <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-zinc-400">
+          <p className="font-mono text-label uppercase tracking-[0.14em] text-zinc-400">
             settling
           </p>
           <div className={listClass}>
@@ -374,7 +374,7 @@ function PositionsBody({ buckets, now, variant }: BodyProps) {
 
       {buckets.resolved.length > 0 ? (
         <div className="space-y-1.5">
-          <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-zinc-400">
+          <p className="font-mono text-label uppercase tracking-[0.14em] text-zinc-400">
             resolved
           </p>
           <div className={listClass}>

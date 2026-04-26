@@ -416,7 +416,7 @@ interface EmptyAction {
 function EmptyState({ text, actions = [] }: { text: string; actions?: EmptyAction[] }) {
   return (
     <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 px-6 py-16 text-center">
-      <p className="text-[14px] text-zinc-300">{text}</p>
+      <p className="text-body text-zinc-300">{text}</p>
       {actions.length > 0 ? (
         <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
           {actions.map(a => (
@@ -424,7 +424,7 @@ function EmptyState({ text, actions = [] }: { text: string; actions?: EmptyActio
               key={a.label}
               type="button"
               onClick={a.onClick}
-              className="inline-flex h-8 items-center rounded-md border border-zinc-700 bg-zinc-900 px-3 font-mono text-[11px] uppercase tracking-[0.12em] text-zinc-200 transition-colors hover:border-zinc-500 hover:bg-zinc-800 hover:text-zinc-50"
+              className="inline-flex h-8 items-center rounded-md border border-zinc-700 bg-zinc-900 px-3 font-mono text-label uppercase tracking-[0.12em] text-zinc-200 transition-colors hover:border-zinc-500 hover:bg-zinc-800 hover:text-zinc-50"
             >
               {a.label}
             </button>
@@ -447,7 +447,7 @@ function ListHeader({
   return (
     <header className="mb-3 flex items-end justify-between gap-3">
       <div className="space-y-1">
-        <p className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-500">
+        <p className="flex items-center gap-2 font-mono text-label uppercase tracking-[0.18em] text-zinc-500">
           {meta.eyebrow}
           {live ? (
             <span className="relative inline-flex h-[6px] w-[6px]" aria-hidden>
@@ -456,12 +456,12 @@ function ListHeader({
             </span>
           ) : null}
         </p>
-        <h2 className="text-[18px] font-semibold tracking-tight text-zinc-100">
+        <h2 className="text-heading font-display font-semibold tracking-tight text-zinc-100">
           {meta.title}<span className="text-rose-500">.</span>
         </h2>
       </div>
       {count > 0 ? (
-        <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-zinc-500">
+        <span className="font-mono text-label uppercase tracking-[0.14em] text-zinc-500">
           {count} {count === 1 ? 'row' : 'rows'}
         </span>
       ) : null}

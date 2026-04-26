@@ -91,7 +91,7 @@ export function BetPill() {
         className={[
           'pointer-events-auto inline-flex items-center gap-2 rounded-full',
           'border border-zinc-700/80 bg-zinc-950/90 px-3 py-1.5 backdrop-blur',
-          'font-mono text-[11px] uppercase tracking-[0.06em] text-zinc-300',
+          'font-mono text-label uppercase tracking-[0.06em] text-zinc-300',
           'shadow-[0_8px_24px_rgba(0,0,0,0.45)]',
           'transition-colors hover:border-zinc-500 hover:text-white',
           'focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400',

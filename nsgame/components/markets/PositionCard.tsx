@@ -108,11 +108,11 @@ export function PositionCard({ position, state }: PositionCardProps) {
             <Avatar slug={slug} name={backedName} side={position.side} />
           ) : null}
           <div className="flex min-w-0 flex-col">
-            <h3 className="truncate text-[14px] font-semibold leading-tight tracking-tight text-zinc-100">
+            <h3 className="truncate text-body font-semibold leading-tight tracking-tight text-zinc-100">
               {backedName}
             </h3>
             {opponentName ? (
-              <p className="truncate font-mono text-[10.5px] text-zinc-500">
+              <p className="truncate font-mono text-label text-zinc-500">
                 vs {opponentName}
               </p>
             ) : null}
@@ -141,7 +141,7 @@ export function PositionCard({ position, state }: PositionCardProps) {
           sub={
             <span
               className={[
-                'inline-flex items-center rounded border px-1 py-px font-mono text-[9px] font-semibold uppercase tracking-[0.1em]',
+                'inline-flex items-center rounded border px-1 py-px font-mono text-label font-semibold uppercase tracking-[0.1em]',
                 sideTone,
               ].join(' ')}
             >
@@ -158,7 +158,7 @@ export function PositionCard({ position, state }: PositionCardProps) {
               : 'text-zinc-100'
           }
           sub={
-            <span className="flex items-center justify-end gap-1.5 font-mono text-[10px] tabular-nums">
+            <span className="flex items-center justify-end gap-1.5 font-mono text-label tabular-nums">
               {pnlUsdc !== null && !refund ? (
                 <span
                   className={
@@ -239,7 +239,7 @@ function Pill({
   return (
     <span
       className={[
-        'inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.1em]',
+        'inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2 py-0.5 font-mono text-label font-semibold uppercase tracking-[0.1em]',
         cls,
       ].join(' ')}
     >
@@ -263,10 +263,10 @@ function Metric({
 }) {
   return (
     <div className={['flex min-w-0 flex-col gap-1', align === 'right' ? 'items-end text-right' : 'items-start'].join(' ')}>
-      <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-zinc-500">
+      <span className="font-mono text-label uppercase tracking-[0.14em] text-zinc-500">
         {label}
       </span>
-      <span className={['font-semibold text-[14px] tabular-nums tracking-tight', valueClass].join(' ')}>
+      <span className={['font-semibold text-body tabular-nums tracking-tight', valueClass].join(' ')}>
         {value}
       </span>
       {sub ? <span className="leading-none">{sub}</span> : null}
@@ -299,7 +299,7 @@ function Avatar({ slug, name, side }: { slug: string; name: string; side: 'yes' 
           if (fallback) fallback.style.display = 'flex'
         }}
       />
-      <span className="absolute inset-0 hidden items-center justify-center bg-zinc-800 text-[12px] font-semibold tracking-tight text-zinc-300">
+      <span className="absolute inset-0 hidden items-center justify-center bg-zinc-800 text-caption font-semibold tracking-tight text-zinc-300">
         {initials(name)}
       </span>
     </span>

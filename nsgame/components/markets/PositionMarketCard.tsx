@@ -95,13 +95,13 @@ export function PositionMarketCard({ position, now }: PositionMarketCardProps) {
       ].join(' ')}
     >
       <div className="flex items-start justify-between gap-2">
-        <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.1em] text-zinc-500">
+        <span className="flex items-center gap-1.5 font-mono text-label uppercase tracking-[0.1em] text-zinc-500">
           {iconId ? <SourceIcon sourceId={iconId} className="h-3.5 w-3.5" /> : null}
           {sourceShort}
         </span>
         <span
           className={[
-            'inline-flex items-center gap-1 rounded border px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.1em]',
+            'inline-flex items-center gap-1 rounded border px-1.5 py-0.5 font-mono text-label font-semibold uppercase tracking-[0.1em]',
             stateClass,
           ].join(' ')}
         >
@@ -122,10 +122,10 @@ export function PositionMarketCard({ position, now }: PositionMarketCardProps) {
         {title}
       </p>
 
-      <div className="flex items-center justify-between font-mono text-[11px]">
+      <div className="flex items-center justify-between font-mono text-label">
         <span
           className={[
-            'inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em]',
+            'inline-flex items-center rounded border px-1.5 py-0.5 text-label font-semibold uppercase tracking-[0.1em]',
             sideClass,
           ].join(' ')}
         >
@@ -133,7 +133,7 @@ export function PositionMarketCard({ position, now }: PositionMarketCardProps) {
         </span>
         <span className="flex items-baseline gap-1.5 tabular-nums">
           <span className="text-zinc-100">{formatUsdc(position.amount)}</span>
-          <span className="text-[10px] uppercase tracking-[0.08em] text-zinc-500">
+          <span className="text-label uppercase tracking-[0.08em] text-zinc-500">
             USDC stake
           </span>
         </span>
@@ -142,7 +142,7 @@ export function PositionMarketCard({ position, now }: PositionMarketCardProps) {
       {winningsLine ? (
         <div
           className={[
-            'rounded px-1.5 py-1 text-center font-mono text-[11px]',
+            'rounded px-1.5 py-1 text-center font-mono text-label',
             isWon ? 'bg-emerald-500/10 text-emerald-300' : 'bg-zinc-800 text-zinc-400',
           ].join(' ')}
         >

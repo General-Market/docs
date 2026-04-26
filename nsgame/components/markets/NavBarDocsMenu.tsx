@@ -116,7 +116,7 @@ export function NavBarDocsMenu() {
         }}
         aria-haspopup="true"
         aria-expanded={open}
-        className="inline-flex h-9 items-center rounded-md border border-zinc-800 px-3 text-[12px] font-medium tracking-tight text-zinc-300 transition-colors hover:border-zinc-700 hover:bg-zinc-900 hover:text-zinc-100"
+        className="inline-flex h-9 items-center rounded-md border border-zinc-800 px-3 text-caption font-medium tracking-tight text-zinc-300 transition-colors hover:border-zinc-700 hover:bg-zinc-900 hover:text-zinc-100"
       >
         Docs
         <svg
@@ -152,14 +152,14 @@ export function NavBarDocsMenu() {
             onMouseLeave={scheduleClose}
           >
             <div className="px-5 pt-4 pb-3 border-b border-zinc-900">
-              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-500">
+              <span className="font-mono text-label uppercase tracking-[0.18em] text-zinc-500">
                 More
               </span>
             </div>
             <div className="grid grid-cols-2 gap-x-6 gap-y-5 px-5 py-5">
               {SECTIONS.map(section => (
                 <div key={section.title}>
-                  <span className="block font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500 mb-2.5">
+                  <span className="block font-mono text-label font-semibold uppercase tracking-[0.16em] text-zinc-500 mb-2.5">
                     {section.title}
                   </span>
                   <ul className="space-y-1">
@@ -169,7 +169,7 @@ export function NavBarDocsMenu() {
                           href={link.href}
                           onClick={() => setOpen(false)}
                           role="menuitem"
-                          className="block py-1 text-[13px] text-zinc-300 transition-colors hover:text-zinc-50"
+                          className="block py-1 text-body text-zinc-300 transition-colors hover:text-zinc-50"
                         >
                           {link.label}
                         </Link>
@@ -180,7 +180,7 @@ export function NavBarDocsMenu() {
               ))}
             </div>
             <div className="px-5 py-3 border-t border-zinc-900">
-              <p className="font-mono text-[10px] leading-relaxed text-zinc-600">
+              <p className="font-mono text-label leading-relaxed text-zinc-600">
                 © 2026 nsgame protocol — DAO in formation
               </p>
             </div>

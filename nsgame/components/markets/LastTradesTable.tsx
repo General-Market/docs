@@ -33,7 +33,7 @@ export function LastTradesTable({ className = '' }: LastTradesTableProps) {
     <section className={className} aria-label="Last trades">
       <header className="mb-3 flex items-end justify-between gap-3">
         <div className="space-y-1">
-          <p className="flex items-center gap-2 font-mono text-micro uppercase tracking-[0.18em] text-terminal-fg-faint">
+          <p className="flex items-center gap-2 font-mono text-label uppercase tracking-[0.18em] text-terminal-fg-faint">
             trades · live ledger
             <span className="relative inline-flex h-[6px] w-[6px]" aria-hidden>
               <span className="absolute inset-0 inline-flex animate-ping rounded-full bg-emerald-500 opacity-60" />
@@ -49,7 +49,7 @@ export function LastTradesTable({ className = '' }: LastTradesTableProps) {
       <div className="overflow-hidden rounded-xl border border-terminal-border bg-terminal-surface/60">
         {/* Column titles. Hidden below sm — mobile rows label themselves
             inline so the table still reads without a header. */}
-        <div className="hidden sm:grid grid-cols-[minmax(0,2.2fr)_minmax(0,1.1fr)_minmax(0,0.9fr)_minmax(0,1.1fr)_minmax(0,0.9fr)_minmax(0,1.2fr)] items-center gap-3 border-b border-terminal-border bg-terminal-surface/80 px-4 py-2 font-mono text-micro uppercase tracking-[0.14em] text-terminal-fg-faint">
+        <div className="hidden sm:grid grid-cols-[minmax(0,2.2fr)_minmax(0,1.1fr)_minmax(0,0.9fr)_minmax(0,1.1fr)_minmax(0,0.9fr)_minmax(0,1.2fr)] items-center gap-3 border-b border-terminal-border bg-terminal-surface/80 px-4 py-2 font-mono text-label uppercase tracking-[0.14em] text-terminal-fg-faint">
           <span>Game</span>
           <span>User</span>
           <span>Time</span>
@@ -163,7 +163,7 @@ function Row({ event, nowSecs }: RowProps) {
           <span className="flex min-w-0 items-center gap-1.5">
             <span
               className={[
-                'inline-flex shrink-0 items-center rounded border px-1 py-px font-mono text-[9px] font-semibold uppercase tracking-[0.1em]',
+                'inline-flex shrink-0 items-center rounded border px-1 py-px font-mono text-label font-semibold uppercase tracking-[0.1em]',
                 tone,
               ].join(' ')}
             >
@@ -172,7 +172,7 @@ function Row({ event, nowSecs }: RowProps) {
             <span className="truncate font-medium text-terminal-fg">{backedName}</span>
           </span>
           {opponentName ? (
-            <span className="truncate font-mono text-micro text-terminal-fg-faint">
+            <span className="truncate font-mono text-label text-terminal-fg-faint">
               vs {opponentName}
             </span>
           ) : null}
@@ -197,7 +197,7 @@ function Row({ event, nowSecs }: RowProps) {
         <span className="block font-mono text-caption font-semibold tabular-nums text-terminal-fg">
           {formatUsdc(amount)}
         </span>
-        <span className="block font-mono text-[9px] uppercase tracking-[0.1em] text-terminal-fg-faint sm:hidden">
+        <span className="block font-mono text-label uppercase tracking-[0.1em] text-terminal-fg-faint sm:hidden">
           {ts}
         </span>
       </div>
@@ -217,7 +217,7 @@ function Row({ event, nowSecs }: RowProps) {
         >
           {payout !== null ? formatUsdcDecimal(payout) : '—'}
         </span>
-        <span className="block font-mono text-[9px] uppercase tracking-[0.1em] text-terminal-fg-faint sm:hidden">
+        <span className="block font-mono text-label uppercase tracking-[0.1em] text-terminal-fg-faint sm:hidden">
           {formatMultiplier(mult)}
         </span>
       </div>

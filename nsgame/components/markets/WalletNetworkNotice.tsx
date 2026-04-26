@@ -77,7 +77,7 @@ export default function WalletNetworkNotice() {
   }
 
   return (
-    <div className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-[11px] text-amber-200/90">
+    <div className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-label text-amber-200/90">
       <svg
         aria-hidden="true"
         className="mt-[1px] shrink-0 text-amber-400"

@@ -82,7 +82,7 @@ export function MobileMenu({
             transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
           >
             <div className="flex items-center justify-between gap-2 border-b border-zinc-800/80 px-5 py-4">
-              <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-zinc-500">
+              <span className="text-label font-medium uppercase tracking-[0.14em] text-zinc-500">
                 Categories
               </span>
               <button
@@ -113,12 +113,12 @@ export function MobileMenu({
               <div className="flex items-center justify-between gap-3">
                 <span
                   aria-label={`Solana ${cluster}`}
-                  className="inline-flex items-center gap-1.5 rounded border border-zinc-800 bg-zinc-900 px-2 py-1 font-mono text-[11px] lowercase tracking-[0.06em] text-zinc-400"
+                  className="inline-flex items-center gap-1.5 rounded border border-zinc-800 bg-zinc-900 px-2 py-1 font-mono text-label lowercase tracking-[0.06em] text-zinc-400"
                 >
                   <PulseDot active color="amber" size={6} />
                   <span>{cluster}</span>
                 </span>
-                <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-600">
+                <span className="font-mono text-label uppercase tracking-[0.14em] text-zinc-600">
                   nsgame.io
                 </span>
               </div>

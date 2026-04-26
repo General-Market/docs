@@ -113,7 +113,7 @@ function ActivityRow({ event, nowSecs }: RowProps) {
     outcomeNode = (
       <span
         className={[
-          'inline-flex shrink-0 items-center rounded border px-1 py-px font-mono text-[9px] font-semibold uppercase tracking-[0.1em]',
+          'inline-flex shrink-0 items-center rounded border px-1 py-px font-mono text-label font-semibold uppercase tracking-[0.1em]',
           event.side === 'yes'
             ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
             : 'border-rose-500/30 bg-rose-500/10 text-rose-300',
@@ -155,7 +155,7 @@ function ActivityRow({ event, nowSecs }: RowProps) {
     outcomeNode = (
       <span
         className={[
-          'inline-flex shrink-0 items-center rounded px-1 py-px font-mono text-[9px] font-semibold uppercase tracking-[0.1em]',
+          'inline-flex shrink-0 items-center rounded px-1 py-px font-mono text-label font-semibold uppercase tracking-[0.1em]',
           verbClass,
         ].join(' ')}
       >
@@ -166,7 +166,7 @@ function ActivityRow({ event, nowSecs }: RowProps) {
 
   return (
     <div className="flex flex-col gap-0.5 px-3 py-2">
-      <div className="flex items-center gap-1.5 text-[9.5px]">
+      <div className="flex items-center gap-1.5 text-label">
         {iconId ? <SourceIcon sourceId={iconId} className="h-3 w-3 shrink-0 rounded-sm" /> : null}
         <span className={['shrink-0 font-mono uppercase tracking-[0.12em]', kindClass].join(' ')}>
           {kindLabel}
@@ -174,12 +174,12 @@ function ActivityRow({ event, nowSecs }: RowProps) {
         <span className="shrink-0 font-mono tabular-nums text-zinc-600">{pair}</span>
         <span className="ml-auto shrink-0 font-mono tabular-nums text-zinc-600">{ts}</span>
       </div>
-      <div className="flex min-w-0 items-center gap-1.5 pl-[18px] text-[10.5px]">
+      <div className="flex min-w-0 items-center gap-1.5 pl-[18px] text-label">
         <span className="min-w-0 truncate font-mono tabular-nums text-zinc-400">
           {actorNode}
         </span>
         {amountNode ? (
-          <span className="ml-auto shrink-0 text-[10.5px]">{amountNode}</span>
+          <span className="ml-auto shrink-0 text-label">{amountNode}</span>
         ) : null}
         {outcomeNode}
       </div>
@@ -210,14 +210,14 @@ export function GlobalActivity({ compact = false, className = '' }: GlobalActivi
       aria-label="Live activity"
     >
       <header className="flex items-center justify-between border-b border-zinc-800 px-3 py-2">
-        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500">
+        <span className="font-mono text-label uppercase tracking-[0.14em] text-zinc-500">
           live activity
         </span>
         <PulseDot active color="amber" size={6} />
       </header>
 
       {empty ? (
-        <p className="px-3 py-3 font-mono text-[11px] text-zinc-500">
+        <p className="px-3 py-3 font-mono text-label text-zinc-500">
           no activity yet. someone has to start.
         </p>
       ) : (

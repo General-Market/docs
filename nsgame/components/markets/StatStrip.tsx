@@ -60,10 +60,10 @@ export function StatStrip({
             key={c.label}
             className="flex shrink-0 snap-start flex-col gap-1"
           >
-            <span className="text-[11px] font-medium tracking-tight text-zinc-500">
+            <span className="text-label font-medium tracking-tight text-zinc-500">
               {c.label}
             </span>
-            <span className="text-[18px] font-semibold tabular-nums tracking-tight text-zinc-100">
+            <span className="text-title font-semibold tabular-nums tracking-tight text-zinc-100">
               {c.value}
             </span>
           </div>

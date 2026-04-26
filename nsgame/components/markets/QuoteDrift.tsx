@@ -69,7 +69,7 @@ export function QuoteDrift({ entries, className = '', limit = 6 }: QuoteDriftPro
   return (
     <div className={['border-t border-zinc-800 px-4 py-3', className].join(' ')}>
       <div className="mb-2 flex items-center justify-between">
-        <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500">
+        <p className="font-mono text-label uppercase tracking-[0.14em] text-zinc-500">
           quote drift
         </p>
         {yesPctSeries.length >= 2 ? (
@@ -80,11 +80,11 @@ export function QuoteDrift({ entries, className = '', limit = 6 }: QuoteDriftPro
         {visible.map(e => (
           <li
             key={e.sig}
-            className="flex items-center gap-2 font-mono text-[11px]"
+            className="flex items-center gap-2 font-mono text-label"
           >
             <span
               className={[
-                'inline-flex h-4 items-center rounded px-1 text-[10px] font-semibold uppercase',
+                'inline-flex h-4 items-center rounded px-1 text-label font-semibold uppercase',
                 e.side === 'yes'
                   ? 'bg-emerald-500/10 text-emerald-300'
                   : 'bg-rose-500/10 text-rose-300',

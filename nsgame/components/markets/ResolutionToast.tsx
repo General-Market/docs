@@ -150,12 +150,12 @@ export function ResolutionToast() {
                   wonCount > 0 ? 'bg-emerald-400' : 'bg-zinc-500',
                 ].join(' ')}
               />
-              <span className="font-mono text-[11px] tracking-tight text-zinc-100">
+              <span className="font-mono text-label tracking-tight text-zinc-100">
                 {message}
               </span>
               <span
                 aria-hidden
-                className="font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500"
+                className="font-mono text-label uppercase tracking-[0.14em] text-zinc-500"
               >
                 view
               </span>

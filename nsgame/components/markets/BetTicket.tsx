@@ -210,7 +210,7 @@ function BetTicketActive({
           <button
             type="button"
             onClick={() => disconnect()}
-            className="mt-2 block w-full text-micro text-terminal-fg-faint transition-colors hover:text-terminal-fg-muted"
+            className="mt-2 block w-full text-label text-terminal-fg-faint transition-colors hover:text-terminal-fg-muted"
           >
             disconnect
           </button>
@@ -294,7 +294,7 @@ export function BetBody({
           <h3 className="truncate text-base font-semibold text-terminal-fg">
             {slot.displayA} vs {slot.displayB}
           </h3>
-          <p className="mt-0.5 truncate text-body-sm text-terminal-fg-muted">
+          <p className="mt-0.5 truncate text-body text-terminal-fg-muted">
             <span className={verbColor}>Buy {verb}</span> · {pickedName}
           </p>
           <div className="mt-1 flex items-center gap-2 text-caption text-terminal-fg-faint">

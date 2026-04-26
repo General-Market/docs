@@ -89,7 +89,7 @@ export default function FaucetButton({ onMinted }: FaucetButtonProps) {
           onClick={handleMint}
           disabled={pending}
           className={[
-            'h-9 rounded-[5px] px-2.5 font-mono text-micro uppercase tracking-[0.08em] transition-colors',
+            'h-9 rounded-[5px] px-2.5 font-mono text-label uppercase tracking-[0.08em] transition-colors',
             pending
               ? 'cursor-not-allowed bg-terminal-surface text-terminal-fg-faint'
               : 'bg-terminal-surface-deep text-emerald-200 hover:text-emerald-100',
@@ -99,7 +99,7 @@ export default function FaucetButton({ onMinted }: FaucetButtonProps) {
         </button>
       </span>
       {inlineMsg && (
-        <span className="font-mono text-micro text-terminal-fg-faint">{inlineMsg}</span>
+        <span className="font-mono text-label text-terminal-fg-faint">{inlineMsg}</span>
       )}
     </div>
   )

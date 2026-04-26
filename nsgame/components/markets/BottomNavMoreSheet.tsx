@@ -139,7 +139,7 @@ export function BottomNavMoreSheet({ open, onClose }: BottomNavMoreSheetProps) {
 
             {/* Header */}
             <div className="flex items-center justify-between px-5 pt-2 pb-3 border-b border-zinc-900">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-400">
+              <span className="text-label font-semibold uppercase tracking-[0.14em] text-zinc-400">
                 {t('more.title')}
               </span>
               <button
@@ -159,7 +159,7 @@ export function BottomNavMoreSheet({ open, onClose }: BottomNavMoreSheetProps) {
               <div className="space-y-7">
                 {SECTIONS.map(section => (
                   <div key={section.titleKey}>
-                    <span className="block text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500 mb-2.5">
+                    <span className="block text-label font-semibold uppercase tracking-[0.16em] text-zinc-500 mb-2.5">
                       {t(section.titleKey)}
                     </span>
                     <ul className="grid grid-cols-2 gap-x-4 gap-y-1">
@@ -168,7 +168,7 @@ export function BottomNavMoreSheet({ open, onClose }: BottomNavMoreSheetProps) {
                           <Link
                             href={link.href}
                             onClick={onClose}
-                            className="block py-1.5 text-[14px] text-zinc-300 hover:text-zinc-50 transition-colors"
+                            className="block py-1.5 text-body text-zinc-300 hover:text-zinc-50 transition-colors"
                           >
                             {link.label}
                           </Link>
@@ -178,7 +178,7 @@ export function BottomNavMoreSheet({ open, onClose }: BottomNavMoreSheetProps) {
                   </div>
                 ))}
 
-                <p className="pt-4 text-[11px] leading-relaxed text-zinc-600">
+                <p className="pt-4 text-label leading-relaxed text-zinc-600">
                   © 2026 nsgame protocol — DAO in formation
                 </p>
               </div>
