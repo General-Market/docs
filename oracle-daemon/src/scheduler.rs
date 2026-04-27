@@ -127,17 +127,16 @@ async fn tick(state: &Arc<SchedulerState>, scanner: &Scanner) -> Result<()> {
             .set(lamports as f64 / 1_000_000_000.0);
     }
 
+    // Resolves first, then claims, then closes. Resolves are the
+    // pipeline's terminal state — each one unblocks user money. A
+    // close merely shifts work into the resolve queue. With FIFO
+    // ordering and a Semaphore cap of CONCURRENCY, the queue starves
+    // whichever phase comes after closes until every close drains.
+    // For a 1.6k-deep close queue, that meant hours of user-visible
+    // "settling" while resolves never landed.
     let sem = Arc::new(Semaphore::new(CONCURRENCY));
     let mut jobs = FuturesUnordered::new();
 
-    for rec in closes {
-        let sem = sem.clone();
-        let state = state.clone();
-        jobs.push(tokio::spawn(async move {
-            let _permit = sem.acquire_owned().await.unwrap();
-            run_close(state, rec).await
-        }));
-    }
     for rec in resolves {
         let sem = sem.clone();
         let state = state.clone();
@@ -152,6 +151,14 @@ async fn tick(state: &Arc<SchedulerState>, scanner: &Scanner) -> Result<()> {
         jobs.push(tokio::spawn(async move {
             let _permit = sem.acquire_owned().await.unwrap();
             run_claim(state, rec).await
+        }));
+    }
+    for rec in closes {
+        let sem = sem.clone();
+        let state = state.clone();
+        jobs.push(tokio::spawn(async move {
+            let _permit = sem.acquire_owned().await.unwrap();
+            run_close(state, rec).await
         }));
     }
 

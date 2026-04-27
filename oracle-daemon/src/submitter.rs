@@ -28,6 +28,7 @@ use solana_rpc_client_api::client_error::Error as ClientError;
 use solana_sdk::signature::Signature;
 use solana_signer::Signer;
 use solana_transaction::versioned::VersionedTransaction;
+use std::sync::OnceLock;
 use std::time::Duration;
 use tracing::{debug, warn};
 
@@ -289,6 +290,21 @@ const MAX_RETRIES: u32 = 5;
 const INITIAL_BACKOFF_MS: u64 = 250;
 const MAX_BACKOFF_MS: u64 = 4_000;
 
+/// Optional second RPC used for `sendTransaction` only. When `SEND_RPC_URL`
+/// is set we route writes there while reads stay on the main RPC. The point
+/// is to escape Helius free-tier sendTransaction throttling without losing
+/// the fast read path: writes go to public devnet (slow but no per-method
+/// cap), reads stay on Helius. When unset, behaviour is identical to the
+/// single-RPC path.
+static SEND_RPC: OnceLock<RpcClient> = OnceLock::new();
+
+fn pick_send_rpc<'a>(default: &'a RpcClient) -> &'a RpcClient {
+    match std::env::var("SEND_RPC_URL") {
+        Ok(url) if !url.is_empty() => SEND_RPC.get_or_init(|| RpcClient::new(url)),
+        _ => default,
+    }
+}
+
 async fn send_legacy_tx(
     rpc: &RpcClient,
     payer: &Keypair,
@@ -296,15 +312,16 @@ async fn send_legacy_tx(
 ) -> Result<Signature> {
     let mut backoff = INITIAL_BACKOFF_MS;
     let mut last_err: Option<ClientError> = None;
+    let send_rpc = pick_send_rpc(rpc);
     for attempt in 0..=MAX_RETRIES {
-        let blockhash = rpc
+        let blockhash = send_rpc
             .get_latest_blockhash()
             .await
             .context("get_latest_blockhash")?;
         let msg = Message::new_with_blockhash(ixs, Some(&payer.pubkey()), &blockhash);
         let tx = VersionedTransaction::try_new(VersionedMessage::Legacy(msg), &[payer])
             .map_err(|e| anyhow!("sign tx: {e}"))?;
-        match rpc
+        match send_rpc
             .send_and_confirm_transaction_with_spinner_and_commitment(
                 &tx,
                 CommitmentConfig::confirmed(),
