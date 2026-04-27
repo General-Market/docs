@@ -244,13 +244,22 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     error: mintError,
     reset: resetMint,
   } = useWriteContract()
-  const { isSuccess: isMintSuccess } = useWaitForTransactionReceipt({ hash: mintHashTx })
+  const { isSuccess: isMintReceiptSuccess } = useWaitForTransactionReceipt({
+    hash: mintHashTx,
+    chainId: settlementChainId,
+  })
 
-  // Mint test USDC + drip settlement gas for testing
+  // Mint test USDC + drip settlement gas for testing.
+  // The happy path goes through the API faucet (no wallet popup), which means
+  // mintHashTx never gets populated and isMintReceiptSuccess never flips.
+  // Track API success separately so the "Minted" badge fires regardless of path.
   const [faucetLoading, setFaucetLoading] = useState(false)
+  const [apiMintSuccess, setApiMintSuccess] = useState(false)
+  const isMintSuccess = isMintReceiptSuccess || apiMintSuccess
   const handleMintTestUsdc = useCallback(async () => {
     if (!address) return
     setFaucetLoading(true)
+    setApiMintSuccess(false)
     try {
       // ITP scope: mints Settlement USDC (6 dec) + drips Sonic gas.
       const res = await fetch('/api/faucet', {
@@ -260,7 +269,13 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
       })
       const data = await res.json()
       if (data.success && !data.itp?.usdc?.error) {
+        setApiMintSuccess(true)
+        // Settlement node may take a block to reflect the new balance.
+        // Refetch a few times so the zero-balance branch hides as soon as
+        // the chain catches up.
         refetchSettlementUsdc()
+        setTimeout(refetchSettlementUsdc, 1500)
+        setTimeout(refetchSettlementUsdc, 4000)
       }
     } catch {
       // Fallback to direct contract call (mint Settlement USDC, 6 decimals)

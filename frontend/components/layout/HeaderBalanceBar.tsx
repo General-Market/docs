@@ -69,8 +69,17 @@ function BalanceLeg({ label, balance, decimals, isDark, scope, address, onMinted
       const leg = scope === 'vision' ? data.vision : data.itp
       if (leg?.usdc?.error) throw new Error(leg.usdc.error)
       setState('done')
-      setTimeout(onMinted, 2000)
-      setTimeout(() => setState('idle'), 4000)
+      // Stagger refetches — the chain may take a block or two to surface
+      // the new balance. Once it's > 0, the parent's zero-balance branch
+      // hides this whole leg and the user sees their USDC in the navbar.
+      onMinted()
+      setTimeout(onMinted, 1500)
+      setTimeout(onMinted, 4000)
+      setTimeout(onMinted, 8000)
+      // If the balance still hasn't surfaced after 15s, the refetch chain has
+      // exhausted itself and the user should be able to try again rather than
+      // stare at a permanent "1K sent" badge.
+      setTimeout(() => setState('idle'), 15000)
     } catch {
       setState('error')
       setTimeout(() => setState('idle'), 3000)

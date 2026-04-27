@@ -12,8 +12,6 @@ import { NextBatches } from './NextBatches'
 import { SourceCard } from './SourceCard'
 import { SourceCardsSkeleton } from '@/components/ui/VisionLoader'
 
-/** How many cards to render on first paint (3 rows × 4 cols) */
-const INITIAL_RENDER_COUNT = 12
 /** Minimum cursor movement (px) before recalculating brightness */
 const CURSOR_DEAD_ZONE = 4
 
@@ -48,7 +46,10 @@ export function SourcesGrid() {
   const { data: meta, isLoading: metaLoading } = useMarketSnapshotMeta()
   const bitmapEditor = useBitmapEditor()
 
-  // Filter sources by category, then exclude stale/dead sources
+  // Filter sources by category, then exclude markets that aren't actually live.
+  // 'not_started' = activeAssets === 0 (registered but no markets running);
+  // 'stale'/'dead' = data hasn't moved in days. Both are noise on the grid.
+  // Zero assetCount means the same — listed in the registry but not tradeable.
   const filteredSources = useMemo(() => {
     const byCategory = activeCategory === 'all'
       ? registrySources
@@ -57,36 +58,21 @@ export function SourcesGrid() {
     if (!meta?.sources) return byCategory
     return byCategory.filter(s => {
       const status = sourceStatusFromMeta(s.sourceId, meta.sources)
-      return status !== 'stale' && status !== 'dead'
+      if (status === 'stale' || status === 'dead' || status === 'not_started') return false
+      if (meta.assetCounts) {
+        const count = assetCountForSource(s.sourceId, meta.assetCounts)
+        if (count === 0) return false
+      }
+      return true
     })
   }, [activeCategory, registrySources, meta?.sources, meta?.assetCounts])
 
-  // ── Progressive rendering — show first 12 immediately, rest after idle ──
-  const [renderAll, setRenderAll] = useState(false)
-
-  useEffect(() => {
-    // Reset when filtered sources change (category switch)
-    if (filteredSources.length <= INITIAL_RENDER_COUNT) {
-      setRenderAll(true)
-      return
-    }
-    setRenderAll(false)
-    const schedule = typeof requestIdleCallback !== 'undefined'
-      ? requestIdleCallback
-      : (cb: () => void) => setTimeout(cb, 1)
-    const id = schedule(() => setRenderAll(true))
-    return () => {
-      if (typeof cancelIdleCallback !== 'undefined') {
-        cancelIdleCallback(id as number)
-      } else {
-        clearTimeout(id as number)
-      }
-    }
-  }, [filteredSources])
-
-  const visibleSources = renderAll
-    ? filteredSources
-    : filteredSources.slice(0, INITIAL_RENDER_COUNT)
+  // Render every filtered card. The previous progressive-slice trick reset
+  // itself on every 30s meta poll because filteredSources got a fresh array
+  // ref, so the "All" tab could stay capped at INITIAL_RENDER_COUNT forever.
+  // The IntersectionObserver below handles cascade entrance for offscreen
+  // cards anyway — initial render cost was the wrong thing to optimise.
+  const visibleSources = filteredSources
 
   // Stabilize source props — avoid creating { ...source, id } on every render.
   // Each source object from the registry already has sourceId; we add `id` once and cache.
