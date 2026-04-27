@@ -5,8 +5,7 @@ import { createPortal } from 'react-dom'
 import { useAccount, useWaitForTransactionReceipt, useWriteContract, useSwitchChain, usePublicClient, useReadContract } from 'wagmi'
 import { parseUnits, formatUnits, decodeEventLog } from 'viem'
 import { INDEX_PROTOCOL, COLLATERAL_DECIMALS } from '@/lib/contracts/addresses'
-import { ERC20_ABI, INDEX_ABI, SETTLEMENT_CUSTODY_ABI, BRIDGED_ITP_ABI } from '@/lib/contracts/index-protocol-abi'
-import { BridgedItpFactoryABI } from '@/lib/contracts/generated/bridged_itp_factory-abi'
+import { ERC20_ABI, INDEX_ABI } from '@/lib/contracts/index-protocol-abi'
 import { ensureCorrectChain } from '@/hooks/useChainWrite'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { TransactionStepper } from '@/components/ui/TransactionStepper'
@@ -25,19 +24,17 @@ import itpIdNames from '@/lib/itp-id-names.json'
 import { usePostHogTracker } from '@/hooks/usePostHog'
 import { SpringModal, SpringBackdrop, glass, ModalClose } from '@/components/ui/spring'
 import { InlineOhlcChart } from '@/components/ui/InlineOhlcChart'
-import { indexL3, settlementChain, settlementChainId } from '@/lib/wagmi'
+import { indexL3 } from '@/lib/wagmi'
 
 /**
- * Sell flow micro-steps — Settlement bridge path (5 steps + Done):
+ * Sell flow micro-steps — L3 direct path (3 steps + Done):
  *
- * Step 1 "Submit on Settlement":  APPROVE (0), SUBMIT (1)
- * Step 2 "Oracle Relay":          RELAY (2) — oracle detects CrossChainSellOrderCreated, burns shares on L3, submits sell order
- * Step 3 "Processing":            BATCH (3), FILL (4)
- * Done:                           DONE (5)
+ * Step 1 "Submit on L3":  SUBMIT (1) — Index.submitOrder side=1 escrows shares
+ * Step 2 "Processing":    BATCH (3), FILL (4) — oracle consensus, USDC released
+ * Done:                   DONE (5)
  *
- * User must approve BridgedITP → SettlementBridgeCustody before selling.
- * Custody escrows the BridgedITP, oracle burns them on L3 and submits the sell order.
- * USDC proceeds are delivered to user on Settlement chain via completeSellOrder.
+ * APPROVE (0) and RELAY (2) are vestigial enum members — selling on L3 burns
+ * shares from _userShares directly, no allowance, no bridge.
  */
 enum SellMicro {
   APPROVE = 0,
@@ -59,7 +56,7 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
   const tc = useTranslations('common')
   const locale = useLocale()
   const { address, isConnected, chainId: currentChainId } = useAccount()
-  const settlementPublicClient = usePublicClient({ chainId: settlementChainId })
+  const l3PublicClient = usePublicClient({ chainId: indexL3.id })
   const { showSuccess } = useToast()
   const { capture } = usePostHogTracker()
   const sellStartTime = useRef<number>(0)
@@ -94,7 +91,7 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
   const [deadlineHours, setDeadlineHours] = useState(1)
   const [micro, setMicro] = useState<number>(-1) // -1 = INPUT mode
   const [orderId, setOrderId] = useState<bigint | null>(null)
-  const [settlementOrderId, setSettlementOrderId] = useState<bigint | null>(null)
+  // L3-only path — no Settlement-side order id.
   const [txError, setTxError] = useState<string | null>(null)
   const [fillPrice, setFillPrice] = useState<bigint | null>(null)
   const [fillAmount, setFillAmount] = useState<bigint | null>(null)
@@ -110,20 +107,17 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
   const { switchChainAsync } = useSwitchChain()
   const { hasNonceGap, pendingCount, refresh: refreshNonce } = useNonceCheck()
 
-  // Approve BridgedITP → SettlementBridgeCustody
-  const {
-    writeContractAsync: writeApproveAsync,
-    data: approveHash,
-    isPending: isApprovePending,
-    error: approveError,
-    reset: resetApprove,
-  } = useWriteContract()
-  const { isLoading: isApproveConfirming, isSuccess: isApproveSuccess } = useWaitForTransactionReceipt({
-    hash: approveHash,
-    chainId: settlementChainId,
-  })
+  // L3 direct path needs no approval — Index burns shares from _userShares.
+  // Wagmi hooks kept as no-op stubs so unchanged stepper code keeps working.
+  const writeApproveAsync = (async () => undefined as any) as any
+  const approveHash: `0x${string}` | undefined = undefined
+  const isApprovePending = false as boolean
+  const approveError = null as Error | null
+  const resetApprove = () => {}
+  const isApproveConfirming = false as boolean
+  const isApproveSuccess = false as boolean
 
-  // Sell on Settlement
+  // Sell on L3
   const {
     writeContractAsync: writeSellAsync,
     data: sellHash,
@@ -133,7 +127,7 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
   } = useWriteContract()
   const { isLoading: isSellConfirming, isSuccess: isSellSuccess, data: sellReceipt } = useWaitForTransactionReceipt({
     hash: sellHash,
-    chainId: settlementChainId,
+    chainId: indexL3.id,
   })
 
   const approveHandled = useRef(false)
@@ -146,45 +140,8 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
   const itpName = staticEntry?.name || userState.bridgedItpName || 'ITP'
   const itpSymbol = staticEntry?.ticker || userState.bridgedItpSymbol || ''
 
-  // Read BridgedITP address directly from BridgedItpFactory on Settlement chain
-  const { data: bridgedItpAddrRaw } = useReadContract({
-    address: INDEX_PROTOCOL.settlementBridgedItpFactory,
-    abi: BridgedItpFactoryABI,
-    functionName: 'deployedItps',
-    args: [itpId as `0x${string}`],
-    chainId: settlementChainId,
-    query: { enabled: !!itpId },
-  })
-  const bridgedItpAddress = (bridgedItpAddrRaw as `0x${string}` | undefined) &&
-    bridgedItpAddrRaw !== '0x0000000000000000000000000000000000000000'
-    ? (bridgedItpAddrRaw as `0x${string}`)
-    : ''
-
-  // Read BridgedITP balance on Settlement chain
-  const { data: bridgedBalanceRaw } = useReadContract({
-    address: bridgedItpAddress as `0x${string}`,
-    abi: ERC20_ABI,
-    functionName: 'balanceOf',
-    args: address ? [address] : undefined,
-    chainId: settlementChainId,
-    query: { enabled: !!address && !!bridgedItpAddress, refetchInterval: 5_000 },
-  })
-  const bridgedItpBalance = (bridgedBalanceRaw as bigint) ?? 0n  // 18 decimals
-
-  // Read BridgedITP allowance for SettlementBridgeCustody on Settlement chain
-  const { data: bridgedAllowanceRaw } = useReadContract({
-    address: bridgedItpAddress as `0x${string}`,
-    abi: ERC20_ABI,
-    functionName: 'allowance',
-    args: address ? [address, INDEX_PROTOCOL.settlementCustody] : undefined,
-    chainId: settlementChainId,
-    query: { enabled: !!address && !!bridgedItpAddress, refetchInterval: 5_000 },
-  })
-  const bridgedItpAllowance = (bridgedAllowanceRaw as bigint) ?? 0n
-
-  // Read L3 shares for diagnostics — if the user has L3 shares but no bridged
-  // shares, the bridging pipeline never finished and Sell would silently fail.
-  // Surface that mismatch instead of showing a bare zero.
+  // L3 direct path: read shares straight from _userShares on Index. The
+  // BridgedITP and SettlementBridgeCustody are not in this story.
   const { data: l3SharesRaw } = useReadContract({
     address: INDEX_PROTOCOL.index,
     abi: INDEX_ABI,
@@ -194,6 +151,10 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
     query: { enabled: !!address && !!itpId, refetchInterval: 5_000 },
   })
   const l3Shares = (l3SharesRaw as bigint) ?? 0n
+  // Backwards-compat aliases for the unchanged render code below.
+  const bridgedItpBalance = l3Shares
+  const bridgedItpAllowance = (1n << 255n) // L3 sell needs no allowance.
+  const bridgedItpAddress = INDEX_PROTOCOL.index // sentinel non-empty value
 
   const { costBasis } = useItpCostBasis(itpId, address ?? null)
   const { navPerShare, navPerShareBn, totalAssetCount, pricedAssetCount, isLoading: isNavLoading } = useItpNav(itpId)
@@ -220,54 +181,24 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
   const insufficientShares = parsedAmount > 0n && parsedAmount > bridgedItpBalance
   const needsApproval = parsedAmount > 0n && bridgedItpAllowance < parsedAmount
 
-  // Diagnose why YOUR SHARES might be zero. The Sell modal can only burn
-  // BridgedITP on Settlement; L3-only shares can't be sold from here.
+  // Diagnose why YOUR SHARES might be zero on the L3 direct path.
   const sharesDiagnosis: string | null = (() => {
     if (!address) return null
-    if (bridgedItpBalance > 0n) return null
-    if (!bridgedItpAddress) return 'No bridged token deployed for this ITP yet — buy through the buy flow once and the bridge will deploy it.'
-    if (l3Shares > 0n) {
-      return `You hold ${parseFloat(formatUnits(l3Shares, 18)).toFixed(4)} shares on L3 but none mirrored to Settlement. The bridge mint never landed — refresh, or buy a single share to nudge the pipeline.`
-    }
+    if (l3Shares > 0n) return null
     return 'You don\'t own shares of this ITP. Creating an ITP does not seed the creator — buy first.'
   })()
 
+  // L3 direct path needs no approval. handleApprove is preserved as an alias
+  // for handleSell so any caller that still routes through it just submits.
   const handleApprove = useCallback(async () => {
-    if (!amount || insufficientShares || !bridgedItpAddress) return
-    sellStartTime.current = Date.now()
-    capture('sell_submitted', {
-      itp_id: itpId,
-      shares_amount: amount,
-      limit_price: limitPrice,
-      slippage_tier: SLIPPAGE_TIERS[slippageTier].label,
-      needs_approval: true,
-    })
-    approveHandled.current = false
-    setTxError(null)
-    setSkippedApproval(false)
-    setMicro(SellMicro.APPROVE)
-
-    try {
-      await ensureCorrectChain(currentChainId, switchChainAsync, settlementChainId, settlementChain)
-    } catch {
-      setTxError('Please switch to the Settlement chain to sell')
-      setMicro(-1)
-      return
-    }
-
-    writeApproveAsync({
-      address: bridgedItpAddress,
-      abi: BRIDGED_ITP_ABI,
-      functionName: 'approve',
-      args: [INDEX_PROTOCOL.settlementCustody, parsedAmount],
-      chainId: settlementChainId,
-    }).catch(() => {
-      // Error handled by approveError effect
-    })
-  }, [amount, parsedAmount, insufficientShares, bridgedItpAddress, writeApproveAsync, currentChainId, switchChainAsync, capture, itpId, limitPrice, slippageTier])
+    setSkippedApproval(true)
+    // handleSell is defined just below; capture via closure to avoid TDZ.
+    setTimeout(() => handleSellRef.current?.(), 0)
+  }, [])
+  const handleSellRef = useRef<(() => void) | null>(null)
 
   const handleSell = useCallback(async () => {
-    if (!settlementPublicClient || !amount || insufficientShares) return
+    if (!l3PublicClient || !amount || insufficientShares) return
     sellHandled.current = false
     setTxError(null)
 
@@ -285,16 +216,16 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
     setMicro(SellMicro.SUBMIT)
 
     try {
-      await ensureCorrectChain(currentChainId, switchChainAsync, settlementChainId, settlementChain)
+      await ensureCorrectChain(currentChainId, switchChainAsync, indexL3.id, indexL3)
     } catch {
-      setTxError('Please switch to the Settlement chain to sell')
+      setTxError('Please switch to the L3 chain to sell')
       setMicro(-1)
       return
     }
 
     let blockTimestamp: bigint
     try {
-      const block = await settlementPublicClient.getBlock()
+      const block = await l3PublicClient.getBlock()
       blockTimestamp = block.timestamp
     } catch {
       blockTimestamp = BigInt(Math.floor(Date.now() / 1000))
@@ -303,24 +234,28 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
     const deadline = blockTimestamp + BigInt(deadlineHours * 3600)
     const priceBn = parseUnits(limitPrice || '0', 18)
 
-    // Settlement: SettlementBridgeCustody.sellITPFromSettlement(itpId, amount, limitPrice, slippageTier, deadline)
-    // amount is in 18 decimals (BridgedITP shares)
+    // L3 direct: Index.submitOrder(itpId, side=1 SELL, shares, limitPrice, slippageTier, deadline)
+    // amount is in 18 decimals (ITP shares)
     writeSellAsync({
-      address: INDEX_PROTOCOL.settlementCustody,
-      abi: SETTLEMENT_CUSTODY_ABI,
-      functionName: 'sellITPFromSettlement',
+      address: INDEX_PROTOCOL.index,
+      abi: INDEX_ABI,
+      functionName: 'submitOrder',
       args: [
         itpId as `0x${string}`,
+        1,
         parsedAmount,
         priceBn,
         BigInt(slippageTier),
         deadline,
       ],
-      chainId: settlementChainId,
+      chainId: indexL3.id,
     }).catch(() => {
       // Error handled by sellError effect
     })
-  }, [settlementPublicClient, amount, limitPrice, deadlineHours, slippageTier, itpId, parsedAmount, writeSellAsync, micro, insufficientShares, currentChainId, switchChainAsync, capture])
+  }, [l3PublicClient, amount, limitPrice, deadlineHours, slippageTier, itpId, parsedAmount, writeSellAsync, micro, insufficientShares, currentChainId, switchChainAsync, capture])
+
+  // Wire ref for handleApprove → handleSell trampoline above.
+  useEffect(() => { handleSellRef.current = handleSell }, [handleSell])
 
   // Approve success -> auto-trigger sell
   useEffect(() => {
@@ -331,27 +266,26 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
     handleSell()
   }, [isApproveSuccess, approveHash, resetApprove, handleSell])
 
-  // Sell success -> extract orderId from CrossChainSellOrderCreated, advance to RELAY
+  // Sell success -> extract orderId from OrderSubmitted on L3, jump to BATCH
   useEffect(() => {
     if (!isSellSuccess || !sellReceipt || sellHandled.current) return
     sellHandled.current = true
     if (sellHash) setSavedSellHash(sellHash)
 
-    // Extract orderId from CrossChainSellOrderCreated event on SettlementBridgeCustody
     for (const log of sellReceipt.logs) {
-      if (log.address.toLowerCase() === INDEX_PROTOCOL.settlementCustody.toLowerCase()) {
+      if (log.address.toLowerCase() === INDEX_PROTOCOL.index.toLowerCase()) {
         try {
-          const decoded = decodeEventLog({ abi: SETTLEMENT_CUSTODY_ABI, data: log.data, topics: log.topics })
-          if (decoded.eventName === 'CrossChainSellOrderCreated') {
-            setSettlementOrderId((decoded.args as any).orderId as bigint)
+          const decoded = decodeEventLog({ abi: INDEX_ABI, data: log.data, topics: log.topics })
+          if (decoded.eventName === 'OrderSubmitted') {
+            setOrderId((decoded.args as any).orderId as bigint)
             break
           }
         } catch {}
       }
     }
 
-    // Settlement tx confirmed → advance to RELAY (oracle will burn L3 shares + submit sell order)
-    setMicro(SellMicro.RELAY)
+    // L3 tx confirmed → straight into the batch wait, no relay leg.
+    setMicro(SellMicro.BATCH)
     resetSell()
     window.dispatchEvent(new Event('portfolio-refresh'))
   }, [isSellSuccess, sellReceipt, resetSell, itpId, amount, sellHash])
@@ -488,7 +422,6 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
   const handleReset = useCallback(() => {
     setMicro(-1)
     setOrderId(null)
-    setSettlementOrderId(null)
     setAmount('')
     setFillPrice(null)
     setFillAmount(null)
@@ -586,10 +519,9 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
 
   const txRefs = useMemo(() => {
     const refs: { label: string; value: string }[] = []
-    if (settlementOrderId !== null) refs.push({ label: 'Settlement', value: `#${settlementOrderId.toString()}` })
     if (orderId !== null) refs.push({ label: 'L3', value: `#${orderId.toString()}` })
     return refs
-  }, [settlementOrderId, orderId])
+  }, [orderId])
 
   const buttonText = isApprovePending
     ? t('button.pending')

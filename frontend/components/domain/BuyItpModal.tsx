@@ -5,8 +5,7 @@ import { createPortal } from 'react-dom'
 import { useAccount, useWaitForTransactionReceipt, useWriteContract, useSwitchChain, usePublicClient, useReadContract } from 'wagmi'
 import { parseUnits, formatUnits, decodeEventLog } from 'viem'
 import { INDEX_PROTOCOL, COLLATERAL_DECIMALS } from '@/lib/contracts/addresses'
-import { ERC20_ABI, INDEX_ABI, SETTLEMENT_CUSTODY_ABI } from '@/lib/contracts/index-protocol-abi'
-import { BridgedItpFactoryABI } from '@/lib/contracts/generated/bridged_itp_factory-abi'
+import { ERC20_ABI, INDEX_ABI } from '@/lib/contracts/index-protocol-abi'
 import { ensureCorrectChain } from '@/hooks/useChainWrite'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { PipelineRing, type PipelineRingPhase } from '@/components/ui/PipelineRing'
@@ -23,18 +22,21 @@ import itpIdNames from '@/lib/itp-id-names.json'
 import { usePostHogTracker } from '@/hooks/usePostHog'
 import { SpringModal, SpringBackdrop, glass, ModalClose } from '@/components/ui/spring'
 import { InlineOhlcChart } from '@/components/ui/InlineOhlcChart'
-import { indexL3, settlementChain, settlementChainId } from '@/lib/wagmi'
+import { indexL3 } from '@/lib/wagmi'
 
-/** Settlement USDC decimals, real USDC on Settlement is 6 decimals */
-const SETTLEMENT_USDC_DECIMALS = 6
+/** L3 USDC decimals — protocol-wide collateral. */
+const L3_USDC_DECIMALS = 18
 
 /**
- * Buy flow micro-steps, Settlement bridge path (5 steps + Done):
+ * Buy flow micro-steps, L3 direct path (4 steps + Done):
  *
- * Step 1 "Submit on Settlement":  APPROVE (0), SUBMIT (1)
- * Step 2 "Oracle Relay":          RELAY (2), oracle detects CrossChainOrderCreated, submits on L3
- * Step 3 "Processing":            BATCH (3), FILL (4)
- * Done:                           DONE (5)
+ * Step 1 "Submit on L3":   APPROVE (0), SUBMIT (1)
+ * Step 2 "Processing":     BATCH (3), FILL (4)
+ * Done:                    DONE (5)
+ *
+ * RELAY (2) is preserved as an enum member for compatibility with downstream
+ * step labels and PostHog event names, but the L3 path skips it — submission
+ * lands directly on L3, the oracle relays nothing because there is no bridge.
  */
 enum BuyMicro {
   APPROVE = 0,
@@ -69,7 +71,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   const tc = useTranslations('common')
   const locale = useLocale()
   const { address, isConnected, chainId: currentChainId } = useAccount()
-  const settlementPublicClient = usePublicClient({ chainId: settlementChainId })
+  const l3PublicClient = usePublicClient({ chainId: indexL3.id })
   const { showSuccess } = useToast()
 
   const SLIPPAGE_TIERS = [
@@ -89,12 +91,10 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   const [deadlineHours, setDeadlineHours] = useState(1)
   const [micro, setMicro] = useState<number>(-1) // -1 = INPUT mode
   const [orderId, setOrderId] = useState<bigint | null>(null)
-  const [settlementOrderId, setSettlementOrderId] = useState<bigint | null>(null)
   const [txError, setTxError] = useState<string | null>(null)
   const [fillPrice, setFillPrice] = useState<bigint | null>(null)
   const [fillAmount, setFillAmount] = useState<bigint | null>(null)
   const [initialSharesBn, setInitialSharesBn] = useState<bigint | null>(null)
-  const [initialBridgedBn, setInitialBridgedBn] = useState<bigint | null>(null)
   const [skippedApproval, setSkippedApproval] = useState(false)
   const [processStalled, setProcessStalled] = useState(false)
 
@@ -105,7 +105,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   const [batchTxHash, setBatchTxHash] = useState<string | null>(null)
   const [fillTxHash, setFillTxHash] = useState<string | null>(null)
 
-  // Settlement chain writes, raw useWriteContract (not the L3-defaulting hook)
+  // L3 chain writes, raw useWriteContract (not the L3-defaulting hook)
   const { switchChainAsync } = useSwitchChain()
 
   const {
@@ -117,7 +117,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   } = useWriteContract()
   const { isLoading: isApproveConfirming, isSuccess: isApproveSuccess } = useWaitForTransactionReceipt({
     hash: approveHash,
-    chainId: settlementChainId,
+    chainId: indexL3.id,
   })
 
   const {
@@ -129,7 +129,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   } = useWriteContract()
   const { isLoading: isBuyConfirming, isSuccess: isBuySuccess, data: buyReceipt } = useWaitForTransactionReceipt({
     hash: buyHash,
-    chainId: settlementChainId,
+    chainId: indexL3.id,
   })
 
   const { hasNonceGap, pendingCount, refresh: refreshNonce } = useNonceCheck()
@@ -149,27 +149,27 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   const itpName = staticEntry?.name || userState.bridgedItpName || 'ITP'
   const itpSymbol = staticEntry?.ticker || userState.bridgedItpSymbol || ''
 
-  // Settlement USDC balance (6 decimals), read from Settlement chain
-  const { data: settlementUsdcRaw, refetch: refetchSettlementUsdc } = useReadContract({
-    address: INDEX_PROTOCOL.settlementUsdc,
+  // L3 USDC balance (18 decimals)
+  const { data: l3UsdcRaw, refetch: refetchL3Usdc } = useReadContract({
+    address: INDEX_PROTOCOL.l3Usdc,
     abi: ERC20_ABI,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
-    chainId: settlementChainId,
+    chainId: indexL3.id,
     query: { enabled: !!address, refetchInterval: 5_000 },
   })
-  const usdcBalance = (settlementUsdcRaw as bigint) ?? 0n
+  const usdcBalance = (l3UsdcRaw as bigint) ?? 0n
 
-  // Settlement USDC allowance for SettlementBridgeCustody
-  const { data: settlementAllowanceRaw, refetch: refetchSettlementAllowance } = useReadContract({
-    address: INDEX_PROTOCOL.settlementUsdc,
+  // L3 USDC allowance for the Index contract
+  const { data: l3AllowanceRaw, refetch: refetchL3Allowance } = useReadContract({
+    address: INDEX_PROTOCOL.l3Usdc,
     abi: ERC20_ABI,
     functionName: 'allowance',
-    args: address ? [address, INDEX_PROTOCOL.settlementCustody] : undefined,
-    chainId: settlementChainId,
+    args: address ? [address, INDEX_PROTOCOL.index] : undefined,
+    chainId: indexL3.id,
     query: { enabled: !!address, refetchInterval: 5_000 },
   })
-  const usdcAllowance = (settlementAllowanceRaw as bigint) ?? 0n
+  const usdcAllowance = (l3AllowanceRaw as bigint) ?? 0n
 
   // L3 user shares for this ITP
   const { data: l3SharesRaw } = useReadContract({
@@ -182,30 +182,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   })
   const userShares = (l3SharesRaw as bigint) ?? 0n
 
-  // BridgedITP balance on Settlement — DONE waits for this to grow.
-  // L3 mint can land but bridge mint can stall (oracle gap, registry auth);
-  // showing success on L3 fill alone is the lie the user already caught.
-  const { data: bridgedItpAddrRaw } = useReadContract({
-    address: INDEX_PROTOCOL.settlementBridgedItpFactory,
-    abi: BridgedItpFactoryABI,
-    functionName: 'deployedItps',
-    args: [itpId as `0x${string}`],
-    chainId: settlementChainId,
-    query: { enabled: !!itpId },
-  })
-  const bridgedItpAddress = (bridgedItpAddrRaw as `0x${string}` | undefined) &&
-    bridgedItpAddrRaw !== '0x0000000000000000000000000000000000000000'
-    ? (bridgedItpAddrRaw as `0x${string}`)
-    : ''
-  const { data: bridgedBalanceRaw } = useReadContract({
-    address: bridgedItpAddress as `0x${string}`,
-    abi: ERC20_ABI,
-    functionName: 'balanceOf',
-    args: address ? [address] : undefined,
-    chainId: settlementChainId,
-    query: { enabled: !!address && !!bridgedItpAddress, refetchInterval: 3_000 },
-  })
-  const bridgedBalance = (bridgedBalanceRaw as bigint) ?? 0n
+  // L3-only path — no BridgedITP to watch. DONE waits on L3 share growth.
 
   const { navPerShare, navPerShareBn, totalAssetCount, pricedAssetCount, isLoading: isNavLoading } = useItpNav(itpId)
 
@@ -233,9 +210,9 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   }, [amount]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const refetchAllowance = useCallback(async () => {
-    await refetchSettlementAllowance()
-    await refetchSettlementUsdc()
-  }, [refetchSettlementAllowance, refetchSettlementUsdc])
+    await refetchL3Allowance()
+    await refetchL3Usdc()
+  }, [refetchL3Allowance, refetchL3Usdc])
 
   const {
     writeContract: writeMint,
@@ -246,7 +223,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   } = useWriteContract()
   const { isSuccess: isMintReceiptSuccess } = useWaitForTransactionReceipt({
     hash: mintHashTx,
-    chainId: settlementChainId,
+    chainId: indexL3.id,
   })
 
   // Mint test USDC + drip settlement gas for testing.
@@ -261,58 +238,56 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     setFaucetLoading(true)
     setApiMintSuccess(false)
     try {
-      // ITP scope: mints Settlement USDC (6 dec) + drips Sonic gas.
+      // Vision scope: mints L3 USDC (18 dec) + drips L3 GM gas.
       const res = await fetch('/api/faucet', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address, amount: '10000', scope: 'itp' }),
+        body: JSON.stringify({ address, amount: '10000', scope: 'vision' }),
       })
       const data = await res.json()
-      if (data.success && !data.itp?.usdc?.error) {
+      if (data.success && !data.vision?.usdc?.error) {
         setApiMintSuccess(true)
-        // Settlement node may take a block to reflect the new balance.
-        // Refetch a few times so the zero-balance branch hides as soon as
-        // the chain catches up.
-        refetchSettlementUsdc()
-        setTimeout(refetchSettlementUsdc, 1500)
-        setTimeout(refetchSettlementUsdc, 4000)
+        // Refetch a few times so the zero-balance branch hides as the L3
+        // node reflects the new balance.
+        refetchL3Usdc()
+        setTimeout(refetchL3Usdc, 1500)
+        setTimeout(refetchL3Usdc, 4000)
       }
     } catch {
-      // Fallback to direct contract call (mint Settlement USDC, 6 decimals)
+      // Fallback to direct contract call (mint L3 USDC, 18 decimals)
       resetMint()
       writeMint({
-        address: INDEX_PROTOCOL.settlementUsdc,
+        address: INDEX_PROTOCOL.l3Usdc,
         abi: MINT_ABI,
         functionName: 'mint',
-        args: [address, parseUnits('10000', SETTLEMENT_USDC_DECIMALS)],
-        chainId: settlementChainId,
+        args: [address, parseUnits('10000', L3_USDC_DECIMALS)],
+        chainId: indexL3.id,
       })
     } finally {
       setFaucetLoading(false)
     }
-  }, [address, writeMint, resetMint, refetchSettlementUsdc])
+  }, [address, writeMint, resetMint, refetchL3Usdc])
 
-  // Amount in 6 decimals (Settlement USDC)
+  // Amount in 18 decimals (L3 USDC)
   // Guard against negative, NaN, or excessive-decimal input
   const sanitizedAmount = (() => {
     if (!amount) return ''
     const n = parseFloat(amount)
     if (isNaN(n) || n < 0) return ''
-    // Clamp to 6 decimal places (Settlement USDC precision)
+    // Clamp to 6 visible decimal places — viem can parse 18 but UI stays sane
     const parts = amount.split('.')
-    if (parts[1] && parts[1].length > SETTLEMENT_USDC_DECIMALS) {
-      return `${parts[0]}.${parts[1].slice(0, SETTLEMENT_USDC_DECIMALS)}`
+    if (parts[1] && parts[1].length > 6) {
+      return `${parts[0]}.${parts[1].slice(0, 6)}`
     }
     return amount
   })()
-  const parsedAmount = sanitizedAmount ? parseUnits(sanitizedAmount, SETTLEMENT_USDC_DECIMALS) : 0n
+  const parsedAmount = sanitizedAmount ? parseUnits(sanitizedAmount, L3_USDC_DECIMALS) : 0n
   const insufficientBalance = parsedAmount > 0n && parsedAmount > usdcBalance
   const needsApproval = parsedAmount > 0n && usdcAllowance < parsedAmount
 
   const snapshotBalances = useCallback(() => {
     setInitialSharesBn(userShares)
-    setInitialBridgedBn(bridgedBalance)
-  }, [userShares, bridgedBalance])
+  }, [userShares])
 
   const handleApprove = useCallback(async () => {
     if (!amount || insufficientBalance) return
@@ -328,28 +303,28 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     setMicro(BuyMicro.APPROVE)
 
     try {
-      // Switch to Settlement chain before approving
-      await ensureCorrectChain(currentChainId, switchChainAsync, settlementChainId, settlementChain)
+      // Switch to L3 chain before approving
+      await ensureCorrectChain(currentChainId, switchChainAsync, indexL3.id, indexL3)
     } catch {
-      setTxError('Please switch to the Settlement chain to buy')
+      setTxError('Please switch to the L3 chain to buy')
       setMicro(-1)
       return
     }
 
-    // Approve Settlement USDC → SettlementBridgeCustody
+    // Approve L3 USDC → Index
     writeApproveAsync({
-      address: INDEX_PROTOCOL.settlementUsdc,
+      address: INDEX_PROTOCOL.l3Usdc,
       abi: ERC20_ABI,
       functionName: 'approve',
-      args: [INDEX_PROTOCOL.settlementCustody, parsedAmount],
-      chainId: settlementChainId,
+      args: [INDEX_PROTOCOL.index, parsedAmount],
+      chainId: indexL3.id,
     }).catch(() => {
       // Error handled by approveError effect
     })
   }, [amount, parsedAmount, insufficientBalance, writeApproveAsync, snapshotBalances, currentChainId, switchChainAsync, capture, itpId, slippageTier, deadlineHours, limitPrice])
 
   const handleBuy = useCallback(async () => {
-    if (!settlementPublicClient || !amount || insufficientBalance) return
+    if (!l3PublicClient || !amount || insufficientBalance) return
     buyHandled.current = false
     setTxError(null)
 
@@ -365,17 +340,17 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     setMicro(BuyMicro.SUBMIT)
 
     try {
-      // Ensure we're on Settlement chain
-      await ensureCorrectChain(currentChainId, switchChainAsync, settlementChainId, settlementChain)
+      // Ensure we're on L3 chain
+      await ensureCorrectChain(currentChainId, switchChainAsync, indexL3.id, indexL3)
     } catch {
-      setTxError('Please switch to the Settlement chain to buy')
+      setTxError('Please switch to the L3 chain to buy')
       setMicro(-1)
       return
     }
 
     let blockTimestamp: bigint
     try {
-      const block = await settlementPublicClient.getBlock()
+      const block = await l3PublicClient.getBlock()
       blockTimestamp = block.timestamp
     } catch {
       blockTimestamp = BigInt(Math.floor(Date.now() / 1000))
@@ -385,24 +360,25 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     const priceBn = limitPrice ? parseUnits(limitPrice, 18) : 0n
     setSubmittedLimitPrice(limitPrice)
 
-    // Settlement: SettlementBridgeCustody.buyITPFromSettlement(itpId, usdcAmount, limitPrice, slippageTier, deadline)
-    // usdcAmount is in 6 decimals (Settlement USDC)
+    // L3 direct: Index.submitOrder(itpId, side=0 BUY, amount, limitPrice, slippageTier, deadline)
+    // amount is in 18 decimals (L3 USDC)
     writeBuyAsync({
-      address: INDEX_PROTOCOL.settlementCustody,
-      abi: SETTLEMENT_CUSTODY_ABI,
-      functionName: 'buyITPFromSettlement',
+      address: INDEX_PROTOCOL.index,
+      abi: INDEX_ABI,
+      functionName: 'submitOrder',
       args: [
         itpId as `0x${string}`,
+        0,
         parsedAmount,
         priceBn,
         BigInt(slippageTier),
         deadline,
       ],
-      chainId: settlementChainId,
+      chainId: indexL3.id,
     }).catch(() => {
       // Error handled by buyError effect
     })
-  }, [settlementPublicClient, amount, insufficientBalance, limitPrice, deadlineHours, slippageTier, itpId, parsedAmount, writeBuyAsync, micro, snapshotBalances, currentChainId, switchChainAsync, capture])
+  }, [l3PublicClient, amount, insufficientBalance, limitPrice, deadlineHours, slippageTier, itpId, parsedAmount, writeBuyAsync, micro, snapshotBalances, currentChainId, switchChainAsync, capture])
 
   // Approve success -> save hash, auto-trigger buy
   useEffect(() => {
@@ -415,32 +391,31 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     })
   }, [isApproveSuccess, approveHash, refetchAllowance, resetApprove, handleBuy])
 
-  // Buy success -> save hash, extract orderId from CrossChainOrderCreated, advance to RELAY
+  // Buy success -> save hash, extract orderId from OrderSubmitted, advance to BATCH
   useEffect(() => {
     if (!isBuySuccess || !buyReceipt || buyHandled.current) return
     buyHandled.current = true
     if (buyHash) setSavedBuyHash(buyHash)
 
-    // Extract orderId from CrossChainOrderCreated event on SettlementBridgeCustody
+    // Extract orderId from OrderSubmitted event on Index (L3)
     for (const log of buyReceipt.logs) {
-      if (log.address.toLowerCase() === INDEX_PROTOCOL.settlementCustody.toLowerCase()) {
+      if (log.address.toLowerCase() === INDEX_PROTOCOL.index.toLowerCase()) {
         try {
-          const decoded = decodeEventLog({ abi: SETTLEMENT_CUSTODY_ABI, data: log.data, topics: log.topics })
-          if (decoded.eventName === 'CrossChainOrderCreated') {
-            setSettlementOrderId((decoded.args as any).orderId as bigint)
+          const decoded = decodeEventLog({ abi: INDEX_ABI, data: log.data, topics: log.topics })
+          if (decoded.eventName === 'OrderSubmitted') {
+            setOrderId((decoded.args as any).orderId as bigint)
             break
           }
         } catch {}
       }
     }
 
-    // Settlement tx confirmed → advance to RELAY (waiting for oracle to pick it up)
-    setMicro(BuyMicro.RELAY)
+    // L3 tx confirmed → no relay leg; jump straight into the on-chain batch wait.
+    setMicro(BuyMicro.BATCH)
     resetBuy()
-    // Persist pending order
     try {
       const pending = JSON.parse(localStorage.getItem('index-pending-orders') || '[]')
-      pending.push({ itpId, side: 0, amount, timestamp: Date.now(), txHash: buyHash, chain: 'settlement' })
+      pending.push({ itpId, side: 0, amount, timestamp: Date.now(), txHash: buyHash, chain: 'l3' })
       localStorage.setItem('index-pending-orders', JSON.stringify(pending))
     } catch {}
     window.dispatchEvent(new Event('portfolio-refresh'))
@@ -502,15 +477,14 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     }
   }, [trackedOrder, micro, orderId])
 
-  // Bridge-mint watcher: only advance to DONE once BridgedITP balance on
-  // Settlement actually grows. Until then the buy is L3-complete but the
-  // sell modal will still show 0 — calling that DONE would repeat the bug.
+  // L3 path: shares are minted directly into _userShares on fill — no bridge
+  // mint to wait for. Advance to DONE the moment the on-chain balance grows.
   useEffect(() => {
     if (micro < BuyMicro.FILL || micro >= BuyMicro.DONE) return
-    if (initialBridgedBn !== null && bridgedBalance > initialBridgedBn) {
+    if (initialSharesBn !== null && userShares > initialSharesBn) {
       setMicro(BuyMicro.DONE)
     }
-  }, [micro, bridgedBalance, initialBridgedBn])
+  }, [micro, userShares, initialSharesBn])
 
   // --- PostHog: buy_step_reached ---
   useEffect(() => {
@@ -630,12 +604,10 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   const handleReset = useCallback(() => {
     setMicro(-1)
     setOrderId(null)
-    setSettlementOrderId(null)
     setAmount('')
     setFillPrice(null)
     setFillAmount(null)
     setInitialSharesBn(null)
-    setInitialBridgedBn(null)
     setSkippedApproval(false)
     clearTxHashes()
   }, [clearTxHashes])
@@ -648,7 +620,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     onClose()
   }, [capture, itpId, micro, amount, onClose])
 
-  const formattedBalance = usdcBalance > 0n ? formatUnits(usdcBalance, SETTLEMENT_USDC_DECIMALS) : '0'
+  const formattedBalance = usdcBalance > 0n ? formatUnits(usdcBalance, L3_USDC_DECIMALS) : '0'
   const isProcessing = isApprovePending || isApproveConfirming || isBuyPending || isBuyConfirming
   const isDone = micro === BuyMicro.DONE
 
@@ -712,10 +684,10 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
 
   const txRefs = useMemo(() => {
     const refs: { label: string; value: string }[] = []
-    if (settlementOrderId !== null) refs.push({ label: 'Settlement', value: `#${settlementOrderId.toString()}` })
+    // L3 direct path has a single order id — no Settlement leg to display.
     if (orderId !== null) refs.push({ label: 'L3', value: `#${orderId.toString()}` })
     return refs
-  }, [orderId, settlementOrderId])
+  }, [orderId])
 
   const renderFillDetails = () => {
     if (!fillPrice || !fillAmount) return null
@@ -891,7 +863,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
                       <span className="text-xs text-text-muted font-mono">{t('balance_label', { amount: parseFloat(formattedBalance).toFixed(2) })}</span>
                       {usdcBalance > 0n && (
                         <button
-                          onClick={() => setAmount(formatUnits(usdcBalance, SETTLEMENT_USDC_DECIMALS))}
+                          onClick={() => setAmount(formatUnits(usdcBalance, L3_USDC_DECIMALS))}
                           className="text-xs font-mono font-bold text-text-secondary hover:text-text-primary transition-colors"
                         >
                           {tc('actions.max')}
