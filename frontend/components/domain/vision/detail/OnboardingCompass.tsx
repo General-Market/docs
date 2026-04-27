@@ -107,6 +107,22 @@ function pickTarget(selectors: string[]): Element | null {
   return null
 }
 
+/**
+ * Bottom edge of the page's sticky header in viewport coordinates. This is
+ * the wall the arrow refuses to cross — anything pinned to the top of the
+ * page would obscure the bubble otherwise.
+ */
+function getHeaderBottom(): number {
+  if (typeof document === 'undefined') return 0
+  const header = document.querySelector('header')
+  if (!header) return 0
+  // Only respect the header if it's actually pinned to the top right now.
+  // (When the page is at the top, the topbar above it gives the header a
+  // bigger bottom edge but the arrow can still sit above the page content.)
+  const r = header.getBoundingClientRect()
+  return r.bottom > 0 && r.top <= 0 ? r.bottom : Math.max(r.bottom, 0)
+}
+
 function CompassPointer({ selectors }: CompassPointerProps) {
   const [rect, setRect] = useState<DOMRect | null>(null)
   const [vp, setVp] = useState<ViewportInfo | null>(null)
@@ -208,6 +224,18 @@ function CompassPointer({ selectors }: CompassPointerProps) {
     }
   }
 
+  // Repulsion floor — the page header is a wall. The arrow's center must
+  // stay at least (header bottom + arrow radius + bubble height + buffer)
+  // below the top of the viewport, so the bubble can sit above the arrow
+  // without crossing the header. Spring transition on the position layer
+  // (below) makes that boundary read as elastic push, not a hard snap.
+  const headerBottom = getHeaderBottom()
+  const arrowRadius = 22
+  const bubbleStack = 38 + 22 // bubble offset + bubble height
+  const repulsionBuffer = 10
+  const minPosY = headerBottom + arrowRadius + bubbleStack + repulsionBuffer
+  if (posY < minPosY) posY = minPosY
+
   // Rotation: angle from arrow position to the actual target center.
   // Recomputed every frame as the user scrolls; the rotation layer below
   // applies a slow ease-out so the arrow trails like a real compass needle.
@@ -226,35 +254,45 @@ function CompassPointer({ selectors }: CompassPointerProps) {
     <>
       {/* On-screen bubble — sits 36px above the arrow, never rotates so the
           text stays upright. Dropped while the target is offscreen so the
-          edge cursor reads as direction-only. */}
+          edge cursor reads as direction-only. The position is animated with
+          a soft spring so the header-repulsion clamp reads as an elastic
+          push instead of a hard snap. */}
       {mode === 'on' && (
         <motion.div
           key="bubble"
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 6 }}
-          transition={{ duration: 0.3, ease: EASE_OUT_EXPO }}
-          className="fixed pointer-events-none z-[60]"
-          style={{
-            left: posX,
-            top: Math.max(posY - 38, 8),
-            transform: 'translate(-50%, -100%)',
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1, x: posX, y: Math.max(posY - 38, 8) }}
+          exit={{ opacity: 0 }}
+          transition={{
+            opacity: { duration: 0.3, ease: EASE_OUT_EXPO },
+            x: { type: 'spring', stiffness: 220, damping: 26, mass: 0.7 },
+            y: { type: 'spring', stiffness: 220, damping: 26, mass: 0.7 },
           }}
+          className="fixed pointer-events-none z-[60] left-0 top-0"
         >
-          <div className="px-2.5 py-1 bg-white text-black text-[10px] font-black tracking-[0.06em] shadow-[0_4px_16px_rgba(0,0,0,0.35)] whitespace-nowrap">
+          <div
+            className="px-2.5 py-1 bg-white text-black text-[10px] font-black tracking-[0.06em] shadow-[0_4px_16px_rgba(0,0,0,0.35)] whitespace-nowrap"
+            style={{ transform: 'translate(-50%, -100%)' }}
+          >
             LOOK HERE
           </div>
         </motion.div>
       )}
 
       <motion.div
-        initial={{ opacity: 0, scale: 0.7 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.7 }}
-        transition={{ duration: 0.35, ease: EASE_OUT_EXPO }}
-        className="fixed pointer-events-none z-[60]"
-        style={{ left: posX, top: posY, transform: 'translate(-50%, -50%)' }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1, x: posX, y: posY }}
+        exit={{ opacity: 0 }}
+        transition={{
+          opacity: { duration: 0.35, ease: EASE_OUT_EXPO },
+          x: { type: 'spring', stiffness: 200, damping: 24, mass: 0.8 },
+          y: { type: 'spring', stiffness: 200, damping: 24, mass: 0.8 },
+        }}
+        className="fixed pointer-events-none z-[60] left-0 top-0"
       >
+        {/* Center-anchor — the framer x/y translate places this div's
+            top-left at (posX, posY); we want its child centered there. */}
+        <div style={{ transform: 'translate(-50%, -50%)' }}>
         {/* Sway layer — CSS keyframe animation reads --sway-amp every cycle.
             Updating the variable as distance changes widens/narrows the
             swing without restarting the animation. */}
@@ -293,6 +331,7 @@ function CompassPointer({ selectors }: CompassPointerProps) {
               </svg>
             </motion.div>
           </div>
+        </div>
         </div>
       </motion.div>
     </>
