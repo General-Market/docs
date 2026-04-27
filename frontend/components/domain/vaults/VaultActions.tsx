@@ -905,6 +905,7 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
           <WalletActionButton
             onClick={() => tab === 'deposit' ? handleDeposit() : handleWithdraw()}
             disabled={tab === 'deposit' ? (depositBusy || depositConfirming || !depositInput) : (redeemBusy || redeemConfirming || !withdrawInput)}
+            dataAttrs={tab === 'deposit' ? { 'data-onboarding-target': 'vault-action' } : undefined}
             className="w-full py-3.5 bg-[#00A36C] text-white text-sm font-black rounded-none shadow-[0_2px_8px_rgba(0,163,108,0.25)] relative overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_32px_rgba(0,163,108,0.25)] disabled:opacity-50 disabled:hover:translate-y-0"
           >
             <span className="relative z-10">

@@ -12,8 +12,12 @@ interface StepDef {
   title: string
   description: string
   action: string
-  /** CSS selector for the on-page element this step points at, if any. */
-  target?: string
+  /**
+   * Selector priority list. The pointer locks onto the first selector whose
+   * element is in the DOM, so opening a modal/panel with a more specific
+   * target re-aims the arrow without a state change.
+   */
+  targets?: string[]
 }
 
 const STEP_DEFS: StepDef[] = [
@@ -37,7 +41,10 @@ const STEP_DEFS: StepDef[] = [
     title: 'Join a Vault',
     description: 'Deposit into a vault. Your money trades automatically.',
     action: 'GO TO VAULTS',
-    target: '[data-onboarding-target="vault"]',
+    targets: [
+      '[data-onboarding-target="vault-action"]',
+      '[data-onboarding-target="vault"]',
+    ],
   },
   {
     id: 'bot',
@@ -49,12 +56,15 @@ const STEP_DEFS: StepDef[] = [
 ]
 
 /* ─────────────────────────────────────────────
-   CompassPointer — viewport-edge arrow that
-   jumps to the target when it enters the screen.
+   CompassPointer — single arrow that always
+   rotates to point at the active target and
+   jumps from viewport edge to over the target
+   when it scrolls into view.
    ───────────────────────────────────────────── */
 
 interface CompassPointerProps {
-  selector: string
+  /** Selector priority list. First match in the DOM wins. */
+  selectors: string[]
 }
 
 interface ViewportInfo {
@@ -62,25 +72,44 @@ interface ViewportInfo {
   vh: number
 }
 
-function CompassPointer({ selector }: CompassPointerProps) {
+function pickTarget(selectors: string[]): Element | null {
+  for (const sel of selectors) {
+    const el = document.querySelector(sel)
+    if (el) {
+      const r = el.getBoundingClientRect()
+      // Skip zero-size elements — they're hidden / not yet laid out.
+      if (r.width > 0 && r.height > 0) return el
+    }
+  }
+  return null
+}
+
+function CompassPointer({ selectors }: CompassPointerProps) {
   const [rect, setRect] = useState<DOMRect | null>(null)
   const [vp, setVp] = useState<ViewportInfo | null>(null)
 
   useEffect(() => {
     let raf = 0
-    let lastEl: Element | null = null
+    let observed: Element | null = null
+    const ro = new ResizeObserver(() => schedule())
 
     const tick = () => {
       raf = 0
-      const el = document.querySelector(selector)
+      const el = pickTarget(selectors)
       if (!el) {
         setRect(null)
-        lastEl = null
+        if (observed) {
+          ro.unobserve(observed)
+          observed = null
+        }
         return
       }
-      lastEl = el
-      const r = el.getBoundingClientRect()
-      setRect(r)
+      if (el !== observed) {
+        if (observed) ro.unobserve(observed)
+        ro.observe(el)
+        observed = el
+      }
+      setRect(el.getBoundingClientRect())
       setVp({ vw: window.innerWidth, vh: window.innerHeight })
     }
 
@@ -90,20 +119,11 @@ function CompassPointer({ selector }: CompassPointerProps) {
     }
 
     schedule()
-
-    const ro = new ResizeObserver(schedule)
     ro.observe(document.documentElement)
-    if (lastEl) ro.observe(lastEl)
 
-    // Re-poll occasionally — target may mount after first render.
-    const poll = window.setInterval(() => {
-      const el = document.querySelector(selector)
-      if (el && el !== lastEl) {
-        lastEl = el
-        ro.observe(el)
-      }
-      schedule()
-    }, 500)
+    // Re-poll occasionally — modals/panels may mount or unmount and we want
+    // the priority list to re-evaluate without waiting for a scroll event.
+    const poll = window.setInterval(schedule, 400)
 
     window.addEventListener('scroll', schedule, true)
     window.addEventListener('resize', schedule)
@@ -115,7 +135,8 @@ function CompassPointer({ selector }: CompassPointerProps) {
       window.removeEventListener('scroll', schedule, true)
       window.removeEventListener('resize', schedule)
     }
-  }, [selector])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectors.join('|')])
 
   if (!rect || !vp) return null
 
@@ -126,76 +147,52 @@ function CompassPointer({ selector }: CompassPointerProps) {
   const onScreen =
     rect.bottom > 0 && rect.top < vp.vh && rect.right > 0 && rect.left < vp.vw
 
+  // ── Position the arrow ──
+  let posX: number
+  let posY: number
+  let mode: 'on' | 'off'
+
   if (onScreen) {
-    // Floating arrow above the target's top edge, bouncing down at it.
-    const top = Math.max(8, rect.top - 12)
-    const left = Math.min(Math.max(cx, 24), vp.vw - 24)
-    return (
-      <motion.div
-        key="on"
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.8 }}
-        transition={{ duration: 0.35, ease: EASE_OUT_EXPO }}
-        className="fixed pointer-events-none z-[60]"
-        style={{ left, top, transform: 'translate(-50%, -100%)' }}
-      >
-        <motion.div
-          animate={{ y: [0, 8, 0] }}
-          transition={{ duration: 1.1, repeat: Infinity, ease: 'easeInOut' }}
-          className="flex flex-col items-center"
-        >
-          <div className="px-2.5 py-1 mb-1 bg-white text-black text-[10px] font-black tracking-[0.06em] shadow-[0_4px_16px_rgba(0,0,0,0.35)] whitespace-nowrap">
-            LOOK HERE
-          </div>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="drop-shadow-[0_2px_6px_rgba(0,0,0,0.4)]">
-            <path d="M12 4 L12 18 M5 12 L12 19 L19 12" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </motion.div>
-      </motion.div>
-    )
-  }
-
-  // Off-screen — project the line from viewport center to target center onto
-  // the viewport rectangle, with a margin so the arrow stays clear of edges
-  // and corner UI (the compass widget itself).
-  const margin = 56
-  const screenCx = vp.vw / 2
-  const screenCy = vp.vh / 2
-
-  const dx = cx - screenCx
-  const dy = cy - screenCy
-  const halfW = Math.max(vp.vw / 2 - margin, 1)
-  const halfH = Math.max(vp.vh / 2 - margin, 1)
-
-  let edgeX = 0
-  let edgeY = 0
-  if (Math.abs(dy) * halfW > Math.abs(dx) * halfH) {
-    // Hits top/bottom edge first.
-    edgeY = dy > 0 ? halfH : -halfH
-    edgeX = dy === 0 ? 0 : (dx * halfH) / Math.abs(dy)
+    mode = 'on'
+    posX = Math.min(Math.max(cx, 28), vp.vw - 28)
+    posY = Math.max(rect.top - 28, 28)
   } else {
-    edgeX = dx > 0 ? halfW : -halfW
-    edgeY = dx === 0 ? 0 : (dy * halfW) / Math.abs(dx)
+    mode = 'off'
+    const margin = 56
+    const screenCx = vp.vw / 2
+    const screenCy = vp.vh / 2
+    const dx = cx - screenCx
+    const dy = cy - screenCy
+    const halfW = Math.max(vp.vw / 2 - margin, 1)
+    const halfH = Math.max(vp.vh / 2 - margin, 1)
+    let edgeX = 0
+    let edgeY = 0
+    if (Math.abs(dy) * halfW > Math.abs(dx) * halfH) {
+      edgeY = dy > 0 ? halfH : -halfH
+      edgeX = dy === 0 ? 0 : (dx * halfH) / Math.abs(dy)
+    } else {
+      edgeX = dx > 0 ? halfW : -halfW
+      edgeY = dx === 0 ? 0 : (dy * halfW) / Math.abs(dx)
+    }
+    posX = screenCx + edgeX
+    posY = screenCy + edgeY
+
+    // Don't camp on top of the bottom-right widget.
+    const widgetTop = vp.vh - 220
+    const widgetLeft = vp.vw - 330
+    if (posX > widgetLeft && posY > widgetTop) {
+      posY = widgetTop - 8
+    }
   }
 
-  const angleRad = Math.atan2(dy, dx)
-  // Arrow SVG points to the right by default; rotate by angleRad.
+  // Rotation: angle from arrow position to the actual target center. Recomputed
+  // every frame as the user scrolls, so the arrow continuously tracks the
+  // target. Default arrow art points right (0deg).
+  const angleRad = Math.atan2(cy - posY, cx - posX)
   const angleDeg = (angleRad * 180) / Math.PI
-
-  // Avoid camping right on top of the bottom-right widget (~bottom-4 right-4
-  // 280-wide). Push arrow up if it lands inside that box.
-  const widgetTop = vp.vh - 200
-  const widgetLeft = vp.vw - 320
-  let posX = screenCx + edgeX
-  let posY = screenCy + edgeY
-  if (posX > widgetLeft && posY > widgetTop) {
-    posY = widgetTop - 8
-  }
 
   return (
     <motion.div
-      key="off"
       initial={{ opacity: 0, scale: 0.7 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.7 }}
@@ -203,16 +200,32 @@ function CompassPointer({ selector }: CompassPointerProps) {
       className="fixed pointer-events-none z-[60]"
       style={{ left: posX, top: posY, transform: 'translate(-50%, -50%)' }}
     >
-      <motion.div
-        animate={{ scale: [1, 1.18, 1] }}
-        transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
-        style={{ transform: `rotate(${angleDeg}deg)` }}
-        className="flex items-center justify-center w-11 h-11 rounded-full bg-white text-black shadow-[0_6px_24px_rgba(0,0,0,0.45)]"
+      {/* Rotation layer — driven by inline transform so framer-motion's pulse
+          animation on a sibling layer can't clobber it. Short transition makes
+          rotation read as smooth tracking instead of stepping. */}
+      <div
+        style={{
+          transform: `rotate(${angleDeg}deg)`,
+          transition: 'transform 90ms linear',
+        }}
       >
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-          <path d="M4 12 L20 12 M13 5 L20 12 L13 19" stroke="black" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </motion.div>
+        {/* Pulse layer — handles only scale so transform composition is clean. */}
+        <motion.div
+          animate={{ scale: mode === 'on' ? [1, 1.12, 1] : [1, 1.2, 1] }}
+          transition={{ duration: 1.1, repeat: Infinity, ease: 'easeInOut' }}
+          className="flex items-center justify-center w-11 h-11 rounded-full bg-white text-black shadow-[0_6px_24px_rgba(0,0,0,0.45)]"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M4 12 L20 12 M13 5 L20 12 L13 19"
+              stroke="black"
+              strokeWidth="2.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </motion.div>
+      </div>
     </motion.div>
   )
 }
@@ -250,13 +263,17 @@ export function OnboardingCompass({ state, onVaultDeposit, onBotDeploy }: Onboar
   if (!state.isActive) return null
 
   const currentDef = STEP_DEFS.find(s => s.id === state.currentStep)!
-  const pointerSelector = currentDef.target
+  const pointerSelectors = currentDef.targets ?? []
+  const ctaDisabled = state.currentStep === 'faucet' && state.faucetLoading
 
   return (
     <>
-      {pointerSelector && (
+      {pointerSelectors.length > 0 && (
         <AnimatePresence>
-          <CompassPointer key={pointerSelector} selector={pointerSelector} />
+          <CompassPointer
+            key={state.currentStep}
+            selectors={pointerSelectors}
+          />
         </AnimatePresence>
       )}
 
@@ -367,15 +384,32 @@ export function OnboardingCompass({ state, onVaultDeposit, onBotDeploy }: Onboar
                   <p className="text-[11px] text-white/45 leading-snug">
                     {currentDef.description}
                   </p>
-                  <button
-                    onClick={handleAction}
-                    disabled={state.currentStep === 'faucet' && state.faucetLoading}
-                    className="w-full px-3 py-2.5 bg-white text-black text-[11px] font-black tracking-[0.06em] hover:bg-white/90 active:bg-white/80 transition-colors disabled:opacity-50 disabled:cursor-wait"
-                  >
-                    {state.currentStep === 'faucet' && state.faucetLoading
-                      ? 'CLAIMING…'
-                      : currentDef.action}
-                  </button>
+                  {/* CTA — wrapped in a relative container so the pulsing
+                      halo can sit behind it without bleeding into the layout.
+                      The pulse is intentionally low-key: a faint expanding
+                      ring + a tiny breathing scale. Reads as "alive" without
+                      stealing attention from the on-page pointer. */}
+                  <div className="relative">
+                    {!ctaDisabled && (
+                      <motion.span
+                        aria-hidden
+                        className="absolute inset-0 pointer-events-none bg-white/30"
+                        animate={{ opacity: [0.35, 0, 0.35], scale: [1, 1.08, 1] }}
+                        transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
+                      />
+                    )}
+                    <motion.button
+                      onClick={handleAction}
+                      disabled={ctaDisabled}
+                      animate={ctaDisabled ? { scale: 1 } : { scale: [1, 1.015, 1] }}
+                      transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
+                      className="relative w-full px-3 py-2.5 bg-white text-black text-[11px] font-black tracking-[0.06em] hover:bg-white/90 active:bg-white/80 transition-colors disabled:opacity-50 disabled:cursor-wait"
+                    >
+                      {state.currentStep === 'faucet' && state.faucetLoading
+                        ? 'CLAIMING…'
+                        : currentDef.action}
+                    </motion.button>
+                  </div>
                 </div>
               </motion.div>
             )}
