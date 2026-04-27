@@ -115,7 +115,6 @@ async function runVisionLeg(to: `0x${string}`, amount: number) {
 }
 
 async function runItpLeg(to: `0x${string}`, amount: number) {
-  const leg: Record<string, any> = {}
   const chain = {
     id: SETTLEMENT_CHAIN_ID,
     name: 'Settlement',
@@ -127,33 +126,41 @@ async function runItpLeg(to: `0x${string}`, amount: number) {
   const wallet = createWalletClient({ account, chain, transport: http(SETTLEMENT_RPC_URL) })
   const pub = createPublicClient({ chain, transport: http(SETTLEMENT_RPC_URL) })
 
-  try {
-    const parsed = parseUnits(String(amount), 6)
-    const hash = await wallet.writeContract({
-      address: SETTLEMENT_USDC, abi: MINT_ABI, functionName: 'mint',
-      args: [to, parsed],
-    })
-    await pub.waitForTransactionReceipt({ hash, timeout: 30_000 })
-    leg.usdc = { hash, amount: `${amount} USDC` }
-  } catch (e: any) {
-    leg.usdc = { error: e.message ?? 'Settlement USDC mint failed' }
-  }
-
-  try {
-    const drip = parseEther(SONIC_GAS_DRIP)
-    const deployerBal = await pub.getBalance({ address: account.address })
-    if (deployerBal > drip * 2n) {
-      const hash = await wallet.sendTransaction({ to, value: drip })
+  // Sonic block time is ~2s. Awaiting two receipts sequentially means ~9s
+  // round-trip — long enough that users mash the button or assume it's
+  // broken. Fire both in parallel and only block on the USDC mint receipt
+  // (the value the user actually came to see). Gas-drip receipt resolves
+  // after the response returns; if it fails, the next /api/faucet call
+  // notices the low balance and surfaces the error then.
+  const usdcPromise = (async () => {
+    try {
+      const parsed = parseUnits(String(amount), 6)
+      const hash = await wallet.writeContract({
+        address: SETTLEMENT_USDC, abi: MINT_ABI, functionName: 'mint',
+        args: [to, parsed],
+      })
       await pub.waitForTransactionReceipt({ hash, timeout: 30_000 })
-      leg.gas = { hash, amount: `${SONIC_GAS_DRIP} S` }
-    } else {
-      leg.gas = { error: 'Deployer low on S' }
+      return { hash, amount: `${amount} USDC` } as const
+    } catch (e: any) {
+      return { error: e.message ?? 'Settlement USDC mint failed' } as const
     }
-  } catch (e: any) {
-    leg.gas = { error: e.message ?? 'S drip failed' }
-  }
+  })()
 
-  return leg
+  const gasPromise = (async () => {
+    try {
+      const drip = parseEther(SONIC_GAS_DRIP)
+      const deployerBal = await pub.getBalance({ address: account.address })
+      if (deployerBal <= drip * 2n) return { error: 'Deployer low on S' } as const
+      const hash = await wallet.sendTransaction({ to, value: drip })
+      // Don't await receipt — we want the API response back ASAP.
+      return { hash, amount: `${SONIC_GAS_DRIP} S` } as const
+    } catch (e: any) {
+      return { error: e.message ?? 'S drip failed' } as const
+    }
+  })()
+
+  const [usdc, gas] = await Promise.all([usdcPromise, gasPromise])
+  return { usdc, gas }
 }
 
 export async function POST(req: NextRequest) {
