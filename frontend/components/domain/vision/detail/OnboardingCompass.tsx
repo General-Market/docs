@@ -269,13 +269,31 @@ function CompassPointer({ selectors, nearestOf }: CompassPointerProps) {
     posX = screenCx + edgeX
     posY = screenCy + edgeY
 
-    // Don't camp on top of the bottom-right widget.
-    const widgetTop = vp.vh - 220
-    const widgetLeft = vp.vw - 330
-    if (posX > widgetLeft && posY > widgetTop) {
-      posY = widgetTop - 8
+    // Don't camp on top of the floating widget. Query its actual rect — on
+    // mobile it's near full-width, on desktop it's a 300px card. The old
+    // hardcoded 220x330 numbers always said "you're inside the widget" on
+    // narrow viewports, dragging the arrow up unnecessarily.
+    const widgetEl = document.querySelector('[data-onboarding-target="widget"]')
+    if (widgetEl) {
+      const wr = widgetEl.getBoundingClientRect()
+      if (
+        posX > wr.left - 12 &&
+        posX < wr.right + 12 &&
+        posY > wr.top - 12 &&
+        posY < wr.bottom + 12
+      ) {
+        posY = wr.top - 12
+      }
     }
   }
+
+  // Bubble drops on narrow viewports. The page is small enough that the
+  // rotating arrow alone reads as direction; stacking a label on top of
+  // the arrow on a 375-wide screen wastes vertical space and crowds the
+  // header.
+  const isNarrow = vp.vw < 480
+  const bubbleHeight = isNarrow ? 0 : 22
+  const bubbleOffset = isNarrow ? 0 : 38
 
   // Repulsion floor — the page header is a wall. The arrow's center must
   // stay at least (header bottom + arrow radius + bubble height + buffer)
@@ -283,11 +301,15 @@ function CompassPointer({ selectors, nearestOf }: CompassPointerProps) {
   // without crossing the header. Spring transition on the position layer
   // (below) makes that boundary read as elastic push, not a hard snap.
   const headerBottom = getHeaderBottom()
-  const arrowRadius = 22
-  const bubbleStack = 38 + 22 // bubble offset + bubble height
+  const arrowRadius = isNarrow ? 18 : 22
   const repulsionBuffer = 10
-  const minPosY = headerBottom + arrowRadius + bubbleStack + repulsionBuffer
+  const minPosY = headerBottom + arrowRadius + bubbleOffset + bubbleHeight + repulsionBuffer
   if (posY < minPosY) posY = minPosY
+
+  // Clamp X so neither the arrow nor the bubble can spill off-screen on
+  // narrow viewports.
+  const xMargin = arrowRadius + 8
+  posX = Math.min(Math.max(posX, xMargin), vp.vw - xMargin)
 
   // Rotation: angle from arrow position to the actual target center.
   // Recomputed every frame as the user scrolls; the rotation layer below
@@ -306,11 +328,10 @@ function CompassPointer({ selectors, nearestOf }: CompassPointerProps) {
   return (
     <>
       {/* On-screen bubble — sits 36px above the arrow, never rotates so the
-          text stays upright. Dropped while the target is offscreen so the
-          edge cursor reads as direction-only. The position is animated with
-          a soft spring so the header-repulsion clamp reads as an elastic
-          push instead of a hard snap. */}
-      {mode === 'on' && (
+          text stays upright. Dropped on narrow viewports (mobile) and
+          while the target is offscreen so the edge cursor reads as
+          direction-only. */}
+      {mode === 'on' && !isNarrow && (
         <motion.div
           key="bubble"
           initial={{ opacity: 0 }}
@@ -367,13 +388,22 @@ function CompassPointer({ selectors, nearestOf }: CompassPointerProps) {
               willChange: 'transform',
             }}
           >
-            {/* Pulse layer — scale only. */}
+            {/* Pulse layer — scale only. Smaller circle on narrow screens
+                so the arrow doesn't dominate a 375-wide viewport. */}
             <motion.div
               animate={{ scale: mode === 'on' ? [1, 1.1, 1] : [1, 1.16, 1] }}
               transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
-              className="flex items-center justify-center w-11 h-11 rounded-full bg-white text-black shadow-[0_6px_24px_rgba(0,0,0,0.45)]"
+              className={[
+                'flex items-center justify-center rounded-full bg-white text-black shadow-[0_6px_24px_rgba(0,0,0,0.45)]',
+                isNarrow ? 'w-9 h-9' : 'w-11 h-11',
+              ].join(' ')}
             >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <svg
+                width={isNarrow ? 18 : 22}
+                height={isNarrow ? 18 : 22}
+                viewBox="0 0 24 24"
+                fill="none"
+              >
                 <path
                   d="M4 12 L20 12 M13 5 L20 12 L13 19"
                   stroke="black"

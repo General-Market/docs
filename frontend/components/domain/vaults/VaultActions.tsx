@@ -599,6 +599,106 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
           </div>
         </div>
 
+        {/* Mobile deposit panel — sits at the top so the action is reachable
+            without scrolling. The same form lives in the desktop sidebar.
+            Two inputs share the same state; only one is laid out at a time
+            (lg:hidden vs. hidden lg:flex). */}
+        <div className="lg:hidden flex flex-col gap-2 px-4 py-3.5 shrink-0 border-b border-[#E0E0E0] bg-[#FAFAFA]">
+          <div className="flex border border-[#E0E0E0] rounded-none overflow-hidden bg-white">
+            <button
+              onClick={() => { setTab('deposit'); resetRedeem?.() }}
+              className={cn('flex-1 py-2 text-[11px] font-bold text-center transition-colors', tab === 'deposit' ? 'bg-[#1A1A1A] text-white' : 'bg-white text-text-muted')}
+            >
+              Deposit
+            </button>
+            <button
+              onClick={() => { setTab('withdraw'); resetDeposit?.() }}
+              className={cn('flex-1 py-2 text-[11px] font-bold text-center border-l border-[#E0E0E0] transition-colors', tab === 'withdraw' ? 'bg-[#1A1A1A] text-white' : 'bg-white text-text-muted')}
+            >
+              Withdraw
+            </button>
+          </div>
+
+          {tab === 'deposit' ? (
+            <div>
+              <div className="relative">
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min="0" step="0.01" placeholder="0.00"
+                  value={depositInput} onChange={(e) => setDepositInput(e.target.value)}
+                  data-onboarding-target="vault-input"
+                  className="w-full px-3.5 py-3 pr-[78px] border-2 border-[#E0E0E0] rounded-none font-mono text-[16px] font-semibold text-text-primary bg-white outline-none focus:border-[#00A36C] focus:ring-[3px] focus:ring-[rgba(0,163,108,0.08)] transition-colors"
+                />
+                {userAddress && usdcBalance > 0n && (
+                  <button
+                    type="button"
+                    onClick={() => setDepositInput(formatUnits(usdcBalance, 18))}
+                    className="absolute right-[48px] top-1/2 -translate-y-1/2 text-[10px] font-extrabold text-[#00A36C] tracking-[0.04em]"
+                  >
+                    MAX
+                  </button>
+                )}
+                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[12px] font-bold text-text-muted">USDC</span>
+              </div>
+              {userAddress && (
+                <div className="flex justify-between items-center mt-1 px-0.5">
+                  <span className="text-[10px] text-text-muted">Balance</span>
+                  <span className="font-mono text-[10px] font-semibold text-text-secondary">
+                    {usdcBalanceFloat.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDC
+                  </span>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="relative">
+              <input
+                type="number"
+                inputMode="decimal"
+                min="0" step="0.0001" placeholder="0.00"
+                value={withdrawInput} onChange={(e) => setWithdrawInput(e.target.value)}
+                className="w-full px-3.5 py-3 pr-[78px] border-2 border-[#E0E0E0] rounded-none font-mono text-[16px] font-semibold text-text-primary bg-white outline-none focus:border-[#00A36C] focus:ring-[3px] focus:ring-[rgba(0,163,108,0.08)] transition-colors"
+              />
+              {shares > 0n && (
+                <button
+                  onClick={() => setWithdrawInput(formatUnits(shares, 18))}
+                  className="absolute right-[48px] top-1/2 -translate-y-1/2 text-[10px] font-extrabold text-[#00A36C] tracking-[0.04em]"
+                >
+                  MAX
+                </button>
+              )}
+              <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[12px] font-bold text-text-muted">Shares</span>
+            </div>
+          )}
+
+          {depositError && tab === 'deposit' && <p className="text-xs text-color-down">{depositError}</p>}
+          {redeemError && tab === 'withdraw' && <p className="text-xs text-color-down">{redeemError}</p>}
+
+          <WalletActionButton
+            onClick={() => tab === 'deposit' ? handleDeposit() : handleWithdraw()}
+            disabled={tab === 'deposit' ? (depositBusy || depositConfirming || !depositInput) : (redeemBusy || redeemConfirming || !withdrawInput)}
+            dataAttrs={tab === 'deposit' ? { 'data-onboarding-target': 'vault-action' } : undefined}
+            className="w-full py-3.5 bg-[#00A36C] text-white text-[15px] font-black rounded-none shadow-[0_4px_16px_rgba(0,163,108,0.25)] relative overflow-hidden disabled:opacity-50"
+          >
+            <span className="relative z-10">
+              {tab === 'deposit'
+                ? depositStep === 'preparing' ? t('vaults.preparing')
+                  : depositStep === 'approving' ? t('vaults.approving')
+                  : depositStep === 'depositing' ? t('vaults.depositing')
+                  : depositStep === 'claiming' ? t('vaults.claiming')
+                  : depositConfirming ? t('vaults.confirming')
+                  : depositStep === 'done' ? t('vaults.deposited')
+                  : `Join This Vault`
+                : redeemStep === 'requesting' ? t('vaults.requesting')
+                  : redeemConfirming ? t('vaults.confirming')
+                  : redeemStep === 'done' ? t('vaults.redeem_requested')
+                  : t('vaults.withdraw')}
+            </span>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent -translate-x-full animate-[shimmer_3s_ease_infinite]" />
+          </WalletActionButton>
+          <p className="text-[10px] text-text-muted text-center">No lock-up. Withdraw anytime. {feePercent.toFixed(0)}% perf fee.</p>
+        </div>
+
         {/* Chart */}
         <div className="px-4 py-3 shrink-0 border-b border-[#F0F0F0]">
           <div className="flex items-center justify-between mb-1.5">
@@ -645,26 +745,11 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
           ))}
         </div>
 
-        {/* Mobile CTA, Deposit is primary, Build-your-own is secondary */}
+        {/* Mobile-only "Or build your own" — the deposit form moved up to
+            the top of the page. This stays here as a low-key secondary
+            path between the chart and the thesis. */}
         <div className="flex flex-col gap-2.5 px-4 py-3.5 shrink-0 border-b border-[#E0E0E0] lg:hidden">
-          <WalletActionButton
-            onClick={() => { setTab('deposit'); if (tab === 'deposit') handleDeposit() }}
-            disabled={tab === 'deposit' && (depositBusy || depositConfirming || !depositInput)}
-            className="w-full py-3.5 bg-[#00A36C] text-white text-[15px] font-black rounded-none shadow-[0_4px_16px_rgba(0,163,108,0.25)] relative overflow-hidden disabled:opacity-50"
-          >
-            <span className="relative z-10">
-              {depositStep === 'preparing' ? t('vaults.preparing')
-                : depositStep === 'approving' ? t('vaults.approving')
-                : depositStep === 'depositing' ? t('vaults.depositing')
-                : depositStep === 'claiming' ? t('vaults.claiming')
-                : depositConfirming ? t('vaults.confirming')
-                : depositStep === 'done' ? t('vaults.deposited')
-                : `Deposit into ${vaultName}`}
-            </span>
-          </WalletActionButton>
-          <p className="text-[10px] text-text-muted text-center">No lock-up. Withdraw anytime. {feePercent.toFixed(0)}% perf fee.</p>
-
-          <button className="mt-1 w-full py-2.5 rounded-none border border-dashed border-[rgba(0,163,108,0.45)] bg-transparent text-[#00A36C] text-[11px] font-extrabold tracking-wide flex items-center justify-center gap-1.5 transition-colors hover:bg-[rgba(0,163,108,0.08)]">
+          <button className="w-full py-2.5 rounded-none border border-dashed border-[rgba(0,163,108,0.45)] bg-transparent text-[#00A36C] text-[11px] font-extrabold tracking-wide flex items-center justify-center gap-1.5 transition-colors hover:bg-[rgba(0,163,108,0.08)]">
             <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
               <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
             </svg>
