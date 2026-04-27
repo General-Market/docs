@@ -62,21 +62,23 @@ const SOURCE_LABELS: Record<number, string> = {
   4: 'tubes_cb',
 }
 
-// Stars settle at the cohort boundary (4h after start) — the bet
-// window is 1h; the remaining 3h is the lock-and-accumulate phase
-// before the oracle resolves. Cams settle 60 s past close to give the
-// data-node a tick of cushion.  All offsets must be multiples of 60 —
-// the program enforces `settlement_time % 60 == 0`.
+// Stars: cohort cycle is 1 h, bet window is the full cycle, race
+// phase lasts another 3 h after close. Settle = close + 3 h. Multiple
+// cohorts overlap at any instant (one bettable, three racing) — the
+// pair never goes dormant.
+// Cams: settle 60 s past close — short cushion for collector lag.
+// All offsets must be multiples of 60 (program enforces
+// `settlement_time % 60 == 0`).
+const STARS_SETTLE_DELAY_SECS = 10_800 // 3 h race after close
 const CAMS_SETTLE_DELAY_SECS = 60
 
 function entryFromPair(pair: PvpPair): CatalogEntry {
   const sourceName = SOURCE_LABELS[pair.sourceId] ?? `source_${pair.sourceId}`
   const closeOffsetSecs = pair.betWindowSecs
-  // Stars: settle at the end of the cohort cycle (4 h after start).
-  // Cams: settle close+60 s — no lock phase to wait through.
-  const settleOffsetSecs = pair.board === 'stars'
-    ? pair.windowSecs
-    : pair.betWindowSecs + CAMS_SETTLE_DELAY_SECS
+  const settleDelay = pair.board === 'stars'
+    ? STARS_SETTLE_DELAY_SECS
+    : CAMS_SETTLE_DELAY_SECS
+  const settleOffsetSecs = closeOffsetSecs + settleDelay
   const id = `${sourceName}_pvp_${pair.format === 'f1-gain-race' ? 'f1' : 'f2'}_${pair.slugA}__vs__${pair.slugB}`
   const label = `${pair.displayA} vs ${pair.displayB}`
   const description = formatDescription(pair)

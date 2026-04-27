@@ -40,11 +40,13 @@ export interface PvpPair {
   tightness: number
 }
 
-// Stars: cohort cycles every 4 h; bets accept for the first 1 h, then
-// the cohort locks for 3 h while audiences accumulate before settle.
-// Cams: cohort cycles every 2 min; bets accept for the full window.
-const STARS_WINDOW = 14_400 // 4 hours total cycle
-const STARS_BET_WINDOW = 3_600 // first hour open for bets
+// Stars: cohort cycles every 1 h, bet window is the full cycle, then
+// a 3 h race phase where the oracle measures view-count gain. Result:
+// at any moment one cohort is bettable plus three are racing — markets
+// stay continuously tradable while the gain race remains 4 h
+// end-to-end. Cams stay on a tight 2-min loop with no lock.
+const STARS_WINDOW = 3_600 // 1 hour cycle (new cohort every hour)
+const STARS_BET_WINDOW = 3_600 // full cycle accepts bets
 const CAMS_WINDOW = 120 // 2 minutes
 const CAMS_BET_WINDOW = 120 // full window — no lock phase
 
