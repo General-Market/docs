@@ -1190,6 +1190,20 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                                                             info!(order_id = %settlement_id, "mintBridgedShares already processed — marking SharesBridged");
                                                             let orch = orchestrator.write().await;
                                                             orch.mark_orders_shares_bridged(&[settlement_id]).await;
+                                                        } else if is_nonce_future_error(&err_str) {
+                                                            warn!(order_id = %settlement_id, "mintBridgedShares hit NonceFuture — correcting cached registry nonce from on-chain");
+                                                            if let Some(mirror_addr) = mirror_registry_addr {
+                                                                let lsn_selector = &ethers::utils::keccak256(b"lastSnapshotNonce()")[..4];
+                                                                if let Ok(bytes) = settlement_writer.static_call(mirror_addr, lsn_selector.to_vec()).await {
+                                                                    if bytes.len() >= 32 {
+                                                                        let on_chain = ethers::types::U256::from_big_endian(&bytes[..32]).as_u64();
+                                                                        let cached = protocol.settlement_registry_nonce();
+                                                                        protocol.reset_settlement_registry_nonce(on_chain);
+                                                                        info!(order_id = %settlement_id, cached, on_chain, "Registry nonce cache corrected (mint path)");
+                                                                    }
+                                                                }
+                                                            }
+                                                            mirror_sync_needed.store(true, Ordering::Release);
                                                         } else {
                                                             warn!(error = %e, user = ?mapping.original_user, "mintBridgedShares failed — stays Batched");
                                                         }
@@ -1396,6 +1410,20 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                                                                 info!(order_id = %settlement_id, "mintBridgedShares already processed — marking SharesBridged");
                                                                 let orch = orchestrator.write().await;
                                                                 orch.mark_orders_shares_bridged(&[settlement_id]).await;
+                                                            } else if is_nonce_future_error(&err_str) {
+                                                                warn!(order_id = %settlement_id, "mintBridgedShares (post-fills) hit NonceFuture — correcting cached registry nonce from on-chain");
+                                                                if let Some(mirror_addr) = mirror_registry_addr {
+                                                                    let lsn_selector = &ethers::utils::keccak256(b"lastSnapshotNonce()")[..4];
+                                                                    if let Ok(bytes) = settlement_writer.static_call(mirror_addr, lsn_selector.to_vec()).await {
+                                                                        if bytes.len() >= 32 {
+                                                                            let on_chain = ethers::types::U256::from_big_endian(&bytes[..32]).as_u64();
+                                                                            let cached = protocol.settlement_registry_nonce();
+                                                                            protocol.reset_settlement_registry_nonce(on_chain);
+                                                                            info!(order_id = %settlement_id, cached, on_chain, "Registry nonce cache corrected (mint post-fills path)");
+                                                                        }
+                                                                    }
+                                                                }
+                                                                mirror_sync_needed.store(true, Ordering::Release);
                                                             } else {
                                                                 warn!(error = %e, "mintBridgedShares failed (post-fills) — stays Batched");
                                                             }
