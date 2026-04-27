@@ -127,17 +127,25 @@ async function runItpLeg(to: `0x${string}`, amount: number) {
   const pub = createPublicClient({ chain, transport: http(SETTLEMENT_RPC_URL) })
 
   // Sonic block time is ~2s. Awaiting two receipts sequentially means ~9s
-  // round-trip — long enough that users mash the button or assume it's
-  // broken. Fire both in parallel and only block on the USDC mint receipt
-  // (the value the user actually came to see). Gas-drip receipt resolves
-  // after the response returns; if it fails, the next /api/faucet call
-  // notices the low balance and surfaces the error then.
+  // round-trip — long enough that users mash the button. Fire both in
+  // parallel, but assign explicit nonces ourselves: viem's auto-nonce
+  // re-reads pending tx-count for each call, so two parallel writes
+  // collide on the same nonce and Sonic rejects the second as
+  // "replacement transaction underpriced". Block the response on the
+  // USDC mint receipt (what the user came to see) and let the gas drip
+  // resolve in the background.
+  const baseNonce = await pub.getTransactionCount({
+    address: account.address,
+    blockTag: 'pending',
+  })
+
   const usdcPromise = (async () => {
     try {
       const parsed = parseUnits(String(amount), 6)
       const hash = await wallet.writeContract({
         address: SETTLEMENT_USDC, abi: MINT_ABI, functionName: 'mint',
         args: [to, parsed],
+        nonce: baseNonce,
       })
       await pub.waitForTransactionReceipt({ hash, timeout: 30_000 })
       return { hash, amount: `${amount} USDC` } as const
@@ -151,8 +159,11 @@ async function runItpLeg(to: `0x${string}`, amount: number) {
       const drip = parseEther(SONIC_GAS_DRIP)
       const deployerBal = await pub.getBalance({ address: account.address })
       if (deployerBal <= drip * 2n) return { error: 'Deployer low on S' } as const
-      const hash = await wallet.sendTransaction({ to, value: drip })
-      // Don't await receipt — we want the API response back ASAP.
+      const hash = await wallet.sendTransaction({
+        to,
+        value: drip,
+        nonce: baseNonce + 1,
+      })
       return { hash, amount: `${SONIC_GAS_DRIP} S` } as const
     } catch (e: any) {
       return { error: e.message ?? 'S drip failed' } as const
