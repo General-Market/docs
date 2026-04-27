@@ -356,7 +356,12 @@ class Pair:
     pair_index: int
     board: str
     source_id: int
+    # window_secs = full cohort cycle (when fresh cohorts open).
+    # bet_window_secs = how long bets accept from cohort start.
+    # Stars: window=14400, bet_window=3600 (1 h open / 3 h locked).
+    # Cams: window=120, bet_window=120 (full window, no lock phase).
     window_secs: int
+    bet_window_secs: int
     settle_delay_secs: int
     slug_a: str
     slug_b: str
@@ -389,6 +394,7 @@ def load_pairs(path: Path) -> list[Pair]:
                 board=str(r["board"]),
                 source_id=int(r["source_id"]),
                 window_secs=int(r["window_secs"]),
+                bet_window_secs=int(r.get("bet_window_secs", r["window_secs"])),
                 settle_delay_secs=int(r["settle_delay_secs"]),
                 slug_a=str(r["slug_a"]),
                 slug_b=str(r["slug_b"]),
@@ -402,14 +408,34 @@ def load_pairs(path: Path) -> list[Pair]:
 
 
 def cohort_for(pair: Pair, now_secs: int) -> tuple[int, int]:
-    """Return (close_time, settlement_time) for pair's current cohort."""
-    close = (now_secs + pair.window_secs - 1) // pair.window_secs * pair.window_secs
-    if close <= now_secs:  # boundary case — push to the next stride
-        close += pair.window_secs
+    """Return (close_time, settlement_time) for pair's CURRENT cohort.
+
+    Cohort start aligns to wall-clock multiples of window_secs. Bets
+    accept from cohort_start through cohort_start + bet_window_secs;
+    settlement lands at close + settle_delay_secs. We never advance to
+    a future cohort — callers check whether `close > now + 10` before
+    placing. During the lock phase (close in the past, settlement
+    pending), `close < now` and the caller skips. This keeps the bot
+    out of the next cohort until its bet window actually opens; the
+    user spec is "1 h open / 3 h locked" and the bot honours it.
+    """
+    cohort_start = (now_secs // pair.window_secs) * pair.window_secs
+    close = cohort_start + pair.bet_window_secs
     if close % 60 != 0:  # program enforces 60s grid
         close = (close + 59) // 60 * 60
     settle = close + pair.settle_delay_secs
     return close, settle
+
+
+def is_bet_window_open(pair: Pair, now_secs: int) -> bool:
+    """True if a bet placed now would land before the cohort's close.
+
+    The program rejects with `BadTime` if `close - now < 10`. We use
+    the same cushion so the bot doesn't burn a tx on a guaranteed
+    rejection during the last ten seconds of the bet window.
+    """
+    close, _ = cohort_for(pair, now_secs)
+    return close - now_secs >= 10
 
 
 # ----------------------------------------------------------------------------- #
@@ -876,6 +902,10 @@ async def sweep_loop(
             placed_any = False
             for pair in pairs:
                 close, _ = cohort_for(pair, now_secs)
+                # Skip pairs whose bet window has passed (lock phase). The
+                # next sweep will pick them up at the next cohort_start.
+                if not is_bet_window_open(pair, now_secs):
+                    continue
                 key = str(pair.pair_index)
                 last = state.last_cohort_starts.get(key)
                 if last == close:
@@ -1252,6 +1282,8 @@ async def member_loop(
             if pair is None:
                 continue
             now_secs = int(time.time())
+            if not is_bet_window_open(pair, now_secs):
+                continue  # cohort is locked; nothing to bet on
             close, settle = cohort_for(pair, now_secs)
             side = _side_for_personality(pair, rng, member.personality)
             usdc_amount = rng.uniform(member.personality.bet_min, member.personality.bet_max)

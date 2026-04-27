@@ -4,225 +4,240 @@
     "board": "stars",
     "format": "f1-gain-race",
     "source_id": 1,
-    "window_secs": 3600,
-    "settle_delay_secs": 60,
+    "window_secs": 14400,
+    "settle_delay_secs": 10800,
     "slug_a": "abella-danger",
     "slug_b": "angela-white1",
     "display_a": "Abella Danger",
     "display_b": "Angela White",
     "audience_a": "5814981298",
     "audience_b": "4099494315",
-    "tightness": 0.7
+    "tightness": 0.7,
+    "bet_window_secs": 3600
   },
   {
     "pair_index": 2,
     "board": "stars",
     "format": "f1-gain-race",
     "source_id": 1,
-    "window_secs": 3600,
-    "settle_delay_secs": 60,
+    "window_secs": 14400,
+    "settle_delay_secs": 10800,
     "slug_a": "adriana-chechik",
     "slug_b": "alexis-fawx",
     "display_a": "Adriana Chechik",
     "display_b": "Alexis Fawx",
     "audience_a": "3772695268",
     "audience_b": "3750463895",
-    "tightness": 0.99
+    "tightness": 0.99,
+    "bet_window_secs": 3600
   },
   {
     "pair_index": 3,
     "board": "stars",
     "format": "f1-gain-race",
     "source_id": 1,
-    "window_secs": 3600,
-    "settle_delay_secs": 60,
+    "window_secs": 14400,
+    "settle_delay_secs": 10800,
     "slug_a": "ava-addams",
     "slug_b": "ariella-ferrera3",
     "display_a": "Ava Addams",
     "display_b": "Ariella Ferrera",
     "audience_a": "3698788641",
     "audience_b": "3381566702",
-    "tightness": 0.91
+    "tightness": 0.91,
+    "bet_window_secs": 3600
   },
   {
     "pair_index": 4,
     "board": "stars",
     "format": "f1-gain-race",
     "source_id": 1,
-    "window_secs": 3600,
-    "settle_delay_secs": 60,
+    "window_secs": 14400,
+    "settle_delay_secs": 10800,
     "slug_a": "brandilovevip1",
     "slug_b": "alura-jenson-11",
     "display_a": "Brandilove",
     "display_b": "Alura Jenson",
     "audience_a": "3314181034",
     "audience_b": "3120629989",
-    "tightness": 0.94
+    "tightness": 0.94,
+    "bet_window_secs": 3600
   },
   {
     "pair_index": 5,
     "board": "stars",
     "format": "f1-gain-race",
     "source_id": 1,
-    "window_secs": 3600,
-    "settle_delay_secs": 60,
+    "window_secs": 14400,
+    "settle_delay_secs": 10800,
     "slug_a": "alison_tyler",
     "slug_b": "bridgette-b",
     "display_a": "Alison Tyler",
     "display_b": "Bridgette B",
     "audience_a": "2247088716",
     "audience_b": "2221762226",
-    "tightness": 0.99
+    "tightness": 0.99,
+    "bet_window_secs": 3600
   },
   {
     "pair_index": 6,
     "board": "stars",
     "format": "f1-gain-race",
     "source_id": 1,
-    "window_secs": 3600,
-    "settle_delay_secs": 60,
+    "window_secs": 14400,
+    "settle_delay_secs": 10800,
     "slug_a": "chanel-preston",
     "slug_b": "august-ames",
     "display_a": "Chanel Preston",
     "display_b": "August Ames",
     "audience_a": "2183134750",
     "audience_b": "2125548986",
-    "tightness": 0.97
+    "tightness": 0.97,
+    "bet_window_secs": 3600
   },
   {
     "pair_index": 7,
     "board": "stars",
     "format": "f1-gain-race",
     "source_id": 1,
-    "window_secs": 3600,
-    "settle_delay_secs": 60,
+    "window_secs": 14400,
+    "settle_delay_secs": 10800,
     "slug_a": "cathy-heaven",
     "slug_b": "alexis-texas",
     "display_a": "Cathy Heaven",
     "display_b": "Alexis Texas",
     "audience_a": "2036804410",
     "audience_b": "1989793063",
-    "tightness": 0.98
+    "tightness": 0.98,
+    "bet_window_secs": 3600
   },
   {
     "pair_index": 8,
     "board": "stars",
     "format": "f1-gain-race",
     "source_id": 1,
-    "window_secs": 3600,
-    "settle_delay_secs": 60,
+    "window_secs": 14400,
+    "settle_delay_secs": 10800,
     "slug_a": "carmela_clutch_official1",
     "slug_b": "anny-kitty",
     "display_a": "Carmela Clutch Official",
     "display_b": "Anny Kitty",
     "audience_a": "1968129263",
     "audience_b": "1924814499",
-    "tightness": 0.98
+    "tightness": 0.98,
+    "bet_window_secs": 3600
   },
   {
     "pair_index": 9,
     "board": "stars",
     "format": "f1-gain-race",
     "source_id": 1,
-    "window_secs": 3600,
-    "settle_delay_secs": 60,
+    "window_secs": 14400,
+    "settle_delay_secs": 10800,
     "slug_a": "beautiful-ann1",
     "slug_b": "blair-williams",
     "display_a": "Beautiful Ann",
     "display_b": "Blair Williams",
     "audience_a": "1881458463",
     "audience_b": "1848614795",
-    "tightness": 0.98
+    "tightness": 0.98,
+    "bet_window_secs": 3600
   },
   {
     "pair_index": 10,
     "board": "stars",
     "format": "f1-gain-race",
     "source_id": 1,
-    "window_secs": 3600,
-    "settle_delay_secs": 60,
+    "window_secs": 14400,
+    "settle_delay_secs": 10800,
     "slug_a": "anissa-kate1",
     "slug_b": "brooklyn-chase-model",
     "display_a": "Anissa Kate",
     "display_b": "Brooklyn Chase",
     "audience_a": "1833521333",
     "audience_b": "1732245517",
-    "tightness": 0.94
+    "tightness": 0.94,
+    "bet_window_secs": 3600
   },
   {
     "pair_index": 11,
     "board": "stars",
     "format": "f1-gain-race",
     "source_id": 1,
-    "window_secs": 3600,
-    "settle_delay_secs": 60,
+    "window_secs": 14400,
+    "settle_delay_secs": 10800,
     "slug_a": "alina-lopez-model",
     "slug_b": "britney_amber",
     "display_a": "Alina Lopez",
     "display_b": "Britney Amber",
     "audience_a": "1714105378",
     "audience_b": "1703266549",
-    "tightness": 0.99
+    "tightness": 0.99,
+    "bet_window_secs": 3600
   },
   {
     "pair_index": 12,
     "board": "stars",
     "format": "f1-gain-race",
     "source_id": 1,
-    "window_secs": 3600,
-    "settle_delay_secs": 60,
+    "window_secs": 14400,
+    "settle_delay_secs": 10800,
     "slug_a": "asa_akira",
     "slug_b": "bianca_naldy_oficial_atriz_porno1",
     "display_a": "Asa Akira",
     "display_b": "Bianca Naldy Oficial Atriz Porno",
     "audience_a": "1626082056",
     "audience_b": "1597014077",
-    "tightness": 0.98
+    "tightness": 0.98,
+    "bet_window_secs": 3600
   },
   {
     "pair_index": 13,
     "board": "stars",
     "format": "f1-gain-race",
     "source_id": 1,
-    "window_secs": 3600,
-    "settle_delay_secs": 60,
+    "window_secs": 14400,
+    "settle_delay_secs": 10800,
     "slug_a": "casey-calvert",
     "slug_b": "aj-applegate",
     "display_a": "Casey Calvert",
     "display_b": "AJ Applegate",
     "audience_a": "1553740935",
     "audience_b": "1532017305",
-    "tightness": 0.99
+    "tightness": 0.99,
+    "bet_window_secs": 3600
   },
   {
     "pair_index": 14,
     "board": "stars",
     "format": "f1-gain-race",
     "source_id": 1,
-    "window_secs": 3600,
-    "settle_delay_secs": 60,
+    "window_secs": 14400,
+    "settle_delay_secs": 10800,
     "slug_a": "alexis-crystal-1",
     "slug_b": "bruna_black4",
     "display_a": "Alexis Crystal",
     "display_b": "Bruna Black",
     "audience_a": "1510973020",
     "audience_b": "1501766675",
-    "tightness": 0.99
+    "tightness": 0.99,
+    "bet_window_secs": 3600
   },
   {
     "pair_index": 15,
     "board": "stars",
     "format": "f1-gain-race",
     "source_id": 1,
-    "window_secs": 3600,
-    "settle_delay_secs": 60,
+    "window_secs": 14400,
+    "settle_delay_secs": 10800,
     "slug_a": "carolina-sweets",
     "slug_b": "abigail-mac5",
     "display_a": "Carolina Sweets",
     "display_b": "Abigail Mac",
     "audience_a": "1459251087",
     "audience_b": "1449691382",
-    "tightness": 0.99
+    "tightness": 0.99,
+    "bet_window_secs": 3600
   },
   {
     "pair_index": 16,
@@ -237,7 +252,8 @@
     "display_b": "Happymeal",
     "audience_a": "22360",
     "audience_b": "21943",
-    "tightness": 0.98
+    "tightness": 0.98,
+    "bet_window_secs": 120
   },
   {
     "pair_index": 17,
@@ -252,7 +268,8 @@
     "display_b": "MS Dira",
     "audience_a": "20197",
     "audience_b": "20012",
-    "tightness": 0.99
+    "tightness": 0.99,
+    "bet_window_secs": 120
   },
   {
     "pair_index": 18,
@@ -267,7 +284,8 @@
     "display_b": "Ronny Ponny",
     "audience_a": "19973",
     "audience_b": "19848",
-    "tightness": 0.99
+    "tightness": 0.99,
+    "bet_window_secs": 120
   },
   {
     "pair_index": 19,
@@ -282,7 +300,8 @@
     "display_b": "Hidden Gem",
     "audience_a": "19700",
     "audience_b": "19587",
-    "tightness": 0.99
+    "tightness": 0.99,
+    "bet_window_secs": 120
   },
   {
     "pair_index": 20,
@@ -297,7 +316,8 @@
     "display_b": "Monika Reed",
     "audience_a": "19570",
     "audience_b": "19133",
-    "tightness": 0.98
+    "tightness": 0.98,
+    "bet_window_secs": 120
   },
   {
     "pair_index": 21,
@@ -312,7 +332,8 @@
     "display_b": "Milabunny",
     "audience_a": "18335",
     "audience_b": "17897",
-    "tightness": 0.98
+    "tightness": 0.98,
+    "bet_window_secs": 120
   },
   {
     "pair_index": 22,
@@ -327,7 +348,8 @@
     "display_b": "Nica Rock",
     "audience_a": "17858",
     "audience_b": "17732",
-    "tightness": 0.99
+    "tightness": 0.99,
+    "bet_window_secs": 120
   },
   {
     "pair_index": 23,
@@ -342,7 +364,8 @@
     "display_b": "Aviebby",
     "audience_a": "17695",
     "audience_b": "17629",
-    "tightness": 1.0
+    "tightness": 1.0,
+    "bet_window_secs": 120
   },
   {
     "pair_index": 24,
@@ -357,7 +380,8 @@
     "display_b": "Misss Viki",
     "audience_a": "17579",
     "audience_b": "17576",
-    "tightness": 1.0
+    "tightness": 1.0,
+    "bet_window_secs": 120
   },
   {
     "pair_index": 25,
@@ -372,6 +396,7 @@
     "display_b": "Sweety Rinushka",
     "audience_a": "17397",
     "audience_b": "17237",
-    "tightness": 0.99
+    "tightness": 0.99,
+    "bet_window_secs": 120
   }
 ]

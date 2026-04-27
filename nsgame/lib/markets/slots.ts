@@ -120,26 +120,31 @@ export function generateSlots(opts: GenerateSlotsOpts): UpcomingSlot[] {
     if (board !== 'all' && entry.board !== board) continue
     if (entry.windowSecs <= 0) continue
 
-    // PvP cohort alignment. There is exactly one live market per pair:
-    // the current cohort. Cohort end = next windowSecs boundary from
-    // wall-clock now. The program-side cohort_rotation_worker uses the
-    // same arithmetic, so the PDA derived here matches the one the
-    // oracle settles. Past cohorts are resolved; future cohorts do
-    // not exist on chain until the next rotation.
-    const settleDelta = entry.settleOffsetSecs - entry.closeOffsetSecs
-    // Strict next-boundary. Math.ceil collapses to nowSecs when nowSecs
-    // sits exactly on a windowSecs boundary, hiding the cohort for a
-    // tick. Floor + window is always strictly in the future.
-    const cohortEnd = Math.floor(nowSecs / entry.windowSecs) * entry.windowSecs + entry.windowSecs
-    // Program enforces `close_time - now >= 10`. If we're inside the last
-    // 10s of a cohort, the bet would be rejected anyway — skip and let
-    // the user see the next cohort fresh.
-    if (cohortEnd - nowSecs < 10) continue
-    if (cohortEnd > horizonSecs) continue
+    // PvP cohort alignment. Each pair has exactly one live cohort: the
+    // current windowSecs slot. Bets accept for closeOffsetSecs from
+    // cohort start, then the cohort locks until settleOffsetSecs from
+    // cohort start. Stars: 1 h open / 3 h locked, settle at end of the
+    // 4 h cycle. Cams: full window open, settle close+60 s.
+    //
+    // The on-chain PDA is derived from (close, settle, threshold) so we
+    // must produce identical values here, in the bot, and inside the
+    // oracle's scanner. Cohort start uses the same floor() math everywhere.
+    const cohortStart = Math.floor(nowSecs / entry.windowSecs) * entry.windowSecs
+    let close = cohortStart + entry.closeOffsetSecs
+    let settle = cohortStart + entry.settleOffsetSecs
 
-    const close = cohortEnd
+    // If the bet window for this cohort already ended (or is within the
+    // 10 s rejection cushion the program enforces), move to the next
+    // cohort. The current one will surface in settling/resolved feeds
+    // separately, not in the live betting list.
+    if (close - nowSecs < 10) {
+      const nextStart = cohortStart + entry.windowSecs
+      close = nextStart + entry.closeOffsetSecs
+      settle = nextStart + entry.settleOffsetSecs
+    }
+    if (close > horizonSecs) continue
     if (close % 60 !== 0) continue
-    const settle = close + settleDelta
+    if (settle % 60 !== 0) continue
     const pda = deriveMarketPdaSync(programId, {
       sourceId: entry.sourceId,
       closeTime: close,

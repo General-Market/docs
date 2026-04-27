@@ -23,8 +23,12 @@ export interface PvpPair {
   format: PvpFormat
   /** 1 = tubes_xv (stars), 4 = tubes_cb (cams). */
   sourceId: 1 | 4
-  /** Window length in seconds. 14_400 stars, 120 cams. */
+  /** Cohort cycle length in seconds — when a fresh cohort opens.
+   *  14_400 stars, 120 cams. */
   windowSecs: number
+  /** How long a cohort accepts bets, measured from cohort start.
+   *  Stars: 3_600 (1h open, 3h locked); cams: full window. */
+  betWindowSecs: number
   slugA: string
   slugB: string
   displayA: string
@@ -36,8 +40,13 @@ export interface PvpPair {
   tightness: number
 }
 
-const STARS_WINDOW = 3_600 // 1 hour
+// Stars: cohort cycles every 4 h; bets accept for the first 1 h, then
+// the cohort locks for 3 h while audiences accumulate before settle.
+// Cams: cohort cycles every 2 min; bets accept for the full window.
+const STARS_WINDOW = 14_400 // 4 hours total cycle
+const STARS_BET_WINDOW = 3_600 // first hour open for bets
 const CAMS_WINDOW = 120 // 2 minutes
+const CAMS_BET_WINDOW = 120 // full window — no lock phase
 
 // Stars — slug → display map, regenerated from real xvideos data on
 // 2026-04-26. Top 30 pornstars by total view count, sorted desc, paired
@@ -146,6 +155,7 @@ function buildRegistry(): readonly PvpPair[] {
       format: 'f1-gain-race',
       sourceId: 1,
       windowSecs: STARS_WINDOW,
+      betWindowSecs: STARS_BET_WINDOW,
       slugA,
       slugB,
       displayA,
@@ -166,6 +176,7 @@ function buildRegistry(): readonly PvpPair[] {
       format: CAMS_FORMATS[i]!,
       sourceId: 4,
       windowSecs: CAMS_WINDOW,
+      betWindowSecs: CAMS_BET_WINDOW,
       slugA,
       slugB,
       displayA,
