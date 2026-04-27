@@ -531,9 +531,14 @@ export function deriveYesPct(
   audA: bigint,
   audB: bigint,
 ): number {
-  if (state) {
+  // Pool-implied — only when both sides have stake. A one-sided pool
+  // would otherwise return 0 or 100, and pctToDecimalOdd renders that
+  // as "—" because no finite odd exists at the extreme. Falling
+  // through to the audience prior gives the user a real number to
+  // anchor on while the empty side fills.
+  if (state && state.totalYes > 0n && state.totalNo > 0n) {
     const total = state.totalYes + state.totalNo
-    if (total > 0n) return Number((state.totalYes * 1000n) / total) / 10
+    return Number((state.totalYes * 1000n) / total) / 10
   }
   const totalAud = audA + audB
   if (totalAud > 0n) {
