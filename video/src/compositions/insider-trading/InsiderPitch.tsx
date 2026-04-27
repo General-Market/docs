@@ -13,6 +13,7 @@ import { CascadeText } from "../../lib/components/Text";
 import { SOURCES } from "../launch/data/sources";
 import { FEATURED_SOURCES, FeaturedCard } from "./SourceCardsWall";
 import { PhoneWithCard, BINARY_MARKET_IDS } from "./PhoneWithCard";
+import { LofiDots } from "../endcard/LofiDots";
 
 const { fontFamily: INTER } = loadInter("normal", {
   subsets: ["latin"],
@@ -60,281 +61,6 @@ export const PITCH_SCENES = {
 } as const;
 
 export const PITCH_DURATION = PITCH_SCENES.closing.end;
-
-// ─── Aurora — soft cyan sweep + bokeh streaks on the white pitch ground.
-//      Two blurred radial lobes plus a scatter of elongated highlights,
-//      all multiply-blended over white so the wrapper turns from sterile
-//      paper into something with depth. Ramps in around the intro→stat
-//      cut (local 66) — the moment the wrapper's black-to-white fade
-//      lands — and breathes through the rest of the pitch. Pure CSS.
-const AURORA_BOUNDARY = PITCH_SCENES.intro.end; // local frame the white ground arrives
-const AURORA_FADE_IN = 14;
-
-type AuroraBokeh = {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  op: number;
-  hue: string;
-  phaseX: number;
-  phaseY: number;
-};
-
-const AURORA_BOKEH: AuroraBokeh[] = [
-  { x: 18, y: 22, w: 340, h: 110, op: 0.32, hue: "rgba(123,201,240,0.85)", phaseX: 0.7, phaseY: 1.3 },
-  { x: 65, y: 14, w: 270, h: 90,  op: 0.24, hue: "rgba(168,220,247,0.78)", phaseX: 1.9, phaseY: 0.4 },
-  { x: 32, y: 78, w: 400, h: 130, op: 0.30, hue: "rgba(95,182,232,0.82)",  phaseX: 0.3, phaseY: 2.1 },
-  { x: 80, y: 64, w: 230, h: 80,  op: 0.22, hue: "rgba(123,201,240,0.78)", phaseX: 2.6, phaseY: 1.7 },
-  { x: 50, y: 92, w: 320, h: 95,  op: 0.20, hue: "rgba(58,142,224,0.72)",  phaseX: 1.1, phaseY: 0.9 },
-  { x: 8,  y: 50, w: 210, h: 70,  op: 0.26, hue: "rgba(168,220,247,0.80)", phaseX: 0.5, phaseY: 2.4 },
-  { x: 92, y: 38, w: 250, h: 80,  op: 0.22, hue: "rgba(123,201,240,0.78)", phaseX: 2.2, phaseY: 0.6 },
-  { x: 42, y: 4,  w: 200, h: 60,  op: 0.18, hue: "rgba(232,244,255,0.85)", phaseX: 1.4, phaseY: 1.0 },
-  { x: 70, y: 86, w: 280, h: 90,  op: 0.24, hue: "rgba(95,182,232,0.80)",  phaseX: 0.9, phaseY: 1.8 },
-  { x: 22, y: 36, w: 300, h: 95,  op: 0.28, hue: "rgba(123,201,240,0.82)", phaseX: 1.7, phaseY: 0.3 },
-];
-
-const AuroraLight: React.FC<{
-  pitchLocal: number;
-  skipFadeIn?: boolean;
-}> = ({ pitchLocal, skipFadeIn = false }) => {
-  const fadeIn = skipFadeIn
-    ? 1
-    : interpolate(
-        pitchLocal,
-        [AURORA_BOUNDARY - 2, AURORA_BOUNDARY + AURORA_FADE_IN],
-        [0, 1],
-        clamp,
-      );
-  if (fadeIn <= 0) return null;
-
-  // Whole-field breath: ±40px lateral, ±24px vertical, 5–6 second cycle.
-  // Keeps the gradient from reading as static wallpaper without ever
-  // calling attention to itself.
-  const breath = Math.sin(pitchLocal * 0.022) * 0.5 + 0.5;
-  const driftX = Math.sin(pitchLocal * 0.012) * 40;
-  const driftY = Math.cos(pitchLocal * 0.009) * 24;
-  const baseOpacity = fadeIn * (0.94 + breath * 0.06);
-
-  return (
-    <AbsoluteFill
-      style={{
-        pointerEvents: "none",
-        opacity: baseOpacity,
-        isolation: "isolate",
-      }}
-    >
-      {/* Lobe 1 — primary cyan sweep, lower-left → upper-right diagonal. */}
-      <AbsoluteFill
-        style={{
-          background:
-            "radial-gradient(ellipse 70% 55% at 28% 72%, rgba(123,201,240,0.82), rgba(123,201,240,0) 65%)",
-          filter: "blur(120px)",
-          transform: `translate(${driftX}px, ${driftY * 0.6}px)`,
-          mixBlendMode: "multiply",
-        }}
-      />
-      {/* Lobe 2 — deeper blue, upper band, slight counter-drift. */}
-      <AbsoluteFill
-        style={{
-          background:
-            "radial-gradient(ellipse 60% 45% at 70% 28%, rgba(58,142,224,0.62), rgba(58,142,224,0) 70%)",
-          filter: "blur(140px)",
-          transform: `translate(${-driftX * 0.7}px, ${-driftY}px)`,
-          mixBlendMode: "multiply",
-        }}
-      />
-      {/* Lobe 3 — pale halo wash, top-right, gentler tint. */}
-      <AbsoluteFill
-        style={{
-          background:
-            "radial-gradient(ellipse 55% 40% at 85% 18%, rgba(180,220,250,0.55), rgba(180,220,250,0) 75%)",
-          filter: "blur(110px)",
-          transform: `translate(${driftX * 0.4}px, ${driftY * 0.4}px)`,
-          mixBlendMode: "multiply",
-        }}
-      />
-      {/* Bokeh streaks — soft elliptical highlights on staggered phases. */}
-      {AURORA_BOKEH.map((b, i) => {
-        const px = Math.sin(pitchLocal * 0.008 + b.phaseX) * 40;
-        const py = Math.cos(pitchLocal * 0.011 + b.phaseY) * 24;
-        const ob = 0.7 + 0.3 * Math.sin(pitchLocal * 0.014 + b.phaseX + b.phaseY);
-        return (
-          <div
-            key={i}
-            style={{
-              position: "absolute",
-              left: `calc(${b.x}% - ${b.w / 2}px)`,
-              top: `calc(${b.y}% - ${b.h / 2}px)`,
-              width: b.w,
-              height: b.h,
-              transform: `translate(${px}px, ${py}px) rotate(-22deg)`,
-              borderRadius: "50%",
-              background: `radial-gradient(ellipse, ${b.hue}, rgba(255,255,255,0) 70%)`,
-              opacity: b.op * ob,
-              filter: "blur(70px)",
-              mixBlendMode: "multiply",
-            }}
-          />
-        );
-      })}
-    </AbsoluteFill>
-  );
-};
-
-// ─── Volumetric light rays — thin cyan streaks emanating from an
-//      off-frame focal point at upper-right. Two stacked conic-gradients
-//      with alternating transparent/cyan stops, blurred to a haze, then
-//      masked at the bottom-left so rays fade INTO the frame instead of
-//      painting it uniformly. mode='background' multiplies behind the
-//      content (turns white into cyan streaks); mode='foreground' uses
-//      screen on top of the content (light brightens dark surfaces, leaves
-//      white untouched). Together they read as light passing through the
-//      scene rather than smeared on it.
-const RAY_FOCUS = "100% -8%";
-
-const buildRayConic = (rotation: number, alpha: number): string => `conic-gradient(
-  from ${rotation}deg at ${RAY_FOCUS},
-  rgba(123,201,240,0) 0deg,
-  rgba(123,201,240,${alpha * 0.55}) 30deg,
-  rgba(123,201,240,0) 35deg,
-  rgba(123,201,240,0) 42deg,
-  rgba(123,201,240,${alpha}) 47deg,
-  rgba(123,201,240,0) 52deg,
-  rgba(123,201,240,0) 59deg,
-  rgba(123,201,240,${alpha * 0.45}) 64deg,
-  rgba(123,201,240,0) 68deg,
-  rgba(123,201,240,0) 76deg,
-  rgba(123,201,240,${alpha * 0.7}) 80deg,
-  rgba(123,201,240,0) 85deg,
-  rgba(123,201,240,0) 92deg,
-  rgba(123,201,240,${alpha * 0.4}) 96deg,
-  rgba(123,201,240,0) 100deg,
-  rgba(123,201,240,0) 360deg
-)`;
-
-const RAY_MASK =
-  "linear-gradient(225deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0.88) 35%, rgba(0,0,0,0.42) 65%, rgba(0,0,0,0) 95%)";
-
-const LightRays: React.FC<{
-  pitchLocal: number;
-  mode: "background" | "foreground";
-  skipFadeIn?: boolean;
-}> = ({ pitchLocal, mode, skipFadeIn = false }) => {
-  const fadeIn = skipFadeIn
-    ? 1
-    : interpolate(
-        pitchLocal,
-        [AURORA_BOUNDARY - 2, AURORA_BOUNDARY + AURORA_FADE_IN],
-        [0, 1],
-        clamp,
-      );
-  if (fadeIn <= 0) return null;
-
-  // Slow sway around the focal point — the off-frame source breathes.
-  const sway = Math.sin(pitchLocal * 0.008) * 4;
-  const pulse = 0.85 + 0.15 * (Math.sin(pitchLocal * 0.018) * 0.5 + 0.5);
-  const baseOpacity = fadeIn * pulse * (mode === "background" ? 1 : 0.5);
-  const blendMode = mode === "background" ? "multiply" : "screen";
-  const rayAlpha = mode === "background" ? 0.42 : 0.65;
-
-  return (
-    <AbsoluteFill
-      style={{
-        pointerEvents: "none",
-        opacity: baseOpacity,
-        mixBlendMode: blendMode,
-        transform: `rotate(${sway * 0.18}deg)`,
-        transformOrigin: "100% 0%",
-        WebkitMaskImage: RAY_MASK,
-        maskImage: RAY_MASK,
-      }}
-    >
-      <AbsoluteFill
-        style={{
-          background: buildRayConic(200 + sway, rayAlpha),
-          filter: "blur(28px)",
-        }}
-      />
-      <AbsoluteFill
-        style={{
-          background: buildRayConic(206 - sway * 0.6, rayAlpha * 0.7),
-          filter: "blur(52px)",
-        }}
-      />
-    </AbsoluteFill>
-  );
-};
-
-// ─── Foreground bokeh — small cyan particles drifting in front of all
-//      content. Normal blend (not screen — screen vanishes on white) at
-//      low opacity, so they read as soft luminous dots regardless of what's
-//      behind them. The eye accepts these as near-camera atmosphere.
-type FgBokeh = {
-  x: number;
-  y: number;
-  r: number;
-  op: number;
-  phaseX: number;
-  phaseY: number;
-  drift: number;
-};
-
-const FG_BOKEH: FgBokeh[] = [
-  { x: 25, y: 30, r: 20, op: 0.55, phaseX: 0.3, phaseY: 1.7, drift: 60 },
-  { x: 70, y: 22, r: 14, op: 0.48, phaseX: 1.4, phaseY: 0.5, drift: 50 },
-  { x: 45, y: 78, r: 24, op: 0.60, phaseX: 2.2, phaseY: 1.1, drift: 70 },
-  { x: 88, y: 60, r: 16, op: 0.50, phaseX: 0.7, phaseY: 2.0, drift: 55 },
-  { x: 12, y: 65, r: 22, op: 0.58, phaseX: 1.9, phaseY: 0.8, drift: 65 },
-  { x: 58, y: 40, r: 12, op: 0.42, phaseX: 0.1, phaseY: 1.3, drift: 45 },
-  { x: 36, y: 12, r: 10, op: 0.40, phaseX: 2.7, phaseY: 0.2, drift: 40 },
-  { x: 80, y: 88, r: 18, op: 0.52, phaseX: 1.1, phaseY: 2.3, drift: 60 },
-];
-
-const ForegroundBokeh: React.FC<{
-  pitchLocal: number;
-  skipFadeIn?: boolean;
-}> = ({ pitchLocal, skipFadeIn = false }) => {
-  const fadeIn = skipFadeIn
-    ? 1
-    : interpolate(
-        pitchLocal,
-        [AURORA_BOUNDARY - 2, AURORA_BOUNDARY + AURORA_FADE_IN],
-        [0, 1],
-        clamp,
-      );
-  if (fadeIn <= 0) return null;
-
-  return (
-    <AbsoluteFill style={{ pointerEvents: "none", opacity: fadeIn }}>
-      {FG_BOKEH.map((b, i) => {
-        const px = Math.sin(pitchLocal * 0.009 + b.phaseX) * b.drift;
-        const py = Math.cos(pitchLocal * 0.011 + b.phaseY) * (b.drift * 0.6);
-        const breath =
-          0.72 + 0.28 * Math.sin(pitchLocal * 0.016 + b.phaseX + b.phaseY);
-        const size = b.r * 6;
-        return (
-          <div
-            key={i}
-            style={{
-              position: "absolute",
-              left: `calc(${b.x}% - ${size / 2}px)`,
-              top: `calc(${b.y}% - ${size / 2}px)`,
-              width: size,
-              height: size,
-              borderRadius: "50%",
-              background:
-                "radial-gradient(circle, rgba(255,255,255,0.95), rgba(168,220,247,0.55) 28%, rgba(123,201,240,0.18) 55%, rgba(123,201,240,0) 75%)",
-              transform: `translate(${px}px, ${py}px)`,
-              opacity: b.op * breath,
-              filter: `blur(${b.r * 0.55}px)`,
-            }}
-          />
-        );
-      })}
-    </AbsoluteFill>
-  );
-};
 
 // ─── Reveal — words rise from below, blur dissolves (CascadeText).
 //      Wrapped in a Sequence so useCurrentFrame resets to the mount moment,
@@ -2071,17 +1797,11 @@ const ClosingLogoGrid: React.FC<{ local: number }> = ({ local }) => {
   const count = CLOSING_GRID_COLS * CLOSING_GRID_ROWS;
 
   return (
-    <AbsoluteFill style={{ background: WHITE }}>
-      {/* Aurora + background rays — the wrapper's set is hidden by this
-          opaque white, so we re-paint here so the closing inherits the
-          same depth as the rest of the pitch. Skip the fade-in: by the
-          time we're in the closing, the field is fully established. */}
-      <AuroraLight pitchLocal={local + PITCH_SCENES.closing.start} skipFadeIn />
-      <LightRays
-        pitchLocal={local + PITCH_SCENES.closing.start}
-        mode="background"
-        skipFadeIn
-      />
+    <AbsoluteFill>
+      {/* Lofi-dot backdrop — replaces the closing's previous opaque white
+          so the halftone broll is the page ground that the GM lockup
+          sits against. */}
+      <LofiDots />
       <div
         style={{
           position: "absolute",
@@ -2243,20 +1963,6 @@ const ClosingScene: React.FC<{
           }}
         />
       </AbsoluteFill>
-
-      {/* Closing-local foreground volumetrics — rays in screen blend
-          across the dark logo container, plus near-camera bokeh. The
-          wrapper's foreground set is occluded by the closing's opaque
-          white, so we restate them here. */}
-      <LightRays
-        pitchLocal={local + PITCH_SCENES.closing.start}
-        mode="foreground"
-        skipFadeIn
-      />
-      <ForegroundBokeh
-        pitchLocal={local + PITCH_SCENES.closing.start}
-        skipFadeIn
-      />
     </AbsoluteFill>
   );
 };
@@ -2535,11 +2241,10 @@ export const InsiderPitch: React.FC<{ startFrame: number }> = ({
         isolation: "isolate",
       }}
     >
-      {/* Aurora + background rays — soft cyan depth and volumetric streaks
-          BEHIND every scene. Scenes that paint their own opaque background
-          hide these (see ClosingLogoGrid for the closing's separate set). */}
-      <AuroraLight pitchLocal={local} />
-      <LightRays pitchLocal={local} mode="background" />
+      {/* Lofi-dot backdrop — replaces the previous cyan light field.
+          Sits behind every scene; scenes that paint their own opaque
+          background hide it. */}
+      <LofiDots />
 
       {activeKey === "intro" ? (
         <IntroScene
@@ -2587,14 +2292,6 @@ export const InsiderPitch: React.FC<{ startFrame: number }> = ({
       {/* Single phone instance spanning Stat → Point 1, rolling across
           the cut instead of hard-mounting twice. */}
       <SharedPhoneLayer local={local} />
-
-      {/* Foreground volumetrics — rays passing IN FRONT of the content
-          (screen blend brightens dark surfaces with cyan, leaves white
-          alone) and bokeh particles floating near-camera. The pair adds
-          the "light passing through space" feel that the wallpaper
-          gradient alone couldn't carry. */}
-      <LightRays pitchLocal={local} mode="foreground" />
-      <ForegroundBokeh pitchLocal={local} />
     </AbsoluteFill>
   );
 };

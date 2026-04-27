@@ -77,6 +77,7 @@ import {
 } from "./compositions/launch/theme";
 import { ParticleEmojiGravity } from "./scenes/ParticleAnimations";
 import { EndCard } from "./compositions/endcard/EndCard";
+import { LofiDots } from "./compositions/endcard/LofiDots";
 import {
   TOTAL_FRAMES as ENDCARD_DURATION,
   FPS as ENDCARD_FPS,
@@ -142,6 +143,16 @@ export const RemotionRoot: React.FC = () => {
         id="EndCard"
         component={EndCard}
         durationInFrames={ENDCARD_DURATION}
+        fps={ENDCARD_FPS}
+        width={1920}
+        height={1080}
+      />
+
+      {/* ═══ LOFI DOTS — hex shader bench, full broll length (5m11s) ═══ */}
+      <Composition
+        id="LofiDots"
+        component={LofiDots}
+        durationInFrames={Math.round(311 * ENDCARD_FPS)}
         fps={ENDCARD_FPS}
         width={1920}
         height={1080}
