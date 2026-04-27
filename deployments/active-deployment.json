@@ -36,5 +36,6 @@
     "user": "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc",
     "testUser": "0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4"
   },
-  "settlementChainId": 14601
+  "settlementChainId": 14601,
+  "deployBlock": 851669
 }
