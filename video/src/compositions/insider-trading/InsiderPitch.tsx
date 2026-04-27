@@ -61,6 +61,127 @@ export const PITCH_SCENES = {
 
 export const PITCH_DURATION = PITCH_SCENES.closing.end;
 
+// ─── Aurora — soft cyan sweep + bokeh streaks on the white pitch ground.
+//      Two blurred radial lobes plus a scatter of elongated highlights,
+//      all multiply-blended over white so the wrapper turns from sterile
+//      paper into something with depth. Ramps in around the intro→stat
+//      cut (local 66) — the moment the wrapper's black-to-white fade
+//      lands — and breathes through the rest of the pitch. Pure CSS.
+const AURORA_BOUNDARY = PITCH_SCENES.intro.end; // local frame the white ground arrives
+const AURORA_FADE_IN = 14;
+
+type AuroraBokeh = {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  op: number;
+  hue: string;
+  phaseX: number;
+  phaseY: number;
+};
+
+const AURORA_BOKEH: AuroraBokeh[] = [
+  { x: 18, y: 22, w: 340, h: 110, op: 0.32, hue: "rgba(123,201,240,0.85)", phaseX: 0.7, phaseY: 1.3 },
+  { x: 65, y: 14, w: 270, h: 90,  op: 0.24, hue: "rgba(168,220,247,0.78)", phaseX: 1.9, phaseY: 0.4 },
+  { x: 32, y: 78, w: 400, h: 130, op: 0.30, hue: "rgba(95,182,232,0.82)",  phaseX: 0.3, phaseY: 2.1 },
+  { x: 80, y: 64, w: 230, h: 80,  op: 0.22, hue: "rgba(123,201,240,0.78)", phaseX: 2.6, phaseY: 1.7 },
+  { x: 50, y: 92, w: 320, h: 95,  op: 0.20, hue: "rgba(58,142,224,0.72)",  phaseX: 1.1, phaseY: 0.9 },
+  { x: 8,  y: 50, w: 210, h: 70,  op: 0.26, hue: "rgba(168,220,247,0.80)", phaseX: 0.5, phaseY: 2.4 },
+  { x: 92, y: 38, w: 250, h: 80,  op: 0.22, hue: "rgba(123,201,240,0.78)", phaseX: 2.2, phaseY: 0.6 },
+  { x: 42, y: 4,  w: 200, h: 60,  op: 0.18, hue: "rgba(232,244,255,0.85)", phaseX: 1.4, phaseY: 1.0 },
+  { x: 70, y: 86, w: 280, h: 90,  op: 0.24, hue: "rgba(95,182,232,0.80)",  phaseX: 0.9, phaseY: 1.8 },
+  { x: 22, y: 36, w: 300, h: 95,  op: 0.28, hue: "rgba(123,201,240,0.82)", phaseX: 1.7, phaseY: 0.3 },
+];
+
+const AuroraLight: React.FC<{
+  pitchLocal: number;
+  skipFadeIn?: boolean;
+}> = ({ pitchLocal, skipFadeIn = false }) => {
+  const fadeIn = skipFadeIn
+    ? 1
+    : interpolate(
+        pitchLocal,
+        [AURORA_BOUNDARY - 2, AURORA_BOUNDARY + AURORA_FADE_IN],
+        [0, 1],
+        clamp,
+      );
+  if (fadeIn <= 0) return null;
+
+  // Whole-field breath: ±40px lateral, ±24px vertical, 5–6 second cycle.
+  // Keeps the gradient from reading as static wallpaper without ever
+  // calling attention to itself.
+  const breath = Math.sin(pitchLocal * 0.022) * 0.5 + 0.5;
+  const driftX = Math.sin(pitchLocal * 0.012) * 40;
+  const driftY = Math.cos(pitchLocal * 0.009) * 24;
+  const baseOpacity = fadeIn * (0.94 + breath * 0.06);
+
+  return (
+    <AbsoluteFill
+      style={{
+        pointerEvents: "none",
+        opacity: baseOpacity,
+        isolation: "isolate",
+      }}
+    >
+      {/* Lobe 1 — primary cyan sweep, lower-left → upper-right diagonal. */}
+      <AbsoluteFill
+        style={{
+          background:
+            "radial-gradient(ellipse 70% 55% at 28% 72%, rgba(123,201,240,0.82), rgba(123,201,240,0) 65%)",
+          filter: "blur(120px)",
+          transform: `translate(${driftX}px, ${driftY * 0.6}px)`,
+          mixBlendMode: "multiply",
+        }}
+      />
+      {/* Lobe 2 — deeper blue, upper band, slight counter-drift. */}
+      <AbsoluteFill
+        style={{
+          background:
+            "radial-gradient(ellipse 60% 45% at 70% 28%, rgba(58,142,224,0.62), rgba(58,142,224,0) 70%)",
+          filter: "blur(140px)",
+          transform: `translate(${-driftX * 0.7}px, ${-driftY}px)`,
+          mixBlendMode: "multiply",
+        }}
+      />
+      {/* Lobe 3 — pale halo wash, top-right, gentler tint. */}
+      <AbsoluteFill
+        style={{
+          background:
+            "radial-gradient(ellipse 55% 40% at 85% 18%, rgba(180,220,250,0.55), rgba(180,220,250,0) 75%)",
+          filter: "blur(110px)",
+          transform: `translate(${driftX * 0.4}px, ${driftY * 0.4}px)`,
+          mixBlendMode: "multiply",
+        }}
+      />
+      {/* Bokeh streaks — soft elliptical highlights on staggered phases. */}
+      {AURORA_BOKEH.map((b, i) => {
+        const px = Math.sin(pitchLocal * 0.008 + b.phaseX) * 40;
+        const py = Math.cos(pitchLocal * 0.011 + b.phaseY) * 24;
+        const ob = 0.7 + 0.3 * Math.sin(pitchLocal * 0.014 + b.phaseX + b.phaseY);
+        return (
+          <div
+            key={i}
+            style={{
+              position: "absolute",
+              left: `calc(${b.x}% - ${b.w / 2}px)`,
+              top: `calc(${b.y}% - ${b.h / 2}px)`,
+              width: b.w,
+              height: b.h,
+              transform: `translate(${px}px, ${py}px) rotate(-22deg)`,
+              borderRadius: "50%",
+              background: `radial-gradient(ellipse, ${b.hue}, rgba(255,255,255,0) 70%)`,
+              opacity: b.op * ob,
+              filter: "blur(70px)",
+              mixBlendMode: "multiply",
+            }}
+          />
+        );
+      })}
+    </AbsoluteFill>
+  );
+};
+
 // ─── Reveal — words rise from below, blur dissolves (CascadeText).
 //      Wrapped in a Sequence so useCurrentFrame resets to the mount moment,
 //      and in a difference-blend div so every word auto-inverts against any
@@ -1797,6 +1918,11 @@ const ClosingLogoGrid: React.FC<{ local: number }> = ({ local }) => {
 
   return (
     <AbsoluteFill style={{ background: WHITE }}>
+      {/* Aurora wash — the wrapper's aurora is hidden by this opaque
+          white, so we re-paint it here so the closing inherits the
+          same depth as the rest of the pitch. Skip the fade-in: by the
+          time we're in the closing, the aurora is fully established. */}
+      <AuroraLight pitchLocal={local + PITCH_SCENES.closing.start} skipFadeIn />
       <div
         style={{
           position: "absolute",
@@ -2236,6 +2362,11 @@ export const InsiderPitch: React.FC<{ startFrame: number }> = ({
         isolation: "isolate",
       }}
     >
+      {/* Aurora — soft cyan depth on the white ground. Sits behind every
+          scene; scenes that paint their own opaque background hide it
+          (see ClosingLogoGrid for the closing's separate aurora call). */}
+      <AuroraLight pitchLocal={local} />
+
       {activeKey === "intro" ? (
         <IntroScene
           local={sceneLocal}
