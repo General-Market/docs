@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vision — A Case Study · GeneralMarket</title>
+<meta name="description" content="A prediction market for things nobody hypes. Train delays. Mountain weather. Energy auctions. The thesis is uncomfortable: where attention is thin, edges survive.">
+<meta property="og:title" content="Vision — A Case Study">
+<meta property="og:description" content="A prediction market for things nobody hypes. The thesis is uncomfortable: where attention is thin, edges survive.">
+<meta property="og:type" content="article">
+<meta name="theme-color" content="#0a0908">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;0,700;1,400&family=Spectral:ital,wght@0,300;0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0908;
+    --bg-warm: #100d0a;
+    --surface: #14110f;
+    --surface-2: #1d1813;
+    --border: #2a2520;
+    --border-bright: #3d342a;
+    --text: #ece5d4;
+    --text-muted: #8a8275;
+    --text-dim: #5a5248;
+    --accent: #c9a66b;
+    --accent-bright: #e0c189;
+    --accent-dim: #6b5839;
+    --loss: #b85a48;
+    --win: #7a9b6e;
+    --serif-display: 'Crimson Pro', Georgia, serif;
+    --serif: 'Spectral', Georgia, serif;
+    --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+    --max: 720px;
+    --max-wide: 1080px;
+  }
+
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--serif);
+    font-size: 18px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+    background-image:
+      radial-gradient(ellipse 80% 60% at 50% 0%, rgba(201, 166, 107, 0.04), transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 70%, rgba(201, 166, 107, 0.02), transparent 70%);
+    background-attachment: fixed;
+  }
+
+  ::selection { background: var(--accent); color: var(--bg); }
+
+  .container { max-width: var(--max); margin: 0 auto; padding: 0 24px; }
+  .container-wide { max-width: var(--max-wide); margin: 0 auto; padding: 0 24px; }
+
+  /* Site header */
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: rgba(10, 9, 8, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  .site-header .nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    max-width: var(--max-wide);
+    margin: 0 auto;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.05em;
+  }
+  .site-header a { color: var(--text); text-decoration: none; }
+  .site-header a:hover { color: var(--accent); }
+  .site-header .crumb { color: var(--text-muted); }
+  .site-header .crumb .sep { margin: 0 0.5em; color: var(--text-dim); }
+  .site-header .meta { color: var(--text-dim); font-variant-numeric: tabular-nums; }
+
+  /* Sections */
+  section { padding: 7rem 0; border-bottom: 1px solid var(--border); position: relative; }
+  section:last-of-type { border-bottom: none; }
+
+  /* Typography */
+  h1 {
+    font-family: var(--serif-display);
+    font-size: clamp(4rem, 14vw, 9rem);
+    font-weight: 700;
+    line-height: 0.92;
+    letter-spacing: -0.04em;
+    color: var(--text);
+  }
+  h1 .period { color: var(--accent); }
+  h2 {
+    font-family: var(--serif-display);
+    font-size: clamp(2rem, 4.5vw, 3.25rem);
+    font-weight: 600;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin-bottom: 2rem;
+    color: var(--text);
+  }
+  h3 {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.25em;
+    color: var(--accent);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  h3::before {
+    content: "";
+    display: inline-block;
+    width: 24px;
+    height: 1px;
+    background: var(--accent);
+  }
+  p { margin-bottom: 1.4rem; max-width: 60ch; }
+  p.lede {
+    font-family: var(--serif-display);
+    font-size: clamp(1.25rem, 2.2vw, 1.6rem);
+    font-weight: 400;
+    line-height: 1.4;
+    color: var(--text-muted);
+    max-width: 30ch;
+  }
+  em { color: var(--accent-bright); font-style: italic; }
+  strong { color: var(--text); font-weight: 600; }
+
+  .label, .num {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+  }
+  .label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--text-muted);
+  }
+
+  /* Hero */
+  .hero { padding: 10rem 0 6rem; border-bottom: 1px solid var(--border); }
+  .hero .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3em;
+    color: var(--accent);
+    margin-bottom: 3rem;
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+  .hero .eyebrow .dot {
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--accent);
+    animation: pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+  .hero h1 { margin-bottom: 3rem; }
+  .hero .subtitle {
+    font-family: var(--serif-display);
+    font-size: clamp(1.4rem, 2.6vw, 1.85rem);
+    line-height: 1.4;
+    color: var(--text);
+    max-width: 28ch;
+    font-weight: 400;
+  }
+  .hero .subtitle .accent { color: var(--accent); font-style: italic; }
+  .hero .meta {
+    margin-top: 5rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+  }
+  .hero .meta .item .label { display: block; margin-bottom: 0.4rem; }
+  .hero .meta .item .val {
+    font-family: var(--mono);
+    font-size: 0.95rem;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Pool simulator */
+  .pool {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 2.5rem;
+    margin: 3rem 0 2rem;
+    position: relative;
+  }
+  .pool-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 2rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .pool-question {
+    font-family: var(--serif-display);
+    font-size: 1.25rem;
+    color: var(--text);
+    line-height: 1.3;
+  }
+  .pool-clock {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+  .pool-bars {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+  }
+  .pool-side {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .pool-side-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .pool-side-label .name { color: var(--text); font-weight: 500; }
+  .pool-side-label .prob { color: var(--accent); font-variant-numeric: tabular-nums; }
+  .pool-bar {
+    height: 64px;
+    background: var(--bg-warm);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+  }
+  .pool-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-dim), var(--accent));
+    transition: width 600ms cubic-bezier(0.22, 1, 0.36, 1);
+    position: relative;
+  }
+  .pool-bar.no .pool-bar-fill {
+    background: linear-gradient(90deg, #4a3a36, var(--loss));
+  }
+  .pool-bar-amount {
+    position: absolute;
+    top: 50%;
+    left: 16px;
+    transform: translateY(-50%);
+    font-family: var(--mono);
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+  }
+  .pool-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+  }
+  .pool-actions .col {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .pool-btn {
+    flex: 1;
+    padding: 0.85rem 0.5rem;
+    background: transparent;
+    border: 1px solid var(--border-bright);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 180ms;
+    border-radius: 3px;
+    letter-spacing: 0.02em;
+  }
+  .pool-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(201, 166, 107, 0.05);
+  }
+  .pool-btn:active { transform: translateY(1px); }
+  .pool-btn.no:hover {
+    border-color: var(--loss);
+    color: var(--loss);
+    background: rgba(184, 90, 72, 0.05);
+  }
+  .pool-receipt {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 1rem;
+    padding: 1.25rem;
+    background: var(--bg-warm);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    margin-bottom: 1.25rem;
+  }
+  .pool-receipt .row { display: flex; flex-direction: column; gap: 0.3rem; }
+  .pool-receipt .row .k {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--text-muted);
+  }
+  .pool-receipt .row .v {
+    font-family: var(--mono);
+    font-size: 1rem;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+  .pool-receipt .row .v.win { color: var(--win); }
+  .pool-receipt .row .v.loss { color: var(--loss); }
+  .pool-reset {
+    display: block;
+    margin-left: auto;
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    cursor: pointer;
+    padding: 0.4rem 0;
+  }
+  .pool-reset:hover { color: var(--accent); }
+
+  .pool-foot {
+    font-family: var(--serif);
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    font-style: italic;
+    margin-top: 1.5rem;
+    max-width: 50ch;
+  }
+
+  /* Batch clock */
+  .clock-wrap {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+    align-items: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 2.5rem;
+    margin: 3rem 0;
+  }
+  @media (max-width: 640px) {
+    .clock-wrap { grid-template-columns: 1fr; gap: 2rem; }
+  }
+  .clock-svg-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .clock-svg {
+    width: 100%;
+    max-width: 280px;
+    height: auto;
+  }
+  .clock-info { display: flex; flex-direction: column; gap: 1.5rem; }
+  .clock-state {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.25em;
+    color: var(--accent);
+  }
+  .clock-state.settling { color: var(--loss); }
+  .clock-time {
+    font-family: var(--mono);
+    font-size: 2.5rem;
+    font-weight: 500;
+    line-height: 1;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+  .clock-desc {
+    font-family: var(--serif);
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+  .clock-speed {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+  .clock-speed button {
+    flex: 1;
+    padding: 0.6rem;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 180ms;
+  }
+  .clock-speed button:hover { border-color: var(--accent-dim); color: var(--text); }
+  .clock-speed button.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(201, 166, 107, 0.06);
+  }
+
+  /* Sources */
+  .sources-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1rem;
+    margin: 3rem 0;
+  }
+  .source-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1.5rem;
+    transition: all 240ms cubic-bezier(0.22, 1, 0.36, 1);
+    cursor: default;
+  }
+  .source-card:hover {
+    border-color: var(--accent-dim);
+    background: var(--surface-2);
+    transform: translateY(-2px);
+  }
+  .source-card .src-tag {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.75rem;
+  }
+  .source-card .src-name {
+    font-family: var(--serif-display);
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 0.4rem;
+  }
+  .source-card .src-region {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    margin-bottom: 1rem;
+  }
+  .source-card .src-example {
+    font-family: var(--serif);
+    font-size: 0.9rem;
+    font-style: italic;
+    color: var(--text-muted);
+    line-height: 1.4;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Rejected list */
+  .rejected-list {
+    list-style: none;
+    margin: 3rem 0;
+    padding: 0;
+    border-top: 1px solid var(--border);
+  }
+  .rejected-list li {
+    font-family: var(--serif-display);
+    font-size: clamp(1.1rem, 2.2vw, 1.4rem);
+    color: var(--text-muted);
+    padding: 1.1rem 0;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    padding-left: 4rem;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 600ms ease, transform 600ms ease;
+  }
+  .rejected-list li.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .rejected-list li::before {
+    content: attr(data-num);
+    position: absolute;
+    left: 0;
+    top: 1.3rem;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.15em;
+    color: var(--text-dim);
+  }
+  .rejected-list li::after {
+    content: "";
+    position: absolute;
+    left: 4rem;
+    right: 0;
+    top: 50%;
+    height: 1px;
+    background: var(--loss);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 800ms cubic-bezier(0.65, 0, 0.35, 1) 400ms;
+  }
+  .rejected-list li.visible::after { transform: scaleX(1); }
+
+  .kept-block {
+    margin-top: 4rem;
+    padding: 3rem 0;
+    border-top: 2px solid var(--accent);
+    border-bottom: 1px solid var(--border);
+    text-align: center;
+  }
+  .kept-block .label-kept {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3em;
+    color: var(--accent);
+    margin-bottom: 1.5rem;
+  }
+  .kept-block .quote {
+    font-family: var(--serif-display);
+    font-size: clamp(1.6rem, 3.5vw, 2.4rem);
+    font-style: italic;
+    line-height: 1.3;
+    color: var(--text);
+    max-width: none;
+  }
+
+  /* Architecture */
+  .arch {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 2rem;
+    margin: 3rem 0;
+    overflow: hidden;
+  }
+  .arch-svg { width: 100%; height: auto; max-height: 460px; }
+  .arch-layer {
+    transition: opacity 240ms;
+    cursor: pointer;
+  }
+  .arch-layer:hover .arch-rect { stroke: var(--accent); stroke-width: 1.5; }
+  .arch-layer:hover .arch-text { fill: var(--accent); }
+  .arch-rect {
+    fill: var(--bg-warm);
+    stroke: var(--border-bright);
+    stroke-width: 1;
+    transition: all 240ms;
+  }
+  .arch-text {
+    font-family: var(--mono);
+    font-size: 13px;
+    fill: var(--text);
+    transition: fill 240ms;
+  }
+  .arch-text.sub {
+    font-size: 10px;
+    fill: var(--text-muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .arch-arrow {
+    stroke: var(--text-dim);
+    stroke-width: 1;
+    fill: none;
+    marker-end: url(#arr);
+  }
+  .arch-detail {
+    margin-top: 1.5rem;
+    padding: 1.25rem;
+    background: var(--bg-warm);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+    min-height: 5rem;
+    transition: all 240ms;
+  }
+  .arch-detail .layer-name {
+    color: var(--accent);
+    font-weight: 500;
+    margin-bottom: 0.4rem;
+    display: block;
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+  }
+
+  /* Numbers */
+  .numbers {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1px;
+    margin: 3rem 0;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .num-cell {
+    background: var(--surface);
+    padding: 2rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .num-cell .k {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--text-muted);
+  }
+  .num-cell .v {
+    font-family: var(--mono);
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    font-weight: 500;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .num-cell .v.live::after {
+    content: "";
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background: var(--win);
+    border-radius: 50%;
+    margin-left: 0.5rem;
+    box-shadow: 0 0 6px var(--win);
+    animation: pulse 2.4s ease-in-out infinite;
+    vertical-align: middle;
+    margin-bottom: 4px;
+  }
+  .num-cell .note {
+    font-family: var(--serif);
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    font-style: italic;
+  }
+
+  /* Footer */
+  footer {
+    padding: 6rem 0 4rem;
+    border-top: 1px solid var(--border);
+    background: var(--bg-warm);
+  }
+  footer .container { display: flex; flex-direction: column; gap: 2rem; }
+  footer .sig {
+    font-family: var(--serif-display);
+    font-size: 1.25rem;
+    color: var(--text);
+    line-height: 1.5;
+    max-width: 40ch;
+  }
+  footer .links {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+  }
+  footer .links a {
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 180ms;
+  }
+  footer .links a:hover { color: var(--accent); }
+  footer .colophon {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+    line-height: 1.6;
+  }
+
+  /* Reveal on scroll */
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 800ms cubic-bezier(0.22, 1, 0.36, 1), transform 800ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .reveal.in { opacity: 1; transform: translateY(0); }
+
+  @media (max-width: 640px) {
+    section { padding: 5rem 0; }
+    .hero { padding: 7rem 0 4rem; }
+    .pool { padding: 1.5rem; }
+    .pool-actions { grid-template-columns: 1fr; }
+    .clock-wrap { padding: 1.5rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav">
+    <a href="https://generalmarket.io">GeneralMarket</a>
+    <span class="crumb"><span class="sep">/</span>Case Studies<span class="sep">/</span><span style="color:var(--accent)">Vision</span></span>
+    <span class="meta">№ 001 · 2026</span>
+  </div>
+</header>
+
+<main>
+
+<section class="hero">
+  <div class="container">
+    <div class="eyebrow">
+      <span class="dot"></span>
+      <span>Case Study № 001 — April 2026</span>
+    </div>
+    <h1>Vision<span class="period">.</span></h1>
+    <p class="subtitle">A prediction market for things <span class="accent">nobody hypes</span>. Train delays. Mountain weather. The unglamorous half of reality.</p>
+    <div class="meta">
+      <div class="item"><span class="label">Built on</span><span class="val">Orbit L3 · 111222333</span></div>
+      <div class="item"><span class="label">Mechanic</span><span class="val">Parimutuel</span></div>
+      <div class="item"><span class="label">Resolution</span><span class="val">2 min – 60 min</span></div>
+      <div class="item"><span class="label">Status</span><span class="val" style="color:var(--win)">Live</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="thesis">
+  <div class="container">
+    <h3>The honest reason</h3>
+    <h2>We tried to write a normal landing page. It kept lying.</h2>
+    <p>For weeks, drafts in the shape every prediction market reaches for. <em>Trade the headlines.</em> <em>Bet on what matters.</em> <em>Your AI works for you while you sleep.</em> All technically true. All useless.</p>
+    <p>What is true and useful is something else. Polymarket already ate the scenarios crowds care about — elections, conflicts, the Oscars. What was left over was an inheritance: train timetables, alpine weather stations, the unglamorous half of reality.</p>
+    <p>We kept the unglamorous half. The thesis is uncomfortable: <strong>where attention is thin, edges survive</strong>.</p>
+  </div>
+</section>
+
+<section id="mechanic">
+  <div class="container">
+    <h3>The mechanic</h3>
+    <h2>Parimutuel. The market makes itself.</h2>
+    <p>No order book. No counterparty matching. You bet into a pool. When the market resolves, the pool divides among the winners by share. The later you bet on the favorite, the worse your odds. The market punishes timidity — as it should.</p>
+    <p>Try it. The math is real; only the data is invented.</p>
+
+    <div class="pool" id="pool">
+      <div class="pool-header">
+        <div class="pool-question">ICE 1227 to Berlin Hbf — delayed by more than five minutes?</div>
+        <div class="pool-clock" id="poolClock">closes in 04:23</div>
+      </div>
+      <div class="pool-bars">
+        <div class="pool-side">
+          <div class="pool-side-label"><span class="name">Yes</span><span class="prob" id="probYes">50.0%</span></div>
+          <div class="pool-bar yes">
+            <div class="pool-bar-fill" id="barYes" style="width:50%"></div>
+            <div class="pool-bar-amount" id="amtYes">$1,000</div>
+          </div>
+        </div>
+        <div class="pool-side">
+          <div class="pool-side-label"><span class="name">No</span><span class="prob" id="probNo">50.0%</span></div>
+          <div class="pool-bar no">
+            <div class="pool-bar-fill" id="barNo" style="width:50%"></div>
+            <div class="pool-bar-amount" id="amtNo">$1,000</div>
+          </div>
+        </div>
+      </div>
+      <div class="pool-actions">
+        <div class="col">
+          <button class="pool-btn" data-side="yes" data-amt="1">+$1 yes</button>
+          <button class="pool-btn" data-side="yes" data-amt="10">+$10 yes</button>
+          <button class="pool-btn" data-side="yes" data-amt="100">+$100 yes</button>
+        </div>
+        <div class="col">
+          <button class="pool-btn no" data-side="no" data-amt="1">+$1 no</button>
+          <button class="pool-btn no" data-side="no" data-amt="10">+$10 no</button>
+          <button class="pool-btn no" data-side="no" data-amt="100">+$100 no</button>
+        </div>
+      </div>
+      <div class="pool-receipt">
+        <div class="row"><span class="k">Your stake</span><span class="v" id="myStake">$0</span></div>
+        <div class="row"><span class="k">If yes wins</span><span class="v win" id="payYes">$0</span></div>
+        <div class="row"><span class="k">If no wins</span><span class="v win" id="payNo">$0</span></div>
+        <div class="row"><span class="k">Total pool</span><span class="v" id="totalPool">$2,000</span></div>
+      </div>
+      <button class="pool-reset" id="poolReset">↺ reset pool</button>
+    </div>
+
+    <p class="pool-foot">Notice what happens when you stack one side. The implied probability moves. So does your payout. The pool is its own price discovery — which is to say, no price discovery at all. Just gravity.</p>
+  </div>
+</section>
+
+<section id="batch">
+  <div class="container">
+    <h3>The clock</h3>
+    <h2>Every market is a fixed-window auction.</h2>
+    <p>Two minutes. Ten minutes. An hour — depending on the source. The window opens, bets accumulate, the window closes, three oracles agree on the outcome, the pool settles. Then it does it again. Forever, until the data source dies or we do.</p>
+
+    <div class="clock-wrap">
+      <div class="clock-svg-wrap">
+        <svg class="clock-svg" viewBox="0 0 200 200">
+          <circle cx="100" cy="100" r="88" fill="none" stroke="var(--border)" stroke-width="1"/>
+          <circle id="arcBet" cx="100" cy="100" r="88" fill="none" stroke="var(--accent-dim)" stroke-width="6" stroke-dasharray="331.6" stroke-dashoffset="0" transform="rotate(-90 100 100)"/>
+          <circle id="arcSettle" cx="100" cy="100" r="88" fill="none" stroke="var(--loss)" stroke-width="6" stroke-dasharray="221.06 552.7" stroke-dashoffset="-331.6" transform="rotate(-90 100 100)" opacity="0.4"/>
+          <line id="hand" x1="100" y1="100" x2="100" y2="22" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" transform="rotate(0 100 100)"/>
+          <circle cx="100" cy="100" r="4" fill="var(--accent)"/>
+          <text x="100" y="14" text-anchor="middle" font-family="var(--mono)" font-size="9" fill="var(--text-dim)" letter-spacing="0.2em">OPEN</text>
+          <text x="186" y="104" text-anchor="end" font-family="var(--mono)" font-size="9" fill="var(--text-dim)" letter-spacing="0.2em">CLOSE</text>
+          <text x="100" y="194" text-anchor="middle" font-family="var(--mono)" font-size="9" fill="var(--text-dim)" letter-spacing="0.2em">SETTLE</text>
+        </svg>
+      </div>
+      <div class="clock-info">
+        <div class="clock-state" id="clockState">Betting</div>
+        <div class="clock-time" id="clockTime">02:34</div>
+        <div class="clock-desc" id="clockDesc">The window is open. Anyone can join the pool. Odds drift with each new bet.</div>
+        <div>
+          <span class="label" style="display:block;margin-bottom:0.5rem">Speed</span>
+          <div class="clock-speed">
+            <button data-speed="1" class="active">1×</button>
+            <button data-speed="20">20×</button>
+            <button data-speed="100">100×</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p style="font-style:italic;color:var(--text-muted);margin-top:0.5rem">A market that ends every two minutes is a market with no time to lie.</p>
+  </div>
+</section>
+
+<section id="sources">
+  <div class="container">
+    <h3>The water table</h3>
+    <h2>A market needs a feed it cannot bribe.</h2>
+    <p>Vision started with three sources. Deutsche Bahn timetables, scraped from an internal API the railway probably forgot it exposed. Alpine weather, from stations placed on summits by people who measure things for a living. The Sonic p2pool fee feed, because someone on the team wanted to bet on gas markets and would not let it go.</p>
+    <p>Each source taught the system something different about how to settle. The trains taught us about <em>delayed truth</em> — outcomes that arrive late, by minutes. The weather taught us about <em>ambiguity</em> — what counts as "above 40 km/h" when the gusts are stochastic. The fees taught us about <em>frequency</em> — markets that resolve every two minutes need consensus that resolves faster.</p>
+
+    <div class="sources-grid">
+      <div class="source-card">
+        <div class="src-tag">Transit</div>
+        <div class="src-name">Deutsche Bahn</div>
+        <div class="src-region">DE · IRIS-TTS feed</div>
+        <div class="src-example">"ICE 1227 to Berlin Hbf — delayed by more than five minutes?"</div>
+      </div>
+      <div class="source-card">
+        <div class="src-tag">Climate</div>
+        <div class="src-name">Alpine Weather</div>
+        <div class="src-region">DE/AT/CH · summit stations</div>
+        <div class="src-example">"Wind speed at the Zugspitze above 40 km/h between 18:00 and 19:00?"</div>
+      </div>
+      <div class="source-card">
+        <div class="src-tag">On-chain</div>
+        <div class="src-name">Sonic p2pool</div>
+        <div class="src-region">Sonic L1 · fee oracle</div>
+        <div class="src-example">"Average block fee on Sonic above 0.001 S in the next two minutes?"</div>
+      </div>
+      <div class="source-card">
+        <div class="src-tag">Markets</div>
+        <div class="src-name">Bitget Spot</div>
+        <div class="src-region">CEX · BTC, ETH, SOL</div>
+        <div class="src-example">"BTC closes above $73,000 at the next ten-minute candle?"</div>
+      </div>
+      <div class="source-card">
+        <div class="src-tag">Energy</div>
+        <div class="src-name">EPEX Spot</div>
+        <div class="src-region">EU · day-ahead auction</div>
+        <div class="src-example">"German day-ahead price negative for any hour tomorrow?"</div>
+      </div>
+      <div class="source-card">
+        <div class="src-tag">Forthcoming</div>
+        <div class="src-name">Air quality</div>
+        <div class="src-region">Global · sensor networks</div>
+        <div class="src-example">"PM2.5 in Mexico City above 100 µg/m³ before noon?"</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="rejected">
+  <div class="container">
+    <h3>What didn't survive</h3>
+    <h2>A landing page is a graveyard.</h2>
+    <p>Every line below was pitched, written, mocked up, prototyped. Every one died. Most by the team's own hand. Some by users telling us, gently, that we sounded like a fund manager.</p>
+
+    <ul class="rejected-list" id="rejectedList">
+      <li data-num="01">"Your AI trades for you while you sleep"</li>
+      <li data-num="02">"The Menu" — a gallery counting how many categories of market we offer</li>
+      <li data-num="03">"The Opinion" — your opinions finally have a price</li>
+      <li data-num="04">"Boring vs Interesting" — a notification comparison</li>
+      <li data-num="05">"Markets You Didn't Know Were Markets"</li>
+      <li data-num="06">"Things That Don't Care About The Economy"</li>
+      <li data-num="07">"How Your Brain Changes" — a thirty-day cognitive shift</li>
+      <li data-num="08">"The First 30 Days" — a diary-style journey</li>
+      <li data-num="09">"Market Birth" — a real-time event-to-trade animation</li>
+      <li data-num="10">"The Same Hour, Two Platforms" — a split-screen evening</li>
+      <li data-num="11">"The Night You Stopped Trading Crypto"</li>
+      <li data-num="12">"Your AI's Moat" — privacy as the primary frame</li>
+    </ul>
+
+    <div class="kept-block">
+      <div class="label-kept">What stayed</div>
+      <div class="quote">"Markets few people watch are markets worth trading."</div>
+    </div>
+    <p style="margin-top:2rem;color:var(--text-muted);font-style:italic">No verb. No promise. No tagline architecture. The kind of sentence you find on a tombstone, which is appropriate.</p>
+  </div>
+</section>
+
+<section id="architecture">
+  <div class="container-wide">
+    <div class="container" style="padding:0">
+      <h3>The plumbing</h3>
+      <h2>An L3 nobody asked for.</h2>
+      <p>Vision lives on its own Orbit chain. Chain ID 111222333 — what you choose when you are not optimizing for memorability. USDC at eighteen decimals, not six, because micro-bets do not tolerate rounding. Three oracles aggregating into a single BLS signature, so that no one of them can lie alone. A bridge to Sonic for collateral, because the markets settle here but the money lives there.</p>
+      <p>The user sees a pool, a button, and a clock. The user is correct.</p>
+
+      <div class="arch">
+        <svg class="arch-svg" viewBox="0 0 1000 460" id="archSvg">
+          <defs>
+            <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--text-dim)"/>
+            </marker>
+          </defs>
+
+          <!-- Frontend -->
+          <g class="arch-layer" data-layer="ui">
+            <rect class="arch-rect" x="380" y="20" width="240" height="60" rx="4"/>
+            <text class="arch-text sub" x="500" y="42" text-anchor="middle">USER</text>
+            <text class="arch-text" x="500" y="62" text-anchor="middle">Frontend · Next.js · Pool, Button, Clock</text>
+          </g>
+          <line class="arch-arrow" x1="500" y1="80" x2="500" y2="105"/>
+
+          <!-- API/Indexer -->
+          <g class="arch-layer" data-layer="api">
+            <rect class="arch-rect" x="320" y="105" width="360" height="60" rx="4"/>
+            <text class="arch-text sub" x="500" y="127" text-anchor="middle">READ PATH</text>
+            <text class="arch-text" x="500" y="147" text-anchor="middle">Data-node · Indexer · Postgres</text>
+          </g>
+          <line class="arch-arrow" x1="500" y1="165" x2="500" y2="190"/>
+
+          <!-- L3 chain -->
+          <g class="arch-layer" data-layer="l3">
+            <rect class="arch-rect" x="200" y="190" width="600" height="80" rx="4" fill="rgba(201,166,107,0.06)"/>
+            <text class="arch-text sub" x="500" y="214" text-anchor="middle">SETTLEMENT</text>
+            <text class="arch-text" x="500" y="234" text-anchor="middle">Orbit L3 · Chain 111222333 · GM gas token</text>
+            <text class="arch-text sub" x="500" y="254" text-anchor="middle" fill="var(--accent)">Vision.sol · Pool.sol · OracleRegistry.sol</text>
+          </g>
+
+          <!-- Oracles -->
+          <line class="arch-arrow" x1="320" y1="270" x2="320" y2="305"/>
+          <line class="arch-arrow" x1="500" y1="270" x2="500" y2="305"/>
+          <line class="arch-arrow" x1="680" y1="270" x2="680" y2="305"/>
+
+          <g class="arch-layer" data-layer="oracle">
+            <rect class="arch-rect" x="240" y="305" width="160" height="60" rx="4"/>
+            <text class="arch-text sub" x="320" y="327" text-anchor="middle">ORACLE 1</text>
+            <text class="arch-text" x="320" y="347" text-anchor="middle">Rust · BLS</text>
+          </g>
+          <g class="arch-layer" data-layer="oracle">
+            <rect class="arch-rect" x="420" y="305" width="160" height="60" rx="4"/>
+            <text class="arch-text sub" x="500" y="327" text-anchor="middle">ORACLE 2</text>
+            <text class="arch-text" x="500" y="347" text-anchor="middle">Rust · BLS</text>
+          </g>
+          <g class="arch-layer" data-layer="oracle">
+            <rect class="arch-rect" x="600" y="305" width="160" height="60" rx="4"/>
+            <text class="arch-text sub" x="680" y="327" text-anchor="middle">ORACLE 3</text>
+            <text class="arch-text" x="680" y="347" text-anchor="middle">Rust · BLS</text>
+          </g>
+
+          <line class="arch-arrow" x1="320" y1="365" x2="500" y2="395"/>
+          <line class="arch-arrow" x1="500" y1="365" x2="500" y2="395"/>
+          <line class="arch-arrow" x1="680" y1="365" x2="500" y2="395"/>
+
+          <!-- BLS aggregator -->
+          <g class="arch-layer" data-layer="bls">
+            <rect class="arch-rect" x="320" y="395" width="360" height="50" rx="4"/>
+            <text class="arch-text" x="500" y="425" text-anchor="middle">Aggregated BLS signature → on-chain settlement</text>
+          </g>
+
+          <!-- Bridge -->
+          <g class="arch-layer" data-layer="bridge">
+            <rect class="arch-rect" x="20" y="190" width="160" height="80" rx="4" fill="rgba(122,155,110,0.06)"/>
+            <text class="arch-text sub" x="100" y="214" text-anchor="middle">BRIDGE</text>
+            <text class="arch-text" x="100" y="234" text-anchor="middle">Sonic L1</text>
+            <text class="arch-text sub" x="100" y="254" text-anchor="middle" fill="var(--win)">USDC custody</text>
+          </g>
+          <line class="arch-arrow" x1="180" y1="230" x2="200" y2="230"/>
+
+          <!-- External feeds -->
+          <g class="arch-layer" data-layer="feeds">
+            <rect class="arch-rect" x="820" y="190" width="160" height="80" rx="4" fill="rgba(184,90,72,0.06)"/>
+            <text class="arch-text sub" x="900" y="214" text-anchor="middle">FEEDS</text>
+            <text class="arch-text" x="900" y="234" text-anchor="middle">DB · Weather</text>
+            <text class="arch-text" x="900" y="254" text-anchor="middle">Bitget · EPEX</text>
+          </g>
+          <line class="arch-arrow" x1="820" y1="335" x2="760" y2="335"/>
+          <line class="arch-arrow" x1="820" y1="335" x2="820" y2="270"/>
+        </svg>
+      </div>
+
+      <div class="arch-detail" id="archDetail">
+        <span class="layer-name">Hover a layer</span>
+        Each block is a system that can fail without the others noticing — until they all fail at once. Ask each one what it does. The answer is short.
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="numbers">
+  <div class="container">
+    <h3>The receipts</h3>
+    <h2>What it cost.</h2>
+
+    <div class="numbers">
+      <div class="num-cell">
+        <span class="k">Solidity written</span>
+        <span class="v">~8,400</span>
+        <span class="note">lines that survived to main</span>
+      </div>
+      <div class="num-cell">
+        <span class="k">Solidity deleted</span>
+        <span class="v">~12,100</span>
+        <span class="note">the cost of arriving anywhere</span>
+      </div>
+      <div class="num-cell">
+        <span class="k">Oracles</span>
+        <span class="v">3</span>
+        <span class="note">two-of-three BLS quorum</span>
+      </div>
+      <div class="num-cell">
+        <span class="k">Smallest bet</span>
+        <span class="v">$0.10</span>
+        <span class="note">why we use 18-decimal USDC</span>
+      </div>
+      <div class="num-cell">
+        <span class="k">Fastest batch</span>
+        <span class="v">2 min</span>
+        <span class="note">betting + settlement</span>
+      </div>
+      <div class="num-cell">
+        <span class="k">Data sources live</span>
+        <span class="v">5</span>
+        <span class="note">five more in the queue</span>
+      </div>
+      <div class="num-cell">
+        <span class="k">Network</span>
+        <span class="v">Orbit L3</span>
+        <span class="note">chain 111222333</span>
+      </div>
+      <div class="num-cell">
+        <span class="k">Status</span>
+        <span class="v live"></span>
+        <span class="note">on testnet · mainnet pending</span>
+      </div>
+    </div>
+
+    <p style="margin-top:2rem;color:var(--text-muted);font-style:italic">Ship metrics are vanity until something settles. Something settles every two minutes.</p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="container">
+    <div class="sig">
+      Built by GeneralMarket. The next case study arrives when there is something to say.
+    </div>
+    <div class="links">
+      <a href="https://generalmarket.io">generalmarket.io</a>
+      <a href="https://generalmarket.io/source/vision">Trade Vision</a>
+      <a href="https://docs.generalmarket.io">Docs</a>
+      <a href="https://github.com/General-Market">GitHub</a>
+    </div>
+    <div class="colophon">
+      Set in Crimson Pro &amp; Spectral, with JetBrains Mono for the receipts. <br>
+      All numbers above are real or marked otherwise. The pool simulator is real math; the train is not. <br>
+      Case Study № 001 · April 2026.
+    </div>
+  </div>
+</footer>
+
+<script>
+(() => {
+  // ---------- Pool simulator ----------
+  const pool = {
+    yes: 1000,
+    no: 1000,
+    myYes: 0,
+    myNo: 0,
+    fee: 0.02,
+  };
+
+  const fmt = (n) => {
+    if (n >= 1_000_000) return '$' + (n / 1_000_000).toFixed(2) + 'M';
+    if (n >= 10_000) return '$' + Math.round(n).toLocaleString();
+    return '$' + n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  };
+
+  const $ = (id) => document.getElementById(id);
+
+  function renderPool() {
+    const total = pool.yes + pool.no;
+    const yesPct = pool.yes / total;
+    const noPct = pool.no / total;
+    const grossPool = total * (1 - pool.fee);
+    const myStake = pool.myYes + pool.myNo;
+    const payIfYes = pool.myYes > 0 ? (pool.myYes / pool.yes) * grossPool : 0;
+    const payIfNo = pool.myNo > 0 ? (pool.myNo / pool.no) * grossPool : 0;
+
+    $('barYes').style.width = (yesPct * 100).toFixed(2) + '%';
+    $('barNo').style.width = (noPct * 100).toFixed(2) + '%';
+    $('amtYes').textContent = fmt(pool.yes);
+    $('amtNo').textContent = fmt(pool.no);
+    $('probYes').textContent = (yesPct * 100).toFixed(1) + '%';
+    $('probNo').textContent = (noPct * 100).toFixed(1) + '%';
+    $('myStake').textContent = fmt(myStake);
+    $('payYes').textContent = fmt(payIfYes);
+    $('payNo').textContent = fmt(payIfNo);
+    $('totalPool').textContent = fmt(total);
+
+    $('payYes').classList.toggle('loss', pool.myYes === 0 && pool.myNo > 0);
+    $('payNo').classList.toggle('loss', pool.myNo === 0 && pool.myYes > 0);
+  }
+
+  document.querySelectorAll('.pool-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const side = btn.dataset.side;
+      const amt = parseFloat(btn.dataset.amt);
+      pool[side] += amt;
+      pool[side === 'yes' ? 'myYes' : 'myNo'] += amt;
+      renderPool();
+    });
+  });
+
+  $('poolReset').addEventListener('click', () => {
+    pool.yes = 1000; pool.no = 1000; pool.myYes = 0; pool.myNo = 0;
+    renderPool();
+  });
+
+  // Pool clock countdown (cosmetic)
+  let poolSecs = 4 * 60 + 23;
+  setInterval(() => {
+    if (poolSecs <= 0) poolSecs = 9 * 60 + 59;
+    poolSecs--;
+    const m = String(Math.floor(poolSecs / 60)).padStart(2, '0');
+    const s = String(poolSecs % 60).padStart(2, '0');
+    $('poolClock').textContent = `closes in ${m}:${s}`;
+  }, 1000);
+
+  renderPool();
+
+  // ---------- Batch clock ----------
+  const BATCH = 600;       // 10 minutes total
+  const BET_END = 360;     // 6 minutes betting
+  let clockT = 0;
+  let clockSpeed = 1;
+  let lastTs = null;
+
+  const states = {
+    bet: {
+      label: 'Betting',
+      desc: 'The window is open. Anyone can join the pool. Odds drift with each new bet.',
+      cls: '',
+    },
+    settle: {
+      label: 'Settling',
+      desc: 'Three oracles read the source. They sign the outcome. Two of three agree, the pool divides.',
+      cls: 'settling',
+    },
+  };
+
+  function fmtTime(secs) {
+    const m = Math.floor(secs / 60);
+    const s = Math.floor(secs % 60);
+    return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+  }
+
+  function renderClock() {
+    const angle = (clockT / BATCH) * 360;
+    document.getElementById('hand').setAttribute('transform', `rotate(${angle} 100 100)`);
+    const isBet = clockT < BET_END;
+    const state = isBet ? states.bet : states.settle;
+    const remaining = isBet ? BET_END - clockT : BATCH - clockT;
+    const stateEl = $('clockState');
+    stateEl.textContent = state.label;
+    stateEl.className = 'clock-state ' + state.cls;
+    $('clockTime').textContent = fmtTime(remaining);
+    $('clockDesc').textContent = state.desc;
+  }
+
+  function tick(ts) {
+    if (lastTs === null) lastTs = ts;
+    const dt = (ts - lastTs) / 1000;
+    lastTs = ts;
+    clockT += dt * clockSpeed;
+    if (clockT >= BATCH) clockT -= BATCH;
+    renderClock();
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+
+  document.querySelectorAll('.clock-speed button').forEach((b) => {
+    b.addEventListener('click', () => {
+      clockSpeed = parseFloat(b.dataset.speed);
+      document.querySelectorAll('.clock-speed button').forEach((x) => x.classList.remove('active'));
+      b.classList.add('active');
+    });
+  });
+
+  // ---------- Rejected list reveal ----------
+  const rejectedItems = document.querySelectorAll('#rejectedList li');
+  const rejectedObs = new IntersectionObserver((entries) => {
+    entries.forEach((e) => {
+      if (e.isIntersecting) {
+        rejectedItems.forEach((li, i) => {
+          setTimeout(() => li.classList.add('visible'), i * 220);
+        });
+        rejectedObs.disconnect();
+      }
+    });
+  }, { threshold: 0.15 });
+  if (rejectedItems[0]) rejectedObs.observe(rejectedItems[0]);
+
+  // ---------- Architecture hover ----------
+  const archDetails = {
+    ui: { name: 'Frontend', text: 'A Next.js app that pretends none of the rest exists. Three primitives: pool, button, clock. Everything else is plumbing.' },
+    api: { name: 'Read path', text: 'A Rust data-node tails the chain, hydrates Postgres, serves the frontend. The chain is the truth; this layer is the index.' },
+    l3: { name: 'L3 settlement', text: 'An Orbit chain dedicated to Vision. USDC at 18 decimals. GM as the gas token. Markets settle here because they have to settle somewhere.' },
+    oracle: { name: 'Oracle daemon', text: 'Three Rust binaries. Each reads the source independently, signs the result with its BLS key, broadcasts the signature. Two-of-three is the quorum. None of them can lie alone.' },
+    bls: { name: 'BLS aggregation', text: 'Three signatures aggregate into one. The chain verifies a single curve point. Settlement happens or it does not — there is no middle.' },
+    bridge: { name: 'Sonic bridge', text: 'Collateral lives on Sonic. Bets settle on L3. The bridge moves USDC across the seam. Atomicity is enforced by the issuer; if the bridge breaks, no shares mint.' },
+    feeds: { name: 'External feeds', text: 'The water table. DB timetables, alpine weather, Bitget tickers, EPEX day-ahead. Each oracle subscribes; each one verifies independently. The market depends on them being honest.' },
+  };
+
+  document.querySelectorAll('.arch-layer').forEach((g) => {
+    g.addEventListener('mouseenter', () => {
+      const k = g.dataset.layer;
+      const d = archDetails[k];
+      if (!d) return;
+      $('archDetail').innerHTML = `<span class="layer-name">${d.name}</span>${d.text}`;
+    });
+  });
+
+  // ---------- Reveal on scroll ----------
+  document.querySelectorAll('section h2, section h3, section p, .pool, .clock-wrap, .sources-grid, .arch, .numbers, .kept-block').forEach((el) => {
+    el.classList.add('reveal');
+  });
+  const revealObs = new IntersectionObserver((entries) => {
+    entries.forEach((e) => {
+      if (e.isIntersecting) {
+        e.target.classList.add('in');
+        revealObs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -8% 0px' });
+  document.querySelectorAll('.reveal').forEach((el) => revealObs.observe(el));
+})();
+</script>
+
+</body>
+</html>
