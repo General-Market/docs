@@ -882,6 +882,74 @@ async def place_one_bet(
     return sig
 
 
+async def open_pool_two_sided(
+    cfg: BotConfig,
+    client: AsyncClient,
+    bucket: TokenBucket,
+    bot_kp: Keypair,
+    pair: Pair,
+    *,
+    lo: float,
+    hi: float,
+    tag: str,
+) -> str | None:
+    """Bootstrap a fresh cohort with bets on BOTH sides in a single tx.
+
+    The bot is the first bettor on every cohort, and a one-sided pool
+    reads as a "refund" verdict on the UI even though it's just empty
+    on one side. Opening the pool two-sided in one atomic tx means
+    every card immediately shows real pool-implied odds — no audience
+    fallback, no refund pill, no '—'.
+
+    Both PlaceBet ixs touch the same Market/Position/Vault/Config
+    PDAs (Position is keyed by owner+market, side lives in the ix
+    args), so the account list dedups to ~9 unique pubkeys and the
+    whole tx fits well under the 1232-byte legacy wire limit.
+    """
+    now_secs = int(time.time())
+    close, settle = cohort_for(pair, now_secs)
+    yes_usdc = random.uniform(lo, hi)
+    no_usdc = random.uniform(lo, hi)
+    yes_raw = _snap_amount(yes_usdc)
+    no_raw = _snap_amount(no_usdc)
+    if yes_raw <= 0 or no_raw <= 0:
+        # Snapping rounded one side to zero — fall through to single-side.
+        return await place_one_bet(cfg, client, bucket, bot_kp, pair, lo=lo, hi=hi, tag=tag)
+
+    common = dict(
+        program_id=cfg.program_id,
+        user=bot_kp.pubkey(),
+        stake_mint=cfg.stake_mint,
+        source_id=pair.source_id,
+        close_time=close,
+        settlement_time=settle,
+        threshold_bps=pair.threshold_bps,
+    )
+    ix_yes = build_place_bet_ix(side="yes", amount_raw=yes_raw, **common)
+    ix_no = build_place_bet_ix(side="no", amount_raw=no_raw, **common)
+    try:
+        sig = await _send_versioned_tx(client, bucket, bot_kp, [ix_yes, ix_no])
+    except Exception as exc:
+        log.error(
+            "[%s] pair #%02d open_pool failed (yes=%.1f no=%.1f): %s",
+            tag,
+            pair.pair_index,
+            yes_raw / USDC_DECIMALS_RAW,
+            no_raw / USDC_DECIMALS_RAW,
+            repr(exc) or type(exc).__name__,
+        )
+        return None
+    log.info(
+        "[%s] OPEN pair #%02d yes=%.1f no=%.1f USDC. sig %s",
+        tag,
+        pair.pair_index,
+        yes_raw / USDC_DECIMALS_RAW,
+        no_raw / USDC_DECIMALS_RAW,
+        sig[:16],
+    )
+    return sig
+
+
 # ----------------------------------------------------------------------------- #
 # Tasks                                                                         #
 # ----------------------------------------------------------------------------- #
@@ -910,13 +978,18 @@ async def sweep_loop(
                 last = state.last_cohort_starts.get(key)
                 if last == close:
                     continue
-                sig = await place_one_bet(
+                # Open the cohort two-sided in a single atomic tx —
+                # one yes leg and one no leg — so the pool is never
+                # one-sided and the UI never falls back to "refund"
+                # or audience-prior odds. Subsequent fleet members
+                # add asymmetry on top of this floor.
+                sig = await open_pool_two_sided(
                     cfg, client, bucket, bot_kp, pair,
                     lo=SWEEP_BET_MIN, hi=SWEEP_BET_MAX, tag="sweep",
                 )
                 if sig:
                     state.last_cohort_starts[key] = close
-                    state.bet_count += 1
+                    state.bet_count += 2  # two bets in the bootstrap tx
                     placed_any = True
                 else:
                     state.failure_count += 1
