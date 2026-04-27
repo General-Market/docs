@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getAaDataNodeUrl } from '@/lib/config'
+import { isHiddenSourceId } from '@/lib/vision/hidden-sources'
 
 interface BulkSourceEntry {
   totalAssets: number
@@ -32,19 +33,21 @@ export async function GET() {
     const bulk: BulkStatsResponse = await res.json()
 
     const assetCounts: Record<string, number> = {}
-    const sources = Object.entries(bulk.sources).map(([id, entry]) => {
-      assetCounts[id] = entry.totalAssets
-      return {
-        sourceId: id,
-        displayName: id,
-        enabled: true,
-        syncIntervalSecs: 300,
-        lastSync: entry.newestRecord,
-        nextSync: null,
-        estimatedNextUpdate: null,
-        status: deriveStatus(entry),
-      }
-    })
+    const sources = Object.entries(bulk.sources)
+      .filter(([id]) => !isHiddenSourceId(id))
+      .map(([id, entry]) => {
+        assetCounts[id] = entry.totalAssets
+        return {
+          sourceId: id,
+          displayName: id,
+          enabled: true,
+          syncIntervalSecs: 300,
+          lastSync: entry.newestRecord,
+          nextSync: null,
+          estimatedNextUpdate: null,
+          status: deriveStatus(entry),
+        }
+      })
 
     const response = NextResponse.json({
       generatedAt: new Date().toISOString(),

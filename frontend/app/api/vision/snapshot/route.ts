@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getAaDataNodeUrl } from '@/lib/config'
 import { allInternalIds } from '@/lib/vision/source-ids'
+import { isHiddenSourceId } from '@/lib/vision/hidden-sources'
 const DETAIL_LIMIT = 10_000   // Per-source detail page (crypto=10K, defi=6K)
 const GRID_CAP_PER_SOURCE = 200  // Grid view bitmap preview cap
 
@@ -28,6 +29,19 @@ export async function GET(request: Request) {
   try {
     // If requesting a specific source, fetch just that source from data-node
     if (sourceFilter) {
+      // Hidden sources are unreachable via the snapshot endpoint too, so any
+      // listing widget that asks "what's in source X" gets nothing back.
+      if (isHiddenSourceId(sourceFilter)) {
+        const empty = NextResponse.json({
+          generatedAt: new Date().toISOString(),
+          maxAgeSecs: null,
+          totalAssets: 0,
+          sources: [],
+          prices: [],
+        })
+        empty.headers.set('Cache-Control', 's-maxage=30, stale-while-revalidate=60')
+        return empty
+      }
       // Try all internal IDs in parallel (e.g., coingecko → ["defi", "crypto"]) — keep largest
       const results = await Promise.all(
         allInternalIds(sourceFilter).map(async (internalId) => {
@@ -62,7 +76,8 @@ export async function GET(request: Request) {
     })
     if (!res.ok) throw new Error(`AA data-node ${res.status}`)
     const raw = await res.json()
-    const snapshots: Array<Record<string, unknown>> = raw.snapshots ?? []
+    const snapshots: Array<Record<string, unknown>> = (raw.snapshots ?? [])
+      .filter((s: Record<string, unknown>) => !isHiddenSourceId(s.source))
 
     // Cap per source so one large source doesn't crowd out the rest
     const countBySource: Record<string, number> = {}

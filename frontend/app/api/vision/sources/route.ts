@@ -1,4 +1,5 @@
 import { getDataNodeServer } from '@/lib/config'
+import { isHiddenSource } from '@/lib/vision/hidden-sources'
 
 function sanitizeSource(s: any) {
   return {
@@ -19,7 +20,7 @@ export async function GET() {
     // Filter by batchEligible from the data-node registry — no static JSON dependency.
     // Sources appear/disappear dynamically as the data-node enables them.
     const sources = (data.sources ?? [])
-      .filter((s: any) => s.batchEligible === true)
+      .filter((s: any) => s.batchEligible === true && !isHiddenSource(s))
       .map(sanitizeSource)
     return Response.json({
       sources,
