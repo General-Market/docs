@@ -100,6 +100,8 @@ export interface TalkingHeadLayoutProps {
   background?: string;
   /** Webcam border radius (default: 24) */
   borderRadius?: number;
+  /** Layer rendered between the background and the webcam — particles, glows, etc. */
+  behindWebcam?: React.ReactNode;
   /** Children render on top of everything (overlay layer) */
   children?: React.ReactNode;
 }
@@ -387,6 +389,7 @@ export const TalkingHeadLayout: React.FC<TalkingHeadLayoutProps> = ({
   transitionFrames = 18,
   background = COLOR.bg,
   borderRadius: brProp = 24,
+  behindWebcam,
   children,
 }) => {
   const frame = useCurrentFrame();
@@ -455,6 +458,7 @@ export const TalkingHeadLayout: React.FC<TalkingHeadLayoutProps> = ({
   return (
     <TalkingHeadContext.Provider value={ctxValue}>
       <AbsoluteFill style={{ background }}>
+        {behindWebcam}
         <div
           style={{
             position: "absolute",
