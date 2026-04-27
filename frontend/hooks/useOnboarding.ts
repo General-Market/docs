@@ -5,10 +5,11 @@ import { useAccount, useConnect } from 'wagmi'
 import { indexL3 } from '@/lib/wagmi'
 import { useOnChainVaultPositions } from '@/hooks/vaults/useOnChainVaultPositions'
 
-export type OnboardingStep = 'wallet' | 'faucet' | 'vault' | 'bot'
+export type OnboardingStep = 'select' | 'wallet' | 'faucet' | 'vault' | 'bot'
 
-const STEPS: OnboardingStep[] = ['wallet', 'faucet', 'vault', 'bot']
+const STEPS: OnboardingStep[] = ['select', 'wallet', 'faucet', 'vault', 'bot']
 const DISMISSED_KEY = 'onboarding_dismissed'
+const SELECT_KEY = 'onboarding_market_selected'
 
 export interface OnboardingState {
   /** Current step the user should complete */
@@ -55,6 +56,25 @@ export function useOnboarding(sourceId: string): OnboardingState {
     setDismissed(false)
     localStorage.removeItem(DISMISSED_KEY)
   }, [])
+
+  // ── Select step ── done once the user has landed on a source detail page,
+  // since arriving there means they've picked a market. Persisted so that
+  // returning to the homepage doesn't drop them back to step zero.
+  const [selectDone, setSelectDone] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return window.localStorage.getItem(SELECT_KEY) === '1'
+  })
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const isOnSourcePage = /^\/(?:[a-z]{2}\/)?source\//.test(window.location.pathname)
+    if (isOnSourcePage && !selectDone) {
+      window.localStorage.setItem(SELECT_KEY, '1')
+      setSelectDone(true)
+    }
+    // sourceId in deps — when the user navigates between source pages
+    // without a full reload we'll re-run and stay marked done.
+  }, [selectDone, sourceId])
 
   // ── Wallet step ──
   const walletDone = isConnected && !!address
@@ -201,6 +221,7 @@ export function useOnboarding(sourceId: string): OnboardingState {
 
   // ── Derive current step ──
   const completed: Record<OnboardingStep, boolean> = {
+    select: selectDone,
     wallet: walletDone,
     faucet: faucetDone,
     vault: vaultDone,
@@ -212,7 +233,7 @@ export function useOnboarding(sourceId: string): OnboardingState {
       if (!completed[step]) return step
     }
     return 'bot' // all done
-  }, [completed.wallet, completed.faucet, completed.vault, completed.bot])
+  }, [completed.select, completed.wallet, completed.faucet, completed.vault, completed.bot])
 
   const stepIndex = STEPS.indexOf(currentStep)
   const isComplete = STEPS.every(s => completed[s])

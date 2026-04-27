@@ -3,6 +3,7 @@ import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { SourcesGrid } from '@/components/domain/vision/sources/SourcesGrid'
 import { WelcomeHero, HeroLeaderboard } from '@/components/domain/vision/WelcomeHero'
+import { HomeOnboardingCompass } from '@/components/domain/vision/HomeOnboardingCompass'
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params
@@ -32,6 +33,11 @@ export default async function VisionPage() {
         <SourcesGrid />
       </div>
       <Footer />
+
+      {/* Floating onboarding compass — surfaces the 'select a market' step
+          first, then advances through wallet/faucet/vault/bot as the user
+          progresses. Persists across page navigations via localStorage. */}
+      <HomeOnboardingCompass />
     </main>
   )
 }

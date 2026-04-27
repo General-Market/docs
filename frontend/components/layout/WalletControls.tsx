@@ -145,6 +145,7 @@ export function WalletControls({ isDark }: WalletControlsProps) {
         >
           <button
             onClick={handleLogin}
+            data-onboarding-target="wallet-connect"
             className={`inline-flex items-center px-4 h-11 text-[13px] font-semibold tracking-[0.01em] rounded-lg transition-all duration-200 fluid-press border ${
               isDark
                 ? 'border-white/20 text-white hover:bg-white/10'

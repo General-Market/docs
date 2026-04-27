@@ -192,6 +192,7 @@ export function SourceCard({ source, bitmapEditor, index = 99, metaAssetCount, m
       onClick={handleViewTransition}
       onMouseEnter={handlePrefetch}
       data-testid="source-card"
+      data-onboarding-target="market-card"
       className="block group cursor-pointer"
     >
       {/* Brand image area */}

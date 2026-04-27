@@ -38,19 +38,37 @@ interface StepDef {
    * target re-aims the arrow without a state change.
    */
   targets?: string[]
+  /**
+   * Multi-match selector. The pointer scans every match and picks the one
+   * nearest to the viewport center each tick, so as the user scrolls the
+   * arrow always lands on the closest candidate.
+   */
+  nearestOf?: string
 }
 
 const STEP_DEFS: StepDef[] = [
   {
-    id: 'wallet',
+    id: 'select',
     number: 1,
+    title: 'Pick a Market',
+    description: 'Tap any market to dive in. The arrow follows the closest one.',
+    action: 'FIND CLOSEST',
+    nearestOf: '[data-onboarding-target="market-card"]',
+  },
+  {
+    id: 'wallet',
+    number: 2,
     title: 'Connect Wallet',
     description: 'Install MetaMask if needed, then connect to the Index network.',
     action: 'CONNECT WALLET',
+    targets: [
+      '[data-onboarding-target="wallet-connect"]',
+      '[data-onboarding-target="widget"]',
+    ],
   },
   {
     id: 'faucet',
-    number: 2,
+    number: 3,
     title: 'Claim Test Funds',
     description: '1,000 USDC + gas. One click. Enough to start.',
     action: 'CLAIM FAUCET',
@@ -58,7 +76,7 @@ const STEP_DEFS: StepDef[] = [
   },
   {
     id: 'vault',
-    number: 3,
+    number: 4,
     title: 'Join a Vault',
     description: 'Type an amount, then deposit. Your money trades automatically.',
     action: 'GO TO VAULTS',
@@ -70,7 +88,7 @@ const STEP_DEFS: StepDef[] = [
   },
   {
     id: 'bot',
-    number: 4,
+    number: 5,
     title: 'Deploy Your Bot',
     description: 'Go further. Build your own strategy with AI.',
     action: 'DEPLOY BOT',
@@ -87,7 +105,14 @@ const STEP_DEFS: StepDef[] = [
 
 interface CompassPointerProps {
   /** Selector priority list. First match in the DOM wins. */
-  selectors: string[]
+  selectors?: string[]
+  /**
+   * Multi-match selector. Every tick, the pointer picks whichever match is
+   * closest to the viewport center — used when "the right target" is
+   * whatever the user is currently looking at (e.g., the nearest market
+   * card on a scrolling grid).
+   */
+  nearestOf?: string
 }
 
 interface ViewportInfo {
@@ -107,6 +132,28 @@ function pickTarget(selectors: string[]): Element | null {
   return null
 }
 
+function pickNearest(selector: string): Element | null {
+  if (typeof document === 'undefined' || typeof window === 'undefined') return null
+  const all = Array.from(document.querySelectorAll(selector))
+  if (all.length === 0) return null
+  const cx = window.innerWidth / 2
+  const cy = window.innerHeight / 2
+  let best: Element | null = null
+  let bestDist = Infinity
+  for (const el of all) {
+    const r = el.getBoundingClientRect()
+    if (r.width === 0 || r.height === 0) continue
+    const ex = r.left + r.width / 2
+    const ey = r.top + r.height / 2
+    const d = Math.hypot(ex - cx, ey - cy)
+    if (d < bestDist) {
+      bestDist = d
+      best = el
+    }
+  }
+  return best
+}
+
 /**
  * Bottom edge of the page's sticky header in viewport coordinates. This is
  * the wall the arrow refuses to cross — anything pinned to the top of the
@@ -123,7 +170,7 @@ function getHeaderBottom(): number {
   return r.bottom > 0 && r.top <= 0 ? r.bottom : Math.max(r.bottom, 0)
 }
 
-function CompassPointer({ selectors }: CompassPointerProps) {
+function CompassPointer({ selectors, nearestOf }: CompassPointerProps) {
   const [rect, setRect] = useState<DOMRect | null>(null)
   const [vp, setVp] = useState<ViewportInfo | null>(null)
 
@@ -134,7 +181,11 @@ function CompassPointer({ selectors }: CompassPointerProps) {
 
     const tick = () => {
       raf = 0
-      const el = pickTarget(selectors)
+      const el = nearestOf
+        ? pickNearest(nearestOf)
+        : selectors && selectors.length > 0
+          ? pickTarget(selectors)
+          : null
       if (!el) {
         setRect(null)
         if (observed) {
@@ -161,7 +212,9 @@ function CompassPointer({ selectors }: CompassPointerProps) {
     ro.observe(document.documentElement)
 
     // Re-poll occasionally — modals/panels may mount or unmount and we want
-    // the priority list to re-evaluate without waiting for a scroll event.
+    // the selector to re-evaluate without waiting for a scroll event.
+    // The nearestOf mode also benefits from this: cards layout-shift after
+    // images load, and we want the arrow to snap to the new closest one.
     const poll = window.setInterval(schedule, 400)
 
     window.addEventListener('scroll', schedule, true)
@@ -175,7 +228,7 @@ function CompassPointer({ selectors }: CompassPointerProps) {
       window.removeEventListener('resize', schedule)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectors.join('|')])
+  }, [selectors?.join('|') ?? '', nearestOf ?? ''])
 
   if (!rect || !vp) return null
 
@@ -384,6 +437,13 @@ export function OnboardingCompass({ state, onVaultDeposit, onBotDeploy }: Onboar
 
   const handleAction = useCallback(() => {
     switch (state.currentStep) {
+      case 'select': {
+        // Scroll the nearest card into view. The pointer math is identical
+        // to what the arrow does — the action button just commits to it.
+        const el = pickNearest('[data-onboarding-target="market-card"]')
+        el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        break
+      }
       case 'wallet':
         state.connectWallet()
         break
@@ -433,15 +493,18 @@ export function OnboardingCompass({ state, onVaultDeposit, onBotDeploy }: Onboar
 
   const currentDef = STEP_DEFS.find(s => s.id === state.currentStep)!
   const pointerSelectors = currentDef.targets ?? []
+  const pointerNearestOf = currentDef.nearestOf
+  const hasPointer = pointerSelectors.length > 0 || !!pointerNearestOf
   const ctaDisabled = state.currentStep === 'faucet' && state.faucetLoading
 
   return (
     <>
-      {pointerSelectors.length > 0 && (
+      {hasPointer && (
         <AnimatePresence>
           <CompassPointer
             key={state.currentStep}
-            selectors={pointerSelectors}
+            selectors={pointerSelectors.length > 0 ? pointerSelectors : undefined}
+            nearestOf={pointerNearestOf}
           />
         </AnimatePresence>
       )}
