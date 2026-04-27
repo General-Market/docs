@@ -11,7 +11,7 @@ import {
 } from "remotion";
 import { FPS } from "../theme";
 import { useDesignTokens } from "../TutorialTheme";
-import { SplitCard } from "../components/DiagramCard";
+import { DiagramCard } from "../components/DiagramCard";
 import { Sfx } from "../components/Sfx";
 import { LAND } from "../sfxMap";
 
@@ -62,7 +62,7 @@ const FaqQuestion: React.FC<{ entry: FaqEntry }> = ({ entry }) => {
   const holdFrames = Math.round(HOLD_SEC * fps);
   const totalFrames = holdFrames + Math.round(FADE_OUT_SEC * fps);
 
-  // Exit fade (entrance handled by SplitCard)
+  // Exit fade (entrance handled by DiagramCard)
   const fadeOutOpacity = interpolate(
     frame,
     [holdFrames, totalFrames],
@@ -92,7 +92,7 @@ const FaqQuestion: React.FC<{ entry: FaqEntry }> = ({ entry }) => {
 
   return (
     <AbsoluteFill style={{ opacity: fadeOutOpacity }}>
-      <SplitCard>
+      <DiagramCard>
         {/* Green accent bar */}
         <div
           style={{
@@ -140,7 +140,7 @@ const FaqQuestion: React.FC<{ entry: FaqEntry }> = ({ entry }) => {
             {entry.text}
           </div>
         </div>
-      </SplitCard>
+      </DiagramCard>
     </AbsoluteFill>
   );
 };
