@@ -126,51 +126,59 @@ async function runItpLeg(to: `0x${string}`, amount: number) {
   const wallet = createWalletClient({ account, chain, transport: http(SETTLEMENT_RPC_URL) })
   const pub = createPublicClient({ chain, transport: http(SETTLEMENT_RPC_URL) })
 
-  // The deployer key is shared with the fund-manager and other backend
-  // services. Two parallel writes — even with explicit nonce hints —
-  // race against any concurrent broadcast from those services and Sonic
-  // rejects the loser as "replacement transaction underpriced".
-  //
-  // Strategy: broadcast USDC mint first (consumes one nonce), then
-  // immediately broadcast the gas drip without awaiting its receipt.
-  // The mint receipt resolves while the drip propagates; total wall
-  // time is dominated by the USDC receipt wait (~4s) instead of two
-  // sequential receipts (~9s).
-  let usdc: Record<string, any>
+  // The deployer key is shared with backend services, so any auto-nonce
+  // strategy (parallel, sequential-with-stale-pending) eventually loses
+  // a race to "replacement transaction underpriced". Take the nonce
+  // ourselves at the start, hand the mint nonce N and the drip nonce
+  // N+1, and broadcast both before awaiting either receipt. The mint
+  // receipt wait is the dominant cost (~4s on Sonic) and runs while
+  // the drip is in flight.
+  const startNonce = await pub.getTransactionCount({
+    address: account.address,
+    blockTag: 'pending',
+  })
+
+  let usdcResult: Record<string, any>
+  let gasResult: Record<string, any>
+  let receiptPromise: ReturnType<typeof pub.waitForTransactionReceipt> | null = null
+
   try {
     const parsed = parseUnits(String(amount), 6)
-    const hash = await wallet.writeContract({
+    const usdcHash = await wallet.writeContract({
       address: SETTLEMENT_USDC, abi: MINT_ABI, functionName: 'mint',
       args: [to, parsed],
+      nonce: startNonce,
     })
-    // Receipt wait runs in parallel with the gas drip broadcast below.
-    const receiptPromise = pub.waitForTransactionReceipt({ hash, timeout: 30_000 })
-
-    let gas: Record<string, any>
-    try {
-      const drip = parseEther(SONIC_GAS_DRIP)
-      const deployerBal = await pub.getBalance({ address: account.address })
-      if (deployerBal <= drip * 2n) {
-        gas = { error: 'Deployer low on S' }
-      } else {
-        // Fire-and-forget: viem fetches a fresh nonce now that the mint
-        // tx is in the mempool, and we don't wait for the receipt.
-        const gasHash = await wallet.sendTransaction({ to, value: drip })
-        gas = { hash: gasHash, amount: `${SONIC_GAS_DRIP} S` }
-      }
-    } catch (e: any) {
-      gas = { error: e.message ?? 'S drip failed' }
-    }
-
-    await receiptPromise
-    usdc = { hash, amount: `${amount} USDC` }
-    return { usdc, gas }
+    receiptPromise = pub.waitForTransactionReceipt({ hash: usdcHash, timeout: 30_000 })
+    usdcResult = { hash: usdcHash, amount: `${amount} USDC` }
   } catch (e: any) {
     return {
       usdc: { error: e.message ?? 'Settlement USDC mint failed' },
       gas: { error: 'Skipped — USDC mint failed' },
     }
   }
+
+  try {
+    const drip = parseEther(SONIC_GAS_DRIP)
+    const deployerBal = await pub.getBalance({ address: account.address })
+    if (deployerBal <= drip * 2n) {
+      gasResult = { error: 'Deployer low on S' }
+    } else {
+      const gasHash = await wallet.sendTransaction({
+        to,
+        value: drip,
+        nonce: startNonce + 1,
+      })
+      gasResult = { hash: gasHash, amount: `${SONIC_GAS_DRIP} S` }
+    }
+  } catch (e: any) {
+    gasResult = { error: e.message ?? 'S drip failed' }
+  }
+
+  if (receiptPromise) {
+    try { await receiptPromise } catch { /* receipt timeout — hash already returned */ }
+  }
+  return { usdc: usdcResult, gas: gasResult }
 }
 
 export async function POST(req: NextRequest) {
