@@ -21,7 +21,7 @@ import type { SourceDisplayServer } from '@/lib/vision/sources-server'
 import { useTranslations } from 'next-intl'
 import { SourceDetailSkeleton } from '@/components/ui/VisionLoader'
 import { useOnboarding } from '@/hooks/useOnboarding'
-import { OnboardingGuide, OnboardingGate } from './OnboardingGuide'
+import { OnboardingCompass } from './OnboardingCompass'
 
 // ── Main component ──
 
@@ -193,45 +193,24 @@ export function SourceDetailV2({ sourceId, initialSource }: SourceDetailV2Props)
             urgency="normal"
           />
 
-          {/* Onboarding guide, sticky so it stays visible while scrolling.
-              Top offset clears the site header: h-14 sm:h-16 → 56 / 64 px.
-              scroll-mt mirrors the top offset so programmatic scrollIntoView
-              lands fully in view. */}
-          {onboarding.isActive && (
-            <div className="sticky top-14 sm:top-16 z-30 scroll-mt-14 sm:scroll-mt-16">
-              <OnboardingGuide
-                state={onboarding}
-                onVaultDeposit={handleOnboardingVaultDeposit}
-                onBotDeploy={handleOnboardingBotDeploy}
-              />
-            </div>
-          )}
-
-          <OnboardingGate requiredStep="faucet" state={onboarding}>
-            <WalletSourceStats sourceId={sourceId} />
-          </OnboardingGate>
+          <WalletSourceStats sourceId={sourceId} />
 
           {/* Pending positions */}
           {rounds && rounds.length > 0 && (
-            <OnboardingGate requiredStep="vault" state={onboarding}>
-              <PendingPositions
-                rounds={rounds}
-                activeBatchId={verifiedBatch?.id}
-              />
-            </OnboardingGate>
+            <PendingPositions
+              rounds={rounds}
+              activeBatchId={verifiedBatch?.id}
+            />
           )}
 
-          {/* Vault showcase. The :has selector collapses this wrapper when
-              the inner OnboardingGate hides its empty VaultShowcase — without
-              it the flex `gap-8` stamps an extra 32px phantom gap above the
-              next section. */}
+          {/* Vault showcase — the onboarding compass aims its pointer at the
+              data-onboarding-target node when the user is on the vault step. */}
           <div
             ref={vaultShowcaseRef}
-            className="[&:has(>div:empty)]:hidden [&:has(>div>div:first-child:empty)]:hidden"
+            data-onboarding-target="vault"
+            className="[&:has(>div:empty)]:hidden [&:has(>div:first-child:empty)]:hidden"
           >
-            <OnboardingGate requiredStep="vault" state={onboarding}>
-              <VaultShowcase sourceId={sourceId} />
-            </OnboardingGate>
+            <VaultShowcase sourceId={sourceId} />
           </div>
 
           {/* Mobile-only "More Sources" strip, mirrors desktop sidebars,
@@ -239,23 +218,28 @@ export function SourceDetailV2({ sourceId, initialSource }: SourceDetailV2Props)
           <SourceSidebarMobile currentSourceId={sourceId} category={source.category} />
 
           {/* Dashboard: current round, round spotlight (with past rounds), leaderboard, recent bets */}
-          <OnboardingGate requiredStep="bot" state={onboarding}>
-            <SourceDashboard
-              sourceId={sourceId}
-              verifiedBatch={verifiedBatch}
-              bettingRound={bettingRound}
-              bettingEnd={bettingEnd}
-              tickDuration={verifiedBatch?.tickDuration ?? bettingRound?.timeframeSecs ?? 300}
-              settlingRound={settlingRound}
-              rounds={rounds}
-            />
-          </OnboardingGate>
+          <SourceDashboard
+            sourceId={sourceId}
+            verifiedBatch={verifiedBatch}
+            bettingRound={bettingRound}
+            bettingEnd={bettingEnd}
+            tickDuration={verifiedBatch?.tickDuration ?? bettingRound?.timeframeSecs ?? 300}
+            settlingRound={settlingRound}
+            rounds={rounds}
+          />
 
           {/* Submarkets grid, sits at the same edge as every other section */}
-          <OnboardingGate requiredStep="bot" state={onboarding}>
-            <SubmarketsGrid sourceId={sourceId} />
-          </OnboardingGate>
+          <SubmarketsGrid sourceId={sourceId} />
       </div>
+
+      {/* Floating onboarding compass — bottom-right card + viewport-edge
+          pointer that locks onto the next-step target. Renders at viewport
+          scope so it survives layout swaps and stays put on mobile. */}
+      <OnboardingCompass
+        state={onboarding}
+        onVaultDeposit={handleOnboardingVaultDeposit}
+        onBotDeploy={handleOnboardingBotDeploy}
+      />
 
       {/* Right sidebar — flush to viewport edge, never inset */}
       <SourceSidebar
