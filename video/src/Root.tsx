@@ -91,6 +91,16 @@ const shorts: ShortConfig[] = [];
 export const RemotionRoot: React.FC = () => {
   return (
     <>
+      {/* ═══ LOFI DOTS — hex shader bench, full broll length (5m11s) ═══ */}
+      <Composition
+        id="LofiDots"
+        component={LofiDots}
+        durationInFrames={Math.round(311 * ENDCARD_FPS)}
+        fps={ENDCARD_FPS}
+        width={1920}
+        height={1080}
+      />
+
       {/* ═══ REPLICATE ═══ */}
       <Folder name="Replicate">
         {/* --- Wabi --- */}
@@ -401,14 +411,6 @@ export const RemotionRoot: React.FC = () => {
           id="EndCard"
           component={EndCard}
           durationInFrames={ENDCARD_DURATION}
-          fps={ENDCARD_FPS}
-          width={1920}
-          height={1080}
-        />
-        <Composition
-          id="LofiDots"
-          component={LofiDots}
-          durationInFrames={Math.round(311 * ENDCARD_FPS)}
           fps={ENDCARD_FPS}
           width={1920}
           height={1080}
