@@ -36,7 +36,7 @@ export interface PvpPair {
   tightness: number
 }
 
-const STARS_WINDOW = 14_400 // 4 hours
+const STARS_WINDOW = 3_600 // 1 hour
 const CAMS_WINDOW = 120 // 2 minutes
 
 // Stars — slug → display map, regenerated from real xvideos data on

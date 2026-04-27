@@ -134,31 +134,36 @@ async fn tick(state: &Arc<SchedulerState>, scanner: &Scanner) -> Result<()> {
     // whichever phase comes after closes until every close drains.
     // For a 1.6k-deep close queue, that meant hours of user-visible
     // "settling" while resolves never landed.
+    //
+    // Phase 4a: each "job" submits a small batch of items in one tx
+    // instead of one tx per item. The legacy 1232-byte wire limit
+    // accommodates 4 close/resolve pairs (precompile + program ix) or
+    // 3 claim ixs comfortably; tighter packing needs LUTs (Phase 4b).
     let sem = Arc::new(Semaphore::new(CONCURRENCY));
     let mut jobs = FuturesUnordered::new();
 
-    for rec in resolves {
+    for chunk in chunks_of(resolves, RESOLVE_BATCH) {
         let sem = sem.clone();
         let state = state.clone();
         jobs.push(tokio::spawn(async move {
             let _permit = sem.acquire_owned().await.unwrap();
-            run_resolve(state, rec).await
+            run_resolve_batch(state, chunk).await
         }));
     }
-    for rec in claims {
+    for chunk in chunks_of(claims, CLAIM_BATCH) {
         let sem = sem.clone();
         let state = state.clone();
         jobs.push(tokio::spawn(async move {
             let _permit = sem.acquire_owned().await.unwrap();
-            run_claim(state, rec).await
+            run_claim_batch(state, chunk).await
         }));
     }
-    for rec in closes {
+    for chunk in chunks_of(closes, CLOSE_BATCH) {
         let sem = sem.clone();
         let state = state.clone();
         jobs.push(tokio::spawn(async move {
             let _permit = sem.acquire_owned().await.unwrap();
-            run_close(state, rec).await
+            run_close_batch(state, chunk).await
         }));
     }
 
@@ -173,6 +178,151 @@ async fn tick(state: &Arc<SchedulerState>, scanner: &Scanner) -> Result<()> {
     Ok(())
 }
 
+// Phase 4a batch sizes. Picked conservatively against the legacy 1232-byte
+// tx wire limit. Closes/resolves bundle (precompile + program-ix) per item
+// at ~250 B; claims are smaller but their account list is fatter, so the
+// safe count is lower. If a batch ever overflows, send_legacy_tx surfaces
+// the error and the next scan will retry the survivors at smaller chunks
+// (next tick reads fresh).
+// Close/resolve are stuck at one per tx until Phase 4b. The program's
+// `verify_multisig` reads `load_instruction_at_checked(i, ix_sysvar)`
+// for i in 0..sigs.len() — it hardcodes "the precompile lives at ix
+// index 0". A second (close, precompile) pair in the same tx fails
+// with BadSignature because both close ixs look at ix 0. The fix lives
+// in the program: accept a `precompile_index_offset` arg and read
+// `load_instruction_at_checked(offset + i, ...)`. That's Phase 4b.
+//
+// Claims have no precompile dependency, so they batch cleanly. ~280 B
+// per claim ix → three fits in the 1232 B legacy wire limit with margin.
+const CLOSE_BATCH: usize = 1;
+const RESOLVE_BATCH: usize = 1;
+const CLAIM_BATCH: usize = 3;
+
+fn chunks_of<T>(items: Vec<T>, size: usize) -> Vec<Vec<T>> {
+    if size <= 1 {
+        return items.into_iter().map(|x| vec![x]).collect();
+    }
+    let mut out: Vec<Vec<T>> = Vec::with_capacity(items.len().div_ceil(size));
+    let mut cur: Vec<T> = Vec::with_capacity(size);
+    for it in items {
+        cur.push(it);
+        if cur.len() == size {
+            out.push(std::mem::take(&mut cur));
+            cur.reserve(size);
+        }
+    }
+    if !cur.is_empty() {
+        out.push(cur);
+    }
+    out
+}
+
+async fn run_close_batch(state: Arc<SchedulerState>, recs: Vec<MarketRecord>) -> Result<()> {
+    if recs.is_empty() { return Ok(()); }
+    let mut items: Vec<submitter::CloseItem> = Vec::with_capacity(recs.len());
+    for rec in &recs {
+        let price = match state.feed.price(rec.market.source_id).await {
+            Ok(p) => p,
+            Err(e) => {
+                warn!(source = rec.market.source_id, error = %e, "feed price fetch failed (close)");
+                continue;
+            }
+        };
+        items.push(submitter::CloseItem {
+            market: rec.address,
+            source_id: rec.market.source_id,
+            close_time: rec.market.close_time,
+            baseline_price: price.price,
+        });
+    }
+    if items.is_empty() { return Ok(()); }
+    let cranker_kp = clone_keypair(&state.identity.keypair);
+    match submitter::submit_close_batch(
+        &state.rpc,
+        &cranker_kp,
+        &state.identity.signing_key,
+        &state.program_id,
+        &items,
+    ).await {
+        Ok(sig) => {
+            info!(count = items.len(), tx = %sig, "close_market batch submitted");
+            state.metrics.last_tx_success_ts.set(now_unix() as f64);
+        }
+        Err(e) => {
+            warn!(count = items.len(), error = %e, "close_market batch failed");
+            state.metrics.tx_failures_total.inc();
+        }
+    }
+    Ok(())
+}
+
+async fn run_resolve_batch(state: Arc<SchedulerState>, recs: Vec<MarketRecord>) -> Result<()> {
+    if recs.is_empty() { return Ok(()); }
+    let mut items: Vec<submitter::ResolveItem> = Vec::with_capacity(recs.len());
+    for rec in &recs {
+        let price = match state.feed.price(rec.market.source_id).await {
+            Ok(p) => p,
+            Err(e) => {
+                warn!(source = rec.market.source_id, error = %e, "feed price fetch failed (resolve)");
+                continue;
+            }
+        };
+        items.push(submitter::ResolveItem {
+            market: rec.address,
+            source_id: rec.market.source_id,
+            settlement_time: rec.market.settlement_time,
+            final_price: price.price,
+        });
+    }
+    if items.is_empty() { return Ok(()); }
+    let cranker_kp = clone_keypair(&state.identity.keypair);
+    match submitter::submit_resolve_batch(
+        &state.rpc,
+        &cranker_kp,
+        &state.identity.signing_key,
+        &state.program_id,
+        &items,
+    ).await {
+        Ok(sig) => {
+            info!(count = items.len(), tx = %sig, "resolve_market batch submitted");
+            state.metrics.last_tx_success_ts.set(now_unix() as f64);
+        }
+        Err(e) => {
+            warn!(count = items.len(), error = %e, "resolve_market batch failed");
+            state.metrics.tx_failures_total.inc();
+        }
+    }
+    Ok(())
+}
+
+async fn run_claim_batch(state: Arc<SchedulerState>, recs: Vec<PositionRecord>) -> Result<()> {
+    if recs.is_empty() { return Ok(()); }
+    let items: Vec<submitter::ClaimItem> = recs.iter().map(|rec| submitter::ClaimItem {
+        market: rec.market_address,
+        position: rec.address,
+        owner: rec.position.owner,
+        stake_mint: state.stake_mint,
+    }).collect();
+    let cranker_kp = clone_keypair(&state.identity.keypair);
+    match submitter::submit_claim_batch(
+        &state.rpc,
+        &cranker_kp,
+        &state.program_id,
+        &items,
+    ).await {
+        Ok(sig) => {
+            info!(count = items.len(), tx = %sig, "claim batch submitted");
+            state.metrics.last_tx_success_ts.set(now_unix() as f64);
+        }
+        Err(e) => {
+            warn!(count = items.len(), error = %e, "claim batch failed");
+            state.metrics.tx_failures_total.inc();
+        }
+    }
+    Ok(())
+}
+
+#[allow(dead_code)]
 async fn run_close(state: Arc<SchedulerState>, rec: MarketRecord) -> Result<()> {
     let price = match state.feed.price(rec.market.source_id).await {
         Ok(p) => p,
@@ -206,6 +356,7 @@ async fn run_close(state: Arc<SchedulerState>, rec: MarketRecord) -> Result<()> 
     Ok(())
 }
 
+#[allow(dead_code)]
 async fn run_resolve(state: Arc<SchedulerState>, rec: MarketRecord) -> Result<()> {
     let price = match state.feed.price(rec.market.source_id).await {
         Ok(p) => p,
@@ -239,6 +390,7 @@ async fn run_resolve(state: Arc<SchedulerState>, rec: MarketRecord) -> Result<()
     Ok(())
 }
 
+#[allow(dead_code)]
 async fn run_claim(state: Arc<SchedulerState>, rec: PositionRecord) -> Result<()> {
     let cranker_kp = clone_keypair(&state.identity.keypair);
     match submitter::submit_claim(

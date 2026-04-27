@@ -28,6 +28,7 @@ use solana_rpc_client_api::client_error::Error as ClientError;
 use solana_sdk::signature::Signature;
 use solana_signer::Signer;
 use solana_transaction::versioned::VersionedTransaction;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::OnceLock;
 use std::time::Duration;
 use tracing::{debug, warn};
@@ -290,18 +291,42 @@ const MAX_RETRIES: u32 = 5;
 const INITIAL_BACKOFF_MS: u64 = 250;
 const MAX_BACKOFF_MS: u64 = 4_000;
 
-/// Optional second RPC used for `sendTransaction` only. When `SEND_RPC_URL`
-/// is set we route writes there while reads stay on the main RPC. The point
-/// is to escape Helius free-tier sendTransaction throttling without losing
-/// the fast read path: writes go to public devnet (slow but no per-method
-/// cap), reads stay on Helius. When unset, behaviour is identical to the
-/// single-RPC path.
-static SEND_RPC: OnceLock<RpcClient> = OnceLock::new();
+/// Optional pool of RPCs used for `sendTransaction` only. When set we
+/// route writes there while reads stay on the main RPC. The point is to
+/// escape per-IP and per-key throttling on devnet's send path: each
+/// proxy in the pool comes from a different egress, so the round-robin
+/// triples (or more) the effective sendTransaction budget without
+/// touching the read path. Reads stay on Helius for the fast scan.
+///
+/// Configuration (in priority order):
+///   * `SEND_RPC_URLS` — comma-separated list, round-robin per submit.
+///   * `SEND_RPC_URL`  — single URL, equivalent to a one-element list.
+///   * unset           — behaviour identical to the single-RPC path.
+static SEND_RPCS: OnceLock<Vec<RpcClient>> = OnceLock::new();
+static SEND_RPC_INDEX: AtomicUsize = AtomicUsize::new(0);
+
+fn send_rpc_pool() -> Option<&'static [RpcClient]> {
+    let pool = SEND_RPCS.get_or_init(|| {
+        let raw = std::env::var("SEND_RPC_URLS")
+            .or_else(|_| std::env::var("SEND_RPC_URL"))
+            .unwrap_or_default();
+        raw.split(',')
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .map(|url| RpcClient::new(url.to_string()))
+            .collect::<Vec<_>>()
+    });
+    if pool.is_empty() { None } else { Some(pool.as_slice()) }
+}
 
 fn pick_send_rpc<'a>(default: &'a RpcClient) -> &'a RpcClient {
-    match std::env::var("SEND_RPC_URL") {
-        Ok(url) if !url.is_empty() => SEND_RPC.get_or_init(|| RpcClient::new(url)),
-        _ => default,
+    match send_rpc_pool() {
+        Some(pool) => {
+            let i = SEND_RPC_INDEX.fetch_add(1, Ordering::Relaxed) % pool.len();
+            // SAFETY: pool is &'static, narrowing the lifetime to 'a is fine.
+            &pool[i]
+        }
+        None => default,
     }
 }
 
@@ -421,6 +446,115 @@ pub async fn submit_claim(
         build_claim_ix(program_id, market, position, owner, stake_mint, &cranker_kp.pubkey());
     debug!(market = %market, position = %position, owner = %owner, "submitting claim");
     send_legacy_tx(rpc, cranker_kp, &[claim_ix]).await
+}
+
+// -----------------------------------------------------------------------------
+// Batched submit entry points (Phase 4a — multi-ix bundling)
+//
+// Each batch packs N (precompile + program-ix) pairs into a single legacy tx.
+// One round-trip per N markets cuts RPC load proportionally; the on-chain
+// program is unchanged. If any item in the batch reverts (e.g. a market got
+// closed by another cranker between scan and submit), the whole tx fails
+// atomically — caller handles the retry by re-scanning.
+//
+// Sizing math (legacy tx, 1232 B ceiling):
+//   close_market: 4 accounts per ix → ~6 unique after dedup, ~250 B per
+//   market overhead. Empirically 4 markets fit comfortably.
+//   resolve_market: same shape.
+//   claim: no precompile, but 6 unique accounts per ix and bigger metas
+//   → cap at 3 to stay well under the wire limit.
+// -----------------------------------------------------------------------------
+
+#[derive(Debug, Clone, Copy)]
+pub struct CloseItem {
+    pub market: Pubkey,
+    pub source_id: u32,
+    pub close_time: i64,
+    pub baseline_price: u128,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct ResolveItem {
+    pub market: Pubkey,
+    pub source_id: u32,
+    pub settlement_time: i64,
+    pub final_price: u128,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct ClaimItem {
+    pub market: Pubkey,
+    pub position: Pubkey,
+    pub owner: Pubkey,
+    pub stake_mint: Pubkey,
+}
+
+pub async fn submit_close_batch(
+    rpc: &RpcClient,
+    cranker_kp: &Keypair,
+    signing_key: &SigningKey,
+    program_id: &Pubkey,
+    items: &[CloseItem],
+) -> Result<Signature> {
+    if items.is_empty() {
+        return Err(anyhow!("submit_close_batch: empty"));
+    }
+    let pk_bytes = signing_key.verifying_key().to_bytes();
+    let mut ixs = Vec::with_capacity(items.len() * 2);
+    for it in items {
+        let payload = crate::payload::build_close_payload(it.source_id, it.close_time, it.baseline_price);
+        let sig: [u8; 64] = signing_key.sign(&payload).to_bytes();
+        ixs.push(build_ed25519_ix(&pk_bytes, &sig, &payload));
+        ixs.push(build_close_ix(program_id, &it.market, &cranker_kp.pubkey(), it.baseline_price, sig));
+    }
+    debug!(count = items.len(), "submitting close_market batch");
+    send_legacy_tx(rpc, cranker_kp, &ixs).await
+}
+
+pub async fn submit_resolve_batch(
+    rpc: &RpcClient,
+    cranker_kp: &Keypair,
+    signing_key: &SigningKey,
+    program_id: &Pubkey,
+    items: &[ResolveItem],
+) -> Result<Signature> {
+    if items.is_empty() {
+        return Err(anyhow!("submit_resolve_batch: empty"));
+    }
+    let pk_bytes = signing_key.verifying_key().to_bytes();
+    let mut ixs = Vec::with_capacity(items.len() * 2);
+    for it in items {
+        let payload = crate::payload::build_resolve_payload(it.source_id, it.settlement_time, it.final_price);
+        let sig: [u8; 64] = signing_key.sign(&payload).to_bytes();
+        ixs.push(build_ed25519_ix(&pk_bytes, &sig, &payload));
+        ixs.push(build_resolve_ix(program_id, &it.market, &cranker_kp.pubkey(), it.final_price, sig));
+    }
+    debug!(count = items.len(), "submitting resolve_market batch");
+    send_legacy_tx(rpc, cranker_kp, &ixs).await
+}
+
+pub async fn submit_claim_batch(
+    rpc: &RpcClient,
+    cranker_kp: &Keypair,
+    program_id: &Pubkey,
+    items: &[ClaimItem],
+) -> Result<Signature> {
+    if items.is_empty() {
+        return Err(anyhow!("submit_claim_batch: empty"));
+    }
+    let mut ixs = Vec::with_capacity(items.len());
+    for it in items {
+        ixs.push(build_claim_ix(
+            program_id,
+            &it.market,
+            &it.position,
+            &it.owner,
+            &it.stake_mint,
+            &cranker_kp.pubkey(),
+        ));
+    }
+    debug!(count = items.len(), "submitting claim batch");
+    send_legacy_tx(rpc, cranker_kp, &ixs).await
 }
 
 // -----------------------------------------------------------------------------
