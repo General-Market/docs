@@ -97,6 +97,8 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   const [initialSharesBn, setInitialSharesBn] = useState<bigint | null>(null)
   const [skippedApproval, setSkippedApproval] = useState(false)
   const [processStalled, setProcessStalled] = useState(false)
+  type Holding = { symbol: string; weight: number; price: number; name?: string; image?: string }
+  const [holdings, setHoldings] = useState<Holding[]>([])
 
   // Saved tx hashes
   const [savedApproveHash, setSavedApproveHash] = useState<string | null>(null)
@@ -548,6 +550,21 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     if (micro === -1) toastFired.current = false
   }, [micro, fillAmount, fillPrice, itpName, showSuccess])
 
+  // Per-asset breakdown — fetch once on fill so the user sees what they
+  // actually bought into. Prices come from /api/itp-enrichment (data-node).
+  useEffect(() => {
+    if (!fillAmount || holdings.length > 0) return
+    let cancelled = false
+    fetch(`/api/itp-enrichment?itp_id=${itpId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (cancelled || !d?.holdings) return
+        setHoldings(d.holdings as Holding[])
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [fillAmount, holdings.length, itpId])
+
   // Error handlers
   useEffect(() => {
     if (approveError) {
@@ -724,6 +741,38 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
             )
           })()}
         </div>
+        {holdings.length > 0 && (
+          <div className="pt-3 border-t border-black/5">
+            <p className="text-[11px] uppercase tracking-wide text-text-muted mb-2">Underlying assets</p>
+            <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+              {holdings.map(h => {
+                const assetUsd = fillAmount
+                  ? parseFloat(formatUnits(fillAmount, COLLATERAL_DECIMALS)) * (h.weight || 0)
+                  : 0
+                const units = h.price > 0 ? assetUsd / h.price : 0
+                return (
+                  <div key={h.symbol} className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2 min-w-0">
+                      {h.image && (
+                        <img src={h.image} alt="" className="w-4 h-4 rounded-full flex-shrink-0" />
+                      )}
+                      <span className="font-mono text-text-primary truncate">{h.symbol}</span>
+                      <span className="text-text-muted tabular-nums">{(h.weight * 100).toFixed(1)}%</span>
+                    </div>
+                    <div className="flex items-center gap-3 font-mono tabular-nums">
+                      <span className="text-text-muted">
+                        {h.price > 0 ? `$${h.price < 1 ? h.price.toFixed(4) : h.price.toFixed(2)}` : '—'}
+                      </span>
+                      <span className="text-text-primary">
+                        {h.price > 0 ? `${units < 1 ? units.toFixed(4) : units.toFixed(2)}` : '—'}
+                      </span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
       </div>
     )
   }
