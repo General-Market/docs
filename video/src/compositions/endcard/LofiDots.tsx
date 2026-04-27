@@ -1,12 +1,8 @@
 /**
- * LofiDots — broll resolved into a square grid of soft dots on paper.
- * Reference look: faded magazine print, halftone screen, the kind of
- * thing that pretends a photograph and a printer had a tired
- * conversation about how to remember a face.
- *
- * Pipeline: cloud broll → fullscreen quad shader → per-cell averaged
- * sample → uniform circle on a paper background. No hex tricks. The
- * lofi comes from the pitch, the desaturation, and the grain.
+ * LofiDots — graded broll dressed with paper grain, vignette, and the
+ * red-bridge chroma isolation pass. The hex tessellation and metallic
+ * dome shading have been retired; this is now a direct broll backdrop
+ * with the lofi grade and selective colour kept intact.
  */
 
 import React, { useMemo, useRef } from "react";
@@ -28,13 +24,7 @@ import {
 import * as THREE from "three";
 
 // ── Knobs ─────────────────────────────────────────────────────────────
-// Pitch of the hex grid in screen pixels (horizontal cell width).
-const CELL_PX = 11;
-// Hex size as fraction of full tessellation. 1.0 = no gap, 0.85 = visible paper.
-const HEX_RATIO = 0.92;
-// Soft edge in pixels. Smaller = harder hex edges.
-const EDGE_PX = 0.5;
-// Paper between hexes. Neutral so it doesn't tint the broll's own colors.
+// Paper tone behind the broll (used as fallback ground + grain base).
 const PAPER = "#ece7da";
 // 1 = full broll color, 0 = grayscale. Original colorimetry.
 const SATURATION = 1.0;
@@ -46,11 +36,19 @@ const LOFI_GRADE = 0.0;
 const GRAIN = 0.04;
 // Subtle vignette at the corners. 0 disables.
 const VIGNETTE = 0.18;
-// Metallic shading per hex: fake dome normal lit from upper-left.
-// 0 = flat, 1 = strong specular. The reference is around 0.3.
-const METALLIC = 0.32;
-// Specular sharpness — bigger = tighter highlight.
-const METAL_SHININESS = 22.0;
+// Chroma isolation: keep red-dominant pixels colored, grey the rest.
+// 1 = full isolation, 0 = bypass. Lower = lets more of the broll bleed.
+const CHROMA_ISOLATE = 1.0;
+// How much red dominance over (G,B) the pixel needs to count as "bridge".
+// 0.04 = generous (anything warm). 0.18 = strict (only saturated red).
+const RED_THRESHOLD = 0.08;
+// Soft edge of the threshold — half this on either side.
+const RED_FEATHER = 0.06;
+// Output red tint for the bridge — lerped with the original red value
+// so the bridge keeps some of its texture rather than going flat poster-red.
+const BRIDGE_RED: [number, number, number] = [0.86, 0.16, 0.18];
+// 0 = keep original red color, 1 = force pure BRIDGE_RED. Mid keeps texture.
+const BRIDGE_TINT = 0.55;
 
 // YouTube extract — the actual cloud broll.
 export const VIDEO_SRC =
@@ -72,17 +70,17 @@ const FRAGMENT = /* glsl */ `
   uniform sampler2D uTex;
   uniform vec2  uResolution;
   uniform vec2  uTexSize;
-  uniform float uCellPx;
-  uniform float uHexRatio;
-  uniform float uEdgePx;
   uniform vec3  uPaper;
   uniform float uSat;
   uniform float uFade;
   uniform float uLofi;
   uniform float uGrain;
   uniform float uVignette;
-  uniform float uMetal;
-  uniform float uMetalShine;
+  uniform float uChroma;
+  uniform float uRedThreshold;
+  uniform float uRedFeather;
+  uniform vec3  uBridgeRed;
+  uniform float uBridgeTint;
 
   varying vec2 vUv;
 
@@ -106,39 +104,6 @@ const FRAGMENT = /* glsl */ `
     return uv * scale + offset;
   }
 
-  // Pointy-top regular hexagon, signed distance from center, R = circumradius.
-  float sdHex(vec2 p, float R) {
-    p = abs(p);
-    float d = max(p.x, p.x * 0.5 + p.y * 0.866025);
-    return d - R * 0.866025;
-  }
-
-  // Find nearest hex center for a fragment. Pointy-top staggered grid:
-  // horizontal pitch = uCellPx, row pitch = sqrt(3)/2 * uCellPx. Each
-  // pixel may sit closest to one of four candidate centers.
-  vec2 nearestHexCenter(vec2 p) {
-    float rowH = uCellPx * 0.866025;
-    float halfCell = uCellPx * 0.5;
-    float jStart = floor((p.y - rowH * 0.5) / rowH);
-
-    vec2 best = vec2(0.0);
-    float bestD = 1.0e9;
-
-    for (int dj = 0; dj <= 1; dj++) {
-      float j = jStart + float(dj);
-      float xOff = mod(j, 2.0) * halfCell;
-      float iStart = floor((p.x - xOff - halfCell) / uCellPx);
-      for (int di = 0; di <= 1; di++) {
-        float i = iStart + float(di);
-        vec2 c = vec2(i * uCellPx + xOff + halfCell,
-                      j * rowH + rowH * 0.5);
-        float d = distance(p, c);
-        if (d < bestD) { bestD = d; best = c; }
-      }
-    }
-    return best;
-  }
-
   // Lofi tone-grade: warm shift, lifted/tinted shadows, slight roll-off.
   vec3 lofiGrade(vec3 c, float strength) {
     vec3 warm   = c * vec3(1.06, 1.00, 0.86);
@@ -147,49 +112,48 @@ const FRAGMENT = /* glsl */ `
     return mix(c, rolled, strength);
   }
 
+  // Chroma isolation — keep red-dominant pixels colored, grey the rest.
+  // Red dominance = R - max(G, B), normalised, made robust to brightness.
+  vec3 chromaIsolate(vec3 c, float strength) {
+    float lum = dot(c, vec3(0.2126, 0.7152, 0.0722));
+    vec3 grey = vec3(lum);
+
+    // How much red exceeds the brighter of green/blue. Negative when bluish.
+    float maxGB = max(c.g, c.b);
+    float dom = c.r - maxGB;
+    // Reject very dark pixels (noise dominates) and near-white (no chroma).
+    float chromaWeight = smoothstep(0.05, 0.18, length(c - grey));
+    float t0 = uRedThreshold - uRedFeather * 0.5;
+    float t1 = uRedThreshold + uRedFeather * 0.5;
+    float mask = smoothstep(t0, t1, dom) * chromaWeight;
+
+    vec3 redKept = mix(c, uBridgeRed, uBridgeTint);
+    vec3 isolated = mix(grey, redKept, mask);
+
+    return mix(c, isolated, strength);
+  }
+
   void main() {
     vec2 fragPx = vUv * uResolution;
 
-    vec2 cellCenter = nearestHexCenter(fragPx);
-
-    vec2 sampleUv = coverUv(cellCenter / uResolution, uResolution, uTexSize);
+    // Direct broll sample — no per-cell averaging, no hex tessellation.
+    vec2 sampleUv = coverUv(vUv, uResolution, uTexSize);
     vec3 col = texture2D(uTex, sampleUv).rgb;
+    col = chromaIsolate(col, uChroma);
     col = desaturate(col, uSat);
     col = lofiGrade(col, uLofi);
     col = mix(col, uPaper, uFade);
 
-    // Hex tessellation: max circumradius without overlap is uCellPx / sqrt(3).
-    float Rmax = uCellPx * 0.5773503;
-    float R = Rmax * uHexRatio;
-    vec2 localPx = fragPx - cellCenter;
-    float sd = sdHex(localPx, R);
-    float hexMask = 1.0 - smoothstep(-uEdgePx, uEdgePx, sd);
-
-    // Metallic — treat each hex as a small dome. Local pos normalised to
-    // hex apothem becomes a fake surface normal; light from upper-left.
-    float apothem = R * 0.866025;
-    vec2 lp = clamp(localPx / apothem, vec2(-1.0), vec2(1.0));
-    float r2 = min(1.0, dot(lp, lp));
-    float nz = sqrt(1.0 - r2);
-    vec3 N = normalize(vec3(lp.x, -lp.y, nz));
-    vec3 L = normalize(vec3(0.45, -0.55, 0.7));
-    float diff = clamp(dot(N, L), 0.0, 1.0);
-    vec3 H  = normalize(L + vec3(0.0, 0.0, 1.0));
-    float spec = pow(clamp(dot(N, H), 0.0, 1.0), uMetalShine);
-    // Shade: dim opposite the light, brighten toward it, sharp specular.
-    vec3 metal = col * (0.55 + 0.95 * diff) + vec3(spec * 0.6);
-    col = mix(col, metal, uMetal);
-
-    // Paper grain frozen to the surface, not animated.
+    // Paper grain — applied to the broll itself and to the vignette
+    // fallback so the texture stays continuous across the falloff.
     float grain = (hash(floor(fragPx / 1.4)) - 0.5) * uGrain;
-    vec3 paper = uPaper + grain;
+    col += vec3(grain);
 
-    vec3 outCol = mix(paper, col, hexMask);
-
-    // Soft vignette to push the corners back into the paper.
+    // Soft vignette pushes the corners back toward the paper tone.
+    vec3 paper = uPaper + vec3(grain);
     vec2 p = vUv - 0.5;
     float v = smoothstep(0.75, 0.2, length(p));
-    outCol = mix(outCol, paper, (1.0 - v) * uVignette);
+    vec3 outCol = mix(col, paper, (1.0 - v) * uVignette);
 
     gl_FragColor = vec4(outCol, 1.0);
   }
@@ -228,17 +192,23 @@ const DotPlane: React.FC<DotPlaneProps> = ({ texture, width, height }) => {
       uTex: { value: texture },
       uResolution: { value: new THREE.Vector2(width, height) },
       uTexSize: { value: texSize },
-      uCellPx: { value: CELL_PX },
-      uHexRatio: { value: HEX_RATIO },
-      uEdgePx: { value: EDGE_PX },
       uPaper: { value: new THREE.Color(PAPER) },
       uSat: { value: SATURATION },
       uFade: { value: FADE_TO_PAPER },
       uLofi: { value: LOFI_GRADE },
       uGrain: { value: GRAIN },
       uVignette: { value: VIGNETTE },
-      uMetal: { value: METALLIC },
-      uMetalShine: { value: METAL_SHININESS },
+      uChroma: { value: CHROMA_ISOLATE },
+      uRedThreshold: { value: RED_THRESHOLD },
+      uRedFeather: { value: RED_FEATHER },
+      uBridgeRed: {
+        value: new THREE.Vector3(
+          BRIDGE_RED[0],
+          BRIDGE_RED[1],
+          BRIDGE_RED[2],
+        ),
+      },
+      uBridgeTint: { value: BRIDGE_TINT },
     }),
     [texture, width, height, texSize],
   );
