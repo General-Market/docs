@@ -55,12 +55,15 @@ if [[ -f "$DEPLOY_FILE" ]]; then
         echo -e "${RED}This file contains wrong contract addresses. Refusing to copy.${NC}"
         exit 1
       fi
-      # Verify at least one Settlement contract exists on-chain (BridgeProxy)
-      BRIDGE_PROXY=$(python3 -c "import json; print(json.load(open('$DEPLOY_FILE'))['contracts']['BridgeProxy'])" 2>/dev/null || echo "")
-      if [[ -n "$BRIDGE_PROXY" ]]; then
-        CODE_SIZE=$(cast codesize "$BRIDGE_PROXY" --rpc-url https://rpc.testnet.soniclabs.com 2>/dev/null || echo "0")
+      # Verify a real Settlement-side contract exists on-chain. Use
+      # SettlementBridgeProxy — that's the Sonic deployment. The plain
+      # BridgeProxy key holds the L3 address which obviously has no code
+      # on Sonic; testing it here was the bug that fatal'd valid deploys.
+      SETTLEMENT_BRIDGE_PROXY=$(python3 -c "import json; print(json.load(open('$DEPLOY_FILE'))['contracts'].get('SettlementBridgeProxy',''))" 2>/dev/null || echo "")
+      if [[ -n "$SETTLEMENT_BRIDGE_PROXY" ]]; then
+        CODE_SIZE=$(cast codesize "$SETTLEMENT_BRIDGE_PROXY" --rpc-url https://rpc.testnet.soniclabs.com 2>/dev/null || echo "0")
         if [[ "$CODE_SIZE" == "0" ]]; then
-          echo -e "${RED}FATAL: BridgeProxy $BRIDGE_PROXY has NO CODE on Sonic testnet${NC}"
+          echo -e "${RED}FATAL: SettlementBridgeProxy $SETTLEMENT_BRIDGE_PROXY has NO CODE on Sonic testnet${NC}"
           echo -e "${RED}These are likely Anvil-only addresses. Refusing to copy.${NC}"
           exit 1
         fi
