@@ -39,11 +39,20 @@ const VIGNETTE = 0.18;
 // Chroma isolation: keep red-dominant pixels colored, grey the rest.
 // 1 = full isolation, 0 = bypass. Lower = lets more of the broll bleed.
 const CHROMA_ISOLATE = 1.0;
-// How much red dominance over (G,B) the pixel needs to count as "bridge".
-// 0.04 = generous (anything warm). 0.18 = strict (only saturated red).
-const RED_THRESHOLD = 0.08;
+// "Warmness" threshold a pixel (or its neighborhood) needs to count as
+// bridge. Warmness = (R − lum) − ½·((G − lum) + (B − lum)) — a
+// luminance-deviation projection onto the red axis. A cloud-covered red
+// pixel keeps a small positive value here that the old r−max(g,b) test
+// missed. Lower = more eager (catches hazy bridge); higher = stricter.
+const RED_THRESHOLD = 0.04;
 // Soft edge of the threshold — half this on either side.
-const RED_FEATHER = 0.06;
+const RED_FEATHER = 0.04;
+// Spatial dilation in source pixels. The shader takes the max warmness
+// over a 9-tap neighborhood at this radius, so cloud-covered or hazy
+// bridge pixels inherit detection from clearer neighbors. Without it,
+// thin clouds shred the bridge into red fragments separated by grey.
+// Larger = bridges wider gaps but smears the colour into surroundings.
+const DILATE_RADIUS = 6.0;
 // Output red tint for the bridge — lerped with the original red value
 // so the bridge keeps some of its texture rather than going flat poster-red.
 const BRIDGE_RED: [number, number, number] = [0.86, 0.16, 0.18];
@@ -81,6 +90,7 @@ const FRAGMENT = /* glsl */ `
   uniform float uRedFeather;
   uniform vec3  uBridgeRed;
   uniform float uBridgeTint;
+  uniform float uDilateRadius;
 
   varying vec2 vUv;
 
@@ -112,20 +122,26 @@ const FRAGMENT = /* glsl */ `
     return mix(c, rolled, strength);
   }
 
-  // Chroma isolation — keep red-dominant pixels colored, grey the rest.
-  // Red dominance = R - max(G, B), normalised, made robust to brightness.
-  vec3 chromaIsolate(vec3 c, float strength) {
+  // Warmness — projection onto the red axis in deviation-from-luminance
+  // space. Returns >0 for warm pixels, =0 for neutral grey, <0 for cool.
+  // Robust to desaturation: a cloud-covered red still scores positive.
+  float warmness(vec3 c) {
+    float lum = dot(c, vec3(0.2126, 0.7152, 0.0722));
+    vec3 dev = c - vec3(lum);
+    return dev.r - 0.5 * (dev.g + dev.b);
+  }
+
+  // Chroma isolation — keep warm pixels coloured, grey the rest. The
+  // warmness signal (precomputed in main with a spatial dilation pass)
+  // does the gating; no separate chroma-weight rejection because grey
+  // pixels already score zero.
+  vec3 chromaIsolate(vec3 c, float w, float strength) {
     float lum = dot(c, vec3(0.2126, 0.7152, 0.0722));
     vec3 grey = vec3(lum);
 
-    // How much red exceeds the brighter of green/blue. Negative when bluish.
-    float maxGB = max(c.g, c.b);
-    float dom = c.r - maxGB;
-    // Reject very dark pixels (noise dominates) and near-white (no chroma).
-    float chromaWeight = smoothstep(0.05, 0.18, length(c - grey));
     float t0 = uRedThreshold - uRedFeather * 0.5;
     float t1 = uRedThreshold + uRedFeather * 0.5;
-    float mask = smoothstep(t0, t1, dom) * chromaWeight;
+    float mask = smoothstep(t0, t1, w);
 
     vec3 redKept = mix(c, uBridgeRed, uBridgeTint);
     vec3 isolated = mix(grey, redKept, mask);
@@ -139,7 +155,27 @@ const FRAGMENT = /* glsl */ `
     // Direct broll sample — no per-cell averaging, no hex tessellation.
     vec2 sampleUv = coverUv(vUv, uResolution, uTexSize);
     vec3 col = texture2D(uTex, sampleUv).rgb;
-    col = chromaIsolate(col, uChroma);
+
+    // Spatial dilation — max warmness over a 9-tap neighborhood at
+    // uDilateRadius pixels. Cloud-covered or hazy bridge pixels inherit
+    // detection from clearer neighbors so the bridge stays continuous
+    // across weather edges instead of dropping out.
+    vec2 stp = vec2(uDilateRadius) / uResolution;
+    float w0 = warmness(col);
+    float w1 = warmness(texture2D(uTex, sampleUv + vec2(stp.x, 0.0)).rgb);
+    float w2 = warmness(texture2D(uTex, sampleUv - vec2(stp.x, 0.0)).rgb);
+    float w3 = warmness(texture2D(uTex, sampleUv + vec2(0.0, stp.y)).rgb);
+    float w4 = warmness(texture2D(uTex, sampleUv - vec2(0.0, stp.y)).rgb);
+    float w5 = warmness(texture2D(uTex, sampleUv + stp).rgb);
+    float w6 = warmness(texture2D(uTex, sampleUv - stp).rgb);
+    float w7 = warmness(texture2D(uTex, sampleUv + vec2(stp.x, -stp.y)).rgb);
+    float w8 = warmness(texture2D(uTex, sampleUv + vec2(-stp.x, stp.y)).rgb);
+    float maxW = max(
+      max(max(w0, w1), max(w2, w3)),
+      max(max(w4, w5), max(max(w6, w7), w8))
+    );
+
+    col = chromaIsolate(col, maxW, uChroma);
     col = desaturate(col, uSat);
     col = lofiGrade(col, uLofi);
     col = mix(col, uPaper, uFade);
@@ -209,6 +245,7 @@ const DotPlane: React.FC<DotPlaneProps> = ({ texture, width, height }) => {
         ),
       },
       uBridgeTint: { value: BRIDGE_TINT },
+      uDilateRadius: { value: DILATE_RADIUS },
     }),
     [texture, width, height, texSize],
   );
