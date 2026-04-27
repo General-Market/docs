@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useUnifiedWalletContext } from '@jup-ag/wallet-adapter'
 import { useWallet } from '@/hooks/useWallet'
 import {
@@ -115,6 +115,22 @@ function BetTicketActive({
     setLocalError(null)
   }, [slot.marketPda])
 
+  // Cohort rotation cue. CalendarPageClient reseats the selected slot to
+  // the next cohort by catalogId every 15s; without a visual cue the
+  // ticket silently swaps the market under the user. Track the previous
+  // PDA so a real rotation (not the initial mount) flashes the header
+  // and exposes a "rolled" badge for ~2s.
+  const prevPdaRef = useRef<string | null>(null)
+  const [justRolled, setJustRolled] = useState(false)
+  useEffect(() => {
+    const prev = prevPdaRef.current
+    prevPdaRef.current = slot.marketPda
+    if (prev === null || prev === slot.marketPda) return
+    setJustRolled(true)
+    const id = window.setTimeout(() => setJustRolled(false), 2_500)
+    return () => window.clearTimeout(id)
+  }, [slot.marketPda])
+
   const parsedUnits = useMemo(() => {
     try { return displayToUsdcUnits(amount) } catch { return 0n }
   }, [amount])
@@ -155,9 +171,23 @@ function BetTicketActive({
 
   return (
     <aside
-      className="flex flex-col rounded-md border border-terminal-border bg-terminal-surface"
+      className={[
+        'flex flex-col rounded-md border bg-terminal-surface transition-[border-color,box-shadow] duration-700 ease-out',
+        justRolled
+          ? 'border-emerald-400/70 shadow-[0_0_0_1px_rgb(52_211_153/0.4),0_8px_24px_-12px_rgb(52_211_153/0.5)]'
+          : 'border-terminal-border',
+      ].join(' ')}
       aria-label="Bet ticket"
     >
+      {justRolled ? (
+        <div
+          className="rounded-t-md bg-emerald-400/10 px-4 py-1.5 text-caption uppercase tracking-[0.1em] text-emerald-300"
+          role="status"
+          aria-live="polite"
+        >
+          rolled to next cohort · stake preserved
+        </div>
+      ) : null}
       <BetBody
         slot={slot}
         side={side}
