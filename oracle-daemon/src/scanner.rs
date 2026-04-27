@@ -21,7 +21,10 @@ use solana_pubkey::Pubkey;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 use solana_rpc_client_api::config::{RpcAccountInfoConfig, RpcProgramAccountsConfig};
 use solana_rpc_client_api::filter::{Memcmp, RpcFilterType};
-use tracing::debug;
+use std::sync::Arc;
+use tracing::{debug, warn};
+
+use crate::indexer::IndexerClient;
 
 // --- Field offsets inside Market account data, after 8-byte discriminator ---
 // Pinned to Market::LEN layout in programs-solana/.../state.rs. A drift in
@@ -58,11 +61,57 @@ pub struct PositionRecord {
 pub struct Scanner {
     rpc: std::sync::Arc<RpcClient>,
     program_id: Pubkey,
+    /// When set, the scanner reads its candidate set from the indexer
+    /// Postgres instead of `getProgramAccounts`. The chain is still hit
+    /// per candidate via `getMultipleAccountsInfo` to materialize the
+    /// `Market` / `Position` structs — that call is per-tx flat cost
+    /// and survives free RPC tiers; the bulk filter scan does not.
+    indexer: Option<Arc<IndexerClient>>,
 }
+
+const INDEXER_BATCH_LIMIT: i64 = 200;
+const ACCOUNT_FETCH_CHUNK: usize = 100;
 
 impl Scanner {
     pub fn new(rpc: std::sync::Arc<RpcClient>, program_id: Pubkey) -> Self {
-        Self { rpc, program_id }
+        Self { rpc, program_id, indexer: None }
+    }
+
+    pub fn with_indexer(
+        rpc: std::sync::Arc<RpcClient>,
+        program_id: Pubkey,
+        indexer: Arc<IndexerClient>,
+    ) -> Self {
+        Self { rpc, program_id, indexer: Some(indexer) }
+    }
+
+    /// Materialize a Market candidate set into full `MarketRecord` values
+    /// by reading the on-chain accounts. Cheaper than getProgramAccounts
+    /// even when the candidate set is large because each chunk is bounded
+    /// by `ACCOUNT_FETCH_CHUNK` and free tiers cope with that fine.
+    async fn fetch_market_records(
+        &self,
+        addresses: &[Pubkey],
+    ) -> Result<Vec<MarketRecord>> {
+        let mut out = Vec::with_capacity(addresses.len());
+        for chunk in addresses.chunks(ACCOUNT_FETCH_CHUNK) {
+            let infos = self
+                .rpc
+                .get_multiple_accounts(chunk)
+                .await
+                .with_context(|| format!("getMultipleAccounts(Market, n={})", chunk.len()))?;
+            for (addr, info) in chunk.iter().zip(infos.into_iter()) {
+                let Some(info) = info else {
+                    debug!(address = %addr, "indexer-known market missing on chain — skipped");
+                    continue;
+                };
+                match Market::try_deserialize(&mut info.data.as_slice()) {
+                    Ok(m) => out.push(MarketRecord { address: *addr, market: m }),
+                    Err(e) => debug!(address = %addr, error = %e, "skipped un-deserializable Market"),
+                }
+            }
+        }
+        Ok(out)
     }
 
     async fn get_markets_with_filters(
@@ -107,6 +156,9 @@ impl Scanner {
 
     /// Markets past close_time with no baseline (needs `close_market`).
     pub async fn markets_needing_close(&self, now: i64) -> Result<Vec<MarketRecord>> {
+        if let Some(idx) = &self.indexer {
+            return self.markets_needing_close_via_indexer(idx, now).await;
+        }
         // Baseline u128 == 0: 16 zero bytes.
         let zero_baseline = RpcFilterType::Memcmp(Memcmp::new_raw_bytes(
             MARKET_OFFSET_BASELINE as usize,
@@ -119,8 +171,36 @@ impl Scanner {
             .collect())
     }
 
+    async fn markets_needing_close_via_indexer(
+        &self,
+        idx: &IndexerClient,
+        now: i64,
+    ) -> Result<Vec<MarketRecord>> {
+        let candidates = idx
+            .markets_needing_close(now, INDEXER_BATCH_LIMIT)
+            .await
+            .map_err(|e| {
+                warn!(error = %e, "indexer markets_needing_close query failed");
+                e
+            })?;
+        if candidates.is_empty() {
+            return Ok(Vec::new());
+        }
+        let addrs: Vec<Pubkey> = candidates.iter().map(|c| c.address).collect();
+        let records = self.fetch_market_records(&addrs).await?;
+        // Re-apply the predicate against the on-chain truth: an event may
+        // have landed since the indexer row was written.
+        Ok(records
+            .into_iter()
+            .filter(|r| r.market.baseline_price == 0 && r.market.close_time <= now)
+            .collect())
+    }
+
     /// Markets with a baseline past settlement_time still unresolved.
     pub async fn markets_needing_resolve(&self, now: i64) -> Result<Vec<MarketRecord>> {
+        if let Some(idx) = &self.indexer {
+            return self.markets_needing_resolve_via_indexer(idx, now).await;
+        }
         // resolved == false (single 0 byte).
         let unresolved = RpcFilterType::Memcmp(Memcmp::new_raw_bytes(
             MARKET_OFFSET_RESOLVED as usize,
@@ -130,6 +210,33 @@ impl Scanner {
         Ok(candidates
             .into_iter()
             .filter(|r| r.market.baseline_price > 0 && r.market.settlement_time <= now)
+            .collect())
+    }
+
+    async fn markets_needing_resolve_via_indexer(
+        &self,
+        idx: &IndexerClient,
+        now: i64,
+    ) -> Result<Vec<MarketRecord>> {
+        let candidates = idx
+            .markets_needing_resolve(now, INDEXER_BATCH_LIMIT)
+            .await
+            .map_err(|e| {
+                warn!(error = %e, "indexer markets_needing_resolve query failed");
+                e
+            })?;
+        if candidates.is_empty() {
+            return Ok(Vec::new());
+        }
+        let addrs: Vec<Pubkey> = candidates.iter().map(|c| c.address).collect();
+        let records = self.fetch_market_records(&addrs).await?;
+        Ok(records
+            .into_iter()
+            .filter(|r| {
+                !r.market.resolved
+                    && r.market.baseline_price > 0
+                    && r.market.settlement_time <= now
+            })
             .collect())
     }
 
@@ -147,6 +254,9 @@ impl Scanner {
     /// program-wide Position sweep survives as a test-only fallback; see
     /// `positions_needing_claim_legacy`.
     pub async fn positions_needing_claim(&self) -> Result<Vec<PositionRecord>> {
+        if let Some(idx) = &self.indexer {
+            return self.positions_needing_claim_via_indexer(idx).await;
+        }
         let resolved_flag = RpcFilterType::Memcmp(Memcmp::new_raw_bytes(
             MARKET_OFFSET_RESOLVED as usize,
             vec![1u8],
@@ -160,6 +270,62 @@ impl Scanner {
         for market in &resolved {
             let positions = self.positions_for_market(&market.address).await?;
             out.extend(positions);
+        }
+        Ok(out)
+    }
+
+    /// Indexer-backed claim discovery. Pulls (market, owner) pairs that
+    /// have a resolved market and no claim event, derives the deterministic
+    /// Position PDA, and batch-fetches the on-chain Position accounts. A
+    /// position that no longer exists (already-claimed and closed) is
+    /// skipped silently — the indexer can briefly lag the chain.
+    async fn positions_needing_claim_via_indexer(
+        &self,
+        idx: &IndexerClient,
+    ) -> Result<Vec<PositionRecord>> {
+        // Larger limit than the market scans because each position fits
+        // in a single getMultipleAccounts chunk; we still cap to keep the
+        // per-tick wall time bounded.
+        let candidates = idx
+            .positions_needing_claim(1_000)
+            .await
+            .map_err(|e| {
+                warn!(error = %e, "indexer positions_needing_claim query failed");
+                e
+            })?;
+        if candidates.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        // Derive Position PDAs in parallel with the per-pair address book.
+        let mut entries: Vec<(Pubkey, Pubkey)> = Vec::with_capacity(candidates.len());
+        for c in candidates {
+            let (pda, _) = Pubkey::find_program_address(
+                &[b"position", c.market.as_ref(), c.owner.as_ref()],
+                &self.program_id,
+            );
+            entries.push((pda, c.market));
+        }
+
+        let mut out = Vec::with_capacity(entries.len());
+        for chunk in entries.chunks(ACCOUNT_FETCH_CHUNK) {
+            let pdas: Vec<Pubkey> = chunk.iter().map(|(pda, _)| *pda).collect();
+            let infos = self
+                .rpc
+                .get_multiple_accounts(&pdas)
+                .await
+                .with_context(|| format!("getMultipleAccounts(Position, n={})", pdas.len()))?;
+            for ((pda, market), info) in chunk.iter().zip(infos.into_iter()) {
+                let Some(info) = info else { continue };
+                match Position::try_deserialize(&mut info.data.as_slice()) {
+                    Ok(p) => out.push(PositionRecord {
+                        address: *pda,
+                        market_address: *market,
+                        position: p,
+                    }),
+                    Err(e) => debug!(address = %pda, error = %e, "skipped un-deserializable Position"),
+                }
+            }
         }
         Ok(out)
     }

@@ -17,6 +17,7 @@ use tracing::{error, info, warn};
 
 use crate::feed::Feed;
 use crate::identity::Identity;
+use crate::indexer::IndexerClient;
 use crate::metrics::Metrics;
 use crate::scanner::{MarketRecord, PositionRecord, Scanner};
 use crate::submitter;
@@ -33,6 +34,9 @@ pub struct SchedulerState {
     pub metrics: Metrics,
     pub stake_mint: Pubkey,
     pub poll_interval: Duration,
+    /// Indexer Postgres client, when configured. The scanner uses it to
+    /// avoid getProgramAccounts on free-tier RPCs.
+    pub indexer: Option<Arc<IndexerClient>>,
 }
 
 fn now_unix() -> i64 {
@@ -43,8 +47,15 @@ fn now_unix() -> i64 {
 }
 
 pub async fn run(state: Arc<SchedulerState>, mut shutdown: tokio::sync::watch::Receiver<bool>) -> Result<()> {
-    info!(poll_secs = state.poll_interval.as_secs(), "scheduler started");
-    let scanner = Scanner::new(state.rpc.clone(), state.program_id);
+    info!(
+        poll_secs = state.poll_interval.as_secs(),
+        indexer = state.indexer.is_some(),
+        "scheduler started"
+    );
+    let scanner = match state.indexer.clone() {
+        Some(idx) => Scanner::with_indexer(state.rpc.clone(), state.program_id, idx),
+        None => Scanner::new(state.rpc.clone(), state.program_id),
+    };
 
     loop {
         if *shutdown.borrow() {

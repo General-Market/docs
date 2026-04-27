@@ -19,6 +19,14 @@ pub struct Config {
     pub oracle_keypair_path: String,
     /// Base URL of the data-node HTTP service (without trailing slash).
     pub data_node_url: String,
+    /// Indexer Postgres connection string. When set, the scheduler reads
+    /// the candidate market set from `prediction_market.market_*` tables
+    /// instead of the program-wide `getProgramAccounts` filter scan that
+    /// Helius free tier rejects. The fallback path keeps the chain scan
+    /// alive for environments without a local indexer.
+    pub indexer_postgres_url: Option<String>,
+    /// Schema name in the indexer database. Defaults to `prediction_market`.
+    pub indexer_schema: String,
     /// Prometheus exporter bind port.
     pub metrics_port: u16,
     /// Seconds between chain scans.
@@ -68,11 +76,21 @@ impl Config {
             .map_err(|e| anyhow!("MIN_SOL_BALANCE invalid: {e}"))?
             .unwrap_or(0.1);
 
+        // Empty string treated as "not set" — easier to stub in env files.
+        let indexer_postgres_url = std::env::var("INDEXER_POSTGRES_URL")
+            .ok()
+            .filter(|s| !s.trim().is_empty());
+
+        let indexer_schema = std::env::var("INDEXER_SCHEMA")
+            .unwrap_or_else(|_| "prediction_market".to_string());
+
         Ok(Self {
             rpc_url,
             program_id,
             oracle_keypair_path,
             data_node_url,
+            indexer_postgres_url,
+            indexer_schema,
             metrics_port,
             poll_interval: Duration::from_secs(poll_secs),
             min_sol_balance,

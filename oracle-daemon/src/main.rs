@@ -10,7 +10,7 @@
 use anyhow::Result;
 use tracing::{error, info};
 
-use prediction_market_oracle::{config, identity, feed, metrics, scheduler};
+use prediction_market_oracle::{config, identity, feed, indexer, metrics, scheduler};
 
 use solana_commitment_config::CommitmentConfig;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
@@ -53,6 +53,28 @@ async fn main() -> Result<()> {
 
     metrics::spawn_server(metrics_bundle.clone(), cfg.metrics_port);
 
+    // Indexer is optional. When unset the scanner falls back to the
+    // legacy chain-scan path; when set it discovers candidate markets via
+    // SQL and only hits the chain to materialize the Market structs.
+    let indexer_client = match cfg.indexer_postgres_url.as_deref() {
+        Some(url) => {
+            match indexer::IndexerClient::connect(url, cfg.indexer_schema.clone()).await {
+                Ok(c) => {
+                    info!("indexer postgres connected (schema={})", cfg.indexer_schema);
+                    Some(Arc::new(c))
+                }
+                Err(e) => {
+                    error!(error = %e, "indexer connect failed; falling back to chain scan");
+                    None
+                }
+            }
+        }
+        None => {
+            info!("INDEXER_POSTGRES_URL unset — using on-chain getProgramAccounts fallback");
+            None
+        }
+    };
+
     let feed = feed::Feed::new(cfg.data_node_url.clone());
     let (shutdown_tx, shutdown_rx) = tokio::sync::watch::channel(false);
 
@@ -64,6 +86,7 @@ async fn main() -> Result<()> {
         metrics: metrics_bundle.clone(),
         stake_mint,
         poll_interval: cfg.poll_interval,
+        indexer: indexer_client,
     });
 
     let scheduler_handle = tokio::spawn({

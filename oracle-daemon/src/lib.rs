@@ -5,6 +5,7 @@
 pub mod config;
 pub mod feed;
 pub mod identity;
+pub mod indexer;
 pub mod metrics;
 pub mod payload;
 pub mod scanner;
