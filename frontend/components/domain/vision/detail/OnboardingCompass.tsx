@@ -54,14 +54,16 @@ const STEP_DEFS: StepDef[] = [
     title: 'Claim Test Funds',
     description: '1,000 USDC + gas. One click. Enough to start.',
     action: 'CLAIM FAUCET',
+    targets: ['[data-onboarding-target="widget"]'],
   },
   {
     id: 'vault',
     number: 3,
     title: 'Join a Vault',
-    description: 'Deposit into a vault. Your money trades automatically.',
+    description: 'Type an amount, then deposit. Your money trades automatically.',
     action: 'GO TO VAULTS',
     targets: [
+      '[data-onboarding-target="vault-input"]',
       '[data-onboarding-target="vault-action"]',
       '[data-onboarding-target="vault"]',
     ],
@@ -72,6 +74,7 @@ const STEP_DEFS: StepDef[] = [
     title: 'Deploy Your Bot',
     description: 'Go further. Build your own strategy with AI.',
     action: 'DEPLOY BOT',
+    targets: ['[data-onboarding-target="widget"]'],
   },
 ]
 
@@ -417,6 +420,10 @@ export function OnboardingCompass({ state, onVaultDeposit, onBotDeploy }: Onboar
         exit={{ opacity: 0, y: 24 }}
         transition={{ duration: 0.5, ease: EASE_OUT_EXPO }}
         style={{ x: dragX, y: dragY }}
+        // The data attribute makes the widget itself a pointer target. For
+        // the faucet/bot steps the arrow tracks this element — useful once
+        // the user has dragged the widget somewhere unexpected.
+        data-onboarding-target="widget"
         className={[
           // Compact card anchored bottom-right; same shape on mobile so the
           // drag affordance is consistent across viewports.
