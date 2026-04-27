@@ -4,10 +4,12 @@ import { injected } from 'wagmi/connectors'
 import { getExplorerBaseUrl } from '@/lib/utils/explorer'
 
 // RPC URLs from environment.
-// Browser always routes L3 through the same-origin /api/rpc proxy: avoids
-// mixed-content on HTTPS and the upstream nginx's broken CORS preflight on
-// HTTP. Server-side (SSR) uses the direct URL.
-const envRpcUrl = process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8546'
+// Browser always routes L3 and Settlement through same-origin proxies: avoids
+// mixed-content on HTTPS and CORS failures on upstream RPCs that don't answer
+// preflight (the L3 nginx, Sonic's public testnet RPC). SSR uses direct URLs.
+const envRpcUrl = typeof window !== 'undefined'
+  ? '/api/settlement-rpc'
+  : (process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8546')
 const envL3RpcUrl = typeof window !== 'undefined'
   ? '/api/rpc'
   : (process.env.NEXT_PUBLIC_L3_RPC_URL || 'http://localhost:8545')
@@ -75,7 +77,7 @@ const l3Transport = l3FallbackRpcUrl
     })
 
 // RPC configuration — Settlement
-const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8546'
+const rpcUrl = envRpcUrl
 const fallbackRpcUrl = process.env.NEXT_PUBLIC_RPC_FALLBACK_URL
 
 const settlementTransport = fallbackRpcUrl
