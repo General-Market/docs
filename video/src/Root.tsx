@@ -17,8 +17,6 @@ import {
   ofReplicateMeta,
   ofSceneMetas,
 } from "./compositions/replicates/ordinaryfolk/OFReplicateComposition";
-import { ofFirst8Meta } from "./compositions/replicates/of-first8/OFFirst8";
-import { ofFirst8SideBySideMeta } from "./compositions/replicates/of-first8/OFFirst8SideBySide";
 import {
   whopReplicateMeta,
   whopSceneMetas,
@@ -31,12 +29,7 @@ import {
   webglPicksMeta,
   webglSceneMetas,
 } from "./compositions/backgrounds/webgl-picks/WebGLPicksComposition";
-import {
-  gmLogo3dMeta,
-  gmLogoSceneMetas,
-} from "./compositions/gm/logo-3d/GMLogo3D";
 import { visionVsMeta } from "./compositions/vision/vs/VisionVsComposition";
-import { gmQuantsMeta } from "./compositions/vision/vs/GMQuantsComposition";
 import { kalshiMeta } from "./compositions/replicates/kalshi/KalshiComposition";
 import { kalshiSideBySideMeta } from "./compositions/replicates/kalshi/KalshiSideBySide";
 import { flashblocksMeta } from "./compositions/replicates/standrew/FlashblocksComposition";
@@ -98,135 +91,6 @@ const shorts: ShortConfig[] = [];
 export const RemotionRoot: React.FC = () => {
   return (
     <>
-      {/* ═══ LAUNCH ═══ */}
-      <Composition
-        id="Launch30"
-        component={Launch30}
-        durationInFrames={LAUNCH_DURATION}
-        fps={LAUNCH_FPS}
-        width={1920}
-        height={1080}
-      />
-
-      {/* ═══ OG CARD (General Market Twitter/OG image) ═══ */}
-      <Composition
-        id="OgCardGM"
-        component={OgCardGM}
-        durationInFrames={1}
-        fps={30}
-        width={1200}
-        height={630}
-      />
-
-      {/* ═══ OG BANNER (X/Twitter profile banner 1500x500) ═══ */}
-      <Composition
-        id="OgBannerGM"
-        component={OgBannerGM}
-        durationInFrames={1}
-        fps={30}
-        width={1500}
-        height={500}
-      />
-
-      {/* ═══ INSIDER CASES ═══ */}
-      <Composition
-        id={insiderCasesMeta.id}
-        component={insiderCasesMeta.component}
-        durationInFrames={insiderCasesMeta.durationInFrames}
-        fps={insiderCasesMeta.fps}
-        width={insiderCasesMeta.width}
-        height={insiderCasesMeta.height}
-      />
-
-      {/* ═══ END CARD ═══ */}
-      <Composition
-        id="EndCard"
-        component={EndCard}
-        durationInFrames={ENDCARD_DURATION}
-        fps={ENDCARD_FPS}
-        width={1920}
-        height={1080}
-      />
-
-      {/* ═══ LOFI DOTS — hex shader bench, full broll length (5m11s) ═══ */}
-      <Composition
-        id="LofiDots"
-        component={LofiDots}
-        durationInFrames={Math.round(311 * ENDCARD_FPS)}
-        fps={ENDCARD_FPS}
-        width={1920}
-        height={1080}
-      />
-
-      {/* ═══ SEQUENCE 02 ═══ */}
-      <Composition
-        id="Sequence02"
-        component={Sequence02}
-        durationInFrames={SEQ02_DURATION}
-        fps={SEQ02_FPS}
-        width={SEQ02_W}
-        height={SEQ02_H}
-      />
-
-      {/* ═══ TUTORIAL ═══ */}
-      <Composition
-        id="Tutorial"
-        component={TutorialVideo}
-        durationInFrames={TUTORIAL_DURATION}
-        fps={TUTORIAL_FPS}
-        width={1920}
-        height={1080}
-      />
-      {/* ═══ WEBGL PICKS ═══ */}
-      <Composition
-        id={webglPicksMeta.id}
-        component={webglPicksMeta.component}
-        durationInFrames={webglPicksMeta.durationInFrames}
-        fps={webglPicksMeta.fps}
-        width={webglPicksMeta.width}
-        height={webglPicksMeta.height}
-      />
-      {SHOW_SCENES && (
-        <Folder name="WebGL-Picks">
-          {webglSceneMetas.map((meta) => (
-            <Composition
-              key={meta.id}
-              id={meta.id}
-              component={meta.component}
-              durationInFrames={meta.durationInFrames}
-              fps={meta.fps}
-              width={meta.width}
-              height={meta.height}
-            />
-          ))}
-        </Folder>
-      )}
-
-      {/* ═══ GM BRAND ═══ */}
-      <Composition
-        id={gmBrandMeta.id}
-        component={gmBrandMeta.component}
-        durationInFrames={gmBrandMeta.durationInFrames}
-        fps={gmBrandMeta.fps}
-        width={gmBrandMeta.width}
-        height={gmBrandMeta.height}
-      />
-      {SHOW_SCENES && (
-        <Folder name="GM-Scenes">
-          {gmSceneMetas.map((meta) => (
-            <Composition
-              key={meta.id}
-              id={meta.id}
-              component={meta.component}
-              durationInFrames={meta.durationInFrames}
-              fps={meta.fps}
-              width={meta.width}
-              height={meta.height}
-            />
-          ))}
-        </Folder>
-      )}
-
       {/* ═══ REPLICATE ═══ */}
       <Folder name="Replicate">
         {/* --- Wabi --- */}
@@ -473,24 +337,6 @@ export const RemotionRoot: React.FC = () => {
           </Folder>
         )}
 
-        {/* --- OF First 8s --- */}
-        <Composition
-          id={ofFirst8Meta.id}
-          component={ofFirst8Meta.component}
-          durationInFrames={ofFirst8Meta.durationInFrames}
-          fps={ofFirst8Meta.fps}
-          width={ofFirst8Meta.width}
-          height={ofFirst8Meta.height}
-        />
-        <Composition
-          id={ofFirst8SideBySideMeta.id}
-          component={ofFirst8SideBySideMeta.component}
-          durationInFrames={ofFirst8SideBySideMeta.durationInFrames}
-          fps={ofFirst8SideBySideMeta.fps}
-          width={ofFirst8SideBySideMeta.width}
-          height={ofFirst8SideBySideMeta.height}
-        />
-
         {/* --- Whop --- */}
         <Composition
           id={whopReplicateMeta.id}
@@ -519,6 +365,116 @@ export const RemotionRoot: React.FC = () => {
 
       {/* ═══ OTHER ═══ */}
       <Folder name="Other">
+        <Composition
+          id="Launch30"
+          component={Launch30}
+          durationInFrames={LAUNCH_DURATION}
+          fps={LAUNCH_FPS}
+          width={1920}
+          height={1080}
+        />
+        <Composition
+          id="OgCardGM"
+          component={OgCardGM}
+          durationInFrames={1}
+          fps={30}
+          width={1200}
+          height={630}
+        />
+        <Composition
+          id="OgBannerGM"
+          component={OgBannerGM}
+          durationInFrames={1}
+          fps={30}
+          width={1500}
+          height={500}
+        />
+        <Composition
+          id={insiderCasesMeta.id}
+          component={insiderCasesMeta.component}
+          durationInFrames={insiderCasesMeta.durationInFrames}
+          fps={insiderCasesMeta.fps}
+          width={insiderCasesMeta.width}
+          height={insiderCasesMeta.height}
+        />
+        <Composition
+          id="EndCard"
+          component={EndCard}
+          durationInFrames={ENDCARD_DURATION}
+          fps={ENDCARD_FPS}
+          width={1920}
+          height={1080}
+        />
+        <Composition
+          id="LofiDots"
+          component={LofiDots}
+          durationInFrames={Math.round(311 * ENDCARD_FPS)}
+          fps={ENDCARD_FPS}
+          width={1920}
+          height={1080}
+        />
+        <Composition
+          id="Sequence02"
+          component={Sequence02}
+          durationInFrames={SEQ02_DURATION}
+          fps={SEQ02_FPS}
+          width={SEQ02_W}
+          height={SEQ02_H}
+        />
+        <Composition
+          id="Tutorial"
+          component={TutorialVideo}
+          durationInFrames={TUTORIAL_DURATION}
+          fps={TUTORIAL_FPS}
+          width={1920}
+          height={1080}
+        />
+        <Composition
+          id={webglPicksMeta.id}
+          component={webglPicksMeta.component}
+          durationInFrames={webglPicksMeta.durationInFrames}
+          fps={webglPicksMeta.fps}
+          width={webglPicksMeta.width}
+          height={webglPicksMeta.height}
+        />
+        {SHOW_SCENES && (
+          <Folder name="WebGL-Picks">
+            {webglSceneMetas.map((meta) => (
+              <Composition
+                key={meta.id}
+                id={meta.id}
+                component={meta.component}
+                durationInFrames={meta.durationInFrames}
+                fps={meta.fps}
+                width={meta.width}
+                height={meta.height}
+              />
+            ))}
+          </Folder>
+        )}
+        <Composition
+          id={gmBrandMeta.id}
+          component={gmBrandMeta.component}
+          durationInFrames={gmBrandMeta.durationInFrames}
+          fps={gmBrandMeta.fps}
+          width={gmBrandMeta.width}
+          height={gmBrandMeta.height}
+        />
+        {SHOW_SCENES && (
+          <Folder name="GM-Scenes">
+            {gmSceneMetas.map((meta) => (
+              <Composition
+                key={meta.id}
+                id={meta.id}
+                component={meta.component}
+                durationInFrames={meta.durationInFrames}
+                fps={meta.fps}
+                width={meta.width}
+                height={meta.height}
+              />
+            ))}
+          </Folder>
+        )}
         <Composition
           id={visionVCMeta.id}
           component={visionVCMeta.component}
@@ -592,37 +548,6 @@ export const RemotionRoot: React.FC = () => {
           width={visionVsMeta.width}
           height={visionVsMeta.height}
         />
-        <Composition
-          id={gmQuantsMeta.id}
-          component={gmQuantsMeta.component}
-          durationInFrames={gmQuantsMeta.durationInFrames}
-          fps={gmQuantsMeta.fps}
-          width={gmQuantsMeta.width}
-          height={gmQuantsMeta.height}
-        />
-        <Composition
-          id={gmLogo3dMeta.id}
-          component={gmLogo3dMeta.component}
-          durationInFrames={gmLogo3dMeta.durationInFrames}
-          fps={gmLogo3dMeta.fps}
-          width={gmLogo3dMeta.width}
-          height={gmLogo3dMeta.height}
-        />
-        {SHOW_SCENES && (
-          <Folder name="GMLogo-Scenes">
-            {gmLogoSceneMetas.map((meta) => (
-              <Composition
-                key={meta.id}
-                id={meta.id}
-                component={meta.component}
-                durationInFrames={meta.durationInFrames}
-                fps={meta.fps}
-                width={meta.width}
-                height={meta.height}
-              />
-            ))}
-          </Folder>
-        )}
       </Folder>
 
       {/* Per-short compositions */}
