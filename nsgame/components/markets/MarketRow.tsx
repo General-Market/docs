@@ -240,7 +240,15 @@ function CompetitorRow({
         {compactAudience(audience)}
       </span>
 
-      {oneSidedRefund || refund ? (
+      {refund ? (
+        // Only show the refund pill when the market has actually resolved
+        // as a refund (tied / both flat / one-sided post-close). The
+        // pre-resolution "this side currently has zero stake" case is
+        // not a verdict — the empty side's multiplier shows the
+        // audience-prior odds, and the user gets to decide whether to
+        // fill it. `oneSidedRefund` is no longer surfaced here; we
+        // keep the prop for now to avoid a noisy refactor in the
+        // parent, but it stops driving the visual.
         <span className="ml-auto inline-flex h-8 min-w-[60px] items-center justify-center rounded-full border-2 border-terminal-border-strong px-3 text-label italic text-terminal-fg-faint">
           refund
         </span>

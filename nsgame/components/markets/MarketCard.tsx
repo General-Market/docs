@@ -2,7 +2,7 @@
 
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import type { UpcomingSlot, MarketState } from '@/lib/markets/hooks.stub'
-import { useSourcePrice, payoutMultiplier, formatMultiplier } from '@/lib/markets/hooks'
+import { useSourcePrice, formatMultiplier, deriveYesPct, pctToDecimalOdd } from '@/lib/markets/hooks'
 import { CountdownTimer, useNowSecs } from './CountdownTimer'
 import { PulseDot } from './PulseDot'
 
@@ -101,19 +101,17 @@ function MarketCardImpl({ slot, state, onSelect }: MarketCardProps) {
     return undefined
   }, [state])
 
-  // Multipliers for both sides — small, both shown.
-  const yesMult = useMemo(
-    () => state ? payoutMultiplier(state.totalYes, state.totalNo, 'yes') : null,
-    [state],
+  // Multipliers for both sides — small, both shown. Use the same
+  // three-tier derivation as the row pill: pool-implied when both
+  // sides have stake, else audience-prior, else 50/50. Without this
+  // a one-sided pool reads "—" / "0.99×", which is uglier than the
+  // honest fallback to a real audience-anchored number.
+  const multYesPct = useMemo(
+    () => deriveYesPct(state, slot.audienceA, slot.audienceB),
+    [state, slot.audienceA, slot.audienceB],
   )
-  const noMult = useMemo(
-    () => state ? payoutMultiplier(state.totalYes, state.totalNo, 'no') : null,
-    [state],
-  )
-  const oneSided = !!state && (
-    (state.totalYes === 0n && state.totalNo > 0n) ||
-    (state.totalNo === 0n && state.totalYes > 0n)
-  )
+  const yesMult = useMemo(() => pctToDecimalOdd(multYesPct), [multYesPct])
+  const noMult = useMemo(() => pctToDecimalOdd(100 - multYesPct), [multYesPct])
 
   // Avoid Date.now() at render — it diverges between SSR and hydration.
   const now = useNowSecs()
@@ -202,14 +200,15 @@ function MarketCardImpl({ slot, state, onSelect }: MarketCardProps) {
               poolFlash === 'up' ? 'bg-emerald-500/10' : poolFlash === 'down' ? 'bg-rose-500/10' : 'bg-transparent',
             ].join(' ')}
           >
-            {oneSided ? (
-              <span className="italic text-terminal-fg-faint">refund · no opposing side</span>
-            ) : (
-              <span className="text-terminal-fg-muted">
-                <span className="text-emerald-300">{formatMultiplier(yesMult)}</span> yes{' '}
-                <span className="text-rose-300">{formatMultiplier(noMult)}</span> no
-              </span>
-            )}
+            {/* Show multipliers always — even on one-sided pools the
+                empty side now reads the audience-prior odd, which is
+                actionable info for a user thinking about filling it.
+                The post-resolution refund case is captured separately
+                via state.outcomeYes === null. */}
+            <span className="text-terminal-fg-muted">
+              <span className="text-emerald-300">{formatMultiplier(yesMult)}</span> yes{' '}
+              <span className="text-rose-300">{formatMultiplier(noMult)}</span> no
+            </span>
             <span className="text-terminal-fg-faint">pool {totalUsdc} USDC</span>
           </div>
         </div>
