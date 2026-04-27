@@ -182,6 +182,160 @@ const AuroraLight: React.FC<{
   );
 };
 
+// ─── Volumetric light rays — thin cyan streaks emanating from an
+//      off-frame focal point at upper-right. Two stacked conic-gradients
+//      with alternating transparent/cyan stops, blurred to a haze, then
+//      masked at the bottom-left so rays fade INTO the frame instead of
+//      painting it uniformly. mode='background' multiplies behind the
+//      content (turns white into cyan streaks); mode='foreground' uses
+//      screen on top of the content (light brightens dark surfaces, leaves
+//      white untouched). Together they read as light passing through the
+//      scene rather than smeared on it.
+const RAY_FOCUS = "100% -8%";
+
+const buildRayConic = (rotation: number, alpha: number): string => `conic-gradient(
+  from ${rotation}deg at ${RAY_FOCUS},
+  rgba(123,201,240,0) 0deg,
+  rgba(123,201,240,${alpha * 0.55}) 30deg,
+  rgba(123,201,240,0) 35deg,
+  rgba(123,201,240,0) 42deg,
+  rgba(123,201,240,${alpha}) 47deg,
+  rgba(123,201,240,0) 52deg,
+  rgba(123,201,240,0) 59deg,
+  rgba(123,201,240,${alpha * 0.45}) 64deg,
+  rgba(123,201,240,0) 68deg,
+  rgba(123,201,240,0) 76deg,
+  rgba(123,201,240,${alpha * 0.7}) 80deg,
+  rgba(123,201,240,0) 85deg,
+  rgba(123,201,240,0) 92deg,
+  rgba(123,201,240,${alpha * 0.4}) 96deg,
+  rgba(123,201,240,0) 100deg,
+  rgba(123,201,240,0) 360deg
+)`;
+
+const RAY_MASK =
+  "linear-gradient(225deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0.88) 35%, rgba(0,0,0,0.42) 65%, rgba(0,0,0,0) 95%)";
+
+const LightRays: React.FC<{
+  pitchLocal: number;
+  mode: "background" | "foreground";
+  skipFadeIn?: boolean;
+}> = ({ pitchLocal, mode, skipFadeIn = false }) => {
+  const fadeIn = skipFadeIn
+    ? 1
+    : interpolate(
+        pitchLocal,
+        [AURORA_BOUNDARY - 2, AURORA_BOUNDARY + AURORA_FADE_IN],
+        [0, 1],
+        clamp,
+      );
+  if (fadeIn <= 0) return null;
+
+  // Slow sway around the focal point — the off-frame source breathes.
+  const sway = Math.sin(pitchLocal * 0.008) * 4;
+  const pulse = 0.85 + 0.15 * (Math.sin(pitchLocal * 0.018) * 0.5 + 0.5);
+  const baseOpacity = fadeIn * pulse * (mode === "background" ? 1 : 0.5);
+  const blendMode = mode === "background" ? "multiply" : "screen";
+  const rayAlpha = mode === "background" ? 0.42 : 0.65;
+
+  return (
+    <AbsoluteFill
+      style={{
+        pointerEvents: "none",
+        opacity: baseOpacity,
+        mixBlendMode: blendMode,
+        transform: `rotate(${sway * 0.18}deg)`,
+        transformOrigin: "100% 0%",
+        WebkitMaskImage: RAY_MASK,
+        maskImage: RAY_MASK,
+      }}
+    >
+      <AbsoluteFill
+        style={{
+          background: buildRayConic(200 + sway, rayAlpha),
+          filter: "blur(28px)",
+        }}
+      />
+      <AbsoluteFill
+        style={{
+          background: buildRayConic(206 - sway * 0.6, rayAlpha * 0.7),
+          filter: "blur(52px)",
+        }}
+      />
+    </AbsoluteFill>
+  );
+};
+
+// ─── Foreground bokeh — small cyan particles drifting in front of all
+//      content. Normal blend (not screen — screen vanishes on white) at
+//      low opacity, so they read as soft luminous dots regardless of what's
+//      behind them. The eye accepts these as near-camera atmosphere.
+type FgBokeh = {
+  x: number;
+  y: number;
+  r: number;
+  op: number;
+  phaseX: number;
+  phaseY: number;
+  drift: number;
+};
+
+const FG_BOKEH: FgBokeh[] = [
+  { x: 25, y: 30, r: 20, op: 0.55, phaseX: 0.3, phaseY: 1.7, drift: 60 },
+  { x: 70, y: 22, r: 14, op: 0.48, phaseX: 1.4, phaseY: 0.5, drift: 50 },
+  { x: 45, y: 78, r: 24, op: 0.60, phaseX: 2.2, phaseY: 1.1, drift: 70 },
+  { x: 88, y: 60, r: 16, op: 0.50, phaseX: 0.7, phaseY: 2.0, drift: 55 },
+  { x: 12, y: 65, r: 22, op: 0.58, phaseX: 1.9, phaseY: 0.8, drift: 65 },
+  { x: 58, y: 40, r: 12, op: 0.42, phaseX: 0.1, phaseY: 1.3, drift: 45 },
+  { x: 36, y: 12, r: 10, op: 0.40, phaseX: 2.7, phaseY: 0.2, drift: 40 },
+  { x: 80, y: 88, r: 18, op: 0.52, phaseX: 1.1, phaseY: 2.3, drift: 60 },
+];
+
+const ForegroundBokeh: React.FC<{
+  pitchLocal: number;
+  skipFadeIn?: boolean;
+}> = ({ pitchLocal, skipFadeIn = false }) => {
+  const fadeIn = skipFadeIn
+    ? 1
+    : interpolate(
+        pitchLocal,
+        [AURORA_BOUNDARY - 2, AURORA_BOUNDARY + AURORA_FADE_IN],
+        [0, 1],
+        clamp,
+      );
+  if (fadeIn <= 0) return null;
+
+  return (
+    <AbsoluteFill style={{ pointerEvents: "none", opacity: fadeIn }}>
+      {FG_BOKEH.map((b, i) => {
+        const px = Math.sin(pitchLocal * 0.009 + b.phaseX) * b.drift;
+        const py = Math.cos(pitchLocal * 0.011 + b.phaseY) * (b.drift * 0.6);
+        const breath =
+          0.72 + 0.28 * Math.sin(pitchLocal * 0.016 + b.phaseX + b.phaseY);
+        const size = b.r * 6;
+        return (
+          <div
+            key={i}
+            style={{
+              position: "absolute",
+              left: `calc(${b.x}% - ${size / 2}px)`,
+              top: `calc(${b.y}% - ${size / 2}px)`,
+              width: size,
+              height: size,
+              borderRadius: "50%",
+              background:
+                "radial-gradient(circle, rgba(255,255,255,0.95), rgba(168,220,247,0.55) 28%, rgba(123,201,240,0.18) 55%, rgba(123,201,240,0) 75%)",
+              transform: `translate(${px}px, ${py}px)`,
+              opacity: b.op * breath,
+              filter: `blur(${b.r * 0.55}px)`,
+            }}
+          />
+        );
+      })}
+    </AbsoluteFill>
+  );
+};
+
 // ─── Reveal — words rise from below, blur dissolves (CascadeText).
 //      Wrapped in a Sequence so useCurrentFrame resets to the mount moment,
 //      and in a difference-blend div so every word auto-inverts against any
@@ -1918,11 +2072,16 @@ const ClosingLogoGrid: React.FC<{ local: number }> = ({ local }) => {
 
   return (
     <AbsoluteFill style={{ background: WHITE }}>
-      {/* Aurora wash — the wrapper's aurora is hidden by this opaque
-          white, so we re-paint it here so the closing inherits the
+      {/* Aurora + background rays — the wrapper's set is hidden by this
+          opaque white, so we re-paint here so the closing inherits the
           same depth as the rest of the pitch. Skip the fade-in: by the
-          time we're in the closing, the aurora is fully established. */}
+          time we're in the closing, the field is fully established. */}
       <AuroraLight pitchLocal={local + PITCH_SCENES.closing.start} skipFadeIn />
+      <LightRays
+        pitchLocal={local + PITCH_SCENES.closing.start}
+        mode="background"
+        skipFadeIn
+      />
       <div
         style={{
           position: "absolute",
@@ -2084,6 +2243,20 @@ const ClosingScene: React.FC<{
           }}
         />
       </AbsoluteFill>
+
+      {/* Closing-local foreground volumetrics — rays in screen blend
+          across the dark logo container, plus near-camera bokeh. The
+          wrapper's foreground set is occluded by the closing's opaque
+          white, so we restate them here. */}
+      <LightRays
+        pitchLocal={local + PITCH_SCENES.closing.start}
+        mode="foreground"
+        skipFadeIn
+      />
+      <ForegroundBokeh
+        pitchLocal={local + PITCH_SCENES.closing.start}
+        skipFadeIn
+      />
     </AbsoluteFill>
   );
 };
@@ -2362,10 +2535,11 @@ export const InsiderPitch: React.FC<{ startFrame: number }> = ({
         isolation: "isolate",
       }}
     >
-      {/* Aurora — soft cyan depth on the white ground. Sits behind every
-          scene; scenes that paint their own opaque background hide it
-          (see ClosingLogoGrid for the closing's separate aurora call). */}
+      {/* Aurora + background rays — soft cyan depth and volumetric streaks
+          BEHIND every scene. Scenes that paint their own opaque background
+          hide these (see ClosingLogoGrid for the closing's separate set). */}
       <AuroraLight pitchLocal={local} />
+      <LightRays pitchLocal={local} mode="background" />
 
       {activeKey === "intro" ? (
         <IntroScene
@@ -2413,6 +2587,14 @@ export const InsiderPitch: React.FC<{ startFrame: number }> = ({
       {/* Single phone instance spanning Stat → Point 1, rolling across
           the cut instead of hard-mounting twice. */}
       <SharedPhoneLayer local={local} />
+
+      {/* Foreground volumetrics — rays passing IN FRONT of the content
+          (screen blend brightens dark surfaces with cyan, leaves white
+          alone) and bokeh particles floating near-camera. The pair adds
+          the "light passing through space" feel that the wallpaper
+          gradient alone couldn't carry. */}
+      <LightRays pitchLocal={local} mode="foreground" />
+      <ForegroundBokeh pitchLocal={local} />
     </AbsoluteFill>
   );
 };
