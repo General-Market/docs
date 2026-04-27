@@ -1,10 +1,30 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useEffect, useRef, useState, useCallback } from 'react'
+import { motion, AnimatePresence, useDragControls, useMotionValue } from 'framer-motion'
 import type { OnboardingState, OnboardingStep } from '@/hooks/useOnboarding'
 
 const EASE_OUT_EXPO: [number, number, number, number] = [0.16, 1, 0.3, 1]
+
+/* Inject the sway keyframes once. Animating amplitude via a CSS variable
+   means changing distance (during scroll) doesn't restart the keyframe
+   sequence — the needle just swings wider or narrower. */
+const SWAY_STYLE_ID = 'compass-sway-style'
+
+function ensureSwayStyles() {
+  if (typeof document === 'undefined') return
+  if (document.getElementById(SWAY_STYLE_ID)) return
+  const style = document.createElement('style')
+  style.id = SWAY_STYLE_ID
+  style.textContent = `
+    @keyframes compass-sway {
+      0%   { transform: translateX(calc(var(--sway-amp, 0px) * -1)); }
+      50%  { transform: translateX(var(--sway-amp, 0px)); }
+      100% { transform: translateX(calc(var(--sway-amp, 0px) * -1)); }
+    }
+  `
+  document.head.appendChild(style)
+}
 
 interface StepDef {
   id: OnboardingStep
@@ -185,48 +205,94 @@ function CompassPointer({ selectors }: CompassPointerProps) {
     }
   }
 
-  // Rotation: angle from arrow position to the actual target center. Recomputed
-  // every frame as the user scrolls, so the arrow continuously tracks the
-  // target. Default arrow art points right (0deg).
+  // Rotation: angle from arrow position to the actual target center.
+  // Recomputed every frame as the user scrolls; the rotation layer below
+  // applies a slow ease-out so the arrow trails like a real compass needle.
   const angleRad = Math.atan2(cy - posY, cx - posX)
   const angleDeg = (angleRad * 180) / Math.PI
 
+  // Distance to target. We use this to scale the horizontal sway amplitude:
+  // a far target produces wider needle swings, a close target settles down.
+  const dist = Math.hypot(cx - posX, cy - posY)
+  const swayAmp = Math.min(Math.max(dist / 70, 4), 22)
+
+  // Inject the sway keyframes once.
+  ensureSwayStyles()
+
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.7 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.7 }}
-      transition={{ duration: 0.35, ease: EASE_OUT_EXPO }}
-      className="fixed pointer-events-none z-[60]"
-      style={{ left: posX, top: posY, transform: 'translate(-50%, -50%)' }}
-    >
-      {/* Rotation layer — driven by inline transform so framer-motion's pulse
-          animation on a sibling layer can't clobber it. Short transition makes
-          rotation read as smooth tracking instead of stepping. */}
-      <div
-        style={{
-          transform: `rotate(${angleDeg}deg)`,
-          transition: 'transform 90ms linear',
-        }}
-      >
-        {/* Pulse layer — handles only scale so transform composition is clean. */}
+    <>
+      {/* On-screen bubble — sits 36px above the arrow, never rotates so the
+          text stays upright. Dropped while the target is offscreen so the
+          edge cursor reads as direction-only. */}
+      {mode === 'on' && (
         <motion.div
-          animate={{ scale: mode === 'on' ? [1, 1.12, 1] : [1, 1.2, 1] }}
-          transition={{ duration: 1.1, repeat: Infinity, ease: 'easeInOut' }}
-          className="flex items-center justify-center w-11 h-11 rounded-full bg-white text-black shadow-[0_6px_24px_rgba(0,0,0,0.45)]"
+          key="bubble"
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 6 }}
+          transition={{ duration: 0.3, ease: EASE_OUT_EXPO }}
+          className="fixed pointer-events-none z-[60]"
+          style={{
+            left: posX,
+            top: Math.max(posY - 38, 8),
+            transform: 'translate(-50%, -100%)',
+          }}
         >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M4 12 L20 12 M13 5 L20 12 L13 19"
-              stroke="black"
-              strokeWidth="2.6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          <div className="px-2.5 py-1 bg-white text-black text-[10px] font-black tracking-[0.06em] shadow-[0_4px_16px_rgba(0,0,0,0.35)] whitespace-nowrap">
+            LOOK HERE
+          </div>
         </motion.div>
-      </div>
-    </motion.div>
+      )}
+
+      <motion.div
+        initial={{ opacity: 0, scale: 0.7 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.7 }}
+        transition={{ duration: 0.35, ease: EASE_OUT_EXPO }}
+        className="fixed pointer-events-none z-[60]"
+        style={{ left: posX, top: posY, transform: 'translate(-50%, -50%)' }}
+      >
+        {/* Sway layer — CSS keyframe animation reads --sway-amp every cycle.
+            Updating the variable as distance changes widens/narrows the
+            swing without restarting the animation. */}
+        <div
+          style={{
+            ['--sway-amp' as never]: `${swayAmp.toFixed(1)}px`,
+            animation: 'compass-sway 2.6s ease-in-out infinite',
+            willChange: 'transform',
+          }}
+        >
+          {/* Rotation layer — slow ease-out transition so the needle trails
+              the user's scroll instead of snapping. Inline style so it
+              composes cleanly with the parent (sway) and child (pulse)
+              transforms. */}
+          <div
+            style={{
+              transform: `rotate(${angleDeg}deg)`,
+              transition: 'transform 280ms cubic-bezier(0.16, 1, 0.3, 1)',
+              willChange: 'transform',
+            }}
+          >
+            {/* Pulse layer — scale only. */}
+            <motion.div
+              animate={{ scale: mode === 'on' ? [1, 1.1, 1] : [1, 1.16, 1] }}
+              transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
+              className="flex items-center justify-center w-11 h-11 rounded-full bg-white text-black shadow-[0_6px_24px_rgba(0,0,0,0.45)]"
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M4 12 L20 12 M13 5 L20 12 L13 19"
+                  stroke="black"
+                  strokeWidth="2.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </motion.div>
+          </div>
+        </div>
+      </motion.div>
+    </>
   )
 }
 
@@ -240,8 +306,39 @@ interface OnboardingCompassProps {
   onBotDeploy: () => void
 }
 
+const POSITION_KEY = 'onboarding_compass_offset'
+
+interface PositionOffset {
+  dx: number
+  dy: number
+}
+
+function readSavedOffset(): PositionOffset {
+  if (typeof window === 'undefined') return { dx: 0, dy: 0 }
+  try {
+    const raw = window.localStorage.getItem(POSITION_KEY)
+    if (!raw) return { dx: 0, dy: 0 }
+    const parsed = JSON.parse(raw)
+    if (typeof parsed?.dx === 'number' && typeof parsed?.dy === 'number') {
+      return { dx: parsed.dx, dy: parsed.dy }
+    }
+  } catch {
+    // fall through
+  }
+  return { dx: 0, dy: 0 }
+}
+
 export function OnboardingCompass({ state, onVaultDeposit, onBotDeploy }: OnboardingCompassProps) {
   const [collapsed, setCollapsed] = useState(false)
+
+  // Drag state — offset from the base bottom-right anchor. Persisted between
+  // sessions. The base position lives in Tailwind classes; the transform
+  // motion values supply a free offset on top.
+  const initialOffsetRef = useRef<PositionOffset>(readSavedOffset())
+  const dragX = useMotionValue(initialOffsetRef.current.dx)
+  const dragY = useMotionValue(initialOffsetRef.current.dy)
+  const dragControls = useDragControls()
+  const containerRef = useRef<HTMLDivElement>(null)
 
   const handleAction = useCallback(() => {
     switch (state.currentStep) {
@@ -259,6 +356,36 @@ export function OnboardingCompass({ state, onVaultDeposit, onBotDeploy }: Onboar
         break
     }
   }, [state, onVaultDeposit, onBotDeploy])
+
+  const handleDragEnd = useCallback(() => {
+    if (typeof window === 'undefined') return
+    // Clamp the offset so the widget can't be dragged completely off-screen.
+    // The base anchor is bottom-right with 12-16px margin; we keep at least
+    // ~80px of the widget visible regardless of where the user releases.
+    const el = containerRef.current
+    if (el) {
+      const rect = el.getBoundingClientRect()
+      const minVisible = 80
+      const vw = window.innerWidth
+      const vh = window.innerHeight
+      const overflowRight = Math.max(0, rect.right - vw + 8)
+      const overflowLeft = Math.max(0, minVisible - rect.right)
+      const overflowBottom = Math.max(0, rect.bottom - vh + 8)
+      const overflowTop = Math.max(0, minVisible - rect.bottom)
+      const adjX = overflowRight ? -overflowRight : overflowLeft
+      const adjY = overflowBottom ? -overflowBottom : overflowTop
+      if (adjX) dragX.set(dragX.get() + adjX)
+      if (adjY) dragY.set(dragY.get() + adjY)
+    }
+    try {
+      window.localStorage.setItem(
+        POSITION_KEY,
+        JSON.stringify({ dx: dragX.get(), dy: dragY.get() })
+      )
+    } catch {
+      // localStorage may be disabled — non-fatal
+    }
+  }, [dragX, dragY])
 
   if (!state.isActive) return null
 
@@ -278,16 +405,23 @@ export function OnboardingCompass({ state, onVaultDeposit, onBotDeploy }: Onboar
       )}
 
       <motion.div
+        ref={containerRef}
+        drag
+        dragListener={false}
+        dragControls={dragControls}
+        dragMomentum={false}
+        dragElastic={0}
+        onDragEnd={handleDragEnd}
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 24 }}
         transition={{ duration: 0.5, ease: EASE_OUT_EXPO }}
+        style={{ x: dragX, y: dragY }}
         className={[
-          'fixed z-50',
-          // Mobile: full width minus side margins, anchored bottom.
-          'left-3 right-3 bottom-3',
-          // Desktop: collapse to a fixed-width card in the bottom-right.
-          'sm:left-auto sm:right-4 sm:bottom-4 sm:w-[300px]',
+          // Compact card anchored bottom-right; same shape on mobile so the
+          // drag affordance is consistent across viewports.
+          'fixed z-50 w-[min(92vw,300px)]',
+          'right-3 bottom-3 sm:right-4 sm:bottom-4',
         ].join(' ')}
       >
         <div className="relative bg-terminal-dark border border-white/[0.1] shadow-[0_12px_40px_rgba(0,0,0,0.5)] overflow-hidden">
@@ -301,9 +435,24 @@ export function OnboardingCompass({ state, onVaultDeposit, onBotDeploy }: Onboar
             />
           </div>
 
-          {/* Header strip */}
-          <div className="flex items-center justify-between px-3.5 py-2 border-b border-white/[0.06]">
-            <div className="flex items-center gap-2">
+          {/* Header strip — doubles as the drag handle. Pointer-down here
+              starts a drag via dragControls; the action buttons further right
+              still receive their click events because the drag only engages
+              once the pointer actually moves. */}
+          <div
+            onPointerDown={(e) => dragControls.start(e)}
+            className="flex items-center justify-between px-3.5 py-2 border-b border-white/[0.06] cursor-grab active:cursor-grabbing select-none touch-none"
+          >
+            <div className="flex items-center gap-2 pointer-events-none">
+              {/* Drag affordance — six dots, signals the strip is grabbable. */}
+              <svg width="10" height="14" viewBox="0 0 10 14" className="text-white/30 shrink-0">
+                <circle cx="2" cy="3" r="1" fill="currentColor" />
+                <circle cx="8" cy="3" r="1" fill="currentColor" />
+                <circle cx="2" cy="7" r="1" fill="currentColor" />
+                <circle cx="8" cy="7" r="1" fill="currentColor" />
+                <circle cx="2" cy="11" r="1" fill="currentColor" />
+                <circle cx="8" cy="11" r="1" fill="currentColor" />
+              </svg>
               <span className="text-[9px] font-bold tracking-[0.16em] text-white/40 uppercase">
                 Tutorial
               </span>
@@ -311,7 +460,10 @@ export function OnboardingCompass({ state, onVaultDeposit, onBotDeploy }: Onboar
                 {state.stepIndex + 1}/{state.totalSteps}
               </span>
             </div>
-            <div className="flex items-center gap-2">
+            <div
+              className="flex items-center gap-2"
+              onPointerDown={(e) => e.stopPropagation()}
+            >
               <button
                 onClick={() => setCollapsed(c => !c)}
                 className="text-[9px] font-bold tracking-[0.06em] text-white/30 hover:text-white/70 transition-colors"
