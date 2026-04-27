@@ -16,10 +16,11 @@ import { useNowSecs } from './CountdownTimer'
 
 const SIDEBAR_VIDEO = '/source-video/tubes.mp4'
 
-// Gate playback on visibility. Off-screen video burns decode budget for
-// nothing; reduced-motion users never asked for ambient loops to begin
-// with. The two rails will drift by tens of milliseconds — nobody is
-// counting frames against another sidebar across the fold.
+// Reduced-motion users get a frozen first frame; everyone else gets the
+// loop via the autoplay attribute. Off-screen pause is gated on
+// IntersectionObserver — sticky positioning means the rails are nearly
+// always intersecting, so the savings are theoretical, but the decode
+// budget is cheap to give back when scrolled past.
 function useVisibilityGatedVideo() {
   const ref = useRef<HTMLVideoElement>(null)
   useEffect(() => {
@@ -33,6 +34,13 @@ function useVisibilityGatedVideo() {
       video.pause()
       return
     }
+
+    // Kick the loop ourselves. The autoplay attribute is set on the
+    // element, but a hydration-time race in React-managed media (where
+    // the IntersectionObserver's first async tick can lose its initial
+    // firing) leaves the video paused at currentTime=0 in production.
+    // A direct play() on mount sidesteps the ambiguity.
+    void video.play().catch(() => { /* autoplay refusal — silent */ })
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -235,10 +243,11 @@ export function MarketTeaserSidebar({
           <video
             ref={videoRef}
             src={SIDEBAR_VIDEO}
+            autoPlay
             loop
             muted
             playsInline
-            preload="metadata"
+            preload="auto"
             aria-hidden
             className="absolute inset-0 h-full w-full object-cover opacity-50"
             style={{ transform: side === 'right' ? 'scaleX(-1)' : undefined }}
