@@ -7,17 +7,16 @@ import { privateKeyToAccount } from 'viem/accounts'
  *
  * POST /api/faucet { address, amount?, scope?: 'vision' | 'itp' | 'both' }
  *
- * Scopes are strictly separated — Vision and Index are two different places.
- *   vision: mints L3 USDC (18 dec) + drips L3 GM gas.
- *   itp:    mints Settlement USDC (6 dec) + drips Sonic S gas.
- *   both:   all of the above (used only on pages that bridge both contexts, e.g. portfolio).
+ * The user-facing buy on both Vision and Index runs on L3 USDC (18 dec) —
+ * the bridge handles Settlement USDC internally, the user wallet never holds it.
+ * So default scope is 'vision': mint L3 USDC + drip L3 GM gas, one currency,
+ * good for both products.
  *
- * Default when scope omitted: 'vision'. Legacy `gas: true` maps to 'both' for
- * callers that haven't migrated.
+ * 'itp' and 'both' remain for admin/E2E tooling that needs to top up Settlement
+ * USDC + Sonic gas (e.g. AP keeper rehydration). Not used by the UI.
  *
- * Each leg is reported independently in the response. A failure in one leg
- * never silently masks the other — the caller sees `{ error }` on the affected
- * leg and can retry just that context.
+ * Each leg reports independently. A failure in one leg never silently masks
+ * the other — the caller sees `{ error }` on the affected leg.
  */
 
 import { getL3RpcServer, SETTLEMENT_RPC_URL } from '@/lib/config'
@@ -56,7 +55,6 @@ type Scope = 'vision' | 'itp' | 'both'
 function resolveScope(body: any): Scope {
   const s = body?.scope
   if (s === 'vision' || s === 'itp' || s === 'both') return s
-  if (body?.gas === true) return 'both'
   return 'vision'
 }
 
