@@ -1,15 +1,15 @@
 /**
- * HexPixelate — wrap any video source in a hex-packed grid of flat
- * unicolour dots. Each disk takes one sample from its centre and
- * prints it solid; between the dots, the same broll prints at a
- * fraction of its brightness so the silhouette of the underlying
- * frame survives the decimation. No quantisation, no palette — the
- * image is its own palette, just sparser.
+ * HexPixelate — wrap any video source in a tessellation of flat
+ * unicolour hexagons. Each cell takes one sample from its centre and
+ * prints it solid across the hex; a thin gap around the hex shows the
+ * same broll dimmed, so the silhouette of the underlying frame
+ * survives the decimation. No quantisation, no palette — the image
+ * is its own palette, just sparser.
  *
  * Drop in over an OffthreadVideo or any video staticFile. Cell size
  * is the hex circumradius in pixels — default 14. Optional zoom is
- * baked into the sampler so dots keep their size on screen while the
- * underlying frame zooms in.
+ * baked into the sampler so hexes keep their size on screen while
+ * the underlying frame zooms in.
  */
 
 import React, { useEffect, useMemo, useRef } from "react";
@@ -41,7 +41,7 @@ const FRAGMENT = /* glsl */ `
   uniform vec2  uTexSize;
   uniform float uHexSize;
   uniform float uZoom;
-  uniform float uDotRadius;
+  uniform float uHexInset;
   uniform float uBgDim;
 
   varying vec2 vUv;
@@ -77,6 +77,14 @@ const FRAGMENT = /* glsl */ `
     return vec4(p - gv, gv);
   }
 
+  // Signed distance to a pointy-top hexagon of circumradius 1, centred
+  // at the origin. Negative inside, zero on edge, positive outside.
+  float hexDist(vec2 p) {
+    float APOTHEM = 0.8660254;
+    vec2 q = abs(p);
+    return max(q.x - APOTHEM, q.x * 0.5 + q.y * APOTHEM - APOTHEM);
+  }
+
   void main() {
     vec2 fragPx = vUv * uResolution;
     vec2 p = fragPx / uHexSize;
@@ -85,24 +93,24 @@ const FRAGMENT = /* glsl */ `
     vec2 centreP = hc.xy;
     vec2 local   = hc.zw;
 
-    // Sample at the dot's centre — that is the dot's flat colour.
+    // Sample at the hex's centre — that is the cell's flat colour.
     vec2 centrePx = centreP * uHexSize;
-    vec2 dotUv = sampleUv(centrePx / uResolution);
-    vec3 dotCol = texture2D(uTex, dotUv).rgb;
+    vec2 hexUv = sampleUv(centrePx / uResolution);
+    vec3 hexCol = texture2D(uTex, hexUv).rgb;
 
     // Sample at the actual fragment for the dimmed background that
-    // shows between the dots. Same broll, just darker — so the silhouette
-    // of the underlying frame survives the decimation.
+    // shows in the gap around the hex. Same broll, just darker — so the
+    // silhouette of the underlying frame survives the decimation.
     vec2 bgUvSrc = sampleUv(vUv);
     vec3 bgCol = texture2D(uTex, bgUvSrc).rgb * uBgDim;
 
-    // Disk mask inside the hex cell. Anti-aliased rim, in p-units —
-    // small numbers since p is already scaled by hex circumradius.
-    float r = length(local);
-    float disk = 1.0 - smoothstep(uDotRadius - 0.04,
-                                  uDotRadius + 0.04, r);
+    // Hex SDF mask. Anti-aliased rim, in p-units — small numbers since
+    // p is already scaled by hex circumradius.
+    float d = hexDist(local);
+    float fill = 1.0 - smoothstep(-uHexInset - 0.012,
+                                  -uHexInset + 0.012, d);
 
-    vec3 col = mix(bgCol, dotCol, disk);
+    vec3 col = mix(bgCol, hexCol, fill);
     gl_FragColor = vec4(col, 1.0);
   }
 `;
@@ -113,7 +121,7 @@ interface PlaneProps {
   height: number;
   cellSize: number;
   zoom: number;
-  dotRadius: number;
+  inset: number;
   bgDim: number;
 }
 
@@ -123,7 +131,7 @@ const Plane: React.FC<PlaneProps> = ({
   height,
   cellSize,
   zoom,
-  dotRadius,
+  inset,
   bgDim,
 }) => {
   const matRef = useRef<THREE.ShaderMaterial>(null);
@@ -152,10 +160,10 @@ const Plane: React.FC<PlaneProps> = ({
       uTexSize: { value: texSize },
       uHexSize: { value: cellSize },
       uZoom: { value: zoom },
-      uDotRadius: { value: dotRadius },
+      uHexInset: { value: inset },
       uBgDim: { value: bgDim },
     }),
-    [texture, width, height, texSize, cellSize, zoom, dotRadius, bgDim],
+    [texture, width, height, texSize, cellSize, zoom, inset, bgDim],
   );
 
   if (matRef.current) {
@@ -164,7 +172,7 @@ const Plane: React.FC<PlaneProps> = ({
     matRef.current.uniforms.uZoom.value = zoom;
     matRef.current.uniforms.uHexSize.value = cellSize;
     matRef.current.uniforms.uResolution.value.set(width, height);
-    matRef.current.uniforms.uDotRadius.value = dotRadius;
+    matRef.current.uniforms.uHexInset.value = inset;
     matRef.current.uniforms.uBgDim.value = bgDim;
   }
 
@@ -255,11 +263,11 @@ type Props = {
   cellSize?: number;
   /** Optional zoom applied to the underlying frame, around the centre. */
   zoom?: number;
-  /** Disk radius inside the hex cell, in circumradius units. 0.866 is
-   *  the apothem (touching neighbours). Default 0.78 — tight packing
-   *  with a small breath of background showing through. */
-  dotRadius?: number;
-  /** Brightness of the underlying frame between dots. 0 = black,
+  /** Inset from the hex edge, in circumradius units. 0 = perfect
+   *  tessellation; a positive value carves a gap that shows the
+   *  dimmed broll. Default 0.08. */
+  inset?: number;
+  /** Brightness of the underlying frame between hexes. 0 = black,
    *  1 = full broll, default 0.32 — image survives without competing. */
   bgDim?: number;
 };
@@ -270,7 +278,7 @@ export const HexPixelate: React.FC<Props> = ({
   height,
   cellSize = 14,
   zoom = 1,
-  dotRadius = 0.78,
+  inset = 0.08,
   bgDim = 0.32,
 }) => {
   const env = useRemotionEnvironment();
@@ -314,7 +322,7 @@ export const HexPixelate: React.FC<Props> = ({
             height={h}
             cellSize={cellSize}
             zoom={zoom}
-            dotRadius={dotRadius}
+            inset={inset}
             bgDim={bgDim}
           />
         ) : (
@@ -325,7 +333,7 @@ export const HexPixelate: React.FC<Props> = ({
             cellSize={cellSize}
             zoom={zoom}
             frame={frame}
-            dotRadius={dotRadius}
+            inset={inset}
             bgDim={bgDim}
           />
         )}
