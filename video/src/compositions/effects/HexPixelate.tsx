@@ -1,12 +1,12 @@
 /**
- * RectPixelate — wrap any video source in a grid of small unicolour
- * rectangles. Each cell takes one sample from the centre of the video
- * and prints it flat. No texture inside the cell, no shading at the
- * edge, no gradient. The image survives only as a mosaic of its means.
+ * HexPixelate — wrap any video source in a tessellation of small flat
+ * hexagons. Each cell takes one sample from the centre of the video
+ * and prints it across the whole hex. No texture inside, no shading,
+ * no dome. The image survives only as a mosaic of its means.
  *
  * Drop in over an OffthreadVideo or any video staticFile. Cell size
- * defaults to 12px; the source is cover-fit and the optional zoom is
- * applied inside the sampler so cells stay the same size on screen
+ * is the hex circumradius in pixels — default 14. The optional zoom
+ * is baked into the sampler, so cells stay the same size on screen
  * while the underlying frame zooms in.
  */
 
@@ -37,7 +37,7 @@ const FRAGMENT = /* glsl */ `
   uniform sampler2D uTex;
   uniform vec2  uResolution;
   uniform vec2  uTexSize;
-  uniform vec2  uCellSize;
+  uniform float uHexSize;
   uniform float uZoom;
 
   varying vec2 vUv;
@@ -53,12 +53,25 @@ const FRAGMENT = /* glsl */ `
     return uv * scale + offset;
   }
 
+  // Two interleaved rectangular grids, one hex centre each. For any
+  // point we test both candidates and keep the closer — that is the
+  // Voronoi cell of a hex tessellation. The Inigo Quilez two-grid
+  // trick. Returns the nearest hex centre in the same scaled space.
+  vec2 hexCentre(vec2 p) {
+    float SQRT3 = 1.7320508;
+    vec2 cell = vec2(SQRT3, 3.0);
+    vec2 a = mod(p + cell * 0.5, cell) - cell * 0.5;
+    vec2 b = mod(p, cell) - cell * 0.5;
+    vec2 gv = dot(a, a) < dot(b, b) ? a : b;
+    return p - gv;
+  }
+
   void main() {
     vec2 fragPx = vUv * uResolution;
+    vec2 p = fragPx / uHexSize;
 
-    // Snap to cell centre. The whole rectangle inherits one sample.
-    vec2 cellId = floor(fragPx / uCellSize);
-    vec2 centrePx = (cellId + 0.5) * uCellSize;
+    vec2 centreP = hexCentre(p);
+    vec2 centrePx = centreP * uHexSize;
     vec2 centreUv = centrePx / uResolution;
 
     // Cover-fit then scale around centre to bake the zoom into sampling.
@@ -109,7 +122,7 @@ const Plane: React.FC<PlaneProps> = ({
       uTex: { value: texture },
       uResolution: { value: new THREE.Vector2(width, height) },
       uTexSize: { value: texSize },
-      uCellSize: { value: new THREE.Vector2(cellSize, cellSize) },
+      uHexSize: { value: cellSize },
       uZoom: { value: zoom },
     }),
     [texture, width, height, texSize, cellSize, zoom],
@@ -119,7 +132,7 @@ const Plane: React.FC<PlaneProps> = ({
     matRef.current.uniforms.uTex.value = texture;
     matRef.current.uniforms.uTexSize.value = texSize;
     matRef.current.uniforms.uZoom.value = zoom;
-    matRef.current.uniforms.uCellSize.value.set(cellSize, cellSize);
+    matRef.current.uniforms.uHexSize.value = cellSize;
     matRef.current.uniforms.uResolution.value.set(width, height);
   }
 
@@ -206,17 +219,17 @@ type Props = {
   width: number;
   /** Container height, in pixels. Floats are rounded. */
   height: number;
-  /** Cell side length in pixels. Smaller = denser mosaic. */
+  /** Hex circumradius in pixels. Smaller = denser tessellation. */
   cellSize?: number;
   /** Optional zoom applied to the underlying frame, around the centre. */
   zoom?: number;
 };
 
-export const RectPixelate: React.FC<Props> = ({
+export const HexPixelate: React.FC<Props> = ({
   src,
   width,
   height,
-  cellSize = 12,
+  cellSize = 14,
   zoom = 1,
 }) => {
   const env = useRemotionEnvironment();
