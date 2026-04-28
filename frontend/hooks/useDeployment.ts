@@ -31,7 +31,10 @@ export function useDeployment() {
   const getAddress = (name: string): `0x${string}` => {
     const addr = data?.contracts?.[name]
       ?? (name === 'IssuerRegistry' ? data?.contracts?.['OracleRegistry'] : undefined)
-    return (addr ?? '0x0000000000000000000000000000000000000000') as `0x${string}`
+    // Lowercase: viem rejects mis-cased EIP-55 checksums and the JSON is
+    // written by tools that don't always emit a valid one. All-lowercase
+    // is unconditionally accepted. Same treatment as lib/contracts/addresses.ts.
+    return (addr?.toLowerCase() ?? '0x0000000000000000000000000000000000000000') as `0x${string}`
   }
 
   const whitelistedVaults: `0x${string}`[] = (data?.whitelistedVaults ?? [])
