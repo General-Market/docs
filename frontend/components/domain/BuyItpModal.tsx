@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom'
-import { useAccount, useWaitForTransactionReceipt, useWriteContract, useSwitchChain, usePublicClient, useReadContract } from 'wagmi'
+import { useAccount, useWaitForTransactionReceipt, useWriteContract, usePublicClient, useReadContract } from 'wagmi'
 import { parseUnits, formatUnits, decodeEventLog } from 'viem'
 import { INDEX_PROTOCOL, COLLATERAL_DECIMALS } from '@/lib/contracts/addresses'
 import { ERC20_ABI, INDEX_ABI } from '@/lib/contracts/index-protocol-abi'
-import { ensureCorrectChain } from '@/hooks/useChainWrite'
+import { useChainWriteContract } from '@/hooks/useChainWrite'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { PipelineRing, type PipelineRingPhase } from '@/components/ui/PipelineRing'
 import { getTxUrl } from '@/lib/utils/explorer'
@@ -70,7 +70,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   const t = useTranslations('buy-modal')
   const tc = useTranslations('common')
   const locale = useLocale()
-  const { address, isConnected, chainId: currentChainId } = useAccount()
+  const { address, isConnected } = useAccount()
   const l3PublicClient = usePublicClient({ chainId: indexL3.id })
   const { showSuccess } = useToast()
 
@@ -107,16 +107,16 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   const [batchTxHash, setBatchTxHash] = useState<string | null>(null)
   const [fillTxHash, setFillTxHash] = useState<string | null>(null)
 
-  // L3 chain writes, raw useWriteContract (not the L3-defaulting hook)
-  const { switchChainAsync } = useSwitchChain()
-
+  // L3 chain writes via the shared wrapper — auto-switches chain and pins
+  // chainId on every call. Same path Vision (BatchEntryPanel) and the
+  // vault/morpho/itp-approval hooks already use.
   const {
     writeContractAsync: writeApproveAsync,
     data: approveHash,
     isPending: isApprovePending,
     error: approveError,
     reset: resetApprove,
-  } = useWriteContract()
+  } = useChainWriteContract()
   const { isLoading: isApproveConfirming, isSuccess: isApproveSuccess } = useWaitForTransactionReceipt({
     hash: approveHash,
     chainId: indexL3.id,
@@ -128,7 +128,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     isPending: isBuyPending,
     error: buyError,
     reset: resetBuy,
-  } = useWriteContract()
+  } = useChainWriteContract()
   const { isLoading: isBuyConfirming, isSuccess: isBuySuccess, data: buyReceipt } = useWaitForTransactionReceipt({
     hash: buyHash,
     chainId: indexL3.id,
@@ -230,7 +230,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     isPending: isMintPending,
     error: mintError,
     reset: resetMint,
-  } = useWriteContract()
+  } = useChainWriteContract()
   const { isSuccess: isMintReceiptSuccess } = useWaitForTransactionReceipt({
     hash: mintHashTx,
     chainId: indexL3.id,
@@ -271,14 +271,14 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
         poll()
       }
     } catch {
-      // Fallback to direct contract call (mint L3 USDC, 18 decimals)
+      // Fallback to direct contract call (mint L3 USDC, 18 decimals).
+      // Wrapper handles chain switch + chainId.
       resetMint()
       writeMint({
         address: INDEX_PROTOCOL.l3Usdc,
         abi: MINT_ABI,
         functionName: 'mint',
         args: [address, parseUnits('10000', L3_USDC_DECIMALS)],
-        chainId: indexL3.id,
       })
     } finally {
       setFaucetLoading(false)
@@ -319,26 +319,16 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     snapshotBalances()
     setMicro(BuyMicro.APPROVE)
 
-    try {
-      // Switch to L3 chain before approving
-      await ensureCorrectChain(currentChainId, switchChainAsync, indexL3.id, indexL3)
-    } catch {
-      setTxError('Please switch to the L3 chain to buy')
-      setMicro(-1)
-      return
-    }
-
-    // Approve L3 USDC → Index
+    // Approve L3 USDC → Index. The wrapper switches chain and pins chainId.
     writeApproveAsync({
       address: INDEX_PROTOCOL.l3Usdc,
       abi: ERC20_ABI,
       functionName: 'approve',
       args: [INDEX_PROTOCOL.index, parsedAmount],
-      chainId: indexL3.id,
     }).catch(() => {
       // Error handled by approveError effect
     })
-  }, [amount, parsedAmount, insufficientBalance, writeApproveAsync, snapshotBalances, currentChainId, switchChainAsync, capture, itpId, slippageTier, deadlineHours, limitPrice])
+  }, [amount, parsedAmount, insufficientBalance, writeApproveAsync, snapshotBalances, capture, itpId, slippageTier, deadlineHours, limitPrice])
 
   const handleBuy = useCallback(async () => {
     if (!l3PublicClient || !amount || insufficientBalance) return
@@ -356,15 +346,6 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     }
     setMicro(BuyMicro.SUBMIT)
 
-    try {
-      // Ensure we're on L3 chain
-      await ensureCorrectChain(currentChainId, switchChainAsync, indexL3.id, indexL3)
-    } catch {
-      setTxError('Please switch to the L3 chain to buy')
-      setMicro(-1)
-      return
-    }
-
     let blockTimestamp: bigint
     try {
       const block = await l3PublicClient.getBlock()
@@ -378,7 +359,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     setSubmittedLimitPrice(limitPrice)
 
     // L3 direct: Index.submitOrder(itpId, side=0 BUY, amount, limitPrice, slippageTier, deadline)
-    // amount is in 18 decimals (L3 USDC)
+    // amount is in 18 decimals (L3 USDC). Wrapper handles chain switch + chainId.
     writeBuyAsync({
       address: INDEX_PROTOCOL.index,
       abi: INDEX_ABI,
@@ -391,11 +372,10 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
         BigInt(slippageTier),
         deadline,
       ],
-      chainId: indexL3.id,
     }).catch(() => {
       // Error handled by buyError effect
     })
-  }, [l3PublicClient, amount, insufficientBalance, limitPrice, deadlineHours, slippageTier, itpId, parsedAmount, writeBuyAsync, micro, snapshotBalances, currentChainId, switchChainAsync, capture])
+  }, [l3PublicClient, amount, insufficientBalance, limitPrice, deadlineHours, slippageTier, itpId, parsedAmount, writeBuyAsync, micro, snapshotBalances, capture])
 
   // Approve success -> save hash, auto-trigger buy
   useEffect(() => {
