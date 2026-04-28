@@ -1,0 +1,80 @@
+import React from "react";
+import { AbsoluteFill, Sequence } from "remotion";
+import { Scene01_Intro, Scene02_Numbers, Scene03_DarkGrid, Scene04_CubeExplode } from "./ScenesA";
+import { Scene05_Waiting, Scene06_Starburst, Scene07_TransactionQueue, Scene08_GridText } from "./ScenesB";
+import { Scene09_Experience, Scene10_LiveTestnet, Scene11_NewSpeed, Scene12_Finale } from "./ScenesC";
+
+/*
+ * Rainbows — adapted from the Flashblocks replica skeleton
+ * 1920x1080, 24fps, 893 frames (37.2s)
+ *
+ * Scene timeline (frame ranges):
+ *   01  Intro     "When you want leverage / you trade perps."         0–48
+ *   02  Numbers   "When you want volatility exposure / options."      48–96
+ *   03  DarkGrid  "When you want better odds / you trade rainbows."   96–180
+ *   04  Cube      silent visual beat                                  180–252
+ *   05  Waiting   "We designed an additional / liquidity layer."      252–300
+ *   06  Burst     "70% / of your profits"                             300–372
+ *   07  Queue     frontrunners / insider traders / market manipulators 372–480
+ *   08  Grid      "filters / them / out."                             480–540
+ *   09  Circles   "Now."                                              540–588
+ *   10  Testnet   "only you, with the market" / "the best odds..."    588–672
+ *   11  NewSpeed  "and / the assets / you always traded."             672–720
+ *   12  Finale    "rainbows" + "the only trade that's actually yours" 720–893
+ */
+
+export const RainbowsFlashblocksComposition: React.FC = () => {
+  return (
+    <AbsoluteFill style={{ backgroundColor: "#000" }}>
+      <Sequence from={0} durationInFrames={48} name="01 Intro">
+        <Scene01_Intro />
+      </Sequence>
+      <Sequence from={48} durationInFrames={48} name="02 Numbers">
+        <Scene02_Numbers />
+      </Sequence>
+      <Sequence from={96} durationInFrames={84} name="03 Dark Grid">
+        <Scene03_DarkGrid />
+      </Sequence>
+      <Sequence from={180} durationInFrames={72} name="04 Cube Explode">
+        <Scene04_CubeExplode />
+      </Sequence>
+      <Sequence from={252} durationInFrames={48} name="05 Waiting">
+        <Scene05_Waiting />
+      </Sequence>
+      <Sequence from={300} durationInFrames={72} name="06 Starburst">
+        <Scene06_Starburst />
+      </Sequence>
+      <Sequence from={372} durationInFrames={108} name="07 Transaction Queue">
+        <Scene07_TransactionQueue />
+      </Sequence>
+      <Sequence from={480} durationInFrames={60} name="08 Grid Text">
+        <Scene08_GridText />
+      </Sequence>
+      <Sequence from={540} durationInFrames={48} name="09 Experience">
+        <Scene09_Experience />
+      </Sequence>
+      <Sequence from={588} durationInFrames={84} name="10 Live Testnet">
+        <Scene10_LiveTestnet />
+      </Sequence>
+      <Sequence from={672} durationInFrames={48} name="11 New Speed">
+        <Scene11_NewSpeed />
+      </Sequence>
+      <Sequence from={720} durationInFrames={173} name="12 Finale">
+        <Scene12_Finale />
+      </Sequence>
+    </AbsoluteFill>
+  );
+};
+
+export const rainbowsFlashblocksMeta = {
+  id: "Rainbows-Flashblocks",
+  component: RainbowsFlashblocksComposition,
+  width: 1920,
+  height: 1080,
+  fps: 24,
+  durationInFrames: 893,
+};
+
+export { sceneMetasA } from "./ScenesA";
+export { sceneMetasB } from "./ScenesB";
+export { sceneMetasC } from "./ScenesC";
