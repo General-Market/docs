@@ -490,9 +490,10 @@ function readSavedOffset(): PositionOffset {
 export function OnboardingCompass({ state, onVaultDeposit, onBotDeploy }: OnboardingCompassProps) {
   const [collapsed, setCollapsed] = useState(false)
 
-  // Drag state — offset from the base bottom-right anchor. Persisted between
-  // sessions. The base position lives in Tailwind classes; the transform
-  // motion values supply a free offset on top.
+  // Drag state — offset from the base bottom-left anchor. Persisted
+  // between sessions. The base position lives in Tailwind classes; the
+  // motion values supply a free offset on top, and clampToViewport
+  // (below) keeps the card on-canvas if the viewport shrinks.
   const initialOffsetRef = useRef<PositionOffset>(readSavedOffset())
   const dragX = useMotionValue(initialOffsetRef.current.dx)
   const dragY = useMotionValue(initialOffsetRef.current.dy)
@@ -523,26 +524,34 @@ export function OnboardingCompass({ state, onVaultDeposit, onBotDeploy }: Onboar
     }
   }, [state, onVaultDeposit, onBotDeploy])
 
-  const handleDragEnd = useCallback(() => {
-    if (typeof window === 'undefined') return
-    // Clamp the offset so the widget can't be dragged completely off-screen.
-    // The base anchor is bottom-right with 12-16px margin; we keep at least
-    // ~80px of the widget visible regardless of where the user releases.
+  /**
+   * Clamp the current drag offset against the actual rendered rect of the
+   * widget. Runs on drag-end and on viewport resize so a saved offset from
+   * a previous (larger) screen can't keep the card stranded off-canvas
+   * after the user opens the same page on a smaller monitor or rotates
+   * a phone.
+   */
+  const clampToViewport = useCallback(() => {
+    if (typeof window === 'undefined') return false
     const el = containerRef.current
-    if (el) {
-      const rect = el.getBoundingClientRect()
-      const minVisible = 80
-      const vw = window.innerWidth
-      const vh = window.innerHeight
-      const overflowRight = Math.max(0, rect.right - vw + 8)
-      const overflowLeft = Math.max(0, minVisible - rect.right)
-      const overflowBottom = Math.max(0, rect.bottom - vh + 8)
-      const overflowTop = Math.max(0, minVisible - rect.bottom)
-      const adjX = overflowRight ? -overflowRight : overflowLeft
-      const adjY = overflowBottom ? -overflowBottom : overflowTop
-      if (adjX) dragX.set(dragX.get() + adjX)
-      if (adjY) dragY.set(dragY.get() + adjY)
-    }
+    if (!el) return false
+    const rect = el.getBoundingClientRect()
+    const minVisible = 80
+    const vw = window.innerWidth
+    const vh = window.innerHeight
+    const overflowRight = Math.max(0, rect.right - vw + 8)
+    const overflowLeft = Math.max(0, minVisible - rect.right)
+    const overflowBottom = Math.max(0, rect.bottom - vh + 8)
+    const overflowTop = Math.max(0, minVisible - rect.bottom)
+    const adjX = overflowRight ? -overflowRight : overflowLeft
+    const adjY = overflowBottom ? -overflowBottom : overflowTop
+    if (adjX) dragX.set(dragX.get() + adjX)
+    if (adjY) dragY.set(dragY.get() + adjY)
+    return !!(adjX || adjY)
+  }, [dragX, dragY])
+
+  const handleDragEnd = useCallback(() => {
+    clampToViewport()
     try {
       window.localStorage.setItem(
         POSITION_KEY,
@@ -551,7 +560,42 @@ export function OnboardingCompass({ state, onVaultDeposit, onBotDeploy }: Onboar
     } catch {
       // localStorage may be disabled — non-fatal
     }
-  }, [dragX, dragY])
+  }, [clampToViewport, dragX, dragY])
+
+  // Re-clamp on viewport resize (and once on mount, after first paint, in
+  // case the saved offset came from a larger screen). Persist if anything
+  // moved so the next session starts fully on-screen.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    let raf = 0
+    const run = () => {
+      raf = 0
+      const moved = clampToViewport()
+      if (moved) {
+        try {
+          window.localStorage.setItem(
+            POSITION_KEY,
+            JSON.stringify({ dx: dragX.get(), dy: dragY.get() })
+          )
+        } catch {
+          // ignore
+        }
+      }
+    }
+    const schedule = () => {
+      if (raf) return
+      raf = requestAnimationFrame(run)
+    }
+    // Initial check, post-paint, so containerRef is populated.
+    schedule()
+    window.addEventListener('resize', schedule)
+    window.addEventListener('orientationchange', schedule)
+    return () => {
+      if (raf) cancelAnimationFrame(raf)
+      window.removeEventListener('resize', schedule)
+      window.removeEventListener('orientationchange', schedule)
+    }
+  }, [clampToViewport, dragX, dragY])
 
   if (!state.isActive) return null
 
