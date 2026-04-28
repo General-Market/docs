@@ -1,5 +1,5 @@
 import React from "react";
-import { AbsoluteFill, Sequence } from "remotion";
+import { AbsoluteFill, useCurrentFrame } from "remotion";
 import { loadFont } from "@remotion/google-fonts/Inter";
 import { useGsapProxy } from "../standrew/gsapUtils";
 import {
@@ -333,9 +333,11 @@ export const Scene08_FiveHundredK: React.FC = () => {
 
 /* ═══════════════════════════════════════════════════════
    Scene 09 — BrollCycle  (96 frames = 4s @ 24fps)
-   Mirror of Sequence02 0:57–1:00 broll system. Hex broll grid
-   below, big italic word on top per category.
-   Real broll plays in the cells on render.
+   Direct mirror of sequence02/FullscreenMarkets.SegmentView:
+   pick the active segment for the current frame, render the
+   hex broll grid + the centered word cascade as siblings of
+   the same AbsoluteFill. No nested Sequences, no ZoomedBg —
+   one segment on screen at a time, just like the original.
    ═══════════════════════════════════════════════════════ */
 
 const SCENE09_DURATION = 96;
@@ -343,8 +345,8 @@ const SCENE09_DURATION = 96;
 interface BrollSegment {
   category: BrollCategory;
   durationInFrames: number;
-  words: CascadeWord[];
   fontSize: number;
+  words: CascadeWord[];
 }
 
 const SCENE09_SEGMENTS: BrollSegment[] = [
@@ -352,57 +354,44 @@ const SCENE09_SEGMENTS: BrollSegment[] = [
     category: "twitch",
     durationInFrames: 24,
     fontSize: 200,
-    words: [{ atFrame: 1, text: "Twitch" }],
+    words: [{ atFrame: 2, text: "Twitch" }],
   },
   {
     category: "pumpfun",
     durationInFrames: 24,
     fontSize: 150,
     words: [
-      { atFrame: 1, text: "shorting", br: true },
-      { atFrame: 7, text: "meme coins" },
+      { atFrame: 2, text: "shorting", br: true },
+      { atFrame: 8, text: "meme coins" },
     ],
   },
   {
     category: "animals",
     durationInFrames: 24,
     fontSize: 200,
-    words: [{ atFrame: 1, text: "animals" }],
+    words: [{ atFrame: 2, text: "animals" }],
   },
   {
     category: "movies",
     durationInFrames: 24,
     fontSize: 200,
-    words: [{ atFrame: 1, text: "movies" }],
+    words: [{ atFrame: 2, text: "movies" }],
   },
 ];
 
-const cumulativeStart = (segments: BrollSegment[], idx: number) =>
-  segments.slice(0, idx).reduce((acc, s) => acc + s.durationInFrames, 0);
-
 export const Scene09_BrollCycle: React.FC = () => {
-  return (
-    <AbsoluteFill>
-      <ZoomedBg duration={SCENE09_DURATION}>
-        {SCENE09_SEGMENTS.map((seg, i) => (
-          <Sequence
-            key={`bg-${seg.category}`}
-            from={cumulativeStart(SCENE09_SEGMENTS, i)}
-            durationInFrames={seg.durationInFrames}
-            name={`broll-${seg.category}`}
-          >
-            <BrollGridBg category={seg.category} />
-          </Sequence>
-        ))}
-      </ZoomedBg>
+  const frame = useCurrentFrame();
 
-      {SCENE09_SEGMENTS.map((seg, i) => (
-        <Sequence
-          key={`text-${seg.category}`}
-          from={cumulativeStart(SCENE09_SEGMENTS, i)}
-          durationInFrames={seg.durationInFrames}
-          name={`label-${seg.category}`}
-        >
+  let acc = 0;
+  for (const seg of SCENE09_SEGMENTS) {
+    const segStart = acc;
+    const segEnd = acc + seg.durationInFrames;
+    if (frame >= segStart && frame < segEnd) {
+      // Translate per-segment word timings into the scene's local frame space.
+      const adjustedWords = seg.words.map((w) => ({ ...w, atFrame: segStart + w.atFrame }));
+      return (
+        <AbsoluteFill>
+          <BrollGridBg category={seg.category} startFrame={segStart} />
           <AbsoluteFill
             style={{
               justifyContent: "center",
@@ -411,7 +400,7 @@ export const Scene09_BrollCycle: React.FC = () => {
             }}
           >
             <WordCascade
-              words={seg.words}
+              words={adjustedWords}
               fontSize={seg.fontSize}
               fontFamily={fontFamily}
               color="#ffffff"
@@ -419,10 +408,12 @@ export const Scene09_BrollCycle: React.FC = () => {
               fontStyle="italic"
             />
           </AbsoluteFill>
-        </Sequence>
-      ))}
-    </AbsoluteFill>
-  );
+        </AbsoluteFill>
+      );
+    }
+    acc = segEnd;
+  }
+  return null;
 };
 
 /* ═══════════════════════════════════════════════════════

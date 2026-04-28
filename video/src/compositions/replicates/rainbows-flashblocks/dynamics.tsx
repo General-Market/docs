@@ -326,10 +326,12 @@ const BROLL_PER_CATEGORY = 48;
 export const BrollGridBg: React.FC<{
   category: BrollCategory;
   hexWidth?: number;
-}> = ({ category, hexWidth = 240 }) => {
+  /** Composition-absolute frame when this segment mounted; scrolling counts from here. */
+  startFrame?: number;
+}> = ({ category, hexWidth = 240, startFrame = 0 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const scrollY = (frame / fps) * MEGA_SCROLL_PX_PER_SEC;
+  const scrollY = (Math.max(0, frame - startFrame) / fps) * MEGA_SCROLL_PX_PER_SEC;
   const colors = PLACEHOLDER_COLORS[category] ?? ["#444"];
 
   const hexW = hexWidth;
