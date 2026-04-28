@@ -115,6 +115,20 @@ export const activeChain = indexL3
 export const activeChainId = indexL3.id
 export const settlementChainId = settlementChain.id
 
+// `wallet_addEthereumChain` requires an absolute URL. The chain definitions above
+// use relative same-origin proxies (`/api/rpc`, `/api/settlement-rpc`) for wagmi's
+// transport — desktop MetaMask tolerates relatives, mobile MetaMask rejects them
+// outright with "could not switch". Resolve to absolute before handing to the wallet.
+export function getWalletRpcUrls(chain: Chain): string[] {
+  const raw = chain.rpcUrls.default.http[0]
+  if (!raw) return []
+  if (/^https?:\/\//i.test(raw)) return [raw]
+  if (typeof window !== 'undefined' && raw.startsWith('/')) {
+    return [`${window.location.origin}${raw}`]
+  }
+  return [raw]
+}
+
 // ---------------------------------------------------------------------------
 // L3-defaulting hook wrappers
 // Use these instead of raw wagmi hooks so chain reads always target L3

@@ -4,7 +4,7 @@ import { useEffect, useCallback } from 'react'
 import { usePathname } from 'next/navigation'
 import { useAccount, useChainId, useSwitchChain } from 'wagmi'
 import { type Chain } from 'wagmi/chains'
-import { indexL3, settlementChain } from '@/lib/wagmi'
+import { indexL3, settlementChain, getWalletRpcUrls } from '@/lib/wagmi'
 
 /**
  * Global chain enforcer — blocks all UI and forces wallet to switch
@@ -24,14 +24,6 @@ export function ChainGuard({ children }: { children: React.ReactNode }) {
   const allowedChainIds = [indexL3.id, settlementChain.id]
   const isWrongChain = isConnected && !allowedChainIds.includes(chainId)
 
-  // Resolve relative RPC paths (e.g. "/rpc") to absolute URLs for wallet_addEthereumChain.
-  // Wallets need a full URL — relative paths are invalid.
-  const resolveRpcUrl = useCallback((url: string) => {
-    if (typeof window === 'undefined') return url
-    if (url.startsWith('/')) return `${window.location.origin}${url}`
-    return url
-  }, [])
-
   const forceSwitch = useCallback(async () => {
     // First, try low-level wallet RPC to add + switch chain
     // This works even if wagmi's switchChain has issues
@@ -44,7 +36,7 @@ export function ChainGuard({ children }: { children: React.ReactNode }) {
             chainId: chainIdHex,
             chainName: indexL3.name,
             nativeCurrency: indexL3.nativeCurrency,
-            rpcUrls: [resolveRpcUrl(indexL3.rpcUrls.default.http[0])],
+            rpcUrls: getWalletRpcUrls(indexL3),
           }],
         })
       } catch {
@@ -61,7 +53,7 @@ export function ChainGuard({ children }: { children: React.ReactNode }) {
     }
     // Also trigger wagmi's switch to keep state in sync
     switchChain({ chainId: indexL3.id })
-  }, [switchChain, resolveRpcUrl])
+  }, [switchChain])
 
   // On every connection, push the correct RPC URLs to the wallet.
   // wallet_addEthereumChain updates the RPC if the chain already exists (EIP-3085),
@@ -76,7 +68,7 @@ export function ChainGuard({ children }: { children: React.ReactNode }) {
             chainId: `0x${chain.id.toString(16)}`,
             chainName: chain.name,
             nativeCurrency: chain.nativeCurrency,
-            rpcUrls: [resolveRpcUrl(chain.rpcUrls.default.http[0])],
+            rpcUrls: getWalletRpcUrls(chain),
             ...(chain.blockExplorers?.default ? {
               blockExplorerUrls: [chain.blockExplorers.default.url],
             } : {}),
@@ -86,7 +78,7 @@ export function ChainGuard({ children }: { children: React.ReactNode }) {
     }
     pushChain(indexL3)
     pushChain(settlementChain)
-  }, [isConnected, resolveRpcUrl])
+  }, [isConnected])
 
   // Auto-attempt switch on wrong chain detection
   useEffect(() => {

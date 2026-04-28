@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from 'react'
 import { useTranslations } from 'next-intl'
 import { useAccount, useConnect } from 'wagmi'
-import { indexL3 } from '@/lib/wagmi'
+import { indexL3, getWalletRpcUrls } from '@/lib/wagmi'
 
 interface WalletActionButtonProps {
   onClick: () => void
@@ -45,7 +45,7 @@ export function WalletActionButton({ onClick, children, className, disabled, dat
             chainId: chainIdHex,
             chainName: indexL3.name,
             nativeCurrency: indexL3.nativeCurrency,
-            rpcUrls: [indexL3.rpcUrls.default.http[0]],
+            rpcUrls: getWalletRpcUrls(indexL3),
           }],
         })
       } catch { /* chain may exist */ }

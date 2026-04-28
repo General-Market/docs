@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useAccount, useConnect } from 'wagmi'
 import { useTranslations } from 'next-intl'
-import { indexL3 } from '@/lib/wagmi'
+import { indexL3, getWalletRpcUrls } from '@/lib/wagmi'
 import { usePoints, usePointsLeaderboard } from '@/hooks/usePoints'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
@@ -37,7 +37,7 @@ export default function PointsPageClient() {
             chainId: chainIdHex,
             chainName: indexL3.name,
             nativeCurrency: indexL3.nativeCurrency,
-            rpcUrls: [indexL3.rpcUrls.default.http[0]],
+            rpcUrls: getWalletRpcUrls(indexL3),
           }],
         })
       } catch {}

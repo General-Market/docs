@@ -2,7 +2,7 @@
 
 import { useMemo, useCallback, useEffect, useState } from 'react'
 import { useAccount, useConnect } from 'wagmi'
-import { indexL3 } from '@/lib/wagmi'
+import { indexL3, getWalletRpcUrls } from '@/lib/wagmi'
 import { useOnChainVaultPositions } from '@/hooks/vaults/useOnChainVaultPositions'
 
 export type OnboardingStep = 'select' | 'wallet' | 'faucet' | 'vault' | 'bot'
@@ -205,7 +205,7 @@ export function useOnboarding(sourceId: string): OnboardingState {
             chainId: chainIdHex,
             chainName: indexL3.name,
             nativeCurrency: indexL3.nativeCurrency,
-            rpcUrls: [indexL3.rpcUrls.default.http[0]],
+            rpcUrls: getWalletRpcUrls(indexL3),
           }],
         })
       } catch { /* chain may already exist */ }

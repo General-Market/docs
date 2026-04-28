@@ -12,7 +12,7 @@ import { useL3GasBalance } from '@/hooks/vision/useL3GasBalance'
 import { usePlayerPosition } from '@/hooks/vision/usePlayerPosition'
 import { useSubmitBitmap } from '@/hooks/vision/useSubmitBitmap'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
-import { indexL3 } from '@/lib/wagmi'
+import { indexL3, getWalletRpcUrls } from '@/lib/wagmi'
 import type { BetDirection } from '@/lib/vision/bitmap'
 import { VISION_USDC_DECIMALS } from '@/lib/vision/constants'
 import { SpringPress } from '@/components/ui/spring'
@@ -116,7 +116,7 @@ export default function BatchEntryPanel({
     const chainIdHex = `0x${indexL3.id.toString(16)}`
     const provider = (window as any).ethereum
     if (provider) {
-      try { await provider.request({ method: 'wallet_addEthereumChain', params: [{ chainId: chainIdHex, chainName: indexL3.name, nativeCurrency: indexL3.nativeCurrency, rpcUrls: [indexL3.rpcUrls.default.http[0]] }] }) } catch { /* chain may exist */ }
+      try { await provider.request({ method: 'wallet_addEthereumChain', params: [{ chainId: chainIdHex, chainName: indexL3.name, nativeCurrency: indexL3.nativeCurrency, rpcUrls: getWalletRpcUrls(indexL3) }] }) } catch { /* chain may exist */ }
       try { await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: chainIdHex }] }) } catch { /* user rejected */ }
     }
     connect({ connector: injectedConnector, chainId: indexL3.id })
