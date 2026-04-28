@@ -486,7 +486,32 @@ function readSavedOffset(): PositionOffset {
     if (!raw) return { dx: 0, dy: 0 }
     const parsed = JSON.parse(raw)
     if (typeof parsed?.dx === 'number' && typeof parsed?.dy === 'number') {
-      return { dx: parsed.dx, dy: parsed.dy }
+      // Pre-clamp using a conservative widget-size estimate. The post-paint
+      // useEffect clamp uses the real bounding rect, but if a saved offset
+      // is catastrophic (e.g. -2000 from a previous large monitor) the
+      // widget paints fully off-screen on the first frame; sometimes the
+      // recovery clamp doesn't fully restore visibility before the user
+      // sees a missing widget. This belt-and-braces clamp at read time
+      // means the first paint is already on-canvas.
+      const widgetW = 300
+      const widgetH = 220
+      const minVisible = 80
+      const vw = window.innerWidth
+      const vh = window.innerHeight
+      // Base anchor: left-3 bottom-3 → top-left at (12, vh-12-widgetH).
+      const baseLeft = 12
+      const baseTop = vh - 12 - widgetH
+      let dx = parsed.dx
+      let dy = parsed.dy
+      const left = baseLeft + dx
+      const top = baseTop + dy
+      const right = left + widgetW
+      const bottom = top + widgetH
+      if (right < minVisible) dx += minVisible - right
+      else if (left > vw - minVisible) dx -= left - (vw - minVisible)
+      if (bottom < minVisible) dy += minVisible - bottom
+      else if (top > vh - minVisible) dy -= top - (vh - minVisible)
+      return { dx, dy }
     }
   } catch {
     // fall through

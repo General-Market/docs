@@ -135,8 +135,15 @@ export function SourceDetailV2({ sourceId, initialSource }: SourceDetailV2Props)
   const vaultShowcaseRef = useRef<HTMLDivElement>(null)
 
   const handleOnboardingVaultDeposit = useCallback(() => {
-    vaultShowcaseRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-  }, [])
+    // If we're already on /source/twitch, scroll to the vault showcase on
+    // this page — clicking again then opens a deposit panel. From any
+    // other source, route over to twitch where the curated vaults live.
+    if (sourceId === 'twitch') {
+      vaultShowcaseRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      return
+    }
+    router.push('/source/twitch')
+  }, [router, sourceId])
 
   const handleOnboardingBotDeploy = useCallback(() => {
     router.push('/build-bot')

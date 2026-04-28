@@ -21,13 +21,12 @@ export function HomeOnboardingCompass() {
   const onboarding = useOnboarding('')
   const router = useRouter()
 
+  // Route the vault CTA to the Twitch source page — that's where vaults
+  // are actually offered after wiping /vaults. The standalone vault index
+  // is gone; vaults live inside each market source page.
   const handleVaultDeposit = useCallback(() => {
-    if (typeof document === 'undefined') return
-    const grid =
-      document.querySelector('[data-onboarding-target="market-card"]') ??
-      document.querySelector('main')
-    grid?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-  }, [])
+    router.push('/source/twitch')
+  }, [router])
 
   const handleBotDeploy = useCallback(() => {
     router.push('/build-bot')
