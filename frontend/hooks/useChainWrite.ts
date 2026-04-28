@@ -11,7 +11,8 @@ import {
   type UseSendTransactionParameters,
   type UseSendTransactionReturnType,
 } from 'wagmi'
-import { activeChainId, indexL3 } from '@/lib/wagmi'
+import { type Chain } from 'wagmi/chains'
+import { activeChainId, indexL3, getWalletRpcUrls } from '@/lib/wagmi'
 
 /**
  * Ensure the wallet is on the correct chain before sending a transaction.
@@ -22,23 +23,26 @@ export async function ensureCorrectChain(
   currentChainId: number | undefined,
   switchChainAsync: (args: { chainId: number }) => Promise<unknown>,
   targetChainId: number = activeChainId,
-  targetChain?: { name: string; nativeCurrency: { name: string; symbol: string; decimals: number }; rpcUrls: { default: { http: readonly string[] } } },
+  targetChain?: Chain,
 ) {
   if (currentChainId === targetChainId) return
 
   const chain = targetChain ?? indexL3
+  const targetHex = `0x${targetChainId.toString(16)}`
 
+  // Prefer wagmi's switcher — it keeps the connector's cached chainId in sync
+  // so the next writeContract won't fail with ConnectorChainMismatchError.
   try {
     await switchChainAsync({ chainId: targetChainId })
   } catch {
-    // Fallback: raw wallet RPC
+    // wagmi failed. Drop to raw provider RPC to add + switch.
     const provider = (window as any).ethereum
     if (!provider) throw new Error('No wallet provider found')
 
     try {
       await provider.request({
         method: 'wallet_switchEthereumChain',
-        params: [{ chainId: `0x${targetChainId.toString(16)}` }],
+        params: [{ chainId: targetHex }],
       })
     } catch (switchError: any) {
       // 4902 = chain not added
@@ -46,16 +50,25 @@ export async function ensureCorrectChain(
         await provider.request({
           method: 'wallet_addEthereumChain',
           params: [{
-            chainId: `0x${targetChainId.toString(16)}`,
+            chainId: targetHex,
             chainName: chain.name,
             nativeCurrency: chain.nativeCurrency,
-            rpcUrls: [chain.rpcUrls.default.http[0]],
+            rpcUrls: getWalletRpcUrls(chain),
+            ...(chain.blockExplorers?.default ? {
+              blockExplorerUrls: [chain.blockExplorers.default.url],
+            } : {}),
           }],
         })
       } else {
         throw switchError
       }
     }
+
+    // Raw switch succeeded but wagmi's connector still caches the old chain —
+    // mobile MetaMask doesn't always emit `chainChanged`. Re-run wagmi's
+    // switcher to reconcile the cache. The wallet is already on the target
+    // chain, so this is a no-op at the user level.
+    try { await switchChainAsync({ chainId: targetChainId }) } catch {}
   }
 
   // Wait for the provider to confirm the chain switch.

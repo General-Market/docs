@@ -7,11 +7,13 @@ import { getExplorerBaseUrl } from '@/lib/utils/explorer'
 // Browser always routes L3 and Settlement through same-origin proxies: avoids
 // mixed-content on HTTPS and CORS failures on upstream RPCs that don't answer
 // preflight (the L3 nginx, Sonic's public testnet RPC). SSR uses direct URLs.
+// The browser path resolves to an absolute URL — mobile MetaMask refuses
+// relative URLs in `wallet_addEthereumChain` and dies with a chain-switch error.
 const envRpcUrl = typeof window !== 'undefined'
-  ? '/api/settlement-rpc'
+  ? `${window.location.origin}/api/settlement-rpc`
   : (process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8546')
 const envL3RpcUrl = typeof window !== 'undefined'
-  ? '/api/rpc'
+  ? `${window.location.origin}/api/rpc`
   : (process.env.NEXT_PUBLIC_L3_RPC_URL || 'http://localhost:8545')
 
 // Chain definition — L3 (Index Orbit chain where Vision.sol lives)
