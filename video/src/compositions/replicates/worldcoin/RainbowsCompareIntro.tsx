@@ -1,17 +1,21 @@
-// Rainbows-Compare intro — three macbooks, three answers.
+// Rainbows-Compare intro — one laptop, three answers, the rainbows reveal.
 //
-// Three cloned macbook GLTFs sit on the lofi cloud broll. Each one
-// spins on its Y-axis. As each phrase arrives, its macbook slows,
-// pulls forward, faces the camera. The other two keep spinning
-// behind. The third beat is the punch — rainbows.
+// Text placement is copied verbatim from Rainbows-Flashblocks Scene 01,
+// 02, 03 — same positions, same staggers, same per-beat durations
+// (48 / 48 / 84 frames at 24 fps). Beat 2's text was originally blue
+// on a light gradient; here it is white over the lofi cloud broll for
+// legibility.
 //
-// v1: empty screens. The screen content layer is intentionally
-// missing; once the comparison framing is approved we wire the
-// product UIs into per-macbook canvases.
+// One laptop sits centred behind the text and stays still through
+// beats 1 and 2. At the rainbows reveal — frames 132 to 156, exactly
+// when the title "you trade rainbows." slides in — it performs a
+// single 360° Y-axis spin, eased like an Apple keynote, and lands
+// forward as the title settles. That is its only motion.
 
 import React, { useMemo } from "react";
 import {
   AbsoluteFill,
+  Sequence,
   interpolate,
   staticFile,
   useCurrentFrame,
@@ -34,364 +38,447 @@ const { fontFamily } = loadFont("normal", {
 const MODEL_URL = staticFile("models/tabletop_macbook_iphone.glb");
 useGLTF.preload(MODEL_URL);
 
+// ── Composition timing ──────────────────────────────────────────────
+
 const W = 1920;
 const H = 1080;
-// Match Rainbows-Flashblocks: 24fps, 48-frame beats (2s each).
 const FPS = 24;
-const BEAT_FRAMES = 48;
-const TOTAL_FRAMES = BEAT_FRAMES * 3;
+const BEAT1 = 48;
+const BEAT2 = 48;
+const BEAT3 = 84;
+const TOTAL_FRAMES = BEAT1 + BEAT2 + BEAT3; // 180
 
-// Macbook layout — three side-by-side. Gap > macbook keyboard width
-// or the bases overlap into one wide silver smear.
-const SLOTS: { x: number; z: number; spinDir: 1 | -1 }[] = [
-  { x: -9.5, z: -1.5, spinDir: 1 },
-  { x: 0, z: -1.5, spinDir: -1 },
-  { x: 9.5, z: -1.5, spinDir: 1 },
-];
+// Spin window — the rainbows reveal moment. Frames 132 → 156 is the
+// title slide-in inside Scene03 (1.5s → 2.6s of beat 3 at 24fps).
+const SPIN_START = 132;
+const SPIN_END = 156;
+const SPIN_FRAMES = SPIN_END - SPIN_START;
 
-// Camera pulled far enough back to frame all three with room to spare.
-const CAM_POS = new THREE.Vector3(0, 5.2, -22);
-const CAM_TARGET = new THREE.Vector3(0, 2.4, 0);
+// ── Camera & macbook pose ──────────────────────────────────────────
 
-// Lid pose copied from Worldcoin2 — open laptop in its rest position.
+// Worldcoin2 hero pose, pulled back ~0.8 units to give the text room.
+const CAM_POS_START = new THREE.Vector3(3.031, 4.096, -7.0);
+const CAM_POS_END = new THREE.Vector3(3.031, 4.096, -6.18); // Worldcoin2 baseline
+const CAM_TARGET = new THREE.Vector3(3.001, 2.78, 0.829);
+
 const LID_OPEN = new THREE.Quaternion(-0.78333, 0, 0, 0.62161);
-const LID_CLOSED = new THREE.Quaternion(0, 0, 0, 1); // identity = lid flat on base
 const BEVELS_POS = new THREE.Vector3(-0.00012, 0.00824, -0.10401);
 const BEVELS_SCALE = new THREE.Vector3(0.27471, 0.27471, 0.27471);
 
-// Per-macbook pose rig built once from a fresh GLTF clone. We hide
-// the iPhone children and stash the lid (Bevels_2) reference so we
-// can drive its open/close quaternion each frame.
-function buildMacbookRig(sourceScene: THREE.Object3D): {
-  root: THREE.Object3D;
-  bevels: THREE.Object3D | null;
-} {
-  const root = cloneSkeleton(sourceScene) as THREE.Object3D;
+// ── Macbook scene — single laptop ──────────────────────────────────
 
-  const iphone = root.getObjectByName("iphone");
-  if (iphone) {
-    iphone.traverse((child) => {
-      const m = child as THREE.Mesh;
-      if (m.isMesh) m.visible = false;
-    });
-  }
-
-  const bevels = root.getObjectByName("Bevels_2") ?? null;
-  if (bevels) {
-    bevels.position.copy(BEVELS_POS);
-    bevels.scale.copy(BEVELS_SCALE);
-  }
-
-  return { root, bevels };
-}
-
-// activity: 0 = closed and spinning, 1 = open and forward at rest.
-// At full spin we run hard — 4 turns per second so a still frame is
-// unmistakeably mid-rotation. As activity rises, yaw is multiplied
-// down to zero, so the macbook decelerates and lands facing the camera.
-const SPIN_TURNS_PER_SEC = 4.0;
-
-function macbookYaw(frame: number, slotIdx: number, activity: number): number {
-  const dir = SLOTS[slotIdx].spinDir;
-  const spinPerFrame = (Math.PI * 2 * SPIN_TURNS_PER_SEC) / FPS;
-  return frame * spinPerFrame * dir * (1 - activity);
-}
-
-const ThreeMacbooks: React.FC<{ frame: number }> = ({ frame }) => {
+const MacbookSceneOne: React.FC<{ frame: number }> = ({ frame }) => {
   const { camera } = useThree();
   const gltf = useGLTF(MODEL_URL);
 
-  const rigs = useMemo(
-    () => SLOTS.map(() => buildMacbookRig(gltf.scene)),
-    [gltf],
-  );
+  const root = useMemo(() => {
+    const cloned = cloneSkeleton(gltf.scene) as THREE.Object3D;
 
-  // Per-slot activity over the beats. Smooth ramp in/out so the
-  // change between active/inactive feels intentional, not linear.
-  const slotActivity = SLOTS.map((_, i) => {
-    const beatStart = i * BEAT_FRAMES;
-    const beatEnd = beatStart + BEAT_FRAMES;
-    const rampIn = 6; // ~0.25s at 24fps
-    const rampOut = 6;
-    const settle = beatStart + rampIn;
-    const release = beatEnd - rampOut;
-    if (frame < beatStart) return 0;
-    if (frame < settle) {
-      return interpolate(frame, [beatStart, settle], [0, 1], {
-        extrapolateLeft: "clamp",
-        extrapolateRight: "clamp",
+    const iphone = cloned.getObjectByName("iphone");
+    if (iphone) {
+      iphone.traverse((child) => {
+        const m = child as THREE.Mesh;
+        if (m.isMesh) m.visible = false;
       });
     }
-    if (frame < release) return 1;
-    if (frame < beatEnd) {
-      // Hold third macbook forward to the end of the scene.
-      if (i === SLOTS.length - 1) return 1;
-      return interpolate(frame, [release, beatEnd], [1, 0], {
-        extrapolateLeft: "clamp",
-        extrapolateRight: "clamp",
-      });
-    }
-    // After this slot's beat: only the last one stays forward.
-    return i === SLOTS.length - 1 ? 1 : 0;
-  });
 
-  // On the final beat, gently bring slots A and B forward too so all
-  // three face the camera by the end — the comparison framed in one shot.
-  const finalReveal = interpolate(
-    frame,
-    [BEAT_FRAMES * 2 + 6, BEAT_FRAMES * 2 + 22],
-    [0, 1],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-
-  rigs.forEach(({ root, bevels }, i) => {
-    const slot = SLOTS[i];
-    const myActivity = slotActivity[i];
-    const isFinalSlot = i === SLOTS.length - 1;
-    const activity = isFinalSlot
-      ? myActivity
-      : Math.max(myActivity, finalReveal * 0.7);
-
-    root.position.x = slot.x;
-    // Active macbook pulls slightly forward (toward camera = -z).
-    root.position.z = slot.z - activity * 1.2;
-    root.position.y = 0;
-
-    // Yaw: fast spin tapered to 0 by activity.
-    root.rotation.y = macbookYaw(frame, i, activity);
-    // Tiny scale lift for the focused macbook.
-    const s = 1 + activity * 0.06;
-    root.scale.set(s, s, s);
-
-    // Lid open/close — closed while spinning, opens as activity rises.
-    // Slerp between identity (closed) and the open quaternion. Ease the
-    // open so the lid snaps a little at the end, like a real laptop.
+    const bevels = cloned.getObjectByName("Bevels_2");
     if (bevels) {
-      const eased = activity * activity * (3 - 2 * activity); // smoothstep
-      bevels.quaternion.slerpQuaternions(LID_CLOSED, LID_OPEN, eased);
+      bevels.position.copy(BEVELS_POS);
+      bevels.quaternion.copy(LID_OPEN);
+      bevels.scale.copy(BEVELS_SCALE);
     }
-  });
 
-  // Camera holds wide and steady — micro-drift only.
-  const driftX = Math.sin(frame * 0.012) * 0.08;
-  const driftY = Math.cos(frame * 0.009) * 0.05;
+    return cloned;
+  }, [gltf]);
+
+  // Single 360° spin in the rainbows window. Ease-in-out cubic — slow
+  // start, fast middle, slow finish. Outside the window: yaw 0, fully
+  // forward. The lid stays open at LID_OPEN throughout.
+  let yaw = 0;
+  if (frame >= SPIN_START && frame < SPIN_END) {
+    const t = (frame - SPIN_START) / SPIN_FRAMES;
+    const eased =
+      t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    yaw = eased * Math.PI * 2;
+  }
+  root.rotation.y = yaw;
+
+  // Whisper of breath so the laptop is never dead. ±0.3% scale, slow.
+  const breath = 1 + Math.sin(frame * 0.06) * 0.003;
+  root.scale.set(breath, breath, breath);
+
+  // Slow camera push-in — Apple keynote dolly. Linear over the whole
+  // 7.5s. Subtle enough to feel like air moving rather than a move.
+  const t = interpolate(frame, [0, TOTAL_FRAMES], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
   const cam = camera as THREE.PerspectiveCamera;
-  cam.position.set(CAM_POS.x + driftX, CAM_POS.y + driftY, CAM_POS.z);
+  cam.position.set(
+    CAM_POS_START.x + (CAM_POS_END.x - CAM_POS_START.x) * t,
+    CAM_POS_START.y + (CAM_POS_END.y - CAM_POS_START.y) * t,
+    CAM_POS_START.z + (CAM_POS_END.z - CAM_POS_START.z) * t,
+  );
   cam.lookAt(CAM_TARGET);
   cam.fov = 50;
   cam.updateProjectionMatrix();
 
   return (
     <>
-      {rigs.map(({ root }, i) => (
-        <primitive key={i} object={root} />
-      ))}
+      <primitive object={root} />
       <Environment preset="studio" environmentIntensity={1.6} />
-      <ambientLight intensity={0.35} />
-      <directionalLight position={[5, 8, -5]} intensity={2.2} />
+      <ambientLight intensity={0.3} />
+      {/* Key light — strong, upper-front-left */}
+      <directionalLight position={[5, 8, -5]} intensity={2.6} castShadow />
+      {/* Fill — soft, cool, upper-right */}
       <directionalLight position={[-4, 4, 3]} intensity={0.6} color="#c0d0e8" />
+      {/* Rim — separates body from broll behind */}
+      <directionalLight position={[0, 5, 8]} intensity={1.4} color="#ffffff" />
       <ContactShadows
         position={[0, -0.01, 0]}
-        opacity={0.35}
-        scale={20}
+        opacity={0.4}
+        scale={14}
         blur={1.6}
-        far={6}
+        far={5}
       />
     </>
   );
 };
 
-// ── Text overlay ─────────────────────────────────────────────────────
+// ── Text layers — copied verbatim from ScenesA, white throughout ───
 
-// Text styling and timing mirror Rainbows-Flashblocks Scene01 exactly:
-// large italic Inter 800, white, with the staggered fade-in then phrase-A
-// fade-out at 0.85s, phrase-B fade-in at 0.95s. Each beat lasts 2s.
 const baseText: React.CSSProperties = {
   fontFamily,
   fontWeight: 800,
   fontStyle: "italic",
-  lineHeight: 1.05,
+  lineHeight: 1.15,
   display: "inline-block",
   color: "#fff",
   textShadow: "0 6px 28px rgba(0,0,0,0.65)",
 };
 
-const PHRASES: { a: string[]; b: string[] }[] = [
-  { a: ["When", "you", "want", "leverage"], b: ["you", "trade", "perps."] },
-  {
-    a: ["When", "you", "want", "volatility", "exposure"],
-    b: ["you", "trade", "options."],
-  },
-  {
-    a: ["When", "you", "want", "better", "odds", "of", "winning"],
-    b: ["you", "trade", "rainbows."],
-  },
-];
+const center: React.CSSProperties = {
+  position: "absolute",
+  top: "50%",
+  left: "50%",
+  transform: "translate(-50%, -50%)",
+  display: "flex",
+  gap: 36,
+  justifyContent: "center",
+  whiteSpace: "nowrap",
+};
 
-function buildTextProxies() {
-  const init: Record<string, Record<string, number>> = {};
-  PHRASES.forEach((phrase, beat) => {
-    init[`phraseA_${beat}`] = { opacity: 1 };
-    init[`phraseB_${beat}`] = { opacity: 0 };
-    phrase.a.forEach((_, i) => {
-      // First word of each beat enters already visible — Scene01 pattern.
-      init[`a_${beat}_${i}`] = { opacity: i === 0 ? 1 : 0, y: i === 0 ? 0 : 15 };
-    });
-    phrase.b.forEach((_, i) => {
-      init[`b_${beat}_${i}`] = { opacity: 0, y: 15 };
-    });
-    // Beat row gating — A or B for current beat shows, others hidden.
-    init[`row_${beat}`] = { opacity: beat === 0 ? 1 : 0 };
+// Beat 1 — Scene01_Intro logic. Centered phrase A, centered phrase B.
+const SCENE01_PHRASE_A = ["When", "you", "want", "leverage"] as const;
+const SCENE01_PHRASE_B = ["you", "trade", "perps."] as const;
+
+function buildScene01Proxies() {
+  const init: Record<string, Record<string, number>> = {
+    phraseA: { opacity: 1 },
+    phraseB: { opacity: 0 },
+  };
+  SCENE01_PHRASE_A.forEach((_, i) => {
+    init[`a_${i}`] = { opacity: i === 0 ? 1 : 0, y: i === 0 ? 0 : 15 };
+  });
+  SCENE01_PHRASE_B.forEach((_, i) => {
+    init[`b_${i}`] = { opacity: 0, y: 15 };
   });
   return init;
 }
+const scene01Init = buildScene01Proxies();
 
-const textInit = buildTextProxies();
-
-const TextOverlay: React.FC = () => {
+const TextBeat1: React.FC = () => {
   const s = useGsapProxy((tl, p) => {
-    const beatSec = BEAT_FRAMES / FPS; // 2s
-    PHRASES.forEach((phrase, beat) => {
-      const t0 = beat * beatSec;
-
-      // Beat row gating: previous beat's row hides, this beat's row shows.
-      if (beat > 0) {
-        tl.to(
-          p[`row_${beat - 1}`],
-          { opacity: 0, duration: 0.001 },
-          t0,
-        );
-        tl.to(p[`row_${beat}`], { opacity: 1, duration: 0.001 }, t0);
-      }
-
-      // Phrase A — first word already visible. Rest stagger in.
-      phrase.a.forEach((_, i) => {
-        if (i === 0) return;
-        tl.to(
-          p[`a_${beat}_${i}`],
-          { opacity: 1, y: 0, duration: 0.15, ease: "power2.out" },
-          t0 + 0.15 + i * 0.12,
-        );
-      });
-
-      // Phrase A fades out at 0.85s into the beat.
+    SCENE01_PHRASE_A.forEach((_, i) => {
+      if (i === 0) return;
       tl.to(
-        p[`phraseA_${beat}`],
-        { opacity: 0, duration: 0.18, ease: "power2.in" },
-        t0 + 0.85,
+        p[`a_${i}`],
+        { opacity: 1, y: 0, duration: 0.15, ease: "power2.out" },
+        0.15 + i * 0.12,
       );
-
-      // Phrase B fades in at 0.95s, words stagger.
-      tl.to(
-        p[`phraseB_${beat}`],
-        { opacity: 1, duration: 0.15, ease: "power2.out" },
-        t0 + 0.95,
-      );
-      phrase.b.forEach((_, i) => {
-        tl.to(
-          p[`b_${beat}_${i}`],
-          { opacity: 1, y: 0, duration: 0.15, ease: "power2.out" },
-          t0 + 0.95 + i * 0.18,
-        );
-      });
     });
-  }, textInit);
+    tl.to(p.phraseA, { opacity: 0, duration: 0.18, ease: "power2.in" }, 0.85);
+    tl.to(p.phraseB, { opacity: 1, duration: 0.15, ease: "power2.out" }, 0.95);
+    SCENE01_PHRASE_B.forEach((_, i) => {
+      tl.to(
+        p[`b_${i}`],
+        { opacity: 1, y: 0, duration: 0.15, ease: "power2.out" },
+        0.95 + i * 0.18,
+      );
+    });
+  }, scene01Init);
 
   return (
     <AbsoluteFill style={{ pointerEvents: "none" }}>
-      {PHRASES.map((phrase, beat) => {
-        const isPunch = beat === PHRASES.length - 1;
-        // Match Scene01 sizes: phrase A 160, phrase B 200. Rainbows beat
-        // earns a small bump since it is the answer the others were not.
-        const sizeA = isPunch ? 170 : 160;
-        const sizeB = isPunch ? 220 : 200;
-        return (
-          <div
-            key={beat}
-            style={{
-              position: "absolute",
-              inset: 0,
-              opacity: s[`row_${beat}`].opacity,
-            }}
-          >
-            {/* Phrase A — centered, like Scene01 */}
-            <div
+      <div style={{ ...center, opacity: s.phraseA.opacity }}>
+        {SCENE01_PHRASE_A.map((word, i) => {
+          const proxy = s[`a_${i}`];
+          return (
+            <span
+              key={i}
               style={{
-                position: "absolute",
-                top: "50%",
-                left: "50%",
-                transform: "translate(-50%, -50%)",
-                display: "flex",
-                gap: 36,
-                justifyContent: "center",
-                whiteSpace: "nowrap",
-                opacity: s[`phraseA_${beat}`].opacity,
+                ...baseText,
+                fontSize: 160,
+                opacity: proxy.opacity,
+                transform: `translateY(${proxy.y}px)`,
               }}
             >
-              {phrase.a.map((word, i) => {
-                const proxy = s[`a_${beat}_${i}`];
-                return (
-                  <span
-                    key={i}
-                    style={{
-                      ...baseText,
-                      fontSize: sizeA,
-                      opacity: proxy.opacity,
-                      transform: `translateY(${proxy.y}px)`,
-                    }}
-                  >
-                    {word}
-                  </span>
-                );
-              })}
-            </div>
-
-            {/* Phrase B — also centered, larger, the punch */}
-            <div
+              {word}
+            </span>
+          );
+        })}
+      </div>
+      <div style={{ ...center, opacity: s.phraseB.opacity }}>
+        {SCENE01_PHRASE_B.map((word, i) => {
+          const proxy = s[`b_${i}`];
+          return (
+            <span
+              key={i}
               style={{
-                position: "absolute",
-                top: "50%",
-                left: "50%",
-                transform: "translate(-50%, -50%)",
-                display: "flex",
-                gap: 40,
-                justifyContent: "center",
-                whiteSpace: "nowrap",
-                opacity: s[`phraseB_${beat}`].opacity,
+                ...baseText,
+                fontSize: 200,
+                opacity: proxy.opacity,
+                transform: `translateY(${proxy.y}px)`,
               }}
             >
-              {phrase.b.map((word, i) => {
-                const proxy = s[`b_${beat}_${i}`];
-                return (
-                  <span
-                    key={i}
-                    style={{
-                      ...baseText,
-                      fontSize: sizeB,
-                      opacity: proxy.opacity,
-                      transform: `translateY(${proxy.y}px)`,
-                    }}
-                  >
-                    {word}
-                  </span>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })}
+              {word}
+            </span>
+          );
+        })}
+      </div>
     </AbsoluteFill>
   );
 };
 
-// ── Composition ──────────────────────────────────────────────────────
+// Beat 2 — Scene02_Numbers logic. Phrase A left-aligned, phrase B
+// centered huge. White instead of the original blue.
+const SCENE02_PHRASE_A = [
+  "When",
+  "you",
+  "want",
+  "volatility",
+  "exposure",
+] as const;
+const SCENE02_PHRASE_B = ["you", "trade", "options."] as const;
+
+function buildScene02Proxies() {
+  const init: Record<string, Record<string, number>> = {
+    phraseA: { opacity: 1 },
+    phraseB: { opacity: 0 },
+  };
+  SCENE02_PHRASE_A.forEach((_, i) => {
+    init[`a_${i}`] = { opacity: 0, y: 15 };
+  });
+  SCENE02_PHRASE_B.forEach((_, i) => {
+    init[`b_${i}`] = { opacity: 0, y: 15 };
+  });
+  return init;
+}
+const scene02Init = buildScene02Proxies();
+
+const TextBeat2: React.FC = () => {
+  const s = useGsapProxy((tl, p) => {
+    SCENE02_PHRASE_A.forEach((_, i) => {
+      tl.to(
+        p[`a_${i}`],
+        { opacity: 1, y: 0, duration: 0.12, ease: "power2.out" },
+        i * 0.1,
+      );
+    });
+    tl.to(p.phraseA, { opacity: 0, duration: 0.18, ease: "power2.in" }, 0.85);
+    tl.to(p.phraseB, { opacity: 1, duration: 0.15, ease: "power2.out" }, 0.95);
+    SCENE02_PHRASE_B.forEach((_, i) => {
+      tl.to(
+        p[`b_${i}`],
+        { opacity: 1, y: 0, duration: 0.15, ease: "power2.out" },
+        0.95 + i * 0.16,
+      );
+    });
+  }, scene02Init);
+
+  return (
+    <AbsoluteFill style={{ pointerEvents: "none" }}>
+      {/* Phrase A — left-aligned (Scene02 layout, white text) */}
+      <div
+        style={{
+          position: "absolute",
+          top: "50%",
+          left: "8%",
+          transform: "translateY(-50%)",
+          maxWidth: "84%",
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "0 22px",
+          opacity: s.phraseA.opacity,
+        }}
+      >
+        {SCENE02_PHRASE_A.map((word, i) => {
+          const proxy = s[`a_${i}`];
+          return (
+            <span
+              key={i}
+              style={{
+                ...baseText,
+                fontSize: 145,
+                opacity: proxy.opacity,
+                transform: `translateY(${proxy.y}px)`,
+              }}
+            >
+              {word}
+            </span>
+          );
+        })}
+      </div>
+
+      {/* Phrase B — centered, huge (Scene02 punch) */}
+      <div
+        style={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          display: "flex",
+          flexWrap: "wrap",
+          justifyContent: "center",
+          gap: "0 28px",
+          opacity: s.phraseB.opacity,
+        }}
+      >
+        {SCENE02_PHRASE_B.map((word, i) => {
+          const proxy = s[`b_${i}`];
+          return (
+            <span
+              key={i}
+              style={{
+                ...baseText,
+                fontSize: 250,
+                opacity: proxy.opacity,
+                transform: `translateY(${proxy.y}px)`,
+              }}
+            >
+              {word}
+            </span>
+          );
+        })}
+      </div>
+    </AbsoluteFill>
+  );
+};
+
+// Beat 3 — Scene03_DarkGrid logic. Phase 1: single-word flashes
+// centered. Phase 2: title "you trade rainbows." slides left-aligned.
+const TextBeat3: React.FC = () => {
+  const s = useGsapProxy(
+    (tl, p) => {
+      // Phase 1 — word flashes
+      tl.to(p.when, { opacity: 0, duration: 0.08, ease: "power2.in" }, 0.35);
+      tl.to(
+        p.youFlash,
+        { opacity: 1, y: 0, duration: 0.1, ease: "power2.out" },
+        0.35,
+      );
+      tl.to(
+        p.youFlash,
+        { opacity: 0, duration: 0.08, ease: "power2.in" },
+        0.7,
+      );
+      tl.to(
+        p.want,
+        { opacity: 1, y: 0, duration: 0.1, ease: "power2.out" },
+        0.7,
+      );
+      tl.to(p.want, { opacity: 0, duration: 0.08, ease: "power2.in" }, 1.0);
+      tl.to(
+        p.better,
+        { opacity: 1, y: 0, duration: 0.12, ease: "power2.out" },
+        1.0,
+      );
+
+      // Phase 1 cross-fades out
+      tl.to(p.phase1, { opacity: 0, duration: 0.15, ease: "power2.in" }, 1.5);
+
+      // Phase 2 — title slides in from the right
+      tl.to(p.phase2, { opacity: 1, duration: 0.15, ease: "power2.out" }, 1.6);
+      tl.to(p.title, { x: 0, duration: 0.4, ease: "power2.out" }, 1.6);
+    },
+    {
+      phase1: { opacity: 1 },
+      when: { opacity: 1, y: 0 },
+      youFlash: { opacity: 0, y: 15 },
+      want: { opacity: 0, y: 15 },
+      better: { opacity: 0, y: 15 },
+      phase2: { opacity: 0 },
+      title: { x: 50 },
+    },
+  );
+
+  const flashSpan = (
+    text: string,
+    opacity: number,
+    y: number,
+    fontSize: number,
+  ) => (
+    <span
+      style={{
+        ...baseText,
+        fontStyle: "normal",
+        position: "absolute",
+        left: "50%",
+        transform: `translate(-50%, ${y}px)`,
+        fontSize,
+        opacity,
+        whiteSpace: "nowrap",
+      }}
+    >
+      {text}
+    </span>
+  );
+
+  return (
+    <AbsoluteFill style={{ pointerEvents: "none" }}>
+      {/* Phase 1 — single-word flashes, all sharing one centered slot */}
+      <div style={{ ...center, opacity: s.phase1.opacity }}>
+        {s.when.opacity > 0.01 && flashSpan("When", s.when.opacity, s.when.y, 145)}
+        {s.youFlash.opacity > 0.01 &&
+          flashSpan("you", s.youFlash.opacity, s.youFlash.y, 145)}
+        {s.want.opacity > 0.01 &&
+          flashSpan("want", s.want.opacity, s.want.y, 145)}
+        {s.better.opacity > 0.01 &&
+          flashSpan("better odds", s.better.opacity, s.better.y, 175)}
+      </div>
+
+      {/* Phase 2 — title card */}
+      <div
+        style={{
+          position: "absolute",
+          top: "55%",
+          left: "8%",
+          transform: `translateX(${s.title.x}px)`,
+          opacity: s.phase2.opacity,
+          maxWidth: "84%",
+        }}
+      >
+        <span style={{ ...baseText, fontSize: 200 }}>
+          you trade rainbows.
+        </span>
+      </div>
+    </AbsoluteFill>
+  );
+};
+
+// ── Composition ────────────────────────────────────────────────────
 
 export const RainbowsCompareIntro: React.FC = () => {
   const frame = useCurrentFrame();
 
   return (
     <AbsoluteFill style={{ width: W, height: H }}>
+      {/* Lofi cloud broll — full colour, no chroma filter */}
       <LofiDots skipFadeIn />
+
+      {/* Macbook hero — driven by global frame so the spin lands at the
+          rainbows reveal regardless of the per-Sequence text timing. */}
       <AbsoluteFill>
         <ThreeCanvas
           width={W}
@@ -400,7 +487,7 @@ export const RainbowsCompareIntro: React.FC = () => {
             fov: 50,
             near: 0.5,
             far: 1000,
-            position: [CAM_POS.x, CAM_POS.y, CAM_POS.z],
+            position: [CAM_POS_START.x, CAM_POS_START.y, CAM_POS_START.z],
           }}
           gl={{
             antialias: true,
@@ -412,11 +499,30 @@ export const RainbowsCompareIntro: React.FC = () => {
           style={{ background: "transparent" }}
         >
           <React.Suspense fallback={null}>
-            <ThreeMacbooks frame={frame} />
+            <MacbookSceneOne frame={frame} />
           </React.Suspense>
         </ThreeCanvas>
       </AbsoluteFill>
-      <TextOverlay />
+
+      {/* Text on top — three sequences, exact placements from
+          Rainbows-Flashblocks Scene 01, 02, 03. Beat 2 white not blue. */}
+      <Sequence from={0} durationInFrames={BEAT1} name="01 leverage / perps">
+        <TextBeat1 />
+      </Sequence>
+      <Sequence
+        from={BEAT1}
+        durationInFrames={BEAT2}
+        name="02 vol exposure / options"
+      >
+        <TextBeat2 />
+      </Sequence>
+      <Sequence
+        from={BEAT1 + BEAT2}
+        durationInFrames={BEAT3}
+        name="03 better odds / rainbows"
+      >
+        <TextBeat3 />
+      </Sequence>
     </AbsoluteFill>
   );
 };
