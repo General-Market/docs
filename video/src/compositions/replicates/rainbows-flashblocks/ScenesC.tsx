@@ -87,12 +87,12 @@ export const Scene09_Experience: React.FC = () => {
 
 /* ═══════════════════════════════════════════════════════
    Scene 10 — LiveTestnet reskin
-   Phase 1: "only you, with the market" word-by-word
+   Phase 1: "only you, with rainbows" word-by-word
    Phase 2: big italic "the best odds of winning"
    84 frames (3.5s @ 24fps)
    ═══════════════════════════════════════════════════════ */
 
-const SCENE10_PHASE1 = ["only", "you,", "with", "the", "market"] as const;
+const SCENE10_PHASE1 = ["only", "you,", "with", "rainbows"] as const;
 const SCENE10_PHASE2 = ["giving", "you", "the", "best", "odds", "of", "winning"] as const;
 
 function buildScene10Proxies() {
@@ -133,7 +133,7 @@ export const Scene10_LiveTestnet: React.FC = () => {
     <AbsoluteFill>
       <LightGradient />
 
-      {/* Phase 1 — "only you, with the market" */}
+      {/* Phase 1 — "only you, with rainbows" */}
       <div
         style={{
           position: "absolute",
@@ -217,17 +217,17 @@ export const Scene10_LiveTestnet: React.FC = () => {
 };
 
 /* ═══════════════════════════════════════════════════════
-   Scene 11 — "and" → "the assets" → "you always traded."
+   Scene 11 — "on" → "the assets" → "you always traded."
    48 frames (2s @ 24fps)
    ═══════════════════════════════════════════════════════ */
 
 export const Scene11_NewSpeed: React.FC = () => {
   const s = useGsapProxy(
     (tl, p) => {
-      // "and" visible immediately
-      tl.set(p.and, { opacity: 1 });
-      // "and" fades out at 0.4s
-      tl.to(p.and, { opacity: 0, duration: 0.06 }, 0.4);
+      // "on" visible immediately
+      tl.set(p.lead, { opacity: 1 });
+      // "on" fades out at 0.4s
+      tl.to(p.lead, { opacity: 0, duration: 0.06 }, 0.4);
 
       // "the assets" fades in at 0.45s
       tl.to(p.assets, { opacity: 1, y: 0, duration: 0.15, ease: "power2.out" }, 0.45);
@@ -238,13 +238,13 @@ export const Scene11_NewSpeed: React.FC = () => {
       tl.to(p.traded, { opacity: 1, y: 0, duration: 0.18, ease: "power2.out" }, 1.15);
     },
     {
-      and: { opacity: 0, y: 0 },
+      lead: { opacity: 0, y: 0 },
       assets: { opacity: 0, y: 12 },
       traded: { opacity: 0, y: 12 },
     },
   );
 
-  const showAnd = s.and.opacity > 0.01;
+  const showLead = s.lead.opacity > 0.01;
   const showAssets = s.assets.opacity > 0.01;
   const showTraded = s.traded.opacity > 0.01;
 
@@ -276,9 +276,9 @@ export const Scene11_NewSpeed: React.FC = () => {
           whiteSpace: "nowrap",
         }}
       >
-        {showAnd && (
-          <span style={{ ...textStyle, opacity: s.and.opacity }}>
-            and
+        {showLead && (
+          <span style={{ ...textStyle, opacity: s.lead.opacity }}>
+            on
           </span>
         )}
         {showAssets && (
@@ -310,7 +310,7 @@ export const Scene11_NewSpeed: React.FC = () => {
 
 /* ═══════════════════════════════════════════════════════
    Scene 12 — Finale
-   "rainbows" + "the only trade that's actually yours." + dark fade
+   "rainbows" + dark fade
    173 frames (7.2s @ 24fps)
    ═══════════════════════════════════════════════════════ */
 
@@ -320,9 +320,6 @@ export const Scene12_Finale: React.FC = () => {
       // Title fades in
       tl.to(p.title, { opacity: 1, y: 0, duration: 0.3, ease: "power2.out" }, 0.0);
 
-      // Tagline at 2.0s
-      tl.to(p.tagline, { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" }, 2.0);
-
       // Dark overlay
       tl.to(p.darkOverlay, { opacity: 0.85, duration: 2.0, ease: "power1.in" }, 3.5);
 
@@ -331,7 +328,6 @@ export const Scene12_Finale: React.FC = () => {
     },
     {
       title: { opacity: 0, y: 10 },
-      tagline: { opacity: 0, y: 15 },
       darkOverlay: { opacity: 0 },
       textFade: { opacity: 1 },
     },
@@ -344,7 +340,7 @@ export const Scene12_Finale: React.FC = () => {
       <div
         style={{
           position: "absolute",
-          top: "42%",
+          top: "50%",
           left: "50%",
           transform: "translate(-50%, -50%)",
           textAlign: "center",
@@ -366,23 +362,6 @@ export const Scene12_Finale: React.FC = () => {
           }}
         >
           rainbows
-        </span>
-
-        <span
-          style={{
-            fontFamily,
-            fontSize: 78,
-            fontWeight: 400,
-            fontStyle: "italic",
-            color: "#fff",
-            display: "block",
-            lineHeight: 1.3,
-            marginTop: 24,
-            opacity: s.tagline.opacity,
-            transform: `translateY(${s.tagline.y}px)`,
-          }}
-        >
-          the only trade that&apos;s actually yours.
         </span>
       </div>
 

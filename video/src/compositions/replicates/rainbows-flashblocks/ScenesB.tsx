@@ -308,9 +308,9 @@ const Shape: React.FC<{ type: string; color: string; size: number }> = ({ type, 
   );
 };
 
-// Three thieves get yanked off the queue, one label flashes per pass.
-const VICTIM_INDEXES = [4, 2, 0] as const;
-const LABELS = ["frontrunners", "insider traders", "market manipulators"] as const;
+// Four thieves get yanked off the queue, one label flashes per pass.
+const VICTIM_INDEXES = [5, 3, 1, 0] as const;
+const LABELS = ["frontrunners", "spoofers", "illegal insiders", "market manipulators"] as const;
 
 function buildScene07Proxies() {
   const init: Record<string, Record<string, number>> = {};
@@ -335,16 +335,16 @@ export const Scene07_TransactionQueue: React.FC = () => {
         tl.to(p[`shape_${i}`], { opacity: 1, duration: 0.2 }, i * 0.1);
       });
 
-      // Three passes, ~1.4s apart, each yanking a victim and flashing a label
-      const passStarts = [0.9, 2.0, 3.1];
+      // Four passes, ~0.95s apart, each yanking a victim and flashing a label
+      const passStarts = [0.5, 1.45, 2.4, 3.35];
       passStarts.forEach((start, passIdx) => {
         // Label flashes in
-        tl.to(p[`label_${passIdx}`], { opacity: 1, scale: 1, duration: 0.18, ease: "back.out(1.7)" }, start);
+        tl.to(p[`label_${passIdx}`], { opacity: 1, scale: 1, duration: 0.16, ease: "back.out(1.7)" }, start);
         // Victim yanks upward and fades
-        tl.to(p[`yank_${passIdx}`], { y: -160, duration: 0.45, ease: "power2.out" }, start + 0.05);
-        tl.to(p[`yank_${passIdx}`], { opacity: 0, duration: 0.3, ease: "power2.in" }, start + 0.3);
+        tl.to(p[`yank_${passIdx}`], { y: -160, duration: 0.4, ease: "power2.out" }, start + 0.05);
+        tl.to(p[`yank_${passIdx}`], { opacity: 0, duration: 0.28, ease: "power2.in" }, start + 0.28);
         // Label fades out before next pass
-        tl.to(p[`label_${passIdx}`], { opacity: 0, duration: 0.2, ease: "power2.in" }, start + 0.85);
+        tl.to(p[`label_${passIdx}`], { opacity: 0, duration: 0.18, ease: "power2.in" }, start + 0.78);
       });
 
       // Subtle conveyor drift across the whole scene
@@ -439,7 +439,8 @@ export const Scene07_TransactionQueue: React.FC = () => {
 };
 
 // ────────────────────────────────────────────────────────
-// Scene 08 — Three rows: "filters / them / out."
+// Scene 08 — Three rows: "that filters out / illegal trading / activities"
+// Connector clause sitting between Scene 05 (liquidity layer) and Scene 06 (70%)
 // 60 frames = 2.5s @ 24fps
 // ────────────────────────────────────────────────────────
 
@@ -448,9 +449,9 @@ function buildScene08Proxies() {
     g1: { opacity: 1 },
     g2: { opacity: 0 },
     g3: { opacity: 0 },
-    w_filters: { opacity: 0 },
-    w_them: { opacity: 0 },
-    w_out: { opacity: 0 },
+    w_row1: { opacity: 0 },
+    w_row2: { opacity: 0 },
+    w_row3: { opacity: 0 },
   };
 }
 
@@ -459,28 +460,28 @@ const scene08Init = buildScene08Proxies();
 export const Scene08_GridText: React.FC = () => {
   const s = useGsapProxy(
     (tl, p) => {
-      // Row 1
-      tl.to(p.w_filters, { opacity: 1, duration: 0.1 }, 0.0);
-      tl.to(p.g1, { opacity: 0, duration: 0.12 }, 0.7);
+      // Row 1 — "that filters out"
+      tl.to(p.w_row1, { opacity: 1, duration: 0.1 }, 0.0);
+      tl.to(p.g1, { opacity: 0, duration: 0.12 }, 0.75);
 
-      // Row 2
-      tl.to(p.g2, { opacity: 1, duration: 0.12 }, 0.7);
-      tl.to(p.w_them, { opacity: 1, duration: 0.1 }, 0.7);
-      tl.to(p.g2, { opacity: 0, duration: 0.12 }, 1.4);
+      // Row 2 — "illegal trading"
+      tl.to(p.g2, { opacity: 1, duration: 0.12 }, 0.75);
+      tl.to(p.w_row2, { opacity: 1, duration: 0.1 }, 0.75);
+      tl.to(p.g2, { opacity: 0, duration: 0.12 }, 1.5);
 
-      // Row 3 — holds to end
-      tl.to(p.g3, { opacity: 1, duration: 0.12 }, 1.4);
-      tl.to(p.w_out, { opacity: 1, duration: 0.12 }, 1.4);
+      // Row 3 — "activities" — holds to end
+      tl.to(p.g3, { opacity: 1, duration: 0.12 }, 1.5);
+      tl.to(p.w_row3, { opacity: 1, duration: 0.12 }, 1.5);
     },
     scene08Init,
   );
 
   const phraseStyle: React.CSSProperties = {
     ...baseText,
-    fontSize: 220,
+    fontSize: 175,
     color: "#fff",
     textAlign: "center",
-    maxWidth: "84%",
+    maxWidth: "92%",
     position: "absolute",
     top: "50%",
     left: "50%",
@@ -489,6 +490,7 @@ export const Scene08_GridText: React.FC = () => {
     flexWrap: "wrap",
     justifyContent: "center",
     gap: "0 24px",
+    whiteSpace: "nowrap",
   };
 
   return (
@@ -497,13 +499,13 @@ export const Scene08_GridText: React.FC = () => {
       <GridOverlay color="rgba(255,255,255,0.18)" />
       <AbsoluteFill>
         <div style={{ ...phraseStyle, opacity: s.g1.opacity }}>
-          <span style={{ opacity: s.w_filters.opacity }}>filters</span>
+          <span style={{ opacity: s.w_row1.opacity }}>that filters out</span>
         </div>
         <div style={{ ...phraseStyle, opacity: s.g2.opacity }}>
-          <span style={{ opacity: s.w_them.opacity }}>them</span>
+          <span style={{ opacity: s.w_row2.opacity }}>illegal trading</span>
         </div>
         <div style={{ ...phraseStyle, opacity: s.g3.opacity }}>
-          <span style={{ opacity: s.w_out.opacity }}>out.</span>
+          <span style={{ opacity: s.w_row3.opacity }}>activities</span>
         </div>
       </AbsoluteFill>
     </AbsoluteFill>

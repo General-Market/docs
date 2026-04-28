@@ -293,8 +293,8 @@ export const Scene03_DarkGrid: React.FC = () => {
           </span>
         )}
         {s.better.opacity > 0.01 && (
-          <span style={{ ...baseText, fontStyle: "normal", position: "absolute", left: "50%", transform: `translate(-50%, ${s.better.y}px)`, fontSize: 175, color: "#fff", opacity: s.better.opacity, whiteSpace: "nowrap" }}>
-            better odds
+          <span style={{ ...baseText, fontStyle: "normal", position: "absolute", left: "50%", transform: `translate(-50%, ${s.better.y}px)`, fontSize: 145, color: "#fff", opacity: s.better.opacity, whiteSpace: "nowrap" }}>
+            better odds of winning
           </span>
         )}
       </div>
