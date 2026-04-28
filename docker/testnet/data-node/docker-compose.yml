@@ -28,6 +28,10 @@ services:
       - ../../../frontend/data/sources-display.json:/app/config/sources-display.json:ro
       - ../../../frontend/data/fund-branding.json:/app/config/fund-branding.json:ro
       - ../../../deployments/batch-markets.json:/app/deployments/batch-markets.json:ro
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 1048576
     deploy:
       resources:
         limits:
