@@ -1,13 +1,15 @@
 /**
- * HexPixelate — wrap any video source in a tessellation of small flat
- * hexagons. Each cell takes one sample from the centre of the video
- * and prints it across the whole hex. No texture inside, no shading,
- * no dome. The image survives only as a mosaic of its means.
+ * HexPixelate — wrap any video source in a hex-packed grid of flat
+ * unicolour dots. Each disk takes one sample from its centre and
+ * prints it solid; between the dots, the same broll prints at a
+ * fraction of its brightness so the silhouette of the underlying
+ * frame survives the decimation. No quantisation, no palette — the
+ * image is its own palette, just sparser.
  *
  * Drop in over an OffthreadVideo or any video staticFile. Cell size
- * is the hex circumradius in pixels — default 14. The optional zoom
- * is baked into the sampler, so cells stay the same size on screen
- * while the underlying frame zooms in.
+ * is the hex circumradius in pixels — default 14. Optional zoom is
+ * baked into the sampler so dots keep their size on screen while the
+ * underlying frame zooms in.
  */
 
 import React, { useEffect, useMemo, useRef } from "react";
@@ -39,10 +41,8 @@ const FRAGMENT = /* glsl */ `
   uniform vec2  uTexSize;
   uniform float uHexSize;
   uniform float uZoom;
-  uniform float uHexInset;
-  uniform float uContrast;
-  uniform float uLevels;
-  uniform vec3  uLineColor;
+  uniform float uDotRadius;
+  uniform float uBgDim;
 
   varying vec2 vUv;
 
@@ -57,10 +57,17 @@ const FRAGMENT = /* glsl */ `
     return uv * scale + offset;
   }
 
+  // Apply cover-fit + zoom-around-centre. Pulled out since we sample the
+  // texture twice — once for the dot, once for the dim background.
+  vec2 sampleUv(vec2 uv) {
+    vec2 cov = coverUv(uv, uResolution, uTexSize);
+    return (cov - 0.5) / uZoom + 0.5;
+  }
+
   // Two interleaved rectangular grids, one hex centre each. For any
   // point we test both candidates and keep the closer — that is the
-  // Voronoi cell of a hex tessellation. The Inigo Quilez two-grid
-  // trick. Returns (centre, local) packed into a vec4.
+  // Voronoi cell of a hex tessellation. Returns (centre, local) packed
+  // into a vec4. Inigo Quilez's two-grid trick.
   vec4 hexCentre(vec2 p) {
     float SQRT3 = 1.7320508;
     vec2 cell = vec2(SQRT3, 3.0);
@@ -70,25 +77,6 @@ const FRAGMENT = /* glsl */ `
     return vec4(p - gv, gv);
   }
 
-  // Signed distance to a pointy-top hexagon of circumradius 1, centred
-  // at the origin. Negative inside, zero on edge, positive outside.
-  float hexDist(vec2 p) {
-    float APOTHEM = 0.8660254;
-    vec2 q = abs(p);
-    return max(q.x - APOTHEM, q.x * 0.5 + q.y * APOTHEM - APOTHEM);
-  }
-
-  // Posterise — snap each channel to N evenly spaced levels, edges
-  // included. Fewer levels, harder cliffs, fewer hesitations.
-  vec3 posterise(vec3 c, float n) {
-    return floor(c * (n - 1.0) + 0.5) / (n - 1.0);
-  }
-
-  // Contrast about mid grey. k > 1 = more abrupt, k < 1 = washed out.
-  vec3 contrast(vec3 c, float k) {
-    return clamp((c - 0.5) * k + 0.5, 0.0, 1.0);
-  }
-
   void main() {
     vec2 fragPx = vUv * uResolution;
     vec2 p = fragPx / uHexSize;
@@ -96,28 +84,25 @@ const FRAGMENT = /* glsl */ `
     vec4 hc = hexCentre(p);
     vec2 centreP = hc.xy;
     vec2 local   = hc.zw;
+
+    // Sample at the dot's centre — that is the dot's flat colour.
     vec2 centrePx = centreP * uHexSize;
-    vec2 centreUv = centrePx / uResolution;
+    vec2 dotUv = sampleUv(centrePx / uResolution);
+    vec3 dotCol = texture2D(uTex, dotUv).rgb;
 
-    // Cover-fit then scale around centre to bake the zoom into sampling.
-    vec2 texUv = coverUv(centreUv, uResolution, uTexSize);
-    texUv = (texUv - 0.5) / uZoom + 0.5;
+    // Sample at the actual fragment for the dimmed background that
+    // shows between the dots. Same broll, just darker — so the silhouette
+    // of the underlying frame survives the decimation.
+    vec2 bgUvSrc = sampleUv(vUv);
+    vec3 bgCol = texture2D(uTex, bgUvSrc).rgb * uBgDim;
 
-    vec3 col = texture2D(uTex, texUv).rgb;
+    // Disk mask inside the hex cell. Anti-aliased rim, in p-units —
+    // small numbers since p is already scaled by hex circumradius.
+    float r = length(local);
+    float disk = 1.0 - smoothstep(uDotRadius - 0.04,
+                                  uDotRadius + 0.04, r);
 
-    // Crank the contrast, then quantise to a small number of levels.
-    // The image stops being a gradient and becomes a small set of facts.
-    col = contrast(col, uContrast);
-    col = posterise(col, uLevels);
-
-    // Black line between hexes. The SDF is in circumradius units, so
-    // the inset and edge widths are too — small numbers, nice clean
-    // tessellation lines.
-    float d = hexDist(local);
-    float fill = 1.0 - smoothstep(-uHexInset - 0.012,
-                                  -uHexInset + 0.012, d);
-    col = mix(uLineColor, col, fill);
-
+    vec3 col = mix(bgCol, dotCol, disk);
     gl_FragColor = vec4(col, 1.0);
   }
 `;
@@ -128,10 +113,8 @@ interface PlaneProps {
   height: number;
   cellSize: number;
   zoom: number;
-  inset: number;
-  contrast: number;
-  levels: number;
-  lineColor: [number, number, number];
+  dotRadius: number;
+  bgDim: number;
 }
 
 const Plane: React.FC<PlaneProps> = ({
@@ -140,10 +123,8 @@ const Plane: React.FC<PlaneProps> = ({
   height,
   cellSize,
   zoom,
-  inset,
-  contrast,
-  levels,
-  lineColor,
+  dotRadius,
+  bgDim,
 }) => {
   const matRef = useRef<THREE.ShaderMaterial>(null);
 
@@ -171,14 +152,10 @@ const Plane: React.FC<PlaneProps> = ({
       uTexSize: { value: texSize },
       uHexSize: { value: cellSize },
       uZoom: { value: zoom },
-      uHexInset: { value: inset },
-      uContrast: { value: contrast },
-      uLevels: { value: Math.max(2, Math.floor(levels)) },
-      uLineColor: {
-        value: new THREE.Vector3(lineColor[0], lineColor[1], lineColor[2]),
-      },
+      uDotRadius: { value: dotRadius },
+      uBgDim: { value: bgDim },
     }),
-    [texture, width, height, texSize, cellSize, zoom, inset, contrast, levels, lineColor],
+    [texture, width, height, texSize, cellSize, zoom, dotRadius, bgDim],
   );
 
   if (matRef.current) {
@@ -187,9 +164,8 @@ const Plane: React.FC<PlaneProps> = ({
     matRef.current.uniforms.uZoom.value = zoom;
     matRef.current.uniforms.uHexSize.value = cellSize;
     matRef.current.uniforms.uResolution.value.set(width, height);
-    matRef.current.uniforms.uHexInset.value = inset;
-    matRef.current.uniforms.uContrast.value = contrast;
-    matRef.current.uniforms.uLevels.value = Math.max(2, Math.floor(levels));
+    matRef.current.uniforms.uDotRadius.value = dotRadius;
+    matRef.current.uniforms.uBgDim.value = bgDim;
   }
 
   return (
@@ -275,20 +251,17 @@ type Props = {
   width: number;
   /** Container height, in pixels. Floats are rounded. */
   height: number;
-  /** Hex circumradius in pixels. Smaller = denser tessellation. */
+  /** Hex circumradius in pixels. Smaller = denser dot grid. */
   cellSize?: number;
   /** Optional zoom applied to the underlying frame, around the centre. */
   zoom?: number;
-  /** Width of the dark line between hexes, in circumradius units.
-   *  0 = perfect tessellation, no separators. */
-  inset?: number;
-  /** Contrast about mid grey before quantisation. >1 sharpens. */
-  contrast?: number;
-  /** Number of evenly spaced levels per RGB channel after quantisation.
-   *  Lower = more abrupt cliffs. 5 is the default — 125 colours total. */
-  levels?: number;
-  /** Colour of the line between hexes. Defaults to black. */
-  lineColor?: [number, number, number];
+  /** Disk radius inside the hex cell, in circumradius units. 0.866 is
+   *  the apothem (touching neighbours). Default 0.78 — tight packing
+   *  with a small breath of background showing through. */
+  dotRadius?: number;
+  /** Brightness of the underlying frame between dots. 0 = black,
+   *  1 = full broll, default 0.32 — image survives without competing. */
+  bgDim?: number;
 };
 
 export const HexPixelate: React.FC<Props> = ({
@@ -297,10 +270,8 @@ export const HexPixelate: React.FC<Props> = ({
   height,
   cellSize = 14,
   zoom = 1,
-  inset = 0.06,
-  contrast = 1.45,
-  levels = 5,
-  lineColor = [0, 0, 0],
+  dotRadius = 0.78,
+  bgDim = 0.32,
 }) => {
   const env = useRemotionEnvironment();
   const frame = useCurrentFrame();
@@ -343,10 +314,8 @@ export const HexPixelate: React.FC<Props> = ({
             height={h}
             cellSize={cellSize}
             zoom={zoom}
-            inset={inset}
-            contrast={contrast}
-            levels={levels}
-            lineColor={lineColor}
+            dotRadius={dotRadius}
+            bgDim={bgDim}
           />
         ) : (
           <PreviewSource
@@ -356,10 +325,8 @@ export const HexPixelate: React.FC<Props> = ({
             cellSize={cellSize}
             zoom={zoom}
             frame={frame}
-            inset={inset}
-            contrast={contrast}
-            levels={levels}
-            lineColor={lineColor}
+            dotRadius={dotRadius}
+            bgDim={bgDim}
           />
         )}
       </ThreeCanvas>
