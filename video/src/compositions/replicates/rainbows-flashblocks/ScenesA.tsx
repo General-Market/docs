@@ -1,8 +1,8 @@
 import React from "react";
 import { AbsoluteFill } from "remotion";
 import { loadFont } from "@remotion/google-fonts/Inter";
-import { BlueGradient, DarkBg, SolidBlue, GridOverlay } from "../standrew/backgrounds";
 import { useGsapProxy } from "../standrew/gsapUtils";
+import { DynamicBlue, DynamicDark, DynamicSolidBlue, HexGridOverlay, ZoomedBg } from "./dynamics";
 
 const { fontFamily } = loadFont("normal", { subsets: ["latin"], weights: ["400", "700", "800"] });
 
@@ -20,7 +20,7 @@ const center: React.CSSProperties = {
   left: "50%",
   transform: "translate(-50%, -50%)",
   display: "flex",
-  gap: 36,
+  gap: 30,
   justifyContent: "center",
   whiteSpace: "nowrap",
 };
@@ -30,6 +30,7 @@ const center: React.CSSProperties = {
    "You spent 10,000 hours" → "perfecting your trading strategies."
    ═══════════════════════════════════════════════════════ */
 
+const SCENE01_DURATION = 84;
 const SCENE01_PHRASE_A = ["You", "spent", "10,000", "hours"] as const;
 const SCENE01_PHRASE_B = ["perfecting", "your", "trading", "strategies."] as const;
 
@@ -52,16 +53,13 @@ const scene01Init = buildScene01Proxies();
 export const Scene01_Hook: React.FC = () => {
   const s = useGsapProxy(
     (tl, p) => {
-      // "You" already visible. Rest stagger in.
       SCENE01_PHRASE_A.forEach((_, i) => {
         if (i === 0) return;
         tl.to(p[`a_${i}`], { opacity: 1, y: 0, duration: 0.18, ease: "power2.out" }, 0.2 + i * 0.22);
       });
 
-      // Phrase A fades out at 1.7s
       tl.to(p.phraseA, { opacity: 0, duration: 0.22, ease: "power2.in" }, 1.7);
 
-      // Phrase B fades in at 1.95s, words stagger
       tl.to(p.phraseB, { opacity: 1, duration: 0.18, ease: "power2.out" }, 1.95);
       SCENE01_PHRASE_B.forEach((_, i) => {
         tl.to(p[`b_${i}`], { opacity: 1, y: 0, duration: 0.18, ease: "power2.out" }, 1.95 + i * 0.24);
@@ -72,7 +70,10 @@ export const Scene01_Hook: React.FC = () => {
 
   return (
     <AbsoluteFill>
-      <BlueGradient />
+      <ZoomedBg duration={SCENE01_DURATION}>
+        <DynamicBlue />
+      </ZoomedBg>
+
       <div style={{ ...center, opacity: s.phraseA.opacity }}>
         {SCENE01_PHRASE_A.map((word, i) => {
           const proxy = s[`a_${i}`];
@@ -82,7 +83,7 @@ export const Scene01_Hook: React.FC = () => {
               key={i}
               style={{
                 ...baseText,
-                fontSize: isNumber ? 200 : 145,
+                fontSize: isNumber ? 165 : 125,
                 color: "#fff",
                 opacity: proxy.opacity,
                 transform: `translateY(${proxy.y}px)`,
@@ -93,7 +94,7 @@ export const Scene01_Hook: React.FC = () => {
           );
         })}
       </div>
-      <div style={{ ...center, opacity: s.phraseB.opacity }}>
+      <div style={{ ...center, opacity: s.phraseB.opacity, gap: 24 }}>
         {SCENE01_PHRASE_B.map((word, i) => {
           const proxy = s[`b_${i}`];
           return (
@@ -101,7 +102,7 @@ export const Scene01_Hook: React.FC = () => {
               key={i}
               style={{
                 ...baseText,
-                fontSize: 130,
+                fontSize: 110,
                 color: "#fff",
                 opacity: proxy.opacity,
                 transform: `translateY(${proxy.y}px)`,
@@ -120,22 +121,20 @@ export const Scene01_Hook: React.FC = () => {
    Scene 02 — TryRainbows  (72 frames = 3s @ 24fps)
    Single-word flashes "Then" → "you should" → "try"
    then big italic title slides in: "trading rainbows."
+   Hex grid background.
    ═══════════════════════════════════════════════════════ */
+
+const SCENE02_DURATION = 72;
 
 export const Scene02_TryRainbows: React.FC = () => {
   const s = useGsapProxy(
     (tl, p) => {
-      // "Then" visible from start, exits at 0.45s
       tl.to(p.then, { opacity: 0, duration: 0.1, ease: "power2.in" }, 0.45);
-      // "you should" enters at 0.5s, exits at 0.95s
       tl.to(p.youShould, { opacity: 1, y: 0, duration: 0.12, ease: "power2.out" }, 0.5);
       tl.to(p.youShould, { opacity: 0, duration: 0.1, ease: "power2.in" }, 0.95);
-      // "try" enters at 1.0s
       tl.to(p.tryWord, { opacity: 1, y: 0, duration: 0.12, ease: "power2.out" }, 1.0);
 
-      // Phase 1 cross-fades out at 1.5s
       tl.to(p.phase1, { opacity: 0, duration: 0.18, ease: "power2.in" }, 1.5);
-      // Phase 2: title slides in from right at 1.65s, holds to end
       tl.to(p.phase2, { opacity: 1, duration: 0.18, ease: "power2.out" }, 1.65);
       tl.to(p.title, { x: 0, duration: 0.45, ease: "power2.out" }, 1.65);
     },
@@ -151,29 +150,29 @@ export const Scene02_TryRainbows: React.FC = () => {
 
   return (
     <AbsoluteFill>
-      <DarkBg />
-      <GridOverlay color="rgba(255,255,255,0.18)" cols={10} rows={7} />
+      <ZoomedBg duration={SCENE02_DURATION}>
+        <DynamicDark />
+        <HexGridOverlay color="rgba(255,255,255,0.16)" size={70} />
+      </ZoomedBg>
 
-      {/* Phase 1 — single-word flashes, centered */}
       <div style={{ ...center, opacity: s.phase1.opacity }}>
         {s.then.opacity > 0.01 && (
-          <span style={{ ...baseText, fontStyle: "normal", position: "absolute", left: "50%", transform: `translate(-50%, ${s.then.y}px)`, fontSize: 145, color: "#fff", opacity: s.then.opacity, whiteSpace: "nowrap" }}>
+          <span style={{ ...baseText, fontStyle: "normal", position: "absolute", left: "50%", transform: `translate(-50%, ${s.then.y}px)`, fontSize: 130, color: "#fff", opacity: s.then.opacity, whiteSpace: "nowrap" }}>
             Then
           </span>
         )}
         {s.youShould.opacity > 0.01 && (
-          <span style={{ ...baseText, fontStyle: "normal", position: "absolute", left: "50%", transform: `translate(-50%, ${s.youShould.y}px)`, fontSize: 145, color: "#fff", opacity: s.youShould.opacity, whiteSpace: "nowrap" }}>
+          <span style={{ ...baseText, fontStyle: "normal", position: "absolute", left: "50%", transform: `translate(-50%, ${s.youShould.y}px)`, fontSize: 130, color: "#fff", opacity: s.youShould.opacity, whiteSpace: "nowrap" }}>
             you should
           </span>
         )}
         {s.tryWord.opacity > 0.01 && (
-          <span style={{ ...baseText, fontStyle: "normal", position: "absolute", left: "50%", transform: `translate(-50%, ${s.tryWord.y}px)`, fontSize: 145, color: "#fff", opacity: s.tryWord.opacity, whiteSpace: "nowrap" }}>
+          <span style={{ ...baseText, fontStyle: "normal", position: "absolute", left: "50%", transform: `translate(-50%, ${s.tryWord.y}px)`, fontSize: 130, color: "#fff", opacity: s.tryWord.opacity, whiteSpace: "nowrap" }}>
             try
           </span>
         )}
       </div>
 
-      {/* Phase 2 — title card */}
       <div
         style={{
           position: "absolute",
@@ -184,7 +183,7 @@ export const Scene02_TryRainbows: React.FC = () => {
           maxWidth: "84%",
         }}
       >
-        <span style={{ ...baseText, fontSize: 200, color: "#fff" }}>
+        <span style={{ ...baseText, fontSize: 175, color: "#fff" }}>
           trading rainbows.
         </span>
       </div>
@@ -195,8 +194,10 @@ export const Scene02_TryRainbows: React.FC = () => {
 /* ═══════════════════════════════════════════════════════
    Scene 03 — CubeExplode  (72 frames = 3s @ 24fps)
    Silent visual beat — cube assembles, holds, explodes.
+   Hex grid background.
    ═══════════════════════════════════════════════════════ */
 
+const SCENE03_DURATION = 72;
 const CUBE_SIZE = 500;
 const SMALL_CUBE = 120;
 
@@ -269,14 +270,10 @@ function buildScene03Proxies(): Scene03Proxies {
 export const Scene03_CubeExplode: React.FC = () => {
   const s = useGsapProxy<Scene03Proxies>(
     (tl, p) => {
-      // White square appears at 0.3s
       tl.to(p.cube, { opacity: 1, duration: 0.15, ease: "power2.out" }, 0.3);
-      // Morph to isometric cube
       tl.to(p.cube, { rotX: -30, rotY: 45, duration: 0.4, ease: "power2.out" }, 0.8);
-      // Big cube fades out as explosion starts
       tl.to(p.cubeFade, { opacity: 0, duration: 0.15, ease: "power2.in" }, 1.4);
 
-      // Explosion at 1.5s
       for (let i = 0; i < 10; i++) {
         const target = EXPLOSION_TARGETS[i];
         const shard = p[`shard${i}` as keyof Scene03Proxies] as { x: number; y: number; rotation: number; opacity: number };
@@ -293,10 +290,11 @@ export const Scene03_CubeExplode: React.FC = () => {
 
   return (
     <AbsoluteFill>
-      <SolidBlue />
-      <GridOverlay color="rgba(255,255,255,0.12)" />
+      <ZoomedBg duration={SCENE03_DURATION}>
+        <DynamicSolidBlue />
+        <HexGridOverlay color="rgba(255,255,255,0.13)" size={70} />
+      </ZoomedBg>
 
-      {/* Big cube — morphs flat-square to iso */}
       {showBigCube && (
         <div
           style={{
@@ -324,7 +322,6 @@ export const Scene03_CubeExplode: React.FC = () => {
         </div>
       )}
 
-      {/* Explosion — 10 small cubes */}
       <div
         style={{
           position: "absolute",
@@ -360,7 +357,7 @@ export const Scene03_CubeExplode: React.FC = () => {
 /* ── Meta ── */
 
 export const sceneMetasA = [
-  { id: "RB-Scene01-Hook", component: Scene01_Hook, durationInFrames: 84 },
-  { id: "RB-Scene02-TryRainbows", component: Scene02_TryRainbows, durationInFrames: 72 },
-  { id: "RB-Scene03-CubeExplode", component: Scene03_CubeExplode, durationInFrames: 72 },
+  { id: "RB-Scene01-Hook", component: Scene01_Hook, durationInFrames: SCENE01_DURATION },
+  { id: "RB-Scene02-TryRainbows", component: Scene02_TryRainbows, durationInFrames: SCENE02_DURATION },
+  { id: "RB-Scene03-CubeExplode", component: Scene03_CubeExplode, durationInFrames: SCENE03_DURATION },
 ];

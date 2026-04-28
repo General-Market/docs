@@ -1,8 +1,8 @@
 import React from "react";
 import { AbsoluteFill } from "remotion";
 import { loadFont } from "@remotion/google-fonts/Inter";
-import { SolidBlue, LightGradient, BlueGradient, GridOverlay } from "../standrew/backgrounds";
 import { useGsapProxy } from "../standrew/gsapUtils";
+import { DynamicBlue, DynamicLight, DynamicSolidBlue, HexGridOverlay, ZoomedBg } from "./dynamics";
 
 const { fontFamily } = loadFont("normal", { subsets: ["latin"], weights: ["400", "700", "800"] });
 const BLUE = "#0040FF";
@@ -16,11 +16,12 @@ const baseText: React.CSSProperties = {
 };
 
 /* ═══════════════════════════════════════════════════════
-   Scene 06 — HonestTraders  (84 frames = 3.5s @ 24fps)
+   Scene 06 — HonestTraders  (84 frames = 3.5s)
    Concentric circles + serif italic.
    "Leaving the same amount of profits" → "to fewer honest traders."
    ═══════════════════════════════════════════════════════ */
 
+const SCENE06_DURATION = 84;
 const SCENE06_PHASE1 = ["Leaving", "the", "same", "amount", "of", "profits"] as const;
 const SCENE06_PHASE2 = ["to", "fewer", "honest", "traders."] as const;
 
@@ -45,7 +46,6 @@ const scene06Init = buildScene06Proxies();
 export const Scene06_HonestTraders: React.FC = () => {
   const s = useGsapProxy(
     (tl, p) => {
-      // Concentric circles ripple from start
       const circles = [p.c0, p.c1, p.c2, p.c3, p.c4, p.c5];
       const maxSizes = [90, 262, 434, 606, 778, 950];
       circles.forEach((c, i) => {
@@ -54,18 +54,14 @@ export const Scene06_HonestTraders: React.FC = () => {
         tl.to(c, { size: maxSizes[i], duration: 1.8, ease: "power1.out" }, start);
       });
 
-      // Phase 1 word stagger
       SCENE06_PHASE1.forEach((_, i) => {
         tl.to(p[`p1_${i}`], { opacity: 1, y: 0, duration: 0.14, ease: "power2.out" }, 0.1 + i * 0.13);
       });
 
-      // Phase 1 fades out
       tl.to(p.phase1Wrap, { opacity: 0, duration: 0.22, ease: "power2.in" }, 1.7);
 
-      // Phase 2 wrap entrance
       tl.to(p.phase2Wrap, { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(1.4)" }, 1.95);
 
-      // Phase 2 word stagger
       SCENE06_PHASE2.forEach((_, i) => {
         tl.to(p[`p2_${i}`], { opacity: 1, y: 0, duration: 0.18, ease: "power2.out" }, 2.05 + i * 0.18);
       });
@@ -77,7 +73,9 @@ export const Scene06_HonestTraders: React.FC = () => {
 
   return (
     <AbsoluteFill>
-      <SolidBlue />
+      <ZoomedBg duration={SCENE06_DURATION}>
+        <DynamicSolidBlue />
+      </ZoomedBg>
 
       {circles.map((c, i) => (
         <div
@@ -96,7 +94,6 @@ export const Scene06_HonestTraders: React.FC = () => {
         />
       ))}
 
-      {/* Phase 1 — "Leaving the same amount of profits" */}
       <div
         style={{
           position: "absolute",
@@ -106,7 +103,7 @@ export const Scene06_HonestTraders: React.FC = () => {
           display: "flex",
           flexWrap: "wrap",
           justifyContent: "center",
-          gap: "0 22px",
+          gap: "10px 20px",
           maxWidth: "92%",
           opacity: s.phase1Wrap.opacity,
         }}
@@ -118,7 +115,7 @@ export const Scene06_HonestTraders: React.FC = () => {
               key={i}
               style={{
                 ...baseText,
-                fontSize: 110,
+                fontSize: 95,
                 color: "#fff",
                 opacity: proxy.opacity,
                 transform: `translateY(${proxy.y}px)`,
@@ -130,7 +127,6 @@ export const Scene06_HonestTraders: React.FC = () => {
         })}
       </div>
 
-      {/* Phase 2 — "to fewer honest traders." in serif italic */}
       <div
         style={{
           position: "absolute",
@@ -143,7 +139,7 @@ export const Scene06_HonestTraders: React.FC = () => {
           display: "flex",
           flexWrap: "wrap",
           justifyContent: "center",
-          gap: "0 24px",
+          gap: "0 22px",
         }}
       >
         {SCENE06_PHASE2.map((word, i) => {
@@ -155,7 +151,7 @@ export const Scene06_HonestTraders: React.FC = () => {
                 fontFamily: 'Georgia, "Times New Roman", serif',
                 fontWeight: 400,
                 fontStyle: "italic",
-                fontSize: 145,
+                fontSize: 130,
                 color: "#fff",
                 lineHeight: 1.15,
                 display: "inline-block",
@@ -173,11 +169,12 @@ export const Scene06_HonestTraders: React.FC = () => {
 };
 
 /* ═══════════════════════════════════════════════════════
-   Scene 07 — Protected  (96 frames = 4s @ 24fps)
+   Scene 07 — Protected  (96 frames = 4s)
    Phase 1 (LightGradient): "Trade the assets you've always traded."
-   Phase 2 (BlueGradient + Grid): "Protected."
+   Phase 2 (BlueGradient + HexGrid): "Protected."
    ═══════════════════════════════════════════════════════ */
 
+const SCENE07_DURATION = 96;
 const SCENE07_PHASE1 = ["Trade", "the", "assets", "you've", "always", "traded."] as const;
 
 function buildScene07Proxies() {
@@ -195,15 +192,12 @@ const scene07Init = buildScene07Proxies();
 export const Scene07_Protected: React.FC = () => {
   const s = useGsapProxy(
     (tl, p) => {
-      // Phase 1 word stagger
       SCENE07_PHASE1.forEach((_, i) => {
         tl.to(p[`p1_${i}`], { opacity: 1, y: 0, duration: 0.16, ease: "power2.out" }, 0.1 + i * 0.16);
       });
 
-      // Phase 1 fades out
       tl.to(p.phase1, { opacity: 0, duration: 0.22, ease: "power2.in" }, 2.2);
 
-      // Phase 2 (Protected) lands at 2.45s
       tl.to(p.phase2, { opacity: 1, duration: 0.18, ease: "power2.out" }, 2.45);
       tl.to(p.protected, { opacity: 1, scale: 1, duration: 0.4, ease: "back.out(1.6)" }, 2.45);
     },
@@ -212,9 +206,11 @@ export const Scene07_Protected: React.FC = () => {
 
   return (
     <AbsoluteFill>
-      {/* Phase 1 — LightGradient + blue italic stagger */}
+      {/* Phase 1 — DynamicLight + blue italic stagger */}
       <AbsoluteFill style={{ opacity: s.phase1.opacity }}>
-        <LightGradient />
+        <ZoomedBg duration={SCENE07_DURATION}>
+          <DynamicLight />
+        </ZoomedBg>
         <div
           style={{
             position: "absolute",
@@ -224,7 +220,7 @@ export const Scene07_Protected: React.FC = () => {
             display: "flex",
             flexWrap: "wrap",
             justifyContent: "center",
-            gap: "0 22px",
+            gap: "12px 22px",
             maxWidth: "92%",
           }}
         >
@@ -235,7 +231,7 @@ export const Scene07_Protected: React.FC = () => {
                 key={i}
                 style={{
                   ...baseText,
-                  fontSize: 130,
+                  fontSize: 105,
                   color: BLUE,
                   opacity: proxy.opacity,
                   transform: `translateY(${proxy.y}px)`,
@@ -248,10 +244,12 @@ export const Scene07_Protected: React.FC = () => {
         </div>
       </AbsoluteFill>
 
-      {/* Phase 2 — BlueGradient + grid + "Protected." */}
+      {/* Phase 2 — DynamicBlue + hex grid + "Protected." */}
       <AbsoluteFill style={{ opacity: s.phase2.opacity }}>
-        <BlueGradient />
-        <GridOverlay color="rgba(255,255,255,0.18)" />
+        <ZoomedBg duration={SCENE07_DURATION}>
+          <DynamicBlue />
+          <HexGridOverlay color="rgba(255,255,255,0.18)" size={70} />
+        </ZoomedBg>
         <div
           style={{
             position: "absolute",
@@ -264,7 +262,7 @@ export const Scene07_Protected: React.FC = () => {
           <span
             style={{
               ...baseText,
-              fontSize: 240,
+              fontSize: 220,
               color: "#fff",
               whiteSpace: "nowrap",
             }}
@@ -278,10 +276,11 @@ export const Scene07_Protected: React.FC = () => {
 };
 
 /* ═══════════════════════════════════════════════════════
-   Scene 08 — FiveHundredK  (96 frames = 4s @ 24fps)
+   Scene 08 — FiveHundredK  (96 frames = 4s)
    Counter ticks 0 → 500,000 then "assets you couldn't trade anywhere else"
    ═══════════════════════════════════════════════════════ */
 
+const SCENE08_DURATION = 96;
 const SCENE08_TAIL = ["assets", "you", "couldn't", "trade", "anywhere", "else."] as const;
 
 function buildScene08Proxies() {
@@ -300,19 +299,15 @@ const STARBURST_COUNT = 12;
 export const Scene08_FiveHundredK: React.FC = () => {
   const s = useGsapProxy(
     (tl, p) => {
-      // "Plus" badge fades in at 0.1s
       tl.to(p.plus, { opacity: 1, duration: 0.2, ease: "power2.out" }, 0.1);
 
-      // Counter scales in and ticks 0 → 500,000 from 0.3s to 2.0s
       tl.to(p.counter, { opacity: 1, duration: 0.18 }, 0.3);
       tl.to(p.counter, { scale: 1, duration: 0.55, ease: "back.out(1.6)" }, 0.3);
       tl.to(p.counter, { value: 500000, duration: 1.7, ease: "power2.out" }, 0.3);
 
-      // Starburst at 0.6s
       tl.to(p.starburst, { opacity: 1, duration: 0.18 }, 0.6);
       tl.to(p.starburst, { length: 1100, duration: 1.8, ease: "power2.out" }, 0.6);
 
-      // Tail words stagger from 2.2s
       SCENE08_TAIL.forEach((_, i) => {
         tl.to(p[`t_${i}`], { opacity: 1, y: 0, duration: 0.16, ease: "power2.out" }, 2.2 + i * 0.15);
       });
@@ -324,9 +319,10 @@ export const Scene08_FiveHundredK: React.FC = () => {
 
   return (
     <AbsoluteFill>
-      <LightGradient />
+      <ZoomedBg duration={SCENE08_DURATION}>
+        <DynamicLight />
+      </ZoomedBg>
 
-      {/* Starburst behind the counter */}
       <div
         style={{
           position: "absolute",
@@ -358,7 +354,6 @@ export const Scene08_FiveHundredK: React.FC = () => {
         })}
       </div>
 
-      {/* "Plus" + counter */}
       <div
         style={{
           position: "absolute",
@@ -372,21 +367,20 @@ export const Scene08_FiveHundredK: React.FC = () => {
         <div
           style={{
             ...baseText,
-            fontSize: 80,
+            fontSize: 70,
             fontWeight: 700,
             color: BLUE,
             opacity: s.plus.opacity,
-            marginBottom: -8,
+            marginBottom: -4,
           }}
         >
           Plus
         </div>
-        <div style={{ ...baseText, fontSize: 240, color: BLUE, lineHeight: 1.0 }}>
+        <div style={{ ...baseText, fontSize: 220, color: BLUE, lineHeight: 1.0 }}>
           {counterValue}
         </div>
       </div>
 
-      {/* Tail line */}
       <div
         style={{
           position: "absolute",
@@ -396,7 +390,7 @@ export const Scene08_FiveHundredK: React.FC = () => {
           display: "flex",
           flexWrap: "wrap",
           justifyContent: "center",
-          gap: "0 20px",
+          gap: "10px 18px",
           maxWidth: "92%",
         }}
       >
@@ -407,7 +401,7 @@ export const Scene08_FiveHundredK: React.FC = () => {
               key={i}
               style={{
                 ...baseText,
-                fontSize: 90,
+                fontSize: 80,
                 color: BLUE,
                 opacity: proxy.opacity,
                 transform: `translateY(${proxy.y}px)`,
@@ -423,9 +417,11 @@ export const Scene08_FiveHundredK: React.FC = () => {
 };
 
 /* ═══════════════════════════════════════════════════════
-   Scene 09 — Finale  (144 frames = 6s @ 24fps)
+   Scene 09 — Finale  (144 frames = 6s)
    "rainbows" + dark fade
    ═══════════════════════════════════════════════════════ */
+
+const SCENE09_DURATION = 144;
 
 export const Scene09_Finale: React.FC = () => {
   const s = useGsapProxy(
@@ -443,7 +439,9 @@ export const Scene09_Finale: React.FC = () => {
 
   return (
     <AbsoluteFill>
-      <BlueGradient />
+      <ZoomedBg duration={SCENE09_DURATION}>
+        <DynamicBlue />
+      </ZoomedBg>
 
       <div
         style={{
@@ -459,7 +457,7 @@ export const Scene09_Finale: React.FC = () => {
         <span
           style={{
             fontFamily,
-            fontSize: 260,
+            fontSize: 240,
             fontWeight: 800,
             fontStyle: "italic",
             color: "#fff",
@@ -492,8 +490,8 @@ export const Scene09_Finale: React.FC = () => {
 /* ── Meta ── */
 
 export const sceneMetasC = [
-  { id: "RB-Scene06-HonestTraders", component: Scene06_HonestTraders, durationInFrames: 84 },
-  { id: "RB-Scene07-Protected", component: Scene07_Protected, durationInFrames: 96 },
-  { id: "RB-Scene08-FiveHundredK", component: Scene08_FiveHundredK, durationInFrames: 96 },
-  { id: "RB-Scene09-Finale", component: Scene09_Finale, durationInFrames: 144 },
+  { id: "RB-Scene06-HonestTraders", component: Scene06_HonestTraders, durationInFrames: SCENE06_DURATION },
+  { id: "RB-Scene07-Protected", component: Scene07_Protected, durationInFrames: SCENE07_DURATION },
+  { id: "RB-Scene08-FiveHundredK", component: Scene08_FiveHundredK, durationInFrames: SCENE08_DURATION },
+  { id: "RB-Scene09-Finale", component: Scene09_Finale, durationInFrames: SCENE09_DURATION },
 ];

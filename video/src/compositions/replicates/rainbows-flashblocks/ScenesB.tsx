@@ -1,8 +1,8 @@
 import React from "react";
 import { AbsoluteFill } from "remotion";
 import { loadFont } from "@remotion/google-fonts/Inter";
-import { BlueGradient, LightGradient } from "../standrew/backgrounds";
 import { useGsapProxy } from "../standrew/gsapUtils";
+import { DynamicBlue, DynamicLight, ZoomedBg } from "./dynamics";
 
 const { fontFamily } = loadFont("normal", { subsets: ["latin"], weights: ["400", "700", "800"] });
 const BLUE = "#0040FF";
@@ -16,12 +16,12 @@ const baseText: React.CSSProperties = {
 };
 
 // ────────────────────────────────────────────────────────
-// Scene 04 — FilterAndPercent
-// "Rainbows filters out illegal activities" (BlueGradient phase)
+// Scene 04 — FilterAndPercent  (108 frames = 4.5s)
+// "Rainbows filters out illegal activities" (BlueGradient)
 //   → "70%" + "of your potential profits." (LightGradient + starburst)
-// 108 frames = 4.5s @ 24fps
 // ────────────────────────────────────────────────────────
 
+const SCENE04_DURATION = 108;
 const SCENE04_PHRASE_A = ["Rainbows", "filters", "out", "illegal", "activities"] as const;
 const STARBURST_COUNT = 12;
 
@@ -44,27 +44,21 @@ const scene04Init = buildScene04Proxies();
 export const Scene04_FilterAndPercent: React.FC = () => {
   const s = useGsapProxy(
     (tl, p) => {
-      // Phase 1 — five words stagger across 1.4s
       SCENE04_PHRASE_A.forEach((_, i) => {
         tl.to(p[`a_${i}`], { opacity: 1, y: 0, duration: 0.16, ease: "power2.out" }, 0.05 + i * 0.18);
       });
 
-      // Phase 1 fades out at 1.95s
       tl.to(p.phase1, { opacity: 0, duration: 0.2, ease: "power2.in" }, 1.95);
 
-      // Phase 2 fades in at 2.15s
       tl.to(p.phase2, { opacity: 1, duration: 0.2, ease: "power2.out" }, 2.15);
 
-      // Counter scales in and ticks 0 → 70 from 2.2s to 3.6s
       tl.to(p.counter, { opacity: 1, duration: 0.18 }, 2.2);
       tl.to(p.counter, { scale: 1, duration: 0.55, ease: "back.out(1.7)" }, 2.2);
       tl.to(p.counter, { value: 70, duration: 1.4, ease: "power2.out" }, 2.2);
 
-      // Starburst at 2.45s
       tl.to(p.starburst, { opacity: 1, duration: 0.18 }, 2.45);
       tl.to(p.starburst, { length: 1100, duration: 1.8, ease: "power2.out" }, 2.45);
 
-      // Subtitle at 3.1s
       tl.to(p.subtitle, { opacity: 1, duration: 0.28, ease: "power2.out" }, 3.1);
     },
     scene04Init,
@@ -74,9 +68,11 @@ export const Scene04_FilterAndPercent: React.FC = () => {
 
   return (
     <AbsoluteFill>
-      {/* Phase 1 — BlueGradient + word stagger */}
+      {/* Phase 1 — DynamicBlue + word stagger */}
       <AbsoluteFill style={{ opacity: s.phase1.opacity }}>
-        <BlueGradient />
+        <ZoomedBg duration={SCENE04_DURATION}>
+          <DynamicBlue />
+        </ZoomedBg>
         <div
           style={{
             position: "absolute",
@@ -86,7 +82,7 @@ export const Scene04_FilterAndPercent: React.FC = () => {
             maxWidth: "84%",
             display: "flex",
             flexWrap: "wrap",
-            gap: "0 22px",
+            gap: "12px 22px",
           }}
         >
           {SCENE04_PHRASE_A.map((word, i) => {
@@ -96,7 +92,7 @@ export const Scene04_FilterAndPercent: React.FC = () => {
                 key={i}
                 style={{
                   ...baseText,
-                  fontSize: 130,
+                  fontSize: 110,
                   color: "#fff",
                   opacity: proxy.opacity,
                   transform: `translateY(${proxy.y}px)`,
@@ -109,11 +105,12 @@ export const Scene04_FilterAndPercent: React.FC = () => {
         </div>
       </AbsoluteFill>
 
-      {/* Phase 2 — LightGradient + starburst + 70% counter */}
+      {/* Phase 2 — DynamicLight + starburst + 70% counter */}
       <AbsoluteFill style={{ opacity: s.phase2.opacity }}>
-        <LightGradient />
+        <ZoomedBg duration={SCENE04_DURATION}>
+          <DynamicLight />
+        </ZoomedBg>
 
-        {/* Starburst */}
         <div
           style={{
             position: "absolute",
@@ -145,7 +142,6 @@ export const Scene04_FilterAndPercent: React.FC = () => {
           })}
         </div>
 
-        {/* Counter + subtitle */}
         <div
           style={{
             position: "absolute",
@@ -156,17 +152,18 @@ export const Scene04_FilterAndPercent: React.FC = () => {
             opacity: s.counter.opacity,
           }}
         >
-          <div style={{ ...baseText, fontSize: 290, color: BLUE }}>
+          <div style={{ ...baseText, fontSize: 280, color: BLUE }}>
             {counterValue}%
           </div>
           <div
             style={{
               ...baseText,
-              fontSize: 90,
+              fontSize: 80,
               fontWeight: 700,
               color: BLUE,
               opacity: s.subtitle.opacity,
               marginTop: -4,
+              whiteSpace: "nowrap",
             }}
           >
             of your potential profits
@@ -178,11 +175,12 @@ export const Scene04_FilterAndPercent: React.FC = () => {
 };
 
 // ────────────────────────────────────────────────────────
-// Scene 05 — Manipulators
+// Scene 05 — Manipulators  (108 frames = 4.5s)
 // Conveyor + four yanks: "frontrunners / orderbook spoofers /
 // illegal insiders / market manipulators"
-// 108 frames = 4.5s @ 24fps
 // ────────────────────────────────────────────────────────
+
+const SCENE05_DURATION = 108;
 
 type ShapeType = "diamond" | "hexagon" | "hexagon-hole" | "pentagon" | "circle";
 const TRADES: { type: ShapeType; color: string }[] = [
@@ -276,12 +274,10 @@ const scene05Init = buildScene05Proxies();
 export const Scene05_Manipulators: React.FC = () => {
   const s = useGsapProxy(
     (tl, p) => {
-      // All trade tiles enter
       TRADES.forEach((_, i) => {
         tl.to(p[`shape_${i}`], { opacity: 1, duration: 0.2 }, i * 0.1);
       });
 
-      // Four passes, ~0.95s apart, each yanking a victim and flashing a label
       const passStarts = [0.5, 1.45, 2.4, 3.35];
       passStarts.forEach((start, passIdx) => {
         tl.to(p[`label_${passIdx}`], { opacity: 1, scale: 1, duration: 0.16, ease: "back.out(1.7)" }, start);
@@ -290,7 +286,6 @@ export const Scene05_Manipulators: React.FC = () => {
         tl.to(p[`label_${passIdx}`], { opacity: 0, duration: 0.18, ease: "power2.in" }, start + 0.78);
       });
 
-      // Subtle conveyor drift across the whole scene
       tl.to(p.conveyor, { x: -120, duration: 4.0, ease: "none" }, 0.3);
     },
     scene05Init,
@@ -301,9 +296,11 @@ export const Scene05_Manipulators: React.FC = () => {
 
   return (
     <AbsoluteFill>
-      <BlueGradient />
+      <ZoomedBg duration={SCENE05_DURATION}>
+        <DynamicBlue />
+      </ZoomedBg>
+
       <AbsoluteFill>
-        {/* Rotating labels — only one visible at a time */}
         {LABELS.map((label, i) => {
           const proxy = s[`label_${i}`];
           if (proxy.opacity < 0.01) return null;
@@ -321,7 +318,7 @@ export const Scene05_Manipulators: React.FC = () => {
               <span
                 style={{
                   ...baseText,
-                  fontSize: 150,
+                  fontSize: 130,
                   color: "#fff",
                   whiteSpace: "nowrap",
                 }}
@@ -332,7 +329,6 @@ export const Scene05_Manipulators: React.FC = () => {
           );
         })}
 
-        {/* Trade conveyor */}
         <div
           style={{
             position: "absolute",
@@ -384,6 +380,6 @@ export const Scene05_Manipulators: React.FC = () => {
 // ── Meta ──
 
 export const sceneMetasB = [
-  { id: "RB-Scene04-FilterAndPercent", component: Scene04_FilterAndPercent, durationInFrames: 108 },
-  { id: "RB-Scene05-Manipulators", component: Scene05_Manipulators, durationInFrames: 108 },
+  { id: "RB-Scene04-FilterAndPercent", component: Scene04_FilterAndPercent, durationInFrames: SCENE04_DURATION },
+  { id: "RB-Scene05-Manipulators", component: Scene05_Manipulators, durationInFrames: SCENE05_DURATION },
 ];
