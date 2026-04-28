@@ -2,7 +2,16 @@ import React from "react";
 import { AbsoluteFill } from "remotion";
 import { loadFont } from "@remotion/google-fonts/Inter";
 import { useGsapProxy } from "../standrew/gsapUtils";
-import { DynamicBlue, DynamicLight, DynamicSolidBlue, HexGridOverlay, ZoomedBg } from "./dynamics";
+import {
+  DynamicBlue,
+  DynamicLight,
+  DynamicSolidBlue,
+  HexGridOverlay,
+  MegaGridBg,
+  WordCascade,
+  ZoomedBg,
+  type CascadeWord,
+} from "./dynamics";
 
 const { fontFamily } = loadFont("normal", { subsets: ["latin"], weights: ["400", "700", "800"] });
 const BLUE = "#0040FF";
@@ -276,142 +285,46 @@ export const Scene07_Protected: React.FC = () => {
 };
 
 /* ═══════════════════════════════════════════════════════
-   Scene 08 — FiveHundredK  (96 frames = 4s)
-   Counter ticks 0 → 500,000 then "assets you couldn't trade anywhere else"
+   Scene 08 — FiveHundredK  (96 frames = 4s @ 24fps)
+   MegaGrid scrolling background + WordCascade reveal —
+   matched to the Sequence02 "500,000" SLAM at frame 50:08.
    ═══════════════════════════════════════════════════════ */
 
 const SCENE08_DURATION = 96;
-const SCENE08_TAIL = ["assets", "you", "couldn't", "trade", "anywhere", "else."] as const;
 
-function buildScene08Proxies() {
-  const init: Record<string, Record<string, number>> = {
-    plus: { opacity: 0 },
-    counter: { value: 0, opacity: 0, scale: 0.7 },
-    starburst: { length: 80, opacity: 0 },
-  };
-  SCENE08_TAIL.forEach((_, i) => { init[`t_${i}`] = { opacity: 0, y: 15 }; });
-  return init;
-}
-
-const scene08Init = buildScene08Proxies();
-const STARBURST_COUNT = 12;
+const SCENE08_WORDS: CascadeWord[] = [
+  { atFrame: 2,  text: "Plus",      size: 90,  br: true },
+  { atFrame: 8,  text: "500,000",   size: 240, br: true },
+  { atFrame: 36, text: "assets" },
+  { atFrame: 41, text: "you" },
+  { atFrame: 45, text: "couldn't",  br: true },
+  { atFrame: 54, text: "trade" },
+  { atFrame: 60, text: "anywhere" },
+  { atFrame: 67, text: "else." },
+];
 
 export const Scene08_FiveHundredK: React.FC = () => {
-  const s = useGsapProxy(
-    (tl, p) => {
-      tl.to(p.plus, { opacity: 1, duration: 0.2, ease: "power2.out" }, 0.1);
-
-      tl.to(p.counter, { opacity: 1, duration: 0.18 }, 0.3);
-      tl.to(p.counter, { scale: 1, duration: 0.55, ease: "back.out(1.6)" }, 0.3);
-      tl.to(p.counter, { value: 500000, duration: 1.7, ease: "power2.out" }, 0.3);
-
-      tl.to(p.starburst, { opacity: 1, duration: 0.18 }, 0.6);
-      tl.to(p.starburst, { length: 1100, duration: 1.8, ease: "power2.out" }, 0.6);
-
-      SCENE08_TAIL.forEach((_, i) => {
-        tl.to(p[`t_${i}`], { opacity: 1, y: 0, duration: 0.16, ease: "power2.out" }, 2.2 + i * 0.15);
-      });
-    },
-    scene08Init,
-  );
-
-  const counterValue = Math.round(s.counter.value).toLocaleString("en-US");
-
   return (
     <AbsoluteFill>
       <ZoomedBg duration={SCENE08_DURATION}>
-        <DynamicLight />
+        <MegaGridBg cols={10} rows={10} />
       </ZoomedBg>
-
-      <div
+      <AbsoluteFill
         style={{
-          position: "absolute",
-          top: "38%",
-          left: "50%",
-          width: 0,
-          height: 0,
-          opacity: s.starburst.opacity,
-        }}
-      >
-        {Array.from({ length: STARBURST_COUNT }, (_, i) => {
-          const angle = (360 / STARBURST_COUNT) * i;
-          return (
-            <div
-              key={i}
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: s.starburst.length,
-                height: 4,
-                backgroundColor: BLUE,
-                transformOrigin: "0% 50%",
-                transform: `rotate(${angle}deg) translateX(100px)`,
-                opacity: 0.5,
-              }}
-            />
-          );
-        })}
-      </div>
-
-      <div
-        style={{
-          position: "absolute",
-          top: "38%",
-          left: "50%",
-          transform: `translate(-50%, -50%) scale(${Math.max(s.counter.scale, 0)})`,
-          textAlign: "center",
-          opacity: s.counter.opacity,
-        }}
-      >
-        <div
-          style={{
-            ...baseText,
-            fontSize: 70,
-            fontWeight: 700,
-            color: BLUE,
-            opacity: s.plus.opacity,
-            marginBottom: -4,
-          }}
-        >
-          Plus
-        </div>
-        <div style={{ ...baseText, fontSize: 220, color: BLUE, lineHeight: 1.0 }}>
-          {counterValue}
-        </div>
-      </div>
-
-      <div
-        style={{
-          position: "absolute",
-          top: "70%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          display: "flex",
-          flexWrap: "wrap",
           justifyContent: "center",
-          gap: "10px 18px",
-          maxWidth: "92%",
+          alignItems: "center",
+          padding: 80,
         }}
       >
-        {SCENE08_TAIL.map((word, i) => {
-          const proxy = s[`t_${i}`];
-          return (
-            <span
-              key={i}
-              style={{
-                ...baseText,
-                fontSize: 80,
-                color: BLUE,
-                opacity: proxy.opacity,
-                transform: `translateY(${proxy.y}px)`,
-              }}
-            >
-              {word}
-            </span>
-          );
-        })}
-      </div>
+        <WordCascade
+          words={SCENE08_WORDS}
+          fontSize={90}
+          fontFamily={fontFamily}
+          color="#ffffff"
+          fontWeight={900}
+          fontStyle="italic"
+        />
+      </AbsoluteFill>
     </AbsoluteFill>
   );
 };

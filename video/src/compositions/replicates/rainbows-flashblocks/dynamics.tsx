@@ -1,6 +1,15 @@
 import React from "react";
-import { AbsoluteFill, useCurrentFrame } from "remotion";
+import {
+  AbsoluteFill,
+  Easing,
+  Img,
+  interpolate,
+  staticFile,
+  useCurrentFrame,
+  useVideoConfig,
+} from "remotion";
 import { noise2D } from "@remotion/noise";
+import { SOURCES } from "../../launch/data/sources";
 
 /* ═══════════════════════════════════════════════════════
    Dynamic backgrounds — gradients that drift, breathe, and
@@ -212,5 +221,191 @@ export const ZoomedBg: React.FC<{
     >
       {children}
     </AbsoluteFill>
+  );
+};
+
+/* ═══════════════════════════════════════════════════════
+   MegaGridBg — 10×10 logo grid, tilted, blurred, scrolling.
+   Adapted from sequence02/FullscreenMarkets.MegaGridBg so the
+   500,000 reveal in Scene 08 looks the way the user pointed at.
+   ═══════════════════════════════════════════════════════ */
+
+const MEGA_TILT_X = 12;
+const MEGA_GRID_SCALE = 1.15;
+const MEGA_SCROLL_PX_PER_SEC = 18;
+
+export const MegaGridBg: React.FC<{ cols?: number; rows?: number }> = ({
+  cols = 10,
+  rows = 10,
+}) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const scrollY = (frame / fps) * MEGA_SCROLL_PX_PER_SEC;
+  const count = cols * rows;
+
+  return (
+    <>
+      <AbsoluteFill style={{ backgroundColor: "#ffffff" }} />
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          perspective: 1800,
+          perspectiveOrigin: "50% 45%",
+        }}
+      >
+        <AbsoluteFill
+          style={{
+            display: "grid",
+            gridTemplateColumns: `repeat(${cols}, 1fr)`,
+            gridTemplateRows: `repeat(${rows}, 1fr)`,
+            gap: 3,
+            padding: 3,
+            filter: "blur(6px)",
+            transform: `rotateX(${MEGA_TILT_X}deg) scale(${MEGA_GRID_SCALE}) translateY(${-scrollY}px)`,
+            transformStyle: "preserve-3d",
+          }}
+        >
+          {Array.from({ length: count }).map((_, i) => {
+            const source = SOURCES[i % SOURCES.length];
+            const logoSrc = source.logo.startsWith("/") ? source.logo.slice(1) : source.logo;
+            return (
+              <div
+                key={i}
+                style={{
+                  background: source.bg,
+                  borderRadius: 4,
+                  overflow: "hidden",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  padding: 6,
+                }}
+              >
+                <Img
+                  src={staticFile(logoSrc)}
+                  style={{
+                    maxWidth: "80%",
+                    maxHeight: "80%",
+                    objectFit: "contain",
+                  }}
+                />
+              </div>
+            );
+          })}
+        </AbsoluteFill>
+      </div>
+
+      {/* Soft vignette */}
+      <AbsoluteFill
+        style={{
+          background:
+            "radial-gradient(ellipse at center, rgba(0,0,0,0) 30%, rgba(0,0,0,0.45) 100%)",
+        }}
+      />
+    </>
+  );
+};
+
+/* ═══════════════════════════════════════════════════════
+   WordCascade — words rise + de-blur + fade in on cue.
+   Same easing & shadow recipe as sequence02 so the look matches.
+   ═══════════════════════════════════════════════════════ */
+
+export interface CascadeWord {
+  /** Frame when the word lands (sequence-local). */
+  atFrame: number;
+  text: string;
+  /** Per-word size override. Falls back to the global fontSize. */
+  size?: number;
+  /** Insert a line break after this word. */
+  br?: boolean;
+}
+
+const CASCADE_EASE = Easing.bezier(0.16, 1, 0.3, 1);
+
+export const WordCascade: React.FC<{
+  words: CascadeWord[];
+  fontSize: number;
+  fontFamily: string;
+  color?: string;
+  fontWeight?: number;
+  fontStyle?: "italic" | "normal";
+  entryFrames?: number;
+  rise?: number;
+  blurPx?: number;
+}> = ({
+  words,
+  fontSize,
+  fontFamily,
+  color = "#ffffff",
+  fontWeight = 900,
+  fontStyle = "italic",
+  entryFrames = 10,
+  rise = 40,
+  blurPx = 10,
+}) => {
+  const frame = useCurrentFrame();
+  const lines: CascadeWord[][] = [[]];
+  for (const w of words) {
+    lines[lines.length - 1].push(w);
+    if (w.br) lines.push([]);
+  }
+  if (lines[lines.length - 1].length === 0) lines.pop();
+
+  return (
+    <div
+      style={{
+        fontFamily,
+        fontSize,
+        fontWeight,
+        fontStyle,
+        color,
+        letterSpacing: "-0.02em",
+        lineHeight: 1.05,
+        textAlign: "center",
+        textShadow:
+          "0 4px 32px rgba(0,0,0,0.85), 0 2px 8px rgba(0,0,0,0.7), 0 0 2px rgba(0,0,0,0.6)",
+      }}
+    >
+      {lines.map((line, li) => (
+        <div
+          key={li}
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            flexWrap: "wrap",
+            gap: "0 0.28em",
+          }}
+        >
+          {line.map((w, wi) => {
+            const t = Math.max(0, frame - w.atFrame);
+            const progress = interpolate(t, [0, entryFrames], [0, 1], {
+              extrapolateLeft: "clamp",
+              extrapolateRight: "clamp",
+              easing: CASCADE_EASE,
+            });
+            const dy = (1 - progress) * rise;
+            const blur = (1 - progress) * blurPx;
+            const opacity = frame >= w.atFrame ? progress : 0;
+            return (
+              <span
+                key={wi}
+                style={{
+                  display: "inline-block",
+                  fontSize: w.size ?? fontSize,
+                  transform: `translate3d(0, ${dy}px, 0)`,
+                  opacity,
+                  filter: blur > 0.1 ? `blur(${blur}px)` : undefined,
+                  willChange: "transform, opacity, filter",
+                }}
+              >
+                {w.text}
+              </span>
+            );
+          })}
+        </div>
+      ))}
+    </div>
   );
 };
