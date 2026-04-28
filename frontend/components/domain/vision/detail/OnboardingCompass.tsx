@@ -472,77 +472,23 @@ interface OnboardingCompassProps {
   onBotDeploy: () => void
 }
 
-// v2 — anchor flipped from bottom-right to bottom-left. Stale offsets from
-// the right-anchored version would translate the card off the left edge,
-// so the version bump invalidates them cleanly.
-const POSITION_KEY = 'onboarding_compass_offset_v2'
-
-interface PositionOffset {
-  dx: number
-  dy: number
-}
-
-/**
- * Clamp a (dx, dy) offset to a rect-and-viewport. Returns offsets that
- * place the widget fully inside the viewport with `margin` px of breathing
- * room on every edge. The previous "80 px visible" logic produced ugly
- * half-states where only the CTA showed at the top of the screen — now
- * the whole card is always on canvas.
- */
-function clampOffsetToViewport(
-  dx: number,
-  dy: number,
-  vw: number,
-  vh: number,
-  widgetW: number,
-  widgetH: number,
-  margin: number = 12,
-): PositionOffset {
-  // Base anchor: left-3 bottom-3 → top-left at (margin, vh - margin - widgetH).
-  const dxMax = Math.max(0, vw - margin * 2 - widgetW)
-  // Negative dy lifts the card off the bottom; the floor is "top edge at margin".
-  const dyMin = Math.min(0, -(vh - margin * 2 - widgetH))
-  return {
-    dx: Math.max(0, Math.min(dx, dxMax)),
-    dy: Math.max(dyMin, Math.min(dy, 0)),
-  }
-}
-
-function readSavedOffset(): PositionOffset {
-  if (typeof window === 'undefined') return { dx: 0, dy: 0 }
-  try {
-    const raw = window.localStorage.getItem(POSITION_KEY)
-    if (!raw) return { dx: 0, dy: 0 }
-    const parsed = JSON.parse(raw)
-    if (typeof parsed?.dx === 'number' && typeof parsed?.dy === 'number') {
-      // Pre-clamp using a conservative widget-size estimate. Even before
-      // the post-paint useEffect can read the real rect, the first frame
-      // is on-canvas.
-      return clampOffsetToViewport(
-        parsed.dx,
-        parsed.dy,
-        window.innerWidth,
-        window.innerHeight,
-        300,
-        220,
-      )
-    }
-  } catch {
-    // fall through
-  }
-  return { dx: 0, dy: 0 }
-}
+// Drag offsets are session-only — every page load starts the widget at
+// its base bottom-left anchor. The earlier "remember where I parked it"
+// behavior outlived its usefulness: a single drag could permanently
+// strand the card at the top of the viewport on every subsequent visit,
+// and users (reasonably) read that as a bug rather than a feature.
+//
+// Drag itself still works inside a session; reloading resets.
 
 export function OnboardingCompass({ state, onVaultDeposit, onBotDeploy }: OnboardingCompassProps) {
   const [collapsed, setCollapsed] = useState(false)
 
-  // Drag state — offset from the base bottom-left anchor. Persisted
-  // between sessions. The base position lives in Tailwind classes; the
-  // motion values supply a free offset on top, and clampToViewport
-  // (below) keeps the card on-canvas if the viewport shrinks.
-  const initialOffsetRef = useRef<PositionOffset>(readSavedOffset())
-  const dragX = useMotionValue(initialOffsetRef.current.dx)
-  const dragY = useMotionValue(initialOffsetRef.current.dy)
+  // Drag state — offset from the base bottom-left anchor, session-only.
+  // Both motion values start at 0 every page load; the user can still
+  // drag the widget anywhere they like and clampToViewport keeps it on
+  // canvas during the session, but the position resets on reload.
+  const dragX = useMotionValue(0)
+  const dragY = useMotionValue(0)
   const dragControls = useDragControls()
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -598,42 +544,22 @@ export function OnboardingCompass({ state, onVaultDeposit, onBotDeploy }: Onboar
 
   const handleDragEnd = useCallback(() => {
     clampToViewport()
-    try {
-      window.localStorage.setItem(
-        POSITION_KEY,
-        JSON.stringify({ dx: dragX.get(), dy: dragY.get() })
-      )
-    } catch {
-      // localStorage may be disabled — non-fatal
-    }
-  }, [clampToViewport, dragX, dragY])
+  }, [clampToViewport])
 
-  // Re-clamp on viewport resize (and once on mount, after first paint, in
-  // case the saved offset came from a larger screen). Persist if anything
-  // moved so the next session starts fully on-screen.
+  // Clamp to viewport on resize and orientation changes so dragging the
+  // widget into a corner doesn't strand it when the viewport shrinks.
+  // No persistence — drag offsets reset on reload.
   useEffect(() => {
     if (typeof window === 'undefined') return
     let raf = 0
     const run = () => {
       raf = 0
-      const moved = clampToViewport()
-      if (moved) {
-        try {
-          window.localStorage.setItem(
-            POSITION_KEY,
-            JSON.stringify({ dx: dragX.get(), dy: dragY.get() })
-          )
-        } catch {
-          // ignore
-        }
-      }
+      clampToViewport()
     }
     const schedule = () => {
       if (raf) return
       raf = requestAnimationFrame(run)
     }
-    // Initial check, post-paint, so containerRef is populated.
-    schedule()
     window.addEventListener('resize', schedule)
     window.addEventListener('orientationchange', schedule)
     return () => {
@@ -641,7 +567,7 @@ export function OnboardingCompass({ state, onVaultDeposit, onBotDeploy }: Onboar
       window.removeEventListener('resize', schedule)
       window.removeEventListener('orientationchange', schedule)
     }
-  }, [clampToViewport, dragX, dragY])
+  }, [clampToViewport])
 
   if (!state.isActive) return null
 
