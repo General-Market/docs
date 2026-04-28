@@ -1,66 +1,47 @@
 /**
- * LofiDots — graded broll dressed with paper grain, vignette, and the
- * red-bridge chroma isolation pass. The hex tessellation and metallic
- * dome shading have been retired; this is now a direct broll backdrop
- * with the lofi grade and selective colour kept intact.
+ * LofiDots — a hex grid of identically sized circles, each one carved
+ * into the paper to a different depth. No video, no texture sampling.
+ * Pure shader: paper, grain, vignette, and a per-cell noise that decides
+ * how deeply the punch struck the page. Some dots barely register.
+ * Others sit in their own little shadow.
  */
 
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useMemo, useRef } from "react";
 import {
   AbsoluteFill,
   Easing,
-  Video,
   interpolate,
-  staticFile,
   useCurrentFrame,
-  useRemotionEnvironment,
   useVideoConfig,
 } from "remotion";
-import {
-  ThreeCanvas,
-  useOffthreadVideoTexture,
-} from "@remotion/three";
+import { ThreeCanvas } from "@remotion/three";
 import * as THREE from "three";
 
 // ── Knobs ─────────────────────────────────────────────────────────────
-// Paper tone behind the broll (used as fallback ground + grain base).
+// Paper tone behind the dots.
 const PAPER = "#ece7da";
-// 1 = full broll color, 0 = grayscale. Original colorimetry.
-const SATURATION = 1.0;
-// Lift toward paper. 0 = print as-is.
-const FADE_TO_PAPER = 0.0;
-// Warm shift / shadow lift. 0 disables — keeps the broll's grade.
-const LOFI_GRADE = 0.0;
-// Paper grain strength. 0 disables.
+// Centre-to-centre horizontal spacing of the hex grid, in source pixels.
+const SPACING_PX = 64;
+// Dot radius, in source pixels. Same for every dot — that's the point.
+const RADIUS_PX = 20;
+// Anti-aliased rim width, in pixels.
+const EDGE_PX = 1.4;
+// Average carve depth across the grid. 0 = flat, 1 = aggressive.
+const CARVE_BASE = 0.55;
+// How far each dot can stray from the average. Higher = louder rhythm.
+const CARVE_VAR = 0.45;
+// Slow drift of the per-cell noise, in carve-units per second. Subtle.
+const CARVE_DRIFT = 0.025;
+// Light direction in radians. 2.356 ≈ 135°, light from the top-left.
+const LIGHT_ANGLE = 2.356;
+// Strength of the directional rim shading inside each dot.
+const RIM_SHADE = 0.22;
+// Slight darkening at the floor of deeper dots — fake AO.
+const AO_STRENGTH = 0.14;
+// Paper grain amplitude. Keep it gentle; print, not noise art.
 const GRAIN = 0.04;
-// Subtle vignette at the corners. 0 disables.
+// Soft vignette toward the corners.
 const VIGNETTE = 0.18;
-// Chroma isolation: keep red-dominant pixels colored, grey the rest.
-// 1 = full isolation, 0 = bypass. Lower = lets more of the broll bleed.
-const CHROMA_ISOLATE = 0.0;
-// "Warmness" threshold a pixel (or its neighborhood) needs to count as
-// bridge. Warmness = (R − lum) − ½·((G − lum) + (B − lum)) — a
-// luminance-deviation projection onto the red axis. A cloud-covered red
-// pixel keeps a small positive value here that the old r−max(g,b) test
-// missed. Lower = more eager (catches hazy bridge); higher = stricter.
-const RED_THRESHOLD = 0.04;
-// Soft edge of the threshold — half this on either side.
-const RED_FEATHER = 0.04;
-// Spatial dilation in source pixels. The shader takes the max warmness
-// over a 9-tap neighborhood at this radius, so cloud-covered or hazy
-// bridge pixels inherit detection from clearer neighbors. Without it,
-// thin clouds shred the bridge into red fragments separated by grey.
-// Larger = bridges wider gaps but smears the colour into surroundings.
-const DILATE_RADIUS = 6.0;
-// Output red tint for the bridge — lerped with the original red value
-// so the bridge keeps some of its texture rather than going flat poster-red.
-const BRIDGE_RED: [number, number, number] = [0.86, 0.16, 0.18];
-// 0 = keep original red color, 1 = force pure BRIDGE_RED. Mid keeps texture.
-const BRIDGE_TINT = 0.55;
-
-// YouTube extract — the actual cloud broll.
-export const VIDEO_SRC =
-  "broll/youtube-MLm07I49RiE/broll_1-55-39_to_2-00-50.mp4";
 
 // ── Shaders ───────────────────────────────────────────────────────────
 
@@ -75,21 +56,20 @@ const VERTEX = /* glsl */ `
 const FRAGMENT = /* glsl */ `
   precision highp float;
 
-  uniform sampler2D uTex;
   uniform vec2  uResolution;
-  uniform vec2  uTexSize;
   uniform vec3  uPaper;
-  uniform float uSat;
-  uniform float uFade;
-  uniform float uLofi;
+  uniform float uSpacing;
+  uniform float uRadius;
+  uniform float uEdge;
+  uniform float uCarveBase;
+  uniform float uCarveVar;
+  uniform float uTime;
+  uniform float uDrift;
+  uniform float uLightAngle;
+  uniform float uRimShade;
+  uniform float uAoStrength;
   uniform float uGrain;
   uniform float uVignette;
-  uniform float uChroma;
-  uniform float uRedThreshold;
-  uniform float uRedFeather;
-  uniform vec3  uBridgeRed;
-  uniform float uBridgeTint;
-  uniform float uDilateRadius;
 
   varying vec2 vUv;
 
@@ -97,161 +77,109 @@ const FRAGMENT = /* glsl */ `
     return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
   }
 
-  vec3 desaturate(vec3 c, float s) {
-    float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
-    return mix(vec3(l), c, s);
-  }
-
-  // Sample as if the texture were "object-fit: cover".
-  vec2 coverUv(vec2 uv, vec2 res, vec2 tex) {
-    float rRes = res.x / res.y;
-    float rTex = tex.x / tex.y;
-    vec2 scale = (rTex > rRes)
-      ? vec2(rRes / rTex, 1.0)
-      : vec2(1.0, rTex / rRes);
-    vec2 offset = (1.0 - scale) * 0.5;
-    return uv * scale + offset;
-  }
-
-  // Lofi tone-grade: warm shift, lifted/tinted shadows, slight roll-off.
-  vec3 lofiGrade(vec3 c, float strength) {
-    vec3 warm   = c * vec3(1.06, 1.00, 0.86);
-    vec3 lifted = mix(warm, vec3(0.92, 0.84, 0.66), 0.10);
-    vec3 rolled = lifted - 0.04 * pow(lifted, vec3(1.6));
-    return mix(c, rolled, strength);
-  }
-
-  // Warmness — projection onto the red axis in deviation-from-luminance
-  // space. Returns >0 for warm pixels, =0 for neutral grey, <0 for cool.
-  // Robust to desaturation: a cloud-covered red still scores positive.
-  float warmness(vec3 c) {
-    float lum = dot(c, vec3(0.2126, 0.7152, 0.0722));
-    vec3 dev = c - vec3(lum);
-    return dev.r - 0.5 * (dev.g + dev.b);
-  }
-
-  // Chroma isolation — keep warm pixels coloured, grey the rest. The
-  // warmness signal (precomputed in main with a spatial dilation pass)
-  // does the gating; no separate chroma-weight rejection because grey
-  // pixels already score zero.
-  vec3 chromaIsolate(vec3 c, float w, float strength) {
-    float lum = dot(c, vec3(0.2126, 0.7152, 0.0722));
-    vec3 grey = vec3(lum);
-
-    float t0 = uRedThreshold - uRedFeather * 0.5;
-    float t1 = uRedThreshold + uRedFeather * 0.5;
-    float mask = smoothstep(t0, t1, w);
-
-    vec3 redKept = mix(c, uBridgeRed, uBridgeTint);
-    vec3 isolated = mix(grey, redKept, mask);
-
-    return mix(c, isolated, strength);
+  // Smooth value noise on a 2D integer lattice — used to wobble the
+  // per-cell carve depth across time without ever snapping.
+  float vnoise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    float a = hash(i);
+    float b = hash(i + vec2(1.0, 0.0));
+    float c = hash(i + vec2(0.0, 1.0));
+    float d = hash(i + vec2(1.0, 1.0));
+    vec2 u = f * f * (3.0 - 2.0 * f);
+    return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
   }
 
   void main() {
     vec2 fragPx = vUv * uResolution;
 
-    // Direct broll sample — no per-cell averaging, no hex tessellation.
-    vec2 sampleUv = coverUv(vUv, uResolution, uTexSize);
-    vec3 col = texture2D(uTex, sampleUv).rgb;
-
-    // Spatial dilation — max warmness over a 9-tap neighborhood at
-    // uDilateRadius pixels. Cloud-covered or hazy bridge pixels inherit
-    // detection from clearer neighbors so the bridge stays continuous
-    // across weather edges instead of dropping out.
-    vec2 stp = vec2(uDilateRadius) / uResolution;
-    float w0 = warmness(col);
-    float w1 = warmness(texture2D(uTex, sampleUv + vec2(stp.x, 0.0)).rgb);
-    float w2 = warmness(texture2D(uTex, sampleUv - vec2(stp.x, 0.0)).rgb);
-    float w3 = warmness(texture2D(uTex, sampleUv + vec2(0.0, stp.y)).rgb);
-    float w4 = warmness(texture2D(uTex, sampleUv - vec2(0.0, stp.y)).rgb);
-    float w5 = warmness(texture2D(uTex, sampleUv + stp).rgb);
-    float w6 = warmness(texture2D(uTex, sampleUv - stp).rgb);
-    float w7 = warmness(texture2D(uTex, sampleUv + vec2(stp.x, -stp.y)).rgb);
-    float w8 = warmness(texture2D(uTex, sampleUv + vec2(-stp.x, stp.y)).rgb);
-    float maxW = max(
-      max(max(w0, w1), max(w2, w3)),
-      max(max(w4, w5), max(max(w6, w7), w8))
+    // Hex packing: rows alternate by half a column. Vertical spacing is
+    // sqrt(3)/2 of horizontal — gives the printer's six-around-one ring.
+    float vSpacing = uSpacing * 0.8660254;
+    float row = floor(fragPx.y / vSpacing);
+    float xOffset = mod(row, 2.0) > 0.5 ? 0.5 * uSpacing : 0.0;
+    float colIdx = floor((fragPx.x - xOffset) / uSpacing);
+    vec2 cellId = vec2(colIdx, row);
+    vec2 cellCenter = vec2(
+      (colIdx + 0.5) * uSpacing + xOffset,
+      (row + 0.5) * vSpacing
     );
+    vec2 cellLocal = fragPx - cellCenter;
+    float r = length(cellLocal);
 
-    col = chromaIsolate(col, maxW, uChroma);
-    col = desaturate(col, uSat);
-    col = lofiGrade(col, uLofi);
-    col = mix(col, uPaper, uFade);
+    // Anti-aliased disk mask. 1 inside, 0 outside, smooth at the rim.
+    float dotMask = 1.0 - smoothstep(uRadius - uEdge, uRadius + uEdge, r);
 
-    // Paper grain — applied to the broll itself and to the vignette
-    // fallback so the texture stays continuous across the falloff.
+    // Carve depth: per-cell noise, drifting slowly. Same radius for all,
+    // but the depth of the punch varies — that is the entire concept.
+    float n = vnoise(cellId * 0.37 + vec2(uTime * uDrift, uTime * uDrift * 0.6));
+    float carve = clamp(uCarveBase + uCarveVar * (n - 0.5), 0.0, 1.0);
+
+    // Inside-the-hole shading. For a depression, the inner wall facing
+    // the light catches the brightness; the wall behind sits in shadow.
+    // -dir is the inward-facing normal in 2D; dotting it with the light
+    // direction gives a clean Lambertian split across the cup.
+    float rNorm = clamp(r / uRadius, 0.0, 1.0);
+    vec2 dir = r > 0.001 ? cellLocal / r : vec2(0.0, 1.0);
+    vec2 lightDir = vec2(cos(uLightAngle), sin(uLightAngle));
+    float shade = dot(-dir, lightDir);
+    float rim = smoothstep(0.0, 1.0, rNorm);
+
+    // Floor of the depression dims slightly — fake ambient occlusion.
+    float ao = 1.0 - uAoStrength * carve * (1.0 - 0.4 * rNorm);
+
+    vec3 paper = uPaper;
+    vec3 dotCol = paper * ao + shade * rim * carve * uRimShade * vec3(1.0);
+    vec3 col = mix(paper, dotCol, dotMask);
+
+    // Paper grain — a uniform layer over both the dots and the field, so
+    // nothing feels dropped on top of clean glass.
     float grain = (hash(floor(fragPx / 1.4)) - 0.5) * uGrain;
     col += vec3(grain);
 
-    // Soft vignette pushes the corners back toward the paper tone.
-    vec3 paper = uPaper + vec3(grain);
+    // Soft vignette pushes the corners toward the paper. Almost subliminal.
+    vec3 paperGrain = uPaper + vec3(grain);
     vec2 p = vUv - 0.5;
     float v = smoothstep(0.75, 0.2, length(p));
-    vec3 outCol = mix(col, paper, (1.0 - v) * uVignette);
+    col = mix(col, paperGrain, (1.0 - v) * uVignette);
 
-    gl_FragColor = vec4(outCol, 1.0);
+    gl_FragColor = vec4(col, 1.0);
   }
 `;
 
 // ── Three scene — fullscreen quad ─────────────────────────────────────
 
 interface DotPlaneProps {
-  texture: THREE.Texture;
   width: number;
   height: number;
+  time: number;
 }
 
-const DotPlane: React.FC<DotPlaneProps> = ({ texture, width, height }) => {
+const DotPlane: React.FC<DotPlaneProps> = ({ width, height, time }) => {
   const matRef = useRef<THREE.ShaderMaterial>(null);
-
-  const texSize = useMemo(() => {
-    const img = texture.image as
-      | HTMLVideoElement
-      | HTMLImageElement
-      | { width?: number; height?: number }
-      | undefined;
-    const w =
-      (img as HTMLVideoElement | undefined)?.videoWidth ??
-      (img as HTMLImageElement | undefined)?.width ??
-      width;
-    const h =
-      (img as HTMLVideoElement | undefined)?.videoHeight ??
-      (img as HTMLImageElement | undefined)?.height ??
-      height;
-    return new THREE.Vector2(w || width, h || height);
-  }, [texture.image, width, height]);
 
   const uniforms = useMemo(
     () => ({
-      uTex: { value: texture },
       uResolution: { value: new THREE.Vector2(width, height) },
-      uTexSize: { value: texSize },
       uPaper: { value: new THREE.Color(PAPER) },
-      uSat: { value: SATURATION },
-      uFade: { value: FADE_TO_PAPER },
-      uLofi: { value: LOFI_GRADE },
+      uSpacing: { value: SPACING_PX },
+      uRadius: { value: RADIUS_PX },
+      uEdge: { value: EDGE_PX },
+      uCarveBase: { value: CARVE_BASE },
+      uCarveVar: { value: CARVE_VAR },
+      uTime: { value: time },
+      uDrift: { value: CARVE_DRIFT },
+      uLightAngle: { value: LIGHT_ANGLE },
+      uRimShade: { value: RIM_SHADE },
+      uAoStrength: { value: AO_STRENGTH },
       uGrain: { value: GRAIN },
       uVignette: { value: VIGNETTE },
-      uChroma: { value: CHROMA_ISOLATE },
-      uRedThreshold: { value: RED_THRESHOLD },
-      uRedFeather: { value: RED_FEATHER },
-      uBridgeRed: {
-        value: new THREE.Vector3(
-          BRIDGE_RED[0],
-          BRIDGE_RED[1],
-          BRIDGE_RED[2],
-        ),
-      },
-      uBridgeTint: { value: BRIDGE_TINT },
-      uDilateRadius: { value: DILATE_RADIUS },
     }),
-    [texture, width, height, texSize],
+    [width, height, time],
   );
 
   if (matRef.current) {
-    matRef.current.uniforms.uTex.value = texture;
-    matRef.current.uniforms.uTexSize.value = texSize;
+    matRef.current.uniforms.uTime.value = time;
   }
 
   return (
@@ -270,90 +198,13 @@ const DotPlane: React.FC<DotPlaneProps> = ({ texture, width, height }) => {
   );
 };
 
-// ── Source switch — preview uses <Video>, render uses offthread ───────
-
-const RenderSource: React.FC<{
-  src: string;
-  width: number;
-  height: number;
-}> = ({ src, width, height }) => {
-  const texture = useOffthreadVideoTexture({ src });
-  if (!texture) return null;
-  return <DotPlane texture={texture} width={width} height={height} />;
-};
-
-// Preview path uses a CanvasTexture fed by drawImage(videoElement, …) each
-// frame — robust against @remotion/three useVideoTexture's mount race
-// (which throws "Video not ready" if its resolution promise wins against
-// the videoRef being attached). The canvas keeps the broll's native
-// resolution so the shader's cover-fit pass receives a faithful sample.
-const PREVIEW_CANVAS_W = 1280;
-const PREVIEW_CANVAS_H = 720;
-
-const PreviewSource: React.FC<{
-  videoRef: React.RefObject<HTMLVideoElement | null>;
-  width: number;
-  height: number;
-  frame: number;
-}> = ({ videoRef, width, height, frame }) => {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const textureRef = useRef<THREE.CanvasTexture | null>(null);
-
-  if (!canvasRef.current) {
-    const c = document.createElement("canvas");
-    c.width = PREVIEW_CANVAS_W;
-    c.height = PREVIEW_CANVAS_H;
-    const ctx0 = c.getContext("2d");
-    if (ctx0) {
-      ctx0.fillStyle = PAPER;
-      ctx0.fillRect(0, 0, PREVIEW_CANVAS_W, PREVIEW_CANVAS_H);
-    }
-    canvasRef.current = c;
-    const tex = new THREE.CanvasTexture(c);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    textureRef.current = tex;
-  }
-
-  // Per-frame: blit the video element into the canvas, mark texture dirty.
-  const ctx = canvasRef.current.getContext("2d");
-  const video = videoRef.current;
-  if (ctx && video && video.readyState >= 2 && video.videoWidth > 0) {
-    ctx.drawImage(
-      video,
-      0,
-      0,
-      video.videoWidth,
-      video.videoHeight,
-      0,
-      0,
-      PREVIEW_CANVAS_W,
-      PREVIEW_CANVAS_H,
-    );
-    if (textureRef.current) textureRef.current.needsUpdate = true;
-  }
-  void frame;
-
-  // Suppress lint: useEffect to dispose the texture on unmount.
-  useEffect(() => {
-    const tex = textureRef.current;
-    return () => {
-      tex?.dispose();
-    };
-  }, []);
-
-  if (!textureRef.current) return null;
-  return <DotPlane texture={textureRef.current} width={width} height={height} />;
-};
-
 // ── Main composition ──────────────────────────────────────────────────
 
 export const LofiDots: React.FC<{
   skipFadeIn?: boolean;
 }> = ({ skipFadeIn = false }) => {
   const frame = useCurrentFrame();
-  const { width, height } = useVideoConfig();
-  const env = useRemotionEnvironment();
-  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const { width, height, fps } = useVideoConfig();
 
   const fadeIn = skipFadeIn
     ? 1
@@ -363,23 +214,10 @@ export const LofiDots: React.FC<{
         easing: Easing.bezier(0.16, 1, 0.3, 1),
       });
 
+  const time = frame / fps;
+
   return (
     <AbsoluteFill style={{ background: PAPER }}>
-      {!env.isRendering && (
-        <Video
-          ref={videoRef}
-          src={staticFile(VIDEO_SRC)}
-          style={{
-            position: "absolute",
-            opacity: 0,
-            pointerEvents: "none",
-            width: 1,
-            height: 1,
-          }}
-          muted
-        />
-      )}
-
       <AbsoluteFill style={{ opacity: fadeIn }}>
         <ThreeCanvas
           width={width}
@@ -390,20 +228,7 @@ export const LofiDots: React.FC<{
             alpha: false,
           }}
         >
-          {env.isRendering ? (
-            <RenderSource
-              src={staticFile(VIDEO_SRC)}
-              width={width}
-              height={height}
-            />
-          ) : (
-            <PreviewSource
-              videoRef={videoRef}
-              width={width}
-              height={height}
-              frame={frame}
-            />
-          )}
+          <DotPlane width={width} height={height} time={time} />
         </ThreeCanvas>
       </AbsoluteFill>
     </AbsoluteFill>
