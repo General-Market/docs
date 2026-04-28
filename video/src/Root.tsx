@@ -111,6 +111,7 @@ export const RemotionRoot: React.FC = () => {
         fps={ENDCARD_FPS}
         width={1920}
         height={1080}
+        defaultProps={{ hexMode: true }}
       />
 
       {/* ═══ REPLICATE ═══ */}

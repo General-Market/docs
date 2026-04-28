@@ -1,8 +1,12 @@
 /**
- * LofiDots — graded broll dressed with paper grain, vignette, and the
- * red-bridge chroma isolation pass. The hex tessellation and metallic
- * dome shading have been retired; this is now a direct broll backdrop
- * with the lofi grade and selective colour kept intact.
+ * LofiDots — two paths, one file. With hexMode=false (default), the
+ * broll is graded per pixel: chroma isolation for the red bridge, the
+ * lofi tone-curve, paper grain, vignette. With hexMode=true, the broll
+ * is decimated onto a hex tessellation — each cell takes one sample
+ * from the centre, draws an inset disk, and lays a metallic highlight
+ * across it. The standalone /LofiDots Composition turns hexMode on;
+ * other callers keep the broll backdrop. A grid of small mirrors
+ * watching a sky they will never share.
  */
 
 import React, { useEffect, useMemo, useRef } from "react";
@@ -58,6 +62,25 @@ const BRIDGE_RED: [number, number, number] = [0.86, 0.16, 0.18];
 // 0 = keep original red color, 1 = force pure BRIDGE_RED. Mid keeps texture.
 const BRIDGE_TINT = 0.55;
 
+// ── Hex sequin knobs ──────────────────────────────────────────────────
+// Circumradius of one hexagon, in source pixels. The grid is built so
+// every cell shares this exact size — small printer-like tessellation.
+const HEX_SIZE_PX = 22;
+// Inset disk drawn inside each hex, in units of the circumradius.
+// 1.0 would touch neighbours; 0.78 leaves a clean fabric gap.
+const DISK_RADIUS = 0.78;
+// Anti-aliased rim width on the disk, in the same units.
+const DISK_EDGE = 0.05;
+// Position of the metallic highlight inside each disk, in the same units.
+// y up — so a positive y plus negative x lands on the upper-left.
+const DOME_OFFSET: [number, number] = [-0.22, 0.24];
+// Radius of the highlight falloff. Smaller = tighter glint.
+const DOME_RADIUS = 0.42;
+// Highlight intensity. 1 saturates the disk to white at the centre.
+const DOME_STRENGTH = 0.65;
+// Fabric colour visible between sequins. The black behind the cloth.
+const FABRIC: [number, number, number] = [0.045, 0.045, 0.05];
+
 // YouTube extract — the actual cloud broll.
 export const VIDEO_SRC =
   "broll/youtube-MLm07I49RiE/broll_1-55-39_to_2-00-50.mp4";
@@ -90,6 +113,15 @@ const FRAGMENT = /* glsl */ `
   uniform vec3  uBridgeRed;
   uniform float uBridgeTint;
   uniform float uDilateRadius;
+
+  uniform float uHexMode;
+  uniform float uHexSize;
+  uniform float uDiskRadius;
+  uniform float uDiskEdge;
+  uniform vec2  uDomeOffset;
+  uniform float uDomeRadius;
+  uniform float uDomeStrength;
+  uniform vec3  uFabric;
 
   varying vec2 vUv;
 
@@ -130,6 +162,21 @@ const FRAGMENT = /* glsl */ `
     return dev.r - 0.5 * (dev.g + dev.b);
   }
 
+  // Hex tessellation. Two interleaved rectangular grids carry one hex
+  // centre each — for any pixel we test both candidates and keep the
+  // closer. Returns (localFromCentre, centrePixel) in 'p' space, where
+  // p = fragPx / hexCircumradius. Hex spacing in p: SQRT3 horizontal,
+  // 3.0 vertical between rows of the SAME parity. The Inigo Quilez
+  // two-grid trick — older than the format wars and still sharper.
+  vec4 hexCentre(vec2 p) {
+    float SQRT3 = 1.7320508;
+    vec2 cell = vec2(SQRT3, 3.0);
+    vec2 a = mod(p + cell * 0.5, cell) - cell * 0.5;
+    vec2 b = mod(p, cell) - cell * 0.5;
+    vec2 gv = dot(a, a) < dot(b, b) ? a : b;
+    return vec4(gv, p - gv);
+  }
+
   // Chroma isolation — keep warm pixels coloured, grey the rest. The
   // warmness signal (precomputed in main with a spatial dilation pass)
   // does the gating; no separate chroma-weight rejection because grey
@@ -150,45 +197,82 @@ const FRAGMENT = /* glsl */ `
 
   void main() {
     vec2 fragPx = vUv * uResolution;
+    vec3 col;
 
-    // Direct broll sample — no per-cell averaging, no hex tessellation.
-    vec2 sampleUv = coverUv(vUv, uResolution, uTexSize);
-    vec3 col = texture2D(uTex, sampleUv).rgb;
+    if (uHexMode > 0.5) {
+      // Hex sequin path. The whole disk inherits one colour — the broll
+      // sampled at the hex centre — so the field reads as a tessellation
+      // of small uniform tiles, not a per-pixel grade.
+      vec2 p = fragPx / uHexSize;
+      vec4 h = hexCentre(p);
+      vec2 local = h.xy;
+      vec2 centrePx = h.zw * uHexSize;
 
-    // Spatial dilation — max warmness over a 9-tap neighborhood at
-    // uDilateRadius pixels. Cloud-covered or hazy bridge pixels inherit
-    // detection from clearer neighbors so the bridge stays continuous
-    // across weather edges instead of dropping out.
-    vec2 stp = vec2(uDilateRadius) / uResolution;
-    float w0 = warmness(col);
-    float w1 = warmness(texture2D(uTex, sampleUv + vec2(stp.x, 0.0)).rgb);
-    float w2 = warmness(texture2D(uTex, sampleUv - vec2(stp.x, 0.0)).rgb);
-    float w3 = warmness(texture2D(uTex, sampleUv + vec2(0.0, stp.y)).rgb);
-    float w4 = warmness(texture2D(uTex, sampleUv - vec2(0.0, stp.y)).rgb);
-    float w5 = warmness(texture2D(uTex, sampleUv + stp).rgb);
-    float w6 = warmness(texture2D(uTex, sampleUv - stp).rgb);
-    float w7 = warmness(texture2D(uTex, sampleUv + vec2(stp.x, -stp.y)).rgb);
-    float w8 = warmness(texture2D(uTex, sampleUv + vec2(-stp.x, stp.y)).rgb);
-    float maxW = max(
-      max(max(w0, w1), max(w2, w3)),
-      max(max(w4, w5), max(max(w6, w7), w8))
-    );
+      vec2 sampleUv = coverUv(centrePx / uResolution, uResolution, uTexSize);
+      vec3 sampled = texture2D(uTex, sampleUv).rgb;
+      sampled = desaturate(sampled, uSat);
+      sampled = lofiGrade(sampled, uLofi);
+      sampled = mix(sampled, uPaper, uFade);
 
-    col = chromaIsolate(col, maxW, uChroma);
-    col = desaturate(col, uSat);
-    col = lofiGrade(col, uLofi);
-    col = mix(col, uPaper, uFade);
+      // Disk mask within the hex.
+      float r = length(local);
+      float disk = 1.0 - smoothstep(uDiskRadius - uDiskEdge,
+                                    uDiskRadius + uDiskEdge, r);
 
-    // Paper grain — applied to the broll itself and to the vignette
-    // fallback so the texture stays continuous across the falloff.
+      // Metallic dome — a small, asymmetric highlight that drops the
+      // sequin into 3D. The opposite quadrant gets a faint shadow so
+      // the form does not feel pasted on.
+      vec2 hi = local - uDomeOffset;
+      float highlight = smoothstep(uDomeRadius, 0.0, length(hi));
+      highlight = highlight * highlight;
+
+      vec2 lo = local + uDomeOffset;
+      float shadow = smoothstep(uDomeRadius * 1.3, 0.0, length(lo));
+      shadow = shadow * 0.35;
+
+      vec3 sequin = sampled
+        + highlight * uDomeStrength * vec3(1.0)
+        - shadow    * uDomeStrength * vec3(1.0);
+      col = mix(uFabric, sequin, disk);
+
+    } else {
+      // Original per-pixel broll grade — kept so other compositions
+      // that import LofiDots as a backdrop still print as before.
+      vec2 sampleUv = coverUv(vUv, uResolution, uTexSize);
+      col = texture2D(uTex, sampleUv).rgb;
+
+      vec2 stp = vec2(uDilateRadius) / uResolution;
+      float w0 = warmness(col);
+      float w1 = warmness(texture2D(uTex, sampleUv + vec2(stp.x, 0.0)).rgb);
+      float w2 = warmness(texture2D(uTex, sampleUv - vec2(stp.x, 0.0)).rgb);
+      float w3 = warmness(texture2D(uTex, sampleUv + vec2(0.0, stp.y)).rgb);
+      float w4 = warmness(texture2D(uTex, sampleUv - vec2(0.0, stp.y)).rgb);
+      float w5 = warmness(texture2D(uTex, sampleUv + stp).rgb);
+      float w6 = warmness(texture2D(uTex, sampleUv - stp).rgb);
+      float w7 = warmness(texture2D(uTex, sampleUv + vec2(stp.x, -stp.y)).rgb);
+      float w8 = warmness(texture2D(uTex, sampleUv + vec2(-stp.x, stp.y)).rgb);
+      float maxW = max(
+        max(max(w0, w1), max(w2, w3)),
+        max(max(w4, w5), max(max(w6, w7), w8))
+      );
+
+      col = chromaIsolate(col, maxW, uChroma);
+      col = desaturate(col, uSat);
+      col = lofiGrade(col, uLofi);
+      col = mix(col, uPaper, uFade);
+    }
+
+    // Grain over both paths so the surface stays continuous.
     float grain = (hash(floor(fragPx / 1.4)) - 0.5) * uGrain;
     col += vec3(grain);
 
-    // Soft vignette pushes the corners back toward the paper tone.
-    vec3 paper = uPaper + vec3(grain);
-    vec2 p = vUv - 0.5;
-    float v = smoothstep(0.75, 0.2, length(p));
-    vec3 outCol = mix(col, paper, (1.0 - v) * uVignette);
+    // Vignette — falls toward fabric in hex mode, paper otherwise. The
+    // edge of the cloth and the edge of the paper are not the same edge.
+    vec3 vignetteTo = uHexMode > 0.5 ? uFabric : uPaper;
+    vignetteTo += vec3(grain);
+    vec2 vp = vUv - 0.5;
+    float v = smoothstep(0.75, 0.2, length(vp));
+    vec3 outCol = mix(col, vignetteTo, (1.0 - v) * uVignette);
 
     gl_FragColor = vec4(outCol, 1.0);
   }
@@ -200,9 +284,15 @@ interface DotPlaneProps {
   texture: THREE.Texture;
   width: number;
   height: number;
+  hexMode: boolean;
 }
 
-const DotPlane: React.FC<DotPlaneProps> = ({ texture, width, height }) => {
+const DotPlane: React.FC<DotPlaneProps> = ({
+  texture,
+  width,
+  height,
+  hexMode,
+}) => {
   const matRef = useRef<THREE.ShaderMaterial>(null);
 
   const texSize = useMemo(() => {
@@ -245,13 +335,26 @@ const DotPlane: React.FC<DotPlaneProps> = ({ texture, width, height }) => {
       },
       uBridgeTint: { value: BRIDGE_TINT },
       uDilateRadius: { value: DILATE_RADIUS },
+      uHexMode: { value: hexMode ? 1.0 : 0.0 },
+      uHexSize: { value: HEX_SIZE_PX },
+      uDiskRadius: { value: DISK_RADIUS },
+      uDiskEdge: { value: DISK_EDGE },
+      uDomeOffset: {
+        value: new THREE.Vector2(DOME_OFFSET[0], DOME_OFFSET[1]),
+      },
+      uDomeRadius: { value: DOME_RADIUS },
+      uDomeStrength: { value: DOME_STRENGTH },
+      uFabric: {
+        value: new THREE.Vector3(FABRIC[0], FABRIC[1], FABRIC[2]),
+      },
     }),
-    [texture, width, height, texSize],
+    [texture, width, height, texSize, hexMode],
   );
 
   if (matRef.current) {
     matRef.current.uniforms.uTex.value = texture;
     matRef.current.uniforms.uTexSize.value = texSize;
+    matRef.current.uniforms.uHexMode.value = hexMode ? 1.0 : 0.0;
   }
 
   return (
@@ -276,10 +379,18 @@ const RenderSource: React.FC<{
   src: string;
   width: number;
   height: number;
-}> = ({ src, width, height }) => {
+  hexMode: boolean;
+}> = ({ src, width, height, hexMode }) => {
   const texture = useOffthreadVideoTexture({ src });
   if (!texture) return null;
-  return <DotPlane texture={texture} width={width} height={height} />;
+  return (
+    <DotPlane
+      texture={texture}
+      width={width}
+      height={height}
+      hexMode={hexMode}
+    />
+  );
 };
 
 // Preview path uses a CanvasTexture fed by drawImage(videoElement, …) each
@@ -295,7 +406,8 @@ const PreviewSource: React.FC<{
   width: number;
   height: number;
   frame: number;
-}> = ({ videoRef, width, height, frame }) => {
+  hexMode: boolean;
+}> = ({ videoRef, width, height, frame, hexMode }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const textureRef = useRef<THREE.CanvasTexture | null>(null);
 
@@ -342,14 +454,22 @@ const PreviewSource: React.FC<{
   }, []);
 
   if (!textureRef.current) return null;
-  return <DotPlane texture={textureRef.current} width={width} height={height} />;
+  return (
+    <DotPlane
+      texture={textureRef.current}
+      width={width}
+      height={height}
+      hexMode={hexMode}
+    />
+  );
 };
 
 // ── Main composition ──────────────────────────────────────────────────
 
 export const LofiDots: React.FC<{
   skipFadeIn?: boolean;
-}> = ({ skipFadeIn = false }) => {
+  hexMode?: boolean;
+}> = ({ skipFadeIn = false, hexMode = false }) => {
   const frame = useCurrentFrame();
   const { width, height } = useVideoConfig();
   const env = useRemotionEnvironment();
@@ -363,8 +483,12 @@ export const LofiDots: React.FC<{
         easing: Easing.bezier(0.16, 1, 0.3, 1),
       });
 
+  const bg = hexMode
+    ? `rgb(${Math.round(FABRIC[0] * 255)}, ${Math.round(FABRIC[1] * 255)}, ${Math.round(FABRIC[2] * 255)})`
+    : PAPER;
+
   return (
-    <AbsoluteFill style={{ background: PAPER }}>
+    <AbsoluteFill style={{ background: bg }}>
       {!env.isRendering && (
         <Video
           ref={videoRef}
@@ -395,6 +519,7 @@ export const LofiDots: React.FC<{
               src={staticFile(VIDEO_SRC)}
               width={width}
               height={height}
+              hexMode={hexMode}
             />
           ) : (
             <PreviewSource
@@ -402,6 +527,7 @@ export const LofiDots: React.FC<{
               width={width}
               height={height}
               frame={frame}
+              hexMode={hexMode}
             />
           )}
         </ThreeCanvas>
