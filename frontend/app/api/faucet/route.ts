@@ -89,8 +89,12 @@ async function runVisionLeg(to: `0x${string}`, amount: number) {
       address: l3Usdc, abi: MINT_ABI, functionName: 'mint',
       args: [to, parsed],
     })
-    await pub.waitForTransactionReceipt({ hash, timeout: 30_000 })
-    leg.usdc = { hash, amount: `${amount} USDC` }
+    const receipt = await pub.waitForTransactionReceipt({ hash, timeout: 30_000 })
+    if (receipt.status !== 'success') {
+      leg.usdc = { error: `Mint reverted (status=${receipt.status})`, hash }
+    } else {
+      leg.usdc = { hash, amount: `${amount} USDC` }
+    }
   } catch (e: any) {
     leg.usdc = { error: e.message ?? 'L3 USDC mint failed' }
   }
@@ -100,8 +104,12 @@ async function runVisionLeg(to: `0x${string}`, amount: number) {
     const deployerBal = await pub.getBalance({ address: account.address })
     if (deployerBal > drip * 2n) {
       const hash = await wallet.sendTransaction({ to, value: drip })
-      await pub.waitForTransactionReceipt({ hash, timeout: 30_000 })
-      leg.gas = { hash, amount: `${L3_GAS_DRIP} GM` }
+      const receipt = await pub.waitForTransactionReceipt({ hash, timeout: 30_000 })
+      if (receipt.status !== 'success') {
+        leg.gas = { error: `GM drip reverted (status=${receipt.status})`, hash }
+      } else {
+        leg.gas = { hash, amount: `${L3_GAS_DRIP} GM` }
+      }
     } else {
       leg.gas = { error: 'Deployer low on GM' }
     }
@@ -174,7 +182,15 @@ async function runItpLeg(to: `0x${string}`, amount: number) {
   }
 
   if (receiptPromise) {
-    try { await receiptPromise } catch { /* receipt timeout — hash already returned */ }
+    try {
+      const receipt = await receiptPromise
+      if (receipt.status !== 'success') {
+        usdcResult = { error: `Settlement mint reverted (status=${receipt.status})`, hash: usdcResult.hash }
+      }
+    } catch (e: any) {
+      // Receipt timed out. We don't know status. Be honest about it.
+      usdcResult = { error: e.message ?? 'Settlement receipt timeout', hash: usdcResult.hash }
+    }
   }
   return { usdc: usdcResult, gas: gasResult }
 }

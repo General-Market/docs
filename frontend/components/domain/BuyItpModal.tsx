@@ -151,7 +151,12 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   const itpName = staticEntry?.name || userState.bridgedItpName || 'ITP'
   const itpSymbol = staticEntry?.ticker || userState.bridgedItpSymbol || ''
 
-  // L3 USDC balance (18 decimals)
+  // L3 USDC balance (18 decimals).
+  // Two independent sources: wagmi useReadContract via /api/rpc, and the
+  // data-node SSE feed. They read the same on-chain state but through
+  // different transports — if one lags or breaks, the other catches it.
+  // Display: take the max. Whichever is larger reflects a confirmed mint
+  // the other source hasn't seen yet.
   const { data: l3UsdcRaw, refetch: refetchL3Usdc } = useReadContract({
     address: INDEX_PROTOCOL.l3Usdc,
     abi: ERC20_ABI,
@@ -160,7 +165,10 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     chainId: indexL3.id,
     query: { enabled: !!address, refetchInterval: 5_000 },
   })
-  const usdcBalance = (l3UsdcRaw as bigint) ?? 0n
+  const wagmiBalance = (l3UsdcRaw as bigint) ?? 0n
+  const sseBalanceRaw = sseBalances?.usdc_l3
+  const sseBalance = sseBalanceRaw ? BigInt(sseBalanceRaw) : 0n
+  const usdcBalance = wagmiBalance > sseBalance ? wagmiBalance : sseBalance
 
   // L3 USDC allowance for the Index contract
   const { data: l3AllowanceRaw, refetch: refetchL3Allowance } = useReadContract({
@@ -249,11 +257,18 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
       const data = await res.json()
       if (data.success && !data.vision?.usdc?.error) {
         setApiMintSuccess(true)
-        // Refetch a few times so the zero-balance branch hides as the L3
-        // node reflects the new balance.
-        refetchL3Usdc()
-        setTimeout(refetchL3Usdc, 1500)
-        setTimeout(refetchL3Usdc, 4000)
+        // The receipt is confirmed by the time the API returns. The user's
+        // RPC view may still be one block behind. Poll every 1s for 30s
+        // — give up only after the chain has had ample time to surface
+        // the mint. Each refetch is a single eth_call; cost is negligible.
+        const start = Date.now()
+        const poll = () => {
+          refetchL3Usdc()
+          if (Date.now() - start < 30_000) {
+            setTimeout(poll, 1_000)
+          }
+        }
+        poll()
       }
     } catch {
       // Fallback to direct contract call (mint L3 USDC, 18 decimals)
