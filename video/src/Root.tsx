@@ -82,7 +82,8 @@ import {
 } from "./compositions/launch/theme";
 import { ParticleEmojiGravity } from "./scenes/ParticleAnimations";
 import { EndCard } from "./compositions/endcard/EndCard";
-import { LofiDots } from "./compositions/endcard/LofiDots";
+import { RectPixelate } from "./compositions/effects/RectPixelate";
+import { VIDEO_SRC as LOFI_BROLL_SRC } from "./compositions/endcard/LofiDots";
 import {
   TOTAL_FRAMES as ENDCARD_DURATION,
   FPS as ENDCARD_FPS,
@@ -100,18 +101,24 @@ const SHOW_SCENES = process.env.REMOTION_SHOW_SCENES === "1";
 
 const shorts: ShortConfig[] = [];
 
+// Standalone bench for RectPixelate — the broll, decimated into a grid
+// of small unicolour rectangles. The wrapper is the point; the broll
+// is just convenient signal to test it on.
+const LofiDotsRectBench: React.FC = () => (
+  <RectPixelate src={LOFI_BROLL_SRC} width={1920} height={1080} cellSize={12} />
+);
+
 export const RemotionRoot: React.FC = () => {
   return (
     <>
-      {/* ═══ LOFI DOTS — hex shader bench, full broll length (5m11s) ═══ */}
+      {/* ═══ LOFI DOTS — RectPixelate bench over the broll (5m11s) ═══ */}
       <Composition
         id="LofiDots"
-        component={LofiDots}
+        component={LofiDotsRectBench}
         durationInFrames={Math.round(311 * ENDCARD_FPS)}
         fps={ENDCARD_FPS}
         width={1920}
         height={1080}
-        defaultProps={{ hexMode: true }}
       />
 
       {/* ═══ REPLICATE ═══ */}

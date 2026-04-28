@@ -17,7 +17,6 @@ import {
   Audio,
   Easing,
   Img,
-  OffthreadVideo,
   Sequence,
   Video,
   interpolate,
@@ -47,6 +46,7 @@ import { TimedCascadeText } from "./TimedCascadeText";
 import { useZoom } from "./PunchZoom";
 import { Sequence02Diagrams } from "./diagrams/Sequence02Diagrams";
 import { FullscreenMarkets } from "./FullscreenMarkets";
+import { RectPixelate } from "../effects/RectPixelate";
 import { EndLogoReveal } from "./EndLogoReveal";
 
 const EASE_OUT = Easing.bezier(0.16, 1, 0.3, 1);
@@ -150,7 +150,10 @@ export const Sequence02: React.FC = () => {
       {/* Cold-blue scrim over the backdrop */}
       <AbsoluteFill style={{ background: "rgba(0, 14, 30, 0.42)" }} />
 
-      {/* Clean speaker video inside the animated rect — raw, step-zoomed */}
+      {/* Clean speaker video inside the animated rect — raw, step-zoomed.
+          The RectPixelate wrapper decimates the feed into a grid of small
+          unicolour rectangles. Zoom is baked into the sampler so cells
+          stay the same on screen while the underlying frame zooms in. */}
       <div
         style={{
           position: "absolute",
@@ -163,17 +166,12 @@ export const Sequence02: React.FC = () => {
           boxShadow: "0 40px 120px rgba(0, 0, 0, 0.55)",
         }}
       >
-        <OffthreadVideo
-          src={staticFile(SRC)}
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            transform: `scale(${zoomScale})`,
-            transformOrigin: "center center",
-            willChange: "transform",
-          }}
-          muted
+        <RectPixelate
+          src={SRC}
+          width={rect.w}
+          height={rect.h}
+          cellSize={12}
+          zoom={zoomScale}
         />
       </div>
 
