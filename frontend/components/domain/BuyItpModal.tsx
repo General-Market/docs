@@ -914,6 +914,18 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
                 <div className={`${glass.error} p-4 text-color-down`}>
                   <p className="font-medium">{t('error.title')}</p>
                   <p className="text-sm mt-1 break-all">{txError}</p>
+                  {/nonce/i.test(txError) && (
+                    <div className="mt-3 pt-3 border-t border-color-down/20 text-text-primary text-xs space-y-1">
+                      <p className="font-medium">Wallet nonce out of sync with the chain.</p>
+                      <p>The L3 was redeployed; your wallet still remembers old transactions. Reset to fix:</p>
+                      <ul className="list-disc pl-5 space-y-0.5">
+                        <li>MetaMask: Settings → Advanced → Clear activity tab data</li>
+                        <li>OKX / Rabby: Settings → Reset account</li>
+                        <li>Or remove this network from your wallet and re-add it</li>
+                      </ul>
+                      <p className="text-text-muted">Refresh the page after resetting.</p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1060,6 +1072,18 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
                 <div className={`${glass.error} p-4 text-color-down`}>
                   <p className="font-medium">{t('error.title')}</p>
                   <p className="text-sm mt-1 break-all">{txError}</p>
+                  {/nonce/i.test(txError) && (
+                    <div className="mt-3 pt-3 border-t border-color-down/20 text-text-primary text-xs space-y-1">
+                      <p className="font-medium">Wallet nonce out of sync with the chain.</p>
+                      <p>The L3 was redeployed; your wallet still remembers old transactions. Reset to fix:</p>
+                      <ul className="list-disc pl-5 space-y-0.5">
+                        <li>MetaMask: Settings → Advanced → Clear activity tab data</li>
+                        <li>OKX / Rabby: Settings → Reset account</li>
+                        <li>Or remove this network from your wallet and re-add it</li>
+                      </ul>
+                      <p className="text-text-muted">Refresh the page after resetting.</p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
