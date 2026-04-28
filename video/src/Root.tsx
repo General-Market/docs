@@ -14,6 +14,16 @@ import {
   sceneMetas,
 } from "./compositions/replicates/original/ReplicateComposition";
 import {
+  rainbowsPublicMeta,
+  rainbowsPublicSceneMetas,
+} from "./compositions/replicates/rainbows-public/RainbowsPublicComposition";
+import {
+  rainbowsFlashblocksMeta,
+  sceneMetasA as rainbowsFlashblocksScenesA,
+  sceneMetasB as rainbowsFlashblocksScenesB,
+  sceneMetasC as rainbowsFlashblocksScenesC,
+} from "./compositions/replicates/rainbows-flashblocks/RainbowsFlashblocksComposition";
+import {
   ofReplicateMeta,
   ofSceneMetas,
 } from "./compositions/replicates/ordinaryfolk/OFReplicateComposition";
@@ -103,6 +113,60 @@ export const RemotionRoot: React.FC = () => {
 
       {/* ═══ REPLICATE ═══ */}
       <Folder name="Replicate">
+        {/* --- Rainbows: Public.com adaptation --- */}
+        <Composition
+          id={rainbowsPublicMeta.id}
+          component={rainbowsPublicMeta.component}
+          durationInFrames={rainbowsPublicMeta.durationInFrames}
+          fps={rainbowsPublicMeta.fps}
+          width={rainbowsPublicMeta.width}
+          height={rainbowsPublicMeta.height}
+        />
+        {SHOW_SCENES && (
+          <Folder name="Rainbows-Public-Scenes">
+            {rainbowsPublicSceneMetas.map((meta) => (
+              <Composition
+                key={meta.id}
+                id={meta.id}
+                component={meta.component}
+                durationInFrames={meta.durationInFrames}
+                fps={meta.fps}
+                width={meta.width}
+                height={meta.height}
+              />
+            ))}
+          </Folder>
+        )}
+
+        {/* --- Rainbows: Flashblocks adaptation --- */}
+        <Composition
+          id={rainbowsFlashblocksMeta.id}
+          component={rainbowsFlashblocksMeta.component}
+          durationInFrames={rainbowsFlashblocksMeta.durationInFrames}
+          fps={rainbowsFlashblocksMeta.fps}
+          width={rainbowsFlashblocksMeta.width}
+          height={rainbowsFlashblocksMeta.height}
+        />
+        {SHOW_SCENES && (
+          <Folder name="Rainbows-Flashblocks-Scenes">
+            {[
+              ...rainbowsFlashblocksScenesA,
+              ...rainbowsFlashblocksScenesB,
+              ...rainbowsFlashblocksScenesC,
+            ].map((meta) => (
+              <Composition
+                key={meta.id}
+                id={meta.id}
+                component={meta.component}
+                durationInFrames={meta.durationInFrames}
+                fps={rainbowsFlashblocksMeta.fps}
+                width={rainbowsFlashblocksMeta.width}
+                height={rainbowsFlashblocksMeta.height}
+              />
+            ))}
+          </Folder>
+        )}
+
         {/* --- Wabi --- */}
         <Composition
           id={wabiMeta.id}
