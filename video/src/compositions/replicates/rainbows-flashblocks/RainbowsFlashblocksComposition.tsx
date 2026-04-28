@@ -1,66 +1,54 @@
 import React from "react";
 import { AbsoluteFill, Sequence } from "remotion";
-import { Scene01_Intro, Scene02_Numbers, Scene03_DarkGrid, Scene04_CubeExplode } from "./ScenesA";
-import { Scene05_Waiting, Scene06_Starburst, Scene07_TransactionQueue, Scene08_GridText } from "./ScenesB";
-import { Scene09_Experience, Scene10_LiveTestnet, Scene11_NewSpeed, Scene12_Finale } from "./ScenesC";
+import { Scene01_Hook, Scene02_TryRainbows, Scene03_CubeExplode } from "./ScenesA";
+import { Scene04_FilterAndPercent, Scene05_Manipulators } from "./ScenesB";
+import { Scene06_HonestTraders, Scene07_Protected, Scene08_FiveHundredK, Scene09_Finale } from "./ScenesC";
 
 /*
- * Rainbows — adapted from the Flashblocks replica skeleton
- * 1920x1080, 24fps, 893 frames (37.2s)
+ * Rainbows — script v2
+ * 1920x1080, 24fps, 864 frames (36s)
  *
  * Scene timeline (frame ranges):
- *   01  Intro     "When you want leverage / you trade perps."             0–48
- *   02  Numbers   "When you want volatility exposure / options."         48–96
- *   03  DarkGrid  "When you want better odds of winning / rainbows."     96–180
- *   04  Cube      silent visual beat                                    180–252
- *   05  Waiting   "We designed an additional / liquidity layer."        252–300
- *   08  Grid      "that filters out / illegal trading / activities"     300–360
- *   06  Burst     "70% / of your profits"                               360–432
- *   07  Queue     frontrunners / spoofers / illegal insiders / manipulators 432–540
- *   09  Circles   "Now."                                                540–588
- *   10  Testnet   "only you, with rainbows" / "best odds of winning"    588–672
- *   11  NewSpeed  "on / the assets / you always traded."                672–720
- *   12  Finale    "rainbows"                                            720–893
+ *   01  Hook              "You spent 10,000 hours / perfecting your trading strategies."   0–84
+ *   02  TryRainbows       "Then you should try / trading rainbows."                       84–156
+ *   03  CubeExplode       silent visual beat                                             156–228
+ *   04  FilterAndPercent  "Rainbows filters out illegal activities" + "70% of profits"   228–336
+ *   05  Manipulators      conveyor: frontrunners / spoofers / insiders / manipulators    336–444
+ *   06  HonestTraders     "Leaving the same amount of profits / to fewer honest traders." 444–528
+ *   07  Protected         "Trade the assets you've always traded." → "Protected."        528–624
+ *   08  FiveHundredK      "Plus 500,000 / assets you couldn't trade anywhere else."      624–720
+ *   09  Finale            "rainbows" + dark fade                                         720–864
  */
 
 export const RainbowsFlashblocksComposition: React.FC = () => {
   return (
     <AbsoluteFill style={{ backgroundColor: "#000" }}>
-      <Sequence from={0} durationInFrames={48} name="01 Intro">
-        <Scene01_Intro />
+      <Sequence from={0} durationInFrames={84} name="01 Hook">
+        <Scene01_Hook />
       </Sequence>
-      <Sequence from={48} durationInFrames={48} name="02 Numbers">
-        <Scene02_Numbers />
+      <Sequence from={84} durationInFrames={72} name="02 Try Rainbows">
+        <Scene02_TryRainbows />
       </Sequence>
-      <Sequence from={96} durationInFrames={84} name="03 Dark Grid">
-        <Scene03_DarkGrid />
+      <Sequence from={156} durationInFrames={72} name="03 Cube Explode">
+        <Scene03_CubeExplode />
       </Sequence>
-      <Sequence from={180} durationInFrames={72} name="04 Cube Explode">
-        <Scene04_CubeExplode />
+      <Sequence from={228} durationInFrames={108} name="04 Filter And Percent">
+        <Scene04_FilterAndPercent />
       </Sequence>
-      <Sequence from={252} durationInFrames={48} name="05 Waiting">
-        <Scene05_Waiting />
+      <Sequence from={336} durationInFrames={108} name="05 Manipulators">
+        <Scene05_Manipulators />
       </Sequence>
-      <Sequence from={300} durationInFrames={60} name="08 Filters Out">
-        <Scene08_GridText />
+      <Sequence from={444} durationInFrames={84} name="06 Honest Traders">
+        <Scene06_HonestTraders />
       </Sequence>
-      <Sequence from={360} durationInFrames={72} name="06 Starburst">
-        <Scene06_Starburst />
+      <Sequence from={528} durationInFrames={96} name="07 Protected">
+        <Scene07_Protected />
       </Sequence>
-      <Sequence from={432} durationInFrames={108} name="07 Transaction Queue">
-        <Scene07_TransactionQueue />
+      <Sequence from={624} durationInFrames={96} name="08 Five Hundred K">
+        <Scene08_FiveHundredK />
       </Sequence>
-      <Sequence from={540} durationInFrames={48} name="09 Experience">
-        <Scene09_Experience />
-      </Sequence>
-      <Sequence from={588} durationInFrames={84} name="10 Live Testnet">
-        <Scene10_LiveTestnet />
-      </Sequence>
-      <Sequence from={672} durationInFrames={48} name="11 New Speed">
-        <Scene11_NewSpeed />
-      </Sequence>
-      <Sequence from={720} durationInFrames={173} name="12 Finale">
-        <Scene12_Finale />
+      <Sequence from={720} durationInFrames={144} name="09 Finale">
+        <Scene09_Finale />
       </Sequence>
     </AbsoluteFill>
   );
@@ -72,7 +60,7 @@ export const rainbowsFlashblocksMeta = {
   width: 1920,
   height: 1080,
   fps: 24,
-  durationInFrames: 893,
+  durationInFrames: 864,
 };
 
 export { sceneMetasA } from "./ScenesA";

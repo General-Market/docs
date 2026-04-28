@@ -1,11 +1,10 @@
 import React from "react";
 import { AbsoluteFill } from "remotion";
 import { loadFont } from "@remotion/google-fonts/Inter";
-import { BlueGradient, LightGradient, DarkBg, SolidBlue, GridOverlay } from "../standrew/backgrounds";
+import { BlueGradient, DarkBg, SolidBlue, GridOverlay } from "../standrew/backgrounds";
 import { useGsapProxy } from "../standrew/gsapUtils";
 
 const { fontFamily } = loadFont("normal", { subsets: ["latin"], weights: ["400", "700", "800"] });
-const BLUE = "#0040FF";
 
 const baseText: React.CSSProperties = {
   fontFamily,
@@ -27,12 +26,12 @@ const center: React.CSSProperties = {
 };
 
 /* ═══════════════════════════════════════════════════════
-   Scene 01 — Intro  (48 frames = 2s @ 24fps)
-   "When you want leverage" → "you trade perps."
+   Scene 01 — Hook  (84 frames = 3.5s @ 24fps)
+   "You spent 10,000 hours" → "perfecting your trading strategies."
    ═══════════════════════════════════════════════════════ */
 
-const SCENE01_PHRASE_A = ["When", "you", "want", "leverage"] as const;
-const SCENE01_PHRASE_B = ["you", "trade", "perps."] as const;
+const SCENE01_PHRASE_A = ["You", "spent", "10,000", "hours"] as const;
+const SCENE01_PHRASE_B = ["perfecting", "your", "trading", "strategies."] as const;
 
 function buildScene01Proxies() {
   const init: Record<string, Record<string, number>> = {
@@ -50,22 +49,22 @@ function buildScene01Proxies() {
 
 const scene01Init = buildScene01Proxies();
 
-export const Scene01_Intro: React.FC = () => {
+export const Scene01_Hook: React.FC = () => {
   const s = useGsapProxy(
     (tl, p) => {
-      // "When" already visible. Rest of phrase A staggers in.
+      // "You" already visible. Rest stagger in.
       SCENE01_PHRASE_A.forEach((_, i) => {
         if (i === 0) return;
-        tl.to(p[`a_${i}`], { opacity: 1, y: 0, duration: 0.15, ease: "power2.out" }, 0.15 + i * 0.12);
+        tl.to(p[`a_${i}`], { opacity: 1, y: 0, duration: 0.18, ease: "power2.out" }, 0.2 + i * 0.22);
       });
 
-      // Phrase A fades out at 0.85s
-      tl.to(p.phraseA, { opacity: 0, duration: 0.18, ease: "power2.in" }, 0.85);
+      // Phrase A fades out at 1.7s
+      tl.to(p.phraseA, { opacity: 0, duration: 0.22, ease: "power2.in" }, 1.7);
 
-      // Phrase B fades in at 0.95s, words stagger
-      tl.to(p.phraseB, { opacity: 1, duration: 0.15, ease: "power2.out" }, 0.95);
+      // Phrase B fades in at 1.95s, words stagger
+      tl.to(p.phraseB, { opacity: 1, duration: 0.18, ease: "power2.out" }, 1.95);
       SCENE01_PHRASE_B.forEach((_, i) => {
-        tl.to(p[`b_${i}`], { opacity: 1, y: 0, duration: 0.15, ease: "power2.out" }, 0.95 + i * 0.18);
+        tl.to(p[`b_${i}`], { opacity: 1, y: 0, duration: 0.18, ease: "power2.out" }, 1.95 + i * 0.24);
       });
     },
     scene01Init,
@@ -77,12 +76,13 @@ export const Scene01_Intro: React.FC = () => {
       <div style={{ ...center, opacity: s.phraseA.opacity }}>
         {SCENE01_PHRASE_A.map((word, i) => {
           const proxy = s[`a_${i}`];
+          const isNumber = word === "10,000";
           return (
             <span
               key={i}
               style={{
                 ...baseText,
-                fontSize: 160,
+                fontSize: isNumber ? 200 : 145,
                 color: "#fff",
                 opacity: proxy.opacity,
                 transform: `translateY(${proxy.y}px)`,
@@ -101,7 +101,7 @@ export const Scene01_Intro: React.FC = () => {
               key={i}
               style={{
                 ...baseText,
-                fontSize: 200,
+                fontSize: 130,
                 color: "#fff",
                 opacity: proxy.opacity,
                 transform: `translateY(${proxy.y}px)`,
@@ -117,154 +117,33 @@ export const Scene01_Intro: React.FC = () => {
 };
 
 /* ═══════════════════════════════════════════════════════
-   Scene 02 — Numbers  (48 frames = 2s @ 24fps)
-   "When you want volatility exposure" → "you trade options."
-   Light gradient. Phase A small-ish, phase B big italic.
+   Scene 02 — TryRainbows  (72 frames = 3s @ 24fps)
+   Single-word flashes "Then" → "you should" → "try"
+   then big italic title slides in: "trading rainbows."
    ═══════════════════════════════════════════════════════ */
 
-const SCENE02_PHRASE_A = ["When", "you", "want", "volatility", "exposure"] as const;
-const SCENE02_PHRASE_B = ["you", "trade", "options."] as const;
-
-function buildScene02Proxies() {
-  const init: Record<string, Record<string, number>> = {
-    phraseA: { opacity: 1 },
-    phraseB: { opacity: 0 },
-  };
-  SCENE02_PHRASE_A.forEach((_, i) => {
-    init[`a_${i}`] = { opacity: 0, y: 15 };
-  });
-  SCENE02_PHRASE_B.forEach((_, i) => {
-    init[`b_${i}`] = { opacity: 0, y: 15 };
-  });
-  return init;
-}
-
-const scene02Init = buildScene02Proxies();
-
-export const Scene02_Numbers: React.FC = () => {
+export const Scene02_TryRainbows: React.FC = () => {
   const s = useGsapProxy(
     (tl, p) => {
-      // Phase A staggers in
-      SCENE02_PHRASE_A.forEach((_, i) => {
-        tl.to(p[`a_${i}`], { opacity: 1, y: 0, duration: 0.12, ease: "power2.out" }, i * 0.1);
-      });
-
-      // Phase A fades out at 0.85s
-      tl.to(p.phraseA, { opacity: 0, duration: 0.18, ease: "power2.in" }, 0.85);
-
-      // Phase B fades in at 0.95s
-      tl.to(p.phraseB, { opacity: 1, duration: 0.15, ease: "power2.out" }, 0.95);
-      SCENE02_PHRASE_B.forEach((_, i) => {
-        tl.to(p[`b_${i}`], { opacity: 1, y: 0, duration: 0.15, ease: "power2.out" }, 0.95 + i * 0.16);
-      });
-    },
-    scene02Init,
-  );
-
-  return (
-    <AbsoluteFill>
-      <LightGradient />
-
-      {/* Phase A — left-aligned */}
-      <div
-        style={{
-          position: "absolute",
-          top: "50%",
-          left: "8%",
-          transform: "translateY(-50%)",
-          maxWidth: "84%",
-          display: "flex",
-          flexWrap: "wrap",
-          gap: "0 22px",
-          opacity: s.phraseA.opacity,
-        }}
-      >
-        {SCENE02_PHRASE_A.map((word, i) => {
-          const proxy = s[`a_${i}`];
-          return (
-            <span
-              key={i}
-              style={{
-                ...baseText,
-                fontSize: 145,
-                color: BLUE,
-                opacity: proxy.opacity,
-                transform: `translateY(${proxy.y}px)`,
-              }}
-            >
-              {word}
-            </span>
-          );
-        })}
-      </div>
-
-      {/* Phase B — centered, large italic */}
-      <div
-        style={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          display: "flex",
-          flexWrap: "wrap",
-          justifyContent: "center",
-          gap: "0 28px",
-          opacity: s.phraseB.opacity,
-        }}
-      >
-        {SCENE02_PHRASE_B.map((word, i) => {
-          const proxy = s[`b_${i}`];
-          return (
-            <span
-              key={i}
-              style={{
-                ...baseText,
-                fontSize: 250,
-                color: BLUE,
-                opacity: proxy.opacity,
-                transform: `translateY(${proxy.y}px)`,
-              }}
-            >
-              {word}
-            </span>
-          );
-        })}
-      </div>
-    </AbsoluteFill>
-  );
-};
-
-/* ═══════════════════════════════════════════════════════
-   Scene 03 — DarkGrid  (84 frames = 3.5s @ 24fps)
-   "When" → "you" → "want" → "better odds" → title "you trade rainbows."
-   ═══════════════════════════════════════════════════════ */
-
-export const Scene03_DarkGrid: React.FC = () => {
-  const s = useGsapProxy(
-    (tl, p) => {
-      // "When" visible from the start, exits at 0.35s
-      tl.to(p.when, { opacity: 0, duration: 0.08, ease: "power2.in" }, 0.35);
-      // "you" enters at 0.35s, exits at 0.7s
-      tl.to(p.youFlash, { opacity: 1, y: 0, duration: 0.1, ease: "power2.out" }, 0.35);
-      tl.to(p.youFlash, { opacity: 0, duration: 0.08, ease: "power2.in" }, 0.7);
-      // "want" enters at 0.7s, exits at 1.0s
-      tl.to(p.want, { opacity: 1, y: 0, duration: 0.1, ease: "power2.out" }, 0.7);
-      tl.to(p.want, { opacity: 0, duration: 0.08, ease: "power2.in" }, 1.0);
-      // "better odds" enters at 1.0s
-      tl.to(p.better, { opacity: 1, y: 0, duration: 0.12, ease: "power2.out" }, 1.0);
+      // "Then" visible from start, exits at 0.45s
+      tl.to(p.then, { opacity: 0, duration: 0.1, ease: "power2.in" }, 0.45);
+      // "you should" enters at 0.5s, exits at 0.95s
+      tl.to(p.youShould, { opacity: 1, y: 0, duration: 0.12, ease: "power2.out" }, 0.5);
+      tl.to(p.youShould, { opacity: 0, duration: 0.1, ease: "power2.in" }, 0.95);
+      // "try" enters at 1.0s
+      tl.to(p.tryWord, { opacity: 1, y: 0, duration: 0.12, ease: "power2.out" }, 1.0);
 
       // Phase 1 cross-fades out at 1.5s
-      tl.to(p.phase1, { opacity: 0, duration: 0.15, ease: "power2.in" }, 1.5);
-      // Phase 2: title slides in from right at 1.6s
-      tl.to(p.phase2, { opacity: 1, duration: 0.15, ease: "power2.out" }, 1.6);
-      tl.to(p.title, { x: 0, duration: 0.4, ease: "power2.out" }, 1.6);
+      tl.to(p.phase1, { opacity: 0, duration: 0.18, ease: "power2.in" }, 1.5);
+      // Phase 2: title slides in from right at 1.65s, holds to end
+      tl.to(p.phase2, { opacity: 1, duration: 0.18, ease: "power2.out" }, 1.65);
+      tl.to(p.title, { x: 0, duration: 0.45, ease: "power2.out" }, 1.65);
     },
     {
       phase1: { opacity: 1 },
-      when: { opacity: 1, y: 0 },
-      youFlash: { opacity: 0, y: 15 },
-      want: { opacity: 0, y: 15 },
-      better: { opacity: 0, y: 15 },
+      then: { opacity: 1, y: 0 },
+      youShould: { opacity: 0, y: 15 },
+      tryWord: { opacity: 0, y: 15 },
       phase2: { opacity: 0 },
       title: { x: 50 },
     },
@@ -277,24 +156,19 @@ export const Scene03_DarkGrid: React.FC = () => {
 
       {/* Phase 1 — single-word flashes, centered */}
       <div style={{ ...center, opacity: s.phase1.opacity }}>
-        {s.when.opacity > 0.01 && (
-          <span style={{ ...baseText, fontStyle: "normal", position: "absolute", left: "50%", transform: `translate(-50%, ${s.when.y}px)`, fontSize: 145, color: "#fff", opacity: s.when.opacity, whiteSpace: "nowrap" }}>
-            When
+        {s.then.opacity > 0.01 && (
+          <span style={{ ...baseText, fontStyle: "normal", position: "absolute", left: "50%", transform: `translate(-50%, ${s.then.y}px)`, fontSize: 145, color: "#fff", opacity: s.then.opacity, whiteSpace: "nowrap" }}>
+            Then
           </span>
         )}
-        {s.youFlash.opacity > 0.01 && (
-          <span style={{ ...baseText, fontStyle: "normal", position: "absolute", left: "50%", transform: `translate(-50%, ${s.youFlash.y}px)`, fontSize: 145, color: "#fff", opacity: s.youFlash.opacity, whiteSpace: "nowrap" }}>
-            you
+        {s.youShould.opacity > 0.01 && (
+          <span style={{ ...baseText, fontStyle: "normal", position: "absolute", left: "50%", transform: `translate(-50%, ${s.youShould.y}px)`, fontSize: 145, color: "#fff", opacity: s.youShould.opacity, whiteSpace: "nowrap" }}>
+            you should
           </span>
         )}
-        {s.want.opacity > 0.01 && (
-          <span style={{ ...baseText, fontStyle: "normal", position: "absolute", left: "50%", transform: `translate(-50%, ${s.want.y}px)`, fontSize: 145, color: "#fff", opacity: s.want.opacity, whiteSpace: "nowrap" }}>
-            want
-          </span>
-        )}
-        {s.better.opacity > 0.01 && (
-          <span style={{ ...baseText, fontStyle: "normal", position: "absolute", left: "50%", transform: `translate(-50%, ${s.better.y}px)`, fontSize: 145, color: "#fff", opacity: s.better.opacity, whiteSpace: "nowrap" }}>
-            better odds of winning
+        {s.tryWord.opacity > 0.01 && (
+          <span style={{ ...baseText, fontStyle: "normal", position: "absolute", left: "50%", transform: `translate(-50%, ${s.tryWord.y}px)`, fontSize: 145, color: "#fff", opacity: s.tryWord.opacity, whiteSpace: "nowrap" }}>
+            try
           </span>
         )}
       </div>
@@ -311,7 +185,7 @@ export const Scene03_DarkGrid: React.FC = () => {
         }}
       >
         <span style={{ ...baseText, fontSize: 200, color: "#fff" }}>
-          you trade rainbows.
+          trading rainbows.
         </span>
       </div>
     </AbsoluteFill>
@@ -319,7 +193,7 @@ export const Scene03_DarkGrid: React.FC = () => {
 };
 
 /* ═══════════════════════════════════════════════════════
-   Scene 04 — CubeExplode  (72 frames = 3s @ 24fps)
+   Scene 03 — CubeExplode  (72 frames = 3s @ 24fps)
    Silent visual beat — cube assembles, holds, explodes.
    ═══════════════════════════════════════════════════════ */
 
@@ -375,13 +249,13 @@ const IsoCube: React.FC<{ size: number; opacity?: number }> = ({ size, opacity =
   );
 };
 
-type Scene04Proxies = {
+type Scene03Proxies = {
   cube: { opacity: number; rotX: number; rotY: number };
   cubeFade: { opacity: number };
   [key: `shard${number}`]: { x: number; y: number; rotation: number; opacity: number };
 };
 
-function buildScene04Proxies(): Scene04Proxies {
+function buildScene03Proxies(): Scene03Proxies {
   const base: Record<string, Record<string, number>> = {
     cube: { opacity: 0, rotX: 0, rotY: 0 },
     cubeFade: { opacity: 1 },
@@ -389,11 +263,11 @@ function buildScene04Proxies(): Scene04Proxies {
   for (let i = 0; i < 10; i++) {
     base[`shard${i}`] = { x: 0, y: 0, rotation: 0, opacity: 0 };
   }
-  return base as unknown as Scene04Proxies;
+  return base as unknown as Scene03Proxies;
 }
 
-export const Scene04_CubeExplode: React.FC = () => {
-  const s = useGsapProxy<Scene04Proxies>(
+export const Scene03_CubeExplode: React.FC = () => {
+  const s = useGsapProxy<Scene03Proxies>(
     (tl, p) => {
       // White square appears at 0.3s
       tl.to(p.cube, { opacity: 1, duration: 0.15, ease: "power2.out" }, 0.3);
@@ -405,14 +279,14 @@ export const Scene04_CubeExplode: React.FC = () => {
       // Explosion at 1.5s
       for (let i = 0; i < 10; i++) {
         const target = EXPLOSION_TARGETS[i];
-        const shard = p[`shard${i}` as keyof Scene04Proxies] as { x: number; y: number; rotation: number; opacity: number };
+        const shard = p[`shard${i}` as keyof Scene03Proxies] as { x: number; y: number; rotation: number; opacity: number };
         const offset = 1.5 + i * 0.02;
         tl.to(shard, { opacity: 1, duration: 0.08 }, offset);
         tl.to(shard, { x: target.x, y: target.y, rotation: target.rot, duration: 1.0, ease: "power2.out" }, offset);
         tl.to(shard, { opacity: 0, duration: 0.3, ease: "power2.in" }, offset + 0.8);
       }
     },
-    buildScene04Proxies(),
+    buildScene03Proxies(),
   );
 
   const showBigCube = s.cube.opacity > 0.01 && s.cubeFade.opacity > 0.01;
@@ -461,7 +335,7 @@ export const Scene04_CubeExplode: React.FC = () => {
         }}
       >
         {EXPLOSION_TARGETS.map((_, i) => {
-          const shard = s[`shard${i}` as keyof Scene04Proxies] as { x: number; y: number; rotation: number; opacity: number };
+          const shard = s[`shard${i}` as keyof Scene03Proxies] as { x: number; y: number; rotation: number; opacity: number };
           if (shard.opacity < 0.01) return null;
           return (
             <div
@@ -486,8 +360,7 @@ export const Scene04_CubeExplode: React.FC = () => {
 /* ── Meta ── */
 
 export const sceneMetasA = [
-  { id: "RB-Scene01", component: Scene01_Intro, durationInFrames: 48 },
-  { id: "RB-Scene02", component: Scene02_Numbers, durationInFrames: 48 },
-  { id: "RB-Scene03", component: Scene03_DarkGrid, durationInFrames: 84 },
-  { id: "RB-Scene04", component: Scene04_CubeExplode, durationInFrames: 72 },
+  { id: "RB-Scene01-Hook", component: Scene01_Hook, durationInFrames: 84 },
+  { id: "RB-Scene02-TryRainbows", component: Scene02_TryRainbows, durationInFrames: 72 },
+  { id: "RB-Scene03-CubeExplode", component: Scene03_CubeExplode, durationInFrames: 72 },
 ];
