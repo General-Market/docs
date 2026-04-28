@@ -12,18 +12,18 @@ import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
 
 /**
- * Scene 02 — Public.com product showcase (Round 5 — Three.js glass rewrite)
- * 364 frames at 29fps (~12.5s)
+ * Scene 02 — 364 frames at 29fps (~12.5s).
  *
- * Segments:
- * 1. Stocks      (0-28)
- * 2. ETFs        (28-68)
- * 3. Crypto      (68-96)
- * 4. Treasuries  (96-152)
- * 5. "with even more→" + phones (152-212)
- * 6. "One place" glass text      (212-258)
- * 7. "build your portfolio→"     (258-308)
- * 8. "the way you want." + phone (308-364)
+ * Eight segments. The three antagonists land in the noun-stack slots,
+ * the rest of the sentence flows around them:
+ *   1 (0-28):   "frontrunners"            — glass orb
+ *   2 (28-68):  "insider traders"         — glass donut
+ *   3 (68-96):  "market manipulators"     — glass coins
+ *   4 (96-152): "cost you —"              — glass pillar (transitional bridge)
+ *   5 (152-212):"we built a liquidity layer →" + three menacing phones
+ *   6 (212-258):"70%" glass payload + "of your profits."
+ *   7 (258-308):"that filters them out →" — desktop + phone
+ *   8 (308-364):"stays yours."             — phone rotation, blue close
  */
 
 const C = {
@@ -1009,14 +1009,14 @@ export const Scene02: React.FC = () => {
   return (
     <AbsoluteFill style={{ backgroundColor: C.bg }}>
 
-      {/* ── 1. Stocks (0-28) ── */}
+      {/* ── 1. frontrunners (0-28) ── */}
       {frame < 38 && (
         <Showcase
           frame={frame}
           fps={fps}
           start={0}
           dur={28}
-          label="We designed"
+          label="frontrunners"
           glassScene={<GlassOrbScene progress={0} frame={0} />}
           cards={
             <>
@@ -1067,14 +1067,14 @@ export const Scene02: React.FC = () => {
         />
       )}
 
-      {/* ── 2. ETFs (28-68) ── */}
+      {/* ── 2. insider traders (28-68) ── */}
       {frame >= 18 && frame < 78 && (
         <Showcase
           frame={frame}
           fps={fps}
           start={28}
           dur={40}
-          label="an additional"
+          label="insider traders"
           glassScene={<GlassDonutScene progress={0} frame={0} />}
           glassCamPos={[0, 0.2, 3.2]}
           cards={
@@ -1107,14 +1107,14 @@ export const Scene02: React.FC = () => {
         />
       )}
 
-      {/* ── 3. Crypto (68-96) ── */}
+      {/* ── 3. market manipulators (68-96) ── */}
       {frame >= 58 && frame < 106 && (
         <Showcase
           frame={frame}
           fps={fps}
           start={68}
           dur={28}
-          label="liquidity layer"
+          label="market manipulators"
           glassScene={<GlassCryptoScene progress={0} frame={0} />}
           glassCamPos={[0, 0, 3.0]}
           cards={
@@ -1127,14 +1127,14 @@ export const Scene02: React.FC = () => {
         />
       )}
 
-      {/* ── 4. Treasuries (96-152) ── */}
+      {/* ── 4. transitional bridge (96-152) ── */}
       {frame >= 86 && frame < 162 && (
         <Showcase
           frame={frame}
           fps={fps}
           start={96}
           dur={56}
-          label="that filters out"
+          label="cost you —"
           glassScene={<GlassPillarScene progress={0} frame={0} />}
           glassCamPos={[0, 0, 3.8]}
           cards={
@@ -1195,14 +1195,14 @@ export const Scene02: React.FC = () => {
               }}
             >
               <div style={{ fontSize: 48, fontWeight: 700, color: C.navy, fontFamily: F.h, lineHeight: 1.05 }}>
-                illegal trading
+                we built a
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontSize: 48, fontWeight: 700, color: C.navy, fontFamily: F.h }}>activities</span>
+                <span style={{ fontSize: 48, fontWeight: 700, color: C.navy, fontFamily: F.h }}>liquidity layer</span>
                 <Arrow opacity={interpolate(lf, [10, 18], [0, 1], CL)} size={32} />
               </div>
               <div style={{ marginTop: 14, fontSize: 22, fontWeight: 500, color: "#5e6275", fontFamily: F.b, letterSpacing: -0.2 }}>
-                costing you up to —
+                that filters out the thieves —
               </div>
             </div>
             {[0, 1, 2].map((i) => {
@@ -1438,12 +1438,12 @@ export const Scene02: React.FC = () => {
                 textAlign: "right",
               }}
             >
-              <div style={{ fontSize: 24, fontWeight: 500, color: "#5e6275", fontFamily: F.b, lineHeight: 1.15, letterSpacing: -0.2, marginBottom: 6 }}>frontrunners,</div>
+              <div style={{ fontSize: 24, fontWeight: 500, color: "#5e6275", fontFamily: F.b, lineHeight: 1.15, letterSpacing: -0.2, marginBottom: 6 }}>that filters</div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 10 }}>
-                <span style={{ fontSize: 64, fontWeight: 800, color: C.navy, fontFamily: F.h, letterSpacing: -2 }}>insider</span>
+                <span style={{ fontSize: 64, fontWeight: 800, color: C.navy, fontFamily: F.h, letterSpacing: -2 }}>them</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 10 }}>
-                <span style={{ fontSize: 64, fontWeight: 800, color: C.navy, fontFamily: F.h, letterSpacing: -2 }}>traders,</span>
+                <span style={{ fontSize: 64, fontWeight: 800, color: C.navy, fontFamily: F.h, letterSpacing: -2 }}>out —</span>
                 <Arrow opacity={interpolate(lf, [12, 18], [0, 1], CL)} size={32} />
               </div>
             </div>
@@ -1505,7 +1505,7 @@ export const Scene02: React.FC = () => {
           <div style={{ position: "absolute", inset: 0, opacity: overallOp, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: bgColor }}>
             <BgDots opacity={0.3 * (1 - bgBlue)} frame={frame} />
             <div style={{ position: "absolute", left: 60, top: "50%", transform: `translateY(-50%) translateX(${interpolate(leftEn, [0, 1], [-20, 0])}px)`, opacity: leftEn * textFade }}>
-              <span style={{ fontSize: 54, fontWeight: 800, color: C.navy, fontFamily: F.h, letterSpacing: -1.5 }}>market</span>
+              <span style={{ fontSize: 54, fontWeight: 800, color: C.navy, fontFamily: F.h, letterSpacing: -1.5 }}>stays</span>
             </div>
             <div style={{
               position: "relative",
@@ -1558,9 +1558,9 @@ export const Scene02: React.FC = () => {
                   </div>
                   <div style={{ marginTop: 10, background: "#f8f8fa", borderRadius: 10, padding: "8px 10px", position: "relative" }}>
                     <div style={{ fontSize: 9, color: "#999", fontFamily: F.b }}>Account action</div>
-                    <div style={{ fontSize: 8, color: C.navy, fontFamily: F.b, marginTop: 2, lineHeight: 1.3 }}>Transfer an existing portfolio into Public in less than 2 minutes</div>
+                    <div style={{ fontSize: 8, color: C.navy, fontFamily: F.b, marginTop: 2, lineHeight: 1.3 }}>Move your trades to a layer that filters thieves out.</div>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
-                      <span style={{ fontSize: 9, color: C.green, fontFamily: F.b, fontWeight: 600 }}>Transfer a portfolio</span>
+                      <span style={{ fontSize: 9, color: C.green, fontFamily: F.b, fontWeight: 600 }}>Switch layers</span>
                       <span style={{ fontSize: 10, color: "#ccc" }}>&#8250;</span>
                     </div>
                     <div style={{ position: "absolute", top: 8, right: 10, width: 7, height: 7, borderRadius: 4, background: C.blue }} />
@@ -1613,13 +1613,13 @@ export const Scene02: React.FC = () => {
                   fontWeight: 700,
                   letterSpacing: 2,
                 }}>
-                  PUBLIC
+                  rainbows
                 </div>
               </div>
               <div style={{ position: "absolute", bottom: -20, left: "50%", transform: "translateX(-50%)", width: shadowW, height: 20, borderRadius: "50%", background: `radial-gradient(ellipse, rgba(0,0,0,${shadowOp}) 0%, transparent 70%)` }} />
             </div>
             <div style={{ position: "absolute", right: 60, top: "50%", transform: `translateY(-50%) translateX(${interpolate(rightEn, [0, 1], [20, 0])}px)`, opacity: rightEn * textFade }}>
-              <span style={{ fontSize: 54, fontWeight: 800, color: C.navy, fontFamily: F.h, letterSpacing: -1.5 }}>manipulators.</span>
+              <span style={{ fontSize: 54, fontWeight: 800, color: C.navy, fontFamily: F.h, letterSpacing: -1.5 }}>yours.</span>
             </div>
           </div>
         );

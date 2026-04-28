@@ -15,21 +15,14 @@ const { fontFamily: dmSansFamily } = loadDM("normal", {
 });
 
 /**
- * Scene 04 — 27.56s to 30.1s (2.54s, ~76 frames at 30fps)
+ * Scene 04 — 81 frames at 29fps (~2.79s). End card.
  *
- * Public.com end card. Reference analysis (scene 12):
- *
- * Phase 1 (f0-7):   "public" centered, single blue dot bounces in below text
- * Phase 2 (f7-16):  dot fades out, logo mark (two circles) fades in to left of text
- * Phase 3 (f16-20): ".com" slides/fades in from right
- * Phase 4 (f20-28): tagline fades + slides up
- * Phase 5 (f24-32): app store badges fade + slide up
- * Phase 6 (f35-81): static hold (~1.6s)
- *
- * Timing is compressed and snappy — springs with moderate damping, not slow elegance.
+ * Phase 1: dot bounces in below the wordmark.
+ * Phase 2: dot drifts up-left, the rainbows logomark and wordmark settle in.
+ * Phase 3: tagline lands underneath — "the only trade that's actually yours."
  */
 
-const BLUE = "#042EF4";
+const BLUE = "#042FF4";
 const TEXT_COLOR = "#000000";
 const TAG_COLOR = "#717171";
 

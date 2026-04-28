@@ -9,23 +9,13 @@ import {
 import { loadFont } from "@remotion/google-fonts/Inter";
 
 /**
- * Scene 03 — 22.42s to 27.56s (5.14s, ~149 frames @ 29fps)
+ * Scene 03 — 153 frames at 29fps (~5.27s). Solid blue field.
  *
- * Three text phases on solid blue (#042FF4):
- *   Phase 1 (f0–31):   "All of your investing."  — dark underline under "your"
- *   Phase 2 (f41–72):  "All in one place."       — dark underline under "one place"
- *   Phase 3 (f81–end): "Get up to $10,000 when you / transfer an account."
- *                        — dark underline under "$10,000"
- *
- * Timing (recalculated from deep analysis @ 29fps):
- *   "All" first_seen=22.422, last_seen=23.357 → Phase 1: f0–f27, fade f27–f31
- *   "Allin" first_seen=23.824, last_seen=24.758 → Phase 2: f41–f68, fade f68–f72
- *   "Get" first_seen=25.225 → Phase 3 starts f81
- *   "transfer" first_seen=25.692 → Line 2 enters f95 (14-frame delay)
- *
- * Underlines: dark navy (#061230) 2px, draw left-to-right over 5 frames, ease-out-cubic.
- * Entry: spring slide-up (8px travel, damping 18) + 2-frame opacity snap.
- * Exit: 4-frame linear opacity fade + 4px upward lift. Phase 1 starts at full opacity.
+ * Three sentence phases land in turn, each with a dark underline drawn under
+ * the load-bearing word, and a circle-wipe to white exits the scene.
+ *   Phase 1: "Now: only you,"
+ *   Phase 2: "with the market giving you the best odds of winning,"
+ *   Phase 3: "and the assets / you always traded."
  */
 
 const FPS = 29;

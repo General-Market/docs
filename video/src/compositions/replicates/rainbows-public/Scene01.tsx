@@ -26,7 +26,7 @@ const { fontFamily } = loadFont("normal", {
   weights: ["300", "400", "500", "600", "700", "800"],
 });
 
-const BLUE = "#042FF3";
+const BLUE = "#042FF4";
 const WHITE = "#FFFFFF";
 
 // Audio beats for sync (first 10s): 0.55, 0.7, 1.1, 1.35, 1.5, 1.7, 1.75, 1.85, 2.5, 2.6
@@ -376,40 +376,37 @@ const TangledRibbon3D: React.FC<{ progress: number; breathe?: number }> = ({ pro
 };
 
 /**
- * Segment 2: "all over the place" with tangled ribbon
- * Reference: frame_005–007
- * Huge text filling viewport, dashes between "all" and "over",
- * 3D ribbon loops tangled across the center.
+ * Segment 2: "When you want volatility exposure — you trade options."
+ * Same prose pattern as SometimesSegment, with a 3D tangled ribbon backdrop —
+ * volatility as visible chaos, the sentence laid in front of it.
  */
 const AllOverSegment: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  // Exit dissolve — the ribbon and text fade out as phone enters (crossfade)
+  // Exit dissolve — ribbon + text fade out as phone enters (crossfade with PhoneSegment)
   const exitOpacity = interpolate(frame, [fps * 1.0, fps * 1.35], [1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  // Words: "volatility" top-left, "exposure" top-right, "trade" bottom-left, "options" bottom-right
-  // Enormous text filling the viewport edge-to-edge — the volatility/options beat.
-  const words = [
-    { text: "volatility", top: "-4%", left: "2%", textAlign: "left" as const },
-    { text: "exposure", top: "-4%", right: "2%", textAlign: "right" as const },
-    { text: "trade", bottom: "0%", left: "2%", textAlign: "left" as const },
-    { text: "options", bottom: "0%", right: "2%", textAlign: "right" as const },
+  // Sentence: "When you want volatility exposure" then bridge "— you trade options."
+  const words = ["When", "you", "want", "volatility", "exposure"];
+  // Tighter cadence than SometimesSegment — five words in ~1.0s vs four in ~1.15s
+  const wordStartFrames = [
+    0,
+    Math.round(fps * 0.18),
+    Math.round(fps * 0.36),
+    Math.round(fps * 0.54),
+    Math.round(fps * 0.78),
   ];
 
-  const wordDelays = [0, Math.round(fps * 0.06), Math.round(fps * 0.12), Math.round(fps * 0.18)];
-
-  // Ribbon draws on quickly with segmented feel
+  // Ribbon draws on as the sentence opens
   const ribbonProgress = interpolate(frame, [0, fps * 0.45], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.out(Easing.cubic),
   });
-
-  // Post-draw breathing — subtle oscillation after ribbon is fully drawn
   const breathe = ribbonProgress >= 0.95
     ? Math.sin((frame - fps * 0.45) * 0.15) * interpolate(
         frame,
@@ -423,96 +420,109 @@ const AllOverSegment: React.FC = () => {
     <AbsoluteFill style={{ opacity: exitOpacity }}>
       <FilmGrain opacity={0.03} />
 
-      {/* Tangled ribbon behind text — Three.js 3D tubes */}
+      {/* Tangled ribbon behind the sentence — Three.js 3D tubes */}
       <TangledRibbon3D progress={ribbonProgress} breathe={breathe} />
 
-      {/* Dashed line connecting "all" to "over" — thick dashes as in reference */}
+      {/* Sentence — left-of-center, mirrors SometimesSegment composition */}
       <div
         style={{
           position: "absolute",
-          top: "18%",
-          left: "10%",
-          width: "80%",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
           display: "flex",
+          flexWrap: "nowrap",
           gap: 12,
-          alignItems: "center",
-          justifyContent: "center",
-          opacity: interpolate(frame, [Math.round(fps * 0.08), Math.round(fps * 0.2)], [0, 0.9], {
-            extrapolateLeft: "clamp",
-            extrapolateRight: "clamp",
-          }),
+          alignItems: "baseline",
+          whiteSpace: "nowrap",
         }}
       >
-        {Array.from({ length: 10 }).map((_, i) => (
-          <div
-            key={i}
-            style={{
-              width: 60,
-              height: 6,
-              background: "rgba(255,255,255,0.95)",
-              borderRadius: 3,
-            }}
-          />
-        ))}
+        {words.map((word, i) => {
+          const localFrame = Math.max(0, frame - wordStartFrames[i]);
+          const wordSpring = spring({
+            frame: localFrame,
+            fps,
+            config: { damping: 12, mass: 0.8, stiffness: 120 },
+          });
+          const wordOpacity = interpolate(
+            frame,
+            [wordStartFrames[i], wordStartFrames[i] + Math.round(fps * 0.08)],
+            [0, 1],
+            { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+          );
+          const t = Math.min(1, wordSpring);
+          const wordX = bezier2(t, 25, -8, 0);
+          const wordY = bezier2(t, 30, -5, 0);
+          const wobX = noise2D("vex" + i, frame * 0.04, i * 7.3) * 3.5;
+          const wobY = noise2D("vey" + i, frame * 0.04, i * 3.1) * 3;
+          const prevT = Math.min(1, spring({ frame: Math.max(0, localFrame - 1), fps, config: { damping: 12, mass: 0.8, stiffness: 120 } }));
+          const prevX = bezier2(prevT, 25, -8, 0);
+          const prevY = bezier2(prevT, 30, -5, 0);
+          const vel = Math.abs(wordX - prevX) + Math.abs(wordY - prevY);
+          const isAccent = word === "volatility" || word === "exposure";
+          return (
+            <span
+              key={word}
+              style={{
+                fontFamily,
+                fontSize: isAccent ? 60 : 50,
+                fontWeight: isAccent ? 700 : 400,
+                color: WHITE,
+                opacity: wordOpacity,
+                transform: `translate(${wordX + wobX}px, ${wordY + wobY}px)`,
+                letterSpacing: word === "When" ? 0.5 : -0.3,
+                filter: motionBlurFilter(vel),
+                textShadow: "0 4px 20px rgba(0,0,0,0.25)",
+              }}
+            >
+              {word}
+            </span>
+          );
+        })}
+        {/* Bridge dash + "you trade options." reveal */}
+        {(() => {
+          const bridgeStart = wordStartFrames[4] + Math.round(fps * 0.18);
+          const bridgeEnd = wordStartFrames[4] + Math.round(fps * 0.4);
+          const bridgeT = interpolate(frame, [bridgeStart, bridgeEnd], [0, 1], {
+            extrapolateLeft: "clamp", extrapolateRight: "clamp",
+          });
+          const bridgeX = bezier2(bridgeT, -20, -5, 0);
+          const bridgeY = bezier2(bridgeT, 12, -4, 0);
+          const bridgeWobX = noise2D("vebx", frame * 0.04, 0) * 2.5;
+          const bridgeWobY = noise2D("veby", frame * 0.04, 0) * 2;
+          const bridgePrevT = interpolate(frame - 1, [bridgeStart, bridgeEnd], [0, 1], {
+            extrapolateLeft: "clamp", extrapolateRight: "clamp",
+          });
+          const bridgePrevX = bezier2(bridgePrevT, -20, -5, 0);
+          const bridgeVel = Math.abs(bridgeX - bridgePrevX);
+          return (
+            <span
+              style={{
+                fontFamily,
+                fontSize: 42,
+                fontWeight: 500,
+                color: WHITE,
+                opacity: interpolate(frame, [bridgeStart, bridgeStart + Math.round(fps * 0.1)], [0, 1], {
+                  extrapolateLeft: "clamp", extrapolateRight: "clamp",
+                }),
+                transform: `translate(${bridgeX + bridgeWobX}px, ${bridgeY + bridgeWobY}px)`,
+                filter: motionBlurFilter(bridgeVel),
+                whiteSpace: "nowrap",
+                textShadow: "0 4px 20px rgba(0,0,0,0.25)",
+              }}
+            >
+              — you trade options.
+            </span>
+          );
+        })()}
       </div>
-
-      {/* Big text: "all over the place" — bezier arc entrances, non-axis-aligned */}
-      {words.map((w, i) => {
-        const delay = wordDelays[i];
-        const localF = Math.max(0, frame - delay);
-        const wordSpring = spring({
-          frame: localF,
-          fps,
-          config: { damping: 12, mass: 0.7, stiffness: 100 },
-        });
-        // Each word enters from a different diagonal angle
-        const angles = [
-          { sx: -40, sy: 45, cx: -15, cy: -10 },   // all: from bottom-left arc
-          { sx: 35, sy: 40, cx: 10, cy: -8 },       // over: from bottom-right arc
-          { sx: -30, sy: -40, cx: -12, cy: 8 },     // the: from top-left arc
-          { sx: 40, sy: -35, cx: 15, cy: 10 },      // place: from top-right arc
-        ];
-        const a = angles[i];
-        const t = Math.min(1, wordSpring);
-        const bx = bezier2(t, a.sx, a.cx, 0);
-        const by = bezier2(t, a.sy, a.cy, 0);
-        const wobX = noise2D("aox" + i, frame * 0.035, i * 5.7) * 4;
-        const wobY = noise2D("aoy" + i, frame * 0.035, i * 2.9) * 3.5;
-        // Velocity for motion blur
-        const prevT = Math.min(1, spring({ frame: Math.max(0, localF - 1), fps, config: { damping: 12, mass: 0.7, stiffness: 100 } }));
-        const prevBx = bezier2(prevT, a.sx, a.cx, 0);
-        const prevBy = bezier2(prevT, a.sy, a.cy, 0);
-        const vel = Math.abs(bx - prevBx) + Math.abs(by - prevBy);
-        const posStyle: React.CSSProperties = {
-          position: "absolute",
-          ...(w.top ? { top: w.top } : {}),
-          ...(w.bottom ? { bottom: w.bottom } : {}),
-          ...(w.left ? { left: w.left } : {}),
-          ...(w.right ? { right: w.right } : {}),
-          fontFamily,
-          fontSize: 110,
-          fontWeight: 800,
-          color: WHITE,
-          opacity: wordSpring,
-          transform: `translate(${bx + wobX}px, ${by + wobY}px)`,
-          lineHeight: 0.9,
-          letterSpacing: -3,
-          textShadow: "0 4px 20px rgba(0,0,0,0.15)",
-          filter: motionBlurFilter(vel),
-        };
-        return (
-          <div key={w.text} style={posStyle}>
-            {w.text}
-          </div>
-        );
-      })}
     </AbsoluteFill>
   );
 };
 
 /**
  * Single phone mockup — reusable for both the centered phone and the grid.
- * Shows public.com logo with dynamic island, side buttons, and bezel.
+ * Shows the rainbows logomark with dynamic island, side buttons, and bezel.
  */
 // Screen variant types for grid phones
 type ScreenVariant = "logo" | "treasury" | "holdings" | "chart" | "buy" | "research" | "live" | "about" | "statements";
@@ -585,7 +595,7 @@ const PhoneScreenContent: React.FC<{ variant: ScreenVariant; width: number }> = 
       return (
         <div style={{ width: "100%", padding: `${fs(0.15)}px ${fs(0.06)}px ${fs(0.06)}px`, display: "flex", flexDirection: "column", alignItems: "center" }}>
           <div style={{ width: fs(0.18), height: fs(0.18), borderRadius: "50%", background: "linear-gradient(135deg, rgba(160,170,200,0.5), rgba(140,150,180,0.3))", border: `3px solid rgba(0,20,80,0.1)` }} />
-          <div style={{ ...shared, fontSize: fs(0.03), fontWeight: 600, marginTop: fs(0.02) }}>Public Live</div>
+          <div style={{ ...shared, fontSize: fs(0.03), fontWeight: 600, marginTop: fs(0.02) }}>Rainbows Live</div>
           {[75, 60].map((w, j) => (
             <div key={j} style={{ width: `${w}%`, height: fs(0.015), background: "rgba(0,20,80,0.06)", borderRadius: 2, marginTop: fs(0.01) }} />
           ))}
@@ -621,7 +631,7 @@ const PhoneScreenContent: React.FC<{ variant: ScreenVariant; width: number }> = 
             <div style={{ width: width * 0.022, height: width * 0.022, borderRadius: "50%", background: BLUE }} />
           </div>
           <span style={{ fontFamily, fontSize: width * 0.069, fontWeight: 600, color: "#0a0a2e", letterSpacing: -0.5 }}>
-            public.com
+            rainbows
           </span>
         </div>
       );
@@ -731,7 +741,7 @@ const PhoneMockup: React.FC<{
 };
 
 /**
- * Segment 3: Phone mockup with public.com → tilts → grid of identical 3D phones
+ * Segment 3: Phone mockup with rainbows wordmark → tilts → grid of identical 3D phones
  * Reference: frame_008–014
  * Phone enters centered, tilts with perspective, then zooms out to reveal
  * a 5x3 grid of identical phones in slight isometric perspective.
@@ -1177,7 +1187,7 @@ const OnePlaceSegment: React.FC = () => {
             alignItems: "flex-start",
           }}
         >
-          {/* Bridge phrase above — "When you want better odds of winning —" */}
+          {/* Bridge phrase above — "When you want better odds of winning, you trade —" */}
           <div
             style={{
               fontFamily,
@@ -1191,7 +1201,7 @@ const OnePlaceSegment: React.FC = () => {
               whiteSpace: "nowrap",
             }}
           >
-            When you want better odds of winning —
+            When you want better odds of winning, you trade —
           </div>
           {/* Glass "rainbows" — iridescent crystal */}
           <div
@@ -1283,16 +1293,13 @@ const OnePlaceSegment: React.FC = () => {
 /* EverythingSegment removed — now integrated into OnePlaceSegment as shockwave reveal */
 
 /**
- * Scene 01 — 0.0s to ~10.1s (301 frames at 29fps)
+ * Scene 01 — 301 frames at 29fps (~10.4s).
  *
- * Timeline aligned to deep analysis scene changes:
- * Scene 1: 0–2.34s (frames 0–68): "Sometimes investing can feel →"
- * Scene 2: 2.34–3.74s (frames 68–108): "all over the place" + ribbon
- * Scene 3: 3.74–4.2s (frames 108–122): transition to phone
- * Scene 4: 4.2–5.14s (frames 122–149): phone with public.com
- * Scene 5: 5.14–7.01s (frames 149–203): phone isometric grid
- * Scene 6: 7.01–8.41s (frames 203–244): "One place"
- * Scene 7: 8.41–10.28s (frames 244–298): "invest in" → "everything"
+ * Three sentences in three beats:
+ *   Beat 1 (Segment 1): "When you want leverage — you trade perps."
+ *   Beat 2 (Segment 2): "When you want volatility exposure — you trade options."
+ *   Beat 3 (Segment 4): "When you want better odds of winning, you trade — rainbows."
+ * Segment 3 is the phone-grid bridge between beats 2 and 3.
  */
 export const Scene01: React.FC = () => {
   return (

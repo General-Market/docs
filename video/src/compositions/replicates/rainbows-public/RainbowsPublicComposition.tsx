@@ -14,10 +14,10 @@ export const RainbowsPublicComposition: React.FC = () => {
       <Sequence key={"scene-2"} from={301} durationInFrames={364} name="Scene 02">
         <Scene02 />
       </Sequence>
-      <Sequence key={"scene-3"} from={666} durationInFrames={153} name="Scene 03">
+      <Sequence key={"scene-3"} from={665} durationInFrames={153} name="Scene 03">
         <Scene03 />
       </Sequence>
-      <Sequence key={"scene-4"} from={820} durationInFrames={81} name="Scene 04">
+      <Sequence key={"scene-4"} from={818} durationInFrames={81} name="Scene 04">
         <Scene04 />
       </Sequence>
     </AbsoluteFill>
