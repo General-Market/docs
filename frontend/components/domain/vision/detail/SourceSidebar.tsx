@@ -101,7 +101,11 @@ export function SourceSidebar({ currentSourceId, category, side }: SourceSidebar
           style={{ background: 'linear-gradient(to bottom, transparent, white)' }}
         />
 
-        {/* Source cards + CTA — single contiguous block, centered, no dead space */}
+        {/* Source cards + CTA — disabled. The user wanted the b-roll alone
+            on the sidebars, with no panels stacked over it. Kept here in
+            comment form so we can put it back without re-deriving the
+            layout (sidebarSources slicing, count chip, Explore CTA).
+
         <div className="absolute inset-0 flex flex-col items-center justify-center px-4 py-6">
           <div className="flex flex-col items-center gap-3 w-full">
             {sidebarSources.map(source => {
@@ -129,7 +133,6 @@ export function SourceSidebar({ currentSourceId, category, side }: SourceSidebar
               )
             })}
 
-            {/* CTA — sits directly beneath the source cards, never orphaned */}
             <Link
               href="/vision"
               className="w-full bg-white/90 hover:bg-white rounded-lg py-3 text-center text-[12px] font-black uppercase tracking-wider text-black transition-colors mt-1"
@@ -138,6 +141,7 @@ export function SourceSidebar({ currentSourceId, category, side }: SourceSidebar
             </Link>
           </div>
         </div>
+        */}
       </div>
     </div>
   )
