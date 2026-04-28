@@ -472,11 +472,40 @@ interface OnboardingCompassProps {
   onBotDeploy: () => void
 }
 
-const POSITION_KEY = 'onboarding_compass_offset'
+// v2 — anchor flipped from bottom-right to bottom-left. Stale offsets from
+// the right-anchored version would translate the card off the left edge,
+// so the version bump invalidates them cleanly.
+const POSITION_KEY = 'onboarding_compass_offset_v2'
 
 interface PositionOffset {
   dx: number
   dy: number
+}
+
+/**
+ * Clamp a (dx, dy) offset to a rect-and-viewport. Returns offsets that
+ * place the widget fully inside the viewport with `margin` px of breathing
+ * room on every edge. The previous "80 px visible" logic produced ugly
+ * half-states where only the CTA showed at the top of the screen — now
+ * the whole card is always on canvas.
+ */
+function clampOffsetToViewport(
+  dx: number,
+  dy: number,
+  vw: number,
+  vh: number,
+  widgetW: number,
+  widgetH: number,
+  margin: number = 12,
+): PositionOffset {
+  // Base anchor: left-3 bottom-3 → top-left at (margin, vh - margin - widgetH).
+  const dxMax = Math.max(0, vw - margin * 2 - widgetW)
+  // Negative dy lifts the card off the bottom; the floor is "top edge at margin".
+  const dyMin = Math.min(0, -(vh - margin * 2 - widgetH))
+  return {
+    dx: Math.max(0, Math.min(dx, dxMax)),
+    dy: Math.max(dyMin, Math.min(dy, 0)),
+  }
 }
 
 function readSavedOffset(): PositionOffset {
@@ -486,32 +515,17 @@ function readSavedOffset(): PositionOffset {
     if (!raw) return { dx: 0, dy: 0 }
     const parsed = JSON.parse(raw)
     if (typeof parsed?.dx === 'number' && typeof parsed?.dy === 'number') {
-      // Pre-clamp using a conservative widget-size estimate. The post-paint
-      // useEffect clamp uses the real bounding rect, but if a saved offset
-      // is catastrophic (e.g. -2000 from a previous large monitor) the
-      // widget paints fully off-screen on the first frame; sometimes the
-      // recovery clamp doesn't fully restore visibility before the user
-      // sees a missing widget. This belt-and-braces clamp at read time
-      // means the first paint is already on-canvas.
-      const widgetW = 300
-      const widgetH = 220
-      const minVisible = 80
-      const vw = window.innerWidth
-      const vh = window.innerHeight
-      // Base anchor: left-3 bottom-3 → top-left at (12, vh-12-widgetH).
-      const baseLeft = 12
-      const baseTop = vh - 12 - widgetH
-      let dx = parsed.dx
-      let dy = parsed.dy
-      const left = baseLeft + dx
-      const top = baseTop + dy
-      const right = left + widgetW
-      const bottom = top + widgetH
-      if (right < minVisible) dx += minVisible - right
-      else if (left > vw - minVisible) dx -= left - (vw - minVisible)
-      if (bottom < minVisible) dy += minVisible - bottom
-      else if (top > vh - minVisible) dy -= top - (vh - minVisible)
-      return { dx, dy }
+      // Pre-clamp using a conservative widget-size estimate. Even before
+      // the post-paint useEffect can read the real rect, the first frame
+      // is on-canvas.
+      return clampOffsetToViewport(
+        parsed.dx,
+        parsed.dy,
+        window.innerWidth,
+        window.innerHeight,
+        300,
+        220,
+      )
     }
   } catch {
     // fall through
@@ -558,25 +572,25 @@ export function OnboardingCompass({ state, onVaultDeposit, onBotDeploy }: Onboar
 
   /**
    * Clamp the current drag offset against the actual rendered rect of the
-   * widget. Runs on drag-end and on viewport resize so a saved offset from
-   * a previous (larger) screen can't keep the card stranded off-canvas
-   * after the user opens the same page on a smaller monitor or rotates
-   * a phone.
+   * widget so the entire card always fits in the viewport (12 px margin).
+   * Runs on drag-end and on viewport resize. The earlier "80 px visible"
+   * version produced ugly half-states where only the CTA peeked over the
+   * header on a small viewport — now the widget is always fully visible.
    */
   const clampToViewport = useCallback(() => {
     if (typeof window === 'undefined') return false
     const el = containerRef.current
     if (!el) return false
     const rect = el.getBoundingClientRect()
-    const minVisible = 80
+    const margin = 12
     const vw = window.innerWidth
     const vh = window.innerHeight
-    const overflowRight = Math.max(0, rect.right - vw + 8)
-    const overflowLeft = Math.max(0, minVisible - rect.right)
-    const overflowBottom = Math.max(0, rect.bottom - vh + 8)
-    const overflowTop = Math.max(0, minVisible - rect.bottom)
-    const adjX = overflowRight ? -overflowRight : overflowLeft
-    const adjY = overflowBottom ? -overflowBottom : overflowTop
+    let adjX = 0
+    let adjY = 0
+    if (rect.right > vw - margin) adjX = (vw - margin) - rect.right
+    else if (rect.left < margin) adjX = margin - rect.left
+    if (rect.bottom > vh - margin) adjY = (vh - margin) - rect.bottom
+    else if (rect.top < margin) adjY = margin - rect.top
     if (adjX) dragX.set(dragX.get() + adjX)
     if (adjY) dragY.set(dragY.get() + adjY)
     return !!(adjX || adjY)
