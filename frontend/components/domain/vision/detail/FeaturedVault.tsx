@@ -102,19 +102,19 @@ export function FeaturedVault({ sourceId }: FeaturedVaultProps) {
 
   if (sortedFunds.length === 0) {
     return (
-      <div className="border bg-terminal-dark border border-white/[0.06] p-8 text-center">
+      <Link
+        href="/build-bot"
+        className="block border bg-terminal-dark border border-white/[0.06] p-8 text-center hover:border-white/20 hover:bg-terminal-dark/80 transition-colors"
+      >
         <div className="text-[14px] font-black text-white/90 mb-2">No bots yet</div>
         <p className="text-[12px] text-white/40 mb-5">
           This source has no automated strategies. Be the first.
         </p>
-        <Link
-          href="/build-bot"
-          className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-none bg-white/[0.06] border border-white/[0.08] text-[12px] font-bold text-white/80 hover:bg-white/[0.1] hover:text-white transition-colors"
-        >
+        <span className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-none bg-white/[0.06] border border-white/[0.08] text-[12px] font-bold text-white/80">
           BUILD YOUR BOT
           <span className="text-[10px]">&rarr;</span>
-        </Link>
-      </div>
+        </span>
+      </Link>
     )
   }
 
@@ -128,7 +128,18 @@ export function FeaturedVault({ sourceId }: FeaturedVaultProps) {
   return (
     <div className="space-y-4">
       {/* Featured vault hero */}
-      <div className="border bg-white border border-border-light p-6">
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => setSelectedVault(featuredVault)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            setSelectedVault(featuredVault)
+          }
+        }}
+        className="border bg-white border border-border-light p-6 cursor-pointer hover:border-black/40 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
+      >
         <div className="text-[10px] font-bold tracking-[0.12em] text-text-muted uppercase mb-3">
           Top Performing Bot
         </div>
@@ -167,13 +178,13 @@ export function FeaturedVault({ sourceId }: FeaturedVaultProps) {
 
         <div className="flex items-center gap-2 mb-4">
           <button
-            onClick={() => setSelectedVault(featuredVault)}
+            onClick={(e) => {
+              e.stopPropagation()
+              setSelectedVault(featuredVault)
+            }}
             className="px-5 py-2 rounded-none bg-black text-white text-[12px] font-bold hover:bg-black/80 transition-colors"
           >
             DEPOSIT
-          </button>
-          <button className="px-5 py-2 rounded-none border border-border-light text-[12px] font-bold text-text-secondary hover:bg-black/[0.03] transition-colors">
-            DETAILS
           </button>
         </div>
 
@@ -185,6 +196,7 @@ export function FeaturedVault({ sourceId }: FeaturedVaultProps) {
           </p>
           <Link
             href="/build-bot"
+            onClick={(e) => e.stopPropagation()}
             className="shrink-0 ml-4 px-4 py-1.5 rounded-none bg-white/[0.06] border border-white/[0.08] text-[11px] font-bold text-white/80 hover:bg-white/[0.1] hover:text-white transition-colors"
           >
             START &rarr;
@@ -231,17 +243,17 @@ export function FeaturedVault({ sourceId }: FeaturedVaultProps) {
             })}
 
             {/* Create CTA card */}
-            <div className="shrink-0 w-[200px] rounded-none border border-white/[0.06] bg-terminal-dark p-4 flex flex-col items-center justify-center text-center">
+            <Link
+              href="/build-bot"
+              className="shrink-0 w-[200px] rounded-none border border-white/[0.06] bg-terminal-dark p-4 flex flex-col items-center justify-center text-center hover:border-white/20 hover:bg-terminal-dark/80 transition-colors"
+            >
               <div className="text-[12px] font-bold text-white/80 leading-snug mb-3">
                 You have an edge?<br />Prove it.
               </div>
-              <Link
-                href="/build-bot"
-                className="px-4 py-1.5 rounded-none bg-white/[0.06] border border-white/[0.08] text-[11px] font-bold text-white/80 hover:bg-white/[0.1] hover:text-white transition-colors"
-              >
+              <span className="px-4 py-1.5 rounded-none bg-white/[0.06] border border-white/[0.08] text-[11px] font-bold text-white/80">
                 BUILD YOUR BOT
-              </Link>
-            </div>
+              </span>
+            </Link>
           </div>
         </div>
       )}
