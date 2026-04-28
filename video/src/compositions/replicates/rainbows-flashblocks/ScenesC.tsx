@@ -1,8 +1,9 @@
 import React from "react";
-import { AbsoluteFill } from "remotion";
+import { AbsoluteFill, Sequence } from "remotion";
 import { loadFont } from "@remotion/google-fonts/Inter";
 import { useGsapProxy } from "../standrew/gsapUtils";
 import {
+  BrollGridBg,
   DynamicBlue,
   DynamicLight,
   DynamicSolidBlue,
@@ -10,6 +11,7 @@ import {
   MegaGridBg,
   WordCascade,
   ZoomedBg,
+  type BrollCategory,
   type CascadeWord,
 } from "./dynamics";
 
@@ -32,7 +34,7 @@ const baseText: React.CSSProperties = {
 
 const SCENE06_DURATION = 84;
 const SCENE06_PHASE1 = ["Leaving", "the", "same", "amount", "of", "profits"] as const;
-const SCENE06_PHASE2 = ["to", "fewer", "honest", "traders."] as const;
+const SCENE06_PHASE2 = ["to", "fewer", "honest", "traders"] as const;
 
 function buildScene06Proxies() {
   const init: Record<string, Record<string, number>> = {
@@ -184,7 +186,7 @@ export const Scene06_HonestTraders: React.FC = () => {
    ═══════════════════════════════════════════════════════ */
 
 const SCENE07_DURATION = 96;
-const SCENE07_PHASE1 = ["Trade", "the", "assets", "you've", "always", "traded."] as const;
+const SCENE07_PHASE1 = ["Trade", "the", "assets", "you've", "always", "traded"] as const;
 
 function buildScene07Proxies() {
   const init: Record<string, Record<string, number>> = {
@@ -276,7 +278,7 @@ export const Scene07_Protected: React.FC = () => {
               whiteSpace: "nowrap",
             }}
           >
-            Protected.
+            Protected
           </span>
         </div>
       </AbsoluteFill>
@@ -300,7 +302,7 @@ const SCENE08_WORDS: CascadeWord[] = [
   { atFrame: 45, text: "couldn't",  br: true },
   { atFrame: 54, text: "trade" },
   { atFrame: 60, text: "anywhere" },
-  { atFrame: 67, text: "else." },
+  { atFrame: 67, text: "else" },
 ];
 
 export const Scene08_FiveHundredK: React.FC = () => {
@@ -330,13 +332,52 @@ export const Scene08_FiveHundredK: React.FC = () => {
 };
 
 /* ═══════════════════════════════════════════════════════
-   Scene 09 — Finale  (144 frames = 6s)
+   Scene 09 — BrollCycle  (96 frames = 4s @ 24fps)
+   Mirror of Sequence02 0:57–1:00 broll system. Placeholder
+   colored cells now; real broll will play in the grid on render.
+   Hard cuts between four categories at 24-frame intervals.
+   ═══════════════════════════════════════════════════════ */
+
+const SCENE09_DURATION = 96;
+const BROLL_CYCLE: { category: BrollCategory; durationInFrames: number }[] = [
+  { category: "twitch", durationInFrames: 24 },
+  { category: "pumpfun", durationInFrames: 24 },
+  { category: "animals", durationInFrames: 24 },
+  { category: "movies", durationInFrames: 24 },
+];
+
+export const Scene09_BrollCycle: React.FC = () => {
+  let from = 0;
+  return (
+    <AbsoluteFill>
+      <ZoomedBg duration={SCENE09_DURATION}>
+        {BROLL_CYCLE.map(({ category, durationInFrames }) => {
+          const segment = (
+            <Sequence
+              key={category}
+              from={from}
+              durationInFrames={durationInFrames}
+              name={`broll-${category}`}
+            >
+              <BrollGridBg category={category} />
+            </Sequence>
+          );
+          from += durationInFrames;
+          return segment;
+        })}
+      </ZoomedBg>
+    </AbsoluteFill>
+  );
+};
+
+/* ═══════════════════════════════════════════════════════
+   Scene 10 — Finale  (144 frames = 6s)
    "rainbows" + dark fade
    ═══════════════════════════════════════════════════════ */
 
-const SCENE09_DURATION = 144;
+const SCENE10_DURATION = 144;
 
-export const Scene09_Finale: React.FC = () => {
+export const Scene10_Finale: React.FC = () => {
   const s = useGsapProxy(
     (tl, p) => {
       tl.to(p.title, { opacity: 1, y: 0, duration: 0.35, ease: "power2.out" }, 0.0);
@@ -352,7 +393,7 @@ export const Scene09_Finale: React.FC = () => {
 
   return (
     <AbsoluteFill>
-      <ZoomedBg duration={SCENE09_DURATION}>
+      <ZoomedBg duration={SCENE10_DURATION}>
         <DynamicBlue />
       </ZoomedBg>
 
@@ -406,5 +447,6 @@ export const sceneMetasC = [
   { id: "RB-Scene06-HonestTraders", component: Scene06_HonestTraders, durationInFrames: SCENE06_DURATION },
   { id: "RB-Scene07-Protected", component: Scene07_Protected, durationInFrames: SCENE07_DURATION },
   { id: "RB-Scene08-FiveHundredK", component: Scene08_FiveHundredK, durationInFrames: SCENE08_DURATION },
-  { id: "RB-Scene09-Finale", component: Scene09_Finale, durationInFrames: SCENE09_DURATION },
+  { id: "RB-Scene09-BrollCycle", component: Scene09_BrollCycle, durationInFrames: SCENE09_DURATION },
+  { id: "RB-Scene10-Finale", component: Scene10_Finale, durationInFrames: SCENE10_DURATION },
 ];

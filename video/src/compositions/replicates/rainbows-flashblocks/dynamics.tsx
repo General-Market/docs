@@ -10,6 +10,7 @@ import {
 } from "remotion";
 import { noise2D } from "@remotion/noise";
 import { SOURCES } from "../../launch/data/sources";
+import { PLACEHOLDER_COLORS } from "../../launch/brollAssets";
 
 /* ═══════════════════════════════════════════════════════
    Dynamic backgrounds — gradients that drift, breathe, and
@@ -183,10 +184,10 @@ export const HexGridOverlay: React.FC<{
    "inherits" the zoom and decelerates out of it.
    ═══════════════════════════════════════════════════════ */
 
-const ENTRY_FRAMES = 14;
-const EXIT_FRAMES = 7;
-const ENTRY_SCALE = 1.05;
-const EXIT_SCALE = 1.04;
+const ENTRY_FRAMES = 18;
+const EXIT_FRAMES = 9;
+const ENTRY_SCALE = 1.22;
+const EXIT_SCALE = 1.18;
 
 export function useBackgroundZoom(durationInFrames: number): number {
   const frame = useCurrentFrame();
@@ -297,6 +298,93 @@ export const MegaGridBg: React.FC<{ cols?: number; rows?: number }> = ({
       </div>
 
       {/* Soft vignette */}
+      <AbsoluteFill
+        style={{
+          background:
+            "radial-gradient(ellipse at center, rgba(0,0,0,0) 30%, rgba(0,0,0,0.45) 100%)",
+        }}
+      />
+    </>
+  );
+};
+
+/* ═══════════════════════════════════════════════════════
+   BrollGridBg — placeholder-tile version of the per-category
+   broll grid from sequence02. Real broll plays in these cells
+   on render; for now they hold solid colors from PLACEHOLDER_COLORS.
+   ═══════════════════════════════════════════════════════ */
+
+export type BrollCategory = "twitch" | "pumpfun" | "movies" | "animals";
+
+export const BrollGridBg: React.FC<{
+  category: BrollCategory;
+  cols?: number;
+  rows?: number;
+}> = ({ category, cols = 8, rows = 6 }) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const scrollY = (frame / fps) * MEGA_SCROLL_PX_PER_SEC;
+  const colors = PLACEHOLDER_COLORS[category] ?? ["#444"];
+  const cellW = 100 / cols;
+  const cellH = 100 / rows;
+
+  const cells: { x: number; y: number; i: number }[] = [];
+  let idx = 0;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      cells.push({ x: c * cellW, y: r * cellH, i: idx });
+      idx++;
+    }
+  }
+
+  return (
+    <>
+      <AbsoluteFill style={{ backgroundColor: "#ffffff" }} />
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          perspective: 1800,
+          perspectiveOrigin: "50% 45%",
+        }}
+      >
+        <AbsoluteFill
+          style={{
+            filter: "blur(8px)",
+            overflow: "hidden",
+            transform: `rotateX(${MEGA_TILT_X}deg) scale(${MEGA_GRID_SCALE}) translateY(${-scrollY}px)`,
+            transformStyle: "preserve-3d",
+          }}
+        >
+          {cells.map(({ x, y, i }) => (
+            <div
+              key={i}
+              style={{
+                position: "absolute",
+                left: `${x}%`,
+                top: `${y}%`,
+                width: `${cellW}%`,
+                height: `${cellH}%`,
+                backgroundColor: colors[i % colors.length],
+                overflow: "hidden",
+                padding: 1.5,
+                boxSizing: "border-box",
+              }}
+            >
+              <div
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  borderRadius: 4,
+                  overflow: "hidden",
+                  position: "relative",
+                }}
+              />
+            </div>
+          ))}
+        </AbsoluteFill>
+      </div>
+
       <AbsoluteFill
         style={{
           background:

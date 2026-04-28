@@ -32,7 +32,7 @@ const center: React.CSSProperties = {
 
 const SCENE01_DURATION = 84;
 const SCENE01_PHRASE_A = ["You", "spent", "10,000", "hours"] as const;
-const SCENE01_PHRASE_B = ["perfecting", "your", "trading", "strategies."] as const;
+const SCENE01_PHRASE_B = ["perfecting", "your", "trading", "strategies"] as const;
 
 function buildScene01Proxies() {
   const init: Record<string, Record<string, number>> = {
@@ -184,7 +184,7 @@ export const Scene02_TryRainbows: React.FC = () => {
         }}
       >
         <span style={{ ...baseText, fontSize: 175, color: "#fff" }}>
-          trading rainbows.
+          trading rainbows
         </span>
       </div>
     </AbsoluteFill>

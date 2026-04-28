@@ -2,22 +2,29 @@ import React from "react";
 import { AbsoluteFill, Sequence } from "remotion";
 import { Scene01_Hook, Scene02_TryRainbows, Scene03_CubeExplode } from "./ScenesA";
 import { Scene04_FilterAndPercent, Scene05_Manipulators } from "./ScenesB";
-import { Scene06_HonestTraders, Scene07_Protected, Scene08_FiveHundredK, Scene09_Finale } from "./ScenesC";
+import {
+  Scene06_HonestTraders,
+  Scene07_Protected,
+  Scene08_FiveHundredK,
+  Scene09_BrollCycle,
+  Scene10_Finale,
+} from "./ScenesC";
 
 /*
- * Rainbows — script v2
- * 1920x1080, 24fps, 864 frames (36s)
+ * Rainbows — script v3
+ * 1920x1080, 24fps, 960 frames (40s)
  *
  * Scene timeline (frame ranges):
- *   01  Hook              "You spent 10,000 hours / perfecting your trading strategies."   0–84
- *   02  TryRainbows       "Then you should try / trading rainbows."                       84–156
+ *   01  Hook              "You spent 10,000 hours / perfecting your trading strategies"   0–84
+ *   02  TryRainbows       "Then you should try / trading rainbows"                        84–156
  *   03  CubeExplode       silent visual beat                                             156–228
  *   04  FilterAndPercent  "Rainbows filters out illegal activities" + "70% of profits"   228–336
  *   05  Manipulators      conveyor: frontrunners / spoofers / insiders / manipulators    336–444
- *   06  HonestTraders     "Leaving the same amount of profits / to fewer honest traders." 444–528
- *   07  Protected         "Trade the assets you've always traded." → "Protected."        528–624
- *   08  FiveHundredK      "Plus 500,000 / assets you couldn't trade anywhere else."      624–720
- *   09  Finale            "rainbows" + dark fade                                         720–864
+ *   06  HonestTraders     "Leaving the same amount of profits / to fewer honest traders" 444–528
+ *   07  Protected         "Trade the assets you've always traded" → "Protected"          528–624
+ *   08  FiveHundredK      "Plus 500,000 / assets you couldn't trade anywhere else"       624–720
+ *   09  BrollCycle        twitch / pumpfun / animals / movies broll grids                720–816
+ *   10  Finale            "rainbows" + dark fade                                         816–960
  */
 
 export const RainbowsFlashblocksComposition: React.FC = () => {
@@ -47,8 +54,11 @@ export const RainbowsFlashblocksComposition: React.FC = () => {
       <Sequence from={624} durationInFrames={96} name="08 Five Hundred K">
         <Scene08_FiveHundredK />
       </Sequence>
-      <Sequence from={720} durationInFrames={144} name="09 Finale">
-        <Scene09_Finale />
+      <Sequence from={720} durationInFrames={96} name="09 Broll Cycle">
+        <Scene09_BrollCycle />
+      </Sequence>
+      <Sequence from={816} durationInFrames={144} name="10 Finale">
+        <Scene10_Finale />
       </Sequence>
     </AbsoluteFill>
   );
@@ -60,7 +70,7 @@ export const rainbowsFlashblocksMeta = {
   width: 1920,
   height: 1080,
   fps: 24,
-  durationInFrames: 864,
+  durationInFrames: 960,
 };
 
 export { sceneMetasA } from "./ScenesA";
