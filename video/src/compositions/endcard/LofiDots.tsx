@@ -2,11 +2,10 @@
  * LofiDots — two paths, one file. With hexMode=false (default), the
  * broll is graded per pixel: chroma isolation for the red bridge, the
  * lofi tone-curve, paper grain, vignette. With hexMode=true, the broll
- * is decimated onto a hex tessellation — each cell takes one sample
- * from the centre, draws an inset disk, and lays a metallic highlight
- * across it. The standalone /LofiDots Composition turns hexMode on;
- * other callers keep the broll backdrop. A grid of small mirrors
- * watching a sky they will never share.
+ * is decimated onto a hex tessellation — each hexagon takes one sample
+ * from its centre and prints flat, separated from its neighbours by a
+ * thin fabric line. The standalone /LofiDots Composition turns hexMode
+ * on; other callers keep the broll backdrop.
  */
 
 import React, { useEffect, useMemo, useRef } from "react";
@@ -62,23 +61,16 @@ const BRIDGE_RED: [number, number, number] = [0.86, 0.16, 0.18];
 // 0 = keep original red color, 1 = force pure BRIDGE_RED. Mid keeps texture.
 const BRIDGE_TINT = 0.55;
 
-// ── Hex sequin knobs ──────────────────────────────────────────────────
-// Circumradius of one hexagon, in source pixels. The grid is built so
-// every cell shares this exact size — small printer-like tessellation.
+// ── Hex tile knobs ────────────────────────────────────────────────────
+// Circumradius of one hexagon, in source pixels. Every cell shares it.
 const HEX_SIZE_PX = 22;
-// Inset disk drawn inside each hex, in units of the circumradius.
-// 1.0 would touch neighbours; 0.78 leaves a clean fabric gap.
-const DISK_RADIUS = 0.78;
-// Anti-aliased rim width on the disk, in the same units.
-const DISK_EDGE = 0.05;
-// Position of the metallic highlight inside each disk, in the same units.
-// y up — so a positive y plus negative x lands on the upper-left.
-const DOME_OFFSET: [number, number] = [-0.22, 0.24];
-// Radius of the highlight falloff. Smaller = tighter glint.
-const DOME_RADIUS = 0.42;
-// Highlight intensity. 1 saturates the disk to white at the centre.
-const DOME_STRENGTH = 0.65;
-// Fabric colour visible between sequins. The black behind the cloth.
+// Inset from the hex edge, in units of the circumradius. 0 = perfect
+// tessellation; a small positive value carves a thin gap that makes
+// each hex read as a tile rather than a pixel of a giant image.
+const HEX_INSET = 0.05;
+// Anti-aliased width of the gap edge, same units. Keep small.
+const HEX_EDGE = 0.012;
+// Colour of the gap between hexes. Honest black — the cloth showing.
 const FABRIC: [number, number, number] = [0.045, 0.045, 0.05];
 
 // YouTube extract — the actual cloud broll.
@@ -116,11 +108,8 @@ const FRAGMENT = /* glsl */ `
 
   uniform float uHexMode;
   uniform float uHexSize;
-  uniform float uDiskRadius;
-  uniform float uDiskEdge;
-  uniform vec2  uDomeOffset;
-  uniform float uDomeRadius;
-  uniform float uDomeStrength;
+  uniform float uHexInset;
+  uniform float uHexEdge;
   uniform vec3  uFabric;
 
   varying vec2 vUv;
@@ -177,6 +166,14 @@ const FRAGMENT = /* glsl */ `
     return vec4(gv, p - gv);
   }
 
+  // Signed distance to a pointy-top hexagon of circumradius 1, centred
+  // at the origin. Negative inside, zero on edge, positive outside.
+  float hexDist(vec2 p) {
+    float APOTHEM = 0.8660254;
+    vec2 q = abs(p);
+    return max(q.x - APOTHEM, q.x * 0.5 + q.y * APOTHEM - APOTHEM);
+  }
+
   // Chroma isolation — keep warm pixels coloured, grey the rest. The
   // warmness signal (precomputed in main with a spatial dilation pass)
   // does the gating; no separate chroma-weight rejection because grey
@@ -200,9 +197,9 @@ const FRAGMENT = /* glsl */ `
     vec3 col;
 
     if (uHexMode > 0.5) {
-      // Hex sequin path. The whole disk inherits one colour — the broll
-      // sampled at the hex centre — so the field reads as a tessellation
-      // of small uniform tiles, not a per-pixel grade.
+      // Hex tile path. Each hexagon takes one colour — the broll
+      // sampled at its centre — and prints flat. A thin fabric line
+      // between tiles lets the eye see the tessellation; that is all.
       vec2 p = fragPx / uHexSize;
       vec4 h = hexCentre(p);
       vec2 local = h.xy;
@@ -214,26 +211,10 @@ const FRAGMENT = /* glsl */ `
       sampled = lofiGrade(sampled, uLofi);
       sampled = mix(sampled, uPaper, uFade);
 
-      // Disk mask within the hex.
-      float r = length(local);
-      float disk = 1.0 - smoothstep(uDiskRadius - uDiskEdge,
-                                    uDiskRadius + uDiskEdge, r);
-
-      // Metallic dome — a small, asymmetric highlight that drops the
-      // sequin into 3D. The opposite quadrant gets a faint shadow so
-      // the form does not feel pasted on.
-      vec2 hi = local - uDomeOffset;
-      float highlight = smoothstep(uDomeRadius, 0.0, length(hi));
-      highlight = highlight * highlight;
-
-      vec2 lo = local + uDomeOffset;
-      float shadow = smoothstep(uDomeRadius * 1.3, 0.0, length(lo));
-      shadow = shadow * 0.35;
-
-      vec3 sequin = sampled
-        + highlight * uDomeStrength * vec3(1.0)
-        - shadow    * uDomeStrength * vec3(1.0);
-      col = mix(uFabric, sequin, disk);
+      float d = hexDist(local);
+      float fill = 1.0 - smoothstep(-uHexInset - uHexEdge,
+                                    -uHexInset + uHexEdge, d);
+      col = mix(uFabric, sampled, fill);
 
     } else {
       // Original per-pixel broll grade — kept so other compositions
@@ -337,13 +318,8 @@ const DotPlane: React.FC<DotPlaneProps> = ({
       uDilateRadius: { value: DILATE_RADIUS },
       uHexMode: { value: hexMode ? 1.0 : 0.0 },
       uHexSize: { value: HEX_SIZE_PX },
-      uDiskRadius: { value: DISK_RADIUS },
-      uDiskEdge: { value: DISK_EDGE },
-      uDomeOffset: {
-        value: new THREE.Vector2(DOME_OFFSET[0], DOME_OFFSET[1]),
-      },
-      uDomeRadius: { value: DOME_RADIUS },
-      uDomeStrength: { value: DOME_STRENGTH },
+      uHexInset: { value: HEX_INSET },
+      uHexEdge: { value: HEX_EDGE },
       uFabric: {
         value: new THREE.Vector3(FABRIC[0], FABRIC[1], FABRIC[2]),
       },
