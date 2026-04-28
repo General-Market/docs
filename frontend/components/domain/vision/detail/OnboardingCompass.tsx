@@ -155,6 +155,39 @@ function pickNearest(selector: string): Element | null {
 }
 
 /**
+ * Rotation period for {@link pickRotating}. Lives at module scope so the
+ * arrow's tick loop and the corner widget's CTA agree on which card is
+ * "current" when the click fires.
+ */
+const ROTATE_PERIOD_MS = 1500
+
+/**
+ * Picks one of the visible matches, cycling deterministically through the
+ * set every {@link ROTATE_PERIOD_MS}. The arrow's Y position naturally
+ * varies as the chosen card changes, so the user reads it as "look around
+ * the grid" rather than "stuck on the centered one." Falls back to
+ * {@link pickNearest} if nothing is visible (no cards in viewport yet).
+ */
+function pickRotating(selector: string, rotateMs: number = ROTATE_PERIOD_MS): Element | null {
+  if (typeof document === 'undefined' || typeof window === 'undefined') return null
+  const all = Array.from(document.querySelectorAll(selector))
+  if (all.length === 0) return null
+  const vw = window.innerWidth
+  const vh = window.innerHeight
+  const visible: Element[] = []
+  for (const el of all) {
+    const r = el.getBoundingClientRect()
+    if (r.width === 0 || r.height === 0) continue
+    if (r.bottom > 0 && r.top < vh && r.right > 0 && r.left < vw) {
+      visible.push(el)
+    }
+  }
+  if (visible.length === 0) return pickNearest(selector)
+  const idx = Math.floor(Date.now() / rotateMs) % visible.length
+  return visible[idx]
+}
+
+/**
  * Bottom edge of the page's sticky header in viewport coordinates. This is
  * the wall the arrow refuses to cross — anything pinned to the top of the
  * page would obscure the bubble otherwise.
@@ -182,7 +215,7 @@ function CompassPointer({ selectors, nearestOf }: CompassPointerProps) {
     const tick = () => {
       raf = 0
       const el = nearestOf
-        ? pickNearest(nearestOf)
+        ? pickRotating(nearestOf)
         : selectors && selectors.length > 0
           ? pickTarget(selectors)
           : null
@@ -213,9 +246,10 @@ function CompassPointer({ selectors, nearestOf }: CompassPointerProps) {
 
     // Re-poll occasionally — modals/panels may mount or unmount and we want
     // the selector to re-evaluate without waiting for a scroll event.
-    // The nearestOf mode also benefits from this: cards layout-shift after
-    // images load, and we want the arrow to snap to the new closest one.
-    const poll = window.setInterval(schedule, 400)
+    // In rotating (nearestOf) mode we tick faster so the rotation cadence
+    // — which switches targets every {@link ROTATE_PERIOD_MS} — feels
+    // sharp instead of laggy.
+    const poll = window.setInterval(schedule, nearestOf ? 220 : 400)
 
     window.addEventListener('scroll', schedule, true)
     window.addEventListener('resize', schedule)
@@ -468,9 +502,9 @@ export function OnboardingCompass({ state, onVaultDeposit, onBotDeploy }: Onboar
   const handleAction = useCallback(() => {
     switch (state.currentStep) {
       case 'select': {
-        // Scroll the nearest card into view. The pointer math is identical
-        // to what the arrow does — the action button just commits to it.
-        const el = pickNearest('[data-onboarding-target="market-card"]')
+        // Commit to whichever card the arrow is currently aimed at. The
+        // arrow uses the same rotating picker, so click and pointer agree.
+        const el = pickRotating('[data-onboarding-target="market-card"]')
         el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
         break
       }
@@ -557,10 +591,12 @@ export function OnboardingCompass({ state, onVaultDeposit, onBotDeploy }: Onboar
         // the user has dragged the widget somewhere unexpected.
         data-onboarding-target="widget"
         className={[
-          // Compact card anchored bottom-right; same shape on mobile so the
-          // drag affordance is consistent across viewports.
+          // Compact card anchored bottom-left; same shape on mobile so the
+          // drag affordance is consistent across viewports. Drag offsets
+          // (motion x/y) compose with this anchor — the user can still
+          // park the widget anywhere they want and the position persists.
           'fixed z-50 w-[min(92vw,300px)]',
-          'right-3 bottom-3 sm:right-4 sm:bottom-4',
+          'left-3 bottom-3 sm:left-4 sm:bottom-4',
         ].join(' ')}
       >
         <div className="relative bg-terminal-dark border border-white/[0.1] shadow-[0_12px_40px_rgba(0,0,0,0.5)] overflow-hidden">
