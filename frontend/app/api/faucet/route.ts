@@ -24,11 +24,14 @@ import { getL3RpcServer, SETTLEMENT_RPC_URL } from '@/lib/config'
 const DEPLOYER_KEY = '0x107e200b197dc889feba0a1e0538bf51b97b2fc87f27f82783d5d59789dc3537' as const
 
 import _deployment from '@/lib/contracts/deployment.json'
-const VISION_ADDRESS = (_deployment.contracts.Vision || '0x0000000000000000000000000000000000000000') as `0x${string}`
-const L3_WUSDC_FALLBACK = (_deployment.contracts.L3_WUSDC || '0x0511c61c551280cd2598d5a7380f8e9658f4b7db') as `0x${string}`
+// Lowercase every address — viem rejects mis-cased EIP-55 checksums and the
+// JSON is written by tools that don't always emit valid checksums.
+const lc = (a: string): `0x${string}` => a.toLowerCase() as `0x${string}`
+const VISION_ADDRESS = lc(_deployment.contracts.Vision || '0x0000000000000000000000000000000000000000')
+const L3_WUSDC_FALLBACK = lc(_deployment.contracts.L3_WUSDC || '0x0511c61c551280cd2598d5a7380f8e9658f4b7db')
 const L3_CHAIN_ID = (_deployment as any).chainId || 111222333
 const SETTLEMENT_CHAIN_ID = Number(process.env.NEXT_PUBLIC_SETTLEMENT_CHAIN_ID) || 421611337
-const SETTLEMENT_USDC = (_deployment.contracts.SETTLEMENT_USDC || '0x2775bA795A292A1FfcD91d227d1a1B0889282190') as `0x${string}`
+const SETTLEMENT_USDC = lc(_deployment.contracts.SETTLEMENT_USDC || '0x2775bA795A292A1FfcD91d227d1a1B0889282190')
 const MAX_MINT = 10_000
 const SONIC_GAS_DRIP = '0.5'
 const L3_GAS_DRIP = '1'

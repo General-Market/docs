@@ -5,33 +5,41 @@
  */
 import deployment from './deployment.json'
 
+// Deployment JSONs are written by forge scripts and shell tools that don't
+// always emit EIP-55 checksums correctly. viem v2 rejects mis-cased addresses
+// at the contract-call boundary ("Address must match its checksum counterpart").
+// Lowercasing is unconditionally accepted by viem — no checksum check applies.
+// Normalize once at the import boundary so every consumer is safe.
+const lc = (a: string | undefined): `0x${string}` =>
+  (a ? a.toLowerCase() : '0x0000000000000000000000000000000000000000') as `0x${string}`
+
 const c = deployment.contracts
 
 // Index Protocol Contracts
 export const INDEX_PROTOCOL = {
-  index: c.Index as `0x${string}`,
-  bridgeProxy: c.BridgeProxy as `0x${string}`,
-  bridgedItpFactory: c.BridgedItpFactory as `0x${string}`,
-  settlementBridgedItpFactory: (c as any).SettlementBridgedItpFactory as `0x${string}`,
-  issuerRegistry: (c as any).IssuerRegistry as `0x${string}` ?? c.OracleRegistry as `0x${string}`,
-  assetPairRegistry: c.CollateralRegistry as `0x${string}`,
-  mockBitgetVault: c.MockBitgetVault as `0x${string}`,
-  settlementBridgeProxy: (c as any).SettlementBridgeProxy as `0x${string}`,
-  settlementCustody: c.SettlementBridgeCustody as `0x${string}`,
-  settlementUsdc: c.SETTLEMENT_USDC as `0x${string}`,
-  l3Usdc: c.L3_WUSDC as `0x${string}`,
+  index: lc(c.Index),
+  bridgeProxy: lc(c.BridgeProxy),
+  bridgedItpFactory: lc(c.BridgedItpFactory),
+  settlementBridgedItpFactory: lc((c as any).SettlementBridgedItpFactory),
+  issuerRegistry: lc((c as any).IssuerRegistry ?? c.OracleRegistry),
+  assetPairRegistry: lc(c.CollateralRegistry),
+  mockBitgetVault: lc(c.MockBitgetVault),
+  settlementBridgeProxy: lc((c as any).SettlementBridgeProxy),
+  settlementCustody: lc(c.SettlementBridgeCustody),
+  settlementUsdc: lc(c.SETTLEMENT_USDC),
+  l3Usdc: lc(c.L3_WUSDC),
   feeRegistry: '' as `0x${string}`,
 }
 
 // Morpho / Lending references (read via backend, addresses for frontend reference)
-export const BRIDGE_PROXY = c.BridgeProxy as `0x${string}`
+export const BRIDGE_PROXY = lc(c.BridgeProxy)
 
 // Chain config
 export const CHAIN_ID = (deployment as any).chainId ?? 111222333
 
 // Legacy / General Market compat (unused but other files import these)
-export const CONTRACT_ADDRESS = c.Index as `0x${string}`
-export const COLLATERAL_TOKEN_ADDRESS = c.L3_WUSDC as `0x${string}`
+export const CONTRACT_ADDRESS = lc(c.Index)
+export const COLLATERAL_TOKEN_ADDRESS = lc(c.L3_WUSDC)
 export const COLLATERAL_SYMBOL: string = 'USDC'
 export const COLLATERAL_DECIMALS = 18
 export const MIN_BET_AMOUNT = BigInt(10 ** (COLLATERAL_DECIMALS - 2))
