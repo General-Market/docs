@@ -11,6 +11,7 @@ import {
 import { noise2D } from "@remotion/noise";
 import { SOURCES } from "../../launch/data/sources";
 import { PLACEHOLDER_COLORS } from "../../launch/brollAssets";
+import { BrollCell } from "../../launch/shots/BrollCell";
 
 /* ═══════════════════════════════════════════════════════
    Dynamic backgrounds — gradients that drift, breathe, and
@@ -379,7 +380,9 @@ export const BrollGridBg: React.FC<{
                   overflow: "hidden",
                   position: "relative",
                 }}
-              />
+              >
+                <BrollCell category={category} index={i} />
+              </div>
             </div>
           ))}
         </AbsoluteFill>
