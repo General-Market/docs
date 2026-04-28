@@ -38,7 +38,7 @@ const GRAIN = 0.04;
 const VIGNETTE = 0.18;
 // Chroma isolation: keep red-dominant pixels colored, grey the rest.
 // 1 = full isolation, 0 = bypass. Lower = lets more of the broll bleed.
-const CHROMA_ISOLATE = 1.0;
+const CHROMA_ISOLATE = 0.0;
 // "Warmness" threshold a pixel (or its neighborhood) needs to count as
 // bridge. Warmness = (R − lum) − ½·((G − lum) + (B − lum)) — a
 // luminance-deviation projection onto the red axis. A cloud-covered red
@@ -295,17 +295,21 @@ const PreviewSource: React.FC<{
 
 // ── Main composition ──────────────────────────────────────────────────
 
-export const LofiDots: React.FC = () => {
+export const LofiDots: React.FC<{
+  skipFadeIn?: boolean;
+}> = ({ skipFadeIn = false }) => {
   const frame = useCurrentFrame();
   const { width, height } = useVideoConfig();
   const env = useRemotionEnvironment();
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
-  const fadeIn = interpolate(frame, [0, 18], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-    easing: Easing.bezier(0.16, 1, 0.3, 1),
-  });
+  const fadeIn = skipFadeIn
+    ? 1
+    : interpolate(frame, [0, 18], [0, 1], {
+        extrapolateLeft: "clamp",
+        extrapolateRight: "clamp",
+        easing: Easing.bezier(0.16, 1, 0.3, 1),
+      });
 
   return (
     <AbsoluteFill style={{ background: PAPER }}>

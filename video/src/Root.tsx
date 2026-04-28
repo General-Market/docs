@@ -59,6 +59,7 @@ import { emberSideBySideMeta } from "./compositions/replicates/ember/EmberSideBy
 import { worldcoinMeta } from "./compositions/replicates/worldcoin/WorldcoinComposition";
 import { worldcoinSideBySideMeta } from "./compositions/replicates/worldcoin/WorldcoinSideBySide";
 import { worldcoin2Meta } from "./compositions/replicates/worldcoin/Worldcoin2Composition";
+import { worldcoin2OverLofiMeta } from "./compositions/replicates/worldcoin/Worldcoin2OverLofi";
 import {
   phoneBrollDemoMeta,
   laptopBrollDemoMeta,
@@ -219,6 +220,14 @@ export const RemotionRoot: React.FC = () => {
           fps={worldcoin2Meta.fps}
           width={worldcoin2Meta.width}
           height={worldcoin2Meta.height}
+        />
+        <Composition
+          id={worldcoin2OverLofiMeta.id}
+          component={worldcoin2OverLofiMeta.component}
+          durationInFrames={worldcoin2OverLofiMeta.durationInFrames}
+          fps={worldcoin2OverLofiMeta.fps}
+          width={worldcoin2OverLofiMeta.width}
+          height={worldcoin2OverLofiMeta.height}
         />
         <Composition
           id={phoneBrollDemoMeta.id}

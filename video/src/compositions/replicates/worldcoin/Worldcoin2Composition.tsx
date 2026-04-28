@@ -292,14 +292,16 @@ const GradientBackground: React.FC<{ frame: number }> = ({ frame }) => {
 const W = 1920;
 const H = 1080;
 
-export const Worldcoin2Composition: React.FC = () => {
+export const Worldcoin2Composition: React.FC<{
+  transparent?: boolean;
+}> = ({ transparent = false }) => {
   const frame = useCurrentFrame();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const env = useRemotionEnvironment();
 
   return (
     <AbsoluteFill style={{ width: W, height: H }}>
-      <GradientBackground frame={frame} />
+      {!transparent && <GradientBackground frame={frame} />}
       {!env.isRendering && (
         <Video
           ref={videoRef}
