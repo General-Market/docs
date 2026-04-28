@@ -121,9 +121,16 @@ interface ViewportInfo {
 }
 
 function pickTarget(selectors: string[]): Element | null {
+  // Iterate every match per selector before advancing. The codebase has
+  // mobile + desktop copies of the same form sharing target attributes;
+  // querySelector (singular) would always return the first DOM match,
+  // and on the wrong viewport that copy is display:none with a zero rect.
+  // Falling through to the next selector entirely meant the arrow
+  // landed on a much weaker target (e.g. a wrapper section) instead of
+  // the layout-appropriate copy. querySelectorAll fixes that.
   for (const sel of selectors) {
-    const el = document.querySelector(sel)
-    if (el) {
+    const matches = document.querySelectorAll(sel)
+    for (const el of matches) {
       const r = el.getBoundingClientRect()
       // Skip zero-size elements — they're hidden / not yet laid out.
       if (r.width > 0 && r.height > 0) return el
@@ -625,10 +632,14 @@ export function OnboardingCompass({ state, onVaultDeposit, onBotDeploy }: Onboar
         dragMomentum={false}
         dragElastic={0}
         onDragEnd={handleDragEnd}
-        initial={{ opacity: 0, y: 24 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 24 }}
-        transition={{ duration: 0.5, ease: EASE_OUT_EXPO }}
+        // Entrance is opacity-only. We can't animate y here without
+        // colliding with the dragY motion value driving style.y — the
+        // animation would briefly snap y to 0 on mount and the saved
+        // drag offset wouldn't be honored until the next user interaction.
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.45, ease: EASE_OUT_EXPO }}
         style={{ x: dragX, y: dragY }}
         // The data attribute makes the widget itself a pointer target. For
         // the faucet/bot steps the arrow tracks this element — useful once
