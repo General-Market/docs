@@ -333,39 +333,94 @@ export const Scene08_FiveHundredK: React.FC = () => {
 
 /* ═══════════════════════════════════════════════════════
    Scene 09 — BrollCycle  (96 frames = 4s @ 24fps)
-   Mirror of Sequence02 0:57–1:00 broll system. Placeholder
-   colored cells now; real broll will play in the grid on render.
-   Hard cuts between four categories at 24-frame intervals.
+   Mirror of Sequence02 0:57–1:00 broll system. Hex broll grid
+   below, big italic word on top per category.
+   Real broll plays in the cells on render.
    ═══════════════════════════════════════════════════════ */
 
 const SCENE09_DURATION = 96;
-const BROLL_CYCLE: { category: BrollCategory; durationInFrames: number }[] = [
-  { category: "twitch", durationInFrames: 24 },
-  { category: "pumpfun", durationInFrames: 24 },
-  { category: "animals", durationInFrames: 24 },
-  { category: "movies", durationInFrames: 24 },
+
+interface BrollSegment {
+  category: BrollCategory;
+  durationInFrames: number;
+  words: CascadeWord[];
+  fontSize: number;
+}
+
+const SCENE09_SEGMENTS: BrollSegment[] = [
+  {
+    category: "twitch",
+    durationInFrames: 24,
+    fontSize: 200,
+    words: [{ atFrame: 1, text: "Twitch" }],
+  },
+  {
+    category: "pumpfun",
+    durationInFrames: 24,
+    fontSize: 150,
+    words: [
+      { atFrame: 1, text: "shorting", br: true },
+      { atFrame: 7, text: "meme coins" },
+    ],
+  },
+  {
+    category: "animals",
+    durationInFrames: 24,
+    fontSize: 200,
+    words: [{ atFrame: 1, text: "animals" }],
+  },
+  {
+    category: "movies",
+    durationInFrames: 24,
+    fontSize: 200,
+    words: [{ atFrame: 1, text: "movies" }],
+  },
 ];
 
+const cumulativeStart = (segments: BrollSegment[], idx: number) =>
+  segments.slice(0, idx).reduce((acc, s) => acc + s.durationInFrames, 0);
+
 export const Scene09_BrollCycle: React.FC = () => {
-  let from = 0;
   return (
     <AbsoluteFill>
       <ZoomedBg duration={SCENE09_DURATION}>
-        {BROLL_CYCLE.map(({ category, durationInFrames }) => {
-          const segment = (
-            <Sequence
-              key={category}
-              from={from}
-              durationInFrames={durationInFrames}
-              name={`broll-${category}`}
-            >
-              <BrollGridBg category={category} />
-            </Sequence>
-          );
-          from += durationInFrames;
-          return segment;
-        })}
+        {SCENE09_SEGMENTS.map((seg, i) => (
+          <Sequence
+            key={`bg-${seg.category}`}
+            from={cumulativeStart(SCENE09_SEGMENTS, i)}
+            durationInFrames={seg.durationInFrames}
+            name={`broll-${seg.category}`}
+          >
+            <BrollGridBg category={seg.category} />
+          </Sequence>
+        ))}
       </ZoomedBg>
+
+      {SCENE09_SEGMENTS.map((seg, i) => (
+        <Sequence
+          key={`text-${seg.category}`}
+          from={cumulativeStart(SCENE09_SEGMENTS, i)}
+          durationInFrames={seg.durationInFrames}
+          name={`label-${seg.category}`}
+        >
+          <AbsoluteFill
+            style={{
+              justifyContent: "center",
+              alignItems: "center",
+              padding: 80,
+            }}
+          >
+            <WordCascade
+              words={seg.words}
+              fontSize={seg.fontSize}
+              fontFamily={fontFamily}
+              color="#ffffff"
+              fontWeight={900}
+              fontStyle="italic"
+            />
+          </AbsoluteFill>
+        </Sequence>
+      ))}
     </AbsoluteFill>
   );
 };

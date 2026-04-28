@@ -310,30 +310,45 @@ export const MegaGridBg: React.FC<{ cols?: number; rows?: number }> = ({
 };
 
 /* ═══════════════════════════════════════════════════════
-   BrollGridBg — placeholder-tile version of the per-category
-   broll grid from sequence02. Real broll plays in these cells
-   on render; for now they hold solid colors from PLACEHOLDER_COLORS.
+   BrollGridBg — honeycomb of broll cells, tilted and blurred.
+   Same layout philosophy as sequence02/FullscreenMarkets.BrollGridBg
+   but cells are pointy-top hexagons in an interlocking honeycomb,
+   not square. BrollCell handles real broll on render and falls
+   through to the placeholder color in studio when no asset exists.
    ═══════════════════════════════════════════════════════ */
 
 export type BrollCategory = "twitch" | "pumpfun" | "movies" | "animals";
 
+const HEX_CLIP = "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)";
+const HEX_SQRT3 = Math.sqrt(3);
+const BROLL_PER_CATEGORY = 48;
+
 export const BrollGridBg: React.FC<{
   category: BrollCategory;
-  cols?: number;
-  rows?: number;
-}> = ({ category, cols = 8, rows = 6 }) => {
+  hexWidth?: number;
+}> = ({ category, hexWidth = 240 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const scrollY = (frame / fps) * MEGA_SCROLL_PX_PER_SEC;
   const colors = PLACEHOLDER_COLORS[category] ?? ["#444"];
-  const cellW = 100 / cols;
-  const cellH = 100 / rows;
+
+  const hexW = hexWidth;
+  const hexH = (hexW * 2) / HEX_SQRT3;
+  const rowStride = hexH * 0.75;
+
+  const numCols = Math.ceil(1920 / hexW) + 2;
+  const numRows = Math.ceil(1080 / rowStride) + 2;
 
   const cells: { x: number; y: number; i: number }[] = [];
   let idx = 0;
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      cells.push({ x: c * cellW, y: r * cellH, i: idx });
+  for (let r = -1; r < numRows; r++) {
+    const offsetX = r % 2 !== 0 ? hexW / 2 : 0;
+    for (let c = -1; c < numCols; c++) {
+      cells.push({
+        x: c * hexW + offsetX,
+        y: r * rowStride,
+        i: idx,
+      });
       idx++;
     }
   }
@@ -362,27 +377,16 @@ export const BrollGridBg: React.FC<{
               key={i}
               style={{
                 position: "absolute",
-                left: `${x}%`,
-                top: `${y}%`,
-                width: `${cellW}%`,
-                height: `${cellH}%`,
+                left: x,
+                top: y,
+                width: hexW,
+                height: hexH,
+                clipPath: HEX_CLIP,
                 backgroundColor: colors[i % colors.length],
                 overflow: "hidden",
-                padding: 1.5,
-                boxSizing: "border-box",
               }}
             >
-              <div
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  borderRadius: 4,
-                  overflow: "hidden",
-                  position: "relative",
-                }}
-              >
-                <BrollCell category={category} index={i} />
-              </div>
+              <BrollCell category={category} index={i % BROLL_PER_CATEGORY} />
             </div>
           ))}
         </AbsoluteFill>
