@@ -39,6 +39,10 @@ const FRAGMENT = /* glsl */ `
   uniform vec2  uTexSize;
   uniform float uHexSize;
   uniform float uZoom;
+  uniform float uHexInset;
+  uniform float uContrast;
+  uniform float uLevels;
+  uniform vec3  uLineColor;
 
   varying vec2 vUv;
 
@@ -56,21 +60,42 @@ const FRAGMENT = /* glsl */ `
   // Two interleaved rectangular grids, one hex centre each. For any
   // point we test both candidates and keep the closer — that is the
   // Voronoi cell of a hex tessellation. The Inigo Quilez two-grid
-  // trick. Returns the nearest hex centre in the same scaled space.
-  vec2 hexCentre(vec2 p) {
+  // trick. Returns (centre, local) packed into a vec4.
+  vec4 hexCentre(vec2 p) {
     float SQRT3 = 1.7320508;
     vec2 cell = vec2(SQRT3, 3.0);
     vec2 a = mod(p + cell * 0.5, cell) - cell * 0.5;
     vec2 b = mod(p, cell) - cell * 0.5;
     vec2 gv = dot(a, a) < dot(b, b) ? a : b;
-    return p - gv;
+    return vec4(p - gv, gv);
+  }
+
+  // Signed distance to a pointy-top hexagon of circumradius 1, centred
+  // at the origin. Negative inside, zero on edge, positive outside.
+  float hexDist(vec2 p) {
+    float APOTHEM = 0.8660254;
+    vec2 q = abs(p);
+    return max(q.x - APOTHEM, q.x * 0.5 + q.y * APOTHEM - APOTHEM);
+  }
+
+  // Posterise — snap each channel to N evenly spaced levels, edges
+  // included. Fewer levels, harder cliffs, fewer hesitations.
+  vec3 posterise(vec3 c, float n) {
+    return floor(c * (n - 1.0) + 0.5) / (n - 1.0);
+  }
+
+  // Contrast about mid grey. k > 1 = more abrupt, k < 1 = washed out.
+  vec3 contrast(vec3 c, float k) {
+    return clamp((c - 0.5) * k + 0.5, 0.0, 1.0);
   }
 
   void main() {
     vec2 fragPx = vUv * uResolution;
     vec2 p = fragPx / uHexSize;
 
-    vec2 centreP = hexCentre(p);
+    vec4 hc = hexCentre(p);
+    vec2 centreP = hc.xy;
+    vec2 local   = hc.zw;
     vec2 centrePx = centreP * uHexSize;
     vec2 centreUv = centrePx / uResolution;
 
@@ -79,6 +104,20 @@ const FRAGMENT = /* glsl */ `
     texUv = (texUv - 0.5) / uZoom + 0.5;
 
     vec3 col = texture2D(uTex, texUv).rgb;
+
+    // Crank the contrast, then quantise to a small number of levels.
+    // The image stops being a gradient and becomes a small set of facts.
+    col = contrast(col, uContrast);
+    col = posterise(col, uLevels);
+
+    // Black line between hexes. The SDF is in circumradius units, so
+    // the inset and edge widths are too — small numbers, nice clean
+    // tessellation lines.
+    float d = hexDist(local);
+    float fill = 1.0 - smoothstep(-uHexInset - 0.012,
+                                  -uHexInset + 0.012, d);
+    col = mix(uLineColor, col, fill);
+
     gl_FragColor = vec4(col, 1.0);
   }
 `;
@@ -89,6 +128,10 @@ interface PlaneProps {
   height: number;
   cellSize: number;
   zoom: number;
+  inset: number;
+  contrast: number;
+  levels: number;
+  lineColor: [number, number, number];
 }
 
 const Plane: React.FC<PlaneProps> = ({
@@ -97,6 +140,10 @@ const Plane: React.FC<PlaneProps> = ({
   height,
   cellSize,
   zoom,
+  inset,
+  contrast,
+  levels,
+  lineColor,
 }) => {
   const matRef = useRef<THREE.ShaderMaterial>(null);
 
@@ -124,8 +171,14 @@ const Plane: React.FC<PlaneProps> = ({
       uTexSize: { value: texSize },
       uHexSize: { value: cellSize },
       uZoom: { value: zoom },
+      uHexInset: { value: inset },
+      uContrast: { value: contrast },
+      uLevels: { value: Math.max(2, Math.floor(levels)) },
+      uLineColor: {
+        value: new THREE.Vector3(lineColor[0], lineColor[1], lineColor[2]),
+      },
     }),
-    [texture, width, height, texSize, cellSize, zoom],
+    [texture, width, height, texSize, cellSize, zoom, inset, contrast, levels, lineColor],
   );
 
   if (matRef.current) {
@@ -134,6 +187,9 @@ const Plane: React.FC<PlaneProps> = ({
     matRef.current.uniforms.uZoom.value = zoom;
     matRef.current.uniforms.uHexSize.value = cellSize;
     matRef.current.uniforms.uResolution.value.set(width, height);
+    matRef.current.uniforms.uHexInset.value = inset;
+    matRef.current.uniforms.uContrast.value = contrast;
+    matRef.current.uniforms.uLevels.value = Math.max(2, Math.floor(levels));
   }
 
   return (
@@ -223,6 +279,16 @@ type Props = {
   cellSize?: number;
   /** Optional zoom applied to the underlying frame, around the centre. */
   zoom?: number;
+  /** Width of the dark line between hexes, in circumradius units.
+   *  0 = perfect tessellation, no separators. */
+  inset?: number;
+  /** Contrast about mid grey before quantisation. >1 sharpens. */
+  contrast?: number;
+  /** Number of evenly spaced levels per RGB channel after quantisation.
+   *  Lower = more abrupt cliffs. 5 is the default — 125 colours total. */
+  levels?: number;
+  /** Colour of the line between hexes. Defaults to black. */
+  lineColor?: [number, number, number];
 };
 
 export const HexPixelate: React.FC<Props> = ({
@@ -231,6 +297,10 @@ export const HexPixelate: React.FC<Props> = ({
   height,
   cellSize = 14,
   zoom = 1,
+  inset = 0.06,
+  contrast = 1.45,
+  levels = 5,
+  lineColor = [0, 0, 0],
 }) => {
   const env = useRemotionEnvironment();
   const frame = useCurrentFrame();
@@ -273,6 +343,10 @@ export const HexPixelate: React.FC<Props> = ({
             height={h}
             cellSize={cellSize}
             zoom={zoom}
+            inset={inset}
+            contrast={contrast}
+            levels={levels}
+            lineColor={lineColor}
           />
         ) : (
           <PreviewSource
@@ -282,6 +356,10 @@ export const HexPixelate: React.FC<Props> = ({
             cellSize={cellSize}
             zoom={zoom}
             frame={frame}
+            inset={inset}
+            contrast={contrast}
+            levels={levels}
+            lineColor={lineColor}
           />
         )}
       </ThreeCanvas>
