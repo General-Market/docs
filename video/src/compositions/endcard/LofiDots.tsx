@@ -5,7 +5,7 @@
  * with the lofi grade and selective colour kept intact.
  */
 
-import React, { useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import {
   AbsoluteFill,
   Easing,
@@ -19,7 +19,6 @@ import {
 import {
   ThreeCanvas,
   useOffthreadVideoTexture,
-  useVideoTexture,
 } from "@remotion/three";
 import * as THREE from "three";
 
@@ -283,14 +282,67 @@ const RenderSource: React.FC<{
   return <DotPlane texture={texture} width={width} height={height} />;
 };
 
+// Preview path uses a CanvasTexture fed by drawImage(videoElement, …) each
+// frame — robust against @remotion/three useVideoTexture's mount race
+// (which throws "Video not ready" if its resolution promise wins against
+// the videoRef being attached). The canvas keeps the broll's native
+// resolution so the shader's cover-fit pass receives a faithful sample.
+const PREVIEW_CANVAS_W = 1280;
+const PREVIEW_CANVAS_H = 720;
+
 const PreviewSource: React.FC<{
   videoRef: React.RefObject<HTMLVideoElement | null>;
   width: number;
   height: number;
-}> = ({ videoRef, width, height }) => {
-  const texture = useVideoTexture(videoRef);
-  if (!texture) return null;
-  return <DotPlane texture={texture} width={width} height={height} />;
+  frame: number;
+}> = ({ videoRef, width, height, frame }) => {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const textureRef = useRef<THREE.CanvasTexture | null>(null);
+
+  if (!canvasRef.current) {
+    const c = document.createElement("canvas");
+    c.width = PREVIEW_CANVAS_W;
+    c.height = PREVIEW_CANVAS_H;
+    const ctx0 = c.getContext("2d");
+    if (ctx0) {
+      ctx0.fillStyle = PAPER;
+      ctx0.fillRect(0, 0, PREVIEW_CANVAS_W, PREVIEW_CANVAS_H);
+    }
+    canvasRef.current = c;
+    const tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    textureRef.current = tex;
+  }
+
+  // Per-frame: blit the video element into the canvas, mark texture dirty.
+  const ctx = canvasRef.current.getContext("2d");
+  const video = videoRef.current;
+  if (ctx && video && video.readyState >= 2 && video.videoWidth > 0) {
+    ctx.drawImage(
+      video,
+      0,
+      0,
+      video.videoWidth,
+      video.videoHeight,
+      0,
+      0,
+      PREVIEW_CANVAS_W,
+      PREVIEW_CANVAS_H,
+    );
+    if (textureRef.current) textureRef.current.needsUpdate = true;
+  }
+  void frame;
+
+  // Suppress lint: useEffect to dispose the texture on unmount.
+  useEffect(() => {
+    const tex = textureRef.current;
+    return () => {
+      tex?.dispose();
+    };
+  }, []);
+
+  if (!textureRef.current) return null;
+  return <DotPlane texture={textureRef.current} width={width} height={height} />;
 };
 
 // ── Main composition ──────────────────────────────────────────────────
@@ -349,6 +401,7 @@ export const LofiDots: React.FC<{
               videoRef={videoRef}
               width={width}
               height={height}
+              frame={frame}
             />
           )}
         </ThreeCanvas>
