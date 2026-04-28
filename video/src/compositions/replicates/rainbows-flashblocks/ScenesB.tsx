@@ -314,7 +314,7 @@ const LABELS = ["frontrunners", "insider traders", "market manipulators"] as con
 
 function buildScene07Proxies() {
   const init: Record<string, Record<string, number>> = {};
-  TRADES.forEach((_, i) => { init[`shape_${i}`] = { opacity: 0, y: 0 }; });
+  TRADES.forEach((_, i) => { init[`shape_${i}`] = { opacity: 0 }; });
   init.conveyor = { x: 0 };
   for (let i = 0; i < LABELS.length; i++) {
     init[`label_${i}`] = { opacity: 0, scale: 0.85 };

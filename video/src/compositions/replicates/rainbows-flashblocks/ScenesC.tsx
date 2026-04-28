@@ -93,7 +93,7 @@ export const Scene09_Experience: React.FC = () => {
    ═══════════════════════════════════════════════════════ */
 
 const SCENE10_PHASE1 = ["only", "you,", "with", "the", "market"] as const;
-const SCENE10_PHASE2 = ["the", "best", "odds", "of", "winning"] as const;
+const SCENE10_PHASE2 = ["giving", "you", "the", "best", "odds", "of", "winning"] as const;
 
 function buildScene10Proxies() {
   const init: Record<string, Record<string, number>> = {
@@ -196,7 +196,7 @@ export const Scene10_LiveTestnet: React.FC = () => {
                 key={i}
                 style={{
                   fontFamily,
-                  fontSize: 175,
+                  fontSize: 140,
                   fontWeight: 700,
                   fontStyle: "italic",
                   color: BLUE,
