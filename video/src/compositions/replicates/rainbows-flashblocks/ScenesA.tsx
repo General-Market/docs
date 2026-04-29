@@ -481,21 +481,23 @@ export const Scene02_TryRainbows: React.FC = () => {
 
 /* ═══════════════════════════════════════════════════════
    Scene 03 — RainbowsWraps  (72 frames = 3s @ 24fps)
-   Beat 1 (0–24): four white rectangles drop in stacked, labeled
+   Beat 1 (0–22): four white rectangles drop in stacked, labeled
    Stocks / Crypto / Predictions / Memecoins.
-   Beat 2 (24–72): a rainbow band sweeps top-to-bottom; as it crosses
-   each row, the rectangle morphs into a rainbow-painted organic shape
-   (flower / heart / star / cloud).
-   Replaces the old cube-explode visual beat.
+   Beat 2 (22–72): a rainbow scanner box descends and lands on each
+   rectangle in turn. As the scanner crosses a row, the row gains a
+   rainbow border and an icon next to its label (flower / heart / star
+   / cloud). Rectangles stay rectangles — they get *enriched*.
    ═══════════════════════════════════════════════════════ */
 
 const SCENE03_DURATION = 72;
-const SCENE03_SWEEP_START = 24;
+const SCENE03_SCAN_START = 22;
 const RB_GRAD_ID = "rb-scene03-grad";
 const RB_FILL = `url(#${RB_GRAD_ID})`;
+const RB_GRADIENT_CSS =
+  "linear-gradient(135deg, #FF3B3B 0%, #FF8A1A 20%, #FFD700 40%, #3FCC3F 60%, #0ABAB5 80%, #9C5FFF 100%)";
 
-const ROW_W = 540;
-const ROW_H = 124;
+const ROW_W = 560;
+const ROW_H = 128;
 const ROW_GAP = 36;
 const STACK_TOP = (1080 - (ROW_H * 4 + ROW_GAP * 3)) / 2;
 const rowCenterY = (i: number) => STACK_TOP + ROW_H / 2 + i * (ROW_H + ROW_GAP);
@@ -540,6 +542,10 @@ const SCENE03_ROWS = [
   { label: "Memecoins", Shape: CloudShape },
 ] as const;
 
+const SCANNER_W = ROW_W + 24;
+const SCANNER_H = ROW_H + 24;
+const SCANNER_PAD = 30;
+
 export const Scene03_CubeExplode: React.FC = () => {
   const frame = useCurrentFrame();
 
@@ -550,21 +556,35 @@ export const Scene03_CubeExplode: React.FC = () => {
       easing: Easing.out(Easing.cubic),
     });
 
-  const sweepY = interpolate(frame, [SCENE03_SWEEP_START, SCENE03_DURATION], [-160, 1240], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-    easing: Easing.bezier(0.45, 0, 0.55, 1),
-  });
+  /* Scanner travels down through the four row centres in order. The
+   * first leg is a fly-in from above row 0; subsequent legs snap from
+   * row to row. */
+  const SCAN_TRAVEL = SCENE03_DURATION - 4 - SCENE03_SCAN_START;
+  const scannerY = interpolate(
+    frame,
+    [
+      SCENE03_SCAN_START,
+      SCENE03_SCAN_START + SCAN_TRAVEL * 0.25,
+      SCENE03_SCAN_START + SCAN_TRAVEL * 0.5,
+      SCENE03_SCAN_START + SCAN_TRAVEL * 0.75,
+      SCENE03_SCAN_START + SCAN_TRAVEL,
+    ],
+    [rowCenterY(0) - 200, rowCenterY(0), rowCenterY(1), rowCenterY(2), rowCenterY(3)],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.bezier(0.45, 0, 0.55, 1) },
+  );
 
-  const morph = (i: number) => {
-    const cy = rowCenterY(i);
-    return interpolate(sweepY, [cy - 90, cy + 50], [0, 1], {
+  /* Per-row scan progress: rises to 1 once the scanner's centre reaches
+   * the row, then holds. */
+  const scanProgress = (i: number) =>
+    interpolate(scannerY, [rowCenterY(i) - 50, rowCenterY(i) + 5], [0, 1], {
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
     });
-  };
 
-  const sweepActive = frame >= SCENE03_SWEEP_START - 2 && frame <= SCENE03_DURATION + 4;
+  const scannerVisible = interpolate(frame, [SCENE03_SCAN_START - 4, SCENE03_SCAN_START + 2], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
 
   return (
     <AbsoluteFill>
@@ -588,7 +608,7 @@ export const Scene03_CubeExplode: React.FC = () => {
 
       {SCENE03_ROWS.map((row, i) => {
         const drop = dropProgress(i);
-        const m = morph(i);
+        const scan = scanProgress(i);
         const cy = rowCenterY(i);
         const Shape = row.Shape;
 
@@ -605,6 +625,19 @@ export const Scene03_CubeExplode: React.FC = () => {
               opacity: drop,
             }}
           >
+            {/* Rainbow border glow — appears once the scanner has crossed */}
+            <div
+              style={{
+                position: "absolute",
+                inset: -6,
+                borderRadius: 16,
+                background: RB_GRADIENT_CSS,
+                opacity: scan,
+                filter: `blur(${(1 - scan) * 4}px)`,
+              }}
+            />
+
+            {/* White rectangle (always on after drop) */}
             <div
               style={{
                 position: "absolute",
@@ -612,13 +645,27 @@ export const Scene03_CubeExplode: React.FC = () => {
                 backgroundColor: "#fff",
                 borderRadius: 10,
                 boxShadow: "0 10px 32px rgba(0,0,0,0.22)",
-                opacity: 1 - m,
-                transform: `scale(${1 - m * 0.35})`,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
+              {/* Icon — fades and scales in as the scanner crosses */}
+              <div
+                style={{
+                  position: "absolute",
+                  left: 28,
+                  top: "50%",
+                  width: ROW_H - 36,
+                  height: ROW_H - 36,
+                  transform: `translateY(-50%) scale(${0.55 + scan * 0.45})`,
+                  opacity: scan,
+                }}
+              >
+                <Shape />
+              </div>
+
+              {/* Label — stays */}
               <span
                 style={{
                   fontFamily,
@@ -631,57 +678,53 @@ export const Scene03_CubeExplode: React.FC = () => {
                 {row.label}
               </span>
             </div>
-
-            <div
-              style={{
-                position: "absolute",
-                top: 0,
-                left: "50%",
-                width: ROW_H,
-                height: ROW_H,
-                transform: `translateX(-50%) scale(${0.55 + m * 0.45})`,
-                opacity: m,
-              }}
-            >
-              <Shape />
-            </div>
           </div>
         );
       })}
 
-      {sweepActive && (
-        <>
-          <div
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              top: 0,
-              height: 220,
-              transform: `translateY(${sweepY - 110}px)`,
-              background:
-                "linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.0) 25%, rgba(255,255,255,0.16) 50%, rgba(255,255,255,0.0) 75%, transparent 100%)",
-              filter: "blur(10px)",
-              pointerEvents: "none",
-            }}
+      {/* Scanner — a hollow rainbow rectangle with viewfinder corners */}
+      <svg
+        width={SCANNER_W + SCANNER_PAD * 2}
+        height={SCANNER_H + SCANNER_PAD * 2}
+        viewBox={`0 0 ${SCANNER_W + SCANNER_PAD * 2} ${SCANNER_H + SCANNER_PAD * 2}`}
+        style={{
+          position: "absolute",
+          left: "50%",
+          top: scannerY,
+          transform: "translate(-50%, -50%)",
+          opacity: scannerVisible,
+          pointerEvents: "none",
+          filter: "drop-shadow(0 0 18px rgba(255,255,255,0.35))",
+        }}
+      >
+        <rect
+          x={SCANNER_PAD}
+          y={SCANNER_PAD}
+          width={SCANNER_W}
+          height={SCANNER_H}
+          rx={16}
+          ry={16}
+          fill="none"
+          stroke={RB_FILL}
+          strokeWidth={6}
+          strokeLinejoin="round"
+        />
+        {[
+          { x: SCANNER_PAD, y: SCANNER_PAD, dx: 1, dy: 1 },
+          { x: SCANNER_PAD + SCANNER_W, y: SCANNER_PAD, dx: -1, dy: 1 },
+          { x: SCANNER_PAD, y: SCANNER_PAD + SCANNER_H, dx: 1, dy: -1 },
+          { x: SCANNER_PAD + SCANNER_W, y: SCANNER_PAD + SCANNER_H, dx: -1, dy: -1 },
+        ].map((c, i) => (
+          <path
+            key={i}
+            d={`M ${c.x + c.dx * 22} ${c.y} L ${c.x} ${c.y} L ${c.x} ${c.y + c.dy * 22}`}
+            fill="none"
+            stroke="#fff"
+            strokeWidth={4}
+            strokeLinecap="round"
           />
-          <div
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              top: 0,
-              height: 5,
-              transform: `translateY(${sweepY}px)`,
-              background:
-                "linear-gradient(90deg, #FF3B3B 0%, #FF8A1A 20%, #FFD700 40%, #3FCC3F 60%, #0ABAB5 80%, #9C5FFF 100%)",
-              boxShadow:
-                "0 0 28px 8px rgba(255,255,255,0.40), 0 0 80px 30px rgba(150,200,255,0.22)",
-              pointerEvents: "none",
-            }}
-          />
-        </>
-      )}
+        ))}
+      </svg>
     </AbsoluteFill>
   );
 };
