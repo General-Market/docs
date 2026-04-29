@@ -2,297 +2,215 @@ import React from "react";
 import { Audio, Sequence, staticFile } from "remotion";
 
 /*
- * Rainbows · Flashblocks — SFX track v3 (music-as-SFX)
+ * Rainbows · Flashblocks — SFX track v4 (one sound per kind of thing)
  *
- * The track is built like a score. Three layers stack:
- *   1. PULSE — a recurring tick that acts like a metronome. Spacing
- *      tightens during action, opens up during quiet beats.
- *   2. WORDS — every visible word reveal gets its own tap (mouse-click
- *      / low-pop / sharp-pop). Numbers and emphasis words get the pop.
- *   3. HITS  — phase transitions, shape entrances, gunshots, wipes.
- *      These are the "percussion" — they land on or near pulse beats.
+ * The score uses a fixed palette. Same kind of event gets the same
+ * sample, every time. Repetition is what makes it feel like music.
+ * Volumes are calibrated so the layers stack without smearing.
  *
- * 24fps, 0–756 frames. 12-frame base pulse ≈ 120bpm. Half-pulse (6f)
- * during high-energy passages.
+ *   WORD          mouse-click     0.18  every word reveal, anywhere
+ *   EMPHASIS      sharp-pop       0.50  numbers, knife words, "gain"
+ *   WHOOSH        sharp-fast-…    0.45  scene/phase transitions
+ *   AMBIENT       long-whoosh     0.25  conveyor sweep, orbit drone
+ *   CONVEYOR TICK low-pop         0.10  each version (v1→v10,000)
+ *   SHAPE/BOX     low-pop         0.30  cube boxes, morph shapes
+ *   RING          select-001      0.18  every concentric ring
+ *   COUNTER TICK  digital-click   0.18  counter ramp 0→70
+ *   SHOT          sharp-clap      0.65  sniper gunshot
+ *   DETONATE      sharp-pop       0.45  sniper impact
+ *   LOCK-ON       select-002      0.28  reticle pre-shot
+ *   PAYOFF        obtain-002      0.55  v10,000 lands, endcard reveal
+ *   COUNTER PAYOFF obtain-001     0.50  counter scale-up
+ *   WIPE          epic-fast-whoosh 0.65  square wipe at finale
  *
- * Volumes follow a strict ladder so layers stack without smearing:
- *   pulse        0.10–0.18
- *   word ticks   0.30–0.45
- *   event hits   0.45–0.65
- *   percussion   0.60–0.80
+ * 24fps, 0–756 frames.
  */
 
 const sfx = (name: string) => staticFile(`sfx/mx6/${name}`);
+
+const FILES = {
+  word: "mouse-click.mp3",
+  emphasis: "sharp-pop.mp3",
+  whoosh: "sharp-fast-whoosh.mp3",
+  ambient: "long-whoosh-001.mp3",
+  conveyorTick: "low-pop.mp3",
+  shape: "low-pop.mp3",
+  ring: "select-001.mp3",
+  counterTick: "digital-click.mp3",
+  shot: "sharp-clap.mp3",
+  detonate: "sharp-pop.mp3",
+  lockOn: "select-002.mp3",
+  payoff: "obtain-002.mp3",
+  counterPayoff: "obtain-001.mp3",
+  wipe: "epic-fast-whoosh.mp3",
+};
 
 interface CueProps {
   from: number;
   src: string;
   volume?: number;
   trimAfter?: number;
-  playbackRate?: number;
-  /* Sequence window length. The Audio tag mounts only inside this
-   * window — without it, every cue stays mounted from `from` to the
-   * end of the composition and we hit Remotion's audio-tag cap. */
+  /* Sequence window length. Without it, every Audio mounts at `from`
+   * and stays mounted to the end of the composition — Remotion caps at
+   * 40 simultaneous tags and we hit the cap fast. */
   dur?: number;
 }
 
-const Cue: React.FC<CueProps> = ({
-  from,
-  src,
-  volume = 0.6,
-  trimAfter,
-  playbackRate,
-  dur = 18,
-}) => (
+const Cue: React.FC<CueProps> = ({ from, src, volume = 0.5, trimAfter, dur = 18 }) => (
   <Sequence from={from} durationInFrames={dur} layout="none">
-    <Audio src={src} volume={volume} trimAfter={trimAfter} playbackRate={playbackRate} />
+    <Audio src={src} volume={volume} trimAfter={trimAfter} />
   </Sequence>
 );
 
-const S = {
-  whooshLong: "long-whoosh-001.mp3",
-  whooshSharpLong: "sharp-long-whoosh.mp3",
-  whooshSharpFast: "sharp-fast-whoosh.mp3",
-  whooshEpicFast: "epic-fast-whoosh.mp3",
-  whooshEpic1: "epic-whoosh-001.mp3",
-  whooshEpic2: "epic-whoosh-002.mp3",
-  whooshFastCine: "fast-cinematic-whoosh-stereo.mp3",
-  whooshVeryFastCine: "very-fast-cinematic-whoosh.mp3",
-  whooshVeryFast: "very-fast-whoosh.wav",
-  click: "mouse-click.mp3",
-  clickKey: "keyboard-click.mp3",
-  clickDigi: "digital-click.mp3",
-  popLow: "low-pop.mp3",
-  popCartoon: "pop-cartoon.mp3",
-  popSharp: "sharp-pop.mp3",
-  select1: "select-001.mp3",
-  select2: "select-002.mp3",
-  select3: "select-003.mp3",
-  select4: "select-004.mp3",
-  selectGame: "video-game-select.mp3",
-  obtain1: "obtain-001.mp3",
-  obtain2: "obtain-002.mp3",
-  obtain2Dry: "obtain-002-without-reverb.mp3",
-  on: "on-001.mp3",
-  clap: "sharp-clap.mp3",
-  err1: "error-001.mp3",
-  err2: "error-002.mp3",
-  wrong: "wrong-001.mp3",
-};
+/* Helpers — one component per role keeps the rules visible. */
+const Word: React.FC<{ from: number }> = ({ from }) => (
+  <Cue from={from} src={sfx(FILES.word)} volume={0.18} dur={12} />
+);
+const Emphasis: React.FC<{ from: number }> = ({ from }) => (
+  <Cue from={from} src={sfx(FILES.emphasis)} volume={0.5} dur={14} />
+);
+const Whoosh: React.FC<{ from: number; volume?: number; dur?: number }> = ({
+  from,
+  volume = 0.45,
+  dur = 18,
+}) => <Cue from={from} src={sfx(FILES.whoosh)} volume={volume} dur={dur} />;
+const Ambient: React.FC<{ from: number; volume?: number; dur: number }> = ({
+  from,
+  volume = 0.25,
+  dur,
+}) => (
+  <Cue from={from} src={sfx(FILES.ambient)} volume={volume} trimAfter={dur} dur={dur} />
+);
+const ConveyorTick: React.FC<{ from: number }> = ({ from }) => (
+  <Cue from={from} src={sfx(FILES.conveyorTick)} volume={0.1} dur={6} />
+);
+const Shape: React.FC<{ from: number; volume?: number }> = ({ from, volume = 0.3 }) => (
+  <Cue from={from} src={sfx(FILES.shape)} volume={volume} dur={10} />
+);
+const Ring: React.FC<{ from: number; volume?: number }> = ({ from, volume = 0.18 }) => (
+  <Cue from={from} src={sfx(FILES.ring)} volume={volume} dur={12} />
+);
+const CounterTick: React.FC<{ from: number; volume?: number }> = ({ from, volume = 0.18 }) => (
+  <Cue from={from} src={sfx(FILES.counterTick)} volume={volume} dur={6} />
+);
 
-/* ═════════════════════════════════════════════════════════════════════
-   Layer 1 — PULSE
-   A repeating tick that gives the track its tempo. `step` controls
-   density: 12 = base pulse, 8 = tighter, 6 = double-time.
-   ═════════════════════════════════════════════════════════════════════ */
-const pulse = (
-  fromFrame: number,
-  toFrame: number,
-  step: number,
-  baseVol: number = 0.14,
-  keyPrefix: string = "p",
-): React.ReactNode[] => {
-  const cues: React.ReactNode[] = [];
-  for (let f = fromFrame, i = 0; f < toFrame; f += step, i++) {
-    // Alternate two sample types so the metronome doesn't feel mechanical.
-    const isStrong = i % 2 === 0;
-    const src = isStrong ? S.clickDigi : S.click;
-    const vol = isStrong ? baseVol : baseVol * 0.75;
-    const rate = 1.0 + ((i % 4) - 1.5) * 0.04;
-    cues.push(
-      <Cue
-        key={`${keyPrefix}-${f}`}
-        from={f}
-        src={sfx(src)}
-        volume={vol}
-        playbackRate={rate}
-        dur={6}
-      />,
-    );
-  }
-  return cues;
-};
+/* Conveyor pass timings for Scene 01 — 14 ticks distributed across
+ * the S-curve sweep so the rate matches perceived motion: slow at the
+ * edges, dense through the middle. v10,000 lands at frame 36 with the
+ * payoff cue, so the last tick sits just before that. */
+const SCENE01_CONVEYOR_TICKS = [3, 7, 11, 14, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35];
 
 export const Sfx: React.FC = () => {
   return (
     <>
-      {/* ───────────────────────────────────────────────────────────
-          PULSE TRACK — assembled in segments.
-          0–84    Scene 01:    12f pulse        (calm, words landing on beat)
-          84–132  Scene 02:     8f pulse        (tightens for the question)
-          132–204 Scene 03:     8f pulse        (orbit energy)
-          204–251 Scene 04 A:  12f pulse
-          251–298 Scene 04 B:   6f pulse        (counter ramp double-time)
-          298–312 Scene 04 hold: silence
-          312–420 Scene 05:     8f pulse        (action density)
-          420–461 Scene 06 A:  12f pulse
-          461–504 Scene 06 B:  silence          (serif italic breathes)
-          504–540 Scene 10a:   silence          ("gain more" alone)
-          540–612 Scene 10b:   silence          (UI + "while trading…")
-          612–626 Wipe:        silence
-          626–756 Endcard:     16f wide pulse   (open, settled)
-          ─────────────────────────────────────────────────────────── */}
-      {pulse(0, 84, 12, 0.13, "s1")}
-      {pulse(84, 132, 8, 0.14, "s2")}
-      {pulse(132, 204, 8, 0.15, "s3")}
-      {pulse(204, 251, 12, 0.13, "s4a")}
-      {pulse(251, 298, 6, 0.16, "s4b")}
-      {pulse(312, 420, 8, 0.14, "s5")}
-      {pulse(420, 461, 12, 0.13, "s6a")}
-      {pulse(626, 756, 16, 0.10, "s10c")}
-
       {/* ═════════════════════════════════════════════════════════════
           Scene 01 — Hook (0–84)
           Conveyor sweeps under "You spent 10,000 hours" → "perfecting
-          your trading strategies."
+          your trading strategies." Each version (v1 → v10,000) ticks
+          as it passes the center.
           ═════════════════════════════════════════════════════════════ */}
-      {/* Conveyor ambient */}
-      <Cue from={0} src={sfx(S.whooshLong)} volume={0.4} dur={48} />
-      <Cue from={36} src={sfx(S.whooshLong)} volume={0.32} playbackRate={0.85} dur={48} />
+      <Ambient from={0} dur={42} volume={0.28} />
+      {SCENE01_CONVEYOR_TICKS.map((f) => (
+        <ConveyorTick key={`s1-tick-${f}`} from={f} />
+      ))}
 
-      {/* Phrase A — every word ticks */}
-      <Cue from={0} src={sfx(S.popLow)} volume={0.4} playbackRate={1.0} />        {/* You */}
-      <Cue from={10} src={sfx(S.click)} volume={0.42} />                          {/* spent */}
-      <Cue from={15} src={sfx(S.popSharp)} volume={0.7} />                        {/* 10,000 — emphasis */}
-      <Cue from={21} src={sfx(S.click)} volume={0.4} playbackRate={1.05} />       {/* hours */}
+      {/* Phrase A — every word */}
+      <Word from={0} />     {/* You */}
+      <Word from={10} />    {/* spent */}
+      <Emphasis from={15} />{/* 10,000 */}
+      <Word from={21} />    {/* hours */}
 
-      {/* v10,000 lands at horizontal center — payoff */}
-      <Cue from={36} src={sfx(S.popSharp)} volume={0.72} playbackRate={0.92} />
-      <Cue from={37} src={sfx(S.obtain2Dry)} volume={0.45} trimAfter={20} dur={22} />
+      {/* v10,000 parks at center — the conveyor's payoff */}
+      <Cue from={36} src={sfx(FILES.payoff)} volume={0.55} dur={32} />
 
       {/* Phrase A → B switch */}
-      <Cue from={41} src={sfx(S.whooshVeryFast)} volume={0.62} />
+      <Whoosh from={41} />
 
-      {/* Phrase B — every word ticks */}
-      <Cue from={47} src={sfx(S.popLow)} volume={0.45} />                         {/* perfecting */}
-      <Cue from={53} src={sfx(S.click)} volume={0.42} playbackRate={1.04} />      {/* your */}
-      <Cue from={58} src={sfx(S.popLow)} volume={0.45} playbackRate={0.97} />     {/* trading */}
-      <Cue from={64} src={sfx(S.popSharp)} volume={0.65} />                       {/* strategies — knife */}
+      {/* Phrase B — every word */}
+      <Word from={47} />    {/* perfecting */}
+      <Word from={53} />    {/* your */}
+      <Word from={58} />    {/* trading */}
+      <Emphasis from={64} />{/* strategies */}
 
       {/* ═════════════════════════════════════════════════════════════
           Scene 02 — TryRainbows (84–132)
-          "How rainbows improve / your gains?" slides in together.
+          "How rainbows improve / your gains?" slides in.
           ═════════════════════════════════════════════════════════════ */}
-      <Cue from={84} src={sfx(S.whooshSharpLong)} volume={0.65} dur={48} />
-      {/* All five words enter on the same slide — five quick taps to
-          mark each one as a discrete word. */}
-      <Cue from={87} src={sfx(S.click)} volume={0.36} playbackRate={1.06} />      {/* How */}
-      <Cue from={90} src={sfx(S.click)} volume={0.4} playbackRate={1.0} />        {/* rainbows */}
-      <Cue from={93} src={sfx(S.click)} volume={0.38} playbackRate={1.08} />      {/* improve */}
-      <Cue from={97} src={sfx(S.click)} volume={0.36} playbackRate={1.04} />      {/* your */}
-      <Cue from={101} src={sfx(S.popLow)} volume={0.48} />                        {/* gains? */}
-      <Cue from={120} src={sfx(S.select3)} volume={0.32} trimAfter={18} dur={18} />        {/* hold */}
+      <Whoosh from={84} dur={24} />
+      <Word from={87} />    {/* How */}
+      <Word from={90} />    {/* rainbows */}
+      <Word from={93} />    {/* improve */}
+      <Word from={97} />    {/* your */}
+      <Emphasis from={101} />{/* gains? */}
 
       {/* ═════════════════════════════════════════════════════════════
           Scene 03 — CubeExplode (132–204)
-          Beat 1 (132): 4 boxes punch in. Beat 2 (154): text border
-          snaps in and orbits. Beat 3 (174): rectangles morph to shapes.
+          Boxes punch in (132), text border snaps in (154), morph (174).
           ═════════════════════════════════════════════════════════════ */}
-      {/* Boxes punch in — staggered ticks */}
-      <Cue from={132} src={sfx(S.popCartoon)} volume={0.6} />                     {/* Stocks */}
-      <Cue from={133} src={sfx(S.popLow)} volume={0.5} playbackRate={1.05} />     {/* Crypto */}
-      <Cue from={134} src={sfx(S.popLow)} volume={0.5} playbackRate={1.1} />      {/* Predictions */}
-      <Cue from={135} src={sfx(S.popLow)} volume={0.5} playbackRate={1.15} />     {/* Memecoins */}
-      <Cue from={138} src={sfx(S.clickDigi)} volume={0.32} />
+      <Whoosh from={132} />
+      <Shape from={132} volume={0.32} />  {/* Stocks box */}
+      <Shape from={133} volume={0.3} />   {/* Crypto */}
+      <Shape from={134} volume={0.3} />   {/* Predictions */}
+      <Shape from={135} volume={0.3} />   {/* Memecoins */}
 
-      {/* Text border snaps + orbit ambient */}
-      <Cue from={154} src={sfx(S.whooshSharpFast)} volume={0.62} />
-      <Cue from={158} src={sfx(S.select4)} volume={0.42} />
-      <Cue from={162} src={sfx(S.whooshLong)} volume={0.26} trimAfter={36} dur={36} />     {/* orbit drone */}
+      <Whoosh from={154} volume={0.4} />  {/* text border snap */}
+      <Ambient from={158} dur={42} volume={0.18} />  {/* orbit drone */}
 
-      {/* Morph beat — four shapes arrive */}
-      <Cue from={174} src={sfx(S.obtain2)} volume={0.55} dur={32} />
-      <Cue from={175} src={sfx(S.whooshVeryFastCine)} volume={0.45} />
-      <Cue from={178} src={sfx(S.popLow)} volume={0.4} playbackRate={1.2} />      {/* Flower */}
-      <Cue from={180} src={sfx(S.popLow)} volume={0.4} playbackRate={1.0} />      {/* Heart */}
-      <Cue from={182} src={sfx(S.popLow)} volume={0.4} playbackRate={0.85} />     {/* Star */}
-      <Cue from={184} src={sfx(S.popLow)} volume={0.4} playbackRate={0.9} />      {/* Cloud */}
-      <Cue from={192} src={sfx(S.clickDigi)} volume={0.36} />
+      <Whoosh from={174} volume={0.4} />  {/* morph */}
+      <Shape from={178} volume={0.3} />   {/* Flower */}
+      <Shape from={180} volume={0.3} />   {/* Heart */}
+      <Shape from={182} volume={0.3} />   {/* Star */}
+      <Shape from={184} volume={0.3} />   {/* Cloud */}
 
       {/* ═════════════════════════════════════════════════════════════
           Scene 04 — FilterAndPercent (204–312)
-          Phrase A: 5 words. Phase swap +47. Counter 0→70 (~34f).
-          Starburst expand 1.8s. Subtitle reveal +74.
+          Phrase A: 5 words. Phase swap (251). Counter 0→70 (~34f).
+          Subtitle reveal at 278.
           ═════════════════════════════════════════════════════════════ */}
-      <Cue from={204} src={sfx(S.whooshSharpFast)} volume={0.45} />
+      <Whoosh from={204} volume={0.4} />
+      <Word from={205} />   {/* Rainbows */}
+      <Word from={210} />   {/* filters */}
+      <Word from={214} />   {/* out */}
+      <Word from={219} />   {/* illegal */}
+      <Word from={223} />   {/* activities */}
 
-      {/* Phrase A — typewriter feel, errors land on the semantic words */}
-      <Cue from={205} src={sfx(S.click)} volume={0.45} />                         {/* Rainbows */}
-      <Cue from={210} src={sfx(S.click)} volume={0.45} playbackRate={1.04} />     {/* filters */}
-      <Cue from={214} src={sfx(S.click)} volume={0.42} playbackRate={1.08} />     {/* out */}
-      <Cue from={219} src={sfx(S.wrong)} volume={0.55} />                         {/* illegal */}
-      <Cue from={223} src={sfx(S.err1)} volume={0.5} />                           {/* activities */}
-
-      {/* Phase swap → light gradient */}
-      <Cue from={251} src={sfx(S.whooshEpic1)} volume={0.62} dur={36} />
-      <Cue from={256} src={sfx(S.whooshVeryFastCine)} volume={0.52} />
-      <Cue from={256} src={sfx(S.click)} volume={0.36} />                         {/* "regaining" reveal */}
-
-      {/* Counter ramp 0→70 — 8 ticks accelerating */}
-      <Cue from={257} src={sfx(S.obtain1)} volume={0.6} dur={36} />
-      {[260, 264, 267, 270, 273, 277, 282, 288].map((f, i) => (
-        <Cue
-          key={`s4-count-${i}`}
-          from={f}
-          src={sfx(S.clickDigi)}
-          volume={0.24 + i * 0.018}
-          playbackRate={1.0 + i * 0.04}
-        />
+      {/* Phase swap → counter */}
+      <Whoosh from={251} />
+      <Cue from={257} src={sfx(FILES.counterPayoff)} volume={0.5} dur={36} />
+      {[260, 264, 268, 272, 276, 281, 287].map((f) => (
+        <CounterTick key={`s4-count-${f}`} from={f} />
       ))}
-      <Cue from={291} src={sfx(S.popSharp)} volume={0.6} />                       {/* 70% lands */}
+      <Emphasis from={291} /> {/* 70% lands */}
 
-      {/* Starburst radiate */}
-      <Cue from={263} src={sfx(S.whooshSharpLong)} volume={0.48} dur={48} />
-      <Cue from={265} src={sfx(S.on)} volume={0.32} trimAfter={42} dur={42} />
-
-      {/* Subtitle "of your potential profits" — 4 word ticks */}
-      <Cue from={278} src={sfx(S.obtain2Dry)} volume={0.45} dur={22} />
-      <Cue from={278} src={sfx(S.click)} volume={0.34} />                         {/* of */}
-      <Cue from={281} src={sfx(S.click)} volume={0.34} playbackRate={1.04} />     {/* your */}
-      <Cue from={284} src={sfx(S.click)} volume={0.36} playbackRate={1.08} />     {/* potential */}
-      <Cue from={288} src={sfx(S.popLow)} volume={0.45} />                        {/* profits — emphasis */}
+      {/* Subtitle — 4 words */}
+      <Whoosh from={278} volume={0.3} />
+      <Word from={278} />   {/* of */}
+      <Word from={281} />   {/* your */}
+      <Word from={284} />   {/* potential */}
+      <Word from={288} />   {/* profits */}
 
       {/* ═════════════════════════════════════════════════════════════
           Scene 05 — Manipulators (312–420)
-          Title "Removing", 6 conveyor shapes, 4 sniper passes.
+          Title "Removing", 6 conveyor shapes, 4 sniper passes at
+          +13 / +36 / +59 / +82 (comp 325 / 348 / 371 / 394).
           ═════════════════════════════════════════════════════════════ */}
-      <Cue from={312} src={sfx(S.whooshSharpLong)} volume={0.55} dur={48} />
-      <Cue from={313} src={sfx(S.selectGame)} volume={0.45} />
-      <Cue from={313} src={sfx(S.click)} volume={0.4} />                          {/* "Removing" */}
-      <Cue from={316} src={sfx(S.select4)} volume={0.32} />                       {/* rail */}
+      <Whoosh from={312} />
+      <Word from={313} />   {/* Removing */}
 
-      {/* 6 conveyor shapes appearing */}
-      {[316, 318, 320, 323, 325, 328].map((f, i) => (
-        <Cue
-          key={`s5-shape-${i}`}
-          from={f}
-          src={sfx(S.popLow)}
-          volume={0.34 - i * 0.014}
-          playbackRate={1.18 - i * 0.04}
-        />
+      {/* 6 conveyor shapes appear */}
+      {[316, 318, 320, 323, 325, 328].map((f) => (
+        <Shape key={`s5-shape-${f}`} from={f} volume={0.22} />
       ))}
 
       {/* Conveyor scroll ambient */}
-      <Cue from={319} src={sfx(S.whooshLong)} volume={0.22} trimAfter={84} dur={84} />
+      <Ambient from={319} dur={84} volume={0.2} />
 
-      {/* 4 sniper passes — each is a 5-cue mini-phrase:
-          lock-on / shot / tracer / detonate / debris.
-          Each label word ("frontrunners" / "orderbook spoofers" /
-          "illegal insiders" / "market manipulators") arrives with the
-          shot — the clap IS the word reveal. */}
-      {[
-        { start: 325, lockSnd: S.select2 },
-        { start: 348, lockSnd: S.select3 },
-        { start: 371, lockSnd: S.select2 },
-        { start: 394, lockSnd: S.select1 },
-      ].map((pass, i) => (
-        <React.Fragment key={`s5-pass-${i}`}>
-          <Cue from={pass.start - 7} src={sfx(pass.lockSnd)} volume={0.46} />
-          <Cue from={pass.start} src={sfx(S.clap)} volume={0.78} playbackRate={0.95 + i * 0.03} />
-          <Cue from={pass.start + 1} src={sfx(S.whooshVeryFast)} volume={0.46} />
-          <Cue from={pass.start + 5} src={sfx(S.popSharp)} volume={0.62} />
-          <Cue from={pass.start + 6} src={sfx(S.err2)} volume={0.36} />
-          <Cue from={pass.start + 14} src={sfx(S.popLow)} volume={0.28} playbackRate={0.85} />
+      {/* 4 sniper passes — same 3-cue sequence each time */}
+      {[325, 348, 371, 394].map((start) => (
+        <React.Fragment key={`s5-pass-${start}`}>
+          <Cue from={start - 7} src={sfx(FILES.lockOn)} volume={0.28} dur={14} />
+          <Cue from={start} src={sfx(FILES.shot)} volume={0.65} dur={14} />
+          <Cue from={start + 5} src={sfx(FILES.detonate)} volume={0.45} dur={14} />
         </React.Fragment>
       ))}
 
@@ -300,85 +218,68 @@ export const Sfx: React.FC = () => {
           Scene 06 — HonestTraders (420–504)
           6 concentric rings + Phrase 1 (6 words) → Phrase 2 (4 serif).
           ═════════════════════════════════════════════════════════════ */}
-      {/* Concentric rings — each gets a soft "select" descending */}
-      <Cue from={420} src={sfx(S.on)} volume={0.4} trimAfter={36} dur={36} />
+      {/* Concentric rings — same sample every time, descending volume */}
       {[
-        { f: 420, snd: S.select1, v: 0.36 },
-        { f: 424, snd: S.select2, v: 0.32 },
-        { f: 429, snd: S.select3, v: 0.28 },
-        { f: 433, snd: S.select4, v: 0.25 },
-        { f: 437, snd: S.select1, v: 0.22 },
-        { f: 442, snd: S.select2, v: 0.20 },
-      ].map((c, i) => (
-        <Cue
-          key={`s6-ring-${i}`}
-          from={c.f}
-          src={sfx(c.snd)}
-          volume={c.v}
-          playbackRate={1.0 + i * 0.025}
-        />
+        { f: 420, v: 0.22 },
+        { f: 424, v: 0.20 },
+        { f: 429, v: 0.18 },
+        { f: 433, v: 0.16 },
+        { f: 437, v: 0.14 },
+        { f: 442, v: 0.12 },
+      ].map((c) => (
+        <Ring key={`s6-ring-${c.f}`} from={c.f} volume={c.v} />
       ))}
 
       {/* Phrase 1 — 6 words */}
-      <Cue from={422} src={sfx(S.click)} volume={0.42} />                         {/* Leaving */}
-      <Cue from={425} src={sfx(S.click)} volume={0.38} playbackRate={1.04} />     {/* the */}
-      <Cue from={428} src={sfx(S.click)} volume={0.42} playbackRate={0.98} />     {/* same */}
-      <Cue from={431} src={sfx(S.click)} volume={0.42} playbackRate={1.06} />     {/* amount */}
-      <Cue from={434} src={sfx(S.click)} volume={0.38} playbackRate={1.02} />     {/* of */}
-      <Cue from={437} src={sfx(S.popLow)} volume={0.52} />                        {/* profits */}
+      <Word from={422} />   {/* Leaving */}
+      <Word from={425} />   {/* the */}
+      <Word from={428} />   {/* same */}
+      <Word from={431} />   {/* amount */}
+      <Word from={434} />   {/* of */}
+      <Emphasis from={437} />{/* profits */}
 
       {/* Phase swap — into the serif italic close */}
-      <Cue from={461} src={sfx(S.whooshVeryFastCine)} volume={0.58} />
-      <Cue from={467} src={sfx(S.obtain2Dry)} volume={0.62} dur={22} />
+      <Whoosh from={461} />
+      <Cue from={467} src={sfx(FILES.payoff)} volume={0.5} dur={28} />
 
-      {/* Phrase 2 — 4 words, building to "traders" */}
-      <Cue from={469} src={sfx(S.popLow)} volume={0.4} playbackRate={0.95} />     {/* to */}
-      <Cue from={473} src={sfx(S.popLow)} volume={0.45} />                        {/* fewer */}
-      <Cue from={478} src={sfx(S.popLow)} volume={0.5} playbackRate={0.92} />     {/* honest */}
-      <Cue from={482} src={sfx(S.popSharp)} volume={0.65} />                      {/* traders */}
+      {/* Phrase 2 — 4 words */}
+      <Word from={469} />   {/* to */}
+      <Word from={473} />   {/* fewer */}
+      <Word from={478} />   {/* honest */}
+      <Emphasis from={482} />{/* traders */}
 
       {/* ═════════════════════════════════════════════════════════════
-          Scene 10 — Finale, three scenes:
-            10a (504–540) "gain more" big bold on teal
-            10b (540–612) UI homepage + "while trading the same assets with"
-            10c (612–756) square wipe (612–626) → General lockup endcard
+          Scene 10a — GainMore (504–540)
+          "gain more" — two big bold words.
           ═════════════════════════════════════════════════════════════ */}
+      <Whoosh from={504} />
+      <Emphasis from={506} />{/* gain */}
+      <Emphasis from={511} />{/* more */}
 
-      {/* 10a — "gain more" entry */}
-      <Cue from={504} src={sfx(S.whooshSharpLong)} volume={0.58} dur={48} />
-      <Cue from={506} src={sfx(S.popSharp)} volume={0.62} />                      {/* gain */}
-      <Cue from={511} src={sfx(S.popSharp)} volume={0.55} playbackRate={0.92} />  {/* more */}
-      <Cue from={513} src={sfx(S.obtain2)} volume={0.45} trimAfter={26} dur={26} />
+      {/* ═════════════════════════════════════════════════════════════
+          Scene 10b — TradingWith (540–612)
+          UI drops in, italic phrase cascades word-by-word.
+          ═════════════════════════════════════════════════════════════ */}
+      <Whoosh from={540} />
+      <Word from={568} />   {/* while */}
+      <Word from={571} />   {/* trading */}
+      <Word from={574} />   {/* the */}
+      <Word from={577} />   {/* same */}
+      <Word from={580} />   {/* assets */}
+      <Word from={583} />   {/* with */}
 
-      {/* 10b — UI mockup drops in */}
-      <Cue from={540} src={sfx(S.whooshSharpLong)} volume={0.55} dur={48} />
-      <Cue from={544} src={sfx(S.select4)} volume={0.42} />                       {/* UI lands */}
+      {/* ═════════════════════════════════════════════════════════════
+          Scene 10c — Endcard (612–756)
+          Square wipe (612–626) → endcard with logo lockup + tagline.
+          ═════════════════════════════════════════════════════════════ */}
+      <Cue from={612} src={sfx(FILES.wipe)} volume={0.65} dur={24} />
+      <Cue from={626} src={sfx(FILES.payoff)} volume={0.55} dur={32} />
+      <Word from={636} /> {/* General */}
 
-      {/* 10b — "while trading the same assets with" — 6 word ticks (start at frame 568 = 540+28) */}
-      <Cue from={568} src={sfx(S.click)} volume={0.34} />                         {/* while */}
-      <Cue from={571} src={sfx(S.click)} volume={0.36} playbackRate={1.04} />     {/* trading */}
-      <Cue from={574} src={sfx(S.click)} volume={0.34} playbackRate={1.0} />      {/* the */}
-      <Cue from={577} src={sfx(S.click)} volume={0.36} playbackRate={1.08} />     {/* same */}
-      <Cue from={580} src={sfx(S.click)} volume={0.34} playbackRate={1.04} />     {/* assets */}
-      <Cue from={583} src={sfx(S.click)} volume={0.32} playbackRate={1.0} />      {/* with */}
-
-      {/* 10c — square wipe (612–626) eats the teal */}
-      <Cue from={612} src={sfx(S.whooshEpicFast)} volume={0.75} dur={24} />
-      <Cue from={617} src={sfx(S.whooshEpic2)} volume={0.42} dur={36} />
-
-      {/* 10c — Endcard reveal: bouncing dot, logo mark, "General" wordmark */}
-      <Cue from={626} src={sfx(S.obtain2)} volume={0.68} dur={32} />
-      <Cue from={626} src={sfx(S.popCartoon)} volume={0.48} />                    {/* bouncing dot */}
-      <Cue from={629} src={sfx(S.popLow)} volume={0.34} playbackRate={1.1} />     {/* dot bounce */}
-      <Cue from={632} src={sfx(S.popLow)} volume={0.3} playbackRate={1.2} />
-      <Cue from={632} src={sfx(S.select4)} volume={0.4} />                        {/* logo mark fade */}
-      <Cue from={636} src={sfx(S.click)} volume={0.42} />                         {/* "General" */}
-      <Cue from={640} src={sfx(S.on)} volume={0.3} trimAfter={48} dur={48} />
-
-      {/* 10c — Tagline "Markets for everything." — 3 word ticks */}
-      <Cue from={652} src={sfx(S.clickDigi)} volume={0.42} />                     {/* Markets */}
-      <Cue from={655} src={sfx(S.click)} volume={0.36} playbackRate={1.06} />     {/* for */}
-      <Cue from={658} src={sfx(S.popLow)} volume={0.42} />                        {/* everything */}
+      {/* Tagline — "Markets for everything." */}
+      <Word from={652} />   {/* Markets */}
+      <Word from={655} />   {/* for */}
+      <Word from={659} />   {/* everything */}
     </>
   );
 };
