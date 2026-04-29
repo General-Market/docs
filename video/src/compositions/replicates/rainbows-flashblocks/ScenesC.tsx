@@ -39,60 +39,90 @@ const baseText: React.CSSProperties = {
 };
 
 /* ═══════════════════════════════════════════════════════
-   Scene 06 — HonestTraders  (84 frames = 3.5s)
-   Concentric circles + serif italic.
-   "Leaving the same amount of profits" → "to fewer honest traders."
+   Scene 06 — Rainbows wraps everything  (84 frames = 3.5s)
+   Beat 1 (0–28): four white rectangles drop in, stacked, each labeled
+   (Stocks / Crypto / Predictions / Memecoins).
+   Beat 2 (28–84): a rainbow band sweeps top-to-bottom; as it crosses
+   each row, the rectangle morphs into an organic rainbow-painted shape
+   (flower / heart / star / cloud).
    ═══════════════════════════════════════════════════════ */
 
 const SCENE06_DURATION = 84;
-const SCENE06_PHASE1 = ["Leaving", "the", "same", "amount", "of", "profits"] as const;
-const SCENE06_PHASE2 = ["to", "fewer", "honest", "traders"] as const;
+const SCENE06_BEAT2_START = 30;
+const RB_GRAD_ID = "rb-scene06-grad";
+const RB_FILL = `url(#${RB_GRAD_ID})`;
 
-function buildScene06Proxies() {
-  const init: Record<string, Record<string, number>> = {
-    phase1Wrap: { opacity: 1 },
-    phase2Wrap: { opacity: 0, scale: 0.92 },
-    c0: { size: 0, opacity: 0 },
-    c1: { size: 0, opacity: 0 },
-    c2: { size: 0, opacity: 0 },
-    c3: { size: 0, opacity: 0 },
-    c4: { size: 0, opacity: 0 },
-    c5: { size: 0, opacity: 0 },
-  };
-  SCENE06_PHASE1.forEach((_, i) => { init[`p1_${i}`] = { opacity: 0, y: 15 }; });
-  SCENE06_PHASE2.forEach((_, i) => { init[`p2_${i}`] = { opacity: 0, y: 15 }; });
-  return init;
-}
+const ROW_W = 540;
+const ROW_H = 124;
+const ROW_GAP = 36;
+const STACK_TOP = (1080 - (ROW_H * 4 + ROW_GAP * 3)) / 2;
+const rowCenterY = (i: number) => STACK_TOP + ROW_H / 2 + i * (ROW_H + ROW_GAP);
 
-const scene06Init = buildScene06Proxies();
+const FlowerShape: React.FC = () => (
+  <svg viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+    {[0, 72, 144, 216, 288].map((rot) => (
+      <ellipse key={rot} cx="50" cy="28" rx="11" ry="20" fill={RB_FILL} transform={`rotate(${rot} 50 50)`} />
+    ))}
+    <circle cx="50" cy="50" r="9" fill="#fff" />
+  </svg>
+);
+
+const HeartShape: React.FC = () => (
+  <svg viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+    <path
+      d="M 50 86 C 18 64 10 46 10 32 C 10 20 22 12 34 12 C 42 12 48 18 50 24 C 52 18 58 12 66 12 C 78 12 90 20 90 32 C 90 46 82 64 50 86 Z"
+      fill={RB_FILL}
+    />
+  </svg>
+);
+
+const StarShape: React.FC = () => (
+  <svg viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+    <path d="M 50 8 L 61 38 L 93 38 L 67 57 L 77 88 L 50 70 L 23 88 L 33 57 L 7 38 L 39 38 Z" fill={RB_FILL} />
+  </svg>
+);
+
+const CloudShape: React.FC = () => (
+  <svg viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+    <ellipse cx="30" cy="58" rx="18" ry="15" fill={RB_FILL} />
+    <ellipse cx="50" cy="46" rx="22" ry="18" fill={RB_FILL} />
+    <ellipse cx="70" cy="56" rx="18" ry="15" fill={RB_FILL} />
+    <ellipse cx="50" cy="64" rx="30" ry="11" fill={RB_FILL} />
+  </svg>
+);
+
+const SCENE06_ROWS = [
+  { label: "Stocks", Shape: FlowerShape },
+  { label: "Crypto", Shape: HeartShape },
+  { label: "Predictions", Shape: StarShape },
+  { label: "Memecoins", Shape: CloudShape },
+] as const;
 
 export const Scene06_HonestTraders: React.FC = () => {
-  const s = useGsapProxy(
-    (tl, p) => {
-      const circles = [p.c0, p.c1, p.c2, p.c3, p.c4, p.c5];
-      const maxSizes = [90, 262, 434, 606, 778, 950];
-      circles.forEach((c, i) => {
-        const start = i * 0.18;
-        tl.to(c, { opacity: 0.4, duration: 0.01 }, start);
-        tl.to(c, { size: maxSizes[i], duration: 1.8, ease: "power1.out" }, start);
-      });
+  const frame = useCurrentFrame();
 
-      SCENE06_PHASE1.forEach((_, i) => {
-        tl.to(p[`p1_${i}`], { opacity: 1, y: 0, duration: 0.14, ease: "power2.out" }, 0.1 + i * 0.13);
-      });
+  const dropProgress = (i: number) =>
+    interpolate(frame, [i * 5, i * 5 + 14], [0, 1], {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: Easing.out(Easing.cubic),
+    });
 
-      tl.to(p.phase1Wrap, { opacity: 0, duration: 0.22, ease: "power2.in" }, 1.7);
+  const sweepY = interpolate(frame, [SCENE06_BEAT2_START, SCENE06_DURATION], [-160, 1240], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.bezier(0.45, 0, 0.55, 1),
+  });
 
-      tl.to(p.phase2Wrap, { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(1.4)" }, 1.95);
+  const morph = (i: number) => {
+    const cy = rowCenterY(i);
+    return interpolate(sweepY, [cy - 90, cy + 50], [0, 1], {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    });
+  };
 
-      SCENE06_PHASE2.forEach((_, i) => {
-        tl.to(p[`p2_${i}`], { opacity: 1, y: 0, duration: 0.18, ease: "power2.out" }, 2.05 + i * 0.18);
-      });
-    },
-    scene06Init,
-  );
-
-  const circles = [s.c0, s.c1, s.c2, s.c3, s.c4, s.c5];
+  const sweepActive = frame >= SCENE06_BEAT2_START - 2 && frame <= SCENE06_DURATION + 4;
 
   return (
     <AbsoluteFill>
@@ -100,93 +130,115 @@ export const Scene06_HonestTraders: React.FC = () => {
         <DynamicSolidBlue />
       </ZoomedBg>
 
-      {circles.map((c, i) => (
-        <div
-          key={i}
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            width: c.size,
-            height: c.size,
-            transform: "translate(-50%, -50%)",
-            borderRadius: "50%",
-            border: "3px solid rgba(255,255,255,0.4)",
-            opacity: c.opacity,
-          }}
-        />
-      ))}
+      <svg width="0" height="0" style={{ position: "absolute" }}>
+        <defs>
+          <linearGradient id={RB_GRAD_ID} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#FF3B3B" />
+            <stop offset="20%" stopColor="#FF8A1A" />
+            <stop offset="40%" stopColor="#FFD700" />
+            <stop offset="60%" stopColor="#3FCC3F" />
+            <stop offset="80%" stopColor="#0ABAB5" />
+            <stop offset="100%" stopColor="#9C5FFF" />
+          </linearGradient>
+        </defs>
+      </svg>
 
-      <div
-        style={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          display: "flex",
-          flexWrap: "wrap",
-          justifyContent: "center",
-          gap: "10px 20px",
-          maxWidth: "92%",
-          opacity: s.phase1Wrap.opacity,
-        }}
-      >
-        {SCENE06_PHASE1.map((word, i) => {
-          const proxy = s[`p1_${i}`];
-          return (
-            <span
-              key={i}
+      {SCENE06_ROWS.map((row, i) => {
+        const drop = dropProgress(i);
+        const m = morph(i);
+        const cy = rowCenterY(i);
+        const Shape = row.Shape;
+
+        return (
+          <div
+            key={i}
+            style={{
+              position: "absolute",
+              left: "50%",
+              top: cy,
+              width: ROW_W,
+              height: ROW_H,
+              transform: `translate(-50%, calc(-50% + ${(1 - drop) * -28}px))`,
+              opacity: drop,
+            }}
+          >
+            <div
               style={{
-                ...baseText,
-                fontSize: 95,
-                color: "#fff",
-                opacity: proxy.opacity,
-                transform: `translateY(${proxy.y}px)`,
+                position: "absolute",
+                inset: 0,
+                backgroundColor: "#fff",
+                borderRadius: 10,
+                boxShadow: "0 10px 32px rgba(0,0,0,0.22)",
+                opacity: 1 - m,
+                transform: `scale(${1 - m * 0.35})`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
               }}
             >
-              {word}
-            </span>
-          );
-        })}
-      </div>
+              <span
+                style={{
+                  fontFamily,
+                  fontWeight: 700,
+                  fontSize: 58,
+                  letterSpacing: "-0.02em",
+                  color: "#0a3a38",
+                }}
+              >
+                {row.label}
+              </span>
+            </div>
 
-      <div
-        style={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: `translate(-50%, -50%) scale(${s.phase2Wrap.scale})`,
-          textAlign: "center",
-          maxWidth: "92%",
-          opacity: s.phase2Wrap.opacity,
-          display: "flex",
-          flexWrap: "wrap",
-          justifyContent: "center",
-          gap: "0 22px",
-        }}
-      >
-        {SCENE06_PHASE2.map((word, i) => {
-          const proxy = s[`p2_${i}`];
-          return (
-            <span
-              key={i}
+            <div
               style={{
-                fontFamily: 'Georgia, "Times New Roman", serif',
-                fontWeight: 400,
-                fontStyle: "italic",
-                fontSize: 130,
-                color: "#fff",
-                lineHeight: 1.15,
-                display: "inline-block",
-                opacity: proxy.opacity,
-                transform: `translateY(${proxy.y}px)`,
+                position: "absolute",
+                top: 0,
+                left: "50%",
+                width: ROW_H,
+                height: ROW_H,
+                transform: `translateX(-50%) scale(${0.55 + m * 0.45})`,
+                opacity: m,
               }}
             >
-              {word}
-            </span>
-          );
-        })}
-      </div>
+              <Shape />
+            </div>
+          </div>
+        );
+      })}
+
+      {sweepActive && (
+        <>
+          <div
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              top: 0,
+              height: 220,
+              transform: `translateY(${sweepY - 110}px)`,
+              background:
+                "linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.0) 25%, rgba(255,255,255,0.16) 50%, rgba(255,255,255,0.0) 75%, transparent 100%)",
+              filter: "blur(10px)",
+              pointerEvents: "none",
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              top: 0,
+              height: 5,
+              transform: `translateY(${sweepY}px)`,
+              background:
+                "linear-gradient(90deg, #FF3B3B 0%, #FF8A1A 20%, #FFD700 40%, #3FCC3F 60%, #0ABAB5 80%, #9C5FFF 100%)",
+              boxShadow:
+                "0 0 28px 8px rgba(255,255,255,0.40), 0 0 80px 30px rgba(150,200,255,0.22)",
+              pointerEvents: "none",
+            }}
+          />
+        </>
+      )}
     </AbsoluteFill>
   );
 };
