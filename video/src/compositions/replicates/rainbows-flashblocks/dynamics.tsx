@@ -14,72 +14,26 @@ import { PLACEHOLDER_COLORS } from "../../launch/brollAssets";
 import { BrollCell } from "../../launch/shots/BrollCell";
 
 /* ═══════════════════════════════════════════════════════
-   Dynamic backgrounds — gradients that drift, breathe, and
-   carry a residual zoom across scene cuts.
+   Dynamic backgrounds — flat shades, no motion.
+   Single teal #0ABAB5 for the brand surfaces; near-white
+   #eff8f7 for the light counterpart. No gradient stops, no
+   noise drift. Names kept for back-compat with the scenes.
    ═══════════════════════════════════════════════════════ */
 
-// ── Animated teal mesh gradient (drifting tonal blobs, no white) ──
-export const DynamicBlue: React.FC<{ speed?: number }> = ({ speed = 0.022 }) => {
-  const frame = useCurrentFrame();
-  const t = frame * speed;
+const TEAL = "#0ABAB5";
+const TEAL_LIGHT = "#eff8f7";
 
-  const x3 = 18 + noise2D("rb-x3", t, 2) * 22;
-  const y3 = 88 + noise2D("rb-y3", t, 2.5) * 12;
-  const angle = 135 + Math.sin(t * 0.4) * 12;
+export const DynamicBlue: React.FC<{ speed?: number }> = () => (
+  <AbsoluteFill style={{ backgroundColor: TEAL }} />
+);
 
-  return (
-    <AbsoluteFill
-      style={{
-        background: `
-          radial-gradient(ellipse 100% 100% at ${x3}% ${y3}%, rgba(200,240,238,0.4) 0%, transparent 55%),
-          radial-gradient(ellipse 70% 70% at 50% 50%, rgba(120,235,225,0.22) 0%, transparent 65%),
-          linear-gradient(${angle}deg, #0BC4BE 0%, #1FCFC9 25%, #48E0DA 45%, #1FCFC9 65%, #0ABAB5 85%, #089A95 100%)
-        `,
-      }}
-    />
-  );
-};
+export const DynamicLight: React.FC<{ speed?: number }> = () => (
+  <AbsoluteFill style={{ backgroundColor: TEAL_LIGHT }} />
+);
 
-// ── Animated light gradient (tonal teal-tinted, no white spotlight) ──
-export const DynamicLight: React.FC<{ speed?: number }> = ({ speed = 0.018 }) => {
-  const frame = useCurrentFrame();
-  const t = frame * speed;
-
-  const x2 = 72 + noise2D("rl-x2", t, 1) * 18;
-  const y2 = 70 + noise2D("rl-y2", t, 1.5) * 18;
-  const angle = 135 + Math.cos(t * 0.5) * 10;
-
-  return (
-    <AbsoluteFill
-      style={{
-        background: `
-          radial-gradient(ellipse 60% 60% at ${x2}% ${y2}%, rgba(220,245,243,0.55) 0%, transparent 65%),
-          linear-gradient(${angle}deg, #eff8f7 0%, #e7f4f3 40%, #f4faf9 60%, #ecf6f5 100%)
-        `,
-      }}
-    />
-  );
-};
-
-// ── Animated solid blue (used to be flat — now breathes) ──
-export const DynamicSolidBlue: React.FC<{ speed?: number }> = ({ speed = 0.018 }) => {
-  const frame = useCurrentFrame();
-  const t = frame * speed;
-  const x = 50 + noise2D("rs-x", t, 0) * 18;
-  const y = 50 + noise2D("rs-y", t, 0.5) * 18;
-  const angle = 160 + Math.sin(t * 0.3) * 14;
-
-  return (
-    <AbsoluteFill
-      style={{
-        background: `
-          radial-gradient(ellipse 70% 70% at ${x}% ${y}%, rgba(80,210,200,0.35) 0%, transparent 60%),
-          linear-gradient(${angle}deg, #0BC0BB 0%, #0ABAB5 40%, #089A95 70%, #0AB0AB 100%)
-        `,
-      }}
-    />
-  );
-};
+export const DynamicSolidBlue: React.FC<{ speed?: number }> = () => (
+  <AbsoluteFill style={{ backgroundColor: TEAL }} />
+);
 
 // ── Animated dark background (slow drift, deep navy) ──
 export const DynamicDark: React.FC<{ speed?: number }> = ({ speed = 0.014 }) => {
