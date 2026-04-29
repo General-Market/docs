@@ -6,6 +6,7 @@ import {
   Scene06_HonestTraders,
   Scene10_Finale,
 } from "./ScenesC";
+import { Sfx } from "./Sfx";
 
 /*
  * Rainbows — script v3 (post-cut: scenes 07, 08, 09 removed; scene 02 trimmed)
@@ -45,6 +46,7 @@ export const RainbowsFlashblocksComposition: React.FC = () => {
       <Sequence from={504} durationInFrames={144} name="10 Finale">
         <Scene10_Finale />
       </Sequence>
+      <Sfx />
     </AbsoluteFill>
   );
 };
