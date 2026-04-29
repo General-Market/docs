@@ -6,6 +6,7 @@
 // Investment.createITP — direct L3 path (post-permissionless upgrade).
 // `bridgeNonce` = type(uint256).max signals a non-bridge call; the contract
 // skips its idempotency mapping and creates a fresh ITP every time.
+// ITPCreated is included so receipts can be decoded for the new itpId.
 export const INDEX_CREATE_ITP_ABI = [
   {
     inputs: [
@@ -20,6 +21,19 @@ export const INDEX_CREATE_ITP_ABI = [
     outputs: [{ name: 'itpId', type: 'bytes32' }],
     stateMutability: 'nonpayable',
     type: 'function',
+  },
+  {
+    type: 'event',
+    name: 'ITPCreated',
+    anonymous: false,
+    inputs: [
+      { name: 'itpId', type: 'bytes32', indexed: true },
+      { name: 'creator', type: 'address', indexed: true },
+      { name: 'name', type: 'bytes32', indexed: false },
+      { name: 'symbol', type: 'bytes32', indexed: false },
+      { name: 'assets', type: 'address[]', indexed: false },
+      { name: 'weights', type: 'uint256[]', indexed: false },
+    ],
   },
 ] as const
 

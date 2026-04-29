@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAccount, useWaitForTransactionReceipt, useSwitchChain, useWriteContract, usePublicClient } from 'wagmi'
+import { decodeEventLog } from 'viem'
+import Link from 'next/link'
 import { motion, useReducedMotion } from 'framer-motion'
 import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
 import { INDEX_CREATE_ITP_ABI, BRIDGE_NONCE_SENTINEL } from '@/lib/contracts/index-protocol-abi'
@@ -82,7 +84,9 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
   const { switchChainAsync } = useSwitchChain()
   const l3PublicClient = usePublicClient({ chainId: activeChainId })
   const { writeContract, writeContractAsync, data: hash, isPending, error: writeError, reset: resetWrite } = useWriteContract()
-  const { isLoading: isConfirming, isSuccess, error: confirmError } = useWaitForTransactionReceipt({ hash, chainId: activeChainId })
+  const { data: receipt, isLoading: isConfirming, isSuccess, error: confirmError } = useWaitForTransactionReceipt({ hash, chainId: activeChainId })
+  // Decoded itpId from the ITPCreated log — used to render a "View ITP" link.
+  const [createdItpId, setCreatedItpId] = useState<string | null>(null)
 
   // Toast notifications for ITP creation (direct call on L3, no bridge)
   useTransactionNotification({
@@ -466,6 +470,26 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
     }
   }, [isSuccess, refreshNonce])
 
+  // Pull the new itpId out of the ITPCreated log. The L3-direct path emits
+  // exactly one of these per tx; first match wins.
+  useEffect(() => {
+    if (!isSuccess || !receipt || createdItpId) return
+    for (const log of receipt.logs) {
+      if (log.address.toLowerCase() !== INDEX_PROTOCOL.index.toLowerCase()) continue
+      try {
+        const decoded = decodeEventLog({
+          abi: INDEX_CREATE_ITP_ABI,
+          data: log.data,
+          topics: log.topics,
+        })
+        if (decoded.eventName === 'ITPCreated') {
+          setCreatedItpId(decoded.args.itpId as string)
+          break
+        }
+      } catch { /* not the ITPCreated event, keep scanning */ }
+    }
+  }, [isSuccess, receipt, createdItpId])
+
   // Reset form when finalize modal closes after a successful deploy
   useEffect(() => {
     if (!showFinalizeModal && successRef.current) {
@@ -476,6 +500,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
       resetWrite()
       setItpCountBefore(null)
       setConsensusReached(false)
+      setCreatedItpId(null)
     }
   }, [showFinalizeModal, resetWrite])
 
@@ -765,7 +790,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
           hasNonceGap={hasNonceGap}
           txError={txError}
           isSuccess={isSuccess}
-          consensusReached={consensusReached}
+          createdItpId={createdItpId}
           stuckWarning={stuckWarning}
           onCancel={handleCancel}
         />
@@ -787,7 +812,7 @@ interface FinalizeItpModalProps {
   hasNonceGap: boolean
   txError: string | null
   isSuccess: boolean
-  consensusReached: boolean
+  createdItpId: string | null
   stuckWarning: boolean
   onCancel: () => void
 }
@@ -795,7 +820,7 @@ interface FinalizeItpModalProps {
 function FinalizeItpModal({
   name, setName, symbol, setSymbol, selectedAssets,
   onClose, onSubmit, isPending, isConfirming, isFetchingPrices,
-  hasNonceGap, txError, isSuccess, consensusReached, stuckWarning, onCancel,
+  hasNonceGap, txError, isSuccess, createdItpId, stuckWarning, onCancel,
 }: FinalizeItpModalProps) {
   const t = useTranslations('create-itp')
   const tc = useTranslations('common')
@@ -822,6 +847,24 @@ function FinalizeItpModal({
       ? t('finalize.symbol_label')
       : null
 
+  // Mobile: lock body scroll while the modal is open and snap the viewport to
+  // top. Without this the page underneath stays where the user was scrolled and
+  // a fixed-positioned modal can fall outside the visible viewport — especially
+  // when the iOS URL bar is collapsed.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const prevScrollY = window.scrollY
+    const prevBodyOverflow = document.body.style.overflow
+    window.scrollTo({ top: 0 })
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prevBodyOverflow
+      window.scrollTo({ top: prevScrollY })
+    }
+  }, [])
+
+  const itpHref = createdItpId ? `/itp/${createdItpId}` : null
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
@@ -829,19 +872,6 @@ function FinalizeItpModal({
 
       {/* Modal */}
       <SpringModal className="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-        {/* Orbital pipeline ring, replaces the staring contest */}
-        {(isDeploying || isSuccess) && (
-          <CreatePipelineRing
-            isFetchingPrices={isFetchingPrices}
-            isPending={isPending}
-            isConfirming={isConfirming}
-            isSuccess={isSuccess}
-            consensusReached={consensusReached}
-            symbol={symbol}
-            assetCount={selectedAssets.length}
-          />
-        )}
-
         {/* Header */}
         <div className="flex justify-between items-center px-6 py-4 border-b border-border-light">
           <div>
@@ -850,6 +880,17 @@ function FinalizeItpModal({
           </div>
           <button onClick={onClose} className="text-text-muted hover:text-text-primary text-xl leading-none">×</button>
         </div>
+
+        {/* Status panel — bounded, no negative margins, lives between header and form */}
+        {(isDeploying || isSuccess) && (
+          <CreateStatusPanel
+            isFetchingPrices={isFetchingPrices}
+            isPending={isPending}
+            isConfirming={isConfirming}
+            isSuccess={isSuccess}
+            symbol={symbol}
+          />
+        )}
 
         {/* Form */}
         <div className={`p-6 space-y-4 transition-opacity duration-300 ${formLocked ? 'opacity-40 pointer-events-none' : ''}`}>
@@ -892,17 +933,28 @@ function FinalizeItpModal({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-border-light flex justify-between items-center mt-3">
-          <button onClick={onClose} className="text-sm text-text-muted hover:text-text-secondary transition-colors">
+        <div className="px-6 py-4 border-t border-border-light flex flex-col-reverse sm:flex-row sm:justify-between sm:items-center gap-3 mt-3">
+          <button onClick={onClose} className="text-sm text-text-muted hover:text-text-secondary transition-colors self-start">
             {tc('actions.back')}
           </button>
           {isSuccess ? (
-            <button
-              onClick={onClose}
-              className="bg-zinc-900 text-white font-medium rounded-lg px-6 py-2.5 hover:bg-zinc-800 transition-colors fluid-press"
-            >
-              {tc('actions.close')}
-            </button>
+            <div className="flex items-center gap-2 self-stretch sm:self-auto">
+              {itpHref && (
+                <Link
+                  href={itpHref}
+                  onClick={onClose}
+                  className="flex-1 sm:flex-none text-center bg-zinc-900 text-white font-medium rounded-lg px-5 py-2.5 hover:bg-zinc-800 transition-colors fluid-press"
+                >
+                  See my ITP →
+                </Link>
+              )}
+              <button
+                onClick={onClose}
+                className={`${itpHref ? 'border border-border-medium text-text-secondary hover:text-text-primary' : 'bg-zinc-900 text-white hover:bg-zinc-800'} font-medium rounded-lg px-5 py-2.5 transition-colors fluid-press`}
+              >
+                {tc('actions.close')}
+              </button>
+            </div>
           ) : (
             <div className="flex flex-col items-end gap-1">
               {missingReason && !isDeploying && (
@@ -923,236 +975,66 @@ function FinalizeItpModal({
   )
 }
 
-/**
- * Orbital pipeline ring. Replaces the flat progress bar with a full SVG
- * visualisation of the six semantic phases: prices, sign, submit, relay,
- * consensus, live. Outer ring tracks elapsed-vs-typical time, inner arcs
- * fill as phases complete, three dots schematically represent the 3-of-3
- * oracle consensus (no per-keeper feed is faked — there isn't one for
- * create). Reduced-motion collapses to a static snapshot.
+/* ── Status panel ──
+ * The L3-direct path is synchronous: prices → sign → submit, done. No relay,
+ * no consensus wait. This panel is bounded, lives between header and form,
+ * and never overflows its container. Replaces the old orbital ring.
  */
-interface CreatePipelineRingProps {
+interface CreateStatusPanelProps {
   isFetchingPrices: boolean
   isPending: boolean
   isConfirming: boolean
   isSuccess: boolean
-  consensusReached: boolean
   symbol: string
-  assetCount: number
 }
 
-type Phase = 'prices' | 'sign' | 'submit' | 'relay' | 'consensus' | 'live'
-
-const PHASE_ORDER: Phase[] = ['prices', 'sign', 'submit', 'relay', 'consensus', 'live']
-
-// Typical durations in ms. The outer ring treats the sum as the "budget".
-// Relay + consensus dominate — they are the real wait.
-const PHASE_DURATIONS: Record<Phase, number> = {
-  prices: 3_000,
-  sign: 5_000,
-  submit: 8_000,
-  relay: 40_000,
-  consensus: 60_000,
-  live: 0,
-}
-
-const TYPICAL_TOTAL_MS =
-  PHASE_DURATIONS.prices +
-  PHASE_DURATIONS.sign +
-  PHASE_DURATIONS.submit +
-  PHASE_DURATIONS.relay +
-  PHASE_DURATIONS.consensus
-
-function formatMMSS(ms: number): string {
-  const total = Math.max(0, Math.floor(ms / 1000))
-  const m = Math.floor(total / 60)
-  const s = total % 60
-  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
-}
-
-function CreatePipelineRing({
-  isFetchingPrices, isPending, isConfirming, isSuccess, consensusReached,
-  symbol, assetCount,
-}: CreatePipelineRingProps) {
-  const t = useTranslations('create-itp')
+function CreateStatusPanel({ isFetchingPrices, isPending, isConfirming, isSuccess, symbol }: CreateStatusPanelProps) {
   const reduced = useReducedMotion()
-
-  const currentPhase: Phase = consensusReached
-    ? 'live'
-    : isSuccess
-      ? 'consensus'  // settlement tx confirmed, oracles relaying + reaching consensus
-      : isConfirming
-        ? 'submit'
-        : isPending
-          ? 'sign'
-          : isFetchingPrices
-            ? 'prices'
-            : 'prices'
-
-  const currentIndex = PHASE_ORDER.indexOf(currentPhase)
-
-  // Track elapsed time from mount. Not a precise per-phase clock — the
-  // outer ring is a budget, not a stopwatch. When it fills, it holds.
-  const [elapsedMs, setElapsedMs] = useState(0)
-  const startRef = useRef<number>(Date.now())
-  useEffect(() => {
-    if (consensusReached) return
-    const id = setInterval(() => {
-      setElapsedMs(Date.now() - startRef.current)
-    }, 500)
-    return () => clearInterval(id)
-  }, [consensusReached])
-
-  // SVG geometry
-  const size = 240
-  const cx = size / 2
-  const cy = size / 2
-  const rOuter = 110
-  const rInner = 96
-  const cOuter = 2 * Math.PI * rOuter
-  const cInner = 2 * Math.PI * rInner
-
-  // Outer ring fill, capped at 100%
-  const budgetProgress = Math.min(1, elapsedMs / TYPICAL_TOTAL_MS)
-  const outerOffset = cOuter * (1 - (consensusReached ? 1 : budgetProgress))
-
-  // Inner arcs: five active phases (prices, sign, submit, relay, consensus).
-  // Each owns 1/5 of the circumference. Phases before current are full,
-  // current phase fills proportionally, later phases are empty.
-  const ACTIVE_PHASES: Phase[] = ['prices', 'sign', 'submit', 'relay', 'consensus']
-  const sliceArc = cInner / ACTIVE_PHASES.length
-  const sliceGap = 4 // px breathing room between slices
-
-  // Keeper dots, three of them, evenly placed on the ring at angles
-  // that sit inside the relay + consensus zone.
-  const keeperAngles = [210, 270, 330] // degrees, SVG is -90 offset
-  const keepersActive = isSuccess || consensusReached
-
-  const phaseLabel = t(`finalize.phases.${currentPhase}`)
+  const phaseLabel = isSuccess
+    ? 'ITP deployed'
+    : isConfirming
+      ? 'Awaiting block confirmation'
+      : isPending
+        ? 'Sign the transaction in your wallet'
+        : isFetchingPrices
+          ? 'Fetching live prices'
+          : 'Preparing'
 
   return (
-    <div className="px-6 pt-6 pb-2 flex flex-col items-center">
-      <svg
-        viewBox={`0 0 ${size} ${size}`}
-        width={220}
-        height={220}
-        aria-hidden="true"
-        className="block"
-      >
-        {/* Outer ring, base track */}
-        <circle cx={cx} cy={cy} r={rOuter} fill="none"
-          className="stroke-zinc-200" strokeWidth={3} />
-
-        {/* Outer ring, elapsed progress */}
-        <motion.circle
-          cx={cx} cy={cy} r={rOuter} fill="none"
-          className={consensusReached ? 'stroke-emerald-500' : 'stroke-zinc-900'}
-          strokeWidth={3}
-          strokeLinecap="round"
-          strokeDasharray={cOuter}
-          initial={{ strokeDashoffset: cOuter }}
-          animate={{ strokeDashoffset: reduced ? outerOffset : outerOffset }}
-          transition={reduced ? { duration: 0 } : springs.expand}
-          transform={`rotate(-90 ${cx} ${cy})`}
-        />
-
-        {/* Inner arcs, one per active phase */}
-        {ACTIVE_PHASES.map((p, i) => {
-          const pIdx = PHASE_ORDER.indexOf(p)
-          const isDone = consensusReached || pIdx < currentIndex
-          const isCurrent = !consensusReached && pIdx === currentIndex
-          const fillRatio = isDone ? 1 : isCurrent
-            ? (p === 'consensus'
-                ? Math.min(1, Math.max(0, (elapsedMs - (TYPICAL_TOTAL_MS - PHASE_DURATIONS.consensus)) / PHASE_DURATIONS.consensus))
-                : 0.5) // partial fill for non-budget-tracked phases
-            : 0
-
-          const visibleLen = Math.max(0, sliceArc - sliceGap) * fillRatio
-          const hiddenLen = cInner - visibleLen
-          const rotation = -90 + (i * 360) / ACTIVE_PHASES.length
-
-          return (
-            <g key={p}>
-              {/* Slice base track */}
-              <circle
-                cx={cx} cy={cy} r={rInner} fill="none"
-                className="stroke-zinc-100"
-                strokeWidth={8}
-                strokeDasharray={`${Math.max(0, sliceArc - sliceGap)} ${cInner}`}
-                transform={`rotate(${rotation} ${cx} ${cy})`}
-              />
-              {/* Slice fill */}
-              <motion.circle
-                cx={cx} cy={cy} r={rInner} fill="none"
-                className={isDone ? 'stroke-emerald-500' : 'stroke-zinc-900'}
-                strokeWidth={8}
-                strokeLinecap="round"
-                strokeDasharray={`${visibleLen} ${hiddenLen}`}
-                transform={`rotate(${rotation} ${cx} ${cy})`}
-                initial={false}
-                animate={{ opacity: 1 }}
-                transition={reduced ? { duration: 0 } : springs.expand}
-              />
-            </g>
-          )
-        })}
-
-        {/* Three keeper dots sitting on the ring */}
-        {keeperAngles.map((deg, i) => {
-          const rad = (deg - 90) * (Math.PI / 180)
-          const x = cx + rInner * Math.cos(rad)
-          const y = cy + rInner * Math.sin(rad)
-          const lit = keepersActive
-          return (
-            <motion.circle
-              key={i}
-              cx={x} cy={y} r={4}
-              className={lit ? 'fill-emerald-500' : 'fill-zinc-300'}
-              initial={{ scale: 0.8, opacity: 0.6 }}
-              animate={reduced
-                ? { scale: 1, opacity: lit ? 1 : 0.6 }
-                : lit
-                  ? { scale: [0.8, 1.15, 1], opacity: [0.6, 1, 1] }
-                  : { scale: 1, opacity: 0.6 }
-              }
-              transition={reduced
-                ? { duration: 0 }
-                : { duration: 0.8, delay: i * 0.25, repeat: lit && !consensusReached ? Infinity : 0, repeatDelay: 1.2 }
-              }
-            />
-          )
-        })}
-      </svg>
-
-      {/* Centre label, overlaid above SVG via negative margin trick */}
-      <div className="-mt-[128px] h-[64px] flex flex-col items-center justify-center text-center pointer-events-none">
-        {consensusReached ? (
-          <>
-            <div className="font-mono text-base font-semibold text-emerald-600 tabular-nums">{symbol || '—'}</div>
-            <div className="text-[10px] uppercase tracking-[0.12em] text-text-muted mt-0.5">{t('finalize.phases.live')}</div>
-          </>
+    <div className="px-6 py-5 border-b border-border-light flex items-center gap-4">
+      <div className="relative w-10 h-10 flex-shrink-0">
+        {isSuccess ? (
+          <motion.svg
+            viewBox="0 0 40 40"
+            className="w-10 h-10"
+            initial={{ scale: 0.6, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={reduced ? { duration: 0 } : springs.expand}
+          >
+            <circle cx="20" cy="20" r="18" className="fill-emerald-500" />
+            <path d="M12 20 l6 6 l11 -12" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+          </motion.svg>
         ) : (
-          <>
-            <div className="text-xs font-medium text-text-primary">{phaseLabel}</div>
-            <div className="font-mono text-[10px] text-text-muted tabular-nums mt-1">
-              {t('finalize.elapsed_vs_typical', {
-                elapsed: formatMMSS(elapsedMs),
-                typical: formatMMSS(TYPICAL_TOTAL_MS),
-              })}
-            </div>
-          </>
+          <svg viewBox="0 0 40 40" className="w-10 h-10 animate-spin" style={{ animationDuration: '1.6s' }}>
+            <circle cx="20" cy="20" r="16" fill="none" className="stroke-zinc-200" strokeWidth="3" />
+            <path d="M20 4 a16 16 0 0 1 16 16" fill="none" className="stroke-zinc-900" strokeWidth="3" strokeLinecap="round" />
+          </svg>
         )}
       </div>
-
-      {/* Single-line tagline below the ring during live state */}
-      {consensusReached && (
-        <div className="mt-4 text-xs text-text-muted">
-          {t('finalize.assets_locked_in', { count: assetCount })}
+      <div className="min-w-0 flex-1">
+        <div className={`text-sm font-medium ${isSuccess ? 'text-emerald-700' : 'text-text-primary'}`}>
+          {phaseLabel}
         </div>
-      )}
+        {symbol && (
+          <div className="font-mono text-xs text-text-muted tabular-nums mt-0.5 truncate">
+            {symbol}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
+
 
 /* ── Skeleton ── */
 function Bone({ w = 'w-20', h = 'h-4' }: { w?: string; h?: string }) {
