@@ -298,12 +298,16 @@ function buildScene05Proxies() {
   const init: Record<string, Record<string, number>> = {};
   TRADES.forEach((_, i) => { init[`shape_${i}`] = { opacity: 0 }; });
   init.conveyor = { x: 0 };
+  init.title = { opacity: 0, y: 12 };
+  init.rail = { opacity: 0 };
   init.logo = { opacity: 0, scale: 1, glow: 0 };
   init.sniper = { opacity: 0, recoil: 0, flash: 0 };
   for (let i = 0; i < LABELS.length; i++) {
     init[`label_${i}`] = { opacity: 0, scale: 0.85 };
     init[`tracer_${i}`] = { progress: 0, opacity: 0 };
     init[`detonate_${i}`] = { scale: 1, opacity: 1, burst: 0 };
+    init[`reticle_${i}`] = { opacity: 0, scale: 3 };
+    init[`smoke_${i}`] = { progress: 0 };
   }
   return init;
 }
@@ -313,17 +317,24 @@ const scene05Init = buildScene05Proxies();
 export const Scene05_Manipulators: React.FC = () => {
   const s = useGsapProxy(
     (tl, p) => {
+      tl.to(p.title, { opacity: 1, y: 0, duration: 0.45, ease: "power2.out" }, 0.0);
+      tl.to(p.rail, { opacity: 1, duration: 0.5, ease: "power2.out" }, 0.15);
+
       tl.to(p.logo, { opacity: 1, duration: 0.32, ease: "power2.out" }, 0.05);
-      tl.to(p.sniper, { opacity: 1, duration: 0.35, ease: "power2.out" }, 0.05);
+      tl.to(p.sniper, { opacity: 1, duration: 0.4, ease: "power2.out" }, 0.05);
 
       TRADES.forEach((_, i) => {
-        tl.to(p[`shape_${i}`], { opacity: 1, duration: 0.2 }, i * 0.1);
+        tl.to(p[`shape_${i}`], { opacity: 1, duration: 0.2 }, 0.15 + i * 0.1);
       });
 
-      const passStarts = [0.5, 1.45, 2.4, 3.35];
+      const passStarts = [0.55, 1.5, 2.45, 3.4];
       passStarts.forEach((start, passIdx) => {
+        // Reticle locks on (appears 0.28s before the shot, scales 3 → 1)
+        tl.to(p[`reticle_${passIdx}`], { opacity: 1, duration: 0.06, ease: "power1.out" }, start - 0.28);
+        tl.to(p[`reticle_${passIdx}`], { scale: 1, duration: 0.26, ease: "power3.out" }, start - 0.28);
+
         // Label pop-in
-        tl.to(p[`label_${passIdx}`], { opacity: 1, scale: 1, duration: 0.16, ease: "back.out(1.7)" }, start);
+        tl.to(p[`label_${passIdx}`], { opacity: 1, scale: 1, duration: 0.18, ease: "back.out(1.7)" }, start);
 
         // Sniper recoil + muzzle flash
         tl.to(p.sniper, { recoil: 1, flash: 1, duration: 0.06, ease: "power2.out" }, start);
@@ -338,10 +349,16 @@ export const Scene05_Manipulators: React.FC = () => {
         tl.to(p[`tracer_${passIdx}`], { progress: 1, duration: 0.16, ease: "power2.out" }, start + 0.06);
         tl.to(p[`tracer_${passIdx}`], { opacity: 0, duration: 0.14, ease: "power2.in" }, start + 0.26);
 
+        // Reticle fades on impact
+        tl.to(p[`reticle_${passIdx}`], { opacity: 0, duration: 0.16, ease: "power2.out" }, start + 0.22);
+
         // Detonate
         tl.to(p[`detonate_${passIdx}`], { scale: 1.5, duration: 0.22, ease: "power2.out" }, start + 0.22);
         tl.to(p[`detonate_${passIdx}`], { opacity: 0, duration: 0.22, ease: "power2.in" }, start + 0.24);
-        tl.to(p[`detonate_${passIdx}`], { burst: 1, duration: 0.5, ease: "power2.out" }, start + 0.22);
+        tl.to(p[`detonate_${passIdx}`], { burst: 1, duration: 0.55, ease: "power2.out" }, start + 0.22);
+
+        // Smoke ring at impact
+        tl.to(p[`smoke_${passIdx}`], { progress: 1, duration: 0.7, ease: "power2.out" }, start + 0.24);
 
         // Label fade
         tl.to(p[`label_${passIdx}`], { opacity: 0, duration: 0.18, ease: "power2.in" }, start + 0.78);
@@ -363,7 +380,42 @@ export const Scene05_Manipulators: React.FC = () => {
         <DynamicBlue />
       </ZoomedBg>
 
-      {/* Labels */}
+      {/* Subtle vignette for depth */}
+      <AbsoluteFill
+        style={{
+          background:
+            "radial-gradient(ellipse at center, rgba(0,0,0,0) 50%, rgba(0,0,0,0.35) 100%)",
+          pointerEvents: "none",
+        }}
+      />
+
+      {/* Title — "Removing" */}
+      <div
+        style={{
+          position: "absolute",
+          top: 70,
+          left: 0,
+          right: 0,
+          textAlign: "center",
+          opacity: s.title.opacity,
+          transform: `translateY(${s.title.y}px)`,
+        }}
+      >
+        <span
+          style={{
+            ...baseText,
+            fontSize: 96,
+            fontWeight: 700,
+            color: "rgba(255, 255, 255, 0.92)",
+            letterSpacing: "0.01em",
+            textShadow: "0 2px 24px rgba(0,0,0,0.35)",
+          }}
+        >
+          Removing
+        </span>
+      </div>
+
+      {/* Dynamic labels (sit below the title) */}
       <AbsoluteFill>
         {LABELS.map((label, i) => {
           const proxy = s[`label_${i}`];
@@ -373,7 +425,7 @@ export const Scene05_Manipulators: React.FC = () => {
               key={i}
               style={{
                 position: "absolute",
-                top: "28%",
+                top: "36%",
                 left: "50%",
                 transform: `translate(-50%, -50%) scale(${proxy.scale})`,
                 opacity: proxy.opacity,
@@ -382,9 +434,10 @@ export const Scene05_Manipulators: React.FC = () => {
               <span
                 style={{
                   ...baseText,
-                  fontSize: 130,
+                  fontSize: 138,
                   color: "#fff",
                   whiteSpace: "nowrap",
+                  textShadow: `0 6px 28px rgba(0,0,0,0.45)`,
                 }}
               >
                 {label}
@@ -393,6 +446,20 @@ export const Scene05_Manipulators: React.FC = () => {
           );
         })}
       </AbsoluteFill>
+
+      {/* Conveyor rail */}
+      <div
+        style={{
+          position: "absolute",
+          top: CONVEYOR_TOP + SHAPE_SIZE + 30,
+          left: CONVEYOR_LEFT - 80,
+          width: STAGE_W * 0.92,
+          height: 2,
+          background:
+            "linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.18) 12%, rgba(255,255,255,0.18) 88%, rgba(255,255,255,0) 100%)",
+          opacity: s.rail.opacity,
+        }}
+      />
 
       {/* Original geometric conveyor (yank-up replaced by detonate) */}
       <div
@@ -423,6 +490,7 @@ export const Scene05_Manipulators: React.FC = () => {
                 gap: 12,
                 opacity: finalOpacity,
                 transform: `scale(${detScale})`,
+                filter: "drop-shadow(0 8px 14px rgba(0,0,0,0.35))",
               }}
             >
               <Shape type={sh.type} color={sh.color} size={SHAPE_SIZE} />
@@ -479,7 +547,7 @@ export const Scene05_Manipulators: React.FC = () => {
         />
       </div>
 
-      {/* Muzzle flash + tracers + particle bursts */}
+      {/* Reticles + muzzle flash + tracers + smoke + bursts */}
       <svg
         style={{
           position: "absolute",
@@ -490,53 +558,124 @@ export const Scene05_Manipulators: React.FC = () => {
         }}
         viewBox={`0 0 ${STAGE_W} ${STAGE_H}`}
       >
-        {/* Muzzle flash */}
+        {/* Muzzle flash — starburst */}
         {s.sniper.flash > 0.01 && (
-          <circle
-            cx={MUZZLE_X}
-            cy={MUZZLE_Y}
-            r={28 * s.sniper.flash}
-            fill="#FFE066"
-            opacity={s.sniper.flash * 0.85}
-          />
+          <g>
+            <circle
+              cx={MUZZLE_X}
+              cy={MUZZLE_Y}
+              r={42 * s.sniper.flash}
+              fill="#FFE066"
+              opacity={s.sniper.flash * 0.45}
+            />
+            {Array.from({ length: 6 }, (_, ri) => {
+              const angle = (ri / 6) * 360 + 15;
+              return (
+                <rect
+                  key={ri}
+                  x={-58 * s.sniper.flash}
+                  y={-2}
+                  width={116 * s.sniper.flash}
+                  height={4}
+                  fill="#FFE066"
+                  opacity={s.sniper.flash * 0.85}
+                  transform={`translate(${MUZZLE_X} ${MUZZLE_Y}) rotate(${angle})`}
+                />
+              );
+            })}
+            <circle
+              cx={MUZZLE_X}
+              cy={MUZZLE_Y}
+              r={14 * s.sniper.flash}
+              fill="#FFFFFF"
+              opacity={s.sniper.flash}
+            />
+          </g>
         )}
 
         {VICTIM_INDEXES.map((shapeIdx, passIdx) => {
           const tracer = s[`tracer_${passIdx}`];
           const det = s[`detonate_${passIdx}`];
+          const reticle = s[`reticle_${passIdx}`];
+          const smoke = s[`smoke_${passIdx}`];
           const target = victimCenter(shapeIdx);
           const endX = MUZZLE_X + tracer.progress * (target.x - MUZZLE_X);
           const endY = MUZZLE_Y + tracer.progress * (target.y - MUZZLE_Y);
+          const victimColor = TRADES[shapeIdx].color;
 
           return (
             <g key={passIdx}>
+              {/* Lock-on reticle */}
+              {reticle.opacity > 0.01 && (
+                <g
+                  transform={`translate(${target.x} ${target.y}) scale(${reticle.scale})`}
+                  opacity={reticle.opacity}
+                >
+                  <circle cx={0} cy={0} r={72} fill="none" stroke="#FF3B6B" strokeWidth={2.5} />
+                  <circle cx={0} cy={0} r={42} fill="none" stroke="#FF3B6B" strokeWidth={1.5} opacity={0.55} />
+                  <line x1={-92} y1={0} x2={-26} y2={0} stroke="#FF3B6B" strokeWidth={2.5} strokeLinecap="round" />
+                  <line x1={26} y1={0} x2={92} y2={0} stroke="#FF3B6B" strokeWidth={2.5} strokeLinecap="round" />
+                  <line x1={0} y1={-92} x2={0} y2={-26} stroke="#FF3B6B" strokeWidth={2.5} strokeLinecap="round" />
+                  <line x1={0} y1={26} x2={0} y2={92} stroke="#FF3B6B" strokeWidth={2.5} strokeLinecap="round" />
+                  <circle cx={0} cy={0} r={3} fill="#FF3B6B" />
+                </g>
+              )}
+
+              {/* Tracer — wide soft glow + crisp inner line */}
               {tracer.opacity > 0.01 && (
-                <line
-                  x1={MUZZLE_X}
-                  y1={MUZZLE_Y}
-                  x2={endX}
-                  y2={endY}
-                  stroke={BLUE}
-                  strokeWidth={3}
-                  strokeOpacity={tracer.opacity}
-                  strokeLinecap="round"
+                <>
+                  <line
+                    x1={MUZZLE_X}
+                    y1={MUZZLE_Y}
+                    x2={endX}
+                    y2={endY}
+                    stroke={BLUE}
+                    strokeWidth={9}
+                    strokeOpacity={tracer.opacity * 0.25}
+                    strokeLinecap="round"
+                  />
+                  <line
+                    x1={MUZZLE_X}
+                    y1={MUZZLE_Y}
+                    x2={endX}
+                    y2={endY}
+                    stroke="#FFFFFF"
+                    strokeWidth={2.5}
+                    strokeOpacity={tracer.opacity}
+                    strokeLinecap="round"
+                  />
+                </>
+              )}
+
+              {/* Smoke / dust ring at impact */}
+              {smoke.progress > 0.01 && (
+                <circle
+                  cx={target.x}
+                  cy={target.y}
+                  r={smoke.progress * 130}
+                  fill="none"
+                  stroke="rgba(220,220,225,0.55)"
+                  strokeWidth={Math.max(0.5, 4 * (1 - smoke.progress))}
+                  opacity={1 - smoke.progress}
                 />
               )}
 
+              {/* Particle burst — varied sizes */}
               {det.burst > 0.01 &&
-                Array.from({ length: 8 }, (_, pi) => {
-                  const angle = (pi / 8) * Math.PI * 2;
-                  const r = det.burst * 150;
+                Array.from({ length: 10 }, (_, pi) => {
+                  const angle = (pi / 10) * Math.PI * 2 + (pi % 2 === 0 ? 0 : 0.18);
+                  const r = det.burst * (130 + (pi % 3) * 25);
                   const px = target.x + Math.cos(angle) * r;
                   const py = target.y + Math.sin(angle) * r;
                   const opacity = Math.max(0, 1 - det.burst);
+                  const radius = 4 + (pi % 3) * 2.5;
                   return (
                     <circle
                       key={pi}
                       cx={px}
                       cy={py}
-                      r={6}
-                      fill={TRADES[shapeIdx].color}
+                      r={radius}
+                      fill={victimColor}
                       opacity={opacity}
                     />
                   );
