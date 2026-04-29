@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom'
-import { useAccount, useWaitForTransactionReceipt, useWriteContract, useSwitchChain, usePublicClient, useReadContract } from 'wagmi'
+import { useAccount, useWaitForTransactionReceipt, usePublicClient, useReadContract } from 'wagmi'
 import { parseUnits, formatUnits, decodeEventLog } from 'viem'
 import { INDEX_PROTOCOL, COLLATERAL_DECIMALS } from '@/lib/contracts/addresses'
 import { ERC20_ABI, INDEX_ABI } from '@/lib/contracts/index-protocol-abi'
-import { ensureCorrectChain } from '@/hooks/useChainWrite'
+import { useChainWriteContract } from '@/hooks/useChainWrite'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { TransactionStepper } from '@/components/ui/TransactionStepper'
 import type { MicroStep, VisibleStep } from '@/components/ui/TransactionStepper'
@@ -55,7 +55,7 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
   const t = useTranslations('sell-modal')
   const tc = useTranslations('common')
   const locale = useLocale()
-  const { address, isConnected, chainId: currentChainId } = useAccount()
+  const { address, isConnected } = useAccount()
   const l3PublicClient = usePublicClient({ chainId: indexL3.id })
   const { showSuccess } = useToast()
   const { capture } = usePostHogTracker()
@@ -95,6 +95,8 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
   const [txError, setTxError] = useState<string | null>(null)
   const [fillPrice, setFillPrice] = useState<bigint | null>(null)
   const [fillAmount, setFillAmount] = useState<bigint | null>(null)
+  type Holding = { symbol: string; weight: number; price: number; name?: string; image?: string }
+  const [holdings, setHoldings] = useState<Holding[]>([])
   const [skippedApproval, setSkippedApproval] = useState(false)
   const [processStalled, setProcessStalled] = useState(false)
 
@@ -104,7 +106,6 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
   const [batchTxHash, setBatchTxHash] = useState<string | null>(null)
   const [fillTxHash, setFillTxHash] = useState<string | null>(null)
 
-  const { switchChainAsync } = useSwitchChain()
   const { hasNonceGap, pendingCount, refresh: refreshNonce } = useNonceCheck()
 
   // L3 direct path needs no approval — Index burns shares from _userShares.
@@ -117,14 +118,16 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
   const isApproveConfirming = false as boolean
   const isApproveSuccess = false as boolean
 
-  // Sell on L3
+  // Sell on L3 — useChainWriteContract auto-switches and pins chainId. Same
+  // wrapper the Buy modal uses, so the path stops dropping signatures when
+  // the wallet is on Sonic instead of L3.
   const {
     writeContractAsync: writeSellAsync,
     data: sellHash,
     isPending: isSellPending,
     error: sellError,
     reset: resetSell,
-  } = useWriteContract()
+  } = useChainWriteContract()
   const { isLoading: isSellConfirming, isSuccess: isSellSuccess, data: sellReceipt } = useWaitForTransactionReceipt({
     hash: sellHash,
     chainId: indexL3.id,
@@ -215,14 +218,6 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
     }
     setMicro(SellMicro.SUBMIT)
 
-    try {
-      await ensureCorrectChain(currentChainId, switchChainAsync, indexL3.id, indexL3)
-    } catch {
-      setTxError('Please switch to the L3 chain to sell')
-      setMicro(-1)
-      return
-    }
-
     let blockTimestamp: bigint
     try {
       const block = await l3PublicClient.getBlock()
@@ -252,7 +247,7 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
     }).catch(() => {
       // Error handled by sellError effect
     })
-  }, [l3PublicClient, amount, limitPrice, deadlineHours, slippageTier, itpId, parsedAmount, writeSellAsync, micro, insufficientShares, currentChainId, switchChainAsync, capture])
+  }, [l3PublicClient, amount, limitPrice, deadlineHours, slippageTier, itpId, parsedAmount, writeSellAsync, micro, insufficientShares, capture])
 
   // Wire ref for handleApprove → handleSell trampoline above.
   useEffect(() => { handleSellRef.current = handleSell }, [handleSell])
@@ -389,6 +384,21 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
     }
     if (micro === -1) toastFired.current = false
   }, [micro, showSuccess]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Per-asset breakdown — fetch once on fill so the user sees what they
+  // sold out of. Same source the buy modal uses.
+  useEffect(() => {
+    if (!fillAmount || holdings.length > 0) return
+    let cancelled = false
+    fetch(`/api/itp-enrichment?itp_id=${itpId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (cancelled || !d?.holdings) return
+        setHoldings(d.holdings as Holding[])
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [fillAmount, holdings.length, itpId])
 
   const [stuckWarning, setStuckWarning] = useState(false)
 
@@ -571,6 +581,37 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
             )
           })()}
         </div>
+        {holdings.length > 0 && (
+          <div className="pt-3 border-t border-black/5">
+            <p className="text-[11px] uppercase tracking-wide text-text-muted mb-2">Underlying assets</p>
+            <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+              {holdings.map(h => {
+                const proceedsUsd = parseFloat(formatUnits(proceeds, COLLATERAL_DECIMALS))
+                const assetUsd = proceedsUsd * (h.weight || 0)
+                const units = h.price > 0 ? assetUsd / h.price : 0
+                return (
+                  <div key={h.symbol} className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2 min-w-0">
+                      {h.image && (
+                        <img src={h.image} alt="" className="w-4 h-4 rounded-full flex-shrink-0" />
+                      )}
+                      <span className="font-mono text-text-primary truncate">{h.symbol}</span>
+                      <span className="text-text-muted tabular-nums">{(h.weight * 100).toFixed(1)}%</span>
+                    </div>
+                    <div className="flex items-center gap-3 font-mono tabular-nums">
+                      <span className="text-text-muted">
+                        {h.price > 0 ? `$${h.price < 1 ? h.price.toFixed(4) : h.price.toFixed(2)}` : '—'}
+                      </span>
+                      <span className="text-text-primary">
+                        {h.price > 0 ? `${units < 1 ? units.toFixed(4) : units.toFixed(2)}` : '—'}
+                      </span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
       </div>
     )
   }
