@@ -700,12 +700,9 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
         if (governance.isPaused()) {
             revert ErrorsLib.E004_SystemPaused();
         }
-        // Security: admin or registered oracle can create ITPs
-        bool isAdmin = msg.sender == governance.admin();
-        bool isOracle = address(oracleRegistry) != address(0) && oracleRegistry.isActiveOracle(msg.sender);
-        if (!isAdmin && !isOracle) {
-            revert ErrorsLib.E061_Unauthorized(msg.sender, governance.admin());
-        }
+        // Permissionless: any EOA may create an ITP. Validation below bounds the input space;
+        // economic griefing (deliberately bogus prices) is bounded by oracle-pushed NAV revealing
+        // any divergence from real basket value on the very next BLS update.
 
         // Idempotency check: if bridgeNonce was already used, return existing itpId
         // type(uint256).max is the sentinel for non-bridge calls

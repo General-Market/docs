@@ -3,6 +3,28 @@
  * Based on actual BridgeProxy.sol contract
  */
 
+// Investment.createITP — direct L3 path (post-permissionless upgrade).
+// `bridgeNonce` = type(uint256).max signals a non-bridge call; the contract
+// skips its idempotency mapping and creates a fresh ITP every time.
+export const INDEX_CREATE_ITP_ABI = [
+  {
+    inputs: [
+      { name: 'name', type: 'string' },
+      { name: 'symbol', type: 'string' },
+      { name: 'weights', type: 'uint256[]' },
+      { name: 'assets', type: 'address[]' },
+      { name: 'prices', type: 'uint256[]' },
+      { name: 'bridgeNonce', type: 'uint256' },
+    ],
+    name: 'createITP',
+    outputs: [{ name: 'itpId', type: 'bytes32' }],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+] as const
+
+export const BRIDGE_NONCE_SENTINEL = (1n << 256n) - 1n
+
 // BridgeProxy ABI - for creating ITPs via bridge
 export const BRIDGE_PROXY_ABI = [
   // Request ITP creation (user calls this)
