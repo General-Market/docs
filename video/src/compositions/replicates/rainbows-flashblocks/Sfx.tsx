@@ -30,10 +30,21 @@ interface CueProps {
   volume?: number;
   trimAfter?: number;
   playbackRate?: number;
+  /* Sequence window length. The Audio tag mounts only inside this
+   * window — without it, every cue stays mounted from `from` to the
+   * end of the composition and we hit Remotion's audio-tag cap. */
+  dur?: number;
 }
 
-const Cue: React.FC<CueProps> = ({ from, src, volume = 0.6, trimAfter, playbackRate }) => (
-  <Sequence from={from} layout="none">
+const Cue: React.FC<CueProps> = ({
+  from,
+  src,
+  volume = 0.6,
+  trimAfter,
+  playbackRate,
+  dur = 18,
+}) => (
+  <Sequence from={from} durationInFrames={dur} layout="none">
     <Audio src={src} volume={volume} trimAfter={trimAfter} playbackRate={playbackRate} />
   </Sequence>
 );
@@ -95,6 +106,7 @@ const pulse = (
         src={sfx(src)}
         volume={vol}
         playbackRate={rate}
+        dur={6}
       />,
     );
   }
@@ -135,8 +147,8 @@ export const Sfx: React.FC = () => {
           your trading strategies."
           ═════════════════════════════════════════════════════════════ */}
       {/* Conveyor ambient */}
-      <Cue from={0} src={sfx(S.whooshLong)} volume={0.4} />
-      <Cue from={36} src={sfx(S.whooshLong)} volume={0.32} playbackRate={0.85} />
+      <Cue from={0} src={sfx(S.whooshLong)} volume={0.4} dur={48} />
+      <Cue from={36} src={sfx(S.whooshLong)} volume={0.32} playbackRate={0.85} dur={48} />
 
       {/* Phrase A — every word ticks */}
       <Cue from={0} src={sfx(S.popLow)} volume={0.4} playbackRate={1.0} />        {/* You */}
@@ -146,7 +158,7 @@ export const Sfx: React.FC = () => {
 
       {/* v10,000 lands at horizontal center — payoff */}
       <Cue from={36} src={sfx(S.popSharp)} volume={0.72} playbackRate={0.92} />
-      <Cue from={37} src={sfx(S.obtain2Dry)} volume={0.45} trimAfter={20} />
+      <Cue from={37} src={sfx(S.obtain2Dry)} volume={0.45} trimAfter={20} dur={22} />
 
       {/* Phrase A → B switch */}
       <Cue from={41} src={sfx(S.whooshVeryFast)} volume={0.62} />
@@ -161,7 +173,7 @@ export const Sfx: React.FC = () => {
           Scene 02 — TryRainbows (84–132)
           "How rainbows improve / your gains?" slides in together.
           ═════════════════════════════════════════════════════════════ */}
-      <Cue from={84} src={sfx(S.whooshSharpLong)} volume={0.65} />
+      <Cue from={84} src={sfx(S.whooshSharpLong)} volume={0.65} dur={48} />
       {/* All five words enter on the same slide — five quick taps to
           mark each one as a discrete word. */}
       <Cue from={87} src={sfx(S.click)} volume={0.36} playbackRate={1.06} />      {/* How */}
@@ -169,7 +181,7 @@ export const Sfx: React.FC = () => {
       <Cue from={93} src={sfx(S.click)} volume={0.38} playbackRate={1.08} />      {/* improve */}
       <Cue from={97} src={sfx(S.click)} volume={0.36} playbackRate={1.04} />      {/* your */}
       <Cue from={101} src={sfx(S.popLow)} volume={0.48} />                        {/* gains? */}
-      <Cue from={120} src={sfx(S.select3)} volume={0.32} trimAfter={18} />        {/* hold */}
+      <Cue from={120} src={sfx(S.select3)} volume={0.32} trimAfter={18} dur={18} />        {/* hold */}
 
       {/* ═════════════════════════════════════════════════════════════
           Scene 03 — CubeExplode (132–204)
@@ -186,10 +198,10 @@ export const Sfx: React.FC = () => {
       {/* Text border snaps + orbit ambient */}
       <Cue from={154} src={sfx(S.whooshSharpFast)} volume={0.62} />
       <Cue from={158} src={sfx(S.select4)} volume={0.42} />
-      <Cue from={162} src={sfx(S.whooshLong)} volume={0.26} trimAfter={36} />     {/* orbit drone */}
+      <Cue from={162} src={sfx(S.whooshLong)} volume={0.26} trimAfter={36} dur={36} />     {/* orbit drone */}
 
       {/* Morph beat — four shapes arrive */}
-      <Cue from={174} src={sfx(S.obtain2)} volume={0.55} />
+      <Cue from={174} src={sfx(S.obtain2)} volume={0.55} dur={32} />
       <Cue from={175} src={sfx(S.whooshVeryFastCine)} volume={0.45} />
       <Cue from={178} src={sfx(S.popLow)} volume={0.4} playbackRate={1.2} />      {/* Flower */}
       <Cue from={180} src={sfx(S.popLow)} volume={0.4} playbackRate={1.0} />      {/* Heart */}
@@ -212,12 +224,12 @@ export const Sfx: React.FC = () => {
       <Cue from={223} src={sfx(S.err1)} volume={0.5} />                           {/* activities */}
 
       {/* Phase swap → light gradient */}
-      <Cue from={251} src={sfx(S.whooshEpic1)} volume={0.62} />
+      <Cue from={251} src={sfx(S.whooshEpic1)} volume={0.62} dur={36} />
       <Cue from={256} src={sfx(S.whooshVeryFastCine)} volume={0.52} />
       <Cue from={256} src={sfx(S.click)} volume={0.36} />                         {/* "regaining" reveal */}
 
       {/* Counter ramp 0→70 — 8 ticks accelerating */}
-      <Cue from={257} src={sfx(S.obtain1)} volume={0.6} />
+      <Cue from={257} src={sfx(S.obtain1)} volume={0.6} dur={36} />
       {[260, 264, 267, 270, 273, 277, 282, 288].map((f, i) => (
         <Cue
           key={`s4-count-${i}`}
@@ -230,11 +242,11 @@ export const Sfx: React.FC = () => {
       <Cue from={291} src={sfx(S.popSharp)} volume={0.6} />                       {/* 70% lands */}
 
       {/* Starburst radiate */}
-      <Cue from={263} src={sfx(S.whooshSharpLong)} volume={0.48} />
-      <Cue from={265} src={sfx(S.on)} volume={0.32} trimAfter={42} />
+      <Cue from={263} src={sfx(S.whooshSharpLong)} volume={0.48} dur={48} />
+      <Cue from={265} src={sfx(S.on)} volume={0.32} trimAfter={42} dur={42} />
 
       {/* Subtitle "of your potential profits" — 4 word ticks */}
-      <Cue from={278} src={sfx(S.obtain2Dry)} volume={0.45} />
+      <Cue from={278} src={sfx(S.obtain2Dry)} volume={0.45} dur={22} />
       <Cue from={278} src={sfx(S.click)} volume={0.34} />                         {/* of */}
       <Cue from={281} src={sfx(S.click)} volume={0.34} playbackRate={1.04} />     {/* your */}
       <Cue from={284} src={sfx(S.click)} volume={0.36} playbackRate={1.08} />     {/* potential */}
@@ -244,7 +256,7 @@ export const Sfx: React.FC = () => {
           Scene 05 — Manipulators (312–420)
           Title "Removing", 6 conveyor shapes, 4 sniper passes.
           ═════════════════════════════════════════════════════════════ */}
-      <Cue from={312} src={sfx(S.whooshSharpLong)} volume={0.55} />
+      <Cue from={312} src={sfx(S.whooshSharpLong)} volume={0.55} dur={48} />
       <Cue from={313} src={sfx(S.selectGame)} volume={0.45} />
       <Cue from={313} src={sfx(S.click)} volume={0.4} />                          {/* "Removing" */}
       <Cue from={316} src={sfx(S.select4)} volume={0.32} />                       {/* rail */}
@@ -261,7 +273,7 @@ export const Sfx: React.FC = () => {
       ))}
 
       {/* Conveyor scroll ambient */}
-      <Cue from={319} src={sfx(S.whooshLong)} volume={0.22} trimAfter={84} />
+      <Cue from={319} src={sfx(S.whooshLong)} volume={0.22} trimAfter={84} dur={84} />
 
       {/* 4 sniper passes — each is a 5-cue mini-phrase:
           lock-on / shot / tracer / detonate / debris.
@@ -289,7 +301,7 @@ export const Sfx: React.FC = () => {
           6 concentric rings + Phrase 1 (6 words) → Phrase 2 (4 serif).
           ═════════════════════════════════════════════════════════════ */}
       {/* Concentric rings — each gets a soft "select" descending */}
-      <Cue from={420} src={sfx(S.on)} volume={0.4} trimAfter={36} />
+      <Cue from={420} src={sfx(S.on)} volume={0.4} trimAfter={36} dur={36} />
       {[
         { f: 420, snd: S.select1, v: 0.36 },
         { f: 424, snd: S.select2, v: 0.32 },
@@ -317,7 +329,7 @@ export const Sfx: React.FC = () => {
 
       {/* Phase swap — into the serif italic close */}
       <Cue from={461} src={sfx(S.whooshVeryFastCine)} volume={0.58} />
-      <Cue from={467} src={sfx(S.obtain2Dry)} volume={0.62} />
+      <Cue from={467} src={sfx(S.obtain2Dry)} volume={0.62} dur={22} />
 
       {/* Phrase 2 — 4 words, building to "traders" */}
       <Cue from={469} src={sfx(S.popLow)} volume={0.4} playbackRate={0.95} />     {/* to */}
@@ -333,13 +345,13 @@ export const Sfx: React.FC = () => {
           ═════════════════════════════════════════════════════════════ */}
 
       {/* 10a — "gain more" entry */}
-      <Cue from={504} src={sfx(S.whooshSharpLong)} volume={0.58} />
+      <Cue from={504} src={sfx(S.whooshSharpLong)} volume={0.58} dur={48} />
       <Cue from={506} src={sfx(S.popSharp)} volume={0.62} />                      {/* gain */}
       <Cue from={511} src={sfx(S.popSharp)} volume={0.55} playbackRate={0.92} />  {/* more */}
-      <Cue from={513} src={sfx(S.obtain2)} volume={0.45} trimAfter={26} />
+      <Cue from={513} src={sfx(S.obtain2)} volume={0.45} trimAfter={26} dur={26} />
 
       {/* 10b — UI mockup drops in */}
-      <Cue from={540} src={sfx(S.whooshSharpLong)} volume={0.55} />
+      <Cue from={540} src={sfx(S.whooshSharpLong)} volume={0.55} dur={48} />
       <Cue from={544} src={sfx(S.select4)} volume={0.42} />                       {/* UI lands */}
 
       {/* 10b — "while trading the same assets with" — 6 word ticks (start at frame 568 = 540+28) */}
@@ -351,17 +363,17 @@ export const Sfx: React.FC = () => {
       <Cue from={583} src={sfx(S.click)} volume={0.32} playbackRate={1.0} />      {/* with */}
 
       {/* 10c — square wipe (612–626) eats the teal */}
-      <Cue from={612} src={sfx(S.whooshEpicFast)} volume={0.75} />
-      <Cue from={617} src={sfx(S.whooshEpic2)} volume={0.42} />
+      <Cue from={612} src={sfx(S.whooshEpicFast)} volume={0.75} dur={24} />
+      <Cue from={617} src={sfx(S.whooshEpic2)} volume={0.42} dur={36} />
 
       {/* 10c — Endcard reveal: bouncing dot, logo mark, "General" wordmark */}
-      <Cue from={626} src={sfx(S.obtain2)} volume={0.68} />
+      <Cue from={626} src={sfx(S.obtain2)} volume={0.68} dur={32} />
       <Cue from={626} src={sfx(S.popCartoon)} volume={0.48} />                    {/* bouncing dot */}
       <Cue from={629} src={sfx(S.popLow)} volume={0.34} playbackRate={1.1} />     {/* dot bounce */}
       <Cue from={632} src={sfx(S.popLow)} volume={0.3} playbackRate={1.2} />
       <Cue from={632} src={sfx(S.select4)} volume={0.4} />                        {/* logo mark fade */}
       <Cue from={636} src={sfx(S.click)} volume={0.42} />                         {/* "General" */}
-      <Cue from={640} src={sfx(S.on)} volume={0.3} trimAfter={48} />
+      <Cue from={640} src={sfx(S.on)} volume={0.3} trimAfter={48} dur={48} />
 
       {/* 10c — Tagline "Markets for everything." — 3 word ticks */}
       <Cue from={652} src={sfx(S.clickDigi)} volume={0.42} />                     {/* Markets */}
