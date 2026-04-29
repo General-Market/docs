@@ -119,8 +119,8 @@ export const Scene01_Hook: React.FC = () => {
 
 /* ═══════════════════════════════════════════════════════
    Scene 02 — TryRainbows  (72 frames = 3s @ 24fps)
-   Single-word flashes "Then" → "you should" → "try"
-   then big italic title slides in: "trading rainbows."
+   Single-word flashes "How" → "rainbows" → "improve"
+   then big italic title slides in: "your gains?"
    Hex grid background.
    ═══════════════════════════════════════════════════════ */
 
@@ -158,17 +158,17 @@ export const Scene02_TryRainbows: React.FC = () => {
       <div style={{ ...center, opacity: s.phase1.opacity }}>
         {s.then.opacity > 0.01 && (
           <span style={{ ...baseText, fontStyle: "normal", position: "absolute", left: "50%", transform: `translate(-50%, ${s.then.y}px)`, fontSize: 130, color: "#fff", opacity: s.then.opacity, whiteSpace: "nowrap" }}>
-            Then
+            How
           </span>
         )}
         {s.youShould.opacity > 0.01 && (
           <span style={{ ...baseText, fontStyle: "normal", position: "absolute", left: "50%", transform: `translate(-50%, ${s.youShould.y}px)`, fontSize: 130, color: "#fff", opacity: s.youShould.opacity, whiteSpace: "nowrap" }}>
-            you should
+            rainbows
           </span>
         )}
         {s.tryWord.opacity > 0.01 && (
           <span style={{ ...baseText, fontStyle: "normal", position: "absolute", left: "50%", transform: `translate(-50%, ${s.tryWord.y}px)`, fontSize: 130, color: "#fff", opacity: s.tryWord.opacity, whiteSpace: "nowrap" }}>
-            try
+            improve
           </span>
         )}
       </div>
@@ -184,7 +184,7 @@ export const Scene02_TryRainbows: React.FC = () => {
         }}
       >
         <span style={{ ...baseText, fontSize: 175, color: "#fff" }}>
-          trading rainbows
+          your gains?
         </span>
       </div>
     </AbsoluteFill>

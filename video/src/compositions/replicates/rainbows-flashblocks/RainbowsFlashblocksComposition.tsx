@@ -13,7 +13,7 @@ import {
  *
  * Scene timeline (frame ranges):
  *   01  Hook              "You spent 10,000 hours / perfecting your trading strategies"   0–84
- *   02  TryRainbows       "Then you should try / trading rainbows"                        84–156
+ *   02  TryRainbows       "How rainbows improve / your gains?"                            84–156
  *   03  CubeExplode       silent visual beat                                             156–228
  *   04  FilterAndPercent  "Rainbows filters out illegal activities" + "70% of profits"   228–336
  *   05  Manipulators      conveyor: frontrunners / spoofers / insiders / manipulators    336–444
