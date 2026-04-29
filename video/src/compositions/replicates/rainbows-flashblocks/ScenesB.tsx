@@ -190,7 +190,6 @@ export const Scene04_FilterAndPercent: React.FC = () => {
 // Scene 05 — Manipulators  (108 frames = 4.5s)
 // Original geometric conveyor (diamond / hex-hole / hex / pentagon / hex / circle).
 // A cartoon sniper takes the four predators out: muzzle flash → tracer → detonate.
-// GM logo sits beside the sniper as the team patch.
 // "frontrunners / orderbook spoofers / illegal insiders / market manipulators"
 // ────────────────────────────────────────────────────────
 
@@ -289,18 +288,12 @@ const SNIPER_LEFT = STAGE_W - SNIPER_RIGHT - SNIPER_W;
 const MUZZLE_X = SNIPER_LEFT + SNIPER_W * 0.18;
 const MUZZLE_Y = SNIPER_TOP + SNIPER_H * 0.62;
 
-// GM logo — small badge near the sniper.
-const LOGO_SIZE = 90;
-const LOGO_TOP = 70;
-const LOGO_LEFT = 70;
-
 function buildScene05Proxies() {
   const init: Record<string, Record<string, number>> = {};
   TRADES.forEach((_, i) => { init[`shape_${i}`] = { opacity: 0 }; });
   init.conveyor = { x: 0 };
   init.title = { opacity: 0, y: 12 };
   init.rail = { opacity: 0 };
-  init.logo = { opacity: 0, scale: 1, glow: 0 };
   init.sniper = { opacity: 0, recoil: 0, flash: 0 };
   for (let i = 0; i < LABELS.length; i++) {
     init[`label_${i}`] = { opacity: 0, scale: 0.85 };
@@ -320,7 +313,6 @@ export const Scene05_Manipulators: React.FC = () => {
       tl.to(p.title, { opacity: 1, y: 0, duration: 0.45, ease: "power2.out" }, 0.0);
       tl.to(p.rail, { opacity: 1, duration: 0.5, ease: "power2.out" }, 0.15);
 
-      tl.to(p.logo, { opacity: 1, duration: 0.32, ease: "power2.out" }, 0.05);
       tl.to(p.sniper, { opacity: 1, duration: 0.4, ease: "power2.out" }, 0.05);
 
       TRADES.forEach((_, i) => {
@@ -339,10 +331,6 @@ export const Scene05_Manipulators: React.FC = () => {
         // Sniper recoil + muzzle flash
         tl.to(p.sniper, { recoil: 1, flash: 1, duration: 0.06, ease: "power2.out" }, start);
         tl.to(p.sniper, { recoil: 0, flash: 0, duration: 0.22, ease: "power2.in" }, start + 0.06);
-
-        // GM logo sympathetic pulse
-        tl.to(p.logo, { scale: 1.18, glow: 1, duration: 0.08, ease: "power2.out" }, start);
-        tl.to(p.logo, { scale: 1, glow: 0, duration: 0.24, ease: "power2.in" }, start + 0.08);
 
         // Tracer draws from muzzle to victim, then fades
         tl.to(p[`tracer_${passIdx}`], { opacity: 1, duration: 0.04 }, start + 0.06);
@@ -527,25 +515,6 @@ export const Scene05_Manipulators: React.FC = () => {
         />
       </div>
 
-      {/* GM logo — small badge */}
-      <div
-        style={{
-          position: "absolute",
-          top: LOGO_TOP,
-          left: LOGO_LEFT,
-          width: LOGO_SIZE,
-          height: LOGO_SIZE,
-          opacity: s.logo.opacity,
-          transform: `scale(${s.logo.scale})`,
-          transformOrigin: "center",
-          filter: `drop-shadow(0 0 ${s.logo.glow * 22}px ${BLUE})`,
-        }}
-      >
-        <Img
-          src={staticFile("gm-logo-white.svg")}
-          style={{ width: "100%", height: "100%", display: "block" }}
-        />
-      </div>
 
       {/* Reticles + muzzle flash + tracers + smoke + bursts */}
       <svg
