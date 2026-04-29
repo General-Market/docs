@@ -152,6 +152,18 @@ export const Scene04_FilterAndPercent: React.FC = () => {
             opacity: s.counter.opacity,
           }}
         >
+          <div
+            style={{
+              ...baseText,
+              fontSize: 80,
+              fontWeight: 700,
+              color: BLUE,
+              marginBottom: -8,
+              lineHeight: 1,
+            }}
+          >
+            regaining
+          </div>
           <div style={{ ...baseText, fontSize: 280, color: BLUE }}>
             {counterValue}%
           </div>
