@@ -7,7 +7,6 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { springs } from '@/components/ui/spring'
 import { useWeb3Available } from '@/lib/contexts/Web3Context'
 import { useAccount } from 'wagmi'
-import { usePostHogTracker } from '@/hooks/usePostHog'
 import { LanguageSwitcher } from './LanguageSwitcher'
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
@@ -72,24 +71,8 @@ export function Header() {
   }, [])
   const { address, isConnected } = walletState
 
-  // ── PostHog ─────────────────────────────────────────────
-  const { capture } = usePostHogTracker()
-
   const navHref = (item: typeof PRIMARY_NAV[number]) =>
     item.id === 'portfolio' ? (address ? `/profile/${address}` : null) : item.href
-
-  const scrollTo = (id: string) => {
-    capture('section_scrolled_to', { section_name: id })
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
-    setMobileMenuOpen(false)
-  }
-
-  // ── Section nav (contextual scroll-to links for overflow) ──
-  const sectionNav = activePage === 'vision' ? [
-    { id: 'vision', label: t('nav.vision_nav') },
-    { id: 'leaderboard', label: t('nav.leaderboard') },
-    { id: 'markets-data', label: t('nav.markets_data') },
-  ] : null
 
   return (
     <>
@@ -256,28 +239,6 @@ export function Header() {
                             )
                           })}
                         </div>
-
-                        {/* Section scroll-to links (contextual) */}
-                        {sectionNav && (
-                          <div className={`px-2 py-1.5 mb-1 border-b ${isDark ? 'border-white/10' : 'border-border-light'}`}>
-                            <div className={`px-1 mb-1 text-micro font-semibold uppercase tracking-[0.08em] ${isDark ? 'text-zinc-500' : 'text-text-muted'}`}>
-                              {t('nav.sections')}
-                            </div>
-                            {sectionNav.map((link) => (
-                              <button
-                                key={link.id}
-                                onClick={() => scrollTo(link.id)}
-                                className={`block w-full text-left px-2 py-2 text-caption rounded transition-colors ${
-                                  isDark
-                                    ? 'text-zinc-300 hover:text-white hover:bg-white/10'
-                                    : 'text-text-secondary hover:text-black hover:bg-surface'
-                                }`}
-                              >
-                                {link.label}
-                              </button>
-                            ))}
-                          </div>
-                        )}
 
                         {[
                           { href: 'https://discord.gg/xsfgzwR6', label: t('footer.discord'), external: true },
