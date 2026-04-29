@@ -11,8 +11,8 @@ import {
 } from "./ScenesC";
 
 /*
- * Rainbows — script v3
- * 1920x1080, 24fps, 960 frames (40s)
+ * Rainbows — script v3 (post-cut: 0:27–0:33 excised, 144 frames removed)
+ * 1920x1080, 24fps, 816 frames (34s)
  *
  * Scene timeline (frame ranges):
  *   01  Hook              "You spent 10,000 hours / perfecting your trading strategies"   0–84
@@ -22,9 +22,9 @@ import {
  *   05  Manipulators      conveyor: frontrunners / spoofers / insiders / manipulators    336–444
  *   06  HonestTraders     "Leaving the same amount of profits / to fewer honest traders" 444–528
  *   07  Protected         "Trade the assets you've always traded" → "Protected"          528–624
- *   08  FiveHundredK      "Plus 500,000 / assets you couldn't trade anywhere else"       624–720
- *   09  BrollCycle        twitch / pumpfun / animals / movies broll grids                720–816
- *   10  Finale            "rainbows" + dark fade                                         816–960
+ *   08  FiveHundredK      first 24f only (head of the line, then cut at 0:27)            624–648
+ *   09  BrollCycle        last 24f only (resumes at 0:33, scene's frames 72–95)          648–672
+ *   10  Finale            "rainbows" + dark fade                                         672–816
  */
 
 export const RainbowsFlashblocksComposition: React.FC = () => {
@@ -51,13 +51,15 @@ export const RainbowsFlashblocksComposition: React.FC = () => {
       <Sequence from={528} durationInFrames={96} name="07 Protected">
         <Scene07_Protected />
       </Sequence>
-      <Sequence from={624} durationInFrames={96} name="08 Five Hundred K">
+      <Sequence from={624} durationInFrames={24} name="08 Five Hundred K (head)">
         <Scene08_FiveHundredK />
       </Sequence>
-      <Sequence from={720} durationInFrames={96} name="09 Broll Cycle">
-        <Scene09_BrollCycle />
+      <Sequence from={648} durationInFrames={24} name="09 Broll Cycle (tail)" layout="none">
+        <Sequence from={-72} durationInFrames={96} layout="none">
+          <Scene09_BrollCycle />
+        </Sequence>
       </Sequence>
-      <Sequence from={816} durationInFrames={144} name="10 Finale">
+      <Sequence from={672} durationInFrames={144} name="10 Finale">
         <Scene10_Finale />
       </Sequence>
     </AbsoluteFill>
@@ -70,7 +72,7 @@ export const rainbowsFlashblocksMeta = {
   width: 1920,
   height: 1080,
   fps: 24,
-  durationInFrames: 960,
+  durationInFrames: 816,
 };
 
 export { sceneMetasA } from "./ScenesA";
