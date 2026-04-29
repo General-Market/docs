@@ -131,6 +131,25 @@ export function VaultsTab({ address }: VaultsTabProps) {
   const [sortKey, setSortKey] = useState<SortKey>('value')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
 
+  // Must live ABOVE the early returns below — otherwise the hook count
+  // changes between renders (no-rows → has-rows on mobile, when the wallet
+  // connects late) and React throws "Rendered more hooks than expected".
+  const sortedRows = useMemo(() => {
+    const list = [...rows]
+    list.sort((a, b) => {
+      let cmp = 0
+      switch (sortKey) {
+        case 'name': cmp = a.name.localeCompare(b.name); break
+        case 'shares': cmp = Number(a.sharesBigInt - b.sharesBigInt); break
+        case 'nav': cmp = a.navPerShare - b.navPerShare; break
+        case 'value': cmp = a.value - b.value; break
+        case 'pnl': cmp = a.pnl - b.pnl; break
+      }
+      return sortDir === 'asc' ? cmp : -cmp
+    })
+    return list
+  }, [rows, sortKey, sortDir])
+
   if (!isSelf) {
     return (
       <div className="py-16 flex flex-col items-center gap-3">
@@ -173,22 +192,6 @@ export function VaultsTab({ address }: VaultsTabProps) {
       </div>
     )
   }
-
-  const sortedRows = useMemo(() => {
-    const list = [...rows]
-    list.sort((a, b) => {
-      let cmp = 0
-      switch (sortKey) {
-        case 'name': cmp = a.name.localeCompare(b.name); break
-        case 'shares': cmp = Number(a.sharesBigInt - b.sharesBigInt); break
-        case 'nav': cmp = a.navPerShare - b.navPerShare; break
-        case 'value': cmp = a.value - b.value; break
-        case 'pnl': cmp = a.pnl - b.pnl; break
-      }
-      return sortDir === 'asc' ? cmp : -cmp
-    })
-    return list
-  }, [rows, sortKey, sortDir])
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
