@@ -18,48 +18,33 @@ import { BrollCell } from "../../launch/shots/BrollCell";
    carry a residual zoom across scene cuts.
    ═══════════════════════════════════════════════════════ */
 
-// ── Animated blue mesh gradient (5× faster + drift) ──
+// ── Animated teal mesh gradient (drifting tonal blobs, no white) ──
 export const DynamicBlue: React.FC<{ speed?: number }> = ({ speed = 0.022 }) => {
   const frame = useCurrentFrame();
   const t = frame * speed;
 
-  // Drift component: blobs slowly travel diagonally; noise modulates around the drift line.
-  const drift = (frame * 0.06) % 200;
-
-  const x1 = 10 + noise2D("rb-x1", t, 0) * 22 + Math.sin(t * 0.7) * 4;
-  const y1 = 10 + noise2D("rb-y1", t, 0.5) * 22 + Math.cos(t * 0.6) * 4;
-  const x2 = 85 + noise2D("rb-x2", t, 1) * 18 - Math.sin(t * 0.5) * 5;
-  const y2 = 12 + noise2D("rb-y2", t, 1.5) * 20 + Math.cos(t * 0.4) * 4;
   const x3 = 18 + noise2D("rb-x3", t, 2) * 22;
   const y3 = 88 + noise2D("rb-y3", t, 2.5) * 12;
-  const x4 = 88 + noise2D("rb-x4", t, 3) * 14;
-  const y4 = 82 + noise2D("rb-y4", t, 3.5) * 14;
   const angle = 135 + Math.sin(t * 0.4) * 12;
 
   return (
     <AbsoluteFill
       style={{
         background: `
-          radial-gradient(ellipse 100% 100% at ${x1}% ${y1}%, rgba(255,255,255,0.78) 0%, transparent 55%),
-          radial-gradient(ellipse 90% 90% at ${x2}% ${y2}%, rgba(255,255,255,0.65) 0%, transparent 50%),
           radial-gradient(ellipse 100% 100% at ${x3}% ${y3}%, rgba(200,240,238,0.4) 0%, transparent 55%),
-          radial-gradient(ellipse 85% 85% at ${x4}% ${y4}%, rgba(255,255,255,0.55) 0%, transparent 50%),
           radial-gradient(ellipse 70% 70% at 50% 50%, rgba(120,235,225,0.22) 0%, transparent 65%),
           linear-gradient(${angle}deg, #0BC4BE 0%, #1FCFC9 25%, #48E0DA 45%, #1FCFC9 65%, #0ABAB5 85%, #089A95 100%)
         `,
-        backgroundPosition: `${drift}px 0, ${-drift}px 0, 0 0, 0 0, 0 0, 0 0`,
       }}
     />
   );
 };
 
-// ── Animated light gradient (warmer drift, near-white) ──
+// ── Animated light gradient (tonal teal-tinted, no white spotlight) ──
 export const DynamicLight: React.FC<{ speed?: number }> = ({ speed = 0.018 }) => {
   const frame = useCurrentFrame();
   const t = frame * speed;
 
-  const x = 28 + noise2D("rl-x", t, 0) * 22;
-  const y = 30 + noise2D("rl-y", t, 0.5) * 22;
   const x2 = 72 + noise2D("rl-x2", t, 1) * 18;
   const y2 = 70 + noise2D("rl-y2", t, 1.5) * 18;
   const angle = 135 + Math.cos(t * 0.5) * 10;
@@ -68,7 +53,6 @@ export const DynamicLight: React.FC<{ speed?: number }> = ({ speed = 0.018 }) =>
     <AbsoluteFill
       style={{
         background: `
-          radial-gradient(ellipse 80% 80% at ${x}% ${y}%, rgba(255,255,255,1) 0%, transparent 70%),
           radial-gradient(ellipse 60% 60% at ${x2}% ${y2}%, rgba(220,245,243,0.55) 0%, transparent 65%),
           linear-gradient(${angle}deg, #eff8f7 0%, #e7f4f3 40%, #f4faf9 60%, #ecf6f5 100%)
         `,
