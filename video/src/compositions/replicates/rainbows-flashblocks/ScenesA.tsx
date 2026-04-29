@@ -485,26 +485,26 @@ export const Scene02_TryRainbows: React.FC = () => {
 
 /* ═══════════════════════════════════════════════════════
    Scene 03 — RainbowsWraps  (72 frames = 3s @ 24fps)
-   Three beats:
-     1 (0–22)   — four white rectangles drop in, stacked, labeled
-                  Stocks / Crypto / Predictions / Memecoins.
-     2 (22–40)  — a white "RAINBOWS · RAINBOWS · …" text border
-                  scrolls around the stack on a rounded-rect path —
-                  Rainbows, the box on the boxes.
-     3 (40–66)  — all four rectangles morph simultaneously: the box
-                  silhouette shrinks into a compact organic shape
-                  (heart / flower / star / cloud), and the label
-                  ("Stocks", "Crypto", …) stays inside, scaling down
-                  to fit. Text border keeps spinning.
-   Easing follows the original cube scene's GSAP feel — power2.out /
-   back.out — so the boxes settle rather than snap.
+   Three sharp beats, in the cube scene's tradition (assemble / hold /
+   explode — each beat a distinct moment, not a slow ramp):
+     1 (frame 0)    — all four white rectangles present immediately,
+                      labeled Stocks / Crypto / Predictions / Memecoins.
+                      A 6-frame back.out punch gives them a body, but
+                      they're on screen from frame 1.
+     2 (frame 22)   — the white "RAINBOWS · RAINBOWS · …" text border
+                      snaps in around the stack on a rounded-rect path
+                      and starts orbiting.
+     3 (frame 42)   — all four rectangles morph simultaneously into
+                      compact shapes (heart / flower / star / cloud).
+                      Labels stay inside, shrink to fit. Text border
+                      keeps spinning.
    ═══════════════════════════════════════════════════════ */
 
 const SCENE03_DURATION = 72;
 const SCENE03_WRAP_START = 22;
-const SCENE03_WRAP_END = 40;
-const SCENE03_MORPH_START = 40;
-const SCENE03_MORPH_END = 66;
+const SCENE03_WRAP_END = 30;
+const SCENE03_MORPH_START = 42;
+const SCENE03_MORPH_END = 60;
 
 const ROW_W = 560;
 const ROW_H = 128;
@@ -590,34 +590,35 @@ const SCENE03_ROWS = [
 export const Scene03_CubeExplode: React.FC = () => {
   const frame = useCurrentFrame();
 
-  /* Beat 1 — staggered drop-in, per row */
-  const dropProgress = (i: number) =>
-    interpolate(frame, [i * 4, i * 4 + 12], [0, 1], {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-      easing: Easing.out(Easing.cubic),
-    });
+  /* Beat 1 — all four squares present immediately. A 6-frame back.out
+   * punch gives them weight on entrance (matches the cube's elastic
+   * assemble), but they're on screen from frame 1. */
+  const punchIn = interpolate(frame, [0, 6], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.bezier(0.34, 1.56, 0.64, 1),
+  });
 
-  /* Beat 2 — text border fades in (power2.out feel) */
+  /* Beat 2 — text border snaps in (8 frames, expo.out feel) */
   const wrapDraw = interpolate(frame, [SCENE03_WRAP_START, SCENE03_WRAP_END], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
-    easing: Easing.out(Easing.cubic),
+    easing: Easing.bezier(0.16, 1, 0.3, 1),
   });
 
-  /* Beat 3 — single morph progress with smooth ease-in-out (power2.inOut) */
+  /* Beat 3 — morph crossfade. Sharp ease-in-out so the rectangle holds
+   * its shape until the last moment, then commits. */
   const morph = interpolate(frame, [SCENE03_MORPH_START, SCENE03_MORPH_END], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
-    easing: Easing.bezier(0.45, 0, 0.55, 1),
+    easing: Easing.bezier(0.6, 0, 0.4, 1),
   });
 
-  /* Shape scale uses an overshoot curve (back.out) so the new
-   * silhouettes land with a small bounce — same character as the
-   * cube's "back.out(1.6)" assemble. */
+  /* Shape scale uses back.out so the new silhouettes overshoot and
+   * settle — same character as the cube's "back.out(1.6)" assemble. */
   const shapeScaleProgress = interpolate(
     frame,
-    [SCENE03_MORPH_START + 2, SCENE03_MORPH_END + 4],
+    [SCENE03_MORPH_START, SCENE03_MORPH_END + 2],
     [0, 1],
     {
       extrapolateLeft: "clamp",
@@ -626,13 +627,13 @@ export const Scene03_CubeExplode: React.FC = () => {
     },
   );
 
-  /* Continuous text scroll along the wrapper path. Speed eases up after
-   * the border first appears so the entrance feels like an arrival, not
-   * a constant marquee. */
+  /* Continuous text scroll along the wrapper path. Eases up over the
+   * first 10 frames so the border *arrives* rather than starts
+   * mid-marquee. */
   const textScroll = interpolate(
     frame,
-    [SCENE03_WRAP_START, SCENE03_WRAP_START + 14, SCENE03_DURATION],
-    [0, 90, 90 + (SCENE03_DURATION - SCENE03_WRAP_START - 14) * 5],
+    [SCENE03_WRAP_START, SCENE03_WRAP_START + 10, SCENE03_DURATION],
+    [0, 60, 60 + (SCENE03_DURATION - SCENE03_WRAP_START - 10) * 5],
     {
       extrapolateLeft: "clamp",
       extrapolateRight: "extend",
@@ -648,7 +649,6 @@ export const Scene03_CubeExplode: React.FC = () => {
       </ZoomedBg>
 
       {SCENE03_ROWS.map((row, i) => {
-        const drop = dropProgress(i);
         const cy = rowCenterY(i);
         const Shape = row.Shape;
 
@@ -661,8 +661,8 @@ export const Scene03_CubeExplode: React.FC = () => {
               top: cy,
               width: ROW_W,
               height: ROW_H,
-              transform: `translate(-50%, calc(-50% + ${(1 - drop) * -28}px))`,
-              opacity: drop,
+              transform: `translate(-50%, -50%) scale(${punchIn})`,
+              opacity: punchIn > 0.05 ? 1 : punchIn * 20,
             }}
           >
             {/* White rectangle — fades out as the silhouette morphs */}
