@@ -147,7 +147,7 @@ export const Scene04_FilterAndPercent: React.FC = () => {
             position: "absolute",
             top: "50%",
             left: "50%",
-            transform: "translate(-50%, calc(-50% - 180px))",
+            transform: "translate(-50%, calc(-50% - 280px))",
             ...baseText,
             fontSize: 80,
             fontWeight: 700,
