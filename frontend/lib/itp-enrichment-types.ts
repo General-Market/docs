@@ -30,6 +30,7 @@ export interface CompanyFounderData {
 
 export interface EnrichedHolding {
   symbol: string
+  address: string
   name: string
   weight: number
   price: number

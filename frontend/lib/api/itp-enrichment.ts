@@ -306,14 +306,15 @@ async function fetchFundingData(
  *  Priority chain: serverHoldings (if provided) → /chain/l3/itp-state + deployed-assets.json → static fallback. */
 export async function computeEnrichment(
   itpId: string,
-  serverHoldings?: { symbol: string; weight: number; price: number }[],
+  serverHoldings?: { symbol: string; weight: number; price: number; address?: string }[],
 ): Promise<ItpEnrichment> {
-  let rawHoldings: { symbol: string; weight: number; price: number; name: string }[] = []
+  let rawHoldings: { symbol: string; address: string; weight: number; price: number; name: string }[] = []
 
   // Priority 1: Use server-provided holdings (from /snapshot endpoint, has real weights)
   if (serverHoldings && serverHoldings.length > 0) {
     rawHoldings = serverHoldings.map(h => ({
       symbol: h.symbol,
+      address: (h.address ?? '').toLowerCase(),
       weight: h.weight,
       price: h.price,
       name: h.symbol,
@@ -337,6 +338,7 @@ export async function computeEnrichment(
         const symbol = deployedMap[addr.toLowerCase()] || ''
         return {
           symbol: symbol.toUpperCase(),
+          address: addr.toLowerCase(),
           weight: equalWeight,
           price: 0,
           name: symbol.toUpperCase(),
@@ -355,6 +357,7 @@ export async function computeEnrichment(
       const equalWeight = 1 / assets.length
       rawHoldings = assets.map(a => ({
         symbol: a.symbol,
+        address: a.address.toLowerCase(),
         weight: equalWeight,
         price: 0,
         name: a.symbol,
