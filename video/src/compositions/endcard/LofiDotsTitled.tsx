@@ -36,15 +36,21 @@ const HEX_N = 24;
 const RADIUS = 50 / HEX_N;
 const TIME_COEF = 0.7;
 const DEPTH_SCALE = 0.55;
-const METALNESS = 0.82;
-const ROUGHNESS = 0.30;
+// ParticleWave runs metalness 0.8 — fine when its base colours are
+// pure white/blue/black, since metal reflects the environment and
+// those colours read either bright (white) or dark (black) under
+// point lights. Our broll skews moody, mostly mid-grey clouds; the
+// same metalness eats it. Drop to ~0.45 so the broll's diffuse
+// channel survives, keep clearcoat for the wet gloss.
+const METALNESS = 0.45;
+const ROUGHNESS = 0.42;
 const CLEARCOAT = 1;
-const CLEARCOAT_ROUGHNESS = 0.12;
+const CLEARCOAT_ROUGHNESS = 0.18;
 const TILT_X = 0.10;
 const TILT_Y = 0.10;
-// Metallic shading mutes the broll's chroma. Lift it before handing
-// the colour to the material — gentle gain, clamped to white.
-const COLOR_BOOST = 1.20;
+// Pre-gain on the sampled colour. Even with metalness reduced the
+// PBR shader compresses chroma — give it back here.
+const COLOR_BOOST = 1.55;
 
 // ── Broll sampler (video → 2D canvas → pixel buffer each render) ──
 const SAMPLER_W = 256;
@@ -261,12 +267,13 @@ const HexField: React.FC<HexFieldProps> = ({
 
   return (
     <>
-      {/* Lights — same arrangement as ParticleWave: a hot key from
-          the front, a cooler accent from behind. The accent is the
-          one the eye remembers; it bleeds round the silhouette. */}
+      {/* Lights — key from the front, accent from behind, ambient
+          floor, and a hemisphere fill so unlit prisms still carry
+          their broll colour instead of going black. Without the
+          hemisphere, metal-in-a-dark-room reads as a black field. */}
       <pointLight
         color={0xffffff}
-        intensity={1000}
+        intensity={1100}
         decay={2}
         position={[targetX, targetY, 5]}
       />
@@ -276,7 +283,11 @@ const HexField: React.FC<HexFieldProps> = ({
         decay={2}
         position={[targetX, targetY, -20]}
       />
-      <ambientLight intensity={0.45} />
+      <ambientLight intensity={0.85} />
+      <hemisphereLight
+        args={[0xfff2dd, 0x1a1822, 0.9]}
+        position={[0, 0, 30]}
+      />
 
       <group
         scale={[scaleFactor, scaleFactor, 1]}
