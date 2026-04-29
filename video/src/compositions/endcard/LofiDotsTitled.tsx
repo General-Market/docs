@@ -33,7 +33,15 @@ import { VIDEO_SRC } from "./LofiDots";
 const HEX_N = 72;
 const RADIUS = 50 / HEX_N;
 const TIME_COEF = 0.7;
-const DEPTH_SCALE = 0.55;
+// Peak depth offset, in absolute world units. Decoupled from
+// RADIUS — ParticleWave's `RADIUS * DEPTH_SCALE` at HEX_N=20 came
+// out to ≈1.375 world units; we just keep that amplitude when
+// hexes shrink, otherwise the wave disappears with the tiles.
+const DEPTH_AMPLITUDE = 1.4;
+// Proximity falloff distance in pre-scale world units. ParticleWave's
+// `20 * RADIUS` at HEX_N=20 = 50; we just hold that value so the
+// cursor's halo of motion still covers most of the field.
+const PROXIMITY_RADIUS = 50;
 // ParticleWave runs metalness 0.8 — fine when its base colours are
 // pure white/blue/black, since metal reflects the environment and
 // those colours read either bright (white) or dark (black) under
@@ -207,7 +215,7 @@ const HexField: React.FC<HexFieldProps> = ({
 
     const dummy = new THREE.Object3D();
     const tmpColor = new THREE.Color();
-    const maxDist = 20 * RADIUS * scaleFactor;
+    const maxDist = PROXIMITY_RADIUS * scaleFactor;
 
     for (let i = 0; i < tiles.length; i++) {
       const tile = tiles[i];
@@ -222,8 +230,7 @@ const HexField: React.FC<HexFieldProps> = ({
       const depth =
         0.5 *
         (Math.cos(tile.phase + time * TIME_COEF) - 1) *
-        RADIUS *
-        DEPTH_SCALE *
+        DEPTH_AMPLITUDE *
         proximity;
 
       dummy.position.set(tile.x, tile.y, depth);
