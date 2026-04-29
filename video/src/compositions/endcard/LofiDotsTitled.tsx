@@ -358,12 +358,17 @@ export const LofiDotsTitled: React.FC = () => {
   );
   const letterSpacing = fontSize * TITLE_LETTER_SPACING_EM;
 
+  // Lift the broll inside the glyphs so the words punch through
+  // the now-livelier metal — without this, the masked broll matches
+  // the surrounding lighting too closely and the letters dissolve.
   const titleVideoStyle: React.CSSProperties = {
     width: "100%",
     height: "100%",
     objectFit: "cover",
     objectPosition: "center",
+    filter: "brightness(1.30) contrast(1.20) saturate(1.35)",
   };
+  const haloFilterId = `${MASK_ID}-halo`;
 
   return (
     <AbsoluteFill style={{ background: "#050507" }}>
@@ -403,8 +408,59 @@ export const LofiDotsTitled: React.FC = () => {
         </ThreeCanvas>
       </AbsoluteFill>
 
-      {/* Layer 2 — broll inside the title glyphs. */}
+      {/* Layer 2 — titles. Three passes: dark blurred halo behind
+          for separation, broll clipped to glyphs, hard outline on
+          top so the silhouette survives over hot highlights. */}
       <AbsoluteFill style={{ pointerEvents: "none", opacity: titleOpacity }}>
+        {/* 2a. Halo — same glyphs, blurred, near-black, bleeds out
+            into a vignette that frames the words. Two stacked passes
+            so the falloff is gentle rather than a sharp dark ring. */}
+        <svg
+          width={width}
+          height={height}
+          viewBox={`0 0 ${width} ${height}`}
+          style={{ position: "absolute", inset: 0 }}
+        >
+          <defs>
+            <filter
+              id={haloFilterId}
+              x="-20%"
+              y="-20%"
+              width="140%"
+              height="140%"
+            >
+              <feGaussianBlur
+                in="SourceGraphic"
+                stdDeviation={Math.round(fontSize * 0.06)}
+              />
+              <feComponentTransfer>
+                <feFuncA type="linear" slope="1.6" />
+              </feComponentTransfer>
+            </filter>
+          </defs>
+          <g filter={`url(#${haloFilterId})`}>
+            {TITLE_LINES.map((line, i) => (
+              <text
+                key={i}
+                x={width / 2}
+                y={baselines[i]}
+                textAnchor="middle"
+                fontFamily={TITLE_FONT}
+                fontWeight={TITLE_WEIGHTS[i]}
+                fontSize={fontSize}
+                letterSpacing={letterSpacing}
+                fill="rgba(3,3,5,0.92)"
+                stroke="rgba(3,3,5,0.92)"
+                strokeWidth={Math.round(fontSize * 0.05)}
+                paintOrder="stroke"
+              >
+                {line}
+              </text>
+            ))}
+          </g>
+        </svg>
+
+        {/* 2b. Broll clipped to the glyph silhouettes. */}
         <svg
           width={width}
           height={height}
@@ -449,7 +505,7 @@ export const LofiDotsTitled: React.FC = () => {
           </foreignObject>
         </svg>
 
-        {/* Thin ink stroke so the silhouette survives over highlights. */}
+        {/* 2c. Hard outline so the glyph edge stays crisp. */}
         <svg
           width={width}
           height={height}
@@ -467,8 +523,8 @@ export const LofiDotsTitled: React.FC = () => {
               fontSize={fontSize}
               letterSpacing={letterSpacing}
               fill="none"
-              stroke="rgba(5,5,7,0.85)"
-              strokeWidth={3}
+              stroke="rgba(5,5,7,0.95)"
+              strokeWidth={5}
               paintOrder="stroke"
             >
               {line}
