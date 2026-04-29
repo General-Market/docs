@@ -8,7 +8,7 @@ import {
   Easing,
 } from "remotion";
 import { loadFont } from "@remotion/google-fonts/Inter";
-import { loadFont as loadDM } from "@remotion/google-fonts/DMSans";
+import { loadFont as loadGeist } from "@remotion/google-fonts/Geist";
 import { useGsapProxy } from "../standrew/gsapUtils";
 import {
   BrollGridBg,
@@ -24,7 +24,7 @@ import {
 } from "./dynamics";
 
 const { fontFamily } = loadFont("normal", { subsets: ["latin"], weights: ["400", "700", "800"] });
-const { fontFamily: dmSansFamily } = loadDM("normal", {
+const { fontFamily: brandFontFamily } = loadGeist("normal", {
   subsets: ["latin"],
   weights: ["400", "500", "600", "700", "800"],
 });
@@ -430,9 +430,9 @@ export const Scene09_BrollCycle: React.FC = () => {
 
 /* ═══════════════════════════════════════════════════════
    Scene 10 — Finale  (144 frames = 6s @ 24fps)
-   "rainbows" briefly held → square wipe to GeneralMarket lockup.
+   "rainbows" briefly held → square wipe to General lockup.
    Mirrors public.com's end card — square instead of circle, GM
-   logo mark instead of stacked dots, "generalmarket.io" text.
+   logo mark instead of stacked dots, "General" wordmark.
    ═══════════════════════════════════════════════════════ */
 
 const SCENE10_DURATION = 144;
@@ -454,7 +454,7 @@ const ENDCARD_BG =
   "radial-gradient(ellipse at center, #FFFFFF 0%, #FAFAFA 55%, #F0F0F0 100%)";
 
 const lockupTextStyle: React.CSSProperties = {
-  fontFamily: `${dmSansFamily}, system-ui, sans-serif`,
+  fontFamily: `${brandFontFamily}, system-ui, sans-serif`,
   fontSize: TEXT_SIZE,
   fontWeight: 700,
   color: "#000",
@@ -463,7 +463,7 @@ const lockupTextStyle: React.CSSProperties = {
 };
 
 const taglineStyle: React.CSSProperties = {
-  fontFamily: `${dmSansFamily}, system-ui, sans-serif`,
+  fontFamily: `${brandFontFamily}, system-ui, sans-serif`,
   fontSize: TAGLINE_SIZE,
   fontWeight: 400,
   color: "#717171",
@@ -552,19 +552,7 @@ export const Scene10_Finale: React.FC = () => {
     config: { damping: 10, mass: 0.3, stiffness: 180 },
   });
 
-  /* Phase 3 — ".io" slides + fades in */
-  const ioOpacity = interpolate(ec, [22, 30], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-    easing: Easing.out(Easing.cubic),
-  });
-  const ioSlideX = interpolate(ec, [22, 30], [12, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-    easing: Easing.out(Easing.cubic),
-  });
-
-  /* Phase 4 — tagline */
+  /* Phase 3 — tagline */
   const taglineSpring = spring({
     frame: Math.max(0, ec - 26),
     fps,
@@ -573,7 +561,7 @@ export const Scene10_Finale: React.FC = () => {
   const taglineProgress = ec < 26 ? 0 : taglineSpring;
   const taglineY = interpolate(taglineProgress, [0, 1], [10, 0]);
 
-  /* Lockup nudges up slightly as ".io" + tagline arrive, to keep the
+  /* Lockup nudges up slightly as the tagline arrives, to keep the
    * optical center balanced. */
   const contentShiftY = interpolate(ec, [22, 34], [0, -10], {
     extrapolateLeft: "clamp",
@@ -595,7 +583,7 @@ export const Scene10_Finale: React.FC = () => {
             alignItems: "center",
           }}
         >
-          {/* Logo lockup row: [mark] generalmarket[.io] */}
+          {/* Logo lockup row: [mark] General */}
           <div
             style={{
               display: "flex",
@@ -618,22 +606,12 @@ export const Scene10_Finale: React.FC = () => {
               <GMLogoMark size={LOGO_SIZE} />
             </div>
 
-            {/* Wordmark — "generalmarket" + ".io" */}
+            {/* Wordmark — "General" */}
             <div style={{ display: "flex", alignItems: "baseline" }}>
-              <span style={lockupTextStyle}>generalmarket</span>
-              <span
-                style={{
-                  ...lockupTextStyle,
-                  opacity: ioOpacity,
-                  transform: `translateX(${ioSlideX}px)`,
-                  display: "inline-block",
-                }}
-              >
-                .io
-              </span>
+              <span style={lockupTextStyle}>General</span>
             </div>
 
-            {/* Bouncing square dot — sits below "generalmarket", drifts
+            {/* Bouncing square dot — sits below "General", drifts
              * up-left as it fades, the way the public.com circle does. */}
             <div
               style={{
