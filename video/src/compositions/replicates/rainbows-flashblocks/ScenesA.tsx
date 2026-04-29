@@ -274,7 +274,10 @@ const scene01Init = buildScene01Proxies();
 export const Scene01_Hook: React.FC = () => {
   const s = useGsapProxy(
     (tl, p) => {
-      tl.to(p.conveyor, { x: -5400, duration: 2.5, ease: "power2.in" }, 0.0);
+      // Belt zips through v1..v4642 then decelerates so v10,000 (i=17, the
+      // most-advanced shape) parks at horizontal center of the 1920px frame.
+      // Item center: 240 + 390*i. For i=17 → 6870. Land at 960 → x = -5910.
+      tl.to(p.conveyor, { x: -5910, duration: 1.5, ease: "power3.out" }, 0.0);
 
       SCENE01_PHRASE_A.forEach((_, i) => {
         if (i === 0) return;
@@ -481,26 +484,38 @@ export const Scene02_TryRainbows: React.FC = () => {
 
 /* ═══════════════════════════════════════════════════════
    Scene 03 — RainbowsWraps  (72 frames = 3s @ 24fps)
-   Beat 1 (0–22): four white rectangles drop in stacked, labeled
-   Stocks / Crypto / Predictions / Memecoins.
-   Beat 2 (22–72): a rainbow scanner box descends and lands on each
-   rectangle in turn. As the scanner crosses a row, the row gains a
-   rainbow border and an icon next to its label (flower / heart / star
-   / cloud). Rectangles stay rectangles — they get *enriched*.
+   Three beats:
+     1 (0–22)   — four white rectangles drop in, stacked, labeled
+                  Stocks / Crypto / Predictions / Memecoins.
+     2 (22–40)  — a single rainbow rectangle draws itself around the
+                  whole stack — Rainbows, the box on the boxes.
+     3 (40–66)  — all four rectangles morph simultaneously into their
+                  rainbow-painted shapes (flower / heart / star /
+                  cloud). The wrapper stays.
    ═══════════════════════════════════════════════════════ */
 
 const SCENE03_DURATION = 72;
-const SCENE03_SCAN_START = 22;
+const SCENE03_WRAP_START = 22;
+const SCENE03_WRAP_END = 40;
+const SCENE03_MORPH_START = 40;
+const SCENE03_MORPH_END = 66;
 const RB_GRAD_ID = "rb-scene03-grad";
 const RB_FILL = `url(#${RB_GRAD_ID})`;
-const RB_GRADIENT_CSS =
-  "linear-gradient(135deg, #FF3B3B 0%, #FF8A1A 20%, #FFD700 40%, #3FCC3F 60%, #0ABAB5 80%, #9C5FFF 100%)";
 
 const ROW_W = 560;
 const ROW_H = 128;
 const ROW_GAP = 36;
 const STACK_TOP = (1080 - (ROW_H * 4 + ROW_GAP * 3)) / 2;
+const STACK_HEIGHT = ROW_H * 4 + ROW_GAP * 3;
 const rowCenterY = (i: number) => STACK_TOP + ROW_H / 2 + i * (ROW_H + ROW_GAP);
+
+/* Wrapper sits just outside the stack on every side */
+const WRAP_PAD = 22;
+const WRAP_W = ROW_W + WRAP_PAD * 2;
+const WRAP_H = STACK_HEIGHT + WRAP_PAD * 2;
+const WRAP_RADIUS = 22;
+/* Rounded-rect perimeter for the stroke-draw animation */
+const WRAP_PERIMETER = 2 * (WRAP_W + WRAP_H) - 8 * WRAP_RADIUS + 2 * Math.PI * WRAP_RADIUS;
 
 const FlowerShape: React.FC = () => (
   <svg viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
