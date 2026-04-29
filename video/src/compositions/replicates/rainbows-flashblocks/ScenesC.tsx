@@ -15,7 +15,6 @@ import { useGsapProxy } from "../standrew/gsapUtils";
 import {
   BrollGridBg,
   DynamicBlue,
-  DynamicDark,
   DynamicLight,
   DynamicSolidBlue,
   HexGridOverlay,
@@ -432,88 +431,23 @@ export const Scene09_BrollCycle: React.FC = () => {
 };
 
 /* ═══════════════════════════════════════════════════════
-   Scene 10 — Finale  (144 frames = 6s @ 24fps)
+   Scene 10 — Finale, three beats
 
-   Two beats with proper text animation:
-     Beat A (0–58, ~2.4s) — "gain more" + "while trading the
-       same assets with" cascade in word-by-word over blue.
-     Beat B (58–144, ~3.6s) — square wipe reveals dark hex
-       grid with the generalmarket.io UI in a browser frame
-       and a bold tagline below — mirrors the reference layout.
+   10a (36 frames = 1.5s)  "gain more" big bold on teal.
+   10b (72 frames = 3s)    "while trading the same assets with"
+                           italic on teal, with the generalmarket.io
+                           UI in a browser frame above — the layout
+                           the reference asked for.
+   10c (144 frames = 6s)   square wipe to white + General lockup
+                           endcard, restored from the original.
    ═══════════════════════════════════════════════════════ */
 
-const SCENE10_DURATION = 144;
-
-/* Beat A — word cascade timings (composition frames) */
-const PHRASE_A_WORDS = ["gain", "more"] as const;
-const PHRASE_B_WORDS = ["while", "trading", "the", "same", "assets", "with"] as const;
-const PHRASE_A_START = 0;
-const PHRASE_A_STAGGER = 4;       // frames between words in phrase A
-const PHRASE_B_START = 14;
-const PHRASE_B_STAGGER = 3;       // frames between words in phrase B
-
-/* Beat A → B transition */
-const BLUE_HOLD_END = 50;
-const WIPE_START = 50;
-const WIPE_END = 64;              // 14-frame square wipe
-const REVEAL_START = WIPE_END;
-
-/* Beat B — UI reveal */
-const UI_FRAME_W = 1620;
-const UI_FRAME_H = 920;
-const UI_FRAME_RADIUS = 24;
-const UI_TAGLINE_SIZE = 96;
-const UI_TAGLINE_ACCENT = "#34D399";   // emerald — matches reference
-
-/* Browser-frame chrome — three macOS-style traffic-light dots and an
- * address pill above the screenshot. Keeps the UI shot feeling like a
- * real product surface, the way the reference image does. */
-const BrowserChrome: React.FC<{ width: number }> = ({ width }) => (
-  <div
-    style={{
-      width,
-      height: 48,
-      backgroundColor: "#161618",
-      borderTopLeftRadius: UI_FRAME_RADIUS,
-      borderTopRightRadius: UI_FRAME_RADIUS,
-      display: "flex",
-      alignItems: "center",
-      paddingLeft: 22,
-      paddingRight: 22,
-      gap: 10,
-      borderBottom: "1px solid rgba(255,255,255,0.08)",
-    }}
-  >
-    {["#FF5F57", "#FEBC2E", "#28C840"].map((c) => (
-      <div key={c} style={{ width: 14, height: 14, borderRadius: "50%", backgroundColor: c }} />
-    ))}
-    <div
-      style={{
-        flex: 1,
-        marginLeft: 28,
-        height: 28,
-        borderRadius: 8,
-        backgroundColor: "rgba(255,255,255,0.06)",
-        display: "flex",
-        alignItems: "center",
-        paddingLeft: 14,
-        fontFamily: `${brandFontFamily}, system-ui, sans-serif`,
-        fontSize: 16,
-        color: "rgba(255,255,255,0.65)",
-        letterSpacing: 0.2,
-      }}
-    >
-      generalmarket.io
-    </div>
-  </div>
-);
-
-export const Scene10_Finale: React.FC = () => {
+/* Shared word-cascade easing: each word springs in from below with a
+ * tiny scale overshoot — same character used across phrase A / B. */
+const useWordEntry = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-
-  /* ── Beat A — word-cascade entry per word ── */
-  const wordEntry = (atFrame: number) => {
+  return (atFrame: number) => {
     const local = Math.max(0, frame - atFrame);
     const s = spring({
       frame: local,
@@ -526,213 +460,410 @@ export const Scene10_Finale: React.FC = () => {
       scale: interpolate(s, [0, 1], [0.92, 1]),
     };
   };
+};
 
-  /* Beat A fades as the wipe begins so the words don't fight the reveal. */
-  const blueLayerOpacity = interpolate(frame, [BLUE_HOLD_END - 4, WIPE_START + 2], [1, 0], {
+/* ───────────────────────────────────────────────────────
+   Scene 10a — "gain more"
+   ─────────────────────────────────────────────────────── */
+
+const SCENE10A_DURATION = 36;
+const SCENE10A_WORDS = ["gain", "more"] as const;
+const SCENE10A_STAGGER = 5;
+
+export const Scene10a_GainMore: React.FC = () => {
+  const wordEntry = useWordEntry();
+  return (
+    <AbsoluteFill style={{ backgroundColor: BLUE }}>
+      <div
+        style={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          display: "flex",
+          gap: 32,
+          whiteSpace: "nowrap",
+        }}
+      >
+        {SCENE10A_WORDS.map((word, i) => {
+          const e = wordEntry(2 + i * SCENE10A_STAGGER);
+          return (
+            <span
+              key={i}
+              style={{
+                fontFamily,
+                fontSize: 240,
+                fontWeight: 800,
+                fontStyle: "normal",
+                color: "#fff",
+                lineHeight: 1,
+                letterSpacing: -3,
+                opacity: e.opacity,
+                transform: `translateY(${e.y}px) scale(${e.scale})`,
+                display: "inline-block",
+              }}
+            >
+              {word}
+            </span>
+          );
+        })}
+      </div>
+    </AbsoluteFill>
+  );
+};
+
+/* ───────────────────────────────────────────────────────
+   Scene 10b — "while trading the same assets with" + UI homepage
+   The UI sits in the upper portion inside a browser frame, the
+   italic phrase rests below it — mirrors the reference layout.
+   ─────────────────────────────────────────────────────── */
+
+const SCENE10B_DURATION = 72;
+const SCENE10B_WORDS = ["while", "trading", "the", "same", "assets", "with"] as const;
+const SCENE10B_TEXT_START = 28;
+const SCENE10B_STAGGER = 3;
+
+const UI_FRAME_W = 1500;
+const UI_FRAME_H = 720;
+const UI_FRAME_RADIUS = 22;
+
+/* Browser-frame chrome — three macOS traffic-light dots and an
+ * address pill. Keeps the screenshot feeling like a real surface. */
+const BrowserChrome: React.FC<{ width: number }> = ({ width }) => (
+  <div
+    style={{
+      width,
+      height: 44,
+      backgroundColor: "#161618",
+      borderTopLeftRadius: UI_FRAME_RADIUS,
+      borderTopRightRadius: UI_FRAME_RADIUS,
+      display: "flex",
+      alignItems: "center",
+      paddingLeft: 20,
+      paddingRight: 20,
+      gap: 9,
+      borderBottom: "1px solid rgba(255,255,255,0.08)",
+    }}
+  >
+    {["#FF5F57", "#FEBC2E", "#28C840"].map((c) => (
+      <div key={c} style={{ width: 13, height: 13, borderRadius: "50%", backgroundColor: c }} />
+    ))}
+    <div
+      style={{
+        flex: 1,
+        marginLeft: 26,
+        height: 26,
+        borderRadius: 7,
+        backgroundColor: "rgba(255,255,255,0.06)",
+        display: "flex",
+        alignItems: "center",
+        paddingLeft: 14,
+        fontFamily: `${brandFontFamily}, system-ui, sans-serif`,
+        fontSize: 15,
+        color: "rgba(255,255,255,0.7)",
+        letterSpacing: 0.2,
+      }}
+    >
+      generalmarket.io
+    </div>
+  </div>
+);
+
+export const Scene10b_TradingWith: React.FC = () => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const wordEntry = useWordEntry();
+
+  /* UI drops in with a tiny scale overshoot. */
+  const uiSpring = spring({
+    frame,
+    fps,
+    config: { damping: 16, stiffness: 140, mass: 0.7 },
+  });
+  const uiOpacity = interpolate(frame, [0, 8], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const uiY = interpolate(uiSpring, [0, 1], [-50, 0]);
+  const uiScale = interpolate(uiSpring, [0, 1], [0.96, 1]);
+  const uiDrift = interpolate(frame, [10, SCENE10B_DURATION], [0, -12], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  /* ── Square wipe: shrinks the blue layer to a point ── */
+  return (
+    <AbsoluteFill style={{ backgroundColor: BLUE }}>
+      {/* UI mockup — browser frame around the homepage screenshot */}
+      <div
+        style={{
+          position: "absolute",
+          top: 80,
+          left: "50%",
+          transform: `translate(-50%, ${uiY + uiDrift}px) scale(${uiScale})`,
+          opacity: uiOpacity,
+          width: UI_FRAME_W,
+          borderRadius: UI_FRAME_RADIUS,
+          boxShadow:
+            "0 60px 120px rgba(0,0,0,0.35), 0 24px 48px rgba(0,0,0,0.22), 0 0 0 1px rgba(255,255,255,0.18) inset",
+          backgroundColor: "#0b0d10",
+          overflow: "hidden",
+        }}
+      >
+        <BrowserChrome width={UI_FRAME_W} />
+        <Img
+          src={staticFile("gm-homepage.png")}
+          style={{
+            display: "block",
+            width: "100%",
+            height: UI_FRAME_H,
+            objectFit: "cover",
+            objectPosition: "top center",
+          }}
+        />
+      </div>
+
+      {/* Italic phrase — bottom band, cascades in word-by-word */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: 90,
+          left: 0,
+          right: 0,
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "baseline",
+          gap: 18,
+          flexWrap: "wrap",
+        }}
+      >
+        {SCENE10B_WORDS.map((word, i) => {
+          const e = wordEntry(SCENE10B_TEXT_START + i * SCENE10B_STAGGER);
+          return (
+            <span
+              key={i}
+              style={{
+                fontFamily,
+                fontSize: 86,
+                fontWeight: 400,
+                fontStyle: "italic",
+                color: "#fff",
+                lineHeight: 1.1,
+                opacity: e.opacity,
+                transform: `translateY(${e.y}px)`,
+                display: "inline-block",
+              }}
+            >
+              {word}
+            </span>
+          );
+        })}
+      </div>
+    </AbsoluteFill>
+  );
+};
+
+/* ───────────────────────────────────────────────────────
+   Scene 10c — General endcard
+   Square wipe from teal to white + GM logo lockup. Restored
+   from the original Scene 10 finale.
+   ─────────────────────────────────────────────────────── */
+
+const SCENE10C_DURATION = 144;
+const WIPE_START = 0;
+const WIPE_END = 14;
+const ENDCARD_START = WIPE_END;
+
+const LOGO_SIZE = 86;
+const TEXT_SIZE = 124;
+const TAGLINE_SIZE = 30;
+const DOT_SIZE = 42;
+
+const ENDCARD_BG =
+  "radial-gradient(ellipse at center, #FFFFFF 0%, #FAFAFA 55%, #F0F0F0 100%)";
+
+const lockupTextStyle: React.CSSProperties = {
+  fontFamily: `${brandFontFamily}, system-ui, sans-serif`,
+  fontSize: TEXT_SIZE,
+  fontWeight: 700,
+  color: "#000",
+  letterSpacing: -1.2,
+  lineHeight: 1,
+};
+
+const taglineStyle: React.CSSProperties = {
+  fontFamily: `${brandFontFamily}, system-ui, sans-serif`,
+  fontSize: TAGLINE_SIZE,
+  fontWeight: 400,
+  color: "#717171",
+  letterSpacing: 0.2,
+};
+
+/* GM logo mark — black square with seven white horizontal pills.
+ * Inlined from public/gm-logo.svg so no asset lookup is needed. */
+const GMLogoMark: React.FC<{ size: number }> = ({ size }) => (
+  <svg width={size} height={size} viewBox="0 0 102 102" fill="none">
+    <path d="M0 0H102V102H0V0Z" fill="#000" />
+    <path d="M15.2794 49.5703C15.2794 49.1458 15.4181 48.7941 15.6956 48.5155C15.9731 48.2369 16.3233 48.0976 16.7462 48.0976H28.7186C29.1414 48.0976 29.4916 48.2369 29.7691 48.5155C30.0466 48.7941 30.1854 49.1458 30.1854 49.5703V52.5955C30.1854 53.0201 30.0466 53.3717 29.7691 53.6503C29.4916 53.929 29.1414 54.0683 28.7186 54.0683H16.7462C16.3233 54.0683 15.9731 53.929 15.6956 53.6503C15.4181 53.3717 15.2794 53.0201 15.2794 52.5955V49.5703Z" fill="#fff" />
+    <path d="M26.6227 49.5703C26.6227 49.1458 26.7615 48.7941 27.039 48.5155C27.3165 48.2369 27.6667 48.0976 28.0895 48.0976H40.0619C40.4848 48.0976 40.835 48.2369 41.1125 48.5155C41.39 48.7941 41.5288 49.1458 41.5288 49.5703V52.5955C41.5288 53.0201 41.39 53.3717 41.1125 53.6503C40.835 53.929 40.4848 54.0683 40.0619 54.0683H28.0895C27.6667 54.0683 27.3165 53.929 27.039 53.6503C26.7615 53.3717 26.6227 53.0201 26.6227 52.5955V49.5703Z" fill="#fff" />
+    <path d="M37.9661 49.5703C37.9661 49.1458 38.1048 48.7941 38.3824 48.5155C38.6599 48.2369 39.01 48.0976 39.4329 48.0976H51.4053C51.8282 48.0976 52.1784 48.2369 52.4559 48.5155C52.7334 48.7941 52.8721 49.1458 52.8721 49.5703V52.5955C52.8721 53.0201 52.7334 53.3717 52.4559 53.6503C52.1784 53.929 51.8282 54.0683 51.4053 54.0683H39.4329C39.01 54.0683 38.6599 53.929 38.3824 53.6503C38.1048 53.3717 37.9661 53.0201 37.9661 52.5955V49.5703Z" fill="#fff" />
+    <path d="M49.3095 49.5703C49.3095 49.1458 49.4482 48.7941 49.7257 48.5155C50.0032 48.2369 50.3534 48.0976 50.7763 48.0976H62.7487C63.1716 48.0976 63.5217 48.2369 63.7992 48.5155C64.0768 48.7941 64.2155 49.1458 64.2155 49.5703V52.5955C64.2155 53.0201 64.0768 53.3717 63.7992 53.6503C63.5217 53.929 63.1716 54.0683 62.7487 54.0683H50.7763C50.3534 54.0683 50.0032 53.929 49.7257 53.6503C49.4482 53.3717 49.3095 53.0201 49.3095 52.5955V49.5703Z" fill="#fff" />
+    <path d="M60.6528 49.5902C60.6528 49.1657 60.7916 48.814 61.0691 48.5354C61.3466 48.2568 61.6968 48.1175 62.1197 48.1175H68.423C68.8459 48.1175 69.1961 48.2568 69.4736 48.5354C69.7511 48.814 69.8898 49.1657 69.8898 49.5902V52.5955C69.8898 53.0201 69.7511 53.3717 69.4736 53.6503C69.1961 53.929 68.8459 54.0683 68.423 54.0683H62.1197C61.6968 54.0683 61.3466 53.929 61.0691 53.6503C60.7916 53.3717 60.6528 53.0201 60.6528 52.5955V49.5902Z" fill="#fff" />
+    <path d="M66.3245 49.5703C66.3245 49.1458 66.4633 48.7941 66.7408 48.5155C67.0183 48.2369 67.3685 48.0976 67.7913 48.0976H79.7637C80.1866 48.0976 80.5368 48.2369 80.8143 48.5155C81.0918 48.7941 81.2306 49.1458 81.2306 49.5703V52.5955C81.2306 53.0201 81.0918 53.3717 80.8143 53.6503C80.5368 53.929 80.1866 54.0683 79.7637 54.0683H67.7913C67.3685 54.0683 67.0183 53.929 66.7408 53.6503C66.4633 53.3717 66.3245 53.0201 66.3245 52.5955V49.5703Z" fill="#fff" />
+    <path d="M77.6679 49.5902C77.6679 49.1657 77.8066 48.814 78.0841 48.5354C78.3617 48.2568 78.7118 48.1175 79.1347 48.1175H85.4381C85.8609 48.1175 86.2111 48.2568 86.4886 48.5354C86.7661 48.814 86.9049 49.1657 86.9049 49.5902V52.5955C86.9049 53.0201 86.7661 53.3717 86.4886 53.6503C86.2111 53.929 85.8609 54.0683 85.4381 54.0683H79.1347C78.7118 54.0683 78.3617 53.929 78.0841 53.6503C77.8066 53.3717 77.6679 53.0201 77.6679 52.5955V49.5902Z" fill="#fff" />
+  </svg>
+);
+
+export const Scene10c_Endcard: React.FC = () => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+
+  /* Square wipe — teal layer shrinks to a point, revealing the
+   * white endcard underneath. */
   const wipePct = interpolate(frame, [WIPE_START, WIPE_END], [0, 50], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.bezier(0.65, 0, 0.25, 1),
   });
 
-  /* ── Beat B — local frame ── */
-  const rv = Math.max(0, frame - REVEAL_START);
+  /* Endcard local frame */
+  const ec = Math.max(0, frame - ENDCARD_START);
 
-  /* UI screenshot drops in from above with subtle scale (back.out feel). */
-  const uiSpring = spring({
-    frame: rv,
+  /* Phase 1 — bouncing square dot below "General" */
+  const dotSpring = spring({
+    frame: ec,
     fps,
-    config: { damping: 16, stiffness: 140, mass: 0.7 },
+    config: { damping: 8, mass: 0.3, stiffness: 280 },
   });
-  const uiOpacity = interpolate(rv, [0, 8], [0, 1], {
+
+  /* Phase 2 — dot fades + drifts toward logo position; logo mark fades in */
+  const transition = interpolate(ec, [6, 13], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.bezier(0.22, 0.1, 0.25, 1),
+  });
+  const singleDotOpacity = interpolate(transition, [0, 0.4], [1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const uiY = interpolate(uiSpring, [0, 1], [-60, 0]);
-  const uiScale = interpolate(uiSpring, [0, 1], [0.96, 1]);
-
-  /* Slow continuous parallax: drifts the UI a few px upward through the
-   * hold so the frame doesn't feel frozen. */
-  const uiDrift = interpolate(rv, [10, SCENE10_DURATION - REVEAL_START], [0, -14], {
+  const singleDotY = interpolate(transition, [0, 0.55], [0, -34], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.out(Easing.cubic),
+  });
+  const singleDotX = interpolate(transition, [0, 0.55], [0, -60], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.out(Easing.cubic),
+  });
+  const logoMarkOpacity = interpolate(transition, [0.18, 0.55], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
+  const logoMarkScale = spring({
+    frame: Math.max(0, ec - 6),
+    fps,
+    config: { damping: 10, mass: 0.3, stiffness: 180 },
+  });
 
-  /* Tagline cascades in word-by-word a beat after the UI lands. */
-  const taglineWords = ["Markets", "for", "everything"] as const;
-  const taglineStart = REVEAL_START + 14;
-  const taglineStagger = 4;
+  /* Phase 3 — tagline */
+  const taglineSpring = spring({
+    frame: Math.max(0, ec - 26),
+    fps,
+    config: { damping: 12, mass: 0.3, stiffness: 140 },
+  });
+  const taglineProgress = ec < 26 ? 0 : taglineSpring;
+  const taglineY = interpolate(taglineProgress, [0, 1], [10, 0]);
+
+  /* Lockup nudges up slightly as the tagline arrives, to keep the
+   * optical center balanced. */
+  const contentShiftY = interpolate(ec, [22, 34], [0, -10], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
 
   return (
     <AbsoluteFill>
-      {/* Beat B (revealed underneath) — dark hex grid + UI + tagline */}
-      <AbsoluteFill>
-        <ZoomedBg duration={SCENE10_DURATION}>
-          <DynamicDark />
-          <HexGridOverlay color="rgba(255,255,255,0.10)" size={70} />
-        </ZoomedBg>
-
-        {/* UI mockup — browser frame around the homepage screenshot */}
-        <div
-          style={{
-            position: "absolute",
-            top: "44%",
-            left: "50%",
-            transform: `translate(-50%, calc(-50% + ${uiY + uiDrift}px)) scale(${uiScale})`,
-            opacity: uiOpacity,
-            width: UI_FRAME_W,
-            borderRadius: UI_FRAME_RADIUS,
-            boxShadow:
-              "0 60px 120px rgba(0,0,0,0.55), 0 24px 48px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.08) inset",
-            backgroundColor: "#0b0d10",
-            overflow: "hidden",
-          }}
-        >
-          <BrowserChrome width={UI_FRAME_W} />
-          <Img
-            src={staticFile("gm-homepage.png")}
-            style={{
-              display: "block",
-              width: "100%",
-              height: UI_FRAME_H,
-              objectFit: "cover",
-              objectPosition: "top center",
-            }}
-          />
-        </div>
-
-        {/* Tagline — bottom band, cascading words like the reference */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: 80,
-            left: 0,
-            right: 0,
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "baseline",
-            gap: 26,
-          }}
-        >
-          {taglineWords.map((word, i) => {
-            const e = wordEntry(taglineStart + i * taglineStagger);
-            const isAccent = word === "everything";
-            return (
-              <span
-                key={i}
-                style={{
-                  fontFamily,
-                  fontSize: UI_TAGLINE_SIZE,
-                  fontWeight: 800,
-                  fontStyle: "italic",
-                  color: isAccent ? UI_TAGLINE_ACCENT : "#fff",
-                  letterSpacing: -1.5,
-                  lineHeight: 1,
-                  opacity: e.opacity,
-                  transform: `translateY(${e.y}px) scale(${e.scale})`,
-                  textShadow: "0 6px 30px rgba(0,0,0,0.55)",
-                  display: "inline-block",
-                }}
-              >
-                {word}
-              </span>
-            );
-          })}
-        </div>
-      </AbsoluteFill>
-
-      {/* Beat A — blue layer with word-cascade text; eaten by the wipe */}
-      <AbsoluteFill
-        style={{
-          backgroundColor: BLUE,
-          clipPath: `inset(${wipePct}% ${wipePct}% ${wipePct}% ${wipePct}%)`,
-          WebkitClipPath: `inset(${wipePct}% ${wipePct}% ${wipePct}% ${wipePct}%)`,
-          opacity: blueLayerOpacity,
-        }}
-      >
+      {/* GM endcard layer — sits underneath; revealed by square wipe */}
+      <AbsoluteFill style={{ background: ENDCARD_BG }}>
         <div
           style={{
             position: "absolute",
             top: "50%",
             left: "50%",
-            transform: "translate(-50%, -50%)",
-            textAlign: "center",
-            maxWidth: 1500,
-            width: "92%",
+            transform: `translate(-50%, calc(-50% + ${contentShiftY}px))`,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
           }}
         >
-          {/* Phrase A — "gain more" — large bold cascade */}
+          {/* Logo lockup row: [mark] General */}
           <div
             style={{
               display: "flex",
+              alignItems: "center",
               justifyContent: "center",
-              gap: 28,
-              marginBottom: 22,
+              position: "relative",
+              minHeight: 120,
             }}
           >
-            {PHRASE_A_WORDS.map((word, i) => {
-              const e = wordEntry(PHRASE_A_START + i * PHRASE_A_STAGGER);
-              return (
-                <span
-                  key={i}
-                  style={{
-                    fontFamily,
-                    fontSize: 200,
-                    fontWeight: 800,
-                    fontStyle: "normal",
-                    color: "#fff",
-                    lineHeight: 1.05,
-                    letterSpacing: -2,
-                    opacity: e.opacity,
-                    transform: `translateY(${e.y}px) scale(${e.scale})`,
-                    display: "inline-block",
-                  }}
-                >
-                  {word}
-                </span>
-              );
-            })}
+            <div
+              style={{
+                marginRight: 22,
+                opacity: logoMarkOpacity,
+                transform: `scale(${logoMarkScale})`,
+                display: "flex",
+                alignItems: "center",
+              }}
+            >
+              <GMLogoMark size={LOGO_SIZE} />
+            </div>
+
+            <div style={{ display: "flex", alignItems: "baseline" }}>
+              <span style={lockupTextStyle}>General</span>
+            </div>
+
+            {/* Bouncing square dot — drifts up-left as it fades. */}
+            <div
+              style={{
+                position: "absolute",
+                left: "42%",
+                bottom: -10,
+                transform: `translate(-50%, ${24 + singleDotY}px) translateX(${singleDotX}px) scale(${dotSpring})`,
+                opacity: singleDotOpacity,
+                pointerEvents: "none",
+              }}
+            >
+              <div
+                style={{
+                  width: DOT_SIZE,
+                  height: DOT_SIZE,
+                  backgroundColor: "#000",
+                }}
+              />
+            </div>
           </div>
 
-          {/* Phrase B — italic, smaller, faster cascade */}
+          {/* Tagline */}
           <div
             style={{
-              display: "flex",
-              justifyContent: "center",
-              gap: 18,
-              flexWrap: "wrap",
-              rowGap: 8,
+              marginTop: 28,
+              opacity: taglineProgress,
+              transform: `translateY(${taglineY}px)`,
             }}
           >
-            {PHRASE_B_WORDS.map((word, i) => {
-              const e = wordEntry(PHRASE_B_START + i * PHRASE_B_STAGGER);
-              return (
-                <span
-                  key={i}
-                  style={{
-                    fontFamily,
-                    fontSize: 78,
-                    fontWeight: 400,
-                    fontStyle: "italic",
-                    color: "#fff",
-                    lineHeight: 1.3,
-                    opacity: e.opacity,
-                    transform: `translateY(${e.y}px)`,
-                    display: "inline-block",
-                  }}
-                >
-                  {word}
-                </span>
-              );
-            })}
+            <span style={taglineStyle}>Markets for everything.</span>
           </div>
         </div>
       </AbsoluteFill>
+
+      {/* Teal layer — eaten by the square wipe to reveal the endcard */}
+      <AbsoluteFill
+        style={{
+          backgroundColor: BLUE,
+          clipPath: `inset(${wipePct}% ${wipePct}% ${wipePct}% ${wipePct}%)`,
+          WebkitClipPath: `inset(${wipePct}% ${wipePct}% ${wipePct}% ${wipePct}%)`,
+        }}
+      />
     </AbsoluteFill>
   );
 };
@@ -744,5 +875,7 @@ export const sceneMetasC = [
   { id: "RB-Scene07-Protected", component: Scene07_Protected, durationInFrames: SCENE07_DURATION },
   { id: "RB-Scene08-FiveHundredK", component: Scene08_FiveHundredK, durationInFrames: SCENE08_DURATION },
   { id: "RB-Scene09-BrollCycle", component: Scene09_BrollCycle, durationInFrames: SCENE09_DURATION },
-  { id: "RB-Scene10-Finale", component: Scene10_Finale, durationInFrames: SCENE10_DURATION },
+  { id: "RB-Scene10a-GainMore", component: Scene10a_GainMore, durationInFrames: SCENE10A_DURATION },
+  { id: "RB-Scene10b-TradingWith", component: Scene10b_TradingWith, durationInFrames: SCENE10B_DURATION },
+  { id: "RB-Scene10c-Endcard", component: Scene10c_Endcard, durationInFrames: SCENE10C_DURATION },
 ];
