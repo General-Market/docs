@@ -668,16 +668,31 @@ export const Scene10_Finale: React.FC = () => {
           <span
             style={{
               fontFamily,
-              fontSize: 118,
+              fontSize: 200,
               fontWeight: 800,
-              fontStyle: "italic",
+              fontStyle: "normal",
               color: "#fff",
               display: "block",
               lineHeight: 1.1,
-              letterSpacing: -1,
+              letterSpacing: -2,
             }}
           >
-            gain more while trading the same assets with
+            gain more
+          </span>
+          <span
+            style={{
+              fontFamily,
+              fontSize: 78,
+              fontWeight: 400,
+              fontStyle: "italic",
+              color: "#fff",
+              display: "block",
+              lineHeight: 1.3,
+              marginTop: 18,
+              whiteSpace: "nowrap",
+            }}
+          >
+            while trading the same assets with
           </span>
         </div>
       </AbsoluteFill>
