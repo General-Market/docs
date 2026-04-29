@@ -176,21 +176,84 @@ export const Scene04_FilterAndPercent: React.FC = () => {
 
 // ────────────────────────────────────────────────────────
 // Scene 05 — Manipulators  (108 frames = 4.5s)
-// Unified rounded-square conveyor; the four predators wear color.
-// GM logo, top-right, plays sniper: pulse → tracer → detonate.
+// Original geometric conveyor (diamond / hex-hole / hex / pentagon / hex / circle).
+// A cartoon sniper takes the four predators out: muzzle flash → tracer → detonate.
+// GM logo sits beside the sniper as the team patch.
 // "frontrunners / orderbook spoofers / illegal insiders / market manipulators"
 // ────────────────────────────────────────────────────────
 
 const SCENE05_DURATION = 108;
 
-const TRADES: { color: string; predator: boolean }[] = [
-  { color: "#FFD700", predator: true },  // 0 → market manipulators (gold)
-  { color: "#FF3B6B", predator: true },  // 1 → illegal insiders (red)
-  { color: "#FFFFFF", predator: false }, // 2 plain
-  { color: "#00E5FF", predator: true },  // 3 → orderbook spoofers (cyan)
-  { color: "#FFFFFF", predator: false }, // 4 plain
-  { color: "#FF6B00", predator: true },  // 5 → frontrunners (orange)
+type ShapeType = "diamond" | "hexagon" | "hexagon-hole" | "pentagon" | "circle";
+const TRADES: { type: ShapeType; color: string }[] = [
+  { type: "diamond", color: "#FFD700" },
+  { type: "hexagon-hole", color: "#FFFFFF" },
+  { type: "hexagon", color: "#FF6B00" },
+  { type: "pentagon", color: "#00E5FF" },
+  { type: "hexagon", color: "#9CA3AF" },
+  { type: "circle", color: "#FFFFFF" },
 ];
+
+const clipPaths: Record<string, string> = {
+  hexagon: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
+  pentagon: "polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%)",
+};
+
+const Shape: React.FC<{ type: string; color: string; size: number }> = ({ type, color, size }) => {
+  if (type === "diamond") {
+    return (
+      <div
+        style={{
+          width: size * 0.7,
+          height: size * 0.7,
+          backgroundColor: color,
+          transform: "rotate(45deg)",
+          borderRadius: 4,
+        }}
+      />
+    );
+  }
+  if (type === "circle") {
+    return (
+      <div
+        style={{
+          width: size,
+          height: size,
+          backgroundColor: color,
+          borderRadius: "50%",
+        }}
+      />
+    );
+  }
+  if (type === "hexagon-hole") {
+    return (
+      <div
+        style={{
+          width: size,
+          height: size,
+          backgroundColor: color,
+          clipPath: clipPaths.hexagon,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <div
+          style={{
+            width: size * 0.4,
+            height: size * 0.4,
+            backgroundColor: "#1a1a2e",
+            borderRadius: "50%",
+          }}
+        />
+      </div>
+    );
+  }
+  const cp = clipPaths[type] || clipPaths.hexagon;
+  return (
+    <div style={{ width: size, height: size, backgroundColor: color, clipPath: cp }} />
+  );
+};
 
 const VICTIM_INDEXES = [5, 3, 1, 0] as const;
 const LABELS = ["frontrunners", "orderbook spoofers", "illegal insiders", "market manipulators"] as const;
@@ -203,17 +266,28 @@ const CONVEYOR_LEFT = 0.08 * STAGE_W;     // 153.6
 const CONVEYOR_TOP = 0.62 * STAGE_H;      // 669.6
 const SHAPE_CENTER_DY = SHAPE_SIZE / 2;
 
-const LOGO_SIZE = 130;
-const LOGO_RIGHT = 110;
-const LOGO_TOP = 90;
-const LOGO_CENTER_X = STAGE_W - LOGO_RIGHT - LOGO_SIZE / 2;
-const LOGO_CENTER_Y = LOGO_TOP + LOGO_SIZE / 2;
+// Sniper figure (top-right). Mirrored so the rifle points left toward the conveyor.
+const SNIPER_W = 320;
+const SNIPER_H = SNIPER_W * (1052 / 744); // ≈ 452, native viewBox aspect
+const SNIPER_RIGHT = 80;
+const SNIPER_TOP = 40;
+// Approximate muzzle position (in screen pixels) after horizontal flip.
+// Sniper figure roughly centered; rifle muzzle sits low-left of the (flipped) figure.
+const SNIPER_LEFT = STAGE_W - SNIPER_RIGHT - SNIPER_W;
+const MUZZLE_X = SNIPER_LEFT + SNIPER_W * 0.18;
+const MUZZLE_Y = SNIPER_TOP + SNIPER_H * 0.62;
+
+// GM logo — small badge near the sniper.
+const LOGO_SIZE = 90;
+const LOGO_TOP = 70;
+const LOGO_LEFT = 70;
 
 function buildScene05Proxies() {
   const init: Record<string, Record<string, number>> = {};
   TRADES.forEach((_, i) => { init[`shape_${i}`] = { opacity: 0 }; });
   init.conveyor = { x: 0 };
   init.logo = { opacity: 0, scale: 1, glow: 0 };
+  init.sniper = { opacity: 0, recoil: 0, flash: 0 };
   for (let i = 0; i < LABELS.length; i++) {
     init[`label_${i}`] = { opacity: 0, scale: 0.85 };
     init[`tracer_${i}`] = { progress: 0, opacity: 0 };
@@ -228,6 +302,7 @@ export const Scene05_Manipulators: React.FC = () => {
   const s = useGsapProxy(
     (tl, p) => {
       tl.to(p.logo, { opacity: 1, duration: 0.32, ease: "power2.out" }, 0.05);
+      tl.to(p.sniper, { opacity: 1, duration: 0.35, ease: "power2.out" }, 0.05);
 
       TRADES.forEach((_, i) => {
         tl.to(p[`shape_${i}`], { opacity: 1, duration: 0.2 }, i * 0.1);
@@ -238,16 +313,20 @@ export const Scene05_Manipulators: React.FC = () => {
         // Label pop-in
         tl.to(p[`label_${passIdx}`], { opacity: 1, scale: 1, duration: 0.16, ease: "back.out(1.7)" }, start);
 
-        // Logo pulse + glow
-        tl.to(p.logo, { scale: 1.22, glow: 1, duration: 0.08, ease: "power2.out" }, start);
+        // Sniper recoil + muzzle flash
+        tl.to(p.sniper, { recoil: 1, flash: 1, duration: 0.06, ease: "power2.out" }, start);
+        tl.to(p.sniper, { recoil: 0, flash: 0, duration: 0.22, ease: "power2.in" }, start + 0.06);
+
+        // GM logo sympathetic pulse
+        tl.to(p.logo, { scale: 1.18, glow: 1, duration: 0.08, ease: "power2.out" }, start);
         tl.to(p.logo, { scale: 1, glow: 0, duration: 0.24, ease: "power2.in" }, start + 0.08);
 
-        // Tracer draws from logo to victim, then fades
+        // Tracer draws from muzzle to victim, then fades
         tl.to(p[`tracer_${passIdx}`], { opacity: 1, duration: 0.04 }, start + 0.06);
         tl.to(p[`tracer_${passIdx}`], { progress: 1, duration: 0.16, ease: "power2.out" }, start + 0.06);
         tl.to(p[`tracer_${passIdx}`], { opacity: 0, duration: 0.14, ease: "power2.in" }, start + 0.26);
 
-        // Detonate — replaces the old yank
+        // Detonate
         tl.to(p[`detonate_${passIdx}`], { scale: 1.5, duration: 0.22, ease: "power2.out" }, start + 0.22);
         tl.to(p[`detonate_${passIdx}`], { opacity: 0, duration: 0.22, ease: "power2.in" }, start + 0.24);
         tl.to(p[`detonate_${passIdx}`], { burst: 1, duration: 0.5, ease: "power2.out" }, start + 0.22);
@@ -303,7 +382,7 @@ export const Scene05_Manipulators: React.FC = () => {
         })}
       </AbsoluteFill>
 
-      {/* Unified rounded-square conveyor */}
+      {/* Original geometric conveyor (yank-up replaced by detonate) */}
       <div
         style={{
           position: "absolute",
@@ -311,7 +390,7 @@ export const Scene05_Manipulators: React.FC = () => {
           left: CONVEYOR_LEFT,
           transform: `translateX(${s.conveyor.x}px)`,
           display: "flex",
-          alignItems: "flex-start",
+          alignItems: "center",
           gap: SPACING - SHAPE_SIZE,
         }}
       >
@@ -330,19 +409,11 @@ export const Scene05_Manipulators: React.FC = () => {
                 flexDirection: "column",
                 alignItems: "center",
                 gap: 12,
+                opacity: finalOpacity,
+                transform: `scale(${detScale})`,
               }}
             >
-              <div
-                style={{
-                  width: SHAPE_SIZE,
-                  height: SHAPE_SIZE,
-                  backgroundColor: sh.color,
-                  borderRadius: 28,
-                  opacity: finalOpacity,
-                  transform: `scale(${detScale})`,
-                  boxShadow: sh.predator ? `0 0 24px ${sh.color}55` : "none",
-                }}
-              />
+              <Shape type={sh.type} color={sh.color} size={SHAPE_SIZE} />
               <div
                 style={{
                   width: 40,
@@ -356,18 +427,38 @@ export const Scene05_Manipulators: React.FC = () => {
         })}
       </div>
 
-      {/* GM logo — the sniper */}
+      {/* Sniper — flipped horizontally so the rifle aims toward the conveyor */}
+      <div
+        style={{
+          position: "absolute",
+          top: SNIPER_TOP,
+          right: SNIPER_RIGHT - s.sniper.recoil * 14,
+          width: SNIPER_W,
+          height: SNIPER_H,
+          opacity: s.sniper.opacity,
+          transform: `scaleX(-1)`,
+          transformOrigin: "center",
+          filter: `drop-shadow(0 8px 18px rgba(0,0,0,0.45))`,
+        }}
+      >
+        <Img
+          src={staticFile("sniper.svg")}
+          style={{ width: "100%", height: "100%", display: "block" }}
+        />
+      </div>
+
+      {/* GM logo — small badge */}
       <div
         style={{
           position: "absolute",
           top: LOGO_TOP,
-          right: LOGO_RIGHT,
+          left: LOGO_LEFT,
           width: LOGO_SIZE,
           height: LOGO_SIZE,
           opacity: s.logo.opacity,
           transform: `scale(${s.logo.scale})`,
           transformOrigin: "center",
-          filter: `drop-shadow(0 0 ${s.logo.glow * 28}px ${BLUE})`,
+          filter: `drop-shadow(0 0 ${s.logo.glow * 22}px ${BLUE})`,
         }}
       >
         <Img
@@ -376,7 +467,7 @@ export const Scene05_Manipulators: React.FC = () => {
         />
       </div>
 
-      {/* Tracers + particle bursts */}
+      {/* Muzzle flash + tracers + particle bursts */}
       <svg
         style={{
           position: "absolute",
@@ -387,19 +478,30 @@ export const Scene05_Manipulators: React.FC = () => {
         }}
         viewBox={`0 0 ${STAGE_W} ${STAGE_H}`}
       >
+        {/* Muzzle flash */}
+        {s.sniper.flash > 0.01 && (
+          <circle
+            cx={MUZZLE_X}
+            cy={MUZZLE_Y}
+            r={28 * s.sniper.flash}
+            fill="#FFE066"
+            opacity={s.sniper.flash * 0.85}
+          />
+        )}
+
         {VICTIM_INDEXES.map((shapeIdx, passIdx) => {
           const tracer = s[`tracer_${passIdx}`];
           const det = s[`detonate_${passIdx}`];
           const target = victimCenter(shapeIdx);
-          const endX = LOGO_CENTER_X + tracer.progress * (target.x - LOGO_CENTER_X);
-          const endY = LOGO_CENTER_Y + tracer.progress * (target.y - LOGO_CENTER_Y);
+          const endX = MUZZLE_X + tracer.progress * (target.x - MUZZLE_X);
+          const endY = MUZZLE_Y + tracer.progress * (target.y - MUZZLE_Y);
 
           return (
             <g key={passIdx}>
               {tracer.opacity > 0.01 && (
                 <line
-                  x1={LOGO_CENTER_X}
-                  y1={LOGO_CENTER_Y}
+                  x1={MUZZLE_X}
+                  y1={MUZZLE_Y}
                   x2={endX}
                   y2={endY}
                   stroke={BLUE}
