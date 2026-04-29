@@ -27,7 +27,10 @@ import * as THREE from "three";
 import { VIDEO_SRC } from "./LofiDots";
 
 // ── Hex grid (mirrors ParticleWave; tuned for broll-sampled colour) ──
-const HEX_N = 24;
+// 72 = 3× ParticleWave's 24, hexagons one-third the radius. The
+// instance count rises to 5184 — InstancedMesh handles it; the
+// per-render matrix/colour rewrite is the only real cost.
+const HEX_N = 72;
 const RADIUS = 50 / HEX_N;
 const TIME_COEF = 0.7;
 const DEPTH_SCALE = 0.55;
