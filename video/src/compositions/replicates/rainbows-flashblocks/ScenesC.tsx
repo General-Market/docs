@@ -662,20 +662,22 @@ export const Scene10_Finale: React.FC = () => {
             transform: `translate(-50%, calc(-50% + ${rainbowsY}px))`,
             opacity: rainbowsOpacity,
             textAlign: "center",
+            maxWidth: 1500,
           }}
         >
           <span
             style={{
               fontFamily,
-              fontSize: 240,
+              fontSize: 118,
               fontWeight: 800,
               fontStyle: "italic",
               color: "#fff",
               display: "block",
-              lineHeight: 1.15,
+              lineHeight: 1.1,
+              letterSpacing: -1,
             }}
           >
-            rainbows
+            gain more while trading the same assets with
           </span>
         </div>
       </AbsoluteFill>
