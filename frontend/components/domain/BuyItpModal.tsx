@@ -13,6 +13,8 @@ import { getTxUrl } from '@/lib/utils/explorer'
 import { useUserState } from '@/hooks/useUserState'
 import { useNonceCheck } from '@/hooks/useNonceCheck'
 import { useItpNav } from '@/hooks/useItpNav'
+import { useItpInventory } from '@/hooks/useItpInventory'
+import { computeFillBreakdown } from '@/lib/itp/fill-breakdown'
 import { useSSEOrders, useSSEBalances, type UserOrder } from '@/hooks/useSSE'
 import { useToast } from '@/lib/contexts/ToastContext'
 import { YouTubeLite, extractYouTubeId } from '@/components/ui/YouTubeLite'
@@ -97,7 +99,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   const [initialSharesBn, setInitialSharesBn] = useState<bigint | null>(null)
   const [skippedApproval, setSkippedApproval] = useState(false)
   const [processStalled, setProcessStalled] = useState(false)
-  type Holding = { symbol: string; weight: number; price: number; name?: string; image?: string }
+  type Holding = { symbol: string; address: string; weight: number; price: number; name?: string; image?: string }
   const [holdings, setHoldings] = useState<Holding[]>([])
 
   // Saved tx hashes
@@ -195,6 +197,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   // L3-only path — no BridgedITP to watch. DONE waits on L3 share growth.
 
   const { navPerShare, navPerShareBn, totalAssetCount, pricedAssetCount, isLoading: isNavLoading } = useItpNav(itpId)
+  const { inventory } = useItpInventory(itpId)
 
   const navPriceSet = useRef(false)
   useEffect(() => {
@@ -736,38 +739,55 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
             )
           })()}
         </div>
-        {holdings.length > 0 && (
-          <div className="pt-3 border-t border-black/5">
-            <p className="text-[11px] uppercase tracking-wide text-text-muted mb-2">Underlying assets</p>
-            <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
-              {holdings.map(h => {
-                const assetUsd = fillAmount
-                  ? parseFloat(formatUnits(fillAmount, COLLATERAL_DECIMALS)) * (h.weight || 0)
-                  : 0
-                const units = h.price > 0 ? assetUsd / h.price : 0
-                return (
-                  <div key={h.symbol} className="flex items-center justify-between text-xs">
+        {holdings.length > 0 && fillPrice && fillAmount && (() => {
+          const rows = computeFillBreakdown({
+            fillAmount,
+            fillPrice,
+            holdings: holdings.map(h => ({
+              symbol: h.symbol,
+              address: h.address,
+              price: h.price,
+              weight: h.weight,
+              image: h.image,
+            })),
+            inventory,
+          })
+          if (rows.length === 0) return null
+          return (
+            <div className="pt-3 border-t border-black/5">
+              <p className="text-[11px] uppercase tracking-wide text-text-muted mb-2">
+                {t('fill_details.underlying_title')}
+              </p>
+              <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                {rows.map(r => (
+                  <div key={r.symbol} className="flex items-center justify-between text-xs">
                     <div className="flex items-center gap-2 min-w-0">
-                      {h.image && (
-                        <img src={h.image} alt="" className="w-4 h-4 rounded-full flex-shrink-0" />
-                      )}
-                      <span className="font-mono text-text-primary truncate">{h.symbol}</span>
-                      <span className="text-text-muted tabular-nums">{(h.weight * 100).toFixed(1)}%</span>
+                      {r.image && <img src={r.image} alt="" className="w-4 h-4 rounded-full flex-shrink-0" />}
+                      <span className="font-mono text-text-primary truncate">{r.symbol}</span>
+                      <span className="text-text-muted tabular-nums">{(r.weight * 100).toFixed(1)}%</span>
                     </div>
                     <div className="flex items-center gap-3 font-mono tabular-nums">
                       <span className="text-text-muted">
-                        {h.price > 0 ? `$${h.price < 1 ? h.price.toFixed(4) : h.price.toFixed(2)}` : '—'}
+                        {r.price !== null
+                          ? `$${r.price < 1 ? r.price.toFixed(4) : r.price.toFixed(2)}`
+                          : '—'}
                       </span>
                       <span className="text-text-primary">
-                        {h.price > 0 ? `${units < 1 ? units.toFixed(4) : units.toFixed(2)}` : '—'}
+                        {r.qtyAcquired < 1 ? r.qtyAcquired.toFixed(6) : r.qtyAcquired.toFixed(4)}
+                      </span>
+                      <span className="text-text-muted w-16 text-right">
+                        {r.usd !== null ? `$${r.usd.toFixed(2)}` : '—'}
                       </span>
                     </div>
                   </div>
-                )
-              })}
+                ))}
+              </div>
+              <p className="text-[10px] text-text-muted mt-2">
+                {t('fill_details.underlying_note')}
+              </p>
             </div>
-          </div>
-        )}
+          )
+        })()}
       </div>
     )
   }

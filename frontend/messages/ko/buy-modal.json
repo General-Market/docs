@@ -55,7 +55,9 @@
     "fill_price": "체결 가격",
     "amount_filled": "체결 금액",
     "shares": "주식 수",
-    "vs_limit": "지정가 대비"
+    "vs_limit": "지정가 대비",
+    "underlying_title": "Underlying assets acquired",
+    "underlying_note": "Quantities are exact (on-chain inventory × shares minted). Prices reflect the current oracle quote."
   },
   "toast": {
     "buy_filled_shares": "매수 체결 — {name} 주식 {shares}주 수령",

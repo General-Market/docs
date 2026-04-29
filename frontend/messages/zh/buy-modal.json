@@ -55,7 +55,9 @@
     "fill_price": "成交价格",
     "amount_filled": "成交金额",
     "shares": "份额",
-    "vs_limit": "对比限价"
+    "vs_limit": "对比限价",
+    "underlying_title": "Underlying assets acquired",
+    "underlying_note": "Quantities are exact (on-chain inventory × shares minted). Prices reflect the current oracle quote."
   },
   "toast": {
     "buy_filled_shares": "买入已成交 -- 收到 {shares} {name} 份额",

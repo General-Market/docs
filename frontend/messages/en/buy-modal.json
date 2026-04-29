@@ -67,7 +67,9 @@
     "fill_price": "Fill Price",
     "amount_filled": "Amount Filled",
     "shares": "Shares",
-    "vs_limit": "vs Limit"
+    "vs_limit": "vs Limit",
+    "underlying_title": "Underlying assets acquired",
+    "underlying_note": "Quantities are exact (on-chain inventory × shares minted). Prices reflect the current oracle quote."
   },
   "toast": {
     "buy_filled_shares": "Buy filled \u2014 {shares} {name} shares received",

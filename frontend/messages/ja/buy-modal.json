@@ -55,7 +55,9 @@
     "fill_price": "約定価格",
     "amount_filled": "約定金額",
     "shares": "シェア",
-    "vs_limit": "指値比較"
+    "vs_limit": "指値比較",
+    "underlying_title": "Underlying assets acquired",
+    "underlying_note": "Quantities are exact (on-chain inventory × shares minted). Prices reflect the current oracle quote."
   },
   "toast": {
     "buy_filled_shares": "購入約定 — {name}のシェア{shares}を受け取りました",
