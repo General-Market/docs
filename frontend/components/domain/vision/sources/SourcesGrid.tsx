@@ -197,13 +197,13 @@ export function SourcesGrid() {
       {/* Stats bar — full-bleed black, iShares convention: number dominates, label whispers */}
       {showSectionBar && (
         <div className="bg-black text-white">
-          <div className="max-w-site mx-auto px-6 lg:px-12 py-5 flex items-end">
-            <div className="flex items-end gap-10">
-              <div className="flex flex-col">
+          <div className="max-w-site mx-auto px-6 lg:px-12 py-5 flex flex-wrap items-end gap-y-4">
+            <div className="flex items-end gap-5 sm:gap-10 min-w-0 flex-1">
+              <div className="flex flex-col min-w-0">
                 <span className="text-micro font-medium uppercase tracking-[0.08em] text-white/70 mb-1">{t('sources_grid.sources')}</span>
                 <AnimatedNumber value={sourceCount} decimals={0} duration={1200} className="text-stat font-black font-mono tabular-nums" />
               </div>
-              <div className="flex flex-col">
+              <div className="flex flex-col min-w-0">
                 <span className="text-micro font-medium uppercase tracking-[0.08em] text-white/70 mb-1">{t('sources_grid.assets')}</span>
                 {statsLoading ? (
                   <span className="inline-block w-20 h-8 bg-white/10 rounded animate-pulse" />
@@ -217,14 +217,14 @@ export function SourcesGrid() {
                   />
                 )}
               </div>
-              <div className="flex flex-col">
+              <div className="flex flex-col min-w-0">
                 <span className="text-micro font-medium uppercase tracking-[0.08em] text-white/70 mb-1">{t('sources_grid.categories')}</span>
                 <AnimatedNumber value={categoryCount} decimals={0} duration={1000} className="text-stat font-black font-mono tabular-nums" />
               </div>
             </div>
 
-            {/* Live uptime — right aligned, links to explorer */}
-            <div className="ml-auto flex items-center gap-3 live-ambient-pulse">
+            {/* Live uptime — right aligned on desktop, wraps below stats on mobile */}
+            <div className="flex items-center gap-3 live-ambient-pulse w-full sm:w-auto sm:ml-auto">
               <a href="/explorer" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-color-up opacity-75" />
@@ -237,7 +237,7 @@ export function SourcesGrid() {
               </a>
               <button
                 onClick={() => setShowSectionBar(false)}
-                className="text-white/60 hover:text-white transition-colors text-title leading-none ml-1"
+                className="text-white/60 hover:text-white transition-colors text-title leading-none ml-auto sm:ml-1"
                 aria-label={t('sources_grid.dismiss')}
               >
                 &times;

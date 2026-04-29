@@ -18,7 +18,7 @@ export default async function VisionPage() {
   const t = await getTranslations('seo.sr_only')
 
   return (
-    <main className="min-h-screen bg-page flex flex-col">
+    <main className="min-h-screen bg-page flex flex-col overflow-x-clip">
       <Header />
 
       {/* Screen 1 — ChatGPT-style welcome */}

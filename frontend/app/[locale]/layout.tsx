@@ -6,7 +6,6 @@ import {
   WebsiteJsonLd,
   SoftwareApplicationJsonLd,
 } from '@/components/seo/JsonLd'
-import { HowItWorksButton } from '@/components/ui/HowItWorksButton'
 
 type Props = {
   children: React.ReactNode
@@ -73,7 +72,6 @@ export default async function LocaleLayout({ children, params }: Props) {
       <WebsiteJsonLd description={tJsonLd('website_description')} />
       <SoftwareApplicationJsonLd description={tJsonLd('app_description')} />
       {children}
-      <HowItWorksButton />
     </>
   )
 }

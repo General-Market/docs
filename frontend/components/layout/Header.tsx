@@ -229,6 +229,34 @@ export function Header() {
                             : 'glass-popover'
                         }`}
                       >
+                        {/* Primary navigation (mirrors desktop tabs) */}
+                        <div className={`px-2 py-1.5 mb-1 border-b ${isDark ? 'border-white/10' : 'border-border-light'}`}>
+                          {PRIMARY_NAV.filter(item => item.id !== 'portfolio' || isConnected).map((item) => {
+                            const href = navHref(item)
+                            if (!href) return null
+                            const active = activePage === item.id
+                            return (
+                              <Link
+                                key={item.id}
+                                href={href}
+                                onClick={() => setMobileMenuOpen(false)}
+                                aria-current={active ? 'page' : undefined}
+                                className={`block px-2 py-2 text-caption font-semibold rounded transition-colors ${
+                                  active
+                                    ? isDark
+                                      ? 'text-white bg-white/10'
+                                      : 'text-black bg-surface'
+                                    : isDark
+                                      ? 'text-zinc-300 hover:text-white hover:bg-white/10'
+                                      : 'text-text-secondary hover:text-black hover:bg-surface'
+                                }`}
+                              >
+                                {t(item.labelKey)}
+                              </Link>
+                            )
+                          })}
+                        </div>
+
                         {/* Section scroll-to links (contextual) */}
                         {sectionNav && (
                           <div className={`px-2 py-1.5 mb-1 border-b ${isDark ? 'border-white/10' : 'border-border-light'}`}>

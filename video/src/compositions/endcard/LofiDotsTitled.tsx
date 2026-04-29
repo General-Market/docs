@@ -27,10 +27,10 @@ import * as THREE from "three";
 import { VIDEO_SRC } from "./LofiDots";
 
 // ── Hex grid (mirrors ParticleWave; tuned for broll-sampled colour) ──
-// 72 = 3× ParticleWave's 24, hexagons one-third the radius. The
-// instance count rises to 5184 — InstancedMesh handles it; the
-// per-render matrix/colour rewrite is the only real cost.
-const HEX_N = 72;
+// 108 = 4.5× ParticleWave's 24, hexagons less than a quarter of the
+// original radius. The instance count rises to 11 664 — InstancedMesh
+// handles it; the per-render matrix/colour rewrite is the only cost.
+const HEX_N = 108;
 const RADIUS = 50 / HEX_N;
 const TIME_COEF = 0.7;
 // Peak depth offset, in absolute world units. Decoupled from
@@ -38,10 +38,6 @@ const TIME_COEF = 0.7;
 // out to ≈1.375 world units; we just keep that amplitude when
 // hexes shrink, otherwise the wave disappears with the tiles.
 const DEPTH_AMPLITUDE = 1.4;
-// Proximity falloff distance in pre-scale world units. ParticleWave's
-// `20 * RADIUS` at HEX_N=20 = 50; we just hold that value so the
-// cursor's halo of motion still covers most of the field.
-const PROXIMITY_RADIUS = 50;
 // ParticleWave runs metalness 0.8 — fine when its base colours are
 // pure white/blue/black, since metal reflects the environment and
 // those colours read either bright (white) or dark (black) under
@@ -52,8 +48,6 @@ const METALNESS = 0.45;
 const ROUGHNESS = 0.42;
 const CLEARCOAT = 1;
 const CLEARCOAT_ROUGHNESS = 0.18;
-const TILT_X = 0.10;
-const TILT_Y = 0.10;
 // Pre-gain on the sampled colour. Even with metalness reduced the
 // PBR shader compresses chroma — give it back here.
 const COLOR_BOOST = 1.55;
@@ -169,17 +163,10 @@ const useBrollSampler = (
 // ── 3D hex field ──
 interface HexFieldProps {
   samplerRef: React.MutableRefObject<Sampler | null>;
-  pointerX: number;
-  pointerY: number;
   time: number;
 }
 
-const HexField: React.FC<HexFieldProps> = ({
-  samplerRef,
-  pointerX,
-  pointerY,
-  time,
-}) => {
+const HexField: React.FC<HexFieldProps> = ({ samplerRef, time }) => {
   const { size } = useThree();
   const meshRef = useRef<THREE.InstancedMesh>(null);
 
@@ -194,11 +181,6 @@ const HexField: React.FC<HexFieldProps> = ({
   const wWidth = wHeight * aspect;
   const scaleFactor =
     aspect > 1 ? (wWidth / 100) * 1.4 : (wHeight / 100) * 1.4;
-
-  const targetX = (pointerX * wWidth) / 2;
-  const targetY = (pointerY * wHeight) / 2;
-  const tiltX = -pointerY * TILT_X;
-  const tiltY = pointerX * TILT_Y;
 
   // Per-render: imperatively rewrite every instance matrix and colour.
   // useEffect with no deps fires after every render, before paint —
@@ -215,23 +197,16 @@ const HexField: React.FC<HexFieldProps> = ({
 
     const dummy = new THREE.Object3D();
     const tmpColor = new THREE.Color();
-    const maxDist = PROXIMITY_RADIUS * scaleFactor;
 
     for (let i = 0; i < tiles.length; i++) {
       const tile = tiles[i];
-      const worldX = tile.x * scaleFactor;
-      const worldY = tile.y * scaleFactor;
-      const dx = worldX - targetX;
-      const dy = worldY - targetY;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      const t = Math.max(0, Math.min(1, dist / maxDist));
-      const proximity = 1 - t * t * (3 - 2 * t);
 
+      // Phase-only wave — every tile pulses with full amplitude;
+      // no cursor-driven proximity halo.
       const depth =
         0.5 *
         (Math.cos(tile.phase + time * TIME_COEF) - 1) *
-        DEPTH_AMPLITUDE *
-        proximity;
+        DEPTH_AMPLITUDE;
 
       dummy.position.set(tile.x, tile.y, depth);
       dummy.scale.setScalar(1);
@@ -263,32 +238,31 @@ const HexField: React.FC<HexFieldProps> = ({
 
   return (
     <>
-      {/* Lights — key from the front, accent from behind, ambient
-          floor, and a hemisphere fill so unlit prisms still carry
-          their broll colour instead of going black. Without the
-          hemisphere, metal-in-a-dark-room reads as a black field. */}
+      {/* ParticleWave's lights, locked at the centre — `decay=0`
+          so intensity reaches every tile equally regardless of
+          distance. The white key from in front, the red accent
+          from behind, ambient and hemisphere as fill. Same flavour
+          as the reference, no cursor-following, no hot spot
+          chasing the eye. */}
       <pointLight
         color={0xffffff}
-        intensity={1100}
-        decay={2}
-        position={[targetX, targetY, 5]}
+        intensity={10}
+        decay={0}
+        position={[0, 0, 30]}
       />
       <pointLight
         color={0xff5040}
-        intensity={520}
-        decay={2}
-        position={[targetX, targetY, -20]}
+        intensity={4}
+        decay={0}
+        position={[0, 0, -20]}
       />
-      <ambientLight intensity={0.85} />
+      <ambientLight intensity={0.55} />
       <hemisphereLight
-        args={[0xfff2dd, 0x1a1822, 0.9]}
+        args={[0xfff2dd, 0x1a1822, 0.7]}
         position={[0, 0, 30]}
       />
 
-      <group
-        scale={[scaleFactor, scaleFactor, 1]}
-        rotation={[tiltX, tiltY, 0]}
-      >
+      <group scale={[scaleFactor, scaleFactor, 1]}>
         <instancedMesh
           ref={meshRef}
           args={[geometry, undefined, tiles.length]}
@@ -322,11 +296,7 @@ export const LofiDotsTitled: React.FC = () => {
   const samplerVideoRef = useRef<HTMLVideoElement | null>(null);
   const samplerRef = useBrollSampler(samplerVideoRef, frame);
 
-  // Slow Lissajous drift — gives the lighting and tilt a life of
-  // their own without ever quite repeating.
   const time = frame / fps;
-  const pointerX = Math.sin(time * 0.4) * Math.cos(time * 0.25) * 0.6;
-  const pointerY = Math.sin(time * 0.3) * 0.5;
 
   const fadeIn = interpolate(frame, [0, Math.round(fps * 1.5)], [0, 1], {
     extrapolateLeft: "clamp",
@@ -363,12 +333,7 @@ export const LofiDotsTitled: React.FC = () => {
             toneMapping: THREE.ACESFilmicToneMapping,
           }}
         >
-          <HexField
-            samplerRef={samplerRef}
-            pointerX={pointerX}
-            pointerY={pointerY}
-            time={time}
-          />
+          <HexField samplerRef={samplerRef} time={time} />
         </ThreeCanvas>
       </AbsoluteFill>
 
