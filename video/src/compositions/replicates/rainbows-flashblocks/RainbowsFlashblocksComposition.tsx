@@ -8,17 +8,17 @@ import {
 } from "./ScenesC";
 
 /*
- * Rainbows — script v3 (post-cut: scenes 07, 08, 09 removed)
- * 1920x1080, 24fps, 672 frames (28s)
+ * Rainbows — script v3 (post-cut: scenes 07, 08, 09 removed; scene 02 trimmed)
+ * 1920x1080, 24fps, 648 frames (27s)
  *
  * Scene timeline (frame ranges):
  *   01  Hook              "You spent 10,000 hours / perfecting your trading strategies"   0–84
- *   02  TryRainbows       "How rainbows improve / your gains?"                            84–156
- *   03  CubeExplode       silent visual beat                                             156–228
- *   04  FilterAndPercent  "Rainbows filters out illegal activities" + "70% of profits"   228–336
- *   05  Manipulators      conveyor: frontrunners / spoofers / insiders / manipulators    336–444
- *   06  HonestTraders     "Leaving the same amount of profits / to fewer honest traders" 444–528
- *   10  Finale            "rainbows" + dark fade                                         528–672
+ *   02  TryRainbows       "How rainbows improve / your gains?"                            84–132
+ *   03  CubeExplode       silent visual beat                                             132–204
+ *   04  FilterAndPercent  "Rainbows filters out illegal activities" + "70% of profits"   204–312
+ *   05  Manipulators      conveyor: frontrunners / spoofers / insiders / manipulators    312–420
+ *   06  HonestTraders     "Leaving the same amount of profits / to fewer honest traders" 420–504
+ *   10  Finale            "rainbows" + dark fade                                         504–648
  */
 
 export const RainbowsFlashblocksComposition: React.FC = () => {
@@ -27,22 +27,22 @@ export const RainbowsFlashblocksComposition: React.FC = () => {
       <Sequence from={0} durationInFrames={84} name="01 Hook">
         <Scene01_Hook />
       </Sequence>
-      <Sequence from={84} durationInFrames={72} name="02 Try Rainbows">
+      <Sequence from={84} durationInFrames={48} name="02 Try Rainbows">
         <Scene02_TryRainbows />
       </Sequence>
-      <Sequence from={156} durationInFrames={72} name="03 Cube Explode">
+      <Sequence from={132} durationInFrames={72} name="03 Cube Explode">
         <Scene03_CubeExplode />
       </Sequence>
-      <Sequence from={228} durationInFrames={108} name="04 Filter And Percent">
+      <Sequence from={204} durationInFrames={108} name="04 Filter And Percent">
         <Scene04_FilterAndPercent />
       </Sequence>
-      <Sequence from={336} durationInFrames={108} name="05 Manipulators">
+      <Sequence from={312} durationInFrames={108} name="05 Manipulators">
         <Scene05_Manipulators />
       </Sequence>
-      <Sequence from={444} durationInFrames={84} name="06 Honest Traders">
+      <Sequence from={420} durationInFrames={84} name="06 Honest Traders">
         <Scene06_HonestTraders />
       </Sequence>
-      <Sequence from={528} durationInFrames={144} name="10 Finale">
+      <Sequence from={504} durationInFrames={144} name="10 Finale">
         <Scene10_Finale />
       </Sequence>
     </AbsoluteFill>
@@ -55,7 +55,7 @@ export const rainbowsFlashblocksMeta = {
   width: 1920,
   height: 1080,
   fps: 24,
-  durationInFrames: 672,
+  durationInFrames: 648,
 };
 
 export { sceneMetasA } from "./ScenesA";

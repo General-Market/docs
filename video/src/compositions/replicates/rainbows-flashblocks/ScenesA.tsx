@@ -118,33 +118,20 @@ export const Scene01_Hook: React.FC = () => {
 };
 
 /* ═══════════════════════════════════════════════════════
-   Scene 02 — TryRainbows  (72 frames = 3s @ 24fps)
-   Single-word flashes "How" → "rainbows" → "improve"
-   then big italic title slides in: "your gains?"
-   Hex grid background.
+   Scene 02 — TryRainbows  (48 frames = 2s @ 24fps)
+   Big italic question slides in over hex-grid dark and holds:
+   "How rainbows improve / your gains?"
    ═══════════════════════════════════════════════════════ */
 
-const SCENE02_DURATION = 72;
+const SCENE02_DURATION = 48;
 
 export const Scene02_TryRainbows: React.FC = () => {
   const s = useGsapProxy(
     (tl, p) => {
-      tl.to(p.then, { opacity: 0, duration: 0.1, ease: "power2.in" }, 0.45);
-      tl.to(p.youShould, { opacity: 1, y: 0, duration: 0.12, ease: "power2.out" }, 0.5);
-      tl.to(p.youShould, { opacity: 0, duration: 0.1, ease: "power2.in" }, 0.95);
-      tl.to(p.tryWord, { opacity: 1, y: 0, duration: 0.12, ease: "power2.out" }, 1.0);
-
-      tl.to(p.phase1, { opacity: 0, duration: 0.18, ease: "power2.in" }, 1.5);
-      tl.to(p.phase2, { opacity: 1, duration: 0.18, ease: "power2.out" }, 1.65);
-      tl.to(p.title, { x: 0, duration: 0.45, ease: "power2.out" }, 1.65);
+      tl.to(p.title, { opacity: 1, x: 0, duration: 0.5, ease: "power2.out" }, 0.1);
     },
     {
-      phase1: { opacity: 1 },
-      then: { opacity: 1, y: 0 },
-      youShould: { opacity: 0, y: 15 },
-      tryWord: { opacity: 0, y: 15 },
-      phase2: { opacity: 0 },
-      title: { x: 50 },
+      title: { opacity: 0, x: 60 },
     },
   );
 
@@ -155,35 +142,20 @@ export const Scene02_TryRainbows: React.FC = () => {
         <HexGridOverlay color="rgba(255,255,255,0.16)" size={70} />
       </ZoomedBg>
 
-      <div style={{ ...center, opacity: s.phase1.opacity }}>
-        {s.then.opacity > 0.01 && (
-          <span style={{ ...baseText, fontStyle: "normal", position: "absolute", left: "50%", transform: `translate(-50%, ${s.then.y}px)`, fontSize: 130, color: "#fff", opacity: s.then.opacity, whiteSpace: "nowrap" }}>
-            How
-          </span>
-        )}
-        {s.youShould.opacity > 0.01 && (
-          <span style={{ ...baseText, fontStyle: "normal", position: "absolute", left: "50%", transform: `translate(-50%, ${s.youShould.y}px)`, fontSize: 130, color: "#fff", opacity: s.youShould.opacity, whiteSpace: "nowrap" }}>
-            rainbows
-          </span>
-        )}
-        {s.tryWord.opacity > 0.01 && (
-          <span style={{ ...baseText, fontStyle: "normal", position: "absolute", left: "50%", transform: `translate(-50%, ${s.tryWord.y}px)`, fontSize: 130, color: "#fff", opacity: s.tryWord.opacity, whiteSpace: "nowrap" }}>
-            improve
-          </span>
-        )}
-      </div>
-
       <div
         style={{
           position: "absolute",
-          top: "55%",
+          top: "50%",
           left: "8%",
-          transform: `translateX(${s.title.x}px)`,
-          opacity: s.phase2.opacity,
+          transform: `translate(0, calc(-50% + 0px)) translateX(${s.title.x}px)`,
+          opacity: s.title.opacity,
           maxWidth: "84%",
         }}
       >
-        <span style={{ ...baseText, fontSize: 175, color: "#fff" }}>
+        <span style={{ ...baseText, fontSize: 150, color: "#fff", display: "block" }}>
+          How rainbows improve
+        </span>
+        <span style={{ ...baseText, fontSize: 150, color: "#fff", display: "block" }}>
           your gains?
         </span>
       </div>
