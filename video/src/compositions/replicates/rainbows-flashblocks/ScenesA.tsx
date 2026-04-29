@@ -488,11 +488,14 @@ export const Scene02_TryRainbows: React.FC = () => {
    Three beats:
      1 (0–22)   — four white rectangles drop in, stacked, labeled
                   Stocks / Crypto / Predictions / Memecoins.
-     2 (22–40)  — a single rainbow rectangle draws itself around the
-                  whole stack — Rainbows, the box on the boxes.
-     3 (40–66)  — all four rectangles morph simultaneously into their
-                  rainbow-painted shapes (flower / heart / star /
-                  cloud). The wrapper stays.
+     2 (22–40)  — a rainbow text border ("RAINBOWS · RAINBOWS · …")
+                  scrolls around the stack on a rounded-rect path —
+                  Rainbows, the box on the boxes.
+     3 (40–66)  — all four rectangles morph simultaneously: the box
+                  silhouette shrinks into a compact organic shape
+                  (heart / flower / star / cloud), and the label
+                  ("Stocks", "Crypto", …) stays inside, scaling down
+                  to fit. The text border keeps spinning.
    ═══════════════════════════════════════════════════════ */
 
 const SCENE03_DURATION = 72;
@@ -510,20 +513,46 @@ const STACK_TOP = (1080 - (ROW_H * 4 + ROW_GAP * 3)) / 2;
 const STACK_HEIGHT = ROW_H * 4 + ROW_GAP * 3;
 const rowCenterY = (i: number) => STACK_TOP + ROW_H / 2 + i * (ROW_H + ROW_GAP);
 
-/* Wrapper sits just outside the stack on every side */
-const WRAP_PAD = 22;
+/* Text-border wrapper: sits a comfortable distance outside the stack so
+ * the type doesn't crowd the rectangles. */
+const WRAP_PAD = 56;
 const WRAP_W = ROW_W + WRAP_PAD * 2;
 const WRAP_H = STACK_HEIGHT + WRAP_PAD * 2;
-const WRAP_RADIUS = 22;
-/* Rounded-rect perimeter for the stroke-draw animation */
-const WRAP_PERIMETER = 2 * (WRAP_W + WRAP_H) - 8 * WRAP_RADIUS + 2 * Math.PI * WRAP_RADIUS;
+const WRAP_RADIUS = 28;
 
+/* Rounded-rect path for the textPath, in viewBox coordinates */
+const WRAP_PATH_ORIGIN = 60;
+const wrapPathD = (() => {
+  const x = WRAP_PATH_ORIGIN;
+  const y = WRAP_PATH_ORIGIN;
+  const w = WRAP_W;
+  const h = WRAP_H;
+  const r = WRAP_RADIUS;
+  return [
+    `M ${x + r} ${y}`,
+    `L ${x + w - r} ${y}`,
+    `A ${r} ${r} 0 0 1 ${x + w} ${y + r}`,
+    `L ${x + w} ${y + h - r}`,
+    `A ${r} ${r} 0 0 1 ${x + w - r} ${y + h}`,
+    `L ${x + r} ${y + h}`,
+    `A ${r} ${r} 0 0 1 ${x} ${y + h - r}`,
+    `L ${x} ${y + r}`,
+    `A ${r} ${r} 0 0 1 ${x + r} ${y}`,
+    "Z",
+  ].join(" ");
+})();
+
+const TEXT_BORDER_TEXT = "  RAINBOWS  ·  ".repeat(28);
+const TEXT_BORDER_FONT_SIZE = 36;
+const TEXT_BORDER_PATH_ID = "rb-scene03-border-path";
+
+/* Shapes — white silhouettes that the boxes morph into */
 const FlowerShape: React.FC = () => (
   <svg viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
     {[0, 72, 144, 216, 288].map((rot) => (
-      <ellipse key={rot} cx="50" cy="28" rx="11" ry="20" fill={RB_FILL} transform={`rotate(${rot} 50 50)`} />
+      <ellipse key={rot} cx="50" cy="28" rx="11" ry="20" fill="#fff" transform={`rotate(${rot} 50 50)`} />
     ))}
-    <circle cx="50" cy="50" r="9" fill="#fff" />
+    <circle cx="50" cy="50" r="9" fill="#0a3a38" />
   </svg>
 );
 
@@ -531,23 +560,23 @@ const HeartShape: React.FC = () => (
   <svg viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
     <path
       d="M 50 86 C 18 64 10 46 10 32 C 10 20 22 12 34 12 C 42 12 48 18 50 24 C 52 18 58 12 66 12 C 78 12 90 20 90 32 C 90 46 82 64 50 86 Z"
-      fill={RB_FILL}
+      fill="#fff"
     />
   </svg>
 );
 
 const StarShape: React.FC = () => (
   <svg viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
-    <path d="M 50 8 L 61 38 L 93 38 L 67 57 L 77 88 L 50 70 L 23 88 L 33 57 L 7 38 L 39 38 Z" fill={RB_FILL} />
+    <path d="M 50 8 L 61 38 L 93 38 L 67 57 L 77 88 L 50 70 L 23 88 L 33 57 L 7 38 L 39 38 Z" fill="#fff" />
   </svg>
 );
 
 const CloudShape: React.FC = () => (
   <svg viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
-    <ellipse cx="30" cy="58" rx="18" ry="15" fill={RB_FILL} />
-    <ellipse cx="50" cy="46" rx="22" ry="18" fill={RB_FILL} />
-    <ellipse cx="70" cy="56" rx="18" ry="15" fill={RB_FILL} />
-    <ellipse cx="50" cy="64" rx="30" ry="11" fill={RB_FILL} />
+    <ellipse cx="30" cy="58" rx="18" ry="15" fill="#fff" />
+    <ellipse cx="50" cy="46" rx="22" ry="18" fill="#fff" />
+    <ellipse cx="70" cy="56" rx="18" ry="15" fill="#fff" />
+    <ellipse cx="50" cy="64" rx="30" ry="11" fill="#fff" />
   </svg>
 );
 
@@ -582,6 +611,11 @@ export const Scene03_CubeExplode: React.FC = () => {
     extrapolateRight: "clamp",
     easing: Easing.bezier(0.6, 0, 0.4, 1),
   });
+
+  /* Continuous text scroll along the wrapper path. Negative startOffset
+   * shifts the text earlier on the path, so the visible characters
+   * appear to roll clockwise around the rectangle. */
+  const textScroll = (frame - SCENE03_WRAP_START) * 6;
 
   return (
     <AbsoluteFill>
@@ -621,7 +655,7 @@ export const Scene03_CubeExplode: React.FC = () => {
               opacity: drop,
             }}
           >
-            {/* White rectangle — fades + shrinks during morph */}
+            {/* White rectangle — fades out as the silhouette morphs */}
             <div
               style={{
                 position: "absolute",
@@ -630,26 +664,11 @@ export const Scene03_CubeExplode: React.FC = () => {
                 borderRadius: 10,
                 boxShadow: "0 10px 32px rgba(0,0,0,0.22)",
                 opacity: 1 - morph,
-                transform: `scale(${1 - morph * 0.35})`,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
+                transform: `scaleX(${1 - morph * 0.78}) scaleY(${1 - morph * 0.06})`,
               }}
-            >
-              <span
-                style={{
-                  fontFamily,
-                  fontWeight: 700,
-                  fontSize: 58,
-                  letterSpacing: "-0.02em",
-                  color: "#0a3a38",
-                }}
-              >
-                {row.label}
-              </span>
-            </div>
+            />
 
-            {/* Shape — fades + scales in during morph */}
+            {/* White shape — fades + scales in to replace the rectangle */}
             <div
               style={{
                 position: "absolute",
@@ -657,47 +676,76 @@ export const Scene03_CubeExplode: React.FC = () => {
                 left: "50%",
                 width: ROW_H,
                 height: ROW_H,
-                transform: `translateX(-50%) scale(${0.55 + morph * 0.45})`,
+                transform: `translateX(-50%) scale(${0.55 + morph * 0.55})`,
                 opacity: morph,
+                filter: "drop-shadow(0 8px 24px rgba(0,0,0,0.22))",
               }}
             >
               <Shape />
+            </div>
+
+            {/* Label — stays centred, shrinks slightly to sit inside the shape */}
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                pointerEvents: "none",
+              }}
+            >
+              <span
+                style={{
+                  fontFamily,
+                  fontWeight: 700,
+                  fontSize: 58 - morph * 24,
+                  letterSpacing: "-0.02em",
+                  color: "#0a3a38",
+                }}
+              >
+                {row.label}
+              </span>
             </div>
           </div>
         );
       })}
 
-      {/* Rainbow wrapper — single rectangle around the entire stack.
-       * Stroke is drawn from the top centre using stroke-dashoffset. */}
+      {/* Rainbow text border — scrolls around the stack on a rounded-rect path */}
       <svg
-        width={WRAP_W + 60}
-        height={WRAP_H + 60}
-        viewBox={`0 0 ${WRAP_W + 60} ${WRAP_H + 60}`}
+        width={WRAP_W + WRAP_PATH_ORIGIN * 2}
+        height={WRAP_H + WRAP_PATH_ORIGIN * 2}
+        viewBox={`0 0 ${WRAP_W + WRAP_PATH_ORIGIN * 2} ${WRAP_H + WRAP_PATH_ORIGIN * 2}`}
         style={{
           position: "absolute",
           left: "50%",
           top: "50%",
           transform: "translate(-50%, -50%)",
           pointerEvents: "none",
-          filter: "drop-shadow(0 0 18px rgba(255,255,255,0.30))",
+          opacity: wrapDraw,
+          filter: "drop-shadow(0 0 12px rgba(255,255,255,0.25))",
         }}
       >
-        <rect
-          x={30}
-          y={30}
-          width={WRAP_W}
-          height={WRAP_H}
-          rx={WRAP_RADIUS}
-          ry={WRAP_RADIUS}
-          fill="none"
-          stroke={RB_FILL}
-          strokeWidth={6}
-          strokeLinejoin="round"
-          strokeLinecap="round"
-          strokeDasharray={WRAP_PERIMETER}
-          strokeDashoffset={WRAP_PERIMETER * (1 - wrapDraw)}
-          transform={`rotate(-90 ${30 + WRAP_W / 2} ${30 + WRAP_H / 2})`}
-        />
+        <defs>
+          <path id={TEXT_BORDER_PATH_ID} d={wrapPathD} fill="none" />
+        </defs>
+        <text
+          fontSize={TEXT_BORDER_FONT_SIZE}
+          fontWeight={800}
+          fontStyle="italic"
+          fill={RB_FILL}
+          letterSpacing={2}
+          style={{ fontFamily }}
+        >
+          <textPath
+            href={`#${TEXT_BORDER_PATH_ID}`}
+            startOffset={-textScroll}
+            spacing="auto"
+            method="align"
+          >
+            {TEXT_BORDER_TEXT}
+          </textPath>
+        </text>
       </svg>
     </AbsoluteFill>
   );
