@@ -9,6 +9,7 @@ import {
   spring,
   Easing,
 } from "remotion";
+import { CameraMotionBlur } from "@remotion/motion-blur";
 import { loadFont } from "@remotion/google-fonts/Inter";
 import { loadFont as loadGeist } from "@remotion/google-fonts/Geist";
 import { useGsapProxy } from "../standrew/gsapUtils";
@@ -62,7 +63,8 @@ function buildScene06Proxies() {
     c5: { size: 0, opacity: 0 },
   };
   SCENE06_PHASE1.forEach((_, i) => { init[`p1_${i}`] = { opacity: 0, y: 15 }; });
-  SCENE06_PHASE2.forEach((_, i) => { init[`p2_${i}`] = { opacity: 0, y: 15 }; });
+  // Phase 2 reveals via a clip-path wipe (ink soaking into paper) — wipe = 100 hides the word.
+  SCENE06_PHASE2.forEach((_, i) => { init[`p2_${i}`] = { wipe: 100, opacity: 0 }; });
   return init;
 }
 
@@ -87,8 +89,19 @@ export const Scene06_HonestTraders: React.FC = () => {
 
       tl.to(p.phase2Wrap, { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(1.4)" }, 1.95);
 
+      // Ink wipe — each word's clip-path contracts left-to-right. Slower than
+      // the phase-1 staccato reveal; the serif gets to breathe.
       SCENE06_PHASE2.forEach((_, i) => {
-        tl.to(p[`p2_${i}`], { opacity: 1, y: 0, duration: 0.18, ease: "power2.out" }, 2.05 + i * 0.18);
+        tl.to(
+          p[`p2_${i}`],
+          { opacity: 1, duration: 0.05, ease: "none" },
+          2.05 + i * 0.22,
+        );
+        tl.to(
+          p[`p2_${i}`],
+          { wipe: 0, duration: 0.55, ease: "power2.inOut" },
+          2.05 + i * 0.22,
+        );
       });
     },
     scene06Init,
@@ -169,6 +182,7 @@ export const Scene06_HonestTraders: React.FC = () => {
       >
         {SCENE06_PHASE2.map((word, i) => {
           const proxy = s[`p2_${i}`];
+          const wipe = `inset(0 ${proxy.wipe}% 0 0)`;
           return (
             <span
               key={i}
@@ -181,7 +195,8 @@ export const Scene06_HonestTraders: React.FC = () => {
                 lineHeight: 1.15,
                 display: "inline-block",
                 opacity: proxy.opacity,
-                transform: `translateY(${proxy.y}px)`,
+                clipPath: wipe,
+                WebkitClipPath: wipe,
               }}
             >
               {word}
@@ -462,6 +477,28 @@ const useWordEntry = () => {
   };
 };
 
+/* Punch-in entry: bigger overshoot, harder landing — the kind of scale curve
+ * that reads as "impact" instead of "fade-in". Used for finale beats. */
+const usePunchEntry = () => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  return (atFrame: number) => {
+    const local = Math.max(0, frame - atFrame);
+    const s = spring({
+      frame: local,
+      fps,
+      config: { damping: 9, stiffness: 240, mass: 0.5 },
+    });
+    return {
+      opacity: interpolate(local, [0, 3], [0, 1], {
+        extrapolateLeft: "clamp",
+        extrapolateRight: "clamp",
+      }),
+      scale: interpolate(s, [0, 1], [0.55, 1]),
+    };
+  };
+};
+
 /* ───────────────────────────────────────────────────────
    Scene 10a — "gain more"
    ─────────────────────────────────────────────────────── */
@@ -471,7 +508,25 @@ const SCENE10A_WORDS = ["gain", "more"] as const;
 const SCENE10A_STAGGER = 5;
 
 export const Scene10a_GainMore: React.FC = () => {
-  const wordEntry = useWordEntry();
+  const punchEntry = usePunchEntry();
+  const frame = useCurrentFrame();
+
+  /* Screen-shake — a 3-frame jitter at each word's impact frame.
+   * Hash-based sub-pixel offset so the shake doesn't repeat exactly. */
+  const shakeAt = (impact: number) => {
+    const dt = frame - impact;
+    if (dt < 0 || dt > 4) return { x: 0, y: 0 };
+    const fall = (4 - dt) / 4;
+    const seed = (frame * 9301 + 49297) % 233280;
+    const r1 = ((seed / 233280) - 0.5) * 8;
+    const r2 = (((seed * 7) % 233280 / 233280) - 0.5) * 8;
+    return { x: r1 * fall, y: r2 * fall };
+  };
+  const shake1 = shakeAt(2 + 3); // landing of "gain"
+  const shake2 = shakeAt(2 + SCENE10A_STAGGER + 3); // landing of "more"
+  const sx = shake1.x + shake2.x;
+  const sy = shake1.y + shake2.y;
+
   return (
     <AbsoluteFill style={{ backgroundColor: BLUE }}>
       <div
@@ -479,14 +534,14 @@ export const Scene10a_GainMore: React.FC = () => {
           position: "absolute",
           top: "50%",
           left: "50%",
-          transform: "translate(-50%, -50%)",
+          transform: `translate(calc(-50% + ${sx}px), calc(-50% + ${sy}px))`,
           display: "flex",
           gap: 32,
           whiteSpace: "nowrap",
         }}
       >
         {SCENE10A_WORDS.map((word, i) => {
-          const e = wordEntry(2 + i * SCENE10A_STAGGER);
+          const e = punchEntry(2 + i * SCENE10A_STAGGER);
           return (
             <span
               key={i}
@@ -499,7 +554,7 @@ export const Scene10a_GainMore: React.FC = () => {
                 lineHeight: 1,
                 letterSpacing: -3,
                 opacity: e.opacity,
-                transform: `translateY(${e.y}px) scale(${e.scale})`,
+                transform: `scale(${e.scale})`,
                 display: "inline-block",
               }}
             >
@@ -586,20 +641,93 @@ export const Scene10b_TradingWith: React.FC = () => {
   });
   const uiY = interpolate(uiSpring, [0, 1], [-50, 0]);
   const uiScale = interpolate(uiSpring, [0, 1], [0.96, 1]);
+  /* Ken-Burns drift — slow continuous pan up and a slight zoom. The eye
+   * registers it as "live document" without consciously seeing motion. */
   const uiDrift = interpolate(frame, [10, SCENE10B_DURATION], [0, -12], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
+  const kenBurns = interpolate(frame, [0, SCENE10B_DURATION], [1, 1.04], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  /* Cursor — enters from upper-right at frame 4, glides to the third card
+   * (Steam, in the screenshot's grid) by frame 24, hovers, then nudges
+   * onto the card a second time at frame 38 (the click). */
+  const cursorEnter = interpolate(frame, [2, 8], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const cursorX = interpolate(
+    frame,
+    [4, 24, 38, 50],
+    [1320, 880, 880, 880],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
+    },
+  );
+  const cursorY = interpolate(
+    frame,
+    [4, 24, 38, 50],
+    [120, 360, 380, 380],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
+    },
+  );
+  /* Click compress — cursor scales 1 → 0.78 → 1 over 4 frames around frame 38. */
+  const clickPulse = interpolate(
+    frame,
+    [36, 38, 40, 42],
+    [1, 0.78, 1.06, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+
+  /* Card hover lift — third card lifts as cursor arrives, presses on click. */
+  const cardLift = interpolate(frame, [22, 30], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
+  });
+  const cardPress = interpolate(frame, [37, 39, 42], [0, 1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const cardY = -cardLift * 6 + cardPress * 4;
+
+  /* Click ripple — circular pulse from click point, fades over 14 frames. */
+  const rippleScale = interpolate(frame, [38, 52], [0, 4.5], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.out(Easing.cubic),
+  });
+  const rippleOpacity = interpolate(frame, [38, 41, 52], [0, 0.55, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  /* LIVE badge pulse — quietly throbs throughout to register as live data. */
+  const livePulse = 0.7 + 0.3 * Math.sin((frame / fps) * 6.28 * 1.4);
+
+  /* Ticker — fakes a price reading that flickers. Number changes every 4f. */
+  const tickerSeed = Math.floor(frame / 4);
+  const tickerVal = `$${(2.41 + ((tickerSeed * 13) % 8) * 0.01).toFixed(2)}`;
 
   return (
     <AbsoluteFill style={{ backgroundColor: BLUE }}>
-      {/* UI mockup — browser frame around the homepage screenshot */}
+      {/* UI mockup — browser frame around the homepage screenshot.
+       * Static screenshot dressed up: cursor + lift + ripple + ticker make
+       * it feel like a live document. */}
       <div
         style={{
           position: "absolute",
           top: 80,
           left: "50%",
-          transform: `translate(-50%, ${uiY + uiDrift}px) scale(${uiScale})`,
+          transform: `translate(-50%, ${uiY + uiDrift}px) scale(${uiScale * kenBurns})`,
           opacity: uiOpacity,
           width: UI_FRAME_W,
           borderRadius: UI_FRAME_RADIUS,
@@ -610,16 +738,132 @@ export const Scene10b_TradingWith: React.FC = () => {
         }}
       >
         <BrowserChrome width={UI_FRAME_W} />
-        <Img
-          src={staticFile("gm-homepage.png")}
-          style={{
-            display: "block",
-            width: "100%",
-            height: UI_FRAME_H,
-            objectFit: "cover",
-            objectPosition: "top center",
-          }}
-        />
+        <div style={{ position: "relative", width: "100%", height: UI_FRAME_H }}>
+          <Img
+            src={staticFile("gm-homepage.png")}
+            style={{
+              display: "block",
+              width: "100%",
+              height: UI_FRAME_H,
+              objectFit: "cover",
+              objectPosition: "top center",
+            }}
+          />
+
+          {/* Card hover halo — sits over the third card (Steam region).
+           * Coordinates are in the screenshot's local pixel space,
+           * roughly centered on the third of four cards. */}
+          <div
+            style={{
+              position: "absolute",
+              left: 800,
+              top: 180 + cardY,
+              width: 230,
+              height: 240,
+              borderRadius: 14,
+              boxShadow: `0 ${10 + cardLift * 14}px ${20 + cardLift * 30}px rgba(0,229,255,${0.08 + cardLift * 0.18})`,
+              border: `1px solid rgba(0,229,255,${0.1 + cardLift * 0.35})`,
+              pointerEvents: "none",
+              opacity: cardLift,
+            }}
+          />
+
+          {/* Click ripple — circular pulse expanding from click position */}
+          {rippleOpacity > 0.02 && (
+            <div
+              style={{
+                position: "absolute",
+                left: 880,
+                top: 380,
+                width: 60,
+                height: 60,
+                marginLeft: -30,
+                marginTop: -30,
+                borderRadius: "50%",
+                border: "2px solid #00E5FF",
+                transform: `scale(${rippleScale})`,
+                opacity: rippleOpacity,
+                pointerEvents: "none",
+              }}
+            />
+          )}
+
+          {/* LIVE badge — small pill near the header */}
+          <div
+            style={{
+              position: "absolute",
+              top: 16,
+              right: 24,
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "4px 10px",
+              borderRadius: 12,
+              backgroundColor: "rgba(0, 0, 0, 0.6)",
+              fontFamily: `${brandFontFamily}, system-ui, sans-serif`,
+              fontSize: 10,
+              fontWeight: 600,
+              color: "#fff",
+              letterSpacing: 0.8,
+              opacity: 0.9,
+            }}
+          >
+            <span
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: "50%",
+                backgroundColor: "#FF2D55",
+                opacity: livePulse,
+                boxShadow: `0 0 ${4 + livePulse * 6}px rgba(255,45,85,${livePulse * 0.8})`,
+              }}
+            />
+            LIVE
+          </div>
+
+          {/* Ticker — flickering price near the cursor target */}
+          <div
+            style={{
+              position: "absolute",
+              left: 800,
+              top: 142,
+              padding: "2px 6px",
+              borderRadius: 4,
+              backgroundColor: "rgba(0, 229, 255, 0.18)",
+              border: "1px solid rgba(0, 229, 255, 0.4)",
+              fontFamily: `${brandFontFamily}, system-ui, sans-serif`,
+              fontSize: 11,
+              fontWeight: 600,
+              color: "#00E5FF",
+              letterSpacing: 0.3,
+              opacity: cardLift,
+            }}
+          >
+            {tickerVal}
+          </div>
+
+          {/* Cursor — macOS arrow, drawn as SVG so it can scale on click */}
+          <div
+            style={{
+              position: "absolute",
+              left: cursorX,
+              top: cursorY,
+              transform: `translate(-3px, -2px) scale(${clickPulse})`,
+              opacity: cursorEnter,
+              pointerEvents: "none",
+              filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.4))",
+            }}
+          >
+            <svg width={28} height={28} viewBox="0 0 24 24">
+              <path
+                d="M3 2 L 3 18 L 8 14 L 11 21 L 14 20 L 11 13 L 17 13 Z"
+                fill="#fff"
+                stroke="#000"
+                strokeWidth="1"
+              />
+            </svg>
+          </div>
+        </div>
       </div>
 
       {/* Italic phrase — bottom band, cascades in word-by-word */}
@@ -676,7 +920,6 @@ const ENDCARD_START = WIPE_END;
 const LOGO_SIZE = 86;
 const TEXT_SIZE = 124;
 const TAGLINE_SIZE = 30;
-const DOT_SIZE = 42;
 
 const ENDCARD_BG =
   "radial-gradient(ellipse at center, #FFFFFF 0%, #FAFAFA 55%, #F0F0F0 100%)";
@@ -699,26 +942,70 @@ const taglineStyle: React.CSSProperties = {
 };
 
 /* GM logo mark — black square with seven white horizontal pills.
- * Inlined from public/gm-logo.svg so no asset lookup is needed. */
-const GMLogoMark: React.FC<{ size: number }> = ({ size }) => (
+ * Inlined from public/gm-logo.svg. The seven pills are rendered as
+ * separate <path> children so each can fade in on its own stagger. */
+const GM_PILLS: readonly string[] = [
+  "M15.2794 49.5703C15.2794 49.1458 15.4181 48.7941 15.6956 48.5155C15.9731 48.2369 16.3233 48.0976 16.7462 48.0976H28.7186C29.1414 48.0976 29.4916 48.2369 29.7691 48.5155C30.0466 48.7941 30.1854 49.1458 30.1854 49.5703V52.5955C30.1854 53.0201 30.0466 53.3717 29.7691 53.6503C29.4916 53.929 29.1414 54.0683 28.7186 54.0683H16.7462C16.3233 54.0683 15.9731 53.929 15.6956 53.6503C15.4181 53.3717 15.2794 53.0201 15.2794 52.5955V49.5703Z",
+  "M26.6227 49.5703C26.6227 49.1458 26.7615 48.7941 27.039 48.5155C27.3165 48.2369 27.6667 48.0976 28.0895 48.0976H40.0619C40.4848 48.0976 40.835 48.2369 41.1125 48.5155C41.39 48.7941 41.5288 49.1458 41.5288 49.5703V52.5955C41.5288 53.0201 41.39 53.3717 41.1125 53.6503C40.835 53.929 40.4848 54.0683 40.0619 54.0683H28.0895C27.6667 54.0683 27.3165 53.929 27.039 53.6503C26.7615 53.3717 26.6227 53.0201 26.6227 52.5955V49.5703Z",
+  "M37.9661 49.5703C37.9661 49.1458 38.1048 48.7941 38.3824 48.5155C38.6599 48.2369 39.01 48.0976 39.4329 48.0976H51.4053C51.8282 48.0976 52.1784 48.2369 52.4559 48.5155C52.7334 48.7941 52.8721 49.1458 52.8721 49.5703V52.5955C52.8721 53.0201 52.7334 53.3717 52.4559 53.6503C52.1784 53.929 51.8282 54.0683 51.4053 54.0683H39.4329C39.01 54.0683 38.6599 53.929 38.3824 53.6503C38.1048 53.3717 37.9661 53.0201 37.9661 52.5955V49.5703Z",
+  "M49.3095 49.5703C49.3095 49.1458 49.4482 48.7941 49.7257 48.5155C50.0032 48.2369 50.3534 48.0976 50.7763 48.0976H62.7487C63.1716 48.0976 63.5217 48.2369 63.7992 48.5155C64.0768 48.7941 64.2155 49.1458 64.2155 49.5703V52.5955C64.2155 53.0201 64.0768 53.3717 63.7992 53.6503C63.5217 53.929 63.1716 54.0683 62.7487 54.0683H50.7763C50.3534 54.0683 50.0032 53.929 49.7257 53.6503C49.4482 53.3717 49.3095 53.0201 49.3095 52.5955V49.5703Z",
+  "M60.6528 49.5902C60.6528 49.1657 60.7916 48.814 61.0691 48.5354C61.3466 48.2568 61.6968 48.1175 62.1197 48.1175H68.423C68.8459 48.1175 69.1961 48.2568 69.4736 48.5354C69.7511 48.814 69.8898 49.1657 69.8898 49.5902V52.5955C69.8898 53.0201 69.7511 53.3717 69.4736 53.6503C69.1961 53.929 68.8459 54.0683 68.423 54.0683H62.1197C61.6968 54.0683 61.3466 53.929 61.0691 53.6503C60.7916 53.3717 60.6528 53.0201 60.6528 52.5955V49.5902Z",
+  "M66.3245 49.5703C66.3245 49.1458 66.4633 48.7941 66.7408 48.5155C67.0183 48.2369 67.3685 48.0976 67.7913 48.0976H79.7637C80.1866 48.0976 80.5368 48.2369 80.8143 48.5155C81.0918 48.7941 81.2306 49.1458 81.2306 49.5703V52.5955C81.2306 53.0201 81.0918 53.3717 80.8143 53.6503C80.5368 53.929 80.1866 54.0683 79.7637 54.0683H67.7913C67.3685 54.0683 67.0183 53.929 66.7408 53.6503C66.4633 53.3717 66.3245 53.0201 66.3245 52.5955V49.5703Z",
+  "M77.6679 49.5902C77.6679 49.1657 77.8066 48.814 78.0841 48.5354C78.3617 48.2568 78.7118 48.1175 79.1347 48.1175H85.4381C85.8609 48.1175 86.2111 48.2568 86.4886 48.5354C86.7661 48.814 86.9049 49.1657 86.9049 49.5902V52.5955C86.9049 53.0201 86.7661 53.3717 86.4886 53.6503C86.2111 53.929 85.8609 54.0683 85.4381 54.0683H79.1347C78.7118 54.0683 78.3617 53.929 78.0841 53.6503C77.8066 53.3717 77.6679 53.0201 77.6679 52.5955V49.5902Z",
+];
+
+/* `pillProgress` — one number per pill, 0 → 1. The outer black square is
+ * always drawn; the pills layer in. */
+const GMLogoMark: React.FC<{ size: number; pillProgress: readonly number[] }> = ({
+  size,
+  pillProgress,
+}) => (
   <svg width={size} height={size} viewBox="0 0 102 102" fill="none">
     <path d="M0 0H102V102H0V0Z" fill="#000" />
-    <path d="M15.2794 49.5703C15.2794 49.1458 15.4181 48.7941 15.6956 48.5155C15.9731 48.2369 16.3233 48.0976 16.7462 48.0976H28.7186C29.1414 48.0976 29.4916 48.2369 29.7691 48.5155C30.0466 48.7941 30.1854 49.1458 30.1854 49.5703V52.5955C30.1854 53.0201 30.0466 53.3717 29.7691 53.6503C29.4916 53.929 29.1414 54.0683 28.7186 54.0683H16.7462C16.3233 54.0683 15.9731 53.929 15.6956 53.6503C15.4181 53.3717 15.2794 53.0201 15.2794 52.5955V49.5703Z" fill="#fff" />
-    <path d="M26.6227 49.5703C26.6227 49.1458 26.7615 48.7941 27.039 48.5155C27.3165 48.2369 27.6667 48.0976 28.0895 48.0976H40.0619C40.4848 48.0976 40.835 48.2369 41.1125 48.5155C41.39 48.7941 41.5288 49.1458 41.5288 49.5703V52.5955C41.5288 53.0201 41.39 53.3717 41.1125 53.6503C40.835 53.929 40.4848 54.0683 40.0619 54.0683H28.0895C27.6667 54.0683 27.3165 53.929 27.039 53.6503C26.7615 53.3717 26.6227 53.0201 26.6227 52.5955V49.5703Z" fill="#fff" />
-    <path d="M37.9661 49.5703C37.9661 49.1458 38.1048 48.7941 38.3824 48.5155C38.6599 48.2369 39.01 48.0976 39.4329 48.0976H51.4053C51.8282 48.0976 52.1784 48.2369 52.4559 48.5155C52.7334 48.7941 52.8721 49.1458 52.8721 49.5703V52.5955C52.8721 53.0201 52.7334 53.3717 52.4559 53.6503C52.1784 53.929 51.8282 54.0683 51.4053 54.0683H39.4329C39.01 54.0683 38.6599 53.929 38.3824 53.6503C38.1048 53.3717 37.9661 53.0201 37.9661 52.5955V49.5703Z" fill="#fff" />
-    <path d="M49.3095 49.5703C49.3095 49.1458 49.4482 48.7941 49.7257 48.5155C50.0032 48.2369 50.3534 48.0976 50.7763 48.0976H62.7487C63.1716 48.0976 63.5217 48.2369 63.7992 48.5155C64.0768 48.7941 64.2155 49.1458 64.2155 49.5703V52.5955C64.2155 53.0201 64.0768 53.3717 63.7992 53.6503C63.5217 53.929 63.1716 54.0683 62.7487 54.0683H50.7763C50.3534 54.0683 50.0032 53.929 49.7257 53.6503C49.4482 53.3717 49.3095 53.0201 49.3095 52.5955V49.5703Z" fill="#fff" />
-    <path d="M60.6528 49.5902C60.6528 49.1657 60.7916 48.814 61.0691 48.5354C61.3466 48.2568 61.6968 48.1175 62.1197 48.1175H68.423C68.8459 48.1175 69.1961 48.2568 69.4736 48.5354C69.7511 48.814 69.8898 49.1657 69.8898 49.5902V52.5955C69.8898 53.0201 69.7511 53.3717 69.4736 53.6503C69.1961 53.929 68.8459 54.0683 68.423 54.0683H62.1197C61.6968 54.0683 61.3466 53.929 61.0691 53.6503C60.7916 53.3717 60.6528 53.0201 60.6528 52.5955V49.5902Z" fill="#fff" />
-    <path d="M66.3245 49.5703C66.3245 49.1458 66.4633 48.7941 66.7408 48.5155C67.0183 48.2369 67.3685 48.0976 67.7913 48.0976H79.7637C80.1866 48.0976 80.5368 48.2369 80.8143 48.5155C81.0918 48.7941 81.2306 49.1458 81.2306 49.5703V52.5955C81.2306 53.0201 81.0918 53.3717 80.8143 53.6503C80.5368 53.929 80.1866 54.0683 79.7637 54.0683H67.7913C67.3685 54.0683 67.0183 53.929 66.7408 53.6503C66.4633 53.3717 66.3245 53.0201 66.3245 52.5955V49.5703Z" fill="#fff" />
-    <path d="M77.6679 49.5902C77.6679 49.1657 77.8066 48.814 78.0841 48.5354C78.3617 48.2568 78.7118 48.1175 79.1347 48.1175H85.4381C85.8609 48.1175 86.2111 48.2568 86.4886 48.5354C86.7661 48.814 86.9049 49.1657 86.9049 49.5902V52.5955C86.9049 53.0201 86.7661 53.3717 86.4886 53.6503C86.2111 53.929 85.8609 54.0683 85.4381 54.0683H79.1347C78.7118 54.0683 78.3617 53.929 78.0841 53.6503C77.8066 53.3717 77.6679 53.0201 77.6679 52.5955V49.5902Z" fill="#fff" />
+    {GM_PILLS.map((d, i) => (
+      <path
+        key={i}
+        d={d}
+        fill="#fff"
+        opacity={pillProgress[i] ?? 0}
+        transform={`translate(${(1 - (pillProgress[i] ?? 0)) * -8} 0)`}
+      />
+    ))}
   </svg>
 );
+
+/* Tinted version — used as a single-frame chromatic-split ghost layer
+ * on lock-in. Outer black square is transparent so the tint blends
+ * cleanly with the real mark underneath. */
+const GMLogoMarkTinted: React.FC<{ size: number; color: string }> = ({ size, color }) => (
+  <svg width={size} height={size} viewBox="0 0 102 102" fill="none">
+    {GM_PILLS.map((d, i) => (
+      <path key={i} d={d} fill={color} />
+    ))}
+  </svg>
+);
+
+/* Endcard timing — three pieces, each earns its frame.
+ * Pill assembly tightened: direct interpolation, 6f per pill, 1.5f stagger.
+ * Last pill (i=6) lands at ec = 0 + 6*1.5 + 6 = 15 (local 15 within endcard).
+ *   ec  0–14   (relative to ENDCARD_START) — pills assemble L→R
+ *   ec 16      LOCK-IN: chromatic flash + shockwave ring
+ *   ec 16–34   wordmark "General" reveals via clip-path wipe
+ *   ec 36–50   tagline fades in
+ *   ec 50+     hold
+ */
+const PILL_FADE = 6;
+const PILL_STAGGER = 1.5;
+const LOCK_IN = Math.ceil((GM_PILLS.length - 1) * PILL_STAGGER) + PILL_FADE + 1; // 16
+const WORDMARK_START = LOCK_IN;
+const WORDMARK_END = WORDMARK_START + 18;
+const TAGLINE_START = WORDMARK_END + 2;
 
 export const Scene10c_Endcard: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  /* Square wipe — teal layer shrinks to a point, revealing the
-   * white endcard underneath. */
+  /* Square wipe — teal shrinks to a point, revealing endcard. */
   const wipePct = interpolate(frame, [WIPE_START, WIPE_END], [0, 50], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
@@ -728,55 +1015,66 @@ export const Scene10c_Endcard: React.FC = () => {
   /* Endcard local frame */
   const ec = Math.max(0, frame - ENDCARD_START);
 
-  /* Phase 1 — bouncing square dot below "General" */
-  const dotSpring = spring({
+  /* Mark assembles pill-by-pill. Direct interpolation — fast, snappy. */
+  const pillProgress = GM_PILLS.map((_, i) => {
+    const start = i * PILL_STAGGER;
+    return interpolate(ec, [start, start + PILL_FADE], [0, 1], {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: Easing.bezier(0.34, 1.56, 0.64, 1),
+    });
+  });
+
+  /* Mark scale — small overshoot the moment the assembly begins. */
+  const markScale = spring({
     frame: ec,
     fps,
-    config: { damping: 8, mass: 0.3, stiffness: 280 },
+    config: { damping: 11, stiffness: 180, mass: 0.5 },
   });
 
-  /* Phase 2 — dot fades + drifts toward logo position; logo mark fades in */
-  const transition = interpolate(ec, [6, 13], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-    easing: Easing.bezier(0.22, 0.1, 0.25, 1),
-  });
-  const singleDotOpacity = interpolate(transition, [0, 0.4], [1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const singleDotY = interpolate(transition, [0, 0.55], [0, -34], {
+  /* Lock-in flash — peaks at LOCK_IN, decays over 8 frames. The only
+   * chromatic moment in the whole video; it has to feel like a click. */
+  const flashIntensity = interpolate(
+    ec,
+    [LOCK_IN - 1, LOCK_IN + 1, LOCK_IN + 8],
+    [0, 1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+
+  /* Shockwave ring — single pulse on lock-in. Scale 0 → 8, fades over 18f. */
+  const ringScale = interpolate(ec, [LOCK_IN, LOCK_IN + 18], [0.2, 7], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.out(Easing.cubic),
   });
-  const singleDotX = interpolate(transition, [0, 0.55], [0, -60], {
+  const ringOpacity = interpolate(ec, [LOCK_IN, LOCK_IN + 4, LOCK_IN + 18], [0, 0.55, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
-    easing: Easing.out(Easing.cubic),
-  });
-  const logoMarkOpacity = interpolate(transition, [0.18, 0.55], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const logoMarkScale = spring({
-    frame: Math.max(0, ec - 6),
-    fps,
-    config: { damping: 10, mass: 0.3, stiffness: 180 },
   });
 
-  /* Phase 3 — tagline */
+  /* Wordmark wipe — left-to-right ink. */
+  const wordmarkWipe = interpolate(ec, [WORDMARK_START, WORDMARK_END], [100, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.bezier(0.55, 0, 0.2, 1),
+  });
+  const wordmarkOpacity = interpolate(ec, [WORDMARK_START, WORDMARK_START + 2], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const wordmarkClip = `inset(0 ${wordmarkWipe}% 0 0)`;
+
+  /* Tagline — fades up after wordmark settles. */
   const taglineSpring = spring({
-    frame: Math.max(0, ec - 26),
+    frame: Math.max(0, ec - TAGLINE_START),
     fps,
     config: { damping: 12, mass: 0.3, stiffness: 140 },
   });
-  const taglineProgress = ec < 26 ? 0 : taglineSpring;
+  const taglineProgress = ec < TAGLINE_START ? 0 : taglineSpring;
   const taglineY = interpolate(taglineProgress, [0, 1], [10, 0]);
 
-  /* Lockup nudges up slightly as the tagline arrives, to keep the
-   * optical center balanced. */
-  const contentShiftY = interpolate(ec, [22, 34], [0, -10], {
+  /* Slight upward nudge as tagline lands, to balance optical center. */
+  const contentShiftY = interpolate(ec, [WORDMARK_END, TAGLINE_START + 12], [0, -10], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -806,40 +1104,78 @@ export const Scene10c_Endcard: React.FC = () => {
               minHeight: 120,
             }}
           >
+            {/* Shockwave ring — radiates from the mark on lock-in */}
+            {ringOpacity > 0.01 && (
+              <div
+                style={{
+                  position: "absolute",
+                  left: 0,
+                  top: "50%",
+                  width: LOGO_SIZE,
+                  height: LOGO_SIZE,
+                  marginTop: -LOGO_SIZE / 2,
+                  borderRadius: "50%",
+                  border: "3px solid #000",
+                  transform: `scale(${ringScale})`,
+                  opacity: ringOpacity,
+                  pointerEvents: "none",
+                }}
+              />
+            )}
+
             <div
               style={{
                 marginRight: 22,
-                opacity: logoMarkOpacity,
-                transform: `scale(${logoMarkScale})`,
+                transform: `scale(${markScale})`,
                 display: "flex",
                 alignItems: "center",
+                position: "relative",
               }}
             >
-              <GMLogoMark size={LOGO_SIZE} />
+              <GMLogoMark size={LOGO_SIZE} pillProgress={pillProgress} />
+
+              {/* Chromatic flash — RGB-split copies offset on lock-in */}
+              {flashIntensity > 0.02 && (
+                <>
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      mixBlendMode: "screen",
+                      transform: `translateX(-${flashIntensity * 9}px)`,
+                      opacity: flashIntensity * 0.9,
+                      filter: "drop-shadow(0 0 0 #FF2D8B)",
+                    }}
+                  >
+                    <GMLogoMarkTinted size={LOGO_SIZE} color="#FF2D8B" />
+                  </div>
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      mixBlendMode: "screen",
+                      transform: `translateX(${flashIntensity * 9}px)`,
+                      opacity: flashIntensity * 0.9,
+                    }}
+                  >
+                    <GMLogoMarkTinted size={LOGO_SIZE} color="#00E5FF" />
+                  </div>
+                </>
+              )}
             </div>
 
             <div style={{ display: "flex", alignItems: "baseline" }}>
-              <span style={lockupTextStyle}>General</span>
-            </div>
-
-            {/* Bouncing square dot — drifts up-left as it fades. */}
-            <div
-              style={{
-                position: "absolute",
-                left: "42%",
-                bottom: -10,
-                transform: `translate(-50%, ${24 + singleDotY}px) translateX(${singleDotX}px) scale(${dotSpring})`,
-                opacity: singleDotOpacity,
-                pointerEvents: "none",
-              }}
-            >
-              <div
+              <span
                 style={{
-                  width: DOT_SIZE,
-                  height: DOT_SIZE,
-                  backgroundColor: "#000",
+                  ...lockupTextStyle,
+                  opacity: wordmarkOpacity,
+                  clipPath: wordmarkClip,
+                  WebkitClipPath: wordmarkClip,
+                  display: "inline-block",
                 }}
-              />
+              >
+                General
+              </span>
             </div>
           </div>
 
@@ -856,14 +1192,18 @@ export const Scene10c_Endcard: React.FC = () => {
         </div>
       </AbsoluteFill>
 
-      {/* Teal layer — eaten by the square wipe to reveal the endcard */}
-      <AbsoluteFill
-        style={{
-          backgroundColor: BLUE,
-          clipPath: `inset(${wipePct}% ${wipePct}% ${wipePct}% ${wipePct}%)`,
-          WebkitClipPath: `inset(${wipePct}% ${wipePct}% ${wipePct}% ${wipePct}%)`,
-        }}
-      />
+      {/* Teal layer — eaten by the square wipe to reveal the endcard.
+       * Motion blur during the 14-frame contraction keeps the edge from
+       * stair-stepping. */}
+      <CameraMotionBlur shutterAngle={frame < WIPE_END ? 180 : 0} samples={6}>
+        <AbsoluteFill
+          style={{
+            backgroundColor: BLUE,
+            clipPath: `inset(${wipePct}% ${wipePct}% ${wipePct}% ${wipePct}%)`,
+            WebkitClipPath: `inset(${wipePct}% ${wipePct}% ${wipePct}% ${wipePct}%)`,
+          }}
+        />
+      </CameraMotionBlur>
     </AbsoluteFill>
   );
 };

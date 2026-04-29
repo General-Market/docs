@@ -1,5 +1,5 @@
 import React from "react";
-import { Audio, Sequence, staticFile } from "remotion";
+import { Audio, Sequence, interpolate, staticFile } from "remotion";
 
 /*
  * Rainbows · Flashblocks — SFX track v5 (locked palette)
@@ -122,9 +122,38 @@ const Wipe: React.FC<{ from: number }> = ({ from }) => (
  * frame 36 with the payoff, so the last tick sits just before that. */
 const SCENE01_CONVEYOR_TICKS = [3, 7, 11, 14, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35];
 
+/* Music bed — `launch-track.mp3`, 117.5 BPM, energy from f0.
+ * Beats at every ~12.25 frames; scene boundaries land within 1-3 frames
+ * of beats at 84, 540, 612, 638 — close enough to feel cohesive without
+ * being mechanical.
+ * Fade in 0–12, hold at low volume, fade out 580–612 so the endcard's
+ * sustained tone owns the finale. */
+const MUSIC_END = 612;
+const MUSIC_TARGET_VOL = 0.16;
+const musicVolume = (f: number) => {
+  if (f < 0 || f > MUSIC_END) return 0;
+  const fadeIn = interpolate(f, [0, 12], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const fadeOut = interpolate(f, [580, MUSIC_END], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  return MUSIC_TARGET_VOL * Math.min(fadeIn, fadeOut);
+};
+
+const MusicBed: React.FC = () => (
+  <Sequence from={0} durationInFrames={MUSIC_END} layout="none">
+    <Audio src={staticFile("music/launch-track.mp3")} volume={musicVolume} />
+  </Sequence>
+);
+
 export const Sfx: React.FC = () => {
   return (
     <>
+      {/* Music bed — sits at -15 dB under SFX, fades out into endcard tone */}
+      <MusicBed />
       {/* ═════════════════════════════════════════════════════════════
           Scene 01 — Hook (0–84)
           "You spent 10,000 hours" → "perfecting your trading strategies."
@@ -268,8 +297,14 @@ export const Sfx: React.FC = () => {
 
       {/* ═════════════════════════════════════════════════════════════
           Scene 10b — TradingWith (540–612)
+          UI cursor enters at f4, hovers third card at f24, clicks at f38.
+          Global click frame = 540 + 38 = 578.
           ═════════════════════════════════════════════════════════════ */}
       <Whoosh from={540} />
+      {/* Soft hover tick when cursor lands on the card */}
+      <ConveyorTick from={564} />
+      {/* Click — short pop. Same family as the Pop role, lighter weight. */}
+      <ConveyorTick from={578} />
       <Word from={568} />   {/* while */}
       <Word from={571} />   {/* trading */}
       <Word from={574} />   {/* the */}
@@ -279,16 +314,38 @@ export const Sfx: React.FC = () => {
 
       {/* ═════════════════════════════════════════════════════════════
           Scene 10c — Endcard (612–756)
-          Square wipe (612–626) → endcard with logo lockup + tagline.
+          Local frame 0–14: square wipe to white
+          ENDCARD_START at local 14 — global 626 begins the endcard.
+          ec  0–15   pills assemble L→R (7 pills × 1.5f stagger + 6f fade)
+          ec 16      LOCK-IN — chromatic flash + shockwave ring  → global 642
+          ec 16–34   wordmark "General" wipes in
+          ec 36–50   tagline arrives
+          Global = 626 + ec for endcard events.
           ═════════════════════════════════════════════════════════════ */}
       <Wipe from={612} />
-      <Payoff from={626} />
-      <Word from={636} />   {/* General */}
 
-      {/* Tagline */}
-      <Word from={652} />   {/* Markets */}
-      <Word from={655} />   {/* for */}
-      <Word from={659} />   {/* everything */}
+      {/* Pill ticks — one per pill, light percussion as the mark builds.
+       * Pill i starts at ec = i * 1.5; in global frames: 626 + i*1.5. */}
+      {[626, 627, 629, 630, 632, 633, 635].map((f) => (
+        <ConveyorTick key={`s10c-pill-${f}`} from={f} />
+      ))}
+
+      {/* Lock-in (ec=16, global 642) — payoff + pop on the chromatic flash */}
+      <Payoff from={642} />
+      <Pop from={642} />
+
+      {/* Wordmark wipe — "General" reveals. */}
+      <Word from={642} />
+
+      {/* Tagline (ec=36, global 662) */}
+      <Word from={662} />   {/* Markets */}
+      <Word from={665} />   {/* for */}
+      <Word from={669} />   {/* everything */}
+
+      {/* Sustained tone — the only sound in the video that holds.
+       * Drone runs from lock-in to comp end (114 frames), low-volume
+       * to sit under the tagline cues, then alone for the final hold. */}
+      <Ambient from={642} dur={114} />
     </>
   );
 };

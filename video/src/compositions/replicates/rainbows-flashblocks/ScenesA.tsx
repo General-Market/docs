@@ -1,5 +1,6 @@
 import React from "react";
 import { AbsoluteFill, useCurrentFrame, interpolate, Easing } from "remotion";
+import { CameraMotionBlur } from "@remotion/motion-blur";
 import { loadFont } from "@remotion/google-fonts/Inter";
 import { useGsapProxy } from "../standrew/gsapUtils";
 import { DynamicBlue, DynamicDark, DynamicSolidBlue, HexGridOverlay, ZoomedBg } from "./dynamics";
@@ -323,7 +324,8 @@ export const Scene01_Hook: React.FC = () => {
         <DynamicBlue />
       </ZoomedBg>
 
-      {/* Conveyor — bottom band, full population, big tags, each version more advanced */}
+      {/* Conveyor — bottom band, full population, big tags, each version more advanced.
+       * Wrapped in motion-blur: the 5,910px sweep over 1.7s strobes raw. */}
       <div
         style={{
           position: "absolute",
@@ -334,6 +336,7 @@ export const Scene01_Hook: React.FC = () => {
           overflow: "hidden",
         }}
       >
+        <CameraMotionBlur shutterAngle={120} samples={6}>
         <div
           style={{
             position: "absolute",
@@ -389,6 +392,7 @@ export const Scene01_Hook: React.FC = () => {
             </div>
           ))}
         </div>
+        </CameraMotionBlur>
       </div>
 
       {/* Phrase A — original layout: "You spent 10,000 hours" */}
@@ -606,14 +610,6 @@ export const Scene03_CubeExplode: React.FC = () => {
     easing: Easing.bezier(0.16, 1, 0.3, 1),
   });
 
-  /* Beat 3 — morph crossfade. Sharp ease-in-out so the rectangle holds
-   * its shape until the last moment, then commits. */
-  const morph = interpolate(frame, [SCENE03_MORPH_START, SCENE03_MORPH_END], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-    easing: Easing.bezier(0.6, 0, 0.4, 1),
-  });
-
   /* Shape scale uses back.out so the new silhouettes overshoot and
    * settle — same character as the cube's "back.out(1.6)" assemble. */
   const shapeScaleProgress = interpolate(
@@ -648,78 +644,125 @@ export const Scene03_CubeExplode: React.FC = () => {
         <HexGridOverlay color="rgba(255,255,255,0.13)" size={70} />
       </ZoomedBg>
 
-      {SCENE03_ROWS.map((row, i) => {
-        const cy = rowCenterY(i);
-        const Shape = row.Shape;
+      <CameraMotionBlur shutterAngle={frame < 8 ? 180 : 0} samples={5}>
+      {/* 3D card stack — each card sits at a slight z-offset, the whole
+       * group slowly orbits on Y. At morph beat each card flips 180° to
+       * reveal the morphed shape on its back face. The flat 2D version
+       * survives in the comp via the text border outside this wrapper;
+       * only the cards become volumetric. */}
+      <AbsoluteFill
+        style={{
+          perspective: 1800,
+          perspectiveOrigin: "50% 50%",
+        }}
+      >
+        <AbsoluteFill
+          style={{
+            transformStyle: "preserve-3d",
+            transform: `rotateX(${interpolate(
+              frame,
+              [0, SCENE03_MORPH_START, SCENE03_DURATION],
+              [4, 6, 12],
+              { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+            )}deg) rotateY(${interpolate(
+              frame,
+              [0, SCENE03_DURATION],
+              [-10, 10],
+              { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+            )}deg)`,
+          }}
+        >
+          {SCENE03_ROWS.map((row, i) => {
+            const cy = rowCenterY(i);
+            const Shape = row.Shape;
 
-        return (
-          <div
-            key={i}
-            style={{
-              position: "absolute",
-              left: "50%",
-              top: cy,
-              width: ROW_W,
-              height: ROW_H,
-              transform: `translate(-50%, -50%) scale(${punchIn})`,
-              opacity: punchIn > 0.05 ? 1 : punchIn * 20,
-            }}
-          >
-            {/* White rectangle — fades out as the silhouette morphs */}
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                backgroundColor: "#fff",
-                borderRadius: 10,
-                boxShadow: "0 10px 32px rgba(0,0,0,0.22)",
-                opacity: 1 - morph,
-                transform: `scaleX(${1 - morph * 0.78}) scaleY(${1 - morph * 0.06})`,
-              }}
-            />
+            /* Each card flips 180° between MORPH_START and MORPH_END.
+             * Stagger so the cards don't all spin in lockstep. */
+            const flipStart = SCENE03_MORPH_START + i * 1.5;
+            const flipEnd = SCENE03_MORPH_END + i * 1.5;
+            const flip = interpolate(frame, [flipStart, flipEnd], [0, 180], {
+              extrapolateLeft: "clamp",
+              extrapolateRight: "clamp",
+              easing: Easing.bezier(0.6, 0, 0.4, 1),
+            });
 
-            {/* White shape — fades + scales in (overshoots, then settles) */}
-            <div
-              style={{
-                position: "absolute",
-                top: 0,
-                left: "50%",
-                width: ROW_H,
-                height: ROW_H,
-                transform: `translateX(-50%) scale(${0.4 + shapeScaleProgress * 0.65})`,
-                opacity: morph,
-                filter: "drop-shadow(0 8px 24px rgba(0,0,0,0.22))",
-              }}
-            >
-              <Shape />
-            </div>
+            /* Z-offset per row — cards sit slightly behind each other in 3D
+             * space so the perspective registers as depth, not flat tilt. */
+            const zOffset = (i - 1.5) * 18;
 
-            {/* Label — stays centred, shrinks slightly to sit inside the shape */}
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                pointerEvents: "none",
-              }}
-            >
-              <span
+            return (
+              <div
+                key={i}
                 style={{
-                  fontFamily,
-                  fontWeight: 700,
-                  fontSize: 58 - morph * 24,
-                  letterSpacing: "-0.02em",
-                  color: "#0a3a38",
+                  position: "absolute",
+                  left: "50%",
+                  top: cy,
+                  width: ROW_W,
+                  height: ROW_H,
+                  transform: `translate(-50%, -50%) translateZ(${zOffset}px) scale(${punchIn}) rotateY(${flip}deg)`,
+                  transformStyle: "preserve-3d",
+                  opacity: punchIn > 0.05 ? 1 : punchIn * 20,
                 }}
               >
-                {row.label}
-              </span>
-            </div>
-          </div>
-        );
-      })}
+                {/* Front face — white rectangle with label */}
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    backgroundColor: "#fff",
+                    borderRadius: 10,
+                    boxShadow: "0 10px 32px rgba(0,0,0,0.22)",
+                    backfaceVisibility: "hidden",
+                    WebkitBackfaceVisibility: "hidden",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontFamily,
+                      fontWeight: 700,
+                      fontSize: 58,
+                      letterSpacing: "-0.02em",
+                      color: "#0a3a38",
+                    }}
+                  >
+                    {row.label}
+                  </span>
+                </div>
+
+                {/* Back face — morphed shape silhouette */}
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    borderRadius: 10,
+                    backfaceVisibility: "hidden",
+                    WebkitBackfaceVisibility: "hidden",
+                    transform: "rotateY(180deg)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    filter: "drop-shadow(0 8px 24px rgba(0,0,0,0.3))",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: ROW_H,
+                      height: ROW_H,
+                      transform: `scale(${0.6 + shapeScaleProgress * 0.45})`,
+                    }}
+                  >
+                    <Shape />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </AbsoluteFill>
+      </AbsoluteFill>
+      </CameraMotionBlur>
 
       {/* Rainbow text border — scrolls around the stack on a rounded-rect path */}
       <svg

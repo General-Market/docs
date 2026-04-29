@@ -1,5 +1,5 @@
 import React from "react";
-import { AbsoluteFill, Img, staticFile } from "remotion";
+import { AbsoluteFill, Img, staticFile, useCurrentFrame, interpolate } from "remotion";
 import { loadFont } from "@remotion/google-fonts/Inter";
 import { useGsapProxy } from "../standrew/gsapUtils";
 import { DynamicBlue, DynamicLight, ZoomedBg } from "./dynamics";
@@ -53,7 +53,10 @@ export const Scene04_FilterAndPercent: React.FC = () => {
       tl.to(p.phase2, { opacity: 1, duration: 0.2, ease: "power2.out" }, 2.15);
 
       tl.to(p.counter, { opacity: 1, duration: 0.18 }, 2.2);
-      tl.to(p.counter, { scale: 1, duration: 0.55, ease: "back.out(1.7)" }, 2.2);
+      // Whip-in: overshoot past 1, settle. Reads more like a number that arrives.
+      tl.to(p.counter, { scale: 1.18, duration: 0.32, ease: "power3.out" }, 2.2);
+      tl.to(p.counter, { scale: 0.96, duration: 0.18, ease: "power2.inOut" }, 2.52);
+      tl.to(p.counter, { scale: 1, duration: 0.22, ease: "power2.out" }, 2.7);
       tl.to(p.counter, { value: 70, duration: 1.4, ease: "power2.out" }, 2.2);
 
       tl.to(p.starburst, { opacity: 1, duration: 0.18 }, 2.45);
@@ -65,6 +68,14 @@ export const Scene04_FilterAndPercent: React.FC = () => {
   );
 
   const counterValue = Math.round(s.counter.value);
+
+  // Chromatic split — peaks at frame 87 (the moment the counter parks at 70),
+  // decays over 6 frames. Reads as an impact frame, not a constant effect.
+  const frame = useCurrentFrame();
+  const splitPx = interpolate(frame, [83, 87, 93], [0, 14, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
 
   return (
     <AbsoluteFill>
@@ -169,8 +180,43 @@ export const Scene04_FilterAndPercent: React.FC = () => {
             opacity: s.counter.opacity,
           }}
         >
-          <div style={{ ...baseText, fontSize: 280, color: BLUE }}>
-            {counterValue}%
+          <div style={{ position: "relative", display: "inline-block" }}>
+            {/* Cyan/magenta ghost layers — sit underneath, offset by splitPx */}
+            {splitPx > 0.5 && (
+              <>
+                <div
+                  style={{
+                    ...baseText,
+                    position: "absolute",
+                    inset: 0,
+                    fontSize: 280,
+                    color: "#FF2D8B",
+                    transform: `translateX(-${splitPx}px)`,
+                    mixBlendMode: "screen",
+                    opacity: 0.85,
+                  }}
+                >
+                  {counterValue}%
+                </div>
+                <div
+                  style={{
+                    ...baseText,
+                    position: "absolute",
+                    inset: 0,
+                    fontSize: 280,
+                    color: "#00E5FF",
+                    transform: `translateX(${splitPx}px)`,
+                    mixBlendMode: "screen",
+                    opacity: 0.85,
+                  }}
+                >
+                  {counterValue}%
+                </div>
+              </>
+            )}
+            <div style={{ ...baseText, fontSize: 280, color: BLUE, position: "relative" }}>
+              {counterValue}%
+            </div>
           </div>
           <div
             style={{
