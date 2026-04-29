@@ -84,6 +84,7 @@ import { ParticleEmojiGravity } from "./scenes/ParticleAnimations";
 import { EndCard } from "./compositions/endcard/EndCard";
 import { HexPixelate } from "./compositions/effects/HexPixelate";
 import { VIDEO_SRC as LOFI_BROLL_SRC } from "./compositions/endcard/LofiDots";
+import { LofiDotsTitled } from "./compositions/endcard/LofiDotsTitled";
 import {
   TOTAL_FRAMES as ENDCARD_DURATION,
   FPS as ENDCARD_FPS,
@@ -115,6 +116,16 @@ export const RemotionRoot: React.FC = () => {
       <Composition
         id="LofiDots"
         component={LofiDotsHexBench}
+        durationInFrames={Math.round(311 * ENDCARD_FPS)}
+        fps={ENDCARD_FPS}
+        width={1920}
+        height={1080}
+      />
+
+      {/* ═══ LOFI DOTS TITLED — same broll, but the titles are the broll ═══ */}
+      <Composition
+        id="LofiDotsTitled"
+        component={LofiDotsTitled}
         durationInFrames={Math.round(311 * ENDCARD_FPS)}
         fps={ENDCARD_FPS}
         width={1920}
