@@ -291,7 +291,7 @@ export function HomeClient() {
         {/* ── Mobile bottom bar — glass slider ── */}
         <LayoutGroup id="nav-mobile">
           <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 glass-nav shadow-[0_-4px_30px_rgba(0,0,0,0.08)] safe-area-bottom">
-            <div className="flex items-center justify-center overflow-x-auto scrollbar-hide h-[60px] px-2 gap-1 snap-x snap-mandatory">
+            <div className="flex items-stretch justify-around h-[60px] px-1 gap-0.5">
               {NAV_GROUPS.flatMap(g => g.items).map((item) => {
                 const isActive = activeSection === item.id
                 const Icon = ICON_MAP[item.id]
@@ -299,7 +299,7 @@ export function HomeClient() {
                   <button
                     key={item.id}
                     onClick={() => switchTo(item.id)}
-                    className={`relative flex flex-col items-center justify-center gap-[3px] min-w-[64px] px-3 py-1.5 rounded-xl snap-center transition-all duration-200 ${
+                    className={`relative flex flex-col items-center justify-center gap-[2px] flex-1 min-w-0 px-1 py-1.5 rounded-xl transition-all duration-200 ${
                       isActive
                         ? 'text-black'
                         : 'text-black/30 active:scale-95'
@@ -316,7 +316,7 @@ export function HomeClient() {
                     <span className="relative z-10">
                       {Icon && <Icon active={isActive} />}
                     </span>
-                    <span className={`relative z-10 text-[9px] font-semibold truncate max-w-[60px] ${
+                    <span className={`relative z-10 text-[9px] font-semibold truncate w-full text-center px-0.5 ${
                       isActive ? 'text-black' : 'text-black/35'
                     }`}>
                       {item.label}
@@ -390,22 +390,22 @@ export function HomeClient() {
                 {id === 'discovery' && <ItpBrowserGrid />}
                 {id === 'markets' && <ItpListing onItpsLoaded={handleItpsLoaded} />}
                 {id === 'portfolio' && (
-                  <div className="px-6 lg:px-12 py-8">
+                  <div className="px-2 sm:px-6 lg:px-12 py-8">
                     <PortfolioSection expanded={true} onToggle={() => {}} deployedItps={deployedItps} />
                   </div>
                 )}
                 {id === 'create' && (
-                  <div className="px-6 lg:px-12 py-8">
+                  <div className="px-2 sm:px-6 lg:px-12 py-8">
                     <CreateItpSection expanded={true} onToggle={() => {}} initialHoldings={deployHoldings} />
                   </div>
                 )}
                 {id === 'lend' && (
-                  <div className="px-6 lg:px-12 py-8">
+                  <div className="px-2 sm:px-6 lg:px-12 py-8">
                     <LendingPage />
                   </div>
                 )}
                 {id === 'backtest' && (
-                  <div className="px-6 lg:px-12 py-8">
+                  <div className="px-2 sm:px-6 lg:px-12 py-8">
                     <BacktestSection
                       expanded={true}
                       onToggle={() => {}}
@@ -416,7 +416,7 @@ export function HomeClient() {
                   </div>
                 )}
                 {id === 'system' && (
-                  <div className="px-6 lg:px-12 py-8 space-y-8">
+                  <div className="px-2 sm:px-6 lg:px-12 py-8 space-y-8">
                     <SystemStatusSection deployedItps={deployedItps} />
                     <div className="border-t border-border-medium" />
                     <VaultTradesFeed deployedItps={deployedItps} />
