@@ -16,15 +16,15 @@ const baseText: React.CSSProperties = {
 
 /* ═══════════════════════════════════════════════════════
    Scene 01 — Hook  (84 frames = 3.5s @ 24fps)
-   Conveyor of strategy attempts (v1 → v10,000) scrolls across
-   the bottom while "You spent / 10,000 / hours" stamps above.
-   Then phrase A fades and "perfecting your trading strategies"
-   lands word by word. Vocabulary mirrors Scene 05.
+   Original line stays: "You spent 10,000 hours" → "perfecting
+   your trading strategies." A conveyor of strategy attempts
+   (v1 → v10,000) scrolls fast underneath in the scene-05
+   vocabulary — fewer items, larger tags, faster sweep.
    ═══════════════════════════════════════════════════════ */
 
 const SCENE01_DURATION = 84;
+const SCENE01_PHRASE_A = ["You", "spent", "10,000", "hours"] as const;
 const SCENE01_PHRASE_B = ["perfecting", "your", "trading", "strategies"] as const;
-const GOLD = "#FFD700";
 
 type ConveyorShapeKind = "diamond" | "hexagon" | "hexagon-hole" | "pentagon" | "circle";
 
@@ -106,7 +106,11 @@ function conveyorRand(s: number) {
   return x - Math.floor(x);
 }
 
-const CONVEYOR_COUNT = 24;
+const CONVEYOR_COUNT = 14;
+const CONVEYOR_SHAPE_SIZE = 130;
+const CONVEYOR_GAP = 130;
+const CONVEYOR_TAG_SIZE = 56;
+
 const CONVEYOR_ITEMS = Array.from({ length: CONVEYOR_COUNT }, (_, i) => {
   const kind = CONVEYOR_SHAPE_KINDS[Math.floor(conveyorRand(i + 1) * CONVEYOR_SHAPE_KINDS.length)];
   const color = CONVEYOR_COLORS[Math.floor(conveyorRand(i + 1009) * CONVEYOR_COLORS.length)];
@@ -123,11 +127,11 @@ function buildScene01Proxies() {
   const init: Record<string, Record<string, number>> = {
     phraseA: { opacity: 1 },
     phraseB: { opacity: 0 },
-    youSpent: { opacity: 0, y: 18 },
-    tenK: { opacity: 0, scale: 0 },
-    hours: { opacity: 0, y: 18 },
     conveyor: { x: 0, opacity: 0 },
   };
+  SCENE01_PHRASE_A.forEach((_, i) => {
+    init[`a_${i}`] = { opacity: i === 0 ? 1 : 0, y: i === 0 ? 0 : 15 };
+  });
   SCENE01_PHRASE_B.forEach((_, i) => {
     init[`b_${i}`] = { opacity: 0, y: 15 };
   });
@@ -139,25 +143,47 @@ const scene01Init = buildScene01Proxies();
 export const Scene01_Hook: React.FC = () => {
   const s = useGsapProxy(
     (tl, p) => {
-      tl.to(p.conveyor, { opacity: 1, duration: 0.3, ease: "power2.out" }, 0);
-      tl.to(p.conveyor, { x: -1900, duration: 3.4, ease: "power2.in" }, 0.05);
+      tl.to(p.conveyor, { opacity: 1, duration: 0.25, ease: "power2.out" }, 0);
+      tl.to(p.conveyor, { x: -2600, duration: 2.6, ease: "power2.in" }, 0.0);
 
-      tl.to(p.youSpent, { opacity: 1, y: 0, duration: 0.2, ease: "power2.out" }, 0.15);
-      tl.to(p.tenK, { opacity: 1, duration: 0.18 }, 0.5);
-      tl.to(p.tenK, { scale: 1, duration: 0.55, ease: "back.out(1.9)" }, 0.5);
-      tl.to(p.hours, { opacity: 1, y: 0, duration: 0.2, ease: "power2.out" }, 1.05);
-
-      tl.to(p.phraseA, { opacity: 0, duration: 0.25, ease: "power2.in" }, 1.85);
-
-      tl.to(p.phraseB, { opacity: 1, duration: 0.2, ease: "power2.out" }, 2.1);
-      SCENE01_PHRASE_B.forEach((_, i) => {
-        tl.to(p[`b_${i}`], { opacity: 1, y: 0, duration: 0.18, ease: "power2.out" }, 2.1 + i * 0.18);
+      SCENE01_PHRASE_A.forEach((_, i) => {
+        if (i === 0) return;
+        tl.to(p[`a_${i}`], { opacity: 1, y: 0, duration: 0.18, ease: "power2.out" }, 0.2 + i * 0.22);
       });
 
-      tl.to(p.conveyor, { opacity: 0.5, duration: 0.4, ease: "power2.out" }, 2.0);
+      tl.to(p.phraseA, { opacity: 0, duration: 0.22, ease: "power2.in" }, 1.7);
+
+      tl.to(p.phraseB, { opacity: 1, duration: 0.18, ease: "power2.out" }, 1.95);
+      SCENE01_PHRASE_B.forEach((_, i) => {
+        tl.to(p[`b_${i}`], { opacity: 1, y: 0, duration: 0.18, ease: "power2.out" }, 1.95 + i * 0.24);
+      });
+
+      tl.to(p.conveyor, { opacity: 0.55, duration: 0.4, ease: "power2.out" }, 1.95);
     },
     scene01Init,
   );
+
+  const phraseACenter: React.CSSProperties = {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    display: "flex",
+    gap: 30,
+    justifyContent: "center",
+    whiteSpace: "nowrap",
+  };
+
+  const phraseBCenter: React.CSSProperties = {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    display: "flex",
+    gap: 24,
+    justifyContent: "center",
+    whiteSpace: "nowrap",
+  };
 
   return (
     <AbsoluteFill>
@@ -165,14 +191,14 @@ export const Scene01_Hook: React.FC = () => {
         <DynamicBlue />
       </ZoomedBg>
 
-      {/* Conveyor — bottom band */}
+      {/* Conveyor — bottom band, fewer items, bigger tags, faster sweep */}
       <div
         style={{
           position: "absolute",
-          top: "73%",
+          top: "70%",
           left: 0,
           right: 0,
-          height: 220,
+          height: 290,
           opacity: s.conveyor.opacity,
           overflow: "hidden",
         }}
@@ -180,11 +206,11 @@ export const Scene01_Hook: React.FC = () => {
         <div
           style={{
             position: "absolute",
-            left: 80,
+            left: 100,
             top: 0,
             display: "flex",
             alignItems: "flex-start",
-            gap: 60,
+            gap: CONVEYOR_GAP,
             transform: `translateX(${s.conveyor.x}px)`,
           }}
         >
@@ -195,23 +221,31 @@ export const Scene01_Hook: React.FC = () => {
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                gap: 14,
-                width: 96,
+                gap: 18,
+                width: CONVEYOR_SHAPE_SIZE,
               }}
             >
-              <div style={{ height: 96, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <ConveyorShape kind={it.kind} color={it.color} size={86} />
+              <div
+                style={{
+                  height: CONVEYOR_SHAPE_SIZE,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <ConveyorShape kind={it.kind} color={it.color} size={CONVEYOR_SHAPE_SIZE} />
               </div>
-              <div style={{ width: 28, height: 2.5, backgroundColor: "rgba(0,0,0,0.4)", borderRadius: 2 }} />
+              <div style={{ width: 44, height: 3, backgroundColor: "rgba(0,0,0,0.4)", borderRadius: 2 }} />
               <span
                 style={{
                   ...baseText,
                   fontStyle: "normal",
-                  fontWeight: 700,
-                  fontSize: 26,
-                  color: "rgba(255,255,255,0.85)",
-                  letterSpacing: "-0.01em",
+                  fontWeight: 800,
+                  fontSize: CONVEYOR_TAG_SIZE,
+                  color: "#ffffff",
+                  letterSpacing: "-0.02em",
                   whiteSpace: "nowrap",
+                  textShadow: "0 4px 18px rgba(0,0,0,0.35)",
                 }}
               >
                 {formatTag(it.tag)}
@@ -221,63 +255,30 @@ export const Scene01_Hook: React.FC = () => {
         </div>
       </div>
 
-      {/* Phrase A — stacked: "You spent" / "10,000" / "hours" */}
-      <div style={{ position: "absolute", inset: 0, opacity: s.phraseA.opacity, pointerEvents: "none" }}>
-        <div
-          style={{
-            position: "absolute",
-            top: "8%",
-            left: "50%",
-            transform: `translate(-50%, ${s.youSpent.y}px)`,
-            opacity: s.youSpent.opacity,
-          }}
-        >
-          <span style={{ ...baseText, fontSize: 95, color: "#fff", whiteSpace: "nowrap" }}>You spent</span>
-        </div>
-
-        <div
-          style={{
-            position: "absolute",
-            top: "20%",
-            left: "50%",
-            transform: `translate(-50%, 0) scale(${Math.max(0, s.tenK.scale)})`,
-            transformOrigin: "50% 50%",
-            opacity: s.tenK.opacity,
-            textShadow: "0 10px 32px rgba(0,0,0,0.32)",
-          }}
-        >
-          <span style={{ ...baseText, fontSize: 300, color: GOLD, lineHeight: 1, whiteSpace: "nowrap" }}>
-            10,000
-          </span>
-        </div>
-
-        <div
-          style={{
-            position: "absolute",
-            top: "57%",
-            left: "50%",
-            transform: `translate(-50%, ${s.hours.y}px)`,
-            opacity: s.hours.opacity,
-          }}
-        >
-          <span style={{ ...baseText, fontSize: 95, color: "#fff", whiteSpace: "nowrap" }}>hours</span>
-        </div>
+      {/* Phrase A — original layout: "You spent 10,000 hours" */}
+      <div style={{ ...phraseACenter, opacity: s.phraseA.opacity }}>
+        {SCENE01_PHRASE_A.map((word, i) => {
+          const proxy = s[`a_${i}`];
+          const isNumber = word === "10,000";
+          return (
+            <span
+              key={i}
+              style={{
+                ...baseText,
+                fontSize: isNumber ? 165 : 125,
+                color: "#fff",
+                opacity: proxy.opacity,
+                transform: `translateY(${proxy.y}px)`,
+              }}
+            >
+              {word}
+            </span>
+          );
+        })}
       </div>
 
       {/* Phrase B — "perfecting your trading strategies" */}
-      <div
-        style={{
-          position: "absolute",
-          top: "32%",
-          left: "50%",
-          transform: "translate(-50%, 0)",
-          display: "flex",
-          gap: 24,
-          justifyContent: "center",
-          whiteSpace: "nowrap",
-          opacity: s.phraseB.opacity,
-        }}
-      >
+      <div style={{ ...phraseBCenter, opacity: s.phraseB.opacity }}>
         {SCENE01_PHRASE_B.map((word, i) => {
           const proxy = s[`b_${i}`];
           return (
