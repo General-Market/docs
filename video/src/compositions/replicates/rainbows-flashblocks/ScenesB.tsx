@@ -373,15 +373,6 @@ export const Scene05_Manipulators: React.FC = () => {
         <DynamicBlue />
       </ZoomedBg>
 
-      {/* Subtle vignette for depth */}
-      <AbsoluteFill
-        style={{
-          background:
-            "radial-gradient(ellipse at center, rgba(0,0,0,0) 50%, rgba(0,0,0,0.35) 100%)",
-          pointerEvents: "none",
-        }}
-      />
-
       {/* Title — "Removing" */}
       <div
         style={{
