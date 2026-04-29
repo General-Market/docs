@@ -4,15 +4,14 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAccount, useWaitForTransactionReceipt, useSwitchChain, useWriteContract, usePublicClient } from 'wagmi'
 import { motion, useReducedMotion } from 'framer-motion'
 import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
-import { BRIDGE_PROXY_ABI } from '@/lib/contracts/index-protocol-abi'
+import { INDEX_CREATE_ITP_ABI, BRIDGE_NONCE_SENTINEL } from '@/lib/contracts/index-protocol-abi'
 import { useNonceCheck } from '@/hooks/useNonceCheck'
 import { useTransactionNotification } from '@/hooks/useTransactionNotification'
 import { ensureCorrectChain } from '@/hooks/useChainWrite'
-import { settlementChainId, settlementChain } from '@/lib/wagmi'
+import { activeChainId, indexL3 } from '@/lib/wagmi'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { getCoinGeckoUrl } from '@/lib/coingecko'
 import { DATA_NODE_URL } from '@/lib/config'
-import { useDeployerName } from '@/hooks/useDeployerName'
 import { useSSENav } from '@/hooks/useSSE'
 import { useTranslations } from 'next-intl'
 import { usePostHogTracker } from '@/hooks/usePostHog'
@@ -74,24 +73,18 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
   const { capture } = usePostHogTracker()
   const [name, setName] = useState('')
   const [symbol, setSymbol] = useState('')
-  const [description, setDescription] = useState('')
-  const [websiteUrl, setWebsiteUrl] = useState('')
-  const [videoUrl, setVideoUrl] = useState('')
-  const [oracleName, setOracleName] = useState('')
   const [selectedAssets, setSelectedAssets] = useState<AssetWeight[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [txError, setTxError] = useState<string | null>(null)
   const [availableAssets, setAvailableAssets] = useState<{ address: string; symbol: string }[]>([])
   const [coinMap, setCoinMap] = useState<Record<string, CoinEntry>>({})
-  const { name: existingDeployerName, refetch: refetchDeployerName } = useDeployerName(address as `0x${string}` | undefined)
-  const needsOracleName = isConnected && !existingDeployerName
 
   const { switchChainAsync } = useSwitchChain()
-  const settlementPublicClient = usePublicClient({ chainId: settlementChainId })
+  const l3PublicClient = usePublicClient({ chainId: activeChainId })
   const { writeContract, writeContractAsync, data: hash, isPending, error: writeError, reset: resetWrite } = useWriteContract()
-  const { isLoading: isConfirming, isSuccess, error: confirmError } = useWaitForTransactionReceipt({ hash, chainId: settlementChainId })
+  const { isLoading: isConfirming, isSuccess, error: confirmError } = useWaitForTransactionReceipt({ hash, chainId: activeChainId })
 
-  // Toast notifications for ITP creation (tx is on Settlement, not L3)
+  // Toast notifications for ITP creation (direct call on L3, no bridge)
   useTransactionNotification({
     hash,
     isPending,
@@ -99,7 +92,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
     isSuccess,
     error: (writeError || confirmError) as Error | null,
     label: 'Create ITP',
-    chain: 'settlement',
+    chain: 'l3',
   })
 
   const { hasNonceGap, pendingCount, refresh: refreshNonce } = useNonceCheck()
@@ -378,27 +371,13 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
     setIsFetchingPrices(false)
 
     try {
-      // BridgeProxy lives on Settlement, ensure wallet is on Settlement chain before submitting.
-      // Use writeContractAsync (not writeContract) so the chain switch and tx submit
-      // happen in the same async execution context without React re-renders in between.
+      // L3 direct: Investment.createITP is permissionless on L3, no bridge involved.
+      // Wallet must be on L3 to sign — switch if needed.
       try {
-        await ensureCorrectChain(currentChainId, switchChainAsync, settlementChainId, settlementChain)
+        await ensureCorrectChain(currentChainId, switchChainAsync, activeChainId, indexL3)
       } catch {
-        setTxError('Please switch to the Settlement chain to create an ITP')
+        setTxError('Please switch to the L3 chain to create an ITP')
         return
-      }
-
-      // If deployer hasn't set their name yet, set it first
-      if (needsOracleName && oracleName.trim()) {
-        console.log('[CreateITP] Setting deployer name:', oracleName.trim())
-        await writeContractAsync({
-          address: INDEX_PROTOCOL.settlementBridgeProxy,
-          abi: BRIDGE_PROXY_ABI,
-          functionName: 'setDeployerName',
-          args: [oracleName.trim()],
-          chainId: settlementChainId,
-        })
-        refetchDeployerName()
       }
 
       submittedSymbolRef.current = symbol
@@ -409,32 +388,28 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
       })
 
       console.log('[CreateITP] Submitting tx:', {
-        bridgeProxy: INDEX_PROTOCOL.settlementBridgeProxy,
+        index: INDEX_PROTOCOL.index,
         name, symbol,
         assetsCount: assets.length,
         weightsSum: weights.reduce((a, b) => a + b, 0n).toString(),
         prices: prices.map(p => p.toString()),
-        metadata: { description, websiteUrl, videoUrl },
       })
 
-      // Pre-simulate on Settlement public client (not wallet provider) to catch
-      // chain-routing issues where wallet's eth_estimateGas hits the wrong chain.
-      if (settlementPublicClient) {
+      // Pre-simulate on the L3 public client to catch reverts before wallet prompt.
+      if (l3PublicClient) {
         try {
-          await settlementPublicClient.simulateContract({
-            address: INDEX_PROTOCOL.settlementBridgeProxy,
-            abi: BRIDGE_PROXY_ABI,
-            functionName: 'requestCreateItp',
-            args: [name, symbol, weights, assets, prices, { description, websiteUrl, videoUrl }],
+          await l3PublicClient.simulateContract({
+            address: INDEX_PROTOCOL.index,
+            abi: INDEX_CREATE_ITP_ABI,
+            functionName: 'createITP',
+            args: [name, symbol, weights, assets, prices, BRIDGE_NONCE_SENTINEL],
             account: address,
           })
-          console.log('[CreateITP] Pre-simulation passed on Settlement')
+          console.log('[CreateITP] Pre-simulation passed on L3')
         } catch (simErr: any) {
           console.error('[CreateITP] Pre-simulation failed:', simErr)
           let reason = simErr.shortMessage || simErr.message || 'Simulation failed'
-          // Decode known contract error selectors
           if (reason.includes('0xfb25c4bc')) reason = 'Each asset must have at least 1% weight'
-          else if (reason.includes('0xeac2915e')) reason = 'Unauthorized, wallet not permitted'
           else if (reason.includes('0x3432baf7')) reason = 'System is paused'
           setTxError(reason.slice(0, 300))
           capture('create_itp_failed', { error_message: reason.slice(0, 200), step: 'pre_simulate' })
@@ -443,11 +418,11 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
       }
 
       await writeContractAsync({
-        address: INDEX_PROTOCOL.settlementBridgeProxy,
-        abi: BRIDGE_PROXY_ABI,
-        functionName: 'requestCreateItp',
-        args: [name, symbol, weights, assets, prices, { description, websiteUrl, videoUrl }],
-        chainId: settlementChainId,
+        address: INDEX_PROTOCOL.index,
+        abi: INDEX_CREATE_ITP_ABI,
+        functionName: 'createITP',
+        args: [name, symbol, weights, assets, prices, BRIDGE_NONCE_SENTINEL],
+        chainId: activeChainId,
       })
     } catch (e: any) {
       console.error('[CreateITP] writeContractAsync threw:', e)
@@ -488,7 +463,6 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
       })
       refreshNonce()
       setStuckWarning(false)
-      refetchDeployerName()
     }
   }, [isSuccess, refreshNonce])
 
@@ -498,10 +472,6 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
       successRef.current = false
       setName('')
       setSymbol('')
-      setDescription('')
-      setWebsiteUrl('')
-      setVideoUrl('')
-      setOracleName('')
       setSelectedAssets([])
       resetWrite()
       setItpCountBefore(null)
@@ -786,11 +756,6 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
         <FinalizeItpModal
           name={name} setName={setName}
           symbol={symbol} setSymbol={setSymbol}
-          description={description} setDescription={setDescription}
-          websiteUrl={websiteUrl} setWebsiteUrl={setWebsiteUrl}
-          videoUrl={videoUrl} setVideoUrl={setVideoUrl}
-          oracleName={oracleName} setOracleName={setOracleName}
-          needsOracleName={needsOracleName}
           selectedAssets={selectedAssets}
           onClose={() => setShowFinalizeModal(false)}
           onSubmit={handleSubmit}
@@ -813,11 +778,6 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
 interface FinalizeItpModalProps {
   name: string; setName: (v: string) => void
   symbol: string; setSymbol: (v: string) => void
-  description: string; setDescription: (v: string) => void
-  websiteUrl: string; setWebsiteUrl: (v: string) => void
-  videoUrl: string; setVideoUrl: (v: string) => void
-  oracleName: string; setOracleName: (v: string) => void
-  needsOracleName: boolean
   selectedAssets: AssetWeight[]
   onClose: () => void
   onSubmit: () => void
@@ -833,9 +793,7 @@ interface FinalizeItpModalProps {
 }
 
 function FinalizeItpModal({
-  name, setName, symbol, setSymbol, description, setDescription,
-  websiteUrl, setWebsiteUrl, videoUrl, setVideoUrl,
-  oracleName, setOracleName, needsOracleName, selectedAssets,
+  name, setName, symbol, setSymbol, selectedAssets,
   onClose, onSubmit, isPending, isConfirming, isFetchingPrices,
   hasNonceGap, txError, isSuccess, consensusReached, stuckWarning, onCancel,
 }: FinalizeItpModalProps) {
@@ -919,57 +877,6 @@ function FinalizeItpModal({
             </div>
           </div>
 
-          {/* Oracle Name */}
-          {needsOracleName && (
-            <div>
-              <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-1.5 block">{t('finalize.oracle_name_label')}</label>
-              <input
-                type="text" value={oracleName}
-                onChange={(e) => setOracleName(e.target.value.slice(0, 64))}
-                placeholder={t('finalize.oracle_name_placeholder')}
-                disabled={formLocked}
-                className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none disabled:text-text-muted"
-              />
-            </div>
-          )}
-
-          {/* Description */}
-          <div>
-            <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-1.5 block">{t('finalize.description_label')}</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value.slice(0, 280))}
-              placeholder={t('finalize.description_placeholder')}
-              rows={2}
-              disabled={formLocked}
-              className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none resize-none disabled:text-text-muted"
-            />
-            <span className="text-micro text-text-muted">{t('finalize.char_count', { count: description.length })}</span>
-          </div>
-
-          {/* Website + Video */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-1.5 block">{t('finalize.website_label')}</label>
-              <input
-                type="url" value={websiteUrl}
-                onChange={(e) => setWebsiteUrl(e.target.value.slice(0, 128))}
-                placeholder={t('finalize.website_placeholder')}
-                disabled={formLocked}
-                className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none disabled:text-text-muted"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-1.5 block">{t('finalize.video_label')}</label>
-              <input
-                type="url" value={videoUrl}
-                onChange={(e) => setVideoUrl(e.target.value.slice(0, 256))}
-                placeholder={t('finalize.video_placeholder')}
-                disabled={formLocked}
-                className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none disabled:text-text-muted"
-              />
-            </div>
-          </div>
         </div>
 
         {/* Status messages, outside the greyed form area */}
