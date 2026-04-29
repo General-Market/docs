@@ -286,12 +286,16 @@ const HexField: React.FC<HexFieldProps> = ({
           ref={meshRef}
           args={[geometry, undefined, tiles.length]}
         >
+          {/* No `vertexColors` — the geometry has no per-vertex
+              colour attribute, so enabling it would make the shader
+              multiply by zero and paint every prism black. The
+              InstancedMesh's instanceColor attribute is picked up
+              automatically by USE_INSTANCING_COLOR. */}
           <meshPhysicalMaterial
             metalness={METALNESS}
             roughness={ROUGHNESS}
             clearcoat={CLEARCOAT}
             clearcoatRoughness={CLEARCOAT_ROUGHNESS}
-            vertexColors
             side={THREE.FrontSide}
           />
         </instancedMesh>
