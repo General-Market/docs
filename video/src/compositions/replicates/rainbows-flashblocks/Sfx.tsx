@@ -27,7 +27,7 @@ import { Audio, Sequence, staticFile } from "remotion";
 const sfx = (name: string) => staticFile(`sfx/mx6/${name}`);
 
 const F = {
-  word: "select-003.mp3",
+  word: "obtain-002-without-reverb.mp3",
   pop: "sharp-pop.mp3",
   whoosh: "sharp-fast-whoosh.mp3",
   ambient: "long-whoosh-001.mp3",
@@ -43,7 +43,7 @@ const F = {
 };
 
 const V = {
-  word: 0.18,
+  word: 0.14,
   pop: 0.5,
   whoosh: 0.4,
   ambient: 0.22,
@@ -166,8 +166,7 @@ export const Sfx: React.FC = () => {
       {/* ═════════════════════════════════════════════════════════════
           Scene 03 — CubeExplode (132–204)
           ═════════════════════════════════════════════════════════════ */}
-      {/* Boxes punch in */}
-      <Whoosh from={132} />
+      {/* Boxes punch in — 4 shapes mark the entry, no whoosh on top */}
       <Shape from={132} />  {/* Stocks */}
       <Shape from={133} />  {/* Crypto */}
       <Shape from={134} />  {/* Predictions */}
@@ -202,8 +201,7 @@ export const Sfx: React.FC = () => {
       ))}
       <Pop from={291} />    {/* 70% lands */}
 
-      {/* Subtitle */}
-      <Whoosh from={278} />
+      {/* Subtitle — 4 words mark the reveal, no whoosh on top */}
       <Word from={278} />   {/* of */}
       <Word from={281} />   {/* your */}
       <Word from={284} />   {/* potential */}
@@ -215,8 +213,10 @@ export const Sfx: React.FC = () => {
       <Whoosh from={312} />
       <Word from={313} />   {/* Removing */}
 
-      {/* 6 conveyor items (treat them as conveyor ticks, not shapes) */}
-      {[316, 318, 320, 323, 325, 328].map((f) => (
+      {/* 4 conveyor items tick as they appear; items 4 and 5 land
+       * inside the sniper sequence (start frame 325) so they go
+       * silent — the sniper takes over. */}
+      {[316, 318, 320, 323].map((f) => (
         <ConveyorTick key={`s5-item-${f}`} from={f} />
       ))}
 
@@ -234,8 +234,10 @@ export const Sfx: React.FC = () => {
       {/* ═════════════════════════════════════════════════════════════
           Scene 06 — HonestTraders (420–504)
           ═════════════════════════════════════════════════════════════ */}
-      {/* 6 concentric rings — same sample, same volume */}
-      {[420, 424, 429, 433, 437, 442].map((f) => (
+      {/* 6 concentric rings — same sample, same volume. Ring 5 is
+       * shifted from 437 → 440 so it doesn't fire the same frame as
+       * the Pop on "profits". */}
+      {[420, 424, 429, 433, 440, 444].map((f) => (
         <Ring key={`s6-ring-${f}`} from={f} />
       ))}
 
