@@ -147,23 +147,28 @@ export const Scene04_FilterAndPercent: React.FC = () => {
             position: "absolute",
             top: "50%",
             left: "50%",
+            transform: "translate(-50%, calc(-50% - 180px))",
+            ...baseText,
+            fontSize: 80,
+            fontWeight: 700,
+            color: BLUE,
+            lineHeight: 1,
+            whiteSpace: "nowrap",
+          }}
+        >
+          regaining
+        </div>
+
+        <div
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
             transform: `translate(-50%, -50%) scale(${Math.max(s.counter.scale, 0)})`,
             textAlign: "center",
             opacity: s.counter.opacity,
           }}
         >
-          <div
-            style={{
-              ...baseText,
-              fontSize: 80,
-              fontWeight: 700,
-              color: BLUE,
-              marginBottom: -8,
-              lineHeight: 1,
-            }}
-          >
-            regaining
-          </div>
           <div style={{ ...baseText, fontSize: 280, color: BLUE }}>
             {counterValue}%
           </div>
