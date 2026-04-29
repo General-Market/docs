@@ -258,7 +258,7 @@ function buildScene01Proxies() {
   const init: Record<string, Record<string, number>> = {
     phraseA: { opacity: 1 },
     phraseB: { opacity: 0 },
-    conveyor: { x: 0, opacity: 0 },
+    conveyor: { x: 0 },
   };
   SCENE01_PHRASE_A.forEach((_, i) => {
     init[`a_${i}`] = { opacity: i === 0 ? 1 : 0, y: i === 0 ? 0 : 15 };
@@ -274,7 +274,6 @@ const scene01Init = buildScene01Proxies();
 export const Scene01_Hook: React.FC = () => {
   const s = useGsapProxy(
     (tl, p) => {
-      tl.to(p.conveyor, { opacity: 1, duration: 0.25, ease: "power2.out" }, 0);
       tl.to(p.conveyor, { x: -5400, duration: 2.5, ease: "power2.in" }, 0.0);
 
       SCENE01_PHRASE_A.forEach((_, i) => {
@@ -288,8 +287,6 @@ export const Scene01_Hook: React.FC = () => {
       SCENE01_PHRASE_B.forEach((_, i) => {
         tl.to(p[`b_${i}`], { opacity: 1, y: 0, duration: 0.18, ease: "power2.out" }, 1.95 + i * 0.24);
       });
-
-      tl.to(p.conveyor, { opacity: 0.55, duration: 0.4, ease: "power2.out" }, 1.95);
     },
     scene01Init,
   );
@@ -330,7 +327,6 @@ export const Scene01_Hook: React.FC = () => {
           left: 0,
           right: 0,
           height: 320,
-          opacity: s.conveyor.opacity,
           overflow: "hidden",
         }}
       >
