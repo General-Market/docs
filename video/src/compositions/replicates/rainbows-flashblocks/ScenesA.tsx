@@ -106,22 +106,148 @@ function conveyorRand(s: number) {
   return x - Math.floor(x);
 }
 
-const CONVEYOR_COUNT = 14;
+const CONVEYOR_COUNT = 18;
 const CONVEYOR_SHAPE_SIZE = 130;
-const CONVEYOR_GAP = 130;
-const CONVEYOR_TAG_SIZE = 56;
+const CONVEYOR_GAP = 110;
+const CONVEYOR_TAG_SIZE = 76;
+const CONVEYOR_ITEM_WIDTH = 200;
 
 const CONVEYOR_ITEMS = Array.from({ length: CONVEYOR_COUNT }, (_, i) => {
   const kind = CONVEYOR_SHAPE_KINDS[Math.floor(conveyorRand(i + 1) * CONVEYOR_SHAPE_KINDS.length)];
   const color = CONVEYOR_COLORS[Math.floor(conveyorRand(i + 1009) * CONVEYOR_COLORS.length)];
   const t = i / (CONVEYOR_COUNT - 1);
   const tag = Math.max(i + 1, Math.round(Math.pow(10000, t)));
-  return { kind, color, tag };
+  // Decoration tier 0..5 — each version looks one rung more sophisticated
+  const tier = Math.min(5, Math.floor((i / (CONVEYOR_COUNT - 1)) * 6));
+  return { kind, color, tag, tier };
 });
 
 function formatTag(n: number): string {
-  return `v${n.toLocaleString("en-US")}`;
+  if (n >= 1000) return `v${Math.round(n / 1000)}K`;
+  return `v${n}`;
 }
+
+/* Each successive version stacks more decoration over the base shape. */
+const AdvancedShape: React.FC<{
+  kind: ConveyorShapeKind;
+  color: string;
+  size: number;
+  tier: number;
+}> = ({ kind, color, size, tier }) => {
+  const ringSize = size + 14;
+  const auraSize = size * 1.55;
+  return (
+    <div
+      style={{
+        position: "relative",
+        width: size,
+        height: size,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      {tier >= 4 && (
+        <div
+          style={{
+            position: "absolute",
+            width: auraSize,
+            height: auraSize,
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            background: `radial-gradient(circle, ${color}55 0%, transparent 62%)`,
+            filter: "blur(10px)",
+            pointerEvents: "none",
+          }}
+        />
+      )}
+
+      {tier >= 1 && (
+        <div
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+          }}
+        >
+          <ConveyorShape kind={kind} color="rgba(255,255,255,0.85)" size={ringSize} />
+        </div>
+      )}
+
+      {tier >= 3 &&
+        Array.from({ length: 4 }).map((_, t) => (
+          <div
+            key={`tick-${t}`}
+            style={{
+              position: "absolute",
+              width: 5,
+              height: 18,
+              backgroundColor: "rgba(255,255,255,0.95)",
+              borderRadius: 2,
+              top: "50%",
+              left: "50%",
+              transformOrigin: "50% 50%",
+              transform: `translate(-50%, -50%) rotate(${t * 90}deg) translateY(-${size * 0.72}px)`,
+            }}
+          />
+        ))}
+
+      <div style={{ position: "relative", zIndex: 1 }}>
+        <ConveyorShape kind={kind} color={color} size={size} />
+      </div>
+
+      {tier >= 2 && kind !== "hexagon-hole" && (
+        <div
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: size * 0.26,
+            height: size * 0.26,
+            backgroundColor: "rgba(0,0,0,0.55)",
+            borderRadius: "50%",
+            zIndex: 2,
+          }}
+        />
+      )}
+
+      {tier >= 5 && (
+        <>
+          <div
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: ringSize + 16,
+              height: ringSize + 16,
+              borderRadius: "50%",
+              border: "2px dashed rgba(255,255,255,0.7)",
+              zIndex: 0,
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              width: size * 0.7,
+              height: size * 0.16,
+              top: size * 0.18,
+              left: "50%",
+              transform: "translateX(-50%)",
+              background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.65), transparent)",
+              borderRadius: 8,
+              zIndex: 3,
+              pointerEvents: "none",
+            }}
+          />
+        </>
+      )}
+    </div>
+  );
+};
 
 function buildScene01Proxies() {
   const init: Record<string, Record<string, number>> = {
@@ -144,7 +270,7 @@ export const Scene01_Hook: React.FC = () => {
   const s = useGsapProxy(
     (tl, p) => {
       tl.to(p.conveyor, { opacity: 1, duration: 0.25, ease: "power2.out" }, 0);
-      tl.to(p.conveyor, { x: -2600, duration: 2.6, ease: "power2.in" }, 0.0);
+      tl.to(p.conveyor, { x: -3800, duration: 2.5, ease: "power2.in" }, 0.0);
 
       SCENE01_PHRASE_A.forEach((_, i) => {
         if (i === 0) return;
@@ -191,14 +317,14 @@ export const Scene01_Hook: React.FC = () => {
         <DynamicBlue />
       </ZoomedBg>
 
-      {/* Conveyor — bottom band, fewer items, bigger tags, faster sweep */}
+      {/* Conveyor — bottom band, full population, big tags, each version more advanced */}
       <div
         style={{
           position: "absolute",
-          top: "70%",
+          top: "68%",
           left: 0,
           right: 0,
-          height: 290,
+          height: 320,
           opacity: s.conveyor.opacity,
           overflow: "hidden",
         }}
@@ -221,21 +347,26 @@ export const Scene01_Hook: React.FC = () => {
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                gap: 18,
-                width: CONVEYOR_SHAPE_SIZE,
+                gap: 22,
+                width: CONVEYOR_ITEM_WIDTH,
               }}
             >
               <div
                 style={{
-                  height: CONVEYOR_SHAPE_SIZE,
+                  height: CONVEYOR_SHAPE_SIZE + 30,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <ConveyorShape kind={it.kind} color={it.color} size={CONVEYOR_SHAPE_SIZE} />
+                <AdvancedShape
+                  kind={it.kind}
+                  color={it.color}
+                  size={CONVEYOR_SHAPE_SIZE}
+                  tier={it.tier}
+                />
               </div>
-              <div style={{ width: 44, height: 3, backgroundColor: "rgba(0,0,0,0.4)", borderRadius: 2 }} />
+              <div style={{ width: 50, height: 3, backgroundColor: "rgba(0,0,0,0.45)", borderRadius: 2 }} />
               <span
                 style={{
                   ...baseText,
@@ -245,7 +376,7 @@ export const Scene01_Hook: React.FC = () => {
                   color: "#ffffff",
                   letterSpacing: "-0.02em",
                   whiteSpace: "nowrap",
-                  textShadow: "0 4px 18px rgba(0,0,0,0.35)",
+                  textShadow: "0 4px 18px rgba(0,0,0,0.4)",
                 }}
               >
                 {formatTag(it.tag)}
