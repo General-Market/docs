@@ -847,18 +847,27 @@ function FinalizeItpModal({
       ? t('finalize.symbol_label')
       : null
 
-  // Mobile: lock body scroll while the modal is open and snap the viewport to
-  // top. Without this the page underneath stays where the user was scrolled and
-  // a fixed-positioned modal can fall outside the visible viewport — especially
-  // when the iOS URL bar is collapsed.
+  // Mobile body-scroll lock — `position: fixed` on body is the only iOS-reliable
+  // way to freeze the page. Plain `overflow: hidden` is silently ignored on
+  // Safari when an input takes focus and the keyboard pops the visual viewport.
   useEffect(() => {
     if (typeof window === 'undefined') return
     const prevScrollY = window.scrollY
-    const prevBodyOverflow = document.body.style.overflow
-    window.scrollTo({ top: 0 })
-    document.body.style.overflow = 'hidden'
+    const prevBodyStyle = {
+      position: document.body.style.position,
+      top: document.body.style.top,
+      width: document.body.style.width,
+      overflowY: document.body.style.overflowY,
+    }
+    document.body.style.position = 'fixed'
+    document.body.style.top = `-${prevScrollY}px`
+    document.body.style.width = '100%'
+    document.body.style.overflowY = 'scroll'
     return () => {
-      document.body.style.overflow = prevBodyOverflow
+      document.body.style.position = prevBodyStyle.position
+      document.body.style.top = prevBodyStyle.top
+      document.body.style.width = prevBodyStyle.width
+      document.body.style.overflowY = prevBodyStyle.overflowY
       window.scrollTo({ top: prevScrollY })
     }
   }, [])
@@ -866,12 +875,17 @@ function FinalizeItpModal({
   const itpHref = createdItpId ? `/itp/${createdItpId}` : null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    // Outer container scrolls when content exceeds the viewport. Using `dvh`
+    // (dynamic viewport height) so iOS URL-bar visibility doesn't push the
+    // modal below the screen.
+    <div className="fixed inset-0 z-50 overflow-y-auto overscroll-contain">
       {/* Backdrop */}
-      <SpringBackdrop className="absolute inset-0 glass-overlay" onClick={onClose} />
+      <SpringBackdrop className="fixed inset-0 glass-overlay" onClick={onClose} />
 
-      {/* Modal */}
-      <SpringModal className="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+      {/* Centring wrapper — flex on tall viewports, top-aligned on short ones */}
+      <div className="relative min-h-[100dvh] flex items-start sm:items-center justify-center p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        {/* Modal */}
+        <SpringModal className="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full my-auto">
         {/* Header */}
         <div className="flex justify-between items-center px-6 py-4 border-b border-border-light">
           <div>
@@ -970,7 +984,8 @@ function FinalizeItpModal({
             </div>
           )}
         </div>
-      </SpringModal>
+        </SpringModal>
+      </div>
     </div>
   )
 }
