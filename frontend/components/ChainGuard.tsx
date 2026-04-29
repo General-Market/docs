@@ -55,17 +55,30 @@ export function ChainGuard({ children }: { children: React.ReactNode }) {
     switchChain({ chainId: indexL3.id })
   }, [switchChain])
 
-  // On every connection, push the correct RPC URLs to the wallet.
-  // wallet_addEthereumChain updates the RPC if the chain already exists (EIP-3085),
-  // preventing stale localhost:8545 config from a previous env.
+  // Add chains to the wallet only if they aren't there yet. Pushing on every
+  // reconnect mutates the wallet's stored RPC URL via EIP-3085, which can
+  // invalidate per-chain nonce caches (OKX in particular) and produce a
+  // spurious "Nonce too high" on the next signed tx. Probe with
+  // `wallet_switchEthereumChain` first; only call `wallet_addEthereumChain`
+  // when the wallet replies 4902 (chain not configured).
   useEffect(() => {
     if (!isConnected || typeof window === 'undefined' || !window.ethereum) return
-    const pushChain = async (chain: Chain) => {
+    const ensureChainAdded = async (chain: Chain) => {
+      const chainIdHex = `0x${chain.id.toString(16)}`
+      try {
+        await window.ethereum!.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: chainIdHex }],
+        })
+        return // already there — don't rewrite the URL
+      } catch (err: any) {
+        if (err?.code !== 4902) return // user rejected, or some other error; don't add
+      }
       try {
         await window.ethereum!.request({
           method: 'wallet_addEthereumChain',
           params: [{
-            chainId: `0x${chain.id.toString(16)}`,
+            chainId: chainIdHex,
             chainName: chain.name,
             nativeCurrency: chain.nativeCurrency,
             rpcUrls: getWalletRpcUrls(chain),
@@ -74,10 +87,11 @@ export function ChainGuard({ children }: { children: React.ReactNode }) {
             } : {}),
           }],
         })
-      } catch { /* chain may reject if already configured identically */ }
+      } catch { /* user rejected the add */ }
     }
-    pushChain(indexL3)
-    pushChain(settlementChain)
+    // Only need to ensure L3 — settlementChain is added on demand by the
+    // bridge/deposit flows that actually need it.
+    ensureChainAdded(indexL3)
   }, [isConnected])
 
   // Auto-attempt switch on wrong chain detection

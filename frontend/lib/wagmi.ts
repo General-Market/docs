@@ -117,18 +117,31 @@ export const activeChain = indexL3
 export const activeChainId = indexL3.id
 export const settlementChainId = settlementChain.id
 
-// `wallet_addEthereumChain` requires an absolute URL. The chain definitions above
-// use relative same-origin proxies (`/api/rpc`, `/api/settlement-rpc`) for wagmi's
-// transport — desktop MetaMask tolerates relatives, mobile MetaMask rejects them
-// outright with "could not switch". Resolve to absolute before handing to the wallet.
+// What the wallet stores must be **stable across sessions**. EIP-3085 lets a
+// dapp rewrite the wallet's stored RPC URL for an existing chainId on every
+// `wallet_addEthereumChain` call — and OKX (at least) appears to invalidate
+// or desynchronise its per-chain nonce cache when the URL rotates underneath
+// it. Result: the wallet's pre-flight builds a tx with a nonce ahead of what
+// the (now-different) RPC reports as pending, and refuses with "Nonce too
+// high. Please adjust the nonce and try again."
+//
+// The dapp can still use a proxy internally (cheaper, avoids mixed-content,
+// dodges CORS), but the wallet must always see the same canonical public URL.
+// Hard-code those here. They never change. They never carry an origin prefix.
+const WALLET_RPC_URLS: Record<number, string> = {
+  111222333: 'https://rpc.generalmarket.io/',
+  421611337: 'https://rpc.testnet.soniclabs.com',
+}
+
 export function getWalletRpcUrls(chain: Chain): string[] {
+  const canonical = WALLET_RPC_URLS[chain.id]
+  if (canonical) return [canonical]
+  // Fallback: use whatever the chain config has, but only if absolute.
+  // Never hand the wallet a relative URL — wallets reject those and cache
+  // the rejection.
   const raw = chain.rpcUrls.default.http[0]
-  if (!raw) return []
-  if (/^https?:\/\//i.test(raw)) return [raw]
-  if (typeof window !== 'undefined' && raw.startsWith('/')) {
-    return [`${window.location.origin}${raw}`]
-  }
-  return [raw]
+  if (raw && /^https?:\/\//i.test(raw)) return [raw]
+  return []
 }
 
 // ---------------------------------------------------------------------------
