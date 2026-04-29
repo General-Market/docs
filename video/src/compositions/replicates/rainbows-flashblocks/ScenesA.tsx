@@ -274,10 +274,11 @@ const scene01Init = buildScene01Proxies();
 export const Scene01_Hook: React.FC = () => {
   const s = useGsapProxy(
     (tl, p) => {
-      // Belt zips through v1..v4642 then decelerates so v10,000 (i=17, the
-      // most-advanced shape) parks at horizontal center of the 1920px frame.
-      // Item center: 240 + 390*i. For i=17 → 6870. Land at 960 → x = -5910.
-      tl.to(p.conveyor, { x: -5910, duration: 1.5, ease: "power3.out" }, 0.0);
+      // S-curve: slow ramp lets v1/v2/v4 be readable, then belt accelerates
+      // through the middle versions and decelerates onto v10,000 (i=17),
+      // parked at horizontal center. Item center: 240 + 390*i = 6870 for i=17.
+      // Center on 960 → x = -5910.
+      tl.to(p.conveyor, { x: -5910, duration: 1.7, ease: "power3.inOut" }, 0.0);
 
       SCENE01_PHRASE_A.forEach((_, i) => {
         if (i === 0) return;
