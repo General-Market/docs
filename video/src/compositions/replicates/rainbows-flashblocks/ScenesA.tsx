@@ -557,13 +557,10 @@ const SCENE03_ROWS = [
   { label: "Memecoins", Shape: CloudShape },
 ] as const;
 
-const SCANNER_W = ROW_W + 24;
-const SCANNER_H = ROW_H + 24;
-const SCANNER_PAD = 30;
-
 export const Scene03_CubeExplode: React.FC = () => {
   const frame = useCurrentFrame();
 
+  /* Beat 1 — staggered drop-in, per row */
   const dropProgress = (i: number) =>
     interpolate(frame, [i * 4, i * 4 + 12], [0, 1], {
       extrapolateLeft: "clamp",
@@ -571,34 +568,18 @@ export const Scene03_CubeExplode: React.FC = () => {
       easing: Easing.out(Easing.cubic),
     });
 
-  /* Scanner travels down through the four row centres in order. The
-   * first leg is a fly-in from above row 0; subsequent legs snap from
-   * row to row. */
-  const SCAN_TRAVEL = SCENE03_DURATION - 4 - SCENE03_SCAN_START;
-  const scannerY = interpolate(
-    frame,
-    [
-      SCENE03_SCAN_START,
-      SCENE03_SCAN_START + SCAN_TRAVEL * 0.25,
-      SCENE03_SCAN_START + SCAN_TRAVEL * 0.5,
-      SCENE03_SCAN_START + SCAN_TRAVEL * 0.75,
-      SCENE03_SCAN_START + SCAN_TRAVEL,
-    ],
-    [rowCenterY(0) - 200, rowCenterY(0), rowCenterY(1), rowCenterY(2), rowCenterY(3)],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.bezier(0.45, 0, 0.55, 1) },
-  );
-
-  /* Per-row scan progress: rises to 1 once the scanner's centre reaches
-   * the row, then holds. */
-  const scanProgress = (i: number) =>
-    interpolate(scannerY, [rowCenterY(i) - 50, rowCenterY(i) + 5], [0, 1], {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-    });
-
-  const scannerVisible = interpolate(frame, [SCENE03_SCAN_START - 4, SCENE03_SCAN_START + 2], [0, 1], {
+  /* Beat 2 — rainbow rectangle draws itself around the stack */
+  const wrapDraw = interpolate(frame, [SCENE03_WRAP_START, SCENE03_WRAP_END], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
+    easing: Easing.bezier(0.6, 0, 0.4, 1),
+  });
+
+  /* Beat 3 — all four boxes morph simultaneously */
+  const morph = interpolate(frame, [SCENE03_MORPH_START, SCENE03_MORPH_END], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.bezier(0.6, 0, 0.4, 1),
   });
 
   return (
@@ -623,7 +604,6 @@ export const Scene03_CubeExplode: React.FC = () => {
 
       {SCENE03_ROWS.map((row, i) => {
         const drop = dropProgress(i);
-        const scan = scanProgress(i);
         const cy = rowCenterY(i);
         const Shape = row.Shape;
 
@@ -640,19 +620,7 @@ export const Scene03_CubeExplode: React.FC = () => {
               opacity: drop,
             }}
           >
-            {/* Rainbow border glow — appears once the scanner has crossed */}
-            <div
-              style={{
-                position: "absolute",
-                inset: -6,
-                borderRadius: 16,
-                background: RB_GRADIENT_CSS,
-                opacity: scan,
-                filter: `blur(${(1 - scan) * 4}px)`,
-              }}
-            />
-
-            {/* White rectangle (always on after drop) */}
+            {/* White rectangle — fades + shrinks during morph */}
             <div
               style={{
                 position: "absolute",
@@ -660,27 +628,13 @@ export const Scene03_CubeExplode: React.FC = () => {
                 backgroundColor: "#fff",
                 borderRadius: 10,
                 boxShadow: "0 10px 32px rgba(0,0,0,0.22)",
+                opacity: 1 - morph,
+                transform: `scale(${1 - morph * 0.35})`,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
-              {/* Icon — fades and scales in as the scanner crosses */}
-              <div
-                style={{
-                  position: "absolute",
-                  left: 28,
-                  top: "50%",
-                  width: ROW_H - 36,
-                  height: ROW_H - 36,
-                  transform: `translateY(-50%) scale(${0.55 + scan * 0.45})`,
-                  opacity: scan,
-                }}
-              >
-                <Shape />
-              </div>
-
-              {/* Label — stays */}
               <span
                 style={{
                   fontFamily,
@@ -693,52 +647,56 @@ export const Scene03_CubeExplode: React.FC = () => {
                 {row.label}
               </span>
             </div>
+
+            {/* Shape — fades + scales in during morph */}
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: "50%",
+                width: ROW_H,
+                height: ROW_H,
+                transform: `translateX(-50%) scale(${0.55 + morph * 0.45})`,
+                opacity: morph,
+              }}
+            >
+              <Shape />
+            </div>
           </div>
         );
       })}
 
-      {/* Scanner — a hollow rainbow rectangle with viewfinder corners */}
+      {/* Rainbow wrapper — single rectangle around the entire stack.
+       * Stroke is drawn from the top centre using stroke-dashoffset. */}
       <svg
-        width={SCANNER_W + SCANNER_PAD * 2}
-        height={SCANNER_H + SCANNER_PAD * 2}
-        viewBox={`0 0 ${SCANNER_W + SCANNER_PAD * 2} ${SCANNER_H + SCANNER_PAD * 2}`}
+        width={WRAP_W + 60}
+        height={WRAP_H + 60}
+        viewBox={`0 0 ${WRAP_W + 60} ${WRAP_H + 60}`}
         style={{
           position: "absolute",
           left: "50%",
-          top: scannerY,
+          top: "50%",
           transform: "translate(-50%, -50%)",
-          opacity: scannerVisible,
           pointerEvents: "none",
-          filter: "drop-shadow(0 0 18px rgba(255,255,255,0.35))",
+          filter: "drop-shadow(0 0 18px rgba(255,255,255,0.30))",
         }}
       >
         <rect
-          x={SCANNER_PAD}
-          y={SCANNER_PAD}
-          width={SCANNER_W}
-          height={SCANNER_H}
-          rx={16}
-          ry={16}
+          x={30}
+          y={30}
+          width={WRAP_W}
+          height={WRAP_H}
+          rx={WRAP_RADIUS}
+          ry={WRAP_RADIUS}
           fill="none"
           stroke={RB_FILL}
           strokeWidth={6}
           strokeLinejoin="round"
+          strokeLinecap="round"
+          strokeDasharray={WRAP_PERIMETER}
+          strokeDashoffset={WRAP_PERIMETER * (1 - wrapDraw)}
+          transform={`rotate(-90 ${30 + WRAP_W / 2} ${30 + WRAP_H / 2})`}
         />
-        {[
-          { x: SCANNER_PAD, y: SCANNER_PAD, dx: 1, dy: 1 },
-          { x: SCANNER_PAD + SCANNER_W, y: SCANNER_PAD, dx: -1, dy: 1 },
-          { x: SCANNER_PAD, y: SCANNER_PAD + SCANNER_H, dx: 1, dy: -1 },
-          { x: SCANNER_PAD + SCANNER_W, y: SCANNER_PAD + SCANNER_H, dx: -1, dy: -1 },
-        ].map((c, i) => (
-          <path
-            key={i}
-            d={`M ${c.x + c.dx * 22} ${c.y} L ${c.x} ${c.y} L ${c.x} ${c.y + c.dy * 22}`}
-            fill="none"
-            stroke="#fff"
-            strokeWidth={4}
-            strokeLinecap="round"
-          />
-        ))}
       </svg>
     </AbsoluteFill>
   );
