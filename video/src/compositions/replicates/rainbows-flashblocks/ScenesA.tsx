@@ -110,7 +110,7 @@ const CONVEYOR_COUNT = 18;
 const CONVEYOR_SHAPE_SIZE = 130;
 const CONVEYOR_GAP = 110;
 const CONVEYOR_TAG_SIZE = 76;
-const CONVEYOR_ITEM_WIDTH = 200;
+const CONVEYOR_ITEM_WIDTH = 280;
 
 const CONVEYOR_ITEMS = Array.from({ length: CONVEYOR_COUNT }, (_, i) => {
   const kind = CONVEYOR_SHAPE_KINDS[Math.floor(conveyorRand(i + 1) * CONVEYOR_SHAPE_KINDS.length)];
@@ -123,11 +123,11 @@ const CONVEYOR_ITEMS = Array.from({ length: CONVEYOR_COUNT }, (_, i) => {
 });
 
 function formatTag(n: number): string {
-  if (n >= 1000) return `v${Math.round(n / 1000)}K`;
-  return `v${n}`;
+  return `v${n.toLocaleString("en-US")}`;
 }
 
-/* Each successive version stacks more decoration over the base shape. */
+/* Each successive version stacks more decoration over the base shape.
+   All layers are solid colors — no translucency, no blur. */
 const AdvancedShape: React.FC<{
   kind: ConveyorShapeKind;
   color: string;
@@ -135,7 +135,8 @@ const AdvancedShape: React.FC<{
   tier: number;
 }> = ({ kind, color, size, tier }) => {
   const ringSize = size + 14;
-  const auraSize = size * 1.55;
+  const haloSize = size + 36;
+  const orbitSize = size + 76;
   return (
     <div
       style={{
@@ -147,22 +148,22 @@ const AdvancedShape: React.FC<{
         justifyContent: "center",
       }}
     >
+      {/* T4 outer colored halo — sits behind everything */}
       {tier >= 4 && (
         <div
           style={{
             position: "absolute",
-            width: auraSize,
-            height: auraSize,
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            background: `radial-gradient(circle, ${color}55 0%, transparent 62%)`,
-            filter: "blur(10px)",
-            pointerEvents: "none",
+            zIndex: 0,
           }}
-        />
+        >
+          <ConveyorShape kind={kind} color={color} size={haloSize} />
+        </div>
       )}
 
+      {/* T1 solid white outline ring */}
       {tier >= 1 && (
         <div
           style={{
@@ -170,34 +171,19 @@ const AdvancedShape: React.FC<{
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
+            zIndex: 1,
           }}
         >
-          <ConveyorShape kind={kind} color="rgba(255,255,255,0.85)" size={ringSize} />
+          <ConveyorShape kind={kind} color="#ffffff" size={ringSize} />
         </div>
       )}
 
-      {tier >= 3 &&
-        Array.from({ length: 4 }).map((_, t) => (
-          <div
-            key={`tick-${t}`}
-            style={{
-              position: "absolute",
-              width: 5,
-              height: 18,
-              backgroundColor: "rgba(255,255,255,0.95)",
-              borderRadius: 2,
-              top: "50%",
-              left: "50%",
-              transformOrigin: "50% 50%",
-              transform: `translate(-50%, -50%) rotate(${t * 90}deg) translateY(-${size * 0.72}px)`,
-            }}
-          />
-        ))}
-
-      <div style={{ position: "relative", zIndex: 1 }}>
+      {/* Base shape */}
+      <div style={{ position: "relative", zIndex: 2 }}>
         <ConveyorShape kind={kind} color={color} size={size} />
       </div>
 
+      {/* T2 solid dark inner pip */}
       {tier >= 2 && kind !== "hexagon-hole" && (
         <div
           style={{
@@ -205,15 +191,36 @@ const AdvancedShape: React.FC<{
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            width: size * 0.26,
-            height: size * 0.26,
-            backgroundColor: "rgba(0,0,0,0.55)",
+            width: size * 0.28,
+            height: size * 0.28,
+            backgroundColor: "#0a4f4d",
             borderRadius: "50%",
-            zIndex: 2,
+            zIndex: 3,
           }}
         />
       )}
 
+      {/* T3 four cardinal tick marks, solid white, positioned outside any halo */}
+      {tier >= 3 &&
+        Array.from({ length: 4 }).map((_, t) => (
+          <div
+            key={`tick-${t}`}
+            style={{
+              position: "absolute",
+              width: 5,
+              height: 20,
+              backgroundColor: "#ffffff",
+              borderRadius: 2,
+              top: "50%",
+              left: "50%",
+              transformOrigin: "50% 50%",
+              transform: `translate(-50%, -50%) rotate(${t * 90}deg) translateY(-${(tier >= 4 ? haloSize : ringSize) / 2 + 14}px)`,
+              zIndex: 4,
+            }}
+          />
+        ))}
+
+      {/* T5 dashed orbit ring + glossy highlight, both solid */}
       {tier >= 5 && (
         <>
           <div
@@ -222,25 +229,23 @@ const AdvancedShape: React.FC<{
               top: "50%",
               left: "50%",
               transform: "translate(-50%, -50%)",
-              width: ringSize + 16,
-              height: ringSize + 16,
+              width: orbitSize,
+              height: orbitSize,
               borderRadius: "50%",
-              border: "2px dashed rgba(255,255,255,0.7)",
+              border: "3px dashed #ffffff",
               zIndex: 0,
             }}
           />
           <div
             style={{
               position: "absolute",
-              width: size * 0.7,
-              height: size * 0.16,
+              width: size * 0.22,
+              height: size * 0.1,
+              backgroundColor: "#ffffff",
+              borderRadius: "50%",
               top: size * 0.18,
-              left: "50%",
-              transform: "translateX(-50%)",
-              background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.65), transparent)",
-              borderRadius: 8,
-              zIndex: 3,
-              pointerEvents: "none",
+              left: size * 0.22,
+              zIndex: 5,
             }}
           />
         </>
@@ -270,7 +275,7 @@ export const Scene01_Hook: React.FC = () => {
   const s = useGsapProxy(
     (tl, p) => {
       tl.to(p.conveyor, { opacity: 1, duration: 0.25, ease: "power2.out" }, 0);
-      tl.to(p.conveyor, { x: -3800, duration: 2.5, ease: "power2.in" }, 0.0);
+      tl.to(p.conveyor, { x: -5400, duration: 2.5, ease: "power2.in" }, 0.0);
 
       SCENE01_PHRASE_A.forEach((_, i) => {
         if (i === 0) return;
