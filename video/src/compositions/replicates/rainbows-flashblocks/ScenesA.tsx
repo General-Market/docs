@@ -1,5 +1,5 @@
 import React from "react";
-import { AbsoluteFill } from "remotion";
+import { AbsoluteFill, useCurrentFrame, interpolate, Easing } from "remotion";
 import { loadFont } from "@remotion/google-fonts/Inter";
 import { useGsapProxy } from "../standrew/gsapUtils";
 import { DynamicBlue, DynamicDark, DynamicSolidBlue, HexGridOverlay, ZoomedBg } from "./dynamics";
@@ -479,101 +479,91 @@ export const Scene02_TryRainbows: React.FC = () => {
 };
 
 /* ═══════════════════════════════════════════════════════
-   Scene 03 — CubeExplode  (72 frames = 3s @ 24fps)
-   Silent visual beat — cube assembles, holds, explodes.
-   Hex grid background.
+   Scene 03 — RainbowsWraps  (72 frames = 3s @ 24fps)
+   Beat 1 (0–24): four white rectangles drop in stacked, labeled
+   Stocks / Crypto / Predictions / Memecoins.
+   Beat 2 (24–72): a rainbow band sweeps top-to-bottom; as it crosses
+   each row, the rectangle morphs into a rainbow-painted organic shape
+   (flower / heart / star / cloud).
+   Replaces the old cube-explode visual beat.
    ═══════════════════════════════════════════════════════ */
 
 const SCENE03_DURATION = 72;
-const CUBE_SIZE = 500;
-const SMALL_CUBE = 120;
+const SCENE03_SWEEP_START = 24;
+const RB_GRAD_ID = "rb-scene03-grad";
+const RB_FILL = `url(#${RB_GRAD_ID})`;
 
-function seededRand(seed: number) {
-  const x = Math.sin(seed * 9301 + 49297) * 233280;
-  return x - Math.floor(x);
-}
+const ROW_W = 540;
+const ROW_H = 124;
+const ROW_GAP = 36;
+const STACK_TOP = (1080 - (ROW_H * 4 + ROW_GAP * 3)) / 2;
+const rowCenterY = (i: number) => STACK_TOP + ROW_H / 2 + i * (ROW_H + ROW_GAP);
 
-const EXPLOSION_TARGETS = Array.from({ length: 10 }, (_, i) => {
-  const angle = seededRand(i * 7 + 3) * Math.PI * 2;
-  const dist = 300 + seededRand(i * 13 + 1) * 300;
-  return {
-    x: Math.cos(angle) * dist,
-    y: Math.sin(angle) * dist * 0.8,
-    rot: seededRand(i * 19 + 5) * 720 - 360,
-  };
-});
-
-const CubeFace: React.FC<{ size: number; transform: string; shade: string }> = ({ size, transform, shade }) => (
-  <div
-    style={{
-      position: "absolute",
-      width: size,
-      height: size,
-      background: shade,
-      border: "1.5px solid rgba(0,0,0,0.25)",
-      transform,
-      backfaceVisibility: "hidden",
-    }}
-  />
+const FlowerShape: React.FC = () => (
+  <svg viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+    {[0, 72, 144, 216, 288].map((rot) => (
+      <ellipse key={rot} cx="50" cy="28" rx="11" ry="20" fill={RB_FILL} transform={`rotate(${rot} 50 50)`} />
+    ))}
+    <circle cx="50" cy="50" r="9" fill="#fff" />
+  </svg>
 );
 
-const IsoCube: React.FC<{ size: number; opacity?: number }> = ({ size, opacity = 1 }) => {
-  const half = size / 2;
-  return (
-    <div
-      style={{
-        width: size,
-        height: size,
-        position: "relative",
-        transformStyle: "preserve-3d",
-        transform: "rotateX(-30deg) rotateY(45deg)",
-        opacity,
-      }}
-    >
-      <CubeFace size={size} transform={`translateZ(${half}px)`} shade="rgba(255,255,255,0.95)" />
-      <CubeFace size={size} transform={`rotateX(90deg) translateZ(${half}px)`} shade="rgba(255,255,255,0.8)" />
-      <CubeFace size={size} transform={`rotateY(90deg) translateZ(${half}px)`} shade="rgba(230,230,240,0.85)" />
-    </div>
-  );
-};
+const HeartShape: React.FC = () => (
+  <svg viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+    <path
+      d="M 50 86 C 18 64 10 46 10 32 C 10 20 22 12 34 12 C 42 12 48 18 50 24 C 52 18 58 12 66 12 C 78 12 90 20 90 32 C 90 46 82 64 50 86 Z"
+      fill={RB_FILL}
+    />
+  </svg>
+);
 
-type Scene03Proxies = {
-  cube: { opacity: number; rotX: number; rotY: number };
-  cubeFade: { opacity: number };
-  [key: `shard${number}`]: { x: number; y: number; rotation: number; opacity: number };
-};
+const StarShape: React.FC = () => (
+  <svg viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+    <path d="M 50 8 L 61 38 L 93 38 L 67 57 L 77 88 L 50 70 L 23 88 L 33 57 L 7 38 L 39 38 Z" fill={RB_FILL} />
+  </svg>
+);
 
-function buildScene03Proxies(): Scene03Proxies {
-  const base: Record<string, Record<string, number>> = {
-    cube: { opacity: 0, rotX: 0, rotY: 0 },
-    cubeFade: { opacity: 1 },
-  };
-  for (let i = 0; i < 10; i++) {
-    base[`shard${i}`] = { x: 0, y: 0, rotation: 0, opacity: 0 };
-  }
-  return base as unknown as Scene03Proxies;
-}
+const CloudShape: React.FC = () => (
+  <svg viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+    <ellipse cx="30" cy="58" rx="18" ry="15" fill={RB_FILL} />
+    <ellipse cx="50" cy="46" rx="22" ry="18" fill={RB_FILL} />
+    <ellipse cx="70" cy="56" rx="18" ry="15" fill={RB_FILL} />
+    <ellipse cx="50" cy="64" rx="30" ry="11" fill={RB_FILL} />
+  </svg>
+);
+
+const SCENE03_ROWS = [
+  { label: "Stocks", Shape: FlowerShape },
+  { label: "Crypto", Shape: HeartShape },
+  { label: "Predictions", Shape: StarShape },
+  { label: "Memecoins", Shape: CloudShape },
+] as const;
 
 export const Scene03_CubeExplode: React.FC = () => {
-  const s = useGsapProxy<Scene03Proxies>(
-    (tl, p) => {
-      tl.to(p.cube, { opacity: 1, duration: 0.15, ease: "power2.out" }, 0.3);
-      tl.to(p.cube, { rotX: -30, rotY: 45, duration: 0.4, ease: "power2.out" }, 0.8);
-      tl.to(p.cubeFade, { opacity: 0, duration: 0.15, ease: "power2.in" }, 1.4);
+  const frame = useCurrentFrame();
 
-      for (let i = 0; i < 10; i++) {
-        const target = EXPLOSION_TARGETS[i];
-        const shard = p[`shard${i}` as keyof Scene03Proxies] as { x: number; y: number; rotation: number; opacity: number };
-        const offset = 1.5 + i * 0.02;
-        tl.to(shard, { opacity: 1, duration: 0.08 }, offset);
-        tl.to(shard, { x: target.x, y: target.y, rotation: target.rot, duration: 1.0, ease: "power2.out" }, offset);
-        tl.to(shard, { opacity: 0, duration: 0.3, ease: "power2.in" }, offset + 0.8);
-      }
-    },
-    buildScene03Proxies(),
-  );
+  const dropProgress = (i: number) =>
+    interpolate(frame, [i * 4, i * 4 + 12], [0, 1], {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: Easing.out(Easing.cubic),
+    });
 
-  const showBigCube = s.cube.opacity > 0.01 && s.cubeFade.opacity > 0.01;
+  const sweepY = interpolate(frame, [SCENE03_SWEEP_START, SCENE03_DURATION], [-160, 1240], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.bezier(0.45, 0, 0.55, 1),
+  });
+
+  const morph = (i: number) => {
+    const cy = rowCenterY(i);
+    return interpolate(sweepY, [cy - 90, cy + 50], [0, 1], {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    });
+  };
+
+  const sweepActive = frame >= SCENE03_SWEEP_START - 2 && frame <= SCENE03_DURATION + 4;
 
   return (
     <AbsoluteFill>
@@ -582,61 +572,115 @@ export const Scene03_CubeExplode: React.FC = () => {
         <HexGridOverlay color="rgba(255,255,255,0.13)" size={70} />
       </ZoomedBg>
 
-      {showBigCube && (
-        <div
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            perspective: 800,
-            opacity: s.cube.opacity * s.cubeFade.opacity,
-          }}
-        >
+      <svg width="0" height="0" style={{ position: "absolute" }}>
+        <defs>
+          <linearGradient id={RB_GRAD_ID} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#FF3B3B" />
+            <stop offset="20%" stopColor="#FF8A1A" />
+            <stop offset="40%" stopColor="#FFD700" />
+            <stop offset="60%" stopColor="#3FCC3F" />
+            <stop offset="80%" stopColor="#0ABAB5" />
+            <stop offset="100%" stopColor="#9C5FFF" />
+          </linearGradient>
+        </defs>
+      </svg>
+
+      {SCENE03_ROWS.map((row, i) => {
+        const drop = dropProgress(i);
+        const m = morph(i);
+        const cy = rowCenterY(i);
+        const Shape = row.Shape;
+
+        return (
           <div
+            key={i}
             style={{
-              width: CUBE_SIZE,
-              height: CUBE_SIZE,
-              position: "relative",
-              transformStyle: "preserve-3d",
-              transform: `rotateX(${s.cube.rotX}deg) rotateY(${s.cube.rotY}deg)`,
+              position: "absolute",
+              left: "50%",
+              top: cy,
+              width: ROW_W,
+              height: ROW_H,
+              transform: `translate(-50%, calc(-50% + ${(1 - drop) * -28}px))`,
+              opacity: drop,
             }}
           >
-            <CubeFace size={CUBE_SIZE} transform={`translateZ(${CUBE_SIZE / 2}px)`} shade="rgba(255,255,255,0.95)" />
-            <CubeFace size={CUBE_SIZE} transform={`rotateX(90deg) translateZ(${CUBE_SIZE / 2}px)`} shade="rgba(255,255,255,0.8)" />
-            <CubeFace size={CUBE_SIZE} transform={`rotateY(90deg) translateZ(${CUBE_SIZE / 2}px)`} shade="rgba(230,230,240,0.85)" />
-          </div>
-        </div>
-      )}
-
-      <div
-        style={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          perspective: 800,
-        }}
-      >
-        {EXPLOSION_TARGETS.map((_, i) => {
-          const shard = s[`shard${i}` as keyof Scene03Proxies] as { x: number; y: number; rotation: number; opacity: number };
-          if (shard.opacity < 0.01) return null;
-          return (
             <div
-              key={i}
               style={{
                 position: "absolute",
-                left: -SMALL_CUBE / 2,
-                top: -SMALL_CUBE / 2,
-                transform: `translate(${shard.x}px, ${shard.y}px) rotate(${shard.rotation}deg)`,
-                opacity: shard.opacity,
+                inset: 0,
+                backgroundColor: "#fff",
+                borderRadius: 10,
+                boxShadow: "0 10px 32px rgba(0,0,0,0.22)",
+                opacity: 1 - m,
+                transform: `scale(${1 - m * 0.35})`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
               }}
             >
-              <IsoCube size={SMALL_CUBE} />
+              <span
+                style={{
+                  fontFamily,
+                  fontWeight: 700,
+                  fontSize: 58,
+                  letterSpacing: "-0.02em",
+                  color: "#0a3a38",
+                }}
+              >
+                {row.label}
+              </span>
             </div>
-          );
-        })}
-      </div>
+
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: "50%",
+                width: ROW_H,
+                height: ROW_H,
+                transform: `translateX(-50%) scale(${0.55 + m * 0.45})`,
+                opacity: m,
+              }}
+            >
+              <Shape />
+            </div>
+          </div>
+        );
+      })}
+
+      {sweepActive && (
+        <>
+          <div
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              top: 0,
+              height: 220,
+              transform: `translateY(${sweepY - 110}px)`,
+              background:
+                "linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.0) 25%, rgba(255,255,255,0.16) 50%, rgba(255,255,255,0.0) 75%, transparent 100%)",
+              filter: "blur(10px)",
+              pointerEvents: "none",
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              top: 0,
+              height: 5,
+              transform: `translateY(${sweepY}px)`,
+              background:
+                "linear-gradient(90deg, #FF3B3B 0%, #FF8A1A 20%, #FFD700 40%, #3FCC3F 60%, #0ABAB5 80%, #9C5FFF 100%)",
+              boxShadow:
+                "0 0 28px 8px rgba(255,255,255,0.40), 0 0 80px 30px rgba(150,200,255,0.22)",
+              pointerEvents: "none",
+            }}
+          />
+        </>
+      )}
     </AbsoluteFill>
   );
 };
