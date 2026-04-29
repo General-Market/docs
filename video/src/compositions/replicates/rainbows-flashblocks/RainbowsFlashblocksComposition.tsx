@@ -4,22 +4,26 @@ import { Scene01_Hook, Scene02_TryRainbows, Scene03_CubeExplode } from "./Scenes
 import { Scene04_FilterAndPercent, Scene05_Manipulators } from "./ScenesB";
 import {
   Scene06_HonestTraders,
-  Scene10_Finale,
+  Scene10a_GainMore,
+  Scene10b_TradingWith,
+  Scene10c_Endcard,
 } from "./ScenesC";
 import { Sfx } from "./Sfx";
 
 /*
- * Rainbows — script v3 (post-cut: scenes 07, 08, 09 removed; scene 02 trimmed)
- * 1920x1080, 24fps, 648 frames (27s)
+ * Rainbows — script v4 (finale split into three scenes: 10a/10b/10c)
+ * 1920x1080, 24fps, 756 frames (31.5s)
  *
  * Scene timeline (frame ranges):
- *   01  Hook              "You spent 10,000 hours / perfecting your trading strategies"   0–84
- *   02  TryRainbows       "How rainbows improve / your gains?"                            84–132
- *   03  CubeExplode       silent visual beat                                             132–204
- *   04  FilterAndPercent  "Rainbows filters out illegal activities" + "70% of profits"   204–312
- *   05  Manipulators      conveyor: frontrunners / spoofers / insiders / manipulators    312–420
- *   06  HonestTraders     "Leaving the same amount of profits / to fewer honest traders" 420–504
- *   10  Finale            "rainbows" + dark fade                                         504–648
+ *   01   Hook              "You spent 10,000 hours / perfecting…"               0–84
+ *   02   TryRainbows       "How rainbows improve / your gains?"                 84–132
+ *   03   CubeExplode       silent visual beat                                   132–204
+ *   04   FilterAndPercent  "Rainbows filters out illegal activities" + 70%      204–312
+ *   05   Manipulators      conveyor: frontrunners / spoofers / insiders…        312–420
+ *   06   HonestTraders     "Leaving the same amount of profits / to fewer…"     420–504
+ *   10a  GainMore          "gain more" big bold on teal                         504–540
+ *   10b  TradingWith       "while trading the same assets with" + UI homepage   540–612
+ *   10c  Endcard           square wipe to white + General lockup                612–756
  */
 
 export const RainbowsFlashblocksComposition: React.FC = () => {
@@ -43,8 +47,14 @@ export const RainbowsFlashblocksComposition: React.FC = () => {
       <Sequence from={420} durationInFrames={84} name="06 Honest Traders">
         <Scene06_HonestTraders />
       </Sequence>
-      <Sequence from={504} durationInFrames={144} name="10 Finale">
-        <Scene10_Finale />
+      <Sequence from={504} durationInFrames={36} name="10a Gain More">
+        <Scene10a_GainMore />
+      </Sequence>
+      <Sequence from={540} durationInFrames={72} name="10b Trading With">
+        <Scene10b_TradingWith />
+      </Sequence>
+      <Sequence from={612} durationInFrames={144} name="10c Endcard">
+        <Scene10c_Endcard />
       </Sequence>
       <Sfx />
     </AbsoluteFill>
@@ -57,7 +67,7 @@ export const rainbowsFlashblocksMeta = {
   width: 1920,
   height: 1080,
   fps: 24,
-  durationInFrames: 648,
+  durationInFrames: 756,
 };
 
 export { sceneMetasA } from "./ScenesA";
