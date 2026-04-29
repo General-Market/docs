@@ -5,7 +5,7 @@ import { useGsapProxy } from "../standrew/gsapUtils";
 import { DynamicBlue, DynamicLight, ZoomedBg } from "./dynamics";
 
 const { fontFamily } = loadFont("normal", { subsets: ["latin"], weights: ["400", "700", "800"] });
-const BLUE = "#0040FF";
+const BLUE = "#0ABAB5";
 
 const baseText: React.CSSProperties = {
   fontFamily,

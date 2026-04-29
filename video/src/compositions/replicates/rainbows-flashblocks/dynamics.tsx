@@ -42,10 +42,10 @@ export const DynamicBlue: React.FC<{ speed?: number }> = ({ speed = 0.022 }) => 
         background: `
           radial-gradient(ellipse 100% 100% at ${x1}% ${y1}%, rgba(255,255,255,0.78) 0%, transparent 55%),
           radial-gradient(ellipse 90% 90% at ${x2}% ${y2}%, rgba(255,255,255,0.65) 0%, transparent 50%),
-          radial-gradient(ellipse 100% 100% at ${x3}% ${y3}%, rgba(200,220,255,0.4) 0%, transparent 55%),
+          radial-gradient(ellipse 100% 100% at ${x3}% ${y3}%, rgba(200,240,238,0.4) 0%, transparent 55%),
           radial-gradient(ellipse 85% 85% at ${x4}% ${y4}%, rgba(255,255,255,0.55) 0%, transparent 50%),
-          radial-gradient(ellipse 70% 70% at 50% 50%, rgba(120,170,255,0.22) 0%, transparent 65%),
-          linear-gradient(${angle}deg, #0050FF 0%, #1060FF 25%, #3080FF 45%, #1060FF 65%, #0040FF 85%, #0035EE 100%)
+          radial-gradient(ellipse 70% 70% at 50% 50%, rgba(120,235,225,0.22) 0%, transparent 65%),
+          linear-gradient(${angle}deg, #0BC4BE 0%, #1FCFC9 25%, #48E0DA 45%, #1FCFC9 65%, #0ABAB5 85%, #089A95 100%)
         `,
         backgroundPosition: `${drift}px 0, ${-drift}px 0, 0 0, 0 0, 0 0, 0 0`,
       }}
@@ -69,8 +69,8 @@ export const DynamicLight: React.FC<{ speed?: number }> = ({ speed = 0.018 }) =>
       style={{
         background: `
           radial-gradient(ellipse 80% 80% at ${x}% ${y}%, rgba(255,255,255,1) 0%, transparent 70%),
-          radial-gradient(ellipse 60% 60% at ${x2}% ${y2}%, rgba(220,230,255,0.55) 0%, transparent 65%),
-          linear-gradient(${angle}deg, #f0f4ff 0%, #e8eeff 40%, #f5f8ff 60%, #eef2ff 100%)
+          radial-gradient(ellipse 60% 60% at ${x2}% ${y2}%, rgba(220,245,243,0.55) 0%, transparent 65%),
+          linear-gradient(${angle}deg, #eff8f7 0%, #e7f4f3 40%, #f4faf9 60%, #ecf6f5 100%)
         `,
       }}
     />
@@ -89,8 +89,8 @@ export const DynamicSolidBlue: React.FC<{ speed?: number }> = ({ speed = 0.018 }
     <AbsoluteFill
       style={{
         background: `
-          radial-gradient(ellipse 70% 70% at ${x}% ${y}%, rgba(80,140,255,0.35) 0%, transparent 60%),
-          linear-gradient(${angle}deg, #0055FF 0%, #0040FF 40%, #0035EE 70%, #0045FF 100%)
+          radial-gradient(ellipse 70% 70% at ${x}% ${y}%, rgba(80,210,200,0.35) 0%, transparent 60%),
+          linear-gradient(${angle}deg, #0BC0BB 0%, #0ABAB5 40%, #089A95 70%, #0AB0AB 100%)
         `,
       }}
     />
@@ -108,7 +108,7 @@ export const DynamicDark: React.FC<{ speed?: number }> = ({ speed = 0.014 }) => 
     <AbsoluteFill
       style={{
         background: `
-          radial-gradient(ellipse 60% 60% at ${x}% ${y}%, rgba(50,80,160,0.18) 0%, transparent 65%),
+          radial-gradient(ellipse 60% 60% at ${x}% ${y}%, rgba(40,140,135,0.18) 0%, transparent 65%),
           linear-gradient(180deg, #0c0c12 0%, #111118 50%, #0a0a10 100%)
         `,
       }}

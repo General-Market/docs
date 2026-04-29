@@ -1,6 +1,14 @@
 import React from "react";
-import { AbsoluteFill, useCurrentFrame } from "remotion";
+import {
+  AbsoluteFill,
+  useCurrentFrame,
+  useVideoConfig,
+  interpolate,
+  spring,
+  Easing,
+} from "remotion";
 import { loadFont } from "@remotion/google-fonts/Inter";
+import { loadFont as loadDM } from "@remotion/google-fonts/DMSans";
 import { useGsapProxy } from "../standrew/gsapUtils";
 import {
   BrollGridBg,
@@ -16,7 +24,11 @@ import {
 } from "./dynamics";
 
 const { fontFamily } = loadFont("normal", { subsets: ["latin"], weights: ["400", "700", "800"] });
-const BLUE = "#0040FF";
+const { fontFamily: dmSansFamily } = loadDM("normal", {
+  subsets: ["latin"],
+  weights: ["400", "500", "600", "700", "800"],
+});
+const BLUE = "#0ABAB5";
 
 const baseText: React.CSSProperties = {
   fontFamily,
@@ -417,72 +429,278 @@ export const Scene09_BrollCycle: React.FC = () => {
 };
 
 /* ═══════════════════════════════════════════════════════
-   Scene 10 — Finale  (144 frames = 6s)
-   "rainbows" + dark fade
+   Scene 10 — Finale  (144 frames = 6s @ 24fps)
+   "rainbows" briefly held → square wipe to GeneralMarket lockup.
+   Mirrors public.com's end card — square instead of circle, GM
+   logo mark instead of stacked dots, "generalmarket.io" text.
    ═══════════════════════════════════════════════════════ */
 
 const SCENE10_DURATION = 144;
 
+/* Timing (composition frames) */
+const RAINBOWS_HOLD_END = 38;   // start fade
+const RAINBOWS_FADE_END = 46;   // fully faded
+const WIPE_START = 46;
+const WIPE_END = 60;            // 14-frame square wipe
+const ENDCARD_START = WIPE_END;
+
+/* Endcard sizes */
+const LOGO_SIZE = 86;
+const TEXT_SIZE = 124;
+const TAGLINE_SIZE = 30;
+const DOT_SIZE = 42;
+
+const ENDCARD_BG =
+  "radial-gradient(ellipse at center, #FFFFFF 0%, #FAFAFA 55%, #F0F0F0 100%)";
+
+const lockupTextStyle: React.CSSProperties = {
+  fontFamily: `${dmSansFamily}, system-ui, sans-serif`,
+  fontSize: TEXT_SIZE,
+  fontWeight: 700,
+  color: "#000",
+  letterSpacing: -1.2,
+  lineHeight: 1,
+};
+
+const taglineStyle: React.CSSProperties = {
+  fontFamily: `${dmSansFamily}, system-ui, sans-serif`,
+  fontSize: TAGLINE_SIZE,
+  fontWeight: 400,
+  color: "#717171",
+  letterSpacing: 0.2,
+};
+
+/* GM logo mark — black square with seven white horizontal pills.
+ * Inlined from public/gm-logo.svg so no asset lookup is needed. */
+const GMLogoMark: React.FC<{ size: number }> = ({ size }) => (
+  <svg width={size} height={size} viewBox="0 0 102 102" fill="none">
+    <path d="M0 0H102V102H0V0Z" fill="#000" />
+    <path d="M15.2794 49.5703C15.2794 49.1458 15.4181 48.7941 15.6956 48.5155C15.9731 48.2369 16.3233 48.0976 16.7462 48.0976H28.7186C29.1414 48.0976 29.4916 48.2369 29.7691 48.5155C30.0466 48.7941 30.1854 49.1458 30.1854 49.5703V52.5955C30.1854 53.0201 30.0466 53.3717 29.7691 53.6503C29.4916 53.929 29.1414 54.0683 28.7186 54.0683H16.7462C16.3233 54.0683 15.9731 53.929 15.6956 53.6503C15.4181 53.3717 15.2794 53.0201 15.2794 52.5955V49.5703Z" fill="#fff" />
+    <path d="M26.6227 49.5703C26.6227 49.1458 26.7615 48.7941 27.039 48.5155C27.3165 48.2369 27.6667 48.0976 28.0895 48.0976H40.0619C40.4848 48.0976 40.835 48.2369 41.1125 48.5155C41.39 48.7941 41.5288 49.1458 41.5288 49.5703V52.5955C41.5288 53.0201 41.39 53.3717 41.1125 53.6503C40.835 53.929 40.4848 54.0683 40.0619 54.0683H28.0895C27.6667 54.0683 27.3165 53.929 27.039 53.6503C26.7615 53.3717 26.6227 53.0201 26.6227 52.5955V49.5703Z" fill="#fff" />
+    <path d="M37.9661 49.5703C37.9661 49.1458 38.1048 48.7941 38.3824 48.5155C38.6599 48.2369 39.01 48.0976 39.4329 48.0976H51.4053C51.8282 48.0976 52.1784 48.2369 52.4559 48.5155C52.7334 48.7941 52.8721 49.1458 52.8721 49.5703V52.5955C52.8721 53.0201 52.7334 53.3717 52.4559 53.6503C52.1784 53.929 51.8282 54.0683 51.4053 54.0683H39.4329C39.01 54.0683 38.6599 53.929 38.3824 53.6503C38.1048 53.3717 37.9661 53.0201 37.9661 52.5955V49.5703Z" fill="#fff" />
+    <path d="M49.3095 49.5703C49.3095 49.1458 49.4482 48.7941 49.7257 48.5155C50.0032 48.2369 50.3534 48.0976 50.7763 48.0976H62.7487C63.1716 48.0976 63.5217 48.2369 63.7992 48.5155C64.0768 48.7941 64.2155 49.1458 64.2155 49.5703V52.5955C64.2155 53.0201 64.0768 53.3717 63.7992 53.6503C63.5217 53.929 63.1716 54.0683 62.7487 54.0683H50.7763C50.3534 54.0683 50.0032 53.929 49.7257 53.6503C49.4482 53.3717 49.3095 53.0201 49.3095 52.5955V49.5703Z" fill="#fff" />
+    <path d="M60.6528 49.5902C60.6528 49.1657 60.7916 48.814 61.0691 48.5354C61.3466 48.2568 61.6968 48.1175 62.1197 48.1175H68.423C68.8459 48.1175 69.1961 48.2568 69.4736 48.5354C69.7511 48.814 69.8898 49.1657 69.8898 49.5902V52.5955C69.8898 53.0201 69.7511 53.3717 69.4736 53.6503C69.1961 53.929 68.8459 54.0683 68.423 54.0683H62.1197C61.6968 54.0683 61.3466 53.929 61.0691 53.6503C60.7916 53.3717 60.6528 53.0201 60.6528 52.5955V49.5902Z" fill="#fff" />
+    <path d="M66.3245 49.5703C66.3245 49.1458 66.4633 48.7941 66.7408 48.5155C67.0183 48.2369 67.3685 48.0976 67.7913 48.0976H79.7637C80.1866 48.0976 80.5368 48.2369 80.8143 48.5155C81.0918 48.7941 81.2306 49.1458 81.2306 49.5703V52.5955C81.2306 53.0201 81.0918 53.3717 80.8143 53.6503C80.5368 53.929 80.1866 54.0683 79.7637 54.0683H67.7913C67.3685 54.0683 67.0183 53.929 66.7408 53.6503C66.4633 53.3717 66.3245 53.0201 66.3245 52.5955V49.5703Z" fill="#fff" />
+    <path d="M77.6679 49.5902C77.6679 49.1657 77.8066 48.814 78.0841 48.5354C78.3617 48.2568 78.7118 48.1175 79.1347 48.1175H85.4381C85.8609 48.1175 86.2111 48.2568 86.4886 48.5354C86.7661 48.814 86.9049 49.1657 86.9049 49.5902V52.5955C86.9049 53.0201 86.7661 53.3717 86.4886 53.6503C86.2111 53.929 85.8609 54.0683 85.4381 54.0683H79.1347C78.7118 54.0683 78.3617 53.929 78.0841 53.6503C77.8066 53.3717 77.6679 53.0201 77.6679 52.5955V49.5902Z" fill="#fff" />
+  </svg>
+);
+
 export const Scene10_Finale: React.FC = () => {
-  const s = useGsapProxy(
-    (tl, p) => {
-      tl.to(p.title, { opacity: 1, y: 0, duration: 0.35, ease: "power2.out" }, 0.0);
-      tl.to(p.darkOverlay, { opacity: 0.85, duration: 1.8, ease: "power1.in" }, 3.0);
-      tl.to(p.textFade, { opacity: 0.4, duration: 1.8, ease: "power1.in" }, 3.0);
-    },
-    {
-      title: { opacity: 0, y: 10 },
-      darkOverlay: { opacity: 0 },
-      textFade: { opacity: 1 },
-    },
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+
+  /* ── "rainbows" preroll: spring in, hold, fast fade ── */
+  const rainbowsIn = spring({
+    frame,
+    fps,
+    config: { damping: 14, stiffness: 180, mass: 0.6 },
+  });
+  const rainbowsOut = interpolate(
+    frame,
+    [RAINBOWS_HOLD_END, RAINBOWS_FADE_END],
+    [1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
+  const rainbowsY = interpolate(rainbowsIn, [0, 1], [12, 0]);
+  const rainbowsOpacity = rainbowsIn * rainbowsOut;
+
+  /* ── Square wipe: clip the blue layer from full-screen down to a point.
+   *    `inset(50% from each side)` → zero visible area. ── */
+  const wipePct = interpolate(frame, [WIPE_START, WIPE_END], [0, 50], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.bezier(0.65, 0, 0.25, 1),
+  });
+
+  /* ── Endcard local frame ── */
+  const ec = Math.max(0, frame - ENDCARD_START);
+
+  /* Phase 1 — bouncing square dot below "generalmarket" */
+  const dotSpring = spring({
+    frame: ec,
+    fps,
+    config: { damping: 8, mass: 0.3, stiffness: 280 },
+  });
+
+  /* Phase 2 — dot fades + drifts toward logo position; logo mark fades in */
+  const transition = interpolate(ec, [6, 13], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.bezier(0.22, 0.1, 0.25, 1),
+  });
+  const singleDotOpacity = interpolate(transition, [0, 0.4], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const singleDotY = interpolate(transition, [0, 0.55], [0, -34], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.out(Easing.cubic),
+  });
+  const singleDotX = interpolate(transition, [0, 0.55], [0, -60], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.out(Easing.cubic),
+  });
+  const logoMarkOpacity = interpolate(transition, [0.18, 0.55], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const logoMarkScale = spring({
+    frame: Math.max(0, ec - 6),
+    fps,
+    config: { damping: 10, mass: 0.3, stiffness: 180 },
+  });
+
+  /* Phase 3 — ".io" slides + fades in */
+  const ioOpacity = interpolate(ec, [22, 30], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.out(Easing.cubic),
+  });
+  const ioSlideX = interpolate(ec, [22, 30], [12, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.out(Easing.cubic),
+  });
+
+  /* Phase 4 — tagline */
+  const taglineSpring = spring({
+    frame: Math.max(0, ec - 26),
+    fps,
+    config: { damping: 12, mass: 0.3, stiffness: 140 },
+  });
+  const taglineProgress = ec < 26 ? 0 : taglineSpring;
+  const taglineY = interpolate(taglineProgress, [0, 1], [10, 0]);
+
+  /* Lockup nudges up slightly as ".io" + tagline arrive, to keep the
+   * optical center balanced. */
+  const contentShiftY = interpolate(ec, [22, 34], [0, -10], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
 
   return (
     <AbsoluteFill>
-      <ZoomedBg duration={SCENE10_DURATION}>
-        <DynamicBlue />
-      </ZoomedBg>
-
-      <div
-        style={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          textAlign: "center",
-          zIndex: 2,
-          opacity: s.textFade.opacity,
-        }}
-      >
-        <span
+      {/* GM endcard layer — sits underneath; revealed by square wipe */}
+      <AbsoluteFill style={{ background: ENDCARD_BG }}>
+        <div
           style={{
-            fontFamily,
-            fontSize: 240,
-            fontWeight: 800,
-            fontStyle: "italic",
-            color: "#fff",
-            display: "block",
-            lineHeight: 1.15,
-            opacity: s.title.opacity,
-            transform: `translateY(${s.title.y}px)`,
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: `translate(-50%, calc(-50% + ${contentShiftY}px))`,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
           }}
         >
-          rainbows
-        </span>
-      </div>
+          {/* Logo lockup row: [mark] generalmarket[.io] */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              position: "relative",
+              minHeight: 120,
+            }}
+          >
+            {/* GM logo mark — appears on the LEFT of the wordmark */}
+            <div
+              style={{
+                marginRight: 22,
+                opacity: logoMarkOpacity,
+                transform: `scale(${logoMarkScale})`,
+                display: "flex",
+                alignItems: "center",
+              }}
+            >
+              <GMLogoMark size={LOGO_SIZE} />
+            </div>
 
-      <div
+            {/* Wordmark — "generalmarket" + ".io" */}
+            <div style={{ display: "flex", alignItems: "baseline" }}>
+              <span style={lockupTextStyle}>generalmarket</span>
+              <span
+                style={{
+                  ...lockupTextStyle,
+                  opacity: ioOpacity,
+                  transform: `translateX(${ioSlideX}px)`,
+                  display: "inline-block",
+                }}
+              >
+                .io
+              </span>
+            </div>
+
+            {/* Bouncing square dot — sits below "generalmarket", drifts
+             * up-left as it fades, the way the public.com circle does. */}
+            <div
+              style={{
+                position: "absolute",
+                left: "42%",
+                bottom: -10,
+                transform: `translate(-50%, ${24 + singleDotY}px) translateX(${singleDotX}px) scale(${dotSpring})`,
+                opacity: singleDotOpacity,
+                pointerEvents: "none",
+              }}
+            >
+              <div
+                style={{
+                  width: DOT_SIZE,
+                  height: DOT_SIZE,
+                  backgroundColor: "#000",
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Tagline */}
+          <div
+            style={{
+              marginTop: 28,
+              opacity: taglineProgress,
+              transform: `translateY(${taglineY}px)`,
+            }}
+          >
+            <span style={taglineStyle}>Markets for everything.</span>
+          </div>
+        </div>
+      </AbsoluteFill>
+
+      {/* Blue overlay carrying "rainbows" — gets eaten by the square wipe */}
+      <AbsoluteFill
         style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: `rgba(0, 10, 30, ${s.darkOverlay.opacity})`,
-          zIndex: 1,
-          pointerEvents: "none",
+          backgroundColor: BLUE,
+          clipPath: `inset(${wipePct}% ${wipePct}% ${wipePct}% ${wipePct}%)`,
+          WebkitClipPath: `inset(${wipePct}% ${wipePct}% ${wipePct}% ${wipePct}%)`,
         }}
-      />
+      >
+        <div
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: `translate(-50%, calc(-50% + ${rainbowsY}px))`,
+            opacity: rainbowsOpacity,
+            textAlign: "center",
+          }}
+        >
+          <span
+            style={{
+              fontFamily,
+              fontSize: 240,
+              fontWeight: 800,
+              fontStyle: "italic",
+              color: "#fff",
+              display: "block",
+              lineHeight: 1.15,
+            }}
+          >
+            rainbows
+          </span>
+        </div>
+      </AbsoluteFill>
     </AbsoluteFill>
   );
 };
