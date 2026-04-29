@@ -69,7 +69,8 @@
     "shares": "Shares",
     "vs_limit": "vs Limit",
     "underlying_title": "Underlying assets acquired",
-    "underlying_note": "Quantities are exact (on-chain inventory × shares minted). Prices reflect the current oracle quote."
+    "underlying_note": "Quantities are exact (on-chain inventory × shares minted). Prices reflect the current oracle quote.",
+    "underlying_note_approx": "Approximate breakdown — this ITP has no on-chain inventory yet, so quantities are derived from weights at current prices."
   },
   "toast": {
     "buy_filled_shares": "Buy filled \u2014 {shares} {name} shares received",

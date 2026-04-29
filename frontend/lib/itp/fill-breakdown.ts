@@ -18,6 +18,7 @@ export type FillBreakdownRow = {
   price: number | null     // null when unknown
   usd: number | null       // null when price unknown
   weight: number
+  isApprox: boolean        // true when row falls back to weight-based math (legacy ITP, no inventory)
 }
 
 export type FillBreakdownArgs = {
@@ -38,13 +39,27 @@ export function computeFillBreakdown(args: FillBreakdownArgs): FillBreakdownRow[
   const invByAddr = new Map<string, bigint>()
   for (const inv of inventory) invByAddr.set(inv.address.toLowerCase(), inv.qtyPerShare)
 
+  const fillAmountFloat = Number(fillAmount) / 1e18
+
   const rows: FillBreakdownRow[] = []
   for (const h of holdings) {
-    const qtyPerShareBn = invByAddr.get(h.address.toLowerCase())
-    if (qtyPerShareBn === undefined) continue
-
-    const qtyAcquired = Number(qtyPerShareBn * sharesBn) / 1e36
+    const qtyPerShareBn = h.address ? invByAddr.get(h.address.toLowerCase()) : undefined
     const price = h.price > 0 ? h.price : null
+
+    let qtyAcquired: number
+    let isApprox: boolean
+    if (qtyPerShareBn !== undefined) {
+      qtyAcquired = Number(qtyPerShareBn * sharesBn) / 1e36
+      isApprox = false
+    } else {
+      // Legacy ITP fallback: weight × fillAmount / price. Approximation —
+      // diverges from the real basket if asset prices have moved since fill,
+      // but it keeps the UI honest about *what was bought* until the chain
+      // grows an inventory entry for this ITP.
+      qtyAcquired = price !== null ? (fillAmountFloat * h.weight) / price : 0
+      isApprox = true
+    }
+
     const usd = price === null ? null : qtyAcquired * price
 
     rows.push({
@@ -54,6 +69,7 @@ export function computeFillBreakdown(args: FillBreakdownArgs): FillBreakdownRow[
       price,
       usd,
       weight: h.weight,
+      isApprox,
     })
   }
   return rows

@@ -52,7 +52,10 @@
     "fill_price": "成交价格",
     "shares_sold": "已售份额",
     "usdc_proceeds": "USDC 收入",
-    "pnl_vs_cost": "盈亏 (对比成本)"
+    "pnl_vs_cost": "盈亏 (对比成本)",
+    "underlying_title": "Underlying assets released",
+    "underlying_note": "Quantities are exact (on-chain inventory × shares burned). Prices reflect the current oracle quote.",
+    "underlying_note_approx": "Approximate breakdown — this ITP has no on-chain inventory yet, so quantities are derived from weights at current prices."
   },
   "toast": {
     "sell_filled": "卖出已成交 -- 收到 {proceeds}"

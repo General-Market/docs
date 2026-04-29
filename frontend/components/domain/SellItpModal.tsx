@@ -14,6 +14,8 @@ import { getTxUrl } from '@/lib/utils/explorer'
 import { useUserState } from '@/hooks/useUserState'
 import { useItpCostBasis } from '@/hooks/useItpCostBasis'
 import { useItpNav } from '@/hooks/useItpNav'
+import { useItpInventory } from '@/hooks/useItpInventory'
+import { computeFillBreakdown } from '@/lib/itp/fill-breakdown'
 import { useSSEOrders, type UserOrder } from '@/hooks/useSSE'
 import { useNonceCheck } from '@/hooks/useNonceCheck'
 import { useToast } from '@/lib/contexts/ToastContext'
@@ -95,7 +97,7 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
   const [txError, setTxError] = useState<string | null>(null)
   const [fillPrice, setFillPrice] = useState<bigint | null>(null)
   const [fillAmount, setFillAmount] = useState<bigint | null>(null)
-  type Holding = { symbol: string; weight: number; price: number; name?: string; image?: string }
+  type Holding = { symbol: string; address: string; weight: number; price: number; name?: string; image?: string }
   const [holdings, setHoldings] = useState<Holding[]>([])
   const [skippedApproval, setSkippedApproval] = useState(false)
   const [processStalled, setProcessStalled] = useState(false)
@@ -161,6 +163,21 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
 
   const { costBasis } = useItpCostBasis(itpId, address ?? null)
   const { navPerShare, navPerShareBn, totalAssetCount, pricedAssetCount, isLoading: isNavLoading } = useItpNav(itpId)
+  const { inventory } = useItpInventory(itpId)
+
+  // Fetch underlying holdings on fill so the modal can show what was released.
+  useEffect(() => {
+    if (!fillAmount || holdings.length > 0) return
+    let cancelled = false
+    fetch(`/api/itp-enrichment?itp_id=${itpId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (cancelled || !d?.holdings) return
+        setHoldings(d.holdings as Holding[])
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [fillAmount, holdings.length, itpId])
 
   const navPriceSet = useRef(false)
   useEffect(() => {
@@ -581,37 +598,61 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
             )
           })()}
         </div>
-        {holdings.length > 0 && (
-          <div className="pt-3 border-t border-black/5">
-            <p className="text-[11px] uppercase tracking-wide text-text-muted mb-2">Underlying assets</p>
-            <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
-              {holdings.map(h => {
-                const proceedsUsd = parseFloat(formatUnits(proceeds, COLLATERAL_DECIMALS))
-                const assetUsd = proceedsUsd * (h.weight || 0)
-                const units = h.price > 0 ? assetUsd / h.price : 0
-                return (
-                  <div key={h.symbol} className="flex items-center justify-between text-xs">
+        {holdings.length > 0 && fillPrice && fillAmount && (() => {
+          // Sell-side fillAmount is shares burned (18-dec). The breakdown helper
+          // expects fillAmount in USDC, so synthesize proceeds: shares × price.
+          // This makes the helper reconstruct the original shares burned and
+          // compute exact qty released per asset (or fall back to weight math).
+          const proceedsAsFillAmount = (fillAmount * fillPrice) / BigInt(1e18)
+          const rows = computeFillBreakdown({
+            fillAmount: proceedsAsFillAmount,
+            fillPrice,
+            holdings: holdings.map(h => ({
+              symbol: h.symbol,
+              address: h.address,
+              price: h.price,
+              weight: h.weight,
+              image: h.image,
+            })),
+            inventory,
+          })
+          if (rows.length === 0) return null
+          const anyApprox = rows.some(r => r.isApprox)
+          return (
+            <div className="pt-3 border-t border-black/5">
+              <p className="text-[11px] uppercase tracking-wide text-text-muted mb-2">
+                {t('fill_details.underlying_title')}
+              </p>
+              <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                {rows.map(r => (
+                  <div key={r.symbol} className="flex items-center justify-between text-xs">
                     <div className="flex items-center gap-2 min-w-0">
-                      {h.image && (
-                        <img src={h.image} alt="" className="w-4 h-4 rounded-full flex-shrink-0" />
-                      )}
-                      <span className="font-mono text-text-primary truncate">{h.symbol}</span>
-                      <span className="text-text-muted tabular-nums">{(h.weight * 100).toFixed(1)}%</span>
+                      {r.image && <img src={r.image} alt="" className="w-4 h-4 rounded-full flex-shrink-0" />}
+                      <span className="font-mono text-text-primary truncate">{r.symbol}</span>
+                      <span className="text-text-muted tabular-nums">{(r.weight * 100).toFixed(1)}%</span>
                     </div>
                     <div className="flex items-center gap-3 font-mono tabular-nums">
                       <span className="text-text-muted">
-                        {h.price > 0 ? `$${h.price < 1 ? h.price.toFixed(4) : h.price.toFixed(2)}` : '—'}
+                        {r.price !== null
+                          ? `$${r.price < 1 ? r.price.toFixed(4) : r.price.toFixed(2)}`
+                          : '—'}
                       </span>
                       <span className="text-text-primary">
-                        {h.price > 0 ? `${units < 1 ? units.toFixed(4) : units.toFixed(2)}` : '—'}
+                        {r.qtyAcquired < 1 ? r.qtyAcquired.toFixed(6) : r.qtyAcquired.toFixed(4)}
+                      </span>
+                      <span className="text-text-muted w-16 text-right">
+                        {r.usd !== null ? `$${r.usd.toFixed(2)}` : '—'}
                       </span>
                     </div>
                   </div>
-                )
-              })}
+                ))}
+              </div>
+              <p className="text-[10px] text-text-muted mt-2">
+                {t(anyApprox ? 'fill_details.underlying_note_approx' : 'fill_details.underlying_note')}
+              </p>
             </div>
-          </div>
-        )}
+          )
+        })()}
       </div>
     )
   }

@@ -753,6 +753,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
             inventory,
           })
           if (rows.length === 0) return null
+          const anyApprox = rows.some(r => r.isApprox)
           return (
             <div className="pt-3 border-t border-black/5">
               <p className="text-[11px] uppercase tracking-wide text-text-muted mb-2">
@@ -783,7 +784,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
                 ))}
               </div>
               <p className="text-[10px] text-text-muted mt-2">
-                {t('fill_details.underlying_note')}
+                {t(anyApprox ? 'fill_details.underlying_note_approx' : 'fill_details.underlying_note')}
               </p>
             </div>
           )

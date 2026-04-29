@@ -52,7 +52,10 @@
     "fill_price": "約定価格",
     "shares_sold": "売却シェア数",
     "usdc_proceeds": "USDC受取額",
-    "pnl_vs_cost": "損益（取得単価比）"
+    "pnl_vs_cost": "損益（取得単価比）",
+    "underlying_title": "Underlying assets released",
+    "underlying_note": "Quantities are exact (on-chain inventory × shares burned). Prices reflect the current oracle quote.",
+    "underlying_note_approx": "Approximate breakdown — this ITP has no on-chain inventory yet, so quantities are derived from weights at current prices."
   },
   "toast": {
     "sell_filled": "売却約定 — {proceeds}を受け取りました"

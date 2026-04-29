@@ -52,7 +52,10 @@
     "fill_price": "Fill Price",
     "shares_sold": "Shares Sold",
     "usdc_proceeds": "USDC Proceeds",
-    "pnl_vs_cost": "P&L vs Cost"
+    "pnl_vs_cost": "P&L vs Cost",
+    "underlying_title": "Underlying assets released",
+    "underlying_note": "Quantities are exact (on-chain inventory × shares burned). Prices reflect the current oracle quote.",
+    "underlying_note_approx": "Approximate breakdown — this ITP has no on-chain inventory yet, so quantities are derived from weights at current prices."
   },
   "toast": {
     "sell_filled": "Sell filled \u2014 {proceeds} received"
