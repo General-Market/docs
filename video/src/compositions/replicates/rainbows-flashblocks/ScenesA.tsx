@@ -488,14 +488,16 @@ export const Scene02_TryRainbows: React.FC = () => {
    Three beats:
      1 (0–22)   — four white rectangles drop in, stacked, labeled
                   Stocks / Crypto / Predictions / Memecoins.
-     2 (22–40)  — a rainbow text border ("RAINBOWS · RAINBOWS · …")
+     2 (22–40)  — a white "RAINBOWS · RAINBOWS · …" text border
                   scrolls around the stack on a rounded-rect path —
                   Rainbows, the box on the boxes.
      3 (40–66)  — all four rectangles morph simultaneously: the box
                   silhouette shrinks into a compact organic shape
                   (heart / flower / star / cloud), and the label
                   ("Stocks", "Crypto", …) stays inside, scaling down
-                  to fit. The text border keeps spinning.
+                  to fit. Text border keeps spinning.
+   Easing follows the original cube scene's GSAP feel — power2.out /
+   back.out — so the boxes settle rather than snap.
    ═══════════════════════════════════════════════════════ */
 
 const SCENE03_DURATION = 72;
@@ -503,8 +505,6 @@ const SCENE03_WRAP_START = 22;
 const SCENE03_WRAP_END = 40;
 const SCENE03_MORPH_START = 40;
 const SCENE03_MORPH_END = 66;
-const RB_GRAD_ID = "rb-scene03-grad";
-const RB_FILL = `url(#${RB_GRAD_ID})`;
 
 const ROW_W = 560;
 const ROW_H = 128;
@@ -598,24 +598,47 @@ export const Scene03_CubeExplode: React.FC = () => {
       easing: Easing.out(Easing.cubic),
     });
 
-  /* Beat 2 — rainbow rectangle draws itself around the stack */
+  /* Beat 2 — text border fades in (power2.out feel) */
   const wrapDraw = interpolate(frame, [SCENE03_WRAP_START, SCENE03_WRAP_END], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
-    easing: Easing.bezier(0.6, 0, 0.4, 1),
+    easing: Easing.out(Easing.cubic),
   });
 
-  /* Beat 3 — all four boxes morph simultaneously */
+  /* Beat 3 — single morph progress with smooth ease-in-out (power2.inOut) */
   const morph = interpolate(frame, [SCENE03_MORPH_START, SCENE03_MORPH_END], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
-    easing: Easing.bezier(0.6, 0, 0.4, 1),
+    easing: Easing.bezier(0.45, 0, 0.55, 1),
   });
 
-  /* Continuous text scroll along the wrapper path. Negative startOffset
-   * shifts the text earlier on the path, so the visible characters
-   * appear to roll clockwise around the rectangle. */
-  const textScroll = (frame - SCENE03_WRAP_START) * 6;
+  /* Shape scale uses an overshoot curve (back.out) so the new
+   * silhouettes land with a small bounce — same character as the
+   * cube's "back.out(1.6)" assemble. */
+  const shapeScaleProgress = interpolate(
+    frame,
+    [SCENE03_MORPH_START + 2, SCENE03_MORPH_END + 4],
+    [0, 1],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: Easing.bezier(0.34, 1.56, 0.64, 1),
+    },
+  );
+
+  /* Continuous text scroll along the wrapper path. Speed eases up after
+   * the border first appears so the entrance feels like an arrival, not
+   * a constant marquee. */
+  const textScroll = interpolate(
+    frame,
+    [SCENE03_WRAP_START, SCENE03_WRAP_START + 14, SCENE03_DURATION],
+    [0, 90, 90 + (SCENE03_DURATION - SCENE03_WRAP_START - 14) * 5],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "extend",
+      easing: Easing.out(Easing.cubic),
+    },
+  );
 
   return (
     <AbsoluteFill>
@@ -623,19 +646,6 @@ export const Scene03_CubeExplode: React.FC = () => {
         <DynamicSolidBlue />
         <HexGridOverlay color="rgba(255,255,255,0.13)" size={70} />
       </ZoomedBg>
-
-      <svg width="0" height="0" style={{ position: "absolute" }}>
-        <defs>
-          <linearGradient id={RB_GRAD_ID} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#FF3B3B" />
-            <stop offset="20%" stopColor="#FF8A1A" />
-            <stop offset="40%" stopColor="#FFD700" />
-            <stop offset="60%" stopColor="#3FCC3F" />
-            <stop offset="80%" stopColor="#0ABAB5" />
-            <stop offset="100%" stopColor="#9C5FFF" />
-          </linearGradient>
-        </defs>
-      </svg>
 
       {SCENE03_ROWS.map((row, i) => {
         const drop = dropProgress(i);
@@ -668,7 +678,7 @@ export const Scene03_CubeExplode: React.FC = () => {
               }}
             />
 
-            {/* White shape — fades + scales in to replace the rectangle */}
+            {/* White shape — fades + scales in (overshoots, then settles) */}
             <div
               style={{
                 position: "absolute",
@@ -676,7 +686,7 @@ export const Scene03_CubeExplode: React.FC = () => {
                 left: "50%",
                 width: ROW_H,
                 height: ROW_H,
-                transform: `translateX(-50%) scale(${0.55 + morph * 0.55})`,
+                transform: `translateX(-50%) scale(${0.4 + shapeScaleProgress * 0.65})`,
                 opacity: morph,
                 filter: "drop-shadow(0 8px 24px rgba(0,0,0,0.22))",
               }}
@@ -733,7 +743,7 @@ export const Scene03_CubeExplode: React.FC = () => {
           fontSize={TEXT_BORDER_FONT_SIZE}
           fontWeight={800}
           fontStyle="italic"
-          fill={RB_FILL}
+          fill="#fff"
           letterSpacing={2}
           style={{ fontFamily }}
         >
