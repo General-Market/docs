@@ -183,6 +183,28 @@ def build(args: argparse.Namespace) -> None:
     chain_batches = fetch_batches(oracle_urls)
     log.info("  %d active batches in oracle directory", len(chain_batches))
 
+    # Optional fallback: a JSON file mapping batch_id -> {config_hash, source_id,
+    # tick_duration}. Useful when the oracle's live /vision/batches has dropped
+    # settled batches but we still want to visualize them.
+    if args.batches_meta and os.path.exists(args.batches_meta):
+        try:
+            with open(args.batches_meta) as f:
+                meta_doc = json.load(f)
+            merged = 0
+            for k, v in meta_doc.items():
+                bid = int(k)
+                if bid not in chain_batches and isinstance(v, dict):
+                    chain_batches[bid] = {
+                        "config_hash": v.get("config_hash", ""),
+                        "source_id": v.get("source_id", ""),
+                        "tick_duration": v.get("tick_duration"),
+                        "market_count": v.get("market_count", 0),
+                    }
+                    merged += 1
+            log.info("  merged %d batches from %s", merged, args.batches_meta)
+        except Exception as e:
+            log.warning("Failed to read batches-meta %s: %s", args.batches_meta, e)
+
     # Cap batches to avoid pulling thousands of histories on a noisy bot.
     batch_ids = sorted({int(p["batch_id"]) for p in positions if "batch_id" in p})
     if args.max_batches and len(batch_ids) > args.max_batches:
@@ -360,6 +382,8 @@ def main() -> None:
     ap.add_argument("--player", help="Player address — fetches final balance per batch")
     ap.add_argument("--max-batches", type=int, default=500,
                     help="Hard cap on batches resolved (default: 500)")
+    ap.add_argument("--batches-meta", help="JSON file: {batch_id: {config_hash, source_id, tick_duration}}. "
+                    "Used as fallback when oracle dropped settled batches.")
     args = ap.parse_args()
     build(args)
 
