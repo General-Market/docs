@@ -266,12 +266,9 @@
 
     <div class="chart-section">
       <div class="overlay-bar" id="overlayBar">
-        <span>overlay strategy:</span>
+        <span>overlay:</span>
         <span class="chip on" data-strat="ai">AI</span>
         <span class="chip" data-strat="actual">bot's actual</span>
-        <span class="chip" data-strat="momentum">momentum</span>
-        <span class="chip" data-strat="contrarian">contrarian</span>
-        <span class="chip" data-strat="mean_reversion">mean-revert</span>
         <span class="chip" data-strat="none">none</span>
       </div>
       <div class="canvas-host" id="priceHost">
@@ -287,7 +284,7 @@
 
     <div class="pnl-section">
       <div class="header">
-        <h3>Simulated PnL — strategies vs the bot</h3>
+        <h3>AI backtest</h3>
         <div class="legend" id="pnlLegend"></div>
         <div class="totals" id="pnlTotals"></div>
       </div>
@@ -335,21 +332,10 @@
   }
 
   const STRATS = [
-    { key: "ai",             label: "AI ensemble", color: "#f7a35c", on: true,
+    { key: "ai",     label: "AI",           color: "#f7a35c", on: true,
       decide: (i, prices) => aiDecide(i, prices) },
-    { key: "actual",         label: "bot's actual", color: "#e7eaef", on: true,
+    { key: "actual", label: "bot's actual", color: "#e7eaef", on: true,
       decide: (i, prices, ctx) => ctx.actualBet(prices[i].ts) },
-    { key: "momentum",       label: "momentum (10)", color: "#74e0a3", on: true,
-      decide: (i, prices) => i >= 10 ? (prices[i].price > prices[i-10].price ? "UP" : "DOWN") : null },
-    { key: "contrarian",     label: "contrarian (10)", color: "#f87171", on: true,
-      decide: (i, prices) => i >= 10 ? (prices[i].price > prices[i-10].price ? "DOWN" : "UP") : null },
-    { key: "mean_reversion", label: "mean-revert (30)", color: "#b19cd9", on: true,
-      decide: (i, prices) => {
-        if (i < 30) return null;
-        let s = 0; for (let k = i-29; k <= i; k++) s += prices[k].price;
-        const ma = s / 30;
-        return prices[i].price > ma * 1.005 ? "DOWN" : prices[i].price < ma * 0.995 ? "UP" : null;
-      } },
   ];
 
   const state = {
@@ -600,6 +586,42 @@
     return { up, down, label: strat.label };
   }
 
+  // Custom plugin: draws a tip-anchored arrow per point so the apex sits
+  // exactly on the price line instead of a triangle centered on the point.
+  const arrowPlugin = {
+    id: "arrowMarkers",
+    afterDatasetsDraw(chart) {
+      const ctx = chart.ctx;
+      chart.data.datasets.forEach((ds, di) => {
+        if (!ds._arrow) return;
+        const meta = chart.getDatasetMeta(di);
+        if (meta.hidden) return;
+        const { dir, size = 8, fill, stroke = fill } = ds._arrow;
+        ctx.save();
+        ctx.fillStyle = fill; ctx.strokeStyle = stroke; ctx.lineWidth = 1;
+        const w = size, h = size * 1.6;
+        meta.data.forEach((pt) => {
+          if (!pt) return;
+          const x = pt.x, y = pt.y;
+          ctx.beginPath();
+          if (dir === "UP") {
+            // tip at (x,y); base below the price line
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - w, y + h);
+            ctx.lineTo(x + w, y + h);
+          } else {
+            // tip at (x,y); base above
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - w, y - h);
+            ctx.lineTo(x + w, y - h);
+          }
+          ctx.closePath(); ctx.fill();
+        });
+        ctx.restore();
+      });
+    },
+  };
+
   // ── Price chart with bet markers ─────────────────────────────
   function drawPriceChart(canvas, series, trades) {
     const points = series.map(p => ({ x: p.ts * 1000, y: p.price }));
@@ -617,37 +639,41 @@
         borderColor: "#a8b3c2", backgroundColor: "rgba(168,179,194,0.06)",
         borderWidth: 1.5, fill: true, tension: 0.15, pointRadius: 0 },
       { label: "UP bets", type: "scatter", data: upMarkers,
-        borderColor: "#74e0a3", backgroundColor: "#74e0a3",
-        pointRadius: 8, pointHoverRadius: 11, pointStyle: "triangle", showLine: false },
+        showLine: false, pointRadius: 0, pointHitRadius: 12,
+        _arrow: { dir: "UP", size: 9, fill: "#74e0a3" } },
       { label: "DOWN bets", type: "scatter", data: downMarkers,
-        borderColor: "#f87171", backgroundColor: "#f87171",
-        pointRadius: 8, pointHoverRadius: 11, pointStyle: "triangle", rotation: 180, showLine: false },
+        showLine: false, pointRadius: 0, pointHitRadius: 12,
+        _arrow: { dir: "DOWN", size: 9, fill: "#f87171" } },
     ];
     if (overlay.up.length) {
       datasets.push({
         label: `${overlay.label} UP`, type: "scatter", data: overlay.up,
-        borderColor: "rgba(116,224,163,0.55)", backgroundColor: "rgba(116,224,163,0.45)",
-        pointRadius: 4, pointHoverRadius: 7, pointStyle: "triangle", showLine: false,
+        showLine: false, pointRadius: 0, pointHitRadius: 8,
+        _arrow: { dir: "UP", size: 5, fill: "rgba(116,224,163,0.65)" },
       });
     }
     if (overlay.down.length) {
       datasets.push({
         label: `${overlay.label} DOWN`, type: "scatter", data: overlay.down,
-        borderColor: "rgba(248,113,113,0.55)", backgroundColor: "rgba(248,113,113,0.45)",
-        pointRadius: 4, pointHoverRadius: 7, pointStyle: "triangle", rotation: 180, showLine: false,
+        showLine: false, pointRadius: 0, pointHitRadius: 8,
+        _arrow: { dir: "DOWN", size: 5, fill: "rgba(248,113,113,0.65)" },
       });
     }
 
     if (state.priceChart) state.priceChart.destroy();
     state.priceChart = new Chart(canvas.getContext("2d"), {
       type: "line",
+      plugins: [arrowPlugin],
       data: { datasets },
       options: {
         responsive: true, maintainAspectRatio: false, animation: false,
         parsing: false, normalized: true,
         interaction: { mode: "nearest", intersect: false },
         plugins: {
-          legend: { labels: { color: "#8b929d", boxWidth: 12, boxHeight: 12 } },
+          legend: {
+            labels: { color: "#8b929d", boxWidth: 12, boxHeight: 12,
+              filter: (item) => !/UP|DOWN/.test(item.text) },
+          },
           tooltip: {
             backgroundColor: "#15181d", borderColor: "#20242b", borderWidth: 1,
             titleColor: "#e7eaef", bodyColor: "#e7eaef",
