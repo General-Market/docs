@@ -25,8 +25,8 @@ const baseText: React.CSSProperties = {
    "Is simpler than trading market like this."
    ═══════════════════════════════════════════════════════ */
 
-const SCENE01_A = ["Trade", "market", "like", "this."] as const;
-const SCENE01_B = ["Is", "simpler", "than", "trading", "market", "like", "this."] as const;
+const SCENE01_A = ["Trade", "market", "like", "this"] as const;
+const SCENE01_B = ["Is", "simpler", "than", "trading", "market", "like", "this"] as const;
 
 function buildScene01Proxies() {
   const init: Record<string, Record<string, number>> = {
@@ -118,28 +118,38 @@ export const Scene01_Intro: React.FC = () => {
 
 /* ═══════════════════════════════════════════════════════
    Scene 02 — Numbers  (48 frames = 2s @ 24fps)
-   Counter rolls 0 → 70, then "% of your profits"
+   "regaining / 70% / of your profits" — three lines, one frame.
    ═══════════════════════════════════════════════════════ */
 
 export const Scene02_Numbers: React.FC = () => {
   const s = useGsapProxy(
     (tl, p) => {
-      // Counter rolls 0 → 70 over 0.0s–0.5s
-      tl.to(p.num, { value: 70, duration: 0.5, ease: "power2.out", snap: { value: 1 } }, 0.0);
-      // "%" fades in at 0.4s
-      tl.to(p.pct, { opacity: 1, duration: 0.15, ease: "power2.out" }, 0.45);
-      // counter pair fades out at 1.0s
-      tl.to(p.bigPair, { opacity: 0, duration: 0.18, ease: "power2.in" }, 1.0);
-      // Caption "of your profits" fades in at 1.15s
-      tl.to(p.caption, { opacity: 1, y: 0, duration: 0.18, ease: "power2.out" }, 1.15);
+      // "regaining" fades in first
+      tl.to(p.regaining, { opacity: 1, y: 0, duration: 0.22, ease: "power2.out" }, 0.0);
+      // Counter rolls 0 → 70
+      tl.to(p.num, { opacity: 1, duration: 0.15 }, 0.2);
+      tl.to(p.num, { value: 70, duration: 0.6, ease: "power2.out", snap: { value: 1 } }, 0.2);
+      tl.to(p.num, { scale: 1, duration: 0.5, ease: "back.out(1.6)" }, 0.2);
+      // "%" reveals
+      tl.to(p.pct, { opacity: 1, duration: 0.15, ease: "power2.out" }, 0.65);
+      // "of your profits" cascades in last
+      tl.to(p.caption, { opacity: 1, y: 0, duration: 0.22, ease: "power2.out" }, 0.95);
     },
     {
-      num: { value: 0, opacity: 1 },
+      regaining: { opacity: 0, y: 12 },
+      num: { value: 0, opacity: 0, scale: 0.7 },
       pct: { opacity: 0 },
-      bigPair: { opacity: 1 },
-      caption: { opacity: 0, y: 18 },
+      caption: { opacity: 0, y: 14 },
     },
   );
+
+  const blueGradientText: React.CSSProperties = {
+    backgroundImage: `linear-gradient(180deg, ${BLUE} 0%, #2a5cff 60%, ${BLUE} 100%)`,
+    backgroundClip: "text",
+    WebkitBackgroundClip: "text",
+    WebkitTextFillColor: "transparent",
+    color: "transparent",
+  };
 
   return (
     <AbsoluteFill>
@@ -151,37 +161,71 @@ export const Scene02_Numbers: React.FC = () => {
           left: "50%",
           transform: "translate(-50%, -50%)",
           display: "flex",
-          alignItems: "baseline",
-          opacity: s.bigPair.opacity,
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 4,
           whiteSpace: "nowrap",
         }}
       >
-        <span style={{ ...baseText, fontSize: 340, color: BLUE }}>
-          {Math.round(s.num.value)}
-        </span>
+        {/* "regaining" */}
         <span
           style={{
             ...baseText,
-            fontSize: 260,
+            fontSize: 96,
+            fontWeight: 700,
             color: BLUE,
-            marginLeft: 16,
-            opacity: s.pct.opacity,
+            opacity: s.regaining.opacity,
+            transform: `translateY(${s.regaining.y}px)`,
+            letterSpacing: "-0.01em",
           }}
         >
-          %
+          regaining
         </span>
-      </div>
-      <div
-        style={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: `translate(-50%, calc(-50% + ${s.caption.y}px))`,
-          opacity: s.caption.opacity,
-          whiteSpace: "nowrap",
-        }}
-      >
-        <span style={{ ...baseText, fontSize: 200, color: BLUE }}>
+
+        {/* 70% */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "baseline",
+            opacity: s.num.opacity,
+            transform: `scale(${s.num.scale})`,
+          }}
+        >
+          <span
+            style={{
+              ...baseText,
+              ...blueGradientText,
+              fontSize: 360,
+              letterSpacing: "-0.04em",
+            }}
+          >
+            {Math.round(s.num.value)}
+          </span>
+          <span
+            style={{
+              ...baseText,
+              ...blueGradientText,
+              fontSize: 260,
+              marginLeft: 12,
+              opacity: s.pct.opacity,
+            }}
+          >
+            %
+          </span>
+        </div>
+
+        {/* "of your profits" */}
+        <span
+          style={{
+            ...baseText,
+            fontSize: 110,
+            fontWeight: 700,
+            color: BLUE,
+            opacity: s.caption.opacity,
+            transform: `translateY(${s.caption.y}px)`,
+            marginTop: 8,
+          }}
+        >
           of your profits
         </span>
       </div>
@@ -362,7 +406,7 @@ const IsoCube: React.FC<{ size: number; opacity?: number }> = ({ size, opacity =
   );
 };
 
-const SCENE04_WORDS = ["Rainbows", "filters", "out", "illegal", "activities."] as const;
+const SCENE04_WORDS = ["Rainbows", "filters", "out", "illegal", "activities"] as const;
 
 type Scene04Proxies = {
   cube: { opacity: number; rotX: number; rotY: number };

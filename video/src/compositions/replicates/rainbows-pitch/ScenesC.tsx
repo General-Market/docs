@@ -1,5 +1,5 @@
 import React from "react";
-import { AbsoluteFill } from "remotion";
+import { AbsoluteFill, Img, staticFile } from "remotion";
 import { loadFont } from "@remotion/google-fonts/Inter";
 import { SolidBlue, LightGradient, BlueGradient, GridOverlay } from "./backgrounds";
 import { useGsapProxy } from "./gsapUtils";
@@ -320,7 +320,7 @@ export const Scene11_NewSpeed: React.FC = () => {
                 transform: `translateY(${s.assets.y}px)`,
               }}
             >
-              assets.
+              assets
             </span>
           </>
         )}
@@ -331,28 +331,34 @@ export const Scene11_NewSpeed: React.FC = () => {
 
 /* ═══════════════════════════════════════════════════════
    Scene 12 — Finale  (173 frames = 7.2s @ 24fps)
-   "General." + "Markets for everything." + dark fade
+   GM logo + "General" wordmark + "Markets for everything"
    ═══════════════════════════════════════════════════════ */
 
 export const Scene12_Finale: React.FC = () => {
   const s = useGsapProxy(
     (tl, p) => {
-      // Title fades in 0.0–0.4s
-      tl.to(p.title, { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" }, 0.0);
-      // Tagline at 1.6s
-      tl.to(p.tagline, { opacity: 1, y: 0, duration: 0.45, ease: "power2.out" }, 1.6);
-      // Dark overlay 4.0–6.5s
-      tl.to(p.darkOverlay, { opacity: 0.88, duration: 2.5, ease: "power1.in" }, 4.0);
-      // Text fades 4.0–6.5s
-      tl.to(p.textFade, { opacity: 0.35, duration: 2.5, ease: "power1.in" }, 4.0);
+      // Logo scales in
+      tl.to(p.logo, { opacity: 1, scale: 1, duration: 0.55, ease: "back.out(1.4)" }, 0.0);
+      tl.to(p.logoGlow, { opacity: 1, duration: 0.6, ease: "power2.out" }, 0.2);
+      // Wordmark "General" appears
+      tl.to(p.title, { opacity: 1, y: 0, duration: 0.45, ease: "power2.out" }, 0.7);
+      // Tagline
+      tl.to(p.tagline, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, 1.7);
+      // Dark overlay 4.5–6.8s
+      tl.to(p.darkOverlay, { opacity: 0.88, duration: 2.3, ease: "power1.in" }, 4.5);
+      tl.to(p.textFade, { opacity: 0.35, duration: 2.3, ease: "power1.in" }, 4.5);
     },
     {
-      title: { opacity: 0, y: 12 },
+      logo: { opacity: 0, scale: 0.7 },
+      logoGlow: { opacity: 0 },
+      title: { opacity: 0, y: 14 },
       tagline: { opacity: 0, y: 18 },
       darkOverlay: { opacity: 0 },
       textFade: { opacity: 1 },
     },
   );
+
+  const LOGO_SIZE = 220;
 
   return (
     <AbsoluteFill>
@@ -361,45 +367,85 @@ export const Scene12_Finale: React.FC = () => {
       <div
         style={{
           position: "absolute",
-          top: "42%",
+          top: "50%",
           left: "50%",
           transform: "translate(-50%, -50%)",
           textAlign: "center",
           zIndex: 2,
           opacity: s.textFade.opacity,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 28,
         }}
       >
+        {/* Logo with soft glow */}
+        <div
+          style={{
+            position: "relative",
+            width: LOGO_SIZE,
+            height: LOGO_SIZE,
+            opacity: s.logo.opacity,
+            transform: `scale(${s.logo.scale})`,
+          }}
+        >
+          {/* Glow plate behind logo */}
+          <div
+            style={{
+              position: "absolute",
+              inset: -40,
+              borderRadius: "50%",
+              background:
+                "radial-gradient(circle, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0) 65%)",
+              opacity: s.logoGlow.opacity,
+              filter: "blur(6px)",
+            }}
+          />
+          <Img
+            src={staticFile("gm-logo-white.svg")}
+            style={{
+              position: "relative",
+              width: LOGO_SIZE,
+              height: LOGO_SIZE,
+              filter: "drop-shadow(0 8px 24px rgba(0,0,0,0.25))",
+            }}
+          />
+        </div>
+
+        {/* Wordmark */}
         <span
           style={{
             fontFamily,
-            fontSize: 230,
+            fontSize: 180,
             fontWeight: 800,
             fontStyle: "italic",
             color: "#fff",
             display: "block",
-            lineHeight: 1.15,
+            lineHeight: 1,
+            letterSpacing: "-0.02em",
             opacity: s.title.opacity,
             transform: `translateY(${s.title.y}px)`,
+            textShadow: "0 4px 28px rgba(0,0,0,0.25)",
           }}
         >
-          General.
+          General
         </span>
 
+        {/* Tagline */}
         <span
           style={{
             fontFamily,
-            fontSize: 95,
+            fontSize: 78,
             fontWeight: 400,
             fontStyle: "italic",
-            color: "#fff",
+            color: "rgba(255,255,255,0.85)",
             display: "block",
-            lineHeight: 1.3,
-            marginTop: 28,
+            lineHeight: 1.2,
             opacity: s.tagline.opacity,
             transform: `translateY(${s.tagline.y}px)`,
           }}
         >
-          Markets for everything.
+          Markets for everything
         </span>
       </div>
 

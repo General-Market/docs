@@ -22,7 +22,7 @@ const baseText: React.CSSProperties = {
    ════════════════════════════════════════════════════════ */
 
 const SCENE05_PHASE1 = ["Removing"] as const;
-const SCENE05_PHASE2 = ["what", "shouldn't", "be", "here."] as const;
+const SCENE05_PHASE2 = ["what", "shouldn't", "be", "here"] as const;
 
 function buildScene05Proxies() {
   const init: Record<string, { opacity: number; y: number }> = {};
@@ -284,7 +284,7 @@ export const Scene06_Starburst: React.FC = () => {
 
 /* ════════════════════════════════════════════════════════
    Scene 07 — Villains with strike-through  (108 frames = 4.5s @ 24fps)
-   Four rows. Each row: text appears, red line strikes across.
+   Four rows. Each row: lifts in, struck through, then dims.
    ════════════════════════════════════════════════════════ */
 
 const VILLAINS = [
@@ -297,9 +297,11 @@ const VILLAINS = [
 function buildScene07Proxies() {
   const init: Record<string, Record<string, number>> = {};
   VILLAINS.forEach((_, i) => {
-    init[`row_${i}`] = { opacity: 0, x: -40 };
-    init[`strike_${i}`] = { scaleX: 0 };
+    init[`row_${i}`] = { opacity: 0, x: -50, dim: 1 };
+    init[`strike_${i}`] = { scaleX: 0, glow: 0 };
+    init[`dot_${i}`] = { opacity: 0, scale: 0 };
   });
+  init.headline = { opacity: 0, y: 12 };
   return init;
 }
 
@@ -308,12 +310,22 @@ const scene07Init = buildScene07Proxies();
 export const Scene07_TransactionQueue: React.FC = () => {
   const s = useGsapProxy(
     (tl, p) => {
-      // Each villain: text in, then strike-through draws across
-      const ROW_INTERVAL = 0.85;
+      // Tiny header dot
+      tl.to(p.headline, { opacity: 1, y: 0, duration: 0.25, ease: "power2.out" }, 0.0);
+
+      // Each villain: enter → strike → dim
+      const ROW_INTERVAL = 0.95;
       VILLAINS.forEach((_, i) => {
-        const start = i * ROW_INTERVAL;
-        tl.to(p[`row_${i}`], { opacity: 1, x: 0, duration: 0.32, ease: "power2.out" }, start);
-        tl.to(p[`strike_${i}`], { scaleX: 1, duration: 0.32, ease: "power2.inOut" }, start + 0.32);
+        const start = 0.25 + i * ROW_INTERVAL;
+        tl.to(p[`row_${i}`], { opacity: 1, x: 0, duration: 0.36, ease: "power3.out" }, start);
+        // Strike + glow flash together
+        tl.to(p[`strike_${i}`], { scaleX: 1, duration: 0.42, ease: "power2.inOut" }, start + 0.32);
+        tl.to(p[`strike_${i}`], { glow: 1, duration: 0.18, ease: "power2.out" }, start + 0.32);
+        tl.to(p[`strike_${i}`], { glow: 0.45, duration: 0.5, ease: "power2.in" }, start + 0.5);
+        // Red dot indicator pops at strike start
+        tl.to(p[`dot_${i}`], { opacity: 1, scale: 1, duration: 0.18, ease: "back.out(2)" }, start + 0.34);
+        // Row dims after strike completes
+        tl.to(p[`row_${i}`], { dim: 0.42, duration: 0.4, ease: "power2.in" }, start + 0.78);
       });
     },
     scene07Init,
@@ -322,58 +334,136 @@ export const Scene07_TransactionQueue: React.FC = () => {
   return (
     <AbsoluteFill>
       <BlueGradient />
+      {/* Subtle vignette for depth */}
+      <AbsoluteFill
+        style={{
+          background:
+            "radial-gradient(ellipse at center, transparent 35%, rgba(0,15,60,0.45) 100%)",
+          pointerEvents: "none",
+        }}
+      />
       <AbsoluteFill>
+        {/* Header label — tiny, top-left of card */}
         <div
           style={{
             position: "absolute",
-            top: "50%",
+            top: "16%",
+            left: "50%",
+            transform: `translate(-50%, ${s.headline.y}px)`,
+            opacity: s.headline.opacity * 0.7,
+            display: "flex",
+            alignItems: "center",
+            gap: 14,
+          }}
+        >
+          <div
+            style={{
+              width: 10,
+              height: 10,
+              borderRadius: "50%",
+              backgroundColor: STRIKE_RED,
+              boxShadow: `0 0 12px ${STRIKE_RED}`,
+            }}
+          />
+          <span
+            style={{
+              fontFamily,
+              fontSize: 32,
+              fontWeight: 700,
+              fontStyle: "italic",
+              color: "rgba(255,255,255,0.85)",
+              letterSpacing: "0.18em",
+              textTransform: "uppercase",
+            }}
+          >
+            removed
+          </span>
+        </div>
+
+        {/* Villain stack */}
+        <div
+          style={{
+            position: "absolute",
+            top: "52%",
             left: "50%",
             transform: "translate(-50%, -50%)",
             display: "flex",
             flexDirection: "column",
-            gap: 18,
+            gap: 28,
             alignItems: "flex-start",
+            padding: "44px 56px",
+            borderRadius: 24,
+            background:
+              "linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)",
+            backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
+            border: "1px solid rgba(255,255,255,0.10)",
+            boxShadow:
+              "0 30px 80px rgba(0,10,40,0.35), inset 0 1px 0 rgba(255,255,255,0.12)",
           }}
         >
           {VILLAINS.map((villain, i) => {
             const row = s[`row_${i}`];
             const strike = s[`strike_${i}`];
+            const dot = s[`dot_${i}`];
             return (
               <div
                 key={villain}
                 style={{
                   position: "relative",
-                  display: "inline-block",
-                  opacity: row.opacity,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 28,
+                  opacity: row.opacity * row.dim,
                   transform: `translateX(${row.x}px)`,
-                  paddingRight: 24,
+                  filter: `saturate(${0.4 + 0.6 * row.dim})`,
                 }}
               >
-                <span
-                  style={{
-                    ...baseText,
-                    fontSize: 112,
-                    color: "#fff",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {villain}
-                </span>
-                {/* Red strike-through */}
+                {/* Red dot — appears at strike */}
                 <div
                   style={{
-                    position: "absolute",
-                    top: "52%",
-                    left: -8,
-                    right: -8,
-                    height: 10,
+                    width: 16,
+                    height: 16,
+                    borderRadius: "50%",
                     backgroundColor: STRIKE_RED,
-                    transform: `scaleX(${strike.scaleX}) rotate(-2deg)`,
-                    transformOrigin: "0% 50%",
-                    boxShadow: "0 0 16px rgba(255,42,42,0.55)",
-                    pointerEvents: "none",
+                    boxShadow: `0 0 14px ${STRIKE_RED}, 0 0 28px rgba(255,42,42,0.4)`,
+                    opacity: dot.opacity,
+                    transform: `scale(${dot.scale})`,
+                    flexShrink: 0,
                   }}
                 />
+
+                <div style={{ position: "relative", display: "inline-block", paddingRight: 16 }}>
+                  <span
+                    style={{
+                      ...baseText,
+                      fontSize: 108,
+                      fontWeight: 800,
+                      color: "#fff",
+                      whiteSpace: "nowrap",
+                      textShadow: "0 4px 24px rgba(0,0,0,0.35)",
+                      letterSpacing: "-0.015em",
+                    }}
+                  >
+                    {villain}
+                  </span>
+                  {/* Strike line — gradient, glow */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "53%",
+                      left: -6,
+                      right: -6,
+                      height: 8,
+                      borderRadius: 4,
+                      background: `linear-gradient(90deg, #ff0040 0%, ${STRIKE_RED} 50%, #ff5e2a 100%)`,
+                      transform: `scaleX(${strike.scaleX}) rotate(-2.2deg)`,
+                      transformOrigin: "0% 50%",
+                      boxShadow: `0 0 ${20 + strike.glow * 24}px rgba(255,42,42,${0.4 + strike.glow * 0.5})`,
+                      pointerEvents: "none",
+                    }}
+                  />
+                </div>
               </div>
             );
           })}
@@ -385,15 +475,20 @@ export const Scene07_TransactionQueue: React.FC = () => {
 
 /* ════════════════════════════════════════════════════════
    Scene 08 — Asset grid  (60 frames = 2.5s @ 24fps)
-   2×2 grid: Stocks / Crypto / Predictions / Memecoins
+   2×2 of frosted-glass tiles, each containing one asset class.
    ════════════════════════════════════════════════════════ */
 
-const ASSETS = ["Stocks", "Crypto", "Predictions", "Memecoins"] as const;
+const ASSETS = [
+  { label: "Stocks", accent: "#7ee0ff" },
+  { label: "Crypto", accent: "#ffb84d" },
+  { label: "Predictions", accent: "#ff6cf3" },
+  { label: "Memecoins", accent: "#9bff7e" },
+] as const;
 
 function buildScene08Proxies() {
   const init: Record<string, Record<string, number>> = {};
   ASSETS.forEach((_, i) => {
-    init[`tile_${i}`] = { opacity: 0, y: 25, scale: 0.9 };
+    init[`tile_${i}`] = { opacity: 0, y: 25, scale: 0.92 };
   });
   return init;
 }
@@ -404,8 +499,12 @@ export const Scene08_GridText: React.FC = () => {
   const s = useGsapProxy(
     (tl, p) => {
       ASSETS.forEach((_, i) => {
-        const start = 0.1 + i * 0.32;
-        tl.to(p[`tile_${i}`], { opacity: 1, y: 0, scale: 1, duration: 0.35, ease: "back.out(1.4)" }, start);
+        const start = 0.1 + i * 0.28;
+        tl.to(
+          p[`tile_${i}`],
+          { opacity: 1, y: 0, scale: 1, duration: 0.42, ease: "back.out(1.5)" },
+          start,
+        );
       });
     },
     scene08Init,
@@ -414,7 +513,14 @@ export const Scene08_GridText: React.FC = () => {
   return (
     <AbsoluteFill>
       <BlueGradient />
-      <GridOverlay color="rgba(255,255,255,0.18)" />
+      <GridOverlay color="rgba(255,255,255,0.16)" />
+      <AbsoluteFill
+        style={{
+          background:
+            "radial-gradient(ellipse at center, transparent 30%, rgba(0,15,60,0.4) 100%)",
+          pointerEvents: "none",
+        }}
+      />
       <AbsoluteFill>
         <div
           style={{
@@ -425,26 +531,56 @@ export const Scene08_GridText: React.FC = () => {
             display: "grid",
             gridTemplateColumns: "repeat(2, 1fr)",
             gridTemplateRows: "repeat(2, 1fr)",
-            columnGap: 80,
-            rowGap: 30,
-            width: 1500,
+            gap: 36,
+            width: 1280,
+            height: 540,
           }}
         >
-          {ASSETS.map((label, i) => {
+          {ASSETS.map(({ label, accent }, i) => {
             const proxy = s[`tile_${i}`];
             return (
               <div
                 key={label}
                 style={{
+                  position: "relative",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
+                  borderRadius: 22,
+                  background:
+                    "linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.04) 100%)",
+                  backdropFilter: "blur(10px)",
+                  WebkitBackdropFilter: "blur(10px)",
+                  border: "1px solid rgba(255,255,255,0.14)",
+                  boxShadow:
+                    "0 20px 50px rgba(0,10,40,0.28), inset 0 1px 0 rgba(255,255,255,0.16)",
                   opacity: proxy.opacity,
                   transform: `translateY(${proxy.y}px) scale(${proxy.scale})`,
-                  whiteSpace: "nowrap",
+                  overflow: "hidden",
                 }}
               >
-                <span style={{ ...baseText, fontSize: 145, color: "#fff" }}>
+                {/* Top accent bar */}
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: 4,
+                    background: `linear-gradient(90deg, transparent, ${accent}, transparent)`,
+                    opacity: 0.85,
+                  }}
+                />
+                <span
+                  style={{
+                    ...baseText,
+                    fontSize: 110,
+                    fontWeight: 800,
+                    color: "#fff",
+                    letterSpacing: "-0.02em",
+                    textShadow: "0 3px 18px rgba(0,0,0,0.3)",
+                  }}
+                >
                   {label}
                 </span>
               </div>
