@@ -197,10 +197,23 @@
   .pnl-section canvas { position: absolute; inset: 0; }
 
   .empty {
-    height: 100%; display: grid; place-items: center;
+    position: absolute; inset: 0;
+    display: grid; place-items: center;
     color: var(--muted); font-size: 13px;
+    pointer-events: none;
+    background: var(--bg);
   }
+  .empty[hidden] { display: none; }
   .empty .small { font-size: 11px; margin-top: 6px; }
+
+  /* Overlay-strategy chip strip above the price chart */
+  .overlay-bar {
+    display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
+    padding: 0 0 8px 0;
+    font-size: 11px; color: var(--muted);
+  }
+  .overlay-bar .chip { font-size: 11px; }
+  .overlay-bar .chip.on { color: var(--text); border-color: var(--text); background: var(--panel-2); }
 </style>
 </head>
 <body>
@@ -252,6 +265,15 @@
     </div>
 
     <div class="chart-section">
+      <div class="overlay-bar" id="overlayBar">
+        <span>overlay strategy:</span>
+        <span class="chip on" data-strat="ai">AI</span>
+        <span class="chip" data-strat="actual">bot's actual</span>
+        <span class="chip" data-strat="momentum">momentum</span>
+        <span class="chip" data-strat="contrarian">contrarian</span>
+        <span class="chip" data-strat="mean_reversion">mean-revert</span>
+        <span class="chip" data-strat="none">none</span>
+      </div>
       <div class="canvas-host" id="priceHost">
         <div class="empty" id="emptyState">
           <div>
@@ -259,7 +281,7 @@
             <div class="small">Pick a row on the left.</div>
           </div>
         </div>
-        <canvas id="chart" hidden></canvas>
+        <canvas id="chart"></canvas>
       </div>
     </div>
 
@@ -285,7 +307,36 @@
   const OVERSCAN = 8;
   const TICK_SECS_DEFAULT = 60;
 
+  // Lightweight ensemble that combines momentum + mean-reversion with a
+  // volatility regime filter. Calm market → trust momentum. Choppy → fade to
+  // the mean. The point is a strategy with a real signal, not a coin toss.
+  function aiDecide(i, prices) {
+    if (i < 30) return null;
+    const cur = prices[i].price;
+    const past20 = prices[i - 20].price;
+    let sum = 0;
+    for (let k = i - 29; k <= i; k++) sum += prices[k].price;
+    const ma30 = sum / 30;
+    // Realized vol over last 30 returns
+    let vsum = 0, vcount = 0;
+    for (let k = i - 29; k < i; k++) {
+      const r = (prices[k + 1].price - prices[k].price) / Math.max(1e-9, prices[k].price);
+      vsum += r * r; vcount++;
+    }
+    const vol = Math.sqrt(vsum / Math.max(1, vcount));
+    const momSign = cur > past20 * 1.001 ? 1 : cur < past20 * 0.999 ? -1 : 0;
+    const revSign = cur > ma30 * 1.01 ? -1 : cur < ma30 * 0.99 ? 1 : 0;
+    // High vol → reversion dominates. Low vol → momentum dominates.
+    const w = vol > 0.02 ? 0.3 : 0.7;
+    const score = w * momSign + (1 - w) * revSign;
+    if (score > 0.25) return "UP";
+    if (score < -0.25) return "DOWN";
+    return null;
+  }
+
   const STRATS = [
+    { key: "ai",             label: "AI ensemble", color: "#f7a35c", on: true,
+      decide: (i, prices) => aiDecide(i, prices) },
     { key: "actual",         label: "bot's actual", color: "#e7eaef", on: true,
       decide: (i, prices, ctx) => ctx.actualBet(prices[i].ts) },
     { key: "momentum",       label: "momentum (10)", color: "#74e0a3", on: true,
@@ -299,19 +350,24 @@
         const ma = s / 30;
         return prices[i].price > ma * 1.005 ? "DOWN" : prices[i].price < ma * 0.995 ? "UP" : null;
       } },
-    { key: "random",         label: "random (seeded)", color: "#6aa9ff", on: true,
-      decide: (i, prices) => {
-        // deterministic by ts so repeated viewing matches
-        const t = prices[i].ts | 0;
-        return ((Math.sin(t * 12.9898) * 43758.5453) % 1) > 0 ? "UP" : "DOWN";
-      } },
   ];
 
   const state = {
     items: [], filtered: [], filters: { last_bet: null, settled: null },
     query: "", activeIdx: -1, priceChart: null, pnlChart: null,
     abortCtrl: null, stratOn: Object.fromEntries(STRATS.map(s => [s.key, s.on])),
+    overlayStrat: "ai",
+    currentDoc: null,
   };
+
+  // Overlay-strategy chip selector
+  document.getElementById("overlayBar").addEventListener("click", (e) => {
+    const c = e.target.closest(".chip"); if (!c) return;
+    document.querySelectorAll("#overlayBar .chip").forEach(x => x.classList.remove("on"));
+    c.classList.add("on");
+    state.overlayStrat = c.dataset.strat;
+    if (state.currentDoc) drawAll(state.currentDoc);
+  });
 
   // ── Boot ─────────────────────────────────────────────────────
   fetch("./index.json", { cache: "no-store" })
@@ -465,6 +521,7 @@
   }
 
   function drawAll(doc) {
+    state.currentDoc = doc;
     const empty = document.getElementById("emptyState");
     const canvas = document.getElementById("chart");
     const series = doc.history || [];
@@ -474,12 +531,11 @@
     if (!series.length) {
       empty.hidden = false;
       empty.innerHTML = `<div>no price history available</div>`;
-      canvas.hidden = true;
       if (state.priceChart) { state.priceChart.destroy(); state.priceChart = null; }
       drawPnL([], [], TICK_SECS_DEFAULT);
       return;
     }
-    empty.hidden = true; canvas.hidden = false;
+    empty.hidden = true;
 
     drawPriceChart(canvas, series, trades);
     drawStatsLine(stats, doc, trades);
@@ -510,6 +566,40 @@
     target.innerHTML = parts.join(" · ");
   }
 
+  // Decimate strategy decisions over the price series into ~80 arrows.
+  function buildOverlay(series, trades) {
+    const empty = { up: [], down: [], label: "" };
+    const stratKey = state.overlayStrat;
+    if (!stratKey || stratKey === "none") return empty;
+    const strat = STRATS.find(s => s.key === stratKey);
+    if (!strat) return empty;
+
+    // Only the actual-bet strategy needs trade context.
+    const sortedTrades = [...trades].sort((a, b) => a.joined_at - b.joined_at);
+    const tickSecs = (sortedTrades[0] && sortedTrades[0].tick_duration) || TICK_SECS_DEFAULT;
+    function actualBet(ts) {
+      let best = null;
+      for (const t of sortedTrades) {
+        if (t.joined_at <= ts) best = t; else break;
+      }
+      if (!best) return null;
+      const window = (best.tick_duration || tickSecs) * 30;
+      if (ts - best.joined_at > window) return null;
+      return best.bet;
+    }
+    const ctx = { actualBet };
+
+    const stride = Math.max(1, Math.floor(series.length / 80));
+    const up = [], down = [];
+    for (let i = 0; i < series.length; i += stride) {
+      const bet = strat.decide(i, series, ctx);
+      if (!bet) continue;
+      const pt = { x: series[i].ts * 1000, y: series[i].price };
+      (bet === "UP" ? up : down).push(pt);
+    }
+    return { up, down, label: strat.label };
+  }
+
   // ── Price chart with bet markers ─────────────────────────────
   function drawPriceChart(canvas, series, trades) {
     const points = series.map(p => ({ x: p.ts * 1000, y: p.price }));
@@ -518,22 +608,40 @@
     const downMarkers = trades.filter(t => t.bet === "DOWN")
       .map(t => ({ x: t.joined_at * 1000, y: priceAt(series, t.joined_at) }));
 
+    // Overlay arrows from the selected strategy. Decimate so we don't
+    // shotgun thousands of markers across a 7-day chart.
+    const overlay = buildOverlay(series, trades);
+
+    const datasets = [
+      { label: "price", data: points,
+        borderColor: "#a8b3c2", backgroundColor: "rgba(168,179,194,0.06)",
+        borderWidth: 1.5, fill: true, tension: 0.15, pointRadius: 0 },
+      { label: "UP bets", type: "scatter", data: upMarkers,
+        borderColor: "#74e0a3", backgroundColor: "#74e0a3",
+        pointRadius: 8, pointHoverRadius: 11, pointStyle: "triangle", showLine: false },
+      { label: "DOWN bets", type: "scatter", data: downMarkers,
+        borderColor: "#f87171", backgroundColor: "#f87171",
+        pointRadius: 8, pointHoverRadius: 11, pointStyle: "triangle", rotation: 180, showLine: false },
+    ];
+    if (overlay.up.length) {
+      datasets.push({
+        label: `${overlay.label} UP`, type: "scatter", data: overlay.up,
+        borderColor: "rgba(116,224,163,0.55)", backgroundColor: "rgba(116,224,163,0.45)",
+        pointRadius: 4, pointHoverRadius: 7, pointStyle: "triangle", showLine: false,
+      });
+    }
+    if (overlay.down.length) {
+      datasets.push({
+        label: `${overlay.label} DOWN`, type: "scatter", data: overlay.down,
+        borderColor: "rgba(248,113,113,0.55)", backgroundColor: "rgba(248,113,113,0.45)",
+        pointRadius: 4, pointHoverRadius: 7, pointStyle: "triangle", rotation: 180, showLine: false,
+      });
+    }
+
     if (state.priceChart) state.priceChart.destroy();
     state.priceChart = new Chart(canvas.getContext("2d"), {
       type: "line",
-      data: {
-        datasets: [
-          { label: "price", data: points,
-            borderColor: "#a8b3c2", backgroundColor: "rgba(168,179,194,0.06)",
-            borderWidth: 1.5, fill: true, tension: 0.15, pointRadius: 0 },
-          { label: "UP bets", type: "scatter", data: upMarkers,
-            borderColor: "#74e0a3", backgroundColor: "#74e0a3",
-            pointRadius: 8, pointHoverRadius: 11, pointStyle: "triangle", showLine: false },
-          { label: "DOWN bets", type: "scatter", data: downMarkers,
-            borderColor: "#f87171", backgroundColor: "#f87171",
-            pointRadius: 8, pointHoverRadius: 11, pointStyle: "triangle", rotation: 180, showLine: false },
-        ],
-      },
+      data: { datasets },
       options: {
         responsive: true, maintainAspectRatio: false, animation: false,
         parsing: false, normalized: true,
