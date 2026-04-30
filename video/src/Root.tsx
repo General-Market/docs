@@ -43,6 +43,10 @@ import { visionVsMeta } from "./compositions/vision/vs/VisionVsComposition";
 import { kalshiMeta } from "./compositions/replicates/kalshi/KalshiComposition";
 import { kalshiSideBySideMeta } from "./compositions/replicates/kalshi/KalshiSideBySide";
 import { flashblocksMeta } from "./compositions/replicates/standrew/FlashblocksComposition";
+import { rainbowsPitchMeta } from "./compositions/replicates/rainbows-pitch/RainbowsPitchComposition";
+import { sceneAMetas as rainbowsPitchSceneA } from "./compositions/replicates/rainbows-pitch/ScenesA";
+import { sceneBMetas as rainbowsPitchSceneB } from "./compositions/replicates/rainbows-pitch/ScenesB";
+import { sceneCMetas as rainbowsPitchSceneC } from "./compositions/replicates/rainbows-pitch/ScenesC";
 import { flashblocksSideBySideMeta } from "./compositions/replicates/standrew/FlashblocksSideBySide";
 import { sceneAMetas as flashblocksSceneAMetas } from "./compositions/replicates/standrew/ScenesA";
 import { sceneBMetas as flashblocksSceneBMetas } from "./compositions/replicates/standrew/ScenesB";
@@ -309,6 +313,35 @@ export const RemotionRoot: React.FC = () => {
           width={kalshiSideBySideMeta.width}
           height={kalshiSideBySideMeta.height}
         />
+
+        {/* --- Rainbows Pitch (Flashblocks-Replicate clone, awaiting copy adaptation) --- */}
+        <Composition
+          id={rainbowsPitchMeta.id}
+          component={rainbowsPitchMeta.component}
+          durationInFrames={rainbowsPitchMeta.durationInFrames}
+          fps={rainbowsPitchMeta.fps}
+          width={rainbowsPitchMeta.width}
+          height={rainbowsPitchMeta.height}
+        />
+        {SHOW_SCENES && (
+          <Folder name="Rainbows-Pitch-Scenes">
+            {[
+              ...rainbowsPitchSceneA,
+              ...rainbowsPitchSceneB,
+              ...rainbowsPitchSceneC,
+            ].map((meta) => (
+              <Composition
+                key={meta.id}
+                id={meta.id}
+                component={meta.component}
+                durationInFrames={meta.durationInFrames}
+                fps={rainbowsPitchMeta.fps}
+                width={rainbowsPitchMeta.width}
+                height={rainbowsPitchMeta.height}
+              />
+            ))}
+          </Folder>
+        )}
 
         {/* --- Flashblocks --- */}
         <Composition
