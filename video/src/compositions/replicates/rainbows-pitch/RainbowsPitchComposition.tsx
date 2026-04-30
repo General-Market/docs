@@ -7,22 +7,26 @@ import { Scene09_Experience, Scene10_LiveTestnet, Scene11_NewSpeed, Scene12_Fina
 /*
  * Rainbows pitch — 37.2s explainer (1920x1080, 24fps, 893 frames)
  *
- *   01  "Trade market like this." → "Is simpler than..."   0–48
- *   02  Counter 0→70%, "of your profits"                   48–96
- *   03  "But what are rainbows?" → title card              96–180
- *   04  "Rainbows filters out illegal activities" + cube   180–252
- *   05  "Removing" → "what shouldn't be here."             252–300
- *   06  Counter 0→500,000, "exclusive markets",            300–372
- *       sub-caption "only tradable with rainbows"
- *   07  Villains struck through (frontrunners,             372–480
- *       orderbook spoofers, illegal insiders, manipulators)
- *   08  Asset grid: Stocks / Crypto / Predictions /        480–540
- *       Memecoins
- *   09  Concentric circles + "gain more"                   540–588
- *   10  "Leaving the same profits" → "to fewer            588–672
+ * Rhetorical order: hook → question → answer (metaphor) → setup →
+ * evidence (literal) → quantify → mechanic → result → universe setup
+ * → universe reveal → differentiator → brand. Closing four scenes
+ * accelerate into the finale: 48 → 60 → 72 → 173 frames.
+ *
+ *   01  "Trade market like this." → "Is simpler than..."     0–48
+ *   02  "But what are rainbows?" → title card               48–132
+ *   03  "Rainbows filters out illegal activities" + cube  132–204
+ *   04  "Removing" → "what shouldn't be here."            204–252
+ *   05  Villains struck through                            252–360
+ *   06  Counter 0→70%, "of your profits"                  360–408
+ *   07  "Leaving the same profits" → "to fewer            408–492
  *       honest traders"
- *   11  "while trading the same assets."                   672–720
- *   12  "General." + "Markets for everything." + fade     720–893
+ *   08  Concentric circles + "gain more"                  492–540
+ *   09  "while trading the same assets."                  540–588
+ *   10  Asset grid: Stocks / Crypto / Predictions /       588–648
+ *       Memecoins
+ *   11  Counter 0→500,000, "exclusive markets",           648–720
+ *       sub-caption "only tradable with rainbows"
+ *   12  "General." + "Markets for everything." + fade    720–893
  */
 
 export const RainbowsPitchComposition: React.FC = () => {
@@ -31,35 +35,35 @@ export const RainbowsPitchComposition: React.FC = () => {
       <Sequence from={0} durationInFrames={48} name="01 Compare">
         <Scene01_Intro />
       </Sequence>
-      <Sequence from={48} durationInFrames={48} name="02 70% Counter">
-        <Scene02_Numbers />
-      </Sequence>
-      <Sequence from={96} durationInFrames={84} name="03 What Are Rainbows">
+      <Sequence from={48} durationInFrames={84} name="02 What Are Rainbows">
         <Scene03_DarkGrid />
       </Sequence>
-      <Sequence from={180} durationInFrames={72} name="04 Filters Illegal">
+      <Sequence from={132} durationInFrames={72} name="03 Filters Illegal">
         <Scene04_CubeExplode />
       </Sequence>
-      <Sequence from={252} durationInFrames={48} name="05 Removing">
+      <Sequence from={204} durationInFrames={48} name="04 Removing">
         <Scene05_Waiting />
       </Sequence>
-      <Sequence from={300} durationInFrames={72} name="06 500k Markets">
-        <Scene06_Starburst />
-      </Sequence>
-      <Sequence from={372} durationInFrames={108} name="07 Villains Struck">
+      <Sequence from={252} durationInFrames={108} name="05 Villains Struck">
         <Scene07_TransactionQueue />
       </Sequence>
-      <Sequence from={480} durationInFrames={60} name="08 Asset Grid">
-        <Scene08_GridText />
+      <Sequence from={360} durationInFrames={48} name="06 70% Counter">
+        <Scene02_Numbers />
       </Sequence>
-      <Sequence from={540} durationInFrames={48} name="09 Gain More">
-        <Scene09_Experience />
-      </Sequence>
-      <Sequence from={588} durationInFrames={84} name="10 Same Profits">
+      <Sequence from={408} durationInFrames={84} name="07 Same Profits">
         <Scene10_LiveTestnet />
       </Sequence>
-      <Sequence from={672} durationInFrames={48} name="11 Same Assets">
+      <Sequence from={492} durationInFrames={48} name="08 Gain More">
+        <Scene09_Experience />
+      </Sequence>
+      <Sequence from={540} durationInFrames={48} name="09 Same Assets">
         <Scene11_NewSpeed />
+      </Sequence>
+      <Sequence from={588} durationInFrames={60} name="10 Asset Grid">
+        <Scene08_GridText />
+      </Sequence>
+      <Sequence from={648} durationInFrames={72} name="11 500k Markets">
+        <Scene06_Starburst />
       </Sequence>
       <Sequence from={720} durationInFrames={173} name="12 General Finale">
         <Scene12_Finale />
