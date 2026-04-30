@@ -95,15 +95,24 @@ def decode_bm(raw, n):
     return [("UP" if (raw[i//8] >> (7 - (i%8))) & 1 else "DOWN")
             for i in range(n) if (i // 8) < len(raw)]
 
+_DSN = "host=localhost dbname=index_prices user=max"
+
 def fetch_series(asset_id, days):
-    c = conn.cursor()
-    c.execute("""
-        SELECT EXTRACT(EPOCH FROM fetched_at)::bigint AS ts, value::float8 AS v
-        FROM market_prices
-        WHERE asset_id = %s AND fetched_at > NOW() - INTERVAL '%s days'
-        ORDER BY fetched_at ASC
-    """, (asset_id, days))
-    return [{"ts": int(r["ts"]), "price": r["v"]} for r in c.fetchall()]
+    # Per-thread connection: psycopg2 connections are NOT thread-safe; sharing
+    # one across the ThreadPoolExecutor serialised every query and made this
+    # ~8× slower than necessary.
+    tconn = psycopg2.connect(_DSN, cursor_factory=RealDictCursor)
+    try:
+        c = tconn.cursor()
+        c.execute("""
+            SELECT EXTRACT(EPOCH FROM fetched_at)::bigint AS ts, value::float8 AS v
+            FROM market_prices
+            WHERE asset_id = %s AND fetched_at > NOW() - INTERVAL '%s days'
+            ORDER BY fetched_at ASC
+        """, (asset_id, days))
+        return [{"ts": int(r["ts"]), "price": r["v"]} for r in c.fetchall()]
+    finally:
+        tconn.close()
 
 # ── Aggregate per-asset ───────────────────────────────────────────
 # trades[asset_id] = [{batch_id, bet, joined_at, settled, pnl_usdc, deposit_usdc, tick_duration, source_name}]
