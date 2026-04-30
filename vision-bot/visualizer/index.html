@@ -12,10 +12,12 @@
     --line: #20242b;
     --text: #e7eaef;
     --muted: #8b929d;
-    --accent: #74e0a3;
-    --accent-2: #f87171;
+    --green: #74e0a3;
+    --red: #f87171;
     --warn: #f5b86c;
-    --link: #6aa9ff;
+    --blue: #6aa9ff;
+    --purple: #b19cd9;
+    --orange: #f7a35c;
   }
   * { box-sizing: border-box; }
   html, body { height: 100%; margin: 0; }
@@ -24,20 +26,56 @@
     font: 13px/1.45 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
     -webkit-font-smoothing: antialiased;
   }
-  .app { display: grid; grid-template-columns: 360px 1fr; height: 100vh; }
+
+  .app {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    grid-template-columns: 360px 1fr;
+    height: 100vh;
+  }
+
+  /* ── Bot status bar ───────────────────────────────────────── */
+  .status {
+    grid-column: 1 / span 2;
+    border-bottom: 1px solid var(--line);
+    background: var(--panel);
+    padding: 10px 18px;
+    display: flex; flex-wrap: wrap; gap: 24px;
+    align-items: center;
+  }
+  .status .brand {
+    font-weight: 600; letter-spacing: -0.01em;
+  }
+  .status .addr {
+    font-family: ui-monospace, SFMono-Regular, monospace;
+    color: var(--muted); font-size: 12px;
+  }
+  .status .stat {
+    display: flex; flex-direction: column; gap: 1px;
+    line-height: 1.2;
+  }
+  .status .stat label {
+    font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .status .stat value {
+    font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums;
+  }
+  .status .stat .pos { color: var(--green); }
+  .status .stat .neg { color: var(--red); }
+  .status .stat .neutral { color: var(--text); }
+  .status .src-pill {
+    padding: 2px 8px; border-radius: 999px; font-size: 11px;
+    background: var(--panel-2); border: 1px solid var(--line); color: var(--muted);
+  }
+
+  /* ── Sidebar ──────────────────────────────────────────────── */
   .sidebar {
+    grid-column: 1; grid-row: 2;
     border-right: 1px solid var(--line);
     background: var(--panel);
-    display: grid; grid-template-rows: auto auto 1fr auto;
+    display: grid; grid-template-rows: auto 1fr auto;
     min-height: 0;
   }
-  .header {
-    padding: 14px 16px 10px; border-bottom: 1px solid var(--line);
-  }
-  .header h1 {
-    margin: 0; font-size: 14px; font-weight: 600; letter-spacing: -0.01em;
-  }
-  .header .sub { color: var(--muted); margin-top: 2px; font-size: 12px; }
   .controls {
     padding: 10px 12px; border-bottom: 1px solid var(--line);
     display: grid; gap: 8px;
@@ -45,13 +83,10 @@
   .controls input[type="search"] {
     width: 100%; padding: 7px 10px; border-radius: 6px;
     background: var(--panel-2); color: var(--text);
-    border: 1px solid var(--line); outline: none;
-    font: inherit;
+    border: 1px solid var(--line); outline: none; font: inherit;
   }
-  .controls input[type="search"]:focus { border-color: var(--link); }
-  .filters {
-    display: flex; flex-wrap: wrap; gap: 6px;
-  }
+  .controls input[type="search"]:focus { border-color: var(--blue); }
+  .filters { display: flex; flex-wrap: wrap; gap: 6px; }
   .chip {
     padding: 3px 8px; border-radius: 999px; cursor: pointer;
     border: 1px solid var(--line); color: var(--muted);
@@ -59,44 +94,49 @@
     user-select: none;
   }
   .chip.on { color: var(--text); border-color: var(--text); background: var(--panel-2); }
-  .chip.bet-up.on { color: var(--accent); border-color: var(--accent); }
-  .chip.bet-down.on { color: var(--accent-2); border-color: var(--accent-2); }
+  .chip.bet-up.on { color: var(--green); border-color: var(--green); }
+  .chip.bet-down.on { color: var(--red); border-color: var(--red); }
+
   .list-wrap { overflow-y: auto; position: relative; }
   .list-spacer { width: 100%; }
-  .list-window {
-    position: absolute; top: 0; left: 0; right: 0;
-    will-change: transform;
-  }
+  .list-window { position: absolute; top: 0; left: 0; right: 0; will-change: transform; }
   .row {
     display: grid; grid-template-columns: 1fr auto;
     gap: 4px; align-items: center;
     padding: 8px 14px;
     border-bottom: 1px solid #15181d;
     cursor: pointer;
+    overflow: hidden;
   }
   .row:hover { background: var(--panel-2); }
   .row.active { background: #1a1f27; }
   .row .name {
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font-weight: 500;
   }
-  .row .meta { color: var(--muted); font-size: 11px; }
+  .row .meta { color: var(--muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .row .right { text-align: right; }
   .pill {
     display: inline-block; padding: 1px 6px; border-radius: 4px;
     font-size: 10px; font-weight: 600; letter-spacing: 0.02em;
   }
-  .pill.up   { color: var(--accent); background: rgba(116,224,163,0.10); }
-  .pill.down { color: var(--accent-2); background: rgba(248,113,113,0.10); }
-  .pill.win  { color: var(--accent); }
-  .pill.loss { color: var(--accent-2); }
+  .pill.up   { color: var(--green); background: rgba(116,224,163,0.10); }
+  .pill.down { color: var(--red);   background: rgba(248,113,113,0.10); }
+  .pill.win  { color: var(--green); }
+  .pill.loss { color: var(--red); }
   .pill.flat { color: var(--muted); }
   .footer {
     padding: 8px 14px; border-top: 1px solid var(--line);
     color: var(--muted); font-size: 11px;
     display: flex; justify-content: space-between;
   }
+
+  /* ── Main panel ───────────────────────────────────────────── */
   .main {
-    display: grid; grid-template-rows: auto 1fr; min-height: 0;
+    grid-column: 2; grid-row: 2;
+    display: grid;
+    grid-template-rows: auto 1fr 280px;
+    min-height: 0; min-width: 0;
   }
   .topbar {
     padding: 14px 20px; border-bottom: 1px solid var(--line);
@@ -105,38 +145,88 @@
   }
   .title { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
   .subtitle { color: var(--muted); font-size: 12px; margin-top: 2px; }
-  .stats {
+  .meta-stats {
     display: flex; gap: 18px; font-size: 12px; color: var(--muted);
   }
-  .stats b { color: var(--text); font-weight: 600; }
-  .chart-wrap {
-    position: relative; padding: 18px 20px; min-height: 0;
+  .meta-stats b { color: var(--text); font-weight: 600; }
+
+  .chart-section {
+    position: relative;
+    padding: 14px 20px 4px;
+    min-height: 0; min-width: 0;
+    display: flex; flex-direction: column;
   }
+  .chart-section .canvas-host {
+    position: relative; flex: 1; min-height: 0;
+  }
+  .chart-section canvas { position: absolute; inset: 0; }
+
+  .pnl-section {
+    border-top: 1px solid var(--line);
+    padding: 10px 20px 14px;
+    display: grid;
+    grid-template-rows: auto 1fr;
+    min-height: 0;
+    background: var(--panel);
+  }
+  .pnl-section .header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-bottom: 6px;
+  }
+  .pnl-section .header h3 {
+    margin: 0; font-size: 12px; font-weight: 600;
+    letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted);
+  }
+  .pnl-section .legend {
+    display: flex; gap: 12px; font-size: 11px;
+  }
+  .pnl-section .legend .item {
+    display: flex; gap: 5px; align-items: center; cursor: pointer;
+  }
+  .pnl-section .legend .item.off { opacity: 0.4; text-decoration: line-through; }
+  .pnl-section .legend .swatch {
+    width: 10px; height: 10px; border-radius: 2px;
+  }
+  .pnl-section .totals {
+    display: flex; gap: 10px; font-size: 11px; color: var(--muted);
+  }
+  .pnl-section .totals b { font-variant-numeric: tabular-nums; }
+  .pnl-section .canvas-host {
+    position: relative; min-height: 0;
+  }
+  .pnl-section canvas { position: absolute; inset: 0; }
+
   .empty {
     height: 100%; display: grid; place-items: center;
     color: var(--muted); font-size: 13px;
   }
   .empty .small { font-size: 11px; margin-top: 6px; }
-  canvas { width: 100% !important; height: 100% !important; }
-  .err { color: var(--accent-2); padding: 0 20px; font-size: 12px; }
 </style>
 </head>
 <body>
 <div class="app">
-  <aside class="sidebar">
-    <div class="header">
-      <h1>Vision — visualizer</h1>
-      <div class="sub" id="summary">loading…</div>
-    </div>
 
+  <!-- Status bar -->
+  <header class="status" id="statusBar">
+    <div class="brand">Vision bot</div>
+    <div class="addr" id="botAddr">…</div>
+    <div class="stat"><label>active</label><value class="neutral" id="sActive">—</value></div>
+    <div class="stat"><label>settled</label><value class="neutral" id="sSettled">—</value></div>
+    <div class="stat"><label>deposited</label><value class="neutral" id="sDeposit">—</value></div>
+    <div class="stat"><label>settled pnl</label><value class="neutral" id="sPnl">—</value></div>
+    <div class="stat"><label>assets</label><value class="neutral" id="sAssets">—</value></div>
+    <div class="stat"><label>trades</label><value class="neutral" id="sTrades">—</value></div>
+    <div id="sourceList" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+  </header>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
     <div class="controls">
-      <input type="search" id="search" placeholder="search asset, batch, source" autocomplete="off" />
+      <input type="search" id="search" placeholder="search asset name or source" autocomplete="off" />
       <div class="filters" id="filters">
-        <span class="chip" data-filter="bet" data-value="UP">UP</span>
-        <span class="chip" data-filter="bet" data-value="DOWN">DOWN</span>
-        <span class="chip" data-filter="result" data-value="win">winners</span>
-        <span class="chip" data-filter="result" data-value="loss">losers</span>
-        <span class="chip" data-filter="settled" data-value="open">open</span>
+        <span class="chip bet-up" data-filter="last_bet" data-value="UP">last UP</span>
+        <span class="chip bet-down" data-filter="last_bet" data-value="DOWN">last DOWN</span>
+        <span class="chip" data-filter="settled" data-value="any">has settled</span>
       </div>
     </div>
 
@@ -151,22 +241,37 @@
     </div>
   </aside>
 
+  <!-- Main -->
   <main class="main">
     <div class="topbar">
       <div>
         <div class="title" id="chartTitle">Pick an asset.</div>
         <div class="subtitle" id="chartSubtitle">A market is a bet about a number that hasn't settled yet.</div>
       </div>
-      <div class="stats" id="chartStats"></div>
+      <div class="meta-stats" id="chartStats"></div>
     </div>
-    <div class="chart-wrap" id="chartWrap">
-      <div class="empty" id="emptyState">
-        <div>
-          <div>Nothing loaded.</div>
-          <div class="small">Pick a row on the left.</div>
+
+    <div class="chart-section">
+      <div class="canvas-host" id="priceHost">
+        <div class="empty" id="emptyState">
+          <div>
+            <div>Nothing loaded.</div>
+            <div class="small">Pick a row on the left.</div>
+          </div>
         </div>
+        <canvas id="chart" hidden></canvas>
       </div>
-      <canvas id="chart" hidden></canvas>
+    </div>
+
+    <div class="pnl-section">
+      <div class="header">
+        <h3>Simulated PnL — strategies vs the bot</h3>
+        <div class="legend" id="pnlLegend"></div>
+        <div class="totals" id="pnlTotals"></div>
+      </div>
+      <div class="canvas-host">
+        <canvas id="pnlChart"></canvas>
+      </div>
     </div>
   </main>
 </div>
@@ -176,73 +281,106 @@
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1/dist/chartjs-adapter-luxon.umd.min.js"></script>
 <script>
 (() => {
-  const ROW_HEIGHT = 44;
+  const ROW_HEIGHT = 46;
   const OVERSCAN = 8;
+  const TICK_SECS_DEFAULT = 60;
+
+  const STRATS = [
+    { key: "actual",         label: "bot's actual", color: "#e7eaef", on: true,
+      decide: (i, prices, ctx) => ctx.actualBet(prices[i].ts) },
+    { key: "momentum",       label: "momentum (10)", color: "#74e0a3", on: true,
+      decide: (i, prices) => i >= 10 ? (prices[i].price > prices[i-10].price ? "UP" : "DOWN") : null },
+    { key: "contrarian",     label: "contrarian (10)", color: "#f87171", on: true,
+      decide: (i, prices) => i >= 10 ? (prices[i].price > prices[i-10].price ? "DOWN" : "UP") : null },
+    { key: "mean_reversion", label: "mean-revert (30)", color: "#b19cd9", on: true,
+      decide: (i, prices) => {
+        if (i < 30) return null;
+        let s = 0; for (let k = i-29; k <= i; k++) s += prices[k].price;
+        const ma = s / 30;
+        return prices[i].price > ma * 1.005 ? "DOWN" : prices[i].price < ma * 0.995 ? "UP" : null;
+      } },
+    { key: "random",         label: "random (seeded)", color: "#6aa9ff", on: true,
+      decide: (i, prices) => {
+        // deterministic by ts so repeated viewing matches
+        const t = prices[i].ts | 0;
+        return ((Math.sin(t * 12.9898) * 43758.5453) % 1) > 0 ? "UP" : "DOWN";
+      } },
+  ];
 
   const state = {
-    items: [],
-    filtered: [],
-    filters: { bet: null, result: null, settled: null },
-    query: "",
-    activeIdx: -1,
-    chart: null,
-    abortCtrl: null,
+    items: [], filtered: [], filters: { last_bet: null, settled: null },
+    query: "", activeIdx: -1, priceChart: null, pnlChart: null,
+    abortCtrl: null, stratOn: Object.fromEntries(STRATS.map(s => [s.key, s.on])),
   };
 
   // ── Boot ─────────────────────────────────────────────────────
   fetch("./index.json", { cache: "no-store" })
-    .then(r => {
-      if (!r.ok) throw new Error("index.json missing — run download.py first");
-      return r.json();
-    })
+    .then(r => { if (!r.ok) throw new Error("index.json missing"); return r.json(); })
     .then(doc => {
       state.items = doc.items || [];
       state.filtered = state.items;
-      const sum = document.getElementById("summary");
-      const fresh = doc.generated_at
-        ? new Date(doc.generated_at * 1000).toLocaleString()
-        : "unknown";
-      sum.textContent = `${doc.batch_count} batches · ${doc.asset_count} assets · ${fresh}`;
+
+      document.getElementById("botAddr").textContent =
+        (doc.player || "").slice(0, 10) + "…" + (doc.player || "").slice(-4);
+
+      const s = doc.stats || {};
+      setStat("sActive", s.active_batches);
+      setStat("sSettled", s.settled_batches);
+      setStat("sDeposit", s.total_deposited_usdc, "$");
+      setStat("sPnl", s.total_settled_pnl_usdc, "$", true);
+      setStat("sAssets", s.asset_count);
+      setStat("sTrades", s.trade_count);
+      const sl = document.getElementById("sourceList");
+      sl.innerHTML = "";
+      for (const src of (s.sources || [])) {
+        const el = document.createElement("span");
+        el.className = "src-pill"; el.textContent = src;
+        sl.appendChild(el);
+      }
       document.getElementById("totalCount").textContent = `${state.items.length} total`;
       renderList();
     })
     .catch(e => {
-      document.getElementById("summary").textContent = "no data";
       document.getElementById("emptyState").innerHTML =
-        `<div><div style="color:var(--accent-2)">${escape(e.message)}</div>` +
-        `<div class="small">Run <code>python download.py</code>, then reload.</div></div>`;
+        `<div><div style="color:var(--red)">${escape(e.message)}</div>` +
+        `<div class="small">Run the downloader, then reload.</div></div>`;
     });
+
+  function setStat(id, value, prefix = "", colorize = false) {
+    const el = document.getElementById(id);
+    if (value == null) { el.textContent = "—"; return; }
+    const sign = value > 0 ? "+" : "";
+    el.textContent = (typeof value === "number")
+      ? `${prefix}${sign}${value.toFixed(prefix === "$" ? 2 : 0)}`
+      : String(value);
+    el.classList.remove("pos", "neg", "neutral");
+    if (colorize && typeof value === "number") {
+      el.classList.add(value > 0 ? "pos" : value < 0 ? "neg" : "neutral");
+    } else {
+      el.classList.add("neutral");
+    }
+  }
 
   // ── Search & filters ─────────────────────────────────────────
   document.getElementById("search").addEventListener("input", (e) => {
     state.query = e.target.value.trim().toLowerCase();
     applyFilters();
   });
-
   document.getElementById("filters").addEventListener("click", (e) => {
-    const chip = e.target.closest(".chip");
-    if (!chip) return;
-    const f = chip.dataset.filter;
-    const v = chip.dataset.value;
+    const chip = e.target.closest(".chip"); if (!chip) return;
+    const f = chip.dataset.filter, v = chip.dataset.value;
     state.filters[f] = state.filters[f] === v ? null : v;
-    document.querySelectorAll(`.chip[data-filter="${f}"]`).forEach(c => {
-      c.classList.toggle("on", c.dataset.value === state.filters[f]);
-    });
-    chip.classList.toggle("bet-up", v === "UP");
-    chip.classList.toggle("bet-down", v === "DOWN");
+    document.querySelectorAll(`.chip[data-filter="${f}"]`).forEach(c =>
+      c.classList.toggle("on", c.dataset.value === state.filters[f]));
     applyFilters();
   });
-
   function applyFilters() {
-    const q = state.query;
-    const f = state.filters;
+    const q = state.query, f = state.filters;
     state.filtered = state.items.filter(it => {
-      if (f.bet && it.bet !== f.bet) return false;
-      if (f.result === "win" && !(it.pnl_usdc > 0)) return false;
-      if (f.result === "loss" && !(it.pnl_usdc < 0)) return false;
-      if (f.settled === "open" && it.settled) return false;
+      if (f.last_bet && it.last_bet !== f.last_bet) return false;
+      if (f.settled === "any" && it.settled_pnl_usdc == null) return false;
       if (q) {
-        const hay = `${it.asset_id} ${it.asset_name} ${it.source_id} ${it.batch_id}`.toLowerCase();
+        const hay = `${it.asset_id} ${it.asset_name} ${it.source_name}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
@@ -269,19 +407,20 @@
     let html = "";
     for (let i = start; i < end; i++) {
       const it = state.filtered[i];
-      const betCls = it.bet === "UP" ? "up" : it.bet === "DOWN" ? "down" : "flat";
-      const betLabel = it.bet || "—";
-      const pnl = it.pnl_usdc;
-      const pnlCls = pnl > 0 ? "win" : pnl < 0 ? "loss" : "flat";
+      const last = it.last_bet;
+      const betCls = last === "UP" ? "up" : last === "DOWN" ? "down" : "flat";
+      const pnl = it.settled_pnl_usdc;
       const pnlText = pnl == null ? "" : (pnl > 0 ? "+" : "") + pnl.toFixed(2);
+      const pnlCls = pnl == null ? "flat" : pnl > 0 ? "win" : pnl < 0 ? "loss" : "flat";
       const active = (i === state.activeIdx) ? " active" : "";
+      const tradeCount = it.trade_count;
       html += `<div class="row${active}" data-idx="${i}" style="height:${ROW_HEIGHT}px">
         <div>
-          <div class="name">${escape(it.asset_name || it.asset_id)}</div>
-          <div class="meta">batch ${it.batch_id} · ${escape(it.source_id || "?")}</div>
+          <div class="name">${escape(it.asset_name)}</div>
+          <div class="meta">${escape(it.source_name || "?")} · ${tradeCount} ${tradeCount === 1 ? "trade" : "trades"}</div>
         </div>
         <div class="right">
-          <div><span class="pill ${betCls}">${betLabel}</span></div>
+          <div><span class="pill ${betCls}">${last || "—"}</span></div>
           <div class="meta ${pnlCls}">${pnlText}</div>
         </div>
       </div>`;
@@ -291,28 +430,22 @@
   }
 
   win.addEventListener("click", (e) => {
-    const row = e.target.closest(".row");
-    if (!row) return;
+    const row = e.target.closest(".row"); if (!row) return;
     const idx = +row.dataset.idx;
-    selectRow(idx);
-  });
-
-  function selectRow(idx) {
     if (idx === state.activeIdx) return;
     state.activeIdx = idx;
     renderList();
-    const item = state.filtered[idx];
-    if (item) loadAsset(item);
-  }
+    loadAsset(state.filtered[idx]);
+  });
 
-  // ── Asset load (lazy, abortable) ─────────────────────────────
+  // ── Asset load ───────────────────────────────────────────────
   async function loadAsset(item) {
     const empty = document.getElementById("emptyState");
     empty.hidden = false;
-    empty.innerHTML = `<div>loading <b>${escape(item.asset_name || item.asset_id)}</b>…</div>`;
-    document.getElementById("chartTitle").textContent = item.asset_name || item.asset_id;
+    empty.innerHTML = `<div>loading <b>${escape(item.asset_name)}</b>…</div>`;
+    document.getElementById("chartTitle").textContent = item.asset_name;
     document.getElementById("chartSubtitle").textContent =
-      `batch ${item.batch_id} · source ${item.source_id || "?"} · ${item.points} points`;
+      `${item.source_name} · asset id ${item.asset_id}`;
     document.getElementById("chartStats").innerHTML = "";
 
     if (state.abortCtrl) state.abortCtrl.abort();
@@ -325,110 +458,216 @@
       doc = await r.json();
     } catch (e) {
       if (e.name === "AbortError") return;
-      empty.innerHTML = `<div style="color:var(--accent-2)">load failed: ${escape(e.message)}</div>`;
+      empty.innerHTML = `<div style="color:var(--red)">load failed: ${escape(e.message)}</div>`;
       return;
     }
-    drawChart(doc);
+    drawAll(doc);
   }
 
-  function drawChart(doc) {
-    const canvas = document.getElementById("chart");
+  function drawAll(doc) {
     const empty = document.getElementById("emptyState");
-    const stats = document.getElementById("chartStats");
-
+    const canvas = document.getElementById("chart");
     const series = doc.history || [];
-    const trade = doc.trade || {};
+    const trades = (doc.trades || []).slice().sort((a, b) => a.joined_at - b.joined_at);
+    const stats = document.getElementById("chartStats");
 
     if (!series.length) {
       empty.hidden = false;
-      empty.innerHTML = `<div>no price history available for this asset</div>`;
+      empty.innerHTML = `<div>no price history available</div>`;
       canvas.hidden = true;
-      if (state.chart) { state.chart.destroy(); state.chart = null; }
+      if (state.priceChart) { state.priceChart.destroy(); state.priceChart = null; }
+      drawPnL([], [], TICK_SECS_DEFAULT);
       return;
     }
+    empty.hidden = true; canvas.hidden = false;
 
-    canvas.hidden = false;
-    empty.hidden = true;
+    drawPriceChart(canvas, series, trades);
+    drawStatsLine(stats, doc, trades);
 
+    const tickSecs = (trades[0] && trades[0].tick_duration) || TICK_SECS_DEFAULT;
+    drawPnL(series, trades, tickSecs);
+  }
+
+  function drawStatsLine(target, doc, trades) {
+    const settled = trades.filter(t => t.settled);
+    const totalPnl = settled.reduce((s, t) => s + (t.pnl_usdc || 0), 0);
+    const wins = settled.filter(t => (t.pnl_usdc || 0) > 0).length;
+    const losses = settled.filter(t => (t.pnl_usdc || 0) < 0).length;
+    const ups = trades.filter(t => t.bet === "UP").length;
+    const downs = trades.length - ups;
+
+    const parts = [];
+    parts.push(`<span><b>${trades.length}</b> trades</span>`);
+    parts.push(`<span class="pill up">${ups} UP</span><span class="pill down">${downs} DOWN</span>`);
+    if (settled.length) {
+      const cls = totalPnl >= 0 ? "win" : "loss";
+      const sign = totalPnl >= 0 ? "+" : "";
+      parts.push(`<span>settled pnl <b class="${cls}">${sign}${totalPnl.toFixed(2)}</b></span>`);
+      parts.push(`<span><b class="win">${wins}W</b> / <b class="loss">${losses}L</b></span>`);
+    } else {
+      parts.push(`<span style="color:var(--warn)">${trades.length} open</span>`);
+    }
+    target.innerHTML = parts.join(" · ");
+  }
+
+  // ── Price chart with bet markers ─────────────────────────────
+  function drawPriceChart(canvas, series, trades) {
     const points = series.map(p => ({ x: p.ts * 1000, y: p.price }));
-    const color = trade.bet === "UP" ? "#74e0a3"
-                : trade.bet === "DOWN" ? "#f87171"
-                : "#6aa9ff";
+    const upMarkers = trades.filter(t => t.bet === "UP")
+      .map(t => ({ x: t.joined_at * 1000, y: priceAt(series, t.joined_at) }));
+    const downMarkers = trades.filter(t => t.bet === "DOWN")
+      .map(t => ({ x: t.joined_at * 1000, y: priceAt(series, t.joined_at) }));
 
-    // Bet entry marker — annotated as a separate single-point dataset
-    const entryDataset = (trade.joined_at)
-      ? [{
-          label: `entry · ${trade.bet || "—"}`,
-          type: "scatter",
-          data: [{ x: trade.joined_at * 1000, y: priceAt(series, trade.joined_at) }],
-          borderColor: color, backgroundColor: color,
-          pointRadius: 8, pointHoverRadius: 10, showLine: false,
-          pointStyle: trade.bet === "DOWN" ? "triangle" : "triangle",
-          rotation: trade.bet === "DOWN" ? 180 : 0,
-        }]
-      : [];
-
-    if (state.chart) state.chart.destroy();
-    state.chart = new Chart(canvas.getContext("2d"), {
+    if (state.priceChart) state.priceChart.destroy();
+    state.priceChart = new Chart(canvas.getContext("2d"), {
       type: "line",
       data: {
         datasets: [
-          {
-            label: doc.asset_name || doc.asset_id,
-            data: points,
-            borderColor: "#a8b3c2",
-            backgroundColor: "rgba(168,179,194,0.06)",
-            borderWidth: 1.5,
-            fill: true,
-            tension: 0.15,
-            pointRadius: 0,
-          },
-          ...entryDataset,
+          { label: "price", data: points,
+            borderColor: "#a8b3c2", backgroundColor: "rgba(168,179,194,0.06)",
+            borderWidth: 1.5, fill: true, tension: 0.15, pointRadius: 0 },
+          { label: "UP bets", type: "scatter", data: upMarkers,
+            borderColor: "#74e0a3", backgroundColor: "#74e0a3",
+            pointRadius: 8, pointHoverRadius: 11, pointStyle: "triangle", showLine: false },
+          { label: "DOWN bets", type: "scatter", data: downMarkers,
+            borderColor: "#f87171", backgroundColor: "#f87171",
+            pointRadius: 8, pointHoverRadius: 11, pointStyle: "triangle", rotation: 180, showLine: false },
         ],
       },
       options: {
-        responsive: true, maintainAspectRatio: false,
-        animation: false, parsing: false, normalized: true,
+        responsive: true, maintainAspectRatio: false, animation: false,
+        parsing: false, normalized: true,
         interaction: { mode: "nearest", intersect: false },
         plugins: {
-          legend: { labels: { color: "#8b929d" } },
+          legend: { labels: { color: "#8b929d", boxWidth: 12, boxHeight: 12 } },
           tooltip: {
             backgroundColor: "#15181d", borderColor: "#20242b", borderWidth: 1,
             titleColor: "#e7eaef", bodyColor: "#e7eaef",
             callbacks: {
-              title: (items) => luxon.DateTime.fromMillis(items[0].parsed.x).toFormat("LLL d HH:mm"),
+              title: (it) => luxon.DateTime.fromMillis(it[0].parsed.x).toFormat("LLL d HH:mm"),
               label: (it) => ` ${it.dataset.label}: ${fmt(it.parsed.y)}`,
             },
           },
         },
         scales: {
-          x: {
-            type: "time",
-            time: { tooltipFormat: "LLL d HH:mm" },
-            ticks: { color: "#8b929d", maxRotation: 0, autoSkipPadding: 30 },
-            grid: { color: "rgba(255,255,255,0.04)" },
-          },
-          y: {
-            ticks: { color: "#8b929d" },
-            grid: { color: "rgba(255,255,255,0.04)" },
-          },
+          x: { type: "time", ticks: { color: "#8b929d", maxRotation: 0, autoSkipPadding: 30 },
+               grid: { color: "rgba(255,255,255,0.04)" } },
+          y: { ticks: { color: "#8b929d" }, grid: { color: "rgba(255,255,255,0.04)" } },
         },
       },
     });
+  }
 
-    // Stats line above the chart
-    const parts = [];
-    if (trade.bet) parts.push(`bet <b class="${trade.bet === 'UP' ? 'win' : 'loss'}">${trade.bet}</b>`);
-    if (trade.deposit_usdc != null) parts.push(`deposit <b>${trade.deposit_usdc.toFixed(2)}</b>`);
-    if (trade.balance_usdc != null) parts.push(`balance <b>${trade.balance_usdc.toFixed(2)}</b>`);
-    if (trade.pnl_usdc != null) {
-      const sign = trade.pnl_usdc >= 0 ? "+" : "";
-      const cls = trade.pnl_usdc >= 0 ? "win" : "loss";
-      parts.push(`pnl <b class="${cls}">${sign}${trade.pnl_usdc.toFixed(2)}</b>`);
+  // ── Simulated PnL panel ──────────────────────────────────────
+  function drawPnL(series, trades, tickSecs) {
+    const canvas = document.getElementById("pnlChart");
+    const totalsEl = document.getElementById("pnlTotals");
+    const legendEl = document.getElementById("pnlLegend");
+
+    if (!series.length || series.length < 11) {
+      if (state.pnlChart) { state.pnlChart.destroy(); state.pnlChart = null; }
+      totalsEl.textContent = "";
+      legendEl.innerHTML = "";
+      return;
     }
-    if (trade.settled === false) parts.push(`<span style="color:var(--warn)">open</span>`);
-    if (trade.market_count) parts.push(`${trade.market_count} markets`);
-    stats.innerHTML = parts.join(" · ");
+
+    // Build "actual bet at time t" lookup from trades. The bot held one bet
+    // per batch over its tick window. Approximate: for each trade, the bet is
+    // active from joined_at to joined_at + tick_duration*N. We don't know N
+    // precisely, so the bet stays "current" until the next trade's joined_at.
+    const sortedTrades = [...trades].sort((a, b) => a.joined_at - b.joined_at);
+    function actualBet(ts) {
+      // find the latest trade with joined_at <= ts
+      let best = null;
+      for (const t of sortedTrades) {
+        if (t.joined_at <= ts) best = t; else break;
+      }
+      // expire after ~30 ticks if there's no later trade
+      if (!best) return null;
+      const window = (best.tick_duration || tickSecs) * 30;
+      if (ts - best.joined_at > window) return null;
+      return best.bet;
+    }
+
+    // Walk forward. At each step i, each strategy produces a bet looking at
+    // prices[0..i]. Then PnL[i+1] = +1 if bet matches sign(price[i+1]-price[i])
+    // else -1. Cumulative.
+    const datasets = [];
+    const totals = {};
+    const stratCtx = { actualBet };
+
+    for (const s of STRATS) {
+      if (!state.stratOn[s.key]) continue;
+      let cum = 0;
+      const data = [{ x: series[0].ts * 1000, y: 0 }];
+      for (let i = 0; i + 1 < series.length; i++) {
+        const bet = s.decide(i, series, stratCtx);
+        if (bet) {
+          const moveUp = series[i + 1].price > series[i].price;
+          const moveDown = series[i + 1].price < series[i].price;
+          if (moveUp || moveDown) {
+            cum += (bet === "UP" && moveUp) || (bet === "DOWN" && moveDown) ? 1 : -1;
+          }
+        }
+        data.push({ x: series[i + 1].ts * 1000, y: cum });
+      }
+      datasets.push({
+        label: s.label, data,
+        borderColor: s.color, backgroundColor: s.color,
+        borderWidth: 1.5, pointRadius: 0, tension: 0.05,
+      });
+      totals[s.key] = cum;
+    }
+
+    // Legend with toggles
+    legendEl.innerHTML = "";
+    for (const s of STRATS) {
+      const item = document.createElement("div");
+      item.className = "item" + (state.stratOn[s.key] ? "" : " off");
+      item.innerHTML = `<span class="swatch" style="background:${s.color}"></span>${s.label}`;
+      item.onclick = () => {
+        state.stratOn[s.key] = !state.stratOn[s.key];
+        drawPnL(series, trades, tickSecs);
+      };
+      legendEl.appendChild(item);
+    }
+
+    // Totals strip
+    const tparts = STRATS.filter(s => state.stratOn[s.key]).map(s => {
+      const v = totals[s.key];
+      const sign = v > 0 ? "+" : "";
+      const cls = v > 0 ? "pos" : v < 0 ? "neg" : "neutral";
+      return `<span><span style="color:${s.color}">●</span> <b style="color:var(--${cls === 'pos' ? 'green' : cls === 'neg' ? 'red' : 'text'})">${sign}${v}</b></span>`;
+    });
+    totalsEl.innerHTML = tparts.join(" ");
+
+    if (state.pnlChart) state.pnlChart.destroy();
+    state.pnlChart = new Chart(canvas.getContext("2d"), {
+      type: "line",
+      data: { datasets },
+      options: {
+        responsive: true, maintainAspectRatio: false, animation: false,
+        parsing: false, normalized: true,
+        interaction: { mode: "nearest", intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: "#15181d", borderColor: "#20242b", borderWidth: 1,
+            titleColor: "#e7eaef", bodyColor: "#e7eaef",
+            callbacks: {
+              title: (it) => luxon.DateTime.fromMillis(it[0].parsed.x).toFormat("LLL d HH:mm"),
+              label: (it) => ` ${it.dataset.label}: ${it.parsed.y > 0 ? '+' : ''}${it.parsed.y}`,
+            },
+          },
+        },
+        scales: {
+          x: { type: "time", ticks: { color: "#8b929d", maxRotation: 0, autoSkipPadding: 30 },
+               grid: { color: "rgba(255,255,255,0.04)" } },
+          y: { ticks: { color: "#8b929d" }, grid: { color: "rgba(255,255,255,0.04)" },
+               title: { display: true, text: "cumulative ticks won − lost", color: "#8b929d", font: { size: 10 } } },
+        },
+      },
+    });
   }
 
   // ── Helpers ──────────────────────────────────────────────────
@@ -453,8 +692,10 @@
       .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
 
-  // Keep the chart sized when the window changes.
-  window.addEventListener("resize", () => state.chart && state.chart.resize());
+  window.addEventListener("resize", () => {
+    if (state.priceChart) state.priceChart.resize();
+    if (state.pnlChart) state.pnlChart.resize();
+  });
 })();
 </script>
 </body>
