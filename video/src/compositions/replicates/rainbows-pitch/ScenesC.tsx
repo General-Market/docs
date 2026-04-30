@@ -8,17 +8,13 @@ const { fontFamily } = loadFont("normal", { subsets: ["latin"], weights: ["400",
 const BLUE = "#0040FF";
 
 /* ═══════════════════════════════════════════════════════
-   Scene 09 — Experience
-   "experience" in serif italic + expanding concentric circles
+   Scene 09 — Concentric circles + "gain more"
    48 frames (2s @ 24fps)
    ═══════════════════════════════════════════════════════ */
 
 export const Scene09_Experience: React.FC = () => {
   const s = useGsapProxy(
     (tl, p) => {
-      // text visible immediately — already opacity 1
-
-      // 6 concentric circles, staggered expansion
       const circles = [p.c0, p.c1, p.c2, p.c3, p.c4, p.c5];
       const maxSizes = [90, 262, 434, 606, 778, 950];
 
@@ -69,6 +65,9 @@ export const Scene09_Experience: React.FC = () => {
           left: "50%",
           transform: "translate(-50%, -50%)",
           opacity: s.text.opacity,
+          display: "flex",
+          gap: 28,
+          whiteSpace: "nowrap",
         }}
       >
         <span
@@ -76,12 +75,24 @@ export const Scene09_Experience: React.FC = () => {
             fontFamily: 'Georgia, "Times New Roman", serif',
             fontWeight: 400,
             fontStyle: "italic",
-            fontSize: 160,
+            fontSize: 175,
             color: "#fff",
             lineHeight: 1.15,
           }}
         >
-          experience
+          gain
+        </span>
+        <span
+          style={{
+            fontFamily: 'Georgia, "Times New Roman", serif',
+            fontWeight: 400,
+            fontStyle: "italic",
+            fontSize: 175,
+            color: "#fff",
+            lineHeight: 1.15,
+          }}
+        >
+          more
         </span>
       </div>
     </AbsoluteFill>
@@ -89,58 +100,43 @@ export const Scene09_Experience: React.FC = () => {
 };
 
 /* ═══════════════════════════════════════════════════════
-   Scene 10 — LiveTestnet
-   Phase 1: "Flashblocks are live on" word-by-word
-   Phase 2: "Testnet" title + subtitle word-by-word
-   84 frames (3.5s @ 24fps)
+   Scene 10 — Cascade → title  (84 frames = 3.5s @ 24fps)
+   Phase 1: "Leaving / the / same / profits" word cascade
+   Phase 2: "to fewer honest traders" title slides in
    ═══════════════════════════════════════════════════════ */
 
-const SUBTITLE_WORDS = ["(with", "mainnet", "coming", "this", "summer)"];
+const SCENE10_PHASE1 = ["Leaving", "the", "same", "profits"] as const;
+const SCENE10_PHASE2 = ["to", "fewer", "honest", "traders"] as const;
+
+function buildScene10Proxies() {
+  const init: Record<string, Record<string, number>> = {
+    phase1: { opacity: 1 },
+    title: { opacity: 0, scale: 0.92 },
+  };
+  SCENE10_PHASE1.forEach((w) => { init[`p1_${w}`] = { opacity: 0, y: 15 }; });
+  SCENE10_PHASE2.forEach((w) => { init[`p2_${w}`] = { opacity: 0, y: 12 }; });
+  return init;
+}
 
 export const Scene10_LiveTestnet: React.FC = () => {
   const s = useGsapProxy(
     (tl, p) => {
-      // Phase 1 words — visible immediately, staggered
-      tl.to(p.flash, { opacity: 1, y: 0, duration: 0.15, ease: "power2.out" }, 0.0);
-      tl.to(p.are, { opacity: 1, y: 0, duration: 0.15, ease: "power2.out" }, 0.15);
-      tl.to(p.live, { opacity: 1, y: 0, duration: 0.15, ease: "power2.out" }, 0.3);
-      tl.to(p.on, { opacity: 1, y: 0, duration: 0.15, ease: "power2.out" }, 0.45);
+      // Phase 1 cascade
+      SCENE10_PHASE1.forEach((w, i) => {
+        tl.to(p[`p1_${w}`], { opacity: 1, y: 0, duration: 0.16, ease: "power2.out" }, i * 0.16);
+      });
+      // Phase 1 fades out
+      tl.to(p.phase1, { opacity: 0, duration: 0.22 }, 1.05);
 
-      // Phase 1 fade out
-      tl.to(p.phase1, { opacity: 0, duration: 0.2 }, 1.0);
-
-      // Phase 2: Testnet
-      tl.to(p.testnet, { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(1.4)" }, 1.2);
-
-      // Subtitle words one at a time
-      const subKeys = [p.sw0, p.sw1, p.sw2, p.sw3, p.sw4];
-      subKeys.forEach((sw, i) => {
-        tl.to(sw, { opacity: 1, y: 0, duration: 0.12, ease: "power2.out" }, 1.6 + i * 0.1);
+      // Phase 2 title
+      tl.to(p.title, { opacity: 1, scale: 1, duration: 0.35, ease: "back.out(1.4)" }, 1.25);
+      // Phase 2 word cascade
+      SCENE10_PHASE2.forEach((w, i) => {
+        tl.to(p[`p2_${w}`], { opacity: 1, y: 0, duration: 0.14, ease: "power2.out" }, 1.4 + i * 0.13);
       });
     },
-    {
-      flash: { opacity: 0, y: 15 },
-      are: { opacity: 0, y: 15 },
-      live: { opacity: 0, y: 15 },
-      on: { opacity: 0, y: 15 },
-      phase1: { opacity: 1 },
-      testnet: { opacity: 0, scale: 0.92 },
-      sw0: { opacity: 0, y: 10 },
-      sw1: { opacity: 0, y: 10 },
-      sw2: { opacity: 0, y: 10 },
-      sw3: { opacity: 0, y: 10 },
-      sw4: { opacity: 0, y: 10 },
-    },
+    buildScene10Proxies(),
   );
-
-  const phase1Words = [
-    { proxy: s.flash, word: "Flashblocks" },
-    { proxy: s.are, word: "are" },
-    { proxy: s.live, word: "live" },
-    { proxy: s.on, word: "on" },
-  ];
-
-  const subProxies = [s.sw0, s.sw1, s.sw2, s.sw3, s.sw4];
 
   return (
     <AbsoluteFill>
@@ -154,117 +150,107 @@ export const Scene10_LiveTestnet: React.FC = () => {
           left: "6%",
           display: "flex",
           flexWrap: "wrap",
-          gap: "0 16px",
+          gap: "0 18px",
           maxWidth: "88%",
           opacity: s.phase1.opacity,
         }}
       >
-        {phase1Words.map(({ proxy, word }) => (
-          <span
-            key={word}
-            style={{
-              fontFamily,
-              fontSize: 160,
-              fontWeight: 700,
-              fontStyle: "italic",
-              color: BLUE,
-              opacity: proxy.opacity,
-              transform: `translateY(${proxy.y}px)`,
-              display: "inline-block",
-              lineHeight: 1.15,
-            }}
-          >
-            {word}
-          </span>
-        ))}
-      </div>
-
-      {/* Phase 2: Testnet */}
-      <div
-        style={{
-          position: "absolute",
-          top: "40%",
-          left: "50%",
-          transform: `translate(-50%, 0) scale(${s.testnet.scale})`,
-          opacity: s.testnet.opacity,
-          textAlign: "center",
-        }}
-      >
-        <span
-          style={{
-            fontFamily,
-            fontSize: 200,
-            fontWeight: 700,
-            color: BLUE,
-            display: "block",
-            lineHeight: 1.15,
-          }}
-        >
-          Testnet
-        </span>
-
-        <div
-          style={{
-            marginTop: 16,
-            display: "flex",
-            flexWrap: "wrap",
-            justifyContent: "center",
-            gap: "0 8px",
-          }}
-        >
-          {SUBTITLE_WORDS.map((word, i) => (
+        {SCENE10_PHASE1.map((word) => {
+          const p = s[`p1_${word}`];
+          return (
             <span
-              key={i}
+              key={word}
               style={{
                 fontFamily,
-                fontSize: 72,
-                fontWeight: 400,
+                fontSize: 155,
+                fontWeight: 700,
                 fontStyle: "italic",
                 color: BLUE,
-                opacity: subProxies[i].opacity,
-                transform: `translateY(${subProxies[i].y}px)`,
+                opacity: p.opacity,
+                transform: `translateY(${p.y}px)`,
                 display: "inline-block",
-                lineHeight: 1.4,
+                lineHeight: 1.15,
               }}
             >
               {word}
             </span>
-          ))}
-        </div>
+          );
+        })}
+      </div>
+
+      {/* Phase 2 — title */}
+      <div
+        style={{
+          position: "absolute",
+          top: "42%",
+          left: "50%",
+          transform: `translate(-50%, 0) scale(${s.title.scale})`,
+          opacity: s.title.opacity,
+          textAlign: "center",
+          display: "flex",
+          flexWrap: "wrap",
+          justifyContent: "center",
+          gap: "0 22px",
+          maxWidth: "92%",
+        }}
+      >
+        {SCENE10_PHASE2.map((word) => {
+          const p = s[`p2_${word}`];
+          return (
+            <span
+              key={word}
+              style={{
+                fontFamily,
+                fontSize: 175,
+                fontWeight: 800,
+                fontStyle: "italic",
+                color: BLUE,
+                opacity: p.opacity,
+                transform: `translateY(${p.y}px)`,
+                display: "inline-block",
+                lineHeight: 1.15,
+              }}
+            >
+              {word}
+            </span>
+          );
+        })}
       </div>
     </AbsoluteFill>
   );
 };
 
 /* ═══════════════════════════════════════════════════════
-   Scene 11 — NewSpeed
-   "is" → "new" → "new speed"
+   Scene 11 — "while" → "trading" → "the same assets"
    48 frames (2s @ 24fps)
    ═══════════════════════════════════════════════════════ */
 
 export const Scene11_NewSpeed: React.FC = () => {
   const s = useGsapProxy(
     (tl, p) => {
-      // "is" visible immediately
-      tl.set(p.is, { opacity: 1 });
-      // "is" fades out at 0.35s
-      tl.to(p.is, { opacity: 0, duration: 0.05 }, 0.35);
+      tl.set(p.while_, { opacity: 1 });
+      tl.to(p.while_, { opacity: 0, duration: 0.08 }, 0.4);
 
-      // "new" fades in at 0.4s
-      tl.to(p.new_, { opacity: 1, y: 0, duration: 0.15, ease: "power2.out" }, 0.4);
+      tl.to(p.trading, { opacity: 1, y: 0, duration: 0.16, ease: "power2.out" }, 0.5);
+      tl.to(p.trading, { opacity: 0, duration: 0.08 }, 1.0);
 
-      // "speed" fades in at 0.6s
-      tl.to(p.speed, { opacity: 1, y: 0, duration: 0.15, ease: "power2.out" }, 0.6);
+      tl.to(p.the_, { opacity: 1, y: 0, duration: 0.14, ease: "power2.out" }, 1.1);
+      tl.to(p.same, { opacity: 1, y: 0, duration: 0.14, ease: "power2.out" }, 1.25);
+      tl.to(p.assets, { opacity: 1, y: 0, duration: 0.14, ease: "power2.out" }, 1.4);
     },
     {
-      is: { opacity: 0, y: 0 },
-      new_: { opacity: 0, y: 12 },
-      speed: { opacity: 0, y: 12 },
+      while_: { opacity: 0, y: 0 },
+      trading: { opacity: 0, y: 12 },
+      the_: { opacity: 0, y: 12 },
+      same: { opacity: 0, y: 12 },
+      assets: { opacity: 0, y: 12 },
     },
   );
 
-  const showIs = s.is.opacity > 0.01;
-  const showNewSpeed = s.new_.opacity > 0.01 || s.speed.opacity > 0.01;
+  const showWhile = s.while_.opacity > 0.01;
+  const showTrading = s.trading.opacity > 0.01;
+  const showFinal =
+    s.the_.opacity > 0.01 || s.same.opacity > 0.01 || s.assets.opacity > 0.01;
 
   const textStyle: React.CSSProperties = {
     fontFamily,
@@ -288,36 +274,53 @@ export const Scene11_NewSpeed: React.FC = () => {
           left: "50%",
           transform: "translate(-50%, -50%)",
           display: "flex",
-          gap: 18,
+          gap: 22,
           justifyContent: "center",
           whiteSpace: "nowrap",
         }}
       >
-        {showIs && (
-          <span style={{ ...textStyle, opacity: s.is.opacity }}>
-            is
+        {showWhile && (
+          <span style={{ ...textStyle, opacity: s.while_.opacity }}>while</span>
+        )}
+        {showTrading && (
+          <span
+            style={{
+              ...textStyle,
+              opacity: s.trading.opacity,
+              transform: `translateY(${s.trading.y}px)`,
+            }}
+          >
+            trading
           </span>
         )}
-
-        {showNewSpeed && (
+        {showFinal && (
           <>
             <span
               style={{
                 ...textStyle,
-                opacity: s.new_.opacity,
-                transform: `translateY(${s.new_.y}px)`,
+                opacity: s.the_.opacity,
+                transform: `translateY(${s.the_.y}px)`,
               }}
             >
-              new
+              the
             </span>
             <span
               style={{
                 ...textStyle,
-                opacity: s.speed.opacity,
-                transform: `translateY(${s.speed.y}px)`,
+                opacity: s.same.opacity,
+                transform: `translateY(${s.same.y}px)`,
               }}
             >
-              speed
+              same
+            </span>
+            <span
+              style={{
+                ...textStyle,
+                opacity: s.assets.opacity,
+                transform: `translateY(${s.assets.y}px)`,
+              }}
+            >
+              assets.
             </span>
           </>
         )}
@@ -327,29 +330,25 @@ export const Scene11_NewSpeed: React.FC = () => {
 };
 
 /* ═══════════════════════════════════════════════════════
-   Scene 12 — Finale
-   "Flashblocks" + tagline + dark fade
-   173 frames (7.2s @ 24fps)
+   Scene 12 — Finale  (173 frames = 7.2s @ 24fps)
+   "General." + "Markets for everything." + dark fade
    ═══════════════════════════════════════════════════════ */
 
 export const Scene12_Finale: React.FC = () => {
   const s = useGsapProxy(
     (tl, p) => {
-      // Title fades in 0.0-0.3s
-      tl.to(p.title, { opacity: 1, y: 0, duration: 0.3, ease: "power2.out" }, 0.0);
-
-      // Tagline appears at 2.0s
-      tl.to(p.tagline, { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" }, 2.0);
-
-      // Dark overlay 3.5s-5.5s
-      tl.to(p.darkOverlay, { opacity: 0.85, duration: 2.0, ease: "power1.in" }, 3.5);
-
-      // Text fades 3.5s-5.5s
-      tl.to(p.textFade, { opacity: 0.4, duration: 2.0, ease: "power1.in" }, 3.5);
+      // Title fades in 0.0–0.4s
+      tl.to(p.title, { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" }, 0.0);
+      // Tagline at 1.6s
+      tl.to(p.tagline, { opacity: 1, y: 0, duration: 0.45, ease: "power2.out" }, 1.6);
+      // Dark overlay 4.0–6.5s
+      tl.to(p.darkOverlay, { opacity: 0.88, duration: 2.5, ease: "power1.in" }, 4.0);
+      // Text fades 4.0–6.5s
+      tl.to(p.textFade, { opacity: 0.35, duration: 2.5, ease: "power1.in" }, 4.0);
     },
     {
-      title: { opacity: 0, y: 10 },
-      tagline: { opacity: 0, y: 15 },
+      title: { opacity: 0, y: 12 },
+      tagline: { opacity: 0, y: 18 },
       darkOverlay: { opacity: 0 },
       textFade: { opacity: 1 },
     },
@@ -359,7 +358,6 @@ export const Scene12_Finale: React.FC = () => {
     <AbsoluteFill>
       <BlueGradient />
 
-      {/* text layer */}
       <div
         style={{
           position: "absolute",
@@ -374,9 +372,9 @@ export const Scene12_Finale: React.FC = () => {
         <span
           style={{
             fontFamily,
-            fontSize: 200,
+            fontSize: 230,
             fontWeight: 800,
-            fontStyle: "normal",
+            fontStyle: "italic",
             color: "#fff",
             display: "block",
             lineHeight: 1.15,
@@ -384,7 +382,7 @@ export const Scene12_Finale: React.FC = () => {
             transform: `translateY(${s.title.y}px)`,
           }}
         >
-          Flashblocks
+          General.
         </span>
 
         <span
@@ -396,12 +394,12 @@ export const Scene12_Finale: React.FC = () => {
             color: "#fff",
             display: "block",
             lineHeight: 1.3,
-            marginTop: 20,
+            marginTop: 28,
             opacity: s.tagline.opacity,
             transform: `translateY(${s.tagline.y}px)`,
           }}
         >
-          fast just got faster
+          Markets for everything.
         </span>
       </div>
 

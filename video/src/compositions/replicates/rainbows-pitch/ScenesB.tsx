@@ -6,6 +6,7 @@ import { useGsapProxy } from "./gsapUtils";
 
 const { fontFamily } = loadFont("normal", { subsets: ["latin"], weights: ["400", "700", "800"] });
 const BLUE = "#0040FF";
+const STRIKE_RED = "#ff2a2a";
 
 const baseText: React.CSSProperties = {
   fontFamily,
@@ -15,18 +16,18 @@ const baseText: React.CSSProperties = {
   display: "inline-block",
 };
 
-// ────────────────────────────────────────────────────────
-// Scene 05 — "Instead of waiting two seconds"
-// 48 frames = 2s @ 24fps
-// ────────────────────────────────────────────────────────
+/* ════════════════════════════════════════════════════════
+   Scene 05 — Two-phase phrase  (48 frames = 2s @ 24fps)
+   "Removing" → "what shouldn't be here."
+   ════════════════════════════════════════════════════════ */
 
-const SCENE05_PHASE1 = ["Instead", "of", "waiting", "two", "seconds"] as const;
-const SCENE05_PHASE2 = ["for", "the", "next", "block"] as const;
+const SCENE05_PHASE1 = ["Removing"] as const;
+const SCENE05_PHASE2 = ["what", "shouldn't", "be", "here."] as const;
 
 function buildScene05Proxies() {
   const init: Record<string, { opacity: number; y: number }> = {};
-  for (const w of SCENE05_PHASE1) init[`p1_${w}`] = { opacity: 0, y: 15 };
-  for (const w of SCENE05_PHASE2) init[`p2_${w}`] = { opacity: 0, y: 15 };
+  SCENE05_PHASE1.forEach((w) => { init[`p1_${w}`] = { opacity: 0, y: 15 }; });
+  SCENE05_PHASE2.forEach((w) => { init[`p2_${w}`] = { opacity: 0, y: 15 }; });
   init.phase1Wrap = { opacity: 1, y: 0 };
   init.phase2Wrap = { opacity: 0, y: 0 };
   return init;
@@ -37,22 +38,16 @@ const scene05Init = buildScene05Proxies();
 export const Scene05_Waiting: React.FC = () => {
   const s = useGsapProxy(
     (tl, p) => {
-      // Phase 1 words
-      SCENE05_PHASE1.forEach((w, i) => {
-        const t = i * 0.15;
-        tl.to(p[`p1_${w}`], { opacity: 1, y: 0, duration: 0.12, ease: "power2.out" }, t);
-      });
-
-      // Phase 1 fade out
-      tl.to(p.phase1Wrap, { opacity: 0, duration: 0.15 }, 1.1);
-
-      // Phase 2 wrap fade in
-      tl.to(p.phase2Wrap, { opacity: 1, duration: 0.1 }, 1.2);
-
-      // Phase 2 words
+      // "Removing" enters at 0
+      tl.to(p[`p1_Removing`], { opacity: 1, y: 0, duration: 0.18, ease: "power2.out" }, 0.0);
+      // Phase 1 fades out
+      tl.to(p.phase1Wrap, { opacity: 0, duration: 0.18 }, 1.0);
+      // Phase 2 wrap fades in
+      tl.to(p.phase2Wrap, { opacity: 1, duration: 0.12 }, 1.1);
+      // Phase 2 words stagger
       SCENE05_PHASE2.forEach((w, i) => {
-        const t = 1.2 + i * 0.15;
-        tl.to(p[`p2_${w}`], { opacity: 1, y: 0, duration: 0.12, ease: "power2.out" }, t);
+        const t = 1.1 + i * 0.13;
+        tl.to(p[`p2_${w}`], { opacity: 1, y: 0, duration: 0.14, ease: "power2.out" }, t);
       });
     },
     scene05Init,
@@ -62,18 +57,15 @@ export const Scene05_Waiting: React.FC = () => {
     <AbsoluteFill>
       <BlueGradient />
       <AbsoluteFill>
-        {/* Phase 1 — left-aligned */}
+        {/* Phase 1 — centered */}
         <div
           style={{
             position: "absolute",
-            top: "45%",
-            left: "8%",
-            transform: "translateY(-50%)",
-            maxWidth: "80%",
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "0 20px",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
             opacity: s.phase1Wrap.opacity,
+            whiteSpace: "nowrap",
           }}
         >
           {SCENE05_PHASE1.map((word) => {
@@ -83,7 +75,7 @@ export const Scene05_Waiting: React.FC = () => {
                 key={word}
                 style={{
                   ...baseText,
-                  fontSize: 175,
+                  fontSize: 230,
                   color: "#fff",
                   opacity: p.opacity,
                   transform: `translateY(${p.y}px)`,
@@ -95,7 +87,7 @@ export const Scene05_Waiting: React.FC = () => {
           })}
         </div>
 
-        {/* Phase 2 — centered */}
+        {/* Phase 2 — centered, smaller */}
         <div
           style={{
             position: "absolute",
@@ -105,7 +97,8 @@ export const Scene05_Waiting: React.FC = () => {
             display: "flex",
             flexWrap: "wrap",
             justifyContent: "center",
-            gap: "0 18px",
+            gap: "0 24px",
+            maxWidth: "85%",
             opacity: s.phase2Wrap.opacity,
           }}
         >
@@ -116,8 +109,7 @@ export const Scene05_Waiting: React.FC = () => {
                 key={word}
                 style={{
                   ...baseText,
-                  fontSize: 145,
-                  fontWeight: word === "block" ? 800 : 800,
+                  fontSize: 155,
                   color: "#fff",
                   opacity: p.opacity,
                   transform: `translateY(${p.y}px)`,
@@ -133,95 +125,75 @@ export const Scene05_Waiting: React.FC = () => {
   );
 };
 
-// ────────────────────────────────────────────────────────
-// Scene 06 — Starburst counter "200 milliseconds"
-// 72 frames = 3s @ 24fps
-// ────────────────────────────────────────────────────────
+/* ════════════════════════════════════════════════════════
+   Scene 06 — Starburst counter  (72 frames = 3s @ 24fps)
+   Counter 0 → 500,000  + "exclusive markets"
+   sub-caption: "only tradable with rainbows"
+   ════════════════════════════════════════════════════════ */
 
-const SCENE06_WORDS = ["Flashblocks", "are", "streamed", "every"] as const;
-const STARBURST_COUNT = 12;
+const STARBURST_COUNT = 14;
 
 function buildScene06Proxies() {
-  const init: Record<string, Record<string, number>> = {};
-  for (const w of SCENE06_WORDS) init[`w_${w}`] = { opacity: 0, y: 15 };
-  init.textPhrase = { opacity: 1 };
-  init.counter = { value: 0, opacity: 0, scale: 0 };
-  init.starburst = { length: 80, opacity: 0 };
-  init.ms = { opacity: 0 };
-  return init;
+  return {
+    intro: { opacity: 0, y: 15 },
+    counter: { value: 0, opacity: 0, scale: 0 },
+    starburst: { length: 80, opacity: 0 },
+    caption: { opacity: 0, y: 12 },
+    subCaption: { opacity: 0, y: 12 },
+  };
 }
 
 const scene06Init = buildScene06Proxies();
 
+const formatThousands = (n: number) =>
+  Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
 export const Scene06_Starburst: React.FC = () => {
   const s = useGsapProxy(
     (tl, p) => {
-      // Words stagger
-      SCENE06_WORDS.forEach((w, i) => {
-        tl.to(p[`w_${w}`], { opacity: 1, y: 0, duration: 0.12, ease: "power2.out" }, i * 0.2);
-      });
+      // "And" enters at 0
+      tl.to(p.intro, { opacity: 1, y: 0, duration: 0.18, ease: "power2.out" }, 0.0);
 
-      // Text phrase fades out at 1.0s
-      tl.to(p.textPhrase, { opacity: 0, duration: 0.2 }, 1.0);
+      // Counter scales in
+      tl.to(p.counter, { opacity: 1, duration: 0.15 }, 0.4);
+      tl.to(p.counter, { scale: 1, duration: 0.55, ease: "back.out(1.7)" }, 0.4);
+      tl.to(p.counter, { value: 500000, duration: 1.1, ease: "power2.out" }, 0.5);
 
-      // Counter entrance at 1.0s — scale spring, opacity, value 0→200
-      tl.to(p.counter, { opacity: 1, duration: 0.15 }, 1.0);
-      tl.to(p.counter, { scale: 1, duration: 0.5, ease: "back.out(1.7)" }, 1.0);
-      tl.to(p.counter, { value: 200, duration: 0.8, ease: "power2.out" }, 1.0);
+      // Starburst lines
+      tl.to(p.starburst, { opacity: 1, duration: 0.15 }, 0.6);
+      tl.to(p.starburst, { length: 1100, duration: 1.6, ease: "power2.out" }, 0.6);
 
-      // Starburst lines at 1.2s
-      tl.to(p.starburst, { opacity: 1, duration: 0.15 }, 1.2);
-      tl.to(p.starburst, { length: 1000, duration: 1.5, ease: "power2.out" }, 1.2);
+      // "exclusive markets"
+      tl.to(p.caption, { opacity: 1, y: 0, duration: 0.22, ease: "power2.out" }, 1.55);
 
-      // "milliseconds" at 1.5s
-      tl.to(p.ms, { opacity: 1, duration: 0.2, ease: "power2.out" }, 1.5);
+      // "only tradable with rainbows" sub-caption — last
+      tl.to(p.subCaption, { opacity: 1, y: 0, duration: 0.25, ease: "power2.out" }, 2.05);
     },
     scene06Init,
   );
-
-  const counterValue = Math.round(s.counter.value);
 
   return (
     <AbsoluteFill>
       <LightGradient />
       <AbsoluteFill>
-        {/* Text phrase */}
+        {/* Top label */}
         <div
           style={{
             position: "absolute",
-            top: "25%",
-            left: "6%",
-            maxWidth: "80%",
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "0 16px",
-            opacity: s.textPhrase.opacity,
+            top: "10%",
+            left: "50%",
+            transform: `translate(-50%, ${s.intro.y}px)`,
+            opacity: s.intro.opacity,
           }}
         >
-          {SCENE06_WORDS.map((word) => {
-            const p = s[`w_${word}`];
-            return (
-              <span
-                key={word}
-                style={{
-                  ...baseText,
-                  fontSize: 160,
-                  color: BLUE,
-                  opacity: p.opacity,
-                  transform: `translateY(${p.y}px)`,
-                }}
-              >
-                {word}
-              </span>
-            );
-          })}
+          <span style={{ ...baseText, fontSize: 110, color: BLUE }}>And</span>
         </div>
 
         {/* Starburst lines */}
         <div
           style={{
             position: "absolute",
-            top: "50%",
+            top: "44%",
             left: "50%",
             width: 0,
             height: 0,
@@ -241,136 +213,93 @@ export const Scene06_Starburst: React.FC = () => {
                   height: 4,
                   backgroundColor: BLUE,
                   transformOrigin: "0% 50%",
-                  transform: `rotate(${angle}deg) translateX(100px)`,
-                  opacity: 0.5,
+                  transform: `rotate(${angle}deg) translateX(120px)`,
+                  opacity: 0.45,
                 }}
               />
             );
           })}
         </div>
 
-        {/* Counter + milliseconds */}
+        {/* Counter */}
         <div
           style={{
             position: "absolute",
-            top: "50%",
+            top: "44%",
             left: "50%",
             transform: `translate(-50%, -50%) scale(${Math.max(s.counter.scale, 0)})`,
             textAlign: "center",
             opacity: s.counter.opacity,
+            whiteSpace: "nowrap",
           }}
         >
-          <div style={{ ...baseText, fontSize: 290, color: BLUE }}>
-            {counterValue}
+          <div style={{ ...baseText, fontSize: 260, color: BLUE }}>
+            {formatThousands(s.counter.value)}
           </div>
-          <div
+        </div>
+
+        {/* "exclusive markets" caption */}
+        <div
+          style={{
+            position: "absolute",
+            top: "70%",
+            left: "50%",
+            transform: `translate(-50%, ${s.caption.y}px)`,
+            opacity: s.caption.opacity,
+            whiteSpace: "nowrap",
+          }}
+        >
+          <span style={{ ...baseText, fontSize: 130, color: BLUE }}>
+            exclusive markets
+          </span>
+        </div>
+
+        {/* sub-caption */}
+        <div
+          style={{
+            position: "absolute",
+            top: "82%",
+            left: "50%",
+            transform: `translate(-50%, ${s.subCaption.y}px)`,
+            opacity: s.subCaption.opacity,
+            whiteSpace: "nowrap",
+          }}
+        >
+          <span
             style={{
               ...baseText,
-              fontSize: 130,
-              fontWeight: 700,
+              fontSize: 56,
+              fontWeight: 400,
+              fontStyle: "italic",
               color: BLUE,
-              opacity: s.ms.opacity,
-              marginTop: -4,
             }}
           >
-            milliseconds
-          </div>
+            only tradable with rainbows
+          </span>
         </div>
       </AbsoluteFill>
     </AbsoluteFill>
   );
 };
 
-// ────────────────────────────────────────────────────────
-// Scene 07 — Transaction queue / conveyor
-// 108 frames = 4.5s @ 24fps
-// ────────────────────────────────────────────────────────
+/* ════════════════════════════════════════════════════════
+   Scene 07 — Villains with strike-through  (108 frames = 4.5s @ 24fps)
+   Four rows. Each row: text appears, red line strikes across.
+   ════════════════════════════════════════════════════════ */
 
-const SHAPES: {
-  type: "diamond" | "hexagon" | "hexagon-hole" | "pentagon" | "circle";
-  color: string;
-}[] = [
-  { type: "diamond", color: "#FFD700" },
-  { type: "hexagon-hole", color: "#FFFFFF" },
-  { type: "hexagon", color: "#FF6B00" },
-  { type: "pentagon", color: "#00E5FF" },
-  { type: "hexagon", color: "#9CA3AF" },
-  { type: "circle", color: "#FFFFFF" },
-];
-
-const clipPaths: Record<string, string> = {
-  hexagon: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
-  pentagon: "polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%)",
-};
-
-const Shape: React.FC<{ type: string; color: string; size: number }> = ({ type, color, size }) => {
-  if (type === "diamond") {
-    return (
-      <div
-        style={{
-          width: size * 0.7,
-          height: size * 0.7,
-          backgroundColor: color,
-          transform: "rotate(45deg)",
-          borderRadius: 4,
-        }}
-      />
-    );
-  }
-  if (type === "circle") {
-    return (
-      <div
-        style={{
-          width: size,
-          height: size,
-          backgroundColor: color,
-          borderRadius: "50%",
-        }}
-      />
-    );
-  }
-  if (type === "hexagon-hole") {
-    return (
-      <div
-        style={{
-          width: size,
-          height: size,
-          backgroundColor: color,
-          clipPath: clipPaths.hexagon,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <div
-          style={{
-            width: size * 0.4,
-            height: size * 0.4,
-            backgroundColor: "#1a1a2e",
-            borderRadius: "50%",
-          }}
-        />
-      </div>
-    );
-  }
-  const cp = clipPaths[type] || clipPaths.hexagon;
-  return (
-    <div style={{ width: size, height: size, backgroundColor: color, clipPath: cp }} />
-  );
-};
-
-const P1_WORDS = "that means your transaction doesn't sit in line".split(" ");
-const P2_WORDS = "it gets picked up almost right away".split(" ");
+const VILLAINS = [
+  "frontrunners",
+  "orderbook spoofers",
+  "illegal insiders",
+  "market manipulators",
+] as const;
 
 function buildScene07Proxies() {
   const init: Record<string, Record<string, number>> = {};
-  P1_WORDS.forEach((_, i) => { init[`p1_${i}`] = { opacity: 0, y: 15 }; });
-  P2_WORDS.forEach((_, i) => { init[`p2_${i}`] = { opacity: 0, y: 15 }; });
-  init.p1Wrap = { opacity: 1 };
-  init.p2Wrap = { opacity: 0 };
-  SHAPES.forEach((_, i) => { init[`shape_${i}`] = { opacity: 0 }; });
-  init.conveyor = { x: 0 };
-  init.lastShape = { y: 0, opacity: 1 };
+  VILLAINS.forEach((_, i) => {
+    init[`row_${i}`] = { opacity: 0, x: -40 };
+    init[`strike_${i}`] = { scaleX: 0 };
+  });
   return init;
 }
 
@@ -379,145 +308,70 @@ const scene07Init = buildScene07Proxies();
 export const Scene07_TransactionQueue: React.FC = () => {
   const s = useGsapProxy(
     (tl, p) => {
-      // Phase 1 words (0-2s)
-      P1_WORDS.forEach((_, i) => {
-        tl.to(p[`p1_${i}`], { opacity: 1, y: 0, duration: 0.12, ease: "power2.out" }, i * 0.12);
+      // Each villain: text in, then strike-through draws across
+      const ROW_INTERVAL = 0.85;
+      VILLAINS.forEach((_, i) => {
+        const start = i * ROW_INTERVAL;
+        tl.to(p[`row_${i}`], { opacity: 1, x: 0, duration: 0.32, ease: "power2.out" }, start);
+        tl.to(p[`strike_${i}`], { scaleX: 1, duration: 0.32, ease: "power2.inOut" }, start + 0.32);
       });
-
-      // Shape entries stagger
-      SHAPES.forEach((_, i) => {
-        tl.to(p[`shape_${i}`], { opacity: 1, duration: 0.25 }, i * 0.125);
-      });
-
-      // Phase 1 fade out, phase 2 fade in (cross-fade around 2s)
-      tl.to(p.p1Wrap, { opacity: 0, duration: 0.25 }, 1.75);
-      tl.to(p.p2Wrap, { opacity: 1, duration: 0.25 }, 2.0);
-
-      // Phase 2 words (2-4.5s)
-      P2_WORDS.forEach((_, i) => {
-        tl.to(p[`p2_${i}`], { opacity: 1, y: 0, duration: 0.12, ease: "power2.out" }, 2.0 + i * 0.12);
-      });
-
-      // Conveyor shift at 2.5s
-      tl.to(p.conveyor, { x: -180, duration: 0.8, ease: "power2.inOut" }, 2.5);
-
-      // Last shape picked up and faded
-      tl.to(p.lastShape, { y: -60, duration: 0.6, ease: "power2.out" }, 2.3);
-      tl.to(p.lastShape, { opacity: 0, duration: 0.4 }, 2.7);
     },
     scene07Init,
   );
-
-  const shapeSize = 200;
-  const spacing = 260;
 
   return (
     <AbsoluteFill>
       <BlueGradient />
       <AbsoluteFill>
-        {/* Phase 1 text */}
         <div
           style={{
             position: "absolute",
-            top: "28%",
-            left: "8%",
-            transform: "translateY(-50%)",
-            maxWidth: "85%",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
             display: "flex",
-            flexWrap: "wrap",
-            gap: "0 14px",
-            opacity: s.p1Wrap.opacity,
+            flexDirection: "column",
+            gap: 18,
+            alignItems: "flex-start",
           }}
         >
-          {P1_WORDS.map((word, i) => {
-            const p = s[`p1_${i}`];
-            return (
-              <span
-                key={i}
-                style={{
-                  ...baseText,
-                  fontSize: 160,
-                  color: "#fff",
-                  opacity: p.opacity,
-                  transform: `translateY(${p.y}px)`,
-                }}
-              >
-                {word}
-              </span>
-            );
-          })}
-        </div>
-
-        {/* Phase 2 text */}
-        <div
-          style={{
-            position: "absolute",
-            top: "28%",
-            left: "8%",
-            transform: "translateY(-50%)",
-            maxWidth: "85%",
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "0 14px",
-            opacity: s.p2Wrap.opacity,
-          }}
-        >
-          {P2_WORDS.map((word, i) => {
-            const p = s[`p2_${i}`];
-            return (
-              <span
-                key={i}
-                style={{
-                  ...baseText,
-                  fontSize: 160,
-                  color: "#fff",
-                  opacity: p.opacity,
-                  transform: `translateY(${p.y}px)`,
-                }}
-              >
-                {word}
-              </span>
-            );
-          })}
-        </div>
-
-        {/* Conveyor shapes */}
-        <div
-          style={{
-            position: "absolute",
-            top: "62%",
-            left: "8%",
-            transform: `translateX(${s.conveyor.x}px)`,
-            display: "flex",
-            alignItems: "center",
-            gap: spacing - shapeSize,
-          }}
-        >
-          {SHAPES.map((sh, i) => {
-            const isLast = i === SHAPES.length - 1;
-            const shapeOpacity = s[`shape_${i}`].opacity;
-            const finalOpacity = isLast ? shapeOpacity * s.lastShape.opacity : shapeOpacity;
-            const yOffset = isLast ? s.lastShape.y : 0;
-
+          {VILLAINS.map((villain, i) => {
+            const row = s[`row_${i}`];
+            const strike = s[`strike_${i}`];
             return (
               <div
-                key={i}
+                key={villain}
                 style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: 12,
-                  opacity: finalOpacity,
-                  transform: `translateY(${yOffset}px)`,
+                  position: "relative",
+                  display: "inline-block",
+                  opacity: row.opacity,
+                  transform: `translateX(${row.x}px)`,
+                  paddingRight: 24,
                 }}
               >
-                <Shape type={sh.type} color={sh.color} size={shapeSize} />
+                <span
+                  style={{
+                    ...baseText,
+                    fontSize: 112,
+                    color: "#fff",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {villain}
+                </span>
+                {/* Red strike-through */}
                 <div
                   style={{
-                    width: 40,
-                    height: 3,
-                    backgroundColor: "rgba(0,0,0,0.35)",
-                    borderRadius: 2,
+                    position: "absolute",
+                    top: "52%",
+                    left: -8,
+                    right: -8,
+                    height: 10,
+                    backgroundColor: STRIKE_RED,
+                    transform: `scaleX(${strike.scaleX}) rotate(-2deg)`,
+                    transformOrigin: "0% 50%",
+                    boxShadow: "0 0 16px rgba(255,42,42,0.55)",
+                    pointerEvents: "none",
                   }}
                 />
               </div>
@@ -529,26 +383,19 @@ export const Scene07_TransactionQueue: React.FC = () => {
   );
 };
 
-// ────────────────────────────────────────────────────────
-// Scene 08 — Grid text: "faster confirmations / smoother
-//            dApps / and a way better"
-// 60 frames = 2.5s @ 24fps
-// ────────────────────────────────────────────────────────
+/* ════════════════════════════════════════════════════════
+   Scene 08 — Asset grid  (60 frames = 2.5s @ 24fps)
+   2×2 grid: Stocks / Crypto / Predictions / Memecoins
+   ════════════════════════════════════════════════════════ */
+
+const ASSETS = ["Stocks", "Crypto", "Predictions", "Memecoins"] as const;
 
 function buildScene08Proxies() {
-  return {
-    g1: { opacity: 1 }, // "faster" → "faster confirmations"
-    g2: { opacity: 0 }, // "smoother" → "smoother dApps"
-    g3: { opacity: 0 }, // "and a" → "and a way" → "and a way better"
-    w_faster: { opacity: 0 },
-    w_confirmations: { opacity: 0 },
-    w_smoother: { opacity: 0 },
-    w_dApps: { opacity: 0 },
-    w_and: { opacity: 0 },
-    w_a: { opacity: 0 },
-    w_way: { opacity: 0 },
-    w_better: { opacity: 0 },
-  };
+  const init: Record<string, Record<string, number>> = {};
+  ASSETS.forEach((_, i) => {
+    init[`tile_${i}`] = { opacity: 0, y: 25, scale: 0.9 };
+  });
+  return init;
 }
 
 const scene08Init = buildScene08Proxies();
@@ -556,69 +403,53 @@ const scene08Init = buildScene08Proxies();
 export const Scene08_GridText: React.FC = () => {
   const s = useGsapProxy(
     (tl, p) => {
-      // Group 1: "faster" at 0.0s, "confirmations" at 0.3s
-      tl.to(p.w_faster, { opacity: 1, duration: 0.08 }, 0.0);
-      tl.to(p.w_confirmations, { opacity: 1, duration: 0.08 }, 0.3);
-      // Cross-fade out group 1 at 0.65s
-      tl.to(p.g1, { opacity: 0, duration: 0.12 }, 0.65);
-
-      // Group 2: "smoother" at 0.65s, "dApps" at 0.95s
-      tl.to(p.g2, { opacity: 1, duration: 0.12 }, 0.65);
-      tl.to(p.w_smoother, { opacity: 1, duration: 0.08 }, 0.65);
-      tl.to(p.w_dApps, { opacity: 1, duration: 0.08 }, 0.95);
-      // Cross-fade out group 2 at 1.3s
-      tl.to(p.g2, { opacity: 0, duration: 0.12 }, 1.3);
-
-      // Group 3: "and a" at 1.3s, "way" at 1.6s, "better" at 1.8s
-      tl.to(p.g3, { opacity: 1, duration: 0.12 }, 1.3);
-      tl.to(p.w_and, { opacity: 1, duration: 0.08 }, 1.3);
-      tl.to(p.w_a, { opacity: 1, duration: 0.08 }, 1.3);
-      tl.to(p.w_way, { opacity: 1, duration: 0.08 }, 1.6);
-      tl.to(p.w_better, { opacity: 1, duration: 0.08 }, 1.8);
-      // Hold to 2.5s — no fade out
+      ASSETS.forEach((_, i) => {
+        const start = 0.1 + i * 0.32;
+        tl.to(p[`tile_${i}`], { opacity: 1, y: 0, scale: 1, duration: 0.35, ease: "back.out(1.4)" }, start);
+      });
     },
     scene08Init,
   );
-
-  const phraseStyle: React.CSSProperties = {
-    ...baseText,
-    fontSize: 145,
-    color: "#fff",
-    textAlign: "center",
-    maxWidth: "80%",
-    position: "absolute",
-    top: "50%",
-    left: "50%",
-    transform: "translate(-50%, -50%)",
-    display: "flex",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    gap: "0 18px",
-  };
 
   return (
     <AbsoluteFill>
       <BlueGradient />
       <GridOverlay color="rgba(255,255,255,0.18)" />
       <AbsoluteFill>
-        {/* Group 1: faster confirmations */}
-        <div style={{ ...phraseStyle, opacity: s.g1.opacity }}>
-          <span style={{ opacity: s.w_faster.opacity }}>faster</span>
-          <span style={{ opacity: s.w_confirmations.opacity }}>confirmations</span>
-        </div>
-
-        {/* Group 2: smoother dApps */}
-        <div style={{ ...phraseStyle, opacity: s.g2.opacity }}>
-          <span style={{ opacity: s.w_smoother.opacity }}>smoother</span>
-          <span style={{ opacity: s.w_dApps.opacity }}>dApps</span>
-        </div>
-
-        {/* Group 3: and a way better */}
-        <div style={{ ...phraseStyle, opacity: s.g3.opacity }}>
-          <span style={{ opacity: s.w_and.opacity }}>and</span>
-          <span style={{ opacity: s.w_a.opacity }}>a</span>
-          <span style={{ opacity: s.w_way.opacity }}>way</span>
-          <span style={{ opacity: s.w_better.opacity }}>better</span>
+        <div
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            display: "grid",
+            gridTemplateColumns: "repeat(2, 1fr)",
+            gridTemplateRows: "repeat(2, 1fr)",
+            columnGap: 80,
+            rowGap: 30,
+            width: 1500,
+          }}
+        >
+          {ASSETS.map((label, i) => {
+            const proxy = s[`tile_${i}`];
+            return (
+              <div
+                key={label}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  opacity: proxy.opacity,
+                  transform: `translateY(${proxy.y}px) scale(${proxy.scale})`,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                <span style={{ ...baseText, fontSize: 145, color: "#fff" }}>
+                  {label}
+                </span>
+              </div>
+            );
+          })}
         </div>
       </AbsoluteFill>
     </AbsoluteFill>
