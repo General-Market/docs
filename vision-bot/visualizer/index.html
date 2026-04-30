@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Vision bot — visualizer</title>
+<style>
+  :root {
+    --bg: #0b0c0e;
+    --panel: #111317;
+    --panel-2: #15181d;
+    --line: #20242b;
+    --text: #e7eaef;
+    --muted: #8b929d;
+    --accent: #74e0a3;
+    --accent-2: #f87171;
+    --warn: #f5b86c;
+    --link: #6aa9ff;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font: 13px/1.45 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .app { display: grid; grid-template-columns: 360px 1fr; height: 100vh; }
+  .sidebar {
+    border-right: 1px solid var(--line);
+    background: var(--panel);
+    display: grid; grid-template-rows: auto auto 1fr auto;
+    min-height: 0;
+  }
+  .header {
+    padding: 14px 16px 10px; border-bottom: 1px solid var(--line);
+  }
+  .header h1 {
+    margin: 0; font-size: 14px; font-weight: 600; letter-spacing: -0.01em;
+  }
+  .header .sub { color: var(--muted); margin-top: 2px; font-size: 12px; }
+  .controls {
+    padding: 10px 12px; border-bottom: 1px solid var(--line);
+    display: grid; gap: 8px;
+  }
+  .controls input[type="search"] {
+    width: 100%; padding: 7px 10px; border-radius: 6px;
+    background: var(--panel-2); color: var(--text);
+    border: 1px solid var(--line); outline: none;
+    font: inherit;
+  }
+  .controls input[type="search"]:focus { border-color: var(--link); }
+  .filters {
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .chip {
+    padding: 3px 8px; border-radius: 999px; cursor: pointer;
+    border: 1px solid var(--line); color: var(--muted);
+    background: transparent; font-size: 11px;
+    user-select: none;
+  }
+  .chip.on { color: var(--text); border-color: var(--text); background: var(--panel-2); }
+  .chip.bet-up.on { color: var(--accent); border-color: var(--accent); }
+  .chip.bet-down.on { color: var(--accent-2); border-color: var(--accent-2); }
+  .list-wrap { overflow-y: auto; position: relative; }
+  .list-spacer { width: 100%; }
+  .list-window {
+    position: absolute; top: 0; left: 0; right: 0;
+    will-change: transform;
+  }
+  .row {
+    display: grid; grid-template-columns: 1fr auto;
+    gap: 4px; align-items: center;
+    padding: 8px 14px;
+    border-bottom: 1px solid #15181d;
+    cursor: pointer;
+  }
+  .row:hover { background: var(--panel-2); }
+  .row.active { background: #1a1f27; }
+  .row .name {
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .row .meta { color: var(--muted); font-size: 11px; }
+  .row .right { text-align: right; }
+  .pill {
+    display: inline-block; padding: 1px 6px; border-radius: 4px;
+    font-size: 10px; font-weight: 600; letter-spacing: 0.02em;
+  }
+  .pill.up   { color: var(--accent); background: rgba(116,224,163,0.10); }
+  .pill.down { color: var(--accent-2); background: rgba(248,113,113,0.10); }
+  .pill.win  { color: var(--accent); }
+  .pill.loss { color: var(--accent-2); }
+  .pill.flat { color: var(--muted); }
+  .footer {
+    padding: 8px 14px; border-top: 1px solid var(--line);
+    color: var(--muted); font-size: 11px;
+    display: flex; justify-content: space-between;
+  }
+  .main {
+    display: grid; grid-template-rows: auto 1fr; min-height: 0;
+  }
+  .topbar {
+    padding: 14px 20px; border-bottom: 1px solid var(--line);
+    display: grid; grid-template-columns: 1fr auto; gap: 16px;
+    align-items: center; background: var(--panel);
+  }
+  .title { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
+  .subtitle { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .stats {
+    display: flex; gap: 18px; font-size: 12px; color: var(--muted);
+  }
+  .stats b { color: var(--text); font-weight: 600; }
+  .chart-wrap {
+    position: relative; padding: 18px 20px; min-height: 0;
+  }
+  .empty {
+    height: 100%; display: grid; place-items: center;
+    color: var(--muted); font-size: 13px;
+  }
+  .empty .small { font-size: 11px; margin-top: 6px; }
+  canvas { width: 100% !important; height: 100% !important; }
+  .err { color: var(--accent-2); padding: 0 20px; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="header">
+      <h1>Vision — visualizer</h1>
+      <div class="sub" id="summary">loading…</div>
+    </div>
+
+    <div class="controls">
+      <input type="search" id="search" placeholder="search asset, batch, source" autocomplete="off" />
+      <div class="filters" id="filters">
+        <span class="chip" data-filter="bet" data-value="UP">UP</span>
+        <span class="chip" data-filter="bet" data-value="DOWN">DOWN</span>
+        <span class="chip" data-filter="result" data-value="win">winners</span>
+        <span class="chip" data-filter="result" data-value="loss">losers</span>
+        <span class="chip" data-filter="settled" data-value="open">open</span>
+      </div>
+    </div>
+
+    <div class="list-wrap" id="listWrap">
+      <div class="list-spacer" id="listSpacer"></div>
+      <div class="list-window" id="listWindow"></div>
+    </div>
+
+    <div class="footer">
+      <span id="visibleCount">0</span>
+      <span id="totalCount">0 total</span>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <div class="title" id="chartTitle">Pick an asset.</div>
+        <div class="subtitle" id="chartSubtitle">A market is a bet about a number that hasn't settled yet.</div>
+      </div>
+      <div class="stats" id="chartStats"></div>
+    </div>
+    <div class="chart-wrap" id="chartWrap">
+      <div class="empty" id="emptyState">
+        <div>
+          <div>Nothing loaded.</div>
+          <div class="small">Pick a row on the left.</div>
+        </div>
+      </div>
+      <canvas id="chart" hidden></canvas>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1/dist/chartjs-adapter-luxon.umd.min.js"></script>
+<script>
+(() => {
+  const ROW_HEIGHT = 44;
+  const OVERSCAN = 8;
+
+  const state = {
+    items: [],
+    filtered: [],
+    filters: { bet: null, result: null, settled: null },
+    query: "",
+    activeIdx: -1,
+    chart: null,
+    abortCtrl: null,
+  };
+
+  // ── Boot ─────────────────────────────────────────────────────
+  fetch("./index.json", { cache: "no-store" })
+    .then(r => {
+      if (!r.ok) throw new Error("index.json missing — run download.py first");
+      return r.json();
+    })
+    .then(doc => {
+      state.items = doc.items || [];
+      state.filtered = state.items;
+      const sum = document.getElementById("summary");
+      const fresh = doc.generated_at
+        ? new Date(doc.generated_at * 1000).toLocaleString()
+        : "unknown";
+      sum.textContent = `${doc.batch_count} batches · ${doc.asset_count} assets · ${fresh}`;
+      document.getElementById("totalCount").textContent = `${state.items.length} total`;
+      renderList();
+    })
+    .catch(e => {
+      document.getElementById("summary").textContent = "no data";
+      document.getElementById("emptyState").innerHTML =
+        `<div><div style="color:var(--accent-2)">${escape(e.message)}</div>` +
+        `<div class="small">Run <code>python download.py</code>, then reload.</div></div>`;
+    });
+
+  // ── Search & filters ─────────────────────────────────────────
+  document.getElementById("search").addEventListener("input", (e) => {
+    state.query = e.target.value.trim().toLowerCase();
+    applyFilters();
+  });
+
+  document.getElementById("filters").addEventListener("click", (e) => {
+    const chip = e.target.closest(".chip");
+    if (!chip) return;
+    const f = chip.dataset.filter;
+    const v = chip.dataset.value;
+    state.filters[f] = state.filters[f] === v ? null : v;
+    document.querySelectorAll(`.chip[data-filter="${f}"]`).forEach(c => {
+      c.classList.toggle("on", c.dataset.value === state.filters[f]);
+    });
+    chip.classList.toggle("bet-up", v === "UP");
+    chip.classList.toggle("bet-down", v === "DOWN");
+    applyFilters();
+  });
+
+  function applyFilters() {
+    const q = state.query;
+    const f = state.filters;
+    state.filtered = state.items.filter(it => {
+      if (f.bet && it.bet !== f.bet) return false;
+      if (f.result === "win" && !(it.pnl_usdc > 0)) return false;
+      if (f.result === "loss" && !(it.pnl_usdc < 0)) return false;
+      if (f.settled === "open" && it.settled) return false;
+      if (q) {
+        const hay = `${it.asset_id} ${it.asset_name} ${it.source_id} ${it.batch_id}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+    renderList();
+  }
+
+  // ── Virtualized list ─────────────────────────────────────────
+  const wrap = document.getElementById("listWrap");
+  const spacer = document.getElementById("listSpacer");
+  const win = document.getElementById("listWindow");
+  wrap.addEventListener("scroll", renderList, { passive: true });
+
+  function renderList() {
+    const total = state.filtered.length;
+    spacer.style.height = (total * ROW_HEIGHT) + "px";
+
+    const scrollTop = wrap.scrollTop;
+    const viewportH = wrap.clientHeight || 600;
+    const start = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - OVERSCAN);
+    const end = Math.min(total, Math.ceil((scrollTop + viewportH) / ROW_HEIGHT) + OVERSCAN);
+
+    win.style.transform = `translateY(${start * ROW_HEIGHT}px)`;
+    let html = "";
+    for (let i = start; i < end; i++) {
+      const it = state.filtered[i];
+      const betCls = it.bet === "UP" ? "up" : it.bet === "DOWN" ? "down" : "flat";
+      const betLabel = it.bet || "—";
+      const pnl = it.pnl_usdc;
+      const pnlCls = pnl > 0 ? "win" : pnl < 0 ? "loss" : "flat";
+      const pnlText = pnl == null ? "" : (pnl > 0 ? "+" : "") + pnl.toFixed(2);
+      const active = (i === state.activeIdx) ? " active" : "";
+      html += `<div class="row${active}" data-idx="${i}" style="height:${ROW_HEIGHT}px">
+        <div>
+          <div class="name">${escape(it.asset_name || it.asset_id)}</div>
+          <div class="meta">batch ${it.batch_id} · ${escape(it.source_id || "?")}</div>
+        </div>
+        <div class="right">
+          <div><span class="pill ${betCls}">${betLabel}</span></div>
+          <div class="meta ${pnlCls}">${pnlText}</div>
+        </div>
+      </div>`;
+    }
+    win.innerHTML = html;
+    document.getElementById("visibleCount").textContent = `${total} shown`;
+  }
+
+  win.addEventListener("click", (e) => {
+    const row = e.target.closest(".row");
+    if (!row) return;
+    const idx = +row.dataset.idx;
+    selectRow(idx);
+  });
+
+  function selectRow(idx) {
+    if (idx === state.activeIdx) return;
+    state.activeIdx = idx;
+    renderList();
+    const item = state.filtered[idx];
+    if (item) loadAsset(item);
+  }
+
+  // ── Asset load (lazy, abortable) ─────────────────────────────
+  async function loadAsset(item) {
+    const empty = document.getElementById("emptyState");
+    empty.hidden = false;
+    empty.innerHTML = `<div>loading <b>${escape(item.asset_name || item.asset_id)}</b>…</div>`;
+    document.getElementById("chartTitle").textContent = item.asset_name || item.asset_id;
+    document.getElementById("chartSubtitle").textContent =
+      `batch ${item.batch_id} · source ${item.source_id || "?"} · ${item.points} points`;
+    document.getElementById("chartStats").innerHTML = "";
+
+    if (state.abortCtrl) state.abortCtrl.abort();
+    state.abortCtrl = new AbortController();
+
+    let doc;
+    try {
+      const r = await fetch("./" + item.file, { signal: state.abortCtrl.signal });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      doc = await r.json();
+    } catch (e) {
+      if (e.name === "AbortError") return;
+      empty.innerHTML = `<div style="color:var(--accent-2)">load failed: ${escape(e.message)}</div>`;
+      return;
+    }
+    drawChart(doc);
+  }
+
+  function drawChart(doc) {
+    const canvas = document.getElementById("chart");
+    const empty = document.getElementById("emptyState");
+    const stats = document.getElementById("chartStats");
+
+    const series = doc.history || [];
+    const trade = doc.trade || {};
+
+    if (!series.length) {
+      empty.hidden = false;
+      empty.innerHTML = `<div>no price history available for this asset</div>`;
+      canvas.hidden = true;
+      if (state.chart) { state.chart.destroy(); state.chart = null; }
+      return;
+    }
+
+    canvas.hidden = false;
+    empty.hidden = true;
+
+    const points = series.map(p => ({ x: p.ts * 1000, y: p.price }));
+    const color = trade.bet === "UP" ? "#74e0a3"
+                : trade.bet === "DOWN" ? "#f87171"
+                : "#6aa9ff";
+
+    // Bet entry marker — annotated as a separate single-point dataset
+    const entryDataset = (trade.joined_at)
+      ? [{
+          label: `entry · ${trade.bet || "—"}`,
+          type: "scatter",
+          data: [{ x: trade.joined_at * 1000, y: priceAt(series, trade.joined_at) }],
+          borderColor: color, backgroundColor: color,
+          pointRadius: 8, pointHoverRadius: 10, showLine: false,
+          pointStyle: trade.bet === "DOWN" ? "triangle" : "triangle",
+          rotation: trade.bet === "DOWN" ? 180 : 0,
+        }]
+      : [];
+
+    if (state.chart) state.chart.destroy();
+    state.chart = new Chart(canvas.getContext("2d"), {
+      type: "line",
+      data: {
+        datasets: [
+          {
+            label: doc.asset_name || doc.asset_id,
+            data: points,
+            borderColor: "#a8b3c2",
+            backgroundColor: "rgba(168,179,194,0.06)",
+            borderWidth: 1.5,
+            fill: true,
+            tension: 0.15,
+            pointRadius: 0,
+          },
+          ...entryDataset,
+        ],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        animation: false, parsing: false, normalized: true,
+        interaction: { mode: "nearest", intersect: false },
+        plugins: {
+          legend: { labels: { color: "#8b929d" } },
+          tooltip: {
+            backgroundColor: "#15181d", borderColor: "#20242b", borderWidth: 1,
+            titleColor: "#e7eaef", bodyColor: "#e7eaef",
+            callbacks: {
+              title: (items) => luxon.DateTime.fromMillis(items[0].parsed.x).toFormat("LLL d HH:mm"),
+              label: (it) => ` ${it.dataset.label}: ${fmt(it.parsed.y)}`,
+            },
+          },
+        },
+        scales: {
+          x: {
+            type: "time",
+            time: { tooltipFormat: "LLL d HH:mm" },
+            ticks: { color: "#8b929d", maxRotation: 0, autoSkipPadding: 30 },
+            grid: { color: "rgba(255,255,255,0.04)" },
+          },
+          y: {
+            ticks: { color: "#8b929d" },
+            grid: { color: "rgba(255,255,255,0.04)" },
+          },
+        },
+      },
+    });
+
+    // Stats line above the chart
+    const parts = [];
+    if (trade.bet) parts.push(`bet <b class="${trade.bet === 'UP' ? 'win' : 'loss'}">${trade.bet}</b>`);
+    if (trade.deposit_usdc != null) parts.push(`deposit <b>${trade.deposit_usdc.toFixed(2)}</b>`);
+    if (trade.balance_usdc != null) parts.push(`balance <b>${trade.balance_usdc.toFixed(2)}</b>`);
+    if (trade.pnl_usdc != null) {
+      const sign = trade.pnl_usdc >= 0 ? "+" : "";
+      const cls = trade.pnl_usdc >= 0 ? "win" : "loss";
+      parts.push(`pnl <b class="${cls}">${sign}${trade.pnl_usdc.toFixed(2)}</b>`);
+    }
+    if (trade.settled === false) parts.push(`<span style="color:var(--warn)">open</span>`);
+    if (trade.market_count) parts.push(`${trade.market_count} markets`);
+    stats.innerHTML = parts.join(" · ");
+  }
+
+  // ── Helpers ──────────────────────────────────────────────────
+  function priceAt(series, ts) {
+    if (!series.length) return null;
+    let lo = 0, hi = series.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (series[mid].ts < ts) lo = mid + 1; else hi = mid;
+    }
+    return series[lo].price;
+  }
+  function fmt(n) {
+    if (n == null || !isFinite(n)) return "—";
+    const a = Math.abs(n);
+    if (a >= 1000) return n.toFixed(0);
+    if (a >= 1) return n.toFixed(3);
+    return n.toPrecision(4);
+  }
+  function escape(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  // Keep the chart sized when the window changes.
+  window.addEventListener("resize", () => state.chart && state.chart.resize());
+})();
+</script>
+</body>
+</html>
