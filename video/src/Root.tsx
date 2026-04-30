@@ -136,6 +136,35 @@ export const RemotionRoot: React.FC = () => {
         height={1080}
       />
 
+      {/* ═══ RAINBOWS PITCH — Flashblocks-Replicate clone, awaiting copy adaptation ═══ */}
+      <Composition
+        id={rainbowsPitchMeta.id}
+        component={rainbowsPitchMeta.component}
+        durationInFrames={rainbowsPitchMeta.durationInFrames}
+        fps={rainbowsPitchMeta.fps}
+        width={rainbowsPitchMeta.width}
+        height={rainbowsPitchMeta.height}
+      />
+      {SHOW_SCENES && (
+        <Folder name="Rainbows-Pitch-Scenes">
+          {[
+            ...rainbowsPitchSceneA,
+            ...rainbowsPitchSceneB,
+            ...rainbowsPitchSceneC,
+          ].map((meta) => (
+            <Composition
+              key={meta.id}
+              id={meta.id}
+              component={meta.component}
+              durationInFrames={meta.durationInFrames}
+              fps={rainbowsPitchMeta.fps}
+              width={rainbowsPitchMeta.width}
+              height={rainbowsPitchMeta.height}
+            />
+          ))}
+        </Folder>
+      )}
+
       {/* ═══ REPLICATE ═══ */}
       <Folder name="Replicate">
         {/* --- Rainbows: Public.com adaptation --- */}
@@ -313,35 +342,6 @@ export const RemotionRoot: React.FC = () => {
           width={kalshiSideBySideMeta.width}
           height={kalshiSideBySideMeta.height}
         />
-
-        {/* --- Rainbows Pitch (Flashblocks-Replicate clone, awaiting copy adaptation) --- */}
-        <Composition
-          id={rainbowsPitchMeta.id}
-          component={rainbowsPitchMeta.component}
-          durationInFrames={rainbowsPitchMeta.durationInFrames}
-          fps={rainbowsPitchMeta.fps}
-          width={rainbowsPitchMeta.width}
-          height={rainbowsPitchMeta.height}
-        />
-        {SHOW_SCENES && (
-          <Folder name="Rainbows-Pitch-Scenes">
-            {[
-              ...rainbowsPitchSceneA,
-              ...rainbowsPitchSceneB,
-              ...rainbowsPitchSceneC,
-            ].map((meta) => (
-              <Composition
-                key={meta.id}
-                id={meta.id}
-                component={meta.component}
-                durationInFrames={meta.durationInFrames}
-                fps={rainbowsPitchMeta.fps}
-                width={rainbowsPitchMeta.width}
-                height={rainbowsPitchMeta.height}
-              />
-            ))}
-          </Folder>
-        )}
 
         {/* --- Flashblocks --- */}
         <Composition
