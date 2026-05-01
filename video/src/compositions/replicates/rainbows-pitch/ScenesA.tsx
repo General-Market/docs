@@ -22,14 +22,15 @@ const baseText: React.CSSProperties = {
 
 /* ═══════════════════════════════════════════════════════
    Scene 01 — Intro  (48 frames = 2s @ 24fps)
-   Telegram-chat compare:
-     top bubble (vision): 4 sparklines + "Trade market like this."
-     bottom bubble (crash): TRUMPUSDT line + "Is simpler than..."
+   "Trade market like this." cross-fades to
+   "Is simpler than trading market like this."
+   Each phrase carries a chart: vision sparklines for the
+   first "this", a TRUMPUSDT crash line for the second.
    Real data — VPS 1 Postgres index_prices.{market_prices,klines}.
    ═══════════════════════════════════════════════════════ */
 
-const SCENE01_A = ["Trade", "markets", "like", "this."] as const;
-const SCENE01_B = ["Is", "simpler", "than", "trading", "markets", "like", "this."] as const;
+const SCENE01_A = ["Trade", "market", "like", "this"] as const;
+const SCENE01_B = ["Is", "simpler", "than", "trading", "market", "like", "this"] as const;
 
 const VISION_TILES = [
   { key: "xqc", label: "xQc", color: "#74e0a3" },
@@ -38,7 +39,6 @@ const VISION_TILES = [
   { key: "caedrel", label: "Caedrel", color: "#b19cd9" },
 ] as const;
 
-const CRASH_T0_UNIX = 1770751380;
 
 function pathFromPoints(
   pts: readonly (readonly [number, number])[],
@@ -196,255 +196,229 @@ const CrashChart: React.FC<{
   );
 };
 
-const ChatBubble: React.FC<{
-  variant: "outgoing" | "incoming";
-  width: number;
-  children: React.ReactNode;
-  style?: React.CSSProperties;
-}> = ({ variant, width, children, style }) => {
-  const isOut = variant === "outgoing";
-  return (
-    <div
-      style={{
-        width,
-        background: isOut
-          ? "linear-gradient(180deg, rgba(127,110,226,0.96), rgba(110,92,215,0.96))"
-          : "linear-gradient(180deg, rgba(20,21,26,0.96), rgba(12,13,17,0.96))",
-        borderRadius: 36,
-        borderBottomRightRadius: isOut ? 36 : 12,
-        borderBottomLeftRadius: isOut ? 12 : 36,
-        boxShadow: isOut
-          ? "0 12px 50px rgba(60,40,140,0.45)"
-          : "0 14px 60px rgba(0,0,0,0.55)",
-        color: "#fff",
-        padding: "26px 32px 18px",
-        boxSizing: "border-box",
-        ...style,
-      }}
-    >
-      {children}
-    </div>
-  );
-};
-
-const TgStamp: React.FC<{ tone?: "light" | "dim" }> = ({ tone = "light" }) => (
-  <span
-    style={{
-      color: tone === "light" ? "rgba(255,255,255,0.78)" : "rgba(255,255,255,0.55)",
-      fontSize: 16,
-      letterSpacing: "0.02em",
-      fontFamily: "ui-monospace, SFMono-Regular, monospace",
-    }}
-  >
-    15:07 ✓✓
-  </span>
-);
-
 function buildScene01Proxies() {
   const init: Record<string, Record<string, number>> = {
-    bubbleA: { opacity: 0, y: 30 },
-    bubbleB: { opacity: 0, y: 30 },
+    phraseA: { opacity: 1 },
+    phraseB: { opacity: 0 },
     tilesDraw: { v: 0 },
     crashDraw: { v: 0 },
   };
-  SCENE01_A.forEach((_, i) => { init[`a_${i}`] = { opacity: 0, y: 14 }; });
-  SCENE01_B.forEach((_, i) => { init[`b_${i}`] = { opacity: 0, y: 14 }; });
+  SCENE01_A.forEach((w, i) => { init[`a_${i}`] = { opacity: i === 0 ? 1 : 0, y: i === 0 ? 0 : 15 }; });
+  SCENE01_B.forEach((_, i) => { init[`b_${i}`] = { opacity: 0, y: 15 }; });
   return init;
 }
 
 export const Scene01_Intro: React.FC = () => {
   const s = useGsapProxy(
     (tl, p) => {
-      tl.to(p.bubbleA, { opacity: 1, y: 0, duration: 0.28, ease: "power3.out" }, 0.0);
-      tl.to(p.tilesDraw, { v: 1, duration: 0.55, ease: "power2.out" }, 0.16);
+      // Phrase A — words stagger in 0.0s → 0.45s
       SCENE01_A.forEach((_, i) => {
-        tl.to(p[`a_${i}`]!, { opacity: 1, y: 0, duration: 0.18, ease: "power2.out" }, 0.30 + i * 0.06);
+        if (i === 0) return;
+        tl.to(p[`a_${i}`]!, { opacity: 1, y: 0, duration: 0.15, ease: "power2.out" }, i * 0.15);
       });
-      tl.to(p.bubbleB, { opacity: 1, y: 0, duration: 0.28, ease: "power3.out" }, 0.55);
-      tl.to(p.crashDraw, { v: 1, duration: 0.85, ease: "power2.out" }, 0.65);
+      // Vision sparklines draw alongside phrase A
+      tl.to(p.tilesDraw, { v: 1, duration: 0.6, ease: "power2.out" }, 0.05);
+      // Phrase A (and its chart) fade out
+      tl.to(p.phraseA, { opacity: 0, duration: 0.18, ease: "power2.in" }, 0.75);
+      // Phrase B fades in
+      tl.to(p.phraseB, { opacity: 1, duration: 0.15, ease: "power2.out" }, 0.85);
+      // Crash chart draws alongside phrase B
+      tl.to(p.crashDraw, { v: 1, duration: 0.85, ease: "power2.out" }, 0.90);
+      // Phrase B — words stagger in 0.85s → 1.69s
       SCENE01_B.forEach((_, i) => {
-        tl.to(p[`b_${i}`]!, { opacity: 1, y: 0, duration: 0.16, ease: "power2.out" }, 0.95 + i * 0.05);
+        tl.to(p[`b_${i}`]!, { opacity: 1, y: 0, duration: 0.14, ease: "power2.out" }, 0.85 + i * 0.12);
       });
     },
     buildScene01Proxies(),
   );
 
+  const phraseStyle: React.CSSProperties = {
+    position: "absolute",
+    top: "62%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    display: "flex",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: "0 32px",
+    maxWidth: "92%",
+    whiteSpace: "nowrap",
+  };
+
+  // Each "this" gets its own visualisation — anchored above the text.
+  const chartFrameStyle: React.CSSProperties = {
+    position: "absolute",
+    top: "18%",
+    left: "50%",
+    transform: "translateX(-50%)",
+    width: 1320,
+    display: "flex",
+    justifyContent: "center",
+  };
+
   const last = CRASH.points[CRASH.points.length - 1]!;
-  const firstD = new Date(CRASH_T0_UNIX * 1000);
-  const lastD = new Date((CRASH_T0_UNIX + last[0]) * 1000);
-  const fmtDate = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   const startV = CRASH.points[0]![1];
-  const endV = last[1];
-  const pctChange = ((endV - startV) / startV) * 100;
+  const pctChange = ((last[1] - startV) / startV) * 100;
 
   return (
     <AbsoluteFill>
       <BlueGradient />
-      <AbsoluteFill style={{ background: "rgba(0,0,0,0.18)" }} />
 
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 28,
-        }}
-      >
-        {/* TOP — vision */}
-        <div style={{ opacity: s.bubbleA.opacity, transform: `translateY(${s.bubbleA.y}px)` }}>
-          <ChatBubble variant="outgoing" width={1180}>
-            <div style={{ display: "flex", gap: 14, marginBottom: 18 }}>
-              {VISION_TILES.map(({ key, label, color }) => (
-                <div
-                  key={key}
-                  style={{
-                    width: 268,
-                    background: "rgba(255,255,255,0.10)",
-                    borderRadius: 16,
-                    padding: 12,
-                    border: "1px solid rgba(255,255,255,0.10)",
-                    boxSizing: "border-box",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      marginBottom: 6,
-                    }}
-                  >
-                    <span style={{ fontFamily, fontSize: 15, fontWeight: 600, letterSpacing: "-0.01em" }}>
-                      {label}
-                    </span>
-                    <span
-                      style={{
-                        fontFamily: "ui-monospace, SFMono-Regular, monospace",
-                        fontSize: 11,
-                        color: "rgba(255,255,255,0.6)",
-                      }}
-                    >
-                      twitch
-                    </span>
-                  </div>
-                  <Sparkline
-                    pts={VISION[key].points}
-                    width={244}
-                    height={64}
-                    stroke={color}
-                    draw={s.tilesDraw.v}
-                  />
-                </div>
-              ))}
-            </div>
-
-            <div style={{ display: "flex", gap: 18, alignItems: "baseline", flexWrap: "wrap" }}>
-              {SCENE01_A.map((word, i) => {
-                const proxy = s[`a_${i}`]!;
-                return (
-                  <span
-                    key={word + i}
-                    style={{
-                      ...baseText,
-                      fontSize: 56,
-                      color: "#fff",
-                      opacity: proxy.opacity,
-                      transform: `translateY(${proxy.y}px)`,
-                      letterSpacing: "-0.01em",
-                    }}
-                  >
-                    {word}
-                  </span>
-                );
-              })}
-            </div>
-
-            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
-              <TgStamp tone="light" />
-            </div>
-          </ChatBubble>
-        </div>
-
-        {/* BOTTOM — crash */}
-        <div style={{ opacity: s.bubbleB.opacity, transform: `translateY(${s.bubbleB.y}px)` }}>
-          <ChatBubble variant="incoming" width={1180}>
+      {/* Vision tiles — visible during phrase A */}
+      <div style={{ ...chartFrameStyle, opacity: s.phraseA.opacity }}>
+        <div
+          style={{
+            display: "flex",
+            gap: 18,
+            padding: 18,
+            background: "rgba(8, 24, 80, 0.32)",
+            borderRadius: 22,
+            border: "1px solid rgba(255,255,255,0.18)",
+            backdropFilter: "blur(8px)",
+            boxShadow: "0 18px 60px rgba(0,30,120,0.35)",
+          }}
+        >
+          {VISION_TILES.map(({ key, label, color }) => (
             <div
+              key={key}
               style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: 8,
+                width: 296,
+                background: "rgba(255,255,255,0.10)",
+                borderRadius: 14,
+                padding: 12,
+                border: "1px solid rgba(255,255,255,0.12)",
+                boxSizing: "border-box",
               }}
             >
-              <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                <span
-                  style={{
-                    fontFamily,
-                    fontSize: 16,
-                    fontWeight: 700,
-                    letterSpacing: "0.02em",
-                    background: "rgba(255,90,90,0.16)",
-                    color: "#ff8a8a",
-                    padding: "4px 10px",
-                    borderRadius: 999,
-                  }}
-                >
-                  TRUMP / USDT
-                </span>
-                <span style={{ fontFamily, fontSize: 16, color: "#ff7a7a", fontWeight: 700 }}>
-                  {pctChange.toFixed(1)}%
-                </span>
-              </div>
-              <span
+              <div
                 style={{
-                  fontFamily: "ui-monospace, SFMono-Regular, monospace",
-                  fontSize: 14,
-                  color: "rgba(255,255,255,0.55)",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: 6,
                 }}
               >
-                {`${fmtDate(firstD)} – ${fmtDate(lastD)}`}
+                <span style={{ fontFamily, fontSize: 16, fontWeight: 700, color: "#fff", letterSpacing: "-0.01em" }}>
+                  {label}
+                </span>
+                <span
+                  style={{
+                    fontFamily: "ui-monospace, SFMono-Regular, monospace",
+                    fontSize: 11,
+                    color: "rgba(255,255,255,0.65)",
+                  }}
+                >
+                  twitch viewers
+                </span>
+              </div>
+              <Sparkline
+                pts={VISION[key].points}
+                width={272}
+                height={72}
+                stroke={color}
+                draw={s.tilesDraw.v}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Crash chart — visible during phrase B */}
+      <div style={{ ...chartFrameStyle, opacity: s.phraseB.opacity }}>
+        <div
+          style={{
+            width: 1240,
+            padding: "16px 22px 14px",
+            background: "rgba(10,10,14,0.78)",
+            borderRadius: 22,
+            border: "1px solid rgba(255,90,90,0.30)",
+            boxShadow: "0 18px 70px rgba(0,0,0,0.55)",
+            backdropFilter: "blur(6px)",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 6,
+            }}
+          >
+            <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+              <span
+                style={{
+                  fontFamily,
+                  fontSize: 16,
+                  fontWeight: 700,
+                  letterSpacing: "0.02em",
+                  background: "rgba(255,90,90,0.18)",
+                  color: "#ff8a8a",
+                  padding: "4px 10px",
+                  borderRadius: 999,
+                }}
+              >
+                TRUMP / USDT
+              </span>
+              <span style={{ fontFamily, fontSize: 16, color: "#ff7a7a", fontWeight: 700 }}>
+                {pctChange.toFixed(1)}%
               </span>
             </div>
-
-            <CrashChart pts={CRASH.points} width={1116} height={244} draw={s.crashDraw.v} />
-
-            <div
+            <span
               style={{
-                display: "flex",
-                gap: 18,
-                alignItems: "baseline",
-                flexWrap: "wrap",
-                marginTop: 10,
+                fontFamily: "ui-monospace, SFMono-Regular, monospace",
+                fontSize: 12,
+                color: "rgba(255,255,255,0.55)",
               }}
             >
-              {SCENE01_B.map((word, i) => {
-                const proxy = s[`b_${i}`]!;
-                return (
-                  <span
-                    key={word + i}
-                    style={{
-                      ...baseText,
-                      fontSize: 44,
-                      color: "#fff",
-                      opacity: proxy.opacity,
-                      transform: `translateY(${proxy.y}px)`,
-                      letterSpacing: "-0.01em",
-                    }}
-                  >
-                    {word}
-                  </span>
-                );
-              })}
-            </div>
-
-            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 6 }}>
-              <TgStamp tone="dim" />
-            </div>
-          </ChatBubble>
+              90 days
+            </span>
+          </div>
+          <CrashChart pts={CRASH.points} width={1196} height={196} draw={s.crashDraw.v} />
         </div>
+      </div>
+
+      {/* Phrase A — original 150pt centered */}
+      <div style={{ ...phraseStyle, opacity: s.phraseA.opacity }}>
+        {SCENE01_A.map((word, i) => {
+          const proxy = s[`a_${i}`]!;
+          return (
+            <span
+              key={word + i}
+              style={{
+                ...baseText,
+                fontSize: 150,
+                color: "#fff",
+                opacity: proxy.opacity,
+                transform: `translateY(${proxy.y}px)`,
+                textShadow: "0 4px 28px rgba(0,0,40,0.55)",
+              }}
+            >
+              {word}
+            </span>
+          );
+        })}
+      </div>
+
+      {/* Phrase B — original 130pt centered */}
+      <div style={{ ...phraseStyle, opacity: s.phraseB.opacity }}>
+        {SCENE01_B.map((word, i) => {
+          const proxy = s[`b_${i}`]!;
+          return (
+            <span
+              key={word + i}
+              style={{
+                ...baseText,
+                fontSize: 130,
+                color: "#fff",
+                opacity: proxy.opacity,
+                transform: `translateY(${proxy.y}px)`,
+                textShadow: "0 4px 28px rgba(0,0,40,0.55)",
+              }}
+            >
+              {word}
+            </span>
+          );
+        })}
       </div>
     </AbsoluteFill>
   );
