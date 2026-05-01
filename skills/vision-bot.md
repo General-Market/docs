@@ -5,7 +5,7 @@
 ## Required Environment
 
 ```
-RPC_URL=http://142.132.164.24/
+RPC_URL=https://rpc.generalmarket.io/
 VISION_API_URL=https://generalmarket.io/api/vision
 VISION_ADDRESS=0x4F1BDD073932828bf2822F6dCAD1121Da41ED1Ef
 BOT_PRIVATE_KEY=<wallet private key with funded WUSDC>
