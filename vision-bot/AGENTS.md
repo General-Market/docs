@@ -33,7 +33,7 @@ VISION_API_URL=http://localhost:3000/api
 FAUCET_URL=http://localhost:3000/api/bot/faucet
 
 # Chain — unchanged in any environment
-RPC_URL=http://142.132.164.24/
+RPC_URL=http://159.195.79.153/
 VISION_ADDRESS=0x94d540bb45975bd5a0c7ba9a15a0d34e378f6c61
 USDC_ADDRESS=0xaddb799bc1499b224dc4368e92b9042a54908553
 CHAIN_ID=111222333
@@ -99,7 +99,7 @@ Min deposit per join: 1e17 wei = 0.1 USDC.
 - **Vision:** `0x94d540bb45975bd5a0c7ba9a15a0d34e378f6c61`
 - **USDC (L3):** `0xaddb799bc1499b224dc4368e92b9042a54908553`
 - **Chain ID:** `111222333` (Arbitrum Orbit L3)
-- **RPC:** `http://142.132.164.24/`
+- **RPC:** `http://159.195.79.153/`
 - **USDC decimals:** 18
 - **Gas token:** GM (native, 18 decimals)
 - **Fee:** 0.05% on profits

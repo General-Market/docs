@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createPublicClient, http, parseAbiItem, formatUnits } from 'viem'
 import deployment from '@/lib/contracts/deployment.json'
 
-const L3_RPC = process.env['L3_RPC_URL'] || process.env['NEXT_PUBLIC_L3_RPC_URL'] || 'http://142.132.164.24/'
+const L3_RPC = process.env['L3_RPC_URL'] || process.env['NEXT_PUBLIC_L3_RPC_URL'] || 'http://159.195.79.153/'
 // Read the Vision address from deployment.json rather than hardcoding. The
 // prior hardcoded value survived a redeploy; the endpoint was quietly polling
 // a dead contract and returning an empty array forever.

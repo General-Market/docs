@@ -20,7 +20,7 @@ services:
       - /tmp
     environment:
       FUND_MANAGER_KEY: "0x107e200b197dc889feba0a1e0538bf51b97b2fc87f27f82783d5d59789dc3537"
-      L3_RPC_URL: "http://142.132.164.24/"
+      L3_RPC_URL: "http://159.195.79.153/"
       VISION_API_URL: "http://localhost:10001"
       DATA_NODE_URL: "http://localhost:8200"
       ORACLE_URLS: "http://localhost:10001,http://localhost:10002,http://localhost:10003"

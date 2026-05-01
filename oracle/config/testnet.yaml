@@ -13,7 +13,7 @@ node_id: 1
 port: 9001
 
 # Index L3 RPC endpoint
-rpc_url: "http://142.132.164.24/"
+rpc_url: "http://159.195.79.153/"
 
 # BLS key file path (32-byte BN254 private key)
 bls_key_path: "./keys/bls-node1.key"

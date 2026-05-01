@@ -8,7 +8,7 @@
 #   Vercel            — frontend (www.generalmarket.io)
 #
 # Chains:
-#   L3 (Orbit)        — chain 111222333, http://142.132.164.24/
+#   L3 (Orbit)        — chain 111222333, http://159.195.79.153/
 #   Settlement (Sonic) — chain 14601, https://rpc.testnet.soniclabs.com
 #
 # Usage:
@@ -40,7 +40,7 @@ cd "$SCRIPT_DIR"
 # ── Configuration ────────────────────────────────────────────
 # L3 (Orbit)
 CHAIN_ID=111222333
-RPC_URL="http://142.132.164.24/"
+RPC_URL="http://159.195.79.153/"
 
 # Gas price (wei) — must exceed L3 base fee. Query: cast base-fee --rpc-url $RPC_URL
 GAS_PRICE=10000000000  # 10 gwei
@@ -57,7 +57,7 @@ GITHUB_REPO="https://github.com/General-Market/mono.git"
 
 # VPS 1 — Backend (oracles + data-node + PostgreSQL)
 VPS_BE_HOST="index-maker/prod/be"
-VPS_BE_IP="116.203.156.98"
+VPS_BE_IP="159.195.78.238"
 VPS_BE_USER="max"
 VPS_BE_DIR="/home/max/index"
 DATA_NODE_PORT=8200
@@ -65,7 +65,7 @@ EXPLORER_TOKEN="20b8dfdd244827f7a88d31dbe96b448938f1731437a9340e3a616ba63f2dc267
 
 # VPS 2 — Chain + AP
 VPS_CHAIN_HOST="index-maker/prod/postgres"
-VPS_CHAIN_IP="142.132.164.24"
+VPS_CHAIN_IP="159.195.79.153"
 VPS_CHAIN_USER="max"
 VPS_CHAIN_DIR="/home/max/index"
 
@@ -598,7 +598,7 @@ cmd_deploy() {
        command -v jq >/dev/null 2>&1; then
         echo -e "${BLUE}Pre-deploy address check (informational)...${NC}"
         bash scripts/validate-deployment-addresses.sh \
-            "${RPC_URL:-http://142.132.164.24/}" \
+            "${RPC_URL:-http://159.195.79.153/}" \
             deployments/active-deployment.json || \
             echo -e "${YELLOW}Current deployment has dead addresses — proceeding with redeploy.${NC}"
     fi
@@ -3157,7 +3157,7 @@ cmd_refresh_batches() {
     # the on-chain config_hashes won't match what the data-node computes — causing
     # oracles to get 404 when fetching batch configs and ticks never advance.
     echo -e "${BLUE}[2/4] Fetching fresh batch configs from data-node...${NC}"
-    local DATA_NODE_URL="${DATA_NODE_URL:-http://116.203.156.98/data-node}"
+    local DATA_NODE_URL="${DATA_NODE_URL:-http://159.195.78.238/data-node}"
     if curl -sf "$DATA_NODE_URL/batches/recommended" 2>/dev/null | python3 -c "
 import sys, json
 d = json.load(sys.stdin)
@@ -3997,7 +3997,7 @@ case "${1:-help}" in
         # lives in scripts/validate-deployment.sh; this one takes explicit
         # paths so CI and pre-deploy checks can share it.
         shift
-        RPC="${RPC_URL:-http://142.132.164.24/}"
+        RPC="${RPC_URL:-http://159.195.79.153/}"
         if [ $# -eq 0 ]; then
             set -- deployments/active-deployment.json
         fi

@@ -979,7 +979,7 @@ if [ "$VPS_DN_RUNNING" = true ]; then
     echo -e "  ${YELLOW}VPS data-node is running — skipping local (shared API keys)${NC}"
     echo -e "  ${YELLOW}Stop VPS first: ./deploy.sh --stop${NC}"
     # Still set DATA_NODE_URL to VPS for oracles/AP to use
-    export DATA_NODE_URL="http://142.132.164.24:8200"
+    export DATA_NODE_URL="http://159.195.79.153:8200"
     DATA_NODE_RUNNING=true
 elif ! $PG_ISREADY -q 2>/dev/null; then
     echo -e "  ${YELLOW}PostgreSQL not running — skipping data-node${NC}"

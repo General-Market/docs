@@ -118,9 +118,9 @@ AP_ADDR=$(jval "d['accounts'].get('ap','')")
 if [ -z "$RPC" ]; then
     RPC=$(jval "d.get('rpc','')")
 fi
-RPC="${RPC:-http://142.132.164.24/}"
+RPC="${RPC:-http://159.195.79.153/}"
 
-DATA_NODE_URL="${DATA_NODE_URL:-http://116.203.156.98/data-node}"
+DATA_NODE_URL="${DATA_NODE_URL:-http://159.195.78.238/data-node}"
 FRONTEND_URL="${FRONTEND_URL:-http://localhost:3000}"
 
 echo "  Chain ID:        $CHAIN_ID"
@@ -392,7 +392,7 @@ fi
 
 # Check Vision batches (served by oracles, not data-node)
 if [ -n "$VISION" ]; then
-    ORACLE_URL="${ORACLE_URL:-http://116.203.156.98/oracle1}"
+    ORACLE_URL="${ORACLE_URL:-http://159.195.78.238/oracle1}"
     VISION_RESP=$(curl -sf "$ORACLE_URL/vision/batches" 2>/dev/null || echo "")
     if [ -n "$VISION_RESP" ]; then
         BATCH_COUNT=$(echo "$VISION_RESP" | jq '.batches | length' 2>/dev/null || echo "0")

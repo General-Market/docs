@@ -6,9 +6,9 @@ vcl 4.1;
 import std;
 
 backend datanode {
-    .host = "116.203.156.98";
+    .host = "159.195.78.238";
     .port = "80";
-    .host_header = "116.203.156.98";
+    .host_header = "159.195.78.238";
     .connect_timeout = 5s;
     .first_byte_timeout = 20s;
     .between_bytes_timeout = 10s;

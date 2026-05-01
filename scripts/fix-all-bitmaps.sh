@@ -7,7 +7,7 @@ set -euo pipefail
 
 CAST=~/.foundry/bin/cast
 VISION="0xd5ec37ffa8c40b5dbaf7ffe9d9878c3a387ad47a"
-RPC="http://142.132.164.24/"
+RPC="http://159.195.79.153/"
 SWARM_ENV="/home/max/index/docker/testnet/vision-swarm/swarm.env"
 NULL_HASH="c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
 ORACLE_PORTS=(10001 10002 10003)

@@ -3,7 +3,7 @@ import { createPublicClient, http, parseAbiItem, formatUnits, getAddress } from 
 import deployment from '@/lib/contracts/deployment.json'
 
 const L3_RPC =
-  process.env['L3_RPC_URL'] || process.env['NEXT_PUBLIC_L3_RPC_URL'] || 'http://142.132.164.24/'
+  process.env['L3_RPC_URL'] || process.env['NEXT_PUBLIC_L3_RPC_URL'] || 'http://159.195.79.153/'
 const VISION_ADDRESS = (deployment as any).contracts?.Vision as `0x${string}`
 const BLOCK_TIME_MS = 1000
 // 24 hours at ~1s/block. Long enough to catch most live vaults' recent

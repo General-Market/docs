@@ -13,7 +13,7 @@ set -e
 
 # ── Config ────────────────────────────────────────────────────
 VPS_HOST="index-maker/prod/postgres"       # SSH alias (for ssh commands)
-VPS_IP="142.132.164.24"
+VPS_IP="159.195.79.153"
 VPS_USER="max"
 VPS_DIR="/home/max/index"
 DB_NAME="index_prices"
@@ -267,7 +267,7 @@ fi
 # ── Bump deployment nonce (if supported) ─────────────────────
 # Services auto-detect nonce changes and flush stale state.
 # DEPLOYER_KEY must be set in environment (e.g., from system.env) for nonce bump.
-L3_RPC_URL="http://142.132.164.24/"
+L3_RPC_URL="http://159.195.79.153/"
 INDEX_ADDRESS=$(python3 -c "import json; print(json.load(open('$SCRIPT_DIR/deployments/active-deployment.json'))['contracts']['Index'])" 2>/dev/null || echo "")
 if [ -n "$INDEX_ADDRESS" ] && [ -n "$DEPLOYER_KEY" ]; then
     echo -e "${BLUE}Bumping deployment nonce...${NC}"
@@ -282,16 +282,16 @@ if [ -n "$INDEX_ADDRESS" ] && [ -n "$DEPLOYER_KEY" ]; then
         echo -e "  Services will auto-detect and flush."
 
         # Wait for data-node to pick up the new nonce
-        wait_for_service "http://142.132.164.24:$DATA_NODE_PORT" "data-node" "$NEW_NONCE" || true
+        wait_for_service "http://159.195.79.153:$DATA_NODE_PORT" "data-node" "$NEW_NONCE" || true
     else
         echo -e "  ${YELLOW}Contract lacks deploymentNonce — using legacy flush${NC}"
         # Fallback: try manual reload if service supports it
-        curl -sf -X POST "http://142.132.164.24:$DATA_NODE_PORT/admin/reload" 2>/dev/null && \
+        curl -sf -X POST "http://159.195.79.153:$DATA_NODE_PORT/admin/reload" 2>/dev/null && \
             echo -e "  ${GREEN}Triggered manual reload on data-node${NC}" || true
     fi
 elif [ -n "$INDEX_ADDRESS" ]; then
     echo -e "  ${YELLOW}DEPLOYER_KEY not set — skipping nonce bump. Try manual reload.${NC}"
-    curl -sf -X POST "http://142.132.164.24:$DATA_NODE_PORT/admin/reload" 2>/dev/null && \
+    curl -sf -X POST "http://159.195.79.153:$DATA_NODE_PORT/admin/reload" 2>/dev/null && \
         echo -e "  ${GREEN}Triggered manual reload on data-node${NC}" || true
 fi
 
@@ -300,7 +300,7 @@ echo -e "${GREEN}╔════════════════════
 echo -e "║         DEPLOYMENT COMPLETE                                  ║"
 echo -e "╚══════════════════════════════════════════════════════════════╝${NC}"
 echo ""
-echo -e "  VPS data-node: http://142.132.164.24:$DATA_NODE_PORT"
+echo -e "  VPS data-node: http://159.195.79.153:$DATA_NODE_PORT"
 echo -e "  Logs:          ssh $VPS_HOST 'tail -f $VPS_DIR/logs/data-node.log'"
 echo -e "  Stop:          ./deploy.sh --stop"
 echo -e "  Status:        ./deploy.sh --status"

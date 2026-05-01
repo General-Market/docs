@@ -9,7 +9,7 @@ Usage:
 import subprocess, json, sys, os, time, random
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-RPC = os.environ.get("L3_RPC_URL", "http://142.132.164.24/")
+RPC = os.environ.get("L3_RPC_URL", "http://159.195.79.153/")
 KEY = os.environ.get("DEPLOYER_KEY", "0x107e200b197dc889feba0a1e0538bf51b97b2fc87f27f82783d5d59789dc3537")
 MAX_UINT = "0x" + "f" * 64
 

@@ -101,7 +101,7 @@ curl -sI https://generalmarket.io/bot-api/batches/recommended | grep X-Cache
 #   Within 30 s:   X-Cache: HIT
 
 # Public data-node access should now be denied:
-curl -sv http://116.203.156.98/data-node/batches/recommended 2>&1 | grep "< HTTP"
+curl -sv https://api.generalmarket.io/data-node/batches/recommended 2>&1 | grep "< HTTP"
 #   < HTTP/1.1 403 Forbidden
 ```
 

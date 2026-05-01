@@ -17,7 +17,7 @@
 #   scripts/reconciliation-check.sh [<tolerance_bps>]
 #
 # Env:
-#   L3_RPC_URL                 — default http://142.132.164.24/
+#   L3_RPC_URL                 — default http://159.195.79.153/
 #   SETTLEMENT_RPC_URL         — default http://localhost:8546
 #   DATA_NODE_URL              — default http://localhost:8200
 #   DEPLOYMENT_FILE            — default deployments/active-deployment.json
@@ -29,7 +29,7 @@
 set -euo pipefail
 
 TOLERANCE_BPS="${1:-10}"       # 10 bps = 0.1 %
-L3_RPC="${L3_RPC_URL:-http://142.132.164.24/}"
+L3_RPC="${L3_RPC_URL:-http://159.195.79.153/}"
 SETTLEMENT_RPC="${SETTLEMENT_RPC_URL:-http://localhost:8546}"
 DATA_NODE_URL="${DATA_NODE_URL:-http://localhost:8200}"
 DEPLOYMENT_FILE="${DEPLOYMENT_FILE:-deployments/active-deployment.json}"

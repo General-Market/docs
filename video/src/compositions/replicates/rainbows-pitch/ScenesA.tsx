@@ -30,7 +30,7 @@ const baseText: React.CSSProperties = {
    the BTC series.
    ═══════════════════════════════════════════════════════ */
 
-const SCENE01_A = ["Trade", "market", "like", "this"] as const;
+const SCENE01_A = ["Trading", "market", "like", "this"] as const;
 const SCENE01_B = ["Is", "simpler", "than", "trading", "market", "like", "this"] as const;
 
 type Quad = {

@@ -30,7 +30,7 @@ set -euo pipefail
 
 # ==== Configuration ====
 DEPLOYMENT_FILE="${DEPLOYMENT_FILE:-deployments/active-deployment.json}"
-RPC="${RPC_URL:-http://142.132.164.24/}"
+RPC="${RPC_URL:-http://159.195.79.153/}"
 BASTION="bastion"  # See vps.md for connection details
 BASTION_USER="${BASTION_USER:-max}"
 ORACLE_BINARY="${ORACLE_BINARY:-./target/release/oracle}"

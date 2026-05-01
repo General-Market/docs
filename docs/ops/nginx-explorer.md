@@ -9,7 +9,7 @@ bound to the 600GB volume at `/mnt/HC_Volume_105330957/blockscout/`).
 > (`159.195.78.238` for VPS 1) and are gated by UFW.
 
 For external access via the main nginx at `http://api.generalmarket.io/explorer/`
-(or `http://116.203.156.98/explorer/` pre-cutover, `http://159.195.78.238/explorer/`
+(or `https://api.generalmarket.io/explorer/` pre-cutover, `http://159.195.78.238/explorer/`
 post-cutover), add the following location blocks inside the `server {}` block of
 `/etc/nginx/sites-enabled/default`:
 

@@ -856,7 +856,7 @@ def main():
         sys.exit(1)
 
     rpc_url = manager_cfg.get(
-        "rpc_url", os.environ.get("L3_RPC_URL", "http://142.132.164.24/"),
+        "rpc_url", os.environ.get("L3_RPC_URL", "https://rpc.generalmarket.io/"),
     )
     factory_addr = manager_cfg.get("factory", "")
     vision_api = manager_cfg.get(

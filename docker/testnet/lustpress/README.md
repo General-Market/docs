@@ -35,9 +35,9 @@ docker logs -f testnet-lustpress
 ## Smoke test from VPS 1
 
 ```bash
-# Pre-cutover (Hetzner): private net
+# Pre-Netcup (Hetzner — decommissioned): private net
 curl -s 'http://10.2.0.2:3131/api/pornhub/video?id=ph000000000000001'
-# Post-cutover (Netcup): public IP, UFW restricts who can reach it
+# Netcup (canonical): public IP, UFW gates inbound
 curl -s 'http://159.195.79.153:3131/api/pornhub/video?id=ph000000000000001'
 ```
 

@@ -32,14 +32,14 @@ Alternate faucet: `POST /api/bot/faucet { "address": "0x..." }` — 100 USDC + 1
 
 ## Index (ITPs)
 - Chain: Arbitrum Orbit L3, Chain ID 111222333
-- RPC: http://142.132.164.24/
+- RPC: https://rpc.generalmarket.io/
 - Collateral: USDC (18 decimals)
 - API (local): http://localhost:3000/api
 - API (prod, once deployed): https://www.generalmarket.io/api
 
 ## Vision (Prediction Market)
 - Chain: Arbitrum Orbit L3, Chain ID 111222333
-- RPC: http://142.132.164.24/
+- RPC: https://rpc.generalmarket.io/
 - Contract: 0x94d540bb45975bd5a0c7ba9a15a0d34e378f6c61
 - USDC: 0xaddb799bc1499b224dc4368e92b9042a54908553 (18 decimals)
 - Gas token: GM (native, 18 decimals)

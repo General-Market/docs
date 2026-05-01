@@ -16,7 +16,7 @@ This finds root causes that sequential debugging misses — one agent finds the 
 
 **Every agent, every sub-agent, every session MUST commit AND push after completing work.**
 
-The pipeline: commit → `git push mono main` → post-commit hook pings the Dokploy webhook on **VPS 3** (`178.104.243.94`, alias `vps3` or `index-maker/prod/fe`) → Dokploy clones `General-Market/mono` over SSH (deploy key wired in Dokploy's `ssh-key` table), builds from `/frontend` or `/nsgame` via nixpacks, replaces the container, Traefik (port 8080) serves it, nginx terminates HTTPS for `generalmarket.io` and `nsgame.org`. Public mirrors (`gm-frontend`, `gm-nsgame`) are gone — the only source of truth is mono. Skipping the push breaks the deploy chain. Work that isn't pushed doesn't exist.
+The pipeline: commit → `git push mono main` → post-commit hook pings the Dokploy webhook on **VPS 3** (`159.195.77.160`, alias `vps3` or `index-maker/prod/fe`) → Dokploy clones `General-Market/mono` over SSH (deploy key wired in Dokploy's `ssh-key` table), builds from `/frontend` or `/nsgame` via nixpacks, replaces the container, Traefik (port 8080) serves it, nginx terminates HTTPS for `generalmarket.io` and `nsgame.org`. Public mirrors (`gm-frontend`, `gm-nsgame`) are gone — the only source of truth is mono. Skipping the push breaks the deploy chain. Work that isn't pushed doesn't exist.
 
 **Rules:**
 1. After completing any task/feature: stage changed files, commit, `git push mono main`
@@ -69,28 +69,31 @@ This copies `envs/{env}/.env` → `frontend/.env.local` and syncs 3 deployment J
 After deploying contracts locally, `start.sh` syncs deployment JSONs back to `envs/local/`.
 After deploying on testnet, `testnet.sh` syncs back to `envs/testnet/`.
 
-## Netcup migration (hybrid state)
+## Netcup migration (complete — 2026-05-01)
 
-The infra is mid-cutover from Hetzner to Netcup. All three Netcup boxes sit in
-Nürnberg (AS197540, 159.195.x), inter-VPS RTT 0.4–0.6 ms — public IPs play the
-role the Hetzner private net used to. No more `10.2.0.0/24`. No bastion. UFW
-replaces the custom `iptables.service` units. NIC is `eth0`, not `enp7s0`.
+Cutover finished 2026-05-01 ~22:25 CEST. Chain advancing on Netcup VPS 2
+from block 1069006. All six DNS records flipped. Hetzner services stopped,
+boxes decommissioning same day. Three Netcup boxes in Nürnberg (AS197540,
+159.195.x), inter-VPS RTT 0.4–0.6 ms — public IPs replace what the Hetzner
+private net used to do. No `10.2.0.0/24`. No bastion. UFW. NIC is `eth0`.
 
-| Role | Old (Hetzner) | New (Netcup) | State |
-|------|---------------|--------------|-------|
-| VPS 1 backend | 116.203.156.98 | 159.195.78.238 | staged, pending cutover |
-| VPS 2 chain + DB | 142.132.164.24 | 159.195.79.153 | staged, pending cutover |
-| VPS 3 frontend + Solana | 178.104.243.94 | 159.195.77.160 | live |
+| Role | Hetzner (decommissioning) | Netcup (canonical) | State |
+|------|---------------------------|--------------------|-------|
+| VPS 1 backend | 116.203.156.98 | **159.195.78.238** | live |
+| VPS 2 chain + AP | 142.132.164.24 | **159.195.79.153** | live |
+| VPS 3 frontend + Solana | 178.104.243.94 | **159.195.77.160** | live |
 
-Canonical SSH aliases (`index-maker/prod/be|postgres|fe`, `vps3`) **still point
-at Hetzner** until VPS 1 + VPS 2 cutover. Use `vps1-new`, `vps2-new`, `vps3-new`
-for direct access to the new boxes (root@159.195.x:3189). Full migration runbook
-at `scripts/cutover-netcup.md`. Pre/post-cutover IP details in `vps.md`.
+Canonical SSH aliases (`index-maker/prod/be|postgres|fe`, `vps3`) now resolve
+to Netcup. Direct SSH on port 3189 as `root` for all three — no bastion.
+`vps1-old`, `vps2-old`, `vps3-old` aliases retained for the next 24h in case
+of emergency rollback (procedure: re-point DNS via Cloudflare API + start
+old containers — runbook at `scripts/cutover-netcup.md`). Drop the `-old`
+aliases once Hetzner is wiped. Pre/post-cutover details in `vps.md`.
 
 ## Network
 | Network | Chain ID | RPC | Collateral |
 |---------|----------|-----|------------|
-| Index L3 (Orbit) | 111222333 | https://rpc.generalmarket.io/ (via nginx+LE on VPS 2, or http://142.132.164.24/ direct) | GM (18 dec) |
+| Index L3 (Orbit) | 111222333 | https://rpc.generalmarket.io/ (via nginx+LE on VPS 2, or http://159.195.79.153/ direct) | GM (18 dec) |
 | Local Settlement (Anvil) | 421611337 | http://localhost:8546 | — |
 
 **Frontend-accessible HTTPS origins** (added 2026-04-21 to let browsers preconnect + avoid mixed-content):

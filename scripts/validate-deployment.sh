@@ -29,8 +29,8 @@ echo -e "${BLUE}Validating deployment addresses (env: $ENV)${NC}"
 # Determine RPC from env
 case "$ENV" in
     local)   L3_RPC="http://localhost:8545" ;;
-    testnet) L3_RPC="http://142.132.164.24/" ;;
-    *)       L3_RPC="http://142.132.164.24/" ;;
+    testnet) L3_RPC="http://159.195.79.153/" ;;
+    *)       L3_RPC="http://159.195.79.153/" ;;
 esac
 
 # Check L3 connectivity

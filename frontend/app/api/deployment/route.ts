@@ -19,7 +19,7 @@ const CACHE_HEADERS = {
 const L3_RPC_URL =
   process.env.L3_RPC_URL ||
   process.env.NEXT_PUBLIC_L3_RPC_URL ||
-  'http://142.132.164.24/'
+  'http://159.195.79.153/'
 
 // Contracts whose bytecode we verify at request time. Keeps the response
 // self-auditing: if an address goes dead on-chain, callers see it flagged

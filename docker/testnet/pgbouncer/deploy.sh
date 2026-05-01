@@ -34,8 +34,8 @@ ssh "$VPS2" "psql -h 127.0.0.1 -p 6432 -U max -d index_prices -c 'SELECT 1 AS pg
 
 echo ""
 echo "=== PgBouncer deployed ==="
-echo "Services should now connect to: postgres://max@10.2.0.2:6432/index_prices"
+echo "Services should now connect to: postgres://max@159.195.79.153:6432/index_prices"
 echo ""
 echo "To update data-node, edit docker-compose.override.yml:"
-echo "  --database-url postgres://max@10.2.0.2:6432/index_prices"
+echo "  --database-url postgres://max@159.195.79.153:6432/index_prices"
 echo "Then restart: docker compose -f ... down && docker compose -f ... up -d"

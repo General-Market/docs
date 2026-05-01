@@ -39,7 +39,7 @@ if [ -n "${ADMIN_ADDRESS:-}" ]; then
 fi
 
 # RPC URL
-RPC_URL="${TESTNET_RPC:-http://142.132.164.24/}"
+RPC_URL="${TESTNET_RPC:-http://159.195.79.153/}"
 
 # Parse flags
 DRY_RUN=false

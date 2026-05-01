@@ -3,7 +3,7 @@
 #
 # Unlike start.sh which runs everything locally with Anvil,
 # this script uses the real VPS L3 chain and VPS PostgreSQL:
-#   - L3 RPC: http://142.132.164.24/ (Orbit chain on VPS 2, chain ID 111222333)
+#   - L3 RPC: http://159.195.79.153/ (Orbit chain on VPS 2, chain ID 111222333)
 #   - PostgreSQL: VPS 2 (data-node runs there via deploy.sh)
 #   - Contracts: deployed to VPS L3
 #   - Oracles + AP: run locally, point to VPS RPC
@@ -31,14 +31,14 @@ cd "$SCRIPT_DIR"
 # ── Testnet Configuration ─────────────────────────────────────
 # VPS L3 chain (Orbit on Sonic Testnet)
 CHAIN_ID=111222333
-RPC_URL="http://142.132.164.24/"
+RPC_URL="http://159.195.79.153/"
 # No separate Settlement chain on testnet — L3 handles everything
 SETTLEMENT_CHAIN_ID=$CHAIN_ID
 SETTLEMENT_RPC_URL="$RPC_URL"
 
 # VPS data-node
 VPS_HOST="index-maker/prod/postgres"
-DATA_NODE_URL="http://142.132.164.24:8200"
+DATA_NODE_URL="http://159.195.79.153:8200"
 
 # Testnet deployer wallet (from vps.md)
 DEPLOYER_KEY="${DEPLOYER_KEY:-0x107e200b197dc889feba0a1e0538bf51b97b2fc87f27f82783d5d59789dc3537}"
@@ -327,7 +327,7 @@ ORACLE_ARGS="$ORACLE_ARGS --data-node-url $DATA_NODE_URL"
 if [ "$VISION_ENABLED" = true ] && [ -n "$VISION_ADDR" ] && [ "$VISION_ADDR" != "" ]; then
     ORACLE_ARGS="$ORACLE_ARGS --vision-enabled"
     ORACLE_ARGS="$ORACLE_ARGS --vision-address $VISION_ADDR"
-    ORACLE_ARGS="$ORACLE_ARGS --vision-database-url postgres://max@142.132.164.24:5432/index_prices"
+    ORACLE_ARGS="$ORACLE_ARGS --vision-database-url postgres://max@159.195.79.153:5432/index_prices"
     ORACLE_ARGS="$ORACLE_ARGS --vision-data-node-url $DATA_NODE_URL"
     ORACLE_ARGS="$ORACLE_ARGS --vision-rpc-ws-url $RPC_URL"
     ORACLE_ARGS="$ORACLE_ARGS --vision-reveal-window-secs 60"
@@ -426,7 +426,7 @@ echo -e "  ${CYAN}Data-node:${NC}  $DATA_NODE_URL"
 echo -e "  ${CYAN}Oracles:${NC}    localhost:9001-900$ORACLE_COUNT"
 echo -e "  ${CYAN}AP:${NC}         localhost:9100"
 echo -e "  ${CYAN}Frontend:${NC}   http://localhost:3000"
-echo -e "  ${CYAN}Explorer:${NC}   http://142.132.164.24/ (GET requests)"
+echo -e "  ${CYAN}Explorer:${NC}   http://159.195.79.153/ (GET requests)"
 echo ""
 echo -e "  ${YELLOW}Deployer:${NC}   $DEPLOYER_ADDRESS"
 echo -e "  ${YELLOW}Deployment:${NC} deployments/active-deployment.json"

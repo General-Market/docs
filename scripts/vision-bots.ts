@@ -7,8 +7,8 @@
  *   npx tsx scripts/vision-bots.ts
  *
  * Environment:
- *   L3_RPC          — L3 RPC URL (default: http://142.132.164.24/)
- *   ORACLE_BASE     — Base URL for oracles (default: http://116.203.156.98)
+ *   L3_RPC          — L3 RPC URL (default: http://159.195.79.153/)
+ *   ORACLE_BASE     — Base URL for oracles (default: http://159.195.78.238)
  *   DEPOSIT_AMOUNT  — USDC per batch join (default: 10)
  *   BOT_COUNT       — Number of bots (default: 10)
  */
@@ -31,8 +31,8 @@ import * as path from 'path'
 
 // ── Config ──
 
-const L3_RPC = process.env.L3_RPC || 'http://142.132.164.24/'
-const ORACLE_BASE = process.env.ORACLE_BASE || 'http://116.203.156.98'
+const L3_RPC = process.env.L3_RPC || 'http://159.195.79.153/'
+const ORACLE_BASE = process.env.ORACLE_BASE || 'http://159.195.78.238'
 const ORACLE_URLS = [
   `${ORACLE_BASE}/oracle1`,
   `${ORACLE_BASE}/oracle2`,

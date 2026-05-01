@@ -7,7 +7,7 @@ max_exposure = 5000
 poll_interval = 30
 round_based = true
 
-rpc_url = "http://142.132.164.24/"
+rpc_url = "http://159.195.79.153/"
 vision_api = "http://localhost:10001"
 data_node = "http://localhost:8200"
 

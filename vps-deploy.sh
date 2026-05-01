@@ -20,14 +20,14 @@ cd "$SCRIPT_DIR"
 # SSH
 BASTION="max@65.109.10.32"
 BASTION_PORT=3189
-VPS1_IP="116.203.156.98"
+VPS1_IP="159.195.78.238"
 VPS1_PORT=3189
 VPS1_USER="max"
-VPS2_IP="142.132.164.24"
+VPS2_IP="159.195.79.153"
 REMOTE_DIR="/home/max/index"
 
 # Chain — Orbit L3 on VPS 2
-RPC_URL="${RPC_URL:-http://142.132.164.24/}"
+RPC_URL="${RPC_URL:-http://159.195.79.153/}"
 CHAIN_ID="${CHAIN_ID:-111222333}"
 
 # Oracles
@@ -276,7 +276,7 @@ if [ -f ".env.data-node" ]; then
 fi
 
 # Defaults (overridable via env)
-RPC_URL="${RPC_URL:-${ORBIT_RPC_URL:-http://142.132.164.24/}}"
+RPC_URL="${RPC_URL:-${ORBIT_RPC_URL:-http://159.195.79.153/}}"
 CHAIN_ID="${CHAIN_ID:-${ORBIT_CHAIN_ID:-111222333}}"
 ORACLE_COUNT="${ORACLE_COUNT:-3}"
 LOG_LEVEL="${LOG_LEVEL:-info}"
@@ -313,7 +313,7 @@ elif command -v autossh &>/dev/null; then
     echo -e "${YELLOW}Setting up PostgreSQL tunnel to VPS 2...${NC}"
     # VPS 2 has PostgreSQL on localhost:5432
     # Use Hetzner private network (10.2.0.x) if available
-    VPS2_ADDR="${VPS2_ADDR:-142.132.164.24}"
+    VPS2_ADDR="${VPS2_ADDR:-159.195.79.153}"
     autossh -M 0 -f -N -o "ServerAliveInterval=30" -o "ServerAliveCountMax=3" \
         -L 5432:127.0.0.1:5432 "max@${VPS2_ADDR}" -p 3189
     sleep 1

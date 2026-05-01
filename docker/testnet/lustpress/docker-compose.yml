@@ -30,7 +30,7 @@ services:
       RESPECT_RETRY_AFTER: "true"
     # Only exposed on private network — never on public interface
     ports:
-      - "10.2.0.2:3131:3000"
+      - "0.0.0.0:3131:3000"
     networks:
       - lustpress
     healthcheck:

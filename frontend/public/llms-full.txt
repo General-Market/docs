@@ -228,7 +228,7 @@ def encode_bitmap(bets: list[str], market_count: int) -> bytes:
 
 ### Blockchain Layer
 - **Chain**: Arbitrum Orbit L3 (Chain ID: 111222333)
-- **RPC**: http://142.132.164.24/
+- **RPC**: https://rpc.generalmarket.io/
 - **Collateral**: USDC (WUSDC on L3, 18 decimals)
 
 ### Smart Contracts — ITP
