@@ -8,6 +8,7 @@ import { useSystemStatus } from '@/hooks/useSystemStatus'
 import { useApBalances } from '@/hooks/useApBalances'
 import { useInventoryRanking } from '@/hooks/useInventoryRanking'
 import type { DeployedItpRef } from '@/components/domain/ItpListing'
+import { loadCoinMap } from '@/lib/static-cache'
 
 const NODE_NAMES = ['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon', 'Zeta']
 const VAULT_PAGE_SIZE = 6
@@ -120,10 +121,7 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
   // Coin logos from CoinGecko coin-map
   const [coinMap, setCoinMap] = useState<Record<string, { id: string; image: string }>>({})
   useEffect(() => {
-    fetch('/coin-map.json')
-      .then(r => r.ok ? r.json() : {})
-      .then(data => setCoinMap(data))
-      .catch(() => {})
+    loadCoinMap().then(setCoinMap)
   }, [])
 
   // Build ITP name lookup: itpId → display name

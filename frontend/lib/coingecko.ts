@@ -1,19 +1,10 @@
-// Coin map loaded lazily from /coin-map.json — entries have { id, image }
+import { loadCoinMap } from './static-cache'
+
 let coinMapCache: Record<string, { id: string; image: string }> | null = null
-let coinMapPromise: Promise<void> | null = null
 
-function ensureCoinMap(): void {
-  if (coinMapCache || typeof window === 'undefined') return
-  if (!coinMapPromise) {
-    coinMapPromise = fetch('/coin-map.json')
-      .then(r => r.ok ? r.json() : {})
-      .then(data => { coinMapCache = data })
-      .catch(() => { coinMapCache = {} })
-  }
+if (typeof window !== 'undefined') {
+  loadCoinMap().then(map => { coinMapCache = map })
 }
-
-// Kick off the fetch at module load time (client only)
-if (typeof window !== 'undefined') ensureCoinMap()
 
 /**
  * Get CoinGecko URL for a token symbol.

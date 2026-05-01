@@ -5,6 +5,7 @@ import { usePublicClient } from 'wagmi'
 import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
 import { indexL3 } from '@/lib/wagmi'
 import { MOCK_BITGET_VAULT_ABI } from '@/lib/contracts/mockbitget-vault-abi'
+import { loadDeployedAssets } from '@/lib/static-cache'
 
 const POLL_MS = 30_000
 const BATCH_SIZE = 50
@@ -41,30 +42,18 @@ export interface UseVaultTradesReturn {
 
 // ── Symbol map (address -> symbol) from deployed-assets.json ──
 
-type AssetEntry = { address: string; symbol: string }
 let symbolMapCache: Map<string, string> | null = null
-let symbolMapPromise: Promise<Map<string, string>> | null = null
 
 function loadSymbolMap(): Promise<Map<string, string>> {
   if (symbolMapCache) return Promise.resolve(symbolMapCache)
-  if (symbolMapPromise) return symbolMapPromise
-
-  symbolMapPromise = fetch('/deployed-assets.json')
-    .then(r => r.ok ? r.json() as Promise<AssetEntry[]> : [])
-    .then(entries => {
-      const map = new Map<string, string>()
-      for (const entry of entries) {
-        map.set(entry.address.toLowerCase(), entry.symbol)
-      }
-      symbolMapCache = map
-      return map
-    })
-    .catch(() => {
-      symbolMapPromise = null
-      return new Map<string, string>()
-    })
-
-  return symbolMapPromise
+  return loadDeployedAssets().then(entries => {
+    const map = new Map<string, string>()
+    for (const entry of entries) {
+      map.set(entry.address.toLowerCase(), entry.symbol)
+    }
+    symbolMapCache = map
+    return map
+  })
 }
 
 function resolveSymbol(address: string, symbolMap: Map<string, string>): string {

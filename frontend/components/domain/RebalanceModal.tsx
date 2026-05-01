@@ -9,6 +9,7 @@ import { settlementChainId } from '@/lib/wagmi'
 import { useToast } from '@/lib/contexts/ToastContext'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { getCoinGeckoUrl } from '@/lib/coingecko'
+import { loadCoinMap, loadDeployedAssets } from '@/lib/static-cache'
 import { useTranslations } from 'next-intl'
 import { DATA_NODE_URL, SETTLEMENT_RPC_URL as SETTLEMENT_RPC, L3_RPC_URL as L3_RPC } from '@/lib/config'
 import { usePostHogTracker } from '@/hooks/usePostHog'
@@ -169,18 +170,10 @@ export function RebalanceModal({ itpId, itpName, onClose, initialHoldings }: Reb
 
   // Load available assets from deployed-assets.json + coin logos from coin-map.json
   useEffect(() => {
-    fetch('/deployed-assets.json')
-      .then(res => res.ok ? res.json() : Promise.reject('not found'))
-      .then((data: { address: string; symbol: string }[]) => {
-        if (Array.isArray(data) && data.length > 0) {
-          setAvailableAssets(data)
-        }
-      })
-      .catch(() => {})
-    fetch('/coin-map.json')
-      .then(r => r.ok ? r.json() : {})
-      .then(data => setCoinMap(data))
-      .catch(() => {})
+    loadDeployedAssets().then(data => {
+      if (data.length > 0) setAvailableAssets(data)
+    })
+    loadCoinMap().then(setCoinMap)
   }, [])
 
   // Load ITP state + symbols on mount

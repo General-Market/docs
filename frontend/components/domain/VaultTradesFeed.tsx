@@ -6,6 +6,7 @@ import { formatUnits } from 'viem'
 import { useVaultTrades, type VaultTrade } from '@/hooks/useVaultTrades'
 import { useSystemStatus, type RecentOrder } from '@/hooks/useSystemStatus'
 import type { DeployedItpRef } from '@/components/domain/ItpListing'
+import { loadCoinMap } from '@/lib/static-cache'
 
 const PAGE_SIZE = 15
 
@@ -165,10 +166,7 @@ export function VaultTradesFeed({ deployedItps }: VaultTradesFeedProps) {
 
   // Load coin logos
   useEffect(() => {
-    fetch('/coin-map.json')
-      .then(r => r.ok ? r.json() : {})
-      .then(data => setCoinMap(data))
-      .catch(() => {})
+    loadCoinMap().then(setCoinMap)
   }, [])
 
   // Tick relative times every 15s

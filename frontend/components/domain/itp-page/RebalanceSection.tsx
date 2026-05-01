@@ -9,6 +9,7 @@ import { L3_RPC_URL } from '@/lib/config'
 import { useRebalance } from '@/hooks/useRebalance'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { getTxUrl } from '@/lib/utils/explorer'
+import { loadDeployedAssets } from '@/lib/static-cache'
 
 const L3_INDEX = INDEX_PROTOCOL.index
 
@@ -89,12 +90,7 @@ export function RebalanceSection({ itpId, enrichment }: RebalanceSectionProps) {
 
   // Load available assets for adding new ones
   useEffect(() => {
-    fetch('/deployed-assets.json')
-      .then(res => res.ok ? res.json() : [])
-      .then((data: { address: string; symbol: string }[]) => {
-        if (Array.isArray(data)) setAvailableAssets(data)
-      })
-      .catch(() => {})
+    loadDeployedAssets().then(setAvailableAssets)
   }, [])
 
   // Load ITP on-chain state

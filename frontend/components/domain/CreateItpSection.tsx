@@ -13,6 +13,7 @@ import { ensureCorrectChain } from '@/hooks/useChainWrite'
 import { activeChainId, indexL3 } from '@/lib/wagmi'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { getCoinGeckoUrl } from '@/lib/coingecko'
+import { loadCoinMap, loadDeployedAssets } from '@/lib/static-cache'
 import { DATA_NODE_URL } from '@/lib/config'
 import { useSSENav } from '@/hooks/useSSE'
 import { useTranslations } from 'next-intl'
@@ -110,42 +111,35 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
 
   // Load full asset list from deployed-assets.json on mount
   useEffect(() => {
-    fetch('/deployed-assets.json')
-      .then(res => res.ok ? res.json() : Promise.reject('not found'))
-      .then((data: { address: string; symbol: string }[]) => {
-        if (Array.isArray(data) && data.length > 0) {
-          // Deduplicate by symbol, keep first occurrence
-          const seen = new Set<string>()
-          const unique = data.filter(a => {
-            const key = a.symbol.toUpperCase()
-            if (seen.has(key)) return false
-            seen.add(key)
-            return true
-          })
-          setAvailableAssets(unique)
-          // Pre-select default symbols with equal weights (only if no selection yet)
-          setSelectedAssets(prev => {
-            if (prev.length > 0) return prev
-            const preselected = DEFAULT_PRESELECT_SYMBOLS
-              .map(sym => unique.find(a => a.symbol.toUpperCase() === sym))
-              .filter((a): a is { address: string; symbol: string } => !!a)
-            const n = preselected.length
-            if (n === 0) return prev
-            const w = Math.floor(100 / n)
-            const remainder = 100 - w * n
-            return preselected.map((a, i) => ({ ...a, weight: w + (i === 0 ? remainder : 0) }))
-          })
-        }
+    loadDeployedAssets().then(data => {
+      if (data.length === 0) return
+      // Deduplicate by symbol, keep first occurrence
+      const seen = new Set<string>()
+      const unique = data.filter(a => {
+        const key = a.symbol.toUpperCase()
+        if (seen.has(key)) return false
+        seen.add(key)
+        return true
       })
-      .catch(() => { /* deployed-assets.json not available, user must select manually */ })
+      setAvailableAssets(unique)
+      // Pre-select default symbols with equal weights (only if no selection yet)
+      setSelectedAssets(prev => {
+        if (prev.length > 0) return prev
+        const preselected = DEFAULT_PRESELECT_SYMBOLS
+          .map(sym => unique.find(a => a.symbol.toUpperCase() === sym))
+          .filter((a): a is { address: string; symbol: string } => !!a)
+        const n = preselected.length
+        if (n === 0) return prev
+        const w = Math.floor(100 / n)
+        const remainder = 100 - w * n
+        return preselected.map((a, i) => ({ ...a, weight: w + (i === 0 ? remainder : 0) }))
+      })
+    })
   }, [])
 
   // Load symbol → {id, image} mapping for logos from static coin-map
   useEffect(() => {
-    fetch('/coin-map.json', { signal: AbortSignal.timeout(10_000) })
-      .then(res => res.ok ? res.json() : Promise.reject('not found'))
-      .then((data: Record<string, CoinEntry>) => setCoinMap(data))
-      .catch(() => { /* logos won't show, acceptable fallback */ })
+    loadCoinMap().then(setCoinMap)
   }, [])
 
   // Pre-populate from backtester when initialHoldings changes
