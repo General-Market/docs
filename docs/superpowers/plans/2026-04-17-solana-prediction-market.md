@@ -2735,7 +2735,7 @@ User=oracle
 Environment=RPC_URL=https://api.devnet.solana.com
 Environment=PROGRAM_ID=...
 Environment=ORACLE_KEYPAIR=/etc/prediction-oracle/oracle.json
-Environment=DATA_NODE_URL=http://10.2.0.3:8200
+Environment=DATA_NODE_URL=http://159.195.78.238:8200  # post-Netcup VPS 1; was http://10.2.0.3:8200 on Hetzner. See CLAUDE.md "Netcup migration".
 Environment=BASELINE_DB=/var/lib/prediction-oracle/baselines.db
 ExecStart=/usr/local/bin/prediction-market-oracle
 Restart=always

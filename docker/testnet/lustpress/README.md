@@ -10,9 +10,9 @@ The data-node `tubes` source hits lustpress, not the tube sites directly. Lustpr
 
 ## Where it runs
 
-**VPS 2** (`index-maker/prod/postgres`, private IP `10.2.0.2`). Never on VPS 1 — outbound tube scraping from the same IP that serves oracles and nginx would cross-contaminate reputation.
+**VPS 2** (alias `index-maker/prod/postgres` until cutover; new box `vps2-new` at `159.195.79.153`). Never on VPS 1 — outbound tube scraping from the same IP that serves oracles and nginx would cross-contaminate reputation.
 
-Private-network exposure only: `10.2.0.2:3131`. The data-node connects over the 10.2.x/24 private network.
+Exposed on `127.0.0.1:3131` (or `0.0.0.0:3131` post-Netcup, since UFW is the gatekeeper now — see CLAUDE.md "Netcup migration"). The data-node connects over the public network from VPS 1. The old `10.2.0.0/24` Hetzner private net is gone.
 
 ## Env vars (already set in docker-compose.yml)
 
@@ -35,7 +35,10 @@ docker logs -f testnet-lustpress
 ## Smoke test from VPS 1
 
 ```bash
+# Pre-cutover (Hetzner): private net
 curl -s 'http://10.2.0.2:3131/api/pornhub/video?id=ph000000000000001'
+# Post-cutover (Netcup): public IP, UFW restricts who can reach it
+curl -s 'http://159.195.79.153:3131/api/pornhub/video?id=ph000000000000001'
 ```
 
 Expected: JSON with `views`, `title`, `duration`, or a structured error. If you get HTML, Cloudflare intervened — drop the request rate.
