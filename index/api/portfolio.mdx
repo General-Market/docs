@@ -15,7 +15,7 @@ Your positions, your history, your profit and loss. The wallet address is the on
   User wallet address (e.g., `0x...`).
 </ParamField>
 
-All ITP positions, total value, and profit/loss for a wallet. The numbers do not flatter.
+All Dex Traded Fund (DTF) positions, total value, and profit/loss for a wallet. The numbers do not flatter.
 
 <CodeGroup>
 ```bash cURL
@@ -81,15 +81,15 @@ portfolio = resp.json()
 | `total_value_usd` | number | Total portfolio value in USD |
 | `total_pnl_usd` | number | Total profit/loss in USD |
 | `total_pnl_pct` | number | Total profit/loss as a percentage |
-| `positions` | array | Array of ITP positions held by the user |
+| `positions` | array | Array of DTF positions held by the user |
 
 **Position fields:**
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `itp_id` | string | ITP identifier |
-| `name` | string | ITP name |
-| `symbol` | string | ITP ticker symbol |
+| `itp_id` | string | DTF identifier |
+| `name` | string | DTF name |
+| `symbol` | string | DTF ticker symbol |
 | `shares` | string | Number of shares held in wei |
 | `nav_per_share` | number | Current NAV per share |
 | `value_usd` | number | Current position value in USD |
@@ -216,8 +216,8 @@ trades = resp.json()
 | `tx_hash` | string | Transaction hash on-chain |
 | `timestamp` | number | Unix timestamp of the trade |
 | `type` | string | Trade type: `buy` or `sell` |
-| `itp_id` | string | ITP identifier |
-| `itp_symbol` | string | ITP ticker symbol |
+| `itp_id` | string | DTF identifier |
+| `itp_symbol` | string | DTF ticker symbol |
 | `shares` | string | Number of shares traded in wei |
 | `price_per_share` | number | Execution price per share in USD |
 | `total_usd` | number | Total trade value in USD |

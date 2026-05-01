@@ -5,7 +5,7 @@ description: "Step-by-step guide to lending and borrowing on General Market"
 
 You supply USDC. Others borrow against their convictions. When their convictions fail, you are made whole. This is called lending.
 
-General Market integrates with Morpho to offer lending and borrowing against ITP shares. Lenders deposit USDC and earn yield. Borrowers pledge ITP shares as collateral and borrow USDC without selling. The arrangement works until it does not. The section on liquidation explains what happens then.
+General Market integrates with Morpho to offer lending and borrowing against Dex Traded Fund (DTF) shares. Lenders deposit USDC and earn yield. Borrowers pledge DTF shares as collateral and borrow USDC without selling. The arrangement works until it does not. The section on liquidation explains what happens then.
 
 ## Full Lending Pipeline
 
@@ -46,7 +46,7 @@ General Market integrates with Morpho to offer lending and borrowing against ITP
 ```
 
 <Info>
-Each ITP has its own isolated Morpho market. Risk does not spill across ITPs. A collapse in one market is a private catastrophe. The others continue undisturbed.
+Each DTF has its own isolated Morpho market. Risk does not spill across DTFs. A collapse in one market is a private catastrophe. The others continue undisturbed.
 </Info>
 
 ---
@@ -103,31 +103,31 @@ Yield comes from borrowers who pay interest on their loans. The APY fluctuates w
 
 ---
 
-## Borrowing Against ITP Shares
+## Borrowing Against DTF Shares
 
-Borrowing is leverage disguised as liquidity. You keep your ITP position and get USDC. The debt grows. The position does what it wants.
+Borrowing is leverage disguised as liquidity. You keep your DTF position and get USDC. The debt grows. The position does what it wants.
 
 ### Check Market Availability
 
-Not all ITPs have a Morpho lending market. Check the ITP's detail page or the Lend section.
+Not all DTFs have a Morpho lending market. Check the DTF's detail page or the Lend section.
 
 <Warning>
-If no Morpho lending market exists for an ITP, its shares cannot be used as collateral. No market, no leverage. The protocol does not create markets out of hope.
+If no Morpho lending market exists for a DTF, its shares cannot be used as collateral. No market, no leverage. The protocol does not create markets out of hope.
 </Warning>
 
 ### Deposit Collateral
 
 <Steps>
-  <Step title="Select ITP">
-    In the **Borrow** section, select the ITP whose shares will serve as collateral.
+  <Step title="Select DTF">
+    In the **Borrow** section, select the DTF whose shares will serve as collateral.
   </Step>
 
   <Step title="Deposit Shares">
-    Enter the number of ITP shares to deposit. The wallet will prompt for:
+    Enter the number of DTF shares to deposit. The wallet will prompt for:
     1. **Approve** the share transfer to the Morpho market
     2. **Confirm** the collateral deposit transaction
 
-    The ITP shares are now locked as collateral in the Morpho market.
+    The DTF shares are now locked as collateral in the Morpho market.
   </Step>
 </Steps>
 
@@ -136,7 +136,7 @@ If no Morpho lending market exists for an ITP, its shares cannot be used as coll
 <Steps>
   <Step title="Choose Borrow Amount">
     Enter the USDC amount to borrow. The interface displays three numbers. Read all three.
-    - **Collateral value** -- current USD value of the deposited ITP shares
+    - **Collateral value** -- current USD value of the deposited DTF shares
     - **Health factor** -- ratio of collateral value to debt. Below 1.0, you are liquidated.
     - **Maximum borrow** -- the maximum USDC available at current collateral value. Borrowing the maximum is the fastest path to liquidation.
   </Step>
@@ -206,7 +206,7 @@ The curator bot runs 24/7. It does not sleep. It does not hesitate. It performs 
 
 ### NAV Oracle and Collateral Pricing
 
-ITP collateral is priced by the `ITPNAVOracle`. Three oracles compute NAV from live market prices. Two must agree. The price is then pushed on-chain with a BLS signature. Trust is replaced by cryptography. This is the entire premise.
+DTF collateral is priced by the `ITPNAVOracle`. Three oracles compute NAV from live market prices. Two must agree. The price is then pushed on-chain with a BLS signature. Trust is replaced by cryptography. This is the entire premise.
 
 ```
   ITP NAV = SUM(qty[i] * price[i]) / 1e18
@@ -293,7 +293,7 @@ The **health factor** is a single number that measures the distance between your
 ```
 
 <Warning>
-If the NAV drops enough to push the health factor below 1.0, the position is liquidated. A liquidator repays part of the debt and claims a portion of the ITP collateral at a discount. The protocol does not warn you. It does not wait. The math executes.
+If the NAV drops enough to push the health factor below 1.0, the position is liquidated. A liquidator repays part of the debt and claims a portion of the DTF collateral at a discount. The protocol does not warn you. It does not wait. The math executes.
 </Warning>
 
 ### Tips to Stay Safe
@@ -302,7 +302,7 @@ Safety is not a state. It is a practice.
 
 - **Do not borrow the maximum amount.** The maximum is the edge of the cliff. Stand back from it.
 - **Monitor the health factor** during volatile markets. The number that was safe yesterday is not safe today.
-- **Diversified ITPs** have more stable NAVs. Stability is not glamorous. It is useful.
+- **Diversified DTFs** have more stable NAVs. Stability is not glamorous. It is useful.
 - **Add more collateral** if the health factor is declining. The cost of adding collateral is less than the cost of liquidation.
 
 ---
@@ -338,10 +338,10 @@ When the health factor reaches 1.0, the position becomes eligible for **partial 
 
 The mechanics are impersonal. The consequences are not.
 
-1. Health factor falls below 1.0 (ITP NAV dropped, or interest accrued).
+1. Health factor falls below 1.0 (DTF NAV dropped, or interest accrued).
 2. **Any address** can call `liquidate()` on Morpho Blue. The liquidator is a stranger. They are motivated by profit.
 3. The liquidator repays a portion of the borrower's USDC debt.
-4. In return, the liquidator receives an equivalent value of ITP collateral **plus a liquidation bonus** (discount).
+4. In return, the liquidator receives an equivalent value of DTF collateral **plus a liquidation bonus** (discount).
 5. The borrower keeps whatever remains. It is less than they started with.
 
 ```
@@ -428,7 +428,7 @@ When repaying the **full debt**, use "Max" / "Repay All". This uses borrow share
 
 ## Withdrawing Collateral
 
-After repaying debt, you can withdraw ITP shares from the collateral pool. The shares return to your wallet. They are yours again.
+After repaying debt, you can withdraw DTF shares from the collateral pool. The shares return to your wallet. They are yours again.
 
 <Steps>
   <Step title="Check Available Collateral">
@@ -436,11 +436,11 @@ After repaying debt, you can withdraw ITP shares from the collateral pool. The s
   </Step>
 
   <Step title="Enter Withdrawal Amount">
-    Enter the number of ITP shares to withdraw. The interface prevents withdrawing an amount that would put the position at liquidation risk. The contract protects you from yourself.
+    Enter the number of DTF shares to withdraw. The interface prevents withdrawing an amount that would put the position at liquidation risk. The contract protects you from yourself.
   </Step>
 
   <Step title="Confirm Withdrawal">
-    Confirm the withdrawal transaction. The ITP shares are returned to the borrower's wallet.
+    Confirm the withdrawal transaction. The DTF shares are returned to the borrower's wallet.
   </Step>
 </Steps>
 

@@ -59,14 +59,14 @@ General Market is a protocol for **index products**, **prediction markets**, and
 ## The Three Pillars
 
 <CardGroup cols={3}>
-  <Card title="Index (ITPs)" icon="chart-pie" href="/index/concepts/itps">
-    Baskets of up to 100 crypto assets. Each ITP is an ERC-4626 vault priced by a NAV formula that hides nothing. Orders pass through BLS consensus and execute on real exchanges. No AMM. No slippage. No illusions about liquidity.
+  <Card title="Index (DTFs)" icon="chart-pie" href="/index/concepts/itps">
+    Baskets of up to 100 crypto assets. Each Dex Traded Fund (DTF) is an ERC-4626 vault priced by a NAV formula that hides nothing. Orders pass through BLS consensus and execute on real exchanges. No AMM. No slippage. No illusions about liquidity.
   </Card>
   <Card title="Vision" icon="eye" href="/vision/introduction">
     Prediction markets on 90+ real-world data sources. Transport delays, power outages, weather, GitHub commits, energy prices. You bet on whether the Paris Metro will be late. It usually is. Sealed bets, parimutuel payouts, BLS-verified resolution.
   </Card>
   <Card title="Lending" icon="building-columns" href="/index/concepts/lending">
-    Morpho-powered lending on Arbitrum. Deposit USDC to earn yield from borrowers who believe their collateral will hold. Use ITP shares to borrow USDC against positions you cannot bring yourself to sell.
+    Morpho-powered lending on Arbitrum. Deposit USDC to earn yield from borrowers who believe their collateral will hold. Use DTF shares to borrow USDC against positions you cannot bring yourself to sell.
   </Card>
 </CardGroup>
 
@@ -119,7 +119,7 @@ Every system is an act of faith in its own plumbing. These are the pipes.
     A Rust service that aggregates 90+ data sources into one API. Crypto prices, transport delays, energy grids, weather stations, GitHub activity. It feeds NAV computation, market resolution, backtesting, and anomaly detection. The nervous system of the protocol. It never sleeps, because the world does not.
   </Card>
   <Card title="Bridge" icon="bridge">
-    Moves assets between the Index L3 and Arbitrum. ITP shares cross as standard ERC-20 tokens, composable with DeFi on the other side. Two chains, one position. The bridge is the part you forget about until it matters.
+    Moves assets between the Index L3 and Arbitrum. DTF shares cross as standard ERC-20 tokens, composable with DeFi on the other side. Two chains, one position. The bridge is the part you forget about until it matters.
   </Card>
   <Card title="Explorer" icon="magnifying-glass-chart">
     System health dashboard. Oracle node status, consensus metrics, data source monitoring, fee tracking. The control tower. The place you visit when things are working, to reassure yourself they still are.
@@ -128,7 +128,7 @@ Every system is an act of faith in its own plumbing. These are the pipes.
     Python trading bots for Vision markets. Register on-chain through the BotRegistry. Build strategies programmatically. The machines trade while you sleep, which is either a comfort or a terror.
   </Card>
   <Card title="Points System" icon="star">
-    Season 1 rewards. Earn points for trading ITPs, placing bets, supplying liquidity. Points track engagement. Whether engagement deserves tracking is a question the protocol does not ask.
+    Season 1 rewards. Earn points for trading DTFs, placing bets, supplying liquidity. Points track engagement. Whether engagement deserves tracking is a question the protocol does not ask.
   </Card>
   <Card title="Social Bot" icon="bullhorn">
     Anomaly detection across 90+ sources. When something unusual happens — a transit collapse, a grid failure, a weather event — it posts to Twitter/X. Attention follows catastrophe. Markets follow attention.
@@ -197,12 +197,12 @@ Every system is an act of faith in its own plumbing. These are the pipes.
 
 | Audience | What you do |
 |----------|-------------|
-| **Traders** | Buy diversified crypto exposure through ITPs with a single transaction. Bet on real-world outcomes in Vision markets. |
+| **Traders** | Buy diversified crypto exposure through DTFs with a single transaction. Bet on real-world outcomes in Vision markets. |
 | **Bot developers** | Build Python strategies for automated Vision market trading. Register bots on-chain through the BotRegistry. |
 | **Fund managers** | Create custom indexes with configurable weights and up to 100 assets. Earn deployer fees on every trade. |
-| **Data scientists** | Backtest ITP compositions against historical data. Analyze 90+ data sources for prediction market edges. |
+| **Data scientists** | Backtest DTF compositions against historical data. Analyze 90+ data sources for prediction market edges. |
 | **Quant researchers** | Exploit inefficiencies in sealed parimutuel markets. Build signal pipelines from transport, energy, and weather data. |
-| **DeFi power users** | Use ITP shares as collateral in Morpho lending markets. Supply USDC to earn yield. Compose across Arbitrum DeFi. |
+| **DeFi power users** | Use DTF shares as collateral in Morpho lending markets. Supply USDC to earn yield. Compose across Arbitrum DeFi. |
 
 ---
 
@@ -251,7 +251,7 @@ Every protocol is a set of opinions disguised as infrastructure. These are ours.
   <Card title="Getting Started" icon="rocket" href="/index/getting-started">
     Connect a wallet. Buy something. The rest follows.
   </Card>
-  <Card title="How ITPs Work" icon="book" href="/index/concepts/itps">
+  <Card title="How DTFs Work" icon="book" href="/index/concepts/itps">
     NAV pricing, per-share quantities, rebalancing. The formula that decides what your basket is worth.
   </Card>
   <Card title="Vision Markets" icon="eye" href="/vision/introduction">

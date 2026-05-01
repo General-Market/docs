@@ -1,16 +1,16 @@
 ---
 title: "Lending"
-description: "Earn yield or borrow against ITP positions using Morpho"
+description: "Earn yield or borrow against DTF positions using Morpho"
 ---
 
 # Lending and Borrowing
 
-You deposit USDC to earn yield. The yield comes from people who believe their ITP collateral will not collapse. They are sometimes right.
+You deposit USDC to earn yield. The yield comes from people who believe their Dex Traded Fund (DTF) collateral will not collapse. They are sometimes right.
 
 ## Quick Start: Earn Yield on USDC
 
 1. Go to the **Lending** section on [generalmarket.io](https://generalmarket.io)
-2. Pick a lending market (each corresponds to an ITP)
+2. Pick a lending market (each corresponds to a DTF)
 3. Deposit USDC — interest begins immediately
 4. Withdraw anytime — no lock-up
 
@@ -37,19 +37,19 @@ See [Lending Guide](/index/guides/lending) for the full walkthrough.
 ```
 
 <Info>
-Not all ITPs have lending markets. Only those configured with a Morpho market. Check the ITP detail page. If there is no market, there is no market. Some things cannot be borrowed against.
+Not all DTFs have lending markets. Only those configured with a Morpho market. Check the DTF detail page. If there is no market, there is no market. Some things cannot be borrowed against.
 </Info>
 
 ## How Morpho Lending Works
 
-Lending is powered by [Morpho](https://morpho.org/). Each ITP has its own isolated market with its own parameters. Risk does not spill across ITPs. One basket's collapse is not another basket's problem. This is the design. Whether reality respects the design is an open question.
+Lending is powered by [Morpho](https://morpho.org/). Each DTF has its own isolated market with its own parameters. Risk does not spill across DTFs. One basket's collapse is not another basket's problem. This is the design. Whether reality respects the design is an open question.
 
 Two sides to every market:
 
 | Role | What You Do | What You Earn/Pay |
 |------|-------------|-------------------|
 | **Lender** | Deposit USDC into the lending pool | Earn interest from borrowers |
-| **Borrower** | Deposit ITP tokens as collateral, borrow USDC | Pay interest to lenders |
+| **Borrower** | Deposit DTF tokens as collateral, borrow USDC | Pay interest to lenders |
 
 ## Supplying USDC (Lending)
 
@@ -69,17 +69,17 @@ You deposit USDC. Someone else borrows it. They pay you for the privilege. The s
 - **No lock-up** -- No minimum deposit period. You can leave whenever you want. The protocol does not hold grudges.
 
 <Tip>
-Lending earns USDC yield without ITP price exposure. Your principal stays in USDC. You earn interest but do not ride the basket. A spectator's income.
+Lending earns USDC yield without DTF price exposure. Your principal stays in USDC. You earn interest but do not ride the basket. A spectator's income.
 </Tip>
 
-## Borrowing Against ITPs
+## Borrowing Against DTFs
 
-You hold ITP tokens. You want USDC. You do not want to sell. This is the classic dilemma of the attached investor — wanting liquidity without surrender. Morpho solves it, at a price.
+You hold DTF tokens. You want USDC. You do not want to sell. This is the classic dilemma of the attached investor — wanting liquidity without surrender. Morpho solves it, at a price.
 
 ### How to Borrow
 
-1. Navigate to the **Lending** section and select the market for your ITP.
-2. **Deposit collateral** -- transfer ITP tokens into the Morpho market.
+1. Navigate to the **Lending** section and select the market for your DTF.
+2. **Deposit collateral** -- transfer DTF tokens into the Morpho market.
 3. **Borrow USDC** -- draw up to the allowed loan-to-value (LTV) ratio.
 4. Use the USDC. Trade, provide liquidity, withdraw. The protocol does not ask why.
 
@@ -117,7 +117,7 @@ The **health factor** is a single number that measures how close you are to losi
 |---------------|--------|
 | > 1.5 | Safe -- comfortable margin |
 | 1.0 - 1.5 | Caution -- monitor the position closely |
-| <= 1.0 | Liquidatable -- the ITP collateral can be seized |
+| <= 1.0 | Liquidatable -- the DTF collateral can be seized |
 
 <Warning>
 At **1.0 or below**, your position can be liquidated. A liquidator repays part of your debt and takes your collateral at a discount. The protocol is indifferent to your plans. Monitor the health factor, especially during volatility. The market does not send warnings. The number is the warning.
@@ -143,7 +143,7 @@ At **1.0 or below**, your position can be liquidated. A liquidator repays part o
 
 Two ways to save yourself:
 
-- **Deposit more collateral** -- Add more ITP tokens. Feed the position.
+- **Deposit more collateral** -- Add more DTF tokens. Feed the position.
 - **Repay debt** -- Return USDC. Reduce what you owe. The oldest solution to the oldest problem.
 
 ## Liquidation
@@ -179,7 +179,7 @@ When the health factor touches 1.0, the position is exposed. Anyone can liquidat
 ### How It Works
 
 1. A liquidator repays part of your USDC debt.
-2. In return, they take an equivalent value of your ITP collateral, plus a **liquidation bonus** — a discount on what they seize. Generosity to the vultures is how the system stays healthy.
+2. In return, they take an equivalent value of your DTF collateral, plus a **liquidation bonus** — a discount on what they seize. Generosity to the vultures is how the system stays healthy.
 3. You keep whatever remains. It is less than you had. It is more than nothing.
 
 ### Key Properties
@@ -216,12 +216,12 @@ Everything here can hurt you. The table below names how. Naming the danger is no
 
 | Risk | Description | Mitigation |
 |------|-------------|------------|
-| **Liquidation** | ITP NAV drops, health factor falls below 1.0 | Keep health factor above 1.5; set up monitoring alerts |
+| **Liquidation** | DTF NAV drops, health factor falls below 1.0 | Keep health factor above 1.5; set up monitoring alerts |
 | **Utilization** | High borrowing utilization means lenders may not withdraw immediately | Liquidity typically returns as rates rise and attract repayments |
-| **Smart contract** | Morpho or ITP contract vulnerabilities | Morpho is well-audited; ITP contracts are audited |
+| **Smart contract** | Morpho or DTF contract vulnerabilities | Morpho is well-audited; DTF contracts are audited |
 | **Oracle** | Price feed delays or inaccuracies | NAV is computed from multiple price sources with validation |
 
-## Example: Leveraged ITP Position
+## Example: Leveraged DTF Position
 
 Leverage is the art of multiplying your conviction and your exposure in equal measure. The following is a 1.5x loop. It is elegant. It is also how most people learn what liquidation means.
 

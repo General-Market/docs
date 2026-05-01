@@ -80,7 +80,7 @@ The addresses are the protocol. Everything else -- the code, the documentation, 
 
 | Contract | Address | Description |
 |----------|---------|-------------|
-| **Index** | `0xc405a458b63b5ee8E19eB5C4ECf86fAD41F2E902` | Main entry point for order management, ITP creation, and NAV computation. |
+| **Index** | `0xc405a458b63b5ee8E19eB5C4ECf86fAD41F2E902` | Main entry point for order management, DTF creation, and NAV computation. |
 | **Governance** | `0xE0A07455F9e92FFf3e8DF8EBd64BB68463D3bcEC` | Administrative controls for pausing, parameter updates, and UUPS upgrades. |
 | **OracleRegistry** | `0xB2b2c21Fa066b216a583493aE0e82eb16A37f275` | Manages oracle node registration and BLS public key storage. |
 | **CollateralRegistry** | `0x907eCdB6AD282122893D2Ea0f733421497b693a7` | Whitelist of accepted collateral tokens for order placement. |
@@ -92,7 +92,7 @@ The addresses are the protocol. Everything else -- the code, the documentation, 
 | **L3BridgeProxy** | `0x45014B4d25df82a99a47926D8EfcabA0427a5Eac` | L3-side bridge proxy for cross-chain order routing. |
 | **L3BridgeCustody** | `0xb7a4B6Dc1bB9Cf2b63E74aE06a8aB0a00df0d475` | Holds escrowed assets on L3 during cross-chain operations. |
 | **BLSCustody** | `0x1d7bab069f8D161622B0bd12e6D010C1f05b14cC` | Custody contract for BLS-verified operations. |
-| **L3BridgedItpFactory** | `0x53C5d94c48b1d276cA5dB1f759b5765e3F546efE` | Factory that deploys ERC-4626 ITP share tokens on L3. |
+| **L3BridgedItpFactory** | `0x53C5d94c48b1d276cA5dB1f759b5765e3F546efE` | Factory that deploys ERC-4626 DTF share tokens on L3. |
 
 ### Vision
 
@@ -100,12 +100,12 @@ The addresses are the protocol. Everything else -- the code, the documentation, 
 |----------|---------|-------------|
 | **Vision** | `0x8aF92d1D6397c0073f47D1f754983A2Da51C06C8` | Prediction market contract for batch management and player operations. |
 
-### ITP Vaults
+### DTF Vaults
 
 | Contract | Address | Description |
 |----------|---------|-------------|
-| **ITP Vault #1** | `0x069c34442E40dD574E90e568710d2fbDAfeEb5dB` | First Index Tracking Product vault (BridgedITP). |
-| **ITP Vault #2** | `0x87E53b1A665864a1385Fc080259B0e81DC7f5713` | Second Index Tracking Product vault. |
+| **DTF Vault #1** | `0x069c34442E40dD574E90e568710d2fbDAfeEb5dB` | First Dex Traded Fund vault (`BridgedITP`). |
+| **DTF Vault #2** | `0x87E53b1A665864a1385Fc080259B0e81DC7f5713` | Second Dex Traded Fund vault. |
 
 ### Tokens
 
@@ -119,10 +119,10 @@ The addresses are the protocol. Everything else -- the code, the documentation, 
 | Contract | Address | Description |
 |----------|---------|-------------|
 | **Morpho** | `0x2b43723840e5935a4E4b832d18C7c033a1C15074` | Morpho core lending protocol. |
-| **Adaptive IRM** | `0x095e7F85a7569B64cdEA8d4b5F148ff77f371907` | Interest rate model for the USDC/ITP market. |
+| **Adaptive IRM** | `0x095e7F85a7569B64cdEA8d4b5F148ff77f371907` | Interest rate model for the USDC/DTF market. |
 | **MirrorOracleRegistry** | `0xB2b2c21Fa066b216a583493aE0e82eb16A37f275` | Mirror of OracleRegistry used as oracle registry. |
-| **ITP NAV Oracle** | `0x172D6F3330CD4c993C4F49341E38f8d551E1c5d3` | Oracle providing ITP NAV for Morpho liquidation pricing. |
-| **MetaMorpho Vault** | `0xB4FF430878a980cf23d06CC31EEE2f26AbD1bbb2` | Curated vault for USDC lending against ITP collateral. |
+| **DTF NAV Oracle** | `0x172D6F3330CD4c993C4F49341E38f8d551E1c5d3` | Oracle providing DTF NAV for Morpho liquidation pricing. |
+| **MetaMorpho Vault** | `0xB4FF430878a980cf23d06CC31EEE2f26AbD1bbb2` | Curated vault for USDC lending against DTF collateral. |
 
 ## Settlement Contracts (Chain 14601)
 
@@ -130,7 +130,7 @@ The addresses are the protocol. Everything else -- the code, the documentation, 
 |----------|---------|-------------|
 | **SettlementBridgeProxy** | `0x8026b02F341248339C65a2c07727a0fB34F8f36f` | Settlement-side bridge proxy for cross-chain order routing. |
 | **SettlementBridgeCustody** | `0x774095bC7E274Bb3e9A42f481Eeb6D636354E937` | Holds escrowed USDC on Settlement during bridge operations. |
-| **SettlementBridgedItpFactory** | `0x86169A8852e99f98d1C3b9412fD01f0f4fE5eE11` | Factory that deploys ITP share tokens on Settlement. |
+| **SettlementBridgedItpFactory** | `0x86169A8852e99f98d1C3b9412fD01f0f4fE5eE11` | Factory that deploys DTF share tokens on Settlement. |
 | **SettlementOracleRegistry** | `0xe880B2E9c546cBe478C05bcb551AC97B1EC89371` | Oracle registry mirror on Settlement for BLS verification. |
 
 ### Tokens

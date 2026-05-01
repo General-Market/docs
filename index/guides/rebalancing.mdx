@@ -1,11 +1,11 @@
 ---
 title: "Rebalancing"
-description: "Change ITP asset weights while preserving NAV — formula, worked examples, and step-by-step guide"
+description: "Change DTF asset weights while preserving NAV — formula, worked examples, and step-by-step guide"
 ---
 
 Rebalancing preserves NAV. It does not preserve hope. The weights change. The disappointment is redistributed.
 
-An ITP's per-share quantities are fixed at creation. As prices move, the actual dollar weight of each asset drifts from the original target. Rebalancing lets the deployer reassign weights -- and even add or remove assets -- while keeping the NAV per share unchanged.
+A Dex Traded Fund's (DTF) per-share quantities are fixed at creation. As prices move, the actual dollar weight of each asset drifts from the original target. Rebalancing lets the deployer reassign weights -- and even add or remove assets -- while keeping the NAV per share unchanged.
 
 <Snippet file="chain-info.mdx" />
 
@@ -96,7 +96,7 @@ A proof. Not a promise -- a proof.
 
 ### Setup
 
-An ITP was created with three assets at equal weight. Prices have since moved:
+A DTF was created with three assets at equal weight. Prices have since moved:
 
 ```text
   ┌──────────────────────────────────────────────────────────┐
@@ -163,7 +163,7 @@ NAV preserved within rounding precision. Shareholders hold the same dollar value
 
 <Steps>
   <Step title="Open the Rebalance Modal">
-    Navigate to the ITP's detail page. If you are the deployer, the **Rebalance** button appears in the management section. Click it to open the rebalance modal.
+    Navigate to the DTF's detail page. If you are the deployer, the **Rebalance** button appears in the management section. Click it to open the rebalance modal.
 
     <Note>
     Only the deployer's wallet can initiate a rebalance. The button does not appear for other users. You created this. You maintain it. No one else will.
@@ -324,7 +324,7 @@ The AP executes these deltas. Physical backing aligns with on-chain inventory. T
   └─────────────────────────────────────────────────┘
 ```
 
-`requestRebalance()` is technically permissionless. Anyone can emit the event. But the oracle nodes verify the caller is the ITP's deployer before signing. The door is open. The bouncer is not.
+`requestRebalance()` is technically permissionless. Anyone can emit the event. But the oracle nodes verify the caller is the DTF's deployer before signing. The door is open. The bouncer is not.
 
 <Warning>
 BLS signature verification is never bypassed. Not in local dev. Not in tests. Not anywhere. This is not a policy. It is a constraint that cannot be removed without destroying the protocol.
@@ -394,7 +394,7 @@ Rebalancing is not free. Nothing is free. The question is whether the cost of re
 ```
 
 <Tip>
-For most ITPs, rebalance when any asset drifts more than 5-10% from target weight. This is the compromise between precision and cost. Perfection would require infinite rebalances. Negligence requires zero. The answer is somewhere between the two.
+For most DTFs, rebalance when any asset drifts more than 5-10% from target weight. This is the compromise between precision and cost. Perfection would require infinite rebalances. Negligence requires zero. The answer is somewhere between the two.
 </Tip>
 
 ---
@@ -408,7 +408,7 @@ The contract enforces what judgment cannot:
 - **No zero prices**: Every asset must have a non-zero price at rebalance time
 - **No duplicate assets**: Cannot add an asset that already exists in the basket
 - **Remove indices descending**: When removing multiple assets, indices must be sorted in descending order (the contract uses swap-and-pop)
-- **ITP must be active**: Cannot rebalance a paused or inactive ITP
+- **DTF must be active**: Cannot rebalance a paused or inactive DTF
 
 ---
 

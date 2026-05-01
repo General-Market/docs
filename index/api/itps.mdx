@@ -1,18 +1,18 @@
 ---
-title: "ITP Endpoints"
-description: "ITP pricing, NAV, and ranking data"
+title: "DTF Endpoints"
+description: "DTF pricing, NAV, and ranking data"
 ---
 
-# ITP Endpoints
+# DTF Endpoints
 
-An ITP is a basket of assets with a price. These endpoints tell you what that price is, what it was, and what the basket contains. The rest is your decision.
+A Dex Traded Fund (DTF) is a basket of assets with a price. These endpoints tell you what that price is, what it was, and what the basket contains. The rest is your decision.
 
 ---
 
-## Get ITP Price / NAV
+## Get DTF Price / NAV
 
 <ParamField query="itp_id" type="string" required>
-  The on-chain ITP identifier (hex address, e.g., `0x...`).
+  The on-chain DTF identifier (hex address, e.g., `0x...`).
 </ParamField>
 
 Returns the current NAV per share, priced asset count, and AUM. Tries the data node first; falls back to on-chain if needed.
@@ -56,13 +56,13 @@ data = resp.json()
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `itp_id` | string | ITP identifier |
+| `itp_id` | string | DTF identifier |
 | `nav` | string | NAV per share in wei (18 decimals) |
 | `nav_display` | number | Human-readable NAV per share in USD |
 | `assets_priced` | number | Number of assets with available price data |
-| `assets_total` | number | Total number of assets in the ITP basket |
+| `assets_total` | number | Total number of assets in the DTF basket |
 | `aum_usd` | number | Total assets under management in USD |
-| `total_supply` | string | Total ITP shares outstanding in wei |
+| `total_supply` | string | Total DTF shares outstanding in wei |
 
 <Note>
   NAV is computed as `sum(qty[i] * price[i]) / 1e18` where quantities are the fixed per-share amounts stored on-chain. See the pricing model documentation for details.
@@ -95,7 +95,7 @@ data = resp.json()
 ## Get NAV Time Series
 
 <ParamField query="itp_id" type="string" required>
-  The on-chain ITP identifier.
+  The on-chain DTF identifier.
 </ParamField>
 
 <ParamField query="range" type="string" required>
@@ -150,7 +150,7 @@ series = resp.json()
 
 ## Get AUM Ranking
 
-All ITPs, ranked by AUM. The market votes with capital.
+All DTFs, ranked by AUM. The market votes with capital.
 
 <CodeGroup>
 ```bash cURL
@@ -197,9 +197,9 @@ ranking = resp.json()
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `itp_id` | string | ITP identifier |
-| `name` | string | Human-readable ITP name |
-| `symbol` | string | ITP ticker symbol |
+| `itp_id` | string | DTF identifier |
+| `name` | string | Human-readable DTF name |
+| `symbol` | string | DTF ticker symbol |
 | `nav_per_share` | number | Current NAV per share in USD |
 | `aum_usd` | number | Total assets under management in USD |
 | `total_supply` | string | Total shares outstanding in wei |
@@ -209,27 +209,27 @@ ranking = resp.json()
 
 ## Get Snapshot
 
-The current state of an ITP -- or all of them. Weights, quantities, NAV, supply.
+The current state of a DTF -- or all of them. Weights, quantities, NAV, supply.
 
 <ParamField query="itp_id" type="string">
-  Optional. When provided, the endpoint returns the snapshot for only the specified ITP.
+  Optional. When provided, the endpoint returns the snapshot for only the specified DTF.
 </ParamField>
 
 <CodeGroup>
 ```bash cURL
-# All ITPs
+# All DTFs
 curl "https://generalmarket.io/api/snapshot"
 
-# Specific ITP
+# Specific DTF
 curl "https://generalmarket.io/api/snapshot?itp_id=0x1234abcd..."
 ```
 
 ```javascript JavaScript
-// All ITPs
+// All DTFs
 const res = await fetch("https://generalmarket.io/api/snapshot");
 const snapshot = await res.json();
 
-// Specific ITP
+// Specific DTF
 const res2 = await fetch(
   "https://generalmarket.io/api/snapshot?itp_id=0x1234abcd..."
 );
@@ -239,11 +239,11 @@ const itpSnapshot = await res2.json();
 ```python Python
 import requests
 
-# All ITPs
+# All DTFs
 resp = requests.get("https://generalmarket.io/api/snapshot")
 snapshot = resp.json()
 
-# Specific ITP
+# Specific DTF
 resp = requests.get(
     "https://generalmarket.io/api/snapshot",
     params={"itp_id": "0x1234abcd..."}
@@ -271,7 +271,7 @@ itp_snapshot = resp.json()
 
 ---
 
-## Get ITP Enrichment
+## Get DTF Enrichment
 
 Beyond prices: who founded the projects in this basket, how much venture money they raised, what their TVL looks like, and how the market values them. Four upstream sources, aggregated into one response.
 
@@ -280,7 +280,7 @@ GET /api/itp-enrichment?itp_id={itp_id}
 ```
 
 <ParamField query="itp_id" type="string" required>
-  The on-chain ITP identifier (66-character hex string: `0x` + 64 hex chars).
+  The on-chain DTF identifier (66-character hex string: `0x` + 64 hex chars).
 </ParamField>
 
 ```

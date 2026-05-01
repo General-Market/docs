@@ -17,29 +17,29 @@ Errors raised during order creation, validation, and lifecycle management.
 |------|------|-------------|
 | `E001` | `OrderBelowMin` | Order amount is below the minimum threshold (0.001 USDC = 1e15 wei with 18 decimals). |
 | `E002` | `InsufficientBalance` | User has insufficient USDC balance to cover the order amount. |
-| `E003` | `ITPPaused` | The specified ITP is currently paused by governance. |
+| `E003` | `ITPPaused` | The specified DTF is currently paused by governance. |
 | `E004` | `SystemPaused` | The entire system is in emergency pause mode. All operations are blocked. |
-| `E006` | `ITPNotFound` | The specified ITP identifier does not exist. ITP must be registered before orders can be placed. |
-| `E007` | `AssetDelisting` | An asset in this ITP is being delisted. No new orders accepted during delisting. |
+| `E006` | `ITPNotFound` | The specified DTF identifier does not exist. The DTF must be registered before orders can be placed. |
+| `E007` | `AssetDelisting` | An asset in this DTF is being delisted. No new orders accepted during delisting. |
 | `E008` | `SourceUnavailable` | External liquidity source (AP, DEX) is offline or unreachable. |
 | `E009` | `OrderExpired` | Order has expired past its deadline. Orders auto-cancel after 1 hour (default) and the user receives a full refund. |
 | `E010` | `FillIncomplete` | Order was only partially filled. The remainder is automatically refunded to the user. |
 | `E011` | `InvalidSlippageTier` | Invalid slippage tier specified. Valid tiers: 0 (0.3%), 1 (1%), or 2 (3%). |
 | `E012` | `InvalidDeadline` | Order deadline is invalid. Must be in the future and within 24 hours. |
 
-## ITP Creation Errors (E013 - E018, E051)
+## DTF Creation Errors (E013 - E018, E051)
 
-Errors raised during ITP creation, configuration, and weight management.
+Errors raised during DTF creation, configuration, and weight management.
 
 | Code | Name | Description |
 |------|------|-------------|
-| `E013` | `WeightBelowMinimum` | ITP weight is below the minimum threshold of 0.25% (2.5e15 with 18 decimals). |
-| `E014` | `InvalidWeightSum` | ITP weights do not sum to exactly 100% (1e18). |
+| `E013` | `WeightBelowMinimum` | DTF weight is below the minimum threshold of 0.25% (2.5e15 with 18 decimals). |
+| `E014` | `InvalidWeightSum` | DTF weights do not sum to exactly 100% (1e18). |
 | `E015` | `LengthMismatch` | Assets and weights arrays have different lengths. |
-| `E016` | `NoAssets` | ITP must have at least one asset. |
-| `E017` | `DuplicateAsset` | Duplicate asset address in ITP creation. |
+| `E016` | `NoAssets` | A DTF must have at least one asset. |
+| `E017` | `DuplicateAsset` | Duplicate asset address in DTF creation. |
 | `E018` | `ZeroAssetAddress` | Zero address not allowed for an asset. |
-| `E051` | `TooManyAssets` | ITP has too many assets (exceeds maximum). |
+| `E051` | `TooManyAssets` | DTF has too many assets (exceeds maximum). |
 
 ## Batch and Fill Errors (E019 - E024, E036 - E037)
 
@@ -121,7 +121,7 @@ Errors raised by the settlement-side bridge custody contract.
 | `E057` | `InvalidProof` | Invalid proof (zero values not allowed). |
 | `E058` | `InvalidDeadline` | Invalid deadline for cross-chain order (outside min/max bounds). |
 | `E059` | `CrossChainOrderZeroAmount` | Zero amount for cross-chain order. |
-| `E060` | `ZeroITPId` | Zero ITP ID for cross-chain order. |
+| `E060` | `ZeroITPId` | Zero DTF ID for cross-chain order. |
 
 ## Authorization and Initialization Errors (E061 - E064)
 
@@ -131,40 +131,40 @@ General protocol-level errors for access control and initialization.
 |------|------|-------------|
 | `E061` | `Unauthorized` | Caller is not authorized (admin-only function). |
 | `E062` | `AlreadyInitialized` | Contract or field has already been initialized. |
-| `E063` | `MintFailed` | External call to mint ITP tokens failed. |
+| `E063` | `MintFailed` | External call to mint DTF tokens failed. |
 | `E064` | `StringTooLong` | String exceeds the maximum bytes32 length (32 bytes). |
 
 ## Rebalance Errors (E065 - E069)
 
-Errors raised during ITP rebalance proposals and execution.
+Errors raised during DTF rebalance proposals and execution.
 
 | Code | Name | Description |
 |------|------|-------------|
-| `E065` | `NotITPCreator` | Caller is not the ITP creator (required for proposeRebalance). |
-| `E066` | `ITPNotActive` | ITP is not in active status (required for rebalance). |
-| `E067` | `RebalanceAlreadyPending` | A pending rebalance already exists for this ITP. |
-| `E068` | `NoActiveRebalance` | No active pending rebalance for this ITP. |
+| `E065` | `NotITPCreator` | Caller is not the DTF creator (required for `proposeRebalance`). |
+| `E066` | `ITPNotActive` | DTF is not in active status (required for rebalance). |
+| `E067` | `RebalanceAlreadyPending` | A pending rebalance already exists for this DTF. |
+| `E068` | `NoActiveRebalance` | No active pending rebalance for this DTF. |
 | `E069` | `WeightsMismatch` | Submitted weights do not match the pending rebalance target. |
 
 ## Bridge Proxy Errors (E070 - E07E)
 
-Errors raised by the BridgeProxy for cross-chain ITP creation, BLS verification, and bridged token management.
+Errors raised by the `BridgeProxy` for cross-chain DTF creation, BLS verification, and bridged token management.
 
 | Code | Name | Description |
 |------|------|-------------|
-| `E070` | `AlreadyCompleted` | ITP creation request has already been completed. |
+| `E070` | `AlreadyCompleted` | DTF creation request has already been completed. |
 | `E071` | `InvalidBLSSignature` | BLS signature verification failed on the bridge proxy. |
 | `E072` | `CreationNotFound` | No pending creation request found for this nonce. |
 | `E073` | `InvalidWeightsSum` | Weights do not sum to 1e18 (100%). |
 | `E074` | `WeightBelowMinimum` | Weight below minimum threshold (0.25% = 2.5e15). |
 | `E075` | `BridgeLengthMismatch` | Weights and assets arrays have different lengths. |
-| `E076` | `NoAssets` | No assets provided in ITP creation request. |
-| `E077` | `TooManyAssets` | Too many assets in ITP creation request (max 50). |
-| `E078` | `DuplicateAsset` | Duplicate asset address in ITP creation request. |
+| `E076` | `NoAssets` | No assets provided in DTF creation request. |
+| `E077` | `TooManyAssets` | Too many assets in DTF creation request (max 50). |
+| `E078` | `DuplicateAsset` | Duplicate asset address in DTF creation request. |
 | `E079` | `ZeroAddressAsset` | Zero address not allowed in assets array. |
 | `E07A` | `NameTooLong` | Name exceeds maximum length (32 bytes). |
 | `E07B` | `SymbolTooLong` | Symbol exceeds maximum length (10 bytes). |
-| `E07C` | `OrbitItpAlreadyMapped` | OrbitItpId already has a mapped BridgedITP. |
+| `E07C` | `OrbitItpAlreadyMapped` | `OrbitItpId` already has a mapped `BridgedITP`. |
 | `E07D` | `InsufficientSigners` | Insufficient signers for threshold BLS verification. |
 | `E07E` | `InvalidAggregatedPubkeyLength` | Invalid aggregated pubkey length (must be 128 bytes for G2). |
 
@@ -181,7 +181,7 @@ Errors raised during USDC decimal conversion between L3 (18 decimals) and Settle
 
 | Code | Name | Description |
 |------|------|-------------|
-| `E081` | `InsufficientShares` | User has insufficient ITP shares for the sell order. |
+| `E081` | `InsufficientShares` | User has insufficient DTF shares for the sell order. |
 
 ## Production Hardening Errors (E082 - E089)
 
@@ -223,12 +223,12 @@ Errors raised by the NAV Oracle for price submissions and staleness checks.
 
 ## Cross-Chain Rebalance Errors (E099 - E115)
 
-Errors raised during cross-chain ITP rebalance operations, including asset additions and removals.
+Errors raised during cross-chain DTF rebalance operations, including asset additions and removals.
 
 | Code | Name | Description |
 |------|------|-------------|
-| `E099` | `BridgeItpNotFound` | ITP not found in bridge deployer tracking. |
-| `E100` | `NotBridgeDeployer` | Caller is not the ITP deployer on the bridge. |
+| `E099` | `BridgeItpNotFound` | DTF not found in bridge deployer tracking. |
+| `E100` | `NotBridgeDeployer` | Caller is not the DTF deployer on the bridge. |
 | `E101` | `EmptyRebalanceWeights` | Rebalance request has empty weights array. |
 | `E102` | `RebalanceWeightTooLow` | Rebalance weight below minimum (0.25%). |
 | `E103` | `RebalanceWeightsSumInvalid` | Rebalance weights do not sum to 1e18. |
@@ -236,14 +236,14 @@ Errors raised during cross-chain ITP rebalance operations, including asset addit
 | `E105` | `RebalanceAlreadyCompleted` | Rebalance request already completed. |
 | `E106` | `ZeroAddressNotAllowed` | Zero address not allowed. |
 | `E107` | `NotAuthorizedBridge` | Caller is not the authorized bridge. |
-| `E108` | `RebalanceWeightsLengthMismatch` | Rebalance weights length does not match ITP asset count. |
+| `E108` | `RebalanceWeightsLengthMismatch` | Rebalance weights length does not match DTF asset count. |
 | `E109` | `RemoveIndicesNotDescending` | Remove indices must be sorted in descending order. |
 | `E110` | `RemoveIndexOutOfBounds` | Remove index out of bounds for current asset list. |
 | `E111` | `FinalAssetCountMismatch` | New weights length does not match final asset count after removals/additions. |
 | `E112` | `PricesLengthMismatch` | Prices array length does not match new weights length. |
 | `E113` | `ZeroPriceInRebalance` | Price cannot be zero for NAV/inventory computation. |
-| `E114` | `DuplicateAssetInRebalance` | Duplicate asset in add list or already exists in ITP. |
-| `E115` | `RebalanceResultsInNoAssets` | ITP must have at least one asset after rebalance. |
+| `E114` | `DuplicateAssetInRebalance` | Duplicate asset in add list or already exists in DTF. |
+| `E115` | `RebalanceResultsInNoAssets` | A DTF must have at least one asset after rebalance. |
 
 ## Cross-Chain Sell Errors (E116 - E120)
 
@@ -251,23 +251,23 @@ Errors raised during cross-chain sell order processing.
 
 | Code | Name | Description |
 |------|------|-------------|
-| `E116` | `BridgedItpNotFound` | BridgedITP address not found for this ITP ID. |
+| `E116` | `BridgedItpNotFound` | `BridgedITP` address not found for this DTF ID. |
 | `E117` | `CrossChainSellZeroAmount` | Zero amount for cross-chain sell order. |
 | `E118` | `ZeroBridgeProxy` | Zero address for BridgeProxy. |
 | `E119` | `SellOrderNotFound` | Sell order not found. |
 | `E120` | `SellOrderAlreadyCompleted` | Sell order already completed or refunded. |
 
-## ITP Metadata Errors (E121 - E127)
+## DTF Metadata Errors (E121 - E127)
 
-Errors raised when setting ITP descriptions, URLs, and deployer names.
+Errors raised when setting DTF descriptions, URLs, and deployer names.
 
 | Code | Name | Description |
 |------|------|-------------|
-| `E121` | `DescriptionTooLong` | ITP description exceeds maximum length (280 bytes). |
-| `E122` | `UrlTooLong` | ITP website URL exceeds maximum length (128 bytes). |
-| `E123` | `VideoUrlTooLong` | ITP video URL exceeds maximum length (256 bytes). |
-| `E124` | `NotItpDeployer` | Caller is not the deployer of this ITP. |
-| `E125` | `BuyOrderNotFound` | Buy order not found (orderId has no cross-chain order). |
+| `E121` | `DescriptionTooLong` | DTF description exceeds maximum length (280 bytes). |
+| `E122` | `UrlTooLong` | DTF website URL exceeds maximum length (128 bytes). |
+| `E123` | `VideoUrlTooLong` | DTF video URL exceeds maximum length (256 bytes). |
+| `E124` | `NotItpDeployer` | Caller is not the deployer of this DTF. |
+| `E125` | `BuyOrderNotFound` | Buy order not found (`orderId` has no cross-chain order). |
 | `E126` | `FillPriceViolatesLimit` | Fill price violates the order's limit price. Side 0 = BUY (fill too high), 1 = SELL (fill too low). |
 | `E127` | `DeployerNameTooLong` | Deployer name exceeds maximum length. |
 

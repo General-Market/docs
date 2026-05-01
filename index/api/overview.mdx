@@ -7,7 +7,7 @@ description: "Introduction to the General Market API"
 
 The API returns JSON. It does not return meaning. That is your problem.
 
-Read access to prices, ITP NAV, portfolios, backtesting, and lending positions. No authentication for read endpoints. No opinions in the response body.
+Read access to prices, Dex Traded Fund (DTF) NAV, portfolios, backtesting, and lending positions. No authentication for read endpoints. No opinions in the response body.
 
 ## Architecture
 
@@ -135,7 +135,7 @@ Vision-specific routes (see [Vision API Reference](/vision/api/overview)):
   <Card title="Prices" icon="chart-line" href="/index/api/prices">
     What things cost right now. Single assets, bulk fetches, low-latency trading prices.
   </Card>
-  <Card title="ITPs" icon="layer-group" href="/index/api/itps">
+  <Card title="DTFs" icon="layer-group" href="/index/api/itps">
     NAV, enrichment data, AUM rankings, state snapshots. The index products, dissected.
   </Card>
   <Card title="Portfolio" icon="wallet" href="/index/api/portfolio">
@@ -145,7 +145,7 @@ Vision-specific routes (see [Vision API Reference](/vision/api/overview)):
     Backtesting engine. Ask what would have happened. The answer is always humbling.
   </Card>
   <Card title="Morpho" icon="building-columns" href="/index/api/morpho">
-    Lending positions and history. Borrow against your ITP shares. Monitor your health factor.
+    Lending positions and history. Borrow against your DTF shares. Monitor your health factor.
   </Card>
   <Card title="Infrastructure" icon="server" href="/index/api/infrastructure">
     Deployment config, explorer health, testnet faucet, data-node proxy. The plumbing.

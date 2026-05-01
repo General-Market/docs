@@ -1,13 +1,13 @@
 ---
-title: "Index Tracking Products (ITPs)"
-description: "How ITPs work -- the on-chain equivalent of ETFs"
+title: "Dex Traded Funds (DTFs)"
+description: "How DTFs work -- the on-chain equivalent of ETFs"
 ---
 
-# Index Tracking Products (ITPs)
+# Dex Traded Funds (DTFs)
 
-An ITP is a basket. Like all baskets, it holds things that will disappoint you at different rates. The virtue of the basket is that the disappointments cancel each other out — sometimes. The NAV tells you how the cancellation is going.
+A Dex Traded Fund (DTF) is a basket. Like all baskets, it holds things that will disappoint you at different rates. The virtue of the basket is that the disappointments cancel each other out — sometimes. The NAV tells you how the cancellation is going.
 
-## Quick Start: Buy an ITP
+## Quick Start: Buy a DTF
 
 ```bash
 # Check ITP price (NAV)
@@ -19,7 +19,7 @@ index.submitOrder(itpId, usdcAmount, OrderType.BUY)
 
 See [Buy & Sell Guide](/index/guides/buy-sell) for the full step-by-step.
 
-## ITP Lifecycle
+## DTF Lifecycle
 
 ```mermaid
 flowchart LR
@@ -32,9 +32,9 @@ flowchart LR
     E -->|"new quantities, same NAV"| B
 ```
 
-## What Makes Up an ITP
+## What Makes Up a DTF
 
-An ITP is four things. No more.
+A DTF is four things. No more.
 
 - **A basket of assets** -- up to 100 crypto assets with defined weights
 - **Fixed per-share quantities** -- each share represents a fixed amount of each underlying asset
@@ -47,7 +47,7 @@ Up to **100 assets** per basket. You can build a market-wide index or a narrow c
 
 ## NAV Pricing
 
-Every ITP has a **Net Asset Value (NAV)**. It is the fair value of one share, computed from the prices of everything inside the basket. NAV is the only number that matters. It is also the only number that never stops moving.
+Every DTF has a **Net Asset Value (NAV)**. It is the fair value of one share, computed from the prices of everything inside the basket. NAV is the only number that matters. It is also the only number that never stops moving.
 
 ### NAV Computation Formula
 
@@ -62,9 +62,9 @@ Where:
 
 The same formula runs on-chain in `Index.sol`, off-chain in the oracle nodes, and in the frontend. Three places, one truth. If they ever disagree, something is very wrong.
 
-## ITP Creation: How Quantities Are Set
+## DTF Creation: How Quantities Are Set
 
-Every ITP begins its life worth exactly **$1** (`1e18` in contract math). A deployer chooses weights. The protocol converts those weights into fixed per-share quantities. From this moment on, the dollar figure is a memory. The quantities are the reality.
+Every DTF begins its life worth exactly **$1** (`1e18` in contract math). A deployer chooses weights. The protocol converts those weights into fixed per-share quantities. From this moment on, the dollar figure is a memory. The quantities are the reality.
 
 ```solidity
 qty[i] = (weight[i] * 1e18) / price[i]
@@ -88,7 +88,7 @@ NAV = (0.000006666 * 50000) + (0.000111100 * 3000) + (0.003334000 * 100)
     = $1.00
 ```
 
-## ITP Key Invariants
+## DTF Key Invariants
 
 Three rules. They do not bend.
 
@@ -98,11 +98,11 @@ Three rules. They do not bend.
 
 1. **Buy/sell = mint/burn shares.** You buy $100 at NAV $1.05, you receive ~95.24 shares. The quantities per share do not move.
 
-2. **NAV drifts from $1 over time.** The basket appreciates, NAV rises. The basket falls, NAV falls. This is the point. An ITP that stays at $1 forever has failed at its only job.
+2. **NAV drifts from $1 over time.** The basket appreciates, NAV rises. The basket falls, NAV falls. This is the point. A DTF that stays at $1 forever has failed at its only job.
 
 3. **Quantities are stored on-chain.** The `_itpInventory` mapping in `IndexStorage.sol` is the canonical truth. Everything else is a reflection.
 
-## ITP Rebalancing
+## DTF Rebalancing
 
 A rebalance reshuffles the deck without changing the value of the hand. New quantities, same NAV. The deployer adjusts the composition — the value per share does not flinch.
 
@@ -119,7 +119,7 @@ Where:
 
 ### Rebalance Worked Example
 
-Time passes. Prices move. BTC rises to $60,000, ETH to $3,500, SOL to $120. The ITP's NAV is now:
+Time passes. Prices move. BTC rises to $60,000, ETH to $3,500, SOL to $120. The DTF's NAV is now:
 
 ```solidity
 NAV = (0.000006666 * 60000) + (0.000111100 * 3500) + (0.003334000 * 120)
@@ -147,13 +147,13 @@ NAV = (0.000009908 * 60000) + (0.000101906 * 3500) + (0.001981500 * 120)
 NAV is preserved. Exposure is not. After a rebalance, you hold the same dollar value but a different bet on the future. The value did not change. The conviction did.
 </Warning>
 
-## ITP ERC-4626 Vault Tokens
+## DTF ERC-4626 Vault Tokens
 
-Every ITP is an [ERC-4626](https://eips.ethereum.org/EIPS/eip-4626) vault. A standard interface. Standards are dull. They are also the reason your tokens work everywhere.
+Every DTF is an [ERC-4626](https://eips.ethereum.org/EIPS/eip-4626) vault. A standard interface. Standards are dull. They are also the reason your tokens work everywhere.
 
-- **Fungible** -- all shares of the same ITP are identical. Your share and my share are the same share.
-- **Transferable** -- send ITP tokens to any address. Ownership is portable.
-- **Collateralizable** -- use ITP tokens as collateral in [lending markets](/index/concepts/lending). Borrow against what you believe in.
+- **Fungible** -- all shares of the same DTF are identical. Your share and my share are the same share.
+- **Transferable** -- send DTF tokens to any address. Ownership is portable.
+- **Collateralizable** -- use DTF tokens as collateral in [lending markets](/index/concepts/lending). Borrow against what you believe in.
 - **18 decimals** -- matching ERC-20 conventions. Precision beyond what any human needs.
 
 ## Technical Details
@@ -169,4 +169,4 @@ Where the formula lives, for those who need to see the source. Trust, but verify
 | Contract | `Index.sol` | `updateWeights()` -- rebalance: recalculates quantities preserving NAV |
 | Storage | `IndexStorage.sol` | `_itpInventory[itpId]` -- canonical per-share quantities |
 | Oracle | `nav.rs` | `calculate_nav()` -- reads inventory via `getITPState` |
-| Frontend | `useItpNav.ts` | Inventory-first calculation, weight fallback for legacy ITPs |
+| Frontend | `useItpNav.ts` | Inventory-first calculation, weight fallback for legacy DTFs |

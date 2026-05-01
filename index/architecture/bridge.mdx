@@ -7,7 +7,7 @@ description: "Cross-chain bridge between Index L3 and Settlement -- buy/sell flo
 
 The bridge exists because assets live on one chain and users live on another. Geography, even digital, is a curse.
 
-Two chains. Different trust models. Different decimal conventions. The bridge reconciles them while enforcing the one rule that cannot be broken: no ITP shares are minted without confirmed collateral. Everything else is negotiable. This is not.
+Two chains. Different trust models. Different decimal conventions. The bridge reconciles them while enforcing the one rule that cannot be broken: no DTF shares are minted without confirmed collateral. Everything else is negotiable. This is not.
 
 ## Chain Overview
 
@@ -177,7 +177,7 @@ Ten steps. Four BLS consensus rounds. Two chains. One invariant: USDC must be re
 
 ### Crash Recovery
 
-Machines crash. The question is not whether, but when. The `pendingMints` mapping in SettlementBridgeCustody is the recovery anchor. On restart, oracles query it to find orders where USDC was released but BridgedITP was not yet minted, then resume.
+Machines crash. The question is not whether, but when. The `pendingMints` mapping in SettlementBridgeCustody is the recovery anchor. On restart, oracles query it to find orders where USDC was released but `BridgedITP` was not yet minted, then resume.
 
 ```text
   completeBuyOrder succeeds
@@ -259,7 +259,7 @@ The reverse. Burn the tokens, return the USDC. Same number of steps, same number
 
 ### Failed Sell Recovery
 
-If BridgedITP is burned but the L3 fill never completes, the user's tokens are gone with no USDC to show for it. This cannot stand. A safety valve exists:
+If `BridgedITP` is burned but the L3 fill never completes, the user's tokens are gone with no USDC to show for it. This cannot stand. A safety valve exists:
 
 ```text
   burnSellOrderShares() succeeds
@@ -283,7 +283,7 @@ If BridgedITP is burned but the L3 fill never completes, the user's tokens are g
 
 ## The Backing Invariant
 
-The single most important property of the entire protocol. Not the most interesting. Not the most clever. The most important. Every minted share must be 1:1 backed by underlying assets. Without this, everything else is theater.
+The single most important property of the entire protocol. Not the most interesting. Not the most clever. The most important. Every minted DTF share must be 1:1 backed by underlying assets. Without this, everything else is theater.
 
 ```text
   +-----------------------------------------------------------------------+
@@ -326,7 +326,7 @@ The single most important property of the entire protocol. Not the most interest
 ```
 
 <Warning>
-**Never mint ITP shares without confirmed backing.** The bridge enforces this by requiring `completeBuyOrder` (which releases escrowed USDC to the AP for asset purchases) to succeed before `mintBridgedShares` is called. If `completeBuyOrder` reverts, the oracles execute `refundBuyOrder` instead -- USDC goes back to the user, zero shares minted. Unbacked ITP is worse than stuck orders, worse than slow consensus, worse than any other failure mode.
+**Never mint DTF shares without confirmed backing.** The bridge enforces this by requiring `completeBuyOrder` (which releases escrowed USDC to the AP for asset purchases) to succeed before `mintBridgedShares` is called. If `completeBuyOrder` reverts, the oracles execute `refundBuyOrder` instead -- USDC goes back to the user, zero shares minted. An unbacked DTF is worse than stuck orders, worse than slow consensus, worse than any other failure mode.
 </Warning>
 
 ## Order Lifecycle on the Bridge

@@ -1,6 +1,6 @@
 ---
-title: "Buy & Sell ITPs"
-description: "How to buy and sell index tracking products on General Market"
+title: "Buy & Sell DTFs"
+description: "How to buy and sell Dex Traded Funds on General Market"
 ---
 
 Buying is an act of faith. Selling is an act of clarity. Both cost gas.
@@ -21,13 +21,13 @@ You do not need to be on the Index L3 to trade. The protocol bridges USDC from A
 
 ---
 
-## Buying an ITP
+## Buying a DTF
 
-Navigate to the **Markets** page. Choose the ITP you want to own. Click **Buy**. The modal opens. The rest is commitment.
+Navigate to the **Markets** page. Choose the Dex Traded Fund (DTF) you want to own. Click **Buy**. The modal opens. The rest is commitment.
 
 <Steps>
   <Step title="Enter Amount">
-    Type the USDC amount. The estimated number of ITP shares appears below, calculated from the current NAV. The number looks precise. It is an estimate.
+    Type the USDC amount. The estimated number of DTF shares appears below, calculated from the current NAV. The number looks precise. It is an estimate.
   </Step>
 
   <Step title="Configure Slippage">
@@ -51,7 +51,7 @@ After submission, the order passes through three stages. Each one is visible. No
 |-------|-------------|--------|
 | **Submit** | USDC spend approved and order submitted to BridgeProxy on L1/L2 | Wallet confirmation |
 | **Process** | USDC bridges to L3, order is relayed, batched by oracle nodes via BLS consensus, and the Authorized Participant (AP) fills the underlying assets on exchanges | Automatic -- takes 1-5 minutes |
-| **Deliver** | Collateral recorded on-chain, bridged back to origin chain, bridge finalized, and ITP shares minted to the buyer's wallet | Automatic -- takes 1-3 minutes |
+| **Deliver** | Collateral recorded on-chain, bridged back to origin chain, bridge finalized, and DTF shares minted to the buyer's wallet | Automatic -- takes 1-3 minutes |
 
 <Info>
 Order processing is fully automatic after submission. Close the modal. Walk away. The order does not need your attention. It needs the oracles' signatures. Track progress on the **Portfolio** page if waiting is unbearable.
@@ -67,13 +67,13 @@ The UI streams live status updates via Server-Sent Events (SSE). You watch the p
 
 ---
 
-## Selling an ITP
+## Selling a DTF
 
-Selling is simpler than buying. You already know what you own. The only question is whether the price has taught you anything. Go to the **Portfolio** page or the ITP's market page and click **Sell**.
+Selling is simpler than buying. You already know what you own. The only question is whether the price has taught you anything. Go to the **Portfolio** page or the DTF's market page and click **Sell**.
 
 <Steps>
   <Step title="Enter Share Amount">
-    Enter the number of ITP shares to sell. Click **Max** to liquidate the entire position. The estimated USDC proceeds are calculated from the current NAV. The word "estimated" is doing a lot of work in that sentence.
+    Enter the number of DTF shares to sell. Click **Max** to liquidate the entire position. The estimated USDC proceeds are calculated from the current NAV. The word "estimated" is doing a lot of work in that sentence.
   </Step>
 
   <Step title="Configure Slippage">
@@ -82,7 +82,7 @@ Selling is simpler than buying. You already know what you own. The only question
 
   <Step title="Submit Sell Order">
     The wallet prompts for:
-    1. **Approve** the ITP share transfer (first time only per ITP)
+    1. **Approve** the DTF share transfer (first time only per DTF)
     2. **Confirm** the sell transaction
 
     The sell order enters the same three-stage pipeline (Submit, Process, Deliver). At the end, USDC returns to your wallet. The position is gone.
@@ -101,9 +101,9 @@ Slippage is the distance between the price you saw and the price you got. The ma
 
 | Setting | Tolerance | Best For |
 |---------|-----------|----------|
-| **Tight** | 0.3% | Stable, high-liquidity ITPs |
+| **Tight** | 0.3% | Stable, high-liquidity DTFs |
 | **Normal** | 1.0% | Most orders (default) |
-| **Relaxed** | 3.0% | Volatile or low-liquidity ITPs, large orders |
+| **Relaxed** | 3.0% | Volatile or low-liquidity DTFs, large orders |
 
 <Tip>
 If an order fails due to slippage, the escrowed USDC is returned automatically. Nothing is lost except the gas and the moment. Retry with a higher tolerance or wait for calmer markets. Calm markets are not guaranteed.
@@ -113,9 +113,9 @@ If an order fails due to slippage, the escrowed USDC is returned automatically. 
 
 ## Price History Chart
 
-Each ITP has a price chart showing NAV over time. You will study it before buying. You will study it after selling. In neither case will it tell you what to do next.
+Each DTF has a price chart showing NAV over time. You will study it before buying. You will study it after selling. In neither case will it tell you what to do next.
 
-The NAV is computed from the ITP's fixed per-share asset quantities and live prices:
+The NAV is computed from the DTF's fixed per-share asset quantities and live prices:
 
 <Snippet file="nav-formula.mdx" />
 

@@ -25,7 +25,7 @@ Six steps between your USDC and your tokens. Each one can fail. None of them do,
     The Authorized Participant receives the USDC and buys the underlying assets on **Bitget**. Real order books. Real counterparties. The abstraction ends here.
   </Step>
   <Step title="confirmFills Mints Shares on L3">
-    `confirmFills()` is called on L3. The contract checks each fill against the **0.1% price tolerance**. If it passes, ITP shares are **minted** to your wallet. The exposure begins.
+    `confirmFills()` is called on L3. The contract checks each fill against the **0.1% price tolerance**. If it passes, DTF shares are **minted** to your wallet. The exposure begins.
   </Step>
   <Step title="BridgedITP Minted on Settlement">
     `mintBridgedShares()` is called on Settlement with BLS verification. A BridgedITP token — an ERC-20 replica of your L3 shares — is minted to your wallet on Settlement. You now hold the same position on both chains.
@@ -46,7 +46,7 @@ Selling is the buy flow in reverse — except the money must cross a chain bound
 
 <Steps>
   <Step title="Submit Sell Order on L3">
-    `submitOrder(itpId, amount, SELL)`. Your ITP shares are **escrowed** on L3. They are no longer yours. They are not yet gone. You have decided to leave, but the protocol has not yet agreed.
+    `submitOrder(itpId, amount, SELL)`. Your DTF shares are **escrowed** on L3. They are no longer yours. They are not yet gone. You have decided to leave, but the protocol has not yet agreed.
   </Step>
   <Step title="Oracle Bridges Sell to Settlement">
     The oracle nodes detect the pending sell order, reach BLS consensus, and relay it to the Settlement chain. The sell intent crosses the chain boundary — cryptographically signed, not optimistically assumed.
@@ -61,13 +61,13 @@ Selling is the buy flow in reverse — except the money must cross a chain bound
     `completeSellOrder()` is called on Settlement with a valid BLS signature. The contract verifies the signature, transfers USDC from the AP vault to your wallet on Settlement. You are whole again. Or less than whole. The math will tell you.
   </Step>
   <Step title="confirmFills Burns Shares on L3">
-    `confirmFills()` is called on L3. The escrowed ITP shares are **burned**. The position ceases to exist on both chains simultaneously. What was yours is now no one's.
+    `confirmFills()` is called on L3. The escrowed DTF shares are **burned**. The position ceases to exist on both chains simultaneously. What was yours is now no one's.
   </Step>
 </Steps>
 
 ### Sell Flow — Full Infrastructure Diagram
 
-<img src="/images/index/sell-flow.svg" alt="Sell flow infrastructure diagram — ITP shares escrowed on L3, oracle BLS consensus batches order, AP sells on Bitget, USDC returned to Settlement custody, completeSellOrder pays user, confirmFills burns shares on L3" />
+<img src="/images/index/sell-flow.svg" alt="Sell flow infrastructure diagram — DTF shares escrowed on L3, oracle BLS consensus batches order, AP sells on Bitget, USDC returned to Settlement custody, completeSellOrder pays user, confirmFills burns shares on L3" />
 
 <Info>
 The sell flow touches two chains and requires four BLS consensus rounds. The USDC arrives on Settlement, not on L3. If you deposited from Settlement, this is where you expect it. If you traded natively on L3, the bridge handles the conversion. See the [Bridge Architecture](/index/architecture/bridge) for the full cross-chain diagram.
@@ -149,7 +149,7 @@ Sixty seconds. If the world has not responded by then, the order enters timeout.
 
 1. First timeout: automatic retry. The protocol is patient.
 2. Second timeout: another retry. The protocol is stubborn.
-3. Third timeout: the order is cancelled. Your USDC or ITP tokens are returned. The protocol is not foolish.
+3. Third timeout: the order is cancelled. Your USDC or DTF tokens are returned. The protocol is not foolish.
 
 <Note>
 Timeouts are rare. They exist for the moments when exchanges go dark or networks congest. The safety net you never think about until the floor disappears.

@@ -13,23 +13,23 @@ When asked to "build a trading bot from generalmarket.io", follow the instructio
 - [Getting Started](https://generalmarket.io/docs/index/getting-started): Wallet setup, network config, first trade
 
 ## Index -- Concepts
-- [ITPs](https://generalmarket.io/docs/index/concepts/itps): Tokenized baskets, per-share quantities, rebalancing mechanics
+- [DTFs](https://generalmarket.io/docs/index/concepts/itps): Tokenized baskets, per-share quantities, rebalancing mechanics
 - [Order Lifecycle](https://generalmarket.io/docs/index/concepts/order-lifecycle): BLS consensus flow from submission to settlement
 - [Lending](https://generalmarket.io/docs/index/concepts/lending): Morpho integration for borrowing and lending
 
 ## Index -- Guides
-- [Buy & Sell](https://generalmarket.io/docs/index/guides/buy-sell): Step-by-step ITP trading
-- [Create an ITP](https://generalmarket.io/docs/index/guides/create-itp): Deploy custom index products
-- [Rebalancing](https://generalmarket.io/docs/index/guides/rebalancing): Rebalance ITP weights while preserving NAV
-- [Backtesting](https://generalmarket.io/docs/index/guides/backtesting): Simulate ITP performance with historical data
-- [Lending](https://generalmarket.io/docs/index/guides/lending): Use ITPs as collateral in Morpho markets
+- [Buy & Sell](https://generalmarket.io/docs/index/guides/buy-sell): Step-by-step DTF trading
+- [Create a DTF](https://generalmarket.io/docs/index/guides/create-itp): Deploy custom index products
+- [Rebalancing](https://generalmarket.io/docs/index/guides/rebalancing): Rebalance DTF weights while preserving NAV
+- [Backtesting](https://generalmarket.io/docs/index/guides/backtesting): Simulate DTF performance with historical data
+- [Lending](https://generalmarket.io/docs/index/guides/lending): Use DTFs as collateral in Morpho markets
 - [Settlement](https://generalmarket.io/docs/index/guides/settlement): Settlement chain mechanics and cross-chain flow
 - [Explorer](https://generalmarket.io/docs/index/guides/explorer): Explorer dashboard for monitoring system health and orders
 
 ## Index -- API Reference
 - [API Overview](https://generalmarket.io/docs/index/api/overview): Base URL, authentication, response format
 - [Prices](https://generalmarket.io/docs/index/api/prices): Real-time and historical asset prices
-- [ITPs](https://generalmarket.io/docs/index/api/itps): ITP NAV, AUM, state snapshots
+- [DTFs](https://generalmarket.io/docs/index/api/itps): DTF NAV, AUM, state snapshots
 - [Portfolio](https://generalmarket.io/docs/index/api/portfolio): User portfolio tracking
 - [Simulation](https://generalmarket.io/docs/index/api/simulation): Backtesting engine
 - [Morpho](https://generalmarket.io/docs/index/api/morpho): Lending positions and operations

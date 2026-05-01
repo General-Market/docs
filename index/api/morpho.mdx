@@ -114,10 +114,10 @@ position = resp.json()
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `collateral` | string | ITP shares deposited as collateral (18 decimals) |
+| `collateral` | string | DTF shares deposited as collateral (18 decimals) |
 | `borrow_shares` | string | Morpho borrow shares (not USDC amount -- see `debt_amount`) |
 | `debt_amount` | string | Actual USDC debt including accrued interest (18 decimals on L3) |
-| `oracle_price` | string | ITP NAV price from ITPNAVOracle (36 decimals, Morpho format) |
+| `oracle_price` | string | DTF NAV price from `ITPNAVOracle` (36 decimals, Morpho format) |
 | `max_borrow` | string | Maximum additional USDC borrowable (18 decimals) |
 | `max_withdraw` | string | Maximum collateral withdrawable without liquidation (18 decimals) |
 
@@ -179,12 +179,12 @@ const state = await res.json();
 |-------|------|-------------|
 | `usdc_balance` | string | L3 USDC balance (18 decimals) |
 | `usdc_allowance_morpho` | string | USDC approval for Morpho contract |
-| `bridged_itp_address` | string | Collateral token (ITP) address on L3 |
-| `bridged_itp_balance` | string | ITP token balance (18 decimals) |
-| `bridged_itp_allowance_morpho` | string | ITP approval for Morpho contract |
-| `bridged_itp_name` | string | ITP token name |
-| `bridged_itp_symbol` | string | ITP token symbol |
-| `bridged_itp_total_supply` | string | Total ITP supply (18 decimals) |
+| `bridged_itp_address` | string | Collateral token (DTF) address on L3 |
+| `bridged_itp_balance` | string | DTF token balance (18 decimals) |
+| `bridged_itp_allowance_morpho` | string | DTF approval for Morpho contract |
+| `bridged_itp_name` | string | DTF token name |
+| `bridged_itp_symbol` | string | DTF token symbol |
+| `bridged_itp_total_supply` | string | Total DTF supply (18 decimals) |
 
 <Note>
   All values on L3 use **18 decimal** USDC (not 6 decimals like on Ethereum mainnet or Arbitrum). See the [USDC Decimals](/index/concepts/lending#usdc-decimals) section.
@@ -385,14 +385,14 @@ The bot that moves capital where it is needed. It monitors utilization, respects
 
 ### Risk Tier Concentration Limits
 
-Each ITP market is assigned a risk tier that caps the maximum percentage of vault assets the curator can allocate to it:
+Each DTF market is assigned a risk tier that caps the maximum percentage of vault assets the curator can allocate to it:
 
 | Tier | Description | Max Concentration |
 |------|-------------|-------------------|
-| **A** | Blue-chip, diversified ITPs | 30% |
-| **B** | Medium risk ITPs | 20% |
-| **C** | Higher risk, narrower ITPs | 10% |
-| **D** | Watch list, new ITPs | 5% |
+| **A** | Blue-chip, diversified DTFs | 30% |
+| **B** | Medium risk DTFs | 20% |
+| **C** | Higher risk, narrower DTFs | 10% |
+| **D** | Watch list, new DTFs | 5% |
 
 ```
   Example: Vault with $100,000 USDC
@@ -553,13 +553,13 @@ When the health factor drops to 1.0, the position is exposed. Anyone can liquida
 - **Anyone can liquidate**: Liquidation is permissionless -- any address can call `liquidate()` on Morpho Blue.
 - **Liquidation bonus**: The liquidator receives collateral at a discount (bonus percentage set per market).
 - **No grace period**: Once HF < 1.0, liquidation is immediate.
-- **Oracle-dependent**: The health factor is computed using the ITPNAVOracle price. If the oracle price is stale (> 365 days), the `price()` call reverts and liquidation is blocked.
+- **Oracle-dependent**: The health factor is computed using the `ITPNAVOracle` price. If the oracle price is stale (> 365 days), the `price()` call reverts and liquidation is blocked.
 
 ---
 
-## ITP Collateral and NAV Oracle
+## DTF Collateral and NAV Oracle
 
-ITP shares are collateral. The oracle that prices them is BLS-verified and oracle-signed. If the oracle lies, liquidations break. So it does not lie.
+DTF shares are collateral. The oracle that prices them is BLS-verified and oracle-signed. If the oracle lies, liquidations break. So it does not lie.
 
 ```
   NAV ORACLE PIPELINE
@@ -609,7 +609,7 @@ ITP shares are collateral. The oracle that prices them is BLS-verified and oracl
 
 ### Oracle Price Format
 
-The ITPNAVOracle uses Morpho's 36-decimal price convention:
+The `ITPNAVOracle` uses Morpho's 36-decimal price convention:
 
 ```
   Morpho formula:  collateral_raw * price / 1e36 = loan_raw
