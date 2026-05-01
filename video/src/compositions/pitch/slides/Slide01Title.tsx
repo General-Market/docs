@@ -1,10 +1,21 @@
 import React from "react";
+import { Img, staticFile } from "remotion";
 import { SlideFrame } from "../SlideFrame";
 import { COLOR, FONT, SLIDE_COUNT } from "../tokens";
 
 export const Slide01Title: React.FC = () => {
   return (
-    <SlideFrame pageNumber={1} pageTotal={SLIDE_COUNT}>
+    <SlideFrame pageNumber={1} pageTotal={SLIDE_COUNT} hideBrand>
+      <Img
+        src={staticFile("gm-logo-black.svg")}
+        style={{
+          width: 168,
+          height: 168,
+          marginLeft: -16,
+          marginBottom: 48,
+          display: "block",
+        }}
+      />
       <h1
         style={{
           fontFamily: FONT.serif,

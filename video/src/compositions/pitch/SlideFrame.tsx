@@ -6,6 +6,7 @@ type Props = {
   eyebrow?: string;
   pageNumber?: number;
   pageTotal?: number;
+  hideBrand?: boolean;
   children: React.ReactNode;
 };
 
@@ -13,23 +14,26 @@ export const SlideFrame: React.FC<Props> = ({
   eyebrow,
   pageNumber,
   pageTotal,
+  hideBrand,
   children,
 }) => {
   return (
     <AbsoluteFill style={{ background: COLOR.bg }}>
-      <div
-        style={{
-          position: "absolute",
-          top: 64,
-          left: PAD.x,
-          fontFamily: FONT.serif,
-          fontSize: 22,
-          color: COLOR.muted,
-          letterSpacing: "-0.005em",
-        }}
-      >
-        General Market
-      </div>
+      {!hideBrand && (
+        <div
+          style={{
+            position: "absolute",
+            top: 64,
+            left: PAD.x,
+            fontFamily: FONT.serif,
+            fontSize: 22,
+            color: COLOR.muted,
+            letterSpacing: "-0.005em",
+          }}
+        >
+          General Market
+        </div>
+      )}
 
       {pageNumber !== undefined && pageTotal !== undefined && (
         <div
