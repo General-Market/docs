@@ -2,7 +2,7 @@ import React from "react";
 import { AbsoluteFill, Audio, Sequence, staticFile } from "remotion";
 import { Scene01_Intro, Scene02_Numbers, Scene03_DarkGrid, Scene04_CubeExplode } from "./ScenesA";
 import { Scene05_Waiting, Scene06_Starburst, Scene07_TransactionQueue, Scene08_GridText } from "./ScenesB";
-import { Scene09_Experience, Scene10_LiveTestnet, Scene11_NewSpeed, Scene12_Finale } from "./ScenesC";
+import { Scene09_Experience, Scene10_LiveTestnet, Scene11_NewSpeed, Scene12_Finale, Scene13_PairsCompare } from "./ScenesC";
 
 /*
  * Rainbows pitch — 37.2s explainer (1920x1080, 24fps, 893 frames)
@@ -18,15 +18,17 @@ import { Scene09_Experience, Scene10_LiveTestnet, Scene11_NewSpeed, Scene12_Fina
  *   04  "Removing" → "what shouldn't be here."            204–252
  *   05  Villains struck through                            252–360
  *   06  Counter 0→70%, "of your profits"                  360–408
- *   07  Pairs no exchange will list — split-screen        408–492
- *       without/with rainbows comparison
+ *   07  "Leaving the same profits" → "to fewer            408–492
+ *       honest traders"
  *   08  Concentric circles + "gain more"                  492–540
  *   09  "while trading the same assets."                  540–588
  *   10  Asset grid: Stocks / Crypto / Predictions /       588–648
  *       Memecoins
  *   11  Counter 0→500,000, "exclusive markets",           648–720
  *       sub-caption "only tradable with rainbows"
- *   12  "General." + "Markets for everything." + fade    720–893
+ *   12  Pairs no exchange will list — split-screen        720–804
+ *       without/with rainbows comparison
+ *   13  "General." + "Markets for everything." + fade    804–1596
  */
 
 export const RainbowsPitchComposition: React.FC = () => {
@@ -66,7 +68,10 @@ export const RainbowsPitchComposition: React.FC = () => {
       <Sequence from={648} durationInFrames={72} name="11 500k Markets">
         <Scene06_Starburst />
       </Sequence>
-      <Sequence from={720} durationInFrames={173} name="12 General Finale">
+      <Sequence from={720} durationInFrames={84} name="12 Pairs Compare">
+        <Scene13_PairsCompare />
+      </Sequence>
+      <Sequence from={804} durationInFrames={792} name="13 General Finale">
         <Scene12_Finale />
       </Sequence>
     </AbsoluteFill>
@@ -79,5 +84,5 @@ export const rainbowsPitchMeta = {
   width: 1920,
   height: 1080,
   fps: 24,
-  durationInFrames: 893,
+  durationInFrames: 1596,
 };

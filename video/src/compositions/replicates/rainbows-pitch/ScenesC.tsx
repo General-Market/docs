@@ -1,10 +1,11 @@
 import React from "react";
 import { AbsoluteFill, Img, staticFile } from "remotion";
 import { loadFont } from "@remotion/google-fonts/Inter";
-import { SolidBlue, BlueGradient, GridOverlay } from "./backgrounds";
+import { SolidBlue, LightGradient, BlueGradient, GridOverlay } from "./backgrounds";
 import { useGsapProxy } from "./gsapUtils";
 
 const { fontFamily } = loadFont("normal", { subsets: ["latin"], weights: ["400", "700", "800"] });
+const BLUE = "#000000";
 
 /* ═══════════════════════════════════════════════════════
    Scene 09 — Concentric circles + "gain more"
@@ -99,36 +100,157 @@ export const Scene09_Experience: React.FC = () => {
 };
 
 /* ═══════════════════════════════════════════════════════
-   Scene 10 — Pairs no exchange will list  (84 frames = 3.5s @ 24fps)
+   Scene 10 — Cascade → title  (84 frames = 3.5s @ 24fps)
+   Phase 1: "Leaving / the / same / profits" word cascade
+   Phase 2: "to fewer honest traders" title slides in
+   ═══════════════════════════════════════════════════════ */
+
+const SCENE10_PHASE1 = ["Leaving", "the", "same", "profits"] as const;
+const SCENE10_PHASE2 = ["to", "fewer", "honest", "traders"] as const;
+
+function buildScene10Proxies() {
+  const init: Record<string, Record<string, number>> = {
+    phase1: { opacity: 1 },
+    title: { opacity: 0, scale: 0.92 },
+  };
+  SCENE10_PHASE1.forEach((w) => { init[`p1_${w}`] = { opacity: 0, y: 15 }; });
+  SCENE10_PHASE2.forEach((w) => { init[`p2_${w}`] = { opacity: 0, y: 12 }; });
+  return init;
+}
+
+export const Scene10_LiveTestnet: React.FC = () => {
+  const s = useGsapProxy(
+    (tl, p) => {
+      // Phase 1 cascade
+      SCENE10_PHASE1.forEach((w, i) => {
+        tl.to(p[`p1_${w}`], { opacity: 1, y: 0, duration: 0.16, ease: "power2.out" }, i * 0.16);
+      });
+      // Phase 1 fades out
+      tl.to(p.phase1, { opacity: 0, duration: 0.22 }, 1.05);
+
+      // Phase 2 title
+      tl.to(p.title, { opacity: 1, scale: 1, duration: 0.35, ease: "back.out(1.4)" }, 1.25);
+      // Phase 2 word cascade
+      SCENE10_PHASE2.forEach((w, i) => {
+        tl.to(p[`p2_${w}`], { opacity: 1, y: 0, duration: 0.14, ease: "power2.out" }, 1.4 + i * 0.13);
+      });
+    },
+    buildScene10Proxies(),
+  );
+
+  return (
+    <AbsoluteFill>
+      <LightGradient />
+
+      {/* Phase 1 */}
+      <div
+        style={{
+          position: "absolute",
+          top: "42%",
+          left: "6%",
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "0 18px",
+          maxWidth: "88%",
+          opacity: s.phase1.opacity,
+        }}
+      >
+        {SCENE10_PHASE1.map((word) => {
+          const p = s[`p1_${word}`];
+          return (
+            <span
+              key={word}
+              style={{
+                fontFamily,
+                fontSize: 155,
+                fontWeight: 700,
+                fontStyle: "italic",
+                color: BLUE,
+                opacity: p.opacity,
+                transform: `translateY(${p.y}px)`,
+                display: "inline-block",
+                lineHeight: 1.15,
+              }}
+            >
+              {word}
+            </span>
+          );
+        })}
+      </div>
+
+      {/* Phase 2 — title */}
+      <div
+        style={{
+          position: "absolute",
+          top: "42%",
+          left: "50%",
+          transform: `translate(-50%, 0) scale(${s.title.scale})`,
+          opacity: s.title.opacity,
+          textAlign: "center",
+          display: "flex",
+          flexWrap: "wrap",
+          justifyContent: "center",
+          gap: "0 22px",
+          maxWidth: "92%",
+        }}
+      >
+        {SCENE10_PHASE2.map((word) => {
+          const p = s[`p2_${word}`];
+          return (
+            <span
+              key={word}
+              style={{
+                fontFamily,
+                fontSize: 175,
+                fontWeight: 800,
+                fontStyle: "italic",
+                color: BLUE,
+                opacity: p.opacity,
+                transform: `translateY(${p.y}px)`,
+                display: "inline-block",
+                lineHeight: 1.15,
+              }}
+            >
+              {word}
+            </span>
+          );
+        })}
+      </div>
+    </AbsoluteFill>
+  );
+};
+
+/* ═══════════════════════════════════════════════════════
+   Scene 13 — Pairs no exchange will list  (84 frames = 3.5s @ 24fps)
    Split-screen: same insider pairs, dead on the left (no rainbows),
-   alive on the right (with rainbows).
+   alive on the right (with rainbows). Lands after the 500k counter.
    ═══════════════════════════════════════════════════════ */
 
 const RAINBOW_GRADIENT_C =
   "linear-gradient(90deg, #ff3b3b 0%, #ff8a00 18%, #ffd400 36%, #2cd36f 54%, #2dabff 72%, #7e3bff 88%, #ff3bd1 100%)";
 
-const SCENE10_PAIRS = [
+const SCENE13_PAIRS = [
   "$WIF / $BONK",
   "ICE 247 — on time?",
   "Rain in Berlin tonight",
   "Whale wakes: 0xfa…",
 ] as const;
 
-function buildScene10Proxies() {
+function buildScene13Proxies() {
   const init: Record<string, Record<string, number>> = {
     headline: { opacity: 0, y: 14 },
     leftLabel: { opacity: 0 },
     rightLabel: { opacity: 0 },
     rightBg: { opacity: 0 },
   };
-  SCENE10_PAIRS.forEach((_, i) => {
+  SCENE13_PAIRS.forEach((_, i) => {
     init[`l_${i}`] = { opacity: 0, x: -18, strike: 0 };
     init[`r_${i}`] = { opacity: 0, x: 18 };
   });
   return init;
 }
 
-export const Scene10_LiveTestnet: React.FC = () => {
+export const Scene13_PairsCompare: React.FC = () => {
   const s = useGsapProxy(
     (tl, p) => {
       // Headline lands first.
@@ -136,7 +258,7 @@ export const Scene10_LiveTestnet: React.FC = () => {
 
       // Left side — "without rainbows" cascade with strike-through.
       tl.to(p.leftLabel, { opacity: 0.65, duration: 0.18, ease: "power2.out" }, 0.32);
-      SCENE10_PAIRS.forEach((_, i) => {
+      SCENE13_PAIRS.forEach((_, i) => {
         const t = 0.42 + i * 0.12;
         tl.to(p[`l_${i}`], { opacity: 0.45, x: 0, duration: 0.18, ease: "power2.out" }, t);
         tl.to(p[`l_${i}`], { strike: 1, duration: 0.22, ease: "power2.out" }, t + 0.08);
@@ -145,11 +267,11 @@ export const Scene10_LiveTestnet: React.FC = () => {
       // Right side — rainbow panel sweeps in, then glowing pairs cascade.
       tl.to(p.rightBg, { opacity: 1, duration: 0.32, ease: "power2.out" }, 1.18);
       tl.to(p.rightLabel, { opacity: 1, duration: 0.18, ease: "power2.out" }, 1.30);
-      SCENE10_PAIRS.forEach((_, i) => {
+      SCENE13_PAIRS.forEach((_, i) => {
         tl.to(p[`r_${i}`], { opacity: 1, x: 0, duration: 0.18, ease: "power2.out" }, 1.42 + i * 0.12);
       });
     },
-    buildScene10Proxies(),
+    buildScene13Proxies(),
   );
 
   const headlineStyle: React.CSSProperties = {
@@ -250,7 +372,7 @@ export const Scene10_LiveTestnet: React.FC = () => {
           without rainbows
         </span>
         <div style={{ height: 24 }} />
-        {SCENE10_PAIRS.map((pair, i) => {
+        {SCENE13_PAIRS.map((pair, i) => {
           const p = s[`l_${i}`];
           return (
             <div
@@ -299,7 +421,7 @@ export const Scene10_LiveTestnet: React.FC = () => {
           with rainbows
         </span>
         <div style={{ height: 24 }} />
-        {SCENE10_PAIRS.map((pair, i) => {
+        {SCENE13_PAIRS.map((pair, i) => {
           const p = s[`r_${i}`];
           return (
             <div
