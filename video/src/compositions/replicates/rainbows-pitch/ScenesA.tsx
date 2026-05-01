@@ -6,7 +6,7 @@ import { useGsapProxy } from "./gsapUtils";
 import { SERIES } from "./scene01-data";
 
 const { fontFamily } = loadFont("normal", { subsets: ["latin"], weights: ["400", "700", "800"] });
-const BLUE = "#0040FF";
+const BLUE = "#000000";
 
 // One use only — reserved for the word "rainbows" in the Scene 03 title.
 const RAINBOW_GRADIENT =
@@ -639,7 +639,7 @@ export const Scene02_Numbers: React.FC = () => {
   );
 
   const blueGradientText: React.CSSProperties = {
-    backgroundImage: `linear-gradient(180deg, ${BLUE} 0%, #2a5cff 60%, ${BLUE} 100%)`,
+    backgroundImage: `linear-gradient(180deg, #000 0%, #3a3a3a 50%, #000 100%)`,
     backgroundClip: "text",
     WebkitBackgroundClip: "text",
     WebkitTextFillColor: "transparent",

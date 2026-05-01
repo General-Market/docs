@@ -4,74 +4,269 @@ import {
   useCurrentFrame,
   interpolate,
 } from "remotion";
-import { noise2D } from "@remotion/noise";
 
 // ── Colors ──
-export const BLUE = "#0040FF";
+// Was a saturated blue; the pitch now lives in monochrome — keeping the
+// BLUE export so existing call sites don't have to learn another name.
+export const BLUE = "#000000";
 export const DARK = "#0a0a0a";
-export const LIGHT_BG = "#eef2ff";
+export const LIGHT_BG = "#fafafa";
 
-// ── Animated blue-white mesh gradient (the signature look) ──
-export const BlueGradient: React.FC<{ speed?: number }> = ({ speed = 0.003 }) => {
+const TICKER_ITEMS = [
+  ["BTC/USD", "$64,048", "−7.24%", "down"],
+  ["PEPE", "$0.0000039", "−11.6%", "down"],
+  ["BTC-PUT-65K", "$6,559", "+86.3%", "up"],
+  ["MEXICANUNC", "$0.0000239", "−99.73%", "down"],
+  ["TRUMP", "$2.547", "−12.86%", "down"],
+  ["JUST_CHATTING", "346K viewers", "−24.7%", "down"],
+  ["CS2", "1.28M players", "−6.9%", "down"],
+  ["LICHESS", "4,036 active", "−7.3%", "down"],
+  ["MTA:NYC", "716 trips", "−4.4%", "down"],
+] as const;
+
+// One ticker line — a strip of mono price quotes that scrolls across the frame.
+const Ticker: React.FC<{
+  bottom?: number;
+  top?: number;
+  textColor: string;
+  upColor: string;
+  downColor: string;
+  bg: string;
+  speedPxPerFrame?: number;
+}> = ({ bottom, top, textColor, upColor, downColor, bg, speedPxPerFrame = 4 }) => {
   const frame = useCurrentFrame();
-  const t = frame * speed;
-
-  const x1 = 10 + noise2D("gx1", t, 0) * 15;
-  const y1 = 10 + noise2D("gy1", t, 0.5) * 15;
-  const x2 = 85 + noise2D("gx2", t, 1) * 12;
-  const y2 = 10 + noise2D("gy2", t, 1.5) * 12;
-  const x3 = 15 + noise2D("gx3", t, 2) * 15;
-  const y3 = 90 + noise2D("gy3", t, 2.5) * 10;
-  const x4 = 90 + noise2D("gx4", t, 3) * 10;
-  const y4 = 85 + noise2D("gy4", t, 3.5) * 10;
-
+  const offset = (frame * speedPxPerFrame) % 1920;
+  const Item = ({ entry }: { entry: (typeof TICKER_ITEMS)[number] }) => {
+    const [name, price, pct, dir] = entry;
+    return (
+      <span style={{ display: "inline-flex", gap: 10, alignItems: "center", marginRight: 36 }}>
+        <span style={{ color: textColor, opacity: 0.75 }}>{name}</span>
+        <span style={{ color: textColor, fontWeight: 600 }}>{price}</span>
+        <span style={{ color: dir === "up" ? upColor : downColor, fontWeight: 700 }}>
+          {dir === "up" ? "▲" : "▼"} {pct}
+        </span>
+      </span>
+    );
+  };
   return (
-    <AbsoluteFill
+    <div
       style={{
-        background: `
-          radial-gradient(ellipse 100% 100% at ${x1}% ${y1}%, rgba(255,255,255,0.75) 0%, transparent 55%),
-          radial-gradient(ellipse 90% 90% at ${x2}% ${y2}%, rgba(255,255,255,0.65) 0%, transparent 50%),
-          radial-gradient(ellipse 100% 100% at ${x3}% ${y3}%, rgba(200,220,255,0.35) 0%, transparent 55%),
-          radial-gradient(ellipse 85% 85% at ${x4}% ${y4}%, rgba(255,255,255,0.55) 0%, transparent 50%),
-          radial-gradient(ellipse 70% 70% at 50% 50%, rgba(100,160,255,0.2) 0%, transparent 65%),
-          linear-gradient(135deg, #0050FF 0%, #1060FF 25%, #3080FF 45%, #1060FF 65%, #0040FF 85%, #0035EE 100%)
-        `,
+        position: "absolute",
+        left: 0,
+        right: 0,
+        height: 32,
+        ...(top !== undefined ? { top } : { bottom: bottom ?? 0 }),
+        background: bg,
+        borderTop: `1px solid ${textColor}10`,
+        borderBottom: `1px solid ${textColor}10`,
+        overflow: "hidden",
+        whiteSpace: "nowrap",
+        fontFamily: "ui-monospace, SFMono-Regular, monospace",
+        fontSize: 13,
+        display: "flex",
+        alignItems: "center",
+        zIndex: 1,
       }}
-    />
+    >
+      <div style={{ transform: `translateX(${-offset}px)`, paddingLeft: 16, display: "flex" }}>
+        {[...TICKER_ITEMS, ...TICKER_ITEMS, ...TICKER_ITEMS].map((it, i) => (
+          <Item key={i} entry={it} />
+        ))}
+      </div>
+    </div>
   );
 };
 
-// ── Light gradient (near-white with subtle blue tint) ──
-export const LightGradient: React.FC = () => {
-  const frame = useCurrentFrame();
-  const t = frame * 0.002;
-  const x = 25 + noise2D("lgx", t, 0) * 15;
-  const y = 30 + noise2D("lgy", t, 0.5) * 15;
+// Halftone dot field, baked as inline SVG data URI for cheap repeat.
+const halftoneSvg = (color: string, opacity: number) =>
+  `url("data:image/svg+xml;utf8,${encodeURIComponent(
+    `<svg xmlns='http://www.w3.org/2000/svg' width='8' height='8'><circle cx='2' cy='2' r='1' fill='${color}' fill-opacity='${opacity}'/></svg>`,
+  )}")`;
 
+// Subtle film grain via noise + filter.
+const Grain: React.FC<{ color?: string; opacity?: number }> = ({
+  color = "#ffffff",
+  opacity = 0.04,
+}) => {
+  const frame = useCurrentFrame();
   return (
-    <AbsoluteFill
-      style={{
-        background: `
-          radial-gradient(ellipse 80% 80% at ${x}% ${y}%, rgba(255,255,255,1) 0%, transparent 70%),
-          linear-gradient(135deg, #f0f4ff 0%, #e8eeff 40%, #f5f8ff 60%, #eef2ff 100%)
-        `,
-      }}
-    />
+    <AbsoluteFill style={{ pointerEvents: "none", opacity, mixBlendMode: "overlay" }}>
+      <svg width="100%" height="100%" preserveAspectRatio="none">
+        <filter id={`grain-${frame % 4}`}>
+          <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed={frame % 4} />
+          <feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 1 0" />
+        </filter>
+        <rect width="100%" height="100%" filter={`url(#grain-${frame % 4})`} fill={color} />
+      </svg>
+    </AbsoluteFill>
   );
 };
 
-// ── Solid blue (for the "experience" scene) ──
-export const SolidBlue: React.FC = () => (
-  <AbsoluteFill
+// Recurring chart watermark — a giant italic word at low opacity that anchors
+// the editorial mood without pulling focus from the foreground.
+const Watermark: React.FC<{ text: string; color: string }> = ({ text, color }) => (
+  <div
     style={{
-      background: "linear-gradient(160deg, #0055FF 0%, #0040FF 40%, #0035EE 70%, #0045FF 100%)",
+      position: "absolute",
+      inset: 0,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      pointerEvents: "none",
     }}
-  />
+  >
+    <span
+      style={{
+        fontFamily: "Inter, system-ui, sans-serif",
+        fontSize: 360,
+        fontWeight: 800,
+        fontStyle: "italic",
+        letterSpacing: "-0.04em",
+        color,
+        opacity: 0.05,
+        whiteSpace: "nowrap",
+      }}
+    >
+      {text}
+    </span>
+  </div>
 );
 
-// ── Dark background ──
+// Tiny TradingView-style metadata badges anchored to the corners.
+const CornerBadge: React.FC<{
+  pos: "tl" | "tr" | "bl" | "br";
+  color: string;
+  children: React.ReactNode;
+}> = ({ pos, color, children }) => {
+  const top = pos.startsWith("t") ? 22 : undefined;
+  const bottom = pos.startsWith("b") ? 22 : undefined;
+  const left = pos.endsWith("l") ? 22 : undefined;
+  const right = pos.endsWith("r") ? 22 : undefined;
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top,
+        bottom,
+        left,
+        right,
+        fontFamily: "ui-monospace, SFMono-Regular, monospace",
+        fontSize: 12,
+        color,
+        opacity: 0.6,
+        letterSpacing: "0.06em",
+        textTransform: "uppercase",
+        zIndex: 2,
+        pointerEvents: "none",
+      }}
+    >
+      {children}
+    </div>
+  );
+};
+
+// ── Black background — the "energetic" frames that used to be blue ──
+export const BlueGradient: React.FC<{ speed?: number }> = () => {
+  const frame = useCurrentFrame();
+  const breathe = 0.92 + 0.08 * Math.sin(frame * 0.04);
+  return (
+    <AbsoluteFill style={{ background: "#000" }}>
+      {/* very subtle vignette so the pure black has shape */}
+      <AbsoluteFill
+        style={{
+          background:
+            "radial-gradient(ellipse 90% 70% at 50% 45%, rgba(255,255,255,0.04) 0%, transparent 65%)",
+          opacity: breathe,
+        }}
+      />
+      {/* trading-desk gridlines */}
+      <AbsoluteFill style={{ pointerEvents: "none", opacity: 0.5 }}>
+        <svg width="100%" height="100%">
+          <defs>
+            <pattern id="bk-grid" width="80" height="80" patternUnits="userSpaceOnUse">
+              <path d="M 80 0 L 0 0 0 80" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="1" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#bk-grid)" />
+        </svg>
+      </AbsoluteFill>
+      <Watermark text="GENERAL" color="#ffffff" />
+      <Ticker
+        bottom={0}
+        textColor="#ffffff"
+        upColor="#26a69a"
+        downColor="#ef5350"
+        bg="rgba(13,17,23,0.94)"
+      />
+      <Grain color="#ffffff" opacity={0.05} />
+      <CornerBadge pos="tr" color="#ffffff">
+        ● LIVE · {String(Math.floor(frame / 24)).padStart(2, "0")}:
+        {String(frame % 24).padStart(2, "0")}
+      </CornerBadge>
+    </AbsoluteFill>
+  );
+};
+
+// ── Paper-white background — the "calm" frames that used to be light blue ──
+export const LightGradient: React.FC = () => {
+  return (
+    <AbsoluteFill style={{ background: "#f5f5f3" }}>
+      {/* halftone dot field */}
+      <AbsoluteFill
+        style={{
+          backgroundImage: halftoneSvg("#000", 0.18),
+          backgroundSize: "8px 8px",
+          opacity: 0.7,
+          pointerEvents: "none",
+        }}
+      />
+      {/* off-center diagonal rule for editorial energy */}
+      <div
+        style={{
+          position: "absolute",
+          left: "50%",
+          top: 0,
+          bottom: 0,
+          width: 1,
+          background: "rgba(0,0,0,0.06)",
+          transform: "translateX(-50%) rotate(8deg)",
+        }}
+      />
+      <Watermark text="MARKETS" color="#000000" />
+      <Ticker
+        top={0}
+        textColor="#0d1117"
+        upColor="#0a8054"
+        downColor="#c33232"
+        bg="rgba(245,245,243,0.92)"
+      />
+      <Grain color="#000000" opacity={0.025} />
+      <CornerBadge pos="bl" color="#000000">
+        EDITION №01 · 2026
+      </CornerBadge>
+    </AbsoluteFill>
+  );
+};
+
+// ── Solid black (replaces SolidBlue for the high-impact frames) ──
+export const SolidBlue: React.FC = () => (
+  <AbsoluteFill style={{ background: "#000" }}>
+    <AbsoluteFill
+      style={{
+        background:
+          "radial-gradient(ellipse 80% 60% at 50% 50%, rgba(255,255,255,0.06) 0%, transparent 65%)",
+      }}
+    />
+    <Watermark text="·" color="#ffffff" />
+    <Grain color="#ffffff" opacity={0.05} />
+  </AbsoluteFill>
+);
+
+// ── Dark background — already black-ish, just upgraded with grain ──
 export const DarkBg: React.FC = () => (
-  <AbsoluteFill style={{ backgroundColor: "#111111" }} />
+  <AbsoluteFill style={{ backgroundColor: "#0a0a0a" }}>
+    <Grain color="#ffffff" opacity={0.04} />
+  </AbsoluteFill>
 );
 
 // ── Grid overlay ──

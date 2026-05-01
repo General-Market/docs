@@ -5,7 +5,7 @@ import { SolidBlue, LightGradient, BlueGradient, GridOverlay } from "./backgroun
 import { useGsapProxy } from "./gsapUtils";
 
 const { fontFamily } = loadFont("normal", { subsets: ["latin"], weights: ["400", "700", "800"] });
-const BLUE = "#0040FF";
+const BLUE = "#000000";
 
 /* ═══════════════════════════════════════════════════════
    Scene 09 — Concentric circles + "gain more"
