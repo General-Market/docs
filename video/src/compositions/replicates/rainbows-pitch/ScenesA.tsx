@@ -3,6 +3,7 @@ import { AbsoluteFill } from "remotion";
 import { loadFont } from "@remotion/google-fonts/Inter";
 import { BlueGradient, LightGradient, DarkBg, SolidBlue, GridOverlay } from "./backgrounds";
 import { useGsapProxy } from "./gsapUtils";
+import { CRASH, VISION } from "./scene01-data";
 
 const { fontFamily } = loadFont("normal", { subsets: ["latin"], weights: ["400", "700", "800"] });
 const BLUE = "#0040FF";
@@ -21,96 +22,429 @@ const baseText: React.CSSProperties = {
 
 /* ═══════════════════════════════════════════════════════
    Scene 01 — Intro  (48 frames = 2s @ 24fps)
-   "Trade market like this." cross-fades to
-   "Is simpler than trading market like this."
+   Telegram-chat compare:
+     top bubble (vision): 4 sparklines + "Trade market like this."
+     bottom bubble (crash): TRUMPUSDT line + "Is simpler than..."
+   Real data — VPS 1 Postgres index_prices.{market_prices,klines}.
    ═══════════════════════════════════════════════════════ */
 
-const SCENE01_A = ["Trade", "market", "like", "this"] as const;
-const SCENE01_B = ["Is", "simpler", "than", "trading", "market", "like", "this"] as const;
+const SCENE01_A = ["Trade", "markets", "like", "this."] as const;
+const SCENE01_B = ["Is", "simpler", "than", "trading", "markets", "like", "this."] as const;
+
+const VISION_TILES = [
+  { key: "xqc", label: "xQc", color: "#74e0a3" },
+  { key: "ishowspeed", label: "Speed", color: "#f7a35c" },
+  { key: "jynxzi", label: "Jynxzi", color: "#6aa9ff" },
+  { key: "caedrel", label: "Caedrel", color: "#b19cd9" },
+] as const;
+
+const CRASH_T0_UNIX = 1770751380;
+
+function pathFromPoints(
+  pts: readonly (readonly [number, number])[],
+  w: number,
+  h: number,
+  pad: number,
+): string {
+  if (pts.length < 2) return "";
+  const tMin = pts[0]![0];
+  const tMax = pts[pts.length - 1]![0];
+  let yMin = pts[0]![1];
+  let yMax = pts[0]![1];
+  for (const [, y] of pts) {
+    if (y < yMin) yMin = y;
+    if (y > yMax) yMax = y;
+  }
+  const tRange = tMax - tMin || 1;
+  const yRange = yMax - yMin || 1;
+  const innerW = w - pad * 2;
+  const innerH = h - pad * 2;
+  return pts
+    .map(([t, y], i) => {
+      const X = pad + ((t - tMin) / tRange) * innerW;
+      const Y = pad + (1 - (y - yMin) / yRange) * innerH;
+      return `${i === 0 ? "M" : "L"}${X.toFixed(2)} ${Y.toFixed(2)}`;
+    })
+    .join(" ");
+}
+
+const Sparkline: React.FC<{
+  pts: readonly (readonly [number, number])[];
+  width: number;
+  height: number;
+  stroke: string;
+  draw: number;
+}> = ({ pts, width, height, stroke, draw }) => {
+  const d = pathFromPoints(pts, width, height, 4);
+  const drawClamped = Math.max(0, Math.min(1, draw));
+  return (
+    <svg width={width} height={height} style={{ display: "block" }}>
+      <path
+        d={d}
+        fill="none"
+        stroke={stroke}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        pathLength={1}
+        strokeDasharray={1}
+        strokeDashoffset={1 - drawClamped}
+      />
+    </svg>
+  );
+};
+
+const CrashChart: React.FC<{
+  pts: readonly (readonly [number, number])[];
+  width: number;
+  height: number;
+  draw: number;
+}> = ({ pts, width, height, draw }) => {
+  const padL = 64;
+  const padR = 24;
+  const padT = 22;
+  const padB = 18;
+  const innerW = width - padL - padR;
+  const innerH = height - padT - padB;
+  const ys = pts.map((p) => p[1]);
+  const yMin = Math.min(...ys);
+  const yMax = Math.max(...ys);
+  const yPad = (yMax - yMin) * 0.08;
+  const yLo = yMin - yPad;
+  const yHi = yMax + yPad;
+  const tMin = pts[0]![0];
+  const tMax = pts[pts.length - 1]![0];
+
+  const xy = (t: number, y: number): readonly [number, number] => {
+    const X = padL + ((t - tMin) / (tMax - tMin)) * innerW;
+    const Y = padT + (1 - (y - yLo) / (yHi - yLo)) * innerH;
+    return [X, Y];
+  };
+
+  const linePath = pts
+    .map(([t, y], i) => {
+      const [X, Y] = xy(t, y);
+      return `${i === 0 ? "M" : "L"}${X.toFixed(2)} ${Y.toFixed(2)}`;
+    })
+    .join(" ");
+
+  const drawClamped = Math.max(0, Math.min(1, draw));
+  const idx = Math.max(0, Math.min(pts.length - 1, Math.floor(pts.length * drawClamped) - 1));
+  const last = pts[idx]!;
+  const [lx, ly] = xy(last[0], last[1]);
+
+  const yTicks = [0, 0.25, 0.5, 0.75, 1].map((f) => yLo + f * (yHi - yLo));
+
+  const [x0] = xy(pts[0]![0], pts[0]![1]);
+  const [xN] = xy(pts[pts.length - 1]![0], pts[pts.length - 1]![1]);
+  const yBottom = padT + innerH;
+  const areaPath = `${linePath} L${xN.toFixed(2)} ${yBottom.toFixed(2)} L${x0.toFixed(2)} ${yBottom.toFixed(2)} Z`;
+
+  return (
+    <svg width={width} height={height} style={{ display: "block" }}>
+      <defs>
+        <linearGradient id="crashFill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#ff5a5a" stopOpacity="0.45" />
+          <stop offset="100%" stopColor="#ff5a5a" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      {yTicks.map((v, i) => {
+        const Y = padT + (1 - (v - yLo) / (yHi - yLo)) * innerH;
+        return (
+          <g key={i}>
+            <line x1={padL} y1={Y} x2={padL + innerW} y2={Y} stroke="rgba(255,255,255,0.06)" strokeWidth={1} />
+            <text
+              x={padL - 12}
+              y={Y + 4}
+              fill="rgba(255,255,255,0.55)"
+              fontSize={14}
+              textAnchor="end"
+              fontFamily="ui-monospace, SFMono-Regular, monospace"
+            >
+              {`$${v.toFixed(2)}`}
+            </text>
+          </g>
+        );
+      })}
+      <path d={areaPath} fill="url(#crashFill)" opacity={Math.min(1, drawClamped * 1.4)} />
+      <path
+        d={linePath}
+        fill="none"
+        stroke="#ff7a7a"
+        strokeWidth={3}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        pathLength={1}
+        strokeDasharray={1}
+        strokeDashoffset={1 - drawClamped}
+      />
+      {drawClamped > 0.05 && (
+        <g>
+          <line
+            x1={lx}
+            y1={padT}
+            x2={lx}
+            y2={padT + innerH}
+            stroke="rgba(255,122,122,0.4)"
+            strokeDasharray="4 4"
+            strokeWidth={1}
+          />
+          <circle cx={lx} cy={ly} r={6} fill="#ff7a7a" stroke="#0a0a0a" strokeWidth={2} />
+        </g>
+      )}
+    </svg>
+  );
+};
+
+const ChatBubble: React.FC<{
+  variant: "outgoing" | "incoming";
+  width: number;
+  children: React.ReactNode;
+  style?: React.CSSProperties;
+}> = ({ variant, width, children, style }) => {
+  const isOut = variant === "outgoing";
+  return (
+    <div
+      style={{
+        width,
+        background: isOut
+          ? "linear-gradient(180deg, rgba(127,110,226,0.96), rgba(110,92,215,0.96))"
+          : "linear-gradient(180deg, rgba(20,21,26,0.96), rgba(12,13,17,0.96))",
+        borderRadius: 36,
+        borderBottomRightRadius: isOut ? 36 : 12,
+        borderBottomLeftRadius: isOut ? 12 : 36,
+        boxShadow: isOut
+          ? "0 12px 50px rgba(60,40,140,0.45)"
+          : "0 14px 60px rgba(0,0,0,0.55)",
+        color: "#fff",
+        padding: "26px 32px 18px",
+        boxSizing: "border-box",
+        ...style,
+      }}
+    >
+      {children}
+    </div>
+  );
+};
+
+const TgStamp: React.FC<{ tone?: "light" | "dim" }> = ({ tone = "light" }) => (
+  <span
+    style={{
+      color: tone === "light" ? "rgba(255,255,255,0.78)" : "rgba(255,255,255,0.55)",
+      fontSize: 16,
+      letterSpacing: "0.02em",
+      fontFamily: "ui-monospace, SFMono-Regular, monospace",
+    }}
+  >
+    15:07 ✓✓
+  </span>
+);
 
 function buildScene01Proxies() {
   const init: Record<string, Record<string, number>> = {
-    phraseA: { opacity: 1 },
-    phraseB: { opacity: 0 },
+    bubbleA: { opacity: 0, y: 30 },
+    bubbleB: { opacity: 0, y: 30 },
+    tilesDraw: { v: 0 },
+    crashDraw: { v: 0 },
   };
-  SCENE01_A.forEach((w, i) => { init[`a_${i}`] = { opacity: i === 0 ? 1 : 0, y: i === 0 ? 0 : 15 }; });
-  SCENE01_B.forEach((_, i) => { init[`b_${i}`] = { opacity: 0, y: 15 }; });
+  SCENE01_A.forEach((_, i) => { init[`a_${i}`] = { opacity: 0, y: 14 }; });
+  SCENE01_B.forEach((_, i) => { init[`b_${i}`] = { opacity: 0, y: 14 }; });
   return init;
 }
 
 export const Scene01_Intro: React.FC = () => {
   const s = useGsapProxy(
     (tl, p) => {
-      // Phrase A — words stagger in 0.0s → 0.45s
+      tl.to(p.bubbleA, { opacity: 1, y: 0, duration: 0.28, ease: "power3.out" }, 0.0);
+      tl.to(p.tilesDraw, { v: 1, duration: 0.55, ease: "power2.out" }, 0.16);
       SCENE01_A.forEach((_, i) => {
-        if (i === 0) return; // first word visible at start
-        tl.to(p[`a_${i}`], { opacity: 1, y: 0, duration: 0.15, ease: "power2.out" }, i * 0.15);
+        tl.to(p[`a_${i}`]!, { opacity: 1, y: 0, duration: 0.18, ease: "power2.out" }, 0.30 + i * 0.06);
       });
-      // Phrase A fades out
-      tl.to(p.phraseA, { opacity: 0, duration: 0.18, ease: "power2.in" }, 0.75);
-      // Phrase B fades in
-      tl.to(p.phraseB, { opacity: 1, duration: 0.15, ease: "power2.out" }, 0.85);
-      // Phrase B — words stagger in 0.85s → 1.69s
+      tl.to(p.bubbleB, { opacity: 1, y: 0, duration: 0.28, ease: "power3.out" }, 0.55);
+      tl.to(p.crashDraw, { v: 1, duration: 0.85, ease: "power2.out" }, 0.65);
       SCENE01_B.forEach((_, i) => {
-        tl.to(p[`b_${i}`], { opacity: 1, y: 0, duration: 0.14, ease: "power2.out" }, 0.85 + i * 0.12);
+        tl.to(p[`b_${i}`]!, { opacity: 1, y: 0, duration: 0.16, ease: "power2.out" }, 0.95 + i * 0.05);
       });
     },
     buildScene01Proxies(),
   );
 
-  const phraseStyle: React.CSSProperties = {
-    position: "absolute",
-    top: "50%",
-    left: "50%",
-    transform: "translate(-50%, -50%)",
-    display: "flex",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    gap: "0 32px",
-    maxWidth: "92%",
-    whiteSpace: "nowrap",
-  };
+  const last = CRASH.points[CRASH.points.length - 1]!;
+  const firstD = new Date(CRASH_T0_UNIX * 1000);
+  const lastD = new Date((CRASH_T0_UNIX + last[0]) * 1000);
+  const fmtDate = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const startV = CRASH.points[0]![1];
+  const endV = last[1];
+  const pctChange = ((endV - startV) / startV) * 100;
 
   return (
     <AbsoluteFill>
       <BlueGradient />
-      <div style={{ ...phraseStyle, opacity: s.phraseA.opacity }}>
-        {SCENE01_A.map((word, i) => {
-          const proxy = s[`a_${i}`];
-          return (
-            <span
-              key={word + i}
+      <AbsoluteFill style={{ background: "rgba(0,0,0,0.18)" }} />
+
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 28,
+        }}
+      >
+        {/* TOP — vision */}
+        <div style={{ opacity: s.bubbleA.opacity, transform: `translateY(${s.bubbleA.y}px)` }}>
+          <ChatBubble variant="outgoing" width={1180}>
+            <div style={{ display: "flex", gap: 14, marginBottom: 18 }}>
+              {VISION_TILES.map(({ key, label, color }) => (
+                <div
+                  key={key}
+                  style={{
+                    width: 268,
+                    background: "rgba(255,255,255,0.10)",
+                    borderRadius: 16,
+                    padding: 12,
+                    border: "1px solid rgba(255,255,255,0.10)",
+                    boxSizing: "border-box",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: 6,
+                    }}
+                  >
+                    <span style={{ fontFamily, fontSize: 15, fontWeight: 600, letterSpacing: "-0.01em" }}>
+                      {label}
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: "ui-monospace, SFMono-Regular, monospace",
+                        fontSize: 11,
+                        color: "rgba(255,255,255,0.6)",
+                      }}
+                    >
+                      twitch
+                    </span>
+                  </div>
+                  <Sparkline
+                    pts={VISION[key].points}
+                    width={244}
+                    height={64}
+                    stroke={color}
+                    draw={s.tilesDraw.v}
+                  />
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: "flex", gap: 18, alignItems: "baseline", flexWrap: "wrap" }}>
+              {SCENE01_A.map((word, i) => {
+                const proxy = s[`a_${i}`]!;
+                return (
+                  <span
+                    key={word + i}
+                    style={{
+                      ...baseText,
+                      fontSize: 56,
+                      color: "#fff",
+                      opacity: proxy.opacity,
+                      transform: `translateY(${proxy.y}px)`,
+                      letterSpacing: "-0.01em",
+                    }}
+                  >
+                    {word}
+                  </span>
+                );
+              })}
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+              <TgStamp tone="light" />
+            </div>
+          </ChatBubble>
+        </div>
+
+        {/* BOTTOM — crash */}
+        <div style={{ opacity: s.bubbleB.opacity, transform: `translateY(${s.bubbleB.y}px)` }}>
+          <ChatBubble variant="incoming" width={1180}>
+            <div
               style={{
-                ...baseText,
-                fontSize: 150,
-                color: "#fff",
-                opacity: proxy.opacity,
-                transform: `translateY(${proxy.y}px)`,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 8,
               }}
             >
-              {word}
-            </span>
-          );
-        })}
-      </div>
-      <div style={{ ...phraseStyle, opacity: s.phraseB.opacity }}>
-        {SCENE01_B.map((word, i) => {
-          const proxy = s[`b_${i}`];
-          return (
-            <span
-              key={word + i}
+              <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                <span
+                  style={{
+                    fontFamily,
+                    fontSize: 16,
+                    fontWeight: 700,
+                    letterSpacing: "0.02em",
+                    background: "rgba(255,90,90,0.16)",
+                    color: "#ff8a8a",
+                    padding: "4px 10px",
+                    borderRadius: 999,
+                  }}
+                >
+                  TRUMP / USDT
+                </span>
+                <span style={{ fontFamily, fontSize: 16, color: "#ff7a7a", fontWeight: 700 }}>
+                  {pctChange.toFixed(1)}%
+                </span>
+              </div>
+              <span
+                style={{
+                  fontFamily: "ui-monospace, SFMono-Regular, monospace",
+                  fontSize: 14,
+                  color: "rgba(255,255,255,0.55)",
+                }}
+              >
+                {`${fmtDate(firstD)} – ${fmtDate(lastD)}`}
+              </span>
+            </div>
+
+            <CrashChart pts={CRASH.points} width={1116} height={244} draw={s.crashDraw.v} />
+
+            <div
               style={{
-                ...baseText,
-                fontSize: 130,
-                color: "#fff",
-                opacity: proxy.opacity,
-                transform: `translateY(${proxy.y}px)`,
+                display: "flex",
+                gap: 18,
+                alignItems: "baseline",
+                flexWrap: "wrap",
+                marginTop: 10,
               }}
             >
-              {word}
-            </span>
-          );
-        })}
+              {SCENE01_B.map((word, i) => {
+                const proxy = s[`b_${i}`]!;
+                return (
+                  <span
+                    key={word + i}
+                    style={{
+                      ...baseText,
+                      fontSize: 44,
+                      color: "#fff",
+                      opacity: proxy.opacity,
+                      transform: `translateY(${proxy.y}px)`,
+                      letterSpacing: "-0.01em",
+                    }}
+                  >
+                    {word}
+                  </span>
+                );
+              })}
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 6 }}>
+              <TgStamp tone="dim" />
+            </div>
+          </ChatBubble>
+        </div>
       </div>
     </AbsoluteFill>
   );
