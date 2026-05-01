@@ -69,6 +69,24 @@ This copies `envs/{env}/.env` → `frontend/.env.local` and syncs 3 deployment J
 After deploying contracts locally, `start.sh` syncs deployment JSONs back to `envs/local/`.
 After deploying on testnet, `testnet.sh` syncs back to `envs/testnet/`.
 
+## Netcup migration (hybrid state)
+
+The infra is mid-cutover from Hetzner to Netcup. All three Netcup boxes sit in
+Nürnberg (AS197540, 159.195.x), inter-VPS RTT 0.4–0.6 ms — public IPs play the
+role the Hetzner private net used to. No more `10.2.0.0/24`. No bastion. UFW
+replaces the custom `iptables.service` units. NIC is `eth0`, not `enp7s0`.
+
+| Role | Old (Hetzner) | New (Netcup) | State |
+|------|---------------|--------------|-------|
+| VPS 1 backend | 116.203.156.98 | 159.195.78.238 | staged, pending cutover |
+| VPS 2 chain + DB | 142.132.164.24 | 159.195.79.153 | staged, pending cutover |
+| VPS 3 frontend + Solana | 178.104.243.94 | 159.195.77.160 | live |
+
+Canonical SSH aliases (`index-maker/prod/be|postgres|fe`, `vps3`) **still point
+at Hetzner** until VPS 1 + VPS 2 cutover. Use `vps1-new`, `vps2-new`, `vps3-new`
+for direct access to the new boxes (root@159.195.x:3189). Full migration runbook
+at `scripts/cutover-netcup.md`. Pre/post-cutover IP details in `vps.md`.
+
 ## Network
 | Network | Chain ID | RPC | Collateral |
 |---------|----------|-----|------------|
