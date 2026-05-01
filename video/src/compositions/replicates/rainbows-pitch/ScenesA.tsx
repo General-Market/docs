@@ -3,7 +3,7 @@ import { AbsoluteFill } from "remotion";
 import { loadFont } from "@remotion/google-fonts/Inter";
 import { LightGradient, DarkBg, SolidBlue, GridOverlay } from "./backgrounds";
 import { useGsapProxy } from "./gsapUtils";
-import { CRASH, CRASH_T0, VISION } from "./scene01-data";
+import { SERIES } from "./scene01-data";
 
 const { fontFamily } = loadFont("normal", { subsets: ["latin"], weights: ["400", "700", "800"] });
 const BLUE = "#0040FF";
@@ -22,47 +22,106 @@ const baseText: React.CSSProperties = {
 
 /* ═══════════════════════════════════════════════════════
    Scene 01 — Intro  (48 frames = 2s @ 24fps)
-   TradingView-lite chrome. Phrase A rides on a 2×2 watchlist
-   of four real Vision categories (twitch / steam / lichess /
-   nyc-mta). Phrase B rides on a full-bleed TRUMPUSDT
-   candlestick chart. Both pulled from VPS 1 Postgres,
-   continuous over a 7-day window.
+   TradingView-lite chrome. Two 2×2 candlestick panels swap
+   under the existing word-stagger.
+     Phrase A → vision watchlist  (4 popular categories)
+     Phrase B → crash watchlist   (PEPE / BTC / BTC-put / PF rug)
+   Real OHLC from VPS 1 Postgres; PUT chart synthesized from
+   the BTC series.
    ═══════════════════════════════════════════════════════ */
 
 const SCENE01_A = ["Trade", "market", "like", "this"] as const;
 const SCENE01_B = ["Is", "simpler", "than", "trading", "market", "like", "this"] as const;
 
-// Four distinct Vision categories — most popular asset in each.
-const VISION_QUADS = [
+type Quad = {
+  key: keyof typeof SERIES;
+  symbol: string;
+  category: string;
+  logoBg: string;
+  logoFg: string;
+  logoChar: string;
+  fmt: (v: number) => string;
+};
+
+// Phase A — 4 distinct Vision categories, most popular asset in each.
+const VISION_QUADS: ReadonlyArray<Quad> = [
   {
     key: "twitch_justchat",
-    label: "TWITCH:JUST_CHATTING",
+    symbol: "TWITCH:JUST_CHATTING",
     category: "Streaming",
-    color: "#b19cd9",
-    fmt: (v: number) => `${(v / 1000).toFixed(0)}K`,
+    logoBg: "#9146ff",
+    logoFg: "#fff",
+    logoChar: "T",
+    fmt: (v) => `${(v / 1000).toFixed(0)}K`,
   },
   {
     key: "steam_cs2",
-    label: "STEAM:CS2",
+    symbol: "STEAM:CS2",
     category: "Gaming",
-    color: "#6aa9ff",
-    fmt: (v: number) => `${(v / 1000).toFixed(0)}K`,
+    logoBg: "#1b2838",
+    logoFg: "#66c0f4",
+    logoChar: "S",
+    fmt: (v) => `${(v / 1000).toFixed(0)}K`,
   },
   {
     key: "lichess_players",
-    label: "LICHESS:TOURNAMENTS",
+    symbol: "LICHESS:TOURNAMENTS",
     category: "Chess",
-    color: "#f7a35c",
-    fmt: (v: number) => `${v.toFixed(0)}`,
+    logoBg: "#161512",
+    logoFg: "#fff",
+    logoChar: "♞",
+    fmt: (v) => `${v.toFixed(0)}`,
   },
   {
     key: "mta_nyc",
-    label: "MTA:NYC_TRIPS",
+    symbol: "MTA:NYC_TRIPS",
     category: "Transit",
-    color: "#74e0a3",
-    fmt: (v: number) => `${v.toFixed(0)}`,
+    logoBg: "#ffce00",
+    logoFg: "#000",
+    logoChar: "M",
+    fmt: (v) => `${v.toFixed(0)}`,
   },
-] as const;
+];
+
+// Phase B — 4 crypto/scam markets.
+const CRASH_QUADS: ReadonlyArray<Quad> = [
+  {
+    key: "pepe",
+    symbol: "BITGET:PEPEUSDT",
+    category: "Memecoin",
+    logoBg: "#4d9b41",
+    logoFg: "#fff",
+    logoChar: "🐸",
+    fmt: (v) => `$${v.toFixed(8)}`,
+  },
+  {
+    key: "btc_put",
+    symbol: "DERIBIT:BTC-PUT-65K",
+    category: "Option",
+    logoBg: "#1f2937",
+    logoFg: "#ef5350",
+    logoChar: "P",
+    fmt: (v) => `$${v.toFixed(0)}`,
+  },
+  {
+    key: "btc",
+    symbol: "BITGET:BTCUSDT",
+    category: "Crypto",
+    logoBg: "#f7931a",
+    logoFg: "#fff",
+    logoChar: "₿",
+    fmt: (v) => `$${v.toLocaleString("en-US", { maximumFractionDigits: 0 })}`,
+  },
+  {
+    key: "pf_mex",
+    symbol: "PUMPFUN:MEXICANUNC",
+    category: "Rug-pull",
+    logoBg: "#ff67c5",
+    logoFg: "#fff",
+    logoChar: "💊",
+    fmt: (v) => `$${v.toFixed(7)}`,
+  },
+];
 
 const TV_BG = "#0d1117";
 const TV_PANEL = "#131722";
@@ -216,58 +275,74 @@ const TVAxes: React.FC<{
   );
 };
 
-// One quadrant of the 2×2 vision watchlist.
-const TVMiniPanel: React.FC<{
+// Round logo with a brand color + character/emoji.
+const Logo: React.FC<{ bg: string; fg: string; char: string; size?: number }> = ({
+  bg,
+  fg,
+  char,
+  size = 32,
+}) => (
+  <div
+    style={{
+      width: size,
+      height: size,
+      borderRadius: "50%",
+      background: bg,
+      color: fg,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontFamily,
+      fontSize: size * 0.55,
+      fontWeight: 800,
+      letterSpacing: "-0.02em",
+      flexShrink: 0,
+      boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
+    }}
+  >
+    {char}
+  </div>
+);
+
+// One TradingView quadrant: header (logo + symbol + price + %) + candlestick chart.
+const TVQuadPanel: React.FC<{
   width: number;
   height: number;
-  label: string;
-  category: string;
-  color: string;
-  pts: readonly (readonly [number, number])[];
-  fmt: (v: number) => string;
+  quad: Quad;
+  candles: readonly (readonly [number, number, number, number, number])[];
   draw: number;
-}> = ({ width, height, label, category, color, pts, fmt, draw }) => {
-  const headerH = 56;
-  const padR = 76;
+}> = ({ width, height, quad, candles, draw }) => {
+  const headerH = 64;
+  const padR = 78;
   const padT = headerH + 8;
   const padB = 28;
   const innerW = width - padR;
   const innerH = height - padT - padB;
-  const ys = pts.map((p) => p[1]);
-  const yMin = Math.min(...ys);
-  const yMax = Math.max(...ys);
-  const yPad = (yMax - yMin) * 0.1 || 1;
+
+  let yMin = Infinity;
+  let yMax = -Infinity;
+  for (const [, , h, l] of candles) {
+    if (l < yMin) yMin = l;
+    if (h > yMax) yMax = h;
+  }
+  const yPad = (yMax - yMin) * 0.10 || 1;
   const yLo = yMin - yPad;
   const yHi = yMax + yPad;
-  const tMin = pts[0]![0];
-  const tMax = pts[pts.length - 1]![0];
-
-  const xy = (t: number, y: number): readonly [number, number] => {
-    const X = ((t - tMin) / (tMax - tMin)) * innerW;
-    const Y = padT + (1 - (y - yLo) / (yHi - yLo)) * innerH;
-    return [X, Y];
-  };
-
-  const linePath = pts
-    .map(([t, y], i) => {
-      const [X, Y] = xy(t, y);
-      return `${i === 0 ? "M" : "L"}${X.toFixed(2)} ${Y.toFixed(2)}`;
-    })
-    .join(" ");
-
-  const [x0] = xy(pts[0]![0], pts[0]![1]);
-  const [xN] = xy(pts[pts.length - 1]![0], pts[pts.length - 1]![1]);
-  const yBottom = padT + innerH;
-  const areaPath = `${linePath} L${xN.toFixed(2)} ${yBottom.toFixed(2)} L${x0.toFixed(2)} ${yBottom.toFixed(2)} Z`;
+  const tMin = candles[0]![0];
+  const tMax = candles[candles.length - 1]![0];
+  const xCenter = (t: number) => ((t - tMin) / (tMax - tMin)) * innerW;
+  const yPx = (v: number) => padT + (1 - (v - yLo) / (yHi - yLo)) * innerH;
 
   const drawClamped = Math.max(0, Math.min(1, draw));
-  const startV = pts[0]![1];
-  const endV = pts[pts.length - 1]![1];
+  const visible = Math.max(1, Math.floor(candles.length * drawClamped));
+  const cw = Math.max(2, (innerW / candles.length) * 0.66);
+
+  const startV = candles[0]![4];
+  const endV = candles[candles.length - 1]![4];
   const pct = ((endV - startV) / startV) * 100;
   const pctColor = pct >= 0 ? TV_GREEN : TV_RED;
 
-  const xLabels = [0, 0.5, 1].map((f) => ({ pos: f, label: `${Math.round((1 - f) * 7)}d` }));
-  const fillId = `mini-${label.replace(/[^a-z0-9]/gi, "")}`;
+  const xLabels = [0, 0.5, 1].map((f) => ({ pos: f, label: f === 0 ? "start" : f === 1 ? "now" : "·" }));
 
   return (
     <div
@@ -288,143 +363,72 @@ const TVMiniPanel: React.FC<{
           left: 0,
           right: 0,
           height: headerH,
-          padding: "10px 16px 8px",
+          padding: "12px 18px 8px",
           display: "flex",
-          flexDirection: "column",
-          gap: 4,
-          zIndex: 2,
+          alignItems: "center",
+          gap: 12,
+          zIndex: 3,
+          background: "linear-gradient(180deg, rgba(13,17,23,0.72) 0%, rgba(13,17,23,0) 100%)",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span
-            style={{
-              padding: "3px 8px",
-              fontSize: 11,
-              fontFamily: MONO,
-              fontWeight: 700,
-              letterSpacing: "0.06em",
-              background: `${color}22`,
-              color,
-              borderRadius: 4,
-            }}
-          >
-            {category.toUpperCase()}
-          </span>
-          <span
-            style={{
-              fontFamily: MONO,
-              fontSize: 13,
-              fontWeight: 700,
-              color: "#fff",
-              letterSpacing: "0.02em",
-            }}
-          >
-            {label}
-          </span>
-        </div>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-          <span style={{ fontFamily: MONO, fontSize: 22, fontWeight: 700, color: "#fff" }}>
-            {fmt(endV)}
-          </span>
-          <span style={{ fontFamily: MONO, fontSize: 14, fontWeight: 700, color: pctColor }}>
-            {pct >= 0 ? "+" : ""}
-            {pct.toFixed(2)}%
-          </span>
+        <Logo bg={quad.logoBg} fg={quad.logoFg} char={quad.logoChar} size={36} />
+        <div style={{ display: "flex", flexDirection: "column", gap: 3, flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span
+              style={{
+                fontFamily: MONO,
+                fontSize: 14,
+                fontWeight: 700,
+                color: "#fff",
+                letterSpacing: "0.02em",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              {quad.symbol}
+            </span>
+            <span
+              style={{
+                padding: "2px 7px",
+                fontSize: 10,
+                fontFamily: MONO,
+                fontWeight: 700,
+                letterSpacing: "0.08em",
+                background: `${quad.logoBg}33`,
+                color: quad.logoFg === "#fff" ? "#fff" : quad.logoBg,
+                borderRadius: 3,
+                border: `1px solid ${quad.logoBg}55`,
+              }}
+            >
+              {quad.category.toUpperCase()}
+            </span>
+          </div>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+            <span style={{ fontFamily: MONO, fontSize: 22, fontWeight: 800, color: "#fff" }}>
+              {quad.fmt(endV)}
+            </span>
+            <span style={{ fontFamily: MONO, fontSize: 14, fontWeight: 700, color: pctColor }}>
+              {pct >= 0 ? "+" : ""}
+              {pct.toFixed(2)}%
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* axes + watermark */}
+      {/* gridlines + axis */}
       <TVAxes
         width={width}
         height={height}
         padT={padT}
         yLo={yLo}
         yHi={yHi}
-        yFmt={fmt}
+        yFmt={quad.fmt}
         xLabels={xLabels}
         yAxisWidth={padR}
       />
 
-      {/* line + area */}
-      <svg width={width} height={height} style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
-        <defs>
-          <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity="0.35" />
-            <stop offset="100%" stopColor={color} stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        <path d={areaPath} fill={`url(#${fillId})`} opacity={Math.min(1, drawClamped * 1.4)} />
-        <path
-          d={linePath}
-          fill="none"
-          stroke={color}
-          strokeWidth={2.4}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          pathLength={1}
-          strokeDasharray={1}
-          strokeDashoffset={1 - drawClamped}
-          style={{ filter: `drop-shadow(0 0 8px ${color}55)` }}
-        />
-      </svg>
-    </div>
-  );
-};
-
-// Full-bleed candlestick chart (TRUMPUSDT crash).
-const TVCandleChart: React.FC<{
-  width: number;
-  height: number;
-  candles: readonly (readonly [number, number, number, number, number])[];
-  draw: number;
-  t0: number;
-}> = ({ width, height, candles, draw, t0 }) => {
-  const padR = 110;
-  const padT = 80;
-  const padB = 40;
-  const innerW = width - padR;
-  const innerH = height - padT - padB;
-  let yMin = Infinity;
-  let yMax = -Infinity;
-  for (const [, , h, l] of candles) {
-    if (l < yMin) yMin = l;
-    if (h > yMax) yMax = h;
-  }
-  const yPad = (yMax - yMin) * 0.08;
-  const yLo = yMin - yPad;
-  const yHi = yMax + yPad;
-  const tMin = candles[0]![0];
-  const tMax = candles[candles.length - 1]![0];
-  const xCenter = (t: number) => ((t - tMin) / (tMax - tMin)) * innerW;
-  const yPx = (v: number) => padT + (1 - (v - yLo) / (yHi - yLo)) * innerH;
-
-  const drawClamped = Math.max(0, Math.min(1, draw));
-  const visible = Math.max(1, Math.floor(candles.length * drawClamped));
-  const cw = (innerW / candles.length) * 0.66;
-
-  const xLabels = [0, 0.25, 0.5, 0.75, 1].map((f) => {
-    const ts = t0 + tMin + f * (tMax - tMin);
-    const d = new Date(ts * 1000);
-    return { pos: f, label: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }) };
-  });
-
-  const lastVis = candles[Math.min(visible - 1, candles.length - 1)]!;
-  const lastClose = lastVis[4];
-  const lastY = yPx(lastClose);
-
-  return (
-    <div style={{ position: "relative", width, height }}>
-      <TVAxes
-        width={width}
-        height={height}
-        padT={padT}
-        yLo={yLo}
-        yHi={yHi}
-        yFmt={(v) => `$${v.toFixed(3)}`}
-        xLabels={xLabels}
-        watermark="TRUMP/USDT · 2H"
-        yAxisWidth={padR}
-      />
+      {/* candlesticks */}
       <svg width={width} height={height} style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
         {candles.slice(0, visible).map(([t, o, h, l, c], i) => {
           const xc = xCenter(t);
@@ -437,34 +441,11 @@ const TVCandleChart: React.FC<{
           const bodyH = Math.max(1, bodyBot - bodyTop);
           return (
             <g key={i}>
-              <line x1={xc} y1={wickTop} x2={xc} y2={wickBot} stroke={color} strokeWidth={1.2} />
+              <line x1={xc} y1={wickTop} x2={xc} y2={wickBot} stroke={color} strokeWidth={1.1} />
               <rect x={xc - cw / 2} y={bodyTop} width={cw} height={bodyH} fill={color} />
             </g>
           );
         })}
-        {/* live price pin */}
-        <line
-          x1={0}
-          y1={lastY}
-          x2={innerW}
-          y2={lastY}
-          stroke={TV_RED}
-          strokeWidth={1}
-          strokeDasharray="4 4"
-          opacity={0.6}
-        />
-        <rect x={innerW + 4} y={lastY - 12} width={padR - 8} height={24} fill={TV_RED} rx={3} />
-        <text
-          x={innerW + padR / 2}
-          y={lastY + 5}
-          fill="#fff"
-          fontSize={13}
-          fontWeight={700}
-          textAnchor="middle"
-          fontFamily={MONO}
-        >
-          {`$${lastClose.toFixed(3)}`}
-        </text>
       </svg>
     </div>
   );
@@ -481,6 +462,41 @@ function buildScene01Proxies() {
   SCENE01_B.forEach((_, i) => { init[`b_${i}`] = { opacity: 0, y: 15 }; });
   return init;
 }
+
+const TOPBAR_H = 56;
+const PANEL_W = 1920 / 2;
+const PANEL_H = (1080 - TOPBAR_H) / 2;
+
+const QuadGrid: React.FC<{
+  quads: ReadonlyArray<Quad>;
+  draw: number;
+}> = ({ quads, draw }) => (
+  <div
+    style={{
+      position: "absolute",
+      top: TOPBAR_H,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      display: "grid",
+      gridTemplateColumns: "1fr 1fr",
+      gridTemplateRows: "1fr 1fr",
+      gap: 1,
+      background: TV_LINE,
+    }}
+  >
+    {quads.map((q) => (
+      <TVQuadPanel
+        key={q.key as string}
+        width={PANEL_W}
+        height={PANEL_H}
+        quad={q}
+        candles={SERIES[q.key].candles}
+        draw={draw}
+      />
+    ))}
+  </div>
+);
 
 export const Scene01_Intro: React.FC = () => {
   const s = useGsapProxy(
@@ -515,15 +531,6 @@ export const Scene01_Intro: React.FC = () => {
     pointerEvents: "none",
   };
 
-  const lastC = CRASH.candles[CRASH.candles.length - 1]!;
-  const startV = CRASH.candles[0]![1];
-  const pctChange = ((lastC[4] - startV) / startV) * 100;
-
-  // 2×2 watchlist geometry — under the 56px topbar.
-  const TOPBAR_H = 56;
-  const PANEL_W = 1920 / 2;
-  const PANEL_H = (1080 - TOPBAR_H) / 2;
-
   return (
     <AbsoluteFill style={{ background: TV_BG }}>
       {/* ── Vision panel — phrase A ────────────────────────── */}
@@ -534,63 +541,25 @@ export const Scene01_Intro: React.FC = () => {
           metaColor={TV_TEXT}
           activeTf="1H"
         />
-        <div
-          style={{
-            position: "absolute",
-            top: TOPBAR_H,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gridTemplateRows: "1fr 1fr",
-            gap: 1,
-            background: TV_LINE,
-          }}
-        >
-          {VISION_QUADS.map((q) => {
-            const series = VISION[q.key];
-            return (
-              <TVMiniPanel
-                key={q.key}
-                width={PANEL_W}
-                height={PANEL_H}
-                label={q.label}
-                category={q.category}
-                color={q.color}
-                pts={series.points}
-                fmt={q.fmt}
-                draw={s.tilesDraw.v}
-              />
-            );
-          })}
-        </div>
+        <QuadGrid quads={VISION_QUADS} draw={s.tilesDraw.v} />
       </div>
 
       {/* ── Crash panel — phrase B ─────────────────────────── */}
       <div style={{ position: "absolute", inset: 0, opacity: s.phraseB.opacity }}>
         <TVTopBar
-          symbol="BITGET:TRUMPUSDT"
-          meta={`${pctChange >= 0 ? "+" : ""}${pctChange.toFixed(2)}%`}
-          metaColor={pctChange < 0 ? TV_RED : TV_GREEN}
+          symbol="CRYPTO:WATCHLIST"
+          meta="4 markets · live"
+          metaColor={TV_RED}
           activeTf="1H"
         />
-        <div style={{ position: "absolute", top: TOPBAR_H, left: 0, right: 0, bottom: 0, background: TV_PANEL }}>
-          <TVCandleChart
-            width={1920}
-            height={1080 - TOPBAR_H}
-            candles={CRASH.candles}
-            draw={s.crashDraw.v}
-            t0={CRASH_T0}
-          />
-        </div>
+        <QuadGrid quads={CRASH_QUADS} draw={s.crashDraw.v} />
       </div>
 
       {/* ── Scrim for text legibility ──────────────────────── */}
       <AbsoluteFill
         style={{
           background:
-            "radial-gradient(ellipse 70% 45% at 50% 50%, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0) 70%)",
+            "radial-gradient(ellipse 65% 40% at 50% 50%, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0) 70%)",
           pointerEvents: "none",
         }}
       />
