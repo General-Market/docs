@@ -16,12 +16,14 @@ import { SlideRoadmap } from "./slides/SlideRoadmap";
 import { Slide10Team } from "./slides/Slide10Team";
 import { Slide11Ask } from "./slides/Slide11Ask";
 
-const SLIDES: Array<{ id: string; component: React.FC }> = [
+type SlideEntry = { id: string; component: React.FC; frames?: number };
+
+const SLIDES: SlideEntry[] = [
   { id: "01-Title", component: Slide01Title },
   { id: "02-Problem", component: Slide02Problem },
   { id: "03-Insight", component: Slide03Insight },
   { id: "04-WhyNow", component: Slide04WhyNow },
-  { id: "05-Market", component: Slide05Market },
+  { id: "05-Market", component: Slide05Market, frames: 90 },
   { id: "06-ExitComps", component: SlideExitComps },
   { id: "07-Distribution", component: Slide06Distribution },
   { id: "08-Competition", component: Slide07Competition },
@@ -33,12 +35,18 @@ const SLIDES: Array<{ id: string; component: React.FC }> = [
   { id: "14-Ask", component: Slide11Ask },
 ];
 
+const slideFrames = (s: SlideEntry) => s.frames ?? SLIDE_FRAMES;
+
 export const PitchComposition: React.FC = () => {
   return (
     <Series>
-      {SLIDES.map(({ id, component: Slide }) => (
-        <Series.Sequence key={id} durationInFrames={SLIDE_FRAMES} name={id}>
-          <Slide />
+      {SLIDES.map((slide) => (
+        <Series.Sequence
+          key={slide.id}
+          durationInFrames={slideFrames(slide)}
+          name={slide.id}
+        >
+          <slide.component />
         </Series.Sequence>
       ))}
     </Series>
@@ -48,16 +56,16 @@ export const PitchComposition: React.FC = () => {
 export const pitchMeta = {
   id: "Pitch",
   component: PitchComposition,
-  durationInFrames: SLIDES.length * SLIDE_FRAMES,
+  durationInFrames: SLIDES.reduce((sum, s) => sum + slideFrames(s), 0),
   fps: FPS,
   width: W,
   height: H,
 };
 
-export const pitchSceneMetas = SLIDES.map(({ id, component }) => ({
-  id: `Pitch-${id}`,
-  component,
-  durationInFrames: SLIDE_FRAMES,
+export const pitchSceneMetas = SLIDES.map((slide) => ({
+  id: `Pitch-${slide.id}`,
+  component: slide.component,
+  durationInFrames: slideFrames(slide),
   fps: FPS,
   width: W,
   height: H,
