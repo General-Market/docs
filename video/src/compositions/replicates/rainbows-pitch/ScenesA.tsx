@@ -1,9 +1,9 @@
 import React from "react";
 import { AbsoluteFill } from "remotion";
 import { loadFont } from "@remotion/google-fonts/Inter";
-import { BlueGradient, LightGradient, DarkBg, SolidBlue, GridOverlay } from "./backgrounds";
+import { LightGradient, DarkBg, SolidBlue, GridOverlay } from "./backgrounds";
 import { useGsapProxy } from "./gsapUtils";
-import { CRASH, VISION } from "./scene01-data";
+import { CRASH, CRASH_T0, VISION } from "./scene01-data";
 
 const { fontFamily } = loadFont("normal", { subsets: ["latin"], weights: ["400", "700", "800"] });
 const BLUE = "#0040FF";
@@ -22,101 +22,228 @@ const baseText: React.CSSProperties = {
 
 /* ═══════════════════════════════════════════════════════
    Scene 01 — Intro  (48 frames = 2s @ 24fps)
-   "Trade market like this." cross-fades to
-   "Is simpler than trading market like this."
-   Each phrase carries a chart: vision sparklines for the
-   first "this", a TRUMPUSDT crash line for the second.
-   Real data — VPS 1 Postgres index_prices.{market_prices,klines}.
+   TradingView-lite chrome. Phrase A rides on a 2×2 watchlist
+   of four real Vision categories (twitch / steam / lichess /
+   nyc-mta). Phrase B rides on a full-bleed TRUMPUSDT
+   candlestick chart. Both pulled from VPS 1 Postgres,
+   continuous over a 7-day window.
    ═══════════════════════════════════════════════════════ */
 
 const SCENE01_A = ["Trade", "market", "like", "this"] as const;
 const SCENE01_B = ["Is", "simpler", "than", "trading", "market", "like", "this"] as const;
 
-const VISION_TILES = [
-  { key: "xqc", label: "xQc", color: "#74e0a3" },
-  { key: "ishowspeed", label: "Speed", color: "#f7a35c" },
-  { key: "jynxzi", label: "Jynxzi", color: "#6aa9ff" },
-  { key: "caedrel", label: "Caedrel", color: "#b19cd9" },
+// Four distinct Vision categories — most popular asset in each.
+const VISION_QUADS = [
+  {
+    key: "twitch_justchat",
+    label: "TWITCH:JUST_CHATTING",
+    category: "Streaming",
+    color: "#b19cd9",
+    fmt: (v: number) => `${(v / 1000).toFixed(0)}K`,
+  },
+  {
+    key: "steam_cs2",
+    label: "STEAM:CS2",
+    category: "Gaming",
+    color: "#6aa9ff",
+    fmt: (v: number) => `${(v / 1000).toFixed(0)}K`,
+  },
+  {
+    key: "lichess_players",
+    label: "LICHESS:TOURNAMENTS",
+    category: "Chess",
+    color: "#f7a35c",
+    fmt: (v: number) => `${v.toFixed(0)}`,
+  },
+  {
+    key: "mta_nyc",
+    label: "MTA:NYC_TRIPS",
+    category: "Transit",
+    color: "#74e0a3",
+    fmt: (v: number) => `${v.toFixed(0)}`,
+  },
 ] as const;
 
+const TV_BG = "#0d1117";
+const TV_PANEL = "#131722";
+const TV_LINE = "rgba(255,255,255,0.06)";
+const TV_TEXT = "rgba(255,255,255,0.55)";
+const TV_TEXT_DIM = "rgba(255,255,255,0.35)";
+const TV_GREEN = "#26a69a";
+const TV_RED = "#ef5350";
+const TIMEFRAMES = ["1m", "5m", "15m", "1H", "4H", "1D", "1W"] as const;
 
-function pathFromPoints(
-  pts: readonly (readonly [number, number])[],
-  w: number,
-  h: number,
-  pad: number,
-): string {
-  if (pts.length < 2) return "";
-  const tMin = pts[0]![0];
-  const tMax = pts[pts.length - 1]![0];
-  let yMin = pts[0]![1];
-  let yMax = pts[0]![1];
-  for (const [, y] of pts) {
-    if (y < yMin) yMin = y;
-    if (y > yMax) yMax = y;
-  }
-  const tRange = tMax - tMin || 1;
-  const yRange = yMax - yMin || 1;
-  const innerW = w - pad * 2;
-  const innerH = h - pad * 2;
-  return pts
-    .map(([t, y], i) => {
-      const X = pad + ((t - tMin) / tRange) * innerW;
-      const Y = pad + (1 - (y - yMin) / yRange) * innerH;
-      return `${i === 0 ? "M" : "L"}${X.toFixed(2)} ${Y.toFixed(2)}`;
-    })
-    .join(" ");
-}
 
-const Sparkline: React.FC<{
-  pts: readonly (readonly [number, number])[];
+const MONO = "ui-monospace, SFMono-Regular, Menlo, monospace";
+
+const TVTopBar: React.FC<{
+  symbol: string;
+  meta: string;
+  metaColor: string;
+  activeTf: string;
+  height?: number;
+}> = ({ symbol, meta, metaColor, activeTf, height = 56 }) => (
+  <div
+    style={{
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      height,
+      background: "rgba(13,17,23,0.96)",
+      borderBottom: `1px solid ${TV_LINE}`,
+      display: "flex",
+      alignItems: "center",
+      padding: "0 28px",
+      gap: 22,
+      zIndex: 4,
+    }}
+  >
+    <span style={{ fontFamily, fontSize: 18, fontWeight: 800, color: "#fff", letterSpacing: "-0.01em" }}>
+      {symbol}
+    </span>
+    <span style={{ fontFamily, fontSize: 15, fontWeight: 700, color: metaColor }}>{meta}</span>
+    <div style={{ marginLeft: 16, display: "flex", gap: 4 }}>
+      {TIMEFRAMES.map((t) => (
+        <span
+          key={t}
+          style={{
+            padding: "6px 12px",
+            fontSize: 13,
+            borderRadius: 4,
+            fontFamily: MONO,
+            background: t === activeTf ? "rgba(255,255,255,0.10)" : "transparent",
+            color: t === activeTf ? "#fff" : TV_TEXT_DIM,
+            fontWeight: t === activeTf ? 700 : 500,
+            letterSpacing: "0.02em",
+          }}
+        >
+          {t}
+        </span>
+      ))}
+    </div>
+    <div
+      style={{
+        marginLeft: "auto",
+        display: "flex",
+        gap: 22,
+        color: TV_TEXT_DIM,
+        fontSize: 13,
+        fontFamily,
+        letterSpacing: "0.01em",
+      }}
+    >
+      <span>Indicators</span>
+      <span>Templates</span>
+      <span>Alert</span>
+      <span>·</span>
+    </div>
+  </div>
+);
+
+// Shared axis chrome (gridlines + labels + watermark).
+const TVAxes: React.FC<{
   width: number;
   height: number;
-  stroke: string;
-  draw: number;
-}> = ({ pts, width, height, stroke, draw }) => {
-  const d = pathFromPoints(pts, width, height, 4);
-  const drawClamped = Math.max(0, Math.min(1, draw));
+  padT: number;
+  yLo: number;
+  yHi: number;
+  yFmt: (v: number) => string;
+  xLabels: ReadonlyArray<{ pos: number; label: string }>;
+  watermark?: string;
+  yAxisWidth?: number;
+}> = ({ width, height, padT, yLo, yHi, yFmt, xLabels, watermark, yAxisWidth = 88 }) => {
+  const padB = 32;
+  const innerW = width - yAxisWidth;
+  const innerH = height - padT - padB;
+  const yTicks = 6;
   return (
-    <svg width={width} height={height} style={{ display: "block" }}>
-      <path
-        d={d}
-        fill="none"
-        stroke={stroke}
-        strokeWidth={2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        pathLength={1}
-        strokeDasharray={1}
-        strokeDashoffset={1 - drawClamped}
-      />
+    <svg width={width} height={height} style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+      {Array.from({ length: yTicks + 1 }).map((_, i) => {
+        const f = i / yTicks;
+        const Y = padT + f * innerH;
+        const v = yHi - f * (yHi - yLo);
+        return (
+          <g key={i}>
+            <line x1={0} y1={Y} x2={innerW} y2={Y} stroke={TV_LINE} strokeWidth={1} />
+            <text
+              x={width - 12}
+              y={Y + 4}
+              fill={TV_TEXT}
+              fontSize={12}
+              textAnchor="end"
+              fontFamily={MONO}
+            >
+              {yFmt(v)}
+            </text>
+          </g>
+        );
+      })}
+      {xLabels.map((xl, i) => {
+        const X = xl.pos * innerW;
+        return (
+          <g key={i}>
+            <line x1={X} y1={padT} x2={X} y2={padT + innerH} stroke={TV_LINE} strokeWidth={1} />
+            <text
+              x={X}
+              y={height - 10}
+              fill={TV_TEXT}
+              fontSize={11}
+              textAnchor="middle"
+              fontFamily={MONO}
+            >
+              {xl.label}
+            </text>
+          </g>
+        );
+      })}
+      {watermark && (
+        <text
+          x={innerW / 2}
+          y={padT + innerH / 2 + 28}
+          fill="rgba(255,255,255,0.04)"
+          fontSize={Math.min(180, Math.floor(innerW / 8))}
+          textAnchor="middle"
+          fontFamily={fontFamily}
+          fontWeight={800}
+          fontStyle="italic"
+          letterSpacing="-0.02em"
+        >
+          {watermark}
+        </text>
+      )}
     </svg>
   );
 };
 
-const CrashChart: React.FC<{
-  pts: readonly (readonly [number, number])[];
+// One quadrant of the 2×2 vision watchlist.
+const TVMiniPanel: React.FC<{
   width: number;
   height: number;
+  label: string;
+  category: string;
+  color: string;
+  pts: readonly (readonly [number, number])[];
+  fmt: (v: number) => string;
   draw: number;
-}> = ({ pts, width, height, draw }) => {
-  const padL = 64;
-  const padR = 24;
-  const padT = 22;
-  const padB = 18;
-  const innerW = width - padL - padR;
+}> = ({ width, height, label, category, color, pts, fmt, draw }) => {
+  const headerH = 56;
+  const padR = 76;
+  const padT = headerH + 8;
+  const padB = 28;
+  const innerW = width - padR;
   const innerH = height - padT - padB;
   const ys = pts.map((p) => p[1]);
   const yMin = Math.min(...ys);
   const yMax = Math.max(...ys);
-  const yPad = (yMax - yMin) * 0.08;
+  const yPad = (yMax - yMin) * 0.1 || 1;
   const yLo = yMin - yPad;
   const yHi = yMax + yPad;
   const tMin = pts[0]![0];
   const tMax = pts[pts.length - 1]![0];
 
   const xy = (t: number, y: number): readonly [number, number] => {
-    const X = padL + ((t - tMin) / (tMax - tMin)) * innerW;
+    const X = ((t - tMin) / (tMax - tMin)) * innerW;
     const Y = padT + (1 - (y - yLo) / (yHi - yLo)) * innerH;
     return [X, Y];
   };
@@ -128,71 +255,218 @@ const CrashChart: React.FC<{
     })
     .join(" ");
 
-  const drawClamped = Math.max(0, Math.min(1, draw));
-  const idx = Math.max(0, Math.min(pts.length - 1, Math.floor(pts.length * drawClamped) - 1));
-  const last = pts[idx]!;
-  const [lx, ly] = xy(last[0], last[1]);
-
-  const yTicks = [0, 0.25, 0.5, 0.75, 1].map((f) => yLo + f * (yHi - yLo));
-
   const [x0] = xy(pts[0]![0], pts[0]![1]);
   const [xN] = xy(pts[pts.length - 1]![0], pts[pts.length - 1]![1]);
   const yBottom = padT + innerH;
   const areaPath = `${linePath} L${xN.toFixed(2)} ${yBottom.toFixed(2)} L${x0.toFixed(2)} ${yBottom.toFixed(2)} Z`;
 
+  const drawClamped = Math.max(0, Math.min(1, draw));
+  const startV = pts[0]![1];
+  const endV = pts[pts.length - 1]![1];
+  const pct = ((endV - startV) / startV) * 100;
+  const pctColor = pct >= 0 ? TV_GREEN : TV_RED;
+
+  const xLabels = [0, 0.5, 1].map((f) => ({ pos: f, label: `${Math.round((1 - f) * 7)}d` }));
+  const fillId = `mini-${label.replace(/[^a-z0-9]/gi, "")}`;
+
   return (
-    <svg width={width} height={height} style={{ display: "block" }}>
-      <defs>
-        <linearGradient id="crashFill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#ff5a5a" stopOpacity="0.45" />
-          <stop offset="100%" stopColor="#ff5a5a" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      {yTicks.map((v, i) => {
-        const Y = padT + (1 - (v - yLo) / (yHi - yLo)) * innerH;
-        return (
-          <g key={i}>
-            <line x1={padL} y1={Y} x2={padL + innerW} y2={Y} stroke="rgba(255,255,255,0.06)" strokeWidth={1} />
-            <text
-              x={padL - 12}
-              y={Y + 4}
-              fill="rgba(255,255,255,0.55)"
-              fontSize={14}
-              textAnchor="end"
-              fontFamily="ui-monospace, SFMono-Regular, monospace"
-            >
-              {`$${v.toFixed(2)}`}
-            </text>
-          </g>
-        );
-      })}
-      <path d={areaPath} fill="url(#crashFill)" opacity={Math.min(1, drawClamped * 1.4)} />
-      <path
-        d={linePath}
-        fill="none"
-        stroke="#ff7a7a"
-        strokeWidth={3}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        pathLength={1}
-        strokeDasharray={1}
-        strokeDashoffset={1 - drawClamped}
+    <div
+      style={{
+        position: "relative",
+        width,
+        height,
+        background: TV_PANEL,
+        boxSizing: "border-box",
+        overflow: "hidden",
+      }}
+    >
+      {/* header */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: headerH,
+          padding: "10px 16px 8px",
+          display: "flex",
+          flexDirection: "column",
+          gap: 4,
+          zIndex: 2,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span
+            style={{
+              padding: "3px 8px",
+              fontSize: 11,
+              fontFamily: MONO,
+              fontWeight: 700,
+              letterSpacing: "0.06em",
+              background: `${color}22`,
+              color,
+              borderRadius: 4,
+            }}
+          >
+            {category.toUpperCase()}
+          </span>
+          <span
+            style={{
+              fontFamily: MONO,
+              fontSize: 13,
+              fontWeight: 700,
+              color: "#fff",
+              letterSpacing: "0.02em",
+            }}
+          >
+            {label}
+          </span>
+        </div>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+          <span style={{ fontFamily: MONO, fontSize: 22, fontWeight: 700, color: "#fff" }}>
+            {fmt(endV)}
+          </span>
+          <span style={{ fontFamily: MONO, fontSize: 14, fontWeight: 700, color: pctColor }}>
+            {pct >= 0 ? "+" : ""}
+            {pct.toFixed(2)}%
+          </span>
+        </div>
+      </div>
+
+      {/* axes + watermark */}
+      <TVAxes
+        width={width}
+        height={height}
+        padT={padT}
+        yLo={yLo}
+        yHi={yHi}
+        yFmt={fmt}
+        xLabels={xLabels}
+        yAxisWidth={padR}
       />
-      {drawClamped > 0.05 && (
-        <g>
-          <line
-            x1={lx}
-            y1={padT}
-            x2={lx}
-            y2={padT + innerH}
-            stroke="rgba(255,122,122,0.4)"
-            strokeDasharray="4 4"
-            strokeWidth={1}
-          />
-          <circle cx={lx} cy={ly} r={6} fill="#ff7a7a" stroke="#0a0a0a" strokeWidth={2} />
-        </g>
-      )}
-    </svg>
+
+      {/* line + area */}
+      <svg width={width} height={height} style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+        <defs>
+          <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.35" />
+            <stop offset="100%" stopColor={color} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <path d={areaPath} fill={`url(#${fillId})`} opacity={Math.min(1, drawClamped * 1.4)} />
+        <path
+          d={linePath}
+          fill="none"
+          stroke={color}
+          strokeWidth={2.4}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          pathLength={1}
+          strokeDasharray={1}
+          strokeDashoffset={1 - drawClamped}
+          style={{ filter: `drop-shadow(0 0 8px ${color}55)` }}
+        />
+      </svg>
+    </div>
+  );
+};
+
+// Full-bleed candlestick chart (TRUMPUSDT crash).
+const TVCandleChart: React.FC<{
+  width: number;
+  height: number;
+  candles: readonly (readonly [number, number, number, number, number])[];
+  draw: number;
+  t0: number;
+}> = ({ width, height, candles, draw, t0 }) => {
+  const padR = 110;
+  const padT = 80;
+  const padB = 40;
+  const innerW = width - padR;
+  const innerH = height - padT - padB;
+  let yMin = Infinity;
+  let yMax = -Infinity;
+  for (const [, , h, l] of candles) {
+    if (l < yMin) yMin = l;
+    if (h > yMax) yMax = h;
+  }
+  const yPad = (yMax - yMin) * 0.08;
+  const yLo = yMin - yPad;
+  const yHi = yMax + yPad;
+  const tMin = candles[0]![0];
+  const tMax = candles[candles.length - 1]![0];
+  const xCenter = (t: number) => ((t - tMin) / (tMax - tMin)) * innerW;
+  const yPx = (v: number) => padT + (1 - (v - yLo) / (yHi - yLo)) * innerH;
+
+  const drawClamped = Math.max(0, Math.min(1, draw));
+  const visible = Math.max(1, Math.floor(candles.length * drawClamped));
+  const cw = (innerW / candles.length) * 0.66;
+
+  const xLabels = [0, 0.25, 0.5, 0.75, 1].map((f) => {
+    const ts = t0 + tMin + f * (tMax - tMin);
+    const d = new Date(ts * 1000);
+    return { pos: f, label: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }) };
+  });
+
+  const lastVis = candles[Math.min(visible - 1, candles.length - 1)]!;
+  const lastClose = lastVis[4];
+  const lastY = yPx(lastClose);
+
+  return (
+    <div style={{ position: "relative", width, height }}>
+      <TVAxes
+        width={width}
+        height={height}
+        padT={padT}
+        yLo={yLo}
+        yHi={yHi}
+        yFmt={(v) => `$${v.toFixed(3)}`}
+        xLabels={xLabels}
+        watermark="TRUMP/USDT · 2H"
+        yAxisWidth={padR}
+      />
+      <svg width={width} height={height} style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+        {candles.slice(0, visible).map(([t, o, h, l, c], i) => {
+          const xc = xCenter(t);
+          const isUp = c >= o;
+          const color = isUp ? TV_GREEN : TV_RED;
+          const wickTop = yPx(h);
+          const wickBot = yPx(l);
+          const bodyTop = yPx(Math.max(o, c));
+          const bodyBot = yPx(Math.min(o, c));
+          const bodyH = Math.max(1, bodyBot - bodyTop);
+          return (
+            <g key={i}>
+              <line x1={xc} y1={wickTop} x2={xc} y2={wickBot} stroke={color} strokeWidth={1.2} />
+              <rect x={xc - cw / 2} y={bodyTop} width={cw} height={bodyH} fill={color} />
+            </g>
+          );
+        })}
+        {/* live price pin */}
+        <line
+          x1={0}
+          y1={lastY}
+          x2={innerW}
+          y2={lastY}
+          stroke={TV_RED}
+          strokeWidth={1}
+          strokeDasharray="4 4"
+          opacity={0.6}
+        />
+        <rect x={innerW + 4} y={lastY - 12} width={padR - 8} height={24} fill={TV_RED} rx={3} />
+        <text
+          x={innerW + padR / 2}
+          y={lastY + 5}
+          fill="#fff"
+          fontSize={13}
+          fontWeight={700}
+          textAnchor="middle"
+          fontFamily={MONO}
+        >
+          {`$${lastClose.toFixed(3)}`}
+        </text>
+      </svg>
+    </div>
   );
 };
 
@@ -211,20 +485,14 @@ function buildScene01Proxies() {
 export const Scene01_Intro: React.FC = () => {
   const s = useGsapProxy(
     (tl, p) => {
-      // Phrase A — words stagger in 0.0s → 0.45s
       SCENE01_A.forEach((_, i) => {
         if (i === 0) return;
         tl.to(p[`a_${i}`]!, { opacity: 1, y: 0, duration: 0.15, ease: "power2.out" }, i * 0.15);
       });
-      // Vision sparklines draw alongside phrase A
-      tl.to(p.tilesDraw, { v: 1, duration: 0.6, ease: "power2.out" }, 0.05);
-      // Phrase A (and its chart) fade out
+      tl.to(p.tilesDraw, { v: 1, duration: 0.7, ease: "power2.out" }, 0.05);
       tl.to(p.phraseA, { opacity: 0, duration: 0.18, ease: "power2.in" }, 0.75);
-      // Phrase B fades in
       tl.to(p.phraseB, { opacity: 1, duration: 0.15, ease: "power2.out" }, 0.85);
-      // Crash chart draws alongside phrase B
-      tl.to(p.crashDraw, { v: 1, duration: 0.85, ease: "power2.out" }, 0.90);
-      // Phrase B — words stagger in 0.85s → 1.69s
+      tl.to(p.crashDraw, { v: 1, duration: 0.95, ease: "power2.out" }, 0.85);
       SCENE01_B.forEach((_, i) => {
         tl.to(p[`b_${i}`]!, { opacity: 1, y: 0, duration: 0.14, ease: "power2.out" }, 0.85 + i * 0.12);
       });
@@ -234,7 +502,7 @@ export const Scene01_Intro: React.FC = () => {
 
   const phraseStyle: React.CSSProperties = {
     position: "absolute",
-    top: "62%",
+    top: "50%",
     left: "50%",
     transform: "translate(-50%, -50%)",
     display: "flex",
@@ -243,141 +511,91 @@ export const Scene01_Intro: React.FC = () => {
     gap: "0 32px",
     maxWidth: "92%",
     whiteSpace: "nowrap",
+    zIndex: 5,
+    pointerEvents: "none",
   };
 
-  // Each "this" gets its own visualisation — anchored above the text.
-  const chartFrameStyle: React.CSSProperties = {
-    position: "absolute",
-    top: "18%",
-    left: "50%",
-    transform: "translateX(-50%)",
-    width: 1320,
-    display: "flex",
-    justifyContent: "center",
-  };
+  const lastC = CRASH.candles[CRASH.candles.length - 1]!;
+  const startV = CRASH.candles[0]![1];
+  const pctChange = ((lastC[4] - startV) / startV) * 100;
 
-  const last = CRASH.points[CRASH.points.length - 1]!;
-  const startV = CRASH.points[0]![1];
-  const pctChange = ((last[1] - startV) / startV) * 100;
+  // 2×2 watchlist geometry — under the 56px topbar.
+  const TOPBAR_H = 56;
+  const PANEL_W = 1920 / 2;
+  const PANEL_H = (1080 - TOPBAR_H) / 2;
 
   return (
-    <AbsoluteFill>
-      <BlueGradient />
-
-      {/* Vision tiles — visible during phrase A */}
-      <div style={{ ...chartFrameStyle, opacity: s.phraseA.opacity }}>
+    <AbsoluteFill style={{ background: TV_BG }}>
+      {/* ── Vision panel — phrase A ────────────────────────── */}
+      <div style={{ position: "absolute", inset: 0, opacity: s.phraseA.opacity }}>
+        <TVTopBar
+          symbol="VISION:WATCHLIST"
+          meta="4 markets · live"
+          metaColor={TV_TEXT}
+          activeTf="1H"
+        />
         <div
           style={{
-            display: "flex",
-            gap: 18,
-            padding: 18,
-            background: "rgba(8, 24, 80, 0.32)",
-            borderRadius: 22,
-            border: "1px solid rgba(255,255,255,0.18)",
-            backdropFilter: "blur(8px)",
-            boxShadow: "0 18px 60px rgba(0,30,120,0.35)",
+            position: "absolute",
+            top: TOPBAR_H,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gridTemplateRows: "1fr 1fr",
+            gap: 1,
+            background: TV_LINE,
           }}
         >
-          {VISION_TILES.map(({ key, label, color }) => (
-            <div
-              key={key}
-              style={{
-                width: 296,
-                background: "rgba(255,255,255,0.10)",
-                borderRadius: 14,
-                padding: 12,
-                border: "1px solid rgba(255,255,255,0.12)",
-                boxSizing: "border-box",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: 6,
-                }}
-              >
-                <span style={{ fontFamily, fontSize: 16, fontWeight: 700, color: "#fff", letterSpacing: "-0.01em" }}>
-                  {label}
-                </span>
-                <span
-                  style={{
-                    fontFamily: "ui-monospace, SFMono-Regular, monospace",
-                    fontSize: 11,
-                    color: "rgba(255,255,255,0.65)",
-                  }}
-                >
-                  twitch viewers
-                </span>
-              </div>
-              <Sparkline
-                pts={VISION[key].points}
-                width={272}
-                height={72}
-                stroke={color}
+          {VISION_QUADS.map((q) => {
+            const series = VISION[q.key];
+            return (
+              <TVMiniPanel
+                key={q.key}
+                width={PANEL_W}
+                height={PANEL_H}
+                label={q.label}
+                category={q.category}
+                color={q.color}
+                pts={series.points}
+                fmt={q.fmt}
                 draw={s.tilesDraw.v}
               />
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
-      {/* Crash chart — visible during phrase B */}
-      <div style={{ ...chartFrameStyle, opacity: s.phraseB.opacity }}>
-        <div
-          style={{
-            width: 1240,
-            padding: "16px 22px 14px",
-            background: "rgba(10,10,14,0.78)",
-            borderRadius: 22,
-            border: "1px solid rgba(255,90,90,0.30)",
-            boxShadow: "0 18px 70px rgba(0,0,0,0.55)",
-            backdropFilter: "blur(6px)",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: 6,
-            }}
-          >
-            <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-              <span
-                style={{
-                  fontFamily,
-                  fontSize: 16,
-                  fontWeight: 700,
-                  letterSpacing: "0.02em",
-                  background: "rgba(255,90,90,0.18)",
-                  color: "#ff8a8a",
-                  padding: "4px 10px",
-                  borderRadius: 999,
-                }}
-              >
-                TRUMP / USDT
-              </span>
-              <span style={{ fontFamily, fontSize: 16, color: "#ff7a7a", fontWeight: 700 }}>
-                {pctChange.toFixed(1)}%
-              </span>
-            </div>
-            <span
-              style={{
-                fontFamily: "ui-monospace, SFMono-Regular, monospace",
-                fontSize: 12,
-                color: "rgba(255,255,255,0.55)",
-              }}
-            >
-              90 days
-            </span>
-          </div>
-          <CrashChart pts={CRASH.points} width={1196} height={196} draw={s.crashDraw.v} />
+      {/* ── Crash panel — phrase B ─────────────────────────── */}
+      <div style={{ position: "absolute", inset: 0, opacity: s.phraseB.opacity }}>
+        <TVTopBar
+          symbol="BITGET:TRUMPUSDT"
+          meta={`${pctChange >= 0 ? "+" : ""}${pctChange.toFixed(2)}%`}
+          metaColor={pctChange < 0 ? TV_RED : TV_GREEN}
+          activeTf="1H"
+        />
+        <div style={{ position: "absolute", top: TOPBAR_H, left: 0, right: 0, bottom: 0, background: TV_PANEL }}>
+          <TVCandleChart
+            width={1920}
+            height={1080 - TOPBAR_H}
+            candles={CRASH.candles}
+            draw={s.crashDraw.v}
+            t0={CRASH_T0}
+          />
         </div>
       </div>
 
-      {/* Phrase A — original 150pt centered */}
+      {/* ── Scrim for text legibility ──────────────────────── */}
+      <AbsoluteFill
+        style={{
+          background:
+            "radial-gradient(ellipse 70% 45% at 50% 50%, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0) 70%)",
+          pointerEvents: "none",
+        }}
+      />
+
+      {/* ── Phrase A — 150pt centered ──────────────────────── */}
       <div style={{ ...phraseStyle, opacity: s.phraseA.opacity }}>
         {SCENE01_A.map((word, i) => {
           const proxy = s[`a_${i}`]!;
@@ -390,7 +608,7 @@ export const Scene01_Intro: React.FC = () => {
                 color: "#fff",
                 opacity: proxy.opacity,
                 transform: `translateY(${proxy.y}px)`,
-                textShadow: "0 4px 28px rgba(0,0,40,0.55)",
+                textShadow: "0 4px 32px rgba(0,0,0,0.85), 0 0 80px rgba(0,0,0,0.7)",
               }}
             >
               {word}
@@ -399,7 +617,7 @@ export const Scene01_Intro: React.FC = () => {
         })}
       </div>
 
-      {/* Phrase B — original 130pt centered */}
+      {/* ── Phrase B — 130pt centered ──────────────────────── */}
       <div style={{ ...phraseStyle, opacity: s.phraseB.opacity }}>
         {SCENE01_B.map((word, i) => {
           const proxy = s[`b_${i}`]!;
@@ -412,7 +630,7 @@ export const Scene01_Intro: React.FC = () => {
                 color: "#fff",
                 opacity: proxy.opacity,
                 transform: `translateY(${proxy.y}px)`,
-                textShadow: "0 4px 28px rgba(0,0,40,0.55)",
+                textShadow: "0 4px 32px rgba(0,0,0,0.85), 0 0 80px rgba(0,0,0,0.7)",
               }}
             >
               {word}
