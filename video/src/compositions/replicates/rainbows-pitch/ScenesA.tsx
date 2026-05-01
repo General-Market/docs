@@ -742,23 +742,27 @@ export const Scene03_DarkGrid: React.FC = () => {
       // Compressed for 60-frame (2.5s) budget. Phase 1 ends at 1.20s,
       // phase 2 lands fast and holds briefly — the rainbow flourish was
       // overstaying its welcome.
-      tl.to(p.but, { opacity: 0, duration: 0.06, ease: "power2.in" }, 0.24);
-      tl.to(p.what, { opacity: 1, y: 0, duration: 0.08, ease: "power2.out" }, 0.24);
-      tl.to(p.what, { opacity: 0, duration: 0.06, ease: "power2.in" }, 0.50);
-      tl.to(p.are, { opacity: 1, y: 0, duration: 0.08, ease: "power2.out" }, 0.50);
-      tl.to(p.are, { opacity: 0, duration: 0.06, ease: "power2.in" }, 0.78);
-      tl.to(p.rainbows, { opacity: 1, y: 0, duration: 0.10, ease: "power2.out" }, 0.78);
-      // Phase 1 cross-fades out at 1.20s
-      tl.to(p.phase1, { opacity: 0, duration: 0.14, ease: "power2.in" }, 1.20);
-      // Phase 2 — title slides in fast at 1.30s, hold ~0.9s.
-      tl.to(p.phase2, { opacity: 1, duration: 0.12, ease: "power2.out" }, 1.30);
-      tl.to(p.title, { x: 0, duration: 0.30, ease: "power2.out" }, 1.30);
+      // Phase 1 — five-word statement, ~0.20s per word.
+      tl.to(p.but, { opacity: 0, duration: 0.05, ease: "power2.in" }, 0.20);
+      tl.to(p.only, { opacity: 1, y: 0, duration: 0.07, ease: "power2.out" }, 0.20);
+      tl.to(p.only, { opacity: 0, duration: 0.05, ease: "power2.in" }, 0.42);
+      tl.to(p.tradable, { opacity: 1, y: 0, duration: 0.08, ease: "power2.out" }, 0.42);
+      tl.to(p.tradable, { opacity: 0, duration: 0.05, ease: "power2.in" }, 0.66);
+      tl.to(p.with_, { opacity: 1, y: 0, duration: 0.06, ease: "power2.out" }, 0.66);
+      tl.to(p.with_, { opacity: 0, duration: 0.05, ease: "power2.in" }, 0.84);
+      tl.to(p.rainbows, { opacity: 1, y: 0, duration: 0.10, ease: "power2.out" }, 0.84);
+      // Phase 1 cross-fades out at 1.25s.
+      tl.to(p.phase1, { opacity: 0, duration: 0.12, ease: "power2.in" }, 1.25);
+      // Phase 2 — title slides in fast at 1.35s, holds the rest.
+      tl.to(p.phase2, { opacity: 1, duration: 0.12, ease: "power2.out" }, 1.35);
+      tl.to(p.title, { x: 0, duration: 0.30, ease: "power2.out" }, 1.35);
     },
     {
       phase1: { opacity: 1 },
       but: { opacity: 1, y: 0 },
-      what: { opacity: 0, y: 15 },
-      are: { opacity: 0, y: 15 },
+      only: { opacity: 0, y: 15 },
+      tradable: { opacity: 0, y: 15 },
+      with_: { opacity: 0, y: 15 },
       rainbows: { opacity: 0, y: 15 },
       phase2: { opacity: 0 },
       title: { x: 60 },
@@ -795,14 +799,19 @@ export const Scene03_DarkGrid: React.FC = () => {
             But
           </span>
         )}
-        {s.what.opacity > 0.01 && (
-          <span style={{ ...baseText, fontStyle: "normal", ...flashStyle, transform: `translate(-50%, calc(-50% + ${s.what.y}px))`, opacity: s.what.opacity }}>
-            what
+        {s.only.opacity > 0.01 && (
+          <span style={{ ...baseText, fontStyle: "normal", ...flashStyle, transform: `translate(-50%, calc(-50% + ${s.only.y}px))`, opacity: s.only.opacity }}>
+            only
           </span>
         )}
-        {s.are.opacity > 0.01 && (
-          <span style={{ ...baseText, fontStyle: "normal", ...flashStyle, transform: `translate(-50%, calc(-50% + ${s.are.y}px))`, opacity: s.are.opacity }}>
-            are
+        {s.tradable.opacity > 0.01 && (
+          <span style={{ ...baseText, fontStyle: "normal", ...flashStyle, transform: `translate(-50%, calc(-50% + ${s.tradable.y}px))`, opacity: s.tradable.opacity }}>
+            tradable
+          </span>
+        )}
+        {s.with_.opacity > 0.01 && (
+          <span style={{ ...baseText, fontStyle: "normal", ...flashStyle, transform: `translate(-50%, calc(-50% + ${s.with_.y}px))`, opacity: s.with_.opacity }}>
+            with
           </span>
         )}
         {s.rainbows.opacity > 0.01 && (
@@ -817,7 +826,7 @@ export const Scene03_DarkGrid: React.FC = () => {
               opacity: s.rainbows.opacity,
             }}
           >
-            rainbows?
+            rainbows.
           </span>
         )}
       </div>

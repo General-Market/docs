@@ -13,13 +13,13 @@ import { Scene09_Experience, Scene10_LiveTestnet, Scene11_NewSpeed, Scene12_Fina
  * accelerate into the finale: 48 → 60 → 72 → 173 frames.
  *
  *   01  "Trade market like this." → "Is simpler than..."     0–48
- *   02  "But what are rainbows?" → title card               48–132
+ *   02  "But only tradable with rainbows." → title card    48–132
  *   03  "Rainbows filters out illegal activities" + cube  132–204
  *   04  "Removing" → "what shouldn't be here."            204–252
  *   05  Villains struck through                            252–360
  *   06  Counter 0→70%, "of your profits"                  360–408
- *   07  "Leaving the same profits" → "to fewer            408–492
- *       honest traders"
+ *   07  Pairs no exchange will list — split-screen        408–492
+ *       without/with rainbows comparison
  *   08  Concentric circles + "gain more"                  492–540
  *   09  "while trading the same assets."                  540–588
  *   10  Asset grid: Stocks / Crypto / Predictions /       588–648
