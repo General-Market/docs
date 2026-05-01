@@ -1,9 +1,9 @@
 {
   "heading": "TRACKED MARKETS",
   "hero": {
-    "label": "Index Tracking Products",
+    "label": "Dex Traded Funds",
     "title": "Markets",
-    "description": "Explore decentralized index products. Each ITP tracks a basket of crypto assets with live NAV pricing and on-chain settlement."
+    "description": "Explore decentralized index products. Each DTF tracks a basket of crypto assets with live NAV pricing and on-chain settlement."
   },
   "summary": {
     "types_count": "{count} types",
@@ -74,8 +74,8 @@
     "showing_all": "Showing all {total} products"
   },
   "itp_card": {
-    "loading": "Loading ITPs...",
-    "no_itps": "No ITPs created yet",
+    "loading": "Loading DTFs...",
+    "no_itps": "No DTFs created yet",
     "nav_per_share": "NAV / Share",
     "assets": "Assets",
     "balance": "Balance",
@@ -86,12 +86,12 @@
     "chart": "Chart",
     "rebalance": "Rebalance",
     "borrow": "Borrow",
-    "edit_itp_info": "Edit ITP Info",
+    "edit_itp_info": "Edit DTF Info",
     "description_placeholder": "Description (max 280 chars / ~50 words)",
     "website_placeholder": "Website URL (max 128)",
     "video_placeholder": "YouTube URL (max 256)",
     "settlement_erc20": "Settlement ERC20:",
-    "itp_id": "ITP ID:",
+    "itp_id": "DTF ID:",
     "minted_supply": "Minted Supply",
     "loading_holders": "Loading holders...",
     "unable_fetch_holders": "Unable to fetch holders",
@@ -108,8 +108,8 @@
   },
   "rebalance": {
     "title": "Rebalance {name}",
-    "itp_id_label": "ITP ID:",
-    "loading": "Loading ITP state...",
+    "itp_id_label": "DTF ID:",
+    "loading": "Loading DTF state...",
     "add_asset_label": "Add Asset ({count} in basket, {available} available)",
     "search_placeholder": "Search asset to add...",
     "equal_weights": "Equal Weights",
@@ -244,7 +244,7 @@
       "fund_inception": "Fund Inception",
       "asset_class": "Asset Class",
       "asset_class_value": "Crypto Index",
-      "itp_id": "ITP ID",
+      "itp_id": "DTF ID",
       "number_of_holdings": "Number of Holdings",
       "as_of": "as of {date}",
       "copy": "Copy",

@@ -1,8 +1,8 @@
-# ITP Ideas — 96 Backtester Configurations × 11 Investor Archetypes
+# DTF Ideas — 96 Backtester Configurations × 11 Investor Archetypes
 
 Different investors desire different things. The Girardian mimetic desire framework reveals that investment preferences are not innate -- they are shaped by the communities we belong to, the influencers we follow, and the narratives we internalize. A TradFi migrant craves the familiar comfort of index funds and factor investing. A crypto-native degen chases memes and reflexivity. A macro strategist sees geopolitical chess moves. A tech visionary bets on paradigm shifts. A yield hunter optimizes for income. A culture investor financializes lifestyle. A risk manager tames volatility. An emerging markets bull bets on the unbanked. A contrarian zigs when everyone zags. A momentum trader surfs narrative waves.
 
-Each ITP below is defined by backtester parameters: `category_id` (CoinGecko, DefiLlama, or fundamental-analysis category), `top_n` (basket size), `weighting` (allocation scheme), `rebalance_days`, and optional overlays (FNG, VC, dominance regime switching).
+Each DTF below is defined by backtester parameters: `category_id` (CoinGecko, DefiLlama, or fundamental-analysis category), `top_n` (basket size), `weighting` (allocation scheme), `rebalance_days`, and optional overlays (FNG, VC, dominance regime switching).
 
 ---
 

@@ -121,7 +121,7 @@
     "performance": "Performance",
     "deploy_index": "Deploy Index",
     "rebalance": "Rebalance",
-    "rebalance_select": "Select ITP to rebalance",
+    "rebalance_select": "Select DTF to rebalance",
     "nav_label": "NAV: ${value}",
     "return_label": "Return: {value}%",
     "dd_label": "DD: {value}%"

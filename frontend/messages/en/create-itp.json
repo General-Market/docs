@@ -5,7 +5,7 @@
     "description": "Build a custom index product. Select assets, set weights, and deploy on-chain."
   },
   "collapsed": {
-    "description": "Create an Index Tracking Product with custom weights"
+    "description": "Create a Dex Traded Fund (DTF) with custom weights"
   },
   "select_assets": {
     "title": "Select Assets ({count}/100)",
@@ -24,7 +24,7 @@
     "continue": "Continue \u2192"
   },
   "finalize": {
-    "title": "Finalize ITP",
+    "title": "Finalize DTF",
     "assets_selected": "{count} assets selected",
     "name_label": "Name (max 32)",
     "name_placeholder": "e.g., DeFi Blue Chips",
@@ -33,7 +33,7 @@
     "oracle_name_label": "Oracle Name (max 64)",
     "oracle_name_placeholder": "e.g., Vanguard Labs",
     "description_label": "Description (optional)",
-    "description_placeholder": "Brief description shown on ITP cards",
+    "description_placeholder": "Brief description shown on DTF cards",
     "website_label": "Website (optional)",
     "website_placeholder": "https://yoursite.io",
     "video_label": "Video (optional)",
@@ -50,18 +50,18 @@
       "submit": "Submitting on Settlement",
       "relay": "Oracle relaying to L3",
       "consensus": "Oracle consensus",
-      "live": "ITP live on L3"
+      "live": "DTF live on L3"
     },
     "elapsed_vs_typical": "elapsed {elapsed} \u00b7 typical {typical}",
     "assets_locked_in": "{count} assets locked in basket"
   },
   "skeleton": {
-    "itp_name": "ITP Name (max 32)",
+    "itp_name": "DTF Name (max 32)",
     "symbol": "Symbol (max 10)"
   },
   "success": {
     "title": "Submitted",
-    "description": "Keepers are signing. The ITP arrives when they agree.",
+    "description": "Keepers are signing. The DTF arrives when they agree.",
     "consensus_title": "Live on L3",
     "consensus_description": "Consensus reached. The basket exists."
   },

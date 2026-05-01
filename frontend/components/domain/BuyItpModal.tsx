@@ -150,7 +150,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   // Keep useUserState for ITP name/symbol (fetches from backend)
   const userState = useUserState(itpId)
   const staticEntry = (itpIdNames as Record<string, { name: string; ticker: string }>)[itpId.toLowerCase()]
-  const itpName = staticEntry?.name || userState.bridgedItpName || 'ITP'
+  const itpName = staticEntry?.name || userState.bridgedItpName || 'DTF'
   const itpSymbol = staticEntry?.ticker || userState.bridgedItpSymbol || ''
 
   // L3 USDC balance (18 decimals).
@@ -811,7 +811,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
             if (!vid) return null
             return (
               <div className="rounded-lg overflow-hidden mb-4">
-                <YouTubeLite videoId={vid} title={itpName || 'ITP'} />
+                <YouTubeLite videoId={vid} title={itpName || 'DTF'} />
               </div>
             )
           })()}

@@ -86,12 +86,12 @@ export function LendItpModal({ itpInfo, isOpen, onClose }: LendItpModalProps) {
         <div className="p-6">
           {/* Header */}
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-text-primary">{t('lend_modal.title', { name: itpInfo.name || 'ITP' })}</h2>
+            <h2 className="text-lg font-semibold text-text-primary">{t('lend_modal.title', { name: itpInfo.name || 'DTF' })}</h2>
             <ModalClose onClick={onClose} />
           </div>
           {itpInfo.symbol && <p className="text-text-secondary mb-1 font-mono">${itpInfo.symbol}</p>}
           <p className="text-xs text-text-muted mb-6">
-            {t('lend_modal.description', { symbol: itpInfo.symbol || 'ITP' })}
+            {t('lend_modal.description', { symbol: itpInfo.symbol || 'DTF' })}
           </p>
 
           {!isConnected ? (

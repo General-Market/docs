@@ -121,7 +121,7 @@
     "performance": "성과",
     "deploy_index": "인덱스 배포",
     "rebalance": "리밸런스",
-    "rebalance_select": "리밸런스할 ITP 선택",
+    "rebalance_select": "리밸런스할 DTF 선택",
     "nav_label": "NAV: ${value}",
     "return_label": "수익률: {value}%",
     "dd_label": "DD: {value}%"

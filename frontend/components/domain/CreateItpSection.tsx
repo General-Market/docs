@@ -96,7 +96,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
     isConfirming,
     isSuccess,
     error: (writeError || confirmError) as Error | null,
-    label: 'Create ITP',
+    label: 'Create DTF',
     chain: 'l3',
   })
 
@@ -374,7 +374,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
       try {
         await ensureCorrectChain(currentChainId, switchChainAsync, activeChainId, indexL3)
       } catch {
-        setTxError('Please switch to the L3 chain to create an ITP')
+        setTxError('Please switch to the L3 chain to create a DTF')
         return
       }
 
@@ -953,7 +953,7 @@ function FinalizeItpModal({
                   onClick={onClose}
                   className="flex-1 sm:flex-none text-center bg-zinc-900 text-white font-medium rounded-lg px-5 py-2.5 hover:bg-zinc-800 transition-colors fluid-press"
                 >
-                  See my ITP →
+                  See my DTF →
                 </Link>
               )}
               <button
@@ -1000,7 +1000,7 @@ interface CreateStatusPanelProps {
 function CreateStatusPanel({ isFetchingPrices, isPending, isConfirming, isSuccess, symbol }: CreateStatusPanelProps) {
   const reduced = useReducedMotion()
   const phaseLabel = isSuccess
-    ? 'ITP deployed'
+    ? 'DTF deployed'
     : isConfirming
       ? 'Awaiting block confirmation'
       : isPending

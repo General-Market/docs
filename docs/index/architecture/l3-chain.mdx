@@ -44,7 +44,7 @@ The `native-token: 0x0000000000000000000000000000000000000000` convention in Orb
 
 ### Enlarged Contract Size Limit
 
-The standard EVM contract size limit is 24,576 bytes. Index contracts -- particularly `Index.sol` with its order management, ITP creation, NAV computation, and BLS verification -- exceed this. The L3 doubles the limit to 49,152 bytes. Complex systems require complex contracts. The alternative was splitting logic across proxies, adding indirection and gas cost for the sake of a constraint that no longer applies.
+The standard EVM contract size limit is 24,576 bytes. Index contracts -- particularly `Index.sol` with its order management, DTF creation, NAV computation, and BLS verification -- exceed this. The L3 doubles the limit to 49,152 bytes. Complex systems require complex contracts. The alternative was splitting logic across proxies, adding indirection and gas cost for the sake of a constraint that no longer applies.
 
 ### BN254 Precompiles
 
@@ -89,10 +89,10 @@ Everything that matters to the protocol runs here.
 └──────────────────────────────────────────────────────────┘
 ```
 
-- **Core protocol contracts** -- Index, Governance, OracleRegistry. The entry points for order management, ITP creation, and BLS key registration.
+- **Core protocol contracts** -- Index, Governance, OracleRegistry. The entry points for order management, DTF creation, and BLS key registration.
 - **Vision prediction markets** -- Batch creation, player operations, tick resolution, bot registry. All prediction market activity lives here.
-- **ITP vaults** -- ERC-4626 tokenized vaults for each Index Tracking Product.
-- **Morpho lending markets** -- Borrow USDC against ITP collateral. The NAV oracle feeds Morpho with BLS-verified prices.
+- **DTF vaults** -- ERC-4626 tokenized vaults for each Dex Traded Fund.
+- **Morpho lending markets** -- Borrow USDC against DTF collateral. The NAV oracle feeds Morpho with BLS-verified prices.
 - **Bridge endpoints** -- Custody contracts and proxy for cross-chain operations with the Settlement chain.
 
 ## USDC on L3

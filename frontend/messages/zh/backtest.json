@@ -121,7 +121,7 @@
     "performance": "业绩",
     "deploy_index": "部署指数",
     "rebalance": "再平衡",
-    "rebalance_select": "选择要再平衡的 ITP",
+    "rebalance_select": "选择要再平衡的 DTF",
     "nav_label": "NAV: ${value}",
     "return_label": "收益率: {value}%",
     "dd_label": "回撤: {value}%"

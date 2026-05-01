@@ -1,6 +1,6 @@
 {
   "title": "Buy {name}",
-  "itp_id_label": "ITP ID:",
+  "itp_id_label": "DTF ID:",
   "amount_label": "Amount (USDC)",
   "balance_label": "Balance: {amount} USDC",
   "max_price_label": "Max Price (USDC/share)",
@@ -18,7 +18,7 @@
   "minting": "Minting...",
   "minted": "Minted!",
   "mint_failed": "Mint failed",
-  "your_itp_shares": "Your ITP Shares",
+  "your_itp_shares": "Your DTF Shares",
   "buy_more": "Buy More",
   "button": {
     "approve_pending": "Confirm approval in wallet...",
@@ -26,7 +26,7 @@
     "buy_pending": "Confirm buy in wallet...",
     "buy_confirming": "Submitting order...",
     "approve_and_buy": "Approve & Buy",
-    "buy_itp": "Buy ITP"
+    "buy_itp": "Buy DTF"
   },
   "steps": {
     "submit": "Submit",
@@ -70,7 +70,7 @@
     "vs_limit": "vs Limit",
     "underlying_title": "Underlying assets acquired",
     "underlying_note": "Quantities are exact (on-chain inventory × shares minted). Prices reflect the current oracle quote.",
-    "underlying_note_approx": "Approximate breakdown — this ITP has no on-chain inventory yet, so quantities are derived from weights at current prices."
+    "underlying_note_approx": "Approximate breakdown — this DTF has no on-chain inventory yet, so quantities are derived from weights at current prices."
   },
   "toast": {
     "buy_filled_shares": "Buy filled \u2014 {shares} {name} shares received",

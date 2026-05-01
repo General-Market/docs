@@ -98,7 +98,7 @@ export function ItpMetadataSection({ itpId }: SectionProps) {
           <div className="relative w-full max-w-2xl" style={{ paddingBottom: '56.25%' }}>
             <iframe
               src={embedUrl}
-              title="ITP Video"
+              title="DTF Video"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
               className="absolute inset-0 w-full h-full rounded border border-border-light"

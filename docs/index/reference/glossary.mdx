@@ -11,7 +11,7 @@ Every system invents its own language. This is the dictionary. Learn it once; th
 
 ### AP (Authorized Participant)
 
-An entity registered with the protocol that executes trades on centralized exchanges (CEX) on behalf of the protocol. APs report fill prices back on-chain and are subject to price tolerance checks (max 0.1% deviation). APs provide liquidity and enable the creation/redemption mechanism for ITPs.
+An entity registered with the protocol that executes trades on centralized exchanges (CEX) on behalf of the protocol. APs report fill prices back on-chain and are subject to price tolerance checks (max 0.1% deviation). APs provide liquidity and enable the creation/redemption mechanism for DTFs.
 
 ### Balance Proof
 
@@ -31,11 +31,11 @@ An on-chain registry in the Vision contract where automated trading bots registe
 
 ### AUM (Assets Under Management)
 
-The total value of all underlying assets held within an ITP, calculated as the sum of each asset's quantity multiplied by its current price. AUM grows or shrinks as underlying asset prices change and as shares are minted or burned.
+The total value of all underlying assets held within a DTF, calculated as the sum of each asset's quantity multiplied by its current price. AUM grows or shrinks as underlying asset prices change and as shares are minted or burned.
 
 ### Backing Invariant
 
-The rule that no ITP shares may be minted without confirmed backing. Every minted share must be 1:1 backed by its underlying tokens. `completeBuyOrder` on the Settlement chain (which releases USDC to the AP for asset purchases) must succeed before shares are minted on L3. If `completeBuyOrder` fails, the entire order is rolled back and no shares are minted. Unbacked ITP is the single worst failure mode in the protocol.
+The rule that no DTF shares may be minted without confirmed backing. Every minted share must be 1:1 backed by its underlying tokens. `completeBuyOrder` on the Settlement chain (which releases USDC to the AP for asset purchases) must succeed before shares are minted on L3. If `completeBuyOrder` fails, the entire order is rolled back and no shares are minted. An unbacked DTF is the single worst failure mode in the protocol.
 
 ### BLS (Boneh-Lynn-Shacham)
 
@@ -47,11 +47,11 @@ The elliptic curve (also known as alt-bn128) used for BLS signature operations. 
 
 ### Bridge
 
-The cross-chain system connecting L3 and Settlement. It enables ITP shares to be bridged from L3 to Settlement for use as Morpho collateral, and USDC to move between chains during buy/sell operations. The bridge consists of `L3BridgeCustody` and `SettlementBridgeCustody` contracts that hold funds in transit and enforce the backing invariant.
+The cross-chain system connecting L3 and Settlement. It enables DTF shares to be bridged from L3 to Settlement for use as Morpho collateral, and USDC to move between chains during buy/sell operations. The bridge consists of `L3BridgeCustody` and `SettlementBridgeCustody` contracts that hold funds in transit and enforce the backing invariant.
 
-### Bridged ITP
+### Bridged DTF
 
-An ERC-20 replica of an L3 ITP on the Settlement chain. When a user bridges ITP shares from L3 to Settlement, the original shares are locked in `L3BridgeCustody` and an equivalent amount of Bridged ITP tokens are minted on Settlement. Bridged ITPs can be used as collateral in Morpho lending markets.
+An ERC-20 replica of an L3 DTF on the Settlement chain. When a user bridges DTF shares from L3 to Settlement, the original shares are locked in `L3BridgeCustody` and an equivalent amount of `BridgedITP` tokens are minted on Settlement. Bridged DTFs can be used as collateral in Morpho lending markets.
 
 ### Collateral
 
@@ -59,19 +59,19 @@ USDC tokens that are escrowed by the protocol during the order lifecycle. When a
 
 ### Curator
 
-A service that collects BLS-signed NAV updates from the oracle network, manages Morpho vault allocation across ITP lending markets, and monitors health factors for liquidation risk. The curator submits aggregated NAV to the `ITPNAVOracle` on the Settlement chain and adjusts Morpho supply caps based on current market conditions.
+A service that collects BLS-signed NAV updates from the oracle network, manages Morpho vault allocation across DTF lending markets, and monitors health factors for liquidation risk. The curator submits aggregated NAV to the `ITPNAVOracle` on the Settlement chain and adjusts Morpho supply caps based on current market conditions.
 
 ### Data Node
 
-A Rust service that aggregates 90+ external data sources (CoinGecko, USGS, TFL, Deutsche Bahn, etc.) and serves a unified market data API. The data node provides real-time and historical prices used by oracles for Vision tick resolution and ITP NAV calculation. Source code lives in `data-node/`.
+A Rust service that aggregates 90+ external data sources (CoinGecko, USGS, TFL, Deutsche Bahn, etc.) and serves a unified market data API. The data node provides real-time and historical prices used by oracles for Vision tick resolution and DTF NAV calculation. Source code lives in `data-node/`.
 
 ### ERC-4626
 
-A tokenized vault standard used for ITP share tokens. Each ITP's share token implements ERC-4626, providing a standardized interface for deposits, withdrawals, and share/asset accounting. This enables composability with other DeFi protocols such as Morpho lending.
+A tokenized vault standard used for DTF share tokens. Each DTF's share token implements ERC-4626, providing a standardized interface for deposits, withdrawals, and share/asset accounting. This enables composability with other DeFi protocols such as Morpho lending.
 
 ### Explorer
 
-A frontend dashboard showing system health, consensus metrics, and source status. The Explorer displays oracle uptime, BLS signing rates, data source freshness, Vision batch activity, and ITP order pipeline status. Accessible from the main navigation.
+A frontend dashboard showing system health, consensus metrics, and source status. The Explorer displays oracle uptime, BLS signing rates, data source freshness, Vision batch activity, and DTF order pipeline status. Accessible from the main navigation.
 
 ### Health Factor
 
@@ -81,13 +81,17 @@ A ratio representing the safety of a lending position, calculated as the value o
 
 A consensus node in the General Market network that batches pending orders, produces BLS signatures, and submits confirmed batches on-chain. Multiple oracles form the consensus layer. Their BLS public keys are registered in `OracleRegistry`, and a quorum of signatures is required to confirm any batch.
 
-### ITP (Index Tracking Product)
+### DTF (Dex Traded Fund)
 
-A tokenized basket of up to 100 crypto assets, conceptually similar to an ETF. Each ITP has a fixed set of per-share asset quantities that determine its NAV. Users buy and sell ITP shares; quantities only change during a rebalance operation. ITPs start at a price of $1 per share and drift as underlying prices move.
+A tokenized basket of up to 100 crypto assets, conceptually similar to an ETF. Each DTF has a fixed set of per-share asset quantities that determine its NAV. Users buy and sell DTF shares; quantities only change during a rebalance operation. DTFs start at a price of $1 per share and drift as underlying prices move.
+
+### ITP
+
+Legacy term. → see **DTF**. Older code, contract names, and storage fields (`createITP`, `_itpInventory`, `getITPState`, `BridgedITP`, `ITPNAVOracle`) preserve the original spelling. The product name is now Dex Traded Fund.
 
 ### ITPNAVOracle
 
-An on-chain oracle on the Settlement chain that receives BLS-signed NAV updates from the curator. Morpho markets reference the `ITPNAVOracle` to price ITP collateral for lending. The oracle enforces BLS signature verification via `MirrorOracleRegistry` before accepting any NAV update.
+An on-chain oracle on the Settlement chain that receives BLS-signed NAV updates from the curator. Morpho markets reference the `ITPNAVOracle` to price DTF collateral for lending. The oracle enforces BLS signature verification via `MirrorOracleRegistry` before accepting any NAV update.
 
 ### L3 (Layer 3)
 
@@ -95,7 +99,7 @@ The Arbitrum Orbit chain (Chain ID: `111222333`) where the General Market protoc
 
 ### L3BridgeCustody
 
-The contract on L3 that holds USDC and ITP shares during cross-chain bridge operations. When a user initiates a bridge buy, USDC is locked in `L3BridgeCustody` until the Settlement side confirms execution. When ITP shares are bridged to Settlement, the original shares are held in this contract.
+The contract on L3 that holds USDC and DTF shares during cross-chain bridge operations. When a user initiates a bridge buy, USDC is locked in `L3BridgeCustody` until the Settlement side confirms execution. When DTF shares are bridged to Settlement, the original shares are held in this contract.
 
 ### Liquidation
 
@@ -103,7 +107,7 @@ The forced sale of collateral when a lending position's health factor drops belo
 
 ### Morpho
 
-A DeFi lending protocol integrated with General Market that enables users to borrow USDC against their ITP shares as collateral. Morpho markets are created for each ITP, allowing holders to leverage their positions or access liquidity without selling.
+A DeFi lending protocol integrated with General Market that enables users to borrow USDC against their DTF shares as collateral. Morpho markets are created for each DTF, allowing holders to leverage their positions or access liquidity without selling.
 
 ### MirrorOracleRegistry
 
@@ -111,17 +115,17 @@ A Settlement-side copy of the oracle BLS public keys from the L3 `OracleRegistry
 
 ### NAV (Net Asset Value)
 
-The total value of an ITP's underlying assets per share, computed as:
+The total value of a DTF's underlying assets per share, computed as:
 
 ```
 NAV = sum(qty[i] * price[i]) / 1e18
 ```
 
-where `qty[i]` is the fixed per-share quantity of asset `i` and `price[i]` is its current market price. NAV is the canonical pricing mechanism for all ITP buy and sell operations.
+where `qty[i]` is the fixed per-share quantity of asset `i` and `price[i]` is its current market price. NAV is the canonical pricing mechanism for all DTF buy and sell operations.
 
 ### Netting
 
-The process of combining offsetting buy and sell orders within a batch to reduce the total volume that APs need to execute on external markets. For example, if a batch contains $10,000 in buy orders and $7,000 in sell orders for the same ITP, only $3,000 net needs to be executed externally.
+The process of combining offsetting buy and sell orders within a batch to reduce the total volume that APs need to execute on external markets. For example, if a batch contains $10,000 in buy orders and $7,000 in sell orders for the same DTF, only $3,000 net needs to be executed externally.
 
 ### Resolution Type
 
@@ -129,7 +133,7 @@ A configuration parameter for each market in a Vision batch that defines the pri
 
 ### Rebalance
 
-The operation of updating an ITP's per-share asset quantities to match new target weights while preserving the current NAV. New quantities are calculated as:
+The operation of updating a DTF's per-share asset quantities to match new target weights while preserving the current NAV. New quantities are calculated as:
 
 ```
 qty_new[i] = (w_new[i] * currentNAV) / price[i]
@@ -143,7 +147,7 @@ A `keccak256` hash of a player's bitmap submitted on-chain before the actual bit
 
 ### Settlement Chain
 
-The Arbitrum chain (Chain ID: `14601`) used for bridge custody and Morpho lending. Settlement hosts the `SettlementBridgeCustody`, `ITPNAVOracle`, `MirrorOracleRegistry`, Morpho markets, and Bridged ITP tokens. USDC on Settlement uses the standard 6 decimals.
+The Arbitrum chain (Chain ID: `14601`) used for bridge custody and Morpho lending. Settlement hosts the `SettlementBridgeCustody`, `ITPNAVOracle`, `MirrorOracleRegistry`, Morpho markets, and Bridged DTF tokens. USDC on Settlement uses the standard 6 decimals.
 
 ### SettlementBridgeCustody
 

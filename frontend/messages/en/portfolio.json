@@ -30,7 +30,7 @@
     "subtitle": "Active Holdings"
   },
   "positions_table": {
-    "itp": "ITP",
+    "itp": "DTF",
     "shares": "Shares",
     "avg_cost": "Avg Cost",
     "nav": "NAV",
@@ -40,7 +40,7 @@
   },
   "trades_table": {
     "date": "Date",
-    "itp": "ITP",
+    "itp": "DTF",
     "side": "Side",
     "amount": "Amount",
     "price": "Price",
@@ -59,7 +59,7 @@
   },
   "empty": {
     "no_positions_title": "No positions yet",
-    "no_positions_description": "Browse index products above and buy your first ITP to start tracking performance here.",
+    "no_positions_description": "Browse index products above and buy your first DTF to start tracking performance here.",
     "explore_indexes": "Explore Indexes",
     "no_trades_title": "No trades yet",
     "no_trades_description": "Your buy and sell history will appear here once you make your first trade.",

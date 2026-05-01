@@ -142,7 +142,7 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
   // Keep useUserState for name/symbol only (backend convenience)
   const userState = useUserState(itpId)
   const staticEntry = (itpIdNames as Record<string, { name: string; ticker: string }>)[itpId.toLowerCase()]
-  const itpName = staticEntry?.name || userState.bridgedItpName || 'ITP'
+  const itpName = staticEntry?.name || userState.bridgedItpName || 'DTF'
   const itpSymbol = staticEntry?.ticker || userState.bridgedItpSymbol || ''
 
   // L3 direct path: read shares straight from _userShares on Index. The
@@ -205,7 +205,7 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
   const sharesDiagnosis: string | null = (() => {
     if (!address) return null
     if (l3Shares > 0n) return null
-    return 'You don\'t own shares of this ITP. Creating an ITP does not seed the creator — buy first.'
+    return 'You don\'t own shares of this DTF. Creating a DTF does not seed the creator — buy first.'
   })()
 
   // L3 direct path needs no approval. handleApprove is preserved as an alias
@@ -675,7 +675,7 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
             if (!vid) return null
             return (
               <div className="rounded-lg overflow-hidden mb-4">
-                <YouTubeLite videoId={vid} title={itpName || 'ITP'} />
+                <YouTubeLite videoId={vid} title={itpName || 'DTF'} />
               </div>
             )
           })()}

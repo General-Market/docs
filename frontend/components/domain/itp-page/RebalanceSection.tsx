@@ -151,7 +151,7 @@ export function RebalanceSection({ itpId, enrichment }: RebalanceSectionProps) {
 
         if (!cancelled) setAssets(rows)
       } catch (e: any) {
-        if (!cancelled) setLoadError(e.message || 'Failed to load ITP state')
+        if (!cancelled) setLoadError(e.message || 'Failed to load DTF state')
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -229,7 +229,7 @@ export function RebalanceSection({ itpId, enrichment }: RebalanceSectionProps) {
       removedIndices,
       newAssetRows.map(a => a.address as `0x${string}`),
       newWeights,
-      note || 'Rebalance from ITP detail page',
+      note || 'Rebalance from DTF detail page',
     )
   }
 

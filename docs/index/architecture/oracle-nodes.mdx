@@ -16,7 +16,7 @@ Five obligations, repeated every second, without complaint:
 - Collect pending orders from the Index contract
 - Propose batches and coordinate BLS multi-party signing
 - Submit confirmed batches on-chain with aggregated signatures
-- Trigger rebalancing when ITP weights are updated
+- Trigger rebalancing when DTF weights are updated
 - Maintain price consensus for NAV computation
 
 ## Key Modules
@@ -62,7 +62,7 @@ One second. Five phases. 200 milliseconds each. The precision is not aspirationa
 | **PROPOSE** | 200ms | Leader constructs and broadcasts the proposed batch |
 | **SIGN_SUBMIT** | 200ms | Peer oracle nodes validate the proposal and return BLS partial signatures |
 | **CONFIRM** | 200ms | Leader aggregates signatures and submits the confirmed batch on-chain |
-| **REBALANCE** | 200ms | Process any pending ITP rebalance operations (weight updates → new quantities) |
+| **REBALANCE** | 200ms | Process any pending DTF rebalance operations (weight updates → new quantities) |
 
 ```mermaid
 gantt

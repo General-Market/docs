@@ -2,7 +2,7 @@
   "heading": {
     "label": "Morpho 볼트",
     "title": "대출",
-    "description": "USDC를 예치하여 수익을 얻거나 ITP 포지션을 담보로 대출받으세요."
+    "description": "USDC를 예치하여 수익을 얻거나 DTF 포지션을 담보로 대출받으세요."
   },
   "stats": {
     "vault_tvl": "볼트 TVL (총예치금액)",
@@ -18,11 +18,11 @@
     "est_annual_yield": "예상 연간 수익",
     "yield_status": "수익 상태",
     "no_borrows_yet": "아직 대출 없음",
-    "no_borrows_notice": "사용자가 ITP 담보로 USDC를 빌릴 때 볼트 수익이 발생합니다. 현재 활성 대출이 없습니다."
+    "no_borrows_notice": "사용자가 DTF 담보로 USDC를 빌릴 때 볼트 수익이 발생합니다. 현재 활성 대출이 없습니다."
   },
   "borrow_panel": {
-    "title": "대출 — ITP 담보",
-    "collateral_value": "담보 (ITP 가치)",
+    "title": "대출 — DTF 담보",
+    "collateral_value": "담보 (DTF 가치)",
     "outstanding_debt": "미상환 부채",
     "max_borrow": "최대 대출 ({lltv}% LTV)",
     "change_itp": "변경"
@@ -67,7 +67,7 @@
   },
   "borrow_usdc": {
     "title": "USDC 대출",
-    "description": "ITP 담보를 이용하여 USDC를 대출합니다",
+    "description": "DTF 담보를 이용하여 USDC를 대출합니다",
     "amount_label": "금액 (USDC)",
     "max_borrow_label": "최대 대출: {amount} USDC",
     "projected_health_factor": "예상 건전성 지수",
@@ -98,12 +98,12 @@
   },
   "deposit_collateral": {
     "title": "담보 예치",
-    "description": "USDC를 대출받기 위해 ITP 토큰을 담보로 예치합니다",
-    "amount_label": "금액 (ITP)",
-    "balance_label": "잔액: {amount} ITP",
-    "insufficient_balance": "ITP 잔액 부족",
+    "description": "USDC를 대출받기 위해 DTF 토큰을 담보로 예치합니다",
+    "amount_label": "금액 (DTF)",
+    "balance_label": "잔액: {amount} DTF",
+    "insufficient_balance": "DTF 잔액 부족",
     "button": {
-      "approving_itp": "ITP 승인 중...",
+      "approving_itp": "DTF 승인 중...",
       "confirm_wallet": "지갑에서 확인하세요...",
       "depositing": "예치 중...",
       "deposited": "예치 완료!",
@@ -130,14 +130,14 @@
   },
   "withdraw_collateral": {
     "title": "담보 출금",
-    "description_no_debt": "ITP 담보를 출금합니다",
+    "description_no_debt": "DTF 담보를 출금합니다",
     "description_with_debt": "이용 가능한 담보를 출금합니다 (부채에 의해 제한됨)",
-    "amount_label": "금액 (ITP)",
+    "amount_label": "금액 (DTF)",
     "deposited_label": "예치됨: {amount}",
     "max_withdraw_label": "최대 출금: {amount}",
     "projected_health_factor": "예상 건전성 지수",
     "cannot_withdraw_health": "출금 불가: 건전성 지수가 1.0 미만이 됩니다",
-    "close_position_notice": "이 작업은 포지션을 종료하고 모든 ITP를 지갑으로 반환합니다.",
+    "close_position_notice": "이 작업은 포지션을 종료하고 모든 DTF를 지갑으로 반환합니다.",
     "button": {
       "confirm_wallet": "지갑에서 확인하세요...",
       "withdrawing": "출금 중...",
@@ -200,9 +200,9 @@
   },
   "collateral_selector": {
     "title": "담보 선택",
-    "description": "USDC 대출에 사용할 ITP를 선택하세요",
-    "no_itps": "지갑에 대출 마켓이 있는 ITP가 없습니다",
-    "no_itps_hint": "먼저 ITP를 구매한 후 다시 돌아오세요.",
+    "description": "USDC 대출에 사용할 DTF를 선택하세요",
+    "no_itps": "지갑에 대출 마켓이 있는 DTF가 없습니다",
+    "no_itps_hint": "먼저 DTF를 구매한 후 다시 돌아오세요.",
     "balance": "잔액",
     "nav": "NAV",
     "no_market": "대출 마켓 없음",
@@ -260,7 +260,7 @@
     "days_ago": "{days}일 전"
   },
   "markets_detail": {
-    "itp_markets": "ITP 마켓",
+    "itp_markets": "DTF 마켓",
     "collateral": "담보",
     "nav_price": "NAV 가격",
     "ltv": "LTV",

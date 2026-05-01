@@ -100,7 +100,7 @@ export function MarketActionModal({
           <div className="flex justify-between items-start mb-1">
             <div>
               <h2 className="text-lg font-semibold text-text-primary">
-                {t('lend_modal.title', { name: itpInfo.name || 'ITP' })}
+                {t('lend_modal.title', { name: itpInfo.name || 'DTF' })}
               </h2>
               {itpInfo.symbol && (
                 <p className="text-text-muted text-sm font-mono">${itpInfo.symbol}</p>
@@ -124,7 +124,7 @@ export function MarketActionModal({
                         {t('position_card.collateral')}
                       </span>
                       <span className="text-sm text-text-primary font-mono tabular-nums">
-                        {parseFloat(collateral!).toFixed(4)} ITP
+                        {parseFloat(collateral!).toFixed(4)} DTF
                       </span>
                     </div>
                     <div className="flex justify-between items-center">

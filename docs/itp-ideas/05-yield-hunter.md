@@ -1,4 +1,4 @@
-# ITP Ideas: The Yield Hunter
+# DTF Ideas: The Yield Hunter
 
 Archetype: DeFi power user who optimizes for yield. Comes from fixed income, dividend investing, or DeFi farming. Wants diversified yield exposure, passive income, real yield, and compounding returns.
 

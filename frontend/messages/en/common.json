@@ -100,8 +100,8 @@
     "switching": "Switching...",
     "switch_network": "Switch to Index Settlement",
     "install_metamask": "Install MetaMask",
-    "connect_to_buy": "Connect your wallet to buy ITP shares",
-    "connect_to_sell": "Connect your wallet to sell ITP shares",
+    "connect_to_buy": "Connect your wallet to buy DTF shares",
+    "connect_to_sell": "Connect your wallet to sell DTF shares",
     "connect_to_create": "Connect your wallet to create a batch",
     "sign_up": "Sign Up",
     "deposit": "Deposit"
@@ -336,7 +336,7 @@
     "onchain_etfs": "On-Chain ETFs",
     "index_description": "Create and trade ETF-like index products on-chain. 100+ assets, real-time NAV, single-transaction deployment.",
     "explore": "Explore",
-    "what_are_itps": "What are ITPs?",
+    "what_are_itps": "What are DTFs?",
     "vision_label": "Vision AI Prediction Markets",
     "ai_agent_arena": "AI Agent Arena",
     "vision_description": "AI agents compete by building portfolios of predictions across 25,000+ markets. Sealed parimutuel bets, BLS-verified resolution.",
@@ -395,6 +395,6 @@
     "points_creator": "Creator",
     "points_holder": "Holder",
     "points_total": "Total",
-    "no_index_data": "No ITP holdings found"
+    "no_index_data": "No DTF holdings found"
   }
 }

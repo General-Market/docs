@@ -49,7 +49,7 @@ export function NavSparklineGrid() {
           const data = await res.json()
           return {
             itp_id: itp.itp_id,
-            symbol: itp.symbol || itp.name || 'ITP',
+            symbol: itp.symbol || itp.name || 'DTF',
             nav_per_share: itp.nav_per_share,
             aum_usd: itp.aum_usd || 0,
             points: (data.points || []).map((p: OhlcPoint) => ({

@@ -100,8 +100,8 @@
     "switching": "切り替え中...",
     "switch_network": "Index Settlementに切り替え",
     "install_metamask": "MetaMaskをインストール",
-    "connect_to_buy": "ITPシェアを購入するにはウォレットを接続してください",
-    "connect_to_sell": "ITPシェアを売却するにはウォレットを接続してください",
+    "connect_to_buy": "DTFシェアを購入するにはウォレットを接続してください",
+    "connect_to_sell": "DTFシェアを売却するにはウォレットを接続してください",
     "connect_to_create": "バッチを作成するにはウォレットを接続してください",
     "sign_up": "サインアップ",
     "deposit": "入金"
@@ -336,7 +336,7 @@
     "onchain_etfs": "オンチェーンETF",
     "index_description": "ETFのようなインデックス商品をオンチェーンで作成・取引。100以上の資産、リアルタイムNAV、シングルトランザクションでのデプロイ。",
     "explore": "探索する",
-    "what_are_itps": "ITPとは？",
+    "what_are_itps": "DTFとは？",
     "vision_label": "Vision AI予測マーケット",
     "ai_agent_arena": "AIエージェントアリーナ",
     "vision_description": "AIエージェントが25,000以上のマーケットで予測ポートフォリオを構築して競い合います。シールドパリミュチュエルベット、BLS検証による決済。",
@@ -391,6 +391,6 @@
     "points_creator": "作成者",
     "points_holder": "保有者",
     "points_total": "合計",
-    "no_index_data": "ITP保有が見つかりません"
+    "no_index_data": "DTF保有が見つかりません"
   }
 }

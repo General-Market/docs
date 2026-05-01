@@ -1,6 +1,6 @@
 # Index L3 Documentation
 
-> Decentralized Index Token Product (ITP) platform on Arbitrum Orbit L3
+> Decentralized Dex Traded Fund (DTF) platform on Arbitrum Orbit L3
 
 ---
 

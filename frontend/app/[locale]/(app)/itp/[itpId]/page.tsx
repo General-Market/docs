@@ -31,8 +31,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const num = parseItpNum(itpId)
   const override = ITP_NAMES[itpId.toLowerCase()]
-  const name = itp?.name || override?.name || `ITP #${num}`
-  const symbol = itp?.symbol || override?.ticker || `ITP${num}`
+  const name = itp?.name || override?.name || `DTF #${num}`
+  const symbol = itp?.symbol || override?.ticker || `DTF${num}`
   const assetCount = itp?.assetCount || 0
   const nav = itp?.nav || 0
 
@@ -83,8 +83,8 @@ export default async function ItpPage({ params }: Props) {
   const pageOverride = ITP_NAMES[itpId.toLowerCase()]
   const data = itp ?? {
     itpId,
-    name: pageOverride?.name || `ITP #${itpNum}`,
-    symbol: pageOverride?.ticker || `ITP${itpNum}`,
+    name: pageOverride?.name || `DTF #${itpNum}`,
+    symbol: pageOverride?.ticker || `DTF${itpNum}`,
     nav: 0,
     aum: 0,
     assetCount: 0,

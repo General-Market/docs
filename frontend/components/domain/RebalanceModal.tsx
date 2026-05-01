@@ -251,7 +251,7 @@ export function RebalanceModal({ itpId, itpName, onClose, initialHoldings }: Reb
 
         setAssets(rows)
       } catch (e: any) {
-        setErrorMsg(e.message || 'Failed to load ITP state')
+        setErrorMsg(e.message || 'Failed to load DTF state')
         setStatus('error')
       } finally {
         if (!cancelled) setLoading(false)

@@ -1,30 +1,30 @@
 ---
-title: "What Are Index Tracking Products (ITPs)?"
-description: "ITPs are on-chain tokenized index products — the crypto equivalent of ETFs. One token, a basket of crypto assets, real-time NAV. Learn how they work."
-keywords: ["ITP", "index tracking product", "crypto ETF", "on-chain ETF", "DeFi index fund", "tokenized index", "ERC-4626 vault", "crypto index fund"]
+title: "What Are Dex Traded Funds (DTFs)?"
+description: "DTFs are on-chain DEX-traded fund products — tokenized crypto baskets that settle on-chain. One token, a basket of crypto assets, real-time NAV. Learn how they work."
+keywords: ["ITP", "index tracking product", "crypto ETF", "on-chain ETF", "DeFi index fund", "tokenized index", "ERC-4626 vault", "crypto index fund", "DTF", "DEX traded fund", "dex traded funds", "on-chain DTF"]
 date: "2026-03-17"
 author: "General Market"
 slug: "what-are-itps"
 category: "Education"
 readingTime: "14 min read"
 tldr:
-  - "ITPs are <strong>on-chain ETFs</strong> — one token holds a basket of up to 100 crypto assets with fixed weights"
+  - "DTFs are <strong>on-chain ETFs</strong> — one token holds a basket of up to 100 crypto assets with fixed weights"
   - "Settlement in <strong>~30 seconds</strong> on Arbitrum — no T+1 waiting, no custodian delays"
-  - "Management fees up to <strong>10% annualized</strong>, 70/30 split between creator and protocol — <strong>recurring revenue per ITP deployed</strong>"
-  - "107 backtested ITPs: <strong>median 33.5% annualized</strong>, 75% positive. Best Sharpe: <strong>1.355</strong> (RWA TVL Weighted)"
+  - "Management fees up to <strong>10% annualized</strong>, 70/30 split between creator and protocol — <strong>recurring revenue per DTF deployed</strong>"
+  - "107 backtested DTFs: <strong>median 33.5% annualized</strong>, 75% positive. Best Sharpe: <strong>1.355</strong> (RWA TVL Weighted)"
 ---
 
 The on-chain equivalent of ETFs. One token. A basket of crypto assets. Fixed weights. The rest is arithmetic.
 
 ## The 30-Second Version
 
-You want exposure to "DeFi" but refuse to buy 10 tokens separately, each with its own swap, its own gas fee, its own position to monitor at 3 AM. An ITP lets you buy one token that holds all 10. The price floats with the basket. The S&P 500 ETF, except nobody asked for your identification, and settlement takes thirty seconds instead of a business day.
+You want exposure to "DeFi" but refuse to buy 10 tokens separately, each with its own swap, its own gas fee, its own position to monitor at 3 AM. A Dex Traded Fund (DTF) lets you buy one token that holds all 10. The price floats with the basket. The S&P 500 ETF, except nobody asked for your identification, and settlement takes thirty seconds instead of a business day.
 
 Someone picks the assets. Assigns weights. Deploys on-chain. You buy shares at the current NAV. When the underlying tokens rise, your share price rises. When they fall, yours falls with them. One token. Many assets. One fate. The simplicity is not a simplification — it is the product.
 
 <Callout type="info">
 
-**Example: "DeFi Blue Chips" ITP**
+**Example: "DeFi Blue Chips" DTF**
 
 | Token | Weight |
 |-------|--------|
@@ -45,23 +45,23 @@ You buy 100 shares → $124 exposure to all 8 tokens in one transaction.
 
 ## What Happens When You Hold for 30 Days
 
-Numbers clarify what prose obscures. Take the DeFi Blue Chips ITP above. You buy 100 shares at $1.00 NAV. One hundred dollars in, one token in your wallet. Then time does what time does.
+Numbers clarify what prose obscures. Take the DeFi Blue Chips DTF above. You buy 100 shares at $1.00 NAV. One hundred dollars in, one token in your wallet. Then time does what time does.
 
 **Days 1–10: The rally.** ETH drags DeFi upward. AAVE climbs 22%, UNI follows at 18%. The rest trail behind but everything is green. Your NAV rises to $1.08. You did nothing. The basket did the work. Eight tokens moved — you held one.
 
-**Day 15: The rebalance.** The ITP creator decides to add LDO at 5% and trim CRV from 10% to 5%. A single on-chain transaction recalculates the underlying quantities while preserving your NAV at that moment. Your share count does not change. What each share *contains* shifts beneath you, silently, like furniture rearranged in a room you never left. You still hold 100 shares. The thesis evolved. Your position did not require your attention.
+**Day 15: The rebalance.** The DTF creator decides to add LDO at 5% and trim CRV from 10% to 5%. A single on-chain transaction recalculates the underlying quantities while preserving your NAV at that moment. Your share count does not change. What each share *contains* shifts beneath you, silently, like furniture rearranged in a room you never left. You still hold 100 shares. The thesis evolved. Your position did not require your attention.
 
-**Day 25: The dip.** Broad market correction. Everything drops. MKR sheds 15% in a day. Your NAV falls to $0.94. You are down 6%. This is the part where documentation would say "past performance does not guarantee future results." Instead: you held one token through a drawdown that would have required monitoring eight separate positions, calculating eight separate losses, resisting eight separate urges to panic-sell at the worst moment. The ITP absorbed the complexity. The loss remained simple.
+**Day 25: The dip.** Broad market correction. Everything drops. MKR sheds 15% in a day. Your NAV falls to $0.94. You are down 6%. This is the part where documentation would say "past performance does not guarantee future results." Instead: you held one token through a drawdown that would have required monitoring eight separate positions, calculating eight separate losses, resisting eight separate urges to panic-sell at the worst moment. The DTF absorbed the complexity. The loss remained simple.
 
 **Day 30: The recovery.** Markets bounce. Your NAV reaches $1.12. You are up 12% on the month.
 
 The point is not the 12%. The point is what you did not do. You did not execute eight swaps. You did not rebalance manually. You did not wake at 3 AM because SNX was crashing and you could not remember what percentage of your portfolio it represented. You held one token. The basket handled the rest. Convenience, in volatile markets, is not a luxury. It is a survival mechanism.
 
-## How ITPs Work
+## How DTFs Work
 
 ### Creation
 
-Anyone can create an ITP. Pick assets from 100+ supported tokens. Assign weights. Deploy in a single transaction. The ITP starts at $1 NAV. Each share holds a fixed quantity of each underlying asset, calculated from the weights and prices at the moment of creation. An opinion, crystallized into arithmetic.
+Anyone can create a DTF. Pick assets from 100+ supported tokens. Assign weights. Deploy in a single transaction. The DTF starts at $1 NAV. Each share holds a fixed quantity of each underlying asset, calculated from the weights and prices at the moment of creation. An opinion, crystallized into arithmetic.
 
 The math at creation:
 
@@ -80,7 +80,7 @@ The price of one share. Calculated as: sum of (quantity × price) for each asset
 NAV = sum(quantity[i] × price[i]) / 1e18
 ```
 
-If ETH rises 10% and your ITP is 50% ETH, your NAV rises roughly 5%. If everything drops 20%, your NAV drops 20%. The math is transparent and verifiable on-chain at all times. The market does not care about your intentions, but at least the accounting is honest.
+If ETH rises 10% and your DTF is 50% ETH, your NAV rises roughly 5%. If everything drops 20%, your NAV drops 20%. The math is transparent and verifiable on-chain at all times. The market does not care about your intentions, but at least the accounting is honest.
 
 ### NAV is Not a Promise
 
@@ -92,13 +92,13 @@ The formula is on-chain. Anyone can verify it. The oracle prices feeding it come
 
 ### Buying and Selling
 
-To buy: deposit USDC, receive ITP shares at the current NAV. If the NAV is $1.24 and you deposit $124, you get 100 shares. To sell: return your shares, receive USDC at the current NAV. Settlement happens on-chain in one cycle. No waiting days for your funds. No intermediary holding your money while pretending to process paperwork.
+To buy: deposit USDC, receive DTF shares at the current NAV. If the NAV is $1.24 and you deposit $124, you get 100 shares. To sell: return your shares, receive USDC at the current NAV. Settlement happens on-chain in one cycle. No waiting days for your funds. No intermediary holding your money while pretending to process paperwork.
 
 Every minted share is backed 1:1 by its underlying assets. The protocol does not mint optimistically — your USDC is converted to the underlying tokens before shares are issued. If the settlement transaction fails, no shares are created. This is not a design philosophy. It is a constraint enforced by the contract itself. Unbacked shares cannot exist because the code does not permit them to.
 
 ### Rebalancing
 
-The ITP creator can update weights at any time. When this happens, the underlying quantities are recalculated to preserve the current NAV:
+The DTF creator can update weights at any time. When this happens, the underlying quantities are recalculated to preserve the current NAV:
 
 ```
 quantity_new[i] = (weight_new[i] × currentNAV) / price[i]
@@ -110,19 +110,19 @@ Your share count stays the same — only what each share contains changes. The p
 
 For those who read contract code before whitepapers.
 
-**ERC-4626 vault, subverted.** The ITP contract inherits ERC-4626 — the standard interface for tokenized vaults. But every direct deposit, mint, withdraw, and redeem function is disabled. You cannot interact with the vault directly. All minting flows through `Investment.sol`, which enforces a strict pipeline: order placement, Authorized Participant confirmation, asset purchase verification, and only then — share minting. The standard interface is a skeleton. The custom logic is the body.
+**ERC-4626 vault, subverted.** The DTF contract inherits ERC-4626 — the standard interface for tokenized vaults. But every direct deposit, mint, withdraw, and redeem function is disabled. You cannot interact with the vault directly. All minting flows through `Investment.sol`, which enforces a strict pipeline: order placement, Authorized Participant confirmation, asset purchase verification, and only then — share minting. The standard interface is a skeleton. The custom logic is the body.
 
-**Authorized Participants.** Real underlying assets, not synthetic exposure. When you buy ITP shares, an Authorized Participant (AP) executes the actual token purchases on Bitget. The AP confirms the trade. Only after confirmation does `Investment.sol` call `completeBuyOrder`, releasing USDC to the AP and minting shares to the buyer. If the AP trade fails — gas issue, revert, timeout — the entire order rolls back. No shares minted. No USDC released. The pipeline is atomic or it is nothing.
+**Authorized Participants.** Real underlying assets, not synthetic exposure. When you buy DTF shares, an Authorized Participant (AP) executes the actual token purchases on Bitget. The AP confirms the trade. Only after confirmation does `Investment.sol` call `completeBuyOrder`, releasing USDC to the AP and minting shares to the buyer. If the AP trade fails — gas issue, revert, timeout — the entire order rolls back. No shares minted. No USDC released. The pipeline is atomic or it is nothing.
 
-**On-chain inventory.** Basket quantities are stored in `_itpInventory[itpId]` — a mapping from ITP ID to an array of fixed-point quantities per asset. These quantities change only on rebalance. Buy and sell operations mint or burn proportional shares without touching the underlying quantities. The inventory is the ground truth. Everything else is derived.
+**On-chain inventory.** Basket quantities are stored in `_itpInventory[itpId]` — a mapping from DTF ID to an array of fixed-point quantities per asset. These quantities change only on rebalance. Buy and sell operations mint or burn proportional shares without touching the underlying quantities. The inventory is the ground truth. Everything else is derived.
 
 **NAV oracle.** BLS-signed price feeds arrive every 4 hours (14,400-second curator cycle). The oracle nodes independently fetch prices, compute NAV using the same `sum(qty[i] * price[i]) / 1e18` formula, sign with their BLS private keys on the BN254 curve, and submit. When the threshold agrees, the aggregated signature is verified on-chain in one transaction. One price. One proof. No ambiguity.
 
-**The backing invariant.** Shares are never minted without confirmed backing. This is the single most important property of the system, and the one most likely to be eroded by convenience if left unguarded. `completeBuyOrder` on settlement must succeed before shares exist on L3. If it fails, the order reverts. No optimistic minting. No "we'll settle later." Unbacked tokens are the industry's original sin. ITPs choose slower minting over faster fraud. The paranoia is architectural, which means it cannot be overridden by a tired engineer at 2 AM.
+**The backing invariant.** Shares are never minted without confirmed backing. This is the single most important property of the system, and the one most likely to be eroded by convenience if left unguarded. `completeBuyOrder` on settlement must succeed before shares exist on L3. If it fails, the order reverts. No optimistic minting. No "we'll settle later." Unbacked tokens are the industry's original sin. DTFs choose slower minting over faster fraud. The paranoia is architectural, which means it cannot be overridden by a tired engineer at 2 AM.
 
-## ITPs vs Traditional ETFs
+## DTFs vs Traditional ETFs
 
-| Feature | ETF | ITP |
+| Feature | ETF | DTF |
 |---------|-----|-----|
 | Settlement | T+1 days | ~30 seconds |
 | Minimum Investment | $100+ | $1 |
@@ -135,49 +135,49 @@ For those who read contract code before whitepapers.
 | Rebalancing | Quarterly + regulatory filing | Instant on-chain, any time |
 | Underlying Visibility | Quarterly disclosure, 45-day delay | Every holding visible on-chain, always |
 
-Different tradeoffs, not a hierarchy. ITPs trade speed and permissionlessness for regulatory clarity and deposit insurance. ETFs are battle-tested over decades with clear legal frameworks. ITPs are new, operate continuously, and anyone can create one without filing paperwork.
+Different tradeoffs, not a hierarchy. DTFs trade speed and permissionlessness for regulatory clarity and deposit insurance. ETFs are battle-tested over decades with clear legal frameworks. DTFs are new, operate continuously, and anyone can create one without filing paperwork.
 
-The geographic distinction matters more than it appears. A traditional ETF requires a brokerage account, which requires a social security number or equivalent, which requires residency in a country whose financial infrastructure your broker supports. An ITP requires a wallet. The barrier is not lower — it is different. Seven billion people cannot open a Schwab account. Most of them can install MetaMask. Whether they should is a separate question, but the option exists in a way it did not before.
+The geographic distinction matters more than it appears. A traditional ETF requires a brokerage account, which requires a social security number or equivalent, which requires residency in a country whose financial infrastructure your broker supports. A DTF requires a wallet. The barrier is not lower — it is different. Seven billion people cannot open a Schwab account. Most of them can install MetaMask. Whether they should is a separate question, but the option exists in a way it did not before.
 
-ETFs require an institution. ITPs require a wallet. Both require conviction.
+ETFs require an institution. DTFs require a wallet. Both require conviction.
 
-## ITPs vs Buying Tokens Directly
+## DTFs vs Buying Tokens Directly
 
 Why not buy the 10 tokens yourself? You can. Nobody is stopping you. But there are reasons people choose not to endure that particular form of suffering:
 
-1. **Gas.** 10 separate swaps cost 10x the gas. An ITP purchase is one transaction. Efficiency is its own argument.
-2. **Rebalancing.** Maintaining 20% ETH / 20% BTC requires manual adjustment when prices shift. The math is not hard. Doing it every week is. An ITP handles this automatically. Discipline outsourced to a contract.
+1. **Gas.** 10 separate swaps cost 10x the gas. A DTF purchase is one transaction. Efficiency is its own argument.
+2. **Rebalancing.** Maintaining 20% ETH / 20% BTC requires manual adjustment when prices shift. The math is not hard. Doing it every week is. A DTF handles this automatically. Discipline outsourced to a contract.
 3. **Tracking.** One NAV number versus tracking 10 different prices across 10 different positions. Simplicity has a cognitive value that does not appear on any balance sheet.
 4. **Legibility.** You can share one token that represents a thesis. "I'm bullish on DeFi" becomes a single tradeable asset, not a spreadsheet. An opinion with a price tag.
-5. **Composability.** An ITP is an ERC-20 token. It can be transferred, used as collateral, integrated into other protocols. Ten separate token positions are ten separate management problems. One ITP is one token that plays well with everything else on-chain.
+5. **Composability.** A DTF is an ERC-20 token. It can be transferred, used as collateral, integrated into other protocols. Ten separate token positions are ten separate management problems. One DTF is one token that plays well with everything else on-chain.
 
 The same reason people buy SPY instead of 500 individual stocks. Convenience is not laziness — it is the recognition that life is finite.
 
-## Why ITPs Are a Business
+## Why DTFs Are a Business
 
-The ETF industry manages over $10 trillion in global assets, generating $25 billion or more in annual fee revenue at basis-point margins. The business model is simple: charge a small percentage of a large number, forever. ITPs replicate this model on-chain.
+The ETF industry manages over $10 trillion in global assets, generating $25 billion or more in annual fee revenue at basis-point margins. The business model is simple: charge a small percentage of a large number, forever. DTFs replicate this model on-chain.
 
-**The fee architecture.** Management fees up to 10% annualized (MAX_FEE_RATE = 1,000 basis points), split 70/30 between the ITP creator and the protocol. Trading fee: 0.3% per trade. The creator earns for building. The protocol earns for existing. Both earn for as long as the ITP holds assets.
+**The fee architecture.** Management fees up to 10% annualized (MAX_FEE_RATE = 1,000 basis points), split 70/30 between the DTF creator and the protocol. Trading fee: 0.3% per trade. The creator earns for building. The protocol earns for existing. Both earn for as long as the DTF holds assets.
 
-**The unit economics.** 100 ITPs at $1M AUM each, with a 1% average management fee, produces $1M annually in total fees. The protocol's 30% share: $300,000 per year from that cohort alone. Scale the AUM, scale the revenue. The relationship is linear and permanent — every ITP deployed is recurring revenue that compounds with growth.
+**The unit economics.** 100 DTFs at $1M AUM each, with a 1% average management fee, produces $1M annually in total fees. The protocol's 30% share: $300,000 per year from that cohort alone. Scale the AUM, scale the revenue. The relationship is linear and permanent — every DTF deployed is recurring revenue that compounds with growth.
 
-**The ETF parallel.** Vanguard did not invent investing. It made index funds permissionless — anyone could access diversified exposure at minimal cost, and the sheer volume of "anyone" made Vanguard enormous. ITPs do not invent crypto baskets. They make them permissionless. No SEC filing. No authorized participant agreements. No $100M minimum viable AUM. The creation cost is one transaction. The barrier is not lower — it is absent.
+**The ETF parallel.** Vanguard did not invent investing. It made index funds permissionless — anyone could access diversified exposure at minimal cost, and the sheer volume of "anyone" made Vanguard enormous. DTFs do not invent crypto baskets. They make them permissionless. No SEC filing. No authorized participant agreements. No $100M minimum viable AUM. The creation cost is one transaction. The barrier is not lower — it is absent.
 
-This means the long tail can exist. Niche baskets, thesis-driven allocations, community portfolios, meme-sector indexes — products that would never survive the overhead of traditional fund creation can exist on-chain because the overhead is approximately zero. The question is not whether someone will create an "AI Infrastructure" ITP or a "Latin American DeFi" ITP. The question is how many will exist before the market notices they already do.
+This means the long tail can exist. Niche baskets, thesis-driven allocations, community portfolios, meme-sector indexes — products that would never survive the overhead of traditional fund creation can exist on-chain because the overhead is approximately zero. The question is not whether someone will create an "AI Infrastructure" DTF or a "Latin American DeFi" DTF. The question is how many will exist before the market notices they already do.
 
 Every platform that hosts user-generated content discovered the same truth: the long tail generates more aggregate value than the head. SPY and QQQ are the head. The ten thousand baskets that would never exist if creation required a legal team — that is the body. And bodies, unlike heads, grow.
 
 ## What the Backtests Show
 
-107 ITPs backtested against 4 years of price data (April 2022 to March 2026). Not simulated — real prices, real weights, real rebalance logic. The results are instructive in the way that autopsies are instructive: they reveal what killed the patient and what kept the survivors alive.
+107 DTFs backtested against 4 years of price data (April 2022 to March 2026). Not simulated — real prices, real weights, real rebalance logic. The results are instructive in the way that autopsies are instructive: they reveal what killed the patient and what kept the survivors alive.
 
-**The aggregate picture.** Median annualized return: 33.5%. Seventy-five percent of backtested ITPs were net positive. The median survived a bear market, a recovery, and a second cycle. This is not a guarantee. It is a census of what happened when specific strategies met specific conditions.
+**The aggregate picture.** Median annualized return: 33.5%. Seventy-five percent of backtested DTFs were net positive. The median survived a bear market, a recovery, and a second cycle. This is not a guarantee. It is a census of what happened when specific strategies met specific conditions.
 
 **The winners.** Multi-factor strategies with sentiment overlays dominated. The best risk-adjusted performer: **RWA TVL Weighted** — Sharpe ratio of 1.355, annualized return of 24.3%. Steady, diversified, unglamorous. The best absolute performer: **DeFi Momentum + FNG** (Fear & Greed Index overlay) — 3,587% total return, 79.2% annualized, Sharpe of 1.17. The Fear & Greed Index, that crude barometer of collective panic, turned out to be a remarkably effective rebalancing signal. Sentiment is information wearing a mask.
 
-**The losers.** Narrow themed baskets collapsed with the concentration they celebrated. **British Founders ITP:** -98.7%. **Stanford Alumni ITP:** -98.5%. When your thesis is "tokens created by people from the same university," you have not diversified — you have decorated a single point of failure.
+**The losers.** Narrow themed baskets collapsed with the concentration they celebrated. **British Founders DTF:** -98.7%. **Stanford Alumni DTF:** -98.5%. When your thesis is "tokens created by people from the same university," you have not diversified — you have decorated a single point of failure.
 
-**The lesson.** ITPs that diversify across 10+ assets and rebalance on signal outperform static concentrated baskets by a margin that is not subtle. Diversification is not a platitude. It is the difference between -98% and +33%. The backtests do not prove that ITPs are profitable. They prove that the mechanism works — and that the mechanism is only as good as the thesis it encodes. A tool does not guarantee the hand that holds it.
+**The lesson.** DTFs that diversify across 10+ assets and rebalance on signal outperform static concentrated baskets by a margin that is not subtle. Diversification is not a platitude. It is the difference between -98% and +33%. The backtests do not prove that DTFs are profitable. They prove that the mechanism works — and that the mechanism is only as good as the thesis it encodes. A tool does not guarantee the hand that holds it.
 
 ## How to Get Started
 
@@ -187,20 +187,20 @@ Four steps. Five if you count the moment of decision, which is always the hardes
 
 **Step 2: Connect your wallet.** Go to [generalmarket.io](https://generalmarket.io). MetaMask, WalletConnect, any EVM-compatible wallet. No account. No KYC. No email. The wallet is the identity.
 
-**Step 3: Browse ITPs.** Each ITP displays its holdings, weights, NAV, AUM, and creator address. Read them like you would read a portfolio — because that is what they are. Someone expressed a thesis in token weights. You are deciding whether to share it.
+**Step 3: Browse DTFs.** Each DTF displays its holdings, weights, NAV, AUM, and creator address. Read them like you would read a portfolio — because that is what they are. Someone expressed a thesis in token weights. You are deciding whether to share it.
 
-**Step 4: Buy.** Enter the USDC amount. Confirm. Receive ITP shares in your wallet. Settlement: roughly 30 seconds. The NAV begins to float. You are holding a basket of crypto assets in a single token.
+**Step 4: Buy.** Enter the USDC amount. Confirm. Receive DTF shares in your wallet. Settlement: roughly 30 seconds. The NAV begins to float. You are holding a basket of crypto assets in a single token.
 
-**Or: Create your own.** Pick tokens. Set weights. Deploy. Your ITP launches at $1.00 NAV. If others buy in, you have built something between a portfolio and a small declaration of belief. If nobody buys in, you still hold your own conviction at the price you intended. Either way, the thing exists on-chain, with your address on it. A position is a statement. A tokenized position is a statement that can be priced.
+**Or: Create your own.** Pick tokens. Set weights. Deploy. Your DTF launches at $1.00 NAV. If others buy in, you have built something between a portfolio and a small declaration of belief. If nobody buys in, you still hold your own conviction at the price you intended. Either way, the thing exists on-chain, with your address on it. A position is a statement. A tokenized position is a statement that can be priced.
 
 ## Risks
 
-ITPs are an emerging financial primitive. The risks are real, and pretending otherwise would be an insult to your intelligence.
+DTFs are an emerging financial primitive. The risks are real, and pretending otherwise would be an insult to your intelligence.
 
-- **Smart contract risk.** ITPs are governed by smart contracts. Code can have bugs. Contracts are audited but not guaranteed to be flawless. Funds held in a contract are only as safe as the contract itself. Trust in code is still trust.
+- **Smart contract risk.** DTFs are governed by smart contracts. Code can have bugs. Contracts are audited but not guaranteed to be flawless. Funds held in a contract are only as safe as the contract itself. Trust in code is still trust.
 - **Oracle risk.** NAV depends on price feeds from external oracles verified by BLS consensus. If oracles report incorrect prices, your NAV calculation will be wrong. You may buy too high or sell too low. The chain is only as truthful as its sources.
-- **Liquidity risk.** Low-AUM ITPs may have wider effective spreads. If you hold a large position relative to the ITP's total AUM, exiting may take multiple cycles. Size is a privilege that becomes a trap.
-- **Creator risk.** Anyone can create an ITP. This is a feature and a vulnerability in the same breath. A creator can rebalance into tokens you would not have chosen. Check the creator's track record. Check the holdings. The permissionlessness that lets anyone build also lets anyone build badly.
+- **Liquidity risk.** Low-AUM DTFs may have wider effective spreads. If you hold a large position relative to the DTF's total AUM, exiting may take multiple cycles. Size is a privilege that becomes a trap.
+- **Creator risk.** Anyone can create a DTF. This is a feature and a vulnerability in the same breath. A creator can rebalance into tokens you would not have chosen. Check the creator's track record. Check the holdings. The permissionlessness that lets anyone build also lets anyone build badly.
 - **Regulatory risk.** Rules around tokenized index products are still forming. What is permissible today may face restrictions tomorrow. This space does not yet have the regulatory clarity of traditional ETFs. The law moves slowly, but it moves.
 
 You will lose money here. Perhaps not, but the possibility deserves to be named before anything else is promised. The difference between this and other places you might lose money is that here, the arithmetic of your ruin is visible. Transparency does not prevent loss. It prevents surprise — which, in finance, is the only mercy available.
@@ -208,6 +208,6 @@ You will lose money here. Perhaps not, but the possibility deserves to be named 
 ## Further Reading
 
 - [About General Market](/about) — The team and technology behind the protocol.
-- [Browse Markets](/index) — Explore all available ITPs and start trading.
+- [Browse Markets](/index) — Explore all available DTFs and start trading.
 - [AI Prediction Markets](/learn/ai-prediction-markets) — How AI agents trade prediction markets on General Market.
 - [Build a Prediction Market Bot](/learn/build-prediction-market-bot) — Step-by-step guide to building your own trading bot.

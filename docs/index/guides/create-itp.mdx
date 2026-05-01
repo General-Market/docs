@@ -1,11 +1,11 @@
 ---
-title: "Create an ITP"
-description: "Design and deploy a custom Index Tracking Product on General Market"
+title: "Create a DTF"
+description: "Design and deploy a custom Dex Traded Fund on General Market"
 ---
 
 You are about to create a financial product. The market will price it. The market has no feelings about your intentions.
 
-An ITP is a tokenized basket of crypto assets -- an on-chain ETF. You choose the assets, set the weights, and deploy in a single transaction. After that, anyone can buy and sell shares. The product is no longer yours. It belongs to the market.
+A Dex Traded Fund (DTF) is a tokenized basket of crypto assets -- an on-chain ETF. You choose the assets, set the weights, and deploy in a single transaction. After that, anyone can buy and sell shares. The product is no longer yours. It belongs to the market.
 
 <Snippet file="chain-info.mdx" />
 
@@ -17,7 +17,7 @@ An ITP is a tokenized basket of crypto assets -- an on-chain ETF. You choose the
   <Step title="Select Assets">
     Choose from **100+ available crypto tokens**. They are organized by category (Layer 1, DeFi, AI, Memecoins, etc.).
 
-    The protocol imposes no minimum or maximum count. A well-diversified ITP holds between 5 and 50 assets. Diversification is the admission that you do not know which one will fail.
+    The protocol imposes no minimum or maximum count. A well-diversified DTF holds between 5 and 50 assets. Diversification is the admission that you do not know which one will fail.
   </Step>
 
   <Step title="Set Weights">
@@ -35,20 +35,20 @@ An ITP is a tokenized basket of crypto assets -- an on-chain ETF. You choose the
   </Step>
 
   <Step title="Add Metadata">
-    Give the ITP a name and description. Buyers will read the name. Some will read the description. Few will read the holdings. Name it well.
+    Give the DTF a name and description. Buyers will read the name. Some will read the description. Few will read the holdings. Name it well.
     - **Website URL** -- link to a project page, blog post, or research document
-    - **YouTube video** -- embed an explainer or thesis video on the ITP's market page
+    - **YouTube video** -- embed an explainer or thesis video on the DTF's market page
   </Step>
 
   <Step title="Deploy">
-    Click **Create ITP**. One transaction. One confirmation. After this, there is no undo.
+    Click **Create DTF**. One transaction. One confirmation. After this, there is no undo.
 
     The deployment transaction:
-    1. Registers the ITP on the Index contract on L3
+    1. Registers the DTF on the Index contract on L3
     2. Converts percentage weights into fixed per-share quantities
     3. Sets the initial NAV to **$1.00**
 
-    The ITP is live. It appears on the **Markets** page. The market begins forming an opinion.
+    The DTF is live. It appears on the **Markets** page. The market begins forming an opinion.
   </Step>
 </Steps>
 
@@ -62,17 +62,17 @@ Weights are intentions. Quantities are commitments. At creation, the protocol co
 qty[i] = (weight[i] * 1e18) / price[i]
 ```
 
-These quantities define how much of each asset one ITP share represents. They are stored on-chain and **do not change** unless the creator triggers a rebalance. The quantities are permanent. The prices are not.
+These quantities define how much of each asset one DTF share represents. They are stored on-chain and **do not change** unless the creator triggers a rebalance. The quantities are permanent. The prices are not.
 
 ### Example
 
-Suppose an ITP is created with 100 assets, all equally weighted at 1%, and every asset is priced at $1.00:
+Suppose a DTF is created with 100 assets, all equally weighted at 1%, and every asset is priced at $1.00:
 
 ```text
 qty[i] = (0.01 * 1e18) / 1e18 = 0.01 tokens per share
 ```
 
-Each share of the ITP holds 0.01 of each token. The NAV starts at exactly $1.00:
+Each share of the DTF holds 0.01 of each token. The NAV starts at exactly $1.00:
 
 <Snippet file="nav-formula.mdx" />
 
@@ -94,13 +94,13 @@ Fees are denominated in USDC and credited to the deployer's wallet automatically
 
 ## After Deployment
 
-The ITP is live. What you intended no longer matters. What you built does.
+The DTF is live. What you intended no longer matters. What you built does.
 
-- The ITP appears on the **Markets** page alongside all other ITPs
+- The DTF appears on the **Markets** page alongside all other DTFs
 - Anyone with USDC can buy and sell shares
-- Real-time NAV, price charts, and trading volume are visible on the ITP's detail page
+- Real-time NAV, price charts, and trading volume are visible on the DTF's detail page
 - The deployer earns fees on every trade
 
 <Note>
-ITP creation is irreversible. Verify the asset selection and weights before deploying. You can rebalance weights later. You cannot delete the ITP. What is deployed stays deployed.
+DTF creation is irreversible. Verify the asset selection and weights before deploying. You can rebalance weights later. You cannot delete the DTF. What is deployed stays deployed.
 </Note>

@@ -7,7 +7,7 @@ description: "Monitor system health, data source status, consensus metrics, and 
 
 The explorer shows you what the system is doing. Most of the time, it is working. When it is not, you will know before anyone tells you.
 
-Real-time consensus health, order throughput, peer-to-peer connectivity, ITP fund metrics, Vision batch activity, and chain performance -- all in one place. The dashboard does not interpret. It reports.
+Real-time consensus health, order throughput, peer-to-peer connectivity, DTF fund metrics, Vision batch activity, and chain performance -- all in one place. The dashboard does not interpret. It reports.
 
 ```
 +-----------------------------------------------------------------------+
@@ -297,7 +297,7 @@ Each oracle runs a continuous loop:
 
 ---
 
-## ITP & NAV Tab
+## DTF & NAV Tab
 
 Fund metrics. The numbers that matter to anyone with money in the system.
 
@@ -314,15 +314,15 @@ Fund metrics. The numbers that matter to anyone with money in the system.
 
 ### Pending Order Volume
 
-Queue depth of ITP buy/sell orders over time. A pipeline activity proxy. Sustained high values mean orders are not settling fast enough. Demand exceeds throughput.
+Queue depth of DTF buy/sell orders over time. A pipeline activity proxy. Sustained high values mean orders are not settling fast enough. Demand exceeds throughput.
 
-### Live ITP Metrics
+### Live DTF Metrics
 
-A table refreshed every 30 seconds. On-chain data for each ITP. The numbers are real. They are also 30 seconds old.
+A table refreshed every 30 seconds. On-chain data for each DTF. The numbers are real. They are also 30 seconds old.
 
 | Column | Meaning |
 |--------|---------|
-| **Fund** | ITP name and symbol |
+| **Fund** | DTF name and symbol |
 | **NAV** | Net Asset Value per share -- computed as `sum(qty[i] * price[i]) / 1e18` |
 | **AUM** | Assets Under Management in USD |
 | **Assets** | Number of underlying tokens in the basket |
@@ -415,7 +415,7 @@ The summary view. If you only check one tab, make it this one. The charts here d
 ```
 
 <Warning>
-**Quorum Lost** is the highest-severity state. No transactions process. ITP buys/sells and Vision settlements halt. The network is running. It is just running in place.
+**Quorum Lost** is the highest-severity state. No transactions process. DTF buys/sells and Vision settlements halt. The network is running. It is just running in place.
 </Warning>
 
 ---

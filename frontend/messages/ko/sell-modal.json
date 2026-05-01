@@ -1,6 +1,6 @@
 {
   "title": "{name} 매도",
-  "itp_id_label": "ITP ID:",
+  "itp_id_label": "DTF ID:",
   "your_shares_label": "보유 주식",
   "no_shares": "지갑에 주식이 없습니다",
   "no_bridged_itp": "이 펀드는 아직 Settlement에 브릿지되지 않았습니다.",
@@ -55,7 +55,7 @@
     "pnl_vs_cost": "매입가 대비 손익",
     "underlying_title": "Underlying assets released",
     "underlying_note": "Quantities are exact (on-chain inventory × shares burned). Prices reflect the current oracle quote.",
-    "underlying_note_approx": "Approximate breakdown — this ITP has no on-chain inventory yet, so quantities are derived from weights at current prices."
+    "underlying_note_approx": "Approximate breakdown — this DTF has no on-chain inventory yet, so quantities are derived from weights at current prices."
   },
   "toast": {
     "sell_filled": "매도 체결 — {proceeds} 수령"

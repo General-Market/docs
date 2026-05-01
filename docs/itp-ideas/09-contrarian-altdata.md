@@ -1,4 +1,4 @@
-# ITP Ideas: The Contrarian / Alt Data Investor
+# DTF Ideas: The Contrarian / Alt Data Investor
 
 Archetype: Zigs when everyone zags. Uses alternative data, bets against consensus, hunts structural mispricings, and finds alpha in weird places. Reads Nassim Taleb, loves optionality, hates crowded trades. Believes the best returns come from being provably right when the crowd is provably wrong.
 

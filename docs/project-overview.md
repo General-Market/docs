@@ -1,10 +1,10 @@
 # Index L3 - Project Overview
 
-> Decentralized Index Token Product (ITP) and prediction market platform on Arbitrum Orbit L3
+> Decentralized Dex Traded Fund (DTF) and prediction market platform on Arbitrum Orbit L3
 
 ## Executive Summary
 
-Index L3 is a blockchain-based platform with two product lines: Index Token Products (ITPs) — basket tokens representing weighted portfolios of underlying assets — and Vision, a prediction market system powered by 90+ real-world data sources. The system enables decentralized order batching, BLS consensus among oracle nodes, trade execution via Authorized Participants (APs) on centralized exchanges, and parimutuel betting on observable outcomes.
+Index L3 is a blockchain-based platform with two product lines: Dex Traded Funds (DTFs) — basket tokens representing weighted portfolios of underlying assets — and Vision, a prediction market system powered by 90+ real-world data sources. The system enables decentralized order batching, BLS consensus among oracle nodes, trade execution via Authorized Participants (APs) on centralized exchanges, and parimutuel betting on observable outcomes.
 
 **Project Type:** Monorepo (Rust workspace + Solidity contracts + Next.js frontend)
 **Primary Languages:** Rust (~200,000 LOC), TypeScript (~116,000 LOC), Solidity (~15,000 LOC)
@@ -79,7 +79,7 @@ Index L3 is a blockchain-based platform with two product lines: Index Token Prod
 | `leader/` | Round-robin leader election per cycle |
 | `price/` | Price fetching, validation, DEX integration (1inch) |
 | `state/` | State reconstruction from chain events |
-| `nav/` | ITP NAV computation from on-chain inventory |
+| `nav/` | DTF NAV computation from on-chain inventory |
 
 **Consensus Flow:**
 1. Leader proposes batch of pending orders
@@ -157,23 +157,23 @@ TradeRequest → place_order → poll_fills → validate_price → report_fills
 
 ### 5. Smart Contracts (`/contracts`)
 
-**Purpose:** On-chain order management, ITP token issuance, Vision prediction markets, bridge custody, and BLS signature verification.
+**Purpose:** On-chain order management, DTF token issuance, Vision prediction markets, bridge custody, and BLS signature verification.
 
 **Contract Architecture (10 subdirectories + root):**
 
 | Directory | Contracts | Description |
 |-----------|-----------|-------------|
-| `core/` | Investment.sol, InvestmentStorage.sol, ITP.sol, BLSCustody.sol | Order submission, batch/fill confirmation, ITP vault (ERC-4626), BLS-signed custody |
+| `core/` | Investment.sol, InvestmentStorage.sol, ITP.sol, BLSCustody.sol | Order submission, batch/fill confirmation, DTF vault (ERC-4626), BLS-signed custody |
 | `vision/` | Vision.sol, BotRegistry.sol | Prediction market batches, tick resolution, bot registration |
-| `oracle/` | ITPNAVOracle.sol | On-chain NAV oracle for ITP pricing |
-| `bridge/` | BridgeProxy.sol, BridgedITP.sol, BridgedItpFactory.sol | Cross-chain ITP bridging |
+| `oracle/` | ITPNAVOracle.sol | On-chain NAV oracle for DTF pricing |
+| `bridge/` | BridgeProxy.sol, BridgedITP.sol, BridgedItpFactory.sol | Cross-chain DTF bridging |
 | `custody/` | L3BridgeCustody.sol, SettlementBridgeCustody.sol | Dual-custody for L3 and settlement chains |
 | `registry/` | OracleRegistry.sol, CollateralRegistry.sol, AssetPairRegistry.sol, FeeRegistry.sol, MirrorOracleRegistry.sol | Configuration registries |
 | `libraries/` | TypesLib, ErrorsLib, EventsLib, BLSLib, BLSVerifier, BettingLib, DecimalLib, RebalanceLib, AdminLib, VisionMerkleProof | Shared logic |
 | `irm/` | CuratorRateIRM.sol | Interest rate model for lending |
 | `interfaces/` | — | Interface definitions |
 | `mocks/` | — | Test mocks |
-| (root) | Governance.sol | Admin, pause, ITP pause controls |
+| (root) | Governance.sol | Admin, pause, DTF pause controls |
 
 **50 contract files, ~15,000 lines of Solidity.**
 
@@ -181,7 +181,7 @@ TradeRequest → place_order → poll_fills → validate_price → report_fills
 
 ### 6. Frontend (`/frontend`)
 
-**Purpose:** Next.js 14 application with App Router, serving both ITP and Vision products.
+**Purpose:** Next.js 14 application with App Router, serving both DTF and Vision products.
 
 **Stack:** Next.js 14, TypeScript, Tailwind CSS, wagmi/viem, next-intl
 
@@ -196,7 +196,7 @@ TradeRequest → place_order → poll_fills → validate_price → report_fills
 |-------|-------------|
 | `/` | Home / landing |
 | `/index` | Index listing |
-| `/itp/[itpId]` | ITP detail — 12 analytics sections |
+| `/itp/[itpId]` | DTF detail — 12 analytics sections |
 | `/sources` | Vision source catalog |
 | `/source/[sourceId]` | Vision source detail with markets |
 | `/explorer` | Chain explorer |
@@ -206,7 +206,7 @@ TradeRequest → place_order → poll_fills → validate_price → report_fills
 | `/points` | Points / rewards |
 | `/about`, `/terms`, `/privacy` | Static pages |
 
-**ITP Detail Page (`/itp/[itpId]`) — 12 Sections:**
+**DTF Detail Page (`/itp/[itpId]`) — 12 Sections:**
 KeyStatsBar, HoldingsTable, PerformanceChart, NavCanvas, PortfolioBreakdown, FounderDemographics, FundFacts, FundingOverview, ConcentrationMetrics, DefiHealth, InvestmentObjective, TradeCta
 
 **Vision Components:**
@@ -249,12 +249,12 @@ KeyStatsBar, HoldingsTable, PerformanceChart, NavCanvas, PortfolioBreakdown, Fou
 - **Duration:** 1 second (configurable, minimum 50ms)
 - **Phases:** COLLECT (200ms) → PROPOSE (200ms) → SIGN_SUBMIT (200ms) → CONFIRM (200ms) → REBALANCE (200ms)
 
-### Order Flow (ITP)
+### Order Flow (DTF)
 1. User calls `submitOrder()` with USDC escrow
 2. Order enters PENDING status
 3. Oracles batch orders via consensus → BATCHED
 4. AP executes on exchange, reports fills → FILLED
-5. ITP tokens minted to user
+5. DTF tokens minted to user
 
 ### Vision Market Flow
 1. Data source publishes observable outcome (e.g., BTC price, flight delay, earthquake magnitude)
@@ -262,7 +262,7 @@ KeyStatsBar, HoldingsTable, PerformanceChart, NavCanvas, PortfolioBreakdown, Fou
 3. Oracle nodes resolve tick via BLS-signed consensus
 4. Settlement distributes pool to winning positions (parimutuel)
 
-### ITP Pricing (ETF Model)
+### DTF Pricing (ETF Model)
 - At creation, weights convert to fixed per-share quantities: `qty[i] = (weight[i] * 1e18) / price[i]`
 - NAV floats with underlying prices: `NAV = sum(qty[i] * price[i]) / 1e18`
 - Buy/sell mint/burn proportional shares without changing quantities
@@ -288,7 +288,7 @@ KeyStatsBar, HoldingsTable, PerformanceChart, NavCanvas, PortfolioBreakdown, Fou
 
 | Project | Test Range | Execution | Coverage |
 |---------|-----------|-----------|----------|
-| ITP | 00–09, 16–18 | Serial | Wallet, buy/sell, lending, create ITP, backtester, oracle resilience, bridge, portfolio, multi-ITP |
+| DTF | 00–09, 16–18 | Serial | Wallet, buy/sell, lending, create DTF, backtester, oracle resilience, bridge, portfolio, multi-DTF |
 | Vision | 10–15, 19–21 | Serial | Sources, deposit, batch entry, claim/withdraw, settlement bridge, display formatting |
 | Shared | 22–46 | Both | API smoke, decimal regression, system health, faucet, swarm, leaderboard, liquidation |
 

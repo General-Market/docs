@@ -2,7 +2,7 @@
   "heading": {
     "label": "Morpho Vaults",
     "title": "Lend",
-    "description": "Deposit USDC to earn yield or borrow against your ITP positions."
+    "description": "Deposit USDC to earn yield or borrow against your DTF positions."
   },
   "stats": {
     "vault_tvl": "Vault TVL",
@@ -18,11 +18,11 @@
     "est_annual_yield": "Est. Annual Yield",
     "yield_status": "Yield Status",
     "no_borrows_yet": "No borrows yet",
-    "no_borrows_notice": "Vault earns yield when users borrow USDC against ITP collateral. No active borrows at the moment."
+    "no_borrows_notice": "Vault earns yield when users borrow USDC against DTF collateral. No active borrows at the moment."
   },
   "borrow_panel": {
     "title": "Borrow USDC",
-    "collateral_value": "Collateral (ITP value)",
+    "collateral_value": "Collateral (DTF value)",
     "outstanding_debt": "Outstanding Debt",
     "max_borrow": "Max Borrow ({lltv}% LTV)",
     "change_itp": "Change"
@@ -67,7 +67,7 @@
   },
   "borrow_usdc": {
     "title": "Borrow USDC",
-    "description": "Borrow USDC against your ITP collateral",
+    "description": "Borrow USDC against your DTF collateral",
     "amount_label": "Amount (USDC)",
     "max_borrow_label": "Max borrow: {amount} USDC",
     "projected_health_factor": "Projected Health Factor",
@@ -98,12 +98,12 @@
   },
   "deposit_collateral": {
     "title": "Deposit Collateral",
-    "description": "Deposit ITP tokens as collateral to borrow USDC",
-    "amount_label": "Amount (ITP)",
-    "balance_label": "Balance: {amount} ITP",
-    "insufficient_balance": "Insufficient ITP balance",
+    "description": "Deposit DTF tokens as collateral to borrow USDC",
+    "amount_label": "Amount (DTF)",
+    "balance_label": "Balance: {amount} DTF",
+    "insufficient_balance": "Insufficient DTF balance",
     "button": {
-      "approving_itp": "Approving ITP...",
+      "approving_itp": "Approving DTF...",
       "confirm_wallet": "Confirm in wallet...",
       "depositing": "Depositing...",
       "deposited": "Deposited!",
@@ -130,14 +130,14 @@
   },
   "withdraw_collateral": {
     "title": "Withdraw Collateral",
-    "description_no_debt": "Withdraw your ITP collateral",
+    "description_no_debt": "Withdraw your DTF collateral",
     "description_with_debt": "Withdraw available collateral (limited by debt)",
-    "amount_label": "Amount (ITP)",
+    "amount_label": "Amount (DTF)",
     "deposited_label": "Deposited: {amount}",
     "max_withdraw_label": "Max withdraw: {amount}",
     "projected_health_factor": "Projected Health Factor",
     "cannot_withdraw_health": "Cannot withdraw: health factor would be below 1.0",
-    "close_position_notice": "This will close your position and return all ITP to your wallet.",
+    "close_position_notice": "This will close your position and return all DTF to your wallet.",
     "button": {
       "confirm_wallet": "Confirm in wallet...",
       "withdrawing": "Withdrawing...",
@@ -199,10 +199,10 @@
     "view_on_explorer": "View on explorer"
   },
   "collateral_selector": {
-    "title": "Borrow against which ITP?",
-    "description": "Pick an ITP from your wallet to use as collateral",
-    "no_itps": "No ITPs with lending markets in your wallet",
-    "no_itps_hint": "Buy an ITP first, then come back to borrow against it.",
+    "title": "Borrow against which DTF?",
+    "description": "Pick a DTF from your wallet to use as collateral",
+    "no_itps": "No DTFs with lending markets in your wallet",
+    "no_itps_hint": "Buy a DTF first, then come back to borrow against it.",
     "balance": "Balance",
     "nav": "NAV",
     "no_market": "No lending market",
@@ -260,7 +260,7 @@
     "days_ago": "{days}d ago"
   },
   "markets_detail": {
-    "itp_markets": "ITP Markets",
+    "itp_markets": "DTF Markets",
     "collateral": "Collateral",
     "nav_price": "NAV Price",
     "ltv": "LTV",

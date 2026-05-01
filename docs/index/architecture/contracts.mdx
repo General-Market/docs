@@ -9,15 +9,15 @@ The contracts are the truth. Everything else is commentary.
 
 7,300 lines of Solidity on an Arbitrum Orbit L3. UUPS proxies. BLS verification on every path that matters. No test modes, no owner overrides -- because the moment you add a bypass, you have admitted the system does not believe in itself.
 
-## ITP Core Contracts
+## DTF Core Contracts
 
 | Contract | Description |
 |---|---|
-| **Index.sol** | Central entry point for order submission, batch/fill confirmation, and Index Tracking Product (ITP) management. Houses `createITP` (converts weights to fixed per-share quantities), `_getCurrentPrice` (computes NAV from inventory), and `updateWeights` (rebalance that preserves NAV). |
-| **ITP.sol** | ERC-4626 vault wrapping each ITP's share token. Handles minting on buy, burning on sell, and exposes standard vault accounting. |
+| **Index.sol** | Central entry point for order submission, batch/fill confirmation, and Dex Traded Fund (DTF) management. Houses `createITP` (converts weights to fixed per-share quantities), `_getCurrentPrice` (computes NAV from inventory), and `updateWeights` (rebalance that preserves NAV). |
+| **ITP.sol** | ERC-4626 vault wrapping each DTF's share token. Handles minting on buy, burning on sell, and exposes standard vault accounting. |
 | **BridgeProxy.sol** | Cross-chain order routing between Arbitrum L1/L2 and the L3. Relays user orders submitted on Arbitrum down to the Index contract on L3. |
-| **BridgedItpFactory.sol** | Factory that creates ERC-20 representations of ITP shares on Arbitrum, enabling L1/L2 composability without requiring users to interact with L3 directly. |
-| **Governance.sol** | Administrative controls including global pause, per-ITP pause, and role management. |
+| **BridgedItpFactory.sol** | Factory that creates ERC-20 representations of DTF shares on Arbitrum, enabling L1/L2 composability without requiring users to interact with L3 directly. |
+| **Governance.sol** | Administrative controls including global pause, per-DTF pause, and role management. |
 | **BLSCustody.sol** | Executes custody operations (deposits, withdrawals) gated by BLS-signed consensus from oracle nodes. |
 
 ## Registry Contracts
@@ -25,7 +25,7 @@ The contracts are the truth. Everything else is commentary.
 | Contract | Description |
 |---|---|
 | **OracleRegistry.sol** | Stores oracle node BLS public keys, manages the aggregated public key, and handles key rotation. New oracle nodes must register in OracleRegistry before participating in consensus. |
-| **CollateralRegistry.sol** | Maintains the whitelist of accepted collateral tokens (currently USDC). Controls which tokens can back ITP creation and order settlement. |
+| **CollateralRegistry.sol** | Maintains the whitelist of accepted collateral tokens (currently USDC). Controls which tokens can back DTF creation and order settlement. |
 | **AssetPairRegistry.sol** | Configures trading pairs available on the protocol -- maps asset identifiers to on-chain and off-chain parameters. |
 | **FeeRegistry.sol** | Defines fee tiers for different operations and manages deployer fee claiming. Protocol fees are accrued in FeeRegistry and claimable by authorized addresses. |
 
@@ -34,7 +34,7 @@ The contracts are the truth. Everything else is commentary.
 | Library | Purpose |
 |---|---|
 | **TypesLib.sol** | Shared struct definitions used across the protocol: `LimitOrder`, `Fill`, `ITP`, batch metadata, and more. |
-| **ErrorsLib.sol** | Custom error definitions ranging from `E001` through `E069+`. Every revert in the protocol uses a typed error from ErrorsLib. |
+| **ErrorsLib.sol** | Custom error definitions ranging from `E001` through `E069+`. Every revert in the protocol uses a typed error from `ErrorsLib`. |
 | **EventsLib.sol** | Event definitions emitted by core contracts -- `OrderSubmitted`, `BatchConfirmed`, `FillExecuted`, `ITPCreated`, `WeightsUpdated`, etc. |
 | **BLSLib.sol** | BLS signature verification using EVM precompiles on the BN254 curve. Called by every path that validates oracle node consensus. |
 
@@ -46,9 +46,9 @@ The contracts are the truth. Everything else is commentary.
 
 All upgradeable contracts use UUPS proxies (OpenZeppelin 5.x). Storage slots are managed to survive upgrades. The proxy address is permanent. Only the implementation changes.
 
-## ITP NAV Pricing Model
+## DTF NAV Pricing Model
 
-Every ITP starts at \$1. Then the market takes over. The price drifts as underlying assets move -- this is the point.
+Every DTF starts at \$1. Then the market takes over. The price drifts as underlying assets move -- this is the point.
 
 ```solidity
 // At creation (or rebalance), weights become fixed quantities:
@@ -77,7 +77,7 @@ Every state change that matters requires cryptographic proof that the machines a
 - **Key management:** Aggregated public key in `OracleRegistry.sol`, updated on join/leave/rotation
 - **Verification:** `BLSLib.verify(message, signature, aggregatedPubkey)` in `confirmBatch()`, before any state change
 
-## ITP Order Lifecycle
+## DTF Order Lifecycle
 
 ```text
 User submits order (L3 or via BridgeProxy)

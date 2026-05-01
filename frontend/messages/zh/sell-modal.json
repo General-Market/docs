@@ -1,6 +1,6 @@
 {
   "title": "卖出 {name}",
-  "itp_id_label": "ITP ID:",
+  "itp_id_label": "DTF ID:",
   "your_shares_label": "您的份额",
   "no_shares": "钱包中未找到份额",
   "no_bridged_itp": "该基金尚未桥接至 Settlement。",
@@ -55,7 +55,7 @@
     "pnl_vs_cost": "盈亏 (对比成本)",
     "underlying_title": "Underlying assets released",
     "underlying_note": "Quantities are exact (on-chain inventory × shares burned). Prices reflect the current oracle quote.",
-    "underlying_note_approx": "Approximate breakdown — this ITP has no on-chain inventory yet, so quantities are derived from weights at current prices."
+    "underlying_note_approx": "Approximate breakdown — this DTF has no on-chain inventory yet, so quantities are derived from weights at current prices."
   },
   "toast": {
     "sell_filled": "卖出已成交 -- 收到 {proceeds}"

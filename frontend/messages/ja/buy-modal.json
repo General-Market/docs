@@ -1,6 +1,6 @@
 {
   "title": "{name}を購入",
-  "itp_id_label": "ITP ID：",
+  "itp_id_label": "DTF ID：",
   "amount_label": "金額（USDC）",
   "balance_label": "残高：{amount} USDC",
   "max_price_label": "上限価格（USDC/シェア）",
@@ -18,7 +18,7 @@
   "minting": "ミント中...",
   "minted": "ミント完了！",
   "mint_failed": "ミントに失敗しました",
-  "your_itp_shares": "あなたのITPシェア",
+  "your_itp_shares": "あなたのDTFシェア",
   "buy_more": "追加購入",
   "button": {
     "approve_pending": "ウォレットで承認を確認してください...",
@@ -26,7 +26,7 @@
     "buy_pending": "ウォレットで購入を確認してください...",
     "buy_confirming": "注文を送信中...",
     "approve_and_buy": "承認 & 購入",
-    "buy_itp": "ITPを購入"
+    "buy_itp": "DTFを購入"
   },
   "steps": {
     "submit": "送信",
@@ -58,7 +58,7 @@
     "vs_limit": "指値比較",
     "underlying_title": "Underlying assets acquired",
     "underlying_note": "Quantities are exact (on-chain inventory × shares minted). Prices reflect the current oracle quote.",
-    "underlying_note_approx": "Approximate breakdown — this ITP has no on-chain inventory yet, so quantities are derived from weights at current prices."
+    "underlying_note_approx": "Approximate breakdown — this DTF has no on-chain inventory yet, so quantities are derived from weights at current prices."
   },
   "toast": {
     "buy_filled_shares": "購入約定 — {name}のシェア{shares}を受け取りました",

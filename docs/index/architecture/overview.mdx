@@ -7,7 +7,7 @@ description: "Complete architecture overview of General Market — all component
 
 Eight services. Two chains. Twenty-nine contracts. Built by people who could not stop building.
 
-General Market is what happens when you refuse to depend on anyone else's infrastructure. Index products and prediction markets, vertically integrated from data ingestion to settlement, coordinated through BLS consensus because trust is a luxury the chain cannot afford.
+General Market is what happens when you refuse to depend on anyone else's infrastructure. Dex Traded Funds (DTFs) and prediction markets, vertically integrated from data ingestion to settlement, coordinated through BLS consensus because trust is a luxury the chain cannot afford.
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────────────────────┐
@@ -188,7 +188,7 @@ Two chains because one was not enough and three would have been vanity. Each cha
 | **Composability** | Limited (custom chain) | Full Arbitrum DeFi ecosystem |
 | **User access** | Via frontend or bots | Direct wallet interaction |
 
-L3 handles the operations that must be cheap -- order batching at 1-second cycles, Vision tick resolution. Settlement provides what L3 cannot: composability. ITP shares become standard ERC-20s on Arbitrum, usable as Morpho collateral. Geography, even digital, is a constraint you work around rather than wish away.
+L3 handles the operations that must be cheap -- order batching at 1-second cycles, Vision tick resolution. Settlement provides what L3 cannot: composability. DTF shares become standard ERC-20s on Arbitrum, usable as Morpho collateral. Geography, even digital, is a constraint you work around rather than wish away.
 
 ---
 
@@ -366,7 +366,7 @@ When a user submits from Settlement instead of L3, the order crosses chains. The
 ```
 
 <Tip>
-  Bridged ITP shares on Arbitrum are standard ERC-20 tokens. They can be used as collateral in Morpho lending markets via the `ITPNAVOracle` which provides on-chain NAV pricing.
+  Bridged DTF shares on Arbitrum are standard ERC-20 tokens. They can be used as collateral in Morpho lending markets via the `ITPNAVOracle` which provides on-chain NAV pricing.
 </Tip>
 
 ---
@@ -471,7 +471,7 @@ Every arrow is a protocol. Every protocol is a boundary. Every boundary exists b
 |---|---|---|---|
 | Frontend | Data Node | REST + SSE | Prices, NAV, portfolio, backtesting, streaming updates |
 | Frontend | L3 Chain | JSON-RPC | Read contract state, submit user transactions |
-| Frontend | Settlement | JSON-RPC | Bridge orders, read bridged ITP balances |
+| Frontend | Settlement | JSON-RPC | Bridge orders, read bridged DTF balances |
 | Oracle Nodes | L3 Chain | JSON-RPC | Submit BLS-signed batch confirmations |
 | Oracle Nodes | Data Node | REST | Fetch latest prices for batch pricing |
 | Oracle Nodes | Oracle Nodes | TCP + TLS | P2P consensus messages, BLS partial signatures |

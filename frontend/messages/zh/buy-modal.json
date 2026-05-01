@@ -1,6 +1,6 @@
 {
   "title": "买入 {name}",
-  "itp_id_label": "ITP ID:",
+  "itp_id_label": "DTF ID:",
   "amount_label": "金额 (USDC)",
   "balance_label": "余额: {amount} USDC",
   "max_price_label": "最高价格 (USDC/份额)",
@@ -18,7 +18,7 @@
   "minting": "铸造中...",
   "minted": "铸造完成!",
   "mint_failed": "铸造失败",
-  "your_itp_shares": "您的 ITP 份额",
+  "your_itp_shares": "您的 DTF 份额",
   "buy_more": "继续买入",
   "button": {
     "approve_pending": "请在钱包中确认授权...",
@@ -26,7 +26,7 @@
     "buy_pending": "请在钱包中确认买入...",
     "buy_confirming": "提交订单中...",
     "approve_and_buy": "授权并买入",
-    "buy_itp": "买入 ITP"
+    "buy_itp": "买入 DTF"
   },
   "steps": {
     "submit": "提交",
@@ -58,7 +58,7 @@
     "vs_limit": "对比限价",
     "underlying_title": "Underlying assets acquired",
     "underlying_note": "Quantities are exact (on-chain inventory × shares minted). Prices reflect the current oracle quote.",
-    "underlying_note_approx": "Approximate breakdown — this ITP has no on-chain inventory yet, so quantities are derived from weights at current prices."
+    "underlying_note_approx": "Approximate breakdown — this DTF has no on-chain inventory yet, so quantities are derived from weights at current prices."
   },
   "toast": {
     "buy_filled_shares": "买入已成交 -- 收到 {shares} {name} 份额",

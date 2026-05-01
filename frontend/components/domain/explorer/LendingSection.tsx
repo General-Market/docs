@@ -59,7 +59,7 @@ export function LendingSection({ loading }: SectionProps) {
     const m = new Map<string, string>()
     for (const n of navList) {
       if (n.settlement_address) {
-        m.set(n.settlement_address.toLowerCase(), n.symbol || n.name || `ITP-${n.itp_id}`)
+        m.set(n.settlement_address.toLowerCase(), n.symbol || n.name || `DTF-${n.itp_id}`)
       }
     }
     return m
@@ -292,7 +292,7 @@ export function LendingSection({ loading }: SectionProps) {
         {/* 6. Market Distribution (Pie) */}
         <ExplorerChartCard
           title={t('explorer.lending_section.distribution')}
-          subtitle="Supply distribution across ITP markets"
+          subtitle="Supply distribution across DTF markets"
           loading={lendingLoading}
         >
           {distributionData.length > 0 ? (

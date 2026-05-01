@@ -1,4 +1,4 @@
-# ITP Ideas: The Thematic Momentum Trader
+# DTF Ideas: The Thematic Momentum Trader
 
 Archetype: Narrative surfer, sector rotator, catalyst hunter, event-driven tactician, momentum-first thinker who reads flows and rides waves before the crowd.
 

@@ -120,10 +120,10 @@
   },
   "aum_ranking": {
     "title": "AUM 排名",
-    "description": "全部ITP的AUM资产排名",
+    "description": "全部DTF的AUM资产排名",
     "total_aum": "总 AUM",
     "loading": "正在加载排名数据...",
-    "need_events": "需要 2 个以上事件（ITP 创建、再平衡或成交）才能显示排名图表。",
+    "need_events": "需要 2 个以上事件（DTF 创建、再平衡或成交）才能显示排名图表。",
     "showing_event": "当前显示 1 个事件。",
     "snapshots_count": "{count} 个快照"
   },
@@ -176,7 +176,7 @@
       "amount": "金额",
       "price": "价格",
       "fee": "手续费",
-      "itps": "ITP",
+      "itps": "DTF",
       "trade_id": "交易 ID"
     },
     "side_buy": "买入",

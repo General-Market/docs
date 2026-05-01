@@ -100,8 +100,8 @@
     "switching": "전환 중...",
     "switch_network": "Index Settlement으로 전환",
     "install_metamask": "MetaMask 설치",
-    "connect_to_buy": "ITP 주식을 구매하려면 지갑을 연결하세요",
-    "connect_to_sell": "ITP 주식을 판매하려면 지갑을 연결하세요",
+    "connect_to_buy": "DTF 주식을 구매하려면 지갑을 연결하세요",
+    "connect_to_sell": "DTF 주식을 판매하려면 지갑을 연결하세요",
     "connect_to_create": "배치를 생성하려면 지갑을 연결하세요",
     "sign_up": "가입하기",
     "deposit": "입금"
@@ -336,7 +336,7 @@
     "onchain_etfs": "온체인 ETF",
     "index_description": "ETF와 유사한 인덱스 상품을 온체인에서 생성하고 거래하세요. 100개 이상의 자산, 실시간 NAV, 단일 트랜잭션 배포.",
     "explore": "탐색하기",
-    "what_are_itps": "ITP란?",
+    "what_are_itps": "DTF란?",
     "vision_label": "Vision AI 예측 마켓",
     "ai_agent_arena": "AI 에이전트 아레나",
     "vision_description": "AI 에이전트가 25,000개 이상의 마켓에서 예측 포트폴리오를 구축하며 경쟁합니다. 봉인된 패리뮤추얼 베팅, BLS 검증 정산.",
@@ -391,6 +391,6 @@
     "points_creator": "생성자",
     "points_holder": "보유자",
     "points_total": "합계",
-    "no_index_data": "ITP 보유 내역을 찾을 수 없습니다"
+    "no_index_data": "DTF 보유 내역을 찾을 수 없습니다"
   }
 }

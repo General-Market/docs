@@ -2,7 +2,7 @@
   "heading": {
     "label": "Morpho 金库",
     "title": "借贷",
-    "description": "存入 USDC 赚取收益，或抵押您的 ITP 持仓进行借款。"
+    "description": "存入 USDC 赚取收益，或抵押您的 DTF 持仓进行借款。"
   },
   "stats": {
     "vault_tvl": "金库 TVL (总锁仓量)",
@@ -18,11 +18,11 @@
     "est_annual_yield": "预估年收益",
     "yield_status": "收益状态",
     "no_borrows_yet": "暂无借款",
-    "no_borrows_notice": "当用户以ITP抵押借入USDC时，金库产生收益。目前没有活跃借款。"
+    "no_borrows_notice": "当用户以DTF抵押借入USDC时，金库产生收益。目前没有活跃借款。"
   },
   "borrow_panel": {
-    "title": "借款 -- 以 ITP 抵押",
-    "collateral_value": "抵押品 (ITP 价值)",
+    "title": "借款 -- 以 DTF 抵押",
+    "collateral_value": "抵押品 (DTF 价值)",
     "outstanding_debt": "未偿债务",
     "max_borrow": "最大可借 ({lltv}% LTV)",
     "change_itp": "更换"
@@ -67,7 +67,7 @@
   },
   "borrow_usdc": {
     "title": "借入 USDC",
-    "description": "以您的 ITP 抵押品借入 USDC",
+    "description": "以您的 DTF 抵押品借入 USDC",
     "amount_label": "金额 (USDC)",
     "max_borrow_label": "最大可借: {amount} USDC",
     "projected_health_factor": "预计健康因子",
@@ -98,12 +98,12 @@
   },
   "deposit_collateral": {
     "title": "存入抵押品",
-    "description": "存入 ITP 代币作为抵押品以借入 USDC",
-    "amount_label": "金额 (ITP)",
-    "balance_label": "余额: {amount} ITP",
-    "insufficient_balance": "ITP 余额不足",
+    "description": "存入 DTF 代币作为抵押品以借入 USDC",
+    "amount_label": "金额 (DTF)",
+    "balance_label": "余额: {amount} DTF",
+    "insufficient_balance": "DTF 余额不足",
     "button": {
-      "approving_itp": "授权 ITP 中...",
+      "approving_itp": "授权 DTF 中...",
       "confirm_wallet": "请在钱包中确认...",
       "depositing": "存入中...",
       "deposited": "存入完成!",
@@ -130,14 +130,14 @@
   },
   "withdraw_collateral": {
     "title": "提取抵押品",
-    "description_no_debt": "提取您的 ITP 抵押品",
+    "description_no_debt": "提取您的 DTF 抵押品",
     "description_with_debt": "提取可用抵押品 (受债务限制)",
-    "amount_label": "金额 (ITP)",
+    "amount_label": "金额 (DTF)",
     "deposited_label": "已存入: {amount}",
     "max_withdraw_label": "最大可提: {amount}",
     "projected_health_factor": "预计健康因子",
     "cannot_withdraw_health": "无法提取: 健康因子将低于 1.0",
-    "close_position_notice": "此操作将关闭您的仓位并将所有 ITP 退回到您的钱包。",
+    "close_position_notice": "此操作将关闭您的仓位并将所有 DTF 退回到您的钱包。",
     "button": {
       "confirm_wallet": "请在钱包中确认...",
       "withdrawing": "提取中...",
@@ -200,9 +200,9 @@
   },
   "collateral_selector": {
     "title": "选择抵押品",
-    "description": "选择一个 ITP 作为借入 USDC 的抵押品",
-    "no_itps": "钱包中没有可用于借贷市场的 ITP",
-    "no_itps_hint": "请先购买 ITP，然后再回来进行抵押借款。",
+    "description": "选择一个 DTF 作为借入 USDC 的抵押品",
+    "no_itps": "钱包中没有可用于借贷市场的 DTF",
+    "no_itps_hint": "请先购买 DTF，然后再回来进行抵押借款。",
     "balance": "余额",
     "nav": "NAV",
     "no_market": "暂无借贷市场",
@@ -260,7 +260,7 @@
     "days_ago": "{days}天前"
   },
   "markets_detail": {
-    "itp_markets": "ITP 市场",
+    "itp_markets": "DTF 市场",
     "collateral": "抵押品",
     "nav_price": "NAV 价格",
     "ltv": "LTV",

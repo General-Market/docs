@@ -1,4 +1,4 @@
-# ITP Ideas: The Tech Visionary
+# DTF Ideas: The Tech Visionary
 
 Archetype: The builder, the Balaji follower, the whitepaper reader. Bets on infrastructure, paradigm shifts, and the technological frontier.
 

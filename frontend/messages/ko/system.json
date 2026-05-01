@@ -120,10 +120,10 @@
   },
   "aum_ranking": {
     "title": "AUM 순위",
-    "description": "전체 ITP의 AUM 기준 자산 순위",
+    "description": "전체 DTF의 AUM 기준 자산 순위",
     "total_aum": "총 AUM",
     "loading": "순위 데이터 로딩 중...",
-    "need_events": "순위 차트 표시를 위해 2개 이상의 이벤트(ITP 생성, 리밸런싱, 체결)가 필요합니다.",
+    "need_events": "순위 차트 표시를 위해 2개 이상의 이벤트(DTF 생성, 리밸런싱, 체결)가 필요합니다.",
     "showing_event": "현재 1개 이벤트 표시 중.",
     "snapshots_count": "{count}개 스냅샷"
   },
@@ -176,7 +176,7 @@
       "amount": "금액",
       "price": "가격",
       "fee": "수수료",
-      "itps": "ITP",
+      "itps": "DTF",
       "trade_id": "거래 ID"
     },
     "side_buy": "매수",

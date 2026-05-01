@@ -3,7 +3,7 @@
     "title": "General Market — On-Chain Index Products & AI Prediction Markets",
     "title_template": "%s | General Market",
     "description": "Create, trade, and manage tokenized index products on-chain. AI agents compete in prediction markets. Built on Orbit L3.",
-    "keywords": "index funds, ETF, institutional, on-chain, crypto trading, DeFi, autonomous capital markets, Orbit, L3"
+    "keywords": "index funds, ETF, institutional, on-chain, crypto trading, DeFi, autonomous capital markets, Orbit, L3, DTF, DEX traded fund, dex traded funds, on-chain DTF"
   },
   "og": {
     "site_name": "General Market",
@@ -22,19 +22,19 @@
     },
     "portfolio": {
       "title": "Portfolio Tracking",
-      "description": "Track your ITP holdings, view real-time P&L, cost basis, and trade history. Connect your wallet to see your portfolio performance across all index products."
+      "description": "Track your DTF holdings, view real-time P&L, cost basis, and trade history. Connect your wallet to see your portfolio performance across all index products."
     },
     "create": {
-      "title": "Create Your Own ITP",
-      "description": "Design custom index products by selecting from 100+ crypto assets and assigning weights. Deploy in a single transaction. Your ITP starts at $1 NAV and floats with underlying prices."
+      "title": "Create Your Own DTF",
+      "description": "Design custom Dex Traded Funds (DTFs) by selecting from 100+ crypto assets and assigning weights. Deploy in a single transaction. Your DTF starts at $1 NAV and floats with underlying prices."
     },
     "lending": {
       "title": "Lend & Borrow",
-      "description": "Deposit USDC to earn yield through Morpho lending markets. Or use your ITP shares as collateral to borrow USDC against your positions."
+      "description": "Deposit USDC to earn yield through Morpho lending markets. Or use your DTF shares as collateral to borrow USDC against your positions."
     },
     "backtesting": {
       "title": "Backtest Strategies",
-      "description": "Simulate portfolio performance with historical price data before deploying real capital. View returns, drawdowns, and Sharpe ratios. Deploy winning strategies directly as ITPs."
+      "description": "Simulate portfolio performance with historical price data before deploying real capital. View returns, drawdowns, and Sharpe ratios. Deploy winning strategies directly as DTFs."
     },
     "itp_article": {
       "nav_per_share": "NAV per share: ${nav}",
@@ -47,7 +47,7 @@
     "org_description": "The institutional-grade protocol for on-chain index products.",
     "website_description": "The institutional-grade protocol for on-chain index products. Create, trade, and manage tokenized index products on-chain.",
     "app_description": "The institutional-grade protocol for on-chain index products. Create, trade, and manage tokenized index products.",
-    "itp_description": "{name} \u2014 on-chain index tracking product with {count} crypto assets. NAV: ${nav}.",
+    "itp_description": "{name} \u2014 on-chain Dex Traded Fund (DTF) with {count} crypto assets. NAV: ${nav}.",
     "category_index_fund": "Index Fund"
   },
   "pages": {
@@ -69,7 +69,7 @@
     },
     "legal_index": {
       "title": "Index Products Legal Disclaimer",
-      "description": "Legal disclaimer for General Market Index tracking products (ITPs). Protocol architecture, risk disclosures, and limitation of liability. IM Standards LLC."
+      "description": "Legal disclaimer for General Market Dex Traded Funds (DTFs). Protocol architecture, risk disclosures, and limitation of liability. IM Standards LLC."
     },
     "vision": {
       "title": "AI Prediction Markets Powered by AI Agents",
@@ -101,15 +101,15 @@
       "not_found": "Article Not Found"
     },
     "learn_itps": {
-      "title": "What Are Index Tracking Products (ITPs)? — General Market",
-      "description": "ITPs are on-chain tokenized index products — the crypto equivalent of ETFs. One token, a basket of crypto assets, real-time NAV. Learn how they work."
+      "title": "What Are Dex Traded Funds (DTFs)? — General Market",
+      "description": "DTFs are on-chain tokenized index products — the crypto equivalent of ETFs. One token, a basket of crypto assets, real-time NAV. Learn how they work."
     },
     "itp": {
       "title": "{name} ({symbol})",
-      "description": "{name} ({symbol}) — on-chain index tracking product with {count} crypto assets. Current NAV: ${nav}.",
+      "description": "{name} ({symbol}) — on-chain Dex Traded Fund (DTF) with {count} crypto assets. Current NAV: ${nav}.",
       "og_title": "{name} | General Market",
-      "not_found": "ITP Not Found",
-      "subtitle": "{symbol} — On-chain index tracking product",
+      "not_found": "DTF Not Found",
+      "subtitle": "{symbol} — On-chain Dex Traded Fund",
       "nav_share": "NAV / Share",
       "aum": "AUM",
       "assets": "Assets",
@@ -117,8 +117,8 @@
       "asset_col": "Asset",
       "weight_col": "Weight",
       "price_col": "Price",
-      "trade_this": "Trade This ITP",
-      "learn_about": "Learn About ITPs",
+      "trade_this": "Trade This DTF",
+      "learn_about": "Learn About DTFs",
       "disclaimer": "NAV is calculated from live price feeds. Data updates every 60 seconds. Past performance is not indicative of future results.",
       "json_ld_category": "Index Fund"
     }

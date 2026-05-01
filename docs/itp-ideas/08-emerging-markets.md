@@ -1,4 +1,4 @@
-# ITP Ideas: The Emerging Markets Bull
+# DTF Ideas: The Emerging Markets Bull
 
 Archetype: Frontier investor, Global South believer, financial inclusion maximalist, remittance-pilled, asymmetric growth seeker who sees crypto as the monetary infrastructure for the developing world.
 

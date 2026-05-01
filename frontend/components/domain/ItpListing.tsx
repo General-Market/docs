@@ -51,8 +51,8 @@ function navSnapshotsToRows(navList: NavSnapshot[]): ItpRow[] {
       const override = (itpIdNames as Record<string, { name: string; ticker: string }>)[nav.itp_id.toLowerCase()]
       return {
         itpId: nav.itp_id,
-        name: override?.name || nav.name || `ITP #${num}`,
-        symbol: override?.ticker || nav.symbol || `ITP${num}`,
+        name: override?.name || nav.name || `DTF #${num}`,
+        symbol: override?.ticker || nav.symbol || `DTF${num}`,
         navPerShare: nav.nav_per_share,
         aum: nav.aum_usd,
         totalSupply: BigInt(nav.total_supply),

@@ -102,7 +102,7 @@ export function DepositCollateral({ market, itpId, onSuccess }: DepositCollatera
       successHandled.current = true
       setStep('success')
       const amt = amount || '0'
-      showSuccess(`Deposited ${amt} ITP as collateral`, depositTxHash ? { url: getTxUrl(depositTxHash, 'l3'), text: 'View tx' } : undefined)
+      showSuccess(`Deposited ${amt} DTF as collateral`, depositTxHash ? { url: getTxUrl(depositTxHash, 'l3'), text: 'View tx' } : undefined)
       capture('lend_completed', { itp_id: itpId, action: 'deposit', tx_hash: depositTxHash })
       refetchBalance()
       refetchAllowance()

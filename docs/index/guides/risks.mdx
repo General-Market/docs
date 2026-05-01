@@ -1,13 +1,13 @@
 ---
 title: "Risks"
-description: "What to understand before buying, creating, or lending against ITPs"
+description: "What to understand before buying, creating, or lending against DTFs"
 ---
 
 # Risks
 
 This section exists because honesty is cheaper than lawsuits. Everything here can lose you money. We built it anyway.
 
-ITPs track baskets of crypto assets. They are not risk-free. Nothing in crypto is. This page covers every material risk. Read it before committing capital. You will not read it. But it will exist for when things go wrong.
+Dex Traded Funds (DTFs) track baskets of crypto assets. They are not risk-free. Nothing in crypto is. This page covers every material risk. Read it before committing capital. You will not read it. But it will exist for when things go wrong.
 
 ---
 
@@ -15,7 +15,7 @@ ITPs track baskets of crypto assets. They are not risk-free. Nothing in crypto i
 
 ### NAV Fluctuation
 
-The NAV floats with the prices of underlying assets. If the basket drops 50%, your ITP is worth 50% less. There is no floor. There is no guaranteed value. The market does not owe you anything.
+The NAV floats with the prices of underlying assets. If the basket drops 50%, your DTF is worth 50% less. There is no floor. There is no guaranteed value. The market does not owe you anything.
 
 ```
 NAV = sum(qty[i] * price[i]) / 1e18
@@ -25,7 +25,7 @@ The NAV formula is transparent and deterministic. The market it tracks is neithe
 
 ### Concentration Risk
 
-An ITP with three tokens is a bet on three things. If one collapses, the impact is a third of your position. Market-cap-weighted ITPs naturally concentrate into the largest assets. Concentration is conviction. Conviction is risk by another name.
+A DTF with three tokens is a bet on three things. If one collapses, the impact is a third of your position. Market-cap-weighted DTFs naturally concentrate into the largest assets. Concentration is conviction. Conviction is risk by another name.
 
 <Tip>
 Use equal-weight or capped-market-cap strategies to limit single-asset exposure. The backtesting engine lets you compare concentration vs. diversification. The data will show you what you do not want to see.
@@ -33,11 +33,11 @@ Use equal-weight or capped-market-cap strategies to limit single-asset exposure.
 
 ### Drawdown
 
-Crypto markets routinely experience -50% to -80% drawdowns. An ITP holding altcoins can draw down further. Check `max_drawdown_pct` from backtesting before deploying. It tells you the worst historical pain. The next drawdown may be worse. History is a lower bound on suffering, not an upper bound.
+Crypto markets routinely experience -50% to -80% drawdowns. A DTF holding altcoins can draw down further. Check `max_drawdown_pct` from backtesting before deploying. It tells you the worst historical pain. The next drawdown may be worse. History is a lower bound on suffering, not an upper bound.
 
 ### Delistings
 
-If an asset gets delisted from exchanges, it becomes illiquid. The ITP still holds it. The price feed may freeze or drop to zero. A dead asset in a live basket is a wound that does not heal.
+If an asset gets delisted from exchanges, it becomes illiquid. The DTF still holds it. The price feed may freeze or drop to zero. A dead asset in a live basket is a wound that does not heal.
 
 ---
 
@@ -45,7 +45,7 @@ If an asset gets delisted from exchanges, it becomes illiquid. The ITP still hol
 
 ### No Auto-Rebalance
 
-After deploying an ITP, it does **not** auto-rebalance. The quantities are fixed until someone triggers a rebalance. If nobody rebalances, the ITP drifts from its target weights indefinitely. The protocol does not maintain your thesis. You do.
+After deploying a DTF, it does **not** auto-rebalance. The quantities are fixed until someone triggers a rebalance. If nobody rebalances, the DTF drifts from its target weights indefinitely. The protocol does not maintain your thesis. You do.
 
 ### Rebalance Costs
 
@@ -53,7 +53,7 @@ Each rebalance incurs trading fees and gas. Frequent rebalancing in volatile mar
 
 ### Price Feed Risk
 
-ITP NAV depends on price feeds from CoinGecko, Binance, and other sources aggregated by the data-node. If a price feed is stale or manipulated, the NAV computation will be wrong. The oracle nodes enforce a 0.1% price tolerance. This catches most deviations. Not all.
+DTF NAV depends on price feeds from CoinGecko, Binance, and other sources aggregated by the data-node. If a price feed is stale or manipulated, the NAV computation will be wrong. The oracle nodes enforce a 0.1% price tolerance. This catches most deviations. Not all.
 
 ---
 
@@ -61,7 +61,7 @@ ITP NAV depends on price feeds from CoinGecko, Binance, and other sources aggreg
 
 ### BLS Consensus Dependency
 
-All ITP operations require BLS multi-signature consensus from the oracle set. If fewer than 2/3 of oracles are online, nothing processes. The protocol does not halt. It waits. Your money waits with it.
+All DTF operations require BLS multi-signature consensus from the oracle set. If fewer than 2/3 of oracles are online, nothing processes. The protocol does not halt. It waits. Your money waits with it.
 
 ### Contract Bugs
 
@@ -77,7 +77,7 @@ The bridge introduces trust assumptions. Bridge failures or exploits can result 
 
 ### Liquidation
 
-If you borrow USDC against ITP collateral, you are subject to liquidation when the ITP's value drops below the required health factor. Crypto moves fast. Liquidation moves faster. Monitor positions or accept the consequences of not monitoring them.
+If you borrow USDC against DTF collateral, you are subject to liquidation when the DTF's value drops below the required health factor. Crypto moves fast. Liquidation moves faster. Monitor positions or accept the consequences of not monitoring them.
 
 ### Health Factor
 
@@ -93,7 +93,7 @@ Morpho relies on oracle prices. If oracle prices diverge from market reality, li
 
 ---
 
-## Checklist: Before Buying an ITP
+## Checklist: Before Buying a DTF
 
 Five steps. Each one is an opportunity to change your mind. After the fifth, the money is committed.
 
@@ -107,11 +107,11 @@ Five steps. Each one is an opportunity to change your mind. After the fifth, the
   </Step>
 
   <Step title="Understand the Rebalance Schedule">
-    Who triggers rebalances? How often? An ITP with no rebalance activity drifts from its target allocation. Drift is neglect made visible.
+    Who triggers rebalances? How often? A DTF with no rebalance activity drifts from its target allocation. Drift is neglect made visible.
   </Step>
 
   <Step title="Size Your Position">
-    Do not put more into an ITP than you can afford to lose entirely. Start small. Scale up after observing the product across market conditions. Conviction should be earned, not assumed.
+    Do not put more into a DTF than you can afford to lose entirely. Start small. Scale up after observing the product across market conditions. Conviction should be earned, not assumed.
   </Step>
 
   <Step title="Monitor After Buying">
@@ -121,9 +121,9 @@ Five steps. Each one is an opportunity to change your mind. After the fifth, the
 
 ---
 
-## Checklist: Before Creating an ITP
+## Checklist: Before Creating a DTF
 
-Creating an ITP is irreversible. These steps exist to slow you down. Slowness before deployment is a virtue. After deployment, it is too late.
+Creating a DTF is irreversible. These steps exist to slow you down. Slowness before deployment is a virtue. After deployment, it is too late.
 
 <Steps>
   <Step title="Backtest the Strategy">
@@ -131,7 +131,7 @@ Creating an ITP is irreversible. These steps exist to slow you down. Slowness be
   </Step>
 
   <Step title="Check Asset Availability">
-    All assets must have active price feeds. Use `/sim/categories` to see the tradeable universe. An ITP containing an untradeable asset is a promise that cannot be kept.
+    All assets must have active price feeds. Use `/sim/categories` to see the tradeable universe. A DTF containing an untradeable asset is a promise that cannot be kept.
   </Step>
 
   <Step title="Set Realistic Fees">

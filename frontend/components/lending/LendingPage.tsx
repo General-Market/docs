@@ -302,7 +302,7 @@ export function LendingPage() {
               <div className="border border-border-light bg-white p-6 text-center">
                 <p className="text-text-secondary text-sm">Connect wallet to borrow</p>
                 <p className="text-text-muted text-xs mt-1">
-                  Deposit ITP shares as collateral, borrow USDC
+                  Deposit DTF shares as collateral, borrow USDC
                 </p>
               </div>
             )}

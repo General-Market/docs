@@ -120,10 +120,10 @@
   },
   "aum_ranking": {
     "title": "AUM Ranking",
-    "description": "Asset rankings by AUM across all ITPs",
+    "description": "Asset rankings by AUM across all DTFs",
     "total_aum": "total AUM",
     "loading": "Loading ranking data...",
-    "need_events": "Need 2+ events (ITP creations, rebalances, or fills) to display ranking chart.",
+    "need_events": "Need 2+ events (DTF creations, rebalances, or fills) to display ranking chart.",
     "showing_event": "Currently showing 1 event.",
     "snapshots_count": "{count} snapshots"
   },
@@ -176,7 +176,7 @@
       "amount": "Amount",
       "price": "Price",
       "fee": "Fee",
-      "itps": "ITP(s)",
+      "itps": "DTF(s)",
       "trade_id": "Trade ID"
     },
     "side_buy": "Buy",

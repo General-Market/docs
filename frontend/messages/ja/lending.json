@@ -2,7 +2,7 @@
   "heading": {
     "label": "Morpho Vaults",
     "title": "レンディング",
-    "description": "USDCを預けて利回りを獲得するか、ITPポジションを担保に借入を行えます。"
+    "description": "USDCを預けて利回りを獲得するか、DTFポジションを担保に借入を行えます。"
   },
   "stats": {
     "vault_tvl": "Vault TVL (預入総額)",
@@ -18,11 +18,11 @@
     "est_annual_yield": "推定年間収益",
     "yield_status": "収益ステータス",
     "no_borrows_yet": "借入なし",
-    "no_borrows_notice": "ユーザーがITP担保でUSDCを借りるとVault収益が発生します。現在アクティブな借入はありません。"
+    "no_borrows_notice": "ユーザーがDTF担保でUSDCを借りるとVault収益が発生します。現在アクティブな借入はありません。"
   },
   "borrow_panel": {
-    "title": "借入 — ITP担保",
-    "collateral_value": "担保価値（ITP評価額）",
+    "title": "借入 — DTF担保",
+    "collateral_value": "担保価値（DTF評価額）",
     "outstanding_debt": "未返済残高",
     "max_borrow": "最大借入額（{lltv}% LTV）",
     "change_itp": "変更"
@@ -67,7 +67,7 @@
   },
   "borrow_usdc": {
     "title": "USDCを借入",
-    "description": "ITP担保に対してUSDCを借入",
+    "description": "DTF担保に対してUSDCを借入",
     "amount_label": "金額（USDC）",
     "max_borrow_label": "最大借入額：{amount} USDC",
     "projected_health_factor": "予測ヘルスファクター",
@@ -98,12 +98,12 @@
   },
   "deposit_collateral": {
     "title": "担保を預入",
-    "description": "USDCを借入するためにITPトークンを担保として預入",
-    "amount_label": "金額（ITP）",
-    "balance_label": "残高：{amount} ITP",
-    "insufficient_balance": "ITP残高が不足しています",
+    "description": "USDCを借入するためにDTFトークンを担保として預入",
+    "amount_label": "金額（DTF）",
+    "balance_label": "残高：{amount} DTF",
+    "insufficient_balance": "DTF残高が不足しています",
     "button": {
-      "approving_itp": "ITPを承認中...",
+      "approving_itp": "DTFを承認中...",
       "confirm_wallet": "ウォレットで確認してください...",
       "depositing": "預入中...",
       "deposited": "預入完了！",
@@ -130,14 +130,14 @@
   },
   "withdraw_collateral": {
     "title": "担保を引出",
-    "description_no_debt": "ITP担保を引き出します",
+    "description_no_debt": "DTF担保を引き出します",
     "description_with_debt": "引出可能な担保を引き出します（債務により制限あり）",
-    "amount_label": "金額（ITP）",
+    "amount_label": "金額（DTF）",
     "deposited_label": "預入済み：{amount}",
     "max_withdraw_label": "最大引出額：{amount}",
     "projected_health_factor": "予測ヘルスファクター",
     "cannot_withdraw_health": "引出不可：ヘルスファクターが1.0を下回ります",
-    "close_position_notice": "これによりポジションがクローズされ、すべてのITPがウォレットに返還されます。",
+    "close_position_notice": "これによりポジションがクローズされ、すべてのDTFがウォレットに返還されます。",
     "button": {
       "confirm_wallet": "ウォレットで確認してください...",
       "withdrawing": "引出中...",
@@ -200,9 +200,9 @@
   },
   "collateral_selector": {
     "title": "担保の選択",
-    "description": "USDCの借入に担保として使用するITPを選択してください",
-    "no_itps": "ウォレットにレンディングマーケット対応のITPがありません",
-    "no_itps_hint": "先にITPを購入してから、担保として借入にお戻りください。",
+    "description": "USDCの借入に担保として使用するDTFを選択してください",
+    "no_itps": "ウォレットにレンディングマーケット対応のDTFがありません",
+    "no_itps_hint": "先にDTFを購入してから、担保として借入にお戻りください。",
     "balance": "残高",
     "nav": "NAV",
     "no_market": "レンディングマーケットなし",
@@ -260,7 +260,7 @@
     "days_ago": "{days}日前"
   },
   "markets_detail": {
-    "itp_markets": "ITPマーケット",
+    "itp_markets": "DTFマーケット",
     "collateral": "担保",
     "nav_price": "NAV価格",
     "ltv": "LTV",

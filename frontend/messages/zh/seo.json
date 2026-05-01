@@ -22,19 +22,19 @@
     },
     "portfolio": {
       "title": "投资组合追踪",
-      "description": "跟踪您的 ITP 持仓，查看实时盈亏、成本基础和交易历史。连接钱包即可查看所有指数产品的投资组合表现。"
+      "description": "跟踪您的 DTF 持仓，查看实时盈亏、成本基础和交易历史。连接钱包即可查看所有指数产品的投资组合表现。"
     },
     "create": {
-      "title": "创建您的 ITP",
-      "description": "从 100+ 加密资产中选择并分配权重，设计自定义指数产品。通过单笔交易完成部署。您的 ITP 起始 NAV (净资产价值) 为 $1，随底层资产价格浮动。"
+      "title": "创建您的 DTF",
+      "description": "从 100+ 加密资产中选择并分配权重，设计自定义指数产品。通过单笔交易完成部署。您的 DTF 起始 NAV (净资产价值) 为 $1，随底层资产价格浮动。"
     },
     "lending": {
       "title": "借贷",
-      "description": "通过 Morpho 借贷市场存入 USDC 赚取收益。或将您的 ITP 份额作为抵押品借入 USDC。"
+      "description": "通过 Morpho 借贷市场存入 USDC 赚取收益。或将您的 DTF 份额作为抵押品借入 USDC。"
     },
     "backtesting": {
       "title": "策略回测",
-      "description": "在投入实际资金前，使用历史价格数据模拟投资组合表现。查看回报率、最大回撤和夏普比率。将优胜策略直接部署为 ITP。"
+      "description": "在投入实际资金前，使用历史价格数据模拟投资组合表现。查看回报率、最大回撤和夏普比率。将优胜策略直接部署为 DTF。"
     },
     "itp_article": {
       "nav_per_share": "每份额 NAV (净资产价值): ${nav}",
@@ -49,15 +49,15 @@
     "app_description": "面向链上指数产品的机构级协议。创建、交易和管理代币化指数产品。",
     "faq": {
       "q1": "什么是 General Market?",
-      "a1": "General Market 是面向链上指数产品的机构级协议。创建、交易和管理代币化指数跟踪产品 (ITP)，跟踪一篮子加密资产，类似于传统金融中的 ETF。",
-      "q2": "什么是指数跟踪产品 (ITP)?",
-      "a2": "ITP 是持有一篮子具有固定权重的加密资产的代币化指数产品。其 NAV (净资产价值) 随底层资产价格浮动，与 ETF 类似。您可以创建自定义 ITP 或交易现有 ITP。",
+      "a1": "General Market 是面向链上指数产品的机构级协议。创建、交易和管理代币化去中心化交易基金 (DTF)，跟踪一篮子加密资产，类似于传统金融中的 ETF。",
+      "q2": "什么是去中心化交易基金 (DTF)?",
+      "a2": "DTF 是持有一篮子具有固定权重的加密资产的代币化指数产品。其 NAV (净资产价值) 随底层资产价格浮动，与 ETF 类似。您可以创建自定义 DTF 或交易现有 DTF。",
       "q3": "General Market 的借贷功能如何运作?",
-      "a3": "General Market 集成了 Morpho 借贷市场。您可以存入 USDC 赚取收益，或将 ITP 份额作为抵押品进行借款。",
+      "a3": "General Market 集成了 Morpho 借贷市场。您可以存入 USDC 赚取收益，或将 DTF 份额作为抵押品进行借款。",
       "q4": "开始使用需要什么?",
-      "a4": "您需要一个连接到 Index L3 网络的 Web3 钱包 (如 MetaMask) 和 USDC 代币。然后您可以浏览市场标签购买现有 ITP 或创建您自己的自定义指数。"
+      "a4": "您需要一个连接到 Index L3 网络的 Web3 钱包 (如 MetaMask) 和 USDC 代币。然后您可以浏览市场标签购买现有 DTF 或创建您自己的自定义指数。"
     },
-    "itp_description": "{name} -- 包含 {count} 种加密资产的链上指数跟踪产品。NAV (净资产价值): ${nav}。",
+    "itp_description": "{name} -- 包含 {count} 种加密资产的链上去中心化交易基金。NAV (净资产价值): ${nav}。",
     "category_index_fund": "指数基金"
   },
   "pages": {
@@ -103,15 +103,15 @@
       "not_found": "未找到文章"
     },
     "learn_itps": {
-      "title": "什么是指数跟踪产品 (ITP)？ — General Market",
-      "description": "ITP 是链上代币化指数产品——加密世界的 ETF。一个代币，一篮子加密资产，实时 NAV。了解其运作方式。"
+      "title": "什么是去中心化交易基金 (DTF)？ — General Market",
+      "description": "DTF 是链上代币化指数产品——加密世界的 ETF。一个代币，一篮子加密资产，实时 NAV。了解其运作方式。"
     },
     "itp": {
       "title": "{name} ({symbol})",
-      "description": "{name} ({symbol}) — 包含 {count} 种加密资产的链上指数跟踪产品。当前 NAV：${nav}。",
+      "description": "{name} ({symbol}) — 包含 {count} 种加密资产的链上去中心化交易基金。当前 NAV：${nav}。",
       "og_title": "{name} | General Market",
-      "not_found": "未找到 ITP",
-      "subtitle": "{symbol} — 链上指数跟踪产品",
+      "not_found": "未找到 DTF",
+      "subtitle": "{symbol} — 链上去中心化交易基金",
       "nav_share": "每份额 NAV",
       "aum": "管理资产规模",
       "assets": "资产",
@@ -119,8 +119,8 @@
       "asset_col": "资产",
       "weight_col": "权重",
       "price_col": "价格",
-      "trade_this": "交易此 ITP",
-      "learn_about": "了解 ITP",
+      "trade_this": "交易此 DTF",
+      "learn_about": "了解 DTF",
       "disclaimer": "NAV 根据实时价格数据计算。数据每 60 秒更新一次。过往业绩不代表未来表现。",
       "json_ld_category": "指数基金"
     },
@@ -130,7 +130,7 @@
     },
     "legal_index": {
       "title": "指数产品法律免责声明 — General Market",
-      "description": "General Market 指数跟踪产品 (ITP) 法律免责声明。协议架构、风险披露和责任限制。IM Standards LLC。"
+      "description": "General Market 去中心化交易基金 (DTF) 法律免责声明。协议架构、风险披露和责任限制。IM Standards LLC。"
     }
   },
   "breadcrumbs": {

@@ -88,7 +88,7 @@ export function WithdrawCollateral({ market, onSuccess }: WithdrawCollateralProp
       successHandled.current = true
       setStep('success')
       const amt = amount || '0'
-      showSuccess(`Withdrew ${parseFloat(amt).toFixed(4)} ITP collateral`, withdrawTxHash ? { url: getTxUrl(withdrawTxHash, 'l3'), text: 'View tx' } : undefined)
+      showSuccess(`Withdrew ${parseFloat(amt).toFixed(4)} DTF collateral`, withdrawTxHash ? { url: getTxUrl(withdrawTxHash, 'l3'), text: 'View tx' } : undefined)
       capture('lend_completed', { itp_id: market?.collateralToken, action: 'withdraw', tx_hash: withdrawTxHash })
       refetchPosition()
       onSuccess?.()

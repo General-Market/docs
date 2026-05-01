@@ -5,7 +5,7 @@
     "description": "맞춤형 인덱스 상품을 구성하세요. 자산을 선택하고, 비중을 설정한 후 온체인에 배포합니다."
   },
   "collapsed": {
-    "description": "맞춤 비중으로 인덱스 추적 상품을 생성하세요"
+    "description": "맞춤 비중으로 Dex 거래 펀드를 생성하세요"
   },
   "select_assets": {
     "title": "자산 선택 ({count}/100)",
@@ -24,7 +24,7 @@
     "continue": "계속 →"
   },
   "finalize": {
-    "title": "ITP 완료",
+    "title": "DTF 완료",
     "assets_selected": "{count}개 자산 선택됨",
     "name_label": "이름 (최대 32자)",
     "name_placeholder": "예: DeFi 블루칩",
@@ -33,7 +33,7 @@
     "oracle_name_label": "발행자 이름 (최대 64자)",
     "oracle_name_placeholder": "예: Vanguard Labs",
     "description_label": "설명 (선택사항)",
-    "description_placeholder": "ITP 카드에 표시되는 간략한 설명",
+    "description_placeholder": "DTF 카드에 표시되는 간략한 설명",
     "website_label": "웹사이트 (선택사항)",
     "website_placeholder": "https://yoursite.io",
     "video_label": "영상 (선택사항)",
@@ -46,14 +46,14 @@
     "tx_stuck": "트랜잭션이 지연되고 있을 수 있습니다."
   },
   "skeleton": {
-    "itp_name": "ITP 이름 (최대 32자)",
+    "itp_name": "DTF 이름 (최대 32자)",
     "symbol": "심볼 (최대 10자)"
   },
   "success": {
-    "title": "ITP 요청 제출됨",
+    "title": "DTF 요청 제출됨",
     "description": "오라클 합의를 기다리는 중 — 몇 분 정도 소요될 수 있습니다...",
-    "consensus_title": "ITP 생성 완료",
-    "consensus_description": "오라클 합의가 완료되었습니다. ITP가 L3에서 운영 중입니다."
+    "consensus_title": "DTF 생성 완료",
+    "consensus_description": "오라클 합의가 완료되었습니다. DTF가 L3에서 운영 중입니다."
   },
   "errors": {
     "fill_all_fields": "모든 필드를 입력하고 비중 합계가 100%인지 확인해 주세요",

@@ -104,8 +104,8 @@ Beyond the 91 external sources, the data node runs its own collectors -- polling
 
 | Collector | Module | Responsibility | Poll Interval |
 |---|---|---|---|
-| **Price Collector** | `collector.rs` | Bitget spot prices for ITP-eligible assets | 30s |
-| **ITP Collector** | `itp_collector.rs` | On-chain ITP state (NAV, supply, inventory) from L3 | 30s |
+| **Price Collector** | `collector.rs` | Bitget spot prices for DTF-eligible assets | 30s |
+| **DTF Collector** | `itp_collector.rs` | On-chain DTF state (NAV, supply, inventory) from L3 | 30s |
 | **Trade Collector** | `trade_collector.rs` | On-chain order fills and trade events from L3 | 30s |
 | **Kline Collector** | `kline_collector.rs` | OHLCV candles from Bitget for chart display | Continuous |
 | **Liquidity Collector** | `liquidity_collector.rs` | Order book depth snapshots per trading pair | 1h |
@@ -366,7 +366,7 @@ Twenty-five migrations. Fifteen tables. Five groups. The schema is a fossil reco
 | `market_prices` | 001 | Full price history for all 91 sources, partitioned by source |
 | `market_prices_latest` | 025 | Materialized "latest price per asset" for fast reads |
 | `market_assets` | 021 | Source registry (which assets each source tracks) |
-| `itp_snapshots` | 002 | ITP NAV/supply/weight snapshots from chain poller |
+| `itp_snapshots` | 002 | DTF NAV/supply/weight snapshots from chain poller |
 | `trades` | 004 | On-chain trade fills (orderId, price, amount) |
 | `klines` | 005 | OHLCV candle data from Bitget |
 | `liquidity` | 006 | Order book depth snapshots |
@@ -399,11 +399,11 @@ Axum. 50+ endpoints. Six groups. CORS and gzip via Tower middleware. The API ret
 | `/fast-prices-by-address` | GET | Same, keyed by contract address |
 | `/latest-prices` | GET | Latest prices from `market_prices_latest` |
 | `/prices-by-address` | GET | Prices keyed by on-chain address |
-| `/itp-price` | GET | ITP NAV (inventory-based computation) |
+| `/itp-price` | GET | DTF NAV (inventory-based computation) |
 | `/verify-nav` | GET | Cross-check NAV against on-chain |
 | `/nav-series` | GET | Historical NAV time series |
-| `/itp-bid-ask` | GET | ITP bid/ask spread from orderbook |
-| `/itp-orderbook` | GET | Full aggregated ITP orderbook |
+| `/itp-bid-ask` | GET | DTF bid/ask spread from orderbook |
+| `/itp-orderbook` | GET | Full aggregated DTF orderbook |
 
 ### Portfolio & User State
 
@@ -418,7 +418,7 @@ Axum. 50+ endpoints. Six groups. CORS and gzip via Tower middleware. The API ret
 | `/morpho-position` | GET | User's Morpho lending position |
 | `/morpho-history` | GET | Morpho position history |
 | `/fill-speed` | GET | Average order fill latency |
-| `/aum-ranking` | GET | ITP ranking by AUM |
+| `/aum-ranking` | GET | DTF ranking by AUM |
 | `/liquidity` | GET | Liquidity depth per pair |
 | `/liquidity/alerts` | GET | Low liquidity warnings |
 
@@ -560,7 +560,7 @@ The `SimDataCache` loads into memory at startup and reloads every 24 hours. Ever
 The same formula as `Index.sol._getCurrentPrice()`. The Data Node reads `_itpInventory` directly from L3. One formula. Two implementations. They must agree.
 </Info>
 
-For each ITP:
+For each DTF:
 
 ```text
 NAV = sum(qty[i] * price[i]) / 1e18
@@ -594,7 +594,7 @@ The only command that matters in production. Starts the HTTP server and all coll
 |---|---|---|---|
 | `--port` | `DATA_NODE_PORT` | 8200 | HTTP server port |
 | `--database-url` | `DATABASE_URL` | -- | PostgreSQL connection string |
-| `--assets-file` | `DATA_NODE_ASSETS_FILE` | `assets.json` | ITP-eligible asset definitions |
+| `--assets-file` | `DATA_NODE_ASSETS_FILE` | `assets.json` | DTF-eligible asset definitions |
 | `--poll-interval` | `DATA_NODE_POLL_INTERVAL_SECS` | 30 | Price collector interval |
 | `--rpc-url` | `INDEX_RPC_URL` | `https://rpc.generalmarket.io/` | L3 chain RPC |
 | `--index-address` | `INDEX_ADDRESS` | -- | Index.sol contract address |

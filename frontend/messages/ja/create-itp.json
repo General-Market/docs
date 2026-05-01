@@ -5,7 +5,7 @@
     "description": "カスタムインデックス商品を構築。資産を選択し、ウェイトを設定して、オンチェーンにデプロイします。"
   },
   "collapsed": {
-    "description": "カスタムウェイトでインデックス追跡商品を作成"
+    "description": "カスタムウェイトでDexトレード型ファンドを作成"
   },
   "select_assets": {
     "title": "資産を選択 ({count}/100)",
@@ -24,7 +24,7 @@
     "continue": "次へ →"
   },
   "finalize": {
-    "title": "ITPの最終確認",
+    "title": "DTFの最終確認",
     "assets_selected": "{count}資産を選択済み",
     "name_label": "名前（最大32文字）",
     "name_placeholder": "例：DeFi Blue Chips",
@@ -33,7 +33,7 @@
     "oracle_name_label": "発行者名（最大64文字）",
     "oracle_name_placeholder": "例：Vanguard Labs",
     "description_label": "説明（任意）",
-    "description_placeholder": "ITPカードに表示される簡潔な説明",
+    "description_placeholder": "DTFカードに表示される簡潔な説明",
     "website_label": "ウェブサイト（任意）",
     "website_placeholder": "https://yoursite.io",
     "video_label": "動画（任意）",
@@ -46,14 +46,14 @@
     "tx_stuck": "トランザクションが停止している可能性があります。"
   },
   "skeleton": {
-    "itp_name": "ITP名（最大32文字）",
+    "itp_name": "DTF名（最大32文字）",
     "symbol": "シンボル（最大10文字）"
   },
   "success": {
-    "title": "ITPリクエスト送信済み",
+    "title": "DTFリクエスト送信済み",
     "description": "オラクルのコンセンサスを待っています — 数分かかる場合があります...",
-    "consensus_title": "ITP作成完了",
-    "consensus_description": "オラクルのコンセンサスが完了しました。ITPはL3で稼働中です。"
+    "consensus_title": "DTF作成完了",
+    "consensus_description": "オラクルのコンセンサスが完了しました。DTFはL3で稼働中です。"
   },
   "errors": {
     "fill_all_fields": "すべてのフィールドを入力し、ウェイトの合計が100%であることを確認してください",

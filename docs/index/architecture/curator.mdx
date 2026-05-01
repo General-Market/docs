@@ -156,7 +156,7 @@ Capital must go where it is needed. The allocation bot watches utilization acros
 
 ### Risk Tiers
 
-Every ITP market is assigned a risk tier that controls maximum concentration (percentage of vault assets allowed in that market):
+Every DTF market is assigned a risk tier that controls maximum concentration (percentage of vault assets allowed in that market):
 
 ```
     ┌─────────────────────────────────────────────────────────┐
@@ -178,7 +178,7 @@ Every ITP market is assigned a risk tier that controls maximum concentration (pe
 ```
 
 <Tip>
-  New markets default to **Tier D** (5% cap) — the most restrictive tier. This prevents a freshly created ITP from absorbing excessive vault capital before it has been reviewed.
+  New markets default to **Tier D** (5% cap) — the most restrictive tier. This prevents a freshly created DTF from absorbing excessive vault capital before it has been reviewed.
 </Tip>
 
 ### Allocation Cycle
@@ -319,7 +319,7 @@ A stale oracle is a lying oracle. Each risk tier defines the maximum acceptable 
 
 | Tier | Max Staleness | Description |
 |---|---|---|
-| **Tier A** | 4 hours | Blue-chip ITPs, tightest freshness |
+| **Tier A** | 4 hours | Blue-chip DTFs, tightest freshness |
 | **Tier B** | 6 hours | Medium risk |
 | **Tier C** | 12 hours | Higher risk |
 | **Tier D** | 24 hours | Watch list (also hard maximum) |
@@ -395,7 +395,7 @@ Risk has a price. The SERM algorithm computes it by weighing utilization, volati
 |---|---|---|
 | `global_util` | On-chain market state | Aggregate utilization across all markets |
 | `stress` | Health monitor (shared state) | Per-asset volatility score, capped at 5x |
-| `concentration` | ITP composition weights | How concentrated the collateral basket is |
+| `concentration` | DTF composition weights | How concentrated the collateral basket is |
 | `liquidity_mult` | Asset config | Penalty for illiquid underlying assets |
 | `tier_premium` | Risk tier (A/B/C/D) | Fixed premium per tier |
 
@@ -463,7 +463,7 @@ Four tasks in one process need to share what they know. `SharedCuratorState` -- 
 | `alerting` | `alerting.rs` | Telegram + log-based alert dispatching |
 | `shared_state` | `shared_state.rs` | `Arc<RwLock<>>` state for cross-task communication |
 | `tier_config` | `tier_config.rs` | Risk tier definitions and concentration cap loading |
-| `market_config` | `market_config.rs` | Market registry: ITP -> Morpho market mapping |
+| `market_config` | `market_config.rs` | Market registry: DTF -> Morpho market mapping |
 | `liquidator` | `liquidator.rs` | Liquidation bot (triggers when HF < 1.0) |
 | `data_node_client` | `data_node_client.rs` | Client for data-node RPC cache (avoids direct chain reads) |
 

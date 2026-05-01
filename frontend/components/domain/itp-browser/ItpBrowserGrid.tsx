@@ -100,8 +100,8 @@ function navSnapshotsToRows(navList: NavSnapshot[]): ItpRow[] {
       const override = (itpIdNames as Record<string, { name: string; ticker: string }>)[nav.itp_id.toLowerCase()]
       return {
         itpId: nav.itp_id,
-        name: override?.name || nav.name || `ITP #${num}`,
-        symbol: override?.ticker || nav.symbol || `ITP${num}`,
+        name: override?.name || nav.name || `DTF #${num}`,
+        symbol: override?.ticker || nav.symbol || `DTF${num}`,
         navPerShare: nav.nav_per_share,
         aum: nav.aum_usd,
         totalSupply: (() => { try { return BigInt(nav.total_supply ?? '0') } catch { return 0n } })(),
@@ -169,7 +169,7 @@ export function ItpBrowserGrid() {
 
   // On-chain names for ITPs not in static mapping
   const unknownItpIds = useMemo(() =>
-    rows.filter(r => r.name.startsWith('ITP #') || r.name.startsWith('ITP#')).map(r => r.itpId),
+    rows.filter(r => r.name.startsWith('DTF #') || r.name.startsWith('DTF#')).map(r => r.itpId),
     [rows]
   )
   const onChainNames = useItpNames(unknownItpIds)
@@ -178,7 +178,7 @@ export function ItpBrowserGrid() {
     if (onChainNames.size === 0) return rows
     return rows.map(r => {
       const resolved = onChainNames.get(r.itpId.toLowerCase())
-      if (resolved && (r.name.startsWith('ITP #') || r.name.startsWith('ITP#'))) {
+      if (resolved && (r.name.startsWith('DTF #') || r.name.startsWith('DTF#'))) {
         return { ...r, name: resolved.name || r.name, symbol: resolved.symbol || r.symbol }
       }
       return r

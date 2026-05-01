@@ -1,4 +1,4 @@
-# ITP Ideas: The TradFi Migrant
+# DTF Ideas: The TradFi Migrant
 
 > Investor archetype: Institutional investors and traditional finance professionals entering crypto. They want familiar structures -- sector rotation, market-cap weighted indexes, factor investing, blue-chip baskets. Think Vanguard, BlackRock, State Street -- but for crypto.
 

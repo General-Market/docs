@@ -121,7 +121,7 @@ export function ITPSection({ snapshots, latest, loading }: SectionProps) {
                     <tr key={itp.itp_id} className="border-b border-border-light last:border-0">
                       <td className="py-1.5 pr-2">
                         <span className="text-caption font-bold text-black">
-                          {itp.symbol || itp.name || 'ITP'}
+                          {itp.symbol || itp.name || 'DTF'}
                         </span>
                       </td>
                       <td className="py-1.5 pr-2 text-right">

@@ -30,7 +30,7 @@
     "subtitle": "保有中のポジション"
   },
   "positions_table": {
-    "itp": "ITP",
+    "itp": "DTF",
     "shares": "シェア",
     "avg_cost": "平均取得単価",
     "nav": "NAV (純資産価値)",
@@ -40,7 +40,7 @@
   },
   "trades_table": {
     "date": "日付",
-    "itp": "ITP",
+    "itp": "DTF",
     "side": "売買",
     "amount": "金額",
     "price": "価格",
@@ -59,7 +59,7 @@
   },
   "empty": {
     "no_positions_title": "ポジションがありません",
-    "no_positions_description": "上記のインデックス商品を閲覧し、最初のITPを購入してパフォーマンスの追跡を始めましょう。",
+    "no_positions_description": "上記のインデックス商品を閲覧し、最初のDTFを購入してパフォーマンスの追跡を始めましょう。",
     "explore_indexes": "インデックスを見る",
     "no_trades_title": "取引履歴がありません",
     "no_trades_description": "最初の取引を行うと、売買履歴がここに表示されます。",

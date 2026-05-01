@@ -1,11 +1,11 @@
 ---
 title: "Backtesting"
-description: "Simulate portfolio performance with historical data before deploying an ITP"
+description: "Simulate portfolio performance with historical data before deploying a DTF"
 ---
 
 Backtesting shows what would have happened. It says nothing about what will happen. This is its only honest feature.
 
-The engine simulates portfolio performance from 2020 to today. Test a thesis, compare configurations via sweep mode, and deploy the result as a live ITP -- from the UI or API.
+The engine simulates portfolio performance from 2020 to today. Test a thesis, compare configurations via sweep mode, and deploy the result as a live Dex Traded Fund (DTF) -- from the UI or API.
 
 <Warning>
 **Past performance does not guarantee future results.** The past is a story you tell yourself to justify a decision you have already made. Backtesting cannot account for future market conditions, liquidity changes, or black swan events. See [Risks](/index/guides/risks) before committing capital.
@@ -364,9 +364,9 @@ The `nav_series` starts at `1.0` and tracks portfolio value over time. A NAV of 
 
 ---
 
-## Deploy as ITP
+## Deploy as DTF
 
-A backtest that looks good enough becomes a live ITP with one click. The transition from simulation to reality is instant. The consequences are not.
+A backtest that looks good enough becomes a live DTF with one click. The transition from simulation to reality is instant. The consequences are not.
 
 <Steps>
   <Step title="Review Final Holdings">
@@ -374,7 +374,7 @@ A backtest that looks good enough becomes a live ITP with one click. The transit
   </Step>
 
   <Step title="Click Deploy Index">
-    The button pre-fills the ITP creation form with the backtested assets and weights. One click from history to the present.
+    The button pre-fills the DTF creation form with the backtested assets and weights. One click from history to the present.
   </Step>
 
   <Step title="Confirm On-Chain">
@@ -383,7 +383,7 @@ A backtest that looks good enough becomes a live ITP with one click. The transit
 </Steps>
 
 <Warning>
-The deployed ITP uses the weights from the final rebalance. It does **not** auto-rebalance. The backtest rebalanced for you. Reality will not.
+The deployed DTF uses the weights from the final rebalance. It does **not** auto-rebalance. The backtest rebalanced for you. Reality will not.
 </Warning>
 
 ---

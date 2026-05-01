@@ -1,9 +1,9 @@
 {
   "heading": "跟踪市场",
   "hero": {
-    "label": "指数跟踪产品",
+    "label": "去中心化交易基金",
     "title": "市场",
-    "description": "探索去中心化指数产品。每个 ITP 跟踪一篮子加密资产，具有实时 NAV (净资产价值) 定价和链上结算。"
+    "description": "探索去中心化指数产品。每个 DTF 跟踪一篮子加密资产，具有实时 NAV (净资产价值) 定价和链上结算。"
   },
   "summary": {
     "types_count": "{count} 种类型",
@@ -74,8 +74,8 @@
     "showing_all": "显示全部 {total} 个产品"
   },
   "itp_card": {
-    "loading": "加载 ITP 中...",
-    "no_itps": "暂无已创建的 ITP",
+    "loading": "加载 DTF 中...",
+    "no_itps": "暂无已创建的 DTF",
     "nav_per_share": "NAV (净资产价值) / 份额",
     "assets": "资产",
     "balance": "余额",
@@ -86,12 +86,12 @@
     "chart": "图表",
     "rebalance": "再平衡",
     "borrow": "借款",
-    "edit_itp_info": "编辑 ITP 信息",
+    "edit_itp_info": "编辑 DTF 信息",
     "description_placeholder": "描述 (最多 280 字符 / 约 50 词)",
     "website_placeholder": "网站 URL (最多 128 字符)",
     "video_placeholder": "YouTube URL (最多 256 字符)",
     "settlement_erc20": "Settlement ERC20:",
-    "itp_id": "ITP ID:",
+    "itp_id": "DTF ID:",
     "minted_supply": "已铸造供应量",
     "loading_holders": "加载持有人中...",
     "unable_fetch_holders": "无法获取持有人信息",
@@ -108,8 +108,8 @@
   },
   "rebalance": {
     "title": "再平衡 {name}",
-    "itp_id_label": "ITP ID:",
-    "loading": "加载 ITP 状态中...",
+    "itp_id_label": "DTF ID:",
+    "loading": "加载 DTF 状态中...",
     "add_asset_label": "添加资产 (篮子中 {count} 个, 可用 {available} 个)",
     "search_placeholder": "搜索要添加的资产...",
     "equal_weights": "等权重",
@@ -244,7 +244,7 @@
       "fund_inception": "基金成立日",
       "asset_class": "资产类别",
       "asset_class_value": "加密货币指数",
-      "itp_id": "ITP ID",
+      "itp_id": "DTF ID",
       "number_of_holdings": "持仓数量",
       "as_of": "截至 {date}",
       "copy": "复制",

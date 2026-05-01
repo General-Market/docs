@@ -30,7 +30,7 @@
     "subtitle": "활성 보유 내역"
   },
   "positions_table": {
-    "itp": "ITP",
+    "itp": "DTF",
     "shares": "주식 수",
     "avg_cost": "평균 매입가",
     "nav": "NAV (순자산가치)",
@@ -40,7 +40,7 @@
   },
   "trades_table": {
     "date": "날짜",
-    "itp": "ITP",
+    "itp": "DTF",
     "side": "매매 구분",
     "amount": "금액",
     "price": "가격",
@@ -59,7 +59,7 @@
   },
   "empty": {
     "no_positions_title": "아직 포지션이 없습니다",
-    "no_positions_description": "위에서 인덱스 상품을 탐색하고 첫 ITP를 구매하여 여기에서 성과를 추적하세요.",
+    "no_positions_description": "위에서 인덱스 상품을 탐색하고 첫 DTF를 구매하여 여기에서 성과를 추적하세요.",
     "explore_indexes": "인덱스 탐색",
     "no_trades_title": "아직 거래 내역이 없습니다",
     "no_trades_description": "첫 거래를 완료하면 매수 및 매도 내역이 여기에 표시됩니다.",

@@ -146,7 +146,7 @@ The bridge handles this conversion transparently. Deposit 100 USDC on Settlement
 
 ## How Tokens Appear on Each Chain
 
-When you buy an ITP through the bridge, you end up with tokens on both chains. The same position, two representations. One real, one reflected.
+When you buy a Dex Traded Fund (DTF) through the bridge, you end up with tokens on both chains. The same position, two representations. One real, one reflected.
 
 ```text
                      BRIDGE BUY
@@ -196,11 +196,11 @@ BridgedITP tokens are full ERC-20 tokens on Settlement. They represent the same 
 ### On L3 (Chain ID 111222333)
 
 <Steps>
-  <Step title="Buy an ITP">
-    Navigate to **Markets**, select an ITP, enter a USDC amount, and confirm the buy order. The order goes through BLS consensus and fills within seconds.
+  <Step title="Buy a DTF">
+    Navigate to **Markets**, select a DTF, enter a USDC amount, and confirm the buy order. The order goes through BLS consensus and fills within seconds.
   </Step>
 
-  <Step title="Sell an ITP">
+  <Step title="Sell a DTF">
     From your **Portfolio**, select a position, enter the number of shares to sell, and confirm. USDC is returned to your L3 wallet.
   </Step>
 
@@ -212,15 +212,15 @@ BridgedITP tokens are full ERC-20 tokens on Settlement. They represent the same 
 ### On Settlement (Chain ID 14601)
 
 <Steps>
-  <Step title="Bridge-Buy an ITP">
-    Deposit USDC on Settlement to buy ITP shares. The bridge escrows your USDC, the oracles execute the trade, and you receive both ITP shares on L3 and BridgedITP on Settlement.
+  <Step title="Bridge-Buy a DTF">
+    Deposit USDC on Settlement to buy DTF shares. The bridge escrows your USDC, the oracles execute the trade, and you receive both DTF shares on L3 and BridgedITP on Settlement.
   </Step>
 
   <Step title="Lend USDC">
     Go to the **Lend** section and deposit USDC into the Morpho vault. Your USDC earns yield from borrowers immediately, with no lock-up period.
   </Step>
 
-  <Step title="Borrow Against ITP">
+  <Step title="Borrow Against DTF">
     Deposit BridgedITP shares as collateral in a Morpho lending market and borrow USDC. Monitor your health factor to avoid liquidation.
   </Step>
 
@@ -263,12 +263,12 @@ The two-chain architecture exists to separate concerns. Trading happens where tr
     Deep dive into the cross-chain bridge -- buy/sell flows, custody, and the backing invariant.
   </Card>
   <Card title="Lending Guide" icon="hand-holding-dollar" href="/index/guides/lending">
-    Step-by-step guide to lending USDC and borrowing against ITP shares on Settlement.
+    Step-by-step guide to lending USDC and borrowing against DTF shares on Settlement.
   </Card>
-  <Card title="Buy and Sell ITPs" icon="arrows-spin" href="/index/guides/buy-sell">
-    How to trade ITPs on L3 -- order submission, batching, and fills.
+  <Card title="Buy and Sell DTFs" icon="arrows-spin" href="/index/guides/buy-sell">
+    How to trade DTFs on L3 -- order submission, batching, and fills.
   </Card>
   <Card title="Getting Started" icon="rocket" href="/index/getting-started">
-    Set up your wallet and make your first ITP trade.
+    Set up your wallet and make your first DTF trade.
   </Card>
 </CardGroup>

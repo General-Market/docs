@@ -1,4 +1,4 @@
-# ITP Ideas: The Culture & Lifestyle Investor
+# DTF Ideas: The Culture & Lifestyle Investor
 
 Investor archetype: the person who invests in what they live and breathe -- gaming, sports, music, social media, creator economy, metaverse, entertainment. They see crypto as the financialization of culture itself.
 

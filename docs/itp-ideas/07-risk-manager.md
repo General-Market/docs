@@ -1,4 +1,4 @@
-# ITP Ideas: The Risk Manager
+# DTF Ideas: The Risk Manager
 
 Archetype: Portfolio allocator, hedge fund risk analyst, Sharpe ratio optimizer, drawdown minimizer. Wants crypto exposure with guardrails — capital preservation, risk-adjusted returns, and sleeping well at night. Sees crypto as an asset class to be tamed, not ridden.
 

@@ -120,10 +120,10 @@
   },
   "aum_ranking": {
     "title": "AUMランキング",
-    "description": "全ITPのAUM基準資産ランキング",
+    "description": "全DTFのAUM基準資産ランキング",
     "total_aum": "総AUM",
     "loading": "ランキングデータを読み込み中...",
-    "need_events": "ランキングチャートの表示には2件以上のイベント（ITP作成、リバランス、約定）が必要です。",
+    "need_events": "ランキングチャートの表示には2件以上のイベント（DTF作成、リバランス、約定）が必要です。",
     "showing_event": "現在1件のイベントを表示中。",
     "snapshots_count": "{count}件のスナップショット"
   },
@@ -176,7 +176,7 @@
       "amount": "金額",
       "price": "価格",
       "fee": "手数料",
-      "itps": "ITP",
+      "itps": "DTF",
       "trade_id": "取引ID"
     },
     "side_buy": "購入",

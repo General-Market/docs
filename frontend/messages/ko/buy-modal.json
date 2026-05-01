@@ -1,6 +1,6 @@
 {
   "title": "{name} 매수",
-  "itp_id_label": "ITP ID:",
+  "itp_id_label": "DTF ID:",
   "amount_label": "금액 (USDC)",
   "balance_label": "잔액: {amount} USDC",
   "max_price_label": "최대 가격 (USDC/주)",
@@ -18,7 +18,7 @@
   "minting": "발행 중...",
   "minted": "발행 완료!",
   "mint_failed": "발행 실패",
-  "your_itp_shares": "내 ITP 주식",
+  "your_itp_shares": "내 DTF 주식",
   "buy_more": "추가 매수",
   "button": {
     "approve_pending": "지갑에서 승인을 확인하세요...",
@@ -26,7 +26,7 @@
     "buy_pending": "지갑에서 매수를 확인하세요...",
     "buy_confirming": "주문 제출 중...",
     "approve_and_buy": "승인 및 매수",
-    "buy_itp": "ITP 매수"
+    "buy_itp": "DTF 매수"
   },
   "steps": {
     "submit": "제출",
@@ -58,7 +58,7 @@
     "vs_limit": "지정가 대비",
     "underlying_title": "Underlying assets acquired",
     "underlying_note": "Quantities are exact (on-chain inventory × shares minted). Prices reflect the current oracle quote.",
-    "underlying_note_approx": "Approximate breakdown — this ITP has no on-chain inventory yet, so quantities are derived from weights at current prices."
+    "underlying_note_approx": "Approximate breakdown — this DTF has no on-chain inventory yet, so quantities are derived from weights at current prices."
   },
   "toast": {
     "buy_filled_shares": "매수 체결 — {name} 주식 {shares}주 수령",

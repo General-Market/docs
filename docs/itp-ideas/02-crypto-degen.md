@@ -1,4 +1,4 @@
-# ITP Ideas: The Crypto Native Degen
+# DTF Ideas: The Crypto Native Degen
 
 Archetype: CT-native, narrative-rotator, meme-maximalist, airdrop farmer, reflexivity-aware speculator.
 

@@ -121,7 +121,7 @@
     "performance": "パフォーマンス",
     "deploy_index": "インデックスをデプロイ",
     "rebalance": "リバランス",
-    "rebalance_select": "リバランスするITPを選択",
+    "rebalance_select": "リバランスするDTFを選択",
     "nav_label": "NAV: ${value}",
     "return_label": "リターン: {value}%",
     "dd_label": "DD: {value}%"

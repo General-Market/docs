@@ -393,7 +393,7 @@ function MarketsTableInline({ allMarketData, onBorrow, activeBorrowCollaterals }
         }) as string
         nameMap.set(addr, name)
       } catch {
-        nameMap.set(addr, 'ITP')
+        nameMap.set(addr, 'DTF')
       }
       // Fetch user balance if connected
       if (address) {
@@ -419,7 +419,7 @@ function MarketsTableInline({ allMarketData, onBorrow, activeBorrowCollaterals }
   // Build rows: one per SSE-fed market entry
   const rows = allCollateralTokens.map(addr => {
     const mktData = allMarketData?.get(addr)
-    const name = itpNames.get(addr) || 'ITP'
+    const name = itpNames.get(addr) || 'DTF'
     const userBal = userBalances.get(addr) ?? 0n
     const lltv = mktData ? Number(mktData.lltv) / 1e16 : 77
 

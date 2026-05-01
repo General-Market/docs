@@ -1,6 +1,6 @@
 {
   "title": "Sell {name}",
-  "itp_id_label": "ITP ID:",
+  "itp_id_label": "DTF ID:",
   "your_shares_label": "Your Shares",
   "no_shares": "No shares found in your wallet",
   "no_bridged_itp": "This fund hasn't been bridged to Settlement yet.",
@@ -55,7 +55,7 @@
     "pnl_vs_cost": "P&L vs Cost",
     "underlying_title": "Underlying assets released",
     "underlying_note": "Quantities are exact (on-chain inventory × shares burned). Prices reflect the current oracle quote.",
-    "underlying_note_approx": "Approximate breakdown — this ITP has no on-chain inventory yet, so quantities are derived from weights at current prices."
+    "underlying_note_approx": "Approximate breakdown — this DTF has no on-chain inventory yet, so quantities are derived from weights at current prices."
   },
   "toast": {
     "sell_filled": "Sell filled \u2014 {proceeds} received"

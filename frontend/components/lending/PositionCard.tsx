@@ -105,7 +105,7 @@ export function PositionCard({ market, crisisLevel }: PositionCardProps) {
           <p className="text-text-primary font-bold text-xl font-mono tabular-nums">
             {parseFloat(collateralFormatted).toFixed(4)}
           </p>
-          <p className="text-text-muted text-xs">ITP</p>
+          <p className="text-text-muted text-xs">DTF</p>
         </div>
 
         {/* Debt */}
@@ -169,7 +169,7 @@ export function PositionCard({ market, crisisLevel }: PositionCardProps) {
           <div className="flex justify-between items-center">
             <span className="text-text-secondary text-sm">{t('position_card.available_to_withdraw')}</span>
             <span className="text-color-up font-mono tabular-nums">
-              {parseFloat(formatUnits(position.maxWithdraw, 18)).toFixed(4)} ITP
+              {parseFloat(formatUnits(position.maxWithdraw, 18)).toFixed(4)} DTF
             </span>
           </div>
         )}

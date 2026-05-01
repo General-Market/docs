@@ -112,8 +112,8 @@ export const buyModal = {
   },
 
   submitButton(page: Page): Locator {
-    // Text cycles: "Approve & Buy" | "Buy ITP" | wallet-pending states
-    return page.getByRole('button', { name: /Approve & Buy|Buy ITP/ });
+    // Text cycles: "Approve & Buy" | "Buy DTF" | wallet-pending states
+    return page.getByRole('button', { name: /Approve & Buy|Buy DTF/ });
   },
 
   orderSubmittedBanner(page: Page): Locator {

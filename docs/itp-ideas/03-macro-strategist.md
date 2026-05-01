@@ -1,4 +1,4 @@
-# ITP Ideas: The Macro Strategist
+# DTF Ideas: The Macro Strategist
 
 Investor archetype: the geopolitical thinker, the Ray Dalio disciple, the Zoltan Pozsar reader. Crypto exposure through the lens of macro themes -- inflation hedges, de-dollarization, commodity cycles, monetary policy, demographic shifts.
 
