@@ -501,16 +501,18 @@ const QuadGrid: React.FC<{
 export const Scene01_Intro: React.FC = () => {
   const s = useGsapProxy(
     (tl, p) => {
+      // Phrase A — words stagger in 0.0 → 0.45s, hold to 1.30s, fade 1.30s.
       SCENE01_A.forEach((_, i) => {
         if (i === 0) return;
         tl.to(p[`a_${i}`]!, { opacity: 1, y: 0, duration: 0.15, ease: "power2.out" }, i * 0.15);
       });
-      tl.to(p.tilesDraw, { v: 1, duration: 0.7, ease: "power2.out" }, 0.05);
-      tl.to(p.phraseA, { opacity: 0, duration: 0.18, ease: "power2.in" }, 0.75);
-      tl.to(p.phraseB, { opacity: 1, duration: 0.15, ease: "power2.out" }, 0.85);
-      tl.to(p.crashDraw, { v: 1, duration: 0.95, ease: "power2.out" }, 0.85);
+      tl.to(p.tilesDraw, { v: 1, duration: 0.85, ease: "power2.out" }, 0.05);
+      tl.to(p.phraseA, { opacity: 0, duration: 0.18, ease: "power2.in" }, 1.30);
+      // Phrase B — fades in 1.40s, words stagger 1.40 → 2.12s, hold to 3.0s.
+      tl.to(p.phraseB, { opacity: 1, duration: 0.15, ease: "power2.out" }, 1.40);
+      tl.to(p.crashDraw, { v: 1, duration: 1.10, ease: "power2.out" }, 1.40);
       SCENE01_B.forEach((_, i) => {
-        tl.to(p[`b_${i}`]!, { opacity: 1, y: 0, duration: 0.14, ease: "power2.out" }, 0.85 + i * 0.12);
+        tl.to(p[`b_${i}`]!, { opacity: 1, y: 0, duration: 0.14, ease: "power2.out" }, 1.40 + i * 0.12);
       });
     },
     buildScene01Proxies(),
@@ -737,21 +739,20 @@ export const Scene02_Numbers: React.FC = () => {
 export const Scene03_DarkGrid: React.FC = () => {
   const s = useGsapProxy(
     (tl, p) => {
-      // "But" visible at 0
-      tl.to(p.but, { opacity: 0, duration: 0.08, ease: "power2.in" }, 0.35);
-      // "what" enters
-      tl.to(p.what, { opacity: 1, y: 0, duration: 0.1, ease: "power2.out" }, 0.35);
-      tl.to(p.what, { opacity: 0, duration: 0.08, ease: "power2.in" }, 0.7);
-      // "are"
-      tl.to(p.are, { opacity: 1, y: 0, duration: 0.1, ease: "power2.out" }, 0.7);
-      tl.to(p.are, { opacity: 0, duration: 0.08, ease: "power2.in" }, 1.0);
-      // "rainbows?" — held longer, with rainbow gradient
-      tl.to(p.rainbows, { opacity: 1, y: 0, duration: 0.12, ease: "power2.out" }, 1.0);
-      // Phase 1 cross-fades out at 1.6s
-      tl.to(p.phase1, { opacity: 0, duration: 0.18, ease: "power2.in" }, 1.6);
-      // Phase 2 — title slides in from right at 1.7s
-      tl.to(p.phase2, { opacity: 1, duration: 0.15, ease: "power2.out" }, 1.7);
-      tl.to(p.title, { x: 0, duration: 0.45, ease: "power2.out" }, 1.7);
+      // Compressed for 60-frame (2.5s) budget. Phase 1 ends at 1.20s,
+      // phase 2 lands fast and holds briefly — the rainbow flourish was
+      // overstaying its welcome.
+      tl.to(p.but, { opacity: 0, duration: 0.06, ease: "power2.in" }, 0.24);
+      tl.to(p.what, { opacity: 1, y: 0, duration: 0.08, ease: "power2.out" }, 0.24);
+      tl.to(p.what, { opacity: 0, duration: 0.06, ease: "power2.in" }, 0.50);
+      tl.to(p.are, { opacity: 1, y: 0, duration: 0.08, ease: "power2.out" }, 0.50);
+      tl.to(p.are, { opacity: 0, duration: 0.06, ease: "power2.in" }, 0.78);
+      tl.to(p.rainbows, { opacity: 1, y: 0, duration: 0.10, ease: "power2.out" }, 0.78);
+      // Phase 1 cross-fades out at 1.20s
+      tl.to(p.phase1, { opacity: 0, duration: 0.14, ease: "power2.in" }, 1.20);
+      // Phase 2 — title slides in fast at 1.30s, hold ~0.9s.
+      tl.to(p.phase2, { opacity: 1, duration: 0.12, ease: "power2.out" }, 1.30);
+      tl.to(p.title, { x: 0, duration: 0.30, ease: "power2.out" }, 1.30);
     },
     {
       phase1: { opacity: 1 },

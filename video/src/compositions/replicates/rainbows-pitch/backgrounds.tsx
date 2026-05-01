@@ -12,71 +12,6 @@ export const BLUE = "#000000";
 export const DARK = "#0a0a0a";
 export const LIGHT_BG = "#fafafa";
 
-const TICKER_ITEMS = [
-  ["BTC/USD", "$64,048", "−7.24%", "down"],
-  ["PEPE", "$0.0000039", "−11.6%", "down"],
-  ["BTC-PUT-65K", "$6,559", "+86.3%", "up"],
-  ["MEXICANUNC", "$0.0000239", "−99.73%", "down"],
-  ["TRUMP", "$2.547", "−12.86%", "down"],
-  ["JUST_CHATTING", "346K viewers", "−24.7%", "down"],
-  ["CS2", "1.28M players", "−6.9%", "down"],
-  ["LICHESS", "4,036 active", "−7.3%", "down"],
-  ["MTA:NYC", "716 trips", "−4.4%", "down"],
-] as const;
-
-// One ticker line — a strip of mono price quotes that scrolls across the frame.
-const Ticker: React.FC<{
-  bottom?: number;
-  top?: number;
-  textColor: string;
-  upColor: string;
-  downColor: string;
-  bg: string;
-  speedPxPerFrame?: number;
-}> = ({ bottom, top, textColor, upColor, downColor, bg, speedPxPerFrame = 4 }) => {
-  const frame = useCurrentFrame();
-  const offset = (frame * speedPxPerFrame) % 1920;
-  const Item = ({ entry }: { entry: (typeof TICKER_ITEMS)[number] }) => {
-    const [name, price, pct, dir] = entry;
-    return (
-      <span style={{ display: "inline-flex", gap: 10, alignItems: "center", marginRight: 36 }}>
-        <span style={{ color: textColor, opacity: 0.75 }}>{name}</span>
-        <span style={{ color: textColor, fontWeight: 600 }}>{price}</span>
-        <span style={{ color: dir === "up" ? upColor : downColor, fontWeight: 700 }}>
-          {dir === "up" ? "▲" : "▼"} {pct}
-        </span>
-      </span>
-    );
-  };
-  return (
-    <div
-      style={{
-        position: "absolute",
-        left: 0,
-        right: 0,
-        height: 32,
-        ...(top !== undefined ? { top } : { bottom: bottom ?? 0 }),
-        background: bg,
-        borderTop: `1px solid ${textColor}10`,
-        borderBottom: `1px solid ${textColor}10`,
-        overflow: "hidden",
-        whiteSpace: "nowrap",
-        fontFamily: "ui-monospace, SFMono-Regular, monospace",
-        fontSize: 13,
-        display: "flex",
-        alignItems: "center",
-        zIndex: 1,
-      }}
-    >
-      <div style={{ transform: `translateX(${-offset}px)`, paddingLeft: 16, display: "flex" }}>
-        {[...TICKER_ITEMS, ...TICKER_ITEMS, ...TICKER_ITEMS].map((it, i) => (
-          <Item key={i} entry={it} />
-        ))}
-      </div>
-    </div>
-  );
-};
-
 // Halftone dot field, baked as inline SVG data URI for cheap repeat.
 const halftoneSvg = (color: string, opacity: number) =>
   `url("data:image/svg+xml;utf8,${encodeURIComponent(
@@ -101,36 +36,6 @@ const Grain: React.FC<{ color?: string; opacity?: number }> = ({
     </AbsoluteFill>
   );
 };
-
-// Recurring chart watermark — a giant italic word at low opacity that anchors
-// the editorial mood without pulling focus from the foreground.
-const Watermark: React.FC<{ text: string; color: string }> = ({ text, color }) => (
-  <div
-    style={{
-      position: "absolute",
-      inset: 0,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      pointerEvents: "none",
-    }}
-  >
-    <span
-      style={{
-        fontFamily: "Inter, system-ui, sans-serif",
-        fontSize: 360,
-        fontWeight: 800,
-        fontStyle: "italic",
-        letterSpacing: "-0.04em",
-        color,
-        opacity: 0.05,
-        whiteSpace: "nowrap",
-      }}
-    >
-      {text}
-    </span>
-  </div>
-);
 
 // Tiny TradingView-style metadata badges anchored to the corners.
 const CornerBadge: React.FC<{
@@ -190,14 +95,6 @@ export const BlueGradient: React.FC<{ speed?: number }> = () => {
           <rect width="100%" height="100%" fill="url(#bk-grid)" />
         </svg>
       </AbsoluteFill>
-      <Watermark text="GENERAL" color="#ffffff" />
-      <Ticker
-        bottom={0}
-        textColor="#ffffff"
-        upColor="#26a69a"
-        downColor="#ef5350"
-        bg="rgba(13,17,23,0.94)"
-      />
       <Grain color="#ffffff" opacity={0.05} />
       <CornerBadge pos="tr" color="#ffffff">
         ● LIVE · {String(Math.floor(frame / 24)).padStart(2, "0")}:
@@ -232,14 +129,6 @@ export const LightGradient: React.FC = () => {
           transform: "translateX(-50%) rotate(8deg)",
         }}
       />
-      <Watermark text="MARKETS" color="#000000" />
-      <Ticker
-        top={0}
-        textColor="#0d1117"
-        upColor="#0a8054"
-        downColor="#c33232"
-        bg="rgba(245,245,243,0.92)"
-      />
       <Grain color="#000000" opacity={0.025} />
       <CornerBadge pos="bl" color="#000000">
         EDITION №01 · 2026
@@ -257,7 +146,6 @@ export const SolidBlue: React.FC = () => (
           "radial-gradient(ellipse 80% 60% at 50% 50%, rgba(255,255,255,0.06) 0%, transparent 65%)",
       }}
     />
-    <Watermark text="·" color="#ffffff" />
     <Grain color="#ffffff" opacity={0.05} />
   </AbsoluteFill>
 );

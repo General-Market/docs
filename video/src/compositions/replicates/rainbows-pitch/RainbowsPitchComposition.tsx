@@ -1,5 +1,5 @@
 import React from "react";
-import { AbsoluteFill, Sequence } from "remotion";
+import { AbsoluteFill, Audio, Sequence, staticFile } from "remotion";
 import { Scene01_Intro, Scene02_Numbers, Scene03_DarkGrid, Scene04_CubeExplode } from "./ScenesA";
 import { Scene05_Waiting, Scene06_Starburst, Scene07_TransactionQueue, Scene08_GridText } from "./ScenesB";
 import { Scene09_Experience, Scene10_LiveTestnet, Scene11_NewSpeed, Scene12_Finale } from "./ScenesC";
@@ -32,10 +32,11 @@ import { Scene09_Experience, Scene10_LiveTestnet, Scene11_NewSpeed, Scene12_Fina
 export const RainbowsPitchComposition: React.FC = () => {
   return (
     <AbsoluteFill style={{ backgroundColor: "#000" }}>
-      <Sequence from={0} durationInFrames={48} name="01 Compare">
+      <Audio src={staticFile("music/rainbows-pitch.mp3")} volume={0.7} />
+      <Sequence from={0} durationInFrames={72} name="01 Compare">
         <Scene01_Intro />
       </Sequence>
-      <Sequence from={48} durationInFrames={84} name="02 What Are Rainbows">
+      <Sequence from={72} durationInFrames={60} name="02 What Are Rainbows">
         <Scene03_DarkGrid />
       </Sequence>
       <Sequence from={132} durationInFrames={72} name="03 Filters Illegal">
