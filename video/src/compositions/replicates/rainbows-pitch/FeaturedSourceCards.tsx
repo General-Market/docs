@@ -42,6 +42,13 @@ type Card = {
   isPrice: boolean;
   isPercent?: boolean;
   smallDecimals?: boolean;
+  /** Sub-row image rendering shape — round avatars (coins, streamers) vs
+      square thumbs (game banners, market posters) vs flat ticker pills. */
+  rowImageShape?: "round" | "square" | "ticker";
+  /** Background colour for ticker-pill fallback (pumpfun, db_trains, etc.). */
+  tickerBadgeBg?: string;
+  /** Foreground colour for ticker-pill fallback. */
+  tickerBadgeFg?: string;
   data: SourceData;
 };
 
@@ -56,6 +63,7 @@ const FINANCE_CARDS: Card[] = [
     accent: "#8DC73F",
     valueLabel: "Price",
     isPrice: true,
+    rowImageShape: "round",
     data: data.coingecko,
   },
   {
@@ -67,6 +75,7 @@ const FINANCE_CARDS: Card[] = [
     valueLabel: "Probability",
     isPrice: false,
     isPercent: true,
+    rowImageShape: "square",
     data: data.polymarket,
   },
   {
@@ -77,6 +86,9 @@ const FINANCE_CARDS: Card[] = [
     accent: "#1f3a93",
     valueLabel: "Price",
     isPrice: true,
+    rowImageShape: "round",
+    tickerBadgeBg: "#1f3a93",
+    tickerBadgeFg: "#ffffff",
     data: data.nyse,
   },
   {
@@ -88,6 +100,9 @@ const FINANCE_CARDS: Card[] = [
     valueLabel: "Price",
     isPrice: true,
     smallDecimals: true,
+    rowImageShape: "ticker",
+    tickerBadgeBg: "#00d18c",
+    tickerBadgeFg: "#0a0a0a",
     data: data.pumpfun,
   },
 ];
@@ -101,6 +116,7 @@ const VARIETY_CARDS: Card[] = [
     accent: "#9146FF",
     valueLabel: "Viewers",
     isPrice: false,
+    rowImageShape: "square",
     data: data.twitch,
   },
   {
@@ -111,6 +127,9 @@ const VARIETY_CARDS: Card[] = [
     accent: "#ec0016",
     valueLabel: "Avg Delay",
     isPrice: false,
+    rowImageShape: "ticker",
+    tickerBadgeBg: "#ec0016",
+    tickerBadgeFg: "#ffffff",
     data: data.db_trains,
   },
   {
@@ -121,16 +140,20 @@ const VARIETY_CARDS: Card[] = [
     accent: "#1b6ee8",
     valueLabel: "Players",
     isPrice: false,
+    rowImageShape: "square",
     data: data.steam,
   },
   {
     id: "animals",
     display: "Wildlife",
     logoFile: "source-imgs/new-inaturalist.svg",
-    brandBg: "#f5f5f5",
+    brandBg: "#74AC00",
     accent: "#74AC00",
     valueLabel: "Observations",
     isPrice: false,
+    rowImageShape: "ticker",
+    tickerBadgeBg: "#74AC00",
+    tickerBadgeFg: "#ffffff",
     data: data.animals,
   },
 ];
@@ -414,6 +437,75 @@ function formatValue(v: string, isPrice: boolean, isPercent: boolean, smallDecim
   return n.toFixed(1);
 }
 
+// ── Sub-row avatar — image when we have one, ticker pill otherwise ──
+function SubRowAvatar({
+  market,
+  card,
+  shape,
+}: {
+  market: Market;
+  card: Card;
+  shape: "round" | "square" | "ticker";
+}) {
+  const SIZE = 30;
+  const ticker = (market.symbol || market.assetId || "").toUpperCase();
+  const tickerShort = ticker.replace(/^(STOCK_|PF:|TWITCH_GAME_|STEAM#|WILD\/|DB_)/, "").slice(0, 5);
+
+  if (shape !== "ticker" && market.imageUrl) {
+    const radius = shape === "round" ? "50%" : 7;
+    // imageUrl is a relative path under public/ after the prefetch pass —
+    // wrap it with staticFile so the bundler resolves to the local file.
+    const src = market.imageUrl.startsWith("http")
+      ? market.imageUrl
+      : staticFile(market.imageUrl);
+    return (
+      <div
+        style={{
+          width: SIZE,
+          height: SIZE,
+          borderRadius: radius,
+          background: "#f1f4f7",
+          overflow: "hidden",
+          flexShrink: 0,
+          border: "1px solid rgba(15,23,42,0.06)",
+        }}
+      >
+        <Img
+          src={src}
+          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+        />
+      </div>
+    );
+  }
+
+  // Ticker pill fallback
+  const bg = card.tickerBadgeBg ?? card.accent;
+  const fg = card.tickerBadgeFg ?? "#ffffff";
+  return (
+    <div
+      style={{
+        height: SIZE,
+        minWidth: SIZE,
+        padding: "0 8px",
+        borderRadius: 7,
+        background: bg,
+        color: fg,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontFamily,
+        fontSize: 11,
+        fontWeight: 800,
+        letterSpacing: "0.04em",
+        flexShrink: 0,
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.18), 0 1px 2px rgba(0,0,0,0.10)",
+      }}
+    >
+      {tickerShort}
+    </div>
+  );
+}
+
 // ── A single card ──
 function Card({
   card,
@@ -533,43 +625,50 @@ function Card({
       </div>
 
       {/* Sub-market rows */}
-      <div style={{ borderTop: "1px solid #f1f5f9" }}>
+      <div style={{ borderTop: "1px solid #eef0f3" }}>
         {topMarkets.slice(0, 4).map((m, i) => {
           const change = formatChange(m.changePct);
           const rowAppear = Math.max(0, Math.min(1, (appear - 0.2 - i * 0.08) / 0.4));
+          const shape = card.rowImageShape ?? "round";
+          const positive = parseFloat(m.changePct) >= 0;
+          const changeBg = positive ? "rgba(16,185,129,0.10)" : "rgba(220,38,38,0.10)";
           return (
             <div
               key={m.assetId}
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 12,
+                gap: 14,
                 padding: "13px 24px",
-                borderTop: i === 0 ? "none" : "1px solid #f4f4f5",
+                borderTop: i === 0 ? "none" : "1px solid #f1f4f7",
                 opacity: rowAppear,
                 transform: `translateX(${(1 - rowAppear) * 8}px)`,
               }}
             >
+              {/* Series colour dot — anchors the row to its chart line */}
               <span
                 style={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: 999,
+                  width: 4,
+                  height: 28,
+                  borderRadius: 2,
                   background: CHART_COLORS[i],
                   flexShrink: 0,
                 }}
               />
+              {/* Asset image / ticker pill */}
+              <SubRowAvatar market={m} card={card} shape={shape} />
               <span
                 style={{
                   fontFamily,
-                  fontSize: 16,
-                  fontWeight: 500,
+                  fontSize: 15,
+                  fontWeight: 600,
                   color: "#18181b",
                   flex: 1,
                   minWidth: 0,
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   whiteSpace: "nowrap",
+                  letterSpacing: "-0.01em",
                 }}
               >
                 {m.name}
@@ -582,6 +681,7 @@ function Card({
                   color: "#0a0a0a",
                   fontVariantNumeric: "tabular-nums",
                   flexShrink: 0,
+                  letterSpacing: "-0.01em",
                 }}
               >
                 {formatValue(m.value, card.isPrice, !!card.isPercent, !!card.smallDecimals)}
@@ -589,13 +689,17 @@ function Card({
               <span
                 style={{
                   fontFamily,
-                  fontSize: 14,
-                  fontWeight: 600,
+                  fontSize: 12,
+                  fontWeight: 700,
                   color: change.color,
+                  background: changeBg,
                   fontVariantNumeric: "tabular-nums",
-                  width: 80,
+                  padding: "3px 7px",
+                  borderRadius: 5,
+                  minWidth: 76,
                   textAlign: "right",
                   flexShrink: 0,
+                  letterSpacing: "-0.01em",
                 }}
               >
                 {change.text}

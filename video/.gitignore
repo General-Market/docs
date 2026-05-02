@@ -7,6 +7,10 @@ out/
 # Media assets (too large for git)
 public/
 blender_render/
+# Exception: scene-image avatars baked from prefetch — small PNGs/JPGs
+# needed by Remotion to render the Rainbows-Pitch source cards offline.
+!public/scene-images/
+!public/scene-images/**
 
 # Media files anywhere
 *.mp4

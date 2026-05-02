@@ -122,9 +122,10 @@ async function fetchNyse() {
   const historyData = {};
   for (const sym of NYSE_TICKERS) {
     const finnhubSym = sym.replace('-', '.');
-    const q = await getJson(
-      `https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(finnhubSym)}&token=${FINNHUB}`,
-    );
+    const [q, profile] = await Promise.all([
+      getJson(`https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(finnhubSym)}&token=${FINNHUB}`),
+      getJson(`https://finnhub.io/api/v1/stock/profile2?symbol=${encodeURIComponent(finnhubSym)}&token=${FINNHUB}`).catch(() => ({})),
+    ]);
     const assetId = `stock_${sym}`;
     topMarkets.push({
       assetId,
@@ -132,7 +133,7 @@ async function fetchNyse() {
       name: NAMES[sym] ?? sym,
       value: String(q.c ?? 0),
       changePct: String((q.dp ?? 0).toFixed(4)),
-      imageUrl: null,
+      imageUrl: profile?.logo ?? null,
     });
     const yahoo = await getJson(
       `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?range=7d&interval=1d`,
@@ -220,13 +221,32 @@ async function fetchProdSource(displayId, { topN = 4, marketCountOverride } = {}
     name: p.name,
     value: p.value,
     changePct: p.changePct ?? '0',
-    imageUrl: p.imageUrl ?? null,
+    imageUrl: p.imageUrl ?? deriveImageUrl(displayId, p.assetId, p.symbol),
   }));
   return {
     topMarkets,
     historyData,
     marketCount: marketCountOverride ?? snap.totalAssets ?? all.length,
   };
+}
+
+// Map asset IDs to their canonical CDN image when the data-node returns null.
+// Twitch boxart and Steam header are predictable URL patterns; we exploit them
+// instead of waiting for the snapshot pipeline to backfill imageUrl.
+function deriveImageUrl(displayId, assetId, symbol) {
+  if (!assetId && !symbol) return null;
+  if (displayId === 'twitch') {
+    const m = (assetId || '').match(/^twitch_game_(\d+)/);
+    if (m) return `https://static-cdn.jtvnw.net/ttv-boxart/${m[1]}-188x250.jpg`;
+    const sm = (assetId || '').match(/^twitch_stream_(.+)/);
+    if (sm) return `https://static-cdn.jtvnw.net/jtv_user_pictures/${sm[1]}-profile_image-150x150.png`;
+  }
+  if (displayId === 'steam') {
+    const m = (assetId || '').match(/^steam_game_(\d+)/);
+    if (m) return `https://cdn.cloudflare.steamstatic.com/steam/apps/${m[1]}/header.jpg`;
+  }
+  // animals → ticker pills (no reliable open-image source for these labels)
+  return null;
 }
 
 // ───────── Deutsche Bahn — IRIS direct (current + synth 7d) ──
@@ -326,8 +346,19 @@ function parsePtTs(pt) {
 
 // ───────── orchestrator ────────────────────────────────────
 async function main() {
+  // Load whatever's currently on disk so we can fall back to last-good data
+  // when a per-source fetch comes back empty (the prod data-node has been
+  // intermittently dropping per-source queries to zero).
+  let prior = { sources: {} };
+  try {
+    prior = JSON.parse(await fs.readFile(OUT, 'utf8'));
+  } catch {
+    /* first run */
+  }
+
   const sources = {};
   const errors = {};
+  const notes = {};
   const tasks = [
     ['coingecko', fetchCoinGecko],
     ['polymarket', fetchPolymarket],
@@ -341,21 +372,48 @@ async function main() {
   for (const [name, fn] of tasks) {
     try {
       console.log(`fetching ${name}…`);
-      sources[name] = await fn();
-      console.log(`  ✓ ${sources[name].topMarkets.length} markets, ${Object.values(sources[name].historyData).reduce((n, a) => n + a.length, 0)} history points`);
+      const fresh = await fn();
+      if (fresh.topMarkets.length === 0 && prior.sources?.[name]?.topMarkets?.length > 0) {
+        sources[name] = enrichImages(name, prior.sources[name]);
+        notes[name] = 'kept-prior-data (live fetch was empty)';
+        console.log(`  ↻ kept prior data (${sources[name].topMarkets.length} markets)`);
+      } else {
+        sources[name] = enrichImages(name, fresh);
+        const histPts = Object.values(sources[name].historyData).reduce((n, a) => n + a.length, 0);
+        console.log(`  ✓ ${sources[name].topMarkets.length} markets, ${histPts} history points`);
+      }
     } catch (err) {
-      console.error(`  ✗ ${name}:`, err.message);
-      errors[name] = err.message;
+      if (prior.sources?.[name]?.topMarkets?.length > 0) {
+        sources[name] = enrichImages(name, prior.sources[name]);
+        notes[name] = `kept-prior-data (fetch threw: ${err.message})`;
+        console.log(`  ↻ kept prior data after error: ${err.message}`);
+      } else {
+        console.error(`  ✗ ${name}:`, err.message);
+        errors[name] = err.message;
+      }
     }
   }
   const out = {
     generatedAt: new Date().toISOString(),
     sources,
     ...(Object.keys(errors).length ? { errors } : {}),
+    ...(Object.keys(notes).length ? { notes } : {}),
   };
   await fs.mkdir(path.dirname(OUT), { recursive: true });
   await fs.writeFile(OUT, JSON.stringify(out, null, 2));
   console.log(`\nwrote ${OUT}`);
+}
+
+// Backfill imageUrl on any topMarket that's missing it. Lets us upgrade old
+// JSON in place without a fresh prod fetch.
+function enrichImages(displayId, src) {
+  return {
+    ...src,
+    topMarkets: src.topMarkets.map(m => ({
+      ...m,
+      imageUrl: m.imageUrl || deriveImageUrl(displayId, m.assetId, m.symbol) || null,
+    })),
+  };
 }
 
 main().catch(err => {
