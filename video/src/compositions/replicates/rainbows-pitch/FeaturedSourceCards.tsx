@@ -419,27 +419,32 @@ function Card({
   card,
   appear,
   drawProgress,
+  aliveProgress = 1,
 }: {
   card: Card;
   appear: number;
   drawProgress: number;
+  /** 0 = blocked / "no exchange lists this", 1 = fully live with data */
+  aliveProgress?: number;
 }) {
   const { topMarkets, historyData, marketCount } = card.data;
   const ids = topMarkets.map((m) => m.assetId);
+  const dead = 1 - aliveProgress;
 
   return (
     <div
       style={{
         position: "relative",
         background: `linear-gradient(180deg, ${card.accent}10 0%, #ffffff 35%, #ffffff 100%)`,
-        border: "1px solid #e5e5e5",
+        border: `1px solid ${dead > 0.5 ? "#d4d4d4" : "#e5e5e5"}`,
         borderRadius: 14,
-        boxShadow: `0 24px 60px rgba(15,23,42,${0.12 * appear}), 0 4px 14px rgba(15,23,42,0.05)`,
+        boxShadow: `0 24px 60px rgba(15,23,42,${0.12 * appear * aliveProgress}), 0 4px 14px rgba(15,23,42,0.05)`,
         opacity: appear,
         transform: `translateY(${(1 - appear) * 22}px) scale(${0.96 + 0.04 * appear})`,
         overflow: "hidden",
         display: "flex",
         flexDirection: "column",
+        filter: `grayscale(${dead * 0.9}) brightness(${1 - dead * 0.18})`,
       }}
     >
       {/* Accent bar */}
@@ -612,34 +617,70 @@ function Card({
       >
         <MultiLineChart ids={ids} history={historyData} drawProgress={drawProgress} />
       </div>
+
+      {/* Dead-state overlay — diagonal red strike + "Not listed" stamp.
+          Fades out as aliveProgress climbs to 1. */}
+      {dead > 0.02 && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            pointerEvents: "none",
+            opacity: dead,
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "-8%",
+              right: "-8%",
+              height: 10,
+              background: "linear-gradient(90deg, transparent, #ff3b3b 12%, #ff3b3b 88%, transparent)",
+              transform: "rotate(-9deg)",
+              transformOrigin: "center",
+              boxShadow: "0 0 18px rgba(255,59,59,0.55)",
+              borderRadius: 2,
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              top: 24,
+              right: 24,
+              padding: "5px 12px",
+              background: "rgba(255,59,59,0.92)",
+              color: "#fff",
+              fontFamily,
+              fontSize: 11,
+              fontWeight: 800,
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+              borderRadius: 6,
+              boxShadow: "0 4px 14px rgba(255,59,59,0.35)",
+            }}
+          >
+            Not Listed
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-// ── Scene root — parametric ──
-function FeaturedSourceCardsSceneInner({
-  cards,
-  layout,
-  drawEndFrame,
-}: {
-  cards: Card[];
-  layout: "row" | "grid2x2";
-  drawEndFrame: number;
-}) {
+// ── Scene root — finance variant (no before/after) ──
+export const FeaturedSourceCardsScene: React.FC = () => {
   const frame = useCurrentFrame();
-  const cardAppears = cards.map((_, i) =>
+  const cardAppears = FINANCE_CARDS.map((_, i) =>
     interpolate(frame, [2 + i * 4, 2 + i * 4 + 14], [0, 1], {
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
     }),
   );
-  const drawProgress = interpolate(frame, [18, drawEndFrame], [0, 1], {
+  const drawProgress = interpolate(frame, [18, 42], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const gridTemplateColumns = layout === "grid2x2" ? "repeat(2, 1fr)" : "repeat(4, 1fr)";
-  const gridTemplateRows = layout === "grid2x2" ? "repeat(2, 1fr)" : "1fr";
-
   return (
     <AbsoluteFill>
       <LightGradient />
@@ -648,23 +689,157 @@ function FeaturedSourceCardsSceneInner({
           position: "absolute",
           inset: 36,
           display: "grid",
-          gridTemplateColumns,
-          gridTemplateRows,
-          gap: layout === "grid2x2" ? 28 : 22,
+          gridTemplateColumns: "repeat(4, 1fr)",
+          gridTemplateRows: "1fr",
+          gap: 22,
         }}
       >
-        {cards.map((card, i) => (
+        {FINANCE_CARDS.map((card, i) => (
           <Card key={card.id} card={card} appear={cardAppears[i]} drawProgress={drawProgress} />
         ))}
       </div>
     </AbsoluteFill>
   );
-}
+};
 
-export const FeaturedSourceCardsScene: React.FC = () => (
-  <FeaturedSourceCardsSceneInner cards={FINANCE_CARDS} layout="row" drawEndFrame={42} />
-);
+// ── Scene root — variety variant with before/after ──
+//   Phase 1 (0–32):  cards visible but greyed-out, "Not Listed" stamps.
+//                    Headline: "Markets no exchange will list."
+//   Phase 2 (32–46): rainbow wipe sweeps left→right, cards bloom to colour
+//                    in its wake.
+//   Phase 3 (46–84): cards alive, charts complete drawing, headline becomes
+//                    "Until Rainbows."
+const RAINBOW_GRADIENT =
+  "linear-gradient(90deg, #ff3b3b 0%, #ff8a00 18%, #ffd400 36%, #2cd36f 54%, #2dabff 72%, #7e3bff 88%, #ff3bd1 100%)";
 
-export const FeaturedVarietyCardsScene: React.FC = () => (
-  <FeaturedSourceCardsSceneInner cards={VARIETY_CARDS} layout="grid2x2" drawEndFrame={48} />
-);
+export const FeaturedVarietyCardsScene: React.FC = () => {
+  const frame = useCurrentFrame();
+
+  // All four cards land together in phase 1 — they're props, not the reveal.
+  const cardAppear = interpolate(frame, [0, 12], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  // Cards come alive in a left-to-right cascade timed to the rainbow sweep.
+  // i=0,1 (left col) at frame 34; i=2,3 (right col) at frame 40.
+  const aliveProgresses = VARIETY_CARDS.map((_, i) => {
+    const isRight = i % 2 === 1;
+    const start = isRight ? 38 : 32;
+    return interpolate(frame, [start, start + 8], [0, 1], {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    });
+  });
+
+  // Chart strokes only paint after the card is alive.
+  const drawProgress = interpolate(frame, [44, 72], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  // Rainbow sweep: a tilted full-height bar travels across the canvas.
+  const sweepX = interpolate(frame, [28, 50], [-30, 130], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const sweepOpacity = interpolate(frame, [28, 32, 46, 50], [0, 0.85, 0.85, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  // Headline transition.
+  const before = interpolate(frame, [0, 6, 30, 36], [0, 1, 1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const after = interpolate(frame, [42, 50], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  return (
+    <AbsoluteFill>
+      <LightGradient />
+
+      {/* Headline — swaps mid-scene */}
+      <div
+        style={{
+          position: "absolute",
+          top: 28,
+          left: 0,
+          right: 0,
+          textAlign: "center",
+          fontFamily,
+          fontWeight: 800,
+          fontStyle: "italic",
+          fontSize: 52,
+          color: "#0a0a0a",
+          letterSpacing: "-0.02em",
+          height: 64,
+        }}
+      >
+        <span style={{ position: "absolute", left: 0, right: 0, opacity: before }}>
+          Markets no exchange will list.
+        </span>
+        <span
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            opacity: after,
+            backgroundImage: RAINBOW_GRADIENT,
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
+          }}
+        >
+          Until Rainbows.
+        </span>
+      </div>
+
+      <div
+        style={{
+          position: "absolute",
+          top: 116,
+          left: 36,
+          right: 36,
+          bottom: 36,
+          display: "grid",
+          gridTemplateColumns: "repeat(2, 1fr)",
+          gridTemplateRows: "repeat(2, 1fr)",
+          gap: 28,
+        }}
+      >
+        {VARIETY_CARDS.map((card, i) => (
+          <Card
+            key={card.id}
+            card={card}
+            appear={cardAppear}
+            drawProgress={drawProgress}
+            aliveProgress={aliveProgresses[i]}
+          />
+        ))}
+      </div>
+
+      {/* Rainbow wipe — tilted vertical bar that traverses the canvas */}
+      {sweepOpacity > 0.01 && (
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            bottom: 0,
+            left: `${sweepX}%`,
+            width: "32%",
+            backgroundImage: RAINBOW_GRADIENT,
+            opacity: sweepOpacity,
+            transform: "skewX(-10deg)",
+            filter: "blur(28px)",
+            mixBlendMode: "screen",
+            pointerEvents: "none",
+          }}
+        />
+      )}
+    </AbsoluteFill>
+  );
+};
