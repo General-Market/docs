@@ -10,12 +10,14 @@ export const maxDuration = 300
 const MAX_ATTEMPTS = 5
 const BACKOFF_MS = [0, 120, 320, 700, 1400]
 
-// In-memory per-call cache. The orbit-proxy upstream is hammered by other
-// services on the L3 — at peak, ~40% of POSTs come back 502 with no body.
-// Caching successful eth_call results for a few seconds drops the number of
-// requests we actually send, and lets a stale-but-real value paint while
-// upstream is hiccuping. View methods only; writes bypass entirely.
-const CACHE_TTL_MS = 30_000
+// In-memory per-call cache with stale-on-error. The orbit-proxy upstream is
+// hammered by other services on the L3 — at peak, ~40% of POSTs come back
+// 502 with no body. Fresh entries (< FRESH_TTL_MS) skip upstream entirely.
+// Stale entries (older but still resident) are kept indefinitely as a
+// fallback: when upstream fails for a call we have any cached value for, we
+// serve the stale one rather than failing the whole batch. View methods
+// only; writes bypass.
+const FRESH_TTL_MS = 30_000
 const CACHE_MAX_ENTRIES = 4096
 const CACHEABLE_METHODS = new Set([
   'eth_call',
@@ -29,17 +31,21 @@ const CACHEABLE_METHODS = new Set([
   'eth_getLogs',
 ])
 
-type CacheEntry = { result: unknown; expires: number }
+type CacheEntry = { result: unknown; freshUntil: number }
 const cache = new Map<string, CacheEntry>()
 
 function cacheKey(method: string, params: unknown): string {
   return `${method}:${JSON.stringify(params)}`
 }
 
-function readCache(key: string, now: number): unknown | undefined {
+function readFresh(key: string, now: number): unknown | undefined {
   const entry = cache.get(key)
-  if (!entry || entry.expires <= now) return undefined
+  if (!entry || entry.freshUntil <= now) return undefined
   return entry.result
+}
+
+function readStale(key: string): unknown | undefined {
+  return cache.get(key)?.result
 }
 
 function writeCache(key: string, result: unknown, now: number) {
@@ -52,7 +58,7 @@ function writeCache(key: string, result: unknown, now: number) {
       if (++i >= drop) break
     }
   }
-  cache.set(key, { result, expires: now + CACHE_TTL_MS })
+  cache.set(key, { result, freshUntil: now + FRESH_TTL_MS })
 }
 
 interface RpcCall {
@@ -115,8 +121,8 @@ export async function POST(req: NextRequest) {
   const isBatch = Array.isArray(parsed)
   const calls: RpcCall[] = isBatch ? (parsed as RpcCall[]) : [parsed as RpcCall]
 
-  // First pass: serve any cache hits, collect misses for upstream.
-  const cachedById = new Map<string | number, unknown>()
+  // First pass: serve fresh cache hits locally; collect misses for upstream.
+  const freshById = new Map<string | number, unknown>()
   const misses: RpcCall[] = []
   const missKey = new Map<string | number, string>()
 
@@ -126,68 +132,87 @@ export async function POST(req: NextRequest) {
       continue
     }
     const key = cacheKey(call.method, call.params ?? [])
-    const hit = readCache(key, now)
+    const hit = readFresh(key, now)
     if (hit !== undefined) {
-      cachedById.set(call.id, hit)
+      freshById.set(call.id, hit)
     } else {
       misses.push(call)
       missKey.set(call.id, key)
     }
   }
 
-  // Second pass: ask upstream for the misses, with retry.
+  // Second pass: ask upstream for the misses, with retry. If upstream fails
+  // entirely, we'll fall back to stale cache below; nothing to do here yet.
   const upstreamById = new Map<string | number, RpcResponse>()
+  let upstreamUsable = true
+  let upstreamPassThrough: NextResponse | null = null
+
   if (misses.length > 0) {
     const body = isBatch ? JSON.stringify(misses) : JSON.stringify(misses[0])
     const response = await forward(body)
+
     if (!response) {
-      // If every original call was already cached, we wouldn't be here.
-      // Some call needs upstream, upstream is gone — surface that.
-      return NextResponse.json({ error: 'RPC unreachable' }, { status: 502 })
-    }
-    if (response.status !== 200) {
-      // Pass non-200 through (auth errors, payload-too-large, etc).
-      return new NextResponse(response.body, {
-        status: response.status,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    }
-    const upstreamText = await response.text()
-    let upstreamJson: unknown
-    try {
-      upstreamJson = JSON.parse(upstreamText)
-    } catch {
-      // Upstream returned 200 but malformed JSON. Pass through.
-      return new NextResponse(upstreamText, {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    }
-    const upstreamArr: RpcResponse[] = Array.isArray(upstreamJson)
-      ? (upstreamJson as RpcResponse[])
-      : [upstreamJson as RpcResponse]
-    for (const r of upstreamArr) {
-      upstreamById.set(r.id, r)
-      const key = missKey.get(r.id)
-      if (key && !r.error && r.result !== undefined) {
-        writeCache(key, r.result, now)
+      upstreamUsable = false
+    } else if (response.status !== 200) {
+      // Non-200 from upstream (auth, payload, etc). If we can fall back to
+      // stale for every miss, prefer that over surfacing the error. Else
+      // pass it through.
+      const allStale = misses.every((c) => readStale(missKey.get(c.id) ?? '') !== undefined)
+      if (allStale) {
+        upstreamUsable = false
+      } else {
+        upstreamPassThrough = new NextResponse(response.body, {
+          status: response.status,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      }
+    } else {
+      const upstreamText = await response.text()
+      let upstreamJson: unknown
+      try {
+        upstreamJson = JSON.parse(upstreamText)
+      } catch {
+        return new NextResponse(upstreamText, {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      }
+      const upstreamArr: RpcResponse[] = Array.isArray(upstreamJson)
+        ? (upstreamJson as RpcResponse[])
+        : [upstreamJson as RpcResponse]
+      for (const r of upstreamArr) {
+        upstreamById.set(r.id, r)
+        const key = missKey.get(r.id)
+        if (key && !r.error && r.result !== undefined) {
+          writeCache(key, r.result, now)
+        }
       }
     }
   }
 
-  // Stitch the final response in the original call order, mixing cached and
-  // upstream entries. JSON-RPC clients (viem) match results back by id, so
-  // ordering doesn't strictly matter, but preserving it is friendlier.
+  if (upstreamPassThrough) return upstreamPassThrough
+
+  // Stitch the final response. For each call: prefer fresh cache, then
+  // upstream's answer, then stale cache, then a synthesized error.
   const out: RpcResponse[] = calls.map((call) => {
-    if (cachedById.has(call.id)) {
-      return { jsonrpc: '2.0', id: call.id, result: cachedById.get(call.id) }
+    if (freshById.has(call.id)) {
+      return { jsonrpc: '2.0', id: call.id, result: freshById.get(call.id) }
     }
-    const r = upstreamById.get(call.id)
-    if (r) return r
+    if (upstreamUsable) {
+      const r = upstreamById.get(call.id)
+      if (r) return r
+    }
+    const key = missKey.get(call.id)
+    if (key) {
+      const stale = readStale(key)
+      if (stale !== undefined) {
+        return { jsonrpc: '2.0', id: call.id, result: stale }
+      }
+    }
     return {
       jsonrpc: '2.0',
       id: call.id,
-      error: { code: -32603, message: 'no upstream response for this call' },
+      error: { code: -32603, message: 'upstream unreachable, no cache' },
     }
   })
 
