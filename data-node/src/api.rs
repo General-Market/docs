@@ -7554,6 +7554,26 @@ async fn admin_sources_health(
             _ => "initializing".to_string(),
         };
 
+        // Freshness override. The error tracker can lie: a container restart
+        // wipes its state, an outage pauses syncs without recording errors,
+        // a "OK" category just means "the last attempt didn't throw" — none
+        // of which is the same thing as fresh data in the database. The
+        // newest record's age is the ground truth. If it dwarfs the cycle,
+        // the source is not healthy regardless of what the tracker thinks.
+        let status = if status == "healthy" && active_assets > 0 && *interval > 0 {
+            let stale_threshold = (*interval as i64).saturating_mul(3);
+            let dead_threshold = (*interval as i64).saturating_mul(20);
+            if last_sync_age_secs >= dead_threshold {
+                "dead".to_string()
+            } else if last_sync_age_secs >= stale_threshold {
+                "stale".to_string()
+            } else {
+                status
+            }
+        } else {
+            status
+        };
+
         let estimated_daily_records: i64 = 0;
 
         let (err_cat, cons_err, tot_err, last_err, last_succ, tot_syncs, ns_reason) =
