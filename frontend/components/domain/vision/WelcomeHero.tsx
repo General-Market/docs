@@ -19,6 +19,15 @@ import { Link, useRouter } from '@/i18n/routing'
 // cognitive dissonance: streaming, trains, gaming, earthquakes.
 const FEATURED_SOURCE_IDS = ['twitch', 'db_trains', 'steam', 'earthquake'] as const
 
+// Server-cached chart payload — what the previous visitor saw. Hydrated once
+// on mount, used for instant first paint while live data loads quietly.
+type CachedTopMarket = { assetId?: string; symbol?: string; name?: string; value?: string; changePct?: string }
+type CachedChart = {
+  topMarkets: CachedTopMarket[]
+  historyData: Record<string, { value: number; ts: number }[]>
+  generatedAt: number
+}
+
 // ~200 English-speaking Twitch streamers (Mar 2026, TwitchTracker data).
 // Broad enough that 4+ are live at any hour. Card sorts by biggest viewer loss.
 const PREFERRED_US_STREAMERS = new Set([
@@ -699,12 +708,14 @@ function FeaturedSourceCard({
   status,
   index,
   reduced,
+  cached,
 }: {
   source: { sourceId: string; name: string; logo: string; brandBg: string; valueLabel: string; valueUnit: string; category: string; isPrice: boolean; prefixes: string[] }
   marketCount: number
   status: string
   index: number
   reduced: boolean | null
+  cached?: CachedChart
 }) {
   const accentColor = ACCENT_OVERRIDES[source.sourceId] ?? (
     source.brandBg.startsWith('#') && source.brandBg !== '#f5f5f5' && source.brandBg !== '#f0f2f5'
@@ -775,6 +786,7 @@ function FeaturedSourceCard({
   // Fetch real history for the selected top markets
   const topIds = useMemo(() => topMarkets.map(m => m.assetId || m.symbol).filter(Boolean), [topMarkets])
   const topIdsKey = topIds.join(',')
+  const lastPostedKey = useRef<string>('')
 
   useEffect(() => {
     if (topIds.length === 0 || topIdsKey === historyIds.join(',')) return
@@ -809,6 +821,65 @@ function FeaturedSourceCard({
   // True once fetch has resolved AND at least one shown market has real history.
   // Without this, the chart would paint procedurally-generated noise.
   const hasRealHistory = historyLoaded && topIds.some(id => (historyData[id]?.length ?? 0) >= 2)
+
+  // Atomic swap: render cached topMarkets + cached history until BOTH live
+  // snapshot and live history are ready, then flip everything together. Avoids
+  // the chart blanking during the cached-IDs → live-IDs transition.
+  const liveReady = topMarkets.length > 0 && hasRealHistory
+  const cachedHasHistory = useMemo(() => {
+    if (!cached) return false
+    return (cached.topMarkets ?? []).some(m => {
+      const id = m.assetId || m.symbol || ''
+      return id ? (cached.historyData?.[id]?.length ?? 0) >= 2 : false
+    })
+  }, [cached])
+
+  const cachedAsSnapshot = useMemo<SnapshotPrice[]>(() => {
+    if (!cached) return []
+    return (cached.topMarkets ?? []).map(m => ({
+      source: source.sourceId,
+      assetId: m.assetId ?? '',
+      symbol: m.symbol ?? '',
+      name: m.name ?? '',
+      category: null,
+      value: m.value ?? '0',
+      prevClose: null,
+      changePct: m.changePct ?? null,
+      volume24h: null,
+      marketCap: null,
+      fetchedAt: '',
+      imageUrl: null,
+    }))
+  }, [cached, source.sourceId])
+
+  const displayedMarkets = liveReady ? topMarkets : (cachedHasHistory ? cachedAsSnapshot : topMarkets)
+  const displayedHistory = liveReady ? historyData : (cachedHasHistory ? cached!.historyData : historyData)
+  const showChart = displayedMarkets.length > 0 && (liveReady || cachedHasHistory)
+
+  // Refresh the server cache once we have a fresh, full payload — so the next
+  // visitor sees what we just saw, instantly. POST is sanitized + size-capped server-side.
+  useEffect(() => {
+    if (!liveReady) return
+    if (lastPostedKey.current === topIdsKey) return
+    lastPostedKey.current = topIdsKey
+    const payload = {
+      sourceId: source.sourceId,
+      topMarkets: topMarkets.map(m => ({
+        assetId: m.assetId,
+        symbol: m.symbol,
+        name: m.name,
+        value: m.value,
+        changePct: m.changePct,
+      })),
+      historyData,
+    }
+    fetch('/api/vision/featured-charts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(5_000),
+    }).catch(() => { /* cache priming is best-effort */ })
+  }, [liveReady, topIdsKey, source.sourceId, topMarkets, historyData])
 
   // Brand background style
   const brandStyle: React.CSSProperties = source.brandBg.startsWith('linear-gradient')
@@ -872,9 +943,9 @@ function FeaturedSourceCard({
 
         {/* Sub-market rows */}
         <div className="border-t border-zinc-100">
-          {topMarkets.length > 0 ? (
-            topMarkets.map((m, idx) => (
-              <SubMarketRow key={m.assetId} market={m} displaySourceId={source.sourceId} prefixes={source.prefixes ?? []} isPrice={source.isPrice} valueUnit={source.valueUnit} colorIndex={idx} />
+          {displayedMarkets.length > 0 ? (
+            displayedMarkets.map((m, idx) => (
+              <SubMarketRow key={m.assetId || m.symbol || idx} market={m} displaySourceId={source.sourceId} prefixes={source.prefixes ?? []} isPrice={source.isPrice} valueUnit={source.valueUnit} colorIndex={idx} />
             ))
           ) : (
             <div className="px-3 py-3">
@@ -886,15 +957,16 @@ function FeaturedSourceCard({
         </div>
 
         {/* Chart area — Polymarket-style with grid, fills, smooth curves.
-            Only renders once real history arrives; otherwise a loading shell. */}
-        {topMarkets.length > 0 && hasRealHistory ? (
+            Renders from the cached payload first (last visitor's data) so the
+            card is never blank, then atomically swaps to live data. */}
+        {showChart ? (
           <div className="border-t border-zinc-100 px-2 pt-2 pb-1 flex-1" style={{ background: `linear-gradient(180deg, transparent 0%, ${accentColor}06 100%)` }}>
             <div className="relative h-[140px] w-full">
               <MultiLineChart
-                marketIds={topMarkets.map(m => m.assetId || m.symbol).filter(Boolean)}
-                markets={topMarkets.map(m => ({ name: m.name || m.symbol || '', assetId: m.assetId || '' }))}
+                marketIds={displayedMarkets.map(m => m.assetId || m.symbol).filter(Boolean)}
+                markets={displayedMarkets.map(m => ({ name: m.name || m.symbol || '', assetId: m.assetId || '' }))}
                 valueLabel={source.valueLabel}
-                historyData={historyData}
+                historyData={displayedHistory}
               />
             </div>
           </div>
@@ -915,6 +987,21 @@ function FeaturedSourceCard({
 function FeaturedSources({ reduced }: { reduced: boolean | null }) {
   const { sources } = useSourceRegistry()
   const { data: meta } = useMarketSnapshotMeta()
+
+  // Hydrate the chart cache once on mount — what the last visitor saw, ready
+  // for instant first paint. Live data fetch runs in parallel and replaces it.
+  const [cacheBySource, setCacheBySource] = useState<Record<string, CachedChart>>({})
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/vision/featured-charts', { signal: AbortSignal.timeout(5_000) })
+      .then(r => r.ok ? r.json() : null)
+      .then(json => {
+        if (cancelled || !json?.sources) return
+        setCacheBySource(json.sources as Record<string, CachedChart>)
+      })
+      .catch(() => { /* no cache available — render the loading shell */ })
+    return () => { cancelled = true }
+  }, [])
 
   const featured = useMemo(() => {
     if (sources.length === 0) return []
@@ -972,6 +1059,7 @@ function FeaturedSources({ reduced }: { reduced: boolean | null }) {
                 status={status}
                 index={i}
                 reduced={reduced}
+                cached={cacheBySource[source.sourceId]}
               />
             </div>
           )
