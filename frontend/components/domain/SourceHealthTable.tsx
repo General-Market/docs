@@ -11,6 +11,7 @@ import {
   TableCell,
 } from '@/components/ui/Table'
 import type { SourceHealth, SourceStatus } from '@/hooks/useSourceHealth'
+import type { SourceStatsRow } from '@/hooks/useSourceStats'
 import { useSourceRegistry, findSource } from '@/hooks/vision/useSourceRegistry'
 
 // ── Types ──
@@ -26,11 +27,16 @@ type SortField =
   | 'staleAssets'
   | 'avgChangePct'
   | 'syncGapMaxSecs'
+  | 'lastSettledAt'
+  | 'traderCount'
+  | 'totalDepositedUsdc'
 
 type SortDirection = 'asc' | 'desc'
 
 interface SourceHealthTableProps {
   sources: SourceHealth[]
+  /** Per-source vision stats keyed by lowercased sourceId. Optional — table renders dashes when absent. */
+  statsById?: Map<string, SourceStatsRow>
   loading: boolean
   selectedSourceId: string | null
   onSelectSource: (sourceId: string) => void
@@ -114,6 +120,22 @@ function formatAge(secs: number): string {
   return `${(secs / 86400).toFixed(1)}d`
 }
 
+function formatRelativeAge(iso: string | null): string {
+  if (!iso) return '--'
+  const ts = Date.parse(iso)
+  if (!Number.isFinite(ts)) return '--'
+  const secs = Math.max(0, (Date.now() - ts) / 1000)
+  return `${formatAge(secs)} ago`
+}
+
+function formatUsd(amount: number): string {
+  if (!Number.isFinite(amount) || amount === 0) return '$0'
+  if (amount >= 1_000_000) return `$${(amount / 1_000_000).toFixed(2)}M`
+  if (amount >= 1_000) return `$${(amount / 1_000).toFixed(1)}K`
+  if (amount >= 1) return `$${amount.toFixed(2)}`
+  return `$${amount.toFixed(4)}`
+}
+
 function hasHighZeroRate(source: SourceHealth): boolean {
   if (source.activeAssets === 0) return false
   return (source.zeroValueAssets / source.activeAssets) > 0.2
@@ -184,12 +206,12 @@ const API_KEY_LINKS: Record<string, { url: string; label: string }> = {
 
 // ── Skeleton ──
 
-function TableSkeleton({ skelBg = 'bg-border-light' }: { skelBg?: string }) {
+function TableSkeleton({ skelBg = 'bg-border-light', columns = 10 }: { skelBg?: string; columns?: number }) {
   return (
     <>
       {Array.from({ length: 6 }, (_, r) => (
         <TableRow key={r}>
-          {Array.from({ length: 11 }, (_, c) => (
+          {Array.from({ length: columns }, (_, c) => (
             <TableCell key={c}>
               <div className={`h-4 rounded animate-pulse ${c === 0 ? 'w-28' : 'w-14'} ${skelBg}`} />
             </TableCell>
@@ -219,11 +241,15 @@ function SortIcon({ active, direction, color = 'text-black' }: { active: boolean
 
 export function SourceHealthTable({
   sources,
+  statsById,
   loading,
   selectedSourceId,
   onSelectSource,
   dark = false,
 }: SourceHealthTableProps) {
+  const lookupStats = useCallback((sourceId: string): SourceStatsRow | undefined => {
+    return statsById?.get(sourceId.toLowerCase())
+  }, [statsById])
   // Theme tokens — dark mode uses explorer palette
   const txt = dark ? 'text-white' : 'text-black'
   const txtMuted = dark ? 'text-white/40' : 'text-text-muted'
@@ -293,19 +319,39 @@ export function SourceHealthTable({
         case 'syncGapMaxSecs':
           cmp = a.syncGapMaxSecs - b.syncGapMaxSecs
           break
+        case 'lastSettledAt': {
+          const ax = lookupStats(a.sourceId)?.lastSettledAt
+          const bx = lookupStats(b.sourceId)?.lastSettledAt
+          const at = ax ? Date.parse(ax) : 0
+          const bt = bx ? Date.parse(bx) : 0
+          cmp = at - bt
+          break
+        }
+        case 'traderCount':
+          cmp = (lookupStats(a.sourceId)?.traderCount ?? 0) - (lookupStats(b.sourceId)?.traderCount ?? 0)
+          break
+        case 'totalDepositedUsdc':
+          cmp = (lookupStats(a.sourceId)?.totalDepositedUsdc ?? 0) - (lookupStats(b.sourceId)?.totalDepositedUsdc ?? 0)
+          break
       }
 
       return sortDirection === 'asc' ? cmp : -cmp
     })
 
     return sorted
-  }, [filteredSources, sortField, sortDirection])
+  }, [filteredSources, sortField, sortDirection, lookupStats])
 
+  const showVisionStats = statsById !== undefined
   const columns: { label: string; field: SortField; align?: string }[] = [
     { label: 'Source', field: 'displayName' },
     { label: 'Status', field: 'status' },
     { label: 'Live / Total', field: 'activeAssets', align: 'text-right' },
     { label: 'Cycle', field: 'syncIntervalSecs', align: 'text-right' },
+    ...(showVisionStats ? [
+      { label: 'Last Settled', field: 'lastSettledAt' as SortField, align: 'text-right' },
+      { label: 'Traders', field: 'traderCount' as SortField, align: 'text-right' },
+      { label: 'Volume', field: 'totalDepositedUsdc' as SortField, align: 'text-right' },
+    ] : []),
     { label: 'Records', field: 'totalPriceRecords', align: 'text-right' },
     { label: 'Freshness', field: 'lastSyncAgeSecs', align: 'text-right' },
     { label: 'Zeros', field: 'zeroValueAssets', align: 'text-right' },
@@ -352,10 +398,10 @@ export function SourceHealthTable({
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableSkeleton skelBg={bgSkeleton} />
+              <TableSkeleton skelBg={bgSkeleton} columns={columns.length} />
             ) : sortedSources.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={11} className="py-12 text-center">
+                <TableCell colSpan={columns.length} className="py-12 text-center">
                   <p className="text-text-muted">
                     {search ? t('source_health.no_sources_search') : t('source_health.no_sources')}
                   </p>
@@ -474,6 +520,52 @@ export function SourceHealthTable({
                         )
                       })()}
                     </TableCell>
+
+                    {showVisionStats && (
+                      <>
+                        {/* Last Settled */}
+                        <TableCell className="text-right font-mono tabular-nums text-caption">
+                          {(() => {
+                            const stats = lookupStats(source.sourceId)
+                            if (!stats || !stats.lastSettledAt) {
+                              return <span className={txtMuted}>—</span>
+                            }
+                            return (
+                              <div className="flex flex-col items-end leading-tight">
+                                <span>{formatRelativeAge(stats.lastSettledAt)}</span>
+                                <span className="text-[9px] text-text-muted">
+                                  {stats.settledBatches.toLocaleString()} batches
+                                </span>
+                              </div>
+                            )
+                          })()}
+                        </TableCell>
+
+                        {/* Traders */}
+                        <TableCell className="text-right font-mono tabular-nums text-caption">
+                          {(() => {
+                            const n = lookupStats(source.sourceId)?.traderCount ?? 0
+                            return (
+                              <span className={n > 0 ? '' : txtMuted}>
+                                {n.toLocaleString()}
+                              </span>
+                            )
+                          })()}
+                        </TableCell>
+
+                        {/* Volume (USDC deposited) */}
+                        <TableCell className="text-right font-mono tabular-nums text-caption">
+                          {(() => {
+                            const v = lookupStats(source.sourceId)?.totalDepositedUsdc ?? 0
+                            return (
+                              <span className={v > 0 ? '' : txtMuted}>
+                                {formatUsd(v)}
+                              </span>
+                            )
+                          })()}
+                        </TableCell>
+                      </>
+                    )}
 
                     {/* Records */}
                     <TableCell className="text-right font-mono tabular-nums text-caption">

@@ -3,12 +3,14 @@
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useSourceHealth } from '@/hooks/useSourceHealth'
+import { useSourceStats } from '@/hooks/useSourceStats'
 import { SourceHealthTable } from '@/components/domain/SourceHealthTable'
 import { SourceDetailModal } from '@/components/domain/SourceDetailModal'
 
 export function SourcesExplorerSection() {
   const t = useTranslations('pages')
-  const { sources, loading, error, lastUpdated, refresh } = useSourceHealth()
+  const { sources, loading, error, refresh } = useSourceHealth()
+  const { byId: statsById } = useSourceStats()
   const [selectedSourceId, setSelectedSourceId] = useState<string | null>(null)
 
   const healthyCt = sources.filter(s => s.status === 'healthy').length
@@ -67,6 +69,7 @@ export function SourcesExplorerSection() {
 
       <SourceHealthTable
         sources={sources}
+        statsById={statsById}
         loading={loading}
         selectedSourceId={selectedSourceId}
         onSelectSource={setSelectedSourceId}

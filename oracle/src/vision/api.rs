@@ -138,6 +138,7 @@ pub fn routes(state: Arc<VisionState>) -> axum::Router {
         .route("/vision/points/:address", get(vision_points_player))
         .route("/vision/activity", get(vision_activity))
         .route("/vision/explorer/tie-rate-history", get(tie_rate_history))
+        .route("/vision/explorer/source-stats", get(source_stats))
         .route("/vision/batch/:id/ratios", get(batch_ratios))
         .route("/vision/vault/:address/history", get(vault_history))
         .route("/vision/sse/settlements", get(sse_settlements))
@@ -3349,6 +3350,59 @@ async fn tie_rate_history(
         }))).into_response(),
         Err(e) => {
             warn!("Tie-rate history query failed: {e}");
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(ApiError::new(format!("Database error: {e}")))).into_response()
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// GET /vision/explorer/source-stats — per-source lifetime activity
+// ---------------------------------------------------------------------------
+
+/// One row of per-source rollup. `total_deposited_wei` is text-encoded to
+/// preserve precision over JSON; the frontend formats it as USDC (1e18 wei).
+#[derive(Debug, Serialize, sqlx::FromRow)]
+struct SourceStatsRow {
+    source_id: String,
+    last_settled_at: Option<chrono::DateTime<chrono::Utc>>,
+    settled_batches: i64,
+    trader_count: i64,
+    total_deposited_wei: Option<String>,
+}
+
+/// Per-source lifetime stats: when did the most recent batch settle, how many
+/// distinct addresses ever traded that source, and how much USDC (wei) those
+/// traders deposited across all rounds. Joins `vision_round_players` to
+/// `vision_batch_lifecycle` so the source name is the plain text label, not
+/// the keccak hash.
+async fn source_stats(
+    State(state): State<Arc<VisionState>>,
+) -> impl IntoResponse {
+    let rows = sqlx::query_as::<_, SourceStatsRow>(
+        r#"
+        SELECT
+            vbl.source_id,
+            MAX(vbl.settled_at)                                     AS last_settled_at,
+            COUNT(DISTINCT vbl.on_chain_batch_id)
+                FILTER (WHERE vbl.settled_at IS NOT NULL)::bigint  AS settled_batches,
+            COUNT(DISTINCT vrp.player)::bigint                      AS trader_count,
+            COALESCE(SUM(vrp.deposited::numeric), 0)::text          AS total_deposited_wei
+        FROM vision_batch_lifecycle vbl
+        LEFT JOIN vision_round_players vrp
+               ON vrp.batch_id = vbl.on_chain_batch_id
+        WHERE vbl.source_id IS NOT NULL AND vbl.source_id <> ''
+        GROUP BY vbl.source_id
+        "#,
+    )
+    .fetch_all(&state.pool)
+    .await;
+
+    match rows {
+        Ok(data) => (StatusCode::OK, Json(serde_json::json!({
+            "sources": data,
+        }))).into_response(),
+        Err(e) => {
+            warn!("Source stats query failed: {e}");
             (StatusCode::INTERNAL_SERVER_ERROR, Json(ApiError::new(format!("Database error: {e}")))).into_response()
         }
     }
