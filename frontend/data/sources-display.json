@@ -1778,7 +1778,7 @@
       "name": "Lichess Chess",
       "description": "Live chess activity \u2014 player counts, game starts, and tournament participation on Lichess.",
       "category": "entertainment",
-      "logo": "/source-imgs/new-hackernews.svg",
+      "logo": "/source-imgs/new-lichess.webp",
       "brandBg": "#f5f5f5",
       "prefixes": [
         "lichess_"
