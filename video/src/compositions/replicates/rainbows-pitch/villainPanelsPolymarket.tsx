@@ -1,11 +1,20 @@
 /* villainPanelsPolymarket.tsx — two variants of the chart-bearing
-   villain panels, redrawn in Polymarket's chart language: headline
-   metric, range pills, right-edge ladder, animated playhead, stats
-   strip. Mempool + orderbook panels are reused from villainPanels.tsx.
+   villain panels, redrawn in Polymarket's chart language. Mempool +
+   orderbook panels are reused from villainPanels.tsx.
 
-   Variant A: ManipulationPanel becomes a smooth pump-dump line.
-   Variant B: ManipulationPanel keeps its candlesticks; only the
-              surrounding chrome adopts the Polymarket frame. */
+   Polymarket signature, applied:
+   - warmer dark card (#15171C), no border, soft inset
+   - Inter at 300/500/600 — not 700; sentence-case titles, no caps
+   - monospace ONLY on digits, never on labels
+   - generous 32px horizontal padding, 24px vertical
+   - 88px headline at weight 500, brighter green/red
+   - rounded pill range selector, 8px radius, real padding
+   - right ladder in ¢ (cents), thin solid hairline gridlines
+   - playhead crosshair + tooltip pill that draws after the line settles
+
+   A: ManipulationPanel becomes a smooth pump-dump line.
+   B: ManipulationPanel keeps its candlesticks; only the surrounding
+      frame adopts the Polymarket grammar. */
 
 import React from "react";
 import {
@@ -18,15 +27,67 @@ import {
   type PanelOpacities,
 } from "./villainPanels";
 
-const MUTED = "rgba(255,255,255,0.55)";
-const DIM = "rgba(255,255,255,0.35)";
-const GRID = "rgba(255,255,255,0.06)";
-const GRID_LIGHT = "rgba(255,255,255,0.04)";
-const PILL_ACTIVE = "rgba(255,255,255,0.10)";
-const POLY_GREEN = "#2DC576";
-const POLY_RED = "#E64800";
+// ── Polymarket palette (dark mode) ───────────────────────────────────
+const BG = "#15171C";
+const TEXT = "#FAFAFA";
+const TEXT_SECONDARY = "#A1A1AA";
+const TEXT_TERTIARY = "#71717A";
+const HAIRLINE = "rgba(255,255,255,0.06)";
+const GRID = "rgba(255,255,255,0.05)";
+const PILL_ACTIVE_BG = "#27292F";
+const PILL_ACTIVE_BORDER = "rgba(255,255,255,0.08)";
+
+const POLY_GREEN = "#22C55E";
+const POLY_RED = "#EF4444";
+
+const PAD_X = 32;
+const PAD_TOP = 24;
+const PAD_BOTTOM = 24;
 
 const RANGES = ["1H", "6H", "1D", "1W", "ALL"];
+
+const TITLE_FONT: React.CSSProperties = {
+  fontFamily: INTER_FONT,
+  fontWeight: 500,
+  fontSize: 14,
+  letterSpacing: "-0.005em",
+  color: TEXT_SECONDARY,
+};
+
+const HEADLINE_FONT: React.CSSProperties = {
+  fontFamily: INTER_FONT,
+  fontWeight: 500,
+  fontSize: 88,
+  letterSpacing: "-0.035em",
+  lineHeight: 1,
+  fontVariantNumeric: "tabular-nums",
+};
+
+const DELTA_FONT: React.CSSProperties = {
+  fontFamily: INTER_FONT,
+  fontWeight: 400,
+  fontSize: 15,
+  color: TEXT_TERTIARY,
+  letterSpacing: "-0.005em",
+};
+
+const STAT_LABEL: React.CSSProperties = {
+  fontFamily: INTER_FONT,
+  fontWeight: 500,
+  fontSize: 12,
+  color: TEXT_TERTIARY,
+  letterSpacing: "0",
+};
+
+const STAT_VALUE: React.CSSProperties = {
+  fontFamily: INTER_FONT,
+  fontWeight: 600,
+  fontSize: 22,
+  color: TEXT,
+  letterSpacing: "-0.015em",
+  fontVariantNumeric: "tabular-nums",
+  marginTop: 4,
+};
 
 type StatCol = { label: string; value: string };
 
@@ -55,93 +116,94 @@ const PolyFrame: React.FC<PolyFrameProps> = ({
       style={{
         width: PANEL_W,
         height: PANEL_H,
-        background: "#0d1117",
-        border: "1px solid rgba(255,255,255,0.08)",
-        borderRadius: 14,
+        background: BG,
+        borderRadius: 16,
         overflow: "hidden",
-        boxShadow: "0 30px 80px rgba(0,0,0,0.55)",
+        boxShadow:
+          "0 30px 80px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04)",
         fontFamily: INTER_FONT,
         display: "flex",
         flexDirection: "column",
       }}
     >
+      {/* Title row — sentence case, tiny live dot on the right */}
       <div
         style={{
-          padding: "16px 20px 12px",
+          padding: `${PAD_TOP}px ${PAD_X}px 0`,
           display: "flex",
           alignItems: "center",
-          gap: 10,
-          borderBottom: `1px solid ${GRID}`,
         }}
       >
+        <span style={TITLE_FONT}>{title}</span>
         <span
           style={{
-            fontSize: 12,
-            fontWeight: 700,
-            letterSpacing: "0.10em",
-            color: MUTED,
+            marginLeft: "auto",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
           }}
         >
-          {title}
-        </span>
-        <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
           <span
             style={{
               width: 6,
               height: 6,
               borderRadius: "50%",
               background: POLY_GREEN,
-              boxShadow: `0 0 8px ${POLY_GREEN}`,
+              boxShadow: `0 0 10px ${POLY_GREEN}`,
             }}
           />
-          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", color: MUTED }}>
-            LIVE
+          <span
+            style={{
+              fontFamily: INTER_FONT,
+              fontWeight: 500,
+              fontSize: 12,
+              color: TEXT_SECONDARY,
+            }}
+          >
+            Live
           </span>
         </span>
       </div>
 
-      <div style={{ padding: "20px 20px 14px", display: "flex", alignItems: "flex-end" }}>
-        <div>
-          <div
-            style={{
-              fontSize: 64,
-              fontWeight: 700,
-              color: trendColor,
-              letterSpacing: "-0.02em",
-              lineHeight: 1,
-              fontVariantNumeric: "tabular-nums",
-            }}
-          >
-            {headline}
-          </div>
-          <div
-            style={{
-              marginTop: 6,
-              fontSize: 14,
-              fontWeight: 600,
-              color: MUTED,
-              fontVariantNumeric: "tabular-nums",
-            }}
-          >
-            {delta}
-          </div>
+      {/* Headline + range pills */}
+      <div
+        style={{
+          padding: `20px ${PAD_X}px 24px`,
+          display: "flex",
+          alignItems: "flex-end",
+          gap: 16,
+        }}
+      >
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ ...HEADLINE_FONT, color: trendColor }}>{headline}</div>
+          <div style={{ ...DELTA_FONT, marginTop: 10 }}>{delta}</div>
         </div>
-        <div style={{ marginLeft: "auto", display: "flex", gap: 4 }}>
+        <div
+          style={{
+            display: "flex",
+            gap: 4,
+            background: "rgba(255,255,255,0.025)",
+            borderRadius: 10,
+            padding: 4,
+          }}
+        >
           {RANGES.map((r) => {
             const active = r === activeRange;
             return (
               <span
                 key={r}
                 style={{
-                  padding: "5px 10px",
-                  borderRadius: 6,
-                  fontSize: 11,
-                  fontWeight: 700,
-                  letterSpacing: "0.04em",
-                  fontFamily: PANEL_MONO,
-                  background: active ? PILL_ACTIVE : "transparent",
-                  color: active ? "#fff" : DIM,
-                  border: active ? "1px solid rgba(255,255,255,0.06)" : "1px solid transparent",
+                  padding: "6px 12px",
+                  borderRadius: 8,
+                  fontFamily: INTER_FONT,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  background: active ? PILL_ACTIVE_BG : "transparent",
+                  color: active ? TEXT : TEXT_TERTIARY,
+                  border: active
+                    ? `1px solid ${PILL_ACTIVE_BORDER}`
+                    : "1px solid transparent",
+                  letterSpacing: "0.01em",
                 }}
               >
                 {r}
@@ -151,42 +213,33 @@ const PolyFrame: React.FC<PolyFrameProps> = ({
         </div>
       </div>
 
-      <div style={{ flex: 1, minHeight: 0, position: "relative" }}>{children}</div>
-
+      {/* Chart body */}
       <div
         style={{
-          padding: "14px 20px 18px",
-          borderTop: `1px solid ${GRID}`,
+          flex: 1,
+          minHeight: 0,
+          position: "relative",
+          padding: `0 ${PAD_X - 8}px 0 ${PAD_X}px`,
+        }}
+      >
+        {children}
+      </div>
+
+      {/* Stats strip */}
+      <div
+        style={{
+          padding: `20px ${PAD_X}px ${PAD_BOTTOM}px`,
+          marginTop: 8,
+          borderTop: `1px solid ${HAIRLINE}`,
           display: "grid",
           gridTemplateColumns: `repeat(${stats.length}, 1fr)`,
-          gap: 8,
+          gap: 16,
         }}
       >
         {stats.map((s, i) => (
           <div key={i}>
-            <div
-              style={{
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: "0.10em",
-                color: DIM,
-                textTransform: "uppercase",
-              }}
-            >
-              {s.label}
-            </div>
-            <div
-              style={{
-                marginTop: 4,
-                fontSize: 16,
-                fontWeight: 700,
-                color: "#fff",
-                fontVariantNumeric: "tabular-nums",
-                fontFamily: PANEL_MONO,
-              }}
-            >
-              {s.value}
-            </div>
+            <div style={STAT_LABEL}>{s.label}</div>
+            <div style={STAT_VALUE}>{s.value}</div>
           </div>
         ))}
       </div>
@@ -194,39 +247,40 @@ const PolyFrame: React.FC<PolyFrameProps> = ({
   );
 };
 
-/* ── Insider options-flow chart, Polymarket-styled (shared A & B) ─── */
-
+// ── Chart geometry ───────────────────────────────────────────────────
 const PLOT_W = 540;
 const PLOT_H = 360;
-const PAD_L = 20;
-const PAD_R = 56;
-const PAD_T = 18;
-const PAD_B = 30;
+const PAD_L = 0;
+const PAD_R = 48; // right ladder room
+const PAD_T = 12;
+const PAD_B = 28;
 
-const yTicks = [0, 0.25, 0.5, 0.75, 1.0];
+const Y_TICKS = [0, 0.25, 0.5, 0.75, 1.0];
 
 const RightLadder: React.FC = () => (
   <>
-    {yTicks.map((t) => {
+    {Y_TICKS.map((t) => {
       const y = PAD_T + (PLOT_H - PAD_T - PAD_B) * (1 - t);
       return (
         <g key={t}>
           <line
             x1={PAD_L}
             y1={y}
-            x2={PLOT_W - PAD_R + 4}
+            x2={PLOT_W - PAD_R}
             y2={y}
-            stroke={GRID_LIGHT}
+            stroke={GRID}
             strokeWidth={1}
           />
           <text
-            x={PLOT_W - PAD_R + 10}
-            y={y + 3}
+            x={PLOT_W - PAD_R + 8}
+            y={y + 4}
             fontFamily={PANEL_MONO}
-            fontSize={10}
-            fill={DIM}
+            fontSize={11}
+            fontWeight={500}
+            fill={TEXT_TERTIARY}
+            style={{ fontVariantNumeric: "tabular-nums" }}
           >
-            {(t * 100).toFixed(0)}
+            {(t * 100).toFixed(0)}¢
           </text>
         </g>
       );
@@ -243,36 +297,38 @@ type TooltipProps = {
 };
 
 const Tooltip: React.FC<TooltipProps> = ({ x, y, label, sub, labelColor }) => {
-  const px = Math.min(PLOT_W - PAD_R - 110, Math.max(PAD_L, x + 10));
+  const W = 124;
+  const px = Math.min(PLOT_W - PAD_R - W - 4, Math.max(PAD_L + 4, x + 12));
   return (
     <g>
       <rect
         x={px}
-        y={y + 4}
-        width={110}
-        height={36}
-        rx={6}
-        fill="rgba(13,17,23,0.95)"
-        stroke="rgba(255,255,255,0.10)"
+        y={y}
+        width={W}
+        height={42}
+        rx={8}
+        fill="#1F2128"
+        stroke="rgba(255,255,255,0.08)"
         strokeWidth={1}
       />
       <text
-        x={px + 10}
+        x={px + 12}
         y={y + 18}
-        fontFamily={PANEL_MONO}
-        fontSize={11}
+        fontFamily={INTER_FONT}
+        fontSize={12}
+        fontWeight={600}
         fill={labelColor}
-        fontWeight={700}
-        letterSpacing="0.06em"
       >
         {label}
       </text>
       <text
-        x={px + 10}
-        y={y + 32}
-        fontFamily={PANEL_MONO}
-        fontSize={10}
-        fill={MUTED}
+        x={px + 12}
+        y={y + 34}
+        fontFamily={INTER_FONT}
+        fontSize={11}
+        fontWeight={500}
+        fill={TEXT_SECONDARY}
+        style={{ fontVariantNumeric: "tabular-nums" }}
       >
         {sub}
       </text>
@@ -280,6 +336,27 @@ const Tooltip: React.FC<TooltipProps> = ({ x, y, label, sub, labelColor }) => {
   );
 };
 
+const xAxisLabels = (labels: [string, string, string]) =>
+  [0, 0.5, 1].map((t, i) => {
+    const plotW = PLOT_W - PAD_L - PAD_R;
+    const x = PAD_L + plotW * t;
+    return (
+      <text
+        key={i}
+        x={x}
+        y={PLOT_H - 6}
+        textAnchor={i === 0 ? "start" : i === 2 ? "end" : "middle"}
+        fontFamily={INTER_FONT}
+        fontSize={11}
+        fontWeight={500}
+        fill={TEXT_TERTIARY}
+      >
+        {labels[i]}
+      </text>
+    );
+  });
+
+// ── Insider chart — shared by A & B ──────────────────────────────────
 const InsiderChart: React.FC<{ frame: number }> = ({ frame }) => {
   const plotW = PLOT_W - PAD_L - PAD_R;
   const plotH = PLOT_H - PAD_T - PAD_B;
@@ -319,10 +396,16 @@ const InsiderChart: React.FC<{ frame: number }> = ({ frame }) => {
   const pulse = settle >= 1 ? (Math.sin((frame - drawDur - 12) * 0.25) + 1) / 2 : 0;
 
   return (
-    <svg width="100%" height="100%" viewBox={`0 0 ${PLOT_W} ${PLOT_H}`} preserveAspectRatio="none">
+    <svg
+      width="100%"
+      height="100%"
+      viewBox={`0 0 ${PLOT_W} ${PLOT_H}`}
+      preserveAspectRatio="none"
+    >
       <defs>
         <linearGradient id="poly-insider-fill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={POLY_GREEN} stopOpacity={0.22} />
+          <stop offset="0%" stopColor={POLY_GREEN} stopOpacity={0.18} />
+          <stop offset="60%" stopColor={POLY_GREEN} stopOpacity={0.04} />
           <stop offset="100%" stopColor={POLY_GREEN} stopOpacity={0} />
         </linearGradient>
       </defs>
@@ -337,7 +420,7 @@ const InsiderChart: React.FC<{ frame: number }> = ({ frame }) => {
         d={path}
         fill="none"
         stroke={POLY_GREEN}
-        strokeWidth={2.4}
+        strokeWidth={2.5}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -346,43 +429,30 @@ const InsiderChart: React.FC<{ frame: number }> = ({ frame }) => {
         y1={PAD_T}
         x2={playX}
         y2={PLOT_H - PAD_B}
-        stroke="rgba(255,255,255,0.18)"
+        stroke="rgba(255,255,255,0.20)"
         strokeWidth={1}
-        strokeDasharray="3 3"
       />
       <circle
         cx={playX}
         cy={playY}
-        r={4 + pulse * 1.5}
+        r={5 + pulse * 1.5}
         fill={POLY_GREEN}
-        stroke="#0d1117"
-        strokeWidth={2}
+        stroke={BG}
+        strokeWidth={3}
       />
       {progress >= 1 && (
-        <Tooltip x={playX} y={PAD_T} label="NEWS DROP" sub="+3,400% vol" labelColor={POLY_RED} />
+        <Tooltip x={playX} y={PAD_T + 4} label="News drop" sub="+3,400% vol" labelColor={POLY_RED} />
       )}
-      {[0, 0.5, 1].map((t, i) => (
-        <text
-          key={i}
-          x={toX(t)}
-          y={PLOT_H - 8}
-          textAnchor={i === 0 ? "start" : i === 2 ? "end" : "middle"}
-          fontFamily={PANEL_MONO}
-          fontSize={10}
-          fill={DIM}
-        >
-          {["−24h", "−12h", "now"][i]}
-        </text>
-      ))}
+      {xAxisLabels(["−24h", "−12h", "Now"])}
     </svg>
   );
 };
 
 const InsiderPolyPanel: React.FC<{ frame: number }> = ({ frame }) => (
   <PolyFrame
-    title="OPTIONS FLOW · ANOMALY"
+    title="Options flow · anomaly"
     headline="+3,400%"
-    delta="vs 24h avg · pre-news"
+    delta="vs 24h average · pre-news"
     trend="up"
     activeRange="1D"
     stats={[
@@ -395,8 +465,7 @@ const InsiderPolyPanel: React.FC<{ frame: number }> = ({ frame }) => (
   </PolyFrame>
 );
 
-/* ── Variant A: pump-dump as a smooth line ─────────────────────────── */
-
+// ── Variant A: pump-dump line ────────────────────────────────────────
 const ManipulationLineChart: React.FC<{ frame: number }> = ({ frame }) => {
   const plotW = PLOT_W - PAD_L - PAD_R;
   const plotH = PLOT_H - PAD_T - PAD_B;
@@ -450,14 +519,19 @@ const ManipulationLineChart: React.FC<{ frame: number }> = ({ frame }) => {
   const playColor = playPt[0] > PEAK_X ? POLY_RED : POLY_GREEN;
 
   return (
-    <svg width="100%" height="100%" viewBox={`0 0 ${PLOT_W} ${PLOT_H}`} preserveAspectRatio="none">
+    <svg
+      width="100%"
+      height="100%"
+      viewBox={`0 0 ${PLOT_W} ${PLOT_H}`}
+      preserveAspectRatio="none"
+    >
       <defs>
         <linearGradient id="poly-manip-fill-green" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={POLY_GREEN} stopOpacity={0.18} />
+          <stop offset="0%" stopColor={POLY_GREEN} stopOpacity={0.16} />
           <stop offset="100%" stopColor={POLY_GREEN} stopOpacity={0} />
         </linearGradient>
         <linearGradient id="poly-manip-fill-red" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={POLY_RED} stopOpacity={0.2} />
+          <stop offset="0%" stopColor={POLY_RED} stopOpacity={0.18} />
           <stop offset="100%" stopColor={POLY_RED} stopOpacity={0} />
         </linearGradient>
       </defs>
@@ -478,7 +552,7 @@ const ManipulationLineChart: React.FC<{ frame: number }> = ({ frame }) => {
         d={greenPath}
         fill="none"
         stroke={POLY_GREEN}
-        strokeWidth={2.4}
+        strokeWidth={2.5}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -486,24 +560,23 @@ const ManipulationLineChart: React.FC<{ frame: number }> = ({ frame }) => {
         d={redPath}
         fill="none"
         stroke={POLY_RED}
-        strokeWidth={2.4}
+        strokeWidth={2.5}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       {progress >= 1 && (
         <g>
-          <circle cx={toX(PEAK_X)} cy={toY(0.95)} r={3} fill="#fff" />
+          <circle cx={toX(PEAK_X)} cy={toY(0.95)} r={3.5} fill={TEXT} />
           <text
             x={toX(PEAK_X)}
-            y={toY(0.95) - 8}
+            y={toY(0.95) - 10}
             textAnchor="middle"
-            fontFamily={PANEL_MONO}
-            fontSize={10}
-            fontWeight={700}
-            fill="#fff"
-            letterSpacing="0.06em"
+            fontFamily={INTER_FONT}
+            fontSize={11}
+            fontWeight={600}
+            fill={TEXT}
           >
-            PEAK
+            Peak
           </text>
         </g>
       )}
@@ -512,33 +585,19 @@ const ManipulationLineChart: React.FC<{ frame: number }> = ({ frame }) => {
         y1={PAD_T}
         x2={playX}
         y2={PLOT_H - PAD_B}
-        stroke="rgba(255,255,255,0.18)"
+        stroke="rgba(255,255,255,0.20)"
         strokeWidth={1}
-        strokeDasharray="3 3"
       />
-      <circle cx={playX} cy={playY} r={4} fill={playColor} stroke="#0d1117" strokeWidth={2} />
+      <circle cx={playX} cy={playY} r={5} fill={playColor} stroke={BG} strokeWidth={3} />
       {progress >= 1 && (
-        <Tooltip x={playX} y={PAD_T} label="DUMP" sub="−62% in 30m" labelColor={POLY_RED} />
+        <Tooltip x={playX} y={PAD_T + 4} label="Dump" sub="−62% in 30m" labelColor={POLY_RED} />
       )}
-      {[0, 0.5, 1].map((t, i) => (
-        <text
-          key={i}
-          x={toX(t)}
-          y={PLOT_H - 8}
-          textAnchor={i === 0 ? "start" : i === 2 ? "end" : "middle"}
-          fontFamily={PANEL_MONO}
-          fontSize={10}
-          fill={DIM}
-        >
-          {["t0", "t+30m", "t+1h"][i]}
-        </text>
-      ))}
+      {xAxisLabels(["t0", "t+30m", "t+1h"])}
     </svg>
   );
 };
 
-/* ── Variant B: pump-dump as candles inside the Polymarket frame ─── */
-
+// ── Variant B: pump-dump candles inside Polymarket frame ─────────────
 const ManipulationCandleChart: React.FC<{ frame: number }> = ({ frame }) => {
   const plotW = PLOT_W - PAD_L - PAD_R;
   const plotH = PLOT_H - PAD_T - PAD_B;
@@ -563,7 +622,7 @@ const ManipulationCandleChart: React.FC<{ frame: number }> = ({ frame }) => {
   const visible = candles.slice(0, reveal);
 
   const cw = plotW / candles.length;
-  const bodyW = cw * 0.62;
+  const bodyW = cw * 0.6;
   const toX = (i: number) => PAD_L + cw * i + cw / 2;
   const toY = (v: number) => PAD_T + plotH * (1 - v);
 
@@ -577,7 +636,12 @@ const ManipulationCandleChart: React.FC<{ frame: number }> = ({ frame }) => {
   const playX = toX(playIdx);
 
   return (
-    <svg width="100%" height="100%" viewBox={`0 0 ${PLOT_W} ${PLOT_H}`} preserveAspectRatio="none">
+    <svg
+      width="100%"
+      height="100%"
+      viewBox={`0 0 ${PLOT_W} ${PLOT_H}`}
+      preserveAspectRatio="none"
+    >
       <RightLadder />
       {visible.map((c, i) => {
         const [o, cl, lo, hi] = c;
@@ -595,7 +659,8 @@ const ManipulationCandleChart: React.FC<{ frame: number }> = ({ frame }) => {
               width={bodyW}
               height={Math.max(2, bodyBottom - bodyTop)}
               fill={color}
-              opacity={0.92}
+              opacity={0.95}
+              rx={1.5}
             />
           </g>
         );
@@ -605,49 +670,35 @@ const ManipulationCandleChart: React.FC<{ frame: number }> = ({ frame }) => {
         y1={PAD_T}
         x2={playX}
         y2={PLOT_H - PAD_B}
-        stroke="rgba(255,255,255,0.18)"
+        stroke="rgba(255,255,255,0.20)"
         strokeWidth={1}
-        strokeDasharray="3 3"
       />
       {progress >= 1 && (
         <g>
           <text
             x={toX(7)}
-            y={toY(0.97) - 8}
+            y={toY(0.97) - 10}
             textAnchor="middle"
-            fontFamily={PANEL_MONO}
-            fontSize={10}
-            fontWeight={700}
-            fill="#fff"
-            letterSpacing="0.06em"
+            fontFamily={INTER_FONT}
+            fontSize={11}
+            fontWeight={600}
+            fill={TEXT}
           >
-            PEAK
+            Peak
           </text>
-          <Tooltip x={playX} y={PAD_T} label="DUMP" sub="−62% in 30m" labelColor={POLY_RED} />
+          <Tooltip x={playX} y={PAD_T + 4} label="Dump" sub="−62% in 30m" labelColor={POLY_RED} />
         </g>
       )}
-      {[0, 0.5, 1].map((t, i) => (
-        <text
-          key={i}
-          x={PAD_L + plotW * t}
-          y={PLOT_H - 8}
-          textAnchor={i === 0 ? "start" : i === 2 ? "end" : "middle"}
-          fontFamily={PANEL_MONO}
-          fontSize={10}
-          fill={DIM}
-        >
-          {["t0", "t+30m", "t+1h"][i]}
-        </text>
-      ))}
+      {xAxisLabels(["t0", "t+30m", "t+1h"])}
     </svg>
   );
 };
 
 const ManipulationPolyPanelA: React.FC<{ frame: number }> = ({ frame }) => (
   <PolyFrame
-    title="PRICE · WASH TRADE"
+    title="Price · wash trade"
     headline="−62%"
-    delta="$0.30 · last 1h"
+    delta="$0.30 · last hour"
     trend="down"
     activeRange="1H"
     stats={[
@@ -662,9 +713,9 @@ const ManipulationPolyPanelA: React.FC<{ frame: number }> = ({ frame }) => (
 
 const ManipulationPolyPanelB: React.FC<{ frame: number }> = ({ frame }) => (
   <PolyFrame
-    title="PRICE · WASH TRADE"
+    title="Price · wash trade"
     headline="−62%"
-    delta="$0.30 · last 1h"
+    delta="$0.30 · last hour"
     trend="down"
     activeRange="1H"
     stats={[
