@@ -155,3 +155,46 @@ export function useVaults() {
     },
   }
 }
+
+/**
+ * Read VaultInfo for an explicit list of vault addresses, bypassing the
+ * factory. Useful when the calling surface already knows which vaults it
+ * needs (e.g. the source page reading from fund-branding.json) and shouldn't
+ * pay for a `getAllVaults()` call — or, more pointedly, when the factory
+ * address in deployment.json is stale and `getAllVaults()` returns nothing.
+ *
+ * Same chunking budget as useVaults: 10 × 50 = 500 vaults max.
+ */
+export function useVaultsByAddresses(addresses: `0x${string}`[]) {
+  const enabled = addresses.length > 0
+  const chunk0 = useVaultChunk(addresses, 0, enabled)
+  const chunk1 = useVaultChunk(addresses, 1, enabled)
+  const chunk2 = useVaultChunk(addresses, 2, enabled)
+  const chunk3 = useVaultChunk(addresses, 3, enabled)
+  const chunk4 = useVaultChunk(addresses, 4, enabled)
+  const chunk5 = useVaultChunk(addresses, 5, enabled)
+  const chunk6 = useVaultChunk(addresses, 6, enabled)
+  const chunk7 = useVaultChunk(addresses, 7, enabled)
+  const chunk8 = useVaultChunk(addresses, 8, enabled)
+  const chunk9 = useVaultChunk(addresses, 9, enabled)
+
+  const chunks = [chunk0, chunk1, chunk2, chunk3, chunk4, chunk5, chunk6, chunk7, chunk8, chunk9]
+  const isLoading = chunks.some(c => c.isLoading)
+
+  const vaults: VaultInfo[] = []
+  for (let ci = 0; ci < chunks.length; ci++) {
+    const start = ci * CHUNK_SIZE
+    const slice = addresses.slice(start, start + CHUNK_SIZE)
+    if (slice.length === 0) break
+    const results = chunks[ci].data
+    if (results) {
+      vaults.push(...parseVaults(slice, results as { status: string; result: unknown }[]))
+    }
+  }
+
+  return {
+    vaults,
+    isLoading,
+    refetch: () => chunks.forEach(c => c.refetch()),
+  }
+}

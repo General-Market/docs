@@ -8,7 +8,7 @@ import { VaultActions } from '@/components/domain/vaults/VaultActions'
 import { useVaultHistory } from '@/hooks/vaults/useVaultHistory'
 import { useVaultDisplayResolver } from '@/hooks/vaults/useVaultDisplay'
 import { useSSEVisionVaults, useSSEUserVaultPositions } from '@/hooks/useSSE'
-import { useVaults, type VaultInfo } from '@/hooks/vaults/useVaults'
+import { useVaultsByAddresses, type VaultInfo } from '@/hooks/vaults/useVaults'
 import { cn } from '@/lib/utils/cn'
 import Link from 'next/link'
 
@@ -571,12 +571,18 @@ export function VaultShowcase({ sourceId }: VaultShowcaseProps) {
     [sourceId],
   )
 
-  // Wagmi is the source of truth for vault state — reads the chain via the
-  // factory address in deployment.json. SSE is kept as a secondary signal so
-  // live user positions and the inter-cycle refresh still work, and so the
-  // display resolver has something to fall back on while the first multicall
-  // settles on a cold page load.
-  const { vaults: chainVaults, isLoading: chainLoading } = useVaults()
+  // Read the source's vaults directly by address — fund-branding.json is the
+  // canonical (source → vault) map, so we don't need to round-trip through
+  // VisionVaultFactory.getAllVaults() here. Bypassing the factory also means
+  // a stale or unregistered vault still renders correct stats: the factory
+  // address in deployment.json was empty on L3 at one point and silently
+  // turned every TVL/Perf into $0 / +0.00%. SSE remains a fallback inside
+  // useVaultDisplayResolver for the cold-paint window.
+  const fundAddresses = useMemo(
+    () => funds.map((f: any) => f.vault.toLowerCase() as `0x${string}`),
+    [funds],
+  )
+  const { vaults: chainVaults, isLoading: chainLoading } = useVaultsByAddresses(fundAddresses)
   const vaultPositions = useSSEUserVaultPositions()
   const visionVaults = useSSEVisionVaults()
 
