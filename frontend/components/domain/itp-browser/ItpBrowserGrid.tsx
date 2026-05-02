@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { useTranslations } from 'next-intl'
 import { useRouter } from '@/i18n/routing'
+import { useWindowVirtualizer } from '@tanstack/react-virtual'
 import { useSSENav, type NavSnapshot } from '@/hooks/useSSE'
 import { useItpCreators } from '@/hooks/useItpCreators'
 import { useItpNames } from '@/hooks/useItpNames'
@@ -14,6 +15,10 @@ import blacklistedItps from '@/lib/config/blacklisted-itps.json'
 import itpIdNames from '@/lib/itp-id-names.json'
 
 const PROTOCOL_DEPLOYER = '0xc0d3ca67da45613e7c5b2d55f09b00b3c99721f4'
+
+// On-chain name resolution costs one RPC roundtrip per ITP. Cap it to the
+// top N by AUM so the page can mount in O(1) instead of O(itps).
+const MAX_NAME_RESOLUTIONS = 200
 
 // ── Category taxonomy (mirrored from ItpListing) ──
 
@@ -109,6 +114,30 @@ function navSnapshotsToRows(navList: NavSnapshot[]): ItpRow[] {
     })
 }
 
+// ── Responsive column count ──
+
+function useColumnCount(): number {
+  const [cols, setCols] = useState<number>(2)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const mqlXl = window.matchMedia('(min-width: 1280px)')
+    const mqlLg = window.matchMedia('(min-width: 1024px)')
+    const update = () => {
+      if (mqlXl.matches) setCols(4)
+      else if (mqlLg.matches) setCols(3)
+      else setCols(2)
+    }
+    update()
+    mqlXl.addEventListener('change', update)
+    mqlLg.addEventListener('change', update)
+    return () => {
+      mqlXl.removeEventListener('change', update)
+      mqlLg.removeEventListener('change', update)
+    }
+  }, [])
+  return cols
+}
+
 // ── Component ──
 
 export function ItpBrowserGrid() {
@@ -167,11 +196,14 @@ export function ItpBrowserGrid() {
   const itpIds = useMemo(() => rows.map(r => r.itpId), [rows])
   const { creators } = useItpCreators(itpIds)
 
-  // On-chain names for ITPs not in static mapping
-  const unknownItpIds = useMemo(() =>
-    rows.filter(r => r.name.startsWith('DTF #') || r.name.startsWith('DTF#')).map(r => r.itpId),
-    [rows]
-  )
+  // On-chain names — capped to the top N by AUM. Resolving names for all
+  // ~4000 ITPs would saturate the RPC for minutes. The remainder fall back
+  // to "DTF #N" until they earn the visibility.
+  const unknownItpIds = useMemo(() => {
+    const unknown = rows.filter(r => r.name.startsWith('DTF #') || r.name.startsWith('DTF#'))
+    unknown.sort((a, b) => b.aum - a.aum)
+    return unknown.slice(0, MAX_NAME_RESOLUTIONS).map(r => r.itpId)
+  }, [rows])
   const onChainNames = useItpNames(unknownItpIds)
 
   const namedRows = useMemo(() => {
@@ -223,71 +255,36 @@ export function ItpBrowserGrid() {
     return [...list].sort((a, b) => b.aum - a.aum)
   }, [namedRows, activeCategory, categoryMap, creators])
 
-  // Cascade entrance
+  // ── Virtualization ──
+
+  const cols = useColumnCount()
   const gridRef = useRef<HTMLDivElement>(null)
-  const rafRef = useRef(0)
-  const rectsRef = useRef<{ cx: number; cy: number }[]>([])
+  const [rowHeight, setRowHeight] = useState(280)
+  const [scrollMargin, setScrollMargin] = useState(0)
 
-  useEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-    const grid = gridRef.current
-    if (!grid) return
-    const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            ;(entry.target as HTMLElement).classList.add('cascade-revealed')
-            io.unobserve(entry.target)
-          }
-        })
-      },
-      { threshold: 0.05 },
-    )
-    for (const child of Array.from(grid.children)) io.observe(child)
-    return () => io.disconnect()
-  }, [filtered])
-
-  // Cursor wake
-  const cacheRects = useCallback(() => {
-    const grid = gridRef.current
-    if (!grid) return
-    rectsRef.current = Array.from(grid.children).map(el => {
-      const r = el.getBoundingClientRect()
-      return { cx: r.left + r.width / 2, cy: r.top + r.height / 2 }
-    })
-  }, [])
-
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-    cancelAnimationFrame(rafRef.current)
-    rafRef.current = requestAnimationFrame(() => {
-      const grid = gridRef.current
-      if (!grid) return
-      const children = grid.children
-      const rects = rectsRef.current
-      if (rects.length !== children.length) return
-      for (let i = 0; i < children.length; i++) {
-        const { cx, cy } = rects[i]
-        const dist = Math.hypot(e.clientX - cx, e.clientY - cy)
-        const t = Math.max(0, 1 - dist / 300)
-        const el = children[i].firstElementChild as HTMLElement | null
-        if (!el) continue
-        el.style.filter = t > 0.01 ? `brightness(${1 + t * 0.06})` : ''
-      }
-    })
-  }, [])
-
-  const handleMouseLeave = useCallback(() => {
-    cancelAnimationFrame(rafRef.current)
-    const grid = gridRef.current
-    if (!grid) return
-    for (const child of Array.from(grid.children)) {
-      const el = child.firstElementChild as HTMLElement | null
-      if (el) el.style.filter = ''
+  useLayoutEffect(() => {
+    const el = gridRef.current
+    if (!el) return
+    const recompute = () => {
+      const w = el.clientWidth
+      if (w > 0) setRowHeight(Math.floor(w / cols))
+      const rect = el.getBoundingClientRect()
+      setScrollMargin(rect.top + window.scrollY)
     }
-  }, [])
+    recompute()
+    const ro = new ResizeObserver(recompute)
+    ro.observe(el)
+    if (document.body) ro.observe(document.body)
+    return () => ro.disconnect()
+  }, [cols])
 
-  useEffect(() => () => cancelAnimationFrame(rafRef.current), [])
+  const rowCount = Math.ceil(filtered.length / cols)
+  const virtualizer = useWindowVirtualizer({
+    count: rowCount,
+    estimateSize: () => rowHeight,
+    overscan: 4,
+    scrollMargin,
+  })
 
   return (
     <div className="flex flex-col">
@@ -349,9 +346,12 @@ export function ItpBrowserGrid() {
       <div className="px-6 lg:px-12 py-6">
         <div className="max-w-site mx-auto">
           {loading ? (
-            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-0 border border-border-light">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="border-r border-b border-border-light p-4 animate-pulse">
+            <div
+              className="grid border border-border-light"
+              style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+            >
+              {Array.from({ length: cols * 2 }).map((_, i) => (
+                <div key={i} className="border-r border-b border-border-light p-4 animate-pulse aspect-square">
                   <div className="bg-zinc-100 rounded h-[100px] mb-3" />
                   <div className="bg-zinc-100 rounded h-4 w-1/3 mb-2" />
                   <div className="bg-zinc-100 rounded h-3 w-2/3 mb-3" />
@@ -369,36 +369,47 @@ export function ItpBrowserGrid() {
           ) : (
             <div
               ref={gridRef}
-              className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 border border-border-light"
-              onMouseEnter={cacheRects}
-              onMouseMove={handleMouseMove}
-              onMouseLeave={handleMouseLeave}
+              className="relative border border-border-light"
+              style={{ height: `${virtualizer.getTotalSize()}px` }}
             >
-              {filtered.map((row, i) => {
-                const cats = categoryMap.get(row.itpId) ?? new Set<FundCategoryId>()
-                const primaryCat = getPrimaryCategory(cats)
-                const creator = creators.get(row.itpId)
-                const isCommunity = !!creator && creator !== PROTOCOL_DEPLOYER
+              {virtualizer.getVirtualItems().map((virtualRow) => {
+                const startIdx = virtualRow.index * cols
+                const rowItems = filtered.slice(startIdx, startIdx + cols)
                 return (
                   <div
-                    key={row.itpId}
-                    className="source-card-cascade"
-                    style={{ '--d': Math.floor(i / 4) + (i % 4) } as React.CSSProperties}
+                    key={virtualRow.key}
+                    data-index={virtualRow.index}
+                    className="absolute top-0 left-0 w-full grid"
+                    style={{
+                      height: `${virtualRow.size}px`,
+                      transform: `translateY(${virtualRow.start - scrollMargin}px)`,
+                      gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+                    }}
                   >
-                    <ItpBrowserCard
-                      itpId={row.itpId}
-                      name={row.name}
-                      symbol={row.symbol}
-                      navPerShare={row.navPerShare}
-                      aum={row.aum}
-                      description={ITP_PAGE_CONTENT[row.symbol.toUpperCase()]?.objective}
-                      categoryLabel={CATEGORY_LABELS[primaryCat]}
-                      isCommunity={isCommunity}
-                      onBuy={setBuyModal}
-                      onSell={setSellModal}
-                      onNavigate={(id) => router.push(`/itp/${id}`)}
-                      index={i}
-                    />
+                    {rowItems.map((row, i) => {
+                      const idx = startIdx + i
+                      const cats = categoryMap.get(row.itpId) ?? new Set<FundCategoryId>()
+                      const primaryCat = getPrimaryCategory(cats)
+                      const creator = creators.get(row.itpId)
+                      const isCommunity = !!creator && creator !== PROTOCOL_DEPLOYER
+                      return (
+                        <ItpBrowserCard
+                          key={row.itpId}
+                          itpId={row.itpId}
+                          name={row.name}
+                          symbol={row.symbol}
+                          navPerShare={row.navPerShare}
+                          aum={row.aum}
+                          description={ITP_PAGE_CONTENT[row.symbol.toUpperCase()]?.objective}
+                          categoryLabel={CATEGORY_LABELS[primaryCat]}
+                          isCommunity={isCommunity}
+                          onBuy={setBuyModal}
+                          onSell={setSellModal}
+                          onNavigate={(id) => router.push(`/itp/${id}`)}
+                          index={idx}
+                        />
+                      )
+                    })}
                   </div>
                 )
               })}
