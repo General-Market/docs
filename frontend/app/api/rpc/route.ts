@@ -1,65 +1,195 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 // JSON-RPC proxy for L3 chain. POST-only.
-// Replaces the /rpc afterFiles rewrite from next.config.ts.
 const L3_RPC_URL = process.env.NEXT_PUBLIC_L3_RPC_URL || process.env.L3_RPC_URL || 'http://localhost:8545'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300
 
-const MAX_ATTEMPTS = 3
-const BACKOFF_MS = [0, 150, 400]
+const MAX_ATTEMPTS = 5
+const BACKOFF_MS = [0, 120, 320, 700, 1400]
 
-async function forward(body: ArrayBuffer): Promise<Response> {
-  return fetch(L3_RPC_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body,
-    signal: AbortSignal.timeout(30_000),
-  })
+// In-memory per-call cache. The orbit-proxy upstream is hammered by other
+// services on the L3 — at peak, ~40% of POSTs come back 502 with no body.
+// Caching successful eth_call results for a few seconds drops the number of
+// requests we actually send, and lets a stale-but-real value paint while
+// upstream is hiccuping. View methods only; writes bypass entirely.
+const CACHE_TTL_MS = 30_000
+const CACHE_MAX_ENTRIES = 4096
+const CACHEABLE_METHODS = new Set([
+  'eth_call',
+  'eth_getCode',
+  'eth_getStorageAt',
+  'eth_getBalance',
+  'eth_getTransactionCount',
+  'eth_chainId',
+  'eth_blockNumber',
+  'eth_getBlockByNumber',
+  'eth_getLogs',
+])
+
+type CacheEntry = { result: unknown; expires: number }
+const cache = new Map<string, CacheEntry>()
+
+function cacheKey(method: string, params: unknown): string {
+  return `${method}:${JSON.stringify(params)}`
 }
 
-export async function POST(req: NextRequest) {
-  // Read once into a Buffer so we can replay the body across retries.
-  // The orbit-proxy upstream (the Nitro Go process behind nginx) flakes on
-  // ~30% of concurrent batched calls — returns 502 with no body and recovers
-  // on the next try. Retrying here turns those into invisible single-call
-  // hiccups instead of blank vault sections in the UI.
-  const body = await req.arrayBuffer()
+function readCache(key: string, now: number): unknown | undefined {
+  const entry = cache.get(key)
+  if (!entry || entry.expires <= now) return undefined
+  return entry.result
+}
 
+function writeCache(key: string, result: unknown, now: number) {
+  if (cache.size >= CACHE_MAX_ENTRIES) {
+    // Trim half the oldest entries (Map preserves insertion order).
+    const drop = Math.floor(CACHE_MAX_ENTRIES / 2)
+    let i = 0
+    for (const k of cache.keys()) {
+      cache.delete(k)
+      if (++i >= drop) break
+    }
+  }
+  cache.set(key, { result, expires: now + CACHE_TTL_MS })
+}
+
+interface RpcCall {
+  jsonrpc?: string
+  id: number | string
+  method: string
+  params?: unknown
+}
+
+interface RpcResponse {
+  jsonrpc: string
+  id: number | string
+  result?: unknown
+  error?: { code: number; message: string }
+}
+
+async function forward(body: string): Promise<Response | null> {
+  const buf = new TextEncoder().encode(body)
   let lastResponse: Response | null = null
-  let lastError: unknown = null
-
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     if (BACKOFF_MS[attempt] > 0) {
       await new Promise((r) => setTimeout(r, BACKOFF_MS[attempt]))
     }
     try {
-      const response = await forward(body)
-      // 5xx from upstream — orbit-proxy hiccup, worth retrying. Anything
-      // else (200, 4xx) is the upstream's intended answer; pass it through.
+      const response = await fetch(L3_RPC_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: buf,
+        signal: AbortSignal.timeout(30_000),
+      })
       if (response.status >= 500 && response.status < 600 && attempt + 1 < MAX_ATTEMPTS) {
         lastResponse = response
         continue
       }
+      return response
+    } catch {
+      // network blip — retry
+    }
+  }
+  return lastResponse
+}
+
+export async function POST(req: NextRequest) {
+  const text = await req.text()
+  const now = Date.now()
+
+  // Parse. If unparseable, just forward unchanged.
+  let parsed: RpcCall | RpcCall[] | null = null
+  try {
+    parsed = JSON.parse(text)
+  } catch {
+    const response = await forward(text)
+    if (!response) return NextResponse.json({ error: 'RPC unreachable' }, { status: 502 })
+    return new NextResponse(response.body, {
+      status: response.status,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
+  const isBatch = Array.isArray(parsed)
+  const calls: RpcCall[] = isBatch ? (parsed as RpcCall[]) : [parsed as RpcCall]
+
+  // First pass: serve any cache hits, collect misses for upstream.
+  const cachedById = new Map<string | number, unknown>()
+  const misses: RpcCall[] = []
+  const missKey = new Map<string | number, string>()
+
+  for (const call of calls) {
+    if (!CACHEABLE_METHODS.has(call.method)) {
+      misses.push(call)
+      continue
+    }
+    const key = cacheKey(call.method, call.params ?? [])
+    const hit = readCache(key, now)
+    if (hit !== undefined) {
+      cachedById.set(call.id, hit)
+    } else {
+      misses.push(call)
+      missKey.set(call.id, key)
+    }
+  }
+
+  // Second pass: ask upstream for the misses, with retry.
+  const upstreamById = new Map<string | number, RpcResponse>()
+  if (misses.length > 0) {
+    const body = isBatch ? JSON.stringify(misses) : JSON.stringify(misses[0])
+    const response = await forward(body)
+    if (!response) {
+      // If every original call was already cached, we wouldn't be here.
+      // Some call needs upstream, upstream is gone — surface that.
+      return NextResponse.json({ error: 'RPC unreachable' }, { status: 502 })
+    }
+    if (response.status !== 200) {
+      // Pass non-200 through (auth errors, payload-too-large, etc).
       return new NextResponse(response.body, {
         status: response.status,
         headers: { 'Content-Type': 'application/json' },
       })
-    } catch (e) {
-      lastError = e
+    }
+    const upstreamText = await response.text()
+    let upstreamJson: unknown
+    try {
+      upstreamJson = JSON.parse(upstreamText)
+    } catch {
+      // Upstream returned 200 but malformed JSON. Pass through.
+      return new NextResponse(upstreamText, {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+    const upstreamArr: RpcResponse[] = Array.isArray(upstreamJson)
+      ? (upstreamJson as RpcResponse[])
+      : [upstreamJson as RpcResponse]
+    for (const r of upstreamArr) {
+      upstreamById.set(r.id, r)
+      const key = missKey.get(r.id)
+      if (key && !r.error && r.result !== undefined) {
+        writeCache(key, r.result, now)
+      }
     }
   }
 
-  if (lastResponse) {
-    return new NextResponse(lastResponse.body, {
-      status: lastResponse.status,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  }
-  return NextResponse.json(
-    { error: (lastError as any)?.message || 'RPC unreachable' },
-    { status: 502 },
-  )
+  // Stitch the final response in the original call order, mixing cached and
+  // upstream entries. JSON-RPC clients (viem) match results back by id, so
+  // ordering doesn't strictly matter, but preserving it is friendlier.
+  const out: RpcResponse[] = calls.map((call) => {
+    if (cachedById.has(call.id)) {
+      return { jsonrpc: '2.0', id: call.id, result: cachedById.get(call.id) }
+    }
+    const r = upstreamById.get(call.id)
+    if (r) return r
+    return {
+      jsonrpc: '2.0',
+      id: call.id,
+      error: { code: -32603, message: 'no upstream response for this call' },
+    }
+  })
+
+  return NextResponse.json(isBatch ? out : out[0], { status: 200 })
 }
