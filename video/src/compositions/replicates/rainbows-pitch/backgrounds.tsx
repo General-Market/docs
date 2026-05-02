@@ -12,12 +12,6 @@ export const BLUE = "#000000";
 export const DARK = "#0a0a0a";
 export const LIGHT_BG = "#fafafa";
 
-// Halftone dot field, baked as inline SVG data URI for cheap repeat.
-const halftoneSvg = (color: string, opacity: number) =>
-  `url("data:image/svg+xml;utf8,${encodeURIComponent(
-    `<svg xmlns='http://www.w3.org/2000/svg' width='8' height='8'><circle cx='2' cy='2' r='1' fill='${color}' fill-opacity='${opacity}'/></svg>`,
-  )}")`;
-
 // Subtle film grain via noise + filter.
 const Grain: React.FC<{ color?: string; opacity?: number }> = ({
   color = "#ffffff",
@@ -34,39 +28,6 @@ const Grain: React.FC<{ color?: string; opacity?: number }> = ({
         <rect width="100%" height="100%" filter={`url(#grain-${frame % 4})`} fill={color} />
       </svg>
     </AbsoluteFill>
-  );
-};
-
-// Tiny TradingView-style metadata badges anchored to the corners.
-const CornerBadge: React.FC<{
-  pos: "tl" | "tr" | "bl" | "br";
-  color: string;
-  children: React.ReactNode;
-}> = ({ pos, color, children }) => {
-  const top = pos.startsWith("t") ? 22 : undefined;
-  const bottom = pos.startsWith("b") ? 22 : undefined;
-  const left = pos.endsWith("l") ? 22 : undefined;
-  const right = pos.endsWith("r") ? 22 : undefined;
-  return (
-    <div
-      style={{
-        position: "absolute",
-        top,
-        bottom,
-        left,
-        right,
-        fontFamily: "ui-monospace, SFMono-Regular, monospace",
-        fontSize: 12,
-        color,
-        opacity: 0.6,
-        letterSpacing: "0.06em",
-        textTransform: "uppercase",
-        zIndex: 2,
-        pointerEvents: "none",
-      }}
-    >
-      {children}
-    </div>
   );
 };
 
@@ -96,10 +57,6 @@ export const BlueGradient: React.FC<{ speed?: number }> = () => {
         </svg>
       </AbsoluteFill>
       <Grain color="#ffffff" opacity={0.05} />
-      <CornerBadge pos="tr" color="#ffffff">
-        ● LIVE · {String(Math.floor(frame / 24)).padStart(2, "0")}:
-        {String(frame % 24).padStart(2, "0")}
-      </CornerBadge>
     </AbsoluteFill>
   );
 };
@@ -108,15 +65,6 @@ export const BlueGradient: React.FC<{ speed?: number }> = () => {
 export const LightGradient: React.FC = () => {
   return (
     <AbsoluteFill style={{ background: "#f5f5f3" }}>
-      {/* halftone dot field */}
-      <AbsoluteFill
-        style={{
-          backgroundImage: halftoneSvg("#000", 0.18),
-          backgroundSize: "8px 8px",
-          opacity: 0.7,
-          pointerEvents: "none",
-        }}
-      />
       {/* off-center diagonal rule for editorial energy */}
       <div
         style={{
@@ -130,9 +78,6 @@ export const LightGradient: React.FC = () => {
         }}
       />
       <Grain color="#000000" opacity={0.025} />
-      <CornerBadge pos="bl" color="#000000">
-        EDITION №01 · 2026
-      </CornerBadge>
     </AbsoluteFill>
   );
 };
