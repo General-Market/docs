@@ -713,6 +713,13 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
             }
         }
 
+        // Reject empty name or symbol — anti-spam against permissionless ITP creation.
+        // Catches both empty strings and pure-null payloads that pack to bytes32(0).
+        if (bytes(name).length == 0 || bytes(symbol).length == 0
+            || _stringToBytes32(name) == bytes32(0) || _stringToBytes32(symbol) == bytes32(0)) {
+            revert ErrorsLib.E052_EmptyNameOrSymbol();
+        }
+
         // 1. Validate array lengths match
         if (weights.length != _assets.length) {
             revert ErrorsLib.E015_LengthMismatch(_assets.length, weights.length);

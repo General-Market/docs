@@ -6844,6 +6844,12 @@ pub async fn compute_aum_ranking_json(state: &AppState) -> String {
     let mut itp_entries: Vec<ItpEntry> = Vec::new();
 
     for (itp_id, itp_state) in &itp_cache.states {
+        // Drop spam ITPs (empty name or symbol). The permissionless createITP entrypoint
+        // on L3 was abused on 2026-04-29 to mint ~4000 nameless funds; real ITPs always
+        // carry a non-empty bytes32 name and symbol.
+        if itp_state.name.trim().is_empty() || itp_state.symbol.trim().is_empty() {
+            continue;
+        }
         let total_supply_f = itp_state.total_supply.as_u128() as f64;
 
         // Build per-asset ranking for this ITP

@@ -39,7 +39,15 @@ function formatShares(supply: string): string {
 
 export function ITPSection({ snapshots, latest, loading }: SectionProps) {
   const t = useTranslations('pages')
-  const navList = useSSENav()
+  const navListRaw = useSSENav()
+
+  // Drop spam ITPs (empty name or symbol) — defense in depth even if the
+  // data-node filter regresses. The permissionless createITP entrypoint
+  // on L3 is open to bots; legitimate funds always carry name + symbol.
+  const navList = useMemo(
+    () => navListRaw.filter((n) => (n.name?.trim() ?? '') !== '' && (n.symbol?.trim() ?? '') !== ''),
+    [navListRaw],
+  )
 
   // Top 5 by AUM — keeps ITP Overview table within the 200px card body
   const topItps = useMemo(() => {

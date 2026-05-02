@@ -416,6 +416,12 @@ pub async fn run(
                         _ => None,
                     };
 
+                    // Skip spam ITPs with empty name/symbol (permissionless createITP abuse).
+                    if name.trim().is_empty() || symbol.trim().is_empty() {
+                        total_ok += 1;
+                        continue;
+                    }
+
                     // Populate cache
                     let cached = CachedItpState {
                         creator,
@@ -576,6 +582,10 @@ pub async fn run(
                             // Decode name/symbol from event bytes32 fields
                             let name = bytes32_to_string(event.name);
                             let symbol = bytes32_to_string(event.symbol);
+                            // Drop spam — empty name/symbol is the bot signature.
+                            if name.trim().is_empty() || symbol.trim().is_empty() {
+                                continue;
+                            }
                             let cached = CachedItpState {
                                 creator,
                                 total_supply,
@@ -717,6 +727,10 @@ pub async fn run(
                                 .get(&itp_id_hex)
                                 .map(|s| (s.name.clone(), s.symbol.clone(), s.settlement_address.clone(), s.vault_address.clone()))
                                 .unwrap_or_default();
+                            // Don't reintroduce spam ITPs the cache already filtered out.
+                            if prev_name.trim().is_empty() || prev_symbol.trim().is_empty() {
+                                continue;
+                            }
                             let cached = CachedItpState {
                                 creator,
                                 total_supply,
@@ -884,6 +898,10 @@ pub async fn run(
                         fetch_itp_state_with_retry(&contract, itp_id_bytes).await
                     {
                         let (name, symbol) = fetch_name_symbol(&contract, itp_id_bytes).await;
+                        // Skip empty-name/symbol spam ITPs at the reconciliation hydration path too.
+                        if name.trim().is_empty() || symbol.trim().is_empty() {
+                            continue;
+                        }
                         let cached_state = CachedItpState {
                             creator,
                             total_supply,

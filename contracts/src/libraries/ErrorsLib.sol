@@ -73,6 +73,9 @@ library ErrorsLib {
     /// @notice E018: Zero address not allowed for asset
     error E018_ZeroAssetAddress();
 
+    /// @notice E052: ITP name or symbol is empty (bytes32 zero)
+    error E052_EmptyNameOrSymbol();
+
     /// @notice E051: ITP has too many assets
     /// @param count Number of assets provided
     /// @param maximum Maximum allowed assets

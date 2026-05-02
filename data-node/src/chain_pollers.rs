@@ -539,6 +539,11 @@ pub async fn poll_nav_once(state: &AppState) -> Result<(), Box<dyn std::error::E
 
     let mut snapshots = Vec::new();
     for (itp_id, itp) in &itp_cache.states {
+        // Drop spam ITPs created via permissionless createITP with empty name/symbol payloads.
+        // Real funds always carry a non-empty bytes32 name and symbol; bots leave both blank.
+        if itp.name.trim().is_empty() || itp.symbol.trim().is_empty() {
+            continue;
+        }
         let nav_f64 = if !itp.assets.is_empty() && itp.assets.len() == itp.inventory.len() {
             let mut sum = 0.0_f64;
             let mut resolved = 0;
