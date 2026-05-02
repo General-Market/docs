@@ -1,7 +1,8 @@
 import React from "react";
 import { AbsoluteFill, Audio, Sequence, staticFile } from "remotion";
 import { Scene01_Intro, Scene02_Numbers, Scene03_DarkGrid, Scene04_CubeExplode } from "./ScenesA";
-import { Scene05_Waiting, Scene06_Starburst, Scene07_TransactionQueue, Scene08_GridText } from "./ScenesB";
+import { Scene05_Waiting, Scene06_Starburst, Scene07_TransactionQueue } from "./ScenesB";
+import { FeaturedSourceCardsScene } from "./FeaturedSourceCards";
 import { Scene09_Experience, Scene10_LiveTestnet, Scene11_NewSpeed, Scene12_Finale, Scene13_PairsCompare } from "./ScenesC";
 
 /*
@@ -63,7 +64,7 @@ export const RainbowsPitchComposition: React.FC = () => {
         <Scene11_NewSpeed />
       </Sequence>
       <Sequence from={588} durationInFrames={60} name="10 Asset Grid">
-        <Scene08_GridText />
+        <FeaturedSourceCardsScene />
       </Sequence>
       <Sequence from={648} durationInFrames={72} name="11 500k Markets">
         <Scene06_Starburst />
