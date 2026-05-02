@@ -114,11 +114,11 @@ impl PeerConnection {
     }
 
     /// Close the connection
-    pub async fn close(self) {
-        if let Some(handle) = self.writer_handle {
+    pub async fn close(mut self) {
+        if let Some(handle) = self.writer_handle.take() {
             handle.abort();
         }
-        if let Some(handle) = self.reader_handle {
+        if let Some(handle) = self.reader_handle.take() {
             handle.abort();
         }
     }
@@ -406,10 +406,29 @@ impl PeerConnection {
                                         actual_peer_id = sender_id;
                                         info!(?actual_peer_id, %addr, "Identified peer");
 
-                                        // Update the connection map with the real peer ID
+                                        // Update the connection map with the real peer ID.
+                                        // If another connection already lives at the real
+                                        // peer_id (simultaneous mutual dial — both sides
+                                        // accepted each other's outbound), `insert` returns
+                                        // the displaced connection. `Drop` aborts its
+                                        // writer/reader tasks so its TCP socket closes —
+                                        // without this, the wire stays open and `connected_peers`
+                                        // counts the corpse.
                                         let mut conns = connections.write().await;
                                         if let Some(conn) = conns.remove(&old_id) {
-                                            conns.insert(actual_peer_id, conn);
+                                            if let Some(displaced) = conns.insert(actual_peer_id, conn) {
+                                                let displaced_addr = displaced.addr();
+                                                warn!(
+                                                    code = "INFRA-007",
+                                                    ?actual_peer_id,
+                                                    new_addr = %addr,
+                                                    displaced_addr = %displaced_addr,
+                                                    "Re-key displaced an existing connection — closing the loser",
+                                                );
+                                                // Explicit drop happens at end of scope; Drop
+                                                // impl on PeerConnection aborts both tasks.
+                                                drop(displaced);
+                                            }
                                         }
                                     }
                                 }
@@ -440,16 +459,12 @@ impl PeerConnection {
         //
         // Remove the dead connection from the map entirely (not just mark
         // Disconnected). This lets reconnect_loop insert a fresh connection
-        // without conflicting with the zombie entry.
+        // without conflicting with the zombie entry. The removed value's
+        // Drop impl aborts its writer task (the reader is this task, already
+        // returning).
         {
             let mut conns = connections.write().await;
-            if let Some(old_conn) = conns.remove(&actual_peer_id) {
-                // Abort the writer task — if the reader died, keeping the
-                // writer alive is pointless and wastes resources.
-                if let Some(wh) = old_conn.writer_handle {
-                    wh.abort();
-                }
-            }
+            let _ = conns.remove(&actual_peer_id);
         }
 
         // Request auto-reconnect for outgoing connections via the channel.
@@ -531,6 +546,25 @@ impl PeerConnection {
                     backoff_ms = (backoff_ms * BACKOFF_MULTIPLIER).min(MAX_BACKOFF_MS);
                 }
             }
+        }
+    }
+}
+
+impl Drop for PeerConnection {
+    /// Abort the writer and reader tasks when the value is dropped.
+    ///
+    /// A `PeerConnection` value owns its TCP socket through these two tasks.
+    /// Whenever the value leaves the connection map — explicit removal,
+    /// re-key displacement, eviction by a same-key `insert` — both tasks
+    /// must die so the socket closes. Without this, a displaced connection
+    /// keeps the wire open while the map carries a single live entry per
+    /// peer, and `connected_peers` inflates beyond the real mesh size.
+    fn drop(&mut self) {
+        if let Some(handle) = self.writer_handle.take() {
+            handle.abort();
+        }
+        if let Some(handle) = self.reader_handle.take() {
+            handle.abort();
         }
     }
 }
@@ -696,5 +730,107 @@ mod tests {
             .collect();
 
         assert_eq!(sequence, vec![100, 200, 400, 800, 1600, 3200, 5000]);
+    }
+
+    /// Regression test for the 9-peers-instead-of-6 bug.
+    ///
+    /// When a `PeerConnection` is dropped, both the writer and reader tasks
+    /// must terminate. Otherwise the tasks keep the underlying TCP socket
+    /// alive, the wire shows ghost connections, and `connected_peers` inflates.
+    #[tokio::test]
+    async fn test_drop_aborts_writer_and_reader_tasks() {
+        let writer_handle = tokio::spawn(async {
+            loop {
+                tokio::time::sleep(Duration::from_secs(60)).await;
+            }
+        });
+        let reader_handle = tokio::spawn(async {
+            loop {
+                tokio::time::sleep(Duration::from_secs(60)).await;
+            }
+        });
+        let writer_abort = writer_handle.abort_handle();
+        let reader_abort = reader_handle.abort_handle();
+
+        let (outgoing_tx, _outgoing_rx) = mpsc::channel::<P2PMessage>(1);
+        let conn = PeerConnection {
+            peer_id: [0xAB; 32],
+            addr: "127.0.0.1:9000".parse().unwrap(),
+            status: AtomicU8::new(ConnectionStatus::Connected as u8),
+            outgoing_tx,
+            writer_handle: Some(writer_handle),
+            reader_handle: Some(reader_handle),
+        };
+
+        assert!(!writer_abort.is_finished(), "writer alive before drop");
+        assert!(!reader_abort.is_finished(), "reader alive before drop");
+
+        drop(conn);
+        tokio::time::sleep(Duration::from_millis(50)).await;
+
+        assert!(writer_abort.is_finished(), "writer must be aborted after drop");
+        assert!(reader_abort.is_finished(), "reader must be aborted after drop");
+    }
+
+    /// Regression test: dropping a connection that was *displaced* by `insert`
+    /// from a HashMap also aborts its tasks. This is the exact path that
+    /// produced the ghost peers in production.
+    #[tokio::test]
+    async fn test_hashmap_insert_displacement_aborts_displaced_tasks() {
+        let mut map: HashMap<PeerId, PeerConnection> = HashMap::new();
+        let real_id: PeerId = [0xBE; 32];
+
+        // First insert — the eventual loser of the race.
+        let writer_a = tokio::spawn(async {
+            loop {
+                tokio::time::sleep(Duration::from_secs(60)).await;
+            }
+        });
+        let reader_a = tokio::spawn(async {
+            loop {
+                tokio::time::sleep(Duration::from_secs(60)).await;
+            }
+        });
+        let writer_a_abort = writer_a.abort_handle();
+        let reader_a_abort = reader_a.abort_handle();
+        let (tx_a, _rx_a) = mpsc::channel::<P2PMessage>(1);
+        map.insert(real_id, PeerConnection {
+            peer_id: real_id,
+            addr: "127.0.0.1:1111".parse().unwrap(),
+            status: AtomicU8::new(ConnectionStatus::Connected as u8),
+            outgoing_tx: tx_a,
+            writer_handle: Some(writer_a),
+            reader_handle: Some(reader_a),
+        });
+
+        // Second insert at the same key — displaces the first.
+        let writer_b = tokio::spawn(async {
+            loop {
+                tokio::time::sleep(Duration::from_secs(60)).await;
+            }
+        });
+        let reader_b = tokio::spawn(async {
+            loop {
+                tokio::time::sleep(Duration::from_secs(60)).await;
+            }
+        });
+        let (tx_b, _rx_b) = mpsc::channel::<P2PMessage>(1);
+        let displaced = map.insert(real_id, PeerConnection {
+            peer_id: real_id,
+            addr: "127.0.0.1:2222".parse().unwrap(),
+            status: AtomicU8::new(ConnectionStatus::Connected as u8),
+            outgoing_tx: tx_b,
+            writer_handle: Some(writer_b),
+            reader_handle: Some(reader_b),
+        });
+
+        // Production code currently discards the displaced value implicitly.
+        // We do the same — drop happens at end of statement.
+        drop(displaced);
+        tokio::time::sleep(Duration::from_millis(50)).await;
+
+        assert!(writer_a_abort.is_finished(), "displaced writer must be aborted");
+        assert!(reader_a_abort.is_finished(), "displaced reader must be aborted");
+        assert_eq!(map.len(), 1, "map should hold exactly one entry");
     }
 }
