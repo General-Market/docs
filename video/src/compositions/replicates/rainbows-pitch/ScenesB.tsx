@@ -17,115 +17,6 @@ const baseText: React.CSSProperties = {
 };
 
 /* ════════════════════════════════════════════════════════
-   Scene 05 — Two-phase phrase  (48 frames = 2s @ 24fps)
-   "Removing" → "what shouldn't be here."
-   ════════════════════════════════════════════════════════ */
-
-const SCENE05_PHASE1 = ["Removing"] as const;
-const SCENE05_PHASE2 = ["what", "shouldn't", "be", "here"] as const;
-
-function buildScene05Proxies() {
-  const init: Record<string, { opacity: number; y: number }> = {};
-  SCENE05_PHASE1.forEach((w) => { init[`p1_${w}`] = { opacity: 0, y: 15 }; });
-  SCENE05_PHASE2.forEach((w) => { init[`p2_${w}`] = { opacity: 0, y: 15 }; });
-  init.phase1Wrap = { opacity: 1, y: 0 };
-  init.phase2Wrap = { opacity: 0, y: 0 };
-  return init;
-}
-
-const scene05Init = buildScene05Proxies();
-
-export const Scene05_Waiting: React.FC = () => {
-  const s = useGsapProxy(
-    (tl, p) => {
-      // "Removing" enters at 0
-      tl.to(p[`p1_Removing`], { opacity: 1, y: 0, duration: 0.18, ease: "power2.out" }, 0.0);
-      // Phase 1 fades out
-      tl.to(p.phase1Wrap, { opacity: 0, duration: 0.18 }, 1.0);
-      // Phase 2 wrap fades in
-      tl.to(p.phase2Wrap, { opacity: 1, duration: 0.12 }, 1.1);
-      // Phase 2 words stagger
-      SCENE05_PHASE2.forEach((w, i) => {
-        const t = 1.1 + i * 0.13;
-        tl.to(p[`p2_${w}`], { opacity: 1, y: 0, duration: 0.14, ease: "power2.out" }, t);
-      });
-    },
-    scene05Init,
-  );
-
-  return (
-    <AbsoluteFill>
-      <BlueGradient />
-      <AbsoluteFill>
-        {/* Phase 1 — centered */}
-        <div
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            opacity: s.phase1Wrap.opacity,
-            whiteSpace: "nowrap",
-          }}
-        >
-          {SCENE05_PHASE1.map((word) => {
-            const p = s[`p1_${word}`];
-            return (
-              <span
-                key={word}
-                style={{
-                  ...baseText,
-                  fontSize: 230,
-                  color: "#fff",
-                  opacity: p.opacity,
-                  transform: `translateY(${p.y}px)`,
-                }}
-              >
-                {word}
-              </span>
-            );
-          })}
-        </div>
-
-        {/* Phase 2 — centered, smaller */}
-        <div
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            display: "flex",
-            flexWrap: "wrap",
-            justifyContent: "center",
-            gap: "0 24px",
-            maxWidth: "85%",
-            opacity: s.phase2Wrap.opacity,
-          }}
-        >
-          {SCENE05_PHASE2.map((word) => {
-            const p = s[`p2_${word}`];
-            return (
-              <span
-                key={word}
-                style={{
-                  ...baseText,
-                  fontSize: 155,
-                  color: "#fff",
-                  opacity: p.opacity,
-                  transform: `translateY(${p.y}px)`,
-                }}
-              >
-                {word}
-              </span>
-            );
-          })}
-        </div>
-      </AbsoluteFill>
-    </AbsoluteFill>
-  );
-};
-
-/* ════════════════════════════════════════════════════════
    Scene 06 — Starburst counter  (72 frames = 3s @ 24fps)
    Counter 0 → 500,000  + "exclusive markets"
    sub-caption: "only tradable with rainbows"
@@ -283,8 +174,9 @@ export const Scene06_Starburst: React.FC = () => {
 };
 
 /* ════════════════════════════════════════════════════════
-   Scene 07 — Villains with strike-through  (108 frames = 4.5s @ 24fps)
-   Four rows. Each row: lifts in, struck through, then dims.
+   Scene 07 — Big "Removing" + villains struck through
+   (156 frames = 6.5s @ 24fps — absorbs the old Scene 05)
+   "Removing" headline lands first, villains stagger underneath.
    ════════════════════════════════════════════════════════ */
 
 const VILLAINS = [
@@ -301,7 +193,7 @@ function buildScene07Proxies() {
     init[`strike_${i}`] = { scaleX: 0, glow: 0 };
     init[`dot_${i}`] = { opacity: 0, scale: 0 };
   });
-  init.headline = { opacity: 0, y: 12 };
+  init.title = { opacity: 0, y: 22 };
   return init;
 }
 
@@ -310,21 +202,20 @@ const scene07Init = buildScene07Proxies();
 export const Scene07_TransactionQueue: React.FC = () => {
   const s = useGsapProxy(
     (tl, p) => {
-      // Tiny header dot
-      tl.to(p.headline, { opacity: 1, y: 0, duration: 0.25, ease: "power2.out" }, 0.0);
+      // Big "Removing" lands first
+      tl.to(p.title, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 0.0);
 
-      // Each villain: enter → strike → dim
-      const ROW_INTERVAL = 0.95;
+      // Villains stagger underneath
+      const ROW_INTERVAL = 1.18;
+      const VILLAIN_START = 0.7;
       VILLAINS.forEach((_, i) => {
-        const start = 0.25 + i * ROW_INTERVAL;
+        const start = VILLAIN_START + i * ROW_INTERVAL;
         tl.to(p[`row_${i}`], { opacity: 1, x: 0, duration: 0.36, ease: "power3.out" }, start);
         // Strike + glow flash together
         tl.to(p[`strike_${i}`], { scaleX: 1, duration: 0.42, ease: "power2.inOut" }, start + 0.32);
         tl.to(p[`strike_${i}`], { glow: 1, duration: 0.18, ease: "power2.out" }, start + 0.32);
         tl.to(p[`strike_${i}`], { glow: 0.45, duration: 0.5, ease: "power2.in" }, start + 0.5);
-        // Red dot indicator pops at strike start
         tl.to(p[`dot_${i}`], { opacity: 1, scale: 1, duration: 0.18, ease: "back.out(2)" }, start + 0.34);
-        // Row dims after strike completes
         tl.to(p[`row_${i}`], { dim: 0.42, duration: 0.4, ease: "power2.in" }, start + 0.78);
       });
     },
@@ -343,63 +234,40 @@ export const Scene07_TransactionQueue: React.FC = () => {
         }}
       />
       <AbsoluteFill>
-        {/* Header label — tiny, top-left of card */}
+        {/* Big "Removing" headline */}
         <div
           style={{
             position: "absolute",
-            top: "16%",
+            top: "13%",
             left: "50%",
-            transform: `translate(-50%, ${s.headline.y}px)`,
-            opacity: s.headline.opacity * 0.7,
-            display: "flex",
-            alignItems: "center",
-            gap: 14,
+            transform: `translate(-50%, ${s.title.y}px)`,
+            opacity: s.title.opacity,
+            whiteSpace: "nowrap",
           }}
         >
-          <div
-            style={{
-              width: 10,
-              height: 10,
-              borderRadius: "50%",
-              backgroundColor: STRIKE_RED,
-              boxShadow: `0 0 12px ${STRIKE_RED}`,
-            }}
-          />
           <span
             style={{
-              fontFamily,
-              fontSize: 32,
-              fontWeight: 700,
-              fontStyle: "italic",
-              color: "rgba(255,255,255,0.85)",
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
+              ...baseText,
+              fontSize: 230,
+              color: "#fff",
+              textShadow: "0 6px 32px rgba(0,0,0,0.4)",
             }}
           >
-            removed
+            Removing
           </span>
         </div>
 
-        {/* Villain stack */}
+        {/* Villain stack — no frame, just text */}
         <div
           style={{
             position: "absolute",
-            top: "52%",
+            top: "62%",
             left: "50%",
             transform: "translate(-50%, -50%)",
             display: "flex",
             flexDirection: "column",
             gap: 28,
             alignItems: "flex-start",
-            padding: "44px 56px",
-            borderRadius: 24,
-            background:
-              "linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)",
-            backdropFilter: "blur(8px)",
-            WebkitBackdropFilter: "blur(8px)",
-            border: "1px solid rgba(255,255,255,0.10)",
-            boxShadow:
-              "0 30px 80px rgba(0,10,40,0.35), inset 0 1px 0 rgba(255,255,255,0.12)",
           }}
         >
           {VILLAINS.map((villain, i) => {
@@ -595,8 +463,7 @@ export const Scene08_GridText: React.FC = () => {
 // ── Meta ──
 
 export const sceneBMetas = [
-  { id: "RP-Scene05", component: Scene05_Waiting, durationInFrames: 48 },
   { id: "RP-Scene06", component: Scene06_Starburst, durationInFrames: 72 },
-  { id: "RP-Scene07", component: Scene07_TransactionQueue, durationInFrames: 108 },
+  { id: "RP-Scene07", component: Scene07_TransactionQueue, durationInFrames: 156 },
   { id: "RP-Scene08", component: Scene08_GridText, durationInFrames: 60 },
 ];

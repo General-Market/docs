@@ -1,7 +1,7 @@
 import React from "react";
 import { AbsoluteFill, Audio, Sequence, staticFile } from "remotion";
 import { Scene01_Intro, Scene02_Numbers, Scene03_DarkGrid, Scene04_CubeExplode } from "./ScenesA";
-import { Scene05_Waiting, Scene06_Starburst, Scene07_TransactionQueue } from "./ScenesB";
+import { Scene06_Starburst, Scene07_TransactionQueue } from "./ScenesB";
 import { FeaturedSourceCardsScene } from "./FeaturedSourceCards";
 import { Scene09_Experience, Scene10_LiveTestnet, Scene11_NewSpeed, Scene12_Finale, Scene13_PairsCompare } from "./ScenesC";
 
@@ -16,8 +16,7 @@ import { Scene09_Experience, Scene10_LiveTestnet, Scene11_NewSpeed, Scene12_Fina
  *   01  "Trade market like this." → "Is simpler than..."     0–48
  *   02  "But only tradable with rainbows." → title card    48–132
  *   03  "Rainbows filters out illegal activities" + cube  132–204
- *   04  "Removing" → "what shouldn't be here."            204–252
- *   05  Villains struck through                            252–360
+ *   04  "Removing" headline + villains struck through    204–360
  *   06  Counter 0→70%, "of your profits"                  360–408
  *   07  "Leaving the same profits" → "to fewer            408–492
  *       honest traders"
@@ -45,10 +44,7 @@ export const RainbowsPitchComposition: React.FC = () => {
       <Sequence from={132} durationInFrames={72} name="03 Filters Illegal">
         <Scene04_CubeExplode />
       </Sequence>
-      <Sequence from={204} durationInFrames={48} name="04 Removing">
-        <Scene05_Waiting />
-      </Sequence>
-      <Sequence from={252} durationInFrames={108} name="05 Villains Struck">
+      <Sequence from={204} durationInFrames={156} name="04 Removing + Villains">
         <Scene07_TransactionQueue />
       </Sequence>
       <Sequence from={360} durationInFrames={48} name="06 70% Counter">
