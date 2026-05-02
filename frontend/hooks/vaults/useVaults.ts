@@ -54,21 +54,36 @@ function buildVaultCalls(addresses: `0x${string}`[]) {
   ])
 }
 
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as const
+
+function readField<T>(entry: { status: string; result: unknown } | undefined, fallback: T): T {
+  if (!entry || entry.status === 'failure') return fallback
+  return entry.result as T
+}
+
 function parseVaults(addresses: `0x${string}`[], results: { status: string; result: unknown }[]): VaultInfo[] {
   const vaults: VaultInfo[] = []
   for (let i = 0; i < addresses.length; i++) {
     const base = i * FIELDS_PER_VAULT
     const chunk = results.slice(base, base + FIELDS_PER_VAULT)
-    if (chunk.some((r) => r.status === 'failure')) continue
 
-    const name = chunk[0].result as string
-    const symbol = chunk[1].result as string
-    const manager = chunk[2].result as `0x${string}`
-    const performanceFeeRate = chunk[3].result as bigint
-    const highWaterMark = chunk[4].result as bigint
-    const totalAssets = chunk[5].result as bigint
-    const totalSupply = chunk[6].result as bigint
-    const totalActiveCapital = chunk[7].result as bigint
+    // The TVL/NAV/perf display only needs totalAssets + totalSupply. The
+    // other six fields are nice-to-have, used by the deposit modal and
+    // surface labels. A flaky RPC dropping any one of them used to drop
+    // the whole vault — leaving the page with no fund cards at all. Treat
+    // each field as independently optional and let the caller render
+    // whatever arrived this tick. Drop the vault only when *every* read
+    // failed (the address itself is unreachable).
+    if (chunk.every((r) => r.status === 'failure')) continue
+
+    const name = readField<string>(chunk[0], '')
+    const symbol = readField<string>(chunk[1], '')
+    const manager = readField<`0x${string}`>(chunk[2], ZERO_ADDRESS)
+    const performanceFeeRate = readField<bigint>(chunk[3], 0n)
+    const highWaterMark = readField<bigint>(chunk[4], 10n ** 18n)
+    const totalAssets = readField<bigint>(chunk[5], 0n)
+    const totalSupply = readField<bigint>(chunk[6], 0n)
+    const totalActiveCapital = readField<bigint>(chunk[7], 0n)
 
     const navPerShare = totalSupply > 0n ? Number(totalAssets) / Number(totalSupply) : 1.0
     const performanceSinceInception = navPerShare - 1.0

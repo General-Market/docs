@@ -59,20 +59,31 @@ export const settlementChain: Chain = {
 const l3RpcUrl = envL3RpcUrl
 const l3FallbackRpcUrl = process.env.NEXT_PUBLIC_L3_RPC_FALLBACK_URL
 
+// L3 has no multicall3 deployed (canonical address is empty). Without it,
+// useReadContracts fans out one HTTP POST per call — 32 for a single vault
+// page, more for the global lists. The orbit-proxy in front of the L3 chain
+// doesn't pool keep-alive connections well and starts handing back 502s once
+// a few requests arrive concurrently. JSON-RPC batching collapses the burst
+// into a single POST containing a JSON array, which the proxy handles fine.
+const L3_BATCH = { batchSize: 64, wait: 16 } as const
+
 const l3Transport = l3FallbackRpcUrl
   ? fallback([
       http(l3RpcUrl, {
+        batch: L3_BATCH,
         timeout: 5_000,
         retryCount: 2,
         retryDelay: 1_000
       }),
       http(l3FallbackRpcUrl, {
+        batch: L3_BATCH,
         timeout: 5_000,
         retryCount: 2,
         retryDelay: 1_000
       })
     ])
   : http(l3RpcUrl, {
+      batch: L3_BATCH,
       timeout: 10_000,
       retryCount: 3,
       retryDelay: 1_000
