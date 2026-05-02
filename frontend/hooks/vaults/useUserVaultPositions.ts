@@ -28,10 +28,27 @@ export interface UserVaultSummary {
 
 const CHUNK_SIZE = 50
 
+type BalanceCall = {
+  address: `0x${string}`
+  abi: typeof VISION_VAULT_ABI
+  functionName: 'balanceOf'
+  args: [`0x${string}`]
+  chainId: number
+}
+
+function useBalanceChunk(calls: BalanceCall[], chunkIndex: number) {
+  const slice = calls.slice(chunkIndex * CHUNK_SIZE, (chunkIndex + 1) * CHUNK_SIZE)
+  return useReadContracts({
+    contracts: slice as any,
+    allowFailure: true,
+    query: { enabled: slice.length > 0, refetchInterval: 15_000 },
+  })
+}
+
 export function useUserVaultPositions(userAddress: string | undefined): UserVaultSummary {
   const { vaults, isLoading: vaultsLoading } = useVaults()
 
-  const balanceCalls = useMemo(() => {
+  const balanceCalls = useMemo<BalanceCall[]>(() => {
     if (!userAddress || vaults.length === 0) return []
     return vaults.map((v) => ({
       address: v.address,
@@ -42,42 +59,30 @@ export function useUserVaultPositions(userAddress: string | undefined): UserVaul
     }))
   }, [userAddress, vaults])
 
-  // Chunk into <=50 calls per batch (wagmi multicall limit)
-  const chunk0Calls = balanceCalls.slice(0, CHUNK_SIZE)
-  const chunk1Calls = balanceCalls.slice(CHUNK_SIZE, CHUNK_SIZE * 2)
-  const chunk2Calls = balanceCalls.slice(CHUNK_SIZE * 2, CHUNK_SIZE * 3)
-  const chunk3Calls = balanceCalls.slice(CHUNK_SIZE * 3, CHUNK_SIZE * 4)
+  // 10 × 50 = 500 matches useVaults()'s chunk budget — must stay ≥ the vault
+  // count, or late-list vaults silently miss the balanceOf check.
+  const chunk0 = useBalanceChunk(balanceCalls, 0)
+  const chunk1 = useBalanceChunk(balanceCalls, 1)
+  const chunk2 = useBalanceChunk(balanceCalls, 2)
+  const chunk3 = useBalanceChunk(balanceCalls, 3)
+  const chunk4 = useBalanceChunk(balanceCalls, 4)
+  const chunk5 = useBalanceChunk(balanceCalls, 5)
+  const chunk6 = useBalanceChunk(balanceCalls, 6)
+  const chunk7 = useBalanceChunk(balanceCalls, 7)
+  const chunk8 = useBalanceChunk(balanceCalls, 8)
+  const chunk9 = useBalanceChunk(balanceCalls, 9)
 
-  const chunk0 = useReadContracts({
-    contracts: chunk0Calls as any,
-    allowFailure: true,
-    query: { enabled: chunk0Calls.length > 0, refetchInterval: 15_000 },
-  })
-  const chunk1 = useReadContracts({
-    contracts: chunk1Calls as any,
-    allowFailure: true,
-    query: { enabled: chunk1Calls.length > 0, refetchInterval: 15_000 },
-  })
-  const chunk2 = useReadContracts({
-    contracts: chunk2Calls as any,
-    allowFailure: true,
-    query: { enabled: chunk2Calls.length > 0, refetchInterval: 15_000 },
-  })
-  const chunk3 = useReadContracts({
-    contracts: chunk3Calls as any,
-    allowFailure: true,
-    query: { enabled: chunk3Calls.length > 0, refetchInterval: 15_000 },
-  })
+  const chunks = [chunk0, chunk1, chunk2, chunk3, chunk4, chunk5, chunk6, chunk7, chunk8, chunk9]
 
   const allResults = useMemo(() => {
     const results: ({ status: string; result: unknown } | undefined)[] = []
-    for (const chunk of [chunk0, chunk1, chunk2, chunk3]) {
+    for (const chunk of chunks) {
       if (chunk.data) results.push(...(chunk.data as any))
     }
     return results
-  }, [chunk0.data, chunk1.data, chunk2.data, chunk3.data])
+  }, [chunk0.data, chunk1.data, chunk2.data, chunk3.data, chunk4.data, chunk5.data, chunk6.data, chunk7.data, chunk8.data, chunk9.data])
 
-  const isLoadingBalances = [chunk0, chunk1, chunk2, chunk3].some(c => c.isLoading)
+  const isLoadingBalances = chunks.some(c => c.isLoading)
 
   const summary = useMemo((): UserVaultSummary => {
     if (vaults.length === 0 || allResults.length === 0) {

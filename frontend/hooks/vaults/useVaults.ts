@@ -1,10 +1,12 @@
 'use client'
 
-import { useReadContract, useReadContracts } from 'wagmi'
+import { useMemo } from 'react'
+import { useReadContracts } from 'wagmi'
 import { formatUnits } from 'viem'
-import { VISION_VAULT_ABI, VISION_VAULT_FACTORY_ABI } from '@/lib/contracts/vault-abi'
+import { VISION_VAULT_ABI } from '@/lib/contracts/vault-abi'
 import { useDeployment } from '@/hooks/useDeployment'
 import { indexL3 } from '@/lib/wagmi'
+import fundData from '@/data/fund-branding.json'
 
 export interface VaultInfo {
   address: `0x${string}`
@@ -26,9 +28,18 @@ export interface VaultInfo {
   deployedRatio: number
 }
 
-const ZERO_ADDR = '0x0000000000000000000000000000000000000000' as const
 const FIELDS_PER_VAULT = 8
 const CHUNK_SIZE = 50
+
+/** All vault addresses the frontend knows how to render, derived from
+ *  fund-branding.json. This is the canonical list — VisionVaultFactory was
+ *  redundant in practice (a vault without a fund-branding entry has no name,
+ *  no description, no sparkline) and unreliable in production (the factory
+ *  address in deployment.json drifted to a contract with no code, leaving
+ *  every TVL/Perf at zero). */
+const ALL_FUND_VAULT_ADDRESSES: `0x${string}`[] = (fundData as { funds: { vault?: string }[] }).funds
+  .filter((f) => !!f.vault)
+  .map((f) => (f.vault as string).toLowerCase() as `0x${string}`)
 
 function buildVaultCalls(addresses: `0x${string}`[]) {
   return addresses.flatMap((addr) => [
@@ -89,55 +100,15 @@ function useVaultChunk(addresses: `0x${string}`[], chunkIndex: number, enabled: 
 }
 
 export function useVaults() {
-  const { getAddress, whitelistedVaults } = useDeployment()
-  const factoryAddress = getAddress('VisionVaultFactory')
-  const factoryEnabled = factoryAddress !== ZERO_ADDR
+  const { whitelistedVaults } = useDeployment()
 
-  const {
-    data: vaultAddresses,
-    isLoading: isLoadingAddresses,
-    refetch: refetchAddresses,
-  } = useReadContract({
-    address: factoryAddress,
-    abi: VISION_VAULT_FACTORY_ABI,
-    functionName: 'getAllVaults',
-    chainId: indexL3.id,
-    query: { enabled: factoryEnabled },
-  })
+  const addresses = useMemo(() => {
+    if (whitelistedVaults.length === 0) return ALL_FUND_VAULT_ADDRESSES
+    const allowed = new Set(whitelistedVaults)
+    return ALL_FUND_VAULT_ADDRESSES.filter((a) => allowed.has(a))
+  }, [whitelistedVaults])
 
-  const allAddresses = (vaultAddresses as `0x${string}`[] | undefined) ?? []
-  const addresses = whitelistedVaults.length > 0
-    ? allAddresses.filter(a => whitelistedVaults.includes(a.toLowerCase() as `0x${string}`))
-    : allAddresses
-
-  const chunksEnabled = addresses.length > 0
-
-  // Up to 10 chunks × 50 = 500 vaults. Add more hooks if needed.
-  const chunk0 = useVaultChunk(addresses, 0, chunksEnabled)
-  const chunk1 = useVaultChunk(addresses, 1, chunksEnabled)
-  const chunk2 = useVaultChunk(addresses, 2, chunksEnabled)
-  const chunk3 = useVaultChunk(addresses, 3, chunksEnabled)
-  const chunk4 = useVaultChunk(addresses, 4, chunksEnabled)
-  const chunk5 = useVaultChunk(addresses, 5, chunksEnabled)
-  const chunk6 = useVaultChunk(addresses, 6, chunksEnabled)
-  const chunk7 = useVaultChunk(addresses, 7, chunksEnabled)
-  const chunk8 = useVaultChunk(addresses, 8, chunksEnabled)
-  const chunk9 = useVaultChunk(addresses, 9, chunksEnabled)
-
-  const chunks = [chunk0, chunk1, chunk2, chunk3, chunk4, chunk5, chunk6, chunk7, chunk8, chunk9]
-  const isLoadingData = chunks.some(c => c.isLoading)
-
-  // Merge chunk results progressively — each chunk parses its own slice
-  const vaults: VaultInfo[] = []
-  for (let ci = 0; ci < chunks.length; ci++) {
-    const start = ci * CHUNK_SIZE
-    const slice = addresses.slice(start, start + CHUNK_SIZE)
-    if (slice.length === 0) break
-    const results = chunks[ci].data
-    if (results) {
-      vaults.push(...parseVaults(slice, results as { status: string; result: unknown }[]))
-    }
-  }
+  const { vaults, isLoading, refetch } = useVaultsByAddresses(addresses)
 
   const totalTvl = vaults.reduce((sum, v) => sum + v.totalAssets, 0n)
   const totalTvlFormatted = parseFloat(formatUnits(totalTvl, 18)).toLocaleString(undefined, {
@@ -148,11 +119,8 @@ export function useVaults() {
     vaults,
     totalTvl,
     totalTvlFormatted,
-    isLoading: isLoadingAddresses || isLoadingData,
-    refetch: () => {
-      refetchAddresses()
-      chunks.forEach(c => c.refetch())
-    },
+    isLoading,
+    refetch,
   }
 }
 
