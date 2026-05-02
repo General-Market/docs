@@ -16,6 +16,18 @@ import { useMemo } from "react";
 import { useCurrentFrame, useVideoConfig } from "remotion";
 import { gsap } from "gsap";
 
+/**
+ * Standard entrance easings for Rainbows-Pitch.
+ * Out-only: things arriving should decelerate into place, never accelerate out.
+ *
+ *   HERO_SPRING    — confident overshoot for primary reveals (titles, big cards)
+ *   ELEMENT_SPRING — subtle overshoot for text, pills, chrome
+ *   SOFT_OUT       — restrained ease-out when a spring would feel cartoonish
+ */
+export const HERO_SPRING = "back.out(1.8)";
+export const ELEMENT_SPRING = "back.out(1.2)";
+export const SOFT_OUT = "power3.out";
+
 export type ProxyState = Record<string, number>;
 
 export function useGsapProxy<T extends Record<string, ProxyState>>(
