@@ -511,6 +511,45 @@ def write_vault_snapshots(funds, vault_info_cache=None):
         log.warning("Vault snapshot write failed: %s", e)
 
 
+# ── Heartbeat ──────────────────────────────────────────────────
+
+
+def _heartbeat_path() -> str:
+    return os.environ.get("HEARTBEAT_FILE", "/app/pnl-data/heartbeat.json")
+
+
+def _write_heartbeat(updates: dict) -> None:
+    """Read-modify-write the heartbeat file with atomic rename.
+
+    Preserves prior fields (notably ``source_match``) so that liveness
+    pings written mid-cycle don't blank out the last good cycle summary
+    and trip the Docker HEALTHCHECK assert. Atomic rename also avoids
+    EACCES when the existing file was created by a different uid (a
+    classic bind-mount rot pattern).
+    """
+    path = _heartbeat_path()
+    payload: dict = {}
+    try:
+        with open(path) as hb:
+            payload = json.load(hb) or {}
+    except (FileNotFoundError, json.JSONDecodeError):
+        pass
+    except Exception as e:
+        log.debug("Heartbeat read failed (will overwrite): %s", e)
+    payload.update(updates)
+    tmp = path + ".tmp"
+    try:
+        with open(tmp, "w") as hb:
+            json.dump(payload, hb)
+        os.replace(tmp, path)
+    except Exception as e:
+        log.warning("Heartbeat write failed: %s", e)
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+
+
 # ── Main cycle ─────────────────────────────────────────────────
 
 
@@ -815,21 +854,14 @@ def run_cycle(
             len(batches),
         )
 
-    # Write heartbeat for Docker HEALTHCHECK. Use a context manager so we
-    # don't leak file descriptors and log any failure instead of swallowing.
-    heartbeat_path = os.environ.get("HEARTBEAT_FILE", "/app/pnl-data/heartbeat.json")
-    payload = {
+    _write_heartbeat({
         "cycle": cycle_number,
         "ts": time.time(),
         "joined": joined_this_cycle,
         "source_match": matched_any_source,
         "batches": len(batches),
-    }
-    try:
-        with open(heartbeat_path, "w") as hb:
-            json.dump(payload, hb)
-    except Exception as e:
-        log.warning("Heartbeat write failed: %s", e)
+        "phase": "complete",
+    })
 
     # Persist state at the end of the cycle, reusing the cache so we don't
     # fire another wave of vault reads.
@@ -1063,14 +1095,12 @@ def main():
     try:
         while not shutdown_flag["set"]:
             cycle_failed = False
-            # Write heartbeat at cycle start so Docker knows we're alive
-            # even during long cycles (60-90s with 183 funds).
-            heartbeat_path = os.environ.get("HEARTBEAT_FILE", "/app/pnl-data/heartbeat.json")
-            try:
-                with open(heartbeat_path, "w") as hb:
-                    json.dump({"cycle": cycle, "ts": time.time(), "phase": "starting"}, hb)
-            except Exception:
-                pass
+            # Liveness ping at cycle start so the staleness assert doesn't
+            # fire during long cycles (60-90s with 183 funds). Uses
+            # read-modify-write so the prior cycle's source_match field
+            # survives — the start-of-cycle write is a heartbeat, not a
+            # state reset.
+            _write_heartbeat({"cycle": cycle, "ts": time.time(), "phase": "starting"})
             try:
                 urls = oracle_urls_fn()
                 run_cycle(
@@ -1080,12 +1110,7 @@ def main():
             except Exception as e:
                 cycle_failed = True
                 log.error("Cycle error: %s", e, exc_info=True)
-                # Keep heartbeat alive even on failure
-                try:
-                    with open(heartbeat_path, "w") as hb:
-                        json.dump({"cycle": cycle, "ts": time.time(), "error": str(e)}, hb)
-                except Exception:
-                    pass
+                _write_heartbeat({"cycle": cycle, "ts": time.time(), "error": str(e), "phase": "error"})
             # Increment outside the try so an exception doesn't desync the
             # counter from the actual number of attempted cycles.
             cycle += 1

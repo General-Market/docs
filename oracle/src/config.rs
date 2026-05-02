@@ -1027,9 +1027,13 @@ impl OracleConfig {
 
     /// Get whether registry sync is enabled.
     ///
-    /// Default: false
+    /// Default: false. Returns true only if the operator opted in AND a
+    /// MirrorOracleRegistry address is configured — without a mirror to
+    /// publish attestations to, the sync handler has no work to do, and
+    /// leaving the cache enabled would pin `/ready` to 503 forever.
     pub fn effective_registry_sync_enabled(&self) -> bool {
         self.registry_sync_enabled.unwrap_or(false)
+            && self.mirror_registry_address.is_some()
     }
 
     /// Get the effective registry sync polling interval in milliseconds.

@@ -461,7 +461,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             if oracle_registry_address == ethers::types::Address::zero() {
                 warn!(node_id, "Registry sync enabled but OracleRegistry address not configured, skipping handler");
                 None
+            } else if mirror_registry_address.is_none() {
+                warn!(node_id, "Registry sync enabled but MirrorOracleRegistry address not configured (set ORACLE_MIRROR_REGISTRY_ADDRESS or wire it via deployment.json), skipping handler");
+                None
             } else {
+                let mirror_address = mirror_registry_address.expect("checked above");
+
                 // Create provider from L3 RPC URL
                 let l3_rpc_url = components.chain.rpc_url.clone();
                 let provider = Arc::new(
@@ -475,9 +480,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     max_block_range: 1000,
                     initial_scan_blocks: 86_400, // 24h downtime tolerance at 1s blocks
                 };
-
-                // TODO: wire mirror_address from config (L2 MirrorOracleRegistry contract address)
-                let mirror_address = ethers::types::Address::zero();
 
                 let mut handler = oracle::RegistrySyncHandler::new(
                     provider,
