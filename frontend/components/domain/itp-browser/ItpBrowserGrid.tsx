@@ -96,22 +96,40 @@ function itpIdToNumber(itpId: string): number {
   } catch { return 0 }
 }
 
+// Mirrors the filtering in data-node `compute_aum_ranking_json`: drop ITPs
+// with no resolved NAV (broken or no oracle prices), then dedupe by display
+// name keeping the highest AUM. The SSE `nav` topic doesn't apply these,
+// so we replay them client-side. Without this the grid fills with thousands
+// of permissionlessly-deployed empty ITPs.
 function navSnapshotsToRows(navList: NavSnapshot[]): ItpRow[] {
   const blacklistSet = new Set((blacklistedItps as string[]).map(id => id.toLowerCase()))
-  return navList
-    .filter(nav => !blacklistSet.has(nav.itp_id.toLowerCase()))
-    .map(nav => {
-      const num = itpIdToNumber(nav.itp_id)
-      const override = (itpIdNames as Record<string, { name: string; ticker: string }>)[nav.itp_id.toLowerCase()]
-      return {
-        itpId: nav.itp_id,
-        name: override?.name || nav.name || `DTF #${num}`,
-        symbol: override?.ticker || nav.symbol || `DTF${num}`,
-        navPerShare: nav.nav_per_share,
-        aum: nav.aum_usd,
-        totalSupply: (() => { try { return BigInt(nav.total_supply ?? '0') } catch { return 0n } })(),
-      }
+  const rows: ItpRow[] = []
+  for (const nav of navList) {
+    if (blacklistSet.has(nav.itp_id.toLowerCase())) continue
+    if (!(nav.nav_per_share > 0)) continue
+    const num = itpIdToNumber(nav.itp_id)
+    const override = (itpIdNames as Record<string, { name: string; ticker: string }>)[nav.itp_id.toLowerCase()]
+    rows.push({
+      itpId: nav.itp_id,
+      name: override?.name || nav.name || `DTF #${num}`,
+      symbol: override?.ticker || nav.symbol || `DTF${num}`,
+      navPerShare: nav.nav_per_share,
+      aum: nav.aum_usd,
+      totalSupply: (() => { try { return BigInt(nav.total_supply ?? '0') } catch { return 0n } })(),
     })
+  }
+  // Dedupe by name — keep highest AUM
+  rows.sort((a, b) => b.aum - a.aum)
+  const seen = new Set<string>()
+  const deduped: ItpRow[] = []
+  for (const r of rows) {
+    const key = r.name.trim().toLowerCase()
+    if (!key) { deduped.push(r); continue }
+    if (seen.has(key)) continue
+    seen.add(key)
+    deduped.push(r)
+  }
+  return deduped
 }
 
 // ── Responsive column count ──
