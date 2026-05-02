@@ -47,7 +47,7 @@ type Card = {
 
 const data = sourcesData.sources as Record<string, SourceData>;
 
-const CARDS: Card[] = [
+const FINANCE_CARDS: Card[] = [
   {
     id: "coingecko",
     display: "CoinGecko",
@@ -89,6 +89,49 @@ const CARDS: Card[] = [
     isPrice: true,
     smallDecimals: true,
     data: data.pumpfun,
+  },
+];
+
+const VARIETY_CARDS: Card[] = [
+  {
+    id: "twitch",
+    display: "Twitch",
+    logoFile: "source-imgs/new-twitch.webp",
+    brandBg: "#9146FF",
+    accent: "#9146FF",
+    valueLabel: "Viewers",
+    isPrice: false,
+    data: data.twitch,
+  },
+  {
+    id: "db_trains",
+    display: "Deutsche Bahn",
+    logoFile: "source-imgs/new-dbtrains.svg",
+    brandBg: "#ec0016",
+    accent: "#ec0016",
+    valueLabel: "Avg Delay",
+    isPrice: false,
+    data: data.db_trains,
+  },
+  {
+    id: "steam",
+    display: "Steam",
+    logoFile: "source-imgs/new-steam.webp",
+    brandBg: "#171a21",
+    accent: "#1b6ee8",
+    valueLabel: "Players",
+    isPrice: false,
+    data: data.steam,
+  },
+  {
+    id: "animals",
+    display: "Wildlife",
+    logoFile: "source-imgs/new-inaturalist.svg",
+    brandBg: "#f5f5f5",
+    accent: "#74AC00",
+    valueLabel: "Observations",
+    isPrice: false,
+    data: data.animals,
   },
 ];
 
@@ -208,19 +251,18 @@ function MultiLineChart({
     series.push({ id, color: CHART_COLORS[i], values, timestamps });
   });
 
-  // Global normalization across all series — preserves the visual ranking
-  // (the most-active stream is the tallest line, the cheapest token is the
-  // bottom line) which is exactly what the homepage chart conveys. Series
-  // sitting flat near the bottom is OK; that's the truth of the data.
+  // Per-series % normalization — each line uses its own min/max, so a stock
+  // that drifts 0.5% in a week and a memecoin that doubles overnight both
+  // show their movement at full plot height. Visualizes change, not absolute
+  // value. Series occupy the same vertical band; movement is what matters.
   if (series.length === 0) {
     return <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "100%" }} />;
   }
-  const allVals = series.flatMap((s) => s.values);
-  const gMin = Math.min(...allVals);
-  const gMax = Math.max(...allVals);
-  const gRange = gMax - gMin || 1;
   series.forEach((s) => {
-    s.values = s.values.map((v) => 0.1 + 0.78 * ((v - gMin) / gRange));
+    const min = Math.min(...s.values);
+    const max = Math.max(...s.values);
+    const range = max - min || Math.max(Math.abs(max), 1);
+    s.values = s.values.map((v) => 0.12 + 0.74 * ((v - min) / range));
   });
 
   const toY = (v: number) => padT + plotH * (1 - v);
@@ -574,21 +616,29 @@ function Card({
   );
 }
 
-// ── Scene root ──
-export const FeaturedSourceCardsScene: React.FC = () => {
+// ── Scene root — parametric ──
+function FeaturedSourceCardsSceneInner({
+  cards,
+  layout,
+  drawEndFrame,
+}: {
+  cards: Card[];
+  layout: "row" | "grid2x2";
+  drawEndFrame: number;
+}) {
   const frame = useCurrentFrame();
-  // Stagger appearance: card i starts at frame 2 + i*4, eases in over 14 frames.
-  const cardAppears = CARDS.map((_, i) =>
+  const cardAppears = cards.map((_, i) =>
     interpolate(frame, [2 + i * 4, 2 + i * 4 + 14], [0, 1], {
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
     }),
   );
-  // Chart line-draw progress — global, completes by ~frame 42
-  const drawProgress = interpolate(frame, [18, 42], [0, 1], {
+  const drawProgress = interpolate(frame, [18, drawEndFrame], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
+  const gridTemplateColumns = layout === "grid2x2" ? "repeat(2, 1fr)" : "repeat(4, 1fr)";
+  const gridTemplateRows = layout === "grid2x2" ? "repeat(2, 1fr)" : "1fr";
 
   return (
     <AbsoluteFill>
@@ -598,14 +648,23 @@ export const FeaturedSourceCardsScene: React.FC = () => {
           position: "absolute",
           inset: 36,
           display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
-          gap: 22,
+          gridTemplateColumns,
+          gridTemplateRows,
+          gap: layout === "grid2x2" ? 28 : 22,
         }}
       >
-        {CARDS.map((card, i) => (
+        {cards.map((card, i) => (
           <Card key={card.id} card={card} appear={cardAppears[i]} drawProgress={drawProgress} />
         ))}
       </div>
     </AbsoluteFill>
   );
-};
+}
+
+export const FeaturedSourceCardsScene: React.FC = () => (
+  <FeaturedSourceCardsSceneInner cards={FINANCE_CARDS} layout="row" drawEndFrame={42} />
+);
+
+export const FeaturedVarietyCardsScene: React.FC = () => (
+  <FeaturedSourceCardsSceneInner cards={VARIETY_CARDS} layout="grid2x2" drawEndFrame={48} />
+);

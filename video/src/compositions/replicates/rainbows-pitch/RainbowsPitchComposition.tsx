@@ -2,8 +2,8 @@ import React from "react";
 import { AbsoluteFill, Audio, Sequence, staticFile } from "remotion";
 import { Scene01_Intro, Scene02_Numbers, Scene03_DarkGrid, Scene04_CubeExplode } from "./ScenesA";
 import { Scene06_Starburst, Scene07_TransactionQueue } from "./ScenesB";
-import { FeaturedSourceCardsScene } from "./FeaturedSourceCards";
-import { Scene09_Experience, Scene10_LiveTestnet, Scene11_NewSpeed, Scene12_Finale, Scene13_PairsCompare } from "./ScenesC";
+import { FeaturedSourceCardsScene, FeaturedVarietyCardsScene } from "./FeaturedSourceCards";
+import { Scene09_Experience, Scene10_LiveTestnet, Scene11_NewSpeed, Scene12_Finale } from "./ScenesC";
 
 /*
  * Rainbows pitch — 37.2s explainer (1920x1080, 24fps, 893 frames)
@@ -65,8 +65,8 @@ export const RainbowsPitchComposition: React.FC = () => {
       <Sequence from={648} durationInFrames={72} name="11 500k Markets">
         <Scene06_Starburst />
       </Sequence>
-      <Sequence from={720} durationInFrames={84} name="12 Pairs Compare">
-        <Scene13_PairsCompare />
+      <Sequence from={720} durationInFrames={84} name="12 Variety Cards">
+        <FeaturedVarietyCardsScene />
       </Sequence>
       <Sequence from={804} durationInFrames={792} name="13 General Finale">
         <Scene12_Finale />
