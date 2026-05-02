@@ -581,7 +581,15 @@ function buildScene07Proxies() {
 
 const scene07Init = buildScene07Proxies();
 
-export const Scene07_TransactionQueue: React.FC = () => {
+type Scene07PanelsComponent = React.FC<{
+  opacities: PanelOpacities;
+  frame: number;
+  spoofIntensity: number;
+}>;
+
+export const Scene07_TransactionQueue: React.FC<{
+  Panels?: Scene07PanelsComponent;
+}> = ({ Panels = VillainPanels }) => {
   const frame = useCurrentFrame();
   const s = useGsapProxy(
     (tl, p) => {
@@ -666,7 +674,7 @@ export const Scene07_TransactionQueue: React.FC = () => {
             left: "5%",
           }}
         >
-          <VillainPanels opacities={panelOpacities} frame={frame} spoofIntensity={spoofIntensity} />
+          <Panels opacities={panelOpacities} frame={frame} spoofIntensity={spoofIntensity} />
         </div>
 
         {/* Right column — villain stack */}

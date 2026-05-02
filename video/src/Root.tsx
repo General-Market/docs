@@ -47,6 +47,12 @@ import { rainbowsPitchMeta } from "./compositions/replicates/rainbows-pitch/Rain
 import { sceneAMetas as rainbowsPitchSceneA } from "./compositions/replicates/rainbows-pitch/ScenesA";
 import { sceneBMetas as rainbowsPitchSceneB } from "./compositions/replicates/rainbows-pitch/ScenesB";
 import { sceneCMetas as rainbowsPitchSceneC } from "./compositions/replicates/rainbows-pitch/ScenesC";
+import { rainbowsPitchV2Meta } from "./compositions/replicates/rainbows-pitch-v2/RainbowsPitchV2Composition";
+import { rainbowsPitchParallaxMeta } from "./compositions/replicates/rainbows-pitch-parallax/RainbowsPitchParallaxComposition";
+import {
+  rainbowsPitchPolymarketAMeta,
+  rainbowsPitchPolymarketBMeta,
+} from "./compositions/replicates/rainbows-pitch/RainbowsPitchPolymarket";
 import { flashblocksSideBySideMeta } from "./compositions/replicates/standrew/FlashblocksSideBySide";
 import { sceneAMetas as flashblocksSceneAMetas } from "./compositions/replicates/standrew/ScenesA";
 import { sceneBMetas as flashblocksSceneBMetas } from "./compositions/replicates/standrew/ScenesB";
@@ -80,6 +86,7 @@ import {
 import { Launch30 } from "./compositions/launch/Launch30";
 import { OgCardGM } from "./compositions/launch/OgCardGM";
 import { OgBannerGM } from "./compositions/launch/OgBannerGM";
+import { OgBannerNS } from "./compositions/launch/OgBannerNS";
 import {
   TOTAL_FRAMES as LAUNCH_DURATION,
   FPS as LAUNCH_FPS,
@@ -101,6 +108,10 @@ import {
   H as SEQ02_H,
 } from "./compositions/sequence02/theme";
 import { insiderCasesMeta } from "./compositions/insider-trading/InsiderCases";
+import {
+  pitchMeta,
+  pitchSceneMetas,
+} from "./compositions/pitch/PitchComposition";
 
 const SHOW_SCENES = process.env.REMOTION_SHOW_SCENES === "1";
 
@@ -116,6 +127,29 @@ const LofiDotsHexBench: React.FC = () => (
 export const RemotionRoot: React.FC = () => {
   return (
     <>
+      {/* ═══ PITCH — VC pitch deck, 1 second per slide ═══ */}
+      <Composition
+        id={pitchMeta.id}
+        component={pitchMeta.component}
+        durationInFrames={pitchMeta.durationInFrames}
+        fps={pitchMeta.fps}
+        width={pitchMeta.width}
+        height={pitchMeta.height}
+      />
+      <Folder name="Pitch-Slides">
+        {pitchSceneMetas.map((meta) => (
+          <Composition
+            key={meta.id}
+            id={meta.id}
+            component={meta.component}
+            durationInFrames={meta.durationInFrames}
+            fps={meta.fps}
+            width={meta.width}
+            height={meta.height}
+          />
+        ))}
+      </Folder>
+
       {/* ═══ LOFI DOTS — HexPixelate bench over the broll (5m11s) ═══ */}
       <Composition
         id="LofiDots"
@@ -144,6 +178,41 @@ export const RemotionRoot: React.FC = () => {
         fps={rainbowsPitchMeta.fps}
         width={rainbowsPitchMeta.width}
         height={rainbowsPitchMeta.height}
+      />
+      {/* ═══ RAINBOWS PITCH V2 — every scene gets a prop ═══ */}
+      <Composition
+        id={rainbowsPitchV2Meta.id}
+        component={rainbowsPitchV2Meta.component}
+        durationInFrames={rainbowsPitchV2Meta.durationInFrames}
+        fps={rainbowsPitchV2Meta.fps}
+        width={rainbowsPitchV2Meta.width}
+        height={rainbowsPitchV2Meta.height}
+      />
+      {/* ═══ RAINBOWS PITCH PARALLAX — each scene gets a different micro-element layer ═══ */}
+      <Composition
+        id={rainbowsPitchParallaxMeta.id}
+        component={rainbowsPitchParallaxMeta.component}
+        durationInFrames={rainbowsPitchParallaxMeta.durationInFrames}
+        fps={rainbowsPitchParallaxMeta.fps}
+        width={rainbowsPitchParallaxMeta.width}
+        height={rainbowsPitchParallaxMeta.height}
+      />
+      {/* ═══ RAINBOWS PITCH — Polymarket-styled chart panels at 00:11 ═══ */}
+      <Composition
+        id={rainbowsPitchPolymarketAMeta.id}
+        component={rainbowsPitchPolymarketAMeta.component}
+        durationInFrames={rainbowsPitchPolymarketAMeta.durationInFrames}
+        fps={rainbowsPitchPolymarketAMeta.fps}
+        width={rainbowsPitchPolymarketAMeta.width}
+        height={rainbowsPitchPolymarketAMeta.height}
+      />
+      <Composition
+        id={rainbowsPitchPolymarketBMeta.id}
+        component={rainbowsPitchPolymarketBMeta.component}
+        durationInFrames={rainbowsPitchPolymarketBMeta.durationInFrames}
+        fps={rainbowsPitchPolymarketBMeta.fps}
+        width={rainbowsPitchPolymarketBMeta.width}
+        height={rainbowsPitchPolymarketBMeta.height}
       />
       {SHOW_SCENES && (
         <Folder name="Rainbows-Pitch-Scenes">
@@ -528,6 +597,14 @@ export const RemotionRoot: React.FC = () => {
         <Composition
           id="OgBannerGM"
           component={OgBannerGM}
+          durationInFrames={1}
+          fps={30}
+          width={1500}
+          height={500}
+        />
+        <Composition
+          id="OgBannerNS"
+          component={OgBannerNS}
           durationInFrames={1}
           fps={30}
           width={1500}

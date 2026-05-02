@@ -8,11 +8,13 @@ import { loadFont } from "@remotion/google-fonts/Inter";
 const { fontFamily } = loadFont("normal", { subsets: ["latin"], weights: ["400", "500", "700", "800"] });
 const MONO = "ui-monospace, SFMono-Regular, Menlo, monospace";
 
-const PANEL_W = 580;
-const PANEL_H = 720;
+export const PANEL_W = 580;
+export const PANEL_H = 720;
 
-const RED = "#ef5350";
-const GREEN = "#26a69a";
+export const RED = "#ef5350";
+export const GREEN = "#26a69a";
+export const INTER_FONT = fontFamily;
+export const PANEL_MONO = MONO;
 
 /* ── Generic Vision-style chrome wrapper ──────────────────────── */
 const PanelChrome: React.FC<{
@@ -78,7 +80,7 @@ const PanelChrome: React.FC<{
 );
 
 /* ── Panel 1: Frontrun mempool ────────────────────────────────── */
-const FrontrunPanel: React.FC<{ frame: number }> = ({ frame }) => {
+export const FrontrunPanel: React.FC<{ frame: number }> = ({ frame }) => {
   type Tx = { hash: string; gas: string; size: string; tag?: "FRONTRUN" | null };
   const txs: Tx[] = [
     { hash: "0x71fa…ac02", gas: "32 gwei", size: "0.84 BTC" },
@@ -156,7 +158,7 @@ const FrontrunPanel: React.FC<{ frame: number }> = ({ frame }) => {
 };
 
 /* ── Panel 2: Spoof orderbook ─────────────────────────────────── */
-const SpoofPanel: React.FC<{ frame: number; intensity: number }> = ({ frame, intensity }) => {
+export const SpoofPanel: React.FC<{ frame: number; intensity: number }> = ({ frame, intensity }) => {
   type Row = { price: string; size: string; side: "ask" | "bid"; spoof?: boolean };
   const asks: Row[] = [
     { price: "108,512.40", size: "0.42", side: "ask" },
