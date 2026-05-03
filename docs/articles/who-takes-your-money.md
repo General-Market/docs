@@ -50,13 +50,17 @@ The compounding has been worked out at full precision in [The Drag Study](../../
 
 ### V. The Pattern
 
-This story has been told before. Every venue that ever exposed retail flow to informed counterparties on a central limit order book has bled retail dry until the volume collapsed.
+This story has been told before. The three largest orderbook venues that ever paid heavy subsidies to manufacture their depth each printed the same leaderboard before they died.
 
-Augur shipped a CLOB in 2018 and migrated to AMMs by 2020 because retail had nothing left to give. Veil paid market makers out of pocket to wrap Augur and lasted nine months. Intrade ran a $230M presidential market and Rothschild & Sethi (2016) found **the top 1% of accounts drove 67% of volume** — the same concentration shape Polymarket prints today. PredictIt drained the same way before the regulators arrived. Wolfers & Zitzewitz (2004) noted that markets with concentrated insider information — Supreme Court nominees, papal succession — generated almost no trade *because the uninformed correctly refused to participate*.
+**dYdX v3** launched perpetual futures on StarkEx in August 2021 and shipped roughly $200 million worth of DYDX in trader rewards across 2021–2022; monthly volume peaked above $30 billion in late 2021, and the rewards leaderboard was dominated by a small set of professional accounts that captured both the rebate and the retail flow it attracted. As the rewards decayed retail did not return — volume fell more than 90%, and the team rebuilt the architecture from scratch as v4 on a new chain.
 
-The market did not die because it was poorly run. It died because, given enough time, every CLOB with retail and informed flow on the same book converges to a state where only the informed remain, and the informed have no one left to trade against.
+**FCoin** invented "trans-fee mining" in May 2018, rebating 100% of trading fees back to users in its FT token, peaked at $5.6 billion of daily volume by mid-June, and by February 2020 had frozen roughly $125 million of customer funds inside an exchange whose token had collapsed by 96%. The retail buyers who chased the rebate financed the rebate. The leaderboard, when finally examined, was the same shape every CEX leaderboard prints — a thin layer of professional accounts at the top, a long tail of users who arrived for the bonus and stayed for the loss.
 
-Polymarket is in Phase 2 of that cycle. Volume is up. Concentration is rising. The leaderboard already sits at Intrade's 2012 distribution. The script does not depend on the operator.
+**Serum** was Solana's flagship CLOB DEX, underwritten by Alameda's market making and FTX's token reserves. The depth was real, the leaderboard was Alameda; when the underwriter went bankrupt in November 2022 the book emptied within days.
+
+These venues did not die because they were poorly run. They died because, given enough time, every CLOB with retail and informed flow on the same book converges to a state where only the informed remain, and the informed have no one left to trade against. The subsidy delays the convergence. It does not change the destination.
+
+Polymarket is in the early phase of the same arc. Volume is up. Concentration is rising. The leaderboard already prints the distribution every prior orderbook venue printed before its retail base gave up. The script does not depend on the operator.
 
 ---
 

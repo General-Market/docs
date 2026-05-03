@@ -40,11 +40,15 @@ Polymarket pays roughly one hundred to one thousand times more per dollar of dep
 
 ### IV. The Graveyard
 
-This is where the story stops being new.
+This is where the story stops being new. Three of the largest orderbook venues ever built each ran the same playbook, and each ended the same way.
 
-Augur shipped a CLOB prediction market in 2018; by 2020 the books were empty and the team had migrated to AMMs. Veil paid market makers out of pocket to wrap Augur and shut down nine months after launching. Gnosis Conditional Tokens — same architecture, different brand, empty. PredictIt — empty before the regulators arrived. The 0x relayer wave (IDEX, Radar, Paradex, Hashflow) shipped CLOB DEXes with maker rebates and almost none survive. Serum had Sam's money and Solana's speed, and when one of those disappeared the order book disappeared with it. Polymarket's own AMM era (2020-2023) is in a TUM master's thesis: 26% of LPs profitable, more than $400K of impermanent loss documented, the team migrated to CLOB to stop the bleeding. Kalshi spent its first three years with books so thin the CEO admitted publicly that liquidity was "the most elusive challenge" the category had failed to solve — until Susquehanna walked in with a thirty-times multiplier on depth and the spreads tightened the same day.
+**dYdX v3** launched perpetual futures on StarkEx in August 2021 and shipped roughly $200 million worth of DYDX in trader rewards across 2021–2022. Monthly volume peaked above $30 billion in late 2021 — for a window of months it out-traded Coinbase. As the rewards schedule decayed the volume curve decayed with it; by mid-2023 the venue had lost more than 90% of peak, and the team rebuilt the entire architecture on a new Cosmos chain to escape what v3 had become.
 
-The pattern is the same in every case: build a CLOB, subsidize the makers, run out of money or run out of takers, die. The script does not depend on the team. It depends on the math.
+**FCoin** invented "trans-fee mining" in May 2018, rebating 100% of trading fees back to users in its FT token, and was clearing $5.6 billion of daily volume by mid-June — more than Binance and Huobi combined. The model worked exactly as designed until the token could no longer sustain the rebate. By February 2020 the exchange froze with roughly $125 million of customer funds stuck inside. The CEO published a long apology and disappeared.
+
+**Serum** was Solana's flagship orderbook DEX, underwritten by Alameda's market making and FTX's token reserves. The depth was real until the underwriter went bankrupt in November 2022; the book emptied within days, the project was forked into OpenBook, and the original venue never returned to its prior shape.
+
+The pattern is the same in every case: build a CLOB, subsidize the makers, the rebate runs out or the underwriter leaves or the token deflates, the depth disappears, the volume disappears, the venue disappears. The script does not depend on the team — it depends on the math. Polymarket is the best-funded current iteration of the same script.
 
 ---
 
