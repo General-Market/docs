@@ -29,7 +29,7 @@ DEPLOYMENT_FILE="deployments/active-deployment.json"
 
 if [ ! -f "$DEPLOYMENT_FILE" ]; then
     echo "Error: Deployment file not found: $DEPLOYMENT_FILE"
-    echo "Run: ./scripts/sync-deployment.sh deployments/full-e2e-deployment.json"
+    echo "Run: ./switch-env.sh testnet  (or sync envs/testnet/active-deployment.json)"
     exit 1
 fi
 
