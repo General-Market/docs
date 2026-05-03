@@ -19,7 +19,7 @@ const SYMBOL = 'SPY'
 export async function getEquitiesFeed(): Promise<SourceFeed> {
   const key = process.env.EQUITIES_API_KEY
   let series: number[]
-  let meta = 'US equities · pre-market + close'
+  let meta = 'NYSE-listed · pre-market + close'
 
   if (key) {
     const now = Math.floor(Date.now() / 1000)
@@ -31,7 +31,7 @@ export async function getEquitiesFeed(): Promise<SourceFeed> {
       series = tail
       const last = tail[tail.length - 1]
       if (typeof last === 'number') {
-        meta = `S&P 500 proxy · $${last.toFixed(2)}`
+        meta = `S&P 500 · $${last.toFixed(2)}`
       }
     } else {
       series = fallbackSeries('equities', DEFAULT_RESOLUTION, 0.55, 8, 4)
@@ -42,7 +42,7 @@ export async function getEquitiesFeed(): Promise<SourceFeed> {
 
   return {
     sourceId: 'equities',
-    displayName: 'Stocks',
+    displayName: 'NYSE',
     meta,
     coverage: 'anticheat',
     series,
