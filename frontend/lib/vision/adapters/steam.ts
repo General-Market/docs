@@ -35,6 +35,8 @@ export async function getSteamFeed(): Promise<SourceFeed> {
   return {
     sourceId: 'steam',
     displayName: 'Steam',
+    assetName: 'CS2',
+    assetValue: typeof live === 'number' ? `${live.toLocaleString()}` : undefined,
     meta,
     coverage: 'anticheat',
     series,

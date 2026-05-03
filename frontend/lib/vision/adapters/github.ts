@@ -37,6 +37,8 @@ export async function getGithubFeed(): Promise<SourceFeed> {
   return {
     sourceId: 'github',
     displayName: 'GitHub',
+    assetName: PROXY_REPO,
+    assetValue: typeof stars === 'number' ? `${stars.toLocaleString()}★` : undefined,
     meta,
     coverage: 'anticheat',
     series,

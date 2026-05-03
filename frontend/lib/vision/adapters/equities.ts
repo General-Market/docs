@@ -40,9 +40,12 @@ export async function getEquitiesFeed(): Promise<SourceFeed> {
     series = fallbackSeries('equities', DEFAULT_RESOLUTION, 0.55, 8, 4)
   }
 
+  const last = series[series.length - 1]
   return {
     sourceId: 'equities',
     displayName: 'NYSE',
+    assetName: SYMBOL,
+    assetValue: typeof last === 'number' ? `$${last.toFixed(2)}` : undefined,
     meta,
     coverage: 'anticheat',
     series,

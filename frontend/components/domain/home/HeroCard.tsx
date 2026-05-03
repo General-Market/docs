@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react'
 import { Link } from '@/i18n/routing'
 import { Sparkline } from './Sparkline'
 import { sourceGradient, sourceStroke, sourceFill } from './source-hue'
@@ -11,17 +10,78 @@ type HeroSpec = {
   meta: string
   series: number[]
   coverage: Coverage
+  assetName?: string
+  assetValue?: string
   hrefOverride?: string
-  pillLabel?: string
 }
 
 interface Props {
   feature: HeroSpec
   side: SourceFeed[]
-  logo?: ReactNode
 }
 
-export function HeroCard({ feature, side, logo }: Props) {
+function PillCoverage({ coverage }: { coverage: Coverage }) {
+  if (coverage === 'anticheat') {
+    return (
+      <span
+        className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 font-semibold"
+        style={{
+          background: '#0071e3',
+          color: '#fff',
+          fontSize: 11,
+          letterSpacing: '0.04em',
+        }}
+      >
+        <svg width="11" height="11" viewBox="0 0 12 12" aria-hidden>
+          <path
+            d="M6 1L2 3v3.2c0 2.4 1.7 4.4 4 4.8 2.3-.4 4-2.4 4-4.8V3L6 1z"
+            fill="currentColor"
+          />
+          <path
+            d="M4.4 6l1.2 1.2L8 4.8"
+            stroke="#0071e3"
+            strokeWidth="1.4"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+        Anti-Cheat
+      </span>
+    )
+  }
+  if (coverage === 'external') {
+    return (
+      <span
+        className="inline-flex items-center rounded-full px-2.5 py-1 font-medium border"
+        style={{
+          color: 'var(--apple-text-secondary)',
+          borderColor: 'var(--apple-line)',
+          background: 'transparent',
+          fontSize: 11,
+          letterSpacing: '0.04em',
+        }}
+      >
+        External source
+      </span>
+    )
+  }
+  return (
+    <span
+      className="inline-flex items-center rounded-full px-2.5 py-1 font-medium border"
+      style={{
+        color: 'var(--apple-text-tertiary)',
+        borderColor: 'var(--apple-line)',
+        fontSize: 11,
+        letterSpacing: '0.04em',
+      }}
+    >
+      Coming soon
+    </span>
+  )
+}
+
+export function HeroCard({ feature, side }: Props) {
   const href = feature.hrefOverride ?? `/source/${feature.sourceId}`
 
   return (
@@ -33,18 +93,22 @@ export function HeroCard({ feature, side, logo }: Props) {
         borderRadius: 'var(--apple-r-card)',
       }}
     >
+      {/* Left column — text + CTA */}
       <div className="flex flex-col justify-between p-5 sm:p-7">
         <div>
-          <div
-            className="flex items-center gap-1.5"
-            style={{
-              fontSize: 12,
-              color: 'var(--apple-text-secondary)',
-              letterSpacing: '0.02em',
-            }}
-          >
-            <CheckBadge />
-            <span>{feature.pillLabel ?? 'Featured · Anti-Cheat verified'}</span>
+          <div className="flex items-center gap-2">
+            <span
+              className="inline-flex items-center rounded-full px-2 py-0.5 font-semibold"
+              style={{
+                background: 'var(--apple-text)',
+                color: '#fff',
+                fontSize: 10,
+                letterSpacing: '0.04em',
+              }}
+            >
+              FEATURED
+            </span>
+            <PillCoverage coverage={feature.coverage} />
           </div>
           <h2
             className="mt-3 font-semibold"
@@ -87,29 +151,54 @@ export function HeroCard({ feature, side, logo }: Props) {
         </Link>
       </div>
 
+      {/* Middle — gradient + asset name + sparkline */}
       <div
         className="relative min-h-[180px] sm:min-h-[220px] lg:min-h-[260px]"
         style={{ background: sourceGradient(feature.sourceId) }}
       >
-        {logo && (
-          <div className="absolute top-4 left-4">
-            {logo}
+        {feature.assetName && (
+          <div className="absolute top-6 left-6 right-6 z-10">
+            <div
+              className="font-semibold"
+              style={{
+                fontFamily: 'var(--apple-font-display)',
+                fontSize: 22,
+                letterSpacing: 'var(--apple-track-tight)',
+                color: 'var(--apple-text)',
+                lineHeight: 1.1,
+              }}
+            >
+              {feature.assetName}
+            </div>
+            {feature.assetValue && (
+              <div
+                className="mt-1"
+                style={{
+                  fontFamily: 'var(--apple-font-text)',
+                  fontSize: 13,
+                  letterSpacing: 'var(--apple-track-tight)',
+                  color: 'var(--apple-text-secondary)',
+                  fontVariantNumeric: 'tabular-nums',
+                }}
+              >
+                {feature.assetValue}
+              </div>
+            )}
           </div>
         )}
-        <div className="absolute inset-0 flex items-end p-4 sm:p-6">
-          <div className="w-full" style={{ height: 220 }}>
-            <Sparkline
-              series={feature.series}
-              width={800}
-              height={220}
-              stroke={sourceStroke(feature.sourceId)}
-              fill={sourceFill(feature.sourceId)}
-              ariaLabel={`${feature.displayName} 24h activity`}
-            />
-          </div>
+        <div className="absolute inset-x-0 bottom-0 h-[60%]">
+          <Sparkline
+            series={feature.series}
+            width={800}
+            height={220}
+            stroke={sourceStroke(feature.sourceId)}
+            fill={sourceFill(feature.sourceId)}
+            ariaLabel={`${feature.displayName} 24h activity`}
+          />
         </div>
       </div>
 
+      {/* Right side rail */}
       <div
         className="flex flex-col border-t lg:border-l lg:border-t-0"
         style={{ borderColor: 'var(--apple-line)' }}
@@ -144,7 +233,6 @@ function SideRow({ feed }: { feed: SourceFeed }) {
             height={48}
             stroke={sourceStroke(feed.sourceId)}
             fill={sourceFill(feed.sourceId)}
-            ariaLabel=""
           />
         </div>
       </div>
@@ -166,7 +254,7 @@ function SideRow({ feed }: { feed: SourceFeed }) {
             color: 'var(--apple-text-secondary)',
           }}
         >
-          {feed.meta}
+          {feed.assetName ?? feed.meta}
         </div>
       </div>
     </Link>
@@ -177,22 +265,6 @@ function PlayIcon() {
   return (
     <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
       <path d="M8 5v14l11-7z" />
-    </svg>
-  )
-}
-
-function CheckBadge() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden>
-      <path d="M6 1L2 3v3.2c0 2.4 1.7 4.4 4 4.8 2.3-.4 4-2.4 4-4.8V3L6 1z" fill="#0071e3" />
-      <path
-        d="M4.4 6l1.2 1.2L8 4.8"
-        stroke="white"
-        strokeWidth="1.2"
-        fill="none"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
     </svg>
   )
 }

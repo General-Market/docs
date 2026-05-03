@@ -13,6 +13,8 @@ export async function getTwitchFeed(): Promise<SourceFeed> {
   return {
     sourceId: 'twitch',
     displayName: 'Twitch',
+    assetName: 'xQc · concurrent',
+    assetValue: '—',
     meta: 'Concurrent viewers · top streamers',
     coverage: 'anticheat',
     series: fallbackSeries('twitch', DEFAULT_RESOLUTION, 0.65, 10, 3),

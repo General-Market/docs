@@ -1,7 +1,13 @@
 import type { ReactNode } from 'react'
 import { Link } from '@/i18n/routing'
 import { Sparkline } from './Sparkline'
-import { sourceGradient, sourceStroke, sourceFill, sourceAvatar } from './source-hue'
+import {
+  sourceGradient,
+  sourceStroke,
+  sourceFill,
+  avatarBackground,
+  avatarForeground,
+} from './source-hue'
 
 export type Coverage = 'anticheat' | 'external' | 'soon'
 
@@ -10,45 +16,78 @@ export type AssetCardProps = {
   displayName: string
   meta: string
   series: number[]
+  /** Specific sub-market label rendered over the chart. */
+  assetName?: string
+  /** Number printed beside the assetName. */
+  assetValue?: string
   coverage?: Coverage
   hrefOverride?: string
   badge?: string
-  logo?: ReactNode
+  /** Optional element rendered inside the avatar circle. */
+  avatar?: ReactNode
 }
 
-function CoverageDot({ coverage }: { coverage: Coverage }) {
+function CoveragePill({ coverage }: { coverage: Coverage }) {
   if (coverage === 'anticheat') {
     return (
-      <svg width="12" height="12" viewBox="0 0 12 12" aria-label="Anti-Cheat verified">
-        <path
-          d="M6 1L2 3v3.2c0 2.4 1.7 4.4 4 4.8 2.3-.4 4-2.4 4-4.8V3L6 1z"
-          fill="#0071e3"
-        />
-        <path
-          d="M4.4 6l1.2 1.2L8 4.8"
-          stroke="white"
-          strokeWidth="1.2"
-          fill="none"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
+      <span
+        className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-semibold"
+        style={{
+          background: '#0071e3',
+          color: '#fff',
+          fontSize: 10,
+          letterSpacing: '0.04em',
+        }}
+        aria-label="Anti-Cheat verified"
+      >
+        <svg width="9" height="9" viewBox="0 0 12 12" aria-hidden>
+          <path
+            d="M6 1L2 3v3.2c0 2.4 1.7 4.4 4 4.8 2.3-.4 4-2.4 4-4.8V3L6 1z"
+            fill="currentColor"
+          />
+          <path
+            d="M4.4 6l1.2 1.2L8 4.8"
+            stroke="#0071e3"
+            strokeWidth="1.4"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+        Anti-Cheat
+      </span>
     )
   }
   if (coverage === 'external') {
     return (
       <span
-        className="inline-block rounded-full"
+        className="inline-flex items-center rounded-full px-2 py-0.5 font-medium"
         style={{
-          width: 8,
-          height: 8,
-          background: 'rgba(0,0,0,0.18)',
+          background: 'rgba(255,255,255,0.85)',
+          color: 'var(--apple-text-secondary)',
+          fontSize: 10,
+          letterSpacing: '0.04em',
+          backdropFilter: 'saturate(180%) blur(8px)',
         }}
-        aria-label="External source"
-      />
+      >
+        External
+      </span>
     )
   }
-  return null
+  return (
+    <span
+      className="inline-flex items-center rounded-full px-2 py-0.5 font-medium"
+      style={{
+        background: 'rgba(255,255,255,0.85)',
+        color: 'var(--apple-text-tertiary)',
+        fontSize: 10,
+        letterSpacing: '0.04em',
+        backdropFilter: 'saturate(180%) blur(8px)',
+      }}
+    >
+      Soon
+    </span>
+  )
 }
 
 export function AssetCard({
@@ -56,59 +95,104 @@ export function AssetCard({
   displayName,
   meta,
   series,
+  assetName,
+  assetValue,
   coverage = 'anticheat',
   hrefOverride,
   badge,
-  logo,
+  avatar,
 }: AssetCardProps) {
   const href = hrefOverride ?? `/source/${sourceId}`
 
   return (
     <Link
       href={href as never}
-      className="group flex flex-col gap-2.5 text-left transition"
+      className="group flex flex-col gap-3 text-left transition"
     >
       <div
-        className="relative aspect-[16/9] w-full overflow-hidden"
+        className="relative aspect-[16/10] w-full overflow-hidden"
         style={{
           borderRadius: 'var(--apple-r-md)',
           background: sourceGradient(sourceId),
         }}
       >
-        <div className="absolute inset-0 flex items-end p-3">
-          <div className="w-full h-full">
-            <Sparkline
-              series={series}
-              width={400}
-              height={120}
-              stroke={sourceStroke(sourceId)}
-              fill={sourceFill(sourceId)}
-              ariaLabel={`${displayName} 24h activity`}
-            />
-          </div>
+        {/* Top row: badge left, coverage pill right */}
+        <div className="absolute top-3 left-3 right-3 z-10 flex items-start justify-between gap-2">
+          {badge ? (
+            <span
+              className="inline-flex items-center rounded-full px-2 py-0.5 font-semibold text-white"
+              style={{
+                fontSize: 10,
+                letterSpacing: '0.04em',
+                background: 'rgba(0,0,0,0.65)',
+                backdropFilter: 'saturate(180%) blur(8px)',
+              }}
+            >
+              {badge}
+            </span>
+          ) : (
+            <span />
+          )}
+          <CoveragePill coverage={coverage} />
         </div>
-        {badge && (
-          <div
-            className="absolute top-2 right-2 rounded-full px-2 py-0.5 font-semibold text-white"
-            style={{
-              fontSize: 10,
-              letterSpacing: '0.04em',
-              background: 'rgba(0,0,0,0.65)',
-            }}
-          >
-            {badge}
+
+        {/* Asset label + value, mid-card */}
+        {assetName && (
+          <div className="absolute left-3 right-3 z-10" style={{ top: '46%' }}>
+            <div
+              className="font-semibold truncate"
+              style={{
+                fontFamily: 'var(--apple-font-display)',
+                fontSize: 17,
+                letterSpacing: 'var(--apple-track-tight)',
+                color: 'var(--apple-text)',
+                lineHeight: 1.1,
+              }}
+            >
+              {assetName}
+            </div>
+            {assetValue && (
+              <div
+                className="num mt-0.5"
+                style={{
+                  fontFamily: 'var(--apple-font-text)',
+                  fontSize: 12,
+                  letterSpacing: 'var(--apple-track-tight)',
+                  color: 'var(--apple-text-secondary)',
+                  fontVariantNumeric: 'tabular-nums',
+                }}
+              >
+                {assetValue}
+              </div>
+            )}
           </div>
         )}
+
+        {/* Sparkline anchored to the bottom */}
+        <div className="absolute inset-x-0 bottom-0 h-[44%]">
+          <Sparkline
+            series={series}
+            width={400}
+            height={120}
+            stroke={sourceStroke(sourceId)}
+            fill={sourceFill(sourceId)}
+            ariaLabel={`${displayName} 24h activity`}
+          />
+        </div>
       </div>
-      <div className="flex gap-3">
+
+      <div className="flex gap-3 items-center">
         <div
-          className="grid h-9 w-9 shrink-0 place-items-center rounded-full font-medium text-white overflow-hidden"
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-full overflow-hidden"
           style={{
-            fontSize: 12,
-            background: sourceAvatar(sourceId),
+            background: avatarBackground,
+            color: avatarForeground,
+            fontSize: 13,
+            fontWeight: 600,
+            letterSpacing: 'var(--apple-track-tighter)',
           }}
         >
-          {logo ? logo : displayName.charAt(0).toUpperCase()}
+          {avatar ?? displayName.charAt(0).toUpperCase()}
         </div>
         <div className="min-w-0 flex-1">
           <div
@@ -124,15 +208,14 @@ export function AssetCard({
             {displayName}
           </div>
           <div
-            className="mt-0.5 flex items-center gap-1.5 truncate"
+            className="mt-0.5 truncate"
             style={{
               fontFamily: 'var(--apple-font-text)',
               fontSize: 12,
               color: 'var(--apple-text-secondary)',
             }}
           >
-            <span className="truncate">{meta}</span>
-            <CoverageDot coverage={coverage} />
+            {meta}
           </div>
         </div>
       </div>

@@ -9,6 +9,8 @@ import { DEFAULT_RESOLUTION, fallbackSeries, fetchJsonWithTimeout } from './type
 
 type PumpCoin = {
   mint?: string
+  symbol?: string
+  name?: string
   market_cap?: number
   usd_market_cap?: number
   reply_count?: number
@@ -42,12 +44,24 @@ export async function getPumpfunFeed(): Promise<SourceFeed> {
     series = fallbackSeries('pumpfun', DEFAULT_RESOLUTION, 0.70, 14, 6)
   }
 
+  const top = data && data.length > 0 ? data[0] : undefined
+  const topLabel = top?.symbol ?? top?.name
+  const topCap = Number(top?.usd_market_cap ?? top?.market_cap ?? 0)
   return {
     sourceId: 'pumpfun',
     displayName: 'Pumpfun',
+    assetName: topLabel ? `$${topLabel}` : 'Newest coin',
+    assetValue: topCap > 0 ? `$${formatBig(topCap)}` : undefined,
     meta,
     coverage: 'external',
     series,
     external: true,
   }
+}
+
+function formatBig(n: number): string {
+  if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B'
+  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M'
+  if (n >= 1e3) return (n / 1e3).toFixed(1) + 'k'
+  return n.toFixed(0)
 }

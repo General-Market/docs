@@ -1,7 +1,5 @@
-import type { ReactNode } from 'react'
 import { AssetCard } from './AssetCard'
 import { HeroCard } from './HeroCard'
-import { NyseLogo } from './source-logos'
 import type { SourceFeed } from '@/lib/vision/adapters'
 
 type FeedMap = Record<string, SourceFeed>
@@ -10,10 +8,6 @@ const HERO_ID = 'polymarket'
 const SIDE_RAIL_IDS = ['pumpfun', 'defillama', 'equities', 'espn'] as const
 const FEATURED_ROW_IDS = ['defillama', 'equities', 'espn', 'iss'] as const
 const TOP_MARKETS_IDS = ['twitch', 'steam', 'github', 'pumpfun'] as const
-
-const STATIC_LOGOS: Partial<Record<string, () => ReactNode>> = {
-  equities: () => <NyseLogo height={20} />,
-}
 
 function pick(feeds: FeedMap, id: string): SourceFeed {
   return (
@@ -77,19 +71,6 @@ export function HomeDashboard({ feeds }: { feeds: FeedMap }) {
   return (
     <div className="px-4 py-6 sm:px-8 sm:py-8 max-w-[1200px] mx-auto">
       <div>
-        <p
-          className="mb-2"
-          style={{
-            fontFamily: 'var(--apple-font-text)',
-            fontSize: 11,
-            letterSpacing: '0.04em',
-            color: 'var(--apple-accent)',
-            textTransform: 'uppercase',
-            fontWeight: 600,
-          }}
-        >
-          Anti-Cheat
-        </p>
         <h1
           className="font-semibold"
           style={{
@@ -102,64 +83,59 @@ export function HomeDashboard({ feeds }: { feeds: FeedMap }) {
         >
           Trading is easy with an Anti-Cheat.
         </h1>
-        <p
-          className="mt-2 max-w-[640px]"
-          style={{
-            fontFamily: 'var(--apple-font-text)',
-            fontSize: 15,
-            letterSpacing: 'var(--apple-track-tighter)',
-            color: 'var(--apple-text-secondary)',
-            lineHeight: 1.4,
-          }}
-        >
-          Sealed bets. Parimutuel pools. Oracle consensus you can verify.
-          The market can&apos;t see your hand and neither can the house.
-        </p>
       </div>
 
       <div className="mt-6">
-        <HeroCard feature={hero} side={side} />
+        <HeroCard
+          feature={{
+            sourceId: hero.sourceId,
+            displayName: hero.displayName,
+            meta: hero.meta,
+            series: hero.series,
+            coverage: hero.coverage,
+            assetName: hero.assetName,
+            assetValue: hero.assetValue,
+            hrefOverride: hero.hrefOverride,
+          }}
+          side={side}
+        />
       </div>
 
       <section className="mt-10">
         <SectionHeader title="Top markets" href="/explorer" />
         <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
-          {featuredRow.map((feed) => {
-            const Logo = STATIC_LOGOS[feed.sourceId]
-            return (
-              <AssetCard
-                key={feed.sourceId}
-                sourceId={feed.sourceId}
-                displayName={feed.displayName}
-                meta={feed.meta}
-                series={feed.series}
-                coverage={feed.coverage}
-                hrefOverride={feed.hrefOverride}
-                logo={Logo ? Logo() : undefined}
-              />
-            )
-          })}
+          {featuredRow.map((feed) => (
+            <AssetCard
+              key={feed.sourceId}
+              sourceId={feed.sourceId}
+              displayName={feed.displayName}
+              meta={feed.meta}
+              series={feed.series}
+              assetName={feed.assetName}
+              assetValue={feed.assetValue}
+              coverage={feed.coverage}
+              hrefOverride={feed.hrefOverride}
+            />
+          ))}
         </div>
       </section>
 
       <section className="mt-10 mb-4">
         <SectionHeader title="Recently active" />
         <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
-          {topMarkets.map((feed) => {
-            const Logo = STATIC_LOGOS[feed.sourceId]
-            return (
-              <AssetCard
-                key={feed.sourceId}
-                sourceId={feed.sourceId}
-                displayName={feed.displayName}
-                meta={feed.meta}
-                series={feed.series}
-                coverage={feed.coverage}
-                hrefOverride={feed.hrefOverride}
-                logo={Logo ? Logo() : undefined}
-              />
-            )
-          })}
+          {topMarkets.map((feed) => (
+            <AssetCard
+              key={feed.sourceId}
+              sourceId={feed.sourceId}
+              displayName={feed.displayName}
+              meta={feed.meta}
+              series={feed.series}
+              assetName={feed.assetName}
+              assetValue={feed.assetValue}
+              coverage={feed.coverage}
+              hrefOverride={feed.hrefOverride}
+            />
+          ))}
         </div>
       </section>
     </div>

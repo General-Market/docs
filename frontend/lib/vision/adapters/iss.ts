@@ -34,9 +34,13 @@ export async function getIssFeed(): Promise<SourceFeed> {
     series = fallbackSeries('iss', DEFAULT_RESOLUTION, 420, 8, 1.6)
   }
 
+  const altLabel =
+    typeof data?.altitude === 'number' ? `${data.altitude.toFixed(1)} km` : undefined
   return {
     sourceId: 'iss',
     displayName: 'ISS',
+    assetName: 'ISS altitude',
+    assetValue: altLabel,
     meta,
     coverage: 'anticheat',
     series,

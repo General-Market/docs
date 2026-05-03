@@ -75,15 +75,29 @@ function Brand() {
         General Market
       </span>
       <span
-        className="hidden sm:inline-block rounded-full px-1.5 py-0.5 font-medium"
+        className="hidden sm:inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-semibold"
         style={{
           fontSize: 10,
           letterSpacing: '0.04em',
           textTransform: 'uppercase',
-          background: 'rgba(0,0,0,0.05)',
-          color: 'var(--apple-text-secondary)',
+          background: '#0071e3',
+          color: '#ffffff',
         }}
       >
+        <svg width="9" height="9" viewBox="0 0 12 12" aria-hidden>
+          <path
+            d="M6 1L2 3v3.2c0 2.4 1.7 4.4 4 4.8 2.3-.4 4-2.4 4-4.8V3L6 1z"
+            fill="currentColor"
+          />
+          <path
+            d="M4.4 6l1.2 1.2L8 4.8"
+            stroke="#0071e3"
+            strokeWidth="1.4"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
         Anti-Cheat
       </span>
     </Link>

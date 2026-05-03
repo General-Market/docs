@@ -10,8 +10,10 @@ import { DEFAULT_RESOLUTION, fallbackSeries, fetchJsonWithTimeout } from './type
  */
 
 type EspnEvent = {
+  name?: string
+  shortName?: string
   competitions?: Array<{
-    competitors?: Array<{ score?: string }>
+    competitors?: Array<{ score?: string; team?: { abbreviation?: string } }>
   }>
 }
 
@@ -47,9 +49,13 @@ export async function getEspnFeed(): Promise<SourceFeed> {
     ? `${liveCount} game${liveCount === 1 ? '' : 's'} on the board`
     : 'NBA · NFL · MLB · soccer'
 
+  const featured = events[0]
+  const featuredName = featured?.shortName ?? featured?.name
   return {
     sourceId: 'espn',
     displayName: 'ESPN',
+    assetName: featuredName ?? 'NBA tonight',
+    assetValue: liveCount > 0 ? `${liveCount} live` : undefined,
     meta,
     coverage: 'anticheat',
     series,

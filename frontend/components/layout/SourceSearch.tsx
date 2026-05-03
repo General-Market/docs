@@ -5,7 +5,6 @@ import { useRouter } from '@/i18n/routing'
 import { useSourceRegistry } from '@/hooks/vision/useSourceRegistry'
 import Image from 'next/image'
 import { SearchIcon } from './apple-icons'
-import { NyseLogo } from '@/components/domain/home/source-logos'
 
 type SearchResult = {
   sourceId: string
@@ -14,9 +13,8 @@ type SearchResult = {
   logo: string
 }
 
-const STATIC_LOGOS: Record<string, () => React.ReactNode> = {
-  equities: () => <NyseLogo height={16} />,
-}
+const MAX_RESULTS_TYPING = 8
+const MAX_RESULTS_BROWSE = 16
 
 function fuzzyScore(haystack: string, needle: string): number {
   const h = haystack.toLowerCase()
@@ -36,27 +34,20 @@ function fuzzyScore(haystack: string, needle: string): number {
   return score
 }
 
-function ResultLogo({ sourceId, logo, name }: { sourceId: string; logo: string; name: string }) {
-  const Static = STATIC_LOGOS[sourceId]
-  if (Static) {
-    return (
-      <span className="inline-flex items-center justify-center w-6 h-6 shrink-0">
-        {Static()}
-      </span>
-    )
-  }
+/** Round logo. Apple's circle treatment: registry image, neutral fallback. */
+function ResultLogo({ logo, name }: { logo: string; name: string }) {
   if (logo) {
     return (
       <span
-        className="inline-flex items-center justify-center w-6 h-6 shrink-0 overflow-hidden rounded-[6px]"
-        style={{ background: 'rgba(0,0,0,0.04)' }}
+        className="inline-flex items-center justify-center w-7 h-7 shrink-0 overflow-hidden rounded-full"
+        style={{ background: '#f5f5f7' }}
       >
         <Image
           src={logo}
           alt=""
-          width={20}
-          height={20}
-          className="object-contain"
+          width={28}
+          height={28}
+          className="object-cover"
           unoptimized
         />
       </span>
@@ -64,10 +55,11 @@ function ResultLogo({ sourceId, logo, name }: { sourceId: string; logo: string; 
   }
   return (
     <span
-      className="inline-flex items-center justify-center w-6 h-6 shrink-0 rounded-[6px] font-semibold text-white"
+      className="inline-flex items-center justify-center w-7 h-7 shrink-0 rounded-full font-semibold"
       style={{
-        background: 'var(--apple-text)',
-        fontSize: 11,
+        background: '#f5f5f7',
+        color: 'var(--apple-text)',
+        fontSize: 12,
       }}
       aria-hidden
     >
@@ -85,18 +77,30 @@ export function SourceSearch() {
   const ref = useRef<HTMLDivElement | null>(null)
 
   const results: SearchResult[] = useMemo(() => {
-    if (!q.trim()) return []
+    const trimmed = q.trim()
+    if (!trimmed) {
+      // Browse mode: show alphabetically sorted sources up to MAX_RESULTS_BROWSE.
+      return [...sources]
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .slice(0, MAX_RESULTS_BROWSE)
+        .map((s) => ({
+          sourceId: s.sourceId,
+          name: s.name,
+          category: s.category,
+          logo: s.logo,
+        }))
+    }
     return sources
       .map((s) => ({
         sourceId: s.sourceId,
         name: s.name,
         category: s.category,
         logo: s.logo,
-        score: Math.max(fuzzyScore(s.name, q), fuzzyScore(s.category, q)),
+        score: Math.max(fuzzyScore(s.name, trimmed), fuzzyScore(s.category, trimmed)),
       }))
       .filter((r) => r.score > 0)
       .sort((a, b) => b.score - a.score)
-      .slice(0, 8)
+      .slice(0, MAX_RESULTS_TYPING)
       .map(({ sourceId, name, category, logo }) => ({ sourceId, name, category, logo }))
   }, [q, sources])
 
@@ -129,6 +133,8 @@ export function SourceSearch() {
     }
   }
 
+  const showHeader = open && !q.trim() && results.length > 0
+
   return (
     <div ref={ref} className="relative w-full">
       <div
@@ -148,6 +154,7 @@ export function SourceSearch() {
             setOpen(true)
             setActive(0)
           }}
+          onClick={() => setOpen(true)}
           onFocus={() => setOpen(true)}
           onKeyDown={onKey}
           className="flex-1 bg-transparent outline-none border-0"
@@ -163,13 +170,28 @@ export function SourceSearch() {
 
       {open && results.length > 0 && (
         <div
-          className="absolute left-0 right-0 mt-1 rounded-apple-md border overflow-hidden z-50"
+          className="absolute left-0 right-0 mt-1 rounded-apple-md border overflow-hidden z-50 max-h-[480px] overflow-y-auto"
           style={{
             background: 'var(--apple-panel)',
             borderColor: 'var(--apple-line)',
             boxShadow: '0 12px 32px rgba(0,0,0,0.10)',
           }}
         >
+          {showHeader && (
+            <div
+              className="px-3 pt-2 pb-1 sticky top-0"
+              style={{
+                background: 'var(--apple-panel)',
+                fontSize: 11,
+                letterSpacing: '0.04em',
+                color: 'var(--apple-text-tertiary)',
+                textTransform: 'uppercase',
+                fontWeight: 600,
+              }}
+            >
+              All markets
+            </div>
+          )}
           {results.map((r, i) => (
             <button
               key={r.sourceId}
@@ -182,7 +204,7 @@ export function SourceSearch() {
                 background: i === active ? 'rgba(0,0,0,0.04)' : 'transparent',
               }}
             >
-              <ResultLogo sourceId={r.sourceId} logo={r.logo} name={r.name} />
+              <ResultLogo logo={r.logo} name={r.name} />
               <span
                 className="flex-1 truncate"
                 style={{

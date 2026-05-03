@@ -9,6 +9,10 @@ export type Coverage = 'anticheat' | 'external' | 'soon'
 export interface SourceFeed {
   sourceId: string
   displayName: string
+  /** Specific sub-market label drawn over the chart (e.g. "BTC by Dec 31", "CS2", "bitcoin/bitcoin"). */
+  assetName?: string
+  /** Number printed alongside the assetName on the chart (price, count, percentage). */
+  assetValue?: string
   meta: string
   coverage: Coverage
   series: number[]

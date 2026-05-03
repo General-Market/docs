@@ -28,9 +28,12 @@ export async function getDefiLlamaFeed(): Promise<SourceFeed> {
     series = fallbackSeries('defillama', DEFAULT_RESOLUTION, 0.48, 6, 5)
   }
 
+  const last = data && data.length > 0 ? data[data.length - 1]?.[1] : undefined
   return {
     sourceId: 'defillama',
     displayName: 'DefiLlama',
+    assetName: 'Total DeFi TVL',
+    assetValue: typeof last === 'number' ? `$${formatBig(last)}` : undefined,
     meta,
     coverage: 'anticheat',
     series,

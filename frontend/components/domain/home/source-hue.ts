@@ -1,7 +1,8 @@
 /**
- * Stable hue per source id. Mirrors the bot visualizer's sourceHue helper —
- * ASCII sum modulo 360, deterministic, no overrides.
- * Used for the per-source gradient tile and the sparkline accent color.
+ * Stable hue per source id — Apple-restrained palette.
+ * The visualizer used loud HSL gradients (80% saturation). Apple's product
+ * cards use much subtler tints — soft pastels with high luminance, never
+ * fighting the foreground. We mirror that here.
  */
 export function sourceHue(sourceId: string): number {
   let n = 0
@@ -9,22 +10,26 @@ export function sourceHue(sourceId: string): number {
   return n % 360
 }
 
+/** Tile background — single hue, low saturation, gentle vertical fade. */
 export function sourceGradient(sourceId: string): string {
   const h = sourceHue(sourceId)
-  return `linear-gradient(135deg, hsl(${h} 80% 94%), hsl(${(h + 40) % 360} 80% 88%))`
+  return `linear-gradient(180deg, hsl(${h} 32% 96%), hsl(${h} 28% 91%))`
 }
 
+/** Sparkline stroke — readable, single hue at print-ink saturation. */
 export function sourceStroke(sourceId: string): string {
   const h = sourceHue(sourceId)
-  return `hsl(${h} 60% 38%)`
+  return `hsl(${h} 48% 36%)`
 }
 
+/** Sparkline area fill — same hue at chart-ghost opacity. */
 export function sourceFill(sourceId: string): string {
   const h = sourceHue(sourceId)
-  return `hsla(${h}, 70%, 50%, 0.18)`
+  return `hsl(${h} 50% 45%)`
 }
 
-export function sourceAvatar(sourceId: string): string {
-  const h = sourceHue(sourceId)
-  return `linear-gradient(135deg, hsl(${h} 70% 55%), hsl(${(h + 40) % 360} 70% 45%))`
-}
+/** Avatar background — neutral apple surface, monochrome. */
+export const avatarBackground = '#f5f5f7'
+
+/** Avatar text/icon color — apple primary text. */
+export const avatarForeground = '#1d1d1f'

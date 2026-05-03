@@ -42,14 +42,22 @@ export async function getPolymarketFeed(): Promise<SourceFeed> {
     series = fallbackSeries('polymarket', DEFAULT_RESOLUTION, 0.62, 12, 7)
   }
 
+  const top = data && data.length > 0 ? data[0] : undefined
+  const topQuestion = top?.question ? truncate(top.question, 56) : undefined
   return {
     sourceId: 'polymarket',
     displayName: 'Polymarket',
+    assetName: topQuestion ?? 'Top question',
+    assetValue: top?.volume ? `$${formatBig(Number(top.volume))}` : undefined,
     meta,
     coverage: 'external',
     series,
     external: true,
   }
+}
+
+function truncate(s: string, n: number): string {
+  return s.length <= n ? s : s.slice(0, n - 1) + '…'
 }
 
 function formatBig(n: number): string {
