@@ -367,15 +367,15 @@ def build(args: argparse.Namespace) -> None:
         "Done. %d batches, %d asset files, written to %s",
         len(by_batch), written, out_root,
     )
-    log.info("Open index.html via:  python -m http.server  (from %s)", out_root)
+    log.info("Reload the Vite app — data in %s", out_root)
 
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Vision bot data + history downloader")
     ap.add_argument("--pnl", help="Path to pnl.json (default: from config or pnl.json)")
     ap.add_argument("--config", default="../config.toml", help="config.toml path (default: ../config.toml)")
-    ap.add_argument("--out", default=os.path.dirname(os.path.abspath(__file__)),
-                    help="Output directory (default: this script's directory)")
+    ap.add_argument("--out", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "public"),
+                    help="Output directory (default: ./public — served by Vite)")
     ap.add_argument("--data-node", help="Override data-node URL")
     ap.add_argument("--oracle", action="append", help="Oracle URL (repeatable)")
     ap.add_argument("--days", type=int, default=7, help="History window in days (default: 7)")

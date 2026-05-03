@@ -1,0 +1,42 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #0b0c0e;
+  --color-panel: #111317;
+  --color-panel-2: #15181d;
+  --color-line: #20242b;
+  --color-text: #e7eaef;
+  --color-muted: #8b929d;
+  --color-up: #74e0a3;
+  --color-down: #f87171;
+  --color-warn: #f5b86c;
+  --color-blue: #6aa9ff;
+  --color-purple: #b19cd9;
+  --color-orange: #f7a35c;
+
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, monospace;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.45;
+  background: var(--color-bg);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Tabular numbers everywhere a number sits next to text */
+.num { font-variant-numeric: tabular-nums; }
+
+/* Scrollbar — quiet, not a pet */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-line); border-radius: 5px; }
+::-webkit-scrollbar-thumb:hover { background: #2c313a; }

@@ -12,7 +12,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 ap = argparse.ArgumentParser()
 ap.add_argument("--player", required=True)
 ap.add_argument("--limit", type=int, default=20, help="Max batches to consider")
-ap.add_argument("--out", default="/tmp/viz")
+ap.add_argument("--out", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "public"))
 ap.add_argument("--days", type=int, default=7)
 ap.add_argument("--data-node", default="http://localhost:8200")
 ap.add_argument("--max-assets", type=int, default=120)
