@@ -14,7 +14,7 @@ export function DashboardView({ items, onOpen, loading }: Props) {
 
   if (loading && items.length === 0) {
     return (
-      <main className="row-start-2 col-start-2 grid min-h-0 place-items-center bg-panel">
+      <main className="row-start-2 col-start-1 grid min-h-0 place-items-center bg-panel md:col-start-2">
         <div className="text-muted" style={{ fontSize: 14 }}>loading…</div>
       </main>
     )
@@ -22,8 +22,8 @@ export function DashboardView({ items, onOpen, loading }: Props) {
 
   if (!featured) {
     return (
-      <main className="row-start-2 col-start-2 grid min-h-0 place-items-center bg-panel">
-        <div className="text-center">
+      <main className="row-start-2 col-start-1 grid min-h-0 place-items-center bg-panel md:col-start-2">
+        <div className="px-6 text-center">
           <div className="font-display font-semibold text-text" style={{ fontSize: 28, letterSpacing: '-0.022em' }}>
             No assets yet.
           </div>
@@ -36,31 +36,31 @@ export function DashboardView({ items, onOpen, loading }: Props) {
   }
 
   return (
-    <main className="row-start-2 col-start-2 min-h-0 overflow-y-auto bg-panel">
-      <div className="mx-auto max-w-[1200px] px-8 py-8">
+    <main className="row-start-2 col-start-1 min-h-0 overflow-y-auto bg-panel md:col-start-2">
+      <div className="mx-auto max-w-[1200px] px-4 py-6 sm:px-8 sm:py-8">
         <h1
           className="font-display font-semibold text-text"
-          style={{ fontSize: 32, letterSpacing: '-0.022em', lineHeight: 1.07 }}
+          style={{ fontSize: 28, letterSpacing: '-0.022em', lineHeight: 1.07 }}
         >
           Home
         </h1>
 
-        <div className="mt-6">
+        <div className="mt-5 sm:mt-6">
           <HeroCard featured={featured} side={sideRail} onOpen={onOpen} />
         </div>
 
-        <section className="mt-12">
+        <section className="mt-8 sm:mt-12">
           <SectionHeader title="Top backtests" onSeeAll={() => onOpen(topBacktests[0])} />
-          <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-4 grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
             {topBacktests.map((it) => (
               <AssetCard key={it.asset_id} item={it} onClick={() => onOpen(it)} />
             ))}
           </div>
         </section>
 
-        <section className="mt-12 mb-4">
+        <section className="mt-8 mb-4 sm:mt-12">
           <SectionHeader title="Recently active" />
-          <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-4 grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
             {recentActive(items).map((it) => (
               <AssetCard key={it.asset_id} item={it} onClick={() => onOpen(it)} />
             ))}

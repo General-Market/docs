@@ -32,8 +32,8 @@ export function AssetView({ item, onBack }: Props) {
   const empty = !item
 
   return (
-    <main className="row-start-2 col-start-2 grid min-h-0 min-w-0 grid-rows-[auto_1fr_280px]">
-      <div className="grid grid-cols-[auto_1fr_auto] items-center gap-4 border-b border-line bg-panel px-6 py-4">
+    <main className="row-start-2 col-start-1 grid min-h-0 min-w-0 grid-rows-[auto_1fr_240px] md:col-start-2 md:grid-rows-[auto_1fr_280px]">
+      <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-line bg-panel px-4 py-3 sm:gap-4 sm:px-6 sm:py-4">
         {onBack && (
           <button
             type="button"
@@ -103,7 +103,7 @@ export function AssetView({ item, onBack }: Props) {
         )}
       </div>
 
-      <section className="relative flex min-h-0 min-w-0 flex-col px-6 pt-4 pb-1">
+      <section className="relative flex min-h-0 min-w-0 flex-col px-4 pt-3 pb-1 sm:px-6 sm:pt-4">
         <div className="flex flex-wrap items-center gap-1.5 pb-3" style={{ fontSize: 12 }}>
           <span className="text-muted pr-1">Overlay</span>
           {(['ai', 'actual', 'none'] as const).map((k) => (
@@ -149,7 +149,7 @@ export function AssetView({ item, onBack }: Props) {
         </div>
       </section>
 
-      <section className="grid min-h-0 grid-rows-[auto_1fr] border-t border-line bg-panel-2 px-6 pt-3 pb-4">
+      <section className="grid min-h-0 grid-rows-[auto_1fr] border-t border-line bg-panel-2 px-4 pt-2 pb-3 sm:px-6 sm:pt-3 sm:pb-4">
         <div className="flex items-center justify-between pb-2">
           <h3
             className="font-display font-semibold text-text"

@@ -8,11 +8,13 @@ interface Props {
   onChange: (v: View) => void
   items: IndexItem[]
   sources: string[]
+  mobileOpen: boolean
+  onClose: () => void
 }
 
 const VISIBLE_SOURCES = 6
 
-export function NavRail({ view, onChange, items, sources }: Props) {
+export function NavRail({ view, onChange, items, sources, mobileOpen, onClose }: Props) {
   const [showAllSources, setShowAllSources] = useState(false)
   const sourceCounts = useMemo(() => {
     const m = new Map<string, number>()
@@ -28,7 +30,22 @@ export function NavRail({ view, onChange, items, sources }: Props) {
   const visibleSources = showAllSources ? sortedSources : sortedSources.slice(0, VISIBLE_SOURCES)
 
   return (
-    <aside className="row-start-2 col-start-1 flex min-h-0 flex-col gap-1 overflow-y-auto border-r border-line bg-panel px-3 py-3">
+    <>
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-20 bg-black/30 md:hidden"
+          onClick={onClose}
+          aria-hidden
+        />
+      )}
+      <aside
+        className={clsx(
+          'flex min-h-0 flex-col gap-1 overflow-y-auto border-r border-line bg-panel px-3 py-3 transition-transform',
+          'fixed inset-y-0 left-0 z-30 w-[260px]',
+          'md:relative md:row-start-2 md:col-start-1 md:w-auto md:translate-x-0 md:transition-none',
+          mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
+        )}
+      >
       <NavSection>
         <NavRow
           icon={<HomeIcon />}
@@ -107,7 +124,8 @@ export function NavRail({ view, onChange, items, sources }: Props) {
           />
         )}
       </NavSection>
-    </aside>
+      </aside>
+    </>
   )
 }
 

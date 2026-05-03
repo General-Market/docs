@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { clsx } from 'clsx'
 import { shortAddr } from '@/lib/format'
+import { GMLogo } from './GMLogo'
 
 interface Props {
   player: string | undefined
@@ -10,9 +11,18 @@ interface Props {
   error: string | undefined
   query: string
   onQueryChange: (q: string) => void
+  onToggleNav: () => void
 }
 
-export function TopBar({ player, generatedAt, loading, error, query, onQueryChange }: Props) {
+export function TopBar({
+  player,
+  generatedAt,
+  loading,
+  error,
+  query,
+  onQueryChange,
+  onToggleNav,
+}: Props) {
   const queryClient = useQueryClient()
   const [refreshing, setRefreshing] = useState(false)
 
@@ -27,8 +37,8 @@ export function TopBar({ player, generatedAt, loading, error, query, onQueryChan
   }
 
   return (
-    <header className="col-span-2 grid grid-cols-[auto_1fr_auto] items-center gap-6 border-b border-line bg-panel px-6 py-3">
-      <Brand />
+    <header className="col-span-2 grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-line bg-panel px-3 py-3 sm:gap-6 sm:px-6">
+      <Brand onToggleNav={onToggleNav} />
       <Search value={query} onChange={onQueryChange} />
       <Actions
         player={player}
@@ -41,18 +51,28 @@ export function TopBar({ player, generatedAt, loading, error, query, onQueryChan
   )
 }
 
-function Brand() {
+function Brand({ onToggleNav }: { onToggleNav: () => void }) {
   return (
     <div className="flex items-center gap-2">
-      <AppleMark />
+      <button
+        type="button"
+        onClick={onToggleNav}
+        className="grid h-9 w-9 cursor-pointer place-items-center rounded-full text-muted transition hover:bg-[rgba(0,0,0,0.05)] hover:text-text md:hidden"
+        title="Menu"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden>
+          <path d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+      <GMLogo size={22} />
       <span
-        className="font-display font-semibold tracking-tight text-text"
+        className="hidden font-display font-semibold tracking-tight text-text sm:inline"
         style={{ fontSize: 19, letterSpacing: '-0.022em' }}
       >
         Vision bot
       </span>
       <span
-        className="rounded-full px-1.5 py-0.5 font-medium text-muted"
+        className="hidden rounded-full px-1.5 py-0.5 font-medium text-muted sm:inline-block"
         style={{
           fontSize: 10,
           letterSpacing: '0.04em',
@@ -100,14 +120,14 @@ function Actions({
 }) {
   const addr = shortAddr(player)
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-2 sm:gap-3">
       {error && (
-        <span className="text-xs text-down" style={{ fontSize: 12 }}>
+        <span className="hidden text-down sm:inline" style={{ fontSize: 12 }}>
           {error}
         </span>
       )}
       {generatedAt && (
-        <span className="text-faint" style={{ fontSize: 12 }}>
+        <span className="hidden text-faint sm:inline" style={{ fontSize: 12 }}>
           {ageString(generatedAt)}
         </span>
       )}
@@ -125,14 +145,6 @@ function Actions({
       </button>
       <Identicon addr={player} title={addr} />
     </div>
-  )
-}
-
-function AppleMark() {
-  return (
-    <svg width="18" height="22" viewBox="0 0 18 22" fill="currentColor" aria-hidden>
-      <path d="M14.59 11.49c-.02-2.39 1.95-3.54 2.04-3.6-1.11-1.62-2.84-1.85-3.46-1.87-1.47-.15-2.87.86-3.62.86-.75 0-1.91-.84-3.14-.82-1.62.02-3.11.94-3.94 2.39-1.68 2.92-.43 7.23 1.21 9.6.8 1.16 1.76 2.46 3.01 2.41 1.21-.05 1.67-.78 3.13-.78 1.46 0 1.87.78 3.15.76 1.3-.02 2.13-1.18 2.92-2.34.92-1.34 1.3-2.65 1.32-2.72-.03-.01-2.53-.97-2.62-3.89zM12.06 4.78c.66-.81 1.11-1.93.99-3.04-.96.04-2.12.64-2.81 1.45-.62.71-1.16 1.85-1.02 2.94 1.07.08 2.17-.55 2.84-1.35z" />
-    </svg>
   )
 }
 

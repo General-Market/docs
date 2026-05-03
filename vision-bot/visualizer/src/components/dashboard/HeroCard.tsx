@@ -3,6 +3,7 @@ import type { IndexItem } from '@/lib/types'
 import { useAsset } from '@/lib/queries'
 import { sourceHue } from '@/lib/view'
 import { Sparkline } from './Sparkline'
+import { GMLogo } from '../GMLogo'
 
 interface Props {
   featured: IndexItem
@@ -18,16 +19,13 @@ export function HeroCard({ featured, side, onOpen }: Props) {
 
   return (
     <div
-      className="grid gap-0 overflow-hidden border border-line bg-panel"
-      style={{
-        borderRadius: 'var(--radius-xl)',
-        gridTemplateColumns: 'minmax(260px, 320px) 1fr minmax(220px, 280px)',
-      }}
+      className="grid gap-0 overflow-hidden border border-line bg-panel grid-cols-1 lg:grid-cols-[minmax(260px,320px)_1fr_minmax(220px,280px)]"
+      style={{ borderRadius: 'var(--radius-xl)' }}
     >
-      <div className="flex flex-col justify-between p-7">
+      <div className="flex flex-col justify-between p-5 sm:p-7">
         <div>
           <div className="flex items-center gap-1.5 text-muted" style={{ fontSize: 12 }}>
-            <AppleMark size={11} />
+            <GMLogo size={12} />
             <span style={{ letterSpacing: 0.2 }}>Featured backtest</span>
           </div>
           <h2
@@ -75,12 +73,12 @@ export function HeroCard({ featured, side, onOpen }: Props) {
       </div>
 
       <div
-        className="relative min-h-[260px]"
+        className="relative min-h-[180px] sm:min-h-[220px] lg:min-h-[260px]"
         style={{
           background: `linear-gradient(135deg, hsl(${hue} 80% 94%), hsl(${(hue + 40) % 360} 80% 88%))`,
         }}
       >
-        <div className="absolute inset-0 flex items-end p-6">
+        <div className="absolute inset-0 flex items-end p-4 sm:p-6">
           <Sparkline
             points={data?.history}
             width={800}
@@ -92,7 +90,7 @@ export function HeroCard({ featured, side, onOpen }: Props) {
         </div>
       </div>
 
-      <div className="flex flex-col border-l border-line">
+      <div className="flex flex-col border-t border-line lg:border-l lg:border-t-0">
         {side.slice(0, 4).map((it) => (
           <SideRow key={it.asset_id} item={it} onOpen={() => onOpen(it)} />
         ))}
@@ -159,14 +157,6 @@ function PlayIcon() {
   return (
     <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
       <path d="M8 5v14l11-7z" />
-    </svg>
-  )
-}
-
-function AppleMark({ size = 11 }: { size?: number }) {
-  return (
-    <svg width={size} height={size * 1.22} viewBox="0 0 18 22" fill="currentColor" aria-hidden>
-      <path d="M14.59 11.49c-.02-2.39 1.95-3.54 2.04-3.6-1.11-1.62-2.84-1.85-3.46-1.87-1.47-.15-2.87.86-3.62.86-.75 0-1.91-.84-3.14-.82-1.62.02-3.11.94-3.94 2.39-1.68 2.92-.43 7.23 1.21 9.6.8 1.16 1.76 2.46 3.01 2.41 1.21-.05 1.67-.78 3.13-.78 1.46 0 1.87.78 3.15.76 1.3-.02 2.13-1.18 2.92-2.34.92-1.34 1.3-2.65 1.32-2.72-.03-.01-2.53-.97-2.62-3.89zM12.06 4.78c.66-.81 1.11-1.93.99-3.04-.96.04-2.12.64-2.81 1.45-.62.71-1.16 1.85-1.02 2.94 1.07.08 2.17-.55 2.84-1.35z" />
     </svg>
   )
 }

@@ -14,6 +14,7 @@ export function App() {
   const [selected, setSelected] = useState<IndexItem | null>(null)
   const [query, setQuery] = useState('')
   const [view, setView] = useState<View>({ kind: 'home' })
+  const [navOpen, setNavOpen] = useState(false)
 
   const items = index?.items ?? []
   const sources = index?.stats?.sources ?? []
@@ -21,11 +22,17 @@ export function App() {
   function changeView(v: View) {
     setView(v)
     setSelected(null)
+    setNavOpen(false)
+  }
+
+  function selectAsset(item: IndexItem) {
+    setSelected(item)
+    setNavOpen(false)
   }
 
   return (
     <AppShell>
-      <div className="grid h-full grid-cols-[240px_1fr] grid-rows-[auto_1fr]">
+      <div className="grid h-full grid-cols-1 grid-rows-[auto_1fr] md:grid-cols-[240px_1fr]">
         <TopBar
           player={index?.player}
           generatedAt={index?.generated_at}
@@ -33,15 +40,23 @@ export function App() {
           error={error?.message}
           query={query}
           onQueryChange={setQuery}
+          onToggleNav={() => setNavOpen((v) => !v)}
         />
-        <NavRail view={view} onChange={changeView} items={items} sources={sources} />
+        <NavRail
+          view={view}
+          onChange={changeView}
+          items={items}
+          sources={sources}
+          mobileOpen={navOpen}
+          onClose={() => setNavOpen(false)}
+        />
         <MainPanel
           view={view}
           selected={selected}
           items={items}
           query={query}
           loading={isPending}
-          onSelect={setSelected}
+          onSelect={selectAsset}
           onBack={() => setSelected(null)}
         />
       </div>
@@ -90,11 +105,11 @@ function MainPanel({
 
 function StrategiesPlaceholder() {
   return (
-    <main className="row-start-2 col-start-2 grid min-h-0 place-items-center bg-panel">
-      <div className="text-center">
+    <main className="row-start-2 col-start-1 grid min-h-0 place-items-center bg-panel md:col-start-2">
+      <div className="text-center px-6">
         <div
           className="font-display font-semibold text-text"
-          style={{ fontSize: 32, letterSpacing: '-0.022em' }}
+          style={{ fontSize: 28, letterSpacing: '-0.022em' }}
         >
           Strategies
         </div>

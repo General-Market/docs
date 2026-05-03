@@ -44,11 +44,11 @@ export function AssetList({ items, selected, onSelect, query, filter, loading }:
   })
 
   return (
-    <main className="row-start-2 col-start-2 grid min-h-0 min-w-0 grid-rows-[auto_1fr] bg-panel">
-      <header className="flex items-baseline justify-between border-b border-line px-8 pt-6 pb-4">
+    <main className="row-start-2 col-start-1 grid min-h-0 min-w-0 grid-rows-[auto_1fr] bg-panel md:col-start-2">
+      <header className="flex flex-wrap items-baseline justify-between gap-2 border-b border-line px-4 pt-5 pb-3 sm:px-8 sm:pt-6 sm:pb-4">
         <h1
           className="font-display font-semibold text-text"
-          style={{ fontSize: 28, letterSpacing: '-0.022em', lineHeight: 1.1 }}
+          style={{ fontSize: 24, letterSpacing: '-0.022em', lineHeight: 1.1 }}
         >
           {FILTER_LABEL[filter]}
         </h1>
@@ -58,7 +58,7 @@ export function AssetList({ items, selected, onSelect, query, filter, loading }:
         </span>
       </header>
 
-      <div ref={scrollerRef} className="relative overflow-y-auto px-4 py-2">
+      <div ref={scrollerRef} className="relative overflow-y-auto px-2 py-2 sm:px-4">
         {loading && (
           <div className="px-4 py-3 text-muted" style={{ fontSize: 13 }}>
             loading…
