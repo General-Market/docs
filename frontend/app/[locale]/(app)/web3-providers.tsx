@@ -7,6 +7,7 @@ import { wagmiConfig } from '@/lib/wagmi'
 import { ToastProvider } from '@/lib/contexts/ToastContext'
 import { SSEProvider } from '@/hooks/useSSE'
 import { ChainGuard } from '@/components/ChainGuard'
+import { AutoFaucet } from '@/components/AutoFaucet'
 import { Web3Provider } from '@/lib/contexts/Web3Context'
 import { ReactNode, useMemo, useState } from 'react'
 
@@ -42,6 +43,7 @@ export function Web3Providers({ children }: { children: ReactNode }) {
           <ToastProvider>
             <SSEWrapper>
               <ChainGuard>
+                <AutoFaucet />
                 {children}
               </ChainGuard>
             </SSEWrapper>
