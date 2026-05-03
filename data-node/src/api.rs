@@ -1399,19 +1399,6 @@ async fn nav_series(
         let start_minute = (effective_from.timestamp() / 60) * 60;
         let end_minute = (to.timestamp() / 60) * 60;
 
-        // Insert creation tick at $1.00 (before the minute walk)
-        {
-            let mut seed_nav: f64 = 0.0;
-            for (i, sym) in symbols.iter().enumerate() {
-                let price = last_close.get(sym).copied().unwrap_or(0.0);
-                seed_nav += inventory[i] * price;
-            }
-            let nav = seed_nav / 1e18;
-            if nav > 0.0 {
-                itp_1m_candles.push((effective_from.timestamp(), nav, nav, nav, nav));
-            }
-        }
-
         // Track consecutive minutes without kline data; stop emitting
         // candles once we've gone 5+ minutes with no real data to avoid
         // stale flat candles that diverge from the live NAV.
@@ -1558,21 +1545,6 @@ async fn nav_series(
         }
 
         let mut nav_ticks: Vec<(i64, f64)> = Vec::new();
-
-        if !last_prices.is_empty() && !inventory.is_empty() {
-            let seed_nav: f64 = inventory
-                .iter()
-                .zip(symbols.iter())
-                .map(|(&qty, sym)| {
-                    let price = last_prices.get(sym).copied().unwrap_or(0.0);
-                    qty * price
-                })
-                .sum::<f64>()
-                / 1e18;
-            if seed_nav > 0.0 {
-                nav_ticks.push((effective_from.timestamp(), seed_nav));
-            }
-        }
 
         let seed_prices =
             db::query_latest_prices_before(&state.pool, &symbol_refs, effective_from)
