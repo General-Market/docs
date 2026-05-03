@@ -3,6 +3,7 @@ import { QueryClient, dehydrate, HydrationBoundary } from '@tanstack/react-query
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { SourceDetailV2 } from '@/components/domain/vision/detail/SourceDetailV2'
+import { HomeOnboardingCompass } from '@/components/domain/vision/HomeOnboardingCompass'
 import { getSourceDisplayServer } from '@/lib/vision/sources-server'
 import { getCategoryLabel } from '@/lib/vision/source-categories'
 import { prefetchSourceSnapshot, prefetchBatchConfigBySource, prefetchSnapshotMeta, prefetchBatches, prefetchRounds, prefetchSourceHistory } from '@/lib/vision/prefetch'
@@ -128,6 +129,7 @@ export default async function SourcePage({ params }: Props) {
           <SourceDetailV2 sourceId={sourceId} initialSource={source} />
         </div>
         <Footer />
+        <HomeOnboardingCompass />
       </main>
     </HydrationBoundary>
   )

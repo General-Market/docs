@@ -1,31 +1,41 @@
 import { ReactNode } from 'react'
 import { LeftRail } from './LeftRail'
 import { TopBar } from './TopBar'
-import { RightRail } from './RightRail'
 
 type AppShellProps = {
   children: ReactNode
   search?: ReactNode
-  rightRail?: ReactNode
 }
 
-export function AppShell({ children, search, rightRail }: AppShellProps) {
+/**
+ * Outer page is gray. Everything sits inside a centered floating white panel
+ * with rounded corners and a soft shadow. Modelled on the bot visualizer.
+ */
+export function AppShell({ children, search }: AppShellProps) {
   return (
     <div
-      className="flex min-h-screen"
-      style={{ background: 'var(--apple-bg)', color: 'var(--apple-text)' }}
+      className="min-h-screen w-full"
+      style={{ background: 'var(--apple-page-bg)' }}
     >
-      <LeftRail />
-      <div className="flex-1 min-w-0 flex">
-        <div className="flex-1 min-w-0 flex flex-col">
-          <TopBar search={search} />
-          <main className="flex-1 min-w-0">
-            <div className="mx-auto w-full max-w-apple-wide px-6 py-8">
-              {children}
-            </div>
-          </main>
+      <div
+        className="mx-auto sm:p-4 lg:p-6"
+        style={{ maxWidth: 'var(--apple-shell-max)' }}
+      >
+        <div
+          className="overflow-hidden"
+          style={{
+            background: 'var(--apple-panel)',
+            borderRadius: 'var(--apple-r-card)',
+            boxShadow: 'var(--apple-shadow-card)',
+            minHeight: 'calc(100vh - 3rem)',
+          }}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-[240px_1fr]">
+            <TopBar search={search} />
+            <LeftRail />
+            <main className="min-w-0">{children}</main>
+          </div>
         </div>
-        {rightRail !== undefined && <RightRail>{rightRail}</RightRail>}
       </div>
     </div>
   )

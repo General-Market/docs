@@ -1,14 +1,11 @@
 'use client'
 
-import { useTranslations } from 'next-intl'
 import { Link, usePathname } from '@/i18n/routing'
 import { useAccount } from 'wagmi'
 import { useWeb3Available } from '@/lib/contexts/Web3Context'
 import {
   HomeIcon,
-  LayersIcon,
   BoxesIcon,
-  VaultIcon,
   CompassIcon,
   BotIcon,
   UserIcon,
@@ -22,11 +19,12 @@ type NavItem = {
   icon: React.ComponentType<{ className?: string }>
 }
 
-const NAV: NavItem[] = [
+const PRIMARY: NavItem[] = [
   { id: 'home', href: '/', label: 'Home', icon: HomeIcon },
-  { id: 'sources', href: '/sources', label: 'Sources', icon: LayersIcon },
-  { id: 'itps', href: '/index', label: 'ITPs', icon: BoxesIcon },
-  { id: 'vaults', href: '/vaults', label: 'Vaults', icon: VaultIcon },
+  { id: 'index-funds', href: '/index', label: 'Index Funds', icon: BoxesIcon },
+]
+
+const SECONDARY: NavItem[] = [
   { id: 'explorer', href: '/explorer', label: 'Explorer', icon: CompassIcon },
   { id: 'leaderboard', href: '/leaderboard', label: 'Leaderboard', icon: TrophyIcon },
   { id: 'build-bot', href: '/build-bot', label: 'Build a Bot', icon: BotIcon },
@@ -37,107 +35,106 @@ function isActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(href + '/')
 }
 
+function Row({
+  href,
+  label,
+  Icon,
+  active,
+}: {
+  href: string
+  label: string
+  Icon: React.ComponentType<{ className?: string }>
+  active: boolean
+}) {
+  return (
+    <Link
+      href={href as never}
+      className="flex items-center gap-3 px-3 py-2 rounded-apple-sm transition-colors duration-200 ease-apple"
+      style={{
+        background: active ? 'rgba(0,0,0,0.05)' : 'transparent',
+        color: active ? 'var(--apple-text)' : 'var(--apple-text-secondary)',
+      }}
+    >
+      <Icon className="w-[18px] h-[18px]" />
+      <span
+        style={{
+          fontFamily: 'var(--apple-font-text)',
+          fontSize: 14,
+          letterSpacing: 'var(--apple-track-tight)',
+          fontWeight: active ? 600 : 500,
+        }}
+      >
+        {label}
+      </span>
+    </Link>
+  )
+}
+
 export function LeftRail() {
   const pathname = usePathname()
   const hasWeb3 = useWeb3Available()
   const { address } = useAccount()
 
-  const profileHref = address ? `/profile/${address}` : null
+  const portfolioHref = address ? `/profile/${address}` : '/profile'
+  const portfolioActive = pathname.startsWith('/profile')
 
   return (
     <aside
-      className="hidden lg:flex flex-col shrink-0 border-r"
+      className="hidden md:flex flex-col gap-1 row-start-2 col-start-1 border-r overflow-y-auto px-3 py-3"
       style={{
-        width: 'var(--apple-shell-left)',
-        background: 'var(--apple-bg)',
-        borderColor: 'var(--apple-border)',
+        background: 'var(--apple-panel)',
+        borderColor: 'var(--apple-line)',
       }}
       aria-label="Primary"
     >
-      <Link
-        href="/"
-        className="h-14 flex items-center gap-2 px-5 border-b"
-        style={{ borderColor: 'var(--apple-border)' }}
-      >
-        <span
-          className="font-semibold"
-          style={{
-            fontFamily: 'var(--apple-font-display)',
-            fontSize: 'var(--apple-fs-19)',
-            letterSpacing: 'var(--apple-track-tighter)',
-            color: 'var(--apple-text)',
-          }}
-        >
-          General Market
-        </span>
-      </Link>
-
-      <nav className="flex-1 px-3 py-4 flex flex-col gap-0.5">
-        {NAV.map((item) => {
-          const active = isActive(pathname, item.href)
-          const Icon = item.icon
-          return (
-            <Link
-              key={item.id}
-              href={item.href}
-              className="flex items-center gap-3 px-3 py-2 rounded-apple-sm transition-colors duration-200 ease-apple"
-              style={{
-                background: active ? 'var(--apple-surface)' : 'transparent',
-                color: active ? 'var(--apple-text)' : 'var(--apple-text-secondary)',
-              }}
-            >
-              <Icon className="w-4 h-4" />
-              <span
-                style={{
-                  fontFamily: 'var(--apple-font-text)',
-                  fontSize: 'var(--apple-fs-14)',
-                  letterSpacing: 'var(--apple-track-tight)',
-                  fontWeight: active ? 600 : 500,
-                }}
-              >
-                {item.label}
-              </span>
-            </Link>
-          )
-        })}
-
-        {hasWeb3 && profileHref && (
-          <Link
-            href={profileHref as never}
-            className="flex items-center gap-3 px-3 py-2 rounded-apple-sm transition-colors duration-200 ease-apple mt-1"
-            style={{
-              color: pathname.startsWith('/profile/')
-                ? 'var(--apple-text)'
-                : 'var(--apple-text-secondary)',
-              background: pathname.startsWith('/profile/')
-                ? 'var(--apple-surface)'
-                : 'transparent',
-            }}
-          >
-            <UserIcon className="w-4 h-4" />
-            <span
-              style={{
-                fontFamily: 'var(--apple-font-text)',
-                fontSize: 'var(--apple-fs-14)',
-                letterSpacing: 'var(--apple-track-tight)',
-                fontWeight: 500,
-              }}
-            >
-              Profile
-            </span>
-          </Link>
+      <div className="flex flex-col gap-0.5">
+        {PRIMARY.map((it) => (
+          <Row
+            key={it.id}
+            href={it.href}
+            label={it.label}
+            Icon={it.icon}
+            active={isActive(pathname, it.href)}
+          />
+        ))}
+        {hasWeb3 && (
+          <Row
+            href={portfolioHref}
+            label="Portfolio"
+            Icon={UserIcon}
+            active={portfolioActive}
+          />
         )}
-      </nav>
+      </div>
 
       <div
-        className="px-5 py-3 border-t text-[11px]"
+        className="my-2 border-t"
+        style={{ borderColor: 'var(--apple-line)' }}
+      />
+
+      <div className="flex flex-col gap-0.5">
+        {SECONDARY.map((it) => (
+          <Row
+            key={it.id}
+            href={it.href}
+            label={it.label}
+            Icon={it.icon}
+            active={isActive(pathname, it.href)}
+          />
+        ))}
+      </div>
+
+      <div className="flex-1" />
+
+      <div
+        className="px-3 py-2 text-[11px]"
         style={{
-          borderColor: 'var(--apple-border)',
           color: 'var(--apple-text-tertiary)',
-          letterSpacing: 'var(--apple-track-loose)',
+          letterSpacing: '0.04em',
+          textTransform: 'uppercase',
         }}
       >
-        Anti-Cheat · Testnet v0.93
+        Anti-Cheat · Beta
       </div>
     </aside>
   )

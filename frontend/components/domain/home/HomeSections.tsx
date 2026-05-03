@@ -1,17 +1,25 @@
-import { SourceFeatureCard } from './SourceFeatureCard'
+import type { ReactNode } from 'react'
+import { AssetCard } from './AssetCard'
+import { HeroCard } from './HeroCard'
 import { NyseLogo } from './source-logos'
 import type { SourceFeed } from '@/lib/vision/adapters'
 
 type FeedMap = Record<string, SourceFeed>
 
-const FEATURED_ROW_IDS = ['defillama', 'equities', 'espn'] as const
-const TOP_MARKETS_IDS = ['twitch', 'steam', 'github', 'iss'] as const
+const HERO_ID = 'polymarket'
+const SIDE_RAIL_IDS = ['pumpfun', 'defillama', 'equities', 'espn'] as const
+const FEATURED_ROW_IDS = ['defillama', 'equities', 'espn', 'iss'] as const
+const TOP_MARKETS_IDS = ['twitch', 'steam', 'github', 'pumpfun'] as const
 
-function pick(feeds: FeedMap, id: string, fallbackName: string): SourceFeed {
+const STATIC_LOGOS: Partial<Record<string, () => ReactNode>> = {
+  equities: () => <NyseLogo height={20} />,
+}
+
+function pick(feeds: FeedMap, id: string): SourceFeed {
   return (
     feeds[id] ?? {
       sourceId: id,
-      displayName: fallbackName,
+      displayName: id,
       meta: 'Loading…',
       coverage: 'soon',
       series: [],
@@ -19,106 +27,141 @@ function pick(feeds: FeedMap, id: string, fallbackName: string): SourceFeed {
   )
 }
 
-function asCardProps(feed: SourceFeed) {
-  return {
-    sourceId: feed.sourceId,
-    displayName: feed.displayName,
-    meta: feed.meta,
-    coverage: feed.coverage,
-    series: feed.series,
-    hrefOverride: feed.hrefOverride,
-  }
-}
-
-export function FeaturedHero({ feeds }: { feeds: FeedMap }) {
-  const f = pick(feeds, 'polymarket', 'Polymarket')
+function SectionHeader({
+  title,
+  href,
+}: {
+  title: string
+  href?: string
+}) {
   return (
-    <SourceFeatureCard
-      {...asCardProps(f)}
-      size="hero"
-      accentColor="var(--apple-accent)"
-    />
-  )
-}
-
-const ROW_LOGO: Partial<Record<string, () => React.ReactNode>> = {
-  equities: () => <NyseLogo height={28} />,
-}
-
-export function FeaturedRow({ feeds }: { feeds: FeedMap }) {
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      {FEATURED_ROW_IDS.map((id) => {
-        const f = pick(feeds, id, id)
-        const renderLogo = ROW_LOGO[id]
-        return (
-          <SourceFeatureCard
-            key={id}
-            {...asCardProps(f)}
-            size="medium"
-            accentColor="var(--apple-text)"
-            logo={renderLogo ? renderLogo() : undefined}
-          />
-        )
-      })}
+    <div className="flex items-baseline justify-between mb-4">
+      <h2
+        className="font-semibold"
+        style={{
+          fontFamily: 'var(--apple-font-display)',
+          fontSize: 22,
+          letterSpacing: 'var(--apple-track-tight)',
+          color: 'var(--apple-text)',
+        }}
+      >
+        {title}
+      </h2>
+      {href && (
+        <a
+          href={href}
+          className="border transition hover:bg-[rgba(0,0,0,0.04)]"
+          style={{
+            background: 'var(--apple-panel)',
+            color: 'var(--apple-text)',
+            borderColor: 'var(--apple-line)',
+            borderRadius: 'var(--apple-r-pill)',
+            padding: '6px 14px',
+            fontSize: 12,
+            fontWeight: 500,
+          }}
+        >
+          See All ›
+        </a>
+      )}
     </div>
   )
 }
 
-export function TopMarketsStrip({ feeds }: { feeds: FeedMap }) {
-  return (
-    <section>
-      <h2
-        className="mb-3"
-        style={{
-          fontFamily: 'var(--apple-font-display)',
-          fontSize: 'var(--apple-fs-21)',
-          letterSpacing: 'var(--apple-track-tight)',
-          color: 'var(--apple-text)',
-          fontWeight: 600,
-        }}
-      >
-        Top markets
-      </h2>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {TOP_MARKETS_IDS.map((id) => {
-          const f = pick(feeds, id, id)
-          return (
-            <SourceFeatureCard
-              key={id}
-              {...asCardProps(f)}
-              size="small"
-              accentColor="var(--apple-text-secondary)"
-            />
-          )
-        })}
-      </div>
-    </section>
-  )
-}
+export function HomeDashboard({ feeds }: { feeds: FeedMap }) {
+  const hero = pick(feeds, HERO_ID)
+  const side = SIDE_RAIL_IDS.map((id) => pick(feeds, id))
+  const featuredRow = FEATURED_ROW_IDS.map((id) => pick(feeds, id))
+  const topMarkets = TOP_MARKETS_IDS.map((id) => pick(feeds, id))
 
-export function SidebarFeatured({ feeds }: { feeds: FeedMap }) {
-  const f = pick(feeds, 'pumpfun', 'Pumpfun')
   return (
-    <div className="p-4 flex flex-col gap-4">
-      <div
-        className="px-2"
-        style={{
-          fontFamily: 'var(--apple-font-text)',
-          fontSize: 'var(--apple-fs-12)',
-          color: 'var(--apple-text-tertiary)',
-          letterSpacing: 'var(--apple-track-loose)',
-          textTransform: 'uppercase',
-          fontWeight: 600,
-        }}
-      >
-        On the side
+    <div className="px-4 py-6 sm:px-8 sm:py-8 max-w-[1200px] mx-auto">
+      <div>
+        <p
+          className="mb-2"
+          style={{
+            fontFamily: 'var(--apple-font-text)',
+            fontSize: 11,
+            letterSpacing: '0.04em',
+            color: 'var(--apple-accent)',
+            textTransform: 'uppercase',
+            fontWeight: 600,
+          }}
+        >
+          Anti-Cheat
+        </p>
+        <h1
+          className="font-semibold"
+          style={{
+            fontFamily: 'var(--apple-font-display)',
+            fontSize: 28,
+            letterSpacing: 'var(--apple-track-tight)',
+            lineHeight: 1.07,
+            color: 'var(--apple-text)',
+          }}
+        >
+          Trading is easy with an Anti-Cheat.
+        </h1>
+        <p
+          className="mt-2 max-w-[640px]"
+          style={{
+            fontFamily: 'var(--apple-font-text)',
+            fontSize: 15,
+            letterSpacing: 'var(--apple-track-tighter)',
+            color: 'var(--apple-text-secondary)',
+            lineHeight: 1.4,
+          }}
+        >
+          Sealed bets. Parimutuel pools. Oracle consensus you can verify.
+          The market can&apos;t see your hand and neither can the house.
+        </p>
       </div>
-      <SourceFeatureCard
-        {...asCardProps(f)}
-        size="medium"
-        accentColor="var(--apple-accent-on-dark)"
-      />
+
+      <div className="mt-6">
+        <HeroCard feature={hero} side={side} />
+      </div>
+
+      <section className="mt-10">
+        <SectionHeader title="Top markets" href="/explorer" />
+        <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
+          {featuredRow.map((feed) => {
+            const Logo = STATIC_LOGOS[feed.sourceId]
+            return (
+              <AssetCard
+                key={feed.sourceId}
+                sourceId={feed.sourceId}
+                displayName={feed.displayName}
+                meta={feed.meta}
+                series={feed.series}
+                coverage={feed.coverage}
+                hrefOverride={feed.hrefOverride}
+                logo={Logo ? Logo() : undefined}
+              />
+            )
+          })}
+        </div>
+      </section>
+
+      <section className="mt-10 mb-4">
+        <SectionHeader title="Recently active" />
+        <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
+          {topMarkets.map((feed) => {
+            const Logo = STATIC_LOGOS[feed.sourceId]
+            return (
+              <AssetCard
+                key={feed.sourceId}
+                sourceId={feed.sourceId}
+                displayName={feed.displayName}
+                meta={feed.meta}
+                series={feed.series}
+                coverage={feed.coverage}
+                hrefOverride={feed.hrefOverride}
+                logo={Logo ? Logo() : undefined}
+              />
+            )
+          })}
+        </div>
+      </section>
     </div>
   )
 }
