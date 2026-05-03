@@ -4,8 +4,12 @@ use sqlx::PgPool;
 use tracing::info;
 
 pub async fn create_pool(database_url: &str) -> Result<PgPool, sqlx::Error> {
+    // Postgres `max_connections` is 100 on VPS 1; the data-node fans out into
+    // ~12 collectors plus the API. At 30 the pool starves under any real load —
+    // ITP snapshot writes time out and the collector cursor never advances,
+    // which is why every chart on the frontend renders empty.
     PgPoolOptions::new()
-        .max_connections(30)
+        .max_connections(70)
         .acquire_timeout(std::time::Duration::from_secs(10))
         .idle_timeout(std::time::Duration::from_secs(300))
         .connect(database_url)

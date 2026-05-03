@@ -72,10 +72,11 @@ async fn store_itp_state(
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let itp_id_hex = format!("0x{}", hex::encode(itp_id_bytes));
 
-    let (_creator, total_supply, nav, assets, weights, inventory) = contract
-        .get_itp_state(itp_id_bytes.into())
-        .call()
-        .await?;
+    // The L3 RPC behind nginx flaps under concurrent load — the raw call here
+    // would surface as `Failed to store created ITP` and stall the collector
+    // cursor. fetch_itp_state_with_retry already does 3 attempts with backoff.
+    let (_id, _creator, total_supply, nav, assets, weights, inventory) =
+        fetch_itp_state_with_retry(contract, itp_id_bytes).await?;
 
     let ts = get_block_timestamp(provider, block_number).await?;
 
