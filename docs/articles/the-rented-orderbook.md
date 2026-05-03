@@ -40,15 +40,15 @@ Polymarket pays roughly one hundred to one thousand times more per dollar of dep
 
 ### IV. The Graveyard
 
-This is where the story stops being new. Three of the largest orderbook venues ever built each ran the same playbook, and each ended the same way.
+This is where the story stops being new. The three largest on-chain perpetuals venues that ever paid heavy subsidies for their order books each ran the same playbook, and each ended the same way.
 
-**dYdX v3** launched perpetual futures on StarkEx in August 2021 and shipped roughly $200 million worth of DYDX in trader rewards across 2021–2022. Monthly volume peaked above $30 billion in late 2021 — for a window of months it out-traded Coinbase. As the rewards schedule decayed the volume curve decayed with it; by mid-2023 the venue had lost more than 90% of peak, and the team rebuilt the entire architecture on a new Cosmos chain to escape what v3 had become.
+**dYdX v3** launched perpetual futures on StarkEx in August 2021 and shipped roughly 122 million DYDX tokens — dollar-weighted around $200–250 million — in trader rewards across 32 epochs. Monthly volume cleared $30–40 billion at peak, lifetime volume crossed $1.46 trillion, and for a window of months it out-traded Coinbase. The rewards schedule decayed, the volume curve decayed with it, and on October 28, 2024 the entire v3 chain was switched off. Subsidies on: a trillion dollars of volume. Subsidies off: the chain itself.
 
-**FCoin** invented "trans-fee mining" in May 2018, rebating 100% of trading fees back to users in its FT token, and was clearing $5.6 billion of daily volume by mid-June — more than Binance and Huobi combined. The model worked exactly as designed until the token could no longer sustain the rebate. By February 2020 the exchange froze with roughly $125 million of customer funds stuck inside. The CEO published a long apology and disappeared.
+**Synthetix Perps via Kwenta** ran the most explicit subsidy farm on-chain. From May 2023 it paid 5.31 million OP tokens over twenty weeks plus continuous KWENTA emissions; a Dune dashboard at the time showed traders earning $1.27 in OP rewards for every $1 of fees they paid — i.e. the venue paid traders 27% *more* than it took from them. Daily volume peaked at $450 million and 34.5% of the entire perp DEX market. When the OP program ended in late 2023, volume fell three consecutive quarters to $5.1 billion in Q3 2024 (down 21% QoQ), and Synthetix folded Kwenta back into the parent in a wind-down acquisition.
 
-**Serum** was Solana's flagship orderbook DEX, underwritten by Alameda's market making and FTX's token reserves. The depth was real until the underwriter went bankrupt in November 2022; the book emptied within days, the project was forked into OpenBook, and the original venue never returned to its prior shape.
+**Aevo** is the cleanest before-and-after on the chart. The Ribbon Finance team launched an aggressive pre-airdrop incentive program, daily volume hit $4.5 billion in February–March 2024, and the protocol briefly threatened the leaders. The airdrop dropped on March 13, 2024; within weeks daily volume was below $100 million — a drop of more than 97% — and CoinDesk was quoting wash-trading allegations on the way down. AEVO fell 70%+ from launch.
 
-The pattern is the same in every case: build a CLOB, subsidize the makers, the rebate runs out or the underwriter leaves or the token deflates, the depth disappears, the volume disappears, the venue disappears. The script does not depend on the team — it depends on the math. Polymarket is the best-funded current iteration of the same script.
+The pattern is the same in every case: build a perps DEX, subsidize the makers and the takers, the rebate runs out or the airdrop completes or the token deflates, the depth disappears, the volume disappears, the venue disappears. The script does not depend on the team — it depends on the math. Polymarket is the best-funded current iteration of the same script.
 
 ---
 

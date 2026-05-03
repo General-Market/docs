@@ -50,17 +50,17 @@ The compounding has been worked out at full precision in [The Drag Study](../../
 
 ### V. The Pattern
 
-This story has been told before. The three largest orderbook venues that ever paid heavy subsidies to manufacture their depth each printed the same leaderboard before they died.
+This story has been told before. The three largest on-chain perpetuals venues that ever stacked retail flow against incentivized professional accounts each printed the same leaderboard before they died.
 
-**dYdX v3** launched perpetual futures on StarkEx in August 2021 and shipped roughly $200 million worth of DYDX in trader rewards across 2021–2022; monthly volume peaked above $30 billion in late 2021, and the rewards leaderboard was dominated by a small set of professional accounts that captured both the rebate and the retail flow it attracted. As the rewards decayed retail did not return — volume fell more than 90%, and the team rebuilt the architecture from scratch as v4 on a new chain.
+**dYdX v3** launched perpetual futures on StarkEx in August 2021 and shipped roughly $200–250 million worth of DYDX in trader rewards across 32 epochs. Monthly volume cleared $30–40 billion at peak — and the rewards leaderboard was dominated by a small set of professional accounts that captured both the rebate and the retail flow it attracted. As the rewards decayed retail did not return; on October 28, 2024 the entire v3 chain was switched off and the team rebuilt the architecture from scratch as v4 on a new chain.
 
-**FCoin** invented "trans-fee mining" in May 2018, rebating 100% of trading fees back to users in its FT token, peaked at $5.6 billion of daily volume by mid-June, and by February 2020 had frozen roughly $125 million of customer funds inside an exchange whose token had collapsed by 96%. The retail buyers who chased the rebate financed the rebate. The leaderboard, when finally examined, was the same shape every CEX leaderboard prints — a thin layer of professional accounts at the top, a long tail of users who arrived for the bonus and stayed for the loss.
+**Synthetix Perps via Kwenta** ran the most explicit subsidy-farming program ever shipped on-chain. From May 2023 it paid 5.31 million OP tokens plus KWENTA emissions, and a Dune dashboard at the time showed traders earning **$1.27 in OP rewards for every $1 of fees they paid** — the venue paid traders 27% more than it took from them. Daily volume hit $450 million and 34.5% of the perp DEX market. When OP rewards ended in late 2023, volume fell three consecutive quarters to $5.1 billion in Q3 2024. The leaderboard during the program was the same handful of farming wallets recycling capital through the rebate. Traders had been paid to trade. They left when paying stopped.
 
-**Serum** was Solana's flagship CLOB DEX, underwritten by Alameda's market making and FTX's token reserves. The depth was real, the leaderboard was Alameda; when the underwriter went bankrupt in November 2022 the book emptied within days.
+**Aevo** is the cleanest leaderboard collapse on record. The Ribbon team's pre-airdrop incentive program drove daily volume to $4.5 billion in February–March 2024, almost entirely captured by farming wallets positioning for the airdrop. The airdrop dropped on March 13, 2024; within weeks daily volume was below $100 million — a 97% fall — and CoinDesk was quoting open accusations of wash trading. The leaderboard, examined post-airdrop, was the same wallets that had captured the airdrop and left.
 
-These venues did not die because they were poorly run. They died because, given enough time, every CLOB with retail and informed flow on the same book converges to a state where only the informed remain, and the informed have no one left to trade against. The subsidy delays the convergence. It does not change the destination.
+These venues did not die because they were poorly run. They died because, given enough time, every CLOB that mixes retail with incentivized professional flow converges to a state where the professionals have captured the incentives and the retail has nothing left to give. The subsidy delays the convergence. It does not change the destination.
 
-Polymarket is in the early phase of the same arc. Volume is up. Concentration is rising. The leaderboard already prints the distribution every prior orderbook venue printed before its retail base gave up. The script does not depend on the operator.
+Polymarket is in the early phase of the same arc. Volume is up. Concentration is rising. The leaderboard already prints the distribution every prior subsidized perpetuals venue printed before its retail base gave up. The script does not depend on the operator.
 
 ---
 
