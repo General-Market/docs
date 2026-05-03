@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Link } from '@/i18n/routing'
 import { Sparkline } from './Sparkline'
 
@@ -14,6 +15,8 @@ export type SourceFeatureCardProps = {
   hrefOverride?: string
   badge?: string
   accentColor?: string
+  /** Optional brand logo. When set, renders above the displayName which becomes sr-only. */
+  logo?: ReactNode
 }
 
 const SIZE_HEIGHT: Record<CardSize, number> = {
@@ -65,6 +68,7 @@ export function SourceFeatureCard({
   hrefOverride,
   badge = 'Featured',
   accentColor,
+  logo,
 }: SourceFeatureCardProps) {
   const href = hrefOverride ?? `/source/${sourceId}`
   const stroke = accentColor ?? 'var(--apple-text)'
@@ -80,18 +84,27 @@ export function SourceFeatureCard({
     >
       <div className="flex items-start justify-between gap-3 relative z-10">
         <div className="min-w-0">
-          <div
-            className="font-semibold truncate"
-            style={{
-              fontFamily: 'var(--apple-font-display)',
-              fontSize: titleSize,
-              letterSpacing: 'var(--apple-track-tighter)',
-              color: 'var(--apple-text)',
-              lineHeight: 1.0714,
-            }}
-          >
-            {displayName}
-          </div>
+          {logo ? (
+            <>
+              <span className="sr-only">{displayName}</span>
+              <div className="flex items-center" aria-hidden="true">
+                {logo}
+              </div>
+            </>
+          ) : (
+            <div
+              className="font-semibold truncate"
+              style={{
+                fontFamily: 'var(--apple-font-display)',
+                fontSize: titleSize,
+                letterSpacing: 'var(--apple-track-tighter)',
+                color: 'var(--apple-text)',
+                lineHeight: 1.0714,
+              }}
+            >
+              {displayName}
+            </div>
+          )}
           {meta && (
             <div
               className="mt-1 truncate"

@@ -1,4 +1,5 @@
 import { SourceFeatureCard } from './SourceFeatureCard'
+import { NyseLogo } from './source-logos'
 import type { SourceFeed } from '@/lib/vision/adapters'
 
 type FeedMap = Record<string, SourceFeed>
@@ -40,17 +41,23 @@ export function FeaturedHero({ feeds }: { feeds: FeedMap }) {
   )
 }
 
+const ROW_LOGO: Partial<Record<string, () => React.ReactNode>> = {
+  equities: () => <NyseLogo height={28} />,
+}
+
 export function FeaturedRow({ feeds }: { feeds: FeedMap }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {FEATURED_ROW_IDS.map((id) => {
         const f = pick(feeds, id, id)
+        const renderLogo = ROW_LOGO[id]
         return (
           <SourceFeatureCard
             key={id}
             {...asCardProps(f)}
             size="medium"
             accentColor="var(--apple-text)"
+            logo={renderLogo ? renderLogo() : undefined}
           />
         )
       })}
