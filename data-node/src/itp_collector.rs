@@ -16,6 +16,19 @@ use crate::chain_cache::{CachedItpState, ChainCache};
 use crate::db;
 use crate::evm_init::create_provider_and_address;
 
+// Permissionless `createITP` invites unrelated parties to flood the chain.
+// One bot ran our Deploy107ITPs script with its own key and minted ~5,960 of
+// the 6,060 ITPs on testnet. We drop everything they create at every ingest
+// path — DB writes, cache inserts, reconciliation. Lowercase, no `0x`.
+const BLOCKED_CREATORS: &[&str] = &[
+    "aacb9812fb7c7a5284b9786e53fcd5ccfd375133",
+];
+
+fn is_blocked_creator(creator: &Address) -> bool {
+    let hex = format!("{:x}", creator);
+    BLOCKED_CREATORS.iter().any(|b| *b == hex.as_str())
+}
+
 abigen!(
     IndexCollector,
     r#"[
@@ -75,8 +88,13 @@ async fn store_itp_state(
     // The L3 RPC behind nginx flaps under concurrent load — the raw call here
     // would surface as `Failed to store created ITP` and stall the collector
     // cursor. fetch_itp_state_with_retry already does 3 attempts with backoff.
-    let (_id, _creator, total_supply, nav, assets, weights, inventory) =
+    let (_id, creator, total_supply, nav, assets, weights, inventory) =
         fetch_itp_state_with_retry(contract, itp_id_bytes).await?;
+
+    if is_blocked_creator(&creator) {
+        debug!(itp_id = %itp_id_hex, creator = %format!("{:?}", creator), "Skipping ITP from blocked creator");
+        return Ok(());
+    }
 
     let ts = get_block_timestamp(provider, block_number).await?;
 
@@ -372,6 +390,17 @@ pub async fn run(
         for result in results {
             match result {
                 Ok((i, itp_id_hex, creator, total_supply, nav, assets, weights, inventory)) => {
+                    if is_blocked_creator(&creator) {
+                        // Drop spam ITPs at startup hydration — never write a snapshot,
+                        // never populate the cache. Also clean up any rows that already
+                        // landed before this filter existed.
+                        let _ = sqlx::query("DELETE FROM itp_snapshots WHERE itp_id = $1")
+                            .bind(&itp_id_hex)
+                            .execute(&pool)
+                            .await;
+                        total_ok += 1;
+                        continue;
+                    }
                     // Store init snapshot if needed
                     match db::has_init_snapshot(&pool, &itp_id_hex).await {
                         Ok(false) => {
@@ -562,6 +591,10 @@ pub async fn run(
             Ok(events) => {
                 for (event, meta) in &events {
                     let itp_id_bytes: [u8; 32] = event.itp_id.into();
+                    if is_blocked_creator(&event.creator) {
+                        // Skip the chain re-read AND any downstream snapshot/cache work.
+                        continue;
+                    }
                     if let Err(e) = store_itp_state(
                         &pool,
                         &contract,
@@ -721,6 +754,9 @@ pub async fn run(
                         if let Ok((_id, creator, total_supply, nav, assets, weights, inventory)) =
                             fetch_itp_state_with_retry(&contract, itp_id_bytes).await
                         {
+                            if is_blocked_creator(&creator) {
+                                continue;
+                            }
                             // Preserve existing name/symbol from cache (set at creation time)
                             let mut cache = chain_cache.itp_states.write().await;
                             let (prev_name, prev_symbol, prev_settlement, prev_vault) = cache
@@ -898,6 +934,9 @@ pub async fn run(
                     if let Ok((_id, creator, total_supply, nav, assets, weights, inventory)) =
                         fetch_itp_state_with_retry(&contract, itp_id_bytes).await
                     {
+                        if is_blocked_creator(&creator) {
+                            continue;
+                        }
                         let (name, symbol) = fetch_name_symbol(&contract, itp_id_bytes).await;
                         // Skip empty-name/symbol spam ITPs at the reconciliation hydration path too.
                         if name.trim().is_empty() || symbol.trim().is_empty() {
