@@ -3,7 +3,7 @@
 # Reads orders from chain, computes BLS sig via bls-tool, submits in batches.
 set -euo pipefail
 
-RPC="${L3_RPC:-http://142.132.164.24/}"
+RPC="${L3_RPC:-https://rpc.generalmarket.io/}"
 KEY="${DEPLOYER_KEY:-0x107e200b197dc889feba0a1e0538bf51b97b2fc87f27f82783d5d59789dc3537}"
 CHAIN_ID=111222333
 BATCH_SIZE=10  # orders per confirmFills tx

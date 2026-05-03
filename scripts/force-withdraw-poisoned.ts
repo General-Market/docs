@@ -61,7 +61,7 @@ const L3_CHAIN: Chain = {
   id: 111222333,
   name: 'Index L3',
   nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-  rpcUrls: { default: { http: ['http://142.132.164.24/'] } },
+  rpcUrls: { default: { http: ['https://rpc.generalmarket.io/'] } },
 }
 
 // ── ABI fragments ───────────────────────────────────────────────────────────
@@ -150,7 +150,7 @@ function loadDeployment(): { visionAddr: string; oracleRegistryAddr: string; rpc
   return {
     visionAddr: raw.contracts.Vision,
     oracleRegistryAddr: raw.contracts.OracleRegistry,
-    rpcUrl: raw.rpcUrl || 'http://142.132.164.24/',
+    rpcUrl: raw.rpcUrl || 'https://rpc.generalmarket.io/',
   }
 }
 
@@ -214,7 +214,7 @@ async function main() {
   const env = loadSwarmEnv()
   const deployment = loadDeployment()
   const oracleUrls: string[] = (env.ORACLE_URLS ?? '').split(',').filter(Boolean)
-  const rpcUrl = env.L3_RPC_URL || deployment.rpcUrl || 'http://142.132.164.24/'
+  const rpcUrl = env.L3_RPC_URL || deployment.rpcUrl || 'https://rpc.generalmarket.io/'
 
   console.log(`RPC:          ${rpcUrl}`)
   console.log(`Vision:       ${deployment.visionAddr}`)

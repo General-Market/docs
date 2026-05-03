@@ -9,7 +9,7 @@
 import { createPublicClient, createWalletClient, http, encodeFunctionData, parseUnits, formatUnits, type Hex } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 
-const L3_RPC = process.env.L3_RPC || 'http://142.132.164.24/'
+const L3_RPC = process.env.L3_RPC || 'https://rpc.generalmarket.io/'
 const DEPLOYER_KEY = (process.env.DEPLOYER_KEY || '0x107e200b197dc889feba0a1e0538bf51b97b2fc87f27f82783d5d59789dc3537') as Hex
 const INDEX = (process.env.INDEX_ADDRESS || '0x61988A72e2c898702bf634D5D2A0278694CC731C') as Hex
 const L3_USDC = (process.env.L3_USDC || '0x4c782452e7fA2AE5f11d498a0B43a44B5d97906B') as Hex

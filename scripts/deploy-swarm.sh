@@ -4,7 +4,7 @@ set -euo pipefail
 VPS="index-maker/prod/be"
 REMOTE_DIR="/home/max/index"
 COMPOSE_DIR="docker/testnet/vision-swarm"
-L3_RPC="http://142.132.164.24/"
+L3_RPC="https://rpc.generalmarket.io/"
 ADDR_RE='^0x[0-9a-fA-F]{40}$'
 SSH_OPTS="-o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4"
 

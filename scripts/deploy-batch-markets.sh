@@ -17,7 +17,7 @@ DEPLOYMENT="frontend/lib/contracts/deployment.json"
 MORPHO_DEPLOYMENT="frontend/lib/contracts/morpho-deployment.json"
 
 INDEX_ADDR=$(jq -r '.contracts.Index' "$DEPLOYMENT")
-L3_RPC=$(jq -r '.contracts.L3_WUSDC // empty' "$DEPLOYMENT" | head -c 0; echo "http://142.132.164.24")
+L3_RPC=$(jq -r '.contracts.L3_WUSDC // empty' "$DEPLOYMENT" | head -c 0; echo "https://rpc.generalmarket.io")
 
 MORPHO=$(jq -r '.contracts.MORPHO' "$MORPHO_DEPLOYMENT")
 CURATOR_IRM=$(jq -r '.contracts.CURATOR_RATE_IRM // .contracts.ADAPTIVE_IRM' "$MORPHO_DEPLOYMENT")

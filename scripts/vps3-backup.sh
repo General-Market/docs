@@ -3,7 +3,7 @@
 # Nightly Postgres backup for VPS 3.
 #
 # Deploy:
-#   scp -P 3189 scripts/vps3-backup.sh root@178.104.243.94:/root/scripts/
+#   scp -P 3189 scripts/vps3-backup.sh root@159.195.77.160:/root/scripts/
 #   ssh vps3 'chmod +x /root/scripts/vps3-backup.sh'
 #
 # Cron (run on VPS 3, not locally):

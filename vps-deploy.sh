@@ -17,9 +17,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-# SSH
-BASTION="max@65.109.10.32"
-BASTION_PORT=3189
+# SSH — Netcup direct-SSH model. No bastion.
 VPS1_IP="159.195.78.238"
 VPS1_PORT=3189
 VPS1_USER="max"
@@ -49,16 +47,16 @@ NC='\033[0m'
 
 # ============ SSH Helpers ============
 ssh_vps1() {
-    ssh -o StrictHostKeyChecking=no -J "${BASTION}:${BASTION_PORT}" -p "$VPS1_PORT" "${VPS1_USER}@${VPS1_IP}" "$@"
+    ssh -o StrictHostKeyChecking=no -p "$VPS1_PORT" "${VPS1_USER}@${VPS1_IP}" "$@"
 }
 
 scp_to_vps1() {
-    scp -o StrictHostKeyChecking=no -o "ProxyJump=${BASTION}:${BASTION_PORT}" -P "$VPS1_PORT" "$@"
+    scp -o StrictHostKeyChecking=no -P "$VPS1_PORT" "$@"
 }
 
 rsync_to_vps1() {
     rsync -avz --progress \
-        -e "ssh -o StrictHostKeyChecking=no -J ${BASTION}:${BASTION_PORT} -p ${VPS1_PORT}" \
+        -e "ssh -o StrictHostKeyChecking=no -p ${VPS1_PORT}" \
         "$@"
 }
 
@@ -625,7 +623,7 @@ echo "    ./vps-deploy.sh --logs      # Tail logs"
 echo "    ./vps-deploy.sh --stop      # Stop services"
 echo ""
 echo -e "  ${BLUE}Direct SSH:${NC}"
-echo "    ssh -J ${BASTION}:${BASTION_PORT} -p ${VPS1_PORT} ${VPS1_USER}@${VPS1_IP}"
+echo "    ssh -p ${VPS1_PORT} ${VPS1_USER}@${VPS1_IP}"
 echo "    cd ${REMOTE_DIR} && tail -f logs/*.log"
 echo ""
 

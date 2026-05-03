@@ -10,7 +10,7 @@
 
 set -euo pipefail
 
-RPC="${L3_RPC_URL:-http://142.132.164.24/}"
+RPC="${L3_RPC_URL:-https://rpc.generalmarket.io/}"
 FACTORY="0xbc418956A20DB5C343b56b6AE947AF4896b23A1e"
 BATCH_JOINED_TOPIC="0x1c0ce30c1ac6de0e996765851ba43b39bbc27db1debd311ca41905a706567cdb"
 

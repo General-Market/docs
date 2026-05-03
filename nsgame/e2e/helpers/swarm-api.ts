@@ -196,7 +196,7 @@ export async function getVisionContractUsdc(): Promise<bigint> {
 
 // ── Health Checks ──
 
-const VPS_IP = "142.132.164.24";
+const VPS_IP = "159.195.78.238";
 
 export async function checkDataNodeHealth(): Promise<boolean> {
   // Try nginx proxy first (raw port 8200 is firewalled)

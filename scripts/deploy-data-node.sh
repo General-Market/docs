@@ -14,7 +14,7 @@ set -euo pipefail
 MONO_ROOT="$(git rev-parse --show-toplevel)"
 cd "$MONO_ROOT"
 
-VPS_HOST="root@178.104.243.94"
+VPS_HOST="root@159.195.77.160"
 VPS_PORT="3189"
 
 echo "[deploy-data-node] syncing data-node/ to VPS 3"
