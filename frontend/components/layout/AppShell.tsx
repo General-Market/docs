@@ -1,4 +1,5 @@
 import { ReactNode } from 'react'
+import { AppleFooter } from './AppleFooter'
 import { LeftRail } from './LeftRail'
 import { TopBar } from './TopBar'
 
@@ -33,7 +34,10 @@ export function AppShell({ children, search }: AppShellProps) {
           <div className="grid grid-cols-1 md:grid-cols-[240px_1fr]">
             <TopBar search={search} />
             <LeftRail />
-            <main className="min-w-0">{children}</main>
+            <div className="min-w-0 flex flex-col">
+              <main className="min-w-0">{children}</main>
+              <AppleFooter />
+            </div>
           </div>
         </div>
       </div>
