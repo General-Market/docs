@@ -91,10 +91,10 @@ export function HomeDashboard({ feeds }: { feeds: FeedMap }) {
             sourceId: hero.sourceId,
             displayName: hero.displayName,
             meta: hero.meta,
-            series: hero.series,
             coverage: hero.coverage,
             assetName: hero.assetName,
             assetValue: hero.assetValue,
+            imageUrl: hero.imageUrl,
             hrefOverride: hero.hrefOverride,
           }}
           side={side}
@@ -110,7 +110,7 @@ export function HomeDashboard({ feeds }: { feeds: FeedMap }) {
               sourceId={feed.sourceId}
               displayName={feed.displayName}
               meta={feed.meta}
-              series={feed.series}
+              imageUrl={feed.imageUrl}
               assetName={feed.assetName}
               assetValue={feed.assetValue}
               coverage={feed.coverage}
@@ -129,7 +129,7 @@ export function HomeDashboard({ feeds }: { feeds: FeedMap }) {
               sourceId={feed.sourceId}
               displayName={feed.displayName}
               meta={feed.meta}
-              series={feed.series}
+              imageUrl={feed.imageUrl}
               assetName={feed.assetName}
               assetValue={feed.assetValue}
               coverage={feed.coverage}

@@ -1,6 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
+import Image from 'next/image'
 import { ReactNode } from 'react'
 import { Link } from '@/i18n/routing'
 
@@ -51,18 +52,14 @@ export function TopBar({ search }: TopBarProps) {
 function Brand() {
   return (
     <Link href="/" className="flex items-center gap-2">
-      <div
-        className="grid place-items-center font-bold text-white"
-        style={{
-          width: 22,
-          height: 22,
-          borderRadius: 6,
-          background: 'var(--apple-text)',
-          fontSize: 11,
-        }}
-      >
-        GM
-      </div>
+      <Image
+        src="/logo.svg"
+        alt="General"
+        width={26}
+        height={26}
+        style={{ borderRadius: 6 }}
+        priority
+      />
       <span
         className="hidden sm:inline font-semibold"
         style={{
@@ -72,7 +69,7 @@ function Brand() {
           color: 'var(--apple-text)',
         }}
       >
-        General Market
+        General
       </span>
       <span
         className="hidden sm:inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-semibold"

@@ -1,5 +1,5 @@
 import type { SourceFeed } from './types'
-import { fallbackSeries } from './types'
+import { fallbackSeries, SOURCE_IMAGES } from './types'
 import { getDefiLlamaFeed } from './defillama'
 import { getEquitiesFeed } from './equities'
 import { getEspnFeed } from './espn'
@@ -43,7 +43,7 @@ export async function getHomeFeeds(): Promise<Record<string, SourceFeed>> {
   results.forEach((r, i) => {
     const id = ids[i]
     if (r.status === 'fulfilled') {
-      out[id] = r.value
+      out[id] = { ...r.value, imageUrl: r.value.imageUrl ?? SOURCE_IMAGES[id] }
     } else {
       const d = DISPLAY[id]
       out[id] = {
@@ -52,6 +52,7 @@ export async function getHomeFeeds(): Promise<Record<string, SourceFeed>> {
         meta: d.meta,
         coverage: d.coverage,
         series: fallbackSeries(id),
+        imageUrl: SOURCE_IMAGES[id],
         external: d.coverage === 'external',
       }
     }
