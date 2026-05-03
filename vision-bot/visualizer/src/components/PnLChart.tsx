@@ -63,21 +63,22 @@ export function PnLChart({ data, stratOn }: Props) {
       width: container.clientWidth,
       height: container.clientHeight,
       layout: {
-        background: { type: ColorType.Solid, color: '#111317' },
-        textColor: '#8b929d',
-        fontFamily: 'Inter, system-ui, sans-serif',
+        background: { type: ColorType.Solid, color: '#ffffff' },
+        textColor: '#6e6e73',
+        fontFamily:
+          '"SF Pro Text", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif',
         attributionLogo: false,
       },
       grid: {
-        vertLines: { color: 'rgba(255,255,255,0.04)' },
-        horzLines: { color: 'rgba(255,255,255,0.04)' },
+        vertLines: { color: 'rgba(0,0,0,0.06)' },
+        horzLines: { color: 'rgba(0,0,0,0.06)' },
       },
-      rightPriceScale: { borderColor: '#20242b' },
-      timeScale: { borderColor: '#20242b', timeVisible: true, secondsVisible: false },
+      rightPriceScale: { borderColor: 'rgba(0,0,0,0.08)' },
+      timeScale: { borderColor: 'rgba(0,0,0,0.08)', timeVisible: true, secondsVisible: false },
       crosshair: {
         mode: CrosshairMode.Normal,
-        vertLine: { color: '#3a414c', width: 1, style: 0 },
-        horzLine: { color: '#3a414c', width: 1, style: 0 },
+        vertLine: { color: 'rgba(0,0,0,0.25)', width: 1, style: 0 },
+        horzLine: { color: 'rgba(0,0,0,0.25)', width: 1, style: 0 },
       },
       autoSize: false,
     })

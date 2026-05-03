@@ -46,13 +46,13 @@ export const STRATEGIES: Strategy[] = [
   {
     key: 'ai',
     label: 'AI',
-    color: '#f7a35c',
+    color: '#ff9500',
     decide: (i, prices) => aiDecide(i, prices),
   },
   {
     key: 'actual',
     label: "bot's actual",
-    color: '#e7eaef',
+    color: '#1d1d1f',
     decide: (i, prices, ctx) => ctx.actualBet(prices[i].ts),
   },
 ]
