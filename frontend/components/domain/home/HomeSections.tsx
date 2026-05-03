@@ -69,13 +69,13 @@ export function HomeDashboard({ feeds }: { feeds: FeedMap }) {
   const topMarkets = TOP_MARKETS_IDS.map((id) => pick(feeds, id))
 
   return (
-    <div className="px-4 py-6 sm:px-8 sm:py-8 max-w-[1200px] mx-auto">
+    <div className="px-6 py-8 lg:px-10 lg:py-10">
       <div>
         <h1
           className="font-semibold"
           style={{
             fontFamily: 'var(--apple-font-display)',
-            fontSize: 28,
+            fontSize: 32,
             letterSpacing: 'var(--apple-track-tight)',
             lineHeight: 1.07,
             color: 'var(--apple-text)',
@@ -85,32 +85,32 @@ export function HomeDashboard({ feeds }: { feeds: FeedMap }) {
         </h1>
       </div>
 
-      <div className="mt-6">
+      <div className="mt-8">
         <HeroCard
           feature={{
             sourceId: hero.sourceId,
             displayName: hero.displayName,
             meta: hero.meta,
+            series: hero.series,
             coverage: hero.coverage,
             assetName: hero.assetName,
             assetValue: hero.assetValue,
-            imageUrl: hero.imageUrl,
             hrefOverride: hero.hrefOverride,
           }}
           side={side}
         />
       </div>
 
-      <section className="mt-10">
+      <section className="mt-12">
         <SectionHeader title="Top markets" href="/explorer" />
-        <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-5 sm:gap-6 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5">
           {featuredRow.map((feed) => (
             <AssetCard
               key={feed.sourceId}
               sourceId={feed.sourceId}
               displayName={feed.displayName}
               meta={feed.meta}
-              imageUrl={feed.imageUrl}
+              series={feed.series}
               assetName={feed.assetName}
               assetValue={feed.assetValue}
               coverage={feed.coverage}
@@ -120,16 +120,16 @@ export function HomeDashboard({ feeds }: { feeds: FeedMap }) {
         </div>
       </section>
 
-      <section className="mt-10 mb-4">
+      <section className="mt-12 mb-4">
         <SectionHeader title="Recently active" />
-        <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-5 sm:gap-6 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5">
           {topMarkets.map((feed) => (
             <AssetCard
               key={feed.sourceId}
               sourceId={feed.sourceId}
               displayName={feed.displayName}
               meta={feed.meta}
-              imageUrl={feed.imageUrl}
+              series={feed.series}
               assetName={feed.assetName}
               assetValue={feed.assetValue}
               coverage={feed.coverage}

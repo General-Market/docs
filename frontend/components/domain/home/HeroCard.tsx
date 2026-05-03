@@ -1,6 +1,6 @@
-import Image from 'next/image'
 import { Link } from '@/i18n/routing'
-import { sourceGradient } from './source-hue'
+import { Sparkline } from './Sparkline'
+import { sourceGradient, sourceStroke, sourceFill } from './source-hue'
 import type { Coverage } from './AssetCard'
 import type { SourceFeed } from '@/lib/vision/adapters'
 
@@ -8,16 +8,35 @@ type HeroSpec = {
   sourceId: string
   displayName: string
   meta: string
+  series: number[]
   coverage: Coverage
   assetName?: string
   assetValue?: string
-  imageUrl?: string
   hrefOverride?: string
 }
 
 interface Props {
   feature: HeroSpec
   side: SourceFeed[]
+}
+
+function ShieldDot() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 12 12" aria-hidden>
+      <path
+        d="M6 1L2 3v3.2c0 2.4 1.7 4.4 4 4.8 2.3-.4 4-2.4 4-4.8V3L6 1z"
+        fill="currentColor"
+      />
+      <path
+        d="M4.4 6l1.2 1.2L8 4.8"
+        stroke="#0071e3"
+        strokeWidth="1.4"
+        fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
 }
 
 function PillCoverage({ coverage }: { coverage: Coverage }) {
@@ -68,25 +87,6 @@ function PillCoverage({ coverage }: { coverage: Coverage }) {
   )
 }
 
-function ShieldDot() {
-  return (
-    <svg width="11" height="11" viewBox="0 0 12 12" aria-hidden>
-      <path
-        d="M6 1L2 3v3.2c0 2.4 1.7 4.4 4 4.8 2.3-.4 4-2.4 4-4.8V3L6 1z"
-        fill="currentColor"
-      />
-      <path
-        d="M4.4 6l1.2 1.2L8 4.8"
-        stroke="#0071e3"
-        strokeWidth="1.4"
-        fill="none"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
-
 function FeaturedTag() {
   return (
     <div
@@ -132,6 +132,7 @@ export function HeroCard({ feature, side }: Props) {
         className="contents group"
         aria-label={`Open ${feature.displayName} — ${feature.assetName ?? ''}`}
       >
+        {/* Left text column */}
         <div className="flex flex-col justify-between p-6 sm:p-8">
           <div>
             <FeaturedTag />
@@ -145,10 +146,24 @@ export function HeroCard({ feature, side }: Props) {
                 color: 'var(--apple-text)',
               }}
             >
-              {feature.assetName ?? feature.displayName}
+              {feature.displayName}
             </h2>
+            {feature.assetName && (
+              <p
+                className="mt-2"
+                style={{
+                  fontFamily: 'var(--apple-font-text)',
+                  fontSize: 17,
+                  letterSpacing: 'var(--apple-track-tight)',
+                  lineHeight: 1.3,
+                  color: 'var(--apple-text)',
+                }}
+              >
+                {feature.assetName}
+              </p>
+            )}
             <p
-              className="mt-3"
+              className="mt-2"
               style={{
                 fontSize: 14,
                 lineHeight: 1.4,
@@ -178,32 +193,60 @@ export function HeroCard({ feature, side }: Props) {
           </span>
         </div>
 
+        {/* Middle gradient + chart */}
         <div
-          className="relative min-h-[240px] sm:min-h-[280px] lg:min-h-[320px] overflow-hidden"
+          className="relative min-h-[240px] sm:min-h-[280px] lg:min-h-[320px]"
           style={{ background: sourceGradient(feature.sourceId) }}
         >
-          {feature.imageUrl && (
-            <div className="absolute inset-0 flex items-center justify-center p-10 transition group-hover:scale-[1.03]">
-              <div className="relative w-full h-full max-w-[60%] max-h-[60%]">
-                <Image
-                  src={feature.imageUrl}
-                  alt={`${feature.displayName} logo`}
-                  fill
-                  className="object-contain"
-                  sizes="(min-width: 1024px) 40vw, 100vw"
-                  priority
-                  unoptimized
-                />
-              </div>
+          {/* Top label — big source name + asset name on the chart */}
+          <div className="absolute top-6 left-6 right-6 z-10">
+            <div
+              className="font-semibold"
+              style={{
+                fontFamily: 'var(--apple-font-display)',
+                fontSize: 28,
+                letterSpacing: 'var(--apple-track-tight)',
+                lineHeight: 1.05,
+                color: 'var(--apple-text)',
+              }}
+            >
+              {feature.displayName}
             </div>
-          )}
+            {feature.assetName && (
+              <div
+                className="mt-1.5 font-medium line-clamp-2"
+                style={{
+                  fontFamily: 'var(--apple-font-text)',
+                  fontSize: 14,
+                  letterSpacing: 'var(--apple-track-tight)',
+                  color: 'var(--apple-text-secondary)',
+                  lineHeight: 1.3,
+                }}
+              >
+                {feature.assetName}
+              </div>
+            )}
+          </div>
+
+          {/* Sparkline filling the lower half */}
+          <div className="absolute inset-x-0 bottom-0 h-[60%]">
+            <Sparkline
+              series={feature.series}
+              width={800}
+              height={220}
+              stroke={sourceStroke(feature.sourceId)}
+              fill={sourceFill(feature.sourceId)}
+              ariaLabel={`${feature.displayName} 24h activity`}
+            />
+          </div>
+
           {feature.assetValue && (
             <div
-              className="absolute bottom-4 right-4 rounded-apple-sm px-2.5 py-1 font-semibold num"
+              className="absolute bottom-4 right-4 rounded-full px-3 py-1 font-semibold num"
               style={{
-                fontSize: 12,
+                fontSize: 13,
                 letterSpacing: '0.02em',
-                background: 'rgba(255,255,255,0.85)',
+                background: 'rgba(255,255,255,0.92)',
                 color: 'var(--apple-text)',
                 backdropFilter: 'saturate(180%) blur(8px)',
                 fontVariantNumeric: 'tabular-nums',
@@ -237,46 +280,47 @@ function SideRow({ feed }: { feed: SourceFeed }) {
       style={{ borderColor: 'var(--apple-line)' }}
     >
       <div
-        className="relative h-14 w-20 shrink-0 overflow-hidden flex items-center justify-center p-1.5"
+        className="relative h-14 w-20 shrink-0 overflow-hidden"
         style={{
           borderRadius: 'var(--apple-r-sm)',
           background: sourceGradient(feed.sourceId),
         }}
       >
-        {feed.imageUrl && (
-          <div className="relative w-full h-full">
-            <Image
-              src={feed.imageUrl}
-              alt=""
-              fill
-              className="object-contain"
-              sizes="80px"
-              unoptimized
-            />
-          </div>
-        )}
+        <div className="absolute inset-x-0 bottom-0 h-full">
+          <Sparkline
+            series={feed.series}
+            width={160}
+            height={56}
+            stroke={sourceStroke(feed.sourceId)}
+            fill={sourceFill(feed.sourceId)}
+          />
+        </div>
       </div>
       <div className="min-w-0 flex-1">
         <div
-          className="font-medium line-clamp-2"
+          className="truncate font-semibold"
           style={{
-            fontSize: 13,
+            fontFamily: 'var(--apple-font-display)',
+            fontSize: 15,
             letterSpacing: 'var(--apple-track-tighter)',
             color: 'var(--apple-text)',
-            lineHeight: 1.3,
-          }}
-        >
-          {feed.assetName ?? feed.displayName}
-        </div>
-        <div
-          className="mt-0.5 truncate"
-          style={{
-            fontSize: 11,
-            color: 'var(--apple-text-secondary)',
+            lineHeight: 1.2,
           }}
         >
           {feed.displayName}
         </div>
+        {feed.assetName && (
+          <div
+            className="truncate"
+            style={{
+              fontSize: 11,
+              color: 'var(--apple-text-secondary)',
+            }}
+            title={feed.assetName}
+          >
+            {feed.assetName}
+          </div>
+        )}
       </div>
     </Link>
   )

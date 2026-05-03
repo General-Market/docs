@@ -9,37 +9,20 @@ type AppShellProps = {
 }
 
 /**
- * Outer page is gray. Everything sits inside a centered floating white panel
- * with rounded corners and a soft shadow. Modelled on the bot visualizer.
+ * Full-bleed shell. No floating card, no outer gray gap. Hairline dividers
+ * between regions. The panel IS the page — Apple's pro/enterprise pattern.
  */
 export function AppShell({ children, search }: AppShellProps) {
   return (
     <div
-      className="min-h-screen w-full"
-      style={{ background: 'var(--apple-page-bg)' }}
+      className="min-h-screen w-full grid grid-cols-1 md:grid-cols-[240px_1fr]"
+      style={{ background: 'var(--apple-panel)', color: 'var(--apple-text)' }}
     >
-      <div
-        className="mx-auto sm:p-4 lg:p-6"
-        style={{ maxWidth: 'var(--apple-shell-max)' }}
-      >
-        <div
-          className="overflow-hidden"
-          style={{
-            background: 'var(--apple-panel)',
-            borderRadius: 'var(--apple-r-card)',
-            boxShadow: 'var(--apple-shadow-card)',
-            minHeight: 'calc(100vh - 3rem)',
-          }}
-        >
-          <div className="grid grid-cols-1 md:grid-cols-[240px_1fr]">
-            <TopBar search={search} />
-            <LeftRail />
-            <div className="min-w-0 flex flex-col">
-              <main className="min-w-0">{children}</main>
-              <AppleFooter />
-            </div>
-          </div>
-        </div>
+      <TopBar search={search} />
+      <LeftRail />
+      <div className="flex flex-col min-w-0">
+        <main className="flex-1 min-w-0">{children}</main>
+        <AppleFooter />
       </div>
     </div>
   )

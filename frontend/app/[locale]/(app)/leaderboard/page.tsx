@@ -10,7 +10,7 @@ export const metadata = {
 export default function LeaderboardPage() {
   return (
     <AppShell search={<SourceSearch />}>
-      <div className="px-4 py-6 sm:px-8 sm:py-8 max-w-[1200px] mx-auto">
+      <div className="px-6 py-8 lg:px-10 lg:py-10">
         <div className="mb-8">
           <h1
             className="font-semibold"
