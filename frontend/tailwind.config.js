@@ -55,15 +55,32 @@ module.exports = {
       maxWidth: {
         site: 'none',
         'site-wide': 'none',
+        'apple-narrow': '420px',
+        'apple': '734px',
+        'apple-wide': '1068px',
+        'apple-max': '1680px',
       },
       boxShadow: {
         card: '0 1px 2px rgba(0,0,0,0.04)',
         'card-hover': '0 2px 8px rgba(0,0,0,0.06)',
         'card-elevated': '0 2px 6px rgba(0,0,0,0.04)',
         modal: '0 25px 50px rgba(0,0,0,0.20)',
+        'apple-card': '0 8px 24px rgba(0,0,0,0.06)',
       },
       borderRadius: {
         card: '6px',
+        'apple-sm': '8px',
+        'apple-md': '12px',
+        'apple-pill': '980px',
+      },
+      letterSpacing: {
+        'apple-tight': '-0.022em',
+        'apple-tighter': '-0.016em',
+        'apple-loose': '0.011em',
+      },
+      transitionTimingFunction: {
+        'apple': 'cubic-bezier(0.4, 0, 0.6, 1)',
+        'apple-out': 'cubic-bezier(0.25, 0.1, 0.3, 1)',
       },
       keyframes: {
         shimmer: {

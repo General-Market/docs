@@ -1,0 +1,128 @@
+/*
+  Apple-sourced design tokens.
+  Every value pulled from apple.com production CSS or Apple HIG.
+  See docs/apple-style-table.md for citations.
+  Do not invent values. Do not pretty-round.
+*/
+
+:root {
+  --apple-font-display: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --apple-font-text: "SF Pro Text", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+
+  --apple-fs-12: 12px;
+  --apple-fs-14: 14px;
+  --apple-fs-17: 17px;
+  --apple-fs-19: 19px;
+  --apple-fs-21: 21px;
+  --apple-fs-24: 24px;
+  --apple-fs-28: 28px;
+  --apple-fs-32: 32px;
+  --apple-fs-40: 40px;
+  --apple-fs-48: 48px;
+  --apple-fs-56: 56px;
+
+  --apple-track-tight: -0.022em;
+  --apple-track-tighter: -0.016em;
+  --apple-track-mid: -0.005em;
+  --apple-track-loose: 0.011em;
+
+  --apple-bg: #ffffff;
+  --apple-surface: #f5f5f7;
+  --apple-text: #1d1d1f;
+  --apple-text-secondary: #6e6e73;
+  --apple-text-tertiary: #86868b;
+  --apple-accent: #0071e3;
+  --apple-accent-hover: #0066cc;
+  --apple-accent-on-dark: #2997ff;
+  --apple-border: rgba(0, 0, 0, 0.08);
+  --apple-divider: #e8e8ed;
+
+  --apple-coverage-anticheat: #0071e3;
+  --apple-coverage-external: #86868b;
+
+  --apple-ease-default: cubic-bezier(0.4, 0, 0.6, 1);
+  --apple-ease-out: cubic-bezier(0.25, 0.1, 0.3, 1);
+
+  --apple-r-sm: 8px;
+  --apple-r-md: 12px;
+  --apple-r-pill: 980px;
+
+  --apple-content-narrow: 420px;
+  --apple-content: 734px;
+  --apple-content-wide: 1068px;
+  --apple-content-max: 1680px;
+
+  --apple-glass-bg-light: rgba(250, 250, 252, 0.8);
+  --apple-glass-bg-dark: rgba(22, 22, 23, 0.8);
+  --apple-glass-filter: saturate(180%) blur(20px);
+
+  --apple-shell-left: 240px;
+  --apple-shell-right: 320px;
+  --apple-shell-topbar: 56px;
+}
+
+.apple-glass {
+  background: var(--apple-glass-bg-light);
+  backdrop-filter: var(--apple-glass-filter);
+  -webkit-backdrop-filter: var(--apple-glass-filter);
+  border-bottom: 1px solid var(--apple-border);
+}
+
+.apple-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: var(--apple-r-pill);
+  font-family: var(--apple-font-text);
+  font-size: var(--apple-fs-12);
+  letter-spacing: var(--apple-track-loose);
+  font-weight: 600;
+  line-height: 1;
+}
+
+.apple-pill--featured {
+  background: var(--apple-text);
+  color: var(--apple-bg);
+}
+
+.apple-pill--anticheat {
+  background: var(--apple-coverage-anticheat);
+  color: #ffffff;
+}
+
+.apple-pill--external {
+  background: transparent;
+  color: var(--apple-text-secondary);
+  border: 1px solid var(--apple-border);
+}
+
+.apple-card {
+  background: var(--apple-bg);
+  border: 1px solid var(--apple-border);
+  border-radius: var(--apple-r-md);
+  transition: transform 240ms var(--apple-ease-default),
+              box-shadow 240ms var(--apple-ease-default);
+}
+
+.apple-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+}
+
+.apple-hero-line {
+  font-family: var(--apple-font-display);
+  font-size: clamp(40px, 5vw, var(--apple-fs-56));
+  line-height: 1.0714;
+  letter-spacing: var(--apple-track-tighter);
+  font-weight: 600;
+  color: var(--apple-text);
+}
+
+.apple-hero-sub {
+  font-family: var(--apple-font-text);
+  font-size: var(--apple-fs-21);
+  line-height: 1.1904;
+  letter-spacing: var(--apple-track-tight);
+  color: var(--apple-text-secondary);
+}
