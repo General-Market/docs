@@ -69,26 +69,34 @@ This copies `envs/{env}/.env` → `frontend/.env.local` and syncs 3 deployment J
 After deploying contracts locally, `start.sh` syncs deployment JSONs back to `envs/local/`.
 After deploying on testnet, `testnet.sh` syncs back to `envs/testnet/`.
 
-## Netcup migration (complete — 2026-05-01)
+## Netcup migration (complete — 2026-05-01, Hetzner gone — 2026-05-03)
 
-Cutover finished 2026-05-01 ~22:25 CEST. Chain advancing on Netcup VPS 2
-from block 1069006. All six DNS records flipped. Hetzner services stopped,
-boxes decommissioning same day. Three Netcup boxes in Nürnberg (AS197540,
-159.195.x), inter-VPS RTT 0.4–0.6 ms — public IPs replace what the Hetzner
-private net used to do. No `10.2.0.0/24`. No bastion. UFW. NIC is `eth0`.
+Cutover finished 2026-05-01 ~22:25 CEST. Hetzner boxes wiped 2026-05-03 —
+**the old IPs are dead, the `*-old` SSH aliases are removed, there is no
+rollback path.** Anything that names `116.203.156.98`, `142.132.164.24`, or
+`178.104.243.94` as a target is stale; treat as a bug and replace with the
+Netcup IP below. Chain advancing on Netcup VPS 2 from block 1069006. Three
+Netcup boxes in Nürnberg (AS197540, 159.195.x), inter-VPS RTT 0.4–0.6 ms —
+public IPs replace what the Hetzner private net used to do. No `10.2.0.0/24`.
+No bastion. UFW. NIC is `eth0`.
 
-| Role | Hetzner (decommissioning) | Netcup (canonical) | State |
-|------|---------------------------|--------------------|-------|
-| VPS 1 backend | 116.203.156.98 | **159.195.78.238** | live |
-| VPS 2 chain + AP | 142.132.164.24 | **159.195.79.153** | live |
-| VPS 3 frontend + Solana | 178.104.243.94 | **159.195.77.160** | live |
+| Role | Netcup IP | State |
+|------|-----------|-------|
+| VPS 1 backend | **159.195.78.238** | live |
+| VPS 2 chain + AP | **159.195.79.153** | live |
+| VPS 3 frontend + Solana | **159.195.77.160** | live |
 
-Canonical SSH aliases (`index-maker/prod/be|postgres|fe`, `vps3`) now resolve
-to Netcup. Direct SSH on port 3189 as `root` for all three — no bastion.
-`vps1-old`, `vps2-old`, `vps3-old` aliases retained for the next 24h in case
-of emergency rollback (procedure: re-point DNS via Cloudflare API + start
-old containers — runbook at `scripts/cutover-netcup.md`). Drop the `-old`
-aliases once Hetzner is wiped. Pre/post-cutover details in `vps.md`.
+SSH aliases: `index-maker/prod/be`, `index-maker/prod/postgres`,
+`index-maker/prod/fe`, `vps3`. Direct SSH on port 3189 as `root` — no bastion.
+Pre/post-cutover details in `vps.md`. Cutover runbook at
+`scripts/cutover-netcup.md` (kept for reference; not for re-running).
+
+**Wallet RPC URLs (post-cutover gotcha):** wallets that connected before the
+cutover still hold `http://142.132.164.24/` for chain 111222333 and silently
+fail every signed tx with a `502` modal. The dapp force-pushes the canonical
+URL once per browser via `ensureWalletRpcRefreshed` in
+`frontend/lib/wagmi.ts`, gated on `WALLET_RPC_REWRITE_VERSION`. Bump that
+constant on the next migration.
 
 ## Network
 | Network | Chain ID | RPC | Collateral |

@@ -12,7 +12,7 @@ import {
   type UseSendTransactionReturnType,
 } from 'wagmi'
 import { type Chain } from 'wagmi/chains'
-import { activeChainId, indexL3, getWalletRpcUrls } from '@/lib/wagmi'
+import { activeChainId, indexL3, getWalletRpcUrls, ensureWalletRpcRefreshed } from '@/lib/wagmi'
 
 /**
  * Ensure the wallet is on the correct chain before sending a transaction.
@@ -25,9 +25,16 @@ export async function ensureCorrectChain(
   targetChainId: number = activeChainId,
   targetChain?: Chain,
 ) {
+  const chain = targetChain ?? indexL3
+
+  // Force the canonical RPC URL once per browser (no-op after first success).
+  // Without this, a wallet that already has chain 111222333 with a pre-cutover
+  // host caches that URL forever — every signed tx sends eth_getTransactionCount
+  // to a dead box and surfaces a 502 error modal in the wallet UI.
+  await ensureWalletRpcRefreshed(chain)
+
   if (currentChainId === targetChainId) return
 
-  const chain = targetChain ?? indexL3
   const targetHex = `0x${targetChainId.toString(16)}`
 
   // Prefer wagmi's switcher — it keeps the connector's cached chainId in sync

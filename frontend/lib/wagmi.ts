@@ -155,6 +155,63 @@ export function getWalletRpcUrls(chain: Chain): string[] {
   return []
 }
 
+// One-time forced rewrite of the wallet's stored RPC URL. Bumped only when
+// the canonical URL changes (chain migration, host swap). Wallets that hold
+// a stale URL across the cutover would otherwise call the dead host on every
+// signed tx — there is no DNS to redirect bare-IP RPCs and no way to read the
+// wallet's stored URL to know it's stale. So we push the canonical URL once
+// per browser, key on this version, and never again. The stability that OKX
+// needs for its nonce cache survives because the rewrite fires exactly once.
+//
+// Bump on the next migration. Format: "YYYY-MM-DD-<slug>".
+export const WALLET_RPC_REWRITE_VERSION = '2026-05-03-netcup'
+const WALLET_RPC_REWRITE_LS_KEY = 'gm-wallet-rpc-rewrite-version'
+
+/**
+ * Force the wallet to adopt the canonical RPC URL for a given chain, exactly
+ * once per browser per WALLET_RPC_REWRITE_VERSION. No-op if the version flag
+ * is already set, if no provider is connected, or if the chain has no
+ * canonical URL configured. Safe to call eagerly on connect and before every
+ * write — subsequent calls return immediately.
+ */
+export async function ensureWalletRpcRefreshed(chain: Chain): Promise<void> {
+  if (typeof window === 'undefined') return
+  const provider = (window as any).ethereum
+  if (!provider) return
+  // localStorage may throw in restricted contexts (private mode, sandboxed
+  // iframes). Treat any access failure as "not yet rewritten" and fall back
+  // to no-op rather than crashing the connect flow.
+  try {
+    if (window.localStorage.getItem(WALLET_RPC_REWRITE_LS_KEY) === WALLET_RPC_REWRITE_VERSION) {
+      return
+    }
+  } catch {
+    return
+  }
+  const canonical = WALLET_RPC_URLS[chain.id]
+  if (!canonical) return
+  const chainIdHex = `0x${chain.id.toString(16)}`
+  try {
+    await provider.request({
+      method: 'wallet_addEthereumChain',
+      params: [{
+        chainId: chainIdHex,
+        chainName: chain.name,
+        nativeCurrency: chain.nativeCurrency,
+        rpcUrls: [canonical],
+        ...(chain.blockExplorers?.default ? {
+          blockExplorerUrls: [chain.blockExplorers.default.url],
+        } : {}),
+      }],
+    })
+    try { window.localStorage.setItem(WALLET_RPC_REWRITE_LS_KEY, WALLET_RPC_REWRITE_VERSION) } catch { /* ignore */ }
+  } catch {
+    // Wallet refused or user dismissed. Leave the flag unset so the next
+    // session retries. The user's tx will fail with the dead URL until they
+    // approve, but the dapp keeps trying without further intervention.
+  }
+}
+
 // ---------------------------------------------------------------------------
 // L3-defaulting hook wrappers
 // Use these instead of raw wagmi hooks so chain reads always target L3

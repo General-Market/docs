@@ -4,7 +4,7 @@ import { useEffect, useCallback } from 'react'
 import { usePathname } from 'next/navigation'
 import { useAccount, useChainId, useSwitchChain } from 'wagmi'
 import { type Chain } from 'wagmi/chains'
-import { indexL3, settlementChain, getWalletRpcUrls } from '@/lib/wagmi'
+import { indexL3, settlementChain, getWalletRpcUrls, ensureWalletRpcRefreshed } from '@/lib/wagmi'
 
 /**
  * Global chain enforcer — blocks all UI and forces wallet to switch
@@ -61,9 +61,16 @@ export function ChainGuard({ children }: { children: React.ReactNode }) {
   // spurious "Nonce too high" on the next signed tx. Probe with
   // `wallet_switchEthereumChain` first; only call `wallet_addEthereumChain`
   // when the wallet replies 4902 (chain not configured).
+  //
+  // Exception: `ensureWalletRpcRefreshed` runs first and forces the canonical
+  // URL exactly once per browser (gated on WALLET_RPC_REWRITE_VERSION). This
+  // is the migration-cutover escape hatch — any wallet that holds a stale
+  // RPC URL from before the version bump silently adopts the canonical one
+  // on the next connect, without the user editing wallet settings.
   useEffect(() => {
     if (!isConnected || typeof window === 'undefined' || !window.ethereum) return
     const ensureChainAdded = async (chain: Chain) => {
+      await ensureWalletRpcRefreshed(chain)
       const chainIdHex = `0x${chain.id.toString(16)}`
       try {
         await window.ethereum!.request({
