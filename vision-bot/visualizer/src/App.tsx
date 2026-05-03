@@ -14,6 +14,7 @@ export function App() {
       <StatusBar
         player={index?.player}
         stats={index?.stats}
+        generatedAt={index?.generated_at}
         loading={isPending}
         error={error?.message}
       />

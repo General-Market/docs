@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import type { IndexStats } from '@/lib/types'
 import { fmtUsd, fmtSignedInt, shortAddr } from '@/lib/format'
 import { clsx } from 'clsx'
@@ -5,11 +7,25 @@ import { clsx } from 'clsx'
 interface Props {
   player: string | undefined
   stats: IndexStats | undefined
+  generatedAt: number | undefined
   loading: boolean
   error: string | undefined
 }
 
-export function StatusBar({ player, stats, loading, error }: Props) {
+export function StatusBar({ player, stats, generatedAt, loading, error }: Props) {
+  const queryClient = useQueryClient()
+  const [refreshing, setRefreshing] = useState(false)
+
+  async function refresh() {
+    setRefreshing(true)
+    try {
+      await queryClient.invalidateQueries()
+      await queryClient.refetchQueries()
+    } finally {
+      setRefreshing(false)
+    }
+  }
+
   return (
     <header className="col-span-2 flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-line bg-panel px-5 py-2.5">
       <div className="font-semibold tracking-tight">Vision bot</div>
@@ -38,13 +54,33 @@ export function StatusBar({ player, stats, loading, error }: Props) {
         ))}
       </div>
 
-      {error && (
-        <div className="ml-auto text-xs text-down">
-          {error} — run the downloader, then reload.
-        </div>
-      )}
+      <div className="ml-auto flex items-center gap-3">
+        {generatedAt && (
+          <span className="text-[11px] text-muted">
+            data {ageString(generatedAt)}
+          </span>
+        )}
+        <button
+          type="button"
+          onClick={refresh}
+          disabled={refreshing}
+          className="cursor-pointer rounded-md border border-line bg-panel-2 px-2.5 py-1 text-[11px] text-muted hover:border-text hover:text-text disabled:cursor-wait disabled:opacity-60"
+          title="Re-fetch index.json + selected asset (after re-running build_from_db.py)"
+        >
+          {refreshing ? 'refreshing…' : 'refresh'}
+        </button>
+        {error && <span className="text-xs text-down">{error}</span>}
+      </div>
     </header>
   )
+}
+
+function ageString(unixSeconds: number): string {
+  const ageMs = Date.now() - unixSeconds * 1000
+  if (ageMs < 60_000) return 'just now'
+  if (ageMs < 3_600_000) return `${Math.floor(ageMs / 60_000)}m old`
+  if (ageMs < 86_400_000) return `${Math.floor(ageMs / 3_600_000)}h old`
+  return `${Math.floor(ageMs / 86_400_000)}d old`
 }
 
 function Stat({

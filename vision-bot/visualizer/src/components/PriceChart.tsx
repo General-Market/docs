@@ -12,7 +12,7 @@ import {
   type Time,
   type UTCTimestamp,
 } from 'lightweight-charts'
-import type { AssetDoc, Bet, PricePoint } from '@/lib/types'
+import type { AssetDoc, Bet, PricePoint, Trade } from '@/lib/types'
 import { STRATEGIES, makeActualBetLookup, priceAt } from '@/lib/strategies'
 
 interface Props {
@@ -124,8 +124,8 @@ function buildMarkers(data: AssetDoc, overlay: 'ai' | 'actual' | 'none'): Series
   const trades = data.trades ?? []
 
   const out: SeriesMarker<Time>[] = []
-  for (const t of trades) {
-    out.push(tradeMarker(t.bet, t.joined_at))
+  for (const m of dedupeTrades(trades)) {
+    out.push(tradeMarker(m.bet, m.ts, m.count))
   }
 
   if (overlay !== 'none') {
@@ -146,14 +146,30 @@ function buildMarkers(data: AssetDoc, overlay: 'ai' | 'actual' | 'none'): Series
   return out
 }
 
-function tradeMarker(bet: Bet, ts: number): SeriesMarker<Time> {
+function tradeMarker(bet: Bet, ts: number, count: number): SeriesMarker<Time> {
   return {
     time: ts as UTCTimestamp,
     position: bet === 'UP' ? 'belowBar' : 'aboveBar',
     color: bet === 'UP' ? '#74e0a3' : '#f87171',
     shape: bet === 'UP' ? 'arrowUp' : 'arrowDown',
-    size: 1.5,
+    size: count > 1 ? 2 : 1.5,
+    text: count > 1 ? `×${count}` : undefined,
   }
+}
+
+// Many bots have multiple bets at identical joined_at (the Python builder
+// stubs joined_at for active batches). Stacking 20 arrows on one tick is
+// noise — collapse them into a single annotated marker.
+interface TradeGroup { ts: number; bet: Bet; count: number }
+function dedupeTrades(trades: Trade[]): TradeGroup[] {
+  const groups = new Map<string, TradeGroup>()
+  for (const t of trades) {
+    const key = `${t.joined_at}:${t.bet}`
+    const g = groups.get(key)
+    if (g) g.count++
+    else groups.set(key, { ts: t.joined_at, bet: t.bet, count: 1 })
+  }
+  return Array.from(groups.values())
 }
 
 function overlayMarker(bet: Bet, ts: number, color: string): SeriesMarker<Time> {
