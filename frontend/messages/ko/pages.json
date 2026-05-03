@@ -8,8 +8,7 @@
     "nav_create_index": "인덱스 생성",
     "nav_lending": "대출",
     "nav_backtesting": "백테스팅",
-    "nav_system": "시스템",
-    "nav_discovery": "Discovery"
+    "nav_system": "시스템"
   },
   "privacy": {
     "back": "← 뒤로",

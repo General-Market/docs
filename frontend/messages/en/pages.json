@@ -8,8 +8,7 @@
     "nav_create_index": "Create Index",
     "nav_lending": "Lending",
     "nav_backtesting": "Backtesting",
-    "nav_system": "System",
-    "nav_discovery": "Discovery"
+    "nav_system": "System"
   },
   "privacy": {
     "back": "← Back",

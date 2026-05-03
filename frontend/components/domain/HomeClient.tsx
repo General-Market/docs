@@ -12,7 +12,6 @@ import { BacktestSection } from '@/components/domain/simulation/BacktestSection'
 import { RebalanceModal } from '@/components/domain/RebalanceModal'
 import { SystemStatusSection } from '@/components/domain/SystemStatusSection'
 import { VaultTradesFeed } from '@/components/domain/VaultTradesFeed'
-import { ItpBrowserGrid } from '@/components/domain/itp-browser/ItpBrowserGrid'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
 import { useSectionTimeTracker } from '@/hooks/useSectionTimeTracker'
@@ -20,13 +19,6 @@ import { usePostHogTracker } from '@/hooks/usePostHog'
 import { usePrefersReducedMotion } from '@/hooks/useMediaQueries'
 
 /* ── Icons — 16px monoline ── */
-function IconDiscovery({ active }: { active: boolean }) {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={active ? '1.75' : '1.25'} strokeLinecap="round" strokeLinejoin="round">
-      <rect x="1.5" y="1.5" width="5.5" height="5.5" rx="1" /><rect x="9" y="1.5" width="5.5" height="5.5" rx="1" /><rect x="1.5" y="9" width="5.5" height="5.5" rx="1" /><rect x="9" y="9" width="5.5" height="5.5" rx="1" />
-    </svg>
-  )
-}
 function IconMarkets({ active }: { active: boolean }) {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={active ? '1.75' : '1.25'} strokeLinecap="round" strokeLinejoin="round">
@@ -71,7 +63,6 @@ function IconSystem({ active }: { active: boolean }) {
 }
 
 const ICON_MAP: Record<string, (props: { active: boolean }) => React.ReactNode> = {
-  discovery: IconDiscovery,
   markets: IconMarkets,
   portfolio: IconPortfolio,
   create: IconCreate,
@@ -85,7 +76,7 @@ type NavGroup = {
   items: { id: string; label: string }[]
 }
 
-const NAV_SECTION_IDS = ['discovery', 'markets', 'portfolio', 'create', 'lend', 'backtest', 'system']
+const NAV_SECTION_IDS = ['markets', 'portfolio', 'create', 'lend', 'backtest', 'system']
 
 /* ── Motion springs — theatrical ── */
 const SPRING_BLOB = { type: 'spring' as const, stiffness: 170, damping: 22, mass: 0.8 }
@@ -102,7 +93,6 @@ export function HomeClient() {
     {
       label: t('home.nav_group_core'),
       items: [
-        { id: 'discovery', label: t('home.nav_discovery') },
         { id: 'markets', label: t('home.nav_markets') },
         { id: 'portfolio', label: t('home.nav_portfolio') },
         { id: 'create', label: t('home.nav_create_index') },
@@ -122,7 +112,7 @@ export function HomeClient() {
       ],
     },
   ], [t])
-  const [activeSection, setActiveSection] = useState('discovery')
+  const [activeSection, setActiveSection] = useState('markets')
   const [exitingSection, setExitingSection] = useState<string | null>(null)
   const [direction, setDirection] = useState(1)
   const exitTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
@@ -387,7 +377,6 @@ export function HomeClient() {
                   willChange: isVisible ? 'transform, opacity, filter' : 'auto',
                 }}
               >
-                {id === 'discovery' && <ItpBrowserGrid />}
                 {id === 'markets' && <ItpListing onItpsLoaded={handleItpsLoaded} />}
                 {id === 'portfolio' && (
                   <div className="px-2 sm:px-6 lg:px-12 py-8">
