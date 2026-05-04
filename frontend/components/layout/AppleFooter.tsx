@@ -66,8 +66,8 @@ const BOTTOM_LINKS: { label: string; href: string; external?: boolean }[] = [
 
 const linkBase: React.CSSProperties = {
   fontFamily: 'var(--apple-font-text)',
-  fontSize: 14,
-  lineHeight: 1.4286,
+  fontSize: 12,
+  lineHeight: 1.3333,
   color: 'var(--apple-text-secondary)',
   letterSpacing: 'var(--apple-track-loose)',
   textDecoration: 'none',
@@ -81,13 +81,13 @@ const headingStyle: React.CSSProperties = {
   fontWeight: 600,
   color: 'var(--apple-text)',
   margin: 0,
-  marginBottom: 12,
+  marginBottom: 14,
 }
 
 const tertiary: React.CSSProperties = {
   fontFamily: 'var(--apple-font-text)',
   fontSize: 12,
-  lineHeight: 1.4,
+  lineHeight: 1.3333,
   letterSpacing: 'var(--apple-track-loose)',
   color: 'var(--apple-text-tertiary)',
 }
@@ -128,22 +128,52 @@ export function AppleFooter() {
       style={{
         background: 'var(--apple-page-bg)',
         borderTop: '1px solid var(--apple-line)',
-        marginTop: 48,
+        marginTop: 56,
       }}
     >
       <style>{`
         .apple-footer-link { transition: color 200ms var(--apple-ease-default); }
         .apple-footer-link:hover { color: var(--apple-text); }
+        .apple-footer-shell {
+          padding: 56px 24px 0;
+        }
+        .apple-footer-shell-bottom {
+          padding: 20px 24px 40px;
+        }
+        @media (min-width: 768px) {
+          .apple-footer-shell {
+            padding-left: calc(var(--apple-shell-left) + 24px);
+            padding-right: 40px;
+            padding-top: 64px;
+          }
+          .apple-footer-shell-bottom {
+            padding-left: calc(var(--apple-shell-left) + 24px);
+            padding-right: 40px;
+            padding-top: 24px;
+            padding-bottom: 40px;
+          }
+        }
+        @media (min-width: 1280px) {
+          .apple-footer-shell {
+            padding-left: calc(var(--apple-shell-left) + 32px);
+            padding-right: 56px;
+          }
+          .apple-footer-shell-bottom {
+            padding-left: calc(var(--apple-shell-left) + 32px);
+            padding-right: 56px;
+            padding-bottom: 48px;
+          }
+        }
         .apple-footer-grid {
           display: grid;
           grid-template-columns: 1fr;
-          gap: 28px 24px;
+          gap: 32px 32px;
         }
         @media (min-width: 768px) {
           .apple-footer-grid { grid-template-columns: repeat(2, 1fr); }
         }
         @media (min-width: 1024px) {
-          .apple-footer-grid { grid-template-columns: repeat(5, 1fr); }
+          .apple-footer-grid { grid-template-columns: repeat(5, 1fr); gap: 40px 40px; }
         }
         .apple-footer-bottom {
           display: flex;
@@ -163,13 +193,7 @@ export function AppleFooter() {
         }
       `}</style>
 
-      <div
-        style={{
-          maxWidth: 'var(--apple-content-wide)',
-          margin: '0 auto',
-          padding: '40px 24px 0',
-        }}
-      >
+      <div className="apple-footer-shell">
         <div className="apple-footer-grid">
           {COLUMNS.map((col) => (
             <nav key={col.heading} aria-label={col.heading}>
@@ -181,7 +205,7 @@ export function AppleFooter() {
                   margin: 0,
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: 10,
+                  gap: 8,
                 }}
               >
                 {col.links.map((l) => (
@@ -196,18 +220,12 @@ export function AppleFooter() {
         <div
           style={{
             borderTop: '1px solid var(--apple-line)',
-            margin: '28px 0 0',
+            margin: '40px 0 0',
           }}
         />
       </div>
 
-      <div
-        style={{
-          maxWidth: 'var(--apple-content-wide)',
-          margin: '0 auto',
-          padding: '16px 24px 28px',
-        }}
-      >
+      <div className="apple-footer-shell-bottom">
         <div className="apple-footer-bottom">
           <span style={tertiary}>
             Copyright &copy; 2026 General Market. All rights reserved.
