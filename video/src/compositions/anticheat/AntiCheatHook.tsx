@@ -43,7 +43,7 @@ export const AntiCheatHook: React.FC = () => {
 
   return (
     <AbsoluteFill style={{ backgroundColor: colors.bg, fontFamily: font }}>
-      {/* ── Left panel: PLAY ── */}
+      {/* ── Left panel: PLAY — cheater broll visible ── */}
       <div
         style={{
           position: "absolute",
@@ -53,14 +53,11 @@ export const AntiCheatHook: React.FC = () => {
           borderRight: `1px solid ${colors.rule}`,
         }}
       >
-        <PanelBackground
-          src={BROLL.minecraft}
-          align="left"
-          showFrom={HEADER_IN}
-          frame={frame}
-        />
+        <CheaterBrollLayer frame={frame} showFrom={HEADER_IN} />
+        <ChromeOverlay />
         <PanelLabel
           eyebrow="When you play"
+          slot="01 / Game"
           showFrom={HEADER_IN}
           align="left"
           frame={frame}
@@ -77,7 +74,7 @@ export const AntiCheatHook: React.FC = () => {
         />
       </div>
 
-      {/* ── Right panel: TRADE ── */}
+      {/* ── Right panel: TRADE — procedural trading screen ── */}
       <div
         style={{
           position: "absolute",
@@ -91,14 +88,11 @@ export const AntiCheatHook: React.FC = () => {
           }),
         }}
       >
-        <PanelBackground
-          src={BROLL.cs2}
-          align="right"
-          showFrom={SPLIT_AT}
-          frame={frame}
-        />
+        <TradingScreen frame={frame} showFrom={SPLIT_AT} />
+        <ChromeOverlay tint={colors.accent} />
         <PanelLabel
           eyebrow="When you trade"
+          slot="02 / Market"
           showFrom={SPLIT_AT}
           align="right"
           frame={frame}
@@ -122,7 +116,7 @@ export const AntiCheatHook: React.FC = () => {
         <RevealLines />
       </Sequence>
 
-      {/* ── Vignette + grain for cinematic compression ── */}
+      {/* ── Vignette ── */}
       <AbsoluteFill
         style={{
           pointerEvents: "none",
@@ -134,24 +128,30 @@ export const AntiCheatHook: React.FC = () => {
   );
 };
 
-// ────────────────────────────────────────────────────────────────────────
+// ─── Left panel: cycle through the three cheat clips synced to the pair reveals ─
 
-const PanelBackground: React.FC<{
-  src: string;
-  align: "left" | "right";
-  showFrom: number;
+const CheaterBrollLayer: React.FC<{
   frame: number;
-}> = ({ src, frame, showFrom }) => {
-  const opacity = interpolate(
+  showFrom: number;
+}> = ({ frame, showFrom }) => {
+  // Before pairs start: minecraft kill aura (matches the rage-y energy).
+  // From PAIRS_AT, swap to whatever cheat the active pair names.
+  const pairIdx = Math.max(
+    -1,
+    Math.min(PAIRS.length - 1, Math.floor((frame - PAIRS_AT) / PAIR_STEP)),
+  );
+  const activeSrc = pairIdx < 0 ? BROLL.minecraft : PAIRS[pairIdx].broll;
+
+  const fadeIn = interpolate(
     frame,
-    [showFrom, showFrom + toFrames(0.5)],
-    [0, 0.42],
+    [showFrom, showFrom + toFrames(0.4)],
+    [0, 1],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
   const scale = interpolate(
     frame,
-    [showFrom, showFrom + toFrames(6)],
-    [1.18, 1.05],
+    [showFrom, showFrom + toFrames(8)],
+    [1.08, 1.0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
 
@@ -160,35 +160,361 @@ const PanelBackground: React.FC<{
       style={{
         position: "absolute",
         inset: 0,
-        opacity,
+        opacity: fadeIn,
         transform: `scale(${scale})`,
-        filter: "saturate(0.7) contrast(1.1)",
       }}
     >
+      {/* Use key= to force a fresh OffthreadVideo when the active clip changes. */}
       <OffthreadVideo
-        src={src}
+        key={activeSrc}
+        src={activeSrc}
         muted
         startFrom={0}
-        playbackRate={1}
+        playbackRate={1.0}
         style={{
           width: "100%",
           height: "100%",
           objectFit: "cover",
-          mixBlendMode: "screen",
+          filter: "saturate(1.05) contrast(1.05) brightness(0.95)",
         }}
       />
     </div>
   );
 };
 
+// ─── Right panel: procedural trading screen ────────────────────────────────────
+
+const CANDLE_COUNT = 48;
+
+const TradingScreen: React.FC<{ frame: number; showFrom: number }> = ({
+  frame,
+  showFrom,
+}) => {
+  const fadeIn = interpolate(
+    frame,
+    [showFrom, showFrom + toFrames(0.5)],
+    [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+
+  // Time progresses with frame — candles drift left.
+  const t = Math.max(0, frame - showFrom);
+
+  // The "manipulation candle" — a violent red drop at this moment.
+  const manipFrame = toFrames(5.4) - showFrom;
+
+  const candles = generateCandles(t, CANDLE_COUNT, manipFrame);
+  const lastClose = candles[candles.length - 1].close;
+  const prevClose = candles[Math.max(0, candles.length - 2)].close;
+  const pct = ((lastClose - prevClose) / prevClose) * 100;
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        opacity: fadeIn,
+        background:
+          "linear-gradient(180deg, #0d0d10 0%, #050507 100%)",
+      }}
+    >
+      {/* Header strip */}
+      <div
+        style={{
+          position: "absolute",
+          top: 28,
+          left: 32,
+          right: 32,
+          display: "flex",
+          gap: 28,
+          alignItems: "baseline",
+          fontFamily: monoFont,
+          color: colors.dim,
+          fontSize: 22,
+          letterSpacing: "0.06em",
+          opacity: 0.85,
+        }}
+      >
+        <span style={{ color: colors.fg, fontWeight: 600 }}>BTC-PERP</span>
+        <span>{lastClose.toFixed(2)}</span>
+        <span style={{ color: pct >= 0 ? "#3ddc84" : colors.accent }}>
+          {pct >= 0 ? "+" : ""}
+          {pct.toFixed(2)}%
+        </span>
+        <span style={{ marginLeft: "auto", opacity: 0.5 }}>1m · LIVE</span>
+      </div>
+
+      {/* Chart area */}
+      <div
+        style={{
+          position: "absolute",
+          left: 32,
+          right: 360,
+          top: 90,
+          bottom: 200,
+          overflow: "hidden",
+        }}
+      >
+        <CandleChart candles={candles} />
+      </div>
+
+      {/* Order book on the right */}
+      <div
+        style={{
+          position: "absolute",
+          right: 32,
+          top: 90,
+          width: 300,
+          bottom: 200,
+        }}
+      >
+        <OrderBook frame={t} centerPrice={lastClose} />
+      </div>
+
+      {/* Bottom ticker scroll — fast money */}
+      <div
+        style={{
+          position: "absolute",
+          left: 32,
+          right: 32,
+          bottom: 90,
+          height: 70,
+          borderTop: `1px solid ${colors.rule}`,
+          borderBottom: `1px solid ${colors.rule}`,
+          overflow: "hidden",
+        }}
+      >
+        <Ticker frame={t} />
+      </div>
+    </div>
+  );
+};
+
+const CandleChart: React.FC<{ candles: Candle[] }> = ({ candles }) => {
+  const min = Math.min(...candles.map((c) => c.low));
+  const max = Math.max(...candles.map((c) => c.high));
+  const range = max - min || 1;
+  const yOf = (p: number) => ((max - p) / range) * 100;
+
+  return (
+    <svg
+      viewBox="0 0 100 100"
+      preserveAspectRatio="none"
+      width="100%"
+      height="100%"
+      style={{ overflow: "visible" }}
+    >
+      {/* Grid lines */}
+      {[20, 40, 60, 80].map((y) => (
+        <line
+          key={y}
+          x1={0}
+          x2={100}
+          y1={y}
+          y2={y}
+          stroke="#1a1a1f"
+          strokeWidth={0.1}
+        />
+      ))}
+      {candles.map((c, i) => {
+        const x = (i / candles.length) * 100;
+        const w = (1 / candles.length) * 0.65 * 100;
+        const cx = x + w / 2;
+        const isUp = c.close >= c.open;
+        const colorC = isUp ? "#3ddc84" : colors.accent;
+        const bodyTop = yOf(Math.max(c.open, c.close));
+        const bodyH = Math.max(0.3, Math.abs(yOf(c.open) - yOf(c.close)));
+        return (
+          <g key={i}>
+            <line
+              x1={cx}
+              x2={cx}
+              y1={yOf(c.high)}
+              y2={yOf(c.low)}
+              stroke={colorC}
+              strokeWidth={0.15}
+            />
+            <rect
+              x={x}
+              y={bodyTop}
+              width={w}
+              height={bodyH}
+              fill={colorC}
+              opacity={c.boom ? 1 : 0.85}
+            />
+          </g>
+        );
+      })}
+    </svg>
+  );
+};
+
+const OB_LEVELS = 7;
+
+const OrderBook: React.FC<{ frame: number; centerPrice: number }> = ({
+  frame,
+  centerPrice,
+}) => {
+  // Generate bid/ask levels with sizes that animate.
+  // The "spoof" — a giant fake bid that flashes in then vanishes.
+  const spoofIn = toFrames(6.2) - toFrames(2.0); // local to right-panel time
+  const spoofVisible = frame > spoofIn && frame < spoofIn + toFrames(0.7);
+  const spoofLevel = 3; // index of bid that gets the giant flash
+
+  const rows: { side: "ask" | "bid"; price: number; size: number; flash: boolean }[] = [];
+  for (let i = OB_LEVELS - 1; i >= 0; i--) {
+    const noise = pseudo(frame * 0.05 + i) * 0.6 + 0.4;
+    rows.push({
+      side: "ask",
+      price: centerPrice + (i + 1) * 0.5,
+      size: noise * 12 + 2,
+      flash: false,
+    });
+  }
+  for (let i = 0; i < OB_LEVELS; i++) {
+    const noise = pseudo(frame * 0.05 + i + 100) * 0.6 + 0.4;
+    let size = noise * 12 + 2;
+    let flash = false;
+    if (spoofVisible && i === spoofLevel) {
+      size = 28;
+      flash = true;
+    }
+    rows.push({
+      side: "bid",
+      price: centerPrice - (i + 1) * 0.5,
+      size,
+      flash,
+    });
+  }
+
+  const maxSize = Math.max(...rows.map((r) => r.size));
+
+  return (
+    <div
+      style={{
+        fontFamily: monoFont,
+        fontSize: 14,
+        color: colors.dim,
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        gap: 2,
+      }}
+    >
+      <div
+        style={{
+          fontSize: 13,
+          letterSpacing: "0.18em",
+          color: colors.dim,
+          opacity: 0.6,
+          marginBottom: 8,
+        }}
+      >
+        ORDER BOOK
+      </div>
+      {rows.map((r, i) => {
+        const widthPct = (r.size / maxSize) * 100;
+        const color = r.side === "ask" ? colors.accent : "#3ddc84";
+        return (
+          <div
+            key={i}
+            style={{
+              position: "relative",
+              display: "flex",
+              alignItems: "center",
+              padding: "3px 8px",
+              fontVariantNumeric: "tabular-nums",
+              backgroundColor: r.flash ? "rgba(255,59,59,0.16)" : "transparent",
+              border: r.flash
+                ? "1px solid rgba(255,59,59,0.6)"
+                : "1px solid transparent",
+            }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                bottom: 0,
+                right: r.side === "ask" ? 0 : "auto",
+                left: r.side === "bid" ? 0 : "auto",
+                width: `${widthPct}%`,
+                backgroundColor: color,
+                opacity: r.flash ? 0.42 : 0.18,
+              }}
+            />
+            <span style={{ position: "relative", flex: 1, color: colors.fg }}>
+              {r.price.toFixed(2)}
+            </span>
+            <span style={{ position: "relative", color }}>
+              {r.size.toFixed(1)}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+const TICKER_ITEMS = [
+  "ETH-PERP   3,847.12  +1.84%",
+  "SOL-PERP   201.55   -2.10%",
+  "BTC-PERP   61,247   +0.42%",
+  "BLOCK 24,871,902   ◆ MEV $42,118",
+  "AAPL  237.89  +0.71%",
+  "NVDA  941.52  -1.04%",
+  "FILL  61,250.00 × 0.84  BTC-PERP",
+  "FILL  3,847.32 × 12.4   ETH-PERP",
+];
+
+const Ticker: React.FC<{ frame: number }> = ({ frame }) => {
+  const text = TICKER_ITEMS.join("     ·     ");
+  const offset = (frame * 6) % 4000;
+
+  return (
+    <div
+      style={{
+        fontFamily: monoFont,
+        fontSize: 22,
+        color: colors.dim,
+        whiteSpace: "nowrap",
+        position: "absolute",
+        top: "50%",
+        transform: `translate(${-offset}px, -50%)`,
+        letterSpacing: "0.06em",
+      }}
+    >
+      {text}
+      <span style={{ paddingLeft: 80 }}>{text}</span>
+    </div>
+  );
+};
+
+// ─── Generic chrome — darken the top + bottom strips so text reads cleanly ─────
+
+const ChromeOverlay: React.FC<{ tint?: string }> = ({ tint }) => (
+  <div
+    style={{
+      position: "absolute",
+      inset: 0,
+      pointerEvents: "none",
+      background: tint
+        ? `linear-gradient(180deg, rgba(10,10,10,0.78) 0%, rgba(10,10,10,0.30) 32%, rgba(10,10,10,0.30) 62%, rgba(10,10,10,0.78) 100%), linear-gradient(180deg, rgba(255,59,59,0.05), rgba(255,59,59,0.02))`
+        : `linear-gradient(180deg, rgba(10,10,10,0.78) 0%, rgba(10,10,10,0.20) 32%, rgba(10,10,10,0.20) 62%, rgba(10,10,10,0.82) 100%)`,
+    }}
+  />
+);
+
+// ─── Text components (unchanged behaviour, slot label is now a prop) ───────────
+
 const PanelLabel: React.FC<{
   eyebrow: string;
+  slot: string;
   showFrom: number;
   align: "left" | "right";
   frame: number;
   fps: number;
   tint?: string;
-}> = ({ eyebrow, showFrom, align, frame, fps, tint }) => {
+}> = ({ eyebrow, slot, showFrom, align, frame, fps, tint }) => {
   const t = spring({
     frame: frame - showFrom,
     fps,
@@ -201,7 +527,7 @@ const PanelLabel: React.FC<{
     <div
       style={{
         position: "absolute",
-        top: "20%",
+        top: "12%",
         left: 0,
         right: 0,
         textAlign: align === "left" ? "left" : "right",
@@ -221,20 +547,21 @@ const PanelLabel: React.FC<{
           marginBottom: 18,
         }}
       >
-        {align === "left" ? "01 / Game" : "02 / Market"}
+        {slot}
       </div>
       <div
         style={{
           fontFamily: font,
-          fontSize: 132,
+          fontSize: 124,
           fontWeight: 800,
           letterSpacing: "-0.04em",
           color: tint ?? colors.fg,
           lineHeight: 0.95,
+          textShadow: "0 4px 28px rgba(0,0,0,0.65)",
         }}
       >
         {eyebrow}
-        <span style={{ color: tint ?? colors.fg, opacity: 0.4 }}>.</span>
+        <span style={{ color: tint ?? colors.fg, opacity: 0.45 }}>.</span>
       </div>
     </div>
   );
@@ -254,7 +581,7 @@ const PairList: React.FC<{
     <div
       style={{
         position: "absolute",
-        bottom: "16%",
+        bottom: "10%",
         left: 0,
         right: 0,
         textAlign: align === "left" ? "left" : "right",
@@ -290,6 +617,7 @@ const PairList: React.FC<{
               alignItems: "center",
               gap: 18,
               flexDirection: align === "left" ? "row" : "row-reverse",
+              textShadow: "0 2px 18px rgba(0,0,0,0.6)",
             }}
           >
             <span
@@ -332,7 +660,7 @@ const RevealLines: React.FC = () => {
       style={{
         justifyContent: "center",
         alignItems: "center",
-        background: "rgba(10,10,10,0.7)",
+        background: "rgba(10,10,10,0.78)",
         backdropFilter: "blur(2px)",
       }}
     >
@@ -369,6 +697,56 @@ const RevealLines: React.FC = () => {
     </AbsoluteFill>
   );
 };
+
+// ─── Procedural candle generator ───────────────────────────────────────────────
+
+type Candle = {
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  boom?: boolean;
+};
+
+function pseudo(seed: number): number {
+  // deterministic, 0..1, smooth-ish
+  return (Math.sin(seed * 12.9898) * 43758.5453) % 1 < 0
+    ? ((Math.sin(seed * 12.9898) * 43758.5453) % 1) + 1
+    : (Math.sin(seed * 12.9898) * 43758.5453) % 1;
+}
+
+function generateCandles(
+  timeFrame: number,
+  count: number,
+  manipAt: number,
+): Candle[] {
+  const candles: Candle[] = [];
+  let price = 61_200;
+  // Each frame, the chart drifts left; every ~3 frames we add a new candle's worth of motion.
+  const tick = timeFrame * 0.06;
+  for (let i = 0; i < count; i++) {
+    const phase = i + tick;
+    const drift = Math.sin(phase * 0.27) * 18 + Math.cos(phase * 0.61) * 12;
+    const noise = (pseudo(phase * 1.7) - 0.5) * 22;
+    const open = price;
+    let close = price + drift + noise;
+    let high = Math.max(open, close) + Math.abs(drift) * 0.4 + pseudo(phase * 3.1) * 6;
+    let low = Math.min(open, close) - Math.abs(drift) * 0.4 - pseudo(phase * 5.7 + 1) * 6;
+    let boom = false;
+    // Manipulation candle — a single violent red bar near the right edge,
+    // visible during the active "trading" reveal.
+    const manipIdx = count - 6;
+    if (i === manipIdx && timeFrame >= manipAt && timeFrame < manipAt + 36) {
+      close = open - 220;
+      high = open + 14;
+      low = close - 24;
+      boom = true;
+    }
+    candles.push({ open, high, low, close, boom });
+    price = close;
+  }
+  return candles;
+}
 
 export const antiCheatHookMeta = {
   id: "AntiCheatHook",
