@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, useRef, useEffect, useCallback } from 'react'
+import { useMemo, useState, useEffect, useCallback, useRef } from 'react'
 import { formatUnits } from 'viem'
 import { motion, useReducedMotion } from 'framer-motion'
 import fundData from '@/data/fund-branding.json'
@@ -9,6 +9,7 @@ import { useVaultHistory } from '@/hooks/vaults/useVaultHistory'
 import { useVaultDisplayResolver } from '@/hooks/vaults/useVaultDisplay'
 import { useSSEVisionVaults, useSSEUserVaultPositions } from '@/hooks/useSSE'
 import { useVaultsByAddresses, type VaultInfo } from '@/hooks/vaults/useVaults'
+import { Sparkline } from '@/components/domain/home/Sparkline'
 import { cn } from '@/lib/utils/cn'
 
 const STRATEGY_META: Record<string, { label: string; color: string }> = {
@@ -41,24 +42,6 @@ function formatTvl(tvl: number) {
 function safeBigInt(v: string | undefined): bigint {
   if (!v) return 0n
   try { return BigInt(v) } catch { return 0n }
-}
-
-/** rgb()/hex → rgba() with explicit alpha. CanvasGradient refuses
- *  `rgb(...)20`, so the previous string concatenation threw at the first
- *  paint and propagated through the error boundary. */
-function toRgba(color: string, alpha: number): string {
-  const m = color.match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/i)
-  if (m) return `rgba(${m[1]},${m[2]},${m[3]},${alpha})`
-  if (color.startsWith('#') && (color.length === 7 || color.length === 4)) {
-    const hex = color.length === 4
-      ? '#' + color.slice(1).split('').map(c => c + c).join('')
-      : color
-    const r = parseInt(hex.slice(1, 3), 16)
-    const g = parseInt(hex.slice(3, 5), 16)
-    const b = parseInt(hex.slice(5, 7), 16)
-    return `rgba(${r},${g},${b},${alpha})`
-  }
-  return color
 }
 
 function buildVaultInfo(fund: any, totalAssets: bigint, totalSupply: bigint): VaultInfo {
@@ -96,85 +79,6 @@ function computeUserValue(pos: UserPosition | undefined, vault: VaultInfo): numb
       : 0
   const pendingValue = pos.pending > 0n ? parseFloat(formatUnits(pos.pending, 18)) : 0
   return sharesValue + pendingValue
-}
-
-/* ─────────────────────────────────────────────
-   Sparkline, Canvas, responsive width
-   ───────────────────────────────────────────── */
-
-function Sparkline({ data, height, color, className }: {
-  data: number[]
-  height: number
-  color: string
-  className?: string
-}) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-
-  useEffect(() => {
-    const container = containerRef.current
-    const canvas = canvasRef.current
-    if (!container || !canvas || data.length < 2) return
-
-    const draw = () => {
-      const width = container.clientWidth
-      const ctx = canvas.getContext('2d')
-      if (!ctx || width === 0) return
-
-      const dpr = window.devicePixelRatio || 1
-      canvas.width = width * dpr
-      canvas.height = height * dpr
-      canvas.style.width = `${width}px`
-      canvas.style.height = `${height}px`
-      ctx.scale(dpr, dpr)
-      ctx.clearRect(0, 0, width, height)
-
-      const min = Math.min(...data)
-      const max = Math.max(...data)
-      const range = max - min || 1
-      const padY = height * 0.12
-
-      ctx.beginPath()
-      ctx.strokeStyle = color
-      ctx.lineWidth = 1.5
-      ctx.lineJoin = 'round'
-      ctx.lineCap = 'round'
-
-      let lastX = 0, lastY = 0
-      data.forEach((v, i) => {
-        const x = (i / (data.length - 1)) * width
-        const y = height - padY - ((v - min) / range) * (height - padY * 2)
-        if (i === 0) ctx.moveTo(x, y)
-        else ctx.lineTo(x, y)
-        lastX = x
-        lastY = y
-      })
-      ctx.stroke()
-
-      // gradient fill
-      ctx.lineTo(lastX, height)
-      ctx.lineTo(0, height)
-      ctx.closePath()
-      const gradient = ctx.createLinearGradient(0, 0, 0, height)
-      gradient.addColorStop(0, toRgba(color, 0.12))
-      gradient.addColorStop(1, toRgba(color, 0.02))
-      ctx.fillStyle = gradient
-      ctx.fill()
-    }
-
-    draw()
-    const observer = new ResizeObserver(draw)
-    observer.observe(container)
-    return () => observer.disconnect()
-  }, [data, height, color])
-
-  if (data.length < 2) return null
-
-  return (
-    <div ref={containerRef} className={className}>
-      <canvas ref={canvasRef} />
-    </div>
-  )
 }
 
 /* ─────────────────────────────────────────────
@@ -274,6 +178,10 @@ function VaultTiltCard({ fund, vault, index, userPosition, onDeposit }: {
 
   const { snapshots } = useVaultHistory(vault.address)
   const navData = useMemo(() => snapshots.map(s => s.nav), [snapshots])
+  // Perf-driven hue. Apple system green for up, system red for down.
+  // Black-on-everything was the previous default — three identical strokes
+  // read as templated. Honest colour reads as alive.
+  const sparkColor = isPositive ? 'rgb(52,199,89)' : 'rgb(255,59,48)'
 
   return (
     <motion.div
@@ -336,12 +244,19 @@ function VaultTiltCard({ fund, vault, index, userPosition, onDeposit }: {
             {fund.tagline}
           </p>
 
-          <Sparkline
-            data={navData}
-            height={36}
-            color="#1d1d1f"
-            className="mb-4"
-          />
+          {/* Real NAV history from useVaultHistory. Render nothing when the
+              series is too short to draw — a fake curve where there is no
+              history reads as broken trust. */}
+          {navData.length >= 2 && (
+            <div className="mb-4" style={{ height: 36 }}>
+              <Sparkline
+                series={navData}
+                width={320}
+                height={36}
+                stroke={sparkColor}
+              />
+            </div>
+          )}
 
           <div className="flex items-end justify-between gap-4">
             <div>

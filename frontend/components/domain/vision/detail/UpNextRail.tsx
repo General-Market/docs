@@ -21,6 +21,8 @@ import { useRounds } from '@/hooks/vision/useRounds'
 import { usePlayerPosition } from '@/hooks/vision/usePlayerPosition'
 import { useBatches } from '@/hooks/vision/useBatches'
 import { useTrendingBots } from '@/hooks/vision/useTrendingBots'
+import { useVaultHistory } from '@/hooks/vaults/useVaultHistory'
+import { Sparkline } from '@/components/domain/home/Sparkline'
 
 /* ─── helpers ─────────────────────────────────────────────────── */
 
@@ -177,6 +179,14 @@ function NewestVaultCard({ sourceId }: { sourceId: string }) {
     return all.length > 0 ? all[all.length - 1] : null
   }, [sourceId])
 
+  // Real NAV history. The card showed no chart for months — the comment in
+  // this file admitted "performance data is a follow-up". Now it isn't.
+  const vaultAddress = (fund?.vault as string | undefined) ?? ''
+  const { snapshots } = useVaultHistory(vaultAddress)
+  const navData = useMemo(() => snapshots.map(s => s.nav), [snapshots])
+  const isPositive = navData.length < 2 ? true : navData[navData.length - 1] >= navData[0]
+  const sparkColor = isPositive ? 'rgb(52,199,89)' : 'rgb(255,59,48)'
+
   if (!fund || !fund.vault) return null
 
   const href = `/source/${sourceId}/vault/${(fund.vault as string).toLowerCase()}`
@@ -208,6 +218,11 @@ function NewestVaultCard({ sourceId }: { sourceId: string }) {
         >
           {fund.tagline}
         </span>
+      )}
+      {navData.length >= 2 && (
+        <div className="w-full" style={{ height: 24, marginTop: 4 }}>
+          <Sparkline series={navData} width={240} height={24} stroke={sparkColor} />
+        </div>
       )}
     </RailCard>
   )

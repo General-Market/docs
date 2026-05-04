@@ -19,7 +19,7 @@
  * lands.
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { formatUnits } from 'viem'
 import { Link } from '@/i18n/routing'
 import fundData from '@/data/fund-branding.json'
@@ -28,6 +28,7 @@ import { useVaultDisplayResolver } from '@/hooks/vaults/useVaultDisplay'
 import { useSSEVisionVaults, useSSEUserVaultPositions } from '@/hooks/useSSE'
 import { useVaultHistory } from '@/hooks/vaults/useVaultHistory'
 import { useSourceRegistry, findSource } from '@/hooks/vision/useSourceRegistry'
+import { Sparkline } from '@/components/domain/home/Sparkline'
 
 /* ─── helpers ─────────────────────────────────────────────────── */
 
@@ -49,22 +50,6 @@ function formatTvl(tvl: number) {
 function safeBigInt(v: string | undefined): bigint {
   if (!v) return 0n
   try { return BigInt(v) } catch { return 0n }
-}
-
-/** Convert `rgb(R,G,B)` or `#rrggbb` to `rgba(...)` with a given alpha. */
-function toRgba(color: string, alpha: number): string {
-  const m = color.match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/i)
-  if (m) return `rgba(${m[1]},${m[2]},${m[3]},${alpha})`
-  if (color.startsWith('#') && (color.length === 7 || color.length === 4)) {
-    const hex = color.length === 4
-      ? '#' + color.slice(1).split('').map(c => c + c).join('')
-      : color
-    const r = parseInt(hex.slice(1, 3), 16)
-    const g = parseInt(hex.slice(3, 5), 16)
-    const b = parseInt(hex.slice(5, 7), 16)
-    return `rgba(${r},${g},${b},${alpha})`
-  }
-  return color
 }
 
 /* ─── shared shell — keeps height + surface identical across branches ─ */
@@ -112,82 +97,6 @@ const SUB_STYLE: React.CSSProperties = {
   lineHeight: 1.4706,
   color: 'var(--apple-text-secondary)',
   maxWidth: '40ch',
-}
-
-/* ─── sparkline ────────────────────────────────────────────────── */
-
-function Sparkline({ data, color }: { data: number[]; color: string }) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const HEIGHT = 56
-
-  useEffect(() => {
-    const container = containerRef.current
-    const canvas = canvasRef.current
-    if (!container || !canvas || data.length < 2) return
-
-    const draw = () => {
-      const width = container.clientWidth
-      const ctx = canvas.getContext('2d')
-      if (!ctx || width === 0) return
-
-      const dpr = window.devicePixelRatio || 1
-      canvas.width = width * dpr
-      canvas.height = HEIGHT * dpr
-      canvas.style.width = `${width}px`
-      canvas.style.height = `${HEIGHT}px`
-      ctx.scale(dpr, dpr)
-      ctx.clearRect(0, 0, width, HEIGHT)
-
-      const min = Math.min(...data)
-      const max = Math.max(...data)
-      const range = max - min || 1
-      const padY = HEIGHT * 0.1
-
-      ctx.beginPath()
-      ctx.strokeStyle = color
-      ctx.lineWidth = 1.5
-      ctx.lineJoin = 'round'
-      ctx.lineCap = 'round'
-
-      let lastX = 0, lastY = 0
-      data.forEach((v, i) => {
-        const x = (i / (data.length - 1)) * width
-        const y = HEIGHT - padY - ((v - min) / range) * (HEIGHT - padY * 2)
-        if (i === 0) ctx.moveTo(x, y)
-        else ctx.lineTo(x, y)
-        lastX = x
-        lastY = y
-      })
-      ctx.stroke()
-
-      ctx.lineTo(lastX, HEIGHT)
-      ctx.lineTo(0, HEIGHT)
-      ctx.closePath()
-      const gradient = ctx.createLinearGradient(0, 0, 0, HEIGHT)
-      // The stroke color arrives as `rgb(R,G,B)`; concatenating an alpha
-      // suffix (`+ '20'`) yields `rgb(...)20`, which canvas refuses and
-      // throws on, killing the entire card via the error boundary. Use
-      // a proper rgba conversion so empty alpha never breaks the paint.
-      gradient.addColorStop(0, toRgba(color, 0.12))
-      gradient.addColorStop(1, toRgba(color, 0.02))
-      ctx.fillStyle = gradient
-      ctx.fill()
-    }
-
-    draw()
-    const observer = new ResizeObserver(draw)
-    observer.observe(container)
-    return () => observer.disconnect()
-  }, [data, color])
-
-  if (data.length < 2) return null
-
-  return (
-    <div ref={containerRef} className="w-full">
-      <canvas ref={canvasRef} />
-    </div>
-  )
 }
 
 /* ─── chart placeholder — single soft surface, no stacked bars ─── */
@@ -510,10 +419,17 @@ export function FeaturedVaultHero({ sourceId }: FeaturedVaultHeroProps) {
         }
       />
 
-      {/* sparkline — no per-trade markers; vaults can have 1000 fills/block */}
-      {navData.length >= 2
-        ? <Sparkline data={navData} color={sparklineColor} />
-        : <ChartPlaceholder pulse={false} />}
+      {/* sparkline — Apple Bézier hairline, no per-trade markers; vaults can
+          have thousands of fills per block. Real NAV history only — when no
+          snapshots exist, fall through to the soft placeholder rather than
+          synthesise a curve. */}
+      {navData.length >= 2 ? (
+        <div className="w-full" style={{ height: 56 }}>
+          <Sparkline series={navData} width={640} height={56} stroke={sparklineColor} />
+        </div>
+      ) : (
+        <ChartPlaceholder pulse={false} />
+      )}
 
       <div className="flex flex-wrap gap-3">
         <StatPill label="NAV" value={formatNav(display.nav)} />
