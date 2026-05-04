@@ -112,6 +112,7 @@ import {
   pitchMeta,
   pitchSceneMetas,
 } from "./compositions/pitch/PitchComposition";
+import { antiCheatHookMeta } from "./compositions/anticheat/AntiCheatHook";
 
 const SHOW_SCENES = process.env.REMOTION_SHOW_SCENES === "1";
 
@@ -127,6 +128,16 @@ const LofiDotsHexBench: React.FC = () => (
 export const RemotionRoot: React.FC = () => {
   return (
     <>
+      {/* ═══ ANTI-CHEAT HOOK — launch video opening (12s) ═══ */}
+      <Composition
+        id={antiCheatHookMeta.id}
+        component={antiCheatHookMeta.component}
+        durationInFrames={antiCheatHookMeta.durationInFrames}
+        fps={antiCheatHookMeta.fps}
+        width={antiCheatHookMeta.width}
+        height={antiCheatHookMeta.height}
+      />
+
       {/* ═══ PITCH — VC pitch deck, 1 second per slide ═══ */}
       <Composition
         id={pitchMeta.id}

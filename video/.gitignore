@@ -11,6 +11,10 @@ blender_render/
 # needed by Remotion to render the Rainbows-Pitch source cards offline.
 !public/scene-images/
 !public/scene-images/**
+# Exception: cheat-broll directory needs to be re-included before the
+# *.mp4 block at the bottom; the per-file mp4 exception sits after it.
+!public/cheat-broll/
+!public/cheat-broll/**
 
 # Media files anywhere
 *.mp4
@@ -22,3 +26,6 @@ blender_render/
 *.avi
 *.mov
 *.mkv
+
+# Per-file exception that must come after *.mp4 to take effect.
+!public/cheat-broll/*.mp4
