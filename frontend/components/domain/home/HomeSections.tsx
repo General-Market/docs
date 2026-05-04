@@ -103,7 +103,7 @@ export function HomeDashboard({ feeds }: { feeds: FeedMap }) {
 
       <section className="mt-12">
         <SectionHeader title="Top markets" href="/explorer" />
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4">
           {featuredRow.map((feed) => (
             <AssetCard
               key={feed.sourceId}
@@ -122,7 +122,7 @@ export function HomeDashboard({ feeds }: { feeds: FeedMap }) {
 
       <section className="mt-12 mb-4">
         <SectionHeader title="Recently active" />
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4">
           {topMarkets.map((feed) => (
             <AssetCard
               key={feed.sourceId}
