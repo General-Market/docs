@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import { QueryClient, dehydrate, HydrationBoundary } from '@tanstack/react-query'
-import { Header } from '@/components/layout/Header'
-import { Footer } from '@/components/layout/Footer'
+import { AppShell } from '@/components/layout/AppShell'
+import { SourceSearch } from '@/components/layout/SourceSearch'
+import { SourceSidebarApple } from '@/components/domain/vision/detail/SourceSidebarApple'
 import { SourceDetailV2 } from '@/components/domain/vision/detail/SourceDetailV2'
 import { HomeOnboardingCompass } from '@/components/domain/vision/HomeOnboardingCompass'
 import { getSourceDisplayServer } from '@/lib/vision/sources-server'
@@ -120,17 +121,18 @@ export default async function SourcePage({ params }: Props) {
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <main className="min-h-screen bg-page flex flex-col">
-        <Header />
-        {jsonLd.map((ld, i) => (
-          <script key={i} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} />
-        ))}
-        <div className="flex-1 overflow-x-clip">
-          <SourceDetailV2 sourceId={sourceId} initialSource={source} />
+      {jsonLd.map((ld, i) => (
+        <script key={i} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} />
+      ))}
+      <AppShell
+        search={<SourceSearch />}
+        sidebar={<SourceSidebarApple sourceId={sourceId} category={source?.category} />}
+      >
+        <div className="overflow-x-clip">
+          <SourceDetailV2 sourceId={sourceId} initialSource={source} hideSidebar />
         </div>
-        <Footer />
         <HomeOnboardingCompass />
-      </main>
+      </AppShell>
     </HydrationBoundary>
   )
 }

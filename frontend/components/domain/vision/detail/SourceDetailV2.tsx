@@ -25,9 +25,16 @@ import { OnboardingCompass } from './OnboardingCompass'
 interface SourceDetailV2Props {
   sourceId: string
   initialSource?: SourceDisplayServer
+  /**
+   * When true, SourceDetailV2 omits its own SourceSidebarApple and flex
+   * wrapper. Use this when the parent page already slots the sidebar into
+   * AppShell — the shell's 240px column IS the sidebar, and this component
+   * renders as a straight content column inside the grid's right cell.
+   */
+  hideSidebar?: boolean
 }
 
-export function SourceDetailV2({ sourceId, initialSource }: SourceDetailV2Props) {
+export function SourceDetailV2({ sourceId, initialSource, hideSidebar }: SourceDetailV2Props) {
   const t = useTranslations('vision')
   const router = useRouter()
 
@@ -116,62 +123,70 @@ export function SourceDetailV2({ sourceId, initialSource }: SourceDetailV2Props)
     )
   }
 
-  return (
-    <div className="flex">
-      <SourceSidebarApple sourceId={sourceId} category={source.category} />
+  const contentColumn = (
+    <div className="flex-1 min-w-0 flex flex-col">
+      <SourceTabNav sourceId={sourceId} activeTab="overview" />
 
-      <div className="flex-1 min-w-0 flex flex-col">
-        <SourceTabNav sourceId={sourceId} activeTab="overview" />
-
-        <div className="px-4 sm:px-6 lg:px-10 py-6 lg:py-10 flex flex-col gap-10 lg:gap-12">
-          {/* Hero row: featured vault (2/3) + Up Next rail (1/3) */}
-          <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
-              <FeaturedVaultHero sourceId={sourceId} />
-            </div>
-            <div>
-              <UpNextRail sourceId={sourceId} />
-            </div>
-          </section>
-
-          <WalletSourceStats sourceId={sourceId} />
-
-          {rounds && rounds.length > 0 && (
-            <PendingPositions
-              rounds={rounds}
-              activeBatchId={activeBatch?.id}
-            />
-          )}
-
-          {/* For You — curated vaults. VaultShowcase carries its own visual identity. */}
-          <div
-            ref={vaultShowcaseRef}
-            data-onboarding-target="vault"
-            className="[&:has(>div:empty)]:hidden [&:has(>div:first-child:empty)]:hidden"
-          >
-            <VaultShowcase sourceId={sourceId} />
+      <div className="px-4 sm:px-6 lg:px-10 py-6 lg:py-10 flex flex-col gap-10 lg:gap-12">
+        {/* Hero row: featured vault (2/3) + Up Next rail (1/3) */}
+        <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <FeaturedVaultHero sourceId={sourceId} />
           </div>
+          <div>
+            <UpNextRail sourceId={sourceId} />
+          </div>
+        </section>
 
-          {/* Trending — bots from the GitHub examples repo. */}
-          <SectionWithHeader
-            label="trending"
-            title="bots"
-            sub="from the vision-bot-examples repo"
-          >
-            <TrendingBotsRail sourceId={sourceId} />
-          </SectionWithHeader>
+        <WalletSourceStats sourceId={sourceId} />
 
-          {/* Mobile-only "more sources" strip — desktop sidebar handles lg+. */}
-          <SourceSidebarMobile currentSourceId={sourceId} category={source.category} />
+        {rounds && rounds.length > 0 && (
+          <PendingPositions
+            rounds={rounds}
+            activeBatchId={activeBatch?.id}
+          />
+        )}
+
+        {/* For You — curated vaults. VaultShowcase carries its own visual identity. */}
+        <div
+          ref={vaultShowcaseRef}
+          data-onboarding-target="vault"
+          className="[&:has(>div:empty)]:hidden [&:has(>div:first-child:empty)]:hidden"
+        >
+          <VaultShowcase sourceId={sourceId} />
         </div>
-      </div>
 
+        {/* Trending — bots from the GitHub examples repo. */}
+        <SectionWithHeader
+          label="trending"
+          title="bots"
+          sub="from the vision-bot-examples repo"
+        >
+          <TrendingBotsRail sourceId={sourceId} />
+        </SectionWithHeader>
+
+        {/* Mobile-only "more sources" strip — desktop sidebar handles lg+. */}
+        <SourceSidebarMobile currentSourceId={sourceId} category={source.category} />
+      </div>
+    </div>
+  )
+
+  return (
+    <>
+      {hideSidebar ? (
+        contentColumn
+      ) : (
+        <div className="flex">
+          <SourceSidebarApple sourceId={sourceId} category={source.category} />
+          {contentColumn}
+        </div>
+      )}
       <OnboardingCompass
         state={onboarding}
         onVaultDeposit={handleOnboardingVaultDeposit}
         onBotDeploy={handleOnboardingBotDeploy}
       />
-    </div>
+    </>
   )
 }
 

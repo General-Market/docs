@@ -1,8 +1,9 @@
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
-import { notFound } from 'next/navigation'
-import { Header } from '@/components/layout/Header'
-import { Footer } from '@/components/layout/Footer'
+import { notFound } from 'next/navigation' // malformed-address guard only
+import { AppShell } from '@/components/layout/AppShell'
+import { SourceSearch } from '@/components/layout/SourceSearch'
+import { SourceSidebarApple } from '@/components/domain/vision/detail/SourceSidebarApple'
 import { VaultPortfolioView } from '@/components/domain/vision/vault/VaultPortfolioView'
 import { getSourceDisplayServer } from '@/lib/vision/sources-server'
 import fundData from '@/data/fund-branding.json'
@@ -51,31 +52,37 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
+/** /^0x[0-9a-f]{40}$/i — the only shape a vault address can take. */
+const EVM_ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/
+
 export default async function VaultPage({ params }: Props) {
   const { sourceId, vaultAddress } = await params
+
+  // Reject genuinely malformed addresses (wrong length, non-hex, etc).
+  // A well-formed address with no branding entry is still renderable.
+  if (!EVM_ADDRESS_RE.test(vaultAddress)) notFound()
+
   const fund = findFund(vaultAddress)
+  const source = await getSourceDisplayServer(sourceId)
 
-  // Vault must appear in fund-branding.json to be renderable.
-  // Unknown addresses get a 404 rather than a blank shell.
-  if (!fund) notFound()
+  // Branding is optional. Fall back to a truncated address as the display name.
+  const vaultName = fund?.name ?? `${vaultAddress.slice(0, 6)}…${vaultAddress.slice(-4)}`
 
-  const vaultName = fund.name
-
-  // NAV and TVL: we server-render placeholder values (1.0 / 0)
-  // and the client view fetches live on-chain data via the existing
-  // useVaultsByAddresses hook. For static rendering we keep it simple.
+  // NAV and TVL: server-render placeholder values (1.0 / 0).
+  // The client view fetches live on-chain data via useVaultsByAddresses.
   const navPerShare = 1.0
   const performanceSinceInception = 0
   const tvlFormatted = '0'
 
   return (
-    <main className="min-h-screen flex flex-col" style={{ background: 'var(--apple-page-bg,#f5f5f7)' }}>
-      <Header />
-
+    <AppShell
+      search={<SourceSearch />}
+      sidebar={<SourceSidebarApple sourceId={sourceId} category={source?.category} />}
+    >
       {/* Breadcrumb */}
       <nav
         aria-label="Breadcrumb"
-        className="mx-auto w-full max-w-[var(--apple-content-max,1680px)] px-5 lg:px-10 pt-5 pb-0"
+        className="px-5 lg:px-10 pt-5 pb-0"
       >
         <ol
           className="flex items-center gap-1.5 flex-wrap"
@@ -96,9 +103,7 @@ export default async function VaultPage({ params }: Props) {
         </ol>
       </nav>
 
-      <div
-        className="flex-1 mx-auto w-full max-w-[var(--apple-content-max,1680px)] px-5 lg:px-10 pb-20 mt-5"
-      >
+      <div className="px-5 lg:px-10 pb-20 mt-5">
         <div
           style={{
             background: 'var(--apple-panel,#ffffff)',
@@ -133,8 +138,6 @@ export default async function VaultPage({ params }: Props) {
           </Suspense>
         </div>
       </div>
-
-      <Footer />
-    </main>
+    </AppShell>
   )
 }

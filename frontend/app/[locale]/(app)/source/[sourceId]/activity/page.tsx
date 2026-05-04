@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
-import { Header } from '@/components/layout/Header'
-import { Footer } from '@/components/layout/Footer'
+import { AppShell } from '@/components/layout/AppShell'
+import { SourceSearch } from '@/components/layout/SourceSearch'
 import { BatchVaultResults } from '@/components/domain/vision/detail/BatchVaultResults'
 import { ActivityRecentBets } from '@/components/domain/vision/detail/ActivityRecentBets'
 import { SourceSidebarApple } from '@/components/domain/vision/detail/SourceSidebarApple'
@@ -66,49 +66,45 @@ export default async function ActivityPage({ params }: Props) {
     : []
 
   return (
-    <main className="min-h-screen bg-page flex flex-col">
-      <Header />
+    <>
       {jsonLd.map((ld, i) => (
         <script key={i} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} />
       ))}
+      <AppShell
+        search={<SourceSearch />}
+        sidebar={<SourceSidebarApple sourceId={sourceId} category={source?.category} />}
+      >
+        <div className="flex flex-col">
+          <SourceTabNav sourceId={sourceId} activeTab="activity" />
+          <div className="px-4 sm:px-6 lg:px-10 py-6 lg:py-10 pb-16">
+            <header className="mb-8">
+              <h1
+                style={{
+                  fontFamily: 'var(--apple-font-display)',
+                  fontSize: 'clamp(32px, 3.5vw, 40px)',
+                  letterSpacing: 'var(--apple-track-tighter)',
+                  lineHeight: 1.1,
+                  fontWeight: 600,
+                  color: 'var(--apple-text)',
+                  margin: 0,
+                }}
+              >
+                Activity
+              </h1>
+            </header>
 
-      <div className="flex-1 overflow-x-clip">
-        <div className="flex">
-          <SourceSidebarApple sourceId={sourceId} category={source?.category} />
-          <div className="flex-1 min-w-0 flex flex-col">
-            <SourceTabNav sourceId={sourceId} activeTab="activity" />
-            <div className="px-4 sm:px-6 lg:px-10 py-6 lg:py-10 pb-16">
-              <header className="mb-8">
-                <h1
-                  style={{
-                    fontFamily: 'var(--apple-font-display)',
-                    fontSize: 'clamp(32px, 3.5vw, 40px)',
-                    letterSpacing: 'var(--apple-track-tighter)',
-                    lineHeight: 1.1,
-                    fontWeight: 600,
-                    color: 'var(--apple-text)',
-                    margin: 0,
-                  }}
-                >
-                  Activity
-                </h1>
-              </header>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="border border-[var(--apple-border,rgba(0,0,0,0.08))] bg-[var(--surface,#fff)] p-5 rounded-[var(--apple-r-md,12px)]">
-                  <h2 className="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--apple-text-tertiary,#86868b)] mb-3">
-                    Round History
-                  </h2>
-                  <BatchVaultResults sourceId={sourceId} />
-                </div>
-                <ActivityRecentBets />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="border border-[var(--apple-border,rgba(0,0,0,0.08))] bg-[var(--surface,#fff)] p-5 rounded-[var(--apple-r-md,12px)]">
+                <h2 className="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--apple-text-tertiary,#86868b)] mb-3">
+                  Round History
+                </h2>
+                <BatchVaultResults sourceId={sourceId} />
               </div>
+              <ActivityRecentBets />
             </div>
           </div>
         </div>
-      </div>
-
-      <Footer />
-    </main>
+      </AppShell>
+    </>
   )
 }

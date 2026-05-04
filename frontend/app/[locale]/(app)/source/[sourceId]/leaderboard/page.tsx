@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { QueryClient, dehydrate, HydrationBoundary } from '@tanstack/react-query'
-import { Header } from '@/components/layout/Header'
-import { Footer } from '@/components/layout/Footer'
+import { AppShell } from '@/components/layout/AppShell'
+import { SourceSearch } from '@/components/layout/SourceSearch'
 import { TopPlayers } from '@/components/domain/vision/detail/TopPlayers'
 import { SourceSidebarApple } from '@/components/domain/vision/detail/SourceSidebarApple'
 import { SourceTabNav } from '@/components/domain/vision/detail/SourceTabNav'
@@ -86,41 +86,35 @@ export default async function LeaderboardPage({ params }: Props) {
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <main className="min-h-screen bg-page flex flex-col">
-        <Header />
-        {jsonLd.map((ld, i) => (
-          <script key={i} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} />
-        ))}
-
-        <div className="flex-1 overflow-x-clip">
-          <div className="flex">
-            <SourceSidebarApple sourceId={sourceId} category={source?.category} />
-            <div className="flex-1 min-w-0 flex flex-col">
-              <SourceTabNav sourceId={sourceId} activeTab="leaderboard" />
-              <div className="px-4 sm:px-6 lg:px-10 py-6 lg:py-10 pb-16">
-                <header className="mb-8">
-                  <h1
-                    style={{
-                      fontFamily: 'var(--apple-font-display)',
-                      fontSize: 'clamp(32px, 3.5vw, 40px)',
-                      letterSpacing: 'var(--apple-track-tighter)',
-                      lineHeight: 1.1,
-                      fontWeight: 600,
-                      color: 'var(--apple-text)',
-                      margin: 0,
-                    }}
-                  >
-                    Leaderboard
-                  </h1>
-                </header>
-                <TopPlayers sourceId={sourceId} />
-              </div>
-            </div>
+      {jsonLd.map((ld, i) => (
+        <script key={i} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} />
+      ))}
+      <AppShell
+        search={<SourceSearch />}
+        sidebar={<SourceSidebarApple sourceId={sourceId} category={source?.category} />}
+      >
+        <div className="flex flex-col">
+          <SourceTabNav sourceId={sourceId} activeTab="leaderboard" />
+          <div className="px-4 sm:px-6 lg:px-10 py-6 lg:py-10 pb-16">
+            <header className="mb-8">
+              <h1
+                style={{
+                  fontFamily: 'var(--apple-font-display)',
+                  fontSize: 'clamp(32px, 3.5vw, 40px)',
+                  letterSpacing: 'var(--apple-track-tighter)',
+                  lineHeight: 1.1,
+                  fontWeight: 600,
+                  color: 'var(--apple-text)',
+                  margin: 0,
+                }}
+              >
+                Leaderboard
+              </h1>
+            </header>
+            <TopPlayers sourceId={sourceId} />
           </div>
         </div>
-
-        <Footer />
-      </main>
+      </AppShell>
     </HydrationBoundary>
   )
 }
