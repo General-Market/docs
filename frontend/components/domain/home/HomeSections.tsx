@@ -81,7 +81,7 @@ export function HomeDashboard({ feeds }: { feeds: FeedMap }) {
             color: 'var(--apple-text)',
           }}
         >
-          Trading is easy with an Anti-Cheat.
+          Trading is easy with an Anti-Cheat
         </h1>
       </div>
 
