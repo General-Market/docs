@@ -1,6 +1,7 @@
 import React from "react";
 import {
   AbsoluteFill,
+  Sequence,
   interpolate,
   spring,
   useCurrentFrame,
@@ -9,46 +10,19 @@ import {
 import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 
-const SCENE_SECONDS = 5;
-const TERMINAL_AT = toFrames(0.8);
+const SCENE_SECONDS = 8;
+const TERMINAL_AT = toFrames(4);
 const GREEN = "#3ddc84";
-
-// Per-line typewriter timing (scene-local seconds, char-per-second cps).
-type Line = {
-  text: string;
-  color: string;
-  bold?: boolean;
-  startSec: number;
-  cps: number;
-};
-
-const LINES: Line[] = [
-  { text: "$ claude", color: colors.dim, startSec: 0.8, cps: 32 },
-  {
-    text: "> upgrade my bot to block-trading",
-    color: colors.fg,
-    startSec: 1.4,
-    cps: 32,
-  },
-  {
-    text: "✓ shielded",
-    color: GREEN,
-    bold: true,
-    startSec: 2.8,
-    cps: 32,
-  },
-];
-
-const LINE_END_SEC = (l: Line) => l.startSec + l.text.length / l.cps;
-const LAST_LINE = LINES[LINES.length - 1];
-const CHECK_LANDS_SEC = LINE_END_SEC(LAST_LINE);
 
 export const AntiCheatSolution: React.FC = () => {
   return (
     <AbsoluteFill style={{ backgroundColor: colors.bg, fontFamily: font }}>
-      <Backdrop />
       <Headline />
-      <Terminal />
+
+      <Sequence from={TERMINAL_AT}>
+        <Terminal />
+      </Sequence>
+
       <AbsoluteFill
         style={{
           pointerEvents: "none",
@@ -60,126 +34,109 @@ export const AntiCheatSolution: React.FC = () => {
   );
 };
 
-// ─── Headline: "General changes this." snaps in at 0s, sits at the top. ──────
+// ─── Headline: "General changes this." ────────────────────────────────────────
 
 const Headline: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  const opacity = interpolate(
+  const t = spring({
     frame,
-    [0, toFrames(0.18)],
-    [0, 1],
+    fps,
+    config: { damping: 22, stiffness: 110, mass: 0.7 },
+  });
+  const t2 = spring({
+    frame: frame - toFrames(0.6),
+    fps,
+    config: { damping: 22, stiffness: 100, mass: 0.8 },
+  });
+
+  // Slide up + fade as the terminal arrives.
+  const lift = interpolate(
+    frame,
+    [TERMINAL_AT - toFrames(0.3), TERMINAL_AT + toFrames(0.4)],
+    [0, -120],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
-  const enterY = interpolate(
+  const headlineOpacity = interpolate(
     frame,
-    [0, toFrames(0.18)],
-    [14, 0],
+    [TERMINAL_AT - toFrames(0.2), TERMINAL_AT + toFrames(0.5)],
+    [1, 0.18],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
 
-  // One-time scale punch on "changes".
-  const punch = spring({
-    frame: frame - toFrames(0.05),
-    fps,
-    config: { damping: 9, stiffness: 220, mass: 0.55 },
-  });
-  const punchScale =
-    1 + Math.sin(Math.min(1, Math.max(0, punch)) * Math.PI) * 0.06;
+  const isTerminal = frame >= TERMINAL_AT;
 
   return (
-    <div
+    <AbsoluteFill
       style={{
-        position: "absolute",
-        top: "10%",
-        left: 0,
-        right: 0,
-        textAlign: "center",
+        justifyContent: "center",
+        alignItems: "center",
         padding: "0 96px",
-        opacity,
-        transform: `translateY(${enterY}px)`,
+        textAlign: "center",
+        opacity: headlineOpacity,
+        transform: `translateY(${lift}px)`,
       }}
     >
       <div
         style={{
           fontFamily: font,
-          fontSize: 110,
+          fontSize: 132,
           fontWeight: 800,
           letterSpacing: "-0.04em",
           color: colors.fg,
           lineHeight: 0.95,
           textShadow: "0 4px 28px rgba(0,0,0,0.65)",
+          opacity: interpolate(t, [0, 1], [0, 1]),
+          transform: `translateY(${interpolate(t, [0, 1], [22, 0])}px)`,
         }}
       >
-        General{" "}
-        <span
-          style={{
-            color: GREEN,
-            display: "inline-block",
-            transform: `scale(${punchScale})`,
-            transformOrigin: "center",
-          }}
-        >
-          changes
-        </span>{" "}
-        this
+        General <span style={{ color: GREEN }}>changes</span> this
+        <span style={{ color: colors.fg, opacity: 0.45 }}>.</span>
       </div>
-    </div>
+      <div
+        style={{
+          marginTop: 36,
+          fontFamily: monoFont,
+          fontSize: 30,
+          fontWeight: 500,
+          letterSpacing: "0.18em",
+          textTransform: "uppercase",
+          color: colors.dim,
+          opacity: interpolate(t2, [0, 1], [0, 1]) * (isTerminal ? 0 : 1),
+          transform: `translateY(${interpolate(t2, [0, 1], [16, 0])}px)`,
+        }}
+      >
+        Securing your profits from unfair actors
+      </div>
+    </AbsoluteFill>
   );
 };
 
-// ─── Terminal: dark panel + character-by-character type-out per line. ────────
+// ─── Terminal panel — types out the prompt + response ─────────────────────────
+
+const TERMINAL_LINES: { text: string; color: string; mode: "cmd" | "user" | "ok" }[] = [
+  { text: "$ claude", color: colors.dim, mode: "cmd" },
+  { text: "> upgrade my bot to block-trading", color: colors.fg, mode: "user" },
+  { text: "✓ shielded", color: GREEN, mode: "ok" },
+];
 
 const Terminal: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  if (frame < TERMINAL_AT - 2) return null;
 
-  const local = frame - TERMINAL_AT;
-  const localSec = local / FPS;
-
-  // Panel scale-spring entrance the moment line 1 starts typing.
-  const enterFrame = local - toFrames(LINES[0].startSec - TERMINAL_AT / FPS);
-  const enter = spring({
-    frame: enterFrame,
+  // Panel itself springs in.
+  const panel = spring({
+    frame,
     fps,
-    config: { damping: 10, stiffness: 180, mass: 0.7, overshootClamping: false },
+    config: { damping: 22, stiffness: 130, mass: 0.6 },
   });
-  // back.out(1.6)-flavoured: spring already overshoots; compress range to 0.96 → 1.0.
-  const enterScale = interpolate(enter, [0, 1], [0.96, 1.0]);
-  const enterOpacity = interpolate(
-    enterFrame,
-    [0, toFrames(0.32)],
-    [0, 1],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
+  const panelOpacity = interpolate(panel, [0, 1], [0, 1]);
+  const panelY = interpolate(panel, [0, 1], [40, 0]);
 
-  // Determine the active line — the highest line whose start has passed.
-  let activeLineIdx = -1;
-  for (let i = 0; i < LINES.length; i++) {
-    if (localSec >= LINES[i].startSec) activeLineIdx = i;
-  }
-  const allDone =
-    activeLineIdx === LINES.length - 1 && localSec >= CHECK_LANDS_SEC;
-
-  // Cursor blink: 1Hz square wave keyed off frame. Solid (no blink) once `✓ shielded`
-  // has fully landed.
-  const blinkFrames = Math.round(FPS / 2); // 15 frames on, 15 off → 1Hz
-  const blinkOn = Math.floor(local / blinkFrames) % 2 === 0;
-  const cursorVisible = allDone ? true : blinkOn;
-
-  // Green-pulse on the shielded line: starts when `✓ shielded` fully lands.
-  const checkLandFrame = local - toFrames(CHECK_LANDS_SEC);
-  const pulseDur = toFrames(0.4);
-  const pulseT =
-    checkLandFrame >= 0 && checkLandFrame <= pulseDur
-      ? checkLandFrame / pulseDur
-      : -1;
-  const shieldedBg =
-    pulseT >= 0
-      ? `rgba(61,220,132,${Math.sin(pulseT * Math.PI) * 0.15})`
-      : "transparent";
+  // Per-line typewriter timings (frames are local to the terminal sequence).
+  const LINE_DELAYS = [toFrames(0.3), toFrames(1.2), toFrames(2.5)];
+  const CHARS_PER_FRAME = 0.7; // ~21 cps at 30fps
 
   return (
     <AbsoluteFill
@@ -192,22 +149,22 @@ const Terminal: React.FC = () => {
       <div
         style={{
           width: "min(1200px, 90%)",
-          background: "#0d0d10",
-          border: `1px solid #1a1a1f`,
-          borderRadius: 12,
-          transform: `scale(${enterScale})`,
-          opacity: enterOpacity,
+          background: "linear-gradient(180deg, #0d0d10 0%, #050507 100%)",
+          border: `1px solid ${colors.rule}`,
+          borderRadius: 8,
+          opacity: panelOpacity,
+          transform: `translateY(${panelY}px)`,
           boxShadow: "0 24px 80px rgba(0,0,0,0.6)",
-          marginTop: 80,
         }}
       >
+        {/* Window chrome */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
             gap: 8,
             padding: "14px 18px",
-            borderBottom: `1px solid #1a1a1f`,
+            borderBottom: `1px solid ${colors.rule}`,
           }}
         >
           <Dot color="#ff5f57" />
@@ -226,9 +183,10 @@ const Terminal: React.FC = () => {
           </span>
         </div>
 
+        {/* Body */}
         <div
           style={{
-            padding: "36px",
+            padding: "32px 40px 36px",
             fontFamily: monoFont,
             fontSize: 38,
             lineHeight: 1.5,
@@ -237,59 +195,54 @@ const Terminal: React.FC = () => {
             gap: 6,
           }}
         >
-          {LINES.map((line, i) => {
-            // Pre-start: invisible (collapses height to 0 so later lines aren't pushed).
-            if (localSec < line.startSec) {
-              return <div key={i} style={{ height: 0, opacity: 0 }} />;
-            }
-            const elapsed = localSec - line.startSec;
-            const charsDone = Math.min(
+          {TERMINAL_LINES.map((line, i) => {
+            const start = LINE_DELAYS[i];
+            const localFrame = Math.max(0, frame - start);
+            const visibleChars = Math.min(
               line.text.length,
-              Math.floor(elapsed * line.cps),
+              Math.floor(localFrame * CHARS_PER_FRAME),
             );
-            const isActive = i === activeLineIdx;
-            const fullyTyped = charsDone >= line.text.length;
-            const isShielded = !!line.bold;
+            const shown = line.text.slice(0, visibleChars);
+            const isActive = frame >= start;
+            const isComplete = visibleChars >= line.text.length;
+            const showCursor = isActive && !isComplete;
 
             return (
               <div
                 key={i}
                 style={{
                   color: line.color,
-                  fontWeight: line.bold ? 700 : 500,
+                  fontWeight: line.mode === "ok" ? 700 : 500,
+                  opacity: isActive ? 1 : 0.0,
                   whiteSpace: "pre",
-                  display: "flex",
-                  alignItems: "center",
-                  backgroundColor: isShielded ? shieldedBg : "transparent",
-                  padding: isShielded ? "2px 6px" : "0",
-                  margin: isShielded ? "-2px -6px" : "0",
-                  borderRadius: 4,
-                  transition: "none",
                 }}
               >
-                <span>{line.text.slice(0, charsDone)}</span>
-                {/* Cursor only on the line currently being typed, OR on the last
-                    line once everything finishes. */}
-                {(isActive && !fullyTyped) ||
-                (i === LINES.length - 1 && allDone) ? (
-                  <span
-                    style={{
-                      display: "inline-block",
-                      width: "0.6em",
-                      height: "1em",
-                      marginLeft: 4,
-                      background: GREEN,
-                      opacity: cursorVisible ? 1 : 0,
-                      verticalAlign: "middle",
-                    }}
-                  />
-                ) : null}
+                {shown}
+                {showCursor && <Cursor />}
               </div>
             );
           })}
         </div>
       </div>
     </AbsoluteFill>
+  );
+};
+
+const Cursor: React.FC = () => {
+  const frame = useCurrentFrame();
+  const blink = Math.floor(frame / 8) % 2 === 0;
+  return (
+    <span
+      style={{
+        display: "inline-block",
+        width: "0.55em",
+        marginLeft: 2,
+        background: colors.fg,
+        opacity: blink ? 0.85 : 0.0,
+        height: "1em",
+        verticalAlign: "-0.18em",
+      }}
+    />
   );
 };
 
@@ -305,52 +258,6 @@ const Dot: React.FC<{ color: string }> = ({ color }) => (
     }}
   />
 );
-
-// ─── Backdrop with quiet ambient pulse ────────────────────────────────────────
-
-const Backdrop: React.FC = () => {
-  const frame = useCurrentFrame();
-  const pulse = 0.14 + Math.sin((frame / 45) * Math.PI * 2) * 0.04;
-
-  return (
-    <AbsoluteFill
-      style={{
-        background: "linear-gradient(180deg, #0d0d10 0%, #050507 100%)",
-      }}
-    >
-      <svg
-        viewBox={`0 0 ${W} ${H}`}
-        width="100%"
-        height="100%"
-        preserveAspectRatio="none"
-        style={{ position: "absolute", inset: 0, opacity: 0.3 + pulse }}
-      >
-        {Array.from({ length: 12 }).map((_, i) => (
-          <line
-            key={`h${i}`}
-            x1={0}
-            x2={W}
-            y1={(i + 1) * (H / 13)}
-            y2={(i + 1) * (H / 13)}
-            stroke="#16161b"
-            strokeWidth={1}
-          />
-        ))}
-        {Array.from({ length: 18 }).map((_, i) => (
-          <line
-            key={`v${i}`}
-            x1={(i + 1) * (W / 19)}
-            x2={(i + 1) * (W / 19)}
-            y1={0}
-            y2={H}
-            stroke="#13131a"
-            strokeWidth={1}
-          />
-        ))}
-      </svg>
-    </AbsoluteFill>
-  );
-};
 
 export const antiCheatSolutionMeta = {
   id: "AntiCheatSolution",
