@@ -51,6 +51,22 @@ function safeBigInt(v: string | undefined): bigint {
   try { return BigInt(v) } catch { return 0n }
 }
 
+/** Convert `rgb(R,G,B)` or `#rrggbb` to `rgba(...)` with a given alpha. */
+function toRgba(color: string, alpha: number): string {
+  const m = color.match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/i)
+  if (m) return `rgba(${m[1]},${m[2]},${m[3]},${alpha})`
+  if (color.startsWith('#') && (color.length === 7 || color.length === 4)) {
+    const hex = color.length === 4
+      ? '#' + color.slice(1).split('').map(c => c + c).join('')
+      : color
+    const r = parseInt(hex.slice(1, 3), 16)
+    const g = parseInt(hex.slice(3, 5), 16)
+    const b = parseInt(hex.slice(5, 7), 16)
+    return `rgba(${r},${g},${b},${alpha})`
+  }
+  return color
+}
+
 /* ─── shared shell — keeps height + surface identical across branches ─ */
 
 const CARD_CLASS = 'flex flex-col gap-5 p-6 rounded-[var(--apple-r-card)] border overflow-hidden'
@@ -140,8 +156,12 @@ function Sparkline({ data, color }: { data: number[]; color: string }) {
       ctx.lineTo(0, HEIGHT)
       ctx.closePath()
       const gradient = ctx.createLinearGradient(0, 0, 0, HEIGHT)
-      gradient.addColorStop(0, color + '20')
-      gradient.addColorStop(1, color + '05')
+      // The stroke color arrives as `rgb(R,G,B)`; concatenating an alpha
+      // suffix (`+ '20'`) yields `rgb(...)20`, which canvas refuses and
+      // throws on, killing the entire card via the error boundary. Use
+      // a proper rgba conversion so empty alpha never breaks the paint.
+      gradient.addColorStop(0, toRgba(color, 0.12))
+      gradient.addColorStop(1, toRgba(color, 0.02))
       ctx.fillStyle = gradient
       ctx.fill()
     }
@@ -391,24 +411,32 @@ export function FeaturedVaultHero({ sourceId }: FeaturedVaultHeroProps) {
     return chainByAddress[key] ?? null
   }, [featuredFund, chainByAddress])
 
-  // Resolve display vitals (wagmi preferred, SSE fallback).
+  // Resolve display vitals (wagmi preferred, SSE fallback). Returns null
+  // when *neither* source has anything for this vault — the hero then falls
+  // through to the empty-state branch instead of pretending NAV is $1.0000
+  // and TVL is zero. Faking values reads as "vault is broken"; saying
+  // nothing reads as "vault has yet to live."
   const display = useMemo(() => {
-    if (!featuredVault) {
-      if (!featuredFund) return null
-      const key = (featuredFund.vault as string).toLowerCase()
-      const sse = sseByAddress[key]
-      if (sse) {
-        let assets = 0n
-        try { assets = BigInt(sse.total_assets) } catch {}
-        return {
-          tvl: parseFloat(formatUnits(assets, 18)),
-          nav: sse.nav_per_share,
-          perf: sse.nav_per_share - 1.0,
-        }
-      }
-      return { tvl: 0, nav: 1.0, perf: 0 }
+    if (!featuredFund) return null
+    if (featuredVault && (featuredVault.totalAssets > 0n || featuredVault.totalSupply > 0n)) {
+      return resolveDisplay(featuredVault)
     }
-    return resolveDisplay(featuredVault)
+    const key = (featuredFund.vault as string).toLowerCase()
+    const sse = sseByAddress[key]
+    if (sse) {
+      let assets = 0n
+      try { assets = BigInt(sse.total_assets) } catch {}
+      return {
+        tvl: parseFloat(formatUnits(assets, 18)),
+        nav: sse.nav_per_share,
+        perf: sse.nav_per_share - 1.0,
+      }
+    }
+    // Chain returned a vault but every read was zero (or a partial read
+    // succeeded for `name` but not the balance fields). That's not the same
+    // as "no live data" — surface zeros only when the chain confirms them.
+    if (featuredVault) return resolveDisplay(featuredVault)
+    return null
   }, [featuredVault, featuredFund, sseByAddress, resolveDisplay])
 
   const vaultAddress = featuredFund?.vault as string | undefined
