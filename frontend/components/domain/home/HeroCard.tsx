@@ -198,23 +198,11 @@ export function HeroCard({ feature, side }: Props) {
           className="relative min-h-[240px] sm:min-h-[280px] lg:min-h-[320px]"
           style={{ background: sourceGradient(feature.sourceId) }}
         >
-          {/* Top label — big source name + asset name on the chart */}
-          <div className="absolute top-6 left-6 right-6 z-10">
-            <div
-              className="font-semibold"
-              style={{
-                fontFamily: 'var(--apple-font-display)',
-                fontSize: 28,
-                letterSpacing: 'var(--apple-track-tight)',
-                lineHeight: 1.05,
-                color: 'var(--apple-text)',
-              }}
-            >
-              {feature.displayName}
-            </div>
-            {feature.assetName && (
+          {/* Top label — asset name only; source name already established on the left */}
+          {feature.assetName && (
+            <div className="absolute top-6 left-6 right-6 z-10">
               <div
-                className="mt-1.5 font-medium line-clamp-2"
+                className="font-medium line-clamp-2"
                 style={{
                   fontFamily: 'var(--apple-font-text)',
                   fontSize: 14,
@@ -225,8 +213,8 @@ export function HeroCard({ feature, side }: Props) {
               >
                 {feature.assetName}
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Sparkline filling the lower half */}
           <div className="absolute inset-x-0 bottom-0 h-[60%] overflow-hidden">
@@ -271,6 +259,25 @@ export function HeroCard({ feature, side }: Props) {
   )
 }
 
+function SideShieldDot() {
+  return (
+    <svg width="8" height="8" viewBox="0 0 12 12" aria-hidden>
+      <path
+        d="M6 1L2 3v3.2c0 2.4 1.7 4.4 4 4.8 2.3-.4 4-2.4 4-4.8V3L6 1z"
+        fill="currentColor"
+      />
+      <path
+        d="M4.4 6l1.2 1.2L8 4.8"
+        stroke="#0071e3"
+        strokeWidth="1.4"
+        fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
 function SideRow({ feed }: { feed: SourceFeed }) {
   const href = feed.hrefOverride ?? `/source/${feed.sourceId}`
   return (
@@ -297,17 +304,47 @@ function SideRow({ feed }: { feed: SourceFeed }) {
         </div>
       </div>
       <div className="min-w-0 flex-1">
-        <div
-          className="truncate font-semibold"
-          style={{
-            fontFamily: 'var(--apple-font-display)',
-            fontSize: 15,
-            letterSpacing: 'var(--apple-track-tighter)',
-            color: 'var(--apple-text)',
-            lineHeight: 1.2,
-          }}
-        >
-          {feed.displayName}
+        <div className="flex items-center gap-1.5 mb-0.5">
+          <div
+            className="truncate font-semibold"
+            style={{
+              fontFamily: 'var(--apple-font-display)',
+              fontSize: 15,
+              letterSpacing: 'var(--apple-track-tighter)',
+              color: 'var(--apple-text)',
+              lineHeight: 1.2,
+            }}
+          >
+            {feed.displayName}
+          </div>
+          {feed.coverage === 'anticheat' && (
+            <span
+              className="inline-flex shrink-0 items-center gap-0.5 rounded-full px-1.5 py-0.5 font-semibold"
+              style={{
+                background: '#0071e3',
+                color: '#fff',
+                fontSize: 9,
+                letterSpacing: '0.04em',
+              }}
+              aria-label="Anti-Cheat verified"
+            >
+              <SideShieldDot />
+              Anti-Cheat
+            </span>
+          )}
+          {feed.coverage === 'external' && (
+            <span
+              className="inline-flex shrink-0 items-center rounded-full px-1.5 py-0.5 font-medium"
+              style={{
+                background: 'rgba(0,0,0,0.06)',
+                color: 'var(--apple-text-secondary)',
+                fontSize: 9,
+                letterSpacing: '0.04em',
+              }}
+            >
+              External
+            </span>
+          )}
         </div>
         {feed.assetName && (
           <div
@@ -319,6 +356,18 @@ function SideRow({ feed }: { feed: SourceFeed }) {
             title={feed.assetName}
           >
             {feed.assetName}
+          </div>
+        )}
+        {feed.assetValue && (
+          <div
+            className="mt-0.5 font-semibold num"
+            style={{
+              fontSize: 11,
+              color: 'var(--apple-text)',
+              fontVariantNumeric: 'tabular-nums',
+            }}
+          >
+            {feed.assetValue}
           </div>
         )}
       </div>

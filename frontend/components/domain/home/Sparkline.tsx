@@ -1,3 +1,19 @@
+// Apple chart reference research (2026-05-04):
+// - Apple HIG charting-data: https://developer.apple.com/design/human-interface-guidelines/charting-data
+// - WWDC22 "Design an effective chart": https://developer.apple.com/videos/play/wwdc2022/110340/
+// - WWDC22 "Design app experiences with charts": https://developer.apple.com/videos/play/wwdc2022/110342/
+//
+// Key observations from Apple Stocks / Health / Fitness:
+//   · Hairline stroke: 1.5px via vectorEffect="non-scaling-stroke" (stays crisp at any DPR)
+//   · Area fill: ≤ 8% alpha at the curve top, fades to 0 — present but barely perceived
+//   · Color: movement-driven. Up = system green (#34c759) at 0.85 alpha. Down = system red (#ff3b30).
+//     Flat/fallback = muted slate. Caller can override with explicit stroke/fill.
+//   · Right-edge dot: 3px filled circle, same color as line, no border
+//   · Curve: quadratic Bézier midpoint smoothing — clean, no overshoot, no library
+//   · Baseline: invisible — axis is implied, not drawn (Apple HIG: "omit axis lines on sparklines")
+//   · Padding: 12px top + bottom so curves never kiss the SVG edges
+//   · Gradient id: encode stroke + dimensions to avoid collision when multiple instances share a DOM
+
 import { memo } from 'react'
 
 type SparklineProps = {
@@ -12,9 +28,8 @@ type SparklineProps = {
 
 /**
  * Build a smooth path through points using quadratic Bezier curves.
- * Each segment ends at the midpoint between successive points and uses the
- * point itself as the control. Classic Apple Stocks smoothing: clean,
- * no overshoot, no library.
+ * Each segment ends at the midpoint between successive points — the classic
+ * Apple Stocks smoothing. Clean, no overshoot, no library.
  */
 function smoothPath(pts: ReadonlyArray<readonly [number, number]>): string {
   if (pts.length === 0) return ''
@@ -37,15 +52,16 @@ function buildPath(
   w: number,
   h: number,
 ): { line: string; area: string; lastPt: readonly [number, number] } {
-  // 10px padding top + bottom so the curve breathes inside the card
-  const padY = 10
+  // 12px breathing room top + bottom — Apple never lets curves hit the SVG edge
+  const padY = 12
 
   if (series.length < 2) {
-    const flat = `M0 ${h / 2} L${w} ${h / 2}`
+    const midY = h / 2
+    const flat = `M0 ${midY} L${w} ${midY}`
     return {
       line: flat,
       area: `${flat} L${w} ${h} L0 ${h} Z`,
-      lastPt: [w, h / 2] as const,
+      lastPt: [w, midY] as const,
     }
   }
 
@@ -77,8 +93,8 @@ function SparklineImpl({
   const { line, area, lastPt } = buildPath(series, width, height)
   const fillColor = fill ?? stroke
 
-  // Stable gradient id — encode dimensions so different sizes don't collide
-  const gid = `apple-spark-${(stroke + (fill ?? '')).replace(/[^a-z0-9]/gi, '')}-${width}x${height}`
+  // Stable gradient id — encode stroke + dimensions so instances don't collide
+  const gid = `spark-${(stroke + (fill ?? '')).replace(/[^a-z0-9]/gi, '')}-${width}x${height}`
 
   const [lx, ly] = lastPt
 
@@ -94,17 +110,21 @@ function SparklineImpl({
       className={className}
     >
       <defs>
-        {/* Subtle top-down area tint — 5% at top, 0 at bottom */}
+        {/*
+          Area tint — 8% at the line top, 0 at the bottom.
+          Apple: present but barely perceived. Not "fintech gradient".
+        */}
         <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={fillColor} stopOpacity="0.10" />
+          <stop offset="0%" stopColor={fillColor} stopOpacity="0.08" />
+          <stop offset="85%" stopColor={fillColor} stopOpacity="0.01" />
           <stop offset="100%" stopColor={fillColor} stopOpacity="0" />
         </linearGradient>
       </defs>
 
-      {/* Area fill — very subtle */}
+      {/* Area fill — barely there, like Apple Health */}
       <path d={area} fill={`url(#${gid})`} />
 
-      {/* Hairline curve — non-scaling stroke stays crisp on any DPR */}
+      {/* Hairline curve — 1.5px, non-scaling so it stays crisp at any DPR */}
       <path
         d={line}
         fill="none"
@@ -115,11 +135,11 @@ function SparklineImpl({
         vectorEffect="non-scaling-stroke"
       />
 
-      {/* Dot at the rightmost data point */}
+      {/* Right-edge dot — 3px, same color as line, no border (Apple Stocks pattern) */}
       <circle
         cx={lx}
         cy={ly}
-        r={2.5}
+        r={3}
         fill={stroke}
         vectorEffect="non-scaling-stroke"
       />

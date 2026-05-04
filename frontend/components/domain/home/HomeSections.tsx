@@ -69,7 +69,7 @@ export function HomeDashboard({ feeds }: { feeds: FeedMap }) {
   const topMarkets = TOP_MARKETS_IDS.map((id) => pick(feeds, id))
 
   return (
-    <div className="px-6 py-8 lg:px-10 lg:py-10">
+    <div className="px-6 py-8 md:px-8 lg:px-10 lg:py-10">
       <div>
         <h1
           className="font-semibold"
@@ -103,7 +103,7 @@ export function HomeDashboard({ feeds }: { feeds: FeedMap }) {
 
       <section className="mt-12">
         <SectionHeader title="Top markets" href="/explorer" />
-        <div className="grid grid-cols-2 gap-5 sm:gap-6 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5">
           {featuredRow.map((feed) => (
             <AssetCard
               key={feed.sourceId}
@@ -122,7 +122,7 @@ export function HomeDashboard({ feeds }: { feeds: FeedMap }) {
 
       <section className="mt-12 mb-4">
         <SectionHeader title="Recently active" />
-        <div className="grid grid-cols-2 gap-5 sm:gap-6 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5">
           {topMarkets.map((feed) => (
             <AssetCard
               key={feed.sourceId}
