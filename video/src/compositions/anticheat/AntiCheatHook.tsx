@@ -1,6 +1,7 @@
 import React from "react";
 import {
   AbsoluteFill,
+  Loop,
   OffthreadVideo,
   Sequence,
   interpolate,
@@ -9,6 +10,11 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
+import {
+  TransitionSeries,
+  linearTiming,
+} from "@remotion/transitions";
+import { fade } from "@remotion/transitions/fade";
 import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 
@@ -34,27 +40,34 @@ export const AntiCheatHook: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
+  // Spring drives the split. At frame=SPLIT_AT it begins; before that it
+  // sits at 0, which means the left panel occupies the full canvas.
   const splitProgress = spring({
     frame: frame - SPLIT_AT,
     fps,
     config: { damping: 18, stiffness: 90, mass: 0.9 },
   });
-  const splitX = interpolate(splitProgress, [0, 1], [0, W / 2]);
+  const splitOffset = interpolate(splitProgress, [0, 1], [0, W / 2], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
 
   return (
     <AbsoluteFill style={{ backgroundColor: colors.bg, fontFamily: font }}>
-      {/* ── Left panel: PLAY — cheater broll visible ── */}
+      {/* ── Left panel: PLAY — full width until the split, then half ── */}
       <div
         style={{
           position: "absolute",
-          inset: 0,
-          right: `${W - splitX}px`,
+          top: 0,
+          bottom: 0,
+          left: 0,
+          right: `${splitOffset}px`,
           overflow: "hidden",
           borderRight: `1px solid ${colors.rule}`,
         }}
       >
-        <CheaterBrollLayer frame={frame} showFrom={HEADER_IN} />
-        <ChromeOverlay />
+        <CheaterBrollSequence />
+        <StripDarken />
         <PanelLabel
           eyebrow="When you play"
           slot="01 / Game"
@@ -74,22 +87,20 @@ export const AntiCheatHook: React.FC = () => {
         />
       </div>
 
-      {/* ── Right panel: TRADE — procedural trading screen ── */}
+      {/* ── Right panel: TRADE — slides in from the right edge ── */}
       <div
         style={{
           position: "absolute",
-          inset: 0,
-          left: `${splitX}px`,
+          top: 0,
+          bottom: 0,
+          left: `${W - splitOffset}px`,
+          right: 0,
           overflow: "hidden",
           borderLeft: `1px solid ${colors.rule}`,
-          opacity: interpolate(frame, [SPLIT_AT - 4, SPLIT_AT + 8], [0, 1], {
-            extrapolateLeft: "clamp",
-            extrapolateRight: "clamp",
-          }),
         }}
       >
         <TradingScreen frame={frame} showFrom={SPLIT_AT} />
-        <ChromeOverlay tint={colors.accent} />
+        <StripDarken tint={colors.accent} />
         <PanelLabel
           eyebrow="When you trade"
           slot="02 / Market"
@@ -128,58 +139,92 @@ export const AntiCheatHook: React.FC = () => {
   );
 };
 
-// ─── Left panel: cycle through the three cheat clips synced to the pair reveals ─
+// ─── Left panel broll: a clean sequential timeline with crossfades ────────────
+//
+// 0.0–3.0s   minecraft-killaura
+// 3.0–6.0s   cs2-spinbot
+// 6.0–11.0s  valorant-wallhack
+// 11.0–12.0s minecraft-killaura (looped, so it never freezes on the last frame)
+//
+// Total: 360 frames. The crossfade overlap is absorbed by the linearTiming
+// duration, so no clip ever runs out of source material before its slot ends.
 
-const CheaterBrollLayer: React.FC<{
-  frame: number;
-  showFrom: number;
-}> = ({ frame, showFrom }) => {
-  // Before pairs start: minecraft kill aura (matches the rage-y energy).
-  // From PAIRS_AT, swap to whatever cheat the active pair names.
-  const pairIdx = Math.max(
-    -1,
-    Math.min(PAIRS.length - 1, Math.floor((frame - PAIRS_AT) / PAIR_STEP)),
-  );
-  const activeSrc = pairIdx < 0 ? BROLL.minecraft : PAIRS[pairIdx].broll;
+const FADE = toFrames(0.27); // 8 frames at 30fps
 
-  const fadeIn = interpolate(
-    frame,
-    [showFrom, showFrom + toFrames(0.4)],
-    [0, 1],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-  const scale = interpolate(
-    frame,
-    [showFrom, showFrom + toFrames(8)],
-    [1.08, 1.0],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-
+const CheaterBrollSequence: React.FC = () => {
   return (
-    <div
-      style={{
-        position: "absolute",
-        inset: 0,
-        opacity: fadeIn,
-        transform: `scale(${scale})`,
-      }}
-    >
-      {/* Use key= to force a fresh OffthreadVideo when the active clip changes. */}
-      <OffthreadVideo
-        key={activeSrc}
-        src={activeSrc}
-        muted
-        startFrom={0}
-        playbackRate={1.0}
-        style={{
-          width: "100%",
-          height: "100%",
-          objectFit: "cover",
-          filter: "saturate(1.05) contrast(1.05) brightness(0.95)",
-        }}
-      />
-    </div>
+    <AbsoluteFill>
+      <TransitionSeries>
+        <TransitionSeries.Sequence durationInFrames={toFrames(3.0)}>
+          <BrollClip src={BROLL.minecraft} />
+        </TransitionSeries.Sequence>
+
+        <TransitionSeries.Transition
+          presentation={fade()}
+          timing={linearTiming({ durationInFrames: FADE })}
+        />
+
+        <TransitionSeries.Sequence durationInFrames={toFrames(3.0)}>
+          <BrollClip src={BROLL.cs2} />
+        </TransitionSeries.Sequence>
+
+        <TransitionSeries.Transition
+          presentation={fade()}
+          timing={linearTiming({ durationInFrames: FADE })}
+        />
+
+        <TransitionSeries.Sequence durationInFrames={toFrames(5.0)}>
+          <BrollClip src={BROLL.valorant} />
+        </TransitionSeries.Sequence>
+
+        <TransitionSeries.Transition
+          presentation={fade()}
+          timing={linearTiming({ durationInFrames: FADE })}
+        />
+
+        {/* Tail: minecraft loops so the freeze-frame never appears.
+            Sized so the total timeline (sum of seq durations minus the three
+            8-frame transitions) lands exactly on the 360-frame composition. */}
+        <TransitionSeries.Sequence durationInFrames={toFrames(1.8)}>
+          <BrollClip src={BROLL.minecraft} loop />
+        </TransitionSeries.Sequence>
+      </TransitionSeries>
+    </AbsoluteFill>
   );
+};
+
+const BrollClip: React.FC<{ src: string; loop?: boolean }> = ({
+  src,
+  loop,
+}) => {
+  // OffthreadVideo has no native loop prop — wrap it in <Loop> when we
+  // need the source to repeat past its own runtime. The minecraft tail
+  // slot is shorter than the clip itself, so loop is a no-op safety net.
+  const videoStyle: React.CSSProperties = {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+    filter: "saturate(1.05) contrast(1.05) brightness(0.95)",
+  };
+
+  const inner = (
+    <OffthreadVideo
+      src={src}
+      muted
+      playbackRate={1.0}
+      style={videoStyle}
+    />
+  );
+
+  if (loop) {
+    // 90 frames = 3s, comfortably within every clip's source duration.
+    return (
+      <AbsoluteFill>
+        <Loop durationInFrames={toFrames(3.0)}>{inner}</Loop>
+      </AbsoluteFill>
+    );
+  }
+  return <AbsoluteFill>{inner}</AbsoluteFill>;
 };
 
 // ─── Right panel: procedural trading screen ────────────────────────────────────
@@ -489,17 +534,17 @@ const Ticker: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
-// ─── Generic chrome — darken the top + bottom strips so text reads cleanly ─────
+// ─── Strip darkening — only the top + bottom edges, so the broll stays clean ──
 
-const ChromeOverlay: React.FC<{ tint?: string }> = ({ tint }) => (
+const StripDarken: React.FC<{ tint?: string }> = ({ tint }) => (
   <div
     style={{
       position: "absolute",
       inset: 0,
       pointerEvents: "none",
       background: tint
-        ? `linear-gradient(180deg, rgba(10,10,10,0.78) 0%, rgba(10,10,10,0.30) 32%, rgba(10,10,10,0.30) 62%, rgba(10,10,10,0.78) 100%), linear-gradient(180deg, rgba(255,59,59,0.05), rgba(255,59,59,0.02))`
-        : `linear-gradient(180deg, rgba(10,10,10,0.78) 0%, rgba(10,10,10,0.20) 32%, rgba(10,10,10,0.20) 62%, rgba(10,10,10,0.82) 100%)`,
+        ? `linear-gradient(180deg, rgba(10,10,10,0.82) 0%, rgba(10,10,10,0.0) 28%, rgba(10,10,10,0.0) 64%, rgba(10,10,10,0.86) 100%), linear-gradient(180deg, rgba(255,59,59,0.04), rgba(255,59,59,0.0))`
+        : `linear-gradient(180deg, rgba(10,10,10,0.82) 0%, rgba(10,10,10,0.0) 28%, rgba(10,10,10,0.0) 64%, rgba(10,10,10,0.86) 100%)`,
     }}
   />
 );
