@@ -1,10 +1,11 @@
 import type { SourceFeed } from './types'
-import { DEFAULT_RESOLUTION, fallbackSeries, fetchJsonWithTimeout } from './types'
+import { fetchJsonWithTimeout } from './types'
 
 /**
- * GitHub — public REST API for trending stars on a watched repo. We sample
- * the bitcoin/bitcoin star count as a proxy stat; the curve is the value
- * smeared along a deterministic baseline so the card has a stationary shape.
+ * GitHub — public REST API gives a current star count for a repo. One number
+ * is not a time-series; we carry it as a value chip and render no curve.
+ * The data-node has historical stargazer history if you want a real chart
+ * later — wire it through `/market/prices/github/{repo}/history` then.
  */
 
 type RepoMeta = {
@@ -21,17 +22,10 @@ export async function getGithubFeed(): Promise<SourceFeed> {
     { headers: { Accept: 'application/vnd.github+json' } },
   )
 
-  let series: number[]
   let meta = 'Stars · activity · releases'
-
   const stars = data?.stargazers_count
   if (typeof stars === 'number' && stars > 0) {
-    const base = fallbackSeries('github', DEFAULT_RESOLUTION, stars, stars * 0.002, 4)
-    base[base.length - 1] = stars
-    series = base
     meta = `${PROXY_REPO} · ${stars.toLocaleString()} stars`
-  } else {
-    series = fallbackSeries('github', DEFAULT_RESOLUTION, 0.58, 7, 4)
   }
 
   return {
@@ -41,6 +35,6 @@ export async function getGithubFeed(): Promise<SourceFeed> {
     assetValue: typeof stars === 'number' ? `${stars.toLocaleString()}★` : undefined,
     meta,
     coverage: 'anticheat',
-    series,
+    series: [],
   }
 }

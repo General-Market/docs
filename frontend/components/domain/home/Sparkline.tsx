@@ -51,19 +51,13 @@ function buildPath(
   series: number[],
   w: number,
   h: number,
-): { line: string; area: string; lastPt: readonly [number, number] } {
+): { line: string; area: string; lastPt: readonly [number, number] } | null {
   // 12px breathing room top + bottom — Apple never lets curves hit the SVG edge
   const padY = 12
 
-  if (series.length < 2) {
-    const midY = h / 2
-    const flat = `M0 ${midY} L${w} ${midY}`
-    return {
-      line: flat,
-      area: `${flat} L${w} ${h} L0 ${h} Z`,
-      lastPt: [w, midY] as const,
-    }
-  }
+  // Real or absent. No flat-line stub, no synthesized shape — if upstream
+  // doesn't give us at least two points, we render nothing.
+  if (series.length < 2) return null
 
   const min = Math.min(...series)
   const max = Math.max(...series)
@@ -90,7 +84,9 @@ function SparklineImpl({
   className,
   ariaLabel = '',
 }: SparklineProps) {
-  const { line, area, lastPt } = buildPath(series, width, height)
+  const built = buildPath(series, width, height)
+  if (!built) return null
+  const { line, area, lastPt } = built
   const fillColor = fill ?? stroke
 
   // Stable gradient id — encode stroke + dimensions so instances don't collide

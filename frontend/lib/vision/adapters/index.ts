@@ -1,5 +1,5 @@
 import type { SourceFeed } from './types'
-import { fallbackSeries, SOURCE_IMAGES } from './types'
+import { SOURCE_IMAGES } from './types'
 import { getDefiLlamaFeed } from './defillama'
 import { getEquitiesFeed } from './equities'
 import { getEspnFeed } from './espn'
@@ -51,7 +51,7 @@ export async function getHomeFeeds(): Promise<Record<string, SourceFeed>> {
         displayName: d.displayName,
         meta: d.meta,
         coverage: d.coverage,
-        series: fallbackSeries(id),
+        series: [],
         imageUrl: SOURCE_IMAGES[id],
         external: d.coverage === 'external',
       }
@@ -72,7 +72,7 @@ export async function getSingleFeed(id: string): Promise<SourceFeed | null> {
       displayName: d?.displayName ?? id,
       meta: d?.meta ?? '',
       coverage: d?.coverage ?? 'anticheat',
-      series: fallbackSeries(id),
+      series: [],
     }
   }
 }

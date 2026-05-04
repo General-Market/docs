@@ -1,11 +1,11 @@
 import type { SourceFeed } from './types'
-import { DEFAULT_RESOLUTION, fallbackSeries, fetchJsonWithTimeout } from './types'
+import { fetchJsonWithTimeout } from './types'
 
 /**
- * Polymarket — public Gamma API gives recent volume per market. We pull a few
- * top markets and synthesize a 24h activity series. The card is marked
- * `external` because Polymarket itself is the upstream platform; the on-chain
- * Anti-Cheat does not run their orderbook.
+ * Polymarket — public Gamma API gives current per-market volume. Sorting
+ * those volumes is a ranking, not a time-series; rendering a curve from it
+ * is a lie. We surface the top question and total live volume; chart absent.
+ * The card is `external` because Polymarket's orderbook is not Anti-Cheat.
  */
 
 type GammaMarket = {
@@ -21,25 +21,15 @@ export async function getPolymarketFeed(): Promise<SourceFeed> {
     5000,
   )
 
-  let series: number[]
   let meta = 'Prediction markets · live volume'
-
   if (data && data.length > 0) {
-    const vols = data
+    const total = data
       .map((m) => Number(m.volume ?? 0))
       .filter((v) => Number.isFinite(v) && v > 0)
-      .sort((a, b) => b - a)
-      .slice(0, DEFAULT_RESOLUTION)
-
-    if (vols.length >= 4) {
-      series = vols.reverse() // ascending so the line generally moves up
-      const total = vols.reduce((a, b) => a + b, 0)
+      .reduce((a, b) => a + b, 0)
+    if (total > 0) {
       meta = `${data.length} live markets · 24h $${formatBig(total)}`
-    } else {
-      series = fallbackSeries('polymarket', DEFAULT_RESOLUTION, 0.62, 12, 7)
     }
-  } else {
-    series = fallbackSeries('polymarket', DEFAULT_RESOLUTION, 0.62, 12, 7)
   }
 
   const top = data && data.length > 0 ? data[0] : undefined
@@ -51,7 +41,7 @@ export async function getPolymarketFeed(): Promise<SourceFeed> {
     assetValue: top?.volume ? `$${formatBig(Number(top.volume))}` : undefined,
     meta,
     coverage: 'external',
-    series,
+    series: [],
     external: true,
   }
 }

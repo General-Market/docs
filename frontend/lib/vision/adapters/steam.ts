@@ -1,10 +1,11 @@
 import type { SourceFeed } from './types'
-import { DEFAULT_RESOLUTION, fallbackSeries, fetchJsonWithTimeout } from './types'
+import { fetchJsonWithTimeout } from './types'
 
 /**
- * Steam — Steam Charts endpoint returns concurrent player counts per appid.
- * We sample CS2 (730) as a proxy; Steam's public API gives current count only,
- * so we splice the live value onto a deterministic baseline curve.
+ * Steam — GetNumberOfCurrentPlayers returns a single live count for an appid
+ * (CS2 / 730). One number is not a time-series; splicing it onto a fake
+ * baseline is the kind of thing UI dashboards do when they're pretending.
+ * We carry the live count as a value chip and render no curve.
  */
 
 type SteamNumber = {
@@ -19,17 +20,10 @@ export async function getSteamFeed(): Promise<SourceFeed> {
     4000,
   )
 
-  let series: number[]
   let meta = 'Player counts · top titles'
-
   const live = data?.response?.player_count
   if (typeof live === 'number' && live > 0) {
-    const base = fallbackSeries('steam', DEFAULT_RESOLUTION, live, live * 0.05, 5)
-    base[base.length - 1] = live
-    series = base
     meta = `CS2 live · ${live.toLocaleString()} players`
-  } else {
-    series = fallbackSeries('steam', DEFAULT_RESOLUTION, 0.42, 6, 5)
   }
 
   return {
@@ -39,6 +33,6 @@ export async function getSteamFeed(): Promise<SourceFeed> {
     assetValue: typeof live === 'number' ? `${live.toLocaleString()}` : undefined,
     meta,
     coverage: 'anticheat',
-    series,
+    series: [],
   }
 }

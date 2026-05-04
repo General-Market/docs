@@ -1,20 +1,15 @@
 import type { SourceFeed } from './types'
-import { DEFAULT_RESOLUTION, fallbackSeries, fetchJsonWithTimeout } from './types'
+import { fetchJsonWithTimeout } from './types'
 
 /**
- * ESPN public scoreboard — counts NBA games today as the "activity" curve.
- * Endpoint: site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard
- * The series is synthesized from the count + per-game scores so the card has
- * a meaningful stationary shape. ESPN does not expose minute-level history;
- * we derive a curve from current state + fallback noise.
+ * ESPN public scoreboard — point-in-time NBA games. ESPN does not expose
+ * minute-level activity history, so we render no curve. The card uses the
+ * count of live games and a featured matchup name as the legible signal.
  */
 
 type EspnEvent = {
   name?: string
   shortName?: string
-  competitions?: Array<{
-    competitors?: Array<{ score?: string; team?: { abbreviation?: string } }>
-  }>
 }
 
 type EspnScoreboard = {
@@ -29,21 +24,6 @@ export async function getEspnFeed(): Promise<SourceFeed> {
 
   const events = data?.events ?? []
   const liveCount = events.length
-  const scoreSamples: number[] = []
-
-  for (const ev of events) {
-    for (const c of ev.competitions ?? []) {
-      for (const team of c.competitors ?? []) {
-        const s = parseInt(team.score ?? '', 10)
-        if (Number.isFinite(s)) scoreSamples.push(s)
-      }
-    }
-  }
-
-  const series =
-    scoreSamples.length >= 4
-      ? smearToResolution(scoreSamples, DEFAULT_RESOLUTION)
-      : fallbackSeries('espn', DEFAULT_RESOLUTION, 0.50, 5, 6)
 
   const meta = liveCount > 0
     ? `${liveCount} game${liveCount === 1 ? '' : 's'} on the board`
@@ -58,18 +38,6 @@ export async function getEspnFeed(): Promise<SourceFeed> {
     assetValue: liveCount > 0 ? `${liveCount} live` : undefined,
     meta,
     coverage: 'anticheat',
-    series,
+    series: [],
   }
-}
-
-function smearToResolution(samples: number[], n: number): number[] {
-  const out: number[] = []
-  for (let i = 0; i < n; i++) {
-    const t = (i / (n - 1)) * (samples.length - 1)
-    const lo = Math.floor(t)
-    const hi = Math.min(samples.length - 1, lo + 1)
-    const frac = t - lo
-    out.push(samples[lo] * (1 - frac) + samples[hi] * frac)
-  }
-  return out
 }

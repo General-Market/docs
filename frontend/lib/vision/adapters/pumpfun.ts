@@ -1,10 +1,10 @@
 import type { SourceFeed } from './types'
-import { DEFAULT_RESOLUTION, fallbackSeries, fetchJsonWithTimeout } from './types'
+import { fetchJsonWithTimeout } from './types'
 
 /**
- * Pumpfun — the public frontend.pump.fun endpoint exposes recent coin launches.
- * We fall back gracefully when the API rate-limits us. Marked `external` because
- * pumpfun is upstream of Anti-Cheat coverage.
+ * Pumpfun — pump.fun's public coin endpoint returns recent launches with
+ * current market caps. It's not a time-series; ranking caps and plotting
+ * them is a fake curve. We surface the newest coin and its cap; chart absent.
  */
 
 type PumpCoin = {
@@ -24,24 +24,9 @@ export async function getPumpfunFeed(): Promise<SourceFeed> {
     { headers: { Accept: 'application/json' } },
   )
 
-  let series: number[]
   let meta = 'Solana memecoin launches'
-
   if (data && data.length > 0) {
-    const caps = data
-      .map((c) => Number(c.usd_market_cap ?? c.market_cap ?? 0))
-      .filter((v) => Number.isFinite(v) && v > 0)
-      .slice(0, DEFAULT_RESOLUTION)
-      .reverse()
-
-    if (caps.length >= 4) {
-      series = caps
-      meta = `${data.length} fresh launches · last hour`
-    } else {
-      series = fallbackSeries('pumpfun', DEFAULT_RESOLUTION, 0.70, 14, 6)
-    }
-  } else {
-    series = fallbackSeries('pumpfun', DEFAULT_RESOLUTION, 0.70, 14, 6)
+    meta = `${data.length} fresh launches · last hour`
   }
 
   const top = data && data.length > 0 ? data[0] : undefined
@@ -54,7 +39,7 @@ export async function getPumpfunFeed(): Promise<SourceFeed> {
     assetValue: topCap > 0 ? `$${formatBig(topCap)}` : undefined,
     meta,
     coverage: 'external',
-    series,
+    series: [],
     external: true,
   }
 }
