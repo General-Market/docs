@@ -44,6 +44,24 @@ function safeBigInt(v: string | undefined): bigint {
   try { return BigInt(v) } catch { return 0n }
 }
 
+/** rgb()/hex → rgba() with explicit alpha. CanvasGradient refuses
+ *  `rgb(...)20`, so the previous string concatenation threw at the first
+ *  paint and propagated through the error boundary. */
+function toRgba(color: string, alpha: number): string {
+  const m = color.match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/i)
+  if (m) return `rgba(${m[1]},${m[2]},${m[3]},${alpha})`
+  if (color.startsWith('#') && (color.length === 7 || color.length === 4)) {
+    const hex = color.length === 4
+      ? '#' + color.slice(1).split('').map(c => c + c).join('')
+      : color
+    const r = parseInt(hex.slice(1, 3), 16)
+    const g = parseInt(hex.slice(3, 5), 16)
+    const b = parseInt(hex.slice(5, 7), 16)
+    return `rgba(${r},${g},${b},${alpha})`
+  }
+  return color
+}
+
 function buildVaultInfo(fund: any, totalAssets: bigint, totalSupply: bigint): VaultInfo {
   const nav = totalSupply > 0n ? Number(totalAssets) / Number(totalSupply) : 1.0
   const perf = nav - 1.0
@@ -139,8 +157,8 @@ function Sparkline({ data, height, color, className }: {
       ctx.lineTo(0, height)
       ctx.closePath()
       const gradient = ctx.createLinearGradient(0, 0, 0, height)
-      gradient.addColorStop(0, color + '20')
-      gradient.addColorStop(1, color + '05')
+      gradient.addColorStop(0, toRgba(color, 0.12))
+      gradient.addColorStop(1, toRgba(color, 0.02))
       ctx.fillStyle = gradient
       ctx.fill()
     }
@@ -564,6 +582,18 @@ export function VaultShowcase({ sourceId }: VaultShowcaseProps) {
   const reduced = !!useReducedMotion()
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
 
+  // Patience timer: wagmi's multicall hook can keep `isLoading` true through
+  // an internal retry loop when the RPC returns 4xx/5xx. Without a bound,
+  // the user stares at "Loading vaults…" forever. After 5s, render whatever
+  // arrived (even nothing) — fund-branding gives names; zero balances are
+  // honest until a number contradicts them.
+  const [patienceExpired, setPatienceExpired] = useState(false)
+  useEffect(() => {
+    setPatienceExpired(false)
+    const t = setTimeout(() => setPatienceExpired(true), 5000)
+    return () => clearTimeout(t)
+  }, [sourceId])
+
   const funds = useMemo(
     () => (fundData as any).funds.filter((f: any) => f.source === sourceId && f.vault),
     [sourceId],
@@ -649,10 +679,12 @@ export function VaultShowcase({ sourceId }: VaultShowcaseProps) {
 
   // Loading: chain reads still pending and SSE returned nothing. Paint a
   // single Apple-toned panel rather than a 3-up grid of placeholders. Three
-  // identical cards read as templated; one reads as patient.
+  // identical cards read as templated; one reads as patient. Bound it: the
+  // patience timer expires after 5s so a hung RPC doesn't strand the user
+  // in front of a forever-skeleton.
   const hasAnyVaultData =
     Object.keys(chainVaultByAddress).length > 0 || Object.keys(sseVaultByAddress).length > 0
-  if (chainLoading && !hasAnyVaultData) {
+  if (chainLoading && !hasAnyVaultData && !patienceExpired) {
     return <VaultShowcaseLoading />
   }
 
