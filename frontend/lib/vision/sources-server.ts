@@ -3,6 +3,7 @@
 // Client components: use useSourceRegistry() from @/hooks/vision/useSourceRegistry instead.
 
 import { getDataNodeServer } from '@/lib/config'
+import sourcesDisplay from '@/data/sources-display.json'
 
 export interface SourceDisplayServer {
   sourceId: string
@@ -29,6 +30,42 @@ export interface SourceRegistryServer {
   categories: CategoryDisplayServer[]
 }
 
+// ── Static fallback registry ───────────────────────────────────────────────────
+// The committed JSON the client already trusts via @/data/sources-display.json.
+// Used when the data-node upstream is unreachable (local dev, transient outage).
+// Same shape as SourceDisplayServer — coerce missing string fields to empty so
+// generateMetadata always produces a usable title.
+
+const STATIC_REGISTRY: SourceRegistryServer = (() => {
+  const raw = sourcesDisplay as {
+    sources?: Array<Partial<SourceDisplayServer> & { sourceId: string; name?: string }>
+    categories?: CategoryDisplayServer[]
+  }
+  const sources: SourceDisplayServer[] = (raw.sources ?? []).map(s => ({
+    sourceId: s.sourceId,
+    internalIds: s.internalIds,
+    name: s.name ?? s.sourceId,
+    description: s.description ?? '',
+    category: s.category ?? '',
+    logo: s.logo ?? '',
+    brandBg: s.brandBg ?? '',
+    prefixes: s.prefixes ?? [],
+    valueLabel: s.valueLabel ?? '',
+    valueUnit: s.valueUnit ?? '',
+    isPrice: s.isPrice ?? false,
+  }))
+  return { sources, categories: raw.categories ?? [] }
+})()
+
+function findInRegistry(
+  registry: SourceRegistryServer,
+  sourceId: string,
+): SourceDisplayServer | undefined {
+  return registry.sources.find(
+    s => s.sourceId === sourceId || s.internalIds?.includes(sourceId),
+  )
+}
+
 // ── In-memory TTL cache ────────────────────────────────────────────────────────
 
 const CACHE_TTL_MS = 10_000
@@ -38,7 +75,8 @@ let cachedAt = 0
 
 /**
  * Fetch source registry from data-node with a 10-second in-memory TTL cache.
- * Falls back to empty registry on error — callers should handle empty gracefully.
+ * Falls back to the static JSON registry on error so callers always see a
+ * non-empty list of well-known sources.
  */
 export async function getSourceRegistryServer(): Promise<SourceRegistryServer> {
   const now = Date.now()
@@ -49,7 +87,7 @@ export async function getSourceRegistryServer(): Promise<SourceRegistryServer> {
   try {
     const res = await fetch(`${getDataNodeServer()}/sources/registry`)
     if (!res.ok) {
-      return cached ?? { sources: [], categories: [] }
+      return cached ?? STATIC_REGISTRY
     }
     const data = await res.json()
     const registry: SourceRegistryServer = {
@@ -60,21 +98,25 @@ export async function getSourceRegistryServer(): Promise<SourceRegistryServer> {
     cachedAt = now
     return registry
   } catch {
-    return cached ?? { sources: [], categories: [] }
+    return cached ?? STATIC_REGISTRY
   }
 }
 
 /**
  * Get metadata for a single source by ID.
- * Returns undefined when the source is unknown or registry unavailable.
+ * Tries the live registry first, then the static JSON the client already uses.
+ * Returns undefined only when the ID is unknown to both.
  */
 export async function getSourceDisplayServer(
   sourceId: string,
 ): Promise<SourceDisplayServer | undefined> {
   const registry = await getSourceRegistryServer()
-  return registry.sources.find(
-    s => s.sourceId === sourceId || s.internalIds?.includes(sourceId),
-  )
+  const found = findInRegistry(registry, sourceId)
+  if (found) return found
+  // Live registry didn't know — consult the static fallback before giving up.
+  // Covers the case where the data-node responded but omitted a known source
+  // (e.g. batchEligible=false at the upstream, but the client still routes here).
+  return findInRegistry(STATIC_REGISTRY, sourceId)
 }
 
 /**
