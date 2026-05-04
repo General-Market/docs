@@ -50,17 +50,17 @@ const STEP_DEFS: StepDef[] = [
   {
     id: 'select',
     number: 1,
-    title: 'Pick a Market',
+    title: 'Pick a market',
     description: 'Tap any market to dive in. The arrow follows the closest one.',
-    action: 'FIND CLOSEST',
+    action: 'Find closest',
     nearestOf: '[data-onboarding-target="market-card"]',
   },
   {
     id: 'wallet',
     number: 2,
-    title: 'Connect Wallet',
+    title: 'Connect wallet',
     description: 'Install MetaMask if needed, then connect to the Index network.',
-    action: 'CONNECT WALLET',
+    action: 'Connect wallet',
     targets: [
       '[data-onboarding-target="wallet-connect"]',
       '[data-onboarding-target="widget"]',
@@ -69,17 +69,17 @@ const STEP_DEFS: StepDef[] = [
   {
     id: 'faucet',
     number: 3,
-    title: 'Claim Test Funds',
+    title: 'Claim test funds',
     description: '1,000 USDC + gas. One click. Enough to start.',
-    action: 'CLAIM FAUCET',
+    action: 'Claim faucet',
     targets: ['[data-onboarding-target="widget"]'],
   },
   {
     id: 'vault',
     number: 4,
-    title: 'Join a Vault',
+    title: 'Join a vault',
     description: 'Type an amount, then deposit. Your money trades automatically.',
-    action: 'GO TO VAULTS',
+    action: 'Go to vaults',
     targets: [
       '[data-onboarding-target="vault-input"]',
       '[data-onboarding-target="vault-action"]',
@@ -89,9 +89,9 @@ const STEP_DEFS: StepDef[] = [
   {
     id: 'bot',
     number: 5,
-    title: 'Deploy Your Bot',
+    title: 'Deploy your bot',
     description: 'Go further. Build your own strategy with AI.',
-    action: 'DEPLOY BOT',
+    action: 'Deploy bot',
     targets: ['[data-onboarding-target="widget"]'],
   },
 ]
@@ -386,10 +386,22 @@ function CompassPointer({ selectors, nearestOf }: CompassPointerProps) {
           className="fixed pointer-events-none z-[60] left-0 top-0"
         >
           <div
-            className="px-2.5 py-1 bg-white text-black text-[10px] font-black tracking-[0.06em] shadow-[0_4px_16px_rgba(0,0,0,0.35)] whitespace-nowrap"
-            style={{ transform: 'translate(-50%, -100%)' }}
+            className="whitespace-nowrap"
+            style={{
+              transform: 'translate(-50%, -100%)',
+              padding: '6px 12px',
+              borderRadius: '999px',
+              background: 'var(--apple-surface)',
+              color: 'var(--apple-text)',
+              border: '1px solid var(--apple-line)',
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: '12px',
+              fontWeight: 500,
+              letterSpacing: 'normal',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04)',
+            }}
           >
-            LOOK HERE
+            Look here
           </div>
         </motion.div>
       )}
@@ -605,19 +617,22 @@ export function OnboardingCompass({ state, onVaultDeposit, onBotDeploy }: Onboar
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.45, ease: EASE_OUT_EXPO }}
-        style={{ x: dragX, y: dragY }}
+        style={{
+          x: dragX,
+          y: dragY,
+          // Bottom-right anchor with a safe-area floor so the panel stays
+          // clear of corner widgets (dev "1 Issue" badge, browser zoom
+          // chrome, devices with home indicators). The compass arrow
+          // floats dynamically over its target, so bottom-right is rarely
+          // camped — and when it is, the drag handle lets the user move.
+          bottom: 'max(24px, calc(env(safe-area-inset-bottom) + 16px))',
+          right: 'max(16px, calc(env(safe-area-inset-right) + 12px))',
+        }}
         // The data attribute makes the widget itself a pointer target. For
         // the faucet/bot steps the arrow tracks this element — useful once
         // the user has dragged the widget somewhere unexpected.
         data-onboarding-target="widget"
-        className={[
-          // Compact card anchored bottom-left; same shape on mobile so the
-          // drag affordance is consistent across viewports. Drag offsets
-          // (motion x/y) compose with this anchor — the user can still
-          // park the widget anywhere they want and the position persists.
-          'fixed z-50 w-[min(92vw,300px)]',
-          'left-3 bottom-3 sm:left-4 sm:bottom-4',
-        ].join(' ')}
+        className="fixed z-50 w-[min(92vw,300px)]"
       >
         <div className="relative bg-terminal-dark border border-white/[0.1] shadow-[0_12px_40px_rgba(0,0,0,0.5)] overflow-hidden">
           {/* Progress bar */}
@@ -648,10 +663,10 @@ export function OnboardingCompass({ state, onVaultDeposit, onBotDeploy }: Onboar
                 <circle cx="2" cy="11" r="1" fill="currentColor" />
                 <circle cx="8" cy="11" r="1" fill="currentColor" />
               </svg>
-              <span className="text-[9px] font-bold tracking-[0.16em] text-white/40 uppercase">
+              <span className="text-[11px] font-semibold text-white/55">
                 Tutorial
               </span>
-              <span className="text-[9px] font-mono text-white/25">
+              <span className="text-[11px] font-mono text-white/30">
                 {state.stepIndex + 1}/{state.totalSteps}
               </span>
             </div>
@@ -661,17 +676,17 @@ export function OnboardingCompass({ state, onVaultDeposit, onBotDeploy }: Onboar
             >
               <button
                 onClick={() => setCollapsed(c => !c)}
-                className="text-[9px] font-bold tracking-[0.06em] text-white/30 hover:text-white/70 transition-colors"
+                className="text-[11px] font-medium text-white/40 hover:text-white/80 transition-colors"
                 aria-label={collapsed ? 'Expand tutorial' : 'Hide tutorial'}
               >
-                {collapsed ? 'OPEN' : 'HIDE'}
+                {collapsed ? 'Open' : 'Hide'}
               </button>
               <button
                 onClick={state.dismiss}
-                className="text-[9px] font-bold tracking-[0.06em] text-white/30 hover:text-white/70 transition-colors"
+                className="text-[11px] font-medium text-white/40 hover:text-white/80 transition-colors"
                 aria-label="Dismiss tutorial"
               >
-                CLOSE
+                Close
               </button>
             </div>
           </div>
@@ -694,12 +709,12 @@ export function OnboardingCompass({ state, onVaultDeposit, onBotDeploy }: Onboar
                       <li
                         key={def.id}
                         className={[
-                          'flex items-center gap-2 text-[11px] font-bold tracking-[0.02em] transition-colors',
+                          'flex items-center gap-2 text-[12px] font-medium transition-colors',
                           isDone
                             ? 'text-white/45 line-through decoration-white/20'
                             : isCurrent
                               ? 'text-white'
-                              : 'text-white/30',
+                              : 'text-white/40',
                         ].join(' ')}
                       >
                         <span
@@ -750,10 +765,10 @@ export function OnboardingCompass({ state, onVaultDeposit, onBotDeploy }: Onboar
                       disabled={ctaDisabled}
                       animate={ctaDisabled ? { scale: 1 } : { scale: [1, 1.015, 1] }}
                       transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
-                      className="relative w-full px-3 py-2.5 bg-white text-black text-[11px] font-black tracking-[0.06em] hover:bg-white/90 active:bg-white/80 transition-colors disabled:opacity-50 disabled:cursor-wait"
+                      className="relative w-full px-3 py-2.5 bg-white text-black text-[12px] font-semibold hover:bg-white/90 active:bg-white/80 transition-colors disabled:opacity-50 disabled:cursor-wait"
                     >
                       {state.currentStep === 'faucet' && state.faucetLoading
-                        ? 'CLAIMING…'
+                        ? 'Claiming…'
                         : currentDef.action}
                     </motion.button>
                   </div>
