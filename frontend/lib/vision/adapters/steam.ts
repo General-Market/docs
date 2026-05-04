@@ -1,38 +1,40 @@
 import type { SourceFeed } from './types'
-import { fetchJsonWithTimeout } from './types'
+import { pickSourceSeries, formatCount } from './data-node-history'
 
 /**
- * Steam — GetNumberOfCurrentPlayers returns a single live count for an appid
- * (CS2 / 730). One number is not a time-series; splicing it onto a fake
- * baseline is the kind of thing UI dashboards do when they're pretending.
- * We carry the live count as a value chip and render no curve.
+ * Steam — concurrent player counts per game, sampled by the data-node
+ * collector. The home card pins Counter-Strike (appid 730) when present;
+ * if its history is too thin we let the ranker pick the most-played title.
  */
-
-type SteamNumber = {
-  response?: { player_count?: number; result?: number }
-}
-
-const CS2_APPID = 730
+const CS2_ASSET_ID = 'steam_game_730'
 
 export async function getSteamFeed(): Promise<SourceFeed> {
-  const data = await fetchJsonWithTimeout<SteamNumber>(
-    `https://api.steampowered.com/ISteamUserStats/GetNumberOfCurrentPlayers/v1/?appid=${CS2_APPID}`,
-    4000,
-  )
+  const picked = await pickSourceSeries('steam', {
+    rankBy: 'value',
+    preferredAssetId: CS2_ASSET_ID,
+    minPoints: 12,
+    maxSeriesPoints: 64,
+  })
 
-  let meta = 'Player counts · top titles'
-  const live = data?.response?.player_count
-  if (typeof live === 'number' && live > 0) {
-    meta = `CS2 live · ${live.toLocaleString()} players`
+  if (!picked) {
+    return {
+      sourceId: 'steam',
+      displayName: 'Steam',
+      meta: 'Player counts · top titles',
+      coverage: 'anticheat',
+      series: [],
+    }
   }
 
+  const name = picked.asset.name ?? picked.asset.symbol ?? 'Top game'
+  const last = picked.last ?? 0
   return {
     sourceId: 'steam',
     displayName: 'Steam',
-    assetName: 'CS2',
-    assetValue: typeof live === 'number' ? `${live.toLocaleString()}` : undefined,
-    meta,
+    assetName: name,
+    assetValue: last > 0 ? formatCount(last) : undefined,
+    meta: last > 0 ? `${name} · ${formatCount(last)} players` : 'Player counts · top titles',
     coverage: 'anticheat',
-    series: [],
+    series: picked.series,
   }
 }

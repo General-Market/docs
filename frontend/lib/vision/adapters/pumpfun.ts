@@ -1,52 +1,53 @@
 import type { SourceFeed } from './types'
-import { fetchJsonWithTimeout } from './types'
+import { pickSourceSeries, formatBigNumber } from './data-node-history'
 
 /**
- * Pumpfun — pump.fun's public coin endpoint returns recent launches with
- * current market caps. It's not a time-series; ranking caps and plotting
- * them is a fake curve. We surface the newest coin and its cap; chart absent.
+ * Pumpfun — Solana memecoin prices the data-node samples by the minute.
+ * Top by USD price (a market-cap proxy); the chart is the violent honesty
+ * of a coin that exists for sixteen hours and dies. The card stays
+ * `external` because pump.fun is not Anti-Cheat.
  */
 
-type PumpCoin = {
-  mint?: string
-  symbol?: string
-  name?: string
-  market_cap?: number
-  usd_market_cap?: number
-  reply_count?: number
-  created_timestamp?: number
+function shortName(name?: string): string {
+  if (!name) return 'Newest coin'
+  // Names look like "Trollina (CqsE..pump)" — strip the parenthetical.
+  return name.replace(/\s*\([^)]*\)\s*$/, '').trim() || name
 }
 
 export async function getPumpfunFeed(): Promise<SourceFeed> {
-  const data = await fetchJsonWithTimeout<PumpCoin[]>(
-    'https://frontend-api.pump.fun/coins?offset=0&limit=50&sort=created_timestamp&order=DESC',
-    5000,
-    { headers: { Accept: 'application/json' } },
-  )
+  const picked = await pickSourceSeries('pumpfun', {
+    rankBy: 'value',
+    minPoints: 12,
+    maxSeriesPoints: 64,
+  })
 
-  let meta = 'Solana memecoin launches'
-  if (data && data.length > 0) {
-    meta = `${data.length} fresh launches · last hour`
+  if (!picked) {
+    return {
+      sourceId: 'pumpfun',
+      displayName: 'Pumpfun',
+      meta: 'Solana memecoin launches',
+      coverage: 'external',
+      series: [],
+      external: true,
+    }
   }
 
-  const top = data && data.length > 0 ? data[0] : undefined
-  const topLabel = top?.symbol ?? top?.name
-  const topCap = Number(top?.usd_market_cap ?? top?.market_cap ?? 0)
+  const label = shortName(picked.asset.name)
+  const price = picked.last ?? 0
+  const priceLabel =
+    price > 0
+      ? price < 0.001
+        ? `$${price.toExponential(2)}`
+        : `$${price.toFixed(price < 1 ? 4 : 2)}`
+      : undefined
   return {
     sourceId: 'pumpfun',
     displayName: 'Pumpfun',
-    assetName: topLabel ? `$${topLabel}` : 'Newest coin',
-    assetValue: topCap > 0 ? `$${formatBig(topCap)}` : undefined,
-    meta,
+    assetName: `$${label}`,
+    assetValue: priceLabel,
+    meta: priceLabel ? `$${label} · ${priceLabel}` : 'Solana memecoin launches',
     coverage: 'external',
-    series: [],
+    series: picked.series,
     external: true,
   }
-}
-
-function formatBig(n: number): string {
-  if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B'
-  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M'
-  if (n >= 1e3) return (n / 1e3).toFixed(1) + 'k'
-  return n.toFixed(0)
 }
