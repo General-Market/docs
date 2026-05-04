@@ -1,7 +1,8 @@
 'use client'
 
 import { useMemo } from 'react'
-import { Link } from '@/i18n/routing'
+import { useTranslations } from 'next-intl'
+import { Link, usePathname } from '@/i18n/routing'
 import { useSourceRegistry, findSource } from '@/hooks/vision/useSourceRegistry'
 import { getCategoryLabel } from '@/lib/vision/source-categories'
 
@@ -21,6 +22,8 @@ interface PeerSource {
 }
 
 export function SourceSidebarApple({ sourceId, category }: SourceSidebarAppleProps) {
+  const t = useTranslations('vision.source_sidebar')
+  const pathname = usePathname()
   const { sources, isLoading } = useSourceRegistry()
 
   const currentSource = findSource(sources, sourceId)
@@ -36,9 +39,14 @@ export function SourceSidebarApple({ sourceId, category }: SourceSidebarApplePro
 
   const categoryLabel = currentSource ? getCategoryLabel(currentSource.category) : getCategoryLabel(effectiveCategory)
 
+  const overviewHref = `/source/${sourceId}`
+  const marketsHref = `/source/${sourceId}/markets`
+  const activityHref = `/source/${sourceId}/activity`
+  const leaderboardHref = `/source/${sourceId}/leaderboard`
+
   return (
     <aside
-      aria-label="Source navigation"
+      aria-label={t('aria_label')}
       style={{
         width: 'var(--apple-shell-left)',
         borderRight: '1px solid var(--apple-line)',
@@ -59,7 +67,7 @@ export function SourceSidebarApple({ sourceId, category }: SourceSidebarApplePro
         }}
       >
         <Link
-          href={`/source/${sourceId}` as never}
+          href={overviewHref as never}
           style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}
         >
           {currentSource?.logo || isLoading ? (
@@ -70,6 +78,8 @@ export function SourceSidebarApple({ sourceId, category }: SourceSidebarApplePro
                   : undefined
               }
               alt={currentSource?.name ?? ''}
+              width={36}
+              height={36}
               style={{
                 width: 36,
                 height: 36,
@@ -109,7 +119,7 @@ export function SourceSidebarApple({ sourceId, category }: SourceSidebarApplePro
             <p
               style={{
                 fontFamily: 'var(--apple-font-text)',
-                fontSize: 12,
+                fontSize: 'var(--apple-fs-12)',
                 letterSpacing: 'var(--apple-track-loose)',
                 color: 'var(--apple-text-secondary)',
                 margin: 0,
@@ -126,23 +136,23 @@ export function SourceSidebarApple({ sourceId, category }: SourceSidebarApplePro
 
       {/* ── "for you" group ── */}
       <div style={{ padding: '12px 16px 0' }}>
-        <GroupHeader label="for you" />
-        <NavItem href={`/source/${sourceId}` as never} label="overview" />
-        <NavItem href={`/source/${sourceId}/markets` as never} label="markets" />
-        <NavItem href={`/source/${sourceId}/activity` as never} label="activity" />
-        <NavItem href={`/source/${sourceId}/leaderboard` as never} label="leaderboard" />
+        <GroupHeader label={t('group_for_you')} />
+        <NavItem href={overviewHref} label={t('nav_overview')} pathname={pathname} exact />
+        <NavItem href={marketsHref} label={t('nav_markets')} pathname={pathname} />
+        <NavItem href={activityHref} label={t('nav_activity')} pathname={pathname} />
+        <NavItem href={leaderboardHref} label={t('nav_leaderboard')} pathname={pathname} />
       </div>
 
       {/* ── "build" group ── */}
       <div style={{ padding: '12px 16px 0' }}>
-        <GroupHeader label="build" />
-        <NavItem href={"/build-bot" as never} label="run a bot" />
+        <GroupHeader label={t('group_build')} />
+        <NavItem href="/build-bot" label={t('nav_run_a_bot')} pathname={pathname} />
       </div>
 
       {/* ── Peer sources in the same category ── */}
       {peers.length > 0 && (
         <div style={{ padding: '12px 16px 0' }}>
-          <GroupHeader label="more sources" />
+          <GroupHeader label={t('group_more_sources')} />
           {peers.map(peer => (
             <Link
               key={peer.sourceId}
@@ -156,11 +166,13 @@ export function SourceSidebarApple({ sourceId, category }: SourceSidebarApplePro
                 textDecoration: 'none',
                 transition: 'background 200ms var(--apple-ease-default)',
               }}
-              className="sidebar-peer-link"
+              className="source-sidebar-peer-link"
             >
               <img
                 src={`/source-imgs/icons/${peer.sourceId}.png`}
                 alt={peer.name}
+                width={22}
+                height={22}
                 style={{
                   width: 22,
                   height: 22,
@@ -199,7 +211,7 @@ export function SourceSidebarApple({ sourceId, category }: SourceSidebarApplePro
         }}
       >
         <Link
-          href={"/vision" as never}
+          href="/vision"
           style={{
             fontFamily: 'var(--apple-font-text)',
             fontSize: 'var(--apple-fs-12)',
@@ -208,18 +220,9 @@ export function SourceSidebarApple({ sourceId, category }: SourceSidebarApplePro
             textDecoration: 'none',
           }}
         >
-          all sources →
+          {t('footer_all_sources')}
         </Link>
       </div>
-
-      <style>{`
-        .sidebar-peer-link:hover {
-          background: var(--apple-surface);
-        }
-        .sidebar-peer-link:hover span {
-          color: var(--apple-text);
-        }
-      `}</style>
     </aside>
   )
 }
@@ -244,10 +247,25 @@ function GroupHeader({ label }: { label: string }) {
   )
 }
 
-function NavItem({ href, label }: { href: never; label: string }) {
+interface NavItemProps {
+  href: string
+  label: string
+  pathname: string
+  /** When true, only matches the exact pathname (no prefix match). */
+  exact?: boolean
+}
+
+function isNavActive(pathname: string, href: string, exact: boolean): boolean {
+  if (exact) return pathname === href || pathname === `${href}/`
+  return pathname === href || pathname.startsWith(`${href}/`)
+}
+
+function NavItem({ href, label, pathname, exact = false }: NavItemProps) {
+  const active = isNavActive(pathname, href, exact)
   return (
     <Link
-      href={href}
+      href={href as never}
+      aria-current={active ? 'page' : undefined}
       style={{
         display: 'block',
         padding: '6px 8px',
@@ -256,10 +274,12 @@ function NavItem({ href, label }: { href: never; label: string }) {
         fontFamily: 'var(--apple-font-text)',
         fontSize: 'var(--apple-fs-14)',
         letterSpacing: 'var(--apple-track-tight)',
-        color: 'var(--apple-text-secondary)',
+        color: active ? 'var(--apple-text)' : 'var(--apple-text-secondary)',
+        fontWeight: active ? 600 : 400,
+        background: active ? 'rgba(0, 0, 0, 0.05)' : 'transparent',
         transition: 'background 200ms var(--apple-ease-default), color 200ms var(--apple-ease-default)',
       }}
-      className="sidebar-nav-item"
+      className="source-sidebar-nav-item"
     >
       {label}
     </Link>

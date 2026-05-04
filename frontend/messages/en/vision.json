@@ -809,5 +809,17 @@
     "withdraw_usdc": "Withdraw All",
     "connect_to_deposit": "Log in to deposit",
     "connect_to_withdraw": "Log in to withdraw"
+  },
+  "source_sidebar": {
+    "aria_label": "Source navigation",
+    "group_for_you": "For you",
+    "group_build": "Build",
+    "group_more_sources": "More sources",
+    "nav_overview": "Overview",
+    "nav_markets": "Markets",
+    "nav_activity": "Activity",
+    "nav_leaderboard": "Leaderboard",
+    "nav_run_a_bot": "Run a bot",
+    "footer_all_sources": "All sources →"
   }
 }

@@ -1139,3 +1139,20 @@ input[type="number"] {
     scroll-behavior: auto !important;
   }
 }
+
+/* ── Source sidebar (Apple): hover + active states ── */
+.source-sidebar-peer-link:hover {
+  background: var(--apple-surface);
+}
+.source-sidebar-peer-link:hover span {
+  color: var(--apple-text);
+}
+.source-sidebar-nav-item:hover {
+  background: var(--apple-surface);
+  color: var(--apple-text);
+}
+.source-sidebar-nav-item[aria-current="page"] {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--apple-text);
+  font-weight: 600;
+}

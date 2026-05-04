@@ -707,5 +707,17 @@
   "market_accordion_actions": {
     "all_up_title": "全て {category} UP",
     "all_down_title": "全て {category} DOWN"
+  },
+  "source_sidebar": {
+    "aria_label": "Source navigation",
+    "group_for_you": "For you",
+    "group_build": "Build",
+    "group_more_sources": "More sources",
+    "nav_overview": "Overview",
+    "nav_markets": "Markets",
+    "nav_activity": "Activity",
+    "nav_leaderboard": "Leaderboard",
+    "nav_run_a_bot": "Run a bot",
+    "footer_all_sources": "All sources →"
   }
 }
