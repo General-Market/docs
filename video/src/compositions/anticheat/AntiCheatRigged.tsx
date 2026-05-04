@@ -9,7 +9,9 @@ import {
 import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 
-const SCENE_SECONDS = 12;
+const SCENE_SECONDS = 7;
+const CARD_TIMES = [toFrames(1.0), toFrames(2.5), toFrames(4.0)];
+const STAMP_AT = toFrames(5.5);
 
 const CARDS = [
   {
@@ -34,20 +36,11 @@ const CARDS = [
 
 export const AntiCheatRigged: React.FC = () => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
 
-  // Headline enters at 0, cards from 2s, last line at 10s.
-  const headlineT = spring({
-    frame,
-    fps,
-    config: { damping: 22, stiffness: 110, mass: 0.7 },
-  });
-
-  // The headline fades out as the final stamp rises.
-  const finalAt = toFrames(10);
+  // Headline + cards fade out as the stamp arrives.
   const fadeOut = interpolate(
     frame,
-    [finalAt - toFrames(0.3), finalAt + toFrames(0.4)],
+    [STAMP_AT - toFrames(0.2), STAMP_AT + toFrames(0.1)],
     [1, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
@@ -56,48 +49,8 @@ export const AntiCheatRigged: React.FC = () => {
     <AbsoluteFill style={{ backgroundColor: colors.bg, fontFamily: font }}>
       <TradingBackdrop />
 
-      {/* Headline */}
-      <div
-        style={{
-          position: "absolute",
-          top: "12%",
-          left: 0,
-          right: 0,
-          textAlign: "center",
-          padding: "0 96px",
-          opacity: interpolate(headlineT, [0, 1], [0, 1]) * fadeOut,
-          transform: `translateY(${interpolate(headlineT, [0, 1], [22, 0])}px)`,
-        }}
-      >
-        <div
-          style={{
-            fontFamily: monoFont,
-            fontSize: 28,
-            fontWeight: 500,
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
-            color: colors.dim,
-            marginBottom: 16,
-          }}
-        >
-          The rigged stack
-        </div>
-        <div
-          style={{
-            fontFamily: font,
-            fontSize: 96,
-            fontWeight: 800,
-            letterSpacing: "-0.04em",
-            color: colors.fg,
-            lineHeight: 0.95,
-            textShadow: "0 4px 28px rgba(0,0,0,0.65)",
-          }}
-        >
-          If you don&rsquo;t have
-        </div>
-      </div>
+      <Headline fadeOut={fadeOut} />
 
-      {/* Three cards */}
       <div
         style={{
           position: "absolute",
@@ -112,84 +65,13 @@ export const AntiCheatRigged: React.FC = () => {
           opacity: fadeOut,
         }}
       >
-        {CARDS.map((card, i) => {
-          const at = toFrames(2 + i * 2.5);
-          const t = spring({
-            frame: frame - at,
-            fps,
-            config: { damping: 22, stiffness: 130, mass: 0.6 },
-          });
-          const opacity = interpolate(t, [0, 1], [0, 1]);
-          const y = interpolate(t, [0, 1], [40, 0]);
-          return (
-            <div
-              key={card.n}
-              style={{
-                flex: 1,
-                maxWidth: 480,
-                padding: "36px 36px 40px",
-                border: `1px solid ${colors.accent}`,
-                borderRadius: 4,
-                backgroundColor: "rgba(255,59,59,0.04)",
-                opacity,
-                transform: `translateY(${y}px)`,
-                boxShadow:
-                  "0 0 0 1px rgba(255,59,59,0.06), 0 12px 36px rgba(0,0,0,0.55)",
-                display: "flex",
-                flexDirection: "column",
-                gap: 18,
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "baseline",
-                  justifyContent: "space-between",
-                  fontFamily: monoFont,
-                  color: colors.dim,
-                  fontSize: 22,
-                  letterSpacing: "0.18em",
-                  textTransform: "uppercase",
-                }}
-              >
-                <span>{card.n}</span>
-                <span style={{ color: colors.accent, fontSize: 30 }}>
-                  {card.glyph}
-                </span>
-              </div>
-              <div
-                style={{
-                  fontFamily: font,
-                  fontSize: 42,
-                  fontWeight: 700,
-                  letterSpacing: "-0.02em",
-                  color: colors.fg,
-                  lineHeight: 1.1,
-                }}
-              >
-                {card.label}
-              </div>
-              <div
-                style={{
-                  marginTop: "auto",
-                  fontFamily: monoFont,
-                  fontSize: 18,
-                  letterSpacing: "0.04em",
-                  color: colors.dim,
-                  opacity: 0.85,
-                }}
-              >
-                {card.sub}
-              </div>
-            </div>
-          );
-        })}
+        {CARDS.map((card, i) => (
+          <Card key={card.n} card={card} at={CARD_TIMES[i]} />
+        ))}
       </div>
 
-      {/* Final stamp */}
-      <FinalStamp showFrom={finalAt} />
+      <FinalStamp />
 
-      {/* Vignette */}
       <AbsoluteFill
         style={{
           pointerEvents: "none",
@@ -201,17 +83,189 @@ export const AntiCheatRigged: React.FC = () => {
   );
 };
 
-const FinalStamp: React.FC<{ showFrom: number }> = ({ showFrom }) => {
+// ─── Headline: snaps in at 0s, 0.18s entrance ────────────────────────────────
+
+const Headline: React.FC<{ fadeOut: number }> = ({ fadeOut }) => {
+  const frame = useCurrentFrame();
+  const opacity = interpolate(
+    frame,
+    [0, toFrames(0.18)],
+    [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const y = interpolate(
+    frame,
+    [0, toFrames(0.18)],
+    [14, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: "12%",
+        left: 0,
+        right: 0,
+        textAlign: "center",
+        padding: "0 96px",
+        opacity: opacity * fadeOut,
+        transform: `translateY(${y}px)`,
+      }}
+    >
+      <div
+        style={{
+          fontFamily: monoFont,
+          fontSize: 28,
+          fontWeight: 500,
+          letterSpacing: "0.18em",
+          textTransform: "uppercase",
+          color: colors.dim,
+          marginBottom: 16,
+        }}
+      >
+        The rigged stack
+      </div>
+      <div
+        style={{
+          fontFamily: font,
+          fontSize: 96,
+          fontWeight: 800,
+          letterSpacing: "-0.04em",
+          color: colors.fg,
+          lineHeight: 0.95,
+          textShadow: "0 4px 28px rgba(0,0,0,0.65)",
+        }}
+      >
+        If you don&rsquo;t have
+      </div>
+    </div>
+  );
+};
+
+// ─── Card: each one snaps in (whole card) at its own beat ─────────────────────
+
+const Card: React.FC<{
+  card: (typeof CARDS)[number];
+  at: number;
+}> = ({ card, at }) => {
+  const frame = useCurrentFrame();
+  const local = frame - at;
+  if (local < -2) {
+    return (
+      <div
+        style={{
+          flex: 1,
+          maxWidth: 480,
+          opacity: 0,
+        }}
+      />
+    );
+  }
+
+  const opacity = interpolate(
+    local,
+    [0, toFrames(0.18)],
+    [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const y = interpolate(
+    local,
+    [0, toFrames(0.18)],
+    [14, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+
+  return (
+    <div
+      style={{
+        flex: 1,
+        maxWidth: 480,
+        padding: "36px 36px 40px",
+        border: `1px solid ${colors.accent}`,
+        borderRadius: 4,
+        backgroundColor: "rgba(255,59,59,0.04)",
+        opacity,
+        transform: `translateY(${y}px)`,
+        boxShadow:
+          "0 0 0 1px rgba(255,59,59,0.06), 0 12px 36px rgba(0,0,0,0.55)",
+        display: "flex",
+        flexDirection: "column",
+        gap: 18,
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "baseline",
+          justifyContent: "space-between",
+          fontFamily: monoFont,
+          color: colors.dim,
+          fontSize: 22,
+          letterSpacing: "0.18em",
+          textTransform: "uppercase",
+        }}
+      >
+        <span>{card.n}</span>
+        <span style={{ color: colors.accent, fontSize: 30 }}>{card.glyph}</span>
+      </div>
+      <div
+        style={{
+          fontFamily: font,
+          fontSize: 42,
+          fontWeight: 700,
+          letterSpacing: "-0.02em",
+          color: colors.fg,
+          lineHeight: 1.1,
+        }}
+      >
+        {card.label}
+      </div>
+      <div
+        style={{
+          marginTop: "auto",
+          fontFamily: monoFont,
+          fontSize: 18,
+          letterSpacing: "0.04em",
+          color: colors.dim,
+          opacity: 0.85,
+        }}
+      >
+        {card.sub}
+      </div>
+    </div>
+  );
+};
+
+// ─── Final stamp at 5.5s — "70% on the table" with one scale punch ────────────
+
+const FinalStamp: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const t = spring({
-    frame: frame - showFrom,
+  if (frame < STAMP_AT - 2) return null;
+
+  const local = frame - STAMP_AT;
+  const opacity = interpolate(
+    local,
+    [0, toFrames(0.18)],
+    [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const slam = spring({
+    frame: local,
     fps,
-    config: { damping: 16, stiffness: 180, mass: 0.6 },
+    config: { damping: 11, stiffness: 200, mass: 0.7 },
   });
-  if (frame < showFrom - 4) return null;
-  const opacity = interpolate(t, [0, 1], [0, 1]);
-  const scale = interpolate(t, [0, 1], [0.92, 1]);
+  const slamScale = interpolate(slam, [0, 1], [0.6, 1.0]);
+
+  // Single hero-word punch.
+  const punch = spring({
+    frame: local - toFrames(0.05),
+    fps,
+    config: { damping: 9, stiffness: 220, mass: 0.55 },
+  });
+  const punchScale =
+    1 + Math.sin(Math.min(1, Math.max(0, punch)) * Math.PI) * 0.06;
 
   return (
     <AbsoluteFill
@@ -233,7 +287,7 @@ const FinalStamp: React.FC<{ showFrom: number }> = ({ showFrom }) => {
           textAlign: "center",
           padding: "0 96px",
           opacity,
-          transform: `scale(${scale})`,
+          transform: `scale(${slamScale * punchScale})`,
           textShadow: "0 4px 32px rgba(255,59,59,0.25)",
         }}
       >
@@ -245,7 +299,12 @@ const FinalStamp: React.FC<{ showFrom: number }> = ({ showFrom }) => {
   );
 };
 
+// ─── Backdrop with quiet ambient pulse ────────────────────────────────────────
+
 const TradingBackdrop: React.FC = () => {
+  const frame = useCurrentFrame();
+  const pulse = 0.14 + Math.sin((frame / 45) * Math.PI * 2) * 0.04;
+
   return (
     <AbsoluteFill
       style={{
@@ -257,7 +316,7 @@ const TradingBackdrop: React.FC = () => {
         width="100%"
         height="100%"
         preserveAspectRatio="none"
-        style={{ position: "absolute", inset: 0, opacity: 0.45 }}
+        style={{ position: "absolute", inset: 0, opacity: 0.3 + pulse }}
       >
         {Array.from({ length: 12 }).map((_, i) => (
           <line

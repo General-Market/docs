@@ -1,7 +1,6 @@
 import React from "react";
 import {
   AbsoluteFill,
-  Sequence,
   interpolate,
   spring,
   useCurrentFrame,
@@ -10,22 +9,15 @@ import {
 import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 
-const SCENE_SECONDS = 10;
-const STAT_DURATION = toFrames(5);
+const SCENE_SECONDS = 5;
+const CHIPS_AT = toFrames(2.5);
 
 export const AntiCheatStat: React.FC = () => {
   return (
     <AbsoluteFill style={{ backgroundColor: colors.bg, fontFamily: font }}>
       <TradingBackdrop />
-
-      <Sequence from={0} durationInFrames={STAT_DURATION + toFrames(0.4)}>
-        <StatPanel />
-      </Sequence>
-
-      <Sequence from={STAT_DURATION}>
-        <ChipsPanel />
-      </Sequence>
-
+      <StatPanel />
+      <ChipsPanel />
       <AbsoluteFill
         style={{
           pointerEvents: "none",
@@ -37,10 +29,343 @@ export const AntiCheatStat: React.FC = () => {
   );
 };
 
-// ─── Faint trading-screen background (grid + candle silhouettes) ──────────────
+// ─── Beat 1 (0.0s): "0.01% claim 70%" — numbers slam in at final value ──────
+
+const StatPanel: React.FC = () => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+
+  // Whole panel snaps in over 0.18s — opacity + lift, single move.
+  const enterOpacity = interpolate(
+    frame,
+    [0, toFrames(0.18)],
+    [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const enterY = interpolate(
+    frame,
+    [0, toFrames(0.18)],
+    [14, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+
+  // Hard exit: at CHIPS_AT, kill the panel in 6 frames.
+  const exit = interpolate(
+    frame,
+    [CHIPS_AT - 6, CHIPS_AT],
+    [1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const opacity = enterOpacity * exit;
+
+  // 70% — single scale punch on the hero number.
+  const punch = spring({
+    frame: frame - toFrames(0.05),
+    fps,
+    config: { damping: 9, stiffness: 220, mass: 0.55 },
+  });
+  const heroScale =
+    1 +
+    Math.sin(Math.min(1, Math.max(0, punch)) * Math.PI) * 0.06;
+
+  return (
+    <AbsoluteFill style={{ opacity, transform: `translateY(${enterY}px)` }}>
+      <div
+        style={{
+          position: "absolute",
+          top: "18%",
+          left: 0,
+          right: 0,
+          textAlign: "center",
+          fontFamily: monoFont,
+          fontSize: 28,
+          fontWeight: 500,
+          letterSpacing: "0.18em",
+          textTransform: "uppercase",
+          color: colors.dim,
+        }}
+      >
+        Cheaters → Profits
+      </div>
+
+      <div
+        style={{
+          position: "absolute",
+          top: "32%",
+          left: 0,
+          right: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 72,
+          padding: "0 96px",
+        }}
+      >
+        <BigNumber value="0.01%" subtitle="of traders" tint={colors.fg} />
+        <ArrowFlow />
+        <BigNumber
+          value="70%"
+          subtitle="of all profits"
+          tint={colors.accent}
+          scale={heroScale}
+        />
+      </div>
+
+      <div
+        style={{
+          position: "absolute",
+          bottom: "20%",
+          left: 0,
+          right: 0,
+          textAlign: "center",
+          fontFamily: font,
+          fontSize: 44,
+          fontWeight: 500,
+          letterSpacing: "-0.01em",
+          color: colors.fg,
+          opacity: 0.92,
+        }}
+      >
+        0.01% of cheaters claim 70% of all profits.
+      </div>
+    </AbsoluteFill>
+  );
+};
+
+const BigNumber: React.FC<{
+  value: string;
+  subtitle: string;
+  tint: string;
+  scale?: number;
+}> = ({ value, subtitle, tint, scale = 1 }) => {
+  // Numbers slam in: scale 0.6→1 over 0.32s with overshoot, opacity over 0.15s.
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const slam = spring({
+    frame,
+    fps,
+    config: { damping: 11, stiffness: 200, mass: 0.7 },
+  });
+  const slamScale = interpolate(slam, [0, 1], [0.6, 1.0]);
+  const slamOpacity = interpolate(
+    frame,
+    [0, toFrames(0.15)],
+    [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+
+  return (
+    <div style={{ textAlign: "center", opacity: slamOpacity }}>
+      <div
+        style={{
+          fontFamily: font,
+          fontSize: 240,
+          fontWeight: 800,
+          letterSpacing: "-0.04em",
+          color: tint,
+          lineHeight: 0.95,
+          textShadow: "0 4px 28px rgba(0,0,0,0.65)",
+          fontVariantNumeric: "tabular-nums",
+          transform: `scale(${slamScale * scale})`,
+          transformOrigin: "center",
+        }}
+      >
+        {value}
+      </div>
+      <div
+        style={{
+          marginTop: 18,
+          fontFamily: monoFont,
+          fontSize: 24,
+          fontWeight: 500,
+          letterSpacing: "0.18em",
+          textTransform: "uppercase",
+          color: colors.dim,
+        }}
+      >
+        {subtitle}
+      </div>
+    </div>
+  );
+};
+
+const ArrowFlow: React.FC = () => {
+  const length = 220;
+  return (
+    <svg width={length + 40} height={120} style={{ overflow: "visible" }}>
+      <defs>
+        <linearGradient id="arrow-grad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor={colors.dim} stopOpacity={0.6} />
+          <stop offset="100%" stopColor={colors.accent} stopOpacity={1} />
+        </linearGradient>
+      </defs>
+      <line
+        x1={0}
+        y1={60}
+        x2={length}
+        y2={60}
+        stroke="url(#arrow-grad)"
+        strokeWidth={3}
+        strokeLinecap="round"
+      />
+      <line
+        x1={length - 14}
+        y1={60 - 14}
+        x2={length}
+        y2={60}
+        stroke={colors.accent}
+        strokeWidth={3}
+        strokeLinecap="round"
+      />
+      <line
+        x1={length - 14}
+        y1={60 + 14}
+        x2={length}
+        y2={60}
+        stroke={colors.accent}
+        strokeWidth={3}
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+};
+
+// ─── Beat 2 (2.5s): four chips snap in together + tagline ─────────────────────
+
+const CHIPS = ["Perps", "Options", "Predictions", "Launchpads"] as const;
+
+const ChipsPanel: React.FC = () => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+
+  if (frame < CHIPS_AT) return null;
+  const local = frame - CHIPS_AT;
+
+  // All four chips arrive together — phrase, not cascade.
+  const chipsOpacity = interpolate(
+    local,
+    [0, toFrames(0.18)],
+    [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const chipsY = interpolate(
+    local,
+    [0, toFrames(0.18)],
+    [14, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+
+  const taglineOpacity = interpolate(
+    local,
+    [toFrames(0.5), toFrames(0.8)],
+    [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const taglineY = interpolate(
+    local,
+    [toFrames(0.5), toFrames(0.8)],
+    [14, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+
+  // Spring punch on the chips block once.
+  const punch = spring({
+    frame: local,
+    fps,
+    config: { damping: 9, stiffness: 220, mass: 0.55 },
+  });
+  const punchScale = 1 + Math.sin(Math.min(1, Math.max(0, punch)) * Math.PI) * 0.04;
+
+  return (
+    <AbsoluteFill>
+      <div
+        style={{
+          position: "absolute",
+          top: "30%",
+          left: 0,
+          right: 0,
+          textAlign: "center",
+          fontFamily: monoFont,
+          fontSize: 28,
+          fontWeight: 500,
+          letterSpacing: "0.18em",
+          textTransform: "uppercase",
+          color: colors.dim,
+          opacity: chipsOpacity,
+        }}
+      >
+        Every market they touch
+      </div>
+
+      <div
+        style={{
+          position: "absolute",
+          top: "40%",
+          left: 0,
+          right: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 28,
+          padding: "0 96px",
+          flexWrap: "wrap",
+          opacity: chipsOpacity,
+          transform: `translateY(${chipsY}px) scale(${punchScale})`,
+        }}
+      >
+        {CHIPS.map((label) => (
+          <div
+            key={label}
+            style={{
+              fontFamily: monoFont,
+              fontSize: 56,
+              fontWeight: 500,
+              letterSpacing: "0.04em",
+              textTransform: "uppercase",
+              color: colors.fg,
+              padding: "22px 38px",
+              border: `1px solid ${colors.accent}`,
+              borderRadius: 4,
+              backgroundColor: "rgba(255,59,59,0.04)",
+              boxShadow:
+                "0 0 0 1px rgba(255,59,59,0.08), 0 8px 32px rgba(0,0,0,0.45)",
+            }}
+          >
+            {label}
+          </div>
+        ))}
+      </div>
+
+      <div
+        style={{
+          position: "absolute",
+          bottom: "20%",
+          left: 0,
+          right: 0,
+          textAlign: "center",
+          fontFamily: font,
+          fontSize: 64,
+          fontWeight: 700,
+          letterSpacing: "-0.025em",
+          color: colors.fg,
+          opacity: taglineOpacity,
+          transform: `translateY(${taglineY}px)`,
+        }}
+      >
+        Leaving you with{" "}
+        <span style={{ color: colors.accent }}>nearly none.</span>
+      </div>
+    </AbsoluteFill>
+  );
+};
+
+// ─── Backdrop with quiet ambient pulse ────────────────────────────────────────
 
 const TradingBackdrop: React.FC = () => {
   const frame = useCurrentFrame();
+  // Sin-wave breathing 0.10 → 0.18 → 0.10 over ~1.5s (45f).
+  const pulse = 0.14 + Math.sin((frame / 45) * Math.PI * 2) * 0.04;
+
   return (
     <AbsoluteFill
       style={{
@@ -52,9 +377,8 @@ const TradingBackdrop: React.FC = () => {
         width="100%"
         height="100%"
         preserveAspectRatio="none"
-        style={{ position: "absolute", inset: 0, opacity: 0.55 }}
+        style={{ position: "absolute", inset: 0, opacity: 0.4 + pulse }}
       >
-        {/* Grid */}
         {Array.from({ length: 12 }).map((_, i) => (
           <line
             key={`h${i}`}
@@ -77,7 +401,6 @@ const TradingBackdrop: React.FC = () => {
             strokeWidth={1}
           />
         ))}
-        {/* Candle silhouettes */}
         {Array.from({ length: 60 }).map((_, i) => {
           const seedA = pseudo(i * 1.31 + frame * 0.01);
           const seedB = pseudo(i * 0.77 + 9.1);
@@ -112,306 +435,6 @@ const TradingBackdrop: React.FC = () => {
     </AbsoluteFill>
   );
 };
-
-// ─── Stat panel: 0.01% / arrow / 70% ──────────────────────────────────────────
-
-const StatPanel: React.FC = () => {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-
-  const enter = spring({
-    frame,
-    fps,
-    config: { damping: 22, stiffness: 110, mass: 0.7 },
-  });
-  const exit = spring({
-    frame: frame - (STAT_DURATION - toFrames(0.4)),
-    fps,
-    config: { damping: 28, stiffness: 140, mass: 0.6 },
-  });
-  const opacity = interpolate(enter, [0, 1], [0, 1]) * (1 - exit);
-
-  // Counters — count up over the first 1.6s.
-  const countT = Math.min(1, Math.max(0, frame / toFrames(1.6)));
-  const eased = 1 - Math.pow(1 - countT, 3);
-  const left = (0.01 * eased).toFixed(2);
-  const right = Math.round(70 * eased);
-
-  // Arrow draws from frame 0.6s to 1.6s.
-  const arrowT = interpolate(
-    frame,
-    [toFrames(0.6), toFrames(1.6)],
-    [0, 1],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-
-  return (
-    <AbsoluteFill style={{ opacity }}>
-      {/* Eyebrow label */}
-      <div
-        style={{
-          position: "absolute",
-          top: "18%",
-          left: 0,
-          right: 0,
-          textAlign: "center",
-          fontFamily: monoFont,
-          fontSize: 28,
-          fontWeight: 500,
-          letterSpacing: "0.18em",
-          textTransform: "uppercase",
-          color: colors.dim,
-        }}
-      >
-        Cheaters → Profits
-      </div>
-
-      {/* Big numbers row */}
-      <div
-        style={{
-          position: "absolute",
-          top: "32%",
-          left: 0,
-          right: 0,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 72,
-          padding: "0 96px",
-        }}
-      >
-        <BigNumber value={`${left}%`} subtitle="of traders" tint={colors.fg} />
-        <ArrowFlow t={arrowT} />
-        <BigNumber
-          value={`${right}%`}
-          subtitle="of all profits"
-          tint={colors.accent}
-        />
-      </div>
-
-      {/* Sub-line */}
-      <div
-        style={{
-          position: "absolute",
-          bottom: "20%",
-          left: 0,
-          right: 0,
-          textAlign: "center",
-          fontFamily: font,
-          fontSize: 44,
-          fontWeight: 500,
-          letterSpacing: "-0.01em",
-          color: colors.fg,
-          opacity: interpolate(
-            frame,
-            [toFrames(2.0), toFrames(2.6)],
-            [0, 0.92],
-            { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-          ),
-        }}
-      >
-        0.01% of cheaters claim 70% of all profits.
-      </div>
-    </AbsoluteFill>
-  );
-};
-
-const BigNumber: React.FC<{
-  value: string;
-  subtitle: string;
-  tint: string;
-}> = ({ value, subtitle, tint }) => {
-  return (
-    <div style={{ textAlign: "center" }}>
-      <div
-        style={{
-          fontFamily: font,
-          fontSize: 240,
-          fontWeight: 800,
-          letterSpacing: "-0.04em",
-          color: tint,
-          lineHeight: 0.95,
-          textShadow: "0 4px 28px rgba(0,0,0,0.65)",
-          fontVariantNumeric: "tabular-nums",
-        }}
-      >
-        {value}
-      </div>
-      <div
-        style={{
-          marginTop: 18,
-          fontFamily: monoFont,
-          fontSize: 24,
-          fontWeight: 500,
-          letterSpacing: "0.18em",
-          textTransform: "uppercase",
-          color: colors.dim,
-        }}
-      >
-        {subtitle}
-      </div>
-    </div>
-  );
-};
-
-const ArrowFlow: React.FC<{ t: number }> = ({ t }) => {
-  // The arrow draws from left to right.
-  const length = 220;
-  const drawn = Math.max(0, Math.min(length, length * t));
-  const headOpacity = t > 0.92 ? 1 : 0;
-  return (
-    <svg width={length + 40} height={120} style={{ overflow: "visible" }}>
-      <defs>
-        <linearGradient id="arrow-grad" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor={colors.dim} stopOpacity={0.6} />
-          <stop offset="100%" stopColor={colors.accent} stopOpacity={1} />
-        </linearGradient>
-      </defs>
-      <line
-        x1={0}
-        y1={60}
-        x2={drawn}
-        y2={60}
-        stroke="url(#arrow-grad)"
-        strokeWidth={3}
-        strokeLinecap="round"
-      />
-      <g opacity={headOpacity}>
-        <line
-          x1={length - 14}
-          y1={60 - 14}
-          x2={length}
-          y2={60}
-          stroke={colors.accent}
-          strokeWidth={3}
-          strokeLinecap="round"
-        />
-        <line
-          x1={length - 14}
-          y1={60 + 14}
-          x2={length}
-          y2={60}
-          stroke={colors.accent}
-          strokeWidth={3}
-          strokeLinecap="round"
-        />
-      </g>
-    </svg>
-  );
-};
-
-// ─── Chips panel: PERPS · OPTIONS · PREDICTIONS · LAUNCHPADS ──────────────────
-
-const CHIPS = ["Perps", "Options", "Predictions", "Launchpads"] as const;
-
-const ChipsPanel: React.FC = () => {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-
-  return (
-    <AbsoluteFill>
-      <div
-        style={{
-          position: "absolute",
-          top: "30%",
-          left: 0,
-          right: 0,
-          textAlign: "center",
-          fontFamily: monoFont,
-          fontSize: 28,
-          fontWeight: 500,
-          letterSpacing: "0.18em",
-          textTransform: "uppercase",
-          color: colors.dim,
-        }}
-      >
-        Every market they touch
-      </div>
-
-      <div
-        style={{
-          position: "absolute",
-          top: "40%",
-          left: 0,
-          right: 0,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 28,
-          padding: "0 96px",
-          flexWrap: "wrap",
-        }}
-      >
-        {CHIPS.map((label, i) => {
-          const at = toFrames(0.18 * i + 0.05);
-          const t = spring({
-            frame: frame - at,
-            fps,
-            config: { damping: 14, stiffness: 220, mass: 0.55 },
-          });
-          const y = interpolate(t, [0, 1], [-46, 0]);
-          const opacity = interpolate(t, [0, 1], [0, 1]);
-          const scale = interpolate(t, [0, 1], [0.92, 1]);
-          return (
-            <div
-              key={label}
-              style={{
-                fontFamily: monoFont,
-                fontSize: 56,
-                fontWeight: 500,
-                letterSpacing: "0.04em",
-                textTransform: "uppercase",
-                color: colors.fg,
-                padding: "22px 38px",
-                border: `1px solid ${colors.accent}`,
-                borderRadius: 4,
-                backgroundColor: "rgba(255,59,59,0.04)",
-                boxShadow:
-                  "0 0 0 1px rgba(255,59,59,0.08), 0 8px 32px rgba(0,0,0,0.45)",
-                opacity,
-                transform: `translateY(${y}px) scale(${scale})`,
-              }}
-            >
-              {label}
-            </div>
-          );
-        })}
-      </div>
-
-      <div
-        style={{
-          position: "absolute",
-          bottom: "20%",
-          left: 0,
-          right: 0,
-          textAlign: "center",
-          fontFamily: font,
-          fontSize: 64,
-          fontWeight: 700,
-          letterSpacing: "-0.025em",
-          color: colors.fg,
-          opacity: interpolate(
-            frame,
-            [toFrames(1.4), toFrames(2.0)],
-            [0, 1],
-            { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-          ),
-          transform: `translateY(${interpolate(
-            frame,
-            [toFrames(1.4), toFrames(2.0)],
-            [16, 0],
-            { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-          )}px)`,
-        }}
-      >
-        Leaving you with{" "}
-        <span style={{ color: colors.accent }}>nearly none.</span>
-      </div>
-    </AbsoluteFill>
-  );
-};
-
-// ─── Deterministic noise (lifted from the hook) ───────────────────────────────
 
 function pseudo(seed: number): number {
   const v = (Math.sin(seed * 12.9898) * 43758.5453) % 1;

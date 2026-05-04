@@ -9,33 +9,71 @@ import {
 import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 
-const SCENE_SECONDS = 10;
+const SCENE_SECONDS = 6;
+const SUBLINE_AT = toFrames(1.5);
+const TERTIARY_AT = toFrames(3.0);
 
 export const AntiCheatEndCard: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  const wordmark = spring({
+  // Beat 1 (0s): wordmark "General" snaps in.
+  const wordmarkOpacity = interpolate(
     frame,
+    [0, toFrames(0.18)],
+    [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const wordmarkY = interpolate(
+    frame,
+    [0, toFrames(0.18)],
+    [14, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  // Hero word punch — once.
+  const punch = spring({
+    frame: frame - toFrames(0.05),
     fps,
-    config: { damping: 18, stiffness: 90, mass: 0.9 },
+    config: { damping: 9, stiffness: 220, mass: 0.55 },
   });
-  const subline = spring({
-    frame: frame - toFrames(4),
-    fps,
-    config: { damping: 22, stiffness: 110, mass: 0.7 },
-  });
-  const tertiary = spring({
-    frame: frame - toFrames(7),
-    fps,
-    config: { damping: 26, stiffness: 100, mass: 0.8 },
-  });
+  const wordmarkPunch =
+    1 + Math.sin(Math.min(1, Math.max(0, punch)) * Math.PI) * 0.06;
 
-  // Underline draws once the wordmark settles.
+  // Underline draws once, immediately under wordmark.
   const underlineT = interpolate(
     frame,
-    [toFrames(1.6), toFrames(2.6)],
+    [toFrames(0.4), toFrames(1.1)],
     [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+
+  // Beat 2 (1.5s): subline.
+  const sublineLocal = frame - SUBLINE_AT;
+  const sublineOpacity = interpolate(
+    sublineLocal,
+    [0, toFrames(0.18)],
+    [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const sublineY = interpolate(
+    sublineLocal,
+    [0, toFrames(0.18)],
+    [14, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+
+  // Beat 3 (3.0s): tertiary.
+  const tertiaryLocal = frame - TERTIARY_AT;
+  const tertiaryOpacity = interpolate(
+    tertiaryLocal,
+    [0, toFrames(0.18)],
+    [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const tertiaryY = interpolate(
+    tertiaryLocal,
+    [0, toFrames(0.18)],
+    [14, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
 
@@ -49,15 +87,16 @@ export const AntiCheatEndCard: React.FC = () => {
         padding: "0 96px",
       }}
     >
+      <Backdrop />
       <div
         style={{
           textAlign: "center",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
+          position: "relative",
         }}
       >
-        {/* Eyebrow — small monogram label */}
         <div
           style={{
             fontFamily: monoFont,
@@ -67,14 +106,13 @@ export const AntiCheatEndCard: React.FC = () => {
             textTransform: "uppercase",
             color: colors.dim,
             marginBottom: 28,
-            opacity: interpolate(wordmark, [0, 1], [0, 1]),
-            transform: `translateY(${interpolate(wordmark, [0, 1], [10, 0])}px)`,
+            opacity: wordmarkOpacity,
+            transform: `translateY(${wordmarkY}px)`,
           }}
         >
           Anti-Cheat · Trading
         </div>
 
-        {/* Wordmark */}
         <div
           style={{
             fontFamily: font,
@@ -83,15 +121,15 @@ export const AntiCheatEndCard: React.FC = () => {
             letterSpacing: "-0.05em",
             color: colors.fg,
             lineHeight: 0.95,
-            opacity: interpolate(wordmark, [0, 1], [0, 1]),
-            transform: `translateY(${interpolate(wordmark, [0, 1], [28, 0])}px)`,
+            opacity: wordmarkOpacity,
+            transform: `translateY(${wordmarkY}px) scale(${wordmarkPunch})`,
+            transformOrigin: "center",
             textShadow: "0 4px 28px rgba(0,0,0,0.65)",
           }}
         >
           General
         </div>
 
-        {/* Underline */}
         <div
           style={{
             position: "relative",
@@ -116,7 +154,6 @@ export const AntiCheatEndCard: React.FC = () => {
           />
         </div>
 
-        {/* Subline */}
         <div
           style={{
             fontFamily: font,
@@ -124,15 +161,14 @@ export const AntiCheatEndCard: React.FC = () => {
             fontWeight: 600,
             letterSpacing: "-0.02em",
             color: colors.fg,
-            opacity: interpolate(subline, [0, 1], [0, 1]),
-            transform: `translateY(${interpolate(subline, [0, 1], [20, 0])}px)`,
+            opacity: sublineOpacity,
+            transform: `translateY(${sublineY}px)`,
           }}
         >
           Trading is easy with an Anti-Cheat
           <span style={{ color: colors.fg, opacity: 0.45 }}>.</span>
         </div>
 
-        {/* Tertiary */}
         <div
           style={{
             marginTop: 28,
@@ -142,8 +178,8 @@ export const AntiCheatEndCard: React.FC = () => {
             letterSpacing: "0.22em",
             textTransform: "uppercase",
             color: colors.dim,
-            opacity: interpolate(tertiary, [0, 1], [0, 1]),
-            transform: `translateY(${interpolate(tertiary, [0, 1], [12, 0])}px)`,
+            opacity: tertiaryOpacity,
+            transform: `translateY(${tertiaryY}px)`,
           }}
         >
           Available only via trading bots
@@ -157,6 +193,41 @@ export const AntiCheatEndCard: React.FC = () => {
             "radial-gradient(circle at 50% 50%, transparent 55%, rgba(0,0,0,0.55) 100%)",
         }}
       />
+    </AbsoluteFill>
+  );
+};
+
+// ─── Backdrop with quiet ambient pulse ────────────────────────────────────────
+
+const Backdrop: React.FC = () => {
+  const frame = useCurrentFrame();
+  const pulse = 0.10 + Math.sin((frame / 45) * Math.PI * 2) * 0.04;
+
+  return (
+    <AbsoluteFill
+      style={{
+        background: "linear-gradient(180deg, #0d0d10 0%, #050507 100%)",
+      }}
+    >
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        width="100%"
+        height="100%"
+        preserveAspectRatio="none"
+        style={{ position: "absolute", inset: 0, opacity: pulse + 0.2 }}
+      >
+        {Array.from({ length: 12 }).map((_, i) => (
+          <line
+            key={`h${i}`}
+            x1={0}
+            x2={W}
+            y1={(i + 1) * (H / 13)}
+            y2={(i + 1) * (H / 13)}
+            stroke="#16161b"
+            strokeWidth={1}
+          />
+        ))}
+      </svg>
     </AbsoluteFill>
   );
 };

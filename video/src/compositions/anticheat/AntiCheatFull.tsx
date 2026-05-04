@@ -1,6 +1,6 @@
 import React from "react";
 import { AbsoluteFill, Series } from "remotion";
-import { FPS, H, W, colors, toFrames } from "./theme";
+import { FPS, H, W, colors } from "./theme";
 import { antiCheatHookMeta } from "./AntiCheatHook";
 import { antiCheatStatMeta } from "./AntiCheatStat";
 import { antiCheatRiggedMeta } from "./AntiCheatRigged";
@@ -8,12 +8,10 @@ import { antiCheatSolutionMeta } from "./AntiCheatSolution";
 import { antiCheatReassureMeta } from "./AntiCheatReassure";
 import { antiCheatEndCardMeta } from "./AntiCheatEndCard";
 
-const TOTAL_SECONDS = 60;
+// Hook 12s + Stat 5s + Rigged 7s + Solution 5s + Reassure 4s + EndCard 6s = 39s.
+// Hard cuts. No transitions. Each scene starts at the prior scene's last frame + 1.
+const TOTAL_FRAMES = 1170;
 
-// The chain. Hook (12s) + Stat (10s) + Rigged (12s) + Solution (8s) +
-// Reassure (8s) + EndCard (10s) = 60s. The Series component places each
-// scene's local frame 0 at the start of its slot, so each composition
-// runs against its own clock.
 const SCENES = [
   antiCheatHookMeta,
   antiCheatStatMeta,
@@ -46,7 +44,7 @@ export const AntiCheatFull: React.FC = () => {
 export const antiCheatFullMeta = {
   id: "AntiCheatFull",
   component: AntiCheatFull,
-  durationInFrames: toFrames(TOTAL_SECONDS),
+  durationInFrames: TOTAL_FRAMES,
   fps: FPS,
   width: W,
   height: H,
