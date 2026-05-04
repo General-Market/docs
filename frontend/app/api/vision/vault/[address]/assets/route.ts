@@ -106,9 +106,9 @@ function computeAgg(trades: RawTrade[]): AssetAgg[] {
 
 export async function GET(
   _request: Request,
-  { params }: { params: Promise<{ vaultAddress: string }> },
+  { params }: { params: Promise<{ address: string }> },
 ) {
-  const { vaultAddress } = await params
+  const { address: vaultAddress } = await params
 
   let checksummed: string
   try {

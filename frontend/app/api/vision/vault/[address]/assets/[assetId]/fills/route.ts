@@ -36,9 +36,9 @@ export interface FillEntry {
 
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ vaultAddress: string; assetId: string }> },
+  { params }: { params: Promise<{ address: string; assetId: string }> },
 ) {
-  const { vaultAddress, assetId } = await params
+  const { address: vaultAddress, assetId } = await params
   const { searchParams } = new URL(request.url)
   const page = Math.max(0, parseInt(searchParams.get('page') ?? '0', 10))
   const rawLimit = parseInt(searchParams.get('limit') ?? String(DEFAULT_PAGE_SIZE), 10)
