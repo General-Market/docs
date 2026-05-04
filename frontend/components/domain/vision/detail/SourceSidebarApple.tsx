@@ -51,13 +51,11 @@ export function SourceSidebarApple({ sourceId, category }: SourceSidebarApplePro
         width: 'var(--apple-shell-left)',
         borderRight: '1px solid var(--apple-line)',
         background: 'var(--apple-panel)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 0,
         flexShrink: 0,
-        // hidden below lg — the mobile sidebar handles narrow viewports
+        // Display + flex-direction live in className so `hidden` actually wins
+        // below the breakpoint. Inline `display:flex` would override Tailwind.
       }}
-      className="hidden lg:flex"
+      className="hidden md:flex flex-col"
     >
       {/* ── Source identity ── */}
       <div
