@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
-import { Header } from '@/components/layout/Header'
-import { Footer } from '@/components/layout/Footer'
+import { AppShell } from '@/components/layout/AppShell'
+import { SourceSearch } from '@/components/layout/SourceSearch'
 import { BuildBotVSL } from '@/components/marketing/BuildBotVSL'
 
 export const revalidate = 3600
@@ -87,9 +87,7 @@ const breadcrumbJsonLd = {
 
 export default function BuildBotPage() {
   return (
-    <main className="min-h-screen bg-page flex flex-col">
-      <Header />
-
+    <AppShell search={<SourceSearch />}>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(howToJsonLd) }}
@@ -98,12 +96,7 @@ export default function BuildBotPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
-
-      <div className="flex-1">
-        <BuildBotVSL />
-      </div>
-
-      <Footer />
-    </main>
+      <BuildBotVSL />
+    </AppShell>
   )
 }

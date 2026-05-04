@@ -3,6 +3,8 @@ import { getTranslations } from 'next-intl/server'
 import { getItpSummaries } from '@/lib/api/server-data'
 import { FinancialProductJsonLd, BreadcrumbJsonLd } from '@/components/seo/JsonLd'
 import { HomeClient } from '@/components/domain/HomeClient'
+import { AppShell } from '@/components/layout/AppShell'
+import { SourceSearch } from '@/components/layout/SourceSearch'
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params
@@ -27,7 +29,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
   const tJsonLd = await getTranslations({ locale, namespace: 'seo.json_ld' })
 
   return (
-    <main className="min-h-screen bg-page flex flex-col">
+    <AppShell search={<SourceSearch />}>
       {/* SEO-visible content */}
       <div className="sr-only">
         <h1>{t('h1')}</h1>
@@ -79,6 +81,6 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
 
       {/* Interactive client app */}
       <HomeClient />
-    </main>
+    </AppShell>
   )
 }
