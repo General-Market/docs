@@ -10,8 +10,8 @@ import {
 import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 
-const SCENE_SECONDS = 8;
-const TERMINAL_AT = toFrames(4);
+const SCENE_SECONDS = 6.5;
+const TERMINAL_AT = toFrames(2.5);
 const GREEN = "#3ddc84";
 
 export const AntiCheatSolution: React.FC = () => {

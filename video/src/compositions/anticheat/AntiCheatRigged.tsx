@@ -10,9 +10,9 @@ import {
 import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 
-const SCENE_SECONDS = 7;
+const SCENE_SECONDS = 6;
 const CARD_TIMES = [toFrames(1.0), toFrames(2.5), toFrames(4.0)];
-const STAMP_AT = toFrames(5.5);
+const STAMP_AT = toFrames(4.7);
 
 const CARDS = [
   {

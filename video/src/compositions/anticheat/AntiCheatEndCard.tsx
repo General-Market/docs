@@ -9,9 +9,9 @@ import {
 import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 
-const SCENE_SECONDS = 6;
+const SCENE_SECONDS = 5;
 const SUBLINE_AT = toFrames(1.5);
-const TERTIARY_AT = toFrames(3.0);
+const TERTIARY_AT = toFrames(2.2);
 
 export const AntiCheatEndCard: React.FC = () => {
   const frame = useCurrentFrame();

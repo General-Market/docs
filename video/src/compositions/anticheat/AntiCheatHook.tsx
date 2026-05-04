@@ -1,7 +1,6 @@
 import React from "react";
 import {
   AbsoluteFill,
-  Loop,
   OffthreadVideo,
   Sequence,
   interpolate,
@@ -34,7 +33,7 @@ const HEADER_IN = toFrames(0.3);
 const SPLIT_AT = toFrames(2.0);
 const PAIRS_AT = toFrames(3.6);
 const PAIR_STEP = toFrames(1.4);
-const REVEAL_AT = toFrames(8.4);
+const REVEAL_AT = toFrames(7.5);
 
 export const AntiCheatHook: React.FC = () => {
   const frame = useCurrentFrame();
@@ -143,10 +142,9 @@ export const AntiCheatHook: React.FC = () => {
 //
 // 0.0–3.0s   minecraft-killaura
 // 3.0–6.0s   cs2-spinbot
-// 6.0–11.0s  valorant-wallhack
-// 11.0–12.0s minecraft-killaura (looped, so it never freezes on the last frame)
+// 6.0–10.0s  valorant-wallhack (covered by reveal overlay from 7.5s)
 //
-// Total: 360 frames. The crossfade overlap is absorbed by the linearTiming
+// Total: 300 frames. The crossfade overlap is absorbed by the linearTiming
 // duration, so no clip ever runs out of source material before its slot ends.
 
 const FADE = toFrames(0.27); // 8 frames at 30fps
@@ -173,33 +171,15 @@ const CheaterBrollSequence: React.FC = () => {
           timing={linearTiming({ durationInFrames: FADE })}
         />
 
-        <TransitionSeries.Sequence durationInFrames={toFrames(5.0)}>
+        <TransitionSeries.Sequence durationInFrames={toFrames(4.2)}>
           <BrollClip src={BROLL.valorant} />
-        </TransitionSeries.Sequence>
-
-        <TransitionSeries.Transition
-          presentation={fade()}
-          timing={linearTiming({ durationInFrames: FADE })}
-        />
-
-        {/* Tail: minecraft loops so the freeze-frame never appears.
-            Sized so the total timeline (sum of seq durations minus the three
-            8-frame transitions) lands exactly on the 360-frame composition. */}
-        <TransitionSeries.Sequence durationInFrames={toFrames(1.8)}>
-          <BrollClip src={BROLL.minecraft} loop />
         </TransitionSeries.Sequence>
       </TransitionSeries>
     </AbsoluteFill>
   );
 };
 
-const BrollClip: React.FC<{ src: string; loop?: boolean }> = ({
-  src,
-  loop,
-}) => {
-  // OffthreadVideo has no native loop prop — wrap it in <Loop> when we
-  // need the source to repeat past its own runtime. The minecraft tail
-  // slot is shorter than the clip itself, so loop is a no-op safety net.
+const BrollClip: React.FC<{ src: string }> = ({ src }) => {
   const videoStyle: React.CSSProperties = {
     width: "100%",
     height: "100%",
@@ -207,24 +187,11 @@ const BrollClip: React.FC<{ src: string; loop?: boolean }> = ({
     filter: "saturate(1.05) contrast(1.05) brightness(0.95)",
   };
 
-  const inner = (
-    <OffthreadVideo
-      src={src}
-      muted
-      playbackRate={1.0}
-      style={videoStyle}
-    />
+  return (
+    <AbsoluteFill>
+      <OffthreadVideo src={src} muted playbackRate={1.0} style={videoStyle} />
+    </AbsoluteFill>
   );
-
-  if (loop) {
-    // 90 frames = 3s, comfortably within every clip's source duration.
-    return (
-      <AbsoluteFill>
-        <Loop durationInFrames={toFrames(3.0)}>{inner}</Loop>
-      </AbsoluteFill>
-    );
-  }
-  return <AbsoluteFill>{inner}</AbsoluteFill>;
 };
 
 // ─── Right panel: procedural trading screen ────────────────────────────────────
@@ -795,7 +762,7 @@ function generateCandles(
 export const antiCheatHookMeta = {
   id: "AntiCheatHook",
   component: AntiCheatHook,
-  durationInFrames: toFrames(12),
+  durationInFrames: toFrames(10),
   fps: FPS,
   width: W,
   height: H,

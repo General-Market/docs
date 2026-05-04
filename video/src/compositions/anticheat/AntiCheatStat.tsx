@@ -10,8 +10,8 @@ import {
 import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 
-const SCENE_SECONDS = 10;
-const STAT_DURATION = toFrames(5);
+const SCENE_SECONDS = 7.5;
+const STAT_DURATION = toFrames(4);
 
 export const AntiCheatStat: React.FC = () => {
   return (
