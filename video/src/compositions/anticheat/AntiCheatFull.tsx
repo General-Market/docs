@@ -8,9 +8,9 @@ import { antiCheatSolutionMeta } from "./AntiCheatSolution";
 import { antiCheatReassureMeta } from "./AntiCheatReassure";
 import { antiCheatEndCardMeta } from "./AntiCheatEndCard";
 
-// Hook 12s + Stat 5s + Rigged 7s + Solution 5s + Reassure 4s + EndCard 6s = 39s.
+// Hook 12s + Stat 10s + Rigged 7s + Solution 8s + Reassure 8s + EndCard 6s = 51s.
 // Hard cuts. No transitions. Each scene starts at the prior scene's last frame + 1.
-const TOTAL_FRAMES = 1170;
+const TOTAL_FRAMES = 1530;
 
 const SCENES = [
   antiCheatHookMeta,
