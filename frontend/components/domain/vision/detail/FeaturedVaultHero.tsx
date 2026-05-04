@@ -9,17 +9,17 @@
  * the highest `totalAssets` is featured. This mirrors VaultShowcase's sorting
  * logic exactly so both surfaces always agree on which vault is "featured".
  *
- * Depositor count: not available in the current SSE schema (`VisionVaultSSE`)
- * or the wagmi multicall (no `balanceOf` enumeration on the vault contract).
- * We omit the depositor pill rather than show a stale or fabricated number.
- * When the data-node exposes a `holder_count` field, add it to VisionVaultSSE
- * and read it here.
+ * Render branches:
+ *   - Loading (with known identity)  → identity card + reserved chart pulse + soft pills
+ *   - Empty / SSE-down (after 5s)    → identity card + invitation to build a vault
+ *   - Success                         → full hero with sparkline + stat pills + CTA
  *
- * Sparkline: uses the same canvas-based sparkline from VaultShowcase. No per-
- * trade markers — vaults can have 1000 fills per block; dots would be noise.
+ * The card never goes dark. It never shows three stacked bars. The slot's
+ * height is stable across all branches so the layout doesn't lurch when data
+ * lands.
  */
 
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { formatUnits } from 'viem'
 import { Link } from '@/i18n/routing'
 import fundData from '@/data/fund-branding.json'
@@ -27,7 +27,7 @@ import { useVaultsByAddresses } from '@/hooks/vaults/useVaults'
 import { useVaultDisplayResolver } from '@/hooks/vaults/useVaultDisplay'
 import { useSSEVisionVaults, useSSEUserVaultPositions } from '@/hooks/useSSE'
 import { useVaultHistory } from '@/hooks/vaults/useVaultHistory'
-import { cn } from '@/lib/utils/cn'
+import { useSourceRegistry, findSource } from '@/hooks/vision/useSourceRegistry'
 
 /* ─── helpers ─────────────────────────────────────────────────── */
 
@@ -49,6 +49,44 @@ function formatTvl(tvl: number) {
 function safeBigInt(v: string | undefined): bigint {
   if (!v) return 0n
   try { return BigInt(v) } catch { return 0n }
+}
+
+/* ─── shared shell — keeps height + surface identical across branches ─ */
+
+const CARD_CLASS = 'flex flex-col gap-5 p-6 rounded-[var(--apple-r-card)] border overflow-hidden'
+const CARD_STYLE: React.CSSProperties = {
+  borderColor: 'var(--apple-line)',
+  background: 'var(--apple-panel)',
+  minHeight: 360,
+}
+
+const EYEBROW_STYLE: React.CSSProperties = {
+  fontFamily: 'var(--apple-font-text)',
+  fontSize: 11,
+  letterSpacing: 'var(--apple-track-loose)',
+  color: 'var(--apple-text-tertiary)',
+  fontWeight: 600,
+  textTransform: 'uppercase',
+  lineHeight: 1,
+}
+
+const HEADING_STYLE: React.CSSProperties = {
+  fontFamily: 'var(--apple-font-display)',
+  fontSize: 'var(--apple-fs-28)',
+  letterSpacing: 'var(--apple-track-tighter)',
+  lineHeight: 1.1428,
+  fontWeight: 600,
+  color: 'var(--apple-text)',
+  marginBottom: 6,
+}
+
+const SUB_STYLE: React.CSSProperties = {
+  fontFamily: 'var(--apple-font-text)',
+  fontSize: 'var(--apple-fs-17)',
+  letterSpacing: 'var(--apple-track-tight)',
+  lineHeight: 1.4706,
+  color: 'var(--apple-text-secondary)',
+  maxWidth: '40ch',
 }
 
 /* ─── sparkline ────────────────────────────────────────────────── */
@@ -123,13 +161,34 @@ function Sparkline({ data, color }: { data: number[]; color: string }) {
   )
 }
 
+/* ─── chart placeholder — single soft surface, no stacked bars ─── */
+
+function ChartPlaceholder({ pulse }: { pulse: boolean }) {
+  return (
+    <div
+      className="w-full rounded-[var(--apple-r-sm)]"
+      style={{
+        height: 56,
+        background: 'var(--apple-surface)',
+        border: '1px solid var(--apple-line)',
+        animation: pulse ? 'skeleton-shimmer 1.8s var(--ease-out) infinite' : undefined,
+        backgroundImage: pulse
+          ? 'linear-gradient(90deg, rgba(0,163,108,0.04) 0%, rgba(0,163,108,0.04) 33%, rgba(0,163,108,0.10) 50%, rgba(0,163,108,0.04) 67%, rgba(0,163,108,0.04) 100%)'
+          : undefined,
+        backgroundSize: pulse ? '200% 100%' : undefined,
+      }}
+      aria-hidden="true"
+    />
+  )
+}
+
 /* ─── stat pill ────────────────────────────────────────────────── */
 
 function StatPill({ label, value, positive }: { label: string; value: string; positive?: boolean }) {
   return (
     <div
       className="flex flex-col gap-0.5 px-3 py-2 rounded-[var(--apple-r-sm)] border"
-      style={{ borderColor: 'var(--apple-border)', background: 'var(--apple-surface)' }}
+      style={{ borderColor: 'var(--apple-line)', background: 'var(--apple-surface)' }}
     >
       <span
         style={{
@@ -165,26 +224,104 @@ function StatPill({ label, value, positive }: { label: string; value: string; po
   )
 }
 
-/* ─── skeleton ─────────────────────────────────────────────────── */
-
-function FeaturedVaultHeroSkeleton() {
+function StatPillGhost({ label }: { label: string }) {
   return (
     <div
-      className="flex flex-col gap-5 p-6 rounded-[var(--apple-r-card)] border"
-      style={{ borderColor: 'var(--apple-border)', background: 'var(--apple-panel)' }}
-      aria-hidden="true"
+      className="flex flex-col gap-1 px-3 py-2 rounded-[var(--apple-r-sm)] border"
+      style={{ borderColor: 'var(--apple-line)', background: 'var(--apple-surface)' }}
     >
-      <div className="space-y-2">
-        <div className="skeleton h-4 w-24 rounded" />
-        <div className="skeleton h-7 w-48 rounded" />
-        <div className="skeleton h-4 w-full max-w-sm rounded" />
+      <span style={{ ...EYEBROW_STYLE, fontSize: 'var(--apple-fs-12)' }}>{label}</span>
+      <span
+        style={{
+          display: 'inline-block',
+          height: 14,
+          width: 56,
+          borderRadius: 4,
+          background: 'rgba(0,0,0,0.06)',
+        }}
+      />
+    </div>
+  )
+}
+
+/* ─── identity header (used by all branches) ─────────────────── */
+
+function IdentityHeader({
+  eyebrow,
+  title,
+  sub,
+  trailingPill,
+}: {
+  eyebrow: string
+  title: string
+  sub?: string
+  trailingPill?: React.ReactNode
+}) {
+  return (
+    <>
+      <div className="flex items-center gap-2">
+        <span className="apple-pill apple-pill--external" style={{ textTransform: 'uppercase' }}>
+          {eyebrow}
+        </span>
+        {trailingPill}
       </div>
-      <div className="skeleton h-14 w-full rounded" />
-      <div className="flex gap-3">
-        <div className="skeleton h-14 w-24 rounded-[var(--apple-r-sm)]" />
-        <div className="skeleton h-14 w-24 rounded-[var(--apple-r-sm)]" />
+      <div>
+        <h2 style={HEADING_STYLE}>{title}</h2>
+        {sub && <p style={SUB_STYLE}>{sub}</p>}
       </div>
-      <div className="skeleton h-10 w-28 rounded-[var(--apple-r-pill)]" />
+    </>
+  )
+}
+
+/* ─── loading state ─────────────────────────────────────────── */
+
+function LoadingState({ sourceName }: { sourceName: string }) {
+  return (
+    <div className={CARD_CLASS} style={CARD_STYLE} aria-busy="true">
+      <IdentityHeader
+        eyebrow="featured vault"
+        title={sourceName}
+        sub="Live odds incoming."
+      />
+      <ChartPlaceholder pulse />
+      <div className="flex flex-wrap gap-3">
+        <StatPillGhost label="NAV" />
+        <StatPillGhost label="all-time return" />
+        <StatPillGhost label="TVL" />
+      </div>
+    </div>
+  )
+}
+
+/* ─── empty state (also serves as SSE-down fallback after 5s) ── */
+
+function EmptyState({ sourceName }: { sourceName: string }) {
+  return (
+    <div className={CARD_CLASS} style={CARD_STYLE}>
+      <IdentityHeader
+        eyebrow="featured vault"
+        title="No vault has stepped forward yet."
+        sub={`The slot is open. Whoever ships a strategy on ${sourceName} first lands here.`}
+      />
+      <ChartPlaceholder pulse={false} />
+      <div>
+        <Link
+          href="/build-bot"
+          className="inline-flex items-center gap-1.5 rounded-[var(--apple-r-pill)] px-5 py-2.5 transition-colors"
+          style={{
+            background: 'var(--apple-accent)',
+            color: '#fff',
+            fontFamily: 'var(--apple-font-text)',
+            fontSize: 'var(--apple-fs-17)',
+            letterSpacing: 'var(--apple-track-tight)',
+            fontWeight: 600,
+            textDecoration: 'none',
+          }}
+        >
+          Build a vault
+          <span aria-hidden="true">→</span>
+        </Link>
+      </div>
     </div>
   )
 }
@@ -197,6 +334,15 @@ interface FeaturedVaultHeroProps {
 
 export function FeaturedVaultHero({ sourceId }: FeaturedVaultHeroProps) {
   const resolveDisplay = useVaultDisplayResolver()
+  const { sources } = useSourceRegistry()
+
+  // Source identity is known synchronously from registry (cached on mount via parent prefetch).
+  // Fall back to a humanized sourceId so we never render an empty heading.
+  const sourceName = useMemo(() => {
+    const entry = findSource(sources, sourceId)
+    if (entry?.name) return entry.name
+    return sourceId.charAt(0).toUpperCase() + sourceId.slice(1)
+  }, [sources, sourceId])
 
   // All funds for this source from the canonical branding manifest.
   const funds = useMemo(
@@ -280,77 +426,53 @@ export function FeaturedVaultHero({ sourceId }: FeaturedVaultHeroProps) {
   const hasPosition = !!userPosition &&
     (safeBigInt(userPosition.shares) > 0n || safeBigInt(userPosition.pending_deposit) > 0n)
 
-  // Show skeleton during initial load when there's no SSE fallback either.
+  // Patience timer: if SSE is silent and chain is empty for 5s, show the empty state
+  // instead of pulsing forever. Local dev hits this whenever data-node SSE returns 502.
+  const [patienceExpired, setPatienceExpired] = useState(false)
+  useEffect(() => {
+    setPatienceExpired(false)
+    const t = setTimeout(() => setPatienceExpired(true), 5000)
+    return () => clearTimeout(t)
+  }, [sourceId])
+
   const hasAnyData = Object.keys(chainByAddress).length > 0 || Object.keys(sseByAddress).length > 0
-  if (chainLoading && !hasAnyData) {
-    return <FeaturedVaultHeroSkeleton />
+  const stillFetching = chainLoading && !hasAnyData
+
+  // Branch 1: actively fetching, nothing in cache yet, give it 5s before bailing.
+  if (stillFetching && !patienceExpired) {
+    return <LoadingState sourceName={sourceName} />
   }
 
-  if (!featuredFund || !display) return null
+  // Branch 2: no fund mapped for this source, OR data never arrived.
+  // Either way, the vault slot is empty — teach the user what it's for.
+  if (!featuredFund || !display) {
+    return <EmptyState sourceName={sourceName} />
+  }
 
+  // Branch 3: success.
   const isPositive = display.perf >= 0
-  const perfColor = isPositive ? 'rgb(52,199,89)' : 'rgb(255,59,48)'
   const sparklineColor = isPositive ? 'rgb(52,199,89)' : 'rgb(255,59,48)'
 
   const depositHref = `/source/${sourceId}/vault/${(vaultAddress ?? '').toLowerCase()}`
 
   return (
-    <div
-      className="flex flex-col gap-5 p-6 rounded-[var(--apple-r-card)] border overflow-hidden"
-      style={{ borderColor: 'var(--apple-border)', background: 'var(--apple-panel)' }}
-    >
-      {/* label row */}
-      <div className="flex items-center gap-2">
-        <span
-          className="apple-pill apple-pill--external"
-          style={{ textTransform: 'uppercase' }}
-        >
-          featured vault
-        </span>
-        {hasPosition && (
-          <span className="apple-pill apple-pill--anticheat">
-            deposited
-          </span>
-        )}
-      </div>
+    <div className={CARD_CLASS} style={CARD_STYLE}>
+      <IdentityHeader
+        eyebrow="featured vault"
+        title={featuredFund.name}
+        sub={featuredFund.tagline}
+        trailingPill={
+          hasPosition ? (
+            <span className="apple-pill apple-pill--anticheat">deposited</span>
+          ) : undefined
+        }
+      />
 
-      {/* title + tagline */}
-      <div>
-        <h2
-          style={{
-            fontFamily: 'var(--apple-font-display)',
-            fontSize: 'var(--apple-fs-28)',
-            letterSpacing: 'var(--apple-track-tighter)',
-            lineHeight: 1.1428,
-            fontWeight: 600,
-            color: 'var(--apple-text)',
-            marginBottom: '6px',
-          }}
-        >
-          {featuredFund.name}
-        </h2>
-        {featuredFund.tagline && (
-          <p
-            style={{
-              fontFamily: 'var(--apple-font-text)',
-              fontSize: 'var(--apple-fs-17)',
-              letterSpacing: 'var(--apple-track-tight)',
-              lineHeight: 1.4706,
-              color: 'var(--apple-text-secondary)',
-              maxWidth: '40ch',
-            }}
-          >
-            {featuredFund.tagline}
-          </p>
-        )}
-      </div>
+      {/* sparkline — no per-trade markers; vaults can have 1000 fills/block */}
+      {navData.length >= 2
+        ? <Sparkline data={navData} color={sparklineColor} />
+        : <ChartPlaceholder pulse={false} />}
 
-      {/* sparkline — no per-trade markers; see file header */}
-      {navData.length >= 2 && (
-        <Sparkline data={navData} color={sparklineColor} />
-      )}
-
-      {/* stat pills */}
       <div className="flex flex-wrap gap-3">
         <StatPill label="NAV" value={formatNav(display.nav)} />
         <StatPill
@@ -361,7 +483,6 @@ export function FeaturedVaultHero({ sourceId }: FeaturedVaultHeroProps) {
         <StatPill label="TVL" value={formatTvl(display.tvl)} />
       </div>
 
-      {/* CTA */}
       <div>
         <Link
           href={depositHref}
