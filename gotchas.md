@@ -31,3 +31,7 @@ Patterns that bit us. Written to prevent repeats.
 ## Chain-level
 
 - **Nitro freezer table corruption survives container restart**. A clean Docker restart loop on `orbit-l3-testnet-sequencer-1` with `Failed to open database: freezer table ... is corrupted` means the pebble DB's ancient segments are torn. Only fixes: restore snapshot, or full L1 resync. No config edit will help.
+
+## Parallel Agents
+
+- **`git add` then `git commit` is not safe when multiple agents share the working tree**. The index is shared state. Agent A stages its file, Agent B stages its file before A commits, then A's `git commit` sweeps both into one commit — and B's later `git commit` finds nothing to do. Symptom from May 4 swarm: the UpNextRail diff landed inside the OnboardingCompass agent's commit (`7e6da13d`), with the wrong subject line. Work shipped, attribution drifted. Fix: every agent uses the atomic form — `git commit -m "<msg>" -- <path>` — which stages and commits the named paths in one operation. The index outside those paths is left untouched. No `git add` step at all.
