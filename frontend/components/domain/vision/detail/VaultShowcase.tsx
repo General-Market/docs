@@ -246,135 +246,6 @@ function useCountUp(target: number, duration = 1200, skip = false) {
   return { ref, value }
 }
 
-/* ─────────────────────────────────────────────
-   Featured Vault, the hero
-   ───────────────────────────────────────────── */
-
-function FeaturedHero({ fund, vault, userPosition, onDeposit }: {
-  fund: any
-  vault: VaultInfo
-  userPosition?: UserPosition
-  onDeposit: () => void
-}) {
-  const reduced = !!useReducedMotion()
-  const resolveDisplay = useVaultDisplayResolver()
-  const display = resolveDisplay(vault)
-  const tvl = display.tvl
-  const nav = display.nav
-  const perf = display.perf
-  const perfAbs = Math.abs(perf * 100)
-  const isPositive = perf >= 0
-  const strategy = STRATEGY_META[fund.strategy]
-
-  const { ref: countRef, value: countValue } = useCountUp(perfAbs, 1400, reduced)
-
-  const { snapshots } = useVaultHistory(vault.address)
-  const navData = useMemo(() => snapshots.map(s => s.nav), [snapshots])
-
-  const userValue = computeUserValue(userPosition, vault)
-  const hasPosition = !!userPosition && (userPosition.shares > 0n || userPosition.pending > 0n)
-  const pendingOnly = hasPosition && userPosition!.shares === 0n && userPosition!.pending > 0n
-
-  return (
-    <motion.div
-      initial={reduced ? false : { opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, ease: EASE_OUT_EXPO }}
-      className="relative bg-terminal-dark border border-white/[0.08] overflow-hidden"
-    >
-        <div className="p-6 sm:p-8">
-          {/* label row */}
-          <div className="flex items-center gap-3 mb-5">
-            <span className="text-[10px] font-bold tracking-[0.14em] text-white/35 uppercase">
-              Featured Vault
-            </span>
-            {strategy && (
-              <span className="text-[9px] font-bold tracking-[0.1em] px-2 py-0.5 rounded uppercase bg-white/[0.08] text-white/60">
-                {strategy.label}
-              </span>
-            )}
-          </div>
-
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
-            {/* left column, name, tagline, stats, CTA */}
-            <div className="min-w-0 flex-1">
-              <h3 className="text-[22px] sm:text-[26px] font-black text-white leading-tight mb-2">
-                {fund.name}
-              </h3>
-              <p className="text-[12px] text-white/35 leading-relaxed max-w-md mb-6">
-                {fund.tagline}
-              </p>
-
-              <div className="flex items-center gap-6 mb-6">
-                <div>
-                  <div className="text-[9px] font-bold tracking-[0.12em] text-white/25 uppercase mb-0.5">TVL</div>
-                  <div className="text-[16px] font-mono font-bold text-white/90">{formatTvl(tvl)}</div>
-                </div>
-                <div className="w-px h-8 bg-white/[0.06]" />
-                <div>
-                  <div className="text-[9px] font-bold tracking-[0.12em] text-white/25 uppercase mb-0.5">Fee</div>
-                  <div className="text-[16px] font-mono font-bold text-white/90">{(fund.fee / 100).toFixed(0)}%</div>
-                </div>
-                <div className="w-px h-8 bg-white/[0.06]" />
-                <div>
-                  <div className="text-[9px] font-bold tracking-[0.12em] text-white/25 uppercase mb-0.5">NAV</div>
-                  <div className="text-[16px] font-mono font-bold text-white/90">${nav.toFixed(4)}</div>
-                </div>
-                {hasPosition && (
-                  <>
-                    <div className="w-px h-8 bg-white/[0.06]" />
-                    <div>
-                      <div className="text-[9px] font-bold tracking-[0.12em] text-emerald-300/60 uppercase mb-0.5">
-                        {pendingOnly ? 'Pending' : 'Your Position'}
-                      </div>
-                      <div className="text-[16px] font-mono font-bold text-emerald-300">
-                        ${userValue.toFixed(2)}
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={onDeposit}
-                  className="px-6 py-2.5 bg-white text-black text-[12px] font-black tracking-[0.04em] hover:bg-white/90 transition-colors"
-                >
-                  {hasPosition ? 'Add / withdraw' : 'Deposit'}
-                </button>
-                <button
-                  onClick={onDeposit}
-                  className="px-5 py-2.5 border border-white/[0.1] text-[12px] font-bold text-white/50 hover:border-white/20 hover:text-white/80 transition-colors"
-                >
-                  Details
-                </button>
-              </div>
-            </div>
-
-            {/* right column, performance + sparkline */}
-            <div className="shrink-0 sm:text-right">
-              <div ref={countRef}>
-                <span className={cn(
-                  'text-[36px] sm:text-[44px] font-mono font-black leading-none tabular-nums',
-                  isPositive ? 'text-color-up' : 'text-color-down',
-                )}>
-                  {isPositive ? '+' : '-'}{countValue.toFixed(2)}%
-                </span>
-              </div>
-              <div className="text-[10px] text-white/25 mt-1.5 tracking-[0.06em]">since inception</div>
-
-              <Sparkline
-                data={navData}
-                height={52}
-                color="#FFFFFF"
-                className="mt-4 w-full sm:w-[200px] sm:ml-auto"
-              />
-            </div>
-          </div>
-        </div>
-      </motion.div>
-  )
-}
 
 /* ─────────────────────────────────────────────
    Vault Tilt Card, 3D perspective hover
@@ -674,7 +545,6 @@ export function VaultShowcase({ sourceId }: VaultShowcaseProps) {
   // less than nothing.
   if (sortedFunds.length === 0) return null
 
-  const featured = sortedFunds[0]
   const rest = sortedFunds.slice(1)
 
   // Loading: chain reads still pending and SSE returned nothing. Paint a
@@ -688,20 +558,18 @@ export function VaultShowcase({ sourceId }: VaultShowcaseProps) {
     return <VaultShowcaseLoading />
   }
 
+  // The featured vault renders in the page-level FeaturedVaultHero (Apple shell).
+  // VaultShowcase carries the rest. If there is no rest, return null so the
+  // parent's `:has(>div:empty)` collapses the wrapper.
+  if (rest.length === 0) return null
+
   return (
     <div className="space-y-6">
-      <FeaturedHero
-        fund={featured}
-        vault={getVaultData(featured)}
-        userPosition={getUserPosition(featured.vault)}
-        onDeposit={() => setSelectedIndex(0)}
-      />
-
       {rest.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-4">
             <h4 className="text-[11px] font-bold tracking-[0.1em] text-text-muted uppercase">
-              More Strategies
+              More strategies
             </h4>
             <span className="text-[10px] font-mono text-text-muted">
               {rest.length} vault{rest.length !== 1 ? 's' : ''}

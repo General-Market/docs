@@ -111,39 +111,92 @@ function BotCard({ bot }: { bot: BotEntry }) {
   )
 }
 
-function FallbackCard({ sourceId }: { sourceId: string }) {
-  const fallbackUrl = `https://github.com/General-Market/vision-bot-examples/tree/main/${sourceId}`
+function BuildYourOwnCard({ sourceId: _sourceId, prominent }: { sourceId: string; prominent?: boolean }) {
   return (
     <a
-      href={fallbackUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="fallback-card"
-      aria-label="View bot examples on GitHub"
+      href="/build-bot"
+      className={`build-card ${prominent ? 'build-card--prominent' : ''}`}
+      aria-label="Build your own bot"
     >
-      <span className="fallback-cta">View bot examples on GitHub →</span>
+      <div className="build-card__body">
+        <h3 className="build-card__name">Build your own</h3>
+        <p className="build-card__description">
+          {prominent
+            ? 'No bots yet. Be the first.'
+            : 'Code, deploy, earn. The slot is yours.'}
+        </p>
+      </div>
+      <div className="build-card__footer">
+        <span className="build-card__hint">A repo, a key, a strategy.</span>
+        <span className="build-card__cta">Start →</span>
+      </div>
 
       <style jsx>{`
-        .fallback-card {
+        .build-card {
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          background: var(--apple-surface, #f5f5f7);
+          border: 1px dashed var(--apple-line, rgba(0, 0, 0, 0.16));
+          border-radius: var(--apple-r-md, 12px);
+          padding: 24px;
+          text-decoration: none;
+          color: inherit;
+          transition:
+            transform 240ms cubic-bezier(0.4, 0, 0.6, 1),
+            box-shadow 240ms cubic-bezier(0.4, 0, 0.6, 1),
+            border-color 240ms cubic-bezier(0.4, 0, 0.6, 1);
+          min-height: 160px;
+        }
+        .build-card--prominent {
+          grid-column: 1 / -1;
+          min-height: 200px;
+        }
+        .build-card:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+          border-color: rgba(0, 0, 0, 0.32);
+          text-decoration: none;
+        }
+        .build-card__body {
+          flex: 1;
+          margin-bottom: 20px;
+        }
+        .build-card__name {
+          font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+          font-size: 17px;
+          font-weight: 600;
+          letter-spacing: -0.016em;
+          line-height: 1.2105;
+          color: var(--apple-text, #1d1d1f);
+          margin: 0 0 8px 0;
+        }
+        .build-card__description {
+          font-family: "SF Pro Text", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+          font-size: 14px;
+          letter-spacing: -0.005em;
+          line-height: 1.4286;
+          color: var(--apple-text-secondary, #6e6e73);
+          margin: 0;
+        }
+        .build-card__footer {
           display: flex;
           align-items: center;
-          justify-content: center;
-          background: var(--apple-panel, #ffffff);
-          border: 1px solid var(--apple-line, rgba(0, 0, 0, 0.08));
-          border-radius: var(--apple-r-md, 12px);
-          padding: 32px 24px;
-          text-decoration: none;
-          grid-column: 1 / -1;
-          transition: filter 240ms cubic-bezier(0.4, 0, 0.6, 1);
+          justify-content: space-between;
+          gap: 8px;
         }
-        .fallback-card:hover {
-          filter: brightness(0.98);
-        }
-        .fallback-cta {
+        .build-card__hint {
           font-family: "SF Pro Text", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
-          font-size: 17px;
-          letter-spacing: -0.022em;
+          font-size: 12px;
+          color: var(--apple-text-tertiary, #86868b);
+        }
+        .build-card__cta {
+          font-family: "SF Pro Text", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+          font-size: 14px;
+          letter-spacing: -0.005em;
           color: var(--apple-accent, #0071e3);
+          white-space: nowrap;
+          font-weight: 500;
         }
       `}</style>
     </a>
@@ -190,17 +243,17 @@ function SkeletonCard() {
 export function TrendingBotsRail({ sourceId }: TrendingBotsRailProps) {
   const { bots, isStub, isLoading } = useTrendingBots(sourceId)
 
-  const showFallback = isStub && bots.length === 0
-  const hasBots = !isLoading && !showFallback && bots.length > 0
-  const isEmpty = !isLoading && !showFallback && bots.length === 0
+  const realBots = !isLoading && !isStub ? bots : []
+  const hasNoBots = !isLoading && realBots.length === 0
 
   return (
     <div className="bots-rail">
       <div className="bots-rail__grid">
         {isLoading && Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}
-        {showFallback && <FallbackCard sourceId={sourceId} />}
-        {hasBots && bots.map((bot) => <BotCard key={bot.path} bot={bot} />)}
-        {isEmpty && <FallbackCard sourceId={sourceId} />}
+        {!isLoading && realBots.map((bot) => <BotCard key={bot.path} bot={bot} />)}
+        {!isLoading && (
+          <BuildYourOwnCard sourceId={sourceId} prominent={hasNoBots} />
+        )}
       </div>
 
       <style jsx>{`
@@ -217,9 +270,9 @@ export function TrendingBotsRail({ sourceId }: TrendingBotsRailProps) {
             grid-template-columns: repeat(2, 1fr);
           }
         }
-        @media (min-width: 1024px) {
+        @media (min-width: 1280px) {
           .bots-rail__grid {
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(3, 1fr);
           }
         }
       `}</style>

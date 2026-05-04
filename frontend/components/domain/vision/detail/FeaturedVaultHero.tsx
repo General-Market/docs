@@ -76,6 +76,15 @@ const CARD_STYLE: React.CSSProperties = {
   minHeight: 360,
 }
 
+const CARD_LINK_CLASS = 'group flex flex-col gap-5 p-6 rounded-[var(--apple-r-card)] border overflow-hidden no-underline transition-[box-shadow,border-color] duration-200'
+const CARD_LINK_STYLE: React.CSSProperties = {
+  borderColor: 'var(--apple-line)',
+  background: 'var(--apple-panel)',
+  minHeight: 360,
+  color: 'inherit',
+  cursor: 'pointer',
+}
+
 const EYEBROW_STYLE: React.CSSProperties = {
   fontFamily: 'var(--apple-font-text)',
   fontSize: 11,
@@ -484,7 +493,12 @@ export function FeaturedVaultHero({ sourceId }: FeaturedVaultHeroProps) {
   const depositHref = `/source/${sourceId}/vault/${(vaultAddress ?? '').toLowerCase()}`
 
   return (
-    <div className={CARD_CLASS} style={CARD_STYLE}>
+    <Link
+      href={depositHref}
+      aria-label={`Open ${featuredFund.name} vault`}
+      className={`${CARD_LINK_CLASS} hero-card-link`}
+      style={CARD_LINK_STYLE}
+    >
       <IdentityHeader
         eyebrow="featured vault"
         title={featuredFund.name}
@@ -512,8 +526,7 @@ export function FeaturedVaultHero({ sourceId }: FeaturedVaultHeroProps) {
       </div>
 
       <div>
-        <Link
-          href={depositHref}
+        <span
           className="inline-flex items-center gap-1.5 rounded-[var(--apple-r-pill)] px-5 py-2.5 transition-colors"
           style={{
             background: 'var(--apple-accent)',
@@ -522,13 +535,19 @@ export function FeaturedVaultHero({ sourceId }: FeaturedVaultHeroProps) {
             fontSize: 'var(--apple-fs-17)',
             letterSpacing: 'var(--apple-track-tight)',
             fontWeight: 600,
-            textDecoration: 'none',
           }}
         >
-          Deposit
+          {hasPosition ? 'Manage position' : 'Deposit'}
           <span aria-hidden="true">→</span>
-        </Link>
+        </span>
       </div>
-    </div>
+
+      <style jsx>{`
+        :global(.hero-card-link:hover) {
+          border-color: rgba(0, 0, 0, 0.18) !important;
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+        }
+      `}</style>
+    </Link>
   )
 }
