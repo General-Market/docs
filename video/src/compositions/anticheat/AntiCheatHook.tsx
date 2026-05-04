@@ -25,9 +25,9 @@ const BROLL = {
 };
 
 const PAIRS = [
-  { game: "Spin-bots.", trade: "Insider traders.", broll: BROLL.cs2 },
-  { game: "Wall-hackers.", trade: "Front-runners.", broll: BROLL.valorant },
-  { game: "Kill aura.", trade: "Order-flow buyers.", broll: BROLL.minecraft },
+  { game: "Spin-bots", trade: "Insider traders", broll: BROLL.cs2 },
+  { game: "Wall-hackers", trade: "Front-runners", broll: BROLL.valorant },
+  { game: "Kill aura", trade: "Order-flow buyers", broll: BROLL.minecraft },
 ] as const;
 
 const HEADER_IN = toFrames(0.3);
@@ -606,7 +606,6 @@ const PanelLabel: React.FC<{
         }}
       >
         {eyebrow}
-        <span style={{ color: tint ?? colors.fg, opacity: 0.45 }}>.</span>
       </div>
     </div>
   );
@@ -736,7 +735,7 @@ const RevealLines: React.FC = () => {
             marginTop: 16,
           }}
         >
-          are trading against you.
+          are trading against you
         </div>
       </div>
     </AbsoluteFill>

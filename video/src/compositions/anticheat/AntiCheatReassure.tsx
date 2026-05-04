@@ -111,7 +111,6 @@ export const AntiCheatReassure: React.FC = () => {
           }}
         >
           Trade all the same assets
-          <span style={{ color: colors.fg, opacity: 0.45 }}>.</span>
         </div>
 
         <div
@@ -140,7 +139,6 @@ export const AntiCheatReassure: React.FC = () => {
           >
             shielded
           </span>
-          <span style={{ color: colors.fg, opacity: 0.45 }}>.</span>
         </div>
       </div>
 

@@ -166,7 +166,6 @@ export const AntiCheatEndCard: React.FC = () => {
           }}
         >
           Trading is easy with an Anti-Cheat
-          <span style={{ color: colors.fg, opacity: 0.45 }}>.</span>
         </div>
 
         <div

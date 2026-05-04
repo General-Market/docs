@@ -353,7 +353,7 @@ const ChipsPanel: React.FC = () => {
         }}
       >
         Leaving you with{" "}
-        <span style={{ color: colors.accent }}>nearly none.</span>
+        <span style={{ color: colors.accent }}>nearly none</span>
       </div>
     </AbsoluteFill>
   );

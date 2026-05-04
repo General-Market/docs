@@ -107,7 +107,6 @@ const Headline: React.FC = () => {
           changes
         </span>{" "}
         this
-        <span style={{ color: colors.fg, opacity: 0.45 }}>.</span>
       </div>
     </AbsoluteFill>
   );

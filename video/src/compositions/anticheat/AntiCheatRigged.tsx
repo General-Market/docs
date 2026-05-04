@@ -17,20 +17,20 @@ const CARDS = [
   {
     n: "01",
     glyph: "✦",
-    label: "A tip from a politician.",
-    sub: "Material non-public information.",
+    label: "A tip from a politician",
+    sub: "Material non-public information",
   },
   {
     n: "02",
     glyph: "◢",
-    label: "$100M of latency infra.",
-    sub: "Co-located, sub-microsecond.",
+    label: "$100M of latency infra",
+    sub: "Co-located, sub-microsecond",
   },
   {
     n: "03",
     glyph: "◇",
-    label: "$30M for exchange data.",
-    sub: "Direct feeds. Unfair by design.",
+    label: "$30M for exchange data",
+    sub: "Direct feeds, unfair by design",
   },
 ] as const;
 
@@ -293,7 +293,7 @@ const FinalStamp: React.FC = () => {
       >
         You&rsquo;re leaving 70%
         <br />
-        on the table.
+        on the table
       </div>
     </AbsoluteFill>
   );
