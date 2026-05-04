@@ -167,35 +167,9 @@ export function AppleFooter() {
         style={{
           maxWidth: 'var(--apple-content-wide)',
           margin: '0 auto',
-          padding: '28px 24px 0',
+          padding: '40px 24px 0',
         }}
       >
-        <p style={{ ...tertiary, margin: 0, maxWidth: 820 }}>
-          General Market is protected by the Anti-Cheat. Bets are sealed before
-          the round closes — no participant sees another's commitment, no
-          operator can favor a side. Settlement runs through BLS-signed oracle
-          consensus, so a single rogue node cannot move a price.
-        </p>
-        <p style={{ ...tertiary, margin: '10px 0 0', maxWidth: 820 }}>
-          Pools are parimutuel. There is no house book to lean on, no orderbook
-          to front-run. Outcomes are paid from the pool the players themselves
-          built. Trading is easy with an Anti-Cheat. The rest is just patience.
-        </p>
-      </div>
-
-      <div
-        style={{
-          maxWidth: 'var(--apple-content-wide)',
-          margin: '0 auto',
-          padding: '0 24px',
-        }}
-      >
-        <div
-          style={{
-            borderTop: '1px solid var(--apple-line)',
-            margin: '24px 0 28px',
-          }}
-        />
         <div className="apple-footer-grid">
           {COLUMNS.map((col) => (
             <nav key={col.heading} aria-label={col.heading}>
