@@ -50,19 +50,15 @@ export function TopBar({ search }: TopBarProps) {
   return (
     <>
       <header
-        className="col-span-1 md:col-span-2 flex items-center gap-3 border-b py-3"
+        className="relative col-span-1 md:col-span-2 flex items-center gap-2 md:gap-3 border-b py-3 px-4 md:pl-0 md:pr-4"
         style={{
           background: 'var(--apple-panel)',
           borderColor: 'var(--apple-line)',
-          // Match the 240px sidebar column width for logo padding; content side gets flex-1
-          paddingLeft: 0,
-          paddingRight: '1rem',
         }}
       >
-        {/* Logo region — 240px wide on md+, matches sidebar column exactly */}
+        {/* Logo region — content-width on mobile, 240px on md+ to align with the sidebar column */}
         <div
-          className="shrink-0 flex items-center"
-          style={{ width: 240, paddingLeft: 16, paddingRight: 16 }}
+          className="shrink-0 flex items-center md:w-[240px] md:px-4"
         >
           {/* Burger — mobile only */}
           <button
@@ -70,7 +66,7 @@ export function TopBar({ search }: TopBarProps) {
             aria-label="menu"
             aria-expanded={drawerOpen}
             onClick={() => setDrawerOpen(true)}
-            className="md:hidden flex flex-col justify-center gap-[5px] w-8 h-8 mr-2 shrink-0"
+            className="md:hidden flex flex-col justify-center gap-[5px] w-8 h-8 mr-1 shrink-0"
           >
             <span
               className="block h-px w-5 rounded-full"
@@ -89,14 +85,17 @@ export function TopBar({ search }: TopBarProps) {
           <Brand />
         </div>
 
-        {/* Search — hidden on mobile, flex on md+ */}
+        {/* Spacer pushes mobile search + wallet to the right edge */}
+        <div className="flex-1 md:hidden" />
+
+        {/* Search — hidden on mobile, centered on md+ */}
         <div className="hidden md:flex flex-1 justify-center">
           <div className="w-full max-w-[520px]">{search}</div>
         </div>
 
-        {/* Mobile: compact search icon expanding to input */}
+        {/* Mobile: compact search icon expanding to input. Sits beside the wallet. */}
         {search && (
-          <div className="flex md:hidden flex-1 min-w-0">
+          <div className="flex md:hidden items-center justify-end min-w-0">
             <MobileSearch>{search}</MobileSearch>
           </div>
         )}
@@ -113,7 +112,7 @@ export function TopBar({ search }: TopBarProps) {
 
 /**
  * On mobile, wraps the search node behind a magnifying-glass toggle.
- * Tapping the icon expands the full search input inline.
+ * Tapping the icon swaps the bar for a full-width search input. Apple pattern.
  */
 function MobileSearch({ children }: { children: ReactNode }) {
   const [expanded, setExpanded] = useState(false)
@@ -124,7 +123,7 @@ function MobileSearch({ children }: { children: ReactNode }) {
         type="button"
         aria-label="Search"
         onClick={() => setExpanded(true)}
-        className="flex items-center justify-center w-8 h-8"
+        className="flex items-center justify-center w-9 h-9 -mr-1"
         style={{ color: 'var(--apple-text-secondary)' }}
       >
         <svg
@@ -146,14 +145,17 @@ function MobileSearch({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="flex items-center gap-2 flex-1 min-w-0">
+    <div
+      className="absolute inset-0 flex items-center gap-2 px-4 z-10"
+      style={{ background: 'var(--apple-panel)' }}
+    >
       <div className="flex-1 min-w-0">{children}</div>
       <button
         type="button"
         aria-label="Close search"
         onClick={() => setExpanded(false)}
-        className="shrink-0 text-[13px]"
-        style={{ color: 'var(--apple-text-tertiary)' }}
+        className="shrink-0 text-[14px] px-1"
+        style={{ color: 'var(--apple-text-secondary)' }}
       >
         Cancel
       </button>
