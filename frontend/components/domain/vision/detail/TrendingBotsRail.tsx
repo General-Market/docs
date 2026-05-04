@@ -195,9 +195,7 @@ export function TrendingBotsRail({ sourceId }: TrendingBotsRailProps) {
   const isEmpty = !isLoading && !showFallback && bots.length === 0
 
   return (
-    <section className="bots-rail">
-      <h2 className="bots-rail__heading">bots</h2>
-
+    <div className="bots-rail">
       <div className="bots-rail__grid">
         {isLoading && Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}
         {showFallback && <FallbackCard sourceId={sourceId} />}
@@ -208,15 +206,6 @@ export function TrendingBotsRail({ sourceId }: TrendingBotsRailProps) {
       <style jsx>{`
         .bots-rail {
           width: 100%;
-        }
-        .bots-rail__heading {
-          font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
-          font-size: 21px;
-          font-weight: 600;
-          letter-spacing: -0.016em;
-          line-height: 1.1904;
-          color: var(--apple-text, #1d1d1f);
-          margin: 0 0 20px 0;
         }
         .bots-rail__grid {
           display: grid;
@@ -234,6 +223,6 @@ export function TrendingBotsRail({ sourceId }: TrendingBotsRailProps) {
           }
         }
       `}</style>
-    </section>
+    </div>
   )
 }

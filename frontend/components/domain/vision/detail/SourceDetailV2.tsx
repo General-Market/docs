@@ -1,8 +1,8 @@
 'use client'
 
-import { useMemo, useCallback, useRef } from 'react'
+import { useMemo, useRef } from 'react'
+import Image from 'next/image'
 import { useRouter } from '@/i18n/routing'
-import { useSourceSnapshot, useMarketSnapshotMeta } from '@/hooks/vision/useMarketSnapshot'
 import { useBatches } from '@/hooks/vision/useBatches'
 import { useRounds } from '@/hooks/vision/useRounds'
 import { usePlayerPosition } from '@/hooks/vision/usePlayerPosition'
@@ -19,8 +19,6 @@ import { WalletSourceStats } from './shared'
 import type { SourceDisplayServer } from '@/lib/vision/sources-server'
 import { useTranslations } from 'next-intl'
 import { SourceDetailSkeleton } from '@/components/ui/VisionLoader'
-import { useOnboarding } from '@/hooks/useOnboarding'
-import { OnboardingCompass } from './OnboardingCompass'
 
 interface SourceDetailV2Props {
   sourceId: string
@@ -69,10 +67,6 @@ export function SourceDetailV2({ sourceId, initialSource, hideSidebar }: SourceD
         }
       : null
 
-  // Snapshot + meta still needed by shared sub-components.
-  useSourceSnapshot(sourceId)
-  useMarketSnapshotMeta()
-
   const { data: batches } = useBatches()
   const { data: rounds } = useRounds(sourceId)
 
@@ -83,20 +77,7 @@ export function SourceDetailV2({ sourceId, initialSource, hideSidebar }: SourceD
 
   usePlayerPosition(activeBatch?.id)
 
-  const onboarding = useOnboarding(sourceId)
   const vaultShowcaseRef = useRef<HTMLDivElement>(null)
-
-  const handleOnboardingVaultDeposit = useCallback(() => {
-    if (sourceId === 'twitch') {
-      vaultShowcaseRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      return
-    }
-    router.push('/source/twitch')
-  }, [router, sourceId])
-
-  const handleOnboardingBotDeploy = useCallback(() => {
-    router.push('/build-bot')
-  }, [router])
 
   if (isRegistryLoading && !initialSource) {
     return <SourceDetailSkeleton />
@@ -128,6 +109,15 @@ export function SourceDetailV2({ sourceId, initialSource, hideSidebar }: SourceD
       <SourceTabNav sourceId={sourceId} activeTab="overview" />
 
       <div className="px-4 sm:px-6 lg:px-10 py-6 lg:py-10 flex flex-col gap-10 lg:gap-12">
+        {/* Identity — renders synchronously from initialSource so the brand greets you before any data. */}
+        <SourceIdentityCard
+          name={source.name}
+          description={source.description}
+          category={source.category}
+          logo={source.logo}
+          brandBg={source.brandBg}
+        />
+
         {/* Hero row: featured vault (2/3) + Up Next rail (1/3) */}
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
@@ -171,22 +161,123 @@ export function SourceDetailV2({ sourceId, initialSource, hideSidebar }: SourceD
     </div>
   )
 
+  if (hideSidebar) return contentColumn
+
   return (
-    <>
-      {hideSidebar ? (
-        contentColumn
-      ) : (
-        <div className="flex">
-          <SourceSidebarApple sourceId={sourceId} category={source.category} />
-          {contentColumn}
+    <div className="flex">
+      <SourceSidebarApple sourceId={sourceId} category={source.category} />
+      {contentColumn}
+    </div>
+  )
+}
+
+/**
+ * Identity card. Mirrors the home page Featured surface — eyebrow, display name,
+ * description, meta pill — and renders synchronously from props. The brand
+ * introduces itself before the SSE has the courtesy to arrive.
+ */
+function SourceIdentityCard({
+  name,
+  description,
+  category,
+  logo,
+  brandBg,
+}: {
+  name: string
+  description: string
+  category: string
+  logo: string
+  brandBg: string
+}) {
+  return (
+    <section
+      className="flex items-center gap-5 sm:gap-6 border p-5 sm:p-6"
+      style={{
+        background: 'var(--apple-panel)',
+        borderColor: 'var(--apple-line)',
+        borderRadius: 'var(--apple-r-card)',
+      }}
+    >
+      <div
+        className="relative shrink-0 flex items-center justify-center overflow-hidden"
+        style={{
+          width: 64,
+          height: 64,
+          background: brandBg || '#000',
+          borderRadius: 'var(--apple-r-md)',
+        }}
+        aria-hidden
+      >
+        {logo ? (
+          <Image
+            src={logo}
+            alt=""
+            width={96}
+            height={48}
+            className="max-h-[48px] max-w-[80%] object-contain"
+            priority
+          />
+        ) : null}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div
+          style={{
+            fontFamily: 'var(--apple-font-text)',
+            fontSize: 11,
+            fontWeight: 600,
+            letterSpacing: 'var(--apple-track-loose)',
+            color: 'var(--apple-text-tertiary)',
+            textTransform: 'uppercase',
+          }}
+        >
+          source
         </div>
-      )}
-      <OnboardingCompass
-        state={onboarding}
-        onVaultDeposit={handleOnboardingVaultDeposit}
-        onBotDeploy={handleOnboardingBotDeploy}
-      />
-    </>
+        <h2
+          className="mt-1 font-semibold"
+          style={{
+            fontFamily: 'var(--apple-font-display)',
+            fontSize: 28,
+            letterSpacing: 'var(--apple-track-tight)',
+            lineHeight: 1.1,
+            color: 'var(--apple-text)',
+            margin: 0,
+          }}
+        >
+          {name}
+        </h2>
+        {description && (
+          <p
+            className="mt-2"
+            style={{
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: 14,
+              lineHeight: 1.45,
+              letterSpacing: 'var(--apple-track-tight)',
+              color: 'var(--apple-text-secondary)',
+              margin: 0,
+            }}
+          >
+            {description}
+          </p>
+        )}
+        {category && (
+          <div className="mt-3">
+            <span
+              className="inline-flex items-center rounded-full border px-2.5 py-1 font-medium"
+              style={{
+                color: 'var(--apple-text-secondary)',
+                borderColor: 'var(--apple-line)',
+                background: 'transparent',
+                fontSize: 11,
+                letterSpacing: '0.04em',
+              }}
+            >
+              {category}
+            </span>
+          </div>
+        )}
+      </div>
+    </section>
   )
 }
 
