@@ -4,7 +4,8 @@ import { notFound } from 'next/navigation' // malformed-address guard only
 import { AppShell } from '@/components/layout/AppShell'
 import { SourceSearch } from '@/components/layout/SourceSearch'
 import { SourceSidebarApple } from '@/components/domain/vision/detail/SourceSidebarApple'
-import { VaultPortfolioView } from '@/components/domain/vision/vault/VaultPortfolioView'
+import { VaultDetailClient } from '@/components/domain/vision/vault/VaultDetailClient'
+import { GeneralLoader } from '@/components/ui/GeneralLoader'
 import { getSourceDisplayServer } from '@/lib/vision/sources-server'
 import fundData from '@/data/fund-branding.json'
 
@@ -41,8 +42,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const source = await getSourceDisplayServer(sourceId)
 
   const name = fund?.name ?? `Vault ${vaultAddress.slice(0, 6)}…${vaultAddress.slice(-4)}`
-  const title = `${name} · Portfolio | Vision`
-  const description = `${name} vault portfolio — fills, realized PnL, and market activity on the ${source?.name ?? sourceId} data source.`
+  const title = `${name} · Vault | Vision`
+  const description = `${name} — deposit, NAV history, and portfolio activity on the ${source?.name ?? sourceId} data source.`
 
   return {
     title,
@@ -66,13 +67,8 @@ export default async function VaultPage({ params }: Props) {
   const source = await getSourceDisplayServer(sourceId)
 
   // Branding is optional. Fall back to a truncated address as the display name.
-  const vaultName = fund?.name ?? `${vaultAddress.slice(0, 6)}…${vaultAddress.slice(-4)}`
-
-  // NAV and TVL: server-render placeholder values (1.0 / 0).
-  // The client view fetches live on-chain data via useVaultsByAddresses.
-  const navPerShare = 1.0
-  const performanceSinceInception = 0
-  const tvlFormatted = '0'
+  const fallbackName = `${vaultAddress.slice(0, 6)}…${vaultAddress.slice(-4)}`
+  const vaultName = fund?.name ?? fallbackName
 
   return (
     <AppShell
@@ -104,39 +100,14 @@ export default async function VaultPage({ params }: Props) {
       </nav>
 
       <div className="px-5 lg:px-10 pb-20 mt-5">
-        <div
-          style={{
-            background: 'var(--apple-panel,#ffffff)',
-            borderRadius: 'var(--apple-r-card,28px)',
-            border: '1px solid var(--apple-divider,#e8e8ed)',
-            overflow: 'hidden',
-            boxShadow: 'var(--apple-shadow-card,0 1px 2px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06))',
-          }}
-        >
-          <Suspense
-            fallback={
-              <div
-                className="flex items-center justify-center py-24"
-                style={{
-                  fontFamily: 'var(--apple-font-text,"SF Pro Text",Helvetica,Arial,sans-serif)',
-                  fontSize: 15,
-                  color: 'var(--apple-text-secondary,#6e6e73)',
-                }}
-              >
-                loading…
-              </div>
-            }
-          >
-            <VaultPortfolioView
-              vaultAddress={vaultAddress}
-              vaultName={vaultName}
-              sourceId={sourceId}
-              navPerShare={navPerShare}
-              performanceSinceInception={performanceSinceInception}
-              tvlFormatted={tvlFormatted}
-            />
-          </Suspense>
-        </div>
+        <Suspense fallback={<GeneralLoader height="60vh" />}>
+          <VaultDetailClient
+            vaultAddress={vaultAddress.toLowerCase() as `0x${string}`}
+            sourceId={sourceId}
+            fund={fund}
+            fallbackName={fallbackName}
+          />
+        </Suspense>
       </div>
     </AppShell>
   )
