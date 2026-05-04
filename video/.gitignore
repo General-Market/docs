@@ -15,6 +15,9 @@ blender_render/
 # *.mp4 block at the bottom; the per-file mp4 exception sits after it.
 !public/cheat-broll/
 !public/cheat-broll/**
+# Exception: anticheat-imgs — stills used by the AntiCheat compositions.
+!public/anticheat-imgs/
+!public/anticheat-imgs/**
 
 # Media files anywhere
 *.mp4

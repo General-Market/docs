@@ -3,6 +3,7 @@ import {
   AbsoluteFill,
   interpolate,
   spring,
+  staticFile,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
@@ -16,21 +17,21 @@ const STAMP_AT = toFrames(5.5);
 const CARDS = [
   {
     n: "01",
-    glyph: "✦",
     label: "A tip from a politician",
     sub: "Material non-public information",
+    image: staticFile("anticheat-imgs/congress.jpg"),
   },
   {
     n: "02",
-    glyph: "◢",
     label: "$100M of latency infra",
     sub: "Co-located, sub-microsecond",
+    image: staticFile("anticheat-imgs/hft-racks.png"),
   },
   {
     n: "03",
-    glyph: "◇",
     label: "$30M for exchange data",
     sub: "Direct feeds, unfair by design",
+    image: staticFile("anticheat-imgs/orderflow-traders.png"),
   },
 ] as const;
 
@@ -181,7 +182,6 @@ const Card: React.FC<{
       style={{
         flex: 1,
         maxWidth: 480,
-        padding: "36px 36px 40px",
         border: `1px solid ${colors.accent}`,
         borderRadius: 4,
         backgroundColor: "rgba(255,59,59,0.04)",
@@ -191,47 +191,88 @@ const Card: React.FC<{
           "0 0 0 1px rgba(255,59,59,0.06), 0 12px 36px rgba(0,0,0,0.55)",
         display: "flex",
         flexDirection: "column",
-        gap: 18,
+        overflow: "hidden",
       }}
     >
+      {/* Image — top ~55% of card. */}
       <div
         style={{
+          position: "relative",
+          width: "100%",
+          aspectRatio: "16 / 11",
+          overflow: "hidden",
+          borderBottom: `1px solid rgba(255,59,59,0.4)`,
+        }}
+      >
+        <img
+          src={card.image}
+          alt=""
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            display: "block",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "linear-gradient(180deg, rgba(0,0,0,0.0), rgba(0,0,0,0.45))",
+            pointerEvents: "none",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            top: 16,
+            left: 18,
+            fontFamily: monoFont,
+            fontSize: 20,
+            color: colors.dim,
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
+            textShadow: "0 2px 8px rgba(0,0,0,0.85)",
+          }}
+        >
+          {card.n}
+        </div>
+      </div>
+
+      <div
+        style={{
+          padding: "24px 30px 28px",
           display: "flex",
-          alignItems: "baseline",
-          justifyContent: "space-between",
-          fontFamily: monoFont,
-          color: colors.dim,
-          fontSize: 22,
-          letterSpacing: "0.18em",
-          textTransform: "uppercase",
+          flexDirection: "column",
+          gap: 12,
+          flex: 1,
         }}
       >
-        <span>{card.n}</span>
-        <span style={{ color: colors.accent, fontSize: 30 }}>{card.glyph}</span>
-      </div>
-      <div
-        style={{
-          fontFamily: font,
-          fontSize: 42,
-          fontWeight: 700,
-          letterSpacing: "-0.02em",
-          color: colors.fg,
-          lineHeight: 1.1,
-        }}
-      >
-        {card.label}
-      </div>
-      <div
-        style={{
-          marginTop: "auto",
-          fontFamily: monoFont,
-          fontSize: 18,
-          letterSpacing: "0.04em",
-          color: colors.dim,
-          opacity: 0.85,
-        }}
-      >
-        {card.sub}
+        <div
+          style={{
+            fontFamily: font,
+            fontSize: 30,
+            fontWeight: 700,
+            letterSpacing: "-0.02em",
+            color: colors.fg,
+            lineHeight: 1.15,
+          }}
+        >
+          {card.label}
+        </div>
+        <div
+          style={{
+            marginTop: "auto",
+            fontFamily: monoFont,
+            fontSize: 14,
+            letterSpacing: "0.04em",
+            color: colors.dim,
+            opacity: 0.85,
+          }}
+        >
+          {card.sub}
+        </div>
       </div>
     </div>
   );

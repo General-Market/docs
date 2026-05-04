@@ -3,6 +3,7 @@ import {
   AbsoluteFill,
   interpolate,
   spring,
+  staticFile,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
@@ -11,11 +12,13 @@ import { FPS, H, W, colors, toFrames } from "./theme";
 
 const SCENE_SECONDS = 5;
 const CHIPS_AT = toFrames(2.5);
+const WSJ_CHART = staticFile("anticheat-imgs/polymarket-chart.png");
 
 export const AntiCheatStat: React.FC = () => {
   return (
     <AbsoluteFill style={{ backgroundColor: colors.bg, fontFamily: font }}>
       <TradingBackdrop />
+      <WsjChartLayer />
       <StatPanel />
       <ChipsPanel />
       <AbsoluteFill
@@ -25,7 +28,91 @@ export const AntiCheatStat: React.FC = () => {
             "radial-gradient(circle at 50% 50%, transparent 55%, rgba(0,0,0,0.55) 100%)",
         }}
       />
+      <SourceCaption />
     </AbsoluteFill>
+  );
+};
+
+// ─── WSJ chart background layer — sits behind numbers, in front of grid ──────
+
+const WsjChartLayer: React.FC = () => {
+  const frame = useCurrentFrame();
+  // Same fade-out as the StatPanel: lives until CHIPS_AT then dies fast,
+  // so it never fights the chips.
+  const fadeIn = interpolate(
+    frame,
+    [0, toFrames(0.5)],
+    [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const fadeOut = interpolate(
+    frame,
+    [CHIPS_AT - 6, CHIPS_AT],
+    [1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const opacity = 0.16 * fadeIn * fadeOut;
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: 0,
+        right: 0,
+        bottom: 0,
+        height: "40%",
+        pointerEvents: "none",
+        opacity,
+      }}
+    >
+      <img
+        src={WSJ_CHART}
+        alt=""
+        style={{
+          width: "100%",
+          height: "100%",
+          objectFit: "contain",
+          filter: "saturate(0.4)",
+        }}
+      />
+    </div>
+  );
+};
+
+// ─── Tiny attribution at the bottom-right ─────────────────────────────────────
+
+const SourceCaption: React.FC = () => {
+  const frame = useCurrentFrame();
+  const opacity =
+    interpolate(
+      frame,
+      [toFrames(0.4), toFrames(0.9)],
+      [0, 0.5],
+      { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+    ) *
+    interpolate(
+      frame,
+      [CHIPS_AT - 6, CHIPS_AT],
+      [1, 0],
+      { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+    );
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        right: 32,
+        bottom: 32,
+        fontFamily: monoFont,
+        fontSize: 16,
+        color: colors.dim,
+        letterSpacing: "0.04em",
+        opacity,
+        pointerEvents: "none",
+      }}
+    >
+      Source: WSJ analysis of Polymarket data
+    </div>
   );
 };
 

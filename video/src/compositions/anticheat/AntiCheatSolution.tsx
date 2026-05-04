@@ -10,9 +10,38 @@ import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 
 const SCENE_SECONDS = 5;
-const TERMINAL_AT = toFrames(1.8);
-const SHIELDED_FLASH_AT = toFrames(3.0);
+const TERMINAL_AT = toFrames(0.8);
 const GREEN = "#3ddc84";
+
+// Per-line typewriter timing (scene-local seconds, char-per-second cps).
+type Line = {
+  text: string;
+  color: string;
+  bold?: boolean;
+  startSec: number;
+  cps: number;
+};
+
+const LINES: Line[] = [
+  { text: "$ claude", color: colors.dim, startSec: 0.8, cps: 32 },
+  {
+    text: "> upgrade my bot to block-trading",
+    color: colors.fg,
+    startSec: 1.4,
+    cps: 32,
+  },
+  {
+    text: "✓ shielded",
+    color: GREEN,
+    bold: true,
+    startSec: 2.8,
+    cps: 32,
+  },
+];
+
+const LINE_END_SEC = (l: Line) => l.startSec + l.text.length / l.cps;
+const LAST_LINE = LINES[LINES.length - 1];
+const CHECK_LANDS_SEC = LINE_END_SEC(LAST_LINE);
 
 export const AntiCheatSolution: React.FC = () => {
   return (
@@ -31,7 +60,7 @@ export const AntiCheatSolution: React.FC = () => {
   );
 };
 
-// ─── Headline: "General changes this." snaps in at 0s, lifts when terminal lands
+// ─── Headline: "General changes this." snaps in at 0s, sits at the top. ──────
 
 const Headline: React.FC = () => {
   const frame = useCurrentFrame();
@@ -50,20 +79,6 @@ const Headline: React.FC = () => {
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
 
-  // Lift + dim as terminal arrives.
-  const lift = interpolate(
-    frame,
-    [TERMINAL_AT - toFrames(0.1), TERMINAL_AT + toFrames(0.2)],
-    [0, -120],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-  const dim = interpolate(
-    frame,
-    [TERMINAL_AT - toFrames(0.1), TERMINAL_AT + toFrames(0.2)],
-    [1, 0.18],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-
   // One-time scale punch on "changes".
   const punch = spring({
     frame: frame - toFrames(0.05),
@@ -74,20 +89,22 @@ const Headline: React.FC = () => {
     1 + Math.sin(Math.min(1, Math.max(0, punch)) * Math.PI) * 0.06;
 
   return (
-    <AbsoluteFill
+    <div
       style={{
-        justifyContent: "center",
-        alignItems: "center",
-        padding: "0 96px",
+        position: "absolute",
+        top: "10%",
+        left: 0,
+        right: 0,
         textAlign: "center",
-        opacity: opacity * dim,
-        transform: `translateY(${enterY + lift}px)`,
+        padding: "0 96px",
+        opacity,
+        transform: `translateY(${enterY}px)`,
       }}
     >
       <div
         style={{
           fontFamily: font,
-          fontSize: 132,
+          fontSize: 110,
           fontWeight: 800,
           letterSpacing: "-0.04em",
           color: colors.fg,
@@ -108,17 +125,11 @@ const Headline: React.FC = () => {
         </span>{" "}
         this
       </div>
-    </AbsoluteFill>
+    </div>
   );
 };
 
-// ─── Terminal: the whole block reveals fast at 1.8s. No type-out. ────────────
-
-const TERMINAL_LINES: { text: string; color: string; bold?: boolean }[] = [
-  { text: "$ claude", color: colors.dim },
-  { text: "> upgrade my bot to block-trading", color: colors.fg },
-  { text: "✓ shielded", color: GREEN, bold: true },
-];
+// ─── Terminal: dark panel + character-by-character type-out per line. ────────
 
 const Terminal: React.FC = () => {
   const frame = useCurrentFrame();
@@ -126,40 +137,49 @@ const Terminal: React.FC = () => {
   if (frame < TERMINAL_AT - 2) return null;
 
   const local = frame - TERMINAL_AT;
+  const localSec = local / FPS;
 
-  // Whole panel snaps in over 0.3s — phrase-level reveal of all three lines.
-  const opacity = interpolate(
-    local,
-    [0, toFrames(0.3)],
+  // Panel scale-spring entrance the moment line 1 starts typing.
+  const enterFrame = local - toFrames(LINES[0].startSec - TERMINAL_AT / FPS);
+  const enter = spring({
+    frame: enterFrame,
+    fps,
+    config: { damping: 10, stiffness: 180, mass: 0.7, overshootClamping: false },
+  });
+  // back.out(1.6)-flavoured: spring already overshoots; compress range to 0.96 → 1.0.
+  const enterScale = interpolate(enter, [0, 1], [0.96, 1.0]);
+  const enterOpacity = interpolate(
+    enterFrame,
+    [0, toFrames(0.32)],
     [0, 1],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
-  const slam = spring({
-    frame: local,
-    fps,
-    config: { damping: 11, stiffness: 200, mass: 0.7 },
-  });
-  const slamScale = interpolate(slam, [0, 1], [0.92, 1]);
-  const y = interpolate(
-    local,
-    [0, toFrames(0.18)],
-    [14, 0],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
 
-  // Green flash on `✓ shielded` at SHIELDED_FLASH_AT (scene-local).
-  const flashLocal = frame - SHIELDED_FLASH_AT;
-  const flash = spring({
-    frame: flashLocal,
-    fps,
-    config: { damping: 9, stiffness: 220, mass: 0.55 },
-  });
-  const flashScale =
-    1 + Math.sin(Math.min(1, Math.max(0, flash)) * Math.PI) * 0.06;
-  const flashGlow = Math.max(
-    0,
-    Math.sin(Math.min(1, Math.max(0, flash)) * Math.PI),
-  );
+  // Determine the active line — the highest line whose start has passed.
+  let activeLineIdx = -1;
+  for (let i = 0; i < LINES.length; i++) {
+    if (localSec >= LINES[i].startSec) activeLineIdx = i;
+  }
+  const allDone =
+    activeLineIdx === LINES.length - 1 && localSec >= CHECK_LANDS_SEC;
+
+  // Cursor blink: 1Hz square wave keyed off frame. Solid (no blink) once `✓ shielded`
+  // has fully landed.
+  const blinkFrames = Math.round(FPS / 2); // 15 frames on, 15 off → 1Hz
+  const blinkOn = Math.floor(local / blinkFrames) % 2 === 0;
+  const cursorVisible = allDone ? true : blinkOn;
+
+  // Green-pulse on the shielded line: starts when `✓ shielded` fully lands.
+  const checkLandFrame = local - toFrames(CHECK_LANDS_SEC);
+  const pulseDur = toFrames(0.4);
+  const pulseT =
+    checkLandFrame >= 0 && checkLandFrame <= pulseDur
+      ? checkLandFrame / pulseDur
+      : -1;
+  const shieldedBg =
+    pulseT >= 0
+      ? `rgba(61,220,132,${Math.sin(pulseT * Math.PI) * 0.15})`
+      : "transparent";
 
   return (
     <AbsoluteFill
@@ -167,17 +187,18 @@ const Terminal: React.FC = () => {
         justifyContent: "center",
         alignItems: "center",
         padding: "0 96px",
-        opacity,
       }}
     >
       <div
         style={{
           width: "min(1200px, 90%)",
-          background: "linear-gradient(180deg, #0d0d10 0%, #050507 100%)",
-          border: `1px solid ${colors.rule}`,
-          borderRadius: 8,
-          transform: `translateY(${y}px) scale(${slamScale})`,
+          background: "#0d0d10",
+          border: `1px solid #1a1a1f`,
+          borderRadius: 12,
+          transform: `scale(${enterScale})`,
+          opacity: enterOpacity,
           boxShadow: "0 24px 80px rgba(0,0,0,0.6)",
+          marginTop: 80,
         }}
       >
         <div
@@ -186,7 +207,7 @@ const Terminal: React.FC = () => {
             alignItems: "center",
             gap: 8,
             padding: "14px 18px",
-            borderBottom: `1px solid ${colors.rule}`,
+            borderBottom: `1px solid #1a1a1f`,
           }}
         >
           <Dot color="#ff5f57" />
@@ -207,7 +228,7 @@ const Terminal: React.FC = () => {
 
         <div
           style={{
-            padding: "32px 40px 36px",
+            padding: "36px",
             fontFamily: monoFont,
             fontSize: 38,
             lineHeight: 1.5,
@@ -216,8 +237,20 @@ const Terminal: React.FC = () => {
             gap: 6,
           }}
         >
-          {TERMINAL_LINES.map((line, i) => {
-            const isShielded = line.bold;
+          {LINES.map((line, i) => {
+            // Pre-start: invisible (collapses height to 0 so later lines aren't pushed).
+            if (localSec < line.startSec) {
+              return <div key={i} style={{ height: 0, opacity: 0 }} />;
+            }
+            const elapsed = localSec - line.startSec;
+            const charsDone = Math.min(
+              line.text.length,
+              Math.floor(elapsed * line.cps),
+            );
+            const isActive = i === activeLineIdx;
+            const fullyTyped = charsDone >= line.text.length;
+            const isShielded = !!line.bold;
+
             return (
               <div
                 key={i}
@@ -225,18 +258,32 @@ const Terminal: React.FC = () => {
                   color: line.color,
                   fontWeight: line.bold ? 700 : 500,
                   whiteSpace: "pre",
-                  display: "inline-block",
-                  transform: isShielded
-                    ? `scale(${flashScale})`
-                    : undefined,
-                  transformOrigin: "left center",
-                  textShadow:
-                    isShielded && flashGlow > 0
-                      ? `0 0 ${24 * flashGlow}px rgba(61,220,132,${0.6 * flashGlow})`
-                      : undefined,
+                  display: "flex",
+                  alignItems: "center",
+                  backgroundColor: isShielded ? shieldedBg : "transparent",
+                  padding: isShielded ? "2px 6px" : "0",
+                  margin: isShielded ? "-2px -6px" : "0",
+                  borderRadius: 4,
+                  transition: "none",
                 }}
               >
-                {line.text}
+                <span>{line.text.slice(0, charsDone)}</span>
+                {/* Cursor only on the line currently being typed, OR on the last
+                    line once everything finishes. */}
+                {(isActive && !fullyTyped) ||
+                (i === LINES.length - 1 && allDone) ? (
+                  <span
+                    style={{
+                      display: "inline-block",
+                      width: "0.6em",
+                      height: "1em",
+                      marginLeft: 4,
+                      background: GREEN,
+                      opacity: cursorVisible ? 1 : 0,
+                      verticalAlign: "middle",
+                    }}
+                  />
+                ) : null}
               </div>
             );
           })}

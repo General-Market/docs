@@ -337,14 +337,21 @@ function paintScreen(ctx: CanvasRenderingContext2D, frame: number) {
   }
 }
 
-// ── Camera + macbook pose — held still, only breath ───────────────
+// ── Camera + macbook pose — slow creep-in, no dolly ───────────────
 
-const CAM_POS = new THREE.Vector3(3.031, 4.096, -6.18);
+const CAM_POS_START = new THREE.Vector3(3.031, 4.096, -6.18);
+const CAM_POS_END = new THREE.Vector3(3.031, 4.096, -5.55);
 const CAM_TARGET = new THREE.Vector3(3.001, 2.78, 0.829);
 
 const LID_OPEN = new THREE.Quaternion(-0.78333, 0, 0, 0.62161);
 const BEVELS_POS = new THREE.Vector3(-0.00012, 0.00824, -0.10401);
 const BEVELS_SCALE = new THREE.Vector3(0.27471, 0.27471, 0.27471);
+
+// power2.inOut equivalent: y = t<0.5 ? 2t² : 1 − pow(−2t+2, 2)/2
+function easeInOut(t: number): number {
+  const c = Math.min(1, Math.max(0, t));
+  return c < 0.5 ? 2 * c * c : 1 - Math.pow(-2 * c + 2, 2) / 2;
+}
 
 const MacbookScene: React.FC<{ frame: number }> = ({ frame }) => {
   const { camera } = useThree();
@@ -411,9 +418,11 @@ const MacbookScene: React.FC<{ frame: number }> = ({ frame }) => {
   root.rotation.y = 0;
   root.position.x = 0;
 
-  // Hold camera still at CAM_POS_END.
+  // Camera creep — start → end across the full scene, eased.
+  const camT = easeInOut(frame / (SCENE_SECONDS * FPS));
+  const camZ = CAM_POS_START.z + (CAM_POS_END.z - CAM_POS_START.z) * camT;
   const cam = camera as THREE.PerspectiveCamera;
-  cam.position.set(CAM_POS.x, CAM_POS.y, CAM_POS.z);
+  cam.position.set(CAM_POS_START.x, CAM_POS_START.y, camZ);
   cam.lookAt(CAM_TARGET);
   cam.fov = 50;
   cam.updateProjectionMatrix();
@@ -460,14 +469,6 @@ export const AntiCheatReassure: React.FC = () => {
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
 
-  // First line drifts up slightly when second arrives.
-  const liftFirst = interpolate(
-    frame,
-    [SECOND_LINE_AT - toFrames(0.1), SECOND_LINE_AT + toFrames(0.2)],
-    [0, -64],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-
   // Beat 2: ". . . but shielded." — snap in at 2.0s with hero punch on `shielded`.
   const local2 = frame - SECOND_LINE_AT;
   const t2Opacity = interpolate(
@@ -504,16 +505,21 @@ export const AntiCheatReassure: React.FC = () => {
       style={{
         backgroundColor: colors.bg,
         fontFamily: font,
-        justifyContent: "center",
-        alignItems: "center",
-        padding: "0 96px",
         overflow: "hidden",
       }}
     >
       <Backdrop />
 
-      {/* Macbook hero — sits behind the headlines, holds still. */}
-      <AbsoluteFill style={{ zIndex: 0 }}>
+      {/* Macbook hero — pushed down so its centre lands ~62% from the top.
+          The ThreeCanvas itself is full-bleed; the translateY shifts the
+          rendered scene downward in screen space without changing the
+          camera/target. */}
+      <AbsoluteFill
+        style={{
+          zIndex: 0,
+          transform: "translateY(12%)",
+        }}
+      >
         <ThreeCanvas
           width={W}
           height={H}
@@ -521,7 +527,7 @@ export const AntiCheatReassure: React.FC = () => {
             fov: 50,
             near: 0.5,
             far: 1000,
-            position: [CAM_POS.x, CAM_POS.y, CAM_POS.z],
+            position: [CAM_POS_START.x, CAM_POS_START.y, CAM_POS_START.z],
           }}
           gl={{
             antialias: true,
@@ -538,16 +544,6 @@ export const AntiCheatReassure: React.FC = () => {
         </ThreeCanvas>
       </AbsoluteFill>
 
-      {/* Soft scrim only behind the type so the screen never fights the headline. */}
-      <AbsoluteFill
-        style={{
-          pointerEvents: "none",
-          zIndex: 1,
-          background:
-            "radial-gradient(ellipse 60% 36% at 50% 50%, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0) 70%)",
-        }}
-      />
-
       {/* Shield watermark — sits with the headlines. */}
       <div
         style={{
@@ -559,55 +555,91 @@ export const AntiCheatReassure: React.FC = () => {
           opacity: shieldOpacity,
           transform: `scale(${shieldScale})`,
           zIndex: 2,
+          pointerEvents: "none",
         }}
       >
         <ShieldGlyph />
       </div>
 
-      <div style={{ textAlign: "center", position: "relative", zIndex: 3 }}>
-        <div
-          style={{
-            fontFamily: font,
-            fontSize: 124,
-            fontWeight: 800,
-            letterSpacing: "-0.04em",
-            color: colors.fg,
-            lineHeight: 0.95,
-            textShadow: "0 4px 28px rgba(0,0,0,0.65)",
-            opacity: t1Opacity,
-            transform: `translateY(${t1Y + liftFirst}px)`,
-          }}
-        >
-          Trade all the same assets
-        </div>
+      {/* Headline ABOVE the laptop. Top of frame, centred. */}
+      <div
+        style={{
+          position: "absolute",
+          top: "8%",
+          left: 0,
+          right: 0,
+          textAlign: "center",
+          padding: "0 96px",
+          zIndex: 3,
+          fontFamily: font,
+          fontSize: 96,
+          fontWeight: 800,
+          letterSpacing: "-0.04em",
+          color: colors.fg,
+          lineHeight: 0.95,
+          textShadow: "0 4px 28px rgba(0,0,0,0.65)",
+          opacity: t1Opacity,
+          transform: `translateY(${t1Y}px)`,
+        }}
+      >
+        Trade all the same assets
+      </div>
 
-        <div
+      {/* "...but" — left of the laptop, centred to its screen height (~62% top). */}
+      <div
+        style={{
+          position: "absolute",
+          top: "62%",
+          left: 0,
+          width: "50%",
+          paddingRight: 80,
+          textAlign: "right",
+          transform: `translateY(calc(-50% + ${t2Y}px))`,
+          fontFamily: font,
+          fontSize: 96,
+          fontWeight: 700,
+          letterSpacing: "-0.025em",
+          lineHeight: 1,
+          color: colors.fg,
+          opacity: t2Opacity,
+          zIndex: 3,
+        }}
+      >
+        <span style={{ color: colors.dim, opacity: 0.7 }}>
+          .&nbsp;.&nbsp;.
+        </span>{" "}
+        but
+      </div>
+
+      {/* "shielded" — right of the laptop, same vertical centre. */}
+      <div
+        style={{
+          position: "absolute",
+          top: "62%",
+          right: 0,
+          width: "50%",
+          paddingLeft: 80,
+          textAlign: "left",
+          transform: `translateY(calc(-50% + ${t2Y}px))`,
+          fontFamily: font,
+          fontSize: 96,
+          fontWeight: 700,
+          letterSpacing: "-0.025em",
+          lineHeight: 1,
+          color: GREEN,
+          opacity: t2Opacity,
+          zIndex: 3,
+        }}
+      >
+        <span
           style={{
-            marginTop: 36,
-            fontFamily: font,
-            fontSize: 96,
-            fontWeight: 700,
-            letterSpacing: "-0.025em",
-            color: colors.fg,
-            opacity: t2Opacity,
-            transform: `translateY(${t2Y}px)`,
+            display: "inline-block",
+            transform: `scale(${punchScale})`,
+            transformOrigin: "left center",
           }}
         >
-          <span style={{ color: colors.dim, opacity: 0.7 }}>
-            .&nbsp;.&nbsp;.
-          </span>{" "}
-          but{" "}
-          <span
-            style={{
-              color: GREEN,
-              display: "inline-block",
-              transform: `scale(${punchScale})`,
-              transformOrigin: "center",
-            }}
-          >
-            shielded
-          </span>
-        </div>
+          shielded
+        </span>
       </div>
 
       {/* Vignette stays on top of everything. */}
