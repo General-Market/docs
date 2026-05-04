@@ -18,6 +18,8 @@ import { FPS, H, W, colors, toFrames } from "./theme";
 
 const SCENE_SECONDS = 4;
 const SECOND_LINE_AT = toFrames(2.0);
+// "shielded" arrives two beats after "...but" — the pause is the punchline.
+const SHIELDED_AT = SECOND_LINE_AT + toFrames(0.6);
 const GREEN = "#3ddc84";
 
 // ── MacBook model + screen painting ────────────────────────────────
@@ -469,7 +471,7 @@ export const AntiCheatReassure: React.FC = () => {
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
 
-  // Beat 2: ". . . but shielded." — snap in at 2.0s with hero punch on `shielded`.
+  // Beat 2a: ". . . but" — snap in at 2.0s. The setup.
   const local2 = frame - SECOND_LINE_AT;
   const t2Opacity = interpolate(
     local2,
@@ -483,17 +485,32 @@ export const AntiCheatReassure: React.FC = () => {
     [14, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
+
+  // Beat 2b: "shielded" — lands two beats later. The knife.
+  const local3 = frame - SHIELDED_AT;
+  const t3Opacity = interpolate(
+    local3,
+    [0, toFrames(0.22)],
+    [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const t3Y = interpolate(
+    local3,
+    [0, toFrames(0.22)],
+    [42, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
   const punch = spring({
-    frame: local2 - toFrames(0.05),
+    frame: local3 - toFrames(0.05),
     fps,
     config: { damping: 9, stiffness: 220, mass: 0.55 },
   });
   const punchScale =
-    1 + Math.sin(Math.min(1, Math.max(0, punch)) * Math.PI) * 0.06;
+    1 + Math.sin(Math.min(1, Math.max(0, punch)) * Math.PI) * 0.05;
 
-  // Shield reveal sized with second line.
+  // Shield watermark joins the knife, not the setup.
   const shield = spring({
-    frame: local2,
+    frame: local3,
     fps,
     config: { damping: 26, stiffness: 100, mass: 1 },
   });
@@ -611,24 +628,29 @@ export const AntiCheatReassure: React.FC = () => {
         but
       </div>
 
-      {/* "shielded" — right of the laptop, same vertical centre. */}
+      {/* "shielded" — anchored to the left, oversized so it spills past the
+          right edge. The word is bigger than the frame on purpose: the eye
+          can't take it in at once, which is the point. */}
       <div
         style={{
           position: "absolute",
-          top: "62%",
-          right: 0,
-          width: "50%",
-          paddingLeft: 80,
+          top: "58%",
+          left: 0,
+          width: "auto",
+          paddingLeft: 60,
           textAlign: "left",
-          transform: `translateY(calc(-50% + ${t2Y}px))`,
+          transform: `translateY(calc(-50% + ${t3Y}px))`,
           fontFamily: font,
-          fontSize: 96,
-          fontWeight: 700,
-          letterSpacing: "-0.025em",
-          lineHeight: 1,
+          fontSize: 480,
+          fontWeight: 900,
+          letterSpacing: "-0.05em",
+          lineHeight: 0.85,
           color: GREEN,
-          opacity: t2Opacity,
-          zIndex: 3,
+          opacity: t3Opacity,
+          zIndex: 5,
+          whiteSpace: "nowrap",
+          textShadow: "0 6px 36px rgba(0,0,0,0.7)",
+          pointerEvents: "none",
         }}
       >
         <span
