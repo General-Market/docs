@@ -1,56 +1,222 @@
 import React from "react";
-import {
-  AbsoluteFill,
-  interpolate,
-  spring,
-  useCurrentFrame,
-  useVideoConfig,
-} from "remotion";
+import { AbsoluteFill } from "remotion";
 import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
+import {
+  useGsapProxy,
+  HERO_SPRING,
+  ELEMENT_SPRING,
+  SOFT_OUT,
+} from "../replicates/rainbows-pitch/gsapUtils";
 
 const SCENE_SECONDS = 12;
 
-const CARDS = [
+// Headline split — eyebrow + main words.
+const EYEBROW = ["The", "rigged", "stack"] as const;
+const HEADLINE = ["If", "you", "don’t", "have"] as const;
+
+// Cards — label words split, plus a "value" the counter rolls to.
+type Card = {
+  n: string;
+  glyph: string;
+  labelWords: string[];
+  // Optional counter — shown next to the label as $XM
+  counter?: { to: number; prefix: string; suffix: string };
+  sub: string;
+};
+
+const CARDS: Card[] = [
   {
     n: "01",
     glyph: "✦",
-    label: "A tip from a politician.",
+    labelWords: ["A", "tip", "from", "a", "politician."],
     sub: "Material non-public information.",
   },
   {
     n: "02",
     glyph: "◢",
-    label: "$100M of latency infra.",
+    labelWords: ["of", "latency", "infra."],
+    counter: { to: 100, prefix: "$", suffix: "M" },
     sub: "Co-located, sub-microsecond.",
   },
   {
     n: "03",
     glyph: "◇",
-    label: "$30M for exchange data.",
+    labelWords: ["for", "exchange", "data."],
+    counter: { to: 30, prefix: "$", suffix: "M" },
     sub: "Direct feeds. Unfair by design.",
   },
-] as const;
+];
+
+// Final stamp — words for the "70%" hero line.
+const STAMP_LEAD = ["You’re", "leaving"] as const;
+const STAMP_TAIL = ["on", "the", "table."] as const;
 
 export const AntiCheatRigged: React.FC = () => {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-
-  // Headline enters at 0, cards from 2s, last line at 10s.
-  const headlineT = spring({
-    frame,
-    fps,
-    config: { damping: 22, stiffness: 110, mass: 0.7 },
+  const proxyKeys: Record<string, Record<string, number>> = {
+    fadeOut: { v: 1 },
+    finalIn: { v: 0 },
+    stampNum: { value: 0, scale: 0.7, opacity: 0, letterSpacing: -0.02 },
+    stampPct: { opacity: 0 },
+  };
+  EYEBROW.forEach((_, i) => {
+    proxyKeys[`eb_${i}`] = { opacity: 0, y: 10 };
+  });
+  HEADLINE.forEach((_, i) => {
+    proxyKeys[`hl_${i}`] = { opacity: 0, y: 18 };
+  });
+  CARDS.forEach((c, ci) => {
+    proxyKeys[`card_${ci}`] = { opacity: 0, y: 30, scale: 0.92 };
+    proxyKeys[`cardN_${ci}`] = { opacity: 0, y: 8 };
+    proxyKeys[`cardG_${ci}`] = { opacity: 0, scale: 0.7 };
+    if (c.counter) {
+      proxyKeys[`cardC_${ci}`] = { value: 0, opacity: 0, scale: 0.7 };
+    }
+    c.labelWords.forEach((_, wi) => {
+      proxyKeys[`cl_${ci}_${wi}`] = { opacity: 0, y: 10 };
+    });
+    proxyKeys[`cardS_${ci}`] = { opacity: 0, y: 8 };
+  });
+  STAMP_LEAD.forEach((_, i) => {
+    proxyKeys[`sl_${i}`] = { opacity: 0, y: 18 };
+  });
+  STAMP_TAIL.forEach((_, i) => {
+    proxyKeys[`st_${i}`] = { opacity: 0, y: 18 };
   });
 
-  // The headline fades out as the final stamp rises.
-  const finalAt = toFrames(10);
-  const fadeOut = interpolate(
-    frame,
-    [finalAt - toFrames(0.3), finalAt + toFrames(0.4)],
-    [1, 0],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
+  const finalAt = 10; // seconds — matches the original timing
+
+  const s = useGsapProxy((tl, p) => {
+    // Eyebrow words — 0.0 → 0.3s
+    EYEBROW.forEach((_, i) => {
+      tl.to(
+        p[`eb_${i}`]!,
+        { opacity: 1, y: 0, duration: 0.16, ease: "power2.out" },
+        0.05 + i * 0.1,
+      );
+    });
+
+    // Headline words — 0.4 → 0.85s
+    HEADLINE.forEach((_, i) => {
+      tl.to(
+        p[`hl_${i}`]!,
+        { opacity: 1, y: 0, duration: 0.18, ease: ELEMENT_SPRING },
+        0.4 + i * 0.12,
+      );
+    });
+
+    // Cards — staggered 0.4s apart starting at 1.6s
+    CARDS.forEach((card, ci) => {
+      const cardAt = 1.6 + ci * 0.4;
+      tl.to(
+        p[`card_${ci}`]!,
+        {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          duration: 0.45,
+          ease: "back.out(1.4)",
+        },
+        cardAt,
+      );
+      // Number slot
+      tl.to(
+        p[`cardN_${ci}`]!,
+        { opacity: 1, y: 0, duration: 0.18, ease: SOFT_OUT },
+        cardAt + 0.1,
+      );
+      tl.to(
+        p[`cardG_${ci}`]!,
+        { opacity: 1, scale: 1, duration: 0.45, ease: "back.out(1.6)" },
+        cardAt + 0.1,
+      );
+
+      // If the card has a counter, run it
+      if (card.counter) {
+        tl.to(
+          p[`cardC_${ci}`]!,
+          { opacity: 1, duration: 0.12 },
+          cardAt + 0.25,
+        );
+        tl.to(
+          p[`cardC_${ci}`]!,
+          {
+            value: card.counter.to,
+            duration: 0.6,
+            ease: SOFT_OUT,
+            snap: { value: 1 },
+          },
+          cardAt + 0.25,
+        );
+        tl.to(
+          p[`cardC_${ci}`]!,
+          { scale: 1, duration: 0.5, ease: "back.out(1.6)" },
+          cardAt + 0.25,
+        );
+      }
+
+      // Label words type in word by word, 0.08s apart
+      card.labelWords.forEach((_, wi) => {
+        tl.to(
+          p[`cl_${ci}_${wi}`]!,
+          { opacity: 1, y: 0, duration: 0.14, ease: "power2.out" },
+          cardAt + 0.35 + wi * 0.08,
+        );
+      });
+
+      tl.to(
+        p[`cardS_${ci}`]!,
+        { opacity: 1, y: 0, duration: 0.18, ease: SOFT_OUT },
+        cardAt + 0.7,
+      );
+    });
+
+    // Headline + cards fade as the stamp arrives
+    tl.to(p.fadeOut, { v: 0, duration: 0.4, ease: "power2.in" }, finalAt - 0.3);
+    tl.to(p.finalIn, { v: 1, duration: 0.4, ease: SOFT_OUT }, finalAt);
+
+    // Stamp lead words — "You're leaving"
+    STAMP_LEAD.forEach((_, i) => {
+      tl.to(
+        p[`sl_${i}`]!,
+        { opacity: 1, y: 0, duration: 0.18, ease: ELEMENT_SPRING },
+        finalAt + 0.15 + i * 0.11,
+      );
+    });
+
+    // 70% counter
+    tl.to(p.stampNum, { opacity: 1, duration: 0.12 }, finalAt + 0.45);
+    tl.to(
+      p.stampNum,
+      { value: 70, duration: 0.6, ease: SOFT_OUT, snap: { value: 1 } },
+      finalAt + 0.45,
+    );
+    tl.to(
+      p.stampNum,
+      { scale: 1, duration: 0.5, ease: "back.out(1.6)" },
+      finalAt + 0.45,
+    );
+    tl.to(
+      p.stampNum,
+      { letterSpacing: -0.04, duration: 0.4, ease: SOFT_OUT },
+      finalAt + 0.45,
+    );
+    tl.to(
+      p.stampNum,
+      { letterSpacing: -0.025, duration: 0.4, ease: SOFT_OUT },
+      finalAt + 0.85,
+    );
+    tl.to(p.stampPct, { opacity: 1, duration: 0.15 }, finalAt + 1.0);
+
+    // Tail words — "on the table"
+    STAMP_TAIL.forEach((_, i) => {
+      tl.to(
+        p[`st_${i}`]!,
+        { opacity: 1, y: 0, duration: 0.18, ease: ELEMENT_SPRING },
+        finalAt + 1.15 + i * 0.1,
+      );
+    });
+  }, proxyKeys);
 
   return (
     <AbsoluteFill style={{ backgroundColor: colors.bg, fontFamily: font }}>
@@ -65,12 +231,14 @@ export const AntiCheatRigged: React.FC = () => {
           right: 0,
           textAlign: "center",
           padding: "0 96px",
-          opacity: interpolate(headlineT, [0, 1], [0, 1]) * fadeOut,
-          transform: `translateY(${interpolate(headlineT, [0, 1], [22, 0])}px)`,
+          opacity: s.fadeOut.v,
         }}
       >
         <div
           style={{
+            display: "flex",
+            justifyContent: "center",
+            gap: 12,
             fontFamily: monoFont,
             fontSize: 28,
             fontWeight: 500,
@@ -80,10 +248,28 @@ export const AntiCheatRigged: React.FC = () => {
             marginBottom: 16,
           }}
         >
-          The rigged stack
+          {EYEBROW.map((word, i) => {
+            const proxy = s[`eb_${i}`]!;
+            return (
+              <span
+                key={word + i}
+                style={{
+                  display: "inline-block",
+                  opacity: proxy.opacity,
+                  transform: `translateY(${proxy.y}px)`,
+                }}
+              >
+                {word}
+              </span>
+            );
+          })}
         </div>
         <div
           style={{
+            display: "flex",
+            justifyContent: "center",
+            flexWrap: "wrap",
+            gap: "0 28px",
             fontFamily: font,
             fontSize: 96,
             fontWeight: 800,
@@ -93,7 +279,21 @@ export const AntiCheatRigged: React.FC = () => {
             textShadow: "0 4px 28px rgba(0,0,0,0.65)",
           }}
         >
-          If you don&rsquo;t have
+          {HEADLINE.map((word, i) => {
+            const proxy = s[`hl_${i}`]!;
+            return (
+              <span
+                key={word + i}
+                style={{
+                  display: "inline-block",
+                  opacity: proxy.opacity,
+                  transform: `translateY(${proxy.y}px)`,
+                }}
+              >
+                {word}
+              </span>
+            );
+          })}
         </div>
       </div>
 
@@ -109,18 +309,16 @@ export const AntiCheatRigged: React.FC = () => {
           justifyContent: "center",
           gap: 36,
           padding: "0 96px",
-          opacity: fadeOut,
+          opacity: s.fadeOut.v,
         }}
       >
-        {CARDS.map((card, i) => {
-          const at = toFrames(2 + i * 2.5);
-          const t = spring({
-            frame: frame - at,
-            fps,
-            config: { damping: 22, stiffness: 130, mass: 0.6 },
-          });
-          const opacity = interpolate(t, [0, 1], [0, 1]);
-          const y = interpolate(t, [0, 1], [40, 0]);
+        {CARDS.map((card, ci) => {
+          const cardP = s[`card_${ci}`]!;
+          const numP = s[`cardN_${ci}`]!;
+          const glyphP = s[`cardG_${ci}`]!;
+          const subP = s[`cardS_${ci}`]!;
+          const counterP = card.counter ? s[`cardC_${ci}`]! : null;
+
           return (
             <div
               key={card.n}
@@ -131,8 +329,8 @@ export const AntiCheatRigged: React.FC = () => {
                 border: `1px solid ${colors.accent}`,
                 borderRadius: 4,
                 backgroundColor: "rgba(255,59,59,0.04)",
-                opacity,
-                transform: `translateY(${y}px)`,
+                opacity: cardP.opacity,
+                transform: `translateY(${cardP.y}px) scale(${cardP.scale})`,
                 boxShadow:
                   "0 0 0 1px rgba(255,59,59,0.06), 0 12px 36px rgba(0,0,0,0.55)",
                 display: "flex",
@@ -152,13 +350,32 @@ export const AntiCheatRigged: React.FC = () => {
                   textTransform: "uppercase",
                 }}
               >
-                <span>{card.n}</span>
-                <span style={{ color: colors.accent, fontSize: 30 }}>
+                <span
+                  style={{
+                    display: "inline-block",
+                    opacity: numP.opacity,
+                    transform: `translateY(${numP.y}px)`,
+                  }}
+                >
+                  {card.n}
+                </span>
+                <span
+                  style={{
+                    display: "inline-block",
+                    color: colors.accent,
+                    fontSize: 30,
+                    opacity: glyphP.opacity,
+                    transform: `scale(${glyphP.scale})`,
+                  }}
+                >
                   {card.glyph}
                 </span>
               </div>
               <div
                 style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: "0 12px",
                   fontFamily: font,
                   fontSize: 42,
                   fontWeight: 700,
@@ -167,7 +384,38 @@ export const AntiCheatRigged: React.FC = () => {
                   lineHeight: 1.1,
                 }}
               >
-                {card.label}
+                {counterP && card.counter && (
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "baseline",
+                      color: colors.fg,
+                      opacity: counterP.opacity,
+                      transform: `scale(${counterP.scale})`,
+                      transformOrigin: "left center",
+                      fontVariantNumeric: "tabular-nums",
+                    }}
+                  >
+                    <span>{card.counter.prefix}</span>
+                    <span>{Math.round(counterP.value)}</span>
+                    <span>{card.counter.suffix}</span>
+                  </span>
+                )}
+                {card.labelWords.map((word, wi) => {
+                  const proxy = s[`cl_${ci}_${wi}`]!;
+                  return (
+                    <span
+                      key={word + wi}
+                      style={{
+                        display: "inline-block",
+                        opacity: proxy.opacity,
+                        transform: `translateY(${proxy.y}px)`,
+                      }}
+                    >
+                      {word}
+                    </span>
+                  );
+                })}
               </div>
               <div
                 style={{
@@ -176,7 +424,8 @@ export const AntiCheatRigged: React.FC = () => {
                   fontSize: 18,
                   letterSpacing: "0.04em",
                   color: colors.dim,
-                  opacity: 0.85,
+                  opacity: subP.opacity * 0.85,
+                  transform: `translateY(${subP.y}px)`,
                 }}
               >
                 {card.sub}
@@ -187,9 +436,108 @@ export const AntiCheatRigged: React.FC = () => {
       </div>
 
       {/* Final stamp */}
-      <FinalStamp showFrom={finalAt} />
+      {s.finalIn.v > 0.001 && (
+        <AbsoluteFill
+          style={{
+            justifyContent: "center",
+            alignItems: "center",
+            background: `rgba(10,10,10,${0.78 * s.finalIn.v})`,
+            backdropFilter: `blur(${2 * s.finalIn.v}px)`,
+            opacity: s.finalIn.v,
+          }}
+        >
+          <div
+            style={{
+              fontFamily: font,
+              fontSize: 124,
+              fontWeight: 800,
+              color: colors.accent,
+              lineHeight: 1.05,
+              textAlign: "center",
+              padding: "0 96px",
+              textShadow: "0 4px 32px rgba(255,59,59,0.25)",
+              display: "flex",
+              flexDirection: "column",
+              gap: 12,
+              alignItems: "center",
+            }}
+          >
+            {/* Lead — "You're leaving" + number + % */}
+            <div
+              style={{
+                display: "flex",
+                gap: "0 24px",
+                alignItems: "baseline",
+                flexWrap: "wrap",
+                justifyContent: "center",
+              }}
+            >
+              {STAMP_LEAD.map((word, i) => {
+                const proxy = s[`sl_${i}`]!;
+                return (
+                  <span
+                    key={word + i}
+                    style={{
+                      display: "inline-block",
+                      opacity: proxy.opacity,
+                      transform: `translateY(${proxy.y}px)`,
+                      letterSpacing: "-0.04em",
+                    }}
+                  >
+                    {word}
+                  </span>
+                );
+              })}
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "baseline",
+                  opacity: s.stampNum.opacity,
+                  transform: `scale(${s.stampNum.scale})`,
+                  fontVariantNumeric: "tabular-nums",
+                  letterSpacing: `${s.stampNum.letterSpacing}em`,
+                }}
+              >
+                {Math.round(s.stampNum.value)}
+                <span
+                  style={{
+                    opacity: s.stampPct.opacity,
+                    letterSpacing: "-0.04em",
+                  }}
+                >
+                  %
+                </span>
+              </span>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                gap: "0 24px",
+                justifyContent: "center",
+                flexWrap: "wrap",
+              }}
+            >
+              {STAMP_TAIL.map((word, i) => {
+                const proxy = s[`st_${i}`]!;
+                return (
+                  <span
+                    key={word + i}
+                    style={{
+                      display: "inline-block",
+                      opacity: proxy.opacity,
+                      transform: `translateY(${proxy.y}px)`,
+                      letterSpacing: "-0.04em",
+                    }}
+                  >
+                    {word}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        </AbsoluteFill>
+      )}
 
-      {/* Vignette */}
       <AbsoluteFill
         style={{
           pointerEvents: "none",
@@ -197,50 +545,6 @@ export const AntiCheatRigged: React.FC = () => {
             "radial-gradient(circle at 50% 50%, transparent 55%, rgba(0,0,0,0.55) 100%)",
         }}
       />
-    </AbsoluteFill>
-  );
-};
-
-const FinalStamp: React.FC<{ showFrom: number }> = ({ showFrom }) => {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  const t = spring({
-    frame: frame - showFrom,
-    fps,
-    config: { damping: 16, stiffness: 180, mass: 0.6 },
-  });
-  if (frame < showFrom - 4) return null;
-  const opacity = interpolate(t, [0, 1], [0, 1]);
-  const scale = interpolate(t, [0, 1], [0.92, 1]);
-
-  return (
-    <AbsoluteFill
-      style={{
-        justifyContent: "center",
-        alignItems: "center",
-        background: "rgba(10,10,10,0.78)",
-        backdropFilter: "blur(2px)",
-      }}
-    >
-      <div
-        style={{
-          fontFamily: font,
-          fontSize: 124,
-          fontWeight: 800,
-          letterSpacing: "-0.04em",
-          color: colors.accent,
-          lineHeight: 0.95,
-          textAlign: "center",
-          padding: "0 96px",
-          opacity,
-          transform: `scale(${scale})`,
-          textShadow: "0 4px 32px rgba(255,59,59,0.25)",
-        }}
-      >
-        You&rsquo;re leaving 70%
-        <br />
-        on the table.
-      </div>
     </AbsoluteFill>
   );
 };
@@ -285,6 +589,8 @@ const TradingBackdrop: React.FC = () => {
     </AbsoluteFill>
   );
 };
+
+void HERO_SPRING;
 
 export const antiCheatRiggedMeta = {
   id: "AntiCheatRigged",
