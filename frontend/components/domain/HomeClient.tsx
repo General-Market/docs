@@ -2,8 +2,6 @@
 
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { motion, LayoutGroup } from 'framer-motion'
-import { Header } from '@/components/layout/Header'
-import { Footer } from '@/components/layout/Footer'
 import { ItpListing, DeployedItpRef } from '@/components/domain/ItpListing'
 import { PortfolioSection } from '@/components/domain/PortfolioSection'
 import { CreateItpSection } from '@/components/domain/CreateItpSection'
@@ -196,8 +194,6 @@ export function HomeClient() {
 
   return (
     <>
-      <Header />
-
       <div className="flex min-h-[calc(100vh-64px)]">
         {/* ── Sidebar — desktop ── */}
         <LayoutGroup id="nav-desktop">
@@ -425,8 +421,6 @@ export function HomeClient() {
           onClose={() => setRebalanceModal(null)}
         />
       )}
-
-      <Footer />
     </>
   )
 }
