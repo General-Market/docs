@@ -20,8 +20,8 @@ export function AppShell({ children, search }: AppShellProps) {
     >
       <TopBar search={search} />
       <LeftRail />
-      <div className="flex flex-col min-w-0">
-        <main className="flex-1 min-w-0">{children}</main>
+      <main className="min-w-0">{children}</main>
+      <div className="col-span-1 md:col-span-2">
         <AppleFooter />
       </div>
     </div>

@@ -229,7 +229,7 @@ export function HeroCard({ feature, side }: Props) {
           </div>
 
           {/* Sparkline filling the lower half */}
-          <div className="absolute inset-x-0 bottom-0 h-[60%]">
+          <div className="absolute inset-x-0 bottom-0 h-[60%] overflow-hidden">
             <Sparkline
               series={feature.series}
               width={800}

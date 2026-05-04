@@ -93,7 +93,7 @@ export function AssetCard({
       className="group flex flex-col gap-2 text-left transition"
     >
       <div
-        className="relative aspect-[16/10] w-full overflow-hidden border"
+        className="relative aspect-[16/10] w-full overflow-hidden isolate border"
         style={{
           borderRadius: 'var(--apple-r-md)',
           background: sourceGradient(sourceId),
@@ -150,7 +150,7 @@ export function AssetCard({
         </div>
 
         {/* Sparkline filling the bottom 60% of the tile */}
-        <div className="absolute inset-x-0 bottom-0 h-[55%]">
+        <div className="absolute inset-x-0 bottom-0 h-[55%] overflow-hidden">
           <Sparkline
             series={series}
             width={400}

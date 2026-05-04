@@ -71,7 +71,7 @@ function SparklineImpl({
     <svg
       viewBox={`0 0 ${width} ${height}`}
       width="100%"
-      height={height}
+      height="100%"
       preserveAspectRatio="none"
       role={ariaLabel ? 'img' : 'presentation'}
       aria-label={ariaLabel || undefined}
