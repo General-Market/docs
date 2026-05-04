@@ -322,13 +322,13 @@ function FeaturedHero({ fund, vault, userPosition, onDeposit }: {
                   onClick={onDeposit}
                   className="px-6 py-2.5 bg-white text-black text-[12px] font-black tracking-[0.04em] hover:bg-white/90 transition-colors"
                 >
-                  {hasPosition ? 'ADD / WITHDRAW' : 'DEPOSIT'}
+                  {hasPosition ? 'Add / withdraw' : 'Deposit'}
                 </button>
                 <button
                   onClick={onDeposit}
                   className="px-5 py-2.5 border border-white/[0.1] text-[12px] font-bold text-white/50 hover:border-white/20 hover:text-white/80 transition-colors"
                 >
-                  DETAILS
+                  Details
                 </button>
               </div>
             </div>
@@ -466,7 +466,7 @@ function VaultTiltCard({ fund, vault, index, userPosition, onDeposit }: {
           {/* deposit, reveals on hover */}
           <div className="mt-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
             <button className="w-full py-1.5 bg-black text-white text-[10px] font-bold hover:bg-black/80 transition-colors">
-              {hasPosition ? 'MANAGE' : 'DEPOSIT'}
+              {hasPosition ? 'Manage' : 'Deposit'}
             </button>
           </div>
         </div>
@@ -476,83 +476,81 @@ function VaultTiltCard({ fund, vault, index, userPosition, onDeposit }: {
 }
 
 /* ─────────────────────────────────────────────
-   Skeleton, mirrors FeaturedHero + tilt-card grid
+   Loading panel — one Apple-toned card, no grid.
+   Three identical placeholders read as broken;
+   one reads as patient.
    ───────────────────────────────────────────── */
 
-function VaultShowcaseSkeleton({ count }: { count: number }) {
-  const tiles = Math.max(0, Math.min(count, 5))
+function VaultShowcaseLoading() {
   return (
-    <div className="space-y-6" aria-hidden="true">
-      <div className="relative bg-terminal-dark border border-white/[0.08] overflow-hidden">
-        <div className="p-6 sm:p-8">
-          <div className="flex items-center gap-3 mb-5">
-            <span className="skeleton h-[10px] w-24 rounded" style={{ background: 'rgba(255,255,255,0.08)' }} />
-            <span className="skeleton h-[14px] w-16 rounded" style={{ background: 'rgba(255,255,255,0.08)' }} />
-          </div>
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
-            <div className="min-w-0 flex-1">
-              <span className="skeleton block h-[26px] w-2/3 rounded mb-2" style={{ background: 'rgba(255,255,255,0.08)' }} />
-              <span className="skeleton block h-[12px] w-full max-w-md rounded mb-1.5" style={{ background: 'rgba(255,255,255,0.06)' }} />
-              <span className="skeleton block h-[12px] w-4/5 max-w-md rounded mb-6" style={{ background: 'rgba(255,255,255,0.06)' }} />
-              <div className="flex items-center gap-6 mb-6">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i}>
-                    <span className="skeleton block h-[9px] w-10 rounded mb-1" style={{ background: 'rgba(255,255,255,0.06)' }} />
-                    <span className="skeleton block h-[16px] w-16 rounded" style={{ background: 'rgba(255,255,255,0.1)' }} />
-                  </div>
-                ))}
+    <section aria-hidden="true">
+      <header className="mb-5 flex items-baseline gap-3">
+        <span
+          style={{
+            fontFamily: 'var(--apple-font-text)',
+            fontSize: 11,
+            fontWeight: 600,
+            letterSpacing: 'var(--apple-track-loose)',
+            color: 'var(--apple-text-tertiary)',
+            textTransform: 'uppercase',
+          }}
+        >
+          for you
+        </span>
+        <h2
+          style={{
+            fontFamily: 'var(--apple-font-display)',
+            fontSize: 'var(--apple-fs-28)',
+            fontWeight: 600,
+            letterSpacing: 'var(--apple-track-tighter)',
+            color: 'var(--apple-text)',
+            margin: 0,
+            lineHeight: 1.1,
+          }}
+        >
+          Vaults
+        </h2>
+        <span
+          style={{
+            fontFamily: 'var(--apple-font-text)',
+            fontSize: 'var(--apple-fs-14)',
+            letterSpacing: 'var(--apple-track-tight)',
+            color: 'var(--apple-text-secondary)',
+          }}
+        >
+          Loading vaults…
+        </span>
+      </header>
+      <div
+        className="border p-6 sm:p-8"
+        style={{
+          background: 'var(--apple-panel)',
+          borderColor: 'var(--apple-line)',
+          borderRadius: 'var(--apple-r-card)',
+        }}
+      >
+        <div className="flex flex-col gap-5">
+          <span className="skeleton block h-[20px] w-2/5 rounded" />
+          <span className="skeleton block h-[12px] w-3/5 rounded" />
+          <div className="flex items-end justify-between gap-6">
+            <div className="flex items-center gap-6">
+              <div>
+                <span className="skeleton block h-[9px] w-10 rounded mb-1.5" />
+                <span className="skeleton block h-[16px] w-16 rounded" />
               </div>
-              <div className="flex items-center gap-3">
-                <span className="skeleton h-[36px] w-24 rounded" style={{ background: 'rgba(255,255,255,0.1)' }} />
-                <span className="skeleton h-[36px] w-20 rounded" style={{ background: 'rgba(255,255,255,0.06)' }} />
+              <div>
+                <span className="skeleton block h-[9px] w-10 rounded mb-1.5" />
+                <span className="skeleton block h-[16px] w-16 rounded" />
               </div>
             </div>
-            <div className="shrink-0 sm:text-right">
-              <span className="skeleton block h-[44px] w-40 rounded" style={{ background: 'rgba(255,255,255,0.1)' }} />
-              <span className="skeleton block h-[10px] w-24 mt-2 rounded" style={{ background: 'rgba(255,255,255,0.06)' }} />
-              <span className="skeleton block h-[52px] w-full sm:w-[200px] sm:ml-auto mt-4 rounded" style={{ background: 'rgba(255,255,255,0.06)' }} />
-            </div>
+            <span className="skeleton block h-[36px] w-32 rounded" />
           </div>
         </div>
       </div>
-
-      {tiles > 0 && (
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <span className="skeleton h-[11px] w-32 rounded" />
-            <span className="skeleton h-[10px] w-16 rounded" />
-          </div>
-          <div className="flex gap-4 overflow-x-auto pb-2 sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:overflow-visible sm:pb-0">
-            {Array.from({ length: tiles }).map((_, i) => (
-              <div
-                key={i}
-                className="shrink-0 basis-[calc(50%-0.5rem)] sm:basis-auto sm:shrink border border-border-light bg-white p-4"
-                style={{ animationDelay: `${i * 80}ms` }}
-              >
-                <div className="flex items-center justify-between gap-2 mb-1">
-                  <span className="skeleton h-[14px] w-2/3 rounded" />
-                  <span className="skeleton h-[10px] w-12 rounded" />
-                </div>
-                <span className="skeleton block h-[10px] w-full rounded mb-3" />
-                <span className="skeleton block h-[36px] w-full rounded mb-3" />
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="skeleton block h-[8px] w-8 rounded mb-1" />
-                    <span className="skeleton block h-[11px] w-12 rounded" />
-                  </div>
-                  <div className="text-right">
-                    <span className="skeleton block h-[8px] w-8 rounded mb-1 ml-auto" />
-                    <span className="skeleton block h-[11px] w-12 rounded ml-auto" />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
+    </section>
   )
 }
+
 
 /* ─────────────────────────────────────────────
    VaultShowcase, orchestrator
@@ -640,17 +638,22 @@ export function VaultShowcase({ sourceId }: VaultShowcaseProps) {
     })
   }, [funds, chainVaultByAddress, sseVaultByAddress])
 
+  // Empty: this source has no vaults registered. Return null so the parent's
+  // `[&:has(>div:empty)]:hidden` hack on SourceDetailV2 hides the wrapper. A
+  // section with no vaults is best left silent — three placeholder cards say
+  // less than nothing.
   if (sortedFunds.length === 0) return null
 
   const featured = sortedFunds[0]
   const rest = sortedFunds.slice(1)
 
-  // Chain vaults still streaming in and SSE has nothing to fill — paint a
-  // skeleton shaped like the real hero so the section doesn't flash zeros.
+  // Loading: chain reads still pending and SSE returned nothing. Paint a
+  // single Apple-toned panel rather than a 3-up grid of placeholders. Three
+  // identical cards read as templated; one reads as patient.
   const hasAnyVaultData =
     Object.keys(chainVaultByAddress).length > 0 || Object.keys(sseVaultByAddress).length > 0
   if (chainLoading && !hasAnyVaultData) {
-    return <VaultShowcaseSkeleton count={rest.length} />
+    return <VaultShowcaseLoading />
   }
 
   return (
@@ -714,7 +717,7 @@ export function VaultShowcase({ sourceId }: VaultShowcaseProps) {
                   Automated strategy. Live in minutes. Others deposit into it.
                 </p>
                 <Link href="/build-bot" className="px-5 py-2 bg-white/[0.06] border border-white/[0.08] text-[11px] font-bold text-white/60 hover:bg-white/[0.1] hover:text-white transition-colors">
-                  CREATE STRATEGY
+                  Create strategy
                 </Link>
               </div>
             </motion.div>
