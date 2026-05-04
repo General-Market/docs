@@ -4,8 +4,8 @@ import { use, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useAccount } from 'wagmi'
 import { useTranslations } from 'next-intl'
-import { Header } from '@/components/layout/Header'
-import { Footer } from '@/components/layout/Footer'
+import { AppShell } from '@/components/layout/AppShell'
+import { SourceSearch } from '@/components/layout/SourceSearch'
 import { ProfileHero } from '@/components/domain/profile/ProfileHero'
 import { ProfileTabs, type ProfileTabId } from '@/components/domain/profile/ProfileTabs'
 import { VisionTab } from '@/components/domain/profile/VisionTab'
@@ -153,8 +153,7 @@ export default function ProfilePage({ params }: { params: Promise<{ address: str
   const { address } = use(params)
 
   return (
-    <main className="min-h-screen bg-page flex flex-col">
-      <Header />
+    <AppShell search={<SourceSearch />}>
       <Suspense
         fallback={
           <div className="px-6 lg:px-12">
@@ -166,8 +165,6 @@ export default function ProfilePage({ params }: { params: Promise<{ address: str
       >
         <ProfileContent address={address} />
       </Suspense>
-      <div className="flex-1" />
-      <Footer />
-    </main>
+    </AppShell>
   )
 }

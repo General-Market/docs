@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
-import { Header } from '@/components/layout/Header'
-import { Footer } from '@/components/layout/Footer'
+import { AppShell } from '@/components/layout/AppShell'
+import { SourceSearch } from '@/components/layout/SourceSearch'
 import ExplorerPageClient from './ExplorerPageClient'
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
@@ -25,10 +25,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 
 export default function ExplorerPage() {
   return (
-    <>
-      <Header />
+    <AppShell search={<SourceSearch />}>
       <ExplorerPageClient />
-      <Footer />
-    </>
+    </AppShell>
   )
 }
