@@ -10,7 +10,7 @@ import { AnimatedNumber } from '@/components/ui/AnimatedNumber'
 import { CategoryNav } from './CategoryNav'
 import { NextBatches } from './NextBatches'
 import { SourceCard } from './SourceCard'
-import { SourceCardsSkeleton } from '@/components/ui/VisionLoader'
+import { GeneralLoader } from '@/components/ui/GeneralLoader'
 
 /** Minimum cursor movement (px) before recalculating brightness */
 const CURSOR_DEAD_ZONE = 4
@@ -251,7 +251,7 @@ export function SourcesGrid() {
       <div className="px-6 lg:px-12 py-6">
         <div className="max-w-site mx-auto">
           {registryLoading && filteredSources.length === 0 ? (
-            <SourceCardsSkeleton />
+            <GeneralLoader height={360} />
           ) : (
           <div
             ref={gridRef}

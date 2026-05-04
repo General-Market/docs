@@ -8,7 +8,7 @@ import { useBatches } from '@/hooks/vision/useBatches'
 import { useSourceRegistry, findSource } from '@/hooks/vision/useSourceRegistry'
 import type { BitmapEditor, CellState } from '@/hooks/vision/useBitmapEditor'
 import { SpringExpand, SpringRow, SpringPress } from '@/components/ui/spring'
-import { TerminalBootLoader } from './TerminalBootLoader'
+import { GeneralLoader } from '@/components/ui/GeneralLoader'
 import { getLineStyle } from '@/lib/vision/transport-colors'
 import { getAssetImageUrl } from '@/lib/vision/asset-images'
 // Side-effect imports: register official color maps
@@ -476,13 +476,11 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
           <div role="columnheader" className="text-center">{t('markets_table.bet')}</div>
         </div>
 
-        {/* Loading state — Bloomberg terminal boot (also shown when meta says markets exist but snapshot is empty) */}
+        {/* Loading state — logo, name, ring. The table waits. */}
         {(isLoading || shouldRetry) && (
-          <TerminalBootLoader
-            rowCount={metaAssetCount ?? 16}
-            sourcePrefix={sourceEntry?.prefixes?.[0] ?? ''}
-            brandColor={sourceEntry?.brandBg ?? '#000000'}
-          />
+          <div className="py-12">
+            <GeneralLoader height={240} />
+          </div>
         )}
 
         {/* Empty state — only when meta also confirms no markets */}

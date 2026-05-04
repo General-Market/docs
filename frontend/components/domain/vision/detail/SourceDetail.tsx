@@ -24,7 +24,7 @@ import { useReadContract } from 'wagmi'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import { indexL3 } from '@/lib/wagmi'
 import { useDeployment } from '@/hooks/useDeployment'
-import { SourceDetailSkeleton } from '@/components/ui/VisionLoader'
+import { GeneralLoader } from '@/components/ui/GeneralLoader'
 import { FirstTradeCTA } from '../FirstTradeCTA'
 import { SourceFunds } from '@/components/domain/vaults/SourceFunds'
 
@@ -150,7 +150,7 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
   const bettingEnd = bettingRound?.bettingEnd ?? null
 
   if (isRegistryLoading && !initialSource) {
-    return <SourceDetailSkeleton />
+    return <GeneralLoader height="70vh" />
   }
 
   if (!source) {

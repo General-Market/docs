@@ -1,15 +1,11 @@
-import { Header } from '@/components/layout/Header'
-import { Footer } from '@/components/layout/Footer'
-import { SourceDetailSkeleton } from '@/components/ui/VisionLoader'
+import { AppShell } from '@/components/layout/AppShell'
+import { SourceSearch } from '@/components/layout/SourceSearch'
+import { GeneralLoader } from '@/components/ui/GeneralLoader'
 
 export default function SourceLoading() {
   return (
-    <main className="min-h-screen bg-page flex flex-col">
-      <Header />
-      <div className="flex-1 overflow-x-clip">
-        <SourceDetailSkeleton />
-      </div>
-      <Footer />
-    </main>
+    <AppShell search={<SourceSearch />}>
+      <GeneralLoader height="80vh" />
+    </AppShell>
   )
 }

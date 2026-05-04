@@ -18,7 +18,7 @@ import { VaultShowcase } from './VaultShowcase'
 import { WalletSourceStats } from './shared'
 import type { SourceDisplayServer } from '@/lib/vision/sources-server'
 import { useTranslations } from 'next-intl'
-import { SourceDetailSkeleton } from '@/components/ui/VisionLoader'
+import { GeneralLoader } from '@/components/ui/GeneralLoader'
 
 interface SourceDetailV2Props {
   sourceId: string
@@ -80,7 +80,7 @@ export function SourceDetailV2({ sourceId, initialSource, hideSidebar }: SourceD
   const vaultShowcaseRef = useRef<HTMLDivElement>(null)
 
   if (isRegistryLoading && !initialSource) {
-    return <SourceDetailSkeleton />
+    return <GeneralLoader height="70vh" />
   }
 
   if (!source) {

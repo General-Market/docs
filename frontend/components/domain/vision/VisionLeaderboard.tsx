@@ -3,7 +3,7 @@
 import { useVisionLeaderboard, VisionLeaderboardEntry } from '@/hooks/vision/useVisionLeaderboard'
 import { useTranslations } from 'next-intl'
 import { useIsMobile } from '@/hooks/useMediaQueries'
-import { LeaderboardSkeleton } from '@/components/ui/VisionLoader'
+import { GeneralLoader } from '@/components/ui/GeneralLoader'
 
 function MobileCard({ entry, t }: { entry: VisionLeaderboardEntry; t: ReturnType<typeof useTranslations<'vision'>> }) {
   const pnlPositive = entry.pnl >= 0
@@ -46,7 +46,7 @@ export function VisionLeaderboard() {
   const isMobile = useIsMobile()
 
   if (isLoading) {
-    return <LeaderboardSkeleton />
+    return <GeneralLoader height={280} />
   }
 
   if (isError || leaderboard.length === 0) {
