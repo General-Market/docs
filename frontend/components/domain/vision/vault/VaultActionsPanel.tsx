@@ -146,13 +146,33 @@ export function VaultActionsPanel({
     depositStep === 'claiming'
   const redeemBusy = redeemStep === 'requesting'
 
+  // Wrap in try so a malformed input ("1.2.3") never silently swallows the
+  // click. parseUnits throws on invalid decimals — that's the kind of thing
+  // the wallet popup never explains because it never gets to ask.
   const handleDeposit = () => {
-    const amount = parseUnits(depositInput || '0', 18)
+    if (!userAddress) {
+      // The WalletActionButton handles the connect handshake on the click
+      // before this fires; this guard exists for keyboard activations and
+      // tests that bypass the wrapper.
+      return
+    }
+    let amount: bigint
+    try {
+      amount = parseUnits(depositInput || '0', 18)
+    } catch {
+      return
+    }
     if (amount <= 0n) return
     deposit(vaultAddress, amount)
   }
   const handleWithdraw = () => {
-    const sh = parseUnits(withdrawInput || '0', 18)
+    if (!userAddress) return
+    let sh: bigint
+    try {
+      sh = parseUnits(withdrawInput || '0', 18)
+    } catch {
+      return
+    }
     if (sh <= 0n) return
     redeem(vaultAddress, sh)
   }
@@ -307,17 +327,18 @@ export function VaultActionsPanel({
       ) : null}
 
       {/* Action */}
-      <WalletActionButton
-        onClick={() => (tab === 'deposit' ? handleDeposit() : handleWithdraw())}
+      <ActionButton
+        tab={tab}
+        onDeposit={handleDeposit}
+        onWithdraw={handleWithdraw}
         disabled={
           tab === 'deposit'
             ? depositBusy || depositConfirming || !depositInput
             : redeemBusy || redeemConfirming || !withdrawInput
         }
-        className="vault-action-button"
-      >
-        {tab === 'deposit' ? depositLabel : withdrawLabel}
-      </WalletActionButton>
+        depositLabel={depositLabel}
+        withdrawLabel={withdrawLabel}
+      />
 
       <p style={{ ...subtleStyle, textAlign: 'center', margin: 0 }}>
         No lock-up. {feePercent.toFixed(0)}% performance fee.
@@ -366,30 +387,39 @@ export function VaultActionsPanel({
         </div>
       ) : null}
 
-      <style jsx>{`
-        .vault-action-button {
-          width: 100%;
-          padding: 12px 18px;
-          background: var(--apple-accent, #0071e3);
-          color: #fff;
-          font-family: var(--apple-font-text);
-          font-size: 17px;
-          font-weight: 500;
-          letter-spacing: var(--apple-track-tight);
-          border: none;
-          border-radius: var(--apple-r-pill, 980px);
-          cursor: pointer;
-          transition: background-color 0.15s ease;
-        }
-        .vault-action-button:hover:not(:disabled) {
-          background: var(--apple-accent-hover, #0066cc);
-        }
-        .vault-action-button:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-      `}</style>
     </section>
+  )
+}
+
+// ── Action button ─────────────────────────────────────────
+// Lives in its own component so its click handler captures the right callback
+// reference per render. The earlier styled-jsx version scoped its styles via
+// a className that vanished mid-tree on certain renders — clicks still
+// registered, but the visual disabled state desynced. Plain Tailwind here.
+
+function ActionButton({
+  tab, onDeposit, onWithdraw, disabled, depositLabel, withdrawLabel,
+}: {
+  tab: 'deposit' | 'withdraw'
+  onDeposit: () => void
+  onWithdraw: () => void
+  disabled: boolean
+  depositLabel: string
+  withdrawLabel: string
+}) {
+  const handleClick = () => {
+    if (tab === 'deposit') onDeposit()
+    else onWithdraw()
+  }
+  return (
+    <WalletActionButton
+      onClick={handleClick}
+      disabled={disabled}
+      dataAttrs={tab === 'deposit' ? { 'data-onboarding-target': 'vault-action' } : undefined}
+      className="w-full px-[18px] py-3 rounded-full bg-[#0071e3] text-white text-[17px] font-medium tracking-tight transition-colors hover:bg-[#0066cc] disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      {tab === 'deposit' ? depositLabel : withdrawLabel}
+    </WalletActionButton>
   )
 }
 

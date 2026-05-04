@@ -6,12 +6,14 @@
  * that wires AppShell + breadcrumb and hands data into here.
  *
  * Layout:
- *   1. Hero card     — identity, stat strip, sparkline, "deposited" pill
+ *   1. Hero card     — identity, strategy pill, stat strip, "deposited" pill
  *   2. Two-column    — deposit panel (1/3) + NAV chart (rest)
  *   3. Portfolio     — existing VaultPortfolioView (asset fills)
+ *
+ * The hero deliberately has no chart. The real NavChart is rendered below.
  */
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { formatUnits } from 'viem'
 import { useVaultsByAddresses } from '@/hooks/vaults/useVaults'
 import { useVaultDisplayResolver } from '@/hooks/vaults/useVaultDisplay'
@@ -75,7 +77,7 @@ function formatPerf(perf: number) {
 
 export function VaultDetailClient({ vaultAddress, sourceId, fund, fallbackName }: Props) {
   const lower = vaultAddress.toLowerCase() as `0x${string}`
-  const { vaults, isLoading } = useVaultsByAddresses([lower])
+  const { vaults } = useVaultsByAddresses([lower])
   const vault = vaults[0]
   const resolveDisplay = useVaultDisplayResolver()
 
@@ -111,7 +113,6 @@ export function VaultDetailClient({ vaultAddress, sourceId, fund, fallbackName }
   // ---- chart history --------------------------------------------------
   const [range, setRange] = useState<VaultHistoryRange>('1d')
   const { snapshots: rangeSnapshots } = useVaultHistory(lower, range)
-  const { snapshots: allSnapshots } = useVaultHistory(lower, 'all')
 
   const liveTick: VaultSnapshot | null = useMemo(() => {
     if (!sseVault) return null
@@ -125,18 +126,15 @@ export function VaultDetailClient({ vaultAddress, sourceId, fund, fallbackName }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sseVault?.nav_per_share, sseVault?.total_assets])
 
-  const withLive = (arr: VaultSnapshot[]): VaultSnapshot[] => {
-    if (!liveTick) return arr
-    if (arr.length === 0) return [liveTick]
-    const last = arr[arr.length - 1]
-    if (liveTick.ts <= last.ts) return arr
-    return [...arr, liveTick]
-  }
-  const chartSnapshots = useMemo(() => withLive(rangeSnapshots), [rangeSnapshots, liveTick])
-  const sparkSnapshots = useMemo(() => withLive(allSnapshots), [allSnapshots, liveTick])
+  const chartSnapshots = useMemo(() => {
+    if (!liveTick) return rangeSnapshots
+    if (rangeSnapshots.length === 0) return [liveTick]
+    const last = rangeSnapshots[rangeSnapshots.length - 1]
+    if (liveTick.ts <= last.ts) return rangeSnapshots
+    return [...rangeSnapshots, liveTick]
+  }, [rangeSnapshots, liveTick])
 
   const navData = useMemo(() => chartSnapshots.map((s) => s.nav), [chartSnapshots])
-  const sparkData = useMemo(() => sparkSnapshots.map((s) => s.nav), [sparkSnapshots])
 
   // ---- identity ------------------------------------------------------
   const vaultName = fund?.name ?? fallbackName
@@ -144,12 +142,6 @@ export function VaultDetailClient({ vaultAddress, sourceId, fund, fallbackName }
   const strategyLabel = fund?.strategy ? (STRATEGY_LABEL[fund.strategy] ?? fund.strategy.replace(/_/g, ' ')) : null
   const feePercent = vault ? Number(vault.performanceFeeRate) / 1e16 : (fund?.fee ?? 0) / 100
   const isPositive = effective.perf >= 0
-
-  // ---- mount-once skeleton patience ----------------------------------
-  // The vault read can take ~600ms on a cold RPC. Show the hero with
-  // placeholders rather than a full-page loader so the layout doesn't lurch.
-  const [, setMounted] = useState(false)
-  useEffect(() => { setMounted(true) }, [])
 
   return (
     <div className="flex flex-col gap-5">
@@ -164,9 +156,7 @@ export function VaultDetailClient({ vaultAddress, sourceId, fund, fallbackName }
         tvl={effective.tvl}
         feePercent={feePercent}
         isPositive={isPositive}
-        sparkData={sparkData}
         hasPosition={hasPosition}
-        loading={isLoading && !sseDisplay}
       />
 
       {/* TWO COLUMN: actions + chart */}
@@ -330,8 +320,8 @@ export function VaultDetailClient({ vaultAddress, sourceId, fund, fallbackName }
 
 function VaultHeroCard({
   eyebrow, strategyLabel, title, tagline,
-  nav, perf, tvl, feePercent, isPositive, sparkData,
-  hasPosition, loading,
+  nav, perf, tvl, feePercent, isPositive,
+  hasPosition,
 }: {
   eyebrow: string
   strategyLabel: string | null
@@ -342,9 +332,7 @@ function VaultHeroCard({
   tvl: number
   feePercent: number
   isPositive: boolean
-  sparkData: number[]
   hasPosition: boolean
-  loading: boolean
 }) {
   return (
     <section
@@ -415,24 +403,6 @@ function VaultHeroCard({
         </p>
       </div>
 
-      {/* Sparkline */}
-      <div style={{ height: 56 }}>
-        {sparkData.length >= 2 ? (
-          <HeroSparkline data={sparkData} positive={isPositive} />
-        ) : (
-          <div
-            style={{
-              height: '100%',
-              borderRadius: 'var(--apple-r-sm,8px)',
-              background: 'var(--apple-surface)',
-              border: '1px solid var(--apple-line,rgba(0,0,0,0.08))',
-              opacity: loading ? 0.6 : 1,
-            }}
-            aria-hidden
-          />
-        )}
-      </div>
-
       {/* Stat strip */}
       <div
         style={{
@@ -498,29 +468,3 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: 'up
   )
 }
 
-// Lightweight sparkline drawn as an SVG polyline. The full NavChart owns
-// the heavy chart in the row below; the hero spark exists for first-glance.
-function HeroSparkline({ data, positive }: { data: number[]; positive: boolean }) {
-  const min = Math.min(...data)
-  const max = Math.max(...data)
-  const range = max - min || 1
-  const points = data
-    .map((v, i) => `${(i / (data.length - 1)) * 100},${100 - ((v - min) / range) * 100}`)
-    .join(' ')
-  const color = positive ? 'rgb(52,199,89)' : 'rgb(255,59,48)'
-  const fill = positive ? 'rgba(52,199,89,0.10)' : 'rgba(255,59,48,0.10)'
-
-  return (
-    <svg
-      width="100%"
-      height="100%"
-      viewBox="0 0 100 100"
-      preserveAspectRatio="none"
-      style={{ display: 'block' }}
-      aria-hidden
-    >
-      <polyline points={points} fill="none" stroke={color} strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
-      <polygon points={`0,100 ${points} 100,100`} fill={fill} />
-    </svg>
-  )
-}
