@@ -9,7 +9,8 @@ const SIDEBAR_EXCLUDED = new Set(['chaturbate', 'fourchan'])
 
 interface SourceSidebarAppleProps {
   sourceId: string
-  category: string
+  /** Falls back to the registry entry's category when omitted. */
+  category?: string
 }
 
 interface PeerSource {
@@ -23,16 +24,17 @@ export function SourceSidebarApple({ sourceId, category }: SourceSidebarApplePro
   const { sources, isLoading } = useSourceRegistry()
 
   const currentSource = findSource(sources, sourceId)
+  const effectiveCategory = category ?? currentSource?.category ?? ''
 
   // Category peers: up to 6 sources in the same category, excluding self
   const peers = useMemo<PeerSource[]>(() => {
-    if (!sources.length) return []
+    if (!sources.length || !effectiveCategory) return []
     return sources
-      .filter(s => s.sourceId !== sourceId && s.category === category && !SIDEBAR_EXCLUDED.has(s.sourceId))
+      .filter(s => s.sourceId !== sourceId && s.category === effectiveCategory && !SIDEBAR_EXCLUDED.has(s.sourceId))
       .slice(0, 6)
-  }, [sources, sourceId, category])
+  }, [sources, sourceId, effectiveCategory])
 
-  const categoryLabel = currentSource ? getCategoryLabel(currentSource.category) : getCategoryLabel(category)
+  const categoryLabel = currentSource ? getCategoryLabel(currentSource.category) : getCategoryLabel(effectiveCategory)
 
   return (
     <aside
@@ -122,19 +124,19 @@ export function SourceSidebarApple({ sourceId, category }: SourceSidebarApplePro
         </Link>
       </div>
 
-      {/* ── "for you" group — wallet-aware data (bets / vaults / bots) ── */}
+      {/* ── "for you" group ── */}
       <div style={{ padding: '12px 16px 0' }}>
         <GroupHeader label="for you" />
         <NavItem href={`/source/${sourceId}` as never} label="overview" />
-        <NavItem href={`/source/${sourceId}/vault` as never} label="vaults" />
-        <NavItem href={`/source/${sourceId}/bots` as never} label="bots" />
+        <NavItem href={`/source/${sourceId}/markets` as never} label="markets" />
+        <NavItem href={`/source/${sourceId}/activity` as never} label="activity" />
+        <NavItem href={`/source/${sourceId}/leaderboard` as never} label="leaderboard" />
       </div>
 
       {/* ── "build" group ── */}
       <div style={{ padding: '12px 16px 0' }}>
         <GroupHeader label="build" />
-        <NavItem href={`/source/${sourceId}/bots` as never} label="run a bot" />
-        <NavItem href={`/source/${sourceId}/vault` as never} label="deploy a vault" />
+        <NavItem href={"/build-bot" as never} label="run a bot" />
       </div>
 
       {/* ── Peer sources in the same category ── */}

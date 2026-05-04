@@ -2,7 +2,7 @@
 
 import { Link, usePathname } from '@/i18n/routing'
 
-export type SourceTab = 'overview' | 'vaults' | 'bots' | 'markets' | 'activity' | 'leaderboard'
+export type SourceTab = 'overview' | 'markets' | 'activity' | 'leaderboard'
 
 interface Tab {
   id: SourceTab
@@ -20,8 +20,6 @@ function buildTabs(sourceId: string): Tab[] {
   const base = `/source/${sourceId}`
   return [
     { id: 'overview',     label: 'Overview',     href: base },
-    { id: 'vaults',       label: 'Vaults',       href: `${base}/vault` },
-    { id: 'bots',         label: 'Bots',         href: `${base}/bots` },
     { id: 'markets',      label: 'Markets',      href: `${base}/markets` },
     { id: 'activity',     label: 'Activity',     href: `${base}/activity` },
     { id: 'leaderboard',  label: 'Leaderboard',  href: `${base}/leaderboard` },
@@ -30,10 +28,7 @@ function buildTabs(sourceId: string): Tab[] {
 
 function deriveActiveTab(pathname: string, sourceId: string): SourceTab {
   const base = `/source/${sourceId}`
-  // Exact match → overview
   if (pathname === base || pathname === `${base}/`) return 'overview'
-  if (pathname.startsWith(`${base}/vault`)) return 'vaults'
-  if (pathname.startsWith(`${base}/bots`)) return 'bots'
   if (pathname.startsWith(`${base}/markets`)) return 'markets'
   if (pathname.startsWith(`${base}/activity`)) return 'activity'
   if (pathname.startsWith(`${base}/leaderboard`)) return 'leaderboard'
