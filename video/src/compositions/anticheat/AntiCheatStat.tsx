@@ -156,7 +156,7 @@ const StatPanel: React.FC = () => {
           right: 0,
           textAlign: "center",
           fontFamily: monoFont,
-          fontSize: 28,
+          fontSize: 40,
           fontWeight: 500,
           letterSpacing: "0.18em",
           textTransform: "uppercase",
@@ -198,7 +198,7 @@ const StatPanel: React.FC = () => {
           right: 0,
           textAlign: "center",
           fontFamily: font,
-          fontSize: 44,
+          fontSize: 60,
           fontWeight: 500,
           letterSpacing: "-0.01em",
           color: colors.fg,
@@ -239,9 +239,9 @@ const BigNumber: React.FC<{
       </div>
       <div
         style={{
-          marginTop: 18,
+          marginTop: 22,
           fontFamily: monoFont,
-          fontSize: 24,
+          fontSize: 36,
           fontWeight: 500,
           letterSpacing: "0.18em",
           textTransform: "uppercase",
@@ -318,7 +318,7 @@ const ChipsPanel: React.FC = () => {
           right: 0,
           textAlign: "center",
           fontFamily: monoFont,
-          fontSize: 28,
+          fontSize: 40,
           fontWeight: 500,
           letterSpacing: "0.18em",
           textTransform: "uppercase",

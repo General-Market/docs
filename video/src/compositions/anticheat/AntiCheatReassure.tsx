@@ -116,9 +116,9 @@ export const AntiCheatReassure: React.FC = () => {
 
         <div
           style={{
-            marginTop: 40,
+            marginTop: 44,
             fontFamily: monoFont,
-            fontSize: 24,
+            fontSize: 36,
             fontWeight: 500,
             letterSpacing: "0.18em",
             textTransform: "uppercase",

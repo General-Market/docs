@@ -100,12 +100,12 @@ export const AntiCheatEndCard: React.FC = () => {
         <div
           style={{
             fontFamily: monoFont,
-            fontSize: 26,
+            fontSize: 40,
             fontWeight: 500,
             letterSpacing: "0.32em",
             textTransform: "uppercase",
             color: colors.dim,
-            marginBottom: 28,
+            marginBottom: 32,
             opacity: wordmarkOpacity,
             transform: `translateY(${wordmarkY}px)`,
           }}
@@ -170,9 +170,9 @@ export const AntiCheatEndCard: React.FC = () => {
 
         <div
           style={{
-            marginTop: 28,
+            marginTop: 32,
             fontFamily: monoFont,
-            fontSize: 22,
+            fontSize: 32,
             fontWeight: 500,
             letterSpacing: "0.22em",
             textTransform: "uppercase",

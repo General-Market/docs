@@ -242,7 +242,7 @@ const TradingScreen: React.FC<{ frame: number; showFrom: number }> = ({
           alignItems: "baseline",
           fontFamily: monoFont,
           color: colors.dim,
-          fontSize: 22,
+          fontSize: 30,
           letterSpacing: "0.06em",
           opacity: 0.85,
         }}
@@ -405,21 +405,21 @@ const OrderBook: React.FC<{ frame: number; centerPrice: number }> = ({
     <div
       style={{
         fontFamily: monoFont,
-        fontSize: 14,
+        fontSize: 22,
         color: colors.dim,
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        gap: 2,
+        gap: 4,
       }}
     >
       <div
         style={{
-          fontSize: 13,
+          fontSize: 20,
           letterSpacing: "0.18em",
           color: colors.dim,
           opacity: 0.6,
-          marginBottom: 8,
+          marginBottom: 10,
         }}
       >
         ORDER BOOK
@@ -486,7 +486,7 @@ const Ticker: React.FC<{ frame: number }> = ({ frame }) => {
     <div
       style={{
         fontFamily: monoFont,
-        fontSize: 22,
+        fontSize: 30,
         color: colors.dim,
         whiteSpace: "nowrap",
         position: "absolute",
@@ -551,12 +551,12 @@ const PanelLabel: React.FC<{
       <div
         style={{
           fontFamily: monoFont,
-          fontSize: 28,
+          fontSize: 38,
           fontWeight: 500,
           letterSpacing: "0.18em",
           textTransform: "uppercase",
           color: colors.dim,
-          marginBottom: 18,
+          marginBottom: 22,
         }}
       >
         {slot}
@@ -634,11 +634,11 @@ const PairList: React.FC<{
             <span
               style={{
                 fontFamily: monoFont,
-                fontSize: 22,
+                fontSize: 34,
                 fontWeight: 500,
                 color: colors.dim,
                 opacity: 0.7,
-                minWidth: 32,
+                minWidth: 50,
               }}
             >
               0{i + 1}

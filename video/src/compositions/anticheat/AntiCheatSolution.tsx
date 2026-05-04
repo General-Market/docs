@@ -98,7 +98,7 @@ const Headline: React.FC = () => {
         style={{
           marginTop: 36,
           fontFamily: monoFont,
-          fontSize: 30,
+          fontSize: 40,
           fontWeight: 500,
           letterSpacing: "0.18em",
           textTransform: "uppercase",
@@ -174,7 +174,7 @@ const Terminal: React.FC = () => {
             style={{
               marginLeft: 18,
               fontFamily: monoFont,
-              fontSize: 16,
+              fontSize: 24,
               color: colors.dim,
               letterSpacing: "0.08em",
             }}
@@ -186,13 +186,13 @@ const Terminal: React.FC = () => {
         {/* Body */}
         <div
           style={{
-            padding: "32px 40px 36px",
+            padding: "36px 44px 40px",
             fontFamily: monoFont,
-            fontSize: 38,
+            fontSize: 50,
             lineHeight: 1.5,
             display: "flex",
             flexDirection: "column",
-            gap: 6,
+            gap: 8,
           }}
         >
           {TERMINAL_LINES.map((line, i) => {

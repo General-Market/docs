@@ -117,12 +117,12 @@ const Headline: React.FC<{ fadeOut: number }> = ({ fadeOut }) => {
       <div
         style={{
           fontFamily: monoFont,
-          fontSize: 28,
+          fontSize: 40,
           fontWeight: 500,
           letterSpacing: "0.18em",
           textTransform: "uppercase",
           color: colors.dim,
-          marginBottom: 16,
+          marginBottom: 20,
         }}
       >
         The rigged stack
@@ -226,11 +226,11 @@ const Card: React.FC<{
         <div
           style={{
             position: "absolute",
-            top: 16,
-            left: 18,
+            top: 18,
+            left: 20,
             fontFamily: monoFont,
-            fontSize: 20,
-            color: colors.dim,
+            fontSize: 30,
+            color: colors.fg,
             letterSpacing: "0.18em",
             textTransform: "uppercase",
             textShadow: "0 2px 8px rgba(0,0,0,0.85)",
@@ -242,17 +242,17 @@ const Card: React.FC<{
 
       <div
         style={{
-          padding: "24px 30px 28px",
+          padding: "28px 32px 32px",
           display: "flex",
           flexDirection: "column",
-          gap: 12,
+          gap: 16,
           flex: 1,
         }}
       >
         <div
           style={{
             fontFamily: font,
-            fontSize: 30,
+            fontSize: 44,
             fontWeight: 700,
             letterSpacing: "-0.02em",
             color: colors.fg,
@@ -265,10 +265,10 @@ const Card: React.FC<{
           style={{
             marginTop: "auto",
             fontFamily: monoFont,
-            fontSize: 14,
+            fontSize: 22,
             letterSpacing: "0.04em",
             color: colors.dim,
-            opacity: 0.85,
+            opacity: 0.9,
           }}
         >
           {card.sub}
