@@ -113,6 +113,12 @@ import {
   pitchSceneMetas,
 } from "./compositions/pitch/PitchComposition";
 import { antiCheatHookMeta } from "./compositions/anticheat/AntiCheatHook";
+import { antiCheatStatMeta } from "./compositions/anticheat/AntiCheatStat";
+import { antiCheatRiggedMeta } from "./compositions/anticheat/AntiCheatRigged";
+import { antiCheatSolutionMeta } from "./compositions/anticheat/AntiCheatSolution";
+import { antiCheatReassureMeta } from "./compositions/anticheat/AntiCheatReassure";
+import { antiCheatEndCardMeta } from "./compositions/anticheat/AntiCheatEndCard";
+import { antiCheatFullMeta } from "./compositions/anticheat/AntiCheatFull";
 
 const SHOW_SCENES = process.env.REMOTION_SHOW_SCENES === "1";
 
@@ -128,15 +134,35 @@ const LofiDotsHexBench: React.FC = () => (
 export const RemotionRoot: React.FC = () => {
   return (
     <>
-      {/* ═══ ANTI-CHEAT HOOK — launch video opening (12s) ═══ */}
-      <Composition
-        id={antiCheatHookMeta.id}
-        component={antiCheatHookMeta.component}
-        durationInFrames={antiCheatHookMeta.durationInFrames}
-        fps={antiCheatHookMeta.fps}
-        width={antiCheatHookMeta.width}
-        height={antiCheatHookMeta.height}
-      />
+      {/* ═══ ANTI-CHEAT — full launch video (60s) and its scenes ═══ */}
+      <Folder name="AntiCheat">
+        <Composition
+          id={antiCheatFullMeta.id}
+          component={antiCheatFullMeta.component}
+          durationInFrames={antiCheatFullMeta.durationInFrames}
+          fps={antiCheatFullMeta.fps}
+          width={antiCheatFullMeta.width}
+          height={antiCheatFullMeta.height}
+        />
+        {[
+          antiCheatHookMeta,
+          antiCheatStatMeta,
+          antiCheatRiggedMeta,
+          antiCheatSolutionMeta,
+          antiCheatReassureMeta,
+          antiCheatEndCardMeta,
+        ].map((meta) => (
+          <Composition
+            key={meta.id}
+            id={meta.id}
+            component={meta.component}
+            durationInFrames={meta.durationInFrames}
+            fps={meta.fps}
+            width={meta.width}
+            height={meta.height}
+          />
+        ))}
+      </Folder>
 
       {/* ═══ PITCH — VC pitch deck, 1 second per slide ═══ */}
       <Composition
