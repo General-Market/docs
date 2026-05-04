@@ -13,8 +13,8 @@ type SparklineProps = {
 /**
  * Build a smooth path through points using quadratic Bezier curves.
  * Each segment ends at the midpoint between successive points and uses the
- * point itself as the control. This is the classic "smooth chart" trick from
- * Apple Stocks / Health: clean, no overshoot, no library dependency.
+ * point itself as the control. Classic Apple Stocks smoothing: clean,
+ * no overshoot, no library.
  */
 function smoothPath(pts: ReadonlyArray<readonly [number, number]>): string {
   if (pts.length === 0) return ''
@@ -32,16 +32,27 @@ function smoothPath(pts: ReadonlyArray<readonly [number, number]>): string {
   return d
 }
 
-function buildPath(series: number[], w: number, h: number): { line: string; area: string } {
+function buildPath(
+  series: number[],
+  w: number,
+  h: number,
+): { line: string; area: string; lastPt: readonly [number, number] } {
+  // 10px padding top + bottom so the curve breathes inside the card
+  const padY = 10
+
   if (series.length < 2) {
     const flat = `M0 ${h / 2} L${w} ${h / 2}`
-    return { line: flat, area: `${flat} L${w} ${h} L0 ${h} Z` }
+    return {
+      line: flat,
+      area: `${flat} L${w} ${h} L0 ${h} Z`,
+      lastPt: [w, h / 2] as const,
+    }
   }
+
   const min = Math.min(...series)
   const max = Math.max(...series)
   const range = max - min || 1
   const stepX = w / (series.length - 1)
-  const padY = 4
 
   const pts: Array<readonly [number, number]> = series.map((v, i) => {
     const x = i * stepX
@@ -51,7 +62,7 @@ function buildPath(series: number[], w: number, h: number): { line: string; area
 
   const line = smoothPath(pts)
   const area = `${line} L${w} ${h} L0 ${h} Z`
-  return { line, area }
+  return { line, area, lastPt: pts[pts.length - 1] }
 }
 
 function SparklineImpl({
@@ -63,9 +74,13 @@ function SparklineImpl({
   className,
   ariaLabel = '',
 }: SparklineProps) {
-  const { line, area } = buildPath(series, width, height)
+  const { line, area, lastPt } = buildPath(series, width, height)
   const fillColor = fill ?? stroke
-  const gid = `apple-spark-${(stroke + (fill ?? '')).replace(/[^a-z0-9]/gi, '')}-${width}-${height}`
+
+  // Stable gradient id — encode dimensions so different sizes don't collide
+  const gid = `apple-spark-${(stroke + (fill ?? '')).replace(/[^a-z0-9]/gi, '')}-${width}x${height}`
+
+  const [lx, ly] = lastPt
 
   return (
     <svg
@@ -79,19 +94,34 @@ function SparklineImpl({
       className={className}
     >
       <defs>
+        {/* Subtle top-down area tint — 5% at top, 0 at bottom */}
         <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={fillColor} stopOpacity="0.22" />
+          <stop offset="0%" stopColor={fillColor} stopOpacity="0.10" />
           <stop offset="100%" stopColor={fillColor} stopOpacity="0" />
         </linearGradient>
       </defs>
+
+      {/* Area fill — very subtle */}
       <path d={area} fill={`url(#${gid})`} />
+
+      {/* Hairline curve — non-scaling stroke stays crisp on any DPR */}
       <path
         d={line}
         fill="none"
         stroke={stroke}
-        strokeWidth={1.6}
+        strokeWidth={1.5}
         strokeLinecap="round"
         strokeLinejoin="round"
+        vectorEffect="non-scaling-stroke"
+      />
+
+      {/* Dot at the rightmost data point */}
+      <circle
+        cx={lx}
+        cy={ly}
+        r={2.5}
+        fill={stroke}
+        vectorEffect="non-scaling-stroke"
       />
     </svg>
   )

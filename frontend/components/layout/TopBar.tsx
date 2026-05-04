@@ -2,8 +2,9 @@
 
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
-import { ReactNode } from 'react'
+import { ReactNode, useState, useEffect } from 'react'
 import { Link } from '@/i18n/routing'
+import { MobileDrawer } from './MobileDrawer'
 
 const WalletControls = dynamic(
   () => import('./WalletControls').then((m) => ({ default: m.WalletControls })),
@@ -32,20 +33,131 @@ type TopBarProps = {
 }
 
 export function TopBar({ search }: TopBarProps) {
+  const [drawerOpen, setDrawerOpen] = useState(false)
+
+  // Lock body scroll when drawer is open
+  useEffect(() => {
+    if (drawerOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [drawerOpen])
+
   return (
-    <header
-      className="md:col-span-2 grid grid-cols-[auto_1fr_auto] items-center gap-3 sm:gap-6 border-b px-4 sm:px-6 py-3"
-      style={{
-        background: 'var(--apple-panel)',
-        borderColor: 'var(--apple-line)',
-      }}
-    >
-      <Brand />
-      <div className="mx-auto w-full max-w-[520px]">{search}</div>
-      <div className="shrink-0">
-        <WalletControls isDark={false} />
-      </div>
-    </header>
+    <>
+      <header
+        className="col-span-1 md:col-span-2 flex items-center gap-3 border-b py-3"
+        style={{
+          background: 'var(--apple-panel)',
+          borderColor: 'var(--apple-line)',
+          // Match the 240px sidebar column width for logo padding; content side gets flex-1
+          paddingLeft: 0,
+          paddingRight: '1rem',
+        }}
+      >
+        {/* Logo region — 240px wide on md+, matches sidebar column exactly */}
+        <div
+          className="shrink-0 flex items-center"
+          style={{ width: 240, paddingLeft: 16, paddingRight: 16 }}
+        >
+          {/* Burger — mobile only */}
+          <button
+            type="button"
+            aria-label="menu"
+            aria-expanded={drawerOpen}
+            onClick={() => setDrawerOpen(true)}
+            className="md:hidden flex flex-col justify-center gap-[5px] w-8 h-8 mr-2 shrink-0"
+          >
+            <span
+              className="block h-px w-5 rounded-full"
+              style={{ background: 'var(--apple-text)' }}
+            />
+            <span
+              className="block h-px w-5 rounded-full"
+              style={{ background: 'var(--apple-text)' }}
+            />
+            <span
+              className="block h-px w-5 rounded-full"
+              style={{ background: 'var(--apple-text)' }}
+            />
+          </button>
+
+          <Brand />
+        </div>
+
+        {/* Search — hidden on mobile, flex on md+ */}
+        <div className="hidden md:flex flex-1 justify-center">
+          <div className="w-full max-w-[520px]">{search}</div>
+        </div>
+
+        {/* Mobile: compact search icon expanding to input */}
+        {search && (
+          <div className="flex md:hidden flex-1 min-w-0">
+            <MobileSearch>{search}</MobileSearch>
+          </div>
+        )}
+
+        <div className="shrink-0">
+          <WalletControls isDark={false} />
+        </div>
+      </header>
+
+      <MobileDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+    </>
+  )
+}
+
+/**
+ * On mobile, wraps the search node behind a magnifying-glass toggle.
+ * Tapping the icon expands the full search input inline.
+ */
+function MobileSearch({ children }: { children: ReactNode }) {
+  const [expanded, setExpanded] = useState(false)
+
+  if (!expanded) {
+    return (
+      <button
+        type="button"
+        aria-label="Search"
+        onClick={() => setExpanded(true)}
+        className="flex items-center justify-center w-8 h-8"
+        style={{ color: 'var(--apple-text-secondary)' }}
+      >
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={1.6}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden
+        >
+          <circle cx="11" cy="11" r="7" />
+          <path d="M20 20l-4-4" />
+        </svg>
+      </button>
+    )
+  }
+
+  return (
+    <div className="flex items-center gap-2 flex-1 min-w-0">
+      <div className="flex-1 min-w-0">{children}</div>
+      <button
+        type="button"
+        aria-label="Close search"
+        onClick={() => setExpanded(false)}
+        className="shrink-0 text-[13px]"
+        style={{ color: 'var(--apple-text-tertiary)' }}
+      >
+        Cancel
+      </button>
+    </div>
   )
 }
 
