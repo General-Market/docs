@@ -240,20 +240,37 @@ function SkeletonCard() {
   )
 }
 
+/**
+ * Static reference bot — shown when the API returns nothing real
+ * (no GitHub token, rate-limited, empty source dir, fetch failed).
+ *
+ * The void is filled with a real link instead of a placeholder. A
+ * card that goes nowhere reads as a stub; one that resolves to a
+ * real repo reads as an example. The user finds the same building
+ * blocks either way — only the surface changes.
+ */
+const STATIC_EXAMPLE_BOT: BotEntry = {
+  name: 'Twitch trader',
+  path: 'twitch',
+  lastCommitAt: null,
+  htmlUrl: 'https://github.com/General-Market/vision-bot-examples/tree/main/twitch',
+  description: 'Reference bot example for the Vision bot examples repo.',
+  sparkline7d: null,
+}
+
 export function TrendingBotsRail({ sourceId }: TrendingBotsRailProps) {
   const { bots, isStub, isLoading } = useTrendingBots(sourceId)
 
   const realBots = !isLoading && !isStub ? bots : []
-  const hasNoBots = !isLoading && realBots.length === 0
+  const showExample = !isLoading && realBots.length === 0
 
   return (
     <div className="bots-rail">
       <div className="bots-rail__grid">
         {isLoading && Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}
-        {!isLoading && realBots.map((bot) => <BotCard key={bot.path} bot={bot} />)}
-        {!isLoading && (
-          <BuildYourOwnCard sourceId={sourceId} prominent={hasNoBots} />
-        )}
+        {!isLoading && realBots.length > 0 && realBots.map((bot) => <BotCard key={bot.path} bot={bot} />)}
+        {showExample && <BotCard bot={STATIC_EXAMPLE_BOT} />}
+        {!isLoading && <BuildYourOwnCard sourceId={sourceId} prominent={false} />}
       </div>
 
       <style jsx>{`

@@ -66,15 +66,15 @@ function RailCard({
   href?: string
   external?: boolean
 }) {
+  const interactive = Boolean(href)
   const inner = (
     <div
-      className="apple-card flex flex-col gap-2 p-4"
-      style={{ background: 'var(--apple-panel)' }}
+      className={`rail-card flex flex-col gap-2 p-5${interactive ? ' rail-card--link' : ''}`}
     >
       <span
         style={{
           fontFamily: 'var(--apple-font-text)',
-          fontSize: 'var(--apple-fs-12)',
+          fontSize: 11,
           letterSpacing: 'var(--apple-track-loose)',
           color: 'var(--apple-text-tertiary)',
           fontWeight: 600,
@@ -85,6 +85,23 @@ function RailCard({
         {label}
       </span>
       {children}
+
+      <style jsx>{`
+        .rail-card {
+          background: var(--apple-panel, #ffffff);
+          border: 1px solid var(--apple-line, rgba(0, 0, 0, 0.08));
+          border-radius: var(--apple-r-md, 12px);
+          transition:
+            transform 240ms cubic-bezier(0.4, 0, 0.6, 1),
+            box-shadow 240ms cubic-bezier(0.4, 0, 0.6, 1),
+            border-color 240ms cubic-bezier(0.4, 0, 0.6, 1);
+        }
+        .rail-card--link:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+          border-color: rgba(0, 0, 0, 0.16);
+        }
+      `}</style>
     </div>
   )
 
@@ -124,7 +141,7 @@ function RoundClosesCard({ sourceId }: { sourceId: string }) {
   const closed = remaining <= 0
 
   return (
-    <RailCard label="current round" href={`/source/${sourceId}`}>
+    <RailCard label="Current round" href={`/source/${sourceId}`}>
       <span
         style={{
           fontFamily: 'var(--apple-font-text)',
@@ -135,7 +152,7 @@ function RoundClosesCard({ sourceId }: { sourceId: string }) {
           color: closed ? 'var(--apple-text-secondary)' : 'var(--apple-text)',
         }}
       >
-        {closed ? 'round closed' : `closes in ${formatCountdown(remaining)}`}
+        {closed ? 'Round closed' : `Closes in ${formatCountdown(remaining)}`}
       </span>
       <span
         style={{
@@ -160,12 +177,12 @@ function NewestVaultCard({ sourceId }: { sourceId: string }) {
     return all.length > 0 ? all[all.length - 1] : null
   }, [sourceId])
 
-  if (!fund) return null
+  if (!fund || !fund.vault) return null
 
   const href = `/source/${sourceId}/vault/${(fund.vault as string).toLowerCase()}`
 
   return (
-    <RailCard label="newest vault" href={href}>
+    <RailCard label="Newest vault" href={href}>
       <span
         style={{
           fontFamily: 'var(--apple-font-text)',
@@ -204,47 +221,19 @@ function TopBotCard({ sourceId }: { sourceId: string }) {
 
   if (isLoading) {
     return (
-      <RailCard label="top bot 7d">
+      <RailCard label="Top bot · 7d">
         <div className="skeleton h-6 w-32 rounded" aria-hidden="true" />
         <div className="skeleton h-4 w-full rounded" aria-hidden="true" />
       </RailCard>
     )
   }
 
-  if (!top) {
-    return (
-      <RailCard
-        label="top bot 7d"
-        href={`https://github.com/General-Market/vision-bot-examples`}
-        external
-      >
-        <span
-          style={{
-            fontFamily: 'var(--apple-font-text)',
-            fontSize: 'var(--apple-fs-17)',
-            letterSpacing: 'var(--apple-track-tight)',
-            color: 'var(--apple-text-secondary)',
-          }}
-        >
-          no bots yet
-        </span>
-        <span
-          style={{
-            fontFamily: 'var(--apple-font-text)',
-            fontSize: 'var(--apple-fs-14)',
-            letterSpacing: 'var(--apple-track-tight)',
-            color: 'var(--apple-accent)',
-          }}
-        >
-          view on GitHub →
-        </span>
-      </RailCard>
-    )
-  }
+  // No top bot? Render nothing. Empty placeholders are not company.
+  if (!top) return null
 
   // sparkline7d is always null for now (performance data is a follow-up from Slice 4).
   return (
-    <RailCard label="top bot 7d" href={top.htmlUrl} external>
+    <RailCard label="Top bot · 7d" href={top.htmlUrl} external>
       <span
         style={{
           fontFamily: 'var(--apple-font-text)',
@@ -291,7 +280,7 @@ function TopBotCard({ sourceId }: { sourceId: string }) {
           color: 'var(--apple-accent)',
         }}
       >
-        view on GitHub →
+        View on GitHub →
       </span>
     </RailCard>
   )
@@ -329,7 +318,7 @@ function YourRoundCard({ sourceId }: { sourceId: string }) {
       : `$${deposited.toFixed(2)}`
 
   return (
-    <RailCard label="your open round" href={`/source/${sourceId}`}>
+    <RailCard label="Your open round" href={`/source/${sourceId}`}>
       <span
         style={{
           fontFamily: 'var(--apple-font-text)',

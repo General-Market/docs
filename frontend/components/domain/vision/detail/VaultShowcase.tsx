@@ -10,7 +10,6 @@ import { useVaultDisplayResolver } from '@/hooks/vaults/useVaultDisplay'
 import { useSSEVisionVaults, useSSEUserVaultPositions } from '@/hooks/useSSE'
 import { useVaultsByAddresses, type VaultInfo } from '@/hooks/vaults/useVaults'
 import { cn } from '@/lib/utils/cn'
-import Link from 'next/link'
 
 const STRATEGY_META: Record<string, { label: string; color: string }> = {
   momentum:           { label: 'MOMENTUM',   color: '#10b981' },
@@ -248,7 +247,9 @@ function useCountUp(target: number, duration = 1200, skip = false) {
 
 
 /* ─────────────────────────────────────────────
-   Vault Tilt Card, 3D perspective hover
+   Vault Card — Apple register. The old 3D tilt
+   was retired: it read as theatrical against the
+   featured hero. A soft shadow-lift earns more.
    ───────────────────────────────────────────── */
 
 function VaultTiltCard({ fund, vault, index, userPosition, onDeposit }: {
@@ -259,7 +260,6 @@ function VaultTiltCard({ fund, vault, index, userPosition, onDeposit }: {
   onDeposit: () => void
 }) {
   const reduced = !!useReducedMotion()
-  const [transform, setTransform] = useState('')
 
   const resolveDisplay = useVaultDisplayResolver()
   const display = resolveDisplay(vault)
@@ -275,16 +275,6 @@ function VaultTiltCard({ fund, vault, index, userPosition, onDeposit }: {
   const { snapshots } = useVaultHistory(vault.address)
   const navData = useMemo(() => snapshots.map(s => s.nav), [snapshots])
 
-  const onMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (reduced) return
-    const rect = e.currentTarget.getBoundingClientRect()
-    const x = (e.clientX - rect.left) / rect.width - 0.5
-    const y = (e.clientY - rect.top) / rect.height - 0.5
-    setTransform(`perspective(800px) rotateX(${(-y * 6).toFixed(2)}deg) rotateY(${(x * 6).toFixed(2)}deg) scale(1.02)`)
-  }, [reduced])
-
-  const onMouseLeave = useCallback(() => setTransform(''), [])
-
   return (
     <motion.div
       initial={reduced ? false : { opacity: 0, y: 24 }}
@@ -292,73 +282,186 @@ function VaultTiltCard({ fund, vault, index, userPosition, onDeposit }: {
       transition={{ duration: 0.5, delay: 0.15 + index * 0.08, ease: EASE_OUT_EXPO }}
     >
       <div
-        onMouseMove={onMouseMove}
-        onMouseLeave={onMouseLeave}
         onClick={onDeposit}
         role="button"
         tabIndex={0}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onDeposit() } }}
-        className="group relative border border-border-light bg-white cursor-pointer overflow-hidden transition-shadow duration-300 hover:shadow-lg hover:border-black/40"
-        style={{
-          transform: transform || undefined,
-          transition: transform
-            ? 'transform 0.08s ease-out'
-            : 'transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
-          willChange: transform ? 'transform' : undefined,
-        }}
+        className="vault-apple-card group relative cursor-pointer overflow-hidden"
       >
-        <div className="p-4">
-          <div className="flex items-center justify-between gap-2 mb-1">
-            <span className="font-black text-[14px] text-text-primary leading-tight truncate">
+        <div className="p-5">
+          <div className="flex items-center justify-between gap-2 mb-1.5">
+            <span
+              className="truncate"
+              style={{
+                fontFamily: 'var(--apple-font-display)',
+                fontSize: 17,
+                fontWeight: 600,
+                letterSpacing: '-0.016em',
+                lineHeight: 1.2105,
+                color: 'var(--apple-text)',
+              }}
+            >
               {fund.name}
             </span>
             {strategy && (
-              <span className="shrink-0 text-[8px] font-bold tracking-[0.08em] px-1.5 py-0.5 rounded uppercase whitespace-nowrap bg-black/5 text-text-muted">
+              <span
+                className="shrink-0 whitespace-nowrap"
+                style={{
+                  fontFamily: 'var(--apple-font-text)',
+                  fontSize: 10,
+                  fontWeight: 600,
+                  letterSpacing: 'var(--apple-track-loose)',
+                  textTransform: 'uppercase',
+                  background: 'var(--apple-surface)',
+                  color: 'var(--apple-text-tertiary)',
+                  padding: '2px 8px',
+                  borderRadius: 999,
+                }}
+              >
                 {strategy.label}
               </span>
             )}
           </div>
 
-          <p className="text-[10px] text-text-muted leading-snug mb-3 line-clamp-2">
+          <p
+            className="line-clamp-2 mb-4"
+            style={{
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: 13,
+              letterSpacing: '-0.005em',
+              lineHeight: 1.3846,
+              color: 'var(--apple-text-secondary)',
+            }}
+          >
             {fund.tagline}
           </p>
 
           <Sparkline
             data={navData}
             height={36}
-            color="#000000"
-            className="mb-3"
+            color="#1d1d1f"
+            className="mb-4"
           />
 
-          <div className="flex items-center justify-between font-mono text-[11px] tabular-nums">
+          <div className="flex items-end justify-between gap-4">
             <div>
-              <div className="text-[8px] font-bold tracking-[0.08em] text-text-muted uppercase">TVL</div>
-              <div className="font-bold text-text-primary">{formatTvl(tvl)}</div>
+              <div
+                style={{
+                  fontFamily: 'var(--apple-font-text)',
+                  fontSize: 11,
+                  fontWeight: 600,
+                  letterSpacing: 'var(--apple-track-loose)',
+                  textTransform: 'uppercase',
+                  color: 'var(--apple-text-tertiary)',
+                  marginBottom: 2,
+                }}
+              >
+                TVL
+              </div>
+              <div
+                style={{
+                  fontFamily: 'var(--apple-font-display)',
+                  fontSize: 17,
+                  fontWeight: 600,
+                  letterSpacing: '-0.016em',
+                  color: 'var(--apple-text)',
+                  fontVariantNumeric: 'tabular-nums',
+                }}
+              >
+                {formatTvl(tvl)}
+              </div>
             </div>
             <div className="text-right">
-              <div className="text-[8px] font-bold tracking-[0.08em] text-text-muted uppercase">Perf</div>
-              <div className={cn('font-bold', isPositive ? 'text-color-up' : 'text-color-down')}>
+              <div
+                style={{
+                  fontFamily: 'var(--apple-font-text)',
+                  fontSize: 11,
+                  fontWeight: 600,
+                  letterSpacing: 'var(--apple-track-loose)',
+                  textTransform: 'uppercase',
+                  color: 'var(--apple-text-tertiary)',
+                  marginBottom: 2,
+                }}
+              >
+                Perf
+              </div>
+              <div
+                className={cn(isPositive ? 'text-color-up' : 'text-color-down')}
+                style={{
+                  fontFamily: 'var(--apple-font-display)',
+                  fontSize: 17,
+                  fontWeight: 600,
+                  letterSpacing: '-0.016em',
+                  fontVariantNumeric: 'tabular-nums',
+                }}
+              >
                 {formatPerf(perf)}
               </div>
             </div>
           </div>
 
           {hasPosition && (
-            <div className="mt-2.5 pt-2.5 border-t border-black/5 flex items-center justify-between font-mono text-[11px] tabular-nums">
-              <div className="text-[8px] font-bold tracking-[0.08em] text-emerald-700/70 uppercase">
-                {pendingOnly ? 'Pending' : 'Your Position'}
+            <div
+              className="mt-4 pt-3 flex items-center justify-between"
+              style={{ borderTop: '1px solid var(--apple-line)' }}
+            >
+              <div
+                style={{
+                  fontFamily: 'var(--apple-font-text)',
+                  fontSize: 11,
+                  fontWeight: 600,
+                  letterSpacing: 'var(--apple-track-loose)',
+                  textTransform: 'uppercase',
+                  color: 'var(--apple-text-tertiary)',
+                }}
+              >
+                {pendingOnly ? 'Pending' : 'Your position'}
               </div>
-              <div className="font-bold text-emerald-700">${userValue.toFixed(2)}</div>
+              <div
+                style={{
+                  fontFamily: 'var(--apple-font-display)',
+                  fontSize: 14,
+                  fontWeight: 600,
+                  letterSpacing: '-0.016em',
+                  color: 'var(--apple-text)',
+                  fontVariantNumeric: 'tabular-nums',
+                }}
+              >
+                ${userValue.toFixed(2)}
+              </div>
             </div>
           )}
 
-          {/* deposit, reveals on hover */}
-          <div className="mt-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-            <button className="w-full py-1.5 bg-black text-white text-[10px] font-bold hover:bg-black/80 transition-colors">
-              {hasPosition ? 'Manage' : 'Deposit'}
-            </button>
+          <div
+            className="mt-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+            style={{
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: 13,
+              letterSpacing: '-0.005em',
+              color: 'var(--apple-accent)',
+              fontWeight: 500,
+            }}
+          >
+            {hasPosition ? 'Manage →' : 'Deposit →'}
           </div>
         </div>
+
+        <style jsx>{`
+          .vault-apple-card {
+            background: var(--apple-panel, #ffffff);
+            border: 1px solid var(--apple-line, rgba(0, 0, 0, 0.08));
+            border-radius: var(--apple-r-md, 12px);
+            transition:
+              transform 240ms cubic-bezier(0.4, 0, 0.6, 1),
+              box-shadow 240ms cubic-bezier(0.4, 0, 0.6, 1),
+              border-color 240ms cubic-bezier(0.4, 0, 0.6, 1);
+          }
+          .vault-apple-card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+            border-color: rgba(0, 0, 0, 0.16);
+          }
+        `}</style>
       </div>
     </motion.div>
   )
@@ -450,7 +553,6 @@ interface VaultShowcaseProps {
 }
 
 export function VaultShowcase({ sourceId }: VaultShowcaseProps) {
-  const reduced = !!useReducedMotion()
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
 
   // Patience timer: wagmi's multicall hook can keep `isLoading` true through
@@ -567,11 +669,28 @@ export function VaultShowcase({ sourceId }: VaultShowcaseProps) {
     <div className="space-y-6">
       {rest.length > 0 && (
         <div>
-          <div className="flex items-center justify-between mb-4">
-            <h4 className="text-[11px] font-bold tracking-[0.1em] text-text-muted uppercase">
+          <div className="flex items-baseline justify-between mb-4">
+            <h4
+              style={{
+                fontFamily: 'var(--apple-font-text)',
+                fontSize: 11,
+                fontWeight: 600,
+                letterSpacing: 'var(--apple-track-loose)',
+                color: 'var(--apple-text-tertiary)',
+                textTransform: 'uppercase',
+                margin: 0,
+              }}
+            >
               More strategies
             </h4>
-            <span className="text-[10px] font-mono text-text-muted">
+            <span
+              style={{
+                fontFamily: 'var(--apple-font-text)',
+                fontSize: 12,
+                color: 'var(--apple-text-tertiary)',
+                fontVariantNumeric: 'tabular-nums',
+              }}
+            >
               {rest.length} vault{rest.length !== 1 ? 's' : ''}
             </span>
           </div>
@@ -596,31 +715,6 @@ export function VaultShowcase({ sourceId }: VaultShowcaseProps) {
                 />
               </div>
             ))}
-
-            {/* create strategy CTA */}
-            <motion.div
-              initial={reduced ? false : { opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.15 + rest.length * 0.08, ease: EASE_OUT_EXPO }}
-              className="shrink-0 basis-[calc(50%-0.5rem)] snap-start sm:basis-auto sm:shrink"
-            >
-              <div className="relative bg-terminal-dark border border-white/[0.06] h-full flex flex-col items-center justify-center text-center p-6 min-h-[200px]">
-                <div className="w-10 h-10 bg-white/[0.04] border border-white/[0.06] flex items-center justify-center mb-4">
-                  <svg className="w-4.5 h-4.5 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="m6.75 7.5 3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0 0 21 18V6a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 6v12a2.25 2.25 0 0 0 2.25 2.25Z" />
-                  </svg>
-                </div>
-                <div className="text-[14px] font-black text-white/80 leading-tight mb-1.5">
-                  Build Your Own
-                </div>
-                <p className="text-[10px] text-white/25 leading-relaxed mb-4 max-w-[200px]">
-                  Automated strategy. Live in minutes. Others deposit into it.
-                </p>
-                <Link href="/build-bot" className="px-5 py-2 bg-white/[0.06] border border-white/[0.08] text-[11px] font-bold text-white/60 hover:bg-white/[0.1] hover:text-white transition-colors">
-                  Create strategy
-                </Link>
-              </div>
-            </motion.div>
           </div>
         </div>
       )}
