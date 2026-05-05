@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useRef } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
 import { useRouter } from '@/i18n/routing'
 import { useBatches } from '@/hooks/vision/useBatches'
@@ -189,6 +189,9 @@ function SourceIdentityCard({
   logo: string
   brandBg: string
 }) {
+  const [logoBroken, setLogoBroken] = useState(false)
+  const hasLogo = !!logo && !logoBroken
+
   return (
     <section
       className="flex items-center gap-5 sm:gap-6 border p-5 sm:p-6"
@@ -198,17 +201,17 @@ function SourceIdentityCard({
         borderRadius: 'var(--apple-r-card)',
       }}
     >
-      <div
-        className="relative shrink-0 flex items-center justify-center overflow-hidden"
-        style={{
-          width: 64,
-          height: 64,
-          background: brandBg || '#000',
-          borderRadius: 'var(--apple-r-md)',
-        }}
-        aria-hidden
-      >
-        {logo ? (
+      {hasLogo && (
+        <div
+          className="relative shrink-0 flex items-center justify-center overflow-hidden"
+          style={{
+            width: 64,
+            height: 64,
+            background: brandBg || '#000',
+            borderRadius: 'var(--apple-r-md)',
+          }}
+          aria-hidden
+        >
           <Image
             src={logo}
             alt=""
@@ -216,9 +219,10 @@ function SourceIdentityCard({
             height={48}
             className="max-h-[48px] max-w-[80%] object-contain"
             priority
+            onError={() => setLogoBroken(true)}
           />
-        ) : null}
-      </div>
+        </div>
+      )}
       <div className="min-w-0 flex-1">
         <div
           style={{

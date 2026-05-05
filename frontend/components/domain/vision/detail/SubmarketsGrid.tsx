@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { Link } from '@/i18n/routing'
 import { useSourceSnapshot } from '@/hooks/vision/useMarketSnapshot'
 import { useSourceRegistry, findSource } from '@/hooks/vision/useSourceRegistry'
 import { useQuery } from '@tanstack/react-query'
@@ -32,7 +33,10 @@ function MarketIcon({ sourceId, assetId, prefixes, imageUrl }: {
     return (
       <span className="relative inline-block w-[22px] h-[22px] shrink-0">
         {!loaded && (
-          <span className="absolute inset-0 rounded-full bg-white/[0.08] animate-pulse" />
+          <span
+            className="absolute inset-0 rounded-full"
+            style={{ background: 'var(--apple-surface)' }}
+          />
         )}
         <img
           src={src} alt=""
@@ -54,8 +58,8 @@ function MarketIcon({ sourceId, assetId, prefixes, imageUrl }: {
       </span>
     )
   }
-  // No src and no badge — keep the shimmer so the slot reads as "still resolving"
-  return <span className="w-[22px] h-[22px] rounded-full bg-white/[0.08] animate-pulse shrink-0" />
+  // No icon source available — render nothing rather than a perpetual shimmer.
+  return null
 }
 
 interface RatiosResponse {
@@ -140,21 +144,55 @@ export function SubmarketsGrid({ sourceId }: SubmarketsGridProps) {
   const hasMore = filtered.length > visibleCount
 
   return (
-    <div>
+    <div
+      className="border overflow-hidden"
+      style={{
+        background: 'var(--apple-panel)',
+        borderColor: 'var(--apple-line)',
+        borderRadius: 'var(--apple-r-card)',
+      }}
+    >
       {/* Header */}
-      <div className="bg-terminal-dark px-5 py-3 flex items-center justify-between flex-wrap gap-2">
-        <div>
-          <div className="text-micro font-semibold uppercase tracking-[0.1em] text-text-inverse-muted/50">
+      <div
+        className="flex items-center justify-between flex-wrap gap-3 px-5 sm:px-6 py-4"
+        style={{ borderBottom: '1px solid var(--apple-line)' }}
+      >
+        <div className="flex items-baseline gap-3">
+          <span
+            style={{
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: 'var(--apple-track-loose)',
+              color: 'var(--apple-text-tertiary)',
+              textTransform: 'uppercase',
+            }}
+          >
             Markets
-          </div>
-          <div className="text-[15px] font-bold text-text-inverse">
+          </span>
+          <span
+            style={{
+              fontFamily: 'var(--apple-font-display)',
+              fontSize: 17,
+              fontWeight: 600,
+              letterSpacing: 'var(--apple-track-tight)',
+              color: 'var(--apple-text)',
+            }}
+          >
             {sourceEntry?.name ?? sourceId}
-            {markets.length > 0 && (
-              <span className="text-label font-normal text-text-inverse-muted/45 ml-2">
-                {markets.length.toLocaleString()}
-              </span>
-            )}
-          </div>
+          </span>
+          {markets.length > 0 && (
+            <span
+              style={{
+                fontFamily: 'var(--apple-font-text)',
+                fontSize: 12,
+                color: 'var(--apple-text-tertiary)',
+                fontVariantNumeric: 'tabular-nums',
+              }}
+            >
+              {markets.length.toLocaleString()}
+            </span>
+          )}
         </div>
         <input
           type="text"
@@ -162,54 +200,99 @@ export function SubmarketsGrid({ sourceId }: SubmarketsGridProps) {
           value={search}
           onChange={e => { setSearch(e.target.value); setVisibleCount(PAGE_SIZE) }}
           aria-label="Search submarkets"
-          className="px-2.5 py-1 rounded text-label bg-white/[0.05] border border-white/10 text-text-inverse placeholder:text-text-inverse-muted/30 outline-none focus:border-white/25 focus:ring-1 focus:ring-white/15 w-[140px] transition-colors"
+          className="outline-none transition-colors"
+          style={{
+            padding: '6px 10px',
+            borderRadius: 'var(--apple-r-sm)',
+            border: '1px solid var(--apple-line)',
+            background: 'var(--apple-surface)',
+            color: 'var(--apple-text)',
+            fontFamily: 'var(--apple-font-text)',
+            fontSize: 13,
+            letterSpacing: 'var(--apple-track-tight)',
+            width: 180,
+          }}
         />
       </div>
 
       {/* Grid */}
-      <div className="bg-terminal px-4 py-4">
+      <div className="px-3 sm:px-4 py-4">
         {isLoading ? (
-          <div className="grid grid-cols-2 xl:grid-cols-3 gap-2.5" aria-hidden="true">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5" aria-hidden="true">
             {Array.from({ length: 12 }).map((_, i) => (
               <div
                 key={i}
-                className="flex items-center gap-2.5 px-3 py-2 rounded bg-white/[0.03]"
-                style={{ animationDelay: `${i * 40}ms` }}
+                className="flex items-center gap-2.5 px-3 py-2.5 rounded-[var(--apple-r-sm)]"
+                style={{
+                  background: 'var(--apple-surface)',
+                  border: '1px solid var(--apple-line)',
+                  animationDelay: `${i * 40}ms`,
+                }}
               >
-                <span className="w-[22px] h-[22px] rounded-full bg-white/[0.08] animate-pulse shrink-0" />
-                <span className="flex-1 h-[11px] rounded bg-white/[0.05] animate-pulse" />
+                <span className="skeleton w-[22px] h-[22px] rounded-full shrink-0" />
+                <span className="skeleton flex-1 h-[11px] rounded" />
                 <div className="flex gap-1 shrink-0">
-                  <span className="w-[38px] h-[26px] rounded bg-color-up/10 animate-pulse" />
-                  <span className="w-[38px] h-[26px] rounded bg-color-down/10 animate-pulse" />
+                  <span className="skeleton w-[42px] h-[28px] rounded" />
+                  <span className="skeleton w-[42px] h-[28px] rounded" />
                 </div>
               </div>
             ))}
           </div>
         ) : isError ? (
-          <div className="py-12 text-center text-caption text-color-down/60">
-            Failed to load markets. Retrying...
+          <div
+            className="py-12 text-center"
+            style={{
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: 13,
+              color: 'rgb(255,59,48)',
+            }}
+          >
+            Failed to load markets. Retrying\u2026
           </div>
         ) : filtered.length === 0 ? (
           <div className="py-16 text-center">
             {search ? (
-              <div className="text-caption text-text-inverse-muted/30">
+              <div
+                style={{
+                  fontFamily: 'var(--apple-font-text)',
+                  fontSize: 13,
+                  color: 'var(--apple-text-tertiary)',
+                }}
+              >
                 No markets matching &ldquo;{search}&rdquo;
               </div>
             ) : isFetching ? (
-              <div className="text-caption text-text-inverse-muted/30 animate-pulse">
-                Loading markets...
+              <div
+                className="animate-pulse"
+                style={{
+                  fontFamily: 'var(--apple-font-text)',
+                  fontSize: 13,
+                  color: 'var(--apple-text-tertiary)',
+                }}
+              >
+                Loading markets\u2026
               </div>
             ) : (
               <div className="flex flex-col items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-white/[0.04] border border-white/[0.08] flex items-center justify-center animate-pulse">
-                  <svg className="w-5 h-5 text-text-inverse-muted/20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5" />
-                  </svg>
-                </div>
-                <div className="text-caption text-text-inverse-muted/35 font-medium">
+                <div
+                  style={{
+                    fontFamily: 'var(--apple-font-display)',
+                    fontSize: 15,
+                    fontWeight: 600,
+                    color: 'var(--apple-text)',
+                  }}
+                >
                   No markets yet
                 </div>
-                <div className="text-micro text-text-inverse-muted/25 max-w-[240px] leading-relaxed">
+                <div
+                  style={{
+                    fontFamily: 'var(--apple-font-text)',
+                    fontSize: 13,
+                    color: 'var(--apple-text-secondary)',
+                    maxWidth: 280,
+                    lineHeight: 1.4,
+                  }}
+                >
                   Markets appear when a new round opens. Check back shortly.
                 </div>
               </div>
@@ -217,7 +300,7 @@ export function SubmarketsGrid({ sourceId }: SubmarketsGridProps) {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-2 xl:grid-cols-3 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
               {visible.map((market) => {
                 const name = market.name || market.symbol
                 const truncated = name.length > 20 ? name.slice(0, 18) + '\u2026' : name
@@ -227,11 +310,22 @@ export function SubmarketsGrid({ sourceId }: SubmarketsGridProps) {
                   : impliedRates(market.changePct)
                 const upOdds = toOdds(rates.upPct)
                 const downOdds = toOdds(rates.downPct)
+                const href = `/source/${sourceId}/market/${encodeURIComponent(market.assetId)}`
 
                 return (
-                  <div
+                  <Link
                     key={market.assetId}
-                    className="flex items-center gap-2.5 px-3 py-2 rounded bg-white/[0.03] hover:bg-white/[0.07] transition-colors"
+                    href={href}
+                    aria-label={`Open ${name} history`}
+                    className="market-row flex items-center gap-2.5 px-3 py-2.5 no-underline"
+                    style={{
+                      borderRadius: 'var(--apple-r-sm)',
+                      background: 'var(--apple-surface)',
+                      border: '1px solid var(--apple-line)',
+                      color: 'inherit',
+                      transition:
+                        'background 200ms var(--apple-ease-default), border-color 200ms var(--apple-ease-default)',
+                    }}
                   >
                     <MarketIcon
                       sourceId={sourceId}
@@ -239,31 +333,101 @@ export function SubmarketsGrid({ sourceId }: SubmarketsGridProps) {
                       prefixes={sourceEntry?.prefixes}
                       imageUrl={market.imageUrl}
                     />
-                    <span className="text-label text-text-inverse-muted truncate flex-1 font-medium leading-tight">
+                    <span
+                      className="truncate flex-1"
+                      style={{
+                        fontFamily: 'var(--apple-font-text)',
+                        fontSize: 13,
+                        fontWeight: 500,
+                        letterSpacing: 'var(--apple-track-tight)',
+                        color: 'var(--apple-text)',
+                        lineHeight: 1.3,
+                      }}
+                    >
                       {truncated}
                     </span>
                     <div className="flex gap-1 shrink-0">
-                      <span className="px-2 py-[3px] rounded bg-color-up/15 border border-color-up/20">
-                        <div className="text-[8px] font-semibold text-color-up/50 leading-none">UP</div>
-                        <div className="text-label font-bold font-mono tabular-nums text-color-up leading-tight">
+                      <span
+                        className="px-2 py-[3px] rounded"
+                        style={{
+                          background: 'rgba(52,199,89,0.10)',
+                          border: '1px solid rgba(52,199,89,0.20)',
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: 8,
+                            fontWeight: 600,
+                            color: 'rgba(52,199,89,0.60)',
+                            lineHeight: 1,
+                            letterSpacing: '0.04em',
+                          }}
+                        >
+                          UP
+                        </div>
+                        <div
+                          style={{
+                            fontFamily: 'var(--apple-font-text)',
+                            fontSize: 13,
+                            fontWeight: 700,
+                            color: 'rgb(52,199,89)',
+                            fontVariantNumeric: 'tabular-nums',
+                            lineHeight: 1.2,
+                          }}
+                        >
                           {upOdds}
                         </div>
                       </span>
-                      <span className="px-2 py-[3px] rounded bg-color-down/15 border border-color-down/20">
-                        <div className="text-[8px] font-semibold text-color-down/50 leading-none">DOWN</div>
-                        <div className="text-label font-bold font-mono tabular-nums text-color-down leading-tight">
+                      <span
+                        className="px-2 py-[3px] rounded"
+                        style={{
+                          background: 'rgba(255,59,48,0.10)',
+                          border: '1px solid rgba(255,59,48,0.20)',
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: 8,
+                            fontWeight: 600,
+                            color: 'rgba(255,59,48,0.60)',
+                            lineHeight: 1,
+                            letterSpacing: '0.04em',
+                          }}
+                        >
+                          DOWN
+                        </div>
+                        <div
+                          style={{
+                            fontFamily: 'var(--apple-font-text)',
+                            fontSize: 13,
+                            fontWeight: 700,
+                            color: 'rgb(255,59,48)',
+                            fontVariantNumeric: 'tabular-nums',
+                            lineHeight: 1.2,
+                          }}
+                        >
                           {downOdds}
                         </div>
                       </span>
                     </div>
-                  </div>
+                  </Link>
                 )
               })}
             </div>
             {hasMore && (
               <button
                 onClick={() => setVisibleCount(v => v + PAGE_SIZE)}
-                className="mt-4 w-full py-2 text-caption font-semibold text-text-inverse-muted/40 hover:text-text-inverse-muted/60 bg-white/[0.03] hover:bg-white/[0.06] rounded transition-colors"
+                className="mt-4 w-full py-2.5 transition-colors"
+                style={{
+                  borderRadius: 'var(--apple-r-sm)',
+                  background: 'var(--apple-surface)',
+                  border: '1px solid var(--apple-line)',
+                  fontFamily: 'var(--apple-font-text)',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: 'var(--apple-text-secondary)',
+                  cursor: 'pointer',
+                }}
               >
                 Show more ({(filtered.length - visibleCount).toLocaleString()} remaining)
               </button>
@@ -271,6 +435,13 @@ export function SubmarketsGrid({ sourceId }: SubmarketsGridProps) {
           </>
         )}
       </div>
+
+      <style jsx>{`
+        :global(.market-row:hover) {
+          background: var(--apple-panel) !important;
+          border-color: rgba(0, 0, 0, 0.16) !important;
+        }
+      `}</style>
     </div>
   )
 }

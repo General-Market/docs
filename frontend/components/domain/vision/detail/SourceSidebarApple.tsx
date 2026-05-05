@@ -1,10 +1,37 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link, usePathname } from '@/i18n/routing'
 import { useSourceRegistry, findSource } from '@/hooks/vision/useSourceRegistry'
 import { getCategoryLabel } from '@/lib/vision/source-categories'
+
+/**
+ * Logo that disappears cleanly when the file is missing or fails to load.
+ * The placeholder div was rendering a colored square forever — we replace
+ * that with nothing. A missing logo should leave silence, not a stub.
+ */
+function LogoImg({ src, alt, size, radius }: { src: string | undefined; alt: string; size: number; radius: number }) {
+  const [broken, setBroken] = useState(false)
+  if (!src || broken) return null
+  return (
+    <img
+      src={src}
+      alt={alt}
+      width={size}
+      height={size}
+      onError={() => setBroken(true)}
+      style={{
+        width: size,
+        height: size,
+        borderRadius: radius,
+        objectFit: 'contain',
+        flexShrink: 0,
+        background: 'var(--apple-surface)',
+      }}
+    />
+  )
+}
 
 const SIDEBAR_EXCLUDED = new Set(['chaturbate', 'fourchan'])
 
@@ -24,7 +51,7 @@ interface PeerSource {
 export function SourceSidebarApple({ sourceId, category }: SourceSidebarAppleProps) {
   const t = useTranslations('vision.source_sidebar')
   const pathname = usePathname()
-  const { sources, isLoading } = useSourceRegistry()
+  const { sources } = useSourceRegistry()
 
   const currentSource = findSource(sources, sourceId)
   const effectiveCategory = category ?? currentSource?.category ?? ''
@@ -68,36 +95,12 @@ export function SourceSidebarApple({ sourceId, category }: SourceSidebarApplePro
           href={overviewHref as never}
           style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}
         >
-          {currentSource?.logo || isLoading ? (
-            <img
-              src={
-                currentSource?.logo
-                  ? `/source-imgs/icons/${currentSource.sourceId}.png`
-                  : undefined
-              }
-              alt={currentSource?.name ?? ''}
-              width={36}
-              height={36}
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 8,
-                objectFit: 'contain',
-                flexShrink: 0,
-                background: 'var(--apple-surface)',
-              }}
-            />
-          ) : (
-            <div
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 8,
-                background: 'var(--apple-surface)',
-                flexShrink: 0,
-              }}
-            />
-          )}
+          <LogoImg
+            src={currentSource?.logo ? `/source-imgs/icons/${currentSource.sourceId}.png` : undefined}
+            alt={currentSource?.name ?? ''}
+            size={36}
+            radius={8}
+          />
           <div style={{ overflow: 'hidden' }}>
             <p
               style={{
@@ -166,19 +169,11 @@ export function SourceSidebarApple({ sourceId, category }: SourceSidebarApplePro
               }}
               className="source-sidebar-peer-link"
             >
-              <img
+              <LogoImg
                 src={`/source-imgs/icons/${peer.sourceId}.png`}
                 alt={peer.name}
-                width={22}
-                height={22}
-                style={{
-                  width: 22,
-                  height: 22,
-                  borderRadius: 5,
-                  objectFit: 'contain',
-                  flexShrink: 0,
-                  background: 'var(--apple-surface)',
-                }}
+                size={22}
+                radius={5}
               />
               <span
                 style={{
