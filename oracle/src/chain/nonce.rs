@@ -8,7 +8,7 @@
 
 use std::collections::BTreeSet;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 use std::time::{Duration, Instant};
 
 use dashmap::DashMap;
@@ -16,6 +16,51 @@ use ethers::prelude::*;
 use tracing::{debug, warn};
 
 use common::error::Error;
+
+/// Process-wide registry of `NonceManager`s, keyed by `(chain_id, address)`.
+///
+/// Every actor in the oracle process — leader writer, settlement writer,
+/// custody writer, faucet — must route nonce assignment through the same
+/// broker for a given (chain, signer). Otherwise two managers on the same
+/// account each maintain a private counter and they collide on the chain.
+///
+/// The registry constructs a manager on first lookup, stores it under an
+/// `Arc`, and returns the same `Arc` for every subsequent lookup of the
+/// same key. Different RPC URLs against the same chain still resolve to
+/// one manager — `chain_id`, not URL, is the identity.
+static NONCE_REGISTRY: OnceLock<DashMap<(u64, Address), Arc<NonceManager>>> = OnceLock::new();
+
+fn nonce_registry() -> &'static DashMap<(u64, Address), Arc<NonceManager>> {
+    NONCE_REGISTRY.get_or_init(DashMap::new)
+}
+
+/// Fetch (or construct) the singleton `NonceManager` for a `(chain_id, address)`.
+///
+/// First caller installs a manager built around the supplied provider.
+/// Subsequent callers receive the same `Arc<NonceManager>` regardless of
+/// what provider they pass — the first one wins. This is intentional:
+/// the manager's state belongs to the address, not to any single RPC.
+pub fn get_or_init_nonce_manager(
+    chain_id: u64,
+    address: Address,
+    provider: Arc<Provider<Http>>,
+) -> Arc<NonceManager> {
+    let registry = nonce_registry();
+    if let Some(existing) = registry.get(&(chain_id, address)) {
+        return existing.clone();
+    }
+    registry
+        .entry((chain_id, address))
+        .or_insert_with(|| Arc::new(NonceManager::new(address, provider)))
+        .clone()
+}
+
+/// Test-only: drop the registry entry for a key so a fresh manager is built
+/// on the next call. Production code never needs this.
+#[cfg(test)]
+fn clear_nonce_registry_entry(chain_id: u64, address: Address) {
+    nonce_registry().remove(&(chain_id, address));
+}
 
 /// Status of a pending transaction
 #[derive(Debug, Clone)]
@@ -501,6 +546,49 @@ mod tests {
 
         assert!(!manager.state.lock().await.in_flight.contains(&5), "Should remove from in-flight on success");
         assert_eq!(manager.pending_count(), 0, "Should remove from pending on success");
+    }
+
+    #[test]
+    fn test_nonce_registry_returns_same_arc_for_same_key() {
+        let provider = create_test_provider();
+        let address = Address::random();
+        let chain_id: u64 = 111222333;
+
+        // Ensure a clean slate even if another test populated the static.
+        clear_nonce_registry_entry(chain_id, address);
+
+        let a = get_or_init_nonce_manager(chain_id, address, provider.clone());
+        let b = get_or_init_nonce_manager(chain_id, address, provider.clone());
+
+        // Same allocation — Arc::ptr_eq is the strict identity check.
+        assert!(
+            Arc::ptr_eq(&a, &b),
+            "Registry must return the same Arc<NonceManager> for the same (chain, address)"
+        );
+        // Strong count is 3: registry holds one, `a` and `b` each hold one.
+        assert_eq!(Arc::strong_count(&a), 3);
+
+        // Different address: distinct manager.
+        let other = Address::random();
+        clear_nonce_registry_entry(chain_id, other);
+        let c = get_or_init_nonce_manager(chain_id, other, provider.clone());
+        assert!(
+            !Arc::ptr_eq(&a, &c),
+            "Different address must yield a distinct manager"
+        );
+
+        // Different chain, same address: also distinct.
+        clear_nonce_registry_entry(42161, address);
+        let d = get_or_init_nonce_manager(42161, address, provider);
+        assert!(
+            !Arc::ptr_eq(&a, &d),
+            "Different chain must yield a distinct manager"
+        );
+
+        // Cleanup so other tests in this module aren't perturbed.
+        clear_nonce_registry_entry(chain_id, address);
+        clear_nonce_registry_entry(chain_id, other);
+        clear_nonce_registry_entry(42161, address);
     }
 
     #[tokio::test]

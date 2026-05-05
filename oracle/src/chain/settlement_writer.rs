@@ -10,7 +10,7 @@ use ethers::types::transaction::eip2718::TypedTransaction;
 use tracing::{debug, info, warn};
 
 use super::gas::{GasConfig, GasEstimator};
-use super::nonce::NonceManager;
+use super::nonce::{get_or_init_nonce_manager, NonceManager};
 use super::retry::RetryConfig;
 
 /// Configuration for SettlementChainWriter
@@ -57,8 +57,8 @@ pub struct SettlementChainWriter {
     client: Arc<SettlementSignerClient>,
     /// Configuration
     config: SettlementChainWriterConfig,
-    /// Nonce manager
-    nonce_manager: NonceManager,
+    /// Nonce manager — singleton per (chain_id, signer address) across the process.
+    nonce_manager: Arc<NonceManager>,
     /// Gas estimator
     gas_estimator: GasEstimator<SettlementSignerClient>,
 }
@@ -92,8 +92,9 @@ impl SettlementChainWriter {
         let client = SignerMiddleware::new((*provider_arc).clone(), wallet);
         let client_arc = Arc::new(client);
 
-        // Create nonce manager with the underlying provider
-        let nonce_manager = NonceManager::new(address, provider_arc);
+        // Fetch the singleton nonce manager for this (chain, address). Two
+        // writers built independently against the same key share one broker.
+        let nonce_manager = get_or_init_nonce_manager(config.chain_id, address, provider_arc);
 
         // Create gas estimator
         let gas_estimator = GasEstimator::new(client_arc.clone(), config.gas_config.clone());
