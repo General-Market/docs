@@ -8,10 +8,9 @@ import { antiCheatSolutionMeta } from "./AntiCheatSolution";
 import { antiCheatReassureMeta } from "./AntiCheatReassure";
 import { antiCheatEndCardMeta } from "./AntiCheatEndCard";
 
-// Hook 9.5s + Stat 9s + Rigged 5.5s + Solution 5.5s + Reassure 4.5s + EndCard 3.5s = 37.5s.
-// Stat contains the crowd dezoom (1.8s) and the 67%-strike correction.
+// Hook 10s + Stat 7.5s + Rigged 6s + Solution 6.5s + Reassure 6s + EndCard 5s = 41s.
 // Hard cuts. No transitions. Each scene starts at the prior scene's last frame + 1.
-const TOTAL_FRAMES = 1125;
+const TOTAL_FRAMES = 1230;
 
 const SCENES = [
   antiCheatHookMeta,
