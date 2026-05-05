@@ -1,9 +1,11 @@
 import React from "react";
 import {
   AbsoluteFill,
+  Img,
   Sequence,
   interpolate,
   spring,
+  staticFile,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
@@ -216,18 +218,53 @@ const ArrowFlow: React.FC<{ t: number }> = ({ t }) => {
 // Bars scale to the largest figure. Each bar grows left-to-right, the dollar
 // figure zoom-echoes in as the bar lands.
 
+type SourceBrand =
+  | { kind: "wordmark"; src: string; pad?: number }
+  | { kind: "composite"; icon: string; name: string };
+
 type Bar = {
   label: string;
   value: number; // billions
   displayValue: string;
+  source: SourceBrand;
 };
 
 const BARS: Bar[] = [
-  { label: "perps", value: 1.0, displayValue: "$1.0B+" },
-  { label: "options", value: 2.6, displayValue: "$2.6B" },
-  { label: "predictions", value: 3.7, displayValue: "$3.7B" },
-  { label: "launchpads", value: 0.7, displayValue: "$700M" },
+  {
+    label: "perps",
+    value: 1.0,
+    displayValue: "$1.0B+",
+    source: { kind: "wordmark", src: "logos/exchanges/binance.svg", pad: 8 },
+  },
+  {
+    label: "options",
+    value: 2.6,
+    displayValue: "$2.6B",
+    source: { kind: "wordmark", src: "logos/exchanges/robinhood.svg", pad: 10 },
+  },
+  {
+    label: "predictions",
+    value: 3.7,
+    displayValue: "$3.7B",
+    source: {
+      kind: "wordmark",
+      src: "logos/exchanges/polymarket-black.svg",
+      pad: 10,
+    },
+  },
+  {
+    label: "launchpads",
+    value: 0.7,
+    displayValue: "$700M",
+    source: {
+      kind: "composite",
+      icon: "logos/exchanges/pumpfun.png",
+      name: "pump.fun",
+    },
+  },
 ];
+
+const PROOF_GREEN = "#22d97a";
 
 const MAX_VALUE = Math.max(...BARS.map((b) => b.value));
 const BAR_STAGGER = toFrames(0.32);
@@ -287,15 +324,15 @@ const ExtractionBars: React.FC = () => {
       <div
         style={{
           position: "absolute",
-          top: "20%",
-          bottom: "22%",
+          top: "18%",
+          bottom: "20%",
           left: 0,
           right: 0,
-          padding: "0 180px",
+          padding: "0 90px",
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
-          gap: 36,
+          gap: 30,
         }}
       >
         {BARS.map((bar, i) => (
@@ -308,32 +345,35 @@ const ExtractionBars: React.FC = () => {
         ))}
       </div>
 
-      {/* Knife */}
+      {/* Knife — title-font hero treatment */}
       <div
         style={{
           position: "absolute",
-          bottom: "8%",
+          bottom: "5%",
           left: 0,
           right: 0,
           textAlign: "center",
           fontFamily: font,
-          fontSize: 56,
-          fontWeight: 600,
-          letterSpacing: "-0.02em",
+          fontSize: 96,
+          fontWeight: 800,
+          letterSpacing: "-0.035em",
           color: colors.fg,
+          lineHeight: 0.95,
+          textShadow: "0 4px 28px rgba(0,0,0,0.65)",
           opacity: revealOpacity,
           transform: `translateY(${revealY}px)`,
         }}
       >
-        <span style={{ color: colors.dim, marginRight: 18 }}>→</span>
-        every market you touch.
+        <span style={{ color: colors.dim, marginRight: 24 }}>→</span>
+        every market you touched.
       </div>
     </AbsoluteFill>
   );
 };
 
-const LABEL_COL = 360;
-const VALUE_COL = 280;
+const LABEL_COL = 280;
+const VALUE_COL = 220;
+const CHIP_COL = 320;
 
 const BarRow: React.FC<{
   bar: Bar;
@@ -367,8 +407,8 @@ const BarRow: React.FC<{
       style={{
         display: "flex",
         alignItems: "center",
-        gap: 32,
-        height: 84,
+        gap: 24,
+        height: 96,
       }}
     >
       {/* Label */}
@@ -377,7 +417,7 @@ const BarRow: React.FC<{
           width: LABEL_COL,
           flexShrink: 0,
           fontFamily: monoFont,
-          fontSize: 56,
+          fontSize: 52,
           fontWeight: 500,
           letterSpacing: "0.02em",
           color: colors.dim,
@@ -432,7 +472,7 @@ const BarRow: React.FC<{
           flexShrink: 0,
           textAlign: "left",
           fontFamily: font,
-          fontSize: 80,
+          fontSize: 72,
           fontWeight: 800,
           letterSpacing: "-0.03em",
           color: colors.fg,
@@ -444,6 +484,132 @@ const BarRow: React.FC<{
           delayFrames={Math.round(BAR_GROW * 0.55)}
           containerLocalFrame={local}
         />
+      </div>
+
+      {/* Source chip — exchange wordmark + green underline as proof handle */}
+      <SourceChip
+        brand={bar.source}
+        delayFrames={Math.round(BAR_GROW * 0.85)}
+        containerLocalFrame={local}
+      />
+    </div>
+  );
+};
+
+// ─── Source chip: small white card with the exchange wordmark.
+//     A green underline draws beneath after the chip lands — the visual hook
+//     that says "real source; we're about to show you the article."
+
+const SourceChip: React.FC<{
+  brand: SourceBrand;
+  delayFrames: number;
+  containerLocalFrame: number;
+}> = ({ brand, delayFrames, containerLocalFrame }) => {
+  const local = containerLocalFrame - delayFrames;
+
+  const enterT = Math.max(0, Math.min(1, local / toFrames(0.3)));
+  const enterEased = 1 - Math.pow(1 - enterT, 3);
+  const opacity = enterEased;
+  const x = interpolate(enterEased, [0, 1], [22, 0]);
+
+  const lineT = Math.max(
+    0,
+    Math.min(1, (local - toFrames(0.18)) / toFrames(0.45)),
+  );
+  const lineEased = 1 - Math.pow(1 - lineT, 3);
+
+  return (
+    <div
+      style={{
+        width: CHIP_COL,
+        flexShrink: 0,
+        opacity,
+        transform: `translateX(${x}px)`,
+      }}
+    >
+      <div
+        style={{
+          background: "#ffffff",
+          borderRadius: 8,
+          padding: "12px 18px 10px",
+          height: 80,
+          display: "flex",
+          flexDirection: "column",
+          gap: 6,
+          boxShadow:
+            "0 0 0 1px rgba(255,255,255,0.06), 0 12px 32px rgba(0,0,0,0.55)",
+        }}
+      >
+        <div style={{ flex: 1, position: "relative" }}>
+          {brand.kind === "wordmark" ? (
+            <Img
+              src={staticFile(brand.src)}
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+                padding: brand.pad ?? 0,
+                boxSizing: "border-box",
+                display: "block",
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 10,
+              }}
+            >
+              <Img
+                src={staticFile(brand.icon)}
+                style={{
+                  height: "82%",
+                  width: "auto",
+                  objectFit: "contain",
+                  display: "block",
+                }}
+              />
+              <span
+                style={{
+                  fontFamily: font,
+                  fontWeight: 800,
+                  fontSize: 30,
+                  color: "#0a0a0a",
+                  letterSpacing: "-0.02em",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {brand.name}
+              </span>
+            </div>
+          )}
+        </div>
+        {/* Green underline drawing left → right */}
+        <div
+          style={{
+            position: "relative",
+            height: 4,
+            borderRadius: 2,
+            background: "rgba(34,217,122,0.18)",
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              bottom: 0,
+              left: 0,
+              width: `${lineEased * 100}%`,
+              background: PROOF_GREEN,
+              boxShadow: `0 0 12px ${PROOF_GREEN}`,
+            }}
+          />
+        </div>
       </div>
     </div>
   );
