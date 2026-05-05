@@ -5,8 +5,8 @@ import type { SourceFeed } from '@/lib/vision/adapters'
 type FeedMap = Record<string, SourceFeed>
 
 const HERO_ID = 'polymarket'
-const SIDE_RAIL_IDS = ['pumpfun', 'defillama', 'equities', 'espn'] as const
-const FEATURED_ROW_IDS = ['defillama', 'equities', 'espn', 'iss'] as const
+const SIDE_RAIL_IDS = ['pumpfun', 'defillama', 'equities', 'sports'] as const
+const FEATURED_ROW_IDS = ['defillama', 'equities', 'sports', 'iss'] as const
 const TOP_MARKETS_IDS = ['twitch', 'steam', 'github', 'pumpfun'] as const
 
 function pick(feeds: FeedMap, id: string): SourceFeed {

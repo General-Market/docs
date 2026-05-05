@@ -29,7 +29,7 @@ export const SOURCE_IMAGES: Record<string, string> = {
   pumpfun: '/source-imgs/new-pumpfun.webp',
   defillama: '/source-imgs/new-defillama.webp',
   equities: '/source-imgs/grab-nasdaq.webp',
-  espn: '/source-imgs/grab-espn.webp',
+  sports: '/source-imgs/grab-espn.webp',
   twitch: '/source-imgs/new-twitch.webp',
   steam: '/source-imgs/new-steam.webp',
   github: '/source-imgs/new-github.webp',

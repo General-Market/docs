@@ -2,7 +2,7 @@ import type { SourceFeed } from './types'
 import { SOURCE_IMAGES } from './types'
 import { getDefiLlamaFeed } from './defillama'
 import { getEquitiesFeed } from './equities'
-import { getEspnFeed } from './espn'
+import { getSportsFeed } from './sports'
 import { getIssFeed } from './iss'
 import { getPolymarketFeed } from './polymarket'
 import { getPumpfunFeed } from './pumpfun'
@@ -15,7 +15,7 @@ export type { SourceFeed, Coverage } from './types'
 const ADAPTERS: Record<string, () => Promise<SourceFeed>> = {
   defillama: getDefiLlamaFeed,
   equities: getEquitiesFeed,
-  espn: getEspnFeed,
+  sports: getSportsFeed,
   iss: getIssFeed,
   polymarket: getPolymarketFeed,
   pumpfun: getPumpfunFeed,
@@ -27,7 +27,7 @@ const ADAPTERS: Record<string, () => Promise<SourceFeed>> = {
 const DISPLAY: Record<string, { displayName: string; meta: string; coverage: 'anticheat' | 'external' | 'soon' }> = {
   defillama: { displayName: 'DefiLlama', meta: 'TVL across 240+ protocols', coverage: 'anticheat' },
   equities: { displayName: 'NYSE', meta: 'NYSE-listed · pre-market + close', coverage: 'anticheat' },
-  espn: { displayName: 'ESPN', meta: 'NBA · NFL · MLB · soccer', coverage: 'anticheat' },
+  sports: { displayName: 'Sports', meta: 'NFL · NBA · MLB · NHL · soccer', coverage: 'anticheat' },
   iss: { displayName: 'ISS', meta: 'Position · pass times', coverage: 'anticheat' },
   polymarket: { displayName: 'Polymarket', meta: 'Prediction markets', coverage: 'external' },
   pumpfun: { displayName: 'Pumpfun', meta: 'Solana memecoin launches', coverage: 'external' },
