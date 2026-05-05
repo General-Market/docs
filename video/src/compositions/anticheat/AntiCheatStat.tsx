@@ -16,14 +16,12 @@ const STAT_DURATION = toFrames(4);
 export const AntiCheatStat: React.FC = () => {
   return (
     <AbsoluteFill style={{ backgroundColor: colors.bg, fontFamily: font }}>
-      <TradingBackdrop />
-
       <Sequence from={0} durationInFrames={STAT_DURATION + toFrames(0.4)}>
         <StatPanel />
       </Sequence>
 
       <Sequence from={STAT_DURATION}>
-        <ChipsPanel />
+        <ZoomList />
       </Sequence>
 
       <AbsoluteFill
@@ -33,82 +31,6 @@ export const AntiCheatStat: React.FC = () => {
             "radial-gradient(circle at 50% 50%, transparent 55%, rgba(0,0,0,0.55) 100%)",
         }}
       />
-    </AbsoluteFill>
-  );
-};
-
-// ─── Faint trading-screen background (grid + candle silhouettes) ──────────────
-
-const TradingBackdrop: React.FC = () => {
-  const frame = useCurrentFrame();
-  return (
-    <AbsoluteFill
-      style={{
-        background: "linear-gradient(180deg, #0d0d10 0%, #050507 100%)",
-      }}
-    >
-      <svg
-        viewBox={`0 0 ${W} ${H}`}
-        width="100%"
-        height="100%"
-        preserveAspectRatio="none"
-        style={{ position: "absolute", inset: 0, opacity: 0.55 }}
-      >
-        {/* Grid */}
-        {Array.from({ length: 12 }).map((_, i) => (
-          <line
-            key={`h${i}`}
-            x1={0}
-            x2={W}
-            y1={(i + 1) * (H / 13)}
-            y2={(i + 1) * (H / 13)}
-            stroke="#16161b"
-            strokeWidth={1}
-          />
-        ))}
-        {Array.from({ length: 18 }).map((_, i) => (
-          <line
-            key={`v${i}`}
-            x1={(i + 1) * (W / 19)}
-            x2={(i + 1) * (W / 19)}
-            y1={0}
-            y2={H}
-            stroke="#13131a"
-            strokeWidth={1}
-          />
-        ))}
-        {/* Candle silhouettes */}
-        {Array.from({ length: 60 }).map((_, i) => {
-          const seedA = pseudo(i * 1.31 + frame * 0.01);
-          const seedB = pseudo(i * 0.77 + 9.1);
-          const cx = (i / 60) * W + (i % 2 === 0 ? 6 : -3);
-          const cy = H * 0.42 + Math.sin(i * 0.41 + frame * 0.012) * 90;
-          const len = 60 + seedA * 110;
-          const w = 12;
-          const isUp = seedB > 0.5;
-          const fill = isUp ? "#1c2a22" : "#2a1a1c";
-          const stroke = isUp ? "#1f3a2a" : "#3a1f22";
-          return (
-            <g key={i} opacity={0.55}>
-              <line
-                x1={cx + w / 2}
-                x2={cx + w / 2}
-                y1={cy - len * 0.7}
-                y2={cy + len * 0.7}
-                stroke={stroke}
-                strokeWidth={1.2}
-              />
-              <rect
-                x={cx}
-                y={cy - len / 2}
-                width={w}
-                height={len}
-                fill={fill}
-              />
-            </g>
-          );
-        })}
-      </svg>
     </AbsoluteFill>
   );
 };
@@ -147,25 +69,6 @@ const StatPanel: React.FC = () => {
 
   return (
     <AbsoluteFill style={{ opacity }}>
-      {/* Eyebrow label */}
-      <div
-        style={{
-          position: "absolute",
-          top: "18%",
-          left: 0,
-          right: 0,
-          textAlign: "center",
-          fontFamily: monoFont,
-          fontSize: 40,
-          fontWeight: 500,
-          letterSpacing: "0.18em",
-          textTransform: "uppercase",
-          color: colors.dim,
-        }}
-      >
-        Cheaters → Profits
-      </div>
-
       {/* Big numbers row */}
       <div
         style={{
@@ -300,16 +203,42 @@ const ArrowFlow: React.FC<{ t: number }> = ({ t }) => {
   );
 };
 
-// ─── Chips panel: PERPS · OPTIONS · PREDICTIONS · LAUNCHPADS ──────────────────
+// ─── Zoom list: comma-separated mono dim text with depth-clone trails ─────────
 
-const CHIPS = ["Perps", "Options", "Predictions", "Launchpads"] as const;
+const WORDS = ["perps", "options", "predictions", "launchpads"] as const;
+const WORD_STAGGER = toFrames(0.22);
+const REVEAL_AT =
+  WORD_STAGGER * (WORDS.length - 1) + toFrames(0.95);
 
-const ChipsPanel: React.FC = () => {
+const ZoomList: React.FC = () => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
+
+  // Eyebrow fades in immediately.
+  const eyebrowOpacity = interpolate(
+    frame,
+    [0, toFrames(0.3)],
+    [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+
+  // Final reveal "→ all of it." snaps in once the last echo settles.
+  const revealLocal = frame - REVEAL_AT;
+  const revealOpacity = interpolate(
+    revealLocal,
+    [0, toFrames(0.18)],
+    [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const revealY = interpolate(
+    revealLocal,
+    [0, toFrames(0.18)],
+    [22, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
 
   return (
     <AbsoluteFill>
+      {/* Eyebrow */}
       <div
         style={{
           position: "absolute",
@@ -323,100 +252,186 @@ const ChipsPanel: React.FC = () => {
           letterSpacing: "0.18em",
           textTransform: "uppercase",
           color: colors.dim,
+          opacity: eyebrowOpacity,
         }}
       >
         Every market they touch
       </div>
 
+      {/* Comma-separated word list with zoom clones */}
       <div
         style={{
           position: "absolute",
-          top: "40%",
+          top: "44%",
           left: 0,
           right: 0,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 28,
+          textAlign: "center",
+          fontFamily: monoFont,
+          fontSize: 72,
+          fontWeight: 500,
+          letterSpacing: "0.04em",
+          color: colors.dim,
           padding: "0 96px",
-          flexWrap: "wrap",
+          lineHeight: 1.1,
         }}
       >
-        {CHIPS.map((label, i) => {
-          const at = toFrames(0.18 * i + 0.05);
-          const t = spring({
-            frame: frame - at,
-            fps,
-            config: { damping: 14, stiffness: 220, mass: 0.55 },
-          });
-          const y = interpolate(t, [0, 1], [-46, 0]);
-          const opacity = interpolate(t, [0, 1], [0, 1]);
-          const scale = interpolate(t, [0, 1], [0.92, 1]);
-          return (
-            <div
-              key={label}
-              style={{
-                fontFamily: monoFont,
-                fontSize: 56,
-                fontWeight: 500,
-                letterSpacing: "0.04em",
-                textTransform: "uppercase",
-                color: colors.fg,
-                padding: "22px 38px",
-                border: `1px solid ${colors.accent}`,
-                borderRadius: 4,
-                backgroundColor: "rgba(255,59,59,0.04)",
-                boxShadow:
-                  "0 0 0 1px rgba(255,59,59,0.08), 0 8px 32px rgba(0,0,0,0.45)",
-                opacity,
-                transform: `translateY(${y}px) scale(${scale})`,
-              }}
-            >
-              {label}
-            </div>
-          );
-        })}
+        {WORDS.map((word, i) => (
+          <React.Fragment key={word}>
+            <ZoomEchoWord word={word} delayFrames={i * WORD_STAGGER} />
+            {i < WORDS.length - 1 && (
+              <Comma delayFrames={i * WORD_STAGGER + toFrames(0.18)} />
+            )}
+            {i === WORDS.length - 1 && (
+              <Period delayFrames={i * WORD_STAGGER + toFrames(0.45)} />
+            )}
+          </React.Fragment>
+        ))}
       </div>
 
+      {/* "→ all of it." */}
       <div
         style={{
           position: "absolute",
-          bottom: "20%",
+          bottom: "22%",
           left: 0,
           right: 0,
           textAlign: "center",
           fontFamily: font,
-          fontSize: 64,
+          fontSize: 88,
           fontWeight: 700,
           letterSpacing: "-0.025em",
           color: colors.fg,
-          opacity: interpolate(
-            frame,
-            [toFrames(1.4), toFrames(2.0)],
-            [0, 1],
-            { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-          ),
-          transform: `translateY(${interpolate(
-            frame,
-            [toFrames(1.4), toFrames(2.0)],
-            [16, 0],
-            { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-          )}px)`,
+          opacity: revealOpacity,
+          transform: `translateY(${revealY}px)`,
         }}
       >
-        Leaving you with{" "}
-        <span style={{ color: colors.accent }}>nearly none.</span>
+        <span style={{ color: colors.dim, marginRight: 24 }}>→</span>
+        all of it.
       </div>
     </AbsoluteFill>
   );
 };
 
-// ─── Deterministic noise (lifted from the hook) ───────────────────────────────
+// ─── Zoom-echo word: live word + trailing depth-clones at decreasing scale ────
+//
+// Each echo is the same word rendered a few frames earlier in its own zoom-out
+// curve. Earlier frames mean larger scale, lower alpha — so the trail recedes
+// from the current letter shape backwards into a haze of micro-clones.
+//
+// After the animation settles, the echoes fade out and only the live word
+// remains, sharp at its natural inline position.
 
-function pseudo(seed: number): number {
-  const v = (Math.sin(seed * 12.9898) * 43758.5453) % 1;
-  return v < 0 ? v + 1 : v;
-}
+const ECHO_COUNT = 5;
+const ECHO_GAP_FRAMES = 1.6;
+const ZOOM_DURATION = toFrames(0.55);
+
+const ZoomEchoWord: React.FC<{ word: string; delayFrames: number }> = ({
+  word,
+  delayFrames,
+}) => {
+  const frame = useCurrentFrame();
+  const local = frame - delayFrames;
+
+  if (local < 0) {
+    return (
+      <span style={{ display: "inline-block", visibility: "hidden" }}>
+        {word}
+      </span>
+    );
+  }
+
+  // After the deepest echo lands, fade them all out so the line resolves to
+  // clean text — the trails are a transit effect, not a permanent decoration.
+  const echoFade = interpolate(
+    local,
+    [
+      ZOOM_DURATION + ECHO_COUNT * ECHO_GAP_FRAMES + toFrames(0.05),
+      ZOOM_DURATION + ECHO_COUNT * ECHO_GAP_FRAMES + toFrames(0.35),
+    ],
+    [1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+
+  return (
+    <span
+      style={{
+        position: "relative",
+        display: "inline-block",
+        color: colors.fg,
+      }}
+    >
+      {/* Reserve layout width with hidden text */}
+      <span style={{ visibility: "hidden" }}>{word}</span>
+
+      {Array.from({ length: ECHO_COUNT + 1 }).map((_, i) => {
+        const f = local - i * ECHO_GAP_FRAMES;
+        if (f < 0) return null;
+
+        const t = Math.max(0, Math.min(1, f / ZOOM_DURATION));
+        const eased = 1 - Math.pow(1 - t, 4);
+
+        // Lead (i=0) is the "live" copy. Higher i = older frame echo,
+        // captured when scale was still oversized.
+        const scale = interpolate(eased, [0, 1], [4.6, 1]);
+        const dim = i === 0 ? 1 : Math.pow(0.52, i) * echoFade;
+        const op = eased * dim;
+
+        // Lead at full saturation = colors.fg. Echoes drift toward dim/accent
+        // for a touch of atmospheric perspective.
+        const tint = i === 0 ? colors.fg : i % 2 === 0 ? colors.fg : colors.accent;
+
+        return (
+          <span
+            key={i}
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              textAlign: "center",
+              transform: `scale(${scale})`,
+              transformOrigin: "center",
+              opacity: op,
+              color: tint,
+              pointerEvents: "none",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {word}
+          </span>
+        );
+      })}
+    </span>
+  );
+};
+
+// ─── Punctuation that fades in when its neighbour word arrives ────────────────
+
+const Comma: React.FC<{ delayFrames: number }> = ({ delayFrames }) => {
+  const frame = useCurrentFrame();
+  const opacity = interpolate(
+    frame - delayFrames,
+    [0, toFrames(0.2)],
+    [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  return (
+    <span style={{ opacity, color: colors.dim, marginRight: "0.35em" }}>,</span>
+  );
+};
+
+const Period: React.FC<{ delayFrames: number }> = ({ delayFrames }) => {
+  const frame = useCurrentFrame();
+  const opacity = interpolate(
+    frame - delayFrames,
+    [0, toFrames(0.2)],
+    [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  return (
+    <span style={{ opacity, color: colors.dim }}>.</span>
+  );
+};
 
 export const antiCheatStatMeta = {
   id: "AntiCheatStat",
