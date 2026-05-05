@@ -584,6 +584,35 @@ pub async fn query_creation_snapshot(
     }))
 }
 
+/// Earliest snapshot of any event_type. Used as a fallback for chart `effective_from`
+/// when the creation/init snapshot was lost (e.g. table truncated, backfill not run).
+pub async fn query_earliest_snapshot(
+    pool: &PgPool,
+    itp_id: &str,
+) -> Result<Option<ItpSnapshot>, sqlx::Error> {
+    let row = sqlx::query_as::<_, (String, Vec<String>, Vec<String>, String, DateTime<Utc>, String, String, Vec<String>)>(
+        "SELECT itp_id, assets, inventory, nav, valid_from, event_type, total_supply, weights
+         FROM itp_snapshots
+         WHERE itp_id = $1
+         ORDER BY valid_from ASC
+         LIMIT 1"
+    )
+    .bind(itp_id)
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(row.map(|(itp_id, assets, inventory, nav, valid_from, event_type, total_supply, weights)| ItpSnapshot {
+        itp_id,
+        assets,
+        inventory,
+        nav,
+        valid_from,
+        event_type,
+        total_supply,
+        weights,
+    }))
+}
+
 pub async fn has_init_snapshot(
     pool: &PgPool,
     itp_id: &str,

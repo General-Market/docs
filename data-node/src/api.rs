@@ -1278,9 +1278,18 @@ async fn nav_series(
     // the ITP existed. We use the creation snapshot (init/created) NOT the latest
     // snapshot, because periodic snapshots update every 5min and would clamp `from`
     // to near-present, killing the chart history.
+    //
+    // When no creation snapshot exists (data-node restarted before backfill, or
+    // 'created' rows were truncated), fall back to the EARLIEST snapshot of any
+    // kind. The latest periodic isn't a useful clamp — it shrinks history to
+    // minutes. The earliest snapshot at least lets users see a meaningful range
+    // until backfill restores the true creation timestamp.
     let creation_time = match db::query_creation_snapshot(&state.pool, &itp_id).await {
         Ok(Some(cs)) => cs.valid_from,
-        _ => snapshot.valid_from, // fallback to latest snapshot if no creation found
+        _ => match db::query_earliest_snapshot(&state.pool, &itp_id).await {
+            Ok(Some(es)) => es.valid_from,
+            _ => snapshot.valid_from, // last resort: latest snapshot
+        },
     };
     let effective_from = from.max(creation_time);
 
