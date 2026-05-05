@@ -54,7 +54,11 @@ export function WalletControls({ isDark }: WalletControlsProps) {
     }
   }, [authenticated, address])
 
-  const isMobile = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+  const ua = typeof navigator !== 'undefined' ? navigator.userAgent : ''
+  const isAndroid = /Android/i.test(ua)
+  const isIOS = /iPhone|iPad|iPod/i.test(ua)
+  const isMobile = isAndroid || isIOS
+  const isInMetaMaskBrowser = /MetaMaskMobile/i.test(ua)
   const hasInjectedProvider = typeof window !== 'undefined' && !!window.ethereum
 
   // Connect first. The injected connector's switchChain handles
@@ -64,10 +68,18 @@ export function WalletControls({ isDark }: WalletControlsProps) {
   const handleLogin = () => {
     capture('login_clicked', { source: 'header', mobile: isMobile, has_provider: hasInjectedProvider })
 
-    // Mobile browser without injected provider → deep-link to MetaMask app
-    if (isMobile && !hasInjectedProvider) {
-      const dappUrl = `${window.location.host}${window.location.pathname}`
-      window.location.href = `https://metamask.app.link/dapp/${dappUrl}`
+    // Mobile browser without injected provider → hand off to the MetaMask app.
+    // Skip if we're already inside MM's in-app browser (provider may be late
+    // to inject during hydration); never bounce a user out of MM into Chrome.
+    if (isMobile && !hasInjectedProvider && !isInMetaMaskBrowser) {
+      const dappPath = `${window.location.host}${window.location.pathname}${window.location.search}`
+      // Android: intent URL forces the MM package and avoids Chrome opening
+      // metamask.app.link as a regular tab when the universal link fails to
+      // intercept. iOS: universal link is the only handoff that exists.
+      const target = isAndroid
+        ? `intent://${dappPath}#Intent;scheme=https;package=io.metamask;S.browser_fallback_url=https%3A%2F%2Fmetamask.app.link%2Fdapp%2F${encodeURIComponent(dappPath)};end`
+        : `https://metamask.app.link/dapp/${dappPath}`
+      window.location.assign(target)
       return
     }
 
