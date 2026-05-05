@@ -4,10 +4,8 @@ import {
   OffthreadVideo,
   Sequence,
   interpolate,
-  spring,
   staticFile,
   useCurrentFrame,
-  useVideoConfig,
 } from "remotion";
 import {
   TransitionSeries,
@@ -15,7 +13,7 @@ import {
 } from "@remotion/transitions";
 import { fade } from "@remotion/transitions/fade";
 import { font, monoFont } from "../../common/fonts";
-import { FPS, H, W, colors, toFrames } from "./theme";
+import { FPS, H, W, colors, easeOut, toFrames } from "./theme";
 
 const BROLL = {
   minecraft: staticFile("cheat-broll/minecraft-killaura.mp4"),
@@ -35,21 +33,24 @@ const PAIRS_AT = toFrames(3.6);
 const PAIR_STEP = toFrames(1.4);
 const REVEAL_AT = toFrames(7.5);
 
+// Apple drops are taller and slower. Entrances run 36 frames, exits 24.
+const ENTER = 36;
+
 export const AntiCheatHook: React.FC = () => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
 
-  // Spring drives the split. At frame=SPLIT_AT it begins; before that it
-  // sits at 0, which means the left panel occupies the full canvas.
-  const splitProgress = spring({
-    frame: frame - SPLIT_AT,
-    fps,
-    config: { damping: 18, stiffness: 90, mass: 0.9 },
-  });
-  const splitOffset = interpolate(splitProgress, [0, 1], [0, W / 2], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
+  // The split arrives over 1.2s — a slow opening, not a snap.
+  const splitProgress = interpolate(
+    frame,
+    [SPLIT_AT, SPLIT_AT + ENTER],
+    [0, 1],
+    {
+      easing: easeOut,
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    },
+  );
+  const splitOffset = splitProgress * (W / 2);
 
   return (
     <AbsoluteFill style={{ backgroundColor: colors.bg, fontFamily: font }}>
@@ -73,7 +74,6 @@ export const AntiCheatHook: React.FC = () => {
           showFrom={HEADER_IN}
           align="left"
           frame={frame}
-          fps={fps}
         />
         <PairList
           pairs={PAIRS}
@@ -82,7 +82,6 @@ export const AntiCheatHook: React.FC = () => {
           startFrame={PAIRS_AT}
           stepFrame={PAIR_STEP}
           frame={frame}
-          fps={fps}
         />
       </div>
 
@@ -99,15 +98,13 @@ export const AntiCheatHook: React.FC = () => {
         }}
       >
         <TradingScreen frame={frame} showFrom={SPLIT_AT} />
-        <StripDarken tint={colors.accent} />
+        <StripDarken />
         <PanelLabel
           eyebrow="When you trade"
           slot="02 / Market"
           showFrom={SPLIT_AT}
           align="right"
           frame={frame}
-          fps={fps}
-          tint={colors.accent}
         />
         <PairList
           pairs={PAIRS}
@@ -116,8 +113,6 @@ export const AntiCheatHook: React.FC = () => {
           startFrame={PAIRS_AT}
           stepFrame={PAIR_STEP}
           frame={frame}
-          fps={fps}
-          tint={colors.accent}
         />
       </div>
 
@@ -125,15 +120,6 @@ export const AntiCheatHook: React.FC = () => {
       <Sequence from={REVEAL_AT} layout="none">
         <RevealLines />
       </Sequence>
-
-      {/* ── Vignette ── */}
-      <AbsoluteFill
-        style={{
-          pointerEvents: "none",
-          background:
-            "radial-gradient(circle at 50% 50%, transparent 55%, rgba(0,0,0,0.55) 100%)",
-        }}
-      />
     </AbsoluteFill>
   );
 };
@@ -204,9 +190,13 @@ const TradingScreen: React.FC<{ frame: number; showFrom: number }> = ({
 }) => {
   const fadeIn = interpolate(
     frame,
-    [showFrom, showFrom + toFrames(0.5)],
+    [showFrom, showFrom + ENTER],
     [0, 1],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+    {
+      easing: easeOut,
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    },
   );
 
   // Time progresses with frame — candles drift left.
@@ -226,8 +216,7 @@ const TradingScreen: React.FC<{ frame: number; showFrom: number }> = ({
         position: "absolute",
         inset: 0,
         opacity: fadeIn,
-        background:
-          "linear-gradient(180deg, #0d0d10 0%, #050507 100%)",
+        background: colors.bg,
       }}
     >
       {/* Header strip */}
@@ -247,7 +236,7 @@ const TradingScreen: React.FC<{ frame: number; showFrom: number }> = ({
           opacity: 0.85,
         }}
       >
-        <span style={{ color: colors.fg, fontWeight: 600 }}>BTC-PERP</span>
+        <span style={{ color: colors.fg, fontWeight: 500 }}>BTC-PERP</span>
         <span>{lastClose.toFixed(2)}</span>
         <span style={{ color: pct >= 0 ? "#3ddc84" : colors.accent }}>
           {pct >= 0 ? "+" : ""}
@@ -501,22 +490,11 @@ const Ticker: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
-// ─── Strip darkening — only the top + bottom edges, so the broll stays clean ──
+// ─── Strip darkening — stubbed. The broll breathes on its own. ─────────────────
 
-const StripDarken: React.FC<{ tint?: string }> = ({ tint }) => (
-  <div
-    style={{
-      position: "absolute",
-      inset: 0,
-      pointerEvents: "none",
-      background: tint
-        ? `linear-gradient(180deg, rgba(10,10,10,0.82) 0%, rgba(10,10,10,0.0) 28%, rgba(10,10,10,0.0) 64%, rgba(10,10,10,0.86) 100%), linear-gradient(180deg, rgba(255,59,59,0.04), rgba(255,59,59,0.0))`
-        : `linear-gradient(180deg, rgba(10,10,10,0.82) 0%, rgba(10,10,10,0.0) 28%, rgba(10,10,10,0.0) 64%, rgba(10,10,10,0.86) 100%)`,
-    }}
-  />
-);
+const StripDarken: React.FC<{ tint?: string }> = () => null;
 
-// ─── Text components (unchanged behaviour, slot label is now a prop) ───────────
+// ─── Text components ──────────────────────────────────────────────────────────
 
 const PanelLabel: React.FC<{
   eyebrow: string;
@@ -524,16 +502,19 @@ const PanelLabel: React.FC<{
   showFrom: number;
   align: "left" | "right";
   frame: number;
-  fps: number;
-  tint?: string;
-}> = ({ eyebrow, slot, showFrom, align, frame, fps, tint }) => {
-  const t = spring({
-    frame: frame - showFrom,
-    fps,
-    config: { damping: 22, stiffness: 110, mass: 0.7 },
-  });
-  const y = interpolate(t, [0, 1], [24, 0]);
-  const opacity = interpolate(t, [0, 1], [0, 1]);
+}> = ({ eyebrow, slot, showFrom, align, frame }) => {
+  const t = interpolate(
+    frame,
+    [showFrom, showFrom + ENTER],
+    [0, 1],
+    {
+      easing: easeOut,
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    },
+  );
+  const y = interpolate(t, [0, 1], [32, 0]);
+  const opacity = t;
 
   return (
     <div
@@ -565,11 +546,10 @@ const PanelLabel: React.FC<{
         style={{
           fontFamily: font,
           fontSize: 124,
-          fontWeight: 800,
+          fontWeight: 400,
           letterSpacing: "-0.04em",
-          color: tint ?? colors.fg,
+          color: colors.fg,
           lineHeight: 0.95,
-          textShadow: "0 4px 28px rgba(0,0,0,0.65)",
         }}
       >
         {eyebrow}
@@ -585,9 +565,7 @@ const PairList: React.FC<{
   startFrame: number;
   stepFrame: number;
   frame: number;
-  fps: number;
-  tint?: string;
-}> = ({ pairs, field, align, startFrame, stepFrame, frame, fps, tint }) => {
+}> = ({ pairs, field, align, startFrame, stepFrame, frame }) => {
   return (
     <div
       style={{
@@ -605,30 +583,34 @@ const PairList: React.FC<{
     >
       {pairs.map((pair, i) => {
         const at = startFrame + i * stepFrame;
-        const t = spring({
-          frame: frame - at,
-          fps,
-          config: { damping: 24, stiffness: 130, mass: 0.6 },
-        });
-        const x = interpolate(t, [0, 1], [align === "left" ? -40 : 40, 0]);
-        const opacity = interpolate(t, [0, 1], [0, 1]);
+        const t = interpolate(
+          frame,
+          [at, at + ENTER],
+          [0, 1],
+          {
+            easing: easeOut,
+            extrapolateLeft: "clamp",
+            extrapolateRight: "clamp",
+          },
+        );
+        const y = interpolate(t, [0, 1], [32, 0]);
+        const opacity = t;
 
         return (
           <div
             key={i}
             style={{
-              transform: `translateX(${x}px)`,
+              transform: `translateY(${y}px)`,
               opacity,
               fontFamily: font,
               fontSize: 56,
-              fontWeight: 600,
+              fontWeight: 400,
               letterSpacing: "-0.02em",
-              color: tint ?? colors.fg,
+              color: colors.fg,
               display: "flex",
               alignItems: "center",
               gap: 18,
               flexDirection: align === "left" ? "row" : "row-reverse",
-              textShadow: "0 2px 18px rgba(0,0,0,0.6)",
             }}
           >
             <span
@@ -653,18 +635,36 @@ const PairList: React.FC<{
 
 const RevealLines: React.FC = () => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
 
-  const t1 = spring({
+  // Two-line reveal. The hairline draws under the second line from center
+  // outward over 14 frames once the line has landed.
+  const t1 = interpolate(frame, [0, ENTER], [0, 1], {
+    easing: easeOut,
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const secondStart = toFrames(0.7);
+  const t2 = interpolate(
     frame,
-    fps,
-    config: { damping: 22, stiffness: 100, mass: 0.8 },
-  });
-  const t2 = spring({
-    frame: frame - toFrames(0.7),
-    fps,
-    config: { damping: 22, stiffness: 100, mass: 0.8 },
-  });
+    [secondStart, secondStart + ENTER],
+    [0, 1],
+    {
+      easing: easeOut,
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    },
+  );
+  const ruleStart = secondStart + ENTER;
+  const rulePhase = interpolate(
+    frame,
+    [ruleStart, ruleStart + 14],
+    [0, 1],
+    {
+      easing: easeOut,
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    },
+  );
 
   return (
     <AbsoluteFill
@@ -678,7 +678,7 @@ const RevealLines: React.FC = () => {
       <div
         style={{
           fontFamily: font,
-          fontWeight: 700,
+          fontWeight: 400,
           fontSize: 84,
           letterSpacing: "-0.025em",
           textAlign: "center",
@@ -688,21 +688,36 @@ const RevealLines: React.FC = () => {
       >
         <div
           style={{
-            opacity: interpolate(t1, [0, 1], [0, 1]),
-            transform: `translateY(${interpolate(t1, [0, 1], [16, 0])}px)`,
+            opacity: t1,
+            transform: `translateY(${interpolate(t1, [0, 1], [32, 0])}px)`,
           }}
         >
           The same cheaters ruining your games
         </div>
         <div
           style={{
-            opacity: interpolate(t2, [0, 1], [0, 1]),
-            transform: `translateY(${interpolate(t2, [0, 1], [16, 0])}px)`,
-            color: colors.accent,
+            opacity: t2,
+            transform: `translateY(${interpolate(t2, [0, 1], [32, 0])}px)`,
+            color: colors.fg,
             marginTop: 16,
+            position: "relative",
+            display: "inline-block",
           }}
         >
           are trading against you
+          {/* 1px hairline drawing from center outward beneath the line. */}
+          <div
+            style={{
+              position: "absolute",
+              left: "50%",
+              bottom: -14,
+              height: 1,
+              width: "100%",
+              backgroundColor: colors.fg,
+              transform: `translateX(-50%) scaleX(${rulePhase})`,
+              transformOrigin: "center",
+            }}
+          />
         </div>
       </div>
     </AbsoluteFill>
