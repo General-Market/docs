@@ -5,7 +5,7 @@ import { motion, useReducedMotion } from 'framer-motion'
 import { springs, SpringNumber } from '@/components/ui/spring'
 import { truncateAddress } from '@/lib/utils/address'
 import { formatRelativeTime } from '@/lib/utils/time'
-import { PnlChart } from './PnlChart'
+import { PnlChart, type PnlTimeRange } from './PnlChart'
 import type { PnlPoint } from '@/hooks/usePlayerProfile'
 
 interface ProfileStat {
@@ -26,6 +26,10 @@ interface ProfileHeroProps {
   /** Optional override for the headline P&L figure — used by tabs (e.g. vaults)
    *  that compute totals outside the time-series history. */
   pnlOverride?: number
+  /** Controlled chart range — when provided, the chart pills become a
+   *  controlled input so the page can refetch the matching granularity. */
+  pnlRange?: PnlTimeRange
+  onPnlRangeChange?: (r: PnlTimeRange) => void
 }
 
 function GradientAvatar({ address }: { address: string }) {
@@ -119,6 +123,8 @@ export function ProfileHero({
   stats,
   pnlHistory,
   pnlOverride,
+  pnlRange,
+  onPnlRangeChange,
 }: ProfileHeroProps) {
   const t = useTranslations('common')
   const reduced = useReducedMotion()
@@ -227,7 +233,13 @@ export function ProfileHero({
                 borderRadius: 'var(--apple-r-md)',
               }}
             >
-              <PnlChart history={pnlHistory} hero currentPnlOverride={pnlOverride} />
+              <PnlChart
+                history={pnlHistory}
+                hero
+                currentPnlOverride={pnlOverride}
+                range={pnlRange}
+                onRangeChange={onPnlRangeChange}
+              />
             </motion.div>
           </div>
         </motion.div>

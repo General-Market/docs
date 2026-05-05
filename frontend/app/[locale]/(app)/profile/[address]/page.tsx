@@ -1,12 +1,13 @@
 'use client'
 
-import { use, Suspense } from 'react'
+import { use, Suspense, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useAccount } from 'wagmi'
 import { useTranslations } from 'next-intl'
 import { AppShell } from '@/components/layout/AppShell'
 import { SourceSearch } from '@/components/layout/SourceSearch'
 import { ProfileHero } from '@/components/domain/profile/ProfileHero'
+import type { PnlTimeRange } from '@/components/domain/profile/PnlChart'
 import { ProfileTabs, type ProfileTabId } from '@/components/domain/profile/ProfileTabs'
 import { VisionTab } from '@/components/domain/profile/VisionTab'
 import { IndexTab } from '@/components/domain/profile/IndexTab'
@@ -17,6 +18,7 @@ import { useOnChainVaultPositions } from '@/hooks/vaults/useOnChainVaultPosition
 import {
   useVaultsPortfolioHistory,
   type VaultHolding,
+  type PortfolioHistoryRange,
 } from '@/hooks/vaults/useVaultsPortfolioHistory'
 import fundData from '@/data/fund-branding.json'
 import { formatPnL, formatVolume } from '@/lib/utils/formatters'
@@ -65,9 +67,14 @@ function ProfileContent({ address }: { address: string }) {
     }
     return list
   })()
+  // Chart range is controlled at the page level so the issuer fetch matches
+  // the user's view: 1D → 5min buckets, 1W → 35min, 1M → 3h, ALL → 6h.
+  const [pnlRange, setPnlRange] = useState<PnlTimeRange>('ALL')
+  const rangeParam: PortfolioHistoryRange =
+    pnlRange === '1D' ? '1d' : pnlRange === '1W' ? '1w' : pnlRange === '1M' ? '1m' : 'all'
   const { history: vaultsPortfolioHistory } = useVaultsPortfolioHistory(
     vaultHoldings,
-    'all',
+    rangeParam,
   )
 
   const handleTabChange = (newTab: ProfileTabId) => {
@@ -163,6 +170,8 @@ function ProfileContent({ address }: { address: string }) {
         stats={stats}
         pnlHistory={showingVaults ? vaultsPortfolioHistory : profile?.pnlHistory ?? []}
         pnlOverride={showingVaults ? vaultTotals.totalPnl : undefined}
+        pnlRange={pnlRange}
+        onPnlRangeChange={setPnlRange}
       />
       <ProfileTabs
         activeTab={tab}

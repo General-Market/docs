@@ -21,24 +21,48 @@ interface PnlChartProps {
   hero?: boolean
   /** Override the headline PnL value (for tabs that compute PnL outside the history series). */
   currentPnlOverride?: number
+  /** Controlled range — when provided, `onRangeChange` is required and the
+   *  parent owns range state. Lets the page refetch the right granularity
+   *  from the issuer. */
+  range?: TimeRange
+  onRangeChange?: (r: TimeRange) => void
 }
 
-export function PnlChart({ history, hero, currentPnlOverride }: PnlChartProps) {
+export type { TimeRange as PnlTimeRange }
+
+export function PnlChart({ history, hero, currentPnlOverride, range: controlledRange, onRangeChange }: PnlChartProps) {
   const t = useTranslations('common')
   const locale = useLocale()
-  const [range, setRange] = useState<TimeRange>('ALL')
+  const [internalRange, setInternalRange] = useState<TimeRange>('ALL')
+  const range = controlledRange ?? internalRange
+  const setRange = (r: TimeRange) => {
+    if (onRangeChange) onRangeChange(r)
+    else setInternalRange(r)
+  }
 
-  // Empty history → render a two-point flat line at the override value (or zero),
-  // so the chart shape reads "nothing yet" without looking broken.
+  // Build the working series. If we have history, we trust it but tip the
+  // last sample at the live override so the curve always closes at "now".
+  // If we have no history at all, draw an honest slope from PnL=0 at the
+  // window's start to the current override at NOW — this still represents
+  // "you went from zero to +X" without inventing a path.
   const baseHistory = useMemo<PnlPoint[]>(() => {
-    if (history.length > 0) return history
-    const flatValue = currentPnlOverride ?? 0
     const now = Date.now()
-    return [
-      { timestamp: new Date(now - 24 * 60 * 60 * 1000).toISOString(), pnl: flatValue } as PnlPoint,
-      { timestamp: new Date(now).toISOString(), pnl: flatValue } as PnlPoint,
-    ]
-  }, [history, currentPnlOverride])
+    if (history.length === 0) {
+      const tip = currentPnlOverride ?? 0
+      const span = RANGE_MS[range] ?? 30 * 24 * 60 * 60 * 1000
+      return [
+        { timestamp: new Date(now - span).toISOString(), pnl: 0 } as PnlPoint,
+        { timestamp: new Date(now).toISOString(), pnl: tip } as PnlPoint,
+      ]
+    }
+    if (currentPnlOverride === undefined) return history
+    const last = history[history.length - 1]
+    const lastTs = new Date(last.timestamp).getTime()
+    if (now - lastTs <= 30_000) {
+      return [...history.slice(0, -1), { timestamp: last.timestamp, pnl: currentPnlOverride } as PnlPoint]
+    }
+    return [...history, { timestamp: new Date(now).toISOString(), pnl: currentPnlOverride } as PnlPoint]
+  }, [history, currentPnlOverride, range])
 
   const filtered = useMemo(() => {
     const cutoff = RANGE_MS[range]
@@ -47,8 +71,12 @@ export function PnlChart({ history, hero, currentPnlOverride }: PnlChartProps) {
     const windowed = baseHistory.filter(
       (p) => now - new Date(p.timestamp).getTime() <= cutoff,
     )
-    // A single point doesn't draw a line — keep at least two.
-    return windowed.length >= 2 ? windowed : baseHistory.slice(-2)
+    // A window with too few points (sparse historical data, or a young
+    // vault) reads as a flat line. Fall back to the broadest set of points
+    // we *do* have so the user sees real variation.
+    if (windowed.length >= 2) return windowed
+    if (baseHistory.length >= 2) return baseHistory
+    return baseHistory.slice(-2)
   }, [baseHistory, range])
 
   const currentPnl =
