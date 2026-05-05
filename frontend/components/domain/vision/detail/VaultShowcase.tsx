@@ -4,7 +4,7 @@ import { useMemo, useState, useEffect, useCallback, useRef } from 'react'
 import { formatUnits } from 'viem'
 import { motion, useReducedMotion } from 'framer-motion'
 import fundData from '@/data/fund-branding.json'
-import { VaultActions } from '@/components/domain/vaults/VaultActions'
+import { Link } from '@/i18n/routing'
 import { useVaultHistory } from '@/hooks/vaults/useVaultHistory'
 import { useVaultDisplayResolver } from '@/hooks/vaults/useVaultDisplay'
 import { useSSEVisionVaults, useSSEUserVaultPositions } from '@/hooks/useSSE'
@@ -156,12 +156,12 @@ function useCountUp(target: number, duration = 1200, skip = false) {
    featured hero. A soft shadow-lift earns more.
    ───────────────────────────────────────────── */
 
-function VaultTiltCard({ fund, vault, index, userPosition, onDeposit }: {
+function VaultTiltCard({ fund, vault, index, userPosition, href }: {
   fund: any
   vault: VaultInfo
   index: number
   userPosition?: UserPosition
-  onDeposit: () => void
+  href: string
 }) {
   const reduced = !!useReducedMotion()
 
@@ -189,12 +189,11 @@ function VaultTiltCard({ fund, vault, index, userPosition, onDeposit }: {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.15 + index * 0.08, ease: EASE_OUT_EXPO }}
     >
-      <div
-        onClick={onDeposit}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onDeposit() } }}
-        className="vault-apple-card group relative cursor-pointer overflow-hidden"
+      <Link
+        href={href}
+        aria-label={`Open ${fund.name} vault`}
+        className="vault-apple-card group relative block cursor-pointer overflow-hidden no-underline"
+        style={{ color: 'inherit' }}
       >
         <div className="p-5">
           <div className="flex items-center justify-between gap-2 mb-1.5">
@@ -357,7 +356,7 @@ function VaultTiltCard({ fund, vault, index, userPosition, onDeposit }: {
               fontWeight: 500,
             }}
           >
-            {hasPosition ? 'Manage →' : 'Deposit →'}
+            {hasPosition ? 'Manage →' : 'Open vault →'}
           </div>
         </div>
 
@@ -377,7 +376,7 @@ function VaultTiltCard({ fund, vault, index, userPosition, onDeposit }: {
             border-color: rgba(0, 0, 0, 0.16);
           }
         `}</style>
-      </div>
+      </Link>
     </motion.div>
   )
 }
@@ -468,8 +467,6 @@ interface VaultShowcaseProps {
 }
 
 export function VaultShowcase({ sourceId }: VaultShowcaseProps) {
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
-
   // Patience timer: wagmi's multicall hook can keep `isLoading` true through
   // an internal retry loop when the RPC returns 4xx/5xx. Without a bound,
   // the user stares at "Loading vaults…" forever. After 5s, render whatever
@@ -626,20 +623,12 @@ export function VaultShowcase({ sourceId }: VaultShowcaseProps) {
                   vault={getVaultData(fund)}
                   index={i}
                   userPosition={getUserPosition(fund.vault)}
-                  onDeposit={() => setSelectedIndex(i + 1)}
+                  href={`/source/${sourceId}/vault/${(fund.vault as string).toLowerCase()}`}
                 />
               </div>
             ))}
           </div>
         </div>
-      )}
-
-      {selectedIndex !== null && (
-        <VaultActions
-          vaults={sortedFunds.map((f: any) => ({ fund: f, vault: getVaultData(f) }))}
-          initialIndex={selectedIndex}
-          onClose={() => setSelectedIndex(null)}
-        />
       )}
     </div>
   )
