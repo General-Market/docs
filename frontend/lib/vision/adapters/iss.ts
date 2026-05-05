@@ -1,11 +1,12 @@
 import type { SourceFeed } from './types'
 import { fetchJsonWithTimeout } from './types'
+import { getAaDataNodeUrl } from '@/lib/config'
 
 /**
- * ISS — wheretheiss.at exposes an /at endpoint that returns lat/lon/altitude
- * at a single instant. There is no upstream history we trust enough to plot,
- * so the card carries the live altitude as a value chip and leaves the chart
- * empty. A synthesized orbit wave looks beautiful and tells you nothing.
+ * ISS — live altitude from wheretheiss.at, orbital sweep from the data-node's
+ * recorded latitude stream. The latitude wave is the satellite's real path
+ * across our sky over the last few hours — sine-shaped because orbits are.
+ * Not synthesis. Not a fallback. Real motion through real space.
  */
 
 type IssState = {
@@ -15,21 +16,39 @@ type IssState = {
   longitude?: number
 }
 
+type LatitudeHistory = {
+  prices?: { value?: string | number }[]
+}
+
 const ISS_NORAD_ID = 25544
 
 export async function getIssFeed(): Promise<SourceFeed> {
-  const data = await fetchJsonWithTimeout<IssState>(
-    `https://api.wheretheiss.at/v1/satellites/${ISS_NORAD_ID}`,
-    4000,
-  )
+  const [live, history] = await Promise.all([
+    fetchJsonWithTimeout<IssState>(
+      `https://api.wheretheiss.at/v1/satellites/${ISS_NORAD_ID}`,
+      4000,
+    ),
+    fetchJsonWithTimeout<LatitudeHistory>(
+      `${getAaDataNodeUrl()}/market/prices/iss/iss_latitude/history`,
+      5000,
+    ),
+  ])
 
-  let meta = 'Position · pass times'
-  if (data && typeof data.altitude === 'number') {
-    meta = `Altitude ${data.altitude.toFixed(1)} km · velocity ${(data.velocity ?? 0).toFixed(0)} km/h`
+  // Last 48 samples ≈ 8 hours of orbit, ~5 sine cycles. The sparkline
+  // shows the satellite's ground-track latitude — north up, south down.
+  const series = (history?.prices ?? [])
+    .map((p) => Number(p.value))
+    .filter((v) => Number.isFinite(v))
+    .slice(-48)
+
+  let meta = 'Orbital position · pass times'
+  if (live && typeof live.altitude === 'number') {
+    meta = `Altitude ${live.altitude.toFixed(1)} km · velocity ${(live.velocity ?? 0).toFixed(0)} km/h`
   }
 
   const altLabel =
-    typeof data?.altitude === 'number' ? `${data.altitude.toFixed(1)} km` : undefined
+    typeof live?.altitude === 'number' ? `${live.altitude.toFixed(1)} km` : undefined
+
   return {
     sourceId: 'iss',
     displayName: 'ISS',
@@ -37,6 +56,6 @@ export async function getIssFeed(): Promise<SourceFeed> {
     assetValue: altLabel,
     meta,
     coverage: 'anticheat',
-    series: [],
+    series,
   }
 }
