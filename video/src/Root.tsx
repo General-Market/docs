@@ -126,6 +126,13 @@ import { antiCheatAppleSolutionMeta } from "./compositions/anticheat-apple/AntiC
 import { antiCheatAppleReassureMeta } from "./compositions/anticheat-apple/AntiCheatReassure";
 import { antiCheatAppleEndCardMeta } from "./compositions/anticheat-apple/AntiCheatEndCard";
 import { antiCheatAppleMeta } from "./compositions/anticheat-apple/AntiCheatApple";
+import { antiCheatPitchHookMeta } from "./compositions/anticheat-pitch/AntiCheatPitchHook";
+import { antiCheatPitchStatMeta } from "./compositions/anticheat-pitch/AntiCheatPitchStat";
+import { antiCheatPitchRiggedMeta } from "./compositions/anticheat-pitch/AntiCheatPitchRigged";
+import { antiCheatPitchSolutionMeta } from "./compositions/anticheat-pitch/AntiCheatPitchSolution";
+import { antiCheatPitchReassureMeta } from "./compositions/anticheat-pitch/AntiCheatPitchReassure";
+import { antiCheatPitchEndCardMeta } from "./compositions/anticheat-pitch/AntiCheatPitchEndCard";
+import { antiCheatPitchFullMeta } from "./compositions/anticheat-pitch/AntiCheatPitchFull";
 
 const SHOW_SCENES = process.env.REMOTION_SHOW_SCENES === "1";
 
@@ -188,6 +195,36 @@ export const RemotionRoot: React.FC = () => {
           antiCheatAppleSolutionMeta,
           antiCheatAppleReassureMeta,
           antiCheatAppleEndCardMeta,
+        ].map((meta) => (
+          <Composition
+            key={meta.id}
+            id={meta.id}
+            component={meta.component}
+            durationInFrames={meta.durationInFrames}
+            fps={meta.fps}
+            width={meta.width}
+            height={meta.height}
+          />
+        ))}
+      </Folder>
+
+      {/* ═══ ANTI-CHEAT PITCH — restyled in the Index Maker pitch palette ═══ */}
+      <Folder name="AntiCheatPitch">
+        <Composition
+          id={antiCheatPitchFullMeta.id}
+          component={antiCheatPitchFullMeta.component}
+          durationInFrames={antiCheatPitchFullMeta.durationInFrames}
+          fps={antiCheatPitchFullMeta.fps}
+          width={antiCheatPitchFullMeta.width}
+          height={antiCheatPitchFullMeta.height}
+        />
+        {[
+          antiCheatPitchHookMeta,
+          antiCheatPitchStatMeta,
+          antiCheatPitchRiggedMeta,
+          antiCheatPitchSolutionMeta,
+          antiCheatPitchReassureMeta,
+          antiCheatPitchEndCardMeta,
         ].map((meta) => (
           <Composition
             key={meta.id}
