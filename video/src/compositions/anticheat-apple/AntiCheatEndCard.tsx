@@ -7,9 +7,9 @@ import {
 import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, easeOut, toFrames } from "./theme";
 
-// 7s scene — reveals land in the first ~80 frames, the remaining ~130 frames
-// hold in stillness. Apple end-cards sit.
-const SCENE_SECONDS = 7;
+// 7.2s scene — reveals land in the first ~80 frames, the remaining ~136 frames
+// hold in stillness. Apple end-cards sit. URL stillness lands at 120 frames.
+const SCENE_SECONDS = 7.2;
 const SUBLINE_AT = toFrames(1.0);
 const TERTIARY_AT = toFrames(1.5);
 const URL_AT = toFrames(2.0);

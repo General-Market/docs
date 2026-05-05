@@ -75,14 +75,14 @@ const Headline: React.FC = () => {
           fontSize: 132,
           fontWeight: 300,
           letterSpacing: "-0.04em",
-          color: colors.fg,
+          color: "#f2f4f6",
           lineHeight: 0.95,
           opacity: tIn,
           transform: `translateY(${interpolate(tIn, [0, 1], [32, 0])}px)`,
         }}
       >
         General <span style={{ color: colors.green }}>changes</span> this
-        <span style={{ color: colors.fg, opacity: 0.45 }}>.</span>
+        <span style={{ color: "#f2f4f6", opacity: 0.45 }}>.</span>
       </div>
       <div
         style={{
@@ -133,6 +133,7 @@ const Terminal: React.FC = () => {
         justifyContent: "center",
         alignItems: "center",
         padding: "0 96px",
+        paddingBottom: "12%",
       }}
     >
       <div
@@ -145,26 +146,21 @@ const Terminal: React.FC = () => {
           transform: `translateY(${panelY}px)`,
         }}
       >
-        {/* Window chrome */}
+        {/* Window chrome — single mono caption, no decorative dots. */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
-            gap: 8,
             padding: "14px 18px",
             borderBottom: `1px solid ${colors.rule}`,
           }}
         >
-          <Dot color="#ff5f57" />
-          <Dot color="#febc2e" />
-          <Dot color="#28c840" />
           <span
             style={{
-              marginLeft: 18,
               fontFamily: monoFont,
-              fontSize: 24,
+              fontSize: 22,
               color: colors.dim,
-              letterSpacing: "0.08em",
+              letterSpacing: "0.18em",
             }}
           >
             ~/bot — claude
@@ -233,19 +229,6 @@ const Cursor: React.FC = () => {
     />
   );
 };
-
-const Dot: React.FC<{ color: string }> = ({ color }) => (
-  <span
-    style={{
-      display: "inline-block",
-      width: 12,
-      height: 12,
-      borderRadius: 6,
-      background: color,
-      opacity: 0.6,
-    }}
-  />
-);
 
 export const antiCheatAppleSolutionMeta = {
   id: "AntiCheatAppleSolution",

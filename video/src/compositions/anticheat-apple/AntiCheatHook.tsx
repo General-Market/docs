@@ -170,14 +170,22 @@ const BrollClip: React.FC<{ src: string }> = ({ src }) => {
     width: "100%",
     height: "100%",
     objectFit: "cover",
-    filter: "saturate(1.05) contrast(1.05) brightness(0.95)",
-    transform: "scale(1.18) translateY(-8%)",
+    filter:
+      "brightness(0.7) saturate(0.55) contrast(1.05) hue-rotate(-8deg)",
+    transform: "scale(1.6) translateY(18%)",
     transformOrigin: "center center",
   };
 
   return (
     <AbsoluteFill style={{ overflow: "hidden" }}>
       <OffthreadVideo src={src} muted playbackRate={1.0} style={videoStyle} />
+      <AbsoluteFill
+        style={{
+          backgroundColor: "#0E1218",
+          mixBlendMode: "multiply",
+          pointerEvents: "none",
+        }}
+      />
     </AbsoluteFill>
   );
 };
@@ -696,7 +704,7 @@ const RevealLines: React.FC = () => {
           fontSize: 84,
           letterSpacing: "-0.025em",
           textAlign: "center",
-          color: "#f2f2f2",
+          color: "#f2f4f6",
           lineHeight: 1.15,
         }}
       >
@@ -712,7 +720,7 @@ const RevealLines: React.FC = () => {
           style={{
             opacity: t2,
             transform: `translateY(${interpolate(t2, [0, 1], [32, 0])}px)`,
-            color: "#f2f2f2",
+            color: "#f2f4f6",
             marginTop: 16,
             position: "relative",
             display: "inline-block",
@@ -727,7 +735,7 @@ const RevealLines: React.FC = () => {
               bottom: -14,
               height: 1,
               width: "100%",
-              backgroundColor: "#f2f2f2",
+              backgroundColor: "#f2f4f6",
               transform: `translateX(-50%) scaleX(${rulePhase})`,
               transformOrigin: "center",
             }}

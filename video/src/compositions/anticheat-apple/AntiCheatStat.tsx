@@ -138,7 +138,7 @@ const StatPanel: React.FC = () => {
           left: "50%",
           width: `${ruleT * 100}%`,
           height: 1,
-          backgroundColor: colors.rule,
+          backgroundColor: "rgba(245, 245, 247, 0.04)",
           transform: "translateX(-50%)",
         }}
       />

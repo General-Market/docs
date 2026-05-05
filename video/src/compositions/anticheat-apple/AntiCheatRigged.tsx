@@ -198,7 +198,8 @@ const Card: React.FC<{
             height: "100%",
             objectFit: "cover",
             display: "block",
-            filter: "brightness(0.78) saturate(0.55) contrast(1.05)",
+            filter:
+              "brightness(0.78) saturate(0.55) contrast(1.05) hue-rotate(-10deg)",
           }}
         />
         <div
@@ -324,7 +325,7 @@ const FinalStamp: React.FC = () => {
             fontSize: 148,
             fontWeight: 300,
             letterSpacing: "-0.04em",
-            color: colors.fg,
+            color: "#f2f4f6",
             lineHeight: 0.95,
             textAlign: "center",
           }}
