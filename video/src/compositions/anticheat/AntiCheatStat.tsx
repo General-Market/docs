@@ -10,19 +10,30 @@ import {
 import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 
-const SCENE_SECONDS = 6.0;
-const STAT_DURATION = toFrames(3.5);
+// One figure → a crowd → the data. The crowd lingers as backing for the stat.
+// Source: DeFi Oasis on-chain study of Polymarket trading, Dec 29 2025.
+// 0.04% of addresses (~668 wallets) captured 70% of all realized profits — $3.7B.
+// 70% of 1.7M trader addresses recorded losses; only 30% turned a profit.
+
+const SCENE_SECONDS = 10.5;
+const STAT_FROM = toFrames(3.5);
+const STAT_DURATION = toFrames(4.0);
+const CHIPS_FROM = toFrames(8.0);
 
 export const AntiCheatStat: React.FC = () => {
   return (
     <AbsoluteFill style={{ backgroundColor: colors.bg, fontFamily: font }}>
-      <TradingBackdrop />
+      <CandleBackdropTimed />
+      <CrowdLayer />
 
-      <Sequence from={0} durationInFrames={STAT_DURATION + toFrames(0.4)}>
+      <Sequence
+        from={STAT_FROM}
+        durationInFrames={STAT_DURATION + toFrames(0.4)}
+      >
         <StatPanel />
       </Sequence>
 
-      <Sequence from={STAT_DURATION}>
+      <Sequence from={CHIPS_FROM}>
         <ChipsPanel />
       </Sequence>
 
@@ -37,7 +48,22 @@ export const AntiCheatStat: React.FC = () => {
   );
 };
 
-// ─── Faint trading-screen background (grid + candle silhouettes) ──────────────
+// ─── Candle backdrop, fades in as the crowd dims ──────────────────────────────
+
+const CandleBackdropTimed: React.FC = () => {
+  const frame = useCurrentFrame();
+  const fadeIn = interpolate(
+    frame,
+    [toFrames(3.0), toFrames(4.0)],
+    [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  return (
+    <AbsoluteFill style={{ opacity: fadeIn }}>
+      <TradingBackdrop />
+    </AbsoluteFill>
+  );
+};
 
 const TradingBackdrop: React.FC = () => {
   const frame = useCurrentFrame();
@@ -113,7 +139,107 @@ const TradingBackdrop: React.FC = () => {
   );
 };
 
-// ─── Stat panel: 0.04% / arrow / 67% ──────────────────────────────────────────
+// ─── The crowd: 51×51 = 2,601 figures. Center one is red. Dezoom 0–3s ─────────
+
+const COLS = 51;
+const ROWS = 51;
+const SPACING = 18;
+const CENTER_COL = 25;
+const CENTER_ROW = 25;
+const START_SCALE = 200;
+const END_SCALE = 0.95;
+const ZOOM_DURATION = toFrames(3);
+
+const CrowdLayer: React.FC = () => {
+  const frame = useCurrentFrame();
+
+  const tRaw = Math.min(1, Math.max(0, frame / ZOOM_DURATION));
+  const tEase = 0.5 - 0.5 * Math.cos(tRaw * Math.PI);
+  const scale = START_SCALE * Math.pow(END_SCALE / START_SCALE, tEase);
+
+  const vbW = W / scale;
+  const vbH = H / scale;
+  const vbX = -vbW / 2;
+  const vbY = -vbH / 2;
+
+  // Once the crowd is fully revealed, dim it so the stat sits clean on top.
+  const dim = interpolate(
+    frame,
+    [toFrames(3.0), toFrames(4.0)],
+    [1.0, 0.18],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  // Fade fully out as chips arrive.
+  const out = interpolate(
+    frame,
+    [toFrames(7.6), toFrames(8.2)],
+    [1.0, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const layerOpacity = dim * out;
+
+  const pulse = (Math.sin(frame * 0.14) + 1) / 2;
+  const centerVis = interpolate(
+    frame,
+    [toFrames(2.7), toFrames(3.4)],
+    [1, 0.55],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+
+  return (
+    <AbsoluteFill style={{ opacity: layerOpacity, pointerEvents: "none" }}>
+      <svg
+        width={W}
+        height={H}
+        viewBox={`${vbX} ${vbY} ${vbW} ${vbH}`}
+        preserveAspectRatio="xMidYMid meet"
+        style={{ position: "absolute", inset: 0 }}
+      >
+        <defs>
+          <symbol id="figure" overflow="visible">
+            <circle cx="0" cy="-4" r="2" />
+            <path d="M -3,6 Q -3.5,1 -2,-1 L 2,-1 Q 3.5,1 3,6 Z" />
+          </symbol>
+        </defs>
+
+        {/* The crowd — anonymous, gray, slightly varied */}
+        {Array.from({ length: ROWS }).map((_, r) =>
+          Array.from({ length: COLS }).map((_, c) => {
+            if (r === CENTER_ROW && c === CENTER_COL) return null;
+            const x = (c - CENTER_COL) * SPACING;
+            const y = (r - CENTER_ROW) * SPACING;
+            const seed = ((c * 97 + r * 31) % 100) / 100;
+            const op = 0.5 + seed * 0.3;
+            return (
+              <use
+                key={`${r}-${c}`}
+                href="#figure"
+                x={x}
+                y={y}
+                fill={colors.dim}
+                opacity={op}
+              />
+            );
+          }),
+        )}
+
+        {/* The one — red, pulsing while alone, dimmer once the crowd appears */}
+        <g style={{ opacity: centerVis }}>
+          <circle
+            cx={0}
+            cy={1}
+            r={6 + pulse * 2}
+            fill={colors.accent}
+            opacity={0.22}
+          />
+          <use href="#figure" fill={colors.accent} />
+        </g>
+      </svg>
+    </AbsoluteFill>
+  );
+};
+
+// ─── Stat panel: 0.04% / arrow / 70% ──────────────────────────────────────────
 
 const StatPanel: React.FC = () => {
   const frame = useCurrentFrame();
@@ -135,7 +261,7 @@ const StatPanel: React.FC = () => {
   const countT = Math.min(1, Math.max(0, frame / toFrames(1.6)));
   const eased = 1 - Math.pow(1 - countT, 3);
   const left = (0.04 * eased).toFixed(2);
-  const right = Math.round(67 * eased);
+  const right = Math.round(70 * eased);
 
   // Arrow draws from frame 0.6s to 1.6s.
   const arrowT = interpolate(
@@ -210,7 +336,7 @@ const StatPanel: React.FC = () => {
           ),
         }}
       >
-        0.04% of cheaters claim 67% of all profits.
+        0.04% of cheaters claim 70% of all profits
       </div>
     </AbsoluteFill>
   );
@@ -255,7 +381,6 @@ const BigNumber: React.FC<{
 };
 
 const ArrowFlow: React.FC<{ t: number }> = ({ t }) => {
-  // The arrow draws from left to right.
   const length = 220;
   const drawn = Math.max(0, Math.min(length, length * t));
   const headOpacity = t > 0.92 ? 1 : 0;
@@ -405,7 +530,7 @@ const ChipsPanel: React.FC = () => {
         }}
       >
         Leaving you with{" "}
-        <span style={{ color: colors.accent }}>nearly none.</span>
+        <span style={{ color: colors.accent }}>nearly none</span>
       </div>
     </AbsoluteFill>
   );
