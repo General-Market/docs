@@ -30,7 +30,7 @@ const PAIRS = [
 const HEADER_IN = toFrames(0.3);
 const SPLIT_AT = toFrames(2.0);
 const PAIRS_AT = toFrames(3.6);
-const PAIR_STEP = toFrames(1.4);
+const PAIR_STEP = toFrames(0.4);
 const REVEAL_AT = toFrames(7.5);
 
 // Apple drops are taller and slower. Entrances run 36 frames, exits 24.
@@ -171,10 +171,12 @@ const BrollClip: React.FC<{ src: string }> = ({ src }) => {
     height: "100%",
     objectFit: "cover",
     filter: "saturate(1.05) contrast(1.05) brightness(0.95)",
+    transform: "scale(1.18) translateY(-8%)",
+    transformOrigin: "center center",
   };
 
   return (
-    <AbsoluteFill>
+    <AbsoluteFill style={{ overflow: "hidden" }}>
       <OffthreadVideo src={src} muted playbackRate={1.0} style={videoStyle} />
     </AbsoluteFill>
   );
@@ -211,11 +213,17 @@ const TradingScreen: React.FC<{ frame: number; showFrom: number }> = ({
   const pct = ((lastClose - prevClose) / prevClose) * 100;
 
   return (
+    <AbsoluteFill
+      style={{
+        opacity: fadeIn,
+        filter: "brightness(0.55) saturate(0.6) contrast(1.0)",
+      }}
+    >
     <div
       style={{
         position: "absolute",
         inset: 0,
-        opacity: fadeIn,
+        opacity: 0.7,
         background: colors.bg,
       }}
     >
@@ -231,9 +239,9 @@ const TradingScreen: React.FC<{ frame: number; showFrom: number }> = ({
           alignItems: "baseline",
           fontFamily: monoFont,
           color: colors.dim,
-          fontSize: 30,
+          fontSize: 24,
           letterSpacing: "0.06em",
-          opacity: 0.85,
+          opacity: 0.6,
         }}
       >
         <span style={{ color: colors.fg, fontWeight: 500 }}>BTC-PERP</span>
@@ -288,6 +296,7 @@ const TradingScreen: React.FC<{ frame: number; showFrom: number }> = ({
         <Ticker frame={t} />
       </div>
     </div>
+    </AbsoluteFill>
   );
 };
 
@@ -527,12 +536,17 @@ const PanelLabel: React.FC<{
         padding: "0 96px",
         opacity,
         transform: `translateY(${y}px)`,
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "flex-end",
+        alignItems: align === "left" ? "flex-start" : "flex-end",
+        height: 280,
       }}
     >
       <div
         style={{
           fontFamily: monoFont,
-          fontSize: 38,
+          fontSize: 30,
           fontWeight: 500,
           letterSpacing: "0.18em",
           textTransform: "uppercase",
@@ -546,9 +560,9 @@ const PanelLabel: React.FC<{
         style={{
           fontFamily: font,
           fontSize: 124,
-          fontWeight: 400,
+          fontWeight: 300,
           letterSpacing: "-0.04em",
-          color: colors.fg,
+          color: "#f2f2f2",
           lineHeight: 0.95,
         }}
       >
@@ -570,7 +584,7 @@ const PairList: React.FC<{
     <div
       style={{
         position: "absolute",
-        bottom: "10%",
+        bottom: "22%",
         left: 0,
         right: 0,
         textAlign: align === "left" ? "left" : "right",
@@ -616,10 +630,10 @@ const PairList: React.FC<{
             <span
               style={{
                 fontFamily: monoFont,
-                fontSize: 34,
+                fontSize: 24,
                 fontWeight: 500,
                 color: colors.dim,
-                opacity: 0.7,
+                opacity: 0.5,
                 minWidth: 50,
               }}
             >
@@ -678,11 +692,11 @@ const RevealLines: React.FC = () => {
       <div
         style={{
           fontFamily: font,
-          fontWeight: 400,
+          fontWeight: 300,
           fontSize: 84,
           letterSpacing: "-0.025em",
           textAlign: "center",
-          color: colors.fg,
+          color: "#f2f2f2",
           lineHeight: 1.15,
         }}
       >
@@ -698,13 +712,13 @@ const RevealLines: React.FC = () => {
           style={{
             opacity: t2,
             transform: `translateY(${interpolate(t2, [0, 1], [32, 0])}px)`,
-            color: colors.fg,
+            color: "#f2f2f2",
             marginTop: 16,
             position: "relative",
             display: "inline-block",
           }}
         >
-          are trading against you
+          are trading against you<span style={{ opacity: 0.45 }}>.</span>
           {/* 1px hairline drawing from center outward beneath the line. */}
           <div
             style={{
@@ -713,7 +727,7 @@ const RevealLines: React.FC = () => {
               bottom: -14,
               height: 1,
               width: "100%",
-              backgroundColor: colors.fg,
+              backgroundColor: "#f2f2f2",
               transform: `translateX(-50%) scaleX(${rulePhase})`,
               transformOrigin: "center",
             }}
