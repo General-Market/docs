@@ -119,6 +119,13 @@ import { antiCheatSolutionMeta } from "./compositions/anticheat/AntiCheatSolutio
 import { antiCheatReassureMeta } from "./compositions/anticheat/AntiCheatReassure";
 import { antiCheatEndCardMeta } from "./compositions/anticheat/AntiCheatEndCard";
 import { antiCheatFullMeta } from "./compositions/anticheat/AntiCheatFull";
+import { antiCheatAppleHookMeta } from "./compositions/anticheat-apple/AntiCheatHook";
+import { antiCheatAppleStatMeta } from "./compositions/anticheat-apple/AntiCheatStat";
+import { antiCheatAppleRiggedMeta } from "./compositions/anticheat-apple/AntiCheatRigged";
+import { antiCheatAppleSolutionMeta } from "./compositions/anticheat-apple/AntiCheatSolution";
+import { antiCheatAppleReassureMeta } from "./compositions/anticheat-apple/AntiCheatReassure";
+import { antiCheatAppleEndCardMeta } from "./compositions/anticheat-apple/AntiCheatEndCard";
+import { antiCheatAppleMeta } from "./compositions/anticheat-apple/AntiCheatApple";
 
 const SHOW_SCENES = process.env.REMOTION_SHOW_SCENES === "1";
 
@@ -151,6 +158,36 @@ export const RemotionRoot: React.FC = () => {
           antiCheatSolutionMeta,
           antiCheatReassureMeta,
           antiCheatEndCardMeta,
+        ].map((meta) => (
+          <Composition
+            key={meta.id}
+            id={meta.id}
+            component={meta.component}
+            durationInFrames={meta.durationInFrames}
+            fps={meta.fps}
+            width={meta.width}
+            height={meta.height}
+          />
+        ))}
+      </Folder>
+
+      {/* ═══ ANTI-CHEAT APPLE — launch-film polish pass on a copy ═══ */}
+      <Folder name="AntiCheatApple">
+        <Composition
+          id={antiCheatAppleMeta.id}
+          component={antiCheatAppleMeta.component}
+          durationInFrames={antiCheatAppleMeta.durationInFrames}
+          fps={antiCheatAppleMeta.fps}
+          width={antiCheatAppleMeta.width}
+          height={antiCheatAppleMeta.height}
+        />
+        {[
+          antiCheatAppleHookMeta,
+          antiCheatAppleStatMeta,
+          antiCheatAppleRiggedMeta,
+          antiCheatAppleSolutionMeta,
+          antiCheatAppleReassureMeta,
+          antiCheatAppleEndCardMeta,
         ].map((meta) => (
           <Composition
             key={meta.id}
