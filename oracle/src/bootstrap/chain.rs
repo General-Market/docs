@@ -7,49 +7,59 @@ use crate::{
     ContractAddresses, EthersChainReader, EthersChainWriter, GasConfig, OracleConfig,
 };
 use crate::chain::DataNodeSettlementReader;
-use common::adapters::DataNodeChainReader;
+use common::adapters::{DataNodeChainReader, DeploymentVerifier, VerifierError};
 use common::mocks::MockChainBuilder;
 use common::traits::ChainReader;
 use ethers::prelude::Middleware;
 use ethers::types::Address;
 use std::sync::Arc;
-use tracing::{debug, info, warn};
+use tracing::{debug, error, info, warn};
 
 /// Refuse to boot if any of `contracts` resolves to an address with no code on
-/// the given provider. Configured addresses that point at empty accounts mean
+/// the given chain. Configured addresses that point at empty accounts mean
 /// either a stale deployment file or a chain that's been rolled back / wiped
 /// out from under us — both of which silently swallow every subsequent tx.
 /// This was the 2026-04-23 incident: oracle pipeline kept "succeeding" against
 /// dead L3 contracts, orders bridged into the void. Catch it at the door.
-async fn verify_contracts_have_code<M: Middleware>(
-    provider: &M,
+///
+/// Delegates to `common::adapters::DeploymentVerifier`, which also checks the
+/// chain id against `expected_chain_id` and bundles every offence into one
+/// error so the operator sees the whole picture, not just the first complaint.
+async fn verify_contracts_have_code(
+    rpc_url: &str,
+    expected_chain_id: u64,
     chain_label: &str,
     contracts: &[(&str, Address)],
 ) -> Result<(), BootstrapError> {
-    let mut empty: Vec<String> = Vec::new();
-    for (name, addr) in contracts {
-        if addr.is_zero() {
-            continue; // unconfigured — handled by other code paths
+    let verifier = DeploymentVerifier::new(rpc_url, expected_chain_id);
+    match verifier.verify(contracts).await {
+        Ok(()) => {
+            info!(chain = chain_label, count = contracts.len(),
+                "Contract code verification passed");
+            Ok(())
         }
-        match provider.get_code(*addr, None).await {
-            Ok(code) if code.0.is_empty() => empty.push(format!("{name}={addr:?}")),
-            Ok(_) => {}
-            Err(e) => {
-                warn!(chain = chain_label, %name, ?addr, error = %e,
-                    "get_code failed during startup verification — proceeding");
+        Err(err @ VerifierError::Mismatch { .. }) => {
+            if let VerifierError::Mismatch { ref empty, ref chain_id, ref summary, .. } = err {
+                if let Some(cm) = chain_id {
+                    error!(chain = chain_label, expected = cm.expected, actual = cm.actual,
+                        "deployment verification: chain id mismatch");
+                }
+                for e in empty {
+                    error!(chain = chain_label, label = %e.label, address = ?e.address,
+                        "deployment verification: address has no code on chain");
+                }
+                Err(BootstrapError::Chain(format!(
+                    "{chain_label}: deployment does not match chain — refusing to boot. {}",
+                    summary
+                )))
+            } else {
+                unreachable!()
             }
         }
-    }
-    if empty.is_empty() {
-        info!(chain = chain_label, count = contracts.len(),
-            "Contract code verification passed");
-        Ok(())
-    } else {
-        Err(BootstrapError::Chain(format!(
-            "{chain_label}: configured contracts have NO CODE on chain — refusing to boot. \
-             Either the deployment file is stale or the chain was reset. Empty: [{}]",
-            empty.join(", ")
-        )))
+        Err(other) => Err(BootstrapError::Chain(format!(
+            "{chain_label}: deployment verification RPC failure: {}",
+            other
+        ))),
     }
 }
 
@@ -167,10 +177,12 @@ impl<'a> ChainBuilder<'a> {
             )));
         }
 
-        // Refuse to boot if the configured L3 contracts are empty — silent void
-        // (see helper docstring for the incident this guards).
+        // Refuse to boot if the configured L3 contracts are empty or the
+        // chain id mismatches — silent void (see helper docstring for the
+        // incident this guards).
         verify_contracts_have_code(
-            &provider,
+            rpc_url,
+            self.target_chain_id,
             "L3",
             &[
                 ("Index", self.contract_addresses.index),
@@ -354,12 +366,12 @@ impl<'a> ChainBuilder<'a> {
                     ..Default::default()
                 };
 
-                // Refuse to boot if Settlement-side bridge contracts are empty.
-                // Same guard as L3 — see verify_contracts_have_code.
-                let settlement_provider = ethers::providers::Provider::<ethers::providers::Http>::try_from(settlement_rpc.as_str())
-                    .map_err(|e| BootstrapError::Chain(format!("Failed to create settlement provider for verification: {}", e)))?;
+                // Refuse to boot if Settlement-side bridge contracts are empty
+                // or the chain id mismatches. Same guard as L3 — see
+                // verify_contracts_have_code.
                 verify_contracts_have_code(
-                    &settlement_provider,
+                    settlement_rpc.as_str(),
+                    settlement_chain_id,
                     "Settlement",
                     &[
                         ("SettlementBridgeProxy", bridge_proxy.parse().unwrap_or_default()),

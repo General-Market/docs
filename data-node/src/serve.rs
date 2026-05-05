@@ -65,6 +65,18 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
         "RuntimeConfig loaded"
     );
 
+    // Refuse to boot if the deployment JSON disagrees with the chain
+    // (codeless addresses, wrong chainId). The April 23 incident: oracle
+    // pointed at an empty address, every createBatch succeeded with no
+    // BatchCreated event because the EVM accepts calls to codeless
+    // addresses as no-ops. Eighteen hours of silent failure. Catch it
+    // before any port binds, any DB connects, any signer signs.
+    common::runtime::admin::verify_deployment_or_die(
+        &runtime_config.deployment,
+        &args.rpc_url,
+        &["Index", "OracleRegistry"],
+    ).await;
+
     // Startup validation (warnings only — don't block boot)
     let errors = common::runtime::validate::StartupValidator::validate(&runtime_config).await;
     for e in &errors {

@@ -21,6 +21,26 @@ pub enum Command {
     SyncListings(SyncListingsArgs),
     /// Backfill DefiLlama TVL/fees/volume history
     DlBackfill(DlBackfillArgs),
+    /// Verify a deployment JSON against a live chain. Exits non-zero if the
+    /// chain id mismatches or any contract address is codeless. CI-friendly.
+    VerifyDeployment(VerifyDeploymentArgs),
+}
+
+#[derive(Parser, Debug)]
+pub struct VerifyDeploymentArgs {
+    /// Path to deployment JSON (e.g. deployments/active-deployment.json)
+    #[arg(long, env = "DEPLOYMENT_FILE")]
+    pub deployment_file: String,
+
+    /// RPC URL of the chain the deployment claims
+    #[arg(long, env = "INDEX_RPC_URL")]
+    pub rpc_url: String,
+
+    /// Comma-separated list of contract labels to verify. Each must be a key
+    /// under `contracts.*` in the deployment JSON. Default covers the L3
+    /// contracts every long-running service depends on.
+    #[arg(long, default_value = "Index,OracleRegistry", env = "DEPLOYMENT_VERIFY_LABELS")]
+    pub labels: String,
 }
 
 #[derive(Parser, Debug)]

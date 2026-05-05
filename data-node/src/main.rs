@@ -46,7 +46,7 @@ mod logo_sync;
 mod serve;
 
 use clap::Parser;
-use crate::config::{Cli, Command};
+use crate::config::{Cli, Command, VerifyDeploymentArgs};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -65,5 +65,58 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Command::SyncLogos(args) => logo_sync::run_sync_logos(args).await,
         Command::SyncListings(args) => listing_sync::run(args).await,
         Command::DlBackfill(args) => dl_backfill::run(args).await,
+        Command::VerifyDeployment(args) => run_verify_deployment(args).await,
+    }
+}
+
+/// CI-friendly one-shot verifier. Loads deployment JSON, runs the same
+/// verifier the long-running services use, exits non-zero on mismatch.
+/// Routes through the same path as boot so CI failure modes match prod.
+async fn run_verify_deployment(args: VerifyDeploymentArgs) -> Result<(), Box<dyn std::error::Error>> {
+    use std::path::PathBuf;
+
+    let deployment_path = PathBuf::from(&args.deployment_file);
+    let deployment = common::adapters::DeploymentConfig::from_file(&deployment_path)
+        .map_err(|e| format!("Failed to read {}: {}", args.deployment_file, e))?;
+
+    let labels: Vec<&str> = args.labels.split(',').map(|s| s.trim()).filter(|s| !s.is_empty()).collect();
+    if labels.is_empty() {
+        return Err("--labels must contain at least one contract name".into());
+    }
+
+    // verify_deployment_or_die panics on failure, which is the right shape
+    // for long-running services. For the CLI, we reach into the verifier
+    // directly so we exit cleanly with a non-zero status code instead.
+    let mut resolved: Vec<(&str, ethers::types::Address)> = Vec::with_capacity(labels.len());
+    let mut missing: Vec<&str> = Vec::new();
+    for label in &labels {
+        match deployment.get_contract_address(label) {
+            Ok(addr) => resolved.push((*label, addr)),
+            Err(_) => missing.push(*label),
+        }
+    }
+    if !missing.is_empty() {
+        eprintln!(
+            "verify-deployment: missing contracts {:?} in {}",
+            missing, args.deployment_file
+        );
+        std::process::exit(2);
+    }
+
+    let verifier = common::adapters::DeploymentVerifier::new(&args.rpc_url, deployment.chain_id);
+    match verifier.verify(&resolved).await {
+        Ok(()) => {
+            println!(
+                "verify-deployment: OK — {} contracts present on chainId {} via {}",
+                resolved.len(),
+                deployment.chain_id,
+                args.rpc_url
+            );
+            Ok(())
+        }
+        Err(e) => {
+            eprintln!("verify-deployment: FAIL — {}", e);
+            std::process::exit(1);
+        }
     }
 }

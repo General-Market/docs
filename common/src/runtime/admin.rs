@@ -4,9 +4,12 @@ use axum::{
     http::StatusCode,
     routing::{get, post},
 };
+use ethers::types::Address;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use super::config::SharedConfig;
+use crate::adapters::deployment_verifier::{DeploymentVerifier, VerifierError};
+use crate::adapters::deployment_config::DeploymentConfig;
 
 /// Opaque log-level reload trait -- avoids exposing complex layer stack type.
 /// Implemented in common/src/logging.rs via ReloadHandleImpl.
@@ -175,4 +178,84 @@ async fn handle_log_level(
         status: "updated".into(),
         level: body.level,
     }))
+}
+
+/// One-shot startup verification used by every long-running service.
+///
+/// Reads the deployment JSON, picks the contracts the service actually talks
+/// to, and refuses to return without confirming each one has bytecode on
+/// the chain it claims (and that the chain id matches). On failure, every
+/// offence is logged at ERROR before the panic so the operator sees the
+/// whole picture, not just the first complaint.
+///
+/// This MUST be called BEFORE the service binds any port, opens any DB
+/// connection, or signs anything. Earliest possible exit on bad config.
+pub async fn verify_deployment_or_die(
+    deployment: &DeploymentConfig,
+    rpc_url: &str,
+    labels: &[&str],
+) {
+    // Resolve every requested label up-front. A missing label is itself a
+    // misconfiguration — surface it the same way as a codeless address.
+    let mut resolved: Vec<(&str, Address)> = Vec::with_capacity(labels.len());
+    let mut missing: Vec<&str> = Vec::new();
+    for label in labels {
+        match deployment.get_contract_address(label) {
+            Ok(addr) => resolved.push((label, addr)),
+            Err(_) => missing.push(label),
+        }
+    }
+    if !missing.is_empty() {
+        tracing::error!(
+            missing = ?missing,
+            rpc_url,
+            chain_id = deployment.chain_id,
+            "deployment JSON is missing required contract entries — refusing to start"
+        );
+        panic!(
+            "deployment verification failed: missing contracts {:?} in deployment JSON for chainId {}",
+            missing, deployment.chain_id
+        );
+    }
+
+    let verifier = DeploymentVerifier::new(rpc_url, deployment.chain_id);
+    match verifier.verify(&resolved).await {
+        Ok(()) => {}
+        Err(err @ VerifierError::Mismatch { .. }) => {
+            // Log every offence individually so it's grep-able from
+            // structured logs, then panic with the bundled summary.
+            if let VerifierError::Mismatch { ref empty, ref chain_id, ref summary, ref rpc_url } = err {
+                if let Some(cm) = chain_id {
+                    tracing::error!(
+                        rpc_url = %rpc_url,
+                        expected = cm.expected,
+                        actual = cm.actual,
+                        "deployment verification: chain id mismatch"
+                    );
+                }
+                for e in empty {
+                    tracing::error!(
+                        rpc_url = %rpc_url,
+                        label = %e.label,
+                        address = ?e.address,
+                        "deployment verification: address has no code on chain"
+                    );
+                }
+                panic!(
+                    "deployment verification failed against {}: {}. \
+                     Refusing to start — fix deployment JSON or redeploy.",
+                    rpc_url, summary
+                );
+            }
+        }
+        Err(other) => {
+            tracing::error!(
+                rpc_url,
+                chain_id = deployment.chain_id,
+                error = %other,
+                "deployment verification: RPC call failed at startup"
+            );
+            panic!("deployment verification RPC failure: {}", other);
+        }
+    }
 }

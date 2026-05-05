@@ -85,5 +85,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Command::SyncLogos(args) => logo_sync::run_sync_logos(args).await,
         Command::SyncListings(args) => listing_sync::run(args).await,
         Command::DlBackfill(args) => dl_backfill::run(args).await,
+        Command::VerifyDeployment(_) => {
+            Err("verify-deployment is not available in sfdata-node — use the main data-node binary".into())
+        }
     }
 }

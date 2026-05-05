@@ -74,6 +74,26 @@ pub(crate) async fn run_ap(config: APConfig, shutdown: Arc<AtomicBool>) -> Resul
         }
     }
 
+    // Refuse to boot if the deployment JSON disagrees with the chain
+    // (codeless addresses, wrong chainId). The April 23 incident: oracle
+    // pointed at an empty address, every createBatch succeeded with no
+    // BatchCreated event because the EVM accepts calls to codeless
+    // addresses as no-ops. Eighteen hours of silent failure. Catch it
+    // before any port binds or any signer signs.
+    if !use_mock_chain {
+        if let Some(deployment_path) = config.effective_deployment_file() {
+            let deployment = DeploymentConfig::from_file(&deployment_path)
+                .map_err(|e| format!("Failed to load deployment config for verification: {}", e))?;
+            deployment.validate(target_chain_id)
+                .map_err(|e| format!("Deployment config validation failed: {}", e))?;
+            common::runtime::admin::verify_deployment_or_die(
+                &deployment,
+                &rpc_url,
+                &["Index", "OracleRegistry"],
+            ).await;
+        }
+    }
+
     // Initialize comprehensive metrics (Story 4.9)
     let metrics = Arc::new(APMetrics::new());
     info!("APMetrics initialized (orders, queue, buffer, violations, timeouts)");
