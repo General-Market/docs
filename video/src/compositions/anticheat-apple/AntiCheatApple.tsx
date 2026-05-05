@@ -42,12 +42,12 @@ import { antiCheatAppleEndCardMeta } from "./AntiCheatEndCard";
 //   ↓ fade 12
 //   Reassure   195  | 897  → 1092
 //   ↓ fade 12
-//   EndCard    210  | 1080 → 1290
+//   EndCard    216  | 1080 → 1296
 //
-// Sum of scenes: 300 + 225 + 210 + 210 + 195 + 210 = 1350
-// Less 5 × 12-frame overlaps: 1350 − 60 = 1290 frames at 30fps = 43 seconds.
+// Sum of scenes: 300 + 225 + 210 + 210 + 195 + 216 = 1356
+// Less 5 × 12-frame overlaps: 1356 − 60 = 1296 frames at 30fps ≈ 43.2 seconds.
 const TRANSITION_FRAMES = 12;
-const TOTAL_FRAMES = 1290;
+const TOTAL_FRAMES = 1296;
 
 // White-flash beat between Rigged and Solution. Peaks at the boundary of the
 // 12-frame Rigged→Solution dissolve. The standard fade still runs underneath;
