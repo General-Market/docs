@@ -851,9 +851,12 @@ impl EthersChainWriter {
                     self.nonce_manager.handle_failure(nonce, &error_msg).await?;
 
                     // Check if this is a nonce conflict from concurrent operations
+                    // or local-counter drift after a reorg.
                     let is_nonce_error = {
                         let lower = error_msg.to_lowercase();
-                        lower.contains("nonce too low") || lower.contains("nonce has already been used")
+                        lower.contains("nonce too low")
+                            || lower.contains("nonce has already been used")
+                            || lower.contains("nonce too high")
                     };
 
                     if is_nonce_error && nonce_attempt < MAX_NONCE_RETRIES {

@@ -203,8 +203,14 @@ impl NonceManager {
 
         let error_lower = error_msg.to_lowercase();
 
-        if error_lower.contains("nonce too low") || error_lower.contains("nonce has already been used") {
-            // Nonce already used on-chain -- remove from in_flight, don't reclaim, resync
+        if error_lower.contains("nonce too low")
+            || error_lower.contains("nonce has already been used")
+            || error_lower.contains("nonce too high")
+        {
+            // Either the chain is ahead (nonce too low / already used) or our
+            // local counter has drifted forward of the chain (nonce too high,
+            // typically after an L3 reorg dropped pending txs). Both want the
+            // same fix: forget local state, re-read from chain.
             self.state.lock().await.in_flight.remove(&nonce_u64);
 
             warn!(
