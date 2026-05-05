@@ -95,12 +95,20 @@ impl RuntimeConfig {
     /// Reload from disk + chain. Returns (new_config, nonce_changed).
     pub async fn reload(&self) -> Result<(Self, bool), ConfigError> {
         let index_addr = self.deployment.index_address().ok();
-        let new = Self::load(
+        let mut new = Self::load(
             &self.deployment_file_path,
             &self.rpc_url,
             index_addr,
         )
         .await?;
+        // Transient RPC failure inside `read_nonce` returns 0 from the chain
+        // read, which would otherwise read as a deployment-reset and trigger
+        // a full state flush on every nginx 502. Treat 0-on-reload as "no
+        // signal" and keep the previously known nonce. A real reset arrives
+        // through the bootstrap path, not the reload watcher.
+        if new.deployment_nonce == 0 && self.deployment_nonce != 0 {
+            new.deployment_nonce = self.deployment_nonce;
+        }
         let nonce_changed = new.deployment_nonce != self.deployment_nonce;
         Ok((new, nonce_changed))
     }
