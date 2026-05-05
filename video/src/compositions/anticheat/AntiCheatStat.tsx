@@ -10,8 +10,8 @@ import {
 import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 
-const SCENE_SECONDS = 7.5;
-const STAT_DURATION = toFrames(4);
+const SCENE_SECONDS = 6.0;
+const STAT_DURATION = toFrames(3.5);
 
 export const AntiCheatStat: React.FC = () => {
   return (
@@ -113,7 +113,7 @@ const TradingBackdrop: React.FC = () => {
   );
 };
 
-// ─── Stat panel: 0.01% / arrow / 70% ──────────────────────────────────────────
+// ─── Stat panel: 0.04% / arrow / 67% ──────────────────────────────────────────
 
 const StatPanel: React.FC = () => {
   const frame = useCurrentFrame();
@@ -134,8 +134,8 @@ const StatPanel: React.FC = () => {
   // Counters — count up over the first 1.6s.
   const countT = Math.min(1, Math.max(0, frame / toFrames(1.6)));
   const eased = 1 - Math.pow(1 - countT, 3);
-  const left = (0.01 * eased).toFixed(2);
-  const right = Math.round(70 * eased);
+  const left = (0.04 * eased).toFixed(2);
+  const right = Math.round(67 * eased);
 
   // Arrow draws from frame 0.6s to 1.6s.
   const arrowT = interpolate(
@@ -210,7 +210,7 @@ const StatPanel: React.FC = () => {
           ),
         }}
       >
-        0.01% of cheaters claim 70% of all profits.
+        0.04% of cheaters claim 67% of all profits.
       </div>
     </AbsoluteFill>
   );

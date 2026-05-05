@@ -3,18 +3,20 @@ import { AbsoluteFill, Series } from "remotion";
 import { FPS, H, W, colors } from "./theme";
 import { antiCheatHookMeta } from "./AntiCheatHook";
 import { antiCheatStatMeta } from "./AntiCheatStat";
+import { antiCheatCrowdMeta } from "./AntiCheatCrowd";
 import { antiCheatRiggedMeta } from "./AntiCheatRigged";
 import { antiCheatSolutionMeta } from "./AntiCheatSolution";
 import { antiCheatReassureMeta } from "./AntiCheatReassure";
 import { antiCheatEndCardMeta } from "./AntiCheatEndCard";
 
-// Hook 10s + Stat 7.5s + Rigged 6s + Solution 6.5s + Reassure 6s + EndCard 5s = 41s.
+// Hook 9.5s + Stat 6s + Crowd 5s + Rigged 5.5s + Solution 5.5s + Reassure 4.5s + EndCard 3.5s = 39.5s.
 // Hard cuts. No transitions. Each scene starts at the prior scene's last frame + 1.
-const TOTAL_FRAMES = 1230;
+const TOTAL_FRAMES = 1185;
 
 const SCENES = [
   antiCheatHookMeta,
   antiCheatStatMeta,
+  antiCheatCrowdMeta,
   antiCheatRiggedMeta,
   antiCheatSolutionMeta,
   antiCheatReassureMeta,
