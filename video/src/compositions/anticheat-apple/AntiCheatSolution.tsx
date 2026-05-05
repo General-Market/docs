@@ -3,16 +3,13 @@ import {
   AbsoluteFill,
   Sequence,
   interpolate,
-  spring,
   useCurrentFrame,
-  useVideoConfig,
 } from "remotion";
 import { font, monoFont } from "../../common/fonts";
-import { FPS, H, W, colors, toFrames } from "./theme";
+import { FPS, H, W, colors, easeOut, toFrames } from "./theme";
 
 const SCENE_SECONDS = 6.5;
 const TERMINAL_AT = toFrames(2.5);
-const GREEN = "#3ddc84";
 
 export const AntiCheatSolution: React.FC = () => {
   return (
@@ -22,14 +19,6 @@ export const AntiCheatSolution: React.FC = () => {
       <Sequence from={TERMINAL_AT}>
         <Terminal />
       </Sequence>
-
-      <AbsoluteFill
-        style={{
-          pointerEvents: "none",
-          background:
-            "radial-gradient(circle at 50% 50%, transparent 55%, rgba(0,0,0,0.55) 100%)",
-        }}
-      />
     </AbsoluteFill>
   );
 };
@@ -38,17 +27,17 @@ export const AntiCheatSolution: React.FC = () => {
 
 const Headline: React.FC = () => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
 
-  const t = spring({
-    frame,
-    fps,
-    config: { damping: 22, stiffness: 110, mass: 0.7 },
+  // 36-frame ease-out entrance.
+  const tIn = interpolate(frame, [0, 36], [0, 1], {
+    easing: easeOut,
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
   });
-  const t2 = spring({
-    frame: frame - toFrames(0.6),
-    fps,
-    config: { damping: 22, stiffness: 100, mass: 0.8 },
+  const tSubIn = interpolate(frame - toFrames(0.6), [0, 36], [0, 1], {
+    easing: easeOut,
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
   });
 
   // Slide up + fade as the terminal arrives.
@@ -82,16 +71,15 @@ const Headline: React.FC = () => {
         style={{
           fontFamily: font,
           fontSize: 132,
-          fontWeight: 800,
+          fontWeight: 400,
           letterSpacing: "-0.04em",
           color: colors.fg,
           lineHeight: 0.95,
-          textShadow: "0 4px 28px rgba(0,0,0,0.65)",
-          opacity: interpolate(t, [0, 1], [0, 1]),
-          transform: `translateY(${interpolate(t, [0, 1], [22, 0])}px)`,
+          opacity: tIn,
+          transform: `translateY(${interpolate(tIn, [0, 1], [32, 0])}px)`,
         }}
       >
-        General <span style={{ color: GREEN }}>changes</span> this
+        General <span style={{ color: colors.green }}>changes</span> this
         <span style={{ color: colors.fg, opacity: 0.45 }}>.</span>
       </div>
       <div
@@ -103,8 +91,8 @@ const Headline: React.FC = () => {
           letterSpacing: "0.18em",
           textTransform: "uppercase",
           color: colors.dim,
-          opacity: interpolate(t2, [0, 1], [0, 1]) * (isTerminal ? 0 : 1),
-          transform: `translateY(${interpolate(t2, [0, 1], [16, 0])}px)`,
+          opacity: tSubIn * (isTerminal ? 0 : 1),
+          transform: `translateY(${interpolate(tSubIn, [0, 1], [32, 0])}px)`,
         }}
       >
         Securing your profits from unfair actors
@@ -118,21 +106,20 @@ const Headline: React.FC = () => {
 const TERMINAL_LINES: { text: string; color: string; mode: "cmd" | "user" | "ok" }[] = [
   { text: "$ claude", color: colors.dim, mode: "cmd" },
   { text: "> upgrade my bot to block-trading", color: colors.fg, mode: "user" },
-  { text: "✓ shielded", color: GREEN, mode: "ok" },
+  { text: "✓ shielded", color: colors.green, mode: "ok" },
 ];
 
 const Terminal: React.FC = () => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
 
-  // Panel itself springs in.
-  const panel = spring({
-    frame,
-    fps,
-    config: { damping: 22, stiffness: 130, mass: 0.6 },
+  // Panel itself eases in over 36 frames.
+  const panel = interpolate(frame, [0, 36], [0, 1], {
+    easing: easeOut,
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
   });
-  const panelOpacity = interpolate(panel, [0, 1], [0, 1]);
-  const panelY = interpolate(panel, [0, 1], [40, 0]);
+  const panelOpacity = panel;
+  const panelY = interpolate(panel, [0, 1], [32, 0]);
 
   // Per-line typewriter timings (frames are local to the terminal sequence).
   const LINE_DELAYS = [toFrames(0.3), toFrames(1.2), toFrames(2.5)];
@@ -149,12 +136,11 @@ const Terminal: React.FC = () => {
       <div
         style={{
           width: "min(1200px, 90%)",
-          background: "linear-gradient(180deg, #0d0d10 0%, #050507 100%)",
+          background: colors.bg,
           border: `1px solid ${colors.rule}`,
           borderRadius: 8,
           opacity: panelOpacity,
           transform: `translateY(${panelY}px)`,
-          boxShadow: "0 24px 80px rgba(0,0,0,0.6)",
         }}
       >
         {/* Window chrome */}
@@ -212,7 +198,7 @@ const Terminal: React.FC = () => {
                 key={i}
                 style={{
                   color: line.color,
-                  fontWeight: line.mode === "ok" ? 700 : 500,
+                  fontWeight: line.mode === "ok" ? 500 : 500,
                   opacity: isActive ? 1 : 0.0,
                   whiteSpace: "pre",
                 }}
