@@ -121,20 +121,11 @@ export const AntiCheatApple: React.FC = () => {
         })}
       </TransitionSeries>
 
-      {/* The introducing beat. Between Rigged and Solution. */}
-      <Sequence
-        from={FLASH_FROM}
-        durationInFrames={FLASH_DURATION}
-        layout="none"
-      >
-        <WhiteFlash />
-      </Sequence>
-
       {/* Rec. 709 grade — brightness lift, contrast nudge, slight
           desaturation, a 4% cool-blue screen on top. Subtle per frame,
           unmistakable across the film. Sits above the scenes so it grades
-          everything they paint, but below the letterbox so the bars stay
-          pure black. */}
+          everything they paint, but below the white-flash and letterbox so
+          neither gets tinted away from its true value. */}
       <AbsoluteFill style={{ filter: GRADE_FILTER, pointerEvents: "none" }}>
         <AbsoluteFill
           style={{
@@ -143,6 +134,17 @@ export const AntiCheatApple: React.FC = () => {
           }}
         />
       </AbsoluteFill>
+
+      {/* The introducing beat. Between Rigged and Solution. Rendered above
+          the grade so the apex frame clips to pure #FFFFFF rather than the
+          grade-tinted ~#F5F5F7. */}
+      <Sequence
+        from={FLASH_FROM}
+        durationInFrames={FLASH_DURATION}
+        layout="none"
+      >
+        <WhiteFlash />
+      </Sequence>
 
       {/* 2.39:1 letterbox — black bars top and bottom. Visible band 1920×820. */}
       <AbsoluteFill
