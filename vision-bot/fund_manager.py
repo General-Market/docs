@@ -43,6 +43,16 @@ SNAPSHOT_INTERVAL = 1  # write snapshots every cycle. At poll_interval=30s
 # points to draw a real trading line within minutes of deploy. Previous
 # values (10 cycles = 5 min) made fresh vaults look frozen.
 
+# Auto-seed config — turns vaults that have zero idle capital (because nobody
+# has deposited) into real participants by depositing a small float from the
+# manager EOA. Feature-gated; default off because it's the manager's money.
+#   AUTO_SEED_USDC=5            seed each empty vault with 5 USDC
+#   AUTO_SEED_BUDGET_USDC=50    abort once total seeded across funds hits 50
+#   AUTO_SEED_MAX_ATTEMPTS=2    give up on a fund after this many failed seeds
+AUTO_SEED_USDC = float(os.environ.get("AUTO_SEED_USDC", "0"))
+AUTO_SEED_BUDGET_USDC = float(os.environ.get("AUTO_SEED_BUDGET_USDC", "50"))
+AUTO_SEED_MAX_ATTEMPTS = int(os.environ.get("AUTO_SEED_MAX_ATTEMPTS", "2"))
+
 
 # ── Config ─────────────────────────────────────────────────────
 
@@ -163,6 +173,9 @@ class FundState:
         # Used as the from_block when reading PlayerSettled events so we
         # don't scan the entire chain or miss the event.
         self.join_blocks: dict[int, int] = {}
+        # Auto-seed bookkeeping. Counts attempts (success or failure) so a
+        # broken vault doesn't get hammered every cycle.
+        self._seed_attempts: int = 0
 
     def matches_source(self, source_name):
         if not self.sources:
@@ -553,6 +566,67 @@ def _write_heartbeat(updates: dict) -> None:
 # ── Main cycle ─────────────────────────────────────────────────
 
 
+def _maybe_seed_empty_vault(fund, cache: dict, executor, seed_state: dict) -> bool:
+    """Seed an empty vault from the manager EOA so it can start participating.
+
+    Only fires when AUTO_SEED_USDC > 0 and the vault has zero deposited capital.
+    Respects a global per-process budget so the manager doesn't get drained.
+    Returns True if a seed deposit landed and the cache was refreshed.
+    """
+    if AUTO_SEED_USDC <= 0:
+        return False
+    if fund._seed_attempts >= AUTO_SEED_MAX_ATTEMPTS:
+        return False
+
+    info = _read_vault_info_cached(fund, cache)
+    if info is None:
+        return False
+    # Only seed truly empty vaults — never top up a vault that has any user
+    # capital, idle or active. The seed is for cold starts, not maintenance.
+    if info.get("total_assets", 0) > 0 or info.get("idle_usdc", 0) > 0:
+        return False
+
+    seed_wei = int(AUTO_SEED_USDC * 10**18)
+    spent_so_far = seed_state.get("spent_wei", 0)
+    budget_wei = int(AUTO_SEED_BUDGET_USDC * 10**18)
+    if spent_so_far + seed_wei > budget_wei:
+        log.warning(
+            "[%s] Skipping seed — would exceed AUTO_SEED_BUDGET_USDC (%.2f spent, %.2f cap)",
+            fund.name, spent_so_far / 1e18, AUTO_SEED_BUDGET_USDC,
+        )
+        return False
+
+    # Confirm the manager actually has the USDC before attempting the deposit.
+    try:
+        bot_balance = executor.usdc.functions.balanceOf(executor.bot_addr).call()
+    except Exception as e:
+        log.warning("[%s] Could not read manager USDC balance: %s", fund.name, e)
+        return False
+    if bot_balance < seed_wei:
+        log.warning(
+            "[%s] Manager has %.4f USDC, need %.4f to seed — top up the manager EOA",
+            fund.name, bot_balance / 1e18, AUTO_SEED_USDC,
+        )
+        fund._seed_attempts += 1
+        return False
+
+    fund._seed_attempts += 1
+    log.info(
+        "[%s] Seeding empty vault %s with %.2f USDC from manager",
+        fund.name, fund.vault_addr, AUTO_SEED_USDC,
+    )
+    try:
+        fund.vault.deposit_to_vault(seed_wei)
+    except Exception as e:
+        log.error("[%s] Vault seed failed: %s", fund.name, e)
+        return False
+
+    seed_state["spent_wei"] = spent_so_far + seed_wei
+    # Drop the stale cache entry so the next read sees the real post-seed balances.
+    cache.pop(fund.name, None)
+    return True
+
+
 def _read_vault_info_cached(fund, cache: dict) -> dict | None:
     """Read vault info once per cycle. Subsequent calls return the cached copy.
 
@@ -595,6 +669,19 @@ def run_cycle(
     # Reset per-fund pending join counters at the top of every cycle.
     for fund in funds:
         fund._pending_join_amount = 0
+
+    # Optional auto-seed pass: deposit a small float from the manager into
+    # any vault that has zero capital, so empty-vault sources (no user has
+    # deposited yet) can start playing. Disabled unless AUTO_SEED_USDC > 0.
+    if AUTO_SEED_USDC > 0:
+        seed_state = {"spent_wei": 0}
+        for fund in funds:
+            _maybe_seed_empty_vault(fund, vault_info_cache, executor, seed_state)
+        if seed_state["spent_wei"] > 0:
+            log.info(
+                "Auto-seed: deposited %.2f USDC across vaults this cycle",
+                seed_state["spent_wei"] / 1e18,
+            )
 
     all_batches = fetch_batches(cfg["vision_api"], executor=executor)
     # Filter: only batches with known market count (skip legacy batches without config)

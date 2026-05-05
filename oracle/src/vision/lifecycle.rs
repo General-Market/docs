@@ -836,6 +836,20 @@ impl BatchLifecycleManager {
             "Fetched fresh config for new round"
         );
 
+        // Refuse to create a batch with no markets. Such a batch can never
+        // accept bets (the contract requires bitmap.length == marketCount), and
+        // it sits forever as a corpse polluting the explorer. Old corpses still
+        // exist on-chain — see worldbank batch=3, boe=145185 — but at least
+        // we'll stop minting new ones.
+        if market_count == 0 {
+            warn!(
+                source = %source_name,
+                config_hash = %config_hash_str,
+                "Refusing to create batch — recommended config has 0 markets. Source has no live assets."
+            );
+            return Err(format!("source {} has no markets in recommended config", source_name).into());
+        }
+
         // Record intent in Postgres (all oracles do this for local tracking)
         let lifecycle_id = self.record_round_lifecycle(source_name, config_hash_str, tick_duration, market_count).await?;
 
