@@ -1,6 +1,7 @@
 import React from "react";
 import {
   AbsoluteFill,
+  Img,
   interpolate,
   spring,
   staticFile,
@@ -10,69 +11,161 @@ import {
 import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 
-const SCENE_SECONDS = 6;
-const CARD_TIMES = [toFrames(1.0), toFrames(2.5), toFrames(4.0)];
-const STAMP_AT = toFrames(4.7);
+// Scene timing — 5.5s total.
+//
+// Title "every market you touched" enters first and stays on top.
+// Four articles flash hard-cut, one per market category, each on stage
+// ~0.65s with green highlights revealing in 0.2s. After the last article,
+// "is rigged" punches in red title font as the verdict.
+//
+// Articles are pulled from public/insider-trading/articles/ (already in repo).
+// Highlight bbox coordinates are reused from InsiderCases.tsx — the original
+// yellow highlighter is replaced with a vivid green for this scene.
+const SCENE_SECONDS = 5.5;
 
-const CARDS = [
+const TITLE_IN = 0;
+const ARTICLES_AT = toFrames(0.5);
+const ARTICLE_HOLD = toFrames(0.7);
+const VERDICT_AT = ARTICLES_AT + ARTICLE_HOLD * 4 + toFrames(0.2);
+
+const PROOF_GREEN = "#22d97a";
+const PROOF_GREEN_LIGHT = "#52ffa2";
+
+type Highlight = { x: number; y: number; w: number; h: number };
+
+type Brand =
+  | { kind: "wordmark"; src: string; pad?: number }
+  | { kind: "composite"; icon: string; name: string };
+
+type ArticleProof = {
+  category: string;
+  image: string;
+  brand: Brand;
+  highlights: Highlight[];
+};
+
+const ARTICLES: ArticleProof[] = [
   {
-    n: "01",
-    label: "A tip from a politician",
-    sub: "Material non-public information",
-    image: staticFile("anticheat-imgs/congress.jpg"),
+    category: "perps",
+    image: "insider-trading/articles/1.png",
+    brand: { kind: "wordmark", src: "logos/exchanges/binance.svg", pad: 36 },
+    highlights: [{ x: 0.5737, y: 0.1383, w: 0.3183, h: 0.0453 }],
   },
   {
-    n: "02",
-    label: "$100M of latency infra",
-    sub: "Co-located, sub-microsecond",
-    image: staticFile("anticheat-imgs/hft-racks.png"),
+    category: "options",
+    image: "insider-trading/articles/9.png",
+    brand: { kind: "wordmark", src: "logos/exchanges/robinhood.svg", pad: 40 },
+    highlights: [{ x: 0.4119, y: 0.1968, w: 0.2831, h: 0.042 }],
   },
   {
-    n: "03",
-    label: "$30M for exchange data",
-    sub: "Direct feeds, unfair by design",
-    image: staticFile("anticheat-imgs/orderflow-traders.png"),
+    category: "predictions",
+    image: "insider-trading/articles/3.png",
+    brand: {
+      kind: "wordmark",
+      src: "logos/exchanges/polymarket-black.svg",
+      pad: 40,
+    },
+    highlights: [
+      { x: 0.6467, y: 0.2828, w: 0.2445, h: 0.0273 },
+      { x: 0.5126, y: 0.3313, w: 0.1197, h: 0.0281 },
+    ],
   },
-] as const;
+  {
+    category: "launchpads",
+    image: "insider-trading/articles/4.png",
+    brand: {
+      kind: "composite",
+      icon: "logos/exchanges/pumpfun.png",
+      name: "pump.fun",
+    },
+    highlights: [{ x: 0.1253, y: 0.5158, w: 0.2653, h: 0.0487 }],
+  },
+];
 
 export const AntiCheatRigged: React.FC = () => {
   const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
 
-  // Headline + cards fade out as the stamp arrives.
-  const fadeOut = interpolate(
+  // Title fades + slides in once.
+  const titleT = spring({
+    frame: frame - TITLE_IN,
+    fps,
+    config: { damping: 22, stiffness: 110, mass: 0.7 },
+  });
+  const titleOpacity = interpolate(titleT, [0, 1], [0, 1]);
+  const titleY = interpolate(titleT, [0, 1], [22, 0]);
+
+  // Title dims slightly when the verdict arrives so "IS RIGGED" can hit harder.
+  const titleDim = interpolate(
     frame,
-    [STAMP_AT - toFrames(0.2), STAMP_AT + toFrames(0.1)],
-    [1, 0],
+    [VERDICT_AT, VERDICT_AT + toFrames(0.3)],
+    [1, 0.45],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
 
+  // Active article index based on frame.
+  const articleIdx = Math.min(
+    ARTICLES.length - 1,
+    Math.max(0, Math.floor((frame - ARTICLES_AT) / ARTICLE_HOLD)),
+  );
+  const articlesActive =
+    frame >= ARTICLES_AT && frame < VERDICT_AT - toFrames(0.05);
+
   return (
     <AbsoluteFill style={{ backgroundColor: colors.bg, fontFamily: font }}>
-      <TradingBackdrop />
-
-      <Headline fadeOut={fadeOut} />
-
+      {/* Top-line title */}
       <div
         style={{
           position: "absolute",
-          top: "42%",
+          top: "8%",
           left: 0,
           right: 0,
-          display: "flex",
-          alignItems: "stretch",
-          justifyContent: "center",
-          gap: 36,
+          textAlign: "center",
           padding: "0 96px",
-          opacity: fadeOut,
+          opacity: titleOpacity * titleDim,
+          transform: `translateY(${titleY}px)`,
         }}
       >
-        {CARDS.map((card, i) => (
-          <Card key={card.n} card={card} at={CARD_TIMES[i]} />
-        ))}
+        <div
+          style={{
+            fontFamily: monoFont,
+            fontSize: 32,
+            fontWeight: 500,
+            letterSpacing: "0.28em",
+            textTransform: "uppercase",
+            color: colors.dim,
+            marginBottom: 18,
+          }}
+        >
+          The proof
+        </div>
+        <div
+          style={{
+            fontFamily: font,
+            fontSize: 96,
+            fontWeight: 800,
+            letterSpacing: "-0.04em",
+            color: colors.fg,
+            lineHeight: 0.95,
+            textShadow: "0 4px 28px rgba(0,0,0,0.65)",
+          }}
+        >
+          every market you touched
+        </div>
       </div>
 
-      <FinalStamp />
+      {/* Article slot — only the currently active article renders */}
+      {articlesActive && (
+        <ArticleFlash
+          article={ARTICLES[articleIdx]}
+          startFrame={ARTICLES_AT + articleIdx * ARTICLE_HOLD}
+        />
+      )}
 
+      {/* Verdict — "is rigged" punches in red */}
+      <Verdict />
+
+      {/* Vignette */}
       <AbsoluteFill
         style={{
           pointerEvents: "none",
@@ -84,220 +177,271 @@ export const AntiCheatRigged: React.FC = () => {
   );
 };
 
-// ─── Headline: snaps in at 0s, 0.18s entrance ────────────────────────────────
+// ─── Article flash: hard-cut entry, fast green highlight reveal ───────────────
 
-const Headline: React.FC<{ fadeOut: number }> = ({ fadeOut }) => {
+const ARTICLE_HEIGHT = 720;
+
+const ArticleFlash: React.FC<{
+  article: ArticleProof;
+  startFrame: number;
+}> = ({ article, startFrame }) => {
   const frame = useCurrentFrame();
-  const opacity = interpolate(
-    frame,
-    [0, toFrames(0.18)],
-    [0, 1],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-  const y = interpolate(
-    frame,
-    [0, toFrames(0.18)],
-    [14, 0],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  const local = frame - startFrame;
+
+  // Snap-in: tiny scale punch in the first 4 frames so the cut feels alive.
+  const punchT = Math.max(0, Math.min(1, local / 4));
+  const punchScale = interpolate(punchT, [0, 1], [1.04, 1]);
+  const punchOpacity = interpolate(punchT, [0, 1], [0.35, 1]);
+
+  // Highlight reveals over 6 frames.
+  const highlightReveal = Math.max(
+    0,
+    Math.min(1, (local - 1) / 6),
   );
 
+  // Tiny tilt — same cinematic gesture as InsiderCases.
+  const tilt = ((startFrame * 7919) % 100) / 100 - 0.5; // deterministic per-article
+
+  return (
+    <AbsoluteFill
+      style={{
+        justifyContent: "center",
+        alignItems: "center",
+        paddingTop: 220,
+        paddingBottom: 180,
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 56,
+          transform: `rotate(${tilt * 0.4}deg) scale(${punchScale})`,
+          opacity: punchOpacity,
+        }}
+      >
+        {/* Article card */}
+        <div
+          style={{
+            position: "relative",
+            background: "#ffffff",
+            padding: 18,
+            borderRadius: 24,
+            boxShadow:
+              "0 0 0 1px rgba(14,15,12,0.12), 0 30px 70px rgba(0,0,0,0.55)",
+          }}
+        >
+          <div style={{ position: "relative", display: "block" }}>
+            <Img
+              src={staticFile(article.image)}
+              style={{
+                height: ARTICLE_HEIGHT,
+                width: "auto",
+                maxWidth: 1100,
+                objectFit: "contain",
+                display: "block",
+                borderRadius: 4,
+              }}
+            />
+            <GreenHighlightLayer
+              highlights={article.highlights}
+              reveal={highlightReveal}
+            />
+          </div>
+        </div>
+
+        {/* Brand logo card */}
+        <BrandCard brand={article.brand} />
+      </div>
+
+      {/* Category tag below — the bar-chart label echoed back */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: 100,
+          left: 0,
+          right: 0,
+          textAlign: "center",
+          fontFamily: monoFont,
+          fontSize: 38,
+          fontWeight: 500,
+          letterSpacing: "0.22em",
+          textTransform: "uppercase",
+          color: PROOF_GREEN,
+          opacity: punchOpacity,
+          textShadow: `0 0 18px rgba(34,217,122,0.45)`,
+        }}
+      >
+        · {article.category} ·
+      </div>
+    </AbsoluteFill>
+  );
+};
+
+// ─── Brand card — same primitive as InsiderCases, sized down for fast flash ───
+
+const BrandCard: React.FC<{ brand: Brand }> = ({ brand }) => {
+  return (
+    <div
+      style={{
+        width: 360,
+        height: 240,
+        background: "#ffffff",
+        borderRadius: 24,
+        padding: 24,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        boxShadow:
+          "0 0 0 1px rgba(14,15,12,0.12), 0 24px 60px rgba(0,0,0,0.5)",
+      }}
+    >
+      {brand.kind === "wordmark" ? (
+        <Img
+          src={staticFile(brand.src)}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "contain",
+            padding: brand.pad ?? 32,
+            boxSizing: "border-box",
+          }}
+        />
+      ) : (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 12,
+            width: "100%",
+            height: "100%",
+          }}
+        >
+          <Img
+            src={staticFile(brand.icon)}
+            style={{
+              height: "70%",
+              maxWidth: "38%",
+              width: "auto",
+              objectFit: "contain",
+              display: "block",
+            }}
+          />
+          <span
+            style={{
+              fontFamily: font,
+              fontWeight: 800,
+              fontSize: 44,
+              lineHeight: 1,
+              letterSpacing: "-0.03em",
+              color: "#0a0a0a",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {brand.name}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── Green highlighter — three-stack of green tones with a darker green kick ──
+
+const GreenHighlightLayer: React.FC<{
+  highlights: Highlight[];
+  reveal: number;
+}> = ({ highlights, reveal }) => {
   return (
     <div
       style={{
         position: "absolute",
-        top: "12%",
-        left: 0,
-        right: 0,
-        textAlign: "center",
-        padding: "0 96px",
-        opacity: opacity * fadeOut,
-        transform: `translateY(${y}px)`,
+        inset: 0,
+        pointerEvents: "none",
       }}
     >
-      <div
-        style={{
-          fontFamily: monoFont,
-          fontSize: 40,
-          fontWeight: 500,
-          letterSpacing: "0.18em",
-          textTransform: "uppercase",
-          color: colors.dim,
-          marginBottom: 20,
-        }}
-      >
-        The rigged stack
-      </div>
-      <div
-        style={{
-          fontFamily: font,
-          fontSize: 96,
-          fontWeight: 800,
-          letterSpacing: "-0.04em",
-          color: colors.fg,
-          lineHeight: 0.95,
-          textShadow: "0 4px 28px rgba(0,0,0,0.65)",
-        }}
-      >
-        If you don&rsquo;t have
-      </div>
+      {highlights.map((h, idx) => {
+        const stagger = idx * 0.12;
+        const local = Math.max(
+          0,
+          Math.min(1, (reveal - stagger) / Math.max(0.01, 1 - stagger)),
+        );
+        const overshootX = 0.008;
+        const overshootW = 0.016;
+        const padY = h.h * 0.22;
+        const top = h.y - padY;
+        const heightPct = h.h + padY * 2;
+        return (
+          <React.Fragment key={idx}>
+            {/* Body — multiply blend so the article ink shows through */}
+            <div
+              style={{
+                position: "absolute",
+                left: `${(h.x - overshootX) * 100}%`,
+                top: `${top * 100}%`,
+                width: `${(h.w + overshootW) * local * 100}%`,
+                height: `${heightPct * 100}%`,
+                background: `linear-gradient(180deg, rgba(82,255,162,0.55) 0%, rgba(34,217,122,0.74) 45%, rgba(34,217,122,0.74) 55%, rgba(82,255,162,0.55) 100%)`,
+                mixBlendMode: "multiply",
+                borderRadius: 3,
+                transform: "skewX(-5deg) rotate(-0.8deg)",
+                transformOrigin: "left center",
+              }}
+            />
+            {/* Screen pass — boosts the green saturation */}
+            <div
+              style={{
+                position: "absolute",
+                left: `${(h.x - overshootX) * 100}%`,
+                top: `${top * 100}%`,
+                width: `${(h.w + overshootW) * local * 100}%`,
+                height: `${heightPct * 100}%`,
+                background: `linear-gradient(180deg, rgba(82,255,162,0.45) 0%, rgba(34,217,122,0.55) 45%, rgba(34,217,122,0.55) 55%, rgba(82,255,162,0.45) 100%)`,
+                mixBlendMode: "screen",
+                borderRadius: 3,
+                transform: "skewX(-5deg) rotate(-0.8deg)",
+                transformOrigin: "left center",
+              }}
+            />
+            {/* Kick — darker green underline beneath the highlight */}
+            <div
+              style={{
+                position: "absolute",
+                left: `${(h.x - overshootX * 0.6) * 100}%`,
+                top: `${(h.y + h.h * 0.92) * 100}%`,
+                width: `${(h.w + overshootW * 0.6) * local * 100}%`,
+                height: `${Math.max(0.008, h.h * 0.22) * 100}%`,
+                background: "#0e8f4a",
+                borderRadius: 2,
+                transform: "skewX(-3deg) rotate(-0.4deg)",
+                transformOrigin: "left center",
+                boxShadow: `0 0 6px ${PROOF_GREEN_LIGHT}`,
+              }}
+            />
+          </React.Fragment>
+        );
+      })}
     </div>
   );
 };
 
-// ─── Card: each one snaps in (whole card) at its own beat ─────────────────────
+// ─── Verdict: "IS RIGGED" punches in red after the last article ───────────────
 
-const Card: React.FC<{
-  card: (typeof CARDS)[number];
-  at: number;
-}> = ({ card, at }) => {
-  const frame = useCurrentFrame();
-  const local = frame - at;
-  if (local < -2) {
-    return (
-      <div
-        style={{
-          flex: 1,
-          maxWidth: 480,
-          opacity: 0,
-        }}
-      />
-    );
-  }
-
-  const opacity = interpolate(
-    local,
-    [0, toFrames(0.18)],
-    [0, 1],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-  const y = interpolate(
-    local,
-    [0, toFrames(0.18)],
-    [14, 0],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-
-  return (
-    <div
-      style={{
-        flex: 1,
-        maxWidth: 480,
-        border: `1px solid ${colors.accent}`,
-        borderRadius: 4,
-        backgroundColor: "rgba(255,59,59,0.04)",
-        opacity,
-        transform: `translateY(${y}px)`,
-        boxShadow:
-          "0 0 0 1px rgba(255,59,59,0.06), 0 12px 36px rgba(0,0,0,0.55)",
-        display: "flex",
-        flexDirection: "column",
-        overflow: "hidden",
-      }}
-    >
-      {/* Image — top ~55% of card. */}
-      <div
-        style={{
-          position: "relative",
-          width: "100%",
-          aspectRatio: "16 / 11",
-          overflow: "hidden",
-          borderBottom: `1px solid rgba(255,59,59,0.4)`,
-        }}
-      >
-        <img
-          src={card.image}
-          alt=""
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            display: "block",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background:
-              "linear-gradient(180deg, rgba(0,0,0,0.0), rgba(0,0,0,0.45))",
-            pointerEvents: "none",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            top: 18,
-            left: 20,
-            fontFamily: monoFont,
-            fontSize: 30,
-            color: colors.fg,
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
-            textShadow: "0 2px 8px rgba(0,0,0,0.85)",
-          }}
-        >
-          {card.n}
-        </div>
-      </div>
-
-      <div
-        style={{
-          padding: "28px 32px 32px",
-          display: "flex",
-          flexDirection: "column",
-          gap: 16,
-          flex: 1,
-        }}
-      >
-        <div
-          style={{
-            fontFamily: font,
-            fontSize: 44,
-            fontWeight: 700,
-            letterSpacing: "-0.02em",
-            color: colors.fg,
-            lineHeight: 1.15,
-          }}
-        >
-          {card.label}
-        </div>
-        <div
-          style={{
-            marginTop: "auto",
-            fontFamily: monoFont,
-            fontSize: 22,
-            letterSpacing: "0.04em",
-            color: colors.dim,
-            opacity: 0.9,
-          }}
-        >
-          {card.sub}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ─── Final stamp at 5.5s — "70% on the table" with one scale punch ────────────
-
-const FinalStamp: React.FC = () => {
+const Verdict: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  if (frame < STAMP_AT - 2) return null;
+  const local = frame - VERDICT_AT;
+  if (local < -2) return null;
 
-  const local = frame - STAMP_AT;
-  const opacity = interpolate(
-    local,
-    [0, toFrames(0.18)],
-    [0, 1],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-  const slam = spring({
+  const enter = spring({
     frame: local,
     fps,
     config: { damping: 11, stiffness: 200, mass: 0.7 },
   });
-  const slamScale = interpolate(slam, [0, 1], [0.6, 1.0]);
+  const opacity = interpolate(enter, [0, 1], [0, 1]);
+  const scale = interpolate(enter, [0, 1], [0.7, 1]);
 
   // Single hero-word punch.
   const punch = spring({
@@ -320,68 +464,21 @@ const FinalStamp: React.FC = () => {
       <div
         style={{
           fontFamily: font,
-          fontSize: 124,
+          fontSize: 220,
           fontWeight: 800,
-          letterSpacing: "-0.04em",
+          letterSpacing: "-0.05em",
           color: colors.accent,
           lineHeight: 0.95,
           textAlign: "center",
           padding: "0 96px",
           opacity,
-          transform: `scale(${slamScale * punchScale})`,
-          textShadow: "0 4px 32px rgba(255,59,59,0.25)",
+          transform: `scale(${scale * punchScale})`,
+          textShadow: "0 4px 32px rgba(255,59,59,0.35)",
+          textTransform: "lowercase",
         }}
       >
-        You&rsquo;re leaving 70%
-        <br />
-        on the table
+        is rigged.
       </div>
-    </AbsoluteFill>
-  );
-};
-
-// ─── Backdrop with quiet ambient pulse ────────────────────────────────────────
-
-const TradingBackdrop: React.FC = () => {
-  const frame = useCurrentFrame();
-  const pulse = 0.14 + Math.sin((frame / 45) * Math.PI * 2) * 0.04;
-
-  return (
-    <AbsoluteFill
-      style={{
-        background: "linear-gradient(180deg, #0d0d10 0%, #050507 100%)",
-      }}
-    >
-      <svg
-        viewBox={`0 0 ${W} ${H}`}
-        width="100%"
-        height="100%"
-        preserveAspectRatio="none"
-        style={{ position: "absolute", inset: 0, opacity: 0.3 + pulse }}
-      >
-        {Array.from({ length: 12 }).map((_, i) => (
-          <line
-            key={`h${i}`}
-            x1={0}
-            x2={W}
-            y1={(i + 1) * (H / 13)}
-            y2={(i + 1) * (H / 13)}
-            stroke="#16161b"
-            strokeWidth={1}
-          />
-        ))}
-        {Array.from({ length: 18 }).map((_, i) => (
-          <line
-            key={`v${i}`}
-            x1={(i + 1) * (W / 19)}
-            x2={(i + 1) * (W / 19)}
-            y1={0}
-            y2={H}
-            stroke="#13131a"
-            strokeWidth={1}
-          />
-        ))}
-      </svg>
     </AbsoluteFill>
   );
 };
