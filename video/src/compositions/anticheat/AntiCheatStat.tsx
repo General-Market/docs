@@ -21,7 +21,7 @@ export const AntiCheatStat: React.FC = () => {
       </Sequence>
 
       <Sequence from={STAT_DURATION}>
-        <ZoomList />
+        <ExtractionBars />
       </Sequence>
 
       <AbsoluteFill
@@ -203,14 +203,39 @@ const ArrowFlow: React.FC<{ t: number }> = ({ t }) => {
   );
 };
 
-// ─── Zoom list: comma-separated mono dim text with depth-clone trails ─────────
+// ─── Extraction bars: horizontal bar chart of insider take, by market ─────────
+//
+// Figures sourced from local research:
+//   perps        — $1.0B+/yr MEV + sandwich (Daian et al / THE_70_PERCENT_STUDY §15)
+//   options      — $2.6B/yr Citadel PFOF, mostly options (The TRADE)
+//   predictions  — $3.7B captured by 668 wallets, 71% of all Polymarket profits
+//                  (Reichenbach-Walther 2025 / market-making-costs-prediction-markets.md)
+//   launchpads   — $700M+ Pump.fun cumulative fees + sniper extraction
+//                  (exchange-fee-research.md / bot-activity-verified.md)
+//
+// Bars scale to the largest figure. Each bar grows left-to-right, the dollar
+// figure zoom-echoes in as the bar lands.
 
-const WORDS = ["perps", "options", "predictions", "launchpads"] as const;
-const WORD_STAGGER = toFrames(0.22);
+type Bar = {
+  label: string;
+  value: number; // billions
+  displayValue: string;
+};
+
+const BARS: Bar[] = [
+  { label: "perps", value: 1.0, displayValue: "$1.0B+" },
+  { label: "options", value: 2.6, displayValue: "$2.6B" },
+  { label: "predictions", value: 3.7, displayValue: "$3.7B" },
+  { label: "launchpads", value: 0.7, displayValue: "$700M" },
+];
+
+const MAX_VALUE = Math.max(...BARS.map((b) => b.value));
+const BAR_STAGGER = toFrames(0.32);
+const BAR_GROW = toFrames(0.55);
 const REVEAL_AT =
-  WORD_STAGGER * (WORDS.length - 1) + toFrames(0.95);
+  BAR_STAGGER * (BARS.length - 1) + BAR_GROW + toFrames(0.4);
 
-const ZoomList: React.FC = () => {
+const ExtractionBars: React.FC = () => {
   const frame = useCurrentFrame();
 
   // Eyebrow fades in immediately.
@@ -221,17 +246,17 @@ const ZoomList: React.FC = () => {
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
 
-  // Final reveal "→ all of it." snaps in once the last echo settles.
+  // Final reveal — knife at the end.
   const revealLocal = frame - REVEAL_AT;
   const revealOpacity = interpolate(
     revealLocal,
-    [0, toFrames(0.18)],
+    [0, toFrames(0.22)],
     [0, 1],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
   const revealY = interpolate(
     revealLocal,
-    [0, toFrames(0.18)],
+    [0, toFrames(0.22)],
     [22, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
@@ -242,106 +267,209 @@ const ZoomList: React.FC = () => {
       <div
         style={{
           position: "absolute",
-          top: "30%",
+          top: "8%",
           left: 0,
           right: 0,
           textAlign: "center",
           fontFamily: monoFont,
-          fontSize: 40,
+          fontSize: 36,
           fontWeight: 500,
-          letterSpacing: "0.18em",
+          letterSpacing: "0.22em",
           textTransform: "uppercase",
           color: colors.dim,
           opacity: eyebrowOpacity,
         }}
       >
-        Every market they touch
+        What insiders extract — per year
       </div>
 
-      {/* Comma-separated word list with zoom clones */}
+      {/* Bars */}
       <div
         style={{
           position: "absolute",
-          top: "44%",
+          top: "20%",
+          bottom: "22%",
           left: 0,
           right: 0,
-          textAlign: "center",
-          fontFamily: monoFont,
-          fontSize: 72,
-          fontWeight: 500,
-          letterSpacing: "0.04em",
-          color: colors.dim,
-          padding: "0 96px",
-          lineHeight: 1.1,
+          padding: "0 180px",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          gap: 36,
         }}
       >
-        {WORDS.map((word, i) => (
-          <React.Fragment key={word}>
-            <ZoomEchoWord word={word} delayFrames={i * WORD_STAGGER} />
-            {i < WORDS.length - 1 && (
-              <Comma delayFrames={i * WORD_STAGGER + toFrames(0.18)} />
-            )}
-            {i === WORDS.length - 1 && (
-              <Period delayFrames={i * WORD_STAGGER + toFrames(0.45)} />
-            )}
-          </React.Fragment>
+        {BARS.map((bar, i) => (
+          <BarRow
+            key={bar.label}
+            bar={bar}
+            maxValue={MAX_VALUE}
+            delayFrames={i * BAR_STAGGER}
+          />
         ))}
       </div>
 
-      {/* "→ all of it." */}
+      {/* Knife */}
       <div
         style={{
           position: "absolute",
-          bottom: "22%",
+          bottom: "8%",
           left: 0,
           right: 0,
           textAlign: "center",
           fontFamily: font,
-          fontSize: 88,
-          fontWeight: 700,
-          letterSpacing: "-0.025em",
+          fontSize: 56,
+          fontWeight: 600,
+          letterSpacing: "-0.02em",
           color: colors.fg,
           opacity: revealOpacity,
           transform: `translateY(${revealY}px)`,
         }}
       >
-        <span style={{ color: colors.dim, marginRight: 24 }}>→</span>
-        all of it.
+        <span style={{ color: colors.dim, marginRight: 18 }}>→</span>
+        every market you touch.
       </div>
     </AbsoluteFill>
   );
 };
 
-// ─── Zoom-echo word: live word + trailing depth-clones at decreasing scale ────
-//
-// Each echo is the same word rendered a few frames earlier in its own zoom-out
-// curve. Earlier frames mean larger scale, lower alpha — so the trail recedes
-// from the current letter shape backwards into a haze of micro-clones.
-//
-// After the animation settles, the echoes fade out and only the live word
-// remains, sharp at its natural inline position.
+const LABEL_COL = 360;
+const VALUE_COL = 280;
+
+const BarRow: React.FC<{
+  bar: Bar;
+  maxValue: number;
+  delayFrames: number;
+}> = ({ bar, maxValue, delayFrames }) => {
+  const frame = useCurrentFrame();
+  const local = frame - delayFrames;
+
+  // Label fades in at row start.
+  const labelOpacity = interpolate(
+    local,
+    [0, toFrames(0.25)],
+    [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const labelX = interpolate(
+    local,
+    [0, toFrames(0.3)],
+    [-24, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+
+  // Bar grows from 0 → final width.
+  const growT = Math.max(0, Math.min(1, (local - toFrames(0.15)) / BAR_GROW));
+  const easedGrow = 1 - Math.pow(1 - growT, 3);
+  const widthPct = (bar.value / maxValue) * 100 * easedGrow;
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 32,
+        height: 84,
+      }}
+    >
+      {/* Label */}
+      <div
+        style={{
+          width: LABEL_COL,
+          flexShrink: 0,
+          fontFamily: monoFont,
+          fontSize: 56,
+          fontWeight: 500,
+          letterSpacing: "0.02em",
+          color: colors.dim,
+          textAlign: "right",
+          opacity: labelOpacity,
+          transform: `translateX(${labelX}px)`,
+        }}
+      >
+        {bar.label}
+      </div>
+
+      {/* Bar */}
+      <div
+        style={{
+          flex: 1,
+          height: 36,
+          position: "relative",
+          background: "rgba(255,59,59,0.06)",
+          borderRadius: 2,
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            bottom: 0,
+            left: 0,
+            width: `${widthPct}%`,
+            background: `linear-gradient(90deg, ${colors.accent} 0%, #ff6b4a 100%)`,
+            boxShadow: "0 0 24px rgba(255,59,59,0.35)",
+          }}
+        />
+        {/* Tail tick mark */}
+        <div
+          style={{
+            position: "absolute",
+            top: -6,
+            bottom: -6,
+            left: `calc(${widthPct}% - 1px)`,
+            width: 2,
+            background: colors.fg,
+            opacity: easedGrow * 0.7,
+          }}
+        />
+      </div>
+
+      {/* Dollar figure with zoom-echo */}
+      <div
+        style={{
+          width: VALUE_COL,
+          flexShrink: 0,
+          textAlign: "left",
+          fontFamily: font,
+          fontSize: 80,
+          fontWeight: 800,
+          letterSpacing: "-0.03em",
+          color: colors.fg,
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
+        <ZoomEchoText
+          text={bar.displayValue}
+          delayFrames={Math.round(BAR_GROW * 0.55)}
+          containerLocalFrame={local}
+        />
+      </div>
+    </div>
+  );
+};
+
+// ─── Zoom-echo text: dollar figure emerges with trailing depth-clones ─────────
 
 const ECHO_COUNT = 5;
 const ECHO_GAP_FRAMES = 1.6;
 const ZOOM_DURATION = toFrames(0.55);
 
-const ZoomEchoWord: React.FC<{ word: string; delayFrames: number }> = ({
-  word,
-  delayFrames,
-}) => {
-  const frame = useCurrentFrame();
-  const local = frame - delayFrames;
+const ZoomEchoText: React.FC<{
+  text: string;
+  delayFrames: number;
+  containerLocalFrame: number;
+}> = ({ text, delayFrames, containerLocalFrame }) => {
+  const local = containerLocalFrame - delayFrames;
 
   if (local < 0) {
     return (
       <span style={{ display: "inline-block", visibility: "hidden" }}>
-        {word}
+        {text}
       </span>
     );
   }
 
-  // After the deepest echo lands, fade them all out so the line resolves to
-  // clean text — the trails are a transit effect, not a permanent decoration.
   const echoFade = interpolate(
     local,
     [
@@ -353,15 +481,8 @@ const ZoomEchoWord: React.FC<{ word: string; delayFrames: number }> = ({
   );
 
   return (
-    <span
-      style={{
-        position: "relative",
-        display: "inline-block",
-        color: colors.fg,
-      }}
-    >
-      {/* Reserve layout width with hidden text */}
-      <span style={{ visibility: "hidden" }}>{word}</span>
+    <span style={{ position: "relative", display: "inline-block" }}>
+      <span style={{ visibility: "hidden" }}>{text}</span>
 
       {Array.from({ length: ECHO_COUNT + 1 }).map((_, i) => {
         const f = local - i * ECHO_GAP_FRAMES;
@@ -370,14 +491,10 @@ const ZoomEchoWord: React.FC<{ word: string; delayFrames: number }> = ({
         const t = Math.max(0, Math.min(1, f / ZOOM_DURATION));
         const eased = 1 - Math.pow(1 - t, 4);
 
-        // Lead (i=0) is the "live" copy. Higher i = older frame echo,
-        // captured when scale was still oversized.
-        const scale = interpolate(eased, [0, 1], [4.6, 1]);
-        const dim = i === 0 ? 1 : Math.pow(0.52, i) * echoFade;
+        const scale = interpolate(eased, [0, 1], [3.6, 1]);
+        const dim = i === 0 ? 1 : Math.pow(0.5, i) * echoFade;
         const op = eased * dim;
 
-        // Lead at full saturation = colors.fg. Echoes drift toward dim/accent
-        // for a touch of atmospheric perspective.
         const tint = i === 0 ? colors.fg : i % 2 === 0 ? colors.fg : colors.accent;
 
         return (
@@ -388,48 +505,20 @@ const ZoomEchoWord: React.FC<{ word: string; delayFrames: number }> = ({
               top: 0,
               left: 0,
               right: 0,
-              textAlign: "center",
+              textAlign: "left",
               transform: `scale(${scale})`,
-              transformOrigin: "center",
+              transformOrigin: "left center",
               opacity: op,
               color: tint,
               pointerEvents: "none",
               whiteSpace: "nowrap",
             }}
           >
-            {word}
+            {text}
           </span>
         );
       })}
     </span>
-  );
-};
-
-// ─── Punctuation that fades in when its neighbour word arrives ────────────────
-
-const Comma: React.FC<{ delayFrames: number }> = ({ delayFrames }) => {
-  const frame = useCurrentFrame();
-  const opacity = interpolate(
-    frame - delayFrames,
-    [0, toFrames(0.2)],
-    [0, 1],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-  return (
-    <span style={{ opacity, color: colors.dim, marginRight: "0.35em" }}>,</span>
-  );
-};
-
-const Period: React.FC<{ delayFrames: number }> = ({ delayFrames }) => {
-  const frame = useCurrentFrame();
-  const opacity = interpolate(
-    frame - delayFrames,
-    [0, toFrames(0.2)],
-    [0, 1],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-  return (
-    <span style={{ opacity, color: colors.dim }}>.</span>
   );
 };
 
