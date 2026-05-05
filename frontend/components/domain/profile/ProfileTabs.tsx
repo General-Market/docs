@@ -26,7 +26,7 @@ export function ProfileTabs({
   ]
 
   return (
-    <div className="border-b border-border-light">
+    <div style={{ borderBottom: '1px solid var(--apple-border)' }}>
       <div className="px-6 lg:px-12">
         <SpringTabs className="max-w-site mx-auto flex items-center gap-0">
           {tabs.map((tab) => (
@@ -34,23 +34,47 @@ export function ProfileTabs({
               key={tab.id}
               isActive={activeTab === tab.id}
               onClick={() => onTabChange(tab.id)}
-              className="px-6 py-3 text-body font-semibold transition-all flex items-center gap-2"
-              activeClass="text-black"
-              inactiveClass="text-text-secondary hover:text-black"
+              className="transition-all"
+              activeClass=""
+              inactiveClass=""
               layoutId="profile-tab-indicator"
             >
-              <span>{tab.label}</span>
-              {tab.count > 0 ? (
-                <span
-                  className={
+              <span
+                className="flex items-center gap-2"
+                style={{
+                  padding: '14px 20px',
+                  fontFamily: 'var(--apple-font-text)',
+                  fontSize: 'var(--apple-fs-14)',
+                  fontWeight: 500,
+                  letterSpacing: 'var(--apple-track-mid)',
+                  color:
                     activeTab === tab.id
-                      ? 'bg-black text-white text-caption font-semibold rounded-full px-2 py-0.5 min-w-[22px] text-center'
-                      : 'bg-color-up text-white text-caption font-semibold rounded-full px-2 py-0.5 min-w-[22px] text-center'
-                  }
-                >
-                  {tab.count}
-                </span>
-              ) : null}
+                      ? 'var(--apple-text)'
+                      : 'var(--apple-text-secondary)',
+                }}
+              >
+                <span>{tab.label}</span>
+                {tab.count > 0 ? (
+                  <span
+                    style={{
+                      background:
+                        activeTab === tab.id
+                          ? 'var(--apple-text)'
+                          : 'rgb(52,199,89)',
+                      color: '#fff',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      letterSpacing: 'var(--apple-track-loose)',
+                      borderRadius: 'var(--apple-r-pill)',
+                      padding: '2px 8px',
+                      minWidth: 22,
+                      textAlign: 'center',
+                    }}
+                  >
+                    {tab.count}
+                  </span>
+                ) : null}
+              </span>
             </SpringTab>
           ))}
         </SpringTabs>

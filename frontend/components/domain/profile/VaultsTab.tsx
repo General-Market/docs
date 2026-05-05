@@ -6,7 +6,6 @@ import { formatUnits } from 'viem'
 import { useAccount } from 'wagmi'
 import { Link } from '@/i18n/routing'
 import fundData from '@/data/fund-branding.json'
-import sourcesDisplay from '@/data/sources-display.json'
 import {
   useSSEVisionVaults,
   type VisionVaultSSE,
@@ -51,50 +50,43 @@ const STRATEGY_LABELS: Record<string, string> = {
   regime: 'Regime',
 }
 
-// Source → logo path lookup, derived once.
-const SOURCE_LOGO: Record<string, string> = (() => {
-  const map: Record<string, string> = {}
-  for (const s of (sourcesDisplay as any).sources ?? []) {
-    if (s.sourceId && s.logo) map[s.sourceId] = s.logo
-    if (Array.isArray(s.internalIds)) {
-      for (const id of s.internalIds) if (s.logo) map[id] = s.logo
-    }
-  }
-  return map
-})()
+// Source icon path. Small square brand marks live under /source-imgs/icons.
+function sourceIconUrl(source: string): string {
+  return `/source-imgs/icons/${source}.png`
+}
 
 function VaultBrandTile({ row }: { row: VaultRow }) {
-  const logo = SOURCE_LOGO[row.source]
-  if (logo) {
-    return (
-      <div
-        className="shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden flex items-center justify-center"
-        style={{ background: row.color }}
-      >
-        <Image
-          src={logo}
-          alt={row.source}
-          width={56}
-          height={56}
-          className="w-full h-full object-cover"
-          unoptimized
-        />
-      </div>
-    )
-  }
-  // Fallback — fund-color tile with the symbol's first two letters.
+  // Square Polymarket-style tile, then masked to a circle. Background
+  // tinted by the fund color so the chip never looks empty even when the
+  // icon image is missing.
+  const initials = row.symbol.slice(0, 2)
   return (
     <div
-      className="shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center text-white font-bold text-[16px] tracking-tight"
-      style={{ background: row.color }}
+      className="shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden flex items-center justify-center text-white font-semibold text-[14px] tracking-tight relative"
+      style={{
+        background: row.color,
+        letterSpacing: 'var(--apple-track-tighter)',
+      }}
     >
-      {row.symbol.slice(0, 2)}
+      <span aria-hidden="true">{initials}</span>
+      <Image
+        src={sourceIconUrl(row.source)}
+        alt=""
+        width={56}
+        height={56}
+        className="absolute inset-0 w-full h-full object-cover"
+        unoptimized
+        onError={(e) => {
+          // Fall back to the initials underneath when the file 404s.
+          ;(e.currentTarget as HTMLImageElement).style.visibility = 'hidden'
+        }}
+      />
     </div>
   )
 }
 
 function computeRow(
-  fund: any,
+  fund: { vault: string; name: string; symbol: string; source: string; strategy: string; color?: string },
   vault: VisionVaultSSE | undefined,
   sharesBigInt: bigint,
   pendingBigInt: bigint,
@@ -123,7 +115,7 @@ function computeRow(
     value: sharesValue + pendingFloat,
     pnl: sharesBigInt > 0n ? sharesValue - sharesFloat : 0,
     navPerShare,
-    color: fund.color || '#2C3E50',
+    color: fund.color || '#1d1d1f',
   }
 }
 
@@ -144,14 +136,15 @@ export function VaultsTab({ address }: VaultsTabProps) {
 
   const rows = useMemo<VaultRow[]>(() => {
     if (!isSelf) return []
-    const funds = (fundData as any).funds.filter((f: any) => !!f.vault)
+    const funds = (fundData as { funds: Array<{ vault?: string; name: string; symbol: string; source: string; strategy: string; color?: string }> })
+      .funds.filter((f) => !!f.vault)
     const result: VaultRow[] = []
     for (const fund of funds) {
       const lower = (fund.vault as string).toLowerCase()
       const vault = vaultByAddr.get(lower)
       const sharesBig = onChainShares.get(lower) ?? 0n
       const pendingBig = onChainPending.get(lower) ?? 0n
-      const row = computeRow(fund, vault, sharesBig, pendingBig)
+      const row = computeRow(fund as { vault: string; name: string; symbol: string; source: string; strategy: string; color?: string }, vault, sharesBig, pendingBig)
       if (row) result.push(row)
     }
     result.sort((a, b) => b.value - a.value)
@@ -181,15 +174,29 @@ export function VaultsTab({ address }: VaultsTabProps) {
 
   if (!isSelf) {
     return (
-      <div className="py-16 flex flex-col items-center gap-3">
-        <div className="text-caption text-text-muted">
+      <div
+        className="py-16 flex flex-col items-center gap-3"
+        style={{ fontFamily: 'var(--apple-font-text)' }}
+      >
+        <div
+          style={{
+            color: 'var(--apple-text-tertiary)',
+            fontSize: 'var(--apple-fs-14)',
+            letterSpacing: 'var(--apple-track-mid)',
+          }}
+        >
           Vault positions are only visible on your own profile.
         </div>
         <Link
           href={`/profile/${address}?tab=vision`}
-          className="text-body font-semibold underline underline-offset-4 decoration-dotted hover:text-color-up transition-colors"
+          className="font-semibold underline underline-offset-4 decoration-dotted transition-colors"
+          style={{
+            color: 'var(--apple-accent)',
+            fontSize: 'var(--apple-fs-14)',
+            letterSpacing: 'var(--apple-track-tight)',
+          }}
         >
-          → See this wallet's Vision positions
+          See this wallet&rsquo;s Vision positions →
         </Link>
       </div>
     )
@@ -197,22 +204,72 @@ export function VaultsTab({ address }: VaultsTabProps) {
 
   if (!isChecked && rows.length === 0) {
     return (
-      <div className="rounded-2xl border border-border-light bg-white p-10 text-center">
-        <div className="text-[12px] font-mono text-text-muted">Loading positions…</div>
+      <div
+        className="text-center"
+        style={{
+          background: 'var(--apple-panel)',
+          border: '1px solid var(--apple-border)',
+          borderRadius: 'var(--apple-r-md)',
+          padding: '40px',
+          color: 'var(--apple-text-tertiary)',
+          fontFamily: 'var(--apple-font-text)',
+          fontSize: 'var(--apple-fs-14)',
+          letterSpacing: 'var(--apple-track-mid)',
+        }}
+      >
+        Loading positions…
       </div>
     )
   }
 
   if (rows.length === 0) {
     return (
-      <div className="rounded-2xl border border-border-light bg-white p-10 text-center">
-        <div className="text-[15px] font-bold text-text-primary mb-2">No vault positions</div>
-        <p className="text-[13px] text-text-muted mb-6 max-w-md mx-auto leading-relaxed">
+      <div
+        className="text-center"
+        style={{
+          background: 'var(--apple-panel)',
+          border: '1px solid var(--apple-border)',
+          borderRadius: 'var(--apple-r-md)',
+          padding: '48px 32px',
+          fontFamily: 'var(--apple-font-text)',
+        }}
+      >
+        <div
+          style={{
+            fontFamily: 'var(--apple-font-display)',
+            fontSize: 'var(--apple-fs-21)',
+            letterSpacing: 'var(--apple-track-tight)',
+            color: 'var(--apple-text)',
+            marginBottom: 8,
+            fontWeight: 600,
+          }}
+        >
+          No vault positions
+        </div>
+        <p
+          style={{
+            color: 'var(--apple-text-secondary)',
+            fontSize: 'var(--apple-fs-14)',
+            letterSpacing: 'var(--apple-track-mid)',
+            lineHeight: 1.4706,
+            maxWidth: 400,
+            margin: '0 auto 20px',
+          }}
+        >
           Deposit into any Vision vault. Automated strategies trade on your behalf — you hold shares, not screens.
         </p>
         <Link
           href="/vaults"
-          className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-black text-white text-[12px] font-semibold rounded-full hover:bg-black/85 transition-colors"
+          className="inline-flex items-center gap-1.5 transition-opacity"
+          style={{
+            background: 'var(--apple-accent)',
+            color: '#fff',
+            padding: '10px 20px',
+            borderRadius: 'var(--apple-r-pill)',
+            fontSize: 'var(--apple-fs-14)',
+            fontWeight: 500,
+            letterSpacing: 'var(--apple-track-mid)',
+          }}
         >
           Browse vaults →
         </Link>
@@ -221,8 +278,8 @@ export function VaultsTab({ address }: VaultsTabProps) {
   }
 
   return (
-    <div className="space-y-4">
-      {/* Sub-filter pills (Active / Pending) — Polymarket parity */}
+    <div className="space-y-5" style={{ fontFamily: 'var(--apple-font-text)' }}>
+      {/* Sub-filter pills (Active / Pending) */}
       <div className="flex items-center gap-2">
         <FilterPill active={filter === 'active'} onClick={() => setFilter('active')}>
           Active
@@ -230,13 +287,20 @@ export function VaultsTab({ address }: VaultsTabProps) {
         <FilterPill active={filter === 'pending'} onClick={() => setFilter('pending')}>
           Pending
         </FilterPill>
-        <div className="ml-auto text-[12px] text-text-muted">
+        <div
+          className="ml-auto"
+          style={{
+            color: 'var(--apple-text-tertiary)',
+            fontSize: 'var(--apple-fs-12)',
+            letterSpacing: 'var(--apple-track-loose)',
+          }}
+        >
           {filtered.length} {filtered.length === 1 ? 'position' : 'positions'}
         </div>
       </div>
 
-      {/* Stacked position cards */}
-      <div className="space-y-2">
+      {/* Stacked position cards — Polymarket-shaped, Apple-spaced */}
+      <div className="space-y-2.5">
         {filtered.map((row) => {
           const sharesFloat = parseFloat(formatUnits(row.sharesBigInt, 18))
           const pendingFloat = parseFloat(formatUnits(row.pendingBigInt, 18))
@@ -246,6 +310,7 @@ export function VaultsTab({ address }: VaultsTabProps) {
           const canOpen = !!info
           const strategyLabel =
             STRATEGY_LABELS[row.strategy] || row.strategy.replace(/_/g, ' ')
+          const pnlColor = isUp ? 'rgb(52,199,89)' : 'rgb(255,59,48)'
 
           return (
             <button
@@ -260,49 +325,111 @@ export function VaultsTab({ address }: VaultsTabProps) {
                 })
               }}
               className={cn(
-                'w-full text-left rounded-2xl border border-border-light bg-white px-4 sm:px-5 py-4 sm:py-5',
-                'flex items-center gap-4 sm:gap-5 transition-all duration-200',
-                canOpen
-                  ? 'hover:border-text-muted/40 hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)] cursor-pointer active:scale-[0.998]'
-                  : 'opacity-70 cursor-wait',
+                'w-full text-left flex items-center gap-4 sm:gap-5',
+                canOpen ? 'cursor-pointer' : 'opacity-70 cursor-wait',
               )}
+              style={{
+                background: 'var(--apple-panel)',
+                border: '1px solid var(--apple-border)',
+                borderRadius: 'var(--apple-r-md)',
+                padding: '20px 24px',
+                transition:
+                  'transform 240ms var(--apple-ease-default), box-shadow 240ms var(--apple-ease-default), border-color 240ms var(--apple-ease-default)',
+              }}
+              onMouseEnter={(e) => {
+                if (!canOpen) return
+                ;(e.currentTarget as HTMLButtonElement).style.boxShadow =
+                  'var(--apple-shadow-card)'
+                ;(e.currentTarget as HTMLButtonElement).style.borderColor =
+                  'rgba(0,0,0,0.12)'
+              }}
+              onMouseLeave={(e) => {
+                ;(e.currentTarget as HTMLButtonElement).style.boxShadow = 'none'
+                ;(e.currentTarget as HTMLButtonElement).style.borderColor =
+                  'var(--apple-border)'
+              }}
             >
               <VaultBrandTile row={row} />
 
               <div className="min-w-0 flex-1">
-                <div className="text-[15px] sm:text-[16px] font-semibold text-text-primary leading-tight tracking-tight truncate">
+                <div
+                  className="truncate"
+                  style={{
+                    fontFamily: 'var(--apple-font-display)',
+                    fontSize: 'var(--apple-fs-17)',
+                    fontWeight: 600,
+                    letterSpacing: 'var(--apple-track-tighter)',
+                    color: 'var(--apple-text)',
+                    lineHeight: 1.2105,
+                  }}
+                >
                   {row.name}
                 </div>
-                <div className="mt-1.5 flex items-center gap-1.5 text-[12px] text-text-muted">
-                  <span className="font-mono uppercase tracking-wide">{row.symbol}</span>
-                  <span aria-hidden="true">·</span>
-                  <span className="capitalize">{row.source}</span>
-                  <span aria-hidden="true">·</span>
-                  <span>{strategyLabel}</span>
+                <div
+                  className="mt-1.5"
+                  style={{
+                    color: 'var(--apple-text-secondary)',
+                    fontSize: 'var(--apple-fs-12)',
+                    letterSpacing: 'var(--apple-track-loose)',
+                    lineHeight: 1.4,
+                  }}
+                >
+                  <span style={{ fontFamily: 'var(--font-jetbrains-mono), monospace' }}>
+                    {row.symbol}
+                  </span>{' '}
+                  · <span className="capitalize">{row.source}</span> · {strategyLabel}
                 </div>
-                <div className="mt-1 text-[11px] text-text-muted/80 font-mono tabular-nums">
+                <div
+                  className="mt-1 tabular-nums"
+                  style={{
+                    color: 'var(--apple-text-tertiary)',
+                    fontSize: '11px',
+                    letterSpacing: 'var(--apple-track-loose)',
+                    fontFamily: 'var(--font-jetbrains-mono), monospace',
+                  }}
+                >
                   {sharesFloat.toLocaleString(undefined, { maximumFractionDigits: 4 })} shares · NAV ${row.navPerShare.toFixed(4)}
                 </div>
               </div>
 
               <div className="text-right shrink-0">
-                <div className="text-[15px] sm:text-[16px] font-semibold tabular-nums text-text-primary leading-tight">
+                <div
+                  className="tabular-nums"
+                  style={{
+                    fontFamily: 'var(--apple-font-display)',
+                    fontSize: 'var(--apple-fs-17)',
+                    fontWeight: 600,
+                    letterSpacing: 'var(--apple-track-tighter)',
+                    color: 'var(--apple-text)',
+                    lineHeight: 1.2105,
+                  }}
+                >
                   ${row.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
                 <div
-                  className={cn(
-                    'mt-1.5 text-[12px] font-medium tabular-nums',
-                    isUp ? 'text-color-up' : 'text-color-down',
-                  )}
+                  className="mt-1.5 tabular-nums"
+                  style={{
+                    color: pnlColor,
+                    fontSize: 'var(--apple-fs-12)',
+                    fontWeight: 500,
+                    letterSpacing: 'var(--apple-track-mid)',
+                  }}
                 >
-                  {isUp ? '+' : '-'}${Math.abs(row.pnl).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  {' '}
-                  <span className="opacity-80">
+                  {isUp ? '+' : '-'}${Math.abs(row.pnl).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{' '}
+                  <span style={{ opacity: 0.85 }}>
                     ({isUp ? '+' : ''}{pnlPct.toFixed(2)}%)
                   </span>
                 </div>
                 {pendingFloat > 0 && (
-                  <div className="mt-1 text-[10px] font-mono text-emerald-600 uppercase tracking-wide">
+                  <div
+                    className="mt-1 uppercase tabular-nums"
+                    style={{
+                      color: 'rgb(52,199,89)',
+                      fontSize: '10px',
+                      letterSpacing: '+0.011em',
+                      fontFamily: 'var(--font-jetbrains-mono), monospace',
+                    }}
+                  >
                     ${pendingFloat.toFixed(2)} pending
                   </div>
                 )}
@@ -313,11 +440,19 @@ export function VaultsTab({ address }: VaultsTabProps) {
       </div>
 
       {/* Aggregate footer — quiet, low-stakes */}
-      <div className="pt-2 px-1 flex items-center justify-between text-[11px] font-mono text-text-muted/80">
+      <div
+        className="pt-2 px-1 flex items-center justify-between"
+        style={{
+          color: 'var(--apple-text-tertiary)',
+          fontSize: '11px',
+          letterSpacing: 'var(--apple-track-loose)',
+          fontFamily: 'var(--font-jetbrains-mono), monospace',
+        }}
+      >
         <span>
           {totals.count} {totals.count === 1 ? 'vault' : 'vaults'} · ${totals.totalValue.toFixed(2)} total
         </span>
-        <span className={totals.totalPnl >= 0 ? 'text-color-up' : 'text-color-down'}>
+        <span style={{ color: totals.totalPnl >= 0 ? 'rgb(52,199,89)' : 'rgb(255,59,48)' }}>
           {totals.totalPnl >= 0 ? '+' : ''}${totals.totalPnl.toFixed(2)} all-time
         </span>
       </div>
@@ -346,12 +481,18 @@ function FilterPill({
     <button
       type="button"
       onClick={onClick}
-      className={cn(
-        'px-4 py-1.5 rounded-full text-[12px] font-semibold transition-colors',
-        active
-          ? 'bg-black text-white'
-          : 'bg-surface text-text-secondary hover:text-black',
-      )}
+      className="transition-colors"
+      style={{
+        padding: '6px 16px',
+        borderRadius: 'var(--apple-r-pill)',
+        background: active ? 'var(--apple-text)' : 'transparent',
+        color: active ? '#fff' : 'var(--apple-text-secondary)',
+        border: active ? '1px solid var(--apple-text)' : '1px solid var(--apple-border)',
+        fontSize: 'var(--apple-fs-12)',
+        fontWeight: 500,
+        letterSpacing: 'var(--apple-track-mid)',
+        fontFamily: 'var(--apple-font-text)',
+      }}
     >
       {children}
     </button>

@@ -58,8 +58,9 @@ export function PnlChart({ history, hero, currentPnlOverride }: PnlChartProps) {
         ? filtered[filtered.length - 1].pnl
         : 0
   const isPositive = currentPnl >= 0
-  const strokeColor = isPositive ? '#22c55e' : '#ef4444'
-  const fillColor = isPositive ? '#22c55e' : '#ef4444'
+  // iOS HIG systemGreen / systemRed (light mode).
+  const strokeColor = isPositive ? 'rgb(52,199,89)' : 'rgb(255,59,48)'
+  const fillColor = strokeColor
   const chartHeight = hero ? 120 : 100
 
   const rangeLabel: Record<TimeRange, string> = {
@@ -75,22 +76,58 @@ export function PnlChart({ history, hero, currentPnlOverride }: PnlChartProps) {
     return `${sign}$${abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
   }
 
+  const pnlColor = isPositive ? 'rgb(52,199,89)' : 'rgb(255,59,48)'
+
   return (
-    <div className={hero ? 'h-full flex flex-col' : 'border border-border-light rounded overflow-hidden'}>
+    <div
+      className={hero ? 'h-full flex flex-col' : 'border border-border-light rounded overflow-hidden'}
+      style={hero ? { fontFamily: 'var(--apple-font-text)' } : undefined}
+    >
       {/* Header */}
-      <div className={`flex items-start justify-between ${hero ? 'px-5 pt-5 pb-2' : 'px-3 py-2'}`}>
+      <div className={`flex items-start justify-between ${hero ? 'px-6 pt-6 pb-2' : 'px-3 py-2'}`}>
         {hero ? (
           <div className="min-w-0">
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <span aria-hidden="true" className={`inline-block w-0 h-0 border-l-[5px] border-r-[5px] border-l-transparent border-r-transparent ${isPositive ? 'border-b-[7px] border-b-color-up' : 'border-t-[7px] border-t-color-down'}`} />
-              <span className="text-[13px] font-semibold text-text-primary tracking-tight">
+            <div className="flex items-center gap-1.5 mb-2">
+              <span
+                aria-hidden="true"
+                className={`inline-block w-0 h-0 border-l-[5px] border-r-[5px] border-l-transparent border-r-transparent ${isPositive ? 'border-b-[7px]' : 'border-t-[7px]'}`}
+                style={{
+                  borderBottomColor: isPositive ? pnlColor : undefined,
+                  borderTopColor: !isPositive ? pnlColor : undefined,
+                }}
+              />
+              <span
+                style={{
+                  color: 'var(--apple-text)',
+                  fontSize: 'var(--apple-fs-12)',
+                  fontWeight: 500,
+                  letterSpacing: 'var(--apple-track-loose)',
+                }}
+              >
                 Profit / Loss
               </span>
             </div>
-            <div className={`text-[34px] sm:text-[40px] font-bold tabular-nums leading-[1.05] tracking-tight ${isPositive ? 'text-color-up' : 'text-color-down'}`}>
+            <div
+              className="tabular-nums"
+              style={{
+                fontFamily: 'var(--apple-font-display)',
+                fontSize: 'clamp(32px, 5.5vw, var(--apple-fs-48))',
+                fontWeight: 600,
+                letterSpacing: 'var(--apple-track-tighter)',
+                color: pnlColor,
+                lineHeight: 1.0714,
+              }}
+            >
               <RollingNumber value={currentPnl} format={formatPnl} />
             </div>
-            <div className="text-[12px] text-text-muted mt-1.5 font-medium">
+            <div
+              className="mt-2"
+              style={{
+                color: 'var(--apple-text-tertiary)',
+                fontSize: 'var(--apple-fs-14)',
+                letterSpacing: 'var(--apple-track-mid)',
+              }}
+            >
               {rangeLabel[range]}
             </div>
           </div>
@@ -100,22 +137,46 @@ export function PnlChart({ history, hero, currentPnlOverride }: PnlChartProps) {
           </div>
         )}
 
-        {/* Time range pills */}
-        <div className="flex items-center gap-0.5 shrink-0">
-          {(['1D', '1W', '1M', 'ALL'] as TimeRange[]).map((r) => (
-            <button
-              key={r}
-              onClick={() => setRange(r)}
-              className={`px-2.5 py-1 text-[11px] font-semibold rounded-full transition-colors ${
-                range === r
-                  ? 'bg-blue-50 text-blue-600'
-                  : 'text-text-muted hover:text-black'
-              }`}
-            >
-              {r}
-            </button>
-          ))}
-        </div>
+        {/* Time range pills — Apple iOS systemBlue when active */}
+        {hero && (
+          <div className="flex items-center gap-1 shrink-0">
+            {(['1D', '1W', '1M', 'ALL'] as TimeRange[]).map((r) => (
+              <button
+                key={r}
+                onClick={() => setRange(r)}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: 'var(--apple-r-pill)',
+                  fontSize: 'var(--apple-fs-12)',
+                  fontWeight: 500,
+                  letterSpacing: 'var(--apple-track-mid)',
+                  background: range === r ? 'rgba(0,122,255,0.10)' : 'transparent',
+                  color: range === r ? '#007AFF' : 'var(--apple-text-secondary)',
+                  transition: 'background 240ms var(--apple-ease-default), color 240ms var(--apple-ease-default)',
+                }}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
+        )}
+        {!hero && (
+          <div className="flex items-center gap-1 shrink-0">
+            {(['1D', '1W', '1M', 'ALL'] as TimeRange[]).map((r) => (
+              <button
+                key={r}
+                onClick={() => setRange(r)}
+                className={`px-2.5 py-1 text-[11px] font-semibold rounded-full transition-colors ${
+                  range === r
+                    ? 'bg-blue-50 text-blue-600'
+                    : 'text-text-muted hover:text-black'
+                }`}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Chart */}

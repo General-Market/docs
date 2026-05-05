@@ -43,10 +43,26 @@ function GradientAvatar({ address }: { address: string }) {
 
 function StatCell({ stat }: { stat: ProfileStat }) {
   const hasNumeric = stat.numericValue !== undefined && stat.format
+  // Map our existing semantic color classes to Apple system colors. Anything
+  // not green/red falls through to apple-text (#1d1d1f).
+  const valueColor =
+    stat.color === 'text-color-up'
+      ? 'rgb(52,199,89)'
+      : stat.color === 'text-color-down'
+        ? 'rgb(255,59,48)'
+        : 'var(--apple-text)'
   return (
     <div className="shrink-0">
       <div
-        className={`text-[22px] sm:text-[26px] font-bold tabular-nums leading-none tracking-tight ${stat.color || 'text-text-primary'}`}
+        className="tabular-nums"
+        style={{
+          fontFamily: 'var(--apple-font-display)',
+          fontSize: 'var(--apple-fs-24)',
+          fontWeight: 600,
+          letterSpacing: 'var(--apple-track-tighter)',
+          color: valueColor,
+          lineHeight: 1.0714,
+        }}
       >
         {hasNumeric ? (
           <SpringNumber value={stat.numericValue!} format={stat.format!} />
@@ -54,7 +70,15 @@ function StatCell({ stat }: { stat: ProfileStat }) {
           stat.value
         )}
       </div>
-      <div className="text-[12px] sm:text-[13px] text-text-muted mt-1.5 font-medium">
+      <div
+        className="mt-1.5"
+        style={{
+          color: 'var(--apple-text-secondary)',
+          fontSize: 'var(--apple-fs-12)',
+          letterSpacing: 'var(--apple-track-loose)',
+          fontFamily: 'var(--apple-font-text)',
+        }}
+      >
         {stat.label}
       </div>
     </div>
@@ -124,19 +148,44 @@ export function ProfileHero({
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5">
             {/* Left card — Identity + Stats */}
             <motion.div
-              className="bg-white border border-border-light rounded-2xl p-5 sm:p-6"
               variants={item}
               transition={springs.page}
+              style={{
+                background: 'var(--apple-panel)',
+                border: '1px solid var(--apple-border)',
+                borderRadius: 'var(--apple-r-md)',
+                padding: '24px',
+                fontFamily: 'var(--apple-font-text)',
+              }}
             >
-              <div className="flex items-start gap-4 sm:gap-5 mb-6">
+              <div className="flex items-start gap-4 sm:gap-5 mb-7">
                 <GradientAvatar address={address} />
                 <div className="flex-1 min-w-0">
-                  <div className="text-[24px] sm:text-[30px] font-bold font-mono tracking-tight text-text-primary truncate leading-tight">
+                  <div
+                    className="truncate"
+                    style={{
+                      fontFamily: 'var(--apple-font-display)',
+                      fontSize: 'var(--apple-fs-28)',
+                      fontWeight: 600,
+                      letterSpacing: 'var(--apple-track-tighter)',
+                      color: 'var(--apple-text)',
+                      lineHeight: 1.1428,
+                    }}
+                  >
                     {truncateAddress(address)}
                   </div>
-                  <div className="text-[13px] text-text-muted mt-1 flex items-center gap-2 flex-wrap">
+                  <div
+                    className="mt-1 flex items-center gap-2 flex-wrap"
+                    style={{
+                      color: 'var(--apple-text-tertiary)',
+                      fontSize: 'var(--apple-fs-14)',
+                      letterSpacing: 'var(--apple-track-mid)',
+                    }}
+                  >
                     {joined && <span>{joined}</span>}
-                    {joined && lastActiveAt && <span className="text-text-muted/50">·</span>}
+                    {joined && lastActiveAt && (
+                      <span style={{ color: 'rgba(0,0,0,0.20)' }}>·</span>
+                    )}
                     {lastActiveAt && (
                       <span>
                         {t('profile.last_active', { time: formatRelativeTime(lastActiveAt) })}
@@ -147,14 +196,21 @@ export function ProfileHero({
                 <ShareButton address={address} />
               </div>
 
-              {/* Stats — Polymarket-style: big value above, small label below, vertical dividers */}
-              <div className="flex items-stretch gap-4 sm:gap-6 divide-x divide-border-light">
+              {/* Stats with hairline vertical dividers — Polymarket layout, Apple weights */}
+              <div className="flex items-stretch gap-5 sm:gap-7">
                 {stats.map((stat, i) => (
                   <div
                     key={stat.label}
-                    className={i === 0 ? 'pl-0 pr-2 sm:pr-4 flex-1 min-w-0' : 'pl-4 sm:pl-6 pr-2 flex-1 min-w-0'}
+                    className="flex-1 min-w-0"
+                    style={
+                      i === 0
+                        ? undefined
+                        : { borderLeft: '1px solid var(--apple-divider)', paddingLeft: 'inherit' }
+                    }
                   >
-                    <StatCell stat={stat} />
+                    <div className={i === 0 ? '' : 'pl-5 sm:pl-7'}>
+                      <StatCell stat={stat} />
+                    </div>
                   </div>
                 ))}
               </div>
@@ -162,9 +218,14 @@ export function ProfileHero({
 
             {/* Right card — P&L Chart */}
             <motion.div
-              className="bg-white border border-border-light rounded-2xl overflow-hidden"
+              className="overflow-hidden"
               variants={item}
               transition={springs.page}
+              style={{
+                background: 'var(--apple-panel)',
+                border: '1px solid var(--apple-border)',
+                borderRadius: 'var(--apple-r-md)',
+              }}
             >
               <PnlChart history={pnlHistory} hero currentPnlOverride={pnlOverride} />
             </motion.div>

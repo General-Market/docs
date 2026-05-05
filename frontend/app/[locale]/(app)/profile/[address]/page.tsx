@@ -13,6 +13,12 @@ import { IndexTab } from '@/components/domain/profile/IndexTab'
 import { VaultsTab } from '@/components/domain/profile/VaultsTab'
 import { usePlayerProfile } from '@/hooks/usePlayerProfile'
 import { useVaultsTotals } from '@/hooks/useVaultsTotals'
+import { useOnChainVaultPositions } from '@/hooks/vaults/useOnChainVaultPositions'
+import {
+  useVaultsPortfolioHistory,
+  type VaultHolding,
+} from '@/hooks/vaults/useVaultsPortfolioHistory'
+import fundData from '@/data/fund-branding.json'
 import { formatPnL, formatVolume } from '@/lib/utils/formatters'
 import { computeDerivedMetrics, formatJoined } from '@/lib/utils/profile-metrics'
 
@@ -40,6 +46,29 @@ function ProfileContent({ address }: { address: string }) {
   // Only aggregate vault totals when we're showing the vaults tab for the user's
   // own profile — the SSE streams scope to the connected wallet.
   const vaultTotals = useVaultsTotals(isSelf && tab === 'vaults')
+
+  // Per-vault NAV histories merged into one portfolio P&L curve. Same fund-
+  // branding source of truth that VaultsTab uses; on-chain shares from the
+  // multicall hook (cached, so this and VaultsTab share one fetch).
+  const vaultsActive = isSelf && tab === 'vaults'
+  const { shares: holdingsShares } = useOnChainVaultPositions(
+    vaultsActive ? (connectedAddress as `0x${string}` | undefined) : undefined,
+  )
+  const vaultHoldings = (() => {
+    if (!vaultsActive) return [] as VaultHolding[]
+    const funds = (fundData as { funds: Array<{ vault?: string }> }).funds.filter((f) => !!f.vault)
+    const list: VaultHolding[] = []
+    for (const f of funds) {
+      const lower = (f.vault as string).toLowerCase()
+      const s = holdingsShares.get(lower) ?? 0n
+      if (s > 0n) list.push({ vaultAddress: lower, sharesBigInt: s })
+    }
+    return list
+  })()
+  const { history: vaultsPortfolioHistory } = useVaultsPortfolioHistory(
+    vaultHoldings,
+    'all',
+  )
 
   const handleTabChange = (newTab: ProfileTabId) => {
     router.replace(`?tab=${newTab}`)
@@ -132,7 +161,7 @@ function ProfileContent({ address }: { address: string }) {
         lastActiveAt={profile?.stats.lastActiveAt ?? undefined}
         joined={joinedLabel}
         stats={stats}
-        pnlHistory={showingVaults ? [] : profile?.pnlHistory ?? []}
+        pnlHistory={showingVaults ? vaultsPortfolioHistory : profile?.pnlHistory ?? []}
         pnlOverride={showingVaults ? vaultTotals.totalPnl : undefined}
       />
       <ProfileTabs
