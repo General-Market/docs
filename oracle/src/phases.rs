@@ -903,7 +903,24 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
         } else {
             match protocol.run_batch_confirm_phase(current_cycle, l3_order_ids.clone(), prices.clone(), batch_am_leader).await {
                 Ok(batch_result) => {
-                    info!(cycle = current_cycle, signer_count = batch_result.signature_count, "Batch confirmation completed");
+                    // Honest log: distinguish leader-on-chain-success, leader-failure (no signatures),
+                    // and follower-voted. The previous unconditional "Batch confirmation completed"
+                    // hid every leader cycle that gathered zero signatures, making weeks-long stalls
+                    // invisible. See backlog 20260415 task #16.
+                    if !batch_am_leader {
+                        debug!(cycle = current_cycle, "Follower: batch vote forwarded");
+                    } else if batch_result.signature_count == 0 {
+                        warn!(
+                            cycle = current_cycle,
+                            "Leader: batch confirmation gathered zero signatures — no on-chain tx submitted"
+                        );
+                    } else {
+                        info!(
+                            cycle = current_cycle,
+                            signer_count = batch_result.signature_count,
+                            "Leader: batch confirmation submitted on-chain"
+                        );
+                    }
                     true
                 }
                 Err(e) => {
@@ -1135,13 +1152,28 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
 
                 match protocol.run_fills_confirm_phase(current_cycle, remaining_fills.clone(), batch_am_leader).await {
                     Ok(fills_result) => {
-                        info!(
-                            cycle = current_cycle,
-                            signer_count = fills_result.signature_count,
-                            retries = retry_count,
-                            fill_count = remaining_fills.len(),
-                            "Fills confirmed"
-                        );
+                        if !batch_am_leader {
+                            debug!(
+                                cycle = current_cycle,
+                                fill_count = remaining_fills.len(),
+                                "Follower: fills vote forwarded"
+                            );
+                        } else if fills_result.signature_count == 0 {
+                            warn!(
+                                cycle = current_cycle,
+                                retries = retry_count,
+                                fill_count = remaining_fills.len(),
+                                "Leader: fills confirmation gathered zero signatures — no on-chain tx submitted"
+                            );
+                        } else {
+                            info!(
+                                cycle = current_cycle,
+                                signer_count = fills_result.signature_count,
+                                retries = retry_count,
+                                fill_count = remaining_fills.len(),
+                                "Leader: fills confirmed on-chain"
+                            );
+                        }
                         // Mint BridgedITP shares on Settlement (using each order's actual itp_id)
                         {
                             let bridge_proxy = orchestrator.read().await.config().bridge_proxy;
@@ -1163,7 +1195,13 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                                         current_cycle, order_itp, mapping.original_user, shares, bridge_proxy, settlement_id, batch_am_leader,
                                     ).await {
                                         Ok(mint_result) => {
-                                            info!(cycle = current_cycle, user = ?mapping.original_user, shares = %shares, signer_count = mint_result.signature_count, "MintBridgedShares consensus completed");
+                                            if !batch_am_leader {
+                                                debug!(cycle = current_cycle, user = ?mapping.original_user, "Follower: MintBridgedShares vote forwarded");
+                                            } else if mint_result.signature_count == 0 {
+                                                warn!(cycle = current_cycle, user = ?mapping.original_user, shares = %shares, "Leader: MintBridgedShares gathered zero signatures — no on-chain tx submitted");
+                                            } else {
+                                                info!(cycle = current_cycle, user = ?mapping.original_user, shares = %shares, signer_count = mint_result.signature_count, "Leader: MintBridgedShares signed");
+                                            }
                                             // Only LEADER marks SharesBridged after confirmed receipt
                                             if batch_am_leader && !mint_result.aggregated_signature.0.is_empty() {
                                                 match settlement_writer.mint_bridged_shares(order_itp, mapping.original_user, shares, settlement_id, mint_result.aggregated_signature.0.clone(), protocol.settlement_registry_nonce(), mint_result.signer_bitmap).await {
@@ -1234,7 +1272,15 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                                 std::time::Duration::from_secs(15),
                                 p.run_asset_trades_phase(current_cycle, &at, &cr, batch_am_leader, qt.as_ref()),
                             ).await {
-                                Ok(Ok(at_result)) => info!(cycle = current_cycle, signer_count = at_result.signature_count, "Asset trades emitted"),
+                                Ok(Ok(at_result)) => {
+                                    if !batch_am_leader {
+                                        debug!(cycle = current_cycle, "Follower: asset trades vote forwarded");
+                                    } else if at_result.signature_count == 0 {
+                                        warn!(cycle = current_cycle, "Leader: asset trades phase gathered zero signatures — no AssetTradeRequest emitted");
+                                    } else {
+                                        info!(cycle = current_cycle, signer_count = at_result.signature_count, "Leader: asset trades emitted on-chain");
+                                    }
+                                }
                                 Ok(Err(e)) => warn!(cycle = current_cycle, error = %e, "Asset trades emission failed"),
                                 Err(_) => warn!(cycle = current_cycle, "Asset trades emission timed out after 15s"),
                             }
@@ -1982,7 +2028,13 @@ pub(crate) async fn run_cross_chain_sell_processing<P, W, K, PF>(
 
                     match protocol.run_fills_confirm_phase(current_cycle, fills.clone(), batch_am_leader).await {
                         Ok(fills_result) => {
-                            info!(cycle = current_cycle, signer_count = fills_result.signature_count, "Sell fills confirmed (after E021)");
+                            if !batch_am_leader {
+                                debug!(cycle = current_cycle, "Follower: sell fills vote forwarded (after E021)");
+                            } else if fills_result.signature_count == 0 {
+                                warn!(cycle = current_cycle, "Leader: sell fills gathered zero signatures (after E021) — no on-chain tx submitted");
+                            } else {
+                                info!(cycle = current_cycle, signer_count = fills_result.signature_count, "Leader: sell fills confirmed on-chain (after E021)");
+                            }
                             // Store fill data for Phase C
                             {
                                 let orch = orchestrator.write().await;
