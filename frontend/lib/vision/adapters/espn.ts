@@ -1,5 +1,6 @@
 import type { SourceFeed } from './types'
 import { fetchJsonWithTimeout } from './types'
+import { fetchSourceMarketCount, formatMarketCount } from './data-node-history'
 
 /**
  * ESPN — game count per day across the last seven days. The data-node
@@ -47,11 +48,15 @@ export async function getEspnFeed(): Promise<SourceFeed> {
     }),
   )
 
-  // Today (live) drives the value chip and the assetName.
-  const live = await fetchJsonWithTimeout<EspnScoreboard>(
-    'https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard',
-    5000,
-  )
+  // Today (live) drives the assetName. Markets count comes from the
+  // data-node — that's what the platform actually lists.
+  const [live, marketCount] = await Promise.all([
+    fetchJsonWithTimeout<EspnScoreboard>(
+      'https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard',
+      5000,
+    ),
+    fetchSourceMarketCount('espn'),
+  ])
   const events = live?.events ?? []
   const liveCount = events.length
   const featured = events[0]
@@ -66,7 +71,7 @@ export async function getEspnFeed(): Promise<SourceFeed> {
     sourceId: 'espn',
     displayName: 'ESPN',
     assetName: featuredName ?? 'NBA · 7d',
-    assetValue: liveCount > 0 ? `${liveCount} live` : `${series[series.length - 1] ?? 0} today`,
+    assetValue: marketCount > 0 ? formatMarketCount(marketCount) : undefined,
     meta,
     coverage: 'anticheat',
     series,

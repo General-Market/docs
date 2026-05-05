@@ -1,5 +1,5 @@
 import type { SourceFeed } from './types'
-import { pickSourceSeries, formatCount } from './data-node-history'
+import { pickSourceSeries, formatCount, fetchSourceMarketCount, formatMarketCount } from './data-node-history'
 
 /**
  * Steam — concurrent player counts per game, sampled by the data-node
@@ -17,9 +17,11 @@ export async function getSteamFeed(): Promise<SourceFeed> {
   })
 
   if (!picked) {
+    const total = await fetchSourceMarketCount('steam')
     return {
       sourceId: 'steam',
       displayName: 'Steam',
+      assetValue: total > 0 ? formatMarketCount(total) : undefined,
       meta: 'Player counts · top titles',
       coverage: 'anticheat',
       series: [],
@@ -32,7 +34,7 @@ export async function getSteamFeed(): Promise<SourceFeed> {
     sourceId: 'steam',
     displayName: 'Steam',
     assetName: name,
-    assetValue: last > 0 ? formatCount(last) : undefined,
+    assetValue: formatMarketCount(picked.total),
     meta: last > 0 ? `${name} · ${formatCount(last)} players` : 'Player counts · top titles',
     coverage: 'anticheat',
     series: picked.series,

@@ -1,5 +1,5 @@
 import type { SourceFeed } from './types'
-import { pickSourceSeries, formatBigNumber } from './data-node-history'
+import { pickSourceSeries, formatBigNumber, fetchSourceMarketCount, formatMarketCount } from './data-node-history'
 
 /**
  * Polymarket — top market by 24h volume. The data-node tracks per-market
@@ -23,9 +23,11 @@ export async function getPolymarketFeed(): Promise<SourceFeed> {
   })
 
   if (!picked) {
+    const total = await fetchSourceMarketCount('polymarket')
     return {
       sourceId: 'polymarket',
       displayName: 'Polymarket',
+      assetValue: total > 0 ? formatMarketCount(total) : undefined,
       meta: 'Prediction markets · live volume',
       coverage: 'external',
       series: [],
@@ -34,15 +36,13 @@ export async function getPolymarketFeed(): Promise<SourceFeed> {
   }
 
   const question = truncate(picked.asset.name ?? 'Top market', 60)
-  const last = picked.last ?? 0
   const vol24 = Number(picked.asset.volume24h ?? 0)
-  const probability = last > 0 && last < 1 ? `${(last * 100).toFixed(0)}%` : undefined
 
   return {
     sourceId: 'polymarket',
     displayName: 'Polymarket',
     assetName: question,
-    assetValue: probability,
+    assetValue: formatMarketCount(picked.total),
     meta: vol24 > 0 ? `Top market · 24h $${formatBigNumber(vol24)}` : 'Prediction markets · live volume',
     coverage: 'external',
     series: picked.series,

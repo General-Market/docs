@@ -1,5 +1,6 @@
 import type { SourceFeed } from './types'
 import { DEFAULT_RESOLUTION, fetchJsonWithTimeout } from './types'
+import { fetchSourceMarketCount, formatMarketCount } from './data-node-history'
 
 // DefiLlama returns either {date, tvl} objects or [unix, tvl] tuples
 // depending on endpoint vintage. Handle both shapes.
@@ -11,10 +12,10 @@ type LlamaPoint = { date?: number; tvl?: number } | [number, number]
  * Public, no auth, generous rate limits. Real time-series.
  */
 export async function getDefiLlamaFeed(): Promise<SourceFeed> {
-  const data = await fetchJsonWithTimeout<LlamaPoint[]>(
-    'https://api.llama.fi/v2/historicalChainTvl',
-    5000,
-  )
+  const [data, marketCount] = await Promise.all([
+    fetchJsonWithTimeout<LlamaPoint[]>('https://api.llama.fi/v2/historicalChainTvl', 5000),
+    fetchSourceMarketCount('defillama'),
+  ])
 
   let series: number[] = []
   let meta = 'TVL across 240+ protocols'
@@ -41,7 +42,7 @@ export async function getDefiLlamaFeed(): Promise<SourceFeed> {
     sourceId: 'defillama',
     displayName: 'DefiLlama',
     assetName: 'Total DeFi TVL',
-    assetValue: typeof last === 'number' ? `$${formatBig(last)}` : undefined,
+    assetValue: marketCount > 0 ? formatMarketCount(marketCount) : undefined,
     meta,
     coverage: 'anticheat',
     series,

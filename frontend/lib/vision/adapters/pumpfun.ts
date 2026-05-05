@@ -1,5 +1,5 @@
 import type { SourceFeed } from './types'
-import { pickSourceSeries, formatBigNumber } from './data-node-history'
+import { pickSourceSeries, formatBigNumber, fetchSourceMarketCount, formatMarketCount } from './data-node-history'
 
 /**
  * Pumpfun — Solana memecoin prices the data-node samples by the minute.
@@ -22,9 +22,11 @@ export async function getPumpfunFeed(): Promise<SourceFeed> {
   })
 
   if (!picked) {
+    const total = await fetchSourceMarketCount('pumpfun')
     return {
       sourceId: 'pumpfun',
       displayName: 'Pumpfun',
+      assetValue: total > 0 ? formatMarketCount(total) : undefined,
       meta: 'Solana memecoin launches',
       coverage: 'external',
       series: [],
@@ -44,7 +46,7 @@ export async function getPumpfunFeed(): Promise<SourceFeed> {
     sourceId: 'pumpfun',
     displayName: 'Pumpfun',
     assetName: `$${label}`,
-    assetValue: priceLabel,
+    assetValue: formatMarketCount(picked.total),
     meta: priceLabel ? `$${label} · ${priceLabel}` : 'Solana memecoin launches',
     coverage: 'external',
     series: picked.series,

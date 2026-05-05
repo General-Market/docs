@@ -1,5 +1,5 @@
 import type { SourceFeed } from './types'
-import { pickSourceSeries, formatCount } from './data-node-history'
+import { pickSourceSeries, formatCount, fetchSourceMarketCount, formatMarketCount } from './data-node-history'
 
 /**
  * GitHub — stargazer counts per repo, sampled daily by the data-node.
@@ -21,9 +21,11 @@ export async function getGithubFeed(): Promise<SourceFeed> {
   })
 
   if (!picked) {
+    const total = await fetchSourceMarketCount('github')
     return {
       sourceId: 'github',
       displayName: 'GitHub',
+      assetValue: total > 0 ? formatMarketCount(total) : undefined,
       meta: 'Stars · activity · releases',
       coverage: 'anticheat',
       series: [],
@@ -36,7 +38,7 @@ export async function getGithubFeed(): Promise<SourceFeed> {
     sourceId: 'github',
     displayName: 'GitHub',
     assetName: repo,
-    assetValue: stars > 0 ? `${formatCount(stars)}★` : undefined,
+    assetValue: formatMarketCount(picked.total),
     meta: stars > 0 ? `${repo} · ${formatCount(stars)} stars` : 'Stars · activity · releases',
     coverage: 'anticheat',
     series: picked.series,

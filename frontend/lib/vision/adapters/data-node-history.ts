@@ -57,6 +57,22 @@ export type PickedSeries = {
   asset: DataNodeAsset
   series: number[]
   last: number | null
+  /** Total assets the data-node tracks for this source — what the platform lists. */
+  total: number
+}
+
+/** Fetch the count of markets the platform tracks for a source. */
+export async function fetchSourceMarketCount(source: string): Promise<number> {
+  const base = getAaDataNodeUrl()
+  const data = await fetchJson<PricesResponse>(
+    `${base}/market/prices/${encodeURIComponent(source)}?limit=1`,
+  )
+  return data?.total ?? 0
+}
+
+export function formatMarketCount(n: number): string {
+  if (n >= 1000) return `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}K markets`
+  return `${n.toLocaleString()} market${n === 1 ? '' : 's'}`
 }
 
 export interface PickOptions {
@@ -138,7 +154,7 @@ export async function pickSourceSeries(
     if (pts.length >= minPoints) {
       const series = pts.slice(-maxSeriesPoints)
       const last = series[series.length - 1] ?? null
-      return { asset: c, series, last }
+      return { asset: c, series, last, total: list?.total ?? candidates.length }
     }
   }
   return null

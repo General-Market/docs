@@ -1,5 +1,5 @@
 import type { SourceFeed } from './types'
-import { pickSourceSeries } from './data-node-history'
+import { pickSourceSeries, fetchSourceMarketCount, formatMarketCount } from './data-node-history'
 
 /**
  * Equities — the data-node already collects U.S. stock prices into the
@@ -22,9 +22,11 @@ export async function getEquitiesFeed(): Promise<SourceFeed> {
   })
 
   if (!picked) {
+    const total = await fetchSourceMarketCount('stocks')
     return {
       sourceId: 'equities',
       displayName: 'NYSE',
+      assetValue: total > 0 ? formatMarketCount(total) : undefined,
       meta: 'NYSE-listed · pre-market + close',
       coverage: 'anticheat',
       series: [],
@@ -37,7 +39,7 @@ export async function getEquitiesFeed(): Promise<SourceFeed> {
     sourceId: 'equities',
     displayName: 'NYSE',
     assetName: symbol,
-    assetValue: price > 0 ? `$${price.toFixed(2)}` : undefined,
+    assetValue: formatMarketCount(picked.total),
     meta: price > 0 ? `${symbol} · $${price.toFixed(2)}` : 'NYSE-listed · pre-market + close',
     coverage: 'anticheat',
     series: picked.series,

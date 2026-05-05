@@ -1,6 +1,7 @@
 import type { SourceFeed } from './types'
 import { fetchJsonWithTimeout } from './types'
 import { getAaDataNodeUrl } from '@/lib/config'
+import { fetchSourceMarketCount, formatMarketCount } from './data-node-history'
 
 /**
  * ISS — live altitude from wheretheiss.at, orbital sweep from the data-node's
@@ -23,7 +24,7 @@ type LatitudeHistory = {
 const ISS_NORAD_ID = 25544
 
 export async function getIssFeed(): Promise<SourceFeed> {
-  const [live, history] = await Promise.all([
+  const [live, history, marketCount] = await Promise.all([
     fetchJsonWithTimeout<IssState>(
       `https://api.wheretheiss.at/v1/satellites/${ISS_NORAD_ID}`,
       4000,
@@ -32,6 +33,7 @@ export async function getIssFeed(): Promise<SourceFeed> {
       `${getAaDataNodeUrl()}/market/prices/iss/iss_latitude/history`,
       5000,
     ),
+    fetchSourceMarketCount('iss'),
   ])
 
   // Last 48 samples ≈ 8 hours of orbit, ~5 sine cycles. The sparkline
@@ -46,14 +48,11 @@ export async function getIssFeed(): Promise<SourceFeed> {
     meta = `Altitude ${live.altitude.toFixed(1)} km · velocity ${(live.velocity ?? 0).toFixed(0)} km/h`
   }
 
-  const altLabel =
-    typeof live?.altitude === 'number' ? `${live.altitude.toFixed(1)} km` : undefined
-
   return {
     sourceId: 'iss',
     displayName: 'ISS',
     assetName: 'ISS altitude',
-    assetValue: altLabel,
+    assetValue: marketCount > 0 ? formatMarketCount(marketCount) : undefined,
     meta,
     coverage: 'anticheat',
     series,

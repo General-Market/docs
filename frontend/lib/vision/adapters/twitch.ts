@@ -1,5 +1,5 @@
 import type { SourceFeed } from './types'
-import { pickSourceSeries, formatCount } from './data-node-history'
+import { pickSourceSeries, formatCount, fetchSourceMarketCount, formatMarketCount } from './data-node-history'
 
 /**
  * Twitch — concurrent-viewer counts per game, recorded by the data-node
@@ -14,9 +14,11 @@ export async function getTwitchFeed(): Promise<SourceFeed> {
   })
 
   if (!picked) {
+    const total = await fetchSourceMarketCount('twitch')
     return {
       sourceId: 'twitch',
       displayName: 'Twitch',
+      assetValue: total > 0 ? formatMarketCount(total) : undefined,
       meta: 'Concurrent viewers · top streams',
       coverage: 'anticheat',
       series: [],
@@ -29,7 +31,7 @@ export async function getTwitchFeed(): Promise<SourceFeed> {
     sourceId: 'twitch',
     displayName: 'Twitch',
     assetName: name,
-    assetValue: last > 0 ? formatCount(last) : undefined,
+    assetValue: formatMarketCount(picked.total),
     meta: last > 0 ? `${name} · ${formatCount(last)} concurrent` : 'Concurrent viewers · top streams',
     coverage: 'anticheat',
     series: picked.series,
