@@ -8,10 +8,7 @@ import { antiCheatPitchSolutionMeta } from "./AntiCheatPitchSolution";
 import { antiCheatPitchReassureMeta } from "./AntiCheatPitchReassure";
 import { antiCheatPitchEndCardMeta } from "./AntiCheatPitchEndCard";
 
-// Hook 10s + Stat 7.5s + Rigged 6s + Solution 6.5s + Reassure 6s + EndCard 5s = 41s.
-// Hard cuts. No transitions. Each scene starts at the prior scene's last frame + 1.
-const TOTAL_FRAMES = 1230;
-
+// Six chapters, hard cuts, no transitions — like a deck advancing slide by slide.
 const SCENES = [
   antiCheatPitchHookMeta,
   antiCheatPitchStatMeta,
@@ -20,6 +17,8 @@ const SCENES = [
   antiCheatPitchReassureMeta,
   antiCheatPitchEndCardMeta,
 ] as const;
+
+const TOTAL_FRAMES = SCENES.reduce((sum, s) => sum + s.durationInFrames, 0);
 
 export const AntiCheatPitchFull: React.FC = () => {
   return (

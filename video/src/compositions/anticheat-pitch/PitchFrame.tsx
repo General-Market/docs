@@ -134,7 +134,7 @@ export const PitchFrame: React.FC<{
             background: colors.accent,
           }}
         />
-        Index Maker
+        General
       </div>
     </>
   );
