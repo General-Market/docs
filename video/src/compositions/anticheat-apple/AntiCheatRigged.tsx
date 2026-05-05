@@ -9,7 +9,7 @@ import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, ease, easeOut, toFrames } from "./theme";
 
 const SCENE_SECONDS = 7.0;
-const CARD_TIMES = [toFrames(1.0), toFrames(2.5), toFrames(4.0)];
+const CARD_TIMES = [toFrames(1.0), toFrames(1.4), toFrames(1.8)];
 const STAMP_AT = toFrames(5.2);
 const UNDERLINE_AT = STAMP_AT + 36;
 
@@ -108,7 +108,7 @@ const Headline: React.FC<{ fadeOut: number }> = ({ fadeOut }) => {
       <div
         style={{
           fontFamily: monoFont,
-          fontSize: 40,
+          fontSize: 30,
           fontWeight: 500,
           letterSpacing: "0.18em",
           textTransform: "uppercase",
@@ -124,7 +124,7 @@ const Headline: React.FC<{ fadeOut: number }> = ({ fadeOut }) => {
           fontSize: 96,
           fontWeight: 400,
           letterSpacing: "-0.04em",
-          color: colors.fg,
+          color: "#f2f2f2",
           lineHeight: 0.95,
         }}
       >
@@ -172,7 +172,7 @@ const Card: React.FC<{
         maxWidth: 480,
         border: `1px solid ${colors.rule}`,
         borderRadius: 4,
-        backgroundColor: colors.bg,
+        backgroundColor: "#0B0E12",
         opacity,
         transform: `translateY(${y}px)`,
         display: "flex",
@@ -198,6 +198,16 @@ const Card: React.FC<{
             height: "100%",
             objectFit: "cover",
             display: "block",
+            filter: "brightness(0.78) saturate(0.55) contrast(1.05)",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            mixBlendMode: "screen",
+            backgroundColor: "rgba(20, 30, 60, 0.06)",
+            pointerEvents: "none",
           }}
         />
         <div
@@ -215,10 +225,11 @@ const Card: React.FC<{
             top: 18,
             left: 20,
             fontFamily: monoFont,
-            fontSize: 30,
+            fontSize: 22,
             color: colors.fg,
             letterSpacing: "0.18em",
             textTransform: "uppercase",
+            opacity: 0.7,
           }}
         >
           {card.n}
@@ -237,7 +248,7 @@ const Card: React.FC<{
         <div
           style={{
             fontFamily: font,
-            fontSize: 44,
+            fontSize: 40,
             fontWeight: 400,
             letterSpacing: "-0.02em",
             color: colors.fg,
@@ -250,7 +261,7 @@ const Card: React.FC<{
           style={{
             marginTop: "auto",
             fontFamily: monoFont,
-            fontSize: 22,
+            fontSize: 24,
             letterSpacing: "0.04em",
             color: colors.dim,
             opacity: 0.9,
@@ -310,17 +321,17 @@ const FinalStamp: React.FC = () => {
         <div
           style={{
             fontFamily: font,
-            fontSize: 132,
-            fontWeight: 400,
+            fontSize: 148,
+            fontWeight: 300,
             letterSpacing: "-0.04em",
             color: colors.fg,
             lineHeight: 0.95,
             textAlign: "center",
           }}
         >
-          You&rsquo;re leaving 70%
+          You&rsquo;re leaving
           <br />
-          on the table
+          70% on the table<span style={{ opacity: 0.45 }}>.</span>
         </div>
         {/* Red 1px rule, drawing from center outward. */}
         <div

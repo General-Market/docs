@@ -97,7 +97,7 @@ const StatPanel: React.FC = () => {
           right: 0,
           textAlign: "center",
           fontFamily: monoFont,
-          fontSize: 40,
+          fontSize: 30,
           fontWeight: 500,
           letterSpacing: "0.18em",
           textTransform: "uppercase",
@@ -121,12 +121,12 @@ const StatPanel: React.FC = () => {
           padding: "0 96px",
         }}
       >
-        <BigNumber value={`${left}%`} subtitle="of traders" tint={colors.fg} />
+        <BigNumber value={`${left}%`} subtitle="of traders" tint="#f2f2f2" />
         <ArrowFlow t={arrowT} />
         <BigNumber
           value={`${right}%`}
           subtitle="of all profits"
-          tint={colors.fg}
+          tint="#f2f2f2"
         />
       </div>
 
@@ -147,20 +147,20 @@ const StatPanel: React.FC = () => {
       <div
         style={{
           position: "absolute",
-          bottom: "20%",
+          bottom: "28%",
           left: 0,
           right: 0,
           textAlign: "center",
           fontFamily: font,
-          fontSize: 60,
-          fontWeight: 400,
-          letterSpacing: "-0.01em",
+          fontSize: 64,
+          fontWeight: 300,
+          letterSpacing: "-0.025em",
           color: colors.fg,
           opacity: subLineOpacity,
           transform: `translateY(${subLineY}px)`,
         }}
       >
-        0.01% of cheaters claim 70% of all profits.
+        0.01% of cheaters claim 70% of all profits<span style={{ opacity: 0.45 }}>.</span>
       </div>
     </AbsoluteFill>
   );
@@ -177,7 +177,7 @@ const BigNumber: React.FC<{
         style={{
           fontFamily: font,
           fontSize: 240,
-          fontWeight: 400,
+          fontWeight: 300,
           letterSpacing: "-0.04em",
           color: tint,
           lineHeight: 0.95,
@@ -289,7 +289,7 @@ const ChipsPanel: React.FC = () => {
           right: 0,
           textAlign: "center",
           fontFamily: monoFont,
-          fontSize: 40,
+          fontSize: 30,
           fontWeight: 500,
           letterSpacing: "0.18em",
           textTransform: "uppercase",
@@ -308,7 +308,7 @@ const ChipsPanel: React.FC = () => {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          gap: 28,
+          gap: 56,
           padding: "0 96px",
           flexWrap: "wrap",
         }}
@@ -330,13 +330,9 @@ const ChipsPanel: React.FC = () => {
                 fontFamily: monoFont,
                 fontSize: 56,
                 fontWeight: 500,
-                letterSpacing: "0.04em",
+                letterSpacing: "0.18em",
                 textTransform: "uppercase",
-                color: colors.fg,
-                padding: "22px 38px",
-                border: `1px solid ${colors.rule}`,
-                borderRadius: 4,
-                backgroundColor: "transparent",
+                color: colors.dim,
                 opacity,
                 transform: `translateY(${y}px)`,
               }}
