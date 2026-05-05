@@ -73,7 +73,8 @@ export async function getEspnFeed(): Promise<SourceFeed> {
     assetName: featuredName ?? 'NBA · 7d',
     assetValue: marketCount > 0 ? formatMarketCount(marketCount) : undefined,
     meta,
-    coverage: 'anticheat',
+    coverage: 'soon',
     series,
+    hrefOverride: '/sources',
   }
 }

@@ -24,7 +24,7 @@ export async function getEquitiesFeed(): Promise<SourceFeed> {
   if (!picked) {
     const total = await fetchSourceMarketCount('stocks')
     return {
-      sourceId: 'equities',
+      sourceId: 'nasdaq',
       displayName: 'NYSE',
       assetValue: total > 0 ? formatMarketCount(total) : undefined,
       meta: 'NYSE-listed · pre-market + close',
@@ -36,7 +36,7 @@ export async function getEquitiesFeed(): Promise<SourceFeed> {
   const symbol = picked.asset.symbol ?? picked.asset.name ?? 'Top stock'
   const price = picked.last ?? 0
   return {
-    sourceId: 'equities',
+    sourceId: 'nasdaq',
     displayName: 'NYSE',
     assetName: symbol,
     assetValue: formatMarketCount(picked.total),
