@@ -8,8 +8,8 @@ import {
 import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, easeOut, toFrames } from "./theme";
 
-const SCENE_SECONDS = 6.5;
-const TERMINAL_AT = toFrames(2.5);
+const SCENE_SECONDS = 7.0;
+const TERMINAL_AT = toFrames(3.2);
 
 export const AntiCheatSolution: React.FC = () => {
   return (
@@ -40,17 +40,19 @@ const Headline: React.FC = () => {
     extrapolateRight: "clamp",
   });
 
-  // Slide up + fade as the terminal arrives.
+  // Slide up + fade as the terminal arrives. Headline reaches 0 BEFORE the
+  // terminal lands — Apple = one scene, one hero. No half-opacity ghost
+  // sitting behind the next element.
   const lift = interpolate(
     frame,
-    [TERMINAL_AT - toFrames(0.3), TERMINAL_AT + toFrames(0.4)],
-    [0, -120],
+    [TERMINAL_AT - toFrames(0.4), TERMINAL_AT - toFrames(0.05)],
+    [0, -240],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
   const headlineOpacity = interpolate(
     frame,
-    [TERMINAL_AT - toFrames(0.2), TERMINAL_AT + toFrames(0.5)],
-    [1, 0.18],
+    [TERMINAL_AT - toFrames(0.4), TERMINAL_AT - toFrames(0.05)],
+    [1, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
 
@@ -71,7 +73,7 @@ const Headline: React.FC = () => {
         style={{
           fontFamily: font,
           fontSize: 132,
-          fontWeight: 400,
+          fontWeight: 300,
           letterSpacing: "-0.04em",
           color: colors.fg,
           lineHeight: 0.95,
@@ -174,7 +176,7 @@ const Terminal: React.FC = () => {
           style={{
             padding: "36px 44px 40px",
             fontFamily: monoFont,
-            fontSize: 50,
+            fontSize: 36,
             lineHeight: 1.5,
             display: "flex",
             flexDirection: "column",
@@ -240,7 +242,7 @@ const Dot: React.FC<{ color: string }> = ({ color }) => (
       height: 12,
       borderRadius: 6,
       background: color,
-      opacity: 0.85,
+      opacity: 0.6,
     }}
   />
 );

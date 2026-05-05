@@ -10,9 +10,9 @@ import { FPS, H, W, colors, easeOut, toFrames } from "./theme";
 // 7s scene — reveals land in the first ~80 frames, the remaining ~130 frames
 // hold in stillness. Apple end-cards sit.
 const SCENE_SECONDS = 7;
-const SUBLINE_AT = toFrames(1.5);
-const TERTIARY_AT = toFrames(2.2);
-const URL_AT = toFrames(2.9);
+const SUBLINE_AT = toFrames(1.0);
+const TERTIARY_AT = toFrames(1.5);
+const URL_AT = toFrames(2.0);
 
 export const AntiCheatEndCard: React.FC = () => {
   const frame = useCurrentFrame();
@@ -121,7 +121,7 @@ export const AntiCheatEndCard: React.FC = () => {
             fontSize: 180,
             fontWeight: 400,
             letterSpacing: "-0.045em",
-            color: colors.fg,
+            color: "#f2f2f2",
             lineHeight: 0.95,
             opacity: beat1Opacity,
             transform: `translateY(${beat1Y}px)`,
@@ -160,7 +160,7 @@ export const AntiCheatEndCard: React.FC = () => {
             fontFamily: font,
             fontSize: 56,
             fontWeight: 400,
-            letterSpacing: "-0.02em",
+            letterSpacing: "-0.025em",
             color: colors.fg,
             opacity: sublineOpacity,
             transform: `translateY(${sublineY}px)`,
@@ -175,7 +175,7 @@ export const AntiCheatEndCard: React.FC = () => {
             fontFamily: monoFont,
             fontSize: 32,
             fontWeight: 500,
-            letterSpacing: "0.22em",
+            letterSpacing: "0.28em",
             textTransform: "uppercase",
             color: colors.dim,
             opacity: tertiaryOpacity,
@@ -191,7 +191,7 @@ export const AntiCheatEndCard: React.FC = () => {
             fontFamily: monoFont,
             fontSize: 32,
             fontWeight: 500,
-            letterSpacing: "0.08em",
+            letterSpacing: "0.12em",
             color: colors.fg,
             opacity: urlOpacity,
             transform: `translateY(${urlY}px)`,

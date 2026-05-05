@@ -7,8 +7,8 @@ import {
 import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, easeOut, toFrames } from "./theme";
 
-const SCENE_SECONDS = 6;
-const SECOND_LINE_AT = toFrames(2.5);
+const SCENE_SECONDS = 6.5;
+const SECOND_LINE_AT = toFrames(3.2);
 
 export const AntiCheatReassure: React.FC = () => {
   const frame = useCurrentFrame();
@@ -79,6 +79,7 @@ export const AntiCheatReassure: React.FC = () => {
         justifyContent: "center",
         alignItems: "center",
         padding: "0 96px",
+        paddingBottom: "4%",
         overflow: "hidden",
       }}
     >
@@ -107,9 +108,9 @@ export const AntiCheatReassure: React.FC = () => {
           style={{
             fontFamily: font,
             fontSize: 124,
-            fontWeight: 400,
+            fontWeight: 300,
             letterSpacing: "-0.04em",
-            color: colors.fg,
+            color: "#f2f2f2",
             lineHeight: 0.95,
             opacity: t1,
             transform: `translateY(${
@@ -118,7 +119,7 @@ export const AntiCheatReassure: React.FC = () => {
           }}
         >
           Trade all the same assets
-          <span style={{ color: colors.fg, opacity: 0.45 }}>.</span>
+          <span style={{ color: "#f2f2f2", opacity: 0.45 }}>.</span>
         </div>
 
         <div
