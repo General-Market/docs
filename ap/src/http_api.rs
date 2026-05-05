@@ -43,7 +43,10 @@ pub(crate) async fn handle_live() -> impl IntoResponse {
 /// that crashes.
 pub(crate) async fn handle_ready(State(state): State<AppState>) -> impl IntoResponse {
     const GRACE_PERIOD_SECS: u64 = 300; // startup grace
-    const STALL_THRESHOLD_SECS: u64 = 3_600;
+    // 1h was generous to the point of useless. A keeper that goes 5 minutes
+    // without filling against a non-empty queue is broken; pretending it has
+    // an hour to recover is the lying-heartbeat habit (postmortem 20260415).
+    const STALL_THRESHOLD_SECS: u64 = 300;
 
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)

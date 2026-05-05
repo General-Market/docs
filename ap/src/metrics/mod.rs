@@ -274,26 +274,20 @@ impl APMetrics {
 
     // ========== Health Status (AC: #3, #4, #5) ==========
 
-    /// Get current health status based on thresholds
+    /// Grace period before stall checks engage. Lets fresh boots pass.
+    const STALL_GRACE_SECS: u64 = 300;
+    /// If the queue has work and no order has been processed in this many
+    /// seconds, the service is doing no useful work and is unhealthy. The
+    /// previous code returned Healthy whenever queue_depth/violations were
+    /// quiet — letting AP report green for hours against a dead chain
+    /// (postmortem 20260415).
+    const STALL_UNHEALTHY_SECS: u64 = 300;
+
+    /// Get current health status based on thresholds + work-progress check
     pub async fn get_health_status(&self) -> HealthStatus {
         let queue_depth = self.get_queue_depth();
         let violations = self.get_violations_24h().await;
-        let thresholds = &self.inner.thresholds;
-
-        // Critical thresholds -> Unhealthy
-        if queue_depth > thresholds.queue_depth_critical
-            || violations > thresholds.violations_unhealthy
-        {
-            return HealthStatus::Unhealthy;
-        }
-
-        // Warning thresholds -> Degraded
-        if queue_depth > thresholds.queue_depth_warning || violations > thresholds.violations_degraded
-        {
-            return HealthStatus::Degraded;
-        }
-
-        HealthStatus::Healthy
+        self.calculate_health_status_from_values(queue_depth, violations)
     }
 
     /// Get full health details including all metrics and thresholds
@@ -327,7 +321,13 @@ impl APMetrics {
         }
     }
 
-    /// Calculate health status from pre-fetched values (avoids re-locking)
+    /// Calculate health status from pre-fetched values (avoids re-locking).
+    /// Health is now a function of three things:
+    ///   1. queue_depth and violations vs thresholds (existing rule)
+    ///   2. work-progress: queue has items but no order has been processed
+    ///      in STALL_UNHEALTHY_SECS — Unhealthy
+    /// The work-progress arm is what stops "200 OK against a dead chain" —
+    /// the failure mode the 20260415 postmortem named.
     fn calculate_health_status_from_values(&self, queue_depth: u64, violations: u64) -> HealthStatus {
         let thresholds = &self.inner.thresholds;
 
@@ -336,6 +336,21 @@ impl APMetrics {
             || violations > thresholds.violations_unhealthy
         {
             return HealthStatus::Unhealthy;
+        }
+
+        // Work-progress check: a queue with no progress is a dead worker.
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+        let started_at = self.get_started_at_ts();
+        let uptime = now.saturating_sub(started_at);
+        if uptime > Self::STALL_GRACE_SECS && queue_depth > 0 {
+            let last_processed = self.get_last_order_processed_ts();
+            let since_last = now.saturating_sub(last_processed);
+            if last_processed == 0 || since_last > Self::STALL_UNHEALTHY_SECS {
+                return HealthStatus::Unhealthy;
+            }
         }
 
         // Warning thresholds -> Degraded
