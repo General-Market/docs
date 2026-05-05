@@ -22,7 +22,7 @@ import { useVaultHistory, type VaultSnapshot, type VaultHistoryRange } from '@/h
 import { useVaultStats } from '@/hooks/vaults/useVaultStats'
 import { NavChart } from '@/components/domain/vaults/NavChart'
 import { VaultActionsPanel } from './VaultActionsPanel'
-import { VaultPortfolioView } from './VaultPortfolioView'
+import { VaultRoundHistory } from './VaultRoundHistory'
 
 type FundEntry = {
   name: string
@@ -455,9 +455,9 @@ export function VaultDetailClient({ vaultAddress, sourceId, fund, fallbackName }
         contractAddress={lower}
       />
 
-      {/* PORTFOLIO */}
+      {/* ROUND HISTORY — chain-truth from PlayerJoined/Settled events. */}
       <section
-        aria-label="Portfolio"
+        aria-label="Round history"
         style={{
           background: 'var(--apple-panel,#ffffff)',
           borderRadius: 'var(--apple-r-card,28px)',
@@ -465,18 +465,7 @@ export function VaultDetailClient({ vaultAddress, sourceId, fund, fallbackName }
           overflow: 'hidden',
         }}
       >
-        <VaultPortfolioView
-          vaultAddress={vaultAddress}
-          vaultName={vaultName}
-          sourceId={sourceId}
-          navPerShare={effective.nav}
-          performanceSinceInception={effective.perf}
-          tvlFormatted={
-            parseFloat(
-              formatUnits(vault?.totalAssets ?? 0n, 18),
-            ).toLocaleString(undefined, { maximumFractionDigits: 2 })
-          }
-        />
+        <VaultRoundHistory vaultAddress={lower} />
       </section>
     </div>
   )
