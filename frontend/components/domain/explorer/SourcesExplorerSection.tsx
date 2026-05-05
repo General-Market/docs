@@ -1,16 +1,32 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useSourceHealth } from '@/hooks/useSourceHealth'
 import { useSourceStats } from '@/hooks/useSourceStats'
-import { SourceHealthTable } from '@/components/domain/SourceHealthTable'
+import { useBatches } from '@/hooks/vision/useBatches'
+import { getFundCountForSource } from '@/hooks/vaults/useFundBranding'
+import { SourceHealthTable, type ActiveBatchInfo } from '@/components/domain/SourceHealthTable'
 import { SourceDetailModal } from '@/components/domain/SourceDetailModal'
 
 export function SourcesExplorerSection() {
   const t = useTranslations('pages')
   const { sources, loading, error, refresh } = useSourceHealth()
   const { byId: statsById } = useSourceStats()
+  const { data: batches } = useBatches()
+  const batchBySource = useMemo(() => {
+    const map = new Map<string, ActiveBatchInfo>()
+    for (const b of batches ?? []) {
+      if (!b.sourceId) continue
+      map.set(b.sourceId.toLowerCase(), {
+        id: b.id,
+        marketCount: b.marketCount,
+        playerCount: b.playerCount,
+        hasVault: getFundCountForSource(b.sourceId) > 0,
+      })
+    }
+    return map
+  }, [batches])
   const [selectedSourceId, setSelectedSourceId] = useState<string | null>(null)
 
   const healthyCt = sources.filter(s => s.status === 'healthy').length
@@ -70,6 +86,7 @@ export function SourcesExplorerSection() {
       <SourceHealthTable
         sources={sources}
         statsById={statsById}
+        batchBySource={batchBySource}
         loading={loading}
         selectedSourceId={selectedSourceId}
         onSelectSource={setSelectedSourceId}

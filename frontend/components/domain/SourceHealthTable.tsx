@@ -30,13 +30,25 @@ type SortField =
   | 'lastSettledAt'
   | 'traderCount'
   | 'totalDepositedUsdc'
+  | 'activeBatch'
 
 type SortDirection = 'asc' | 'desc'
+
+/** Per-source view of the latest unpaused on-chain batch. */
+export interface ActiveBatchInfo {
+  id: number
+  marketCount: number
+  playerCount: number
+  /** True when fund-branding declares one or more vaults for this source. */
+  hasVault: boolean
+}
 
 interface SourceHealthTableProps {
   sources: SourceHealth[]
   /** Per-source vision stats keyed by lowercased sourceId. Optional — table renders dashes when absent. */
   statsById?: Map<string, SourceStatsRow>
+  /** Latest active batch per source, keyed by lowercased sourceId. Drives the Active batch column. */
+  batchBySource?: Map<string, ActiveBatchInfo>
   loading: boolean
   selectedSourceId: string | null
   onSelectSource: (sourceId: string) => void
@@ -242,6 +254,7 @@ function SortIcon({ active, direction, color = 'text-black' }: { active: boolean
 export function SourceHealthTable({
   sources,
   statsById,
+  batchBySource,
   loading,
   selectedSourceId,
   onSelectSource,
@@ -250,6 +263,9 @@ export function SourceHealthTable({
   const lookupStats = useCallback((sourceId: string): SourceStatsRow | undefined => {
     return statsById?.get(sourceId.toLowerCase())
   }, [statsById])
+  const lookupBatch = useCallback((sourceId: string): ActiveBatchInfo | undefined => {
+    return batchBySource?.get(sourceId.toLowerCase())
+  }, [batchBySource])
   // Theme tokens — dark mode uses explorer palette
   const txt = dark ? 'text-white' : 'text-black'
   const txtMuted = dark ? 'text-white/40' : 'text-text-muted'
@@ -333,18 +349,35 @@ export function SourceHealthTable({
         case 'totalDepositedUsdc':
           cmp = (lookupStats(a.sourceId)?.totalDepositedUsdc ?? 0) - (lookupStats(b.sourceId)?.totalDepositedUsdc ?? 0)
           break
+        case 'activeBatch': {
+          // Sort key: broken first (0 markets), then unjoined-with-vault (0 players + has vault),
+          // then by player count. Lets the loudest problems float to the top in ascending order.
+          const score = (sid: string): number => {
+            const b = lookupBatch(sid)
+            if (!b) return 1e12
+            if (b.marketCount === 0) return -1e9 + b.id
+            if (b.playerCount === 0 && b.hasVault) return -1e6 + b.id
+            return b.playerCount * 1e3 + b.id / 1e6
+          }
+          cmp = score(a.sourceId) - score(b.sourceId)
+          break
+        }
       }
 
       return sortDirection === 'asc' ? cmp : -cmp
     })
 
     return sorted
-  }, [filteredSources, sortField, sortDirection, lookupStats])
+  }, [filteredSources, sortField, sortDirection, lookupStats, lookupBatch])
 
   const showVisionStats = statsById !== undefined
+  const showActiveBatch = batchBySource !== undefined
   const columns: { label: string; field: SortField; align?: string }[] = [
     { label: 'Source', field: 'displayName' },
     { label: 'Status', field: 'status' },
+    ...(showActiveBatch ? [
+      { label: 'Active batch', field: 'activeBatch' as SortField },
+    ] : []),
     { label: 'Live / Total', field: 'activeAssets', align: 'text-right' },
     { label: 'Cycle', field: 'syncIntervalSecs', align: 'text-right' },
     ...(showVisionStats ? [
@@ -416,6 +449,12 @@ export function SourceHealthTable({
               sortedSources.map(source => {
                 const isSelected = selectedSourceId === source.sourceId
                 const highZeros = hasHighZeroRate(source)
+                const batchInfo = lookupBatch(source.sourceId)
+                const batchBroken = !!batchInfo && batchInfo.marketCount === 0
+                const vaultIdle = !!batchInfo
+                  && batchInfo.marketCount > 0
+                  && batchInfo.playerCount === 0
+                  && batchInfo.hasVault
 
                 return (
                   <TableRow
@@ -423,6 +462,10 @@ export function SourceHealthTable({
                     className={`cursor-pointer transition-colors ${
                       isSelected
                         ? 'bg-surface-info'
+                        : batchBroken
+                        ? 'bg-surface-down/30 hover:bg-surface-down/50'
+                        : vaultIdle
+                        ? 'bg-surface-warning/30 hover:bg-surface-warning/50'
                         : highZeros
                         ? 'hover:bg-surface-info/50'
                         : 'hover:bg-surface'
@@ -484,6 +527,44 @@ export function SourceHealthTable({
                         )}
                       </div>
                     </TableCell>
+
+                    {/* Active batch */}
+                    {showActiveBatch && (
+                      <TableCell className="text-caption">
+                        {(() => {
+                          const b = lookupBatch(source.sourceId)
+                          if (!b) {
+                            return <span className={txtMuted}>—</span>
+                          }
+                          const noMarkets = b.marketCount === 0
+                          const noPlayersWithVault = !noMarkets && b.playerCount === 0 && b.hasVault
+                          const tone =
+                            noMarkets ? 'text-color-down'
+                            : noPlayersWithVault ? 'text-color-warning'
+                            : ''
+                          const flag =
+                            noMarkets ? 'no markets'
+                            : noPlayersWithVault ? 'no players · vault idle'
+                            : null
+                          return (
+                            <div
+                              className="flex flex-col leading-tight"
+                              title={`Batch #${b.id} · ${b.marketCount} markets · ${b.playerCount} players${b.hasVault ? ' · vault expected' : ''}`}
+                            >
+                              <span className={`font-mono tabular-nums font-semibold ${tone}`}>
+                                #{b.id}
+                              </span>
+                              <span className={`text-micro font-mono tabular-nums ${tone || txtMuted}`}>
+                                {b.marketCount}m · {b.playerCount}p
+                              </span>
+                              {flag && (
+                                <span className={`text-[9px] ${tone}`}>{flag}</span>
+                              )}
+                            </div>
+                          )
+                        })()}
+                      </TableCell>
+                    )}
 
                     {/* Live / Total */}
                     <TableCell className="text-right font-mono tabular-nums text-caption">
