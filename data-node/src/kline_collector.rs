@@ -53,7 +53,13 @@ pub async fn run(pool: PgPool, symbol_map_path: String) {
 
     let client = match create_bitget_client("kline_collector") {
         Some(c) => Arc::new(c),
-        None => return,
+        None => {
+            error!(code = "INFRA-013",
+                "Kline collector refusing to start: Bitget creds unset. \
+                 Without this, kline data is silently absent and downstream \
+                 NAV/oracle reads degrade with no signal.");
+            return;
+        }
     };
 
     // Unified loop: always backfill in small chunks, then poll for recent data.

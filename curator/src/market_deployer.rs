@@ -10,7 +10,7 @@ use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
 use crate::config::MarketDeployerConfig;
 
@@ -122,8 +122,18 @@ impl MarketDeployer {
         tokio::time::sleep(Duration::from_secs(5)).await;
         self.do_scan().await;
 
-        // Track last known ITP count for fast event-driven detection
-        let mut last_count = self.read_itp_count().await.unwrap_or(0);
+        // Track last known ITP count for fast event-driven detection.
+        // Defaulting to 0 on RPC failure makes every existing ITP look "new"
+        // and triggers a flood of duplicate vault deploys — warn loudly.
+        let mut last_count = match self.read_itp_count().await {
+            Ok(n) => n,
+            Err(e) => {
+                warn!(code = "INFRA-013", %e,
+                    "Initial read_itp_count failed — starting from 0. \
+                     First scan will treat every existing ITP as new.");
+                0
+            }
+        };
         // Fast poll: check ITP count every 10s. If it changed, scan immediately.
         // Fallback full scan every scan_interval (5 min default).
         let fast_poll = Duration::from_secs(10);

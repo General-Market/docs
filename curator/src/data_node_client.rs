@@ -72,10 +72,12 @@ struct MorphoMarketsResponse {
 impl DataNodeClient {
     /// Create a new DataNodeClient pointed at the given data-node base URL
     pub fn new(base_url: &str) -> Self {
+        // Falling back to Client::default() drops the timeout — every request
+        // can then hang indefinitely on a stuck data-node. Refuse to start.
         let client = reqwest::Client::builder()
             .timeout(std::time::Duration::from_secs(5))
             .build()
-            .unwrap_or_default();
+            .expect("reqwest::Client::builder failed — TLS backend or DNS resolver missing");
 
         Self {
             base_url: base_url.trim_end_matches('/').to_string(),

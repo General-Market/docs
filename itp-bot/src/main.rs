@@ -76,8 +76,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tokio::spawn(async {
         use axum::{routing::get, Router};
         let app = Router::new().route("/health", get(|| async { "ok" }));
-        let listener = tokio::net::TcpListener::bind("0.0.0.0:8210").await.unwrap();
-        axum::serve(listener, app).await.unwrap();
+        let listener = tokio::net::TcpListener::bind("0.0.0.0:8210").await
+            .expect("itp-bot health endpoint: failed to bind 0.0.0.0:8210 (port in use?)");
+        axum::serve(listener, app).await
+            .expect("itp-bot health endpoint: axum::serve exited with error");
     });
 
     let min_gas = parse_ether("0.01")?;

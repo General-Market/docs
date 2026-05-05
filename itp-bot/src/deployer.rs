@@ -68,7 +68,17 @@ pub async fn deploy_itp(
                 Decimal::ZERO
             }
         };
-        let w = (weight_dec * scale).to_u128().unwrap_or(0);
+        // u128 overflow on (weight * 1e18) means the asset would silently
+        // get weight=0, the basket would still pass the total != 0 check,
+        // and we'd ship an ITP with a missing leg. Refuse instead.
+        let w = match (weight_dec * scale).to_u128() {
+            Some(v) => v,
+            None => {
+                error!("[{}] weight {} overflows u128 after scaling — aborting deploy",
+                    ticker, h.weight);
+                return Ok(None);
+            }
+        };
         weights_u128.push(w);
     }
 
@@ -82,7 +92,16 @@ pub async fn deploy_itp(
                 Decimal::ZERO
             }
         };
-        let p = (price_dec * scale).to_u128().unwrap_or(0);
+        // Same reasoning as weights — a silently-zeroed price corrupts NAV
+        // computation at creation time and mints with garbage qty.
+        let p = match (price_dec * scale).to_u128() {
+            Some(v) => v,
+            None => {
+                error!("[{}] price {} for '{}' overflows u128 — aborting deploy",
+                    ticker, h.price_usd, h.symbol);
+                return Ok(None);
+            }
+        };
         prices_u256.push(U256::from(p));
     }
 

@@ -735,7 +735,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                     // Spawn BatchConfigOrchestrator (independent async task, NOT inside run_cycle)
                     let orch_data_node_url = vision_cfg.data_node_url.clone();
-                    let orch_admin_token = vision_cfg.data_node_token.clone().unwrap_or_default();
+                    // Empty admin token means every orchestrator → data-node admin
+                    // call returns 401 forever, silently. Refuse rather than spin
+                    // a task that can never make progress.
+                    let orch_admin_token = vision_cfg.data_node_token.clone()
+                        .unwrap_or_else(|| panic!(
+                            "FATAL: data_node_token unset — BatchConfigOrchestrator \
+                             would 401 against data-node admin routes. Set \
+                             ORACLE_DATA_NODE_TOKEN or --data-node-token."));
                     tokio::spawn(async move {
                         let mut orchestrator = oracle::vision::batch_config_orchestrator::BatchConfigOrchestrator::new(
                             orch_data_node_url,

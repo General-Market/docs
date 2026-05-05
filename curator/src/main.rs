@@ -518,52 +518,60 @@ async fn run_unified(args: CuratorArgs) -> Result<(), Box<dyn std::error::Error>
 
     let mut handles: Vec<tokio::task::JoinHandle<()>> = Vec::new();
 
-    // Task 1: Oracle Collector (if config is valid)
+    // Task 1: Oracle Collector (if config is valid).
+    // Skipping silently is what gave us "curator running but doing nothing"
+    // for hours — surface the missing field instead of pretending it's fine.
     let collector_args = args.clone();
-    if let Ok(config) = CuratorConfig::from_args(collector_args) {
-        let sd = shutdown.clone();
-        handles.push(tokio::spawn(async move {
-            if let Err(e) = run_collector_loop(config, sd).await {
-                error!(error = %e, "Collector task failed");
-            }
-        }));
-        info!("Spawned: Oracle collector task");
-    } else {
-        info!("Skipping collector task (incomplete config)");
+    match CuratorConfig::from_args(collector_args) {
+        Ok(config) => {
+            let sd = shutdown.clone();
+            handles.push(tokio::spawn(async move {
+                if let Err(e) = run_collector_loop(config, sd).await {
+                    error!(error = %e, "Collector task failed");
+                }
+            }));
+            info!("Spawned: Oracle collector task");
+        }
+        Err(e) => warn!(code = "INFRA-013", reason = %e,
+            "Skipping collector task — incomplete config. Curator will run without oracle data."),
     }
 
     // Task 2: Allocation Bot (if config is valid)
     let alloc_args = args.clone();
-    if let Ok(config) = AllocationConfig::from_args(alloc_args) {
-        // Refuse to start the allocator if the vault address does not point
-        // at deployed bytecode. Better to crash once than warn forever.
-        require_contract_deployed(&config.rpc_url, "vault", config.vault_address).await?;
-        let sd = shutdown.clone();
-        handles.push(tokio::spawn(async move {
-            if let Err(e) = run_allocation_loop(config, sd).await {
-                error!(error = %e, "Allocation task failed");
-            }
-        }));
-        info!("Spawned: Allocation bot task");
-    } else {
-        info!("Skipping allocation task (incomplete config)");
+    match AllocationConfig::from_args(alloc_args) {
+        Ok(config) => {
+            // Refuse to start the allocator if the vault address does not point
+            // at deployed bytecode. Better to crash once than warn forever.
+            require_contract_deployed(&config.rpc_url, "vault", config.vault_address).await?;
+            let sd = shutdown.clone();
+            handles.push(tokio::spawn(async move {
+                if let Err(e) = run_allocation_loop(config, sd).await {
+                    error!(error = %e, "Allocation task failed");
+                }
+            }));
+            info!("Spawned: Allocation bot task");
+        }
+        Err(e) => warn!(code = "INFRA-013", reason = %e,
+            "Skipping allocation task — incomplete config. No vault rebalancing will run."),
     }
 
     // Task 3: Health Monitor (if config is valid)
     let health_args = args.clone();
-    if let Ok(config) = HealthMonitorConfig::from_args(health_args) {
-        require_contract_deployed(&config.rpc_url, "vault", config.vault_address).await?;
-        let sd = shutdown.clone();
-        let disp = Some(dispatcher.clone());
-        let state_for_monitor = shared_state.clone();
-        handles.push(tokio::spawn(async move {
-            if let Err(e) = run_health_monitor_loop_with_state(config, sd, disp, state_for_monitor).await {
-                error!(error = %e, "Health monitor task failed");
-            }
-        }));
-        info!("Spawned: Health monitor + crisis detection task");
-    } else {
-        info!("Skipping health monitor task (incomplete config)");
+    match HealthMonitorConfig::from_args(health_args) {
+        Ok(config) => {
+            require_contract_deployed(&config.rpc_url, "vault", config.vault_address).await?;
+            let sd = shutdown.clone();
+            let disp = Some(dispatcher.clone());
+            let state_for_monitor = shared_state.clone();
+            handles.push(tokio::spawn(async move {
+                if let Err(e) = run_health_monitor_loop_with_state(config, sd, disp, state_for_monitor).await {
+                    error!(error = %e, "Health monitor task failed");
+                }
+            }));
+            info!("Spawned: Health monitor + crisis detection task");
+        }
+        Err(e) => warn!(code = "INFRA-013", reason = %e,
+            "Skipping health monitor task — incomplete config. No crisis detection will run."),
     }
 
     // Task 4: Quote API HTTP Server

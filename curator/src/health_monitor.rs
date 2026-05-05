@@ -393,10 +393,12 @@ impl HealthMonitor {
             known_borrowers: HashMap::new(),
             rpc_timeout: Duration::from_secs(30),
             data_node_url: None,
+            // Default Client has no timeout. A health monitor that hangs
+            // on every poll is worse than one that fails to start.
             http_client: reqwest::Client::builder()
                 .timeout(Duration::from_secs(10))
                 .build()
-                .unwrap_or_default(),
+                .expect("reqwest::Client::builder failed — TLS or DNS backend missing"),
             data_node_client: None,
         })
     }

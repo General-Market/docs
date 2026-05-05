@@ -246,14 +246,24 @@ async fn snapshot_from_live_prices(
     snapshot_date: NaiveDate,
 ) -> Result<u64, Box<dyn std::error::Error + Send + Sync>> {
     // Try live prices first (if market_prices_latest is populated)
-    let live_count = sqlx::query_scalar::<_, i64>(
+    let live_count = match sqlx::query_scalar::<_, i64>(
         "SELECT COUNT(*) FROM market_prices_latest
          WHERE source = 'crypto' AND value > 0
            AND fetched_at >= NOW() - INTERVAL '2 hours'"
     )
     .fetch_one(pool)
-    .await
-    .unwrap_or(0);
+    .await {
+        Ok(n) => n,
+        Err(e) => {
+            // Live-price COUNT failed — DB hiccup. Treat as zero so we fall
+            // through to the stale-snapshot path, but warn so the operator
+            // knows the snapshot is from yesterday's data and not live.
+            warn!(%e, code = "INFRA-013",
+                "Live-price count query failed; falling back to stale snapshot. \
+                 Charts will not extend to live data this cycle.");
+            0
+        }
+    };
 
     if live_count >= 3000 {
         let result = sqlx::query(
@@ -438,10 +448,23 @@ async fn backfill_missing(
     // Find coins with no historical data (only today's snapshot or less)
     let existing = db::cg_coins_with_history(pool).await?;
 
-    // Get Bitget-eligible coin_ids first (these are what the sim needs)
-    let all_listings = db::bitget_query_listings(pool, None).await.unwrap_or_default();
+    // Get Bitget-eligible coin_ids first (these are what the sim needs).
+    // If either query fails the priority split silently collapses — every
+    // coin becomes "rest", and Bitget-needed history backfills last. Warn
+    // loudly so operator notices the degraded prioritisation.
+    let all_listings = db::bitget_query_listings(pool, None).await
+        .unwrap_or_else(|e| {
+            warn!(%e, code = "INFRA-013",
+                "bitget_query_listings failed — backfill will not prioritise Bitget coins.");
+            Vec::new()
+        });
     let bitget_symbols: Vec<String> = all_listings.iter().map(|l| l.base_coin.to_uppercase()).collect();
-    let sym_rows = db::cg_query_coin_symbols_for_bitget(pool, &bitget_symbols).await.unwrap_or_default();
+    let sym_rows = db::cg_query_coin_symbols_for_bitget(pool, &bitget_symbols).await
+        .unwrap_or_else(|e| {
+            warn!(%e, code = "INFRA-013",
+                "cg_query_coin_symbols_for_bitget failed — backfill priority list empty.");
+            Vec::new()
+        });
     let bitget_coin_ids: std::collections::HashSet<String> = sym_rows.into_iter().map(|(id, _)| id).collect();
 
     // Get all coin_ids in our DB

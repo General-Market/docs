@@ -488,10 +488,17 @@ pub async fn run(
     chain_cache.hydration_complete.store(true, Ordering::Release);
     info!(ok = total_ok, failed = total_fail, "ITP cache hydration complete");
 
-    // 1d. Resume from persisted cursor and backfill order map from there
-    let persisted_block = db::get_collector_cursor(&pool, "itp_collector")
-        .await
-        .unwrap_or(0);
+    // 1d. Resume from persisted cursor and backfill order map from there.
+    // If the cursor read fails we used to silently restart from genesis,
+    // which on testnet meant a 4h re-scan and a flood of duplicate events.
+    let persisted_block = match db::get_collector_cursor(&pool, "itp_collector").await {
+        Ok(b) => b,
+        Err(e) => {
+            error!(code = "INFRA-013", %e,
+                "Failed to read itp_collector cursor — refusing to silently re-scan from genesis.");
+            return;
+        }
+    };
 
     info!(from = persisted_block, to = current_block, "Building orderId->itpId map (paginated)...");
     backfill_order_map(&contract, &state.order_to_itp, persisted_block, current_block).await;
@@ -1055,7 +1062,13 @@ pub async fn run(
         if all_queries_ok {
             *state.last_block.write().await = to_block;
             *state.last_poll_at.write().await = Some(Utc::now());
-            db::set_collector_cursor(&pool, "itp_collector", to_block).await.ok();
+            if let Err(e) = db::set_collector_cursor(&pool, "itp_collector", to_block).await {
+                // Cursor write failure means we will re-scan to_block next
+                // poll. Cheap cost, but a persistent DB outage gets buried
+                // if we drop the error — surface it as a warn.
+                warn!(code = "INFRA-013", to_block, %e,
+                    "Failed to persist itp_collector cursor — re-scan likely on next tick");
+            }
         } else {
             warn!(from_block, to_block, "Some event queries failed — cursor NOT advanced, will retry next tick");
         }
