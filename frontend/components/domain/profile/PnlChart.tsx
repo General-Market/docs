@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { AreaChart, Area, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import type { PnlPoint } from '@/hooks/usePlayerProfile'
+import { RollingNumber } from '@/components/ui/RollingNumber'
 
 type TimeRange = '1D' | '1W' | '1M' | 'ALL'
 
@@ -61,17 +62,36 @@ export function PnlChart({ history, hero, currentPnlOverride }: PnlChartProps) {
   const fillColor = isPositive ? '#22c55e' : '#ef4444'
   const chartHeight = hero ? 120 : 100
 
+  const rangeLabel: Record<TimeRange, string> = {
+    '1D': '24h',
+    '1W': '7-day',
+    '1M': '30-day',
+    ALL: 'All-Time',
+  }
+
+  const formatPnl = (n: number) => {
+    const sign = n >= 0 ? '+' : '-'
+    const abs = Math.abs(n)
+    return `${sign}$${abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  }
+
   return (
-    <div className={hero ? '' : 'border border-border-light rounded overflow-hidden'}>
+    <div className={hero ? 'h-full flex flex-col' : 'border border-border-light rounded overflow-hidden'}>
       {/* Header */}
-      <div className={`flex items-center justify-between ${hero ? 'px-5 pt-4 pb-1' : 'px-3 py-2'}`}>
+      <div className={`flex items-start justify-between ${hero ? 'px-5 pt-5 pb-2' : 'px-3 py-2'}`}>
         {hero ? (
-          <div>
-            <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">
-              Profit & Loss
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <span aria-hidden="true" className={`inline-block w-0 h-0 border-l-[5px] border-r-[5px] border-l-transparent border-r-transparent ${isPositive ? 'border-b-[7px] border-b-color-up' : 'border-t-[7px] border-t-color-down'}`} />
+              <span className="text-[13px] font-semibold text-text-primary tracking-tight">
+                Profit / Loss
+              </span>
             </div>
-            <div className={`text-[28px] font-black font-mono tabular-nums leading-none ${isPositive ? 'text-color-up' : 'text-color-down'}`}>
-              {currentPnl >= 0 ? '+' : ''}${Math.abs(currentPnl).toFixed(2)}
+            <div className={`text-[34px] sm:text-[40px] font-bold tabular-nums leading-[1.05] tracking-tight ${isPositive ? 'text-color-up' : 'text-color-down'}`}>
+              <RollingNumber value={currentPnl} format={formatPnl} />
+            </div>
+            <div className="text-[12px] text-text-muted mt-1.5 font-medium">
+              {rangeLabel[range]}
             </div>
           </div>
         ) : (
@@ -80,15 +100,15 @@ export function PnlChart({ history, hero, currentPnlOverride }: PnlChartProps) {
           </div>
         )}
 
-        {/* Time range toggles */}
-        <div className="flex items-center gap-1">
+        {/* Time range pills */}
+        <div className="flex items-center gap-0.5 shrink-0">
           {(['1D', '1W', '1M', 'ALL'] as TimeRange[]).map((r) => (
             <button
               key={r}
               onClick={() => setRange(r)}
-              className={`px-2 py-0.5 text-micro font-semibold rounded transition-colors ${
+              className={`px-2.5 py-1 text-[11px] font-semibold rounded-full transition-colors ${
                 range === r
-                  ? 'bg-black text-white'
+                  ? 'bg-blue-50 text-blue-600'
                   : 'text-text-muted hover:text-black'
               }`}
             >
@@ -99,7 +119,7 @@ export function PnlChart({ history, hero, currentPnlOverride }: PnlChartProps) {
       </div>
 
       {/* Chart */}
-      <div style={{ height: chartHeight }} className={hero ? 'px-2' : ''}>
+      <div style={{ height: chartHeight }} className={hero ? 'px-2 mt-auto' : ''}>
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={filtered} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
             <defs>

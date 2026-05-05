@@ -22,11 +22,21 @@ function ProfileContent({ address }: { address: string }) {
   const t = useTranslations('pages.profile')
   const tabParam = searchParams.get('tab')
   const { profile, isLoading } = usePlayerProfile(address)
-  const tab: ProfileTabId =
-    tabParam === 'vaults' ? 'vaults' : tabParam === 'index' ? 'index' : 'vision'
   const { address: connectedAddress } = useAccount()
   const isSelf =
     !!connectedAddress && connectedAddress.toLowerCase() === address.toLowerCase()
+  // Default tab — vaults first when looking at your own profile, vision
+  // otherwise (vault positions are private and would render an empty state
+  // for visitors).
+  const defaultTab: ProfileTabId = isSelf ? 'vaults' : 'vision'
+  const tab: ProfileTabId =
+    tabParam === 'vaults'
+      ? 'vaults'
+      : tabParam === 'index'
+        ? 'index'
+        : tabParam === 'vision'
+          ? 'vision'
+          : defaultTab
   // Only aggregate vault totals when we're showing the vaults tab for the user's
   // own profile — the SSE streams scope to the connected wallet.
   const vaultTotals = useVaultsTotals(isSelf && tab === 'vaults')
@@ -86,7 +96,7 @@ function ProfileContent({ address }: { address: string }) {
           <div className="px-6 lg:px-12">
             <div className="max-w-site mx-auto py-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div className="bg-white border border-border-light rounded-xl p-5">
+                <div className="bg-white border border-border-light rounded-2xl p-5">
                   <div className="flex items-center gap-4 mb-5">
                     <div className="w-14 h-14 rounded-full bg-surface animate-pulse" />
                     <div>
@@ -100,7 +110,7 @@ function ProfileContent({ address }: { address: string }) {
                     ))}
                   </div>
                 </div>
-                <div className="bg-white border border-border-light rounded-xl h-[200px] animate-pulse" />
+                <div className="bg-white border border-border-light rounded-2xl h-[200px] animate-pulse" />
               </div>
             </div>
           </div>

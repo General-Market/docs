@@ -29,15 +29,15 @@ interface ProfileHeroProps {
 }
 
 function GradientAvatar({ address }: { address: string }) {
-  const initial = address[2]?.toUpperCase() || '?'
   const hue = parseInt(address.slice(2, 6), 16) % 360
+  // Soft, juicy radial — matches the orange/pink blob in the Polymarket reference.
+  const bg = `radial-gradient(circle at 30% 30%, hsl(${hue}, 90%, 65%), hsl(${(hue + 80) % 360}, 80%, 55%) 60%, hsl(${(hue + 200) % 360}, 70%, 50%))`
   return (
     <div
-      className="w-14 h-14 rounded-full flex items-center justify-center text-white text-[20px] font-bold shrink-0"
-      style={{ background: `linear-gradient(135deg, hsl(${hue}, 60%, 45%), hsl(${(hue + 60) % 360}, 70%, 55%))` }}
-    >
-      {initial}
-    </div>
+      className="w-16 h-16 sm:w-20 sm:h-20 rounded-full shrink-0"
+      style={{ background: bg }}
+      aria-hidden="true"
+    />
   )
 }
 
@@ -45,15 +45,17 @@ function StatCell({ stat }: { stat: ProfileStat }) {
   const hasNumeric = stat.numericValue !== undefined && stat.format
   return (
     <div className="shrink-0">
-      <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">
-        {stat.label}
-      </div>
-      <div className={`text-subhead font-bold font-mono tabular-nums ${stat.color || 'text-black'}`}>
+      <div
+        className={`text-[22px] sm:text-[26px] font-bold tabular-nums leading-none tracking-tight ${stat.color || 'text-text-primary'}`}
+      >
         {hasNumeric ? (
           <SpringNumber value={stat.numericValue!} format={stat.format!} />
         ) : (
           stat.value
         )}
+      </div>
+      <div className="text-[12px] sm:text-[13px] text-text-muted mt-1.5 font-medium">
+        {stat.label}
       </div>
     </div>
   )
@@ -119,20 +121,20 @@ export function ProfileHero({
           animate="animate"
         >
           {/* Two-card hero grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5">
             {/* Left card — Identity + Stats */}
             <motion.div
-              className="bg-white border border-border-light rounded-xl p-5"
+              className="bg-white border border-border-light rounded-2xl p-5 sm:p-6"
               variants={item}
               transition={springs.page}
             >
-              <div className="flex items-start gap-4 mb-5">
+              <div className="flex items-start gap-4 sm:gap-5 mb-6">
                 <GradientAvatar address={address} />
                 <div className="flex-1 min-w-0">
-                  <div className="text-[20px] font-bold font-mono tracking-tight text-black truncate">
+                  <div className="text-[24px] sm:text-[30px] font-bold font-mono tracking-tight text-text-primary truncate leading-tight">
                     {truncateAddress(address)}
                   </div>
-                  <div className="text-caption text-text-muted mt-0.5 flex items-center gap-2 flex-wrap">
+                  <div className="text-[13px] text-text-muted mt-1 flex items-center gap-2 flex-wrap">
                     {joined && <span>{joined}</span>}
                     {joined && lastActiveAt && <span className="text-text-muted/50">·</span>}
                     {lastActiveAt && (
@@ -145,17 +147,22 @@ export function ProfileHero({
                 <ShareButton address={address} />
               </div>
 
-              {/* Stats grid — 2 rows on mobile, single row on desktop */}
-              <div className="grid grid-cols-3 gap-x-6 gap-y-3 sm:flex sm:items-center sm:gap-6">
-                {stats.map((stat) => (
-                  <StatCell key={stat.label} stat={stat} />
+              {/* Stats — Polymarket-style: big value above, small label below, vertical dividers */}
+              <div className="flex items-stretch gap-4 sm:gap-6 divide-x divide-border-light">
+                {stats.map((stat, i) => (
+                  <div
+                    key={stat.label}
+                    className={i === 0 ? 'pl-0 pr-2 sm:pr-4 flex-1 min-w-0' : 'pl-4 sm:pl-6 pr-2 flex-1 min-w-0'}
+                  >
+                    <StatCell stat={stat} />
+                  </div>
                 ))}
               </div>
             </motion.div>
 
             {/* Right card — P&L Chart */}
             <motion.div
-              className="bg-white border border-border-light rounded-xl overflow-hidden"
+              className="bg-white border border-border-light rounded-2xl overflow-hidden"
               variants={item}
               transition={springs.page}
             >
