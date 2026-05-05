@@ -113,7 +113,10 @@ import {
   pitchSceneMetas,
 } from "./compositions/pitch/PitchComposition";
 import { antiCheatHookMeta } from "./compositions/anticheat/AntiCheatHook";
-import { antiCheatStatMeta } from "./compositions/anticheat/AntiCheatStat";
+import {
+  antiCheatStatMeta,
+  antiCheatBarsMeta,
+} from "./compositions/anticheat/AntiCheatStat";
 import { antiCheatRiggedMeta } from "./compositions/anticheat/AntiCheatRigged";
 import { antiCheatSolutionMeta } from "./compositions/anticheat/AntiCheatSolution";
 import { antiCheatReassureMeta } from "./compositions/anticheat/AntiCheatReassure";
@@ -160,8 +163,9 @@ export const RemotionRoot: React.FC = () => {
         />
         {[
           antiCheatHookMeta,
-          antiCheatStatMeta,
+          antiCheatBarsMeta,
           antiCheatRiggedMeta,
+          antiCheatStatMeta,
           antiCheatSolutionMeta,
           antiCheatReassureMeta,
           antiCheatEndCardMeta,

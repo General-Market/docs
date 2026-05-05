@@ -1,7 +1,6 @@
 import React from "react";
 import {
   AbsoluteFill,
-  Sequence,
   interpolate,
   spring,
   useCurrentFrame,
@@ -10,20 +9,35 @@ import {
 import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 
-const SCENE_SECONDS = 7.5;
-const STAT_DURATION = toFrames(4);
+// Two compositions live in this file:
+//   AntiCheatStat — the 0.01% / 70% concentration numbers (4s)
+//   AntiCheatBars — the % extracted by unfair trading bar chart (3.5s)
+//
+// They were originally a single 7.5s scene; the user split them so the
+// bars sit right after the Hook, while the numbers reinforce the verdict
+// after the Rigged article-flash scene.
+const STAT_SECONDS = 4;
+const BARS_SECONDS = 3.5;
 
 export const AntiCheatStat: React.FC = () => {
   return (
     <AbsoluteFill style={{ backgroundColor: colors.bg, fontFamily: font }}>
-      <Sequence from={0} durationInFrames={STAT_DURATION + toFrames(0.4)}>
-        <StatPanel />
-      </Sequence>
+      <StatPanel />
+      <AbsoluteFill
+        style={{
+          pointerEvents: "none",
+          background:
+            "radial-gradient(circle at 50% 50%, transparent 55%, rgba(0,0,0,0.55) 100%)",
+        }}
+      />
+    </AbsoluteFill>
+  );
+};
 
-      <Sequence from={STAT_DURATION}>
-        <ExtractionBars />
-      </Sequence>
-
+export const AntiCheatBars: React.FC = () => {
+  return (
+    <AbsoluteFill style={{ backgroundColor: colors.bg, fontFamily: font }}>
+      <ExtractionBars />
       <AbsoluteFill
         style={{
           pointerEvents: "none",
@@ -47,7 +61,7 @@ const StatPanel: React.FC = () => {
     config: { damping: 22, stiffness: 110, mass: 0.7 },
   });
   const exit = spring({
-    frame: frame - (STAT_DURATION - toFrames(0.4)),
+    frame: frame - (toFrames(STAT_SECONDS) - toFrames(0.4)),
     fps,
     config: { damping: 28, stiffness: 140, mass: 0.6 },
   });
@@ -530,7 +544,16 @@ const ZoomEchoText: React.FC<{
 export const antiCheatStatMeta = {
   id: "AntiCheatStat",
   component: AntiCheatStat,
-  durationInFrames: toFrames(SCENE_SECONDS),
+  durationInFrames: toFrames(STAT_SECONDS),
+  fps: FPS,
+  width: W,
+  height: H,
+};
+
+export const antiCheatBarsMeta = {
+  id: "AntiCheatBars",
+  component: AntiCheatBars,
+  durationInFrames: toFrames(BARS_SECONDS),
   fps: FPS,
   width: W,
   height: H,

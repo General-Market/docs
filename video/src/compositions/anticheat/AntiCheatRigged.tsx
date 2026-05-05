@@ -11,43 +11,43 @@ import {
 import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 
-// 5.5s scene. "is rigged." holds at the top throughout — red, hero-size,
-// slammed into place by frame 5. Articles flash hard-cut underneath at
-// ~0.7s each, exchange names highlighted in green. No brand logo cards.
+// 5.5s scene. Title block holds on the LEFT for the entire scene:
+//   line 1 — exchange name (green, underlined; updates per article)
+//   line 2 — "is rigged." (red, hero size; constant)
+// Articles flash hard-cut on the RIGHT, much larger than before, with the
+// original yellow highlighter restored on the article phrase.
 const SCENE_SECONDS = 5.5;
 
 const TITLE_IN = 0;
-const ARTICLES_AT = toFrames(0.45);
+const ARTICLES_AT = toFrames(0.4);
 const ARTICLE_HOLD = toFrames(0.7);
 
 const PROOF_GREEN = "#22d97a";
-const PROOF_GREEN_LIGHT = "#52ffa2";
 
 type Highlight = { x: number; y: number; w: number; h: number };
 
 type ArticleProof = {
+  exchange: string;
   category: string;
   image: string;
   highlights: Highlight[];
 };
 
-// Articles pulled from public/insider-trading/articles/. The bbox coordinates
-// for the green highlights are reused from InsiderCases.tsx — they target
-// each article's exchange-name phrase exactly. Order is the bar-chart order
-// followed by reinforcement articles (Kalshi, NYSE, Coinbase) so the rapid
-// cuts feel like a torrent, not a list.
 const ARTICLES: ArticleProof[] = [
   {
+    exchange: "binance",
     category: "perps",
     image: "insider-trading/articles/1.png",
     highlights: [{ x: 0.5737, y: 0.1383, w: 0.3183, h: 0.0453 }],
   },
   {
+    exchange: "robinhood",
     category: "options",
     image: "insider-trading/articles/9.png",
     highlights: [{ x: 0.4119, y: 0.1968, w: 0.2831, h: 0.042 }],
   },
   {
+    exchange: "polymarket",
     category: "predictions",
     image: "insider-trading/articles/3.png",
     highlights: [
@@ -56,21 +56,25 @@ const ARTICLES: ArticleProof[] = [
     ],
   },
   {
+    exchange: "pump.fun",
     category: "launchpads",
     image: "insider-trading/articles/4.png",
     highlights: [{ x: 0.1253, y: 0.5158, w: 0.2653, h: 0.0487 }],
   },
   {
+    exchange: "kalshi",
     category: "predictions",
     image: "insider-trading/articles/6.png",
     highlights: [{ x: 0.4819, y: 0.176, w: 0.216, h: 0.0303 }],
   },
   {
+    exchange: "nyse",
     category: "equity",
     image: "insider-trading/articles/8.png",
     highlights: [{ x: 0.0522, y: 0.5101, w: 0.3917, h: 0.0519 }],
   },
   {
+    exchange: "coinbase",
     category: "spot",
     image: "insider-trading/articles/7.png",
     highlights: [{ x: 0.2453, y: 0.4009, w: 0.3414, h: 0.0417 }],
@@ -81,17 +85,16 @@ export const AntiCheatRigged: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  // Title slams in once, in 5 frames. Mild hold-pulse after that.
+  // "is rigged." slams in once at the start.
   const slamT = spring({
     frame: frame - TITLE_IN,
     fps,
     config: { damping: 11, stiffness: 220, mass: 0.7 },
   });
-  const titleOpacity = interpolate(slamT, [0, 1], [0, 1]);
-  const titleScale = interpolate(slamT, [0, 1], [0.72, 1]);
-
-  // Pulse: subtle scale breath every ~1.5s so the title doesn't flatten.
-  const pulse = 1 + Math.sin((frame / 45) * Math.PI * 2) * 0.012;
+  const verdictOpacity = interpolate(slamT, [0, 1], [0, 1]);
+  const verdictScale = interpolate(slamT, [0, 1], [0.78, 1]);
+  // Subtle breath so the verdict doesn't flatten over 5s.
+  const verdictPulse = 1 + Math.sin((frame / 45) * Math.PI * 2) * 0.012;
 
   // Active article based on frame.
   const articleIdx = Math.max(
@@ -100,56 +103,70 @@ export const AntiCheatRigged: React.FC = () => {
   );
   const articlesActive =
     frame >= ARTICLES_AT && articleIdx < ARTICLES.length;
+  const currentArticle = articlesActive ? ARTICLES[articleIdx] : null;
+  const articleStartFrame = ARTICLES_AT + articleIdx * ARTICLE_HOLD;
 
   return (
     <AbsoluteFill style={{ backgroundColor: colors.bg, fontFamily: font }}>
-      {/* Title — "is rigged." holds at top throughout */}
+      {/* Left — exchange name (line 1) + "is rigged." (line 2) */}
       <div
         style={{
           position: "absolute",
-          top: "5%",
-          left: 0,
-          right: 0,
-          textAlign: "center",
-          padding: "0 96px",
-          opacity: titleOpacity,
-          transform: `scale(${titleScale * pulse})`,
-          transformOrigin: "center top",
+          left: 96,
+          width: 720,
+          top: "50%",
+          transform: "translateY(-50%)",
+          display: "flex",
+          flexDirection: "column",
+          gap: 32,
         }}
       >
         <div
           style={{
             fontFamily: monoFont,
-            fontSize: 30,
+            fontSize: 28,
             fontWeight: 500,
             letterSpacing: "0.32em",
             textTransform: "uppercase",
             color: colors.dim,
-            marginBottom: 14,
           }}
         >
           The verdict
         </div>
+
+        {/* Line 1: exchange name with green underline (re-mounts per article) */}
+        {currentArticle && (
+          <ExchangeLabel
+            key={articleIdx}
+            name={currentArticle.exchange}
+            startFrame={articleStartFrame}
+          />
+        )}
+
+        {/* Line 2: "is rigged." — held constant for the scene */}
         <div
           style={{
             fontFamily: font,
-            fontSize: 200,
+            fontSize: 168,
             fontWeight: 800,
             letterSpacing: "-0.05em",
             color: colors.accent,
-            lineHeight: 0.95,
+            lineHeight: 0.92,
             textShadow: "0 4px 32px rgba(255,59,59,0.35)",
+            opacity: verdictOpacity,
+            transform: `scale(${verdictScale * verdictPulse})`,
+            transformOrigin: "left center",
           }}
         >
           is rigged.
         </div>
       </div>
 
-      {/* Article carousel — flashes underneath the title */}
-      {articlesActive && (
+      {/* Right — big article flash */}
+      {currentArticle && (
         <ArticleFlash
-          article={ARTICLES[articleIdx]}
-          startFrame={ARTICLES_AT + articleIdx * ARTICLE_HOLD}
+          article={currentArticle}
+          startFrame={articleStartFrame}
         />
       )}
 
@@ -165,13 +182,65 @@ export const AntiCheatRigged: React.FC = () => {
   );
 };
 
-// ─── Article flash: hard-cut entry, fast green highlight reveal ───────────────
-//
-// The article sits in the bottom two-thirds of the canvas, beneath the
-// "is rigged." title. No brand card — the article image and its green-
-// highlighted exchange name are the entire visual.
+// ─── Exchange label: name + green underline drawing left → right ──────────────
 
-const ARTICLE_HEIGHT = 580;
+const ExchangeLabel: React.FC<{ name: string; startFrame: number }> = ({
+  name,
+  startFrame,
+}) => {
+  const frame = useCurrentFrame();
+  const local = frame - startFrame;
+
+  // Snap-in: scale punch in 4 frames so the cut feels alive.
+  const punchT = Math.max(0, Math.min(1, local / 4));
+  const punchScale = interpolate(punchT, [0, 1], [1.06, 1]);
+  const punchOpacity = interpolate(punchT, [0, 1], [0.35, 1]);
+
+  // Underline draws over 12 frames after a brief delay.
+  const lineT = Math.max(0, Math.min(1, (local - 1) / 12));
+  const lineEased = 1 - Math.pow(1 - lineT, 3);
+
+  return (
+    <div style={{ display: "inline-block" }}>
+      <div
+        style={{
+          fontFamily: monoFont,
+          fontSize: 78,
+          fontWeight: 500,
+          letterSpacing: "0.01em",
+          color: PROOF_GREEN,
+          lineHeight: 1,
+          textShadow: "0 0 22px rgba(34,217,122,0.45)",
+          opacity: punchOpacity,
+          transform: `scale(${punchScale})`,
+          transformOrigin: "left center",
+          position: "relative",
+          paddingBottom: 14,
+          whiteSpace: "nowrap",
+        }}
+      >
+        {name}
+        {/* Green underline */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            width: `${lineEased * 100}%`,
+            height: 6,
+            background: PROOF_GREEN,
+            borderRadius: 3,
+            boxShadow: `0 0 14px ${PROOF_GREEN}`,
+          }}
+        />
+      </div>
+    </div>
+  );
+};
+
+// ─── Article flash: hard-cut entry, big size, yellow highlighter restored ─────
+
+const ARTICLE_HEIGHT = 880;
 
 const ArticleFlash: React.FC<{
   article: ArticleProof;
@@ -180,40 +249,36 @@ const ArticleFlash: React.FC<{
   const frame = useCurrentFrame();
   const local = frame - startFrame;
 
-  // Snap-in: tiny scale punch in the first 4 frames so the cut feels alive.
   const punchT = Math.max(0, Math.min(1, local / 4));
   const punchScale = interpolate(punchT, [0, 1], [1.04, 1]);
   const punchOpacity = interpolate(punchT, [0, 1], [0.35, 1]);
 
-  // Highlight reveals over 6 frames.
   const highlightReveal = Math.max(0, Math.min(1, (local - 1) / 6));
 
-  // Tiny tilt — deterministic per article so the rapid cuts don't feel sterile.
   const tilt = ((startFrame * 7919) % 100) / 100 - 0.5;
 
   return (
     <div
       style={{
         position: "absolute",
-        top: "44%",
-        left: 0,
-        right: 0,
-        bottom: "5%",
+        right: 60,
+        top: "50%",
+        transform: "translateY(-50%)",
+        width: 1080,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: "0 96px",
       }}
     >
       <div
         style={{
           position: "relative",
           background: "#ffffff",
-          padding: 18,
-          borderRadius: 22,
+          padding: 22,
+          borderRadius: 24,
           boxShadow:
-            "0 0 0 1px rgba(14,15,12,0.12), 0 30px 70px rgba(0,0,0,0.6)",
-          transform: `rotate(${tilt * 0.35}deg) scale(${punchScale})`,
+            "0 0 0 1px rgba(14,15,12,0.12), 0 36px 80px rgba(0,0,0,0.6)",
+          transform: `rotate(${tilt * 0.4}deg) scale(${punchScale})`,
           opacity: punchOpacity,
         }}
       >
@@ -223,13 +288,13 @@ const ArticleFlash: React.FC<{
             style={{
               height: ARTICLE_HEIGHT,
               width: "auto",
-              maxWidth: 1100,
+              maxWidth: 1040,
               objectFit: "contain",
               display: "block",
               borderRadius: 4,
             }}
           />
-          <GreenHighlightLayer
+          <YellowHighlightLayer
             highlights={article.highlights}
             reveal={highlightReveal}
           />
@@ -239,9 +304,9 @@ const ArticleFlash: React.FC<{
   );
 };
 
-// ─── Green highlighter — light-green body, brighter screen pass, dark kick ────
+// ─── Yellow highlighter — original InsiderCases tones, red kick ───────────────
 
-const GreenHighlightLayer: React.FC<{
+const YellowHighlightLayer: React.FC<{
   highlights: Highlight[];
   reveal: number;
 }> = ({ highlights, reveal }) => {
@@ -266,6 +331,7 @@ const GreenHighlightLayer: React.FC<{
         const heightPct = h.h + padY * 2;
         return (
           <React.Fragment key={idx}>
+            {/* Multiply pass — body of the yellow highlighter */}
             <div
               style={{
                 position: "absolute",
@@ -273,13 +339,15 @@ const GreenHighlightLayer: React.FC<{
                 top: `${top * 100}%`,
                 width: `${(h.w + overshootW) * local * 100}%`,
                 height: `${heightPct * 100}%`,
-                background: `linear-gradient(180deg, rgba(82,255,162,0.55) 0%, rgba(34,217,122,0.74) 45%, rgba(34,217,122,0.74) 55%, rgba(82,255,162,0.55) 100%)`,
+                background:
+                  "linear-gradient(180deg, rgba(255,241,82,0.55) 0%, rgba(255,224,38,0.72) 45%, rgba(255,224,38,0.72) 55%, rgba(255,241,82,0.55) 100%)",
                 mixBlendMode: "multiply",
                 borderRadius: 3,
                 transform: "skewX(-5deg) rotate(-0.8deg)",
                 transformOrigin: "left center",
               }}
             />
+            {/* Screen pass — saturation boost */}
             <div
               style={{
                 position: "absolute",
@@ -287,13 +355,15 @@ const GreenHighlightLayer: React.FC<{
                 top: `${top * 100}%`,
                 width: `${(h.w + overshootW) * local * 100}%`,
                 height: `${heightPct * 100}%`,
-                background: `linear-gradient(180deg, rgba(82,255,162,0.45) 0%, rgba(34,217,122,0.55) 45%, rgba(34,217,122,0.55) 55%, rgba(82,255,162,0.45) 100%)`,
+                background:
+                  "linear-gradient(180deg, rgba(255,241,82,0.45) 0%, rgba(255,224,38,0.55) 45%, rgba(255,224,38,0.55) 55%, rgba(255,241,82,0.45) 100%)",
                 mixBlendMode: "screen",
                 borderRadius: 3,
                 transform: "skewX(-5deg) rotate(-0.8deg)",
                 transformOrigin: "left center",
               }}
             />
+            {/* Red kick line */}
             <div
               style={{
                 position: "absolute",
@@ -301,11 +371,11 @@ const GreenHighlightLayer: React.FC<{
                 top: `${(h.y + h.h * 0.92) * 100}%`,
                 width: `${(h.w + overshootW * 0.6) * local * 100}%`,
                 height: `${Math.max(0.008, h.h * 0.22) * 100}%`,
-                background: "#0e8f4a",
+                background: "#ff2b44",
                 borderRadius: 2,
                 transform: "skewX(-3deg) rotate(-0.4deg)",
                 transformOrigin: "left center",
-                boxShadow: `0 0 6px ${PROOF_GREEN_LIGHT}`,
+                boxShadow: "0 0 6px rgba(255,43,68,0.45)",
               }}
             />
           </React.Fragment>
