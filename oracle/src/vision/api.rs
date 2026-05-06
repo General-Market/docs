@@ -3151,7 +3151,7 @@ async fn asset_settlements(
                 mr.down_stake,
                 mr.pct_change_bps
            FROM vision_market_ratios mr
-           JOIN vision_batch_lifecycle bl ON bl.batch_id = mr.batch_id
+           JOIN vision_batch_lifecycle bl ON bl.on_chain_batch_id = mr.batch_id
           WHERE bl.source_id = $1
             AND mr.asset_id = $2
             AND bl.settled_at IS NOT NULL
