@@ -568,38 +568,49 @@ const RIGGED_BG_BARS: BgBar[] = [
 
 const BG_BAR_WIDTH = 64;
 const BG_BAR_OPACITY = 0.22;
+// Same rhythm as the horizontal extraction chart at the Bars scene:
+//   stagger ≈ 0.27s per bar, grow ≈ 0.5s with cubic-out.
+const BG_BAR_STAGGER = toFrames(0.18);
+const BG_BAR_GROW = toFrames(0.55);
 
 const VerticalBars: React.FC = () => {
+  const frame = useCurrentFrame();
   return (
     <AbsoluteFill style={{ pointerEvents: "none" }}>
-      {RIGGED_BG_BARS.map((bar, i) => (
-        <div
-          key={i}
-          style={{
-            position: "absolute",
-            bottom: 0,
-            left: `${bar.xPct * 100}%`,
-            width: BG_BAR_WIDTH,
-            height: `${(bar.heightPct * 100).toFixed(2)}%`,
-            background: colors.accent,
-            opacity: BG_BAR_OPACITY,
-            borderRadius: 2,
-          }}
-        >
-          {/* Top tick */}
+      {RIGGED_BG_BARS.map((bar, i) => {
+        const local = frame - i * BG_BAR_STAGGER;
+        const t = Math.max(0, Math.min(1, local / BG_BAR_GROW));
+        const eased = 1 - Math.pow(1 - t, 3);
+        const heightPct = bar.heightPct * 100 * eased;
+        return (
           <div
+            key={i}
             style={{
               position: "absolute",
-              top: -2,
-              left: -4,
-              right: -4,
-              height: 2,
-              background: colors.fg,
-              opacity: 0.7,
+              bottom: 0,
+              left: `${bar.xPct * 100}%`,
+              width: BG_BAR_WIDTH,
+              height: `${heightPct.toFixed(2)}%`,
+              background: colors.accent,
+              opacity: BG_BAR_OPACITY,
+              borderRadius: 2,
             }}
-          />
-        </div>
-      ))}
+          >
+            {/* Head tick — same idiom as the leading tick on the horizontal chart */}
+            <div
+              style={{
+                position: "absolute",
+                top: -2,
+                left: -4,
+                right: -4,
+                height: 2,
+                background: colors.fg,
+                opacity: eased * 0.7,
+              }}
+            />
+          </div>
+        );
+      })}
     </AbsoluteFill>
   );
 };
