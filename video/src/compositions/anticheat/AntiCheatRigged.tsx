@@ -96,7 +96,7 @@ const ARTICLES: ArticleProof[] = [
     category: "crypto",
     image: "insider-trading/articles/7.png",
     highlights: [{ x: 0.2453, y: 0.4009, w: 0.3414, h: 0.0417 }],
-    exchangeBox: { x: 0.55, y: 0.30, w: 0.28, h: 0.04 },
+    exchangeBox: { x: 0.585, y: 0.30, w: 0.245, h: 0.04 },
   },
 ];
 
@@ -549,7 +549,7 @@ const YellowHighlightLayer: React.FC<{
 // light field. Every fourth line stronger — the cadence of prison bars,
 // not random ticks. Sits behind the verdict and the article flash.
 
-const RIGGED_BAR_SPACING = 56;
+const RIGGED_BAR_SPACING = 64;
 
 const VerticalBars: React.FC = () => {
   const cols = Math.ceil(W / RIGGED_BAR_SPACING) + 1;
@@ -557,15 +557,16 @@ const VerticalBars: React.FC = () => {
   for (let i = 0; i < cols; i++) {
     const x = i * RIGGED_BAR_SPACING;
     const isMajor = i % 4 === 0;
+    const width = isMajor ? 14 : 5;
     lines.push(
       <rect
         key={i}
-        x={x - (isMajor ? 1.4 : 0.9)}
+        x={x - width / 2}
         y={0}
-        width={isMajor ? 2.8 : 1.8}
+        width={width}
         height={H}
         fill={colors.fg}
-        opacity={isMajor ? 0.11 : 0.055}
+        opacity={isMajor ? 0.2 : 0.1}
       />,
     );
   }

@@ -166,11 +166,11 @@ export const AntiCheatEndCard: React.FC = () => {
           <RevealChars
             text="Trading is easy with an Anti-Cheat"
             startFrame={SUBLINE_AT}
-            stagger={1.4}
-            duration={11}
-            y={16}
-            blur={4}
-            scale={0.95}
+            stagger={0.55}
+            duration={9}
+            y={14}
+            blur={3}
+            scale={0.97}
           />
         </div>
 

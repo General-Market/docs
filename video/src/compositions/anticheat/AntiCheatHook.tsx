@@ -722,22 +722,22 @@ const RevealLines: React.FC = () => {
             <RevealChars
               text="The same cheaters ruining your games"
               startFrame={0}
-              stagger={1.3}
-              duration={10}
-              y={16}
-              blur={4}
-              scale={0.96}
+              stagger={0.65}
+              duration={9}
+              y={14}
+              blur={3}
+              scale={0.97}
             />
           </div>
           <div style={{ color: "#ff3b3b", marginTop: 16 }}>
             <RevealChars
               text="are trading against you"
-              startFrame={toFrames(0.6)}
-              stagger={1.5}
-              duration={11}
-              y={18}
-              blur={5}
-              scale={0.94}
+              startFrame={toFrames(0.45)}
+              stagger={0.8}
+              duration={9}
+              y={16}
+              blur={4}
+              scale={0.95}
             />
           </div>
         </div>

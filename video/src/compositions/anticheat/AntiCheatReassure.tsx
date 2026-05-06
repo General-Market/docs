@@ -92,10 +92,10 @@ export const AntiCheatReassure: React.FC = () => {
             <RevealChars
               text="Trade all the same assets"
               startFrame={0}
-              stagger={1.4}
-              duration={11}
-              y={20}
-              blur={5}
+              stagger={0.7}
+              duration={9}
+              y={16}
+              blur={4}
             />
           </div>
 

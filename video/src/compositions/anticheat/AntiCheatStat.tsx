@@ -114,12 +114,12 @@ const StatPanel: React.FC = () => {
       >
         <RevealChars
           text="0.01% of cheaters claim 70% of all profits."
-          startFrame={toFrames(1.4)}
-          stagger={0.9}
-          duration={9}
-          y={12}
-          blur={3}
-          scale={0.97}
+          startFrame={toFrames(1.3)}
+          stagger={0.32}
+          duration={7}
+          y={10}
+          blur={2}
+          scale={0.98}
         />
       </div>
     </AbsoluteFill>
@@ -267,10 +267,10 @@ const ExtractionBars: React.FC = () => {
         <RevealChars
           text="% extracted by unfair trading"
           startFrame={0}
-          stagger={1.0}
-          duration={9}
+          stagger={0.5}
+          duration={8}
           y={10}
-          blur={3}
+          blur={2}
           scale={0.97}
         />
       </div>

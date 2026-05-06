@@ -105,28 +105,28 @@ const Headline: React.FC = () => {
           <RevealChars
             text="General "
             startFrame={0}
-            stagger={1.4}
-            duration={11}
-            y={18}
-            blur={5}
+            stagger={0.9}
+            duration={10}
+            y={16}
+            blur={4}
           />
           <span style={{ color: colors.accent }}>
             <RevealChars
               text="changes"
-              startFrame={toFrames(0.18)}
-              stagger={1.6}
-              duration={12}
-              y={20}
-              blur={6}
+              startFrame={toFrames(0.14)}
+              stagger={1.0}
+              duration={11}
+              y={18}
+              blur={5}
             />
           </span>
           <RevealChars
             text=" this"
-            startFrame={toFrames(0.36)}
-            stagger={1.4}
-            duration={11}
-            y={18}
-            blur={5}
+            startFrame={toFrames(0.28)}
+            stagger={0.9}
+            duration={10}
+            y={16}
+            blur={4}
           />
         </span>
       </div>
