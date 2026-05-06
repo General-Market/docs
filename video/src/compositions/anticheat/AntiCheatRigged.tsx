@@ -50,16 +50,16 @@ const ARTICLES: ArticleProof[] = [
     category: "perps",
     image: "insider-trading/articles/1.png",
     highlights: [{ x: 0.5737, y: 0.1383, w: 0.3183, h: 0.0453 }],
-    // "Binance" — line 1, same line as yellow. Tightened to just the word.
-    exchangeBox: { x: 0.050, y: 0.138, w: 0.120, h: 0.045 },
+    // "Binance" — line 1, same line as yellow.
+    exchangeBox: { x: 0.045, y: 0.138, w: 0.158, h: 0.045 },
   },
   {
     exchange: "robinhood",
     category: "options",
     image: "insider-trading/articles/9.png",
     highlights: [{ x: 0.4119, y: 0.1968, w: 0.2831, h: 0.042 }],
-    // "Robinhood" — line 1; yellow is on line 2. Tightened.
-    exchangeBox: { x: 0.115, y: 0.146, w: 0.205, h: 0.048 },
+    // "Robinhood" — line 1; yellow is on line 2.
+    exchangeBox: { x: 0.110, y: 0.146, w: 0.195, h: 0.048 },
   },
   {
     exchange: "polymarket",
