@@ -12,10 +12,9 @@ import { FPS, H, W, colors, toFrames } from "./theme";
 import { DotGrid, DotGridVignette } from "./DotGrid";
 import { IdleZoom, RevealChars } from "./vibe";
 
-const SCENE_SECONDS = 9;
-const TERMINAL_AT = toFrames(1.6);
+const SCENE_SECONDS = 8;
+const TERMINAL_AT = toFrames(2.8);
 const SCENE_FRAMES = toFrames(SCENE_SECONDS);
-const CTA_AT = toFrames(4.4);
 
 export const AntiCheatSolution: React.FC = () => {
   return (
@@ -220,15 +219,14 @@ const Terminal: React.FC = () => {
   );
   const glow = Math.max(punch * 1.6, glowSustain);
 
-  // CTA fades in after terminal completes.
-  const ctaLocal = frame - CTA_AT;
+  // CTA springs in alongside the terminal panel.
   const ctaSpring = spring({
-    frame: Math.max(0, ctaLocal),
+    frame,
     fps,
-    config: { damping: 22, stiffness: 110, mass: 0.8 },
+    config: { damping: 22, stiffness: 130, mass: 0.6 },
   });
-  const ctaOpacity = ctaLocal < 0 ? 0 : interpolate(ctaSpring, [0, 1], [0, 1]);
-  const ctaY = interpolate(ctaSpring, [0, 1], [22, 0]);
+  const ctaOpacity = interpolate(ctaSpring, [0, 1], [0, 1]);
+  const ctaY = interpolate(ctaSpring, [0, 1], [40, 0]);
 
   return (
     <AbsoluteFill
