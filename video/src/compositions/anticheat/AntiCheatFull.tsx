@@ -7,13 +7,14 @@ import { antiCheatRiggedMeta } from "./AntiCheatRigged";
 import { antiCheatSolutionMeta } from "./AntiCheatSolution";
 import { antiCheatReassureMeta } from "./AntiCheatReassure";
 import { antiCheatEndCardMeta } from "./AntiCheatEndCard";
-import { RGBShift } from "./effects/RGBShift";
 import { LensPunch } from "./effects/LensPunch";
+import { LiquidDistortion } from "./effects/LiquidDistortion";
+import { HalftoneCollapse } from "./effects/HalftoneCollapse";
+import { AnamorphicStreak } from "./effects/AnamorphicStreak";
+import { PageTear } from "./effects/PageTear";
+import { TapeRoll } from "./effects/TapeRoll";
+import { InkBleed } from "./effects/InkBleed";
 
-// Hook 9.5s + Bars 3.5s + Rigged 5.5s + Stat 4s + Solution 5.5s + Reassure 4.5s + EndCard 3.5s = 36s.
-// Hard cuts. No transitions. Each scene starts at the prior scene's last frame + 1.
-// Effects layer: a 6-frame chromatic flash on every cut except the first;
-// a single lens punch on the "is rigged." reveal at the start of Rigged.
 const SCENES = [
   antiCheatHookMeta,
   antiCheatBarsMeta,
@@ -36,6 +37,36 @@ const TOTAL_FRAMES = SCENES.reduce(
 
 const RIGGED_INDEX = SCENES.findIndex((s) => s.id === antiCheatRiggedMeta.id);
 const LENS_PUNCH_FRAME = SCENE_STARTS[RIGGED_INDEX] + Math.round(FPS * 0.25);
+
+type CutEffect = (props: { startFrame: number }) => React.ReactElement;
+
+// One transition vocabulary per cut, no repeats. Each component owns its
+// timing window; we only feed it the absolute start frame.
+const CUT_EFFECTS: Record<string, CutEffect> = {
+  [antiCheatBarsMeta.id]: ({ startFrame }) => (
+    <LiquidDistortion startFrame={startFrame} durationFrames={14} />
+  ),
+  [antiCheatRiggedMeta.id]: ({ startFrame }) => (
+    <HalftoneCollapse startFrame={startFrame} durationFrames={16} cellSize={42} />
+  ),
+  [antiCheatStatMeta.id]: ({ startFrame }) => (
+    <AnamorphicStreak startFrame={startFrame} durationFrames={12} yPercent={48} />
+  ),
+  [antiCheatSolutionMeta.id]: ({ startFrame }) => (
+    <PageTear startFrame={startFrame} durationFrames={14} />
+  ),
+  [antiCheatReassureMeta.id]: ({ startFrame }) => (
+    <TapeRoll startFrame={startFrame} durationFrames={16} bandHeightPx={200} />
+  ),
+  [antiCheatEndCardMeta.id]: ({ startFrame }) => (
+    <InkBleed
+      startFrame={startFrame}
+      durationFrames={18}
+      originX={50}
+      originY={70}
+    />
+  ),
+};
 
 export const AntiCheatFull: React.FC = () => {
   return (
@@ -67,36 +98,22 @@ export const AntiCheatFull: React.FC = () => {
 
       {SCENES.slice(1).map((scene, i) => {
         const cutFrame = SCENE_STARTS[i + 1];
+        const Effect = CUT_EFFECTS[scene.id];
+        if (!Effect) return null;
         return (
           <Sequence
-            key={`flash-${scene.id}`}
+            key={`cut-${scene.id}`}
             from={cutFrame}
-            durationInFrames={10}
+            durationInFrames={20}
             layout="none"
           >
-            <RGBShift startFrame={cutFrame} durationFrames={8}>
-              <ChromaticGhost />
-            </RGBShift>
+            <Effect startFrame={cutFrame} />
           </Sequence>
         );
       })}
     </AbsoluteFill>
   );
 };
-
-// A neutral overlay tinted plate the RGB filter shears through — produces a
-// 3-frame chromatic flash on top of whatever scene starts at the cut.
-const ChromaticGhost: React.FC = () => (
-  <div
-    style={{
-      position: "absolute",
-      inset: 0,
-      background:
-        "linear-gradient(0deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.32) 50%, rgba(255,255,255,0.18) 100%)",
-      mixBlendMode: "screen",
-    }}
-  />
-);
 
 export const antiCheatFullMeta = {
   id: "AntiCheatFull",
