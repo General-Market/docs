@@ -11,30 +11,39 @@ import { antiCheatRiggedMeta } from "./AntiCheatRigged";
 import { antiCheatSolutionMeta } from "./AntiCheatSolution";
 import { antiCheatReassureMeta } from "./AntiCheatReassure";
 import { antiCheatEndCardMeta } from "./AntiCheatEndCard";
-import { pullPunch, pushThrough, pullOnly, silentDezoom } from "./transitions";
+import {
+  zoomPushHeavy,
+  zoomPushSoft,
+  zoomPullLong,
+  zoomPullSlow,
+  zoomWhip,
+} from "./transitions";
+import { HandheldDrift } from "./vibe";
 
-// Five active transitions plus one held hard cut. Total absorbed:
-//   pull-and-punch (Hook→Bars)        16f
-//   pull-and-punch short (Rigged→Stat) 12f
-//   silent dezoom (Stat→Solution)      22f   ← music dies here
-//   push-through gentle (Solution→Reassure) 14f
-//   pull-only (Reassure→EndCard)       14f
-//                                     ────
-//                                      78f  → composition shortens 29.5s → ~26.9s
+// Every transition is a zoom-through-blur. Exiting scene zooms toward a
+// peak scale, gaussian blur rises with the motion, the cut hides inside
+// the blur peak, entering scene starts at that peak and dezooms back to
+// rest as the blur clears. Direction, magnitude, easing, and duration
+// vary per cut.
 //
-// Bars→Rigged stays a hard cut. The bars already are the verdict.
-const T_PULL_PUNCH = 24;
-const T_PULL_PUNCH_SHORT = 18;
-const T_SILENT_DEZOOM = 30;
-const T_PUSH_THROUGH = 22;
-const T_PULL_ONLY = 22;
+//   Hook → Bars        zoom push heavy (1 → 1.55, quart-in)   24f
+//   Bars → Rigged      HARD CUT — the bars are the verdict
+//   Rigged → Stat      whip zoom (1 → 1.85, quint-in)         20f
+//   Stat → Solution    pull slow + veil (1 → 0.72, in-out)    32f   ← music dies
+//   Solution → Reassure soft push (1 → 1.28, cubic-in)        22f
+//   Reassure → EndCard long pull (1 → 0.82)                   26f
+const T_HOOK_BARS = 24;
+const T_RIGGED_STAT = 20;
+const T_STAT_SOLUTION = 32;
+const T_SOLUTION_REASSURE = 22;
+const T_REASSURE_END = 26;
 
 const TRANSITION_FRAMES =
-  T_PULL_PUNCH +
-  T_PULL_PUNCH_SHORT +
-  T_SILENT_DEZOOM +
-  T_PUSH_THROUGH +
-  T_PULL_ONLY;
+  T_HOOK_BARS +
+  T_RIGGED_STAT +
+  T_STAT_SOLUTION +
+  T_SOLUTION_REASSURE +
+  T_REASSURE_END;
 
 const TOTAL_FRAMES =
   antiCheatHookMeta.durationInFrames +
@@ -47,16 +56,14 @@ const TOTAL_FRAMES =
   TRANSITION_FRAMES;
 
 // Music covers Hook + Bars + Rigged + Stat in the new (shorter) timeline.
-// Two transitions land before Stat ends (Hook→Bars, Rigged→Stat) — the
-// silent-dezoom into Solution starts at the very edge so we don't subtract
-// it.
+// Two transitions land before Stat ends — Hook→Bars and Rigged→Stat.
 const MUSIC_FRAMES =
   antiCheatHookMeta.durationInFrames +
   antiCheatBarsMeta.durationInFrames +
   antiCheatRiggedMeta.durationInFrames +
   antiCheatStatMeta.durationInFrames -
-  T_PULL_PUNCH -
-  T_PULL_PUNCH_SHORT;
+  T_HOOK_BARS -
+  T_RIGGED_STAT;
 const MUSIC_FADE_OUT = Math.round(FPS * 0.8);
 const MUSIC_VOLUME = 0.55;
 
@@ -81,6 +88,7 @@ export const AntiCheatFull: React.FC = () => {
           }
         />
       </Sequence>
+      <HandheldDrift amplitude={4} speed={0.045}>
       <TransitionSeries>
         <TransitionSeries.Sequence
           durationInFrames={antiCheatHookMeta.durationInFrames}
@@ -89,8 +97,8 @@ export const AntiCheatFull: React.FC = () => {
         </TransitionSeries.Sequence>
 
         <TransitionSeries.Transition
-          presentation={pullPunch()}
-          timing={linearTiming({ durationInFrames: T_PULL_PUNCH })}
+          presentation={zoomPushHeavy()}
+          timing={linearTiming({ durationInFrames: T_HOOK_BARS })}
         />
 
         <TransitionSeries.Sequence
@@ -108,8 +116,8 @@ export const AntiCheatFull: React.FC = () => {
         </TransitionSeries.Sequence>
 
         <TransitionSeries.Transition
-          presentation={pullPunch()}
-          timing={linearTiming({ durationInFrames: T_PULL_PUNCH_SHORT })}
+          presentation={zoomWhip()}
+          timing={linearTiming({ durationInFrames: T_RIGGED_STAT })}
         />
 
         <TransitionSeries.Sequence
@@ -119,8 +127,8 @@ export const AntiCheatFull: React.FC = () => {
         </TransitionSeries.Sequence>
 
         <TransitionSeries.Transition
-          presentation={silentDezoom({ veilColor: colors.bg })}
-          timing={linearTiming({ durationInFrames: T_SILENT_DEZOOM })}
+          presentation={zoomPullSlow(colors.bg)}
+          timing={linearTiming({ durationInFrames: T_STAT_SOLUTION })}
         />
 
         <TransitionSeries.Sequence
@@ -130,8 +138,8 @@ export const AntiCheatFull: React.FC = () => {
         </TransitionSeries.Sequence>
 
         <TransitionSeries.Transition
-          presentation={pushThrough()}
-          timing={linearTiming({ durationInFrames: T_PUSH_THROUGH })}
+          presentation={zoomPushSoft()}
+          timing={linearTiming({ durationInFrames: T_SOLUTION_REASSURE })}
         />
 
         <TransitionSeries.Sequence
@@ -141,8 +149,8 @@ export const AntiCheatFull: React.FC = () => {
         </TransitionSeries.Sequence>
 
         <TransitionSeries.Transition
-          presentation={pullOnly()}
-          timing={linearTiming({ durationInFrames: T_PULL_ONLY })}
+          presentation={zoomPullLong()}
+          timing={linearTiming({ durationInFrames: T_REASSURE_END })}
         />
 
         <TransitionSeries.Sequence
@@ -151,6 +159,7 @@ export const AntiCheatFull: React.FC = () => {
           <antiCheatEndCardMeta.component />
         </TransitionSeries.Sequence>
       </TransitionSeries>
+      </HandheldDrift>
     </AbsoluteFill>
   );
 };

@@ -6,93 +6,146 @@ import type {
 } from "@remotion/transitions";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Launch-video transitions for the AntiCheat film. Wrapper drives:
-//   • bg-plane scale     — applied to the wrapper itself
-//   • text-plane scale   — published as `--acx-text-scale` for descendants
-//   • motion blur        — CSS filter on the wrapper
-//   • white flash        — overlaid plate at the cut moment
-//   • veil               — used by silentDezoom only
+// Zoom-through-blur transitions for the AntiCheat film.
 //
-// Magnitudes are loud on purpose. A subtle 12% scale reads as a render bug,
-// not as a transition. Launch videos punch.
+// Mental model: the exiting scene zooms (in or out) toward a peak scale,
+// gaining gaussian blur as it accelerates. The cut happens at the blur
+// peak — the swap is invisible inside the blur. The entering scene starts
+// at the same peak scale, blurred, and dezooms back to rest as the blur
+// clears.
+//
+// Acceleration is non-linear on both halves. The exit uses an ease-in
+// curve (slow then fast) so the motion accelerates into the cut. The
+// enter uses an ease-out curve (fast then slow) so the motion decelerates
+// out of the cut. Asymmetric speed = momentum.
+//
+// All variations route through one primitive (`zoomThroughBlur`) and the
+// presets below just configure it.
 // ─────────────────────────────────────────────────────────────────────────────
 
-type EmptyProps = Record<string, never>;
+type EaseFn = (t: number) => number;
 
-const cubicIn = (t: number) => t * t * t;
-const cubicOut = (t: number) => 1 - Math.pow(1 - t, 3);
-const quartOut = (t: number) => 1 - Math.pow(1 - t, 4);
-const quintOut = (t: number) => 1 - Math.pow(1 - t, 5);
-const inOutQuad = (t: number) =>
+const cubicIn: EaseFn = (t) => t * t * t;
+const cubicOut: EaseFn = (t) => 1 - Math.pow(1 - t, 3);
+const quartIn: EaseFn = (t) => t * t * t * t;
+const quartOut: EaseFn = (t) => 1 - Math.pow(1 - t, 4);
+const quintIn: EaseFn = (t) => t * t * t * t * t;
+const quintOut: EaseFn = (t) => 1 - Math.pow(1 - t, 5);
+const inOutQuad: EaseFn = (t) =>
   t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-const backOut = (t: number, s = 1.7) => {
-  const c1 = s;
-  const c3 = c1 + 1;
-  return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+
+export const ease = {
+  cubicIn,
+  cubicOut,
+  quartIn,
+  quartOut,
+  quintIn,
+  quintOut,
+  inOutQuad,
 };
 
-type WrapperOpts = {
-  bgScale: number;
-  textScale: number;
-  opacity: number;
-  blur?: number;
-  flash?: number;
-  veil?: number;
-  veilColor?: string;
-  chroma?: number;
-  children: React.ReactNode;
+type ZoomBlurProps = {
+  exitFrom: number;
+  exitTo: number;
+  enterFrom: number;
+  enterTo: number;
+  maxBlur: number;
+  exitEase: EaseFn;
+  enterEase: EaseFn;
+  flash: number;
+  veil: number;
+  veilColor: string;
 };
 
-const TransitionWrapper: React.FC<WrapperOpts> = ({
-  bgScale,
-  textScale,
-  opacity,
-  blur = 0,
-  flash = 0,
-  veil = 0,
-  veilColor = "#FFFFFF",
-  chroma = 0,
-  children,
-}) => {
-  const filterParts: string[] = [];
-  if (blur > 0.05) filterParts.push(`blur(${blur.toFixed(2)}px)`);
-  if (chroma > 0.05) {
-    filterParts.push(
-      `drop-shadow(${chroma.toFixed(1)}px 0 rgba(255,40,80,0.55))`,
-    );
-    filterParts.push(
-      `drop-shadow(-${chroma.toFixed(1)}px 0 rgba(40,140,255,0.55))`,
-    );
-  }
-  const filter = filterParts.length ? filterParts.join(" ") : undefined;
+const ZoomThroughBlurInner: React.FC<
+  TransitionPresentationComponentProps<ZoomBlurProps>
+> = ({ children, presentationProgress, presentationDirection, passedProps }) => {
+  const t = presentationProgress;
+  const {
+    exitFrom,
+    exitTo,
+    enterFrom,
+    enterTo,
+    maxBlur,
+    exitEase,
+    enterEase,
+    flash,
+    veil,
+    veilColor,
+  } = passedProps;
+
+  const isExit = presentationDirection === "exiting";
+  const e = isExit ? exitEase(t) : enterEase(t);
+
+  const scale = isExit
+    ? exitFrom + (exitTo - exitFrom) * e
+    : enterFrom + (enterTo - enterFrom) * e;
+
+  // Blur peaks at the cut moment (t=1 for exit, t=0 for enter) and falls
+  // off toward the edges of the transition window. Quadratic in the
+  // distance from the peak so the blur ramp matches the motion ramp.
+  const peakDistance = isExit ? 1 - t : t;
+  const blurT = 1 - peakDistance * peakDistance;
+  const blur = maxBlur * blurT;
+
+  // Opacity: hold full, then fade fast in the last/first 22% so the swap
+  // happens inside the blur peak, not as a long crossfade.
+  const opacity = isExit
+    ? t > 0.78
+      ? 1 - (t - 0.78) / 0.22
+      : 1
+    : t < 0.22
+      ? t / 0.22
+      : 1;
+
+  const flashAmount =
+    flash > 0
+      ? isExit
+        ? t > 0.7
+          ? ((t - 0.7) / 0.3) * flash
+          : 0
+        : t < 0.3
+          ? (1 - t / 0.3) * flash
+          : 0
+      : 0;
+
+  const veilAmount =
+    veil > 0
+      ? isExit
+        ? t > 0.5
+          ? ((t - 0.5) / 0.5) * veil
+          : 0
+        : t < 0.5
+          ? (1 - t / 0.5) * veil
+          : 0
+      : 0;
 
   return (
     <AbsoluteFill
       style={{
-        transform: `scale(${bgScale})`,
+        transform: `scale(${scale})`,
         transformOrigin: "50% 50%",
         opacity,
-        filter,
+        filter: blur > 0.05 ? `blur(${blur.toFixed(2)}px)` : undefined,
         willChange: "transform, filter, opacity",
-        ["--acx-text-scale" as string]: String(textScale / bgScale),
-      } as React.CSSProperties}
+      }}
     >
       {children}
-      {flash > 0.005 ? (
+      {flashAmount > 0.005 ? (
         <AbsoluteFill
           style={{
             backgroundColor: "#FFFFFF",
-            opacity: flash,
+            opacity: flashAmount,
             mixBlendMode: "screen",
             pointerEvents: "none",
           }}
         />
       ) : null}
-      {veil > 0.005 ? (
+      {veilAmount > 0.005 ? (
         <AbsoluteFill
           style={{
             backgroundColor: veilColor,
-            opacity: veil,
+            opacity: veilAmount,
             pointerEvents: "none",
           }}
         />
@@ -101,252 +154,113 @@ const TransitionWrapper: React.FC<WrapperOpts> = ({
   );
 };
 
-// ─── Push-through ──────────────────────────────────────────────────────────────
-//
-// Outgoing scene rushes into the camera. Background scales 1 → 1.5 with a
-// hard cubic-in curve. Text scales 1 → 4.0 — eight times the bg rate. Blur
-// rises through the last third. Flash hits at the cut. Incoming scene
-// arrives at bg=1.3, text=0.3 and resolves with a back-out overshoot on
-// background and a spring on text. The asymmetry is the parallax.
-
-const PushThroughInner: React.FC<
-  TransitionPresentationComponentProps<EmptyProps>
-> = ({ children, presentationProgress, presentationDirection }) => {
-  const t = presentationProgress;
-
-  if (presentationDirection === "exiting") {
-    const e = cubicIn(t);
-    const bgScale = 1 + 0.5 * e;
-    const textScale = 1 + 3.0 * e;
-    const blur = t > 0.55 ? ((t - 0.55) / 0.45) * 14 : 0;
-    const opacity = t > 0.78 ? 1 - (t - 0.78) / 0.22 : 1;
-    const flash = t > 0.85 ? ((t - 0.85) / 0.15) * 0.55 : 0;
-    return (
-      <TransitionWrapper
-        bgScale={bgScale}
-        textScale={textScale}
-        opacity={opacity}
-        blur={blur}
-        flash={flash}
-      >
-        {children}
-      </TransitionWrapper>
-    );
-  }
-
-  const eBg = backOut(t, 1.4);
-  const eText = quartOut(Math.min(1, t / 0.7));
-  const bgScale = 1.3 - 0.3 * eBg;
-  const textScale = 0.3 + 0.7 * eText;
-  const blur = t < 0.32 ? (1 - t / 0.32) * 12 : 0;
-  const opacity = t < 0.16 ? t / 0.16 : 1;
-  const flash = t < 0.18 ? (1 - t / 0.18) * 0.45 : 0;
-
-  return (
-    <TransitionWrapper
-      bgScale={bgScale}
-      textScale={textScale}
-      opacity={opacity}
-      blur={blur}
-      flash={flash}
-    >
-      {children}
-    </TransitionWrapper>
-  );
-};
-
-export const pushThrough = (): TransitionPresentation<EmptyProps> => ({
-  component: PushThroughInner,
-  props: {},
-});
-
-// ─── Pull-and-punch (dolly-zoom + slam) ────────────────────────────────────────
-//
-// The headline move. Outgoing scene dolly-zooms: background pulls back to
-// 0.78, text pushes forward to 1.5 — the simultaneous opposite motion is
-// the Hitchcock vertigo. Incoming scene slams in from bg=1.55 with a back-
-// out overshoot and text from 0.4 with a heavy spring bounce. Chromatic
-// aberration on the punch frame, white flash 0 → 0.7 → 0.
-
-const PullPunchInner: React.FC<
-  TransitionPresentationComponentProps<EmptyProps>
-> = ({ children, presentationProgress, presentationDirection }) => {
-  const t = presentationProgress;
-
-  if (presentationDirection === "exiting") {
-    const eBg = cubicOut(t);
-    const eText = cubicOut(Math.min(1, t / 0.65));
-    const bgScale = 1 - 0.22 * eBg;
-    const textScale = 1 + 0.55 * eText;
-    const blur = t > 0.5 ? ((t - 0.5) / 0.5) * 4 : 0;
-    const opacity = t > 0.7 ? 1 - (t - 0.7) / 0.3 : 1;
-    const flash = t > 0.88 ? ((t - 0.88) / 0.12) * 0.7 : 0;
-    return (
-      <TransitionWrapper
-        bgScale={bgScale}
-        textScale={textScale}
-        opacity={opacity}
-        blur={blur}
-        flash={flash}
-      >
-        {children}
-      </TransitionWrapper>
-    );
-  }
-
-  const eBg = backOut(t, 1.8);
-  const eText = backOut(Math.min(1, t / 0.75), 2.4);
-  const bgScale = 1.55 - 0.55 * eBg;
-  const textScale = 0.4 + 0.6 * eText;
-  const blur = t < 0.28 ? (1 - t / 0.28) * 10 : 0;
-  const chroma = t < 0.22 ? (1 - t / 0.22) * 5 : 0;
-  const opacity = t < 0.1 ? t / 0.1 : 1;
-  const flash = t < 0.18 ? (1 - t / 0.18) * 0.6 : 0;
-
-  return (
-    <TransitionWrapper
-      bgScale={bgScale}
-      textScale={textScale}
-      opacity={opacity}
-      blur={blur}
-      chroma={chroma}
-      flash={flash}
-    >
-      {children}
-    </TransitionWrapper>
-  );
-};
-
-export const pullPunch = (): TransitionPresentation<EmptyProps> => ({
-  component: PullPunchInner,
-  props: {},
-});
-
-// ─── Pull-only ─────────────────────────────────────────────────────────────────
-//
-// The close. Outgoing scene retreats and dims. Incoming scene fades in at
-// rest. No punch — the EndCard doesn't earn one.
-
-const PullOnlyInner: React.FC<
-  TransitionPresentationComponentProps<EmptyProps>
-> = ({ children, presentationProgress, presentationDirection }) => {
-  const t = presentationProgress;
-
-  if (presentationDirection === "exiting") {
-    const e = inOutQuad(t);
-    const bgScale = 1 - 0.2 * e;
-    const textScale = 1 - 0.32 * e;
-    const opacity = 1 - 0.85 * e;
-    const blur = e * 5;
-    return (
-      <TransitionWrapper
-        bgScale={bgScale}
-        textScale={textScale}
-        opacity={opacity}
-        blur={blur}
-      >
-        {children}
-      </TransitionWrapper>
-    );
-  }
-
-  const e = quintOut(t);
-  return (
-    <TransitionWrapper bgScale={1} textScale={1} opacity={e}>
-      {children}
-    </TransitionWrapper>
-  );
-};
-
-export const pullOnly = (): TransitionPresentation<EmptyProps> => ({
-  component: PullOnlyInner,
-  props: {},
-});
-
-// ─── Silent dezoom ─────────────────────────────────────────────────────────────
-//
-// The music-death cut. Outgoing scene dezooms 1 → 0.72 on a long ease-in-
-// out while a veil rises. Incoming scene emerges from bg=1.12 through the
-// same veil. Heavy blur during the swallow makes the silence audible.
-
-type SilentDezoomProps = {
-  veilColor: string;
-};
-
-const SilentDezoomInner: React.FC<
-  TransitionPresentationComponentProps<SilentDezoomProps>
-> = ({
-  children,
-  presentationProgress,
-  presentationDirection,
-  passedProps,
-}) => {
-  const t = presentationProgress;
-
-  if (presentationDirection === "exiting") {
-    const e = inOutQuad(t);
-    const bgScale = 1 - 0.28 * e;
-    const blur = e * 9;
-    const veil = e;
-    return (
-      <TransitionWrapper
-        bgScale={bgScale}
-        textScale={bgScale}
-        opacity={1}
-        blur={blur}
-        veil={veil}
-        veilColor={passedProps.veilColor}
-      >
-        {children}
-      </TransitionWrapper>
-    );
-  }
-
-  const e = inOutQuad(t);
-  const bgScale = 1.12 - 0.12 * e;
-  const blur = (1 - e) * 7;
-  const veil = 1 - e;
-  return (
-    <TransitionWrapper
-      bgScale={bgScale}
-      textScale={bgScale}
-      opacity={1}
-      blur={blur}
-      veil={veil}
-      veilColor={passedProps.veilColor}
-    >
-      {children}
-    </TransitionWrapper>
-  );
-};
-
-export const silentDezoom = (
-  props: SilentDezoomProps = { veilColor: "#F0F2F4" },
-): TransitionPresentation<SilentDezoomProps> => ({
-  component: SilentDezoomInner,
+const zoomThroughBlur = (
+  props: ZoomBlurProps,
+): TransitionPresentation<ZoomBlurProps> => ({
+  component: ZoomThroughBlurInner,
   props,
 });
 
-// ─── ParallaxText ──────────────────────────────────────────────────────────────
+// ─── Variations ────────────────────────────────────────────────────────────────
 //
-// Scenes wrap their hero text in this to inherit the text-plane scale from
-// the active transition. Outside a transition the CSS variable defaults to
-// 1 and nothing changes.
+// Each preset is a different shape of the same idea: zoom into the cut,
+// blur peaks at the swap, dezoom out the other side. The choice between
+// them is rhythm and weight, not mechanism.
+
+// Heavy push — accelerating zoom-in, blurs hard. The default for high-
+// energy cuts. Exit and enter geometry meet at 1.55x so the swap reads as
+// continuous motion through a blur tunnel.
+export const zoomPushHeavy = () =>
+  zoomThroughBlur({
+    exitFrom: 1,
+    exitTo: 1.55,
+    enterFrom: 1.55,
+    enterTo: 1,
+    maxBlur: 22,
+    exitEase: quartIn,
+    enterEase: quartOut,
+    flash: 0.4,
+    veil: 0,
+    veilColor: "#FFFFFF",
+  });
+
+// Whip zoom — extreme acceleration into a 1.85x peak. Quint-in on the
+// exit so the last few frames blur to nothing. Reserved for verdicts.
+export const zoomWhip = () =>
+  zoomThroughBlur({
+    exitFrom: 1,
+    exitTo: 1.85,
+    enterFrom: 1.85,
+    enterTo: 1,
+    maxBlur: 30,
+    exitEase: quintIn,
+    enterEase: quartOut,
+    flash: 0.6,
+    veil: 0,
+    veilColor: "#FFFFFF",
+  });
+
+// Pull through blur — exit dezooms slowly, blur rises, enter wakes up
+// from 0.72x. The motion-equivalent of an exhale. Good for moments where
+// the music dies or the tone resets.
+export const zoomPullSlow = (veilColor = "#F0F2F4") =>
+  zoomThroughBlur({
+    exitFrom: 1,
+    exitTo: 0.72,
+    enterFrom: 0.72,
+    enterTo: 1,
+    maxBlur: 16,
+    exitEase: inOutQuad,
+    enterEase: inOutQuad,
+    flash: 0,
+    veil: 1,
+    veilColor,
+  });
+
+// Soft push — gentle 1.25x peak, less blur, more breath. For cuts where
+// continuity matters more than impact.
+export const zoomPushSoft = () =>
+  zoomThroughBlur({
+    exitFrom: 1,
+    exitTo: 1.28,
+    enterFrom: 1.32,
+    enterTo: 1,
+    maxBlur: 12,
+    exitEase: cubicIn,
+    enterEase: cubicOut,
+    flash: 0.2,
+    veil: 0,
+    veilColor: "#FFFFFF",
+  });
+
+// Long pull — slow retreat from the scene, soft blur, the entering scene
+// rises out of the dezoom. The close. No flash, no punch.
+export const zoomPullLong = () =>
+  zoomThroughBlur({
+    exitFrom: 1,
+    exitTo: 0.82,
+    enterFrom: 0.82,
+    enterTo: 1,
+    maxBlur: 10,
+    exitEase: inOutQuad,
+    enterEase: cubicOut,
+    flash: 0,
+    veil: 0,
+    veilColor: "#FFFFFF",
+  });
+
+// ─── ParallaxText (kept as a no-op shim) ──────────────────────────────────────
+//
+// Earlier versions published a separate text-plane scale. The current
+// presentations scale the whole scene as one block, so this wrapper
+// resolves to identity. Kept exported so the scenes that imported it
+// don't break — and so we have a hook ready if we want differential
+// scaling back later.
 
 export const ParallaxText: React.FC<{
   children: React.ReactNode;
   style?: React.CSSProperties;
   origin?: string;
-}> = ({ children, style, origin = "50% 50%" }) => (
-  <div
-    style={{
-      transform: "scale(var(--acx-text-scale, 1))",
-      transformOrigin: origin,
-      display: "inline-block",
-      willChange: "transform",
-      ...style,
-    }}
-  >
-    {children}
-  </div>
+}> = ({ children, style }) => (
+  <div style={{ display: "inline-block", ...style }}>{children}</div>
 );
