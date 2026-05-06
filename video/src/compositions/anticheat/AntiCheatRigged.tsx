@@ -311,46 +311,72 @@ const ArticleFlash: React.FC<{
   );
 };
 
-// ─── Exchange-name underline — clean green line beneath the exchange word ─────
-//
-// Drawn ON the article image at the bbox of the exchange name (binance,
-// polymarket, etc). Two parts: a thicker green underline beneath the word
-// plus a faint green text-glow over the bbox so the eye is pulled to it
-// without obscuring the underlying ink.
+// ─── Exchange-name highlight — same render pattern as the yellow body
+//     highlighter, recolored green. Multi-pass for visible ink: a multiply
+//     body, a screen-blend saturation boost, and a darker green kick line
+//     beneath. This is the pattern that worked for yellow; we're trusting
+//     it for green rather than inventing a new one.
 
 const ExchangeNameUnderline: React.FC<{
   box: Highlight;
   reveal: number;
 }> = ({ box, reveal }) => {
-  const drawn = Math.max(0, Math.min(1, reveal));
+  const local = Math.max(0, Math.min(1, reveal));
+  const overshootX = 0.008;
+  const overshootW = 0.016;
+  const padY = box.h * 0.22;
+  const top = box.y - padY;
+  const heightPct = box.h + padY * 2;
+
   return (
     <>
-      {/* Faint green wash over the word — multiply blend so the ink shows */}
+      {/* Multiply pass — the green ink body */}
       <div
         style={{
           position: "absolute",
-          left: `${box.x * 100}%`,
-          top: `${box.y * 100}%`,
-          width: `${box.w * drawn * 100}%`,
-          height: `${box.h * 100}%`,
+          left: `${(box.x - overshootX) * 100}%`,
+          top: `${top * 100}%`,
+          width: `${(box.w + overshootW) * local * 100}%`,
+          height: `${heightPct * 100}%`,
           background:
-            "linear-gradient(180deg, rgba(82,255,162,0.0) 0%, rgba(34,217,122,0.18) 100%)",
+            "linear-gradient(180deg, rgba(82,255,162,0.55) 0%, rgba(34,217,122,0.74) 45%, rgba(34,217,122,0.74) 55%, rgba(82,255,162,0.55) 100%)",
           mixBlendMode: "multiply",
-          borderRadius: 2,
+          borderRadius: 3,
+          transform: "skewX(-5deg) rotate(-0.8deg)",
+          transformOrigin: "left center",
           pointerEvents: "none",
         }}
       />
-      {/* The underline itself */}
+      {/* Screen pass — saturation boost */}
       <div
         style={{
           position: "absolute",
-          left: `${box.x * 100}%`,
-          top: `${(box.y + box.h * 1.02) * 100}%`,
-          width: `${box.w * drawn * 100}%`,
-          height: `${Math.max(0.012, box.h * 0.22) * 100}%`,
-          background: PROOF_GREEN,
+          left: `${(box.x - overshootX) * 100}%`,
+          top: `${top * 100}%`,
+          width: `${(box.w + overshootW) * local * 100}%`,
+          height: `${heightPct * 100}%`,
+          background:
+            "linear-gradient(180deg, rgba(82,255,162,0.45) 0%, rgba(34,217,122,0.55) 45%, rgba(34,217,122,0.55) 55%, rgba(82,255,162,0.45) 100%)",
+          mixBlendMode: "screen",
+          borderRadius: 3,
+          transform: "skewX(-5deg) rotate(-0.8deg)",
+          transformOrigin: "left center",
+          pointerEvents: "none",
+        }}
+      />
+      {/* Kick line — darker green stroke beneath, mirrors the yellow's red kick */}
+      <div
+        style={{
+          position: "absolute",
+          left: `${(box.x - overshootX * 0.6) * 100}%`,
+          top: `${(box.y + box.h * 0.92) * 100}%`,
+          width: `${(box.w + overshootW * 0.6) * local * 100}%`,
+          height: `${Math.max(0.008, box.h * 0.22) * 100}%`,
+          background: "#0e8f4a",
           borderRadius: 2,
-          boxShadow: `0 0 12px ${PROOF_GREEN}, 0 0 4px ${PROOF_GREEN_LIGHT}`,
+          transform: "skewX(-3deg) rotate(-0.4deg)",
+          transformOrigin: "left center",
+          boxShadow: `0 0 6px ${PROOF_GREEN_LIGHT}`,
           pointerEvents: "none",
         }}
       />
