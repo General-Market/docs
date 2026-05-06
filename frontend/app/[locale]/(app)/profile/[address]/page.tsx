@@ -6,6 +6,7 @@ import { useAccount } from 'wagmi'
 import { useTranslations } from 'next-intl'
 import { AppShell } from '@/components/layout/AppShell'
 import { SourceSearch } from '@/components/layout/SourceSearch'
+import { GeneralLoader } from '@/components/ui/GeneralLoader'
 import { ProfileHero } from '@/components/domain/profile/ProfileHero'
 import type { PnlTimeRange } from '@/components/domain/profile/PnlChart'
 import { ProfileTabs, type ProfileTabId } from '@/components/domain/profile/ProfileTabs'
@@ -84,7 +85,10 @@ function ProfileContent({ address }: { address: string }) {
   // On the vaults tab we show the vault aggregate instead of the player's
   // vision P&L — different accounting, same hero slot.
   const showingVaults = tab === 'vaults' && isSelf
-  const displayPnl = showingVaults ? vaultTotals.totalPnl : profile?.stats.pnl ?? 0
+  const vaultsPriced = !vaultTotals.pricingIncomplete
+  const displayPnl = showingVaults
+    ? vaultsPriced ? vaultTotals.totalPnl : 0
+    : profile?.stats.pnl ?? 0
   const pnlColor = displayPnl >= 0 ? 'text-color-up' : 'text-color-down'
 
   // Polymarket-parity derived metrics — positions value, biggest win,
@@ -97,12 +101,12 @@ function ProfileContent({ address }: { address: string }) {
     ? [
         {
           label: t('positions_value'),
-          value: formatVolume(vaultTotals.totalValue),
+          value: vaultsPriced ? formatVolume(vaultTotals.totalValue) : '—',
         },
         {
           label: t('pnl'),
-          value: formatPnL(vaultTotals.totalPnl),
-          color: pnlColor,
+          value: vaultsPriced ? formatPnL(vaultTotals.totalPnl) : '—',
+          color: vaultsPriced ? pnlColor : undefined,
         },
         {
           label: t('vaults'),
@@ -126,39 +130,7 @@ function ProfileContent({ address }: { address: string }) {
       ]
 
   if (isLoading) {
-    return (
-      <>
-        <div className="border-b border-border-light">
-          <div className="px-6 lg:px-12">
-            <div className="max-w-site mx-auto py-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div className="bg-white border border-border-light rounded-2xl p-5">
-                  <div className="flex items-center gap-4 mb-5">
-                    <div className="w-14 h-14 rounded-full bg-surface animate-pulse" />
-                    <div>
-                      <div className="h-6 w-36 bg-surface rounded animate-pulse" />
-                      <div className="h-3 w-24 bg-surface rounded animate-pulse mt-2" />
-                    </div>
-                  </div>
-                  <div className="flex gap-6">
-                    {[...Array(5)].map((_, i) => (
-                      <div key={i} className="h-8 w-16 bg-surface rounded animate-pulse" />
-                    ))}
-                  </div>
-                </div>
-                <div className="bg-white border border-border-light rounded-2xl h-[200px] animate-pulse" />
-              </div>
-            </div>
-          </div>
-        </div>
-        <ProfileTabs activeTab={tab} onTabChange={handleTabChange} />
-        <div className="px-6 lg:px-12">
-          <div className="max-w-site mx-auto py-8">
-            <div className="h-[140px] bg-surface rounded animate-pulse" />
-          </div>
-        </div>
-      </>
-    )
+    return <GeneralLoader height="80vh" />
   }
 
   return (
@@ -169,7 +141,7 @@ function ProfileContent({ address }: { address: string }) {
         joined={joinedLabel}
         stats={stats}
         pnlHistory={showingVaults ? vaultsPortfolioHistory : profile?.pnlHistory ?? []}
-        pnlOverride={showingVaults ? vaultTotals.totalPnl : undefined}
+        pnlOverride={showingVaults && vaultsPriced ? vaultTotals.totalPnl : undefined}
         pnlRange={pnlRange}
         onPnlRangeChange={setPnlRange}
       />
@@ -202,15 +174,7 @@ export default function ProfilePage({ params }: { params: Promise<{ address: str
 
   return (
     <AppShell search={<SourceSearch />}>
-      <Suspense
-        fallback={
-          <div className="px-6 lg:px-12">
-            <div className="max-w-site mx-auto py-12">
-              <div className="h-8 w-32 bg-surface rounded animate-pulse" />
-            </div>
-          </div>
-        }
-      >
+      <Suspense fallback={<GeneralLoader height="80vh" />}>
         <ProfileContent address={address} />
       </Suspense>
     </AppShell>

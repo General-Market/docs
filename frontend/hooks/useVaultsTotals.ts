@@ -12,33 +12,40 @@ export interface VaultsTotals {
   totalValue: number
   totalPending: number
   totalPnl: number
+  /** True while at least one held vault is missing its SSE NAV snapshot. */
+  pricingIncomplete: boolean
 }
 
 function rowValues(
   vault: VisionVaultSSE | undefined,
   shares: bigint,
   pending: bigint,
-): { value: number; pending: number; pnl: number } | null {
+): { value: number; pending: number; pnl: number; vaultLoading: boolean } | null {
   if (shares === 0n && pending === 0n) return null
+
+  // SSE hasn't shipped this vault's NAV yet (or the data-node lost the registry).
+  // We can still surface pending USDC, but the share-side value is unknown —
+  // returning 0 here would have the aggregate footer claim "−$X all-time".
+  const vaultLoading = !vault || !vault.total_supply || vault.total_supply === '0'
 
   const totalAssets = (() => { try { return BigInt(vault?.total_assets ?? '0') } catch { return 0n } })()
   const totalSupply = (() => { try { return BigInt(vault?.total_supply ?? '0') } catch { return 0n } })()
   const sharesFloat = parseFloat(formatUnits(shares, 18))
   const pendingFloat = parseFloat(formatUnits(pending, 18))
   const sharesValue =
-    totalSupply > 0n && shares > 0n
+    !vaultLoading && totalSupply > 0n && shares > 0n
       ? (Number(shares) / Number(totalSupply)) * parseFloat(formatUnits(totalAssets, 18))
       : 0
 
-  // PnL approximation: for vaults that started at NAV=1.0 and for early depositors,
-  // shares-as-float ≈ initial deposit, so (sharesValue - sharesFloat) ≈ profit.
-  // Pending deposits contribute zero PnL — the money isn't invested yet.
-  const pnl = shares > 0n ? sharesValue - sharesFloat : 0
+  // Approximation: vaults start at NAV=1.0, so shares-as-float ≈ principal.
+  // Skipped while vaultLoading — otherwise we'd report PnL ≈ −principal.
+  const pnl = !vaultLoading && shares > 0n ? sharesValue - sharesFloat : 0
 
   return {
-    value: sharesValue + pendingFloat,
+    value: vaultLoading ? pendingFloat : sharesValue + pendingFloat,
     pending: pendingFloat,
     pnl,
+    vaultLoading,
   }
 }
 
@@ -60,12 +67,15 @@ export function useVaultsTotals(enabled: boolean = true): VaultsTotals {
   }, [visionVaults])
 
   return useMemo<VaultsTotals>(() => {
-    if (!enabled) return { count: 0, totalValue: 0, totalPending: 0, totalPnl: 0 }
+    if (!enabled) {
+      return { count: 0, totalValue: 0, totalPending: 0, totalPnl: 0, pricingIncomplete: false }
+    }
     const funds = (fundData as { funds: Array<{ vault?: string }> }).funds.filter((f) => !!f.vault)
     let count = 0
     let totalValue = 0
     let totalPending = 0
     let totalPnl = 0
+    let pricingIncomplete = false
     for (const fund of funds) {
       const lower = (fund.vault as string).toLowerCase()
       const sharesBig = shares.get(lower) ?? 0n
@@ -76,7 +86,8 @@ export function useVaultsTotals(enabled: boolean = true): VaultsTotals {
       totalValue += r.value
       totalPending += r.pending
       totalPnl += r.pnl
+      if (r.vaultLoading) pricingIncomplete = true
     }
-    return { count, totalValue, totalPending, totalPnl }
+    return { count, totalValue, totalPending, totalPnl, pricingIncomplete }
   }, [enabled, vaultByAddr, shares, pending])
 }

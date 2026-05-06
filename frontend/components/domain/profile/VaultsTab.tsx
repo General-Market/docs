@@ -32,6 +32,8 @@ interface VaultRow {
   pnl: number
   navPerShare: number
   color: string
+  /** True when SSE hasn't shipped this vault's NAV yet — render dashes, not zero. */
+  vaultLoading: boolean
 }
 
 function safeBigInt(v: string | undefined): bigint {
@@ -93,6 +95,12 @@ function computeRow(
 ): VaultRow | null {
   if (sharesBigInt === 0n && pendingBigInt === 0n) return null
 
+  // SSE hasn't delivered this vault's NAV/supply yet (or data-node lost the
+  // registry). Without it we cannot price the position. Render the row with
+  // share count intact, but flag value/pnl as unknown so the UI shows dashes
+  // instead of inventing $0 and -100%.
+  const vaultLoading = !vault || !vault.total_supply || vault.total_supply === '0'
+
   const totalAssets = safeBigInt(vault?.total_assets)
   const totalSupply = safeBigInt(vault?.total_supply)
   const navPerShare = vault?.nav_per_share ?? 1.0
@@ -100,7 +108,7 @@ function computeRow(
   const sharesFloat = parseFloat(formatUnits(sharesBigInt, 18))
   const pendingFloat = parseFloat(formatUnits(pendingBigInt, 18))
   const sharesValue =
-    totalSupply > 0n && sharesBigInt > 0n
+    !vaultLoading && totalSupply > 0n && sharesBigInt > 0n
       ? (Number(sharesBigInt) / Number(totalSupply)) * parseFloat(formatUnits(totalAssets, 18))
       : 0
 
@@ -112,10 +120,11 @@ function computeRow(
     strategy: fund.strategy,
     sharesBigInt,
     pendingBigInt,
-    value: sharesValue + pendingFloat,
-    pnl: sharesBigInt > 0n ? sharesValue - sharesFloat : 0,
+    value: vaultLoading ? Number.NaN : sharesValue + pendingFloat,
+    pnl: vaultLoading || sharesBigInt === 0n ? Number.NaN : sharesValue - sharesFloat,
     navPerShare,
     color: fund.color || '#1d1d1f',
+    vaultLoading,
   }
 }
 
@@ -304,8 +313,9 @@ export function VaultsTab({ address }: VaultsTabProps) {
         {filtered.map((row) => {
           const sharesFloat = parseFloat(formatUnits(row.sharesBigInt, 18))
           const pendingFloat = parseFloat(formatUnits(row.pendingBigInt, 18))
-          const pnlPct = sharesFloat > 0 ? (row.pnl / sharesFloat) * 100 : 0
-          const isUp = row.pnl >= 0
+          const hasPnl = !row.vaultLoading && Number.isFinite(row.pnl)
+          const pnlPct = hasPnl && sharesFloat > 0 ? (row.pnl / sharesFloat) * 100 : 0
+          const isUp = hasPnl ? row.pnl >= 0 : true
           const info = vaultInfoByAddr.get(row.vaultAddress.toLowerCase())
           const canOpen = !!info
           const strategyLabel =
@@ -404,21 +414,29 @@ export function VaultsTab({ address }: VaultsTabProps) {
                     lineHeight: 1.2105,
                   }}
                 >
-                  ${row.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {row.vaultLoading
+                    ? '—'
+                    : `$${row.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                 </div>
                 <div
                   className="mt-1.5 tabular-nums"
                   style={{
-                    color: pnlColor,
+                    color: hasPnl ? pnlColor : 'var(--apple-text-tertiary)',
                     fontSize: 'var(--apple-fs-12)',
                     fontWeight: 500,
                     letterSpacing: 'var(--apple-track-mid)',
                   }}
                 >
-                  {isUp ? '+' : '-'}${Math.abs(row.pnl).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{' '}
-                  <span style={{ opacity: 0.85 }}>
-                    ({isUp ? '+' : ''}{pnlPct.toFixed(2)}%)
-                  </span>
+                  {hasPnl ? (
+                    <>
+                      {isUp ? '+' : '-'}${Math.abs(row.pnl).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{' '}
+                      <span style={{ opacity: 0.85 }}>
+                        ({isUp ? '+' : ''}{pnlPct.toFixed(2)}%)
+                      </span>
+                    </>
+                  ) : (
+                    'NAV loading…'
+                  )}
                 </div>
                 {pendingFloat > 0 && (
                   <div
@@ -450,11 +468,18 @@ export function VaultsTab({ address }: VaultsTabProps) {
         }}
       >
         <span>
-          {totals.count} {totals.count === 1 ? 'vault' : 'vaults'} · ${totals.totalValue.toFixed(2)} total
+          {totals.count} {totals.count === 1 ? 'vault' : 'vaults'} ·{' '}
+          {totals.pricingIncomplete
+            ? 'value loading…'
+            : `$${totals.totalValue.toFixed(2)} total`}
         </span>
-        <span style={{ color: totals.totalPnl >= 0 ? 'rgb(52,199,89)' : 'rgb(255,59,48)' }}>
-          {totals.totalPnl >= 0 ? '+' : ''}${totals.totalPnl.toFixed(2)} all-time
-        </span>
+        {totals.pricingIncomplete ? (
+          <span>—</span>
+        ) : (
+          <span style={{ color: totals.totalPnl >= 0 ? 'rgb(52,199,89)' : 'rgb(255,59,48)' }}>
+            {totals.totalPnl >= 0 ? '+' : ''}${totals.totalPnl.toFixed(2)} all-time
+          </span>
+        )}
       </div>
 
       {selectedVault && (
