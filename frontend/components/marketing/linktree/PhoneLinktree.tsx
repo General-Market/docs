@@ -19,18 +19,19 @@ type Responsive = {
 
 function readResponsive(): Responsive {
   // The phone should sit in the page like a normal centered linktree column —
-  // fully visible, comfortably sized, with a faint scroll-driven slide.
+  // fully visible, comfortably sized, with a faint scroll-driven slide. Menu
+  // scale is calibrated so the link rows clear the bezel.
   if (typeof window === 'undefined') {
-    return { distance: 7.5, topOffset: 0, scrollTravel: 0.5, htmlScale: 0.175 }
+    return { distance: 8.5, topOffset: 0, scrollTravel: 0.5, htmlScale: 0.155 }
   }
   const aspect = window.innerWidth / Math.max(1, window.innerHeight)
   if (aspect >= 1.2) {
-    return { distance: 7.5, topOffset: 0, scrollTravel: 0.5, htmlScale: 0.175 }
+    return { distance: 8.5, topOffset: 0, scrollTravel: 0.5, htmlScale: 0.155 }
   }
   if (aspect >= 0.7) {
-    return { distance: 8.4, topOffset: 0, scrollTravel: 0.45, htmlScale: 0.175 }
+    return { distance: 9.6, topOffset: 0, scrollTravel: 0.45, htmlScale: 0.155 }
   }
-  return { distance: 8.8, topOffset: 0, scrollTravel: 0.4, htmlScale: 0.175 }
+  return { distance: 10.2, topOffset: 0, scrollTravel: 0.4, htmlScale: 0.155 }
 }
 
 type TiltRef = React.MutableRefObject<{

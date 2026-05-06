@@ -42,14 +42,14 @@ export function LinkMenu() {
       <style>{`
         .lt-menu {
           width: 360px;
-          padding: 60px 20px 40px;
+          padding: 56px 28px 32px;
           background: #ffffff;
           color: #1d1d1f;
           font-family: var(--apple-font-display, "SF Pro Display", -apple-system, system-ui, sans-serif);
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 28px;
+          gap: 22px;
           height: 780px;
           box-sizing: border-box;
         }
