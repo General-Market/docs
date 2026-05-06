@@ -3361,37 +3361,58 @@ async fn tie_rate_history(
 
 /// One row of per-source rollup. `total_deposited_wei` is text-encoded to
 /// preserve precision over JSON; the frontend formats it as USDC (1e18 wei).
+///
+/// `settled_markets` is the per-source equivalent of the topbar's global
+/// `totalSettlements`: SUM(market_count) over settled lifecycle rows. One
+/// settled batch with 1,200 markets contributes 1,200 to this number.
 #[derive(Debug, Serialize, sqlx::FromRow)]
 struct SourceStatsRow {
     source_id: String,
     last_settled_at: Option<chrono::DateTime<chrono::Utc>>,
     settled_batches: i64,
+    settled_markets: i64,
     trader_count: i64,
     total_deposited_wei: Option<String>,
 }
 
-/// Per-source lifetime stats: when did the most recent batch settle, how many
-/// distinct addresses ever traded that source, and how much USDC (wei) those
-/// traders deposited across all rounds. Joins `vision_round_players` to
-/// `vision_batch_lifecycle` so the source name is the plain text label, not
-/// the keccak hash.
+/// Per-source lifetime stats. Aggregates batch-level fields (batch counts,
+/// market_count sums, last settled timestamp) separately from player-level
+/// fields (trader count, deposits) — joining the two would multiply
+/// market_count by player count and inflate the totals.
 async fn source_stats(
     State(state): State<Arc<VisionState>>,
 ) -> impl IntoResponse {
     let rows = sqlx::query_as::<_, SourceStatsRow>(
         r#"
         SELECT
-            vbl.source_id,
-            MAX(vbl.settled_at)                                     AS last_settled_at,
-            COUNT(DISTINCT vbl.on_chain_batch_id)
-                FILTER (WHERE vbl.settled_at IS NOT NULL)::bigint  AS settled_batches,
-            COUNT(DISTINCT vrp.player)::bigint                      AS trader_count,
-            COALESCE(SUM(vrp.deposited::numeric), 0)::text          AS total_deposited_wei
-        FROM vision_batch_lifecycle vbl
-        LEFT JOIN vision_round_players vrp
-               ON vrp.batch_id = vbl.on_chain_batch_id
-        WHERE vbl.source_id IS NOT NULL AND vbl.source_id <> ''
-        GROUP BY vbl.source_id
+            b.source_id,
+            b.last_settled_at,
+            b.settled_batches,
+            b.settled_markets,
+            COALESCE(p.trader_count, 0)::bigint           AS trader_count,
+            COALESCE(p.total_deposited_wei, '0')          AS total_deposited_wei
+        FROM (
+            SELECT
+                source_id,
+                MAX(settled_at)                                              AS last_settled_at,
+                COUNT(*) FILTER (WHERE settled_at IS NOT NULL)::bigint       AS settled_batches,
+                COALESCE(SUM(market_count) FILTER (WHERE settled_at IS NOT NULL), 0)::bigint
+                                                                             AS settled_markets
+            FROM vision_batch_lifecycle
+            WHERE source_id IS NOT NULL AND source_id <> ''
+            GROUP BY source_id
+        ) b
+        LEFT JOIN (
+            SELECT
+                vbl.source_id,
+                COUNT(DISTINCT vrp.player)::bigint              AS trader_count,
+                COALESCE(SUM(vrp.deposited::numeric), 0)::text  AS total_deposited_wei
+            FROM vision_round_players vrp
+            JOIN vision_batch_lifecycle vbl
+                   ON vbl.on_chain_batch_id = vrp.batch_id
+            WHERE vbl.source_id IS NOT NULL AND vbl.source_id <> ''
+            GROUP BY vbl.source_id
+        ) p ON p.source_id = b.source_id
         "#,
     )
     .fetch_all(&state.pool)

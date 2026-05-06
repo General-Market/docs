@@ -7,7 +7,15 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 export interface SourceStatsRow {
   sourceId: string
   lastSettledAt: string | null
+  /** Number of settled rounds (batches) for this source. */
   settledBatches: number
+  /**
+   * Number of markets settled — SUM(market_count) across settled batches.
+   * Matches the topbar's global `totalSettlements` definition. Field is
+   * absent on older oracle builds; consumers should fall back to
+   * `settledBatches` while the backend rolls out.
+   */
+  settledMarkets: number
   traderCount: number
   /** Total USDC deposited across all rounds, expressed as 1e18 wei. */
   totalDepositedUsdc: number
@@ -17,6 +25,7 @@ interface RawRow {
   source_id: string
   last_settled_at: string | null
   settled_batches: number
+  settled_markets?: number
   trader_count: number
   total_deposited_wei: string | null
 }
@@ -33,6 +42,7 @@ function transform(raw: RawRow): SourceStatsRow {
     sourceId: raw.source_id,
     lastSettledAt: raw.last_settled_at,
     settledBatches: raw.settled_batches ?? 0,
+    settledMarkets: raw.settled_markets ?? 0,
     traderCount: raw.trader_count ?? 0,
     totalDepositedUsdc: Number.isFinite(wei) ? wei / WEI_PER_USDC : 0,
   }

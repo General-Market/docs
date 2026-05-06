@@ -83,16 +83,18 @@ export function SourceSearch() {
   const [active, setActive] = useState(0)
   const ref = useRef<HTMLDivElement | null>(null)
 
-  // Settlement count per display source = sum of settled_batches across all
-  // internalIds. The data-node keys lifecycle rows by internal id, so a
-  // display source like `coingecko` aggregates from `crypto`.
+  // Settlement count per display source = SUM(market_count) across the
+  // source's internalIds, matching the topbar's global definition. While
+  // the oracle still serves the old API without `settledMarkets`, fall
+  // back to `settledBatches` so the ranking stays sensible.
   const settlementsBySource = useMemo(() => {
     const m = new Map<string, number>()
     for (const s of sources) {
       const ids = s.internalIds?.length ? s.internalIds : [s.sourceId]
       let total = 0
       for (const id of ids) {
-        total += statsById.get(id.toLowerCase())?.settledBatches ?? 0
+        const row = statsById.get(id.toLowerCase())
+        total += row?.settledMarkets || row?.settledBatches || 0
       }
       m.set(s.sourceId, total)
     }
