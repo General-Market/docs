@@ -8,28 +8,20 @@ import {
 } from "remotion";
 import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
+import { DotGrid, DotGridVignette } from "./DotGrid";
 
 // Two compositions live in this file:
 //   AntiCheatStat — the 0.01% / 70% concentration numbers (4s)
 //   AntiCheatBars — the % extracted by unfair trading bar chart (3.5s)
-//
-// They were originally a single 7.5s scene; the user split them so the
-// bars sit right after the Hook, while the numbers reinforce the verdict
-// after the Rigged article-flash scene.
 const STAT_SECONDS = 4;
 const BARS_SECONDS = 3.5;
 
 export const AntiCheatStat: React.FC = () => {
   return (
     <AbsoluteFill style={{ backgroundColor: colors.bg, fontFamily: font }}>
+      <DotGrid />
       <StatPanel />
-      <AbsoluteFill
-        style={{
-          pointerEvents: "none",
-          background:
-            "radial-gradient(circle at 50% 50%, transparent 55%, rgba(0,0,0,0.55) 100%)",
-        }}
-      />
+      <DotGridVignette intensity={0.22} />
     </AbsoluteFill>
   );
 };
@@ -37,14 +29,9 @@ export const AntiCheatStat: React.FC = () => {
 export const AntiCheatBars: React.FC = () => {
   return (
     <AbsoluteFill style={{ backgroundColor: colors.bg, fontFamily: font }}>
+      <DotGrid />
       <ExtractionBars />
-      <AbsoluteFill
-        style={{
-          pointerEvents: "none",
-          background:
-            "radial-gradient(circle at 50% 50%, transparent 55%, rgba(0,0,0,0.55) 100%)",
-        }}
-      />
+      <DotGridVignette intensity={0.22} />
     </AbsoluteFill>
   );
 };
@@ -67,13 +54,11 @@ const StatPanel: React.FC = () => {
   });
   const opacity = interpolate(enter, [0, 1], [0, 1]) * (1 - exit);
 
-  // Counters — count up over the first 1.6s.
   const countT = Math.min(1, Math.max(0, frame / toFrames(1.6)));
   const eased = 1 - Math.pow(1 - countT, 3);
   const left = (0.01 * eased).toFixed(2);
   const right = Math.round(70 * eased);
 
-  // Arrow draws from frame 0.6s to 1.6s.
   const arrowT = interpolate(
     frame,
     [toFrames(0.6), toFrames(1.6)],
@@ -83,7 +68,6 @@ const StatPanel: React.FC = () => {
 
   return (
     <AbsoluteFill style={{ opacity }}>
-      {/* Big numbers row */}
       <div
         style={{
           position: "absolute",
@@ -106,7 +90,6 @@ const StatPanel: React.FC = () => {
         />
       </div>
 
-      {/* Sub-line */}
       <div
         style={{
           position: "absolute",
@@ -116,13 +99,13 @@ const StatPanel: React.FC = () => {
           textAlign: "center",
           fontFamily: font,
           fontSize: 60,
-          fontWeight: 500,
+          fontWeight: 600,
           letterSpacing: "-0.01em",
           color: colors.fg,
           opacity: interpolate(
             frame,
             [toFrames(2.0), toFrames(2.6)],
-            [0, 0.92],
+            [0, 1],
             { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
           ),
         }}
@@ -145,10 +128,9 @@ const BigNumber: React.FC<{
           fontFamily: font,
           fontSize: 240,
           fontWeight: 800,
-          letterSpacing: "-0.04em",
+          letterSpacing: "-0.045em",
           color: tint,
           lineHeight: 0.95,
-          textShadow: "0 4px 28px rgba(0,0,0,0.65)",
           fontVariantNumeric: "tabular-nums",
         }}
       >
@@ -162,7 +144,6 @@ const BigNumber: React.FC<{
           fontWeight: 600,
           letterSpacing: "-0.01em",
           color: colors.fg,
-          textShadow: "0 2px 18px rgba(0,0,0,0.65)",
         }}
       >
         {subtitle}
@@ -172,7 +153,6 @@ const BigNumber: React.FC<{
 };
 
 const ArrowFlow: React.FC<{ t: number }> = ({ t }) => {
-  // The arrow draws from left to right.
   const length = 220;
   const drawn = Math.max(0, Math.min(length, length * t));
   const headOpacity = t > 0.92 ? 1 : 0;
@@ -217,25 +197,11 @@ const ArrowFlow: React.FC<{ t: number }> = ({ t }) => {
   );
 };
 
-// ─── Extraction bars: % of each market extracted by unfair trading ────────────
-//
-// Percentages sourced from local research:
-//   perps        — 80%  bot/algo share of volume (Hyperliquid 90%+, Coinbase
-//                       79–82% institutional; bot-activity-verified.md)
-//   options      — 90%  retail options traders lose money — TastyTrade dataset,
-//                       widely cited; reinforced by 80%+ Robinhood orders
-//                       routed to Citadel/Virtu/G1 (bot-activity-verified.md)
-//   predictions  — 71%  Polymarket: 668 wallets captured 71% of all profits
-//                       (Reichenbach-Walther 2025 / 70_PERCENT_STUDY §16)
-//   launchpads   — 87%  Pump.fun: 87% of sniper-bot trades profitable —
-//                       humans are exit liquidity (BeInCrypto / Dune)
-//
-// Bars scale to the largest figure. Each bar grows left-to-right, the
-// percentage zoom-echoes in as the bar lands.
+// ─── Extraction bars ──────────────────────────────────────────────────────────
 
 type Bar = {
   label: string;
-  value: number; // percentage
+  value: number;
   displayValue: string;
 };
 
@@ -255,7 +221,6 @@ const REVEAL_AT =
 const ExtractionBars: React.FC = () => {
   const frame = useCurrentFrame();
 
-  // Eyebrow fades in immediately.
   const eyebrowOpacity = interpolate(
     frame,
     [0, toFrames(0.3)],
@@ -263,7 +228,6 @@ const ExtractionBars: React.FC = () => {
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
 
-  // Final reveal — knife at the end.
   const revealLocal = frame - REVEAL_AT;
   const revealOpacity = interpolate(
     revealLocal,
@@ -280,7 +244,6 @@ const ExtractionBars: React.FC = () => {
 
   return (
     <AbsoluteFill>
-      {/* Eyebrow */}
       <div
         style={{
           position: "absolute",
@@ -300,7 +263,6 @@ const ExtractionBars: React.FC = () => {
         % extracted by unfair trading
       </div>
 
-      {/* Bars */}
       <div
         style={{
           position: "absolute",
@@ -325,7 +287,6 @@ const ExtractionBars: React.FC = () => {
         ))}
       </div>
 
-      {/* Knife — title-font hero treatment */}
       <div
         style={{
           position: "absolute",
@@ -339,12 +300,11 @@ const ExtractionBars: React.FC = () => {
           letterSpacing: "-0.035em",
           color: colors.fg,
           lineHeight: 0.95,
-          textShadow: "0 4px 28px rgba(0,0,0,0.65)",
           opacity: revealOpacity,
           transform: `translateY(${revealY}px)`,
         }}
       >
-        <span style={{ color: colors.dim, marginRight: 24 }}>→</span>
+        <span style={{ color: colors.accent, marginRight: 24 }}>→</span>
         every market you touched.
       </div>
     </AbsoluteFill>
@@ -362,7 +322,6 @@ const BarRow: React.FC<{
   const frame = useCurrentFrame();
   const local = frame - delayFrames;
 
-  // Label fades in at row start.
   const labelOpacity = interpolate(
     local,
     [0, toFrames(0.25)],
@@ -376,7 +335,6 @@ const BarRow: React.FC<{
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
 
-  // Bar grows from 0 → final width.
   const growT = Math.max(0, Math.min(1, (local - toFrames(0.15)) / BAR_GROW));
   const easedGrow = 1 - Math.pow(1 - growT, 3);
   const widthPct = (bar.value / maxValue) * 100 * easedGrow;
@@ -390,7 +348,6 @@ const BarRow: React.FC<{
         height: 84,
       }}
     >
-      {/* Label */}
       <div
         style={{
           width: LABEL_COL,
@@ -399,7 +356,7 @@ const BarRow: React.FC<{
           fontSize: 56,
           fontWeight: 500,
           letterSpacing: "0.02em",
-          color: colors.dim,
+          color: colors.fgSoft,
           textAlign: "right",
           opacity: labelOpacity,
           transform: `translateX(${labelX}px)`,
@@ -408,13 +365,12 @@ const BarRow: React.FC<{
         {bar.label}
       </div>
 
-      {/* Bar */}
       <div
         style={{
           flex: 1,
           height: 36,
           position: "relative",
-          background: "rgba(255,59,59,0.06)",
+          background: colors.accentTint,
           borderRadius: 2,
           overflow: "hidden",
         }}
@@ -426,11 +382,10 @@ const BarRow: React.FC<{
             bottom: 0,
             left: 0,
             width: `${widthPct}%`,
-            background: `linear-gradient(90deg, ${colors.accent} 0%, #ff6b4a 100%)`,
-            boxShadow: "0 0 24px rgba(255,59,59,0.35)",
+            background: colors.accent,
           }}
         />
-        {/* Tail tick mark */}
+        {/* Tail tick mark — stronger black instead of glowing white */}
         <div
           style={{
             position: "absolute",
@@ -439,12 +394,11 @@ const BarRow: React.FC<{
             left: `calc(${widthPct}% - 1px)`,
             width: 2,
             background: colors.fg,
-            opacity: easedGrow * 0.7,
+            opacity: easedGrow * 0.85,
           }}
         />
       </div>
 
-      {/* Percentage with zoom-echo */}
       <div
         style={{
           width: VALUE_COL,
@@ -468,7 +422,7 @@ const BarRow: React.FC<{
   );
 };
 
-// ─── Zoom-echo text: dollar figure emerges with trailing depth-clones ─────────
+// ─── Zoom-echo text: number emerges with trailing depth-clones ────────────────
 
 const ECHO_COUNT = 5;
 const ECHO_GAP_FRAMES = 1.6;
