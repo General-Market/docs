@@ -1,6 +1,6 @@
 [manager]
 private_key_env = "FUND_MANAGER_KEY"
-rpc_url = "http://159.195.79.153/"
+rpc_url = "http://159.195.79.153:8547/"
 factory = "0xe54db21b61fd50d5f1191c3bcb70ad184f4d58d0"
 vision_address = "0x94d540bb45975bd5a0c7ba9a15a0d34e378f6c61"
 usdc_address = "0xaddb799bc1499b224dc4368e92b9042a54908553"
