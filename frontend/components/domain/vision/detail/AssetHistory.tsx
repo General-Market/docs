@@ -103,34 +103,13 @@ export default function AssetHistory({
     return ((last - first) / first) * 100
   }, [points])
 
-  if (loading) {
-    return (
-      <div className="h-[120px] flex items-center justify-center bg-surface/50">
-        <div className="text-label text-text-muted">{t('markets_table.loading_history')}</div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="h-[60px] flex items-center justify-center bg-surface/50">
-        <div className="text-label text-text-muted">{t('markets_table.no_history')}</div>
-      </div>
-    )
-  }
-
-  if (points.length < 2) {
-    return (
-      <div className="h-[60px] flex items-center justify-center bg-surface/50">
-        <div className="text-label text-text-muted">{t('markets_table.not_enough_data', { count: points.length, plural: points.length !== 1 ? 's' : '' })}</div>
-      </div>
-    )
-  }
-
-  // Downsample for performance
-  const displayPoints = points.length > 200
-    ? points.filter((_, i) => i % Math.ceil(points.length / 200) === 0 || i === points.length - 1)
-    : points
+  // Downsample for performance — must be computed before any conditional return
+  // so that the dependent useMemo below stays in stable hook position.
+  const displayPoints = useMemo(() => {
+    if (points.length <= 200) return points
+    const stride = Math.ceil(points.length / 200)
+    return points.filter((_, i) => i % stride === 0 || i === points.length - 1)
+  }, [points])
 
   // Snap each settlement to the nearest displayed point's fetchedAt — Recharts
   // uses category-axis matching on the dataKey string, so the marker x must
@@ -159,6 +138,30 @@ export default function AssetHistory({
         }
       })
   }, [settlements, displayPoints])
+
+  if (loading) {
+    return (
+      <div className="h-[120px] flex items-center justify-center bg-surface/50">
+        <div className="text-label text-text-muted">{t('markets_table.loading_history')}</div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="h-[60px] flex items-center justify-center bg-surface/50">
+        <div className="text-label text-text-muted">{t('markets_table.no_history')}</div>
+      </div>
+    )
+  }
+
+  if (points.length < 2) {
+    return (
+      <div className="h-[60px] flex items-center justify-center bg-surface/50">
+        <div className="text-label text-text-muted">{t('markets_table.not_enough_data', { count: points.length, plural: points.length !== 1 ? 's' : '' })}</div>
+      </div>
+    )
+  }
 
   return (
     <div className="bg-surface/50 px-4 py-3">
