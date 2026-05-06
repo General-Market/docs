@@ -154,7 +154,11 @@ const CheaterBrollSequence: React.FC = () => {
     <AbsoluteFill>
       <TransitionSeries>
         <TransitionSeries.Sequence durationInFrames={toFrames(3.0)}>
-          <BrollClip src={BROLL.minecraft} maskDisclaimer />
+          <BrollClip
+            src={BROLL.minecraft}
+            maskDisclaimer
+            startFrom={toFrames(1.5)}
+          />
         </TransitionSeries.Sequence>
 
         <TransitionSeries.Transition
@@ -179,10 +183,11 @@ const CheaterBrollSequence: React.FC = () => {
   );
 };
 
-const BrollClip: React.FC<{ src: string; maskDisclaimer?: boolean }> = ({
-  src,
-  maskDisclaimer,
-}) => {
+const BrollClip: React.FC<{
+  src: string;
+  maskDisclaimer?: boolean;
+  startFrom?: number;
+}> = ({ src, maskDisclaimer, startFrom }) => {
   const videoStyle: React.CSSProperties = {
     width: "100%",
     height: "100%",
@@ -192,7 +197,13 @@ const BrollClip: React.FC<{ src: string; maskDisclaimer?: boolean }> = ({
 
   return (
     <AbsoluteFill>
-      <OffthreadVideo src={src} muted playbackRate={1.0} style={videoStyle} />
+      <OffthreadVideo
+        src={src}
+        muted
+        playbackRate={1.0}
+        startFrom={startFrom}
+        style={videoStyle}
+      />
       {maskDisclaimer ? <DisclaimerMask /> : null}
     </AbsoluteFill>
   );
