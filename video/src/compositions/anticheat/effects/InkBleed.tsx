@@ -26,7 +26,7 @@ export const InkBleed: React.FC<Props> = ({
   // Radius grows from 0 to ~1.6× the diagonal so the stain fully covers,
   // then linger-fades. Seed shifts each frame for living edge.
   const r = interpolate(t, [0, 0.85, 1], [0, 1500, 1500], {
-    easing: Easing.out(Easing.expo),
+    easing: Easing.out(Easing.exp),
   });
   const alpha = interpolate(t, [0, 0.25, 0.85, 1], [0, 1, 1, 0]);
   const seed = Math.floor(startFrame / 17) + Math.floor(local * 0.5);

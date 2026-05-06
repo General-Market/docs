@@ -22,7 +22,7 @@ export const PageTear: React.FC<Props> = ({
   const t = local / durationFrames;
 
   const split = interpolate(t, [0, 0.4, 1], [0, 80, 600], {
-    easing: Easing.out(Easing.expo),
+    easing: Easing.out(Easing.exp),
   });
   const flash = interpolate(t, [0, 0.25, 0.55, 1], [0, 1, 0.4, 0]);
   const seed = Math.floor(startFrame / 11);

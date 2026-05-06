@@ -19,7 +19,7 @@ export const AnamorphicStreak: React.FC<Props> = ({
   const t = local / durationFrames;
 
   const widthPct = interpolate(t, [0, 0.45, 1], [0, 130, 130], {
-    easing: Easing.out(Easing.expo),
+    easing: Easing.out(Easing.exp),
   });
   const heightPx = interpolate(t, [0, 0.4, 0.7, 1], [2, 38, 22, 2], {
     easing: Easing.inOut(Easing.cubic),
