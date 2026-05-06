@@ -12,29 +12,30 @@ import { antiCheatSolutionMeta } from "./AntiCheatSolution";
 import { antiCheatReassureMeta } from "./AntiCheatReassure";
 import { antiCheatEndCardMeta } from "./AntiCheatEndCard";
 import {
-  zoomPushHeavy,
-  zoomPushSoft,
-  zoomPullLong,
-  zoomPullSlow,
-  zoomWhip,
+  snapZoomIn,
+  snapZoomIntense,
+  snapZoomOut,
+  snapZoomSoft,
+  pullLong,
 } from "./transitions";
 
-// Every transition shares one camera path: scene zooms 1 → peak → 1
-// across the window, both scenes ride the same curve so geometry is
-// continuous, opacity crossfades in a tight band at the centre where
-// blur peaks. Calm magnitudes; the motion should feel like a breath.
+// Snap-zoom-through-blur. Both halves of the camera path move in the
+// same direction so velocity stays high through the cut — no "stuck
+// lag" at the centre. fg makes the dramatic motion, bg moves at its
+// own (much smaller) magnitude. Variation per cut is in direction,
+// magnitude, and how the bg behaves relative to the fg.
 //
-//   Hook → Bars         heavy push (peak 1.22)        34f
-//   Bars → Rigged       HARD CUT — the bars are the verdict
-//   Rigged → Stat       gentle whip (peak 1.30)       32f
-//   Stat → Solution     slow pull + veil (peak 0.88)  44f   ← music dies
-//   Solution → Reassure soft push (peak 1.10)         30f
-//   Reassure → EndCard  long pull (peak 0.93)         36f
-const T_HOOK_BARS = 34;
-const T_RIGGED_STAT = 32;
-const T_STAT_SOLUTION = 44;
-const T_SOLUTION_REASSURE = 30;
-const T_REASSURE_END = 36;
+//   Hook → Bars         snap-zoom in        20f   fg 1→1.45  bg 1→1.06
+//   Bars → Rigged       HARD CUT
+//   Rigged → Stat       snap-zoom intense   18f   fg 1→1.65  bg pulls back
+//   Stat → Solution     snap-zoom out + veil 38f  fg 1→0.72  ← music dies
+//   Solution → Reassure soft snap           22f   fg 1→1.22  bg ~still
+//   Reassure → EndCard  long pull           28f   fg 1→0.82  bg ~still
+const T_HOOK_BARS = 20;
+const T_RIGGED_STAT = 18;
+const T_STAT_SOLUTION = 38;
+const T_SOLUTION_REASSURE = 22;
+const T_REASSURE_END = 28;
 
 const TRANSITION_FRAMES =
   T_HOOK_BARS +
@@ -94,7 +95,7 @@ export const AntiCheatFull: React.FC = () => {
         </TransitionSeries.Sequence>
 
         <TransitionSeries.Transition
-          presentation={zoomPushHeavy()}
+          presentation={snapZoomIn()}
           timing={linearTiming({ durationInFrames: T_HOOK_BARS })}
         />
 
@@ -113,7 +114,7 @@ export const AntiCheatFull: React.FC = () => {
         </TransitionSeries.Sequence>
 
         <TransitionSeries.Transition
-          presentation={zoomWhip()}
+          presentation={snapZoomIntense()}
           timing={linearTiming({ durationInFrames: T_RIGGED_STAT })}
         />
 
@@ -124,7 +125,7 @@ export const AntiCheatFull: React.FC = () => {
         </TransitionSeries.Sequence>
 
         <TransitionSeries.Transition
-          presentation={zoomPullSlow(colors.bg)}
+          presentation={snapZoomOut(colors.bg)}
           timing={linearTiming({ durationInFrames: T_STAT_SOLUTION })}
         />
 
@@ -135,7 +136,7 @@ export const AntiCheatFull: React.FC = () => {
         </TransitionSeries.Sequence>
 
         <TransitionSeries.Transition
-          presentation={zoomPushSoft()}
+          presentation={snapZoomSoft()}
           timing={linearTiming({ durationInFrames: T_SOLUTION_REASSURE })}
         />
 
@@ -146,7 +147,7 @@ export const AntiCheatFull: React.FC = () => {
         </TransitionSeries.Sequence>
 
         <TransitionSeries.Transition
-          presentation={zoomPullLong()}
+          presentation={pullLong()}
           timing={linearTiming({ durationInFrames: T_REASSURE_END })}
         />
 

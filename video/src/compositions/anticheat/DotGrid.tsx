@@ -1,6 +1,7 @@
 import React from "react";
 import { interpolate, useCurrentFrame } from "remotion";
 import { FPS, H, W, colors } from "./theme";
+import { bgLayerTransform } from "./transitions";
 
 // Two layers, no more, no less.
 //
@@ -107,6 +108,9 @@ export const DotGrid: React.FC<Props> = ({ intensity = 1, speed = 1 }) => {
         position: "absolute",
         inset: 0,
         pointerEvents: "none",
+        transform: bgLayerTransform,
+        transformOrigin: "50% 50%",
+        willChange: "transform",
       }}
     >
       {/* Layer 1 — uniform fine grid */}
@@ -202,6 +206,9 @@ export const DotGridVignette: React.FC<{ intensity?: number }> = ({
       inset: 0,
       pointerEvents: "none",
       background: `radial-gradient(ellipse at center, rgba(240,242,244,0) 40%, rgba(240,242,244,${intensity}) 100%)`,
+      transform: bgLayerTransform,
+      transformOrigin: "50% 50%",
+      willChange: "transform",
     }}
   />
 );
