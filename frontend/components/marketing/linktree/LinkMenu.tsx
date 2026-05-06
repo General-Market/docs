@@ -74,15 +74,14 @@ export function LinkMenu() {
         }
         .lt-status-right svg { color: #1d1d1f; }
         .lt-avatar {
-          width: 88px; height: 88px;
-          border-radius: 999px;
-          background: #000;
+          width: 96px; height: 96px;
+          border-radius: 22px;
           display: grid; place-items: center;
           margin-top: 8px;
-          box-shadow:
-            0 1px 0 rgba(255,255,255,0.6) inset,
-            0 12px 32px rgba(0,0,0,0.12);
+          overflow: hidden;
+          box-shadow: 0 12px 32px rgba(0,0,0,0.12);
         }
+        .lt-avatar img { width: 100%; height: 100%; display: block; }
         .lt-handle {
           font-size: 20px;
           font-weight: 600;
@@ -148,11 +147,11 @@ export function LinkMenu() {
       </div>
 
       <div className="lt-avatar" aria-label="General Market">
-        <Image src="/logo.svg" alt="" width={56} height={56} priority />
+        <Image src="/logo.svg" alt="" width={96} height={96} priority />
       </div>
 
       <h1 className="lt-handle">@generalmarket</h1>
-      <p className="lt-tag">The first anti-cheat in trading.</p>
+      <p className="lt-tag">Trading is easy with an Anti-Cheat.</p>
 
       <div className="lt-list">
         {LINKTREE_ENTRIES.map((entry) => {

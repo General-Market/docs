@@ -5,6 +5,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { ContactShadows, Html, useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
 import { LinkMenu } from './LinkMenu'
+import { GeneralLoader } from '@/components/ui/GeneralLoader'
 
 const MODEL_URL = '/models/tabletop_macbook_iphone.opt.glb'
 useGLTF.preload(MODEL_URL)
@@ -48,7 +49,15 @@ function CameraRig({ distance }: { distance: number }) {
   return null
 }
 
-function PhoneScene({ tilt, responsive }: { tilt: TiltRef; responsive: Responsive }) {
+function PhoneScene({
+  tilt,
+  responsive,
+  onReady,
+}: {
+  tilt: TiltRef
+  responsive: Responsive
+  onReady: () => void
+}) {
   const gltf = useGLTF(MODEL_URL)
   const groupRef = useRef<THREE.Group>(null)
 
@@ -63,7 +72,8 @@ function PhoneScene({ tilt, responsive }: { tilt: TiltRef; responsive: Responsiv
     iphone.position.set(0, 0, 0)
     iphone.quaternion.identity()
     iphone.scale.setScalar(22.486)
-  }, [gltf])
+    onReady()
+  }, [gltf, onReady])
 
   useFrame(() => {
     const g = groupRef.current
@@ -102,6 +112,7 @@ function PhoneScene({ tilt, responsive }: { tilt: TiltRef; responsive: Responsiv
 export function PhoneLinktree() {
   const tilt = useRef({ scrollProgress: 0, yaw: 0, pitch: 0 })
   const [responsive, setResponsive] = useState<Responsive>(() => readResponsive())
+  const [ready, setReady] = useState(false)
 
   useEffect(() => {
     const update = () => setResponsive(readResponsive())
@@ -143,6 +154,13 @@ export function PhoneLinktree() {
 
   return (
     <main className="lt-page" style={{ minHeight: pageHeight }}>
+      <div
+        className="lt-loader"
+        aria-hidden={ready}
+        style={{ opacity: ready ? 0 : 1, pointerEvents: ready ? 'none' : 'auto' }}
+      >
+        <GeneralLoader height="100vh" />
+      </div>
       <style>{`
         .lt-page {
           background:
@@ -171,6 +189,13 @@ export function PhoneLinktree() {
         .lt-stage canvas { touch-action: pan-y; }
         .lt-html-wrapper { pointer-events: none; }
         .lt-html-wrapper > div { pointer-events: auto; }
+        .lt-loader {
+          position: fixed; inset: 0;
+          background: radial-gradient(70% 60% at 50% 38%, #ffffff 0%, #f4f4f6 65%, #ececef 100%);
+          z-index: 50;
+          display: grid; place-items: center;
+          transition: opacity 380ms cubic-bezier(0.4, 0, 0.6, 1);
+        }
       `}</style>
 
       <div className="lt-stage">
@@ -187,7 +212,7 @@ export function PhoneLinktree() {
         >
           <CameraRig distance={responsive.distance} />
           <Suspense fallback={null}>
-            <PhoneScene tilt={tilt} responsive={responsive} />
+            <PhoneScene tilt={tilt} responsive={responsive} onReady={() => setReady(true)} />
             <hemisphereLight args={['#ffffff', '#dde3ec', 0.9]} />
             <ambientLight intensity={0.55} />
             <directionalLight position={[3, 6, -4]} intensity={2.2} />
