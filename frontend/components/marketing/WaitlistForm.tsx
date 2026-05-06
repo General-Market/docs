@@ -1,7 +1,16 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import {
+  AnimatePresence,
+  motion,
+  useMotionValue,
+  useReducedMotion,
+  useSpring,
+  useTransform,
+} from 'framer-motion'
+import { springs } from '@/components/ui/spring'
+import { ShineOverlay } from '@/components/domain/home/ShineOverlay'
 
 type Choice = { value: string; label: string }
 
@@ -20,7 +29,6 @@ type TextStep = {
   description?: string
   placeholder?: string
   required?: boolean
-  multiline?: boolean
 }
 type ChoiceStep = {
   type: 'choice'
@@ -149,28 +157,143 @@ function isValid(
   return { ok: true }
 }
 
+// ── Aurora — drifting Vision-Pro backdrop ─────────────────
+function Aurora() {
+  return (
+    <>
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 -z-20"
+        style={{
+          background:
+            'radial-gradient(1100px 720px at 12% 18%, rgba(99,102,241,0.32), transparent 65%),' +
+            'radial-gradient(960px 640px at 88% 82%, rgba(236,72,153,0.22), transparent 65%),' +
+            'radial-gradient(820px 580px at 50% 108%, rgba(34,211,238,0.22), transparent 70%),' +
+            'linear-gradient(180deg, #F5F5F7 0%, #ECECF1 100%)',
+        }}
+      />
+      <motion.div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 -z-10"
+        animate={{
+          backgroundPosition: ['0% 0%', '60% 40%', '0% 100%', '0% 0%'],
+        }}
+        transition={{ duration: 36, repeat: Infinity, ease: 'easeInOut' }}
+        style={{
+          background:
+            'radial-gradient(900px 700px at 70% 30%, rgba(167,139,250,0.22), transparent 65%),' +
+            'radial-gradient(700px 520px at 20% 70%, rgba(56,189,248,0.18), transparent 65%)',
+          backgroundSize: '160% 160%',
+          filter: 'blur(50px)',
+        }}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 -z-10 opacity-[0.35]"
+        style={{
+          backgroundImage:
+            'radial-gradient(rgba(0,0,0,0.5) 1px, transparent 1px)',
+          backgroundSize: '3px 3px',
+          mixBlendMode: 'overlay',
+        }}
+      />
+    </>
+  )
+}
+
+// ── Tilt — subtle parallax, matches the homepage shine pattern ──
+function Tilt({
+  children,
+  max = 4,
+  className,
+}: {
+  children: ReactNode
+  max?: number
+  className?: string
+}) {
+  const reduced = useReducedMotion()
+  const ref = useRef<HTMLDivElement | null>(null)
+  const mx = useMotionValue(0.5)
+  const my = useMotionValue(0.5)
+  const sx = useSpring(mx, { stiffness: 140, damping: 22, mass: 0.9 })
+  const sy = useSpring(my, { stiffness: 140, damping: 22, mass: 0.9 })
+  const ry = useTransform(sx, [0, 1], [-max, max])
+  const rx = useTransform(sy, [0, 1], [max * 0.7, -max * 0.7])
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el || reduced) return
+    if (typeof window !== 'undefined' && window.matchMedia('(hover: none)').matches) return
+    const onMove = (e: MouseEvent) => {
+      const r = el.getBoundingClientRect()
+      mx.set((e.clientX - r.left) / r.width)
+      my.set((e.clientY - r.top) / r.height)
+    }
+    const onLeave = () => {
+      mx.set(0.5)
+      my.set(0.5)
+    }
+    el.addEventListener('mousemove', onMove)
+    el.addEventListener('mouseleave', onLeave)
+    return () => {
+      el.removeEventListener('mousemove', onMove)
+      el.removeEventListener('mouseleave', onLeave)
+    }
+  }, [mx, my, reduced])
+
+  if (reduced) return <div className={className}>{children}</div>
+
+  return (
+    <motion.div
+      ref={ref}
+      className={className}
+      style={{
+        perspective: 1400,
+        transformStyle: 'preserve-3d',
+        rotateX: rx,
+        rotateY: ry,
+      }}
+    >
+      {children}
+    </motion.div>
+  )
+}
+
+// ── Step transitions — spring slide ───────────────────────
+const stepVariants = {
+  enter: (dir: 1 | -1) => ({ opacity: 0, x: dir * 28, filter: 'blur(6px)' }),
+  center: { opacity: 1, x: 0, filter: 'blur(0px)' },
+  exit: (dir: 1 | -1) => ({ opacity: 0, x: -dir * 28, filter: 'blur(6px)' }),
+}
+
 const NumberBadge = ({ n }: { n: number }) => (
-  <span
+  <motion.span
+    key={n}
+    initial={{ scale: 0.6, opacity: 0 }}
+    animate={{ scale: 1, opacity: 1 }}
+    transition={springs.indicator}
     aria-hidden
-    className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[7px] bg-[#1D4ED8] text-[14px] font-semibold tabular-nums text-white"
+    className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[7px] bg-[#1D4ED8] text-[14px] font-semibold tabular-nums text-white shadow-[0_6px_18px_rgba(29,78,216,0.45)]"
     style={{ marginTop: 6 }}
   >
     {n}
-  </span>
+  </motion.span>
 )
 
 const LetterChip = ({ ch, selected }: { ch: string; selected?: boolean }) => (
-  <span
+  <motion.span
     aria-hidden
+    animate={selected ? { scale: 1.05 } : { scale: 1 }}
+    transition={springs.hover}
     className={[
       'inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[7px] border text-[13px] font-semibold uppercase',
       selected
-        ? 'border-[#1D4ED8] bg-[#1D4ED8] text-white'
-        : 'border-[#C7D2FE] bg-white text-[#1D4ED8]',
+        ? 'border-[#1D4ED8] bg-[#1D4ED8] text-white shadow-[0_4px_12px_rgba(29,78,216,0.4)]'
+        : 'border-[#C7D2FE] bg-white/80 text-[#1D4ED8] backdrop-blur',
     ].join(' ')}
   >
     {ch}
-  </span>
+  </motion.span>
 )
 
 export default function WaitlistForm() {
@@ -180,7 +303,7 @@ export default function WaitlistForm() {
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [direction, setDirection] = useState<1 | -1>(1)
-  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null)
+  const inputRef = useRef<HTMLInputElement | null>(null)
 
   const step = STEPS[idx]
   const total = STEPS.length - 1 // exclude welcome
@@ -188,7 +311,6 @@ export default function WaitlistForm() {
     let n = 0
     for (let i = 1; i < idx; i++) {
       const s = STEPS[i]
-      if (s.type === 'welcome') continue
       if (shouldSkip(s, answers)) continue
       n++
     }
@@ -197,7 +319,7 @@ export default function WaitlistForm() {
 
   useEffect(() => {
     if (step.type === 'text' || step.type === 'email') {
-      const t = setTimeout(() => inputRef.current?.focus(), 250)
+      const t = setTimeout(() => inputRef.current?.focus(), 320)
       return () => clearTimeout(t)
     }
   }, [step])
@@ -242,7 +364,6 @@ export default function WaitlistForm() {
     setError(null)
     const next = findNext(idx, 1, ans)
     if (next === idx) {
-      // last reachable step → submit
       await submit(ans)
       return
     }
@@ -273,7 +394,7 @@ export default function WaitlistForm() {
     const newAnswers = { ...answers, [step.id]: v }
     setAnswers(newAnswers)
     setError(null)
-    setTimeout(() => void advance(newAnswers), 220)
+    setTimeout(() => void advance(newAnswers), 240)
   }
 
   const onToggleMulti = (v: string) => {
@@ -285,104 +406,156 @@ export default function WaitlistForm() {
     setAnswer(step.id, arr)
   }
 
+  const progress = step.type === 'welcome' ? 0 : visibleQuestionIndex / total
+
   if (submitted) {
     return (
-      <div className="flex min-h-[100dvh] flex-col bg-white text-[#1D1D1F]">
-        <main className="mx-auto flex w-full max-w-apple flex-1 items-center px-6 py-24 sm:px-10">
-          <div className="mx-auto text-center">
-            <h1 className="text-[clamp(28px,4.2vw,44px)] font-semibold leading-[1.15] tracking-[-0.022em]">
-              Thanks! You’re now on the waitlist 🔥
-            </h1>
-            <p className="mx-auto mt-6 max-w-[680px] text-[clamp(20px,2.6vw,28px)] leading-[1.35] tracking-[-0.01em] text-[#1D1D1F]">
-              We’ll notify you the second we go live.
-            </p>
-          </div>
+      <div className="relative flex min-h-[100dvh] flex-col items-center justify-center text-[#1D1D1F]">
+        <Aurora />
+        <main className="flex w-full max-w-2xl items-center px-6 py-24 sm:px-10">
+          <Tilt max={3} className="w-full">
+            <motion.div
+              initial={{ opacity: 0, y: 24, filter: 'blur(8px)', scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, filter: 'blur(0px)', scale: 1 }}
+              transition={springs.entrance}
+              className="glass-panel relative overflow-hidden rounded-[28px] p-10 text-center sm:p-14"
+            >
+              <ShineOverlay intensity={0.1} size={520} color="255, 255, 255" />
+              <motion.h1
+                initial={{ opacity: 0, y: 14, filter: 'blur(4px)' }}
+                animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                transition={{ ...springs.entrance, delay: 0.1 }}
+                className="text-[clamp(28px,4.2vw,44px)] font-semibold leading-[1.15] tracking-[-0.022em]"
+              >
+                Thanks! You’re now on the waitlist 🔥
+              </motion.h1>
+              <motion.p
+                initial={{ opacity: 0, y: 14, filter: 'blur(4px)' }}
+                animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                transition={{ ...springs.entrance, delay: 0.2 }}
+                className="mx-auto mt-6 max-w-[680px] text-[clamp(20px,2.6vw,28px)] leading-[1.35] tracking-[-0.01em] text-[#1D1D1F]"
+              >
+                We’ll notify you the second we go live.
+              </motion.p>
+            </motion.div>
+          </Tilt>
         </main>
       </div>
     )
   }
 
-  const progress = step.type === 'welcome' ? 0 : visibleQuestionIndex / total
-
   return (
-    <div className="relative flex min-h-[100dvh] flex-col bg-white text-[#1D1D1F]">
-      <div className="fixed left-0 right-0 top-0 z-30 h-[3px] bg-transparent" aria-hidden>
-        <div
-          className="h-full bg-[#1D4ED8] transition-[width] duration-500 ease-out"
-          style={{ width: `${Math.round(progress * 100)}%` }}
+    <div className="relative flex min-h-[100dvh] flex-col items-center text-[#1D1D1F]">
+      <Aurora />
+
+      <div className="fixed left-0 right-0 top-0 z-30 h-[3px]" aria-hidden>
+        <motion.div
+          className="h-full origin-left bg-gradient-to-r from-[#1D4ED8] via-[#6366F1] to-[#A855F7]"
+          animate={{ scaleX: progress }}
+          initial={false}
+          transition={springs.expand}
+          style={{ transformOrigin: 'left' }}
         />
       </div>
 
-      <main className="mx-auto flex w-full max-w-apple flex-1 items-center px-6 py-24 sm:px-10">
-        <AnimatePresence initial={false} mode="wait" custom={direction}>
-          <motion.div
-            key={step.id}
-            custom={direction}
-            initial={{ opacity: 0, y: direction === 1 ? 24 : -24 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: direction === 1 ? -24 : 24 }}
-            transition={{ duration: 0.32, ease: [0.25, 1, 0.3, 1] }}
-            className="w-full"
-          >
-            {step.type === 'welcome' && <Welcome step={step} onStart={() => void advance()} />}
-            {(step.type === 'text' || step.type === 'email') && (
-              <TextQuestion
-                step={step}
-                index={visibleQuestionIndex}
-                value={typeof answers[step.id] === 'string' ? (answers[step.id] as string) : ''}
-                onChange={(v) => setAnswer(step.id, v)}
-                onKeyDown={onKeyDown}
-                inputRef={inputRef}
-              />
-            )}
-            {step.type === 'choice' && (
-              <ChoiceQuestion
-                step={step}
-                index={visibleQuestionIndex}
-                value={answers[step.id]}
-                onSelectSingle={onSelectSingle}
-                onToggleMulti={onToggleMulti}
-              />
-            )}
-          </motion.div>
-        </AnimatePresence>
+      <main className="flex w-full max-w-2xl flex-1 items-center px-6 py-20 sm:px-10">
+        <Tilt max={4} className="w-full">
+          <div className="glass-panel relative overflow-hidden rounded-[28px] p-7 sm:p-10">
+            <ShineOverlay intensity={0.08} size={560} color="255, 255, 255" />
+
+            <AnimatePresence initial={false} mode="wait" custom={direction}>
+              <motion.div
+                key={step.id}
+                custom={direction}
+                variants={stepVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={springs.entrance}
+                className="relative"
+              >
+                {step.type === 'welcome' && <Welcome step={step} onStart={() => void advance()} />}
+                {(step.type === 'text' || step.type === 'email') && (
+                  <TextQuestion
+                    step={step}
+                    index={visibleQuestionIndex}
+                    value={typeof answers[step.id] === 'string' ? (answers[step.id] as string) : ''}
+                    onChange={(v) => setAnswer(step.id, v)}
+                    onKeyDown={onKeyDown}
+                    inputRef={inputRef}
+                  />
+                )}
+                {step.type === 'choice' && (
+                  <ChoiceQuestion
+                    step={step}
+                    index={visibleQuestionIndex}
+                    value={answers[step.id]}
+                    onSelectSingle={onSelectSingle}
+                    onToggleMulti={onToggleMulti}
+                  />
+                )}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </Tilt>
       </main>
 
       {step.type !== 'welcome' && (
-        <footer className="sticky bottom-0 z-20 border-t border-[#E8E8ED] bg-white/90 px-6 py-4 backdrop-blur-xl sm:px-10">
-          <div className="mx-auto flex w-full max-w-apple items-center justify-between gap-4">
-            <div className="text-[13px] text-[#86868B]">
-              {error ? (
-                <span className="text-[#DC2626]">{error}</span>
-              ) : (
-                <>
-                  Press{' '}
-                  <kbd className="mx-1 rounded border border-[#D2D2D7] bg-[#F5F5F7] px-1.5 py-0.5 text-[11px] font-medium">
-                    Enter
-                  </kbd>{' '}
-                  to continue
-                </>
-              )}
+        <motion.footer
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ ...springs.entrance, delay: 0.15 }}
+          className="sticky bottom-0 z-20 w-full px-4 pb-4 sm:px-6"
+        >
+          <div className="glass-popover mx-auto flex w-full max-w-2xl items-center justify-between gap-4 rounded-2xl px-4 py-3 sm:px-5">
+            <div className="text-[13px] text-[#6E6E73]">
+              <AnimatePresence mode="wait">
+                <motion.span
+                  key={error ?? 'hint'}
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.18 }}
+                  className="inline-block"
+                >
+                  {error ? (
+                    <span className="text-[#DC2626]">{error}</span>
+                  ) : (
+                    <>
+                      Press{' '}
+                      <kbd className="mx-1 rounded border border-[#D2D2D7] bg-white/70 px-1.5 py-0.5 text-[11px] font-medium">
+                        Enter
+                      </kbd>{' '}
+                      to continue
+                    </>
+                  )}
+                </motion.span>
+              </AnimatePresence>
             </div>
             <div className="flex items-center gap-2">
-              <button
+              <motion.button
+                whileTap={{ scale: 0.94 }}
+                transition={springs.press}
                 onClick={back}
-                className="rounded-full border border-[#D2D2D7] px-4 py-2 text-[13px] font-medium text-[#1D1D1F] transition hover:bg-[#F5F5F7]"
+                className="rounded-full border border-black/10 bg-white/60 px-4 py-2 text-[13px] font-medium text-[#1D1D1F] backdrop-blur transition hover:bg-white/80"
                 type="button"
               >
                 Back
-              </button>
-              <button
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.94 }}
+                whileHover={{ y: -1 }}
+                transition={springs.press}
                 onClick={() => void advance()}
                 disabled={submitting}
-                className="rounded-full bg-[#1D4ED8] px-5 py-2 text-[13px] font-semibold text-white transition hover:bg-[#1E40AF] disabled:opacity-60"
+                className="rounded-full bg-[#1D4ED8] px-5 py-2 text-[13px] font-semibold text-white shadow-[0_8px_24px_rgba(29,78,216,0.35)] transition hover:bg-[#1E40AF] disabled:opacity-60"
                 type="button"
               >
                 {submitting ? 'Sending…' : 'OK'}
-              </button>
+              </motion.button>
             </div>
           </div>
-        </footer>
+        </motion.footer>
       )}
     </div>
   )
@@ -391,21 +564,39 @@ export default function WaitlistForm() {
 function Welcome({ step, onStart }: { step: WelcomeStep; onStart: () => void }) {
   return (
     <div className="text-center">
-      <h1 className="mx-auto max-w-[820px] text-[clamp(28px,4.2vw,44px)] font-semibold leading-[1.12] tracking-[-0.022em]">
+      <motion.h1
+        initial={{ opacity: 0, y: 16, filter: 'blur(6px)' }}
+        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+        transition={{ ...springs.entrance, delay: 0.05 }}
+        className="mx-auto max-w-[820px] text-[clamp(28px,4.2vw,44px)] font-semibold leading-[1.12] tracking-[-0.022em]"
+      >
         {step.title}
-      </h1>
-      <p className="mx-auto mt-7 max-w-[760px] text-[clamp(18px,2.4vw,24px)] leading-[1.35] tracking-[-0.01em] text-[#1D1D1F]">
+      </motion.h1>
+      <motion.p
+        initial={{ opacity: 0, y: 14, filter: 'blur(4px)' }}
+        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+        transition={{ ...springs.entrance, delay: 0.18 }}
+        className="mx-auto mt-7 max-w-[760px] text-[clamp(18px,2.4vw,24px)] leading-[1.35] tracking-[-0.01em] text-[#1D1D1F]"
+      >
         {step.body}
-      </p>
-      <div className="mt-10 flex flex-col items-center gap-3">
-        <button
+      </motion.p>
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ ...springs.entrance, delay: 0.32 }}
+        className="mt-10 flex flex-col items-center gap-3"
+      >
+        <motion.button
+          whileHover={{ y: -2, scale: 1.02 }}
+          whileTap={{ scale: 0.96 }}
+          transition={springs.press}
           onClick={onStart}
           autoFocus
-          className="rounded-[10px] bg-[#1D4ED8] px-7 py-3 text-[20px] font-medium text-white shadow-sm transition hover:bg-[#1E40AF] focus:outline-none focus:ring-4 focus:ring-[#1D4ED8]/20"
+          className="rounded-[12px] bg-[#1D4ED8] px-7 py-3 text-[20px] font-medium text-white shadow-[0_12px_36px_rgba(29,78,216,0.45)] focus:outline-none focus:ring-4 focus:ring-[#1D4ED8]/20"
           type="button"
         >
           {step.cta}
-        </button>
+        </motion.button>
         <span className="inline-flex items-center gap-1.5 text-[13px] text-[#6E6E73]">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
             <circle cx="12" cy="12" r="9" />
@@ -413,7 +604,7 @@ function Welcome({ step, onStart }: { step: WelcomeStep; onStart: () => void }) 
           </svg>
           {step.takes}
         </span>
-      </div>
+      </motion.div>
     </div>
   )
 }
@@ -431,25 +622,42 @@ function TextQuestion({
   value: string
   onChange: (v: string) => void
   onKeyDown: (e: React.KeyboardEvent) => void
-  inputRef: React.MutableRefObject<HTMLInputElement | HTMLTextAreaElement | null>
+  inputRef: React.MutableRefObject<HTMLInputElement | null>
 }) {
   return (
     <div>
       <div className="flex items-start gap-3">
         <NumberBadge n={index} />
         <div className="flex-1">
-          <h2 className="text-[clamp(24px,3.2vw,34px)] font-semibold leading-[1.2] tracking-[-0.02em]">
+          <motion.h2
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ ...springs.entrance, delay: 0.05 }}
+            className="text-[clamp(24px,3.2vw,34px)] font-semibold leading-[1.2] tracking-[-0.02em]"
+          >
             {step.label}
             {step.required && <span aria-hidden className="ml-1 align-baseline text-[#1D1D1F]">*</span>}
-          </h2>
+          </motion.h2>
           {step.description && (
-            <p className="mt-2 text-[17px] leading-[1.5] text-[#1D1D1F]/85">{step.description}</p>
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ ...springs.entrance, delay: 0.12 }}
+              className="mt-2 text-[17px] leading-[1.5] text-[#1D1D1F]/85"
+            >
+              {step.description}
+            </motion.p>
           )}
         </div>
       </div>
-      <div className="mt-10 pl-0 sm:pl-10">
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ ...springs.entrance, delay: 0.2 }}
+        className="mt-10 pl-0 sm:pl-10"
+      >
         <input
-          ref={inputRef as React.RefObject<HTMLInputElement>}
+          ref={inputRef}
           type={step.type === 'email' ? 'email' : 'text'}
           inputMode={step.type === 'email' ? 'email' : 'text'}
           autoComplete="off"
@@ -457,9 +665,9 @@ function TextQuestion({
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={onKeyDown}
           placeholder={step.placeholder}
-          className="w-full border-b border-[#D2D2D7] bg-transparent pb-2 text-[clamp(22px,2.8vw,30px)] font-light leading-[1.3] tracking-[-0.01em] text-[#1D1D1F] placeholder:text-[#A5B4FC] focus:border-[#1D4ED8] focus:outline-none"
+          className="w-full border-b border-black/15 bg-transparent pb-2 text-[clamp(22px,2.8vw,30px)] font-light leading-[1.3] tracking-[-0.01em] text-[#1D1D1F] placeholder:text-[#A5B4FC] focus:border-[#1D4ED8] focus:outline-none"
         />
-      </div>
+      </motion.div>
     </div>
   )
 }
@@ -487,14 +695,33 @@ function ChoiceQuestion({
       <div className="flex items-start gap-3">
         <NumberBadge n={index} />
         <div className="flex-1">
-          <h2 className="text-[clamp(24px,3.2vw,34px)] font-semibold leading-[1.2] tracking-[-0.02em]">
+          <motion.h2
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ ...springs.entrance, delay: 0.05 }}
+            className="text-[clamp(24px,3.2vw,34px)] font-semibold leading-[1.2] tracking-[-0.02em]"
+          >
             {step.label}
-          </h2>
+          </motion.h2>
           {step.description && (
-            <p className="mt-2 text-[17px] leading-[1.5] text-[#1D1D1F]/85">{step.description}</p>
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ ...springs.entrance, delay: 0.12 }}
+              className="mt-2 text-[17px] leading-[1.5] text-[#1D1D1F]/85"
+            >
+              {step.description}
+            </motion.p>
           )}
           {step.multiple && (
-            <p className="mt-1 text-[13px] text-[#86868B]">Choose as many as you like.</p>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ ...springs.entrance, delay: 0.2 }}
+              className="mt-1 text-[13px] text-[#86868B]"
+            >
+              Choose as many as you like.
+            </motion.p>
           )}
         </div>
       </div>
@@ -503,30 +730,51 @@ function ChoiceQuestion({
           const letter = String.fromCharCode(65 + i)
           const selected = selectedSet.has(opt.value)
           return (
-            <li key={opt.value}>
-              <button
+            <motion.li
+              key={opt.value}
+              initial={{ opacity: 0, y: 10, filter: 'blur(4px)' }}
+              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+              transition={{ ...springs.entrance, delay: 0.18 + i * 0.06 }}
+            >
+              <motion.button
                 type="button"
+                whileHover={{ y: -2, scale: 1.012 }}
+                whileTap={{ scale: 0.985 }}
+                transition={springs.hover}
                 onClick={() => (step.multiple ? onToggleMulti(opt.value) : onSelectSingle(opt.value))}
                 className={[
-                  'group flex w-full items-center gap-3 rounded-[12px] border px-3 py-3 text-left transition',
+                  'group relative w-full overflow-hidden rounded-2xl border px-3 py-3 text-left',
                   selected
-                    ? 'border-[#1D4ED8] bg-[#EEF2FF]'
-                    : 'border-[#E0E7FF] bg-[#F5F7FE] hover:border-[#C7D2FE] hover:bg-[#EEF2FF]',
+                    ? 'border-[#1D4ED8] bg-[#EEF2FF]/80 shadow-[0_10px_30px_rgba(29,78,216,0.18)] backdrop-blur'
+                    : 'border-white/60 bg-white/55 shadow-[0_4px_18px_rgba(15,23,42,0.06)] backdrop-blur hover:border-[#C7D2FE] hover:bg-white/70',
                 ].join(' ')}
               >
-                <LetterChip ch={letter} selected={selected} />
-                <span className="text-[clamp(18px,2vw,22px)] font-normal text-[#1D4ED8]">
-                  {opt.label}
-                </span>
-                {step.multiple && selected && (
-                  <span aria-hidden className="ml-auto text-[#1D4ED8]">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
+                <ShineOverlay
+                  intensity={0.22}
+                  size={320}
+                  color={selected ? '99, 102, 241' : '148, 163, 255'}
+                />
+                <span className="relative z-[1] flex items-center gap-3">
+                  <LetterChip ch={letter} selected={selected} />
+                  <span className="text-[clamp(18px,2vw,22px)] font-normal text-[#1D4ED8]">
+                    {opt.label}
                   </span>
-                )}
-              </button>
-            </li>
+                  {step.multiple && selected && (
+                    <motion.span
+                      aria-hidden
+                      initial={{ scale: 0, rotate: -90 }}
+                      animate={{ scale: 1, rotate: 0 }}
+                      transition={springs.indicator}
+                      className="ml-auto text-[#1D4ED8]"
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    </motion.span>
+                  )}
+                </span>
+              </motion.button>
+            </motion.li>
           )
         })}
       </ul>
