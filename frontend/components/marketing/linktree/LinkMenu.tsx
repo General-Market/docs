@@ -42,8 +42,12 @@ export function LinkMenu() {
       <style>{`
         .lt-menu {
           width: 360px;
-          padding: 56px 28px 32px;
-          background: #ffffff;
+          padding: 76px 28px 56px;
+          /* Subtle gradient gives the glass chrome something to refract over */
+          background:
+            radial-gradient(140% 60% at 50% 0%, #f7f9fc 0%, transparent 60%),
+            radial-gradient(120% 60% at 50% 100%, #eff1f5 0%, transparent 60%),
+            #ffffff;
           color: #1d1d1f;
           font-family: var(--apple-font-display, "SF Pro Display", -apple-system, system-ui, sans-serif);
           display: flex;
@@ -52,27 +56,65 @@ export function LinkMenu() {
           gap: 22px;
           height: 780px;
           box-sizing: border-box;
+          position: relative;
+          overflow: hidden;
         }
+        /* Liquid-glass status bar — Tahoe-style translucent chrome */
         .lt-status {
           position: absolute;
-          inset: 0 0 auto 0;
-          height: 44px;
-          padding: 14px 28px 0;
+          top: 0; left: 0; right: 0;
+          height: 54px;
+          padding: 18px 30px 0;
           display: flex;
           justify-content: space-between;
           align-items: flex-start;
-          font-size: 14px;
+          font-size: 16px;
           font-weight: 600;
-          letter-spacing: -0.01em;
+          letter-spacing: -0.022em;
           color: #1d1d1f;
           font-variant-numeric: tabular-nums;
+          background:
+            linear-gradient(180deg, rgba(255,255,255,0.72) 0%, rgba(255,255,255,0.32) 100%);
+          -webkit-backdrop-filter: saturate(180%) blur(22px);
+          backdrop-filter: saturate(180%) blur(22px);
+          box-shadow:
+            inset 0 1px 0 rgba(255,255,255,0.85),
+            inset 0 -0.5px 0 rgba(0,0,0,0.05),
+            0 1px 0 rgba(0,0,0,0.04);
+          z-index: 2;
         }
         .lt-status-right {
           display: inline-flex;
-          gap: 6px;
+          gap: 7px;
           align-items: center;
         }
         .lt-status-right svg { color: #1d1d1f; }
+        /* Dynamic island — subtle pill below the status bar */
+        .lt-island {
+          position: absolute;
+          top: 14px; left: 50%;
+          transform: translateX(-50%);
+          width: 110px; height: 30px;
+          border-radius: 999px;
+          background: #0a0a0a;
+          box-shadow:
+            inset 0 0.5px 0 rgba(255,255,255,0.06),
+            0 1px 2px rgba(0,0,0,0.18);
+          z-index: 3;
+        }
+        /* Liquid-glass home indicator */
+        .lt-home {
+          position: absolute;
+          bottom: 18px; left: 50%;
+          transform: translateX(-50%);
+          width: 134px; height: 5px;
+          border-radius: 999px;
+          background: linear-gradient(180deg, #1d1d1f 0%, #2a2a2c 100%);
+          box-shadow:
+            inset 0 0.5px 0 rgba(255,255,255,0.18),
+            0 0.5px 1px rgba(0,0,0,0.12);
+          z-index: 2;
+        }
         .lt-avatar {
           width: 96px; height: 96px;
           border-radius: 22px;
@@ -120,13 +162,6 @@ export function LinkMenu() {
         .lt-row:active { transform: translateY(0); }
         .lt-row svg { flex-shrink: 0; }
         .lt-row-label { flex: 1; }
-        .lt-foot {
-          margin-top: auto;
-          font-size: 11px;
-          letter-spacing: 0.06em;
-          text-transform: uppercase;
-          color: #86868b;
-        }
       `}</style>
 
       <div className="lt-status">
@@ -145,6 +180,7 @@ export function LinkMenu() {
           </svg>
         </span>
       </div>
+      <div className="lt-island" aria-hidden />
 
       <div className="lt-avatar" aria-label="General Market">
         <Image src="/logo.svg" alt="" width={96} height={96} priority />
@@ -174,7 +210,7 @@ export function LinkMenu() {
         })}
       </div>
 
-      <div className="lt-foot">generalmarket.io</div>
+      <div className="lt-home" aria-hidden />
     </div>
   )
 }
