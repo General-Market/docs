@@ -18,25 +18,23 @@ import {
   zoomPullSlow,
   zoomWhip,
 } from "./transitions";
-import { HandheldDrift } from "./vibe";
 
-// Every transition is a zoom-through-blur. Exiting scene zooms toward a
-// peak scale, gaussian blur rises with the motion, the cut hides inside
-// the blur peak, entering scene starts at that peak and dezooms back to
-// rest as the blur clears. Direction, magnitude, easing, and duration
-// vary per cut.
+// Every transition shares one camera path: scene zooms 1 → peak → 1
+// across the window, both scenes ride the same curve so geometry is
+// continuous, opacity crossfades in a tight band at the centre where
+// blur peaks. Calm magnitudes; the motion should feel like a breath.
 //
-//   Hook → Bars        zoom push heavy (1 → 1.55, quart-in)   24f
-//   Bars → Rigged      HARD CUT — the bars are the verdict
-//   Rigged → Stat      whip zoom (1 → 1.85, quint-in)         20f
-//   Stat → Solution    pull slow + veil (1 → 0.72, in-out)    32f   ← music dies
-//   Solution → Reassure soft push (1 → 1.28, cubic-in)        22f
-//   Reassure → EndCard long pull (1 → 0.82)                   26f
-const T_HOOK_BARS = 24;
-const T_RIGGED_STAT = 20;
-const T_STAT_SOLUTION = 32;
-const T_SOLUTION_REASSURE = 22;
-const T_REASSURE_END = 26;
+//   Hook → Bars         heavy push (peak 1.22)        34f
+//   Bars → Rigged       HARD CUT — the bars are the verdict
+//   Rigged → Stat       gentle whip (peak 1.30)       32f
+//   Stat → Solution     slow pull + veil (peak 0.88)  44f   ← music dies
+//   Solution → Reassure soft push (peak 1.10)         30f
+//   Reassure → EndCard  long pull (peak 0.93)         36f
+const T_HOOK_BARS = 34;
+const T_RIGGED_STAT = 32;
+const T_STAT_SOLUTION = 44;
+const T_SOLUTION_REASSURE = 30;
+const T_REASSURE_END = 36;
 
 const TRANSITION_FRAMES =
   T_HOOK_BARS +
@@ -88,7 +86,6 @@ export const AntiCheatFull: React.FC = () => {
           }
         />
       </Sequence>
-      <HandheldDrift amplitude={4} speed={0.045}>
       <TransitionSeries>
         <TransitionSeries.Sequence
           durationInFrames={antiCheatHookMeta.durationInFrames}
@@ -159,7 +156,6 @@ export const AntiCheatFull: React.FC = () => {
           <antiCheatEndCardMeta.component />
         </TransitionSeries.Sequence>
       </TransitionSeries>
-      </HandheldDrift>
     </AbsoluteFill>
   );
 };

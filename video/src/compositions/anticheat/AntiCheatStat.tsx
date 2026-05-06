@@ -10,19 +10,24 @@ import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 import { DotGrid, DotGridVignette } from "./DotGrid";
 import { ParallaxText } from "./transitions";
+import { IdleZoom, RevealChars } from "./vibe";
 
 // Two compositions live in this file:
 //   AntiCheatStat — the 0.01% / 70% concentration numbers (4s)
 //   AntiCheatBars — the % extracted by unfair trading bar chart (3.5s)
 const STAT_SECONDS = 3;
 const BARS_SECONDS = 3;
+const STAT_FRAMES = toFrames(STAT_SECONDS);
+const BARS_FRAMES = toFrames(BARS_SECONDS);
 
 export const AntiCheatStat: React.FC = () => {
   return (
     <AbsoluteFill style={{ backgroundColor: colors.bg, fontFamily: font }}>
-      <DotGrid />
-      <StatPanel />
-      <DotGridVignette intensity={0.22} />
+      <IdleZoom durationInFrames={STAT_FRAMES} from={1} to={1.04}>
+        <DotGrid />
+        <StatPanel />
+        <DotGridVignette intensity={0.22} />
+      </IdleZoom>
     </AbsoluteFill>
   );
 };
@@ -30,9 +35,11 @@ export const AntiCheatStat: React.FC = () => {
 export const AntiCheatBars: React.FC = () => {
   return (
     <AbsoluteFill style={{ backgroundColor: colors.bg, fontFamily: font }}>
-      <DotGrid />
-      <ExtractionBars />
-      <DotGridVignette intensity={0.22} />
+      <IdleZoom durationInFrames={BARS_FRAMES} from={1} to={1.025}>
+        <DotGrid />
+        <ExtractionBars />
+        <DotGridVignette intensity={0.22} />
+      </IdleZoom>
     </AbsoluteFill>
   );
 };
@@ -103,15 +110,17 @@ const StatPanel: React.FC = () => {
           fontWeight: 600,
           letterSpacing: "-0.01em",
           color: colors.fg,
-          opacity: interpolate(
-            frame,
-            [toFrames(1.4), toFrames(2.0)],
-            [0, 1],
-            { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-          ),
         }}
       >
-        0.01% of cheaters claim 70% of all profits.
+        <RevealChars
+          text="0.01% of cheaters claim 70% of all profits."
+          startFrame={toFrames(1.4)}
+          stagger={0.9}
+          duration={9}
+          y={12}
+          blur={3}
+          scale={0.97}
+        />
       </div>
     </AbsoluteFill>
   );
@@ -224,13 +233,6 @@ const REVEAL_AT =
 const ExtractionBars: React.FC = () => {
   const frame = useCurrentFrame();
 
-  const eyebrowOpacity = interpolate(
-    frame,
-    [0, toFrames(0.3)],
-    [0, 1],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-
   const revealLocal = frame - REVEAL_AT;
   const revealOpacity = interpolate(
     revealLocal,
@@ -260,10 +262,17 @@ const ExtractionBars: React.FC = () => {
           letterSpacing: "0.22em",
           textTransform: "uppercase",
           color: colors.dim,
-          opacity: eyebrowOpacity,
         }}
       >
-        % extracted by unfair trading
+        <RevealChars
+          text="% extracted by unfair trading"
+          startFrame={0}
+          stagger={1.0}
+          duration={9}
+          y={10}
+          blur={3}
+          scale={0.97}
+        />
       </div>
 
       <div
@@ -388,7 +397,6 @@ const BarRow: React.FC<{
             background: colors.accent,
           }}
         />
-        {/* Tail tick mark — stronger black instead of glowing white */}
         <div
           style={{
             position: "absolute",

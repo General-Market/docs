@@ -17,6 +17,7 @@ import { fade } from "@remotion/transitions/fade";
 import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, toFrames } from "./theme";
 import { ParallaxText } from "./transitions";
+import { RevealChars } from "./vibe";
 
 const BROLL = {
   minecraft: staticFile("cheat-broll/minecraft-killaura.mp4"),
@@ -696,20 +697,6 @@ const PairList: React.FC<{
 };
 
 const RevealLines: React.FC = () => {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-
-  const t1 = spring({
-    frame,
-    fps,
-    config: { damping: 22, stiffness: 100, mass: 0.8 },
-  });
-  const t2 = spring({
-    frame: frame - toFrames(0.7),
-    fps,
-    config: { damping: 22, stiffness: 100, mass: 0.8 },
-  });
-
   return (
     <AbsoluteFill
       style={{
@@ -731,23 +718,27 @@ const RevealLines: React.FC = () => {
             lineHeight: 1.15,
           }}
         >
-          <div
-            style={{
-              opacity: interpolate(t1, [0, 1], [0, 1]),
-              transform: `translateY(${interpolate(t1, [0, 1], [16, 0])}px)`,
-            }}
-          >
-            The same cheaters ruining your games
+          <div>
+            <RevealChars
+              text="The same cheaters ruining your games"
+              startFrame={0}
+              stagger={1.3}
+              duration={10}
+              y={16}
+              blur={4}
+              scale={0.96}
+            />
           </div>
-          <div
-            style={{
-              opacity: interpolate(t2, [0, 1], [0, 1]),
-              transform: `translateY(${interpolate(t2, [0, 1], [16, 0])}px)`,
-              color: "#ff3b3b",
-              marginTop: 16,
-            }}
-          >
-            are trading against you
+          <div style={{ color: "#ff3b3b", marginTop: 16 }}>
+            <RevealChars
+              text="are trading against you"
+              startFrame={toFrames(0.6)}
+              stagger={1.5}
+              duration={11}
+              y={18}
+              blur={5}
+              scale={0.94}
+            />
           </div>
         </div>
       </ParallaxText>

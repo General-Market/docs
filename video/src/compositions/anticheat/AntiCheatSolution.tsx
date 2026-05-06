@@ -10,21 +10,25 @@ import {
 import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 import { DotGrid, DotGridVignette } from "./DotGrid";
+import { IdleZoom, RevealChars } from "./vibe";
 
 const SCENE_SECONDS = 5.0;
 const TERMINAL_AT = toFrames(1.6);
+const SCENE_FRAMES = toFrames(SCENE_SECONDS);
 
 export const AntiCheatSolution: React.FC = () => {
   return (
     <AbsoluteFill style={{ backgroundColor: colors.bg, fontFamily: font }}>
-      <DotGrid />
-      <Headline />
+      <IdleZoom durationInFrames={SCENE_FRAMES} from={1} to={1.04}>
+        <DotGrid />
+        <Headline />
 
-      <Sequence from={TERMINAL_AT}>
-        <Terminal />
-      </Sequence>
+        <Sequence from={TERMINAL_AT}>
+          <Terminal />
+        </Sequence>
 
-      <DotGridVignette intensity={0.18} />
+        <DotGridVignette intensity={0.18} />
+      </IdleZoom>
     </AbsoluteFill>
   );
 };
@@ -80,8 +84,6 @@ const Headline: React.FC = () => {
           letterSpacing: "-0.04em",
           color: colors.fg,
           lineHeight: 0.95,
-          opacity: interpolate(t, [0, 1], [0, 1]),
-          transform: `translateY(${interpolate(t, [0, 1], [22, 0])}px)`,
           display: "flex",
           alignItems: "center",
           gap: 28,
@@ -95,10 +97,37 @@ const Headline: React.FC = () => {
             height: 72,
             background: colors.accent,
             flexShrink: 0,
+            opacity: interpolate(t, [0, 1], [0, 1]),
+            transform: `scale(${interpolate(t, [0, 1], [0.4, 1])})`,
           }}
         />
         <span>
-          General <span style={{ color: colors.accent }}>changes</span> this
+          <RevealChars
+            text="General "
+            startFrame={0}
+            stagger={1.4}
+            duration={11}
+            y={18}
+            blur={5}
+          />
+          <span style={{ color: colors.accent }}>
+            <RevealChars
+              text="changes"
+              startFrame={toFrames(0.18)}
+              stagger={1.6}
+              duration={12}
+              y={20}
+              blur={6}
+            />
+          </span>
+          <RevealChars
+            text=" this"
+            startFrame={toFrames(0.36)}
+            stagger={1.4}
+            duration={11}
+            y={18}
+            blur={5}
+          />
         </span>
       </div>
       <div

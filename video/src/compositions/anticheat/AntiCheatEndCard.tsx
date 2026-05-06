@@ -9,10 +9,12 @@ import {
 import { font } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 import { ParallaxText } from "./transitions";
+import { IdleZoom, RevealChars } from "./vibe";
 
 const SCENE_SECONDS = 3.0;
 const SUBLINE_AT = toFrames(0.7);
 const TERTIARY_AT = toFrames(1.2);
+const SCENE_FRAMES = toFrames(SCENE_SECONDS);
 
 // The endcard inverts. Solid Base blue field, white wordmark.
 // A light dot grid laid over blue gives the same texture vocabulary as
@@ -83,11 +85,16 @@ export const AntiCheatEndCard: React.FC = () => {
       style={{
         backgroundColor: colors.accent,
         fontFamily: font,
-        justifyContent: "center",
-        alignItems: "center",
-        padding: "0 96px",
       }}
     >
+      <IdleZoom durationInFrames={SCENE_FRAMES} from={1} to={1.018}>
+      <AbsoluteFill
+        style={{
+          justifyContent: "center",
+          alignItems: "center",
+          padding: "0 96px",
+        }}
+      >
       <WhiteDotGrid />
       <div
         style={{
@@ -156,7 +163,15 @@ export const AntiCheatEndCard: React.FC = () => {
             transform: `translateY(${sublineY}px)`,
           }}
         >
-          Trading is easy with an Anti-Cheat
+          <RevealChars
+            text="Trading is easy with an Anti-Cheat"
+            startFrame={SUBLINE_AT}
+            stagger={1.4}
+            duration={11}
+            y={16}
+            blur={4}
+            scale={0.95}
+          />
         </div>
 
         <div
@@ -195,6 +210,8 @@ export const AntiCheatEndCard: React.FC = () => {
           </span>
         </div>
       </div>
+      </AbsoluteFill>
+      </IdleZoom>
     </AbsoluteFill>
   );
 };

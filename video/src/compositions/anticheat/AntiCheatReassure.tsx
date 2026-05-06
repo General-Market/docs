@@ -9,19 +9,16 @@ import {
 import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 import { DotGrid, DotGridVignette } from "./DotGrid";
+import { IdleZoom, RevealChars } from "./vibe";
 
 const SCENE_SECONDS = 3.5;
 const SECOND_LINE_AT = toFrames(1.4);
+const SCENE_FRAMES = toFrames(SCENE_SECONDS);
 
 export const AntiCheatReassure: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  const t1 = spring({
-    frame,
-    fps,
-    config: { damping: 22, stiffness: 110, mass: 0.7 },
-  });
   const t2 = spring({
     frame: frame - SECOND_LINE_AT,
     fps,
@@ -48,93 +45,129 @@ export const AntiCheatReassure: React.FC = () => {
       style={{
         backgroundColor: colors.bg,
         fontFamily: font,
-        justifyContent: "center",
-        alignItems: "center",
-        padding: "0 96px",
         overflow: "hidden",
       }}
     >
-      <DotGrid />
+      <IdleZoom durationInFrames={SCENE_FRAMES} from={1} to={1.04}>
+        <DotGrid />
 
-      {/* Faint shield in the back */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          opacity: shieldOpacity,
-          transform: `scale(${shieldScale})`,
-        }}
-      >
-        <ShieldGlyph />
-      </div>
-
-      <div
-        style={{
-          textAlign: "center",
-          position: "relative",
-        }}
-      >
+        {/* Faint shield in the back */}
         <div
           style={{
-            fontFamily: font,
-            fontSize: 124,
-            fontWeight: 800,
-            letterSpacing: "-0.04em",
-            color: colors.fg,
-            lineHeight: 0.95,
-            opacity: interpolate(t1, [0, 1], [0, 1]),
-            transform: `translateY(${
-              interpolate(t1, [0, 1], [22, 0]) + liftFirst
-            }px)`,
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            opacity: shieldOpacity,
+            transform: `scale(${shieldScale})`,
           }}
         >
-          Trade all the same assets
+          <ShieldGlyph />
         </div>
 
         <div
           style={{
-            marginTop: 36,
-            fontFamily: font,
-            fontSize: 96,
-            fontWeight: 700,
-            letterSpacing: "-0.025em",
-            color: colors.fg,
-            opacity: interpolate(t2, [0, 1], [0, 1]),
-            transform: `translateY(${interpolate(t2, [0, 1], [22, 0])}px)`,
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: "0 96px",
+            textAlign: "center",
           }}
         >
-          <span style={{ color: colors.dim, opacity: 0.7 }}>.&nbsp;.&nbsp;.</span>{" "}
-          but{" "}
-          <span style={{ color: colors.accent }}>shielded</span>
+          <div
+            style={{
+              fontFamily: font,
+              fontSize: 124,
+              fontWeight: 800,
+              letterSpacing: "-0.04em",
+              color: colors.fg,
+              lineHeight: 0.95,
+              transform: `translateY(${liftFirst}px)`,
+            }}
+          >
+            <RevealChars
+              text="Trade all the same assets"
+              startFrame={0}
+              stagger={1.4}
+              duration={11}
+              y={20}
+              blur={5}
+            />
+          </div>
+
+          <div
+            style={{
+              marginTop: 36,
+              fontFamily: font,
+              fontSize: 96,
+              fontWeight: 700,
+              letterSpacing: "-0.025em",
+              color: colors.fg,
+              opacity: interpolate(t2, [0, 1], [0, 1]),
+            }}
+          >
+            <span style={{ color: colors.dim, opacity: 0.7 }}>
+              <RevealChars
+                text=". . ."
+                startFrame={SECOND_LINE_AT}
+                stagger={3.0}
+                duration={10}
+                y={0}
+                blur={0}
+                scale={0.96}
+              />
+            </span>
+            <span>&nbsp;</span>
+            <RevealChars
+              text="but"
+              startFrame={SECOND_LINE_AT + toFrames(0.18)}
+              stagger={1.4}
+              duration={10}
+              y={16}
+              blur={4}
+            />
+            <span>&nbsp;</span>
+            <span style={{ color: colors.accent }}>
+              <RevealChars
+                text="shielded"
+                startFrame={SECOND_LINE_AT + toFrames(0.34)}
+                stagger={1.6}
+                duration={12}
+                y={18}
+                blur={5}
+              />
+            </span>
+          </div>
+
+          <div
+            style={{
+              marginTop: 44,
+              fontFamily: monoFont,
+              fontSize: 36,
+              fontWeight: 500,
+              letterSpacing: "0.18em",
+              textTransform: "uppercase",
+              color: colors.dim,
+              opacity:
+                interpolate(t2, [0, 1], [0, 1]) *
+                interpolate(
+                  frame,
+                  [SECOND_LINE_AT + toFrames(0.4), SECOND_LINE_AT + toFrames(1.0)],
+                  [0, 1],
+                  { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+                ),
+            }}
+          >
+            Same markets · same speed · cheaters removed
+          </div>
         </div>
 
-        <div
-          style={{
-            marginTop: 44,
-            fontFamily: monoFont,
-            fontSize: 36,
-            fontWeight: 500,
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
-            color: colors.dim,
-            opacity:
-              interpolate(t2, [0, 1], [0, 1]) *
-              interpolate(
-                frame,
-                [SECOND_LINE_AT + toFrames(0.4), SECOND_LINE_AT + toFrames(1.0)],
-                [0, 1],
-                { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-              ),
-          }}
-        >
-          Same markets · same speed · cheaters removed
-        </div>
-      </div>
-
-      <DotGridVignette intensity={0.18} />
+        <DotGridVignette intensity={0.18} />
+      </IdleZoom>
     </AbsoluteFill>
   );
 };

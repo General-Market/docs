@@ -3,14 +3,12 @@ import {
   AbsoluteFill,
   Img,
   interpolate,
-  spring,
   staticFile,
   useCurrentFrame,
-  useVideoConfig,
 } from "remotion";
 import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
-import { DotGrid } from "./DotGrid";
+import { IdleZoom, RevealChars } from "./vibe";
 
 // 4.5s scene. Title block holds on the LEFT for the entire scene:
 //   line 1 — exchange name (green, underlined; updates per article)
@@ -18,10 +16,16 @@ import { DotGrid } from "./DotGrid";
 // Articles flash hard-cut on the RIGHT, much larger than before, with the
 // original yellow highlighter restored on the article phrase.
 const SCENE_SECONDS = 4.5;
+const SCENE_FRAMES = Math.round(SCENE_SECONDS * FPS);
 
 const TITLE_IN = 0;
 const ARTICLES_AT = toFrames(0.35);
 const ARTICLE_HOLD = toFrames(0.55);
+
+// Three glitch shots on "is rigged" — irregular intervals, short pulses.
+// Each pulse is a 6-frame chromatic split that decays.
+const GLITCH_AT = [toFrames(0.85), toFrames(2.1), toFrames(3.35)];
+const GLITCH_LEN = 6;
 
 const PROOF_GREEN = "#22d97a";
 const PROOF_GREEN_LIGHT = "#52ffa2";
@@ -47,14 +51,14 @@ const ARTICLES: ArticleProof[] = [
     category: "perps",
     image: "insider-trading/articles/1.png",
     highlights: [{ x: 0.5737, y: 0.1383, w: 0.3183, h: 0.0453 }],
-    exchangeBox: { x: 0.038, y: 0.083, w: 0.205, h: 0.045 },
+    exchangeBox: { x: 0.04, y: 0.138, w: 0.175, h: 0.045 },
   },
   {
     exchange: "robinhood",
     category: "options",
     image: "insider-trading/articles/9.png",
     highlights: [{ x: 0.4119, y: 0.1968, w: 0.2831, h: 0.042 }],
-    exchangeBox: { x: 0.097, y: 0.062, w: 0.282, h: 0.052 },
+    exchangeBox: { x: 0.215, y: 0.135, w: 0.20, h: 0.042 },
   },
   {
     exchange: "polymarket",
@@ -64,21 +68,21 @@ const ARTICLES: ArticleProof[] = [
       { x: 0.6467, y: 0.2828, w: 0.2445, h: 0.0273 },
       { x: 0.5126, y: 0.3313, w: 0.1197, h: 0.0281 },
     ],
-    exchangeBox: { x: 0.045, y: 0.205, w: 0.215, h: 0.04 },
+    exchangeBox: { x: 0.041, y: 0.283, w: 0.215, h: 0.035 },
   },
   {
     exchange: "pump.fun",
-    category: "launchpads",
+    category: "launchpad",
     image: "insider-trading/articles/4.png",
     highlights: [{ x: 0.1253, y: 0.5158, w: 0.2653, h: 0.0487 }],
-    // No exchangeBox — pump.fun isn't named in the visible upper portion.
+    exchangeBox: { x: 0.048, y: 0.428, w: 0.305, h: 0.055 },
   },
   {
     exchange: "kalshi",
     category: "predictions",
     image: "insider-trading/articles/6.png",
     highlights: [{ x: 0.4819, y: 0.176, w: 0.216, h: 0.0303 }],
-    exchangeBox: { x: 0.057, y: 0.123, w: 0.118, h: 0.038 },
+    exchangeBox: { x: 0.052, y: 0.176, w: 0.085, h: 0.030 },
   },
   {
     exchange: "nyse",
@@ -89,27 +93,28 @@ const ARTICLES: ArticleProof[] = [
   },
   {
     exchange: "coinbase",
-    category: "spot",
+    category: "crypto",
     image: "insider-trading/articles/7.png",
     highlights: [{ x: 0.2453, y: 0.4009, w: 0.3414, h: 0.0417 }],
-    exchangeBox: { x: 0.42, y: 0.27, w: 0.265, h: 0.045 },
+    exchangeBox: { x: 0.55, y: 0.30, w: 0.28, h: 0.04 },
   },
 ];
 
 export const AntiCheatRigged: React.FC = () => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
 
-  // "is rigged." slams in once at the start.
-  const slamT = spring({
-    frame: frame - TITLE_IN,
-    fps,
-    config: { damping: 11, stiffness: 220, mass: 0.7 },
-  });
-  const verdictOpacity = interpolate(slamT, [0, 1], [0, 1]);
-  const verdictScale = interpolate(slamT, [0, 1], [0.78, 1]);
   // Subtle breath so the verdict doesn't flatten over 5s.
   const verdictPulse = 1 + Math.sin((frame / 45) * Math.PI * 2) * 0.012;
+
+  // Glitch intensity: the strongest pulse currently active.
+  let glitch = 0;
+  for (const at of GLITCH_AT) {
+    const local = frame - at;
+    if (local >= 0 && local < GLITCH_LEN) {
+      const v = Math.sin((local / GLITCH_LEN) * Math.PI);
+      if (v > glitch) glitch = v;
+    }
+  }
 
   // Active article based on frame.
   const articleIdx = Math.max(
@@ -123,64 +128,136 @@ export const AntiCheatRigged: React.FC = () => {
 
   return (
     <AbsoluteFill style={{ backgroundColor: colors.bg, fontFamily: font }}>
-      <DotGrid />
-      {/* Left — exchange name (line 1) + "is rigged." (line 2) */}
-      <div
-        style={{
-          position: "absolute",
-          left: 96,
-          width: 720,
-          top: "50%",
-          transform: "translateY(-50%)",
-          display: "flex",
-          flexDirection: "column",
-          gap: 32,
-        }}
-      >
-        {/* Line 1: exchange name with green underline (re-mounts per article) */}
+      <IdleZoom durationInFrames={SCENE_FRAMES} from={1} to={1.025}>
+        <VerticalBars />
+        {/* Left — exchange name (line 1) + "is rigged." (line 2) */}
+        <div
+          style={{
+            position: "absolute",
+            left: 96,
+            width: 720,
+            top: "50%",
+            transform: "translateY(-50%)",
+            display: "flex",
+            flexDirection: "column",
+            gap: 32,
+          }}
+        >
+          {/* Line 1: category label with green underline (re-mounts per article) */}
+          {currentArticle && (
+            <ExchangeLabel
+              key={articleIdx}
+              name={currentArticle.category}
+              startFrame={articleStartFrame}
+            />
+          )}
+
+          {/* Line 2: "is rigged" — char-slammed in, glitch flickers thrice */}
+          <div
+            style={{
+              transform: `scale(${verdictPulse})`,
+              transformOrigin: "left center",
+              willChange: "transform",
+            }}
+          >
+            <GlitchVerdict glitch={glitch} />
+          </div>
+        </div>
+
+        {/* Right — big article flash */}
         {currentArticle && (
-          <ExchangeLabel
-            key={articleIdx}
-            name={currentArticle.exchange}
+          <ArticleFlash
+            article={currentArticle}
             startFrame={articleStartFrame}
           />
         )}
 
-        {/* Line 2: "is rigged." — held constant for the scene */}
-        <div
+        {/* Light-field vignette — corners fade to bg, not to black */}
+        <AbsoluteFill
           style={{
-            fontFamily: font,
-            fontSize: 168,
-            fontWeight: 800,
-            letterSpacing: "-0.05em",
-            color: colors.accent,
-            lineHeight: 0.92,
-            opacity: verdictOpacity,
-            transform: `scale(${verdictScale * verdictPulse})`,
-            transformOrigin: "left center",
+            pointerEvents: "none",
+            background:
+              "radial-gradient(ellipse at center, rgba(240,242,244,0) 50%, rgba(240,242,244,0.30) 100%)",
           }}
-        >
-          is rigged.
-        </div>
+        />
+      </IdleZoom>
+    </AbsoluteFill>
+  );
+};
+
+// ─── GlitchVerdict ────────────────────────────────────────────────────────────
+//
+// "is rigged" rendered three times: red-shifted left, cyan-shifted right,
+// base accent-blue centered. RevealChars per layer for the slam-in entry.
+// During glitch pulses, the two chromatic copies translate apart and
+// brighten. Between pulses they vanish, the base sits clean.
+
+const GlitchVerdict: React.FC<{ glitch: number }> = ({ glitch }) => {
+  const baseStyle: React.CSSProperties = {
+    fontFamily: font,
+    fontSize: 168,
+    fontWeight: 800,
+    letterSpacing: "-0.05em",
+    lineHeight: 0.92,
+    whiteSpace: "nowrap",
+  };
+  const ghostShift = 8 * glitch;
+  const ghostOpacity = 0.7 * glitch;
+  const reveal = (
+    <RevealChars
+      text="is rigged"
+      startFrame={TITLE_IN}
+      stagger={2.0}
+      duration={9}
+      y={26}
+      blur={6}
+      scale={0.82}
+    />
+  );
+
+  return (
+    <div style={{ position: "relative", display: "inline-block" }}>
+      {/* Red ghost — shifts left during glitch */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          ...baseStyle,
+          color: "#ff2b44",
+          opacity: ghostOpacity,
+          transform: `translateX(${(-ghostShift).toFixed(2)}px)`,
+          pointerEvents: "none",
+        }}
+      >
+        {reveal}
       </div>
 
-      {/* Right — big article flash */}
-      {currentArticle && (
-        <ArticleFlash
-          article={currentArticle}
-          startFrame={articleStartFrame}
-        />
-      )}
-
-      {/* Light-field vignette — corners fade to bg, not to black */}
-      <AbsoluteFill
+      {/* Cyan ghost — shifts right during glitch */}
+      <div
         style={{
+          position: "absolute",
+          inset: 0,
+          ...baseStyle,
+          color: "#00bcd4",
+          opacity: ghostOpacity,
+          transform: `translateX(${ghostShift.toFixed(2)}px)`,
           pointerEvents: "none",
-          background:
-            "radial-gradient(ellipse at center, rgba(240,242,244,0) 50%, rgba(240,242,244,0.30) 100%)",
         }}
-      />
-    </AbsoluteFill>
+      >
+        {reveal}
+      </div>
+
+      {/* Base verdict */}
+      <div
+        style={{
+          ...baseStyle,
+          color: colors.accent,
+          position: "relative",
+        }}
+      >
+        {reveal}
+      </div>
+    </div>
   );
 };
 
@@ -463,6 +540,46 @@ const YellowHighlightLayer: React.FC<{
         );
       })}
     </div>
+  );
+};
+
+// ─── VerticalBars ─────────────────────────────────────────────────────────────
+//
+// Background-only. Thin vertical lines at regular intervals over the
+// light field. Every fourth line stronger — the cadence of prison bars,
+// not random ticks. Sits behind the verdict and the article flash.
+
+const RIGGED_BAR_SPACING = 56;
+
+const VerticalBars: React.FC = () => {
+  const cols = Math.ceil(W / RIGGED_BAR_SPACING) + 1;
+  const lines: React.ReactNode[] = [];
+  for (let i = 0; i < cols; i++) {
+    const x = i * RIGGED_BAR_SPACING;
+    const isMajor = i % 4 === 0;
+    lines.push(
+      <rect
+        key={i}
+        x={x - (isMajor ? 1.4 : 0.9)}
+        y={0}
+        width={isMajor ? 2.8 : 1.8}
+        height={H}
+        fill={colors.fg}
+        opacity={isMajor ? 0.11 : 0.055}
+      />,
+    );
+  }
+  return (
+    <AbsoluteFill style={{ pointerEvents: "none" }}>
+      <svg
+        width="100%"
+        height="100%"
+        viewBox={`0 0 ${W} ${H}`}
+        preserveAspectRatio="none"
+      >
+        {lines}
+      </svg>
+    </AbsoluteFill>
   );
 };
 
