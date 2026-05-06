@@ -801,33 +801,21 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
         submitted_orders = keep;
     }
 
-    // Filter out orders the orchestrator has already marked Failed. These are
-    // orders whose fill tx will deterministically revert — most commonly E126
-    // (fill price violates user's limit) — so retrying them every cycle just
-    // burns gas estimation rounds. The orchestrator's Failed status is set by
-    // the per-order fill-revert path in run_fills_confirm (see mark_orders_failed
-    // around the 'Per-order fill revert — evicting bad order' log). L3 still
-    // shows them pending because fillOrder never landed; on-chain filter can't
-    // drop them. We drop them ourselves. SharesBridged is NOT filtered — that
-    // would keep L3-direct orders out of the batch/fills pipeline they still
-    // need to go through.
-    {
-        use oracle::BridgeOrderStatus;
-        let pre = submitted_orders.len();
-        let mut keep = Vec::new();
-        let orch = orchestrator.read().await;
-        for oid in &submitted_orders {
-            match orch.get_order_status(oid).await {
-                Some(BridgeOrderStatus::Failed) => { /* drop — marked failed after fill revert */ }
-                _ => keep.push(*oid),
-            }
-        }
-        drop(orch);
-        if keep.len() < pre {
-            info!(before = pre, after = keep.len(), "Filtered failed orders");
-        }
-        submitted_orders = keep;
-    }
+    // Previous code filtered out orders the local orchestrator had marked
+    // Failed (per-order fill-revert eviction, e.g. E126 limit-price violation).
+    // The intent was a gas-estimation optimization. The effect was a silent
+    // consensus break: a Failed mark is *local*, not replicated over P2P, so
+    // when the marking node happened to be the deterministic batch leader for
+    // those orders, its `submitted_orders` emptied here and it returned at
+    // the early-empty check below — never reaching the leader-eligibility
+    // computation, never proposing the batch, while the other two oracles
+    // sat at `am_leader=false` waiting forever.
+    //
+    // The on-chain status is the only ledger every node can agree on. We
+    // burn a few gas-estimation rounds on doomed orders until their on-chain
+    // state changes; that is cheaper than a wedged pipeline. If gas savings
+    // become a real cost, replicate the Failed decision over consensus
+    // instead of letting one node quarantine an order silently.
 
 
     if submitted_orders.is_empty() {
@@ -858,8 +846,11 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
             "Resolved Settlement→L3 order IDs for batch/fills"
         );
 
-        // Use order-based leader election (same node as submit leader, which has the settlement→L3 mapping)
-        let batch_key = submitted_orders.first().map(|id| id.as_u64()).unwrap_or(current_cycle);
+        // Use order-based leader election (same node as submit leader, which has the settlement→L3 mapping).
+        // Use min() not .first() — chain reads can return the same set in different
+        // orders on different nodes, and disagreement on the first element means
+        // disagreement on the leader. min() is order-independent over a set.
+        let batch_key = submitted_orders.iter().map(|id| id.as_u64()).min().unwrap_or(current_cycle);
         let batch_am_leader = calculate_bridge_leader(batch_key, num_oracles, node_index);
         info!(cycle = current_cycle, order_count = submitted_orders.len(), batch_am_leader, "Processing batch for SubmittedOnL3 orders");
 
