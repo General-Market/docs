@@ -219,10 +219,11 @@ async fn compute_bucket(
     account: &[u8],
     bucket_ts: DateTime<Utc>,
 ) -> Result<BucketRow, sqlx::Error> {
-    // Two correlated lookups joined: the latest position-row per vault for
-    // this account at-or-before bucket_ts, and the latest NAV snapshot per
-    // vault at-or-before the same. The vault address conversion lives in
-    // the JOIN so we don't depend on Postgres extensions.
+    // For each vault this account holds, fetch the latest NAV at-or-before
+    // bucket_ts via a per-vault LATERAL — scales O(account_vaults), not
+    // O(all_vaults) like the prior DISTINCT ON. With 324 vaults × millions
+    // of snapshot rows the prior shape took 2-3s/query; this hits the
+    // (vault_address, created_at DESC) index point-wise.
     let row: (Option<rust_decimal::Decimal>, Option<rust_decimal::Decimal>, Option<rust_decimal::Decimal>, Option<i64>) = sqlx::query_as(
         r#"
         WITH pos AS (
@@ -235,22 +236,21 @@ async fn compute_bucket(
             WHERE account = $1
               AND block_time <= $2
             ORDER BY vault_address, block_number DESC, log_index DESC
-        ),
-        nav AS (
-            SELECT DISTINCT ON (vault_address)
-                vault_address AS vault_text,
-                nav_per_share
-            FROM vault_snapshots
-            WHERE created_at <= $2
-            ORDER BY vault_address, created_at DESC
         )
         SELECT
-            COALESCE(SUM((pos.shares_after / 1e18) * nav.nav_per_share)::numeric(38,18), 0) AS portfolio_value,
+            COALESCE(SUM((pos.shares_after / 1e18) * COALESCE(nav.nav_per_share, 1.0))::numeric(38,18), 0) AS portfolio_value,
             COALESCE(SUM(pos.cost_basis_after / 1e18)::numeric(38,18), 0)            AS cost_basis,
             COALESCE(SUM(pos.realized_pnl_after / 1e18)::numeric(38,18), 0)           AS realized_pnl,
             COUNT(*) FILTER (WHERE pos.shares_after > 0)                              AS contributing_vaults
         FROM pos
-        LEFT JOIN nav ON nav.vault_text = ('0x' || encode(pos.vault_address, 'hex'))
+        LEFT JOIN LATERAL (
+            SELECT nav_per_share
+            FROM vault_snapshots
+            WHERE vault_address = ('0x' || encode(pos.vault_address, 'hex'))
+              AND created_at <= $2
+            ORDER BY created_at DESC
+            LIMIT 1
+        ) nav ON TRUE
         "#,
     )
     .bind(account)
