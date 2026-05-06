@@ -853,7 +853,7 @@ pub async fn poll_user_orders_once(state: &AppState) -> Result<(), Box<dyn std::
                         status, fill_price, fill_amount, \
                         EXTRACT(EPOCH FROM order_timestamp)::bigint \
                  FROM trades WHERE LOWER(user_address) = $1 AND order_id < $2 \
-                 AND (status IN (0, 1) OR order_timestamp > NOW() - INTERVAL '5 minutes') \
+                 AND (status IN (0, 1) OR fill_timestamp > NOW() - INTERVAL '24 hours' OR order_timestamp > NOW() - INTERVAL '24 hours') \
                  ORDER BY order_id DESC LIMIT 50"
             )
             .bind(user_addr)
@@ -867,7 +867,7 @@ pub async fn poll_user_orders_once(state: &AppState) -> Result<(), Box<dyn std::
                         status, fill_price, fill_amount, \
                         EXTRACT(EPOCH FROM order_timestamp)::bigint \
                  FROM trades WHERE LOWER(user_address) = $1 \
-                 AND (status IN (0, 1) OR order_timestamp > NOW() - INTERVAL '5 minutes') \
+                 AND (status IN (0, 1) OR fill_timestamp > NOW() - INTERVAL '24 hours' OR order_timestamp > NOW() - INTERVAL '24 hours') \
                  ORDER BY order_id DESC LIMIT 50"
             )
             .bind(user_addr)
@@ -1141,7 +1141,8 @@ pub async fn poll_pending_orders_once(state: &AppState) -> Result<(), Box<dyn st
         let tick = RECONCILE_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         if tick % 30 == 0 {
             let stale_rows = sqlx::query_as::<_, (i64,)>(
-                "SELECT order_id FROM trades WHERE status = 0 \
+                "SELECT order_id FROM trades \
+                 WHERE status IN (0, 1) \
                  AND order_timestamp < NOW() - INTERVAL '60 seconds' \
                  ORDER BY order_id DESC LIMIT 20"
             )

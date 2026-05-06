@@ -97,6 +97,10 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
   const [txError, setTxError] = useState<string | null>(null)
   const [fillPrice, setFillPrice] = useState<bigint | null>(null)
   const [fillAmount, setFillAmount] = useState<bigint | null>(null)
+  // Captured at SUBMIT time so we can detect the on-chain burn directly,
+  // independent of SSE. Mirrors the buy modal's initialSharesBn pattern —
+  // SSE drops FILLED orders quickly and can hide the fill from the modal.
+  const [initialSharesBn, setInitialSharesBn] = useState<bigint | null>(null)
   type Holding = { symbol: string; address: string; weight: number; price: number; name?: string; image?: string }
   const [holdings, setHoldings] = useState<Holding[]>([])
   const [skippedApproval, setSkippedApproval] = useState(false)
@@ -232,6 +236,9 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
         needs_approval: false,
       })
       setSkippedApproval(true)
+      // Snapshot pre-submit shares so the chain-burn fallback effect can
+      // detect a fill without depending on SSE.
+      setInitialSharesBn(l3Shares)
     }
     setMicro(SellMicro.SUBMIT)
 
@@ -352,6 +359,19 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
       setMicro(SellMicro.FILL)
     }
   }, [trackedOrder, micro, orderId])
+
+  // Chain-poll fallback: when the on-chain shares decrease past our pre-submit
+  // snapshot, the burn happened — advance to DONE regardless of SSE state.
+  // SSE drops FILLED orders fast (24h window now, but historically 5min) and
+  // can lose the fill before this modal sees it. Mirrors the buy modal's
+  // userShares > initialSharesBn pattern, inverted for sells.
+  useEffect(() => {
+    if (micro < SellMicro.RELAY || micro >= SellMicro.DONE) return
+    if (initialSharesBn === null) return
+    if (l3Shares < initialSharesBn) {
+      setMicro(SellMicro.DONE)
+    }
+  }, [micro, l3Shares, initialSharesBn])
 
   useEffect(() => {
     if (approveError) {
