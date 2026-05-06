@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from 'react'
 import {
   LineChart,
   Line,
+  ReferenceLine,
   ResponsiveContainer,
   XAxis,
   YAxis,
@@ -16,6 +17,22 @@ interface PriceHistoryPoint {
   value: number
 }
 
+interface SettlementMarker {
+  /** Unix ms timestamp of settlement */
+  at: number
+  /** Outcome label drives marker color */
+  outcome: 'Up' | 'Down' | 'Flat' | 'Cancelled' | 'AllSameSide' | 'AllLosers'
+}
+
+const OUTCOME_COLOR: Record<SettlementMarker['outcome'], string> = {
+  Up: '#16a34a',
+  Down: '#dc2626',
+  Flat: '#94a3b8',
+  Cancelled: '#94a3b8',
+  AllSameSide: '#f59e0b',
+  AllLosers: '#f59e0b',
+}
+
 function formatValue(v: number): string {
   if (v === 0) return '0'
   if (Math.abs(v) < 0.0001) return v.toExponential(2)
@@ -26,7 +43,15 @@ function formatValue(v: number): string {
   return v.toFixed(2)
 }
 
-export default function AssetHistory({ dataNodeSourceId, assetId }: { dataNodeSourceId: string; assetId: string }) {
+export default function AssetHistory({
+  dataNodeSourceId,
+  assetId,
+  settlements = [],
+}: {
+  dataNodeSourceId: string
+  assetId: string
+  settlements?: SettlementMarker[]
+}) {
   const t = useTranslations('vision')
   const locale = useLocale()
   const [points, setPoints] = useState<PriceHistoryPoint[]>([])
@@ -107,6 +132,34 @@ export default function AssetHistory({ dataNodeSourceId, assetId }: { dataNodeSo
     ? points.filter((_, i) => i % Math.ceil(points.length / 200) === 0 || i === points.length - 1)
     : points
 
+  // Snap each settlement to the nearest displayed point's fetchedAt — Recharts
+  // uses category-axis matching on the dataKey string, so the marker x must
+  // exist in the data set or it won't render.
+  const markerLines = useMemo(() => {
+    if (!settlements.length || displayPoints.length === 0) return []
+    const ts = displayPoints.map(p => new Date(p.fetchedAt).getTime())
+    const minTs = ts[0]
+    const maxTs = ts[ts.length - 1]
+    return settlements
+      .filter(s => s.at >= minTs && s.at <= maxTs)
+      .map(s => {
+        let bestIdx = 0
+        let bestDiff = Math.abs(ts[0] - s.at)
+        for (let i = 1; i < ts.length; i++) {
+          const d = Math.abs(ts[i] - s.at)
+          if (d < bestDiff) {
+            bestDiff = d
+            bestIdx = i
+          }
+        }
+        return {
+          x: displayPoints[bestIdx].fetchedAt,
+          color: OUTCOME_COLOR[s.outcome],
+          key: `${s.at}-${s.outcome}`,
+        }
+      })
+  }, [settlements, displayPoints])
+
   return (
     <div className="bg-surface/50 px-4 py-3">
       <div className="flex items-center justify-between mb-2">
@@ -163,6 +216,16 @@ export default function AssetHistory({ dataNodeSourceId, assetId }: { dataNodeSo
             dot={false}
             isAnimationActive={false}
           />
+          {markerLines.map(m => (
+            <ReferenceLine
+              key={m.key}
+              x={m.x}
+              stroke={m.color}
+              strokeWidth={1}
+              strokeDasharray="2 2"
+              ifOverflow="hidden"
+            />
+          ))}
         </LineChart>
       </ResponsiveContainer>
     </div>
