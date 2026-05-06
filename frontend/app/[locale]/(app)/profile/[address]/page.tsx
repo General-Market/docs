@@ -1,6 +1,6 @@
 'use client'
 
-import { use, Suspense, useState } from 'react'
+import { use, useMemo, Suspense, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useAccount } from 'wagmi'
 import { useTranslations } from 'next-intl'
@@ -15,13 +15,10 @@ import { IndexTab } from '@/components/domain/profile/IndexTab'
 import { VaultsTab } from '@/components/domain/profile/VaultsTab'
 import { usePlayerProfile } from '@/hooks/usePlayerProfile'
 import { useVaultsTotals } from '@/hooks/useVaultsTotals'
-import { useOnChainVaultPositions } from '@/hooks/vaults/useOnChainVaultPositions'
 import {
-  useVaultsPortfolioHistory,
-  type VaultHolding,
-  type PortfolioHistoryRange,
-} from '@/hooks/vaults/useVaultsPortfolioHistory'
-import fundData from '@/data/fund-branding.json'
+  useAccountPnlHistory,
+  type AccountPnlRange,
+} from '@/hooks/vaults/useAccountPnlHistory'
 import { formatPnL, formatVolume } from '@/lib/utils/formatters'
 import { computeDerivedMetrics, formatJoined } from '@/lib/utils/profile-metrics'
 
@@ -50,32 +47,21 @@ function ProfileContent({ address }: { address: string }) {
   // own profile — the SSE streams scope to the connected wallet.
   const vaultTotals = useVaultsTotals(isSelf && tab === 'vaults')
 
-  // Per-vault NAV histories merged into one portfolio P&L curve. Same fund-
-  // branding source of truth that VaultsTab uses; on-chain shares from the
-  // multicall hook (cached, so this and VaultsTab share one fetch).
-  const vaultsActive = isSelf && tab === 'vaults'
-  const { shares: holdingsShares } = useOnChainVaultPositions(
-    vaultsActive ? (connectedAddress as `0x${string}` | undefined) : undefined,
-  )
-  const vaultHoldings = (() => {
-    if (!vaultsActive) return [] as VaultHolding[]
-    const funds = (fundData as { funds: Array<{ vault?: string }> }).funds.filter((f) => !!f.vault)
-    const list: VaultHolding[] = []
-    for (const f of funds) {
-      const lower = (f.vault as string).toLowerCase()
-      const s = holdingsShares.get(lower) ?? 0n
-      if (s > 0n) list.push({ vaultAddress: lower, sharesBigInt: s })
-    }
-    return list
-  })()
-  // Chart range is controlled at the page level so the issuer fetch matches
-  // the user's view: 1D → 5min buckets, 1W → 35min, 1M → 3h, ALL → 6h.
+  // The account-level P&L curve is now precomputed by the data-node writer
+  // and read in one indexed lookup — no per-vault fanout, no client merge,
+  // no "current shares × historical NAV" approximation.
   const [pnlRange, setPnlRange] = useState<PnlTimeRange>('ALL')
-  const rangeParam: PortfolioHistoryRange =
+  const rangeParam: AccountPnlRange =
     pnlRange === '1D' ? '1d' : pnlRange === '1W' ? '1w' : pnlRange === '1M' ? '1m' : 'all'
-  const { history: vaultsPortfolioHistory } = useVaultsPortfolioHistory(
-    vaultHoldings,
+  const showingVaultsForCurve = tab === 'vaults' && isSelf
+  const { history: pnlPoints } = useAccountPnlHistory(
+    showingVaultsForCurve ? address : undefined,
     rangeParam,
+  )
+  const vaultsPortfolioHistory = useMemo(
+    () =>
+      pnlPoints.map((p) => ({ timestamp: new Date(p.ts).toISOString(), pnl: p.pnl })),
+    [pnlPoints],
   )
 
   const handleTabChange = (newTab: ProfileTabId) => {

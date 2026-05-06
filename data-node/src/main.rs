@@ -8,6 +8,9 @@ mod cg_collector;
 pub mod chain_cache;
 pub mod chain_event_scanner;
 mod chain_pollers;
+mod vault_event_writer;
+mod vault_event_backfill;
+mod account_pnl_curve_writer;
 mod coingecko;
 mod collector;
 mod collector_loop;
@@ -66,6 +69,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Command::SyncListings(args) => listing_sync::run(args).await,
         Command::DlBackfill(args) => dl_backfill::run(args).await,
         Command::VerifyDeployment(args) => run_verify_deployment(args).await,
+        Command::BackfillVaultEvents(args) => vault_event_backfill::run(args).await,
+        Command::BuildAccountPnlCurve(args) => account_pnl_curve_writer::run_oneshot(args).await,
     }
 }
 

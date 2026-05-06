@@ -2605,6 +2605,21 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
         info!("Chain event scanner started (L3 + Settlement)");
     }
 
+    // VisionVault share-event ledger (account_vault_positions). Independent
+    // of the broadcast channel above — writes directly to pg.
+    {
+        let _h = crate::vault_event_writer::spawn(Arc::clone(&app_state));
+        info!("Vault event writer started (account_vault_positions)");
+    }
+
+    // Precomputed per-account PnL curve. Ticks every 60s, materializes the
+    // latest bucket per (account, bucket_secs). Backfill must run separately
+    // via `data-node build-account-pnl-curve`.
+    {
+        let _h = crate::account_pnl_curve_writer::spawn(app_state.pool.clone());
+        info!("Account PnL curve writer started");
+    }
+
     // Spawn points engine (vision round-based + index hourly)
     {
         let points_pool = app_state.pool.clone();

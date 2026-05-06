@@ -24,6 +24,14 @@ pub enum Command {
     /// Verify a deployment JSON against a live chain. Exits non-zero if the
     /// chain id mismatches or any contract address is codeless. CI-friendly.
     VerifyDeployment(VerifyDeploymentArgs),
+    /// One-shot backfill of VisionVault share events into account_vault_positions.
+    /// Replays Deposit/Withdraw/Transfer logs from each vault's deployment block
+    /// and rebuilds the running cost-basis ledger. Idempotent.
+    BackfillVaultEvents(BackfillVaultEventsArgs),
+    /// Materialize the precomputed account PnL curve from
+    /// account_vault_positions × vault_snapshots. Catches up everyone whose
+    /// last bucket is older than the live tail.
+    BuildAccountPnlCurve(BuildAccountPnlCurveArgs),
 }
 
 #[derive(Parser, Debug)]
@@ -308,6 +316,58 @@ pub struct ServeArgs {
     /// Path to sources-display.json (canonical source registry shared with frontend)
     #[arg(long, default_value = "../frontend/data/sources-display.json", env = "SOURCES_DISPLAY_FILE")]
     pub sources_display_file: String,
+}
+
+#[derive(Parser, Debug)]
+pub struct BackfillVaultEventsArgs {
+    #[arg(long, env = "DATABASE_URL")]
+    pub database_url: String,
+
+    #[arg(long, env = "INDEX_RPC_URL", default_value = "http://localhost:8545")]
+    pub rpc: String,
+
+    /// fund-branding.json. Defaults to the path the live daemon uses.
+    #[arg(long, env = "FUND_BRANDING_FILE", default_value = "frontend/data/fund-branding.json")]
+    pub fund_branding_file: String,
+
+    /// First block to scan. If omitted, the script reads each vault's
+    /// deployment block from the chain (oldest log) — slower but safe.
+    #[arg(long)]
+    pub from_block: Option<u64>,
+
+    /// Stop block. Defaults to current head minus a safety margin.
+    #[arg(long)]
+    pub to_block: Option<u64>,
+
+    /// Block range per get_logs call.
+    #[arg(long, default_value = "5000")]
+    pub chunk_size: u64,
+
+    #[arg(long, default_value = "info", env = "DATA_NODE_LOG_LEVEL")]
+    pub log_level: String,
+}
+
+#[derive(Parser, Debug)]
+pub struct BuildAccountPnlCurveArgs {
+    #[arg(long, env = "DATABASE_URL")]
+    pub database_url: String,
+
+    /// Bucket size to materialize. Repeat the flag to materialize multiple
+    /// (the writer matches range → bucket: 1d=300, 1w=2100, 1m=10800, all=21600).
+    #[arg(long, default_values_t = vec![300i64, 2100, 10800, 21600])]
+    pub bucket_secs: Vec<i64>,
+
+    /// Override the per-bucket retention window. If unset, the writer
+    /// materializes back to each account's earliest position event.
+    #[arg(long)]
+    pub max_lookback_days: Option<i64>,
+
+    /// Restrict to a single account. Useful for debugging.
+    #[arg(long)]
+    pub account: Option<String>,
+
+    #[arg(long, default_value = "info", env = "DATA_NODE_LOG_LEVEL")]
+    pub log_level: String,
 }
 
 #[derive(Parser, Debug)]

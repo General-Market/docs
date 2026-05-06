@@ -579,6 +579,7 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/morpho-history", get(morpho_history))
         .route("/order", get(order))
         .route("/vault-balances", get(vault_balances))
+        .route("/account/:address/pnl-history", get(account_pnl_history))
         .route("/logo/:coin_id", get(serve_logo))
         .route("/coin-map", get(coin_map))
         .route("/cg/categories", get(cg_categories))
@@ -1863,6 +1864,128 @@ struct PortfolioHistoryPoint {
 #[derive(Serialize)]
 struct PortfolioHistoryResponse {
     points: Vec<PortfolioHistoryPoint>,
+}
+
+// ── Account PnL curve (precomputed) ────────────────────────────────────
+
+#[derive(Deserialize)]
+struct AccountPnlHistoryQuery {
+    /// "1d" | "1w" | "1m" | "all". Defaults to "all".
+    range: Option<String>,
+}
+
+#[derive(Serialize)]
+struct AccountPnlPoint {
+    ts: i64,
+    value: f64,
+    cost: f64,
+    pnl: f64,
+    realized_pnl: f64,
+}
+
+#[derive(Serialize)]
+struct AccountPnlHistoryResponse {
+    range: String,
+    bucket_secs: i32,
+    points: Vec<AccountPnlPoint>,
+    last_updated: Option<String>,
+}
+
+fn range_to_bucket_secs(range: &str) -> (&'static str, i32) {
+    match range {
+        "1d" => ("1d", 300),
+        "1w" => ("1w", 2100),
+        "1m" => ("1m", 10800),
+        _    => ("all", 21600),
+    }
+}
+
+async fn account_pnl_history(
+    State(state): State<Arc<AppState>>,
+    axum::extract::Path(address): axum::extract::Path<String>,
+    Query(q): Query<AccountPnlHistoryQuery>,
+) -> Result<axum::response::Response, (StatusCode, Json<ErrorResponse>)> {
+    let address = address.to_lowercase();
+    let bytes = parse_eth_address(&address).ok_or((
+        StatusCode::BAD_REQUEST,
+        Json(ErrorResponse { error: "invalid address".into() }),
+    ))?;
+
+    let range = q.range.as_deref().unwrap_or("all").to_lowercase();
+    let (range_label, bucket_secs) = range_to_bucket_secs(&range);
+
+    // Read window matches the chart's 4 ranges. Capped to 500 points.
+    let interval = match range_label {
+        "1d" => "1 day",
+        "1w" => "7 days",
+        "1m" => "30 days",
+        _    => "10 years",
+    };
+
+    let sql = format!(
+        "SELECT bucket_ts, portfolio_value, cost_basis, pnl, realized_pnl, computed_at
+         FROM account_pnl_curve
+         WHERE account = $1
+           AND bucket_secs = $2
+           AND bucket_ts >= NOW() - INTERVAL '{interval}'
+         ORDER BY bucket_ts ASC
+         LIMIT 500"
+    );
+
+    let rows: Vec<(
+        chrono::DateTime<chrono::Utc>,
+        rust_decimal::Decimal,
+        rust_decimal::Decimal,
+        rust_decimal::Decimal,
+        rust_decimal::Decimal,
+        chrono::DateTime<chrono::Utc>,
+    )> = sqlx::query_as(&sql)
+        .bind(&bytes[..])
+        .bind(bucket_secs)
+        .fetch_all(&state.pool)
+        .await
+        .map_err(db_error)?;
+
+    let last_updated = rows.last().map(|r| r.5.to_rfc3339());
+    let points: Vec<AccountPnlPoint> = rows
+        .into_iter()
+        .map(|(ts, value, cost, pnl, realized, _ca)| AccountPnlPoint {
+            ts: ts.timestamp_millis(),
+            value: dec_to_f64(value),
+            cost: dec_to_f64(cost),
+            pnl: dec_to_f64(pnl),
+            realized_pnl: dec_to_f64(realized),
+        })
+        .collect();
+
+    let body = AccountPnlHistoryResponse {
+        range: range_label.to_string(),
+        bucket_secs,
+        points,
+        last_updated,
+    };
+
+    use axum::response::IntoResponse;
+    let mut response = (StatusCode::OK, Json(body)).into_response();
+    response.headers_mut().insert(
+        axum::http::header::CACHE_CONTROL,
+        axum::http::HeaderValue::from_static("public, s-maxage=30, stale-while-revalidate=30"),
+    );
+    Ok(response)
+}
+
+fn parse_eth_address(s: &str) -> Option<[u8; 20]> {
+    let s = s.strip_prefix("0x").unwrap_or(s);
+    let bytes = hex::decode(s).ok()?;
+    if bytes.len() != 20 { return None; }
+    let mut out = [0u8; 20];
+    out.copy_from_slice(&bytes);
+    Some(out)
+}
+
+fn dec_to_f64(d: rust_decimal::Decimal) -> f64 {
+    use rust_decimal::prelude::ToPrimitive;
+    d.to_f64().unwrap_or(0.0)
 }
 
 async fn portfolio_history(
