@@ -1569,6 +1569,39 @@ impl BatchLifecycleManager {
             .bind(mr.pct_change_bps)
             .execute(&self.pool)
             .await?;
+
+            for pr in &mr.player_results {
+                let side_str = match pr.side {
+                    Side::Up => "Up",
+                    Side::Down => "Down",
+                };
+                let won = matches!(
+                    (&mr.outcome, pr.side),
+                    (super::types::MarketOutcome::Up, Side::Up)
+                        | (super::types::MarketOutcome::Down, Side::Down),
+                );
+                sqlx::query(
+                    "INSERT INTO vision_asset_settlement_players
+                         (batch_id, asset_id, player, side, won,
+                          effective_stake, payout, settled_at)
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+                     ON CONFLICT (batch_id, asset_id, player) DO UPDATE SET
+                         side = EXCLUDED.side,
+                         won = EXCLUDED.won,
+                         effective_stake = EXCLUDED.effective_stake,
+                         payout = EXCLUDED.payout,
+                         settled_at = EXCLUDED.settled_at",
+                )
+                .bind(tick_result.batch_id as i64)
+                .bind(&mr.asset_id)
+                .bind(format!("{:?}", pr.player))
+                .bind(side_str)
+                .bind(won)
+                .bind(pr.effective_stake.to_string())
+                .bind(pr.payout.to_string())
+                .execute(&self.pool)
+                .await?;
+            }
         }
 
         Ok(())

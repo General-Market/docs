@@ -140,6 +140,10 @@ pub fn routes(state: Arc<VisionState>) -> axum::Router {
         .route("/vision/explorer/tie-rate-history", get(tie_rate_history))
         .route("/vision/explorer/source-stats", get(source_stats))
         .route("/vision/batch/:id/ratios", get(batch_ratios))
+        .route(
+            "/vision/asset/:source_id/:asset_id/settlements",
+            get(asset_settlements),
+        )
         .route("/vision/vault/:address/history", get(vault_history))
         .route("/vision/sse/settlements", get(sse_settlements))
         .route("/vision/stats/global", get(vision_stats_global))
@@ -3106,6 +3110,141 @@ async fn player_rounds(
             (StatusCode::OK, Json(serde_json::json!({ "rounds": Vec::<()>::new() }))).into_response()
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// GET /vision/asset/:source_id/:asset_id/settlements — chart-ready history
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Deserialize)]
+struct AssetSettlementsQuery {
+    limit: Option<i64>,
+}
+
+/// Per-asset settlement history with per-player breakdown.
+///
+/// One row per settled (batch, asset) plus a `players` array for the matrix.
+/// Joined to `vision_batch_lifecycle` so we can filter by `source_id` and use
+/// the lifecycle's `settled_at` timestamp to align with the chart.
+async fn asset_settlements(
+    State(state): State<Arc<VisionState>>,
+    Path((source_id, asset_id)): Path<(String, String)>,
+    Query(query): Query<AssetSettlementsQuery>,
+) -> impl IntoResponse {
+    let limit = query.limit.unwrap_or(200).clamp(1, 500);
+
+    #[derive(sqlx::FromRow)]
+    struct Row {
+        batch_id: i64,
+        settled_at: chrono::DateTime<chrono::Utc>,
+        outcome: String,
+        up_stake: String,
+        down_stake: String,
+        pct_change_bps: i64,
+    }
+
+    let rows = sqlx::query_as::<_, Row>(
+        "SELECT mr.batch_id,
+                COALESCE(bl.settled_at, mr.settled_at) AS settled_at,
+                mr.outcome,
+                mr.up_stake,
+                mr.down_stake,
+                mr.pct_change_bps
+           FROM vision_market_ratios mr
+           JOIN vision_batch_lifecycle bl ON bl.batch_id = mr.batch_id
+          WHERE bl.source_id = $1
+            AND mr.asset_id = $2
+            AND bl.settled_at IS NOT NULL
+          ORDER BY bl.settled_at DESC
+          LIMIT $3",
+    )
+    .bind(&source_id)
+    .bind(&asset_id)
+    .bind(limit)
+    .fetch_all(&state.pool)
+    .await;
+
+    let rows = match rows {
+        Ok(r) => r,
+        Err(e) => {
+            warn!("asset_settlements query failed for {source_id}/{asset_id}: {e}");
+            return (
+                StatusCode::OK,
+                Json(serde_json::json!({ "settlements": Vec::<()>::new() })),
+            )
+                .into_response();
+        }
+    };
+
+    let batch_ids: Vec<i64> = rows.iter().map(|r| r.batch_id).collect();
+
+    #[derive(sqlx::FromRow)]
+    struct PlayerRow {
+        batch_id: i64,
+        player: String,
+        side: String,
+        won: bool,
+        effective_stake: String,
+        payout: String,
+    }
+
+    let players = if batch_ids.is_empty() {
+        Vec::new()
+    } else {
+        match sqlx::query_as::<_, PlayerRow>(
+            "SELECT batch_id, player, side, won, effective_stake, payout
+               FROM vision_asset_settlement_players
+              WHERE asset_id = $1
+                AND batch_id = ANY($2)",
+        )
+        .bind(&asset_id)
+        .bind(&batch_ids)
+        .fetch_all(&state.pool)
+        .await
+        {
+            Ok(p) => p,
+            Err(e) => {
+                warn!("asset_settlements players query failed: {e}");
+                Vec::new()
+            }
+        }
+    };
+
+    let mut by_batch: std::collections::HashMap<i64, Vec<serde_json::Value>> =
+        std::collections::HashMap::new();
+    for p in players {
+        by_batch
+            .entry(p.batch_id)
+            .or_default()
+            .push(serde_json::json!({
+                "player": p.player,
+                "side": p.side,
+                "won": p.won,
+                "effectiveStake": p.effective_stake,
+                "payout": p.payout,
+            }));
+    }
+
+    let settlements: Vec<serde_json::Value> = rows
+        .into_iter()
+        .map(|r| {
+            serde_json::json!({
+                "batchId": r.batch_id,
+                "settledAt": r.settled_at,
+                "outcome": r.outcome,
+                "upStake": r.up_stake,
+                "downStake": r.down_stake,
+                "pctChangeBps": r.pct_change_bps,
+                "players": by_batch.remove(&r.batch_id).unwrap_or_default(),
+            })
+        })
+        .collect();
+
+    (
+        StatusCode::OK,
+        Json(serde_json::json!({ "settlements": settlements })),
+    )
+        .into_response()
 }
 
 // ---------------------------------------------------------------------------
