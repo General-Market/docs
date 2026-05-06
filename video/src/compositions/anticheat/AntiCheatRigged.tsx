@@ -59,7 +59,7 @@ const ARTICLES: ArticleProof[] = [
     category: "options",
     image: "insider-trading/articles/9.png",
     highlights: [{ x: 0.4119, y: 0.1968, w: 0.2831, h: 0.042 }],
-    exchangeBox: { x: 0.215, y: 0.135, w: 0.20, h: 0.042 },
+    exchangeBox: { x: 0.215, y: 0.135, w: 0.175, h: 0.042 },
   },
   {
     exchange: "polymarket",
@@ -84,13 +84,6 @@ const ARTICLES: ArticleProof[] = [
     image: "insider-trading/articles/6.png",
     highlights: [{ x: 0.4819, y: 0.176, w: 0.216, h: 0.0303 }],
     exchangeBox: { x: 0.052, y: 0.176, w: 0.085, h: 0.030 },
-  },
-  {
-    exchange: "nyse",
-    category: "equity",
-    image: "insider-trading/articles/8.png",
-    highlights: [{ x: 0.0522, y: 0.5101, w: 0.3917, h: 0.0519 }],
-    // No exchangeBox — NYSE isn't named in this SEC/Cohen press release.
   },
   {
     exchange: "coinbase",
