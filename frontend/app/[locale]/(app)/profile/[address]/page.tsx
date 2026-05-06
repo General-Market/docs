@@ -54,7 +54,7 @@ function ProfileContent({ address }: { address: string }) {
   const rangeParam: AccountPnlRange =
     pnlRange === '1D' ? '1d' : pnlRange === '1W' ? '1w' : pnlRange === '1M' ? '1m' : 'all'
   const showingVaultsForCurve = tab === 'vaults' && isSelf
-  const { history: pnlPoints } = useAccountPnlHistory(
+  const { history: pnlPoints, livePnl: pnlLive } = useAccountPnlHistory(
     showingVaultsForCurve ? address : undefined,
     rangeParam,
   )
@@ -69,11 +69,19 @@ function ProfileContent({ address }: { address: string }) {
   }
 
   // On the vaults tab we show the vault aggregate instead of the player's
-  // vision P&L — different accounting, same hero slot.
+  // vision P&L — different accounting, same hero slot. Prefer the
+  // deposit-aware figure from the data-node curve (pnlLive) over the
+  // approximated totals when available.
   const showingVaults = tab === 'vaults' && isSelf
   const vaultsPriced = !vaultTotals.pricingIncomplete
+  const headlinePnl =
+    showingVaults && pnlLive !== null
+      ? pnlLive
+      : showingVaults && vaultsPriced
+        ? vaultTotals.totalPnl
+        : null
   const displayPnl = showingVaults
-    ? vaultsPriced ? vaultTotals.totalPnl : 0
+    ? headlinePnl ?? 0
     : profile?.stats.pnl ?? 0
   const pnlColor = displayPnl >= 0 ? 'text-color-up' : 'text-color-down'
 
@@ -91,8 +99,8 @@ function ProfileContent({ address }: { address: string }) {
         },
         {
           label: t('pnl'),
-          value: vaultsPriced ? formatPnL(vaultTotals.totalPnl) : '—',
-          color: vaultsPriced ? pnlColor : undefined,
+          value: headlinePnl !== null ? formatPnL(headlinePnl) : '—',
+          color: headlinePnl !== null ? pnlColor : undefined,
         },
         {
           label: t('vaults'),
@@ -127,7 +135,7 @@ function ProfileContent({ address }: { address: string }) {
         joined={joinedLabel}
         stats={stats}
         pnlHistory={showingVaults ? vaultsPortfolioHistory : profile?.pnlHistory ?? []}
-        pnlOverride={showingVaults && vaultsPriced ? vaultTotals.totalPnl : undefined}
+        pnlOverride={showingVaults && headlinePnl !== null ? headlinePnl : undefined}
         pnlRange={pnlRange}
         onPnlRangeChange={setPnlRange}
       />

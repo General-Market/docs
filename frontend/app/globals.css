@@ -1,8 +1,8 @@
+@import "../styles/apple-tokens.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import "../styles/apple-tokens.css";
 
 :root {
   --background: #FFFFFF;
