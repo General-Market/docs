@@ -31,12 +31,13 @@ const TOTAL_FRAMES = SCENES.reduce(
   0,
 );
 
-// Music covers Hook (7.5s) + Bars (3s) + Rigged (4.5s). It dies just after
-// the rigged verdict — silence + SFX carry the closing third.
+// Music covers Hook (7.5s) + Bars (3s) + Rigged (4.5s) + Stat (3s) = 18s. It
+// dies on the data verdict — silence + SFX carry the closing third.
 const MUSIC_FRAMES =
   antiCheatHookMeta.durationInFrames +
   antiCheatBarsMeta.durationInFrames +
-  antiCheatRiggedMeta.durationInFrames;
+  antiCheatRiggedMeta.durationInFrames +
+  antiCheatStatMeta.durationInFrames;
 const MUSIC_FADE_OUT = Math.round(FPS * 0.8);
 const MUSIC_VOLUME = 0.55;
 
