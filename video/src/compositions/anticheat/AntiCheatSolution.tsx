@@ -124,7 +124,7 @@ const Headline: React.FC = () => {
 const TERMINAL_LINES: { text: string; color: string; mode: "cmd" | "user" | "ok" }[] = [
   { text: "$ claude", color: "#9aa0a6", mode: "cmd" },
   { text: "> upgrade my bot to block-trading", color: "#f1f3f5", mode: "user" },
-  { text: "✓ shielded", color: "#5BFF9A", mode: "ok" },
+  { text: "✓ shielded", color: "#5B86FF", mode: "ok" },
 ];
 
 const Terminal: React.FC = () => {

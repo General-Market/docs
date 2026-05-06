@@ -100,7 +100,7 @@ export const AntiCheatEndCard: React.FC = () => {
         <div
           style={{
             fontFamily: font,
-            fontSize: 340,
+            fontSize: 220,
             fontWeight: 800,
             letterSpacing: "-0.05em",
             color: "#FFFFFF",
@@ -110,10 +110,10 @@ export const AntiCheatEndCard: React.FC = () => {
             transformOrigin: "center",
             display: "flex",
             alignItems: "center",
-            gap: 44,
+            gap: 30,
           }}
         >
-          <GeneralMark size={300} />
+          <GeneralMark size={200} />
           <span>General</span>
         </div>
 
@@ -251,9 +251,11 @@ const GeneralMark: React.FC<{ size: number }> = ({ size }) => {
 // Same two-layer recipe as DotGrid, but in white over the blue field. Inlined
 // here because the fill color is the only difference.
 
-// Concentric wave fronts emanate from the logo center. Each fine-grid dot
-// brightens as a wave passes through, dimming back to the baseline. Several
-// waves run simultaneously at staggered phases — the choke effect.
+// One shock event at scene start. Five concentric rings spawned in quick
+// succession — a single impact, not a continuous loop. Each ring expands
+// outward, brightens dots it passes through, and fades as it travels. After
+// the rings die past the canvas edge, the field returns to the baseline
+// dot grid for the rest of the scene.
 
 const FINE_SPACING = 14;
 const FINE_RADIUS = 1.6;
@@ -261,32 +263,34 @@ const FINE_ALPHA_BASE = 0.18;
 const FINE_ALPHA_PEAK = 1.0;
 const WHITE = "#FFFFFF";
 
-// Wave parameters — tuned for a slow continuous pulse, not a frantic strobe.
-const WAVE_COUNT = 5;
-const WAVE_PERIOD_SEC = 0.95;       // time between successive wave spawns
-const WAVE_SPEED_PX = 720;          // outward speed
-const WAVE_THICKNESS_PX = 90;       // how wide the bright band of each wave is
-const WAVE_LIFETIME_SEC = WAVE_COUNT * WAVE_PERIOD_SEC;
-const WAVE_MAX_RADIUS = WAVE_SPEED_PX * WAVE_LIFETIME_SEC;
+const SHOCK_RING_COUNT = 5;          // number of concentric rings in the shock
+const SHOCK_RING_SPACING_SEC = 0.10; // delay between successive ring spawns
+const SHOCK_SPEED_PX = 1100;         // outward speed (faster than continuous)
+const SHOCK_THICKNESS_PX = 80;       // width of each bright ring
+const SHOCK_LIFETIME_SEC = 1.6;      // how long an individual ring stays alive
+const SHOCK_START_SEC = 0.05;        // tiny delay so the shock lands with the punch
 
 type WaveFront = {
-  radius: number;     // current radius (px)
-  intensity: number;  // 0..1, peaks mid-life and fades at start + end
+  radius: number;
+  intensity: number;
 };
 
-const computeWaves = (timeSec: number): WaveFront[] => {
+const computeShockWaves = (timeSec: number): WaveFront[] => {
   const waves: WaveFront[] = [];
-  for (let i = 0; i < WAVE_COUNT; i++) {
-    // Wave i was last spawned WAVE_PERIOD_SEC * i seconds ago, modulated
-    // by the wave-cycle so the system loops cleanly.
-    const phase =
-      ((timeSec - i * WAVE_PERIOD_SEC) % WAVE_LIFETIME_SEC + WAVE_LIFETIME_SEC) %
-      WAVE_LIFETIME_SEC;
-    const lifeT = phase / WAVE_LIFETIME_SEC;
-    const radius = phase * WAVE_SPEED_PX;
-    // Bell curve so each wave fades in then out across its lifetime.
-    const intensity = Math.sin(lifeT * Math.PI);
-    waves.push({ radius, intensity });
+  for (let i = 0; i < SHOCK_RING_COUNT; i++) {
+    const spawnAt = SHOCK_START_SEC + i * SHOCK_RING_SPACING_SEC;
+    const age = timeSec - spawnAt;
+    if (age < 0 || age > SHOCK_LIFETIME_SEC) continue;
+    const lifeT = age / SHOCK_LIFETIME_SEC;
+    // Bell curve over the ring's life: sharp ramp in, slow fade.
+    const intensity =
+      lifeT < 0.15
+        ? lifeT / 0.15
+        : Math.pow(1 - (lifeT - 0.15) / 0.85, 1.4);
+    waves.push({
+      radius: age * SHOCK_SPEED_PX,
+      intensity,
+    });
   }
   return waves;
 };
@@ -298,15 +302,11 @@ const WhiteDotGrid: React.FC = () => {
   const cx = W / 2;
   const cy = H / 2;
 
-  const waves = computeWaves(t);
+  const waves = computeShockWaves(t);
 
   const cols = Math.ceil(W / FINE_SPACING) + 2;
   const rows = Math.ceil(H / FINE_SPACING) + 2;
 
-  // Render two passes for the wave dots — one at base alpha (always shown)
-  // and one boosted layer where waves pass through. The boosted dots use
-  // a slightly larger radius so the wave fronts read as a thicker ring
-  // crossing the field.
   const baseDots: React.ReactNode[] = [];
   const boostDots: React.ReactNode[] = [];
 
@@ -314,20 +314,6 @@ const WhiteDotGrid: React.FC = () => {
     const y = ry * FINE_SPACING - FINE_SPACING / 2;
     for (let rx = 0; rx < cols; rx++) {
       const x = rx * FINE_SPACING - FINE_SPACING / 2;
-      const dist = Math.hypot(x - cx, y - cy);
-
-      // Find the strongest wave influence on this dot.
-      let boost = 0;
-      for (const w of waves) {
-        const distFromFront = Math.abs(dist - w.radius);
-        if (distFromFront < WAVE_THICKNESS_PX) {
-          const local = 1 - distFromFront / WAVE_THICKNESS_PX;
-          // Ease the ring — soft tails, sharp peak.
-          const eased = local * local;
-          boost = Math.max(boost, eased * w.intensity);
-        }
-      }
-
       const baseAlpha = FINE_ALPHA_BASE;
       const k = `${ry},${rx}`;
 
@@ -342,10 +328,23 @@ const WhiteDotGrid: React.FC = () => {
         />,
       );
 
+      if (waves.length === 0) continue;
+
+      const dist = Math.hypot(x - cx, y - cy);
+      let boost = 0;
+      for (const w of waves) {
+        const distFromFront = Math.abs(dist - w.radius);
+        if (distFromFront < SHOCK_THICKNESS_PX) {
+          const local = 1 - distFromFront / SHOCK_THICKNESS_PX;
+          const eased = local * local;
+          boost = Math.max(boost, eased * w.intensity);
+        }
+      }
+
       if (boost > 0.04) {
         const peakAlpha =
           baseAlpha + (FINE_ALPHA_PEAK - baseAlpha) * boost;
-        const radiusBoost = FINE_RADIUS * (1 + boost * 0.45);
+        const radiusBoost = FINE_RADIUS * (1 + boost * 0.55);
         boostDots.push(
           <circle
             key={`w${k}`}
@@ -377,9 +376,6 @@ const WhiteDotGrid: React.FC = () => {
     </svg>
   );
 };
-
-// Suppress unused warnings on the now-unused max radius constant.
-void WAVE_MAX_RADIUS;
 
 export const antiCheatEndCardMeta = {
   id: "AntiCheatEndCard",

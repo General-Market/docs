@@ -82,6 +82,13 @@ const snapToGridY = (frac: number) => {
 const snapToGridX = (px: number) =>
   Math.round(px / FINE_SPACING_X) * FINE_SPACING_X;
 
+// Acceleration profile. Bands' effective travel distance grows as
+// t * (1 + t * RAMP) instead of plain t. Result: at scene start they drift
+// at the base velocity; by scene end they're moving several times faster.
+// The eye reads the ramp as acceleration.
+const ACCEL_RAMP = 0.55;
+const accelDistance = (t: number) => t * (1 + t * ACCEL_RAMP);
+
 export const DotGrid: React.FC<Props> = ({ intensity = 1, speed = 1 }) => {
   const frame = useCurrentFrame();
   const t = frame / FPS;
@@ -131,7 +138,7 @@ export const DotGrid: React.FC<Props> = ({ intensity = 1, speed = 1 }) => {
           const yCenterPx = snapToGridY(band.y);
           const lenPx = band.len * W;
           const halfLen = lenPx / 2;
-          const drift = band.velocity * speed * t;
+          const drift = band.velocity * speed * accelDistance(t);
           const phasePx = band.phase * cycleW;
           const wrappedMid =
             ((band.anchor * W + drift + phasePx) % cycleW + cycleW) % cycleW
