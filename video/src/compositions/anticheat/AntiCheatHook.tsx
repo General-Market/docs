@@ -510,8 +510,8 @@ const StripDarken: React.FC<{ tint?: string }> = ({ tint }) => (
       inset: 0,
       pointerEvents: "none",
       background: tint
-        ? `linear-gradient(180deg, rgba(10,10,10,0.82) 0%, rgba(10,10,10,0.0) 28%, rgba(10,10,10,0.0) 64%, rgba(10,10,10,0.86) 100%), linear-gradient(180deg, rgba(255,59,59,0.04), rgba(255,59,59,0.0))`
-        : `linear-gradient(180deg, rgba(10,10,10,0.82) 0%, rgba(10,10,10,0.0) 28%, rgba(10,10,10,0.0) 64%, rgba(10,10,10,0.86) 100%)`,
+        ? `linear-gradient(180deg, rgba(10,10,10,0.82) 0%, rgba(10,10,10,0.0) 28%, rgba(10,10,10,0.0) 52%, rgba(10,10,10,0.78) 78%, rgba(10,10,10,0.94) 100%), linear-gradient(180deg, rgba(255,59,59,0.04), rgba(255,59,59,0.0))`
+        : `linear-gradient(180deg, rgba(10,10,10,0.82) 0%, rgba(10,10,10,0.0) 28%, rgba(10,10,10,0.0) 52%, rgba(10,10,10,0.78) 78%, rgba(10,10,10,0.94) 100%)`,
     }}
   />
 );
@@ -620,37 +620,27 @@ const PairList: React.FC<{
               transform: `translateX(${x}px)`,
               opacity,
               fontFamily: font,
-              fontSize: 80,
-              fontWeight: 800,
-              letterSpacing: "-0.025em",
+              fontSize: 76,
+              fontWeight: 700,
+              letterSpacing: "-0.03em",
               color: tint ?? colors.fg,
               display: "flex",
-              alignItems: "center",
-              gap: 22,
+              alignItems: "baseline",
+              gap: 24,
               flexDirection: align === "left" ? "row" : "row-reverse",
-              padding: "10px 22px",
-              background:
-                "linear-gradient(90deg, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.4) 100%)",
-              borderLeft:
-                align === "left"
-                  ? `3px solid ${tint ?? colors.fg}`
-                  : "none",
-              borderRight:
-                align === "right"
-                  ? `3px solid ${tint ?? colors.fg}`
-                  : "none",
               textShadow:
-                "0 2px 12px rgba(0,0,0,0.95), 0 0 28px rgba(0,0,0,0.6)",
+                "0 2px 6px rgba(0,0,0,0.95), 0 6px 22px rgba(0,0,0,0.8), 0 12px 40px rgba(0,0,0,0.55)",
             }}
           >
             <span
               style={{
                 fontFamily: monoFont,
-                fontSize: 40,
-                fontWeight: 700,
-                color: tint ?? colors.fg,
-                opacity: 0.85,
-                minWidth: 64,
+                fontSize: 32,
+                fontWeight: 500,
+                color: colors.dim,
+                opacity: 0.75,
+                minWidth: 48,
+                letterSpacing: "0.06em",
               }}
             >
               0{i + 1}
