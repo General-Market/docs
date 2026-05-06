@@ -4,10 +4,8 @@ import { useMemo, useState } from 'react'
 import { Link } from '@/i18n/routing'
 import { useSourceSnapshot } from '@/hooks/vision/useMarketSnapshot'
 import { useSourceRegistry, findSource } from '@/hooks/vision/useSourceRegistry'
-import { useAssetSettlements } from '@/hooks/vision/useAssetSettlements'
 import { getAssetImageUrl } from '@/lib/vision/asset-images'
-import AssetHistory from './AssetHistory'
-import { AssetSettlementMatrix } from './AssetSettlementMatrix'
+import { AssetActivityCard } from './AssetActivityCard'
 
 interface AssetDetailViewProps {
   sourceId: string
@@ -67,16 +65,6 @@ export function AssetDetailView({
   const market = useMemo(() => {
     return data?.prices.find(p => p.assetId === assetId) ?? null
   }, [data, assetId])
-
-  const { data: settlements } = useAssetSettlements(dataNodeSourceId, assetId, 60)
-  const settlementMarkers = useMemo(
-    () =>
-      (settlements ?? []).map(s => ({
-        at: new Date(s.settledAt).getTime(),
-        outcome: s.outcome,
-      })),
-    [settlements],
-  )
 
   const displayName = market?.name || market?.symbol || assetId.replace(/_/g, ' ')
   const imageUrl =
@@ -175,76 +163,13 @@ export function AssetDetailView({
         </div>
       </section>
 
-      <section
-        className="border overflow-hidden"
-        style={{
-          background: 'var(--apple-panel)',
-          borderColor: 'var(--apple-line)',
-          borderRadius: 'var(--apple-r-card)',
-        }}
-      >
-        <header
-          className="flex items-baseline justify-between px-5 sm:px-6 pt-5 pb-3"
-        >
-          <h2
-            style={{
-              fontFamily: 'var(--apple-font-display)',
-              fontSize: 17,
-              fontWeight: 600,
-              letterSpacing: 'var(--apple-track-tight)',
-              color: 'var(--apple-text)',
-              margin: 0,
-            }}
-          >
-            History · 7d
-          </h2>
-        </header>
-        <div className="px-2 pb-2">
-          <AssetHistory
-            dataNodeSourceId={dataNodeSourceId}
-            assetId={assetId}
-            settlements={settlementMarkers}
-          />
-        </div>
-      </section>
-
-      <section
-        className="border overflow-hidden"
-        style={{
-          background: 'var(--apple-panel)',
-          borderColor: 'var(--apple-line)',
-          borderRadius: 'var(--apple-r-card)',
-        }}
-      >
-        <header className="flex items-baseline justify-between px-5 sm:px-6 pt-5 pb-3">
-          <h2
-            style={{
-              fontFamily: 'var(--apple-font-display)',
-              fontSize: 17,
-              fontWeight: 600,
-              letterSpacing: 'var(--apple-track-tight)',
-              color: 'var(--apple-text)',
-              margin: 0,
-            }}
-          >
-            Vaults per round
-          </h2>
-          <span
-            style={{
-              fontFamily: 'var(--apple-font-text)',
-              fontSize: 11,
-              color: 'var(--apple-text-tertiary)',
-              letterSpacing: 'var(--apple-track-loose)',
-              textTransform: 'uppercase',
-            }}
-          >
-            ▲ up · ▼ down · faded = lost · header = up%/down% pool odds
-          </span>
-        </header>
-        <div className="px-5 sm:px-6 pb-5">
-          <AssetSettlementMatrix sourceId={dataNodeSourceId} assetId={assetId} />
-        </div>
-      </section>
+      <AssetActivityCard
+        sourceId={sourceId}
+        dataNodeSourceId={dataNodeSourceId}
+        assetId={assetId}
+        isPrice={isPrice}
+        valueUnit={valueUnit}
+      />
     </div>
   )
 }
