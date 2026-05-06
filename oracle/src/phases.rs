@@ -1818,7 +1818,11 @@ pub(crate) async fn run_cross_chain_sell_processing<P, W, K, PF>(
     };
 
     if !submitted_sell_orders.is_empty() {
-        let batch_key = submitted_sell_orders.first().map(|id| id.as_u64()).unwrap_or(current_cycle);
+        // min() not .first() — chain reads can return the same set in different
+        // orders on different nodes, splitting leader agreement. Same fix as the
+        // buy path. Order-independent over a set keeps every node on the same
+        // leader for the same batch.
+        let batch_key = submitted_sell_orders.iter().map(|id| id.as_u64()).min().unwrap_or(current_cycle);
         let batch_am_leader = calculate_bridge_leader(batch_key, num_oracles, node_index);
         info!(cycle = current_cycle, order_count = submitted_sell_orders.len(), batch_am_leader, "Processing batch for SellSubmittedOnL3 orders");
 
