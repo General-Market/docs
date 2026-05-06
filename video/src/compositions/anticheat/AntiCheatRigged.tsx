@@ -35,25 +35,31 @@ type ArticleProof = {
   exchangeBox?: Highlight;       // green underline on the exchange name in title
 };
 
-// `exchangeBox` coords were eyeballed from each article PNG. Two articles
-// don't carry their exchange name in the visible upper portion (pump.fun's
-// article is about a Solana memecoin lawsuit; the SEC/Cohen article doesn't
-// name NYSE) — those keep just the yellow body highlight, while the green
-// title element on the left of the scene already names them.
+// `exchangeBox` coords are anchored to each article's yellow-highlight
+// y-coordinate (the known-correct baseline from InsiderCases.tsx). Earlier
+// independent eyeballing put the y values systematically too high — the
+// green landed on breadcrumbs above the title instead of the title itself.
+//
+// Calibration rule: if the exchange name is on the SAME line as the yellow
+// highlight, use the yellow's y. If on a different line, offset by the
+// title's per-line stride (≈ 0.05 normalized for 2-line titles, ≈ 0.04
+// for tighter 3-line titles).
 const ARTICLES: ArticleProof[] = [
   {
     exchange: "binance",
     category: "perps",
     image: "insider-trading/articles/1.png",
     highlights: [{ x: 0.5737, y: 0.1383, w: 0.3183, h: 0.0453 }],
-    exchangeBox: { x: 0.038, y: 0.083, w: 0.205, h: 0.045 },
+    // "Binance" — line 1 of title, same line as the yellow ("insider trading").
+    exchangeBox: { x: 0.040, y: 0.138, w: 0.205, h: 0.045 },
   },
   {
     exchange: "robinhood",
     category: "options",
     image: "insider-trading/articles/9.png",
     highlights: [{ x: 0.4119, y: 0.1968, w: 0.2831, h: 0.042 }],
-    exchangeBox: { x: 0.097, y: 0.062, w: 0.282, h: 0.052 },
+    // "Robinhood" — line 1 of title; yellow is on line 2 ("Insider Trading").
+    exchangeBox: { x: 0.097, y: 0.146, w: 0.282, h: 0.048 },
   },
   {
     exchange: "polymarket",
@@ -63,7 +69,8 @@ const ARTICLES: ArticleProof[] = [
       { x: 0.6467, y: 0.2828, w: 0.2445, h: 0.0273 },
       { x: 0.5126, y: 0.3313, w: 0.1197, h: 0.0281 },
     ],
-    exchangeBox: { x: 0.045, y: 0.205, w: 0.215, h: 0.04 },
+    // "Polymarket" — line 1 of title, same line as yellow #1 ("insider-traded").
+    exchangeBox: { x: 0.045, y: 0.283, w: 0.205, h: 0.040 },
   },
   {
     exchange: "pump.fun",
@@ -77,7 +84,8 @@ const ARTICLES: ArticleProof[] = [
     category: "predictions",
     image: "insider-trading/articles/6.png",
     highlights: [{ x: 0.4819, y: 0.176, w: 0.216, h: 0.0303 }],
-    exchangeBox: { x: 0.057, y: 0.123, w: 0.118, h: 0.038 },
+    // "Kalshi," — first word of title, same line as yellow ("insider trading").
+    exchangeBox: { x: 0.057, y: 0.176, w: 0.115, h: 0.034 },
   },
   {
     exchange: "nyse",
@@ -91,7 +99,9 @@ const ARTICLES: ArticleProof[] = [
     category: "spot",
     image: "insider-trading/articles/7.png",
     highlights: [{ x: 0.2453, y: 0.4009, w: 0.3414, h: 0.0417 }],
-    exchangeBox: { x: 0.42, y: 0.27, w: 0.265, h: 0.045 },
+    // "Coinbase" — line 1 of multi-line title; yellow is on a later line
+    // ("Insider Trading Action"). Two-line offset of ≈ 0.08.
+    exchangeBox: { x: 0.42, y: 0.318, w: 0.27, h: 0.043 },
   },
 ];
 
