@@ -269,6 +269,16 @@ const SHOCK_SPEED_PX = 1100;         // outward speed (faster than continuous)
 const SHOCK_THICKNESS_PX = 80;       // width of each bright ring
 const SHOCK_LIFETIME_SEC = 1.6;      // how long an individual ring stays alive
 const SHOCK_START_SEC = 0.05;        // tiny delay so the shock lands with the punch
+const SHOCK_INITIAL_RADIUS_PX = 130; // rings birth at the logo perimeter, not at a point
+
+// The shock emanates from the General mark, which the layout puts to the
+// left of canvas center (the wordmark text "General" extends to the right
+// of the mark, so the centered row places the mark in the left half) and
+// slightly above center (the centered content block has subline + tertiary
+// pill below the wordmark row).
+// Tuned for a 1920x1080 canvas with size=200 mark, 30px gap, 220pt wordmark.
+const SHOCK_CX_FRAC = 0.29;
+const SHOCK_CY_FRAC = 0.38;
 
 type WaveFront = {
   radius: number;
@@ -288,7 +298,7 @@ const computeShockWaves = (timeSec: number): WaveFront[] => {
         ? lifeT / 0.15
         : Math.pow(1 - (lifeT - 0.15) / 0.85, 1.4);
     waves.push({
-      radius: age * SHOCK_SPEED_PX,
+      radius: SHOCK_INITIAL_RADIUS_PX + age * SHOCK_SPEED_PX,
       intensity,
     });
   }
@@ -299,8 +309,8 @@ const WhiteDotGrid: React.FC = () => {
   const frame = useCurrentFrame();
   const t = frame / FPS;
 
-  const cx = W / 2;
-  const cy = H / 2;
+  const cx = W * SHOCK_CX_FRAC;
+  const cy = H * SHOCK_CY_FRAC;
 
   const waves = computeShockWaves(t);
 
