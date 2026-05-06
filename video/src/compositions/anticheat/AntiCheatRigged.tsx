@@ -128,8 +128,8 @@ export const AntiCheatRigged: React.FC = () => {
 
   return (
     <AbsoluteFill style={{ backgroundColor: colors.bg, fontFamily: font }}>
+      <VerticalBars />
       <IdleZoom durationInFrames={SCENE_FRAMES} from={1} to={1.025}>
-        <VerticalBars />
         {/* Left — exchange name (line 1) + "is rigged." (line 2) */}
         <div
           style={{
@@ -568,47 +568,38 @@ const RIGGED_BG_BARS: BgBar[] = [
 
 const BG_BAR_WIDTH = 64;
 const BG_BAR_OPACITY = 0.22;
-const BG_BAR_GROW = toFrames(0.4);
-const BG_BAR_STAGGER = 2;
 
 const VerticalBars: React.FC = () => {
-  const frame = useCurrentFrame();
   return (
     <AbsoluteFill style={{ pointerEvents: "none" }}>
-      {RIGGED_BG_BARS.map((bar, i) => {
-        const local = frame - i * BG_BAR_STAGGER;
-        const t = Math.max(0, Math.min(1, local / BG_BAR_GROW));
-        const eased = 1 - Math.pow(1 - t, 3);
-        const heightPct = bar.heightPct * 100 * eased;
-        return (
+      {RIGGED_BG_BARS.map((bar, i) => (
+        <div
+          key={i}
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: `${bar.xPct * 100}%`,
+            width: BG_BAR_WIDTH,
+            height: `${(bar.heightPct * 100).toFixed(2)}%`,
+            background: colors.accent,
+            opacity: BG_BAR_OPACITY,
+            borderRadius: 2,
+          }}
+        >
+          {/* Top tick */}
           <div
-            key={i}
             style={{
               position: "absolute",
-              bottom: 0,
-              left: `${bar.xPct * 100}%`,
-              width: BG_BAR_WIDTH,
-              height: `${heightPct.toFixed(2)}%`,
-              background: colors.accent,
-              opacity: BG_BAR_OPACITY,
-              borderRadius: 2,
+              top: -2,
+              left: -4,
+              right: -4,
+              height: 2,
+              background: colors.fg,
+              opacity: 0.7,
             }}
-          >
-            {/* Top tick — same idiom as the horizontal chart's leading tick */}
-            <div
-              style={{
-                position: "absolute",
-                top: -2,
-                left: -4,
-                right: -4,
-                height: 2,
-                background: colors.fg,
-                opacity: eased * 0.7,
-              }}
-            />
-          </div>
-        );
-      })}
+          />
+        </div>
+      ))}
     </AbsoluteFill>
   );
 };
