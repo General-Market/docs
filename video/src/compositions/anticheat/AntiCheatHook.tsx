@@ -190,9 +190,35 @@ const BrollClip: React.FC<{ src: string }> = ({ src }) => {
   return (
     <AbsoluteFill>
       <OffthreadVideo src={src} muted playbackRate={1.0} style={videoStyle} />
+      <DisclaimerMask />
     </AbsoluteFill>
   );
 };
+
+// Covers the yellow "Disclaimer: I am NOT sponsored…" overlay baked into the
+// source broll. Feathered ellipse mask + faint dot grain mimic the broll's
+// dark surface so the patch reads as backdrop, not censorship.
+const DisclaimerMask: React.FC = () => (
+  <div
+    style={{
+      position: "absolute",
+      left: "12%",
+      right: "12%",
+      top: "74%",
+      height: "16%",
+      backgroundColor: "#050608",
+      backgroundImage:
+        "radial-gradient(rgba(255,255,255,0.022) 1px, transparent 1.4px), radial-gradient(rgba(60,180,120,0.016) 1px, transparent 1.4px)",
+      backgroundSize: "4px 4px, 7px 7px",
+      backgroundPosition: "0 0, 1px 2px",
+      maskImage:
+        "radial-gradient(ellipse at center, black 55%, transparent 100%)",
+      WebkitMaskImage:
+        "radial-gradient(ellipse at center, black 55%, transparent 100%)",
+      pointerEvents: "none",
+    }}
+  />
+);
 
 // ─── Right panel: procedural trading screen ────────────────────────────────────
 
