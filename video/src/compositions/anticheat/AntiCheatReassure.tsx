@@ -47,15 +47,77 @@ export const AntiCheatReassure: React.FC = () => {
         overflow: "hidden",
       }}
     >
-      <IdleZoom durationInFrames={SCENE_FRAMES} from={1} to={1.03}>
+      <IdleZoom durationInFrames={SCENE_FRAMES} from={1} to={1.02}>
         <DotGrid />
-        <Headline />
-        <RotatingProductPanel />
-        <Subtitle />
-        <DotGridVignette intensity={0.20} />
       </IdleZoom>
+      <Headline />
+      <RotatingProductPanel />
+      <ClickFlash />
+      <Subtitle />
+      <DotGridVignette intensity={0.20} />
     </AbsoluteFill>
   );
+};
+
+// Camera dollies in close on entry, pulls out to fit, punches on click,
+// drifts back out at the end. Returns scale + xy shake offsets.
+const useCamera = (): { scale: number; shakeX: number; shakeY: number } => {
+  const frame = useCurrentFrame();
+
+  // Phase 1 — pull from 1.18 to 1.00 over the first ~1.0s. We start
+  // pressed against the UI, then breathe out to fit the whole product.
+  const phase1 = interpolate(
+    frame,
+    [0, toFrames(0.95)],
+    [1.18, 1.0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+
+  // Phase 2 — click punch. Quick spike from 1.00 to 1.045 over ~3f, then
+  // settle back to 1.02 by t+0.6s. The image lands.
+  const punchUp = interpolate(
+    frame,
+    [CLICK_AT - 1, CLICK_AT + 3],
+    [1.0, 1.045],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const punchSettle = interpolate(
+    frame,
+    [CLICK_AT + 3, CLICK_AT + toFrames(0.55)],
+    [1.045, 1.02],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const punch = frame < CLICK_AT + 3 ? punchUp : punchSettle;
+
+  // Phase 3 — slow drift outward at the tail (1.02 → 0.97), implying
+  // the next scene starts pulling the world back.
+  const driftOut = interpolate(
+    frame,
+    [toFrames(2.4), SCENE_FRAMES],
+    [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const tailScale = interpolate(driftOut, [0, 1], [1.02, 0.97]);
+
+  let scale: number;
+  if (frame < toFrames(0.95)) scale = phase1;
+  else if (frame < CLICK_AT - 1) scale = 1.0;
+  else if (frame < toFrames(2.4)) scale = punch;
+  else scale = tailScale;
+
+  // Click shake — 4 frames of jitter starting at click, decaying.
+  const shakeFrames = frame - CLICK_AT;
+  const shakeAmp = interpolate(
+    shakeFrames,
+    [0, 1, 6],
+    [0, 14, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  // Pseudo-random jitter from sine combinations.
+  const shakeX = Math.sin(shakeFrames * 17.3) * shakeAmp;
+  const shakeY = Math.cos(shakeFrames * 21.7) * shakeAmp * 0.6;
+
+  return { scale, shakeX, shakeY };
 };
 
 const Headline: React.FC = () => {
@@ -153,6 +215,7 @@ const Headline: React.FC = () => {
 const RotatingProductPanel: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
+  const { scale: cameraScale, shakeX, shakeY } = useCamera();
 
   const entry = spring({
     frame,
@@ -160,7 +223,6 @@ const RotatingProductPanel: React.FC = () => {
     config: { damping: 28, stiffness: 80, mass: 0.95 },
   });
   const opacity = interpolate(entry, [0, 1], [0, 1]);
-  const entryScale = interpolate(entry, [0, 1], [0.94, 1]);
 
   // Slow continuous 3D oscillation. Yaw period 12s, pitch period 16s.
   const t = frame / fps;
@@ -171,7 +233,7 @@ const RotatingProductPanel: React.FC = () => {
   const pulse = interpolate(
     frame,
     [CLICK_AT - 4, CLICK_AT + 8, CLICK_AT + 26],
-    [0, 1, 0.45],
+    [0, 1, 0.55],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
 
@@ -179,8 +241,8 @@ const RotatingProductPanel: React.FC = () => {
     <div
       style={{
         position: "absolute",
-        left: UI_LEFT,
-        top: UI_TOP,
+        left: UI_LEFT + shakeX,
+        top: UI_TOP + shakeY,
         width: UI_W,
         height: UI_H,
         perspective: 2400,
@@ -191,11 +253,11 @@ const RotatingProductPanel: React.FC = () => {
       <div
         style={{
           position: "absolute",
-          inset: -90,
+          inset: -120,
           background: `radial-gradient(ellipse at center, rgba(0,82,255,${
-            0.14 + pulse * 0.18
+            0.14 + pulse * 0.22
           }), transparent 62%)`,
-          filter: "blur(50px)",
+          filter: "blur(60px)",
           zIndex: 0,
         }}
       />
@@ -205,7 +267,7 @@ const RotatingProductPanel: React.FC = () => {
           width: "100%",
           height: "100%",
           transformStyle: "preserve-3d",
-          transform: `scale(${entryScale}) rotateY(${rotateY}deg) rotateX(${rotateX}deg)`,
+          transform: `scale(${cameraScale}) rotateY(${rotateY}deg) rotateX(${rotateX}deg)`,
           borderRadius: 14,
           overflow: "hidden",
           boxShadow:
@@ -223,6 +285,7 @@ const RotatingProductPanel: React.FC = () => {
           }}
         />
         <Cursor />
+        <ClickBurst />
         <ShieldStamp />
       </div>
     </div>
@@ -257,57 +320,174 @@ const Cursor: React.FC = () => {
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
 
-  // Click ripple — expanding ring at the button.
-  const rippleT = interpolate(frame, [CLICK_AT, CLICK_AT + 22], [0, 1], {
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: x,
+        top: y,
+        width: 30,
+        height: 30,
+        opacity: cursorOpacity,
+        transform: `scale(${clickSquish})`,
+        transformOrigin: "0 0",
+        filter: "drop-shadow(0 4px 10px rgba(0,0,0,0.30))",
+        pointerEvents: "none",
+        zIndex: 4,
+      }}
+    >
+      <svg viewBox="0 0 24 24" width={30} height={30}>
+        <path
+          d="M4.5 3 L4.5 19 L8.5 15.5 L11 21 L13.4 20 L10.9 14.6 L16.5 14.6 Z"
+          fill="#ffffff"
+          stroke="#0a0a0a"
+          strokeWidth={1.4}
+          strokeLinejoin="round"
+        />
+      </svg>
+    </div>
+  );
+};
+
+// Burst at click point — concentric ring, radial spikes, white core.
+const ClickBurst: React.FC = () => {
+  const frame = useCurrentFrame();
+
+  const t = interpolate(frame, [CLICK_AT, CLICK_AT + 24], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const rippleScale = interpolate(rippleT, [0, 1], [0.4, 2.8]);
-  const rippleOpacity = interpolate(rippleT, [0, 0.15, 1], [0, 0.55, 0]);
+
+  if (frame < CLICK_AT - 1) return null;
+
+  const ringScale = interpolate(t, [0, 1], [0.3, 3.4]);
+  const ringOpacity = interpolate(t, [0, 0.15, 1], [0, 0.65, 0]);
+
+  const ring2Scale = interpolate(t, [0, 1], [0.2, 2.4]);
+  const ring2Opacity = interpolate(t, [0, 0.25, 1], [0, 0.45, 0]);
+
+  const coreOpacity = interpolate(t, [0, 0.08, 0.4], [0, 1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const coreScale = interpolate(t, [0, 0.4], [0.4, 1.6], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  const spikeT = interpolate(t, [0, 0.5], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const spikeOpacity = interpolate(t, [0, 0.1, 0.6], [0, 1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const spikeLength = interpolate(spikeT, [0, 1], [0, 70]);
+  const spikeOffset = interpolate(spikeT, [0, 1], [10, 30]);
+
+  const spikes = Array.from({ length: 8 }, (_, i) => (i * Math.PI * 2) / 8);
 
   return (
-    <>
+    <div
+      style={{
+        position: "absolute",
+        left: BTN_X,
+        top: BTN_Y,
+        width: 0,
+        height: 0,
+        pointerEvents: "none",
+        zIndex: 3,
+      }}
+    >
+      {/* Outer ring */}
       <div
         style={{
           position: "absolute",
-          left: BTN_X,
-          top: BTN_Y,
-          width: 60,
-          height: 60,
-          marginLeft: -30,
-          marginTop: -30,
+          left: -36,
+          top: -36,
+          width: 72,
+          height: 72,
           borderRadius: "50%",
-          border: `2px solid ${colors.accent}`,
-          transform: `scale(${rippleScale})`,
-          opacity: rippleOpacity,
-          pointerEvents: "none",
+          border: `3px solid ${colors.accent}`,
+          transform: `scale(${ringScale})`,
+          opacity: ringOpacity,
         }}
       />
+      {/* Inner ring */}
       <div
         style={{
           position: "absolute",
-          left: x,
-          top: y,
-          width: 30,
-          height: 30,
-          opacity: cursorOpacity,
-          transform: `scale(${clickSquish})`,
-          transformOrigin: "0 0",
-          filter: "drop-shadow(0 4px 10px rgba(0,0,0,0.30))",
-          pointerEvents: "none",
+          left: -28,
+          top: -28,
+          width: 56,
+          height: 56,
+          borderRadius: "50%",
+          border: `2px solid ${colors.accent}`,
+          transform: `scale(${ring2Scale})`,
+          opacity: ring2Opacity,
         }}
-      >
-        <svg viewBox="0 0 24 24" width={30} height={30}>
-          <path
-            d="M4.5 3 L4.5 19 L8.5 15.5 L11 21 L13.4 20 L10.9 14.6 L16.5 14.6 Z"
-            fill="#ffffff"
-            stroke="#0a0a0a"
-            strokeWidth={1.4}
-            strokeLinejoin="round"
+      />
+      {/* White core */}
+      <div
+        style={{
+          position: "absolute",
+          left: -18,
+          top: -18,
+          width: 36,
+          height: 36,
+          borderRadius: "50%",
+          background:
+            "radial-gradient(circle, #ffffff 0%, rgba(0,82,255,0.6) 60%, transparent 100%)",
+          transform: `scale(${coreScale})`,
+          opacity: coreOpacity,
+          filter: "blur(2px)",
+        }}
+      />
+      {/* Radial spikes */}
+      {spikes.map((angle, i) => {
+        const ox = Math.cos(angle) * spikeOffset;
+        const oy = Math.sin(angle) * spikeOffset;
+        return (
+          <div
+            key={i}
+            style={{
+              position: "absolute",
+              left: ox - spikeLength / 2,
+              top: oy - 1.5,
+              width: spikeLength,
+              height: 3,
+              background: colors.accent,
+              borderRadius: 2,
+              transform: `rotate(${(angle * 180) / Math.PI}deg)`,
+              transformOrigin: "50% 50%",
+              opacity: spikeOpacity,
+            }}
           />
-        </svg>
-      </div>
-    </>
+        );
+      })}
+    </div>
+  );
+};
+
+// Brief screen-tint pulse on click. Sits above the panel, below text.
+const ClickFlash: React.FC = () => {
+  const frame = useCurrentFrame();
+  const tint = interpolate(
+    frame,
+    [CLICK_AT - 1, CLICK_AT + 2, CLICK_AT + 14],
+    [0, 0.22, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  if (tint <= 0) return null;
+  return (
+    <AbsoluteFill
+      style={{
+        background: `rgba(0, 82, 255, ${tint})`,
+        mixBlendMode: "screen",
+        pointerEvents: "none",
+      }}
+    />
   );
 };
 
@@ -347,6 +527,7 @@ const ShieldStamp: React.FC = () => {
         transform: `scale(${scale})`,
         transformOrigin: "100% 50%",
         boxShadow: "0 18px 40px rgba(0,82,255,0.40)",
+        zIndex: 5,
       }}
     >
       <svg width={20} height={22} viewBox="0 0 100 110">
