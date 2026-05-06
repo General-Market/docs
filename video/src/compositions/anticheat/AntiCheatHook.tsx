@@ -154,7 +154,7 @@ const CheaterBrollSequence: React.FC = () => {
     <AbsoluteFill>
       <TransitionSeries>
         <TransitionSeries.Sequence durationInFrames={toFrames(3.0)}>
-          <BrollClip src={BROLL.minecraft} />
+          <BrollClip src={BROLL.minecraft} maskDisclaimer />
         </TransitionSeries.Sequence>
 
         <TransitionSeries.Transition
@@ -179,7 +179,10 @@ const CheaterBrollSequence: React.FC = () => {
   );
 };
 
-const BrollClip: React.FC<{ src: string }> = ({ src }) => {
+const BrollClip: React.FC<{ src: string; maskDisclaimer?: boolean }> = ({
+  src,
+  maskDisclaimer,
+}) => {
   const videoStyle: React.CSSProperties = {
     width: "100%",
     height: "100%",
@@ -190,31 +193,32 @@ const BrollClip: React.FC<{ src: string }> = ({ src }) => {
   return (
     <AbsoluteFill>
       <OffthreadVideo src={src} muted playbackRate={1.0} style={videoStyle} />
-      <DisclaimerMask />
+      {maskDisclaimer ? <DisclaimerMask /> : null}
     </AbsoluteFill>
   );
 };
 
-// Covers the yellow "Disclaimer: I am NOT sponsored…" overlay baked into the
-// source broll. Feathered ellipse mask + faint dot grain mimic the broll's
-// dark surface so the patch reads as backdrop, not censorship.
+// Covers the baked-in yellow "Disclaimer: I am NOT sponsored…" plus the HUD
+// strip beneath it (inventory bar, "Toggled Free Look on", etc). Spans the
+// full panel width so it survives the half-panel `objectFit: cover` zoom
+// after the split — vertical-only feathering blends it into the broll.
 const DisclaimerMask: React.FC = () => (
   <div
     style={{
       position: "absolute",
-      left: "12%",
-      right: "12%",
-      top: "74%",
-      height: "16%",
+      left: 0,
+      right: 0,
+      top: "68%",
+      height: "32%",
       backgroundColor: "#050608",
       backgroundImage:
         "radial-gradient(rgba(255,255,255,0.022) 1px, transparent 1.4px), radial-gradient(rgba(60,180,120,0.016) 1px, transparent 1.4px)",
       backgroundSize: "4px 4px, 7px 7px",
       backgroundPosition: "0 0, 1px 2px",
       maskImage:
-        "radial-gradient(ellipse at center, black 55%, transparent 100%)",
+        "linear-gradient(180deg, transparent 0%, black 18%, black 100%)",
       WebkitMaskImage:
-        "radial-gradient(ellipse at center, black 55%, transparent 100%)",
+        "linear-gradient(180deg, transparent 0%, black 18%, black 100%)",
       pointerEvents: "none",
     }}
   />
