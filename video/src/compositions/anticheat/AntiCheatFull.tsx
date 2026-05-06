@@ -35,8 +35,9 @@ const TOTAL_FRAMES = SCENES.reduce(
   0,
 );
 
-const RIGGED_INDEX = SCENES.findIndex((s) => s.id === antiCheatRiggedMeta.id);
-const LENS_PUNCH_FRAME = SCENE_STARTS[RIGGED_INDEX] + Math.round(FPS * 0.25);
+// LensPunch sits inside the Rigged Sequence, so its peakFrame is local
+// to that sequence (frames 0..duration-1 of Rigged, not absolute).
+const LENS_PUNCH_LOCAL_FRAME = Math.round(FPS * 0.25);
 
 type CutEffect = (props: { startFrame: number }) => React.ReactElement;
 
@@ -77,7 +78,7 @@ export const AntiCheatFull: React.FC = () => {
         const isRigged = scene.id === antiCheatRiggedMeta.id;
 
         const sceneNode = isRigged ? (
-          <LensPunch peakFrame={LENS_PUNCH_FRAME}>
+          <LensPunch peakFrame={LENS_PUNCH_LOCAL_FRAME}>
             <Comp />
           </LensPunch>
         ) : (
@@ -96,20 +97,14 @@ export const AntiCheatFull: React.FC = () => {
         );
       })}
 
+      {/* Cut effects render at composition root so useCurrentFrame() inside
+          each effect resolves to the absolute frame, not a sequence-local
+          one. Each effect self-gates by checking startFrame against frame. */}
       {SCENES.slice(1).map((scene, i) => {
         const cutFrame = SCENE_STARTS[i + 1];
         const Effect = CUT_EFFECTS[scene.id];
         if (!Effect) return null;
-        return (
-          <Sequence
-            key={`cut-${scene.id}`}
-            from={cutFrame}
-            durationInFrames={20}
-            layout="none"
-          >
-            <Effect startFrame={cutFrame} />
-          </Sequence>
-        );
+        return <Effect key={`cut-${scene.id}`} startFrame={cutFrame} />;
       })}
     </AbsoluteFill>
   );
