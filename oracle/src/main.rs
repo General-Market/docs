@@ -735,14 +735,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                     // Spawn BatchConfigOrchestrator (independent async task, NOT inside run_cycle)
                     let orch_data_node_url = vision_cfg.data_node_url.clone();
-                    // Empty admin token means every orchestrator → data-node admin
-                    // call returns 401 forever, silently. Refuse rather than spin
-                    // a task that can never make progress.
-                    let orch_admin_token = vision_cfg.data_node_token.clone()
-                        .unwrap_or_else(|| panic!(
-                            "FATAL: data_node_token unset — BatchConfigOrchestrator \
-                             would 401 against data-node admin routes. Set \
-                             ORACLE_DATA_NODE_TOKEN or --data-node-token."));
+                    // If data-node enforces admin auth (ADMIN_TOKEN set there),
+                    // the orchestrator MUST send a matching token or every admin
+                    // route returns 401 forever. If data-node leaves admin auth
+                    // unset, the orchestrator can call freely with any string.
+                    // We can't tell from here which mode the peer runs in, so we
+                    // warn loudly when unset and proceed with empty — the actual
+                    // 401 will surface in the orchestrator's error path if it
+                    // happens, instead of preventing the oracle from booting at
+                    // all (which is what the previous panic caused).
+                    let orch_admin_token = vision_cfg.data_node_token.clone().unwrap_or_else(|| {
+                        warn!(
+                            "ORACLE_DATA_NODE_TOKEN unset — BatchConfigOrchestrator \
+                             will call data-node admin routes anonymously. If the \
+                             peer enforces ADMIN_TOKEN every call returns 401. Set \
+                             ORACLE_DATA_NODE_TOKEN or --data-node-token to match \
+                             the data-node's admin token."
+                        );
+                        String::new()
+                    });
                     tokio::spawn(async move {
                         let mut orchestrator = oracle::vision::batch_config_orchestrator::BatchConfigOrchestrator::new(
                             orch_data_node_url,
