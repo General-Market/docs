@@ -184,6 +184,13 @@ function CellGlyph({ side, won }: Cell) {
   )
 }
 
+type WindowHours = 12 | 24 | 168
+const WINDOW_OPTIONS: { hours: WindowHours; label: string }[] = [
+  { hours: 12, label: '12h' },
+  { hours: 24, label: '24h' },
+  { hours: 168, label: '7d' },
+]
+
 export function AssetActivityCard({
   sourceId: _sourceId,
   dataNodeSourceId,
@@ -191,6 +198,7 @@ export function AssetActivityCard({
   isPrice,
   valueUnit,
 }: Props) {
+  const [windowHours, setWindowHours] = useState<WindowHours>(12)
   const [points, setPoints] = useState<PricePoint[]>([])
   const [loading, setLoading] = useState(true)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -199,7 +207,7 @@ export function AssetActivityCard({
     let cancelled = false
     setLoading(true)
     const now = Date.now()
-    const from = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString()
+    const from = new Date(now - windowHours * 60 * 60 * 1000).toISOString()
     const to = new Date(now).toISOString()
     fetch(
       `/api/market/history?source=${encodeURIComponent(dataNodeSourceId)}&asset=${encodeURIComponent(
@@ -224,7 +232,7 @@ export function AssetActivityCard({
     return () => {
       cancelled = true
     }
-  }, [dataNodeSourceId, assetId])
+  }, [dataNodeSourceId, assetId, windowHours])
 
   const { data: settlements } = useAssetSettlements(dataNodeSourceId, assetId, 60)
 
@@ -233,11 +241,23 @@ export function AssetActivityCard({
     [settlements],
   )
 
-  // Default to most recent VISIBLE_COLS settled batches. If we surface "show all",
-  // this slice is what changes.
+  // Restrict the matrix to settlements inside the active time window. The
+  // chart and the matrix breathe the same air.
+  const windowStart = useMemo(
+    () => Date.now() - windowHours * 60 * 60 * 1000,
+    [windowHours],
+  )
+  const windowedAllColumns = useMemo(
+    () =>
+      allColumns.filter(c => new Date(c.batch.settledAt).getTime() >= windowStart),
+    [allColumns, windowStart],
+  )
   const columns = useMemo(
-    () => allColumns.slice(Math.max(0, allColumns.length - VISIBLE_COLS)),
-    [allColumns],
+    () =>
+      windowedAllColumns.slice(
+        Math.max(0, windowedAllColumns.length - VISIBLE_COLS),
+      ),
+    [windowedAllColumns],
   )
   const visibleStartIdx = allColumns.length - columns.length
   const rows = useMemo(
@@ -296,7 +316,12 @@ export function AssetActivityCard({
   if (loading && displayPoints.length === 0) {
     return (
       <section className={cardClass} style={cardStyle}>
-        <Header isPrice={isPrice} valueUnit={valueUnit} />
+        <Header
+          isPrice={isPrice}
+          valueUnit={valueUnit}
+          windowHours={windowHours}
+          onWindowChange={setWindowHours}
+        />
         <div
           style={{
             height: CHART_HEIGHT,
@@ -316,7 +341,12 @@ export function AssetActivityCard({
   if (displayPoints.length < 2) {
     return (
       <section className={cardClass} style={cardStyle}>
-        <Header isPrice={isPrice} valueUnit={valueUnit} />
+        <Header
+          isPrice={isPrice}
+          valueUnit={valueUnit}
+          windowHours={windowHours}
+          onWindowChange={setWindowHours}
+        />
         <div
           style={{
             height: 120,
@@ -344,6 +374,8 @@ export function AssetActivityCard({
         lastValue={displayPoints[displayPoints.length - 1].value}
         changePct={changePct}
         showLegend={showMatrix}
+        windowHours={windowHours}
+        onWindowChange={setWindowHours}
       />
 
       {/* Chart — full responsive width, no scroll. */}
@@ -588,6 +620,54 @@ export function AssetActivityCard({
   )
 }
 
+function WindowToggle({
+  value,
+  onChange,
+}: {
+  value: WindowHours
+  onChange: (h: WindowHours) => void
+}) {
+  return (
+    <div
+      role="tablist"
+      style={{
+        display: 'inline-flex',
+        background: 'rgba(0,0,0,0.04)',
+        borderRadius: 999,
+        padding: 2,
+        gap: 0,
+      }}
+    >
+      {WINDOW_OPTIONS.map(opt => {
+        const active = opt.hours === value
+        return (
+          <button
+            key={opt.hours}
+            role="tab"
+            aria-selected={active}
+            onClick={() => onChange(opt.hours)}
+            style={{
+              padding: '4px 10px',
+              border: 'none',
+              borderRadius: 999,
+              fontSize: 11,
+              fontWeight: 600,
+              cursor: 'pointer',
+              fontVariantNumeric: 'tabular-nums',
+              background: active ? 'var(--apple-panel)' : 'transparent',
+              color: active ? 'var(--apple-text)' : 'var(--apple-text-tertiary)',
+              boxShadow: active ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
+              transition: 'background 120ms ease, color 120ms ease',
+            }}
+          >
+            {opt.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 interface SignalItem {
   ts: number
   color: string
@@ -662,6 +742,8 @@ function Header({
   lastValue,
   changePct,
   showLegend = false,
+  windowHours,
+  onWindowChange,
 }: {
   isPrice: boolean
   valueUnit: string
@@ -669,13 +751,15 @@ function Header({
   lastValue?: number
   changePct?: number | null
   showLegend?: boolean
+  windowHours: WindowHours
+  onWindowChange: (h: WindowHours) => void
 }) {
   return (
     <header
-      className="flex items-baseline justify-between px-5 sm:px-6 pt-5 pb-3"
-      style={{ gap: 16 }}
+      className="flex items-center justify-between px-5 sm:px-6 pt-5 pb-3"
+      style={{ gap: 16, flexWrap: 'wrap' }}
     >
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, flexWrap: 'wrap' }}>
         <h2
           style={{
             fontFamily: 'var(--apple-font-display)',
@@ -685,8 +769,9 @@ function Header({
             margin: 0,
           }}
         >
-          History · 7d
+          History
         </h2>
+        <WindowToggle value={windowHours} onChange={onWindowChange} />
         {firstValue !== undefined && lastValue !== undefined && (
           <span
             style={{
