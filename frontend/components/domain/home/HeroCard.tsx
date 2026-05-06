@@ -1,5 +1,6 @@
 import { Link } from '@/i18n/routing'
 import { Sparkline } from './Sparkline'
+import { ShineOverlay } from './ShineOverlay'
 import { sourceGradient, sourceStroke, sourceFill } from './source-hue'
 import type { Coverage } from './AssetCard'
 import type { SourceFeed } from '@/lib/vision/adapters'
@@ -198,6 +199,8 @@ export function HeroCard({ feature, side }: Props) {
           className="relative min-h-[240px] sm:min-h-[280px] lg:min-h-[320px]"
           style={{ background: sourceGradient(feature.sourceId) }}
         >
+          <ShineOverlay size={420} intensity={0.18} />
+
           {/* Top label — asset name only; source name already established on the left */}
           {feature.assetName && (
             <div className="absolute top-6 left-6 right-6 z-10">
@@ -293,6 +296,7 @@ function SideRow({ feed }: { feed: SourceFeed }) {
           background: sourceGradient(feed.sourceId),
         }}
       >
+        <ShineOverlay size={120} intensity={0.22} />
         <div className="absolute inset-x-0 bottom-0 h-full">
           <Sparkline
             series={feed.series}

@@ -1,5 +1,6 @@
 import { AssetCard } from './AssetCard'
 import { HeroCard } from './HeroCard'
+import { Reveal } from '@/components/ui/Reveal'
 import type { SourceFeed } from '@/lib/vision/adapters'
 
 type FeedMap = Record<string, SourceFeed>
@@ -30,33 +31,37 @@ function SectionHeader({
 }) {
   return (
     <div className="flex items-baseline justify-between mb-4">
-      <h2
-        className="font-semibold"
-        style={{
-          fontFamily: 'var(--apple-font-display)',
-          fontSize: 22,
-          letterSpacing: 'var(--apple-track-tight)',
-          color: 'var(--apple-text)',
-        }}
-      >
-        {title}
-      </h2>
-      {href && (
-        <a
-          href={href}
-          className="border transition hover:bg-[rgba(0,0,0,0.04)]"
+      <Reveal mask>
+        <h2
+          className="font-semibold"
           style={{
-            background: 'var(--apple-panel)',
+            fontFamily: 'var(--apple-font-display)',
+            fontSize: 22,
+            letterSpacing: 'var(--apple-track-tight)',
             color: 'var(--apple-text)',
-            borderColor: 'var(--apple-line)',
-            borderRadius: 'var(--apple-r-pill)',
-            padding: '6px 14px',
-            fontSize: 12,
-            fontWeight: 500,
           }}
         >
-          See All ›
-        </a>
+          {title}
+        </h2>
+      </Reveal>
+      {href && (
+        <Reveal delay={0.08}>
+          <a
+            href={href}
+            className="border transition hover:bg-[rgba(0,0,0,0.04)]"
+            style={{
+              background: 'var(--apple-panel)',
+              color: 'var(--apple-text)',
+              borderColor: 'var(--apple-line)',
+              borderRadius: 'var(--apple-r-pill)',
+              padding: '6px 14px',
+              fontSize: 12,
+              fontWeight: 500,
+            }}
+          >
+            See All ›
+          </a>
+        </Reveal>
       )}
     </div>
   )
@@ -70,7 +75,7 @@ export function HomeDashboard({ feeds }: { feeds: FeedMap }) {
 
   return (
     <div className="px-6 py-8 md:px-8 lg:px-10 lg:py-10">
-      <div>
+      <Reveal mask>
         <h1
           className="font-semibold"
           style={{
@@ -83,9 +88,9 @@ export function HomeDashboard({ feeds }: { feeds: FeedMap }) {
         >
           Trading is easy with an Anti-Cheat
         </h1>
-      </div>
+      </Reveal>
 
-      <div className="mt-8">
+      <Reveal delay={0.08} className="mt-8">
         <HeroCard
           feature={{
             sourceId: hero.sourceId,
@@ -99,23 +104,24 @@ export function HomeDashboard({ feeds }: { feeds: FeedMap }) {
           }}
           side={side}
         />
-      </div>
+      </Reveal>
 
       <section className="mt-12">
         <SectionHeader title="Top markets" href="/explorer" />
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4">
-          {featuredRow.map((feed) => (
-            <AssetCard
-              key={feed.sourceId}
-              sourceId={feed.sourceId}
-              displayName={feed.displayName}
-              meta={feed.meta}
-              series={feed.series}
-              assetName={feed.assetName}
-              assetValue={feed.assetValue}
-              coverage={feed.coverage}
-              hrefOverride={feed.hrefOverride}
-            />
+          {featuredRow.map((feed, i) => (
+            <Reveal key={feed.sourceId} delay={i * 0.05}>
+              <AssetCard
+                sourceId={feed.sourceId}
+                displayName={feed.displayName}
+                meta={feed.meta}
+                series={feed.series}
+                assetName={feed.assetName}
+                assetValue={feed.assetValue}
+                coverage={feed.coverage}
+                hrefOverride={feed.hrefOverride}
+              />
+            </Reveal>
           ))}
         </div>
       </section>
@@ -123,18 +129,19 @@ export function HomeDashboard({ feeds }: { feeds: FeedMap }) {
       <section className="mt-12 mb-4">
         <SectionHeader title="Recently active" />
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4">
-          {topMarkets.map((feed) => (
-            <AssetCard
-              key={feed.sourceId}
-              sourceId={feed.sourceId}
-              displayName={feed.displayName}
-              meta={feed.meta}
-              series={feed.series}
-              assetName={feed.assetName}
-              assetValue={feed.assetValue}
-              coverage={feed.coverage}
-              hrefOverride={feed.hrefOverride}
-            />
+          {topMarkets.map((feed, i) => (
+            <Reveal key={feed.sourceId} delay={i * 0.05}>
+              <AssetCard
+                sourceId={feed.sourceId}
+                displayName={feed.displayName}
+                meta={feed.meta}
+                series={feed.series}
+                assetName={feed.assetName}
+                assetValue={feed.assetValue}
+                coverage={feed.coverage}
+                hrefOverride={feed.hrefOverride}
+              />
+            </Reveal>
           ))}
         </div>
       </section>

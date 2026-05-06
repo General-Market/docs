@@ -300,10 +300,23 @@ export function SpringBackdrop({ className, ...rest }: SpringBackdropProps) {
   return (
     <motion.div
       className={className}
-      initial={reduced ? false : { opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={reduced ? undefined : { opacity: 0 }}
-      transition={{ duration: 0.25 }}
+      initial={reduced ? false : {
+        opacity: 0,
+        backdropFilter: 'blur(0px) saturate(100%)',
+      }}
+      animate={{
+        opacity: 1,
+        backdropFilter: 'blur(24px) saturate(180%)',
+        transition: {
+          opacity: { duration: 0.22, ease: appleEnter },
+          backdropFilter: { duration: 0.34, ease: appleEnter },
+        },
+      }}
+      exit={reduced ? undefined : {
+        opacity: 0,
+        backdropFilter: 'blur(0px) saturate(100%)',
+        transition: { duration: 0.22, ease: appleExit },
+      }}
       {...rest}
     />
   )
