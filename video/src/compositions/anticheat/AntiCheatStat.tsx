@@ -1,6 +1,7 @@
 import React from "react";
 import {
   AbsoluteFill,
+  Easing,
   interpolate,
   spring,
   useCurrentFrame,
@@ -230,23 +231,17 @@ const BAR_GROW = toFrames(0.5);
 const REVEAL_AT =
   BAR_STAGGER * (BARS.length - 1) + BAR_GROW + toFrames(0.3);
 
+const TOUCHED_WORDS = ["every", "market", "you", "touched", "..."];
+const TOUCHED_WORD_STAGGER = toFrames(0.085);
+const TOUCHED_WORD_FADE = toFrames(0.32);
+const TOUCHED_HOLD = toFrames(0.55);
+const TOUCHED_EXIT = toFrames(0.6);
+const TOUCHED_ENTRY_FULL =
+  TOUCHED_WORD_STAGGER * (TOUCHED_WORDS.length - 1) + TOUCHED_WORD_FADE;
+const TOUCHED_EXIT_AT = TOUCHED_ENTRY_FULL + TOUCHED_HOLD;
+const touchedExitEase = Easing.bezier(0.55, 0.0, 0.85, 0.12);
+
 const ExtractionBars: React.FC = () => {
-  const frame = useCurrentFrame();
-
-  const revealLocal = frame - REVEAL_AT;
-  const revealOpacity = interpolate(
-    revealLocal,
-    [0, toFrames(0.22)],
-    [0, 1],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-  const revealY = interpolate(
-    revealLocal,
-    [0, toFrames(0.22)],
-    [22, 0],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-
   return (
     <AbsoluteFill>
       <div
@@ -299,27 +294,81 @@ const ExtractionBars: React.FC = () => {
         ))}
       </div>
 
-      <div
-        style={{
-          position: "absolute",
-          bottom: "5%",
-          left: 0,
-          right: 0,
-          textAlign: "center",
-          fontFamily: font,
-          fontSize: 96,
-          fontWeight: 800,
-          letterSpacing: "-0.035em",
-          color: colors.fg,
-          lineHeight: 0.95,
-          opacity: revealOpacity,
-          transform: `translateY(${revealY}px)`,
-        }}
-      >
-        <span style={{ color: colors.accent, marginRight: 24 }}>→</span>
-        every market you touched.
-      </div>
+      <TouchedLine />
     </AbsoluteFill>
+  );
+};
+
+const TouchedLine: React.FC = () => {
+  const frame = useCurrentFrame();
+  const local = frame - REVEAL_AT;
+
+  if (local < 0) return null;
+
+  const exitRaw = Math.max(
+    0,
+    Math.min(1, (local - TOUCHED_EXIT_AT) / TOUCHED_EXIT),
+  );
+  const exitEased = touchedExitEase(exitRaw);
+  const exitX = -exitEased * (W * 1.15);
+  const groupOpacity = interpolate(
+    exitRaw,
+    [0.78, 1],
+    [1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        bottom: "5%",
+        left: 0,
+        right: 0,
+        textAlign: "center",
+        fontFamily: font,
+        fontSize: 96,
+        fontWeight: 800,
+        letterSpacing: "-0.035em",
+        color: colors.fg,
+        lineHeight: 0.95,
+        whiteSpace: "nowrap",
+        transform: `translate3d(${exitX}px, 0, 0)`,
+        opacity: groupOpacity,
+        willChange: "transform, opacity",
+      }}
+    >
+      {TOUCHED_WORDS.map((word, i) => {
+        const wLocal = local - i * TOUCHED_WORD_STAGGER;
+        const wOpacity = interpolate(
+          wLocal,
+          [0, TOUCHED_WORD_FADE],
+          [0, 1],
+          { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+        );
+        const wY = interpolate(
+          wLocal,
+          [0, TOUCHED_WORD_FADE],
+          [26, 0],
+          { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+        );
+        const isLast = i === TOUCHED_WORDS.length - 1;
+        return (
+          <span
+            key={i}
+            style={{
+              display: "inline-block",
+              marginRight: isLast ? 0 : "0.32em",
+              opacity: wOpacity,
+              transform: `translate3d(0, ${wY}px, 0)`,
+              willChange: "transform, opacity",
+            }}
+          >
+            {word}
+          </span>
+        );
+      })}
+    </div>
   );
 };
 
