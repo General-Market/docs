@@ -566,12 +566,15 @@ const RIGGED_BG_BARS: BgBar[] = [
   { xPct: 0.905, heightPct: 0.60 },
 ];
 
-const BG_BAR_WIDTH = 64;
-const BG_BAR_OPACITY = 0.22;
-// Same rhythm as the horizontal extraction chart at the Bars scene:
-//   stagger ≈ 0.27s per bar, grow ≈ 0.5s with cubic-out.
-const BG_BAR_STAGGER = toFrames(0.18);
-const BG_BAR_GROW = toFrames(0.55);
+const BG_BAR_WIDTH = 72;
+const BG_BAR_OPACITY = 0.3;
+// Initial grow on the same beat as the horizontal extraction chart.
+const BG_BAR_STAGGER = toFrames(0.16);
+const BG_BAR_GROW = toFrames(0.5);
+// After the grow, every bar oscillates around its base height — never
+// freezes. Two octaves of sine per bar, phase-offset by index so the field
+// looks like live data, not paint.
+const WOBBLE_AMP = 0.075;
 
 const VerticalBars: React.FC = () => {
   const frame = useCurrentFrame();
@@ -579,9 +582,18 @@ const VerticalBars: React.FC = () => {
     <AbsoluteFill style={{ pointerEvents: "none" }}>
       {RIGGED_BG_BARS.map((bar, i) => {
         const local = frame - i * BG_BAR_STAGGER;
-        const t = Math.max(0, Math.min(1, local / BG_BAR_GROW));
-        const eased = 1 - Math.pow(1 - t, 3);
-        const heightPct = bar.heightPct * 100 * eased;
+        const growT = Math.max(0, Math.min(1, local / BG_BAR_GROW));
+        const eased = 1 - Math.pow(1 - growT, 3);
+        const t = frame / FPS;
+        const wobble =
+          (Math.sin(t * 1.6 + i * 0.9) * 0.65 +
+            Math.sin(t * 2.9 + i * 1.7) * 0.35) *
+          WOBBLE_AMP *
+          eased;
+        const heightPct = Math.max(
+          0,
+          Math.min(0.98, bar.heightPct + wobble) * eased,
+        ) * 100;
         return (
           <div
             key={i}
