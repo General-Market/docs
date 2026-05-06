@@ -30,21 +30,29 @@ type ArticleProof = {
   exchange: string;
   category: string;
   image: string;
-  highlights: Highlight[];
+  highlights: Highlight[];      // yellow body highlight (insider-trading phrases)
+  exchangeBox?: Highlight;       // green underline on the exchange name in title
 };
 
+// `exchangeBox` coords were eyeballed from each article PNG. Two articles
+// don't carry their exchange name in the visible upper portion (pump.fun's
+// article is about a Solana memecoin lawsuit; the SEC/Cohen article doesn't
+// name NYSE) — those keep just the yellow body highlight, while the green
+// title element on the left of the scene already names them.
 const ARTICLES: ArticleProof[] = [
   {
     exchange: "binance",
     category: "perps",
     image: "insider-trading/articles/1.png",
     highlights: [{ x: 0.5737, y: 0.1383, w: 0.3183, h: 0.0453 }],
+    exchangeBox: { x: 0.038, y: 0.083, w: 0.205, h: 0.045 },
   },
   {
     exchange: "robinhood",
     category: "options",
     image: "insider-trading/articles/9.png",
     highlights: [{ x: 0.4119, y: 0.1968, w: 0.2831, h: 0.042 }],
+    exchangeBox: { x: 0.097, y: 0.062, w: 0.282, h: 0.052 },
   },
   {
     exchange: "polymarket",
@@ -54,30 +62,35 @@ const ARTICLES: ArticleProof[] = [
       { x: 0.6467, y: 0.2828, w: 0.2445, h: 0.0273 },
       { x: 0.5126, y: 0.3313, w: 0.1197, h: 0.0281 },
     ],
+    exchangeBox: { x: 0.045, y: 0.205, w: 0.215, h: 0.04 },
   },
   {
     exchange: "pump.fun",
     category: "launchpads",
     image: "insider-trading/articles/4.png",
     highlights: [{ x: 0.1253, y: 0.5158, w: 0.2653, h: 0.0487 }],
+    // No exchangeBox — pump.fun isn't named in the visible upper portion.
   },
   {
     exchange: "kalshi",
     category: "predictions",
     image: "insider-trading/articles/6.png",
     highlights: [{ x: 0.4819, y: 0.176, w: 0.216, h: 0.0303 }],
+    exchangeBox: { x: 0.057, y: 0.123, w: 0.118, h: 0.038 },
   },
   {
     exchange: "nyse",
     category: "equity",
     image: "insider-trading/articles/8.png",
     highlights: [{ x: 0.0522, y: 0.5101, w: 0.3917, h: 0.0519 }],
+    // No exchangeBox — NYSE isn't named in this SEC/Cohen press release.
   },
   {
     exchange: "coinbase",
     category: "spot",
     image: "insider-trading/articles/7.png",
     highlights: [{ x: 0.2453, y: 0.4009, w: 0.3414, h: 0.0417 }],
+    exchangeBox: { x: 0.42, y: 0.27, w: 0.265, h: 0.045 },
   },
 ];
 
@@ -298,9 +311,62 @@ const ArticleFlash: React.FC<{
             highlights={article.highlights}
             reveal={highlightReveal}
           />
+          {article.exchangeBox && (
+            <ExchangeNameUnderline
+              box={article.exchangeBox}
+              reveal={highlightReveal}
+            />
+          )}
         </div>
       </div>
     </div>
+  );
+};
+
+// ─── Exchange-name underline — clean green line beneath the exchange word ─────
+//
+// Drawn ON the article image at the bbox of the exchange name (binance,
+// polymarket, etc). Two parts: a thicker green underline beneath the word
+// plus a faint green text-glow over the bbox so the eye is pulled to it
+// without obscuring the underlying ink.
+
+const ExchangeNameUnderline: React.FC<{
+  box: Highlight;
+  reveal: number;
+}> = ({ box, reveal }) => {
+  const drawn = Math.max(0, Math.min(1, reveal));
+  return (
+    <>
+      {/* Faint green wash over the word — multiply blend so the ink shows */}
+      <div
+        style={{
+          position: "absolute",
+          left: `${box.x * 100}%`,
+          top: `${box.y * 100}%`,
+          width: `${box.w * drawn * 100}%`,
+          height: `${box.h * 100}%`,
+          background:
+            "linear-gradient(180deg, rgba(82,255,162,0.0) 0%, rgba(34,217,122,0.18) 100%)",
+          mixBlendMode: "multiply",
+          borderRadius: 2,
+          pointerEvents: "none",
+        }}
+      />
+      {/* The underline itself */}
+      <div
+        style={{
+          position: "absolute",
+          left: `${box.x * 100}%`,
+          top: `${(box.y + box.h * 1.02) * 100}%`,
+          width: `${box.w * drawn * 100}%`,
+          height: `${Math.max(0.012, box.h * 0.22) * 100}%`,
+          background: PROOF_GREEN,
+          borderRadius: 2,
+          boxShadow: `0 0 12px ${PROOF_GREEN}, 0 0 4px ${PROOF_GREEN_LIGHT}`,
+          pointerEvents: "none",
+        }}
+      />
+    </>
   );
 };
 
