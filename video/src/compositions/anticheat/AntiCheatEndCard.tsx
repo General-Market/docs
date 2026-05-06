@@ -11,7 +11,7 @@ import { FPS, H, W, colors, toFrames } from "./theme";
 import { ParallaxText } from "./transitions";
 import { IdleZoom, RevealChars } from "./vibe";
 
-const SCENE_SECONDS = 3.0;
+const SCENE_SECONDS = 4.5;
 const SUBLINE_AT = toFrames(0.7);
 const TERTIARY_AT = toFrames(1.2);
 const SCENE_FRAMES = toFrames(SCENE_SECONDS);

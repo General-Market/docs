@@ -25,17 +25,17 @@ import {
 // own (much smaller) magnitude. Variation per cut is in direction,
 // magnitude, and how the bg behaves relative to the fg.
 //
-//   Hook → Bars         snap-zoom in        20f   fg 1→1.45  bg 1→1.06
+//   Hook → Bars         snap-zoom in        26f   fg 1→1.45  bg 1→1.06
 //   Bars → Rigged       HARD CUT
-//   Rigged → Stat       snap-zoom intense   18f   fg 1→1.65  bg pulls back
-//   Stat → Solution     snap-zoom out + veil 38f  fg 1→0.72  ← music dies
-//   Solution → Reassure soft snap           22f   fg 1→1.22  bg ~still
-//   Reassure → EndCard  long pull           28f   fg 1→0.82  bg ~still
-const T_HOOK_BARS = 20;
-const T_RIGGED_STAT = 18;
-const T_STAT_SOLUTION = 38;
-const T_SOLUTION_REASSURE = 22;
-const T_REASSURE_END = 28;
+//   Rigged → Stat       snap-zoom intense   24f   fg 1→1.65  bg pulls back
+//   Stat → Solution     snap-zoom out + veil 42f  fg 1→0.72  ← music dies
+//   Solution → Reassure soft snap           28f   fg 1→1.22  bg ~still
+//   Reassure → EndCard  long pull           34f   fg 1→0.82  bg ~still
+const T_HOOK_BARS = 26;
+const T_RIGGED_STAT = 24;
+const T_STAT_SOLUTION = 42;
+const T_SOLUTION_REASSURE = 28;
+const T_REASSURE_END = 34;
 
 const TRANSITION_FRAMES =
   T_HOOK_BARS +
@@ -72,6 +72,7 @@ export const AntiCheatFull: React.FC = () => {
       <Sequence from={0} durationInFrames={MUSIC_FRAMES}>
         <Audio
           src={staticFile("anticheat-bed.mp3")}
+          loop
           volume={(frame) =>
             interpolate(
               frame,

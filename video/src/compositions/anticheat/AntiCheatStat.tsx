@@ -15,8 +15,8 @@ import { IdleZoom, RevealChars } from "./vibe";
 // Two compositions live in this file:
 //   AntiCheatStat — the 0.01% / 70% concentration numbers (4s)
 //   AntiCheatBars — the % extracted by unfair trading bar chart (3.5s)
-const STAT_SECONDS = 3;
-const BARS_SECONDS = 3;
+const STAT_SECONDS = 4;
+const BARS_SECONDS = 4;
 const STAT_FRAMES = toFrames(STAT_SECONDS);
 const BARS_FRAMES = toFrames(BARS_SECONDS);
 

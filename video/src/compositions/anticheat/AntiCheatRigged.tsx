@@ -15,16 +15,16 @@ import { IdleZoom, RevealChars } from "./vibe";
 //   line 2 — "is rigged." (red, hero size; constant)
 // Articles flash hard-cut on the RIGHT, much larger than before, with the
 // original yellow highlighter restored on the article phrase.
-const SCENE_SECONDS = 4.5;
+const SCENE_SECONDS = 6.0;
 const SCENE_FRAMES = Math.round(SCENE_SECONDS * FPS);
 
 const TITLE_IN = 0;
 const ARTICLES_AT = toFrames(0.35);
-const ARTICLE_HOLD = toFrames(0.55);
+const ARTICLE_HOLD = toFrames(0.78);
 
 // Three glitch shots on "is rigged" — irregular intervals, short pulses.
 // Each pulse is a 6-frame chromatic split that decays.
-const GLITCH_AT = [toFrames(0.85), toFrames(2.1), toFrames(3.35)];
+const GLITCH_AT = [toFrames(1.1), toFrames(2.85), toFrames(4.6)];
 const GLITCH_LEN = 6;
 
 const PROOF_GREEN = "#22d97a";

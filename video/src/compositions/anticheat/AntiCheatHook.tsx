@@ -799,7 +799,7 @@ function generateCandles(
 export const antiCheatHookMeta = {
   id: "AntiCheatHook",
   component: AntiCheatHook,
-  durationInFrames: toFrames(7.5),
+  durationInFrames: toFrames(8.5),
   fps: FPS,
   width: W,
   height: H,
