@@ -11,7 +11,16 @@ import {
   type HTMLMotionProps,
 } from 'framer-motion'
 import { useRef, useEffect, useState, type ReactNode } from 'react'
+import { usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
+
+// ── Apple-style page transition easings ─────────────────────
+// apple.com uses cubic-bezier (not spring) for cross-page
+// transitions — predictable, brand-consistent. Springs are
+// reserved for in-app physics (presses, hover, modals).
+
+const appleEnter = [0.32, 0.72, 0, 1] as const
+const appleExit  = [0.4, 0, 0.6, 1] as const
 
 // ── Spring Configs ──────────────────────────────────────────
 // Named presets. Every animation in the app pulls from here.
@@ -408,9 +417,15 @@ export function SpringTab({
 
 
 // ── SpringPage ──────────────────────────────────────────────
-// Page entrance wrapper. First load: instant (no CLS).
-// Subsequent navigations: real spring entrance.
-// Used by template.tsx.
+// Cross-page transition wrapper. MUST be mounted in a stable
+// parent (layout.tsx) — never in template.tsx, which remounts
+// per route and prevents the outgoing page from finishing exit.
+//
+// Behavior:
+//   - First mount: no entrance (avoids hydration jolt + CLS)
+//   - Subsequent navigations: outgoing page exits, incoming
+//     enters — cross-fade with light scale + brief blur,
+//     keyed by pathname.
 
 interface SpringPageProps {
   children: ReactNode
@@ -419,24 +434,44 @@ interface SpringPageProps {
 
 export function SpringPage({ children, className }: SpringPageProps) {
   const reduced = useReducedMotion()
+  const pathname = usePathname()
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => { setMounted(true) }, [])
 
-  // First render (SSR + hydration): plain div, no motion — avoids hydration mismatch
-  if (!mounted || reduced) {
+  if (reduced) {
     return <div className={className}>{children}</div>
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0.5, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={springs.page}
-      className={className}
-    >
-      {children}
-    </motion.div>
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.div
+        key={pathname}
+        className={className}
+        initial={mounted ? { opacity: 0, scale: 0.992, y: 6, filter: 'blur(4px)' } : false}
+        animate={{
+          opacity: 1,
+          scale: 1,
+          y: 0,
+          filter: 'blur(0px)',
+          transition: {
+            opacity: { duration: 0.28, ease: appleEnter },
+            scale:   { duration: 0.34, ease: appleEnter },
+            y:       { duration: 0.34, ease: appleEnter },
+            filter:  { duration: 0.22, ease: appleEnter },
+          },
+        }}
+        exit={{
+          opacity: 0,
+          scale: 0.996,
+          y: -2,
+          filter: 'blur(2px)',
+          transition: { duration: 0.18, ease: appleExit },
+        }}
+      >
+        {children}
+      </motion.div>
+    </AnimatePresence>
   )
 }
 

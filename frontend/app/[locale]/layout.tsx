@@ -6,6 +6,7 @@ import {
   WebsiteJsonLd,
   SoftwareApplicationJsonLd,
 } from '@/components/seo/JsonLd'
+import { SpringPage } from '@/components/ui/spring'
 
 type Props = {
   children: React.ReactNode
@@ -71,7 +72,7 @@ export default async function LocaleLayout({ children, params }: Props) {
       <OrganizationJsonLd description={tJsonLd('org_description')} />
       <WebsiteJsonLd description={tJsonLd('website_description')} />
       <SoftwareApplicationJsonLd description={tJsonLd('app_description')} />
-      {children}
+      <SpringPage>{children}</SpringPage>
     </>
   )
 }
