@@ -9,7 +9,17 @@ import { LinkMenu } from './LinkMenu'
 const MODEL_URL = '/models/tabletop_macbook_iphone.opt.glb'
 useGLTF.preload(MODEL_URL)
 
-type TiltRef = React.MutableRefObject<{ x: number; y: number }>
+// Phone is roughly 3.4 units tall after the GLB scale of 22.486.
+// Top 40% spans ~1.36 units; we move the phone up by ±1.36 so scrolling
+// drives the camera through the menu instead of past empty page.
+const SCROLL_TRAVEL = 1.36
+const PHONE_TOP_OFFSET = -SCROLL_TRAVEL
+
+type TiltRef = React.MutableRefObject<{
+  scrollProgress: number
+  yaw: number
+  pitch: number
+}>
 
 function PhoneScene({ tilt }: { tilt: TiltRef }) {
   const gltf = useGLTF(MODEL_URL)
@@ -31,21 +41,29 @@ function PhoneScene({ tilt }: { tilt: TiltRef }) {
   useFrame(() => {
     const g = groupRef.current
     if (!g) return
-    g.rotation.y = THREE.MathUtils.lerp(g.rotation.y, tilt.current.x, 0.1)
-    g.rotation.x = THREE.MathUtils.lerp(g.rotation.x, tilt.current.y, 0.1)
+    const targetY = PHONE_TOP_OFFSET + tilt.current.scrollProgress * SCROLL_TRAVEL * 2
+    g.position.y = THREE.MathUtils.lerp(g.position.y, targetY, 0.12)
+    g.rotation.y = THREE.MathUtils.lerp(g.rotation.y, tilt.current.yaw, 0.1)
+    g.rotation.x = THREE.MathUtils.lerp(g.rotation.x, tilt.current.pitch, 0.1)
   })
 
   return (
     <group ref={groupRef}>
       <primitive object={gltf.scene} />
+      <ContactShadows
+        position={[0, -1.78, 0]}
+        opacity={0.3}
+        scale={6}
+        blur={2.2}
+        far={4}
+      />
       <Html
         transform
-        position={[0, 0, -0.09]}
+        position={[0, 0, -0.085]}
         rotation={[0, Math.PI, 0]}
         scale={0.0042}
         occlude={false}
         zIndexRange={[1, 0]}
-        style={{ pointerEvents: 'auto' }}
         wrapperClass="lt-html-wrapper"
       >
         <LinkMenu />
@@ -55,25 +73,22 @@ function PhoneScene({ tilt }: { tilt: TiltRef }) {
 }
 
 export function PhoneLinktree() {
-  const tilt = useRef({ x: 0, y: 0 })
-  const mouse = useRef({ x: 0, y: 0 })
+  const tilt = useRef({ scrollProgress: 0, yaw: 0, pitch: 0 })
 
   useEffect(() => {
-    const apply = () => {
+    const onScroll = () => {
       const max = Math.max(1, document.documentElement.scrollHeight - window.innerHeight)
-      const p = max > 1 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0
-      const scrollYaw = (p - 0.5) * 0.32
-      const scrollPitch = (p - 0.5) * 0.12
-      tilt.current.x = scrollYaw + mouse.current.x * 0.08
-      tilt.current.y = scrollPitch + mouse.current.y * 0.05
+      tilt.current.scrollProgress = max > 1
+        ? Math.min(1, Math.max(0, window.scrollY / max))
+        : 0
     }
-    const onScroll = () => apply()
     const onMove = (e: PointerEvent) => {
-      mouse.current.x = (e.clientX / window.innerWidth - 0.5) * 2
-      mouse.current.y = (e.clientY / window.innerHeight - 0.5) * 2
-      apply()
+      const mx = (e.clientX / window.innerWidth - 0.5) * 2
+      const my = (e.clientY / window.innerHeight - 0.5) * 2
+      tilt.current.yaw = mx * 0.10
+      tilt.current.pitch = my * 0.05
     }
-    apply()
+    onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })
     window.addEventListener('pointermove', onMove, { passive: true })
     return () => {
@@ -86,13 +101,10 @@ export function PhoneLinktree() {
     <main className="lt-page">
       <style>{`
         .lt-page {
-          --lt-bg: #fafafa;
-          --lt-text: #1d1d1f;
-          --lt-muted: #6e6e73;
-          min-height: 200vh;
+          min-height: 240vh;
           background:
-            radial-gradient(60% 50% at 50% 38%, #ffffff 0%, #f5f5f7 60%, #eeeef1 100%);
-          color: var(--lt-text);
+            radial-gradient(70% 60% at 50% 38%, #ffffff 0%, #f4f4f6 65%, #ececef 100%);
+          color: #1d1d1f;
           font-family: var(--apple-font-display, "SF Pro Display", -apple-system, system-ui, sans-serif);
           letter-spacing: -0.01em;
           position: relative;
@@ -101,28 +113,11 @@ export function PhoneLinktree() {
           content: '';
           position: fixed; inset: 0;
           pointer-events: none;
+          z-index: 0;
           background:
-            radial-gradient(40% 30% at 50% 70%, rgba(0,113,227,0.07) 0%, transparent 70%),
-            radial-gradient(30% 24% at 80% 30%, rgba(255,180,80,0.06) 0%, transparent 70%);
+            radial-gradient(40% 30% at 50% 78%, rgba(0,113,227,0.05) 0%, transparent 70%),
+            radial-gradient(28% 22% at 82% 30%, rgba(255,180,80,0.05) 0%, transparent 70%);
         }
-        .lt-header {
-          position: fixed; top: 0; left: 0; right: 0;
-          padding: 18px 24px;
-          display: flex; align-items: center; justify-content: space-between;
-          z-index: 4;
-          font-size: 13px;
-          color: var(--lt-muted);
-          mix-blend-mode: multiply;
-        }
-        .lt-back {
-          color: var(--lt-text);
-          text-decoration: none;
-          font-weight: 500;
-          letter-spacing: -0.01em;
-          opacity: 0.8;
-          transition: opacity 200ms cubic-bezier(0.25,1,0.5,1);
-        }
-        .lt-back:hover { opacity: 1; }
         .lt-stage {
           position: sticky;
           top: 0;
@@ -133,34 +128,12 @@ export function PhoneLinktree() {
         .lt-stage canvas { touch-action: none; }
         .lt-html-wrapper { pointer-events: none; }
         .lt-html-wrapper > div { pointer-events: auto; }
-        .lt-credit {
-          position: relative;
-          z-index: 2;
-          padding: 96px 24px 56px;
-          text-align: center;
-          font-size: 12px;
-          letter-spacing: 0.06em;
-          text-transform: uppercase;
-          color: var(--lt-muted);
-        }
-        .lt-credit a {
-          color: inherit; text-decoration: none;
-        }
-        .lt-credit a:hover { color: var(--lt-text); }
-        @media (max-width: 720px) {
-          .lt-page { min-height: 160vh; }
-        }
       `}</style>
-
-      <header className="lt-header">
-        <a className="lt-back" href="/">← generalmarket.io</a>
-        <span>Anti-cheat trading.</span>
-      </header>
 
       <div className="lt-stage">
         <Canvas
           dpr={[1, 2]}
-          camera={{ position: [0, 0, -5], fov: 38 }}
+          camera={{ position: [0, 0, -2.55], fov: 30 }}
           gl={{
             antialias: true,
             alpha: true,
@@ -176,20 +149,9 @@ export function PhoneLinktree() {
             <directionalLight position={[3, 6, -4]} intensity={2.2} />
             <directionalLight position={[-4, 3, 4]} intensity={0.8} color="#c8d4ea" />
             <directionalLight position={[0, -2, -3]} intensity={0.35} color="#fff1d6" />
-            <ContactShadows
-              position={[0, -1.75, 0]}
-              opacity={0.32}
-              scale={6}
-              blur={2}
-              far={5}
-            />
           </Suspense>
         </Canvas>
       </div>
-
-      <footer className="lt-credit">
-        © 2026 General Market · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a>
-      </footer>
     </main>
   )
 }
