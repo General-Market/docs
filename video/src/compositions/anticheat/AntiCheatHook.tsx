@@ -16,8 +16,6 @@ import {
 import { fade } from "@remotion/transitions/fade";
 import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, toFrames } from "./theme";
-import { ParallaxText } from "./transitions";
-import { RevealChars } from "./vibe";
 
 const BROLL = {
   minecraft: staticFile("cheat-broll/minecraft-killaura.mp4"),
@@ -37,6 +35,8 @@ const PAIRS_AT = toFrames(2.6);
 const PAIR_STEP = toFrames(0.9);
 const REVEAL_AT = toFrames(5.7);
 
+const HOOK_DURATION = toFrames(8.5);
+
 export const AntiCheatHook: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -53,89 +53,92 @@ export const AntiCheatHook: React.FC = () => {
     extrapolateRight: "clamp",
   });
 
+  // Continuous Z-push across the full hook — imperceptible per frame,
+  // undeniable in retrospect. The whole composition slowly closes in.
+  const zoomScale = interpolate(frame, [0, HOOK_DURATION], [1, 1.05], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
   return (
     <AbsoluteFill style={{ backgroundColor: "#0a0a0a", fontFamily: font }}>
-      {/* ── Left panel: PLAY — full width until the split, then half ── */}
-      <div
-        style={{
-          position: "absolute",
-          top: 0,
-          bottom: 0,
-          left: 0,
-          right: `${splitOffset}px`,
-          overflow: "hidden",
-          borderRight: `1px solid ${"#1f1f1f"}`,
-        }}
-      >
-        <CheaterBrollSequence />
-        <StripDarken />
-        <PanelLabel
-          eyebrow="When you play"
-          slot="01 / Game"
-          showFrom={HEADER_IN}
-          align="left"
-          frame={frame}
-          fps={fps}
-        />
-        <PairList
-          pairs={PAIRS}
-          field="game"
-          align="left"
-          startFrame={PAIRS_AT}
-          stepFrame={PAIR_STEP}
-          frame={frame}
-          fps={fps}
-        />
-      </div>
-
-      {/* ── Right panel: TRADE — slides in from the right edge ── */}
-      <div
-        style={{
-          position: "absolute",
-          top: 0,
-          bottom: 0,
-          left: `${W - splitOffset}px`,
-          right: 0,
-          overflow: "hidden",
-          borderLeft: `1px solid ${"#1f1f1f"}`,
-        }}
-      >
-        <TradingScreen frame={frame} showFrom={SPLIT_AT} />
-        <StripDarken tint={"#ff3b3b"} />
-        <PanelLabel
-          eyebrow="When you trade"
-          slot="02 / Market"
-          showFrom={SPLIT_AT}
-          align="right"
-          frame={frame}
-          fps={fps}
-          tint={"#ff3b3b"}
-        />
-        <PairList
-          pairs={PAIRS}
-          field="trade"
-          align="right"
-          startFrame={PAIRS_AT}
-          stepFrame={PAIR_STEP}
-          frame={frame}
-          fps={fps}
-          tint={"#ff3b3b"}
-        />
-      </div>
-
-      {/* ── Reveal lines ── */}
-      <Sequence from={REVEAL_AT} layout="none">
-        <RevealLines />
-      </Sequence>
-
-      {/* ── Vignette ── */}
       <AbsoluteFill
         style={{
-          pointerEvents: "none",
-          background:
-            "radial-gradient(circle at 50% 50%, transparent 55%, rgba(0,0,0,0.55) 100%)",
+          transform: `scale(${zoomScale})`,
+          transformOrigin: "50% 50%",
         }}
-      />
+      >
+        {/* ── Left panel: PLAY — full width until the split, then half ── */}
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            bottom: 0,
+            left: 0,
+            right: `${splitOffset}px`,
+            overflow: "hidden",
+            borderRight: `1px solid ${"#1f1f1f"}`,
+          }}
+        >
+          <CheaterBrollSequence />
+          <StripDarken />
+          <PanelLabel
+            eyebrow="When you play"
+            showFrom={HEADER_IN}
+            align="left"
+            frame={frame}
+            fps={fps}
+          />
+          <PairList
+            pairs={PAIRS}
+            field="game"
+            align="left"
+            startFrame={PAIRS_AT}
+            stepFrame={PAIR_STEP}
+            frame={frame}
+            fps={fps}
+          />
+        </div>
+
+        {/* ── Right panel: TRADE — slides in from the right edge ── */}
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            bottom: 0,
+            left: `${W - splitOffset}px`,
+            right: 0,
+            overflow: "hidden",
+            borderLeft: `1px solid ${"#1f1f1f"}`,
+          }}
+        >
+          <TradingScreen frame={frame} showFrom={SPLIT_AT} />
+          <StripDarken tint={"#ff3b3b"} />
+          <PanelLabel
+            eyebrow="When you trade"
+            showFrom={SPLIT_AT}
+            align="right"
+            frame={frame}
+            fps={fps}
+            tint={"#ff3b3b"}
+          />
+          <PairList
+            pairs={PAIRS}
+            field="trade"
+            align="right"
+            startFrame={PAIRS_AT}
+            stepFrame={PAIR_STEP}
+            frame={frame}
+            fps={fps}
+            tint={"#ff3b3b"}
+          />
+        </div>
+
+        {/* ── Reveal lines ── */}
+        <Sequence from={REVEAL_AT} layout="none">
+          <RevealLines />
+        </Sequence>
+      </AbsoluteFill>
     </AbsoluteFill>
   );
 };
@@ -563,13 +566,12 @@ const StripDarken: React.FC<{ tint?: string }> = ({ tint }) => (
 
 const PanelLabel: React.FC<{
   eyebrow: string;
-  slot: string;
   showFrom: number;
   align: "left" | "right";
   frame: number;
   fps: number;
   tint?: string;
-}> = ({ eyebrow, slot, showFrom, align, frame, fps, tint }) => {
+}> = ({ eyebrow, showFrom, align, frame, fps, tint }) => {
   const t = spring({
     frame: frame - showFrom,
     fps,
@@ -591,19 +593,6 @@ const PanelLabel: React.FC<{
         transform: `translateY(${y}px)`,
       }}
     >
-      <div
-        style={{
-          fontFamily: monoFont,
-          fontSize: 38,
-          fontWeight: 500,
-          letterSpacing: "0.18em",
-          textTransform: "uppercase",
-          color: "#7a7a7a",
-          marginBottom: 22,
-        }}
-      >
-        {slot}
-      </div>
       <div
         style={{
           fontFamily: font,
@@ -696,7 +685,27 @@ const PairList: React.FC<{
   );
 };
 
+// Each line flies forward from depth — starts huge and motion-blurred,
+// snaps to scale 1.0 with focus pull. The container shakes on landing,
+// once for each line, so the second clause hits like a second punch.
+const LINE1_LAND = 7;
+const LINE2_START = 6;
+const LINE2_LAND = LINE2_START + 7;
+const SHAKE_FRAMES = 5;
+const SHAKE_AMP = 9;
+
 const RevealLines: React.FC = () => {
+  const frame = useCurrentFrame();
+
+  const shakeAt = (landFrame: number) => {
+    const since = frame - landFrame;
+    if (since < 0 || since >= SHAKE_FRAMES) return 0;
+    return (1 - since / SHAKE_FRAMES) * SHAKE_AMP;
+  };
+  const amp = Math.max(shakeAt(LINE1_LAND), shakeAt(LINE2_LAND));
+  const shakeX = amp ? (pseudo(frame * 7.31) - 0.5) * 2 * amp : 0;
+  const shakeY = amp ? (pseudo(frame * 11.7 + 1) - 0.5) * 2 * amp : 0;
+
   return (
     <AbsoluteFill
       style={{
@@ -704,45 +713,70 @@ const RevealLines: React.FC = () => {
         alignItems: "center",
         background: "rgba(10,10,10,0.78)",
         backdropFilter: "blur(2px)",
+        transform: `translate(${shakeX}px, ${shakeY}px)`,
       }}
     >
-      <ParallaxText>
-        <div
-          style={{
-            fontFamily: font,
-            fontWeight: 700,
-            fontSize: 84,
-            letterSpacing: "-0.025em",
-            textAlign: "center",
-            color: "#f5f5f5",
-            lineHeight: 1.15,
-          }}
-        >
-          <div>
-            <RevealChars
-              text="The same cheaters ruining your games"
-              startFrame={0}
-              stagger={0.65}
-              duration={9}
-              y={14}
-              blur={3}
-              scale={0.97}
-            />
-          </div>
-          <div style={{ color: "#ff3b3b", marginTop: 16 }}>
-            <RevealChars
-              text="are trading against you"
-              startFrame={toFrames(0.45)}
-              stagger={0.8}
-              duration={9}
-              y={16}
-              blur={4}
-              scale={0.95}
-            />
-          </div>
-        </div>
-      </ParallaxText>
+      <div
+        style={{
+          fontFamily: font,
+          fontWeight: 700,
+          fontSize: 84,
+          letterSpacing: "-0.025em",
+          textAlign: "center",
+          color: "#f5f5f5",
+          lineHeight: 1.15,
+        }}
+      >
+        <DepthLine
+          text="The same cheaters ruining your games"
+          startAt={0}
+          frame={frame}
+        />
+        <DepthLine
+          text="are trading against you"
+          startAt={LINE2_START}
+          frame={frame}
+          color="#ff3b3b"
+          marginTop={16}
+        />
+      </div>
     </AbsoluteFill>
+  );
+};
+
+const DepthLine: React.FC<{
+  text: string;
+  startAt: number;
+  frame: number;
+  color?: string;
+  marginTop?: number;
+}> = ({ text, startAt, frame, color, marginTop }) => {
+  const t = frame - startAt;
+  const scale = interpolate(t, [0, 7], [2.4, 1.0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const blurPx = interpolate(t, [0, 7], [16, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const opacity = interpolate(t, [0, 5], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  return (
+    <div
+      style={{
+        transform: `scale(${scale})`,
+        transformOrigin: "50% 50%",
+        filter: blurPx > 0.05 ? `blur(${blurPx}px)` : "none",
+        opacity,
+        color: color ?? "#f5f5f5",
+        marginTop: marginTop ?? 0,
+      }}
+    >
+      {text}
+    </div>
   );
 };
 
