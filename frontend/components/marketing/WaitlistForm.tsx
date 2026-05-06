@@ -29,15 +29,10 @@ type ChoiceStep = {
   description?: string
   options: Choice[]
   required?: boolean
-}
-type ThanksStep = {
-  type: 'thanks'
-  id: 'thanks'
-  title: string
-  body: string
+  multiple?: boolean
 }
 
-type Step = WelcomeStep | TextStep | ChoiceStep | ThanksStep
+type Step = WelcomeStep | TextStep | ChoiceStep
 
 const STEPS: Step[] = [
   {
@@ -74,6 +69,7 @@ const STEPS: Step[] = [
     type: 'choice',
     id: 'protection_from',
     label: 'Against who your pnl need protection from',
+    multiple: true,
     options: [
       { value: 'insider', label: 'Insider Traders' },
       { value: 'frontrun', label: 'Front Runners' },
@@ -118,26 +114,33 @@ const STEPS: Step[] = [
     id: 'notes',
     label: 'Is there anything you’d like us to know?',
     placeholder: 'Type your answer here...',
-    multiline: true,
-  },
-  {
-    type: 'thanks',
-    id: 'thanks',
-    title: 'Thanks! You’re now on the waitlist 🔥',
-    body: 'We’ll notify you the second we go live.',
   },
 ]
 
-type Answers = Record<string, string>
+type AnswerValue = string | string[]
+type Answers = Record<string, AnswerValue>
 
 function shouldSkip(step: Step, answers: Answers): boolean {
-  if (step.id === 'reach' && answers.affiliate !== 'yes') return true
+  if (step.type === 'text' && step.id === 'reach' && answers.affiliate !== 'yes') return true
   return false
 }
 
-function isValid(step: Step, value: string): { ok: true } | { ok: false; reason: string } {
-  if (step.type === 'welcome' || step.type === 'thanks' || step.type === 'choice') return { ok: true }
-  const trimmed = value.trim()
+function isValid(
+  step: Step,
+  value: AnswerValue,
+): { ok: true } | { ok: false; reason: string } {
+  if (step.type === 'welcome') return { ok: true }
+  if (step.type === 'choice') {
+    if (step.required) {
+      if (step.multiple) {
+        if (!Array.isArray(value) || value.length === 0) return { ok: false, reason: 'Pick at least one.' }
+      } else if (typeof value !== 'string' || !value) {
+        return { ok: false, reason: 'Pick one.' }
+      }
+    }
+    return { ok: true }
+  }
+  const trimmed = typeof value === 'string' ? value.trim() : ''
   if (step.required && !trimmed) return { ok: false, reason: 'Required.' }
   if (step.type === 'email' && trimmed) {
     const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)
@@ -175,16 +178,17 @@ export default function WaitlistForm() {
   const [answers, setAnswers] = useState<Answers>({})
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
   const [direction, setDirection] = useState<1 | -1>(1)
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null)
 
   const step = STEPS[idx]
-  const total = STEPS.length - 2 // exclude welcome + thanks
+  const total = STEPS.length - 1 // exclude welcome
   const visibleQuestionIndex = useMemo(() => {
     let n = 0
     for (let i = 1; i < idx; i++) {
       const s = STEPS[i]
-      if (s.type === 'welcome' || s.type === 'thanks') continue
+      if (s.type === 'welcome') continue
       if (shouldSkip(s, answers)) continue
       n++
     }
@@ -198,42 +202,49 @@ export default function WaitlistForm() {
     }
   }, [step])
 
-  function findNext(from: number, dir: 1 | -1): number {
+  function findNext(from: number, dir: 1 | -1, ans: Answers): number {
     let i = from + dir
-    while (i > 0 && i < STEPS.length - 1 && shouldSkip(STEPS[i], answers)) {
+    while (i > 0 && i < STEPS.length && shouldSkip(STEPS[i], ans)) {
       i += dir
     }
     return Math.max(0, Math.min(STEPS.length - 1, i))
   }
 
-  async function advance() {
+  async function submit(finalAnswers: Answers) {
+    setSubmitting(true)
+    try {
+      await fetch('/api/waitlist', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(finalAnswers),
+      })
+    } catch {
+      // user shouldn't pay for our backend
+    } finally {
+      setSubmitting(false)
+      setSubmitted(true)
+    }
+  }
+
+  async function advance(answersOverride?: Answers) {
+    const ans = answersOverride ?? answers
     if (step.type === 'welcome') {
       setDirection(1)
-      setIdx(findNext(idx, 1))
+      setIdx(findNext(idx, 1, ans))
       return
     }
-    if (step.type === 'thanks') return
-    const value = answers[(step as TextStep | ChoiceStep).id] ?? ''
+    const value = ans[step.id] ?? (step.type === 'choice' && step.multiple ? [] : '')
     const v = isValid(step, value)
     if (!v.ok) {
       setError(v.reason)
       return
     }
     setError(null)
-    const next = findNext(idx, 1)
-    if (next === STEPS.length - 1) {
-      setSubmitting(true)
-      try {
-        await fetch('/api/waitlist', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify(answers),
-        })
-      } catch {
-        // silently swallow — the user shouldn't pay for our backend
-      } finally {
-        setSubmitting(false)
-      }
+    const next = findNext(idx, 1, ans)
+    if (next === idx) {
+      // last reachable step → submit
+      await submit(ans)
+      return
     }
     setDirection(1)
     setIdx(next)
@@ -243,30 +254,59 @@ export default function WaitlistForm() {
     if (idx === 0) return
     setError(null)
     setDirection(-1)
-    setIdx(findNext(idx, -1))
+    setIdx(findNext(idx, -1, answers))
   }
 
-  function setAnswer(id: string, value: string) {
+  function setAnswer(id: string, value: AnswerValue) {
     setAnswers((a) => ({ ...a, [id]: value }))
     setError(null)
   }
 
   function onKeyDown(e: React.KeyboardEvent) {
     if (e.key === 'Enter' && !e.shiftKey) {
-      if (step.type === 'text' && (step as TextStep).multiline) return
       e.preventDefault()
       void advance()
     }
   }
 
-  const progress = step.type === 'welcome' ? 0 : step.type === 'thanks' ? 1 : visibleQuestionIndex / total
+  const onSelectSingle = (v: string) => {
+    const newAnswers = { ...answers, [step.id]: v }
+    setAnswers(newAnswers)
+    setError(null)
+    setTimeout(() => void advance(newAnswers), 220)
+  }
+
+  const onToggleMulti = (v: string) => {
+    const current = answers[step.id]
+    const arr = Array.isArray(current) ? current.slice() : []
+    const i = arr.indexOf(v)
+    if (i >= 0) arr.splice(i, 1)
+    else arr.push(v)
+    setAnswer(step.id, arr)
+  }
+
+  if (submitted) {
+    return (
+      <div className="flex min-h-[100dvh] flex-col bg-white text-[#1D1D1F]">
+        <main className="mx-auto flex w-full max-w-apple flex-1 items-center px-6 py-24 sm:px-10">
+          <div className="mx-auto text-center">
+            <h1 className="text-[clamp(28px,4.2vw,44px)] font-semibold leading-[1.15] tracking-[-0.022em]">
+              Thanks! You’re now on the waitlist 🔥
+            </h1>
+            <p className="mx-auto mt-6 max-w-[680px] text-[clamp(20px,2.6vw,28px)] leading-[1.35] tracking-[-0.01em] text-[#1D1D1F]">
+              We’ll notify you the second we go live.
+            </p>
+          </div>
+        </main>
+      </div>
+    )
+  }
+
+  const progress = step.type === 'welcome' ? 0 : visibleQuestionIndex / total
 
   return (
     <div className="relative flex min-h-[100dvh] flex-col bg-white text-[#1D1D1F]">
-      <div
-        className="fixed left-0 right-0 top-0 z-30 h-[3px] bg-transparent"
-        aria-hidden
-      >
+      <div className="fixed left-0 right-0 top-0 z-30 h-[3px] bg-transparent" aria-hidden>
         <div
           className="h-full bg-[#1D4ED8] transition-[width] duration-500 ease-out"
           style={{ width: `${Math.round(progress * 100)}%` }}
@@ -284,13 +324,13 @@ export default function WaitlistForm() {
             transition={{ duration: 0.32, ease: [0.25, 1, 0.3, 1] }}
             className="w-full"
           >
-            {step.type === 'welcome' && <Welcome step={step} onStart={advance} />}
+            {step.type === 'welcome' && <Welcome step={step} onStart={() => void advance()} />}
             {(step.type === 'text' || step.type === 'email') && (
               <TextQuestion
-                step={step as TextStep}
+                step={step}
                 index={visibleQuestionIndex}
-                value={answers[(step as TextStep).id] ?? ''}
-                onChange={(v) => setAnswer((step as TextStep).id, v)}
+                value={typeof answers[step.id] === 'string' ? (answers[step.id] as string) : ''}
+                onChange={(v) => setAnswer(step.id, v)}
                 onKeyDown={onKeyDown}
                 inputRef={inputRef}
               />
@@ -299,23 +339,30 @@ export default function WaitlistForm() {
               <ChoiceQuestion
                 step={step}
                 index={visibleQuestionIndex}
-                value={answers[step.id] ?? ''}
-                onSelect={(v) => {
-                  setAnswer(step.id, v)
-                  setTimeout(() => void advance(), 220)
-                }}
+                value={answers[step.id]}
+                onSelectSingle={onSelectSingle}
+                onToggleMulti={onToggleMulti}
               />
             )}
-            {step.type === 'thanks' && <Thanks step={step} />}
           </motion.div>
         </AnimatePresence>
       </main>
 
-      {step.type !== 'welcome' && step.type !== 'thanks' && (
+      {step.type !== 'welcome' && (
         <footer className="sticky bottom-0 z-20 border-t border-[#E8E8ED] bg-white/90 px-6 py-4 backdrop-blur-xl sm:px-10">
           <div className="mx-auto flex w-full max-w-apple items-center justify-between gap-4">
             <div className="text-[13px] text-[#86868B]">
-              {error ? <span className="text-[#DC2626]">{error}</span> : <>Press <kbd className="mx-1 rounded border border-[#D2D2D7] bg-[#F5F5F7] px-1.5 py-0.5 text-[11px] font-medium">Enter</kbd> to continue</>}
+              {error ? (
+                <span className="text-[#DC2626]">{error}</span>
+              ) : (
+                <>
+                  Press{' '}
+                  <kbd className="mx-1 rounded border border-[#D2D2D7] bg-[#F5F5F7] px-1.5 py-0.5 text-[11px] font-medium">
+                    Enter
+                  </kbd>{' '}
+                  to continue
+                </>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -350,7 +397,6 @@ function Welcome({ step, onStart }: { step: WelcomeStep; onStart: () => void }) 
       <p className="mx-auto mt-7 max-w-[760px] text-[clamp(18px,2.4vw,24px)] leading-[1.35] tracking-[-0.01em] text-[#1D1D1F]">
         {step.body}
       </p>
-      <p className="mt-3 text-[17px] italic text-[#86868B]">Description (optional)</p>
       <div className="mt-10 flex flex-col items-center gap-3">
         <button
           onClick={onStart}
@@ -396,37 +442,23 @@ function TextQuestion({
             {step.label}
             {step.required && <span aria-hidden className="ml-1 align-baseline text-[#1D1D1F]">*</span>}
           </h2>
-          {step.description ? (
+          {step.description && (
             <p className="mt-2 text-[17px] leading-[1.5] text-[#1D1D1F]/85">{step.description}</p>
-          ) : (
-            <p className="mt-2 text-[17px] italic text-[#86868B]">Description (optional)</p>
           )}
         </div>
       </div>
       <div className="mt-10 pl-0 sm:pl-10">
-        {step.multiline ? (
-          <textarea
-            ref={inputRef as React.RefObject<HTMLTextAreaElement>}
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onKeyDown={onKeyDown}
-            rows={3}
-            placeholder={step.placeholder}
-            className="w-full resize-none border-b border-[#D2D2D7] bg-transparent pb-2 text-[clamp(22px,2.8vw,30px)] font-light leading-[1.3] tracking-[-0.01em] text-[#1D1D1F] placeholder:text-[#A5B4FC] focus:border-[#1D4ED8] focus:outline-none"
-          />
-        ) : (
-          <input
-            ref={inputRef as React.RefObject<HTMLInputElement>}
-            type={step.type === 'email' ? 'email' : 'text'}
-            inputMode={step.type === 'email' ? 'email' : 'text'}
-            autoComplete="off"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onKeyDown={onKeyDown}
-            placeholder={step.placeholder}
-            className="w-full border-b border-[#D2D2D7] bg-transparent pb-2 text-[clamp(22px,2.8vw,30px)] font-light leading-[1.3] tracking-[-0.01em] text-[#1D1D1F] placeholder:text-[#A5B4FC] focus:border-[#1D4ED8] focus:outline-none"
-          />
-        )}
+        <input
+          ref={inputRef as React.RefObject<HTMLInputElement>}
+          type={step.type === 'email' ? 'email' : 'text'}
+          inputMode={step.type === 'email' ? 'email' : 'text'}
+          autoComplete="off"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={onKeyDown}
+          placeholder={step.placeholder}
+          className="w-full border-b border-[#D2D2D7] bg-transparent pb-2 text-[clamp(22px,2.8vw,30px)] font-light leading-[1.3] tracking-[-0.01em] text-[#1D1D1F] placeholder:text-[#A5B4FC] focus:border-[#1D4ED8] focus:outline-none"
+        />
       </div>
     </div>
   )
@@ -436,13 +468,20 @@ function ChoiceQuestion({
   step,
   index,
   value,
-  onSelect,
+  onSelectSingle,
+  onToggleMulti,
 }: {
   step: ChoiceStep
   index: number
-  value: string
-  onSelect: (v: string) => void
+  value: AnswerValue | undefined
+  onSelectSingle: (v: string) => void
+  onToggleMulti: (v: string) => void
 }) {
+  const selectedSet = useMemo(() => {
+    if (step.multiple) return new Set(Array.isArray(value) ? value : [])
+    return new Set(typeof value === 'string' && value ? [value] : [])
+  }, [step.multiple, value])
+
   return (
     <div>
       <div className="flex items-start gap-3">
@@ -451,22 +490,23 @@ function ChoiceQuestion({
           <h2 className="text-[clamp(24px,3.2vw,34px)] font-semibold leading-[1.2] tracking-[-0.02em]">
             {step.label}
           </h2>
-          {step.description ? (
+          {step.description && (
             <p className="mt-2 text-[17px] leading-[1.5] text-[#1D1D1F]/85">{step.description}</p>
-          ) : (
-            <p className="mt-2 text-[17px] italic text-[#86868B]">Description (optional)</p>
+          )}
+          {step.multiple && (
+            <p className="mt-1 text-[13px] text-[#86868B]">Choose as many as you like.</p>
           )}
         </div>
       </div>
       <ul className="mt-8 flex flex-col gap-2 pl-0 sm:pl-10">
         {step.options.map((opt, i) => {
           const letter = String.fromCharCode(65 + i)
-          const selected = value === opt.value
+          const selected = selectedSet.has(opt.value)
           return (
             <li key={opt.value}>
               <button
                 type="button"
-                onClick={() => onSelect(opt.value)}
+                onClick={() => (step.multiple ? onToggleMulti(opt.value) : onSelectSingle(opt.value))}
                 className={[
                   'group flex w-full items-center gap-3 rounded-[12px] border px-3 py-3 text-left transition',
                   selected
@@ -478,25 +518,18 @@ function ChoiceQuestion({
                 <span className="text-[clamp(18px,2vw,22px)] font-normal text-[#1D4ED8]">
                   {opt.label}
                 </span>
+                {step.multiple && selected && (
+                  <span aria-hidden className="ml-auto text-[#1D4ED8]">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </span>
+                )}
               </button>
             </li>
           )
         })}
       </ul>
-    </div>
-  )
-}
-
-function Thanks({ step }: { step: ThanksStep }) {
-  return (
-    <div className="text-center">
-      <h1 className="mx-auto max-w-[820px] text-[clamp(28px,4.2vw,44px)] font-semibold leading-[1.15] tracking-[-0.022em]">
-        {step.title}
-      </h1>
-      <p className="mx-auto mt-6 max-w-[680px] text-[clamp(20px,2.6vw,28px)] leading-[1.35] tracking-[-0.01em] text-[#1D1D1F]">
-        {step.body}
-      </p>
-      <p className="mt-3 text-[17px] italic text-[#86868B]">Description (optional)</p>
     </div>
   )
 }

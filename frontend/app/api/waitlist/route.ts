@@ -8,7 +8,7 @@ type Submission = {
   twitter?: string
   telegram?: string
   email?: string
-  protection_from?: string
+  protection_from?: string | string[]
   invite?: string
   volume?: string
   affiliate?: string
@@ -49,11 +49,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'invalid json' }, { status: 400 })
   }
 
-  const data: Submission = {
+  const protection = Array.isArray(body.protection_from)
+    ? body.protection_from.map(clean).filter(Boolean).slice(0, 8)
+    : clean(body.protection_from)
+  const data = {
     twitter: clean(body.twitter),
     telegram: clean(body.telegram),
     email: clean(body.email).toLowerCase(),
-    protection_from: clean(body.protection_from),
+    protection_from: protection,
     invite: clean(body.invite),
     volume: clean(body.volume),
     affiliate: clean(body.affiliate),
