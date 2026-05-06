@@ -23,11 +23,11 @@ import { pullPunch, pushThrough, pullOnly, silentDezoom } from "./transitions";
 //                                      78f  → composition shortens 29.5s → ~26.9s
 //
 // Bars→Rigged stays a hard cut. The bars already are the verdict.
-const T_PULL_PUNCH = 16;
-const T_PULL_PUNCH_SHORT = 12;
-const T_SILENT_DEZOOM = 22;
-const T_PUSH_THROUGH = 14;
-const T_PULL_ONLY = 14;
+const T_PULL_PUNCH = 24;
+const T_PULL_PUNCH_SHORT = 18;
+const T_SILENT_DEZOOM = 30;
+const T_PUSH_THROUGH = 22;
+const T_PULL_ONLY = 22;
 
 const TRANSITION_FRAMES =
   T_PULL_PUNCH +

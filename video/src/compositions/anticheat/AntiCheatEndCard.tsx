@@ -8,6 +8,7 @@ import {
 } from "remotion";
 import { font } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
+import { ParallaxText } from "./transitions";
 
 const SCENE_SECONDS = 3.0;
 const SUBLINE_AT = toFrames(0.7);
@@ -97,25 +98,27 @@ export const AntiCheatEndCard: React.FC = () => {
           position: "relative",
         }}
       >
-        <div
-          style={{
-            fontFamily: font,
-            fontSize: 220,
-            fontWeight: 800,
-            letterSpacing: "-0.05em",
-            color: "#FFFFFF",
-            lineHeight: 0.95,
-            opacity: wordmarkOpacity,
-            transform: `translateY(${wordmarkY}px) scale(${wordmarkPunch})`,
-            transformOrigin: "center",
-            display: "flex",
-            alignItems: "center",
-            gap: 30,
-          }}
-        >
-          <GeneralMark size={200} />
-          <span>General</span>
-        </div>
+        <ParallaxText origin="center">
+          <div
+            style={{
+              fontFamily: font,
+              fontSize: 220,
+              fontWeight: 800,
+              letterSpacing: "-0.05em",
+              color: "#FFFFFF",
+              lineHeight: 0.95,
+              opacity: wordmarkOpacity,
+              transform: `translateY(${wordmarkY}px) scale(${wordmarkPunch})`,
+              transformOrigin: "center",
+              display: "flex",
+              alignItems: "center",
+              gap: 30,
+            }}
+          >
+            <GeneralMark size={200} />
+            <span>General</span>
+          </div>
+        </ParallaxText>
 
         <div
           style={{

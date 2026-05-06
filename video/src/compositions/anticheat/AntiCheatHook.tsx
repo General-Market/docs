@@ -16,6 +16,7 @@ import {
 import { fade } from "@remotion/transitions/fade";
 import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, toFrames } from "./theme";
+import { ParallaxText } from "./transitions";
 
 const BROLL = {
   minecraft: staticFile("cheat-broll/minecraft-killaura.mp4"),
@@ -718,36 +719,38 @@ const RevealLines: React.FC = () => {
         backdropFilter: "blur(2px)",
       }}
     >
-      <div
-        style={{
-          fontFamily: font,
-          fontWeight: 700,
-          fontSize: 84,
-          letterSpacing: "-0.025em",
-          textAlign: "center",
-          color: "#f5f5f5",
-          lineHeight: 1.15,
-        }}
-      >
+      <ParallaxText>
         <div
           style={{
-            opacity: interpolate(t1, [0, 1], [0, 1]),
-            transform: `translateY(${interpolate(t1, [0, 1], [16, 0])}px)`,
+            fontFamily: font,
+            fontWeight: 700,
+            fontSize: 84,
+            letterSpacing: "-0.025em",
+            textAlign: "center",
+            color: "#f5f5f5",
+            lineHeight: 1.15,
           }}
         >
-          The same cheaters ruining your games
+          <div
+            style={{
+              opacity: interpolate(t1, [0, 1], [0, 1]),
+              transform: `translateY(${interpolate(t1, [0, 1], [16, 0])}px)`,
+            }}
+          >
+            The same cheaters ruining your games
+          </div>
+          <div
+            style={{
+              opacity: interpolate(t2, [0, 1], [0, 1]),
+              transform: `translateY(${interpolate(t2, [0, 1], [16, 0])}px)`,
+              color: "#ff3b3b",
+              marginTop: 16,
+            }}
+          >
+            are trading against you
+          </div>
         </div>
-        <div
-          style={{
-            opacity: interpolate(t2, [0, 1], [0, 1]),
-            transform: `translateY(${interpolate(t2, [0, 1], [16, 0])}px)`,
-            color: "#ff3b3b",
-            marginTop: 16,
-          }}
-        >
-          are trading against you
-        </div>
-      </div>
+      </ParallaxText>
     </AbsoluteFill>
   );
 };

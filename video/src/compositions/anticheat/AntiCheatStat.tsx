@@ -9,6 +9,7 @@ import {
 import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 import { DotGrid, DotGridVignette } from "./DotGrid";
+import { ParallaxText } from "./transitions";
 
 // Two compositions live in this file:
 //   AntiCheatStat — the 0.01% / 70% concentration numbers (4s)
@@ -123,19 +124,21 @@ const BigNumber: React.FC<{
 }> = ({ value, subtitle, tint }) => {
   return (
     <div style={{ textAlign: "center" }}>
-      <div
-        style={{
-          fontFamily: font,
-          fontSize: 240,
-          fontWeight: 800,
-          letterSpacing: "-0.045em",
-          color: tint,
-          lineHeight: 0.95,
-          fontVariantNumeric: "tabular-nums",
-        }}
-      >
-        {value}
-      </div>
+      <ParallaxText>
+        <div
+          style={{
+            fontFamily: font,
+            fontSize: 240,
+            fontWeight: 800,
+            letterSpacing: "-0.045em",
+            color: tint,
+            lineHeight: 0.95,
+            fontVariantNumeric: "tabular-nums",
+          }}
+        >
+          {value}
+        </div>
+      </ParallaxText>
       <div
         style={{
           marginTop: 28,
