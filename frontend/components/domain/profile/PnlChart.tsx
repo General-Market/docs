@@ -47,8 +47,11 @@ export function PnlChart({ history, hero, currentPnlOverride, range: controlledR
   // "you went from zero to +X" without inventing a path.
   const baseHistory = useMemo<PnlPoint[]>(() => {
     const now = Date.now()
-    if (history.length === 0) {
-      const tip = currentPnlOverride ?? 0
+    // Empty or single-point histories don't draw a line. Synthesize an
+    // honest 0 → current slope across the visible window so the chart
+    // shows movement until enough real samples accumulate.
+    if (history.length < 2) {
+      const tip = currentPnlOverride ?? (history[0]?.pnl ?? 0)
       const span = RANGE_MS[range] ?? 30 * 24 * 60 * 60 * 1000
       return [
         { timestamp: new Date(now - span).toISOString(), pnl: 0 } as PnlPoint,
