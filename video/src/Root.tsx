@@ -47,12 +47,6 @@ import { rainbowsPitchMeta } from "./compositions/replicates/rainbows-pitch/Rain
 import { sceneAMetas as rainbowsPitchSceneA } from "./compositions/replicates/rainbows-pitch/ScenesA";
 import { sceneBMetas as rainbowsPitchSceneB } from "./compositions/replicates/rainbows-pitch/ScenesB";
 import { sceneCMetas as rainbowsPitchSceneC } from "./compositions/replicates/rainbows-pitch/ScenesC";
-import { rainbowsPitchV2Meta } from "./compositions/replicates/rainbows-pitch-v2/RainbowsPitchV2Composition";
-import { rainbowsPitchParallaxMeta } from "./compositions/replicates/rainbows-pitch-parallax/RainbowsPitchParallaxComposition";
-import {
-  rainbowsPitchPolymarketAMeta,
-  rainbowsPitchPolymarketBMeta,
-} from "./compositions/replicates/rainbows-pitch/RainbowsPitchPolymarket";
 import { flashblocksSideBySideMeta } from "./compositions/replicates/standrew/FlashblocksSideBySide";
 import { sceneAMetas as flashblocksSceneAMetas } from "./compositions/replicates/standrew/ScenesA";
 import { sceneBMetas as flashblocksSceneBMetas } from "./compositions/replicates/standrew/ScenesB";
@@ -122,20 +116,6 @@ import { antiCheatSolutionMeta } from "./compositions/anticheat/AntiCheatSolutio
 import { antiCheatReassureMeta } from "./compositions/anticheat/AntiCheatReassure";
 import { antiCheatEndCardMeta } from "./compositions/anticheat/AntiCheatEndCard";
 import { antiCheatFullMeta } from "./compositions/anticheat/AntiCheatFull";
-import { antiCheatAppleHookMeta } from "./compositions/anticheat-apple/AntiCheatHook";
-import { antiCheatAppleStatMeta } from "./compositions/anticheat-apple/AntiCheatStat";
-import { antiCheatAppleRiggedMeta } from "./compositions/anticheat-apple/AntiCheatRigged";
-import { antiCheatAppleSolutionMeta } from "./compositions/anticheat-apple/AntiCheatSolution";
-import { antiCheatAppleReassureMeta } from "./compositions/anticheat-apple/AntiCheatReassure";
-import { antiCheatAppleEndCardMeta } from "./compositions/anticheat-apple/AntiCheatEndCard";
-import { antiCheatAppleMeta } from "./compositions/anticheat-apple/AntiCheatApple";
-import { antiCheatPitchHookMeta } from "./compositions/anticheat-pitch/AntiCheatPitchHook";
-import { antiCheatPitchStatMeta } from "./compositions/anticheat-pitch/AntiCheatPitchStat";
-import { antiCheatPitchRiggedMeta } from "./compositions/anticheat-pitch/AntiCheatPitchRigged";
-import { antiCheatPitchSolutionMeta } from "./compositions/anticheat-pitch/AntiCheatPitchSolution";
-import { antiCheatPitchReassureMeta } from "./compositions/anticheat-pitch/AntiCheatPitchReassure";
-import { antiCheatPitchEndCardMeta } from "./compositions/anticheat-pitch/AntiCheatPitchEndCard";
-import { antiCheatPitchFullMeta } from "./compositions/anticheat-pitch/AntiCheatPitchFull";
 
 const SHOW_SCENES = process.env.REMOTION_SHOW_SCENES === "1";
 
@@ -169,66 +149,6 @@ export const RemotionRoot: React.FC = () => {
           antiCheatSolutionMeta,
           antiCheatReassureMeta,
           antiCheatEndCardMeta,
-        ].map((meta) => (
-          <Composition
-            key={meta.id}
-            id={meta.id}
-            component={meta.component}
-            durationInFrames={meta.durationInFrames}
-            fps={meta.fps}
-            width={meta.width}
-            height={meta.height}
-          />
-        ))}
-      </Folder>
-
-      {/* ═══ ANTI-CHEAT APPLE — launch-film polish pass on a copy ═══ */}
-      <Folder name="AntiCheatApple">
-        <Composition
-          id={antiCheatAppleMeta.id}
-          component={antiCheatAppleMeta.component}
-          durationInFrames={antiCheatAppleMeta.durationInFrames}
-          fps={antiCheatAppleMeta.fps}
-          width={antiCheatAppleMeta.width}
-          height={antiCheatAppleMeta.height}
-        />
-        {[
-          antiCheatAppleHookMeta,
-          antiCheatAppleStatMeta,
-          antiCheatAppleRiggedMeta,
-          antiCheatAppleSolutionMeta,
-          antiCheatAppleReassureMeta,
-          antiCheatAppleEndCardMeta,
-        ].map((meta) => (
-          <Composition
-            key={meta.id}
-            id={meta.id}
-            component={meta.component}
-            durationInFrames={meta.durationInFrames}
-            fps={meta.fps}
-            width={meta.width}
-            height={meta.height}
-          />
-        ))}
-      </Folder>
-
-      {/* ═══ ANTI-CHEAT PITCH — restyled in the Index Maker pitch palette ═══ */}
-      <Folder name="AntiCheatPitch">
-        <Composition
-          id={antiCheatPitchFullMeta.id}
-          component={antiCheatPitchFullMeta.component}
-          durationInFrames={antiCheatPitchFullMeta.durationInFrames}
-          fps={antiCheatPitchFullMeta.fps}
-          width={antiCheatPitchFullMeta.width}
-          height={antiCheatPitchFullMeta.height}
-        />
-        {[
-          antiCheatPitchHookMeta,
-          antiCheatPitchStatMeta,
-          antiCheatPitchRiggedMeta,
-          antiCheatPitchSolutionMeta,
-          antiCheatPitchReassureMeta,
-          antiCheatPitchEndCardMeta,
         ].map((meta) => (
           <Composition
             key={meta.id}
@@ -293,41 +213,6 @@ export const RemotionRoot: React.FC = () => {
         fps={rainbowsPitchMeta.fps}
         width={rainbowsPitchMeta.width}
         height={rainbowsPitchMeta.height}
-      />
-      {/* ═══ RAINBOWS PITCH V2 — every scene gets a prop ═══ */}
-      <Composition
-        id={rainbowsPitchV2Meta.id}
-        component={rainbowsPitchV2Meta.component}
-        durationInFrames={rainbowsPitchV2Meta.durationInFrames}
-        fps={rainbowsPitchV2Meta.fps}
-        width={rainbowsPitchV2Meta.width}
-        height={rainbowsPitchV2Meta.height}
-      />
-      {/* ═══ RAINBOWS PITCH PARALLAX — each scene gets a different micro-element layer ═══ */}
-      <Composition
-        id={rainbowsPitchParallaxMeta.id}
-        component={rainbowsPitchParallaxMeta.component}
-        durationInFrames={rainbowsPitchParallaxMeta.durationInFrames}
-        fps={rainbowsPitchParallaxMeta.fps}
-        width={rainbowsPitchParallaxMeta.width}
-        height={rainbowsPitchParallaxMeta.height}
-      />
-      {/* ═══ RAINBOWS PITCH — Polymarket-styled chart panels at 00:11 ═══ */}
-      <Composition
-        id={rainbowsPitchPolymarketAMeta.id}
-        component={rainbowsPitchPolymarketAMeta.component}
-        durationInFrames={rainbowsPitchPolymarketAMeta.durationInFrames}
-        fps={rainbowsPitchPolymarketAMeta.fps}
-        width={rainbowsPitchPolymarketAMeta.width}
-        height={rainbowsPitchPolymarketAMeta.height}
-      />
-      <Composition
-        id={rainbowsPitchPolymarketBMeta.id}
-        component={rainbowsPitchPolymarketBMeta.component}
-        durationInFrames={rainbowsPitchPolymarketBMeta.durationInFrames}
-        fps={rainbowsPitchPolymarketBMeta.fps}
-        width={rainbowsPitchPolymarketBMeta.width}
-        height={rainbowsPitchPolymarketBMeta.height}
       />
       {SHOW_SCENES && (
         <Folder name="Rainbows-Pitch-Scenes">
