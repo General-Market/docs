@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useRef } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { ContactShadows, Environment, Html, useGLTF } from '@react-three/drei'
+import { ContactShadows, Html, useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
 import { LinkMenu } from './LinkMenu'
 
@@ -171,10 +171,11 @@ export function PhoneLinktree() {
         >
           <Suspense fallback={null}>
             <PhoneScene tilt={tilt} />
-            <Environment preset="studio" environmentIntensity={1.4} />
-            <ambientLight intensity={0.45} />
-            <directionalLight position={[3, 6, -4]} intensity={2.0} />
-            <directionalLight position={[-3, 4, 3]} intensity={0.6} color="#c0d0e8" />
+            <hemisphereLight args={['#ffffff', '#dde3ec', 0.9]} />
+            <ambientLight intensity={0.55} />
+            <directionalLight position={[3, 6, -4]} intensity={2.2} />
+            <directionalLight position={[-4, 3, 4]} intensity={0.8} color="#c8d4ea" />
+            <directionalLight position={[0, -2, -3]} intensity={0.35} color="#fff1d6" />
             <ContactShadows
               position={[0, -1.75, 0]}
               opacity={0.32}
