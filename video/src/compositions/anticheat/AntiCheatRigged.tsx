@@ -134,19 +134,6 @@ export const AntiCheatRigged: React.FC = () => {
           gap: 32,
         }}
       >
-        <div
-          style={{
-            fontFamily: monoFont,
-            fontSize: 28,
-            fontWeight: 500,
-            letterSpacing: "0.32em",
-            textTransform: "uppercase",
-            color: colors.dim,
-          }}
-        >
-          The verdict
-        </div>
-
         {/* Line 1: exchange name with green underline (re-mounts per article) */}
         {currentArticle && (
           <ExchangeLabel

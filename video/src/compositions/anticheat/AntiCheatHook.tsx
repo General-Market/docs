@@ -620,25 +620,37 @@ const PairList: React.FC<{
               transform: `translateX(${x}px)`,
               opacity,
               fontFamily: font,
-              fontSize: 56,
-              fontWeight: 600,
-              letterSpacing: "-0.02em",
+              fontSize: 80,
+              fontWeight: 800,
+              letterSpacing: "-0.025em",
               color: tint ?? colors.fg,
               display: "flex",
               alignItems: "center",
-              gap: 18,
+              gap: 22,
               flexDirection: align === "left" ? "row" : "row-reverse",
-              textShadow: "0 2px 18px rgba(0,0,0,0.6)",
+              padding: "10px 22px",
+              background:
+                "linear-gradient(90deg, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.4) 100%)",
+              borderLeft:
+                align === "left"
+                  ? `3px solid ${tint ?? colors.fg}`
+                  : "none",
+              borderRight:
+                align === "right"
+                  ? `3px solid ${tint ?? colors.fg}`
+                  : "none",
+              textShadow:
+                "0 2px 12px rgba(0,0,0,0.95), 0 0 28px rgba(0,0,0,0.6)",
             }}
           >
             <span
               style={{
                 fontFamily: monoFont,
-                fontSize: 34,
-                fontWeight: 500,
-                color: colors.dim,
-                opacity: 0.7,
-                minWidth: 50,
+                fontSize: 40,
+                fontWeight: 700,
+                color: tint ?? colors.fg,
+                opacity: 0.85,
+                minWidth: 64,
               }}
             >
               0{i + 1}
@@ -762,7 +774,7 @@ function generateCandles(
 export const antiCheatHookMeta = {
   id: "AntiCheatHook",
   component: AntiCheatHook,
-  durationInFrames: toFrames(10),
+  durationInFrames: toFrames(9.5),
   fps: FPS,
   width: W,
   height: H,

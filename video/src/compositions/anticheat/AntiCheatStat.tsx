@@ -156,13 +156,13 @@ const BigNumber: React.FC<{
       </div>
       <div
         style={{
-          marginTop: 22,
-          fontFamily: monoFont,
-          fontSize: 36,
-          fontWeight: 500,
-          letterSpacing: "0.18em",
-          textTransform: "uppercase",
-          color: colors.dim,
+          marginTop: 28,
+          fontFamily: font,
+          fontSize: 56,
+          fontWeight: 600,
+          letterSpacing: "-0.01em",
+          color: colors.fg,
+          textShadow: "0 2px 18px rgba(0,0,0,0.65)",
         }}
       >
         {subtitle}

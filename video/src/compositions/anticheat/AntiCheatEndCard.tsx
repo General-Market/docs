@@ -6,12 +6,12 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { font, monoFont } from "../../common/fonts";
+import { font } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 
-const SCENE_SECONDS = 5;
-const SUBLINE_AT = toFrames(1.5);
-const TERTIARY_AT = toFrames(2.2);
+const SCENE_SECONDS = 3.5;
+const SUBLINE_AT = toFrames(1.0);
+const TERTIARY_AT = toFrames(1.6);
 
 export const AntiCheatEndCard: React.FC = () => {
   const frame = useCurrentFrame();
@@ -99,24 +99,8 @@ export const AntiCheatEndCard: React.FC = () => {
       >
         <div
           style={{
-            fontFamily: monoFont,
-            fontSize: 40,
-            fontWeight: 500,
-            letterSpacing: "0.32em",
-            textTransform: "uppercase",
-            color: colors.dim,
-            marginBottom: 32,
-            opacity: wordmarkOpacity,
-            transform: `translateY(${wordmarkY}px)`,
-          }}
-        >
-          Anti-Cheat · Trading
-        </div>
-
-        <div
-          style={{
             fontFamily: font,
-            fontSize: 220,
+            fontSize: 240,
             fontWeight: 800,
             letterSpacing: "-0.05em",
             color: colors.fg,
@@ -157,12 +141,14 @@ export const AntiCheatEndCard: React.FC = () => {
         <div
           style={{
             fontFamily: font,
-            fontSize: 56,
-            fontWeight: 600,
-            letterSpacing: "-0.02em",
+            fontSize: 78,
+            fontWeight: 700,
+            letterSpacing: "-0.025em",
             color: colors.fg,
+            lineHeight: 1.1,
             opacity: sublineOpacity,
             transform: `translateY(${sublineY}px)`,
+            textShadow: "0 2px 24px rgba(0,0,0,0.7)",
           }}
         >
           Trading is easy with an Anti-Cheat
@@ -170,18 +156,38 @@ export const AntiCheatEndCard: React.FC = () => {
 
         <div
           style={{
-            marginTop: 32,
-            fontFamily: monoFont,
-            fontSize: 32,
-            fontWeight: 500,
-            letterSpacing: "0.22em",
-            textTransform: "uppercase",
-            color: colors.dim,
+            marginTop: 40,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 14,
+            padding: "16px 28px",
+            border: `1px solid ${colors.rule}`,
+            borderRadius: 999,
+            background: "rgba(255,255,255,0.04)",
             opacity: tertiaryOpacity,
             transform: `translateY(${tertiaryY}px)`,
           }}
         >
-          Available only via trading bots
+          <span
+            style={{
+              width: 10,
+              height: 10,
+              borderRadius: 5,
+              background: "#3ddc84",
+              boxShadow: "0 0 10px rgba(61,220,132,0.7)",
+            }}
+          />
+          <span
+            style={{
+              fontFamily: font,
+              fontSize: 40,
+              fontWeight: 600,
+              letterSpacing: "-0.005em",
+              color: colors.fg,
+            }}
+          >
+            Available only via trading bots
+          </span>
         </div>
       </div>
 

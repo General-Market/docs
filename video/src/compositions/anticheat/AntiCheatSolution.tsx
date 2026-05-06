@@ -10,8 +10,8 @@ import {
 import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 
-const SCENE_SECONDS = 6.5;
-const TERMINAL_AT = toFrames(2.5);
+const SCENE_SECONDS = 5.5;
+const TERMINAL_AT = toFrames(2.0);
 const GREEN = "#3ddc84";
 
 export const AntiCheatSolution: React.FC = () => {
@@ -92,19 +92,18 @@ const Headline: React.FC = () => {
         }}
       >
         General <span style={{ color: GREEN }}>changes</span> this
-        <span style={{ color: colors.fg, opacity: 0.45 }}>.</span>
       </div>
       <div
         style={{
-          marginTop: 36,
-          fontFamily: monoFont,
-          fontSize: 40,
-          fontWeight: 500,
-          letterSpacing: "0.18em",
-          textTransform: "uppercase",
-          color: colors.dim,
+          marginTop: 44,
+          fontFamily: font,
+          fontSize: 64,
+          fontWeight: 600,
+          letterSpacing: "-0.015em",
+          color: colors.fg,
           opacity: interpolate(t2, [0, 1], [0, 1]) * (isTerminal ? 0 : 1),
           transform: `translateY(${interpolate(t2, [0, 1], [16, 0])}px)`,
+          textShadow: "0 2px 22px rgba(0,0,0,0.7)",
         }}
       >
         Securing your profits from unfair actors
@@ -135,7 +134,7 @@ const Terminal: React.FC = () => {
   const panelY = interpolate(panel, [0, 1], [40, 0]);
 
   // Per-line typewriter timings (frames are local to the terminal sequence).
-  const LINE_DELAYS = [toFrames(0.3), toFrames(1.2), toFrames(2.5)];
+  const LINE_DELAYS = [toFrames(0.3), toFrames(1.0), toFrames(2.6)];
   const CHARS_PER_FRAME = 0.7; // ~21 cps at 30fps
 
   return (
