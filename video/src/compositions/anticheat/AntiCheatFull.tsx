@@ -8,7 +8,7 @@ import { antiCheatSolutionMeta } from "./AntiCheatSolution";
 import { antiCheatReassureMeta } from "./AntiCheatReassure";
 import { antiCheatEndCardMeta } from "./AntiCheatEndCard";
 
-// Hook 9.5s + Bars 3.5s + Rigged 5.5s + Stat 4s + Solution 5.5s + Reassure 4.5s + EndCard 3.5s = 36s.
+// Hook 7.5s + Bars 3s + Rigged 4.5s + Stat 3s + Solution 5s + Reassure 3.5s + EndCard 3s = 29.5s.
 // The bar chart sits right after the Hook so the audience meets the data
 // before the proof. The 0.01% / 70% concentration numbers reinforce the
 // verdict immediately after "is rigged." lands, so the closing third of
@@ -31,7 +31,7 @@ const TOTAL_FRAMES = SCENES.reduce(
   0,
 );
 
-// Music covers Hook (9.5s) + Bars (3.5s) + Rigged (5.5s). It dies just after
+// Music covers Hook (7.5s) + Bars (3s) + Rigged (4.5s). It dies just after
 // the rigged verdict — silence + SFX carry the closing third.
 const MUSIC_FRAMES =
   antiCheatHookMeta.durationInFrames +

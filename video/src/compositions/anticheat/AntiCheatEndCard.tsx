@@ -9,9 +9,9 @@ import {
 import { font } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 
-const SCENE_SECONDS = 3.5;
-const SUBLINE_AT = toFrames(1.0);
-const TERTIARY_AT = toFrames(1.6);
+const SCENE_SECONDS = 3.0;
+const SUBLINE_AT = toFrames(0.7);
+const TERTIARY_AT = toFrames(1.2);
 
 // The endcard inverts. Solid Base blue field, white wordmark.
 // A light dot grid laid over blue gives the same texture vocabulary as

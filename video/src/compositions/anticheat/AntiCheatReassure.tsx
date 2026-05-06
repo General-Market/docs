@@ -10,8 +10,8 @@ import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 import { DotGrid, DotGridVignette } from "./DotGrid";
 
-const SCENE_SECONDS = 4.5;
-const SECOND_LINE_AT = toFrames(1.8);
+const SCENE_SECONDS = 3.5;
+const SECOND_LINE_AT = toFrames(1.4);
 
 export const AntiCheatReassure: React.FC = () => {
   const frame = useCurrentFrame();

@@ -12,16 +12,16 @@ import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 import { DotGrid } from "./DotGrid";
 
-// 5.5s scene. Title block holds on the LEFT for the entire scene:
+// 4.5s scene. Title block holds on the LEFT for the entire scene:
 //   line 1 — exchange name (green, underlined; updates per article)
 //   line 2 — "is rigged." (red, hero size; constant)
 // Articles flash hard-cut on the RIGHT, much larger than before, with the
 // original yellow highlighter restored on the article phrase.
-const SCENE_SECONDS = 5.5;
+const SCENE_SECONDS = 4.5;
 
 const TITLE_IN = 0;
-const ARTICLES_AT = toFrames(0.4);
-const ARTICLE_HOLD = toFrames(0.7);
+const ARTICLES_AT = toFrames(0.35);
+const ARTICLE_HOLD = toFrames(0.55);
 
 const PROOF_GREEN = "#22d97a";
 const PROOF_GREEN_LIGHT = "#52ffa2";

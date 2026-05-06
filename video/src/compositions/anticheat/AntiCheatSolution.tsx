@@ -11,8 +11,8 @@ import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 import { DotGrid, DotGridVignette } from "./DotGrid";
 
-const SCENE_SECONDS = 5.5;
-const TERMINAL_AT = toFrames(2.0);
+const SCENE_SECONDS = 5.0;
+const TERMINAL_AT = toFrames(1.6);
 
 export const AntiCheatSolution: React.FC = () => {
   return (
@@ -139,8 +139,8 @@ const Terminal: React.FC = () => {
   const panelOpacity = interpolate(panel, [0, 1], [0, 1]);
   const panelY = interpolate(panel, [0, 1], [40, 0]);
 
-  const LINE_DELAYS = [toFrames(0.3), toFrames(1.0), toFrames(2.6)];
-  const CHARS_PER_FRAME = 0.7;
+  const LINE_DELAYS = [toFrames(0.2), toFrames(0.8), toFrames(2.0)];
+  const CHARS_PER_FRAME = 0.85;
 
   return (
     <AbsoluteFill

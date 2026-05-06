@@ -30,10 +30,10 @@ const PAIRS = [
 ] as const;
 
 const HEADER_IN = toFrames(0.3);
-const SPLIT_AT = toFrames(2.0);
-const PAIRS_AT = toFrames(3.6);
-const PAIR_STEP = toFrames(1.4);
-const REVEAL_AT = toFrames(7.5);
+const SPLIT_AT = toFrames(1.6);
+const PAIRS_AT = toFrames(2.6);
+const PAIR_STEP = toFrames(0.9);
+const REVEAL_AT = toFrames(5.7);
 
 export const AntiCheatHook: React.FC = () => {
   const frame = useCurrentFrame();
@@ -239,7 +239,7 @@ const TradingScreen: React.FC<{ frame: number; showFrom: number }> = ({
   const t = Math.max(0, frame - showFrom);
 
   // The "manipulation candle" — a violent red drop at this moment.
-  const manipFrame = toFrames(5.4) - showFrom;
+  const manipFrame = toFrames(4.4) - showFrom;
 
   const candles = generateCandles(t, CANDLE_COUNT, manipFrame);
   const lastClose = candles[candles.length - 1].close;
@@ -790,7 +790,7 @@ function generateCandles(
 export const antiCheatHookMeta = {
   id: "AntiCheatHook",
   component: AntiCheatHook,
-  durationInFrames: toFrames(9.5),
+  durationInFrames: toFrames(7.5),
   fps: FPS,
   width: W,
   height: H,

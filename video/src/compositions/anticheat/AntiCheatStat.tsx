@@ -13,8 +13,8 @@ import { DotGrid, DotGridVignette } from "./DotGrid";
 // Two compositions live in this file:
 //   AntiCheatStat — the 0.01% / 70% concentration numbers (4s)
 //   AntiCheatBars — the % extracted by unfair trading bar chart (3.5s)
-const STAT_SECONDS = 4;
-const BARS_SECONDS = 3.5;
+const STAT_SECONDS = 3;
+const BARS_SECONDS = 3;
 
 export const AntiCheatStat: React.FC = () => {
   return (
@@ -54,14 +54,14 @@ const StatPanel: React.FC = () => {
   });
   const opacity = interpolate(enter, [0, 1], [0, 1]) * (1 - exit);
 
-  const countT = Math.min(1, Math.max(0, frame / toFrames(1.6)));
+  const countT = Math.min(1, Math.max(0, frame / toFrames(1.2)));
   const eased = 1 - Math.pow(1 - countT, 3);
   const left = (0.01 * eased).toFixed(2);
   const right = Math.round(70 * eased);
 
   const arrowT = interpolate(
     frame,
-    [toFrames(0.6), toFrames(1.6)],
+    [toFrames(0.4), toFrames(1.2)],
     [0, 1],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
@@ -104,7 +104,7 @@ const StatPanel: React.FC = () => {
           color: colors.fg,
           opacity: interpolate(
             frame,
-            [toFrames(2.0), toFrames(2.6)],
+            [toFrames(1.4), toFrames(2.0)],
             [0, 1],
             { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
           ),
@@ -213,10 +213,10 @@ const BARS: Bar[] = [
 ];
 
 const MAX_VALUE = Math.max(...BARS.map((b) => b.value));
-const BAR_STAGGER = toFrames(0.32);
-const BAR_GROW = toFrames(0.55);
+const BAR_STAGGER = toFrames(0.26);
+const BAR_GROW = toFrames(0.5);
 const REVEAL_AT =
-  BAR_STAGGER * (BARS.length - 1) + BAR_GROW + toFrames(0.4);
+  BAR_STAGGER * (BARS.length - 1) + BAR_GROW + toFrames(0.3);
 
 const ExtractionBars: React.FC = () => {
   const frame = useCurrentFrame();
