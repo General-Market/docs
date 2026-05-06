@@ -50,16 +50,18 @@ const ARTICLES: ArticleProof[] = [
     category: "perps",
     image: "insider-trading/articles/1.png",
     highlights: [{ x: 0.5737, y: 0.1383, w: 0.3183, h: 0.0453 }],
-    // "Binance" — line 1 of title, same line as the yellow ("insider trading").
-    exchangeBox: { x: 0.040, y: 0.138, w: 0.205, h: 0.045 },
+    // "Binance" — line 1, same line as yellow. Width tightened to just
+    // "Binance" (was bleeding into "post").
+    exchangeBox: { x: 0.040, y: 0.138, w: 0.155, h: 0.045 },
   },
   {
     exchange: "robinhood",
     category: "options",
     image: "insider-trading/articles/9.png",
     highlights: [{ x: 0.4119, y: 0.1968, w: 0.2831, h: 0.042 }],
-    // "Robinhood" — line 1 of title; yellow is on line 2 ("Insider Trading").
-    exchangeBox: { x: 0.097, y: 0.146, w: 0.282, h: 0.048 },
+    // "Robinhood" — line 1; yellow is on line 2 ("Insider Trading").
+    // Width tightened (was bleeding into "Blocks").
+    exchangeBox: { x: 0.097, y: 0.146, w: 0.245, h: 0.048 },
   },
   {
     exchange: "polymarket",
@@ -69,7 +71,7 @@ const ARTICLES: ArticleProof[] = [
       { x: 0.6467, y: 0.2828, w: 0.2445, h: 0.0273 },
       { x: 0.5126, y: 0.3313, w: 0.1197, h: 0.0281 },
     ],
-    // "Polymarket" — line 1 of title, same line as yellow #1 ("insider-traded").
+    // "Polymarket" — line 1, same line as yellow #1 ("insider-traded").
     exchangeBox: { x: 0.045, y: 0.283, w: 0.205, h: 0.040 },
   },
   {
@@ -77,31 +79,30 @@ const ARTICLES: ArticleProof[] = [
     category: "launchpads",
     image: "insider-trading/articles/4.png",
     highlights: [{ x: 0.1253, y: 0.5158, w: 0.2653, h: 0.0487 }],
-    // No exchangeBox — pump.fun isn't named in the visible upper portion.
+    // "Solana Memecoin" — line 1 of title; yellow is on line 2 ("Insider
+    // Trading") at y=0.516, line-stride ~0.05. pump.fun isn't named in
+    // the visible upper portion, so the green proof goes on the platform
+    // category instead.
+    exchangeBox: { x: 0.040, y: 0.466, w: 0.300, h: 0.045 },
   },
   {
     exchange: "kalshi",
     category: "predictions",
     image: "insider-trading/articles/6.png",
     highlights: [{ x: 0.4819, y: 0.176, w: 0.216, h: 0.0303 }],
-    // "Kalshi," — first word of title, same line as yellow ("insider trading").
-    exchangeBox: { x: 0.057, y: 0.176, w: 0.115, h: 0.034 },
-  },
-  {
-    exchange: "nyse",
-    category: "equity",
-    image: "insider-trading/articles/8.png",
-    highlights: [{ x: 0.0522, y: 0.5101, w: 0.3917, h: 0.0519 }],
-    // No exchangeBox — NYSE isn't named in this SEC/Cohen press release.
+    // "Kalshi," — first word of title, same line as yellow. Width tightened
+    // (was bleeding into "Polymarket").
+    exchangeBox: { x: 0.057, y: 0.176, w: 0.090, h: 0.034 },
   },
   {
     exchange: "coinbase",
     category: "spot",
     image: "insider-trading/articles/7.png",
     highlights: [{ x: 0.2453, y: 0.4009, w: 0.3414, h: 0.0417 }],
-    // "Coinbase" — line 1 of multi-line title; yellow is on a later line
-    // ("Insider Trading Action"). Two-line offset of ≈ 0.08.
-    exchangeBox: { x: 0.42, y: 0.318, w: 0.27, h: 0.043 },
+    // "Coinbase" — line 1 of title; yellow is on a later line ("Insider
+    // Trading Action"). x shifted right (was on "Former Coin" instead of
+    // "Coinbase").
+    exchangeBox: { x: 0.580, y: 0.318, w: 0.220, h: 0.043 },
   },
 ];
 
