@@ -8,6 +8,7 @@ import {
 } from "remotion";
 import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
+import { VerticalDotGrid } from "./DotGrid";
 import { IdleZoom, RevealChars } from "./vibe";
 
 // 4.5s scene. Title block holds on the LEFT for the entire scene:
@@ -128,7 +129,7 @@ export const AntiCheatRigged: React.FC = () => {
 
   return (
     <AbsoluteFill style={{ backgroundColor: colors.bg, fontFamily: font }}>
-      <VerticalBars />
+      <VerticalDotGrid />
       <IdleZoom durationInFrames={SCENE_FRAMES} from={1} to={1.025}>
         {/* Left — exchange name (line 1) + "is rigged." (line 2) */}
         <div
@@ -540,90 +541,6 @@ const YellowHighlightLayer: React.FC<{
         );
       })}
     </div>
-  );
-};
-
-// ─── VerticalBars ─────────────────────────────────────────────────────────────
-//
-// The same Base-blue bars as the extraction chart, rotated 90°. Solid
-// fills, staggered grow from the floor, tick at the head of each column.
-// Sits behind the verdict and the article flash as the scene's backdrop.
-
-type BgBar = { xPct: number; heightPct: number };
-
-const RIGGED_BG_BARS: BgBar[] = [
-  { xPct: 0.025, heightPct: 0.62 },
-  { xPct: 0.105, heightPct: 0.86 },
-  { xPct: 0.185, heightPct: 0.46 },
-  { xPct: 0.265, heightPct: 0.78 },
-  { xPct: 0.345, heightPct: 0.55 },
-  { xPct: 0.425, heightPct: 0.92 },
-  { xPct: 0.505, heightPct: 0.40 },
-  { xPct: 0.585, heightPct: 0.70 },
-  { xPct: 0.665, heightPct: 0.88 },
-  { xPct: 0.745, heightPct: 0.52 },
-  { xPct: 0.825, heightPct: 0.74 },
-  { xPct: 0.905, heightPct: 0.60 },
-];
-
-const BG_BAR_WIDTH = 72;
-const BG_BAR_OPACITY = 0.3;
-// Initial grow on the same beat as the horizontal extraction chart.
-const BG_BAR_STAGGER = toFrames(0.16);
-const BG_BAR_GROW = toFrames(0.5);
-// After the grow, every bar oscillates around its base height — never
-// freezes. Two octaves of sine per bar, phase-offset by index so the field
-// looks like live data, not paint.
-const WOBBLE_AMP = 0.075;
-
-const VerticalBars: React.FC = () => {
-  const frame = useCurrentFrame();
-  return (
-    <AbsoluteFill style={{ pointerEvents: "none" }}>
-      {RIGGED_BG_BARS.map((bar, i) => {
-        const local = frame - i * BG_BAR_STAGGER;
-        const growT = Math.max(0, Math.min(1, local / BG_BAR_GROW));
-        const eased = 1 - Math.pow(1 - growT, 3);
-        const t = frame / FPS;
-        const wobble =
-          (Math.sin(t * 1.6 + i * 0.9) * 0.65 +
-            Math.sin(t * 2.9 + i * 1.7) * 0.35) *
-          WOBBLE_AMP *
-          eased;
-        const heightPct = Math.max(
-          0,
-          Math.min(0.98, bar.heightPct + wobble) * eased,
-        ) * 100;
-        return (
-          <div
-            key={i}
-            style={{
-              position: "absolute",
-              bottom: 0,
-              left: `${bar.xPct * 100}%`,
-              width: BG_BAR_WIDTH,
-              height: `${heightPct.toFixed(2)}%`,
-              background: colors.accent,
-              opacity: BG_BAR_OPACITY,
-              borderRadius: 2,
-            }}
-          >
-            {/* Head tick — same idiom as the leading tick on the horizontal chart */}
-            <div
-              style={{
-                position: "absolute",
-                top: -2,
-                left: -4,
-                right: -4,
-                height: 2,
-                background: colors.fg,
-                opacity: eased * 0.7,
-              }}
-            />
-          </div>
-        );
-      })}
-    </AbsoluteFill>
   );
 };
 
