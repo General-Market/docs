@@ -9,27 +9,22 @@ import {
 } from "remotion";
 import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
+import { DotGrid, DotGridVignette } from "./DotGrid";
 
 const SCENE_SECONDS = 5.5;
 const TERMINAL_AT = toFrames(2.0);
-const GREEN = "#3ddc84";
 
 export const AntiCheatSolution: React.FC = () => {
   return (
     <AbsoluteFill style={{ backgroundColor: colors.bg, fontFamily: font }}>
+      <DotGrid />
       <Headline />
 
       <Sequence from={TERMINAL_AT}>
         <Terminal />
       </Sequence>
 
-      <AbsoluteFill
-        style={{
-          pointerEvents: "none",
-          background:
-            "radial-gradient(circle at 50% 50%, transparent 55%, rgba(0,0,0,0.55) 100%)",
-        }}
-      />
+      <DotGridVignette intensity={0.18} />
     </AbsoluteFill>
   );
 };
@@ -51,7 +46,6 @@ const Headline: React.FC = () => {
     config: { damping: 22, stiffness: 100, mass: 0.8 },
   });
 
-  // Slide up + fade as the terminal arrives.
   const lift = interpolate(
     frame,
     [TERMINAL_AT - toFrames(0.3), TERMINAL_AT + toFrames(0.4)],
@@ -86,12 +80,26 @@ const Headline: React.FC = () => {
           letterSpacing: "-0.04em",
           color: colors.fg,
           lineHeight: 0.95,
-          textShadow: "0 4px 28px rgba(0,0,0,0.65)",
           opacity: interpolate(t, [0, 1], [0, 1]),
           transform: `translateY(${interpolate(t, [0, 1], [22, 0])}px)`,
+          display: "flex",
+          alignItems: "center",
+          gap: 28,
+          justifyContent: "center",
         }}
       >
-        General <span style={{ color: GREEN }}>changes</span> this
+        <span
+          style={{
+            display: "inline-block",
+            width: 72,
+            height: 72,
+            background: colors.accent,
+            flexShrink: 0,
+          }}
+        />
+        <span>
+          General <span style={{ color: colors.accent }}>changes</span> this
+        </span>
       </div>
       <div
         style={{
@@ -100,10 +108,9 @@ const Headline: React.FC = () => {
           fontSize: 64,
           fontWeight: 600,
           letterSpacing: "-0.015em",
-          color: colors.fg,
+          color: colors.fgSoft,
           opacity: interpolate(t2, [0, 1], [0, 1]) * (isTerminal ? 0 : 1),
           transform: `translateY(${interpolate(t2, [0, 1], [16, 0])}px)`,
-          textShadow: "0 2px 22px rgba(0,0,0,0.7)",
         }}
       >
         Securing your profits from unfair actors
@@ -115,16 +122,15 @@ const Headline: React.FC = () => {
 // ─── Terminal panel — types out the prompt + response ─────────────────────────
 
 const TERMINAL_LINES: { text: string; color: string; mode: "cmd" | "user" | "ok" }[] = [
-  { text: "$ claude", color: colors.dim, mode: "cmd" },
-  { text: "> upgrade my bot to block-trading", color: colors.fg, mode: "user" },
-  { text: "✓ shielded", color: GREEN, mode: "ok" },
+  { text: "$ claude", color: "#9aa0a6", mode: "cmd" },
+  { text: "> upgrade my bot to block-trading", color: "#f1f3f5", mode: "user" },
+  { text: "✓ shielded", color: "#5BFF9A", mode: "ok" },
 ];
 
 const Terminal: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  // Panel itself springs in.
   const panel = spring({
     frame,
     fps,
@@ -133,9 +139,8 @@ const Terminal: React.FC = () => {
   const panelOpacity = interpolate(panel, [0, 1], [0, 1]);
   const panelY = interpolate(panel, [0, 1], [40, 0]);
 
-  // Per-line typewriter timings (frames are local to the terminal sequence).
   const LINE_DELAYS = [toFrames(0.3), toFrames(1.0), toFrames(2.6)];
-  const CHARS_PER_FRAME = 0.7; // ~21 cps at 30fps
+  const CHARS_PER_FRAME = 0.7;
 
   return (
     <AbsoluteFill
@@ -149,11 +154,12 @@ const Terminal: React.FC = () => {
         style={{
           width: "min(1200px, 90%)",
           background: "linear-gradient(180deg, #0d0d10 0%, #050507 100%)",
-          border: `1px solid ${colors.rule}`,
+          border: "1px solid rgba(255,255,255,0.08)",
           borderRadius: 8,
           opacity: panelOpacity,
           transform: `translateY(${panelY}px)`,
-          boxShadow: "0 24px 80px rgba(0,0,0,0.6)",
+          boxShadow:
+            "0 0 0 1px rgba(10,12,18,0.10), 0 24px 56px rgba(10,12,18,0.20)",
         }}
       >
         {/* Window chrome */}
@@ -163,7 +169,7 @@ const Terminal: React.FC = () => {
             alignItems: "center",
             gap: 8,
             padding: "14px 18px",
-            borderBottom: `1px solid ${colors.rule}`,
+            borderBottom: "1px solid rgba(255,255,255,0.08)",
           }}
         >
           <Dot color="#ff5f57" />
@@ -174,7 +180,7 @@ const Terminal: React.FC = () => {
               marginLeft: 18,
               fontFamily: monoFont,
               fontSize: 24,
-              color: colors.dim,
+              color: "#9aa0a6",
               letterSpacing: "0.08em",
             }}
           >
@@ -182,7 +188,6 @@ const Terminal: React.FC = () => {
           </span>
         </div>
 
-        {/* Body */}
         <div
           style={{
             padding: "36px 44px 40px",
@@ -236,7 +241,7 @@ const Cursor: React.FC = () => {
         display: "inline-block",
         width: "0.55em",
         marginLeft: 2,
-        background: colors.fg,
+        background: "#f1f3f5",
         opacity: blink ? 0.85 : 0.0,
         height: "1em",
         verticalAlign: "-0.18em",

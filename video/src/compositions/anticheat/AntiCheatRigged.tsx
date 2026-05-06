@@ -10,18 +10,21 @@ import {
 } from "remotion";
 import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
-import { DotGrid, DotGridVignette } from "./DotGrid";
+import { DotGrid } from "./DotGrid";
 
 // 5.5s scene. Title block holds on the LEFT for the entire scene:
-//   line 1 — exchange name (Base blue, with underline; updates per article)
-//   line 2 — "is rigged." (Base blue, hero size; constant)
-// Articles flash hard-cut on the RIGHT, with the matching blue underline on
-// the article phrase and on the exchange name in the article title.
+//   line 1 — exchange name (green, underlined; updates per article)
+//   line 2 — "is rigged." (red, hero size; constant)
+// Articles flash hard-cut on the RIGHT, much larger than before, with the
+// original yellow highlighter restored on the article phrase.
 const SCENE_SECONDS = 5.5;
 
 const TITLE_IN = 0;
 const ARTICLES_AT = toFrames(0.4);
 const ARTICLE_HOLD = toFrames(0.7);
+
+const PROOF_GREEN = "#22d97a";
+const PROOF_GREEN_LIGHT = "#52ffa2";
 
 type Highlight = { x: number; y: number; w: number; h: number };
 
@@ -29,24 +32,29 @@ type ArticleProof = {
   exchange: string;
   category: string;
   image: string;
-  highlights: Highlight[];
-  exchangeBox?: Highlight;
+  highlights: Highlight[];      // yellow body highlight (insider-trading phrases)
+  exchangeBox?: Highlight;       // green underline on the exchange name in title
 };
 
+// `exchangeBox` coords were eyeballed from each article PNG. Two articles
+// don't carry their exchange name in the visible upper portion (pump.fun's
+// article is about a Solana memecoin lawsuit; the SEC/Cohen article doesn't
+// name NYSE) — those keep just the yellow body highlight, while the green
+// title element on the left of the scene already names them.
 const ARTICLES: ArticleProof[] = [
   {
     exchange: "binance",
     category: "perps",
     image: "insider-trading/articles/1.png",
     highlights: [{ x: 0.5737, y: 0.1383, w: 0.3183, h: 0.0453 }],
-    exchangeBox: { x: 0.045, y: 0.138, w: 0.158, h: 0.045 },
+    exchangeBox: { x: 0.038, y: 0.083, w: 0.205, h: 0.045 },
   },
   {
     exchange: "robinhood",
     category: "options",
     image: "insider-trading/articles/9.png",
     highlights: [{ x: 0.4119, y: 0.1968, w: 0.2831, h: 0.042 }],
-    exchangeBox: { x: 0.110, y: 0.146, w: 0.195, h: 0.048 },
+    exchangeBox: { x: 0.097, y: 0.062, w: 0.282, h: 0.052 },
   },
   {
     exchange: "polymarket",
@@ -56,28 +64,35 @@ const ARTICLES: ArticleProof[] = [
       { x: 0.6467, y: 0.2828, w: 0.2445, h: 0.0273 },
       { x: 0.5126, y: 0.3313, w: 0.1197, h: 0.0281 },
     ],
-    exchangeBox: { x: 0.045, y: 0.283, w: 0.205, h: 0.040 },
+    exchangeBox: { x: 0.045, y: 0.205, w: 0.215, h: 0.04 },
   },
   {
     exchange: "pump.fun",
     category: "launchpads",
     image: "insider-trading/articles/4.png",
     highlights: [{ x: 0.1253, y: 0.5158, w: 0.2653, h: 0.0487 }],
-    exchangeBox: { x: 0.040, y: 0.466, w: 0.300, h: 0.060 },
+    // No exchangeBox — pump.fun isn't named in the visible upper portion.
   },
   {
     exchange: "kalshi",
     category: "predictions",
     image: "insider-trading/articles/6.png",
     highlights: [{ x: 0.4819, y: 0.176, w: 0.216, h: 0.0303 }],
-    exchangeBox: { x: 0.068, y: 0.176, w: 0.090, h: 0.034 },
+    exchangeBox: { x: 0.057, y: 0.123, w: 0.118, h: 0.038 },
+  },
+  {
+    exchange: "nyse",
+    category: "equity",
+    image: "insider-trading/articles/8.png",
+    highlights: [{ x: 0.0522, y: 0.5101, w: 0.3917, h: 0.0519 }],
+    // No exchangeBox — NYSE isn't named in this SEC/Cohen press release.
   },
   {
     exchange: "coinbase",
     category: "spot",
     image: "insider-trading/articles/7.png",
     highlights: [{ x: 0.2453, y: 0.4009, w: 0.3414, h: 0.0417 }],
-    exchangeBox: { x: 0.610, y: 0.295, w: 0.220, h: 0.043 },
+    exchangeBox: { x: 0.42, y: 0.27, w: 0.265, h: 0.045 },
   },
 ];
 
@@ -85,6 +100,7 @@ export const AntiCheatRigged: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
+  // "is rigged." slams in once at the start.
   const slamT = spring({
     frame: frame - TITLE_IN,
     fps,
@@ -92,8 +108,10 @@ export const AntiCheatRigged: React.FC = () => {
   });
   const verdictOpacity = interpolate(slamT, [0, 1], [0, 1]);
   const verdictScale = interpolate(slamT, [0, 1], [0.78, 1]);
+  // Subtle breath so the verdict doesn't flatten over 5s.
   const verdictPulse = 1 + Math.sin((frame / 45) * Math.PI * 2) * 0.012;
 
+  // Active article based on frame.
   const articleIdx = Math.max(
     0,
     Math.floor((frame - ARTICLES_AT) / ARTICLE_HOLD),
@@ -106,8 +124,7 @@ export const AntiCheatRigged: React.FC = () => {
   return (
     <AbsoluteFill style={{ backgroundColor: colors.bg, fontFamily: font }}>
       <DotGrid />
-
-      {/* Left — exchange name + "is rigged." */}
+      {/* Left — exchange name (line 1) + "is rigged." (line 2) */}
       <div
         style={{
           position: "absolute",
@@ -120,6 +137,7 @@ export const AntiCheatRigged: React.FC = () => {
           gap: 32,
         }}
       >
+        {/* Line 1: exchange name with green underline (re-mounts per article) */}
         {currentArticle && (
           <ExchangeLabel
             key={articleIdx}
@@ -128,6 +146,7 @@ export const AntiCheatRigged: React.FC = () => {
           />
         )}
 
+        {/* Line 2: "is rigged." — held constant for the scene */}
         <div
           style={{
             fontFamily: font,
@@ -139,24 +158,13 @@ export const AntiCheatRigged: React.FC = () => {
             opacity: verdictOpacity,
             transform: `scale(${verdictScale * verdictPulse})`,
             transformOrigin: "left center",
-            display: "flex",
-            alignItems: "center",
-            gap: 32,
           }}
         >
-          <span
-            style={{
-              display: "inline-block",
-              width: 110,
-              height: 110,
-              background: colors.accent,
-              flexShrink: 0,
-            }}
-          />
-          <span>is rigged.</span>
+          is rigged.
         </div>
       </div>
 
+      {/* Right — big article flash */}
       {currentArticle && (
         <ArticleFlash
           article={currentArticle}
@@ -164,12 +172,19 @@ export const AntiCheatRigged: React.FC = () => {
         />
       )}
 
-      <DotGridVignette intensity={0.18} />
+      {/* Light-field vignette — corners fade to bg, not to black */}
+      <AbsoluteFill
+        style={{
+          pointerEvents: "none",
+          background:
+            "radial-gradient(ellipse at center, rgba(240,242,244,0) 50%, rgba(240,242,244,0.30) 100%)",
+        }}
+      />
     </AbsoluteFill>
   );
 };
 
-// ─── Exchange label: name + Base-blue underline drawing left → right ──────────
+// ─── Exchange label: name + green underline drawing left → right ──────────────
 
 const ExchangeLabel: React.FC<{ name: string; startFrame: number }> = ({
   name,
@@ -178,10 +193,12 @@ const ExchangeLabel: React.FC<{ name: string; startFrame: number }> = ({
   const frame = useCurrentFrame();
   const local = frame - startFrame;
 
+  // Snap-in: scale punch in 4 frames so the cut feels alive.
   const punchT = Math.max(0, Math.min(1, local / 4));
   const punchScale = interpolate(punchT, [0, 1], [1.06, 1]);
   const punchOpacity = interpolate(punchT, [0, 1], [0.35, 1]);
 
+  // Underline draws over 12 frames after a brief delay.
   const lineT = Math.max(0, Math.min(1, (local - 1) / 12));
   const lineEased = 1 - Math.pow(1 - lineT, 3);
 
@@ -191,10 +208,11 @@ const ExchangeLabel: React.FC<{ name: string; startFrame: number }> = ({
         style={{
           fontFamily: monoFont,
           fontSize: 78,
-          fontWeight: 600,
+          fontWeight: 500,
           letterSpacing: "0.01em",
-          color: colors.fg,
+          color: PROOF_GREEN,
           lineHeight: 1,
+          textShadow: "0 0 22px rgba(34,217,122,0.45)",
           opacity: punchOpacity,
           transform: `scale(${punchScale})`,
           transformOrigin: "left center",
@@ -204,6 +222,7 @@ const ExchangeLabel: React.FC<{ name: string; startFrame: number }> = ({
         }}
       >
         {name}
+        {/* Green underline */}
         <div
           style={{
             position: "absolute",
@@ -211,8 +230,9 @@ const ExchangeLabel: React.FC<{ name: string; startFrame: number }> = ({
             left: 0,
             width: `${lineEased * 100}%`,
             height: 6,
-            background: colors.accent,
-            borderRadius: 0,
+            background: PROOF_GREEN,
+            borderRadius: 3,
+            boxShadow: `0 0 14px ${PROOF_GREEN}`,
           }}
         />
       </div>
@@ -220,7 +240,7 @@ const ExchangeLabel: React.FC<{ name: string; startFrame: number }> = ({
   );
 };
 
-// ─── Article flash: hard-cut entry, big size, blue highlighter ────────────────
+// ─── Article flash: hard-cut entry, big size, yellow highlighter restored ─────
 
 const ARTICLE_HEIGHT = 880;
 
@@ -255,11 +275,11 @@ const ArticleFlash: React.FC<{
       <div
         style={{
           position: "relative",
-          background: colors.surface,
+          background: "#ffffff",
           padding: 22,
-          borderRadius: 10,
+          borderRadius: 14,
           boxShadow:
-            "0 0 0 1px rgba(10,12,18,0.10), 0 24px 48px rgba(10,12,18,0.18)",
+            "0 0 0 1px rgba(10,12,18,0.16), 0 24px 56px rgba(10,12,18,0.20)",
           transform: `rotate(${tilt * 0.4}deg) scale(${punchScale})`,
           opacity: punchOpacity,
         }}
@@ -276,7 +296,7 @@ const ArticleFlash: React.FC<{
               borderRadius: 4,
             }}
           />
-          <BlueHighlightLayer
+          <YellowHighlightLayer
             highlights={article.highlights}
             reveal={highlightReveal}
           />
@@ -292,37 +312,82 @@ const ArticleFlash: React.FC<{
   );
 };
 
-// ─── Exchange-name underline inside the article: a clean blue stroke ─────────
+// ─── Exchange-name highlight — same render pattern as the yellow body
+//     highlighter, recolored green. Multi-pass for visible ink: a multiply
+//     body, a screen-blend saturation boost, and a darker green kick line
+//     beneath. This is the pattern that worked for yellow; we're trusting
+//     it for green rather than inventing a new one.
 
 const ExchangeNameUnderline: React.FC<{
   box: Highlight;
   reveal: number;
 }> = ({ box, reveal }) => {
   const local = Math.max(0, Math.min(1, reveal));
-  const overshootX = 0.004;
-  const overshootW = 0.008;
+  const overshootX = 0.008;
+  const overshootW = 0.016;
+  const padY = box.h * 0.22;
+  const top = box.y - padY;
+  const heightPct = box.h + padY * 2;
 
   return (
-    <div
-      style={{
-        position: "absolute",
-        left: `${(box.x - overshootX) * 100}%`,
-        top: `${(box.y + box.h * 0.95) * 100}%`,
-        width: `${(box.w + overshootW) * local * 100}%`,
-        height: `${Math.max(0.008, box.h * 0.20) * 100}%`,
-        background: colors.accent,
-        borderRadius: 0,
-        pointerEvents: "none",
-        transform: "skewX(-2deg)",
-        transformOrigin: "left center",
-      }}
-    />
+    <>
+      {/* Multiply pass — the green ink body */}
+      <div
+        style={{
+          position: "absolute",
+          left: `${(box.x - overshootX) * 100}%`,
+          top: `${top * 100}%`,
+          width: `${(box.w + overshootW) * local * 100}%`,
+          height: `${heightPct * 100}%`,
+          background:
+            "linear-gradient(180deg, rgba(82,255,162,0.55) 0%, rgba(34,217,122,0.74) 45%, rgba(34,217,122,0.74) 55%, rgba(82,255,162,0.55) 100%)",
+          mixBlendMode: "multiply",
+          borderRadius: 3,
+          transform: "skewX(-5deg) rotate(-0.8deg)",
+          transformOrigin: "left center",
+          pointerEvents: "none",
+        }}
+      />
+      {/* Screen pass — saturation boost */}
+      <div
+        style={{
+          position: "absolute",
+          left: `${(box.x - overshootX) * 100}%`,
+          top: `${top * 100}%`,
+          width: `${(box.w + overshootW) * local * 100}%`,
+          height: `${heightPct * 100}%`,
+          background:
+            "linear-gradient(180deg, rgba(82,255,162,0.45) 0%, rgba(34,217,122,0.55) 45%, rgba(34,217,122,0.55) 55%, rgba(82,255,162,0.45) 100%)",
+          mixBlendMode: "screen",
+          borderRadius: 3,
+          transform: "skewX(-5deg) rotate(-0.8deg)",
+          transformOrigin: "left center",
+          pointerEvents: "none",
+        }}
+      />
+      {/* Kick line — darker green stroke beneath, mirrors the yellow's red kick */}
+      <div
+        style={{
+          position: "absolute",
+          left: `${(box.x - overshootX * 0.6) * 100}%`,
+          top: `${(box.y + box.h * 0.92) * 100}%`,
+          width: `${(box.w + overshootW * 0.6) * local * 100}%`,
+          height: `${Math.max(0.008, box.h * 0.22) * 100}%`,
+          background: "#0e8f4a",
+          borderRadius: 2,
+          transform: "skewX(-3deg) rotate(-0.4deg)",
+          transformOrigin: "left center",
+          boxShadow: `0 0 6px ${PROOF_GREEN_LIGHT}`,
+          pointerEvents: "none",
+        }}
+      />
+    </>
   );
 };
 
-// ─── Blue highlighter — flat, ink-style, no multiply/screen blends ───────────
+// ─── Yellow highlighter — original InsiderCases tones, red kick ───────────────
 
-const BlueHighlightLayer: React.FC<{
+const YellowHighlightLayer: React.FC<{
   highlights: Highlight[];
   reveal: number;
 }> = ({ highlights, reveal }) => {
@@ -340,14 +405,14 @@ const BlueHighlightLayer: React.FC<{
           0,
           Math.min(1, (reveal - stagger) / Math.max(0.01, 1 - stagger)),
         );
-        const overshootX = 0.006;
-        const overshootW = 0.012;
-        const padY = h.h * 0.18;
+        const overshootX = 0.008;
+        const overshootW = 0.016;
+        const padY = h.h * 0.22;
         const top = h.y - padY;
         const heightPct = h.h + padY * 2;
         return (
           <React.Fragment key={idx}>
-            {/* Translucent blue ink — multiply so the article text reads through */}
+            {/* Multiply pass — body of the yellow highlighter */}
             <div
               style={{
                 position: "absolute",
@@ -355,14 +420,31 @@ const BlueHighlightLayer: React.FC<{
                 top: `${top * 100}%`,
                 width: `${(h.w + overshootW) * local * 100}%`,
                 height: `${heightPct * 100}%`,
-                background: "rgba(0, 82, 255, 0.30)",
+                background:
+                  "linear-gradient(180deg, rgba(255,241,82,0.55) 0%, rgba(255,224,38,0.72) 45%, rgba(255,224,38,0.72) 55%, rgba(255,241,82,0.55) 100%)",
                 mixBlendMode: "multiply",
-                borderRadius: 1,
-                transform: "skewX(-3deg) rotate(-0.4deg)",
+                borderRadius: 3,
+                transform: "skewX(-5deg) rotate(-0.8deg)",
                 transformOrigin: "left center",
               }}
             />
-            {/* Solid kick line beneath */}
+            {/* Screen pass — saturation boost */}
+            <div
+              style={{
+                position: "absolute",
+                left: `${(h.x - overshootX) * 100}%`,
+                top: `${top * 100}%`,
+                width: `${(h.w + overshootW) * local * 100}%`,
+                height: `${heightPct * 100}%`,
+                background:
+                  "linear-gradient(180deg, rgba(255,241,82,0.45) 0%, rgba(255,224,38,0.55) 45%, rgba(255,224,38,0.55) 55%, rgba(255,241,82,0.45) 100%)",
+                mixBlendMode: "screen",
+                borderRadius: 3,
+                transform: "skewX(-5deg) rotate(-0.8deg)",
+                transformOrigin: "left center",
+              }}
+            />
+            {/* Red kick line */}
             <div
               style={{
                 position: "absolute",
@@ -370,10 +452,11 @@ const BlueHighlightLayer: React.FC<{
                 top: `${(h.y + h.h * 0.92) * 100}%`,
                 width: `${(h.w + overshootW * 0.6) * local * 100}%`,
                 height: `${Math.max(0.008, h.h * 0.22) * 100}%`,
-                background: colors.accent,
-                borderRadius: 1,
-                transform: "skewX(-2deg)",
+                background: "#ff2b44",
+                borderRadius: 2,
+                transform: "skewX(-3deg) rotate(-0.4deg)",
                 transformOrigin: "left center",
+                boxShadow: "0 0 6px rgba(255,43,68,0.45)",
               }}
             />
           </React.Fragment>

@@ -1,77 +1,95 @@
 import React from "react";
 import { interpolate, useCurrentFrame } from "remotion";
-import { H, W, colors } from "./theme";
+import { FPS, H, W, colors } from "./theme";
 
-// The Base-style dotted-line backdrop.
+// Two layers, no more, no less.
 //
-// Horizontal rows of small dots, of varying lengths and densities, scattered
-// asymmetrically across the field. Some rows hug the left edge, some the
-// right, some sit cleanly mid-canvas. The dot color is Base blue (the
-// `accent`) at low alpha — the texture must read as paper under x-ray, not
-// as a foreground element.
+// Layer 1 — the fine uniform dot grid that fills the entire canvas. Faint
+// Base blue. Reads as paper texture, not as a foreground element. Static.
 //
-// The grid drifts very slowly so it never feels frozen on long holds.
+// Layer 2 — the bold horizontal bands. Tightly-packed rows of saturated
+// Base blue dots. They stream horizontally at varying velocities so the
+// field reads as accelerating. Faster bands have tighter spacing — that
+// contrast is what registers as motion.
+//
+// Each band wraps modularly: when a dot exits the right edge it reappears
+// on the left so the stream is continuous.
 
-type Row = {
-  // Vertical position as a fraction of canvas height.
+// ─── Layer 1 — uniform background grid (static) ──────────────────────────────
+
+const FINE_SPACING_X = 14;
+const FINE_SPACING_Y = 14;
+const FINE_RADIUS = 1.6;
+const FINE_ALPHA = 0.22;
+
+// ─── Layer 2 — moving bands ──────────────────────────────────────────────────
+
+type Band = {
+  // Vertical center of the band, fraction of canvas height.
   y: number;
-  // Horizontal start, fraction of width. Negative is allowed (off-canvas).
-  x0: number;
-  // Length, fraction of width.
+  // Effective length of the band as drawn at any instant, fraction of width.
+  // The shorter the length, the more "streak"-like the band.
   len: number;
-  // Dot count along the row.
-  count: number;
-  // Dot radius in px.
-  r: number;
-  // 0 → near-invisible, 1 → full accent at base alpha.
-  weight: number;
-  // 0 → dotted, 1 → dashes (treated as elongated dot strokes).
-  dash: number;
+  // Anchor — fraction of width where the band's mid-point sits when the
+  // global cycle phase is 0. Lets us cluster bands around chosen rows.
+  anchor: number;
+  // Dot spacing (px). Smaller = denser/faster-feeling.
+  spacing: number;
+  // Dot radius (px).
+  radius: number;
+  // Peak alpha at band center.
+  alpha: number;
+  // Horizontal velocity (px/sec). Positive = drift right.
+  velocity: number;
+  // Phase offset (0..1) so bands don't all hit the same x at the same frame.
+  phase: number;
 };
 
-// A hand-tuned set so the texture looks designed, not noisy.
-// Dots are sparse near vertical center (where headlines live) and dense
-// near top and bottom edges.
-const ROWS: Row[] = [
-  { y: 0.04, x0: -0.02, len: 0.30, count: 22, r: 2.5, weight: 0.6, dash: 0 },
-  { y: 0.06, x0: 0.30, len: 0.18, count: 12, r: 2.0, weight: 0.4, dash: 0 },
-  { y: 0.08, x0: 0.62, len: 0.42, count: 32, r: 2.5, weight: 0.7, dash: 0 },
-  { y: 0.11, x0: 0.04, len: 0.22, count: 15, r: 2.0, weight: 0.5, dash: 0 },
-  { y: 0.13, x0: 0.38, len: 0.12, count: 8, r: 2.0, weight: 0.35, dash: 0 },
-  { y: 0.16, x0: 0.55, len: 0.30, count: 22, r: 2.5, weight: 0.55, dash: 0 },
-  { y: 0.19, x0: 0.10, len: 0.40, count: 28, r: 2.0, weight: 0.45, dash: 0 },
-  { y: 0.22, x0: 0.66, len: 0.20, count: 14, r: 2.0, weight: 0.35, dash: 0 },
-  { y: 0.26, x0: 0.02, len: 0.16, count: 11, r: 2.0, weight: 0.30, dash: 0 },
-  { y: 0.30, x0: 0.74, len: 0.24, count: 17, r: 2.0, weight: 0.40, dash: 0 },
-  { y: 0.34, x0: 0.20, len: 0.10, count: 7, r: 1.8, weight: 0.25, dash: 0 },
-  { y: 0.38, x0: 0.58, len: 0.18, count: 13, r: 2.0, weight: 0.35, dash: 0 },
-  { y: 0.42, x0: -0.02, len: 0.14, count: 10, r: 1.8, weight: 0.22, dash: 0 },
-  { y: 0.50, x0: 0.78, len: 0.10, count: 7, r: 1.8, weight: 0.20, dash: 0 },
-  { y: 0.54, x0: 0.05, len: 0.12, count: 8, r: 1.8, weight: 0.22, dash: 0 },
-  { y: 0.58, x0: 0.62, len: 0.20, count: 14, r: 2.0, weight: 0.30, dash: 0 },
-  { y: 0.62, x0: 0.18, len: 0.16, count: 11, r: 1.8, weight: 0.30, dash: 0 },
-  { y: 0.66, x0: 0.74, len: 0.22, count: 16, r: 2.0, weight: 0.40, dash: 0 },
-  { y: 0.70, x0: 0.04, len: 0.26, count: 18, r: 2.0, weight: 0.45, dash: 0 },
-  { y: 0.74, x0: 0.46, len: 0.14, count: 10, r: 2.0, weight: 0.35, dash: 0 },
-  { y: 0.78, x0: 0.10, len: 0.40, count: 28, r: 2.5, weight: 0.55, dash: 0 },
-  { y: 0.81, x0: 0.62, len: 0.18, count: 13, r: 2.0, weight: 0.40, dash: 0 },
-  { y: 0.84, x0: 0.02, len: 0.18, count: 13, r: 2.0, weight: 0.40, dash: 0 },
-  { y: 0.87, x0: 0.36, len: 0.30, count: 22, r: 2.5, weight: 0.55, dash: 0 },
-  { y: 0.90, x0: 0.72, len: 0.26, count: 19, r: 2.5, weight: 0.65, dash: 0 },
-  { y: 0.93, x0: 0.06, len: 0.16, count: 12, r: 2.0, weight: 0.45, dash: 0 },
-  { y: 0.96, x0: 0.42, len: 0.36, count: 26, r: 2.5, weight: 0.70, dash: 0 },
+// Bands clustered in three vertical zones — top, mid, bottom — like the
+// Base reference. Speeds vary so the field has fast streaks alongside
+// slow drifts; that contrast reads as acceleration.
+const BANDS: Band[] = [
+  // ── Top cluster (3 bands very close in y, different speeds)
+  { y: 0.045, len: 0.62, anchor: 0.30, spacing: 7, radius: 2.4, alpha: 0.95, velocity: 380, phase: 0.00 },
+  { y: 0.062, len: 0.58, anchor: 0.46, spacing: 6, radius: 2.4, alpha: 0.95, velocity: 540, phase: 0.30 },
+  { y: 0.078, len: 0.42, anchor: 0.22, spacing: 7, radius: 2.4, alpha: 0.92, velocity: 320, phase: 0.55 },
+
+  // ── Mid-upper accent
+  { y: 0.18, len: 0.50, anchor: 0.70, spacing: 6, radius: 2.4, alpha: 0.92, velocity: 620, phase: 0.10 },
+  { y: 0.197, len: 0.30, anchor: 0.84, spacing: 6, radius: 2.4, alpha: 0.92, velocity: 720, phase: 0.40 },
+
+  // ── Quiet middle (one short fast streak so the eye keeps the rhythm)
+  { y: 0.42, len: 0.18, anchor: 0.10, spacing: 6, radius: 2.2, alpha: 0.85, velocity: 820, phase: 0.65 },
+
+  // ── Lower-mid accent
+  { y: 0.61, len: 0.36, anchor: 0.78, spacing: 6, radius: 2.3, alpha: 0.90, velocity: 580, phase: 0.20 },
+  { y: 0.628, len: 0.22, anchor: 0.88, spacing: 6, radius: 2.3, alpha: 0.90, velocity: 700, phase: 0.50 },
+
+  // ── Bottom cluster (mirror of top)
+  { y: 0.85, len: 0.58, anchor: 0.62, spacing: 7, radius: 2.4, alpha: 0.95, velocity: 360, phase: 0.05 },
+  { y: 0.867, len: 0.62, anchor: 0.42, spacing: 6, radius: 2.4, alpha: 0.95, velocity: 500, phase: 0.35 },
+  { y: 0.884, len: 0.46, anchor: 0.74, spacing: 7, radius: 2.4, alpha: 0.92, velocity: 280, phase: 0.60 },
 ];
+
+// Edge fade fraction — how much of the band length on each side fades to
+// zero. Same on both sides so streaks look symmetrical.
+const FADE_FRACTION = 0.18;
 
 type Props = {
   // Multiplier on overall dot opacity. Default 1.
   intensity?: number;
-  // When true, the grid drifts slowly horizontally — handy for static scenes.
-  drift?: boolean;
+  // Multiplier on every band's velocity. 0 freezes the bands. Default 1.
+  speed?: number;
 };
 
-export const DotGrid: React.FC<Props> = ({ intensity = 1, drift = true }) => {
+export const DotGrid: React.FC<Props> = ({ intensity = 1, speed = 1 }) => {
   const frame = useCurrentFrame();
-  const driftOffset = drift ? Math.sin(frame / 240) * 8 : 0;
+  const t = frame / FPS; // seconds
+  const cycleW = W * 1.6; // wrap width — enough that bands always have somewhere to come from
+
+  // Build the fine grid once.
+  const fineCols = Math.ceil(W / FINE_SPACING_X) + 2;
+  const fineRows = Math.ceil(H / FINE_SPACING_Y) + 2;
 
   return (
     <svg
@@ -85,32 +103,81 @@ export const DotGrid: React.FC<Props> = ({ intensity = 1, drift = true }) => {
         pointerEvents: "none",
       }}
     >
-      {ROWS.map((row, ri) => {
-        const yPx = row.y * H;
-        const x0Px = row.x0 * W + driftOffset;
-        const lenPx = row.len * W;
-        const step = lenPx / Math.max(1, row.count - 1);
-        const baseAlpha = 0.42 * row.weight * intensity;
+      {/* Layer 1 — uniform fine grid */}
+      <g opacity={FINE_ALPHA * intensity}>
+        {Array.from({ length: fineRows }).map((_, ry) => {
+          const y = ry * FINE_SPACING_Y - FINE_SPACING_Y / 2;
+          return (
+            <g key={`r${ry}`}>
+              {Array.from({ length: fineCols }).map((_, rx) => {
+                const x = rx * FINE_SPACING_X - FINE_SPACING_X / 2;
+                return (
+                  <circle
+                    key={`r${ry}c${rx}`}
+                    cx={x}
+                    cy={y}
+                    r={FINE_RADIUS}
+                    fill={colors.accent}
+                  />
+                );
+              })}
+            </g>
+          );
+        })}
+      </g>
 
-        return (
-          <g key={ri}>
-            {Array.from({ length: row.count }).map((_, di) => {
-              const x = x0Px + di * step;
-              if (x < -10 || x > W + 10) return null;
-              return (
-                <circle
-                  key={di}
-                  cx={x}
-                  cy={yPx}
-                  r={row.r}
-                  fill={colors.accent}
-                  opacity={baseAlpha}
-                />
-              );
-            })}
-          </g>
-        );
-      })}
+      {/* Layer 2 — streaming bands */}
+      <g>
+        {BANDS.map((band, bi) => {
+          const yPx = band.y * H;
+          const lenPx = band.len * W;
+          const halfLen = lenPx / 2;
+
+          // Mid-x of the band drifts to the right and wraps modularly.
+          // Phase offset spreads bands across the cycle so they don't all
+          // arrive at the anchor at the same frame.
+          const drift = band.velocity * speed * t;
+          const phasePx = band.phase * cycleW;
+          const wrappedMid =
+            ((band.anchor * W + drift + phasePx) % cycleW + cycleW) % cycleW
+            - cycleW * 0.3;
+          const x0Px = wrappedMid - halfLen;
+          const x1Px = wrappedMid + halfLen;
+
+          // Skip bands that are entirely off-screen.
+          if (x1Px < -20 || x0Px > W + 20) return null;
+
+          const fadePx = lenPx * FADE_FRACTION;
+          const count = Math.max(2, Math.floor(lenPx / band.spacing));
+
+          return (
+            <g key={`b${bi}`}>
+              {Array.from({ length: count }).map((_, di) => {
+                const x = x0Px + di * band.spacing;
+                if (x < -10 || x > W + 10) return null;
+
+                const fromStart = x - x0Px;
+                const fromEnd = x1Px - x;
+                let alphaScale = 1;
+                if (fromStart < fadePx) alphaScale *= fromStart / fadePx;
+                if (fromEnd < fadePx) alphaScale *= fromEnd / fadePx;
+                alphaScale = Math.max(0, Math.min(1, alphaScale));
+
+                return (
+                  <circle
+                    key={`d${di}`}
+                    cx={x}
+                    cy={yPx}
+                    r={band.radius}
+                    fill={colors.accent}
+                    opacity={band.alpha * alphaScale * intensity}
+                  />
+                );
+              })}
+            </g>
+          );
+        })}
+      </g>
     </svg>
   );
 };

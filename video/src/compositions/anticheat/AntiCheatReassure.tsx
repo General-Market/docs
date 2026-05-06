@@ -8,10 +8,10 @@ import {
 } from "remotion";
 import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
+import { DotGrid, DotGridVignette } from "./DotGrid";
 
-const SCENE_SECONDS = 6;
-const SECOND_LINE_AT = toFrames(2.5);
-const GREEN = "#3ddc84";
+const SCENE_SECONDS = 4.5;
+const SECOND_LINE_AT = toFrames(1.8);
 
 export const AntiCheatReassure: React.FC = () => {
   const frame = useCurrentFrame();
@@ -28,7 +28,6 @@ export const AntiCheatReassure: React.FC = () => {
     config: { damping: 22, stiffness: 100, mass: 0.8 },
   });
 
-  // The first line drifts up slightly as the second arrives.
   const liftFirst = interpolate(
     frame,
     [SECOND_LINE_AT - toFrames(0.3), SECOND_LINE_AT + toFrames(0.5)],
@@ -36,13 +35,12 @@ export const AntiCheatReassure: React.FC = () => {
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
 
-  // Shield reveals with the second line.
   const shield = spring({
     frame: frame - SECOND_LINE_AT,
     fps,
     config: { damping: 26, stiffness: 100, mass: 1 },
   });
-  const shieldOpacity = interpolate(shield, [0, 1], [0, 0.06]);
+  const shieldOpacity = interpolate(shield, [0, 1], [0, 0.10]);
   const shieldScale = interpolate(shield, [0, 1], [0.85, 1]);
 
   return (
@@ -56,6 +54,8 @@ export const AntiCheatReassure: React.FC = () => {
         overflow: "hidden",
       }}
     >
+      <DotGrid />
+
       {/* Faint shield in the back */}
       <div
         style={{
@@ -85,7 +85,6 @@ export const AntiCheatReassure: React.FC = () => {
             letterSpacing: "-0.04em",
             color: colors.fg,
             lineHeight: 0.95,
-            textShadow: "0 4px 28px rgba(0,0,0,0.65)",
             opacity: interpolate(t1, [0, 1], [0, 1]),
             transform: `translateY(${
               interpolate(t1, [0, 1], [22, 0]) + liftFirst
@@ -93,7 +92,6 @@ export const AntiCheatReassure: React.FC = () => {
           }}
         >
           Trade all the same assets
-          <span style={{ color: colors.fg, opacity: 0.45 }}>.</span>
         </div>
 
         <div
@@ -110,8 +108,7 @@ export const AntiCheatReassure: React.FC = () => {
         >
           <span style={{ color: colors.dim, opacity: 0.7 }}>.&nbsp;.&nbsp;.</span>{" "}
           but{" "}
-          <span style={{ color: GREEN }}>shielded</span>
-          <span style={{ color: colors.fg, opacity: 0.45 }}>.</span>
+          <span style={{ color: colors.accent }}>shielded</span>
         </div>
 
         <div
@@ -137,13 +134,7 @@ export const AntiCheatReassure: React.FC = () => {
         </div>
       </div>
 
-      <AbsoluteFill
-        style={{
-          pointerEvents: "none",
-          background:
-            "radial-gradient(circle at 50% 50%, transparent 55%, rgba(0,0,0,0.55) 100%)",
-        }}
-      />
+      <DotGridVignette intensity={0.18} />
     </AbsoluteFill>
   );
 };
@@ -159,14 +150,14 @@ const ShieldGlyph: React.FC = () => {
       <path
         d="M50 4 L92 18 L92 56 C92 82 72 99 50 106 C28 99 8 82 8 56 L8 18 Z"
         fill="none"
-        stroke="#3ddc84"
+        stroke={colors.accent}
         strokeWidth={2}
         strokeLinejoin="round"
       />
       <path
         d="M30 56 L46 72 L72 40"
         fill="none"
-        stroke="#3ddc84"
+        stroke={colors.accent}
         strokeWidth={3}
         strokeLinecap="round"
         strokeLinejoin="round"
