@@ -66,6 +66,7 @@
     "next": "^15",
     "next-intl": "^4.8.3",
     "next-mdx-remote": "^6.0.0",
+    "pg": "^8.20.0",
     "pino": "^10.3.0",
     "pngjs": "^7.0.0",
     "porto": "^0.2.37",
@@ -89,6 +90,7 @@
   "devDependencies": {
     "@playwright/test": "^1.49.0",
     "@types/node": "^22",
+    "@types/pg": "^8.20.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/react-window": "^2.0.0",
