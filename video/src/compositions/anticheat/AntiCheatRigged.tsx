@@ -50,18 +50,16 @@ const ARTICLES: ArticleProof[] = [
     category: "perps",
     image: "insider-trading/articles/1.png",
     highlights: [{ x: 0.5737, y: 0.1383, w: 0.3183, h: 0.0453 }],
-    // "Binance" — line 1, same line as yellow. Width tightened to just
-    // "Binance" (was bleeding into "post").
-    exchangeBox: { x: 0.040, y: 0.138, w: 0.155, h: 0.045 },
+    // "Binance" — line 1, same line as yellow. Tightened to just the word.
+    exchangeBox: { x: 0.050, y: 0.138, w: 0.120, h: 0.045 },
   },
   {
     exchange: "robinhood",
     category: "options",
     image: "insider-trading/articles/9.png",
     highlights: [{ x: 0.4119, y: 0.1968, w: 0.2831, h: 0.042 }],
-    // "Robinhood" — line 1; yellow is on line 2 ("Insider Trading").
-    // Width tightened (was bleeding into "Blocks").
-    exchangeBox: { x: 0.097, y: 0.146, w: 0.245, h: 0.048 },
+    // "Robinhood" — line 1; yellow is on line 2. Tightened.
+    exchangeBox: { x: 0.115, y: 0.146, w: 0.205, h: 0.048 },
   },
   {
     exchange: "polymarket",
@@ -79,30 +77,30 @@ const ARTICLES: ArticleProof[] = [
     category: "launchpads",
     image: "insider-trading/articles/4.png",
     highlights: [{ x: 0.1253, y: 0.5158, w: 0.2653, h: 0.0487 }],
-    // "Solana Memecoin" — line 1 of title; yellow is on line 2 ("Insider
-    // Trading") at y=0.516, line-stride ~0.05. pump.fun isn't named in
-    // the visible upper portion, so the green proof goes on the platform
-    // category instead.
-    exchangeBox: { x: 0.040, y: 0.466, w: 0.300, h: 0.045 },
+    // "Solana Memecoin" — line 1 of title; yellow is on line 2. The
+    // pump.fun name doesn't appear in the visible upper portion, so the
+    // green proof goes on the platform category instead. Height bumped
+    // because this article is taller than the others (1764×1580) — the
+    // same normalized h reads visually thinner.
+    exchangeBox: { x: 0.040, y: 0.466, w: 0.300, h: 0.060 },
   },
   {
     exchange: "kalshi",
     category: "predictions",
     image: "insider-trading/articles/6.png",
     highlights: [{ x: 0.4819, y: 0.176, w: 0.216, h: 0.0303 }],
-    // "Kalshi," — first word of title, same line as yellow. Width tightened
-    // (was bleeding into "Polymarket").
-    exchangeBox: { x: 0.057, y: 0.176, w: 0.090, h: 0.034 },
+    // "Kalshi," — first word of title, same line as yellow.
+    exchangeBox: { x: 0.068, y: 0.176, w: 0.090, h: 0.034 },
   },
   {
     exchange: "coinbase",
     category: "spot",
     image: "insider-trading/articles/7.png",
     highlights: [{ x: 0.2453, y: 0.4009, w: 0.3414, h: 0.0417 }],
-    // "Coinbase" — line 1 of title; yellow is on a later line ("Insider
-    // Trading Action"). x shifted right (was on "Former Coin" instead of
-    // "Coinbase").
-    exchangeBox: { x: 0.580, y: 0.318, w: 0.220, h: 0.043 },
+    // "Coinbase" — line 1 of title; yellow is on a later line. Lifted up
+    // (was sitting in the gap between line 1 and line 2) and shifted right
+    // (was leaking into "Former").
+    exchangeBox: { x: 0.610, y: 0.295, w: 0.220, h: 0.043 },
   },
 ];
 
