@@ -545,41 +545,70 @@ const YellowHighlightLayer: React.FC<{
 
 // ─── VerticalBars ─────────────────────────────────────────────────────────────
 //
-// Background-only. Thin vertical lines at regular intervals over the
-// light field. Every fourth line stronger — the cadence of prison bars,
-// not random ticks. Sits behind the verdict and the article flash.
+// The same Base-blue bars as the extraction chart, rotated 90°. Solid
+// fills, staggered grow from the floor, tick at the head of each column.
+// Sits behind the verdict and the article flash as the scene's backdrop.
 
-const RIGGED_BAR_SPACING = 64;
+type BgBar = { xPct: number; heightPct: number };
+
+const RIGGED_BG_BARS: BgBar[] = [
+  { xPct: 0.025, heightPct: 0.62 },
+  { xPct: 0.105, heightPct: 0.86 },
+  { xPct: 0.185, heightPct: 0.46 },
+  { xPct: 0.265, heightPct: 0.78 },
+  { xPct: 0.345, heightPct: 0.55 },
+  { xPct: 0.425, heightPct: 0.92 },
+  { xPct: 0.505, heightPct: 0.40 },
+  { xPct: 0.585, heightPct: 0.70 },
+  { xPct: 0.665, heightPct: 0.88 },
+  { xPct: 0.745, heightPct: 0.52 },
+  { xPct: 0.825, heightPct: 0.74 },
+  { xPct: 0.905, heightPct: 0.60 },
+];
+
+const BG_BAR_WIDTH = 64;
+const BG_BAR_OPACITY = 0.22;
+const BG_BAR_GROW = toFrames(0.4);
+const BG_BAR_STAGGER = 2;
 
 const VerticalBars: React.FC = () => {
-  const cols = Math.ceil(W / RIGGED_BAR_SPACING) + 1;
-  const lines: React.ReactNode[] = [];
-  for (let i = 0; i < cols; i++) {
-    const x = i * RIGGED_BAR_SPACING;
-    const isMajor = i % 4 === 0;
-    const width = isMajor ? 14 : 5;
-    lines.push(
-      <rect
-        key={i}
-        x={x - width / 2}
-        y={0}
-        width={width}
-        height={H}
-        fill={colors.fg}
-        opacity={isMajor ? 0.2 : 0.1}
-      />,
-    );
-  }
+  const frame = useCurrentFrame();
   return (
     <AbsoluteFill style={{ pointerEvents: "none" }}>
-      <svg
-        width="100%"
-        height="100%"
-        viewBox={`0 0 ${W} ${H}`}
-        preserveAspectRatio="none"
-      >
-        {lines}
-      </svg>
+      {RIGGED_BG_BARS.map((bar, i) => {
+        const local = frame - i * BG_BAR_STAGGER;
+        const t = Math.max(0, Math.min(1, local / BG_BAR_GROW));
+        const eased = 1 - Math.pow(1 - t, 3);
+        const heightPct = bar.heightPct * 100 * eased;
+        return (
+          <div
+            key={i}
+            style={{
+              position: "absolute",
+              bottom: 0,
+              left: `${bar.xPct * 100}%`,
+              width: BG_BAR_WIDTH,
+              height: `${heightPct.toFixed(2)}%`,
+              background: colors.accent,
+              opacity: BG_BAR_OPACITY,
+              borderRadius: 2,
+            }}
+          >
+            {/* Top tick — same idiom as the horizontal chart's leading tick */}
+            <div
+              style={{
+                position: "absolute",
+                top: -2,
+                left: -4,
+                right: -4,
+                height: 2,
+                background: colors.fg,
+                opacity: eased * 0.7,
+              }}
+            />
+          </div>
+        );
+      })}
     </AbsoluteFill>
   );
 };
