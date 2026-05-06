@@ -17,11 +17,11 @@ export const InkBleed: React.FC<Props> = ({
   color = "#08070a",
 }) => {
   const frame = useCurrentFrame();
+  const id = React.useId();
   const local = frame - startFrame;
   if (local < 0 || local > durationFrames) return null;
 
   const t = local / durationFrames;
-  const id = React.useId();
 
   // Radius grows from 0 to ~1.6× the diagonal so the stain fully covers,
   // then linger-fades. Seed shifts each frame for living edge.

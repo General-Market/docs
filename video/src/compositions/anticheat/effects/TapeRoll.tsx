@@ -13,11 +13,11 @@ export const TapeRoll: React.FC<Props> = ({
   bandHeightPx = 180,
 }) => {
   const frame = useCurrentFrame();
+  const id = React.useId();
   const local = frame - startFrame;
   if (local < 0 || local > durationFrames) return null;
 
   const t = local / durationFrames;
-  const id = React.useId();
 
   // Band travels from below the bottom edge up past the top, like a VHS
   // sync-loss bar rolling against the field direction.

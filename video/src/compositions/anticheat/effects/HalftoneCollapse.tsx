@@ -15,11 +15,11 @@ export const HalftoneCollapse: React.FC<Props> = ({
   color = "#000000",
 }) => {
   const frame = useCurrentFrame();
+  const id = React.useId();
   const local = frame - startFrame;
   if (local < 0 || local > durationFrames) return null;
 
   const t = local / durationFrames;
-  const id = React.useId();
 
   // Wave position sweeps top→bottom across normalized 0..1.
   const waveY = interpolate(t, [0, 1], [-0.25, 1.25], {

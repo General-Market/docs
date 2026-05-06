@@ -15,11 +15,11 @@ export const PageTear: React.FC<Props> = ({
   flashColor = "#ffffff",
 }) => {
   const frame = useCurrentFrame();
+  const id = React.useId();
   const local = frame - startFrame;
   if (local < 0 || local > durationFrames) return null;
 
   const t = local / durationFrames;
-  const id = React.useId();
 
   const split = interpolate(t, [0, 0.4, 1], [0, 80, 600], {
     easing: Easing.out(Easing.expo),

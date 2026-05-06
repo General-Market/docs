@@ -13,8 +13,8 @@ export const LiquidDistortion: React.FC<Props> = ({
   color = "#ffffff",
 }) => {
   const frame = useCurrentFrame();
-  const local = frame - startFrame;
   const id = React.useId();
+  const local = frame - startFrame;
 
   if (local < 0 || local > durationFrames) return null;
 
