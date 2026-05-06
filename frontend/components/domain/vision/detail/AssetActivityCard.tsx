@@ -1,14 +1,6 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import {
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
 import { useAssetSettlements, type AssetSettlement } from '@/hooks/vision/useAssetSettlements'
 import fundData from '@/data/fund-branding.json'
 
@@ -40,23 +32,21 @@ const VAULT_BY_ADDR: Map<string, FundEntry> = (() => {
   return m
 })()
 
-const OUTCOME_COLOR = {
-  Up: '#16a34a',
-  Down: '#dc2626',
-  Flat: '#94a3b8',
-  Cancelled: '#94a3b8',
-  AllSameSide: '#f59e0b',
-  AllLosers: '#f59e0b',
-} as const
-
-const CHART_HEIGHT = 320
-const SIGNAL_H = 18
-const CELL_W = 52
+const CHART_HEIGHT = 280
+const CELL_W = 32
 const COL_GAP = 4
 const ROW_H = 28
+const HEADER_H = 32
 const LEFT_RAIL = 168
 const TOP_N = 12
-const VISIBLE_COLS = 24
+const X_PADDING = 16
+
+type WindowHours = 12 | 24 | 168
+const WINDOW_OPTIONS: { hours: WindowHours; label: string }[] = [
+  { hours: 12, label: '12h' },
+  { hours: 24, label: '24h' },
+  { hours: 168, label: '7d' },
+]
 
 function shortAddr(a: string): string {
   if (!a) return '?'
@@ -85,18 +75,27 @@ function formatTime(t: number): string {
   })
 }
 
-function computeOdds(s: AssetSettlement): { upPct: number | null; downPct: number | null } {
-  let up = 0
-  let down = 0
+function winnerOdds(s: AssetSettlement): {
+  mult: number | null
+  side: 'Up' | 'Down' | null
+} {
+  let up = 0n
+  let down = 0n
   try {
-    up = Number(BigInt(s.upStake))
-    down = Number(BigInt(s.downStake))
+    up = BigInt(s.upStake)
+    down = BigInt(s.downStake)
   } catch {
-    return { upPct: null, downPct: null }
+    return { mult: null, side: null }
   }
   const total = up + down
-  if (!total) return { upPct: null, downPct: null }
-  return { upPct: (up / total) * 100, downPct: (down / total) * 100 }
+  if (total === 0n) return { mult: null, side: null }
+  if (s.outcome === 'Up' && up > 0n) {
+    return { mult: Number((total * 1000n) / up) / 1000, side: 'Up' }
+  }
+  if (s.outcome === 'Down' && down > 0n) {
+    return { mult: Number((total * 1000n) / down) / 1000, side: 'Down' }
+  }
+  return { mult: null, side: null }
 }
 
 interface Cell {
@@ -116,8 +115,8 @@ interface Row {
 
 interface BatchCol {
   batch: AssetSettlement
-  upPct: number | null
-  downPct: number | null
+  mult: number | null
+  winSide: 'Up' | 'Down' | null
 }
 
 function buildMatrix(settlements: AssetSettlement[]): {
@@ -127,7 +126,10 @@ function buildMatrix(settlements: AssetSettlement[]): {
   const ordered = [...settlements].sort(
     (a, b) => new Date(a.settledAt).getTime() - new Date(b.settledAt).getTime(),
   )
-  const columns: BatchCol[] = ordered.map(b => ({ batch: b, ...computeOdds(b) }))
+  const columns: BatchCol[] = ordered.map(b => {
+    const w = winnerOdds(b)
+    return { batch: b, mult: w.mult, winSide: w.side }
+  })
   const acc = new Map<string, Row>()
   ordered.forEach((s, colIdx) => {
     s.players.forEach(p => {
@@ -151,7 +153,6 @@ function buildMatrix(settlements: AssetSettlement[]): {
       if (p.won) row.wins += 1
     })
   })
-  // Funds first; then by participation; then alphabetical.
   const rows = [...acc.values()]
     .sort((a, b) => {
       if (a.isFund !== b.isFund) return a.isFund ? -1 : 1
@@ -165,17 +166,15 @@ function buildMatrix(settlements: AssetSettlement[]): {
 
 function CellGlyph({ side, won }: Cell) {
   if (!side) {
-    return (
-      <span style={{ color: 'var(--apple-text-tertiary)', opacity: 0.4 }}>·</span>
-    )
+    return <span style={{ color: 'var(--apple-text-tertiary)', opacity: 0.35 }}>·</span>
   }
   const color = won ? 'rgb(52,199,89)' : 'rgb(255,59,48)'
   return (
     <span
       style={{
         color,
-        fontSize: 12,
-        opacity: won ? 1 : 0.55,
+        fontSize: 13,
+        opacity: won ? 1 : 0.5,
         lineHeight: 1,
       }}
     >
@@ -184,12 +183,19 @@ function CellGlyph({ side, won }: Cell) {
   )
 }
 
-type WindowHours = 12 | 24 | 168
-const WINDOW_OPTIONS: { hours: WindowHours; label: string }[] = [
-  { hours: 12, label: '12h' },
-  { hours: 24, label: '24h' },
-  { hours: 168, label: '7d' },
-]
+function nearestValue(points: PricePoint[], ts: number): number | null {
+  if (points.length === 0) return null
+  let bestIdx = 0
+  let bestDiff = Math.abs(points[0].ts - ts)
+  for (let i = 1; i < points.length; i++) {
+    const d = Math.abs(points[i].ts - ts)
+    if (d < bestDiff) {
+      bestDiff = d
+      bestIdx = i
+    }
+  }
+  return points[bestIdx].value
+}
 
 export function AssetActivityCard({
   sourceId: _sourceId,
@@ -234,390 +240,470 @@ export function AssetActivityCard({
     }
   }, [dataNodeSourceId, assetId, windowHours])
 
-  const { data: settlements } = useAssetSettlements(dataNodeSourceId, assetId, 60)
+  const { data: settlements } = useAssetSettlements(dataNodeSourceId, assetId, 200)
 
   const { columns: allColumns, rows: allRows } = useMemo(
     () => buildMatrix(settlements ?? []),
     [settlements],
   )
 
-  // Restrict the matrix to settlements inside the active time window. The
-  // chart and the matrix breathe the same air.
   const windowStart = useMemo(
     () => Date.now() - windowHours * 60 * 60 * 1000,
     [windowHours],
   )
-  const windowedAllColumns = useMemo(
+  const columns = useMemo(
     () =>
       allColumns.filter(c => new Date(c.batch.settledAt).getTime() >= windowStart),
     [allColumns, windowStart],
   )
-  const columns = useMemo(
-    () =>
-      windowedAllColumns.slice(
-        Math.max(0, windowedAllColumns.length - VISIBLE_COLS),
-      ),
-    [windowedAllColumns],
-  )
-  const visibleStartIdx = allColumns.length - columns.length
+  const colStartIdx = allColumns.length - columns.length
   const rows = useMemo(
     () =>
       allRows
-        .map(r => ({
-          ...r,
-          cells: r.cells.slice(visibleStartIdx),
-        }))
+        .map(r => ({ ...r, cells: r.cells.slice(colStartIdx) }))
         .filter(r => r.cells.some(c => c.side !== null)),
-    [allRows, visibleStartIdx],
+    [allRows, colStartIdx],
   )
 
-  const showMatrix = rows.length > 0
+  // Per-settlement chart data: price at the moment of each settlement.
+  const seriesValues = useMemo<(number | null)[]>(() => {
+    return columns.map(c =>
+      nearestValue(points, new Date(c.batch.settledAt).getTime()),
+    )
+  }, [columns, points])
 
-  // Scroll to far right on first load — most recent activity is what matters.
-  useEffect(() => {
-    if (scrollRef.current && columns.length > 0) {
-      scrollRef.current.scrollLeft = scrollRef.current.scrollWidth
-    }
-  }, [columns.length])
+  const valuesForRange = useMemo(() => {
+    const vs = seriesValues.filter((v): v is number => v != null)
+    if (vs.length === 0 && points.length > 0) return points.map(p => p.value)
+    return vs
+  }, [seriesValues, points])
 
-  // Downsample chart points for perf (cap ~600).
-  const displayPoints = useMemo(() => {
-    if (points.length <= 600) return points
-    const stride = Math.ceil(points.length / 600)
-    return points.filter((_, i) => i % stride === 0 || i === points.length - 1)
-  }, [points])
+  const yMin = useMemo(() => {
+    if (valuesForRange.length === 0) return 0
+    return Math.min(...valuesForRange)
+  }, [valuesForRange])
+  const yMax = useMemo(() => {
+    if (valuesForRange.length === 0) return 1
+    return Math.max(...valuesForRange)
+  }, [valuesForRange])
+  const ySpan = Math.max(1e-12, yMax - yMin)
 
   const lineColor = useMemo(() => {
-    if (displayPoints.length < 2) return '#94a3b8'
-    return displayPoints[displayPoints.length - 1].value >= displayPoints[0].value
-      ? '#16a34a'
-      : '#dc2626'
-  }, [displayPoints])
+    const first = seriesValues.find(v => v != null)
+    const last = [...seriesValues].reverse().find(v => v != null)
+    if (first == null || last == null) return '#94a3b8'
+    return last >= first ? '#16a34a' : '#dc2626'
+  }, [seriesValues])
 
   const changePct = useMemo(() => {
-    if (displayPoints.length < 2) return null
-    const f = displayPoints[0].value
-    const l = displayPoints[displayPoints.length - 1].value
-    if (f === 0) return null
-    return ((l - f) / f) * 100
-  }, [displayPoints])
+    const first = seriesValues.find(v => v != null)
+    const last = [...seriesValues].reverse().find(v => v != null)
+    if (first == null || last == null || first === 0) return null
+    return ((last - first) / first) * 100
+  }, [seriesValues])
 
-  const tDomain = useMemo<[number, number]>(() => {
-    if (displayPoints.length === 0) {
-      const now = Date.now()
-      return [now - 7 * 24 * 60 * 60 * 1000, now]
+  const hasMatrix = rows.length > 0
+  const colCount = columns.length
+
+  // Chart inner width — scrolls with the matrix.
+  const innerWidth = useMemo(() => {
+    const fromCells = colCount * (CELL_W + COL_GAP) + X_PADDING * 2
+    return Math.max(720, fromCells)
+  }, [colCount])
+
+  // Pixel x for column index i (center of cell).
+  const xForIdx = (i: number) => X_PADDING + i * (CELL_W + COL_GAP) + CELL_W / 2
+
+  // Pixel y for value v.
+  const yForValue = (v: number) => {
+    const padTop = 16
+    const padBot = 16
+    const usable = CHART_HEIGHT - padTop - padBot
+    return padTop + (1 - (v - yMin) / ySpan) * usable
+  }
+
+  // Linear path through settlement points (skipping nulls).
+  const linePath = useMemo(() => {
+    const segs: string[] = []
+    let started = false
+    seriesValues.forEach((v, i) => {
+      if (v == null) {
+        started = false
+        return
+      }
+      const x = xForIdx(i)
+      const y = yForValue(v)
+      segs.push(`${started ? 'L' : 'M'} ${x.toFixed(1)} ${y.toFixed(1)}`)
+      started = true
+    })
+    return segs.join(' ')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seriesValues, yMin, yMax, ySpan, colCount])
+
+  // Fall back to time-linear line when there are no settlements (early state).
+  const fallbackPath = useMemo(() => {
+    if (points.length < 2 || colCount > 0) return ''
+    const tMin = points[0].ts
+    const tMax = points[points.length - 1].ts
+    const tSpan = Math.max(1, tMax - tMin)
+    const segs: string[] = []
+    points.forEach((p, i) => {
+      const x = X_PADDING + ((p.ts - tMin) / tSpan) * (innerWidth - X_PADDING * 2)
+      const y = yForValue(p.value)
+      segs.push(`${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`)
+    })
+    return segs.join(' ')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [points, innerWidth, yMin, yMax, ySpan, colCount])
+
+  // Scroll to the right edge on first load — most recent activity in view.
+  useEffect(() => {
+    if (scrollRef.current && colCount > 0) {
+      scrollRef.current.scrollLeft = scrollRef.current.scrollWidth
     }
-    return [
-      displayPoints[0].ts,
-      displayPoints[displayPoints.length - 1].ts,
-    ]
-  }, [displayPoints])
+  }, [colCount, windowHours])
 
-  if (loading && displayPoints.length === 0) {
+  const firstValue = seriesValues.find(v => v != null) ?? points[0]?.value
+  const lastValue =
+    [...seriesValues].reverse().find(v => v != null) ??
+    points[points.length - 1]?.value
+
+  const HEADER_NODE = (
+    <Header
+      isPrice={isPrice}
+      valueUnit={valueUnit}
+      firstValue={firstValue}
+      lastValue={lastValue}
+      changePct={changePct}
+      windowHours={windowHours}
+      onWindowChange={setWindowHours}
+      showLegend={hasMatrix}
+    />
+  )
+
+  if (loading && points.length === 0) {
     return (
       <section className={cardClass} style={cardStyle}>
-        <Header
-          isPrice={isPrice}
-          valueUnit={valueUnit}
-          windowHours={windowHours}
-          onWindowChange={setWindowHours}
-        />
-        <div
-          style={{
-            height: CHART_HEIGHT,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'var(--apple-text-tertiary)',
-            fontSize: 13,
-          }}
-        >
-          Loading…
-        </div>
+        {HEADER_NODE}
+        <div style={emptyState}>Loading…</div>
       </section>
     )
   }
 
-  if (displayPoints.length < 2) {
+  if (points.length < 2 && colCount === 0) {
     return (
       <section className={cardClass} style={cardStyle}>
-        <Header
-          isPrice={isPrice}
-          valueUnit={valueUnit}
-          windowHours={windowHours}
-          onWindowChange={setWindowHours}
-        />
-        <div
-          style={{
-            height: 120,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'var(--apple-text-tertiary)',
-            fontSize: 13,
-          }}
-        >
-          Not enough history yet.
-        </div>
+        {HEADER_NODE}
+        <div style={emptyState}>Not enough history yet.</div>
       </section>
     )
   }
-
-  const matrixWidth = columns.length * (CELL_W + COL_GAP) + 16
 
   return (
     <section className={cardClass} style={cardStyle}>
-      <Header
-        isPrice={isPrice}
-        valueUnit={valueUnit}
-        firstValue={displayPoints[0].value}
-        lastValue={displayPoints[displayPoints.length - 1].value}
-        changePct={changePct}
-        showLegend={showMatrix}
-        windowHours={windowHours}
-        onWindowChange={setWindowHours}
-      />
+      {HEADER_NODE}
 
-      {/* Chart — full responsive width, no scroll. */}
-      <div style={{ padding: '4px 16px 0', borderTop: '1px solid var(--apple-line)' }}>
-        <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
-          <LineChart
-            data={displayPoints}
-            margin={{ top: 12, right: 12, left: 0, bottom: 4 }}
-          >
-            <XAxis
-              type="number"
-              dataKey="ts"
-              domain={tDomain}
-              scale="time"
-              tick={{ fontSize: 10, fill: 'var(--apple-text-tertiary)' }}
-              axisLine={{ stroke: 'rgba(0,0,0,0.08)' }}
-              tickLine={false}
-              tickFormatter={(v: number) =>
-                new Date(v).toLocaleDateString(undefined, {
-                  month: 'short',
-                  day: 'numeric',
-                })
-              }
-              minTickGap={60}
-            />
-            <YAxis
-              domain={['auto', 'auto']}
-              tick={{ fontSize: 10, fill: 'var(--apple-text-tertiary)' }}
-              axisLine={false}
-              tickLine={false}
-              width={56}
-              tickFormatter={(v: number) => formatValue(v, isPrice)}
-            />
-            <Tooltip
-              contentStyle={{
-                background: '#18181b',
-                border: 'none',
-                borderRadius: 4,
-                fontSize: 11,
-                color: '#fff',
-                padding: '6px 10px',
-              }}
-              labelFormatter={(v: number) => formatTime(v)}
-              formatter={(v: number) => [
-                `${isPrice ? '$' : ''}${formatValue(v, isPrice)}${
-                  !isPrice && valueUnit ? ` ${valueUnit}` : ''
-                }`,
-                'Value',
-              ]}
-            />
-            <Line
-              type="monotone"
-              dataKey="value"
-              stroke={lineColor}
-              strokeWidth={1.5}
-              dot={false}
-              isAnimationActive={false}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Signal strip — settlement dots inline beneath the chart. */}
-      <SignalStrip
-        domain={tDomain}
-        items={allColumns.map(c => ({
-          ts: new Date(c.batch.settledAt).getTime(),
-          color:
-            OUTCOME_COLOR[c.batch.outcome as keyof typeof OUTCOME_COLOR] || '#94a3b8',
-          batchId: c.batch.batchId,
-        }))}
-      />
-
-      {!showMatrix ? (
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'stretch',
+          borderTop: '1px solid var(--apple-line)',
+        }}
+      >
+        {/* Left rail — Y-axis labels + vault names. Sticky via flex layout. */}
         <div
           style={{
-            padding: '14px 20px 18px',
-            color: 'var(--apple-text-tertiary)',
-            fontSize: 12,
-            borderTop: '1px solid var(--apple-line)',
+            flexShrink: 0,
+            width: LEFT_RAIL,
+            background: 'var(--apple-panel)',
+            borderRight: '1px solid var(--apple-line)',
+            position: 'relative',
           }}
         >
-          No participant has bet on this market yet. Settlement positions appear here as activity accumulates.
-        </div>
-      ) : (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'stretch',
-            borderTop: '1px solid var(--apple-line)',
-          }}
-        >
-          {/* Sticky left rail — participant labels. */}
+          {/* Y-axis on the chart half */}
+          <div style={{ height: CHART_HEIGHT, position: 'relative' }}>
+            <YAxisTicks yMin={yMin} yMax={yMax} isPrice={isPrice} />
+          </div>
+          {/* Header row */}
           <div
             style={{
-              flexShrink: 0,
-              width: LEFT_RAIL,
-              background: 'var(--apple-panel)',
-              borderRight: '1px solid var(--apple-line)',
+              height: HEADER_H,
+              borderTop: '1px solid var(--apple-line)',
+              borderBottom: '1px solid var(--apple-line)',
             }}
-          >
-            <div style={{ height: 36, borderBottom: '1px solid var(--apple-line)' }} />
-            {rows.map(r => (
-              <div
-                key={r.player}
-                title={r.player}
+          />
+          {/* Vault rows */}
+          {rows.map(r => (
+            <div
+              key={r.player}
+              title={r.player}
+              style={{
+                height: ROW_H,
+                display: 'flex',
+                alignItems: 'center',
+                padding: '0 14px',
+                gap: 8,
+                fontSize: 12,
+                color: 'var(--apple-text)',
+                borderBottom: '1px solid rgba(0,0,0,0.04)',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+              }}
+            >
+              <span
                 style={{
-                  height: ROW_H,
-                  display: 'flex',
-                  alignItems: 'center',
-                  padding: '0 14px',
-                  gap: 8,
-                  fontSize: 12,
-                  color: 'var(--apple-text)',
-                  borderBottom: '1px solid rgba(0,0,0,0.04)',
-                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                  width: 6,
+                  height: 6,
+                  borderRadius: 999,
+                  background: r.color || 'var(--apple-text-tertiary)',
+                }}
+              />
+              <span
+                style={{
+                  flex: 1,
                   overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  fontFamily: r.isFund ? undefined : 'var(--apple-font-mono, monospace)',
+                  fontSize: r.isFund ? 12 : 11,
                 }}
               >
-                <span
-                  style={{
-                    flexShrink: 0,
-                    width: 6,
-                    height: 6,
-                    borderRadius: 999,
-                    background: r.color || 'var(--apple-text-tertiary)',
-                  }}
-                />
-                <span
-                  style={{
-                    flex: 1,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    fontFamily: r.isFund ? undefined : 'var(--apple-font-mono, monospace)',
-                    fontSize: r.isFund ? 12 : 11,
-                  }}
-                >
-                  {r.label}
-                </span>
-                <span
-                  style={{
-                    flexShrink: 0,
-                    fontSize: 9,
-                    fontWeight: 600,
-                    letterSpacing: 'var(--apple-track-loose)',
-                    textTransform: 'uppercase',
-                    padding: '1px 5px',
-                    borderRadius: 3,
-                    background: r.isFund ? 'rgba(52,199,89,0.12)' : 'rgba(0,0,0,0.05)',
-                    color: r.isFund ? 'rgb(52,199,89)' : 'var(--apple-text-tertiary)',
-                  }}
-                >
-                  {r.isFund ? 'FUND' : 'BOT'}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          {/* Right scroll: column headers + cells. */}
-          <div ref={scrollRef} style={{ flex: 1, overflowX: 'auto', overflowY: 'hidden' }}>
-            <div style={{ minWidth: matrixWidth }}>
-              <div
+                {r.label}
+              </span>
+              <span
                 style={{
-                  display: 'grid',
-                  gridTemplateColumns: `repeat(${columns.length}, ${CELL_W}px)`,
-                  columnGap: COL_GAP,
-                  padding: '0 8px',
+                  flexShrink: 0,
+                  fontSize: 9,
+                  fontWeight: 600,
+                  letterSpacing: 'var(--apple-track-loose)',
+                  textTransform: 'uppercase',
+                  padding: '1px 5px',
+                  borderRadius: 3,
+                  background: r.isFund ? 'rgba(52,199,89,0.12)' : 'rgba(0,0,0,0.05)',
+                  color: r.isFund ? 'rgb(52,199,89)' : 'var(--apple-text-tertiary)',
                 }}
               >
-                {columns.map(c => {
-                  const headColor =
-                    c.batch.outcome === 'Up'
-                      ? 'rgb(52,199,89)'
-                      : c.batch.outcome === 'Down'
-                      ? 'rgb(255,59,48)'
-                      : 'var(--apple-text-tertiary)'
-                  return (
-                    <div
-                      key={`h-${c.batch.batchId}`}
-                      title={`${formatTime(new Date(c.batch.settledAt).getTime())}${
-                        c.upPct !== null && c.downPct !== null
-                          ? ` · ↑${c.upPct.toFixed(0)}% / ↓${c.downPct.toFixed(0)}%`
-                          : ''
+                {r.isFund ? 'FUND' : 'BOT'}
+              </span>
+            </div>
+          ))}
+          {!hasMatrix && (
+            <div
+              style={{
+                padding: '14px',
+                fontSize: 12,
+                color: 'var(--apple-text-tertiary)',
+              }}
+            >
+              No participants yet.
+            </div>
+          )}
+        </div>
+
+        {/* Right scroll surface — chart (top) + odds row + cells, all in lockstep. */}
+        <div
+          ref={scrollRef}
+          style={{ flex: 1, overflowX: 'auto', overflowY: 'hidden' }}
+        >
+          <div style={{ width: innerWidth, position: 'relative' }}>
+            {/* Chart */}
+            <svg
+              width={innerWidth}
+              height={CHART_HEIGHT}
+              style={{ display: 'block' }}
+            >
+              {/* Faint vertical guides at each settlement */}
+              {columns.map((c, i) => {
+                const x = xForIdx(i)
+                const guideColor =
+                  c.batch.outcome === 'Up'
+                    ? 'rgba(52,199,89,0.10)'
+                    : c.batch.outcome === 'Down'
+                    ? 'rgba(255,59,48,0.10)'
+                    : 'rgba(148,163,184,0.10)'
+                return (
+                  <line
+                    key={`g-${c.batch.batchId}`}
+                    x1={x}
+                    x2={x}
+                    y1={12}
+                    y2={CHART_HEIGHT - 12}
+                    stroke={guideColor}
+                    strokeWidth={CELL_W}
+                  />
+                )
+              })}
+              {/* Line */}
+              {linePath ? (
+                <path d={linePath} stroke={lineColor} strokeWidth={1.5} fill="none" />
+              ) : null}
+              {fallbackPath ? (
+                <path
+                  d={fallbackPath}
+                  stroke={lineColor}
+                  strokeWidth={1.5}
+                  fill="none"
+                />
+              ) : null}
+              {/* Settlement dots */}
+              {seriesValues.map((v, i) => {
+                if (v == null) return null
+                const c = columns[i]
+                const dotColor =
+                  c.batch.outcome === 'Up'
+                    ? '#16a34a'
+                    : c.batch.outcome === 'Down'
+                    ? '#dc2626'
+                    : '#94a3b8'
+                return (
+                  <circle
+                    key={`dot-${c.batch.batchId}`}
+                    cx={xForIdx(i)}
+                    cy={yForValue(v)}
+                    r={2.5}
+                    fill={dotColor}
+                  >
+                    <title>
+                      {`${formatTime(new Date(c.batch.settledAt).getTime())} · ${
+                        isPrice ? '$' : ''
+                      }${formatValue(v, isPrice)}${
+                        !isPrice && valueUnit ? ` ${valueUnit}` : ''
                       }`}
-                      style={{
-                        height: 36,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        borderBottom: '1px solid var(--apple-line)',
-                        lineHeight: 1.1,
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontSize: 10,
-                          fontWeight: 600,
-                          color: headColor,
-                          fontVariantNumeric: 'tabular-nums',
-                        }}
-                      >
-                        #{c.batch.batchId}
-                      </span>
-                      {c.upPct !== null && c.downPct !== null ? (
-                        <span
-                          style={{
-                            marginTop: 2,
-                            fontSize: 9,
-                            color: 'var(--apple-text-tertiary)',
-                            fontVariantNumeric: 'tabular-nums',
-                          }}
-                        >
-                          {c.upPct.toFixed(0)}/{c.downPct.toFixed(0)}
-                        </span>
-                      ) : null}
-                    </div>
-                  )
-                })}
-                {rows.flatMap(r =>
-                  r.cells.map((cell, colIdx) => (
-                    <div
-                      key={`${r.player}-${colIdx}`}
-                      style={{
-                        height: ROW_H,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        borderBottom: '1px solid rgba(0,0,0,0.04)',
-                      }}
-                    >
-                      <CellGlyph side={cell.side} won={cell.won} />
-                    </div>
-                  )),
-                )}
-              </div>
+                    </title>
+                  </circle>
+                )
+              })}
+            </svg>
+
+            {/* Odds row — winner multiplier under each chart point. */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: `repeat(${Math.max(1, colCount)}, ${CELL_W}px)`,
+                columnGap: COL_GAP,
+                padding: `0 ${X_PADDING}px`,
+                borderTop: '1px solid var(--apple-line)',
+                borderBottom: '1px solid var(--apple-line)',
+                height: HEADER_H,
+              }}
+            >
+              {columns.map((c, i) => {
+                const color =
+                  c.winSide === 'Up'
+                    ? 'rgb(52,199,89)'
+                    : c.winSide === 'Down'
+                    ? 'rgb(255,59,48)'
+                    : 'var(--apple-text-tertiary)'
+                return (
+                  <div
+                    key={`o-${i}`}
+                    title={`${formatTime(new Date(c.batch.settledAt).getTime())}${
+                      c.mult != null ? ` · winner pays ${c.mult.toFixed(2)}x` : ''
+                    }`}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      height: HEADER_H,
+                      fontSize: 10,
+                      fontWeight: 600,
+                      color,
+                      fontVariantNumeric: 'tabular-nums',
+                    }}
+                  >
+                    {c.mult != null ? `${c.mult.toFixed(2)}×` : '—'}
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Body cells — same grid template as the odds row. */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: `repeat(${Math.max(1, colCount)}, ${CELL_W}px)`,
+                columnGap: COL_GAP,
+                padding: `0 ${X_PADDING}px`,
+              }}
+            >
+              {rows.flatMap(r =>
+                r.cells.map((cell, colIdx) => (
+                  <div
+                    key={`${r.player}-${colIdx}`}
+                    style={{
+                      height: ROW_H,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderBottom: '1px solid rgba(0,0,0,0.04)',
+                    }}
+                  >
+                    <CellGlyph side={cell.side} won={cell.won} />
+                  </div>
+                )),
+              )}
             </div>
           </div>
         </div>
-      )}
+      </div>
     </section>
   )
+}
+
+function YAxisTicks({
+  yMin,
+  yMax,
+  isPrice,
+}: {
+  yMin: number
+  yMax: number
+  isPrice: boolean
+}) {
+  if (!isFinite(yMin) || !isFinite(yMax) || yMax === yMin) return null
+  const ticks = 4
+  const out: { v: number; pct: number }[] = []
+  for (let i = 0; i <= ticks; i++) {
+    const v = yMin + ((yMax - yMin) * i) / ticks
+    out.push({ v, pct: (1 - i / ticks) * 100 })
+  }
+  return (
+    <div style={{ position: 'absolute', inset: 0 }}>
+      {out.map((t, i) => (
+        <div
+          key={i}
+          style={{
+            position: 'absolute',
+            top: `${t.pct}%`,
+            right: 12,
+            transform: 'translateY(-50%)',
+            fontSize: 10,
+            color: 'var(--apple-text-tertiary)',
+            fontVariantNumeric: 'tabular-nums',
+          }}
+        >
+          {isPrice ? '$' : ''}
+          {formatValue(t.v, isPrice)}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+const cardClass = 'border overflow-hidden'
+const cardStyle: React.CSSProperties = {
+  background: 'var(--apple-panel)',
+  borderColor: 'var(--apple-line)',
+  borderRadius: 'var(--apple-r-card)',
+}
+
+const emptyState: React.CSSProperties = {
+  height: 160,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  color: 'var(--apple-text-tertiary)',
+  fontSize: 13,
+  borderTop: '1px solid var(--apple-line)',
 }
 
 function WindowToggle({
@@ -635,7 +721,6 @@ function WindowToggle({
         background: 'rgba(0,0,0,0.04)',
         borderRadius: 999,
         padding: 2,
-        gap: 0,
       }}
     >
       {WINDOW_OPTIONS.map(opt => {
@@ -668,73 +753,6 @@ function WindowToggle({
   )
 }
 
-interface SignalItem {
-  ts: number
-  color: string
-  batchId: number
-}
-
-function SignalStrip({
-  domain,
-  items,
-}: {
-  domain: [number, number]
-  items: SignalItem[]
-}) {
-  const [tMin, tMax] = domain
-  const span = Math.max(1, tMax - tMin)
-  return (
-    <div
-      style={{
-        position: 'relative',
-        height: SIGNAL_H,
-        marginTop: 2,
-        marginBottom: 2,
-        padding: '0 16px 0 72px',
-        // Right padding mirrors chart right margin so dots align with chart line area.
-        paddingRight: 28,
-      }}
-    >
-      <div
-        style={{
-          position: 'absolute',
-          inset: 'auto 28px 50% 72px',
-          height: 1,
-          background: 'rgba(0,0,0,0.05)',
-        }}
-      />
-      {items.map(it => {
-        if (it.ts < tMin || it.ts > tMax) return null
-        const left = ((it.ts - tMin) / span) * 100
-        return (
-          <span
-            key={`s-${it.batchId}`}
-            title={`#${it.batchId}`}
-            style={{
-              position: 'absolute',
-              top: '50%',
-              left: `calc(${left}% + 0px)`,
-              transform: 'translate(-50%, -50%)',
-              width: 5,
-              height: 5,
-              borderRadius: 999,
-              background: it.color,
-              boxShadow: '0 0 0 1px rgba(255,255,255,0.7)',
-            }}
-          />
-        )
-      })}
-    </div>
-  )
-}
-
-const cardClass = 'border overflow-hidden'
-const cardStyle: React.CSSProperties = {
-  background: 'var(--apple-panel)',
-  borderColor: 'var(--apple-line)',
-  borderRadius: 'var(--apple-r-card)',
-}
-
 function Header({
   isPrice,
   valueUnit,
@@ -759,7 +777,14 @@ function Header({
       className="flex items-center justify-between px-5 sm:px-6 pt-5 pb-3"
       style={{ gap: 16, flexWrap: 'wrap' }}
     >
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, flexWrap: 'wrap' }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 16,
+          flexWrap: 'wrap',
+        }}
+      >
         <h2
           style={{
             fontFamily: 'var(--apple-font-display)',
@@ -788,7 +813,7 @@ function Header({
             {!isPrice && valueUnit ? ` ${valueUnit}` : ''}
           </span>
         )}
-        {changePct !== null && changePct !== undefined && (
+        {changePct != null && (
           <span
             style={{
               fontSize: 12,
@@ -811,7 +836,7 @@ function Header({
             textTransform: 'uppercase',
           }}
         >
-          ▲ up · ▼ down · faded = lost
+          ▲ up · ▼ down · faded = lost · row above = winner pays
         </span>
       ) : null}
     </header>
