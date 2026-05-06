@@ -7,15 +7,14 @@ import { FPS, H, W, colors } from "./theme";
 // Layer 1 — the fine uniform dot grid that fills the entire canvas. Faint
 // Base blue. Reads as paper texture, not as a foreground element. Static.
 //
-// Layer 2 — the bold horizontal bands. Tightly-packed rows of saturated
-// Base blue dots. They stream horizontally at varying velocities so the
-// field reads as accelerating. Faster bands have tighter spacing — that
-// contrast is what registers as motion.
+// Layer 2 — the bold horizontal bands. They share the grid's spacing and
+// dot positions; what makes a band a band is that its dots are saturated
+// rather than faint, and that 1, 2 or 3 grid rows can be stacked together
+// to give the band visible thickness. The band stream travels horizontally
+// at varied velocities — that contrast reads as acceleration.
 //
-// Each band wraps modularly: when a dot exits the right edge it reappears
-// on the left so the stream is continuous.
-
-// ─── Layer 1 — uniform background grid (static) ──────────────────────────────
+// Each band wraps modularly: when its leading dot exits the right edge it
+// reappears on the left so the stream is continuous.
 
 const FINE_SPACING_X = 14;
 const FINE_SPACING_Y = 14;
@@ -27,67 +26,67 @@ const FINE_ALPHA = 0.22;
 type Band = {
   // Vertical center of the band, fraction of canvas height.
   y: number;
-  // Effective length of the band as drawn at any instant, fraction of width.
-  // The shorter the length, the more "streak"-like the band.
+  // Effective length, fraction of width.
   len: number;
-  // Anchor — fraction of width where the band's mid-point sits when the
-  // global cycle phase is 0. Lets us cluster bands around chosen rows.
+  // Anchor — fraction of width where the band's mid-point sits when phase=0.
   anchor: number;
-  // Dot spacing (px). Smaller = denser/faster-feeling.
-  spacing: number;
-  // Dot radius (px).
-  radius: number;
+  // Number of grid rows this band occupies (1, 2 or 3).
+  rows: number;
   // Peak alpha at band center.
   alpha: number;
-  // Horizontal velocity (px/sec). Positive = drift right.
+  // Horizontal velocity (px/sec).
   velocity: number;
-  // Phase offset (0..1) so bands don't all hit the same x at the same frame.
+  // Phase offset (0..1) so bands don't all hit the anchor at the same frame.
   phase: number;
 };
 
-// Bands clustered in three vertical zones — top, mid, bottom — like the
-// Base reference. Speeds vary so the field has fast streaks alongside
-// slow drifts; that contrast reads as acceleration.
+// Bands clustered in three vertical zones — top, mid, bottom. Speeds vary
+// so fast streaks live alongside slow drifts; the contrast reads as motion.
 const BANDS: Band[] = [
-  // ── Top cluster (3 bands very close in y, different speeds)
-  { y: 0.045, len: 0.62, anchor: 0.30, spacing: 7, radius: 2.4, alpha: 0.95, velocity: 380, phase: 0.00 },
-  { y: 0.062, len: 0.58, anchor: 0.46, spacing: 6, radius: 2.4, alpha: 0.95, velocity: 540, phase: 0.30 },
-  { y: 0.078, len: 0.42, anchor: 0.22, spacing: 7, radius: 2.4, alpha: 0.92, velocity: 320, phase: 0.55 },
+  // ── Top cluster
+  { y: 0.045, len: 0.62, anchor: 0.30, rows: 2, alpha: 0.95, velocity: 380, phase: 0.00 },
+  { y: 0.080, len: 0.58, anchor: 0.46, rows: 1, alpha: 0.92, velocity: 540, phase: 0.30 },
+  { y: 0.115, len: 0.42, anchor: 0.22, rows: 2, alpha: 0.95, velocity: 320, phase: 0.55 },
 
   // ── Mid-upper accent
-  { y: 0.18, len: 0.50, anchor: 0.70, spacing: 6, radius: 2.4, alpha: 0.92, velocity: 620, phase: 0.10 },
-  { y: 0.197, len: 0.30, anchor: 0.84, spacing: 6, radius: 2.4, alpha: 0.92, velocity: 720, phase: 0.40 },
+  { y: 0.21, len: 0.50, anchor: 0.70, rows: 1, alpha: 0.92, velocity: 620, phase: 0.10 },
+  { y: 0.245, len: 0.30, anchor: 0.84, rows: 2, alpha: 0.95, velocity: 720, phase: 0.40 },
 
-  // ── Quiet middle (one short fast streak so the eye keeps the rhythm)
-  { y: 0.42, len: 0.18, anchor: 0.10, spacing: 6, radius: 2.2, alpha: 0.85, velocity: 820, phase: 0.65 },
+  // ── Quiet middle (one short fast streak)
+  { y: 0.42, len: 0.18, anchor: 0.10, rows: 1, alpha: 0.85, velocity: 820, phase: 0.65 },
 
   // ── Lower-mid accent
-  { y: 0.61, len: 0.36, anchor: 0.78, spacing: 6, radius: 2.3, alpha: 0.90, velocity: 580, phase: 0.20 },
-  { y: 0.628, len: 0.22, anchor: 0.88, spacing: 6, radius: 2.3, alpha: 0.90, velocity: 700, phase: 0.50 },
+  { y: 0.62, len: 0.36, anchor: 0.78, rows: 2, alpha: 0.92, velocity: 580, phase: 0.20 },
+  { y: 0.655, len: 0.22, anchor: 0.88, rows: 1, alpha: 0.90, velocity: 700, phase: 0.50 },
 
-  // ── Bottom cluster (mirror of top)
-  { y: 0.85, len: 0.58, anchor: 0.62, spacing: 7, radius: 2.4, alpha: 0.95, velocity: 360, phase: 0.05 },
-  { y: 0.867, len: 0.62, anchor: 0.42, spacing: 6, radius: 2.4, alpha: 0.95, velocity: 500, phase: 0.35 },
-  { y: 0.884, len: 0.46, anchor: 0.74, spacing: 7, radius: 2.4, alpha: 0.92, velocity: 280, phase: 0.60 },
+  // ── Bottom cluster
+  { y: 0.85, len: 0.58, anchor: 0.62, rows: 2, alpha: 0.95, velocity: 360, phase: 0.05 },
+  { y: 0.885, len: 0.62, anchor: 0.42, rows: 1, alpha: 0.92, velocity: 500, phase: 0.35 },
+  { y: 0.92, len: 0.46, anchor: 0.74, rows: 3, alpha: 0.95, velocity: 280, phase: 0.60 },
 ];
 
-// Edge fade fraction — how much of the band length on each side fades to
-// zero. Same on both sides so streaks look symmetrical.
 const FADE_FRACTION = 0.18;
 
 type Props = {
-  // Multiplier on overall dot opacity. Default 1.
   intensity?: number;
-  // Multiplier on every band's velocity. 0 freezes the bands. Default 1.
   speed?: number;
 };
 
+// Snaps a fractional canvas y to the nearest grid row center.
+const snapToGridY = (frac: number) => {
+  const px = frac * H;
+  return Math.round(px / FINE_SPACING_Y) * FINE_SPACING_Y;
+};
+
+// Snaps a px x to the nearest grid column.
+const snapToGridX = (px: number) =>
+  Math.round(px / FINE_SPACING_X) * FINE_SPACING_X;
+
 export const DotGrid: React.FC<Props> = ({ intensity = 1, speed = 1 }) => {
   const frame = useCurrentFrame();
-  const t = frame / FPS; // seconds
-  const cycleW = W * 1.6; // wrap width — enough that bands always have somewhere to come from
+  const t = frame / FPS;
+  const cycleW = W * 1.6;
 
-  // Build the fine grid once.
   const fineCols = Math.ceil(W / FINE_SPACING_X) + 2;
   const fineRows = Math.ceil(H / FINE_SPACING_Y) + 2;
 
@@ -126,54 +125,59 @@ export const DotGrid: React.FC<Props> = ({ intensity = 1, speed = 1 }) => {
         })}
       </g>
 
-      {/* Layer 2 — streaming bands */}
+      {/* Layer 2 — moving bands. Aligned to the fine-grid lattice. */}
       <g>
         {BANDS.map((band, bi) => {
-          const yPx = band.y * H;
+          const yCenterPx = snapToGridY(band.y);
           const lenPx = band.len * W;
           const halfLen = lenPx / 2;
-
-          // Mid-x of the band drifts to the right and wraps modularly.
-          // Phase offset spreads bands across the cycle so they don't all
-          // arrive at the anchor at the same frame.
           const drift = band.velocity * speed * t;
           const phasePx = band.phase * cycleW;
           const wrappedMid =
             ((band.anchor * W + drift + phasePx) % cycleW + cycleW) % cycleW
             - cycleW * 0.3;
-          const x0Px = wrappedMid - halfLen;
-          const x1Px = wrappedMid + halfLen;
+          const x0 = snapToGridX(wrappedMid - halfLen);
+          const x1 = snapToGridX(wrappedMid + halfLen);
 
-          // Skip bands that are entirely off-screen.
-          if (x1Px < -20 || x0Px > W + 20) return null;
+          if (x1 < -20 || x0 > W + 20) return null;
 
           const fadePx = lenPx * FADE_FRACTION;
-          const count = Math.max(2, Math.floor(lenPx / band.spacing));
+          const cols = Math.max(2, Math.round((x1 - x0) / FINE_SPACING_X) + 1);
+
+          // Stack `rows` rows, centered vertically on yCenterPx.
+          const rowOffsets: number[] = [];
+          for (let r = 0; r < band.rows; r++) {
+            rowOffsets.push((r - (band.rows - 1) / 2) * FINE_SPACING_Y);
+          }
 
           return (
             <g key={`b${bi}`}>
-              {Array.from({ length: count }).map((_, di) => {
-                const x = x0Px + di * band.spacing;
-                if (x < -10 || x > W + 10) return null;
+              {rowOffsets.map((yOff, ri) => (
+                <g key={`b${bi}r${ri}`}>
+                  {Array.from({ length: cols }).map((_, di) => {
+                    const x = x0 + di * FINE_SPACING_X;
+                    if (x < -10 || x > W + 10) return null;
 
-                const fromStart = x - x0Px;
-                const fromEnd = x1Px - x;
-                let alphaScale = 1;
-                if (fromStart < fadePx) alphaScale *= fromStart / fadePx;
-                if (fromEnd < fadePx) alphaScale *= fromEnd / fadePx;
-                alphaScale = Math.max(0, Math.min(1, alphaScale));
+                    const fromStart = x - x0;
+                    const fromEnd = x1 - x;
+                    let alphaScale = 1;
+                    if (fromStart < fadePx) alphaScale *= fromStart / fadePx;
+                    if (fromEnd < fadePx) alphaScale *= fromEnd / fadePx;
+                    alphaScale = Math.max(0, Math.min(1, alphaScale));
 
-                return (
-                  <circle
-                    key={`d${di}`}
-                    cx={x}
-                    cy={yPx}
-                    r={band.radius}
-                    fill={colors.accent}
-                    opacity={band.alpha * alphaScale * intensity}
-                  />
-                );
-              })}
+                    return (
+                      <circle
+                        key={`d${di}`}
+                        cx={x}
+                        cy={yCenterPx + yOff}
+                        r={FINE_RADIUS}
+                        fill={colors.accent}
+                        opacity={band.alpha * alphaScale * intensity}
+                      />
+                    );
+                  })}
+                </g>
+              ))}
             </g>
           );
         })}
@@ -182,8 +186,6 @@ export const DotGrid: React.FC<Props> = ({ intensity = 1, speed = 1 }) => {
   );
 };
 
-// A faint vignette in the corners so headlines on the centerline get more
-// breathing room than the dot grid alone provides.
 export const DotGridVignette: React.FC<{ intensity?: number }> = ({
   intensity = 0.25,
 }) => (
@@ -197,8 +199,6 @@ export const DotGridVignette: React.FC<{ intensity?: number }> = ({
   />
 );
 
-// Optional intensity ramp for scene entries: dots fade up over the first
-// `inFrames`, hold, then optionally fade down before `outAt`.
 export const useGridIntensity = (
   inFrames = 8,
   outAt?: number,
@@ -218,3 +218,9 @@ export const useGridIntensity = (
   );
   return inT * outT;
 };
+
+// Re-export the grid lattice constants so scenes that inline a custom
+// dot grid (e.g. the inverted endcard) can stay aligned to the same spacing.
+export const GRID_SPACING_X = FINE_SPACING_X;
+export const GRID_SPACING_Y = FINE_SPACING_Y;
+export const GRID_DOT_RADIUS = FINE_RADIUS;

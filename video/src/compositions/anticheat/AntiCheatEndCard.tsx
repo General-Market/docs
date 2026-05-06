@@ -251,40 +251,114 @@ const GeneralMark: React.FC<{ size: number }> = ({ size }) => {
 // Same two-layer recipe as DotGrid, but in white over the blue field. Inlined
 // here because the fill color is the only difference.
 
+// Concentric wave fronts emanate from the logo center. Each fine-grid dot
+// brightens as a wave passes through, dimming back to the baseline. Several
+// waves run simultaneously at staggered phases — the choke effect.
+
 const FINE_SPACING = 14;
 const FINE_RADIUS = 1.6;
-const FINE_ALPHA = 0.22;
+const FINE_ALPHA_BASE = 0.18;
+const FINE_ALPHA_PEAK = 1.0;
+const WHITE = "#FFFFFF";
 
-type Band = {
-  y: number;
-  len: number;
-  anchor: number;
-  spacing: number;
-  radius: number;
-  alpha: number;
-  velocity: number;
-  phase: number;
+// Wave parameters — tuned for a slow continuous pulse, not a frantic strobe.
+const WAVE_COUNT = 5;
+const WAVE_PERIOD_SEC = 0.95;       // time between successive wave spawns
+const WAVE_SPEED_PX = 720;          // outward speed
+const WAVE_THICKNESS_PX = 90;       // how wide the bright band of each wave is
+const WAVE_LIFETIME_SEC = WAVE_COUNT * WAVE_PERIOD_SEC;
+const WAVE_MAX_RADIUS = WAVE_SPEED_PX * WAVE_LIFETIME_SEC;
+
+type WaveFront = {
+  radius: number;     // current radius (px)
+  intensity: number;  // 0..1, peaks mid-life and fades at start + end
 };
 
-const BANDS: Band[] = [
-  { y: 0.045, len: 0.62, anchor: 0.30, spacing: 7, radius: 2.4, alpha: 0.95, velocity: 380, phase: 0.00 },
-  { y: 0.062, len: 0.58, anchor: 0.46, spacing: 6, radius: 2.4, alpha: 0.95, velocity: 540, phase: 0.30 },
-  { y: 0.078, len: 0.42, anchor: 0.22, spacing: 7, radius: 2.4, alpha: 0.92, velocity: 320, phase: 0.55 },
-  { y: 0.85, len: 0.58, anchor: 0.62, spacing: 7, radius: 2.4, alpha: 0.95, velocity: 360, phase: 0.05 },
-  { y: 0.867, len: 0.62, anchor: 0.42, spacing: 6, radius: 2.4, alpha: 0.95, velocity: 500, phase: 0.35 },
-  { y: 0.884, len: 0.46, anchor: 0.74, spacing: 7, radius: 2.4, alpha: 0.92, velocity: 280, phase: 0.60 },
-];
-
-const FADE_FRACTION = 0.18;
-const WHITE = "#FFFFFF";
+const computeWaves = (timeSec: number): WaveFront[] => {
+  const waves: WaveFront[] = [];
+  for (let i = 0; i < WAVE_COUNT; i++) {
+    // Wave i was last spawned WAVE_PERIOD_SEC * i seconds ago, modulated
+    // by the wave-cycle so the system loops cleanly.
+    const phase =
+      ((timeSec - i * WAVE_PERIOD_SEC) % WAVE_LIFETIME_SEC + WAVE_LIFETIME_SEC) %
+      WAVE_LIFETIME_SEC;
+    const lifeT = phase / WAVE_LIFETIME_SEC;
+    const radius = phase * WAVE_SPEED_PX;
+    // Bell curve so each wave fades in then out across its lifetime.
+    const intensity = Math.sin(lifeT * Math.PI);
+    waves.push({ radius, intensity });
+  }
+  return waves;
+};
 
 const WhiteDotGrid: React.FC = () => {
   const frame = useCurrentFrame();
   const t = frame / FPS;
-  const cycleW = W * 1.6;
 
-  const fineCols = Math.ceil(W / FINE_SPACING) + 2;
-  const fineRows = Math.ceil(H / FINE_SPACING) + 2;
+  const cx = W / 2;
+  const cy = H / 2;
+
+  const waves = computeWaves(t);
+
+  const cols = Math.ceil(W / FINE_SPACING) + 2;
+  const rows = Math.ceil(H / FINE_SPACING) + 2;
+
+  // Render two passes for the wave dots — one at base alpha (always shown)
+  // and one boosted layer where waves pass through. The boosted dots use
+  // a slightly larger radius so the wave fronts read as a thicker ring
+  // crossing the field.
+  const baseDots: React.ReactNode[] = [];
+  const boostDots: React.ReactNode[] = [];
+
+  for (let ry = 0; ry < rows; ry++) {
+    const y = ry * FINE_SPACING - FINE_SPACING / 2;
+    for (let rx = 0; rx < cols; rx++) {
+      const x = rx * FINE_SPACING - FINE_SPACING / 2;
+      const dist = Math.hypot(x - cx, y - cy);
+
+      // Find the strongest wave influence on this dot.
+      let boost = 0;
+      for (const w of waves) {
+        const distFromFront = Math.abs(dist - w.radius);
+        if (distFromFront < WAVE_THICKNESS_PX) {
+          const local = 1 - distFromFront / WAVE_THICKNESS_PX;
+          // Ease the ring — soft tails, sharp peak.
+          const eased = local * local;
+          boost = Math.max(boost, eased * w.intensity);
+        }
+      }
+
+      const baseAlpha = FINE_ALPHA_BASE;
+      const k = `${ry},${rx}`;
+
+      baseDots.push(
+        <circle
+          key={`b${k}`}
+          cx={x}
+          cy={y}
+          r={FINE_RADIUS}
+          fill={WHITE}
+          opacity={baseAlpha}
+        />,
+      );
+
+      if (boost > 0.04) {
+        const peakAlpha =
+          baseAlpha + (FINE_ALPHA_PEAK - baseAlpha) * boost;
+        const radiusBoost = FINE_RADIUS * (1 + boost * 0.45);
+        boostDots.push(
+          <circle
+            key={`w${k}`}
+            cx={x}
+            cy={y}
+            r={radiusBoost}
+            fill={WHITE}
+            opacity={peakAlpha}
+          />,
+        );
+      }
+    }
+  }
 
   return (
     <svg
@@ -298,76 +372,14 @@ const WhiteDotGrid: React.FC = () => {
         pointerEvents: "none",
       }}
     >
-      <g opacity={FINE_ALPHA}>
-        {Array.from({ length: fineRows }).map((_, ry) => {
-          const y = ry * FINE_SPACING - FINE_SPACING / 2;
-          return (
-            <g key={`r${ry}`}>
-              {Array.from({ length: fineCols }).map((_, rx) => {
-                const x = rx * FINE_SPACING - FINE_SPACING / 2;
-                return (
-                  <circle
-                    key={`r${ry}c${rx}`}
-                    cx={x}
-                    cy={y}
-                    r={FINE_RADIUS}
-                    fill={WHITE}
-                  />
-                );
-              })}
-            </g>
-          );
-        })}
-      </g>
-
-      <g>
-        {BANDS.map((band, bi) => {
-          const yPx = band.y * H;
-          const lenPx = band.len * W;
-          const halfLen = lenPx / 2;
-          const drift = band.velocity * t;
-          const phasePx = band.phase * cycleW;
-          const wrappedMid =
-            ((band.anchor * W + drift + phasePx) % cycleW + cycleW) % cycleW
-            - cycleW * 0.3;
-          const x0Px = wrappedMid - halfLen;
-          const x1Px = wrappedMid + halfLen;
-          if (x1Px < -20 || x0Px > W + 20) return null;
-
-          const fadePx = lenPx * FADE_FRACTION;
-          const count = Math.max(2, Math.floor(lenPx / band.spacing));
-
-          return (
-            <g key={`b${bi}`}>
-              {Array.from({ length: count }).map((_, di) => {
-                const x = x0Px + di * band.spacing;
-                if (x < -10 || x > W + 10) return null;
-
-                const fromStart = x - x0Px;
-                const fromEnd = x1Px - x;
-                let alphaScale = 1;
-                if (fromStart < fadePx) alphaScale *= fromStart / fadePx;
-                if (fromEnd < fadePx) alphaScale *= fromEnd / fadePx;
-                alphaScale = Math.max(0, Math.min(1, alphaScale));
-
-                return (
-                  <circle
-                    key={`d${di}`}
-                    cx={x}
-                    cy={yPx}
-                    r={band.radius}
-                    fill={WHITE}
-                    opacity={band.alpha * alphaScale}
-                  />
-                );
-              })}
-            </g>
-          );
-        })}
-      </g>
+      <g>{baseDots}</g>
+      <g>{boostDots}</g>
     </svg>
   );
 };
+
+// Suppress unused warnings on the now-unused max radius constant.
+void WAVE_MAX_RADIUS;
 
 export const antiCheatEndCardMeta = {
   id: "AntiCheatEndCard",
