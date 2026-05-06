@@ -223,21 +223,18 @@ impl Checkpoint {
     }
 }
 
-/// Supported chain IDs for collateral tracking
+/// Supported chain IDs for collateral tracking. ITPs/DTFs are minted and
+/// held on L3 only — Settlement is retained as a constant for USDC custody
+/// bridging, but it does not appear in `ALL_CHAINS` because reconstruction
+/// only walks chains that actually carry per-ITP collateral.
 pub mod chains {
     /// Index L3 Orbit chain ID
     pub const INDEX_L3: u64 = 111222333;
-    /// Settlement chain ID (Arbitrum One)
+    /// Settlement chain ID (Arbitrum One) — used for USDC custody, not ITPs
     pub const SETTLEMENT: u64 = 42161;
-    /// Ethereum Mainnet chain ID
-    pub const ETHEREUM: u64 = 1;
-    /// Base chain ID
-    pub const BASE: u64 = 8453;
-    /// Optimism chain ID
-    pub const OPTIMISM: u64 = 10;
 
-    /// All supported chain IDs
-    pub const ALL_CHAINS: &[u64] = &[INDEX_L3, SETTLEMENT, ETHEREUM, BASE, OPTIMISM];
+    /// Chains walked during collateral reconstruction. L3 only.
+    pub const ALL_CHAINS: &[u64] = &[INDEX_L3];
 }
 
 #[cfg(test)]
@@ -289,7 +286,7 @@ mod tests {
     fn test_chain_constants() {
         assert_eq!(chains::INDEX_L3, 111222333);
         assert_eq!(chains::SETTLEMENT, 42161);
-        assert_eq!(chains::ALL_CHAINS.len(), 5);
+        assert_eq!(chains::ALL_CHAINS, &[chains::INDEX_L3]);
     }
 
     #[test]
