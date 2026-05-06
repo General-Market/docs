@@ -157,42 +157,119 @@ function isValid(
   return { ok: true }
 }
 
-// ── Aurora — drifting Vision-Pro backdrop ─────────────────
+// ── Aurora — five drifting blobs, big blur, hue creep ─────
+type Blob = {
+  size: number
+  color: string
+  top: string
+  left: string
+  duration: number
+  path: { x: number[]; y: number[]; scale: number[] }
+}
+
+const BLOBS: Blob[] = [
+  {
+    size: 720,
+    color: 'rgba(99,102,241,0.55)', // indigo
+    top: '-12%',
+    left: '-8%',
+    duration: 26,
+    path: { x: [0, 220, 80, -60, 0], y: [0, 120, 240, 80, 0], scale: [1, 1.18, 0.92, 1.08, 1] },
+  },
+  {
+    size: 640,
+    color: 'rgba(236,72,153,0.45)', // pink
+    top: '8%',
+    left: '62%',
+    duration: 32,
+    path: { x: [0, -180, -60, 100, 0], y: [0, 80, 200, 100, 0], scale: [1, 0.95, 1.2, 1, 1] },
+  },
+  {
+    size: 820,
+    color: 'rgba(34,211,238,0.42)', // cyan
+    top: '55%',
+    left: '12%',
+    duration: 38,
+    path: { x: [0, 160, 60, -120, 0], y: [0, -100, -220, -60, 0], scale: [1, 1.1, 0.88, 1.15, 1] },
+  },
+  {
+    size: 560,
+    color: 'rgba(167,139,250,0.50)', // violet
+    top: '32%',
+    left: '40%',
+    duration: 22,
+    path: { x: [0, -120, 140, 60, 0], y: [0, 140, -80, -40, 0], scale: [1, 1.25, 0.9, 1.05, 1] },
+  },
+  {
+    size: 480,
+    color: 'rgba(56,189,248,0.38)', // sky
+    top: '70%',
+    left: '70%',
+    duration: 30,
+    path: { x: [0, -200, 40, 120, 0], y: [0, -160, -60, 80, 0], scale: [1, 1.08, 1.22, 0.95, 1] },
+  },
+]
+
 function Aurora() {
+  const reduced = useReducedMotion()
   return (
     <>
       <div
         aria-hidden
-        className="pointer-events-none fixed inset-0 -z-20"
+        className="pointer-events-none fixed inset-0 -z-30"
         style={{
-          background:
-            'radial-gradient(1100px 720px at 12% 18%, rgba(99,102,241,0.32), transparent 65%),' +
-            'radial-gradient(960px 640px at 88% 82%, rgba(236,72,153,0.22), transparent 65%),' +
-            'radial-gradient(820px 580px at 50% 108%, rgba(34,211,238,0.22), transparent 70%),' +
-            'linear-gradient(180deg, #F5F5F7 0%, #ECECF1 100%)',
+          background: 'linear-gradient(180deg, #F5F5F7 0%, #ECECF1 100%)',
         }}
       />
       <motion.div
         aria-hidden
+        className="pointer-events-none fixed inset-0 -z-20 overflow-hidden"
+        animate={reduced ? undefined : { filter: ['hue-rotate(0deg) blur(70px)', 'hue-rotate(18deg) blur(70px)', 'hue-rotate(-12deg) blur(70px)', 'hue-rotate(0deg) blur(70px)'] }}
+        transition={{ duration: 48, repeat: Infinity, ease: 'easeInOut' }}
+        style={{ filter: 'blur(70px)' }}
+      >
+        {BLOBS.map((b, i) => (
+          <motion.div
+            key={i}
+            className="absolute rounded-full"
+            style={{
+              top: b.top,
+              left: b.left,
+              width: b.size,
+              height: b.size,
+              background: `radial-gradient(circle at 50% 50%, ${b.color} 0%, transparent 65%)`,
+              willChange: 'transform',
+            }}
+            initial={{ x: 0, y: 0, scale: 1 }}
+            animate={
+              reduced
+                ? undefined
+                : { x: b.path.x, y: b.path.y, scale: b.path.scale }
+            }
+            transition={{
+              duration: b.duration,
+              repeat: Infinity,
+              ease: 'easeInOut',
+              times: [0, 0.25, 0.5, 0.75, 1],
+            }}
+          />
+        ))}
+      </motion.div>
+      <motion.div
+        aria-hidden
         className="pointer-events-none fixed inset-0 -z-10"
-        animate={{
-          backgroundPosition: ['0% 0%', '60% 40%', '0% 100%', '0% 0%'],
-        }}
-        transition={{ duration: 36, repeat: Infinity, ease: 'easeInOut' }}
+        animate={reduced ? undefined : { opacity: [0.6, 1, 0.7, 1, 0.6] }}
+        transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut' }}
         style={{
           background:
-            'radial-gradient(900px 700px at 70% 30%, rgba(167,139,250,0.22), transparent 65%),' +
-            'radial-gradient(700px 520px at 20% 70%, rgba(56,189,248,0.18), transparent 65%)',
-          backgroundSize: '160% 160%',
-          filter: 'blur(50px)',
+            'radial-gradient(1400px 900px at 50% -10%, rgba(255,255,255,0.45), transparent 60%)',
         }}
       />
       <div
         aria-hidden
         className="pointer-events-none fixed inset-0 -z-10 opacity-[0.35]"
         style={{
-          backgroundImage:
-            'radial-gradient(rgba(0,0,0,0.5) 1px, transparent 1px)',
+          backgroundImage: 'radial-gradient(rgba(0,0,0,0.5) 1px, transparent 1px)',
           backgroundSize: '3px 3px',
           mixBlendMode: 'overlay',
         }}
