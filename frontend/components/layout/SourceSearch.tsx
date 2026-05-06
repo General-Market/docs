@@ -3,6 +3,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { useRouter } from '@/i18n/routing'
 import { useSourceRegistry } from '@/hooks/vision/useSourceRegistry'
+import { useSourceStats } from '@/hooks/useSourceStats'
 import Image from 'next/image'
 import { SearchIcon } from './apple-icons'
 
@@ -11,10 +12,15 @@ type SearchResult = {
   name: string
   category: string
   logo: string
+  settlements: number
 }
 
 const MAX_RESULTS_TYPING = 8
-const MAX_RESULTS_BROWSE = 16
+
+const compactNumber = new Intl.NumberFormat('en-US', {
+  notation: 'compact',
+  maximumFractionDigits: 1,
+})
 
 function fuzzyScore(haystack: string, needle: string): number {
   const h = haystack.toLowerCase()
@@ -71,38 +77,66 @@ function ResultLogo({ logo, name }: { logo: string; name: string }) {
 export function SourceSearch() {
   const router = useRouter()
   const { sources } = useSourceRegistry()
+  const { byId: statsById } = useSourceStats()
   const [q, setQ] = useState('')
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState(0)
   const ref = useRef<HTMLDivElement | null>(null)
 
+  // Settlement count per display source = sum of settled_batches across all
+  // internalIds. The data-node keys lifecycle rows by internal id, so a
+  // display source like `coingecko` aggregates from `crypto`.
+  const settlementsBySource = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const s of sources) {
+      const ids = s.internalIds?.length ? s.internalIds : [s.sourceId]
+      let total = 0
+      for (const id of ids) {
+        total += statsById.get(id.toLowerCase())?.settledBatches ?? 0
+      }
+      m.set(s.sourceId, total)
+    }
+    return m
+  }, [sources, statsById])
+
   const results: SearchResult[] = useMemo(() => {
     const trimmed = q.trim()
+    const decorate = (s: typeof sources[number]): SearchResult => ({
+      sourceId: s.sourceId,
+      name: s.name,
+      category: s.category,
+      logo: s.logo,
+      settlements: settlementsBySource.get(s.sourceId) ?? 0,
+    })
     if (!trimmed) {
-      // Browse mode: show alphabetically sorted sources up to MAX_RESULTS_BROWSE.
+      // Browse mode: every source, ranked by lifetime settlement count desc.
+      // Ties fall back to alphabetical so the list is stable when stats lag.
       return [...sources]
-        .sort((a, b) => a.name.localeCompare(b.name))
-        .slice(0, MAX_RESULTS_BROWSE)
-        .map((s) => ({
-          sourceId: s.sourceId,
-          name: s.name,
-          category: s.category,
-          logo: s.logo,
-        }))
+        .map(decorate)
+        .sort((a, b) => {
+          if (b.settlements !== a.settlements) return b.settlements - a.settlements
+          return a.name.localeCompare(b.name)
+        })
     }
     return sources
       .map((s) => ({
-        sourceId: s.sourceId,
-        name: s.name,
-        category: s.category,
-        logo: s.logo,
+        ...decorate(s),
         score: Math.max(fuzzyScore(s.name, trimmed), fuzzyScore(s.category, trimmed)),
       }))
       .filter((r) => r.score > 0)
-      .sort((a, b) => b.score - a.score)
+      .sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score
+        return b.settlements - a.settlements
+      })
       .slice(0, MAX_RESULTS_TYPING)
-      .map(({ sourceId, name, category, logo }) => ({ sourceId, name, category, logo }))
-  }, [q, sources])
+      .map(({ sourceId, name, category, logo, settlements }) => ({
+        sourceId,
+        name,
+        category,
+        logo,
+        settlements,
+      }))
+  }, [q, sources, settlementsBySource])
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
@@ -218,6 +252,7 @@ export function SourceSearch() {
                 {r.name}
               </span>
               <span
+                className="flex items-center gap-2 shrink-0"
                 style={{
                   fontSize: 11,
                   color: 'var(--apple-text-tertiary)',
@@ -225,7 +260,19 @@ export function SourceSearch() {
                   textTransform: 'uppercase',
                 }}
               >
-                {r.category}
+                <span>{r.category}</span>
+                {r.settlements > 0 && (
+                  <span
+                    title={`${r.settlements.toLocaleString()} settlements`}
+                    style={{
+                      fontVariantNumeric: 'tabular-nums',
+                      color: 'var(--apple-text-secondary)',
+                      fontWeight: 500,
+                    }}
+                  >
+                    {compactNumber.format(r.settlements)}
+                  </span>
+                )}
               </span>
             </button>
           ))}

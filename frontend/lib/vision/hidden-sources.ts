@@ -9,6 +9,7 @@
  */
 export const HIDDEN_SOURCE_IDS = new Set<string>([
   'tubes',
+  'chaturbate',
 ])
 
 export function isHiddenSourceId(id: unknown): boolean {
