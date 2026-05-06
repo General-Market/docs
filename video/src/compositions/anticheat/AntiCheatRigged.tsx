@@ -23,6 +23,7 @@ const ARTICLES_AT = toFrames(0.4);
 const ARTICLE_HOLD = toFrames(0.7);
 
 const PROOF_GREEN = "#22d97a";
+const PROOF_GREEN_LIGHT = "#52ffa2";
 
 type Highlight = { x: number; y: number; w: number; h: number };
 
