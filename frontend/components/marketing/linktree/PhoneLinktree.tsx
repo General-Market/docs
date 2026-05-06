@@ -1,7 +1,7 @@
 'use client'
 
-import { Suspense, useEffect, useRef } from 'react'
-import { Canvas, useFrame } from '@react-three/fiber'
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { ContactShadows, Html, useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
 import { LinkMenu } from './LinkMenu'
@@ -9,11 +9,29 @@ import { LinkMenu } from './LinkMenu'
 const MODEL_URL = '/models/tabletop_macbook_iphone.opt.glb'
 useGLTF.preload(MODEL_URL)
 
-// Phone is roughly 3.4 units tall after the GLB scale of 22.486.
-// Top 40% spans ~1.36 units; we move the phone up by ±1.36 so scrolling
-// drives the camera through the menu instead of past empty page.
-const SCROLL_TRAVEL = 1.36
-const PHONE_TOP_OFFSET = -SCROLL_TRAVEL
+type Responsive = {
+  distance: number
+  topOffset: number
+  scrollTravel: number
+  htmlScale: number
+}
+
+function readResponsive(): Responsive {
+  if (typeof window === 'undefined') {
+    return { distance: 3.06, topOffset: -1.0, scrollTravel: 2.0, htmlScale: 0.16 }
+  }
+  const aspect = window.innerWidth / Math.max(1, window.innerHeight)
+  // Wide screen — original framing.
+  if (aspect >= 1.2) {
+    return { distance: 3.06, topOffset: -1.0, scrollTravel: 2.0, htmlScale: 0.16 }
+  }
+  // Tablet / squarish — pull the camera back so the phone width fits.
+  if (aspect >= 0.7) {
+    return { distance: 4.2, topOffset: -0.7, scrollTravel: 1.3, htmlScale: 0.16 }
+  }
+  // Phone portrait — sit further back; less scroll travel because more is visible.
+  return { distance: 5.6, topOffset: -0.4, scrollTravel: 0.8, htmlScale: 0.16 }
+}
 
 type TiltRef = React.MutableRefObject<{
   scrollProgress: number
@@ -21,7 +39,17 @@ type TiltRef = React.MutableRefObject<{
   pitch: number
 }>
 
-function PhoneScene({ tilt }: { tilt: TiltRef }) {
+function CameraRig({ distance }: { distance: number }) {
+  const { camera } = useThree()
+  useEffect(() => {
+    camera.position.set(0, 0, -distance)
+    camera.lookAt(0, 0, 0)
+    if (camera instanceof THREE.PerspectiveCamera) camera.updateProjectionMatrix()
+  }, [camera, distance])
+  return null
+}
+
+function PhoneScene({ tilt, responsive }: { tilt: TiltRef; responsive: Responsive }) {
   const gltf = useGLTF(MODEL_URL)
   const groupRef = useRef<THREE.Group>(null)
 
@@ -41,7 +69,7 @@ function PhoneScene({ tilt }: { tilt: TiltRef }) {
   useFrame(() => {
     const g = groupRef.current
     if (!g) return
-    const targetY = PHONE_TOP_OFFSET + tilt.current.scrollProgress * SCROLL_TRAVEL * 2
+    const targetY = responsive.topOffset + tilt.current.scrollProgress * responsive.scrollTravel
     g.position.y = THREE.MathUtils.lerp(g.position.y, targetY, 0.12)
     g.rotation.y = THREE.MathUtils.lerp(g.rotation.y, tilt.current.yaw, 0.1)
     g.rotation.x = THREE.MathUtils.lerp(g.rotation.x, tilt.current.pitch, 0.1)
@@ -52,7 +80,7 @@ function PhoneScene({ tilt }: { tilt: TiltRef }) {
       <primitive object={gltf.scene} />
       <ContactShadows
         position={[0, -1.78, 0]}
-        opacity={0.3}
+        opacity={0.28}
         scale={6}
         blur={2.2}
         far={4}
@@ -61,7 +89,7 @@ function PhoneScene({ tilt }: { tilt: TiltRef }) {
         transform
         position={[0, 0, -0.085]}
         rotation={[0, Math.PI, 0]}
-        scale={0.0042}
+        scale={responsive.htmlScale}
         occlude={false}
         zIndexRange={[1, 0]}
         wrapperClass="lt-html-wrapper"
@@ -74,6 +102,18 @@ function PhoneScene({ tilt }: { tilt: TiltRef }) {
 
 export function PhoneLinktree() {
   const tilt = useRef({ scrollProgress: 0, yaw: 0, pitch: 0 })
+  const [responsive, setResponsive] = useState<Responsive>(() => readResponsive())
+
+  useEffect(() => {
+    const update = () => setResponsive(readResponsive())
+    update()
+    window.addEventListener('resize', update)
+    window.addEventListener('orientationchange', update)
+    return () => {
+      window.removeEventListener('resize', update)
+      window.removeEventListener('orientationchange', update)
+    }
+  }, [])
 
   useEffect(() => {
     const onScroll = () => {
@@ -97,11 +137,18 @@ export function PhoneLinktree() {
     }
   }, [])
 
+  // Page tall enough to give scroll room without trapping the user
+  // on tiny mobile viewports where most of the phone is already visible.
+  const pageHeight = useMemo(() => {
+    if (responsive.scrollTravel >= 1.5) return '240vh'
+    if (responsive.scrollTravel >= 1.0) return '200vh'
+    return '160vh'
+  }, [responsive.scrollTravel])
+
   return (
-    <main className="lt-page">
+    <main className="lt-page" style={{ minHeight: pageHeight }}>
       <style>{`
         .lt-page {
-          min-height: 240vh;
           background:
             radial-gradient(70% 60% at 50% 38%, #ffffff 0%, #f4f4f6 65%, #ececef 100%);
           color: #1d1d1f;
@@ -125,7 +172,7 @@ export function PhoneLinktree() {
           height: 100vh;
           z-index: 1;
         }
-        .lt-stage canvas { touch-action: none; }
+        .lt-stage canvas { touch-action: pan-y; }
         .lt-html-wrapper { pointer-events: none; }
         .lt-html-wrapper > div { pointer-events: auto; }
       `}</style>
@@ -133,7 +180,7 @@ export function PhoneLinktree() {
       <div className="lt-stage">
         <Canvas
           dpr={[1, 2]}
-          camera={{ position: [0, 0, -2.55], fov: 30 }}
+          camera={{ position: [0, 0, -responsive.distance], fov: 30 }}
           gl={{
             antialias: true,
             alpha: true,
@@ -142,8 +189,9 @@ export function PhoneLinktree() {
           }}
           style={{ background: 'transparent' }}
         >
+          <CameraRig distance={responsive.distance} />
           <Suspense fallback={null}>
-            <PhoneScene tilt={tilt} />
+            <PhoneScene tilt={tilt} responsive={responsive} />
             <hemisphereLight args={['#ffffff', '#dde3ec', 0.9]} />
             <ambientLight intensity={0.55} />
             <directionalLight position={[3, 6, -4]} intensity={2.2} />
