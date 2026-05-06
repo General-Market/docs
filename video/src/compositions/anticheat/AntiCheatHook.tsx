@@ -140,12 +140,12 @@ export const AntiCheatHook: React.FC = () => {
 
 // ─── Left panel broll: a clean sequential timeline with crossfades ────────────
 //
-// 0.0–3.0s   minecraft-killaura
-// 3.0–6.0s   cs2-spinbot
-// 6.0–10.0s  valorant-wallhack (covered by reveal overlay from 7.5s)
+// 0.0–1.8s   minecraft-killaura  (startFrom 1.5s — opening of source is black)
+// 1.8–4.8s   cs2-spinbot
+// 4.8–9.0s   valorant-wallhack   (covered by reveal overlay from 5.7s)
 //
-// Total: 300 frames. The crossfade overlap is absorbed by the linearTiming
-// duration, so no clip ever runs out of source material before its slot ends.
+// The crossfade overlap is absorbed by the linearTiming duration, so no clip
+// ever runs out of source material before its slot ends.
 
 const FADE = toFrames(0.27); // 8 frames at 30fps
 
@@ -153,7 +153,7 @@ const CheaterBrollSequence: React.FC = () => {
   return (
     <AbsoluteFill>
       <TransitionSeries>
-        <TransitionSeries.Sequence durationInFrames={toFrames(3.0)}>
+        <TransitionSeries.Sequence durationInFrames={toFrames(1.8)}>
           <BrollClip
             src={BROLL.minecraft}
             maskDisclaimer
