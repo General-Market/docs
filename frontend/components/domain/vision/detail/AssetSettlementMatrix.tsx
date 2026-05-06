@@ -2,6 +2,22 @@
 
 import { useMemo } from 'react'
 import { useAssetSettlements, type AssetSettlement } from '@/hooks/vision/useAssetSettlements'
+import fundData from '@/data/fund-branding.json'
+
+interface FundEntry {
+  name?: string
+  symbol?: string
+  vault?: string
+  color?: string
+}
+
+const VAULT_BY_ADDR: Map<string, FundEntry> = (() => {
+  const m = new Map<string, FundEntry>()
+  for (const f of (fundData as { funds: FundEntry[] }).funds) {
+    if (f.vault) m.set(f.vault.toLowerCase(), f)
+  }
+  return m
+})()
 
 function shortAddr(a: string): string {
   if (!a) return '?'
@@ -64,42 +80,71 @@ function Cell({ side, won }: CellProps) {
 
 interface MatrixRow {
   player: string
+  label: string
+  color?: string
   cells: { side: 'Up' | 'Down' | null; won: boolean }[]
   wins: number
   total: number
 }
 
+interface BatchColumn {
+  batch: AssetSettlement
+  upPct: number | null
+  downPct: number | null
+}
+
+function computeOdds(s: AssetSettlement): { upPct: number | null; downPct: number | null } {
+  let up = 0
+  let down = 0
+  try {
+    up = Number(BigInt(s.upStake))
+    down = Number(BigInt(s.downStake))
+  } catch {
+    return { upPct: null, downPct: null }
+  }
+  const total = up + down
+  if (!total) return { upPct: null, downPct: null }
+  return { upPct: (up / total) * 100, downPct: (down / total) * 100 }
+}
+
 function buildMatrix(settlements: AssetSettlement[]): {
-  batches: AssetSettlement[]
+  columns: BatchColumn[]
   rows: MatrixRow[]
 } {
   const ordered = [...settlements].sort(
     (a, b) => new Date(a.settledAt).getTime() - new Date(b.settledAt).getTime(),
   )
-  const players = new Map<string, MatrixRow>()
+  const columns: BatchColumn[] = ordered.map(b => ({ batch: b, ...computeOdds(b) }))
+  const rows = new Map<string, MatrixRow>()
   ordered.forEach((s, colIdx) => {
     s.players.forEach(p => {
       const key = p.player.toLowerCase()
-      let row = players.get(key)
+      const fund = VAULT_BY_ADDR.get(key)
+      // Filter: only show known vaults. EOAs and unbranded contracts drop out.
+      if (!fund) return
+      let row = rows.get(key)
       if (!row) {
         row = {
           player: p.player,
+          label: fund.name || shortAddr(p.player),
+          color: fund.color,
           cells: ordered.map(() => ({ side: null, won: false })),
           wins: 0,
           total: 0,
         }
-        players.set(key, row)
+        rows.set(key, row)
       }
       row.cells[colIdx] = { side: p.side, won: p.won }
       row.total += 1
       if (p.won) row.wins += 1
     })
   })
-  const rows = [...players.values()].sort((a, b) => {
+  const sorted = [...rows.values()].sort((a, b) => {
     if (b.total !== a.total) return b.total - a.total
-    return b.wins - a.wins
+    if (b.wins !== a.wins) return b.wins - a.wins
+    return a.label.localeCompare(b.label)
   })
-  return { batches: ordered, rows }
+  return { columns, rows: sorted }
 }
 
 export function AssetSettlementMatrix({
@@ -111,7 +156,7 @@ export function AssetSettlementMatrix({
 }) {
   const { data, isLoading } = useAssetSettlements(sourceId, assetId, 60)
 
-  const { batches, rows } = useMemo(() => buildMatrix(data ?? []), [data])
+  const { columns, rows } = useMemo(() => buildMatrix(data ?? []), [data])
 
   if (isLoading) {
     return (
@@ -128,7 +173,7 @@ export function AssetSettlementMatrix({
     )
   }
 
-  if (batches.length === 0) {
+  if (columns.length === 0) {
     return (
       <div
         className="text-center py-6"
@@ -139,6 +184,21 @@ export function AssetSettlementMatrix({
         }}
       >
         No settlements yet for this market.
+      </div>
+    )
+  }
+
+  if (rows.length === 0) {
+    return (
+      <div
+        className="text-center py-6"
+        style={{
+          fontFamily: 'var(--apple-font-text)',
+          fontSize: 12,
+          color: 'var(--apple-text-tertiary)',
+        }}
+      >
+        No vault has bet on this market yet.
       </div>
     )
   }
@@ -172,29 +232,52 @@ export function AssetSettlementMatrix({
                 borderBottom: '1px solid var(--apple-line)',
               }}
             >
-              Player
+              Vault
             </th>
-            {batches.map(b => (
-              <th
-                key={b.batchId}
-                title={formatTime(b.settledAt)}
-                style={{
-                  padding: '6px 2px',
-                  color:
-                    b.outcome === 'Up'
-                      ? 'rgb(52,199,89)'
-                      : b.outcome === 'Down'
-                      ? 'rgb(255,59,48)'
-                      : 'var(--apple-text-tertiary)',
-                  fontWeight: 600,
-                  fontSize: 10,
-                  textAlign: 'center',
-                  borderBottom: '1px solid var(--apple-line)',
-                }}
-              >
-                #{b.batchId}
-              </th>
-            ))}
+            {columns.map(c => {
+              const b = c.batch
+              const headColor =
+                b.outcome === 'Up'
+                  ? 'rgb(52,199,89)'
+                  : b.outcome === 'Down'
+                  ? 'rgb(255,59,48)'
+                  : 'var(--apple-text-tertiary)'
+              const oddsTitle =
+                c.upPct !== null && c.downPct !== null
+                  ? `${formatTime(b.settledAt)} · ↑${c.upPct.toFixed(0)}% / ↓${c.downPct.toFixed(0)}%`
+                  : formatTime(b.settledAt)
+              return (
+                <th
+                  key={b.batchId}
+                  title={oddsTitle}
+                  style={{
+                    padding: '6px 2px',
+                    color: headColor,
+                    fontWeight: 600,
+                    fontSize: 10,
+                    textAlign: 'center',
+                    borderBottom: '1px solid var(--apple-line)',
+                    verticalAlign: 'bottom',
+                    lineHeight: 1.15,
+                  }}
+                >
+                  <div>#{b.batchId}</div>
+                  {c.upPct !== null && c.downPct !== null ? (
+                    <div
+                      style={{
+                        marginTop: 2,
+                        fontSize: 9,
+                        fontWeight: 500,
+                        color: 'var(--apple-text-tertiary)',
+                        fontVariantNumeric: 'tabular-nums',
+                      }}
+                    >
+                      {c.upPct.toFixed(0)}/{c.downPct.toFixed(0)}
+                    </div>
+                  ) : null}
+                </th>
+              )
+            })}
             <th
               style={{
                 padding: '6px 0 6px 12px',
@@ -221,13 +304,24 @@ export function AssetSettlementMatrix({
                   background: 'var(--apple-panel)',
                   padding: '4px 12px 4px 0',
                   color: 'var(--apple-text)',
-                  fontFamily: 'var(--apple-font-mono, monospace)',
-                  fontSize: 11,
+                  fontSize: 12,
+                  fontWeight: 500,
                   whiteSpace: 'nowrap',
                   borderBottom: '1px solid rgba(0,0,0,0.04)',
                 }}
               >
-                {shortAddr(r.player)}
+                <span
+                  style={{
+                    display: 'inline-block',
+                    width: 6,
+                    height: 6,
+                    borderRadius: 999,
+                    marginRight: 8,
+                    background: r.color || 'var(--apple-text-tertiary)',
+                    verticalAlign: 'middle',
+                  }}
+                />
+                {r.label}
               </td>
               {r.cells.map((c, i) => (
                 <td

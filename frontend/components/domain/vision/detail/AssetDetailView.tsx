@@ -227,7 +227,7 @@ export function AssetDetailView({
               margin: 0,
             }}
           >
-            Positions per round
+            Vaults per round
           </h2>
           <span
             style={{
@@ -238,7 +238,7 @@ export function AssetDetailView({
               textTransform: 'uppercase',
             }}
           >
-            ▲ up · ▼ down · faded = lost
+            ▲ up · ▼ down · faded = lost · header = up%/down% pool odds
           </span>
         </header>
         <div className="px-5 sm:px-6 pb-5">
