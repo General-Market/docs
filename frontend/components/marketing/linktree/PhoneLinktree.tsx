@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { ContactShadows, Html, useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
@@ -17,20 +17,19 @@ type Responsive = {
 }
 
 function readResponsive(): Responsive {
+  // The phone should sit in the page like a normal centered linktree column —
+  // fully visible, comfortably sized, with a faint scroll-driven slide.
   if (typeof window === 'undefined') {
-    return { distance: 3.06, topOffset: -1.0, scrollTravel: 2.0, htmlScale: 0.16 }
+    return { distance: 7.5, topOffset: 0, scrollTravel: 0.5, htmlScale: 0.175 }
   }
   const aspect = window.innerWidth / Math.max(1, window.innerHeight)
-  // Wide screen — original framing.
   if (aspect >= 1.2) {
-    return { distance: 3.06, topOffset: -1.0, scrollTravel: 2.0, htmlScale: 0.16 }
+    return { distance: 7.5, topOffset: 0, scrollTravel: 0.5, htmlScale: 0.175 }
   }
-  // Tablet / squarish — pull the camera back so the phone width fits.
   if (aspect >= 0.7) {
-    return { distance: 4.2, topOffset: -0.7, scrollTravel: 1.3, htmlScale: 0.16 }
+    return { distance: 8.4, topOffset: 0, scrollTravel: 0.45, htmlScale: 0.175 }
   }
-  // Phone portrait — sit further back; less scroll travel because more is visible.
-  return { distance: 5.6, topOffset: -0.4, scrollTravel: 0.8, htmlScale: 0.16 }
+  return { distance: 8.8, topOffset: 0, scrollTravel: 0.4, htmlScale: 0.175 }
 }
 
 type TiltRef = React.MutableRefObject<{
@@ -139,11 +138,8 @@ export function PhoneLinktree() {
 
   // Page tall enough to give scroll room without trapping the user
   // on tiny mobile viewports where most of the phone is already visible.
-  const pageHeight = useMemo(() => {
-    if (responsive.scrollTravel >= 1.5) return '240vh'
-    if (responsive.scrollTravel >= 1.0) return '200vh'
-    return '160vh'
-  }, [responsive.scrollTravel])
+  // Phone is fully in frame — keep page modest so the slide is gentle.
+  const pageHeight = '140vh'
 
   return (
     <main className="lt-page" style={{ minHeight: pageHeight }}>
