@@ -49,6 +49,7 @@ const WINDOW_OPTIONS: { hours: WindowHours; label: string; settleLimit: number }
   { hours: 1176, label: '7w', settleLimit: 500 },
 ]
 const BANKROLL_COLOR = 'rgb(0,122,255)'
+type ChartMode = 'settlement' | 'time'
 
 function shortAddr(a: string): string {
   if (!a) return '?'
@@ -244,6 +245,8 @@ export function AssetActivityCard({
   valueUnit,
 }: Props) {
   const [windowHours, setWindowHours] = useState<WindowHours>(12)
+  const [chartMode, setChartMode] = useState<ChartMode>('settlement')
+  const [leftIdx, setLeftIdx] = useState(0)
   const [points, setPoints] = useState<PricePoint[]>([])
   const [loading, setLoading] = useState(true)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -319,18 +322,40 @@ export function AssetActivityCard({
     )
   }, [columns, points])
 
-  // Asset price rebased to 1.0 at the first valid value of the window.
-  const assetRatios = useMemo<(number | null)[]>(() => {
-    const v0 = seriesValues.find(v => v != null)
-    if (v0 == null || v0 === 0) return seriesValues.map(() => null)
-    return seriesValues.map(v => (v == null ? null : v / v0))
-  }, [seriesValues])
-
-  // Always-Up bankroll, aligned to settlements (drop the leading 1.0).
-  const bankUpRatios = useMemo<number[]>(() => {
-    const sim = simulateBankroll(columns, 'Up')
-    return sim.series.slice(1)
+  // Always-Up bankroll absolute series (one entry per settlement).
+  const bankUpAbs = useMemo<number[]>(() => {
+    return simulateBankroll(columns, 'Up').series.slice(1)
   }, [columns])
+
+  // Pick a baseline index — leftmost *visible* column when in settlement mode,
+  // first valid value when in time mode (whole window).
+  const baseIdx = useMemo(() => {
+    if (chartMode === 'time') {
+      return seriesValues.findIndex(v => v != null) >= 0
+        ? seriesValues.findIndex(v => v != null)
+        : 0
+    }
+    // settlement: find first valid value at or after leftIdx
+    for (let i = leftIdx; i < seriesValues.length; i++) {
+      if (seriesValues[i] != null) return i
+    }
+    const fallback = seriesValues.findIndex(v => v != null)
+    return fallback >= 0 ? fallback : 0
+  }, [seriesValues, leftIdx, chartMode])
+
+  const baseAsset = seriesValues[baseIdx]
+  const baseBank = bankUpAbs[baseIdx] ?? 1
+
+  // Both series rebased to 1.0 at baseIdx.
+  const assetRatios = useMemo<(number | null)[]>(() => {
+    if (baseAsset == null || baseAsset === 0) return seriesValues.map(() => null)
+    return seriesValues.map(v => (v == null ? null : v / baseAsset))
+  }, [seriesValues, baseAsset])
+
+  const bankUpRatios = useMemo<number[]>(() => {
+    if (!baseBank) return bankUpAbs.map(() => 1)
+    return bankUpAbs.map(v => v / baseBank)
+  }, [bankUpAbs, baseBank])
 
   // Combined Y-range across both lines plus a fallback to raw points.
   const yMin = useMemo(() => {
@@ -448,7 +473,41 @@ export function AssetActivityCard({
     if (scrollRef.current && colCount > 0) {
       scrollRef.current.scrollLeft = scrollRef.current.scrollWidth
     }
-  }, [colCount, windowHours])
+  }, [colCount, windowHours, chartMode])
+
+  // Track leftmost visible column for dynamic rebase. RAF-throttled.
+  useEffect(() => {
+    if (chartMode !== 'settlement') {
+      setLeftIdx(0)
+      return
+    }
+    const el = scrollRef.current
+    if (!el) return
+    let raf = 0
+    const compute = () => {
+      raf = 0
+      const sl = el.scrollLeft
+      const idx = Math.max(
+        0,
+        Math.min(
+          colCount - 1,
+          Math.floor((sl - X_PADDING + CELL_W / 2) / (CELL_W + COL_GAP)),
+        ),
+      )
+      setLeftIdx(idx)
+    }
+    const onScroll = () => {
+      if (raf) return
+      raf = requestAnimationFrame(compute)
+    }
+    el.addEventListener('scroll', onScroll, { passive: true })
+    // Compute once after settle
+    requestAnimationFrame(compute)
+    return () => {
+      el.removeEventListener('scroll', onScroll)
+      if (raf) cancelAnimationFrame(raf)
+    }
+  }, [colCount, chartMode])
 
   const firstValue = seriesValues.find(v => v != null) ?? points[0]?.value
   const lastValue =
@@ -464,7 +523,9 @@ export function AssetActivityCard({
       changePct={changePct}
       windowHours={windowHours}
       onWindowChange={setWindowHours}
-      showLegend={hasMatrix}
+      chartMode={chartMode}
+      onChartModeChange={setChartMode}
+      showLegend={hasMatrix && chartMode === 'settlement'}
     />
   )
 
@@ -482,6 +543,49 @@ export function AssetActivityCard({
       <section className={cardClass} style={cardStyle}>
         {HEADER_NODE}
         <div style={emptyState}>Not enough history yet.</div>
+      </section>
+    )
+  }
+
+  if (chartMode === 'time') {
+    return (
+      <section className={cardClass} style={cardStyle}>
+        {HEADER_NODE}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'stretch',
+            borderTop: '1px solid var(--apple-line)',
+          }}
+        >
+          <div
+            style={{
+              flexShrink: 0,
+              width: LEFT_RAIL,
+              background: 'var(--apple-panel)',
+              borderRight: '1px solid var(--apple-line)',
+              position: 'relative',
+            }}
+          >
+            <div style={{ height: CHART_HEIGHT, position: 'relative' }}>
+              <YAxisTicks yMin={yMin} yMax={yMax} />
+            </div>
+          </div>
+          <div style={{ flex: 1 }}>
+            <TimeChart
+              points={points}
+              columns={columns}
+              bankUpAbs={bankUpAbs}
+              baseAsset={baseAsset}
+              baseBank={baseBank}
+              yMin={yMin}
+              yMax={yMax}
+              ySpan={ySpan}
+              lineColor={lineColor}
+            />
+          </div>
+        </div>
+        {colCount > 0 ? <BacktestStrip columns={columns} /> : null}
       </section>
     )
   }
@@ -762,6 +866,121 @@ export function AssetActivityCard({
   )
 }
 
+function TimeChart({
+  points,
+  columns,
+  bankUpAbs,
+  baseAsset,
+  baseBank,
+  yMin,
+  yMax,
+  ySpan,
+  lineColor,
+}: {
+  points: PricePoint[]
+  columns: BatchCol[]
+  bankUpAbs: number[]
+  baseAsset: number | null | undefined
+  baseBank: number
+  yMin: number
+  yMax: number
+  ySpan: number
+  lineColor: string
+}) {
+  // Use a viewBox so the SVG stretches to container width.
+  const W = 1000
+  const H = CHART_HEIGHT
+  const padX = 20
+  const padTop = 16
+  const padBot = 16
+  const usable = H - padTop - padBot
+
+  if (points.length < 2) {
+    return (
+      <div
+        style={{
+          height: H,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'var(--apple-text-tertiary)',
+          fontSize: 13,
+        }}
+      >
+        Not enough history yet.
+      </div>
+    )
+  }
+
+  const tMin = points[0].ts
+  const tMax = points[points.length - 1].ts
+  const tSpan = Math.max(1, tMax - tMin)
+  const xForTime = (t: number) =>
+    padX + ((t - tMin) / tSpan) * (W - padX * 2)
+  const yForRatio = (r: number) =>
+    padTop + (1 - (r - yMin) / ySpan) * usable
+
+  const v0 = baseAsset != null && baseAsset !== 0 ? baseAsset : points[0].value
+  const baseB = baseBank || 1
+
+  const assetPath = points
+    .map((p, i) => {
+      const r = p.value / v0
+      return `${i === 0 ? 'M' : 'L'} ${xForTime(p.ts).toFixed(1)} ${yForRatio(r).toFixed(1)}`
+    })
+    .join(' ')
+
+  // Bankroll line: one point per settlement timestamp.
+  const bankPoints = columns.map((c, i) => ({
+    ts: new Date(c.batch.settledAt).getTime(),
+    r: (bankUpAbs[i] ?? baseB) / baseB,
+  }))
+  const bankPath =
+    bankPoints.length > 1
+      ? bankPoints
+          .map((b, i) => {
+            const x = xForTime(Math.max(tMin, Math.min(tMax, b.ts)))
+            const y = yForRatio(b.r)
+            return `${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`
+          })
+          .join(' ')
+      : ''
+
+  const baselineY = yForRatio(1.0)
+
+  return (
+    <svg
+      viewBox={`0 0 ${W} ${H}`}
+      preserveAspectRatio="none"
+      width="100%"
+      height={H}
+      style={{ display: 'block' }}
+    >
+      {isFinite(baselineY) ? (
+        <line
+          x1={0}
+          x2={W}
+          y1={baselineY}
+          y2={baselineY}
+          stroke="rgba(0,0,0,0.08)"
+          strokeDasharray="3 3"
+        />
+      ) : null}
+      <path d={assetPath} stroke={lineColor} strokeWidth={1.5} fill="none" vectorEffect="non-scaling-stroke" />
+      {bankPath ? (
+        <path
+          d={bankPath}
+          stroke={BANKROLL_COLOR}
+          strokeWidth={1.5}
+          fill="none"
+          vectorEffect="non-scaling-stroke"
+          opacity={0.85}
+        />
+      ) : null}
+    </svg>
+  )
+}
+
 function BacktestStrip({ columns }: { columns: BatchCol[] }) {
   const up = useMemo(() => simulateBankroll(columns, 'Up'), [columns])
   const down = useMemo(() => simulateBankroll(columns, 'Down'), [columns])
@@ -957,6 +1176,56 @@ const emptyState: React.CSSProperties = {
   borderTop: '1px solid var(--apple-line)',
 }
 
+function ModeToggle({
+  value,
+  onChange,
+}: {
+  value: ChartMode
+  onChange: (m: ChartMode) => void
+}) {
+  const options: { mode: ChartMode; label: string }[] = [
+    { mode: 'settlement', label: 'Settlements' },
+    { mode: 'time', label: 'Time' },
+  ]
+  return (
+    <div
+      role="tablist"
+      style={{
+        display: 'inline-flex',
+        background: 'rgba(0,0,0,0.04)',
+        borderRadius: 999,
+        padding: 2,
+      }}
+    >
+      {options.map(opt => {
+        const active = opt.mode === value
+        return (
+          <button
+            key={opt.mode}
+            role="tab"
+            aria-selected={active}
+            onClick={() => onChange(opt.mode)}
+            style={{
+              padding: '4px 10px',
+              border: 'none',
+              borderRadius: 999,
+              fontSize: 11,
+              fontWeight: 600,
+              cursor: 'pointer',
+              background: active ? 'var(--apple-panel)' : 'transparent',
+              color: active ? 'var(--apple-text)' : 'var(--apple-text-tertiary)',
+              boxShadow: active ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
+              transition: 'background 120ms ease, color 120ms ease',
+            }}
+          >
+            {opt.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 function WindowToggle({
   value,
   onChange,
@@ -1013,6 +1282,8 @@ function Header({
   showLegend = false,
   windowHours,
   onWindowChange,
+  chartMode,
+  onChartModeChange,
 }: {
   isPrice: boolean
   valueUnit: string
@@ -1022,6 +1293,8 @@ function Header({
   showLegend?: boolean
   windowHours: WindowHours
   onWindowChange: (h: WindowHours) => void
+  chartMode: ChartMode
+  onChartModeChange: (m: ChartMode) => void
 }) {
   return (
     <header
@@ -1048,6 +1321,7 @@ function Header({
           History
         </h2>
         <WindowToggle value={windowHours} onChange={onWindowChange} />
+        <ModeToggle value={chartMode} onChange={onChartModeChange} />
         {firstValue !== undefined && lastValue !== undefined && (
           <span
             style={{
