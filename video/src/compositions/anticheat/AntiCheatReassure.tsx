@@ -327,19 +327,15 @@ const RotatingProductPanel: React.FC = () => {
   );
 };
 
-// ─── Emoji burst — fired from the click point, mirrors the GMBrand
+// ─── Shield burst — fired from the click point, mirrors the GMBrand
 // Scene04 launch+settle pattern. Cloud rides along with the panel
-// exit so it leaves the frame as one body.
+// exit so it leaves the frame as one body. Shields instead of
+// emoticons — every cleared trade is a shield earned.
 
-const HEART_EYES = String.fromCodePoint(0x1f60d);
-const PARTY = String.fromCodePoint(0x1f973);
-const RED_HEART = String.fromCodePoint(0x2764, 0xfe0f);
-const SPARKLES = String.fromCodePoint(0x2728);
-const FIRE = String.fromCodePoint(0x1f525);
-const ROCKET = String.fromCodePoint(0x1f680);
+type ShieldVariant = "solid" | "soft" | "outline" | "ink";
 
-type EmojiSeed = {
-  emoji: string;
+type ShieldSeed = {
+  variant: ShieldVariant;
   endX: number;
   endY: number;
   size: number;
@@ -347,17 +343,17 @@ type EmojiSeed = {
   arcHeight: number;
 };
 
-const FLOATING_EMOJIS: EmojiSeed[] = [
-  { emoji: HEART_EYES, endX: -380, endY: -260, size: 108, seed: 1, arcHeight: 180 },
-  { emoji: PARTY, endX: -320, endY: -110, size: 100, seed: 2, arcHeight: 140 },
-  { emoji: SPARKLES, endX: -340, endY: 240, size: 70, seed: 3, arcHeight: 90 },
-  { emoji: RED_HEART, endX: 430, endY: 80, size: 96, seed: 4, arcHeight: 200 },
-  { emoji: ROCKET, endX: 480, endY: 220, size: 84, seed: 5, arcHeight: 150 },
-  { emoji: FIRE, endX: 410, endY: 350, size: 72, seed: 6, arcHeight: 120 },
-  { emoji: RED_HEART, endX: 360, endY: -180, size: 64, seed: 7, arcHeight: 230 },
-  { emoji: HEART_EYES, endX: 340, endY: -320, size: 76, seed: 8, arcHeight: 200 },
-  { emoji: SPARKLES, endX: -250, endY: -380, size: 56, seed: 9, arcHeight: 170 },
-  { emoji: PARTY, endX: -440, endY: 90, size: 80, seed: 10, arcHeight: 150 },
+const FLOATING_SHIELDS: ShieldSeed[] = [
+  { variant: "solid",   endX: -380, endY: -260, size: 108, seed: 1,  arcHeight: 180 },
+  { variant: "soft",    endX: -320, endY: -110, size: 100, seed: 2,  arcHeight: 140 },
+  { variant: "outline", endX: -340, endY:  240, size:  70, seed: 3,  arcHeight:  90 },
+  { variant: "solid",   endX:  430, endY:   80, size:  96, seed: 4,  arcHeight: 200 },
+  { variant: "ink",     endX:  480, endY:  220, size:  84, seed: 5,  arcHeight: 150 },
+  { variant: "soft",    endX:  410, endY:  350, size:  72, seed: 6,  arcHeight: 120 },
+  { variant: "outline", endX:  360, endY: -180, size:  64, seed: 7,  arcHeight: 230 },
+  { variant: "solid",   endX:  340, endY: -320, size:  76, seed: 8,  arcHeight: 200 },
+  { variant: "ink",     endX: -250, endY: -380, size:  56, seed: 9,  arcHeight: 170 },
+  { variant: "soft",    endX: -440, endY:   90, size:  80, seed: 10, arcHeight: 150 },
 ];
 
 const quadBezier = (t: number, p0: number, p1: number, p2: number) => {
@@ -385,8 +381,8 @@ const EmojiBurst: React.FC = () => {
         zIndex: 4,
       }}
     >
-      {FLOATING_EMOJIS.map((item, i) => (
-        <FloatingEmoji
+      {FLOATING_SHIELDS.map((item, i) => (
+        <FloatingShield
           key={i}
           {...item}
           frame={frame}
@@ -398,9 +394,9 @@ const EmojiBurst: React.FC = () => {
   );
 };
 
-const FloatingEmoji: React.FC<
-  EmojiSeed & { frame: number; fps: number; startFrame: number }
-> = ({ emoji, endX, endY, size, seed, arcHeight, frame, fps, startFrame }) => {
+const FloatingShield: React.FC<
+  ShieldSeed & { frame: number; fps: number; startFrame: number }
+> = ({ variant, endX, endY, size, seed, arcHeight, frame, fps, startFrame }) => {
   const localFrame = frame - startFrame;
   if (localFrame < 0) return null;
 
@@ -436,19 +432,56 @@ const FloatingEmoji: React.FC<
     <div
       style={{
         position: "absolute",
-        left: 0,
-        top: 0,
+        left: -size / 2,
+        top: -size / 2,
+        width: size,
+        height: size,
         transform: `translate(${x + noiseX}px, ${y + noiseY}px) scale(${
           scaleSpring * floatScale
         }) rotate(${rotation}deg)`,
-        fontSize: size,
         opacity: Math.min(scaleSpring * 1.5, 1),
-        filter: "drop-shadow(2px 4px 8px rgba(10,10,12,0.10))",
+        filter: "drop-shadow(2px 6px 12px rgba(0,82,255,0.22))",
         pointerEvents: "none",
       }}
     >
-      {emoji}
+      <ShieldGlyph variant={variant} />
     </div>
+  );
+};
+
+const ShieldGlyph: React.FC<{ variant: ShieldVariant }> = ({ variant }) => {
+  const fill =
+    variant === "solid"
+      ? colors.accent
+      : variant === "soft"
+        ? colors.accentSoft
+        : variant === "ink"
+          ? colors.fg
+          : "none";
+  const stroke =
+    variant === "outline" ? colors.accent : variant === "ink" ? colors.fg : "#FFFFFF";
+  const strokeWidth = variant === "outline" ? 8 : 5;
+  const checkColor =
+    variant === "outline" ? colors.accent : "#FFFFFF";
+
+  return (
+    <svg viewBox="0 0 100 110" width="100%" height="100%">
+      <path
+        d="M50 4 L92 18 L92 56 C92 82 72 99 50 106 C28 99 8 82 8 56 L8 18 Z"
+        fill={fill}
+        stroke={stroke}
+        strokeWidth={strokeWidth}
+        strokeLinejoin="round"
+      />
+      <path
+        d="M30 56 L46 72 L72 40"
+        fill="none"
+        stroke={checkColor}
+        strokeWidth={9}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 };
 
