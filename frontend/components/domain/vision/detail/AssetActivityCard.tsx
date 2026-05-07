@@ -41,12 +41,14 @@ const LEFT_RAIL = 168
 const TOP_N = 12
 const X_PADDING = 16
 
-type WindowHours = 12 | 24 | 168
-const WINDOW_OPTIONS: { hours: WindowHours; label: string }[] = [
-  { hours: 12, label: '12h' },
-  { hours: 24, label: '24h' },
-  { hours: 168, label: '7d' },
+type WindowHours = 12 | 24 | 168 | 1176
+const WINDOW_OPTIONS: { hours: WindowHours; label: string; settleLimit: number }[] = [
+  { hours: 12, label: '12h', settleLimit: 80 },
+  { hours: 24, label: '24h', settleLimit: 160 },
+  { hours: 168, label: '7d', settleLimit: 400 },
+  { hours: 1176, label: '7w', settleLimit: 500 },
 ]
+const BANKROLL_COLOR = 'rgb(0,122,255)'
 
 function shortAddr(a: string): string {
   if (!a) return '?'
@@ -277,7 +279,15 @@ export function AssetActivityCard({
     }
   }, [dataNodeSourceId, assetId, windowHours])
 
-  const { data: settlements } = useAssetSettlements(dataNodeSourceId, assetId, 200)
+  const settlementLimit = useMemo(
+    () => WINDOW_OPTIONS.find(o => o.hours === windowHours)?.settleLimit ?? 200,
+    [windowHours],
+  )
+  const { data: settlements } = useAssetSettlements(
+    dataNodeSourceId,
+    assetId,
+    settlementLimit,
+  )
 
   const { columns: allColumns, rows: allRows } = useMemo(
     () => buildMatrix(settlements ?? []),
@@ -309,20 +319,42 @@ export function AssetActivityCard({
     )
   }, [columns, points])
 
-  const valuesForRange = useMemo(() => {
-    const vs = seriesValues.filter((v): v is number => v != null)
-    if (vs.length === 0 && points.length > 0) return points.map(p => p.value)
-    return vs
-  }, [seriesValues, points])
+  // Asset price rebased to 1.0 at the first valid value of the window.
+  const assetRatios = useMemo<(number | null)[]>(() => {
+    const v0 = seriesValues.find(v => v != null)
+    if (v0 == null || v0 === 0) return seriesValues.map(() => null)
+    return seriesValues.map(v => (v == null ? null : v / v0))
+  }, [seriesValues])
 
+  // Always-Up bankroll, aligned to settlements (drop the leading 1.0).
+  const bankUpRatios = useMemo<number[]>(() => {
+    const sim = simulateBankroll(columns, 'Up')
+    return sim.series.slice(1)
+  }, [columns])
+
+  // Combined Y-range across both lines plus a fallback to raw points.
   const yMin = useMemo(() => {
-    if (valuesForRange.length === 0) return 0
-    return Math.min(...valuesForRange)
-  }, [valuesForRange])
+    const all: number[] = []
+    for (const r of assetRatios) if (r != null) all.push(r)
+    for (const r of bankUpRatios) all.push(r)
+    if (all.length === 0 && points.length > 0) {
+      const v0 = points[0].value
+      if (v0 !== 0) for (const p of points) all.push(p.value / v0)
+    }
+    if (all.length === 0) return 0.95
+    return Math.min(...all, 1.0)
+  }, [assetRatios, bankUpRatios, points])
   const yMax = useMemo(() => {
-    if (valuesForRange.length === 0) return 1
-    return Math.max(...valuesForRange)
-  }, [valuesForRange])
+    const all: number[] = []
+    for (const r of assetRatios) if (r != null) all.push(r)
+    for (const r of bankUpRatios) all.push(r)
+    if (all.length === 0 && points.length > 0) {
+      const v0 = points[0].value
+      if (v0 !== 0) for (const p of points) all.push(p.value / v0)
+    }
+    if (all.length === 0) return 1.05
+    return Math.max(...all, 1.0)
+  }, [assetRatios, bankUpRatios, points])
   const ySpan = Math.max(1e-12, yMax - yMin)
 
   const lineColor = useMemo(() => {
@@ -351,47 +383,65 @@ export function AssetActivityCard({
   // Pixel x for column index i (center of cell).
   const xForIdx = (i: number) => X_PADDING + i * (CELL_W + COL_GAP) + CELL_W / 2
 
-  // Pixel y for value v.
-  const yForValue = (v: number) => {
+  // Pixel y for a ratio (1.0 = neutral baseline).
+  const yForRatio = (r: number) => {
     const padTop = 16
     const padBot = 16
     const usable = CHART_HEIGHT - padTop - padBot
-    return padTop + (1 - (v - yMin) / ySpan) * usable
+    return padTop + (1 - (r - yMin) / ySpan) * usable
   }
 
-  // Linear path through settlement points (skipping nulls).
-  const linePath = useMemo(() => {
+  // Asset price line (rebased to 1.0).
+  const assetPath = useMemo(() => {
     const segs: string[] = []
     let started = false
-    seriesValues.forEach((v, i) => {
-      if (v == null) {
+    assetRatios.forEach((r, i) => {
+      if (r == null) {
         started = false
         return
       }
       const x = xForIdx(i)
-      const y = yForValue(v)
+      const y = yForRatio(r)
       segs.push(`${started ? 'L' : 'M'} ${x.toFixed(1)} ${y.toFixed(1)}`)
       started = true
     })
     return segs.join(' ')
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seriesValues, yMin, yMax, ySpan, colCount])
+  }, [assetRatios, yMin, yMax, ySpan, colCount])
 
-  // Fall back to time-linear line when there are no settlements (early state).
+  // Always-Up bankroll line (already a ratio, starts at 1.0).
+  const bankPath = useMemo(() => {
+    if (bankUpRatios.length === 0) return ''
+    const segs: string[] = []
+    bankUpRatios.forEach((r, i) => {
+      const x = xForIdx(i)
+      const y = yForRatio(r)
+      segs.push(`${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`)
+    })
+    return segs.join(' ')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bankUpRatios, yMin, yMax, ySpan, colCount])
+
+  // Time-linear fallback when there are no settlements yet.
   const fallbackPath = useMemo(() => {
     if (points.length < 2 || colCount > 0) return ''
+    const v0 = points[0].value
+    if (v0 === 0) return ''
     const tMin = points[0].ts
     const tMax = points[points.length - 1].ts
     const tSpan = Math.max(1, tMax - tMin)
     const segs: string[] = []
     points.forEach((p, i) => {
       const x = X_PADDING + ((p.ts - tMin) / tSpan) * (innerWidth - X_PADDING * 2)
-      const y = yForValue(p.value)
+      const y = yForRatio(p.value / v0)
       segs.push(`${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`)
     })
     return segs.join(' ')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [points, innerWidth, yMin, yMax, ySpan, colCount])
+
+  // Pixel y for the 1.0 baseline — rendered as a faint dashed line.
+  const baselineY = isFinite(yMin) && isFinite(yMax) ? yForRatio(1.0) : null
 
   // Scroll to the right edge on first load — most recent activity in view.
   useEffect(() => {
@@ -459,7 +509,7 @@ export function AssetActivityCard({
         >
           {/* Y-axis on the chart half */}
           <div style={{ height: CHART_HEIGHT, position: 'relative' }}>
-            <YAxisTicks yMin={yMin} yMax={yMax} isPrice={isPrice} />
+            <YAxisTicks yMin={yMin} yMax={yMax} />
           </div>
           {/* Header row */}
           <div
@@ -570,9 +620,20 @@ export function AssetActivityCard({
                   />
                 )
               })}
-              {/* Line */}
-              {linePath ? (
-                <path d={linePath} stroke={lineColor} strokeWidth={1.5} fill="none" />
+              {/* Baseline at ratio = 1.0 */}
+              {baselineY != null ? (
+                <line
+                  x1={0}
+                  x2={innerWidth}
+                  y1={baselineY}
+                  y2={baselineY}
+                  stroke="rgba(0,0,0,0.08)"
+                  strokeDasharray="3 3"
+                />
+              ) : null}
+              {/* Asset price line (rebased) */}
+              {assetPath ? (
+                <path d={assetPath} stroke={lineColor} strokeWidth={1.5} fill="none" />
               ) : null}
               {fallbackPath ? (
                 <path
@@ -582,10 +643,22 @@ export function AssetActivityCard({
                   fill="none"
                 />
               ) : null}
+              {/* Always-Up bankroll line */}
+              {bankPath ? (
+                <path
+                  d={bankPath}
+                  stroke={BANKROLL_COLOR}
+                  strokeWidth={1.5}
+                  fill="none"
+                  strokeDasharray="0"
+                  opacity={0.85}
+                />
+              ) : null}
               {/* Settlement dots */}
-              {seriesValues.map((v, i) => {
-                if (v == null) return null
+              {assetRatios.map((r, i) => {
+                if (r == null) return null
                 const c = columns[i]
+                const v = seriesValues[i]
                 const dotColor =
                   c.batch.outcome === 'Up'
                     ? '#16a34a'
@@ -596,14 +669,14 @@ export function AssetActivityCard({
                   <circle
                     key={`dot-${c.batch.batchId}`}
                     cx={xForIdx(i)}
-                    cy={yForValue(v)}
+                    cy={yForRatio(r)}
                     r={2.5}
                     fill={dotColor}
                   >
                     <title>
                       {`${formatTime(new Date(c.batch.settledAt).getTime())} · ${
                         isPrice ? '$' : ''
-                      }${formatValue(v, isPrice)}${
+                      }${formatValue(v ?? 0, isPrice)}${
                         !isPrice && valueUnit ? ` ${valueUnit}` : ''
                       }`}
                     </title>
@@ -826,11 +899,9 @@ function BacktestPanel({
 function YAxisTicks({
   yMin,
   yMax,
-  isPrice,
 }: {
   yMin: number
   yMax: number
-  isPrice: boolean
 }) {
   if (!isFinite(yMin) || !isFinite(yMax) || yMax === yMin) return null
   const ticks = 4
@@ -841,23 +912,30 @@ function YAxisTicks({
   }
   return (
     <div style={{ position: 'absolute', inset: 0 }}>
-      {out.map((t, i) => (
-        <div
-          key={i}
-          style={{
-            position: 'absolute',
-            top: `${t.pct}%`,
-            right: 12,
-            transform: 'translateY(-50%)',
-            fontSize: 10,
-            color: 'var(--apple-text-tertiary)',
-            fontVariantNumeric: 'tabular-nums',
-          }}
-        >
-          {isPrice ? '$' : ''}
-          {formatValue(t.v, isPrice)}
-        </div>
-      ))}
+      {out.map((t, i) => {
+        const deltaPct = (t.v - 1) * 100
+        const isBaseline = Math.abs(t.v - 1) < 1e-9
+        return (
+          <div
+            key={i}
+            style={{
+              position: 'absolute',
+              top: `${t.pct}%`,
+              right: 12,
+              transform: 'translateY(-50%)',
+              fontSize: 10,
+              color: isBaseline
+                ? 'var(--apple-text)'
+                : 'var(--apple-text-tertiary)',
+              fontVariantNumeric: 'tabular-nums',
+              fontWeight: isBaseline ? 600 : 400,
+            }}
+          >
+            {deltaPct >= 0 ? '+' : ''}
+            {deltaPct.toFixed(2)}%
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -1000,18 +1078,37 @@ function Header({
           </span>
         )}
       </div>
-      {showLegend ? (
-        <span
-          style={{
-            fontSize: 10,
-            color: 'var(--apple-text-tertiary)',
-            letterSpacing: 'var(--apple-track-loose)',
-            textTransform: 'uppercase',
-          }}
-        >
-          ▲ up · ▼ down · faded = lost · row above = winner pays
-        </span>
-      ) : null}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 14,
+          fontSize: 10,
+          color: 'var(--apple-text-tertiary)',
+          letterSpacing: 'var(--apple-track-loose)',
+          textTransform: 'uppercase',
+        }}
+      >
+        <LegendDot color="rgb(52,199,89)" label="price" />
+        <LegendDot color={BANKROLL_COLOR} label="always ▲ 1%" />
+        {showLegend ? <span>▲ ▼ · faded = lost · winner pays</span> : null}
+      </div>
     </header>
+  )
+}
+
+function LegendDot({ color, label }: { color: string; label: string }) {
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+      <span
+        style={{
+          width: 8,
+          height: 2,
+          background: color,
+          display: 'inline-block',
+        }}
+      />
+      <span>{label}</span>
+    </span>
   )
 }
