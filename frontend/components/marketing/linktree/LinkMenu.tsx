@@ -58,21 +58,52 @@ export function LinkMenu() {
           box-sizing: border-box;
           position: relative;
           overflow: hidden;
+          /* Match the iPhone screen's rounded corners so the menu clips
+             inside the display, not over the bezel. */
+          border-radius: 44px;
         }
-        /* Tahoe-style liquid-glass sheen — sits *over* the menu so the
-           rows read as if they're behind a pane of glass. Pointer events
-           pass through; the rows stay clickable. */
+        /* Tahoe-style liquid-glass — sits *over* the menu so the rows
+           read as if they're behind a pane of glass. Cool-tinted sheen
+           is visible against the warm white menu; rim catches light. */
+        .lt-menu::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          z-index: 5;
+          border-radius: inherit;
+          box-shadow:
+            inset 0 1.5px 0 rgba(255,255,255,0.95),
+            inset 0 -1.5px 0 rgba(0,0,0,0.06),
+            inset 1.5px 0 0 rgba(220,228,240,0.45),
+            inset -1.5px 0 0 rgba(220,228,240,0.30);
+        }
         .lt-menu::after {
           content: '';
           position: absolute;
           inset: 0;
           pointer-events: none;
           z-index: 4;
+          border-radius: inherit;
           background:
-            linear-gradient(135deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.02) 38%, transparent 62%),
-            linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0) 6%),
-            linear-gradient(0deg, rgba(0,0,0,0.04) 0%, rgba(0,0,0,0) 12%);
-          mix-blend-mode: screen;
+            /* Specular sheen — cool-tinted band catching light at top-left */
+            linear-gradient(128deg,
+              rgba(206, 218, 236, 0.55) 0%,
+              rgba(206, 218, 236, 0.28) 14%,
+              rgba(216, 226, 240, 0.08) 26%,
+              transparent 38%,
+              transparent 58%,
+              rgba(216, 226, 240, 0.10) 72%,
+              rgba(196, 210, 230, 0.22) 92%,
+              rgba(196, 210, 230, 0.30) 100%),
+            /* Faint horizon glow across the top */
+            linear-gradient(180deg,
+              rgba(255,255,255,0.35) 0%,
+              transparent 12%),
+            /* Subtle edge vignette — glass curves away */
+            radial-gradient(115% 100% at 50% 50%,
+              transparent 60%,
+              rgba(40, 60, 90, 0.06) 100%);
         }
         /* Liquid-glass status bar — Tahoe-style translucent chrome */
         .lt-status {
