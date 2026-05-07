@@ -1,6 +1,7 @@
 import React from "react";
 import {
   AbsoluteFill,
+  Easing,
   Img,
   interpolate,
   spring,
@@ -8,6 +9,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
+import { noise2D } from "@remotion/noise";
 import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 import { DotGrid, DotGridVignette } from "./DotGrid";
@@ -38,6 +40,19 @@ const CURSOR_MOVE_START = toFrames(0.45);
 const CURSOR_MOVE_END = toFrames(1.40);
 const CLICK_AT = toFrames(1.50);
 
+// Panel exit — mirrors the GMBrand Scene04 phone flight: translate
+// far left, slight rotation, fade. Begins ~1.0s before scene end.
+const PANEL_EXIT_AT = SCENE_FRAMES - toFrames(1.0);
+const PANEL_EXIT_END = SCENE_FRAMES - toFrames(0.1);
+
+// Emoji burst — bursts from the click, the same vocabulary as
+// GMBrand Scene04. Burst origin sits at the click point in screen
+// coordinates so the emojis fan out from the moment the cursor
+// hits "Open".
+const BURST_AT = CLICK_AT;
+const BURST_ORIGIN_X = UI_LEFT + BTN_X;
+const BURST_ORIGIN_Y = UI_TOP + BTN_Y;
+
 export const AntiCheatReassure: React.FC = () => {
   return (
     <AbsoluteFill
@@ -52,11 +67,28 @@ export const AntiCheatReassure: React.FC = () => {
       </IdleZoom>
       <Headline />
       <RotatingProductPanel />
+      <EmojiBurst />
       <ClickFlash />
       <Subtitle />
       <DotGridVignette intensity={0.20} />
     </AbsoluteFill>
   );
+};
+
+// Panel exit progress 0 → 1 over the closing window. Used by the
+// product panel and the emoji cloud so they leave together.
+const usePanelExit = (): { tx: number; rot: number; opacity: number } => {
+  const frame = useCurrentFrame();
+  const t = interpolate(frame, [PANEL_EXIT_AT, PANEL_EXIT_END], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.bezier(0.55, 0, 0.78, 0.2),
+  });
+  return {
+    tx: t * -900,
+    rot: t * -14,
+    opacity: 1 - t,
+  };
 };
 
 // Camera dollies in close on entry, pulls out to fit, punches on click,
@@ -216,13 +248,14 @@ const RotatingProductPanel: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const { scale: cameraScale, shakeX, shakeY } = useCamera();
+  const exit = usePanelExit();
 
   const entry = spring({
     frame,
     fps,
     config: { damping: 28, stiffness: 80, mass: 0.95 },
   });
-  const opacity = interpolate(entry, [0, 1], [0, 1]);
+  const opacity = interpolate(entry, [0, 1], [0, 1]) * exit.opacity;
 
   // Slow continuous 3D oscillation. Yaw period 12s, pitch period 16s.
   const t = frame / fps;
@@ -241,13 +274,15 @@ const RotatingProductPanel: React.FC = () => {
     <div
       style={{
         position: "absolute",
-        left: UI_LEFT + shakeX,
+        left: UI_LEFT + shakeX + exit.tx,
         top: UI_TOP + shakeY,
         width: UI_W,
         height: UI_H,
         perspective: 2400,
         perspectiveOrigin: "50% 50%",
         opacity,
+        transform: `rotate(${exit.rot}deg)`,
+        transformOrigin: "50% 60%",
       }}
     >
       <div
@@ -288,6 +323,131 @@ const RotatingProductPanel: React.FC = () => {
         <ClickBurst />
         <ShieldStamp />
       </div>
+    </div>
+  );
+};
+
+// ─── Emoji burst — fired from the click point, mirrors the GMBrand
+// Scene04 launch+settle pattern. Cloud rides along with the panel
+// exit so it leaves the frame as one body.
+
+const HEART_EYES = String.fromCodePoint(0x1f60d);
+const PARTY = String.fromCodePoint(0x1f973);
+const RED_HEART = String.fromCodePoint(0x2764, 0xfe0f);
+const SPARKLES = String.fromCodePoint(0x2728);
+const FIRE = String.fromCodePoint(0x1f525);
+const ROCKET = String.fromCodePoint(0x1f680);
+
+type EmojiSeed = {
+  emoji: string;
+  endX: number;
+  endY: number;
+  size: number;
+  seed: number;
+  arcHeight: number;
+};
+
+const FLOATING_EMOJIS: EmojiSeed[] = [
+  { emoji: HEART_EYES, endX: -380, endY: -260, size: 108, seed: 1, arcHeight: 180 },
+  { emoji: PARTY, endX: -320, endY: -110, size: 100, seed: 2, arcHeight: 140 },
+  { emoji: SPARKLES, endX: -340, endY: 240, size: 70, seed: 3, arcHeight: 90 },
+  { emoji: RED_HEART, endX: 430, endY: 80, size: 96, seed: 4, arcHeight: 200 },
+  { emoji: ROCKET, endX: 480, endY: 220, size: 84, seed: 5, arcHeight: 150 },
+  { emoji: FIRE, endX: 410, endY: 350, size: 72, seed: 6, arcHeight: 120 },
+  { emoji: RED_HEART, endX: 360, endY: -180, size: 64, seed: 7, arcHeight: 230 },
+  { emoji: HEART_EYES, endX: 340, endY: -320, size: 76, seed: 8, arcHeight: 200 },
+  { emoji: SPARKLES, endX: -250, endY: -380, size: 56, seed: 9, arcHeight: 170 },
+  { emoji: PARTY, endX: -440, endY: 90, size: 80, seed: 10, arcHeight: 150 },
+];
+
+const quadBezier = (t: number, p0: number, p1: number, p2: number) => {
+  const m = 1 - t;
+  return m * m * p0 + 2 * m * t * p1 + t * t * p2;
+};
+
+const EmojiBurst: React.FC = () => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const exit = usePanelExit();
+
+  if (frame < BURST_AT - 1) return null;
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: BURST_ORIGIN_X + exit.tx,
+        top: BURST_ORIGIN_Y,
+        width: 0,
+        height: 0,
+        opacity: exit.opacity,
+        pointerEvents: "none",
+        zIndex: 4,
+      }}
+    >
+      {FLOATING_EMOJIS.map((item, i) => (
+        <FloatingEmoji
+          key={i}
+          {...item}
+          frame={frame}
+          fps={fps}
+          startFrame={BURST_AT + i * 2}
+        />
+      ))}
+    </div>
+  );
+};
+
+const FloatingEmoji: React.FC<
+  EmojiSeed & { frame: number; fps: number; startFrame: number }
+> = ({ emoji, endX, endY, size, seed, arcHeight, frame, fps, startFrame }) => {
+  const localFrame = frame - startFrame;
+  if (localFrame < 0) return null;
+
+  const pathT = interpolate(localFrame, [0, 22], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.bezier(0.16, 1, 0.3, 1),
+  });
+
+  const controlX = endX * 0.3 + (seed % 2 === 0 ? -1 : 1) * arcHeight * 0.4;
+  const controlY = endY * 0.3 - arcHeight;
+  const x = quadBezier(pathT, 0, controlX, endX);
+  const y = quadBezier(pathT, 0, controlY, endY);
+
+  const scaleSpring = spring({
+    frame: localFrame,
+    fps,
+    config: { damping: 6, stiffness: 120, mass: 0.4 },
+  });
+  const floatScale = 1 + Math.sin(localFrame * 0.08 + seed) * 0.06;
+  const settled = pathT >= 0.99;
+  const noiseX = settled ? noise2D("acrX" + seed, localFrame * 0.02, seed) * 8 : 0;
+  const noiseY = settled ? noise2D("acrY" + seed, localFrame * 0.015, seed) * 5 : 0;
+
+  const launchSpin =
+    interpolate(pathT, [0, 1], [0, (seed % 2 === 0 ? 1 : -1) * (15 + seed * 3)], {
+      extrapolateRight: "clamp",
+    });
+  const wobble = Math.sin(localFrame * 0.1 + seed * 2) * 4;
+  const rotation = pathT < 0.95 ? launchSpin : wobble;
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: 0,
+        top: 0,
+        transform: `translate(${x + noiseX}px, ${y + noiseY}px) scale(${
+          scaleSpring * floatScale
+        }) rotate(${rotation}deg)`,
+        fontSize: size,
+        opacity: Math.min(scaleSpring * 1.5, 1),
+        filter: "drop-shadow(2px 4px 8px rgba(10,10,12,0.10))",
+        pointerEvents: "none",
+      }}
+    >
+      {emoji}
     </div>
   );
 };
