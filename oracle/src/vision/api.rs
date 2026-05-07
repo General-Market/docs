@@ -478,9 +478,20 @@ async fn list_batches(
             let mut lifecycle_counts: std::collections::HashMap<u64, usize> = std::collections::HashMap::new();
             let mut lifecycle_sources: std::collections::HashMap<u64, String> = std::collections::HashMap::new();
             let mut lifecycle_player_counts: std::collections::HashMap<u64, usize> = std::collections::HashMap::new();
+            // Only fetch lifecycle rows for the on-chain batch IDs in the current
+            // result set. The unbounded query pulled 85k+ rows on every request
+            // and silently timed out, leaving the HashMap empty so every batch
+            // fell through to the bytes32 hex fallback. The API then returned
+            // raw hashes instead of plain source names — fund_manager could
+            // still resolve them via keccak-map, but downstream consumers that
+            // expected names broke.
+            let batch_ids_in_response: Vec<i64> = rows.iter().map(|r| r.id).collect();
             if let Ok(lc_rows) = sqlx::query_as::<_, (Option<i64>, String, Option<i32>, Option<i32>)>(
-                "SELECT on_chain_batch_id, source_id, market_count, player_count FROM vision_batch_lifecycle WHERE on_chain_batch_id IS NOT NULL"
+                "SELECT on_chain_batch_id, source_id, market_count, player_count
+                 FROM vision_batch_lifecycle
+                 WHERE on_chain_batch_id = ANY($1)"
             )
+            .bind(&batch_ids_in_response)
             .fetch_all(&state.pool)
             .await
             {
