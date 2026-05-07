@@ -7,21 +7,7 @@ description: "Lending position, market data, vault info, and history endpoints"
 
 Lending is borrowing against the future. These endpoints show you the terms, the position, and how close you are to losing it.
 
-```
- +------------------------------------------------------------------+
- |                      MORPHO API OVERVIEW                         |
- +------------------------------------------------------------------+
- |                                                                  |
- |  /morpho-position?user=0x...   Position + market state           |
- |  /morpho-history?address=0x... Transaction history               |
- |  /user-state?address=0x...     Balances + allowances             |
- |                                                                  |
- |  SSE Streams (real-time push):                                   |
- |    user-positions ............. collateral, borrow_shares         |
- |    oracle-prices .............. NAV price, borrow_rate            |
- |                                                                  |
- +------------------------------------------------------------------+
-```
+<MorphoApiOverview />
 
 ---
 
@@ -29,34 +15,7 @@ Lending is borrowing against the future. These endpoints show you the terms, the
 
 Two channels: REST for snapshots, SSE for real-time updates. Both read from the same on-chain Morpho Blue state on L3.
 
-```
-                  +------------------+
-                  |    Frontend      |
-                  |  (React hooks)   |
-                  +--------+---------+
-                           |
-              +------------+------------+
-              |                         |
-     +--------v--------+     +---------v---------+
-     |   REST API       |     |    SSE Streams    |
-     |   /morpho-*      |     |  user-positions   |
-     |   /user-state    |     |  oracle-prices    |
-     +--------+---------+     +---------+---------+
-              |                         |
-              +------------+------------+
-                           |
-                  +--------v---------+
-                  |   Data Node      |
-                  | (Rust, Axum)     |
-                  +--------+---------+
-                           |
-              +------------+------------+
-              |                         |
-     +--------v--------+     +---------v---------+
-     |  Morpho Blue    |     |  ITPNAVOracle     |
-     |  (L3 Orbit)     |     |  (L3 Orbit)       |
-     +------------------+     +-------------------+
-```
+<MorphoArchitecture />
 
 ---
 
@@ -277,36 +236,7 @@ history = resp.json()
 
 Deposit USDC. Receive vault shares. The vault lends your capital across Morpho markets. You earn yield. You bear risk. The two are inseparable.
 
-```
-  DEPOSIT FLOW
-  ============
-
-  +----------+     approve()      +----------+     deposit()     +-----------------+
-  |          | -----------------> |   USDC   | --------------->  |  MetaMorpho     |
-  |  Lender  |                    |  (L3)    |                   |  Vault (ERC4626)|
-  |  Wallet  | <----------------- +----------+                   |                 |
-  |          |   vault shares                                    |  totalAssets++  |
-  +----------+                                                   +--------+--------+
-                                                                          |
-                                           reallocate()                   |
-                                  +---------------------------------------+
-                                  |                  |                    |
-                          +-------v------+   +-------v------+   +--------v-----+
-                          | Morpho Market|   | Morpho Market|   | Morpho Market|
-                          |  ITP-A / USDC|   |  ITP-B / USDC|   |  ITP-C / USDC|
-                          +--------------+   +--------------+   +--------------+
-
-
-  WITHDRAW FLOW
-  =============
-
-  +----------+     redeem()       +-----------------+    withdraw from     +--------------+
-  |          | -----------------> |  MetaMorpho     | ------------------> | Morpho Market|
-  |  Lender  |                    |  Vault (ERC4626)|                     | (available   |
-  |  Wallet  | <----------------- |                 |                     |  liquidity)  |
-  |          |   USDC returned    |  totalAssets--  |                     +--------------+
-  +----------+                    +-----------------+
-```
+<MorphoVaultFlow />
 
 ### Vault Contract Calls
 
@@ -331,57 +261,7 @@ The vault's `totalAssets` includes USDC currently lent out to borrowers. If util
 
 The bot that moves capital where it is needed. It monitors utilization, respects concentration caps, and rebalances without asking permission.
 
-```
-                    +---------------------+
-                    |    Curator Bot      |
-                    |    (Rust daemon)    |
-                    +----------+----------+
-                               |
-                  +------------+------------+
-                  |                         |
-         +--------v--------+      +--------v--------+
-         | Read Metrics     |      | Set Rates       |
-         |                  |      |                  |
-         | morpho.market()  |      | CuratorRateIRM  |
-         | morpho.position()|      | .setRates()     |
-         | vault.totalAssets|      |                  |
-         +--------+---------+      +---------+--------+
-                  |                          |
-                  v                          v
-         +------------------+      +------------------+
-         | Allocation       |      | SERM Algorithm   |
-         | Decisions        |      | (rate pricing)   |
-         |                  |      |                  |
-         | Supply to high-  |      | Kink curve +     |
-         | utilization mkts |      | stress + conc.   |
-         | Withdraw from    |      | + liquidity +    |
-         | low-util. mkts   |      | tier premium     |
-         +--------+---------+      +------------------+
-                  |
-                  v
-         +------------------+
-         | vault.reallocate |
-         | (MarketAlloc[])  |
-         +------------------+
-
-
-  REBALANCING LOGIC
-  =================
-
-    For each market:
-      utilization = totalBorrowed / totalSupplied * 100
-
-                        TARGET BAND
-      0%   50%    70% |===========| 85%    90%   100%
-      |-----+------+--+-----------+--+------+------|
-            |      |                 |      |
-         critical  target           target  critical
-           low     min               max     high
-            |                                |
-            v                                v
-        Withdraw                          Supply
-        candidate                       candidate
-```
+<MorphoCuratorBot />
 
 ### Risk Tier Concentration Limits
 
@@ -394,19 +274,7 @@ Each DTF market is assigned a risk tier that caps the maximum percentage of vaul
 | **C** | Higher risk, narrower DTFs | 10% |
 | **D** | Watch list, new DTFs | 5% |
 
-```
-  Example: Vault with $100,000 USDC
-  ==================================
-
-  +------------------+------+-------+-----------+
-  | Market           | Tier |  Cap  | Max Alloc |
-  +------------------+------+-------+-----------+
-  | Top 100 Crypto   |  A   |  30%  |  $30,000  |
-  | DeFi Blue Chips  |  B   |  20%  |  $20,000  |
-  | AI Tokens        |  C   |  10%  |  $10,000  |
-  | Meme Index       |  D   |   5%  |   $5,000  |
-  +------------------+------+-------+-----------+
-```
+<MorphoTierExample />
 
 ---
 
@@ -414,65 +282,7 @@ Each DTF market is assigned a risk tier that caps the maximum percentage of vaul
 
 Most DeFi rate models compute on-chain. This one delegates to an off-chain curator that runs the SERM algorithm -- because the inputs (volatility, stress, liquidity) are too complex for a pure on-chain computation. The curator pushes. The contract stores. Morpho reads.
 
-```
-  HOW CURATORRATEIRM WORKS
-  ========================
-
-  +------------------+                    +---------------------+
-  |  Curator Bot     |  setRates()        |   CuratorRateIRM    |
-  |  (off-chain)     | -----------------> |   (on-chain)        |
-  |                  |  market_id + rate   |                     |
-  |  Runs SERM algo  |                    |  rates[id] = rate   |
-  |  every ~5 min    |                    |  lastUpdate[id]=now |
-  +------------------+                    +----------+----------+
-                                                     |
-                                          borrowRate()|  Called by Morpho
-                                                     |  on every interaction
-                                                     v
-                                          +----------+----------+
-                                          |   Morpho Blue       |
-                                          |   (interest accrual)|
-                                          +---------------------+
-
-
-  SERM RATE FORMULA
-  =================
-
-    rate = kink(global_util) * (1 + stress*0.5) * (1 + concentration) * liquidity_mult + tier_premium
-
-    Where:
-    - kink(global_util):  Piecewise linear curve
-                          0%-80% util  ->  2%-5% APR (gentle slope)
-                          80%-100% util -> 5%-100% APR (steep slope)
-
-    - stress:             Weighted avg of 24h price moves across ITP assets
-                          Capped at 5x
-
-    - concentration:      Penalty for single-asset dominance in an ITP
-
-    - liquidity_mult:     Illiquid assets pay higher rates
-
-    - tier_premium:       Extra cost for riskier tiers (C, D)
-
-
-  KINK CURVE (base rate)
-  ======================
-
-    APR
-    100% |                                        *
-         |                                      *
-         |                                    *
-         |                                  *
-         |                                *
-      5% |..............................*
-         |                           * |
-         |                        *    |
-         |                     *       |
-      2% |*.................*          |
-         +----+----+----+---+---------+---->
-         0%  20%  40%  60%  80%      100%  Utilization
-                                (kink)
-```
+<MorphoCuratorRateIRM />
 
 ### Safety Mechanisms
 
@@ -494,58 +304,7 @@ If the curator bot goes offline for more than 48 hours, the punitive rate (100% 
 
 When the health factor drops to 1.0, the position is exposed. Anyone can liquidate it. No warning, no grace period. The math is the only judge.
 
-```
-  LIQUIDATION FLOW
-  ================
-
-  Health factor drops below 1.0
-          |
-          v
-  +----------------+     liquidate()      +------------------+
-  |   Liquidator   | ------------------> |   Morpho Blue    |
-  |                |   repays portion    |                  |
-  |  Repays X USDC |   of borrower debt  |  Validates HF<1  |
-  |                |                     |  Transfers ITP   |
-  |  Receives ITP  | <------------------ |  collateral at   |
-  |  at discount   |   ITP + bonus      |  discount        |
-  +----------------+                     +------------------+
-                                                  |
-                                                  v
-                                         +------------------+
-                                         |   Borrower's     |
-                                         |   Position       |
-                                         |                  |
-                                         |  collateral -= X |
-                                         |  debt -= Y       |
-                                         |  HF improves     |
-                                         +------------------+
-
-
-  PARTIAL LIQUIDATION EXAMPLE
-  ===========================
-
-    Before liquidation:
-    +-------------------------------------------+
-    | Collateral: 10,000 ITP (worth $10,000)    |
-    | Debt:       $8,000 USDC                   |
-    | LLTV:       77%                           |
-    | HF:         0.96  (below 1.0!)            |
-    +-------------------------------------------+
-
-    Liquidator repays $2,000 of debt:
-    +-------------------------------------------+
-    | Liquidator pays:   $2,000 USDC            |
-    | Liquidator gets:   2,100 ITP ($2,100)     |
-    |                    (5% liquidation bonus)  |
-    +-------------------------------------------+
-
-    After liquidation:
-    +-------------------------------------------+
-    | Collateral: 7,900 ITP (worth $7,900)      |
-    | Debt:       $6,000 USDC                   |
-    | HF:         1.01  (back above 1.0)        |
-    +-------------------------------------------+
-```
+<MorphoLiquidationFlow />
 
 ### Key Liquidation Rules
 
@@ -561,51 +320,7 @@ When the health factor drops to 1.0, the position is exposed. Anyone can liquida
 
 DTF shares are collateral. The oracle that prices them is BLS-verified and oracle-signed. If the oracle lies, liquidations break. So it does not lie.
 
-```
-  NAV ORACLE PIPELINE
-  ====================
-
-  +------------------+     +------------------+     +------------------+
-  |  Oracle Network  |     |  BLS Aggregation |     |  ITPNAVOracle    |
-  |  (3 oracles)     | --> |  (2/3 threshold) | --> |  (on-chain)      |
-  |                  |     |                  |     |                  |
-  |  Each computes   |     |  Aggregated BLS  |     |  updatePrice()   |
-  |  NAV from prices |     |  signature       |     |  - verify BLS    |
-  +------------------+     +------------------+     |  - check dev <10%|
-                                                    |  - store price   |
-                                                    +--------+---------+
-                                                             |
-                                                    price()  | Called by Morpho
-                                                             | on every interaction
-                                                             v
-                                                    +--------+---------+
-                                                    |   Morpho Blue    |
-                                                    |  Uses price for: |
-                                                    |  - Health factor |
-                                                    |  - Max borrow   |
-                                                    |  - Liquidation   |
-                                                    +------------------+
-
-
-  NAV COMPUTATION
-  ===============
-
-    ITP = basket of N assets with fixed per-share quantities
-
-    NAV = SUM( qty[i] * price[i] ) / 1e18
-
-    Example: "Top 10 Crypto" ITP
-    +--------+----------+----------+-----------+
-    | Asset  | Qty/Share| Price    | Value     |
-    +--------+----------+----------+-----------+
-    | BTC    | 0.00015  | $67,000  | $10.05    |
-    | ETH    | 0.0028   | $3,400   |  $9.52    |
-    | SOL    | 0.053    |   $180   |  $9.54    |
-    | ...    | ...      | ...      | ...       |
-    +--------+----------+----------+-----------+
-    | NAV per share                | $1.0450   |
-    +--------+----------+----------+-----------+
-```
+<MorphoNAVOracle />
 
 ### Oracle Price Format
 
@@ -638,53 +353,7 @@ The `ITPNAVOracle` uses Morpho's 36-decimal price convention:
 
 The health factor is one number. Above 1.0, you are solvent. Below 1.0, you are exposed. Everything else is commentary on that single ratio.
 
-```
-  HEALTH FACTOR FORMULA
-  =====================
-
-    HF = (collateral * oraclePrice / 1e36 * LLTV / 1e18) / debt
-
-    Where:
-    - collateral: ITP amount (18 decimals)
-    - oraclePrice: from ITPNAVOracle (36 decimals)
-    - LLTV: Liquidation Loan-To-Value (e.g., 0.77e18 = 77%)
-    - debt: USDC owed including interest (18 decimals on L3)
-
-
-  HEALTH FACTOR ZONES
-  ====================
-
-    HF   0.0   0.5   1.0   1.5   2.0   2.5   3.0+
-         |      |     |     |     |     |     |
-         +------+-----+-----+-----+-----+-----+---->
-         |XXXXX LIQUIDATABLE |     |           |
-         |XXXXXXXXXXXXX|     |     |           |
-                       |     |     |           |
-                       | CAUTION   |           |
-                       |     |     |           |
-                             |  MODERATE       |
-                             |     |           |
-                                   |   SAFE    |
-                                   |           |
-                                         VERY SAFE
-
-
-  LIQUIDATION PRICE
-  =================
-
-    The ITP NAV price at which HF = 1.0:
-
-    liq_price = debt * 1e36 * 1e18 / (collateral * LLTV)
-
-    Example:
-      collateral = 10,000 ITP
-      debt       = $5,000 USDC
-      LLTV       = 77%
-
-      liq_price = 5000 / (10000 * 0.77) = $0.6494 per ITP
-
-      If ITP NAV drops to $0.6494, the position is liquidatable.
-```
+<MorphoHealthFactor />
 
 ### Monitoring Recommendations
 
@@ -753,19 +422,4 @@ Pushes the latest NAV oracle price and borrow rate whenever they update.
 
 Three sources, in order of preference. The fastest wins. The slowest is the fallback of last resort.
 
-```
-  +-------------------+     +-------------------+     +-------------------+
-  |  SSE Stream       | --> |  REST Endpoint    | --> |  On-Chain Read    |
-  |  (instant push)   |     |  (30s poll)       |     |  (wagmi fallback) |
-  |                   |     |                   |     |                   |
-  |  collateral       |     |  debt_amount      |     |  vault totalAssets|
-  |  borrow_shares    |     |  max_borrow       |     |  vault balanceOf  |
-  |  oracle_price     |     |  max_withdraw     |     |  IRM rates()      |
-  |  borrow_rate      |     |  market state     |     |                   |
-  +-------------------+     +-------------------+     +-------------------+
-
-  Priority: SSE > REST > on-chain reads
-  SSE provides instant updates for position + oracle data.
-  REST fills in computed fields (debt_amount requires market state).
-  On-chain reads are the fallback for vault-level data not yet in SSE/REST.
-```
+<MorphoDataPriority />

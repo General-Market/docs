@@ -9,27 +9,7 @@ The addresses. Where the contracts live on-chain. Verify them before sending mon
 
 Vision contracts are deployed on the **Index L3** Arbitrum Orbit chain (chain ID `111222333`).
 
-```
-┌─────────────────────────────────────────────────┐
-│              INDEX L3 (Chain 111222333)          │
-│                                                 │
-│  ┌───────────────────────────────────────────┐  │
-│  │              Vision Contract              │  │
-│  │  0x4F1BDD073932828bf2822F6dCAD1121Da41ED1Ef│  │
-│  │                                           │  │
-│  │  ┌─────────┐ ┌──────────┐ ┌────────────┐ │  │
-│  │  │ Batches │ │ Players  │ │ Bot Reg.   │ │  │
-│  │  └─────────┘ └──────────┘ └────────────┘ │  │
-│  └───────────────────────────────────────────┘  │
-│                      │                          │
-│              ┌───────┴───────┐                  │
-│              │               │                  │
-│  ┌───────────────┐  ┌────────────────────────┐  │
-│  │  L3 WUSDC     │  │  OracleRegistry        │  │
-│  │  (18 decimals)│  │  (BLS verification)    │  │
-│  └───────────────┘  └────────────────────────┘  │
-└─────────────────────────────────────────────────┘
-```
+<ContractAddressTopology />
 
 <Warning>
 Contract addresses are loaded from `deployments/vision-deployment.json` and may differ between environments (testnet, staging, production). Always verify addresses against the deployment file before interacting with contracts directly.

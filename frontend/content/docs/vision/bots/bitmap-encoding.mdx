@@ -18,15 +18,7 @@ Each bit represents a prediction for one market:
 
 Bits are ordered **big-endian within each byte**: bit 0 is the most significant bit (MSB) of byte 0.
 
-```
-Byte 0                Byte 1                Byte 2
-┌─┬─┬─┬─┬─┬─┬─┬─┐   ┌─┬─┬─┬─┬─┬─┬─┬─┐   ┌─┬─┬─┬─┬─┬─┬─┬─┐
-│0│1│2│3│4│5│6│7│   │8│9│A│B│C│D│E│F│   │G│H│I│J│ │ │ │ │
-└─┴─┴─┴─┴─┴─┴─┴─┘   └─┴─┴─┴─┴─┴─┴─┴─┘   └─┴─┴─┴─┴─┴─┴─┴─┘
- MSB            LSB    MSB            LSB    MSB    ▲     LSB
-                                                    │
-                                              Unused bits = 0
-```
+<BitmapByteLayout />
 
 Numbers inside cells are **market indices** (0-indexed). Unused trailing bits in the last byte are always zero.
 

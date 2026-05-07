@@ -11,20 +11,7 @@ Vision runs a **Season 1** points program that rewards users across **three pool
 **10,000 points per day**. Points are computed server-side in the data-node, stored in
 Postgres, and backed up to CSV every 4 hours.
 
-```
- +=======================================================================+
- |                     UNIFIED POINTS SYSTEM                             |
- |                                                                       |
- |   Pool              Budget       Mechanic                             |
- |   ────              ──────       ────────                             |
- |   Vision            5,000/day    Deposit share in settled rounds      |
- |   Index Creator     2,500/day    NAV growth of your ITP               |
- |   Index Holder      2,500/day    Weighted portfolio performance       |
- |                     ──────                                            |
- |   TOTAL             10,000/day                                        |
- |                                                                       |
- +=======================================================================+
-```
+<PointsOverview />
 
 ## Vision Pool (5,000 pts/day)
 
@@ -32,33 +19,11 @@ When a prediction round settles, points are distributed among all participants
 proportional to their deposit size. The bigger your deposit relative to the pool,
 the more points you earn. Accuracy is irrelevant.
 
-```
- Round #42 settles:
- +------------------------------------------------------------------+
- |                                                                  |
- |  Per-round budget depends on how many rounds settle per day.     |
- |  More rounds = smaller per-round allocation.                     |
- |  Budget clamped to [10, 500] pts/round.                          |
- |                                                                  |
- |  Your share: your_deposit / total_deposited                      |
- |  Your points: round_budget × your_share                          |
- |                                                                  |
- +------------------------------------------------------------------+
-```
+<PointsRoundFormula />
 
 ### Worked Example
 
-```
- Scenario: Round settles with $200 total deposits, ~100 rounds/day
- +------------------------------------------------------------------+
- |                                                                  |
- |  round_budget  = 5,000 / 100 = 50 pts                           |
- |  your_deposit  = $50                                             |
- |  your_share    = $50 / $200 = 0.25  (25%)                       |
- |  your_points   = 50 × 0.25 = 12.5 pts                           |
- |                                                                  |
- +------------------------------------------------------------------+
-```
+<PointsRoundExample />
 
 <Info>
 Points are awarded once per round at settlement. No continuous accrual.
@@ -72,23 +37,7 @@ Create an ITP that outperforms. The protocol ranks all ITPs by **NAV growth sinc
 creation** every hour and distributes 2,500/24 ≈ 104 points per hour using a
 **0.7x exponential decay** curve. Only ITPs with positive growth qualify.
 
-```
- EXPONENTIAL DECAY DISTRIBUTION (0.7x)
- +===================================================================+
- |                                                                   |
- |  Rank   Weight    Share     Points/hr                             |
- |  ----   ------    -----     ---------                             |
- |   #1    1.000     36.1%     37.6   ████████████████████████████   |
- |   #2    0.700     25.2%     26.3   ████████████████████           |
- |   #3    0.490     17.7%     18.4   █████████████                  |
- |   #4    0.343     12.4%     12.9   █████████                      |
- |   #5    0.240      8.7%      9.0   ██████                         |
- |                                                                   |
- |  Formula: weight = 0.7 ^ (rank - 1)                              |
- |  Only positive NAV growth qualifies.                              |
- |                                                                   |
- +===================================================================+
-```
+<PointsCreatorDecay />
 
 ## Index Holder Pool (2,500 pts/day)
 
@@ -108,18 +57,7 @@ the patient and punishes the unlucky. The protocol merely observes.
 The `/points` page shows a unified leaderboard ranked by **total points** across all three
 pools. Each player's breakdown is visible: Vision, Creator, Holder, and Total.
 
-```
- +======================================================================+
- |                         LEADERBOARD                                  |
- +------+------------------+---------+---------+---------+--------+     |
- | RANK |     PLAYER       | VISION  | CREATOR | HOLDER  | TOTAL  |     |
- +------+------------------+---------+---------+---------+--------+     |
- | 1st  | 0xA1b2...c3d4    |  5,200  |  2,400  |  1,800  | 9,400  |     |
- | 2nd  | 0xE5f6...g7h8    |  4,100  |  1,600  |    900  | 6,600  |     |
- | 3rd  | 0xI9j0...k1l2    |  2,800  |     0   |  1,200  | 4,000  |     |
- +------+------------------+---------+---------+---------+--------+     |
- +======================================================================+
-```
+<PointsLeaderboard />
 
 ## What Points Are For
 
@@ -142,29 +80,7 @@ will justify the waiting is a prediction market of its own.
 
 Points are computed in the data-node (`points.rs`) and stored in Postgres.
 
-```
- DATA FLOW
- +================================================================+
- |                                                                |
- |  Oracle API                                                    |
- |       |  settled rounds + player deposits                      |
- |       v                                                        |
- |  data-node (points.rs)                                         |
- |       |  - Polls every 30s for settled Vision rounds           |
- |       |  - Hourly cron for Index Creator + Holder pools        |
- |       |  - CSV backup every 4 hours                            |
- |       v                                                        |
- |  Postgres (points_ledger + points_totals)                      |
- |       |                                                        |
- |       v                                                        |
- |  GET /points?user=     → player totals per pool                |
- |  GET /points/leaderboard → ranked by total points              |
- |       |                                                        |
- |       v                                                        |
- |  Frontend (usePoints hook → /points page)                      |
- |                                                                |
- +================================================================+
-```
+<PointsDataFlow />
 
 ### Key Constants
 

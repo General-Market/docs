@@ -9,129 +9,13 @@ Ninety-eight ways to measure the world. Earthquakes. Ice cream machines. Train d
 
 Every prediction market on Vision is backed by a real-world data source. The Data Node collects, validates, and serves price feeds from 90+ external APIs. The infrastructure is serious. What it measures is often not.
 
-```
-    ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
-    │   USGS API      │  │   CoinGecko     │  │   TFL API       │  │   McBroken      │
-    │   Earthquakes   │  │   Crypto Prices │  │   UK Trains     │  │   Ice Cream     │
-    └────────┬────────┘  └────────┬────────┘  └────────┬────────┘  └────────┬────────┘
-             │                    │                    │                    │
-             └────────────────────┼────────────────────┼────────────────────┘
-                                  │                    │
-                                  ▼                    ▼
-                      ┌────────────────────────────────────┐
-                      │           DATA NODE (Rust)         │
-                      │                                    │
-                      │   ┌──────────┐    ┌─────────────┐  │
-                      │   │ Collect  │───>│  Validate   │  │
-                      │   │ (HTTP)   │    │  (bounds,   │  │
-                      │   └──────────┘    │   staleness │  │
-                      │                   │   checks)   │  │
-                      │                   └──────┬──────┘  │
-                      │                          │         │
-                      │                   ┌──────▼──────┐  │
-                      │                   │   Store     │  │
-                      │                   │ (Postgres)  │  │
-                      │                   └──────┬──────┘  │
-                      │                          │         │
-                      │                   ┌──────▼──────┐  │
-                      │                   │   Serve     │  │
-                      │                   │  (REST API) │  │
-                      │                   └─────────────┘  │
-                      └────────────────┬───────────────────┘
-                                       │
-                            ┌──────────▼──────────┐
-                            │     PostgreSQL      │
-                            │                     │
-                            │  market_prices      │
-                            │  market_prices_latest│
-                            │  source_meta        │
-                            └──────────┬──────────┘
-                                       │
-                            ┌──────────▼──────────┐
-                            │     Vision API      │
-                            │                     │
-                            │  /api/vision/batches│
-                            │  /api/vision/ticks  │
-                            │  /api/vision/state  │
-                            │  /api/vision/history│
-                            └──────────┬──────────┘
-                                       │
-                            ┌──────────▼──────────┐
-                            │      Frontend       │
-                            │                     │
-                            │  Live prices, charts│
-                            │  Batch creation UI  │
-                            │  Market explorer    │
-                            └─────────────────────┘
-```
+<DataPipelineFull />
 
 ## Source Categories at a Glance
 
 Vision sources span 16 categories. Crypto is the least interesting one. The real edge is in the places nobody else is looking -- the buoy readings, the nuclear reactor outputs, the disruption scores of transit systems in cities that run on bureaucratic inertia.
 
-```
-  ┌─────────────────────────────────────────────────────────────────────────────┐
-  │                        VISION DATA SOURCE MAP                              │
-  ├────────────────────┬────────────────────┬───────────────────────────────────┤
-  │                    │                    │                                   │
-  │   FINANCE (14)     │   ECONOMIC (11)    │   REGULATORY (4)                 │
-  │   ~~~~~~~~~~~      │   ~~~~~~~~~~~~     │   ~~~~~~~~~~~~~~                 │
-  │   CoinGecko        │   FRED Rates       │   SEC Filings                    │
-  │   Pump.fun         │   EIA Energy       │   Congress Votes                 │
-  │   DefiLlama        │   US Treasury      │   Federal Courts                 │
-  │   Finnhub Stocks   │   ECB Rates        │   NYC 311                        │
-  │   Nasdaq           │   World Bank       │                                  │
-  │   Zillow           │   BLS              │                                  │
-  │   Polymarket       │   Adzuna Jobs      │                                  │
-  │   FINRA (x2)       │   USA Spending     │                                  │
-  │   Futures          │   IMF              │                                  │
-  │   Bitcoin On-Chain │   OPEC             │                                  │
-  │   Yahoo Drinks     │   CFTC             │                                  │
-  │   TWSE             │                    │                                  │
-  │   Best Buy         │                    │                                  │
-  │                    │                    │                                  │
-  ├────────────────────┼────────────────────┼───────────────────────────────────┤
-  │                    │                    │                                   │
-  │   TECH (8)         │   ENTERTAINMENT    │   GEOPHYSICAL (15)               │
-  │   ~~~~~~~~         │   (14)             │   ~~~~~~~~~~~~~~~~               │
-  │   GitHub           │   ~~~~~~~~~~~~~~   │   USGS Earthquakes               │
-  │   npm              │   Twitch           │   Volcanoes                      │
-  │   PyPI             │   Movies/TV (TMDB) │   NOAA Weather                   │
-  │   Crates.io        │   Last.fm Music    │   Weather Alerts                 │
-  │   StackOverflow    │   Steam Gaming     │   Open-Meteo                     │
-  │   Hacker News      │   AniList Anime    │   Air Quality (AirNow)           │
-  │   Cloudflare       │   Reddit           │   USGS Water                     │
-  │   IODA Outages     │   Chaturbate       │   NOAA Ocean Met                 │
-  │                    │   Board Games      │   NOAA Tides                     │
-  │                    │   Backpack.tf      │   NDBC Buoys                     │
-  │                    │   4chan             │   River Gauges                   │
-  │                    │   Sports           │   NRC Nuclear                    │
-  │                    │   Esports          │   Wildfires                      │
-  │                    │   Theme Parks      │   Disease Tracking               │
-  │                    │   McBroken         │   Power Outages                  │
-  │                    │                    │                                  │
-  ├────────────────────┼────────────────────┼───────────────────────────────────┤
-  │                    │                    │                                   │
-  │   TRANSPORT (16)   │   NATURE (4)       │   ACADEMIC (3)    SPACE (3)      │
-  │   ~~~~~~~~~~~~~~   │   ~~~~~~~~~~       │   ~~~~~~~~~~~~    ~~~~~~~~~~     │
-  │   Global Flights   │   eBird            │   OpenAlex        Space Weather  │
-  │   Transit GTFS     │   Wildlife (iNat)  │   Crossref        ISS Tracker   │
-  │   CityBikes        │   Animal Migration │   PubMed          Mil Aircraft  │
-  │   Parking          │   Animal Shelters  │                                  │
-  │   TomTom Traffic   │                    │                                  │
-  │   EV Charging      │                    │                                  │
-  │   Border Waits     │                    │                                  │
-  │   Airport Delays   │                    │                                  │
-  │   Deutsche Bahn    │                    │                                  │
-  │   NYC Subway       │                    │                                  │
-  │   Paris Metro      │                    │                                  │
-  │   Ryanair          │                    │                                  │
-  │   London Tube      │                    │                                  │
-  │   Ship Tracking    │                    │                                  │
-  │   Port Data        │                    │                                  │
-  │                    │                    │                                  │
-  └────────────────────┴────────────────────┴───────────────────────────────────┘
-```
+<SourceCategoryMap />
 
 ## Full Source Directory
 
@@ -280,49 +164,7 @@ Vision sources span 16 categories. Crypto is the least interesting one. The real
 
 A source produces a numeric value. Any numeric value. The temperature in Fahrenheit, the number of active wildfires, the Kp index of geomagnetic storms. The protocol does not distinguish between the profound and the trivial. It treats them all with the same mechanical impartiality. Players predict whether the value goes UP or DOWN (or stays FLAT) over a tick period.
 
-```
-    ┌──────────────────────────────────────────────────────────────────┐
-    │                    SOURCE TO MARKET FLOW                        │
-    └──────────────────────────────────────────────────────────────────┘
-
-         Source API                  Data Node                  On-Chain
-         ~~~~~~~~~~                  ~~~~~~~~~                  ~~~~~~~~
-
-    ┌──────────────┐
-    │  CoinGecko   │
-    │  GET /price  │──── BTC = $67,432.10 ────┐
-    │  ?ids=btc    │                          │
-    └──────────────┘                          ▼
-                                   ┌────────────────────┐
-                                   │  Validate & Store  │
-                                   │                    │
-                                   │  asset_id: BTC-USD │
-                                   │  price: 67432.10   │
-                                   │  ts: 1710403200    │
-                                   └─────────┬──────────┘
-                                             │
-                                             ▼
-                                   ┌────────────────────┐
-                                   │  Tick N resolves   │
-                                   │                    │
-                                   │  Start: $67,432.10 │
-                                   │  End:   $67,891.55 │
-                                   │                    │
-                                   │  Delta: +$459.45   │
-                                   │  Result: UP        │
-                                   └─────────┬──────────┘
-                                             │
-                                             ▼
-                                   ┌────────────────────┐
-                                   │  BLS-signed price  │
-                                   │  submitted on-chain│
-                                   │                    │
-                                   │  2/3+ oracles must │
-                                   │  agree on the      │
-                                   │  price before it   │
-                                   │  resolves.         │
-                                   └────────────────────┘
-```
+<SourceToMarketFlow />
 
 The same pattern works for every source -- whether the "price" is Bitcoin in USD, an earthquake magnitude, the number of broken McDonald's ice cream machines in Chicago, or the disruption level on the London Underground. The machinery does not know what it is measuring. It only knows the number went up, or it went down, or it stayed the same. In this, it resembles the universe itself.
 
@@ -330,22 +172,7 @@ The same pattern works for every source -- whether the "price" is Bitcoin in USD
 
 Every market has a string ID formed from its source prefix and asset name. A naming convention for the measurable world:
 
-```
-    ┌─────────────┬──────────────────┬──────────────────────────────┐
-    │   Prefix    │   Asset          │   Full Market ID             │
-    ├─────────────┼──────────────────┼──────────────────────────────┤
-    │  crypto_    │  BTC-USD         │  crypto_BTC-USD              │
-    │  earthquake_│  california      │  earthquake_california       │
-    │  tfl_tube_  │  northern        │  tfl_tube_northern           │
-    │  mcbroken_  │  chicago         │  mcbroken_chicago            │
-    │  steam_     │  counter-strike-2│  steam_counter-strike-2      │
-    │  defi_      │  aave            │  defi_aave                   │
-    │  db_trains_ │  berlin_hbf      │  db_trains_berlin_hbf        │
-    │  nrc_       │  palo-verde-1    │  nrc_palo-verde-1            │
-    │  ndbc_      │  41002           │  ndbc_41002                  │
-    │  airnow_    │  los-angeles     │  airnow_los-angeles          │
-    └─────────────┴──────────────────┴──────────────────────────────┘
-```
+<MarketIdConvention />
 
 The prefix determines which source and category the market belongs to. The frontend uses prefix matching to route markets to the correct display logic (value labels, units, formatting).
 
