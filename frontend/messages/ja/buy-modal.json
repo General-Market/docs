@@ -58,7 +58,9 @@
     "vs_limit": "指値比較",
     "underlying_title": "Underlying assets acquired",
     "underlying_note": "Quantities are exact (on-chain inventory × shares minted). Prices reflect the current oracle quote.",
-    "underlying_note_approx": "Approximate breakdown — this DTF has no on-chain inventory yet, so quantities are derived from weights at current prices."
+    "underlying_note_approx": "Approximate breakdown — this DTF has no on-chain inventory yet, so quantities are derived from weights at current prices.",
+    "preview_backing_title": "What your shares will be backed by",
+    "preview_backing_note": "Projected from on-chain inventory and current oracle prices. Final quantities at fill match this exactly when on-chain inventory is set."
   },
   "toast": {
     "buy_filled_shares": "購入約定 — {name}のシェア{shares}を受け取りました",

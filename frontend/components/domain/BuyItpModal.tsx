@@ -538,10 +538,11 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     if (micro === -1) toastFired.current = false
   }, [micro, fillAmount, fillPrice, itpName, showSuccess])
 
-  // Per-asset breakdown — fetch once on fill so the user sees what they
-  // actually bought into. Prices come from /api/itp-enrichment (data-node).
+  // Per-asset breakdown — fetch once on modal open so the user sees the
+  // projected backing before submitting, and the realized backing after fill.
+  // Prices come from /api/itp-enrichment (data-node).
   useEffect(() => {
-    if (!fillAmount || holdings.length > 0) return
+    if (holdings.length > 0) return
     let cancelled = false
     fetch(`/api/itp-enrichment?itp_id=${itpId}`)
       .then(r => r.ok ? r.json() : null)
@@ -551,7 +552,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
       })
       .catch(() => {})
     return () => { cancelled = true }
-  }, [fillAmount, holdings.length, itpId])
+  }, [holdings.length, itpId])
 
   // Error handlers
   useEffect(() => {
@@ -1027,6 +1028,56 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
                   </div>
                 </div>
               )}
+
+              {parsedAmount > 0n && navPerShareBn > 0n && holdings.length > 0 && (() => {
+                const previewRows = computeFillBreakdown({
+                  fillAmount: parsedAmount,
+                  fillPrice: navPerShareBn,
+                  holdings: holdings.map(h => ({
+                    symbol: h.symbol,
+                    address: h.address,
+                    price: h.price,
+                    weight: h.weight,
+                    image: h.image,
+                  })),
+                  inventory,
+                })
+                if (previewRows.length === 0) return null
+                return (
+                  <div className={`${glass.section} p-3`}>
+                    <p className="text-[11px] uppercase tracking-wide text-text-muted mb-2">
+                      {t('fill_details.preview_backing_title')}
+                    </p>
+                    <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                      {previewRows.map(r => (
+                        <div key={r.symbol} className="flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-2 min-w-0">
+                            {r.image && <img src={r.image} alt="" className="w-4 h-4 rounded-full flex-shrink-0" />}
+                            <span className="font-mono text-text-primary truncate">{r.symbol}</span>
+                            <span className="text-text-muted tabular-nums">{(r.weight * 100).toFixed(1)}%</span>
+                          </div>
+                          <div className="flex items-center gap-3 font-mono tabular-nums">
+                            <span className="text-text-muted">
+                              {r.price !== null
+                                ? `$${r.price < 1 ? r.price.toFixed(4) : r.price.toFixed(2)}`
+                                : '—'}
+                            </span>
+                            <span className="text-text-primary">
+                              {r.qtyAcquired < 1 ? r.qtyAcquired.toFixed(6) : r.qtyAcquired.toFixed(4)}
+                            </span>
+                            <span className="text-text-muted w-16 text-right">
+                              {r.usd !== null ? `$${r.usd.toFixed(2)}` : '—'}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-text-muted mt-2">
+                      {t('fill_details.preview_backing_note')}
+                    </p>
+                  </div>
+                )
+              })()}
 
               {hasNonceGap && (
                 <div className={`${glass.warning} p-3 text-amber-600 text-sm`}>

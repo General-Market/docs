@@ -70,11 +70,13 @@
     "vs_limit": "vs Limit",
     "underlying_title": "Underlying assets acquired",
     "underlying_note": "Quantities are exact (on-chain inventory × shares minted). Prices reflect the current oracle quote.",
-    "underlying_note_approx": "Approximate breakdown — this DTF has no on-chain inventory yet, so quantities are derived from weights at current prices."
+    "underlying_note_approx": "Approximate breakdown — this DTF has no on-chain inventory yet, so quantities are derived from weights at current prices.",
+    "preview_backing_title": "What your shares will be backed by",
+    "preview_backing_note": "Projected from on-chain inventory and current oracle prices. Final quantities at fill match this exactly when on-chain inventory is set."
   },
   "toast": {
-    "buy_filled_shares": "Buy filled \u2014 {shares} {name} shares received",
-    "buy_filled": "Buy filled \u2014 {name} shares received"
+    "buy_filled_shares": "Buy filled — {shares} {name} shares received",
+    "buy_filled": "Buy filled — {name} shares received"
   },
   "stall": {
     "title": "Order submitted on Settlement",
