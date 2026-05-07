@@ -28,8 +28,6 @@ const ARTICLE_HOLD = toFrames(0.78);
 const GLITCH_AT = [toFrames(1.1), toFrames(2.85), toFrames(4.6)];
 const GLITCH_LEN = 6;
 
-const PROOF_GREEN_LIGHT = "#52ffa2";
-
 type Highlight = { x: number; y: number; w: number; h: number };
 
 type ArticleProof = {
@@ -360,7 +358,8 @@ const SourceCitation: React.FC<{ url: string }> = ({ url }) => (
   </div>
 );
 
-// Underliner only — a single green stroke beneath the exchange name.
+// Marker-stroke only — multiply + screen passes that sit over the text,
+// mirroring the yellow highlighter's body. No hard kick line beneath.
 
 const ExchangeNameUnderline: React.FC<{
   box: Highlight;
@@ -369,23 +368,47 @@ const ExchangeNameUnderline: React.FC<{
   const local = Math.max(0, Math.min(1, reveal));
   const overshootX = 0.008;
   const overshootW = 0.016;
+  const padY = box.h * 0.22;
+  const top = box.y - padY;
+  const heightPct = box.h + padY * 2;
 
   return (
-    <div
-      style={{
-        position: "absolute",
-        left: `${(box.x - overshootX * 0.6) * 100}%`,
-        top: `${(box.y + box.h * 0.92) * 100}%`,
-        width: `${(box.w + overshootW * 0.6) * local * 100}%`,
-        height: `${Math.max(0.008, box.h * 0.22) * 100}%`,
-        background: "#0e8f4a",
-        borderRadius: 2,
-        transform: "skewX(-3deg) rotate(-0.4deg)",
-        transformOrigin: "left center",
-        boxShadow: `0 0 6px ${PROOF_GREEN_LIGHT}`,
-        pointerEvents: "none",
-      }}
-    />
+    <>
+      {/* Multiply pass — the green ink body */}
+      <div
+        style={{
+          position: "absolute",
+          left: `${(box.x - overshootX) * 100}%`,
+          top: `${top * 100}%`,
+          width: `${(box.w + overshootW) * local * 100}%`,
+          height: `${heightPct * 100}%`,
+          background:
+            "linear-gradient(180deg, rgba(82,255,162,0.55) 0%, rgba(34,217,122,0.74) 45%, rgba(34,217,122,0.74) 55%, rgba(82,255,162,0.55) 100%)",
+          mixBlendMode: "multiply",
+          borderRadius: 3,
+          transform: "skewX(-5deg) rotate(-0.8deg)",
+          transformOrigin: "left center",
+          pointerEvents: "none",
+        }}
+      />
+      {/* Screen pass — saturation boost */}
+      <div
+        style={{
+          position: "absolute",
+          left: `${(box.x - overshootX) * 100}%`,
+          top: `${top * 100}%`,
+          width: `${(box.w + overshootW) * local * 100}%`,
+          height: `${heightPct * 100}%`,
+          background:
+            "linear-gradient(180deg, rgba(82,255,162,0.45) 0%, rgba(34,217,122,0.55) 45%, rgba(34,217,122,0.55) 55%, rgba(82,255,162,0.45) 100%)",
+          mixBlendMode: "screen",
+          borderRadius: 3,
+          transform: "skewX(-5deg) rotate(-0.8deg)",
+          transformOrigin: "left center",
+          pointerEvents: "none",
+        }}
+      />
+    </>
   );
 };
 
