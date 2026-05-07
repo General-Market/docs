@@ -251,28 +251,31 @@ export function LinkMenu({ onLinkClick }: LinkMenuProps = {}) {
           color: #2997ff;
           opacity: 1;
         }
-        /* Chase light — a bright comet sliding around the perimeter.
-           ::before is the rotating conic ring, ::after is the inner
-           black fill that masks the centre so only the rim glows. */
+        /* Chase light — small bright comet on the rim.
+           ::before is the rotating ring (just outside the button edge),
+           ::after is the inner black fill that hides everything except
+           that thin halo. Stops are in strict increasing order; the
+           previous gradient went 352° → 30° which CSS read as one big
+           wrap-around arc, hence the flywheel. */
         .lt-row--featured::before {
           content: '';
           position: absolute;
-          inset: -4px;
+          inset: -1.5px;
           z-index: -2;
           border-radius: 999px;
           background: conic-gradient(
             from 0deg,
-            transparent 0deg,
-            transparent 220deg,
-            rgba(41,151,255,0.55) 280deg,
-            rgba(140,200,255,1) 318deg,
-            rgba(255,255,255,1) 335deg,
-            rgba(140,200,255,1) 352deg,
-            rgba(41,151,255,0.55) 30deg,
-            transparent 90deg,
-            transparent 360deg
+            transparent 0%,
+            transparent 42%,
+            rgba(41,151,255,0.4) 45%,
+            rgba(170,210,255,0.95) 48%,
+            #ffffff 50%,
+            rgba(170,210,255,0.95) 52%,
+            rgba(41,151,255,0.4) 55%,
+            transparent 58%,
+            transparent 100%
           );
-          filter: blur(2.5px);
+          filter: blur(0.6px);
           animation: lt-chase 2.4s infinite;
         }
         .lt-row--featured::after {

@@ -219,11 +219,12 @@ function PhoneScene({
       box.getCenter(center)
       box.getSize(size)
       const htmlScale = (size.x * HTML_TRANSFORM_DIVISOR) / LINK_MENU_CSS_WIDTH
-      // Triangulation between two device screenshots:
-      //   no offset    → menu landed ~0.4 wu RIGHT of phone
-      //   +0.45 offset → menu landed ~0.4 wu LEFT of phone
-      // So the right value sits in between.
-      const xOffset = isIOS ? 0.2 : 0
+      // Triangulation:
+      //   0     → 0.4 wu RIGHT
+      //   +0.20 → still slightly RIGHT (per latest report)
+      //   +0.45 → 0.4 wu LEFT
+      // Bisecting again toward the no-shift midpoint.
+      const xOffset = isIOS ? 0.32 : 0
       fit = {
         position: [center.x + xOffset, center.y, center.z - 0.001],
         scale: htmlScale,
