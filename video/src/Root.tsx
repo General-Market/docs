@@ -114,6 +114,7 @@ import {
 import { antiCheatRiggedMeta } from "./compositions/anticheat/AntiCheatRigged";
 import { antiCheatSolutionMeta } from "./compositions/anticheat/AntiCheatSolution";
 import { antiCheatReassureMeta } from "./compositions/anticheat/AntiCheatReassure";
+import { antiCheatBridgeMeta } from "./compositions/anticheat/AntiCheatBridge";
 import { antiCheatEndCardMeta } from "./compositions/anticheat/AntiCheatEndCard";
 import { antiCheatFullMeta } from "./compositions/anticheat/AntiCheatFull";
 import { blockTradingExileMeta } from "./compositions/block-trading/BlockTradingExile";
@@ -149,6 +150,7 @@ export const RemotionRoot: React.FC = () => {
           antiCheatStatMeta,
           antiCheatSolutionMeta,
           antiCheatReassureMeta,
+          antiCheatBridgeMeta,
           antiCheatEndCardMeta,
         ].map((meta) => (
           <Composition

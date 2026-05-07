@@ -10,6 +10,7 @@ import { antiCheatStatMeta, antiCheatBarsMeta } from "./AntiCheatStat";
 import { antiCheatRiggedMeta } from "./AntiCheatRigged";
 import { antiCheatSolutionMeta } from "./AntiCheatSolution";
 import { antiCheatReassureMeta } from "./AntiCheatReassure";
+import { antiCheatBridgeMeta } from "./AntiCheatBridge";
 import { antiCheatEndCardMeta } from "./AntiCheatEndCard";
 import {
   snapZoomIn,
@@ -30,19 +31,22 @@ import {
 //   Rigged → Stat       snap-zoom intense   24f   fg 1→1.65  bg pulls back
 //   Stat → Solution     snap-zoom out + veil 42f  fg 1→0.72  ← music dies
 //   Solution → Reassure soft snap           28f   fg 1→1.22  bg ~still
-//   Reassure → EndCard  long pull           34f   fg 1→0.82  bg ~still
+//   Reassure → Bridge   soft snap           28f   fg 1→1.18  bg ~still
+//   Bridge → EndCard    long pull           34f   fg 1→0.82  bg ~still
 const T_HOOK_BARS = 26;
 const T_RIGGED_STAT = 24;
 const T_STAT_SOLUTION = 42;
 const T_SOLUTION_REASSURE = 28;
-const T_REASSURE_END = 34;
+const T_REASSURE_BRIDGE = 28;
+const T_BRIDGE_END = 34;
 
 const TRANSITION_FRAMES =
   T_HOOK_BARS +
   T_RIGGED_STAT +
   T_STAT_SOLUTION +
   T_SOLUTION_REASSURE +
-  T_REASSURE_END;
+  T_REASSURE_BRIDGE +
+  T_BRIDGE_END;
 
 const TOTAL_FRAMES =
   antiCheatHookMeta.durationInFrames +
@@ -51,6 +55,7 @@ const TOTAL_FRAMES =
   antiCheatStatMeta.durationInFrames +
   antiCheatSolutionMeta.durationInFrames +
   antiCheatReassureMeta.durationInFrames +
+  antiCheatBridgeMeta.durationInFrames +
   antiCheatEndCardMeta.durationInFrames -
   TRANSITION_FRAMES;
 
@@ -148,8 +153,19 @@ export const AntiCheatFull: React.FC = () => {
         </TransitionSeries.Sequence>
 
         <TransitionSeries.Transition
+          presentation={snapZoomSoft()}
+          timing={linearTiming({ durationInFrames: T_REASSURE_BRIDGE })}
+        />
+
+        <TransitionSeries.Sequence
+          durationInFrames={antiCheatBridgeMeta.durationInFrames}
+        >
+          <antiCheatBridgeMeta.component />
+        </TransitionSeries.Sequence>
+
+        <TransitionSeries.Transition
           presentation={pullLong()}
-          timing={linearTiming({ durationInFrames: T_REASSURE_END })}
+          timing={linearTiming({ durationInFrames: T_BRIDGE_END })}
         />
 
         <TransitionSeries.Sequence
