@@ -1,0 +1,90 @@
+---
+title: "Bridge Architecture"
+description: "Cross-chain bridge between Index L3 and Settlement -- buy/sell flows, custody, and backing guarantees"
+---
+
+# Bridge Architecture
+
+The bridge exists because assets live on one chain and users live on another. Geography, even digital, is a curse.
+
+Two chains. Different trust models. Different decimal conventions. The bridge reconciles them while enforcing the one rule that cannot be broken: no DTF shares are minted without confirmed collateral. Everything else is negotiable. This is not.
+
+## Chain Overview
+
+<BridgeChainOverview />
+
+## Contract Layout
+
+Five contracts. Three on Settlement, two on L3. Each holds custody of something the others need.
+
+<BridgeContractLayout />
+
+<Info>
+All bridge contracts use the UUPS proxy pattern (OpenZeppelin 5.x). Every state-changing bridge operation requires a valid aggregated BLS signature from the oracle nodes -- there are no admin bypasses.
+</Info>
+
+## Decimal Conversion
+
+Six decimals on one side. Eighteen on the other. The bridge converts at the boundary. Get this wrong and users receive 1e12x too much or too little.
+
+<BridgeDecimalConversion />
+
+<Warning>
+Never assume USDC is 6 decimals everywhere. L3 uses 18-decimal USDC. Mixing up decimals in bridge logic would mean users receive 1e12x too much or too little.
+</Warning>
+
+## Bridge Buy Flow
+
+Ten steps. Four BLS consensus rounds. Two chains. One invariant: USDC must be released to the AP before shares are minted. Always.
+
+<BridgeBuyFlow />
+
+<Warning>
+**The Backing Invariant:** `completeBuyOrder` on Settlement MUST succeed BEFORE `mintBridgedShares` is called. If `completeBuyOrder` fails (gas issue, revert, timeout), the entire order is rolled back via `refundBuyOrder` -- USDC is returned to the user and no shares are minted anywhere. There is no optimistic minting.
+</Warning>
+
+### Crash Recovery
+
+Machines crash. The question is not whether, but when. The `pendingMints` mapping in SettlementBridgeCustody is the recovery anchor. On restart, oracles query it to find orders where USDC was released but `BridgedITP` was not yet minted, then resume.
+
+<BridgeCrashRecovery />
+
+## Bridge Sell Flow
+
+The reverse. Burn the tokens, return the USDC. Same number of steps, same number of consensus rounds, same refusal to compromise on backing.
+
+<BridgeSellFlow />
+
+### Failed Sell Recovery
+
+If `BridgedITP` is burned but the L3 fill never completes, the user's tokens are gone with no USDC to show for it. This cannot stand. A safety valve exists:
+
+<BridgeFailedSellRecovery />
+
+## The Backing Invariant
+
+The single most important property of the entire protocol. Not the most interesting. Not the most clever. The most important. Every minted DTF share must be 1:1 backed by underlying assets. Without this, everything else is theater.
+
+<BridgeBackingInvariant />
+
+<Warning>
+**Never mint DTF shares without confirmed backing.** The bridge enforces this by requiring `completeBuyOrder` (which releases escrowed USDC to the AP for asset purchases) to succeed before `mintBridgedShares` is called. If `completeBuyOrder` reverts, the oracles execute `refundBuyOrder` instead -- USDC goes back to the user, zero shares minted. An unbacked DTF is worse than stuck orders, worse than slow consensus, worse than any other failure mode.
+</Warning>
+
+## Order Lifecycle on the Bridge
+
+<BridgeOrderStates />
+
+## Replay Protection
+
+Every operation is recorded so it cannot happen twice. The mappings are the protocol's memory of what it has already done.
+
+<BridgeReplayProtection />
+
+## Timing
+
+Ninety seconds, end to end. Not fast. But correct -- and correctness is not negotiable here.
+
+<BridgeTiming />
+
+The sell flow takes the same time. Each round requires BLS signature aggregation from `ceil(2n/3)` registered oracle nodes. Patience is the price of integrity.

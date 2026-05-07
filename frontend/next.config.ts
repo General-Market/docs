@@ -4,7 +4,6 @@ import { CSP_CONNECT_EXTRA } from "./lib/config";
 
 const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
-const DOCS_URL = process.env.DOCS_URL || "https://docs.generalmarket.io";
 const isDev = process.env.NODE_ENV !== "production";
 
 const nextConfig: NextConfig = {
@@ -72,14 +71,11 @@ const nextConfig: NextConfig = {
     ];
   },
   // All backend/data-node/oracle/vision/rpc proxies are now handled by
-  // catch-all route handlers under app/api/. Only locale routing and docs
-  // proxy remain as rewrites.
+  // catch-all route handlers under app/api/. Docs are now served natively
+  // from app/docs (was previously proxied to Mintlify at docs.generalmarket.io).
   async rewrites() {
     return {
       beforeFiles: [
-        // Docs proxy — must be before locale rewrite (Mintlify at docs.generalmarket.io)
-        { source: "/docs", destination: `${DOCS_URL}/` },
-        { source: "/docs/:path*", destination: `${DOCS_URL}/:path*` },
         // Locale routing fallback
         { source: "/", destination: "/en" },
         {

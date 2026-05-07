@@ -1,0 +1,144 @@
+---
+title: "Continuous Betting"
+description: "Next-tick betting model, two-slot bitmap engine, parimutuel resolution, and dynamic config orchestration"
+---
+
+# Continuous Betting
+
+You bet on what happens next. Not what is happening now — that would be too easy, and too exploitable. During tick N, you are placing bets for tick N+1. By the time your bet becomes active, the universe has moved on. You are always one step behind reality and one step ahead of your commitment. This is the design.
+
+## Tick Lifecycle
+
+<Frame>
+  <img src="/images/vision/tick-lifecycle.svg" alt="Tick lifecycle timing diagram — Alice submits during N-1 and resolves during N, Bob submits during N and resolves during N+1, Carol sits out safely" />
+</Frame>
+
+<Info>
+  Not betting is free. If you submit no bitmap during a tick, you simply sit out the next one. Your balance is untouched. The protocol does not punish absence — only incorrect presence.
+</Info>
+
+## Two-Slot Bitmap Model
+
+Each player in each batch has two slots. One is being resolved. One is being written to. They swap at every tick boundary. The simplicity is structural. The correctness depends on it.
+
+<Frame>
+  <img src="/images/vision/two-slot-bitmap.svg" alt="Two-slot bitmap engine — pending slot for next tick, active slot resolving now, with config-safe decoding using stored config_hash" />
+</Frame>
+
+<Warning>
+  The `config_hash` stored per bitmap is what prevents market-order scrambling. Without it, a config update between submission and resolution could decode bit 0 as "BTC-USD" when the player meant "ETH-USD." The bitmap is a sealed envelope — the config_hash is the key that opens it correctly.
+</Warning>
+
+## Commit-Reveal Scheme
+
+Nobody sees your bets before you commit them on-chain. The protocol enforces this with the same tool cryptography always uses against curiosity: a hash function.
+
+<Frame>
+  <img src="/images/vision/commit-reveal.svg" alt="Commit-reveal flow — player commits keccak256 hash on-chain, reveals bitmap bytes to oracles, hash verification prevents tampering" />
+</Frame>
+
+Two reveal strategies exist. The frontend reveals immediately after commit — simpler UX, equally safe because the hash locks the commitment. Bots reveal near the tick boundary — maximum privacy, since other participants cannot see positions until the last moment. Both strategies are equally secure. Delayed reveal is a privacy optimization, not a security difference.
+
+## Tick Resolution
+
+When a tick ends, the oracles awaken. They fetch real prices, compare them to player bitmaps, compute payouts, and sign the result. The process is deterministic — three independent machines must arrive at the same answer, or nothing happens.
+
+<Frame>
+  <img src="/images/vision/resolution.svg" alt="Resolution pipeline — three oracles independently fetch prices, decode bitmaps, run parimutuel matching, BLS sign, then aggregate at tick boundary" />
+</Frame>
+
+### Parimutuel Settlement
+
+Winners split the losers' stakes. There is no house. There is no edge. There is only the collective judgment of strangers, expressed in USDC, settled by mathematics.
+
+| Element | Detail |
+|---|---|
+| **Pool** | Sum of all active players' `stakePerTick` |
+| **Winners** | Players with more correct predictions than the threshold |
+| **Losers** | Players below the threshold — their stakes fund the winners |
+| **Distribution** | Winners receive proportional to their correct-market count |
+| **Fee** | 0.05% on profits only — losers pay nothing extra |
+| **Weighting** | Flat. No multiplier. Pure prediction accuracy determines payout |
+
+## Config Orchestration
+
+Markets change. New sources appear. Dead markets get removed. The config orchestrator runs every tick, polling the data-node for recommendations and proposing updates through BLS consensus. No human intervention. No frontend deploys. A new data source enters the system and exits as a live market.
+
+<Frame>
+  <img src="/images/vision/config-pipeline.svg" alt="Config orchestration — data-node generates recommendations, orchestrator proposes via BLS, auto-creation pipeline from config to live market in 8 steps" />
+</Frame>
+
+### Safeguards
+
+| Safeguard | Value | Purpose |
+|---|---|---|
+| **MAX_BATCHES** | 200 | On-chain cap prevents unbounded batch flooding |
+| **Rate limit** | 3 per hour | Prevents gas exhaustion from rapid auto-creation |
+| **Min healthy assets** | 5 | Only creates batches with sufficient live data |
+| **Follower verification** | 20% threshold tolerance | Prevents compromised leader from crafting adversarial configs |
+| **Config/bitmap decoupling** | Per-bitmap config_hash | Config updates never scramble active bitmaps |
+
+## Dynamic Source Registry
+
+The frontend has zero hardcoded source knowledge. Every source name, logo, category, and prefix comes from the data-node API. The contract between the backend and the interface is a single endpoint. Everything else follows.
+
+| Removed | Replaced by |
+|---|---|
+| `sources.ts` (VISION_SOURCES) | `GET /sources/registry` |
+| `source-categories.ts` | API categories field |
+| `market-categories.ts` (PREFIX_MAP) | API prefixes field |
+| `VisionMarketsGrid` CATEGORY_GROUPS | API categories + order |
+| `vision-batches.json` (frontend) | `GET /batches/signed` |
+| Multiplier math (oracle) | Flat stakePerTick |
+| Lock window logic | `lockOffset = 0` |
+| `multiplier.rs` (entire file) | Deleted |
+| Manual batch registration | `BatchCreated` auto-detect |
+
+<Info>
+  Adding a new source = data-node config only. Zero frontend deploys. The `useSourceRegistry()` hook caches aggressively (SWR, 5-minute revalidation). Source metadata changes rarely. The hook returns stale data while revalidating, so the grid never flashes empty.
+</Info>
+
+## Tick Scheduling
+
+Each config defines the next tick's duration. The data-node controls pacing per source. Fast-moving markets get shorter ticks. Slow-moving ones get longer. The change takes effect at the next tick boundary — never mid-tick.
+
+```
+next_settlement_time = tick_start_time + tickDuration
+```
+
+When a new config is promoted at a tick boundary:
+1. Current tick resolves using the **old** config's duration
+2. New config activates (lazy promotion)
+3. Next tick starts with the **new** `tickDuration`
+4. Settlement for the new tick = `now + new_tickDuration`
+
+Config promotion happens **after** bitmap flip. Active bitmaps are always decoded with their stored config. Config updates only affect bitmaps submitted after the promotion.
+
+## Cross-Oracle Bitmap Gossip
+
+Before resolution, oracles verify they agree on which players are in the active set. If one oracle missed a reveal, it requests the missing bitmap from peers. Resolution proceeds only with the intersection confirmed by all oracles.
+
+The BLS consensus message includes `bitmap_set_hash = keccak256(sorted list of (player, bitmap_hash) pairs)`. All oracles must produce an identical bitmap set hash, or consensus fails — the tick is skipped, no PnL applied. Divergence is visible. Visibility is the first line of defense.
+
+## Fund Safety
+
+The contract holds the money. The oracles compute the outcomes. Neither trusts the other. Every interaction crosses a verification boundary.
+
+<Frame>
+  <img src="/images/vision/security-boundaries.svg" alt="Fund safety matrix — player controls, oracle controls, and what oracles cannot do" />
+</Frame>
+
+| Layer | Protection | Attack prevented |
+|---|---|---|
+| **Deposits** | On-chain, player wallet tx | Oracles can't deposit/withdraw for you |
+| **Bitmap commit** | On-chain keccak256 hash | Oracles can't change your bets |
+| **Bitmap reveal** | Hash verification | Player can't change bets after commit |
+| **Tick resolution** | BLS consensus (2/3+) | Single oracle can't manipulate outcomes |
+| **Payouts** | BLS-signed proof on-chain | Fake payouts rejected by contract |
+| **Withdrawals** | On-chain, player wallet tx | Only player can withdraw their funds |
+| **Batch config** | configHash on-chain | Config data verifiable against on-chain hash |
+| **Sit-out** | No active bitmap = no risk | Absence is safe |
+
+<Warning>
+  With 2-of-3 BLS threshold, two colluding oracles can selectively exclude players from resolution. The `bitmap_set_hash` in BLS messages makes this auditable — anyone can compare the signed set against on-chain committed hashes. The attack is visible. Visibility is the first line of defense.
+</Warning>

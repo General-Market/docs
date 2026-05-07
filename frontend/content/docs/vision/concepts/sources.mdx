@@ -1,0 +1,443 @@
+---
+title: "Data Sources"
+description: "90+ real-world data sources powering Vision prediction markets — from earthquakes to ice cream machines"
+---
+
+Ninety-eight ways to measure the world. Earthquakes. Ice cream machines. Train delays. The percentage of broken McDonald's soft-serve dispensers in a city you have never visited. The disruption level of a metro line in a country where you do not live. The number of stars on a GitHub repository written in a language you do not speak. The absurdity is the point. Every number is a market. Every market is a question. Every question has exactly two answers, and one of them is wrong.
+
+## The Data Pipeline
+
+Every prediction market on Vision is backed by a real-world data source. The Data Node collects, validates, and serves price feeds from 90+ external APIs. The infrastructure is serious. What it measures is often not.
+
+```
+    ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
+    │   USGS API      │  │   CoinGecko     │  │   TFL API       │  │   McBroken      │
+    │   Earthquakes   │  │   Crypto Prices │  │   UK Trains     │  │   Ice Cream     │
+    └────────┬────────┘  └────────┬────────┘  └────────┬────────┘  └────────┬────────┘
+             │                    │                    │                    │
+             └────────────────────┼────────────────────┼────────────────────┘
+                                  │                    │
+                                  ▼                    ▼
+                      ┌────────────────────────────────────┐
+                      │           DATA NODE (Rust)         │
+                      │                                    │
+                      │   ┌──────────┐    ┌─────────────┐  │
+                      │   │ Collect  │───>│  Validate   │  │
+                      │   │ (HTTP)   │    │  (bounds,   │  │
+                      │   └──────────┘    │   staleness │  │
+                      │                   │   checks)   │  │
+                      │                   └──────┬──────┘  │
+                      │                          │         │
+                      │                   ┌──────▼──────┐  │
+                      │                   │   Store     │  │
+                      │                   │ (Postgres)  │  │
+                      │                   └──────┬──────┘  │
+                      │                          │         │
+                      │                   ┌──────▼──────┐  │
+                      │                   │   Serve     │  │
+                      │                   │  (REST API) │  │
+                      │                   └─────────────┘  │
+                      └────────────────┬───────────────────┘
+                                       │
+                            ┌──────────▼──────────┐
+                            │     PostgreSQL      │
+                            │                     │
+                            │  market_prices      │
+                            │  market_prices_latest│
+                            │  source_meta        │
+                            └──────────┬──────────┘
+                                       │
+                            ┌──────────▼──────────┐
+                            │     Vision API      │
+                            │                     │
+                            │  /api/vision/batches│
+                            │  /api/vision/ticks  │
+                            │  /api/vision/state  │
+                            │  /api/vision/history│
+                            └──────────┬──────────┘
+                                       │
+                            ┌──────────▼──────────┐
+                            │      Frontend       │
+                            │                     │
+                            │  Live prices, charts│
+                            │  Batch creation UI  │
+                            │  Market explorer    │
+                            └─────────────────────┘
+```
+
+## Source Categories at a Glance
+
+Vision sources span 16 categories. Crypto is the least interesting one. The real edge is in the places nobody else is looking -- the buoy readings, the nuclear reactor outputs, the disruption scores of transit systems in cities that run on bureaucratic inertia.
+
+```
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │                        VISION DATA SOURCE MAP                              │
+  ├────────────────────┬────────────────────┬───────────────────────────────────┤
+  │                    │                    │                                   │
+  │   FINANCE (14)     │   ECONOMIC (11)    │   REGULATORY (4)                 │
+  │   ~~~~~~~~~~~      │   ~~~~~~~~~~~~     │   ~~~~~~~~~~~~~~                 │
+  │   CoinGecko        │   FRED Rates       │   SEC Filings                    │
+  │   Pump.fun         │   EIA Energy       │   Congress Votes                 │
+  │   DefiLlama        │   US Treasury      │   Federal Courts                 │
+  │   Finnhub Stocks   │   ECB Rates        │   NYC 311                        │
+  │   Nasdaq           │   World Bank       │                                  │
+  │   Zillow           │   BLS              │                                  │
+  │   Polymarket       │   Adzuna Jobs      │                                  │
+  │   FINRA (x2)       │   USA Spending     │                                  │
+  │   Futures          │   IMF              │                                  │
+  │   Bitcoin On-Chain │   OPEC             │                                  │
+  │   Yahoo Drinks     │   CFTC             │                                  │
+  │   TWSE             │                    │                                  │
+  │   Best Buy         │                    │                                  │
+  │                    │                    │                                  │
+  ├────────────────────┼────────────────────┼───────────────────────────────────┤
+  │                    │                    │                                   │
+  │   TECH (8)         │   ENTERTAINMENT    │   GEOPHYSICAL (15)               │
+  │   ~~~~~~~~         │   (14)             │   ~~~~~~~~~~~~~~~~               │
+  │   GitHub           │   ~~~~~~~~~~~~~~   │   USGS Earthquakes               │
+  │   npm              │   Twitch           │   Volcanoes                      │
+  │   PyPI             │   Movies/TV (TMDB) │   NOAA Weather                   │
+  │   Crates.io        │   Last.fm Music    │   Weather Alerts                 │
+  │   StackOverflow    │   Steam Gaming     │   Open-Meteo                     │
+  │   Hacker News      │   AniList Anime    │   Air Quality (AirNow)           │
+  │   Cloudflare       │   Reddit           │   USGS Water                     │
+  │   IODA Outages     │   Chaturbate       │   NOAA Ocean Met                 │
+  │                    │   Board Games      │   NOAA Tides                     │
+  │                    │   Backpack.tf      │   NDBC Buoys                     │
+  │                    │   4chan             │   River Gauges                   │
+  │                    │   Sports           │   NRC Nuclear                    │
+  │                    │   Esports          │   Wildfires                      │
+  │                    │   Theme Parks      │   Disease Tracking               │
+  │                    │   McBroken         │   Power Outages                  │
+  │                    │                    │                                  │
+  ├────────────────────┼────────────────────┼───────────────────────────────────┤
+  │                    │                    │                                   │
+  │   TRANSPORT (16)   │   NATURE (4)       │   ACADEMIC (3)    SPACE (3)      │
+  │   ~~~~~~~~~~~~~~   │   ~~~~~~~~~~       │   ~~~~~~~~~~~~    ~~~~~~~~~~     │
+  │   Global Flights   │   eBird            │   OpenAlex        Space Weather  │
+  │   Transit GTFS     │   Wildlife (iNat)  │   Crossref        ISS Tracker   │
+  │   CityBikes        │   Animal Migration │   PubMed          Mil Aircraft  │
+  │   Parking          │   Animal Shelters  │                                  │
+  │   TomTom Traffic   │                    │                                  │
+  │   EV Charging      │                    │                                  │
+  │   Border Waits     │                    │                                  │
+  │   Airport Delays   │                    │                                  │
+  │   Deutsche Bahn    │                    │                                  │
+  │   NYC Subway       │                    │                                  │
+  │   Paris Metro      │                    │                                  │
+  │   Ryanair          │                    │                                  │
+  │   London Tube      │                    │                                  │
+  │   Ship Tracking    │                    │                                  │
+  │   Port Data        │                    │                                  │
+  │                    │                    │                                  │
+  └────────────────────┴────────────────────┴───────────────────────────────────┘
+```
+
+## Full Source Directory
+
+### Finance
+
+| Source | Prefix | Value Label | Unit | Update Freq |
+|--------|--------|-------------|------|-------------|
+| CoinGecko Crypto | `crypto_` | Price | USD | ~1 min |
+| Pump.fun Tokens | `pumpfun_` | Price | USD | ~1 min |
+| DefiLlama DeFi | `defi_` | TVL | USD | ~5 min |
+| Finnhub Stocks | `stock_` | Price | USD | ~1 min |
+| Nasdaq Listings | `nasdaq_` | Price | USD | ~1 min |
+| Zillow Real Estate | `zillow_` | Price | USD | Daily |
+| Polymarket | `poly_` | Probability | % | ~1 min |
+| FINRA Short Interest | `finra_` | Short Volume | shares | Daily |
+| FINRA Short Volume | `finra_short_vol_` | Short Volume | shares | Daily |
+| Continuous Futures | `futures_` | Price | USD | ~5 min |
+| Bitcoin On-Chain | `bchain_` | Value | — | ~10 min |
+| Yahoo Drinks | `yahoo_drinks_` | Price | USD | ~5 min |
+| Taiwan Stock Exchange | `twse_` | Price | TWD | Daily |
+| Best Buy Products | `bestbuy_` | Sale Price | USD | ~30 min |
+
+### Economic
+
+| Source | Prefix | Value Label | Unit | Update Freq |
+|--------|--------|-------------|------|-------------|
+| FRED Interest Rates | `fred_` | Rate | % | Daily |
+| EIA Energy Data | `eia_` | Value | — | Weekly |
+| US Treasury Yields | `treasury_` | Yield | % | Daily |
+| ECB Exchange Rates | `ecb_` | Value | — | Daily |
+| World Bank Indicators | `worldbank_` | Value | — | Monthly |
+| Bureau of Labor Stats | `bls_` | Index | — | Monthly |
+| Adzuna Jobs | `adzuna_` | Avg Salary | — | Daily |
+| Federal Spending | `usa_spending_` | Amount | USD | Daily |
+| IMF Indicators | `imf_` | Value | — | Monthly |
+| OPEC Oil Data | `opec_` | Basket Price | USD/bbl | Daily |
+| CFTC Commitments | `cftc_` | Contracts | lots | Weekly |
+
+### Regulatory
+
+| Source | Prefix | Value Label | Unit | Update Freq |
+|--------|--------|-------------|------|-------------|
+| SEC Filings | `sec_edgar_` / `sec_efts_` / `sec_insider_` | Filings | — | Daily |
+| Congress Votes | `congress_` | Count | — | Daily |
+| Federal Courts | `court_` | Filings | /day | Daily |
+| NYC 311 Complaints | `nyc311_` | Complaints | /24h | ~15 min |
+
+### Tech & Developer
+
+| Source | Prefix | Value Label | Unit | Update Freq |
+|--------|--------|-------------|------|-------------|
+| GitHub Repositories | `github_` | Stars | — | ~10 min |
+| npm Packages | `npm_` | Downloads | /wk | Daily |
+| PyPI Packages | `pypi_` | Downloads | /day | Daily |
+| Crates.io Rust | `crates_io_` | Downloads | — | Daily |
+| StackOverflow | `stackexchange_` | Questions | /day | ~30 min |
+| Hacker News | `hn_` | Score | pts | ~5 min |
+| Cloudflare DNS | `cloudflare_` | Rank | — | Daily |
+| Internet Outages (IODA) | `ioda_` | Connectivity | % | ~5 min |
+
+### Entertainment
+
+| Source | Prefix | Value Label | Unit | Update Freq |
+|--------|--------|-------------|------|-------------|
+| Twitch Streaming | `twitch_` | Viewers | live | ~2 min |
+| Movies & TV (TMDB) | `tmdb_` | Popularity | score | ~30 min |
+| Last.fm Music | `lastfm_` | Listeners | — | ~10 min |
+| Steam Gaming | `steam_` | Players | online | ~5 min |
+| AniList Anime | `anilist_` | Popularity | score | Daily |
+| Reddit Communities | `reddit_` | Subscribers | — | ~10 min |
+| Chaturbate Live | `cb_model_` | Viewers | live | ~2 min |
+| Board Games (BGG) | `bgg_` | Hotness | # | ~30 min |
+| Backpack.tf Trading | `backpacktf_` | Price | USD | ~10 min |
+| 4chan Boards | `fourchan_` | Activity | — | ~5 min |
+| Sports Stats | `sport_` | Score | pts | Live |
+| Esports (PandaScore) | `esport_` | Score | — | Live |
+| Theme Park Waits | `queue_times_` | Avg Wait | min | ~5 min |
+| McBroken Ice Cream | `mcbroken_` | % Broken | % | ~10 min |
+
+### Geophysical & Environment
+
+| Source | Prefix | Value Label | Unit | Update Freq |
+|--------|--------|-------------|------|-------------|
+| USGS Earthquakes | `earthquake_` | Magnitude | M | ~1 min |
+| Volcano Activity | `volcano_` | Alert Level | 0-4 | ~30 min |
+| NOAA Weather | `weather_` | Temperature | F | ~15 min |
+| Weather Alerts | `weather_alert_` | Count | alerts | ~5 min |
+| Open-Meteo | `openmeteo_` | Temperature | C | ~15 min |
+| Air Quality (AirNow) | `airnow_` | AQI | 0-500 | ~30 min |
+| USGS Water | `usgs_water_` | Discharge | ft3/s | ~15 min |
+| NOAA Ocean Met | `noaa_met_` | Temp | F | ~30 min |
+| NOAA Tides | `noaa_tide_` | Water Level | ft | ~6 min |
+| NDBC Ocean Buoys | `ndbc_` | Wave Height | m | ~30 min |
+| River Gauges | `nwps_` | Stage Height | ft | ~15 min |
+| NRC Nuclear | `nrc_` | Power | % | Daily |
+| Wildfire Tracking | `wildfire_` | Hotspots | fires | ~15 min |
+| Disease Tracking | `epidemic_` | Cases | — | Daily |
+| US Power Outages | `power_outages_` | Affected | customers | ~15 min |
+
+### Transport
+
+| Source | Prefix | Value Label | Unit | Update Freq |
+|--------|--------|-------------|------|-------------|
+| Global Flights | `flights_` | Flights | active | ~5 min |
+| Transit Realtime (GTFS) | `gtfs_` | Delay | min | ~1 min |
+| CityBikes | `citybikes_` | Available | bikes | ~5 min |
+| Parking Availability | `parking_` | Free Spaces | — | ~5 min |
+| TomTom Traffic | `tomtom_traffic_` | Congestion | ratio | ~5 min |
+| EV Charging | `tomtom_evcharge_` | Available | connectors | ~10 min |
+| Border Wait Times | `cbp_border_` | Wait Time | min | ~15 min |
+| Airport Delays (FAA) | `faa_delays_` | Delay | 0/1 | ~5 min |
+| Deutsche Bahn | `db_trains_` | Avg Delay | min | ~5 min |
+| NYC Subway (MTA) | `mta_subway_` | Disruption | 0-5 | ~2 min |
+| Paris Metro (RATP) | `paris_metro_` | Disruption | 0-4 | ~2 min |
+| Ryanair Delays | `ryanair_` | Avg Delay | min | ~10 min |
+| London Underground | `tfl_tube_` | Disruption | 0-8 | ~2 min |
+| Ship Tracking (AIS) | `aisstream_` | Vessels | — | ~5 min |
+| Port Data | `maritime_` | Ships | — | ~10 min |
+
+### Academic
+
+| Source | Prefix | Value Label | Unit | Update Freq |
+|--------|--------|-------------|------|-------------|
+| OpenAlex Papers | `openalex_` | Papers | /day | Daily |
+| Crossref Citations | `crossref_` | DOIs | — | Daily |
+| PubMed Medical | `pubmed_` | Articles | — | Daily |
+
+### Nature
+
+| Source | Prefix | Value Label | Unit | Update Freq |
+|--------|--------|-------------|------|-------------|
+| eBird Observations | `ebird_` | Observations | — | Daily |
+| Wildlife Tracking | `animals_` | Observations | /24h | Daily |
+| Animal Migration | `movebank_` | Locations | — | Daily |
+| Animal Shelters | `shelter_` | Count | animals | Daily |
+
+### Space
+
+| Source | Prefix | Value Label | Unit | Update Freq |
+|--------|--------|-------------|------|-------------|
+| Space Weather | `spaceweather_` | Kp Index | 0-9 | ~15 min |
+| ISS Tracker | `iss_` | Position | — | ~1 min |
+| Military Aircraft | `mil_aircraft_` | Count | — | ~5 min |
+
+## How Sources Become Markets
+
+A source produces a numeric value. Any numeric value. The temperature in Fahrenheit, the number of active wildfires, the Kp index of geomagnetic storms. The protocol does not distinguish between the profound and the trivial. It treats them all with the same mechanical impartiality. Players predict whether the value goes UP or DOWN (or stays FLAT) over a tick period.
+
+```
+    ┌──────────────────────────────────────────────────────────────────┐
+    │                    SOURCE TO MARKET FLOW                        │
+    └──────────────────────────────────────────────────────────────────┘
+
+         Source API                  Data Node                  On-Chain
+         ~~~~~~~~~~                  ~~~~~~~~~                  ~~~~~~~~
+
+    ┌──────────────┐
+    │  CoinGecko   │
+    │  GET /price  │──── BTC = $67,432.10 ────┐
+    │  ?ids=btc    │                          │
+    └──────────────┘                          ▼
+                                   ┌────────────────────┐
+                                   │  Validate & Store  │
+                                   │                    │
+                                   │  asset_id: BTC-USD │
+                                   │  price: 67432.10   │
+                                   │  ts: 1710403200    │
+                                   └─────────┬──────────┘
+                                             │
+                                             ▼
+                                   ┌────────────────────┐
+                                   │  Tick N resolves   │
+                                   │                    │
+                                   │  Start: $67,432.10 │
+                                   │  End:   $67,891.55 │
+                                   │                    │
+                                   │  Delta: +$459.45   │
+                                   │  Result: UP        │
+                                   └─────────┬──────────┘
+                                             │
+                                             ▼
+                                   ┌────────────────────┐
+                                   │  BLS-signed price  │
+                                   │  submitted on-chain│
+                                   │                    │
+                                   │  2/3+ oracles must │
+                                   │  agree on the      │
+                                   │  price before it   │
+                                   │  resolves.         │
+                                   └────────────────────┘
+```
+
+The same pattern works for every source -- whether the "price" is Bitcoin in USD, an earthquake magnitude, the number of broken McDonald's ice cream machines in Chicago, or the disruption level on the London Underground. The machinery does not know what it is measuring. It only knows the number went up, or it went down, or it stayed the same. In this, it resembles the universe itself.
+
+## Market ID Convention
+
+Every market has a string ID formed from its source prefix and asset name. A naming convention for the measurable world:
+
+```
+    ┌─────────────┬──────────────────┬──────────────────────────────┐
+    │   Prefix    │   Asset          │   Full Market ID             │
+    ├─────────────┼──────────────────┼──────────────────────────────┤
+    │  crypto_    │  BTC-USD         │  crypto_BTC-USD              │
+    │  earthquake_│  california      │  earthquake_california       │
+    │  tfl_tube_  │  northern        │  tfl_tube_northern           │
+    │  mcbroken_  │  chicago         │  mcbroken_chicago            │
+    │  steam_     │  counter-strike-2│  steam_counter-strike-2      │
+    │  defi_      │  aave            │  defi_aave                   │
+    │  db_trains_ │  berlin_hbf      │  db_trains_berlin_hbf        │
+    │  nrc_       │  palo-verde-1    │  nrc_palo-verde-1            │
+    │  ndbc_      │  41002           │  ndbc_41002                  │
+    │  airnow_    │  los-angeles     │  airnow_los-angeles          │
+    └─────────────┴──────────────────┴──────────────────────────────┘
+```
+
+The prefix determines which source and category the market belongs to. The frontend uses prefix matching to route markets to the correct display logic (value labels, units, formatting).
+
+## Source Implementation
+
+Each source is a Rust module in the Data Node implementing the `MarketDataSource` trait. Rust was chosen because it does not forgive mistakes, which is appropriate for code that handles other people's money:
+
+```rust
+pub trait MarketDataSource: Send + Sync {
+    /// Unique source identifier (e.g., "github", "earthquake")
+    fn source_id(&self) -> &str;
+
+    /// Fetch latest prices for all tracked assets
+    async fn fetch_prices(&self) -> Result<Vec<PriceUpdate>>;
+
+    /// Discover available assets (called periodically)
+    async fn discover_assets(&self) -> Result<Vec<AssetEntry>>;
+}
+```
+
+Each source has:
+
+1. **A config JSON** — static list of tracked assets (e.g., `config/github.json`, `config/ioda.json`)
+2. **An HTTP client** — handles rate limiting, retries, and response parsing
+3. **A collection loop** — periodically calls the source API and writes to PostgreSQL
+
+```
+    data-node/src/
+    ├── config/
+    │   ├── github.json          <-- 700 repos to track
+    │   ├── ioda.json            <-- 50 countries to monitor
+    │   ├── earthquake.json      <-- region definitions
+    │   ├── power_outages.json   <-- 50 US states
+    │   └── ...                  <-- one JSON per source
+    │
+    └── market_data/
+        └── sources/
+            ├── github/
+            │   └── client.rs    <-- MarketDataSource impl
+            ├── earthquake/
+            │   └── client.rs
+            ├── ioda/
+            │   └── client.rs
+            ├── weather/
+            │   └── client.rs
+            └── ...              <-- one module per source
+```
+
+## Rate Limiting
+
+Every source has built-in rate limiting to respect upstream API constraints. The Data Node uses a sliding-window rate limiter that automatically backs off when limits are approached. Even greed has a clock.
+
+```
+    ┌──────────────────────────────────────────────────────────┐
+    │                  RATE LIMIT EXAMPLES                     │
+    ├────────────────────┬───────────────┬─────────────────────┤
+    │  Source            │  Limit        │  Strategy           │
+    ├────────────────────┼───────────────┼─────────────────────┤
+    │  GitHub (auth)     │  5,000/hr     │  850ms between reqs │
+    │  GitHub (no auth)  │  60/hr        │  6.5s between reqs  │
+    │  CoinGecko (free)  │  30/min       │  2s between reqs    │
+    │  USGS Earthquake   │  No limit     │  Poll every 60s     │
+    │  TFL              │  500/min       │  Burst OK            │
+    │  IODA             │  No limit      │  Poll every 5 min   │
+    │  NOAA Weather     │  No limit      │  Poll every 15 min  │
+    └────────────────────┴───────────────┴─────────────────────┘
+```
+
+## Adding a New Source
+
+If ninety-eight ways to measure the world are not enough, you can add more. See [Adding a Data Source](https://github.com/generalmarket/index/blob/main/data-node/ADDING_A_DATA_SOURCE.md) for the full guide. The short version:
+
+1. Create `data-node/src/config/yoursource.json` with asset definitions
+2. Implement `MarketDataSource` in `data-node/src/market_data/sources/yoursource/client.rs`
+3. Register the source in the Data Node startup
+4. Add a `VISION_SOURCES` entry in `frontend/lib/vision/sources.ts`
+5. Add prefix mapping in `frontend/lib/vision/market-categories.ts`
+6. Add batch deployment in `contracts/script/DeployAllVisionBatches.s.sol`
+
+```
+    ┌────────────────────────────────────────────────────────────────┐
+    │                NEW SOURCE CHECKLIST                            │
+    ├────────────────────────────────────────────────────────────────┤
+    │                                                                │
+    │  [1] config JSON ........... data-node/src/config/             │
+    │  [2] Rust client ........... data-node/src/market_data/sources/│
+    │  [3] Source registration ... data-node/src/main.rs             │
+    │  [4] Frontend source ....... frontend/lib/vision/sources.ts    │
+    │  [5] Category mapping ...... frontend/lib/vision/market-cats.ts│
+    │  [6] Batch deployment ...... contracts/script/DeployAll...sol  │
+    │                                                                │
+    │  All 6 files must be updated. Miss one and markets won't       │
+    │  show up correctly (or at all) in the UI.                      │
+    └────────────────────────────────────────────────────────────────┘
+```

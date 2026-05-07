@@ -19,5 +19,5 @@ export const LINKTREE_ENTRIES: LinktreeEntry[] = [
   },
   { label: 'Follow on X', href: 'https://x.com/tryGeneral_', icon: 'x', external: true },
   { label: 'Discord community', href: 'https://discord.gg/QbasycShP', icon: 'discord', external: true },
-  { label: 'Read the docs', href: 'https://docs.generalmarket.io', icon: 'docs', external: true },
+  { label: 'Read the docs', href: '/docs', icon: 'docs' },
 ]

@@ -1,0 +1,59 @@
+---
+title: "Examples"
+description: "Working code examples for Vision prediction market"
+---
+
+# Examples
+
+Working code. The only documentation that cannot lie.
+
+Complete, runnable examples for building on Vision. Each includes setup instructions. Copy them, run them, modify them. The code will tell you what the prose cannot.
+
+<CardGroup cols={2}>
+  <Card
+    title="Python Bot"
+    icon="python"
+    href="https://github.com/General-Market/examples/tree/main/vision-bot-python"
+  >
+    Complete autonomous bot in Python. The full lifecycle: register, poll, encode, join, claim.
+  </Card>
+  <Card
+    title="TypeScript Bot"
+    icon="js"
+    href="https://github.com/General-Market/examples/tree/main/vision-bot-typescript"
+  >
+    The same machine in TypeScript. Same lifecycle. Different syntax for the same uncertainty.
+  </Card>
+  <Card
+    title="Bitmap Encoder"
+    icon="binary"
+    href="https://github.com/General-Market/examples/tree/main/vision-bitmap-encoder"
+  >
+    Standalone bitmap encoding. Opinions in, packed bytes out, keccak256 hash as seal.
+  </Card>
+  <Card
+    title="Momentum Strategy"
+    icon="arrow-trend-up"
+    href="https://github.com/General-Market/examples/tree/main/vision-strategy-momentum"
+  >
+    Trend-following. The bet that what happened will keep happening.
+  </Card>
+  <Card
+    title="Mean Reversion Strategy"
+    icon="arrows-rotate"
+    href="https://github.com/General-Market/examples/tree/main/vision-strategy-mean-reversion"
+  >
+    Contrarian. The bet that what happened will undo itself.
+  </Card>
+</CardGroup>
+
+## Quick Start
+
+Every example follows the same pattern. Four steps between you and a machine with opinions about the future:
+
+1. Clone the repo: `git clone https://github.com/General-Market/examples`
+2. Navigate to the example: `cd examples/vision-bot-python`
+3. Copy the env file: `cp .env.example .env`
+4. Fill in your private key and run
+
+See the [Bot Quickstart](/vision/bots/quickstart) for the full walkthrough.

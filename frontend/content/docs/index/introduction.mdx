@@ -1,0 +1,134 @@
+---
+title: "Introduction"
+description: "General Market — on-chain ETFs, prediction markets across 90+ data sources, and DeFi lending"
+---
+
+You will lose money here. Everyone does, everywhere. The difference is that here, the math is visible.
+
+General Market is a protocol for **index products**, **prediction markets**, and **DeFi lending** — running on a custom Arbitrum Orbit L3 with sub-second finality and near-zero gas. It is 8 services, 29 smart contracts, 2 EVM chains, 90+ real-world data sources, and a bot framework. One does not build all this because it is wise. One builds it because the alternative — trusting someone else's spreadsheet — is worse.
+
+<ThreePillars />
+
+---
+
+## The Three Pillars
+
+<CardGroup cols={3}>
+  <Card title="Index (DTFs)" icon="chart-pie" href="/index/concepts/itps">
+    Baskets of up to 100 crypto assets. Each Dex Traded Fund (DTF) is an ERC-4626 vault priced by a NAV formula that hides nothing. Orders pass through BLS consensus and execute on real exchanges. No AMM. No slippage. No illusions about liquidity.
+  </Card>
+  <Card title="Vision" icon="eye" href="/vision/introduction">
+    Prediction markets on 90+ real-world data sources. Transport delays, power outages, weather, GitHub commits, energy prices. You bet on whether the Paris Metro will be late. It usually is. Sealed bets, parimutuel payouts, BLS-verified resolution.
+  </Card>
+  <Card title="Lending" icon="building-columns" href="/index/concepts/lending">
+    Morpho-powered lending on Arbitrum. Deposit USDC to earn yield from borrowers who believe their collateral will hold. Use DTF shares to borrow USDC against positions you cannot bring yourself to sell.
+  </Card>
+</CardGroup>
+
+---
+
+## What Happens Here
+
+<MoneyFlow />
+
+---
+
+## The Infrastructure Beneath
+
+Every system is an act of faith in its own plumbing. These are the pipes.
+
+<CardGroup cols={2}>
+  <Card title="Data Node" icon="database">
+    A Rust service that aggregates 90+ data sources into one API. Crypto prices, transport delays, energy grids, weather stations, GitHub activity. It feeds NAV computation, market resolution, backtesting, and anomaly detection. The nervous system of the protocol. It never sleeps, because the world does not.
+  </Card>
+  <Card title="Bridge" icon="bridge">
+    Moves assets between the Index L3 and Arbitrum. DTF shares cross as standard ERC-20 tokens, composable with DeFi on the other side. Two chains, one position. The bridge is the part you forget about until it matters.
+  </Card>
+  <Card title="Explorer" icon="magnifying-glass-chart">
+    System health dashboard. Oracle node status, consensus metrics, data source monitoring, fee tracking. The control tower. The place you visit when things are working, to reassure yourself they still are.
+  </Card>
+  <Card title="Bot Framework" icon="robot">
+    Python trading bots for Vision markets. Register on-chain through the BotRegistry. Build strategies programmatically. The machines trade while you sleep, which is either a comfort or a terror.
+  </Card>
+  <Card title="Points System" icon="star">
+    Season 1 rewards. Earn points for trading DTFs, placing bets, supplying liquidity. Points track engagement. Whether engagement deserves tracking is a question the protocol does not ask.
+  </Card>
+  <Card title="Social Bot" icon="bullhorn">
+    Anomaly detection across 90+ sources. When something unusual happens — a transit collapse, a grid failure, a weather event — it posts to Twitter/X. Attention follows catastrophe. Markets follow attention.
+  </Card>
+</CardGroup>
+
+---
+
+## Architecture
+
+<GeneralMarketArchitecture />
+
+<Info>
+  The full architecture — contract inventory, data flows, infrastructure layout — lives on the [System Architecture](/index/architecture/overview) page. It is longer than this one. Most architectures are.
+</Info>
+
+---
+
+## Who Comes Here
+
+| Audience | What you do |
+|----------|-------------|
+| **Traders** | Buy diversified crypto exposure through DTFs with a single transaction. Bet on real-world outcomes in Vision markets. |
+| **Bot developers** | Build Python strategies for automated Vision market trading. Register bots on-chain through the BotRegistry. |
+| **Fund managers** | Create custom indexes with configurable weights and up to 100 assets. Earn deployer fees on every trade. |
+| **Data scientists** | Backtest DTF compositions against historical data. Analyze 90+ data sources for prediction market edges. |
+| **Quant researchers** | Exploit inefficiencies in sealed parimutuel markets. Build signal pipelines from transport, energy, and weather data. |
+| **DeFi power users** | Use DTF shares as collateral in Morpho lending markets. Supply USDC to earn yield. Compose across Arbitrum DeFi. |
+
+---
+
+## Convictions
+
+Every protocol is a set of opinions disguised as infrastructure. These are ours.
+
+<CardGroup cols={2}>
+  <Card title="BLS consensus on everything">
+    Every ITP trade, every Vision tick resolution, every bridge relay — verified by multi-party BLS signatures. No test modes. No owner overrides. No bypass flags.
+  </Card>
+  <Card title="Real exchange execution">
+    ITP orders are executed on Bitget by Authorized Participants. No AMM pools. No virtual liquidity. Real order books.
+  </Card>
+  <Card title="Sealed parimutuel betting">
+    Vision bets are sealed — nobody sees what you bet until resolution. Parimutuel payouts: no house edge, winners split the pool proportionally.
+  </Card>
+  <Card title="90+ real-world data sources">
+    Not just crypto. Transport delays across 4 countries, power outages, weather stations, GitHub repos, energy grids, sports, and more. All feeding into Vision markets.
+  </Card>
+</CardGroup>
+
+---
+
+## Where to Go Next
+
+<CardGroup cols={2}>
+  <Card title="Getting Started" icon="rocket" href="/index/getting-started">
+    Connect a wallet. Buy something. The rest follows.
+  </Card>
+  <Card title="How DTFs Work" icon="book" href="/index/concepts/itps">
+    NAV pricing, per-share quantities, rebalancing. The formula that decides what your basket is worth.
+  </Card>
+  <Card title="Vision Markets" icon="eye" href="/vision/introduction">
+    Sealed bets on real-world outcomes. The data resolves it. Not you. Not us.
+  </Card>
+  <Card title="Order Lifecycle" icon="arrows-spin" href="/index/concepts/order-lifecycle">
+    The path an order takes from your wallet through consensus to settlement. It is shorter than you think.
+  </Card>
+  <Card title="Lending" icon="hand-holding-dollar" href="/index/concepts/lending">
+    Earn yield on USDC. Borrow against positions. The usual Faustian bargain, but on-chain.
+  </Card>
+  <Card title="System Architecture" icon="sitemap" href="/index/architecture/overview">
+    All 8 services, 29 contracts, 2 chains. The full diagram for those who need to see the machine.
+  </Card>
+  <Card title="Explorer" icon="magnifying-glass-chart" href="/index/concepts/explorer">
+    System health. Consensus metrics. The dashboard you check when you want to believe everything is fine.
+  </Card>
+  <Card title="Points & Rewards" icon="star" href="/index/concepts/points">
+    Season 1. Earn points for using the protocol. A reward for doing what you were going to do anyway.
+  </Card>
+</CardGroup>

@@ -1,0 +1,112 @@
+---
+title: "Getting Started"
+description: "Set up your wallet and make your first DTF trade"
+---
+
+# Getting Started
+
+Five minutes. That is all it takes to go from idle curiosity to financial exposure. Most regrets begin with less.
+
+## Prerequisites
+
+You need two things. Only two. The simplicity is part of the trap.
+
+- A browser wallet (MetaMask, Rabby, or any EVM-compatible wallet)
+- USDC on the Index L3 network
+
+## Step 1: Install a Wallet
+
+Connect your wallet. A small act. The beginning of most financial regret is a small act.
+
+If you do not have one, install [MetaMask](https://metamask.io/download/). Create a new wallet or import an existing one.
+
+<Tip>
+Rabby and other EVM-compatible wallets work too. Any wallet that supports custom networks will do. The tool matters less than the hand that holds it.
+</Tip>
+
+## Step 2: Add the Index L3 Network
+
+General Market runs on its own chain. You must tell your wallet it exists. The chain does not care whether you do.
+
+| Parameter | Value |
+|-----------|-------|
+| **Network Name** | Index L3 |
+| **RPC URL** | `https://rpc.generalmarket.io/` |
+| **Chain ID** | `111222333` |
+| **Currency Symbol** | ETH |
+| **Block Explorer** | -- |
+
+<Tip>
+Visit [generalmarket.io](https://generalmarket.io) and connect your wallet. It will prompt you to add the network automatically. One less decision to make. You will have enough of those soon.
+</Tip>
+
+## Step 3: Get USDC on Index L3
+
+USDC is the only currency that matters here. Everything settles in it.
+
+1. **Bridge from Arbitrum** -- Use the bridge at [generalmarket.io](https://generalmarket.io) to move USDC from Arbitrum One to Index L3.
+2. **Direct transfer** -- If you already have USDC on Index L3, skip ahead.
+
+<Warning>
+USDC on Index L3 uses **18 decimals**, not the standard 6. The bridge handles the conversion. Do not send USDC directly to the L3 contract address. The contract will not return what it does not understand.
+</Warning>
+
+## Step 4: Browse Available DTFs
+
+Open the **Markets** tab. Here is what the market has produced. Each Dex Traded Fund (DTF) shows:
+
+- **Name and ticker** -- e.g., "Top 100 Crypto" (TOP100)
+- **NAV (Net Asset Value)** -- what one share is worth right now, computed from underlying prices
+- **24h change** -- how much the world has moved since yesterday
+- **Composition** -- the assets inside the basket, and their weights
+- **Total supply** -- how many shares exist
+
+Click any DTF for the full breakdown. Study the composition. Or do not. Most people do not.
+
+## Step 5: Buy Your First DTF
+
+You have chosen. Now commit.
+
+1. Click **Buy** on the DTF card or detail page.
+2. Enter the USDC amount you want to spend.
+3. Review the estimated shares you will receive (based on current NAV).
+4. Click **Confirm** and approve the transaction in your wallet.
+
+<Info>
+Behind the button: three oracle nodes reach [consensus](/index/concepts/order-lifecycle), a real exchange executes real trades, and DTF tokens are minted to your wallet. This takes a few seconds. The machinery is invisible by design.
+</Info>
+
+Two wallet interactions:
+
+1. **Approve** -- Allow the contract to spend your USDC. First time only.
+2. **Submit Order** -- Place the buy order. Your USDC is escrowed until it fills. In that moment between submission and settlement, you are neither buyer nor owner. You are waiting. This is the human condition, compressed into seconds.
+
+## Step 6: Track Your Portfolio
+
+The order fills. Tokens appear in **Portfolio**. You now own a piece of a basket of assets that will appreciate or depreciate regardless of your attention.
+
+From here you can:
+
+- View your holdings and their USDC value
+- Track profit/loss per position
+- Sell back to USDC when conviction fades
+- Deposit DTF tokens into [lending markets](/index/concepts/lending) — to earn yield, or to borrow against what you own but cannot part with
+
+## What Now
+
+You have bought something. The question is whether you understand what you bought. These pages will not make you comfortable, but they will make you informed. The difference matters.
+
+<CardGroup cols={2}>
+  <Card title="How DTFs Work" icon="book" href="/index/concepts/itps">
+    The NAV formula. Per-share quantities. The math behind the basket you now hold.
+  </Card>
+  <Card title="Order Lifecycle" icon="arrows-spin" href="/index/concepts/order-lifecycle">
+    What happened between your click and your tokens. Consensus, execution, settlement.
+  </Card>
+  <Card title="Create Your Own DTF" icon="sliders" href="/index/guides/create-itp">
+    Build your own basket. Choose the assets. Set the weights. Own the outcome.
+  </Card>
+  <Card title="Lending" icon="hand-holding-dollar" href="/index/concepts/lending">
+    Earn yield. Borrow against positions. Leverage is a door that opens in both directions.
+  </Card>
+</CardGroup>

@@ -1,0 +1,325 @@
+---
+title: "Error Codes"
+description: "Vision smart contract error codes with actionable resolutions"
+---
+
+# Error Codes
+
+The many ways a transaction can fail. Each error is the contract saying no -- and unlike human refusals, these come with exact reasons and actionable fixes.
+
+Vision uses named errors in `IVision.sol` and numbered errors (`E200+`) in `ErrorsLib.sol`. Each entry below includes the revert condition and a concrete fix.
+
+<Info>
+Custom errors are decoded from transaction revert data using the contract ABI. If you see a raw hex revert, decode it with `decodeErrorResult` from viem or ethers to get the error name.
+</Info>
+
+## BLS Errors
+
+### InvalidBLSSignature
+
+**Reverts when:** BLS signature verification fails during `claimRewards`, `withdraw`, `forceWithdraw`, `pause`, `unpause`, or `updateBatchMarkets`.
+
+**Fix:** Request a fresh balance proof from `GET /vision/balance/{batchId}/{player}`. BLS proofs can become stale if oracles have rotated their keys or the aggregated public key has been updated in the OracleRegistry. Always fetch the proof immediately before submitting the on-chain transaction. If the error persists, verify that the chain ID in the signed message matches the chain you are submitting to (chain ID `111222333`).
+
+---
+
+## Batch Errors
+
+### BatchNotFound
+
+**Reverts when:** The provided `batchId` does not correspond to any created batch. Specifically, `batch.creator == address(0)`.
+
+**Fix:** Verify the batch ID is correct by calling `getBatch(batchId)` first. Batch IDs are sequential integers starting from 0. If you are using a batch ID from the API, confirm it matches the chain you are connected to. A batch ID valid on one chain will not exist on another.
+
+---
+
+### BatchPaused
+
+**Reverts when:** A player tries to call `joinBatch` on a batch that has been paused by the oracle network.
+
+**Fix:** The batch has been temporarily suspended by oracle consensus (via BLS-signed `pause`). Wait for the oracles to unpause the batch. You can monitor batch status by polling `getBatch(batchId)` and checking the `paused` field. If you believe the pause is in error, contact the batch creator or the oracle operators.
+
+---
+
+### BatchAlreadyExists
+
+**Reverts when:** A batch creation is attempted with a `sourceId` that already has an associated batch.
+
+**Fix:** Each source can only have one batch. Check if a batch already exists for this source by looking up the sourceId mapping. If you need to update the batch configuration, use `updateBatchConfig` on the existing batch instead of creating a new one.
+
+---
+
+## Authorization Errors
+
+### Unauthorized
+
+**Reverts when:** The caller does not have the required permission for the operation. This applies to:
+- `updateBatchMarkets`: caller is not the batch creator.
+- `setBatchMetadata`: caller is not the batch creator.
+- `collectFees`: caller is not the designated `feeCollector` address.
+
+**Fix:** Ensure you are calling the function from the correct address. For batch operations, only the address that created the batch can update its markets or metadata. For fee collection, only the `feeCollector` address (set at contract deployment) can call `collectFees`. If you need to act on behalf of a batch creator, the creator must submit the transaction themselves.
+
+---
+
+## Deposit and Stake Errors
+
+### InsufficientDeposit
+
+**Reverts when:** The `depositAmount` passed to `joinBatch` is less than the `stakePerTick` value. Every player must deposit at least one tick's worth of stake.
+
+**Fix:** Increase the `depositAmount` so it is at least equal to `stakePerTick`. For example, if your `stakePerTick` is 1,000,000 (1 USDC), your deposit must be at least 1,000,000. It is recommended to deposit enough to cover multiple ticks so your position does not immediately run out of balance.
+
+---
+
+### StakeBelowMinimum
+
+**Reverts when:** The `stakePerTick` value passed to `joinBatch` is less than `MIN_STAKE_PER_TICK` (100,000 = 0.1 USDC with 6 decimals).
+
+**Fix:** Set `stakePerTick` to at least `100000` (0.1 USDC). The minimum exists to prevent dust attacks. If you want a small position, 0.1 USDC per tick is the floor.
+
+---
+
+### InsufficientBalance
+
+**Reverts when:** The amount passed to `withdrawBalance` or `withdrawToSettlement` exceeds the caller's available balance in the contract.
+
+**Fix:** Check your current balance by calling `getPosition(batchId, yourAddress)` and reading the `balance` field. Only withdraw up to that amount. If you recently claimed rewards, the balance may have changed.
+
+---
+
+### ZeroAmount
+
+**Reverts when:** A zero amount is passed to `depositBalance`, `withdrawBalance`, or `withdrawToSettlement`.
+
+**Fix:** Provide a non-zero amount. The minimum meaningful deposit is the `stakePerTick` value for your batch.
+
+---
+
+## Player Position Errors
+
+### AlreadyJoined
+
+**Reverts when:** A player tries to call `joinBatch` for a batch they have already joined. Checked by `_positions[batchId][msg.sender].stakePerTick != 0`.
+
+**Fix:** You can only join a batch once per address. If you need to increase your balance, call `deposit(batchId, amount)` instead. If you need to change your bitmap, call `updateBitmap(batchId, newBitmapHash)`. If you want to rejoin after leaving, you must first call `withdraw` to clear your position.
+
+---
+
+### NotJoined
+
+**Reverts when:** A player tries to call `deposit`, `updateBitmap`, `claimRewards`, or `withdraw` on a batch they have not joined. Checked by `_positions[batchId][msg.sender].stakePerTick == 0`.
+
+**Fix:** Call `joinBatch` first before performing any player operations. Verify you are connected with the same wallet address that joined the batch. If you previously withdrew from the batch, your position was deleted and you must rejoin with `joinBatch`.
+
+---
+
+## Tick Errors
+
+### TickAlreadyClaimed
+
+**Reverts when:** The `fromTick` parameter in `claimRewards` is less than or equal to the player's `lastClaimedTick` (when `lastClaimedTick != 0`). This prevents double-claiming the same tick range.
+
+**Fix:** Read the player's current position with `getPosition(batchId, playerAddress)` and check the `lastClaimedTick` field. Set `fromTick` to `lastClaimedTick + 1`. If you are using the oracle API, request a balance proof for the tick range starting after your last claimed tick.
+
+---
+
+### InvalidTickRange
+
+**Reverts when:** The `toTick` parameter in `claimRewards` is less than `fromTick`.
+
+**Fix:** Ensure `toTick >= fromTick`. A single-tick claim uses `fromTick == toTick`. If you are computing tick ranges programmatically, add a guard: `if (toTick < fromTick) throw new Error("Invalid tick range")`.
+
+---
+
+### InvalidTickDuration
+
+**Reverts when:** The `tickDuration` parameter in `createBatch` is either `0` or greater than `MAX_TICK_DURATION` (30 days = 2,592,000 seconds).
+
+**Fix:** Set `tickDuration` to a value between 1 second and 2,592,000 seconds (30 days). Common values: 300 (5 minutes), 3600 (1 hour), 86400 (1 day). The tick duration is immutable after batch creation, so choose carefully.
+
+---
+
+### TickLocked
+
+**Reverts when:** A player attempts to place a bet or update their position during the lock window at the end of a tick. The lock window starts at `tickEnd - lockOffset` seconds before the tick boundary.
+
+**Fix:** Wait until the current tick ends and the next tick begins before submitting your transaction. The lock window prevents last-second position changes that could exploit information asymmetry. You can check the current tick timing by computing `block.timestamp % tickDuration` relative to the `lockOffset`.
+
+---
+
+### InvalidLockOffset
+
+**Reverts when:** The `lockOffset` parameter is greater than or equal to `tickDuration`. The lock window cannot be longer than the tick itself.
+
+**Fix:** Set `lockOffset` to a value strictly less than `tickDuration`. For example, if your tick duration is 300 seconds (5 minutes), a lock offset of 60 seconds (1 minute) means positions are locked for the final minute of each tick.
+
+---
+
+## Solvency Errors
+
+### InsolventPayout
+
+**Reverts when:** The Vision contract does not hold enough USDC to cover the payout plus accumulated fees. Checked by `USDC.balanceOf(address(this)) < payout + accumulatedFees`.
+
+**Fix:** This error indicates a critical solvency issue in the contract. Under normal operation, this should never happen because deposits from losers fund payouts to winners. If you encounter this error, it may indicate a bug in balance proof computation by the oracles. Do not retry the transaction -- report the issue to the protocol operators with the batch ID, your address, and the claim parameters.
+
+---
+
+## Deposit Processing Errors
+
+### AlreadyProcessed
+
+**Reverts when:** A deposit has already been processed (`depositProcessed[depositId]` is already `true`). This is replay protection for deposit crediting.
+
+**Fix:** This deposit has already been credited to the user's balance. No action is needed. If you believe the deposit was not actually credited, check the transaction history for the original processing transaction.
+
+---
+
+### ZeroAddress
+
+**Reverts when:** A zero address (`address(0)`) is passed to `creditBalance` or similar functions that require a valid user address.
+
+**Fix:** Provide a valid non-zero Ethereum address.
+
+---
+
+## Array Errors
+
+### ArrayLengthMismatch
+
+**Reverts when:** The `marketIds` and `resolutionTypes` arrays passed to `createBatch` or `updateBatchMarkets` have different lengths.
+
+**Fix:** Ensure both arrays are the same length. Each market needs exactly one resolution type. For example, if you have 5 market IDs, you must provide exactly 5 resolution types. Double-check your array construction -- a common mistake is appending to one array but not the other.
+
+---
+
+## Bot Registry Errors
+
+### BotAlreadyRegistered
+
+**Reverts when:** An address calls `registerBot` but is already registered in the bot registry. Checked by `_bots[msg.sender].isActive || _botIndex[msg.sender] != 0`.
+
+**Fix:** Each address can only register one bot. If you need to update your bot's endpoint or public key hash, call `deregisterBot()` first, then call `registerBot` again with the new parameters.
+
+---
+
+### BotNotRegistered
+
+**Reverts when:** An address calls `deregisterBot` but is not registered or has already been deregistered. Checked by `!bot.isActive`.
+
+**Fix:** Verify your address is registered by calling `getAllActiveBots()` and checking if your address appears in the returned array. If you have already deregistered, you cannot deregister again. To re-register, call `registerBot` with your new endpoint and public key hash.
+
+---
+
+## Metadata Errors
+
+### StringTooLong
+
+**Reverts when:** A string parameter passed to `setBatchMetadata` or `setDeployerName` exceeds the maximum allowed byte length.
+
+**Fix:** Trim your strings to fit within the limits:
+
+| Field | Max Bytes |
+|-------|-----------|
+| Batch name | 64 |
+| Batch description | 280 |
+| Website URL | 128 |
+| Video URL | 256 |
+| Image URL | 256 |
+| Deployer name | 64 |
+
+Note: The limit is in **bytes**, not characters. Multi-byte characters (e.g., CJK, emoji) consume 2-4 bytes each. Use `new TextEncoder().encode(str).length` in JavaScript to check the byte length before submitting.
+
+---
+
+## Bilateral P2P Errors (E200 - E226)
+
+These numbered errors are defined in `ErrorsLib.sol` and are used by the bilateral peer-to-peer betting system.
+
+### Collateral and Bet Errors (E200 - E209)
+
+| Code | Name | Description |
+|------|------|-------------|
+| `E200` | `InsufficientCollateral` | User does not have enough available collateral for the bet. |
+| `E201` | `BetAlreadyExists` | A bet with this ID already exists. |
+| `E202` | `InvalidBetSignature` | Invalid EIP-712 signature for bet commitment. |
+| `E203` | `BetNotFound` | The specified bet ID was not found. |
+| `E204` | `BetNotActive` | The bet is not in Active status (may be settled, cancelled, or arbitrated). |
+| `E205` | `DeadlineNotPassed` | Bet deadline has not passed yet (required for settlement). |
+| `E206` | `ArbitrationNotRequested` | Arbitration has not been requested for this bet. |
+| `E207` | `InsufficientKeeperSignatures` | Not enough valid keeper signatures to meet the arbitration threshold. |
+| `E208` | `NotBetParty` | Caller is not a party (creator or filler) to this bet. |
+| `E209` | `PayoutExceedsPot` | Custom payout amounts exceed the total pot (creator + filler collateral). |
+
+### Bot Registration Errors (E210 - E212)
+
+| Code | Name | Description |
+|------|------|-------------|
+| `E210` | `BotAlreadyRegistered` | Bot address is already registered. |
+| `E211` | `BotNotActive` | Bot is not registered or is inactive. |
+| `E212` | `InsufficientBotStake` | Insufficient stake provided for bot registration. |
+
+### Keeper Registry Errors (E213 - E222)
+
+| Code | Name | Description |
+|------|------|-------------|
+| `E213` | `KeeperAlreadyRegistered` | Keeper address is already registered. |
+| `E214` | `InvalidKeeperPubkey` | Invalid BLS public key length (must be 128 bytes for G2). |
+| `E215` | `KeeperNotActive` | Keeper is not found or is inactive. |
+| `E216` | `KeeperSuspended` | Keeper is suspended. |
+| `E217` | `NoRotationPending` | No pending key rotation for this keeper. |
+| `E218` | `RotationThresholdNotMet` | Key rotation approval threshold not met. |
+| `E219` | `CannotSelfApprove` | A keeper cannot approve their own key rotation. |
+| `E220` | `AlreadyApproved` | Key rotation already approved by this keeper. |
+| `E221` | `ForceRotationTooEarly` | Force rotation timeout not reached (must wait for the timeout period). |
+| `E222` | `InvalidEndpoint` | Invalid endpoint (empty string). |
+
+### Referral Errors (E223 - E226)
+
+| Code | Name | Description |
+|------|------|-------------|
+| `E223` | `EpochAlreadySet` | Referral epoch already has a Merkle root set. |
+| `E224` | `AlreadyClaimed` | Referral reward already claimed for this epoch. |
+| `E225` | `InvalidMerkleProof` | Invalid Merkle proof for referral claim. |
+| `E226` | `InsufficientBalance` | Withdraw amount exceeds available balance. |
+
+---
+
+## Decoding Errors in the Frontend
+
+Custom errors are decoded using the contract ABI. Here is an example using viem:
+
+```typescript
+import { decodeErrorResult } from "viem";
+import { visionAbi } from "@/lib/contracts/abi";
+
+try {
+  await writeContract(/* ... */);
+} catch (err) {
+  const decoded = decodeErrorResult({
+    abi: visionAbi,
+    data: err.data,
+  });
+  console.error(`Contract reverted: ${decoded.errorName}`);
+  // Named errors: "StakeBelowMinimum", "BatchNotFound", etc.
+  // Numbered errors: "E200_InsufficientCollateral", "E203_BetNotFound", etc.
+}
+```
+
+## Decoding Errors in Python
+
+For bots written in Python using web3.py:
+
+```python
+from web3 import Web3
+from web3.exceptions import ContractLogicError
+
+try:
+    tx = vision_contract.functions.joinBatch(
+        batch_id, deposit_amount, stake_per_tick, bitmap_hash
+    ).transact()
+except ContractLogicError as e:
+    # e.message contains the decoded error name
+    print(f"Contract reverted: {e.message}")
+```
