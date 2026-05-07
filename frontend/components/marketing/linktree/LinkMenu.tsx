@@ -1,7 +1,24 @@
 'use client'
 
 import Image from 'next/image'
+import { useEffect, useState } from 'react'
 import { LINKTREE_ENTRIES, type LinktreeIcon } from './links'
+
+function LiveClock() {
+  // Render the canonical iOS placeholder on SSR / first paint to avoid
+  // hydration mismatch, then swap to the user's local time on mount.
+  const [time, setTime] = useState('9:41')
+  useEffect(() => {
+    const tick = () => {
+      const d = new Date()
+      setTime(`${d.getHours()}:${d.getMinutes().toString().padStart(2, '0')}`)
+    }
+    tick()
+    const id = window.setInterval(tick, 20_000)
+    return () => window.clearInterval(id)
+  }, [])
+  return <>{time}</>
+}
 
 const Icon = ({ kind }: { kind: LinktreeIcon }) => {
   const common = { width: 22, height: 22, viewBox: '0 0 24 24', fill: 'none' } as const
@@ -216,8 +233,11 @@ export function LinkMenu({ onLinkClick }: LinkMenuProps = {}) {
           font-weight: 500;
           letter-spacing: -0.01em;
           transition: background 200ms cubic-bezier(0.25,1,0.5,1),
-                      transform 200ms cubic-bezier(0.25,1,0.5,1);
+                      transform 200ms cubic-bezier(0.25,1,0.5,1),
+                      box-shadow 240ms cubic-bezier(0.25,1,0.5,1);
           border: 1px solid rgba(0,0,0,0.04);
+          position: relative;
+          overflow: hidden;
         }
         .lt-row:hover {
           background: #ececef;
@@ -225,11 +245,67 @@ export function LinkMenu({ onLinkClick }: LinkMenuProps = {}) {
         }
         .lt-row:active { transform: translateY(0); }
         .lt-row svg { flex-shrink: 0; }
-        .lt-row-label { flex: 1; }
+        .lt-row-label { flex: 1; display: flex; flex-direction: column; gap: 2px; line-height: 1.15; }
+        .lt-kicker {
+          font-size: 9.5px;
+          font-weight: 700;
+          letter-spacing: 0.10em;
+          text-transform: uppercase;
+          opacity: 0.6;
+        }
+        /* Featured / primary CTA — black pill with the brand accent
+           pulsing in the rim. Stands out against the grey siblings. */
+        .lt-row--featured {
+          background: linear-gradient(180deg, #1d1d1f 0%, #0a0a0c 100%);
+          color: #ffffff;
+          padding: 16px 20px;
+          border: 1px solid rgba(0,0,0,0.5);
+          box-shadow:
+            inset 0 1px 0 rgba(255,255,255,0.08),
+            inset 0 -1px 0 rgba(0,0,0,0.4),
+            0 8px 22px rgba(0,113,227,0.18),
+            0 1px 2px rgba(0,0,0,0.2);
+          animation: lt-pulse 2.6s ease-in-out infinite;
+        }
+        .lt-row--featured .lt-kicker {
+          color: #2997ff;
+          opacity: 1;
+        }
+        .lt-row--featured:hover {
+          background: linear-gradient(180deg, #2a2a2c 0%, #16161a 100%);
+          transform: translateY(-2px);
+          box-shadow:
+            inset 0 1px 0 rgba(255,255,255,0.10),
+            inset 0 -1px 0 rgba(0,0,0,0.4),
+            0 14px 30px rgba(0,113,227,0.30),
+            0 2px 6px rgba(0,0,0,0.24);
+          animation-play-state: paused;
+        }
+        @keyframes lt-pulse {
+          0%, 100% {
+            box-shadow:
+              inset 0 1px 0 rgba(255,255,255,0.08),
+              inset 0 -1px 0 rgba(0,0,0,0.4),
+              0 8px 22px rgba(0,113,227,0.18),
+              0 1px 2px rgba(0,0,0,0.2),
+              0 0 0 0 rgba(41,151,255,0);
+          }
+          50% {
+            box-shadow:
+              inset 0 1px 0 rgba(255,255,255,0.10),
+              inset 0 -1px 0 rgba(0,0,0,0.4),
+              0 8px 22px rgba(0,113,227,0.22),
+              0 1px 2px rgba(0,0,0,0.2),
+              0 0 0 6px rgba(41,151,255,0.08);
+          }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .lt-row--featured { animation: none; }
+        }
       `}</style>
 
       <div className="lt-status">
-        <span className="lt-time">9:41</span>
+        <span className="lt-time"><LiveClock /></span>
         <span className="lt-status-right">
           {/* Cellular signal — 4 ascending bars */}
           <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor" aria-hidden>
@@ -266,17 +342,21 @@ export function LinkMenu({ onLinkClick }: LinkMenuProps = {}) {
       <div className="lt-list">
         {LINKTREE_ENTRIES.map((entry) => {
           const external = entry.external
+          const className = entry.featured ? 'lt-row lt-row--featured' : 'lt-row'
           return (
             <a
               key={entry.label}
               href={entry.href}
               target={external ? '_blank' : undefined}
               rel={external ? 'noopener noreferrer' : undefined}
-              className="lt-row"
+              className={className}
               onClick={(e) => onLinkClick?.(e, entry.href, !!external)}
             >
               <Icon kind={entry.icon} />
-              <span className="lt-row-label">{entry.label}</span>
+              <span className="lt-row-label">
+                {entry.kicker ? <span className="lt-kicker">{entry.kicker}</span> : null}
+                <span>{entry.label}</span>
+              </span>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
                 <path d="m9 6 6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
