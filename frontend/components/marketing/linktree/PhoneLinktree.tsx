@@ -5,6 +5,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { ContactShadows, Html, useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
 import { LinkMenu } from './LinkMenu'
+import type { LinktreeIcon } from './links'
 import { GeneralLoader } from '@/components/ui/GeneralLoader'
 
 const MODEL_URL = '/models/tabletop_macbook_iphone.opt.glb'
@@ -12,6 +13,65 @@ useGLTF.preload(MODEL_URL)
 
 // How long the phone spins-and-flies before navigation fires.
 const LEAVE_DURATION_MS = 720
+// How long after the leave animation we wait before letting the phone
+// drift home for external links (so the user has time to register the
+// animation; total round-trip ≈ 1.5s).
+const RETURN_AFTER_LEAVE_MS = 800
+
+// One transform recipe per button, so each link feels distinct on click.
+type LeaveTransform = {
+  posX: number
+  posY: number
+  posZ: number
+  rotY: number
+  rotX: number
+  rotZ: number
+}
+
+function leaveTransformFor(style: LinktreeIcon, eased: number, t: number): LeaveTransform {
+  switch (style) {
+    case 'waitlist':
+      // Forward spin, top-right exit, dive toward the camera.
+      return {
+        posX: eased * 7,
+        posY: eased * 4,
+        posZ: eased * -1.2,
+        rotY: eased * Math.PI * 2.4,
+        rotX: eased * -0.35,
+        rotZ: eased * -Math.PI * 0.28,
+      }
+    case 'x':
+      // X marks the spot — Z-axis spin like the logo, slingshot right.
+      return {
+        posX: eased * 9,
+        posY: eased * -1.5,
+        posZ: eased * -0.6,
+        rotY: eased * Math.PI * 1.4,
+        rotX: 0,
+        rotZ: eased * Math.PI * 3.2,
+      }
+    case 'discord':
+      // Drop in like a chat bubble — wobble + bottom-left dive.
+      return {
+        posX: eased * -6,
+        posY: eased * -5,
+        posZ: 0,
+        rotY: Math.sin(t * Math.PI * 4) * 0.55 + eased * 0.4,
+        rotX: eased * 0.55,
+        rotZ: eased * Math.PI * 0.5,
+      }
+    case 'docs':
+      // Open like a book — page-flip on X, recede away.
+      return {
+        posX: 0,
+        posY: eased * -1.4,
+        posZ: eased * 3.2,
+        rotY: eased * Math.PI * 0.45,
+        rotX: eased * Math.PI * 1.4,
+        rotZ: 0,
+      }
+  }
+}
 
 type Responsive = {
   distance: number
@@ -48,7 +108,7 @@ type LeaveRef = React.MutableRefObject<{
   startMs: number
   href: string
   external: boolean
-  openedWindow: Window | null
+  style: LinktreeIcon
 } | null>
 
 // Find the iPhone screen mesh by the same fingerprint DeviceBroll uses:
@@ -104,7 +164,7 @@ function PhoneScene({
   responsive: Responsive
   leaving: LeaveRef
   onReady: () => void
-  onLinkClick: (e: React.MouseEvent, href: string, external: boolean) => void
+  onLinkClick: (e: React.MouseEvent, href: string, external: boolean, style: LinktreeIcon) => void
 }) {
   const gltf = useGLTF(MODEL_URL)
   const groupRef = useRef<THREE.Group>(null)
@@ -172,19 +232,20 @@ function PhoneScene({
     const g = groupRef.current
     if (!g) return
 
-    // Leave animation: spin and accelerate top-right, then navigation
-    // fires from the parent's setTimeout the moment we hit t=1.
+    // Leave animation: each button has its own recipe. Cubic ease-in
+    // (slow → fast) mapped through leaveTransformFor.
     const lv = leaving.current
     if (lv) {
       const t = Math.min(1, (performance.now() - lv.startMs) / LEAVE_DURATION_MS)
-      const eased = t * t * t // cubic ease-in (accelerating)
-      g.position.x = eased * 7
-      g.position.y = (responsive.topOffset + tilt.current.scrollProgress * responsive.scrollTravel)
-        + eased * 4
-      g.position.z = eased * -1.2
-      g.rotation.y = eased * Math.PI * 2.4
-      g.rotation.x = eased * -0.35
-      g.rotation.z = eased * -Math.PI * 0.28
+      const eased = t * t * t
+      const f = leaveTransformFor(lv.style, eased, t)
+      const baseY = responsive.topOffset + tilt.current.scrollProgress * responsive.scrollTravel
+      g.position.x = f.posX
+      g.position.y = baseY + f.posY
+      g.position.z = f.posZ
+      g.rotation.y = f.rotY
+      g.rotation.x = f.rotX
+      g.rotation.z = f.rotZ
       return
     }
 
@@ -251,25 +312,28 @@ export function PhoneLinktree() {
   const [ready, setReady] = useState(false)
 
   const handleLinkClick = useCallback(
-    (e: React.MouseEvent, href: string, external: boolean) => {
+    (e: React.MouseEvent, href: string, external: boolean, style: LinktreeIcon) => {
       e.preventDefault()
       if (leaving.current) return
-      // Open the destination tab on the user gesture so popup blockers
-      // don't kill the navigation that fires after the leave animation.
-      const openedWindow = external
-        ? window.open('about:blank', '_blank', 'noopener,noreferrer')
-        : null
-      leaving.current = { startMs: performance.now(), href, external, openedWindow }
-      setTimeout(() => {
-        const lv = leaving.current
-        if (!lv) return
-        if (lv.external) {
-          if (lv.openedWindow) lv.openedWindow.location.href = lv.href
-          else window.open(lv.href, '_blank', 'noopener,noreferrer')
+      leaving.current = { startMs: performance.now(), href, external, style }
+
+      // At t = LEAVE_DURATION_MS the phone is at its off-screen extreme —
+      // navigate exactly here. Internal: replace the page. External: open
+      // the new tab and let the phone come back so the user isn't staring
+      // at an empty page when they return.
+      window.setTimeout(() => {
+        if (external) {
+          window.open(href, '_blank', 'noopener,noreferrer')
         } else {
-          window.location.href = lv.href
+          window.location.href = href
         }
       }, LEAVE_DURATION_MS)
+
+      if (external) {
+        window.setTimeout(() => {
+          leaving.current = null
+        }, LEAVE_DURATION_MS + RETURN_AFTER_LEAVE_MS)
+      }
     },
     [],
   )
