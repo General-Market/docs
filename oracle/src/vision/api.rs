@@ -486,25 +486,33 @@ async fn list_batches(
             // still resolve them via keccak-map, but downstream consumers that
             // expected names broke.
             let batch_ids_in_response: Vec<i64> = rows.iter().map(|r| r.id).collect();
-            if let Ok(lc_rows) = sqlx::query_as::<_, (Option<i64>, String, Option<i32>, Option<i32>)>(
+            // player_count is BIGINT in the schema; market_count is INTEGER.
+            // Decoding either as the wrong int width caused sqlx to fail the
+            // whole query silently, leaving the HashMap empty.
+            let lc_query = sqlx::query_as::<_, (Option<i64>, String, Option<i32>, Option<i64>)>(
                 "SELECT on_chain_batch_id, source_id, market_count, player_count
                  FROM vision_batch_lifecycle
                  WHERE on_chain_batch_id = ANY($1)"
             )
             .bind(&batch_ids_in_response)
             .fetch_all(&state.pool)
-            .await
-            {
-                for (ocid, src, mc, pc) in lc_rows {
-                    if let Some(bid) = ocid {
-                        lifecycle_sources.insert(bid as u64, src);
-                        if let Some(count) = mc {
-                            lifecycle_counts.insert(bid as u64, count as usize);
-                        }
-                        if let Some(count) = pc {
-                            lifecycle_player_counts.insert(bid as u64, count as usize);
+            .await;
+            match lc_query {
+                Ok(lc_rows) => {
+                    for (ocid, src, mc, pc) in lc_rows {
+                        if let Some(bid) = ocid {
+                            lifecycle_sources.insert(bid as u64, src);
+                            if let Some(count) = mc {
+                                lifecycle_counts.insert(bid as u64, count as usize);
+                            }
+                            if let Some(count) = pc {
+                                lifecycle_player_counts.insert(bid as u64, count as usize);
+                            }
                         }
                     }
+                }
+                Err(e) => {
+                    tracing::warn!(error = %e, "lifecycle_sources query failed — falling back to hex source_ids");
                 }
             }
             let recommended_counts = fetch_market_counts(&state.config.data_node_url).await;
