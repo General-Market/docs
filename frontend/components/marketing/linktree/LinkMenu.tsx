@@ -36,7 +36,11 @@ const Icon = ({ kind }: { kind: LinktreeIcon }) => {
   }
 }
 
-export function LinkMenu() {
+type LinkMenuProps = {
+  onLinkClick?: (e: React.MouseEvent, href: string, external: boolean) => void
+}
+
+export function LinkMenu({ onLinkClick }: LinkMenuProps = {}) {
   return (
     <div className="lt-menu">
       <style>{`
@@ -269,6 +273,7 @@ export function LinkMenu() {
               target={external ? '_blank' : undefined}
               rel={external ? 'noopener noreferrer' : undefined}
               className="lt-row"
+              onClick={(e) => onLinkClick?.(e, entry.href, !!external)}
             >
               <Icon kind={entry.icon} />
               <span className="lt-row-label">{entry.label}</span>

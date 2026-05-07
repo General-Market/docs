@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useEffect, useRef, useState } from 'react'
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { ContactShadows, Html, useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
@@ -10,10 +10,15 @@ import { GeneralLoader } from '@/components/ui/GeneralLoader'
 const MODEL_URL = '/models/tabletop_macbook_iphone.opt.glb'
 useGLTF.preload(MODEL_URL)
 
+// How long the phone spins-and-flies before navigation fires.
+const LEAVE_DURATION_MS = 720
+
 type Responsive = {
   distance: number
   topOffset: number
   scrollTravel: number
+  /** True when the device has no fine pointer — drives ambient idle tilt. */
+  ambient: boolean
 }
 
 // LinkMenu CSS width in px — must stay in sync with .lt-menu width.
@@ -25,17 +30,26 @@ function readResponsive(): Responsive {
   // The phone should sit in the page like a normal centered linktree column —
   // fully visible, comfortably sized, with a faint scroll-driven slide.
   if (typeof window === 'undefined') {
-    return { distance: 8.5, topOffset: 0, scrollTravel: 0.5 }
+    return { distance: 8.5, topOffset: 0, scrollTravel: 0.5, ambient: false }
   }
   const aspect = window.innerWidth / Math.max(1, window.innerHeight)
+  // Touch devices have no mouse parallax — drive an idle sine wave instead.
+  const ambient = window.matchMedia('(hover: none), (pointer: coarse)').matches
   if (aspect >= 1.2) {
-    return { distance: 8.5, topOffset: 0, scrollTravel: 0.5 }
+    return { distance: 8.5, topOffset: 0, scrollTravel: 0.5, ambient }
   }
   if (aspect >= 0.7) {
-    return { distance: 9.6, topOffset: 0, scrollTravel: 0.45 }
+    return { distance: 9.6, topOffset: 0, scrollTravel: 0.45, ambient }
   }
-  return { distance: 10.2, topOffset: 0, scrollTravel: 0.4 }
+  return { distance: 10.2, topOffset: 0, scrollTravel: 0.4, ambient }
 }
+
+type LeaveRef = React.MutableRefObject<{
+  startMs: number
+  href: string
+  external: boolean
+  openedWindow: Window | null
+} | null>
 
 // Find the iPhone screen mesh by the same fingerprint DeviceBroll uses:
 // the only material with an emissiveMap and no baseColor `map`. Skips
@@ -79,11 +93,15 @@ function CameraRig({ distance }: { distance: number }) {
 function PhoneScene({
   tilt,
   responsive,
+  leaving,
   onReady,
+  onLinkClick,
 }: {
   tilt: TiltRef
   responsive: Responsive
+  leaving: LeaveRef
   onReady: () => void
+  onLinkClick: (e: React.MouseEvent, href: string, external: boolean) => void
 }) {
   const gltf = useGLTF(MODEL_URL)
   const groupRef = useRef<THREE.Group>(null)
@@ -147,13 +165,38 @@ function PhoneScene({
     onReady()
   }, [gltf, onReady])
 
-  useFrame(() => {
+  useFrame(({ clock }) => {
     const g = groupRef.current
     if (!g) return
+
+    // Leave animation: spin and accelerate top-right, then navigation
+    // fires from the parent's setTimeout the moment we hit t=1.
+    const lv = leaving.current
+    if (lv) {
+      const t = Math.min(1, (performance.now() - lv.startMs) / LEAVE_DURATION_MS)
+      const eased = t * t * t // cubic ease-in (accelerating)
+      g.position.x = eased * 7
+      g.position.y = (responsive.topOffset + tilt.current.scrollProgress * responsive.scrollTravel)
+        + eased * 4
+      g.position.z = eased * -1.2
+      g.rotation.y = eased * Math.PI * 2.4
+      g.rotation.x = eased * -0.35
+      g.rotation.z = eased * -Math.PI * 0.28
+      return
+    }
+
+    // Idle ambient sine — only on touch devices that lack a mouse parallax.
+    const tNow = clock.getElapsedTime()
+    const ambientYaw = responsive.ambient ? Math.sin(tNow * 0.45) * 0.09 : 0
+    const ambientPitch = responsive.ambient ? Math.sin(tNow * 0.32 + 1.1) * 0.05 : 0
+
     const targetY = responsive.topOffset + tilt.current.scrollProgress * responsive.scrollTravel
     g.position.y = THREE.MathUtils.lerp(g.position.y, targetY, 0.12)
-    g.rotation.y = THREE.MathUtils.lerp(g.rotation.y, tilt.current.yaw, 0.1)
-    g.rotation.x = THREE.MathUtils.lerp(g.rotation.x, tilt.current.pitch, 0.1)
+    g.position.x = THREE.MathUtils.lerp(g.position.x, 0, 0.18)
+    g.position.z = THREE.MathUtils.lerp(g.position.z, 0, 0.18)
+    g.rotation.y = THREE.MathUtils.lerp(g.rotation.y, tilt.current.yaw + ambientYaw, 0.1)
+    g.rotation.x = THREE.MathUtils.lerp(g.rotation.x, tilt.current.pitch + ambientPitch, 0.1)
+    g.rotation.z = THREE.MathUtils.lerp(g.rotation.z, 0, 0.18)
   })
 
   return (
@@ -176,7 +219,7 @@ function PhoneScene({
           zIndexRange={[1, 0]}
           wrapperClass="lt-html-wrapper"
         >
-          <LinkMenu />
+          <LinkMenu onLinkClick={onLinkClick} />
         </Html>
       )}
     </group>
@@ -185,8 +228,33 @@ function PhoneScene({
 
 export function PhoneLinktree() {
   const tilt = useRef({ scrollProgress: 0, yaw: 0, pitch: 0 })
+  const leaving: LeaveRef = useRef(null)
   const [responsive, setResponsive] = useState<Responsive>(() => readResponsive())
   const [ready, setReady] = useState(false)
+
+  const handleLinkClick = useCallback(
+    (e: React.MouseEvent, href: string, external: boolean) => {
+      e.preventDefault()
+      if (leaving.current) return
+      // Open the destination tab on the user gesture so popup blockers
+      // don't kill the navigation that fires after the leave animation.
+      const openedWindow = external
+        ? window.open('about:blank', '_blank', 'noopener,noreferrer')
+        : null
+      leaving.current = { startMs: performance.now(), href, external, openedWindow }
+      setTimeout(() => {
+        const lv = leaving.current
+        if (!lv) return
+        if (lv.external) {
+          if (lv.openedWindow) lv.openedWindow.location.href = lv.href
+          else window.open(lv.href, '_blank', 'noopener,noreferrer')
+        } else {
+          window.location.href = lv.href
+        }
+      }, LEAVE_DURATION_MS)
+    },
+    [],
+  )
 
   useEffect(() => {
     const update = () => setResponsive(readResponsive())
@@ -287,7 +355,13 @@ export function PhoneLinktree() {
         >
           <CameraRig distance={responsive.distance} />
           <Suspense fallback={null}>
-            <PhoneScene tilt={tilt} responsive={responsive} onReady={() => setReady(true)} />
+            <PhoneScene
+              tilt={tilt}
+              responsive={responsive}
+              leaving={leaving}
+              onReady={() => setReady(true)}
+              onLinkClick={handleLinkClick}
+            />
             <hemisphereLight args={['#ffffff', '#dde3ec', 0.9]} />
             <ambientLight intensity={0.55} />
             <directionalLight position={[3, 6, -4]} intensity={2.2} />
