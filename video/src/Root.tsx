@@ -116,6 +116,7 @@ import { antiCheatSolutionMeta } from "./compositions/anticheat/AntiCheatSolutio
 import { antiCheatReassureMeta } from "./compositions/anticheat/AntiCheatReassure";
 import { antiCheatEndCardMeta } from "./compositions/anticheat/AntiCheatEndCard";
 import { antiCheatFullMeta } from "./compositions/anticheat/AntiCheatFull";
+import { blockTradingExileMeta } from "./compositions/block-trading/BlockTradingExile";
 
 const SHOW_SCENES = process.env.REMOTION_SHOW_SCENES === "1";
 
@@ -161,6 +162,16 @@ export const RemotionRoot: React.FC = () => {
           />
         ))}
       </Folder>
+
+      {/* ═══ BLOCK TRADING — single-slide kill-list explainer ═══ */}
+      <Composition
+        id={blockTradingExileMeta.id}
+        component={blockTradingExileMeta.component}
+        durationInFrames={blockTradingExileMeta.durationInFrames}
+        fps={blockTradingExileMeta.fps}
+        width={blockTradingExileMeta.width}
+        height={blockTradingExileMeta.height}
+      />
 
       {/* ═══ PITCH — VC pitch deck, 1 second per slide ═══ */}
       <Composition
