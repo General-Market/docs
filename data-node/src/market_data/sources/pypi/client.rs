@@ -31,7 +31,10 @@ const HUGOVK_URL: &str =
     "https://hugovk.github.io/top-pypi-packages/top-pypi-packages-30-days.min.json";
 const PYPISTATS_URL: &str = "https://pypistats.org/api/packages";
 const MAX_PACKAGES: usize = 100; // Keep init under 5 min (100 × 2.5s = 250s)
-const INTER_REQUEST_DELAY_MS: u64 = 2500; // 30 req/min × 85% ≈ 1 per 2.4s
+// pypistats tightened the limit somewhere around 2026-05; the previous 2500ms
+// delay (30 req/min × 85%) started returning 429 mid-cycle. Drop to ~50% of the
+// posted budget — pypi data is daily anyway, throughput is not a real constraint.
+const INTER_REQUEST_DELAY_MS: u64 = 4000; // ≈ 15 req/min, half of stated budget
 
 #[derive(Debug, Deserialize)]
 struct HugovkResponse {
