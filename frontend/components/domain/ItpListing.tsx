@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, useDeferredValue } from 'react'
+import { useState, useEffect, useMemo, useDeferredValue, type CSSProperties } from 'react'
 import { formatUnits } from 'viem'
 import { BuyItpModal } from './BuyItpModal'
 import { SellItpModal } from './SellItpModal'
@@ -71,6 +71,92 @@ function formatNetAssets(usd: number): string {
 type SortKey = 'ticker' | 'name' | 'nav' | 'aum' | 'shares'
 type SortDir = 'asc' | 'desc'
 
+// ── Apple style atoms ────────────────────────────────────────────────────────
+const colHeader: CSSProperties = {
+  fontFamily: 'var(--apple-font-text)',
+  fontSize: 11,
+  fontWeight: 600,
+  letterSpacing: 'var(--apple-track-loose)',
+  textTransform: 'uppercase',
+  color: 'var(--apple-text-tertiary)',
+  padding: '14px 16px',
+  whiteSpace: 'nowrap',
+  userSelect: 'none',
+  background: 'transparent',
+  borderBottom: '1px solid var(--apple-line)',
+}
+
+const cellBase: CSSProperties = {
+  fontFamily: 'var(--apple-font-text)',
+  fontSize: 14,
+  letterSpacing: 'var(--apple-track-tight)',
+  color: 'var(--apple-text)',
+  padding: '14px 16px',
+  borderBottom: '1px solid var(--apple-line)',
+  verticalAlign: 'middle',
+}
+
+const symbolPill: CSSProperties = {
+  display: 'inline-block',
+  padding: '3px 8px',
+  background: 'var(--apple-text)',
+  color: '#ffffff',
+  borderRadius: 6,
+  fontFamily: '"SF Mono", ui-monospace, "SFMono-Regular", Menlo, monospace',
+  fontSize: 11,
+  fontWeight: 600,
+  letterSpacing: 'var(--apple-track-loose)',
+  lineHeight: 1.2,
+  whiteSpace: 'nowrap',
+}
+
+const ctaPrimary: CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '6px 14px',
+  background: '#0071e3',
+  color: '#ffffff',
+  fontFamily: 'var(--apple-font-text)',
+  fontSize: 13,
+  fontWeight: 600,
+  letterSpacing: 'var(--apple-track-tight)',
+  borderRadius: 980,
+  border: 'none',
+  cursor: 'pointer',
+  transition: 'background 200ms var(--apple-ease-default), opacity 200ms var(--apple-ease-default)',
+}
+
+const ctaSecondary: CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '6px 14px',
+  background: 'var(--apple-panel)',
+  color: 'var(--apple-text)',
+  fontFamily: 'var(--apple-font-text)',
+  fontSize: 13,
+  fontWeight: 500,
+  letterSpacing: 'var(--apple-track-tight)',
+  borderRadius: 980,
+  border: '1px solid var(--apple-line)',
+  cursor: 'pointer',
+  transition: 'background 200ms var(--apple-ease-default)',
+}
+
+const pagerBtn: CSSProperties = {
+  padding: '6px 12px',
+  background: 'var(--apple-panel)',
+  color: 'var(--apple-text)',
+  fontFamily: 'var(--apple-font-text)',
+  fontSize: 13,
+  letterSpacing: 'var(--apple-track-tight)',
+  borderRadius: 8,
+  border: '1px solid var(--apple-line)',
+  cursor: 'pointer',
+  transition: 'background 200ms var(--apple-ease-default)',
+}
+
 export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpListingProps) {
   const t = useTranslations('markets')
 
@@ -111,6 +197,8 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
   const deferredSearch = useDeferredValue(searchQuery)
   const [sortKey, setSortKey] = useState<SortKey>('aum')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
+  const [hoveredRow, setHoveredRow] = useState<string | null>(null)
+  const [searchFocused, setSearchFocused] = useState(false)
 
   const rows = useMemo(() => navSnapshotsToRows(navList), [navList])
 
@@ -162,7 +250,13 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
   const SortArrow = ({ col }: { col: SortKey }) => {
     if (sortKey !== col) return null
     return (
-      <svg className="w-2.5 h-2.5 inline-block ml-1" viewBox="0 0 10 10" fill="currentColor">
+      <svg
+        width="9"
+        height="9"
+        viewBox="0 0 10 10"
+        fill="currentColor"
+        style={{ display: 'inline-block', marginLeft: 4, verticalAlign: 'baseline' }}
+      >
         {sortDir === 'asc'
           ? <path d="M5 2l4 6H1z" />
           : <path d="M5 8l4-6H1z" />
@@ -171,18 +265,55 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
     )
   }
 
+  const sortableHeader = (key: SortKey, align: 'left' | 'right' = 'left'): CSSProperties => ({
+    ...colHeader,
+    textAlign: align,
+    cursor: 'pointer',
+    color: sortKey === key ? 'var(--apple-text-secondary)' : 'var(--apple-text-tertiary)',
+  })
+
   return (
     <>
-      {/* Hero Band */}
+      {/* Hero Band — kept as the global hero-band class, retypeset with Apple tokens */}
       <div className="hero-band">
         <div className="hero-band-inner">
-          <div className="text-label font-semibold tracking-[0.08em] uppercase text-text-muted mb-2">
+          <div
+            style={{
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: 'var(--apple-track-loose)',
+              textTransform: 'uppercase',
+              color: 'var(--apple-text-tertiary)',
+              marginBottom: 8,
+            }}
+          >
             {t('hero.label')}
           </div>
-          <h2 className="text-display md:text-[42px] font-black tracking-tight text-black leading-[1.1] mb-2">
+          <h2
+            style={{
+              fontFamily: 'var(--apple-font-display)',
+              fontSize: 'clamp(32px, 5vw, 48px)',
+              lineHeight: 1.0714,
+              letterSpacing: 'var(--apple-track-tighter)',
+              fontWeight: 600,
+              color: 'var(--apple-text)',
+              margin: '0 0 12px',
+            }}
+          >
             {t('hero.title')}
           </h2>
-          <p className="text-subhead text-text-secondary max-w-[600px]">
+          <p
+            style={{
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: 'var(--apple-fs-21)',
+              lineHeight: 1.1904,
+              letterSpacing: 'var(--apple-track-tight)',
+              color: 'var(--apple-text-secondary)',
+              maxWidth: 600,
+              margin: 0,
+            }}
+          >
             {t('hero.description')}
           </p>
         </div>
@@ -190,17 +321,56 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
 
       {/* Search + count bar */}
       <div className="px-6 lg:px-12 pt-6 pb-3">
-        <div className="max-w-site mx-auto flex items-center justify-between gap-4 flex-wrap">
-          <div className="text-caption text-text-secondary">
-            Showing <strong className="text-text-primary">{sorted.length}</strong> of {rows.length} total funds
+        <div className="max-w-site mx-auto">
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 16,
+              flexWrap: 'wrap',
+              padding: '14px 16px',
+              background: 'var(--apple-panel)',
+              border: '1px solid var(--apple-line)',
+              borderRadius: 12,
+            }}
+          >
+            <div
+              style={{
+                fontFamily: 'var(--apple-font-text)',
+                fontSize: 13,
+                letterSpacing: 'var(--apple-track-tight)',
+                color: 'var(--apple-text-secondary)',
+              }}
+            >
+              Showing{' '}
+              <strong style={{ color: 'var(--apple-text)', fontWeight: 600 }}>{sorted.length}</strong>{' '}
+              of {rows.length} total funds
+            </div>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
+              placeholder="Search by fund name or ticker..."
+              style={{
+                width: '100%',
+                maxWidth: 320,
+                padding: '8px 12px',
+                fontFamily: 'var(--apple-font-text)',
+                fontSize: 14,
+                letterSpacing: 'var(--apple-track-tight)',
+                color: 'var(--apple-text)',
+                background: 'var(--apple-panel)',
+                border: `1px solid ${searchFocused ? '#0071e3' : 'var(--apple-line)'}`,
+                borderRadius: 12,
+                outline: 'none',
+                boxShadow: searchFocused ? '0 0 0 3px rgba(0,113,227,0.16)' : 'none',
+                transition: 'border-color 200ms var(--apple-ease-default), box-shadow 200ms var(--apple-ease-default)',
+              }}
+            />
           </div>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by fund name or ticker..."
-            className="w-full max-w-[300px] border border-[#ccc] rounded px-3 py-[7px] text-caption text-text-primary placeholder-[#aaa] focus:outline-none focus:border-[#666] transition-colors"
-          />
         </div>
       </div>
 
@@ -208,170 +378,248 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
       <div className="px-6 lg:px-12 pb-8">
         <div className="max-w-site mx-auto">
           {loading ? (
-            <div className="text-center py-20 text-text-muted text-body">Loading funds...</div>
+            <div
+              style={{
+                background: 'var(--apple-panel)',
+                border: '1px solid var(--apple-line)',
+                borderRadius: 12,
+                padding: '80px 24px',
+                textAlign: 'center',
+                fontFamily: 'var(--apple-font-text)',
+                fontSize: 14,
+                letterSpacing: 'var(--apple-track-tight)',
+                color: 'var(--apple-text-tertiary)',
+              }}
+            >
+              Loading funds...
+            </div>
           ) : sorted.length === 0 ? (
-            <div className="text-center py-20 text-text-muted text-body">
+            <div
+              style={{
+                background: 'var(--apple-panel)',
+                border: '1px solid var(--apple-line)',
+                borderRadius: 12,
+                padding: '80px 24px',
+                textAlign: 'center',
+                fontFamily: 'var(--apple-font-text)',
+                fontSize: 14,
+                letterSpacing: 'var(--apple-track-tight)',
+                color: 'var(--apple-text-tertiary)',
+              }}
+            >
               {searchQuery ? 'No funds match your search.' : 'No funds available.'}
             </div>
           ) : (
             <>
-            <div className="overflow-x-auto -mx-6 px-6 lg:-mx-0 lg:px-0">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="bg-[#f5f5f5] border-y border-[#ddd]">
-                    <th
-                      onClick={() => handleSort('ticker')}
-                      className="py-2.5 px-4 text-left text-label font-semibold uppercase tracking-[0.05em] text-[#555] cursor-pointer select-none whitespace-nowrap hover:text-[#222]"
-                    >
-                      Ticker<SortArrow col="ticker" />
-                    </th>
-                    <th
-                      onClick={() => handleSort('name')}
-                      className="py-2.5 px-4 text-left text-label font-semibold uppercase tracking-[0.05em] text-[#555] cursor-pointer select-none whitespace-nowrap hover:text-[#222]"
-                    >
-                      Name<SortArrow col="name" />
-                    </th>
-                    <th className="py-2.5 px-2 w-8"></th>
-                    <th
-                      onClick={() => handleSort('nav')}
-                      className="py-2.5 px-4 text-right text-label font-semibold uppercase tracking-[0.05em] text-[#555] cursor-pointer select-none whitespace-nowrap hover:text-[#222]"
-                    >
-                      NAV<SortArrow col="nav" />
-                    </th>
-                    <th
-                      onClick={() => handleSort('aum')}
-                      className="py-2.5 px-4 text-right text-label font-semibold uppercase tracking-[0.05em] text-[#555] cursor-pointer select-none whitespace-nowrap hover:text-[#222]"
-                    >
-                      Net Assets<SortArrow col="aum" />
-                    </th>
-                    <th
-                      onClick={() => handleSort('shares')}
-                      className="py-2.5 px-4 text-right text-label font-semibold uppercase tracking-[0.05em] text-[#555] cursor-pointer select-none whitespace-nowrap hover:text-[#222]"
-                    >
-                      Shares Outstanding<SortArrow col="shares" />
-                    </th>
-                    <th className="py-2.5 px-4 text-right text-label font-semibold uppercase tracking-[0.05em] text-[#555] whitespace-nowrap">
-                      Trade
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginated.map((row, idx) => (
-                    <tr
-                      key={row.itpId}
-                      id={`itp-card-${row.itpId}`}
-                      className={`border-b border-[#eee] hover:bg-[#f0f7f4] transition-colors ${
-                        idx % 2 === 1 ? 'bg-[#fafafa]' : 'bg-white'
-                      }`}
-                    >
-                      {/* Ticker — bold, standalone */}
-                      <td className="py-3 px-4">
-                        <Link href={`/itp/${row.itpId}`}>
-                          <span className="text-caption font-bold text-text-primary hover:text-brand transition-colors">
-                            {row.symbol}
-                          </span>
-                        </Link>
-                      </td>
-                      {/* Name — brand-colored link like iShares */}
-                      <td className="py-3 px-4">
-                        <Link href={`/itp/${row.itpId}`}>
-                          <span className="text-caption text-brand-dark hover:text-brand hover:underline transition-colors">
-                            {row.name}
-                          </span>
-                        </Link>
-                      </td>
-                      {/* Chart button */}
-                      <td className="py-3 px-2 w-8">
-                        <button
-                          onClick={() => setChartModal({ itpId: row.itpId, name: row.name })}
-                          className="text-[#999] hover:text-black transition-colors"
-                          title="NAV chart"
-                        >
-                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="1 12 4 7 8 9 11 4 15 6" />
-                          </svg>
-                        </button>
-                      </td>
-                      {/* NAV */}
-                      <td className="py-3 px-4 text-right">
-                        <span className="text-caption font-mono tabular-nums text-text-primary">
-                          ${row.navPerShare.toFixed(4)}
-                        </span>
-                      </td>
-                      {/* Net Assets */}
-                      <td className="py-3 px-4 text-right">
-                        <span className="text-caption font-mono tabular-nums text-text-primary">
-                          {formatNetAssets(row.aum)}
-                        </span>
-                      </td>
-                      {/* Shares Outstanding */}
-                      <td className="py-3 px-4 text-right">
-                        <span className="text-caption font-mono tabular-nums text-[#666]">
-                          {parseFloat(formatUnits(row.totalSupply, 18)).toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                        </span>
-                      </td>
-                      {/* Trade actions */}
-                      <td className="py-3 px-4 text-right whitespace-nowrap">
-                        <WalletActionButton
-                          onClick={() => setBuyModal(row.itpId)}
-                          className="text-label font-semibold text-brand-dark hover:text-brand transition-colors"
-                        >
-                          Buy
-                        </WalletActionButton>
-                        <span className="mx-1.5 text-[#ddd]">|</span>
-                        <WalletActionButton
-                          onClick={() => setSellModal(row.itpId)}
-                          className="text-label font-semibold text-[#666] hover:text-brand transition-colors"
-                        >
-                          Sell
-                        </WalletActionButton>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between mt-4 px-1">
-                <span className="text-caption text-text-muted">
-                  {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, sorted.length)} of {sorted.length}
-                </span>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => setPage(0)}
-                    disabled={page === 0}
-                    className="px-2 py-1 text-label border border-[#ddd] rounded hover:bg-[#f5f5f5] disabled:opacity-30 disabled:cursor-default"
-                  >
-                    First
-                  </button>
-                  <button
-                    onClick={() => setPage(p => p - 1)}
-                    disabled={page === 0}
-                    className="px-2.5 py-1 text-label border border-[#ddd] rounded hover:bg-[#f5f5f5] disabled:opacity-30 disabled:cursor-default"
-                  >
-                    Prev
-                  </button>
-                  <span className="px-3 text-caption text-text-primary font-medium">
-                    {page + 1} / {totalPages}
-                  </span>
-                  <button
-                    onClick={() => setPage(p => p + 1)}
-                    disabled={page >= totalPages - 1}
-                    className="px-2.5 py-1 text-label border border-[#ddd] rounded hover:bg-[#f5f5f5] disabled:opacity-30 disabled:cursor-default"
-                  >
-                    Next
-                  </button>
-                  <button
-                    onClick={() => setPage(totalPages - 1)}
-                    disabled={page >= totalPages - 1}
-                    className="px-2 py-1 text-label border border-[#ddd] rounded hover:bg-[#f5f5f5] disabled:opacity-30 disabled:cursor-default"
-                  >
-                    Last
-                  </button>
+              <div
+                style={{
+                  background: 'var(--apple-panel)',
+                  border: '1px solid var(--apple-line)',
+                  borderRadius: 12,
+                  overflow: 'hidden',
+                }}
+              >
+                <div className="overflow-x-auto">
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr>
+                        <th onClick={() => handleSort('ticker')} style={sortableHeader('ticker', 'left')}>
+                          Ticker<SortArrow col="ticker" />
+                        </th>
+                        <th onClick={() => handleSort('name')} style={sortableHeader('name', 'left')}>
+                          Name<SortArrow col="name" />
+                        </th>
+                        <th style={{ ...colHeader, padding: '14px 4px', width: 32 }}></th>
+                        <th onClick={() => handleSort('nav')} style={sortableHeader('nav', 'right')}>
+                          NAV<SortArrow col="nav" />
+                        </th>
+                        <th onClick={() => handleSort('aum')} style={sortableHeader('aum', 'right')}>
+                          Net Assets<SortArrow col="aum" />
+                        </th>
+                        <th onClick={() => handleSort('shares')} style={sortableHeader('shares', 'right')}>
+                          Shares Outstanding<SortArrow col="shares" />
+                        </th>
+                        <th style={{ ...colHeader, textAlign: 'right' }}>
+                          Trade
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginated.map((row, idx) => {
+                        const isLast = idx === paginated.length - 1
+                        const isHover = hoveredRow === row.itpId
+                        const rowBg = isHover ? 'rgba(0,0,0,0.03)' : 'transparent'
+                        const cellWithBg = (extra?: CSSProperties): CSSProperties => ({
+                          ...cellBase,
+                          background: rowBg,
+                          borderBottom: isLast ? 'none' : '1px solid var(--apple-line)',
+                          transition: 'background 160ms var(--apple-ease-default)',
+                          ...extra,
+                        })
+                        const numericCellWithBg = (extra?: CSSProperties): CSSProperties => ({
+                          ...cellWithBg(),
+                          textAlign: 'right',
+                          fontVariantNumeric: 'tabular-nums',
+                          ...extra,
+                        })
+                        return (
+                          <tr
+                            key={row.itpId}
+                            id={`itp-card-${row.itpId}`}
+                            onMouseEnter={() => setHoveredRow(row.itpId)}
+                            onMouseLeave={() => setHoveredRow(null)}
+                          >
+                            {/* Ticker pill */}
+                            <td style={cellWithBg()}>
+                              <Link href={`/itp/${row.itpId}`} style={{ textDecoration: 'none' }}>
+                                <span style={symbolPill}>{row.symbol}</span>
+                              </Link>
+                            </td>
+                            {/* Name — Apple blue link */}
+                            <td style={cellWithBg()}>
+                              <Link href={`/itp/${row.itpId}`} style={{ textDecoration: 'none' }}>
+                                <span
+                                  style={{
+                                    fontFamily: 'var(--apple-font-text)',
+                                    fontSize: 14,
+                                    letterSpacing: 'var(--apple-track-tight)',
+                                    color: '#0071e3',
+                                    transition: 'color 160ms var(--apple-ease-default)',
+                                  }}
+                                  onMouseEnter={(e) => { e.currentTarget.style.color = '#0066cc' }}
+                                  onMouseLeave={(e) => { e.currentTarget.style.color = '#0071e3' }}
+                                >
+                                  {row.name}
+                                </span>
+                              </Link>
+                            </td>
+                            {/* Chart button — Apple blue sparkline icon */}
+                            <td style={cellWithBg({ padding: '14px 4px', width: 32 })}>
+                              <button
+                                onClick={() => setChartModal({ itpId: row.itpId, name: row.name })}
+                                title="NAV chart"
+                                style={{
+                                  background: 'transparent',
+                                  border: 'none',
+                                  padding: 4,
+                                  cursor: 'pointer',
+                                  color: 'var(--apple-text-tertiary)',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  borderRadius: 6,
+                                  transition: 'color 160ms var(--apple-ease-default), background 160ms var(--apple-ease-default)',
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.color = '#0071e3' }}
+                                onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--apple-text-tertiary)' }}
+                              >
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                  <polyline points="1 12 4 7 8 9 11 4 15 6" />
+                                </svg>
+                              </button>
+                            </td>
+                            {/* NAV */}
+                            <td style={numericCellWithBg()}>
+                              ${row.navPerShare.toFixed(4)}
+                            </td>
+                            {/* Net Assets */}
+                            <td style={numericCellWithBg()}>
+                              {formatNetAssets(row.aum)}
+                            </td>
+                            {/* Shares Outstanding */}
+                            <td style={numericCellWithBg({ color: 'var(--apple-text-secondary)' })}>
+                              {parseFloat(formatUnits(row.totalSupply, 18)).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                            </td>
+                            {/* Trade actions */}
+                            <td style={numericCellWithBg({ whiteSpace: 'nowrap' })}>
+                              <span style={{ display: 'inline-flex', gap: 8, justifyContent: 'flex-end' }}>
+                                <WalletActionButton
+                                  onClick={() => setBuyModal(row.itpId)}
+                                  style={ctaPrimary}
+                                >
+                                  Buy
+                                </WalletActionButton>
+                                <WalletActionButton
+                                  onClick={() => setSellModal(row.itpId)}
+                                  style={ctaSecondary}
+                                >
+                                  Sell
+                                </WalletActionButton>
+                              </span>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
                 </div>
               </div>
-            )}
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginTop: 16,
+                    padding: '0 4px',
+                  }}
+                >
+                  <span
+                    style={{
+                      fontFamily: 'var(--apple-font-text)',
+                      fontSize: 12,
+                      letterSpacing: 'var(--apple-track-tight)',
+                      color: 'var(--apple-text-tertiary)',
+                    }}
+                  >
+                    {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, sorted.length)} of {sorted.length}
+                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <button
+                      onClick={() => setPage(0)}
+                      disabled={page === 0}
+                      style={{ ...pagerBtn, opacity: page === 0 ? 0.3 : 1, cursor: page === 0 ? 'default' : 'pointer' }}
+                    >
+                      First
+                    </button>
+                    <button
+                      onClick={() => setPage(p => p - 1)}
+                      disabled={page === 0}
+                      style={{ ...pagerBtn, opacity: page === 0 ? 0.3 : 1, cursor: page === 0 ? 'default' : 'pointer' }}
+                    >
+                      Prev
+                    </button>
+                    <span
+                      style={{
+                        padding: '0 10px',
+                        fontFamily: 'var(--apple-font-text)',
+                        fontSize: 13,
+                        letterSpacing: 'var(--apple-track-tight)',
+                        color: 'var(--apple-text)',
+                        fontWeight: 500,
+                        fontVariantNumeric: 'tabular-nums',
+                      }}
+                    >
+                      {page + 1} / {totalPages}
+                    </span>
+                    <button
+                      onClick={() => setPage(p => p + 1)}
+                      disabled={page >= totalPages - 1}
+                      style={{ ...pagerBtn, opacity: page >= totalPages - 1 ? 0.3 : 1, cursor: page >= totalPages - 1 ? 'default' : 'pointer' }}
+                    >
+                      Next
+                    </button>
+                    <button
+                      onClick={() => setPage(totalPages - 1)}
+                      disabled={page >= totalPages - 1}
+                      style={{ ...pagerBtn, opacity: page >= totalPages - 1 ? 0.3 : 1, cursor: page >= totalPages - 1 ? 'default' : 'pointer' }}
+                    >
+                      Last
+                    </button>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>
