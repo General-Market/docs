@@ -4,6 +4,7 @@ import {
   Sequence,
   interpolate,
   spring,
+  staticFile,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
@@ -86,55 +87,52 @@ const Headline: React.FC = () => {
           lineHeight: 0.95,
           display: "flex",
           alignItems: "center",
-          gap: 28,
+          gap: 36,
           justifyContent: "center",
         }}
       >
-        <span
-          style={{
-            display: "inline-block",
-            width: 72,
-            height: 72,
-            background: colors.accent,
-            flexShrink: 0,
-            opacity: interpolate(t, [0, 1], [0, 1]),
-            transform: `scale(${interpolate(t, [0, 1], [0.4, 1])})`,
-          }}
-        />
         <span>
           <RevealChars
-            text="General "
+            text="Introducing "
             startFrame={0}
-            stagger={0.9}
+            stagger={0.7}
             duration={10}
             y={16}
             blur={4}
           />
           <span style={{ color: colors.accent }}>
             <RevealChars
-              text="protects"
-              startFrame={toFrames(0.14)}
+              text="General"
+              startFrame={toFrames(0.36)}
               stagger={1.0}
               duration={11}
               y={18}
               blur={5}
             />
           </span>
-          <RevealChars
-            text=" your pnl"
-            startFrame={toFrames(0.28)}
-            stagger={0.9}
-            duration={10}
-            y={16}
-            blur={4}
-          />
         </span>
+        <img
+          src={staticFile("gm-logo-black.svg")}
+          alt=""
+          style={{
+            width: 132,
+            height: 132,
+            display: "inline-block",
+            flexShrink: 0,
+            opacity: interpolate(t, [0, 1], [0, 1]),
+            transform: `scale(${interpolate(t, [0, 1], [0.4, 1])}) rotate(${interpolate(
+              t,
+              [0, 1],
+              [-12, 0],
+            )}deg)`,
+          }}
+        />
       </div>
       <div
         style={{
           marginTop: 44,
           fontFamily: font,
-          fontSize: 64,
+          fontSize: 60,
           fontWeight: 600,
           letterSpacing: "-0.015em",
           color: colors.fgSoft,
@@ -142,7 +140,7 @@ const Headline: React.FC = () => {
           transform: `translateY(${interpolate(t2, [0, 1], [16, 0])}px)`,
         }}
       >
-        from bad actors
+        shield your pnl in 5 minutes from bad actors
       </div>
     </AbsoluteFill>
   );
@@ -337,23 +335,20 @@ const Terminal: React.FC = () => {
 
       <div
         style={{
-          width: "min(1100px, 88%)",
+          width: "min(1500px, 92%)",
           textAlign: "center",
           fontFamily: font,
-          fontSize: 56,
-          fontWeight: 600,
-          letterSpacing: "-0.015em",
-          lineHeight: 1.18,
+          fontSize: 120,
+          fontWeight: 700,
+          letterSpacing: "-0.025em",
+          lineHeight: 1.08,
           color: colors.fg,
           opacity: ctaOpacity,
           transform: `translateY(${ctaY}px)`,
         }}
       >
-        Switch your trading bot to{" "}
-        <span style={{ color: colors.accent, fontWeight: 800 }}>
-          shielded markets
-        </span>{" "}
-        in 5 minutes
+        <span style={{ color: colors.accent, fontWeight: 800 }}>Shield</span>{" "}
+        your pnl in 5 minutes
       </div>
     </AbsoluteFill>
   );
