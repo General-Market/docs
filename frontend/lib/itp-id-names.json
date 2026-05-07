@@ -1,322 +1,322 @@
 {
   "0x0000000000000000000000000000000000000000000000000000000000000001": {
-    "name": "Cross-Chain Interop Index",
+    "name": "Cross-Chain",
     "ticker": "BRDG"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000002": {
-    "name": "RWA TVL Weighted",
-    "ticker": "RWATVL"
+    "name": "Real World Assets",
+    "ticker": "RWA"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000003": {
-    "name": "Concentrated Meme Top 5",
-    "ticker": "MEME5"
+    "name": "Top Memecoins",
+    "ticker": "MEMES"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000004": {
-    "name": "L1 Multi-Factor + FNG + Dom",
-    "ticker": "L1MFFD"
+    "name": "Layer 1s",
+    "ticker": "L1S"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000005": {
-    "name": "Concentrated Momentum + FNG",
-    "ticker": "MOM5FNG"
+    "name": "Top Movers",
+    "ticker": "MOVE"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000006": {
-    "name": "DeFi Momentum + FNG",
-    "ticker": "DFIMFNG"
+    "name": "DeFi",
+    "ticker": "DEFI"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000007": {
-    "name": "TVL Momentum Perps",
-    "ticker": "TVLMPP"
+    "name": "Perp DEXes",
+    "ticker": "PERP"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000008": {
-    "name": "Low Volatility 30d",
-    "ticker": "LOVOL"
+    "name": "Steady Coins",
+    "ticker": "STDY"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000009": {
-    "name": "BTC Decoupler Index",
+    "name": "BTC Decoupled",
     "ticker": "DCOUP"
   },
   "0x000000000000000000000000000000000000000000000000000000000000000a": {
-    "name": "Serial Entrepreneurs Momentum",
-    "ticker": "SEMO"
+    "name": "Founder Track Record",
+    "ticker": "BUILD"
   },
   "0x000000000000000000000000000000000000000000000000000000000000000b": {
     "name": "Modular Security",
     "ticker": "MSEC"
   },
   "0x000000000000000000000000000000000000000000000000000000000000000c": {
-    "name": "No-Degree Momentum",
-    "ticker": "DRMO"
+    "name": "Self-Taught Founders",
+    "ticker": "SELF"
   },
   "0x000000000000000000000000000000000000000000000000000000000000000d": {
-    "name": "Prediction Market Contrarian",
-    "ticker": "PREDCON"
+    "name": "Prediction Markets",
+    "ticker": "PRED"
   },
   "0x000000000000000000000000000000000000000000000000000000000000000e": {
-    "name": "Serial + FNG Quality",
-    "ticker": "SRFQ"
+    "name": "Founder Track Record 2",
+    "ticker": "BUILD2"
   },
   "0x000000000000000000000000000000000000000000000000000000000000000f": {
-    "name": "Top CS Momentum",
-    "ticker": "CSMM"
+    "name": "Computer Science Schools",
+    "ticker": "CSCH"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000010": {
-    "name": "Crypto Low-Vol 60d",
-    "ticker": "CLVL60"
+    "name": "Steady Coins 2",
+    "ticker": "STDY2"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000011": {
-    "name": "AI Dual Momentum",
-    "ticker": "AIDMOM"
+    "name": "Artificial Intelligence",
+    "ticker": "AINT"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000012": {
-    "name": "No-Degree + FNG Quality",
-    "ticker": "NDFQ"
+    "name": "Self-Taught Founders 2",
+    "ticker": "SELF2"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000013": {
-    "name": "Peak Builders 30-34 Mcap",
-    "ticker": "PB34M"
+    "name": "Peak Age Founders",
+    "ticker": "PEAK"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000014": {
-    "name": "Stealth Momentum",
-    "ticker": "STMO"
+    "name": "Stealth Mode",
+    "ticker": "STLTH"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000015": {
-    "name": "Waterloo-Toronto Corridor",
-    "ticker": "WATO"
+    "name": "Canadian Tech",
+    "ticker": "CATEC"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000016": {
-    "name": "Immigrant Mcap",
-    "ticker": "IMMM"
+    "name": "Immigrant Founders",
+    "ticker": "IMMIG"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000017": {
-    "name": "Elder Statesmen 45+ Mcap",
-    "ticker": "ES45M"
+    "name": "Veteran Founders",
+    "ticker": "VET"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000018": {
-    "name": "Multinational + Momentum",
-    "ticker": "MNMO"
+    "name": "Global Teams",
+    "ticker": "GLOBE"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000019": {
-    "name": "Broad 100 Capped Quarterly",
-    "ticker": "B100CQ"
+    "name": "Broad Market",
+    "ticker": "BROAD"
   },
   "0x000000000000000000000000000000000000000000000000000000000000001a": {
-    "name": "No-Degree vs Ivy",
-    "ticker": "NVIY"
+    "name": "Self-Taught vs Ivy",
+    "ticker": "SELFV"
   },
   "0x000000000000000000000000000000000000000000000000000000000000001b": {
-    "name": "Ivy League Mcap",
-    "ticker": "IVYM"
+    "name": "Ivy League",
+    "ticker": "IVY"
   },
   "0x000000000000000000000000000000000000000000000000000000000000001c": {
-    "name": "Concentrated Dual Momentum",
-    "ticker": "CDM5"
+    "name": "Top Movers 2",
+    "ticker": "MOVE2"
   },
   "0x000000000000000000000000000000000000000000000000000000000000001d": {
-    "name": "High Visibility Founders",
-    "ticker": "HIVI"
+    "name": "Public Founders",
+    "ticker": "FACE"
   },
   "0x000000000000000000000000000000000000000000000000000000000000001e": {
-    "name": "Serial Entrepreneurs Index",
-    "ticker": "SERI"
+    "name": "Founder Track Record 3",
+    "ticker": "BUILD3"
   },
   "0x000000000000000000000000000000000000000000000000000000000000001f": {
-    "name": "Peak Builders 30-34",
-    "ticker": "PB34"
+    "name": "Peak Age Founders 2",
+    "ticker": "PEAK2"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000020": {
-    "name": "US + International Teams",
-    "ticker": "USIN"
+    "name": "Global Teams 2",
+    "ticker": "GLOBE2"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000021": {
-    "name": "Broad 100 Sqrt Mcap Monthly",
-    "ticker": "B100SM"
+    "name": "Broad Market 2",
+    "ticker": "BROAD2"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000022": {
-    "name": "TVL Leaders + Momentum",
-    "ticker": "TVLMOM"
+    "name": "DeFi Leaders",
+    "ticker": "DFLED"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000023": {
-    "name": "Elder Statesmen 45+",
-    "ticker": "ES45"
+    "name": "Veteran Founders 2",
+    "ticker": "VET2"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000024": {
-    "name": "Top CS Schools Index",
-    "ticker": "CSFI"
+    "name": "Computer Science Schools 2",
+    "ticker": "CSCH2"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000025": {
-    "name": "No-Degree Founders",
-    "ticker": "DROP"
+    "name": "Self-Taught Founders 3",
+    "ticker": "SELF3"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000026": {
-    "name": "Yield Protocol TVL",
-    "ticker": "YLDTVL"
+    "name": "Yield",
+    "ticker": "YIELD"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000027": {
-    "name": "American Founders Mcap",
-    "ticker": "USAM"
+    "name": "American Founders",
+    "ticker": "USA"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000028": {
-    "name": "Yield Sqrt TVL",
-    "ticker": "YLDSQRT"
+    "name": "Yield 2",
+    "ticker": "YIELD2"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000029": {
-    "name": "Multinational Teams",
-    "ticker": "MNAT"
+    "name": "Global Teams 3",
+    "ticker": "GLOBE3"
   },
   "0x000000000000000000000000000000000000000000000000000000000000002a": {
-    "name": "MBA Mcap",
-    "ticker": "MBAM"
+    "name": "MBA Founders",
+    "ticker": "MBA"
   },
   "0x000000000000000000000000000000000000000000000000000000000000002b": {
-    "name": "Stealth Mcap",
-    "ticker": "STLM"
+    "name": "Stealth Mode 2",
+    "ticker": "STLTH2"
   },
   "0x000000000000000000000000000000000000000000000000000000000000002c": {
-    "name": "Cornell Blockchain",
+    "name": "Cornell Alumni",
     "ticker": "CRNL"
   },
   "0x000000000000000000000000000000000000000000000000000000000000002d": {
-    "name": "Immigrant Founders",
-    "ticker": "IMMG"
+    "name": "Immigrant Founders 2",
+    "ticker": "IMMIG2"
   },
   "0x000000000000000000000000000000000000000000000000000000000000002e": {
-    "name": "FAANG Defectors Momentum",
-    "ticker": "FDMO"
+    "name": "Big Tech Defectors",
+    "ticker": "DEFEC"
   },
   "0x000000000000000000000000000000000000000000000000000000000000002f": {
     "name": "Ex-Meta Founders",
     "ticker": "META"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000030": {
-    "name": "European Founders Index",
-    "ticker": "EURF"
+    "name": "European Founders",
+    "ticker": "EURO"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000031": {
-    "name": "Chinese Founders Index",
-    "ticker": "CNFI"
+    "name": "Chinese Founders",
+    "ticker": "CHINA"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000032": {
-    "name": "DEX 10 Volume + FNG + Dom",
-    "ticker": "DX10VFD"
+    "name": "DEXes",
+    "ticker": "DEX"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000033": {
-    "name": "Dual Momentum 60d",
-    "ticker": "DMOM60"
+    "name": "Top Movers 3",
+    "ticker": "MOVE3"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000034": {
-    "name": "Modular Mom + VC",
-    "ticker": "MODMVC"
+    "name": "Modular",
+    "ticker": "MOD"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000035": {
-    "name": "Crypto Dual Momentum 60d",
-    "ticker": "CDMOM60"
+    "name": "Top Movers 4",
+    "ticker": "MOVE4"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000036": {
-    "name": "Experienced Founders 35-39",
-    "ticker": "EF39"
+    "name": "Experienced Founders",
+    "ticker": "EXP"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000037": {
-    "name": "Volume Leaders Dual Momentum",
-    "ticker": "VLDM"
+    "name": "Volume Leaders",
+    "ticker": "VOL"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000038": {
-    "name": "CDP 5 TVL Quarterly",
-    "ticker": "CDP5TQ"
+    "name": "Stablecoin Issuers",
+    "ticker": "STABL"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000039": {
-    "name": "Oracle Min Variance",
-    "ticker": "ORAMV"
+    "name": "Oracles",
+    "ticker": "ORCL"
   },
   "0x000000000000000000000000000000000000000000000000000000000000003a": {
-    "name": "All Sectors Rotation",
-    "ticker": "ROTATE"
+    "name": "Sector Rotation",
+    "ticker": "ROT"
   },
   "0x000000000000000000000000000000000000000000000000000000000000003b": {
-    "name": "Age Spread 10-19 Years",
-    "ticker": "AGSP"
+    "name": "Mixed Generations",
+    "ticker": "MIX"
   },
   "0x000000000000000000000000000000000000000000000000000000000000003c": {
-    "name": "Asian Founders Index",
-    "ticker": "ASIF"
+    "name": "Asian Founders",
+    "ticker": "ASIA"
   },
   "0x000000000000000000000000000000000000000000000000000000000000003d": {
-    "name": "Ivy League Founders",
-    "ticker": "IVYX"
+    "name": "Ivy League 2",
+    "ticker": "IVY2"
   },
   "0x000000000000000000000000000000000000000000000000000000000000003e": {
-    "name": "Young Founders Under 30 Momentum",
-    "ticker": "YF30M"
+    "name": "Young Founders",
+    "ticker": "YOUNG"
   },
   "0x000000000000000000000000000000000000000000000000000000000000003f": {
-    "name": "Real World Asset Protocol Index",
-    "ticker": "RWAI"
+    "name": "Real World Assets 2",
+    "ticker": "RWA2"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000040": {
-    "name": "All 50 Dual Mom + FNG Trigger + BTC Dom",
-    "ticker": "MEGAMOM"
+    "name": "All Markets",
+    "ticker": "ALL"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000041": {
-    "name": "Cross-Chain & Interoperability Index",
-    "ticker": "BRDG"
+    "name": "Cross-Chain 2",
+    "ticker": "BRDG2"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000042": {
-    "name": "Lending Revenue Weighted",
-    "ticker": "LENDREV"
+    "name": "Lending",
+    "ticker": "LEND"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000043": {
     "name": "Canadian Founders",
-    "ticker": "CANF"
+    "ticker": "CAN"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000044": {
-    "name": "RWA Macro Defensive",
-    "ticker": "RWADEF"
+    "name": "Defensive RWA",
+    "ticker": "RWADF"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000045": {
-    "name": "Top Yield Protocols",
-    "ticker": "TOPYLD"
+    "name": "Yield 3",
+    "ticker": "YIELD3"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000046": {
-    "name": "ZK Mom + VC",
-    "ticker": "ZKMVC"
+    "name": "Zero-Knowledge",
+    "ticker": "ZKNW"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000047": {
-    "name": "DePIN 10 Revenue + All Overlays",
-    "ticker": "DPULTRA"
+    "name": "DePIN",
+    "ticker": "DEPIN"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000048": {
-    "name": "Liquid Staking TVL Weighted",
-    "ticker": "LSTKTVL"
+    "name": "Liquid Staking",
+    "ticker": "LST"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000049": {
-    "name": "Governance 15 Equal Quarterly",
-    "ticker": "GOV15EQ"
+    "name": "Governance",
+    "ticker": "GOV"
   },
   "0x000000000000000000000000000000000000000000000000000000000000004a": {
-    "name": "Veteran Founders 40-44",
-    "ticker": "VF44"
+    "name": "Veteran Founders 3",
+    "ticker": "VET3"
   },
   "0x000000000000000000000000000000000000000000000000000000000000004b": {
-    "name": "Harvard Alumni Index",
+    "name": "Harvard Alumni",
     "ticker": "HVRD"
   },
   "0x000000000000000000000000000000000000000000000000000000000000004c": {
-    "name": "Bridge Mom + FNG",
-    "ticker": "BRMFNG"
+    "name": "Bridges",
+    "ticker": "BRG"
   },
   "0x000000000000000000000000000000000000000000000000000000000000004d": {
-    "name": "Lending 10 Fee Eff Biweekly",
-    "ticker": "LND10FEB"
+    "name": "Lending 2",
+    "ticker": "LEND2"
   },
   "0x000000000000000000000000000000000000000000000000000000000000004e": {
-    "name": "Metaverse Bottom Fish",
-    "ticker": "METAB"
+    "name": "Metaverse",
+    "ticker": "META2"
   },
   "0x000000000000000000000000000000000000000000000000000000000000004f": {
-    "name": "Privacy Protocol Index",
+    "name": "Privacy",
     "ticker": "PRIV"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000050": {
-    "name": "Fan Token Index",
+    "name": "Fan Tokens",
     "ticker": "FANS"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000051": {
@@ -324,67 +324,67 @@
     "ticker": "BERK"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000052": {
-    "name": "Ex-TradFi Founders",
+    "name": "Ex-Wall Street",
     "ticker": "TRFI"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000053": {
-    "name": "Move-to-Earn Index",
+    "name": "Move-to-Earn",
     "ticker": "M2E"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000054": {
-    "name": "Gaming Momentum 60d",
-    "ticker": "GAMM60"
+    "name": "Gaming",
+    "ticker": "GAME"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000055": {
-    "name": "PhD Founders Index",
-    "ticker": "PHDI"
+    "name": "PhD Founders",
+    "ticker": "PHD"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000056": {
     "name": "Ex-Military Founders",
-    "ticker": "MILF"
+    "ticker": "MIL"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000057": {
     "name": "Ex-Google Founders",
     "ticker": "GOOG"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000058": {
-    "name": "NFT Infrastructure Phoenix",
-    "ticker": "NFTPH"
+    "name": "NFT Infrastructure",
+    "ticker": "NFT"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000059": {
-    "name": "German Engineering",
-    "ticker": "DENG"
+    "name": "German Founders",
+    "ticker": "GER"
   },
   "0x000000000000000000000000000000000000000000000000000000000000005a": {
-    "name": "CDP Momentum",
-    "ticker": "CDPMOM"
+    "name": "Stablecoin Issuers 2",
+    "ticker": "STABL2"
   },
   "0x000000000000000000000000000000000000000000000000000000000000005b": {
-    "name": "Bridge Revenue Index",
-    "ticker": "BRDGREV"
+    "name": "Bridges 2",
+    "ticker": "BRG2"
   },
   "0x000000000000000000000000000000000000000000000000000000000000005c": {
-    "name": "MIT Alumni Index",
-    "ticker": "MITX"
+    "name": "MIT Alumni",
+    "ticker": "MIT"
   },
   "0x000000000000000000000000000000000000000000000000000000000000005d": {
-    "name": "Gaming Dual Momentum",
-    "ticker": "GAMDM"
+    "name": "Gaming 2",
+    "ticker": "GAME2"
   },
   "0x000000000000000000000000000000000000000000000000000000000000005e": {
-    "name": "Concentrated Gaming Top 5",
-    "ticker": "GAME5"
+    "name": "Top Gaming",
+    "ticker": "GAME3"
   },
   "0x000000000000000000000000000000000000000000000000000000000000005f": {
-    "name": "Stanford Alumni Index",
+    "name": "Stanford Alumni",
     "ticker": "STAN"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000060": {
     "name": "British Founders",
-    "ticker": "GBRF"
+    "ticker": "GBR"
   },
   "0x0000000000000000000000000000000000000000000000000000000000000061": {
     "name": "Australian Founders",
-    "ticker": "OZFI"
+    "ticker": "AUS"
   }
 }
