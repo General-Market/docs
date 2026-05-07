@@ -26,10 +26,10 @@ A **resolution type** defines the win condition for a market within a batch. Eac
 
 | Value | Name | Threshold | UP Wins When | DOWN Wins When | FLAT When |
 |-------|------|-----------|-------------|---------------|-----------|
-| 8 | `UP_300` | 3% | price > +3% | price <= +3% | — |
-| 9 | `UP_3000` | 30% | price > +30% | price <= +30% | — |
-| 10 | `DOWN_300` | 3% | price >= -3% | price < -3% | — |
-| 11 | `DOWN_3000` | 30% | price >= -30% | price < -30% | — |
+| 8 | `UP_300` | 3% | price > +3% | price ≤ +3% | — |
+| 9 | `UP_3000` | 30% | price > +30% | price ≤ +30% | — |
+| 10 | `DOWN_300` | 3% | price ≥ -3% | price < -3% | — |
+| 11 | `DOWN_3000` | 30% | price ≥ -30% | price < -30% | — |
 | 12 | `FLAT_300` | 3% | price > +3% | price < -3% | abs(price) < 3% |
 | 13 | `FLAT_3000` | 30% | price > +30% | price < -30% | abs(price) < 30% |
 
@@ -43,22 +43,7 @@ Extended types (8-13) are hardcoded thresholds — they don't use the `customThr
 
 ## Resolution Decision Flow
 
-```mermaid
-flowchart TD
-    A[Price Change %] --> B{Threshold Type}
-    B -->|UP_0 / DOWN_0| C{pct > 0?}
-    C -->|Yes| D[UP Wins]
-    C -->|No| E[DOWN Wins]
-    C -->|= 0| F[FLAT — Refund]
-    B -->|UP_30 / DOWN_30| G{abs pct > 0.3%?}
-    G -->|pct > +0.3%| D
-    G -->|pct < -0.3%| E
-    G -->|Within band| F
-    B -->|FLAT_X| H{abs pct < threshold?}
-    H -->|Yes| F
-    H -->|No, pct > 0| D
-    H -->|No, pct < 0| E
-```
+<ResolutionDecisionFlow />
 
 ## Storage
 

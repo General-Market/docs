@@ -11,28 +11,7 @@ A Vision bot joins prediction batches, submits sealed bitmaps, and claims reward
 
 ## Architecture
 
-```mermaid
-flowchart TD
-    subgraph Bot["Vision Bot"]
-        A[Poll /vision/batches] --> B[Generate Predictions]
-        B --> C[Encode Bitmap]
-        C --> D[keccak256 Hash]
-    end
-
-    subgraph OnChain["On-Chain (Index L3)"]
-        E[Vision Contract]
-    end
-
-    subgraph OffChain["Off-Chain (Oracles)"]
-        F[Oracle Nodes]
-    end
-
-    D -->|"joinBatch(bitmapHash)"| E
-    D -->|"POST /vision/bitmap"| F
-    F -->|"Tick Resolution"| F
-    F -->|"BLS Balance Proofs"| E
-    E -->|"claimRewards()"| Bot
-```
+<BotOverviewLifecycle />
 
 ## What a Vision Bot Does
 

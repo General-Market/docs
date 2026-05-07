@@ -36,17 +36,7 @@ Five obligations, repeated every second, without complaint:
 
 Agreement is not optional. The protocol requires it on every batch.
 
-```mermaid
-flowchart TD
-    A[Leader Proposes Batch] --> B[Peers Validate]
-    B --> C[Each Peer BLS-Signs]
-    C --> D[Leader Aggregates Signatures]
-    D --> E{2/3+ Threshold Met?}
-    E -->|Yes| F[confirmBatch on-chain]
-    F --> G[TradeRequest Events]
-    G --> H[AP Executes Trades]
-    E -->|No| I[Retry Next Cycle]
-```
+<OracleConsensusFlow />
 
 <Info>
   The BLS threshold of `ceil(2n/3)` ensures Byzantine fault tolerance — the oracle nodes can tolerate up to `floor((n-1)/3)` malicious or offline oracle nodes while still making progress.
@@ -64,18 +54,7 @@ One second. Five phases. 200 milliseconds each. The precision is not aspirationa
 | **CONFIRM** | 200ms | Leader aggregates signatures and submits the confirmed batch on-chain |
 | **REBALANCE** | 200ms | Process any pending DTF rebalance operations (weight updates → new quantities) |
 
-```mermaid
-gantt
-    title 1-Second Consensus Cycle
-    dateFormat X
-    axisFormat %L ms
-    section Phases
-    COLLECT    :a, 0, 200
-    PROPOSE    :b, 200, 400
-    SIGN_SUBMIT :c, 400, 600
-    CONFIRM    :d, 600, 800
-    REBALANCE  :e, 800, 1000
-```
+<OracleCycleGantt />
 
 ## Leader Election
 

@@ -17,21 +17,7 @@ To claim on-chain, you need BLS-signed proofs from 2/3+ oracles. See [Bot Lifecy
 
 ## BLS Verification Flow
 
-```mermaid
-sequenceDiagram
-    participant Player
-    participant Oracles
-    participant Contract
-
-    Player->>Oracles: GET /vision/balance/{batchId}/{player}
-    Oracles->>Oracles: Compute balance from tick results
-    Oracles->>Oracles: BLS-sign balance message
-    Oracles-->>Player: Return balance + partial BLS sig
-    Player->>Player: Aggregate 2/3+ BLS signatures
-    Player->>Contract: claimRewards(batchId, fromTick, toTick, newBalance, blsSig)
-    Contract->>Contract: Verify BLS signature
-    Contract-->>Player: Transfer USDC payout
-```
+<BalanceProofsFlow />
 
 ## Why Off-Chain Balance Tracking?
 

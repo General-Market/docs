@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import Image from 'next/image'
 import { DocsSidebar } from '@/components/docs/DocsSidebar'
-import { GeneralMarketWordmark } from '@/components/docs/Schematics'
 import { loadAllSummaries } from '@/lib/docs/mdx'
 import { flattenSlugs } from '@/lib/docs/nav'
 import './docs.css'
@@ -29,7 +29,8 @@ function DocsTopbar() {
     <header className="docs-topbar">
       <div className="docs-topbar-inner">
         <Link href="/docs" className="docs-brand-logo" aria-label="General Market — Documentation">
-          <GeneralMarketWordmark height={20} />
+          <Image src="/logo.svg" alt="" width={26} height={26} priority className="docs-brand-mark-img" />
+          <span className="docs-brand-wordmark">General</span>
           <span className="docs-brand-suffix">Docs</span>
         </Link>
         <nav className="docs-tabs" aria-label="Sections">

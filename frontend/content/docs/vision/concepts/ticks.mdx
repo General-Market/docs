@@ -42,19 +42,7 @@ Tick numbers are computed from Unix timestamps: `currentTick = block.timestamp /
 
 When a tick becomes due for resolution, the oracle engine runs its pipeline. It is mechanical, deterministic, and utterly fair -- which is to say, it has no mercy:
 
-```mermaid
-flowchart TD
-    A[Tick Ends] --> B[Filter Active Players]
-    B --> C[Check Bitmap Reveals]
-    C --> D[Compute Multipliers]
-    D --> E[For Each Market]
-    E --> F[Fetch Prices]
-    F --> G[Determine Outcome]
-    G --> H[Parimutuel Matching]
-    H --> I[Aggregate Balance Changes]
-    I --> J[BLS Consensus]
-    J --> K[Submit On-Chain]
-```
+<TickResolutionFlow />
 
 ### Step by Step
 

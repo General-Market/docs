@@ -21,16 +21,7 @@ See [Bot Quickstart](/vision/bots/quickstart) for a full working example.
 
 ## Batch Lifecycle
 
-```mermaid
-flowchart LR
-    A[Create Batch] --> B[Players Join]
-    B --> C[Tick Resolves]
-    C --> D{More Ticks?}
-    D -->|Yes| C
-    D -->|Paused| E[Paused]
-    E --> C
-    C --> F[Claim / Withdraw]
-```
+<BatchStateMachine />
 
 ## What Is a Batch?
 

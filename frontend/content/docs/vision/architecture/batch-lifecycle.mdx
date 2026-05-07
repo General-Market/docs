@@ -7,19 +7,7 @@ description: "The complete journey of a Vision batch — from raw market data th
 
 A batch is born from data, consecrated by consensus, inhabited by strangers, and dissolved by mathematics. Nine phases. Three machines that must agree. One contract that trusts none of them. This is the full ceremony, end to end.
 
-```mermaid
-flowchart TD
-    A[Data Sources] -->|sync every 60s–7d| B[Market Prices DB]
-    B -->|every 60s| C[Batch Config Generation]
-    C -->|GET /batches/recommended| D[Oracle Discovery]
-    D -->|BLS consensus| E[On-Chain Batch Creation]
-    E -->|PlayerJoined event| F[Players Join + Bitmap Commit]
-    F -->|tick boundary| G[Tick Resolution]
-    G -->|deterministic| H[BLS Settlement Signing]
-    H -->|quorum reached| I[On-Chain Settlement]
-    I -->|POST /batches/settlement| J[Threshold Recalibration]
-    J -->|feedback loop| C
-```
+<BatchLifecycleDiagram />
 
 ---
 

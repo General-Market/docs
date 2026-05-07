@@ -40,6 +40,20 @@ import {
   BridgeFlow,
   SettlementQuickReference,
 } from './SchematicsGuides'
+import {
+  BotOverviewLifecycle,
+  BatchLifecycleDiagram,
+  BalanceProofsFlow,
+  FeesBreakdown,
+  TickResolutionFlow,
+  ResolutionDecisionFlow,
+  BitmapEncodingFlow,
+  BatchStateMachine,
+  OracleConsensusFlow,
+  OracleCycleGantt,
+  OrderCycleGantt,
+  ItpLifecycleFlow,
+} from './SchematicsMermaid'
 
 function Callout({
   variant,
@@ -319,6 +333,18 @@ export const mdxComponents: MDXComponents = {
   UsdcDecimals,
   BridgeFlow,
   SettlementQuickReference,
+  BotOverviewLifecycle,
+  BatchLifecycleDiagram,
+  BalanceProofsFlow,
+  FeesBreakdown,
+  TickResolutionFlow,
+  ResolutionDecisionFlow,
+  BitmapEncodingFlow,
+  BatchStateMachine,
+  OracleConsensusFlow,
+  OracleCycleGantt,
+  OrderCycleGantt,
+  ItpLifecycleFlow,
   a: (props) => {
     const href = props.href ?? ''
     if (/^https?:/i.test(href)) {

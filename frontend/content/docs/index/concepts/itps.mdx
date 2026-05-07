@@ -21,16 +21,7 @@ See [Buy & Sell Guide](/index/guides/buy-sell) for the full step-by-step.
 
 ## DTF Lifecycle
 
-```mermaid
-flowchart LR
-    A[Create ITP] -->|"weights → quantities"| B[ITP Live]
-    B --> C[Buy / Sell]
-    C -->|"mint / burn shares"| B
-    B --> D[NAV Floats]
-    D -->|"prices change"| B
-    B --> E[Rebalance]
-    E -->|"new quantities, same NAV"| B
-```
+<ItpLifecycleFlow />
 
 ## What Makes Up a DTF
 

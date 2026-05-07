@@ -30,14 +30,7 @@ See [Bitmap Encoding](/vision/bots/bitmap-encoding) for the full encoding guide.
 
 ## Bitmap Flow
 
-```mermaid
-flowchart LR
-    A[Predict UP/DOWN] --> B[Encode Bitmap]
-    B --> C[keccak256 Hash]
-    C --> D[Commit Hash On-Chain]
-    D --> E[Reveal Bytes to Oracles]
-    E --> F[Tick Resolves]
-```
+<BitmapEncodingFlow />
 
 ## Sealed Commitment
 

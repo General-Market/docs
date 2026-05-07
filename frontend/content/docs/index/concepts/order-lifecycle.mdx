@@ -77,18 +77,7 @@ The sell flow touches two chains and requires four BLS consensus rounds. The USD
 
 One second. Five phases. The oracle nodes run this cycle continuously, without pause, without weekends. The machines do not tire. That is their advantage over you.
 
-```mermaid
-gantt
-    title 1-Second Consensus Cycle
-    dateFormat X
-    axisFormat %L ms
-    section Phases
-    COLLECT    :a, 0, 200
-    PROPOSE    :b, 200, 400
-    SIGN       :c, 400, 600
-    CONFIRM    :d, 600, 800
-    REBALANCE  :e, 800, 1000
-```
+<OrderCycleGantt />
 
 | Phase | Duration | What Happens |
 |-------|----------|--------------|

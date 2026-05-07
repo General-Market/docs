@@ -15,14 +15,7 @@ description: "How Vision's fee structure works -- 0.05% on profits only"
 
 **Example:** You win 20 USDC → fee is 0.01 USDC → you receive 19.99 USDC.
 
-```mermaid
-flowchart LR
-    A[Tick Resolves] --> B{Won?}
-    B -->|Yes| C[Gross Profit]
-    C --> D[0.05% Fee Deducted]
-    D --> E[Net Payout]
-    B -->|No| F[No Fee — Loss Only]
-```
+<FeesBreakdown />
 
 ## Fee Constants
 

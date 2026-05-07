@@ -196,7 +196,7 @@ Errors added for production hardening: queue depth limits, price staleness check
 | `E086` | `InvalidRotationSignature` | Invalid BLS signature for key rotation request. |
 | `E087` | `InvalidApprovalSignature` | Invalid BLS signature for rotation approval. |
 | `E088` | `InvalidIpUpdateSignature` | Invalid BLS signature for IP update. |
-| `E089` | `InvalidQueueThresholds` | Queue thresholds invalid (warning must be <= pause when pause > 0). |
+| `E089` | `InvalidQueueThresholds` | Queue thresholds invalid (warning must be ≤ pause when pause > 0). |
 
 ## Mirror Registry Errors (E090 - E093)
 
@@ -207,7 +207,7 @@ Errors raised by the MirrorOracleRegistry contract on the settlement chain.
 | `E090` | `StaleNonce` | Sync nonce is not greater than current registry nonce. |
 | `E091` | `InvalidAggPubkey` | Aggregated pubkey has invalid length (must be 128 bytes for G2). |
 | `E092` | `ZeroAdmin` | Admin address cannot be zero. |
-| `E093` | `InvalidThreshold` | Invalid threshold configuration (must be > 0 and <= activeCount). |
+| `E093` | `InvalidThreshold` | Invalid threshold configuration (must be > 0 and ≤ activeCount). |
 
 ## NAV Oracle Errors (E094 - E098)
 

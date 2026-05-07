@@ -775,12 +775,12 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 22px;
+  padding: 24px;
   background: #fff;
   border: 1px solid var(--apple-border);
-  border-top: 3px solid var(--accent, var(--apple-accent));
-  border-radius: 14px;
+  border-radius: 18px;
   min-width: 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 .schematic-pillar-eyebrow {
   font-size: 11px;
@@ -881,11 +881,22 @@
 .docs-brand-logo {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   text-decoration: none;
   color: var(--apple-text);
 }
-.docs-brand-logo svg { display: block; }
+.docs-brand-mark-img {
+  display: block;
+  border-radius: 6px;
+}
+.docs-brand-wordmark {
+  font-family: var(--apple-font-display);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: var(--apple-track-tight);
+  color: var(--apple-text);
+  line-height: 1;
+}
 .docs-brand-suffix {
   font-family: var(--apple-font-display);
   font-size: 15px;
@@ -895,4 +906,5 @@
   border-left: 1px solid var(--apple-border);
   padding-left: 10px;
   margin-left: 2px;
+  line-height: 1;
 }
