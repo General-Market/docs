@@ -253,8 +253,8 @@ export function LinkMenu({ onLinkClick }: LinkMenuProps = {}) {
           text-transform: uppercase;
           opacity: 0.6;
         }
-        /* Featured / primary CTA — black pill with the brand accent
-           pulsing in the rim. Stands out against the grey siblings. */
+        /* Featured / primary CTA — black pill with a chase light orbiting
+           the rim. Accelerates and decelerates around each lap. */
         .lt-row--featured {
           background: linear-gradient(180deg, #1d1d1f 0%, #0a0a0c 100%);
           color: #ffffff;
@@ -265,42 +265,66 @@ export function LinkMenu({ onLinkClick }: LinkMenuProps = {}) {
             inset 0 -1px 0 rgba(0,0,0,0.4),
             0 8px 22px rgba(0,113,227,0.18),
             0 1px 2px rgba(0,0,0,0.2);
-          animation: lt-pulse 2.6s ease-in-out infinite;
+          overflow: visible;
+          isolation: isolate;
+          z-index: 1;
         }
         .lt-row--featured .lt-kicker {
           color: #2997ff;
           opacity: 1;
         }
+        /* Chase light — a bright comet sliding around the perimeter.
+           Two stage keyframes give visible accel/decel each turn. */
+        .lt-row--featured::before {
+          content: '';
+          position: absolute;
+          inset: -2.5px;
+          z-index: -1;
+          border-radius: 999px;
+          background: conic-gradient(
+            from 0deg,
+            rgba(41,151,255,0) 0deg,
+            rgba(41,151,255,0) 240deg,
+            rgba(41,151,255,0.45) 295deg,
+            rgba(180,220,255,0.95) 320deg,
+            rgba(255,255,255,1) 332deg,
+            rgba(180,220,255,0.95) 344deg,
+            rgba(41,151,255,0.45) 25deg,
+            rgba(41,151,255,0) 80deg
+          );
+          filter: blur(0.3px);
+          animation: lt-chase 2.4s infinite;
+        }
+        .lt-row--featured::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          border-radius: inherit;
+          background: linear-gradient(180deg, #1d1d1f 0%, #0a0a0c 100%);
+          z-index: -1;
+        }
         .lt-row--featured:hover {
           background: linear-gradient(180deg, #2a2a2c 0%, #16161a 100%);
           transform: translateY(-2px);
-          box-shadow:
-            inset 0 1px 0 rgba(255,255,255,0.10),
-            inset 0 -1px 0 rgba(0,0,0,0.4),
-            0 14px 30px rgba(0,113,227,0.30),
-            0 2px 6px rgba(0,0,0,0.24);
-          animation-play-state: paused;
         }
-        @keyframes lt-pulse {
-          0%, 100% {
-            box-shadow:
-              inset 0 1px 0 rgba(255,255,255,0.08),
-              inset 0 -1px 0 rgba(0,0,0,0.4),
-              0 8px 22px rgba(0,113,227,0.18),
-              0 1px 2px rgba(0,0,0,0.2),
-              0 0 0 0 rgba(41,151,255,0);
+        .lt-row--featured:hover::after {
+          background: linear-gradient(180deg, #2a2a2c 0%, #16161a 100%);
+        }
+        @keyframes lt-chase {
+          0% {
+            transform: rotate(0deg);
+            animation-timing-function: cubic-bezier(0.5, 0, 0.75, 0);
           }
           50% {
-            box-shadow:
-              inset 0 1px 0 rgba(255,255,255,0.10),
-              inset 0 -1px 0 rgba(0,0,0,0.4),
-              0 8px 22px rgba(0,113,227,0.22),
-              0 1px 2px rgba(0,0,0,0.2),
-              0 0 0 6px rgba(41,151,255,0.08);
+            transform: rotate(180deg);
+            animation-timing-function: cubic-bezier(0.25, 1, 0.5, 1);
+          }
+          100% {
+            transform: rotate(360deg);
           }
         }
         @media (prefers-reduced-motion: reduce) {
-          .lt-row--featured { animation: none; }
+          .lt-row--featured::before { animation: none; }
         }
       `}</style>
 

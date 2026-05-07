@@ -18,10 +18,6 @@ const LEAVE_DURATION_MS = 720
 // animation; total round-trip ≈ 1.5s).
 const RETURN_AFTER_LEAVE_MS = 800
 
-// Reusable scratchpads for the per-frame anchor sync — avoids GC churn.
-const g_pos = new THREE.Vector3()
-const g_quat = new THREE.Quaternion()
-
 // One transform recipe per button, so each link feels distinct on click.
 type LeaveTransform = {
   posX: number
@@ -167,13 +163,23 @@ function PhoneScene({
 }) {
   const gltf = useGLTF(MODEL_URL)
   const groupRef = useRef<THREE.Group>(null)
-  const anchorRef = useRef<THREE.Group>(null)
-  const screenMeshRef = useRef<THREE.Mesh | null>(null)
-  const [screenScale, setScreenScale] = useState<number | null>(null)
+  const [screenFit, setScreenFit] = useState<{
+    position: [number, number, number]
+    scale: number
+  } | null>(null)
 
   useEffect(() => {
     const iphone = gltf.scene.getObjectByName('iphone')
     if (!iphone) return
+    // Pin the group to identity before measuring so useFrame's lerp
+    // doesn't poison the world matrix we're about to read.
+    const g = groupRef.current
+    if (g) {
+      g.position.set(0, 0, 0)
+      g.rotation.set(0, 0, 0)
+      g.scale.set(1, 1, 1)
+      g.updateMatrixWorld(true)
+    }
     const ours = new Set<THREE.Object3D>()
     iphone.traverse((c) => ours.add(c))
     gltf.scene.traverse((child) => {
@@ -184,23 +190,34 @@ function PhoneScene({
     iphone.scale.setScalar(22.486)
     gltf.scene.updateMatrixWorld(true)
 
-    // Cache the screen mesh — useFrame syncs an anchor to its world
-    // transform every frame so the Html stays glued no matter when
-    // matrices became fresh on a given device.
-    const screenMesh = findPhoneScreenMesh(iphone)
-    screenMeshRef.current = screenMesh
+    // Detect iOS Safari — the screen mesh's world position lands a
+    // measurable offset to the right vs every other browser, so we
+    // nudge the menu back leftward by a fixed world-unit value
+    // estimated from a real-device screenshot.
+    const ua = typeof navigator !== 'undefined' ? navigator.userAgent : ''
+    const isIOS = /iPad|iPhone|iPod/.test(ua) && !(window as { MSStream?: unknown }).MSStream
 
-    let scale = 0.178
+    const screenMesh = findPhoneScreenMesh(iphone)
+    let fit: { position: [number, number, number]; scale: number }
     if (screenMesh) {
       if (!screenMesh.geometry.boundingBox) screenMesh.geometry.computeBoundingBox()
       const box = screenMesh.geometry.boundingBox!
         .clone()
         .applyMatrix4(screenMesh.matrixWorld)
+      const center = new THREE.Vector3()
       const size = new THREE.Vector3()
+      box.getCenter(center)
       box.getSize(size)
-      scale = (size.x * HTML_TRANSFORM_DIVISOR) / LINK_MENU_CSS_WIDTH
+      const htmlScale = (size.x * HTML_TRANSFORM_DIVISOR) / LINK_MENU_CSS_WIDTH
+      const xOffset = isIOS ? -0.62 : 0
+      fit = {
+        position: [center.x + xOffset, center.y, center.z - 0.001],
+        scale: htmlScale,
+      }
+    } else {
+      fit = { position: [0, 0, -0.001], scale: 0.178 }
     }
-    setScreenScale(scale)
+    setScreenFit(fit)
 
     onReady()
   }, [gltf, onReady])
@@ -248,50 +265,30 @@ function PhoneScene({
     g.rotation.z = THREE.MathUtils.lerp(g.rotation.z, 0, 0.18)
   })
 
-  // Sync the Html anchor to the screen mesh's world transform so the
-  // menu stays bezel-perfect on every device, even when iOS Safari is
-  // in the middle of a layout shift.
-  useFrame(() => {
-    const anchor = anchorRef.current
-    const screen = screenMeshRef.current
-    if (!anchor || !screen) return
-    g_pos.setFromMatrixPosition(screen.matrixWorld)
-    g_quat.setFromRotationMatrix(screen.matrixWorld)
-    anchor.position.copy(g_pos)
-    anchor.quaternion.copy(g_quat)
-  })
-
   return (
-    <>
-      <group ref={groupRef}>
-        <primitive object={gltf.scene} />
-        <ContactShadows
-          position={[0, -1.78, 0]}
-          opacity={0.28}
-          scale={6}
-          blur={2.2}
-          far={4}
-        />
-      </group>
-      {/* Anchor lives at the scene root and per-frame copies the screen
-          mesh's WORLD transform — so even if matrices are stale on a
-          given iOS render the Html still snaps to the bezel. */}
-      <group ref={anchorRef}>
-        {screenScale && (
-          <Html
-            transform
-            position={[0, 0, -0.001]}
-            rotation={[0, Math.PI, 0]}
-            scale={screenScale}
-            occlude={false}
-            zIndexRange={[1, 0]}
-            wrapperClass="lt-html-wrapper"
-          >
-            <LinkMenu onLinkClick={onLinkClick} />
-          </Html>
-        )}
-      </group>
-    </>
+    <group ref={groupRef}>
+      <primitive object={gltf.scene} />
+      <ContactShadows
+        position={[0, -1.78, 0]}
+        opacity={0.28}
+        scale={6}
+        blur={2.2}
+        far={4}
+      />
+      {screenFit && (
+        <Html
+          transform
+          position={screenFit.position}
+          rotation={[0, Math.PI, 0]}
+          scale={screenFit.scale}
+          occlude={false}
+          zIndexRange={[1, 0]}
+          wrapperClass="lt-html-wrapper"
+        >
+          <LinkMenu onLinkClick={onLinkClick} />
+        </Html>
+      )}
+    </group>
   )
 }
 
@@ -462,7 +459,10 @@ export function PhoneLinktree() {
           position: sticky;
           top: 0;
           width: 100%;
-          height: 100dvh;
+          /* svh = the *small* viewport, fixed regardless of URL bar — keeps
+             the canvas + drei CSS3D math from drifting when iOS Safari
+             collapses or expands its chrome mid-gesture. */
+          height: 100svh;
           z-index: 1;
         }
         .lt-stage canvas { touch-action: pan-y; }
