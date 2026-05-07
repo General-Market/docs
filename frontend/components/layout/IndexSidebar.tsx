@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, type SVGProps } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link, usePathname } from '@/i18n/routing'
 import { useRouter } from 'next/navigation'
@@ -11,13 +11,13 @@ import { HomeIcon, UserIcon } from './apple-icons'
 const SECTION_IDS = ['markets', 'portfolio', 'create', 'lend', 'backtest', 'system'] as const
 type SectionId = (typeof SECTION_IDS)[number]
 
-const SECTIONS: Array<{ id: SectionId; labelKey: string }> = [
-  { id: 'markets', labelKey: 'home.nav_markets' },
-  { id: 'portfolio', labelKey: 'home.nav_portfolio' },
-  { id: 'create', labelKey: 'home.nav_create_index' },
-  { id: 'lend', labelKey: 'home.nav_lending' },
-  { id: 'backtest', labelKey: 'home.nav_backtesting' },
-  { id: 'system', labelKey: 'home.nav_system' },
+const SECTIONS: Array<{ id: SectionId; labelKey: string; Icon: React.ComponentType<SVGProps<SVGSVGElement>> }> = [
+  { id: 'markets', labelKey: 'home.nav_markets', Icon: MarketsIcon },
+  { id: 'portfolio', labelKey: 'home.nav_portfolio', Icon: PortfolioIcon },
+  { id: 'create', labelKey: 'home.nav_create_index', Icon: CreateIcon },
+  { id: 'lend', labelKey: 'home.nav_lending', Icon: LendIcon },
+  { id: 'backtest', labelKey: 'home.nav_backtesting', Icon: BacktestIcon },
+  { id: 'system', labelKey: 'home.nav_system', Icon: SystemIcon },
 ]
 
 function readHash(): SectionId {
@@ -65,6 +65,16 @@ export function IndexSidebar() {
   const portfolioHref = address ? `/profile/${address}` : '/profile'
   const portfolioActive = pathname.startsWith('/profile')
 
+  const sectionRow = (s: (typeof SECTIONS)[number]) => (
+    <SectionButton
+      key={s.id}
+      label={t(s.labelKey)}
+      active={active === s.id}
+      onClick={() => handleSectionClick(s.id)}
+      icon={<s.Icon width={18} height={18} />}
+    />
+  )
+
   return (
     <aside
       aria-label="Index navigation"
@@ -95,38 +105,17 @@ export function IndexSidebar() {
 
       <div style={{ padding: '16px 16px 0' }}>
         <GroupHeader label={t('home.nav_group_core')} />
-        {SECTIONS.slice(0, 3).map((s) => (
-          <SectionButton
-            key={s.id}
-            label={t(s.labelKey)}
-            active={active === s.id}
-            onClick={() => handleSectionClick(s.id)}
-          />
-        ))}
+        {SECTIONS.slice(0, 3).map(sectionRow)}
       </div>
 
       <div style={{ padding: '16px 16px 0' }}>
         <GroupHeader label={t('home.nav_group_tools')} />
-        {SECTIONS.slice(3, 5).map((s) => (
-          <SectionButton
-            key={s.id}
-            label={t(s.labelKey)}
-            active={active === s.id}
-            onClick={() => handleSectionClick(s.id)}
-          />
-        ))}
+        {SECTIONS.slice(3, 5).map(sectionRow)}
       </div>
 
       <div style={{ padding: '16px 16px 0' }}>
         <GroupHeader label={t('home.nav_group_monitoring')} />
-        {SECTIONS.slice(5, 6).map((s) => (
-          <SectionButton
-            key={s.id}
-            label={t(s.labelKey)}
-            active={active === s.id}
-            onClick={() => handleSectionClick(s.id)}
-          />
-        ))}
+        {SECTIONS.slice(5, 6).map(sectionRow)}
       </div>
 
       <div style={{ flex: 1 }} />
@@ -204,10 +193,12 @@ function SectionButton({
   label,
   active,
   onClick,
+  icon,
 }: {
   label: string
   active: boolean
   onClick: () => void
+  icon: React.ReactNode
 }) {
   return (
     <button
@@ -215,7 +206,9 @@ function SectionButton({
       onClick={onClick}
       aria-current={active ? 'page' : undefined}
       style={{
-        display: 'block',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
         width: '100%',
         textAlign: 'left',
         padding: '6px 8px',
@@ -231,7 +224,82 @@ function SectionButton({
         border: 'none',
       }}
     >
-      {label}
+      <span style={{ flexShrink: 0, display: 'inline-flex' }}>{icon}</span>
+      <span>{label}</span>
     </button>
+  )
+}
+
+// ── Section icons — 18px monoline, currentColor ──────────────────────────────
+
+const iconBase = {
+  fill: 'none',
+  stroke: 'currentColor',
+  strokeWidth: 1.6,
+  strokeLinecap: 'round' as const,
+  strokeLinejoin: 'round' as const,
+  viewBox: '0 0 24 24',
+  'aria-hidden': true,
+}
+
+function MarketsIcon(p: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...iconBase} {...p}>
+      <path d="M4 18V12" />
+      <path d="M9 18V6" />
+      <path d="M14 18v-8" />
+      <path d="M19 18V4" />
+    </svg>
+  )
+}
+
+function PortfolioIcon(p: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...iconBase} {...p}>
+      <rect x="3" y="7" width="18" height="13" rx="2" />
+      <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+    </svg>
+  )
+}
+
+function CreateIcon(p: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...iconBase} {...p}>
+      <rect x="4" y="4" width="16" height="16" rx="2" />
+      <path d="M12 8v8" />
+      <path d="M8 12h8" />
+    </svg>
+  )
+}
+
+function LendIcon(p: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...iconBase} {...p}>
+      <rect x="3" y="9" width="18" height="12" rx="2" />
+      <path d="M7 9V6a5 5 0 0 1 10 0v3" />
+      <circle cx="12" cy="15" r="1.5" />
+    </svg>
+  )
+}
+
+function BacktestIcon(p: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...iconBase} {...p}>
+      <path d="M3 4v5h5" />
+      <path d="M3.5 9A8.5 8.5 0 1 1 4 14" />
+    </svg>
+  )
+}
+
+function SystemIcon(p: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...iconBase} {...p}>
+      <path d="M3 6h18" />
+      <path d="M3 12h18" />
+      <path d="M3 18h18" />
+      <circle cx="15" cy="6" r="1.5" fill="currentColor" stroke="none" />
+      <circle cx="8" cy="12" r="1.5" fill="currentColor" stroke="none" />
+      <circle cx="17" cy="18" r="1.5" fill="currentColor" stroke="none" />
+    </svg>
   )
 }
