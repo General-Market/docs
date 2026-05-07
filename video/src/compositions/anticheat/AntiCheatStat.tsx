@@ -45,7 +45,7 @@ export const AntiCheatBars: React.FC = () => {
   );
 };
 
-// ─── Stat panel: 0.01% / arrow / 70% ──────────────────────────────────────────
+// ─── Stat panel: 0.01% take 70% / 99.9% get 30% ──────────────────────────────
 
 const StatPanel: React.FC = () => {
   const frame = useCurrentFrame();
@@ -75,99 +75,226 @@ const StatPanel: React.FC = () => {
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
 
+  // Inverse row enters after the main stat lands — first the divider,
+  // then the row, all driven from the same spring family.
+  const dividerT = interpolate(
+    frame,
+    [toFrames(1.4), toFrames(2.0)],
+    [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const inverseEnter = spring({
+    frame: frame - toFrames(1.7),
+    fps,
+    config: { damping: 24, stiffness: 120, mass: 0.7 },
+  });
+  const inverseGetT = interpolate(
+    frame,
+    [toFrames(2.0), toFrames(2.45)],
+    [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+
   return (
     <AbsoluteFill style={{ opacity }}>
-      <div
-        style={{
-          position: "absolute",
-          top: "30%",
-          left: 0,
-          right: 0,
-          display: "flex",
-          alignItems: "baseline",
-          justifyContent: "center",
-          gap: 56,
-          padding: "0 96px",
-        }}
-      >
-        <BigNumber value={`${left}%`} subtitle="of traders" tint={colors.fg} />
-        <TakeWord t={takeT} />
-        <BigNumber
-          value={`${right}%`}
-          subtitle="of all profits"
-          tint={colors.accent}
-        />
-      </div>
+      <Caption />
 
-      <InverseLine />
+      <StatRow
+        leftValue={`${left}%`}
+        leftSubtitle="of traders"
+        leftTint={colors.fg}
+        rightValue={`${right}%`}
+        rightSubtitle="of all profits"
+        rightTint={colors.accent}
+        verb="take"
+        verbT={takeT}
+        sizes={SIZES_PRIMARY}
+        topPercent={26}
+        rowOpacity={1}
+      />
+
+      <Divider t={dividerT} />
+
+      <StatRow
+        leftValue="99.9%"
+        leftSubtitle="of traders"
+        leftTint={colors.fgSoft}
+        rightValue="30%"
+        rightSubtitle="of profits"
+        rightTint={colors.accentSoft}
+        verb="get"
+        verbT={inverseGetT}
+        sizes={SIZES_SECONDARY}
+        topPercent={66}
+        rowOpacity={interpolate(inverseEnter, [0, 1], [0, 1])}
+      />
     </AbsoluteFill>
   );
 };
 
-const TakeWord: React.FC<{ t: number }> = ({ t }) => (
+// ─── Caption — sets the frame, monospace, dim, anchors the slide. ────────
+
+const Caption: React.FC = () => (
   <div
     style={{
-      fontFamily: font,
-      fontSize: 84,
+      position: "absolute",
+      top: "9%",
+      left: 0,
+      right: 0,
+      textAlign: "center",
+      fontFamily: monoFont,
+      fontSize: 32,
       fontWeight: 500,
-      letterSpacing: "-0.01em",
+      letterSpacing: "0.22em",
+      textTransform: "uppercase",
       color: colors.dim,
-      opacity: t,
-      transform: `translateY(${(1 - t) * 14}px)`,
-      // Pull up to sit visually between the digits, not on the
-      // baseline of the subtitle column.
-      paddingBottom: 36,
     }}
   >
-    take
+    <RevealChars
+      text="who captures the profits"
+      startFrame={0}
+      stagger={0.5}
+      duration={8}
+      y={8}
+      blur={1.5}
+      scale={0.97}
+    />
   </div>
 );
 
-const InverseLine: React.FC = () => {
+// ─── StatRow — one balanced row: number / verb / number with subtitles. ──
+
+type StatSizes = {
+  number: number;
+  subtitle: number;
+  verb: number;
+  marginTop: number;
+  verbLift: number;
+};
+
+const SIZES_PRIMARY: StatSizes = {
+  number: 200,
+  subtitle: 64,
+  verb: 84,
+  marginTop: 18,
+  verbLift: 28,
+};
+
+const SIZES_SECONDARY: StatSizes = {
+  number: 96,
+  subtitle: 36,
+  verb: 44,
+  marginTop: 10,
+  verbLift: 14,
+};
+
+const StatRow: React.FC<{
+  leftValue: string;
+  leftSubtitle: string;
+  leftTint: string;
+  rightValue: string;
+  rightSubtitle: string;
+  rightTint: string;
+  verb: string;
+  verbT: number;
+  sizes: StatSizes;
+  topPercent: number;
+  rowOpacity: number;
+}> = ({
+  leftValue,
+  leftSubtitle,
+  leftTint,
+  rightValue,
+  rightSubtitle,
+  rightTint,
+  verb,
+  verbT,
+  sizes,
+  topPercent,
+  rowOpacity,
+}) => {
   return (
     <div
       style={{
         position: "absolute",
-        bottom: "14%",
+        top: `${topPercent}%`,
         left: 0,
         right: 0,
-        textAlign: "center",
-        fontFamily: font,
-        fontSize: 44,
-        fontWeight: 500,
-        letterSpacing: "-0.005em",
-        color: colors.dim,
+        display: "grid",
+        gridTemplateColumns: "1fr auto 1fr",
+        alignItems: "baseline",
+        columnGap: 48,
+        padding: "0 220px",
+        opacity: rowOpacity,
       }}
     >
-      <RevealChars
-        text="99.9% of traders get 30% of profits"
-        startFrame={toFrames(1.5)}
-        stagger={0.28}
-        duration={6}
-        y={8}
-        blur={1.5}
+      <BigNumber
+        value={leftValue}
+        subtitle={leftSubtitle}
+        tint={leftTint}
+        sizes={sizes}
+        align="end"
+      />
+      <Verb word={verb} t={verbT} sizes={sizes} />
+      <BigNumber
+        value={rightValue}
+        subtitle={rightSubtitle}
+        tint={rightTint}
+        sizes={sizes}
+        align="start"
       />
     </div>
   );
 };
 
+const Verb: React.FC<{ word: string; t: number; sizes: StatSizes }> = ({
+  word,
+  t,
+  sizes,
+}) => (
+  <div
+    style={{
+      fontFamily: font,
+      fontSize: sizes.verb,
+      fontWeight: 500,
+      letterSpacing: "-0.01em",
+      color: colors.dim,
+      opacity: t,
+      transform: `translateY(${(1 - t) * 12}px)`,
+      // Pull up so the verb sits visually between digit centers,
+      // not on the subtitle's baseline.
+      paddingBottom: sizes.verbLift,
+    }}
+  >
+    {word}
+  </div>
+);
+
 const BigNumber: React.FC<{
   value: string;
   subtitle: string;
   tint: string;
-}> = ({ value, subtitle, tint }) => {
+  sizes: StatSizes;
+  align: "start" | "end";
+}> = ({ value, subtitle, tint, sizes, align }) => {
   return (
-    <div style={{ textAlign: "center" }}>
+    <div
+      style={{
+        textAlign: align === "end" ? "right" : "left",
+        justifySelf: align,
+      }}
+    >
       <ParallaxText>
         <div
           style={{
             fontFamily: font,
-            fontSize: 200,
+            fontSize: sizes.number,
             fontWeight: 800,
             letterSpacing: "-0.045em",
             color: tint,
             lineHeight: 0.95,
             fontVariantNumeric: "tabular-nums",
+            whiteSpace: "nowrap",
           }}
         >
           {value}
@@ -175,16 +302,68 @@ const BigNumber: React.FC<{
       </ParallaxText>
       <div
         style={{
-          marginTop: 20,
+          marginTop: sizes.marginTop,
           fontFamily: font,
-          fontSize: 76,
+          fontSize: sizes.subtitle,
           fontWeight: 600,
           letterSpacing: "-0.01em",
-          color: colors.fg,
+          color: colors.dim,
+          whiteSpace: "nowrap",
         }}
       >
         {subtitle}
       </div>
+    </div>
+  );
+};
+
+// ─── Divider — thin rule with a single accent bead in the middle. ────────
+
+const Divider: React.FC<{ t: number }> = ({ t }) => {
+  const reach = t;
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: "60%",
+        left: 0,
+        right: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 22,
+        padding: "0 320px",
+        opacity: t,
+      }}
+    >
+      <div
+        style={{
+          flex: 1,
+          height: 1,
+          background: colors.ruleStrong,
+          transformOrigin: "right center",
+          transform: `scaleX(${reach})`,
+        }}
+      />
+      <div
+        style={{
+          width: 8,
+          height: 8,
+          borderRadius: 4,
+          background: colors.accent,
+          opacity: 0.6,
+          transform: `scale(${t})`,
+        }}
+      />
+      <div
+        style={{
+          flex: 1,
+          height: 1,
+          background: colors.ruleStrong,
+          transformOrigin: "left center",
+          transform: `scaleX(${reach})`,
+        }}
+      />
     </div>
   );
 };
