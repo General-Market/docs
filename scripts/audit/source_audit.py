@@ -233,11 +233,17 @@ def analyse(snapshot: dict) -> list[dict]:
         avg_bots = (sum(bot_count_per_round) / len(bot_count_per_round)) if bot_count_per_round else 0
         avg_vaults = (sum(vault_count_per_round) / len(vault_count_per_round)) if vault_count_per_round else 0
         configured_vaults = funds_by_source.get(src_id, [])
-        # DEGENERATE: same outcome for every market in last 3 rounds
+        # DEGENERATE: every market in the audit window cancelled. This is the
+        # signal we actually care about — settlements that produce no real
+        # outcome. All-Flat / all-Up / all-Down can be legitimate (counter at
+        # zero, monotonic counter, etc.) and shouldn't be flagged as broken.
+        # Cancelled means the resolver bailed: stale prices, missing data,
+        # quorum failure. Those are the bugs.
         outcome_set = set(market_outcomes) if market_outcomes else set()
         is_degenerate = (
             len(market_outcomes) >= 5
             and len(outcome_set) == 1
+            and next(iter(outcome_set)) == "Cancelled"
         )
         # GHOST: settled rounds where chain reports playerCount > 0 but the
         # results endpoint returns zero recorded players. That is exactly the
