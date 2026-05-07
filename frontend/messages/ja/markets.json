@@ -376,5 +376,14 @@
     "ask_total": "売 {value}",
     "assets_count": "{included}/{total} アセット",
     "per_asset_breakdown": "アセット別内訳"
+  },
+  "itp_sidebar": {
+    "aria_label": "インデックスナビゲーション",
+    "group_overview": "概要",
+    "group_discover": "探索",
+    "group_more_indexes": "他のインデックス",
+    "nav_overview": "このインデックス",
+    "nav_all_indexes": "すべてのインデックス",
+    "footer_all_indexes": "すべてのインデックス →"
   }
 }

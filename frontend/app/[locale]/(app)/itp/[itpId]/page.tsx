@@ -3,8 +3,9 @@ import { getTranslations } from 'next-intl/server'
 import { getItpDetail, getItpSummaries } from '@/lib/api/server-data'
 import { BreadcrumbJsonLd } from '@/components/seo/JsonLd'
 import { ItpPageClient } from '@/components/domain/itp-page/ItpPageClient'
-import { Header } from '@/components/layout/Header'
-import { Footer } from '@/components/layout/Footer'
+import { AppShell } from '@/components/layout/AppShell'
+import { SourceSearch } from '@/components/layout/SourceSearch'
+import { ItpSidebarApple, type ItpSidebarPeer } from '@/components/domain/itp/ItpSidebarApple'
 import { Link } from '@/i18n/routing'
 import { computeEnrichment } from '@/lib/api/itp-enrichment'
 import type { ItpEnrichment } from '@/lib/itp-enrichment-types'
@@ -71,8 +72,9 @@ async function fetchEnrichment(
 
 export default async function ItpPage({ params }: Props) {
   const { locale, itpId } = await params
-  const [itp, t, tBreadcrumbs] = await Promise.all([
+  const [itp, summaries, t, tBreadcrumbs] = await Promise.all([
     getItpDetail(itpId),
+    getItpSummaries(),
     getTranslations({ locale, namespace: 'seo.pages.itp' }),
     getTranslations({ locale, namespace: 'seo.breadcrumbs' }),
   ])
@@ -91,10 +93,26 @@ export default async function ItpPage({ params }: Props) {
     holdings: [],
   }
 
-  return (
-    <main className="min-h-screen bg-page flex flex-col">
-      <Header />
+  // Top peers by AUM, excluding current. Six is the visual ceiling — beyond that
+  // the column starts arguing with the content.
+  const peerItps: ItpSidebarPeer[] = summaries
+    .filter((s) => s.itpId.toLowerCase() !== itpId.toLowerCase())
+    .sort((a, b) => (b.aum ?? 0) - (a.aum ?? 0))
+    .slice(0, 6)
+    .map((s) => ({ itpId: s.itpId, name: s.name, symbol: s.symbol }))
 
+  return (
+    <AppShell
+      search={<SourceSearch />}
+      sidebar={
+        <ItpSidebarApple
+          itpId={itpId}
+          name={data.name}
+          symbol={data.symbol}
+          peerItps={peerItps}
+        />
+      }
+    >
       <BreadcrumbJsonLd items={[
         { name: tBreadcrumbs('home'), url: 'https://www.generalmarket.io' },
         { name: tBreadcrumbs('markets'), url: 'https://www.generalmarket.io/index' },
@@ -126,7 +144,7 @@ export default async function ItpPage({ params }: Props) {
         }}
       />
 
-      <div className="flex-1 px-6 lg:px-12 py-8">
+      <div className="px-6 lg:px-12 py-8">
         <div className="max-w-6xl mx-auto">
           <nav className="text-sm text-text-muted mb-4">
             <Link href="/" className="hover:text-text-primary transition-colors">{tBreadcrumbs('home')}</Link>
@@ -151,8 +169,6 @@ export default async function ItpPage({ params }: Props) {
           </p>
         </div>
       </div>
-
-      <Footer />
-    </main>
+    </AppShell>
   )
 }

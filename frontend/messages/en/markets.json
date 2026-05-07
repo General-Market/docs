@@ -376,5 +376,14 @@
     "ask_total": "Ask {value}",
     "assets_count": "{included}/{total} assets",
     "per_asset_breakdown": "Per-asset breakdown"
+  },
+  "itp_sidebar": {
+    "aria_label": "Index navigation",
+    "group_overview": "Overview",
+    "group_discover": "Discover",
+    "group_more_indexes": "More indexes",
+    "nav_overview": "This index",
+    "nav_all_indexes": "All indexes",
+    "footer_all_indexes": "All indexes →"
   }
 }

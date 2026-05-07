@@ -376,5 +376,14 @@
     "ask_total": "卖 {value}",
     "assets_count": "{included}/{total} 资产",
     "per_asset_breakdown": "按资产细分"
+  },
+  "itp_sidebar": {
+    "aria_label": "指数导航",
+    "group_overview": "概览",
+    "group_discover": "发现",
+    "group_more_indexes": "更多指数",
+    "nav_overview": "本指数",
+    "nav_all_indexes": "所有指数",
+    "footer_all_indexes": "所有指数 →"
   }
 }

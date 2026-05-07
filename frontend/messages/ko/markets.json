@@ -376,5 +376,14 @@
     "ask_total": "매도 {value}",
     "assets_count": "{included}/{total} 자산",
     "per_asset_breakdown": "자산별 분석"
+  },
+  "itp_sidebar": {
+    "aria_label": "인덱스 내비게이션",
+    "group_overview": "개요",
+    "group_discover": "탐색",
+    "group_more_indexes": "다른 인덱스",
+    "nav_overview": "이 인덱스",
+    "nav_all_indexes": "모든 인덱스",
+    "footer_all_indexes": "모든 인덱스 →"
   }
 }
