@@ -87,7 +87,7 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
   const sseOrders = useSSEOrders()
 
   const [amount, setAmount] = useState('')
-  const [limitPrice, setLimitPrice] = useState('0')
+  const [limitPrice, setLimitPrice] = useState('')
   const [slippageTier, setSlippageTier] = useState(2)
   const [showSlippage, setShowSlippage] = useState(false)
   const [deadlineHours, setDeadlineHours] = useState(1)
@@ -183,14 +183,6 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
     return () => { cancelled = true }
   }, [fillAmount, holdings.length, itpId])
 
-  const navPriceSet = useRef(false)
-  useEffect(() => {
-    if (navPriceSet.current || isNavLoading) return
-    if (navPerShareBn > 0n) {
-      setLimitPrice(formatUnits(navPerShareBn, 18))
-      navPriceSet.current = true
-    }
-  }, [navPerShareBn, isNavLoading])
 
   // --- PostHog: sell_modal_opened ---
   useEffect(() => {

@@ -199,16 +199,6 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   const { navPerShare, navPerShareBn, totalAssetCount, pricedAssetCount, isLoading: isNavLoading } = useItpNav(itpId)
   const { inventory } = useItpInventory(itpId)
 
-  const navPriceSet = useRef(false)
-  useEffect(() => {
-    if (navPriceSet.current || isNavLoading) return
-    if (navPerShareBn > 0n) {
-      const priceWithBuffer = (navPerShareBn * 105n) / 100n
-      setLimitPrice(formatUnits(priceWithBuffer, 18))
-      navPriceSet.current = true
-    }
-  }, [navPerShareBn, isNavLoading])
-
   // --- PostHog: buy_modal_opened ---
   useEffect(() => {
     capture('buy_modal_opened', { itp_id: itpId, itp_name: itpName, current_nav: navPerShare })
