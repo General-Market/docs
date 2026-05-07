@@ -502,6 +502,10 @@ impl MarketDataSource for SecInsiderMarketSource {
         Ok(assets)
     }
 
+    fn always_record_price(&self) -> bool {
+        true // counter-style metric: write a row every tick so fetched_at advances even when value is identical (otherwise batch_engine excludes the source)
+    }
+
     async fn fetch_prices(&self, _asset_ids: &[String]) -> Result<Vec<PriceUpdate>> {
         let now = Utc::now();
 
