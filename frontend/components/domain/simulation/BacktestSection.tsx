@@ -217,7 +217,17 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
     <>
       {/* Error */}
       {(sim.error || sweep.error) && (
-        <div className="text-color-down text-sm p-4 bg-surface-down border border-border-light rounded-xl mb-6">
+        <div
+          className="text-sm p-4 mb-6"
+          style={{
+            background: '#fdecec',
+            border: '1px solid #f5b8b8',
+            borderRadius: 12,
+            color: '#a8071a',
+            fontFamily: 'var(--apple-font-text)',
+            letterSpacing: 'var(--apple-track-tight)',
+          }}
+        >
           {sim.error || sweep.error}
         </div>
       )}
@@ -244,7 +254,19 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
           )}
           {sim.result?.run_id && (
             <div className="mt-6">
-              <h3 className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-3">{t('holdings.title')}</h3>
+              <h3
+                className="mb-3"
+                style={{
+                  fontFamily: 'var(--apple-font-text)',
+                  fontSize: 11,
+                  fontWeight: 600,
+                  letterSpacing: 'var(--apple-track-loose)',
+                  textTransform: 'uppercase',
+                  color: 'var(--apple-text-tertiary)',
+                }}
+              >
+                {t('holdings.title')}
+              </h3>
               <SimHoldingsTable runId={sim.result.run_id} />
             </div>
           )}
@@ -294,15 +316,53 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
     <>
       {/* Fullscreen overlay */}
       {isFullscreen && (
-        <div className="fixed inset-0 z-50 bg-page overflow-y-auto p-6">
+        <div
+          className="fixed inset-0 z-50 overflow-y-auto p-6"
+          style={{ background: 'var(--apple-page-bg)' }}
+        >
           <div className="flex justify-between items-center mb-6">
             <div>
-              <p className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-1">{t('fullscreen.label')}</p>
-              <h2 className="text-lg font-bold text-text-primary">{t('fullscreen.title')}</h2>
+              <p
+                className="mb-1"
+                style={{
+                  fontFamily: 'var(--apple-font-text)',
+                  fontSize: 11,
+                  fontWeight: 600,
+                  letterSpacing: 'var(--apple-track-loose)',
+                  textTransform: 'uppercase',
+                  color: 'var(--apple-text-tertiary)',
+                }}
+              >
+                {t('fullscreen.label')}
+              </p>
+              <h2
+                style={{
+                  fontFamily: 'var(--apple-font-display)',
+                  fontSize: 'var(--apple-fs-21)',
+                  fontWeight: 600,
+                  letterSpacing: 'var(--apple-track-tighter)',
+                  color: 'var(--apple-text)',
+                  margin: 0,
+                }}
+              >
+                {t('fullscreen.title')}
+              </h2>
             </div>
             <button
               onClick={() => setIsFullscreen(false)}
-              className="text-text-muted hover:text-text-primary text-sm px-3 py-1 border border-border-light rounded-lg transition-colors fluid-press"
+              className="fluid-press"
+              style={{
+                fontFamily: 'var(--apple-font-text)',
+                fontSize: 14,
+                letterSpacing: 'var(--apple-track-tight)',
+                color: 'var(--apple-text)',
+                background: 'var(--apple-panel)',
+                border: '1px solid var(--apple-line)',
+                borderRadius: 12,
+                padding: '6px 14px',
+                cursor: 'pointer',
+                transition: 'background 200ms var(--apple-ease-default)',
+              }}
               title={t('fullscreen.exit_title')}
             >
               {t('fullscreen.exit')}
@@ -315,13 +375,56 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
       <div className="space-y-3 pb-10">
         {/* Section Header */}
         <div className="pt-10">
-          <p className="text-label font-semibold tracking-[0.08em] uppercase text-text-muted mb-1.5">{t('heading.label')}</p>
-          <h2 className="text-display font-black tracking-tight text-black leading-[1.1]">{t('heading.title')}</h2>
-          <p className="text-body text-text-secondary mt-1.5">{t('heading.description')}</p>
+          <p
+            className="mb-1.5"
+            style={{
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: 'var(--apple-track-loose)',
+              textTransform: 'uppercase',
+              color: 'var(--apple-text-tertiary)',
+            }}
+          >
+            {t('heading.label')}
+          </p>
+          <h2
+            style={{
+              fontFamily: 'var(--apple-font-display)',
+              fontSize: 'clamp(32px, 4vw, 48px)',
+              fontWeight: 600,
+              letterSpacing: 'var(--apple-track-tighter)',
+              lineHeight: 1.0714,
+              color: 'var(--apple-text)',
+              margin: 0,
+            }}
+          >
+            {t('heading.title')}
+          </h2>
+          <p
+            className="mt-1.5"
+            style={{
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: 'var(--apple-fs-21)',
+              lineHeight: 1.1904,
+              letterSpacing: 'var(--apple-track-tight)',
+              color: 'var(--apple-text-secondary)',
+              margin: 0,
+            }}
+          >
+            {t('heading.description')}
+          </p>
         </div>
 
         {/* Filter Panel */}
-        <div className="border border-border-light">
+        <div
+          style={{
+            background: 'var(--apple-panel)',
+            border: '1px solid var(--apple-line)',
+            borderRadius: 12,
+            overflow: 'hidden',
+          }}
+        >
           <SimFilterPanel
             filters={filters}
             onChange={setFilters}
@@ -330,7 +433,15 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
           />
         </div>
         {!quota.canRun && (
-          <p className="text-xs text-text-muted mt-2 text-right">
+          <p
+            className="mt-2 text-right"
+            style={{
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: 12,
+              letterSpacing: 'var(--apple-track-loose)',
+              color: 'var(--apple-text-tertiary)',
+            }}
+          >
             {t('quota.cooldown', { seconds: Math.ceil(quota.cooldownRemaining / 1000) })}
           </p>
         )}
@@ -340,7 +451,19 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
           <div className="flex justify-end">
             <button
               onClick={() => setIsFullscreen(true)}
-              className="text-xs text-text-muted hover:text-text-primary px-3 py-1.5 border border-border-light rounded-lg hover:border-border-medium transition-colors fluid-press"
+              className="fluid-press"
+              style={{
+                fontFamily: 'var(--apple-font-text)',
+                fontSize: 12,
+                letterSpacing: 'var(--apple-track-tight)',
+                color: 'var(--apple-text-secondary)',
+                background: 'var(--apple-panel)',
+                border: '1px solid var(--apple-line)',
+                borderRadius: 12,
+                padding: '6px 14px',
+                cursor: 'pointer',
+                transition: 'background 200ms var(--apple-ease-default), color 200ms var(--apple-ease-default)',
+              }}
             >
               {t('fullscreen.enter')}
             </button>
@@ -349,7 +472,14 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
 
         {/* Results */}
         {hasResults && (
-          <div className="border border-border-light p-4">
+          <div
+            style={{
+              background: 'var(--apple-panel)',
+              border: '1px solid var(--apple-line)',
+              borderRadius: 12,
+              padding: 16,
+            }}
+          >
             {resultsContent}
           </div>
         )}

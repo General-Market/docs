@@ -16,14 +16,29 @@ import type { MorphoMarketEntry } from '@/lib/contracts/morpho-markets-registry'
 type FilterMode = 'all' | 'positions' | 'liquidity'
 
 const ErrorFallback = (
-  <div className="bg-surface-down border border-color-down/30 rounded-lg p-6 text-center">
-    <h3 className="text-color-down font-bold mb-2">Module failed to load</h3>
-    <p className="text-text-muted text-sm">Refresh the page to retry.</p>
+  <div
+    className="p-6 text-center"
+    style={{
+      background: '#fdecec',
+      border: '1px solid #f5b8b8',
+      borderRadius: 12,
+      color: '#a8071a',
+      fontFamily: 'var(--apple-font-text)',
+      letterSpacing: 'var(--apple-track-tight)',
+    }}
+  >
+    <h3 className="font-bold mb-2" style={{ fontSize: 17 }}>Module failed to load</h3>
+    <p style={{ fontSize: 14, color: 'var(--apple-text-secondary)' }}>Refresh the page to retry.</p>
   </div>
 )
 
 function Bone({ w = 'w-16' }: { w?: string }) {
-  return <div className={`${w} h-5 bg-border-light rounded animate-pulse`} />
+  return (
+    <div
+      className={`${w} h-5 rounded animate-pulse`}
+      style={{ background: 'var(--apple-line)' }}
+    />
+  )
 }
 
 export function LendingPage() {
@@ -163,73 +178,205 @@ export function LendingPage() {
 
   const hasPositions = isConnected && positionStats !== null
 
-  // ── Filter chip ──
+  // ── Filter chip — Apple segmented control ──
   const FilterChip = useCallback(
-    ({ mode, label }: { mode: FilterMode; label: string }) => (
-      <button
-        type="button"
-        onClick={() => setFilter(mode)}
-        className={`px-3 py-1 text-xs font-bold uppercase tracking-wide transition-colors ${
-          filter === mode
-            ? 'bg-zinc-900 text-white'
-            : 'bg-muted text-text-muted hover:text-text-primary'
-        }`}
-      >
-        {label}
-      </button>
-    ),
+    ({ mode, label }: { mode: FilterMode; label: string }) => {
+      const active = filter === mode
+      return (
+        <button
+          type="button"
+          onClick={() => setFilter(mode)}
+          style={{
+            padding: '6px 14px',
+            fontFamily: 'var(--apple-font-text)',
+            fontSize: 13,
+            fontWeight: active ? 600 : 500,
+            letterSpacing: 'var(--apple-track-tight)',
+            color: active ? 'var(--apple-text)' : 'var(--apple-text-secondary)',
+            background: active ? 'var(--apple-panel)' : 'transparent',
+            borderRadius: 8,
+            border: 'none',
+            cursor: 'pointer',
+            boxShadow: active ? '0 1px 2px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.04)' : 'none',
+            transition: 'background 200ms var(--apple-ease-default), color 200ms var(--apple-ease-default)',
+          }}
+        >
+          {label}
+        </button>
+      )
+    },
     [filter]
   )
+
+  const healthColor =
+    positionStats && positionStats.lowestHealthFactor >= 1.5
+      ? '#16a34a'
+      : positionStats && positionStats.lowestHealthFactor >= 1.0
+        ? '#b45309'
+        : '#dc2626'
 
   return (
     <div className="space-y-6">
       {/* [A] Page Header */}
       <div className="pt-10 mb-2">
-        <p className="text-label font-semibold tracking-[0.08em] uppercase text-text-muted mb-1.5">
+        <p
+          className="mb-1.5"
+          style={{
+            fontFamily: 'var(--apple-font-text)',
+            fontSize: 11,
+            fontWeight: 600,
+            letterSpacing: 'var(--apple-track-loose)',
+            textTransform: 'uppercase',
+            color: 'var(--apple-text-tertiary)',
+          }}
+        >
           {t('heading.label')}
         </p>
-        <h2 className="text-display font-black text-black">{t('heading.title')}</h2>
-        <p className="text-body text-text-secondary mt-1.5">{t('heading.description')}</p>
+        <h2
+          style={{
+            fontFamily: 'var(--apple-font-display)',
+            fontSize: 'clamp(32px, 4vw, 48px)',
+            fontWeight: 600,
+            letterSpacing: 'var(--apple-track-tighter)',
+            lineHeight: 1.0714,
+            color: 'var(--apple-text)',
+            margin: 0,
+          }}
+        >
+          {t('heading.title')}
+        </h2>
+        <p
+          className="mt-1.5"
+          style={{
+            fontFamily: 'var(--apple-font-text)',
+            fontSize: 'var(--apple-fs-21)',
+            lineHeight: 1.1904,
+            letterSpacing: 'var(--apple-track-tight)',
+            color: 'var(--apple-text-secondary)',
+            margin: 0,
+          }}
+        >
+          {t('heading.description')}
+        </p>
       </div>
 
       <ErrorBoundary fallback={ErrorFallback}>
         {/* [B] PositionDashboard — conditional on connection + position state */}
         {hasPositions ? (
-          <div className="section-bar" data-testid="lending-position-stats">
+          <div
+            data-testid="lending-position-stats"
+            style={{
+              background: 'var(--apple-panel)',
+              border: '1px solid var(--apple-line)',
+              borderRadius: 12,
+              padding: '20px 24px',
+            }}
+          >
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 w-full">
-              <div className="flex flex-col gap-0.5">
-                <span className="section-bar-title">Total Collateral</span>
-                <span className="section-bar-value" data-testid="lending-total-collateral">
+              <div className="flex flex-col gap-1">
+                <span
+                  style={{
+                    fontFamily: 'var(--apple-font-text)',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    letterSpacing: 'var(--apple-track-loose)',
+                    textTransform: 'uppercase',
+                    color: 'var(--apple-text-tertiary)',
+                  }}
+                >
+                  Total Collateral
+                </span>
+                <span
+                  data-testid="lending-total-collateral"
+                  style={{
+                    fontFamily: 'var(--apple-font-display)',
+                    fontSize: 'var(--apple-fs-24)',
+                    fontWeight: 600,
+                    letterSpacing: 'var(--apple-track-tighter)',
+                    color: 'var(--apple-text)',
+                  }}
+                >
                   ${positionStats!.totalCollateralUsd.toLocaleString(undefined, {
                     maximumFractionDigits: 0,
                   })}
                 </span>
               </div>
-              <div className="flex flex-col gap-0.5">
-                <span className="section-bar-title">Total Debt</span>
-                <span className="section-bar-value" data-testid="lending-total-debt">
+              <div className="flex flex-col gap-1">
+                <span
+                  style={{
+                    fontFamily: 'var(--apple-font-text)',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    letterSpacing: 'var(--apple-track-loose)',
+                    textTransform: 'uppercase',
+                    color: 'var(--apple-text-tertiary)',
+                  }}
+                >
+                  Total Debt
+                </span>
+                <span
+                  data-testid="lending-total-debt"
+                  style={{
+                    fontFamily: 'var(--apple-font-display)',
+                    fontSize: 'var(--apple-fs-24)',
+                    fontWeight: 600,
+                    letterSpacing: 'var(--apple-track-tighter)',
+                    color: 'var(--apple-text)',
+                  }}
+                >
                   {positionStats!.totalDebtUsd > 0
                     ? `$${positionStats!.totalDebtUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
                     : '\u2014'}
                 </span>
               </div>
-              <div className="flex flex-col gap-0.5">
-                <span className="section-bar-title">Avg Borrow APY</span>
-                <span className="section-bar-value" data-testid="lending-avg-borrow-apy">
+              <div className="flex flex-col gap-1">
+                <span
+                  style={{
+                    fontFamily: 'var(--apple-font-text)',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    letterSpacing: 'var(--apple-track-loose)',
+                    textTransform: 'uppercase',
+                    color: 'var(--apple-text-tertiary)',
+                  }}
+                >
+                  Avg Borrow APY
+                </span>
+                <span
+                  data-testid="lending-avg-borrow-apy"
+                  style={{
+                    fontFamily: 'var(--apple-font-display)',
+                    fontSize: 'var(--apple-fs-24)',
+                    fontWeight: 600,
+                    letterSpacing: 'var(--apple-track-tighter)',
+                    color: 'var(--apple-text)',
+                  }}
+                >
                   {positionStats!.avgBorrowApy.toFixed(2)}%
                 </span>
               </div>
-              <div className="flex flex-col gap-0.5">
-                <span className="section-bar-title">Health Factor</span>
+              <div className="flex flex-col gap-1">
+                <span
+                  style={{
+                    fontFamily: 'var(--apple-font-text)',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    letterSpacing: 'var(--apple-track-loose)',
+                    textTransform: 'uppercase',
+                    color: 'var(--apple-text-tertiary)',
+                  }}
+                >
+                  Health Factor
+                </span>
                 <span
                   data-testid="lending-health-factor"
-                  className={`section-bar-value ${
-                    positionStats!.lowestHealthFactor >= 1.5
-                      ? 'text-green-400'
-                      : positionStats!.lowestHealthFactor >= 1.0
-                        ? 'text-yellow-400'
-                        : 'text-red-400'
-                  }`}
+                  style={{
+                    fontFamily: 'var(--apple-font-display)',
+                    fontSize: 'var(--apple-fs-24)',
+                    fontWeight: 600,
+                    letterSpacing: 'var(--apple-track-tighter)',
+                    color: healthColor,
+                  }}
                 >
                   {positionStats!.lowestHealthFactor === Infinity
                     ? '\u221e'
@@ -250,11 +397,12 @@ export function LendingPage() {
             <div className="flex flex-col sm:flex-row sm:items-center gap-3">
               <div className="relative flex-1">
                 <svg
-                  className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
                   strokeWidth={2}
+                  style={{ color: 'var(--apple-text-tertiary)' }}
                 >
                   <path
                     strokeLinecap="round"
@@ -267,11 +415,42 @@ export function LendingPage() {
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   placeholder="Search markets..."
-                  className="w-full pl-9 pr-3 py-2 text-sm border border-border-light bg-white focus:outline-none focus:border-black transition-colors placeholder:text-text-muted"
+                  className="w-full"
+                  style={{
+                    paddingLeft: 36,
+                    paddingRight: 14,
+                    paddingTop: 10,
+                    paddingBottom: 10,
+                    fontSize: 14,
+                    fontFamily: 'var(--apple-font-text)',
+                    letterSpacing: 'var(--apple-track-tight)',
+                    color: 'var(--apple-text)',
+                    background: 'var(--apple-panel)',
+                    border: '1px solid var(--apple-line)',
+                    borderRadius: 12,
+                    outline: 'none',
+                    transition: 'border-color 200ms var(--apple-ease-default), box-shadow 200ms var(--apple-ease-default)',
+                  }}
+                  onFocus={e => {
+                    e.currentTarget.style.borderColor = '#0071e3'
+                    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(0,113,227,0.18)'
+                  }}
+                  onBlur={e => {
+                    e.currentTarget.style.borderColor = 'var(--apple-line)'
+                    e.currentTarget.style.boxShadow = 'none'
+                  }}
                 />
               </div>
 
-              <div className="flex flex-wrap gap-1 shrink-0">
+              <div
+                className="flex flex-wrap shrink-0"
+                style={{
+                  background: 'var(--apple-surface)',
+                  borderRadius: 10,
+                  padding: 3,
+                  gap: 2,
+                }}
+              >
                 <FilterChip mode="all" label="All" />
                 {isConnected && <FilterChip mode="positions" label="Your positions" />}
                 <FilterChip mode="liquidity" label="Has Liquidity" />
@@ -279,7 +458,14 @@ export function LendingPage() {
             </div>
 
             {/* Markets table — scrollable container */}
-            <div className="max-h-[600px] overflow-y-auto border border-border-light">
+            <div
+              className="max-h-[600px] overflow-y-auto"
+              style={{
+                background: 'var(--apple-panel)',
+                border: '1px solid var(--apple-line)',
+                borderRadius: 12,
+              }}
+            >
               <MarketsTable
                 rows={filteredRows}
                 selectedCollateralToken={selectedCollateralToken}
@@ -299,9 +485,33 @@ export function LendingPage() {
                 onSuccess={refetchPosition}
               />
             ) : (
-              <div className="border border-border-light bg-white p-6 text-center">
-                <p className="text-text-secondary text-sm">Connect wallet to borrow</p>
-                <p className="text-text-muted text-xs mt-1">
+              <div
+                className="p-6 text-center"
+                style={{
+                  background: 'var(--apple-panel)',
+                  border: '1px solid var(--apple-line)',
+                  borderRadius: 12,
+                }}
+              >
+                <p
+                  style={{
+                    fontFamily: 'var(--apple-font-text)',
+                    fontSize: 14,
+                    letterSpacing: 'var(--apple-track-tight)',
+                    color: 'var(--apple-text)',
+                  }}
+                >
+                  Connect wallet to borrow
+                </p>
+                <p
+                  className="mt-1"
+                  style={{
+                    fontFamily: 'var(--apple-font-text)',
+                    fontSize: 12,
+                    letterSpacing: 'var(--apple-track-tight)',
+                    color: 'var(--apple-text-secondary)',
+                  }}
+                >
                   Deposit DTF shares as collateral, borrow USDC
                 </p>
               </div>
