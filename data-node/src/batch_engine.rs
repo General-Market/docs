@@ -416,11 +416,18 @@ async fn get_healthy_assets(
     source_id: &str,
     sync_interval_secs: u64,
 ) -> Result<Vec<String>, sqlx::Error> {
-    // 10× sync interval: generous window because we're building a config
-    // (which markets to include), not trading on live prices. Sources may
-    // have intermittent fetch gaps from rate limits, API outages, etc.
+    // Align with the oracle's staleness ceiling (`max(1800, 2 * tick)`),
+    // not 10× tick. The previous "generous window" let the data-node
+    // recommend assets the oracle would later cancel as stale, producing
+    // rounds where every market resolved Cancelled — github, crypto,
+    // tomtom_traffic, tomtom_evcharge all exhibited the pattern.
+    //
+    // We add the tick once so an asset fetched right at config-build time
+    // is still within the threshold at settlement (one tick later).
+    let oracle_threshold_secs = (2 * sync_interval_secs).max(1800);
+    let cutoff_secs = oracle_threshold_secs.saturating_sub(sync_interval_secs).max(60);
     let staleness_cutoff =
-        Utc::now() - chrono::Duration::seconds((sync_interval_secs * 10).max(7200) as i64);
+        Utc::now() - chrono::Duration::seconds(cutoff_secs as i64);
 
     let rows: Vec<(String,)> = sqlx::query_as(
         r#"
