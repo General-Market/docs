@@ -1720,9 +1720,7 @@ export function WelcomeHero() {
           className="mt-3"
         >
           <a
-            href="https://docs.generalmarket.io"
-            target="_blank"
-            rel="noopener noreferrer"
+            href="/docs/vision/introduction"
             className="text-[11px] text-zinc-400 underline underline-offset-2 hover:text-zinc-600 transition-colors"
           >
             How it works

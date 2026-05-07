@@ -241,9 +241,7 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
           </div>
           <div className="flex items-center gap-6 px-6 md:px-8 py-4 bg-surface/50">
             <a
-              href="https://docs.generalmarket.io"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="/docs"
               className="text-[12px] font-bold uppercase tracking-[0.04em] text-black hover:underline"
             >
               {t('view_docs')} &rarr;
@@ -285,9 +283,7 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
               {tPage('twitter')}
             </a>
             <a
-              href="https://docs.generalmarket.io"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="/docs"
               className="text-[12px] font-bold uppercase tracking-[0.04em] text-black hover:underline"
             >
               {tPage('docs')}

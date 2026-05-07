@@ -664,10 +664,9 @@ export function OverviewInfrastructure() {
             return <Card key={t.title} x={x} y={y} w={tileW} h={tileH} title={t.title} sub={t.sub} accent={t.accent} />
           })}
         </HostPanel>
-        <HostPanel y={10 + vpsPanelH + 16} title="Vercel" sub="www.generalmarket.io · Next.js Frontend" h={otherPanelH} accent="blue" />
-        <HostPanel y={10 + vpsPanelH + 16 + otherPanelH + 16} title="Mintlify" sub="docs.generalmarket.io · documentation" h={otherPanelH} accent="orange" />
+        <HostPanel y={10 + vpsPanelH + 16} title="Dokploy / VPS 3" sub="generalmarket.io · Next.js + /docs" h={otherPanelH} accent="blue" />
       </svg>
-      <figcaption>One VPS runs everything that matters. Two clouds serve the rest.</figcaption>
+      <figcaption>One VPS runs everything that matters. The frontend ships from another.</figcaption>
     </figure>
   )
 }

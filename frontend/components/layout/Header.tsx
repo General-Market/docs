@@ -242,7 +242,7 @@ export function Header() {
 
                         {[
                           { href: 'https://discord.gg/xsfgzwR6', label: t('footer.discord'), external: true },
-                          { href: 'https://docs.generalmarket.io', label: t('footer.docs'), external: true },
+                          { href: '/docs', label: t('footer.docs'), external: false },
                           { href: '/privacy', label: t('footer.privacy_policy'), external: false },
                           { href: '/terms', label: t('footer.terms_of_service'), external: false },
                         ].map((item) => item.external ? (

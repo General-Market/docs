@@ -38,9 +38,9 @@ const COLUMNS: Col[] = [
   {
     heading: 'Build',
     links: [
-      { label: 'Docs', href: 'https://docs.generalmarket.io', external: true },
+      { label: 'Docs', href: '/docs' },
       { label: 'Bots', href: '/build-bot' },
-      { label: 'API', href: 'https://docs.generalmarket.io/api', external: true },
+      { label: 'API', href: '/docs/index/api/overview' },
       { label: 'GitHub', href: 'https://github.com/General-Market', external: true },
     ],
   },
