@@ -13,7 +13,7 @@ import { FPS, H, W, colors, toFrames } from "./theme";
 import { DotGrid, DotGridVignette } from "./DotGrid";
 import { IdleZoom, RevealChars } from "./vibe";
 
-const SCENE_SECONDS = 8;
+const SCENE_SECONDS = 7.3;
 const TERMINAL_AT = toFrames(2.8);
 const SCENE_FRAMES = toFrames(SCENE_SECONDS);
 

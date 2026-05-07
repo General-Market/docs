@@ -35,7 +35,7 @@ const PAIRS_AT = toFrames(2.6);
 const PAIR_STEP = toFrames(0.9);
 const REVEAL_AT = toFrames(5.7);
 
-const HOOK_DURATION = toFrames(8.5);
+const HOOK_DURATION = toFrames(8.0);
 
 export const AntiCheatHook: React.FC = () => {
   const frame = useCurrentFrame();
@@ -833,7 +833,7 @@ function generateCandles(
 export const antiCheatHookMeta = {
   id: "AntiCheatHook",
   component: AntiCheatHook,
-  durationInFrames: toFrames(8.5),
+  durationInFrames: HOOK_DURATION,
   fps: FPS,
   width: W,
   height: H,
