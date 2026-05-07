@@ -22,12 +22,171 @@ import { useTranslations, useLocale } from 'next-intl'
 import Link from 'next/link'
 import itpIdNames from '@/lib/itp-id-names.json'
 import { usePostHogTracker } from '@/hooks/usePostHog'
-import { SpringModal, SpringBackdrop, glass, ModalClose } from '@/components/ui/spring'
+import { SpringModal, SpringBackdrop } from '@/components/ui/spring'
 import { InlineOhlcChart } from '@/components/ui/InlineOhlcChart'
 import { indexL3 } from '@/lib/wagmi'
 
 /** L3 USDC decimals — protocol-wide collateral. */
 const L3_USDC_DECIMALS = 18
+
+// ── Apple style atoms ────────────────────────────────────────
+// Inline-style fragments. Tailwind handles layout (flex/gap),
+// these carry the colors, fonts, and tracking that Tailwind
+// can't express as one-liners against CSS variables.
+
+const applePrimary: React.CSSProperties = {
+  fontFamily: 'var(--apple-font-text)',
+  color: 'var(--apple-text)',
+  letterSpacing: 'var(--apple-track-tight)',
+}
+
+const appleSecondary: React.CSSProperties = {
+  fontFamily: 'var(--apple-font-text)',
+  color: 'var(--apple-text-secondary)',
+  letterSpacing: 'var(--apple-track-tight)',
+}
+
+const appleTertiary: React.CSSProperties = {
+  fontFamily: 'var(--apple-font-text)',
+  color: 'var(--apple-text-tertiary)',
+  letterSpacing: 'var(--apple-track-tight)',
+}
+
+const appleBody: React.CSSProperties = {
+  fontFamily: 'var(--apple-font-text)',
+  fontSize: 14,
+  letterSpacing: 'var(--apple-track-tight)',
+  color: 'var(--apple-text)',
+}
+
+const appleCaption: React.CSSProperties = {
+  fontFamily: 'var(--apple-font-text)',
+  fontSize: 11,
+  fontWeight: 600,
+  letterSpacing: 'var(--apple-track-loose)',
+  color: 'var(--apple-text-tertiary)',
+  textTransform: 'uppercase',
+}
+
+const appleSection: React.CSSProperties = {
+  background: 'var(--apple-panel-2)',
+  border: '1px solid var(--apple-line)',
+  borderRadius: 12,
+  padding: 16,
+}
+
+const appleInput: React.CSSProperties = {
+  width: '100%',
+  background: 'var(--apple-bg)',
+  border: '1px solid var(--apple-line)',
+  borderRadius: 12,
+  padding: '12px 14px',
+  fontFamily: 'var(--apple-font-text)',
+  fontSize: 17,
+  color: 'var(--apple-text)',
+  letterSpacing: 'var(--apple-track-tight)',
+  outline: 'none',
+  transition: 'border-color 200ms var(--apple-ease-default), box-shadow 200ms var(--apple-ease-default)',
+}
+
+const appleInputSm: React.CSSProperties = {
+  ...appleInput,
+  padding: '10px 14px',
+  fontSize: 14,
+}
+
+const appleCtaPrimary: React.CSSProperties = {
+  width: '100%',
+  padding: '14px 22px',
+  background: '#0071e3',
+  color: '#ffffff',
+  fontFamily: 'var(--apple-font-text)',
+  fontSize: 17,
+  fontWeight: 600,
+  letterSpacing: 'var(--apple-track-tight)',
+  borderRadius: 980,
+  border: 'none',
+  cursor: 'pointer',
+  transition: 'background 200ms var(--apple-ease-default), opacity 200ms var(--apple-ease-default)',
+}
+
+const appleCtaSecondary: React.CSSProperties = {
+  width: '100%',
+  padding: '12px 18px',
+  background: 'var(--apple-bg)',
+  color: 'var(--apple-text)',
+  fontFamily: 'var(--apple-font-text)',
+  fontSize: 14,
+  fontWeight: 500,
+  letterSpacing: 'var(--apple-track-tight)',
+  borderRadius: 12,
+  border: '1px solid var(--apple-line)',
+  cursor: 'pointer',
+  transition: 'background 200ms var(--apple-ease-default)',
+}
+
+const appleCancel: React.CSSProperties = {
+  width: '100%',
+  padding: '10px 0',
+  background: 'transparent',
+  color: 'var(--apple-text-secondary)',
+  fontFamily: 'var(--apple-font-text)',
+  fontSize: 14,
+  letterSpacing: 'var(--apple-track-tight)',
+  border: 'none',
+  cursor: 'pointer',
+  transition: 'color 200ms var(--apple-ease-default)',
+}
+
+const appleAlertWarning: React.CSSProperties = {
+  background: '#fff8e6',
+  border: '1px solid #f5d68b',
+  borderRadius: 12,
+  padding: 12,
+  color: '#7a4f00',
+  fontFamily: 'var(--apple-font-text)',
+  fontSize: 14,
+  letterSpacing: 'var(--apple-track-tight)',
+}
+
+const appleAlertError: React.CSSProperties = {
+  background: '#fdecec',
+  border: '1px solid #f5b8b8',
+  borderRadius: 12,
+  padding: 16,
+  color: '#a8071a',
+  fontFamily: 'var(--apple-font-text)',
+  fontSize: 14,
+  letterSpacing: 'var(--apple-track-tight)',
+}
+
+function AppleCloseButton({ onClick, ariaLabel }: { onClick: () => void; ariaLabel: string }) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label={ariaLabel}
+      style={{
+        width: 32,
+        height: 32,
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: 980,
+        background: 'rgba(0,0,0,0.04)',
+        color: 'var(--apple-text-secondary)',
+        border: 'none',
+        cursor: 'pointer',
+        transition: 'background 200ms var(--apple-ease-default), color 200ms var(--apple-ease-default)',
+      }}
+      onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.08)'; e.currentTarget.style.color = 'var(--apple-text)' }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.04)'; e.currentTarget.style.color = 'var(--apple-text-secondary)' }}
+    >
+      <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+  )
+}
 
 /**
  * Buy flow micro-steps, L3 direct path (4 steps + Done):
@@ -698,21 +857,21 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   const renderFillDetails = () => {
     if (!fillPrice || !fillAmount) return null
     return (
-      <div className={`${glass.section} p-4 space-y-2`}>
-        <p className="text-sm font-semibold text-text-primary">{t('fill_details.title')}</p>
-        <div className="text-xs font-mono space-y-1">
+      <div style={appleSection} className="space-y-2">
+        <p style={{ ...appleBody, fontWeight: 600 }}>{t('fill_details.title')}</p>
+        <div className="font-mono space-y-1" style={{ fontSize: 12 }}>
           <div className="flex justify-between">
-            <span className="text-text-muted">{t('fill_details.fill_price')}</span>
-            <span className="text-text-primary tabular-nums">${parseFloat(formatUnits(fillPrice, 18)).toFixed(4)}</span>
+            <span style={appleSecondary}>{t('fill_details.fill_price')}</span>
+            <span style={applePrimary} className="tabular-nums">${parseFloat(formatUnits(fillPrice, 18)).toFixed(4)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-text-muted">{t('fill_details.amount_filled')}</span>
-            <span className="text-text-primary tabular-nums">{parseFloat(formatUnits(fillAmount, COLLATERAL_DECIMALS)).toFixed(4)} USDC</span>
+            <span style={appleSecondary}>{t('fill_details.amount_filled')}</span>
+            <span style={applePrimary} className="tabular-nums">{parseFloat(formatUnits(fillAmount, COLLATERAL_DECIMALS)).toFixed(4)} USDC</span>
           </div>
           {fillPrice > 0n && (
             <div className="flex justify-between">
-              <span className="text-text-muted">{t('fill_details.shares')}</span>
-              <span className="text-text-primary tabular-nums">
+              <span style={appleSecondary}>{t('fill_details.shares')}</span>
+              <span style={applePrimary} className="tabular-nums">
                 {parseFloat(formatUnits((fillAmount * BigInt(1e18)) / fillPrice, 18)).toFixed(4)}
               </span>
             </div>
@@ -720,10 +879,11 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
           {submittedLimitPrice && parseFloat(submittedLimitPrice) > 0 && fillPrice > 0n && (() => {
             const limitBn = BigInt(Math.floor(parseFloat(submittedLimitPrice) * 1e18))
             const slippage = Number(fillPrice - limitBn) * 100 / Number(limitBn)
+            const slipColor = slippage <= 0 ? '#34a853' : slippage < 1 ? '#34a853' : slippage < 3 ? '#b25e09' : '#d93025'
             return (
               <div className="flex justify-between">
-                <span className="text-text-muted">{t('fill_details.vs_limit')}</span>
-                <span className={slippage <= 0 ? 'text-color-up' : slippage < 1 ? 'text-color-up' : slippage < 3 ? 'text-color-warning' : 'text-color-down'}>
+                <span style={appleSecondary}>{t('fill_details.vs_limit')}</span>
+                <span style={{ color: slipColor }} className="tabular-nums">
                   {slippage > 0 ? '+' : ''}{slippage.toFixed(2)}%
                 </span>
               </div>
@@ -746,35 +906,35 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
           if (rows.length === 0) return null
           const anyApprox = rows.some(r => r.isApprox)
           return (
-            <div className="pt-3 border-t border-black/5">
-              <p className="text-[11px] uppercase tracking-wide text-text-muted mb-2">
+            <div className="pt-3" style={{ borderTop: '1px solid var(--apple-line)' }}>
+              <p style={appleCaption} className="mb-2">
                 {t('fill_details.underlying_title')}
               </p>
               <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
                 {rows.map(r => (
-                  <div key={r.symbol} className="flex items-center justify-between text-xs">
+                  <div key={r.symbol} className="flex items-center justify-between" style={{ fontSize: 12 }}>
                     <div className="flex items-center gap-2 min-w-0">
                       {r.image && <img src={r.image} alt="" className="w-4 h-4 rounded-full flex-shrink-0" />}
-                      <span className="font-mono text-text-primary truncate">{r.symbol}</span>
-                      <span className="text-text-muted tabular-nums">{(r.weight * 100).toFixed(1)}%</span>
+                      <span className="font-mono truncate" style={applePrimary}>{r.symbol}</span>
+                      <span className="tabular-nums" style={appleSecondary}>{(r.weight * 100).toFixed(1)}%</span>
                     </div>
                     <div className="flex items-center gap-3 font-mono tabular-nums">
-                      <span className="text-text-muted">
+                      <span style={appleSecondary}>
                         {r.price !== null
                           ? `$${r.price < 1 ? r.price.toFixed(4) : r.price.toFixed(2)}`
                           : '—'}
                       </span>
-                      <span className="text-text-primary">
+                      <span style={applePrimary}>
                         {r.qtyAcquired < 1 ? r.qtyAcquired.toFixed(6) : r.qtyAcquired.toFixed(4)}
                       </span>
-                      <span className="text-text-muted w-16 text-right">
+                      <span className="w-16 text-right" style={appleSecondary}>
                         {r.usd !== null ? `$${r.usd.toFixed(2)}` : '—'}
                       </span>
                     </div>
                   </div>
                 ))}
               </div>
-              <p className="text-[10px] text-text-muted mt-2">
+              <p style={{ ...appleCaption, fontSize: 10, marginTop: 8 }}>
                 {t(anyApprox ? 'fill_details.underlying_note_approx' : 'fill_details.underlying_note')}
               </p>
             </div>
@@ -785,35 +945,91 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   }
 
   return createPortal(
-    <SpringBackdrop className={glass.backdrop} onClick={handleClose}>
-      <SpringModal className={`${glass.modal} max-w-lg w-full`} onClick={e => e.stopPropagation()}>
-        <div className="p-4">
-          <div className="flex justify-between items-center mb-1">
-            <h2 className="text-lg font-semibold text-text-primary">{t('title', { name: itpName })}</h2>
-            <ModalClose onClick={handleClose} />
+    <SpringBackdrop
+      className="fixed inset-0 flex items-center justify-center z-50 p-4"
+      style={{ background: 'rgba(0,0,0,0.48)' }}
+      onClick={handleClose}
+    >
+      <SpringModal
+        className="max-w-lg w-full overflow-y-auto"
+        style={{
+          background: 'var(--apple-panel)',
+          borderRadius: 20,
+          maxHeight: '85dvh',
+          paddingBottom: 'env(safe-area-inset-bottom)',
+          boxShadow: '0 1px 2px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06)',
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        <div style={{ padding: 20 }}>
+          <div className="flex justify-between items-start mb-1" style={{ gap: 12 }}>
+            <div style={{ minWidth: 0 }}>
+              <h2
+                style={{
+                  fontFamily: 'var(--apple-font-display)',
+                  fontSize: 21,
+                  fontWeight: 600,
+                  letterSpacing: 'var(--apple-track-tighter)',
+                  color: 'var(--apple-text)',
+                  margin: 0,
+                  lineHeight: 1.1428,
+                }}
+              >
+                {t('title', { name: itpName })}
+              </h2>
+              {itpSymbol && (
+                <p
+                  className="font-mono"
+                  style={{
+                    ...appleSecondary,
+                    fontSize: 13,
+                    margin: '2px 0 0',
+                  }}
+                >
+                  ${itpSymbol}
+                </p>
+              )}
+            </div>
+            <AppleCloseButton onClick={handleClose} ariaLabel={tc('aria.close')} />
           </div>
-          {itpSymbol && <p className="text-text-secondary mb-0.5 font-mono text-sm">${itpSymbol}</p>}
-          <Link href={`/${locale}/itp/${itpId}`} className="text-xs text-accent hover:underline inline-block mb-2" onClick={handleClose}>More details &rarr;</Link>
+          <Link
+            href={`/${locale}/itp/${itpId}`}
+            onClick={handleClose}
+            style={{
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: 12,
+              letterSpacing: 'var(--apple-track-tight)',
+              color: '#0071e3',
+              display: 'inline-block',
+              marginBottom: 12,
+              textDecoration: 'none',
+            }}
+            className="hover:underline"
+          >
+            More details &rarr;
+          </Link>
 
-          <InlineOhlcChart itpId={itpId} height={180} />
+          <div style={{ marginBottom: 12 }}>
+            <InlineOhlcChart itpId={itpId} height={180} />
+          </div>
 
           {videoUrl && (() => {
             const vid = extractYouTubeId(videoUrl)
             if (!vid) return null
             return (
-              <div className="rounded-lg overflow-hidden mb-4">
+              <div className="overflow-hidden mb-4" style={{ borderRadius: 12 }}>
                 <YouTubeLite videoId={vid} title={itpName || 'DTF'} />
               </div>
             )
           })()}
 
           {!isConnected ? (
-            <div className={`${glass.section} p-8 text-center`}>
-              <p className="text-text-secondary">{tc('wallet.connect_to_buy')}</p>
+            <div style={{ ...appleSection, padding: 32, textAlign: 'center' }}>
+              <p style={appleSecondary}>{tc('wallet.connect_to_buy')}</p>
             </div>
           ) : micro >= 0 ? (
             <div className="space-y-4">
-              <div className={`${glass.section} px-4 pt-4 pb-2`}>
+              <div style={{ ...appleSection, paddingTop: 16, paddingBottom: 8 }}>
                 <PipelineRing
                   phases={RING_PHASES}
                   currentPhase={ringState.phase}
@@ -826,28 +1042,67 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
                   subLabel={ringSubLabel}
                 />
                 {(savedApproveHash || savedBuyHash || batchTxHash || fillTxHash || txRefs.length > 0) && (
-                  <div className="flex flex-wrap justify-center items-center gap-x-3 gap-y-1 text-[10px] font-mono text-text-muted pt-2 border-t border-black/5">
+                  <div
+                    className="flex flex-wrap justify-center items-center gap-x-3 gap-y-1 font-mono pt-2"
+                    style={{
+                      fontSize: 10,
+                      color: 'var(--apple-text-tertiary)',
+                      borderTop: '1px solid var(--apple-line)',
+                    }}
+                  >
                     {savedApproveHash && (
-                      <a href={getTxUrl(savedApproveHash, 'settlement')} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-text-primary transition-colors">
-                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-400" />
+                      <a
+                        href={getTxUrl(savedApproveHash, 'settlement')}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1"
+                        style={{ color: 'var(--apple-text-secondary)', transition: 'color 200ms var(--apple-ease-default)' }}
+                        onMouseEnter={(e) => { e.currentTarget.style.color = '#0071e3' }}
+                        onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--apple-text-secondary)' }}
+                      >
+                        <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: 980, background: '#0071e3' }} />
                         approve {savedApproveHash.slice(0, 6)}..{savedApproveHash.slice(-4)}
                       </a>
                     )}
                     {savedBuyHash && (
-                      <a href={getTxUrl(savedBuyHash, 'settlement')} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-text-primary transition-colors">
-                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-400" />
+                      <a
+                        href={getTxUrl(savedBuyHash, 'settlement')}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1"
+                        style={{ color: 'var(--apple-text-secondary)', transition: 'color 200ms var(--apple-ease-default)' }}
+                        onMouseEnter={(e) => { e.currentTarget.style.color = '#0071e3' }}
+                        onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--apple-text-secondary)' }}
+                      >
+                        <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: 980, background: '#0071e3' }} />
                         submit {savedBuyHash.slice(0, 6)}..{savedBuyHash.slice(-4)}
                       </a>
                     )}
                     {batchTxHash && (
-                      <a href={getTxUrl(batchTxHash, 'l3')} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-text-primary transition-colors">
-                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                      <a
+                        href={getTxUrl(batchTxHash, 'l3')}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1"
+                        style={{ color: 'var(--apple-text-secondary)', transition: 'color 200ms var(--apple-ease-default)' }}
+                        onMouseEnter={(e) => { e.currentTarget.style.color = '#0071e3' }}
+                        onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--apple-text-secondary)' }}
+                      >
+                        <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: 980, background: '#34a853' }} />
                         batch {batchTxHash.slice(0, 6)}..{batchTxHash.slice(-4)}
                       </a>
                     )}
                     {fillTxHash && (
-                      <a href={getTxUrl(fillTxHash, 'l3')} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-text-primary transition-colors">
-                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                      <a
+                        href={getTxUrl(fillTxHash, 'l3')}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1"
+                        style={{ color: 'var(--apple-text-secondary)', transition: 'color 200ms var(--apple-ease-default)' }}
+                        onMouseEnter={(e) => { e.currentTarget.style.color = '#0071e3' }}
+                        onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--apple-text-secondary)' }}
+                      >
+                        <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: 980, background: '#34a853' }} />
                         fill {fillTxHash.slice(0, 6)}..{fillTxHash.slice(-4)}
                       </a>
                     )}
@@ -858,64 +1113,77 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
                 )}
               </div>
               {processStalled && micro >= BuyMicro.RELAY && micro < BuyMicro.DONE && (
-                <div className={`${glass.section} p-4 text-sm`}>
-                  <p className="font-medium text-text-primary mb-1">{t('stall.title')}</p>
-                  <p className="text-text-secondary">{t('stall.description')}</p>
+                <div style={appleSection}>
+                  <p style={{ ...appleBody, fontWeight: 600, marginBottom: 4 }}>{t('stall.title')}</p>
+                  <p style={appleSecondary}>{t('stall.description')}</p>
                 </div>
               )}
               {renderFillDetails()}
 
               {userShares > 0n && (
-                <div className={`${glass.section} p-4`}>
-                  <p className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-1">{t('your_itp_shares')}</p>
-                  <p className="text-2xl font-bold text-text-primary tabular-nums font-mono">{parseFloat(formatUnits(userShares, 18)).toFixed(4)}</p>
+                <div style={appleSection}>
+                  <p style={{ ...appleCaption, marginBottom: 4 }}>{t('your_itp_shares')}</p>
+                  <p
+                    className="tabular-nums font-mono"
+                    style={{
+                      fontFamily: 'var(--apple-font-display)',
+                      fontSize: 28,
+                      fontWeight: 600,
+                      letterSpacing: 'var(--apple-track-tighter)',
+                      color: 'var(--apple-text)',
+                      margin: 0,
+                      lineHeight: 1.1,
+                    }}
+                  >
+                    {parseFloat(formatUnits(userShares, 18)).toFixed(4)}
+                  </p>
                 </div>
               )}
 
               {isDone ? (
-                <button
-                  onClick={handleReset}
-                  className={glass.ctaUp}
-                >
+                <button onClick={handleReset} style={appleCtaPrimary}>
                   {t('buy_more')}
                 </button>
               ) : (micro <= BuyMicro.SUBMIT) ? (
-                <button
-                  onClick={handleCancel}
-                  className={glass.cancel}
-                >
+                <button onClick={handleCancel} style={appleCancel}>
                   {tc('actions.cancel')}
                 </button>
               ) : (
-                <button
-                  onClick={handleClose}
-                  className={glass.cancel}
-                >
+                <button onClick={handleClose} style={appleCancel}>
                   {tc('actions.close')}
                 </button>
               )}
 
               {stuckWarning && (
-                <div className={`${glass.warning} p-3 text-amber-600 text-sm`}>
-                  <p className="font-medium">{tc('warnings.tx_stuck_title')}</p>
-                  <p className="text-xs mt-1">{tc('warnings.tx_stuck_description')}</p>
+                <div style={appleAlertWarning}>
+                  <p style={{ fontWeight: 600 }}>{tc('warnings.tx_stuck_title')}</p>
+                  <p style={{ fontSize: 12, marginTop: 4 }}>{tc('warnings.tx_stuck_description')}</p>
                 </div>
               )}
 
               {txError && (
-                <div className={`${glass.error} p-4 text-color-down`}>
-                  <p className="font-medium">{t('error.title')}</p>
-                  <p className="text-sm mt-1 break-all">{txError}</p>
+                <div style={appleAlertError}>
+                  <p style={{ fontWeight: 600 }}>{t('error.title')}</p>
+                  <p style={{ fontSize: 14, marginTop: 4, wordBreak: 'break-all' }}>{txError}</p>
                   {/nonce/i.test(txError) && (
-                    <div className="mt-3 pt-3 border-t border-color-down/20 text-text-primary text-xs space-y-1">
-                      <p className="font-medium">Wallet nonce out of sync with the chain.</p>
+                    <div
+                      className="space-y-1"
+                      style={{
+                        marginTop: 12,
+                        paddingTop: 12,
+                        borderTop: '1px solid rgba(168, 7, 26, 0.2)',
+                        color: 'var(--apple-text)',
+                        fontSize: 12,
+                      }}
+                    >
+                      <p style={{ fontWeight: 600 }}>Wallet nonce out of sync with the chain.</p>
                       <p>The L3 was redeployed; your wallet still remembers old transactions. Reset to fix:</p>
                       <ul className="list-disc pl-5 space-y-0.5">
                         <li>MetaMask: Settings → Advanced → Clear activity tab data</li>
                         <li>OKX / Rabby: Settings → Reset account</li>
                         <li>Or remove this network from your wallet and re-add it</li>
                       </ul>
-                      <p className="text-text-muted">Refresh the page after resetting.</p>
+                      <p style={appleTertiary}>Refresh the page after resetting.</p>
                     </div>
                   )}
                 </div>
@@ -923,16 +1191,28 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
             </div>
           ) : (
             <div className="space-y-2">
-              <div className={`${glass.section} p-3 space-y-3`}>
+              <div style={{ ...appleSection, padding: 14 }} className="space-y-3">
                 <div>
-                  <div className="flex justify-between items-center mb-1">
-                    <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">{t('amount_label')}</label>
+                  <div className="flex justify-between items-center mb-2">
+                    <label style={appleCaption}>{t('amount_label')}</label>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-text-muted font-mono">{t('balance_label', { amount: parseFloat(formattedBalance).toFixed(2) })}</span>
+                      <span className="font-mono" style={{ ...appleTertiary, fontSize: 12 }}>
+                        {t('balance_label', { amount: parseFloat(formattedBalance).toFixed(2) })}
+                      </span>
                       {usdcBalance > 0n && (
                         <button
                           onClick={() => setAmount(formatUnits(usdcBalance, L3_USDC_DECIMALS))}
-                          className="text-xs font-mono font-bold text-text-secondary hover:text-text-primary transition-colors"
+                          className="font-mono"
+                          style={{
+                            fontSize: 12,
+                            fontWeight: 600,
+                            color: '#0071e3',
+                            background: 'transparent',
+                            border: 'none',
+                            cursor: 'pointer',
+                            padding: '2px 4px',
+                            letterSpacing: 'var(--apple-track-tight)',
+                          }}
                         >
                           {tc('actions.max')}
                         </button>
@@ -947,32 +1227,46 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
                     placeholder="e.g., 100"
                     min="0"
                     step="1"
-                    className={glass.input}
+                    style={{ ...appleInput, fontFamily: 'var(--apple-font-text)', fontVariantNumeric: 'tabular-nums' }}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = '#0071e3'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(0,113,227,0.16)' }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--apple-line)'; e.currentTarget.style.boxShadow = 'none' }}
                   />
                   {insufficientBalance && (
-                    <p className="text-color-down text-xs mt-1">{t('insufficient_usdc')}</p>
+                    <p style={{ color: '#d93025', fontSize: 12, marginTop: 4, fontFamily: 'var(--apple-font-text)' }}>{t('insufficient_usdc')}</p>
                   )}
                 </div>
                 {usdcBalance === 0n && (
-                  <div className="flex items-center gap-3 pt-2 border-t border-border-light">
+                  <div className="flex items-center gap-3 pt-2" style={{ borderTop: '1px solid var(--apple-line)' }}>
                     <button
                       onClick={handleMintTestUsdc}
                       disabled={isMintPending || faucetLoading}
-                      className="px-3 py-1.5 text-xs bg-black/[0.03] text-text-secondary border border-black/[0.06] rounded-lg hover:bg-black/[0.06] disabled:opacity-50 transition-colors"
+                      style={{
+                        padding: '6px 12px',
+                        fontSize: 12,
+                        fontFamily: 'var(--apple-font-text)',
+                        letterSpacing: 'var(--apple-track-tight)',
+                        background: 'rgba(0,0,0,0.04)',
+                        color: 'var(--apple-text-secondary)',
+                        border: '1px solid var(--apple-line)',
+                        borderRadius: 8,
+                        cursor: isMintPending || faucetLoading ? 'not-allowed' : 'pointer',
+                        opacity: isMintPending || faucetLoading ? 0.5 : 1,
+                        transition: 'background 200ms var(--apple-ease-default)',
+                      }}
                     >
                       {isMintPending || faucetLoading ? t('minting') : t('mint_test_usdc')}
                     </button>
-                    {isMintSuccess && <span className="text-xs text-color-up">{t('minted')}</span>}
-                    {mintError && <span className="text-xs text-color-down">{t('mint_failed')}</span>}
+                    {isMintSuccess && <span style={{ fontSize: 12, color: '#34a853', fontFamily: 'var(--apple-font-text)' }}>{t('minted')}</span>}
+                    {mintError && <span style={{ fontSize: 12, color: '#d93025', fontFamily: 'var(--apple-font-text)' }}>{t('mint_failed')}</span>}
                   </div>
                 )}
               </div>
 
-              <div className={`${glass.section} p-3`}>
-                <div className="flex justify-between items-center mb-1">
-                  <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">{t('max_price_label')}</label>
+              <div style={{ ...appleSection, padding: 14 }}>
+                <div className="flex justify-between items-center mb-2">
+                  <label style={appleCaption}>{t('max_price_label')}</label>
                   {navPerShare > 0 && (
-                    <span className="text-xs text-text-secondary font-mono">
+                    <span className="font-mono" style={{ ...appleTertiary, fontSize: 12 }}>
                       {t('nav_label', { nav: navPerShare.toFixed(6), priced: pricedAssetCount, total: totalAssetCount })}
                     </span>
                   )}
@@ -985,10 +1279,12 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
                   placeholder={isNavLoading ? t('computing_price') : navPerShare === 0 ? t('set_limit_price') : t('no_limit')}
                   min="0"
                   step="0.01"
-                  className={glass.inputSm}
+                  style={{ ...appleInputSm, fontVariantNumeric: 'tabular-nums' }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = '#0071e3'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(0,113,227,0.16)' }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--apple-line)'; e.currentTarget.style.boxShadow = 'none' }}
                 />
                 {!isNavLoading && navPerShare === 0 && (
-                  <p className="text-color-warning text-xs mt-2">
+                  <p style={{ color: '#b25e09', fontSize: 12, marginTop: 8, fontFamily: 'var(--apple-font-text)' }}>
                     {t('no_prices_warning')}
                   </p>
                 )}
@@ -998,7 +1294,20 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
                 <button
                   type="button"
                   onClick={() => setShowSlippage(s => !s)}
-                  className="flex items-center gap-1.5 text-xs text-text-muted hover:text-text-primary transition-colors"
+                  className="flex items-center gap-1.5"
+                  style={{
+                    fontSize: 12,
+                    color: 'var(--apple-text-secondary)',
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: '4px 6px',
+                    fontFamily: 'var(--apple-font-text)',
+                    letterSpacing: 'var(--apple-track-tight)',
+                    transition: 'color 200ms var(--apple-ease-default)',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--apple-text)' }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--apple-text-secondary)' }}
                   title={t('slippage_label')}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1009,22 +1318,42 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
                 </button>
               </div>
               {showSlippage && (
-                <div className={`${glass.section} p-4`}>
-                  <label className="block text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-3">{t('slippage_label')}</label>
-                  <div className="flex gap-2 fluid-btn-group">
-                    {SLIPPAGE_TIERS.map(tier => (
-                      <button
-                        key={tier.value}
-                        onClick={() => { setSlippageTier(tier.value); capture('buy_slippage_changed', { itp_id: itpId, slippage_tier: tier.label }) }}
-                        className={`flex-1 py-2 rounded-lg border text-sm font-mono transition-colors ${
-                          slippageTier === tier.value
-                            ? 'border-black/80 text-white bg-black/80'
-                            : 'border-black/10 text-text-muted bg-white/60 hover:border-black/20'
-                        }`}
-                      >
-                        {tier.label}
-                      </button>
-                    ))}
+                <div style={appleSection}>
+                  <label style={{ ...appleCaption, display: 'block', marginBottom: 12 }}>{t('slippage_label')}</label>
+                  <div
+                    className="flex"
+                    style={{
+                      background: 'var(--apple-surface)',
+                      borderRadius: 980,
+                      padding: 3,
+                      gap: 0,
+                    }}
+                  >
+                    {SLIPPAGE_TIERS.map(tier => {
+                      const active = slippageTier === tier.value
+                      return (
+                        <button
+                          key={tier.value}
+                          onClick={() => { setSlippageTier(tier.value); capture('buy_slippage_changed', { itp_id: itpId, slippage_tier: tier.label }) }}
+                          className="flex-1 font-mono"
+                          style={{
+                            padding: '8px 0',
+                            borderRadius: 980,
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: 13,
+                            fontWeight: active ? 600 : 500,
+                            letterSpacing: 'var(--apple-track-tight)',
+                            background: active ? 'var(--apple-bg)' : 'transparent',
+                            color: active ? 'var(--apple-text)' : 'var(--apple-text-secondary)',
+                            boxShadow: active ? '0 1px 2px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)' : 'none',
+                            transition: 'background 200ms var(--apple-ease-default), color 200ms var(--apple-ease-default)',
+                          }}
+                        >
+                          {tier.label}
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
               )}
@@ -1044,35 +1373,35 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
                 })
                 if (previewRows.length === 0) return null
                 return (
-                  <div className={`${glass.section} p-3`}>
-                    <p className="text-[11px] uppercase tracking-wide text-text-muted mb-2">
+                  <div style={{ ...appleSection, padding: 14 }}>
+                    <p style={{ ...appleCaption, marginBottom: 8 }}>
                       {t('fill_details.preview_backing_title')}
                     </p>
                     <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
                       {previewRows.map(r => (
-                        <div key={r.symbol} className="flex items-center justify-between text-xs">
+                        <div key={r.symbol} className="flex items-center justify-between" style={{ fontSize: 12 }}>
                           <div className="flex items-center gap-2 min-w-0">
                             {r.image && <img src={r.image} alt="" className="w-4 h-4 rounded-full flex-shrink-0" />}
-                            <span className="font-mono text-text-primary truncate">{r.symbol}</span>
-                            <span className="text-text-muted tabular-nums">{(r.weight * 100).toFixed(1)}%</span>
+                            <span className="font-mono truncate" style={applePrimary}>{r.symbol}</span>
+                            <span className="tabular-nums" style={appleSecondary}>{(r.weight * 100).toFixed(1)}%</span>
                           </div>
                           <div className="flex items-center gap-3 font-mono tabular-nums">
-                            <span className="text-text-muted">
+                            <span style={appleSecondary}>
                               {r.price !== null
                                 ? `$${r.price < 1 ? r.price.toFixed(4) : r.price.toFixed(2)}`
                                 : '—'}
                             </span>
-                            <span className="text-text-primary">
+                            <span style={applePrimary}>
                               {r.qtyAcquired < 1 ? r.qtyAcquired.toFixed(6) : r.qtyAcquired.toFixed(4)}
                             </span>
-                            <span className="text-text-muted w-16 text-right">
+                            <span className="w-16 text-right" style={appleSecondary}>
                               {r.usd !== null ? `$${r.usd.toFixed(2)}` : '—'}
                             </span>
                           </div>
                         </div>
                       ))}
                     </div>
-                    <p className="text-[10px] text-text-muted mt-2">
+                    <p style={{ ...appleCaption, fontSize: 10, marginTop: 8 }}>
                       {t('fill_details.preview_backing_note')}
                     </p>
                   </div>
@@ -1080,50 +1409,56 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
               })()}
 
               {hasNonceGap && (
-                <div className={`${glass.warning} p-3 text-amber-600 text-sm`}>
-                  <p className="font-medium">{tc('warnings.pending_tx_title')}</p>
-                  <p className="text-xs mt-1">{tc('warnings.pending_tx_description', { count: pendingCount })}</p>
+                <div style={appleAlertWarning}>
+                  <p style={{ fontWeight: 600 }}>{tc('warnings.pending_tx_title')}</p>
+                  <p style={{ fontSize: 12, marginTop: 4 }}>{tc('warnings.pending_tx_description', { count: pendingCount })}</p>
                 </div>
               )}
 
               <WalletActionButton
                 onClick={needsApproval ? handleApprove : handleBuy}
                 disabled={!amount || parsedAmount === 0n || isProcessing || insufficientBalance || hasNonceGap}
-                className={glass.ctaUp}
+                style={appleCtaPrimary}
               >
                 {buttonText}
               </WalletActionButton>
 
               {isProcessing && (
-                <button
-                  onClick={handleCancel}
-                  className={glass.cancel}
-                >
+                <button onClick={handleCancel} style={appleCancel}>
                   {tc('actions.cancel')}
                 </button>
               )}
 
               {stuckWarning && (
-                <div className={`${glass.warning} p-3 text-amber-600 text-sm`}>
-                  <p className="font-medium">{tc('warnings.tx_stuck_title')}</p>
-                  <p className="text-xs mt-1">{tc('warnings.tx_stuck_description')}</p>
+                <div style={appleAlertWarning}>
+                  <p style={{ fontWeight: 600 }}>{tc('warnings.tx_stuck_title')}</p>
+                  <p style={{ fontSize: 12, marginTop: 4 }}>{tc('warnings.tx_stuck_description')}</p>
                 </div>
               )}
 
               {txError && (
-                <div className={`${glass.error} p-4 text-color-down`}>
-                  <p className="font-medium">{t('error.title')}</p>
-                  <p className="text-sm mt-1 break-all">{txError}</p>
+                <div style={appleAlertError}>
+                  <p style={{ fontWeight: 600 }}>{t('error.title')}</p>
+                  <p style={{ fontSize: 14, marginTop: 4, wordBreak: 'break-all' }}>{txError}</p>
                   {/nonce/i.test(txError) && (
-                    <div className="mt-3 pt-3 border-t border-color-down/20 text-text-primary text-xs space-y-1">
-                      <p className="font-medium">Wallet nonce out of sync with the chain.</p>
+                    <div
+                      className="space-y-1"
+                      style={{
+                        marginTop: 12,
+                        paddingTop: 12,
+                        borderTop: '1px solid rgba(168, 7, 26, 0.2)',
+                        color: 'var(--apple-text)',
+                        fontSize: 12,
+                      }}
+                    >
+                      <p style={{ fontWeight: 600 }}>Wallet nonce out of sync with the chain.</p>
                       <p>The L3 was redeployed; your wallet still remembers old transactions. Reset to fix:</p>
                       <ul className="list-disc pl-5 space-y-0.5">
                         <li>MetaMask: Settings → Advanced → Clear activity tab data</li>
                         <li>OKX / Rabby: Settings → Reset account</li>
                         <li>Or remove this network from your wallet and re-add it</li>
                       </ul>
-                      <p className="text-text-muted">Refresh the page after resetting.</p>
+                      <p style={appleTertiary}>Refresh the page after resetting.</p>
                     </div>
                   )}
                 </div>

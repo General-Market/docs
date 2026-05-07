@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, type ReactNode } from 'react'
+import { useState, type CSSProperties, type ReactNode } from 'react'
 import { useTranslations } from 'next-intl'
 import { useAccount, useConnect } from 'wagmi'
 import { indexL3, getWalletRpcUrls } from '@/lib/wagmi'
@@ -9,6 +9,7 @@ interface WalletActionButtonProps {
   onClick: () => void
   children: ReactNode
   className?: string
+  style?: CSSProperties
   disabled?: boolean
   /** Pass-through data-* attributes (e.g., onboarding pointer targets). */
   dataAttrs?: Record<`data-${string}`, string>
@@ -21,7 +22,7 @@ interface WalletActionButtonProps {
  *
  * Styling is applied by the caller via className (use Button variants: buy, sell, default, outline).
  */
-export function WalletActionButton({ onClick, children, className, disabled, dataAttrs }: WalletActionButtonProps) {
+export function WalletActionButton({ onClick, children, className, style, disabled, dataAttrs }: WalletActionButtonProps) {
   const t = useTranslations('common')
   const { isConnected } = useAccount()
   const { connect, connectors, isPending } = useConnect()
@@ -64,6 +65,7 @@ export function WalletActionButton({ onClick, children, className, disabled, dat
       onClick={handleClick}
       disabled={isConnected ? disabled : isPending}
       className={className}
+      style={style}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       {...(dataAttrs ?? {})}
