@@ -294,11 +294,17 @@ pub trait MarketDataSource: Send + Sync {
     }
 
     /// Whether to always write a price record even when the value hasn't changed.
-    /// Useful for low-frequency sources (BLS, etc.) where the value only changes
-    /// monthly but we want a fresh timestamped record on every sync to prove
-    /// the collector is alive and the value is current.
+    ///
+    /// Default `true`: every successful fetch advances `market_prices_latest.fetched_at`
+    /// so the oracle's per-market staleness gate can see the source as alive.
+    /// Counter-style and slow-tick sources (employment counts, alert levels, league
+    /// tables) frequently produce identical values for many ticks in a row; if
+    /// the sync engine drops those as duplicates, the oracle resolves every market
+    /// as Cancelled because the data looks frozen. Override to `false` only for
+    /// high-volume sources where unchanged-value rows would bloat storage and
+    /// the source's own internal dedup is reliable.
     fn always_record_price(&self) -> bool {
-        false
+        true
     }
 
     /// Batch strategy for threshold calibration.
