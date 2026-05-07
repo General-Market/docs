@@ -59,29 +59,29 @@ const TOTAL_FRAMES =
   antiCheatEndCardMeta.durationInFrames -
   TRANSITION_FRAMES;
 
-// Music runs the full length of the cut. Fades in fast, fades out into
-// the end card.
-const MUSIC_FRAMES = TOTAL_FRAMES;
-const MUSIC_FADE_OUT = Math.round(FPS * 1.2);
+// Music shuts down the moment we land on the EndCard — the natural
+// tail of the track ends precisely as the Bridge→EndCard transition
+// completes. We start late into the file so the back half of the
+// march carries the cut and runs out exactly on the final scene.
+const AUDIO_FILE_FRAMES = Math.floor(113.142857 * FPS); // Dagored — Dead Man's March
+const MUSIC_END_FRAME =
+  TOTAL_FRAMES - antiCheatEndCardMeta.durationInFrames + T_BRIDGE_END;
+const MUSIC_START_FROM_AUDIO = Math.max(0, AUDIO_FILE_FRAMES - MUSIC_END_FRAME);
+const MUSIC_FADE_IN = Math.round(FPS * 0.5);
 const MUSIC_VOLUME = 0.55;
 
 export const AntiCheatFull: React.FC = () => {
   return (
     <AbsoluteFill style={{ backgroundColor: colors.bg }}>
-      <Sequence from={0} durationInFrames={MUSIC_FRAMES}>
+      <Sequence from={0} durationInFrames={MUSIC_END_FRAME}>
         <Audio
           src={staticFile("music/twitter/Dagored - The Dead Man's March (freetouse.com).mp3")}
-          loop
+          startFrom={MUSIC_START_FROM_AUDIO}
           volume={(frame) =>
             interpolate(
               frame,
-              [
-                0,
-                Math.round(FPS * 0.25),
-                MUSIC_FRAMES - MUSIC_FADE_OUT,
-                MUSIC_FRAMES,
-              ],
-              [0, MUSIC_VOLUME, MUSIC_VOLUME, 0],
+              [0, MUSIC_FADE_IN],
+              [0, MUSIC_VOLUME],
               { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
             )
           }
