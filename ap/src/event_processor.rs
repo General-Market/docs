@@ -725,7 +725,16 @@ pub(crate) async fn process_events(
                                 .and_then(|p| p.get(symbol.as_str()))
                                 .and_then(|entry| entry.get("last_price"))
                                 .and_then(|v| v.as_str())
-                                .and_then(|s| U256::from_dec_str(s).ok())
+                                .and_then(|s| {
+                                    // Parse decimal string (e.g. "0.0262" or "23.41") to U256 scaled by 1e18.
+                                    // /fast-prices returns human-readable decimals; downstream math expects 1e18 scale.
+                                    let parts: Vec<&str> = s.splitn(2, '.').collect();
+                                    let int_part = parts[0];
+                                    let frac_part = parts.get(1).copied().unwrap_or("");
+                                    let frac_padded: String = frac_part.chars().chain(std::iter::repeat('0')).take(18).collect();
+                                    let combined = format!("{}{}", int_part, frac_padded);
+                                    U256::from_dec_str(&combined).ok()
+                                })
                                 .unwrap_or_default();
                             prices.push(price);
                         }
