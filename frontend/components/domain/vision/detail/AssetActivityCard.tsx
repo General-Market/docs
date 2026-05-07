@@ -183,6 +183,43 @@ function CellGlyph({ side, won }: Cell) {
   )
 }
 
+function sideMultiplier(s: AssetSettlement, side: 'Up' | 'Down'): number | null {
+  let up = 0n
+  let down = 0n
+  try {
+    up = BigInt(s.upStake)
+    down = BigInt(s.downStake)
+  } catch {
+    return null
+  }
+  const total = up + down
+  if (total === 0n) return null
+  const sidePool = side === 'Up' ? up : down
+  if (sidePool === 0n) return null
+  return Number((total * 1000n) / sidePool) / 1000
+}
+
+function simulateBankroll(
+  cols: BatchCol[],
+  side: 'Up' | 'Down',
+): { series: number[]; finalPct: number } {
+  let br = 1.0
+  const series: number[] = [br]
+  for (const c of cols) {
+    const stake = br * 0.01
+    const o = c.batch.outcome
+    if (o === side) {
+      const mult = sideMultiplier(c.batch, side)
+      if (mult != null) br += stake * (mult - 1)
+    } else if (o === 'Up' || o === 'Down') {
+      br -= stake
+    }
+    // Cancelled / Flat / AllSameSide / AllLosers → refund, no change
+    series.push(br)
+  }
+  return { series, finalPct: (br - 1) * 100 }
+}
+
 function nearestValue(points: PricePoint[], ts: number): number | null {
   if (points.length === 0) return null
   let bestIdx = 0
@@ -646,7 +683,143 @@ export function AssetActivityCard({
           </div>
         </div>
       </div>
+
+      {colCount > 0 ? <BacktestStrip columns={columns} /> : null}
     </section>
+  )
+}
+
+function BacktestStrip({ columns }: { columns: BatchCol[] }) {
+  const up = useMemo(() => simulateBankroll(columns, 'Up'), [columns])
+  const down = useMemo(() => simulateBankroll(columns, 'Down'), [columns])
+  return (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        borderTop: '1px solid var(--apple-line)',
+      }}
+    >
+      <BacktestPanel
+        side="Up"
+        finalPct={up.finalPct}
+        series={up.series}
+        rounds={columns.length}
+      />
+      <BacktestPanel
+        side="Down"
+        finalPct={down.finalPct}
+        series={down.series}
+        rounds={columns.length}
+        leftBorder
+      />
+    </div>
+  )
+}
+
+function BacktestPanel({
+  side,
+  finalPct,
+  series,
+  rounds,
+  leftBorder,
+}: {
+  side: 'Up' | 'Down'
+  finalPct: number
+  series: number[]
+  rounds: number
+  leftBorder?: boolean
+}) {
+  const positive = finalPct >= 0
+  const color = positive ? 'rgb(52,199,89)' : 'rgb(255,59,48)'
+  const sideColor = side === 'Up' ? 'rgb(52,199,89)' : 'rgb(255,59,48)'
+
+  // Tiny SVG sparkline. 100% width via viewBox.
+  const W = 200
+  const H = 56
+  const padX = 4
+  const padY = 4
+  const yMin = Math.min(...series)
+  const yMax = Math.max(...series)
+  const ySpan = Math.max(1e-12, yMax - yMin)
+  const xStep = series.length > 1 ? (W - padX * 2) / (series.length - 1) : 0
+  const path = series
+    .map((v, i) => {
+      const x = padX + i * xStep
+      const y = padY + (1 - (v - yMin) / ySpan) * (H - padY * 2)
+      return `${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`
+    })
+    .join(' ')
+  const baselineY = padY + (1 - (1 - yMin) / ySpan) * (H - padY * 2)
+
+  return (
+    <div
+      style={{
+        padding: '14px 20px 16px',
+        borderLeft: leftBorder ? '1px solid var(--apple-line)' : undefined,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 16,
+      }}
+    >
+      <div style={{ flexShrink: 0 }}>
+        <div
+          style={{
+            fontSize: 10,
+            fontWeight: 600,
+            letterSpacing: 'var(--apple-track-loose)',
+            textTransform: 'uppercase',
+            color: 'var(--apple-text-tertiary)',
+          }}
+        >
+          Always {side === 'Up' ? '▲ UP' : '▼ DOWN'}
+          <span style={{ color: sideColor }}> · 1% / round</span>
+        </div>
+        <div
+          style={{
+            marginTop: 4,
+            fontSize: 22,
+            fontWeight: 700,
+            color,
+            fontVariantNumeric: 'tabular-nums',
+            fontFamily: 'var(--apple-font-display)',
+          }}
+        >
+          {finalPct >= 0 ? '+' : ''}
+          {finalPct.toFixed(2)}%
+        </div>
+        <div
+          style={{
+            marginTop: 2,
+            fontSize: 11,
+            color: 'var(--apple-text-tertiary)',
+            fontVariantNumeric: 'tabular-nums',
+          }}
+        >
+          {rounds} round{rounds === 1 ? '' : 's'}
+        </div>
+      </div>
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        preserveAspectRatio="none"
+        width="100%"
+        height={H}
+        style={{ flex: 1 }}
+      >
+        {/* Baseline at bankroll = 1.0 */}
+        {isFinite(baselineY) ? (
+          <line
+            x1={padX}
+            x2={W - padX}
+            y1={baselineY}
+            y2={baselineY}
+            stroke="rgba(0,0,0,0.08)"
+            strokeDasharray="2 3"
+          />
+        ) : null}
+        <path d={path} stroke={color} strokeWidth={1.5} fill="none" />
+      </svg>
+    </div>
   )
 }
 
