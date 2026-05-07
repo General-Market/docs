@@ -209,12 +209,11 @@ function PhoneScene({
       box.getCenter(center)
       box.getSize(size)
       const htmlScale = (size.x * HTML_TRANSFORM_DIVISOR) / LINK_MENU_CSS_WIDTH
-      // Three.js camera's local +X is world −X here (lookAt(0,0,0) from
-      // −Z), so adding to world X moves the menu LEFT on screen. The
-      // last try went the wrong way; flipping the sign and dialling
-      // back the magnitude based on the user's screenshot of the
-      // residual offset.
-      const xOffset = isIOS ? 0.45 : 0
+      // Triangulation between two device screenshots:
+      //   no offset    → menu landed ~0.4 wu RIGHT of phone
+      //   +0.45 offset → menu landed ~0.4 wu LEFT of phone
+      // So the right value sits in between.
+      const xOffset = isIOS ? 0.2 : 0
       fit = {
         position: [center.x + xOffset, center.y, center.z - 0.001],
         scale: htmlScale,

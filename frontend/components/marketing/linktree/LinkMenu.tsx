@@ -83,9 +83,9 @@ export function LinkMenu({ onLinkClick }: LinkMenuProps = {}) {
              inside the display, not over the bezel. */
           border-radius: 44px;
         }
-        /* Tahoe-style liquid-glass — sits *over* the menu so the rows
-           read as if they're behind a pane of glass. Cool-tinted sheen
-           is visible against the warm white menu; rim catches light. */
+        /* Subtle inner rim — a pane-of-glass edge highlight, no big
+           tinted sheen this time. The cool blue overlay was reading
+           as a runaway animation, killed it. */
         .lt-menu::before {
           content: '';
           position: absolute;
@@ -94,37 +94,8 @@ export function LinkMenu({ onLinkClick }: LinkMenuProps = {}) {
           z-index: 5;
           border-radius: inherit;
           box-shadow:
-            inset 0 1.5px 0 rgba(255,255,255,0.95),
-            inset 0 -1.5px 0 rgba(0,0,0,0.06),
-            inset 1.5px 0 0 rgba(220,228,240,0.45),
-            inset -1.5px 0 0 rgba(220,228,240,0.30);
-        }
-        .lt-menu::after {
-          content: '';
-          position: absolute;
-          inset: 0;
-          pointer-events: none;
-          z-index: 4;
-          border-radius: inherit;
-          background:
-            /* Specular sheen — cool-tinted band catching light at top-left */
-            linear-gradient(128deg,
-              rgba(206, 218, 236, 0.55) 0%,
-              rgba(206, 218, 236, 0.28) 14%,
-              rgba(216, 226, 240, 0.08) 26%,
-              transparent 38%,
-              transparent 58%,
-              rgba(216, 226, 240, 0.10) 72%,
-              rgba(196, 210, 230, 0.22) 92%,
-              rgba(196, 210, 230, 0.30) 100%),
-            /* Faint horizon glow across the top */
-            linear-gradient(180deg,
-              rgba(255,255,255,0.35) 0%,
-              transparent 12%),
-            /* Subtle edge vignette — glass curves away */
-            radial-gradient(115% 100% at 50% 50%,
-              transparent 60%,
-              rgba(40, 60, 90, 0.06) 100%);
+            inset 0 1px 0 rgba(255,255,255,0.85),
+            inset 0 -0.5px 0 rgba(0,0,0,0.04);
         }
         /* Liquid-glass status bar — Tahoe-style translucent chrome */
         .lt-status {
@@ -274,25 +245,27 @@ export function LinkMenu({ onLinkClick }: LinkMenuProps = {}) {
           opacity: 1;
         }
         /* Chase light — a bright comet sliding around the perimeter.
-           Two stage keyframes give visible accel/decel each turn. */
+           ::before is the rotating conic ring, ::after is the inner
+           black fill that masks the centre so only the rim glows. */
         .lt-row--featured::before {
           content: '';
           position: absolute;
-          inset: -2.5px;
-          z-index: -1;
+          inset: -4px;
+          z-index: -2;
           border-radius: 999px;
           background: conic-gradient(
             from 0deg,
-            rgba(41,151,255,0) 0deg,
-            rgba(41,151,255,0) 240deg,
-            rgba(41,151,255,0.45) 295deg,
-            rgba(180,220,255,0.95) 320deg,
-            rgba(255,255,255,1) 332deg,
-            rgba(180,220,255,0.95) 344deg,
-            rgba(41,151,255,0.45) 25deg,
-            rgba(41,151,255,0) 80deg
+            transparent 0deg,
+            transparent 220deg,
+            rgba(41,151,255,0.55) 280deg,
+            rgba(140,200,255,1) 318deg,
+            rgba(255,255,255,1) 335deg,
+            rgba(140,200,255,1) 352deg,
+            rgba(41,151,255,0.55) 30deg,
+            transparent 90deg,
+            transparent 360deg
           );
-          filter: blur(0.3px);
+          filter: blur(2.5px);
           animation: lt-chase 2.4s infinite;
         }
         .lt-row--featured::after {
