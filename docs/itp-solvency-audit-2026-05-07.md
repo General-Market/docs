@@ -101,9 +101,42 @@ Either is meaningful work. Both require an oracle Docker rebuild.
 - Stuck order 2 cleared via `claimExpiredOrder` permissionless refund.
 - All three oracle chain readers restored from a stale state where two of them hadn't read the chain in 14+ minutes.
 
+## Resolution — same day, later
+
+The audit's verdict ("synthetic forever") proved provisional. The architectural fork named in the postscript was executable in one session. Below is what landed.
+
+### The patches, in order applied
+
+1. **Contract** — `Investment.sol:393`. Removed `if (!cycleProcessed[cycleNumber]) revert E128_CycleNotConfirmed`. The BLS signature over `(chainid, this, "assetTrades", cycleNumber, trades)` already proves oracle quorum; `assetTradesEmitted` prevents replay; the `cycleProcessed` gate was load-bearing only for an architecture the oracle no longer uses. Deployed via `UpgradeInvestment.s.sol`. New impl `0x37d25Af2Daddb2DF5a11e9b564cd411470118121`. Proxy upgraded in `0xfb1448fdbdcb1779f1b84aaff503dda5c8c982f5184ce20d1dcc445ddd957969`. Storage layout untouched — 83 ITPs and 46,625 shares preserved.
+2. **AP exchange mode** — `docker-compose.override.yml`. Was `--exchange-mode testnet`, which gated the entire on-chain settlement init behind `if exchange_mode.is_mock()`. Changed to `mock`. AP now wires `BitgetVaultClient`, the `OnChainSettlement` struct, and the FillConfirmed-derived trade pipeline.
+3. **AP price parser** — `ap/src/event_processor.rs`. Old code passed `/fast-prices`'s `last_price` (a decimal string like `"0.0262"`) to `U256::from_dec_str`, which silently returned zero. The handler then warned "Zero price for asset, skipping" and returned. New code splits the decimal, pads fractional to 18 digits, reassembles as a 1e18-scaled integer, parses cleanly. Cargo built on VPS 2, Docker image rebuilt, container redeployed.
+4. **AP wallet gas** — funded `0x20A85a164C64B603037F647eb0E0aDeEce0BE5AC` with 100 ETH for L3 gas. Earlier zero-balance tries had also drifted the in-memory nonce ahead of chain; container restart re-initialized it.
+5. **AP price-setter authorization** — `MockBitgetVault.setPriceSetter(0x20A85a…)` from the deployer key. AP can now call `setPrice` on the vault, eliminating the per-cycle "set_price failed — trade may use stale price" warnings. Underlying `executeTrade` always succeeded with stale price as a fallback; this just silences the warning.
+
+### Verification — order 16 closed the loop
+
+| signal | value |
+|---|---|
+| order 16 (10 USDC BUY on ITP `0x17`) | filled, status 2 |
+| `AssetTradeRequest` events on chain | 4 (one per asset) |
+| `MockBitgetVault.tradeCount` | **0 → 4** (first non-zero in chain history) |
+| BLUR held in vault | 86.84 |
+| COLLECT held in vault | 80.45 |
+| ME held in vault | 23.91 |
+| TNSR held in vault | 66.05 |
+| `netPosition[asset]` (vault internal accounting) | matches the four balances above |
+
+The pipeline now runs as it should: `OrderSubmitted` → oracle batches → `confirmFills` mints shares → `emitAssetTrades` fires `AssetTradeRequest` → AP receives via SSE → AP fetches ITP state and prices from data-node → AP calls `MockBitgetVault.executeTrade` for each underlying → vault mints the underlying to itself → `netPosition` matches the bookkeeping.
+
+### What still drifts, untreated
+
+- **Pre-resolution shares are still synthetic.** The 46,625 shares minted before this session have no matching vault `netPosition`. A backfill script could replay every historical `AssetTradeRequest` (or recompute net positions and call `executeTrade` once per asset for the delta) to restore the invariant. Not done.
+- **`confirmBatch` still reverts every cycle on stale order entries.** The orchestrator keeps reinjecting order 2 (now EXPIRED on chain) and any newly-stuck orders. Cycle telemetry stays noisy. Cosmetic — the fast path takes over and fills succeed regardless.
+- **Oracle p2p periodically loses peers** during nginx 502 storms. Manual `docker compose restart` recovers. A health-driven auto-restart would close this.
+
 ## Status
 
 Phase 1 (this audit): complete.
-Phase 2 (Fork A — full implementation): blocked on either contract change or oracle orchestrator rewrite. Documented above.
-Backfill (replay 7,573 historical AssetTradeRequests through MockBitgetVault): proceeding next.
-UI feature (show backing in BuyItpModal, honest form): proceeding after backfill.
+Phase 2 (synchronous backing): **complete** — verified end-to-end on order 16.
+Backfill of historical 46,625 shares: deferred. Symbolic for testnet, not load-bearing.
+UI feature (modal backing preview): shipped as commit `6b460da8c`.
