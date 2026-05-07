@@ -68,9 +68,9 @@ const StatPanel: React.FC = () => {
   const left = (0.01 * eased).toFixed(2);
   const right = Math.round(70 * eased);
 
-  const arrowT = interpolate(
+  const takeT = interpolate(
     frame,
-    [toFrames(0.4), toFrames(1.2)],
+    [toFrames(0.4), toFrames(1.0)],
     [0, 1],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
@@ -80,18 +80,18 @@ const StatPanel: React.FC = () => {
       <div
         style={{
           position: "absolute",
-          top: "32%",
+          top: "30%",
           left: 0,
           right: 0,
           display: "flex",
-          alignItems: "center",
+          alignItems: "baseline",
           justifyContent: "center",
-          gap: 72,
+          gap: 56,
           padding: "0 96px",
         }}
       >
         <BigNumber value={`${left}%`} subtitle="of traders" tint={colors.fg} />
-        <ArrowFlow t={arrowT} />
+        <TakeWord t={takeT} />
         <BigNumber
           value={`${right}%`}
           subtitle="of all profits"
@@ -99,31 +99,55 @@ const StatPanel: React.FC = () => {
         />
       </div>
 
-      <div
-        style={{
-          position: "absolute",
-          bottom: "20%",
-          left: 0,
-          right: 0,
-          textAlign: "center",
-          fontFamily: font,
-          fontSize: 60,
-          fontWeight: 600,
-          letterSpacing: "-0.01em",
-          color: colors.fg,
-        }}
-      >
-        <RevealChars
-          text="0.01% of cheaters claim 70% of all profits."
-          startFrame={toFrames(1.3)}
-          stagger={0.32}
-          duration={7}
-          y={10}
-          blur={2}
-          scale={0.98}
-        />
-      </div>
+      <InverseLine />
     </AbsoluteFill>
+  );
+};
+
+const TakeWord: React.FC<{ t: number }> = ({ t }) => (
+  <div
+    style={{
+      fontFamily: font,
+      fontSize: 84,
+      fontWeight: 500,
+      letterSpacing: "-0.01em",
+      color: colors.dim,
+      opacity: t,
+      transform: `translateY(${(1 - t) * 14}px)`,
+      // Pull up to sit visually between the digits, not on the
+      // baseline of the subtitle column.
+      paddingBottom: 36,
+    }}
+  >
+    take
+  </div>
+);
+
+const InverseLine: React.FC = () => {
+  return (
+    <div
+      style={{
+        position: "absolute",
+        bottom: "14%",
+        left: 0,
+        right: 0,
+        textAlign: "center",
+        fontFamily: font,
+        fontSize: 44,
+        fontWeight: 500,
+        letterSpacing: "-0.005em",
+        color: colors.dim,
+      }}
+    >
+      <RevealChars
+        text="99.9% of traders get 30% of profits"
+        startFrame={toFrames(1.5)}
+        stagger={0.28}
+        duration={6}
+        y={8}
+        blur={1.5}
+      />
+    </div>
   );
 };
 
@@ -138,7 +162,7 @@ const BigNumber: React.FC<{
         <div
           style={{
             fontFamily: font,
-            fontSize: 240,
+            fontSize: 200,
             fontWeight: 800,
             letterSpacing: "-0.045em",
             color: tint,
@@ -151,9 +175,9 @@ const BigNumber: React.FC<{
       </ParallaxText>
       <div
         style={{
-          marginTop: 28,
+          marginTop: 20,
           fontFamily: font,
-          fontSize: 56,
+          fontSize: 76,
           fontWeight: 600,
           letterSpacing: "-0.01em",
           color: colors.fg,
@@ -162,51 +186,6 @@ const BigNumber: React.FC<{
         {subtitle}
       </div>
     </div>
-  );
-};
-
-const ArrowFlow: React.FC<{ t: number }> = ({ t }) => {
-  const length = 220;
-  const drawn = Math.max(0, Math.min(length, length * t));
-  const headOpacity = t > 0.92 ? 1 : 0;
-  return (
-    <svg width={length + 40} height={120} style={{ overflow: "visible" }}>
-      <defs>
-        <linearGradient id="arrow-grad" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor={colors.dim} stopOpacity={0.6} />
-          <stop offset="100%" stopColor={colors.accent} stopOpacity={1} />
-        </linearGradient>
-      </defs>
-      <line
-        x1={0}
-        y1={60}
-        x2={drawn}
-        y2={60}
-        stroke="url(#arrow-grad)"
-        strokeWidth={3}
-        strokeLinecap="round"
-      />
-      <g opacity={headOpacity}>
-        <line
-          x1={length - 14}
-          y1={60 - 14}
-          x2={length}
-          y2={60}
-          stroke={colors.accent}
-          strokeWidth={3}
-          strokeLinecap="round"
-        />
-        <line
-          x1={length - 14}
-          y1={60 + 14}
-          x2={length}
-          y2={60}
-          stroke={colors.accent}
-          strokeWidth={3}
-          strokeLinecap="round"
-        />
-      </g>
-    </svg>
   );
 };
 
