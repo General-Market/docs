@@ -4,6 +4,7 @@ import { getItpSummaries } from '@/lib/api/server-data'
 import { FinancialProductJsonLd, BreadcrumbJsonLd } from '@/components/seo/JsonLd'
 import { HomeClient } from '@/components/domain/HomeClient'
 import { AppShell } from '@/components/layout/AppShell'
+import { IndexSidebar } from '@/components/layout/IndexSidebar'
 import { SourceSearch } from '@/components/layout/SourceSearch'
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
@@ -29,7 +30,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
   const tJsonLd = await getTranslations({ locale, namespace: 'seo.json_ld' })
 
   return (
-    <AppShell search={<SourceSearch />}>
+    <AppShell search={<SourceSearch />} sidebar={<IndexSidebar />}>
       {/* SEO-visible content */}
       <div className="sr-only">
         <h1>{t('h1')}</h1>

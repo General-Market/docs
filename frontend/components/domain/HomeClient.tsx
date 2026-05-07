@@ -77,7 +77,6 @@ type NavGroup = {
 const NAV_SECTION_IDS = ['markets', 'portfolio', 'create', 'lend', 'backtest', 'system']
 
 /* ── Motion springs — theatrical ── */
-const SPRING_BLOB = { type: 'spring' as const, stiffness: 170, damping: 22, mass: 0.8 }
 const SPRING_ACCENT = { type: 'spring' as const, stiffness: 250, damping: 25 }
 const INSTANT = { duration: 0 }
 
@@ -120,37 +119,13 @@ export function HomeClient() {
     itpId: string; name: string; holdings: { symbol: string; weight: number }[]
   } | null>(null)
 
-  const sidebarLightRef = useRef<HTMLDivElement>(null)
-
-  const handleSidebarMouseMove = useCallback((e: React.MouseEvent<HTMLElement>) => {
-    if (reduced || !sidebarLightRef.current) return
-    const rect = e.currentTarget.getBoundingClientRect()
-    const x = e.clientX - rect.left
-    const y = e.clientY - rect.top
-    sidebarLightRef.current.style.background =
-      `radial-gradient(300px circle at ${x}px ${y}px, rgba(255,255,255,0.06), transparent 70%)`
-    sidebarLightRef.current.style.opacity = '1'
-  }, [reduced])
-
-  const handleSidebarMouseLeave = useCallback(() => {
-    if (!sidebarLightRef.current) return
-    sidebarLightRef.current.style.opacity = '0'
-  }, [])
-
   useSectionTimeTracker(NAV_SECTION_IDS)
 
   useEffect(() => {
     return () => clearTimeout(exitTimer.current)
   }, [])
 
-  useEffect(() => {
-    const hash = window.location.hash.slice(1)
-    if (hash && NAV_SECTION_IDS.includes(hash)) {
-      setActiveSection(hash)
-    }
-  }, [])
-
-  const switchTo = useCallback((id: string) => {
+  const switchTo = useCallback((id: string, fromHash = false) => {
     if (id === 'system') {
       capture('section_navigated', { section_name: id })
       router.push('/explorer')
@@ -166,7 +141,26 @@ export function HomeClient() {
     window.scrollTo({ top: 0 })
     clearTimeout(exitTimer.current)
     exitTimer.current = setTimeout(() => setExitingSection(null), reduced ? 0 : 650)
+    // Sync URL hash so the IndexSidebar (and back/forward) reflect the change.
+    // Skip when this call originated from a hashchange event to avoid a loop.
+    if (!fromHash && typeof window !== 'undefined') {
+      const cur = window.location.hash.slice(1)
+      if (cur !== id) history.replaceState(null, '', `#${id}`)
+    }
   }, [activeSection, capture, reduced, router])
+
+  // Read initial hash + listen for IndexSidebar driven changes.
+  useEffect(() => {
+    const sync = () => {
+      const h = window.location.hash.slice(1)
+      if (h && NAV_SECTION_IDS.includes(h)) {
+        switchTo(h, true)
+      }
+    }
+    sync()
+    window.addEventListener('hashchange', sync)
+    return () => window.removeEventListener('hashchange', sync)
+  }, [switchTo])
 
   const handleDeployIndex = useCallback((holdings: { symbol: string; weight: number }[]) => {
     setDeployHoldings(holdings)
@@ -195,84 +189,7 @@ export function HomeClient() {
   return (
     <>
       <div className="flex min-h-[calc(100vh-64px)]">
-        {/* ── Sidebar — desktop ── */}
-        <LayoutGroup id="nav-desktop">
-          <aside
-            onMouseMove={handleSidebarMouseMove}
-            onMouseLeave={handleSidebarMouseLeave}
-            className="hidden lg:flex flex-col w-[240px] shrink-0 bg-zinc-950 border-r border-white/[0.06] sticky top-16 h-[calc(100vh-64px)] select-none overflow-hidden"
-          >
-            {/* ── Cursor-tracked ambient light ── */}
-            <div
-              ref={sidebarLightRef}
-              className="absolute inset-0 opacity-0 transition-opacity duration-500 pointer-events-none z-0"
-            />
-
-            <nav className="relative z-10 flex-1 pt-6 pb-4 flex flex-col">
-              {NAV_GROUPS.map((group, gi) => (
-                <div key={group.label} className={gi > 0 ? 'mt-2' : ''}>
-                  {/* Group label — aligned with icon column */}
-                  <div className="pl-7 pr-6 mb-2">
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/55">
-                      {group.label}
-                    </span>
-                  </div>
-
-                  {/* Items */}
-                  <div className="px-3 space-y-px">
-                    {group.items.map((item) => {
-                      const isActive = activeSection === item.id
-                      const Icon = ICON_MAP[item.id]
-                      return (
-                        <button
-                          key={item.id}
-                          onClick={() => switchTo(item.id)}
-                          className={`group relative w-full flex items-center gap-3 pl-4 pr-3 py-[9px] rounded text-[13px] text-left ${
-                            isActive
-                              ? 'text-white font-semibold'
-                              : 'text-white/75 hover:text-white hover:bg-white/[0.05]'
-                          }`}
-                        >
-                          {/* ── Morphing blob background ── */}
-                          {isActive && (
-                            <motion.div
-                              layoutId="nav-blob"
-                              className="absolute inset-0 rounded bg-white/[0.07]"
-                              transition={reduced ? INSTANT : SPRING_BLOB}
-                              style={{ originX: 0.5, originY: 0.5 }}
-                            />
-                          )}
-
-                          {/* ── Accent bar removed ── */}
-
-                          <span className={`relative z-10 shrink-0 w-4 h-4 flex items-center justify-center transition-colors duration-200 ${
-                            isActive ? 'text-white' : 'text-white/65 group-hover:text-white'
-                          }`}>
-                            {Icon && <Icon active={isActive} />}
-                          </span>
-                          <span className="relative z-10 truncate">{item.label}</span>
-                        </button>
-                      )
-                    })}
-                  </div>
-
-                  {/* Divider between groups */}
-                  {gi < NAV_GROUPS.length - 1 && (
-                    <div className="mx-5 mt-3 border-t border-white/[0.06]" />
-                  )}
-                </div>
-              ))}
-            </nav>
-
-            {/* Bottom */}
-            <div className="relative z-10 px-6 py-4 border-t border-white/[0.06]">
-              <div className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#00A36C]" />
-                <span className="text-[10px] font-mono text-white/30 tracking-wide">Index L3</span>
-              </div>
-            </div>
-          </aside>
-        </LayoutGroup>
+        {/* Desktop sidebar lives in the AppShell now (IndexSidebar). */}
 
         {/* ── Mobile bottom bar — glass slider ── */}
         <LayoutGroup id="nav-mobile">
