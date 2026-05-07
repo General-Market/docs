@@ -70,6 +70,16 @@ function leaveTransformFor(style: LinktreeIcon, eased: number, t: number): Leave
         rotX: eased * Math.PI * 1.4,
         rotZ: 0,
       }
+    case 'app':
+      // Dive forward — straight into the camera as if entering the app.
+      return {
+        posX: eased * 1.0,
+        posY: eased * 0.6,
+        posZ: eased * -3.5,
+        rotY: eased * Math.PI * 0.6,
+        rotX: eased * -0.18,
+        rotZ: 0,
+      }
   }
 }
 

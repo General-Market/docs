@@ -50,6 +50,13 @@ const Icon = ({ kind }: { kind: LinktreeIcon }) => {
           <path d="m17.2 18 1 1 2-2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       )
+    case 'app':
+      return (
+        <svg {...common} aria-hidden>
+          <rect x="3.5" y="3.5" width="17" height="17" rx="4.5" stroke="currentColor" strokeWidth="1.6" />
+          <path d="M9.5 14.5 14.5 9.5M10 9.5h4.5V14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      )
   }
 }
 

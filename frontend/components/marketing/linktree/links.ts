@@ -1,4 +1,4 @@
-export type LinktreeIcon = 'x' | 'discord' | 'docs' | 'waitlist'
+export type LinktreeIcon = 'x' | 'discord' | 'docs' | 'waitlist' | 'app'
 
 export type LinktreeEntry = {
   label: string
@@ -17,6 +17,7 @@ export const LINKTREE_ENTRIES: LinktreeEntry[] = [
     featured: true,
     kicker: 'Early access',
   },
+  { label: 'Open the app', href: '/', icon: 'app' },
   { label: 'Follow on X', href: 'https://x.com/tryGeneral_', icon: 'x', external: true },
   { label: 'Discord community', href: 'https://discord.gg/QbasycShP', icon: 'discord', external: true },
   { label: 'Read the docs', href: '/docs', icon: 'docs' },
