@@ -54,6 +54,26 @@ AUTO_SEED_BUDGET_USDC = float(os.environ.get("AUTO_SEED_BUDGET_USDC", "50"))
 AUTO_SEED_MAX_ATTEMPTS = int(os.environ.get("AUTO_SEED_MAX_ATTEMPTS", "2"))
 
 
+def _wait_for_join(executor, batch_id: int, player: str, timeout: float = 10.0) -> bool:
+    """Poll on-chain getPosition until the join is visible.
+
+    The bitmap submission below races the oracle's view of PlayerJoined.
+    Without this gate, oracles return "Player not found" for the first ~1s
+    after a successful join tx, the two-shot retry exhausts before quorum,
+    and the vault sits joined-but-unbacked-on-bitmap forever.
+    """
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        try:
+            pos = executor.get_player_position(batch_id, player)
+            if pos.get("joinTimestamp", 0) > 0:
+                return True
+        except Exception:
+            pass
+        time.sleep(0.5)
+    return False
+
+
 # ── Config ─────────────────────────────────────────────────────
 
 
@@ -851,10 +871,26 @@ def run_cycle(
             if deposit_wei <= 0:
                 continue
 
+            # Pre-check on chain. In-memory joined_batch_ids drifts on
+            # restart and after reconcile races; without this guard we burn
+            # a tx and a nonce on a guaranteed AlreadyJoined() revert.
+            try:
+                existing = executor.get_player_position(batch_id, fund.vault_addr)
+                if existing.get("joinTimestamp", 0) > 0:
+                    fund.joined_batch_ids.add(batch_id)
+                    fund.active_batches.setdefault(
+                        batch_id, existing.get("totalDeposited", deposit_wei),
+                    )
+                    log.debug(
+                        "[%s] Batch %d already joined on-chain — syncing state",
+                        fund.name, batch_id,
+                    )
+                    continue
+            except Exception:
+                pass  # batch may not exist yet, proceed
+
             # Join via vault. _sign_and_send waits for the receipt — by the
-            # time we return here, the tx is mined. The bitmap POST below
-            # retries on its own if oracles need a moment to catch up; the
-            # global stop-the-world sleep we used to do here was rituals.
+            # time we return here, the tx is mined.
             try:
                 fund.vault.join_batch(
                     batch_id, config_hash, deposit_wei, bm_hash,
@@ -882,13 +918,24 @@ def run_cycle(
                 log.warning("[%s] Batch %d join failed: %s", fund.name, batch_id, e)
                 continue
 
+            # Wait until the oracle can see the PlayerJoined event before
+            # we POST the bitmap. Otherwise the first wave of submissions
+            # all 404 with "Player not found" and the two-shot retry runs
+            # out before quorum, leaving the vault joined-but-bitmap-less.
+            if not _wait_for_join(executor, batch_id, fund.vault_addr, timeout=10):
+                log.warning(
+                    "[%s] Batch %d join not visible on-chain after 10s — "
+                    "submitting bitmap anyway, retry path is the safety net",
+                    fund.name, batch_id,
+                )
+
             # Submit bitmap to oracles. BitmapSubmitError is the typed quorum
             # failure from the new chain.py — log it and move on rather than
             # crashing the cycle.
             try:
                 submit_bitmap(
                     oracle_urls, fund.vault_addr, batch_id,
-                    bitmap, bm_hash, retries=2,
+                    bitmap, bm_hash, retries=5,
                 )
             except BitmapSubmitError as e:
                 log.warning(

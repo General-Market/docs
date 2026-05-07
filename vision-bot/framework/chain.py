@@ -557,11 +557,16 @@ class Executor:
         Caller can distinguish "no batch" from "batch exists but not joined"
         (the latter returns totalDeposited=0 with no exception).
         """
+        return self.get_player_position(batch_id, self.bot_addr)
+
+    def get_player_position(self, batch_id: int, player: str) -> dict:
+        """Read on-chain position for an arbitrary player (e.g. a vault)."""
         info = self.vision.functions.getBatch(batch_id).call()
-        # info[0] is `creator`. Zero address means batch doesn't exist.
         if int(info[0], 16) == 0:
             raise BatchNotFoundError(f"Batch {batch_id} does not exist")
-        raw = self.vision.functions.getPosition(batch_id, self.bot_addr).call()
+        raw = self.vision.functions.getPosition(
+            batch_id, Web3.to_checksum_address(player)
+        ).call()
         return {
             "bitmapHash": raw[0],
             "configHash": raw[1],
