@@ -103,8 +103,11 @@ function PhoneScene({
     iphone.updateMatrixWorld(true)
 
     // Measure the actual screen face from the GLB so the Html overlay
-    // is bezel-perfect, not eyeballed.
+    // is bezel-perfect, not eyeballed. If the texture fingerprint fails
+    // (CSP blocking blob URLs, network failure, anything), fall back to
+    // sensible iPhone-aspect numbers so the menu always renders.
     const screenMesh = findPhoneScreenMesh(iphone)
+    let fit: ScreenFit
     if (screenMesh) {
       if (!screenMesh.geometry.boundingBox) screenMesh.geometry.computeBoundingBox()
       const box = screenMesh.geometry.boundingBox!
@@ -117,11 +120,17 @@ function PhoneScene({
       // Screen normal points toward -Z (camera sits at -distance). Lift
       // the html a hair in front of the glass to avoid z-fighting.
       const htmlScale = (size.x * HTML_TRANSFORM_DIVISOR) / LINK_MENU_CSS_WIDTH
-      setScreenFit({
+      fit = {
         position: [center.x, center.y, center.z - 0.001],
         scale: htmlScale,
-      })
+      }
+    } else {
+      // Fallback: measured ~1.6 wu width on the GLB. Keep the Html in
+      // play even if the screen mesh can't be identified (no textures,
+      // CSP block, future model swap, etc).
+      fit = { position: [0, 0, -0.001], scale: 0.178 }
     }
+    setScreenFit(fit)
 
     onReady()
   }, [gltf, onReady])
