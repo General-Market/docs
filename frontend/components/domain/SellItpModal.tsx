@@ -24,7 +24,7 @@ import { useTranslations, useLocale } from 'next-intl'
 import Link from 'next/link'
 import itpIdNames from '@/lib/itp-id-names.json'
 import { usePostHogTracker } from '@/hooks/usePostHog'
-import { SpringModal, SpringBackdrop, glass, ModalClose } from '@/components/ui/spring'
+import { SpringModal, SpringBackdrop } from '@/components/ui/spring'
 import { InlineOhlcChart } from '@/components/ui/InlineOhlcChart'
 import { indexL3 } from '@/lib/wagmi'
 
@@ -52,6 +52,154 @@ interface SellItpModalProps {
   videoUrl?: string
   onClose: () => void
 }
+
+// ── Apple style primitives (local to this modal) ────────────────────────────
+// Inline objects so changes here don't leak into other surfaces still using
+// the dark-glass tokens. Aesthetic mirrors SourceSidebarApple + apple-tokens.
+
+const apple = {
+  backdrop: {
+    background: 'rgba(0, 0, 0, 0.48)',
+    backdropFilter: 'saturate(180%) blur(20px)',
+    WebkitBackdropFilter: 'saturate(180%) blur(20px)',
+  } as const,
+  modal: {
+    background: 'var(--apple-panel)',
+    color: 'var(--apple-text)',
+    borderRadius: 20,
+    boxShadow: 'var(--apple-shadow-card)',
+    border: '1px solid var(--apple-line)',
+    fontFamily: 'var(--apple-font-text)',
+  } as const,
+  section: {
+    background: 'var(--apple-panel-2)',
+    border: '1px solid var(--apple-line)',
+    borderRadius: 12,
+  } as const,
+  title: {
+    fontFamily: 'var(--apple-font-display)',
+    fontSize: 19,
+    fontWeight: 600,
+    letterSpacing: 'var(--apple-track-tighter)',
+    color: 'var(--apple-text)',
+    margin: 0,
+  } as const,
+  symbol: {
+    fontFamily: 'var(--apple-font-text)',
+    fontSize: 13,
+    color: 'var(--apple-text-secondary)',
+    letterSpacing: 'var(--apple-track-tight)',
+  } as const,
+  link: {
+    fontFamily: 'var(--apple-font-text)',
+    fontSize: 12,
+    color: 'var(--apple-accent)',
+    letterSpacing: 'var(--apple-track-tight)',
+    textDecoration: 'none',
+  } as const,
+  caption: {
+    fontFamily: 'var(--apple-font-text)',
+    fontSize: 11,
+    fontWeight: 600,
+    letterSpacing: 'var(--apple-track-loose)',
+    color: 'var(--apple-text-tertiary)',
+    textTransform: 'uppercase' as const,
+  },
+  body: {
+    fontFamily: 'var(--apple-font-text)',
+    fontSize: 14,
+    letterSpacing: 'var(--apple-track-tight)',
+    color: 'var(--apple-text-secondary)',
+  } as const,
+  bodyPrimary: {
+    fontFamily: 'var(--apple-font-text)',
+    fontSize: 14,
+    letterSpacing: 'var(--apple-track-tight)',
+    color: 'var(--apple-text)',
+  } as const,
+  input: {
+    width: '100%',
+    background: '#ffffff',
+    border: '1px solid var(--apple-line)',
+    borderRadius: 12,
+    padding: '12px 14px',
+    fontFamily: 'var(--apple-font-text)',
+    fontSize: 17,
+    color: 'var(--apple-text)',
+    letterSpacing: 'var(--apple-track-tight)',
+    fontVariantNumeric: 'tabular-nums' as const,
+    outline: 'none',
+    transition: 'border-color 200ms var(--apple-ease-default), box-shadow 200ms var(--apple-ease-default)',
+  } as const,
+  inputSm: {
+    width: '100%',
+    background: '#ffffff',
+    border: '1px solid var(--apple-line)',
+    borderRadius: 12,
+    padding: '9px 14px',
+    fontFamily: 'var(--apple-font-text)',
+    fontSize: 14,
+    color: 'var(--apple-text)',
+    letterSpacing: 'var(--apple-track-tight)',
+    fontVariantNumeric: 'tabular-nums' as const,
+    outline: 'none',
+    transition: 'border-color 200ms var(--apple-ease-default), box-shadow 200ms var(--apple-ease-default)',
+  } as const,
+  primaryCta: {
+    width: '100%',
+    padding: '14px 20px',
+    background: '#0071e3',
+    color: '#ffffff',
+    fontFamily: 'var(--apple-font-text)',
+    fontSize: 15,
+    fontWeight: 600,
+    letterSpacing: 'var(--apple-track-tight)',
+    border: 'none',
+    borderRadius: 980,
+    cursor: 'pointer',
+    transition: 'background 200ms var(--apple-ease-default), opacity 200ms var(--apple-ease-default)',
+  } as const,
+  cancel: {
+    width: '100%',
+    background: 'transparent',
+    border: 'none',
+    padding: '8px 0',
+    fontFamily: 'var(--apple-font-text)',
+    fontSize: 13,
+    color: 'var(--apple-text-secondary)',
+    letterSpacing: 'var(--apple-track-tight)',
+    cursor: 'pointer',
+    transition: 'color 200ms var(--apple-ease-default)',
+  } as const,
+  closeBtn: {
+    width: 32,
+    height: 32,
+    display: 'inline-flex',
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    borderRadius: 980,
+    background: 'rgba(0, 0, 0, 0.05)',
+    color: 'var(--apple-text-secondary)',
+    border: 'none',
+    cursor: 'pointer',
+    transition: 'background 200ms var(--apple-ease-default), color 200ms var(--apple-ease-default)',
+  } as const,
+  error: {
+    background: '#fff5f5',
+    border: '1px solid rgba(220, 38, 38, 0.2)',
+    borderRadius: 12,
+    color: '#b42318',
+  } as const,
+  warning: {
+    background: '#fffaf0',
+    border: '1px solid rgba(217, 119, 6, 0.2)',
+    borderRadius: 12,
+    color: '#92400e',
+  } as const,
+} as const
+
+const APPLE_GREEN = '#16a34a'
+const APPLE_RED = '#dc2626'
 
 export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
   const t = useTranslations('sell-modal')
@@ -581,29 +729,29 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
     const proceeds = (fillAmount * fillPrice) / BigInt(1e18)
 
     return (
-      <div className={`${glass.section} p-4 space-y-2`}>
-        <p className="text-sm font-semibold text-text-primary">{t('fill_details.title')}</p>
+      <div className="p-4 space-y-2" style={apple.section}>
+        <p style={{ ...apple.bodyPrimary, fontSize: 14, fontWeight: 600 }}>{t('fill_details.title')}</p>
         <div className="text-xs font-mono space-y-1">
           <div className="flex justify-between">
-            <span className="text-text-muted">{t('fill_details.fill_price')}</span>
-            <span className="text-text-primary tabular-nums">${parseFloat(formatUnits(fillPrice, 18)).toFixed(4)}</span>
+            <span style={{ color: 'var(--apple-text-secondary)' }}>{t('fill_details.fill_price')}</span>
+            <span className="tabular-nums" style={{ color: 'var(--apple-text)' }}>${parseFloat(formatUnits(fillPrice, 18)).toFixed(4)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-text-muted">{t('fill_details.shares_sold')}</span>
-            <span className="text-text-primary tabular-nums">{parseFloat(formatUnits(fillAmount, 18)).toFixed(4)}</span>
+            <span style={{ color: 'var(--apple-text-secondary)' }}>{t('fill_details.shares_sold')}</span>
+            <span className="tabular-nums" style={{ color: 'var(--apple-text)' }}>{parseFloat(formatUnits(fillAmount, 18)).toFixed(4)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-text-muted">{t('fill_details.usdc_proceeds')}</span>
-            <span className="text-text-primary tabular-nums">${parseFloat(formatUnits(proceeds, COLLATERAL_DECIMALS)).toFixed(2)}</span>
+            <span style={{ color: 'var(--apple-text-secondary)' }}>{t('fill_details.usdc_proceeds')}</span>
+            <span className="tabular-nums" style={{ color: 'var(--apple-text)' }}>${parseFloat(formatUnits(proceeds, COLLATERAL_DECIMALS)).toFixed(2)}</span>
           </div>
           {costBasis && costBasis.avgCostPerShare > 0n && fillPrice > 0n && (() => {
             const costOfShares = (fillAmount * costBasis.avgCostPerShare) / BigInt(1e18)
             const pnl = proceeds - costOfShares
             const pnlPct = Number(costOfShares) > 0 ? Number(pnl) * 100 / Number(costOfShares) : 0
             return (
-              <div className="flex justify-between pt-1 border-t border-border-light">
-                <span className="text-text-muted">{t('fill_details.pnl_vs_cost')}</span>
-                <span className={pnl >= 0n ? 'text-color-up' : 'text-color-down'}>
+              <div className="flex justify-between pt-1" style={{ borderTop: '1px solid var(--apple-line)' }}>
+                <span style={{ color: 'var(--apple-text-secondary)' }}>{t('fill_details.pnl_vs_cost')}</span>
+                <span style={{ color: pnl >= 0n ? APPLE_GREEN : APPLE_RED }}>
                   {pnl >= 0n ? '+' : ''}${parseFloat(formatUnits(pnl, COLLATERAL_DECIMALS)).toFixed(2)} ({pnlPct >= 0 ? '+' : ''}{pnlPct.toFixed(1)}%)
                 </span>
               </div>
@@ -631,8 +779,8 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
           if (rows.length === 0) return null
           const anyApprox = rows.some(r => r.isApprox)
           return (
-            <div className="pt-3 border-t border-black/5">
-              <p className="text-[11px] uppercase tracking-wide text-text-muted mb-2">
+            <div className="pt-3" style={{ borderTop: '1px solid var(--apple-line)' }}>
+              <p className="mb-2" style={{ ...apple.caption, fontSize: 11 }}>
                 {t('fill_details.underlying_title')}
               </p>
               <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
@@ -640,26 +788,26 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
                   <div key={r.symbol} className="flex items-center justify-between text-xs">
                     <div className="flex items-center gap-2 min-w-0">
                       {r.image && <img src={r.image} alt="" className="w-4 h-4 rounded-full flex-shrink-0" />}
-                      <span className="font-mono text-text-primary truncate">{r.symbol}</span>
-                      <span className="text-text-muted tabular-nums">{(r.weight * 100).toFixed(1)}%</span>
+                      <span className="font-mono truncate" style={{ color: 'var(--apple-text)' }}>{r.symbol}</span>
+                      <span className="tabular-nums" style={{ color: 'var(--apple-text-tertiary)' }}>{(r.weight * 100).toFixed(1)}%</span>
                     </div>
                     <div className="flex items-center gap-3 font-mono tabular-nums">
-                      <span className="text-text-muted">
+                      <span style={{ color: 'var(--apple-text-secondary)' }}>
                         {r.price !== null
                           ? `$${r.price < 1 ? r.price.toFixed(4) : r.price.toFixed(2)}`
                           : '—'}
                       </span>
-                      <span className="text-text-primary">
+                      <span style={{ color: 'var(--apple-text)' }}>
                         {r.qtyAcquired < 1 ? r.qtyAcquired.toFixed(6) : r.qtyAcquired.toFixed(4)}
                       </span>
-                      <span className="text-text-muted w-16 text-right">
+                      <span className="w-16 text-right" style={{ color: 'var(--apple-text-tertiary)' }}>
                         {r.usd !== null ? `$${r.usd.toFixed(2)}` : '—'}
                       </span>
                     </div>
                   </div>
                 ))}
               </div>
-              <p className="text-[10px] text-text-muted mt-2">
+              <p className="mt-2" style={{ fontSize: 10, color: 'var(--apple-text-tertiary)' }}>
                 {t(anyApprox ? 'fill_details.underlying_note_approx' : 'fill_details.underlying_note')}
               </p>
             </div>
@@ -670,15 +818,40 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
   }
 
   return createPortal(
-    <SpringBackdrop className={glass.backdrop} onClick={handleClose}>
-      <SpringModal className={`${glass.modal} max-w-lg w-full`} onClick={e => e.stopPropagation()}>
-        <div className="p-4">
-          <div className="flex justify-between items-center mb-1">
-            <h2 className="text-lg font-semibold text-text-primary">{t('title', { name: itpName })}</h2>
-            <ModalClose onClick={handleClose} />
+    <SpringBackdrop
+      className="fixed inset-0 flex items-center justify-center z-50 p-4"
+      style={apple.backdrop}
+      onClick={handleClose}
+    >
+      <SpringModal
+        className="max-w-lg w-full max-h-[85dvh] overflow-y-auto pb-[env(safe-area-inset-bottom)]"
+        style={apple.modal}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-5">
+          <div className="flex justify-between items-start mb-1">
+            <h2 style={apple.title}>{t('title', { name: itpName })}</h2>
+            <button
+              onClick={handleClose}
+              style={apple.closeBtn}
+              aria-label={tc('aria.close')}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.08)'; e.currentTarget.style.color = 'var(--apple-text)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.05)'; e.currentTarget.style.color = 'var(--apple-text-secondary)' }}
+            >
+              <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
-          {itpSymbol && <p className="text-text-secondary mb-0.5 font-mono text-sm">${itpSymbol}</p>}
-          <Link href={`/${locale}/itp/${itpId}`} className="text-xs text-accent hover:underline inline-block mb-2" onClick={handleClose}>More details &rarr;</Link>
+          {itpSymbol && <p className="font-mono mb-1" style={apple.symbol}>${itpSymbol}</p>}
+          <Link
+            href={`/${locale}/itp/${itpId}`}
+            style={apple.link}
+            className="inline-block mb-3 hover:underline"
+            onClick={handleClose}
+          >
+            More details &rarr;
+          </Link>
 
           <InlineOhlcChart itpId={itpId} height={180} />
 
@@ -686,15 +859,15 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
             const vid = extractYouTubeId(videoUrl)
             if (!vid) return null
             return (
-              <div className="rounded-lg overflow-hidden mb-4">
+              <div className="overflow-hidden mb-4" style={{ borderRadius: 12 }}>
                 <YouTubeLite videoId={vid} title={itpName || 'DTF'} />
               </div>
             )
           })()}
 
           {!isConnected ? (
-            <div className={`${glass.section} p-8 text-center`}>
-              <p className="text-text-secondary">{tc('wallet.connect_to_sell')}</p>
+            <div className="p-8 text-center" style={apple.section}>
+              <p style={apple.body}>{tc('wallet.connect_to_sell')}</p>
             </div>
           ) : micro >= 0 ? (
             <div className="space-y-4">
@@ -710,15 +883,15 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
               {renderFillDetails()}
 
               {isDone && (
-                <div className={`${glass.section} p-4`}>
-                  <p className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-1">Proceeds on Settlement chain</p>
-                  <p className="text-sm text-text-secondary">USDC will arrive on your Settlement wallet shortly.</p>
+                <div className="p-4" style={apple.section}>
+                  <p className="mb-1" style={apple.caption}>Proceeds on Settlement chain</p>
+                  <p style={apple.body}>USDC will arrive on your Settlement wallet shortly.</p>
                 </div>
               )}
 
               {processStalled && micro >= SellMicro.RELAY && micro < SellMicro.DONE && (
-                <div className={`${glass.warning} p-3 text-amber-600 text-sm`}>
-                  <p className="font-medium">Processing taking longer than expected</p>
+                <div className="p-3" style={apple.warning}>
+                  <p className="font-medium text-sm">Processing taking longer than expected</p>
                   <p className="text-xs mt-1">Your sell order is submitted. Safe to close — it will complete in the background.</p>
                 </div>
               )}
@@ -726,53 +899,78 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
               {isDone ? (
                 <button
                   onClick={handleReset}
-                  className={glass.ctaDown}
+                  style={apple.primaryCta}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#0066cc' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#0071e3' }}
                 >
                   {t('sell_more')}
                 </button>
               ) : micro <= SellMicro.SUBMIT ? (
                 <button
                   onClick={handleCancel}
-                  className={glass.cancel}
+                  style={apple.cancel}
+                  onMouseEnter={e => { e.currentTarget.style.color = 'var(--apple-text)' }}
+                  onMouseLeave={e => { e.currentTarget.style.color = 'var(--apple-text-secondary)' }}
                 >
                   {tc('actions.cancel')}
                 </button>
               ) : null}
 
               {stuckWarning && (
-                <div className={`${glass.warning} p-3 text-amber-600 text-sm`}>
-                  <p className="font-medium">{tc('warnings.tx_stuck_title')}</p>
+                <div className="p-3" style={apple.warning}>
+                  <p className="font-medium text-sm">{tc('warnings.tx_stuck_title')}</p>
                   <p className="text-xs mt-1">{tc('warnings.tx_stuck_description')}</p>
                 </div>
               )}
 
               {txError && (
-                <div className={`${glass.error} p-4 text-color-down`}>
-                  <p className="font-medium">{t('error.title')}</p>
+                <div className="p-4" style={apple.error}>
+                  <p className="font-medium text-sm">{t('error.title')}</p>
                   <p className="text-sm mt-1 break-all">{txError}</p>
                 </div>
               )}
             </div>
           ) : (
-            <div className="space-y-2">
-              <div className={`${glass.section} p-3`}>
+            <div className="space-y-3">
+              <div className="p-3" style={apple.section}>
                 <div className="flex justify-between items-center">
-                  <span className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">{t('your_shares_label')}</span>
-                  <span className="text-2xl font-bold text-text-primary tabular-nums font-mono">{parseFloat(formatUnits(bridgedItpBalance, 18)).toFixed(4)}</span>
+                  <span style={apple.caption}>{t('your_shares_label')}</span>
+                  <span
+                    className="tabular-nums font-mono"
+                    style={{
+                      fontFamily: 'var(--apple-font-display)',
+                      fontSize: 24,
+                      fontWeight: 600,
+                      letterSpacing: 'var(--apple-track-tighter)',
+                      color: 'var(--apple-text)',
+                    }}
+                  >
+                    {parseFloat(formatUnits(bridgedItpBalance, 18)).toFixed(4)}
+                  </span>
                 </div>
                 {sharesDiagnosis && (
-                  <p className="text-xs text-color-down mt-2 leading-relaxed">{sharesDiagnosis}</p>
+                  <p className="text-xs mt-2 leading-relaxed" style={{ color: APPLE_RED }}>{sharesDiagnosis}</p>
                 )}
               </div>
 
               <>
-                  <div className={`${glass.section} p-3`}>
-                    <div className="flex justify-between items-center mb-1">
-                      <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">{t('shares_to_sell_label')}</label>
+                  <div className="p-3" style={apple.section}>
+                    <div className="flex justify-between items-center mb-2">
+                      <label style={apple.caption}>{t('shares_to_sell_label')}</label>
                       {bridgedItpBalance > 0n && (
                         <button
                           onClick={() => setAmount(formatUnits(bridgedItpBalance, 18))}
-                          className="text-xs font-mono font-bold text-text-secondary hover:text-text-primary transition-colors"
+                          className="font-mono"
+                          style={{
+                            fontFamily: 'var(--apple-font-text)',
+                            fontSize: 12,
+                            fontWeight: 600,
+                            letterSpacing: 'var(--apple-track-tight)',
+                            color: 'var(--apple-accent)',
+                            background: 'transparent',
+                            border: 'none',
+                            cursor: 'pointer',
+                          }}
                         >
                           {tc('actions.max')}
                         </button>
@@ -787,18 +985,20 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
                       min="0"
                       step="0.01"
                       disabled={bridgedItpBalance === 0n}
-                      className={glass.input}
+                      style={apple.input}
+                      onFocus={e => { e.currentTarget.style.borderColor = '#0071e3'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(0,113,227,0.15)' }}
+                      onBlur={e => { e.currentTarget.style.borderColor = 'var(--apple-line)'; e.currentTarget.style.boxShadow = 'none' }}
                     />
                     {insufficientShares && (
-                      <p className="text-color-down text-xs mt-1">{t('insufficient_shares')}</p>
+                      <p className="text-xs mt-2" style={{ color: APPLE_RED }}>{t('insufficient_shares')}</p>
                     )}
                   </div>
 
-                  <div className={`${glass.section} p-3`}>
-                    <div className="flex justify-between items-center mb-1">
-                      <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">{t('min_price_label')}</label>
+                  <div className="p-3" style={apple.section}>
+                    <div className="flex justify-between items-center mb-2">
+                      <label style={apple.caption}>{t('min_price_label')}</label>
                       {navPerShare > 0 && (
-                        <span className="text-xs text-text-secondary font-mono">
+                        <span className="font-mono" style={{ fontSize: 11, color: 'var(--apple-text-secondary)', letterSpacing: 'var(--apple-track-loose)' }}>
                           {t('nav_label', { nav: navPerShare.toFixed(6), priced: pricedAssetCount, total: totalAssetCount })}
                         </span>
                       )}
@@ -811,7 +1011,9 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
                       placeholder={isNavLoading ? t('computing_price') : navPerShare === 0 ? t('set_min_price') : t('no_limit')}
                       min="0"
                       step="0.01"
-                      className={glass.inputSm}
+                      style={apple.inputSm}
+                      onFocus={e => { e.currentTarget.style.borderColor = '#0071e3'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(0,113,227,0.15)' }}
+                      onBlur={e => { e.currentTarget.style.borderColor = 'var(--apple-line)'; e.currentTarget.style.boxShadow = 'none' }}
                     />
                   </div>
 
@@ -819,8 +1021,19 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
                     <button
                       type="button"
                       onClick={() => setShowSlippage(s => !s)}
-                      className="flex items-center gap-1.5 text-xs text-text-muted hover:text-text-primary transition-colors"
+                      className="flex items-center gap-1.5 transition-colors"
+                      style={{
+                        fontFamily: 'var(--apple-font-text)',
+                        fontSize: 12,
+                        color: 'var(--apple-text-secondary)',
+                        letterSpacing: 'var(--apple-track-tight)',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                      }}
                       title={t('slippage_label')}
+                      onMouseEnter={e => { e.currentTarget.style.color = 'var(--apple-text)' }}
+                      onMouseLeave={e => { e.currentTarget.style.color = 'var(--apple-text-secondary)' }}
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826-3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -830,18 +1043,25 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
                     </button>
                   </div>
                   {showSlippage && (
-                    <div className={`${glass.section} p-4`}>
-                      <label className="block text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-3">{t('slippage_label')}</label>
+                    <div className="p-4" style={apple.section}>
+                      <label className="block mb-3" style={apple.caption}>{t('slippage_label')}</label>
                       <div className="flex gap-2 fluid-btn-group">
                         {SLIPPAGE_TIERS.map(tier => (
                           <button
                             key={tier.value}
                             onClick={() => setSlippageTier(tier.value)}
-                            className={`flex-1 py-2 rounded-lg border text-sm font-mono transition-colors ${
-                              slippageTier === tier.value
-                                ? 'border-black/80 text-white bg-black/80'
-                                : 'border-black/10 text-text-muted bg-white/60 hover:border-black/20'
-                            }`}
+                            className="flex-1 font-mono transition-colors"
+                            style={{
+                              padding: '8px 0',
+                              borderRadius: 12,
+                              border: '1px solid',
+                              fontSize: 13,
+                              letterSpacing: 'var(--apple-track-tight)',
+                              borderColor: slippageTier === tier.value ? '#0071e3' : 'var(--apple-line)',
+                              color: slippageTier === tier.value ? '#ffffff' : 'var(--apple-text-secondary)',
+                              background: slippageTier === tier.value ? '#0071e3' : '#ffffff',
+                              cursor: 'pointer',
+                            }}
                           >
                             {tier.label}
                           </button>
@@ -852,12 +1072,12 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
 
                   {/* P&L Preview */}
                   {parsedAmount > 0n && costBasis && costBasis.avgCostPerShare > 0n && (
-                    <div className={`${glass.section} p-4 space-y-1`}>
-                      <p className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-2">{t('estimated_pnl.title')}</p>
+                    <div className="p-4 space-y-1" style={apple.section}>
+                      <p className="mb-2" style={apple.caption}>{t('estimated_pnl.title')}</p>
                       <div className="text-xs font-mono space-y-1">
                         <div className="flex justify-between">
-                          <span className="text-text-muted">{t('estimated_pnl.avg_cost_basis')}</span>
-                          <span className="text-text-primary tabular-nums">${parseFloat(formatUnits(costBasis.avgCostPerShare, 18)).toFixed(4)}/share</span>
+                          <span style={{ color: 'var(--apple-text-secondary)' }}>{t('estimated_pnl.avg_cost_basis')}</span>
+                          <span className="tabular-nums" style={{ color: 'var(--apple-text)' }}>${parseFloat(formatUnits(costBasis.avgCostPerShare, 18)).toFixed(4)}/share</span>
                         </div>
                         {navPerShareBn > 0n && (() => {
                           const estimatedProceeds = (parsedAmount * navPerShareBn) / BigInt(1e18)
@@ -867,16 +1087,16 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
                           return (
                             <>
                               <div className="flex justify-between">
-                                <span className="text-text-muted">{t('estimated_pnl.current_nav')}</span>
-                                <span className="text-text-primary tabular-nums">${navPerShare.toFixed(6)}/share</span>
+                                <span style={{ color: 'var(--apple-text-secondary)' }}>{t('estimated_pnl.current_nav')}</span>
+                                <span className="tabular-nums" style={{ color: 'var(--apple-text)' }}>${navPerShare.toFixed(6)}/share</span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-text-muted">{t('estimated_pnl.est_proceeds')}</span>
-                                <span className="text-text-primary tabular-nums">${parseFloat(formatUnits(estimatedProceeds, 18)).toFixed(2)}</span>
+                                <span style={{ color: 'var(--apple-text-secondary)' }}>{t('estimated_pnl.est_proceeds')}</span>
+                                <span className="tabular-nums" style={{ color: 'var(--apple-text)' }}>${parseFloat(formatUnits(estimatedProceeds, 18)).toFixed(2)}</span>
                               </div>
-                              <div className="flex justify-between pt-1 border-t border-border-light">
-                                <span className="text-text-muted">{t('estimated_pnl.est_pnl')}</span>
-                                <span className={estimatedPnL >= 0n ? 'text-color-up' : 'text-color-down'}>
+                              <div className="flex justify-between pt-1" style={{ borderTop: '1px solid var(--apple-line)' }}>
+                                <span style={{ color: 'var(--apple-text-secondary)' }}>{t('estimated_pnl.est_pnl')}</span>
+                                <span style={{ color: estimatedPnL >= 0n ? APPLE_GREEN : APPLE_RED }}>
                                   {estimatedPnL >= 0n ? '+' : ''}${parseFloat(formatUnits(estimatedPnL, 18)).toFixed(2)} ({pnlPct >= 0 ? '+' : ''}{pnlPct.toFixed(1)}%)
                                 </span>
                               </div>
@@ -888,8 +1108,8 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
                   )}
 
                   {hasNonceGap && (
-                    <div className={`${glass.warning} p-3 text-amber-600 text-sm`}>
-                      <p className="font-medium">{tc('warnings.pending_tx_title')}</p>
+                    <div className="p-3" style={apple.warning}>
+                      <p className="font-medium text-sm">{tc('warnings.pending_tx_title')}</p>
                       <p className="text-xs mt-1">{tc('warnings.pending_tx_description', { count: pendingCount })}</p>
                     </div>
                   )}
@@ -897,7 +1117,11 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
                   <WalletActionButton
                     onClick={needsApproval ? handleApprove : handleSell}
                     disabled={!amount || parsedAmount === 0n || insufficientShares || isPending || isConfirming || !bridgedItpAddress || hasNonceGap}
-                    className={glass.ctaDown}
+                    style={{
+                      ...apple.primaryCta,
+                      cursor: (!amount || parsedAmount === 0n || insufficientShares || isPending || isConfirming || hasNonceGap) ? 'not-allowed' : 'pointer',
+                      opacity: (!amount || parsedAmount === 0n || insufficientShares || isPending || isConfirming || hasNonceGap) ? 0.4 : 1,
+                    }}
                   >
                     {buttonText}
                   </WalletActionButton>
@@ -905,22 +1129,24 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
                   {(isPending || isConfirming) && (
                     <button
                       onClick={handleCancel}
-                      className={glass.cancel}
+                      style={apple.cancel}
+                      onMouseEnter={e => { e.currentTarget.style.color = 'var(--apple-text)' }}
+                      onMouseLeave={e => { e.currentTarget.style.color = 'var(--apple-text-secondary)' }}
                     >
                       {tc('actions.cancel')}
                     </button>
                   )}
 
                   {stuckWarning && (
-                    <div className={`${glass.warning} p-3 text-amber-600 text-sm`}>
-                      <p className="font-medium">Transaction may be stuck</p>
+                    <div className="p-3" style={apple.warning}>
+                      <p className="font-medium text-sm">Transaction may be stuck</p>
                       <p className="text-xs mt-1">Not confirmed after 30s. You can cancel and try again.</p>
                     </div>
                   )}
 
                   {txError && (
-                    <div className={`${glass.error} p-4 text-color-down`}>
-                      <p className="font-medium">{t('error.title')}</p>
+                    <div className="p-4" style={apple.error}>
+                      <p className="font-medium text-sm">{t('error.title')}</p>
                       <p className="text-sm mt-1 break-all">{txError}</p>
                     </div>
                   )}
