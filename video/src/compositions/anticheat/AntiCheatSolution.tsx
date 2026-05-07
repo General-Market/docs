@@ -45,11 +45,6 @@ const Headline: React.FC = () => {
     fps,
     config: { damping: 22, stiffness: 110, mass: 0.7 },
   });
-  const t2 = spring({
-    frame: frame - toFrames(0.6),
-    fps,
-    config: { damping: 22, stiffness: 100, mass: 0.8 },
-  });
 
   const lift = interpolate(
     frame,
@@ -63,8 +58,6 @@ const Headline: React.FC = () => {
     [1, 0.18],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
-
-  const isTerminal = frame >= TERMINAL_AT;
 
   return (
     <AbsoluteFill
@@ -127,20 +120,6 @@ const Headline: React.FC = () => {
             )}deg)`,
           }}
         />
-      </div>
-      <div
-        style={{
-          marginTop: 44,
-          fontFamily: font,
-          fontSize: 60,
-          fontWeight: 600,
-          letterSpacing: "-0.015em",
-          color: colors.fgSoft,
-          opacity: interpolate(t2, [0, 1], [0, 1]) * (isTerminal ? 0 : 1),
-          transform: `translateY(${interpolate(t2, [0, 1], [16, 0])}px)`,
-        }}
-      >
-        shield your pnl in 5 minutes from bad actors
       </div>
     </AbsoluteFill>
   );
@@ -348,7 +327,7 @@ const Terminal: React.FC = () => {
         }}
       >
         <span style={{ color: colors.accent, fontWeight: 800 }}>Shield</span>{" "}
-        your pnl in 5 minutes
+        your pnl from bad actors
       </div>
     </AbsoluteFill>
   );
