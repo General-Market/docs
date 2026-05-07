@@ -6,7 +6,7 @@ import {
   staticFile,
   useCurrentFrame,
 } from "remotion";
-import { font, monoFont } from "../../common/fonts";
+import { font } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 import { VerticalDotGrid } from "./DotGrid";
 import { IdleZoom, RevealChars } from "./vibe";
@@ -28,14 +28,12 @@ const ARTICLE_HOLD = toFrames(0.78);
 const GLITCH_AT = [toFrames(1.1), toFrames(2.85), toFrames(4.6)];
 const GLITCH_LEN = 6;
 
-const PROOF_GREEN = "#22d97a";
 const PROOF_GREEN_LIGHT = "#52ffa2";
 
 type Highlight = { x: number; y: number; w: number; h: number };
 
 type ArticleProof = {
   exchange: string;
-  category: string;
   image: string;
   highlights: Highlight[];      // yellow body highlight (insider-trading phrases)
   exchangeBox?: Highlight;       // green underline on the exchange name in title
@@ -49,48 +47,42 @@ type ArticleProof = {
 const ARTICLES: ArticleProof[] = [
   {
     exchange: "binance",
-    category: "perps",
     image: "insider-trading/articles/1.png",
     highlights: [{ x: 0.5737, y: 0.1383, w: 0.3183, h: 0.0453 }],
-    exchangeBox: { x: 0.04, y: 0.138, w: 0.175, h: 0.045 },
+    exchangeBox: { x: 0.0131, y: 0.1383, w: 0.1759, h: 0.0352 },
   },
   {
     exchange: "robinhood",
-    category: "options",
     image: "insider-trading/articles/9.png",
     highlights: [{ x: 0.4119, y: 0.1968, w: 0.2831, h: 0.042 }],
-    exchangeBox: { x: 0.215, y: 0.135, w: 0.175, h: 0.042 },
+    exchangeBox: { x: 0.1625, y: 0.1433, w: 0.2065, h: 0.0331 },
   },
   {
     exchange: "polymarket",
-    category: "predictions",
     image: "insider-trading/articles/3.png",
     highlights: [
       { x: 0.6467, y: 0.2828, w: 0.2445, h: 0.0273 },
       { x: 0.5126, y: 0.3313, w: 0.1197, h: 0.0281 },
     ],
-    exchangeBox: { x: 0.041, y: 0.283, w: 0.215, h: 0.035 },
+    exchangeBox: { x: 0.0540, y: 0.2828, w: 0.1998, h: 0.0359 },
   },
   {
     exchange: "pump.fun",
-    category: "launchpad",
     image: "insider-trading/articles/4.png",
     highlights: [{ x: 0.1253, y: 0.5158, w: 0.2653, h: 0.0487 }],
-    exchangeBox: { x: 0.048, y: 0.428, w: 0.305, h: 0.055 },
+    exchangeBox: { x: 0.0414, y: 0.4601, w: 0.3163, h: 0.0386 },
   },
   {
     exchange: "kalshi",
-    category: "predictions",
     image: "insider-trading/articles/6.png",
     highlights: [{ x: 0.4819, y: 0.176, w: 0.216, h: 0.0303 }],
-    exchangeBox: { x: 0.052, y: 0.176, w: 0.085, h: 0.030 },
+    exchangeBox: { x: 0.0249, y: 0.1760, w: 0.0964, h: 0.0279 },
   },
   {
     exchange: "coinbase",
-    category: "crypto",
     image: "insider-trading/articles/7.png",
     highlights: [{ x: 0.2453, y: 0.4009, w: 0.3414, h: 0.0417 }],
-    exchangeBox: { x: 0.585, y: 0.30, w: 0.245, h: 0.04 },
+    exchangeBox: { x: 0.5953, y: 0.3042, w: 0.2109, h: 0.0346 },
   },
 ];
 
@@ -137,16 +129,7 @@ export const AntiCheatRigged: React.FC = () => {
             gap: 32,
           }}
         >
-          {/* Line 1: category label with green underline (re-mounts per article) */}
-          {currentArticle && (
-            <ExchangeLabel
-              key={articleIdx}
-              name={currentArticle.category}
-              startFrame={articleStartFrame}
-            />
-          )}
-
-          {/* Line 2: "is rigged" — char-slammed in, glitch flickers thrice */}
+          {/* "is rigged" — two lines, char-slammed in, glitch flickers thrice */}
           <div
             style={{
               transform: `scale(${verdictPulse})`,
@@ -189,24 +172,39 @@ export const AntiCheatRigged: React.FC = () => {
 const GlitchVerdict: React.FC<{ glitch: number }> = ({ glitch }) => {
   const baseStyle: React.CSSProperties = {
     fontFamily: font,
-    fontSize: 168,
+    fontSize: 232,
     fontWeight: 800,
     letterSpacing: "-0.05em",
     lineHeight: 0.92,
     whiteSpace: "nowrap",
   };
-  const ghostShift = 8 * glitch;
+  const ghostShift = 10 * glitch;
   const ghostOpacity = 0.7 * glitch;
   const reveal = (
-    <RevealChars
-      text="is rigged"
-      startFrame={TITLE_IN}
-      stagger={2.0}
-      duration={9}
-      y={26}
-      blur={6}
-      scale={0.82}
-    />
+    <>
+      <div>
+        <RevealChars
+          text="is"
+          startFrame={TITLE_IN}
+          stagger={2.0}
+          duration={9}
+          y={26}
+          blur={6}
+          scale={0.82}
+        />
+      </div>
+      <div>
+        <RevealChars
+          text="rigged"
+          startFrame={TITLE_IN + 6}
+          stagger={2.0}
+          duration={9}
+          y={26}
+          blur={6}
+          scale={0.82}
+        />
+      </div>
+    </>
   );
 
   return (
@@ -255,65 +253,9 @@ const GlitchVerdict: React.FC<{ glitch: number }> = ({ glitch }) => {
   );
 };
 
-// ─── Exchange label: name + green underline drawing left → right ──────────────
-
-const ExchangeLabel: React.FC<{ name: string; startFrame: number }> = ({
-  name,
-  startFrame,
-}) => {
-  const frame = useCurrentFrame();
-  const local = frame - startFrame;
-
-  // Snap-in: scale punch in 4 frames so the cut feels alive.
-  const punchT = Math.max(0, Math.min(1, local / 4));
-  const punchScale = interpolate(punchT, [0, 1], [1.06, 1]);
-  const punchOpacity = interpolate(punchT, [0, 1], [0.35, 1]);
-
-  // Underline draws over 12 frames after a brief delay.
-  const lineT = Math.max(0, Math.min(1, (local - 1) / 12));
-  const lineEased = 1 - Math.pow(1 - lineT, 3);
-
-  return (
-    <div style={{ display: "inline-block" }}>
-      <div
-        style={{
-          fontFamily: monoFont,
-          fontSize: 78,
-          fontWeight: 500,
-          letterSpacing: "0.01em",
-          color: PROOF_GREEN,
-          lineHeight: 1,
-          textShadow: "0 0 22px rgba(34,217,122,0.45)",
-          opacity: punchOpacity,
-          transform: `scale(${punchScale})`,
-          transformOrigin: "left center",
-          position: "relative",
-          paddingBottom: 14,
-          whiteSpace: "nowrap",
-        }}
-      >
-        {name}
-        {/* Green underline */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            width: `${lineEased * 100}%`,
-            height: 6,
-            background: PROOF_GREEN,
-            borderRadius: 3,
-            boxShadow: `0 0 14px ${PROOF_GREEN}`,
-          }}
-        />
-      </div>
-    </div>
-  );
-};
-
 // ─── Article flash: hard-cut entry, big size, yellow highlighter restored ─────
 
-const ARTICLE_HEIGHT = 880;
+const ARTICLE_HEIGHT = 1020;
 
 const ArticleFlash: React.FC<{
   article: ArticleProof;
@@ -334,10 +276,10 @@ const ArticleFlash: React.FC<{
     <div
       style={{
         position: "absolute",
-        right: 60,
+        right: 40,
         top: "50%",
         transform: "translateY(-50%)",
-        width: 1080,
+        width: 1200,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -347,7 +289,7 @@ const ArticleFlash: React.FC<{
         style={{
           position: "relative",
           background: "#ffffff",
-          padding: 22,
+          padding: 24,
           borderRadius: 14,
           boxShadow:
             "0 0 0 1px rgba(10,12,18,0.16), 0 24px 56px rgba(10,12,18,0.20)",
@@ -361,7 +303,7 @@ const ArticleFlash: React.FC<{
             style={{
               height: ARTICLE_HEIGHT,
               width: "auto",
-              maxWidth: 1040,
+              maxWidth: 1160,
               objectFit: "contain",
               display: "block",
               borderRadius: 4,
