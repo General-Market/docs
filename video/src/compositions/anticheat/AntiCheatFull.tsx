@@ -29,7 +29,7 @@ import {
 //   Hook → Bars         snap-zoom in        26f   fg 1→1.45  bg 1→1.06
 //   Bars → Rigged       HARD CUT
 //   Rigged → Stat       snap-zoom intense   24f   fg 1→1.65  bg pulls back
-//   Stat → Solution     snap-zoom out + veil 42f  fg 1→0.72  ← music dies
+//   Stat → Solution     snap-zoom out + veil 42f  fg 1→0.72
 //   Solution → Reassure soft snap           28f   fg 1→1.22  bg ~still
 //   Reassure → Bridge   soft snap           28f   fg 1→1.18  bg ~still
 //   Bridge → EndCard    long pull           34f   fg 1→0.82  bg ~still
@@ -59,16 +59,10 @@ const TOTAL_FRAMES =
   antiCheatEndCardMeta.durationInFrames -
   TRANSITION_FRAMES;
 
-// Music covers Hook + Bars + Rigged + Stat in the new (shorter) timeline.
-// Two transitions land before Stat ends — Hook→Bars and Rigged→Stat.
-const MUSIC_FRAMES =
-  antiCheatHookMeta.durationInFrames +
-  antiCheatBarsMeta.durationInFrames +
-  antiCheatRiggedMeta.durationInFrames +
-  antiCheatStatMeta.durationInFrames -
-  T_HOOK_BARS -
-  T_RIGGED_STAT;
-const MUSIC_FADE_OUT = Math.round(FPS * 0.8);
+// Music runs the full length of the cut. Fades in fast, fades out into
+// the end card.
+const MUSIC_FRAMES = TOTAL_FRAMES;
+const MUSIC_FADE_OUT = Math.round(FPS * 1.2);
 const MUSIC_VOLUME = 0.55;
 
 export const AntiCheatFull: React.FC = () => {
@@ -76,7 +70,7 @@ export const AntiCheatFull: React.FC = () => {
     <AbsoluteFill style={{ backgroundColor: colors.bg }}>
       <Sequence from={0} durationInFrames={MUSIC_FRAMES}>
         <Audio
-          src={staticFile("anticheat-bed.mp3")}
+          src={staticFile("music/twitter/Dagored - The Dead Man's March (freetouse.com).mp3")}
           loop
           volume={(frame) =>
             interpolate(
