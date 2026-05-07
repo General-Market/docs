@@ -390,7 +390,11 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
         uint256 referenceNonce,
         uint256 signersBitmask
     ) external {
-        if (!cycleProcessed[cycleNumber]) revert ErrorsLib.E128_CycleNotConfirmed(cycleNumber);
+        // cycleProcessed gate removed 2026-05-07: Wave 3.4 fast-path lets confirmFills accept
+        // PENDING orders without confirmBatch, leaving cycleProcessed[cycle]=false even after
+        // shares mint. The BLS signature already proves oracle quorum; assetTradesEmitted
+        // prevents replay. Cycle does not need to be "confirmed" for asset-trade emission
+        // to be safe — it just needs oracle consensus, which the BLS sig provides.
         if (assetTradesEmitted[cycleNumber]) revert ErrorsLib.E019_CycleAlreadyProcessed(cycleNumber);
 
         bytes32 message = keccak256(abi.encode(
