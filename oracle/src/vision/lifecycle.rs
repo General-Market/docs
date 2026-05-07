@@ -673,9 +673,13 @@ impl BatchLifecycleManager {
                     continue;
                 };
 
-            if end_price == 0 {
-                continue;
-            }
+            // 0 is a valid value for counter-style sources (no outages, no
+            // volcano alerts, no charging sessions). Skipping them here
+            // means the resolver later returns "no price data" and the
+            // entire market cancels — which is what made power_outages,
+            // volcano, tomtom_evcharge etc. settle 100% Cancelled. Keep the
+            // entry; let resolution_from_median compute Flat/Up/Down from
+            // the (start, end) pair.
 
             // Start price: prefer stored snapshot, fall back to change_pct derivation.
             // If start_prices exist but this specific asset is missing, use change_pct
