@@ -20,12 +20,20 @@ const RADIUS = (RING_DIAMETER - STROKE) / 2
 const CIRC = 2 * Math.PI * RADIUS
 
 export function GeneralLoader({ height = '60vh', caption }: GeneralLoaderProps) {
+  // Translate viewport heights to dynamic viewport units so the wordmark
+  // sits at the visual centre even when iOS Safari's URL bar is showing.
+  const minHeight =
+    typeof height === 'number'
+      ? `${height}px`
+      : height === '100vh' || height === '60vh' || height === '50vh'
+        ? height.replace('vh', 'dvh')
+        : height
   return (
     <div
       role="status"
       aria-label="Loading"
       style={{
-        minHeight: typeof height === 'number' ? `${height}px` : height,
+        minHeight,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',

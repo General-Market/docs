@@ -92,6 +92,17 @@ function PhoneScene({
   useEffect(() => {
     const iphone = gltf.scene.getObjectByName('iphone')
     if (!iphone) return
+    // Pin the group to identity BEFORE measuring so the screen mesh's
+    // world matrix isn't already offset by useFrame's scroll lerp.
+    // Without this the menu drifts away from the phone on devices that
+    // start with a non-zero scroll position (mobile Safari).
+    const g = groupRef.current
+    if (g) {
+      g.position.set(0, 0, 0)
+      g.rotation.set(0, 0, 0)
+      g.scale.set(1, 1, 1)
+      g.updateMatrixWorld(true)
+    }
     const ours = new Set<THREE.Object3D>()
     iphone.traverse((c) => ours.add(c))
     gltf.scene.traverse((child) => {
@@ -100,7 +111,8 @@ function PhoneScene({
     iphone.position.set(0, 0, 0)
     iphone.quaternion.identity()
     iphone.scale.setScalar(22.486)
-    iphone.updateMatrixWorld(true)
+    // Update the entire scene tree so ancestor matrices are fresh too.
+    gltf.scene.updateMatrixWorld(true)
 
     // Measure the actual screen face from the GLB so the Html overlay
     // is bezel-perfect, not eyeballed. If the texture fingerprint fails
@@ -245,7 +257,7 @@ export function PhoneLinktree() {
           position: sticky;
           top: 0;
           width: 100%;
-          height: 100vh;
+          height: 100dvh;
           z-index: 1;
         }
         .lt-stage canvas { touch-action: pan-y; }
@@ -256,6 +268,7 @@ export function PhoneLinktree() {
           background: radial-gradient(70% 60% at 50% 38%, #ffffff 0%, #f4f4f6 65%, #ececef 100%);
           z-index: 50;
           display: grid; place-items: center;
+          height: 100dvh;
           transition: opacity 380ms cubic-bezier(0.4, 0, 0.6, 1);
         }
       `}</style>

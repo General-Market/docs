@@ -110,56 +110,70 @@ export function LinkMenu() {
           position: absolute;
           top: 0; left: 0; right: 0;
           height: 54px;
-          padding: 18px 30px 0;
+          padding: 16px 26px 0;
           display: flex;
           justify-content: space-between;
-          align-items: flex-start;
-          font-size: 16px;
+          align-items: center;
+          color: #1d1d1f;
+          z-index: 2;
+        }
+        .lt-time {
+          font-family: var(--apple-font-display, "SF Pro Display", -apple-system, system-ui, sans-serif);
+          font-size: 17px;
           font-weight: 600;
           letter-spacing: -0.022em;
-          color: #1d1d1f;
           font-variant-numeric: tabular-nums;
-          background:
-            linear-gradient(180deg, rgba(255,255,255,0.72) 0%, rgba(255,255,255,0.32) 100%);
-          -webkit-backdrop-filter: saturate(180%) blur(22px);
-          backdrop-filter: saturate(180%) blur(22px);
-          box-shadow:
-            inset 0 1px 0 rgba(255,255,255,0.85),
-            inset 0 -0.5px 0 rgba(0,0,0,0.05),
-            0 1px 0 rgba(0,0,0,0.04);
-          z-index: 2;
+          line-height: 1;
+          padding-left: 4px;
         }
         .lt-status-right {
           display: inline-flex;
-          gap: 7px;
+          gap: 6px;
           align-items: center;
+          padding-right: 4px;
         }
-        .lt-status-right svg { color: #1d1d1f; }
-        /* Dynamic island — subtle pill below the status bar */
+        .lt-status-right svg { color: #1d1d1f; display: block; }
+        /* Dynamic island — black pill with the camera lens dot, like
+           iPhone 14 Pro and later. Positioned over the status bar. */
         .lt-island {
           position: absolute;
-          top: 14px; left: 50%;
+          top: 11px; left: 50%;
           transform: translateX(-50%);
-          width: 110px; height: 30px;
+          width: 118px; height: 35px;
           border-radius: 999px;
-          background: #0a0a0a;
+          background:
+            radial-gradient(60% 80% at 50% 30%, #1a1a1a 0%, #050505 100%);
           box-shadow:
-            inset 0 0.5px 0 rgba(255,255,255,0.06),
+            inset 0 0.5px 0 rgba(255,255,255,0.08),
+            inset 0 -0.5px 0 rgba(0,0,0,0.6),
             0 1px 2px rgba(0,0,0,0.18);
           z-index: 3;
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          padding-right: 10px;
+        }
+        .lt-island-cam {
+          width: 11px; height: 11px;
+          border-radius: 50%;
+          background:
+            radial-gradient(circle at 35% 35%, #2c3a4a 0%, #0a0e14 60%, #000 100%);
+          box-shadow:
+            inset 0 0 0 1.5px #060708,
+            inset 0 0 2px 0 rgba(60,80,110,0.6);
         }
         /* Liquid-glass home indicator */
         .lt-home {
           position: absolute;
-          bottom: 18px; left: 50%;
+          bottom: 9px; left: 50%;
           transform: translateX(-50%);
-          width: 134px; height: 5px;
+          width: 140px; height: 5px;
           border-radius: 999px;
           background: linear-gradient(180deg, #1d1d1f 0%, #2a2a2c 100%);
           box-shadow:
             inset 0 0.5px 0 rgba(255,255,255,0.18),
             0 0.5px 1px rgba(0,0,0,0.12);
-          z-index: 2;
+          z-index: 4;
         }
         .lt-avatar {
           width: 96px; height: 96px;
@@ -211,22 +225,32 @@ export function LinkMenu() {
       `}</style>
 
       <div className="lt-status">
-        <span>9:41</span>
+        <span className="lt-time">9:41</span>
         <span className="lt-status-right">
-          <svg width="18" height="12" viewBox="0 0 18 12" fill="none" aria-hidden>
-            <rect x="1" y="3" width="2" height="6" rx="0.5" fill="currentColor" />
-            <rect x="5" y="2" width="2" height="8" rx="0.5" fill="currentColor" />
-            <rect x="9" y="1" width="2" height="10" rx="0.5" fill="currentColor" />
-            <rect x="13" y="0" width="2" height="12" rx="0.5" fill="currentColor" />
+          {/* Cellular signal — 4 ascending bars */}
+          <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor" aria-hidden>
+            <rect x="0" y="7" width="3" height="4" rx="0.8" />
+            <rect x="4.7" y="5" width="3" height="6" rx="0.8" />
+            <rect x="9.3" y="2.5" width="3" height="8.5" rx="0.8" />
+            <rect x="14" y="0" width="3" height="11" rx="0.8" />
           </svg>
-          <svg width="16" height="12" viewBox="0 0 16 12" fill="none" aria-hidden>
-            <rect x="0.5" y="2.5" width="11" height="6" rx="1.4" stroke="currentColor" />
-            <rect x="2" y="4" width="8" height="3" fill="currentColor" />
-            <rect x="12.5" y="4.5" width="1" height="3" rx="0.4" fill="currentColor" />
+          {/* Wi-Fi — 3 nested arcs above a dot */}
+          <svg width="16" height="11" viewBox="0 0 16 11" fill="currentColor" aria-hidden>
+            <path d="M8 0C5.16 0 2.55 0.99 0.5 2.65L1.95 4.27C3.61 2.94 5.71 2.14 8 2.14C10.29 2.14 12.39 2.94 14.05 4.27L15.5 2.65C13.45 0.99 10.84 0 8 0Z" />
+            <path d="M8 3.5C6.18 3.5 4.51 4.18 3.22 5.32L4.67 6.95C5.59 6.13 6.74 5.64 8 5.64C9.26 5.64 10.41 6.13 11.33 6.95L12.78 5.32C11.49 4.18 9.82 3.5 8 3.5Z" />
+            <path d="M8 7C6.95 7 6 7.41 5.32 8.07L8 11L10.68 8.07C10 7.41 9.05 7 8 7Z" />
+          </svg>
+          {/* Battery — rounded body, fill, terminal nub */}
+          <svg width="27" height="13" viewBox="0 0 27 13" fill="none" aria-hidden>
+            <rect x="0.5" y="0.5" width="22" height="11.5" rx="3" stroke="currentColor" strokeOpacity="0.4" />
+            <rect x="2" y="2" width="19" height="8.5" rx="1.6" fill="currentColor" />
+            <path d="M24.5 4.4v4.2" stroke="currentColor" strokeOpacity="0.4" strokeWidth="1.4" strokeLinecap="round" />
           </svg>
         </span>
       </div>
-      <div className="lt-island" aria-hidden />
+      <div className="lt-island" aria-hidden>
+        <span className="lt-island-cam" aria-hidden />
+      </div>
 
       <div className="lt-avatar" aria-label="General Market">
         <Image src="/logo.svg" alt="" width={96} height={96} priority />
