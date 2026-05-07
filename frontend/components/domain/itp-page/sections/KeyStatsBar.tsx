@@ -8,11 +8,57 @@ function asOfToday(locale?: string) {
   return new Date().toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-function Skeleton() {
-  return <div className="animate-pulse bg-gray-200 h-9 w-28 rounded" />
+const labelStyle = {
+  fontFamily: 'var(--apple-font-text)',
+  fontSize: '11px',
+  fontWeight: 600,
+  textTransform: 'uppercase' as const,
+  letterSpacing: 'var(--apple-track-loose)',
+  color: 'var(--apple-text-tertiary)',
 }
 
-export function KeyStatsBar({ itpId, nav, aum, assetCount, sinceInception }: SectionProps) {
+const subStyle = {
+  fontFamily: 'var(--apple-font-text)',
+  fontSize: '11px',
+  letterSpacing: 'var(--apple-track-tight)',
+  color: 'var(--apple-text-tertiary)',
+  marginTop: 2,
+}
+
+const valueStyle = {
+  fontFamily: 'var(--apple-font-display)',
+  fontSize: 'clamp(24px, 2.4vw, 32px)',
+  fontWeight: 600,
+  letterSpacing: 'var(--apple-track-tight)',
+  color: 'var(--apple-text)',
+  fontVariantNumeric: 'tabular-nums' as const,
+  lineHeight: 1.1,
+  marginTop: 8,
+}
+
+const tileStyle = {
+  background: 'var(--apple-panel)',
+  border: '1px solid var(--apple-line)',
+  borderRadius: 'var(--apple-r-md)',
+  padding: 20,
+}
+
+function Skeleton() {
+  return (
+    <div
+      className="animate-pulse"
+      style={{
+        height: 30,
+        width: 120,
+        background: 'var(--apple-panel-2)',
+        borderRadius: 6,
+        marginTop: 8,
+      }}
+    />
+  )
+}
+
+export function KeyStatsBar({ itpId, nav, aum, assetCount }: SectionProps) {
   const t = useTranslations('markets.itp_page.key_stats')
   const locale = useLocale()
   const { data: dayData } = useItpNavSeries(itpId, '5m')
@@ -28,85 +74,48 @@ export function KeyStatsBar({ itpId, nav, aum, assetCount, sinceInception }: Sec
   }
 
   const asOf = asOfToday(locale)
+  const changeColor = change1d == null
+    ? 'var(--apple-text-tertiary)'
+    : change1d >= 0 ? '#16a34a' : '#dc2626'
 
   return (
-    <div className="py-6">
-      {/* Desktop: horizontal with dividers */}
-      <div className="hidden md:flex items-start divide-x divide-border-light">
-        {/* NAV / Share */}
-        <div className="pr-6">
-          <div className="text-xs text-text-secondary mb-0.5">{t('nav_per_share')}</div>
-          <div className="text-micro text-text-muted">{t('as_of', { date: asOf })}</div>
+    <div className="py-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+        <div style={tileStyle}>
+          <div style={labelStyle}>{t('nav_per_share')}</div>
+          <div style={subStyle}>{t('as_of', { date: asOf })}</div>
           {nav > 0 ? (
-            <div className="text-3xl font-bold tabular-nums mt-1">${nav.toFixed(4)}</div>
+            <div style={valueStyle}>${nav.toFixed(4)}</div>
           ) : (
-            <div className="mt-1"><Skeleton /></div>
+            <Skeleton />
           )}
         </div>
 
-        {/* 1 Day NAV Change */}
-        <div className="px-6">
-          <div className="text-xs text-text-secondary mb-0.5">{t('one_day_nav_change')}</div>
-          <div className="text-micro text-text-muted">{t('as_of', { date: asOf })}</div>
+        <div style={tileStyle}>
+          <div style={labelStyle}>{t('one_day_nav_change')}</div>
+          <div style={subStyle}>{t('as_of', { date: asOf })}</div>
           {change1d != null && change1dAbs != null ? (
-            <div className={`text-xl font-bold tabular-nums mt-1 ${change1d >= 0 ? 'text-color-up' : 'text-color-down'}`}>
-              {change1d >= 0 ? '▲' : '▼'} {change1dAbs >= 0 ? '+' : ''}{change1dAbs.toFixed(4)} ({change1d >= 0 ? '+' : ''}{change1d.toFixed(2)}%)
+            <div style={{ ...valueStyle, color: changeColor }}>
+              {change1dAbs >= 0 ? '+' : ''}{change1dAbs.toFixed(4)}
+              <span style={{ fontSize: '0.6em', marginLeft: 8, color: changeColor, fontWeight: 500 }}>
+                ({change1d >= 0 ? '+' : ''}{change1d.toFixed(2)}%)
+              </span>
             </div>
           ) : (
-            <div className="text-xl font-bold tabular-nums mt-1 text-text-muted">—</div>
+            <div style={{ ...valueStyle, color: 'var(--apple-text-tertiary)' }}>—</div>
           )}
         </div>
 
-        {/* Total Value Locked */}
-        <div className="px-6">
-          <div className="text-xs text-text-secondary mb-0.5">{t('total_value_locked')}</div>
-          <div className="text-micro text-text-muted">{t('as_of', { date: asOf })}</div>
-          <div className="text-xl font-bold tabular-nums mt-1">
-            {aum > 0 ? formatUsd(aum) : '—'}
-          </div>
+        <div style={tileStyle}>
+          <div style={labelStyle}>{t('total_value_locked')}</div>
+          <div style={subStyle}>{t('as_of', { date: asOf })}</div>
+          <div style={valueStyle}>{aum > 0 ? formatUsd(aum) : '—'}</div>
         </div>
 
-        {/* Holdings */}
-        <div className="pl-6">
-          <div className="text-xs text-text-secondary mb-0.5">{t('holdings')}</div>
-          <div className="text-micro text-text-muted">{t('as_of', { date: asOf })}</div>
-          <div className="text-xl font-bold tabular-nums mt-1">
-            {assetCount > 0 ? assetCount : '—'}
-          </div>
-        </div>
-      </div>
-
-      {/* Mobile: 2-col grid */}
-      <div className="grid grid-cols-2 gap-4 md:hidden">
-        <div className="border-b border-border-light pb-4">
-          <div className="text-xs text-text-secondary mb-0.5">{t('nav_per_share')}</div>
-          <div className="text-micro text-text-muted">{t('as_of', { date: asOf })}</div>
-          {nav > 0 ? (
-            <div className="text-2xl font-bold tabular-nums mt-1">${nav.toFixed(4)}</div>
-          ) : (
-            <div className="mt-1"><Skeleton /></div>
-          )}
-        </div>
-        <div className="border-b border-border-light pb-4">
-          <div className="text-xs text-text-secondary mb-0.5">{t('one_day_nav_change')}</div>
-          <div className="text-micro text-text-muted">{t('as_of', { date: asOf })}</div>
-          {change1d != null ? (
-            <div className={`text-lg font-bold tabular-nums mt-1 ${change1d >= 0 ? 'text-color-up' : 'text-color-down'}`}>
-              {change1d >= 0 ? '+' : ''}{change1d.toFixed(2)}%
-            </div>
-          ) : (
-            <div className="text-lg font-bold tabular-nums mt-1 text-text-muted">—</div>
-          )}
-        </div>
-        <div className="border-b border-border-light pb-4">
-          <div className="text-xs text-text-secondary mb-0.5">{t('total_value_locked')}</div>
-          <div className="text-micro text-text-muted">{t('as_of', { date: asOf })}</div>
-          <div className="text-lg font-bold tabular-nums mt-1">{aum > 0 ? formatUsd(aum) : '—'}</div>
-        </div>
-        <div className="border-b border-border-light pb-4">
-          <div className="text-xs text-text-secondary mb-0.5">{t('holdings')}</div>
-          <div className="text-micro text-text-muted">{t('as_of', { date: asOf })}</div>
-          <div className="text-lg font-bold tabular-nums mt-1">{assetCount > 0 ? assetCount : '—'}</div>
+        <div style={tileStyle}>
+          <div style={labelStyle}>{t('holdings')}</div>
+          <div style={subStyle}>{t('as_of', { date: asOf })}</div>
+          <div style={valueStyle}>{assetCount > 0 ? assetCount : '—'}</div>
         </div>
       </div>
     </div>

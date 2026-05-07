@@ -144,14 +144,22 @@ export default async function ItpPage({ params }: Props) {
         }}
       />
 
-      <div className="px-6 lg:px-12 py-8">
+      <div className="px-4 sm:px-6 lg:px-10 py-6 lg:py-10">
         <div className="max-w-6xl mx-auto">
-          <nav className="text-sm text-text-muted mb-4">
-            <Link href="/" className="hover:text-text-primary transition-colors">{tBreadcrumbs('home')}</Link>
-            <span className="mx-2">/</span>
-            <Link href="/index" className="hover:text-text-primary transition-colors">{tBreadcrumbs('markets')}</Link>
-            <span className="mx-2">/</span>
-            <span className="text-text-primary">{data.name}</span>
+          <nav
+            className="mb-6"
+            style={{
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: 'var(--apple-fs-12)',
+              letterSpacing: 'var(--apple-track-tight)',
+              color: 'var(--apple-text-tertiary)',
+            }}
+          >
+            <Link href="/" style={{ color: 'var(--apple-text-secondary)' }}>{tBreadcrumbs('home')}</Link>
+            <span style={{ margin: '0 8px', color: 'var(--apple-text-tertiary)' }}>/</span>
+            <Link href="/index" style={{ color: 'var(--apple-text-secondary)' }}>{tBreadcrumbs('markets')}</Link>
+            <span style={{ margin: '0 8px', color: 'var(--apple-text-tertiary)' }}>/</span>
+            <span style={{ color: 'var(--apple-text)' }}>{data.name}</span>
           </nav>
 
           <ItpPageClient
@@ -164,7 +172,16 @@ export default async function ItpPage({ params }: Props) {
             enrichment={enrichment}
           />
 
-          <p className="mt-12 text-label text-text-muted leading-relaxed">
+          <p
+            className="mt-12"
+            style={{
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: '11px',
+              lineHeight: 1.5,
+              color: 'var(--apple-text-tertiary)',
+              letterSpacing: 'var(--apple-track-tight)',
+            }}
+          >
             {t('disclaimer')}
           </p>
         </div>

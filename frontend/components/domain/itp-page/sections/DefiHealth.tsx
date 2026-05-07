@@ -11,9 +11,13 @@ function formatTvl(v: number): string {
 }
 
 function PctChange({ value }: { value?: number }) {
-  if (value == null) return <span className="text-text-muted">—</span>
-  const color = value >= 0 ? 'text-color-up' : 'text-color-down'
-  return <span className={`font-mono tabular-nums ${color}`}>{value >= 0 ? '+' : ''}{value.toFixed(2)}%</span>
+  if (value == null) return <span style={{ color: 'var(--apple-text-tertiary)' }}>—</span>
+  const color = value >= 0 ? '#16a34a' : '#dc2626'
+  return (
+    <span style={{ fontVariantNumeric: 'tabular-nums', color, fontFamily: 'var(--apple-font-text)' }}>
+      {value >= 0 ? '+' : ''}{value.toFixed(2)}%
+    </span>
+  )
 }
 
 export function DefiHealth({ enrichment }: SectionProps) {
@@ -22,28 +26,82 @@ export function DefiHealth({ enrichment }: SectionProps) {
   if (!defi) return null
 
   const cards = [
-    { label: t('aggregate_tvl'), value: formatTvl(defi.total_tvl) },
+    { label: t('aggregate_tvl'), value: formatTvl(defi.total_tvl), color: 'var(--apple-text)' },
     {
       label: t('avg_tvl_change_7d'),
       value: `${defi.avg_tvl_change_7d >= 0 ? '+' : ''}${defi.avg_tvl_change_7d.toFixed(2)}%`,
-      color: defi.avg_tvl_change_7d >= 0 ? 'text-color-up' : 'text-color-down',
+      color: defi.avg_tvl_change_7d >= 0 ? '#16a34a' : '#dc2626',
     },
-    { label: t('coverage'), value: t('coverage_value', { with_data: defi.protocols_with_data, total: defi.total_holdings }) },
+    {
+      label: t('coverage'),
+      value: t('coverage_value', { with_data: defi.protocols_with_data, total: defi.total_holdings }),
+      color: 'var(--apple-text)',
+    },
   ]
 
+  const subHead = {
+    fontFamily: 'var(--apple-font-text)',
+    fontSize: '11px',
+    fontWeight: 600,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 'var(--apple-track-loose)',
+    color: 'var(--apple-text-tertiary)',
+  }
+
+  const headerCellStyle = {
+    ...subHead,
+    padding: '12px 16px',
+    background: 'var(--apple-panel-2)',
+    borderBottom: '1px solid var(--apple-line)',
+  }
+
+  const tdStyle = {
+    fontFamily: 'var(--apple-font-text)',
+    fontSize: 'var(--apple-fs-14)',
+    color: 'var(--apple-text)',
+    letterSpacing: 'var(--apple-track-tight)',
+    padding: '12px 16px',
+  }
+
   return (
-    <section>
-      <h2 className="text-2xl font-bold text-text-primary mb-6">
+    <section className="py-8">
+      <h2
+        className="mb-6"
+        style={{
+          fontFamily: 'var(--apple-font-display)',
+          fontSize: 'clamp(24px, 2.4vw, 32px)',
+          fontWeight: 600,
+          letterSpacing: 'var(--apple-track-tight)',
+          color: 'var(--apple-text)',
+          margin: 0,
+        }}
+      >
         {t('title')}
       </h2>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 lg:gap-4 mb-8">
         {cards.map(c => (
-          <div key={c.label}>
-            <div className="text-xs text-text-secondary mb-0.5">
-              {c.label}
-            </div>
-            <div className={`text-xl font-bold font-mono tabular-nums ${c.color || 'text-text-primary'}`}>
+          <div
+            key={c.label}
+            style={{
+              background: 'var(--apple-panel)',
+              border: '1px solid var(--apple-line)',
+              borderRadius: 'var(--apple-r-md)',
+              padding: 20,
+            }}
+          >
+            <div style={subHead}>{c.label}</div>
+            <div
+              style={{
+                fontFamily: 'var(--apple-font-display)',
+                fontSize: 'var(--apple-fs-28)',
+                fontWeight: 600,
+                letterSpacing: 'var(--apple-track-tight)',
+                fontVariantNumeric: 'tabular-nums',
+                color: c.color,
+                marginTop: 8,
+              }}
+            >
               {c.value}
             </div>
           </div>
@@ -51,26 +109,35 @@ export function DefiHealth({ enrichment }: SectionProps) {
       </div>
 
       {defi.top_by_tvl.length > 0 && (
-        <div className="overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-surface border-b border-border-light">
+        <div
+          style={{
+            border: '1px solid var(--apple-line)',
+            borderRadius: 'var(--apple-r-md)',
+            overflow: 'hidden',
+            background: 'var(--apple-panel)',
+          }}
+        >
+          <table className="w-full" style={{ borderCollapse: 'collapse' }}>
+            <thead>
               <tr>
-                <th className="text-left px-4 py-2.5 font-semibold text-text-secondary">{t('protocol')}</th>
-                <th className="text-right px-4 py-2.5 font-semibold text-text-secondary">{t('tvl')}</th>
-                <th className="text-right px-4 py-2.5 font-semibold text-text-secondary">{t('change_1d')}</th>
-                <th className="text-right px-4 py-2.5 font-semibold text-text-secondary">{t('change_7d')}</th>
+                <th style={{ ...headerCellStyle, textAlign: 'left' }}>{t('protocol')}</th>
+                <th style={{ ...headerCellStyle, textAlign: 'right' }}>{t('tvl')}</th>
+                <th style={{ ...headerCellStyle, textAlign: 'right' }}>{t('change_1d')}</th>
+                <th style={{ ...headerCellStyle, textAlign: 'right' }}>{t('change_7d')}</th>
               </tr>
             </thead>
             <tbody>
               {defi.top_by_tvl.map(p => (
-                <tr key={p.symbol} className="border-t border-border-light">
-                  <td className="px-4 py-2.5">
-                    <span className="font-semibold">{p.symbol}</span>
-                    {p.name !== p.symbol && <span className="text-text-muted text-xs ml-1.5">{p.name}</span>}
+                <tr key={p.symbol} style={{ borderTop: '1px solid var(--apple-line)' }}>
+                  <td style={tdStyle}>
+                    <span style={{ fontWeight: 600 }}>{p.symbol}</span>
+                    {p.name !== p.symbol && (
+                      <span style={{ color: 'var(--apple-text-tertiary)', fontSize: 12, marginLeft: 6 }}>{p.name}</span>
+                    )}
                   </td>
-                  <td className="px-4 py-2.5 text-right font-mono tabular-nums">{formatTvl(p.tvl)}</td>
-                  <td className="px-4 py-2.5 text-right"><PctChange value={p.change_1d} /></td>
-                  <td className="px-4 py-2.5 text-right"><PctChange value={p.change_7d} /></td>
+                  <td style={{ ...tdStyle, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{formatTvl(p.tvl)}</td>
+                  <td style={{ ...tdStyle, textAlign: 'right' }}><PctChange value={p.change_1d} /></td>
+                  <td style={{ ...tdStyle, textAlign: 'right' }}><PctChange value={p.change_7d} /></td>
                 </tr>
               ))}
             </tbody>

@@ -15,28 +15,87 @@ export function FundingOverview({ enrichment }: SectionProps) {
     { label: t('funding_rounds'), value: `${funding.total_rounds}` },
   ]
 
+  const sectionTitle = {
+    fontFamily: 'var(--apple-font-display)',
+    fontSize: 'clamp(24px, 2.4vw, 32px)',
+    fontWeight: 600,
+    letterSpacing: 'var(--apple-track-tight)',
+    color: 'var(--apple-text)',
+    margin: 0,
+  } as const
+
+  const subHead = {
+    fontFamily: 'var(--apple-font-text)',
+    fontSize: '11px',
+    fontWeight: 600,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 'var(--apple-track-loose)',
+    color: 'var(--apple-text-tertiary)',
+  }
+
+  const tile = {
+    background: 'var(--apple-panel)',
+    border: '1px solid var(--apple-line)',
+    borderRadius: 'var(--apple-r-md)',
+    padding: 20,
+  }
+
+  const tileValue = {
+    fontFamily: 'var(--apple-font-display)',
+    fontSize: 'var(--apple-fs-28)',
+    fontWeight: 600,
+    letterSpacing: 'var(--apple-track-tight)',
+    color: 'var(--apple-text)',
+    fontVariantNumeric: 'tabular-nums' as const,
+    marginTop: 8,
+  }
+
+  const headerCellStyle = {
+    fontFamily: 'var(--apple-font-text)',
+    fontSize: '11px',
+    fontWeight: 600,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 'var(--apple-track-loose)',
+    color: 'var(--apple-text-tertiary)',
+    padding: '12px 16px',
+    background: 'var(--apple-panel-2)',
+    borderBottom: '1px solid var(--apple-line)',
+  }
+
+  const tdStyle = {
+    fontFamily: 'var(--apple-font-text)',
+    fontSize: 'var(--apple-fs-14)',
+    color: 'var(--apple-text)',
+    letterSpacing: 'var(--apple-track-tight)',
+    padding: '12px 16px',
+  }
+
   return (
-    <section>
-      <h2 className="text-2xl font-bold text-text-primary mb-6">
+    <section className="py-8">
+      <h2 className="mb-6" style={sectionTitle}>
         {t('title')}
       </h2>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 lg:gap-4 mb-8">
         {cards.map(c => (
-          <div key={c.label}>
-            <div className="text-xs text-text-secondary mb-0.5">
-              {c.label}
-            </div>
-            <div className="text-xl font-bold font-mono tabular-nums text-text-primary">
-              {c.value}
-            </div>
+          <div key={c.label} style={tile}>
+            <div style={subHead}>{c.label}</div>
+            <div style={tileValue}>{c.value}</div>
           </div>
         ))}
       </div>
 
       {funding.top_investors.length > 0 && (
-        <div className="py-4 mb-4">
-          <h3 className="text-sm font-semibold text-text-secondary mb-3">
+        <div
+          className="mb-8"
+          style={{
+            background: 'var(--apple-panel)',
+            border: '1px solid var(--apple-line)',
+            borderRadius: 'var(--apple-r-md)',
+            padding: 20,
+          }}
+        >
+          <h3 className="mb-4" style={subHead}>
             {t('top_investors')}
           </h3>
           <ResponsiveContainer width="100%" height={funding.top_investors.length * 32 + 16}>
@@ -46,45 +105,53 @@ export function FundingOverview({ enrichment }: SectionProps) {
                 type="category"
                 dataKey="name"
                 width={140}
-                tick={{ fontSize: 11, fill: '#6B7280' }}
+                tick={{ fontSize: 11, fill: '#6e6e73' }}
                 axisLine={false}
                 tickLine={false}
               />
               <Tooltip
                 formatter={(value: number) => [value, t('investments')]}
                 contentStyle={{
+                  fontFamily: 'var(--apple-font-text)',
                   fontSize: 12,
-                  border: '1px solid #e5e5e5',
-                  borderRadius: 6,
-                  boxShadow: 'none',
+                  border: '1px solid rgba(0,0,0,0.08)',
+                  borderRadius: 8,
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.06)',
                 }}
               />
-              <Bar dataKey="count" fill="#111827" radius={[0, 3, 3, 0]} barSize={18} />
+              <Bar dataKey="count" fill="#0071e3" radius={[0, 3, 3, 0]} barSize={18} />
             </BarChart>
           </ResponsiveContainer>
         </div>
       )}
 
       {funding.recent_raises.length > 0 && (
-        <div className="overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-surface border-b border-border-light">
+        <div
+          style={{
+            border: '1px solid var(--apple-line)',
+            borderRadius: 'var(--apple-r-md)',
+            overflow: 'hidden',
+            background: 'var(--apple-panel)',
+          }}
+        >
+          <table className="w-full" style={{ borderCollapse: 'collapse' }}>
+            <thead>
               <tr>
-                <th className="text-left px-4 py-2.5 font-semibold text-text-secondary">{t('project')}</th>
-                <th className="text-left px-4 py-2.5 font-semibold text-text-secondary">{t('round')}</th>
-                <th className="text-right px-4 py-2.5 font-semibold text-text-secondary">{t('amount')}</th>
-                <th className="text-left px-4 py-2.5 font-semibold text-text-secondary">{t('lead')}</th>
-                <th className="text-right px-4 py-2.5 font-semibold text-text-secondary">{t('date')}</th>
+                <th style={{ ...headerCellStyle, textAlign: 'left' }}>{t('project')}</th>
+                <th style={{ ...headerCellStyle, textAlign: 'left' }}>{t('round')}</th>
+                <th style={{ ...headerCellStyle, textAlign: 'right' }}>{t('amount')}</th>
+                <th style={{ ...headerCellStyle, textAlign: 'left' }}>{t('lead')}</th>
+                <th style={{ ...headerCellStyle, textAlign: 'right' }}>{t('date')}</th>
               </tr>
             </thead>
             <tbody>
               {funding.recent_raises.map((r, i) => (
-                <tr key={i} className="border-t border-border-light">
-                  <td className="px-4 py-2.5 font-semibold">{r.project}</td>
-                  <td className="px-4 py-2.5 text-text-secondary">{r.round}</td>
-                  <td className="px-4 py-2.5 text-right font-mono tabular-nums">${r.amount_m.toFixed(1)}M</td>
-                  <td className="px-4 py-2.5 text-text-secondary">{r.lead}</td>
-                  <td className="px-4 py-2.5 text-right text-text-muted">{r.date || '—'}</td>
+                <tr key={i} style={{ borderTop: '1px solid var(--apple-line)' }}>
+                  <td style={{ ...tdStyle, fontWeight: 600 }}>{r.project}</td>
+                  <td style={{ ...tdStyle, color: 'var(--apple-text-secondary)' }}>{r.round}</td>
+                  <td style={{ ...tdStyle, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>${r.amount_m.toFixed(1)}M</td>
+                  <td style={{ ...tdStyle, color: 'var(--apple-text-secondary)' }}>{r.lead}</td>
+                  <td style={{ ...tdStyle, textAlign: 'right', color: 'var(--apple-text-tertiary)' }}>{r.date || '—'}</td>
                 </tr>
               ))}
             </tbody>

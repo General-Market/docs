@@ -31,6 +31,45 @@ function formatUsd(v: number): string {
 type SortKey = 'rank' | 'name' | 'weight' | 'price' | 'change_24h' | 'market_cap' | 'market_value' | 'notional' | 'quantity'
 type SortDir = 'asc' | 'desc'
 
+const sectionTitleStyle = {
+  fontFamily: 'var(--apple-font-display)',
+  fontSize: 'clamp(24px, 2.4vw, 32px)',
+  fontWeight: 600,
+  letterSpacing: 'var(--apple-track-tight)',
+  color: 'var(--apple-text)',
+  margin: 0,
+} as const
+
+const subTextStyle = {
+  fontFamily: 'var(--apple-font-text)',
+  fontSize: '12px',
+  color: 'var(--apple-text-tertiary)',
+  letterSpacing: 'var(--apple-track-tight)',
+  marginTop: 4,
+}
+
+const headerCellStyle = {
+  fontFamily: 'var(--apple-font-text)',
+  fontSize: '11px',
+  fontWeight: 600,
+  textTransform: 'uppercase' as const,
+  letterSpacing: 'var(--apple-track-loose)',
+  color: 'var(--apple-text-tertiary)',
+  padding: '12px 14px',
+  cursor: 'pointer',
+  userSelect: 'none' as const,
+  background: 'var(--apple-panel-2)',
+  borderBottom: '1px solid var(--apple-line)',
+}
+
+const cellStyle = {
+  fontFamily: 'var(--apple-font-text)',
+  fontSize: 'var(--apple-fs-14)',
+  letterSpacing: 'var(--apple-track-tight)',
+  color: 'var(--apple-text)',
+  padding: '12px 14px',
+}
+
 export function HoldingsTable({ enrichment, nav, aum, assetCount }: SectionProps) {
   const t = useTranslations('markets.itp_page.holdings_table')
   const locale = useLocale()
@@ -93,8 +132,8 @@ export function HoldingsTable({ enrichment, nav, aum, assetCount }: SectionProps
   if (holdings.length === 0) {
     return (
       <section className="py-8">
-        <h2 className="text-2xl font-bold text-text-primary mb-2">{t('title')}</h2>
-        <p className="text-sm text-text-muted">{t('loading')}</p>
+        <h2 style={sectionTitleStyle}>{t('title')}</h2>
+        <p style={subTextStyle}>{t('loading')}</p>
       </section>
     )
   }
@@ -114,62 +153,83 @@ export function HoldingsTable({ enrichment, nav, aum, assetCount }: SectionProps
     setPage(1)
   }
 
-  const SortHeader = ({ k, children, align, className: cx }: { k: SortKey; children: React.ReactNode; align?: string; className?: string }) => (
+  const SortHeader = ({ k, children, align, hideClass }: { k: SortKey; children: React.ReactNode; align?: 'left' | 'right'; hideClass?: string }) => (
     <th
-      className={`px-3 py-2.5 text-micro font-semibold uppercase tracking-[0.08em] text-text-secondary cursor-pointer hover:text-text-primary transition-colors select-none fluid-press ${align || 'text-left'} ${cx || ''}`}
+      className={hideClass}
+      style={{ ...headerCellStyle, textAlign: align ?? 'left' }}
       onClick={() => toggleSort(k)}
     >
-      <span className="inline-flex items-center gap-1">
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
         {children}
-        {sortKey === k && <span className="text-[9px]">{sortDir === 'asc' ? '▲' : '▼'}</span>}
+        {sortKey === k && <span style={{ fontSize: 9, color: 'var(--apple-text-secondary)' }}>{sortDir === 'asc' ? '▲' : '▼'}</span>}
       </span>
     </th>
   )
 
   return (
     <section className="py-8">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-text-primary">{t('title')}</h2>
-          <p className="text-xs text-text-muted mt-0.5">{t('as_of', { date: asOfToday(locale) })}</p>
+          <h2 style={sectionTitleStyle}>{t('title')}</h2>
+          <p style={subTextStyle}>{t('as_of', { date: asOfToday(locale) })}</p>
         </div>
         <input
           type="text"
           placeholder={t('filter_placeholder')}
           value={search}
           onChange={e => handleSearch(e.target.value)}
-          className="border border-border-light rounded px-3 py-1.5 text-sm w-full sm:w-64 focus:outline-none focus:ring-1 focus:ring-text-muted"
+          className="w-full sm:w-72"
+          style={{
+            background: 'var(--apple-panel)',
+            border: '1px solid var(--apple-line)',
+            borderRadius: 'var(--apple-r-sm)',
+            padding: '8px 12px',
+            fontFamily: 'var(--apple-font-text)',
+            fontSize: 'var(--apple-fs-14)',
+            letterSpacing: 'var(--apple-track-tight)',
+            color: 'var(--apple-text)',
+            outline: 'none',
+          }}
         />
       </div>
 
-      <div ref={tableRef} className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-surface border-b border-border-light">
+      <div
+        ref={tableRef}
+        className="overflow-x-auto"
+        style={{
+          border: '1px solid var(--apple-line)',
+          borderRadius: 'var(--apple-r-md)',
+          background: 'var(--apple-panel)',
+        }}
+      >
+        <table className="w-full" style={{ borderCollapse: 'collapse' }}>
+          <thead>
             <tr>
               <SortHeader k="rank">{t('rank')}</SortHeader>
               <SortHeader k="name">{t('name')}</SortHeader>
-              <th className="px-3 py-2.5 text-micro font-semibold uppercase tracking-[0.08em] text-text-secondary text-left hidden sm:table-cell">{t('sector')}</th>
-              <SortHeader k="weight" align="text-right">{t('weight')}</SortHeader>
-              <SortHeader k="price" align="text-right">{t('price')}</SortHeader>
-              <SortHeader k="change_24h" align="text-right">{t('change_24h')}</SortHeader>
-              <SortHeader k="market_value" align="text-right" className="hidden lg:table-cell">{t('market_value')}</SortHeader>
-              <SortHeader k="notional" align="text-right" className="hidden lg:table-cell">{t('notional_value')}</SortHeader>
-              <SortHeader k="quantity" align="text-right" className="hidden xl:table-cell">{t('shares')}</SortHeader>
-              <SortHeader k="market_cap" align="text-right" className="hidden lg:table-cell">{t('market_cap')}</SortHeader>
+              <th className="hidden sm:table-cell" style={{ ...headerCellStyle, textAlign: 'left' }}>{t('sector')}</th>
+              <SortHeader k="weight" align="right">{t('weight')}</SortHeader>
+              <SortHeader k="price" align="right">{t('price')}</SortHeader>
+              <SortHeader k="change_24h" align="right">{t('change_24h')}</SortHeader>
+              <SortHeader k="market_value" align="right" hideClass="hidden lg:table-cell">{t('market_value')}</SortHeader>
+              <SortHeader k="notional" align="right" hideClass="hidden lg:table-cell">{t('notional_value')}</SortHeader>
+              <SortHeader k="quantity" align="right" hideClass="hidden xl:table-cell">{t('shares')}</SortHeader>
+              <SortHeader k="market_cap" align="right" hideClass="hidden lg:table-cell">{t('market_cap')}</SortHeader>
             </tr>
           </thead>
           <tbody>
             {paged.map((h, rowIdx) => (
               <tr
                 key={h.symbol}
-                className="border-b border-border-light fluid-row animate-row-in"
+                className="animate-row-in"
                 style={{
+                  borderTop: '1px solid var(--apple-line)',
                   '--row-i': rowIdx,
                   animationPlayState: tableRevealed ? 'running' : 'paused',
                 } as React.CSSProperties}
               >
-                <td className="px-3 py-2.5 text-text-muted font-mono text-xs">{h.rank}</td>
-                <td className="px-3 py-2.5">
+                <td style={{ ...cellStyle, color: 'var(--apple-text-tertiary)', fontFamily: 'ui-monospace, monospace', fontSize: 12 }}>{h.rank}</td>
+                <td style={cellStyle}>
                   <div className="flex items-center gap-2.5">
                     {h.image ? (
                       <Image
@@ -181,42 +241,53 @@ export function HoldingsTable({ enrichment, nav, aum, assetCount }: SectionProps
                         unoptimized
                       />
                     ) : (
-                      <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-micro font-bold text-text-muted">
+                      <div
+                        className="flex items-center justify-center"
+                        style={{
+                          width: 24,
+                          height: 24,
+                          borderRadius: '50%',
+                          background: 'var(--apple-panel-2)',
+                          fontSize: 11,
+                          fontWeight: 600,
+                          color: 'var(--apple-text-secondary)',
+                        }}
+                      >
                         {h.symbol[0]}
                       </div>
                     )}
                     <div>
-                      <span className="font-semibold text-text-primary">{h.name && h.name !== h.symbol ? h.name : h.symbol}</span>
+                      <span style={{ fontWeight: 600, color: 'var(--apple-text)' }}>{h.name && h.name !== h.symbol ? h.name : h.symbol}</span>
                       {h.name && h.name !== h.symbol && (
-                        <span className="text-text-muted text-xs ml-1.5">{h.symbol}</span>
+                        <span style={{ color: 'var(--apple-text-tertiary)', fontSize: 12, marginLeft: 6 }}>{h.symbol}</span>
                       )}
                     </div>
                   </div>
                 </td>
-                <td className="px-3 py-2.5 text-text-secondary text-xs hidden sm:table-cell">{t('cryptocurrency')}</td>
-                <td className="px-3 py-2.5 text-right font-mono tabular-nums text-text-primary">
+                <td className="hidden sm:table-cell" style={{ ...cellStyle, color: 'var(--apple-text-secondary)', fontSize: 12 }}>{t('cryptocurrency')}</td>
+                <td style={{ ...cellStyle, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
                   {(h.weight * 100).toFixed(2)}%
                 </td>
-                <td className="px-3 py-2.5 text-right font-mono tabular-nums text-text-primary">
+                <td style={{ ...cellStyle, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
                   ${h.price >= 1 ? h.price.toFixed(2) : h.price.toFixed(4)}
                 </td>
-                <td className="px-3 py-2.5 text-right font-mono tabular-nums">
+                <td style={{ ...cellStyle, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
                   {h.change_24h != null ? (
-                    <span className={h.change_24h >= 0 ? 'text-color-up' : 'text-color-down'}>
+                    <span style={{ color: h.change_24h >= 0 ? '#16a34a' : '#dc2626' }}>
                       {h.change_24h >= 0 ? '+' : ''}{h.change_24h.toFixed(2)}%
                     </span>
                   ) : '—'}
                 </td>
-                <td className="px-3 py-2.5 text-right font-mono tabular-nums text-text-primary hidden lg:table-cell">
+                <td className="hidden lg:table-cell" style={{ ...cellStyle, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
                   {h.marketValue > 0 ? formatUsd(h.marketValue) : '—'}
                 </td>
-                <td className="px-3 py-2.5 text-right font-mono tabular-nums text-text-secondary hidden lg:table-cell">
+                <td className="hidden lg:table-cell" style={{ ...cellStyle, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--apple-text-secondary)' }}>
                   {h.notional > 0 ? formatUsd(h.notional) : '—'}
                 </td>
-                <td className="px-3 py-2.5 text-right font-mono tabular-nums text-text-secondary hidden xl:table-cell">
+                <td className="hidden xl:table-cell" style={{ ...cellStyle, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--apple-text-secondary)' }}>
                   {h.quantity > 0 ? h.quantity.toFixed(6) : '—'}
                 </td>
-                <td className="px-3 py-2.5 text-right font-mono tabular-nums text-text-secondary hidden lg:table-cell">
+                <td className="hidden lg:table-cell" style={{ ...cellStyle, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--apple-text-secondary)' }}>
                   {formatMcap(h.market_cap)}
                 </td>
               </tr>
@@ -226,15 +297,38 @@ export function HoldingsTable({ enrichment, nav, aum, assetCount }: SectionProps
       </div>
 
       {totalPages > 1 && (
-        <div className="flex items-center justify-between px-3 py-3 border-t border-border-light">
-          <span className="text-xs text-text-secondary">
+        <div
+          className="flex items-center justify-between"
+          style={{
+            padding: '14px 4px',
+            marginTop: 4,
+          }}
+        >
+          <span
+            style={{
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: 12,
+              color: 'var(--apple-text-secondary)',
+              letterSpacing: 'var(--apple-track-tight)',
+            }}
+          >
             {t('range', { start: startIdx, end: endIdx, total: sorted.length })}
           </span>
           <div className="flex items-center gap-1">
             <button
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={clampedPage === 1}
-              className="px-3 py-1 text-xs font-semibold text-text-secondary hover:text-text-primary disabled:opacity-30 transition-colors"
+              style={{
+                padding: '6px 12px',
+                background: 'transparent',
+                border: 'none',
+                fontFamily: 'var(--apple-font-text)',
+                fontSize: 'var(--apple-fs-14)',
+                fontWeight: 500,
+                color: clampedPage === 1 ? 'var(--apple-text-tertiary)' : 'var(--apple-accent, #0071e3)',
+                cursor: clampedPage === 1 ? 'default' : 'pointer',
+                opacity: clampedPage === 1 ? 0.5 : 1,
+              }}
             >
               {t('previous')}
             </button>
@@ -243,15 +337,24 @@ export function HoldingsTable({ enrichment, nav, aum, assetCount }: SectionProps
                 : clampedPage >= totalPages - 2 ? totalPages - 4 + i
                 : clampedPage - 2 + i
               if (pageNum < 1 || pageNum > totalPages) return null
+              const active = clampedPage === pageNum
               return (
                 <button
                   key={pageNum}
                   onClick={() => setPage(pageNum)}
-                  className={`w-7 h-7 text-xs font-semibold rounded transition-colors fluid-press ${
-                    clampedPage === pageNum
-                      ? 'bg-text-primary text-text-inverse'
-                      : 'text-text-secondary hover:bg-muted'
-                  }`}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 'var(--apple-r-sm)',
+                    background: active ? 'var(--apple-accent, #0071e3)' : 'transparent',
+                    color: active ? '#ffffff' : 'var(--apple-text-secondary)',
+                    border: 'none',
+                    fontFamily: 'var(--apple-font-text)',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'background 150ms var(--apple-ease-default)',
+                  }}
                 >
                   {pageNum}
                 </button>
@@ -260,7 +363,17 @@ export function HoldingsTable({ enrichment, nav, aum, assetCount }: SectionProps
             <button
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={clampedPage === totalPages}
-              className="px-3 py-1 text-xs font-semibold text-text-secondary hover:text-text-primary disabled:opacity-30 transition-colors"
+              style={{
+                padding: '6px 12px',
+                background: 'transparent',
+                border: 'none',
+                fontFamily: 'var(--apple-font-text)',
+                fontSize: 'var(--apple-fs-14)',
+                fontWeight: 500,
+                color: clampedPage === totalPages ? 'var(--apple-text-tertiary)' : 'var(--apple-accent, #0071e3)',
+                cursor: clampedPage === totalPages ? 'default' : 'pointer',
+                opacity: clampedPage === totalPages ? 0.5 : 1,
+              }}
             >
               {t('next')}
             </button>

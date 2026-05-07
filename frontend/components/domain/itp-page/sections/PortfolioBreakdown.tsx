@@ -5,9 +5,9 @@ import { useTranslations } from 'next-intl'
 import type { SectionProps } from '../SectionRenderer'
 
 const COLORS = [
-  '#1a1a2e', '#e94560', '#0f3460', '#f97316', '#06b6d4',
-  '#8b5cf6', '#ec4899', '#14b8a6', '#f59e0b', '#3b82f6',
-  '#94a3b8',
+  '#0071e3', '#1d1d1f', '#5e5ce6', '#ff9500', '#34c759',
+  '#af52de', '#ff2d55', '#5ac8fa', '#ffcc00', '#64d2ff',
+  '#86868b',
 ]
 
 export function PortfolioBreakdown({ enrichment }: SectionProps) {
@@ -31,25 +31,62 @@ export function PortfolioBreakdown({ enrichment }: SectionProps) {
   if (data.length === 0) return null
 
   return (
-    <section>
-      <h2 className="text-2xl font-bold text-text-primary mb-6">
+    <section className="py-8">
+      <h2
+        className="mb-6"
+        style={{
+          fontFamily: 'var(--apple-font-display)',
+          fontSize: 'clamp(24px, 2.4vw, 32px)',
+          fontWeight: 600,
+          letterSpacing: 'var(--apple-track-tight)',
+          color: 'var(--apple-text)',
+          margin: 0,
+        }}
+      >
         {t('title')}
       </h2>
-      <div className="py-4">
+      <div
+        className="mt-6"
+        style={{
+          background: 'var(--apple-panel)',
+          border: '1px solid var(--apple-line)',
+          borderRadius: 'var(--apple-r-md)',
+          padding: 24,
+        }}
+      >
         <div className="flex flex-col md:flex-row items-center gap-8">
           <div className="w-64 h-64 flex-shrink-0">
             <AnimatedDonut data={data} />
           </div>
 
-          <div className="flex-1 grid grid-cols-2 gap-x-6 gap-y-1.5">
+          <div className="flex-1 grid grid-cols-2 gap-x-8 gap-y-2 w-full">
             {data.map((d, i) => (
-              <div key={d.name} className="flex items-center gap-2 text-sm fluid-press cursor-default">
+              <div key={d.name} className="flex items-center gap-3">
                 <div
-                  className="w-3 h-3 rounded-sm flex-shrink-0"
-                  style={{ backgroundColor: COLORS[i % COLORS.length] }}
+                  className="flex-shrink-0"
+                  style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: COLORS[i % COLORS.length] }}
                 />
-                <span className="text-text-secondary truncate">{d.name}</span>
-                <span className="ml-auto font-mono tabular-nums text-text-primary">
+                <span
+                  className="truncate"
+                  style={{
+                    fontFamily: 'var(--apple-font-text)',
+                    fontSize: 'var(--apple-fs-14)',
+                    color: 'var(--apple-text-secondary)',
+                    letterSpacing: 'var(--apple-track-tight)',
+                  }}
+                >
+                  {d.name}
+                </span>
+                <span
+                  className="ml-auto"
+                  style={{
+                    fontFamily: 'var(--apple-font-text)',
+                    fontSize: 'var(--apple-fs-14)',
+                    fontVariantNumeric: 'tabular-nums',
+                    color: 'var(--apple-text)',
+                    fontWeight: 500,
+                  }}
+                >
                   {d.value.toFixed(1)}%
                 </span>
               </div>

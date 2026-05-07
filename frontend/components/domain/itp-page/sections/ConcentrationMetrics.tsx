@@ -27,21 +27,68 @@ export function ConcentrationMetrics({ enrichment }: SectionProps) {
   ]
 
   return (
-    <section>
-      <h2 className="text-2xl font-bold text-text-primary mb-6">
+    <section className="py-8">
+      <h2
+        className="mb-6"
+        style={{
+          fontFamily: 'var(--apple-font-display)',
+          fontSize: 'clamp(24px, 2.4vw, 32px)',
+          fontWeight: 600,
+          letterSpacing: 'var(--apple-track-tight)',
+          color: 'var(--apple-text)',
+          margin: 0,
+        }}
+      >
         {t('title')}
       </h2>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 lg:gap-4">
         {cards.map(c => (
-          <div key={c.label}>
-            <div className="text-xs text-text-secondary mb-0.5">
+          <div
+            key={c.label}
+            style={{
+              background: 'var(--apple-panel)',
+              border: '1px solid var(--apple-line)',
+              borderRadius: 'var(--apple-r-md)',
+              padding: 20,
+            }}
+          >
+            <div
+              style={{
+                fontFamily: 'var(--apple-font-text)',
+                fontSize: '11px',
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                letterSpacing: 'var(--apple-track-loose)',
+                color: 'var(--apple-text-tertiary)',
+              }}
+            >
               {c.label}
             </div>
-            <div className="text-xl font-bold font-mono tabular-nums text-text-primary">
+            <div
+              style={{
+                fontFamily: 'var(--apple-font-display)',
+                fontSize: 'var(--apple-fs-28)',
+                fontWeight: 600,
+                letterSpacing: 'var(--apple-track-tight)',
+                color: 'var(--apple-text)',
+                fontVariantNumeric: 'tabular-nums',
+                marginTop: 8,
+              }}
+            >
               {c.value}
             </div>
             {c.sub && (
-              <div className="text-xs text-text-secondary mt-0.5">{c.sub}</div>
+              <div
+                style={{
+                  fontFamily: 'var(--apple-font-text)',
+                  fontSize: 12,
+                  color: 'var(--apple-text-tertiary)',
+                  marginTop: 4,
+                  letterSpacing: 'var(--apple-track-tight)',
+                }}
+              >
+                {c.sub}
+              </div>
             )}
           </div>
         ))}

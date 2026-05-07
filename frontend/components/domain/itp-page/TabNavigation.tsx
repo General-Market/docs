@@ -139,28 +139,52 @@ export function TabNavigation({ config, sectionProps }: Props) {
   return (
     <>
       {/* Sticky anchor nav with progress bar */}
-      <div ref={navRef} className="sticky top-16 z-10 bg-white border-b border-border-light mb-8">
+      <div
+        ref={navRef}
+        className="sticky top-16 z-10 mb-8"
+        style={{
+          background: 'var(--apple-panel)',
+          borderBottom: '1px solid var(--apple-line)',
+        }}
+      >
         {/* Scroll progress */}
         <div
           ref={progBarRef}
-          className="absolute top-0 left-0 h-[2px] bg-black"
+          className="absolute top-0 left-0 h-[2px]"
           style={{
             width: '0%',
+            background: 'var(--apple-accent, #0071e3)',
             transition: 'width 80ms linear',
           }}
         />
         <SpringTabs className="flex gap-0 overflow-x-auto">
-          {NAV_ITEMS.map(item => (
-            <SpringTab
-              key={item.id}
-              isActive={activeAnchor === item.id}
-              onClick={() => scrollTo(item.id)}
-              className="px-6 py-3 text-sm font-semibold whitespace-nowrap transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-text-primary"
-              layoutId="itp-tab-indicator"
-            >
-              {t(item.key)}
-            </SpringTab>
-          ))}
+          {NAV_ITEMS.map(item => {
+            const active = activeAnchor === item.id
+            return (
+              <SpringTab
+                key={item.id}
+                isActive={active}
+                onClick={() => scrollTo(item.id)}
+                className="whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-inset"
+                layoutId="itp-tab-indicator"
+              >
+                <span
+                  style={{
+                    display: 'inline-block',
+                    padding: '14px 18px',
+                    fontFamily: 'var(--apple-font-text)',
+                    fontSize: 'var(--apple-fs-14)',
+                    fontWeight: active ? 600 : 500,
+                    letterSpacing: 'var(--apple-track-tight)',
+                    color: active ? 'var(--apple-text)' : 'var(--apple-text-secondary)',
+                    transition: 'color 200ms var(--apple-ease-default)',
+                  }}
+                >
+                  {t(item.key)}
+                </span>
+              </SpringTab>
+            )
+          })}
         </SpringTabs>
       </div>
 
@@ -175,7 +199,15 @@ export function TabNavigation({ config, sectionProps }: Props) {
             lastAnchor = anchorId
             return (
               <div key={sectionId} data-fade-in style={{ '--stagger-delay': 0 } as React.CSSProperties}>
-                {i > 0 && <hr className="border-border-light my-8" />}
+                {i > 0 && (
+                  <hr
+                    style={{
+                      border: 0,
+                      borderTop: '1px solid var(--apple-line)',
+                      margin: '32px 0',
+                    }}
+                  />
+                )}
                 {showAnchor && <div id={anchorId} className="scroll-mt-32" />}
                 <Section {...sectionProps} />
               </div>

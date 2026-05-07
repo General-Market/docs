@@ -237,29 +237,92 @@ export function RebalanceSection({ itpId, enrichment }: RebalanceSectionProps) {
 
   if (loading) return null
 
+  const sectionTitle = {
+    fontFamily: 'var(--apple-font-display)',
+    fontSize: 'clamp(24px, 2.4vw, 32px)',
+    fontWeight: 600,
+    letterSpacing: 'var(--apple-track-tight)',
+    color: 'var(--apple-text)',
+    margin: 0,
+  } as const
+
+  const fieldLabel = {
+    fontFamily: 'var(--apple-font-text)',
+    fontSize: '11px',
+    fontWeight: 600,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 'var(--apple-track-loose)',
+    color: 'var(--apple-text-tertiary)',
+  }
+
+  const inputStyle = {
+    background: 'var(--apple-panel)',
+    border: '1px solid var(--apple-line)',
+    borderRadius: 'var(--apple-r-sm)',
+    padding: '8px 12px',
+    fontFamily: 'var(--apple-font-text)',
+    fontSize: 'var(--apple-fs-14)',
+    letterSpacing: 'var(--apple-track-tight)',
+    color: 'var(--apple-text)',
+    outline: 'none',
+  } as const
+
+  const noticeBase = {
+    padding: 12,
+    borderRadius: 'var(--apple-r-sm)',
+    fontFamily: 'var(--apple-font-text)',
+    fontSize: 'var(--apple-fs-14)',
+    letterSpacing: 'var(--apple-track-tight)',
+  }
+
   return (
     <section className="py-8" data-testid="rebalance-section">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl font-bold text-text-primary">Rebalance</h2>
+      <div className="flex items-center justify-between mb-6">
+        <h2 style={sectionTitle}>Rebalance</h2>
         <button
           onClick={() => setExpanded(!expanded)}
-          className="text-sm font-semibold text-text-secondary hover:text-text-primary transition-colors"
           data-testid="rebalance-toggle"
+          style={{
+            fontFamily: 'var(--apple-font-text)',
+            fontSize: 'var(--apple-fs-14)',
+            fontWeight: 500,
+            color: 'var(--apple-accent, #0071e3)',
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            letterSpacing: 'var(--apple-track-tight)',
+          }}
         >
           {expanded ? 'Collapse' : 'Adjust Weights'}
         </button>
       </div>
 
       {!expanded ? (
-        <p className="text-sm text-text-muted">
+        <p
+          style={{
+            fontFamily: 'var(--apple-font-text)',
+            fontSize: 'var(--apple-fs-17)',
+            lineHeight: 1.47,
+            letterSpacing: 'var(--apple-track-tight)',
+            color: 'var(--apple-text-secondary)',
+            margin: 0,
+          }}
+        >
           You are the creator of this index. Adjust asset weights, add or remove holdings, then submit a rebalance request.
         </p>
       ) : (
         <div className="space-y-4">
           {/* Add asset search */}
-          <div className="bg-muted rounded-lg p-3">
+          <div
+            style={{
+              background: 'var(--apple-panel-2)',
+              border: '1px solid var(--apple-line)',
+              borderRadius: 'var(--apple-r-md)',
+              padding: 16,
+            }}
+          >
             <div className="flex justify-between items-center mb-2">
-              <span className="text-sm text-text-secondary">
+              <span style={{ fontFamily: 'var(--apple-font-text)', fontSize: 'var(--apple-fs-12)', color: 'var(--apple-text-secondary)', letterSpacing: 'var(--apple-track-tight)' }}>
                 {assets.length} assets ({availableAssets.length} available)
               </span>
             </div>
@@ -268,7 +331,8 @@ export function RebalanceSection({ itpId, enrichment }: RebalanceSectionProps) {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search to add asset..."
-              className="w-full bg-white border border-border-medium rounded px-3 py-1.5 text-sm mb-2 focus:outline-none focus:ring-1 focus:ring-text-muted"
+              className="w-full mb-2"
+              style={inputStyle}
               disabled={isWorking || status === 'success'}
               data-testid="rebalance-search"
             />
@@ -278,7 +342,18 @@ export function RebalanceSection({ itpId, enrichment }: RebalanceSectionProps) {
                   <button
                     key={asset.address}
                     onClick={() => addAsset(asset)}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-white border border-border-medium rounded text-xs text-text-primary hover:border-zinc-500 transition-colors"
+                    style={{
+                      padding: '4px 10px',
+                      borderRadius: 'var(--apple-r-pill)',
+                      border: '1px solid var(--apple-line)',
+                      background: 'var(--apple-panel)',
+                      fontFamily: 'var(--apple-font-text)',
+                      fontSize: 'var(--apple-fs-12)',
+                      fontWeight: 500,
+                      color: 'var(--apple-text)',
+                      cursor: 'pointer',
+                      transition: 'border-color 150ms var(--apple-ease-default)',
+                    }}
                   >
                     + {asset.symbol}
                   </button>
@@ -291,8 +366,18 @@ export function RebalanceSection({ itpId, enrichment }: RebalanceSectionProps) {
           <div className="flex gap-2">
             <button
               onClick={setEqualWeights}
-              className="px-3 py-1 text-xs border border-border-medium rounded text-text-secondary hover:border-zinc-500 hover:text-text-primary transition-colors"
               data-testid="rebalance-equal"
+              style={{
+                padding: '6px 14px',
+                borderRadius: 'var(--apple-r-pill)',
+                border: '1px solid var(--apple-line)',
+                background: 'var(--apple-panel)',
+                fontFamily: 'var(--apple-font-text)',
+                fontSize: 'var(--apple-fs-12)',
+                fontWeight: 500,
+                color: 'var(--apple-text-secondary)',
+                cursor: 'pointer',
+              }}
             >
               Equal Weights
             </button>
@@ -300,63 +385,84 @@ export function RebalanceSection({ itpId, enrichment }: RebalanceSectionProps) {
 
           {/* Weight sum */}
           <div
-            className={`flex justify-between items-center p-2 text-sm font-mono rounded ${
-              isValid
-                ? 'bg-green-50 text-green-700 border border-green-200'
-                : 'bg-red-50 text-red-700 border border-red-200'
-            }`}
             data-testid="rebalance-weight-sum"
+            className="flex justify-between items-center"
+            style={{
+              padding: '10px 14px',
+              borderRadius: 'var(--apple-r-sm)',
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: 'var(--apple-fs-14)',
+              fontVariantNumeric: 'tabular-nums',
+              background: isValid ? 'rgba(22,163,74,0.08)' : 'rgba(220,38,38,0.08)',
+              color: isValid ? '#16a34a' : '#dc2626',
+              border: `1px solid ${isValid ? 'rgba(22,163,74,0.2)' : 'rgba(220,38,38,0.2)'}`,
+            }}
           >
             <span>Total Weight</span>
             <span>{weightSum.toFixed(2)}%</span>
           </div>
 
           {/* Asset table */}
-          <div className="max-h-[400px] overflow-y-auto border border-border-light rounded-lg">
-            <table className="w-full text-sm" data-testid="rebalance-table">
-              <thead className="sticky top-0 bg-muted">
-                <tr className="text-text-muted text-xs">
-                  <th className="text-left p-2">Asset</th>
-                  <th className="text-right p-2">Current %</th>
-                  <th className="text-right p-2">New %</th>
-                  <th className="p-2 w-8"></th>
+          <div
+            className="max-h-[400px] overflow-y-auto"
+            style={{
+              border: '1px solid var(--apple-line)',
+              borderRadius: 'var(--apple-r-md)',
+            }}
+          >
+            <table className="w-full" data-testid="rebalance-table">
+              <thead
+                className="sticky top-0"
+                style={{ background: 'var(--apple-panel-2)' }}
+              >
+                <tr>
+                  <th style={{ ...fieldLabel, padding: '10px 12px', textAlign: 'left' }}>Asset</th>
+                  <th style={{ ...fieldLabel, padding: '10px 12px', textAlign: 'right' }}>Current %</th>
+                  <th style={{ ...fieldLabel, padding: '10px 12px', textAlign: 'right' }}>New %</th>
+                  <th style={{ padding: '10px 12px', width: 32 }}></th>
                 </tr>
               </thead>
               <tbody>
                 {assets.map((asset, i) => (
                   <tr
                     key={`${asset.address}-${i}`}
-                    className={`border-t border-border-light ${asset.isNew ? 'bg-green-50/30' : ''}`}
                     data-testid="rebalance-row"
+                    style={{
+                      borderTop: '1px solid var(--apple-line)',
+                      background: asset.isNew ? 'rgba(22,163,74,0.04)' : 'transparent',
+                    }}
                   >
-                    <td className="p-2">
+                    <td style={{ padding: '10px 12px' }}>
                       <div className="flex items-center gap-1.5">
-                        <span className="text-text-secondary">{asset.symbol}</span>
-                        {asset.isNew && <span className="text-green-600 text-xs">new</span>}
+                        <span style={{ fontFamily: 'var(--apple-font-text)', fontSize: 'var(--apple-fs-14)', color: 'var(--apple-text)', letterSpacing: 'var(--apple-track-tight)' }}>{asset.symbol}</span>
+                        {asset.isNew && (
+                          <span style={{ fontSize: 11, color: '#16a34a', fontWeight: 600, letterSpacing: 'var(--apple-track-loose)' }}>new</span>
+                        )}
                       </div>
                     </td>
-                    <td className="p-2 text-right text-text-muted font-mono">
+                    <td style={{ padding: '10px 12px', textAlign: 'right', fontFamily: 'var(--apple-font-text)', fontSize: 'var(--apple-fs-14)', fontVariantNumeric: 'tabular-nums', color: 'var(--apple-text-tertiary)' }}>
                       {asset.isNew ? '—' : `${(Number(asset.currentWeight) / 1e16).toFixed(2)}%`}
                     </td>
-                    <td className="p-2 text-right">
+                    <td style={{ padding: '10px 12px', textAlign: 'right' }}>
                       <input
                         type="number"
                         inputMode="decimal"
                         step="0.01"
                         value={asset.newWeight}
                         onChange={e => updateWeight(i, e.target.value)}
-                        className="w-20 bg-muted border border-border-medium rounded px-2 py-1 text-right text-text-primary font-mono text-sm focus:border-zinc-600 focus:outline-none"
+                        style={{ ...inputStyle, width: 88, textAlign: 'right', padding: '6px 10px', fontVariantNumeric: 'tabular-nums' }}
                         disabled={isWorking || status === 'success'}
                         data-testid="rebalance-weight-input"
                       />
                     </td>
-                    <td className="p-2 text-center">
+                    <td style={{ padding: '10px 12px', textAlign: 'center' }}>
                       {asset.isNew && !isWorking && status !== 'success' && (
                         <button
                           onClick={() => removeAsset(i)}
-                          className="text-red-500 hover:text-red-700 text-sm"
+                          style={{ background: 'transparent', border: 'none', color: '#dc2626', fontSize: 14, cursor: 'pointer' }}
+                          aria-label="Remove asset"
                         >
-                          x
+                          ×
                         </button>
                       )}
                     </td>
@@ -368,13 +474,14 @@ export function RebalanceSection({ itpId, enrichment }: RebalanceSectionProps) {
 
           {/* Note */}
           <div>
-            <label className="text-xs text-text-secondary mb-1 block">Rebalance Note</label>
+            <label style={{ ...fieldLabel, display: 'block', marginBottom: 6 }}>Rebalance Note</label>
             <input
               type="text"
               value={note}
               onChange={e => setNote(e.target.value)}
               placeholder="Reason for rebalance (optional)"
-              className="w-full border border-border-medium rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-text-muted"
+              className="w-full"
+              style={inputStyle}
               disabled={isWorking || status === 'success'}
               data-testid="rebalance-note"
             />
@@ -382,34 +489,37 @@ export function RebalanceSection({ itpId, enrichment }: RebalanceSectionProps) {
 
           {/* Status */}
           {status === 'switching-chain' && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-blue-700 text-sm">
+            <div style={{ ...noticeBase, background: 'rgba(0,113,227,0.08)', color: 'var(--apple-accent, #0071e3)', border: '1px solid rgba(0,113,227,0.2)' }}>
               Switching to Settlement chain...
             </div>
           )}
           {status === 'requesting' && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-blue-700 text-sm">
+            <div style={{ ...noticeBase, background: 'rgba(0,113,227,0.08)', color: 'var(--apple-accent, #0071e3)', border: '1px solid rgba(0,113,227,0.2)' }}>
               Confirm in your wallet...
             </div>
           )}
           {status === 'confirming' && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-blue-700 text-sm">
+            <div style={{ ...noticeBase, background: 'rgba(0,113,227,0.08)', color: 'var(--apple-accent, #0071e3)', border: '1px solid rgba(0,113,227,0.2)' }}>
               Confirming on-chain...
             </div>
           )}
           {status === 'error' && error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm break-all">
+            <div style={{ ...noticeBase, background: 'rgba(220,38,38,0.08)', color: '#dc2626', border: '1px solid rgba(220,38,38,0.2)', wordBreak: 'break-all' }}>
               {error}
             </div>
           )}
           {status === 'success' && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-green-700 text-sm" data-testid="rebalance-success">
-              <p className="font-medium mb-1">Rebalance request submitted.</p>
+            <div
+              data-testid="rebalance-success"
+              style={{ ...noticeBase, background: 'rgba(22,163,74,0.08)', color: '#16a34a', border: '1px solid rgba(22,163,74,0.2)' }}
+            >
+              <p style={{ fontWeight: 600, marginBottom: 4 }}>Rebalance request submitted.</p>
               {txHash && (
                 <a
                   href={getTxUrl(txHash, 'settlement')}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs font-mono break-all text-green-600 hover:text-green-800 transition-colors"
+                  style={{ fontSize: 12, fontFamily: 'ui-monospace, monospace', wordBreak: 'break-all', color: '#16a34a', textDecoration: 'underline' }}
                 >
                   Tx: {txHash.slice(0, 10)}...{txHash.slice(-8)}
                 </a>
@@ -421,7 +531,19 @@ export function RebalanceSection({ itpId, enrichment }: RebalanceSectionProps) {
           <WalletActionButton
             onClick={handleSubmit}
             disabled={!isValid || !hasChanges || isWorking || status === 'success'}
-            className="w-full py-3 bg-zinc-900 text-white font-medium rounded-lg text-sm hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full"
+            style={{
+              padding: '14px 24px',
+              borderRadius: 'var(--apple-r-pill)',
+              background: 'var(--apple-accent, #0071e3)',
+              color: '#ffffff',
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: 'var(--apple-fs-14)',
+              fontWeight: 600,
+              letterSpacing: 'var(--apple-track-tight)',
+              border: 'none',
+              cursor: 'pointer',
+            }}
           >
             {status === 'requesting' ? 'Waiting for wallet...'
               : status === 'confirming' ? 'Confirming...'
@@ -432,7 +554,16 @@ export function RebalanceSection({ itpId, enrichment }: RebalanceSectionProps) {
           {status === 'success' && (
             <button
               onClick={reset}
-              className="w-full py-2 text-sm text-text-secondary hover:text-text-primary transition-colors"
+              className="w-full"
+              style={{
+                padding: '10px 0',
+                background: 'transparent',
+                border: 'none',
+                fontFamily: 'var(--apple-font-text)',
+                fontSize: 'var(--apple-fs-14)',
+                color: 'var(--apple-text-secondary)',
+                cursor: 'pointer',
+              }}
             >
               Reset
             </button>

@@ -6,7 +6,17 @@ import { useTranslations } from 'next-intl'
 import { getUniversityLogo } from '@/lib/university-logos'
 import type { SectionProps } from '../SectionRenderer'
 
-const BRAND_COLOR = '#111827'
+const BRAND_COLOR = '#0071e3'
+
+const subHead = {
+  fontFamily: 'var(--apple-font-text)',
+  fontSize: '11px',
+  fontWeight: 600,
+  textTransform: 'uppercase' as const,
+  letterSpacing: 'var(--apple-track-loose)',
+  color: 'var(--apple-text-tertiary)',
+  marginBottom: 12,
+}
 
 function HorizontalBarChart({ data, dataKey, label, tooltipLabel }: {
   data: { label?: string; bucket?: string; count: number }[]
@@ -16,10 +26,15 @@ function HorizontalBarChart({ data, dataKey, label, tooltipLabel }: {
 }) {
   if (data.length === 0) return null
   return (
-    <div className="py-4">
-      <h3 className="text-sm font-semibold text-text-secondary mb-3">
-        {label}
-      </h3>
+    <div
+      style={{
+        background: 'var(--apple-panel)',
+        border: '1px solid var(--apple-line)',
+        borderRadius: 'var(--apple-r-md)',
+        padding: 20,
+      }}
+    >
+      <h3 style={subHead}>{label}</h3>
       <ResponsiveContainer width="100%" height={data.length * 32 + 16}>
         <BarChart data={data} layout="vertical" margin={{ left: 0, right: 16, top: 0, bottom: 0 }}>
           <XAxis type="number" hide />
@@ -27,17 +42,18 @@ function HorizontalBarChart({ data, dataKey, label, tooltipLabel }: {
             type="category"
             dataKey={dataKey}
             width={100}
-            tick={{ fontSize: 11, fill: '#6B7280' }}
+            tick={{ fontSize: 11, fill: '#6e6e73' }}
             axisLine={false}
             tickLine={false}
           />
           <Tooltip
             formatter={(value: number) => [value, tooltipLabel]}
             contentStyle={{
+              fontFamily: 'var(--apple-font-text)',
               fontSize: 12,
-              border: '1px solid #e5e5e5',
-              borderRadius: 6,
-              boxShadow: 'none',
+              border: '1px solid rgba(0,0,0,0.08)',
+              borderRadius: 8,
+              boxShadow: '0 8px 24px rgba(0,0,0,0.06)',
             }}
           />
           <Bar dataKey="count" fill={BRAND_COLOR} radius={[0, 3, 3, 0]} barSize={18} />
@@ -79,15 +95,34 @@ function getNationalityCode(nationality: string): string | null {
   return null
 }
 
+const rowLabelStyle = {
+  fontFamily: 'var(--apple-font-text)',
+  fontSize: 'var(--apple-fs-12)',
+  color: 'var(--apple-text-secondary)',
+  letterSpacing: 'var(--apple-track-tight)',
+}
+
+const rowCountStyle = {
+  fontFamily: 'var(--apple-font-text)',
+  fontSize: 11,
+  color: 'var(--apple-text-tertiary)',
+  fontVariantNumeric: 'tabular-nums' as const,
+}
+
+const cardWrapStyle = {
+  background: 'var(--apple-panel)',
+  border: '1px solid var(--apple-line)',
+  borderRadius: 'var(--apple-r-md)',
+  padding: 20,
+}
+
 function NationalityChart({ data, title }: { data: { label: string; count: number }[]; title: string }) {
   if (data.length === 0) return null
   const maxCount = Math.max(...data.map(d => d.count))
 
   return (
-    <div className="py-4">
-      <h3 className="text-sm font-semibold text-text-secondary mb-3">
-        {title}
-      </h3>
+    <div style={cardWrapStyle}>
+      <h3 style={subHead}>{title}</h3>
       <div className="flex flex-col gap-1.5">
         {data.map(({ label, count }) => {
           const code = getNationalityCode(label)
@@ -105,20 +140,20 @@ function NationalityChart({ data, title }: { data: { label: string; count: numbe
                     unoptimized
                   />
                 ) : (
-                  <div className="w-5 h-[15px] rounded-[2px] bg-gray-200" />
+                  <div className="w-5 h-[15px] rounded-[2px]" style={{ background: 'var(--apple-panel-2)' }} />
                 )}
               </div>
-              <span className="text-label text-gray-500 w-[90px] truncate flex-shrink-0" title={label}>
+              <span className="w-[90px] truncate flex-shrink-0" title={label} style={rowLabelStyle}>
                 {label}
               </span>
               <div className="flex-1 flex items-center gap-1.5">
-                <div className="flex-1 h-[18px] bg-gray-50 rounded-sm overflow-hidden">
+                <div className="flex-1 h-[18px] rounded-sm overflow-hidden" style={{ background: 'var(--apple-panel-2)' }}>
                   <div
                     className="h-full rounded-r-[3px]"
                     style={{ width: `${pct}%`, backgroundColor: BRAND_COLOR }}
                   />
                 </div>
-                <span className="text-micro text-gray-400 w-5 text-right flex-shrink-0">
+                <span className="w-5 text-right flex-shrink-0" style={rowCountStyle}>
                   {count}
                 </span>
               </div>
@@ -135,10 +170,8 @@ function UniversityChart({ data, title }: { data: { label: string; count: number
   const maxCount = Math.max(...data.map(d => d.count))
 
   return (
-    <div className="py-4">
-      <h3 className="text-sm font-semibold text-text-secondary mb-3">
-        {title}
-      </h3>
+    <div style={cardWrapStyle}>
+      <h3 style={subHead}>{title}</h3>
       <div className="flex flex-col gap-1.5">
         {data.map(({ label, count }) => {
           const logoUrl = getUniversityLogo(label)
@@ -156,20 +189,20 @@ function UniversityChart({ data, title }: { data: { label: string; count: number
                     unoptimized
                   />
                 ) : (
-                  <div className="w-4 h-4 rounded-sm bg-gray-200" />
+                  <div className="w-4 h-4 rounded-sm" style={{ background: 'var(--apple-panel-2)' }} />
                 )}
               </div>
-              <span className="text-label text-gray-500 w-[90px] truncate flex-shrink-0" title={label}>
+              <span className="w-[90px] truncate flex-shrink-0" title={label} style={rowLabelStyle}>
                 {label}
               </span>
               <div className="flex-1 flex items-center gap-1.5">
-                <div className="flex-1 h-[18px] bg-gray-50 rounded-sm overflow-hidden">
+                <div className="flex-1 h-[18px] rounded-sm overflow-hidden" style={{ background: 'var(--apple-panel-2)' }}>
                   <div
                     className="h-full rounded-r-[3px]"
                     style={{ width: `${pct}%`, backgroundColor: BRAND_COLOR }}
                   />
                 </div>
-                <span className="text-micro text-gray-400 w-5 text-right flex-shrink-0">
+                <span className="w-5 text-right flex-shrink-0" style={rowCountStyle}>
                   {count}
                 </span>
               </div>
@@ -187,12 +220,29 @@ export function FounderDemographics({ enrichment }: SectionProps) {
   if (!founders || founders.total_founders === 0) return null
 
   return (
-    <section>
-      <div className="mb-4">
-        <h2 className="text-2xl font-bold text-text-primary">
+    <section className="py-8">
+      <div className="mb-6">
+        <h2
+          style={{
+            fontFamily: 'var(--apple-font-display)',
+            fontSize: 'clamp(24px, 2.4vw, 32px)',
+            fontWeight: 600,
+            letterSpacing: 'var(--apple-track-tight)',
+            color: 'var(--apple-text)',
+            margin: 0,
+          }}
+        >
           {t('title')}
         </h2>
-        <p className="text-xs text-text-secondary mt-1">
+        <p
+          style={{
+            fontFamily: 'var(--apple-font-text)',
+            fontSize: 12,
+            color: 'var(--apple-text-tertiary)',
+            marginTop: 6,
+            letterSpacing: 'var(--apple-track-tight)',
+          }}
+        >
           {t('subtitle', { founders: founders.total_founders, companies: founders.total_companies_matched })}
         </p>
       </div>

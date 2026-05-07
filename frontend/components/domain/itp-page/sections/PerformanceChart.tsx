@@ -58,25 +58,25 @@ export function PerformanceChart({ itpId, nav, createdAt }: SectionProps) {
         width: chartContainerRef.current.clientWidth,
         height: 360,
         layout: {
-          background: { color: '#fafafa' },
-          textColor: '#71717a',
-          fontFamily: 'sans-serif',
+          background: { color: '#ffffff' },
+          textColor: '#86868b',
+          fontFamily: '"SF Pro Text", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif',
         },
         grid: {
-          vertLines: { color: '#f4f4f5' },
-          horzLines: { color: '#f4f4f5' },
+          vertLines: { color: 'rgba(0,0,0,0.05)' },
+          horzLines: { color: 'rgba(0,0,0,0.05)' },
         },
         crosshair: {
-          vertLine: { color: '#18181b', width: 1, style: 2 },
-          horzLine: { color: '#18181b', width: 1, style: 2 },
+          vertLine: { color: '#1d1d1f', width: 1, style: 2 },
+          horzLine: { color: '#1d1d1f', width: 1, style: 2 },
         },
         timeScale: {
-          borderColor: '#e4e4e7',
+          borderColor: 'rgba(0,0,0,0.08)',
           timeVisible: true,
           secondsVisible: false,
         },
         rightPriceScale: {
-          borderColor: '#e4e4e7',
+          borderColor: 'rgba(0,0,0,0.08)',
         },
       })
 
@@ -256,71 +256,137 @@ export function PerformanceChart({ itpId, nav, createdAt }: SectionProps) {
     return () => clearInterval(interval)
   }, [chartReady, data, timeframe, itpId])
 
+  const sectionTitleStyle = {
+    fontFamily: 'var(--apple-font-display)',
+    fontSize: 'clamp(24px, 2.4vw, 32px)',
+    fontWeight: 600,
+    letterSpacing: 'var(--apple-track-tight)',
+    color: 'var(--apple-text)',
+    margin: 0,
+  } as const
+
+  const pillBase = {
+    padding: '6px 12px',
+    borderRadius: 'var(--apple-r-pill)',
+    fontFamily: 'var(--apple-font-text)',
+    fontSize: 'var(--apple-fs-12)',
+    fontWeight: 600,
+    letterSpacing: 'var(--apple-track-loose)',
+    cursor: 'pointer',
+    transition: 'background 150ms var(--apple-ease-default), color 150ms var(--apple-ease-default), border-color 150ms var(--apple-ease-default)',
+    border: '1px solid var(--apple-line)',
+  } as const
+
   return (
     <section className="py-8">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl font-bold text-text-primary">{t('title')}</h2>
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <h2 style={sectionTitleStyle}>{t('title')}</h2>
         <div className="flex items-center gap-2">
-          <div className="flex gap-1 fluid-btn-group">
-            {TIMEFRAMES.map(tf => (
-              <button
-                key={tf.value}
-                onClick={() => setTimeframe(tf.value)}
-                className={`px-3 py-1 text-xs font-semibold rounded transition-colors ${
-                  timeframe === tf.value
-                    ? 'bg-text-primary text-text-inverse'
-                    : 'bg-muted text-text-secondary hover:text-text-primary'
-                }`}
-              >
-                {tf.label}
-              </button>
-            ))}
+          <div className="flex gap-1.5">
+            {TIMEFRAMES.map(tf => {
+              const active = timeframe === tf.value
+              return (
+                <button
+                  key={tf.value}
+                  onClick={() => setTimeframe(tf.value)}
+                  style={{
+                    ...pillBase,
+                    background: active ? 'var(--apple-accent, #0071e3)' : 'transparent',
+                    color: active ? '#ffffff' : 'var(--apple-text-secondary)',
+                    borderColor: active ? 'var(--apple-accent, #0071e3)' : 'var(--apple-line)',
+                  }}
+                >
+                  {tf.label}
+                </button>
+              )
+            })}
           </div>
           <button
             onClick={() => setShowBtc(v => !v)}
-            className={`px-3 py-1 text-xs font-semibold rounded transition-colors ${
-              showBtc
-                ? 'bg-[#f7931a]/20 text-[#f7931a] border border-[#f7931a]/50'
-                : 'bg-muted text-text-secondary border border-border-light hover:border-zinc-500'
-            }`}
+            style={{
+              ...pillBase,
+              background: showBtc ? 'rgba(247,147,26,0.14)' : 'transparent',
+              color: showBtc ? '#f7931a' : 'var(--apple-text-secondary)',
+              borderColor: showBtc ? 'rgba(247,147,26,0.4)' : 'var(--apple-line)',
+            }}
           >
             BTC
           </button>
         </div>
       </div>
 
-      <div className="relative">
+      <div
+        className="relative"
+        style={{
+          background: 'var(--apple-panel)',
+          border: '1px solid var(--apple-line)',
+          borderRadius: 'var(--apple-r-md)',
+          padding: 8,
+          overflow: 'hidden',
+        }}
+      >
         <div ref={chartContainerRef} style={{ height: 360 }} />
         {isLoading && data.length === 0 && (
-          <div className="absolute inset-0 flex items-center justify-center bg-card">
+          <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'var(--apple-panel)' }}>
             <div className="text-center">
-              <div className="inline-block w-6 h-6 border-2 border-zinc-900 border-t-transparent rounded-full animate-spin mb-2" />
-              <p className="text-sm text-text-muted">{tc('loading')}</p>
+              <div className="inline-block w-6 h-6 border-2 rounded-full animate-spin mb-2" style={{ borderColor: 'var(--apple-line)', borderTopColor: 'var(--apple-accent, #0071e3)' }} />
+              <p style={{ fontFamily: 'var(--apple-font-text)', fontSize: 'var(--apple-fs-14)', color: 'var(--apple-text-tertiary)' }}>{tc('loading')}</p>
             </div>
           </div>
         )}
         {error && (
-          <div className="absolute inset-0 flex items-center justify-center bg-card">
+          <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'var(--apple-panel)' }}>
             <div className="text-center">
-              <p className="text-sm text-color-down mb-1">{tc('error')}</p>
-              <p className="text-xs text-text-muted">{error}</p>
+              <p style={{ fontFamily: 'var(--apple-font-text)', fontSize: 'var(--apple-fs-14)', color: '#dc2626', marginBottom: 4 }}>{tc('error')}</p>
+              <p style={{ fontFamily: 'var(--apple-font-text)', fontSize: 12, color: 'var(--apple-text-tertiary)' }}>{error}</p>
             </div>
           </div>
         )}
         {!isLoading && !error && data.length === 0 && (
-          <div className="absolute inset-0 flex items-center justify-center bg-card">
-            <p className="text-sm text-text-muted">{t('no_data')}</p>
+          <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'var(--apple-panel)' }}>
+            <p style={{ fontFamily: 'var(--apple-font-text)', fontSize: 'var(--apple-fs-14)', color: 'var(--apple-text-tertiary)' }}>{t('no_data')}</p>
           </div>
         )}
       </div>
 
       {sinceInception != null && inceptionDate && (
-        <div className="mt-4 pt-4 border-t border-border-light">
-          <span className="text-xs text-text-secondary">{t('since_inception_return')}</span>
-          <span className={`text-lg font-bold ${sinceInception >= 0 ? 'text-color-up' : 'text-color-down'}`}>
+        <div
+          className="mt-6 pt-6 flex flex-wrap items-baseline gap-3"
+          style={{ borderTop: '1px solid var(--apple-line)' }}
+        >
+          <span
+            style={{
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: '11px',
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: 'var(--apple-track-loose)',
+              color: 'var(--apple-text-tertiary)',
+            }}
+          >
+            {t('since_inception_return')}
+          </span>
+          <span
+            style={{
+              fontFamily: 'var(--apple-font-display)',
+              fontSize: 'var(--apple-fs-21)',
+              fontWeight: 600,
+              letterSpacing: 'var(--apple-track-tight)',
+              fontVariantNumeric: 'tabular-nums',
+              color: sinceInception >= 0 ? '#16a34a' : '#dc2626',
+            }}
+          >
             <CountUp value={sinceInception} />
           </span>
-          <span className="text-xs text-text-muted ml-2">{t('from_date', { date: inceptionDate })}</span>
+          <span
+            style={{
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: 12,
+              color: 'var(--apple-text-tertiary)',
+            }}
+          >
+            {t('from_date', { date: inceptionDate })}
+          </span>
         </div>
       )}
     </section>

@@ -107,18 +107,67 @@ export function FundFacts({ itpId, symbol, nav, assetCount, createdAt, enrichmen
 
   type Fact = { label: string; value: string; full?: string; copyable?: boolean; asOf?: boolean; testId?: string }
 
+  const sectionTitle = {
+    fontFamily: 'var(--apple-font-display)',
+    fontSize: 'clamp(24px, 2.4vw, 32px)',
+    fontWeight: 600,
+    letterSpacing: 'var(--apple-track-tight)',
+    color: 'var(--apple-text)',
+    margin: 0,
+  } as const
+
+  const subTitle = {
+    fontFamily: 'var(--apple-font-display)',
+    fontSize: 'var(--apple-fs-21)',
+    fontWeight: 600,
+    letterSpacing: 'var(--apple-track-tight)',
+    color: 'var(--apple-text)',
+    margin: 0,
+  } as const
+
+  const factLabelStyle = {
+    fontFamily: 'var(--apple-font-text)',
+    fontSize: 'var(--apple-fs-14)',
+    color: 'var(--apple-text-secondary)',
+    letterSpacing: 'var(--apple-track-tight)',
+  }
+
+  const factValueStyle = {
+    fontFamily: 'var(--apple-font-text)',
+    fontSize: 'var(--apple-fs-14)',
+    color: 'var(--apple-text)',
+    fontWeight: 500,
+    letterSpacing: 'var(--apple-track-tight)',
+    textAlign: 'right' as const,
+  }
+
   const FactRow = ({ f }: { f: Fact }) => (
-    <div className="flex justify-between py-3 border-b border-border-light" {...(f.testId ? { 'data-testid': f.testId } : {})}>
+    <div
+      className="flex justify-between"
+      style={{ padding: '12px 0', borderBottom: '1px solid var(--apple-line)' }}
+      {...(f.testId ? { 'data-testid': f.testId } : {})}
+    >
       <div>
-        <span className="text-sm text-text-secondary">{f.label}</span>
-        {f.asOf && <div className="text-micro text-text-muted">{t('fund_facts.as_of', { date: asOfToday(locale) })}</div>}
+        <span style={factLabelStyle}>{f.label}</span>
+        {f.asOf && (
+          <div style={{ fontFamily: 'var(--apple-font-text)', fontSize: 11, color: 'var(--apple-text-tertiary)', marginTop: 2 }}>
+            {t('fund_facts.as_of', { date: asOfToday(locale) })}
+          </div>
+        )}
       </div>
-      <div className="flex items-center gap-2">
-        <span className="text-sm font-semibold text-text-primary text-right">{f.value}</span>
+      <div className="flex items-center gap-3">
+        <span style={factValueStyle}>{f.value}</span>
         {f.copyable && (
           <button
             onClick={() => copyToClipboard(f.full!, f.label)}
-            className="text-xs text-text-muted hover:text-text-primary transition-colors"
+            style={{
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: 12,
+              color: 'var(--apple-accent, #0071e3)',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+            }}
           >
             {copied === f.label ? t('fund_facts.copied') : t('fund_facts.copy')}
           </button>
@@ -129,7 +178,7 @@ export function FundFacts({ itpId, symbol, nav, assetCount, createdAt, enrichmen
 
   return (
     <section className="py-8">
-      <h2 className="text-2xl font-bold text-text-primary mb-6">{t('fund_facts.title')}</h2>
+      <h2 className="mb-6" style={sectionTitle}>{t('fund_facts.title')}</h2>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-16">
         <div>
@@ -143,26 +192,26 @@ export function FundFacts({ itpId, symbol, nav, assetCount, createdAt, enrichmen
       {/* Portfolio Characteristics */}
       {concentration && (
         <>
-          <h3 className="text-xl font-bold text-text-primary mt-10 mb-4">{t('fund_facts.portfolio_characteristics')}</h3>
+          <h3 className="mt-12 mb-4" style={subTitle}>{t('fund_facts.portfolio_characteristics')}</h3>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-16">
             <div>
-              <div className="flex justify-between py-3 border-b border-border-light">
-                <span className="text-sm text-text-secondary">{t('fund_facts.top_5_concentration')}</span>
-                <span className="text-sm font-semibold text-text-primary">{concentration.top5.toFixed(1)}%</span>
+              <div className="flex justify-between" style={{ padding: '12px 0', borderBottom: '1px solid var(--apple-line)' }}>
+                <span style={factLabelStyle}>{t('fund_facts.top_5_concentration')}</span>
+                <span style={factValueStyle}>{concentration.top5.toFixed(1)}%</span>
               </div>
-              <div className="flex justify-between py-3 border-b border-border-light">
-                <span className="text-sm text-text-secondary">{t('fund_facts.top_10_concentration')}</span>
-                <span className="text-sm font-semibold text-text-primary">{concentration.top10.toFixed(1)}%</span>
+              <div className="flex justify-between" style={{ padding: '12px 0', borderBottom: '1px solid var(--apple-line)' }}>
+                <span style={factLabelStyle}>{t('fund_facts.top_10_concentration')}</span>
+                <span style={factValueStyle}>{concentration.top10.toFixed(1)}%</span>
               </div>
             </div>
             <div>
-              <div className="flex justify-between py-3 border-b border-border-light">
-                <span className="text-sm text-text-secondary">{t('fund_facts.hhi_index')}</span>
-                <span className="text-sm font-semibold text-text-primary">{Math.round(concentration.hhi)} ({concentration.hhiLabel})</span>
+              <div className="flex justify-between" style={{ padding: '12px 0', borderBottom: '1px solid var(--apple-line)' }}>
+                <span style={factLabelStyle}>{t('fund_facts.hhi_index')}</span>
+                <span style={factValueStyle}>{Math.round(concentration.hhi)} ({concentration.hhiLabel})</span>
               </div>
-              <div className="flex justify-between py-3 border-b border-border-light">
-                <span className="text-sm text-text-secondary">{t('fund_facts.average_market_cap')}</span>
-                <span className="text-sm font-semibold text-text-primary">{formatMcap(concentration.avgMcap)}</span>
+              <div className="flex justify-between" style={{ padding: '12px 0', borderBottom: '1px solid var(--apple-line)' }}>
+                <span style={factLabelStyle}>{t('fund_facts.average_market_cap')}</span>
+                <span style={factValueStyle}>{formatMcap(concentration.avgMcap)}</span>
               </div>
             </div>
           </div>
@@ -170,27 +219,29 @@ export function FundFacts({ itpId, symbol, nav, assetCount, createdAt, enrichmen
       )}
 
       {/* Fees */}
-      <h3 className="text-xl font-bold text-text-primary mt-10 mb-2">{t('fund_facts.fees')}</h3>
-      <p className="text-xs text-text-muted mb-4">{t('fund_facts.fees_as_of')}</p>
+      <h3 className="mt-12 mb-2" style={subTitle}>{t('fund_facts.fees')}</h3>
+      <p style={{ fontFamily: 'var(--apple-font-text)', fontSize: 12, color: 'var(--apple-text-tertiary)', marginBottom: 16 }}>
+        {t('fund_facts.fees_as_of')}
+      </p>
       <div className="max-w-lg">
-        <div className="flex justify-between py-3 border-b border-border-light">
-          <span className="text-sm text-text-secondary">{t('fund_facts.management_fee')}</span>
-          <span className="text-sm font-semibold text-text-primary">0.00%</span>
+        <div className="flex justify-between" style={{ padding: '12px 0', borderBottom: '1px solid var(--apple-line)' }}>
+          <span style={factLabelStyle}>{t('fund_facts.management_fee')}</span>
+          <span style={factValueStyle}>0.00%</span>
         </div>
-        <div className="flex justify-between py-3 border-b border-border-light">
-          <span className="text-sm text-text-secondary">{t('fund_facts.acquired_fund_fees')}</span>
-          <span className="text-sm font-semibold text-text-primary">0.00%</span>
+        <div className="flex justify-between" style={{ padding: '12px 0', borderBottom: '1px solid var(--apple-line)' }}>
+          <span style={factLabelStyle}>{t('fund_facts.acquired_fund_fees')}</span>
+          <span style={factValueStyle}>0.00%</span>
         </div>
-        <div className="flex justify-between py-3 border-b border-border-light">
-          <span className="text-sm text-text-secondary">{t('fund_facts.other_expenses')}</span>
-          <span className="text-sm font-semibold text-text-primary">0.00%</span>
+        <div className="flex justify-between" style={{ padding: '12px 0', borderBottom: '1px solid var(--apple-line)' }}>
+          <span style={factLabelStyle}>{t('fund_facts.other_expenses')}</span>
+          <span style={factValueStyle}>0.00%</span>
         </div>
-        <div className="flex justify-between py-3 border-t-2 border-text-primary">
-          <span className="text-sm font-bold text-text-primary">{t('fund_facts.expense_ratio')}</span>
-          <span className="text-sm font-bold text-text-primary">0.00%</span>
+        <div className="flex justify-between" style={{ padding: '12px 0', borderTop: '2px solid var(--apple-text)' }}>
+          <span style={{ ...factLabelStyle, color: 'var(--apple-text)', fontWeight: 600 }}>{t('fund_facts.expense_ratio')}</span>
+          <span style={{ ...factValueStyle, fontWeight: 600 }}>0.00%</span>
         </div>
       </div>
-      <p className="text-micro text-text-muted mt-3">
+      <p style={{ fontFamily: 'var(--apple-font-text)', fontSize: 11, color: 'var(--apple-text-tertiary)', marginTop: 12 }}>
         {t('fund_facts.fee_disclaimer')}
       </p>
     </section>
