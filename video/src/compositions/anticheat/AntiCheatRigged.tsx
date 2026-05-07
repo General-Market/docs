@@ -6,7 +6,7 @@ import {
   staticFile,
   useCurrentFrame,
 } from "remotion";
-import { font } from "../../common/fonts";
+import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 import { VerticalDotGrid } from "./DotGrid";
 import { IdleZoom, RevealChars } from "./vibe";
@@ -35,7 +35,8 @@ type Highlight = { x: number; y: number; w: number; h: number };
 type ArticleProof = {
   exchange: string;
   image: string;
-  highlights: Highlight[];      // yellow body highlight (insider-trading phrases)
+  source: string;                // canonical URL — printed under the card
+  highlights: Highlight[];       // yellow body highlight (insider-trading phrases)
   exchangeBox?: Highlight;       // green underline on the exchange name in title
 };
 
@@ -48,18 +49,24 @@ const ARTICLES: ArticleProof[] = [
   {
     exchange: "binance",
     image: "insider-trading/articles/1.png",
+    source:
+      "theblock.co/post/381752/binance-confirm-insider-trading-year-yellow-fruit-meme-token-higher",
     highlights: [{ x: 0.5737, y: 0.1383, w: 0.3183, h: 0.0453 }],
     exchangeBox: { x: 0.0131, y: 0.1383, w: 0.1759, h: 0.0352 },
   },
   {
     exchange: "robinhood",
     image: "insider-trading/articles/9.png",
+    source:
+      "pymnts.com/markets/2026/robinhood-blocks-some-prediction-markets-over-insider-trading-worries",
     highlights: [{ x: 0.4119, y: 0.1968, w: 0.2831, h: 0.042 }],
     exchangeBox: { x: 0.1625, y: 0.1433, w: 0.2065, h: 0.0331 },
   },
   {
     exchange: "polymarket",
     image: "insider-trading/articles/3.png",
+    source:
+      "coindesk.com/markets/2026/02/27/polymarket-bettors-appear-to-have-insider-traded-on-a-market-designed-to-catch-insider-traders",
     highlights: [
       { x: 0.6467, y: 0.2828, w: 0.2445, h: 0.0273 },
       { x: 0.5126, y: 0.3313, w: 0.1197, h: 0.0281 },
@@ -69,18 +76,22 @@ const ARTICLES: ArticleProof[] = [
   {
     exchange: "pump.fun",
     image: "insider-trading/articles/4.png",
+    source:
+      "cointribune.com/en/solana-memecoin-lawsuit-advances-as-investors-cite-insider-trading-claims",
     highlights: [{ x: 0.1253, y: 0.5158, w: 0.2653, h: 0.0487 }],
     exchangeBox: { x: 0.0414, y: 0.4601, w: 0.3163, h: 0.0386 },
   },
   {
     exchange: "kalshi",
     image: "insider-trading/articles/6.png",
+    source: "thehill.com/policy/technology/5797999-prediction-markets-insider-trading-ban",
     highlights: [{ x: 0.4819, y: 0.176, w: 0.216, h: 0.0303 }],
     exchangeBox: { x: 0.0249, y: 0.1760, w: 0.0964, h: 0.0279 },
   },
   {
     exchange: "coinbase",
     image: "insider-trading/articles/7.png",
+    source: "sec.gov/newsroom/press-releases/2022-127",
     highlights: [{ x: 0.2453, y: 0.4009, w: 0.3414, h: 0.0417 }],
     exchangeBox: { x: 0.5953, y: 0.3042, w: 0.2109, h: 0.0346 },
   },
@@ -255,7 +266,7 @@ const GlitchVerdict: React.FC<{ glitch: number }> = ({ glitch }) => {
 
 // ─── Article flash: hard-cut entry, big size, yellow highlighter restored ─────
 
-const ARTICLE_HEIGHT = 1020;
+const ARTICLE_HEIGHT = 940;
 
 const ArticleFlash: React.FC<{
   article: ArticleProof;
@@ -290,6 +301,7 @@ const ArticleFlash: React.FC<{
           position: "relative",
           background: "#ffffff",
           padding: 24,
+          paddingBottom: 56,
           borderRadius: 14,
           boxShadow:
             "0 0 0 1px rgba(10,12,18,0.16), 0 24px 56px rgba(10,12,18,0.20)",
@@ -320,16 +332,35 @@ const ArticleFlash: React.FC<{
             />
           )}
         </div>
+        <SourceCitation url={article.source} />
       </div>
     </div>
   );
 };
 
-// ─── Exchange-name highlight — same render pattern as the yellow body
-//     highlighter, recolored green. Multi-pass for visible ink: a multiply
-//     body, a screen-blend saturation boost, and a darker green kick line
-//     beneath. This is the pattern that worked for yellow; we're trusting
-//     it for green rather than inventing a new one.
+// ─── Source citation — small mono link printed under the article card ─────────
+
+const SourceCitation: React.FC<{ url: string }> = ({ url }) => (
+  <div
+    style={{
+      position: "absolute",
+      left: 28,
+      right: 28,
+      bottom: 18,
+      fontFamily: monoFont,
+      fontSize: 18,
+      color: "rgba(10,12,18,0.55)",
+      letterSpacing: "0.02em",
+      whiteSpace: "nowrap",
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+    }}
+  >
+    source — {url}
+  </div>
+);
+
+// Underliner only — a single green stroke beneath the exchange name.
 
 const ExchangeNameUnderline: React.FC<{
   box: Highlight;
@@ -338,63 +369,23 @@ const ExchangeNameUnderline: React.FC<{
   const local = Math.max(0, Math.min(1, reveal));
   const overshootX = 0.008;
   const overshootW = 0.016;
-  const padY = box.h * 0.22;
-  const top = box.y - padY;
-  const heightPct = box.h + padY * 2;
 
   return (
-    <>
-      {/* Multiply pass — the green ink body */}
-      <div
-        style={{
-          position: "absolute",
-          left: `${(box.x - overshootX) * 100}%`,
-          top: `${top * 100}%`,
-          width: `${(box.w + overshootW) * local * 100}%`,
-          height: `${heightPct * 100}%`,
-          background:
-            "linear-gradient(180deg, rgba(82,255,162,0.55) 0%, rgba(34,217,122,0.74) 45%, rgba(34,217,122,0.74) 55%, rgba(82,255,162,0.55) 100%)",
-          mixBlendMode: "multiply",
-          borderRadius: 3,
-          transform: "skewX(-5deg) rotate(-0.8deg)",
-          transformOrigin: "left center",
-          pointerEvents: "none",
-        }}
-      />
-      {/* Screen pass — saturation boost */}
-      <div
-        style={{
-          position: "absolute",
-          left: `${(box.x - overshootX) * 100}%`,
-          top: `${top * 100}%`,
-          width: `${(box.w + overshootW) * local * 100}%`,
-          height: `${heightPct * 100}%`,
-          background:
-            "linear-gradient(180deg, rgba(82,255,162,0.45) 0%, rgba(34,217,122,0.55) 45%, rgba(34,217,122,0.55) 55%, rgba(82,255,162,0.45) 100%)",
-          mixBlendMode: "screen",
-          borderRadius: 3,
-          transform: "skewX(-5deg) rotate(-0.8deg)",
-          transformOrigin: "left center",
-          pointerEvents: "none",
-        }}
-      />
-      {/* Kick line — darker green stroke beneath, mirrors the yellow's red kick */}
-      <div
-        style={{
-          position: "absolute",
-          left: `${(box.x - overshootX * 0.6) * 100}%`,
-          top: `${(box.y + box.h * 0.92) * 100}%`,
-          width: `${(box.w + overshootW * 0.6) * local * 100}%`,
-          height: `${Math.max(0.008, box.h * 0.22) * 100}%`,
-          background: "#0e8f4a",
-          borderRadius: 2,
-          transform: "skewX(-3deg) rotate(-0.4deg)",
-          transformOrigin: "left center",
-          boxShadow: `0 0 6px ${PROOF_GREEN_LIGHT}`,
-          pointerEvents: "none",
-        }}
-      />
-    </>
+    <div
+      style={{
+        position: "absolute",
+        left: `${(box.x - overshootX * 0.6) * 100}%`,
+        top: `${(box.y + box.h * 0.92) * 100}%`,
+        width: `${(box.w + overshootW * 0.6) * local * 100}%`,
+        height: `${Math.max(0.008, box.h * 0.22) * 100}%`,
+        background: "#0e8f4a",
+        borderRadius: 2,
+        transform: "skewX(-3deg) rotate(-0.4deg)",
+        transformOrigin: "left center",
+        boxShadow: `0 0 6px ${PROOF_GREEN_LIGHT}`,
+        pointerEvents: "none",
+      }}
+    />
   );
 };
 
