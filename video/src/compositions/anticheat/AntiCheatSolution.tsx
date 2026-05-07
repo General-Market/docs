@@ -162,13 +162,30 @@ const Terminal: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  const panel = spring({
+  // 3D entrance ported from GMBrand Scene03 SegDesktopUI (the desktop UI
+  // fly-in that lands at 0:18). Tilted-and-zoomed → flat over 95 frames.
+  const ENTRANCE_KEYS = [0, 10, 20, 35, 50, 65, 80, 95];
+  const panelRotY = interpolate(
     frame,
-    fps,
-    config: { damping: 22, stiffness: 130, mass: 0.6 },
+    ENTRANCE_KEYS,
+    [-22, -18, -14, -10, -7, -4, -2, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const panelRotX = interpolate(
+    frame,
+    ENTRANCE_KEYS,
+    [8, 6.5, 5, 4, 3, 2, 1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const panelScale = interpolate(
+    frame,
+    ENTRANCE_KEYS,
+    [2.3, 2.0, 1.7, 1.4, 1.2, 1.1, 1.03, 1.0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const panelOpacity = interpolate(frame, [0, 3], [0, 1], {
+    extrapolateRight: "clamp",
   });
-  const panelOpacity = interpolate(panel, [0, 1], [0, 1]);
-  const panelY = interpolate(panel, [0, 1], [40, 0]);
 
   const LINE_DELAYS = [toFrames(0.2), toFrames(0.8), toFrames(2.0)];
   const CHARS_PER_FRAME = 0.85;
@@ -218,11 +235,18 @@ const Terminal: React.FC = () => {
       <div
         style={{
           width: "min(1200px, 90%)",
+          perspective: 1400,
+          opacity: panelOpacity,
+        }}
+      >
+      <div
+        style={{
           background: "linear-gradient(180deg, #0d0d10 0%, #050507 100%)",
           border: "1px solid rgba(255,255,255,0.08)",
           borderRadius: 8,
-          opacity: panelOpacity,
-          transform: `translateY(${panelY}px)`,
+          transformStyle: "preserve-3d",
+          transform: `rotateY(${panelRotY}deg) rotateX(${panelRotX}deg) scale(${panelScale})`,
+          transformOrigin: "50% 50%",
           boxShadow:
             "0 0 0 1px rgba(10,12,18,0.10), 0 24px 56px rgba(10,12,18,0.20)",
         }}
@@ -310,6 +334,7 @@ const Terminal: React.FC = () => {
             );
           })}
         </div>
+      </div>
       </div>
 
       <div
