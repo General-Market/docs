@@ -27,21 +27,21 @@ const LINK_MENU_CSS_WIDTH = 360
 const HTML_TRANSFORM_DIVISOR = 40
 
 function readResponsive(): Responsive {
-  // The phone should sit in the page like a normal centered linktree column —
-  // fully visible, comfortably sized, with a faint scroll-driven slide.
+  // The phone fills the page like a real linktree page does — generously
+  // sized on every device, with just a faint scroll-driven slide.
   if (typeof window === 'undefined') {
-    return { distance: 8.5, topOffset: 0, scrollTravel: 0.5, ambient: false }
+    return { distance: 7.6, topOffset: 0, scrollTravel: 0.5, ambient: false }
   }
   const aspect = window.innerWidth / Math.max(1, window.innerHeight)
-  // Touch devices have no mouse parallax — drive an idle sine wave instead.
+  // Touch devices have no mouse parallax — gyroscope (or sine) takes over.
   const ambient = window.matchMedia('(hover: none), (pointer: coarse)').matches
   if (aspect >= 1.2) {
-    return { distance: 8.5, topOffset: 0, scrollTravel: 0.5, ambient }
+    return { distance: 7.6, topOffset: 0, scrollTravel: 0.5, ambient }
   }
   if (aspect >= 0.7) {
-    return { distance: 9.6, topOffset: 0, scrollTravel: 0.45, ambient }
+    return { distance: 7.8, topOffset: 0, scrollTravel: 0.45, ambient }
   }
-  return { distance: 10.2, topOffset: 0, scrollTravel: 0.4, ambient }
+  return { distance: 8.0, topOffset: 0, scrollTravel: 0.4, ambient }
 }
 
 type LeaveRef = React.MutableRefObject<{
@@ -78,6 +78,9 @@ type TiltRef = React.MutableRefObject<{
   scrollProgress: number
   yaw: number
   pitch: number
+  gyroActive: boolean
+  gyroYaw: number
+  gyroPitch: number
 }>
 
 function CameraRig({ distance }: { distance: number }) {
@@ -185,17 +188,25 @@ function PhoneScene({
       return
     }
 
-    // Idle ambient sine — only on touch devices that lack a mouse parallax.
+    // Tilt source: gyroscope when granted on touch devices, sine wave
+    // as ambient fallback for touch-without-gyro, mouse parallax on desktop.
     const tNow = clock.getElapsedTime()
-    const ambientYaw = responsive.ambient ? Math.sin(tNow * 0.45) * 0.09 : 0
-    const ambientPitch = responsive.ambient ? Math.sin(tNow * 0.32 + 1.1) * 0.05 : 0
+    let tiltYaw = tilt.current.yaw
+    let tiltPitch = tilt.current.pitch
+    if (tilt.current.gyroActive) {
+      tiltYaw = tilt.current.gyroYaw
+      tiltPitch = tilt.current.gyroPitch
+    } else if (responsive.ambient) {
+      tiltYaw = Math.sin(tNow * 0.45) * 0.09
+      tiltPitch = Math.sin(tNow * 0.32 + 1.1) * 0.05
+    }
 
     const targetY = responsive.topOffset + tilt.current.scrollProgress * responsive.scrollTravel
     g.position.y = THREE.MathUtils.lerp(g.position.y, targetY, 0.12)
     g.position.x = THREE.MathUtils.lerp(g.position.x, 0, 0.18)
     g.position.z = THREE.MathUtils.lerp(g.position.z, 0, 0.18)
-    g.rotation.y = THREE.MathUtils.lerp(g.rotation.y, tilt.current.yaw + ambientYaw, 0.1)
-    g.rotation.x = THREE.MathUtils.lerp(g.rotation.x, tilt.current.pitch + ambientPitch, 0.1)
+    g.rotation.y = THREE.MathUtils.lerp(g.rotation.y, tiltYaw, 0.12)
+    g.rotation.x = THREE.MathUtils.lerp(g.rotation.x, tiltPitch, 0.12)
     g.rotation.z = THREE.MathUtils.lerp(g.rotation.z, 0, 0.18)
   })
 
@@ -227,7 +238,14 @@ function PhoneScene({
 }
 
 export function PhoneLinktree() {
-  const tilt = useRef({ scrollProgress: 0, yaw: 0, pitch: 0 })
+  const tilt = useRef({
+    scrollProgress: 0,
+    yaw: 0,
+    pitch: 0,
+    gyroActive: false,
+    gyroYaw: 0,
+    gyroPitch: 0,
+  })
   const leaving: LeaveRef = useRef(null)
   const [responsive, setResponsive] = useState<Responsive>(() => readResponsive())
   const [ready, setReady] = useState(false)
@@ -288,6 +306,64 @@ export function PhoneLinktree() {
       window.removeEventListener('pointermove', onMove)
     }
   }, [])
+
+  // DeviceOrientation — let the user's physical phone steer the 3D phone.
+  // iOS 13+ requires explicit permission tied to a user gesture; we ask on
+  // the first touch. When the gyro feeds events, useFrame uses these values
+  // verbatim and bypasses the sine-wave fallback (gyroActive flag).
+  useEffect(() => {
+    if (!responsive.ambient) return
+
+    let active = false
+
+    const onOrientation = (e: DeviceOrientationEvent) => {
+      // gamma: -90..90 (left-right tilt), beta: -180..180 (front-back).
+      // Phone landscape vs portrait swaps which axis is which; for a
+      // marketing page we only care about portrait-ish clamping.
+      const gamma = (e.gamma ?? 0) / 45 // -1..1ish
+      const beta = ((e.beta ?? 0) - 30) / 60 // small dead-zone around ~30° hold
+      const clamp = (v: number) => Math.max(-1, Math.min(1, v))
+      tilt.current.gyroActive = true
+      tilt.current.gyroYaw = clamp(gamma) * 0.22
+      tilt.current.gyroPitch = clamp(beta) * 0.14
+      active = true
+    }
+
+    const start = () => {
+      window.addEventListener('deviceorientation', onOrientation, { passive: true })
+    }
+
+    type IOSPermissionConstructor = typeof DeviceOrientationEvent & {
+      requestPermission?: () => Promise<'granted' | 'denied'>
+    }
+    const ctor = DeviceOrientationEvent as IOSPermissionConstructor
+    const needsIOSPermission = typeof ctor.requestPermission === 'function'
+
+    const requestOnce = () => {
+      if (active) return
+      if (needsIOSPermission && ctor.requestPermission) {
+        ctor.requestPermission().then((result) => {
+          if (result === 'granted') start()
+        }).catch(() => {})
+      } else {
+        start()
+      }
+    }
+
+    if (needsIOSPermission) {
+      // iOS — request on first touch
+      window.addEventListener('touchend', requestOnce, { once: true })
+      window.addEventListener('click', requestOnce, { once: true })
+    } else {
+      start()
+    }
+
+    return () => {
+      window.removeEventListener('deviceorientation', onOrientation)
+      window.removeEventListener('touchend', requestOnce)
+      window.removeEventListener('click', requestOnce)
+    }
+  }, [responsive.ambient])
 
   // Page tall enough to give scroll room without trapping the user
   // on tiny mobile viewports where most of the phone is already visible.
