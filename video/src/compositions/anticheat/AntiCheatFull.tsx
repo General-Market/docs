@@ -59,14 +59,21 @@ const TOTAL_FRAMES =
   antiCheatEndCardMeta.durationInFrames -
   TRANSITION_FRAMES;
 
-// Music shuts down the moment we land on the EndCard — the natural
-// tail of the track ends precisely as the Bridge→EndCard transition
-// completes. We start late into the file so the back half of the
-// march carries the cut and runs out exactly on the final scene.
+// Music timing — anchor the march's drum spike on the EndCard cut.
+// The spike sits at ~3087f (102.9s) inside the file. We start late
+// enough that the spike lands at the midpoint of Bridge→EndCard;
+// the rest of the file plays under the final scene until the cut ends.
 const AUDIO_FILE_FRAMES = Math.floor(113.142857 * FPS); // Dagored — Dead Man's March
-const MUSIC_END_FRAME =
-  TOTAL_FRAMES - antiCheatEndCardMeta.durationInFrames + T_BRIDGE_END;
-const MUSIC_START_FROM_AUDIO = Math.max(0, AUDIO_FILE_FRAMES - MUSIC_END_FRAME);
+const AUDIO_SPIKE_IN_FILE = 3087;
+const SPIKE_LANDS_AT =
+  TOTAL_FRAMES -
+  antiCheatEndCardMeta.durationInFrames +
+  Math.round(T_BRIDGE_END / 2);
+const MUSIC_START_FROM_AUDIO = Math.max(0, AUDIO_SPIKE_IN_FILE - SPIKE_LANDS_AT);
+const MUSIC_END_FRAME = Math.min(
+  TOTAL_FRAMES,
+  AUDIO_FILE_FRAMES - MUSIC_START_FROM_AUDIO,
+);
 const MUSIC_FADE_IN = Math.round(FPS * 0.5);
 const MUSIC_VOLUME = 0.55;
 
