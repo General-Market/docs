@@ -125,7 +125,17 @@ impl SecEftsMarketSource {
             .user_agent("IndexProtocol/1.0 (contact@indexprotocol.com)")
             .build()
             .context("Failed to build reqwest client")?;
-        let http = SourceHttpClient::with_client(client, rate_limit, RetryConfig::default());
+        // SEC EDGAR EFTS goes down for minutes at a time on a 4-hour fetch
+        // window. The default 3-retry-in-1.4s policy gives up before the
+        // outage clears and the source loses an entire window of data. Give
+        // it 6 retries with up to 60s between attempts so transient SEC
+        // outages don't kill the source for 4+ hours.
+        let retry = RetryConfig {
+            max_retries: 6,
+            base_delay_ms: 1_000,
+            max_delay_ms: 60_000,
+        };
+        let http = SourceHttpClient::with_client(client, rate_limit, retry);
 
         info!(
             "SEC EFTS client initialized with {} form types",

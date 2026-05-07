@@ -3139,3 +3139,86 @@ vault = "0x18c8b54F8212EeF7DA04b256eC2069401655f4dF"
 sources = ["tubes"]
 strategy = "mean_reversion"
 [funds.params]
+
+# ── crypto / stocks / esports — added 2026-05-07 ──
+
+# Crypto Fund 1 — momentum
+[[funds]]
+name = "Crypto Fund 1"
+symbol = "CRYPTO1"
+vault = "0x8A71a2e9363042396347355Ee3fc292A1e671853"
+sources = ["crypto"]
+strategy = "momentum"
+[funds.params]
+
+# Crypto Fund 2 — contrarian
+[[funds]]
+name = "Crypto Fund 2"
+symbol = "CRYPTO2"
+vault = "0xCe7e94E315956A681FDee750eC31f279605C5d87"
+sources = ["crypto"]
+strategy = "contrarian"
+[funds.params]
+
+# Crypto Fund 3 — mean_reversion
+[[funds]]
+name = "Crypto Fund 3"
+symbol = "CRYPTO3"
+vault = "0x9FB7fbE1D33661D014B9E8b8Ad30F083f26c6974"
+sources = ["crypto"]
+strategy = "mean_reversion"
+[funds.params]
+
+# Stocks Fund 1 — momentum
+[[funds]]
+name = "Stocks Fund 1"
+symbol = "STOCKS1"
+vault = "0x507303923d5550a3Bdc5782dC35088D778Ca3a9c"
+sources = ["stocks"]
+strategy = "momentum"
+[funds.params]
+
+# Stocks Fund 2 — contrarian
+[[funds]]
+name = "Stocks Fund 2"
+symbol = "STOCKS2"
+vault = "0x96c89D128e97d954b22423daAf48328aF48058A1"
+sources = ["stocks"]
+strategy = "contrarian"
+[funds.params]
+
+# Stocks Fund 3 — time_of_day
+[[funds]]
+name = "Stocks Fund 3"
+symbol = "STOCKS3"
+vault = "0xf3e6E2C9CDcc56B55F36bf9D8af562372b37f501"
+sources = ["stocks"]
+strategy = "time_of_day"
+[funds.params]
+
+# Esports Fund 1 — momentum
+[[funds]]
+name = "Esports Fund 1"
+symbol = "ESPORTS1"
+vault = "0x392c14F4e1f1E879Aa062A7a7f2fFee94137255f"
+sources = ["esports"]
+strategy = "momentum"
+[funds.params]
+
+# Esports Fund 2 — contrarian
+[[funds]]
+name = "Esports Fund 2"
+symbol = "ESPORTS2"
+vault = "0xBF076EFb4d2436DaBa087c677EC0685464ADc44a"
+sources = ["esports"]
+strategy = "contrarian"
+[funds.params]
+
+# Esports Fund 3 — home_field
+[[funds]]
+name = "Esports Fund 3"
+symbol = "ESPORTS3"
+vault = "0x155563f07EF1E94D6736DdC7DFCcAD201C803B1D"
+sources = ["esports"]
+strategy = "home_field"
+[funds.params]

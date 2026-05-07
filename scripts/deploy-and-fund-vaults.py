@@ -175,15 +175,31 @@ def resolve_addr(deployment: dict, *keys: str) -> str:
     raise KeyError(f"None of {keys} found in deployment JSON")
 
 
-def write_deployment(deployment: dict, whitelisted: list, source_vaults: dict):
+def write_deployment(deployment: dict, whitelisted: list, source_vaults: dict, *, merge: bool = False):
+    """Persist vault metadata into the deployment JSONs.
+
+    `merge=True` preserves any existing entries — required when running for
+    only a subset of sources, otherwise the rest of the deployment vanishes.
+    """
     for path in (ACTIVE_DEPLOYMENT_PATH, FRONTEND_DEPLOYMENT_PATH, ENVS_DEPLOYMENT_PATH):
         if not path.exists():
             continue
         data = json.loads(path.read_text())
-        data["whitelistedVaults"] = whitelisted
-        data["sourceVaults"] = source_vaults
+        if merge:
+            existing_white = data.get("whitelistedVaults") or []
+            existing_src = data.get("sourceVaults") or {}
+            merged_white = list({*(existing_white), *whitelisted})
+            merged_src = {**existing_src, **source_vaults}
+            data["whitelistedVaults"] = merged_white
+            data["sourceVaults"] = merged_src
+        else:
+            data["whitelistedVaults"] = whitelisted
+            data["sourceVaults"] = source_vaults
         path.write_text(json.dumps(data, indent=2) + "\n")
-        log.info(f"Updated {path} ({len(whitelisted)} vaults, {len(source_vaults)} sources)")
+        log.info(
+            f"Updated {path} ({len(data['whitelistedVaults'])} vaults total, "
+            f"{len(data['sourceVaults'])} sources total)"
+        )
 
 
 def main():
@@ -194,6 +210,18 @@ def main():
     parser.add_argument("--rpc", default=os.environ.get("L3_RPC_URL", "http://142.132.164.24/"))
     parser.add_argument("--key", default=os.environ.get("DEPLOYER_KEY"), help="Deployer private key (env: DEPLOYER_KEY)")
     parser.add_argument("--dry-run", action="store_true", help="Print plan, do nothing")
+    parser.add_argument(
+        "--sources", default="",
+        help="Comma-separated source filter (e.g. crypto,stocks,esports). When set, "
+             "only these sources are deployed and the deployment JSONs are merged "
+             "into rather than replaced.",
+    )
+    parser.add_argument(
+        "--allow-missing-batches", action="store_true",
+        help="Allow deploying for sources that aren't in vision-batches.json. The "
+             "oracle's lifecycle still creates rounds via data-node /batches/recommended; "
+             "the static file is just a fallback.",
+    )
     args = parser.parse_args()
 
     if not args.key:
@@ -205,12 +233,30 @@ def main():
     usdc = resolve_addr(deployment, "L3_USDC", "USDC_ADDRESS", "USDC")
 
     if not VISION_BATCHES_PATH.exists():
-        log.error(f"Missing {VISION_BATCHES_PATH} — run Vision batches deploy first")
-        sys.exit(1)
-    batches = json.loads(VISION_BATCHES_PATH.read_text())
+        if not args.allow_missing_batches:
+            log.error(f"Missing {VISION_BATCHES_PATH} — run Vision batches deploy first")
+            sys.exit(1)
+        batches = {"batches": {}}
+    else:
+        batches = json.loads(VISION_BATCHES_PATH.read_text())
     sources = sorted(batches.get("batches", {}).keys())
+
+    if args.sources:
+        requested = [s.strip() for s in args.sources.split(",") if s.strip()]
+        if not args.allow_missing_batches:
+            missing = [s for s in requested if s not in sources]
+            if missing:
+                log.error(
+                    f"Sources not in vision-batches.json: {missing}. "
+                    f"Pass --allow-missing-batches to deploy anyway "
+                    f"(oracle uses data-node /batches/recommended at runtime)."
+                )
+                sys.exit(1)
+        sources = requested
+        log.info(f"Sources filter active: {sources}")
+
     if not sources:
-        log.error("No sources in vision-batches.json")
+        log.error("No sources to deploy for")
         sys.exit(1)
 
     total = len(sources) * args.per_source
@@ -308,8 +354,11 @@ def main():
 
     log.info(f"Funded {funded}/{len(all_vaults)} vaults")
 
-    # Phase 3: persist
-    write_deployment(deployment, all_vaults, source_vaults)
+    # Phase 3: persist. Merge mode preserves the rest of the deployment
+    # JSONs when only a subset of sources was deployed.
+    write_deployment(
+        deployment, all_vaults, source_vaults, merge=bool(args.sources),
+    )
 
     receipt_path = ROOT / "scripts" / "vault-deploy-receipt.json"
     receipt_path.write_text(json.dumps({

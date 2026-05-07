@@ -3957,6 +3957,114 @@
       "fee": 500,
       "category": "Entertainment",
       "vault": "0x18c8b54F8212EeF7DA04b256eC2069401655f4dF"
+    },
+    {
+      "name": "Crypto Fund 1",
+      "symbol": "CRYPTO1",
+      "source": "crypto",
+      "strategy": "momentum",
+      "params": {},
+      "tagline": "Crypto rides the wave. When momentum builds, it follows.",
+      "color": "#F7931A",
+      "fee": 1000,
+      "category": "Crypto",
+      "vault": "0x8A71a2e9363042396347355Ee3fc292A1e671853"
+    },
+    {
+      "name": "Crypto Fund 2",
+      "symbol": "CRYPTO2",
+      "source": "crypto",
+      "strategy": "contrarian",
+      "params": {},
+      "tagline": "When the herd runs one way, this fund walks the other. The crowd is usually wrong at extremes.",
+      "color": "#F7931A",
+      "fee": 1000,
+      "category": "Crypto",
+      "vault": "0xCe7e94E315956A681FDee750eC31f279605C5d87"
+    },
+    {
+      "name": "Crypto Fund 3",
+      "symbol": "CRYPTO3",
+      "source": "crypto",
+      "strategy": "mean_reversion",
+      "params": {},
+      "tagline": "Every spike returns to the mean. This fund waits for the snap-back.",
+      "color": "#F7931A",
+      "fee": 1000,
+      "category": "Crypto",
+      "vault": "0x9FB7fbE1D33661D014B9E8b8Ad30F083f26c6974"
+    },
+    {
+      "name": "Stocks Fund 1",
+      "symbol": "STOCKS1",
+      "source": "stocks",
+      "strategy": "momentum",
+      "params": {},
+      "tagline": "A stock that moves keeps moving. The trend is a contract that markets honor more often than not.",
+      "color": "#1F77B4",
+      "fee": 1000,
+      "category": "Equities",
+      "vault": "0x507303923d5550a3Bdc5782dC35088D778Ca3a9c"
+    },
+    {
+      "name": "Stocks Fund 2",
+      "symbol": "STOCKS2",
+      "source": "stocks",
+      "strategy": "contrarian",
+      "params": {},
+      "tagline": "Every breakout has its faders. This fund pays the bill when conviction outruns reality.",
+      "color": "#1F77B4",
+      "fee": 1000,
+      "category": "Equities",
+      "vault": "0x96c89D128e97d954b22423daAf48328aF48058A1"
+    },
+    {
+      "name": "Stocks Fund 3",
+      "symbol": "STOCKS3",
+      "source": "stocks",
+      "strategy": "time_of_day",
+      "params": {},
+      "tagline": "Markets have moods. Open is restless, close is decisive. This fund trades the clock.",
+      "color": "#1F77B4",
+      "fee": 1000,
+      "category": "Equities",
+      "vault": "0xf3e6E2C9CDcc56B55F36bf9D8af562372b37f501"
+    },
+    {
+      "name": "Esports Fund 1",
+      "symbol": "ESPORTS1",
+      "source": "esports",
+      "strategy": "momentum",
+      "params": {},
+      "tagline": "Streaks compound. A team that won yesterday will likely win today. Esports has memory.",
+      "color": "#9467BD",
+      "fee": 1000,
+      "category": "Sports",
+      "vault": "0x392c14F4e1f1E879Aa062A7a7f2fFee94137255f"
+    },
+    {
+      "name": "Esports Fund 2",
+      "symbol": "ESPORTS2",
+      "source": "esports",
+      "strategy": "contrarian",
+      "params": {},
+      "tagline": "Favorites get punished by their own legend. This fund bets against the obvious.",
+      "color": "#9467BD",
+      "fee": 1000,
+      "category": "Sports",
+      "vault": "0xBF076EFb4d2436DaBa087c677EC0685464ADc44a"
+    },
+    {
+      "name": "Esports Fund 3",
+      "symbol": "ESPORTS3",
+      "source": "esports",
+      "strategy": "home_field",
+      "params": {},
+      "tagline": "Crowds move outcomes. Matches at home shift the line. This fund trades that shift.",
+      "color": "#9467BD",
+      "fee": 1000,
+      "category": "Sports",
+      "vault": "0x155563f07EF1E94D6736DdC7DFCcAD201C803B1D"
     }
   ]
 }
