@@ -89,10 +89,18 @@ impl HnItem {
         }
     }
 
-    /// Truncated title for display (max 80 chars)
+    /// Truncated title for display (max 80 chars).
+    ///
+    /// Uses `chars()` not byte slicing — HN titles regularly contain
+    /// curly quotes and emoji, and `&t[..77]` panics on multi-byte
+    /// boundaries. The crash loop that taught us this restarted the
+    /// process 197 times.
     fn display_title(&self) -> String {
         match &self.title {
-            Some(t) if t.len() > 80 => format!("{}...", &t[..77]),
+            Some(t) if t.chars().count() > 80 => {
+                let truncated: String = t.chars().take(77).collect();
+                format!("{}...", truncated)
+            }
             Some(t) => t.clone(),
             None => format!("HN Item #{}", self.id),
         }

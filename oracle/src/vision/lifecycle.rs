@@ -784,7 +784,7 @@ impl BatchLifecycleManager {
         // Run tick resolver (tick_id = 0 for single-round batches)
         let tick_result = self
             .resolver
-            .resolve_tick(&batch, 0, &players, &prices, now_secs, &market_configs)
+            .resolve_tick(&batch, 0, &players, &prices, now_secs, &market_configs, source_name)
             .await
             .map_err(|e| format!("resolver error: {}", e))?;
 
@@ -1378,6 +1378,16 @@ impl BatchLifecycleManager {
     }
 
     /// Record a new round in `vision_batch_lifecycle` and return its ID.
+    ///
+    /// Allocates the PK under a Postgres advisory lock so concurrent callers
+    /// cannot see the same `MAX(batch_id)` and produce duplicate ids. The
+    /// previous design (`SELECT MAX+1` then `INSERT ON CONFLICT DO NOTHING`)
+    /// silently returned a stale id to the losing caller; that caller's
+    /// `update_round_status_with_chain_id` later overwrote the winner's
+    /// `on_chain_batch_id`, and one source's lifecycle row disappeared under
+    /// another source's name. flights was the visible casualty — its keccak
+    /// happens to start with `0x00`, so it surfaced the bug. Other sources
+    /// were affected too; only flights couldn't be recovered downstream.
     async fn record_round_lifecycle(
         &self,
         source_name: &str,
@@ -1389,19 +1399,29 @@ impl BatchLifecycleManager {
         let betting_end = now + chrono::Duration::seconds(tick_duration as i64);
         let settlement_deadline = betting_end + chrono::Duration::seconds(tick_duration as i64);
 
-        // Use nextBatchId from vision_batches as a proxy for the batch_id
-        // (the real batch_id comes from the on-chain createBatch call)
-        let next_id: i64 = sqlx::query_scalar("SELECT COALESCE(MAX(batch_id), 0) + 1 FROM vision_batch_lifecycle")
-            .fetch_one(&self.pool)
-            .await
-            .unwrap_or(1000);
+        // Magic number — chosen once, used only here. The lock is transaction
+        // scoped, so concurrent inserts serialize but other lifecycle traffic
+        // is unaffected.
+        const LIFECYCLE_PK_LOCK_KEY: i64 = 0x5615_10_C7_C1_E_DEAD_u64 as i64;
 
-        sqlx::query(
-            "INSERT INTO vision_batch_lifecycle (batch_id, source_id, config_hash, timeframe_secs, betting_start, betting_end, settlement_deadline, market_count, created_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
-             ON CONFLICT (batch_id) DO NOTHING",
+        let mut tx = self.pool.begin().await?;
+
+        sqlx::query("SELECT pg_advisory_xact_lock($1)")
+            .bind(LIFECYCLE_PK_LOCK_KEY)
+            .execute(&mut *tx)
+            .await?;
+
+        let next_id: i64 = sqlx::query_scalar(
+            "INSERT INTO vision_batch_lifecycle (
+                batch_id, source_id, config_hash, timeframe_secs,
+                betting_start, betting_end, settlement_deadline,
+                market_count, created_at
+             )
+             SELECT
+                COALESCE((SELECT MAX(batch_id) FROM vision_batch_lifecycle), 999) + 1,
+                $1, $2, $3, $4, $5, $6, $7, NOW()
+             RETURNING batch_id"
         )
-        .bind(next_id)
         .bind(source_name)
         .bind(config_hash)
         .bind(tick_duration as i64)
@@ -1409,8 +1429,10 @@ impl BatchLifecycleManager {
         .bind(betting_end)
         .bind(settlement_deadline)
         .bind(market_count as i32)
-        .execute(&self.pool)
+        .fetch_one(&mut *tx)
         .await?;
+
+        tx.commit().await?;
 
         Ok(next_id as u64)
     }

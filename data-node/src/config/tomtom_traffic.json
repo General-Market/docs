@@ -114,7 +114,8 @@
     "category": "transport",
     "subcategory": "traffic",
     "api_ref": "35.6762,139.6503",
-    "active": true
+    "active": false,
+    "_disabled_reason": "TomTom returns HTTP 400 Point too far from nearest existing segment — coverage gap"
   },
   {
     "asset_id": "tomtom_traffic_ring4_beijing",
@@ -123,7 +124,8 @@
     "category": "transport",
     "subcategory": "traffic",
     "api_ref": "39.9042,116.4074",
-    "active": true
+    "active": false,
+    "_disabled_reason": "TomTom returns HTTP 400 Point too far from nearest existing segment — coverage gap"
   },
   {
     "asset_id": "tomtom_traffic_aye_singapore",

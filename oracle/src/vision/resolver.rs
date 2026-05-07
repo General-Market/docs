@@ -19,6 +19,7 @@ use ethers::types::{Address, H256, U256};
 
 use super::bitmap_store::BitmapStore;
 use super::config::VisionConfig;
+use super::shared::source_max_age_secs;
 use super::side_matching::{self, SideMatchInput};
 use super::types::*;
 
@@ -85,6 +86,8 @@ impl TickResolver {
     ///
     /// See module-level docs for the full pipeline.
     /// `market_configs` provides per-market resolution_type + threshold from off-chain config.
+    /// `source_name` is the human-readable id (e.g. "twitch", "ecb") used to look up
+    /// the per-source staleness ceiling in `SOURCE_MAX_AGE_SECS`.
     pub async fn resolve_tick(
         &self,
         batch: &Batch,
@@ -93,7 +96,17 @@ impl TickResolver {
         prices: &MarketPrices,
         now: u64,
         market_configs: &[MarketConfig],
+        source_name: &str,
     ) -> Result<TickResult, ResolverError> {
+        // Per-source staleness ceiling. Daily/weekly sources publish on a slow
+        // cadence; the global default (1800s) cancels every market they touch.
+        // We take the larger of the global config and the per-source allowance
+        // so real-time sources keep their tight gate.
+        let staleness_threshold = self
+            .config
+            .staleness_threshold_secs
+            .max(source_max_age_secs(source_name, batch.tick_duration as u64));
+
         // 1. Filter active players (balance > 0)
         let active: Vec<&PlayerPosition> = players.iter().filter(|p| !p.deposit.is_zero()).collect();
 
@@ -121,7 +134,7 @@ impl TickResolver {
         // share is redistributed across the remaining active markets.
         let active_market_count = market_configs.iter().filter(|mc| {
             let mid = mc.market_id;
-            prices.get_prices(&mid).is_some() && !prices.is_stale(&mid, self.config.staleness_threshold_secs, now)
+            prices.get_prices(&mid).is_some() && !prices.is_stale(&mid, staleness_threshold, now)
         }).count();
         let num_markets = U256::from(active_market_count.max(1) as u64);
 
@@ -155,14 +168,15 @@ impl TickResolver {
             };
 
             // Check staleness
-            if prices.is_stale(&market_id, self.config.staleness_threshold_secs, now) {
+            if prices.is_stale(&market_id, staleness_threshold, now) {
                 tracing::info!(
                     batch_id = batch.id,
                     market_id = ?market_id,
                     last_update_age_secs = now.saturating_sub(
                         prices.prices.get(&market_id).map(|(_, _, ts)| *ts).unwrap_or(0)
                     ),
-                    threshold_secs = self.config.staleness_threshold_secs,
+                    threshold_secs = staleness_threshold,
+                    source = source_name,
                     "Market resolved as Cancelled — stale price data"
                 );
                 market_results.push(MarketResult {
@@ -1080,7 +1094,7 @@ mod tests {
         prices.insert(market_id, 10_000_000_000, 10_500_000_000, 1000);
 
         let result = resolver
-            .resolve_tick(&batch, 0, &players, &prices, 1000, &market_configs)
+            .resolve_tick(&batch, 0, &players, &prices, 1000, &market_configs, "test")
             .await
             .expect("resolve should succeed");
 
@@ -1158,7 +1172,7 @@ mod tests {
         prices.insert(market_id, 10_000_000_000, 10_200_000_000, 1000);
 
         let result = resolver
-            .resolve_tick(&batch, 0, &players, &prices, 1000, &market_configs)
+            .resolve_tick(&batch, 0, &players, &prices, 1000, &market_configs, "test")
             .await
             .expect("resolve should succeed");
 
@@ -1213,7 +1227,7 @@ mod tests {
         let prices = MarketPrices::new();
 
         let result = resolver
-            .resolve_tick(&batch, 0, &players, &prices, 1000, &market_configs)
+            .resolve_tick(&batch, 0, &players, &prices, 1000, &market_configs, "test")
             .await
             .expect("resolve should succeed");
 
@@ -1260,7 +1274,7 @@ mod tests {
         prices.insert(market_id, 10_000_000_000, 10_500_000_000, 100);
 
         let result = resolver
-            .resolve_tick(&batch, 0, &players, &prices, 1000, &market_configs)
+            .resolve_tick(&batch, 0, &players, &prices, 1000, &market_configs, "test")
             .await
             .expect("resolve should succeed");
 
@@ -1291,7 +1305,7 @@ mod tests {
         let prices = MarketPrices::new();
 
         let result = resolver
-            .resolve_tick(&batch, 0, &players, &prices, 1000, &market_configs)
+            .resolve_tick(&batch, 0, &players, &prices, 1000, &market_configs, "test")
             .await;
 
         assert!(result.is_err());
@@ -1336,7 +1350,7 @@ mod tests {
         prices.insert(market_b, 10_000_000_000, 9_000_000_000, 1000); // DOWN 10%
 
         let result = resolver
-            .resolve_tick(&batch, 0, &players, &prices, 1000, &market_configs)
+            .resolve_tick(&batch, 0, &players, &prices, 1000, &market_configs, "test")
             .await
             .expect("resolve should succeed");
 
@@ -1396,7 +1410,7 @@ mod tests {
         }
 
         let result = resolver
-            .resolve_tick(&batch, 0, &players, &prices, 1000, &market_configs)
+            .resolve_tick(&batch, 0, &players, &prices, 1000, &market_configs, "test")
             .await
             .expect("resolve should succeed");
 
@@ -1463,7 +1477,7 @@ mod tests {
         }
 
         let result = resolver
-            .resolve_tick(&batch, 0, &players, &prices, 1000, &market_configs)
+            .resolve_tick(&batch, 0, &players, &prices, 1000, &market_configs, "test")
             .await
             .expect("resolve should succeed");
 
@@ -1554,7 +1568,7 @@ mod tests {
         }
 
         let result_t0 = resolver
-            .resolve_tick(&batch, 0, &players, &prices, 1000, &market_configs)
+            .resolve_tick(&batch, 0, &players, &prices, 1000, &market_configs, "test")
             .await
             .expect("tick 0 should resolve");
 
@@ -1574,7 +1588,7 @@ mod tests {
         // === Tick 1 ===
         // Player A at tick 1 should have DIFFERENT sides: DOWN, UP, DOWN
         let result_t1 = resolver
-            .resolve_tick(&batch, 1, &players, &prices, 1000, &market_configs)
+            .resolve_tick(&batch, 1, &players, &prices, 1000, &market_configs, "test")
             .await
             .expect("tick 1 should resolve");
 

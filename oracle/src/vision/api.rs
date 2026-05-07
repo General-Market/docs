@@ -100,13 +100,23 @@ pub struct VisionState {
 /// orphan batches. It will produce garbage for actual keccak hashes (by design — the
 /// caller gets a hex string back, which is better than nothing).
 fn bytes32_hex_to_string(hex: &str) -> String {
-    let hex = hex.strip_prefix("0x").unwrap_or(hex);
-    if let Ok(bytes) = hex::decode(hex) {
-        let trimmed: Vec<u8> = bytes.into_iter().take_while(|&b| b != 0).collect();
-        String::from_utf8(trimmed).unwrap_or_else(|_| format!("0x{hex}"))
-    } else {
-        format!("0x{hex}")
+    let hex_stripped = hex.strip_prefix("0x").unwrap_or(hex);
+    let bytes = match hex::decode(hex_stripped) {
+        Ok(b) => b,
+        Err(_) => return format!("0x{hex_stripped}"),
+    };
+    // Heuristic: a real ASCII source name has its first byte in the printable
+    // range. A keccak hash beginning with 0x00 (e.g. flights → 0x00e30477…)
+    // would otherwise truncate to an empty string at the first NUL byte and
+    // every downstream consumer would lose track of the source. Return raw
+    // hex when the first byte isn't printable — fund_manager already keccak-
+    // maps hex source_ids back to canonical names.
+    let first = bytes.first().copied().unwrap_or(0);
+    if !(0x20..=0x7e).contains(&first) {
+        return format!("0x{hex_stripped}");
     }
+    let trimmed: Vec<u8> = bytes.into_iter().take_while(|&b| b != 0).collect();
+    String::from_utf8(trimmed).unwrap_or_else(|_| format!("0x{hex_stripped}"))
 }
 
 /// Encode a UTF-8 string to a 0x-prefixed bytes32 hex string (right-padded with zeros).

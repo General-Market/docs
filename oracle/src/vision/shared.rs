@@ -258,11 +258,15 @@ pub const SOURCE_MAX_AGE_SECS: &[(&str, u64)] = &[
     ("imf",       7 * 86400),
     ("cftc",      3 * 86400),
     ("sec_efts",  3 * 86400),
+    ("sec_13f",   7 * 86400),
+    ("sec_insider", 3 * 86400),
     ("finra",     3 * 86400),
     ("finra_short_vol", 3 * 86400),
     ("fred",      3 * 86400),
     ("congress",  3 * 86400),
     ("yahoo_drinks", 3 * 86400),
+    ("zillow",    7 * 86400),
+    ("bchain",    7 * 86400),
 ];
 
 /// Get the maximum age in seconds for a source's data before it is considered stale.

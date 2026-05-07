@@ -518,9 +518,18 @@ mod tests {
     }
 
     #[test]
-    fn test_all_entries_active() {
+    fn test_most_entries_active() {
+        // shuto_tokyo and ring4_beijing are deliberately inactive — TomTom returns
+        // HTTP 400 for those points (coverage gap). All others must be active.
         let entries = load_all_asset_entries(ASSET_JSON).unwrap();
+        let inactive_allowlist: &[&str] = &[
+            "tomtom_traffic_shuto_tokyo",
+            "tomtom_traffic_ring4_beijing",
+        ];
         for entry in &entries {
+            if inactive_allowlist.contains(&entry.asset_id.as_str()) {
+                continue;
+            }
             assert!(entry.active, "Entry {} should be active", entry.asset_id);
         }
     }
@@ -531,7 +540,6 @@ mod tests {
         let ids: Vec<&str> = entries.iter().map(|e| e.asset_id.as_str()).collect();
         assert!(ids.contains(&"tomtom_traffic_i405_la"));
         assert!(ids.contains(&"tomtom_traffic_m25_london"));
-        assert!(ids.contains(&"tomtom_traffic_shuto_tokyo"));
         assert!(ids.contains(&"tomtom_traffic_401_toronto"));
         assert!(ids.contains(&"tomtom_traffic_n1_capetown"));
     }
