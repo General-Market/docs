@@ -14,24 +14,50 @@ type Responsive = {
   distance: number
   topOffset: number
   scrollTravel: number
-  htmlScale: number
 }
+
+// LinkMenu CSS width in px — must stay in sync with .lt-menu width.
+const LINK_MENU_CSS_WIDTH = 360
+// drei Html with `transform` divides matrix scale by 40 internally.
+const HTML_TRANSFORM_DIVISOR = 40
 
 function readResponsive(): Responsive {
   // The phone should sit in the page like a normal centered linktree column —
-  // fully visible, comfortably sized, with a faint scroll-driven slide. Menu
-  // scale is calibrated so the link rows clear the bezel.
+  // fully visible, comfortably sized, with a faint scroll-driven slide.
   if (typeof window === 'undefined') {
-    return { distance: 8.5, topOffset: 0, scrollTravel: 0.5, htmlScale: 0.155 }
+    return { distance: 8.5, topOffset: 0, scrollTravel: 0.5 }
   }
   const aspect = window.innerWidth / Math.max(1, window.innerHeight)
   if (aspect >= 1.2) {
-    return { distance: 8.5, topOffset: 0, scrollTravel: 0.5, htmlScale: 0.155 }
+    return { distance: 8.5, topOffset: 0, scrollTravel: 0.5 }
   }
   if (aspect >= 0.7) {
-    return { distance: 9.6, topOffset: 0, scrollTravel: 0.45, htmlScale: 0.155 }
+    return { distance: 9.6, topOffset: 0, scrollTravel: 0.45 }
   }
-  return { distance: 10.2, topOffset: 0, scrollTravel: 0.4, htmlScale: 0.155 }
+  return { distance: 10.2, topOffset: 0, scrollTravel: 0.4 }
+}
+
+// Find the iPhone screen mesh by the same fingerprint DeviceBroll uses:
+// the only material with an emissiveMap and no baseColor `map`. Skips
+// array materials. Returns the first match.
+function findPhoneScreenMesh(root: THREE.Object3D): THREE.Mesh | null {
+  let found: THREE.Mesh | null = null
+  root.traverse((child) => {
+    if (found) return
+    const mesh = child as THREE.Mesh
+    if (!mesh.isMesh) return
+    if (Array.isArray(mesh.material)) return
+    const mat = mesh.material as THREE.MeshStandardMaterial | undefined
+    if (mat && mat.emissiveMap && !mat.map) {
+      found = mesh
+    }
+  })
+  return found
+}
+
+type ScreenFit = {
+  position: [number, number, number]
+  scale: number
 }
 
 type TiltRef = React.MutableRefObject<{
@@ -61,6 +87,7 @@ function PhoneScene({
 }) {
   const gltf = useGLTF(MODEL_URL)
   const groupRef = useRef<THREE.Group>(null)
+  const [screenFit, setScreenFit] = useState<ScreenFit | null>(null)
 
   useEffect(() => {
     const iphone = gltf.scene.getObjectByName('iphone')
@@ -73,6 +100,29 @@ function PhoneScene({
     iphone.position.set(0, 0, 0)
     iphone.quaternion.identity()
     iphone.scale.setScalar(22.486)
+    iphone.updateMatrixWorld(true)
+
+    // Measure the actual screen face from the GLB so the Html overlay
+    // is bezel-perfect, not eyeballed.
+    const screenMesh = findPhoneScreenMesh(iphone)
+    if (screenMesh) {
+      if (!screenMesh.geometry.boundingBox) screenMesh.geometry.computeBoundingBox()
+      const box = screenMesh.geometry.boundingBox!
+        .clone()
+        .applyMatrix4(screenMesh.matrixWorld)
+      const center = new THREE.Vector3()
+      const size = new THREE.Vector3()
+      box.getCenter(center)
+      box.getSize(size)
+      // Screen normal points toward -Z (camera sits at -distance). Lift
+      // the html a hair in front of the glass to avoid z-fighting.
+      const htmlScale = (size.x * HTML_TRANSFORM_DIVISOR) / LINK_MENU_CSS_WIDTH
+      setScreenFit({
+        position: [center.x, center.y, center.z - 0.001],
+        scale: htmlScale,
+      })
+    }
+
     onReady()
   }, [gltf, onReady])
 
@@ -95,17 +145,19 @@ function PhoneScene({
         blur={2.2}
         far={4}
       />
-      <Html
-        transform
-        position={[0, 0, -0.085]}
-        rotation={[0, Math.PI, 0]}
-        scale={responsive.htmlScale}
-        occlude={false}
-        zIndexRange={[1, 0]}
-        wrapperClass="lt-html-wrapper"
-      >
-        <LinkMenu />
-      </Html>
+      {screenFit && (
+        <Html
+          transform
+          position={screenFit.position}
+          rotation={[0, Math.PI, 0]}
+          scale={screenFit.scale}
+          occlude={false}
+          zIndexRange={[1, 0]}
+          wrapperClass="lt-html-wrapper"
+        >
+          <LinkMenu />
+        </Html>
+      )}
     </group>
   )
 }

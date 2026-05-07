@@ -59,6 +59,21 @@ export function LinkMenu() {
           position: relative;
           overflow: hidden;
         }
+        /* Tahoe-style liquid-glass sheen — sits *over* the menu so the
+           rows read as if they're behind a pane of glass. Pointer events
+           pass through; the rows stay clickable. */
+        .lt-menu::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          z-index: 4;
+          background:
+            linear-gradient(135deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.02) 38%, transparent 62%),
+            linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0) 6%),
+            linear-gradient(0deg, rgba(0,0,0,0.04) 0%, rgba(0,0,0,0) 12%);
+          mix-blend-mode: screen;
+        }
         /* Liquid-glass status bar — Tahoe-style translucent chrome */
         .lt-status {
           position: absolute;
