@@ -6,7 +6,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { font, monoFont } from "../../common/fonts";
+import { font } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 import { ParallaxText } from "./transitions";
 import { IdleZoom, RevealChars } from "./vibe";
@@ -177,28 +177,40 @@ export const AntiCheatEndCard: React.FC = () => {
       </div>
       </AbsoluteFill>
 
-      {/* Markdown footnote — code-fence inline style, sentence case, mono */}
+      {/* Apple footnote — refined SF Pro, hairline separator, sentence case */}
       <div
         style={{
           position: "absolute",
-          bottom: 96,
+          bottom: 110,
           left: 0,
           right: 0,
-          textAlign: "center",
-          fontFamily: monoFont,
-          fontSize: 56,
-          fontWeight: 500,
-          letterSpacing: "-0.005em",
-          color: "rgba(255,255,255,0.92)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 28,
           opacity: tertiaryOpacity,
           transform: `translateY(${tertiaryY * 0.5}px)`,
         }}
       >
-        <span style={{ color: "rgba(255,255,255,0.40)", marginRight: 14 }}>#</span>
-        Available only via{" "}
-        <span style={{ color: "rgba(255,255,255,0.55)" }}>`</span>
-        <span style={{ color: "#FFFFFF" }}>trading-bots</span>
-        <span style={{ color: "rgba(255,255,255,0.55)" }}>`</span>
+        <div
+          style={{
+            width: 140,
+            height: 1,
+            background: "rgba(255,255,255,0.30)",
+          }}
+        />
+        <div
+          style={{
+            fontFamily: font,
+            fontSize: 52,
+            fontWeight: 400,
+            letterSpacing: "-0.012em",
+            color: "rgba(255,255,255,0.88)",
+            lineHeight: 1.0,
+          }}
+        >
+          Available only via trading bots
+        </div>
       </div>
       </IdleZoom>
     </AbsoluteFill>
