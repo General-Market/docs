@@ -1,5 +1,6 @@
 import { AssetCard } from './AssetCard'
 import { HeroCarousel } from './HeroCarousel'
+import { ScrollRow } from './ScrollRow'
 import { Reveal } from '@/components/ui/Reveal'
 import type { SourceFeed } from '@/lib/vision/adapters'
 
@@ -7,8 +8,35 @@ type FeedMap = Record<string, SourceFeed>
 
 const HERO_ROTATION_IDS = ['polymarket', 'defillama', 'equities', 'sports'] as const
 const SIDE_RAIL_IDS = ['pumpfun', 'iss', 'twitch', 'steam'] as const
-const FEATURED_ROW_IDS = ['defillama', 'equities', 'sports', 'iss'] as const
-const TOP_MARKETS_IDS = ['twitch', 'steam', 'github', 'pumpfun'] as const
+
+// Top markets: every source we currently feed live data for, in display order.
+const TOP_MARKETS_IDS = [
+  'defillama',
+  'equities',
+  'sports',
+  'twitch',
+  'steam',
+  'github',
+  'iss',
+  'pumpfun',
+  'polymarket',
+] as const
+
+// Coming soon: surfaces in the registry without live feeds yet. Curated set —
+// the ones a trader would actually want first. Each renders as a tile with
+// the gradient + name; no fabricated sparklines.
+const SOON_FEEDS: SourceFeed[] = [
+  { sourceId: 'bitcoin', displayName: 'Bitcoin', meta: 'Mempool · hashrate · halving', coverage: 'soon', series: [] },
+  { sourceId: 'finnhub', displayName: 'Finnhub', meta: 'Stocks · forex · earnings', coverage: 'soon', series: [] },
+  { sourceId: 'sec', displayName: 'SEC', meta: '10-K · 13F · 8-K filings', coverage: 'soon', series: [] },
+  { sourceId: 'treasury', displayName: 'US Treasury', meta: 'Yields · auctions · debt', coverage: 'soon', series: [] },
+  { sourceId: 'ecb', displayName: 'ECB', meta: 'Rates · FX reference · M3', coverage: 'soon', series: [] },
+  { sourceId: 'hackernews', displayName: 'Hacker News', meta: 'Front page · score · age', coverage: 'soon', series: [] },
+  { sourceId: 'noaa', displayName: 'NOAA', meta: 'Storms · climate · records', coverage: 'soon', series: [] },
+  { sourceId: 'flights', displayName: 'Flights', meta: 'Delays · cancellations · ETA', coverage: 'soon', series: [] },
+  { sourceId: 'cftc', displayName: 'CFTC', meta: 'COT · futures positioning', coverage: 'soon', series: [] },
+  { sourceId: 'eia', displayName: 'EIA', meta: 'Oil · gas · electricity', coverage: 'soon', series: [] },
+]
 
 function pick(feeds: FeedMap, id: string): SourceFeed {
   return (
@@ -82,7 +110,6 @@ export function HomeDashboard({ feeds }: { feeds: FeedMap }) {
     }
   })
   const side = SIDE_RAIL_IDS.map((id) => pick(feeds, id))
-  const featuredRow = FEATURED_ROW_IDS.map((id) => pick(feeds, id))
   const topMarkets = TOP_MARKETS_IDS.map((id) => pick(feeds, id))
 
   return (
@@ -108,42 +135,37 @@ export function HomeDashboard({ feeds }: { feeds: FeedMap }) {
 
       <section className="mt-12">
         <SectionHeader title="Top markets" href="/explorer" />
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4">
-          {featuredRow.map((feed, i) => (
-            <Reveal key={feed.sourceId} delay={i * 0.05}>
-              <AssetCard
-                sourceId={feed.sourceId}
-                displayName={feed.displayName}
-                meta={feed.meta}
-                series={feed.series}
-                assetName={feed.assetName}
-                assetValue={feed.assetValue}
-                coverage={feed.coverage}
-                hrefOverride={feed.hrefOverride}
-              />
-            </Reveal>
+        <ScrollRow>
+          {topMarkets.map((feed) => (
+            <AssetCard
+              key={feed.sourceId}
+              sourceId={feed.sourceId}
+              displayName={feed.displayName}
+              meta={feed.meta}
+              series={feed.series}
+              assetName={feed.assetName}
+              assetValue={feed.assetValue}
+              coverage={feed.coverage}
+              hrefOverride={feed.hrefOverride}
+            />
           ))}
-        </div>
+        </ScrollRow>
       </section>
 
       <section className="mt-12 mb-4">
-        <SectionHeader title="Recently active" />
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4">
-          {topMarkets.map((feed, i) => (
-            <Reveal key={feed.sourceId} delay={i * 0.05}>
-              <AssetCard
-                sourceId={feed.sourceId}
-                displayName={feed.displayName}
-                meta={feed.meta}
-                series={feed.series}
-                assetName={feed.assetName}
-                assetValue={feed.assetValue}
-                coverage={feed.coverage}
-                hrefOverride={feed.hrefOverride}
-              />
-            </Reveal>
+        <SectionHeader title="Coming soon" href="/explorer" />
+        <ScrollRow>
+          {SOON_FEEDS.map((feed) => (
+            <AssetCard
+              key={feed.sourceId}
+              sourceId={feed.sourceId}
+              displayName={feed.displayName}
+              meta={feed.meta}
+              series={feed.series}
+              coverage={feed.coverage}
+            />
           ))}
-        </div>
+        </ScrollRow>
       </section>
     </div>
   )

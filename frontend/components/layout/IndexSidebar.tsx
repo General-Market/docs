@@ -7,15 +7,7 @@ import { useRouter } from 'next/navigation'
 import { useAccount } from 'wagmi'
 import { useWeb3Available } from '@/lib/contexts/Web3Context'
 import { HomeIcon, UserIcon } from './apple-icons'
-
-const WATCHLIST: Array<{ id: string; name: string; img: string; fresh?: boolean }> = [
-  { id: 'polymarket', name: 'Polymarket', img: '/source-imgs/crop-polymarket.webp', fresh: true },
-  { id: 'defillama', name: 'DefiLlama', img: '/source-imgs/crop-defillama.webp', fresh: true },
-  { id: 'equities', name: 'NYSE', img: '/source-imgs/crop-nasdaq.webp' },
-  { id: 'sports', name: 'Sports', img: '/source-imgs/crop-espn.webp', fresh: true },
-  { id: 'twitch', name: 'Twitch', img: '/source-imgs/crop-twitch.webp' },
-  { id: 'github', name: 'GitHub', img: '/source-imgs/crop-github.webp' },
-]
+import { Watchlist } from './Watchlist'
 
 const SECTION_IDS = ['markets', 'portfolio', 'create', 'lend', 'backtest', 'system'] as const
 type SectionId = (typeof SECTION_IDS)[number]
@@ -127,48 +119,8 @@ export function IndexSidebar() {
         {SECTIONS.slice(5, 6).map(sectionRow)}
       </div>
 
-      <div
-        style={{
-          padding: '20px 16px 0',
-          marginTop: 16,
-          borderTop: '1px solid var(--apple-line)',
-        }}
-      >
-        <GroupHeader label="Watchlist" />
-        {WATCHLIST.map((w) => (
-          <WatchRow key={w.id} item={w} />
-        ))}
-        <Link
-          href={'/explorer' as never}
-          className="flex items-center gap-3 px-2 py-2 rounded-[8px] transition-colors duration-200"
-          style={{
-            background: 'transparent',
-            color: 'var(--apple-text-tertiary)',
-            fontFamily: 'var(--apple-font-text)',
-            fontSize: 13,
-            letterSpacing: 'var(--apple-track-tight)',
-            fontWeight: 500,
-            textDecoration: 'none',
-            transitionTimingFunction: 'var(--apple-ease-default)',
-          }}
-        >
-          <span
-            aria-hidden
-            className="inline-flex items-center justify-center"
-            style={{
-              width: 24,
-              height: 24,
-              borderRadius: 999,
-              background: 'rgba(0,0,0,0.04)',
-              fontSize: 14,
-              color: 'var(--apple-text-tertiary)',
-              lineHeight: 1,
-            }}
-          >
-            ›
-          </span>
-          <span>Browse all sources</span>
-        </Link>
+      <div style={{ padding: '0 16px' }}>
+        <Watchlist />
       </div>
 
       <div style={{ flex: 1 }} />
@@ -238,61 +190,6 @@ function NavLink({
     >
       {icon}
       <span>{label}</span>
-    </Link>
-  )
-}
-
-function WatchRow({
-  item,
-}: {
-  item: { id: string; name: string; img: string; fresh?: boolean }
-}) {
-  return (
-    <Link
-      href={`/source/${item.id}` as never}
-      className="flex items-center gap-3 px-2 py-2 rounded-[8px] transition-colors duration-200 hover:bg-[rgba(0,0,0,0.04)]"
-      style={{
-        color: 'var(--apple-text-secondary)',
-        fontFamily: 'var(--apple-font-text)',
-        fontSize: 'var(--apple-fs-14)',
-        letterSpacing: 'var(--apple-track-tight)',
-        fontWeight: 500,
-        textDecoration: 'none',
-        transitionTimingFunction: 'var(--apple-ease-default)',
-      }}
-    >
-      <span
-        className="relative shrink-0 overflow-hidden"
-        style={{
-          width: 24,
-          height: 24,
-          borderRadius: 999,
-          background: 'rgba(0,0,0,0.04)',
-        }}
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={item.img}
-          alt=""
-          width={24}
-          height={24}
-          loading="lazy"
-          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-        />
-      </span>
-      <span className="flex-1 truncate">{item.name}</span>
-      {item.fresh && (
-        <span
-          aria-label="New activity"
-          style={{
-            width: 6,
-            height: 6,
-            borderRadius: 999,
-            background: '#0071e3',
-            flexShrink: 0,
-          }}
-        />
-      )}
     </Link>
   )
 }
