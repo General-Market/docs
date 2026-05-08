@@ -6,6 +6,7 @@ import {
   staticFile,
   useCurrentFrame,
 } from "remotion";
+import { CameraMotionBlur } from "@remotion/motion-blur";
 import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 import { VerticalDotGrid } from "./DotGrid";
@@ -49,6 +50,18 @@ type LogoMask =
       color?: string;
     };
 
+// Per-article visual treatment. Each beat looks structurally different
+// so the rigged-evidence montage doesn't flatten into six identical
+// flashes. Treatments only affect framing and entry — the underlying
+// article PNG, yellow highlight, and green exchange underline stay.
+type Treatment =
+  | "wide"          // current behaviour — clean card, slight tilt, scale punch
+  | "extreme-zoom"  // image is dollied so the highlighted phrase fills the frame
+  | "corkboard"     // pinned with two thumbtacks, harder shadow, tilted
+  | "stamp"         // huge red "RIGGED" stamp slams across after entry, with shake
+  | "whip"          // whips in from the left with motion blur
+  | "fullscreen";   // takes over the entire frame, no card chrome, no left verdict
+
 type ArticleProof = {
   exchange: string;
   image: string;
@@ -56,6 +69,7 @@ type ArticleProof = {
   highlights: Highlight[];       // yellow body highlight (insider-trading phrases)
   exchangeBox?: Highlight;       // green underline on the exchange name in title
   logoMask?: LogoMask;           // black blackout over a brand logo
+  treatment: Treatment;          // per-beat visual variant
 };
 
 // `exchangeBox` coords were eyeballed from each article PNG. Two articles
@@ -72,6 +86,7 @@ const ARTICLES: ArticleProof[] = [
     highlights: [{ x: 0.5737, y: 0.1383, w: 0.3183, h: 0.0453 }],
     exchangeBox: { x: 0.0131, y: 0.1383, w: 0.1759, h: 0.0352 },
     logoMask: { kind: "circle", cx: 0.499, cy: 0.738, size: 0.42 },
+    treatment: "wide",
   },
   {
     exchange: "robinhood",
@@ -89,6 +104,7 @@ const ARTICLES: ArticleProof[] = [
       rotate: -8,
       color: "#ffffff",
     },
+    treatment: "extreme-zoom",
   },
   {
     exchange: "polymarket",
@@ -100,6 +116,7 @@ const ARTICLES: ArticleProof[] = [
       { x: 0.5126, y: 0.3313, w: 0.1197, h: 0.0281 },
     ],
     exchangeBox: { x: 0.0540, y: 0.2828, w: 0.1998, h: 0.0359 },
+    treatment: "corkboard",
   },
   {
     exchange: "pump.fun",
@@ -108,6 +125,7 @@ const ARTICLES: ArticleProof[] = [
       "cointribune.com/en/solana-memecoin-lawsuit-advances-as-investors-cite-insider-trading-claims",
     highlights: [{ x: 0.1253, y: 0.5158, w: 0.2653, h: 0.0487 }],
     exchangeBox: { x: 0.0414, y: 0.4601, w: 0.3163, h: 0.0386 },
+    treatment: "stamp",
   },
   {
     exchange: "kalshi",
@@ -115,6 +133,7 @@ const ARTICLES: ArticleProof[] = [
     source: "thehill.com/policy/technology/5797999-prediction-markets-insider-trading-ban",
     highlights: [{ x: 0.4819, y: 0.176, w: 0.216, h: 0.0303 }],
     exchangeBox: { x: 0.0249, y: 0.1760, w: 0.0964, h: 0.0279 },
+    treatment: "whip",
   },
   {
     exchange: "coinbase",
@@ -122,6 +141,7 @@ const ARTICLES: ArticleProof[] = [
     source: "sec.gov/newsroom/press-releases/2022-127",
     highlights: [{ x: 0.2453, y: 0.4009, w: 0.3414, h: 0.0417 }],
     exchangeBox: { x: 0.5953, y: 0.3042, w: 0.2109, h: 0.0346 },
+    treatment: "fullscreen",
   },
 ];
 
@@ -150,6 +170,18 @@ export const AntiCheatRigged: React.FC = () => {
   const currentArticle = articlesActive ? ARTICLES[articleIdx] : null;
   const articleStartFrame = articlesActive ? ARTICLE_FRAMES[articleIdx] : 0;
 
+  // Fade the verdict column for fullscreen takeover so the article owns
+  // the entire frame on the final beat. 5f fade in around the cut.
+  const verdictOpacity =
+    currentArticle?.treatment === "fullscreen"
+      ? interpolate(
+          frame - articleStartFrame,
+          [0, 5],
+          [1, 0],
+          { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+        )
+      : 1;
+
   return (
     <AbsoluteFill style={{ backgroundColor: colors.bg, fontFamily: font }}>
       <VerticalDotGrid />
@@ -165,6 +197,7 @@ export const AntiCheatRigged: React.FC = () => {
             display: "flex",
             flexDirection: "column",
             gap: 32,
+            opacity: verdictOpacity,
           }}
         >
           {/* "is rigged" — two lines, char-slammed in, glitch flickers thrice */}
@@ -302,7 +335,12 @@ const GlitchVerdict: React.FC<{ glitch: number }> = ({ glitch }) => {
   );
 };
 
-// ─── Article flash: hard-cut entry, big size, yellow highlighter restored ─────
+// ─── Article flash: per-treatment renderer ────────────────────────────────────
+//
+// The dispatcher picks the variant; each variant owns its framing, entry,
+// and any extra ornament (stamp, thumbtacks, motion blur). They all share
+// one inner core (ArticleCore) that paints the image + highlight layers,
+// so changing the highlighter logic stays one-place.
 
 const ARTICLE_HEIGHT = 940;
 
@@ -310,25 +348,404 @@ const ArticleFlash: React.FC<{
   article: ArticleProof;
   startFrame: number;
 }> = ({ article, startFrame }) => {
+  switch (article.treatment) {
+    case "extreme-zoom":
+      return <ExtremeZoomTreatment article={article} startFrame={startFrame} />;
+    case "corkboard":
+      return <CorkboardTreatment article={article} startFrame={startFrame} />;
+    case "stamp":
+      return <StampTreatment article={article} startFrame={startFrame} />;
+    case "whip":
+      return <WhipTreatment article={article} startFrame={startFrame} />;
+    case "fullscreen":
+      return <FullscreenTreatment article={article} startFrame={startFrame} />;
+    case "wide":
+    default:
+      return <WideTreatment article={article} startFrame={startFrame} />;
+  }
+};
+
+type TreatmentProps = { article: ArticleProof; startFrame: number };
+
+// The image + all overlay layers, no card chrome. Card chrome (white pad,
+// rounded corners, shadow) is added by the wrapping treatment, so e.g.
+// fullscreen can drop it entirely.
+const ArticleCore: React.FC<{
+  article: ArticleProof;
+  reveal: number;
+  imgStyle?: React.CSSProperties;
+}> = ({ article, reveal, imgStyle }) => (
+  <div style={{ position: "relative", display: "block" }}>
+    <Img
+      src={staticFile(article.image)}
+      style={{
+        height: ARTICLE_HEIGHT,
+        width: "auto",
+        maxWidth: 1160,
+        objectFit: "contain",
+        display: "block",
+        borderRadius: 4,
+        ...imgStyle,
+      }}
+    />
+    {article.logoMask && <LogoBlackout mask={article.logoMask} />}
+    <YellowHighlightLayer highlights={article.highlights} reveal={reveal} />
+    {article.exchangeBox && (
+      <ExchangeNameUnderline box={article.exchangeBox} reveal={reveal} />
+    )}
+  </div>
+);
+
+// ─── Wide (binance) — clean white card, slight tilt, scale punch ──────────────
+
+const WideTreatment: React.FC<TreatmentProps> = ({ article, startFrame }) => {
   const frame = useCurrentFrame();
   const local = frame - startFrame;
-
   const punchT = Math.max(0, Math.min(1, local / 4));
   const punchScale = interpolate(punchT, [0, 1], [1.04, 1]);
   const punchOpacity = interpolate(punchT, [0, 1], [0.35, 1]);
-
   const highlightReveal = Math.max(0, Math.min(1, (local - 1) / 6));
-
   const tilt = ((startFrame * 7919) % 100) / 100 - 0.5;
 
+  return (
+    <div style={cardWrapStyle()}>
+      <div
+        style={{
+          ...cardChromeStyle(),
+          transform: `rotate(${tilt * 0.4}deg) scale(${punchScale})`,
+          opacity: punchOpacity,
+        }}
+      >
+        <ArticleCore article={article} reveal={highlightReveal} />
+        <SourceCitation url={article.source} />
+      </div>
+    </div>
+  );
+};
+
+// ─── Extreme zoom (robinhood) — image dollies until phrase fills frame ────────
+
+const ExtremeZoomTreatment: React.FC<TreatmentProps> = ({
+  article,
+  startFrame,
+}) => {
+  const frame = useCurrentFrame();
+  const local = frame - startFrame;
+  const highlightReveal = Math.max(0, Math.min(1, (local - 2) / 6));
+
+  // Camera dollies in: starts at 1.6x already-zoomed, settles at 3.4x.
+  // Slow continuous dolly so the phrase keeps growing through the beat.
+  const zoom = interpolate(local, [0, 12, 26], [1.6, 3.0, 3.4], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  // Highlight rectangle in image-fraction coords. Pick the first highlight.
+  const h = article.highlights[0];
+  const hcx = h.x + h.w / 2; // 0..1 along image width
+  const hcy = h.y + h.h / 2; // 0..1 along image height
+
+  // Origin point on the card (pre-scale) that we want pinned to viewport
+  // centre — given the highlight is at (hcx, hcy) of the image.
+  const originX = `${hcx * 100}%`;
+  const originY = `${hcy * 100}%`;
+
+  // Slight settle on the card — rises from 0.6 → 1.0 in 4f.
+  const opacity = interpolate(local, [0, 4], [0.6, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  return (
+    <AbsoluteFill
+      style={{
+        overflow: "hidden",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <div
+        style={{
+          ...cardChromeStyle(),
+          transform: `scale(${zoom})`,
+          transformOrigin: `${originX} ${originY}`,
+          opacity,
+        }}
+      >
+        <ArticleCore article={article} reveal={highlightReveal} />
+      </div>
+    </AbsoluteFill>
+  );
+};
+
+// ─── Corkboard (polymarket) — pinned with two thumbtacks, harder shadow ───────
+
+const CorkboardTreatment: React.FC<TreatmentProps> = ({
+  article,
+  startFrame,
+}) => {
+  const frame = useCurrentFrame();
+  const local = frame - startFrame;
+  // Drop-and-settle: the card falls 60px and rebounds slightly.
+  const dropY = interpolate(local, [0, 6, 10], [-60, 8, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const opacity = interpolate(local, [0, 3], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const highlightReveal = Math.max(0, Math.min(1, (local - 4) / 8));
+
+  return (
+    <div style={cardWrapStyle()}>
+      <div
+        style={{
+          ...cardChromeStyle(),
+          // Heavier tilt + harder cast shadow — feels nailed to a board.
+          transform: `translateY(${dropY}px) rotate(2.4deg)`,
+          boxShadow:
+            "0 0 0 1px rgba(10,12,18,0.18), 0 32px 60px rgba(10,12,18,0.32)",
+          opacity,
+        }}
+      >
+        <Thumbtack x={"6%"} y={"-10px"} />
+        <Thumbtack x={"94%"} y={"-10px"} delay={2} />
+        <ArticleCore article={article} reveal={highlightReveal} />
+        <SourceCitation url={article.source} />
+      </div>
+    </div>
+  );
+};
+
+const Thumbtack: React.FC<{ x: string; y: string; delay?: number }> = ({
+  x,
+  y,
+  delay = 0,
+}) => {
+  const frame = useCurrentFrame();
+  // Pin lands a hair after the card with a small bounce.
+  const t = Math.max(0, frame - delay);
+  const scale = interpolate(t, [0, 4, 8], [0, 1.25, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const opacity = interpolate(t, [0, 3], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
   return (
     <div
       style={{
         position: "absolute",
-        right: 40,
+        left: x,
+        top: y,
+        transform: `translate(-50%, -50%) scale(${scale})`,
+        width: 36,
+        height: 36,
+        borderRadius: "50%",
+        background:
+          "radial-gradient(circle at 32% 30%, #ff7a8a 0%, #d61b2c 60%, #8a0a16 100%)",
+        boxShadow:
+          "inset 0 -3px 6px rgba(0,0,0,0.35), 0 4px 8px rgba(10,12,18,0.45)",
+        opacity,
+        zIndex: 5,
+      }}
+    />
+  );
+};
+
+// ─── Stamp (pump.fun) — huge red RIGGED slams across after entry ──────────────
+
+const StampTreatment: React.FC<TreatmentProps> = ({ article, startFrame }) => {
+  const frame = useCurrentFrame();
+  const local = frame - startFrame;
+  // Standard punch entry on the card itself.
+  const punchT = Math.max(0, Math.min(1, local / 4));
+  const punchScale = interpolate(punchT, [0, 1], [1.04, 1]);
+  const punchOpacity = interpolate(punchT, [0, 1], [0.35, 1]);
+  const highlightReveal = Math.max(0, Math.min(1, (local - 1) / 6));
+
+  // Stamp lands on local frame 7. Scale 2.4 → 1 in 4 frames, opacity 0 → 1.
+  const STAMP_AT = 7;
+  const stampLocal = local - STAMP_AT;
+  const stampScale = interpolate(stampLocal, [0, 4], [2.4, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const stampOpacity = interpolate(stampLocal, [0, 2], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  // Card shake: 4-frame jitter when the stamp hits.
+  const shakeT = Math.max(0, Math.min(1, stampLocal / 6));
+  const shakeAmp = (1 - shakeT) * 6;
+  const shakeX =
+    stampLocal >= 0 && stampLocal < 6
+      ? Math.sin(stampLocal * 4.5) * shakeAmp
+      : 0;
+  const shakeY =
+    stampLocal >= 0 && stampLocal < 6
+      ? Math.cos(stampLocal * 5.1) * shakeAmp * 0.6
+      : 0;
+
+  return (
+    <div style={cardWrapStyle()}>
+      <div
+        style={{
+          ...cardChromeStyle(),
+          transform: `translate(${shakeX}px, ${shakeY}px) scale(${punchScale})`,
+          opacity: punchOpacity,
+        }}
+      >
+        <ArticleCore article={article} reveal={highlightReveal} />
+        <SourceCitation url={article.source} />
+        {stampLocal >= 0 && (
+          <div
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: `translate(-50%, -50%) rotate(-14deg) scale(${stampScale})`,
+              fontFamily: font,
+              fontSize: 280,
+              fontWeight: 900,
+              letterSpacing: "-0.04em",
+              color: "#d61b2c",
+              opacity: stampOpacity,
+              mixBlendMode: "multiply",
+              textShadow:
+                "0 0 6px rgba(214,27,44,0.20), 1px 1px 0 rgba(214,27,44,0.30)",
+              border: "10px solid #d61b2c",
+              padding: "20px 60px",
+              borderRadius: 16,
+              pointerEvents: "none",
+              whiteSpace: "nowrap",
+            }}
+          >
+            RIGGED
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ─── Whip (kalshi) — flies in from the left with motion blur ──────────────────
+
+const WhipTreatment: React.FC<TreatmentProps> = ({ article, startFrame }) => {
+  const frame = useCurrentFrame();
+  const local = frame - startFrame;
+  // Whip travel: -2200px → 0 in 8 frames with cubic ease-out, then a small
+  // overshoot rebound so the card lands like it bounced off a wall.
+  const whipT = Math.max(0, Math.min(1, local / 8));
+  const eased = 1 - Math.pow(1 - whipT, 3);
+  const tx = (1 - eased) * -2200;
+  const overshoot = interpolate(local, [8, 11, 14], [60, -16, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const cssBlur = interpolate(local, [0, 6, 9], [10, 4, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const opacity = interpolate(local, [0, 2], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const highlightReveal = Math.max(0, Math.min(1, (local - 8) / 8));
+
+  // Skew during travel only — zeroes once the card has landed.
+  const skew = local < 8 ? -6 : 0;
+  const rotate = local < 8 ? 0 : -1.2;
+
+  return (
+    <div style={cardWrapStyle()}>
+      <CameraMotionBlur shutterAngle={150} samples={4}>
+        <div
+          style={{
+            ...cardChromeStyle(),
+            transform: `translateX(${tx + overshoot}px) skewX(${skew}deg) rotate(${rotate}deg)`,
+            opacity,
+            filter: `blur(${cssBlur}px)`,
+          }}
+        >
+          <ArticleCore article={article} reveal={highlightReveal} />
+          <SourceCitation url={article.source} />
+        </div>
+      </CameraMotionBlur>
+      {/* Speed lines — three streaks behind the card during travel. */}
+      {local < 8 && <SpeedLines local={local} />}
+    </div>
+  );
+};
+
+const SpeedLines: React.FC<{ local: number }> = ({ local }) => {
+  const opacity = interpolate(local, [0, 4, 8], [0, 0.7, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  return (
+    <div
+      style={{
+        position: "absolute",
+        right: 80,
         top: "50%",
         transform: "translateY(-50%)",
-        width: 1200,
+        opacity,
+        pointerEvents: "none",
+      }}
+    >
+      {[0, 1, 2].map((i) => (
+        <div
+          key={i}
+          style={{
+            position: "absolute",
+            width: 380 - i * 60,
+            height: 6,
+            background:
+              "linear-gradient(90deg, rgba(10,12,18,0) 0%, rgba(10,12,18,0.55) 100%)",
+            top: -120 + i * 120,
+            right: 0,
+            borderRadius: 3,
+          }}
+        />
+      ))}
+    </div>
+  );
+};
+
+// ─── Fullscreen (coinbase) — takes over the frame, no card chrome ─────────────
+
+const FullscreenTreatment: React.FC<TreatmentProps> = ({
+  article,
+  startFrame,
+}) => {
+  const frame = useCurrentFrame();
+  const local = frame - startFrame;
+  // Fade-zoom in: starts at 1.10, settles to 1.00 over 10f. Slow continuous
+  // dolly past the settle so the receipt keeps growing through the beat.
+  const scale = interpolate(local, [0, 10, 49], [1.10, 1.00, 1.04], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const opacity = interpolate(local, [0, 5], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const highlightReveal = Math.max(0, Math.min(1, (local - 4) / 10));
+
+  // Render the article wrapper at the full frame width. Height is auto so
+  // the natural aspect is preserved and the yellow highlight overlay still
+  // lines up with the phrase. The receipt is centred vertically; the dark
+  // backdrop frames it like a held-up exhibit.
+  return (
+    <AbsoluteFill
+      style={{
+        background: "#0a0c12",
+        overflow: "hidden",
+        opacity,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -337,45 +754,72 @@ const ArticleFlash: React.FC<{
       <div
         style={{
           position: "relative",
-          background: "#ffffff",
-          padding: 24,
-          paddingBottom: 56,
-          borderRadius: 14,
-          boxShadow:
-            "0 0 0 1px rgba(10,12,18,0.16), 0 24px 56px rgba(10,12,18,0.20)",
-          transform: `rotate(${tilt * 0.4}deg) scale(${punchScale})`,
-          opacity: punchOpacity,
+          width: W,
+          transform: `scale(${scale})`,
+          transformOrigin: "center center",
         }}
       >
-        <div style={{ position: "relative", display: "block" }}>
-          <Img
-            src={staticFile(article.image)}
-            style={{
-              height: ARTICLE_HEIGHT,
-              width: "auto",
-              maxWidth: 1160,
-              objectFit: "contain",
-              display: "block",
-              borderRadius: 4,
-            }}
-          />
-          {article.logoMask && <LogoBlackout mask={article.logoMask} />}
-          <YellowHighlightLayer
-            highlights={article.highlights}
+        <Img
+          src={staticFile(article.image)}
+          style={{
+            width: "100%",
+            height: "auto",
+            display: "block",
+          }}
+        />
+        {article.logoMask && <LogoBlackout mask={article.logoMask} />}
+        <YellowHighlightLayer
+          highlights={article.highlights}
+          reveal={highlightReveal}
+        />
+        {article.exchangeBox && (
+          <ExchangeNameUnderline
+            box={article.exchangeBox}
             reveal={highlightReveal}
           />
-          {article.exchangeBox && (
-            <ExchangeNameUnderline
-              box={article.exchangeBox}
-              reveal={highlightReveal}
-            />
-          )}
-        </div>
-        <SourceCitation url={article.source} />
+        )}
       </div>
-    </div>
+      {/* Source citation — subtle bottom-left, white on dark over the photo. */}
+      <div
+        style={{
+          position: "absolute",
+          left: 56,
+          bottom: 48,
+          fontFamily: monoFont,
+          fontSize: 22,
+          color: "rgba(255,255,255,0.78)",
+          letterSpacing: "0.02em",
+          textShadow: "0 1px 2px rgba(0,0,0,0.6)",
+        }}
+      >
+        source — {article.source}
+      </div>
+    </AbsoluteFill>
   );
 };
+
+// ─── Shared style helpers ─────────────────────────────────────────────────────
+
+const cardWrapStyle = (): React.CSSProperties => ({
+  position: "absolute",
+  right: 40,
+  top: "50%",
+  transform: "translateY(-50%)",
+  width: 1200,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+});
+
+const cardChromeStyle = (): React.CSSProperties => ({
+  position: "relative",
+  background: "#ffffff",
+  padding: 24,
+  paddingBottom: 56,
+  borderRadius: 14,
+  boxShadow:
+    "0 0 0 1px rgba(10,12,18,0.16), 0 24px 56px rgba(10,12,18,0.20)",
+});
 
 // ─── Source citation — small mono link printed under the article card ─────────
 
