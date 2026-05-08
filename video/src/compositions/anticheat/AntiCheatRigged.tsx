@@ -26,9 +26,13 @@ const TITLE_IN = 0;
 const ARTICLES_AT = toFrames(0.35);
 const ARTICLE_HOLD = toFrames(0.65);
 
-// Three glitch shots on "is rigged" — irregular intervals, short pulses.
-// Each pulse is a 6-frame chromatic split that decays.
-const GLITCH_AT = [toFrames(0.9), toFrames(2.4), toFrames(3.9)];
+// Three glitch shots on "is rigged" — each chromatic-split pulse
+// detonates on a music landmark inside the playing window.
+//   Glitch 1 — tf 375 (beat 78.9s, energy 0.487)
+//   Glitch 2 — tf 426 (energy peak 80.6s, e=0.818)
+//   Glitch 3 — tf 477 (energy peak 82.29s, e=0.768)
+// Rigged starts at tf 349, so locals are tf - 349.
+const GLITCH_AT = [26, 77, 128];
 const GLITCH_LEN = 6;
 
 type Highlight = { x: number; y: number; w: number; h: number };
