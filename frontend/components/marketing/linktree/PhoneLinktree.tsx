@@ -219,13 +219,16 @@ function PhoneScene({
       box.getCenter(center)
       box.getSize(size)
       const htmlScale = (size.x * HTML_TRANSFORM_DIVISOR) / LINK_MENU_CSS_WIDTH
-      // X is dialled in at +0.32. Y needs the same kind of nudge —
-      // the menu sits a touch low on iOS. World +Y = screen up here
-      // (camera at −Z, default up vector). Starting at +0.12.
+      // X locked at +0.32. Y +0.12 wasn't enough — the avatar still
+      // sits below where the dynamic island lives — so doubled it.
+      // Z nudge moves the menu a hair more in front of the screen
+      // glass (the rotation flip puts +Z = away from camera in the
+      // post-rotation frame, so subtract more).
       const xOffset = isIOS ? 0.32 : 0
-      const yOffset = isIOS ? 0.12 : 0
+      const yOffset = isIOS ? 0.25 : 0
+      const zOffset = isIOS ? -0.005 : -0.001
       fit = {
-        position: [center.x + xOffset, center.y + yOffset, center.z - 0.001],
+        position: [center.x + xOffset, center.y + yOffset, center.z + zOffset],
         scale: htmlScale,
       }
     } else {
