@@ -10,7 +10,7 @@ import { antiCheatStatMeta, antiCheatBarsMeta } from "./AntiCheatStat";
 import { antiCheatRiggedMeta } from "./AntiCheatRigged";
 import { antiCheatSolutionMeta } from "./AntiCheatSolution";
 import { antiCheatReassureMeta } from "./AntiCheatReassure";
-import { antiCheatBridgeMeta } from "./AntiCheatBridge";
+import { antiCheatSwitchMeta } from "./AntiCheatSwitch";
 import { antiCheatEndCardMeta } from "./AntiCheatEndCard";
 import {
   snapZoomIn,
@@ -59,7 +59,7 @@ const TOTAL_FRAMES =
   antiCheatStatMeta.durationInFrames +
   antiCheatSolutionMeta.durationInFrames +
   antiCheatReassureMeta.durationInFrames +
-  antiCheatBridgeMeta.durationInFrames +
+  antiCheatSwitchMeta.durationInFrames +
   antiCheatEndCardMeta.durationInFrames -
   TRANSITION_FRAMES;
 
@@ -169,9 +169,9 @@ export const AntiCheatFull: React.FC = () => {
         />
 
         <TransitionSeries.Sequence
-          durationInFrames={antiCheatBridgeMeta.durationInFrames}
+          durationInFrames={antiCheatSwitchMeta.durationInFrames}
         >
-          <antiCheatBridgeMeta.component />
+          <antiCheatSwitchMeta.component />
         </TransitionSeries.Sequence>
 
         <TransitionSeries.Transition
