@@ -274,7 +274,7 @@ const LETTER_EXIT_FADE = toFrames(0.34);
 const LETTER_EXIT_DRIFT = 22;
 
 // Below-carousel headline. Words enter staggered, exit on the wave.
-const TOUCHED_WORDS = ["every", "markets", "you", "trade"];
+const TOUCHED_WORDS = ["on", "every", "markets", "you", "trade"];
 const TOUCHED_WORD_STAGGER = toFrames(0.07);
 const TOUCHED_WORD_FADE = toFrames(0.28);
 
