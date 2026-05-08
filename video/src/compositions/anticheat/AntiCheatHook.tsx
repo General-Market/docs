@@ -644,13 +644,36 @@ const PairList: React.FC<{
     >
       {pairs.map((pair, i) => {
         const at = startFrame + i * stepFrame;
-        const t = spring({
+        const isFirst = i === 0;
+
+        // Opacity rises immediately on `at`. For the first pair, the
+        // horizontal split is delayed so both sides linger at the canvas
+        // centre — one shape, briefly — before splitting outward into the
+        // two panels. The other pairs keep the original soft slide-in.
+        const opT = spring({
           frame: frame - at,
           fps,
           config: { damping: 24, stiffness: 130, mass: 0.6 },
         });
-        const x = interpolate(t, [0, 1], [align === "left" ? -40 : 40, 0]);
-        const opacity = interpolate(t, [0, 1], [0, 1]);
+        const xT = isFirst
+          ? spring({
+              frame: frame - at - 10,
+              fps,
+              config: { damping: 22, stiffness: 95, mass: 0.75 },
+            })
+          : opT;
+        // First pair starts ~480px inboard so the LEFT panel's word sits
+        // against its right edge and the RIGHT panel's word sits against
+        // its left edge — visually butted together at canvas centre.
+        const initialX = isFirst
+          ? align === "left"
+            ? 480
+            : -480
+          : align === "left"
+            ? -40
+            : 40;
+        const x = interpolate(xT, [0, 1], [initialX, 0]);
+        const opacity = interpolate(opT, [0, 1], [0, 1]);
 
         return (
           <div
@@ -663,28 +686,11 @@ const PairList: React.FC<{
               fontWeight: 700,
               letterSpacing: "-0.03em",
               color: tint ?? "#f5f5f5",
-              display: "flex",
-              alignItems: "baseline",
-              gap: 24,
-              flexDirection: align === "left" ? "row" : "row-reverse",
               textShadow:
                 "0 2px 6px rgba(0,0,0,0.95), 0 6px 22px rgba(0,0,0,0.8), 0 12px 40px rgba(0,0,0,0.55)",
             }}
           >
-            <span
-              style={{
-                fontFamily: monoFont,
-                fontSize: 32,
-                fontWeight: 500,
-                color: "#7a7a7a",
-                opacity: 0.75,
-                minWidth: 48,
-                letterSpacing: "0.06em",
-              }}
-            >
-              0{i + 1}
-            </span>
-            <span>{pair[field]}</span>
+            {pair[field]}
           </div>
         );
       })}

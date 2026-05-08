@@ -225,9 +225,13 @@ const Terminal: React.FC = () => {
   );
   const glow = Math.max(punch * 1.6, glowSustain);
 
-  // CTA springs in alongside the terminal panel.
+  // CTA holds back until the terminal has finished its 95-frame entrance.
+  // While the panel is still oversized and tilted, anything beneath it is
+  // occluded — so the line below ("Shield your pnl…") only earns the right
+  // to appear once the terminal has settled at scale 1.0.
+  const CTA_DELAY = 95;
   const ctaSpring = spring({
-    frame,
+    frame: frame - CTA_DELAY,
     fps,
     config: { damping: 22, stiffness: 130, mass: 0.6 },
   });

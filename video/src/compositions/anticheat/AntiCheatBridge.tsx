@@ -37,7 +37,6 @@ const PREDATORS = [
   "Insider trading",
   "Toxic-flow market making",
   "Spoofing & layering",
-  "Directional bets",
 ];
 
 export const AntiCheatBridge: React.FC = () => {
@@ -359,9 +358,7 @@ const RightAnswer: React.FC = () => {
             pointerEvents: "none",
           }}
         />
-        Directional
-        <br />
-        bets.
+        Direction.
       </div>
     </div>
   );
