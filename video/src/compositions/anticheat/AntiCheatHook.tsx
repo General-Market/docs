@@ -644,36 +644,29 @@ const PairList: React.FC<{
     >
       {pairs.map((pair, i) => {
         const at = startFrame + i * stepFrame;
-        const isFirst = i === 0;
 
-        // Opacity rises immediately on `at`. For the first pair, the
-        // horizontal split is delayed so both sides linger at the canvas
-        // centre — one shape, briefly — before splitting outward into the
-        // two panels. The other pairs keep the original soft slide-in.
-        const opT = spring({
+        // Every pair enters from the centre, already in motion. The
+        // horizontal split runs in parallel with the opacity ramp — by
+        // the time the word is legible it is already moving outward,
+        // never sitting static at the seam.
+        const xT = spring({
           frame: frame - at,
           fps,
-          config: { damping: 24, stiffness: 130, mass: 0.6 },
+          config: { damping: 22, stiffness: 90, mass: 0.8 },
         });
-        const xT = isFirst
-          ? spring({
-              frame: frame - at - 10,
-              fps,
-              config: { damping: 22, stiffness: 95, mass: 0.75 },
-            })
-          : opT;
-        // First pair starts ~480px inboard so the LEFT panel's word sits
-        // against its right edge and the RIGHT panel's word sits against
-        // its left edge — visually butted together at canvas centre.
-        const initialX = isFirst
-          ? align === "left"
-            ? 480
-            : -480
-          : align === "left"
-            ? -40
-            : 40;
+        // Opacity is pulled forward against `xT` so the word becomes
+        // visible after a few frames of inward motion — appears moving,
+        // not appears then moves.
+        const opacity = interpolate(xT, [0.05, 0.45], [0, 1], {
+          extrapolateLeft: "clamp",
+          extrapolateRight: "clamp",
+        });
+        // Inboard start: the LEFT panel's word sits against its right
+        // edge, the RIGHT panel's word sits against its left edge —
+        // butted together at canvas centre. They split outward into
+        // their final panel-aligned positions.
+        const initialX = align === "left" ? 480 : -480;
         const x = interpolate(xT, [0, 1], [initialX, 0]);
-        const opacity = interpolate(opT, [0, 1], [0, 1]);
 
         return (
           <div
