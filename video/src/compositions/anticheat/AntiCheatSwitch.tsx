@@ -14,9 +14,9 @@ import { IdleZoom, RevealChars } from "./vibe";
 // Same slot the Bridge used to occupy: 180 frames, beat 32 absolute.
 // Scene-local beats: 0 (headline), 25 (rows), 51 (pivot), 77 (hero).
 //
-// Setup → pivot → knife. The Blocks row's "40%" doesn't crossfade out —
-// it physically inflates from its row slot into the centre of the frame,
-// becoming the hero. Continuous motion, the way Apple actually does it.
+// Setup → pivot → knife. Three rows with proportional bars; the Blocks
+// row's "40%" doesn't crossfade out — it physically inflates from its
+// row slot into the centre of the frame, becoming the hero.
 const SCENE_FRAMES = toFrames(6.0);
 
 const HEADLINE_AT = 0;
@@ -34,17 +34,28 @@ const ROWS: Row[] = [
 ];
 const HERO_INDEX = 2;
 
-// Spec-ledger geometry. The morphing percentage relies on these numbers
-// to know where it starts. Pre-pivot it sits in the Blocks row's right
-// slot; post-pivot it lands at canvas centre.
-const LEDGER_TOP = 376;
-const LEDGER_LEFT = 240;
-const LEDGER_RIGHT = 240;
-const ROW_PAD_Y = 32;
-const ROW_FONT = 68;
+// ─── Spec-ledger geometry ─────────────────────────────────────────────────────
+//
+// Three columns: label · proportional bar · percentage. The bar's max
+// length is fixed; each row's fill is `BAR_MAX * pct/100` so the Blocks
+// bar is exactly twice the Perps bar. The visual is the proof.
+
+const LABEL_WIDTH = 240;
+const BAR_MAX = 820;
+const PCT_WIDTH = 160;
+const COL_GAP = 28;
+const ROW_TOTAL_WIDTH =
+  LABEL_WIDTH + COL_GAP + BAR_MAX + COL_GAP + PCT_WIDTH;
+const ROW_CONTAINER_LEFT = (W - ROW_TOTAL_WIDTH) / 2;
+
+const LEDGER_TOP = 392;
+const ROW_PAD_Y = 36;
+const ROW_FONT_LABEL = 56;
+const ROW_FONT_PCT = 68;
 const ROW_LINE_HEIGHT = 1.05;
-const ROW_BLOCK_HEIGHT = ROW_PAD_Y * 2 + ROW_FONT * ROW_LINE_HEIGHT;
+const ROW_BLOCK_HEIGHT = ROW_PAD_Y * 2 + ROW_FONT_PCT * ROW_LINE_HEIGHT;
 const HAIRLINE_HEIGHT = 1;
+const BAR_HEIGHT = 6;
 
 const rowCenterY = (i: number) =>
   LEDGER_TOP +
@@ -52,13 +63,17 @@ const rowCenterY = (i: number) =>
   ROW_BLOCK_HEIGHT * i +
   ROW_BLOCK_HEIGHT / 2;
 
-// "40%" right-anchor inside the row. Use the row's right padding edge.
-const ROW_PCT_RIGHT_X = W - LEDGER_RIGHT - 12;
+// Right-anchor for the percentage in column 3 — the morphing 40% starts
+// here. The pct text is right-aligned in its 160px slot.
+const PCT_COL_LEFT = ROW_CONTAINER_LEFT + LABEL_WIDTH + COL_GAP + BAR_MAX + COL_GAP;
+const PCT_COL_RIGHT = PCT_COL_LEFT + PCT_WIDTH;
+const PCT_TEXT_WIDTH_AT_ROW = 134; // approx advance of "40%" at fontSize 68
+const SRC_PCT_CX = PCT_COL_RIGHT - PCT_TEXT_WIDTH_AT_ROW / 2;
 
 // Hero sizing.
 const HERO_FONT = 320;
 const HERO_CENTER_X = W / 2;
-const HERO_CENTER_Y = H / 2 - 12;
+const HERO_CENTER_Y = H / 2 - 24;
 
 export const AntiCheatSwitch: React.FC = () => (
   <AbsoluteFill
@@ -77,9 +92,7 @@ export const AntiCheatSwitch: React.FC = () => (
 );
 
 // ─── Stage ────────────────────────────────────────────────────────────────────
-//
-// One spring drives the whole pivot. Headline lifts, rows slide and blur,
-// hairlines retract, the Blocks 40% travels and inflates, hero copy lands.
+
 const Stage: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -111,7 +124,7 @@ const Headline: React.FC<{ morphT: number }> = ({ morphT }) => {
     <div
       style={{
         position: "absolute",
-        top: 152,
+        top: 156,
         left: 0,
         right: 0,
         textAlign: "center",
@@ -140,48 +153,42 @@ const Headline: React.FC<{ morphT: number }> = ({ morphT }) => {
 };
 
 // ─── Spec ledger ──────────────────────────────────────────────────────────────
-//
-// Hairlines draw left-to-right on row reveal, then retract on pivot.
-// Non-hero rows fade and slide down; the Blocks row keeps its label and
-// hands the "40%" off to the morphing overlay.
 
 const SpecLedger: React.FC<{
   frame: number;
   fps: number;
   morphT: number;
-}> = ({ frame, fps, morphT }) => {
-  return (
-    <div
-      style={{
-        position: "absolute",
-        top: LEDGER_TOP,
-        left: LEDGER_LEFT,
-        right: LEDGER_RIGHT,
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      <Hairline frame={frame} fps={fps} index={0} morphT={morphT} />
-      {ROWS.map((row, i) => (
-        <React.Fragment key={row.label}>
-          <SpecRow
-            row={row}
-            index={i}
-            frame={frame}
-            fps={fps}
-            morphT={morphT}
-          />
-          <Hairline
-            frame={frame}
-            fps={fps}
-            index={i + 1}
-            morphT={morphT}
-          />
-        </React.Fragment>
-      ))}
-    </div>
-  );
-};
+}> = ({ frame, fps, morphT }) => (
+  <div
+    style={{
+      position: "absolute",
+      top: LEDGER_TOP,
+      left: ROW_CONTAINER_LEFT,
+      width: ROW_TOTAL_WIDTH,
+      display: "flex",
+      flexDirection: "column",
+    }}
+  >
+    <Hairline frame={frame} fps={fps} index={0} morphT={morphT} />
+    {ROWS.map((row, i) => (
+      <React.Fragment key={row.label}>
+        <SpecRow
+          row={row}
+          index={i}
+          frame={frame}
+          fps={fps}
+          morphT={morphT}
+        />
+        <Hairline
+          frame={frame}
+          fps={fps}
+          index={i + 1}
+          morphT={morphT}
+        />
+      </React.Fragment>
+    ))}
+  </div>
+);
 
 const Hairline: React.FC<{
   frame: number;
@@ -195,7 +202,6 @@ const Hairline: React.FC<{
     fps,
     config: { damping: 26, stiffness: 130, mass: 0.6 },
   });
-  // Hairlines retract from the right on pivot.
   const retract = 1 - morphT;
   const scaleX = draw * retract;
   return (
@@ -235,26 +241,31 @@ const SpecRow: React.FC<{
     extrapolateRight: "clamp",
   });
 
-  // Counting %: digit ticks up from 0 to its value over ~14 frames.
+  // Counting %: 0 → row.pct over 14 frames, eased.
   const countT = Math.max(0, Math.min(1, local / 14));
   const countEased = 1 - Math.pow(1 - countT, 3);
   const value = Math.round(row.pct * countEased);
 
-  // Exit choreography: non-hero rows blow out on pivot — slide down,
-  // blur, fade. The hero row keeps its label still (the % travels off
-  // on its own as the hero), but the row itself dims and clears.
+  // Bar growth: same easing window as the count, target = BAR_MAX × pct/100.
+  const barFill = (BAR_MAX * row.pct) / 100;
+  const barWidth = barFill * countEased;
+
   const isHero = index === HERO_INDEX;
   const exitOp = 1 - morphT;
   const exitY = isHero ? morphT * 4 : morphT * 56;
   const exitBlur = isHero ? morphT * 2 : morphT * 10;
 
+  // Bars retract on pivot for non-hero rows; the Blocks bar dims with its row.
+  const barRetract = 1 - morphT;
+
   return (
     <div
       style={{
-        display: "flex",
-        alignItems: "baseline",
-        justifyContent: "space-between",
-        padding: `${ROW_PAD_Y}px 12px`,
+        display: "grid",
+        gridTemplateColumns: `${LABEL_WIDTH}px ${BAR_MAX}px ${PCT_WIDTH}px`,
+        columnGap: COL_GAP,
+        alignItems: "center",
+        padding: `${ROW_PAD_Y}px 0`,
         opacity: enterOp * exitOp,
         transform: `translateY(${(enterY + exitY).toFixed(2)}px)`,
         filter:
@@ -264,10 +275,11 @@ const SpecRow: React.FC<{
         willChange: "transform, opacity, filter",
       }}
     >
+      {/* Col 1 — label */}
       <div
         style={{
           fontFamily: font,
-          fontSize: ROW_FONT - 8,
+          fontSize: ROW_FONT_LABEL,
           fontWeight: 600,
           letterSpacing: "-0.022em",
           color: row.accent ? colors.fg : colors.fgSoft,
@@ -276,21 +288,41 @@ const SpecRow: React.FC<{
       >
         {row.label}
       </div>
-      {/* The hero row's % is rendered by MorphingForty; we leave a
-       * spacer here so the row's flex layout stays balanced. The
-       * spacer's text is invisible but reserves the same advance width
-       * as the rendered hero-glyph, keeping the baseline honest. */}
+
+      {/* Col 2 — proportional bar */}
+      <div
+        style={{
+          position: "relative",
+          width: BAR_MAX,
+          height: BAR_HEIGHT,
+        }}
+      >
+        <div
+          style={{
+            width: barWidth * barRetract,
+            height: BAR_HEIGHT,
+            background: row.accent ? colors.accent : colors.dim,
+            borderRadius: BAR_HEIGHT / 2,
+            willChange: "width",
+          }}
+        />
+      </div>
+
+      {/* Col 3 — percentage. The hero row's % is rendered by MorphingForty;
+       * we leave a transparent placeholder here so the grid keeps its
+       * baseline. */}
       {isHero ? (
         <div
           aria-hidden
           style={{
             fontFamily: font,
-            fontSize: ROW_FONT,
+            fontSize: ROW_FONT_PCT,
             fontWeight: 700,
             letterSpacing: "-0.028em",
             color: "transparent",
             fontVariantNumeric: "tabular-nums",
             lineHeight: ROW_LINE_HEIGHT,
+            textAlign: "right",
           }}
         >
           {row.pct}%
@@ -299,12 +331,13 @@ const SpecRow: React.FC<{
         <div
           style={{
             fontFamily: font,
-            fontSize: ROW_FONT,
+            fontSize: ROW_FONT_PCT,
             fontWeight: 700,
             letterSpacing: "-0.028em",
             color: colors.dim,
             fontVariantNumeric: "tabular-nums",
             lineHeight: ROW_LINE_HEIGHT,
+            textAlign: "right",
           }}
         >
           {value}%
@@ -315,17 +348,12 @@ const SpecRow: React.FC<{
 };
 
 // ─── Morphing 40% ─────────────────────────────────────────────────────────────
-//
-// One element. Lives in the Blocks row pre-pivot, travels to centre and
-// inflates 4.7× on pivot. Bloom intensifies with the morph. The pivot
-// spring carries it; no crossfade.
 
 const MorphingForty: React.FC<{
   frame: number;
   fps: number;
   morphT: number;
 }> = ({ frame, fps, morphT }) => {
-  // Reveal: fade-in + counting up to 40 during Act 1.
   const revealStart = ROWS_AT + HERO_INDEX * ROW_STAGGER + 2;
   const revealLocal = frame - revealStart;
   const revealOp = interpolate(revealLocal, [0, 12], [0, 1], {
@@ -345,31 +373,18 @@ const MorphingForty: React.FC<{
 
   const countT = Math.max(0, Math.min(1, revealLocal / 14));
   const countEased = 1 - Math.pow(1 - countT, 3);
-  // Past the pivot, the value is locked at 40 — the morph carries it.
   const value = morphT > 0.05 ? 40 : Math.round(40 * countEased);
 
-  // Source: row position. The element is right-anchored visually inside
-  // the row. We position by its CENTRE, which depends on the rendered
-  // text width, but the morph lerps to the canvas centre by the end so
-  // a small approximation in source-x is invisible.
-  const ROW_PCT_TEXT_WIDTH = 138; // rough advance of "40%" at ROW_FONT=68
-  const SRC_CX = ROW_PCT_RIGHT_X - ROW_PCT_TEXT_WIDTH / 2;
   const SRC_CY = rowCenterY(HERO_INDEX);
-
-  // Lerp centre + scale on the same spring.
-  const cx = SRC_CX + (HERO_CENTER_X - SRC_CX) * morphT;
+  const cx = SRC_PCT_CX + (HERO_CENTER_X - SRC_PCT_CX) * morphT;
   const cy = SRC_CY + (HERO_CENTER_Y - SRC_CY) * morphT;
-  const scale = 1 + (HERO_FONT / ROW_FONT - 1) * morphT;
+  const scale = 1 + (HERO_FONT / ROW_FONT_PCT - 1) * morphT;
 
-  // Quiet sine breath after morph completes — the hero never sits dead.
   const sinceLand = Math.max(0, frame - PIVOT_AT - 22);
   const breath = 1 + Math.sin(sinceLand / 32) * 0.006;
   const finalScale = scale * breath;
 
-  // Bloom rides the morph and stays at full strength after.
   const bloom = morphT;
-
-  // Subtle weight push as it inflates — 700 → 800.
   const weight = morphT > 0.5 ? 800 : 700;
 
   return (
@@ -381,7 +396,7 @@ const MorphingForty: React.FC<{
         transform: `translate(-50%, -50%) translateY(${enterY.toFixed(2)}px) scale(${finalScale.toFixed(4)})`,
         transformOrigin: "center center",
         fontFamily: font,
-        fontSize: ROW_FONT,
+        fontSize: ROW_FONT_PCT,
         fontWeight: weight,
         letterSpacing: "-0.045em",
         lineHeight: 1,
@@ -407,7 +422,7 @@ const MorphingForty: React.FC<{
       {value}
       <span
         style={{
-          fontSize: ROW_FONT * 0.62,
+          fontSize: ROW_FONT_PCT * 0.62,
           marginLeft: 4,
           letterSpacing: "-0.02em",
         }}
@@ -419,9 +434,6 @@ const MorphingForty: React.FC<{
 };
 
 // ─── Hero copy ────────────────────────────────────────────────────────────────
-//
-// Below the 40%: "Up to 2× more.*" — the implication.
-// Bottom kicker: "Just by switching financial product." — the action.
 
 const HeroCopy: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
   const claimT = spring({
@@ -430,7 +442,7 @@ const HeroCopy: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
     config: { damping: 22, stiffness: 130, mass: 0.7 },
   });
   const claimOp = interpolate(claimT, [0, 1], [0, 1]);
-  const claimY = interpolate(claimT, [0, 1], [14, 0]);
+  const claimY = interpolate(claimT, [0, 1], [16, 0]);
 
   const kickT = spring({
     frame: frame - KICKER_AT,
@@ -438,11 +450,11 @@ const HeroCopy: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
     config: { damping: 22, stiffness: 130, mass: 0.7 },
   });
   const kickOp = interpolate(kickT, [0, 1], [0, 1]);
-  const kickY = interpolate(kickT, [0, 1], [10, 0]);
+  const kickY = interpolate(kickT, [0, 1], [12, 0]);
 
   return (
     <>
-      {/* Below the hero number — the implication */}
+      {/* Below the hero number — the implication. Bigger, no period. */}
       <div
         style={{
           position: "absolute",
@@ -451,9 +463,9 @@ const HeroCopy: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
           right: 0,
           textAlign: "center",
           fontFamily: font,
-          fontSize: 56,
-          fontWeight: 600,
-          letterSpacing: "-0.024em",
+          fontSize: 84,
+          fontWeight: 700,
+          letterSpacing: "-0.030em",
           color: colors.fg,
           lineHeight: 1.0,
           opacity: claimOp,
@@ -464,37 +476,37 @@ const HeroCopy: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
         <span
           style={{
             fontFamily: monoFont,
-            fontSize: 24,
+            fontSize: 32,
             color: colors.dim,
-            marginLeft: 2,
+            marginLeft: 4,
             verticalAlign: "super",
             fontWeight: 500,
+            letterSpacing: 0,
           }}
         >
           *
         </span>
-        .
       </div>
 
-      {/* Bottom kicker — the action */}
+      {/* Bottom kicker — the action. Larger size and stronger color so
+       * it actually reads at full-frame distance. */}
       <div
         style={{
           position: "absolute",
-          bottom: 96,
+          bottom: 88,
           left: 0,
           right: 0,
           textAlign: "center",
-          fontFamily: monoFont,
-          fontSize: 22,
+          fontFamily: font,
+          fontSize: 38,
           fontWeight: 500,
-          letterSpacing: "0.32em",
-          textTransform: "uppercase",
-          color: colors.dim,
+          letterSpacing: "-0.020em",
+          color: colors.fgSoft,
           opacity: kickOp,
           transform: `translateY(${kickY.toFixed(2)}px)`,
         }}
       >
-        Just by switching financial product
+        just by switching financial product
       </div>
     </>
   );
