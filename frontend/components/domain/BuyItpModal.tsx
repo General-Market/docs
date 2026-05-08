@@ -23,6 +23,7 @@ import Link from 'next/link'
 import itpIdNames from '@/lib/itp-id-names.json'
 import { usePostHogTracker } from '@/hooks/usePostHog'
 import { SpringModal, SpringBackdrop } from '@/components/ui/spring'
+import { useWaitlistGate } from '@/components/waitlist/WaitlistGateProvider'
 import { InlineOhlcChart } from '@/components/ui/InlineOhlcChart'
 import { indexL3 } from '@/lib/wagmi'
 
@@ -234,6 +235,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   const { address, isConnected } = useAccount()
   const l3PublicClient = usePublicClient({ chainId: indexL3.id })
   const { showSuccess } = useToast()
+  const { requireWhitelist } = useWaitlistGate()
 
   const SLIPPAGE_TIERS = [
     { value: 0, label: '0.3%', description: t('slippage_tight') },
@@ -395,47 +397,49 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   const [faucetLoading, setFaucetLoading] = useState(false)
   const [apiMintSuccess, setApiMintSuccess] = useState(false)
   const isMintSuccess = isMintReceiptSuccess || apiMintSuccess
-  const handleMintTestUsdc = useCallback(async () => {
+  const handleMintTestUsdc = useCallback(() => {
     if (!address) return
-    setFaucetLoading(true)
-    setApiMintSuccess(false)
-    try {
-      // Vision scope: mints L3 USDC (18 dec) + drips L3 GM gas.
-      const res = await fetch('/api/faucet', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address, amount: '10000', scope: 'vision' }),
-      })
-      const data = await res.json()
-      if (data.success && !data.vision?.usdc?.error) {
-        setApiMintSuccess(true)
-        // The receipt is confirmed by the time the API returns. The user's
-        // RPC view may still be one block behind. Poll every 1s for 30s
-        // — give up only after the chain has had ample time to surface
-        // the mint. Each refetch is a single eth_call; cost is negligible.
-        const start = Date.now()
-        const poll = () => {
-          refetchL3Usdc()
-          if (Date.now() - start < 30_000) {
-            setTimeout(poll, 1_000)
+    requireWhitelist(async () => {
+      setFaucetLoading(true)
+      setApiMintSuccess(false)
+      try {
+        // Vision scope: mints L3 USDC (18 dec) + drips L3 GM gas.
+        const res = await fetch('/api/faucet', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ address, amount: '10000', scope: 'vision' }),
+        })
+        const data = await res.json()
+        if (data.success && !data.vision?.usdc?.error) {
+          setApiMintSuccess(true)
+          // The receipt is confirmed by the time the API returns. The user's
+          // RPC view may still be one block behind. Poll every 1s for 30s
+          // — give up only after the chain has had ample time to surface
+          // the mint. Each refetch is a single eth_call; cost is negligible.
+          const start = Date.now()
+          const poll = () => {
+            refetchL3Usdc()
+            if (Date.now() - start < 30_000) {
+              setTimeout(poll, 1_000)
+            }
           }
+          poll()
         }
-        poll()
+      } catch {
+        // Fallback to direct contract call (mint L3 USDC, 18 decimals).
+        // Wrapper handles chain switch + chainId.
+        resetMint()
+        writeMint({
+          address: INDEX_PROTOCOL.l3Usdc,
+          abi: MINT_ABI,
+          functionName: 'mint',
+          args: [address, parseUnits('10000', L3_USDC_DECIMALS)],
+        })
+      } finally {
+        setFaucetLoading(false)
       }
-    } catch {
-      // Fallback to direct contract call (mint L3 USDC, 18 decimals).
-      // Wrapper handles chain switch + chainId.
-      resetMint()
-      writeMint({
-        address: INDEX_PROTOCOL.l3Usdc,
-        abi: MINT_ABI,
-        functionName: 'mint',
-        args: [address, parseUnits('10000', L3_USDC_DECIMALS)],
-      })
-    } finally {
-      setFaucetLoading(false)
-    }
-  }, [address, writeMint, resetMint, refetchL3Usdc])
+    })
+  }, [address, writeMint, resetMint, refetchL3Usdc, requireWhitelist])
 
   // Amount in 18 decimals (L3 USDC)
   // Guard against negative, NaN, or excessive-decimal input

@@ -5,6 +5,7 @@ import { useAccount, useReadContract } from 'wagmi'
 import { indexL3 } from '@/lib/wagmi'
 import { useL3GasBalance } from '@/hooks/vision/useL3GasBalance'
 import { useDeployment } from '@/hooks/useDeployment'
+import { useWaitlistStatus } from '@/hooks/useWaitlistStatus'
 
 const FAUCET_ENABLED = process.env.NEXT_PUBLIC_FAUCET_ENABLED === 'true'
 const COOLDOWN_MS = 24 * 60 * 60 * 1000
@@ -34,6 +35,7 @@ export function useAutoFaucet() {
   const { isLow, isLoading: isGasLoading, refetch: refetchGas } = useL3GasBalance()
   const { getAddress } = useDeployment()
   const usdcAddress = getAddress('L3_WUSDC')
+  const { whitelisted } = useWaitlistStatus()
 
   const { data: usdcBalanceRaw, refetch: refetchUsdc } = useReadContract({
     address: usdcAddress,
@@ -54,6 +56,7 @@ export function useAutoFaucet() {
     if (!isConnected || !address) return
     if (isGasLoading) return
     if (inFlight.current) return
+    if (whitelisted !== true) return
 
     const usdcBalance = (usdcBalanceRaw as bigint | undefined) ?? 0n
     const needsGas = isLow
@@ -95,5 +98,5 @@ export function useAutoFaucet() {
         inFlight.current = false
       }
     })()
-  }, [address, isConnected, isLow, isGasLoading, usdcBalanceRaw, refetchGas, refetchUsdc])
+  }, [address, isConnected, isLow, isGasLoading, usdcBalanceRaw, refetchGas, refetchUsdc, whitelisted])
 }

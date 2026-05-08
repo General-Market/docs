@@ -20,6 +20,7 @@ import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import StrategyList from './StrategyList'
 import { useTranslations } from 'next-intl'
 import { useDeployment } from '@/hooks/useDeployment'
+import { useWaitlistGate } from '@/components/waitlist/WaitlistGateProvider'
 
 interface BatchEntryPanelProps {
   bitmapEditor: BitmapEditor
@@ -64,6 +65,7 @@ export default function BatchEntryPanel({
 }: BatchEntryPanelProps) {
   const t = useTranslations('vision')
   const queryClient = useQueryClient()
+  const { requireWhitelist } = useWaitlistGate()
 
   // -- Contract addresses from deployment.json (auto-synced) --
   const { getAddress } = useDeployment()
@@ -255,35 +257,37 @@ export default function BatchEntryPanel({
   }, [activeBatch, canSubmit, configHash, stakeValue, marketIds, bitmapEditor.state, join, publicClient])
 
   // -- Faucet handler --
-  const handleFaucet = useCallback(async () => {
+  const handleFaucet = useCallback(() => {
     if (!address || faucetLoading) return
-    setFaucetLoading(true)
-    setFaucetError(null)
-    setFaucetSuccess(false)
-    try {
-      const res = await fetch('/api/faucet', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address, amount: '1000', scope: 'vision' }),
-      })
-      const data = await res.json()
-      if (!res.ok || data.error) {
-        setFaucetError(data.error || 'Faucet request failed')
-      } else if (data.vision?.usdc?.error) {
-        setFaucetError(`USDC mint failed: ${data.vision.usdc.error}`)
-      } else if (data.vision?.gas?.error) {
-        setFaucetError(`Gas drip failed: ${data.vision.gas.error}`)
-      } else {
-        setFaucetSuccess(true)
-        setTimeout(() => { refetchBalance(); refetchGas() }, 2000)
-        setTimeout(() => setFaucetSuccess(false), 4000)
+    requireWhitelist(async () => {
+      setFaucetLoading(true)
+      setFaucetError(null)
+      setFaucetSuccess(false)
+      try {
+        const res = await fetch('/api/faucet', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ address, amount: '1000', scope: 'vision' }),
+        })
+        const data = await res.json()
+        if (!res.ok || data.error) {
+          setFaucetError(data.error || 'Faucet request failed')
+        } else if (data.vision?.usdc?.error) {
+          setFaucetError(`USDC mint failed: ${data.vision.usdc.error}`)
+        } else if (data.vision?.gas?.error) {
+          setFaucetError(`Gas drip failed: ${data.vision.gas.error}`)
+        } else {
+          setFaucetSuccess(true)
+          setTimeout(() => { refetchBalance(); refetchGas() }, 2000)
+          setTimeout(() => setFaucetSuccess(false), 4000)
+        }
+      } catch (e: any) {
+        setFaucetError(e.message || 'Network error')
+      } finally {
+        setFaucetLoading(false)
       }
-    } catch (e: any) {
-      setFaucetError(e.message || 'Network error')
-    } finally {
-      setFaucetLoading(false)
-    }
-  }, [address, faucetLoading, refetchBalance, refetchGas])
+    })
+  }, [address, faucetLoading, refetchBalance, refetchGas, requireWhitelist])
 
   // -- Quick-stake buttons --
   const quickAmounts = [1, 5, 10, 50, 100]

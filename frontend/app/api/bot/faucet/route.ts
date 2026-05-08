@@ -23,6 +23,12 @@ import { Redis } from '@upstash/redis'
  */
 
 import { getL3RpcServer } from '@/lib/config'
+import { isWhitelisted } from '@/lib/waitlist-db'
+
+const WAITLIST_GATE_ENABLED = process.env.WAITLIST_GATE_ENABLED !== 'false'
+const WAITLIST_URL = process.env.NEXT_PUBLIC_SITE_ORIGIN
+  ? `${process.env.NEXT_PUBLIC_SITE_ORIGIN}/waitlist`
+  : 'https://generalmarket.io/waitlist'
 
 const DEPLOYER_KEY = '0x107e200b197dc889feba0a1e0538bf51b97b2fc87f27f82783d5d59789dc3537' as const
 
@@ -90,6 +96,21 @@ export async function POST(req: NextRequest) {
 
     if (!address || !/^0x[a-fA-F0-9]{40}$/.test(address)) {
       return NextResponse.json({ error: 'Invalid address' }, { status: 400 })
+    }
+
+    if (WAITLIST_GATE_ENABLED) {
+      try {
+        const allowed = await isWhitelisted(address)
+        if (!allowed) {
+          return NextResponse.json(
+            { error: 'WAITLIST_REQUIRED', waitlistUrl: WAITLIST_URL },
+            { status: 403 },
+          )
+        }
+      } catch (err) {
+        console.error('[bot-faucet] whitelist check failed', err)
+        return NextResponse.json({ error: 'whitelist check failed' }, { status: 500 })
+      }
     }
 
     const limiter = getLimiter()

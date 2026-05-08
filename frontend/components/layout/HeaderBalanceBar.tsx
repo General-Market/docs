@@ -6,6 +6,7 @@ import { formatUnits } from 'viem'
 import { indexL3 } from '@/lib/wagmi'
 import { useDeployment } from '@/hooks/useDeployment'
 import { VISION_USDC_DECIMALS } from '@/lib/vision/constants'
+import { useWaitlistGate } from '@/components/waitlist/WaitlistGateProvider'
 
 const ERC20_BALANCE_ABI = [{
   inputs: [{ name: 'account', type: 'address' }],
@@ -34,6 +35,7 @@ interface Props {
 export function HeaderBalanceBar({ isDark }: Props) {
   const { address } = useAccount()
   const { getAddress } = useDeployment()
+  const { requireWhitelist } = useWaitlistGate()
   const [state, setState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
 
   const l3Usdc = getAddress('L3_WUSDC')
@@ -50,29 +52,31 @@ export function HeaderBalanceBar({ isDark }: Props) {
     },
   })
 
-  const handleFaucet = useCallback(async () => {
+  const handleFaucet = useCallback(() => {
     if (!address || state === 'loading') return
-    setState('loading')
-    try {
-      const res = await fetch('/api/faucet', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address, amount: '1000' }),
-      })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok || data.error) throw new Error(data.error || 'faucet failed')
-      if (data.vision?.usdc?.error) throw new Error(data.vision.usdc.error)
-      setState('done')
-      refetch()
-      setTimeout(refetch, 1500)
-      setTimeout(refetch, 4000)
-      setTimeout(refetch, 8000)
-      setTimeout(() => setState('idle'), 15000)
-    } catch {
-      setState('error')
-      setTimeout(() => setState('idle'), 3000)
-    }
-  }, [address, state, refetch])
+    requireWhitelist(async () => {
+      setState('loading')
+      try {
+        const res = await fetch('/api/faucet', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ address, amount: '1000' }),
+        })
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok || data.error) throw new Error(data.error || 'faucet failed')
+        if (data.vision?.usdc?.error) throw new Error(data.vision.usdc.error)
+        setState('done')
+        refetch()
+        setTimeout(refetch, 1500)
+        setTimeout(refetch, 4000)
+        setTimeout(refetch, 8000)
+        setTimeout(() => setState('idle'), 15000)
+      } catch {
+        setState('error')
+        setTimeout(() => setState('idle'), 3000)
+      }
+    })
+  }, [address, state, refetch, requireWhitelist])
 
   if (!address) return null
 
