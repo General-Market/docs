@@ -1,6 +1,7 @@
 import React from "react";
 import {
   AbsoluteFill,
+  Easing,
   Img,
   interpolate,
   staticFile,
@@ -396,28 +397,38 @@ const ArticleCore: React.FC<{
   </div>
 );
 
-// ─── Wide (binance) — clean white card, slight tilt, scale punch ──────────────
+// ─── Wide (binance) — clean white card, slight tilt, scale punch + dolly ──────
 
 const WideTreatment: React.FC<TreatmentProps> = ({ article, startFrame }) => {
   const frame = useCurrentFrame();
   const local = frame - startFrame;
   const punchT = Math.max(0, Math.min(1, local / 4));
+  // Punch entry, then a slow continuous dolly in toward the exchange name
+  // for the rest of the beat. The card grows from 1.04 → 1 (punch) → 1.16.
   const punchScale = interpolate(punchT, [0, 1], [1.04, 1]);
+  const dollyScale = interpolate(local, [4, 26], [1.0, 1.16], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const scale = punchScale * dollyScale;
   const punchOpacity = interpolate(punchT, [0, 1], [0.35, 1]);
   const highlightReveal = Math.max(0, Math.min(1, (local - 1) / 6));
   const tilt = ((startFrame * 7919) % 100) / 100 - 0.5;
+  const { cx, cy } = exchangeCenter(article);
 
   return (
     <div style={cardWrapStyle()}>
       <div
         style={{
           ...cardChromeStyle(),
-          transform: `rotate(${tilt * 0.4}deg) scale(${punchScale})`,
+          transform: `rotate(${tilt * 0.4}deg) scale(${scale})`,
+          transformOrigin: `${cx * 100}% ${cy * 100}%`,
           opacity: punchOpacity,
         }}
       >
         <ArticleCore article={article} reveal={highlightReveal} />
         <SourceCitation url={article.source} />
+        <ShockwaveRing centerXPct={cx} centerYPct={cy} fireAt={startFrame + 4} />
       </div>
     </div>
   );
@@ -473,6 +484,7 @@ const ExtremeZoomTreatment: React.FC<TreatmentProps> = ({
         }}
       >
         <ArticleCore article={article} reveal={highlightReveal} />
+        <ShockwaveRing centerXPct={acx} centerYPct={acy} fireAt={startFrame + 1} />
       </div>
     </AbsoluteFill>
   );
@@ -491,11 +503,17 @@ const CorkboardTreatment: React.FC<TreatmentProps> = ({
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
+  // Slow dolly toward the exchange name after the card has settled.
+  const dollyScale = interpolate(local, [10, 26], [1.0, 1.14], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
   const opacity = interpolate(local, [0, 3], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
   const highlightReveal = Math.max(0, Math.min(1, (local - 4) / 8));
+  const { cx, cy } = exchangeCenter(article);
 
   return (
     <div style={cardWrapStyle()}>
@@ -503,7 +521,8 @@ const CorkboardTreatment: React.FC<TreatmentProps> = ({
         style={{
           ...cardChromeStyle(),
           // Heavier tilt + harder cast shadow — feels nailed to a board.
-          transform: `translateY(${dropY}px) rotate(2.4deg)`,
+          transform: `translateY(${dropY}px) rotate(2.4deg) scale(${dollyScale})`,
+          transformOrigin: `${cx * 100}% ${cy * 100}%`,
           boxShadow:
             "0 0 0 1px rgba(10,12,18,0.18), 0 32px 60px rgba(10,12,18,0.32)",
           opacity,
@@ -513,6 +532,7 @@ const CorkboardTreatment: React.FC<TreatmentProps> = ({
         <Thumbtack x={"94%"} y={"-10px"} delay={2} />
         <ArticleCore article={article} reveal={highlightReveal} />
         <SourceCitation url={article.source} />
+        <ShockwaveRing centerXPct={cx} centerYPct={cy} fireAt={startFrame + 8} />
       </div>
     </div>
   );
@@ -555,12 +575,11 @@ const Thumbtack: React.FC<{ x: string; y: string; delay?: number }> = ({
   );
 };
 
-// ─── Magnifier (pump.fun) — circular lens expands over the exchange name ─────
+// ─── Magnifier (pump.fun) — shockwave ring + dolly into the exchange name ────
 //
-// The lens is the camera, not an editorial overlay. The article enters
-// normally; on local frame 6 a thick ring scribes around the exchange-name
-// box and the card simultaneously dollies in toward it. The eye lands on
-// the screenshot's own typography.
+// The card enters with a punch, then dollies toward the exchange-name box.
+// On the impact frame the shockwave ring radiates outward from the box —
+// the same impact effect used at /Replicate scene 01.
 
 const MagnifierTreatment: React.FC<TreatmentProps> = ({
   article,
@@ -573,19 +592,16 @@ const MagnifierTreatment: React.FC<TreatmentProps> = ({
   const punchOpacity = interpolate(punchT, [0, 1], [0.35, 1]);
   const highlightReveal = Math.max(0, Math.min(1, (local - 1) / 6));
 
-  const LENS_AT = 6;
-  const lensLocal = local - LENS_AT;
+  const IMPACT_AT = 6;
 
   // Card dolly: 1.0 → 1.4 with origin on the exchange name. The whole card
   // grows toward the box so the box becomes the centre of attention.
-  const cardZoom = interpolate(lensLocal, [0, 10, 24], [1.0, 1.32, 1.40], {
+  const cardZoom = interpolate(local - IMPACT_AT, [0, 10, 24], [1.0, 1.32, 1.40], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  const box = article.exchangeBox;
-  const ecx = box ? box.x + box.w / 2 : 0.5;
-  const ecy = box ? box.y + box.h / 2 : 0.5;
+  const { cx, cy } = exchangeCenter(article);
 
   return (
     <div style={cardWrapStyle()}>
@@ -593,60 +609,83 @@ const MagnifierTreatment: React.FC<TreatmentProps> = ({
         style={{
           ...cardChromeStyle(),
           transform: `scale(${cardZoom})`,
-          transformOrigin: `${ecx * 100}% ${ecy * 100}%`,
+          transformOrigin: `${cx * 100}% ${cy * 100}%`,
           opacity: punchOpacity,
         }}
       >
         <ArticleCore article={article} reveal={highlightReveal} />
         <SourceCitation url={article.source} />
-        {box && lensLocal >= 0 && (
-          <MagnifierLens box={box} local={lensLocal} />
-        )}
+        <ShockwaveRing
+          centerXPct={cx}
+          centerYPct={cy}
+          fireAt={startFrame + IMPACT_AT}
+        />
       </div>
     </div>
   );
 };
 
-const MagnifierLens: React.FC<{ box: Highlight; local: number }> = ({
-  box,
-  local,
+// Shockwave ring — port of the Scene01 collision impact (ReplicateComposition
+// at scene 01 ~frame 245). White circle outline, expands 0 → 1000px from a
+// centre point, opacity 0 → 1 → 0 across the impact window. Sits over the
+// article and emanates from the exchange-name box.
+const SHOCKWAVE_DURATION = 12;
+const SHOCKWAVE_MAX_RADIUS = 1000;
+
+const ShockwaveRing: React.FC<{
+  centerXPct: number;  // 0..1, fraction of parent container
+  centerYPct: number;  // 0..1, fraction of parent container
+  fireAt: number;      // local frame to start expanding
+  duration?: number;
+  maxRadius?: number;
+}> = ({
+  centerXPct,
+  centerYPct,
+  fireAt,
+  duration = SHOCKWAVE_DURATION,
+  maxRadius = SHOCKWAVE_MAX_RADIUS,
 }) => {
-  // Ring scribes outward from box width to ~1.6× box width over 5 frames,
-  // then holds with a faint pulse. Stroke fades from 0 to 1 as it grows.
-  const ringScale = interpolate(local, [0, 5, 24], [0.3, 1.0, 1.04], {
+  const frame = useCurrentFrame();
+  const local = frame - fireAt;
+  if (local < 0 || local > duration) return null;
+
+  const progress = interpolate(local, [0, duration], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.out(Easing.cubic),
+  });
+  const ringRadius = progress * maxRadius;
+  const peak = Math.max(1, Math.round(duration * 0.2));
+  const opacity = interpolate(local, [0, peak, duration], [0, 1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const ringOpacity = interpolate(local, [0, 3], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const cx = box.x + box.w / 2;
-  const cy = box.y + box.h / 2;
-  // Lens diameter = 1.6× the box width. The width is in image fractions, so
-  // use percent units to size — the lens scales with the article.
-  const diameterPct = box.w * 1.7 * 100;
 
   return (
     <div
       style={{
         position: "absolute",
-        left: `${cx * 100}%`,
-        top: `${cy * 100}%`,
-        width: `${diameterPct}%`,
-        aspectRatio: "1 / 1",
+        left: `${centerXPct * 100}%`,
+        top: `${centerYPct * 100}%`,
+        width: ringRadius * 2,
+        height: ringRadius * 2,
         borderRadius: "50%",
-        border: "5px solid rgba(34,217,122,0.95)",
-        boxShadow:
-          "0 0 0 3px rgba(34,217,122,0.18), 0 8px 22px rgba(10,12,18,0.25), inset 0 0 24px rgba(82,255,162,0.20)",
-        transform: `translate(-50%, -50%) scale(${ringScale})`,
-        opacity: ringOpacity,
+        border: `3px solid rgba(255,255,255,${opacity * 0.6})`,
+        boxShadow: `0 0 30px rgba(255,255,255,${opacity * 0.3}), inset 0 0 20px rgba(255,255,255,${opacity * 0.15})`,
+        transform: "translate(-50%, -50%)",
         pointerEvents: "none",
-        background:
-          "radial-gradient(circle at 35% 30%, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0) 55%)",
+        zIndex: 6,
       }}
     />
   );
+};
+
+// Centre point for the shockwave / focus dolly — exchange-name box centre,
+// or image centre if (somehow) the article doesn't carry an exchangeBox.
+const exchangeCenter = (article: ArticleProof): { cx: number; cy: number } => {
+  const box = article.exchangeBox;
+  if (!box) return { cx: 0.5, cy: 0.5 };
+  return { cx: box.x + box.w / 2, cy: box.y + box.h / 2 };
 };
 
 // ─── Whip (kalshi) — flies in from the left with motion blur ──────────────────
@@ -672,10 +711,16 @@ const WhipTreatment: React.FC<TreatmentProps> = ({ article, startFrame }) => {
     extrapolateRight: "clamp",
   });
   const highlightReveal = Math.max(0, Math.min(1, (local - 8) / 8));
+  // Post-landing dolly toward the exchange name.
+  const dollyScale = interpolate(local, [14, 26], [1.0, 1.14], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
 
   // Skew during travel only — zeroes once the card has landed.
   const skew = local < 8 ? -6 : 0;
   const rotate = local < 8 ? 0 : -1.2;
+  const { cx, cy } = exchangeCenter(article);
 
   return (
     <div style={cardWrapStyle()}>
@@ -683,13 +728,15 @@ const WhipTreatment: React.FC<TreatmentProps> = ({ article, startFrame }) => {
         <div
           style={{
             ...cardChromeStyle(),
-            transform: `translateX(${tx + overshoot}px) skewX(${skew}deg) rotate(${rotate}deg)`,
+            transform: `translateX(${tx + overshoot}px) skewX(${skew}deg) rotate(${rotate}deg) scale(${dollyScale})`,
+            transformOrigin: `${cx * 100}% ${cy * 100}%`,
             opacity,
             filter: `blur(${cssBlur}px)`,
           }}
         >
           <ArticleCore article={article} reveal={highlightReveal} />
           <SourceCitation url={article.source} />
+          <ShockwaveRing centerXPct={cx} centerYPct={cy} fireAt={startFrame + 8} />
         </div>
       </CameraMotionBlur>
       {/* Speed lines — three streaks behind the card during travel. */}
@@ -742,8 +789,9 @@ const FullscreenTreatment: React.FC<TreatmentProps> = ({
   const frame = useCurrentFrame();
   const local = frame - startFrame;
   // Fade-zoom in: starts at 1.10, settles to 1.00 over 10f. Slow continuous
-  // dolly past the settle so the receipt keeps growing through the beat.
-  const scale = interpolate(local, [0, 10, 49], [1.10, 1.00, 1.04], {
+  // dolly past the settle so the receipt keeps growing into the exchange
+  // name through the rest of the beat.
+  const scale = interpolate(local, [0, 10, 49], [1.10, 1.04, 1.18], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -752,11 +800,12 @@ const FullscreenTreatment: React.FC<TreatmentProps> = ({
     extrapolateRight: "clamp",
   });
   const highlightReveal = Math.max(0, Math.min(1, (local - 4) / 10));
+  const { cx, cy } = exchangeCenter(article);
 
   // Render the article wrapper at the full frame width. Height is auto so
   // the natural aspect is preserved and the yellow highlight overlay still
-  // lines up with the phrase. The receipt is centred vertically; the dark
-  // backdrop frames it like a held-up exhibit.
+  // lines up with the phrase. The dolly grows toward the exchange-name box
+  // so the receipt's own typography lands as the takeover.
   return (
     <AbsoluteFill
       style={{
@@ -773,7 +822,7 @@ const FullscreenTreatment: React.FC<TreatmentProps> = ({
           position: "relative",
           width: W,
           transform: `scale(${scale})`,
-          transformOrigin: "center center",
+          transformOrigin: `${cx * 100}% ${cy * 100}%`,
         }}
       >
         <Img
@@ -795,6 +844,7 @@ const FullscreenTreatment: React.FC<TreatmentProps> = ({
             reveal={highlightReveal}
           />
         )}
+        <ShockwaveRing centerXPct={cx} centerYPct={cy} fireAt={startFrame + 5} />
       </div>
       {/* Source citation — subtle bottom-left, white on dark over the photo. */}
       <div
