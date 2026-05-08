@@ -1,10 +1,10 @@
 [manager]
 private_key_env = "FUND_MANAGER_KEY"
 rpc_url = "http://159.195.79.153:8547/"
-factory = "0xe54db21b61fd50d5f1191c3bcb70ad184f4d58d0"
-vision_address = "0x94d540bb45975bd5a0c7ba9a15a0d34e378f6c61"
-usdc_address = "0xaddb799bc1499b224dc4368e92b9042a54908553"
-oracle_registry_address = "0xd4c6b4a1a3579150993edd6b5f46aa45d395480b"
+factory = "0x73DBD15D872b80E7A9E90be3CACeDF4aD00407cA"
+vision_address = "0x36a28967544c301a3c66dcfb6c6c90e548412693"
+usdc_address = "0xaddB799BC1499b224DC4368e92b9042a54908553"
+oracle_registry_address = "0xd4c6b4a1A3579150993EdD6B5f46aA45d395480b"
 vision_api = "http://localhost:10001"
 data_node = "http://localhost:8200"
 poll_interval = 30
@@ -12,3213 +12,1903 @@ allocation_bps = 10
 oracle_discovery = "static"
 oracle_urls = ["http://localhost:10001", "http://localhost:10002", "http://localhost:10003"]
 
-# ── ECONOMIC / adzuna ──
-
-# 1. Vacancy — adzuna momentum
 [[funds]]
 name = "Vacancy"
 symbol = "VCNY"
-vault = "0x281DBE8b2cd90d357B7e8119F7aF9dfBe9b3c192"
+vault = "0x81e80c465F7775f7f556792342B8478a03Ceb376"
 sources = ["adzuna"]
 strategy = "momentum"
 [funds.params]
 
-# 2. Layoff — adzuna contrarian
 [[funds]]
 name = "Layoff"
 symbol = "LYOF"
-vault = "0xb598543f68CD4B757A87d511232522808755f44f"
+vault = "0x2C74ac225329E78b1C126B07Be4319e3A0AE3107"
 sources = ["adzuna"]
 strategy = "contrarian"
 [funds.params]
 
-# 3. Demand — adzuna momentum_threshold
 [[funds]]
 name = "Demand"
 symbol = "DMND"
-vault = "0x8dbF56Fd3823003D6f949203376D371393e23BD1"
+vault = "0x0ce59C5945FeA7708913A0Af12550D7Bfc2A71ed"
 sources = ["adzuna"]
 strategy = "momentum_threshold"
 [funds.params]
 min_change_pct = 3.0
 
-# 4. Headcount — adzuna regime
 [[funds]]
 name = "Headcount"
 symbol = "HDCT"
-vault = "0xCdFB7bf167783D3C88145210A56b5b7b824DDB61"
+vault = "0xa2295Adb8b3Fa64760E4d142dE7C33988A195f41"
 sources = ["adzuna"]
 strategy = "regime"
 [funds.params]
 
-# ── ENVIRONMENT / airnow ──
-
-# 5. Clearsky — airnow mean_reversion
 [[funds]]
 name = "Clearsky"
 symbol = "CLRS"
-vault = "0x68d953BE01617Fdb5Db1E444995e2b31496974EF"
+vault = "0xc38D57e506E1414acbe37cec7A9D9eB12df3Af0f"
 sources = ["airnow"]
 strategy = "mean_reversion"
 [funds.params]
 
-# 6. Smog — airnow momentum
 [[funds]]
 name = "Smog"
 symbol = "SMOG"
-vault = "0x8bDcc2fd04CE59833d8e087dc5Dc832532D5BF46"
+vault = "0x69263C482c10aC03D6edB0182A762e7b6dFFFD67"
 sources = ["airnow"]
 strategy = "momentum"
 [funds.params]
 
-# 7. Breeze — airnow contrarian
 [[funds]]
 name = "Breeze"
 symbol = "BRZE"
-vault = "0x8982C7AC859B9572b3C856144be208Abb0C003E6"
+vault = "0x4597A892ED478FF1578cC8994a96d857fb586025"
 sources = ["airnow"]
 strategy = "contrarian"
 [funds.params]
 min_change_pct = 5.0
 
-# 8. Inhalant — airnow regime
 [[funds]]
 name = "Inhalant"
 symbol = "INHL"
-vault = "0x7e7C186D745b4b36a29099f9f941E486180a6aa0"
+vault = "0xF04446279b9Bb245B268aF619360e7264B8333b0"
 sources = ["airnow"]
 strategy = "regime"
 [funds.params]
 
-# ── ENTERTAINMENT / anilist ──
-
-# 9. Season — anilist momentum
 [[funds]]
 name = "Season"
 symbol = "SZON"
-vault = "0x51dDe64884196507f84391Ac25CA474D9f270a2C"
+vault = "0xCF70F59aE5350123B298965D1a0Fb7Ee4D42F249"
 sources = ["anilist"]
 strategy = "momentum"
 [funds.params]
 
-# 10. Filler — anilist contrarian
 [[funds]]
 name = "Filler"
 symbol = "FILR"
-vault = "0xD26DBE97c5a96352b15Ab49753977e440179de3e"
+vault = "0xCE9d73D5b1a4118eb261cF5183650b3c94400050"
 sources = ["anilist"]
 strategy = "contrarian"
 [funds.params]
 
-# 11. Simulcast — anilist time_of_day
 [[funds]]
 name = "Simulcast"
 symbol = "SIMU"
-vault = "0x5C2f2aA592476515837EAa2BD777645c38E50773"
+vault = "0x12337f083c6ED4e810eFDB5cdB6B001dE5dbc499"
 sources = ["anilist"]
 strategy = "time_of_day"
 [funds.params]
 
-# 12. Canon — anilist adoption_curve
 [[funds]]
 name = "Canon"
 symbol = "CANN"
-vault = "0x8188e543cb0E6c5A9c13b10c5b003255a7ACaf06"
+vault = "0x1fc0ce35353CBb3dc6fEfd9AEE429e32991a2C8C"
 sources = ["anilist"]
 strategy = "adoption_curve"
 [funds.params]
 
-# ── NATURE / animals ──
-
-# 13. Safari — animals momentum
 [[funds]]
 name = "Safari"
 symbol = "SFRI"
-vault = "0x1280dF962164c7C3cA38d2Ea58798A29F4a0EF00"
+vault = "0x212459093F015E881ED154CC70117E87a8E195F8"
 sources = ["animals"]
 strategy = "momentum"
 [funds.params]
 
-# 14. Hibernate — animals mean_reversion
 [[funds]]
 name = "Hibernate"
 symbol = "HBRN"
-vault = "0x4A02D6e615EDDF6e102aD05170671DDD967E80f5"
+vault = "0x72e56935AC8B3E48208ec4526F07be932E369Db2"
 sources = ["animals"]
 strategy = "mean_reversion"
 [funds.params]
 
-# 15. Biome — animals cluster
 [[funds]]
 name = "Biome"
 symbol = "BIOM"
-vault = "0x137870EEB9eFf390627F8A72a0a2a6a65F584C54"
+vault = "0xC8fd2565EEFB14Bfb61C2f0ABCA03bF9ce6E29c0"
 sources = ["animals"]
 strategy = "cluster"
 [funds.params]
 
-# 16. Nocturne — animals time_of_day
 [[funds]]
 name = "Nocturne"
 symbol = "NTRN"
-vault = "0xaD7Fb454E60Bc4E44104DF0f6eEF407c2Af37e0F"
+vault = "0xC9A8a234E3f94f37C3dd8D8b754e83Caf6154869"
 sources = ["animals"]
 strategy = "time_of_day"
 [funds.params]
 
-# ── GAMING / backpacktf ──
-
-# 17. Unusual — backpacktf momentum
 [[funds]]
 name = "Unusual"
 symbol = "UNSL"
-vault = "0x2Fab0da56FF398a8643Dd2a194f3C9e533082e4E"
+vault = "0x366EE08cC9f9b59a893c13AA6FC70E7EA2b010b9"
 sources = ["backpacktf"]
 strategy = "momentum"
 [funds.params]
 
-# 18. Uncrate — backpacktf contrarian
 [[funds]]
 name = "Uncrate"
 symbol = "UCRT"
-vault = "0x1A6fFEE6182aB154b0B618414c0ee629203BCC19"
+vault = "0x2E3aBB8550322F77b97e39e3794cA4aCCe070890"
 sources = ["backpacktf"]
 strategy = "contrarian"
 [funds.params]
 
-# 19. Vintage — backpacktf bullish
 [[funds]]
 name = "Vintage"
 symbol = "VNTG"
-vault = "0x89cf251C8152cD6dC7069b1261209526f6EF4ea7"
+vault = "0x4f1354e2D1f47bF06D4827c62f085B76d997332A"
 sources = ["backpacktf"]
 strategy = "bullish"
 [funds.params]
 
-# ── CRYPTO / bchain ──
-
-# 20. Hashrate — bchain momentum
 [[funds]]
 name = "Hashrate"
 symbol = "HASH"
-vault = "0xa6d58FbcC4444Ebb8B066daEA6979e980FD2D8E3"
+vault = "0x0351CDeBe3AAdcb5b40bB5ba606B7aDa70B52B43"
 sources = ["bchain"]
 strategy = "momentum"
 [funds.params]
 
-# 21. Halving — bchain regime
 [[funds]]
 name = "Halving"
 symbol = "HALV"
-vault = "0x4D1919a19AB722Ecd1fae0891876C07423797199"
+vault = "0x1305E8151605a989006085f2b27a3FF0D8b36bd1"
 sources = ["bchain"]
 strategy = "regime"
 [funds.params]
 
-# 22. Satoshi — bchain mean_reversion
 [[funds]]
 name = "Satoshi"
 symbol = "SATS"
-vault = "0xa8206632Dfbd3fBDf073737B9e75Dba4337EB3f4"
+vault = "0x598fd31afD9744c8Af1E423A221b73BEb03086A1"
 sources = ["bchain"]
 strategy = "mean_reversion"
 [funds.params]
 
-# 23. Mempool — bchain cluster
 [[funds]]
 name = "Mempool"
 symbol = "MPLM"
-vault = "0x0A0f5B8E2d4B072aC158928F101BeA9b278b5265"
+vault = "0x87EaAb41b1A655322b62E1C825e0C69eE92ab10E"
 sources = ["bchain"]
 strategy = "cluster"
 [funds.params]
 
-# ── RETAIL / bestbuy ──
-
-# 24. Markdown — bestbuy momentum
 [[funds]]
 name = "Markdown"
 symbol = "MKDN"
-vault = "0xDb15D63769b80de6F63b905D7aC8CD1A42000943"
+vault = "0x399cb078F565458694AA7Ad43b61Cc4fcba25982"
 sources = ["bestbuy"]
 strategy = "momentum"
 [funds.params]
 
-# 25. Bounce — bestbuy contrarian
 [[funds]]
 name = "Bounce"
 symbol = "BNCE"
-vault = "0xBc9DCAb1C124149b6eD8d61ED8e41f19A8d651A6"
+vault = "0x0542c3d824eCb5CDcD2EE3AB8ad02Db0Aa7a9bE8"
 sources = ["bestbuy"]
 strategy = "contrarian"
 [funds.params]
 
-# 26. Doorbuster — bestbuy momentum_threshold
 [[funds]]
 name = "Doorbuster"
 symbol = "DOOR"
-vault = "0xD039f318d93DDE2a0000DB61A3F91cd8eE70a02b"
+vault = "0x6D73348C52a01d2208E767cf2A50e8598f0D4cF7"
 sources = ["bestbuy"]
 strategy = "momentum_threshold"
 [funds.params]
 min_change_pct = 5.0
 
-# 27. Clearance — bestbuy bearish
 [[funds]]
 name = "Clearance"
 symbol = "CLRN"
-vault = "0xD49fd882c8c786F7C1D8e03daA42fB1AcEC3b087"
+vault = "0x8630267C94048CFeD21E794591f8155Fb4cFEF47"
 sources = ["bestbuy"]
 strategy = "bearish"
 [funds.params]
 
-# ── ECONOMIC / bls ──
-
-# 28. Payroll — bls contrarian
 [[funds]]
 name = "Payroll"
 symbol = "PYRL"
-vault = "0x000C56Ea0DA81067A43b354dF511150830B14c14"
+vault = "0xC3996351e875edF50760888395Fd5195f53AdA3a"
 sources = ["bls"]
 strategy = "contrarian"
 [funds.params]
 
-# 29. Nonfarm — bls momentum
 [[funds]]
 name = "Nonfarm"
 symbol = "NFRM"
-vault = "0xC2F8b365c8F6B7d5C242c43979E2e6DE77edb2E5"
+vault = "0x09fa5c3EfbF557b25DD083dAb019F998d0045a88"
 sources = ["bls"]
 strategy = "momentum"
 [funds.params]
 
-# 30. Wage — bls momentum_threshold
 [[funds]]
 name = "Wage"
 symbol = "WAGE"
-vault = "0x38a2C4BAE81d08B05628F7965160F846050ba07D"
+vault = "0xfc9eA12Cf30A8ba80b61EcAFe0d8a2836B48623E"
 sources = ["bls"]
 strategy = "momentum_threshold"
 [funds.params]
 min_change_pct = 0.5
 
-# 31. Underemployed — bls contrarian
 [[funds]]
 name = "Underemployed"
 symbol = "UNEM"
-vault = "0x46809d536B497BE5124178612AC97376110C408f"
+vault = "0x196b0f736DDA8DCcaeA017BD065a567D9297d63B"
 sources = ["bls"]
 strategy = "contrarian"
 [funds.params]
 min_change_pct = 2.0
 
-# ── FINANCE / bonds ──
-
-# 32. Coupon — bonds momentum
 [[funds]]
 name = "Coupon"
 symbol = "CUPN"
-vault = "0x4b4FBbC66B85a6f3e4c7554656EA22BAbd142029"
+vault = "0xCE96D29BE48F764728809430bCaaD8E7aA4B980E"
 sources = ["bonds"]
 strategy = "momentum"
 [funds.params]
 
-# 33. Inversion — bonds contrarian
 [[funds]]
 name = "Inversion"
 symbol = "INVR"
-vault = "0xaBE9A42b9844FeB9d09775Ce2d28E83C28474E98"
+vault = "0x1B40061231b95af2f47E794A75D22234402d0252"
 sources = ["bonds"]
 strategy = "contrarian"
 [funds.params]
 
-# 34. Duration — bonds momentum_threshold
 [[funds]]
 name = "Duration"
 symbol = "DURN"
-vault = "0xA2e771d53dE190171E1637Bf80a1E200B01a22FE"
+vault = "0xb87862473fAc638E5ec64b37C4136a88297494e5"
 sources = ["bonds"]
 strategy = "momentum_threshold"
 [funds.params]
 min_change_pct = 0.5
 
-# 35. Maturity — bonds regime
 [[funds]]
 name = "Maturity"
 symbol = "MTRT"
-vault = "0x24394d7D73698148d5199Be4bc71351DdE87BC14"
+vault = "0x2f47349236bDd935E79AB14fc07b92836A54025c"
 sources = ["bonds"]
 strategy = "regime"
 [funds.params]
 
-# 36. Par — bonds mean_reversion
 [[funds]]
 name = "Par"
 symbol = "PARR"
-vault = "0xdEeBC21d9436b870D9D48A8E2B121CbF803CBF9f"
+vault = "0x6BA08742C73a3F57b9B01a6FaA81f5467a1e0d2c"
 sources = ["bonds"]
 strategy = "mean_reversion"
 [funds.params]
 
-# ── ENTERTAINMENT / chaturbate ──
-
-# 37. After Dark — chaturbate time_of_day
 [[funds]]
 name = "After Dark"
 symbol = "DARK"
-vault = "0xe5D417Eb3188d50573F8f200CCe8D070a887DCbA"
+vault = "0x58afd45Ed7440FCed40408CA6f877e6D65D39e78"
 sources = ["chaturbate"]
 strategy = "time_of_day"
 [funds.params]
 
-# 38. Intermission — chaturbate contrarian
 [[funds]]
 name = "Intermission"
 symbol = "INTR"
-vault = "0x41eda003896c628F07B2aa0C62e4ED07D5cC176D"
+vault = "0x1B01b641E80F0D0044A1311588796e73d1fDAc1A"
 sources = ["chaturbate"]
 strategy = "contrarian"
 [funds.params]
 
-# 39. Nocturnal — chaturbate momentum
 [[funds]]
 name = "Nocturnal"
 symbol = "NOCT"
-vault = "0xE90C3c35f5cFf4600cCF53Fe1e5D6c8117861196"
+vault = "0x0091A0D6ce65134273858aD1A316183182643415"
 sources = ["chaturbate"]
 strategy = "momentum"
 [funds.params]
 
-# 40. Peakhour — chaturbate cluster
 [[funds]]
 name = "Peakhour"
 symbol = "PKHR"
-vault = "0xAFdd260Fc2BE01879E817D575b04FEb678A147E3"
+vault = "0xf81DA1c5611D45c3c76B4bf6ed12D048F150CCC4"
 sources = ["chaturbate"]
 strategy = "cluster"
 [funds.params]
 
-# ── TRANSPORT / citybikes ──
-
-# 41. Spoke — citybikes mean_reversion
 [[funds]]
 name = "Spoke"
 symbol = "SPOK"
-vault = "0xc07Ddf4B74B029a9A749A2B94521eD9A470A796A"
+vault = "0x746a3412cE3D9b82Cf1704E50574aDC247566A62"
 sources = ["citybikes"]
 strategy = "mean_reversion"
 [funds.params]
 
-# 42. Pedal — citybikes time_of_day
 [[funds]]
 name = "Pedal"
 symbol = "PEDL"
-vault = "0x41c43aB5844108C7164742d345c5a9025F1aB24E"
+vault = "0x192D88600F6dCd5c860121ce461B8F7FDeD00A11"
 sources = ["citybikes"]
 strategy = "time_of_day"
 [funds.params]
 
-# 43. Freewheel — citybikes momentum
 [[funds]]
 name = "Freewheel"
 symbol = "FRWL"
-vault = "0x934543718c1Ef3F5Bb0dD4D42dC43483b299552b"
+vault = "0xceA4c70A99B30D1413aE309A281ca075b22eB3c3"
 sources = ["citybikes"]
 strategy = "momentum"
 [funds.params]
 
-# 44. Dockless — citybikes cluster
 [[funds]]
 name = "Dockless"
 symbol = "DKLS"
-vault = "0xfca4aB6A00105E89670a9D0B7d6bF214d149Edb3"
+vault = "0xD33d02Fa6dcEBB8Cc25dE8DD56ED5fb825Ee5C27"
 sources = ["citybikes"]
 strategy = "cluster"
 [funds.params]
 
-# ── TECHNOLOGY / cloudflare ──
-
-# 45. Traffic — cloudflare momentum
 [[funds]]
 name = "Traffic"
 symbol = "TRFC"
-vault = "0x64335998CB2B227AFB7220d88EdE3677b05E4c06"
+vault = "0xc1b623E953C7550C6Da8eec1E8dF8c24f0A422BE"
 sources = ["cloudflare"]
 strategy = "momentum"
 [funds.params]
 
-# 46. Darknet — cloudflare contrarian
 [[funds]]
 name = "Darknet"
 symbol = "DNRK"
-vault = "0x9A14E3346CFDd06cE6B36282B61AF1132D2E9545"
+vault = "0x89beda85a0837EC1ca25C14Fa7474676C7A95B17"
 sources = ["cloudflare"]
 strategy = "contrarian"
 [funds.params]
 
-# 47. Crawl — cloudflare time_of_day
 [[funds]]
 name = "Crawl"
 symbol = "CRWL"
-vault = "0xAD21beE6D3f63cBC870C0FD8d5f6E980a53c0c05"
+vault = "0x4968f27Da0AFBFF6e060bD572F683B3FC24309a4"
 sources = ["cloudflare"]
 strategy = "time_of_day"
 [funds.params]
 
-# 48. Outage — cloudflare cluster
 [[funds]]
 name = "Outage"
 symbol = "OUTG"
-vault = "0xCB64524C8861bC7bb6679C4085129fB4D10a86ac"
+vault = "0x2fFc02f3BFd762e156750aaCAE4C72598d2F065f"
 sources = ["cloudflare"]
 strategy = "cluster"
 [funds.params]
 
-# ── GOVERNMENT / congress ──
-
-# 49. Session — congress momentum
 [[funds]]
 name = "Session"
 symbol = "SESN"
-vault = "0xC18777732760fcf80BC66efE3F6879ac90047c05"
+vault = "0x4d7AADED1234ACb868e4CD6cb1eb5e9b2b6c8F9e"
 sources = ["congress"]
 strategy = "momentum"
 [funds.params]
 
-# 50. Recess — congress contrarian
 [[funds]]
 name = "Recess"
 symbol = "RECS"
-vault = "0xAa02dbaD266a9065Ce6021BA8445B1EC4523B67C"
+vault = "0xBaF127171c55a1f53F9e23C5eA7633Bd344c7FBD"
 sources = ["congress"]
 strategy = "contrarian"
 [funds.params]
 
-# 51. Filibuster — congress volatility_fade
 [[funds]]
 name = "Filibuster"
 symbol = "FLBS"
-vault = "0xa3BF6dC22259Ba6d39259E4C8aCFc56d941e93a1"
+vault = "0xb633027C8Af616Fa4785B425e309EFf30D29b1da"
 sources = ["congress"]
 strategy = "volatility_fade"
 [funds.params]
 
-# 52. Bipartisan — congress regime
 [[funds]]
 name = "Bipartisan"
 symbol = "BPRT"
-vault = "0xbB0Ac41D079a27cf73ECE03a717BAa1A7198ae48"
+vault = "0xa71ce614874982C8285b4A71a94575ef1fD0dc59"
 sources = ["congress"]
 strategy = "regime"
 [funds.params]
 
-# ── ACADEMIC / crossref ──
-
-# 53. Citation — crossref adoption_curve
 [[funds]]
 name = "Citation"
 symbol = "CITE"
-vault = "0xD7f908ce938287C64240A4e821DEe5868231B668"
+vault = "0xE5105cd298cfF97382A74c3b32CC6FE998Ced3de"
 sources = ["crossref"]
 strategy = "adoption_curve"
 [funds.params]
 
-# 54. Retraction — crossref contrarian
 [[funds]]
 name = "Retraction"
 symbol = "RTRC"
-vault = "0x912780B71C7Be2aB05C8FcfeE4A84a432187bf1b"
+vault = "0xdabA6a51ba660E76B64d1dAaE87f2f0C585Fa849"
 sources = ["crossref"]
 strategy = "contrarian"
 [funds.params]
 
-# 55. Index — crossref momentum
 [[funds]]
 name = "Index"
 symbol = "INDX"
-vault = "0x36eF0b5B4227b675E36B0eD1C77534A3fa100867"
+vault = "0x56Dd87cf597D88e6584a0877C776d8E161619bCB"
 sources = ["crossref"]
 strategy = "momentum"
 [funds.params]
 
-# 56. Impact — crossref momentum_threshold
 [[funds]]
 name = "Impact"
 symbol = "IMPC"
-vault = "0xDf00187d348359A4050cBe2E396D0548fD2818b6"
+vault = "0xA611E54db41c21C1B5Df80b13EAC01e2ccC66E1C"
 sources = ["crossref"]
 strategy = "momentum_threshold"
 [funds.params]
 min_change_pct = 5.0
 
-# ── CRYPTO / defi ──
-
-# 57. Lockflow — defi momentum
 [[funds]]
 name = "Lockflow"
 symbol = "LOCK"
-vault = "0xae3caeA2C32D1E42822a5504ACB0D35D80Dfa513"
+vault = "0x8ca7797bB22A2EB60d5e05A4Af7DD18a9E2A9890"
 sources = ["defi"]
 strategy = "momentum"
 [funds.params]
 
-# 58. Unlock — defi contrarian
 [[funds]]
 name = "Unlock"
 symbol = "ULCK"
-vault = "0x22aeBE197B8cF03eB9e3AfC5b47EACEbcC18A31E"
+vault = "0x5F1F88ce5F60B41F589da22B9D49B911f97fF17a"
 sources = ["defi"]
 strategy = "contrarian"
 [funds.params]
 
-# 59. Yield — defi mean_reversion
 [[funds]]
 name = "Yield"
 symbol = "YILD"
-vault = "0x938F554eb2E190db53E7Ac4d3B21E8b97Ba0637F"
+vault = "0x8CA8b0955a9f8648ef77333Ca720aD0FC45ed6A4"
 sources = ["defi"]
 strategy = "mean_reversion"
 [funds.params]
 
-# 60. Exploit — defi volatility_fade
 [[funds]]
 name = "Exploit"
 symbol = "XPLT"
-vault = "0x647C2fba71a9F092275e707F23997fB36Fac8f2b"
+vault = "0xA27F6855Ce6f03d48c68EB53f57A62938a1c3eCd"
 sources = ["defi"]
 strategy = "volatility_fade"
 [funds.params]
 
-# ── GEOPHYSICAL / earthquake ──
-
-# 61. Aftershock — earthquake cluster
 [[funds]]
 name = "Aftershock"
 symbol = "AFTR"
-vault = "0xbE637996A8Db3AC5FA446F14975D3b56f9870FB9"
+vault = "0x24EF60fF1abEB87dA736e3BDE9C5DC6C8eAc4c5c"
 sources = ["earthquake"]
 strategy = "cluster"
 [funds.params]
 
-# 62. Dormant — earthquake mean_reversion
 [[funds]]
 name = "Dormant"
 symbol = "DRMT"
-vault = "0xA73D716971137125c1Ef9A549Df27f4288CBb377"
+vault = "0xf3e1Db0447E83136489692E5F6De7E5371bBa505"
 sources = ["earthquake"]
 strategy = "mean_reversion"
 [funds.params]
 
-# 63. Epicenter — earthquake momentum
 [[funds]]
 name = "Epicenter"
 symbol = "EPIC"
-vault = "0x008E3Bc8F86284B5a587c01753f31529BE94cF4c"
+vault = "0x755C25F4ac3Cd4Ad50dfeE6B976C74ACF2F3eA3e"
 sources = ["earthquake"]
 strategy = "momentum"
 [funds.params]
 
-# 64. Richter — earthquake contrarian
 [[funds]]
 name = "Richter"
 symbol = "RCTR"
-vault = "0xd998fCB8d4a509bE72045BcE4C0AAf385F11Fee6"
+vault = "0xc9936b524298cE724974F782f270EB04871268bE"
 sources = ["earthquake"]
 strategy = "contrarian"
 [funds.params]
 min_change_pct = 4.0
 
-# ── ECONOMIC / ecb ──
-
-# 65. Euro — ecb momentum
 [[funds]]
 name = "Euro"
 symbol = "EURO"
-vault = "0xF6CCBb600064cb971f19D71FC02206d5F320f3a0"
+vault = "0x92539684f68950C97729422A4B89421Fe42Ee59F"
 sources = ["ecb"]
 strategy = "momentum"
 [funds.params]
 
-# 66. Parity — ecb contrarian
 [[funds]]
 name = "Parity"
 symbol = "PRTY"
-vault = "0x8C96950FAd168689D778a2D975377417b054556d"
+vault = "0xDA1Cc052F56714073F722774e7d15923F5eE19C8"
 sources = ["ecb"]
 strategy = "contrarian"
 [funds.params]
 
-# 67. Draghi — ecb momentum_threshold
 [[funds]]
 name = "Draghi"
 symbol = "DRGI"
-vault = "0xd85A6307F6B8bC989D8cFaA6d9e0FAcB248F8517"
+vault = "0x3F20715311282ffEe92A58bb7Cd3AF05AF35e3b0"
 sources = ["ecb"]
 strategy = "momentum_threshold"
 [funds.params]
 min_change_pct = 1.0
 
-# 68. Austerity — ecb regime
 [[funds]]
 name = "Austerity"
 symbol = "ASTR"
-vault = "0x9A08bb58053e92d80De84A1120ee4e634ADBE2c0"
+vault = "0xf3Fc4eE40B675e8db115187a4688e795442204da"
 sources = ["ecb"]
 strategy = "regime"
 [funds.params]
 
-# ── ENERGY / eia ──
-
-# 69. Pipeline — eia momentum
 [[funds]]
 name = "Pipeline"
 symbol = "PIPE"
-vault = "0x7033Af7C9b53534358Bf4A1C32F37604508fcb6f"
+vault = "0x743cD5675b9205E89EF84c6576F3D7906e0b85FA"
 sources = ["eia"]
 strategy = "momentum"
 [funds.params]
 
-# 70. Surplus — eia contrarian
 [[funds]]
 name = "Surplus"
 symbol = "SRPL"
-vault = "0x37c73d1763c276784C549721a12446b4715D5695"
+vault = "0x816dA8b3794F89E1A09d51Ee50A256297f06b464"
 sources = ["eia"]
 strategy = "contrarian"
 [funds.params]
 
-# 71. Joule — eia bullish
 [[funds]]
 name = "Joule"
 symbol = "JOUL"
-vault = "0xdC7C2c381Bd3929c42AE0b9364884463924d5391"
+vault = "0x358a27b26a5383Ef73D082405238D69b5a83A2D3"
 sources = ["eia"]
 strategy = "bullish"
 [funds.params]
 
-# 72. Reserve — eia regime
 [[funds]]
 name = "Reserve"
 symbol = "RSRV"
-vault = "0xfd51bc4cB8C4eeCdD1b1aEE49609b8adcEe24B7C"
+vault = "0x5Cb445481711bb3a91Af1F0AC4D55136CDa5e97A"
 sources = ["eia"]
 strategy = "regime"
 [funds.params]
 
-# ── FINANCE / finra_short_vol ──
-
-# 73. Crowd — finra_short_vol momentum
 [[funds]]
 name = "Crowd"
 symbol = "CRWD"
-vault = "0x4a2c54A5bd4C5f5694Eac8BA9027D9FE53357924"
+vault = "0xFb372D85Bef3dc187e9Cfb9Bfecb7ee335179641"
 sources = ["finra_short_vol"]
 strategy = "momentum"
 [funds.params]
 
-# 74. Unwind — finra_short_vol contrarian
 [[funds]]
 name = "Unwind"
 symbol = "UWND"
-vault = "0xdA61f3B0D1FAF5d20c9c63029E05D08DA33020f4"
+vault = "0x938531303C6E13557cF8B0c90411cce8e5Da8Ab2"
 sources = ["finra_short_vol"]
 strategy = "contrarian"
 [funds.params]
 
-# 75. Spike — finra_short_vol momentum_threshold
 [[funds]]
 name = "Spike"
 symbol = "VSPK"
-vault = "0x0843FCbC7856235d1c4ae533ab97aC1dE421Bbef"
+vault = "0x28ABaBfa2dd68970DeC49219c2a67512ea5D460d"
 sources = ["finra_short_vol"]
 strategy = "momentum_threshold"
 [funds.params]
 min_change_pct = 5.0
 
-# 76. Pressure — finra_short_vol regime
 [[funds]]
 name = "Pressure"
 symbol = "PRES"
-vault = "0x9FE26eC9c951828fD78142fdBcA473e37F971142"
+vault = "0xa8cE1D1bDd59D37FfBa31988789d29c7B431C0A8"
 sources = ["finra_short_vol"]
 strategy = "regime"
 [funds.params]
 
-# ── SOCIAL / fourchan ──
-
-# 77. Noise — fourchan volatility_fade
 [[funds]]
 name = "Noise"
 symbol = "NOIS"
-vault = "0x2283c848817178B82eE808fc38EC5852e66bc948"
+vault = "0x2C3aa9D1AdB0526561B8fA377A6B0a8ECc8b6DA3"
 sources = ["fourchan"]
 strategy = "volatility_fade"
 [funds.params]
 
-# 78. Raid — fourchan momentum
 [[funds]]
 name = "Raid"
 symbol = "RAID"
-vault = "0x032F8296431c664b27402458e68a869f71130262"
+vault = "0x4b284BB6e3237652d5e2E46D4F560Db6B47939a5"
 sources = ["fourchan"]
 strategy = "momentum"
 [funds.params]
 
-# 79. Sage — fourchan contrarian
 [[funds]]
 name = "Sage"
 symbol = "SAGE"
-vault = "0x447D59Ee8DaCdeC7fF3c2B2688a398F0c6BFAc06"
+vault = "0x541Fd12852ABa9eAA39da0969B9e676338E1F9B4"
 sources = ["fourchan"]
 strategy = "contrarian"
 [funds.params]
 
-# 80. Anon — fourchan time_of_day
 [[funds]]
 name = "Anon"
 symbol = "ANON"
-vault = "0x8dfaD6c30020fDEE6F07a52f9347091E66acd999"
+vault = "0x98e84b9816251B075b752eFF3789C0f4666532De"
 sources = ["fourchan"]
 strategy = "time_of_day"
 [funds.params]
 
-# ── TRANSPORT / gtfs_transit ──
-
-# 81. Cascade — gtfs_transit momentum
 [[funds]]
 name = "Cascade"
 symbol = "CSCD"
-vault = "0xB636396D6c6F63d8473BE22E11905b0bAD3aB91A"
+vault = "0xd666c25449363Bed6bf48b270CC772290058678D"
 sources = ["gtfs_transit"]
 strategy = "momentum"
 [funds.params]
 
-# 82. Terminal — gtfs_transit mean_reversion
 [[funds]]
 name = "Terminal"
 symbol = "TRMN"
-vault = "0x46CBd565305A768B6587955C2435338dA9f53c55"
+vault = "0x45AA51370A25cfDCFbe848F8a7e9313ed23d522b"
 sources = ["gtfs_transit"]
 strategy = "mean_reversion"
 [funds.params]
 
-# 83. Timetable — gtfs_transit time_of_day
 [[funds]]
 name = "Timetable"
 symbol = "TMTB"
-vault = "0x816091E7E8Ca4F4508C24791E95748aB2AFA704f"
+vault = "0x5CA74C29E3368696f807d60AB4B8206c100ee195"
 sources = ["gtfs_transit"]
 strategy = "time_of_day"
 [funds.params]
 
-# 84. Delay — gtfs_transit cluster
 [[funds]]
 name = "Delay"
 symbol = "DLAY"
-vault = "0x6f83fF924De24142f325c86B15528adb0b68A32D"
+vault = "0xDf851f3144236E95f02612dEc9229d42768D274d"
 sources = ["gtfs_transit"]
 strategy = "cluster"
 [funds.params]
 
-# ── SOCIAL / hackernews ──
-
-# 85. Frontpage — hackernews momentum
 [[funds]]
 name = "Frontpage"
 symbol = "FRNT"
-vault = "0xd07850A60339303bcccE13A6755092517Fc1FD43"
+vault = "0xa88b0096E4a9e4d33b23986446a08a45Ac73d456"
 sources = ["hackernews"]
 strategy = "momentum"
 [funds.params]
 
-# 86. Decay — hackernews contrarian
 [[funds]]
 name = "Decay"
 symbol = "DCAY"
-vault = "0x132014076B4e5A0DE0032927Ca714D593b73f1A0"
+vault = "0x5326D777F59d4d5C8AeB959F72920e5D5BcbDABf"
 sources = ["hackernews"]
 strategy = "contrarian"
 [funds.params]
 
-# 87. Flagged — hackernews volatility_fade
 [[funds]]
 name = "Flagged"
 symbol = "FLAG"
-vault = "0x07B6A62f277080f3E4800F55704a8dd0F19CD131"
+vault = "0x22aD84D39ee74D7FfE144Cd8A86ba54d071419c8"
 sources = ["hackernews"]
 strategy = "volatility_fade"
 [funds.params]
 
-# 88. Show — hackernews time_of_day
 [[funds]]
 name = "Show"
 symbol = "SHOW"
-vault = "0x9cc36Baf767CAfdCccd26Bb8Ba5b0a2c5E82deE9"
+vault = "0x0551843B3eDD3a25D0fF34C9a72fC4aDF9728229"
 sources = ["hackernews"]
 strategy = "time_of_day"
 [funds.params]
 
-# ── SPACE / iss ──
-
-# 89. Orbit — iss momentum
 [[funds]]
 name = "Orbit"
 symbol = "ORBT"
-vault = "0x0F698Dd4FF9335d74f191228720472F03B2124ac"
+vault = "0xA9aDe4742F36c62B52d1E5408D94F6D392C94dbc"
 sources = ["iss"]
 strategy = "momentum"
 [funds.params]
 
-# 90. Reentry — iss mean_reversion
 [[funds]]
 name = "Reentry"
 symbol = "RENT"
-vault = "0xe5ce83c002DE7F96bc165542819248d94eB274Ee"
+vault = "0x483d34360884246e4DAC07023C96816B09b27DCB"
 sources = ["iss"]
 strategy = "mean_reversion"
 [funds.params]
 
-# 91. Microgravity — iss cluster
 [[funds]]
 name = "Microgravity"
 symbol = "MGRV"
-vault = "0xFe0bb3C6b97D2cD4718F2505237CE34c7E33C627"
+vault = "0x37c47d6d31Be1f01aA28cEBF1fC52d76DCEFDe7f"
 sources = ["iss"]
 strategy = "cluster"
 [funds.params]
 
-# 92. Docking — iss contrarian
 [[funds]]
 name = "Docking"
 symbol = "DOCK"
-vault = "0xc19AE9701699C5d543B16a2954Ea2dE1a54cEA28"
+vault = "0xC614F0dB715A42D3D6B746400aA9452723B54773"
 sources = ["iss"]
 strategy = "contrarian"
 [funds.params]
 min_change_pct = 3.0
 
-# ── DEFENSE / mil_aircraft ──
-
-# 93. Sortie — mil_aircraft momentum
 [[funds]]
 name = "Sortie"
 symbol = "SORT"
-vault = "0x6Ed79E5A599D6F51C4824d865C594C14C6F3DDd8"
+vault = "0x6C3eF66ee8E01748B1CcDa0ec7E1707b5B39454F"
 sources = ["mil_aircraft"]
 strategy = "momentum"
 [funds.params]
 
-# 94. Standdown — mil_aircraft mean_reversion
 [[funds]]
 name = "Standdown"
 symbol = "STDN"
-vault = "0xa75973e78Da625040E382020c9E9503f6922f15A"
+vault = "0x0F40015864151c6c6e9316eA4E06E2A301D01b2C"
 sources = ["mil_aircraft"]
 strategy = "mean_reversion"
 [funds.params]
 
-# 95. Overwatch — mil_aircraft cluster
 [[funds]]
 name = "Overwatch"
 symbol = "OVWT"
-vault = "0xda175F3e16025aaD4DaB88dcc2428a5B17bdd9f6"
+vault = "0xE5661fa4c39AD44270B9D232AB2b351700B02060"
 sources = ["mil_aircraft"]
 strategy = "cluster"
 [funds.params]
 
-# 96. Scramble — mil_aircraft contrarian
 [[funds]]
 name = "Scramble"
 symbol = "SCRM"
-vault = "0xdA6cD50BFD97A8eaAdB51FA8eE6a8D748E54CFd5"
+vault = "0x60C3DB5Dadf6c6A88966f7877FF0f319f630775b"
 sources = ["mil_aircraft"]
 strategy = "contrarian"
 [funds.params]
 min_change_pct = 5.0
 
-# ── TRANSPORT / mta_subway ──
-
-# 97. Metro — mta_subway time_of_day
 [[funds]]
 name = "Metro"
 symbol = "MTRO"
-vault = "0xF9C19cDe2B65920089B5cf094eC1e537bbA0F4E4"
+vault = "0x600759ec228a47A714f04710a70b3eEAF00c7AC0"
 sources = ["mta_subway"]
 strategy = "time_of_day"
 [funds.params]
 
-# 98. Express — mta_subway momentum
 [[funds]]
 name = "Express"
 symbol = "XPRS"
-vault = "0xe4eC0C6C070F3f1AB415e8Dd18ea0841D2468Ec6"
+vault = "0xb666e61446a2bCf0cA58bC3Cb8C8d1c4F88dfBE2"
 sources = ["mta_subway"]
 strategy = "momentum"
 [funds.params]
 
-# 99. Transfer — mta_subway mean_reversion
 [[funds]]
 name = "Transfer"
 symbol = "XFER"
-vault = "0x22aF12D5f6006f39371727030A1Bc2f1C86cA4D6"
+vault = "0x664dA40B8E3253FD967f0c152957356a95c44Cd8"
 sources = ["mta_subway"]
 strategy = "mean_reversion"
 [funds.params]
 
-# 100. Turnstile — mta_subway cluster
 [[funds]]
 name = "Turnstile"
 symbol = "TRNS"
-vault = "0xd328239567897C1Fed7Ae8D08364ca553c74D6C6"
+vault = "0x8d31858c7242d5E99ab59255aEd0084c6E69684e"
 sources = ["mta_subway"]
 strategy = "cluster"
 [funds.params]
 
-# ── OCEAN / ndbc ──
-
-# 101. Swell — ndbc momentum
 [[funds]]
 name = "Swell"
 symbol = "SWEL"
-vault = "0xA6a672D4C395dAf71Ee5567c0eA190c49236b580"
+vault = "0xA42198a47aEe06783B007dE647F73111Cb131c88"
 sources = ["ndbc"]
 strategy = "momentum"
 [funds.params]
 
-# 102. Calm — ndbc mean_reversion
 [[funds]]
 name = "Calm"
 symbol = "CALM"
-vault = "0x953DfC94aA622F27b5d240F0472A537d4B8435d1"
+vault = "0x513584D3eb6Cdc3Dc7211a70Ec8A62B08Bf7b0D4"
 sources = ["ndbc"]
 strategy = "mean_reversion"
 [funds.params]
 
-# 103. Riptide — ndbc cluster
 [[funds]]
 name = "Riptide"
 symbol = "RPTD"
-vault = "0x8994a4f1630f51eB6F4F557f915657B5A950D476"
+vault = "0x83cC2c26a6B4F53c0dF120727e8d56BCdc458E66"
 sources = ["ndbc"]
 strategy = "cluster"
 [funds.params]
 
-# ── WEATHER / noaa_met ──
-
-# 104. Anomaly — noaa_met momentum
 [[funds]]
 name = "Anomaly"
 symbol = "ANML"
-vault = "0x396c6661Ba212933DE068f651bA04BA652dAEd07"
+vault = "0x27eDeFfEd3678c5C143928Af0C40fCBD1ee1a61c"
 sources = ["noaa_met"]
 strategy = "momentum"
 [funds.params]
 
-# 105. Lull — noaa_met mean_reversion
 [[funds]]
 name = "Lull"
 symbol = "LULL"
-vault = "0x5B74B3Eca5C3A730f385Ca64f5c19bE113e7Cd81"
+vault = "0x198b65542563Fa4E933f98306ad9c581A3C0ebeD"
 sources = ["noaa_met"]
 strategy = "mean_reversion"
 [funds.params]
 
-# 106. Barometer — noaa_met contrarian
 [[funds]]
 name = "Barometer"
 symbol = "BARO"
-vault = "0xc9644059114D5d3f3AC51421fD1a54F5dca34CEF"
+vault = "0x07498851caaA638b6c94f2E071e3C59Bd775a924"
 sources = ["noaa_met"]
 strategy = "contrarian"
 [funds.params]
 min_change_pct = 2.0
 
-# ── OCEAN / noaa_tides ──
-
-# 107. Tideline — noaa_tides mean_reversion
 [[funds]]
 name = "Tideline"
 symbol = "TIDE"
-vault = "0x3bA04354e7Fa9539aCfDA24A3b3da4f2a033B7fE"
+vault = "0x54E1c1199551FD4be63E06A55873c75FA96D2785"
 sources = ["noaa_tides"]
 strategy = "mean_reversion"
 [funds.params]
 
-# 108. Surge — noaa_tides momentum
 [[funds]]
 name = "Surge"
 symbol = "SRGE"
-vault = "0x9C9fC9DB6B91de32B2bF2e19B207fec87c8DE313"
+vault = "0x0978e92B2D15293e1E9b7AB510601dd2A99592E4"
 sources = ["noaa_tides"]
 strategy = "momentum"
 [funds.params]
 
-# 109. Neap — noaa_tides contrarian
 [[funds]]
 name = "Neap"
 symbol = "NEAP"
-vault = "0x46b58EeD8aA0D5eE3dfB42f21159E7C6199Ee517"
+vault = "0x5c2A064EE483157E254BEc8b07D36fD0f95C672C"
 sources = ["noaa_tides"]
 strategy = "contrarian"
 [funds.params]
 
-# ── WEATHER / nwps ──
-
-# 110. Flood — nwps momentum
 [[funds]]
 name = "Flood"
 symbol = "FLOD"
-vault = "0xF3C1a359bf23d78a5172131cCf73473bACa24d11"
+vault = "0x0B966E8DB5B3cF6687bF80085460c3267fE87a94"
 sources = ["nwps"]
 strategy = "momentum"
 [funds.params]
 
-# 111. Snowbank — nwps cluster
 [[funds]]
 name = "Snowbank"
 symbol = "SNBR"
-vault = "0x2a66eD00E57503F1Dd1EFde08f6929fAbC77e384"
+vault = "0x411Bfc053fa04D40452B9c2c1B433160808Ae3ec"
 sources = ["nwps"]
 strategy = "cluster"
 [funds.params]
 
-# 112. Crest — nwps mean_reversion
 [[funds]]
 name = "Crest"
 symbol = "CRST"
-vault = "0x085E7ffAa5E31642b3176F7336872D705c405a1d"
+vault = "0x399af8FF184F1A2379d07d6D59C2800134220113"
 sources = ["nwps"]
 strategy = "mean_reversion"
 [funds.params]
 
-# ── TRANSPORT / parking ──
-
-# 113. Valet — parking time_of_day
 [[funds]]
 name = "Valet"
 symbol = "VALT"
-vault = "0x2C3A153203068A217c77eF8174421e9190f8e400"
+vault = "0x545098BA2dc8dE24BD70d99fef3c03C73B3c1d67"
 sources = ["parking"]
 strategy = "time_of_day"
 [funds.params]
 
-# 114. Garage — parking mean_reversion
 [[funds]]
 name = "Garage"
 symbol = "GARG"
-vault = "0x6d42573fcb0Bd27196963b2D57c9A6a4e6B38cF5"
+vault = "0x420E5E7826648CFb9E4E5f3Ccd5a9510e82A0B78"
 sources = ["parking"]
 strategy = "mean_reversion"
 [funds.params]
 
-# 115. Meter — parking momentum
 [[funds]]
 name = "Meter"
 symbol = "METR"
-vault = "0x0c7aa3d4d4d436Ae762e6d33391499c1282eB12c"
+vault = "0x861A66aED8B8C420bD10a9a51FbB35543b86cc09"
 sources = ["parking"]
 strategy = "momentum"
 [funds.params]
 
-# 116. Double Park — parking cluster
 [[funds]]
 name = "Double Park"
 symbol = "DBLP"
-vault = "0x206fdf5D315a63003844ec02B653fbd0d3864f84"
+vault = "0x97f37a106C7906468C1de6Dad6F4cC2d0Ee32022"
 sources = ["parking"]
 strategy = "cluster"
 [funds.params]
 
-# ── PREDICTION / polymarket ──
-
-# 117. Oracle — polymarket momentum
 [[funds]]
 name = "Oracle"
 symbol = "ORCL"
-vault = "0x061756334b104f82A8cA850d34A32Cb2f71D4995"
+vault = "0x9509913E86D577AE076Dc72fd76135E20C9F63C3"
 sources = ["polymarket"]
 strategy = "momentum"
 [funds.params]
 
-# 118. Longshot — polymarket contrarian
 [[funds]]
 name = "Longshot"
 symbol = "LONG"
-vault = "0x6218Dc54718Fe4630bd46c9585411049ec91629F"
+vault = "0x4Bc62Bf1bC8a2dFfa7b199356F179e83A07DE1D9"
 sources = ["polymarket"]
 strategy = "contrarian"
 [funds.params]
 
-# 119. Consensus — polymarket momentum_threshold
 [[funds]]
 name = "Consensus"
 symbol = "CNSN"
-vault = "0xf3595e192cF4572Db4FC49e447fAb29D6E07638e"
+vault = "0xE19CdF8402d7aE554d0a46340AE8C0573a87fFd9"
 sources = ["polymarket"]
 strategy = "momentum_threshold"
 [funds.params]
 min_change_pct = 5.0
 
-# 120. Arbitrage — polymarket mean_reversion
 [[funds]]
 name = "Arbitrage"
 symbol = "ARBI"
-vault = "0x488dF6846Ab2Dd02e983E87AaDf66C3867CE4FD1"
+vault = "0x930f69867A29C606416c5be016197AB51D52cb4b"
 sources = ["polymarket"]
 strategy = "mean_reversion"
 [funds.params]
 
-# ── ACADEMIC / pubmed ──
-
-# 121. Preprint — pubmed adoption_curve
 [[funds]]
 name = "Preprint"
 symbol = "PRPT"
-vault = "0x16dA26498F2Ac98BeC8D931B94fAA05952DCB0cE"
+vault = "0x32Ca2e5ffAb892EcBF71B224A395A90968a8d233"
 sources = ["pubmed"]
 strategy = "adoption_curve"
 [funds.params]
 
-# 122. Placebo — pubmed contrarian
 [[funds]]
 name = "Placebo"
 symbol = "PLBO"
-vault = "0xA1590540c159B280D942270d741089eE77DC1132"
+vault = "0x78198A204411390a8926908cd2a13E18Af77A94b"
 sources = ["pubmed"]
 strategy = "contrarian"
 [funds.params]
 
-# 123. Peer — pubmed momentum
 [[funds]]
 name = "Peer"
 symbol = "PEER"
-vault = "0x36859a5544fddD5D276a0A36534e2D3830d1030a"
+vault = "0xEEE6032848E58801408B1f97c355626cEc747A55"
 sources = ["pubmed"]
 strategy = "momentum"
 [funds.params]
 
-# 124. Trial — pubmed regime
 [[funds]]
 name = "Trial"
 symbol = "TRIL"
-vault = "0xC4509C6467F595B480DA01B47Be2499d3666857e"
+vault = "0xab555c7439349e4Aa7dA1387a862603Be254929b"
 sources = ["pubmed"]
 strategy = "regime"
 [funds.params]
 
-# ── CRYPTO / pumpfun ──
-
-# 125. Degenerator — pumpfun momentum
 [[funds]]
 name = "Degenerator"
 symbol = "DGEN"
-vault = "0xC63e737c771Fd198cf7D514b5ce56c7DE206a524"
+vault = "0x186FcD3478c8899B3a62F34Cb6fc5C4574B69adA"
 sources = ["pumpfun"]
 strategy = "momentum"
 [funds.params]
 
-# 126. Rugpull — pumpfun contrarian
 [[funds]]
 name = "Rugpull"
 symbol = "RUGP"
-vault = "0x85cD5Fc98d3a9196Bf33fDf3C253DedaA368ea07"
+vault = "0xBe5a21b79Dd1465071394C4EAe4E94fab6e3993c"
 sources = ["pumpfun"]
 strategy = "contrarian"
 [funds.params]
 
-# 127. Diagnosis — pumpfun volatility_fade
 [[funds]]
 name = "Diagnosis"
 symbol = "DGNS"
-vault = "0xC7658755bB91b082a583f4EdDEd31d5bb64900aE"
+vault = "0x8b0b25CD51d62220d55eed3EBddb0502e949f2E9"
 sources = ["pumpfun"]
 strategy = "volatility_fade"
 [funds.params]
 
-# 128. Bonding — pumpfun momentum_threshold
 [[funds]]
 name = "Bonding"
 symbol = "BNDG"
-vault = "0xdbdf61E57cCbb5a0729fa15eF665AE67b71C0c21"
+vault = "0x0860389CF8871Ca3e0Fdcf78BE8FC70583aD614F"
 sources = ["pumpfun"]
 strategy = "momentum_threshold"
 [funds.params]
 min_change_pct = 10.0
 
-# ── LEISURE / queue_times ──
-
-# 129. Fastpass — queue_times contrarian
 [[funds]]
 name = "Fastpass"
 symbol = "FAST"
-vault = "0xA0bdCbbFfF615BB6b4bfe78AEB52A5bd1F58E2F0"
+vault = "0xddA415F94B261F03f877331F2542EBF5d429D129"
 sources = ["queue_times"]
 strategy = "contrarian"
 [funds.params]
 
-# 130. Rush — queue_times time_of_day
 [[funds]]
 name = "Rush"
 symbol = "RUSH"
-vault = "0x420a9f6104a252E3Fb641f8D524B3509A4Cb326A"
+vault = "0xC5983757724ACD11451116958f74a6097ACd3257"
 sources = ["queue_times"]
 strategy = "momentum"
 [funds.params]
 
-# 131. Cluster — queue_times cluster
 [[funds]]
 name = "Cluster"
 symbol = "CLST"
-vault = "0xba3d14A9D417035C04445D43a903C9D4Ea52Aaaa"
+vault = "0x0f28bfe6e1c11b6b000aF5fF0a6b94c85471Cf5b"
 sources = ["queue_times"]
 strategy = "cluster"
 [funds.params]
 
-# ── FINANCE / rates ──
-
-# 132. Hawkish — rates momentum
 [[funds]]
 name = "Hawkish"
 symbol = "HAWK"
-vault = "0x4B02DCc924e4D5C71b7C4228A02D3c3773A44d59"
+vault = "0xc32CAF50aD133Ad6684F2539aEAcb34EcD7c4e25"
 sources = ["rates"]
 strategy = "momentum"
 [funds.params]
 min_change_pct = 0.5
 
-# 133. Dovish — rates contrarian
 [[funds]]
 name = "Dovish"
 symbol = "DOVE"
-vault = "0x9C26e94C1c72eE441f934305B102Ce13710b9361"
+vault = "0x6B6882F7aAbD603012cd693E6B13852E1157Ec94"
 sources = ["rates"]
 strategy = "contrarian"
 [funds.params]
 
-# 134. Tighten — rates regime
 [[funds]]
 name = "Tighten"
 symbol = "TITE"
-vault = "0x29DF6915e4ebDA28a2F973B35b1c61f220D2DB2E"
+vault = "0x0517889ECCDC8E0a719FD10E0b7BE0aECE679e16"
 sources = ["rates"]
 strategy = "regime"
 [funds.params]
 
-# 135. Basis — rates momentum_threshold
 [[funds]]
 name = "Basis"
 symbol = "BASS"
-vault = "0xAAb8f6335dAb156c9023C323EFE2D741D9d3e295"
+vault = "0x7B98fea64c32a50E4a01786301F4Df60f514d975"
 sources = ["rates"]
 strategy = "momentum_threshold"
 [funds.params]
 min_change_pct = 0.25
 
-# ── FINANCE / sec_13f ──
-
-# 136. Deadline — sec_13f momentum
 [[funds]]
 name = "Deadline"
 symbol = "DDLN"
-vault = "0x49002702E7c58a56aC9D46d74fb3624CD5f8C8f2"
+vault = "0x6b559059fC5775aADB5bea1A85fab711eF63f3B5"
 sources = ["sec_13f"]
 strategy = "momentum"
 [funds.params]
 
-# 137. Disclosure — sec_13f contrarian
 [[funds]]
 name = "Disclosure"
 symbol = "DSCL"
-vault = "0x5f8Af4d99F0e0cA4D8C66F18AF8bC59806B657ba"
+vault = "0x882aDc8623e2d3A29bCA11C50ae9ff3ff004fF3B"
 sources = ["sec_13f"]
 strategy = "contrarian"
 [funds.params]
 
-# 138. Insider — sec_13f momentum_threshold
 [[funds]]
 name = "Insider"
 symbol = "INSD"
-vault = "0x4c83cBddAcD714b90e1b7075307E585c63B00CF5"
+vault = "0x9aFFa4cf32047e755f02A2AE5a157256EA1BeEB9"
 sources = ["sec_13f"]
 strategy = "momentum_threshold"
 [funds.params]
 min_change_pct = 3.0
 
-# 139. Holdings — sec_13f regime
 [[funds]]
 name = "Holdings"
 symbol = "HLDG"
-vault = "0x2Bbf3eD96C59A2BeccDf1FeC301f8836269fD7FF"
+vault = "0x859C448C56197Ac19016dD1241b72b279b847c1a"
 sources = ["sec_13f"]
 strategy = "regime"
 [funds.params]
 
-# ── SPACE / spaceweather ──
-
-# 140. Aurora — spaceweather momentum
 [[funds]]
 name = "Aurora"
 symbol = "AURA"
-vault = "0x6e6485981B00494E048699c6251A0Ab8CD2f066b"
+vault = "0xB16EE7A826e2f80B4418b2961F380708c121984E"
 sources = ["spaceweather"]
 strategy = "momentum"
 [funds.params]
 
-# 141. Solstice — spaceweather mean_reversion
 [[funds]]
 name = "Solstice"
 symbol = "SLST"
-vault = "0x3f8d8cCAf0CF7e92908A785d144b12Af81C3E59a"
+vault = "0x69d26Cd0Bc97a97F9F23d0E038d93ab17346bc30"
 sources = ["spaceweather"]
 strategy = "mean_reversion"
 [funds.params]
 
-# 142. Sunspot — spaceweather cluster
 [[funds]]
 name = "Sunspot"
 symbol = "SNSP"
-vault = "0x7C42d136D494C91d7177762fEa627A0ae04e380a"
+vault = "0xE095574729Af0F9aE5512bAda365df26E019F4Ab"
 sources = ["spaceweather"]
 strategy = "cluster"
 [funds.params]
 
-# 143. Corona — spaceweather regime
 [[funds]]
 name = "Corona"
 symbol = "CRNA"
-vault = "0x1519baeBA0D71f2d5F25DbF328F384958dcd140A"
+vault = "0x85868911cf4810fD2201E8A84cE710CfF7aa7b86"
 sources = ["spaceweather"]
 strategy = "regime"
 [funds.params]
 
-# ── SPORTS / sports ──
-
-# 144. Homecourt — sports home_field
 [[funds]]
 name = "Homecourt"
 symbol = "HOME"
-vault = "0xE01A79d5644C8DC3E9Ea564966334fD95B3e1FAd"
+vault = "0xdAe7AF481027786A840cf732B5406c386B9cC5Bf"
 sources = ["sports"]
 strategy = "home_field"
 [funds.params]
 
-# 145. Streak — sports momentum
 [[funds]]
 name = "Streak"
 symbol = "STRK"
-vault = "0x3ebF6C70AC70D1E8Ac0241F60619AfceB4E01c7A"
+vault = "0xa3A77443623D95a533305fA41b37A05E9145ea5d"
 sources = ["sports"]
 strategy = "momentum"
 [funds.params]
 
-# 146. Upset — sports contrarian
 [[funds]]
 name = "Upset"
 symbol = "UPST"
-vault = "0x66BA74abc668a6Cf8FA955E5375bf58606d37131"
+vault = "0xe18eD1d9790dB06B1275b04E026D10C8d1bdFD90"
 sources = ["sports"]
 strategy = "contrarian"
 [funds.params]
 
-# 147. Overtime — sports volatility_fade
 [[funds]]
 name = "Overtime"
 symbol = "OVTM"
-vault = "0x7521C16ed551D09e7ecB7d12382a6f0E01fD7f55"
+vault = "0x2D09AfeA7DffEfe61368573D822beC5589faBa1d"
 sources = ["sports"]
 strategy = "volatility_fade"
 [funds.params]
 
-# ── GAMING / steam ──
-
-# 148. Weekend — steam bullish
 [[funds]]
 name = "Weekend"
 symbol = "WKND"
-vault = "0xd1B05d975eE067cCf378A4Cd14A1A3ebc3dAA221"
+vault = "0x580582762a8203e36E0F6A31E71965AFC36F4E59"
 sources = ["steam"]
 strategy = "bullish"
 [funds.params]
 
-# 149. Lobby — steam time_of_day
 [[funds]]
 name = "Lobby"
 symbol = "LOBY"
-vault = "0x928c1db9ae832A241ce2C9b30a0cF6cfa5A40742"
+vault = "0x92129A82eb47f33597731b412779aB65aB69ED51"
 sources = ["steam"]
 strategy = "time_of_day"
 [funds.params]
 
-# 150. Ragequit — steam contrarian
 [[funds]]
 name = "Ragequit"
 symbol = "RAGE"
-vault = "0x2b345aA57705Ae45D9391Aa9261C6F390D8f8383"
+vault = "0xB6950399C46Cfa9B41E41318707Eb9BD0B832ee4"
 sources = ["steam"]
 strategy = "contrarian"
 [funds.params]
 
-# 151. Patch — steam cluster
 [[funds]]
 name = "Patch"
 symbol = "PTCH"
-vault = "0xc9d8b90BEe9Ab0b2148a69C318D6D97113e65efd"
+vault = "0xEcDfc6dDe60948990569a66Cc8f7A935f329F76a"
 sources = ["steam"]
 strategy = "cluster"
 [funds.params]
 
-# ── ENTERTAINMENT / twitch ──
-
-# 152. Prime Time — twitch momentum
 [[funds]]
 name = "Prime Time"
 symbol = "PRME"
-vault = "0x0A3B9D1145DE895736170ec366D60E1d0B0eD402"
+vault = "0xBb31bD1E82C68725cA4cb84c027328d099e06B3B"
 sources = ["twitch"]
 strategy = "momentum"
 [funds.params]
 
-# 153. Offline — twitch contrarian
 [[funds]]
 name = "Offline"
 symbol = "OFLN"
-vault = "0x4b76f99e1fE5517fF34593639CA55615E3ac3168"
+vault = "0x1108Ab4Bab7444b44ce3F3d09a3dDE344377437e"
 sources = ["twitch"]
 strategy = "contrarian"
 [funds.params]
 
-# 154. Subscribe — twitch adoption_curve
 [[funds]]
 name = "Subscribe"
 symbol = "SUBR"
-vault = "0x7e45D3967736aE66AB2e62822eab676da58C0447"
+vault = "0x99EfE3C13352c892cC39121B797aC9f90F2e9333"
 sources = ["twitch"]
 strategy = "adoption_curve"
 [funds.params]
 
-# 155. Host — twitch cluster
 [[funds]]
 name = "Host"
 symbol = "HOST"
-vault = "0xf4EC8cAd81efbcEF8259992140BF489dba8B90e6"
+vault = "0xaa41fb30E9544076Bdf9f334369b29437F38Ea62"
 sources = ["twitch"]
 strategy = "cluster"
 [funds.params]
 
-# ── GOVERNMENT / usa_spending ──
-
-# 156. Stimulus — usa_spending momentum
 [[funds]]
 name = "Stimulus"
 symbol = "STIM"
-vault = "0x0C390fd08A0EB66403B28f10b10465dE7AB71dEA"
+vault = "0xd8283Ed1Eb3dd0A1f1aBaF8DA471aec4076910fB"
 sources = ["usa_spending"]
 strategy = "momentum"
 [funds.params]
 
-# 157. Sequester — usa_spending contrarian
 [[funds]]
 name = "Sequester"
 symbol = "SQST"
-vault = "0xdFCE141ad410804BFE4eAF5F47B13F2527cE4c02"
+vault = "0x9F37578A824964137CcE5D92567293cE9414A603"
 sources = ["usa_spending"]
 strategy = "contrarian"
 [funds.params]
 
-# 158. Deficit — usa_spending regime
 [[funds]]
 name = "Deficit"
 symbol = "DFCT"
-vault = "0xD168dd32dCc4ad87AfF86746b5BB7CC71E3a47ED"
+vault = "0x2d82214c8e8C1c182F5E0a2C4d6ADa558FF034eF"
 sources = ["usa_spending"]
 strategy = "regime"
 [funds.params]
 
-# 159. Earmark — usa_spending cluster
 [[funds]]
 name = "Earmark"
 symbol = "EMRK"
-vault = "0x997af88f3B2C5C81f09DD56E00882f61D38B1E9E"
+vault = "0x07925D5d07a3FeD23220762a3fcaDd9deaD01490"
 sources = ["usa_spending"]
 strategy = "cluster"
 [funds.params]
 
-# ── ENVIRONMENT / usgs_water ──
-
-# 160. Torrent — usgs_water momentum
 [[funds]]
 name = "Torrent"
 symbol = "TRNT"
-vault = "0xC61d86844e23f275E365F7AB8304486c5866CdE0"
+vault = "0x317FdcDb75D084dE10a817759348F3A03bE6cBF7"
 sources = ["usgs_water"]
 strategy = "momentum"
 [funds.params]
 
-# 161. Drought — usgs_water mean_reversion
 [[funds]]
 name = "Drought"
 symbol = "DRHT"
-vault = "0xE67F991603Dc6F7C305c6209E2ff8AAA186d9636"
+vault = "0x40CF93cA7ECcdCCa5F5A411FBc959D2b0BAc90C3"
 sources = ["usgs_water"]
 strategy = "mean_reversion"
 [funds.params]
 
-# 162. Watershed — usgs_water cluster
 [[funds]]
 name = "Watershed"
 symbol = "WSHD"
-vault = "0x227B6E4780dC19E1b5499b912Da50145EA6f4F62"
+vault = "0x121A3Fb2CC6Df39B30c5B9167b80d627F8a7d9dd"
 sources = ["usgs_water"]
 strategy = "cluster"
 [funds.params]
 
-# 163. Baseflow — usgs_water regime
 [[funds]]
 name = "Baseflow"
 symbol = "BSFL"
-vault = "0xA73625084e217597Dc44ec8D131c35f5DDf9aFEF"
+vault = "0x83C2cDbb96BAdB3A5915A4d9a612CA53CD9AFE71"
 sources = ["usgs_water"]
 strategy = "regime"
 [funds.params]
 
-# ── WEATHER / weather ──
-
-# 164. Weatherfront — weather momentum
 [[funds]]
 name = "Weatherfront"
 symbol = "WFRT"
-vault = "0xEF8ef41607D68d5FC8E394023F47bFBAf9D57fd6"
+vault = "0xadD533b5d1e93730435AbB70Ec7fc37353216922"
 sources = ["weather"]
 strategy = "momentum"
 [funds.params]
 
-# 165. Revert — weather mean_reversion
 [[funds]]
 name = "Revert"
 symbol = "RVRT"
-vault = "0x7fa86Ee1E346873Acb0B8fecc466aD3d37ac6725"
+vault = "0xCE0efE66702E1745c9Ec4fae0C0A734726A48ce2"
 sources = ["weather"]
 strategy = "mean_reversion"
 [funds.params]
 
-# 166. Seasonal — weather regime
 [[funds]]
 name = "Seasonal"
 symbol = "SSNL"
-vault = "0x6CDaD910f42c8Ec31d7c85EeEAE25e7F157Eefc4"
+vault = "0xC6834AD44487e2F74587DC14D656BaDf35Ca0119"
 sources = ["weather"]
 strategy = "regime"
 [funds.params]
 
-# 167. Heatwave — weather contrarian
 [[funds]]
 name = "Heatwave"
 symbol = "HEAT"
-vault = "0x68C3dA44Bf598f87178b948e92f2cAC3883A7df2"
+vault = "0x270Ea24ab2a23F175f30BdFd64baa6313A5Fe9eb"
 sources = ["weather"]
 strategy = "contrarian"
 [funds.params]
 min_change_pct = 3.0
 
-# ── WEATHER / weather_alerts ──
-
-# 168. Stormwatch — weather_alerts cluster
 [[funds]]
 name = "Stormwatch"
 symbol = "STRM"
-vault = "0x4EcBbeac38EB229584b49c18E63FD534F5646c13"
+vault = "0x9d761cF139Ab3EBBf46d57Fc2269959c532623c9"
 sources = ["weather_alerts"]
 strategy = "cluster"
 [funds.params]
 
-# 169. All Clear — weather_alerts contrarian
 [[funds]]
 name = "All Clear"
 symbol = "ACLR"
-vault = "0x0f37E1548b19a601f2b93e7cebf6de2C9D57C678"
+vault = "0xdb982B7E39e81A54F1e47ee1EDa056c13d7B1872"
 sources = ["weather_alerts"]
 strategy = "contrarian"
 [funds.params]
 
-# 170. Tornado — weather_alerts momentum
 [[funds]]
 name = "Tornado"
 symbol = "TNDO"
-vault = "0xacac25d5190d0f153f022eBa054a4F34cb2a9eDE"
+vault = "0x8695a927e5c6c3d22D9dC4b7a4bc94a85bbEA732"
 sources = ["weather_alerts"]
 strategy = "momentum"
 [funds.params]
 
-# 171. Bunker — weather_alerts regime
 [[funds]]
 name = "Bunker"
 symbol = "BNKR"
-vault = "0x9065fE3515ed0020B373Da9B20A528c552c73a1C"
+vault = "0x3256157CFEFBE9305fc66173dfd3961Bfc6eBb8D"
 sources = ["weather_alerts"]
 strategy = "regime"
 [funds.params]
 
-# ── ENVIRONMENT / wildfire ──
-
-# 172. Ember — wildfire momentum
 [[funds]]
 name = "Ember"
 symbol = "EMBR"
-vault = "0xE1122305A3bCf008b11299289BaBF925CF0B387b"
+vault = "0x57A9896025D99950053c1F6f44d7b322FA8F8FEE"
 sources = ["wildfire"]
 strategy = "momentum"
 [funds.params]
 
-# 173. Contained — wildfire contrarian
 [[funds]]
 name = "Contained"
 symbol = "CNTD"
-vault = "0x139E77BFB8D73b84502e593023790A0587702b72"
+vault = "0x766340dA491a40a30F01B3D807C1fe552DDEDDb8"
 sources = ["wildfire"]
 strategy = "contrarian"
 [funds.params]
 
-# 174. Tinder — wildfire cluster
 [[funds]]
 name = "Tinder"
 symbol = "TNDR"
-vault = "0x040231BBa7843d0317eCaBa77b8552f2dE8E6947"
+vault = "0x955F44F66050364D4c5558D0AE4386aAf7470190"
 sources = ["wildfire"]
 strategy = "cluster"
 [funds.params]
 
-# 175. Firebreak — wildfire mean_reversion
 [[funds]]
 name = "Firebreak"
 symbol = "FBRK"
-vault = "0xAB85BB4bc95Be7d854f09BB23110cA46F3f9576a"
+vault = "0x92011F6b0F5117f36d660dA473f4283d9dDB08f6"
 sources = ["wildfire"]
 strategy = "mean_reversion"
 [funds.params]
 
-# ── ECONOMIC / worldbank ──
-
-# 176. Glacier — worldbank momentum
 [[funds]]
 name = "Glacier"
 symbol = "GLCR"
-vault = "0xD900dbDd555B84656dB6aa5B00219B7739cb9541"
+vault = "0x108D5e0Af10D089809AfaaE19AD2B5aE99A2D752"
 sources = ["worldbank"]
 strategy = "momentum"
 [funds.params]
 min_change_pct = 1.0
 
-# 177. Convergence — worldbank contrarian
 [[funds]]
 name = "Convergence"
 symbol = "CNVG"
-vault = "0x79cb827FD12922874E09582376bD4a3064994E21"
+vault = "0x07df8a5D3769DeBd3e843e735C16190F11248613"
 sources = ["worldbank"]
 strategy = "contrarian"
 [funds.params]
 
-# 178. Emergence — worldbank adoption_curve
 [[funds]]
 name = "Emergence"
 symbol = "EMRG"
-vault = "0xCDD6691Dc4903b4e30d7D47635dB4f6C08e64563"
+vault = "0x3c0a3343d5aAaC0fAd4cdB7bee592aA4deEbb01d"
 sources = ["worldbank"]
 strategy = "adoption_curve"
 [funds.params]
 
-# 179. Stagnation — worldbank regime
 [[funds]]
 name = "Stagnation"
 symbol = "STGN"
-vault = "0x0f6C0B50341e75e5DcE759eD40c26C135f6Fc3fA"
+vault = "0xB1Ca8860A5BeC64616b6aA20b6F985e52ad13186"
 sources = ["worldbank"]
 strategy = "regime"
 [funds.params]
 
-# ── REAL ESTATE / zillow ──
-
-# 180. Foundation — zillow momentum
 [[funds]]
 name = "Foundation"
 symbol = "FNDM"
-vault = "0xd6Bf520e4f145c970608A661Bf24DfACAf5cC0fe"
+vault = "0xc69B68aff3ed3d8d73ddFf397c4871D673b3e6a8"
 sources = ["zillow"]
 strategy = "momentum"
 [funds.params]
 
-# 181. Overshoot — zillow contrarian
 [[funds]]
 name = "Overshoot"
 symbol = "OVSH"
-vault = "0x8940A48b07733f358138548fa1eB5ffE2315c8e9"
+vault = "0xD44290E89B167F2eE3A3C7547e8d2dB269B0A345"
 sources = ["zillow"]
 strategy = "contrarian"
 [funds.params]
 
-# 182. Shelter — zillow bullish
 [[funds]]
 name = "Shelter"
 symbol = "SHLT"
-vault = "0xcb31440b184E592c3A1d1f4aE7dAC7792f886bbb"
+vault = "0x81018c397a1CcC401ec18F2402BA5Ca97b7FE196"
 sources = ["zillow"]
 strategy = "bullish"
 [funds.params]
 
-# 183. Appraisal — zillow regime
 [[funds]]
 name = "Appraisal"
 symbol = "APSL"
-vault = "0x4f92c53bEE49b57685227d882df01C93436AAF5D"
+vault = "0xe7875282689B68153aCe9f41cC24e2b3fd149D46"
 sources = ["zillow"]
 strategy = "regime"
 [funds.params]
 
-# ═══════════════════════════════════════════════
-# 141 NEW VAULTS — DeployFundCatalogV2 (2026-04-18)
-# ═══════════════════════════════════════════════
-
-# ── coingecko (added 2026-04-18) ──
-
-# Herd — coingecko momentum
 [[funds]]
-name = "Herd"
-symbol = "HERD"
-vault = "0x81d24440DfB9505ea40d5d834672d3FcFe9Eaefb"
-sources = ["coingecko"]
+name = "Adzuna 5"
+symbol = "ADZUNA5"
+vault = "0x21aFCc7C173dB86E3B05a47A018aCB531cf77Dfe"
+sources = ["adzuna"]
 strategy = "momentum"
 [funds.params]
 
-# Washout — coingecko contrarian
 [[funds]]
-name = "Washout"
-symbol = "WASH"
-vault = "0x7a277bF35820543598d9c3ab3B41C840A7Df372b"
-sources = ["coingecko"]
-strategy = "contrarian"
-[funds.params]
-
-# Bullrun — coingecko bullish
-[[funds]]
-name = "Bullrun"
-symbol = "BULL"
-vault = "0x07Cf352b2546212DF41BE9E9fA2a2A2aC42E9383"
-sources = ["coingecko"]
-strategy = "bullish"
-[funds.params]
-
-# ── finnhub (added 2026-04-18) ──
-
-# Ticker — finnhub momentum
-[[funds]]
-name = "Ticker"
-symbol = "TIKR"
-vault = "0x6B7DDeb7c096Aaf5ecA0CEb4bDe18FE9b8b50F3d"
-sources = ["finnhub"]
+name = "Airnow 5"
+symbol = "AIRNOW5"
+vault = "0x7324E73587a881F2edfDE3a622592d27F06C6796"
+sources = ["airnow"]
 strategy = "momentum"
 [funds.params]
 
-# Reversion — finnhub contrarian
 [[funds]]
-name = "Reversion"
-symbol = "RVRS"
-vault = "0x683Bf9704514CAB79427dD62Dded141dDA6e643d"
-sources = ["finnhub"]
-strategy = "contrarian"
-[funds.params]
-
-# Alpha — finnhub bullish
-[[funds]]
-name = "Alpha"
-symbol = "ALFA"
-vault = "0x0E47b3dc4d2012708B19e398dD83fBd73E990Abb"
-sources = ["finnhub"]
-strategy = "bullish"
-[funds.params]
-
-# ── finra (added 2026-04-18) ──
-
-# Squeeze — finra momentum
-[[funds]]
-name = "Squeeze"
-symbol = "SQZE"
-vault = "0xE37Bd9faA2C39666BDAd77F0c182f9Bf2eFb6c7e"
-sources = ["finra"]
+name = "Anilist 5"
+symbol = "ANILIS5"
+vault = "0x57ffdbFC5B83A5dE5D8703DfC6964BDa3eA3e731"
+sources = ["anilist"]
 strategy = "momentum"
 [funds.params]
 
-# Cover — finra contrarian
 [[funds]]
-name = "Cover"
-symbol = "COVR"
-vault = "0x85A10638D95259Cb10c4Bac765f82c5a701969b7"
-sources = ["finra"]
-strategy = "contrarian"
-[funds.params]
-
-# Pressure — finra momentum_threshold
-[[funds]]
-name = "Pressure"
-symbol = "PRSS"
-vault = "0x3a0eE32F4735059b58A38c6584bB24F743e55f91"
-sources = ["finra"]
-strategy = "momentum_threshold"
-[funds.params]
-
-# ── futures (added 2026-04-18) ──
-
-# Barrel — futures momentum
-[[funds]]
-name = "Barrel"
-symbol = "BRRL"
-vault = "0x6E90275879971E7F3D9E04D37c9114ff11B25a31"
-sources = ["futures"]
+name = "Animals 5"
+symbol = "ANIMAL5"
+vault = "0xbff9c5c51C29c2C3C9ADA66A85881dC6B6175DDc"
+sources = ["animals"]
 strategy = "momentum"
 [funds.params]
 
-# Rebalance — futures contrarian
 [[funds]]
-name = "Rebalance"
-symbol = "RBAL"
-vault = "0x10B92C67174976dA8357CdE53f0a7Dd4E42D9d13"
-sources = ["futures"]
-strategy = "contrarian"
-[funds.params]
-
-# Contango — futures bullish
-[[funds]]
-name = "Contango"
-symbol = "CTGO"
-vault = "0x73B41F50cA8a7b66fb9c6C82acD26cdf64fC5e26"
-sources = ["futures"]
-strategy = "bullish"
-[funds.params]
-
-# ── yahoo_drinks (added 2026-04-18) ──
-
-# Espresso — yahoo_drinks momentum
-[[funds]]
-name = "Espresso"
-symbol = "ESPR"
-vault = "0xd5e8128b59A333B0356a279394e20C8A811A91f8"
-sources = ["yahoo_drinks"]
+name = "Backpacktf 4"
+symbol = "BACKPA4"
+vault = "0x7724759A2d4C893d1828FFe79b1A58E88DBf6b35"
+sources = ["backpacktf"]
 strategy = "momentum"
 [funds.params]
 
-# Raincheck — yahoo_drinks contrarian
 [[funds]]
-name = "Raincheck"
-symbol = "RAIN"
-vault = "0x9C913a1fE5b9E9009dE727328055F407C9408FA5"
-sources = ["yahoo_drinks"]
-strategy = "contrarian"
-[funds.params]
-
-# Roast — yahoo_drinks momentum_threshold
-[[funds]]
-name = "Roast"
-symbol = "ROST"
-vault = "0x4Eb855dACca6bD4A4a82262Fcc7e204e391578ec"
-sources = ["yahoo_drinks"]
-strategy = "momentum_threshold"
-[funds.params]
-
-# ── twse (added 2026-04-18) ──
-
-# Taipei — twse momentum
-[[funds]]
-name = "Taipei"
-symbol = "TPEI"
-vault = "0xB2ec666da78EaE724d37e846A19eD9E833C48510"
-sources = ["twse"]
+name = "Backpacktf 5"
+symbol = "BACKPA5"
+vault = "0x83953100964626D1114948C747b42972CE717F57"
+sources = ["backpacktf"]
 strategy = "momentum"
 [funds.params]
 
-# Strait — twse contrarian
 [[funds]]
-name = "Strait"
-symbol = "STRT"
-vault = "0xF2c2C1E18377AB4867443Eb4fc993F79d218EFa7"
-sources = ["twse"]
-strategy = "contrarian"
-[funds.params]
-
-# Pacific — twse bullish
-[[funds]]
-name = "Pacific"
-symbol = "PCFC"
-vault = "0x8e72735286eEf5a66AdB98e85f4E650e60f23228"
-sources = ["twse"]
-strategy = "bullish"
-[funds.params]
-
-# ── imf (added 2026-04-18) ──
-
-# Sovereign — imf momentum
-[[funds]]
-name = "Sovereign"
-symbol = "SVRN"
-vault = "0xfEc498B5D34Dc717ea0BDeB51438BeF14856d376"
-sources = ["imf"]
+name = "Bchain 5"
+symbol = "BCHAIN5"
+vault = "0x322Fc1eCaf31cCF6166ef42BcA10856E7cC9911D"
+sources = ["bchain"]
 strategy = "momentum"
 [funds.params]
 
-# Bailout — imf contrarian
 [[funds]]
-name = "Bailout"
-symbol = "BAIL"
-vault = "0x1A8b50406Bb91027e15BF4fa3003A3Fab54f579e"
-sources = ["imf"]
-strategy = "contrarian"
-[funds.params]
-
-# Reserve — imf bullish
-[[funds]]
-name = "Reserve"
-symbol = "RESV"
-vault = "0x948E45F911fe48C319fA02D72840826631ab10d8"
-sources = ["imf"]
-strategy = "bullish"
-[funds.params]
-
-# ── opec (added 2026-04-18) ──
-
-# Crude — opec momentum
-[[funds]]
-name = "Crude"
-symbol = "CRUD"
-vault = "0xd0C3A005F9113cf2f0987aF5bBeeB7a24ee4aD2D"
-sources = ["opec"]
+name = "Bestbuy 5"
+symbol = "BESTBU5"
+vault = "0xb5a1534Eea1C2AF402F30386411AF45d03Da29e7"
+sources = ["bestbuy"]
 strategy = "momentum"
 [funds.params]
 
-# Glut — opec contrarian
 [[funds]]
-name = "Glut"
-symbol = "GLUT"
-vault = "0x61830100026d4831bda1995dC800c7a2a52dAAff"
-sources = ["opec"]
-strategy = "contrarian"
-[funds.params]
-
-# Benzene — opec momentum_threshold
-[[funds]]
-name = "Benzene"
-symbol = "BNZN"
-vault = "0x1EfdcdDA82A60f9560A8484a208b9d9Ec7c6E7a6"
-sources = ["opec"]
-strategy = "momentum_threshold"
-[funds.params]
-
-# ── cftc (added 2026-04-18) ──
-
-# Speculator — cftc momentum
-[[funds]]
-name = "Speculator"
-symbol = "SPEC"
-vault = "0x535644a56b76a6EaF33BD342eC11b2870fc8d185"
-sources = ["cftc"]
+name = "Bls 5"
+symbol = "BLS5"
+vault = "0xfc0832FaA22Cc564C3A09b776A8D9CE05FC6Df34"
+sources = ["bls"]
 strategy = "momentum"
 [funds.params]
 
-# Hedger — cftc contrarian
 [[funds]]
-name = "Hedger"
-symbol = "HDGR"
-vault = "0xdeaD0A4d9B5126a3c898303CA7992efcc7787c10"
-sources = ["cftc"]
-strategy = "contrarian"
-[funds.params]
-
-# Commitment — cftc momentum_threshold
-[[funds]]
-name = "Commitment"
-symbol = "CMIT"
-vault = "0xE9B82AFce214A4452d1951fB22FcA91efCeFf9cD"
-sources = ["cftc"]
-strategy = "momentum_threshold"
-[funds.params]
-
-# ── courtlistener (added 2026-04-18) ──
-
-# Docket — courtlistener momentum
-[[funds]]
-name = "Docket"
-symbol = "DKCT"
-vault = "0x6c4AF64b3D91381027f9A86701520672B884b6a9"
-sources = ["courtlistener"]
+name = "Chaturbate 5"
+symbol = "CHATUR5"
+vault = "0xa7Dc160DbA4c30aC0C25b6BD7eFd9Da085944677"
+sources = ["chaturbate"]
 strategy = "momentum"
 [funds.params]
 
-# Verdict — courtlistener contrarian
 [[funds]]
-name = "Verdict"
-symbol = "VRDT"
-vault = "0xC8d524312bC5370dBb4188dC473f90Cb739A0d2C"
-sources = ["courtlistener"]
-strategy = "contrarian"
-[funds.params]
-
-# Subpoena — courtlistener momentum_threshold
-[[funds]]
-name = "Subpoena"
-symbol = "SBPN"
-vault = "0x2d315E5599C83D513aB607588379EBA021a71F41"
-sources = ["courtlistener"]
-strategy = "momentum_threshold"
-[funds.params]
-
-# ── github (added 2026-04-18) ──
-
-# Trending — github momentum
-[[funds]]
-name = "Trending"
-symbol = "TRND"
-vault = "0xf2c4Cd5f6268428E557fB7d368e6Aef1833aFeD4"
-sources = ["github"]
+name = "Citybikes 5"
+symbol = "CITYBI5"
+vault = "0xE4cA32966014b543E5e7Cb5D7AF1d7be92B10068"
+sources = ["citybikes"]
 strategy = "momentum"
 [funds.params]
 
-# Burnout — github contrarian
 [[funds]]
-name = "Burnout"
-symbol = "BRNT"
-vault = "0x67b1f011d73C58984731471f76375d2B8705Bc29"
-sources = ["github"]
-strategy = "contrarian"
-[funds.params]
-
-# Stargazer — github bullish
-[[funds]]
-name = "Stargazer"
-symbol = "STAR"
-vault = "0xC604cecad9946bC4F26b4b94f0D05a709dA48fbb"
-sources = ["github"]
-strategy = "bullish"
-[funds.params]
-
-# ── npm (added 2026-04-18) ──
-
-# Adoption — npm momentum
-[[funds]]
-name = "Adoption"
-symbol = "ADPT"
-vault = "0xf2AbB95d4F538F4001BF94255a9c4C0fFEE247f1"
-sources = ["npm"]
+name = "Cloudflare 5"
+symbol = "CLOUDF5"
+vault = "0xD2B83B27c15a5644d5023Bc0286c5b4Ead446510"
+sources = ["cloudflare"]
 strategy = "momentum"
 [funds.params]
 
-# Deprecation — npm contrarian
 [[funds]]
-name = "Deprecation"
-symbol = "DPRC"
-vault = "0x61608a269Be6fb9581023a96540143DAD5A8ba9C"
-sources = ["npm"]
-strategy = "contrarian"
-[funds.params]
-
-# Install — npm bullish
-[[funds]]
-name = "Install"
-symbol = "INST"
-vault = "0xB2a03923383cCf350E9C1C19FF0f36F442959C75"
-sources = ["npm"]
-strategy = "bullish"
-[funds.params]
-
-# ── pypi (added 2026-04-18) ──
-
-# Import — pypi momentum
-[[funds]]
-name = "Import"
-symbol = "IMPT"
-vault = "0xF762d39695BC1907C47E748B9c1E2291B53a5394"
-sources = ["pypi"]
+name = "Congress 5"
+symbol = "CONGRE5"
+vault = "0x90C5c0c1eB4Cb92e2d01aA48C9918537876C146E"
+sources = ["congress"]
 strategy = "momentum"
 [funds.params]
 
-# Unmaintained — pypi contrarian
 [[funds]]
-name = "Unmaintained"
-symbol = "UNMT"
-vault = "0x5F1Ae6f997499cA0Eb9C0000708E8347f38C7e71"
-sources = ["pypi"]
-strategy = "contrarian"
-[funds.params]
-
-# Pip — pypi bullish
-[[funds]]
-name = "Pip"
-symbol = "PPIP"
-vault = "0xbeacD97EBfb5d666728446d201b32F487C9705F3"
-sources = ["pypi"]
-strategy = "bullish"
-[funds.params]
-
-# ── crates_io (added 2026-04-18) ──
-
-# Oxidize — crates_io momentum
-[[funds]]
-name = "Oxidize"
-symbol = "OXDZ"
-vault = "0x0674595D6FEF7De6e5510e593A06e636F99cADa8"
-sources = ["crates_io"]
+name = "Crossref 5"
+symbol = "CROSSR5"
+vault = "0x9958601C2300B2921328bD87504F0193e540cC90"
+sources = ["crossref"]
 strategy = "momentum"
 [funds.params]
 
-# Borrow — crates_io contrarian
 [[funds]]
-name = "Borrow"
-symbol = "BORW"
-vault = "0x54Ee4a3a9E123cC24C9C5DcE183ED93711b7546E"
-sources = ["crates_io"]
-strategy = "contrarian"
-[funds.params]
-
-# Cargo — crates_io bullish
-[[funds]]
-name = "Cargo"
-symbol = "CRGO"
-vault = "0x526A7c78E46fbb8D4fb85a75B50F2A8329293F5E"
-sources = ["crates_io"]
-strategy = "bullish"
-[funds.params]
-
-# ── stackexchange (added 2026-04-18) ──
-
-# Overflow — stackexchange momentum
-[[funds]]
-name = "Overflow"
-symbol = "OFLW"
-vault = "0x495521bC2cFBd0381684f85F9FC1d0F4a07D3081"
-sources = ["stackexchange"]
+name = "Defi 5"
+symbol = "DEFI5"
+vault = "0x434e1aF90681e645E7902ec82cf1B13A1754e20c"
+sources = ["defi"]
 strategy = "momentum"
 [funds.params]
 
-# Answered — stackexchange contrarian
 [[funds]]
-name = "Answered"
-symbol = "ANSD"
-vault = "0x857E003a1Ed7279684f0d21e0F77AAEe3d978bac"
-sources = ["stackexchange"]
-strategy = "contrarian"
-[funds.params]
-
-# Unanswered — stackexchange bearish
-[[funds]]
-name = "Unanswered"
-symbol = "UNSR"
-vault = "0x9ADd3f5B1821B987dD3149f9845F64F567EE82d0"
-sources = ["stackexchange"]
-strategy = "bearish"
-[funds.params]
-
-# ── ioda (added 2026-04-18) ──
-
-# Resilience — ioda contrarian
-[[funds]]
-name = "Resilience"
-symbol = "RSLN"
-vault = "0xcf1aB578DBdbF099D57B996c61E68D3a4540cA32"
-sources = ["ioda"]
-strategy = "contrarian"
-[funds.params]
-
-# Blackout — ioda momentum
-[[funds]]
-name = "Blackout"
-symbol = "BLKO"
-vault = "0xaFAD9F3f728cAD7327409b3416C7b620D9ac03d8"
-sources = ["ioda"]
+name = "Earthquake 5"
+symbol = "EARTHQ5"
+vault = "0xD03B114d320772946B0d894E092E3c0Cd52be1C3"
+sources = ["earthquake"]
 strategy = "momentum"
 [funds.params]
 
-# Uptime — ioda bullish
 [[funds]]
-name = "Uptime"
-symbol = "UPTM"
-vault = "0xf81ad267c7a855eA8D35E61eE821f51b4836256f"
-sources = ["ioda"]
-strategy = "bullish"
-[funds.params]
-
-# ── openalex (added 2026-04-18) ──
-
-# Publish — openalex momentum
-[[funds]]
-name = "Publish"
-symbol = "PUBL"
-vault = "0xFa4763Eb0F31A69b13f98A9F618073310776619C"
-sources = ["openalex"]
+name = "Ecb 5"
+symbol = "ECB5"
+vault = "0xC8BCe79F58D516Cc3956Ce62d8D036D4CC758a10"
+sources = ["ecb"]
 strategy = "momentum"
 [funds.params]
 
-# Sabbatical — openalex contrarian
 [[funds]]
-name = "Sabbatical"
-symbol = "SABT"
-vault = "0xF427ed0df27a948995BBEb82A23ebC1C71a83D54"
-sources = ["openalex"]
-strategy = "contrarian"
-[funds.params]
-
-# Tenure — openalex bullish
-[[funds]]
-name = "Tenure"
-symbol = "TNRE"
-vault = "0x282dE35043A06546895BB0A059c80023a207d4Be"
-sources = ["openalex"]
-strategy = "bullish"
-[funds.params]
-
-# ── tmdb (added 2026-04-18) ──
-
-# Premiere — tmdb momentum
-[[funds]]
-name = "Premiere"
-symbol = "PREM"
-vault = "0xC0ff1D0A10d67958c87c3dee6228Be5f8E82B40B"
-sources = ["tmdb"]
+name = "Eia 5"
+symbol = "EIA5"
+vault = "0xDd2dE9ADE454bfd25AE4B6a73a3eAeBa87403Ad6"
+sources = ["eia"]
 strategy = "momentum"
 [funds.params]
 
-# Sequel — tmdb contrarian
 [[funds]]
-name = "Sequel"
-symbol = "SQEL"
-vault = "0x023aA3D6Bf1EFF5814D57Da4f12B993fab2D4BF2"
-sources = ["tmdb"]
-strategy = "contrarian"
-[funds.params]
-
-# Binge — tmdb bullish
-[[funds]]
-name = "Binge"
-symbol = "BNGE"
-vault = "0xf44594291b3F4FB10F584c0d76e8ed79Eb1003D0"
-sources = ["tmdb"]
-strategy = "bullish"
-[funds.params]
-
-# ── lastfm (added 2026-04-18) ──
-
-# Anthem — lastfm momentum
-[[funds]]
-name = "Anthem"
-symbol = "ANTM"
-vault = "0x91768e2530197A50Cd711Bf56e313E9487cc16aa"
-sources = ["lastfm"]
+name = "Finra_short_vol 5"
+symbol = "FINRA_5"
+vault = "0xa376E54168e93795acee019DC2A49660A9Ba1512"
+sources = ["finra_short_vol"]
 strategy = "momentum"
 [funds.params]
 
-# B-Side — lastfm contrarian
 [[funds]]
-name = "B-Side"
-symbol = "BSDE"
-vault = "0x4DaA0420957d72Bfc594e8c616d9d79e68138Eb3"
-sources = ["lastfm"]
-strategy = "contrarian"
-[funds.params]
-
-# Encore — lastfm bullish
-[[funds]]
-name = "Encore"
-symbol = "ENCR"
-vault = "0xa1829FB429736394B906974C84515BEfa41C1594"
-sources = ["lastfm"]
-strategy = "bullish"
-[funds.params]
-
-# ── reddit (added 2026-04-18) ──
-
-# Hivemind — reddit momentum
-[[funds]]
-name = "Hivemind"
-symbol = "HIVE"
-vault = "0x02158875902d0CC351B1a7999Ae2C7DB4E8ddCDE"
-sources = ["reddit"]
+name = "Fourchan 5"
+symbol = "FOURCH5"
+vault = "0xcF80D8443cfCc24ce48C9b70514B5592331AC0b7"
+sources = ["fourchan"]
 strategy = "momentum"
 [funds.params]
 
-# Downvote — reddit contrarian
 [[funds]]
-name = "Downvote"
-symbol = "DNVT"
-vault = "0x4E800C309a5BE5518BA3D5f14F4A86c777b268E7"
-sources = ["reddit"]
-strategy = "contrarian"
-[funds.params]
-
-# Upvote — reddit bullish
-[[funds]]
-name = "Upvote"
-symbol = "UPVT"
-vault = "0x5a474A9d54186a05A5B24f7C2Cd54c432f7B9A00"
-sources = ["reddit"]
-strategy = "bullish"
-[funds.params]
-
-# ── bgg (added 2026-04-18) ──
-
-# Hotness — bgg momentum
-[[funds]]
-name = "Hotness"
-symbol = "HOTS"
-vault = "0x55595b02280A6CCaC116a68433168a40C482Ff2e"
-sources = ["bgg"]
+name = "Gtfs_transit 5"
+symbol = "GTFS_T5"
+vault = "0xC9b82B9f5Bc9A39d4686d649BBb3B0F69c2B8b98"
+sources = ["gtfs_transit"]
 strategy = "momentum"
 [funds.params]
 
-# Shelf Life — bgg contrarian
 [[funds]]
-name = "Shelf Life"
-symbol = "SHLF"
-vault = "0x0ee4B00C9CDCffE0B4066d8191F9A115709F2861"
-sources = ["bgg"]
-strategy = "contrarian"
-[funds.params]
-
-# Tabletop — bgg bullish
-[[funds]]
-name = "Tabletop"
-symbol = "TABL"
-vault = "0x1C1957a295D861a63AD64c4Ee94Cd1A02Dda0F64"
-sources = ["bgg"]
-strategy = "bullish"
-[funds.params]
-
-# ── pandascore (added 2026-04-18) ──
-
-# Arena — pandascore home_field
-[[funds]]
-name = "Arena"
-symbol = "ARNA"
-vault = "0x0C02C3A67f157F6dd86F1320da22Cd2BC38Ddf26"
-sources = ["pandascore"]
-strategy = "home_field"
-[funds.params]
-
-# Clutch — pandascore momentum
-[[funds]]
-name = "Clutch"
-symbol = "CLCH"
-vault = "0x3D2b2a7B6e4b69705eA00F3586CD78447e416EA7"
-sources = ["pandascore"]
+name = "Hackernews 5"
+symbol = "HACKER5"
+vault = "0xEC1659B2c7132D5a81FA710a8DfD904a0F63Fc1B"
+sources = ["hackernews"]
 strategy = "momentum"
 [funds.params]
 
-# Tilt — pandascore contrarian
 [[funds]]
-name = "Tilt"
-symbol = "TILT"
-vault = "0x84C9Ea59225652405d69cB868c0490f208178bFd"
-sources = ["pandascore"]
-strategy = "contrarian"
-[funds.params]
-
-# ── volcano (added 2026-04-18) ──
-
-# Magma — volcano momentum
-[[funds]]
-name = "Magma"
-symbol = "MGMA"
-vault = "0xCEde5Aadf410b1b88Eac120bC73Ea56Ac698f08e"
-sources = ["volcano"]
+name = "Iss 5"
+symbol = "ISS5"
+vault = "0xffDC71B825C8C50aa9CaED2CE97efB3780B89A53"
+sources = ["iss"]
 strategy = "momentum"
 [funds.params]
 
-# Caldera — volcano contrarian
 [[funds]]
-name = "Caldera"
-symbol = "CLDR"
-vault = "0x4bf5E7835706B2B7b4B21E0E67dcFEfd45C0918A"
-sources = ["volcano"]
-strategy = "contrarian"
-[funds.params]
-
-# Plume — volcano momentum_threshold
-[[funds]]
-name = "Plume"
-symbol = "PLUM"
-vault = "0xeC770fFBD261443DD778b724C4D7C93230a2A380"
-sources = ["volcano"]
-strategy = "momentum_threshold"
-[funds.params]
-
-# ── nrc_nuclear (added 2026-04-18) ──
-
-# Reactor — nrc_nuclear momentum
-[[funds]]
-name = "Reactor"
-symbol = "RCTO"
-vault = "0x29edc87546a074C11bf4264C2F81c749f921c834"
-sources = ["nrc_nuclear"]
+name = "Mil_aircraft 5"
+symbol = "MIL_AI5"
+vault = "0x9f2CE11fFFb4B69774C42B590D2d5e7e65b4fFAF"
+sources = ["mil_aircraft"]
 strategy = "momentum"
 [funds.params]
 
-# Cooldown — nrc_nuclear contrarian
 [[funds]]
-name = "Cooldown"
-symbol = "COOL"
-vault = "0x5Af064DAa7F8CF11FD88e4d88563a33d1105637c"
-sources = ["nrc_nuclear"]
-strategy = "contrarian"
-[funds.params]
-
-# Fission — nrc_nuclear bullish
-[[funds]]
-name = "Fission"
-symbol = "FISN"
-vault = "0x5d58C8c72bc8894FD49218FDc9F20a7EC7d55672"
-sources = ["nrc_nuclear"]
-strategy = "bullish"
-[funds.params]
-
-# ── epidemic (added 2026-04-18) ──
-
-# Contagion — epidemic momentum
-[[funds]]
-name = "Contagion"
-symbol = "CTGN"
-vault = "0x644397B74D7f6CB3bcf291786FA0E7F74603467e"
-sources = ["epidemic"]
+name = "Mta_subway 5"
+symbol = "MTA_SU5"
+vault = "0xbd4d7Ce7A2ceE4cD69e064779Ad730182e48B6A5"
+sources = ["mta_subway"]
 strategy = "momentum"
 [funds.params]
 
-# Remission — epidemic contrarian
 [[funds]]
-name = "Remission"
-symbol = "RMSN"
-vault = "0xb96e50D09c84fc8707c70820089F196e0a96845A"
-sources = ["epidemic"]
-strategy = "contrarian"
-[funds.params]
-
-# Vaccine — epidemic bearish
-[[funds]]
-name = "Vaccine"
-symbol = "VCNE"
-vault = "0x376e1562084891ca48D1BD73FA0Cd9D92a8542e9"
-sources = ["epidemic"]
-strategy = "bearish"
-[funds.params]
-
-# ── power_outages (added 2026-04-18) ──
-
-# Brownout — power_outages momentum
-[[funds]]
-name = "Brownout"
-symbol = "BRWN"
-vault = "0x1bc6D665Bf4a8F2c20199cA0f85578FABF19Ff1D"
-sources = ["power_outages"]
+name = "Ndbc 4"
+symbol = "NDBC4"
+vault = "0xc8D0daE8654a58283083Cd15AE861192a073E676"
+sources = ["ndbc"]
 strategy = "momentum"
 [funds.params]
 
-# Restore — power_outages contrarian
 [[funds]]
-name = "Restore"
-symbol = "RSTR"
-vault = "0x068cF9BA8E150D2E97762B94a497e63CCC539631"
-sources = ["power_outages"]
-strategy = "contrarian"
-[funds.params]
-
-# Surge Protect — power_outages momentum_threshold
-[[funds]]
-name = "Surge Protect"
-symbol = "SPRT"
-vault = "0x42E05E5f9EFeDc319Aa6e1A407E2d4233798FfDf"
-sources = ["power_outages"]
-strategy = "momentum_threshold"
-[funds.params]
-
-# ── flights (added 2026-04-18) ──
-
-# Holding — flights momentum
-[[funds]]
-name = "Holding"
-symbol = "HOLD"
-vault = "0xde6d19a931BCfB9289F1D8454f6d78e4D9D90e5a"
-sources = ["flights"]
+name = "Ndbc 5"
+symbol = "NDBC5"
+vault = "0x9DdA38cF5f44EBece8526eF021776B689A3ED33e"
+sources = ["ndbc"]
 strategy = "momentum"
 [funds.params]
 
-# Tailwind — flights contrarian
 [[funds]]
-name = "Tailwind"
-symbol = "TAIL"
-vault = "0x395f317541616347Fe62edb6a720da6c7C5fEDa4"
-sources = ["flights"]
-strategy = "contrarian"
-[funds.params]
-
-# Liftoff — flights bullish
-[[funds]]
-name = "Liftoff"
-symbol = "LIFT"
-vault = "0x740010FA579E8E7f61D8f3af2A187422D558b264"
-sources = ["flights"]
-strategy = "bullish"
-[funds.params]
-
-# ── tomtom_traffic (added 2026-04-18) ──
-
-# Rush Hour — tomtom_traffic momentum
-[[funds]]
-name = "Rush Hour"
-symbol = "RSHH"
-vault = "0xa8BA9397413b95aEb0c321209717Be1e14BbbD6A"
-sources = ["tomtom_traffic"]
+name = "Noaa_met 4"
+symbol = "NOAA_M4"
+vault = "0xe42B6971bF6C52Ddbb52ccB889d7cd892Bd9f8cd"
+sources = ["noaa_met"]
 strategy = "momentum"
 [funds.params]
 
-# Clearway — tomtom_traffic contrarian
 [[funds]]
-name = "Clearway"
-symbol = "CLWY"
-vault = "0x94E3e24F77e165339AD80963B2156e024EA5B17F"
-sources = ["tomtom_traffic"]
-strategy = "contrarian"
-[funds.params]
-
-# Bottleneck — tomtom_traffic momentum_threshold
-[[funds]]
-name = "Bottleneck"
-symbol = "BTNK"
-vault = "0x8666DA5276Bf39FDE7900914B7597d7b98e16d47"
-sources = ["tomtom_traffic"]
-strategy = "momentum_threshold"
-[funds.params]
-
-# ── tomtom_evcharge (added 2026-04-18) ──
-
-# Charger — tomtom_evcharge momentum
-[[funds]]
-name = "Charger"
-symbol = "CHRG"
-vault = "0xcB424c75C8bbef67E0859F7C185963a95B6d690C"
-sources = ["tomtom_evcharge"]
+name = "Noaa_met 5"
+symbol = "NOAA_M5"
+vault = "0x4Cd57152544b338E876068D2068BbB9A78caA580"
+sources = ["noaa_met"]
 strategy = "momentum"
 [funds.params]
 
-# Topoff — tomtom_evcharge contrarian
 [[funds]]
-name = "Topoff"
-symbol = "TPOF"
-vault = "0xaF0609bAE83FA8d7104aF901Ff40a825619e5E1F"
-sources = ["tomtom_evcharge"]
-strategy = "contrarian"
-[funds.params]
-
-# Range — tomtom_evcharge bullish
-[[funds]]
-name = "Range"
-symbol = "RNGE"
-vault = "0x75Fb03B533e45D953a4E58452794e91Bf6e286f4"
-sources = ["tomtom_evcharge"]
-strategy = "bullish"
-[funds.params]
-
-# ── cbp_border (added 2026-04-18) ──
-
-# Crossing — cbp_border momentum
-[[funds]]
-name = "Crossing"
-symbol = "XING"
-vault = "0xf44CaBeF6C6D315bd0a880CC59C8478d89B95d9D"
-sources = ["cbp_border"]
+name = "Noaa_tides 4"
+symbol = "NOAA_T4"
+vault = "0x7F6E2D44377CdFD1e390CDC22c8D13c588d77338"
+sources = ["noaa_tides"]
 strategy = "momentum"
 [funds.params]
 
-# Customs — cbp_border contrarian
 [[funds]]
-name = "Customs"
-symbol = "CSTM"
-vault = "0xb6bbd4F769F72c7192495Ac92394E39Bf4e69279"
-sources = ["cbp_border"]
-strategy = "contrarian"
-[funds.params]
-
-# Checkpoint — cbp_border momentum_threshold
-[[funds]]
-name = "Checkpoint"
-symbol = "CHKP"
-vault = "0xB8b6e11fc1A31ef77103E0ea726A626aA918Ba9b"
-sources = ["cbp_border"]
-strategy = "momentum_threshold"
-[funds.params]
-
-# ── faa_delays (added 2026-04-18) ──
-
-# Grounded — faa_delays momentum
-[[funds]]
-name = "Grounded"
-symbol = "GRND"
-vault = "0x55ef18fBc5fda5A618f70Dd146800e70581E34d9"
-sources = ["faa_delays"]
+name = "Noaa_tides 5"
+symbol = "NOAA_T5"
+vault = "0x47A37d06BAb59F8f3243F650921b4f8D8f7aA191"
+sources = ["noaa_tides"]
 strategy = "momentum"
 [funds.params]
 
-# Cleared — faa_delays contrarian
 [[funds]]
-name = "Cleared"
-symbol = "CLRD"
-vault = "0x233D09E91709aC147e1eD2F38c4B379cda74e348"
-sources = ["faa_delays"]
-strategy = "contrarian"
-[funds.params]
-
-# Turbulence — faa_delays momentum_threshold
-[[funds]]
-name = "Turbulence"
-symbol = "TRBL"
-vault = "0x42fEdC24a74b8Ac44596dB3b30b97f97B8f0BDa8"
-sources = ["faa_delays"]
-strategy = "momentum_threshold"
-[funds.params]
-
-# ── db_trains (added 2026-04-18) ──
-
-# Verspatung — db_trains momentum
-[[funds]]
-name = "Verspatung"
-symbol = "VSPT"
-vault = "0x219676c8322BDa7a198598867644D4938C499474"
-sources = ["db_trains"]
+name = "Nwps 4"
+symbol = "NWPS4"
+vault = "0x5ba8061E357A54fb49C8F6a956D6559F3E1760b0"
+sources = ["nwps"]
 strategy = "momentum"
 [funds.params]
 
-# Punktlich — db_trains contrarian
 [[funds]]
-name = "Punktlich"
-symbol = "PNKT"
-vault = "0xC4C9ec7a662DF963573fC63Bd4034ffB4FC0e2a9"
-sources = ["db_trains"]
-strategy = "contrarian"
-[funds.params]
-
-# Gleis — db_trains bearish
-[[funds]]
-name = "Gleis"
-symbol = "GLIS"
-vault = "0xb854fd33Fe8188D293816D29DEb23a07Df8998ca"
-sources = ["db_trains"]
-strategy = "bearish"
-[funds.params]
-
-# ── paris_metro (added 2026-04-18) ──
-
-# Bastille — paris_metro momentum
-[[funds]]
-name = "Bastille"
-symbol = "BSTL"
-vault = "0xdbCBd8c8Abdc96B32a62766Cf87572a4383918EB"
-sources = ["paris_metro"]
+name = "Nwps 5"
+symbol = "NWPS5"
+vault = "0xDFE49d6904e243aF0649DE162B06D93Cc06FeBaa"
+sources = ["nwps"]
 strategy = "momentum"
 [funds.params]
 
-# Detour — paris_metro contrarian
 [[funds]]
-name = "Detour"
-symbol = "DTUR"
-vault = "0x7E5dcC697b55168295fFE41a14f3b314DB5f14b7"
-sources = ["paris_metro"]
-strategy = "contrarian"
-[funds.params]
-
-# Greve — paris_metro momentum_threshold
-[[funds]]
-name = "Greve"
-symbol = "GREV"
-vault = "0x16d54a4A5c8127AE9A8ca91D3134D650A30B1532"
-sources = ["paris_metro"]
-strategy = "momentum_threshold"
-[funds.params]
-
-# ── ryanair (added 2026-04-18) ──
-
-# Budget — ryanair momentum
-[[funds]]
-name = "Budget"
-symbol = "BDGT"
-vault = "0xCC7E349c47BB2F21977bEe7CA4981bcBf67bC113"
-sources = ["ryanair"]
+name = "Parking 5"
+symbol = "PARKIN5"
+vault = "0x2eC053AfDcc5F12CBe937FC696bB83c86d3719f4"
+sources = ["parking"]
 strategy = "momentum"
 [funds.params]
 
-# Standby — ryanair contrarian
 [[funds]]
-name = "Standby"
-symbol = "STBY"
-vault = "0x0688D6dA102265175F5328FB752CDf76e85Bcd57"
-sources = ["ryanair"]
-strategy = "contrarian"
-[funds.params]
-
-# Overhead — ryanair bearish
-[[funds]]
-name = "Overhead"
-symbol = "OVHD"
-vault = "0x590D423f96C3016d325Aa2985F1f7b3BCEd7C6B9"
-sources = ["ryanair"]
-strategy = "bearish"
-[funds.params]
-
-# ── tfl_tube (added 2026-04-18) ──
-
-# Mind Gap — tfl_tube momentum
-[[funds]]
-name = "Mind Gap"
-symbol = "MGAP"
-vault = "0x4a08b6d929c09F267E3E76CC114b57F9830c3019"
-sources = ["tfl_tube"]
+name = "Polymarket 5"
+symbol = "POLYMA5"
+vault = "0xA183fA55E6cf7fC99D982f4f1CF2A4A78F8eC4BF"
+sources = ["polymarket"]
 strategy = "momentum"
 [funds.params]
 
-# Oyster — tfl_tube contrarian
 [[funds]]
-name = "Oyster"
-symbol = "OYTR"
-vault = "0x93041D5455a6E40E0A65BdAD930A7BeBd3298e1D"
-sources = ["tfl_tube"]
-strategy = "contrarian"
-[funds.params]
-
-# Piccadilly — tfl_tube bearish
-[[funds]]
-name = "Piccadilly"
-symbol = "PICD"
-vault = "0x3005835E973b4dc3fe357CECAe98a7cc02977654"
-sources = ["tfl_tube"]
-strategy = "bearish"
-[funds.params]
-
-# ── aisstream (added 2026-04-18) ──
-
-# Convoy — aisstream momentum
-[[funds]]
-name = "Convoy"
-symbol = "CNVY"
-vault = "0x9B8dA94b802a805b1f02019e78E9666331c47c66"
-sources = ["aisstream"]
+name = "Pubmed 5"
+symbol = "PUBMED5"
+vault = "0x41EAe7fCB0779ee1335DE939195C6D0317Ba9998"
+sources = ["pubmed"]
 strategy = "momentum"
 [funds.params]
 
-# Anchorage — aisstream contrarian
 [[funds]]
-name = "Anchorage"
-symbol = "ANCH"
-vault = "0x556EB05d992bAFda31b057Feb5B3C655028aF38D"
-sources = ["aisstream"]
-strategy = "contrarian"
-[funds.params]
-
-# Passage — aisstream bullish
-[[funds]]
-name = "Passage"
-symbol = "PASS"
-vault = "0x8729a4276263F3bdEFE2a3C7Efe5Ca7a3B4584d0"
-sources = ["aisstream"]
-strategy = "bullish"
-[funds.params]
-
-# ── maritime (added 2026-04-18) ──
-
-# Berth — maritime momentum
-[[funds]]
-name = "Berth"
-symbol = "BRTH"
-vault = "0xaAf55508E1d2C457E656499f15393CB350DFF687"
-sources = ["maritime"]
+name = "Pumpfun 5"
+symbol = "PUMPFU5"
+vault = "0xFcC8377018014A93117B680043f7296795b7F2CA"
+sources = ["pumpfun"]
 strategy = "momentum"
 [funds.params]
 
-# Slack Tide — maritime contrarian
 [[funds]]
-name = "Slack Tide"
-symbol = "SLTD"
-vault = "0x64E98A08FE9c734012579757cF34bC685798f669"
-sources = ["maritime"]
-strategy = "contrarian"
-[funds.params]
-
-# Manifest — maritime bullish
-[[funds]]
-name = "Manifest"
-symbol = "MNFT"
-vault = "0xdd09a80d20431bF6a6Bf9f67B6625cA8ccd879B8"
-sources = ["maritime"]
-strategy = "bullish"
-[funds.params]
-
-# ── ebird (added 2026-04-18) ──
-
-# Migration — ebird momentum
-[[funds]]
-name = "Migration"
-symbol = "MIGR"
-vault = "0xBe89CfAf050dB2f8ac4794206a62601aBbE925c7"
-sources = ["ebird"]
+name = "Queue_times 4"
+symbol = "QUEUE_4"
+vault = "0xd0ace800Ad450BeE1aB051347704e9eD759BF8f6"
+sources = ["queue_times"]
 strategy = "momentum"
 [funds.params]
 
-# Dormancy — ebird contrarian
 [[funds]]
-name = "Dormancy"
-symbol = "DORM"
-vault = "0xC3Dbb84768d8E81b623cE90A367548E573225257"
-sources = ["ebird"]
-strategy = "contrarian"
-[funds.params]
-
-# Rookery — ebird bullish
-[[funds]]
-name = "Rookery"
-symbol = "ROOK"
-vault = "0xA69159a238d6F58A3bD66e55D342530E65A5a38A"
-sources = ["ebird"]
-strategy = "bullish"
-[funds.params]
-
-# ── movebank (added 2026-04-18) ──
-
-# Flyway — movebank momentum
-[[funds]]
-name = "Flyway"
-symbol = "FLWY"
-vault = "0x5Ebbf424c7451688f5eb232a10aAe107bB634454"
-sources = ["movebank"]
+name = "Queue_times 5"
+symbol = "QUEUE_5"
+vault = "0x168EDF0e8f64E7562e2caeAC81E7A8Aa5190639d"
+sources = ["queue_times"]
 strategy = "momentum"
 [funds.params]
 
-# Roost — movebank contrarian
 [[funds]]
-name = "Roost"
-symbol = "RSTP"
-vault = "0x6197E8e0e9E88B362Bac4E84D4E271058DC94858"
-sources = ["movebank"]
-strategy = "contrarian"
-[funds.params]
-
-# Telemetry — movebank momentum_threshold
-[[funds]]
-name = "Telemetry"
-symbol = "TLMT"
-vault = "0xFd5e8C11e88E450ED44407De6778BE2a866f9a94"
-sources = ["movebank"]
-strategy = "momentum_threshold"
-[funds.params]
-
-# ── shelter (added 2026-04-18) ──
-
-# Intake — shelter momentum
-[[funds]]
-name = "Intake"
-symbol = "INTK"
-vault = "0xA03FA99eE41D811bFFB6fc45D3052B70cB0c0B3a"
-sources = ["shelter"]
+name = "Rates 5"
+symbol = "RATES5"
+vault = "0x890750491f8C308F64Cf5b7AFA4854FE4f3F0957"
+sources = ["rates"]
 strategy = "momentum"
 [funds.params]
 
-# Adopted — shelter contrarian
 [[funds]]
-name = "Adopted"
-symbol = "ADOP"
-vault = "0xE735be1c4c8dC65c0C6F0979D263f8C7764Abd82"
-sources = ["shelter"]
-strategy = "contrarian"
-[funds.params]
-
-# Foster — shelter bearish
-[[funds]]
-name = "Foster"
-symbol = "FSTR"
-vault = "0x10a7Dd260E9c03341976750C42CBA4f285F98e71"
-sources = ["shelter"]
-strategy = "bearish"
-[funds.params]
-
-# ── boe (added 2026-04-18) ──
-
-# Sterling — boe momentum
-[[funds]]
-name = "Sterling"
-symbol = "STLG"
-vault = "0x99C7aFB4F111e2311B898fe7863DB3859223b695"
-sources = ["boe"]
+name = "Sec_13f 5"
+symbol = "SEC_135"
+vault = "0xb10c7228EE24BaF1AD9dE08cec77a0A0F1bDA64F"
+sources = ["sec_13f"]
 strategy = "momentum"
 [funds.params]
 
-# Threadneedle — boe mean_reversion
 [[funds]]
-name = "Threadneedle"
-symbol = "THRD"
-vault = "0xa2bBCa06F08262Bacf66F721415b13eF13199824"
-sources = ["boe"]
-strategy = "mean_reversion"
-[funds.params]
-
-# Gilt — boe regime
-[[funds]]
-name = "Gilt"
-symbol = "GILT"
-vault = "0xb4cC8FDB7ab2D3e52748633303a4C4BE575BCD65"
-sources = ["boe"]
-strategy = "regime"
-[funds.params]
-
-# ── lichess (added 2026-04-18) ──
-
-# Opening — lichess time_of_day
-[[funds]]
-name = "Opening"
-symbol = "OPNG"
-vault = "0x5688391CE620d206f89c34f024E61A6154F42Ce8"
-sources = ["lichess"]
-strategy = "time_of_day"
-[funds.params]
-
-# Endgame — lichess mean_reversion
-[[funds]]
-name = "Endgame"
-symbol = "ENDG"
-vault = "0xE61bBfAdfCf60A6FCf2Ad39ACFe930201caFdB49"
-sources = ["lichess"]
-strategy = "mean_reversion"
-[funds.params]
-
-# Blitz — lichess momentum
-[[funds]]
-name = "Blitz"
-symbol = "BLTZ"
-vault = "0x505e0C585C5c8F10Db7ACd8954202A7ef5D807B4"
-sources = ["lichess"]
+name = "Spaceweather 5"
+symbol = "SPACEW5"
+vault = "0x323a241bC0578aE90BeeB6fe2E55286114013b76"
+sources = ["spaceweather"]
 strategy = "momentum"
 [funds.params]
 
-# ── mcbroken (added 2026-04-18) ──
-
-# Brokenness — mcbroken regime
 [[funds]]
-name = "Brokenness"
-symbol = "BRKN"
-vault = "0xc65d8a6c70Bd402b461206787bf1D6ad7e7c0031"
-sources = ["mcbroken"]
-strategy = "regime"
-[funds.params]
-
-# Serve — mcbroken momentum_threshold
-[[funds]]
-name = "Serve"
-symbol = "SRVE"
-vault = "0x2547600C1CB160c8aF3d96F2DcF7D3b9c4019dCF"
-sources = ["mcbroken"]
-strategy = "momentum_threshold"
-[funds.params]
-
-# Sundae — mcbroken contrarian
-[[funds]]
-name = "Sundae"
-symbol = "SNDE"
-vault = "0xAA0Ab55b89846f42C87BD2FD2B3a22F0616Eae77"
-sources = ["mcbroken"]
-strategy = "contrarian"
-[funds.params]
-
-# ── nasdaq (added 2026-04-18) ──
-
-# Composite — nasdaq momentum
-[[funds]]
-name = "Composite"
-symbol = "CMPS"
-vault = "0xb712BE67270Dc065FEc77126739C3963610b5A6F"
-sources = ["nasdaq"]
+name = "Sports 5"
+symbol = "SPORTS5"
+vault = "0x54d178dd1724cBb91c15dB83A519Cc4036BE0BC1"
+sources = ["sports"]
 strategy = "momentum"
 [funds.params]
 
-# Listing — nasdaq cluster
 [[funds]]
-name = "Listing"
-symbol = "LSTG"
-vault = "0xb638646a26B6628a47fAB8761b381cA4C1Fb50DF"
-sources = ["nasdaq"]
-strategy = "cluster"
-[funds.params]
-
-# Delist — nasdaq bearish
-[[funds]]
-name = "Delist"
-symbol = "DLST"
-vault = "0x50f95D35AD703F5eD35659c6285F1C21DfbEeb85"
-sources = ["nasdaq"]
-strategy = "bearish"
-[funds.params]
-
-# ── nyc311 (added 2026-04-18) ──
-
-# Grievance — nyc311 cluster
-[[funds]]
-name = "Grievance"
-symbol = "GRVN"
-vault = "0x0E43c44Dc561c483F9275a8d31BB76F2938e1942"
-sources = ["nyc311"]
-strategy = "cluster"
-[funds.params]
-
-# Borough — nyc311 time_of_day
-[[funds]]
-name = "Borough"
-symbol = "BORO"
-vault = "0x9112Dc540CED90943A0E77b8c7c3a940970Df39D"
-sources = ["nyc311"]
-strategy = "time_of_day"
-[funds.params]
-
-# Dispatch — nyc311 mean_reversion
-[[funds]]
-name = "Dispatch"
-symbol = "DSPT"
-vault = "0x6Fa1195e37172559C63d8B11cbb30717913597C1"
-sources = ["nyc311"]
-strategy = "mean_reversion"
-[funds.params]
-
-# ── openmeteo (added 2026-04-18) ──
-
-# Isobar — openmeteo regime
-[[funds]]
-name = "Isobar"
-symbol = "ISBR"
-vault = "0x3CAE7b3fD3cEECA9E5c0a7c81fE0C9f3C83ea982"
-sources = ["openmeteo"]
-strategy = "regime"
-[funds.params]
-
-# Gradient — openmeteo momentum
-[[funds]]
-name = "Gradient"
-symbol = "GRAD"
-vault = "0x5CE647ef05A0C2336A114e08e2Ada43Baa2BAb00"
-sources = ["openmeteo"]
+name = "Steam 5"
+symbol = "STEAM5"
+vault = "0x3Bfd29ce1B1194DBdDcd8C8DA6A53707DC4f2Cd4"
+sources = ["steam"]
 strategy = "momentum"
 [funds.params]
 
-# Squall — openmeteo momentum_threshold
 [[funds]]
-name = "Squall"
-symbol = "SQLL"
-vault = "0xcc80ffCA91d7EaC98499466aD4c99e26E26eD299"
-sources = ["openmeteo"]
-strategy = "momentum_threshold"
-[funds.params]
-
-# ── tubes (added 2026-04-18) ──
-
-# Scroll — tubes momentum
-[[funds]]
-name = "Scroll"
-symbol = "SCRL"
-vault = "0xeD4b3C4dF01CeE213D83f43cE489295Dea76B551"
-sources = ["tubes"]
+name = "Twitch 5"
+symbol = "TWITCH5"
+vault = "0xc7F3345B2c68583f3B6c141F394d49ba8786903A"
+sources = ["twitch"]
 strategy = "momentum"
 [funds.params]
 
-# Rotation — tubes time_of_day
 [[funds]]
-name = "Rotation"
-symbol = "ROTN"
-vault = "0x172e6144A0DA9113f8c800A45284d24594899935"
-sources = ["tubes"]
-strategy = "time_of_day"
-[funds.params]
-
-# Archive — tubes mean_reversion
-[[funds]]
-name = "Archive"
-symbol = "ARCV"
-vault = "0x18c8b54F8212EeF7DA04b256eC2069401655f4dF"
-sources = ["tubes"]
-strategy = "mean_reversion"
-[funds.params]
-
-# ── crypto / stocks / esports — added 2026-05-07 ──
-
-# Crypto Fund 1 — momentum
-[[funds]]
-name = "Crypto Fund 1"
-symbol = "CRYPTO1"
-vault = "0x8A71a2e9363042396347355Ee3fc292A1e671853"
-sources = ["crypto"]
+name = "Usa_spending 5"
+symbol = "USA_SP5"
+vault = "0xe12a6bbE8C215964d209c3D04b5b26a3EFB43214"
+sources = ["usa_spending"]
 strategy = "momentum"
 [funds.params]
 
-# Crypto Fund 2 — contrarian
 [[funds]]
-name = "Crypto Fund 2"
-symbol = "CRYPTO2"
-vault = "0xCe7e94E315956A681FDee750eC31f279605C5d87"
-sources = ["crypto"]
-strategy = "contrarian"
-[funds.params]
-
-# Crypto Fund 3 — mean_reversion
-[[funds]]
-name = "Crypto Fund 3"
-symbol = "CRYPTO3"
-vault = "0x9FB7fbE1D33661D014B9E8b8Ad30F083f26c6974"
-sources = ["crypto"]
-strategy = "mean_reversion"
-[funds.params]
-
-# Stocks Fund 1 — momentum
-[[funds]]
-name = "Stocks Fund 1"
-symbol = "STOCKS1"
-vault = "0x507303923d5550a3Bdc5782dC35088D778Ca3a9c"
-sources = ["stocks"]
+name = "Usgs_water 5"
+symbol = "USGS_W5"
+vault = "0xB63107c8637a8A2166B94FfCa3C266FDA9B43891"
+sources = ["usgs_water"]
 strategy = "momentum"
 [funds.params]
 
-# Stocks Fund 2 — contrarian
 [[funds]]
-name = "Stocks Fund 2"
-symbol = "STOCKS2"
-vault = "0x96c89D128e97d954b22423daAf48328aF48058A1"
-sources = ["stocks"]
-strategy = "contrarian"
-[funds.params]
-
-# Stocks Fund 3 — time_of_day
-[[funds]]
-name = "Stocks Fund 3"
-symbol = "STOCKS3"
-vault = "0xf3e6E2C9CDcc56B55F36bf9D8af562372b37f501"
-sources = ["stocks"]
-strategy = "time_of_day"
-[funds.params]
-
-# Esports Fund 1 — momentum
-[[funds]]
-name = "Esports Fund 1"
-symbol = "ESPORTS1"
-vault = "0x392c14F4e1f1E879Aa062A7a7f2fFee94137255f"
-sources = ["esports"]
+name = "Weather 5"
+symbol = "WEATHE5"
+vault = "0x9cD427687Ae53f650c0b6ad74711569Dd17b72dd"
+sources = ["weather"]
 strategy = "momentum"
 [funds.params]
 
-# Esports Fund 2 — contrarian
 [[funds]]
-name = "Esports Fund 2"
-symbol = "ESPORTS2"
-vault = "0xBF076EFb4d2436DaBa087c677EC0685464ADc44a"
-sources = ["esports"]
-strategy = "contrarian"
+name = "Weather_alerts 5"
+symbol = "WEATHE5"
+vault = "0xE800f92b4FB3b0911BED913c1115764a35D63eeC"
+sources = ["weather_alerts"]
+strategy = "momentum"
 [funds.params]
 
-# Esports Fund 3 — home_field
 [[funds]]
-name = "Esports Fund 3"
-symbol = "ESPORTS3"
-vault = "0x155563f07EF1E94D6736DdC7DFCcAD201C803B1D"
-sources = ["esports"]
-strategy = "home_field"
+name = "Wildfire 5"
+symbol = "WILDFI5"
+vault = "0x00612Fe7F894090EeA70AC9A39e8a74c850cE3A5"
+sources = ["wildfire"]
+strategy = "momentum"
 [funds.params]
+
+[[funds]]
+name = "Worldbank 5"
+symbol = "WORLDB5"
+vault = "0xAe03FDf2B450305A99Dd52334b15eCe44B59ba83"
+sources = ["worldbank"]
+strategy = "momentum"
+[funds.params]
+
+[[funds]]
+name = "Zillow 5"
+symbol = "ZILLOW5"
+vault = "0x73034Ec4d493D02867a1410e3a576F519a79c69F"
+sources = ["zillow"]
+strategy = "momentum"
+[funds.params]
+
