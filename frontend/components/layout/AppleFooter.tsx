@@ -59,9 +59,7 @@ const COLUMNS: Col[] = [
 const BOTTOM_LINKS: { label: string; href: string; external?: boolean }[] = [
   { label: 'Privacy Policy', href: '/privacy' },
   { label: 'Terms of Use', href: '/terms' },
-  { label: 'Sales and Refunds', href: '/sales-refunds' },
   { label: 'Legal', href: '/legal-index' },
-  { label: 'Site Map', href: '/sitemap' },
 ]
 
 const linkBase: React.CSSProperties = {
