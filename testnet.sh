@@ -40,7 +40,7 @@ cd "$SCRIPT_DIR"
 # ── Configuration ────────────────────────────────────────────
 # L3 (Orbit)
 CHAIN_ID=111222333
-RPC_URL="http://159.195.79.153/"
+RPC_URL="${RPC_URL:-https://rpc.generalmarket.io/}"
 
 # Gas price (wei) — must exceed L3 base fee. Query: cast base-fee --rpc-url $RPC_URL
 GAS_PRICE=10000000000  # 10 gwei
