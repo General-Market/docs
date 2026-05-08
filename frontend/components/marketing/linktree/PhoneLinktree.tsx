@@ -161,7 +161,8 @@ function CameraRig({ distance }: { distance: number }) {
 type Tuning = {
   xo: number
   yo: number
-  zo: number
+  /** null = derive Z flush with the glass face from the mesh bounding box. */
+  zo: number | null
   debug: boolean
 }
 
@@ -229,16 +230,31 @@ function PhoneScene({
       box.getCenter(center)
       box.getSize(size)
       const htmlScale = (size.x * HTML_TRANSFORM_DIVISOR) / LINK_MENU_CSS_WIDTH
-      // iOS-only offsets, overridable via ?xo=&yo=&zo= so a real
-      // device can be tuned live. The defaults below are the last
-      // known-good values; URL params win.
+      // Camera sits at z = -distance and looks toward the origin, so the
+      // glass face of the screen mesh is at box.min.z. Putting the Html
+      // there (minus a 0.001 epsilon to avoid Z-fighting with the
+      // emissive map) keeps it locked to the screen during tilt — no
+      // parallax, no calibration. ?zo= overrides for live tuning.
+      const zFlush = (box.min.z - center.z) - 0.001
+      // X / Y still need iOS-only fudges — Safari's matrixWorld lands a
+      // fixed offset right + low vs every other browser. Z is geometric.
       const xOffset = isIOS ? tuning.xo : 0
       const yOffset = isIOS ? tuning.yo : 0
-      const zOffset = isIOS ? tuning.zo : -0.001
+      const zOffset = tuning.zo !== null ? tuning.zo : zFlush
       fit = {
         position: [center.x + xOffset, center.y + yOffset, center.z + zOffset],
         scale: htmlScale,
         target: [center.x, center.y, center.z],
+      }
+      if (tuning.debug && typeof console !== 'undefined') {
+        console.log('[linktree] screen mesh', {
+          centerZ: center.z.toFixed(4),
+          minZ: box.min.z.toFixed(4),
+          maxZ: box.max.z.toFixed(4),
+          sizeZ: size.z.toFixed(4),
+          zFlushOffset: zFlush.toFixed(4),
+          appliedZOffset: zOffset.toFixed(4),
+        })
       }
     } else {
       fit = { position: [0, 0, -0.001], scale: 0.178, target: [0, 0, 0] }
@@ -341,7 +357,7 @@ export function PhoneLinktree() {
   const leaving: LeaveRef = useRef(null)
   const [responsive, setResponsive] = useState<Responsive>(() => readResponsive())
   const [ready, setReady] = useState(false)
-  const [tuning, setTuning] = useState<Tuning>({ xo: 0.32, yo: 0.32, zo: 0, debug: false })
+  const [tuning, setTuning] = useState<Tuning>({ xo: 0.32, yo: 0.32, zo: null, debug: false })
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -349,10 +365,11 @@ export function PhoneLinktree() {
       const v = parseFloat(params.get(key) ?? '')
       return Number.isFinite(v) ? v : fallback
     }
+    const zoRaw = parseFloat(params.get('zo') ?? '')
     setTuning({
       xo: num('xo', 0.32),
       yo: num('yo', 0.32),
-      zo: num('zo', 0),
+      zo: Number.isFinite(zoRaw) ? zoRaw : null,
       debug: params.get('debug') === '1',
     })
   }, [])
@@ -552,11 +569,12 @@ export function PhoneLinktree() {
           <br />
           yo = {tuning.yo}
           <br />
-          zo = {tuning.zo}
+          zo = {tuning.zo === null ? 'auto (geometric flush)' : tuning.zo}
           <br />
           <span style={{ opacity: 0.7 }}>
             Red dot = screen-mesh centre. Tune via{' '}
-            <code>?xo=&yo=&zo=&debug=1</code>
+            <code>?xo=&yo=&zo=&debug=1</code>. Console logs the computed
+            zFlushOffset.
           </span>
         </div>
       )}
