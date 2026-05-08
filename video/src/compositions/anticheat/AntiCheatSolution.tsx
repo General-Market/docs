@@ -83,32 +83,26 @@ const Headline: React.FC = () => {
         <div
           style={{
             display: "flex",
+            flexDirection: "column",
             alignItems: "center",
-            gap: 26,
+            gap: 14,
             padding: "60px 90px",
             background: "transparent",
             transform: `scale(${scale})`,
             transformOrigin: "center center",
           }}
         >
-          <img
-            src={staticFile("gm-logo.svg")}
-            alt=""
-            style={{
-              width: 130,
-              height: 130,
-              flexShrink: 0,
-              filter: "drop-shadow(0 8px 28px rgba(0, 82, 255, 0.30))",
-            }}
-          />
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-start",
-              lineHeight: 0.95,
-            }}
-          >
+          <div style={{ display: "flex", alignItems: "center", gap: 26 }}>
+            <img
+              src={staticFile("gm-logo.svg")}
+              alt=""
+              style={{
+                width: 130,
+                height: 130,
+                flexShrink: 0,
+                filter: "drop-shadow(0 8px 28px rgba(0, 82, 255, 0.30))",
+              }}
+            />
             <span
               style={{
                 fontFamily: font,
@@ -116,25 +110,26 @@ const Headline: React.FC = () => {
                 fontWeight: 800,
                 letterSpacing: "-0.05em",
                 color: colors.fg,
+                lineHeight: 0.95,
                 textShadow: "0 8px 28px rgba(0, 82, 255, 0.30)",
               }}
             >
               General
             </span>
-            <span
-              style={{
-                fontFamily: font,
-                fontSize: 56,
-                fontWeight: 700,
-                letterSpacing: "-0.025em",
-                color: colors.accent,
-                marginTop: 6,
-                textShadow: "0 4px 18px rgba(0, 82, 255, 0.35)",
-              }}
-            >
-              fights back
-            </span>
           </div>
+          <span
+            style={{
+              fontFamily: font,
+              fontSize: 140,
+              fontWeight: 800,
+              letterSpacing: "-0.05em",
+              color: colors.accent,
+              lineHeight: 0.95,
+              textShadow: "0 8px 28px rgba(0, 82, 255, 0.30)",
+            }}
+          >
+            fights back
+          </span>
         </div>
       </AbsoluteFill>
       <AbsoluteFill

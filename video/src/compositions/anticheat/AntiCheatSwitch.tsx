@@ -141,7 +141,7 @@ const Headline: React.FC<{ morphT: number }> = ({ morphT }) => {
       }}
     >
       <RevealChars
-        text="Same strategy."
+        text="Same strategy"
         startFrame={HEADLINE_AT}
         stagger={1.0}
         duration={11}

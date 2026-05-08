@@ -212,22 +212,10 @@ const Headline: React.FC = () => {
           opacity: interpolate(t2, [0, 1], [0, 1]),
         }}
       >
-        <span style={{ color: colors.dim, opacity: 0.7 }}>
-          <RevealChars
-            text=". . ."
-            startFrame={SECOND_LINE_AT}
-            stagger={3.0}
-            duration={10}
-            y={0}
-            blur={0}
-            scale={0.96}
-          />
-        </span>
-        <span>&nbsp;</span>
         <RevealChars
-          text="but"
-          startFrame={SECOND_LINE_AT + toFrames(0.18)}
-          stagger={1.4}
+          text="but with an"
+          startFrame={SECOND_LINE_AT}
+          stagger={1.0}
           duration={10}
           y={14}
           blur={4}
@@ -235,8 +223,8 @@ const Headline: React.FC = () => {
         <span>&nbsp;</span>
         <span style={{ color: colors.accent }}>
           <RevealChars
-            text="anti-cheat"
-            startFrame={SECOND_LINE_AT + toFrames(0.34)}
+            text="anticheat"
+            startFrame={SECOND_LINE_AT + toFrames(0.30)}
             stagger={1.6}
             duration={12}
             y={16}
