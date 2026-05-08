@@ -129,7 +129,15 @@ impl MarketDataSource for PypiMarketSource {
     }
 
     fn sync_interval(&self) -> Duration {
-        Duration::from_secs(3600) // 1 hour — 250 packages × 2.5s each = ~10 min fetch time
+        // pypistats `last_day` is a t-1 daily snapshot — refetching hourly means 23/24 ticks
+        // write the same value. Sync once per day. Re-uses fetched_at so the oracle stays alive.
+        Duration::from_secs(24 * 60 * 60)
+    }
+
+    fn always_record_price(&self) -> bool {
+        // Daily snapshot — even within the 24h window the value rarely changes.
+        // Drop unchanged rows to keep storage clean.
+        false
     }
 
     fn rate_limit_config(&self) -> RateLimitConfig {

@@ -297,14 +297,32 @@ impl MarketDataSource for DefiLlamaMarketSource {
                         if tvl <= 0.0 { continue; }
                         let asset_id = format!("protocol_{}", protocol.slug);
                         let subcategory = protocol.category.as_deref().unwrap_or("protocol").to_lowercase();
+                        let symbol = protocol
+                            .symbol
+                            .clone()
+                            .unwrap_or_else(|| protocol.slug.to_uppercase());
                         assets.push(AssetUpdate {
-                            asset_id,
-                            symbol: protocol.symbol.unwrap_or_else(|| protocol.slug.to_uppercase()),
-                            name: protocol.name,
+                            asset_id: asset_id.clone(),
+                            symbol: symbol.clone(),
+                            name: protocol.name.clone(),
                             category: Some("defi".to_string()),
                             metadata: serde_json::json!({
                                 "api_ref": format!("protocol:{}", protocol.slug),
                                 "subcategory": subcategory,
+                                "active": true,
+                            }),
+                        });
+
+                        // Companion asset: 24h TVL change %. Moves on its own,
+                        // independent of the slow TVL snapshot.
+                        assets.push(AssetUpdate {
+                            asset_id: format!("{}_change_24h", asset_id),
+                            symbol: format!("{}_24H", symbol),
+                            name: format!("{} 24h Change", protocol.name),
+                            category: Some("defi".to_string()),
+                            metadata: serde_json::json!({
+                                "api_ref": format!("protocol_change_24h:{}", protocol.slug),
+                                "subcategory": "tvl_change_24h",
                                 "active": true,
                             }),
                         });
@@ -360,7 +378,11 @@ impl MarketDataSource for DefiLlamaMarketSource {
             .collect();
         let protocol_ids: Vec<&String> = asset_ids
             .iter()
-            .filter(|id| id.starts_with("protocol_"))
+            .filter(|id| id.starts_with("protocol_") && !id.ends_with("_change_24h"))
+            .collect();
+        let protocol_change_ids: Vec<&String> = asset_ids
+            .iter()
+            .filter(|id| id.starts_with("protocol_") && id.ends_with("_change_24h"))
             .collect();
         let dex_24h_ids: Vec<&String> = asset_ids
             .iter()
@@ -400,12 +422,18 @@ impl MarketDataSource for DefiLlamaMarketSource {
             }
         }
 
-        // 2. Fetch protocol TVLs if needed
-        if !protocol_ids.is_empty() {
+        // 2. Fetch protocol TVLs if needed (also handles change_24h companion assets)
+        if !protocol_ids.is_empty() || !protocol_change_ids.is_empty() {
             match self.fetch_protocol_tvls().await {
                 Ok(protocols) => {
                     for protocol in protocols {
                         let asset_id = format!("protocol_{}", protocol.slug);
+                        let change_id = format!("{}_change_24h", asset_id);
+                        let symbol = protocol
+                            .symbol
+                            .clone()
+                            .unwrap_or_else(|| protocol.slug.to_uppercase());
+
                         if protocol_ids.contains(&&asset_id) {
                             if let Some(tvl) = protocol.tvl {
                                 let change_pct =
@@ -414,10 +442,8 @@ impl MarketDataSource for DefiLlamaMarketSource {
                                     protocol.mcap.and_then(|v| Decimal::try_from(v).ok());
 
                                 results.push(PriceUpdate {
-                                    asset_id,
-                                    symbol: protocol
-                                        .symbol
-                                        .unwrap_or_else(|| protocol.slug.to_uppercase()),
+                                    asset_id: asset_id.clone(),
+                                    symbol: symbol.clone(),
                                     value: Decimal::try_from(tvl).unwrap_or_default(),
                                     prev_close: None,
                                     change_pct,
@@ -425,6 +451,25 @@ impl MarketDataSource for DefiLlamaMarketSource {
                                     market_cap,
                                     fetched_at: now,
                                 });
+                            }
+                        }
+
+                        // Companion: emit change_1d as its own metric, so the
+                        // sync engine sees a moving series even when TVL is flat.
+                        if protocol_change_ids.contains(&&change_id) {
+                            if let Some(change_1d) = protocol.change_1d {
+                                if let Ok(value) = Decimal::try_from(change_1d) {
+                                    results.push(PriceUpdate {
+                                        asset_id: change_id,
+                                        symbol: format!("{}_24H", symbol),
+                                        value,
+                                        prev_close: None,
+                                        change_pct: None,
+                                        volume_24h: None,
+                                        market_cap: None,
+                                        fetched_at: now,
+                                    });
+                                }
                             }
                         }
                     }

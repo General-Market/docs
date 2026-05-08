@@ -36,6 +36,11 @@ const ASSET_JSON: &str = include_str!("../../../config/mta_subway.json");
 /// SubwayNow (goodservice.io) API endpoint -- returns all route statuses in one call
 const API_URL: &str = "https://api.subwaynow.app/routes";
 
+/// Synthetic asset id for fleet-wide disruption counter — number of lines
+/// not in "Good Service". Per-line severity sits at 0 most of the time;
+/// the aggregate moves whenever any line trips.
+const DISRUPTED_LINE_COUNT_ASSET_ID: &str = "mta_disrupted_line_count";
+
 // ============================================================================
 // API RESPONSE TYPES
 // ============================================================================
@@ -137,10 +142,29 @@ impl MarketDataSource for MtaSubwayMarketSource {
     }
 
     async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {
-        let assets = load_assets_from_json(ASSET_JSON)?;
+        let mut assets = load_assets_from_json(ASSET_JSON)?;
+
+        // Aggregate disruption counter — moves whenever any line is not in
+        // "Good Service". The per-line severities flatline at 0 most of the day.
+        assets.push(AssetUpdate {
+            asset_id: DISRUPTED_LINE_COUNT_ASSET_ID.to_string(),
+            symbol: "MTA/DISRUPTED_LINE_COUNT".to_string(),
+            name: "NYC Subway Disrupted Line Count".to_string(),
+            category: Some("transport".to_string()),
+            metadata: serde_json::json!({
+                "api_ref": "disrupted_line_count",
+                "subcategory": "subway",
+                "active": true,
+                "extra": {
+                    "metric": "disrupted_line_count",
+                    "definition": "Count of subway lines not in Good Service",
+                },
+            }),
+        });
+
         info!(
-            "MTA Subway fetch_assets: {} lines loaded from config",
-            assets.len()
+            "MTA Subway fetch_assets: {} lines loaded from config (+1 fleet aggregate)",
+            assets.len() - 1
         );
         Ok(assets)
     }
@@ -174,10 +198,37 @@ impl MarketDataSource for MtaSubwayMarketSource {
             response.timestamp
         );
 
+        // Compute the fleet-wide disruption count once across all known lines
+        // in the response. This is independent of which asset_ids the caller
+        // requested — the aggregate is over the universe, not the subset.
+        let fleet_disrupted: i64 = response
+            .routes
+            .values()
+            .filter(|r| {
+                let s = r.status.as_deref().unwrap_or("Good Service");
+                Self::status_to_severity(s) > Decimal::ZERO
+            })
+            .count() as i64;
+
         let mut results = Vec::with_capacity(asset_ids.len());
         let mut disrupted_count = 0u32;
 
         for asset_id in asset_ids {
+            // Aggregate metric short-circuit
+            if asset_id == DISRUPTED_LINE_COUNT_ASSET_ID {
+                results.push(PriceUpdate {
+                    asset_id: asset_id.clone(),
+                    symbol: "MTA/DISRUPTED_LINE_COUNT".to_string(),
+                    value: Decimal::from(fleet_disrupted),
+                    prev_close: None,
+                    change_pct: None,
+                    volume_24h: None,
+                    market_cap: None,
+                    fetched_at: now,
+                });
+                continue;
+            }
+
             let (line_ref, symbol) = match ref_map.get(asset_id) {
                 Some(pair) => pair,
                 None => {

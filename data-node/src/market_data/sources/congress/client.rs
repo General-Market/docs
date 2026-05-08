@@ -62,11 +62,25 @@ impl CongressMarketSource {
         Ok(Self { http, api_key })
     }
 
-    /// Fetch count for a metric
+    /// Fetch count for a metric over a rolling 7-day window.
+    ///
+    /// Session-cumulative counts flatlined for weeks between bursts. The
+    /// Congress.gov v3 API supports `fromDateTime` / `toDateTime` (ISO-8601,
+    /// `YYYY-MM-DDTHH:MM:SSZ`) on most list endpoints. Querying the last
+    /// 7 days produces a window that actually moves day-to-day.
     async fn fetch_metric(&self, endpoint_suffix: &str) -> Result<Option<i64>> {
+        let now = Utc::now();
+        let from = now - chrono::Duration::days(7);
+        let from_str = from.format("%Y-%m-%dT%H:%M:%SZ").to_string();
+        let to_str = now.format("%Y-%m-%dT%H:%M:%SZ").to_string();
+
+        // The api_ref may already contain a `?` (e.g. "bill?chamber=house"),
+        // in which case append params with `&`. Otherwise start the query.
+        let separator = if endpoint_suffix.contains('?') { '&' } else { '?' };
+
         let url = format!(
-            "{}/{}?api_key={}&limit=1",
-            CONGRESS_API_URL, endpoint_suffix, self.api_key
+            "{}/{}{}fromDateTime={}&toDateTime={}&api_key={}&limit=1",
+            CONGRESS_API_URL, endpoint_suffix, separator, from_str, to_str, self.api_key
         );
 
         let data: CongressResponse = match self.http.get_json(&url).await {

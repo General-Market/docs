@@ -113,8 +113,15 @@ impl MarketDataSource for VolcanoMarketSource {
     }
 
     async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {
-        let assets = load_assets_from_json(ASSET_JSON)?;
-        info!("Volcano fetch_assets: {} assets loaded from config", assets.len());
+        // The USGS /elevated endpoint only covers US volcanoes. Non-US entries (Etna,
+        // Fuji, Merapi, …) emit Normal=0 forever — a fixed signal is not a signal.
+        // Filter the static config to US-only by the "USA" tag in the asset name.
+        // When/if the Smithsonian GVP feed gets wired in, drop this filter.
+        let assets: Vec<AssetUpdate> = load_assets_from_json(ASSET_JSON)?
+            .into_iter()
+            .filter(|a| a.name.contains("USA"))
+            .collect();
+        info!("Volcano fetch_assets: {} US assets loaded from config", assets.len());
         Ok(assets)
     }
 

@@ -316,10 +316,11 @@ impl MarketDataSource for SecEdgarMarketSource {
     }
 
     fn always_record_price(&self) -> bool {
-        // 13F data is quarterly — values don't change between filings, but we
-        // need a fresh timestamped record on every sync to build price history
-        // and prove the collector is alive.
-        true
+        // 13F data is quarterly — values are identical for ~89 days between
+        // filings. Writing a duplicate row every sync bloats the table and
+        // teaches the oracle nothing. The sync engine's change-detection
+        // writes a new row only when a fresh accession changes the value.
+        false
     }
 
     fn rate_limit_config(&self) -> RateLimitConfig {

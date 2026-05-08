@@ -27,6 +27,12 @@ use crate::market_data::traits::{AssetUpdate, BatchStrategy, MarketDataSource, P
 /// NRC Power Reactor Status Report URL (last 365 days)
 const DATA_URL: &str = "https://www.nrc.gov/reading-rm/doc-collections/event-status/reactor-status/PowerReactorStatusForLast365Days.txt";
 
+/// Synthetic asset id for the fleet-wide outage counter — number of reactors
+/// whose latest power reading is below 100%. Per-reactor capacity factor
+/// pegs to 100 for 18-24 month stretches between refuels; this aggregate
+/// oscillates daily as units enter and leave the outage queue.
+const FLEET_OUTAGE_ASSET_ID: &str = "nrc_fleet_outage_count";
+
 // ============================================================================
 // SOURCE IMPLEMENTATION
 // ============================================================================
@@ -178,9 +184,27 @@ impl MarketDataSource for NrcNuclearMarketSource {
         // Sort for deterministic ordering
         assets.sort_by(|a, b| a.asset_id.cmp(&b.asset_id));
 
+        // Aggregate fleet-outage counter — the only NRC metric that moves
+        // every cycle. Per-reactor power flatlines at 100 between refuels.
+        assets.push(AssetUpdate {
+            asset_id: FLEET_OUTAGE_ASSET_ID.to_string(),
+            symbol: "NRC/FLEET_OUTAGE_COUNT".to_string(),
+            name: "US Nuclear Fleet Outage Count".to_string(),
+            category: Some("environment".to_string()),
+            metadata: serde_json::json!({
+                "api_ref": "fleet_outage_count",
+                "subcategory": "nuclear",
+                "active": true,
+                "extra": {
+                    "metric": "fleet_outage_count",
+                    "definition": "Count of reactors with latest capacity factor < 100%",
+                },
+            }),
+        });
+
         info!(
-            "NRC Nuclear fetch_assets: {} reactor units discovered",
-            assets.len()
+            "NRC Nuclear fetch_assets: {} reactor units discovered (+1 fleet aggregate)",
+            assets.len() - 1
         );
         Ok(assets)
     }
@@ -209,10 +233,34 @@ impl MarketDataSource for NrcNuclearMarketSource {
         // Build a set for fast lookup
         let requested: std::collections::HashSet<&String> = asset_ids.iter().collect();
 
+        // Fleet outage count: how many reactors are below 100% in the latest
+        // snapshot. The full-power threshold is the canonical "in service"
+        // line for NRC reporting; anything below counts as outage or
+        // load-following. This number wakes up daily.
+        let fleet_outage_count: i64 = latest
+            .values()
+            .filter(|p| **p < Decimal::from(100))
+            .count() as i64;
+
         let mut results = Vec::with_capacity(asset_ids.len());
 
         for asset_id in asset_ids {
             if !requested.contains(asset_id) {
+                continue;
+            }
+
+            // Aggregate metric short-circuit
+            if asset_id == FLEET_OUTAGE_ASSET_ID {
+                results.push(PriceUpdate {
+                    asset_id: asset_id.clone(),
+                    symbol: "NRC/FLEET_OUTAGE_COUNT".to_string(),
+                    value: Decimal::from(fleet_outage_count),
+                    prev_close: None,
+                    change_pct: None,
+                    volume_24h: None,
+                    market_cap: None,
+                    fetched_at: now,
+                });
                 continue;
             }
 

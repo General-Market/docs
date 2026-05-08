@@ -6,6 +6,20 @@
 //! API: https://api.cloudflare.com/client/v4/radar/
 //! Auth: CLOUDFLARE_RADAR_TOKEN (free account, Radar read permission)
 //! Rate limit: 1,200 req/5min = 2,400/10min, 85% = 2,040
+//!
+//! TODO(dead-signal): The HTTP adoption percentages tracked here (IPv4/IPv6,
+//! TLS 1.2/1.3, HTTP/1.x/2/3, etc.) move ~0.01% per month — effectively
+//! flat across a sync interval. Add a dynamic metric. Candidates, all on
+//! the existing token's permissions:
+//!   - `/attacks/layer3/timeseries_groups/industry` — DDoS count per cycle
+//!   - `/attacks/layer3/top/locations/origin` — top attack origins (rank shifts)
+//!   - `/attacks/layer7/summary` — daily L7 attack volume
+//!   - `/quality/iqi/timeseries` — IQI delta per region
+//!   - `/email/security/summary/threat_categories` — phish/malware share
+//! Each returns counts or volumes that oscillate every cycle. Do NOT
+//! remove the adoption metrics in the same patch — keep both, let the
+//! aggregate ride on the dynamic side. See nrc_nuclear and mta_subway
+//! for the additive aggregate pattern.
 
 use anyhow::Result;
 use chrono::Utc;

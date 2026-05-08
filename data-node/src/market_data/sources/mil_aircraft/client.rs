@@ -494,6 +494,9 @@ impl MarketDataSource for MilAircraftMarketSource {
         // Fetch live aircraft states instead of relying on potentially stale cache.
         // This ensures every hourly asset sync picks up currently-broadcasting aircraft
         // rather than only those seen during the last fetch_prices() call.
+        // Aircraft that landed and stopped broadcasting are absent from `states`, so
+        // their assets aren't re-emitted here — the trait's natural deactivation flow
+        // handles them. No per-aircraft staleness gate needed.
         let states = match self.fetch_military_states().await {
             Ok(s) => {
                 // Also update the cache so fetch_prices has fresh data

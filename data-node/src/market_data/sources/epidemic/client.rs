@@ -132,6 +132,12 @@ impl MarketDataSource for EpidemicMarketSource {
         for asset_id in asset_ids {
             if let Some(api_ref) = api_ref_map.get(asset_id.as_str()) {
                 if let Some((scope, metric)) = api_ref.split_once(':') {
+                    // The pandemic-era `recovered` field has been frozen for
+                    // most countries since disease.sh stopped tracking it.
+                    // Skip it entirely — it produces dead signal forever.
+                    if metric == "recovered" {
+                        continue;
+                    }
                     let symbol = format!("EPI/{}", scope.to_uppercase());
                     if scope == "global" {
                         global_metrics.push((asset_id.clone(), metric.to_string(), symbol));

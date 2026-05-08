@@ -1,13 +1,22 @@
 //! AIS Maritime vessel tracking client implementing MarketDataSource
 //!
-//! Tracks vessel counts across 25 global ports and shipping lanes using the
-//! Finnish Digitraffic AIS API (free, no auth, ~18k vessels).
+//! Tracks vessel counts using the Finnish Digitraffic AIS API.
+//!
+//! ## GEOGRAPHIC SCOPE LIMITATION
+//!
+//! Digitraffic only emits vessel positions for the Baltic Sea and Gulf of
+//! Finland. The 25-entry config retains worldwide ports and lanes for
+//! historical reasons, but bboxes outside the Baltic envelope count zero
+//! vessels forever — the API cannot see them.
+//!
+//! When `BALTIC_ONLY` is true (the only sane setting today), assets and
+//! prices are filtered at runtime to bboxes intersecting `BALTIC_BBOX`.
+//! Result: Bosphorus, Hormuz, Suez, LA, Singapore, etc. are silently
+//! dropped. To track non-Baltic regions, swap to a global AIS provider
+//! (AISStream, MarineTraffic, Spire) and remove this filter.
 //!
 //! Strategy: ONE call to the Digitraffic AIS locations endpoint fetches all
 //! vessel positions as GeoJSON, then counts per bounding box region in-memory.
-//!
-//! Each region is defined by a bounding box. The value for each asset is the
-//! count of vessels detected in that area.
 //!
 //! API: GET https://meri.digitraffic.fi/api/ais/v1/locations
 //! Auth: None (public API)
@@ -33,6 +42,17 @@ const ASSET_JSON: &str = include_str!("../../../config/maritime.json");
 
 /// Digitraffic AIS locations endpoint (returns all vessels as GeoJSON)
 const API_URL: &str = "https://meri.digitraffic.fi/api/ais/v1/locations";
+
+/// When true, drop any asset whose bbox does not intersect the Baltic envelope.
+/// The Digitraffic feed has zero coverage outside this area; tracking those
+/// regions just emits dead zeros. Flip to false only after switching to a
+/// global AIS provider.
+const BALTIC_ONLY: bool = true;
+
+/// Conservative envelope of Digitraffic AIS coverage: Baltic Sea, Gulf of
+/// Finland, Gulf of Bothnia, Kattegat, Skagerrak. Coordinates as
+/// (lon_min, lat_min, lon_max, lat_max).
+const BALTIC_BBOX: (f64, f64, f64, f64) = (8.0, 53.0, 32.0, 66.0);
 
 // ============================================================================
 // API RESPONSE TYPES (GeoJSON format from Digitraffic)
@@ -75,6 +95,27 @@ impl BBox {
     fn contains(&self, lat: f64, lon: f64) -> bool {
         lat >= self.lat_min && lat <= self.lat_max
             && lon >= self.lon_min && lon <= self.lon_max
+    }
+
+    /// True if this bbox overlaps the Baltic envelope (the only region
+    /// Digitraffic AIS actually covers).
+    fn intersects_baltic(&self) -> bool {
+        let (b_lon_min, b_lat_min, b_lon_max, b_lat_max) = BALTIC_BBOX;
+        self.lon_min <= b_lon_max
+            && self.lon_max >= b_lon_min
+            && self.lat_min <= b_lat_max
+            && self.lat_max >= b_lat_min
+    }
+}
+
+/// True if the bbox string parses and falls inside the Baltic envelope.
+fn bbox_in_coverage(bbox_str: &str) -> bool {
+    if !BALTIC_ONLY {
+        return true;
+    }
+    match MaritimeMarketSource::parse_bbox(bbox_str) {
+        Ok(b) => b.intersects_baltic(),
+        Err(_) => false,
     }
 }
 
@@ -159,8 +200,28 @@ impl MarketDataSource for MaritimeMarketSource {
     }
 
     async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {
-        let assets = load_assets_from_json(ASSET_JSON)?;
-        info!("Maritime fetch_assets: {} ports/lanes loaded", assets.len());
+        let all_entries: Vec<AssetEntry> = serde_json::from_str(ASSET_JSON)?;
+        let bbox_map: HashMap<String, String> = all_entries
+            .iter()
+            .map(|e| (e.asset_id.clone(), e.api_ref.clone()))
+            .collect();
+
+        let assets: Vec<AssetUpdate> = load_assets_from_json(ASSET_JSON)?
+            .into_iter()
+            .filter(|a| {
+                bbox_map
+                    .get(&a.asset_id)
+                    .map(|bbox| bbox_in_coverage(bbox))
+                    .unwrap_or(false)
+            })
+            .collect();
+
+        let total = bbox_map.len();
+        info!(
+            "Maritime fetch_assets: {}/{} ports/lanes inside Digitraffic Baltic coverage",
+            assets.len(),
+            total
+        );
         Ok(assets)
     }
 
@@ -221,6 +282,15 @@ impl MarketDataSource for MaritimeMarketSource {
                     continue;
                 }
             };
+
+            // Skip regions Digitraffic can't see. Emitting zeros there is a lie.
+            if !bbox_in_coverage(bbox_str) {
+                debug!(
+                    "Maritime: {} bbox outside Digitraffic Baltic coverage, skipping",
+                    asset_id
+                );
+                continue;
+            }
 
             let bbox = match Self::parse_bbox(bbox_str) {
                 Ok(b) => b,

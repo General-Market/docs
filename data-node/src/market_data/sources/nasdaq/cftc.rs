@@ -171,7 +171,10 @@ impl MarketDataSource for CftcMarketSource {
     }
 
     fn always_record_price(&self) -> bool {
-        true // CFTC data is weekly — always write a fresh timestamped record on each sync
+        // CFTC publishes once a week, on Friday. Six identical days a week
+        // bloat the table without informing anything. The sync engine's
+        // change-detection writes a new row only when a fresh report ships.
+        false
     }
 
     async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {

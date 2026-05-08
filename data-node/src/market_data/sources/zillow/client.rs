@@ -196,11 +196,10 @@ impl MarketDataSource for ZillowMarketSource {
     }
 
     fn always_record_price(&self) -> bool {
-        // Zillow CSV data is monthly — values don't change between monthly updates.
-        // Without this, the sync engine's change detection skips writing a price when
-        // the value matches the in-memory cache, leaving assets stuck at 1 row.
-        // Same pattern as BLS and SEC EDGAR.
-        true
+        // Zillow CSV data is monthly — daily checks rewrite the same value 30× per month.
+        // Drop unchanged rows. The sync engine still runs daily; the oracle stays alive
+        // through the eventual monthly delta. Identical-value rows were pure storage bloat.
+        false
     }
 
     async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {

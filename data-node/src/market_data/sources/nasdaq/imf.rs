@@ -132,7 +132,10 @@ impl MarketDataSource for ImfMarketSource {
     }
 
     fn always_record_price(&self) -> bool {
-        true // IMF WEO data is semi-annual — always write a fresh timestamped record
+        // IMF WEO releases twice a year. Writing duplicate rows for six months
+        // straight bloats the table without informing anything downstream.
+        // Let the sync engine dedupe — a new row appears only when WEO ships.
+        false
     }
 
     async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {

@@ -12,7 +12,7 @@
 //! Rate limit: 1 concurrent request per IP, very conservative (2 req/min)
 
 use anyhow::Result;
-use chrono::Utc;
+use chrono::{DateTime, NaiveDateTime, Utc};
 use md5;
 use rust_decimal::Decimal;
 use std::collections::{HashMap, HashSet};
@@ -46,6 +46,17 @@ const MIN_INDIVIDUALS_PER_STUDY: u64 = 1;
 
 /// GPS sensor type ID in Movebank
 const GPS_SENSOR_TYPE_ID: u64 = 653;
+
+/// Skip tags whose latest GPS event is older than this. Dead batteries
+/// otherwise pin their last known position into perpetuity.
+const MAX_TAG_AGE_SECS: i64 = 7 * 24 * 60 * 60;
+
+/// Parse a Movebank timestamp ("YYYY-MM-DD HH:MM:SS.SSS") into UTC.
+fn parse_movebank_ts(s: &str) -> Option<DateTime<Utc>> {
+    NaiveDateTime::parse_from_str(s.trim(), "%Y-%m-%d %H:%M:%S%.f")
+        .ok()
+        .map(|dt| DateTime::<Utc>::from_naive_utc_and_offset(dt, Utc))
+}
 
 // ============================================================================
 // CSV PARSING
@@ -361,7 +372,9 @@ impl MovebankMarketSource {
     }
 
     /// Fetch latest GPS events for all individuals in a study.
-    /// Returns a map of local_identifier -> (latitude, longitude).
+    /// Returns a map of local_identifier -> (latitude, longitude). Tags whose
+    /// latest event is older than MAX_TAG_AGE_SECS are dropped — dead batteries
+    /// otherwise emit a fixed last-known position forever.
     async fn fetch_latest_events(
         &self,
         study_id: u64,
@@ -385,7 +398,9 @@ impl MovebankMarketSource {
         };
 
         let rows = parse_csv(&csv_text);
+        let now = Utc::now();
         let mut events = HashMap::new();
+        let mut stale = 0usize;
 
         for row in &rows {
             let identifier = match row.get("individual_local_identifier") {
@@ -407,13 +422,23 @@ impl MovebankMarketSource {
                 None => continue,
             };
 
+            // Drop tags older than MAX_TAG_AGE_SECS. If timestamp is unparseable,
+            // keep the row (preserves prior behaviour for malformed rows).
+            if let Some(ts) = row.get("timestamp").and_then(|s| parse_movebank_ts(s)) {
+                if (now - ts).num_seconds() > MAX_TAG_AGE_SECS {
+                    stale += 1;
+                    continue;
+                }
+            }
+
             events.insert(identifier, (lat, lon));
         }
 
         debug!(
-            "Movebank: study {} returned {} GPS events",
+            "Movebank: study {} returned {} fresh GPS events ({} stale dropped)",
             study_id,
-            events.len()
+            events.len(),
+            stale
         );
         Ok(events)
     }
@@ -526,7 +551,25 @@ impl MarketDataSource for MovebankMarketSource {
                 }
             };
 
+            // Only emit assets for tags whose latest event is fresh (≤ MAX_TAG_AGE_SECS).
+            // Dead-battery tags otherwise stay registered and emit their last position
+            // forever. fetch_latest_events already filters by age, so its keys are the
+            // fresh local_identifiers for this study.
+            let fresh: HashSet<String> = match self.fetch_latest_events(study.id).await {
+                Ok(events) => events.into_keys().collect(),
+                Err(e) => {
+                    warn!(
+                        "Movebank: failed to gate freshness for study {}: {} -- emitting full roster",
+                        study.id, e
+                    );
+                    individuals.iter().map(|i| i.local_identifier.clone()).collect()
+                }
+            };
+
             for individual in &individuals {
+                if !fresh.contains(&individual.local_identifier) {
+                    continue;
+                }
                 let animal_name_san = sanitize_name(&individual.local_identifier);
                 let species_display = if individual.taxon.is_empty() {
                     "Unknown species".to_string()
