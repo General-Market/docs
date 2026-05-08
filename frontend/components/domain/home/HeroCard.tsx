@@ -107,11 +107,23 @@ function FeaturedTag() {
   )
 }
 
-function PlayIcon() {
+function PlayGlyph() {
   return (
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-      <path d="M8 5v14l11-7z" />
-    </svg>
+    <span
+      className="inline-flex shrink-0 items-center justify-center"
+      style={{
+        width: 20,
+        height: 20,
+        borderRadius: 999,
+        background: '#fff',
+        marginLeft: -4,
+      }}
+      aria-hidden
+    >
+      <svg width="9" height="9" viewBox="0 0 24 24" aria-hidden>
+        <path d="M8 5v14l11-7z" fill="var(--apple-text)" />
+      </svg>
+    </span>
   )
 }
 
@@ -183,13 +195,13 @@ export function HeroCard({ feature, side }: Props) {
               background: 'var(--apple-text)',
               color: '#fff',
               borderRadius: 'var(--apple-r-pill)',
-              padding: '10px 18px',
+              padding: '8px 18px 8px 10px',
               fontSize: 14,
               fontWeight: 500,
               letterSpacing: '-0.01em',
             }}
           >
-            <PlayIcon />
+            <PlayGlyph />
             Open
           </span>
         </div>

@@ -1,12 +1,12 @@
 import { AssetCard } from './AssetCard'
-import { HeroCard } from './HeroCard'
+import { HeroCarousel } from './HeroCarousel'
 import { Reveal } from '@/components/ui/Reveal'
 import type { SourceFeed } from '@/lib/vision/adapters'
 
 type FeedMap = Record<string, SourceFeed>
 
-const HERO_ID = 'polymarket'
-const SIDE_RAIL_IDS = ['pumpfun', 'defillama', 'equities', 'sports'] as const
+const HERO_ROTATION_IDS = ['polymarket', 'defillama', 'equities', 'sports'] as const
+const SIDE_RAIL_IDS = ['pumpfun', 'iss', 'twitch', 'steam'] as const
 const FEATURED_ROW_IDS = ['defillama', 'equities', 'sports', 'iss'] as const
 const TOP_MARKETS_IDS = ['twitch', 'steam', 'github', 'pumpfun'] as const
 
@@ -68,7 +68,19 @@ function SectionHeader({
 }
 
 export function HomeDashboard({ feeds }: { feeds: FeedMap }) {
-  const hero = pick(feeds, HERO_ID)
+  const heroRotation = HERO_ROTATION_IDS.map((id) => {
+    const f = pick(feeds, id)
+    return {
+      sourceId: f.sourceId,
+      displayName: f.displayName,
+      meta: f.meta,
+      series: f.series,
+      coverage: f.coverage,
+      assetName: f.assetName,
+      assetValue: f.assetValue,
+      hrefOverride: f.hrefOverride,
+    }
+  })
   const side = SIDE_RAIL_IDS.map((id) => pick(feeds, id))
   const featuredRow = FEATURED_ROW_IDS.map((id) => pick(feeds, id))
   const topMarkets = TOP_MARKETS_IDS.map((id) => pick(feeds, id))
@@ -91,19 +103,7 @@ export function HomeDashboard({ feeds }: { feeds: FeedMap }) {
       </Reveal>
 
       <Reveal delay={0.08} className="mt-8">
-        <HeroCard
-          feature={{
-            sourceId: hero.sourceId,
-            displayName: hero.displayName,
-            meta: hero.meta,
-            series: hero.series,
-            coverage: hero.coverage,
-            assetName: hero.assetName,
-            assetValue: hero.assetValue,
-            hrefOverride: hero.hrefOverride,
-          }}
-          side={side}
-        />
+        <HeroCarousel features={heroRotation} side={side} />
       </Reveal>
 
       <section className="mt-12">
