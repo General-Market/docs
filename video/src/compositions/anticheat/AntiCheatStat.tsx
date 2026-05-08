@@ -8,6 +8,7 @@ import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 import { DotGrid, DotGridVignette } from "./DotGrid";
 import { IdleZoom } from "./vibe";
+import { MUSIC_START_FROM_AUDIO } from "./beats";
 
 // Two compositions live in this file:
 //   AntiCheatStat — primary number 0.01%/70% then hard-cut to 99.9%/30%
@@ -322,6 +323,25 @@ const power2InOut = (t: number): number =>
   t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 const sineInOut = (t: number): number => -(Math.cos(Math.PI * t) - 1) / 2;
 
+// ─── Music-driven angular modulation ────────────────────────────────────────
+// The ring's average rate stays at -180°/CAROUSEL_SCROLL frames so it still
+// completes its planned revolution. The instantaneous rate is modulated by
+// the music's beat phase: slowest exactly on each kick, fastest halfway
+// between kicks. ω(φ) = ω₀ · (1 − A · cos(2π φ)). Integrating gives a clean
+// position formula — total rotation per beat is unchanged, only the timing
+// breathes.
+//
+// Bars opens at absolute video frame 236 (Hook 254 − transition 18). With
+// the audio starting at MUSIC_START_FROM_AUDIO and the first beat at audio
+// second 1.765, beat phase at any video frame F is
+//   φ(F) = ((F + MUSIC_START_FROM_AUDIO) − FIRST_BEAT_FRAME) / BEAT_PERIOD
+// in units of beat cycles.
+const BARS_ABS_START = 236;
+const CAROUSEL_BPM = 69.8;
+const CAROUSEL_BEAT_PERIOD = (60 / CAROUSEL_BPM) * FPS; // ≈ 25.79 frames
+const CAROUSEL_FIRST_BEAT_FRAME = 1.765 * FPS;          // first audio beat
+const CAROUSEL_SPEED_AMPLITUDE = 0.7;                   // 0.3× – 1.7× rate
+
 // The bars + caption are gone. The scene is now the carousel + flanking
 // hero words ("Extracted" / "From You") + a single headline below.
 const ExtractionBars: React.FC = () => (
@@ -580,11 +600,28 @@ const CategoryCarousel: React.FC<{ local: number }> = ({ local }) => {
   const spiralOpacity = spiralT;
 
   // Continuous rotation — once the spiral lands, the ring keeps turning
-  // at a constant rate (-180° per CAROUSEL_SCROLL frames). Unbounded;
-  // it accrues straight through hold and explode without pausing.
+  // with a music-modulated rate. Average is still −180° per CAROUSEL_SCROLL
+  // frames so the planned revolution count is preserved, but the
+  // instantaneous speed slows on each beat and accelerates between them.
+  // Position is the closed-form integral of ω(φ) = ω₀·(1 − A·cos 2πφ).
   const rotateSpeedDegPerFrame = -180 / CAROUSEL_SCROLL;
   const rotationFrames = Math.max(0, local - CAROUSEL_SPIRAL_IN);
-  const continuousRotY = rotateSpeedDegPerFrame * rotationFrames;
+
+  const rotationStartAbs =
+    BARS_ABS_START + REVEAL_AT + CAROUSEL_SPIRAL_IN;
+  const rotationStartPhase =
+    (2 * Math.PI *
+      (rotationStartAbs + MUSIC_START_FROM_AUDIO - CAROUSEL_FIRST_BEAT_FRAME)) /
+    CAROUSEL_BEAT_PERIOD;
+  const currentPhase =
+    rotationStartPhase + (2 * Math.PI * rotationFrames) / CAROUSEL_BEAT_PERIOD;
+
+  const wobbleAmp =
+    (rotateSpeedDegPerFrame * CAROUSEL_SPEED_AMPLITUDE * CAROUSEL_BEAT_PERIOD) /
+    (2 * Math.PI);
+  const continuousRotY =
+    rotateSpeedDegPerFrame * rotationFrames -
+    wobbleAmp * (Math.sin(currentPhase) - Math.sin(rotationStartPhase));
 
   // Tilt + card-tilt are still tied to a normalized scroll progress so
   // they peak around the original scroll-end and ease through.
