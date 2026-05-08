@@ -210,29 +210,83 @@ const Headline: React.FC = () => {
           color: colors.fg,
           lineHeight: 1.0,
           opacity: interpolate(t2, [0, 1], [0, 1]),
+          display: "flex",
+          alignItems: "baseline",
+          justifyContent: "center",
+          gap: 4,
         }}
       >
-        <RevealChars
-          text="but with an"
-          startFrame={SECOND_LINE_AT}
-          stagger={1.0}
-          duration={10}
-          y={14}
-          blur={4}
-        />
-        <span>&nbsp;</span>
-        <span style={{ color: colors.accent }}>
+        <OvershootDots startFrame={SECOND_LINE_AT} />
+        <span style={{ marginLeft: 18 }}>
           <RevealChars
-            text="anticheat"
-            startFrame={SECOND_LINE_AT + toFrames(0.30)}
-            stagger={1.6}
-            duration={12}
-            y={16}
-            blur={5}
+            text="but with an"
+            startFrame={SECOND_LINE_AT + toFrames(0.40)}
+            stagger={1.0}
+            duration={10}
+            y={14}
+            blur={4}
           />
+          <span>&nbsp;</span>
+          <span style={{ color: colors.accent }}>
+            <RevealChars
+              text="anticheat"
+              startFrame={SECOND_LINE_AT + toFrames(0.66)}
+              stagger={1.6}
+              duration={12}
+              y={16}
+              blur={5}
+            />
+          </span>
         </span>
       </div>
     </div>
+  );
+};
+
+// Three trailing dots, GMBrand Scene04 pattern: each dot scales 0→1
+// with overshoot (back.out feel via low-damping spring), opacity ramps.
+// Staggered ~4f apart so the reader catches each one.
+const OvershootDots: React.FC<{ startFrame: number }> = ({ startFrame }) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const DOT_STAGGER = 4;
+
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "baseline",
+        gap: 6,
+      }}
+    >
+      {[0, 1, 2].map((i) => {
+        const local = frame - (startFrame + i * DOT_STAGGER);
+        const scale = spring({
+          frame: local,
+          fps,
+          config: { damping: 6, stiffness: 220, mass: 0.55 },
+        });
+        const op = interpolate(local, [0, 6], [0, 1], {
+          extrapolateLeft: "clamp",
+          extrapolateRight: "clamp",
+        });
+        return (
+          <span
+            key={i}
+            style={{
+              display: "inline-block",
+              color: colors.dim,
+              opacity: op * 0.7,
+              transform: `scale(${scale.toFixed(3)})`,
+              transformOrigin: "center bottom",
+              willChange: "transform, opacity",
+            }}
+          >
+            .
+          </span>
+        );
+      })}
+    </span>
   );
 };
 

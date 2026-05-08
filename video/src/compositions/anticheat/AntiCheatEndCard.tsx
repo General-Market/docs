@@ -181,16 +181,16 @@ export const AntiCheatEndCard: React.FC = () => {
       <div
         style={{
           position: "absolute",
-          bottom: 64,
+          bottom: 96,
           left: 0,
           right: 0,
           textAlign: "center",
           fontFamily: monoFont,
-          fontSize: 18,
+          fontSize: 54,
           fontWeight: 500,
-          letterSpacing: "0.20em",
+          letterSpacing: "0.18em",
           textTransform: "uppercase",
-          color: "rgba(255,255,255,0.55)",
+          color: "rgba(255,255,255,0.65)",
           opacity: tertiaryOpacity,
           transform: `translateY(${tertiaryY * 0.5}px)`,
         }}
