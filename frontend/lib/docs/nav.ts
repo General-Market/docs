@@ -32,7 +32,6 @@ export const DOCS_NAV: DocTab[] = [
           'vision/concepts/balance-proofs',
           'vision/concepts/fees',
           'vision/concepts/sources',
-          'vision/concepts/points',
         ],
       },
       {
@@ -48,7 +47,7 @@ export const DOCS_NAV: DocTab[] = [
       },
       {
         title: 'Guides',
-        pages: ['vision/guides/sources-browser', 'vision/guides/adding-sources'],
+        pages: ['vision/guides/adding-sources'],
       },
       {
         title: 'API Reference',
@@ -74,7 +73,6 @@ export const DOCS_NAV: DocTab[] = [
       {
         title: 'Reference',
         pages: [
-          'vision/reference/resolution-types',
           'vision/reference/contracts',
           'vision/reference/contract-addresses',
           'vision/reference/error-codes',

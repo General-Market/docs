@@ -187,40 +187,22 @@ const StatPanel: React.FC = () => {
     <AbsoluteFill>
       {/* Phase 1 — types in by beat 1, wipes out into the flip */}
       <EmberTypewriter
-        text="0.04% illegals takes 70%"
+        text="illegals 0.04% steal 70% profits"
         typeStart={0}
         typeEnd={26}
         wipeStart={STAT_FLIP_AT - 6}
         wipeEnd={STAT_FLIP_AT}
-        fontSize={140}
+        fontSize={100}
         endColor={colors.fg}
-      />
-      <EmberTypewriter
-        text="of gains"
-        typeStart={0}
-        typeEnd={26}
-        wipeStart={STAT_FLIP_AT - 6}
-        wipeEnd={STAT_FLIP_AT}
-        fontSize={56}
-        endColor={colors.fg}
-        align="bottom-right"
       />
 
       {/* Phase 2 — flips on beat 2, types in by beat 3, holds to snap-zoom */}
       <EmberTypewriter
-        text="99.9% only get 30%"
+        text="legals 99.6% battle-royal for 30%"
         typeStart={STAT_FLIP_AT}
         typeEnd={STAT_FLIP_AT + 26}
-        fontSize={140}
+        fontSize={100}
         endColor={colors.fg}
-      />
-      <EmberTypewriter
-        text="of gains"
-        typeStart={STAT_FLIP_AT}
-        typeEnd={STAT_FLIP_AT + 26}
-        fontSize={56}
-        endColor={colors.fg}
-        align="bottom-right"
       />
     </AbsoluteFill>
   );
