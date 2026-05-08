@@ -1,14 +1,20 @@
 //! Hacker News Firebase API client implementing MarketDataSource
 //!
-//! Tracks score (upvotes) and comment count for the top 500 stories.
-//! Assets are fully dynamic — discovered from the live /topstories endpoint.
+//! Tracks three metrics per story: score (upvotes), comment count,
+//! and front-page rank (1-indexed position in /topstories). Rank is the
+//! only metric that moves consistently — scores asymptote within hours
+//! of a story leaving the front page; rank oscillates every cycle until
+//! the story drops out of the top 500 entirely.
 //!
 //! Lifecycle management:
-//! - Stories older than 7 days are excluded from `fetch_assets()` even if they
-//!   remain in the HN top 500. This triggers the sync engine to deactivate them.
+//! - Stories older than MAX_STORY_AGE_SECS are excluded from `fetch_assets()`
+//!   even if they remain in the HN top 500. This triggers the sync engine
+//!   to deactivate them.
 //! - Dead and deleted items are filtered out during both discovery and pricing.
 //! - `fetch_prices()` detects dead/deleted items and skips them, letting the
 //!   sync engine deactivate them on the next `fetch_assets()` cycle.
+//! - Rank assets are only emitted while a story remains in the live topstories
+//!   list. Once it falls out, the asset deactivates on the next discovery cycle.
 //!
 //! API: https://hacker-news.firebaseio.com/v0/
 //! Auth: None
@@ -18,7 +24,7 @@ use anyhow::Result;
 use chrono::Utc;
 use rust_decimal::Decimal;
 use serde::Deserialize;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 use tracing::{debug, info, warn};
 
@@ -40,8 +46,13 @@ const INTER_REQUEST_DELAY_MS: u64 = 50;
 
 /// Maximum age for tracked stories (seconds). Stories older than this
 /// are excluded from fetch_assets(), causing the sync engine to deactivate them.
-/// 7 days = 604800 seconds.
-const MAX_STORY_AGE_SECS: i64 = 7 * 24 * 60 * 60;
+/// Front-page residue stops accumulating votes within ~24h; tracking dead
+/// numerics for a full week was the original bug. 2 days = 172800 seconds.
+const MAX_STORY_AGE_SECS: i64 = 2 * 24 * 60 * 60;
+
+/// Top-N stories that get a `_rank` asset. The full /topstories list returns
+/// 500 entries but past ~100 the order is noisy and stories rarely climb back.
+const RANK_TOP_N: usize = 100;
 
 // ============================================================================
 // API RESPONSE TYPES
@@ -196,9 +207,18 @@ impl MarketDataSource for HackerNewsMarketSource {
         info!("HN topstories returned {} story IDs", story_ids.len());
 
         let now_unix = Utc::now().timestamp();
-        let mut assets = Vec::with_capacity(story_ids.len() * 2);
+        let mut assets = Vec::with_capacity(story_ids.len() * 3);
         let mut skipped = 0u32;
         let mut aged_out = 0u32;
+
+        // Position map for rank metric — only stories in the live top RANK_TOP_N
+        // get a _rank asset. Rank 1 = top of the list.
+        let rank_map: HashMap<u64, usize> = story_ids
+            .iter()
+            .take(RANK_TOP_N)
+            .enumerate()
+            .map(|(idx, &id)| (id, idx + 1))
+            .collect();
 
         for &story_id in &story_ids {
             tokio::time::sleep(Duration::from_millis(INTER_REQUEST_DELAY_MS)).await;
@@ -253,6 +273,30 @@ impl MarketDataSource for HackerNewsMarketSource {
                         }),
                     });
 
+                    // Rank asset — only if story is in the live top N.
+                    // The position oscillates every cycle; this is the metric
+                    // that actually moves once a story stops accumulating votes.
+                    if let Some(&rank) = rank_map.get(&story_id) {
+                        assets.push(AssetUpdate {
+                            asset_id: format!("hn_{}_rank", story_id),
+                            symbol: format!("HN#{}", story_id),
+                            name: format!("{} (rank)", title),
+                            category: Some("sentiment".to_string()),
+                            metadata: serde_json::json!({
+                                "api_ref": story_id.to_string(),
+                                "subcategory": "hacker_news",
+                                "active": true,
+                                "extra": {
+                                    "metric": "rank",
+                                    "by": item.by,
+                                    "url": item.url,
+                                    "created_at": item.time,
+                                    "rank_top_n": RANK_TOP_N,
+                                },
+                            }),
+                        });
+                        let _ = rank; // silence unused-warning when log level is low
+                    }
                 }
                 Ok(Some(_)) => {
                     skipped += 1; // dead or deleted
@@ -268,12 +312,13 @@ impl MarketDataSource for HackerNewsMarketSource {
         }
 
         info!(
-            "HN fetch_assets: {} stories -> {} assets ({} skipped, {} aged out >{}d)",
+            "HN fetch_assets: {} stories -> {} assets ({} skipped, {} aged out >{}d, rank window={})",
             story_ids.len(),
             assets.len(),
             skipped,
             aged_out,
-            MAX_STORY_AGE_SECS / 86400
+            MAX_STORY_AGE_SECS / 86400,
+            RANK_TOP_N,
         );
 
         Ok(assets)
@@ -289,7 +334,7 @@ impl MarketDataSource for HackerNewsMarketSource {
         let mut results = Vec::new();
 
         // Dedupe asset_ids to unique story IDs
-        // asset_ids look like: "hn_12345_score", "hn_12345_comments"
+        // asset_ids look like: "hn_12345_score", "hn_12345_comments", "hn_12345_rank"
         let mut unique_story_ids: Vec<u64> = Vec::new();
         let mut requested_metrics: HashSet<String> = HashSet::new();
 
@@ -302,10 +347,26 @@ impl MarketDataSource for HackerNewsMarketSource {
             }
         }
 
+        // Pull the live topstories list once per pricing cycle to populate ranks.
+        // A story not present in the top RANK_TOP_N has no rank price this tick;
+        // the sync engine will deactivate orphaned _rank assets on the next
+        // fetch_assets() cycle.
+        let top_ids = self.fetch_top_story_ids().await.unwrap_or_else(|e| {
+            warn!("HN topstories fetch failed during pricing: {:?}", e);
+            Vec::new()
+        });
+        let rank_map: HashMap<u64, usize> = top_ids
+            .iter()
+            .take(RANK_TOP_N)
+            .enumerate()
+            .map(|(idx, &id)| (id, idx + 1))
+            .collect();
+
         debug!(
-            "HN fetch_prices: {} asset_ids -> {} unique stories",
+            "HN fetch_prices: {} asset_ids -> {} unique stories ({} ranked)",
             asset_ids.len(),
-            unique_story_ids.len()
+            unique_story_ids.len(),
+            rank_map.len(),
         );
 
         let mut dead_or_deleted = 0u32;
@@ -334,6 +395,7 @@ impl MarketDataSource for HackerNewsMarketSource {
 
                     let score_id = format!("hn_{}_score", story_id);
                     let comments_id = format!("hn_{}_comments", story_id);
+                    let rank_id = format!("hn_{}_rank", story_id);
                     let title = item.display_title();
 
                     if requested_metrics.contains(&score_id) {
@@ -360,6 +422,23 @@ impl MarketDataSource for HackerNewsMarketSource {
                             market_cap: None,
                             fetched_at: now,
                         });
+                    }
+
+                    if requested_metrics.contains(&rank_id) {
+                        if let Some(&rank) = rank_map.get(&story_id) {
+                            results.push(PriceUpdate {
+                                asset_id: rank_id.clone(),
+                                symbol: format!("{} (rank)", title),
+                                value: Decimal::from(rank as u64),
+                                prev_close: None,
+                                change_pct: None,
+                                volume_24h: None,
+                                market_cap: None,
+                                fetched_at: now,
+                            });
+                        }
+                        // If story dropped out of top N, no rank price this tick.
+                        // The asset will be deactivated by the next fetch_assets() cycle.
                     }
                 }
                 Ok(None) => {
@@ -638,7 +717,17 @@ mod tests {
     }
 
     #[test]
-    fn test_max_story_age_is_7_days() {
-        assert_eq!(MAX_STORY_AGE_SECS, 604800);
+    fn test_max_story_age_is_2_days() {
+        assert_eq!(MAX_STORY_AGE_SECS, 172800);
+    }
+
+    #[test]
+    fn test_rank_top_n() {
+        assert_eq!(RANK_TOP_N, 100);
+    }
+
+    #[test]
+    fn test_parse_story_id_rank() {
+        assert_eq!(parse_story_id("hn_12345_rank"), Some(12345));
     }
 }
