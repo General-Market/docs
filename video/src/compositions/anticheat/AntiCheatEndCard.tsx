@@ -6,7 +6,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { font } from "../../common/fonts";
+import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 import { ParallaxText } from "./transitions";
 import { IdleZoom, RevealChars } from "./vibe";
@@ -174,43 +174,29 @@ export const AntiCheatEndCard: React.FC = () => {
           />
         </div>
 
-        <div
-          style={{
-            marginTop: 40,
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 14,
-            padding: "16px 28px",
-            border: "1px solid rgba(255,255,255,0.25)",
-            borderRadius: 999,
-            background: "rgba(255,255,255,0.08)",
-            opacity: tertiaryOpacity,
-            transform: `translateY(${tertiaryY}px)`,
-          }}
-        >
-          <span
-            style={{
-              width: 10,
-              height: 10,
-              borderRadius: 5,
-              background: "#FFFFFF",
-              boxShadow: "0 0 10px rgba(255,255,255,0.6)",
-            }}
-          />
-          <span
-            style={{
-              fontFamily: font,
-              fontSize: 40,
-              fontWeight: 600,
-              letterSpacing: "-0.005em",
-              color: "#FFFFFF",
-            }}
-          >
-            Available only via trading bots
-          </span>
-        </div>
       </div>
       </AbsoluteFill>
+
+      {/* Apple footnote — bottom-anchored, no chrome */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: 64,
+          left: 0,
+          right: 0,
+          textAlign: "center",
+          fontFamily: monoFont,
+          fontSize: 18,
+          fontWeight: 500,
+          letterSpacing: "0.20em",
+          textTransform: "uppercase",
+          color: "rgba(255,255,255,0.55)",
+          opacity: tertiaryOpacity,
+          transform: `translateY(${tertiaryY * 0.5}px)`,
+        }}
+      >
+        ·&nbsp;&nbsp;Available only via trading bots&nbsp;&nbsp;·
+      </div>
       </IdleZoom>
     </AbsoluteFill>
   );
