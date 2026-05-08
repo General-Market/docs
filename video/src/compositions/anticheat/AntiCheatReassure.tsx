@@ -100,11 +100,11 @@ const usePanelExit = (): { tx: number; rot: number; opacity: number } => {
 const useCamera = (): { scale: number; shakeX: number; shakeY: number } => {
   const frame = useCurrentFrame();
 
-  // Phase 1 — pull from 1.18 to 1.00 over the first ~1.0s. We start
-  // pressed against the UI, then breathe out to fit the whole product.
+  // Phase 1 — pull from 1.18 to 1.00 over the first beat. Starts pressed
+  // against the UI, breathes out to fit the whole product by frame 26.
   const phase1 = interpolate(
     frame,
-    [0, toFrames(0.95)],
+    [0, CLICK_AT],
     [1.18, 1.0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
@@ -125,20 +125,20 @@ const useCamera = (): { scale: number; shakeX: number; shakeY: number } => {
   );
   const punch = frame < CLICK_AT + 3 ? punchUp : punchSettle;
 
-  // Phase 3 — slow drift outward at the tail (1.02 → 0.97), implying
-  // the next scene starts pulling the world back.
+  // Phase 3 — slow drift outward at the tail (1.02 → 0.97), starting on
+  // the panel-exit beat. The world begins to recede the moment the panel
+  // leaves.
   const driftOut = interpolate(
     frame,
-    [toFrames(2.4), SCENE_FRAMES],
+    [PANEL_EXIT_AT, SCENE_FRAMES],
     [0, 1],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
   const tailScale = interpolate(driftOut, [0, 1], [1.02, 0.97]);
 
   let scale: number;
-  if (frame < toFrames(0.95)) scale = phase1;
-  else if (frame < CLICK_AT - 1) scale = 1.0;
-  else if (frame < toFrames(2.4)) scale = punch;
+  if (frame < CLICK_AT) scale = phase1;
+  else if (frame < PANEL_EXIT_AT) scale = punch;
   else scale = tailScale;
 
   // Click shake — 4 frames of jitter starting at click, decaying.
@@ -751,7 +751,10 @@ const ShieldStamp: React.FC = () => {
 
 const Subtitle: React.FC = () => {
   const frame = useCurrentFrame();
-  const FADE_AT = SECOND_LINE_AT + toFrames(0.55);
+  // Fades in on scene-local beat 3 (frame 78 = absolute beat 31), the
+  // same kick that triggers the panel exit. Subtitle solidifies as the
+  // product slides off — one motion, two layers.
+  const FADE_AT = PANEL_EXIT_AT;
 
   const opacity = interpolate(
     frame,

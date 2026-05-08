@@ -33,13 +33,16 @@ const PAIRS = [
 // Hook covers beats 0–8 (frames 23–228). Scene-local frames below.
 //   beat 0  → frame 23 — header in
 //   beat 1  → frame 49 — split begins
-//   beat 3  → frame 100 — pairs cascade begins
+//   beat 3  → frame 100 — pair 1
+//   beat 4  → frame 125 — pair 2
+//   beat 5  → frame 151 — pair 3
 //   beat 6  → frame 177 — verdict reveal
 //   beat 8  → frame 228 — Bars overlays
 const HEADER_IN = 23;
 const SPLIT_AT = 49;
-const PAIRS_AT = 100;
-const PAIR_STEP = 26; // one beat per pair
+// Three pairs — each lands on its own beat. Beats 3/4/5 don't sit on a
+// uniform step (25, 26), so spell them out instead of stepping.
+const PAIR_FRAMES = [100, 125, 151];
 const REVEAL_AT = 177;
 
 const HOOK_DURATION = 254;
@@ -100,8 +103,7 @@ export const AntiCheatHook: React.FC = () => {
             pairs={PAIRS}
             field="game"
             align="left"
-            startFrame={PAIRS_AT}
-            stepFrame={PAIR_STEP}
+            frames={PAIR_FRAMES}
             frame={frame}
             fps={fps}
           />
@@ -133,8 +135,7 @@ export const AntiCheatHook: React.FC = () => {
             pairs={PAIRS}
             field="trade"
             align="right"
-            startFrame={PAIRS_AT}
-            stepFrame={PAIR_STEP}
+            frames={PAIR_FRAMES}
             frame={frame}
             fps={fps}
             tint={"#ff3b3b"}
@@ -161,11 +162,17 @@ export const AntiCheatHook: React.FC = () => {
 
 const FADE = toFrames(0.27); // 8 frames at 30fps
 
+// Clip cuts ride on beats 2 and 5 (frames 74 and 151). The first cut
+// minecraft→cs2 lands at 74; the second cs2→valorant at 151. Durations
+// include the fade overlap so the visible cut sits on the beat.
+const CLIP_1 = 74;
+const CLIP_2 = 151 - 74; // 77
+
 const CheaterBrollSequence: React.FC = () => {
   return (
     <AbsoluteFill>
       <TransitionSeries>
-        <TransitionSeries.Sequence durationInFrames={toFrames(1.8)}>
+        <TransitionSeries.Sequence durationInFrames={CLIP_1}>
           <BrollClip
             src={BROLL.minecraft}
             maskDisclaimer
@@ -178,7 +185,7 @@ const CheaterBrollSequence: React.FC = () => {
           timing={linearTiming({ durationInFrames: FADE })}
         />
 
-        <TransitionSeries.Sequence durationInFrames={toFrames(3.0)}>
+        <TransitionSeries.Sequence durationInFrames={CLIP_2}>
           <BrollClip src={BROLL.cs2} />
         </TransitionSeries.Sequence>
 
@@ -621,12 +628,11 @@ const PairList: React.FC<{
   pairs: typeof PAIRS;
   field: "game" | "trade";
   align: "left" | "right";
-  startFrame: number;
-  stepFrame: number;
+  frames: readonly number[];
   frame: number;
   fps: number;
   tint?: string;
-}> = ({ pairs, field, align, startFrame, stepFrame, frame, fps, tint }) => {
+}> = ({ pairs, field, align, frames, frame, fps, tint }) => {
   return (
     <div
       style={{
@@ -643,7 +649,7 @@ const PairList: React.FC<{
       }}
     >
       {pairs.map((pair, i) => {
-        const at = startFrame + i * stepFrame;
+        const at = frames[i] ?? frames[frames.length - 1];
 
         // Every pair enters from the centre, already in motion. The
         // horizontal split runs in parallel with the opacity ramp — by

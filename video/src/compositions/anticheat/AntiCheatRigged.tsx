@@ -23,9 +23,9 @@ const SCENE_FRAMES = 178;
 
 const TITLE_IN = 0;
 // One article per beat. Rigged starts on beat 11, articles cycle on
-// beats 11–16 (scene-local 0, 26, 51, 77, 102, 129).
-const ARTICLES_AT = 0;
-const ARTICLE_HOLD = 26;
+// beats 11–16 (scene-local 0, 26, 51, 77, 102, 129). Beat-to-beat gaps
+// aren't uniform (25, 25, 26, 25, 27) so spell them out, don't step.
+const ARTICLE_FRAMES = [0, 26, 51, 77, 102, 129];
 
 // Glitches detonate on scene-local beats 1, 3, 5 (frames 26, 77, 129).
 const GLITCH_AT = [26, 77, 129];
@@ -114,15 +114,14 @@ export const AntiCheatRigged: React.FC = () => {
     }
   }
 
-  // Active article based on frame.
-  const articleIdx = Math.max(
-    0,
-    Math.floor((frame - ARTICLES_AT) / ARTICLE_HOLD),
-  );
-  const articlesActive =
-    frame >= ARTICLES_AT && articleIdx < ARTICLES.length;
+  // Active article based on frame — pick the latest beat that has fired.
+  let articleIdx = -1;
+  for (let i = 0; i < ARTICLE_FRAMES.length; i++) {
+    if (frame >= ARTICLE_FRAMES[i] && i < ARTICLES.length) articleIdx = i;
+  }
+  const articlesActive = articleIdx >= 0;
   const currentArticle = articlesActive ? ARTICLES[articleIdx] : null;
-  const articleStartFrame = ARTICLES_AT + articleIdx * ARTICLE_HOLD;
+  const articleStartFrame = articlesActive ? ARTICLE_FRAMES[articleIdx] : 0;
 
   return (
     <AbsoluteFill style={{ backgroundColor: colors.bg, fontFamily: font }}>
