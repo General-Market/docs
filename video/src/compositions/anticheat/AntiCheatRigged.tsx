@@ -16,23 +16,19 @@ import { IdleZoom, RevealChars } from "./vibe";
 //   line 2 — "is rigged." (red, hero size; constant)
 // Articles flash hard-cut on the RIGHT, much larger than before, with the
 // original yellow highlighter restored on the article phrase.
-// 5.2s — articles + glitches + verdict, then snap-zoom intense to Stat.
-// Trimmed from 193f to 156f to remove the dead tail after the last
-// article exits.
-const SCENE_SECONDS = 156 / FPS;
-const SCENE_FRAMES = 156;
+// 5.93s — articles + glitches + verdict, snap-zoom intense to Stat.
+// Locked so the Rigged→Stat transition starts on beat 17 (frame 460).
+const SCENE_SECONDS = 178 / FPS;
+const SCENE_FRAMES = 178;
 
 const TITLE_IN = 0;
-const ARTICLES_AT = toFrames(0.35);
-const ARTICLE_HOLD = toFrames(0.65);
+// One article per beat. Rigged starts on beat 11, articles cycle on
+// beats 11–16 (scene-local 0, 26, 51, 77, 102, 129).
+const ARTICLES_AT = 0;
+const ARTICLE_HOLD = 26;
 
-// Three glitch shots on "is rigged" — each chromatic-split pulse
-// detonates on a music landmark inside the playing window.
-//   Glitch 1 — tf 375 (beat 78.9s, energy 0.487)
-//   Glitch 2 — tf 426 (energy peak 80.6s, e=0.818)
-//   Glitch 3 — tf 477 (energy peak 82.29s, e=0.768)
-// Rigged starts at tf 349, so locals are tf - 349.
-const GLITCH_AT = [26, 77, 128];
+// Glitches detonate on scene-local beats 1, 3, 5 (frames 26, 77, 129).
+const GLITCH_AT = [26, 77, 129];
 const GLITCH_LEN = 6;
 
 type Highlight = { x: number; y: number; w: number; h: number };

@@ -19,6 +19,7 @@ import {
   snapZoomSoft,
   pullLong,
 } from "./transitions";
+import { MUSIC_START_FROM_AUDIO } from "./beats";
 
 // Snap-zoom-through-blur. Both halves of the camera path move in the
 // same direction so velocity stays high through the cut — no "stuck
@@ -59,17 +60,11 @@ const TOTAL_FRAMES =
   antiCheatEndCardMeta.durationInFrames -
   TRANSITION_FRAMES;
 
-// Music timing — anchor the march's drum spike on the EndCard cut.
-// The spike sits at ~3087f (102.9s) inside the file. We start late
-// enough that the spike lands at the midpoint of Bridge→EndCard;
-// the rest of the file plays under the final scene until the cut ends.
+// Music timing — MUSIC_START_FROM_AUDIO is hardcoded in beats.ts so the
+// beat grid stays stable across scene-duration changes. With the current
+// scene plan the drum spike (audio frame 3087) lands ~8f into EndCard,
+// close enough to the Bridge→EndCard cut to feel intentional.
 const AUDIO_FILE_FRAMES = Math.floor(113.142857 * FPS); // Dagored — Dead Man's March
-const AUDIO_SPIKE_IN_FILE = 3087;
-const SPIKE_LANDS_AT =
-  TOTAL_FRAMES -
-  antiCheatEndCardMeta.durationInFrames +
-  Math.round(T_BRIDGE_END / 2);
-const MUSIC_START_FROM_AUDIO = Math.max(0, AUDIO_SPIKE_IN_FILE - SPIKE_LANDS_AT);
 const MUSIC_END_FRAME = Math.min(
   TOTAL_FRAMES,
   AUDIO_FILE_FRAMES - MUSIC_START_FROM_AUDIO,

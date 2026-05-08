@@ -13,11 +13,13 @@ import { FPS, H, W, colors, toFrames } from "./theme";
 import { DotGrid, DotGridVignette } from "./DotGrid";
 import { IdleZoom, RevealChars } from "./vibe";
 
-const SCENE_SECONDS = 7.633;
-// Terminal lands on the tf 735 beat (Solution starts at tf 653, so
-// local 82 = tf 735). The 3D fly-in arrives with the kick.
-const TERMINAL_AT = 82;
-const SCENE_FRAMES = toFrames(SCENE_SECONDS);
+// Solution = 233f (7.77s). Solution→Reassure transition starts on
+// beat 29 (frame 768 absolute). Terminal flies in on scene-local beat 3
+// (absolute beat 24, frame 640) — gives the headline 2.5s before the
+// terminal arrives, then ~3s of terminal + CTA.
+const SCENE_FRAMES = 233;
+const SCENE_SECONDS = SCENE_FRAMES / FPS;
+const TERMINAL_AT = 77;
 
 export const AntiCheatSolution: React.FC = () => {
   return (
@@ -193,10 +195,11 @@ const Terminal: React.FC = () => {
     extrapolateRight: "clamp",
   });
 
-  // LINE_DELAYS pace the typewriter so that "✓ shielded" finishes
-  // typing on the tf 812 beat (energy peak at 93.46s starts here).
-  // Solution local frame 147 + 10f type-out = 157 → absolute tf 810.
-  const LINE_DELAYS = [toFrames(0.2), toFrames(0.8), 65];
+  // Lines paced so each typewriter event lands on a beat. Terminal
+  // mounts at scene-local 77 (beat 3); delays are local to the
+  // sequence. Line 0 types out from beat 3, line 1 from beat 4, line 2
+  // finishes typing on beat 6 — that's the "shielded" punch.
+  const LINE_DELAYS = [0, 26, 67];
   const CHARS_PER_FRAME = 0.85;
 
   // Frame at which the absolute scene-frame "✓ shielded" finishes typing.

@@ -20,13 +20,16 @@ import { IdleZoom, RevealChars } from "./vibe";
 const SCENE_SECONDS = 6.0;
 const SCENE_FRAMES = toFrames(SCENE_SECONDS);
 
+// Bridge starts on beat 32. Scene-local beats: 0, 25, 51, 77.
+// The OR pivot lands on beat 3 (frame 77) — last beat in the scene
+// before the music tails out.
 const HEADLINE_AT = 0;
-const LEFT_EYEBROW_AT = toFrames(0.55);
-const LEFT_LIST_AT = toFrames(0.95);
+const LEFT_EYEBROW_AT = 25;
+const LEFT_LIST_AT = 30;
 const LEFT_STAGGER = toFrames(0.13);
-const OR_AT = toFrames(2.6);
-const RIGHT_EYEBROW_AT = toFrames(2.95);
-const RIGHT_ANSWER_AT = toFrames(3.35);
+const OR_AT = 77;
+const RIGHT_EYEBROW_AT = 90;
+const RIGHT_ANSWER_AT = 102;
 const PREDATORS = [
   "Liquidation hunting",
   "Orderflow purchase",

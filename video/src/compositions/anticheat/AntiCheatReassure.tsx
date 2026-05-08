@@ -15,11 +15,12 @@ import { FPS, H, W, colors, toFrames } from "./theme";
 import { DotGrid, DotGridVignette } from "./DotGrid";
 import { IdleZoom, RevealChars } from "./vibe";
 
-// 3.6s — trimmed tail; the shield burst still has room to land before
-// the cut to Bridge.
-const SCENE_SECONDS = 108 / FPS;
-const SECOND_LINE_AT = toFrames(1.6);
-const SCENE_FRAMES = 108;
+// Reassure = 106f (3.53s). Reassure→Bridge transition starts on beat 32
+// (frame 846 absolute). SECOND_LINE_AT moved to scene-local beat 2
+// (frame 52) so "but shielded" lands on a kick.
+const SCENE_FRAMES = 106;
+const SCENE_SECONDS = SCENE_FRAMES / FPS;
+const SECOND_LINE_AT = 52;
 
 // UI panel geometry — asset is 2000×984 (logged-in homepage).
 const UI_SRC_W = 2000;
@@ -35,19 +36,17 @@ const BTN_SRC_Y = 565;
 const BTN_X = (BTN_SRC_X / UI_SRC_W) * UI_W;
 const BTN_Y = (BTN_SRC_Y / UI_SRC_H) * UI_H;
 
-// Cursor flight path — enters from off-panel bottom-right. Click
-// lands on the tf 889 beat (Reassure starts at tf 851, so local 38
-// = absolute tf 889). The cursor's tail is slightly tighter than
-// before — the cut benefits from the snap.
+// Cursor flight path — enters from off-panel bottom-right. Click lands
+// on scene-local beat 1 (frame 26 = absolute beat 30). The cursor races
+// in over ~22 frames so the click hits the kick.
 const CURSOR_FROM_X = UI_W * 0.82;
 const CURSOR_FROM_Y = UI_H * 1.05;
-const CURSOR_MOVE_START = toFrames(0.45);
-const CURSOR_MOVE_END = 35;
-const CLICK_AT = 38;
+const CURSOR_MOVE_START = 4;
+const CURSOR_MOVE_END = 23;
+const CLICK_AT = 26;
 
-// Panel exit — mirrors the GMBrand Scene04 phone flight: translate
-// far left, slight rotation, fade. Begins ~1.0s before scene end.
-const PANEL_EXIT_AT = SCENE_FRAMES - toFrames(1.0);
+// Panel exit on scene-local beat 3 (frame 78). Pulls left out of frame.
+const PANEL_EXIT_AT = 78;
 const PANEL_EXIT_END = SCENE_FRAMES - toFrames(0.1);
 
 // Emoji burst — bursts from the click, the same vocabulary as

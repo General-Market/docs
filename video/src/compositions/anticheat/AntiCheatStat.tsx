@@ -16,12 +16,16 @@ import { IdleZoom, RevealChars } from "./vibe";
 // Two compositions live in this file:
 //   AntiCheatStat — primary number 0.01%/70% then hard-cut to 99.9%/30%
 //   AntiCheatBars — the % extracted by unfair trading bar chart
-const STAT_SECONDS = 5.0;
-const BARS_SECONDS = 2.6;
-const STAT_FRAMES = toFrames(STAT_SECONDS);
-const BARS_FRAMES = toFrames(BARS_SECONDS);
-// Frame at which the primary number cuts to its inverse (99.9%/30%).
-const STAT_FLIP_AT = toFrames(2.0);
+// Both durations locked to beats. Stat = 145f (4.83s) — the primary
+// number cuts to its inverse on a beat partway through.
+// Bars = 78f (2.6s) — its hard cut to Rigged lands on beat 11.
+const STAT_FRAMES = 145;
+const BARS_FRAMES = 78;
+const STAT_SECONDS = STAT_FRAMES / FPS;
+const BARS_SECONDS = BARS_FRAMES / FPS;
+// Hard-cut flip from 0.01%/take/70% to 99.9%/get/30% on scene-local
+// beat 2 (frame 51 inside Stat = absolute beat 19).
+const STAT_FLIP_AT = 51;
 
 export const AntiCheatStat: React.FC = () => {
   return (

@@ -29,13 +29,20 @@ const PAIRS = [
   { game: "Kill aura", trade: "Order-flow buyers", broll: BROLL.minecraft },
 ] as const;
 
-const HEADER_IN = toFrames(0.3);
-const SPLIT_AT = toFrames(1.6);
-const PAIRS_AT = toFrames(2.6);
-const PAIR_STEP = toFrames(0.9);
-const REVEAL_AT = toFrames(5.7);
+// All major moments locked to absolute video beats (see beats.ts).
+// Hook covers beats 0–8 (frames 23–228). Scene-local frames below.
+//   beat 0  → frame 23 — header in
+//   beat 1  → frame 49 — split begins
+//   beat 3  → frame 100 — pairs cascade begins
+//   beat 6  → frame 177 — verdict reveal
+//   beat 8  → frame 228 — Bars overlays
+const HEADER_IN = 23;
+const SPLIT_AT = 49;
+const PAIRS_AT = 100;
+const PAIR_STEP = 26; // one beat per pair
+const REVEAL_AT = 177;
 
-const HOOK_DURATION = toFrames(8.5);
+const HOOK_DURATION = 254;
 
 export const AntiCheatHook: React.FC = () => {
   const frame = useCurrentFrame();
