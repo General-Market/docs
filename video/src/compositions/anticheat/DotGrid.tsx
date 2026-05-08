@@ -87,10 +87,10 @@ const snapToGridX = (px: number) =>
 // t * (1 + t * RAMP) instead of plain t. Result: at scene start they drift
 // at the base velocity; by scene end they're moving several times faster.
 // The eye reads the ramp as acceleration.
-const ACCEL_RAMP = 0.55;
+const ACCEL_RAMP = 0.85;
 const accelDistance = (t: number) => t * (1 + t * ACCEL_RAMP);
 
-export const DotGrid: React.FC<Props> = ({ intensity = 1, speed = 1 }) => {
+export const DotGrid: React.FC<Props> = ({ intensity = 1, speed = 1.5 }) => {
   const frame = useCurrentFrame();
   const t = frame / FPS;
   const cycleW = W * 1.6;
@@ -253,7 +253,7 @@ const snapToGridXFrac = (frac: number) => snapToGridXPx(frac * W);
 
 export const VerticalDotGrid: React.FC<Props> = ({
   intensity = 1,
-  speed = 1,
+  speed = 1.5,
 }) => {
   const frame = useCurrentFrame();
   const t = frame / FPS;

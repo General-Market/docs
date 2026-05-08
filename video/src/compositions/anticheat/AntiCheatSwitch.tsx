@@ -86,7 +86,7 @@ export const AntiCheatSwitch: React.FC = () => (
     }}
   >
     <IdleZoom durationInFrames={SCENE_FRAMES} from={1} to={1.022}>
-      <DotGrid />
+      <DotGrid speed={3} />
       <ParticleField />
       <Stage />
       <DotGridVignette intensity={0.20} />
