@@ -230,7 +230,62 @@ export const AntiCheatRigged: React.FC = () => {
           }}
         />
       </IdleZoom>
+
+      {/* Source citation — pinned to the scene frame, not the article. Stays
+          legible through every zoom, dolly, whip, and fullscreen takeover. */}
+      {currentArticle && (
+        <SceneSourceCitation
+          url={currentArticle.source}
+          startFrame={articleStartFrame}
+          dark={currentArticle.treatment === "fullscreen"}
+        />
+      )}
     </AbsoluteFill>
+  );
+};
+
+// ─── Scene-level source citation ──────────────────────────────────────────────
+//
+// Pinned to the bottom-left of the 1080×1920 frame. Independent of any card
+// transform, so it survives whip-pans, dollies, and the fullscreen takeover.
+// The full URL is shown — wraps if too long, never truncated.
+
+const SceneSourceCitation: React.FC<{
+  url: string;
+  startFrame: number;
+  dark: boolean;
+}> = ({ url, startFrame, dark }) => {
+  const frame = useCurrentFrame();
+  const local = frame - startFrame;
+  // Quick fade-swap when the article changes — 4f in.
+  const opacity = interpolate(local, [0, 4], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const ink = dark ? "rgba(255,255,255,0.82)" : "rgba(10,12,18,0.72)";
+  const label = dark ? "rgba(255,255,255,0.55)" : "rgba(10,12,18,0.45)";
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: 56,
+        bottom: 56,
+        maxWidth: 940,
+        fontFamily: monoFont,
+        fontSize: 22,
+        lineHeight: 1.35,
+        color: ink,
+        letterSpacing: "0.01em",
+        wordBreak: "break-all",
+        opacity,
+        textShadow: dark ? "0 1px 2px rgba(0,0,0,0.6)" : "none",
+        pointerEvents: "none",
+        zIndex: 10,
+      }}
+    >
+      <span style={{ color: label, marginRight: 8 }}>source —</span>
+      {url}
+    </div>
   );
 };
 
@@ -427,7 +482,6 @@ const WideTreatment: React.FC<TreatmentProps> = ({ article, startFrame }) => {
         }}
       >
         <ArticleCore article={article} reveal={highlightReveal} />
-        <SourceCitation url={article.source} />
         <ShockwaveRing centerXPct={cx} centerYPct={cy} fireAt={startFrame + 4} />
       </div>
     </div>
@@ -531,7 +585,6 @@ const CorkboardTreatment: React.FC<TreatmentProps> = ({
         <Thumbtack x={"6%"} y={"-10px"} />
         <Thumbtack x={"94%"} y={"-10px"} delay={2} />
         <ArticleCore article={article} reveal={highlightReveal} />
-        <SourceCitation url={article.source} />
         <ShockwaveRing centerXPct={cx} centerYPct={cy} fireAt={startFrame + 8} />
       </div>
     </div>
@@ -614,7 +667,6 @@ const MagnifierTreatment: React.FC<TreatmentProps> = ({
         }}
       >
         <ArticleCore article={article} reveal={highlightReveal} />
-        <SourceCitation url={article.source} />
         <ShockwaveRing
           centerXPct={cx}
           centerYPct={cy}
@@ -735,8 +787,7 @@ const WhipTreatment: React.FC<TreatmentProps> = ({ article, startFrame }) => {
           }}
         >
           <ArticleCore article={article} reveal={highlightReveal} />
-          <SourceCitation url={article.source} />
-          <ShockwaveRing centerXPct={cx} centerYPct={cy} fireAt={startFrame + 8} />
+            <ShockwaveRing centerXPct={cx} centerYPct={cy} fireAt={startFrame + 8} />
         </div>
       </CameraMotionBlur>
       {/* Speed lines — three streaks behind the card during travel. */}
@@ -846,21 +897,6 @@ const FullscreenTreatment: React.FC<TreatmentProps> = ({
         )}
         <ShockwaveRing centerXPct={cx} centerYPct={cy} fireAt={startFrame + 5} />
       </div>
-      {/* Source citation — subtle bottom-left, white on dark over the photo. */}
-      <div
-        style={{
-          position: "absolute",
-          left: 56,
-          bottom: 48,
-          fontFamily: monoFont,
-          fontSize: 22,
-          color: "rgba(255,255,255,0.78)",
-          letterSpacing: "0.02em",
-          textShadow: "0 1px 2px rgba(0,0,0,0.6)",
-        }}
-      >
-        source — {article.source}
-      </div>
     </AbsoluteFill>
   );
 };
@@ -882,33 +918,10 @@ const cardChromeStyle = (): React.CSSProperties => ({
   position: "relative",
   background: "#ffffff",
   padding: 24,
-  paddingBottom: 56,
   borderRadius: 14,
   boxShadow:
     "0 0 0 1px rgba(10,12,18,0.16), 0 24px 56px rgba(10,12,18,0.20)",
 });
-
-// ─── Source citation — small mono link printed under the article card ─────────
-
-const SourceCitation: React.FC<{ url: string }> = ({ url }) => (
-  <div
-    style={{
-      position: "absolute",
-      left: 28,
-      right: 28,
-      bottom: 18,
-      fontFamily: monoFont,
-      fontSize: 18,
-      color: "rgba(10,12,18,0.55)",
-      letterSpacing: "0.02em",
-      whiteSpace: "nowrap",
-      overflow: "hidden",
-      textOverflow: "ellipsis",
-    }}
-  >
-    source — {url}
-  </div>
-);
 
 // ─── Logo blackout — flat black shape that covers a brand mark ───────────────
 //
