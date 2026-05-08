@@ -44,12 +44,11 @@ export const AntiCheatSolution: React.FC = () => {
 const Headline: React.FC = () => {
   const frame = useCurrentFrame();
 
-  // Beat 0 is a hold — half a second at scale 1 so the wordmark lands
-  // small and legible. Beat 1 onwards: full-blast accelerating bezier.
-  // End scale is huge (88) so the white card unmistakably exits the
-  // frame; a fullscreen white wash fades in over the last beat to
-  // erase the close-up letterforms entirely.
-  const HOLD_END = 15; // ≈0.5s at 30fps
+  // Hold for the first two beats so the wordmark sits still and legible.
+  // The blast collapses into the third beat — bezier surge, then a fast
+  // white wash that erases the close-up letterforms before the terminal
+  // mounts. Read first, blast last.
+  const HOLD_END = 51; // beat 2 — ≈1.7s of stillness
   const ZOOM_END = TERMINAL_AT;
   const zoomT = interpolate(frame, [HOLD_END, ZOOM_END], [0, 1], {
     extrapolateLeft: "clamp",
@@ -63,11 +62,11 @@ const Headline: React.FC = () => {
     extrapolateRight: "clamp",
   });
 
-  // White wash. Lifts in over the back of the surge and lands solid
-  // before the terminal mounts.
+  // Faster wash — 10 frames from start to solid white, riding the back
+  // of the surge.
   const wash = interpolate(
     frame,
-    [ZOOM_END - 22, ZOOM_END - 4],
+    [ZOOM_END - 14, ZOOM_END - 4],
     [0, 1],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
@@ -93,7 +92,7 @@ const Headline: React.FC = () => {
           }}
         >
           <img
-            src={staticFile("gm-logo-black.svg")}
+            src={staticFile("gm-logo.svg")}
             alt=""
             style={{ width: 130, height: 130, flexShrink: 0 }}
           />
