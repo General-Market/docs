@@ -13,7 +13,7 @@ import { FPS, H, W, colors, toFrames } from "./theme";
 import { DotGrid, DotGridVignette } from "./DotGrid";
 import { IdleZoom, RevealChars } from "./vibe";
 
-const SCENE_SECONDS = 8.0;
+const SCENE_SECONDS = 7.633;
 // Terminal lands on the tf 735 beat (Solution starts at tf 653, so
 // local 82 = tf 735). The 3D fly-in arrives with the kick.
 const TERMINAL_AT = 82;
@@ -114,6 +114,10 @@ const Headline: React.FC = () => {
             height: 132,
             display: "inline-block",
             flexShrink: 0,
+            padding: 12,
+            border: `4px solid ${colors.fg}`,
+            borderRadius: 20,
+            boxSizing: "border-box",
             opacity: interpolate(t, [0, 1], [0, 1]),
             transform: `scale(${interpolate(t, [0, 1], [0.4, 1])}) rotate(${interpolate(
               t,
@@ -291,6 +295,7 @@ const Terminal: React.FC = () => {
             display: "flex",
             flexDirection: "column",
             gap: 8,
+            minHeight: 400,
           }}
         >
           {TERMINAL_LINES.map((line, i) => {
@@ -320,6 +325,7 @@ const Terminal: React.FC = () => {
                   display: "flex",
                   alignItems: "center",
                   gap: isShielded ? 18 : 0,
+                  minHeight: "1.5em",
                   transform: `scale(${lineScale})`,
                   transformOrigin: "left center",
                   textShadow:

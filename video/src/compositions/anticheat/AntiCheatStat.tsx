@@ -14,12 +14,14 @@ import { ParallaxText } from "./transitions";
 import { IdleZoom, RevealChars } from "./vibe";
 
 // Two compositions live in this file:
-//   AntiCheatStat — the 0.01% / 70% concentration numbers (4s)
-//   AntiCheatBars — the % extracted by unfair trading bar chart (3.5s)
-const STAT_SECONDS = 4.5;
-const BARS_SECONDS = 4.0;
+//   AntiCheatStat — primary number 0.01%/70% then hard-cut to 99.9%/30%
+//   AntiCheatBars — the % extracted by unfair trading bar chart
+const STAT_SECONDS = 5.0;
+const BARS_SECONDS = 2.6;
 const STAT_FRAMES = toFrames(STAT_SECONDS);
 const BARS_FRAMES = toFrames(BARS_SECONDS);
+// Frame at which the primary number cuts to its inverse (99.9%/30%).
+const STAT_FLIP_AT = toFrames(2.0);
 
 export const AntiCheatStat: React.FC = () => {
   return (
@@ -63,34 +65,16 @@ const StatPanel: React.FC = () => {
   });
   const opacity = interpolate(enter, [0, 1], [0, 1]) * (1 - exit);
 
+  const flipped = frame >= STAT_FLIP_AT;
+
+  // Pre-flip: count up 0.01% / 70% with the verb "take".
   const countT = Math.min(1, Math.max(0, frame / toFrames(1.2)));
   const eased = 1 - Math.pow(1 - countT, 3);
-  const left = (0.01 * eased).toFixed(2);
-  const right = Math.round(70 * eased);
-
+  const preLeft = (0.01 * eased).toFixed(2);
+  const preRight = Math.round(70 * eased);
   const takeT = interpolate(
     frame,
     [toFrames(0.4), toFrames(1.0)],
-    [0, 1],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-
-  // Inverse row enters after the main stat lands — first the divider,
-  // then the row, all driven from the same spring family.
-  const dividerT = interpolate(
-    frame,
-    [toFrames(1.4), toFrames(2.0)],
-    [0, 1],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-  const inverseEnter = spring({
-    frame: frame - toFrames(1.7),
-    fps,
-    config: { damping: 24, stiffness: 120, mass: 0.7 },
-  });
-  const inverseGetT = interpolate(
-    frame,
-    [toFrames(2.0), toFrames(2.45)],
     [0, 1],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
@@ -99,35 +83,35 @@ const StatPanel: React.FC = () => {
     <AbsoluteFill style={{ opacity }}>
       <Caption />
 
-      <StatRow
-        leftValue={`${left}%`}
-        leftSubtitle="of traders"
-        leftTint={colors.fg}
-        rightValue={`${right}%`}
-        rightSubtitle="of all profits"
-        rightTint={colors.accent}
-        verb="take"
-        verbT={takeT}
-        sizes={SIZES_PRIMARY}
-        topPercent={26}
-        rowOpacity={1}
-      />
-
-      <Divider t={dividerT} />
-
-      <StatRow
-        leftValue="99.9%"
-        leftSubtitle="of traders"
-        leftTint={colors.fgSoft}
-        rightValue="30%"
-        rightSubtitle="of profits"
-        rightTint={colors.accentSoft}
-        verb="get"
-        verbT={inverseGetT}
-        sizes={SIZES_SECONDARY}
-        topPercent={66}
-        rowOpacity={interpolate(inverseEnter, [0, 1], [0, 1])}
-      />
+      {flipped ? (
+        <StatRow
+          leftValue="99.9%"
+          leftSubtitle="of traders"
+          leftTint={colors.fg}
+          rightValue="30%"
+          rightSubtitle="of all profits"
+          rightTint={colors.accent}
+          verb="get"
+          verbT={1}
+          sizes={SIZES_PRIMARY}
+          topPercent={26}
+          rowOpacity={1}
+        />
+      ) : (
+        <StatRow
+          leftValue={`${preLeft}%`}
+          leftSubtitle="of traders"
+          leftTint={colors.fg}
+          rightValue={`${preRight}%`}
+          rightSubtitle="of all profits"
+          rightTint={colors.accent}
+          verb="take"
+          verbT={takeT}
+          sizes={SIZES_PRIMARY}
+          topPercent={26}
+          rowOpacity={1}
+        />
+      )}
     </AbsoluteFill>
   );
 };
@@ -178,14 +162,6 @@ const SIZES_PRIMARY: StatSizes = {
   verb: 84,
   marginTop: 18,
   verbLift: 28,
-};
-
-const SIZES_SECONDARY: StatSizes = {
-  number: 96,
-  subtitle: 36,
-  verb: 44,
-  marginTop: 10,
-  verbLift: 14,
 };
 
 const StatRow: React.FC<{
@@ -313,57 +289,6 @@ const BigNumber: React.FC<{
       >
         {subtitle}
       </div>
-    </div>
-  );
-};
-
-// ─── Divider — thin rule with a single accent bead in the middle. ────────
-
-const Divider: React.FC<{ t: number }> = ({ t }) => {
-  const reach = t;
-  return (
-    <div
-      style={{
-        position: "absolute",
-        top: "60%",
-        left: 0,
-        right: 0,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 22,
-        padding: "0 320px",
-        opacity: t,
-      }}
-    >
-      <div
-        style={{
-          flex: 1,
-          height: 1,
-          background: colors.ruleStrong,
-          transformOrigin: "right center",
-          transform: `scaleX(${reach})`,
-        }}
-      />
-      <div
-        style={{
-          width: 8,
-          height: 8,
-          borderRadius: 4,
-          background: colors.accent,
-          opacity: 0.6,
-          transform: `scale(${t})`,
-        }}
-      />
-      <div
-        style={{
-          flex: 1,
-          height: 1,
-          background: colors.ruleStrong,
-          transformOrigin: "left center",
-          transform: `scaleX(${reach})`,
-        }}
-      />
     </div>
   );
 };

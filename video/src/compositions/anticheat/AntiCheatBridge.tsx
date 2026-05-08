@@ -27,10 +27,6 @@ const LEFT_STAGGER = toFrames(0.13);
 const OR_AT = toFrames(2.6);
 const RIGHT_EYEBROW_AT = toFrames(2.95);
 const RIGHT_ANSWER_AT = toFrames(3.35);
-// Subtitle moved earlier so it has room to breathe in the shorter
-// 6.0s window — lands on the tf 915 beat, exits before cut6.
-const SUBTITLE_AT = toFrames(4.2);
-
 const PREDATORS = [
   "Liquidation hunting",
   "Orderflow purchase",
@@ -54,7 +50,6 @@ export const AntiCheatBridge: React.FC = () => {
         <DotGrid />
         <Headline />
         <Stage />
-        <Subtitle />
         <DotGridVignette intensity={0.20} />
       </IdleZoom>
     </AbsoluteFill>
@@ -365,45 +360,6 @@ const RightAnswer: React.FC = () => {
         <br />
         bets.
       </div>
-    </div>
-  );
-};
-
-// ─── Subtitle ─────────────────────────────────────────────────────────────────
-
-const Subtitle: React.FC = () => {
-  const frame = useCurrentFrame();
-  const opacity = interpolate(
-    frame,
-    [SUBTITLE_AT, SUBTITLE_AT + toFrames(0.45)],
-    [0, 1],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-  const exit = interpolate(
-    frame,
-    [SCENE_FRAMES - toFrames(0.7), SCENE_FRAMES],
-    [1, 0.4],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-
-  return (
-    <div
-      style={{
-        position: "absolute",
-        bottom: 64,
-        left: 0,
-        right: 0,
-        textAlign: "center",
-        fontFamily: monoFont,
-        fontSize: 26,
-        fontWeight: 500,
-        letterSpacing: "0.22em",
-        textTransform: "uppercase",
-        color: colors.dim,
-        opacity: opacity * exit,
-      }}
-    >
-      Same assets · seven fewer predators
     </div>
   );
 };

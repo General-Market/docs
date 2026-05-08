@@ -15,11 +15,11 @@ import { FPS, H, W, colors, toFrames } from "./theme";
 import { DotGrid, DotGridVignette } from "./DotGrid";
 import { IdleZoom, RevealChars } from "./vibe";
 
-// 4.567s — sits between cut5 (tf 837, snap on tf 838 beat) and cut6
-// (tf 946, snap on tf 941 beat). The shield burst rides the slow tail.
-const SCENE_SECONDS = 137 / FPS;
+// 3.6s — trimmed tail; the shield burst still has room to land before
+// the cut to Bridge.
+const SCENE_SECONDS = 108 / FPS;
 const SECOND_LINE_AT = toFrames(1.6);
-const SCENE_FRAMES = 137;
+const SCENE_FRAMES = 108;
 
 // UI panel geometry — asset is 2000×984 (logged-in homepage).
 const UI_SRC_W = 2000;
