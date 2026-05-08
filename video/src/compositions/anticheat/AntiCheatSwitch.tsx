@@ -24,13 +24,14 @@ const SCENE_FRAMES = toFrames(6.6);
 const HEADLINE_AT = 0;
 const ROWS_AT = 22;
 const ROW_STAGGER = 5;
-// Hold the bar chart 1s longer so the viewer can actually read the three
-// percentages. Meteor + morph + settle all shift by the same +30f, so the
-// streak still lands exactly on the morph. Hero+kicker phase loses that
-// second. SCENE_FRAMES stays at 198 — EndCard lands on schedule.
-const PIVOT_AT = 77;
-const COPY_AT = 103;
-const KICKER_AT = toFrames(4.4);
+// Hold the bar chart long enough that the viewer can actually read three
+// percentages before the morph fires. Streak + morph + settle all share
+// the same anchor so the impact still lands on the pivot. The post-morph
+// hero+kicker phase compresses to absorb the extra reading time.
+// SCENE_FRAMES stays at 198 — EndCard lands on schedule.
+const PIVOT_AT = 107;
+const COPY_AT = 130;
+const KICKER_AT = 156;
 
 type Row = { label: string; pct: number; accent: boolean };
 // Order: Blocks first as the dominant bar — descending stair, matching
@@ -97,9 +98,9 @@ const barDepth = (i: number, pct: number) => {
 // Labels float above each bar's FINAL back-top edge, so they don't bob as
 // the bar grows. Two lines: name (smaller) and pct (larger). The hero
 // row's pct is rendered transparently here; MorphingForty paints over it.
-const LABEL_NAME_FONT = 44;
-const LABEL_NAME_LH = 1.1;
-const LABEL_VALUE_FONT = 68;
+const LABEL_NAME_FONT = 80;
+const LABEL_NAME_LH = 1.05;
+const LABEL_VALUE_FONT = 40;
 const LABEL_VALUE_LH = 1.0;
 const LABEL_INTERLINE_GAP = 8;
 const LABEL_BAR_GAP = 14;
@@ -170,7 +171,7 @@ const ParticleField: React.FC = () => {
   // very tail so the EndCard transition starts clean.
   const fieldOp = interpolate(
     frame,
-    [70, 100, SCENE_FRAMES - 18, SCENE_FRAMES],
+    [100, 130, SCENE_FRAMES - 18, SCENE_FRAMES],
     [0, 1, 1, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
@@ -258,9 +259,9 @@ const Headline: React.FC<{ morphT: number }> = ({ morphT }) => {
         right: 0,
         textAlign: "center",
         fontFamily: font,
-        fontSize: 100,
+        fontSize: 140,
         fontWeight: 700,
-        letterSpacing: "-0.034em",
+        letterSpacing: "-0.036em",
         color: colors.fg,
         lineHeight: 1.0,
         opacity: exitOp,
@@ -596,10 +597,10 @@ const MorphingForty: React.FC<{
 // settle orb fades in behind the hero and holds. Reference: Apple's
 // "watched" reveal — adapted to single-color accent.
 
-const STREAK_START = 59;
-const STREAK_IMPACT = 76;
-const FLASH_END = 87;
-const SETTLE_START = 79;
+const STREAK_START = 89;
+const STREAK_IMPACT = 106;
+const FLASH_END = 117;
+const SETTLE_START = 109;
 
 const Streak: React.FC<{
   frame: number;
@@ -767,7 +768,7 @@ const KickerTyping: React.FC<{ startFrame: number }> = ({ startFrame }) => {
           style={{
             display: "inline-block",
             width: 4,
-            height: 92 * 0.7,
+            height: 96 * 0.7,
             backgroundColor:
               charsVisible > KICKER_TEXT_PRE.length ? colors.accent : colors.fg,
             opacity: cursorOpacity,
@@ -811,9 +812,9 @@ const HeroCopy: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
           right: 0,
           textAlign: "center",
           fontFamily: font,
-          fontSize: 84,
+          fontSize: 96,
           fontWeight: 700,
-          letterSpacing: "-0.030em",
+          letterSpacing: "-0.032em",
           color: colors.fg,
           lineHeight: 1.0,
           opacity: claimOp,
@@ -847,9 +848,9 @@ const HeroCopy: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
           right: 0,
           textAlign: "center",
           fontFamily: font,
-          fontSize: 84,
+          fontSize: 96,
           fontWeight: 700,
-          letterSpacing: "-0.030em",
+          letterSpacing: "-0.032em",
           color: colors.fg,
           lineHeight: 1.0,
           opacity: kickOp,
