@@ -35,12 +35,15 @@ const BTN_SRC_Y = 565;
 const BTN_X = (BTN_SRC_X / UI_SRC_W) * UI_W;
 const BTN_Y = (BTN_SRC_Y / UI_SRC_H) * UI_H;
 
-// Cursor flight path — enters from off-panel bottom-right.
+// Cursor flight path — enters from off-panel bottom-right. Click
+// lands on the tf 889 beat (Reassure starts at tf 851, so local 38
+// = absolute tf 889). The cursor's tail is slightly tighter than
+// before — the cut benefits from the snap.
 const CURSOR_FROM_X = UI_W * 0.82;
 const CURSOR_FROM_Y = UI_H * 1.05;
 const CURSOR_MOVE_START = toFrames(0.45);
-const CURSOR_MOVE_END = toFrames(1.40);
-const CLICK_AT = toFrames(1.50);
+const CURSOR_MOVE_END = 35;
+const CLICK_AT = 38;
 
 // Panel exit — mirrors the GMBrand Scene04 phone flight: translate
 // far left, slight rotation, fade. Begins ~1.0s before scene end.

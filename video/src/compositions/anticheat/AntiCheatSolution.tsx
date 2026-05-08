@@ -14,7 +14,9 @@ import { DotGrid, DotGridVignette } from "./DotGrid";
 import { IdleZoom, RevealChars } from "./vibe";
 
 const SCENE_SECONDS = 8.0;
-const TERMINAL_AT = toFrames(2.8);
+// Terminal lands on the tf 735 beat (Solution starts at tf 653, so
+// local 82 = tf 735). The 3D fly-in arrives with the kick.
+const TERMINAL_AT = 82;
 const SCENE_FRAMES = toFrames(SCENE_SECONDS);
 
 export const AntiCheatSolution: React.FC = () => {
@@ -187,7 +189,10 @@ const Terminal: React.FC = () => {
     extrapolateRight: "clamp",
   });
 
-  const LINE_DELAYS = [toFrames(0.2), toFrames(0.8), toFrames(2.0)];
+  // LINE_DELAYS pace the typewriter so that "✓ shielded" finishes
+  // typing on the tf 812 beat (energy peak at 93.46s starts here).
+  // Solution local frame 147 + 10f type-out = 157 → absolute tf 810.
+  const LINE_DELAYS = [toFrames(0.2), toFrames(0.8), 65];
   const CHARS_PER_FRAME = 0.85;
 
   // Frame at which the absolute scene-frame "✓ shielded" finishes typing.
