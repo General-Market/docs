@@ -36,41 +36,57 @@ const ROWS: Row[] = [
 ];
 const HERO_INDEX = 2;
 
-// ─── Spec-ledger geometry ─────────────────────────────────────────────────────
+// ─── Bar-chart geometry — outlined 3D boxes, cavalier oblique projection ────
 //
-// Three columns: label · proportional bar · percentage. The bar's max
-// length is fixed; each row's fill is `BAR_MAX * pct/100` so the Blocks
-// bar is exactly twice the Perps bar. The visual is the proof.
+// Three vertical wireframe bars over the bg. Heights scale linearly with
+// pct so Blocks reads exactly twice Perps — the visual is the proof of
+// "Up to 2× more". Each bar is one silhouette polygon (6 outer edges,
+// filled with bg) plus three internal strokes (front-top, front-right,
+// top-right fold); drawing it that way avoids double strokes at shared
+// joins.
 
-const LABEL_WIDTH = 240;
-const BAR_MAX = 1280;
-const PCT_WIDTH = 140;
-const COL_GAP = 28;
-const ROW_TOTAL_WIDTH =
-  LABEL_WIDTH + COL_GAP + BAR_MAX + COL_GAP + PCT_WIDTH;
-const ROW_CONTAINER_LEFT = (W - ROW_TOTAL_WIDTH) / 2;
+const BAR_WIDTH = 170;
+const BAR_GAP = 200;
+const BAR_BASELINE_Y = 870;
+const BAR_MAX_HEIGHT = 380; // Blocks (40%) sets the cap
+const BAR_DEPTH = 24;
+const BAR_DEPTH_ANGLE_DEG = 30;
+const BAR_DX = BAR_DEPTH * Math.cos((BAR_DEPTH_ANGLE_DEG * Math.PI) / 180);
+const BAR_DY = BAR_DEPTH * Math.sin((BAR_DEPTH_ANGLE_DEG * Math.PI) / 180);
+const BAR_STROKE = 3;
 
-const LEDGER_TOP = 392;
-const ROW_PAD_Y = 36;
-const ROW_FONT_LABEL = 56;
-const ROW_FONT_PCT = 68;
-const ROW_LINE_HEIGHT = 1.05;
-const ROW_BLOCK_HEIGHT = ROW_PAD_Y * 2 + ROW_FONT_PCT * ROW_LINE_HEIGHT;
-const HAIRLINE_HEIGHT = 1;
-const BAR_HEIGHT = 8;
+const CHART_TOTAL_WIDTH = 3 * BAR_WIDTH + 2 * BAR_GAP;
+const CHART_LEFT = (W - CHART_TOTAL_WIDTH) / 2;
 
-const rowCenterY = (i: number) =>
-  LEDGER_TOP +
-  HAIRLINE_HEIGHT * (i + 1) +
-  ROW_BLOCK_HEIGHT * i +
-  ROW_BLOCK_HEIGHT / 2;
+const barX = (i: number) => CHART_LEFT + i * (BAR_WIDTH + BAR_GAP);
+const barTargetH = (pct: number) => (BAR_MAX_HEIGHT * pct) / 40;
+const barCenterX = (i: number) => barX(i) + BAR_WIDTH / 2;
 
-// Right-anchor for the percentage in column 3 — the morphing 40% starts
-// here. The pct text is right-aligned in its 160px slot.
-const PCT_COL_LEFT = ROW_CONTAINER_LEFT + LABEL_WIDTH + COL_GAP + BAR_MAX + COL_GAP;
-const PCT_COL_RIGHT = PCT_COL_LEFT + PCT_WIDTH;
-const PCT_TEXT_WIDTH_AT_ROW = 134; // approx advance of "40%" at fontSize 68
-const SRC_PCT_CX = PCT_COL_RIGHT - PCT_TEXT_WIDTH_AT_ROW / 2;
+// Labels float above each bar's FINAL top, so they don't bob as the bar
+// grows. Two lines: name (smaller) and pct (larger). The hero row's pct
+// is rendered transparently here; MorphingForty paints over it.
+const LABEL_NAME_FONT = 44;
+const LABEL_NAME_LH = 1.1;
+const LABEL_VALUE_FONT = 68;
+const LABEL_VALUE_LH = 1.0;
+const LABEL_INTERLINE_GAP = 8;
+const LABEL_BAR_GAP = 14;
+const LABEL_BLOCK_HEIGHT =
+  LABEL_NAME_FONT * LABEL_NAME_LH +
+  LABEL_INTERLINE_GAP +
+  LABEL_VALUE_FONT * LABEL_VALUE_LH;
+
+const labelTopY = (pct: number) =>
+  BAR_BASELINE_Y - barTargetH(pct) - LABEL_BAR_GAP - LABEL_BLOCK_HEIGHT;
+
+// Hero source position for the morphing 40% — centred on the Blocks
+// bar's front face, at the value-line midpoint.
+const SRC_PCT_CX = barCenterX(HERO_INDEX);
+const SRC_PCT_CY =
+  labelTopY(40) +
+  LABEL_NAME_FONT * LABEL_NAME_LH +
+  LABEL_INTERLINE_GAP +
+  (LABEL_VALUE_FONT * LABEL_VALUE_LH) / 2;
 
 // Hero sizing.
 const HERO_FONT = 320;
@@ -171,7 +187,7 @@ const Stage: React.FC = () => {
     <AbsoluteFill>
       <Headline morphT={morphT} />
       <SettleOrb frame={frame} fps={fps} />
-      <SpecLedger frame={frame} fps={fps} morphT={morphT} />
+      <BarChart3D frame={frame} fps={fps} morphT={morphT} />
       <Streak
         frame={frame}
         startFromX={HERO_CENTER_X + 1100}
@@ -229,72 +245,145 @@ const Headline: React.FC<{ morphT: number }> = ({ morphT }) => {
   );
 };
 
-// ─── Spec ledger ──────────────────────────────────────────────────────────────
+// ─── Bar chart — outlined 3D boxes ────────────────────────────────────────────
 
-const SpecLedger: React.FC<{
+const BarChart3D: React.FC<{
   frame: number;
   fps: number;
   morphT: number;
 }> = ({ frame, fps, morphT }) => (
-  <div
-    style={{
-      position: "absolute",
-      top: LEDGER_TOP,
-      left: ROW_CONTAINER_LEFT,
-      width: ROW_TOTAL_WIDTH,
-      display: "flex",
-      flexDirection: "column",
-    }}
-  >
-    <Hairline frame={frame} fps={fps} index={0} morphT={morphT} />
-    {ROWS.map((row, i) => (
-      <React.Fragment key={row.label}>
-        <SpecRow
+  <>
+    <svg
+      width={W}
+      height={H}
+      viewBox={`0 0 ${W} ${H}`}
+      style={{
+        position: "absolute",
+        left: 0,
+        top: 0,
+        pointerEvents: "none",
+      }}
+    >
+      {ROWS.map((row, i) => (
+        <Bar3D
+          key={row.label}
           row={row}
           index={i}
           frame={frame}
-          fps={fps}
           morphT={morphT}
         />
-        <Hairline
-          frame={frame}
-          fps={fps}
-          index={i + 1}
-          morphT={morphT}
-        />
-      </React.Fragment>
+      ))}
+    </svg>
+    {ROWS.map((row, i) => (
+      <BarLabel
+        key={row.label}
+        row={row}
+        index={i}
+        frame={frame}
+        fps={fps}
+        morphT={morphT}
+      />
     ))}
-  </div>
+  </>
 );
 
-const Hairline: React.FC<{
-  frame: number;
-  fps: number;
+const Bar3D: React.FC<{
+  row: Row;
   index: number;
+  frame: number;
   morphT: number;
-}> = ({ frame, fps, index, morphT }) => {
-  const start = ROWS_AT + index * ROW_STAGGER;
-  const draw = spring({
-    frame: frame - start,
-    fps,
-    config: { damping: 26, stiffness: 130, mass: 0.6 },
+}> = ({ row, index, frame, morphT }) => {
+  const start = ROWS_AT + index * ROW_STAGGER + 2;
+  const local = frame - start;
+
+  const enterOp = interpolate(local, [0, 12], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
   });
-  const retract = 1 - morphT;
-  const scaleX = draw * retract;
+
+  // Height growth: ease-cubic-out over 14 frames, same window as the count.
+  const countT = Math.max(0, Math.min(1, local / 14));
+  const countEased = 1 - Math.pow(1 - countT, 3);
+
+  const isHero = index === HERO_INDEX;
+  const exitOp = 1 - morphT;
+  // Hero retracts a touch faster so the 40% flies free without leaving a
+  // phantom bar trailing behind it.
+  const heightFactor = isHero
+    ? Math.max(0, 1 - morphT * 1.4)
+    : 1 - morphT;
+  const currentH = barTargetH(row.pct) * countEased * heightFactor;
+  if (currentH < 0.5) return null;
+
+  const x = barX(index);
+  const yBottom = BAR_BASELINE_Y;
+  const yTop = yBottom - currentH;
+  const xR = x + BAR_WIDTH;
+
+  const bTLx = x + BAR_DX;
+  const bTLy = yTop - BAR_DY;
+  const bTRx = xR + BAR_DX;
+  const bTRy = yTop - BAR_DY;
+  const bBRx = xR + BAR_DX;
+  const bBRy = yBottom - BAR_DY;
+
+  // Outer silhouette traced counter-clockwise: front-bottom-left → front-
+  // top-left → back-top-left → back-top-right → back-bottom-right →
+  // front-bottom-right. Six visible edges. Filled with bg to mask the dot
+  // grid behind the box.
+  const silhouette = [
+    `${x},${yBottom}`,
+    `${x},${yTop}`,
+    `${bTLx},${bTLy}`,
+    `${bTRx},${bTRy}`,
+    `${bBRx},${bBRy}`,
+    `${xR},${yBottom}`,
+  ].join(" ");
+
   return (
-    <div
-      style={{
-        height: HAIRLINE_HEIGHT,
-        background: colors.rule,
-        transform: `scaleX(${scaleX.toFixed(3)})`,
-        transformOrigin: "0% 50%",
-        willChange: "transform",
-      }}
-    />
+    <g opacity={enterOp * exitOp}>
+      <polygon
+        points={silhouette}
+        fill={colors.bg}
+        stroke={colors.fg}
+        strokeWidth={BAR_STROKE}
+        strokeLinejoin="round"
+      />
+      {/* Front-top edge */}
+      <line
+        x1={x}
+        y1={yTop}
+        x2={xR}
+        y2={yTop}
+        stroke={colors.fg}
+        strokeWidth={BAR_STROKE}
+        strokeLinecap="round"
+      />
+      {/* Front-right edge */}
+      <line
+        x1={xR}
+        y1={yTop}
+        x2={xR}
+        y2={yBottom}
+        stroke={colors.fg}
+        strokeWidth={BAR_STROKE}
+        strokeLinecap="round"
+      />
+      {/* Top-right fold (front-top-right → back-top-right) */}
+      <line
+        x1={xR}
+        y1={yTop}
+        x2={bTRx}
+        y2={bTRy}
+        stroke={colors.fg}
+        strokeWidth={BAR_STROKE}
+        strokeLinecap="round"
+      />
+    </g>
   );
 };
 
-const SpecRow: React.FC<{
+const BarLabel: React.FC<{
   row: Row;
   index: number;
   frame: number;
@@ -303,123 +392,77 @@ const SpecRow: React.FC<{
 }> = ({ row, index, frame, fps, morphT }) => {
   const start = ROWS_AT + index * ROW_STAGGER + 2;
   const local = frame - start;
+
+  const enterOp = interpolate(local, [0, 12], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const enterBlur = interpolate(local, [0, 12], [4, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
   const enter = spring({
     frame: local,
     fps,
     config: { damping: 24, stiffness: 130, mass: 0.7 },
   });
-  const enterOp = interpolate(local, [0, 12], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
   const enterY = interpolate(enter, [0, 1], [12, 0]);
-  const enterBlur = interpolate(local, [0, 12], [4, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
 
-  // Counting %: 0 → row.pct over 14 frames, eased.
   const countT = Math.max(0, Math.min(1, local / 14));
   const countEased = 1 - Math.pow(1 - countT, 3);
   const value = Math.round(row.pct * countEased);
-
-  // Bar growth: same easing window as the count, target = BAR_MAX × pct/100.
-  const barFill = (BAR_MAX * row.pct) / 100;
-  const barWidth = barFill * countEased;
 
   const isHero = index === HERO_INDEX;
   const exitOp = 1 - morphT;
   const exitY = isHero ? morphT * 4 : morphT * 56;
   const exitBlur = isHero ? morphT * 2 : morphT * 10;
 
-  // Bars retract on pivot for non-hero rows; the Blocks bar dims with its row.
-  const barRetract = 1 - morphT;
-
   return (
     <div
       style={{
-        display: "grid",
-        gridTemplateColumns: `${LABEL_WIDTH}px ${BAR_MAX}px ${PCT_WIDTH}px`,
-        columnGap: COL_GAP,
-        alignItems: "center",
-        padding: `${ROW_PAD_Y}px 0`,
+        position: "absolute",
+        left: barCenterX(index),
+        top: labelTopY(row.pct),
+        transform: `translate(-50%, 0) translateY(${(enterY + exitY).toFixed(2)}px)`,
+        textAlign: "center",
         opacity: enterOp * exitOp,
-        transform: `translateY(${(enterY + exitY).toFixed(2)}px)`,
         filter:
           enterBlur + exitBlur > 0.05
             ? `blur(${(enterBlur + exitBlur).toFixed(2)}px)`
             : undefined,
         willChange: "transform, opacity, filter",
+        whiteSpace: "nowrap",
       }}
     >
-      {/* Col 1 — label */}
       <div
         style={{
           fontFamily: font,
-          fontSize: ROW_FONT_LABEL,
+          fontSize: LABEL_NAME_FONT,
+          lineHeight: LABEL_NAME_LH,
           fontWeight: 600,
           letterSpacing: "-0.022em",
           color: row.accent ? colors.fg : colors.fgSoft,
-          lineHeight: ROW_LINE_HEIGHT,
         }}
       >
         {row.label}
       </div>
-
-      {/* Col 2 — proportional bar */}
+      <div style={{ height: LABEL_INTERLINE_GAP }} />
+      {/* Hero pct rendered transparently — MorphingForty paints the visible
+       * "40%" over the same spot. */}
       <div
+        aria-hidden={isHero}
         style={{
-          position: "relative",
-          width: BAR_MAX,
-          height: BAR_HEIGHT,
+          fontFamily: font,
+          fontSize: LABEL_VALUE_FONT,
+          lineHeight: LABEL_VALUE_LH,
+          fontWeight: 700,
+          letterSpacing: "-0.028em",
+          fontVariantNumeric: "tabular-nums",
+          color: isHero ? "transparent" : colors.dim,
         }}
       >
-        <div
-          style={{
-            width: barWidth * barRetract,
-            height: BAR_HEIGHT,
-            background: row.accent ? colors.accent : colors.dim,
-            borderRadius: BAR_HEIGHT / 2,
-            willChange: "width",
-          }}
-        />
+        {isHero ? `${row.pct}%` : `${value}%`}
       </div>
-
-      {/* Col 3 — percentage. The hero row's % is rendered by MorphingForty;
-       * we leave a transparent placeholder here so the grid keeps its
-       * baseline. */}
-      {isHero ? (
-        <div
-          aria-hidden
-          style={{
-            fontFamily: font,
-            fontSize: ROW_FONT_PCT,
-            fontWeight: 700,
-            letterSpacing: "-0.028em",
-            color: "transparent",
-            fontVariantNumeric: "tabular-nums",
-            lineHeight: ROW_LINE_HEIGHT,
-            textAlign: "right",
-          }}
-        >
-          {row.pct}%
-        </div>
-      ) : (
-        <div
-          style={{
-            fontFamily: font,
-            fontSize: ROW_FONT_PCT,
-            fontWeight: 700,
-            letterSpacing: "-0.028em",
-            color: colors.dim,
-            fontVariantNumeric: "tabular-nums",
-            lineHeight: ROW_LINE_HEIGHT,
-            textAlign: "right",
-          }}
-        >
-          {value}%
-        </div>
-      )}
     </div>
   );
 };
@@ -452,10 +495,9 @@ const MorphingForty: React.FC<{
   const countEased = 1 - Math.pow(1 - countT, 3);
   const value = morphT > 0.05 ? 40 : Math.round(40 * countEased);
 
-  const SRC_CY = rowCenterY(HERO_INDEX);
   const cx = SRC_PCT_CX + (HERO_CENTER_X - SRC_PCT_CX) * morphT;
-  const cy = SRC_CY + (HERO_CENTER_Y - SRC_CY) * morphT;
-  const scale = 1 + (HERO_FONT / ROW_FONT_PCT - 1) * morphT;
+  const cy = SRC_PCT_CY + (HERO_CENTER_Y - SRC_PCT_CY) * morphT;
+  const scale = 1 + (HERO_FONT / LABEL_VALUE_FONT - 1) * morphT;
 
   const sinceLand = Math.max(0, frame - PIVOT_AT - 22);
   const breath = 1 + Math.sin(sinceLand / 32) * 0.006;
@@ -473,7 +515,7 @@ const MorphingForty: React.FC<{
         transform: `translate(-50%, -50%) translateY(${enterY.toFixed(2)}px) scale(${finalScale.toFixed(4)})`,
         transformOrigin: "center center",
         fontFamily: font,
-        fontSize: ROW_FONT_PCT,
+        fontSize: LABEL_VALUE_FONT,
         fontWeight: weight,
         letterSpacing: "-0.045em",
         lineHeight: 1,
@@ -499,7 +541,7 @@ const MorphingForty: React.FC<{
       {value}
       <span
         style={{
-          fontSize: ROW_FONT_PCT * 0.62,
+          fontSize: LABEL_VALUE_FONT * 0.62,
           marginLeft: 4,
           letterSpacing: "-0.02em",
         }}
