@@ -3,9 +3,7 @@ import {
   AbsoluteFill,
   Sequence,
   interpolate,
-  spring,
   useCurrentFrame,
-  useVideoConfig,
 } from "remotion";
 import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
@@ -37,24 +35,26 @@ export const AntiCheatSolution: React.FC = () => {
   );
 };
 
-// ─── Headline: Ember-style zoom on "general fix this" ───────────────────────
-// Smooth scale 1 → 6 over beat 1 (frames 0–26). Same easing curve and zoom
-// magnitude as the "on" word in Ember-Replicate. The headline fades out
-// just before the terminal flies in at TERMINAL_AT.
+// ─── Headline: continuous accelerating zoom on "general fix this" ───────────
+// Starts readable (fontSize 80 at scale 1), accelerates outward to scale 2.5
+// across the whole pre-terminal window. Always growing — never holds — then
+// fades out as the terminal flies in at TERMINAL_AT.
 
 const Headline: React.FC = () => {
   const frame = useCurrentFrame();
 
-  const t = interpolate(frame, [0, 26], [0, 1], {
+  // Accelerating progression: slow start, fast finish.
+  const ZOOM_END = TERMINAL_AT - 2;
+  const t = interpolate(frame, [0, ZOOM_END], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const smooth = t * t * (3 - 2 * t);
-  const scale = interpolate(smooth, [0, 1], [1, 6]);
+  const accel = Math.pow(t, 1.6);
+  const scale = interpolate(accel, [0, 1], [1, 2.5]);
 
   const opacity = interpolate(
     frame,
-    [0, 2, TERMINAL_AT - 8, TERMINAL_AT - 2],
+    [0, 2, TERMINAL_AT - 10, TERMINAL_AT - 2],
     [0, 1, 1, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
@@ -71,13 +71,14 @@ const Headline: React.FC = () => {
       <div
         style={{
           fontFamily: font,
-          fontSize: 132,
+          fontSize: 80,
           fontWeight: 800,
-          letterSpacing: "-0.04em",
+          letterSpacing: "-0.035em",
           color: colors.fg,
-          lineHeight: 0.95,
+          lineHeight: 1.0,
           whiteSpace: "nowrap",
           transform: `scale(${scale})`,
+          transformOrigin: "center center",
         }}
       >
         <span style={{ color: colors.accent }}>general</span> fix this
@@ -121,7 +122,6 @@ const ShieldIcon: React.FC<{ size: number; glow: number }> = ({ size, glow }) =>
 
 const Terminal: React.FC = () => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
 
   // 3D entrance ported from GMBrand Scene03 SegDesktopUI (the desktop UI
   // fly-in that lands at 0:18). Tilted-and-zoomed → flat over 95 frames.
@@ -178,19 +178,14 @@ const Terminal: React.FC = () => {
   );
   const glow = Math.max(punch * 1.6, glowSustain);
 
-  // CTA holds back until the terminal has finished its 95-frame entrance,
-  // then slips one beat further so the line lands on a kick. Terminal
-  // mounts at scene-local 77; CTA_DELAY 103 inside the Sequence resolves
-  // to scene-local 180 — beat 26 inside Solution. While the panel is still
-  // oversized and tilted, anything beneath it is occluded.
-  const CTA_DELAY = 103;
-  const ctaSpring = spring({
-    frame: frame - CTA_DELAY,
-    fps,
-    config: { damping: 22, stiffness: 130, mass: 0.6 },
-  });
-  const ctaOpacity = interpolate(ctaSpring, [0, 1], [0, 1]);
-  const ctaY = interpolate(ctaSpring, [0, 1], [40, 0]);
+  // CTA: per-char reveal accelerating from the left.
+  // First char lands at scene-local 103 (= 22.20s absolute = beat 4 in
+  // Solution); intervals shrink as the line progresses (sqrt curve gives
+  // slow start, fast finish). Each char slides in from -80px with a
+  // 6-frame fade.
+  const CTA_TEXT = "Shield your pnl from bad actors";
+  const CTA_START = 26; // Terminal-local
+  const CTA_REVEAL = 52;
 
   return (
     <AbsoluteFill
@@ -315,16 +310,33 @@ const Terminal: React.FC = () => {
           textAlign: "center",
           fontFamily: font,
           fontSize: 120,
-          fontWeight: 700,
           letterSpacing: "-0.025em",
           lineHeight: 1.08,
-          color: colors.fg,
-          opacity: ctaOpacity,
-          transform: `translateY(${ctaY}px)`,
+          whiteSpace: "nowrap",
         }}
       >
-        <span style={{ color: colors.accent, fontWeight: 800 }}>Shield</span>{" "}
-        your pnl from bad actors
+        {CTA_TEXT.split("").map((ch, i) => {
+          const startFrame =
+            CTA_START + CTA_REVEAL * Math.sqrt(i / CTA_TEXT.length);
+          const local = frame - startFrame;
+          const op = Math.max(0, Math.min(1, local / 6));
+          const x = (1 - op) * -80;
+          const isShield = i < 6;
+          return (
+            <span
+              key={i}
+              style={{
+                display: "inline-block",
+                opacity: op,
+                transform: `translateX(${x}px)`,
+                color: isShield ? colors.accent : colors.fg,
+                fontWeight: isShield ? 800 : 700,
+              }}
+            >
+              {ch === " " ? " " : ch}
+            </span>
+          );
+        })}
       </div>
     </AbsoluteFill>
   );
