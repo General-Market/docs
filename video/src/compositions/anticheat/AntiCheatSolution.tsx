@@ -44,22 +44,31 @@ export const AntiCheatSolution: React.FC = () => {
 const Headline: React.FC = () => {
   const frame = useCurrentFrame();
 
-  // Aggressive zoom on a strong easeIn bezier — slow open, late surge —
-  // mirroring the march's rising kick across the three beats of the
-  // pre-terminal window. The wordmark sits on a white card that scales
-  // with it, so by the end the screen is solid white, not the empty
-  // grey of the field. No fade-out: the zoom is the exit.
+  // Hold legible for the first beat, then surge through the back half so
+  // the white card fills the frame by the time the terminal mounts. Strong
+  // easeIn bezier — slow open, late kick — mirroring the march's rising
+  // pulse. The mark and wordmark fade to 0 over the second half so the
+  // last beats land on pure white, not on huge black letterforms.
   const ZOOM_END = TERMINAL_AT;
   const scale = interpolate(frame, [0, ZOOM_END], [1, 22], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
-    easing: Easing.bezier(0.5, 0, 0.7, 0.25),
+    easing: Easing.bezier(0.72, 0, 0.88, 0.35),
   });
 
   const opacity = interpolate(frame, [0, 6], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
+
+  // Fade the black letterforms out before the zoom finishes — keeps the
+  // exit on solid white instead of close-up letter geometry.
+  const innerOpacity = interpolate(
+    frame,
+    [0, 38, ZOOM_END - 12],
+    [1, 1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
 
   return (
     <AbsoluteFill
@@ -84,7 +93,12 @@ const Headline: React.FC = () => {
         <img
           src={staticFile("gm-logo-black.svg")}
           alt=""
-          style={{ width: 200, height: 200, flexShrink: 0 }}
+          style={{
+            width: 200,
+            height: 200,
+            flexShrink: 0,
+            opacity: innerOpacity,
+          }}
         />
         <span
           style={{
@@ -94,6 +108,7 @@ const Headline: React.FC = () => {
             letterSpacing: "-0.05em",
             color: colors.fg,
             lineHeight: 0.95,
+            opacity: innerOpacity,
           }}
         >
           General
