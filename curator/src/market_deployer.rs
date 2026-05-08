@@ -178,6 +178,7 @@ impl MarketDeployer {
         let chain_id = self.provider.get_chainid().await
             .map_err(|e| DeployerError::Rpc(format!("get_chainid: {e}")))?;
         let wallet = self.wallet.clone().with_chain_id(chain_id.as_u64());
+        let client = SignerMiddleware::new(self.provider.clone(), wallet);
 
         // 1. Read ITP count from Index
         let count = self.read_itp_count().await?;
@@ -185,53 +186,94 @@ impl MarketDeployer {
             return Ok(0);
         }
 
-        // 2. Get all vault addresses
-        let vaults = self.get_all_vaults(count).await?;
-
-        // 3. Get existing supply queue (these markets already exist)
+        // 2. Read existing supply queue + collaterals UPFRONT (before any work).
+        //    Mutated during the scan — every market we deploy gets its collateral
+        //    added so the next iteration sees it.
         let existing_ids = self.read_supply_queue().await?;
-        let existing_collaterals = self.get_collaterals_for_markets(&existing_ids).await?;
+        let mut existing_collaterals = self.get_collaterals_for_markets(&existing_ids).await?;
 
-        // 4. Find ITPs without markets
-        let missing: Vec<(u64, Address)> = vaults
-            .iter()
-            .filter(|(_, addr)| !existing_collaterals.contains(addr))
-            .cloned()
-            .collect();
-
-        if missing.is_empty() {
-            return Ok(0);
-        }
-
-        info!(
-            total = count,
-            existing = existing_ids.len(),
-            missing = missing.len(),
-            "Found ITPs without lending markets"
-        );
-
-        // 5. Deploy markets for missing ITPs
-        let client = SignerMiddleware::new(self.provider.clone(), wallet);
+        // 3. Per-ITP: get/deploy vault, then immediately deploy its market if missing.
+        //    Sequential — but each ITP is fully processed (vault → market) before
+        //    moving on. Previously the function gathered all vaults first and only
+        //    then deployed markets, which meant a steady stream of new ITP creations
+        //    starved every market deploy of its turn (vaults grew faster than the
+        //    pre-pass could finish, market step never reached).
+        let selector = &ethers::utils::keccak256(b"itpVaults(bytes32)")[..4];
         let mut new_market_ids: Vec<[u8; 32]> = Vec::new();
+        let mut vault_count = 0usize;
 
-        for (itp_num, vault_addr) in &missing {
-            match self.deploy_market_for_itp(&client, *vault_addr).await {
+        for i in 1..=count {
+            let itp_id = U256::from(i);
+            let mut itp_id_bytes = [0u8; 32];
+            itp_id.to_big_endian(&mut itp_id_bytes);
+
+            let encoded = ethers::abi::encode(&[ethers::abi::Token::FixedBytes(itp_id_bytes.to_vec())]);
+            let mut calldata = selector.to_vec();
+            calldata.extend_from_slice(&encoded);
+            let tx = TransactionRequest::new().to(self.index_address).data(calldata);
+
+            // Read existing vault, or attempt deploy if missing + bytecode available + not in cooldown.
+            let vault_addr: Option<Address> = match self.provider.call(&tx.into(), None).await {
+                Ok(result) if result.len() >= 32 => {
+                    let addr = Address::from_slice(&result[12..32]);
+                    if addr != Address::zero() {
+                        Some(addr)
+                    } else if self.vault_bytecode.is_some() {
+                        let cooled = {
+                            let map = self.failed_deploys.lock().unwrap();
+                            map.get(&i).map_or(true, |t| t.elapsed() >= DEPLOY_FAILURE_COOLDOWN)
+                        };
+                        if !cooled {
+                            info!(itp = i, "Skipping vault deploy — still in cooldown after prior failure");
+                            None
+                        } else {
+                            match self.deploy_vault_for_itp(&client, i, itp_id_bytes).await {
+                                Ok(v) => {
+                                    self.failed_deploys.lock().unwrap().remove(&i);
+                                    info!(itp = i, vault = %v, "Auto-deployed vault for new ITP");
+                                    Some(v)
+                                }
+                                Err(e) => {
+                                    self.failed_deploys.lock().unwrap().insert(i, Instant::now());
+                                    error!(itp = i, error = %e, "Failed to auto-deploy vault (cooldown 30m)");
+                                    None
+                                }
+                            }
+                        }
+                    } else {
+                        None
+                    }
+                }
+                _ => None, // skip failed reads
+            };
+
+            let Some(vault_addr) = vault_addr else { continue };
+            vault_count += 1;
+
+            // Deploy market for this vault if its collateralToken isn't already known.
+            // existing_collaterals was snapshot at the top; new vaults deployed earlier
+            // in this same scan get added to it as we go.
+            if existing_collaterals.contains(&vault_addr) {
+                continue;
+            }
+
+            match self.deploy_market_for_itp(&client, vault_addr).await {
                 Ok(market_id) => {
-                    info!(itp = itp_num, market = %ethers::utils::hex::encode(market_id), "Market deployed");
+                    info!(itp = i, vault = %vault_addr, market = %ethers::utils::hex::encode(market_id),
+                        "Market deployed for ITP (interleaved with vault)");
                     new_market_ids.push(market_id);
+                    existing_collaterals.insert(vault_addr);
                 }
                 Err(e) => {
-                    error!(itp = itp_num, addr = %vault_addr, error = %e, "Failed to deploy market");
-                    // Continue with remaining ITPs
+                    error!(itp = i, vault = %vault_addr, error = %e, "Failed to deploy market");
                 }
             }
         }
 
-        // 6. Update supply queue with all markets (existing + new)
+        // 4. Append new markets to supply queue once at the end. Single tx beats N batched.
         if !new_market_ids.is_empty() {
             let mut all_ids = existing_ids.clone();
             all_ids.extend_from_slice(&new_market_ids);
-
             if let Err(e) = self.set_supply_queue(&client, &all_ids).await {
                 error!(error = %e, "Failed to update supply queue");
             } else {
@@ -239,8 +281,11 @@ impl MarketDeployer {
             }
         }
 
+        info!(itps_seen = vault_count, new_markets = new_market_ids.len(),
+            "scan_and_deploy complete");
         Ok(new_market_ids.len())
     }
+
 
     // ── Contract reads ──
 
