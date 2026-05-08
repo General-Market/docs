@@ -41,8 +41,8 @@ const HERO_INDEX = 2;
 // bar is exactly twice the Perps bar. The visual is the proof.
 
 const LABEL_WIDTH = 240;
-const BAR_MAX = 820;
-const PCT_WIDTH = 160;
+const BAR_MAX = 1280;
+const PCT_WIDTH = 140;
 const COL_GAP = 28;
 const ROW_TOTAL_WIDTH =
   LABEL_WIDTH + COL_GAP + BAR_MAX + COL_GAP + PCT_WIDTH;
@@ -55,7 +55,7 @@ const ROW_FONT_PCT = 68;
 const ROW_LINE_HEIGHT = 1.05;
 const ROW_BLOCK_HEIGHT = ROW_PAD_Y * 2 + ROW_FONT_PCT * ROW_LINE_HEIGHT;
 const HAIRLINE_HEIGHT = 1;
-const BAR_HEIGHT = 6;
+const BAR_HEIGHT = 8;
 
 const rowCenterY = (i: number) =>
   LEDGER_TOP +
@@ -493,7 +493,7 @@ const HeroCopy: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
       <div
         style={{
           position: "absolute",
-          bottom: 88,
+          bottom: 128,
           left: 0,
           right: 0,
           textAlign: "center",
@@ -507,6 +507,28 @@ const HeroCopy: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
         }}
       >
         just by switching financial product
+      </div>
+
+      {/* Legal footnote — tiny, dim, defensible. Apple-style fine print. */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: 56,
+          left: 0,
+          right: 0,
+          textAlign: "center",
+          fontFamily: font,
+          fontSize: 18,
+          fontWeight: 400,
+          letterSpacing: "-0.005em",
+          color: colors.dim,
+          lineHeight: 1.35,
+          maxWidth: 1240,
+          margin: "0 auto",
+          opacity: kickOp,
+        }}
+      >
+        *Indicative comparison under favorable market conditions. Net of fees and slippage. Past performance does not guarantee future returns.
       </div>
     </>
   );
