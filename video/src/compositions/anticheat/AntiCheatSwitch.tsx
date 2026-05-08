@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React from "react";
 import {
   AbsoluteFill,
   interpolate,
@@ -94,71 +94,31 @@ export const AntiCheatSwitch: React.FC = () => (
   </AbsoluteFill>
 );
 
-// ─── Particle field — drifting "+X%" tickers, GMBrand Scene03 pattern ─────
-// Adapted from PctParticleField but tinted accent blue and dimmed for the
-// AntiCheat light field. Fades in around the kicker beat so it amplifies
-// the "just by switching" punch instead of competing with the ledger.
+// ─── Particle field — soft drifting dots, GMBrand SegSupercharge pattern ──
+//
+// Adapted from Scene03's "Built to maximize your edge" supercharge segment:
+// noise-driven dots at varied sizes, fade in around the impact moment and
+// hold through the rest of the scene. Tinted to the accent-blue family so
+// they augment the hero glow without competing with the ledger.
 
-type PctParticle = {
-  id: number;
-  x: number;
-  y: number;
-  label: string;
-  fontSize: number;
-  baseOpacity: number;
-  noiseOffX: number;
-  noiseOffY: number;
-  driftAngle: number;
-  driftSpeed: number;
-};
-
-function seededRandom(seed: number) {
-  let s = seed % 2147483647;
-  if (s <= 0) s += 2147483646;
-  return () => {
-    s = (s * 16807) % 2147483647;
-    return (s - 1) / 2147483646;
-  };
-}
-
-function generatePctParticles(count: number, seed: number): PctParticle[] {
-  const rng = seededRandom(seed);
-  return Array.from({ length: count }, (_, i) => {
-    const r2 = rng();
-    const r3 = rng();
-    const r4 = rng();
-    const r5 = rng();
-    const r6 = rng();
-    const r7 = rng();
-    const value = (r2 * 25 + 0.1).toFixed(1);
-    let fontSize: number;
-    if (r3 < 0.7) fontSize = 14 + r4 * 4;
-    else if (r3 < 0.92) fontSize = 22 + r4 * 6;
-    else fontSize = 30 + r4 * 8;
-    return {
-      id: i,
-      x: r5 * W,
-      y: r6 * H,
-      label: `+${value}%`,
-      fontSize,
-      baseOpacity: 0.18 + r7 * 0.40,
-      noiseOffX: rng() * 1000,
-      noiseOffY: rng() * 1000,
-      driftAngle: rng() * Math.PI * 2,
-      driftSpeed: 0.3 + rng() * 1.5,
-    };
-  });
-}
+const PARTICLE_COUNT = 32;
+const PARTICLE_COLORS = [
+  colors.accent,
+  colors.accentSoft,
+  "#8DA5FF",
+  "#B8C8FF",
+  "#FFFFFF",
+];
 
 const ParticleField: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const particles = useMemo(() => generatePctParticles(120, 1729), []);
 
-  // Fade up around the kicker, hold through the rest of the scene.
+  // Fade in around the impact, hold through the hero state, retreat at the
+  // very tail so the EndCard transition starts clean.
   const fieldOp = interpolate(
     frame,
-    [KICKER_AT - 24, KICKER_AT + 12, SCENE_FRAMES - 14, SCENE_FRAMES],
+    [40, 70, SCENE_FRAMES - 18, SCENE_FRAMES],
     [0, 1, 1, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
@@ -166,32 +126,29 @@ const ParticleField: React.FC = () => {
 
   return (
     <AbsoluteFill style={{ pointerEvents: "none", opacity: fieldOp }}>
-      {particles.map((p) => {
+      {Array.from({ length: PARTICLE_COUNT }, (_, i) => {
         const t = frame / fps;
-        const nx = noise2D("acpx" + p.id, t * 0.4 + p.noiseOffX, 0) * 36;
-        const ny = noise2D("acpy" + p.id, 0, t * 0.4 + p.noiseOffY) * 36;
-        const drift = t * p.driftSpeed * 22;
-        const px = p.x + Math.cos(p.driftAngle) * drift + nx;
-        const py = p.y + Math.sin(p.driftAngle) * drift * 0.5 - drift * 0.3 + ny;
-        const wrappedX = ((px % (W + 100)) + (W + 100)) % (W + 100) - 50;
-        const wrappedY = ((py % (H + 100)) + (H + 100)) % (H + 100) - 50;
+        const px = noise2D("acpx" + i, t * 0.5, i) * 760 + 960;
+        const py = noise2D("acpy" + i, i, t * 0.5) * 460 + 540;
+        const sz = 3 + (i % 5) * 1.6;
+        const color = PARTICLE_COLORS[i % PARTICLE_COLORS.length];
+        const baseOp = 0.32 + ((i * 17) % 36) / 100;
+        const blur = i % 4 === 0 ? 1.8 : 0;
         return (
-          <span
-            key={p.id}
+          <div
+            key={i}
             style={{
               position: "absolute",
-              left: wrappedX,
-              top: wrappedY,
-              fontSize: p.fontSize,
-              fontFamily: monoFont,
-              fontWeight: 600,
-              color: colors.accent,
-              opacity: p.baseOpacity,
-              whiteSpace: "nowrap",
+              left: px,
+              top: py,
+              width: sz,
+              height: sz,
+              borderRadius: "50%",
+              backgroundColor: color,
+              opacity: baseOp,
+              filter: blur > 0 ? `blur(${blur.toFixed(1)}px)` : undefined,
             }}
-          >
-            {p.label}
-          </span>
+          />
         );
       })}
     </AbsoluteFill>
@@ -561,9 +518,9 @@ const MorphingForty: React.FC<{
 // "watched" reveal — adapted to single-color accent.
 
 const STREAK_START = 29;
-const STREAK_IMPACT = 71;
-const FLASH_END = 82;
-const SETTLE_START = 74;
+const STREAK_IMPACT = 46;
+const FLASH_END = 57;
+const SETTLE_START = 49;
 
 const Streak: React.FC<{
   frame: number;
@@ -800,19 +757,20 @@ const HeroCopy: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
         </span>
       </div>
 
-      {/* Bottom kicker — the action. GMBrand Scene02 typing animation,
-       * large size, hero-weight, accent-tinted. Reads at full-frame distance. */}
+      {/* Top kicker — the action, matched in size + weight to "Up to 2× more"
+       * so the two read as twins. Sits where the headline used to live; now
+       * that "Same strategy." has exited it owns the top of the frame. */}
       <div
         style={{
           position: "absolute",
-          bottom: 144,
+          top: 156,
           left: 0,
           right: 0,
           textAlign: "center",
           fontFamily: font,
-          fontSize: 92,
-          fontWeight: 800,
-          letterSpacing: "-0.032em",
+          fontSize: 84,
+          fontWeight: 700,
+          letterSpacing: "-0.030em",
           color: colors.fg,
           lineHeight: 1.0,
           opacity: kickOp,
