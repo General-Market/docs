@@ -197,7 +197,7 @@ function Subgraph({
   const fill = tone === 'tint-blue' ? '#f2f7fe' : tone === 'tint-green' ? '#f1faf3' : APPLE_SURFACE
   return (
     <g>
-      <rect x={x} y={y} width={w} height={h} rx={14} fill={fill} stroke={APPLE_BORDER} />
+      <rect x={x} y={y} width={w} height={h} rx={12} fill={fill} stroke={APPLE_BORDER} />
       <text
         x={x + 16}
         y={y + 20}

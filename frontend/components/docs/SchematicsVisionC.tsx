@@ -104,7 +104,7 @@ export function BlockPipelineSchematic() {
 
         {/* Data node section */}
         <g>
-          <rect x={colX} y={top} width={colW} height={dataH} rx={14} fill={SF} stroke={BD} />
+          <rect x={colX} y={top} width={colW} height={dataH} rx={12} fill={SF} stroke={BD} />
           <rect x={colX} y={top} width={4} height={dataH} fill={BLUE} rx={2} />
           <text x={colX + 18} y={top + 24} fontFamily={FONT_DISPLAY} fontSize="14" fontWeight="600" fill={T1}>Data Node</text>
           <g fontFamily={FONT_TEXT} fontSize="12" fill={T2}>
@@ -119,7 +119,7 @@ export function BlockPipelineSchematic() {
 
         {/* Oracle section */}
         <g>
-          <rect x={colX} y={oracleY} width={colW} height={oracleH} rx={14} fill={BG} stroke={BD} />
+          <rect x={colX} y={oracleY} width={colW} height={oracleH} rx={12} fill={BG} stroke={BD} />
           <rect x={colX} y={oracleY} width={4} height={oracleH} fill={GREEN} rx={2} />
           <text x={colX + 18} y={oracleY + 24} fontFamily={FONT_DISPLAY} fontSize="14" fontWeight="600" fill={T1}>Oracle (×3)</text>
           <text x={colX + 18} y={oracleY + 44} fontFamily={FONT_TEXT} fontSize="12" fill={T2}>Lifecycle Manager — heartbeat per source</text>
@@ -142,7 +142,7 @@ export function BlockPipelineSchematic() {
 
         {/* L3 section */}
         <g>
-          <rect x={colX} y={l3Y} width={colW} height={l3H} rx={14} fill={SF} stroke={BD} />
+          <rect x={colX} y={l3Y} width={colW} height={l3H} rx={12} fill={SF} stroke={BD} />
           <rect x={colX} y={l3Y} width={4} height={l3H} fill={ORANGE} rx={2} />
           <text x={colX + 18} y={l3Y + 24} fontFamily={FONT_DISPLAY} fontSize="14" fontWeight="600" fill={T1}>L3 Blockchain</text>
 
@@ -340,7 +340,7 @@ export function PointsRoundFormula() {
   return (
     <figure className="docs-schematic schematic-arch">
       <svg viewBox={`0 0 ${w} ${h}`} xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Round budget formula">
-        <rect x={20} y={20} width={w - 40} height={h - 40} rx={14} fill={SF} stroke={BD} />
+        <rect x={20} y={20} width={w - 40} height={h - 40} rx={12} fill={SF} stroke={BD} />
         <rect x={20} y={20} width={4} height={h - 40} fill={BLUE} rx={2} />
 
         <text x={40} y={48} fontFamily={FONT_DISPLAY} fontSize="13" fontWeight="600" fill={T1}>
@@ -383,7 +383,7 @@ export function PointsRoundExample() {
   return (
     <figure className="docs-schematic schematic-arch">
       <svg viewBox={`0 0 ${w} ${h}`} xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Round example">
-        <rect x={20} y={20} width={w - 40} height={h - 40} rx={14} fill={BG} stroke={BD} />
+        <rect x={20} y={20} width={w - 40} height={h - 40} rx={12} fill={BG} stroke={BD} />
         <rect x={20} y={20} width={4} height={h - 40} fill={BLUE} rx={2} />
 
         <text x={40} y={48} fontFamily={FONT_DISPLAY} fontSize="13" fontWeight="600" fill={T1}>
@@ -557,7 +557,7 @@ export function ContractAddressTopology() {
       <svg viewBox={`0 0 ${w} ${outerH}`} xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Vision contract topology on Index L3">
         <defs><Arrow /></defs>
 
-        <rect x={20} y={20} width={w - 40} height={outerH - 40} rx={14} fill={SF} stroke={BD} />
+        <rect x={20} y={20} width={w - 40} height={outerH - 40} rx={12} fill={SF} stroke={BD} />
         <text x={w / 2} y={46} textAnchor="middle" fontFamily={FONT_DISPLAY} fontSize="13" fontWeight="600" fill={T1}>
           Index L3 — Chain 111222333
         </text>
@@ -693,7 +693,7 @@ export function MorphoApiOverview() {
 
         {/* REST card */}
         <g>
-          <rect x={20} y={50} width={(w - 60) / 2} height={210} rx={14} fill={BG} stroke={BD} />
+          <rect x={20} y={50} width={(w - 60) / 2} height={210} rx={12} fill={BG} stroke={BD} />
           <rect x={20} y={50} width={4} height={210} fill={BLUE} rx={2} />
           <text x={40} y={74} fontFamily={FONT_DISPLAY} fontSize="13" fontWeight="600" fill={T1}>REST endpoints</text>
           <text x={40} y={92} fontFamily={FONT_TEXT} fontSize="11.5" fill={T3}>snapshot · pull on demand</text>
@@ -707,7 +707,7 @@ export function MorphoApiOverview() {
 
         {/* SSE card */}
         <g>
-          <rect x={40 + (w - 60) / 2} y={50} width={(w - 60) / 2} height={210} rx={14} fill={BG} stroke={BD} />
+          <rect x={40 + (w - 60) / 2} y={50} width={(w - 60) / 2} height={210} rx={12} fill={BG} stroke={BD} />
           <rect x={40 + (w - 60) / 2} y={50} width={4} height={210} fill={GREEN} rx={2} />
           <text x={60 + (w - 60) / 2} y={74} fontFamily={FONT_DISPLAY} fontSize="13" fontWeight="600" fill={T1}>SSE streams</text>
           <text x={60 + (w - 60) / 2} y={92} fontFamily={FONT_TEXT} fontSize="11.5" fill={T3}>real-time push · server-sent</text>

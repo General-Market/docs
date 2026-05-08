@@ -247,7 +247,7 @@ export function CuratorServiceMap() {
           return (
             <g key={i}>
               <line x1={cx} y1={yTop + cardH} x2={cx} y2={yTop + cardH + 50} stroke={BD} markerEnd="url(#resid-arrow)" />
-              <rect x={x + 8} y={yTop + cardH + 60} width={cardW - 16} height={56} rx={10} fill={BG} stroke={BD} />
+              <rect x={x + 8} y={yTop + cardH + 60} width={cardW - 16} height={56} rx={12} fill={BG} stroke={BD} />
               <text
                 x={cx}
                 y={yTop + cardH + 84}
@@ -758,7 +758,7 @@ export function CuratorAllocationCycle() {
         <text x={W / 2 - 130} y={branchY + 22} textAnchor="middle" fontFamily={FONT_TEXT} fontSize="11" fill={T3}>
           No
         </text>
-        <rect x={W / 2 - 320} y={branchY + 14} width={120} height={32} rx={10} fill={SF} stroke={BD} />
+        <rect x={W / 2 - 320} y={branchY + 14} width={120} height={32} rx={12} fill={SF} stroke={BD} />
         <text
           x={W / 2 - 260}
           y={branchY + 35}
@@ -1227,7 +1227,7 @@ export function CuratorSharedState() {
       <svg viewBox={`0 0 ${W} ${H}`} xmlns="http://www.w3.org/2000/svg" role="img">
         <Defs />
         {/* central state box */}
-        <rect x={stateX} y={stateY} width={stateW} height={stateH} rx={14} fill={SF} stroke={BD} />
+        <rect x={stateX} y={stateY} width={stateW} height={stateH} rx={12} fill={SF} stroke={BD} />
         <text
           x={stateX + stateW / 2}
           y={stateY + 26}
@@ -1689,7 +1689,7 @@ export function DataNodeChainPollers() {
     <figure className="docs-schematic schematic-arch">
       <svg viewBox={`0 0 ${W} ${H}`} xmlns="http://www.w3.org/2000/svg" role="img">
         <Defs />
-        <rect x={l3X} y={20} width={400} height={240} rx={14} fill={BG} stroke={BD} />
+        <rect x={l3X} y={20} width={400} height={240} rx={12} fill={BG} stroke={BD} />
         <rect x={l3X} y={28} width={4} height={224} rx={2} fill={BLUE} />
         <text
           x={l3X + 18}
@@ -1715,7 +1715,7 @@ export function DataNodeChainPollers() {
             {line}
           </text>
         ))}
-        <rect x={settleX} y={20} width={320} height={140} rx={14} fill={BG} stroke={BD} />
+        <rect x={settleX} y={20} width={320} height={140} rx={12} fill={BG} stroke={BD} />
         <rect x={settleX} y={28} width={4} height={124} rx={2} fill={ORANGE} />
         <text
           x={settleX + 18}
@@ -1741,7 +1741,7 @@ export function DataNodeChainPollers() {
           </text>
         ))}
         {/* ChainCache */}
-        <rect x={l3X} y={cacheY} width={W - 2 * l3X} height={80} rx={14} fill={SF} stroke={BD} />
+        <rect x={l3X} y={cacheY} width={W - 2 * l3X} height={80} rx={12} fill={SF} stroke={BD} />
         <text
           x={W / 2}
           y={cacheY + 26}
@@ -1767,7 +1767,7 @@ export function DataNodeChainPollers() {
         <line x1={l3X + 200} y1={260} x2={l3X + 200} y2={cacheY} stroke={BD} markerEnd="url(#resid-arrow)" />
         <line x1={settleX + 160} y1={160} x2={settleX + 160} y2={cacheY} stroke={BD} markerEnd="url(#resid-arrow)" />
         {/* REST API */}
-        <rect x={W / 2 - 160} y={apiY} width={320} height={56} rx={14} fill={BG} stroke={BD} />
+        <rect x={W / 2 - 160} y={apiY} width={320} height={56} rx={12} fill={BG} stroke={BD} />
         <rect x={W / 2 - 160} y={apiY + 8} width={4} height={40} rx={2} fill={GREEN} />
         <text
           x={W / 2}
@@ -2037,7 +2037,7 @@ export function DataNodeSimDataCache() {
     <figure className="docs-schematic schematic-arch">
       <svg viewBox={`0 0 ${W} ${H}`} xmlns="http://www.w3.org/2000/svg" role="img">
         <Defs />
-        <rect x={40} y={30} width={W - 80} height={H - 60} rx={14} fill={SF} stroke={BD} />
+        <rect x={40} y={30} width={W - 80} height={H - 60} rx={12} fill={SF} stroke={BD} />
         <text
           x={W / 2}
           y={56}
@@ -2277,7 +2277,7 @@ export function ContractAddressesRegistry() {
           return (
             <g>
               <line x1={padX} y1={yBridge + 14} x2={W - padX} y2={yBridge + 14} stroke={BD} strokeDasharray="4 4" />
-              <rect x={W / 2 - 60} y={yBridge} width={120} height={28} rx={14} fill={BG} stroke={BD} />
+              <rect x={W / 2 - 60} y={yBridge} width={120} height={28} rx={12} fill={BG} stroke={BD} />
               <text
                 x={W / 2}
                 y={yBridge + 19}

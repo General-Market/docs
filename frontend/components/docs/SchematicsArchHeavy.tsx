@@ -224,7 +224,7 @@ export function OverviewTwoChains() {
         <g>
           <line x1={width / 2} y1={panelH + 14} x2={width / 2} y2={panelH + 56} stroke={APPLE_BORDER} markerEnd="url(#otc-arrow)" />
           <line x1={width / 2 - 18} y1={panelH + 35} x2={width / 2 + 18} y2={panelH + 35} stroke={APPLE_BORDER} markerEnd="url(#otc-arrow)" />
-          <rect x={width / 2 - 70} y={panelH + 16} width={140} height={28} rx={14} fill={APPLE_SURFACE} stroke={APPLE_BORDER} />
+          <rect x={width / 2 - 70} y={panelH + 16} width={140} height={28} rx={12} fill={APPLE_SURFACE} stroke={APPLE_BORDER} />
           <text x={width / 2} y={panelH + 35} textAnchor="middle" fontFamily={FONT_TEXT} fontSize={12} fontWeight={500} fill={APPLE_TEXT}>Bridge</text>
         </g>
         <Panel x={20} y={panelH + 60} accent="orange" title="Settlement (Arbitrum)" chainId="Chain ID 14601" decimals="USDC 6 decimals" role="Settlement and composability" rows={rowsSettle} />
@@ -451,7 +451,7 @@ function SequenceDiagram({
             return (
               <g key={i}>
                 <line x1={margin / 2} y1={y - stepGap / 2 + 6} x2={width - margin / 2} y2={y - stepGap / 2 + 6} stroke={APPLE_BORDER} strokeDasharray="4 4" />
-                <rect x={width / 2 - 110} y={y - 14} width={220} height={26} rx={13} fill={APPLE_BG} stroke={APPLE_BORDER} />
+                <rect x={width / 2 - 110} y={y - 14} width={220} height={26} rx={12} fill={APPLE_BG} stroke={APPLE_BORDER} />
                 <text x={width / 2} y={y + 3} textAnchor="middle" fontFamily={FONT_TEXT} fontSize={11.5} fontWeight={600} letterSpacing="0.04em" fill={APPLE_TEXT_2}>{s.label.toUpperCase()}</text>
                 {s.detail ? <text x={width / 2} y={y + 18} textAnchor="middle" fontFamily={FONT_TEXT} fontSize={11} fill={APPLE_TEXT_3}>{s.detail}</text> : null}
               </g>
@@ -848,7 +848,7 @@ export function BridgeDecimalConversion() {
         <Card x={40} y={y + 14} w={260} h={70} title={fromLabel} sub={fromValue} accent={fromAccent} />
         <g>
           <line x1={310} y1={y + 49} x2={520} y2={y + 49} stroke={APPLE_BORDER} markerEnd="url(#bdc-arrow)" />
-          <rect x={345} y={y + 32} width={150} height={30} rx={15} fill={APPLE_SURFACE} stroke={APPLE_BORDER} />
+          <rect x={345} y={y + 32} width={150} height={30} rx={12} fill={APPLE_SURFACE} stroke={APPLE_BORDER} />
           <text x={420} y={y + 52} textAnchor="middle" fontFamily={FONT_TEXT} fontSize={12} fontWeight={500} fill={APPLE_TEXT}>{fnName}</text>
         </g>
         <Card x={540} y={y + 14} w={340} h={70} title={toLabel} sub={toValue} accent={toAccent} />
@@ -1016,7 +1016,7 @@ export function BridgeBackingInvariant() {
         <defs><Marker id="bbi-arrow" /></defs>
 
         {/* Statement banner */}
-        <rect x={20} y={20} width={width - 40} height={86} rx={14} fill={APPLE_BG} stroke={APPLE_BORDER} />
+        <rect x={20} y={20} width={width - 40} height={86} rx={12} fill={APPLE_BG} stroke={APPLE_BORDER} />
         <rect x={20} y={26} width={4} height={74} rx={2} fill={APPLE_BLUE} />
         <text x={40} y={48} fontFamily={FONT_DISPLAY} fontSize={13} fontWeight={600} letterSpacing="0.06em" fill={APPLE_TEXT_3}>THE BACKING INVARIANT</text>
         <text x={40} y={72} fontFamily={FONT_TEXT} fontSize={13} fill={APPLE_TEXT}>For every ITP share in existence, the underlying assets MUST have been purchased and confirmed on a real exchange.</text>
@@ -1228,7 +1228,7 @@ export function BridgeTiming() {
           const y = headerH + i * (rowH + 8)
           return (
             <g key={i}>
-              <rect x={20} y={y} width={width - 40} height={rowH} rx={10} fill={APPLE_BG} stroke={APPLE_BORDER} />
+              <rect x={20} y={y} width={width - 40} height={rowH} rx={12} fill={APPLE_BG} stroke={APPLE_BORDER} />
               <rect x={20} y={y + 6} width={4} height={rowH - 12} rx={2} fill={APPLE_GREEN} />
               <text x={44} y={y + 24} fontFamily={FONT_DISPLAY} fontSize={11} fontWeight={600} letterSpacing="0.06em" fill={APPLE_TEXT_3}>{r.label.toUpperCase()}</text>
               <text x={44} y={y + 44} fontFamily={FONT_DISPLAY} fontSize={14} fontWeight={600} letterSpacing="-0.005em" fill={APPLE_TEXT}>{r.what}</text>

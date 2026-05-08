@@ -250,7 +250,7 @@ export function DataNodeOverview() {
           const y = padY + 44 + i * (rowH + rowGap)
           return (
             <g key={i}>
-              <rect x={xCollectors} y={y} width={colW} height={rowH} rx={10} fill={APPLE_BG} stroke={APPLE_BORDER} />
+              <rect x={xCollectors} y={y} width={colW} height={rowH} rx={12} fill={APPLE_BG} stroke={APPLE_BORDER} />
               <rect x={xCollectors} y={y} width={3} height={rowH} fill={APPLE_GRAY} rx={1.5} />
               <text
                 x={xCollectors + 14}
@@ -281,7 +281,7 @@ export function DataNodeOverview() {
           const y = padY + 44 + i * (rowH + rowGap)
           return (
             <g key={i}>
-              <rect x={xStorage} y={y} width={colW} height={rowH} rx={10} fill={APPLE_BG} stroke={APPLE_BORDER} />
+              <rect x={xStorage} y={y} width={colW} height={rowH} rx={12} fill={APPLE_BG} stroke={APPLE_BORDER} />
               <rect x={xStorage} y={y} width={3} height={rowH} fill={APPLE_BLUE} rx={1.5} />
               <text
                 x={xStorage + 14}

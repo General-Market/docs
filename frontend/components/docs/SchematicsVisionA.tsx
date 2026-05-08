@@ -366,7 +366,7 @@ export function VisionVsTypical() {
     accentTone: string
   }) => (
     <g>
-      <rect x={x} y={top} width={colW} height={H - top - 24} rx={14} fill={BG} stroke={BD} />
+      <rect x={x} y={top} width={colW} height={H - top - 24} rx={12} fill={BG} stroke={BD} />
       <rect x={x} y={top} width={4} height={H - top - 24} fill={accent} rx={2} />
       <text
         x={x + 20}
@@ -460,7 +460,7 @@ export function MarketExamples() {
   return (
     <figure className="docs-schematic schematic-arch">
       <svg viewBox={`0 0 ${W} ${H}`} xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Example Vision markets">
-        <rect x={PAD} y={top} width={W - PAD * 2} height={H - top - 24} rx={14} fill={BG} stroke={BD} />
+        <rect x={PAD} y={top} width={W - PAD * 2} height={H - top - 24} rx={12} fill={BG} stroke={BD} />
         {MARKET_EXAMPLES.map((m, i) => {
           const y = top + i * rowH + rowH / 2 + 4
           return (
@@ -676,7 +676,7 @@ export function AudienceTable() {
   return (
     <figure className="docs-schematic schematic-arch">
       <svg viewBox={`0 0 ${W} ${H}`} xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Vision audiences and use cases">
-        <rect x={PAD} y={top} width={W - PAD * 2} height={H - top - 24} rx={14} fill={BG} stroke={BD} />
+        <rect x={PAD} y={top} width={W - PAD * 2} height={H - top - 24} rx={12} fill={BG} stroke={BD} />
 
         <line x1={PAD + audW} y1={top} x2={PAD + audW} y2={H - 24} stroke={BD} strokeOpacity="0.7" />
 
@@ -826,7 +826,7 @@ export function DataPipelineFull() {
           const cx = x + sourceW / 2
           return (
             <g key={s.name}>
-              <rect x={x} y={sourceY} width={sourceW} height={sourceH} rx={10} fill={SF} stroke={BD} />
+              <rect x={x} y={sourceY} width={sourceW} height={sourceH} rx={12} fill={SF} stroke={BD} />
               <text
                 x={cx}
                 y={sourceY + 26}
@@ -1358,9 +1358,9 @@ export function MarketIdConvention() {
   return (
     <figure className="docs-schematic schematic-arch">
       <svg viewBox={`0 0 ${W} ${H}`} xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Vision market ID convention">
-        <rect x={PAD} y={top} width={W - PAD * 2} height={H - top - 24} rx={14} fill={BG} stroke={BD} />
+        <rect x={PAD} y={top} width={W - PAD * 2} height={H - top - 24} rx={12} fill={BG} stroke={BD} />
 
-        <rect x={PAD} y={top} width={W - PAD * 2} height={headerH} rx={14} fill={SF} />
+        <rect x={PAD} y={top} width={W - PAD * 2} height={headerH} rx={12} fill={SF} />
         <rect x={PAD} y={top + headerH - 1} width={W - PAD * 2} height={1} fill={BD} />
         <text x={colXPrefix} y={top + 23} fontFamily={FONT_TEXT} fontSize="11" fontWeight="600" letterSpacing="0.08em" fill={T2}>
           PREFIX

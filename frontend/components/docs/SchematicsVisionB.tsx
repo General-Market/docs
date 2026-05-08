@@ -210,7 +210,7 @@ export function SourceCardAnatomy() {
         <text x={230} y={96} textAnchor="middle" fontFamily={FONT_TEXT} fontSize={11} fill={T3}>Source logo</text>
 
         {/* category badge */}
-        <rect x={330} y={36} width={60} height={20} rx={10} fill={BG} stroke={BD} />
+        <rect x={330} y={36} width={60} height={20} rx={12} fill={BG} stroke={BD} />
         <text x={360} y={50} textAnchor="middle" fontFamily={FONT_TEXT} fontSize={10} fontWeight={600} letterSpacing="0.06em" fill={T2}>FINANCE</text>
 
         {/* name + status + desc */}
@@ -326,15 +326,15 @@ export function SourceDetailLayout() {
           const x = 36 + i * 100
           return (
             <g key={i}>
-              <rect x={x} y={28} width={w} height={20} rx={10} fill={c.a ? T1 : 'transparent'} stroke={c.a ? T1 : BD} />
+              <rect x={x} y={28} width={w} height={20} rx={12} fill={c.a ? T1 : 'transparent'} stroke={c.a ? T1 : BD} />
               <text x={x + w / 2} y={42} textAnchor="middle" fontFamily={FONT_TEXT} fontSize={11} fontWeight={500} fill={c.a ? '#fff' : T1}>{c.t} {c.n}</text>
             </g>
           )
         })}
 
         {/* hero */}
-        <rect x={20} y={70} width={W - 40} height={120} rx={14} fill={BG} stroke={BD} />
-        <rect x={20} y={70} width={420} height={120} rx={14} fill={SF} fillOpacity={0.6} />
+        <rect x={20} y={70} width={W - 40} height={120} rx={12} fill={BG} stroke={BD} />
+        <rect x={20} y={70} width={420} height={120} rx={12} fill={SF} fillOpacity={0.6} />
         <rect x={36} y={84} width={70} height={18} rx={9} fill={BG} stroke={BD} />
         <text x={71} y={97} textAnchor="middle" fontFamily={FONT_TEXT} fontSize={10} fontWeight={600} letterSpacing="0.08em" fill={T2}>FINANCE</text>
         <circle cx={130} cy={93} r={4} fill={GREEN} />
@@ -342,7 +342,7 @@ export function SourceDetailLayout() {
         <text x={36} y={130} fontFamily={FONT_DISPLAY} fontSize={20} fontWeight={600} letterSpacing="-0.011em" fill={T1}>CoinGecko Crypto</text>
         <text x={36} y={154} fontFamily={FONT_TEXT} fontSize={12.5} fill={T2}>Cryptocurrency market data — prices,</text>
         <text x={36} y={172} fontFamily={FONT_TEXT} fontSize={12.5} fill={T2}>volumes, market caps for thousands of tokens.</text>
-        <rect x={620} y={92} width={180} height={76} rx={10} fill={BG} stroke={BD} strokeDasharray="3 3" />
+        <rect x={620} y={92} width={180} height={76} rx={12} fill={BG} stroke={BD} strokeDasharray="3 3" />
         <text x={710} y={134} textAnchor="middle" fontFamily={FONT_TEXT} fontSize={11} fill={T3}>Source logo</text>
 
         {/* batch bar */}
@@ -368,7 +368,7 @@ export function SourceDetailLayout() {
         <rect x={640} y={216} width={130} height={14} rx={7} fill={BLUE} />
 
         {/* main two-column */}
-        <rect x={20} y={260} width={550} height={260} rx={14} fill={BG} stroke={BD} />
+        <rect x={20} y={260} width={550} height={260} rx={12} fill={BG} stroke={BD} />
         <text x={36} y={284} fontFamily={FONT_DISPLAY} fontSize={13} fontWeight={600} letterSpacing="-0.005em" fill={T1}>Markets table</text>
         {/* mini table rows */}
         {[
@@ -382,14 +382,14 @@ export function SourceDetailLayout() {
               <text x={40} y={y} fontFamily={FONT_MONO} fontSize={11.5} fill={T1}>{r.a}</text>
               <text x={180} y={y} fontFamily={FONT_MONO} fontSize={11.5} fill={T1}>{r.v}</text>
               <text x={300} y={y} fontFamily={FONT_MONO} fontSize={11.5} fill={r.c.startsWith('−') ? RED : GREEN}>{r.c}</text>
-              <rect x={420} y={y - 13} width={50} height={20} rx={10} fill={r.side === 'up' ? GREEN : RED} fillOpacity={0.12} stroke={r.side === 'up' ? GREEN : RED} />
+              <rect x={420} y={y - 13} width={50} height={20} rx={12} fill={r.side === 'up' ? GREEN : RED} fillOpacity={0.12} stroke={r.side === 'up' ? GREEN : RED} />
               <text x={445} y={y + 1} textAnchor="middle" fontFamily={FONT_TEXT} fontSize={10} fontWeight={600} fill={r.side === 'up' ? GREEN : RED}>{r.side === 'up' ? 'UP' : 'DN'}</text>
             </g>
           )
         })}
 
         {/* price chart placeholder */}
-        <rect x={36} y={394} width={520} height={70} rx={10} fill={SF} />
+        <rect x={36} y={394} width={520} height={70} rx={12} fill={SF} />
         <polyline points="50,450 90,440 130,432 170,438 210,420 250,412 290,418 330,402 370,394 410,408 450,400 490,392 540,400" fill="none" stroke={BLUE} strokeWidth={1.5} />
         <text x={296} y={482} textAnchor="middle" fontFamily={FONT_TEXT} fontSize={10.5} fill={T3}>Price history (24h)</text>
 
@@ -398,7 +398,7 @@ export function SourceDetailLayout() {
         <text x={36} y={515} fontFamily={FONT_DISPLAY} fontSize={11.5} fontWeight={600} fill={T1}>Top players: 0xAb..12 · 0x7F..89 · 0xCd..56</text>
 
         {/* batch entry panel */}
-        <rect x={585} y={260} width={275} height={260} rx={14} fill={BG} stroke={BD} />
+        <rect x={585} y={260} width={275} height={260} rx={12} fill={BG} stroke={BD} />
         <text x={601} y={284} fontFamily={FONT_DISPLAY} fontSize={13} fontWeight={600} letterSpacing="-0.005em" fill={T1}>Batch entry panel</text>
         <text x={601} y={306} fontFamily={FONT_TEXT} fontSize={12} fill={T2}>Set your predictions and</text>
         <text x={601} y={322} fontFamily={FONT_TEXT} fontSize={12} fill={T2}>join the batch.</text>
@@ -434,7 +434,7 @@ export function BlockTickBar() {
   return (
     <figure className="docs-schematic schematic-arch">
       <svg viewBox={`0 0 ${W} ${H}`} xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Batch tick bar">
-        <rect x={20} y={20} width={W - 40} height={60} rx={14} fill={BG} stroke={BD} />
+        <rect x={20} y={20} width={W - 40} height={60} rx={12} fill={BG} stroke={BD} />
         {cells.map((c, i) => {
           const x = startX + 20 + i * cellW
           return (
@@ -459,7 +459,7 @@ export function MarketsTableAnatomy() {
   return (
     <figure className="docs-schematic schematic-arch">
       <svg viewBox={`0 0 ${W} ${H}`} xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Markets table anatomy">
-        <rect x={20} y={20} width={W - 40} height={H - 40} rx={14} fill={BG} stroke={BD} />
+        <rect x={20} y={20} width={W - 40} height={H - 40} rx={12} fill={BG} stroke={BD} />
 
         {/* header */}
         {['ASSET', 'VALUE', '24H CHANGE', 'YOUR BET'].map((h, i) => (
@@ -471,11 +471,11 @@ export function MarketsTableAnatomy() {
         <text x={48} y={88} fontFamily={FONT_MONO} fontSize={12.5} fill={T1}>BTC-USD</text>
         <text x={218} y={88} fontFamily={FONT_MONO} fontSize={12.5} fill={T1}>$67,432.10</text>
         <text x={388} y={88} fontFamily={FONT_MONO} fontSize={12.5} fill={GREEN}>+2.14%</text>
-        <rect x={558} y={75} width={50} height={20} rx={10} fill={GREEN} fillOpacity={0.12} stroke={GREEN} />
+        <rect x={558} y={75} width={50} height={20} rx={12} fill={GREEN} fillOpacity={0.12} stroke={GREEN} />
         <text x={583} y={89} textAnchor="middle" fontFamily={FONT_TEXT} fontSize={11} fontWeight={600} fill={GREEN}>UP</text>
 
         {/* expanded chart */}
-        <rect x={48} y={108} width={W - 96} height={106} rx={10} fill={SF} stroke={BD} />
+        <rect x={48} y={108} width={W - 96} height={106} rx={12} fill={SF} stroke={BD} />
         <text x={62} y={126} fontFamily={FONT_TEXT} fontSize={10.5} fontWeight={600} letterSpacing="0.06em" fill={T3}>24H PRICE HISTORY</text>
         <polyline points="62,196 110,180 160,168 210,176 260,156 310,148 360,160 410,138 460,142 510,128 560,132 610,118 670,124" fill="none" stroke={BLUE} strokeWidth={1.5} />
 
@@ -485,7 +485,7 @@ export function MarketsTableAnatomy() {
         <text x={48} y={258} fontFamily={FONT_MONO} fontSize={12.5} fill={T1}>ETH-USD</text>
         <text x={218} y={258} fontFamily={FONT_MONO} fontSize={12.5} fill={T1}>$3,891.55</text>
         <text x={388} y={258} fontFamily={FONT_MONO} fontSize={12.5} fill={RED}>−0.52%</text>
-        <rect x={558} y={245} width={50} height={20} rx={10} fill={RED} fillOpacity={0.12} stroke={RED} />
+        <rect x={558} y={245} width={50} height={20} rx={12} fill={RED} fillOpacity={0.12} stroke={RED} />
         <text x={583} y={259} textAnchor="middle" fontFamily={FONT_TEXT} fontSize={11} fontWeight={600} fill={RED}>DOWN</text>
 
         <text x={48} y={286} fontFamily={FONT_TEXT} fontSize={11.5} fill={T3}>…</text>
@@ -625,7 +625,7 @@ export function ValueTypesTable() {
   return (
     <figure className="docs-schematic schematic-arch">
       <svg viewBox={`0 0 ${W} ${H}`} xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Value types by source">
-        <rect x={20} y={20} width={W - 40} height={H - 40} rx={14} fill={BG} stroke={BD} />
+        <rect x={20} y={20} width={W - 40} height={H - 40} rx={12} fill={BG} stroke={BD} />
 
         {['Source', 'Value Label', 'Unit', 'Example'].map((h, i) => (
           <text key={i} x={cols[i]} y={48} fontFamily={FONT_TEXT} fontSize={10.5} fontWeight={600} letterSpacing="0.08em" fill={T3}>{h.toUpperCase()}</text>
@@ -694,7 +694,7 @@ export function SourceBrowserTickFlow() {
         <text x={plotX} y={282} fontFamily={FONT_TEXT} fontSize={12.5} fill={T2}>
           Delta <tspan fontFamily={FONT_MONO} fill={T1}>+$459.45</tspan>
         </text>
-        <rect x={plotX + 130} y={266} width={64} height={22} rx={11} fill={GREEN} fillOpacity={0.14} stroke={GREEN} />
+        <rect x={plotX + 130} y={266} width={64} height={22} rx={12} fill={GREEN} fillOpacity={0.14} stroke={GREEN} />
         <text x={plotX + 162} y={282} textAnchor="middle" fontFamily={FONT_TEXT} fontSize={11.5} fontWeight={600} fill={GREEN}>UP</text>
 
         <text x={plotX} y={306} fontFamily={FONT_TEXT} fontSize={12} fill={T2}>UP wins · DOWN loses · winners split losers' stakes (minus 0.05% fee on profits)</text>
@@ -727,7 +727,7 @@ export function SourceMonitoring() {
         <text x={20} y={52} fontFamily={FONT_TEXT} fontSize={12} fill={T2}>Live health status of all data sources feeding market prices.</text>
 
         {/* stat strip */}
-        <rect x={20} y={70} width={W - 40} height={64} rx={14} fill={BG} stroke={BD} />
+        <rect x={20} y={70} width={W - 40} height={64} rx={12} fill={BG} stroke={BD} />
         {stats.map((s, i) => {
           const x = 40 + i * 140
           return (
@@ -740,7 +740,7 @@ export function SourceMonitoring() {
         })}
 
         {/* table */}
-        <rect x={20} y={150} width={W - 40} height={H - 170} rx={14} fill={BG} stroke={BD} />
+        <rect x={20} y={150} width={W - 40} height={H - 170} rx={12} fill={BG} stroke={BD} />
         {['Source', 'Status', 'Assets', 'Stale', 'Zero', 'Age'].map((h, i) => (
           <text key={i} x={40 + i * 130} y={178} fontFamily={FONT_TEXT} fontSize={10.5} fontWeight={600} letterSpacing="0.08em" fill={T3}>{h.toUpperCase()}</text>
         ))}
@@ -897,7 +897,7 @@ export function FileMap() {
       <svg viewBox={`0 0 ${W} ${H}`} xmlns="http://www.w3.org/2000/svg" role="img" aria-label="File map">
         {layouts.map((l, gi) => (
           <g key={gi}>
-            <rect x={20} y={l.y} width={W - 40} height={l.h} rx={14} fill={BG} stroke={BD} />
+            <rect x={20} y={l.y} width={W - 40} height={l.h} rx={12} fill={BG} stroke={BD} />
             <rect x={20} y={l.y} width={4} height={l.h} rx={2} fill={l.group.accent} />
             <text x={40} y={l.y + 24} fontFamily={FONT_DISPLAY} fontSize={13.5} fontWeight={600} letterSpacing="-0.005em" fill={T1}>{l.group.title}</text>
             {l.group.files.map(([path, desc], i) => {
@@ -935,7 +935,7 @@ export function FeedQualityTable() {
   return (
     <figure className="docs-schematic schematic-arch">
       <svg viewBox={`0 0 ${W} ${H}`} xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Good feeds vs bad feeds">
-        <rect x={20} y={20} width={W - 40} height={H - 40} rx={14} fill={BG} stroke={BD} />
+        <rect x={20} y={20} width={W - 40} height={H - 40} rx={12} fill={BG} stroke={BD} />
 
         <text x={cols[0]} y={50} fontFamily={FONT_TEXT} fontSize={10.5} fontWeight={600} letterSpacing="0.08em" fill={T3}>SOURCE TYPE</text>
         <text x={cols[1]} y={50} fontFamily={FONT_TEXT} fontSize={10.5} fontWeight={600} letterSpacing="0.08em" fill={GREEN}>GOOD FEEDS</text>
@@ -992,11 +992,11 @@ export function DiscoveryModes() {
           const x = 20 + i * (colW + 10)
           return (
             <g key={i}>
-              <rect x={x} y={20} width={colW} height={H - 40} rx={14} fill={BG} stroke={BD} />
+              <rect x={x} y={20} width={colW} height={H - 40} rx={12} fill={BG} stroke={BD} />
               <rect x={x} y={20} width={4} height={H - 40} rx={2} fill={m.accent} />
               <text x={x + 18} y={48} fontFamily={FONT_DISPLAY} fontSize={14} fontWeight={600} letterSpacing="-0.005em" fill={T1}>{m.label}</text>
 
-              <rect x={x + 18} y={64} width={colW - 36} height={120} rx={10} fill={SF} stroke={BD} />
+              <rect x={x + 18} y={64} width={colW - 36} height={120} rx={12} fill={SF} stroke={BD} />
               {m.code.split('\n').map((line, li) => (
                 <text key={li} x={x + 32} y={86 + li * 18} fontFamily={FONT_MONO} fontSize={11.5} fill={T1}>{line}</text>
               ))}
@@ -1041,10 +1041,10 @@ export function SyncIntervalTree() {
           const y = 70 + i * rowH
           return (
             <g key={i}>
-              <rect x={20} y={y} width={300} height={32} rx={10} fill={BG} stroke={BD} />
+              <rect x={20} y={y} width={300} height={32} rx={12} fill={BG} stroke={BD} />
               <text x={36} y={y + 21} fontFamily={FONT_TEXT} fontSize={12.5} fill={T1}>{from}</text>
               <line x1={328} y1={y + 16} x2={508} y2={y + 16} stroke={T3} markerEnd="url(#vb-arrow)" />
-              <rect x={516} y={y} width={324} height={32} rx={10} fill={BLUE} fillOpacity={0.06} stroke={BLUE} strokeOpacity={0.4} />
+              <rect x={516} y={y} width={324} height={32} rx={12} fill={BLUE} fillOpacity={0.06} stroke={BLUE} strokeOpacity={0.4} />
               <text x={534} y={y + 21} fontFamily={FONT_MONO} fontSize={12} fill={BLUE}>{to}</text>
             </g>
           )
@@ -1052,7 +1052,7 @@ export function SyncIntervalTree() {
 
         {/* rate-limit budget */}
         <g>
-          <rect x={20} y={H - 110} width={W - 40} height={86} rx={14} fill={SF} stroke={BD} />
+          <rect x={20} y={H - 110} width={W - 40} height={86} rx={12} fill={SF} stroke={BD} />
           <text x={36} y={H - 86} fontFamily={FONT_TEXT} fontSize={11} fontWeight={600} letterSpacing="0.08em" fill={T3}>RATE-LIMIT BUDGET CHECK</text>
           <text x={36} y={H - 60} fontFamily={FONT_MONO} fontSize={13} fill={T1}>
             requests_per_sync × syncs_per_hour <tspan fill={T2}>&lt;</tspan> 80% of API hourly limit
@@ -1070,7 +1070,7 @@ export function SourceDirectoryTree() {
   return (
     <figure className="docs-schematic schematic-arch">
       <svg viewBox={`0 0 ${W} ${H}`} xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Source directory tree">
-        <rect x={20} y={20} width={W - 40} height={H - 40} rx={14} fill={BG} stroke={BD} />
+        <rect x={20} y={20} width={W - 40} height={H - 40} rx={12} fill={BG} stroke={BD} />
         <text x={40} y={48} fontFamily={FONT_MONO} fontSize={12.5} fill={T1}>data-node/src/market_data/sources/{`{source}`}/</text>
         <text x={56} y={72} fontFamily={FONT_MONO} fontSize={12} fill={T2}>├── mod.rs<tspan fill={T3}>{'        '}always the same two-liner</tspan></text>
         <text x={56} y={90} fontFamily={FONT_MONO} fontSize={12} fill={T2}>└── client.rs<tspan fill={T3}>{'     '}your implementation</tspan></text>
@@ -1145,7 +1145,7 @@ export function ImplementationPatterns() {
           const y = 24 + row * (rowH + 16)
           return (
             <g key={i}>
-              <rect x={x} y={y} width={colW} height={rowH} rx={14} fill={BG} stroke={BD} />
+              <rect x={x} y={y} width={colW} height={rowH} rx={12} fill={BG} stroke={BD} />
               <rect x={x} y={y} width={4} height={rowH} rx={2} fill={p.accent} />
 
               {/* letter badge */}
@@ -1183,7 +1183,7 @@ export function AssetIdFormat() {
   return (
     <figure className="docs-schematic schematic-arch">
       <svg viewBox={`0 0 ${W} ${H}`} xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Asset ID format">
-        <rect x={20} y={20} width={W - 40} height={H - 40} rx={14} fill={BG} stroke={BD} />
+        <rect x={20} y={20} width={W - 40} height={H - 40} rx={12} fill={BG} stroke={BD} />
         <text x={40} y={50} fontFamily={FONT_DISPLAY} fontSize={14} fontWeight={600} letterSpacing="-0.005em" fill={T1}>Asset ID format</text>
         <text x={40} y={72} fontFamily={FONT_MONO} fontSize={12.5} fill={T2}>
           {`{`}<tspan fill={BLUE}>source_prefix</tspan>{`}_{`}<tspan fill={T1}>identifier</tspan>{`}`}
@@ -1252,12 +1252,12 @@ export function SHelperSignature() {
   return (
     <figure className="docs-schematic schematic-arch">
       <svg viewBox={`0 0 ${W} ${H}`} xmlns="http://www.w3.org/2000/svg" role="img" aria-label="S() helper signature">
-        <rect x={20} y={20} width={W - 40} height={H - 40} rx={14} fill={BG} stroke={BD} />
+        <rect x={20} y={20} width={W - 40} height={H - 40} rx={12} fill={BG} stroke={BD} />
         <rect x={20} y={20} width={4} height={H - 40} rx={2} fill={GREEN} />
 
         <text x={40} y={50} fontFamily={FONT_DISPLAY} fontSize={14} fontWeight={600} letterSpacing="-0.005em" fill={T1}>S() helper signature</text>
 
-        <rect x={40} y={66} width={W - 80} height={50} rx={10} fill={SF} stroke={BD} />
+        <rect x={40} y={66} width={W - 80} height={50} rx={12} fill={SF} stroke={BD} />
         <text x={56} y={88} fontFamily={FONT_MONO} fontSize={12.5} fill={T1}>S(id, name, description, category, logo, brandBg,</text>
         <text x={56} y={106} fontFamily={FONT_MONO} fontSize={12.5} fill={T1}>{'  '}prefixes, valueLabel, valueUnit, isPrice?)</text>
 
@@ -1295,7 +1295,7 @@ export function TestFlow() {
           const y = 24 + i * stepH
           return (
             <g key={i}>
-              <rect x={(W - 380) / 2} y={y} width={380} height={56} rx={14} fill={BG} stroke={BD} />
+              <rect x={(W - 380) / 2} y={y} width={380} height={56} rx={12} fill={BG} stroke={BD} />
               <circle cx={(W - 380) / 2 + 28} cy={y + 28} r={14} fill={BLUE} fillOpacity={0.1} stroke={BLUE} strokeOpacity={0.4} />
               <text x={(W - 380) / 2 + 28} y={y + 33} textAnchor="middle" fontFamily={FONT_DISPLAY} fontSize={12} fontWeight={600} fill={BLUE}>{i + 1}</text>
               <text x={(W - 380) / 2 + 56} y={y + 26} fontFamily={s.mono ? FONT_MONO : FONT_DISPLAY} fontSize={13.5} fontWeight={600} letterSpacing="-0.005em" fill={T1}>{s.title}</text>
@@ -1329,7 +1329,7 @@ export function PitfallsList() {
   return (
     <figure className="docs-schematic schematic-arch">
       <svg viewBox={`0 0 ${W} ${H}`} xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Things that will bite you">
-        <rect x={20} y={20} width={W - 40} height={H - 40} rx={14} fill={BG} stroke={BD} />
+        <rect x={20} y={20} width={W - 40} height={H - 40} rx={12} fill={BG} stroke={BD} />
         <rect x={20} y={20} width={4} height={H - 40} rx={2} fill={RED} />
         <text x={40} y={50} fontFamily={FONT_DISPLAY} fontSize={14} fontWeight={600} letterSpacing="-0.005em" fill={T1}>Things that will bite you</text>
         <line x1={36} y1={64} x2={W - 36} y2={64} stroke={BD} />
@@ -1425,7 +1425,7 @@ export function NewSourceChecklist() {
 
         {layouts.map((l, gi) => (
           <g key={gi}>
-            <rect x={20} y={l.y} width={W - 40} height={l.h} rx={14} fill={BG} stroke={BD} />
+            <rect x={20} y={l.y} width={W - 40} height={l.h} rx={12} fill={BG} stroke={BD} />
             <rect x={20} y={l.y} width={4} height={l.h} rx={2} fill={l.section.accent} />
             <text x={40} y={l.y + 24} fontFamily={FONT_DISPLAY} fontSize={13.5} fontWeight={600} letterSpacing="-0.005em" fill={T1}>{l.section.title}</text>
             {l.section.items.map((it, i) => {
