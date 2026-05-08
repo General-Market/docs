@@ -97,72 +97,66 @@ function stubResponse(reason: string): NextResponse<TrendingBotsResponse> {
   )
 }
 
+// Top-level dirs in the repo that ship a runnable bot. The rail surfaces
+// every entry on every source page so the source-matched bot lands next
+// to the other available examples. Update when a new sibling bot lands.
+//
+// Skipped: visualizer (shared SPA), AGENTS.md (docs), setup.sh (root).
+const BOT_DIRS = ['twitch', 'polymarket'] as const
+
+async function fetchBotEntry(dir: string): Promise<BotEntry | null> {
+  const contentsUrl = `${GITHUB_API}/repos/${REPO}/contents/${encodeURIComponent(dir)}`
+  let res: Response
+  try {
+    res = await githubFetch(contentsUrl)
+  } catch {
+    return null
+  }
+  if (!res.ok) return null
+
+  const [lastCommitAt, description] = await Promise.all([
+    fetchLastCommitAt(dir),
+    fetchReadmeDescription(contentsUrl),
+  ])
+
+  return {
+    name: `${dir} bot`,
+    path: dir,
+    lastCommitAt,
+    htmlUrl: `https://github.com/${REPO}/tree/main/${encodeURIComponent(dir)}`,
+    description,
+    sparkline7d: null,
+  }
+}
+
 export async function GET(request: Request): Promise<NextResponse<TrendingBotsResponse>> {
   const { searchParams } = new URL(request.url)
   const sourceId = searchParams.get('source')
 
   if (!sourceId) {
-    return NextResponse.json({ bots: [], _stub: true, reason: 'missing source param' }, { status: 400 })
-  }
-
-  // Repo layout: each source has exactly one bot at /<source>/. Subdirs
-  // inside (config/, data/, features/, models/) are package internals,
-  // not separate bots — listing them as bots is what the previous version
-  // did and it surfaced "abi", "config", "data" as fake bot tiles.
-  const contentsUrl = `${GITHUB_API}/repos/${REPO}/contents/${encodeURIComponent(sourceId)}`
-
-  let contentsRes: Response
-  try {
-    contentsRes = await githubFetch(contentsUrl)
-  } catch {
-    return stubResponse('github unreachable')
-  }
-
-  if (contentsRes.status === 404) {
-    // No bot for this source yet — not an error, just empty
     return NextResponse.json(
-      { bots: [] },
-      { headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=600' } },
+      { bots: [], _stub: true, reason: 'missing source param' },
+      { status: 400 },
     )
   }
 
-  if (contentsRes.status === 403 || contentsRes.status === 429) {
-    return stubResponse('github rate limit')
+  // Fetch every known bot. The source-matched one sorts first; the rest
+  // ride along as related examples, side by side, on every page.
+  const settled = await Promise.all(BOT_DIRS.map(fetchBotEntry))
+  const bots = settled.filter((b): b is BotEntry => b !== null)
+
+  if (bots.length === 0) {
+    return stubResponse('github unreachable or empty repo')
   }
 
-  if (!contentsRes.ok) {
-    return stubResponse('github unreachable')
-  }
-
-  let entries: GitHubEntry[]
-  try {
-    entries = await contentsRes.json()
-  } catch {
-    return stubResponse('github unreachable')
-  }
-
-  if (!Array.isArray(entries)) {
-    return stubResponse('github unreachable')
-  }
-
-  // The source directory exists. Treat it as a single bot — pull its
-  // README description and last-commit timestamp from the dir as a whole.
-  const [lastCommitAt, description] = await Promise.all([
-    fetchLastCommitAt(sourceId),
-    fetchReadmeDescription(contentsUrl),
-  ])
-
-  const bot: BotEntry = {
-    name: `${sourceId} bot`,
-    path: sourceId,
-    lastCommitAt,
-    htmlUrl: `https://github.com/${REPO}/tree/main/${encodeURIComponent(sourceId)}`,
-    description,
-    sparkline7d: null,
-  }
+  bots.sort((a, b) => {
+    if (a.path === sourceId) return -1
+    if (b.path === sourceId) return 1
+    return a.path.localeCompare(b.path)
+  })
 
   return NextResponse.json(
-    { bots: [bot] },
+    { bots },
     { headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=600' } },
   )
 }
