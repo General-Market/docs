@@ -1,7 +1,6 @@
 import React from "react";
 import {
   AbsoluteFill,
-  Easing,
   interpolate,
   useCurrentFrame,
 } from "remotion";
@@ -17,7 +16,12 @@ import { IdleZoom, RevealChars } from "./vibe";
 // number cuts to its inverse on a beat partway through.
 // Bars = 78f (2.6s) — its hard cut to Rigged lands on beat 11.
 const STAT_FRAMES = 145;
-const BARS_FRAMES = 78;
+// Bars 104f (3.47s) — extended from 78f to give the touched-line beat
+// time to play its letter-wave exit and the 3D category cards. Hard cut
+// to Rigged lands on beat 12 (332) instead of beat 11 (306). Rigged's
+// internal article cadence (ARTICLE_FRAMES) drifts ~1f against beats —
+// negligible.
+const BARS_FRAMES = 104;
 // Hard-cut flip from 0.01%/take/70% to 99.9%/get/30% on scene-local
 // beat 2 (frame 51 inside Stat = absolute beat 19).
 const STAT_FLIP_AT = 51;
@@ -248,15 +252,40 @@ const BAR_GROW = toFrames(0.5);
 const REVEAL_AT =
   BAR_STAGGER * (BARS.length - 1) + BAR_GROW + toFrames(0.3);
 
-const TOUCHED_WORDS = ["every", "market", "you", "touched", "..."];
-const TOUCHED_WORD_STAGGER = toFrames(0.085);
-const TOUCHED_WORD_FADE = toFrames(0.32);
-const TOUCHED_HOLD = toFrames(0.55);
-const TOUCHED_EXIT = toFrames(0.6);
+// Headline loses its trailing "..." — the categories below take that role.
+const TOUCHED_WORDS = ["every", "market", "you", "touched"];
+const TOUCHED_WORD_STAGGER = toFrames(0.07);
+const TOUCHED_WORD_FADE = toFrames(0.28);
 const TOUCHED_ENTRY_FULL =
   TOUCHED_WORD_STAGGER * (TOUCHED_WORDS.length - 1) + TOUCHED_WORD_FADE;
-const TOUCHED_EXIT_AT = TOUCHED_ENTRY_FULL + TOUCHED_HOLD;
-const touchedExitEase = Easing.bezier(0.55, 0.0, 0.85, 0.12);
+
+// Category cards replace the literal "..." — what was actually touched.
+const CATEGORY_LABELS = ["stocks", "crypto", "sports", "predictions"];
+const CARD_ENTRY_DELAY = toFrames(0.3); // after headline begins
+const CARD_STAGGER = toFrames(0.07);
+const CARD_FADE = toFrames(0.34);
+const CARD_ENTRY_FULL =
+  CARD_ENTRY_DELAY +
+  CARD_STAGGER * (CATEGORY_LABELS.length - 1) +
+  CARD_FADE;
+
+// Hold both before the wave-out begins.
+const TOUCHED_HOLD = toFrames(0.42);
+const TOUCHED_EXIT_AT = Math.max(TOUCHED_ENTRY_FULL, CARD_ENTRY_FULL) + TOUCHED_HOLD;
+
+// Per-letter wave-out: each letter exits with a stagger from the center
+// outward, drifting away from center while it fades. TextTrail hide()
+// pattern — wave radiates, then nothing remains.
+const LETTER_EXIT_STAGGER = 1.4;
+const LETTER_EXIT_FADE = toFrames(0.34);
+const LETTER_EXIT_DRIFT = 22; // px per unit of distance from center
+
+// Cards exit on the same impulse — quick rotateY collapse + fade.
+const CARD_EXIT_DURATION = toFrames(0.32);
+const CARD_EXIT_STAGGER = toFrames(0.04);
+
+const expoOut = (t: number): number => (t === 1 ? 1 : 1 - Math.pow(2, -10 * t));
+const expoIn = (t: number): number => (t === 0 ? 0 : Math.pow(2, 10 * t - 10));
 
 const ExtractionBars: React.FC = () => {
   return (
@@ -322,19 +351,6 @@ const TouchedLine: React.FC = () => {
 
   if (local < 0) return null;
 
-  const exitRaw = Math.max(
-    0,
-    Math.min(1, (local - TOUCHED_EXIT_AT) / TOUCHED_EXIT),
-  );
-  const exitEased = touchedExitEase(exitRaw);
-  const exitX = -exitEased * (W * 1.15);
-  const groupOpacity = interpolate(
-    exitRaw,
-    [0.78, 1],
-    [1, 0],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-
   return (
     <div
       style={{
@@ -342,6 +358,38 @@ const TouchedLine: React.FC = () => {
         bottom: "5%",
         left: 0,
         right: 0,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 28,
+        willChange: "transform, opacity",
+      }}
+    >
+      <TouchedHeadline local={local} />
+      <CategoryCards local={local} />
+    </div>
+  );
+};
+
+const TouchedHeadline: React.FC<{ local: number }> = ({ local }) => {
+  // Per-letter exit ride: each letter waits its turn (stagger from center
+  // outward), drifts away from center, fades. The text appears word-by-word
+  // on entry; on exit it disintegrates from the inside out.
+  const exitLocal = local - TOUCHED_EXIT_AT;
+
+  // Build glyph list with word boundaries so spacing survives.
+  type Glyph = { ch: string; isSpace: boolean; wordIdx: number };
+  const glyphs: Glyph[] = [];
+  TOUCHED_WORDS.forEach((word, wi) => {
+    if (wi > 0) glyphs.push({ ch: " ", isSpace: true, wordIdx: wi });
+    for (const ch of word) glyphs.push({ ch, isSpace: false, wordIdx: wi });
+  });
+
+  const center = (glyphs.length - 1) / 2;
+
+  return (
+    <div
+      style={{
         textAlign: "center",
         fontFamily: font,
         fontSize: 96,
@@ -350,41 +398,142 @@ const TouchedLine: React.FC = () => {
         color: colors.fg,
         lineHeight: 0.95,
         whiteSpace: "nowrap",
-        transform: `translate3d(${exitX}px, 0, 0)`,
-        opacity: groupOpacity,
-        willChange: "transform, opacity",
       }}
     >
-      {TOUCHED_WORDS.map((word, i) => {
-        const wLocal = local - i * TOUCHED_WORD_STAGGER;
-        const wOpacity = interpolate(
+      {glyphs.map((g, i) => {
+        // Entry — staggered by word, glyph rides up + fades in.
+        const wLocal = local - g.wordIdx * TOUCHED_WORD_STAGGER;
+        const enterOp = interpolate(
           wLocal,
           [0, TOUCHED_WORD_FADE],
           [0, 1],
           { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
         );
-        const wY = interpolate(
+        const enterY = interpolate(
           wLocal,
           [0, TOUCHED_WORD_FADE],
           [26, 0],
           { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
         );
-        const isLast = i === TOUCHED_WORDS.length - 1;
+
+        // Exit — wave outward from the center.
+        const dist = Math.abs(i - center);
+        const exitStart = dist * LETTER_EXIT_STAGGER;
+        const exitT = Math.max(
+          0,
+          Math.min(1, (exitLocal - exitStart) / LETTER_EXIT_FADE),
+        );
+        const exitEased = expoIn(exitT);
+        const sign = i < center ? -1 : 1;
+        const exitX = sign * dist * LETTER_EXIT_DRIFT * exitEased;
+        const exitY = -exitEased * 18;
+        const exitOp = 1 - exitT;
+        const exitScale = 1 - exitEased * 0.18;
+
+        if (g.isSpace) {
+          return (
+            <span key={i} style={{ display: "inline-block", whiteSpace: "pre" }}>
+              {" "}
+            </span>
+          );
+        }
+
         return (
           <span
             key={i}
             style={{
               display: "inline-block",
-              marginRight: isLast ? 0 : "0.32em",
-              opacity: wOpacity,
-              transform: `translate3d(0, ${wY}px, 0)`,
+              opacity: enterOp * exitOp,
+              transform: `translate3d(${exitX.toFixed(2)}px, ${(enterY + exitY).toFixed(2)}px, 0) scale(${exitScale.toFixed(3)})`,
               willChange: "transform, opacity",
             }}
           >
-            {word}
+            {g.ch}
           </span>
         );
       })}
+    </div>
+  );
+};
+
+// ─── Category cards — Carousel3D-style 3D rotation entrance ──────────────────
+
+const CategoryCards: React.FC<{ local: number }> = ({ local }) => {
+  return (
+    <div
+      style={{
+        display: "flex",
+        gap: 14,
+        perspective: 1100,
+      }}
+    >
+      {CATEGORY_LABELS.map((label, i) => (
+        <CategoryCard key={label} label={label} index={i} local={local} />
+      ))}
+    </div>
+  );
+};
+
+const CategoryCard: React.FC<{
+  label: string;
+  index: number;
+  local: number;
+}> = ({ label, index, local }) => {
+  // Entry: rotateY -90 → 0, translateZ -180 → 0, fade in. expoOut.
+  const enterStart = CARD_ENTRY_DELAY + index * CARD_STAGGER;
+  const enterT = Math.max(
+    0,
+    Math.min(1, (local - enterStart) / CARD_FADE),
+  );
+  const enterEased = expoOut(enterT);
+  const enterRotY = interpolate(enterEased, [0, 1], [-90, 0]);
+  const enterZ = interpolate(enterEased, [0, 1], [-180, 0]);
+  const enterOp = enterT;
+
+  // Exit: rotateY collapses to +90 with reverse stagger (rightmost first),
+  // matching the headline's outward wave.
+  const exitOrder = CATEGORY_LABELS.length - 1 - index;
+  const exitStart = TOUCHED_EXIT_AT + exitOrder * CARD_EXIT_STAGGER;
+  const exitT = Math.max(
+    0,
+    Math.min(1, (local - exitStart) / CARD_EXIT_DURATION),
+  );
+  const exitEased = expoIn(exitT);
+  const exitRotY = exitEased * 90;
+  const exitZ = -exitEased * 220;
+  const exitOp = 1 - exitT;
+
+  const rotY = enterRotY + exitRotY;
+  const z = enterZ + exitZ;
+  const op = enterOp * exitOp;
+
+  return (
+    <div
+      style={{
+        transformStyle: "preserve-3d",
+        transform: `translateZ(${z.toFixed(1)}px) rotateY(${rotY.toFixed(2)}deg)`,
+        opacity: op,
+        willChange: "transform, opacity",
+      }}
+    >
+      <div
+        style={{
+          padding: "10px 22px",
+          background: colors.surface,
+          border: `1.5px solid ${colors.accent}`,
+          borderRadius: 999,
+          fontFamily: monoFont,
+          fontSize: 26,
+          fontWeight: 600,
+          letterSpacing: "0.06em",
+          textTransform: "uppercase",
+          color: colors.accent,
+          whiteSpace: "nowrap",
+          boxShadow: `0 6px 24px ${colors.accentTint}`,
+        }}
+      >
+        {label}
+      </div>
     </div>
   );
 };
