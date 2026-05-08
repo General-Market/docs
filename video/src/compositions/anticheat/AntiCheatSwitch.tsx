@@ -19,16 +19,16 @@ import { IdleZoom, RevealChars } from "./vibe";
 // Setup → pivot → knife. Three rows with proportional bars; the Blocks
 // row's "40%" doesn't crossfade out — it physically inflates from its
 // row slot into the centre of the frame, becoming the hero.
-const SCENE_FRAMES = toFrames(6.6);
+const SCENE_FRAMES = toFrames(7.2);
 
 const HEADLINE_AT = 0;
-const ROWS_AT = 22;
-const ROW_STAGGER = 5;
-// Hold the bar chart long enough that the viewer can actually read three
-// percentages before the morph fires. Streak + morph + settle all share
-// the same anchor so the impact still lands on the pivot. The post-morph
-// hero+kicker phase compresses to absorb the extra reading time.
-// SCENE_FRAMES stays at 198 — EndCard lands on schedule.
+const ROWS_AT = 18;
+const ROW_STAGGER = 3;
+// Hold the bar chart long enough to read three percentages before the
+// morph fires; streak + morph + settle share the pivot anchor so the
+// impact still lands on the morph. Scene extended +0.6s so the post-
+// kicker hold is long enough to read "just by switching financial
+// product" — EndCard + its pullLong transition shift 18f later.
 const PIVOT_AT = 107;
 const COPY_AT = 130;
 const KICKER_AT = 156;
@@ -52,12 +52,12 @@ const HERO_INDEX = 0;
 // top-right fold); drawing it that way avoids double strokes at shared
 // joins.
 
-const BAR_WIDTH = 170;
-const BAR_GAP = 200;
-const BAR_BASELINE_Y = 870;
-const BAR_MAX_HEIGHT = 400; // Blocks (40%) sets the cap
-const BAR_DEPTH = 24;
-const BAR_STROKE = 3;
+const BAR_WIDTH = 240;
+const BAR_GAP = 150;
+const BAR_BASELINE_Y = 1020;
+const BAR_MAX_HEIGHT = 520; // Blocks (40%) sets the cap
+const BAR_DEPTH = 30;
+const BAR_STROKE = 4;
 
 // Visual amplification: heights map through (pct/40)^HEIGHT_POWER instead
 // of linearly. With power 1.6 the displayed percentages stay legit
@@ -333,13 +333,13 @@ const Bar3D: React.FC<{
   const start = ROWS_AT + index * ROW_STAGGER + 2;
   const local = frame - start;
 
-  const enterOp = interpolate(local, [0, 12], [0, 1], {
+  const enterOp = interpolate(local, [0, 6], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  // Height growth: ease-cubic-out over 14 frames, same window as the count.
-  const countT = Math.max(0, Math.min(1, local / 14));
+  // Height growth: ease-cubic-out over 9 frames — bars snap up, no slow fade.
+  const countT = Math.max(0, Math.min(1, local / 9));
   const countEased = 1 - Math.pow(1 - countT, 3);
 
   const isHero = index === HERO_INDEX;
@@ -431,22 +431,22 @@ const BarLabel: React.FC<{
   const start = ROWS_AT + index * ROW_STAGGER + 2;
   const local = frame - start;
 
-  const enterOp = interpolate(local, [0, 12], [0, 1], {
+  const enterOp = interpolate(local, [0, 6], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const enterBlur = interpolate(local, [0, 12], [4, 0], {
+  const enterBlur = interpolate(local, [0, 6], [4, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
   const enter = spring({
     frame: local,
     fps,
-    config: { damping: 24, stiffness: 130, mass: 0.7 },
+    config: { damping: 20, stiffness: 180, mass: 0.6 },
   });
   const enterY = interpolate(enter, [0, 1], [12, 0]);
 
-  const countT = Math.max(0, Math.min(1, local / 14));
+  const countT = Math.max(0, Math.min(1, local / 9));
   const countEased = 1 - Math.pow(1 - countT, 3);
   const value = Math.round(row.pct * countEased);
 
@@ -514,22 +514,22 @@ const MorphingForty: React.FC<{
 }> = ({ frame, fps, morphT }) => {
   const revealStart = ROWS_AT + HERO_INDEX * ROW_STAGGER + 2;
   const revealLocal = frame - revealStart;
-  const revealOp = interpolate(revealLocal, [0, 12], [0, 1], {
+  const revealOp = interpolate(revealLocal, [0, 6], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const revealBlur = interpolate(revealLocal, [0, 12], [4, 0], {
+  const revealBlur = interpolate(revealLocal, [0, 6], [4, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
   const enter = spring({
     frame: revealLocal,
     fps,
-    config: { damping: 24, stiffness: 130, mass: 0.7 },
+    config: { damping: 20, stiffness: 180, mass: 0.6 },
   });
   const enterY = interpolate(enter, [0, 1], [12, 0]);
 
-  const countT = Math.max(0, Math.min(1, revealLocal / 14));
+  const countT = Math.max(0, Math.min(1, revealLocal / 9));
   const countEased = 1 - Math.pow(1 - countT, 3);
   const value = morphT > 0.05 ? 40 : Math.round(40 * countEased);
 
