@@ -131,6 +131,10 @@ export type DeviceBrollProps = {
   background?: React.ReactNode | string;
   /** Contact shadow under the device. Default true for laptop, false for phone. */
   showShadow?: boolean;
+  /** Multiplier applied to ambient, directional, and environment lighting.
+   *  Default 1. Lower values dim the device body without affecting the
+   *  screen's emissive broll. */
+  lightingIntensity?: number;
 };
 
 // ── Screen mesh identification ──
@@ -309,6 +313,7 @@ const Scene: React.FC<{
   lidOpen: number;
   emissiveIntensity: number;
   showShadow: boolean;
+  lightingIntensity: number;
   videoRef: React.RefObject<HTMLVideoElement | null>;
   frame: number;
 }> = ({
@@ -322,6 +327,7 @@ const Scene: React.FC<{
   lidOpen,
   emissiveIntensity,
   showShadow,
+  lightingIntensity,
   videoRef,
   frame,
 }) => {
@@ -329,9 +335,17 @@ const Scene: React.FC<{
   const gltf = useGLTF(MODEL_URL);
   const env = useRemotionEnvironment();
 
+  // Clone the cached scene per instance. A THREE.Object3D can only be
+  // attached to one parent, so two DeviceBroll mounts sharing useGLTF's
+  // cache would race for gltf.scene and one would render empty. Clone
+  // shares geometry and materials by reference; the screen mesh's
+  // material is cloned again inside findScreenMesh, so per-instance
+  // texture mutations stay local.
+  const sceneClone = useMemo(() => gltf.scene.clone(true), [gltf]);
+
   const resolved: ResolvedScene = useMemo(() => {
     if (device === "phone") {
-      const iphone = gltf.scene.getObjectByName("iphone");
+      const iphone = sceneClone.getObjectByName("iphone");
       return {
         screenMesh: iphone ? findPhoneScreenMesh(iphone) : null,
         canvasW: PHONE_CANVAS_W,
@@ -339,30 +353,30 @@ const Scene: React.FC<{
         screenAspect: PHONE_SCREEN_ASPECT,
       };
     }
-    const bevels = gltf.scene.getObjectByName("Bevels_2");
+    const bevels = sceneClone.getObjectByName("Bevels_2");
     return {
       screenMesh: bevels ? findLaptopScreenMesh(bevels) : null,
       canvasW: LAPTOP_CANVAS_W,
       canvasH: LAPTOP_CANVAS_H,
       screenAspect: LAPTOP_SCREEN_ASPECT,
     };
-  }, [gltf, device]);
+  }, [sceneClone, device]);
 
   // Hide the device we are NOT showing.
   useMemo(() => {
-    const iphoneNode = gltf.scene.getObjectByName("iphone");
+    const iphoneNode = sceneClone.getObjectByName("iphone");
     const iphoneSet = new Set<THREE.Object3D>();
     if (iphoneNode) iphoneNode.traverse((c) => iphoneSet.add(c));
-    gltf.scene.traverse((child) => {
+    sceneClone.traverse((child) => {
       if (!(child as THREE.Mesh).isMesh) return;
       const inIphone = iphoneSet.has(child);
       child.visible = device === "phone" ? inIphone : !inIphone;
     });
-  }, [gltf, device]);
+  }, [sceneClone, device]);
 
   // Device-specific transforms.
   if (device === "phone") {
-    const iphone = gltf.scene.getObjectByName("iphone");
+    const iphone = sceneClone.getObjectByName("iphone");
     if (iphone) {
       const pos = position
         ? new THREE.Vector3(...position)
@@ -378,7 +392,7 @@ const Scene: React.FC<{
     }
   } else {
     // Laptop: lid angle interpolates between closed and open.
-    const bevels = gltf.scene.getObjectByName("Bevels_2");
+    const bevels = sceneClone.getObjectByName("Bevels_2");
     if (bevels) {
       const lidQ = new THREE.Quaternion().copy(LID_CLOSED).slerp(LID_OPEN, lidOpen);
       bevels.position.copy(BEVELS_POS);
@@ -388,13 +402,13 @@ const Scene: React.FC<{
     // Laptop world-space transform via the scene root — the macbook is
     // anchored at origin in the GLB, so moving the root moves everything.
     if (position || rotation || scale !== 1) {
-      gltf.scene.position.set(...(position ?? [0, 0, 0]));
+      sceneClone.position.set(...(position ?? [0, 0, 0]));
       if (rotation) {
-        gltf.scene.rotation.set(rotation[0], rotation[1], rotation[2], "YXZ");
+        sceneClone.rotation.set(rotation[0], rotation[1], rotation[2], "YXZ");
       } else {
-        gltf.scene.rotation.set(0, 0, 0);
+        sceneClone.rotation.set(0, 0, 0);
       }
-      gltf.scene.scale.setScalar(scale);
+      sceneClone.scale.setScalar(scale);
     }
   }
 
@@ -408,7 +422,7 @@ const Scene: React.FC<{
 
   return (
     <>
-      <primitive object={gltf.scene} />
+      <primitive object={sceneClone} />
       <React.Suspense fallback={null}>
         {env.isRendering ? (
           <RenderedScreen
@@ -429,10 +443,10 @@ const Scene: React.FC<{
           />
         )}
       </React.Suspense>
-      <Environment preset="studio" environmentIntensity={1.8} />
-      <ambientLight intensity={0.3} />
-      <directionalLight position={[5, 8, -5]} intensity={2.5} castShadow />
-      <directionalLight position={[-4, 4, 3]} intensity={0.6} color="#c0d0e8" />
+      <Environment preset="studio" environmentIntensity={1.8 * lightingIntensity} />
+      <ambientLight intensity={0.3 * lightingIntensity} />
+      <directionalLight position={[5, 8, -5]} intensity={2.5 * lightingIntensity} castShadow />
+      <directionalLight position={[-4, 4, 3]} intensity={0.6 * lightingIntensity} color="#c0d0e8" />
       {showShadow && (
         <ContactShadows
           position={[0, -0.01, 0]}
@@ -462,6 +476,7 @@ export const DeviceBroll: React.FC<DeviceBrollProps> = ({
   height = 1080,
   background,
   showShadow,
+  lightingIntensity = 1,
 }) => {
   const frame = useCurrentFrame();
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -534,6 +549,7 @@ export const DeviceBroll: React.FC<DeviceBrollProps> = ({
             lidOpen={lidOpen}
             emissiveIntensity={emissiveIntensity}
             showShadow={resolvedShadow}
+            lightingIntensity={lightingIntensity}
             videoRef={videoRef}
             frame={frame}
           />

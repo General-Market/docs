@@ -117,7 +117,9 @@ import { antiCheatReassureMeta } from "./compositions/anticheat/AntiCheatReassur
 import { antiCheatBridgeMeta } from "./compositions/anticheat/AntiCheatBridge";
 import { antiCheatEndCardMeta } from "./compositions/anticheat/AntiCheatEndCard";
 import { antiCheatFullMeta } from "./compositions/anticheat/AntiCheatFull";
+import { tradingScreenPortraitMeta } from "./compositions/anticheat/TradingScreenPortrait";
 import { blockTradingExileMeta } from "./compositions/block-trading/BlockTradingExile";
+import { marketAnatomyMeta } from "./compositions/market-anatomy/MarketAnatomy";
 
 const SHOW_SCENES = process.env.REMOTION_SHOW_SCENES === "1";
 
@@ -152,6 +154,7 @@ export const RemotionRoot: React.FC = () => {
           antiCheatReassureMeta,
           antiCheatBridgeMeta,
           antiCheatEndCardMeta,
+          tradingScreenPortraitMeta,
         ].map((meta) => (
           <Composition
             key={meta.id}
@@ -173,6 +176,16 @@ export const RemotionRoot: React.FC = () => {
         fps={blockTradingExileMeta.fps}
         width={blockTradingExileMeta.width}
         height={blockTradingExileMeta.height}
+      />
+
+      {/* ═══ MARKET ANATOMY — eight strategy-pool tables over broll ═══ */}
+      <Composition
+        id={marketAnatomyMeta.id}
+        component={marketAnatomyMeta.component}
+        durationInFrames={marketAnatomyMeta.durationInFrames}
+        fps={marketAnatomyMeta.fps}
+        width={marketAnatomyMeta.width}
+        height={marketAnatomyMeta.height}
       />
 
       {/* ═══ PITCH — VC pitch deck, 1 second per slide ═══ */}

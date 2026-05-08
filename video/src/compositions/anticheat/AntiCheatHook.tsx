@@ -18,11 +18,34 @@ const BROLL = {
   valorant: staticFile("cheat-broll/valorant-wallhack.mp4"),
 };
 
-// Phase 2 will replace this with a portrait trading-screen render
-// (720x1560) at public/cheat-broll/phone-trading.mp4. Until then the
-// phone shows the same glacier-drone clip used by PhoneBrollDemo so we
-// can confirm the 3D scene mounts correctly.
-const PHONE_BROLL_PLACEHOLDER = staticFile("broll/glacier-drone.mp4");
+// Cheat clips are 3-5s each; cycle them across the hook on the original
+// beats — minecraft → cs2 at frame 69, cs2 → valorant at frame 146.
+const LAPTOP_CLIP_CUTS = { mid: 69, late: 146 } as const;
+function laptopBrollFor(frame: number): string {
+  if (frame < LAPTOP_CLIP_CUTS.mid) return BROLL.minecraft;
+  if (frame < LAPTOP_CLIP_CUTS.late) return BROLL.cs2;
+  return BROLL.valorant;
+}
+
+// Tighter framing on the laptop. Default angle (looking down at the
+// screen face) — only push zoom higher so the screen fills the panel.
+const LAPTOP_CAMERA = {
+  position: [3.031, 4.096, -6.179] as [number, number, number],
+  target: [3.001, 2.780, 0.829] as [number, number, number],
+  fov: 50,
+  zoom: 1.7,
+};
+
+// Phone keeps its natural floating pose; tighter zoom so the screen
+// dominates the right panel.
+const PHONE_CAMERA = {
+  position: [-2.8, 2.375, -4.44] as [number, number, number],
+  target: [-2.921, 2.475, -1.564] as [number, number, number],
+  fov: 50,
+  zoom: 1.5,
+};
+
+const PHONE_BROLL = staticFile("cheat-broll/phone-trading.mp4");
 
 const PAIRS = [
   { game: "Spin-bots", trade: "Insider traders" },
@@ -30,28 +53,24 @@ const PAIRS = [
   { game: "Kill aura", trade: "Order-flow buyers" },
 ] as const;
 
-// All major moments locked to absolute video beats (see beats.ts).
-// Hook covers beats 0–8 (frames 17–223). Scene-local frames below.
-//   beat 0  → frame 17  — header in
-//   beat 1  → frame 43  — split begins
-//   beat 3  → frame 94  — pair 1
-//   beat 4  → frame 120 — pair 2
-//   beat 5  → frame 146 — pair 3
-//   beat 6  → frame 172 — verdict reveal
-//   beat 8  → frame 223 — Bars overlays
+// Beat grid (frames):
+//   17  — header in
+//   43  — split begins
+//   94  — pair 1
+//   120 — pair 2
+//   146 — pair 3
+//   172 — verdict reveal
+//   254 — hook ends
 const HEADER_IN = 17;
 const SPLIT_AT = 43;
 const PAIR_FRAMES = [94, 120, 146];
 const REVEAL_AT = 172;
-
 const HOOK_DURATION = 254;
 
 export const AntiCheatHook: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  // Spring drives the split. At frame=SPLIT_AT it begins; before that it
-  // sits at 0, which means the left panel occupies the full canvas.
   const splitProgress = spring({
     frame: frame - SPLIT_AT,
     fps,
@@ -62,8 +81,6 @@ export const AntiCheatHook: React.FC = () => {
     extrapolateRight: "clamp",
   });
 
-  // Continuous Z-push across the full hook — imperceptible per frame,
-  // undeniable in retrospect. The whole composition slowly closes in.
   const zoomScale = interpolate(frame, [0, HOOK_DURATION], [1, 1.05], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
@@ -91,10 +108,13 @@ export const AntiCheatHook: React.FC = () => {
         >
           <DeviceBroll
             device="laptop"
-            broll={BROLL.cs2}
+            broll={laptopBrollFor(frame)}
             brollAspect={16 / 9}
             width={W}
             height={H}
+            camera={LAPTOP_CAMERA}
+            lightingIntensity={0.7}
+            emissiveIntensity={1.6}
             background="#0a0a0a"
           />
           <StripDarken />
@@ -115,7 +135,7 @@ export const AntiCheatHook: React.FC = () => {
           />
         </div>
 
-        {/* ── Right panel: TRADE — phone with trading broll on its screen ── */}
+        {/* ── Right panel: TRADE — phone playing the chart on its screen ── */}
         <div
           style={{
             position: "absolute",
@@ -129,10 +149,13 @@ export const AntiCheatHook: React.FC = () => {
         >
           <DeviceBroll
             device="phone"
-            broll={PHONE_BROLL_PLACEHOLDER}
-            brollAspect={16 / 9}
+            broll={PHONE_BROLL}
+            brollAspect={720 / 1560}
             width={W}
             height={H}
+            camera={PHONE_CAMERA}
+            lightingIntensity={0.7}
+            emissiveIntensity={1.6}
             background="#0a0a0a"
           />
           <StripDarken tint={"#ff3b3b"} />
@@ -290,8 +313,7 @@ const PairList: React.FC<{
 };
 
 // Each line flies forward from depth — starts huge and motion-blurred,
-// snaps to scale 1.0 with focus pull. The container shakes on landing,
-// once for each line, so the second clause hits like a second punch.
+// snaps to scale 1.0 with focus pull.
 const LINE1_LAND = 7;
 const LINE2_START = 6;
 const LINE2_LAND = LINE2_START + 7;
