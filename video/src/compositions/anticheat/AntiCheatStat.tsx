@@ -255,27 +255,28 @@ const CATEGORIES: Category[] = [
   { label: "launchpads", pct: 87 },
 ];
 
-// Carousel cell geometry — full-stage. Cards are big enough that one
-// faces the camera at a readable size during scroll + hold.
-const CAROUSEL_W = 440;
-const CAROUSEL_H = 560;
-const CARD_W = 400;
-const CARD_H = 520;
-const CAROUSEL_RADIUS = 380;
-const CAROUSEL_PERSPECTIVE = 1400;
+// Card geometry — full-stage fan. Four cards laid out side-by-side with
+// slight rotateY tilt, all visible at once. A 3D ring would hide the
+// back card; a fan keeps every datum legible.
+const CARD_W = 380;
+const CARD_H = 500;
+const CARD_X_SPACING = 440;       // distance between card centers
+const CARD_FAN_ROT_STEP = 12;     // deg of rotateY per index from center
+const CARD_FAN_Z_DEPTH = 80;      // outer cards pushed back this many px
+const CARD_FAN_Y_LIFT = 22;       // outer cards drop slightly
+const CAROUSEL_PERSPECTIVE = 1500;
 
-const CAROUSEL_SPIRAL_IN = toFrames(0.55);
-const CAROUSEL_SPIRAL_HOLD_AFTER = toFrames(0.05);
-// Scroll −180° so the back two cards rotate to the front. Slow enough to
-// read the labels as they pass.
-const CAROUSEL_SCROLL = toFrames(1.10);
-// Carousel3D explode phase, ported. The ring tips forward 90° while it
-// spins -360° on Y and rushes the camera (Z -460 → -1800 → +1500), then
-// rotateZ +270. Aligned so its last frame lands on the hard cut to Rigged
-// — the next scene catches the ring mid-spin instead of after a fade.
-const CAROUSEL_EXPLODE = toFrames(0.85);
+// Fan entrance: each card spirals in (rotateY from −90 + Z from −1400)
+// with a stagger across the four. CAROUSEL_ENTRY_FULL = last card's
+// finish — used to schedule hold + explode against scene end.
+const CARD_ENTRY_STAGGER = toFrames(0.07);
+const CARD_ENTRY_FADE = toFrames(0.55);
 const CAROUSEL_ENTRY_FULL =
-  CAROUSEL_SPIRAL_IN + CAROUSEL_SPIRAL_HOLD_AFTER + CAROUSEL_SCROLL;
+  CARD_ENTRY_STAGGER * (CATEGORIES.length - 1) + CARD_ENTRY_FADE;
+// Carousel3D explode phase reinterpreted per-card: outer cards fly to
+// the corners with rotateY/rotateZ spin while Z plunges then surges
+// past the camera. Last frame lands on the hard cut to Rigged.
+const CAROUSEL_EXPLODE = toFrames(0.85);
 // Hold sized so the explode ends at BARS_FRAMES. Computed in Bars-local
 // frames: REVEAL_AT + ENTRY + HOLD + EXPLODE = BARS_FRAMES.
 const CAROUSEL_HOLD = BARS_FRAMES - REVEAL_AT - CAROUSEL_ENTRY_FULL - CAROUSEL_EXPLODE;
@@ -293,8 +294,6 @@ const expoOut = (t: number): number => (t === 1 ? 1 : 1 - Math.pow(2, -10 * t));
 const expoIn = (t: number): number => (t === 0 ? 0 : Math.pow(2, 10 * t - 10));
 const power2InOut = (t: number): number =>
   t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-const power3 = (t: number): number => t * t * t;
-const sineInOut = (t: number): number => -(Math.cos(Math.PI * t) - 1) / 2;
 
 // REVEAL_AT no longer means "bar chart finishes" — it now means "the
 // carousel + headline take the stage." Caption holds at the top.
@@ -438,95 +437,126 @@ const TouchedHeadline: React.FC<{ local: number }> = ({ local }) => {
   );
 };
 
-// ─── Category carousel — Carousel3D ported in full ───────────────────────────
+// ─── Category fan — four cards in a curved row, all visible ────────────────
 //
-// Spiral-in → scroll −180° → hold → explode. The explode phase is the
-// same one Carousel3D plays at frame 110 of its Paris scene: rotateX →
-// 90, rotateY adds another −360, Z plunges to -1800 then rushes through
-// to +1500, rotateZ spins +270. Cards opacity collapses past explode
-// progress 0.8. Aligned with the hard cut to Rigged so the cut catches
-// the ring mid-spin instead of after a fade.
+// Resting state: a fan of four cards centered on the camera, each with
+// its own rotateY tilt (-18 / -6 / +6 / +18) and Z stagger so the outer
+// pair sits behind the inner pair. Per-card spiral entrance (rotateY
+// from far + Z from −1500) with a small stagger reads like Carousel3D's
+// arrival without the back-card hiding problem of a full ring. On exit
+// the cards split apart — left pair flies up-left, right pair flies
+// up-right, each rotating Y/Z, retreating in Z — then dissolves.
 
-const CategoryCarousel: React.FC<{ local: number }> = ({ local }) => {
-  // Spiral-in (frames 0…CAROUSEL_SPIRAL_IN)
-  const spiralT = Math.max(0, Math.min(1, local / CAROUSEL_SPIRAL_IN));
-  const spiralEased = expoOut(spiralT);
-  const spiralZ = interpolate(spiralEased, [0, 1], [-1500, -CAROUSEL_RADIUS - 80]);
-  const spiralRotYAdd = interpolate(spiralEased, [0, 1], [-720, 0]);
-  const spiralOpacity = spiralT;
+const CategoryCarousel: React.FC<{ local: number }> = ({ local }) => (
+  <div
+    style={{
+      width: 1840,
+      height: CARD_H + 60,
+      perspective: CAROUSEL_PERSPECTIVE,
+      position: "relative",
+    }}
+  >
+    {/* Soft scrim — lifts the cards off the dot grid behind. */}
+    <div
+      style={{
+        position: "absolute",
+        inset: "-40px -120px",
+        borderRadius: 64,
+        background:
+          "radial-gradient(ellipse at center, rgba(8, 14, 28, 0.06) 0%, rgba(8, 14, 28, 0) 70%)",
+        pointerEvents: "none",
+      }}
+    />
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        transformStyle: "preserve-3d",
+      }}
+    >
+      {CATEGORIES.map((cat, i) => (
+        <FanCard
+          key={cat.label}
+          cat={cat}
+          index={i}
+          count={CATEGORIES.length}
+          local={local}
+        />
+      ))}
+    </div>
+  </div>
+);
 
-  // Scroll phase — starts after spiral, runs CAROUSEL_SCROLL frames.
-  const scrollLocal = local - CAROUSEL_SPIRAL_IN - CAROUSEL_SPIRAL_HOLD_AFTER;
-  const scrollT = Math.max(0, Math.min(1, scrollLocal / CAROUSEL_SCROLL));
-  const scrollRotY = interpolate(scrollT, [0, 1], [0, -180]);
-  const tiltT = sineInOut(scrollT);
-  const ringRotX = interpolate(tiltT, [0, 1], [3, -3]);
-  const ringRotZ = interpolate(tiltT, [0, 1], [3, -3]);
-  const cardTiltZ = interpolate(scrollT, [0, 1], [10, -10]);
+const FanCard: React.FC<{
+  cat: Category;
+  index: number;
+  count: number;
+  local: number;
+}> = ({ cat, index, count, local }) => {
+  const offset = index - (count - 1) / 2; // -1.5, -0.5, +0.5, +1.5
+  const absOffset = Math.abs(offset);
 
-  // Explode phase — Carousel3D activatePreviewFromCarousel ported.
+  // Resting fan position
+  const restingX = offset * CARD_X_SPACING;
+  const restingY = absOffset * CARD_FAN_Y_LIFT;
+  const restingZ = -absOffset * CARD_FAN_Z_DEPTH;
+  const restingRotY = offset * CARD_FAN_ROT_STEP;
+
+  // Entrance — spiral in from far, with stagger across cards
+  const enterStart = index * CARD_ENTRY_STAGGER;
+  const enterT = Math.max(
+    0,
+    Math.min(1, (local - enterStart) / CARD_ENTRY_FADE),
+  );
+  const enterEased = expoOut(enterT);
+  const entryDir = offset >= 0 ? 1 : -1;
+  const entryX = (1 - enterEased) * 480 * entryDir;
+  const entryZ = (1 - enterEased) * -1400;
+  const entryRotY = (1 - enterEased) * -90 * entryDir;
+  const entryY = (1 - enterEased) * 80;
+  const entryOpacity = enterT;
+
+  // Explode — cards split apart in 3D, retreat, fade.
+  // Aligned to the same explodeStart as the rest of the scene.
   const explodeStart = CAROUSEL_ENTRY_FULL + CAROUSEL_HOLD;
   const explodeT = Math.max(
     0,
     Math.min(1, (local - explodeStart) / CAROUSEL_EXPLODE),
   );
   const explodeEased = power2InOut(explodeT);
-  const explodeRotX = interpolate(explodeEased, [0, 0.4, 1], [0, 90, 90]);
-  const explodeRotYAdd = interpolate(explodeEased, [0, 1], [0, -360 - -180]);
-  const explodeZ = interpolate(
-    explodeEased,
-    [0, 0.3, 1],
-    [-CAROUSEL_RADIUS - 80, -1800, 1500],
-  );
-  const explodeRotZAdd = interpolate(explodeEased, [0.3, 1], [0, 270], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const cardOpacity = explodeT > 0.8 ? interpolate(explodeT, [0.8, 1], [1, 0]) : 1;
+  const explodeDir = offset >= 0 ? 1 : -1;
+  // Outer cards fly farther; inner pair drift more gently.
+  const explodeX = explodeEased * (480 + 380 * absOffset) * explodeDir;
+  const explodeY = explodeEased * (index % 2 === 0 ? -260 : 220);
+  const explodeRotY = explodeEased * 110 * explodeDir;
+  const explodeRotZ = explodeEased * 28 * explodeDir;
+  const explodeZ = interpolate(explodeEased, [0, 0.4, 1], [0, -700, 1300]);
+  const explodeOpacity = 1 - explodeT;
 
-  // Pre-explode uses the spiral Z; during/after explode uses explodeZ.
-  const finalZ = local < explodeStart ? spiralZ : explodeZ;
-  const finalRotY = scrollRotY + spiralRotYAdd + explodeRotYAdd;
-  const finalRotX = ringRotX + explodeRotX;
-  const finalRotZ = ringRotZ + explodeRotZAdd;
-
-  // Brightness — fixed at the Codrops scroll-end value during scroll, then
-  // ride down further during explode for a darkroom-flash feel.
-  const baseBrightness = interpolate(power3(scrollT), [0, 1], [200, 95]);
-  const brightness = interpolate(explodeT, [0, 1], [baseBrightness, 130]);
-
-  const step = 360 / CATEGORIES.length;
+  const totalX = restingX + entryX + explodeX;
+  const totalY = restingY + entryY + explodeY;
+  const totalZ = restingZ + entryZ + explodeZ;
+  const totalRotY = restingRotY + entryRotY + explodeRotY;
+  const totalRotZ = explodeRotZ;
+  const opacity = entryOpacity * explodeOpacity;
 
   return (
     <div
       style={{
-        width: CAROUSEL_W,
-        height: CAROUSEL_H,
-        perspective: CAROUSEL_PERSPECTIVE,
-        opacity: spiralOpacity,
+        position: "absolute",
+        left: "50%",
+        top: "50%",
+        marginLeft: -CARD_W / 2,
+        marginTop: -CARD_H / 2,
+        width: CARD_W,
+        height: CARD_H,
+        transformStyle: "preserve-3d",
+        transform: `translate3d(${totalX.toFixed(1)}px, ${totalY.toFixed(1)}px, ${totalZ.toFixed(1)}px) rotateY(${totalRotY.toFixed(2)}deg) rotateZ(${totalRotZ.toFixed(2)}deg)`,
+        opacity,
         willChange: "transform, opacity",
       }}
     >
-      <div
-        style={{
-          position: "relative",
-          width: "100%",
-          height: "100%",
-          transformStyle: "preserve-3d",
-          transform: `translateZ(${finalZ.toFixed(1)}px) rotateY(${finalRotY.toFixed(2)}deg) rotateX(${finalRotX.toFixed(2)}deg) rotateZ(${finalRotZ.toFixed(2)}deg)`,
-        }}
-      >
-        {CATEGORIES.map((cat, i) => (
-          <CarouselCell
-            key={cat.label}
-            cat={cat}
-            cellRotateY={i * step}
-            cardRotateZ={cardTiltZ}
-            brightness={brightness}
-            cardOpacity={cardOpacity}
-          />
-        ))}
-      </div>
+      <CardSurface cat={cat} />
     </div>
   );
 };
@@ -535,128 +565,105 @@ const CategoryCarousel: React.FC<{ local: number }> = ({ local }) => {
 //
 // Eyebrow ("market" mono caps, dim) ▸ category name (SF Pro Display, 800,
 // near-black) ▸ % (SF Pro Display, 800, accent blue, tabular nums) ▸
-// caption ("extracted" mono small, dim). Soft shadow, 24px radius. Same
-// vocabulary as the apple.com hero cards and the homepage in the frontend.
+// caption ("extracted" mono small, dim). Soft shadow, 24px radius, hairline
+// border. Apple homepage vocabulary.
 
-const CarouselCell: React.FC<{
-  cat: Category;
-  cellRotateY: number;
-  cardRotateZ: number;
-  brightness: number;
-  cardOpacity: number;
-}> = ({ cat, cellRotateY, cardRotateZ, brightness, cardOpacity }) => (
+const CardSurface: React.FC<{ cat: Category }> = ({ cat }) => (
   <div
     style={{
-      position: "absolute",
+      position: "relative",
       width: "100%",
       height: "100%",
-      left: 0,
-      top: 0,
-      transformStyle: "preserve-3d",
-      transform: `rotateY(${cellRotateY}deg) translateZ(${CAROUSEL_RADIUS}px)`,
+      borderRadius: 24,
+      background: colors.surface,
+      boxShadow:
+        "0 1px 0 rgba(255,255,255,0.6) inset, 0 32px 64px rgba(8, 14, 28, 0.22), 0 10px 20px rgba(8, 14, 28, 0.12)",
+      border: `1px solid ${colors.rule}`,
+      overflow: "hidden",
+      backfaceVisibility: "hidden",
     }}
   >
+    {/* Top eyebrow */}
     <div
       style={{
-        position: "relative",
-        width: CARD_W,
-        height: CARD_H,
-        marginLeft: (CAROUSEL_W - CARD_W) / 2,
-        marginTop: (CAROUSEL_H - CARD_H) / 2,
-        borderRadius: 24,
-        background: colors.surface,
-        filter: `brightness(${brightness}%)`,
-        transform: `rotateZ(${cardRotateZ}deg)`,
-        boxShadow:
-          "0 1px 0 rgba(255,255,255,0.6) inset, 0 30px 60px rgba(8, 14, 28, 0.18), 0 8px 16px rgba(8, 14, 28, 0.10)",
-        border: `1px solid ${colors.rule}`,
-        overflow: "hidden",
-        backfaceVisibility: "hidden",
-        opacity: cardOpacity,
+        position: "absolute",
+        top: 28,
+        left: 30,
+        fontFamily: monoFont,
+        fontSize: 17,
+        fontWeight: 500,
+        letterSpacing: "0.22em",
+        textTransform: "uppercase",
+        color: colors.dim,
       }}
     >
-      {/* Top eyebrow */}
-      <div
-        style={{
-          position: "absolute",
-          top: 28,
-          left: 32,
-          fontFamily: monoFont,
-          fontSize: 18,
-          fontWeight: 500,
-          letterSpacing: "0.22em",
-          textTransform: "uppercase",
-          color: colors.dim,
-        }}
-      >
-        market
-      </div>
+      market
+    </div>
 
-      {/* Category name */}
-      <div
-        style={{
-          position: "absolute",
-          top: 84,
-          left: 32,
-          right: 32,
-          fontFamily: font,
-          fontSize: 64,
-          fontWeight: 800,
-          letterSpacing: "-0.022em",
-          color: colors.fg,
-          lineHeight: 1.0,
-        }}
-      >
-        {cat.label}
-      </div>
+    {/* Category name */}
+    <div
+      style={{
+        position: "absolute",
+        top: 78,
+        left: 30,
+        right: 30,
+        fontFamily: font,
+        fontSize: 60,
+        fontWeight: 800,
+        letterSpacing: "-0.022em",
+        color: colors.fg,
+        lineHeight: 1.0,
+      }}
+    >
+      {cat.label}
+    </div>
 
-      {/* Big percentage */}
-      <div
+    {/* Big percentage */}
+    <div
+      style={{
+        position: "absolute",
+        left: 30,
+        right: 30,
+        bottom: 80,
+        fontFamily: font,
+        fontSize: 156,
+        fontWeight: 800,
+        letterSpacing: "-0.04em",
+        color: colors.accent,
+        lineHeight: 0.92,
+        fontVariantNumeric: "tabular-nums",
+        textAlign: "left",
+      }}
+    >
+      {cat.pct}
+      <span
         style={{
-          position: "absolute",
-          left: 32,
-          right: 32,
-          bottom: 92,
-          fontFamily: font,
-          fontSize: 168,
-          fontWeight: 800,
-          letterSpacing: "-0.04em",
+          fontSize: 88,
           color: colors.accent,
-          lineHeight: 0.92,
-          fontVariantNumeric: "tabular-nums",
-          textAlign: "left",
+          marginLeft: 2,
+          letterSpacing: "-0.02em",
         }}
       >
-        {cat.pct}
-        <span
-          style={{
-            fontSize: 96,
-            color: colors.accent,
-            marginLeft: 4,
-            letterSpacing: "-0.02em",
-          }}
-        >
-          %
-        </span>
-      </div>
+        %
+      </span>
+    </div>
 
-      {/* Caption */}
-      <div
-        style={{
-          position: "absolute",
-          left: 32,
-          right: 32,
-          bottom: 36,
-          fontFamily: monoFont,
-          fontSize: 18,
-          fontWeight: 500,
-          letterSpacing: "0.18em",
-          textTransform: "uppercase",
-          color: colors.dim,
-        }}
-      >
-        extracted by unfair trading
-      </div>
+    {/* Caption */}
+    <div
+      style={{
+        position: "absolute",
+        left: 30,
+        right: 30,
+        bottom: 30,
+        fontFamily: monoFont,
+        fontSize: 16,
+        fontWeight: 500,
+        letterSpacing: "0.18em",
+        textTransform: "uppercase",
+        color: colors.dim,
+      }}
+    >
+      extracted by unfair trading
     </div>
   </div>
 );
