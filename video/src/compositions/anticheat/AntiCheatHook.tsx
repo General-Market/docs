@@ -740,12 +740,12 @@ const RevealLines: React.FC = () => {
         }}
       >
         <DepthLine
-          text="The same cheaters ruining your games"
+          text="The cheaters behind your rage in games"
           startAt={0}
           frame={frame}
         />
         <DepthLine
-          text="are trading against you"
+          text="are behind your losses in trading"
           startAt={LINE2_START}
           frame={frame}
           color="#ff3b3b"
