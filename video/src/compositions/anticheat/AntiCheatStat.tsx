@@ -259,19 +259,58 @@ const TOUCHED_WORD_FADE = toFrames(0.28);
 const TOUCHED_ENTRY_FULL =
   TOUCHED_WORD_STAGGER * (TOUCHED_WORDS.length - 1) + TOUCHED_WORD_FADE;
 
-// Category cards replace the literal "..." — what was actually touched.
-const CATEGORY_LABELS = ["stocks", "crypto", "sports", "predictions"];
-const CARD_ENTRY_DELAY = toFrames(0.3); // after headline begins
-const CARD_STAGGER = toFrames(0.07);
-const CARD_FADE = toFrames(0.34);
-const CARD_ENTRY_FULL =
-  CARD_ENTRY_DELAY +
-  CARD_STAGGER * (CATEGORY_LABELS.length - 1) +
-  CARD_FADE;
+// 3D rotating ring of category cards — Carousel3D scroll phase, ported.
+// Six categories arranged in a circle, the whole ring rotates Y while
+// each card carries its own rotateZ tilt and brightness sweep.
+type Category = { label: string; gradient: string };
+const CATEGORIES: Category[] = [
+  {
+    label: "stocks",
+    gradient: "linear-gradient(135deg, #0a3a8c 0%, #061f4d 55%, #02112e 100%)",
+  },
+  {
+    label: "crypto",
+    gradient: "linear-gradient(135deg, #4a2010 0%, #2c1208 55%, #15080a 100%)",
+  },
+  {
+    label: "sports",
+    gradient: "linear-gradient(135deg, #0f3a2a 0%, #062418 55%, #04140e 100%)",
+  },
+  {
+    label: "predictions",
+    gradient: "linear-gradient(135deg, #2f1456 0%, #190a32 55%, #0c0518 100%)",
+  },
+  {
+    label: "options",
+    gradient: "linear-gradient(135deg, #0a3a4c 0%, #062028 55%, #03121a 100%)",
+  },
+  {
+    label: "perps",
+    gradient: "linear-gradient(135deg, #4a0a2a 0%, #28051a 55%, #14020e 100%)",
+  },
+];
+
+// Carousel cell geometry — scaled-down from Carousel3D. Six cards in a
+// 360° ring, large enough to read the labels at this composition's scale.
+const CAROUSEL_W = 280;
+const CAROUSEL_H = 360;
+const CARD_W = 240;
+const CARD_H = 320;
+const CAROUSEL_RADIUS = 260;
+const CAROUSEL_PERSPECTIVE = 1100;
+
+const CAROUSEL_SPIRAL_IN = toFrames(0.42);
+const CAROUSEL_SPIRAL_HOLD_AFTER = toFrames(0.04);
+// After spiral-in completes, the ring scrolls −180° — different cards
+// rotate forward. Compressed to fit the available window.
+const CAROUSEL_SCROLL = toFrames(0.80);
+const CAROUSEL_ENTRY_FULL =
+  CAROUSEL_SPIRAL_IN + CAROUSEL_SPIRAL_HOLD_AFTER + CAROUSEL_SCROLL;
 
 // Hold both before the wave-out begins.
-const TOUCHED_HOLD = toFrames(0.42);
-const TOUCHED_EXIT_AT = Math.max(TOUCHED_ENTRY_FULL, CARD_ENTRY_FULL) + TOUCHED_HOLD;
+const TOUCHED_HOLD = toFrames(0.18);
+const TOUCHED_EXIT_AT =
+  Math.max(TOUCHED_ENTRY_FULL, CAROUSEL_ENTRY_FULL) + TOUCHED_HOLD;
 
 // Per-letter wave-out: each letter exits with a stagger from the center
 // outward, drifting away from center while it fades. TextTrail hide()
@@ -280,65 +319,94 @@ const LETTER_EXIT_STAGGER = 1.4;
 const LETTER_EXIT_FADE = toFrames(0.34);
 const LETTER_EXIT_DRIFT = 22; // px per unit of distance from center
 
-// Cards exit on the same impulse — quick rotateY collapse + fade.
-const CARD_EXIT_DURATION = toFrames(0.32);
-const CARD_EXIT_STAGGER = toFrames(0.04);
+// Carousel exit — explode away in Z, fade out.
+const CAROUSEL_EXIT_DURATION = toFrames(0.36);
 
 const expoOut = (t: number): number => (t === 1 ? 1 : 1 - Math.pow(2, -10 * t));
 const expoIn = (t: number): number => (t === 0 ? 0 : Math.pow(2, 10 * t - 10));
+const power3 = (t: number): number => t * t * t;
+const sineInOut = (t: number): number => -(Math.cos(Math.PI * t) - 1) / 2;
+
+// Bars + caption fade out as the touched line / carousel takes the stage.
+// The fade starts a hair before REVEAL_AT so the carousel arrives onto a
+// dimmed canvas instead of competing with the chart.
+const BARS_FADE_START = REVEAL_AT - toFrames(0.1);
+const BARS_FADE_DURATION = toFrames(0.32);
 
 const ExtractionBars: React.FC = () => {
+  const frame = useCurrentFrame();
+  const barsOpacity = interpolate(
+    frame,
+    [BARS_FADE_START, BARS_FADE_START + BARS_FADE_DURATION],
+    [1, 0.18],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const barsBlur = interpolate(
+    frame,
+    [BARS_FADE_START, BARS_FADE_START + BARS_FADE_DURATION],
+    [0, 4],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+
   return (
     <AbsoluteFill>
-      <div
+      <AbsoluteFill
         style={{
-          position: "absolute",
-          top: "8%",
-          left: 0,
-          right: 0,
-          textAlign: "center",
-          fontFamily: monoFont,
-          fontSize: 36,
-          fontWeight: 500,
-          letterSpacing: "0.22em",
-          textTransform: "uppercase",
-          color: colors.dim,
+          opacity: barsOpacity,
+          filter: barsBlur > 0.05 ? `blur(${barsBlur.toFixed(2)}px)` : undefined,
+          willChange: "opacity, filter",
         }}
       >
-        <RevealChars
-          text="% extracted by unfair trading"
-          startFrame={0}
-          stagger={0.5}
-          duration={8}
-          y={10}
-          blur={2}
-          scale={0.97}
-        />
-      </div>
-
-      <div
-        style={{
-          position: "absolute",
-          top: "20%",
-          bottom: "22%",
-          left: 0,
-          right: 0,
-          padding: "0 200px",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          gap: 36,
-        }}
-      >
-        {BARS.map((bar, i) => (
-          <BarRow
-            key={bar.label}
-            bar={bar}
-            maxValue={MAX_VALUE}
-            delayFrames={i * BAR_STAGGER}
+        <div
+          style={{
+            position: "absolute",
+            top: "8%",
+            left: 0,
+            right: 0,
+            textAlign: "center",
+            fontFamily: monoFont,
+            fontSize: 36,
+            fontWeight: 500,
+            letterSpacing: "0.22em",
+            textTransform: "uppercase",
+            color: colors.dim,
+          }}
+        >
+          <RevealChars
+            text="% extracted by unfair trading"
+            startFrame={0}
+            stagger={0.5}
+            duration={8}
+            y={10}
+            blur={2}
+            scale={0.97}
           />
-        ))}
-      </div>
+        </div>
+
+        <div
+          style={{
+            position: "absolute",
+            top: "20%",
+            bottom: "22%",
+            left: 0,
+            right: 0,
+            padding: "0 200px",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            gap: 36,
+          }}
+        >
+          {BARS.map((bar, i) => (
+            <BarRow
+              key={bar.label}
+              bar={bar}
+              maxValue={MAX_VALUE}
+              delayFrames={i * BAR_STAGGER}
+            />
+          ))}
+        </div>
+      </AbsoluteFill>
 
       <TouchedLine />
     </AbsoluteFill>
@@ -352,22 +420,19 @@ const TouchedLine: React.FC = () => {
   if (local < 0) return null;
 
   return (
-    <div
+    <AbsoluteFill
       style={{
-        position: "absolute",
-        bottom: "5%",
-        left: 0,
-        right: 0,
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        gap: 28,
-        willChange: "transform, opacity",
+        justifyContent: "center",
+        gap: 24,
+        pointerEvents: "none",
       }}
     >
+      <CategoryCarousel local={local} />
       <TouchedHeadline local={local} />
-      <CategoryCards local={local} />
-    </div>
+    </AbsoluteFill>
   );
 };
 
@@ -456,87 +521,161 @@ const TouchedHeadline: React.FC<{ local: number }> = ({ local }) => {
   );
 };
 
-// ─── Category cards — Carousel3D-style 3D rotation entrance ──────────────────
+// ─── Category carousel — Carousel3D scroll phase, ported in miniature ────────
+//
+// A six-card 3D ring. Spiral-in lands it at the resting Z, then it scrolls
+// 180° so the user sees half the categories rotate forward. Each card
+// carries its own rotateZ tilt (10° → −10° across the scroll) and a
+// brightness ramp (250% → 80%) that quotes the original effect's "glare"
+// without overwhelming the bar chart behind it. On exit, the ring
+// retreats in Z and dissolves.
 
-const CategoryCards: React.FC<{ local: number }> = ({ local }) => {
-  return (
-    <div
-      style={{
-        display: "flex",
-        gap: 14,
-        perspective: 1100,
-      }}
-    >
-      {CATEGORY_LABELS.map((label, i) => (
-        <CategoryCard key={label} label={label} index={i} local={local} />
-      ))}
-    </div>
-  );
-};
+const CategoryCarousel: React.FC<{ local: number }> = ({ local }) => {
+  // Spiral-in (frames 0…CAROUSEL_SPIRAL_IN)
+  const spiralT = Math.max(0, Math.min(1, local / CAROUSEL_SPIRAL_IN));
+  const spiralEased = expoOut(spiralT);
+  const spiralZ = interpolate(spiralEased, [0, 1], [-1500, -CAROUSEL_RADIUS - 60]);
+  const spiralRotYAdd = interpolate(spiralEased, [0, 1], [-720, 0]);
+  const spiralOpacity = spiralT;
 
-const CategoryCard: React.FC<{
-  label: string;
-  index: number;
-  local: number;
-}> = ({ label, index, local }) => {
-  // Entry: rotateY -90 → 0, translateZ -180 → 0, fade in. expoOut.
-  const enterStart = CARD_ENTRY_DELAY + index * CARD_STAGGER;
-  const enterT = Math.max(
-    0,
-    Math.min(1, (local - enterStart) / CARD_FADE),
-  );
-  const enterEased = expoOut(enterT);
-  const enterRotY = interpolate(enterEased, [0, 1], [-90, 0]);
-  const enterZ = interpolate(enterEased, [0, 1], [-180, 0]);
-  const enterOp = enterT;
+  // Scroll phase — starts after spiral, runs CAROUSEL_SCROLL frames.
+  const scrollLocal = local - CAROUSEL_SPIRAL_IN - CAROUSEL_SPIRAL_HOLD_AFTER;
+  const scrollT = Math.max(0, Math.min(1, scrollLocal / CAROUSEL_SCROLL));
+  const scrollRotY = interpolate(scrollT, [0, 1], [0, -180]);
+  const tiltT = sineInOut(scrollT);
+  const ringRotX = interpolate(tiltT, [0, 1], [3, -3]);
+  const ringRotZ = interpolate(tiltT, [0, 1], [3, -3]);
+  const cardTiltZ = interpolate(scrollT, [0, 1], [10, -10]);
+  const brightness = interpolate(power3(scrollT), [0, 1], [200, 95]);
 
-  // Exit: rotateY collapses to +90 with reverse stagger (rightmost first),
-  // matching the headline's outward wave.
-  const exitOrder = CATEGORY_LABELS.length - 1 - index;
-  const exitStart = TOUCHED_EXIT_AT + exitOrder * CARD_EXIT_STAGGER;
+  // Exit — fade + retreat.
   const exitT = Math.max(
     0,
-    Math.min(1, (local - exitStart) / CARD_EXIT_DURATION),
+    Math.min(1, (local - TOUCHED_EXIT_AT) / CAROUSEL_EXIT_DURATION),
   );
   const exitEased = expoIn(exitT);
-  const exitRotY = exitEased * 90;
-  const exitZ = -exitEased * 220;
-  const exitOp = 1 - exitT;
+  const exitZAdd = -exitEased * 900;
+  const exitRotZAdd = exitEased * 80;
+  const exitOpacity = 1 - exitT;
 
-  const rotY = enterRotY + exitRotY;
-  const z = enterZ + exitZ;
-  const op = enterOp * exitOp;
+  const finalZ = spiralZ + exitZAdd;
+  const finalRotY = scrollRotY + spiralRotYAdd;
+  const finalRotZ = ringRotZ + exitRotZAdd;
+  const opacity = spiralOpacity * exitOpacity;
+
+  const step = 360 / CATEGORIES.length;
 
   return (
     <div
       style={{
-        transformStyle: "preserve-3d",
-        transform: `translateZ(${z.toFixed(1)}px) rotateY(${rotY.toFixed(2)}deg)`,
-        opacity: op,
+        width: CAROUSEL_W,
+        height: CAROUSEL_H,
+        perspective: CAROUSEL_PERSPECTIVE,
+        opacity,
         willChange: "transform, opacity",
       }}
     >
       <div
         style={{
-          padding: "10px 22px",
-          background: colors.surface,
-          border: `1.5px solid ${colors.accent}`,
-          borderRadius: 999,
-          fontFamily: monoFont,
-          fontSize: 26,
-          fontWeight: 600,
-          letterSpacing: "0.06em",
-          textTransform: "uppercase",
-          color: colors.accent,
-          whiteSpace: "nowrap",
-          boxShadow: `0 6px 24px ${colors.accentTint}`,
+          position: "relative",
+          width: "100%",
+          height: "100%",
+          transformStyle: "preserve-3d",
+          transform: `translateZ(${finalZ.toFixed(1)}px) rotateY(${finalRotY.toFixed(2)}deg) rotateX(${ringRotX.toFixed(2)}deg) rotateZ(${finalRotZ.toFixed(2)}deg)`,
         }}
       >
-        {label}
+        {CATEGORIES.map((cat, i) => (
+          <CarouselCell
+            key={cat.label}
+            cat={cat}
+            cellRotateY={i * step}
+            cardRotateZ={cardTiltZ}
+            brightness={brightness}
+          />
+        ))}
       </div>
     </div>
   );
 };
+
+const CarouselCell: React.FC<{
+  cat: Category;
+  cellRotateY: number;
+  cardRotateZ: number;
+  brightness: number;
+}> = ({ cat, cellRotateY, cardRotateZ, brightness }) => (
+  <div
+    style={{
+      position: "absolute",
+      width: "100%",
+      height: "100%",
+      left: 0,
+      top: 0,
+      transformStyle: "preserve-3d",
+      transform: `rotateY(${cellRotateY}deg) translateZ(${CAROUSEL_RADIUS}px)`,
+    }}
+  >
+    <div
+      style={{
+        position: "relative",
+        width: CARD_W,
+        height: CARD_H,
+        marginLeft: (CAROUSEL_W - CARD_W) / 2,
+        marginTop: (CAROUSEL_H - CARD_H) / 2,
+        borderRadius: 6,
+        background: cat.gradient,
+        filter: `brightness(${brightness}%)`,
+        transform: `rotateZ(${cardRotateZ}deg)`,
+        boxShadow: "0 24px 48px rgba(0, 0, 0, 0.35)",
+        overflow: "hidden",
+        backfaceVisibility: "hidden",
+      }}
+    >
+      {/* Subtle scan-line / sheen for depth */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background:
+            "linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 35%, rgba(0,0,0,0.18) 100%)",
+        }}
+      />
+      {/* Eyebrow */}
+      <div
+        style={{
+          position: "absolute",
+          top: 18,
+          left: 22,
+          fontFamily: monoFont,
+          fontSize: 12,
+          fontWeight: 500,
+          letterSpacing: "0.22em",
+          textTransform: "uppercase",
+          color: "rgba(255, 255, 255, 0.55)",
+        }}
+      >
+        market
+      </div>
+      {/* Hero label */}
+      <div
+        style={{
+          position: "absolute",
+          left: 22,
+          right: 22,
+          bottom: 22,
+          fontFamily: font,
+          fontSize: 44,
+          fontWeight: 800,
+          letterSpacing: "-0.025em",
+          color: "#ffffff",
+          lineHeight: 0.95,
+        }}
+      >
+        {cat.label}
+      </div>
+    </div>
+  </div>
+);
 
 const LABEL_COL = 360;
 const VALUE_COL = 240;
