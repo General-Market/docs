@@ -204,6 +204,12 @@ pub struct BatchConfig {
     pub config_hash: String, // "0x..." hex
     pub tick_duration_secs: u64,
     pub lock_offset_secs: u64,
+    /// Per-source settlement grace window in seconds. Currently derived from
+    /// `tick_duration_secs` via the default rule (`min(2 * tick, 86400)`,
+    /// floored to 60s — Vision's MIN_SETTLEMENT_GRACE). Not persisted to the
+    /// DB schema yet; recomputed on each rebuild.
+    #[serde(default)]
+    pub settlement_grace_secs: u64,
     pub markets: Vec<BatchMarket>,
     pub created_at: DateTime<Utc>,
 }
@@ -217,11 +223,25 @@ pub struct SignedBatchConfig {
     pub config_hash: String,
     pub tick_duration_secs: u64,
     pub lock_offset_secs: u64,
+    /// Per-source settlement grace window in seconds (see `BatchConfig`).
+    #[serde(default)]
+    pub settlement_grace_secs: u64,
     pub markets: Vec<BatchMarket>,
     pub bls_signature: String,  // hex-encoded
     pub signers_bitmask: u64,
     pub reference_nonce: u64,
     pub signed_at: DateTime<Utc>,
+}
+
+/// Default rule for `settlement_grace_secs` when no per-source override exists.
+/// `min(2 * tick, 86_400)` floored to `MIN_SETTLEMENT_GRACE` (60s) so that a
+/// short-tick source like polymarket (60s tick → 120s grace) still satisfies
+/// the contract's `[60, 86400]` bound.
+pub fn default_settlement_grace_secs(tick_duration_secs: u64) -> u64 {
+    tick_duration_secs
+        .saturating_mul(2)
+        .min(86_400)
+        .max(60)
 }
 
 /// Compute keccak256 of ABI-encoded batch config.
@@ -626,6 +646,7 @@ async fn generate_batch_config(
         config_hash: hash_hex,
         tick_duration_secs,
         lock_offset_secs,
+        settlement_grace_secs: default_settlement_grace_secs(tick_duration_secs),
         markets,
         created_at: Utc::now(),
     })
@@ -718,12 +739,14 @@ impl BatchEngineState {
                 .unwrap_or(&source_id)
                 .to_string();
 
+            let tick_secs = tick_dur as u64;
             configs.push(SignedBatchConfig {
                 source_id,
                 display_name,
                 config_hash: format!("0x{}", hex::encode(&hash)),
-                tick_duration_secs: tick_dur as u64,
+                tick_duration_secs: tick_secs,
                 lock_offset_secs: lock_off as u64,
+                settlement_grace_secs: default_settlement_grace_secs(tick_secs),
                 markets,
                 bls_signature: hex::encode(&sig),
                 signers_bitmask: bitmask as u64,
@@ -791,12 +814,14 @@ async fn recover_last_config_from_db(
 
     row.map(|(hash_bytes, markets_json, tick_dur, lock_off, _count, created_at)| {
         let markets: Vec<BatchMarket> = serde_json::from_value(markets_json).unwrap_or_default();
+        let tick_secs = tick_dur as u64;
         BatchConfig {
             source_id: source_id.to_string(),
             display_name: display_name.to_string(),
             config_hash: format!("0x{}", hex::encode(&hash_bytes)),
-            tick_duration_secs: tick_dur as u64,
+            tick_duration_secs: tick_secs,
             lock_offset_secs: lock_off as u64,
+            settlement_grace_secs: default_settlement_grace_secs(tick_secs),
             markets,
             created_at,
         }
@@ -885,6 +910,7 @@ pub async fn run(pool: PgPool, state: Arc<BatchEngineState>, sources: Vec<Source
                     config_hash: config_hash.clone(),
                     tick_duration_secs: *tick_dur,
                     lock_offset_secs: *lock_off,
+                    settlement_grace_secs: default_settlement_grace_secs(*tick_dur),
                     markets: Vec::new(), // no market data available
                     created_at: Utc::now(),
                 });

@@ -1083,6 +1083,7 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             config_hash,
             tick_duration,
             lock_offset,
+            settlement_grace,
             message_hash,
             source_name: _,
             leader_signature: _,
@@ -1094,6 +1095,7 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             h.update(config_hash.as_bytes());
             h.update(tick_duration.to_le_bytes());
             h.update(lock_offset.to_le_bytes());
+            h.update(settlement_grace.to_le_bytes());
             h.update(message_hash.as_bytes());
         }
         P2PMessage::VisionCreateBatchSign {

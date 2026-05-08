@@ -6158,6 +6158,7 @@ async fn resolve_batch_config(
             "configHash": s.config_hash,
             "tickDurationSecs": s.tick_duration_secs,
             "lockOffsetSecs": s.lock_offset_secs,
+            "settlementGraceSecs": s.settlement_grace_secs,
             "markets": s.markets,
         })));
     }
@@ -6177,11 +6178,13 @@ async fn resolve_batch_config(
     .flatten();
 
     if let Some((markets, tick_dur, lock_off, source_id, created_at)) = row {
+        let tick_secs = tick_dur as u64;
         return Ok(Json(serde_json::json!({
             "sourceId": source_id,
             "configHash": hash,
             "tickDurationSecs": tick_dur,
             "lockOffsetSecs": lock_off,
+            "settlementGraceSecs": crate::batch_engine::default_settlement_grace_secs(tick_secs),
             "markets": markets,
             "createdAt": created_at,
         })));
@@ -6281,10 +6284,12 @@ async fn batch_config_by_source(
 
     match row {
         Some((markets, tick_dur, lock_off, created_at)) => {
+            let tick_secs = tick_dur as u64;
             let val = serde_json::json!({
                 "sourceId": source_id,
                 "tickDurationSecs": tick_dur,
                 "lockOffsetSecs": lock_off,
+                "settlementGraceSecs": crate::batch_engine::default_settlement_grace_secs(tick_secs),
                 "markets": markets,
                 "createdAt": created_at,
             });
@@ -6321,6 +6326,12 @@ struct SignedBatchPayload {
     reference_nonce: u64,
     tick_duration_secs: u64,
     lock_offset_secs: u64,
+    /// Optional — when absent the data-node falls back to the
+    /// `default_settlement_grace_secs` rule, which mirrors what the leader
+    /// would have applied. The field is informational here: it is NOT folded
+    /// into the on-chain config hash, so old payloads still verify.
+    #[serde(default)]
+    settlement_grace_secs: Option<u64>,
 }
 
 /// POST /batches/signed — oracle pushes signed config after BLS consensus.
@@ -6474,6 +6485,9 @@ async fn store_signed_batch(
         config_hash: payload.config_hash,
         tick_duration_secs: payload.tick_duration_secs,
         lock_offset_secs: payload.lock_offset_secs,
+        settlement_grace_secs: payload.settlement_grace_secs.unwrap_or_else(|| {
+            crate::batch_engine::default_settlement_grace_secs(payload.tick_duration_secs)
+        }),
         markets,
         bls_signature: payload.bls_signature,
         signers_bitmask: payload.signers_bitmask,

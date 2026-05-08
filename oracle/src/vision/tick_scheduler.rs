@@ -255,6 +255,11 @@ impl TickScheduler {
                     config_hash: config_hash.parse().unwrap_or_default(),
                     tick_duration: *tick_duration as u64,
                     lock_offset: *lock_offset as u64,
+                    // settlement_grace not yet persisted to DB; chain_listener
+                    // re-hydrates it from the contract on startup. Default 0
+                    // means the refund cliff stays closed until the listener
+                    // refreshes — safer than a guess.
+                    settlement_grace: 0,
                     created_at_tick: *created_at_tick as u64,
                     paused: *paused,
                     settled: false, // loaded from active batches, not settled
@@ -307,6 +312,7 @@ mod tests {
             config_hash: H256::zero(),
             tick_duration,
             lock_offset: 0,
+            settlement_grace: 0,
             created_at_tick,
             paused: false,
             settled: false,

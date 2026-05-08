@@ -428,18 +428,19 @@ impl EthersChainWriter {
 
     /// Build a createBatch transaction
     ///
-    /// Encodes: Vision.createBatch(sourceId, configHash, tickDuration, lockOffset, blsSignature, referenceNonce, signersBitmask)
+    /// Encodes: Vision.createBatch(sourceId, configHash, tickDuration, lockOffset, settlementGrace, blsSignature, referenceNonce, signersBitmask)
     fn build_create_batch_tx(
         &self,
         source_id: H256,
         config_hash: H256,
         tick_duration: u64,
         lock_offset: u64,
+        settlement_grace: u64,
         bls_sig: &[u8],
         ref_nonce: u64,
         signers_bitmask: U256,
     ) -> TypedTransaction {
-        // Function signature: createBatch(bytes32,bytes32,uint256,uint256,bytes,uint256,uint256)
+        // Function signature: createBatch(bytes32,bytes32,uint256,uint256,uint256,bytes,uint256,uint256)
         let function = ethers::abi::Function {
             name: "createBatch".to_string(),
             inputs: vec![
@@ -460,6 +461,11 @@ impl EthersChainWriter {
                 },
                 ethers::abi::Param {
                     name: "lockOffset".to_string(),
+                    kind: ethers::abi::ParamType::Uint(256),
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "settlementGrace".to_string(),
                     kind: ethers::abi::ParamType::Uint(256),
                     internal_type: None,
                 },
@@ -496,6 +502,7 @@ impl EthersChainWriter {
             ethers::abi::Token::FixedBytes(config_hash.as_bytes().to_vec()),
             ethers::abi::Token::Uint(U256::from(tick_duration)),
             ethers::abi::Token::Uint(U256::from(lock_offset)),
+            ethers::abi::Token::Uint(U256::from(settlement_grace)),
             ethers::abi::Token::Bytes(bls_sig.to_vec()),
             ethers::abi::Token::Uint(U256::from(ref_nonce)),
             ethers::abi::Token::Uint(signers_bitmask),
@@ -514,12 +521,14 @@ impl EthersChainWriter {
     /// Returns `(tx_hash, on_chain_batch_id)`. The `on_chain_batch_id` is parsed
     /// from the `BatchCreated` event in the receipt logs. This is the contract-assigned
     /// batch ID that the scheduler and other subsystems must use for tracking.
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_batch(
         &self,
         source_id: H256,
         config_hash: H256,
         tick_duration: u64,
         lock_offset: u64,
+        settlement_grace: u64,
         bls_sig: Vec<u8>,
         ref_nonce: u64,
         signers_bitmask: U256,
@@ -529,6 +538,7 @@ impl EthersChainWriter {
             config_hash = ?config_hash,
             tick_duration,
             lock_offset,
+            settlement_grace,
             signature_len = bls_sig.len(),
             ref_nonce,
             signers_bitmask = %signers_bitmask,
@@ -536,7 +546,7 @@ impl EthersChainWriter {
         );
 
         let tx = self.build_create_batch_tx(
-            source_id, config_hash, tick_duration, lock_offset,
+            source_id, config_hash, tick_duration, lock_offset, settlement_grace,
             &bls_sig, ref_nonce, signers_bitmask,
         );
         let (tx_hash, receipt) = self.submit_tx_with_receipt(tx, "create_batch").await?;
@@ -545,7 +555,7 @@ impl EthersChainWriter {
         // Event: BatchCreated(uint256 indexed batchId, bytes32 indexed sourceId, address indexed creator, ...)
         // batchId is topics[1] (first indexed param).
         let batch_created_topic = H256::from(ethers::utils::keccak256(
-            b"BatchCreated(uint256,bytes32,address,bytes32,uint256,uint256)",
+            b"BatchCreated(uint256,bytes32,address,bytes32,uint256,uint256,uint256)",
         ));
 
         let on_chain_batch_id = receipt.logs.iter()

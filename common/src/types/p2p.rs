@@ -911,6 +911,10 @@ pub enum P2PMessage {
         tick_duration: u64,
         /// Lock offset in seconds.
         lock_offset: u64,
+        /// Settlement grace window in seconds (added 2026-05-08).
+        /// Past `(createdAtTick + 1) * tick + grace`, settleBatch reverts and
+        /// players can claim refunds.
+        settlement_grace: u64,
         /// Pre-computed BLS message hash (followers verify by recomputing).
         message_hash: H256,
         /// Leader's BLS signature over message_hash.

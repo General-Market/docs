@@ -55,7 +55,7 @@ impl EventTopics {
     fn new() -> Self {
         Self {
             batch_created: H256::from(ethers::utils::keccak256(
-                b"BatchCreated(uint256,bytes32,address,bytes32,uint256,uint256)",
+                b"BatchCreated(uint256,bytes32,address,bytes32,uint256,uint256,uint256)",
             )),
             batch_paused: H256::from(ethers::utils::keccak256(
                 b"BatchPausedEvent(uint256)",
@@ -87,6 +87,7 @@ struct FetchedBatchData {
     source_id: H256,
     config_hash: H256,
     lock_offset: u64,
+    settlement_grace: u64,
     created_at_tick: u64,
     paused: bool,
     settled: bool,
@@ -246,7 +247,7 @@ impl ChainListener {
     // Event handlers — each updates scheduler (in-memory) AND Postgres
     // =========================================================================
 
-    /// Handle `BatchCreated(uint256 indexed batchId, bytes32 indexed sourceId, address indexed creator, bytes32 configHash, uint256 tickDuration, uint256 lockOffset)`
+    /// Handle `BatchCreated(uint256 indexed batchId, bytes32 indexed sourceId, address indexed creator, bytes32 configHash, uint256 tickDuration, uint256 lockOffset, uint256 settlementGrace)`
     ///
     /// All fields are available from the event itself — no contract read needed.
     /// `createdAtTick` is computed from the block timestamp to avoid an RPC round-trip.
@@ -271,8 +272,41 @@ impl ChainListener {
             }
         };
 
-        // data = configHash (bytes32) + tickDuration (uint256) + lockOffset (uint256)
-        let (config_hash, tick_duration, lock_offset) = if log.data.len() >= 96 {
+        // data layout (canonical, post-settlementGrace):
+        //   configHash (bytes32) + tickDuration (uint256)
+        //   + lockOffset (uint256) + settlementGrace (uint256)
+        // Legacy branches preserved so a re-index of pre-grace batches still
+        // populates the scheduler with whatever fields the older event carried.
+        let (config_hash, tick_duration, lock_offset, settlement_grace) = if log.data.len() >= 128 {
+            let tuple = ethers::abi::decode(
+                &[
+                    ethers::abi::ParamType::FixedBytes(32),
+                    ethers::abi::ParamType::Uint(256),
+                    ethers::abi::ParamType::Uint(256),
+                    ethers::abi::ParamType::Uint(256),
+                ],
+                &log.data,
+            );
+            match tuple {
+                Ok(tokens) => {
+                    let ch = match &tokens[0] {
+                        Token::FixedBytes(b) if b.len() == 32 => H256::from_slice(b),
+                        _ => H256::zero(),
+                    };
+                    let td = tokens[1].clone().into_uint().map(|v| v.as_u64()).unwrap_or(0);
+                    let lo = tokens[2].clone().into_uint().map(|v| v.as_u64()).unwrap_or(0);
+                    let sg = tokens[3].clone().into_uint().map(|v| v.as_u64()).unwrap_or(0);
+                    (ch, td, lo, sg)
+                }
+                Err(_) => {
+                    warn!(batch_id, "BatchCreated: failed to decode data tuple (4-field)");
+                    return;
+                }
+            }
+        } else if log.data.len() >= 96 {
+            // Legacy: configHash + tickDuration + lockOffset (no settlementGrace).
+            // Default grace to 0 — the on-chain batch predates the field; no
+            // refund cliff applies. Repair path will overwrite from getBatch.
             let tuple = ethers::abi::decode(
                 &[ethers::abi::ParamType::FixedBytes(32), ethers::abi::ParamType::Uint(256), ethers::abi::ParamType::Uint(256)],
                 &log.data,
@@ -285,15 +319,15 @@ impl ChainListener {
                     };
                     let td = tokens[1].clone().into_uint().map(|v| v.as_u64()).unwrap_or(0);
                     let lo = tokens[2].clone().into_uint().map(|v| v.as_u64()).unwrap_or(0);
-                    (ch, td, lo)
+                    (ch, td, lo, 0u64)
                 }
                 Err(_) => {
-                    warn!(batch_id, "BatchCreated: failed to decode data tuple");
+                    warn!(batch_id, "BatchCreated: failed to decode data tuple (3-field legacy)");
                     return;
                 }
             }
         } else if log.data.len() >= 64 {
-            // Legacy: configHash + tickDuration only (no lockOffset)
+            // Older legacy: configHash + tickDuration only.
             let tuple = ethers::abi::decode(
                 &[ethers::abi::ParamType::FixedBytes(32), ethers::abi::ParamType::Uint(256)],
                 &log.data,
@@ -305,7 +339,7 @@ impl ChainListener {
                         _ => H256::zero(),
                     };
                     let td = tokens[1].clone().into_uint().map(|v| v.as_u64()).unwrap_or(0);
-                    (ch, td, 0u64)
+                    (ch, td, 0u64, 0u64)
                 }
                 Err(_) => {
                     warn!(batch_id, "BatchCreated: failed to decode data (legacy 2-field)");
@@ -314,7 +348,7 @@ impl ChainListener {
             }
         } else {
             match decode_single_u256(&log.data) {
-                Some(v) => (H256::zero(), v.as_u64(), 0u64),
+                Some(v) => (H256::zero(), v.as_u64(), 0u64, 0u64),
                 None => {
                     warn!(batch_id, "BatchCreated: failed to decode tickDuration from data");
                     return;
@@ -337,6 +371,7 @@ impl ChainListener {
             config_hash,
             tick_duration,
             lock_offset,
+            settlement_grace,
             created_at_tick,
             paused: false,
             settled: false,
@@ -372,6 +407,8 @@ impl ChainListener {
             batch_id,
             creator = %creator,
             tick_duration,
+            lock_offset,
+            settlement_grace,
             config_hash = ?batch.config_hash,
             created_at_tick = batch.created_at_tick,
             "BatchCreated"
@@ -756,9 +793,9 @@ impl ChainListener {
             }
         };
 
-        // Decode the 8-field Batch struct tuple (must match IVision.sol exactly):
+        // Decode the 9-field Batch struct tuple (must match IVision.sol exactly):
         // (address creator, bytes32 sourceId, bytes32 configHash,
-        //  uint256 tickDuration, uint256 lockOffset,
+        //  uint256 tickDuration, uint256 lockOffset, uint256 settlementGrace,
         //  uint256 createdAtTick, bool paused, bool settled)
         let tokens = match abi::decode(
             &[abi::ParamType::Tuple(vec![
@@ -767,9 +804,10 @@ impl ChainListener {
                 abi::ParamType::FixedBytes(32),     // [2] configHash
                 abi::ParamType::Uint(256),          // [3] tickDuration
                 abi::ParamType::Uint(256),          // [4] lockOffset
-                abi::ParamType::Uint(256),          // [5] createdAtTick
-                abi::ParamType::Bool,               // [6] paused
-                abi::ParamType::Bool,               // [7] settled
+                abi::ParamType::Uint(256),          // [5] settlementGrace
+                abi::ParamType::Uint(256),          // [6] createdAtTick
+                abi::ParamType::Bool,               // [7] paused
+                abi::ParamType::Bool,               // [8] settled
             ])],
             &result,
         ) {
@@ -805,20 +843,26 @@ impl ChainListener {
             _ => 0,
         };
 
-        // tuple[5] = createdAtTick
-        let created_at_tick = match &tuple[5] {
+        // tuple[5] = settlementGrace
+        let settlement_grace = match &tuple[5] {
             Token::Uint(v) => v.as_u64(),
             _ => 0,
         };
 
-        // tuple[6] = paused
-        let paused = match &tuple[6] {
+        // tuple[6] = createdAtTick
+        let created_at_tick = match &tuple[6] {
+            Token::Uint(v) => v.as_u64(),
+            _ => 0,
+        };
+
+        // tuple[7] = paused
+        let paused = match &tuple[7] {
             Token::Bool(v) => *v,
             _ => false,
         };
 
-        // tuple[7] = settled
-        let settled = match &tuple[7] {
+        // tuple[8] = settled
+        let settled = match &tuple[8] {
             Token::Bool(v) => *v,
             _ => false,
         };
@@ -827,6 +871,7 @@ impl ChainListener {
             source_id,
             config_hash,
             lock_offset,
+            settlement_grace,
             created_at_tick,
             paused,
             settled,

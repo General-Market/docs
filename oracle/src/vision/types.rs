@@ -20,6 +20,10 @@ pub struct Batch {
     pub tick_duration: u64,
     /// Active lock window offset in seconds
     pub lock_offset: u64,
+    /// Settlement grace window in seconds. After
+    /// `(created_at_tick + 1) * tick_duration + settlement_grace`,
+    /// settleBatch reverts on-chain and the refund window opens.
+    pub settlement_grace: u64,
     pub created_at_tick: u64,
     pub paused: bool,
     pub settled: bool,

@@ -3049,11 +3049,11 @@ where
             // Vision createBatch co-signing
             MessageHandleResult::ProcessVisionCreateBatchProposal {
                 from: _, leader_id, source_name, source_id,
-                config_hash, tick_duration, lock_offset,
+                config_hash, tick_duration, lock_offset, settlement_grace,
                 message_hash, leader_signature: _, reference_nonce: _,
             } => {
                 if let Err(e) = self.handle_vision_create_batch_proposal(
-                    source_name, source_id, config_hash, tick_duration, lock_offset, message_hash, leader_id,
+                    source_name, source_id, config_hash, tick_duration, lock_offset, settlement_grace, message_hash, leader_id,
                 ).await {
                     warn!(error = %e, "Failed to handle VisionCreateBatchProposal");
                 }
@@ -7605,6 +7605,7 @@ where
     // run_vision_ops, handle_vision_*_proposal, vision_check_deposit/withdraw_processed
     // — all deleted during round-only purge (~900 lines)
 
+    #[allow(clippy::too_many_arguments)]
     async fn handle_vision_create_batch_proposal(
         &self,
         source_name: String,
@@ -7612,6 +7613,7 @@ where
         config_hash: H256,
         tick_duration: u64,
         lock_offset: u64,
+        settlement_grace: u64,
         proposed_message_hash: H256,
         leader_id: PeerId,
     ) -> Result<(), Error> {
@@ -7629,7 +7631,10 @@ where
             .and_then(|s| s.parse().ok())
             .unwrap_or(111_222_333);
 
-        // Recompute the BLS message hash from proposal params and verify
+        // Recompute the BLS message hash from proposal params and verify.
+        // Must mirror the contract preimage exactly:
+        //   abi.encode(chainid, vision, "CREATE_BATCH", sourceId, configHash,
+        //              tickDuration, lockOffset, settlementGrace)
         let expected = ethers::utils::keccak256(ethers::abi::encode(&[
             ethers::abi::Token::Uint(U256::from(l3_chain_id)),
             ethers::abi::Token::Address(vision_address),
@@ -7638,6 +7643,7 @@ where
             ethers::abi::Token::FixedBytes(config_hash.as_bytes().to_vec()),
             ethers::abi::Token::Uint(U256::from(tick_duration)),
             ethers::abi::Token::Uint(U256::from(lock_offset)),
+            ethers::abi::Token::Uint(U256::from(settlement_grace)),
         ]));
         let expected_hash = H256::from(expected);
 

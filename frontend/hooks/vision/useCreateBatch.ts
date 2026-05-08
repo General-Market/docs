@@ -18,6 +18,14 @@ export interface CreateBatchParams {
   tickDuration: number
   /** Custom threshold values for _X resolution types (in basis points) */
   customThresholds: number[]
+  /**
+   * Settlement grace window in seconds.
+   * Past `(createdAtTick + 1) * tickDuration + settlementGrace`, settleBatch
+   * reverts on-chain and players can claim refunds. Must satisfy the
+   * contract's `[60, 86400]` bound. Defaults to `min(2 * tickDuration, 86400)`
+   * floored to 60s.
+   */
+  settlementGrace?: number
 }
 
 interface UseCreateBatchReturn {
@@ -114,6 +122,12 @@ export function useCreateBatch(): UseCreateBatchReturn {
       (id) => keccak256(toHex(id)) as `0x${string}`
     )
 
+    // Default rule mirrors the data-node + oracle: min(2 * tick, 86400),
+    // floored to MIN_SETTLEMENT_GRACE (60s).
+    const grace =
+      params.settlementGrace ??
+      Math.min(Math.max(params.tickDuration * 2, 60), 86_400)
+
     writeContract({
       address: visionAddress,
       abi: VISION_ABI,
@@ -124,9 +138,10 @@ export function useCreateBatch(): UseCreateBatchReturn {
         params.resolutionTypes,
         BigInt(params.tickDuration),
         params.customThresholds.map((t) => BigInt(t)),
+        BigInt(grace),
       ] as any,
     })
-  }, [writeContract])
+  }, [writeContract, visionAddress])
 
   const reset = useCallback(() => {
     resetWrite()

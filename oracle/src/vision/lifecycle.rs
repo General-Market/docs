@@ -829,6 +829,15 @@ impl BatchLifecycleManager {
         let config_hash_str = &rec_batch.config_hash;
         let tick_duration = rec_batch.tick_duration_secs;
         let lock_offset = rec_batch.lock_offset_secs;
+        // Default rule: grace = 2 * tick, capped at the contract's MAX (24h).
+        // The contract's MIN_SETTLEMENT_GRACE is 60s — short ticks fall below
+        // that, so we floor to 60. If the recommended config carries an
+        // explicit value, honor it.
+        let settlement_grace = rec_batch
+            .settlement_grace_secs
+            .unwrap_or_else(|| (tick_duration.saturating_mul(2)).min(86_400))
+            .max(60)
+            .min(86_400);
         let market_count = rec_batch.markets.len();
 
         info!(
@@ -836,6 +845,7 @@ impl BatchLifecycleManager {
             config_hash = %config_hash_str,
             tick_duration,
             lock_offset,
+            settlement_grace,
             markets = market_count,
             "Fetched fresh config for new round"
         );
@@ -879,7 +889,7 @@ impl BatchLifecycleManager {
                     .parse()
                     .unwrap_or_else(|_| H256::from(keccak256(config_hash_str.as_bytes())));
 
-                // Compute BLS message: keccak256(abi.encode(chainid, vision_address, "CREATE_BATCH", sourceId, configHash, tickDuration, lockOffset))
+                // Compute BLS message: keccak256(abi.encode(chainid, vision_address, "CREATE_BATCH", sourceId, configHash, tickDuration, lockOffset, settlementGrace))
                 let vision_address: Address = self.config.vision_address
                     .parse()
                     .unwrap_or_default();
@@ -892,6 +902,7 @@ impl BatchLifecycleManager {
                     Token::FixedBytes(config_hash.as_bytes().to_vec()),
                     Token::Uint(U256::from(tick_duration)),
                     Token::Uint(U256::from(lock_offset)),
+                    Token::Uint(U256::from(settlement_grace)),
                 ]));
                 let message_hash = H256::from(bls_message);
 
@@ -924,6 +935,7 @@ impl BatchLifecycleManager {
                     ?config_hash,
                     tick_duration,
                     lock_offset,
+                    settlement_grace,
                     ?message_hash,
                     node_index,
                     num_oracles,
@@ -949,6 +961,7 @@ impl BatchLifecycleManager {
                             config_hash,
                             tick_duration,
                             lock_offset,
+                            settlement_grace,
                             message_hash,
                             leader_signature: common::types::BLSSignature(leader_sig.0.clone()),
                             reference_nonce: ref_nonce,
@@ -1032,7 +1045,7 @@ impl BatchLifecycleManager {
                 let signers_bitmask = U256::from(signer_bits);
                 if let Some(on_chain_id) = self.submit_create_batch(
                     source_name, writer, source_id, config_hash,
-                    tick_duration, lock_offset, aggregated.0,
+                    tick_duration, lock_offset, settlement_grace, aggregated.0,
                     ref_nonce, signers_bitmask, lifecycle_id,
                 ).await {
                     return Ok(on_chain_id);
@@ -1062,6 +1075,7 @@ impl BatchLifecycleManager {
     ///
     /// Returns the on-chain batch ID parsed from the `BatchCreated` event,
     /// or `None` if the submission failed.
+    #[allow(clippy::too_many_arguments)]
     async fn submit_create_batch(
         &self,
         source_name: &str,
@@ -1070,6 +1084,7 @@ impl BatchLifecycleManager {
         config_hash: H256,
         tick_duration: u64,
         lock_offset: u64,
+        settlement_grace: u64,
         bls_sig: Vec<u8>,
         ref_nonce: u64,
         signers_bitmask: U256,
@@ -1081,6 +1096,7 @@ impl BatchLifecycleManager {
             ?config_hash,
             tick_duration,
             lock_offset,
+            settlement_grace,
             signers_bitmask = %signers_bitmask,
             ref_nonce,
             lifecycle_id,
@@ -1091,6 +1107,7 @@ impl BatchLifecycleManager {
             config_hash,
             tick_duration,
             lock_offset,
+            settlement_grace,
             bls_sig,
             ref_nonce,
             signers_bitmask,

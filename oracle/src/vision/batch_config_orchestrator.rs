@@ -46,6 +46,11 @@ pub struct RecommendedBatch {
     pub config_hash: String,
     pub tick_duration_secs: u64,
     pub lock_offset_secs: u64,
+    /// Per-source settlement grace window in seconds.
+    /// Optional — when absent, the leader applies the default rule
+    /// `min(2 * tick_duration, 86_400)` (floored to MIN_SETTLEMENT_GRACE).
+    #[serde(default, alias = "settlementGrace")]
+    pub settlement_grace_secs: Option<u64>,
     pub markets: Vec<RecommendedMarket>,
     #[serde(default)]
     pub created_at: String,
@@ -375,6 +380,7 @@ impl BatchConfigOrchestrator {
                 "referenceNonce": reference_nonce,
                 "tickDurationSecs": config.tick_duration_secs,
                 "lockOffsetSecs": config.lock_offset_secs,
+                "settlementGraceSecs": config.settlement_grace_secs,
             }))
             .send()
             .await?;
@@ -402,6 +408,7 @@ impl BatchConfigOrchestrator {
                 "referenceNonce": reference_nonce,
                 "tickDurationSecs": config.tick_duration_secs,
                 "lockOffsetSecs": config.lock_offset_secs,
+                "settlementGraceSecs": config.settlement_grace_secs,
             }))
             .send()
             .await?;
@@ -436,6 +443,7 @@ mod tests {
             config_hash: "0xabc".into(),
             tick_duration_secs: tick_dur,
             lock_offset_secs: lock_off,
+            settlement_grace_secs: None,
             markets: markets
                 .into_iter()
                 .map(|(id, res, bps)| RecommendedMarket {
