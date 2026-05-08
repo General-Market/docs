@@ -169,9 +169,9 @@ function Brand() {
       <Image
         src="/logo.svg"
         alt="General"
-        width={26}
-        height={26}
-        style={{ borderRadius: 6 }}
+        width={36}
+        height={36}
+        style={{ borderRadius: 8 }}
         priority
       />
       <span
