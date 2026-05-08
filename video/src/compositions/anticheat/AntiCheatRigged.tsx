@@ -56,9 +56,9 @@ type LogoMask =
 // article PNG, yellow highlight, and green exchange underline stay.
 type Treatment =
   | "wide"          // current behaviour — clean card, slight tilt, scale punch
-  | "extreme-zoom"  // image is dollied so the highlighted phrase fills the frame
+  | "extreme-zoom"  // image is dollied so the exchange name fills the frame
   | "corkboard"     // pinned with two thumbtacks, harder shadow, tilted
-  | "stamp"         // huge red "RIGGED" stamp slams across after entry, with shake
+  | "magnifier"     // circular lens ring expands over the exchange name, card zooms in
   | "whip"          // whips in from the left with motion blur
   | "fullscreen";   // takes over the entire frame, no card chrome, no left verdict
 
@@ -125,7 +125,7 @@ const ARTICLES: ArticleProof[] = [
       "cointribune.com/en/solana-memecoin-lawsuit-advances-as-investors-cite-insider-trading-claims",
     highlights: [{ x: 0.1253, y: 0.5158, w: 0.2653, h: 0.0487 }],
     exchangeBox: { x: 0.0414, y: 0.4601, w: 0.3163, h: 0.0386 },
-    treatment: "stamp",
+    treatment: "magnifier",
   },
   {
     exchange: "kalshi",
@@ -353,8 +353,8 @@ const ArticleFlash: React.FC<{
       return <ExtremeZoomTreatment article={article} startFrame={startFrame} />;
     case "corkboard":
       return <CorkboardTreatment article={article} startFrame={startFrame} />;
-    case "stamp":
-      return <StampTreatment article={article} startFrame={startFrame} />;
+    case "magnifier":
+      return <MagnifierTreatment article={article} startFrame={startFrame} />;
     case "whip":
       return <WhipTreatment article={article} startFrame={startFrame} />;
     case "fullscreen":
@@ -423,7 +423,7 @@ const WideTreatment: React.FC<TreatmentProps> = ({ article, startFrame }) => {
   );
 };
 
-// ─── Extreme zoom (robinhood) — image dollies until phrase fills frame ────────
+// ─── Extreme zoom (robinhood) — image dollies until exchange name fills frame ─
 
 const ExtremeZoomTreatment: React.FC<TreatmentProps> = ({
   article,
@@ -434,23 +434,22 @@ const ExtremeZoomTreatment: React.FC<TreatmentProps> = ({
   const highlightReveal = Math.max(0, Math.min(1, (local - 2) / 6));
 
   // Camera dollies in: starts at 1.6x already-zoomed, settles at 3.4x.
-  // Slow continuous dolly so the phrase keeps growing through the beat.
+  // The lens lives on the exchange name in the headline — that word is the
+  // whole point of the beat.
   const zoom = interpolate(local, [0, 12, 26], [1.6, 3.0, 3.4], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  // Highlight rectangle in image-fraction coords. Pick the first highlight.
-  const h = article.highlights[0];
-  const hcx = h.x + h.w / 2; // 0..1 along image width
-  const hcy = h.y + h.h / 2; // 0..1 along image height
+  // Anchor on the exchange-name box. Fall back to the body highlight only
+  // if an article doesn't carry an exchangeBox (currently all do).
+  const anchor = article.exchangeBox ?? article.highlights[0];
+  const acx = anchor.x + anchor.w / 2;
+  const acy = anchor.y + anchor.h / 2;
 
-  // Origin point on the card (pre-scale) that we want pinned to viewport
-  // centre — given the highlight is at (hcx, hcy) of the image.
-  const originX = `${hcx * 100}%`;
-  const originY = `${hcy * 100}%`;
+  const originX = `${acx * 100}%`;
+  const originY = `${acy * 100}%`;
 
-  // Slight settle on the card — rises from 0.6 → 1.0 in 4f.
   const opacity = interpolate(local, [0, 4], [0.6, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
@@ -556,79 +555,97 @@ const Thumbtack: React.FC<{ x: string; y: string; delay?: number }> = ({
   );
 };
 
-// ─── Stamp (pump.fun) — huge red RIGGED slams across after entry ──────────────
+// ─── Magnifier (pump.fun) — circular lens expands over the exchange name ─────
+//
+// The lens is the camera, not an editorial overlay. The article enters
+// normally; on local frame 6 a thick ring scribes around the exchange-name
+// box and the card simultaneously dollies in toward it. The eye lands on
+// the screenshot's own typography.
 
-const StampTreatment: React.FC<TreatmentProps> = ({ article, startFrame }) => {
+const MagnifierTreatment: React.FC<TreatmentProps> = ({
+  article,
+  startFrame,
+}) => {
   const frame = useCurrentFrame();
   const local = frame - startFrame;
-  // Standard punch entry on the card itself.
+
   const punchT = Math.max(0, Math.min(1, local / 4));
-  const punchScale = interpolate(punchT, [0, 1], [1.04, 1]);
   const punchOpacity = interpolate(punchT, [0, 1], [0.35, 1]);
   const highlightReveal = Math.max(0, Math.min(1, (local - 1) / 6));
 
-  // Stamp lands on local frame 7. Scale 2.4 → 1 in 4 frames, opacity 0 → 1.
-  const STAMP_AT = 7;
-  const stampLocal = local - STAMP_AT;
-  const stampScale = interpolate(stampLocal, [0, 4], [2.4, 1], {
+  const LENS_AT = 6;
+  const lensLocal = local - LENS_AT;
+
+  // Card dolly: 1.0 → 1.4 with origin on the exchange name. The whole card
+  // grows toward the box so the box becomes the centre of attention.
+  const cardZoom = interpolate(lensLocal, [0, 10, 24], [1.0, 1.32, 1.40], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const stampOpacity = interpolate(stampLocal, [0, 2], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  // Card shake: 4-frame jitter when the stamp hits.
-  const shakeT = Math.max(0, Math.min(1, stampLocal / 6));
-  const shakeAmp = (1 - shakeT) * 6;
-  const shakeX =
-    stampLocal >= 0 && stampLocal < 6
-      ? Math.sin(stampLocal * 4.5) * shakeAmp
-      : 0;
-  const shakeY =
-    stampLocal >= 0 && stampLocal < 6
-      ? Math.cos(stampLocal * 5.1) * shakeAmp * 0.6
-      : 0;
+
+  const box = article.exchangeBox;
+  const ecx = box ? box.x + box.w / 2 : 0.5;
+  const ecy = box ? box.y + box.h / 2 : 0.5;
 
   return (
     <div style={cardWrapStyle()}>
       <div
         style={{
           ...cardChromeStyle(),
-          transform: `translate(${shakeX}px, ${shakeY}px) scale(${punchScale})`,
+          transform: `scale(${cardZoom})`,
+          transformOrigin: `${ecx * 100}% ${ecy * 100}%`,
           opacity: punchOpacity,
         }}
       >
         <ArticleCore article={article} reveal={highlightReveal} />
         <SourceCitation url={article.source} />
-        {stampLocal >= 0 && (
-          <div
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: `translate(-50%, -50%) rotate(-14deg) scale(${stampScale})`,
-              fontFamily: font,
-              fontSize: 280,
-              fontWeight: 900,
-              letterSpacing: "-0.04em",
-              color: "#d61b2c",
-              opacity: stampOpacity,
-              mixBlendMode: "multiply",
-              textShadow:
-                "0 0 6px rgba(214,27,44,0.20), 1px 1px 0 rgba(214,27,44,0.30)",
-              border: "10px solid #d61b2c",
-              padding: "20px 60px",
-              borderRadius: 16,
-              pointerEvents: "none",
-              whiteSpace: "nowrap",
-            }}
-          >
-            RIGGED
-          </div>
+        {box && lensLocal >= 0 && (
+          <MagnifierLens box={box} local={lensLocal} />
         )}
       </div>
     </div>
+  );
+};
+
+const MagnifierLens: React.FC<{ box: Highlight; local: number }> = ({
+  box,
+  local,
+}) => {
+  // Ring scribes outward from box width to ~1.6× box width over 5 frames,
+  // then holds with a faint pulse. Stroke fades from 0 to 1 as it grows.
+  const ringScale = interpolate(local, [0, 5, 24], [0.3, 1.0, 1.04], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const ringOpacity = interpolate(local, [0, 3], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const cx = box.x + box.w / 2;
+  const cy = box.y + box.h / 2;
+  // Lens diameter = 1.6× the box width. The width is in image fractions, so
+  // use percent units to size — the lens scales with the article.
+  const diameterPct = box.w * 1.7 * 100;
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: `${cx * 100}%`,
+        top: `${cy * 100}%`,
+        width: `${diameterPct}%`,
+        aspectRatio: "1 / 1",
+        borderRadius: "50%",
+        border: "5px solid rgba(34,217,122,0.95)",
+        boxShadow:
+          "0 0 0 3px rgba(34,217,122,0.18), 0 8px 22px rgba(10,12,18,0.25), inset 0 0 24px rgba(82,255,162,0.20)",
+        transform: `translate(-50%, -50%) scale(${ringScale})`,
+        opacity: ringOpacity,
+        pointerEvents: "none",
+        background:
+          "radial-gradient(circle at 35% 30%, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0) 55%)",
+      }}
+    />
   );
 };
 
