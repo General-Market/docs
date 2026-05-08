@@ -240,22 +240,33 @@ function SkeletonCard() {
   )
 }
 
+// Sources whose bot example exists at vision-bot-examples/<sourceId>/.
+// When present we surface a real link; otherwise we surface the twitch
+// reference as the canonical "here's how it's done" example.
+const KNOWN_BOT_SOURCES = new Set(['twitch', 'polymarket'])
+
 /**
  * Static reference bot — shown when the API returns nothing real
  * (no GitHub token, rate-limited, empty source dir, fetch failed).
  *
- * The void is filled with a real link instead of a placeholder. A
- * card that goes nowhere reads as a stub; one that resolves to a
- * real repo reads as an example. The user finds the same building
- * blocks either way — only the surface changes.
+ * Surfaces the source-specific bot when one exists; otherwise points
+ * at the twitch reference so the void resolves to working code, not a
+ * stub.
  */
-const STATIC_EXAMPLE_BOT: BotEntry = {
-  name: 'Twitch trader',
-  path: 'twitch',
-  lastCommitAt: null,
-  htmlUrl: 'https://github.com/General-Market/vision-bot-examples/tree/main/twitch',
-  description: 'Reference bot example for the Vision bot examples repo.',
-  sparkline7d: null,
+function staticExampleBot(sourceId: string): BotEntry {
+  const slug = KNOWN_BOT_SOURCES.has(sourceId) ? sourceId : 'twitch'
+  const label = slug.charAt(0).toUpperCase() + slug.slice(1)
+  return {
+    name: `${label} trader`,
+    path: slug,
+    lastCommitAt: null,
+    htmlUrl: `https://github.com/General-Market/vision-bot-examples/tree/main/${slug}`,
+    description:
+      slug === sourceId
+        ? `Reference bot for the ${slug} source.`
+        : 'Reference bot example for the Vision bot examples repo.',
+    sparkline7d: null,
+  }
 }
 
 export function TrendingBotsRail({ sourceId }: TrendingBotsRailProps) {
@@ -269,7 +280,7 @@ export function TrendingBotsRail({ sourceId }: TrendingBotsRailProps) {
       <div className="bots-rail__grid">
         {isLoading && Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}
         {!isLoading && realBots.length > 0 && realBots.map((bot) => <BotCard key={bot.path} bot={bot} />)}
-        {showExample && <BotCard bot={STATIC_EXAMPLE_BOT} />}
+        {showExample && <BotCard bot={staticExampleBot(sourceId)} />}
         {!isLoading && <BuildYourOwnCard sourceId={sourceId} prominent={false} />}
       </div>
 

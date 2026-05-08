@@ -105,6 +105,10 @@ export async function GET(request: Request): Promise<NextResponse<TrendingBotsRe
     return NextResponse.json({ bots: [], _stub: true, reason: 'missing source param' }, { status: 400 })
   }
 
+  // Repo layout: each source has exactly one bot at /<source>/. Subdirs
+  // inside (config/, data/, features/, models/) are package internals,
+  // not separate bots — listing them as bots is what the previous version
+  // did and it surfaced "abi", "config", "data" as fake bot tiles.
   const contentsUrl = `${GITHUB_API}/repos/${REPO}/contents/${encodeURIComponent(sourceId)}`
 
   let contentsRes: Response
@@ -115,7 +119,7 @@ export async function GET(request: Request): Promise<NextResponse<TrendingBotsRe
   }
 
   if (contentsRes.status === 404) {
-    // No bots for this source yet — not an error, just empty
+    // No bot for this source yet — not an error, just empty
     return NextResponse.json(
       { bots: [] },
       { headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=600' } },
@@ -141,28 +145,24 @@ export async function GET(request: Request): Promise<NextResponse<TrendingBotsRe
     return stubResponse('github unreachable')
   }
 
-  // Top-level subdirectories = bots
-  const dirs = entries.filter((e) => e.type === 'dir')
+  // The source directory exists. Treat it as a single bot — pull its
+  // README description and last-commit timestamp from the dir as a whole.
+  const [lastCommitAt, description] = await Promise.all([
+    fetchLastCommitAt(sourceId),
+    fetchReadmeDescription(contentsUrl),
+  ])
 
-  const bots: BotEntry[] = await Promise.all(
-    dirs.map(async (dir): Promise<BotEntry> => {
-      const [lastCommitAt, description] = await Promise.all([
-        fetchLastCommitAt(dir.path),
-        fetchReadmeDescription(dir.url),
-      ])
-      return {
-        name: dir.name,
-        path: dir.path,
-        lastCommitAt,
-        htmlUrl: dir.html_url,
-        description,
-        sparkline7d: null,
-      }
-    }),
-  )
+  const bot: BotEntry = {
+    name: `${sourceId} bot`,
+    path: sourceId,
+    lastCommitAt,
+    htmlUrl: `https://github.com/${REPO}/tree/main/${encodeURIComponent(sourceId)}`,
+    description,
+    sparkline7d: null,
+  }
 
   return NextResponse.json(
-    { bots },
+    { bots: [bot] },
     { headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=600' } },
   )
 }

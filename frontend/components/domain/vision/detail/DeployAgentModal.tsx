@@ -76,7 +76,13 @@ const AGENTS: AgentConfig[] = [
 interface DeployAgentModalProps {
   agentId: string
   onClose: () => void
+  /** Source id whose bot dir we clone. Falls back to "twitch" when absent. */
+  sourceId?: string
 }
+
+// Repo paths the public examples ship under. Update when a new sibling
+// directory lands in vision-bot-examples.
+const KNOWN_BOT_DIRS = new Set(['twitch', 'polymarket'])
 
 function CopyButton({ text }: { text: string }) {
   const t = useTranslations('vision')
@@ -98,16 +104,19 @@ function CopyButton({ text }: { text: string }) {
   )
 }
 
-export default function DeployAgentModal({ agentId, onClose }: DeployAgentModalProps) {
+export default function DeployAgentModal({ agentId, onClose, sourceId }: DeployAgentModalProps) {
   const t = useTranslations('vision')
   const agent = AGENTS.find(a => a.id === agentId)
   if (!agent) return null
+
+  const botDir =
+    sourceId && KNOWN_BOT_DIRS.has(sourceId) ? sourceId : 'twitch'
 
   const steps = [
     {
       number: 1,
       title: t('deploy_steps.clone'),
-      code: 'git clone https://github.com/General-Market/vision-bot-examples\ncd vision-bot-examples/twitch',
+      code: `git clone https://github.com/General-Market/vision-bot-examples\ncd vision-bot-examples/${botDir}`,
     },
     {
       number: 2,

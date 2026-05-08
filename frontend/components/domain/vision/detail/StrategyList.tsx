@@ -141,6 +141,7 @@ export default function StrategyList({ bitmapEditor, sourceId, marketIds }: Stra
         <DeployAgentModal
           agentId={selectedAgent}
           onClose={() => setSelectedAgent(null)}
+          sourceId={sourceId}
         />
       )}
     </div>
