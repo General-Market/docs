@@ -777,7 +777,7 @@ const WhipTreatment: React.FC<TreatmentProps> = ({ article, startFrame }) => {
 
   return (
     <div style={cardWrapStyle()}>
-      <CameraMotionBlur shutterAngle={150} samples={4}>
+      <CameraMotionBlur shutterAngle={150} samples={2}>
         <div
           style={{
             ...cardChromeStyle(),

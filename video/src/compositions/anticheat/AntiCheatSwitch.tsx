@@ -571,7 +571,7 @@ const MorphingForty: React.FC<{
           position: "absolute",
           inset: -120,
           background: `radial-gradient(ellipse at center, rgba(0,82,255,${(0.34 * bloom).toFixed(3)}), transparent 65%)`,
-          filter: "blur(80px)",
+          filter: "blur(50px)",
           zIndex: -1,
           pointerEvents: "none",
         }}
@@ -720,7 +720,7 @@ const SettleOrb: React.FC<{ frame: number; fps: number }> = ({
         borderRadius: "50%",
         background:
           "radial-gradient(circle, rgba(0,82,255,0.42) 0%, rgba(0,82,255,0.22) 25%, rgba(0,82,255,0.08) 50%, rgba(0,82,255,0) 78%)",
-        filter: "blur(60px)",
+        filter: "blur(40px)",
         opacity,
         pointerEvents: "none",
       }}
