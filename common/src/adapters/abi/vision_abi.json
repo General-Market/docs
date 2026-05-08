@@ -14,6 +14,56 @@
   },
   {
     "type": "function",
+    "name": "batchExpirationTime",
+    "inputs": [
+      {
+        "name": "batchId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "claimRefund",
+    "inputs": [
+      {
+        "name": "batchId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "claimRefundFor",
+    "inputs": [
+      {
+        "name": "batchId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "player",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "collectFees",
     "inputs": [],
     "outputs": [],
@@ -40,6 +90,11 @@
       },
       {
         "name": "lockOffset",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "settlementGrace",
         "type": "uint256",
         "internalType": "uint256"
       },
@@ -172,6 +227,11 @@
           },
           {
             "name": "lockOffset",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "settlementGrace",
             "type": "uint256",
             "internalType": "uint256"
           },
@@ -490,6 +550,12 @@
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
+      },
+      {
+        "name": "settlementGrace",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
       }
     ],
     "anonymous": false
@@ -673,6 +739,31 @@
   },
   {
     "type": "event",
+    "name": "PlayerRefunded",
+    "inputs": [
+      {
+        "name": "batchId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "player",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "PlayerSettled",
     "inputs": [
       {
@@ -754,6 +845,11 @@
   },
   {
     "type": "error",
+    "name": "InvalidSettlementGrace",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "InvalidTickDuration",
     "inputs": []
   },
@@ -770,6 +866,16 @@
   {
     "type": "error",
     "name": "NotJoined",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NotYetRefundable",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "SettlementWindowClosed",
     "inputs": []
   },
   {

@@ -2703,6 +2703,11 @@
   },
   {
     "type": "error",
+    "name": "E052_EmptyNameOrSymbol",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "E061_Unauthorized",
     "inputs": [
       {
@@ -2894,17 +2899,6 @@
         "name": "side",
         "type": "uint8",
         "internalType": "uint8"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "E128_CycleNotConfirmed",
-    "inputs": [
-      {
-        "name": "cycleNumber",
-        "type": "uint256",
-        "internalType": "uint256"
       }
     ]
   },
