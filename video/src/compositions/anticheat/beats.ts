@@ -69,3 +69,24 @@ export const nearestBeatBefore = (frame: number): number | null => {
 // Translate an absolute beat frame to a scene-local frame.
 export const beatLocal = (absoluteBeat: number, sceneStart: number): number =>
   absoluteBeat - sceneStart;
+
+// Triangular envelope around a beat. Returns 0..1.
+//   peak (1.0) at the beat frame.
+//   ramps up linearly over `attack` frames before the beat.
+//   ramps down linearly over `decay` frames after the beat.
+//   0 outside that window.
+//
+// The single shared valve every FX overlay reads through. Linear on
+// purpose: easing belongs to the consumer, not the source.
+export const beatPulse = (
+  frame: number,
+  beatIndex: number,
+  attack = 4,
+  decay = 14,
+): number => {
+  const target = beat(beatIndex);
+  const delta = frame - target;
+  if (delta < -attack || delta > decay) return 0;
+  if (delta <= 0) return (delta + attack) / attack;
+  return 1 - delta / decay;
+};
