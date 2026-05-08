@@ -219,14 +219,13 @@ function PhoneScene({
       box.getCenter(center)
       box.getSize(size)
       const htmlScale = (size.x * HTML_TRANSFORM_DIVISOR) / LINK_MENU_CSS_WIDTH
-      // Triangulation:
-      //   0     → 0.4 wu RIGHT
-      //   +0.20 → still slightly RIGHT (per latest report)
-      //   +0.45 → 0.4 wu LEFT
-      // Bisecting again toward the no-shift midpoint.
+      // X is dialled in at +0.32. Y needs the same kind of nudge —
+      // the menu sits a touch low on iOS. World +Y = screen up here
+      // (camera at −Z, default up vector). Starting at +0.12.
       const xOffset = isIOS ? 0.32 : 0
+      const yOffset = isIOS ? 0.12 : 0
       fit = {
-        position: [center.x + xOffset, center.y, center.z - 0.001],
+        position: [center.x + xOffset, center.y + yOffset, center.z - 0.001],
         scale: htmlScale,
       }
     } else {
