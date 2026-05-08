@@ -263,6 +263,11 @@ const LETTER_EXIT_STAGGER = 1.4;
 const LETTER_EXIT_FADE = toFrames(0.34);
 const LETTER_EXIT_DRIFT = 22;
 
+// Below-carousel headline. Words enter staggered, exit on the wave.
+const TOUCHED_WORDS = ["every", "markets", "you", "trade"];
+const TOUCHED_WORD_STAGGER = toFrames(0.07);
+const TOUCHED_WORD_FADE = toFrames(0.28);
+
 const expoOut = (t: number): number => (t === 1 ? 1 : 1 - Math.pow(2, -10 * t));
 const expoIn = (t: number): number => (t === 0 ? 0 : Math.pow(2, 10 * t - 10));
 const power2InOut = (t: number): number =>
@@ -313,7 +318,107 @@ const TouchedLine: React.FC = () => {
         delay={SIDE_WORD_RIGHT_DELAY}
         local={local}
       />
+
+      {/* Headline below the ring */}
+      <div
+        style={{
+          position: "absolute",
+          zIndex: 20,
+          top: "84%",
+          left: 0,
+          right: 0,
+          display: "flex",
+          justifyContent: "center",
+        }}
+      >
+        <TouchedHeadline local={local} />
+      </div>
     </AbsoluteFill>
+  );
+};
+
+// ─── Below-carousel headline — "every markets you trade" ───────────────────
+//
+// Words fade in staggered (existing entrance vocabulary), then on exit
+// each glyph waits its turn (stagger by distance from center) and rides
+// outward + fades. TextTrail hide() pattern, single line.
+
+const TouchedHeadline: React.FC<{ local: number }> = ({ local }) => {
+  const exitLocal = local - TOUCHED_EXIT_AT;
+
+  type Glyph = { ch: string; isSpace: boolean; wordIdx: number };
+  const glyphs: Glyph[] = [];
+  TOUCHED_WORDS.forEach((word, wi) => {
+    if (wi > 0) glyphs.push({ ch: " ", isSpace: true, wordIdx: wi });
+    for (const ch of word) glyphs.push({ ch, isSpace: false, wordIdx: wi });
+  });
+
+  const center = (glyphs.length - 1) / 2;
+
+  return (
+    <div
+      style={{
+        textAlign: "center",
+        fontFamily: font,
+        fontSize: 84,
+        fontWeight: 800,
+        letterSpacing: "-0.03em",
+        color: colors.fg,
+        lineHeight: 0.95,
+        whiteSpace: "nowrap",
+      }}
+    >
+      {glyphs.map((g, i) => {
+        const wLocal = local - g.wordIdx * TOUCHED_WORD_STAGGER;
+        const enterOp = interpolate(
+          wLocal,
+          [0, TOUCHED_WORD_FADE],
+          [0, 1],
+          { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+        );
+        const enterY = interpolate(
+          wLocal,
+          [0, TOUCHED_WORD_FADE],
+          [22, 0],
+          { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+        );
+
+        const dist = Math.abs(i - center);
+        const exitStart = dist * LETTER_EXIT_STAGGER;
+        const exitT = Math.max(
+          0,
+          Math.min(1, (exitLocal - exitStart) / LETTER_EXIT_FADE),
+        );
+        const exitEased = expoIn(exitT);
+        const sign = i < center ? -1 : 1;
+        const exitX = sign * dist * LETTER_EXIT_DRIFT * exitEased;
+        const exitY = -exitEased * 16;
+        const exitOp = 1 - exitT;
+        const exitScale = 1 - exitEased * 0.18;
+
+        if (g.isSpace) {
+          return (
+            <span key={i} style={{ display: "inline-block", whiteSpace: "pre" }}>
+              {" "}
+            </span>
+          );
+        }
+
+        return (
+          <span
+            key={i}
+            style={{
+              display: "inline-block",
+              opacity: enterOp * exitOp,
+              transform: `translate3d(${exitX.toFixed(2)}px, ${(enterY + exitY).toFixed(2)}px, 0) scale(${exitScale.toFixed(3)})`,
+              willChange: "transform, opacity",
+            }}
+          >
+            {g.ch}
+          </span>
+        );
+      })}
+    </div>
   );
 };
 
