@@ -3,31 +3,45 @@
 /**
  * VaultRoundHistory — what the bot actually did, round by round.
  *
- * The legacy VaultPortfolioView pulled from the data-node's /portfolio/trades
- * table, which only catches ITP order fills. Vision vaults trade parimutuel
- * batches, so that table is permanently empty for them — the "no portfolio
- * data" message was technically correct but useless. This component reads
- * PlayerJoined + PlayerSettled events from the chain and renders one row per
- * round: deposit in, payout out, P&L. The truth lives where the events live.
+ * Reads PlayerJoined / PlayerSettled / PlayerRefunded from the chain via
+ * /api/vision/vault/<addr>/rounds. Renders four states: pending, settled,
+ * refundable, refunded. Stuck is no longer a category — past expiration,
+ * deposits become claimable. The keeper handles most refunds in the
+ * background; the manual button is the user's escape hatch.
  */
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useCallback } from 'react'
+import { useAccount, useWriteContract } from 'wagmi'
+import { VISION_ABI } from '@/lib/contracts/vision-abi'
+import deployment from '@/lib/contracts/deployment.json'
+
+const VISION_ADDRESS = (deployment as any).contracts?.Vision as `0x${string}`
+
+type RoundStatus = 'pending' | 'settled' | 'refundable' | 'refunded'
 
 interface RoundRow {
   batchId: string
-  blockNumber: number
-  status: 'open' | 'settled'
+  joinBlock: number
+  resolveBlock: number | null
+  status: RoundStatus
   deposit: number
   payout: number | null
   pnl: number | null
+  expirationTime: number | null
 }
 
 interface RoundsResponse {
   vault: string
   rounds: RoundRow[]
   total: number
-  lookbackBlocks: number
-  headBlock: number
+  nowSec: number
+  totals: {
+    joined: number
+    settled: number
+    refunded: number
+    refundable: number
+    pending: number
+  }
 }
 
 type SortKey = 'recent' | 'pnl_desc' | 'pnl_asc' | 'size'
@@ -48,16 +62,14 @@ function fmtPnl(v: number | null): { text: string; tone: 'up' | 'down' | 'flat' 
   if (v === null) return { text: '—', tone: 'flat' }
   if (Math.abs(v) < 0.005) return { text: '$0.00', tone: 'flat' }
   const sign = v >= 0 ? '+' : '−'
-  return {
-    text: `${sign}$${Math.abs(v).toFixed(2)}`,
-    tone: v >= 0 ? 'up' : 'down',
-  }
+  return { text: `${sign}$${Math.abs(v).toFixed(2)}`, tone: v >= 0 ? 'up' : 'down' }
 }
 
 function sortRounds(rows: RoundRow[], key: SortKey): RoundRow[] {
   const copy = [...rows]
+  const recency = (r: RoundRow) => r.resolveBlock ?? r.joinBlock
   if (key === 'recent') {
-    copy.sort((a, b) => b.blockNumber - a.blockNumber)
+    copy.sort((a, b) => recency(b) - recency(a))
   } else if (key === 'pnl_desc') {
     copy.sort((a, b) => (b.pnl ?? -Infinity) - (a.pnl ?? -Infinity))
   } else if (key === 'pnl_asc') {
@@ -74,47 +86,46 @@ interface Props {
 
 export function VaultRoundHistory({ vaultAddress }: Props) {
   const [rounds, setRounds] = useState<RoundRow[]>([])
+  const [totals, setTotals] = useState<RoundsResponse['totals'] | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [sortKey, setSortKey] = useState<SortKey>('recent')
 
-  useEffect(() => {
-    let cancelled = false
+  const fetchRounds = useCallback(() => {
     setLoading(true)
     setError(null)
-    fetch(`/api/vision/vault/${vaultAddress}/rounds`, {
+    return fetch(`/api/vision/vault/${vaultAddress}/rounds`, {
       signal: AbortSignal.timeout(15_000),
     })
       .then((r) => r.json() as Promise<RoundsResponse>)
       .then((body) => {
-        if (cancelled) return
         setRounds(body.rounds ?? [])
+        setTotals(body.totals ?? null)
       })
       .catch((e) => {
-        if (cancelled) return
         setError(e instanceof Error ? e.message : 'fetch failed')
         setRounds([])
+        setTotals(null)
       })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-    return () => { cancelled = true }
+      .finally(() => setLoading(false))
   }, [vaultAddress])
+
+  useEffect(() => {
+    let cancelled = false
+    fetchRounds().then(() => {
+      if (cancelled) return
+    })
+    return () => { cancelled = true }
+  }, [fetchRounds])
 
   const sorted = useMemo(() => sortRounds(rounds, sortKey), [rounds, sortKey])
 
-  const totals = useMemo(() => {
-    let played = 0
-    let settled = 0
-    let totalPnl = 0
+  const realizedPnl = useMemo(() => {
+    let pnl = 0
     for (const r of rounds) {
-      played += 1
-      if (r.status === 'settled' && r.pnl !== null) {
-        settled += 1
-        totalPnl += r.pnl
-      }
+      if (r.status === 'settled' && r.pnl !== null) pnl += r.pnl
     }
-    return { played, settled, totalPnl }
+    return pnl
   }, [rounds])
 
   return (
@@ -134,12 +145,22 @@ export function VaultRoundHistory({ vaultAddress }: Props) {
           <h2 style={titleStyle}>What the bot did</h2>
         </div>
         <div className="flex flex-wrap gap-4">
-          <Summary label="Joined" value={totals.played > 0 ? String(totals.played) : '—'} />
-          <Summary label="Settled" value={totals.settled > 0 ? String(totals.settled) : '—'} />
+          <Summary label="Joined" value={totals ? String(totals.joined) : '—'} />
+          <Summary label="Settled" value={totals ? String(totals.settled) : '—'} />
+          <Summary
+            label="Refunded"
+            value={totals ? String(totals.refunded) : '—'}
+            mute={!totals || totals.refunded === 0}
+          />
+          <Summary
+            label="Refundable"
+            value={totals ? String(totals.refundable) : '—'}
+            tone={totals && totals.refundable > 0 ? 'alert' : undefined}
+          />
           <Summary
             label="Realized P&L"
-            value={fmtPnl(totals.settled > 0 ? totals.totalPnl : null).text}
-            tone={fmtPnl(totals.settled > 0 ? totals.totalPnl : null).tone}
+            value={fmtPnl(totals && totals.settled > 0 ? realizedPnl : null).text}
+            tone={fmtPnl(totals && totals.settled > 0 ? realizedPnl : null).tone}
           />
         </div>
       </header>
@@ -186,30 +207,19 @@ export function VaultRoundHistory({ vaultAddress }: Props) {
       ) : error ? (
         <EmptyState text="Could not load round history. Try again in a moment." />
       ) : sorted.length === 0 ? (
-        <EmptyState text="No rounds in the last 24 hours of blocks." />
+        <EmptyState text="No rounds in the lookback window." />
       ) : (
-        <RoundsTable rows={sorted.slice(0, 50)} />
+        <RoundsTable rows={sorted.slice(0, 50)} onRefunded={fetchRounds} />
       )}
 
       {sorted.length > 50 && (
-        <p
-          style={{
-            fontFamily: 'var(--apple-font-text)',
-            fontSize: 12,
-            color: 'var(--apple-text-tertiary)',
-            margin: 0,
-            textAlign: 'center',
-            letterSpacing: 'var(--apple-track-mid)',
-          }}
-        >
-          Showing 50 of {sorted.length} rounds.
-        </p>
+        <p style={overflowNoteStyle}>Showing 50 of {sorted.length} rounds.</p>
       )}
     </div>
   )
 }
 
-function RoundsTable({ rows }: { rows: RoundRow[] }) {
+function RoundsTable({ rows, onRefunded }: { rows: RoundRow[]; onRefunded: () => void }) {
   return (
     <div
       style={{
@@ -221,7 +231,7 @@ function RoundsTable({ rows }: { rows: RoundRow[] }) {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr',
+          gridTemplateColumns: '0.8fr 1fr 1fr 1fr 1fr 1.2fr',
           gap: 0,
           padding: '10px 16px',
           background: 'var(--apple-surface)',
@@ -234,63 +244,162 @@ function RoundsTable({ rows }: { rows: RoundRow[] }) {
         <span style={{ textAlign: 'right' }}>Deposit</span>
         <span style={{ textAlign: 'right' }}>Payout</span>
         <span style={{ textAlign: 'right' }}>P&amp;L</span>
+        <span style={{ textAlign: 'right' }}>Action</span>
       </div>
-      {rows.map((r, i) => {
-        const pnl = fmtPnl(r.pnl)
-        return (
-          <div
-            key={`${r.batchId}-${r.blockNumber}-${i}`}
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr',
-              gap: 0,
-              padding: '12px 16px',
-              borderBottom: i === rows.length - 1 ? 'none' : '1px solid var(--apple-line)',
-              fontVariantNumeric: 'tabular-nums',
-              alignItems: 'baseline',
-              fontSize: 13,
-            }}
-          >
-            <span style={{ color: 'var(--apple-text)', fontWeight: 500 }}>#{r.batchId}</span>
-            <span>
-              <span
-                style={{
-                  fontFamily: 'var(--apple-font-text)',
-                  fontSize: 11,
-                  fontWeight: 600,
-                  letterSpacing: 'var(--apple-track-loose)',
-                  textTransform: 'uppercase',
-                  color:
-                    r.status === 'settled'
-                      ? 'var(--apple-text-secondary)'
-                      : 'rgb(0,113,227)',
-                }}
-              >
-                {r.status === 'settled' ? 'Settled' : 'Open'}
-              </span>
-            </span>
-            <span style={{ textAlign: 'right', color: 'var(--apple-text)' }}>
-              {fmtUsd(r.deposit)}
-            </span>
-            <span style={{ textAlign: 'right', color: 'var(--apple-text)' }}>
-              {r.payout !== null ? fmtUsd(r.payout) : '—'}
-            </span>
-            <span
-              style={{
-                textAlign: 'right',
-                fontWeight: 600,
-                color:
-                  pnl.tone === 'up' ? 'rgb(52,199,89)'
-                  : pnl.tone === 'down' ? 'rgb(255,59,48)'
-                  : 'var(--apple-text-secondary)',
-              }}
-            >
-              {pnl.text}
-            </span>
-          </div>
-        )
-      })}
+      {rows.map((r, i) => (
+        <RoundRowView
+          key={`${r.batchId}-${r.joinBlock}-${i}`}
+          row={r}
+          isLast={i === rows.length - 1}
+          onRefunded={onRefunded}
+        />
+      ))}
     </div>
+  )
+}
+
+function RoundRowView({
+  row,
+  isLast,
+  onRefunded,
+}: {
+  row: RoundRow
+  isLast: boolean
+  onRefunded: () => void
+}) {
+  const pnl = fmtPnl(row.pnl)
+  return (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '0.8fr 1fr 1fr 1fr 1fr 1.2fr',
+        gap: 0,
+        padding: '12px 16px',
+        borderBottom: isLast ? 'none' : '1px solid var(--apple-line)',
+        fontVariantNumeric: 'tabular-nums',
+        alignItems: 'baseline',
+        fontSize: 13,
+      }}
+    >
+      <span style={{ color: 'var(--apple-text)', fontWeight: 500 }}>#{row.batchId}</span>
+      <StatusPill status={row.status} expirationTime={row.expirationTime} />
+      <span style={cellRight}>{fmtUsd(row.deposit)}</span>
+      <span style={cellRight}>{row.payout !== null ? fmtUsd(row.payout) : '—'}</span>
+      <span
+        style={{
+          ...cellRight,
+          fontWeight: 600,
+          color:
+            pnl.tone === 'up' ? 'rgb(52,199,89)'
+            : pnl.tone === 'down' ? 'rgb(255,59,48)'
+            : 'var(--apple-text-secondary)',
+        }}
+      >
+        {pnl.text}
+      </span>
+      <span style={cellRight}>
+        {row.status === 'refundable' ? (
+          <ClaimRefundButton batchId={row.batchId} onSuccess={onRefunded} />
+        ) : (
+          <span style={{ color: 'var(--apple-text-tertiary)' }}>—</span>
+        )}
+      </span>
+    </div>
+  )
+}
+
+function StatusPill({
+  status,
+  expirationTime,
+}: {
+  status: RoundStatus
+  expirationTime: number | null
+}) {
+  const palette = {
+    pending: { bg: 'rgba(0,113,227,0.10)', fg: 'rgb(0,113,227)', label: 'Open' },
+    settled: { bg: 'transparent', fg: 'var(--apple-text-secondary)', label: 'Settled' },
+    refunded: { bg: 'rgba(120,120,128,0.12)', fg: 'var(--apple-text-secondary)', label: 'Refunded' },
+    refundable: { bg: 'rgba(255,159,10,0.14)', fg: 'rgb(178,90,0)', label: 'Refundable' },
+  }[status]
+
+  const tooltip =
+    status === 'refundable'
+      ? 'Settlement window passed without payout. Deposit is claimable.'
+      : status === 'pending' && expirationTime
+      ? `Settles by ${new Date(expirationTime * 1000).toLocaleString()}`
+      : undefined
+
+  return (
+    <span
+      title={tooltip}
+      style={{
+        fontFamily: 'var(--apple-font-text)',
+        fontSize: 11,
+        fontWeight: 600,
+        letterSpacing: 'var(--apple-track-loose)',
+        textTransform: 'uppercase',
+        color: palette.fg,
+        background: palette.bg,
+        padding: status === 'settled' ? 0 : '2px 8px',
+        borderRadius: 'var(--apple-r-pill,980px)',
+        display: 'inline-block',
+      }}
+    >
+      {palette.label}
+    </span>
+  )
+}
+
+function ClaimRefundButton({ batchId, onSuccess }: { batchId: string; onSuccess: () => void }) {
+  const { isConnected } = useAccount()
+  const { writeContractAsync, isPending } = useWriteContract()
+  const [error, setError] = useState<string | null>(null)
+
+  const handleClick = useCallback(async () => {
+    setError(null)
+    try {
+      await writeContractAsync({
+        address: VISION_ADDRESS,
+        abi: VISION_ABI,
+        functionName: 'claimRefund',
+        args: [BigInt(batchId)],
+      })
+      // Give the indexer a moment, then refresh.
+      setTimeout(onSuccess, 2000)
+    } catch (e) {
+      setError(e instanceof Error ? e.message.slice(0, 80) : 'claim failed')
+    }
+  }, [batchId, writeContractAsync, onSuccess])
+
+  if (!isConnected) {
+    return <span style={{ color: 'var(--apple-text-tertiary)', fontSize: 11 }}>Connect to claim</span>
+  }
+
+  return (
+    <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+      <button
+        type="button"
+        onClick={handleClick}
+        disabled={isPending}
+        style={{
+          fontFamily: 'var(--apple-font-text)',
+          fontSize: 12,
+          fontWeight: 600,
+          letterSpacing: 'var(--apple-track-tight)',
+          padding: '4px 12px',
+          borderRadius: 'var(--apple-r-pill,980px)',
+          border: '1px solid rgb(178,90,0)',
+          background: isPending ? 'rgba(255,159,10,0.10)' : 'rgb(255,159,10)',
+          color: isPending ? 'rgb(178,90,0)' : '#fff',
+          cursor: isPending ? 'wait' : 'pointer',
+        }}
+      >
+        {isPending ? 'Claiming…' : 'Claim refund'}
+      </button>
+      {error && (
+        <span style={{ color: 'rgb(255,59,48)', fontSize: 10 }}>{error}</span>
+      )}
+    </span>
   )
 }
 
@@ -315,12 +424,22 @@ function EmptyState({ text }: { text: string }) {
 }
 
 function Summary({
-  label, value, tone,
+  label,
+  value,
+  tone,
+  mute,
 }: {
   label: string
   value: string
-  tone?: 'up' | 'down' | 'flat'
+  tone?: 'up' | 'down' | 'flat' | 'alert'
+  mute?: boolean
 }) {
+  const valueColor =
+    tone === 'up' ? 'rgb(52,199,89)'
+    : tone === 'down' ? 'rgb(255,59,48)'
+    : tone === 'alert' ? 'rgb(178,90,0)'
+    : mute ? 'var(--apple-text-tertiary)'
+    : 'var(--apple-text)'
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 90 }}>
       <span
@@ -342,16 +461,24 @@ function Summary({
           fontSize: 17,
           fontWeight: 600,
           letterSpacing: 'var(--apple-track-tight)',
-          color:
-            tone === 'up' ? 'rgb(52,199,89)'
-            : tone === 'down' ? 'rgb(255,59,48)'
-            : 'var(--apple-text)',
+          color: valueColor,
         }}
       >
         {value}
       </span>
     </div>
   )
+}
+
+const cellRight: React.CSSProperties = { textAlign: 'right', color: 'var(--apple-text)' }
+
+const overflowNoteStyle: React.CSSProperties = {
+  fontFamily: 'var(--apple-font-text)',
+  fontSize: 12,
+  color: 'var(--apple-text-tertiary)',
+  margin: 0,
+  textAlign: 'center',
+  letterSpacing: 'var(--apple-track-mid)',
 }
 
 const eyebrowStyle: React.CSSProperties = {
