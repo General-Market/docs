@@ -85,31 +85,47 @@ Returns:
 `lastError` is sticky — it's the most recent failure, not the current one. If
 `lastTickAt` stops advancing, the loop is stuck.
 
-## systemd (VPS 1)
+## Deploy
 
-```ini
-# /etc/systemd/system/vision-keeper.service
-[Unit]
-Description=Vision refund keeper
-After=network-online.target
-Wants=network-online.target
+The keeper runs on VPS 1 (`index-maker/prod/be`). One script, two steps.
 
-[Service]
-Type=simple
-User=max
-WorkingDirectory=/home/max/index/vision-keeper
-EnvironmentFile=/home/max/index/vision-keeper/.env
-ExecStart=/usr/bin/node /home/max/index/vision-keeper/dist/index.js
-Restart=on-failure
-RestartSec=10
-StandardOutput=journal
-StandardError=journal
+**Step 1.** Create the env file on the VPS. Don't commit it. Don't paste it into chat.
 
-[Install]
-WantedBy=multi-user.target
+```bash
+ssh -p 3189 index-maker/prod/be 'cat > /home/max/index/vision-keeper/.env' <<'EOF'
+KEEPER_PRIVATE_KEY=0x...
+L3_RPC_URL=https://rpc.generalmarket.io/
+EOF
 ```
 
-Then `sudo systemctl enable --now vision-keeper`. Logs via `journalctl -u vision-keeper -f`.
+**Step 2.** Run the installer from your laptop.
+
+```bash
+./vision-keeper/deploy/install.sh
+```
+
+It pulls mono, installs dependencies, builds, drops the systemd unit at
+`/etc/systemd/system/vision-keeper.service`, enables, restarts, and tails 30
+lines of journal output. If `.env` is missing it stops before enabling the
+service and prints the keys it expects. The script is idempotent — run it
+again after every change.
+
+### Operations
+
+```bash
+# live logs
+ssh -p 3189 index-maker/prod/be 'journalctl -u vision-keeper -f'
+
+# restart
+ssh -p 3189 index-maker/prod/be 'systemctl restart vision-keeper'
+
+# health (from the VPS itself, or via tunnel)
+curl http://127.0.0.1:9201/health
+```
+
+The unit file lives at `deploy/vision-keeper.service`. It runs as root, with
+`Restart=always` and `LimitNOFILE=65536`. No daemon should need more file
+descriptors than that, but the L3 RPC sometimes disagrees.
 
 ## What it won't do
 

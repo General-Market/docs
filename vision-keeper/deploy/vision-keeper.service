@@ -1,0 +1,19 @@
+[Unit]
+Description=Vision refund keeper
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/home/max/index/vision-keeper
+EnvironmentFile=/home/max/index/vision-keeper/.env
+ExecStart=/usr/bin/node /home/max/index/vision-keeper/dist/index.js
+Restart=always
+RestartSec=10
+LimitNOFILE=65536
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
