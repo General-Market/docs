@@ -28,6 +28,7 @@ contract VisionVaultTest is TestHelper {
     bytes32 constant CONFIG_HASH = keccak256("vault_test_config");
     uint256 constant TICK_DURATION = 1 hours;
     uint256 constant LOCK_OFFSET = 60;
+    uint256 constant SETTLEMENT_GRACE = 2 hours;
     uint256 constant DEPOSIT = 100 ether; // 100 USDC (18 decimals)
     uint256 constant FEE_RATE = 2000; // 20% performance fee
 
@@ -83,11 +84,11 @@ contract VisionVaultTest is TestHelper {
     function _createBatch() internal returns (uint256 batchId) {
         bytes32 message = keccak256(abi.encode(
             block.chainid, address(vision), "CREATE_BATCH",
-            SOURCE_ID, CONFIG_HASH, TICK_DURATION, LOCK_OFFSET
+            SOURCE_ID, CONFIG_HASH, TICK_DURATION, LOCK_OFFSET, SETTLEMENT_GRACE
         ));
         bytes memory sig = signWithTestOracles(message);
         batchId = vision.createBatch(
-            SOURCE_ID, CONFIG_HASH, TICK_DURATION, LOCK_OFFSET,
+            SOURCE_ID, CONFIG_HASH, TICK_DURATION, LOCK_OFFSET, SETTLEMENT_GRACE,
             sig, REF_NONCE, SIGNERS_BITMASK
         );
     }
@@ -602,5 +603,75 @@ contract VisionVaultTest is TestHelper {
         assertEq(vault.activeBatchDeposits(batchId2), 100 ether);
         assertEq(vault.totalActiveCapital(), 300 ether);
         assertEq(vault.idleUSDC(), 200 ether);
+    }
+
+    // ── Test 18: refundStuckBatch reconciles NAV ─────────────────────
+
+    /// @notice The vault NAV bug fix. After a batch goes stuck and the grace
+    ///         elapses, refundStuckBatch must atomically pull USDC back AND
+    ///         clear activeBatchDeposits + totalActiveCapital. Without that
+    ///         atomic update, NAV silently double-counts the recovered USDC
+    ///         and over-pays the next redeemer.
+    /// @dev    Deposits are sized so joinAmount stays inside the 5% per-batch
+    ///         cap (MAX_BATCH_BPS = 500). 200 of 10000 = 2%, well under.
+    function test_refundStuckBatch_recoversCapital() public {
+        _requestAndClaimDeposit(depositor1, 10000 ether);
+
+        uint256 batchId = _createBatch();
+        bytes32 bitmap = keccak256("bitmap");
+
+        vm.prank(manager);
+        vault.joinBatch(batchId, CONFIG_HASH, 200 ether, bitmap);
+
+        assertEq(vault.activeBatchDeposits(batchId), 200 ether);
+        assertEq(vault.totalActiveCapital(), 200 ether);
+        assertEq(vault.idleUSDC(), 9800 ether);
+        uint256 totalAssetsBefore = vault.totalAssets();
+
+        // Oracle goes silent. Grace expires.
+        vm.warp(vision.batchExpirationTime(batchId) + 1);
+
+        // Anyone can fire the rescue — try a random caller, not the manager.
+        address rescuer = makeAddr("rescuer");
+        vm.prank(rescuer);
+        vault.refundStuckBatch(batchId);
+
+        // Active tracking cleared, idle restored, NAV unchanged.
+        assertEq(vault.activeBatchDeposits(batchId), 0, "active deposit cleared");
+        assertEq(vault.totalActiveCapital(), 0, "active capital cleared");
+        assertEq(vault.idleUSDC(), 10000 ether, "USDC fully returned to idle");
+        assertEq(vault.totalAssets(), totalAssetsBefore, "totalAssets preserved: no double-count, no loss");
+    }
+
+    /// @notice Calling refundStuckBatch twice — second call must revert
+    ///         because activeBatchDeposits[batchId] is already zero.
+    function test_refundStuckBatch_rejectsDouble() public {
+        _requestAndClaimDeposit(depositor1, 10000 ether);
+
+        uint256 batchId = _createBatch();
+        vm.prank(manager);
+        vault.joinBatch(batchId, CONFIG_HASH, 100 ether, keccak256("bm"));
+
+        vm.warp(vision.batchExpirationTime(batchId) + 1);
+
+        vault.refundStuckBatch(batchId);
+
+        vm.expectRevert(IVisionVault.BatchAlreadyReconciled.selector);
+        vault.refundStuckBatch(batchId);
+    }
+
+    /// @notice refundStuckBatch must revert before the grace window has
+    ///         elapsed — the underlying claimRefund will reject with
+    ///         NotYetRefundable.
+    function test_refundStuckBatch_rejectsBeforeExpiration() public {
+        _requestAndClaimDeposit(depositor1, 10000 ether);
+
+        uint256 batchId = _createBatch();
+        vm.prank(manager);
+        vault.joinBatch(batchId, CONFIG_HASH, 100 ether, keccak256("bm"));
+
+        // Don't warp — still in the grace window.
+        vm.expectRevert(IVision.NotYetRefundable.selector);
+        vault.refundStuckBatch(batchId);
     }
 }

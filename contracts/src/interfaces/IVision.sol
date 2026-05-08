@@ -12,12 +12,17 @@ interface IVision {
 
     /// @notice On-chain batch — all market detail lives off-chain, only the config
     ///         hash is stored. One config per batch lifetime (no promotion).
+    /// @dev `settlementGrace` is the window after the tick ends during which the
+    ///      oracle may still call `settleBatch`. Past it, settlement is permanently
+    ///      illegal and players can call `claimRefund` to retrieve their deposit.
+    ///      The protocol gives up the right to be late.
     struct Batch {
         address creator;                 // first user who created the batch
         bytes32 sourceId;                // keccak256(source_id_string)
         bytes32 configHash;              // config hash (keccak256 of ABI-encoded config)
         uint256 tickDuration;            // seconds per tick (used for lock window)
         uint256 lockOffset;              // lock window (seconds before tick end)
+        uint256 settlementGrace;         // seconds after tick end before refund opens
         uint256 createdAtTick;           // block.timestamp / tickDuration at creation
         bool paused;
         bool settled;
@@ -50,6 +55,7 @@ interface IVision {
     error InvalidTickDuration();
     error InvalidLockOffset();
     error LockOffsetTooLarge();
+    error InvalidSettlementGrace();
     error NonZeroSum();
     error BotAlreadyRegistered();
     error BotNotRegistered();
@@ -57,6 +63,8 @@ interface IVision {
     error InvalidBLSSignature();
     error InvalidArrayLength();
     error BatchAlreadySettled();
+    error SettlementWindowClosed();
+    error NotYetRefundable();
 
     // ============ EVENTS ============
 
@@ -66,7 +74,8 @@ interface IVision {
         address indexed creator,
         bytes32 configHash,
         uint256 tickDuration,
-        uint256 lockOffset
+        uint256 lockOffset,
+        uint256 settlementGrace
     );
 
     event BatchPausedEvent(uint256 indexed batchId);
@@ -94,6 +103,11 @@ interface IVision {
     event PlayerSettled(uint256 indexed batchId, address indexed player, uint256 payout, uint256 fee);
     event BatchSettled(uint256 indexed batchId, uint256 playerCount);
 
+    /// @notice Emitted when a player retrieves their deposit after the oracle
+    ///         failed to settle within the grace window. No fee taken — the
+    ///         protocol earned nothing if it didn't deliver.
+    event PlayerRefunded(uint256 indexed batchId, address indexed player, uint256 amount);
+
     event BotRegistered(address indexed bot, string endpoint);
     event BotDeregistered(address indexed bot);
     event FeeCollectorUpdated(address indexed oldCollector, address indexed newCollector);
@@ -102,11 +116,15 @@ interface IVision {
     // ============ BATCH MANAGEMENT ============
 
     /// @notice Create a new batch for a sourceId.
+    /// @param settlementGrace seconds after the tick ends during which the oracle
+    ///        may still settle. After it, refund opens. Must be in
+    ///        [MIN_SETTLEMENT_GRACE, MAX_SETTLEMENT_GRACE].
     function createBatch(
         bytes32 sourceId,
         bytes32 configHash,
         uint256 tickDuration,
         uint256 lockOffset,
+        uint256 settlementGrace,
         bytes calldata blsSignature,
         uint256 referenceNonce,
         uint256 signersBitmask
@@ -181,6 +199,9 @@ interface IVision {
 
     /// @notice Settle an entire batch in one transaction (round-based flow).
     ///         USDC is transferred directly to player wallets.
+    /// @dev Reverts with `SettlementWindowClosed` if called past the
+    ///      batch's `endsAt + settlementGrace`. The oracle has lost the
+    ///      right to decide; the refund window is now open.
     function settleBatch(
         uint256 batchId,
         address[] calldata players,
@@ -189,4 +210,18 @@ interface IVision {
         uint256 referenceNonce,
         uint256 signersBitmask
     ) external;
+
+    /// @notice Timestamp after which the batch's settlement window closes and
+    ///         deposits become refundable. Equals `(createdAtTick + 1) *
+    ///         tickDuration + settlementGrace`.
+    function batchExpirationTime(uint256 batchId) external view returns (uint256);
+
+    /// @notice Retrieve your own deposit if the oracle never settled the batch.
+    ///         Callable only after `block.timestamp >= batchExpirationTime`.
+    function claimRefund(uint256 batchId) external;
+
+    /// @notice Permissionless variant — anyone can fund the gas to refund a
+    ///         specific player. The USDC always goes to `player`. Lets a vault
+    ///         keeper rescue stuck deposits without the vault contract paying gas.
+    function claimRefundFor(uint256 batchId, address player) external;
 }

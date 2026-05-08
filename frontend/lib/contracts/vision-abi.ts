@@ -12,6 +12,7 @@ export const VISION_ABI = [
       { name: 'configHash', type: 'bytes32' },
       { name: 'tickDuration', type: 'uint256' },
       { name: 'lockOffset', type: 'uint256' },
+      { name: 'settlementGrace', type: 'uint256' },
       { name: 'blsSignature', type: 'bytes' },
       { name: 'referenceNonce', type: 'uint256' },
       { name: 'signersBitmask', type: 'uint256' },
@@ -34,6 +35,7 @@ export const VISION_ABI = [
           { name: 'configHash', type: 'bytes32' },
           { name: 'tickDuration', type: 'uint256' },
           { name: 'lockOffset', type: 'uint256' },
+          { name: 'settlementGrace', type: 'uint256' },
           { name: 'createdAtTick', type: 'uint256' },
           { name: 'paused', type: 'bool' },
           { name: 'settled', type: 'bool' },
@@ -41,6 +43,30 @@ export const VISION_ABI = [
       },
     ],
     stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [{ name: 'batchId', type: 'uint256' }],
+    name: 'batchExpirationTime',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [{ name: 'batchId', type: 'uint256' }],
+    name: 'claimRefund',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { name: 'batchId', type: 'uint256' },
+      { name: 'player', type: 'address' },
+    ],
+    name: 'claimRefundFor',
+    outputs: [],
+    stateMutability: 'nonpayable',
     type: 'function',
   },
   {
@@ -290,6 +316,9 @@ export const VISION_ABI = [
   { inputs: [], name: 'InvalidBLSSignature', type: 'error' },
   { inputs: [], name: 'InvalidArrayLength', type: 'error' },
   { inputs: [], name: 'BatchAlreadySettled', type: 'error' },
+  { inputs: [], name: 'SettlementWindowClosed', type: 'error' },
+  { inputs: [], name: 'NotYetRefundable', type: 'error' },
+  { inputs: [], name: 'InvalidSettlementGrace', type: 'error' },
 
   // ============ EVENTS ============
   {
@@ -301,8 +330,19 @@ export const VISION_ABI = [
       { indexed: false, name: 'configHash', type: 'bytes32' },
       { indexed: false, name: 'tickDuration', type: 'uint256' },
       { indexed: false, name: 'lockOffset', type: 'uint256' },
+      { indexed: false, name: 'settlementGrace', type: 'uint256' },
     ],
     name: 'BatchCreated',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: 'batchId', type: 'uint256' },
+      { indexed: true, name: 'player', type: 'address' },
+      { indexed: false, name: 'amount', type: 'uint256' },
+    ],
+    name: 'PlayerRefunded',
     type: 'event',
   },
   {

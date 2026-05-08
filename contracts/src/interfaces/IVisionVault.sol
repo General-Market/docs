@@ -29,6 +29,13 @@ interface IVisionVault is IERC4626, IERC7540Deposit, IERC7540Redeem {
     // ── Reconciliation (permissionless) ─────────────────────────────
     function reconcile(uint256 batchId, uint256 settlementPayout) external;
 
+    /// @notice Pull a stuck deposit back from Vision after the settlement
+    ///         grace window has elapsed without `BatchSettled`. Permissionless —
+    ///         any caller funds the gas, the vault's accounting is reconciled
+    ///         atomically with the on-chain refund. PnL = 0 because the
+    ///         protocol returned exactly what was deposited.
+    function refundStuckBatch(uint256 batchId) external;
+
     // ── View ────────────────────────────────────────────────────────
     function manager() external view returns (address);
     function performanceFeeRate() external view returns (uint256);

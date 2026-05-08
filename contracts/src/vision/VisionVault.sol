@@ -396,6 +396,34 @@ contract VisionVault is IVisionVault {
         emit Reconciled(batchId, pnl, feeSharesMinted, fulfilled);
     }
 
+    /// @notice Permissionless rescue: pull a stuck deposit back from Vision
+    ///         after `settlementGrace` has elapsed without settlement, and
+    ///         reconcile the vault's accounting in the same tx.
+    ///
+    ///         This is the only path that can decrement `activeBatchDeposits`
+    ///         and `totalActiveCapital` for an unsettled batch. Without it,
+    ///         the on-chain refund would land in the vault's USDC balance
+    ///         while NAV still claimed the deposit was active — silent
+    ///         double-counting that would over-pay early redeemers.
+    function refundStuckBatch(uint256 batchId) external {
+        uint256 deposited = activeBatchDeposits[batchId];
+        if (deposited == 0) revert BatchAlreadyReconciled();
+
+        // Pull USDC back from Vision. Reverts if the grace window has not
+        // elapsed, or if the batch was actually settled — in which case the
+        // caller should be calling reconcile() with the settlement payout.
+        IVision(vision).claimRefundFor(batchId, address(this));
+
+        // Refund returns exactly what was deposited. PnL = 0.
+        activeBatchDeposits[batchId] = 0;
+        totalActiveCapital -= deposited;
+
+        // Honour the redeem queue with the recovered idle USDC.
+        uint256 fulfilled = _sweepRedeemQueue();
+
+        emit Reconciled(batchId, int256(0), 0, fulfilled);
+    }
+
     // ── Internal ─────────────────────────────────────────────────────
 
     function _sweepRedeemQueue() internal returns (uint256 fulfilled) {

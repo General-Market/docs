@@ -32,6 +32,7 @@ contract E2EVisionVault is TestHelper {
     bytes32 constant CONFIG_HASH = keccak256("e2e_vault_config");
     uint256 constant TICK_DURATION = 1 hours;
     uint256 constant LOCK_OFFSET = 60;
+    uint256 constant SETTLEMENT_GRACE = 2 hours;
     uint256 constant FEE_RATE = 2000; // 20% performance fee
 
     function setUp() public {
@@ -68,11 +69,11 @@ contract E2EVisionVault is TestHelper {
     function _createBatch() internal returns (uint256 batchId) {
         bytes32 message = keccak256(abi.encode(
             block.chainid, address(vision), "CREATE_BATCH",
-            SOURCE_ID, CONFIG_HASH, TICK_DURATION, LOCK_OFFSET
+            SOURCE_ID, CONFIG_HASH, TICK_DURATION, LOCK_OFFSET, SETTLEMENT_GRACE
         ));
         bytes memory sig = signWithTestOracles(message);
         batchId = vision.createBatch(
-            SOURCE_ID, CONFIG_HASH, TICK_DURATION, LOCK_OFFSET,
+            SOURCE_ID, CONFIG_HASH, TICK_DURATION, LOCK_OFFSET, SETTLEMENT_GRACE,
             sig, REF_NONCE, SIGNERS_BITMASK
         );
     }

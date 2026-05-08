@@ -28,6 +28,7 @@ contract VisionTest is TestHelper {
     bytes32 constant CONFIG_HASH = keccak256("test_config");
     uint256 constant TICK_DURATION = 1 hours;
     uint256 constant LOCK_OFFSET = 60; // 60 seconds
+    uint256 constant SETTLEMENT_GRACE = 2 hours; // window for the oracle to settle past tick end
     uint256 constant DEPOSIT = 10 ether; // 10 USDC (18 decimals)
 
     function setUp() public {
@@ -67,11 +68,11 @@ contract VisionTest is TestHelper {
     function _createBatch() internal returns (uint256 batchId) {
         bytes32 message = keccak256(abi.encode(
             block.chainid, address(vision), "CREATE_BATCH",
-            SOURCE_ID, CONFIG_HASH, TICK_DURATION, LOCK_OFFSET
+            SOURCE_ID, CONFIG_HASH, TICK_DURATION, LOCK_OFFSET, SETTLEMENT_GRACE
         ));
         bytes memory sig = signWithTestOracles(message);
         batchId = vision.createBatch(
-            SOURCE_ID, CONFIG_HASH, TICK_DURATION, LOCK_OFFSET,
+            SOURCE_ID, CONFIG_HASH, TICK_DURATION, LOCK_OFFSET, SETTLEMENT_GRACE,
             sig, REF_NONCE, SIGNERS_BITMASK
         );
     }
@@ -523,5 +524,173 @@ contract VisionTest is TestHelper {
             }
         }
         assertTrue(found, "PlayerJoined event must be emitted");
+    }
+
+    // ============ REFUND TESTS ============
+
+    /// @notice After settlementGrace expires without settlement, the player
+    ///         can pull back exactly what they deposited. No fee.
+    function test_claimRefund_returnsDeposit() public {
+        uint256 batchId = _createBatch();
+        _joinBatch(batchId, player1, DEPOSIT);
+
+        uint256 balBefore = usdc.balanceOf(player1);
+
+        // Warp past expiration: end of tick + grace + 1
+        uint256 expiration = vision.batchExpirationTime(batchId);
+        vm.warp(expiration + 1);
+
+        vm.prank(player1);
+        vision.claimRefund(batchId);
+
+        assertEq(
+            usdc.balanceOf(player1) - balBefore,
+            DEPOSIT,
+            "Player must receive full deposit, no fee"
+        );
+
+        // Position cleared — repeat refund must revert
+        IVision.PlayerPosition memory pos = vision.getPosition(batchId, player1);
+        assertEq(pos.totalDeposited, 0, "Position deleted after refund");
+    }
+
+    /// @notice settleBatch must revert past the cliff. The oracle has lost
+    ///         the right to decide; only refunds are legal now.
+    function test_settleBatch_rejectedPastExpiration() public {
+        uint256 batchId = _createBatch();
+        _joinBatch(batchId, player1, DEPOSIT);
+
+        uint256 expiration = vision.batchExpirationTime(batchId);
+        vm.warp(expiration + 1);
+
+        address[] memory players = new address[](1);
+        uint256[] memory payouts = new uint256[](1);
+        players[0] = player1;
+        payouts[0] = DEPOSIT;
+
+        bytes32 payoutsHash = keccak256(abi.encode(players, payouts));
+        bytes32 message = keccak256(abi.encode(
+            block.chainid, address(vision), "SETTLE_BATCH", batchId, payoutsHash
+        ));
+        bytes memory sig = signWithTestOracles(message);
+
+        vm.expectRevert(IVision.SettlementWindowClosed.selector);
+        vision.settleBatch(batchId, players, payouts, sig, REF_NONCE, SIGNERS_BITMASK);
+    }
+
+    /// @notice Refund attempted before grace expires must revert.
+    function test_claimRefund_rejectedBeforeExpiration() public {
+        uint256 batchId = _createBatch();
+        _joinBatch(batchId, player1, DEPOSIT);
+
+        // Still inside the grace window
+        vm.prank(player1);
+        vm.expectRevert(IVision.NotYetRefundable.selector);
+        vision.claimRefund(batchId);
+    }
+
+    /// @notice Double-refund must revert. The position-deletion sentinel is
+    ///         the per-player guard.
+    function test_claimRefund_rejectsDouble() public {
+        uint256 batchId = _createBatch();
+        _joinBatch(batchId, player1, DEPOSIT);
+
+        vm.warp(vision.batchExpirationTime(batchId) + 1);
+
+        vm.prank(player1);
+        vision.claimRefund(batchId);
+
+        vm.prank(player1);
+        vm.expectRevert(IVision.NotJoined.selector);
+        vision.claimRefund(batchId);
+    }
+
+    /// @notice Refund on an already-settled batch must revert. Settlement
+    ///         already paid the player; there's nothing to refund.
+    function test_claimRefund_rejectsSettled() public {
+        uint256 batchId = _createBatch();
+        _joinBatch(batchId, player1, DEPOSIT);
+
+        // Settle inside the window
+        address[] memory players = new address[](1);
+        uint256[] memory payouts = new uint256[](1);
+        players[0] = player1;
+        payouts[0] = DEPOSIT;
+        _settleBatch(batchId, players, payouts);
+
+        // Past the cliff — but the batch is already settled
+        vm.warp(vision.batchExpirationTime(batchId) + 1);
+
+        vm.prank(player1);
+        vm.expectRevert(IVision.BatchAlreadySettled.selector);
+        vision.claimRefund(batchId);
+    }
+
+    /// @notice claimRefundFor — anyone can pay gas to rescue any player.
+    ///         USDC always lands in the player's wallet, never the caller's.
+    function test_claimRefundFor_paysOriginalPlayer() public {
+        uint256 batchId = _createBatch();
+        _joinBatch(batchId, player1, DEPOSIT);
+
+        vm.warp(vision.batchExpirationTime(batchId) + 1);
+
+        uint256 player1Before = usdc.balanceOf(player1);
+        uint256 player2Before = usdc.balanceOf(player2);
+
+        vm.prank(player2); // someone else fires the rescue
+        vision.claimRefundFor(batchId, player1);
+
+        assertEq(
+            usdc.balanceOf(player1) - player1Before,
+            DEPOSIT,
+            "Player1 receives the deposit, even though player2 called"
+        );
+        assertEq(
+            usdc.balanceOf(player2),
+            player2Before,
+            "Caller wallet must not be touched"
+        );
+    }
+
+    /// @notice settlementGrace bounds: zero, below MIN, and above MAX must
+    ///         all revert. The oracle gets at least one minute, never more
+    ///         than 24 hours.
+    function test_createBatch_rejectsInvalidSettlementGrace() public {
+        // Zero grace
+        bytes32 sourceA = keccak256("grace_test_zero");
+        bytes32 cfgA = keccak256("cfg_zero");
+        bytes32 messageA = keccak256(abi.encode(
+            block.chainid, address(vision), "CREATE_BATCH",
+            sourceA, cfgA, TICK_DURATION, LOCK_OFFSET, uint256(0)
+        ));
+        bytes memory sigA = signWithTestOracles(messageA);
+        vm.expectRevert(IVision.InvalidSettlementGrace.selector);
+        vision.createBatch(
+            sourceA, cfgA, TICK_DURATION, LOCK_OFFSET, 0,
+            sigA, REF_NONCE, SIGNERS_BITMASK
+        );
+
+        // Above MAX_SETTLEMENT_GRACE
+        bytes32 sourceB = keccak256("grace_test_huge");
+        bytes32 cfgB = keccak256("cfg_huge");
+        uint256 tooBig = vision.MAX_SETTLEMENT_GRACE() + 1;
+        bytes32 messageB = keccak256(abi.encode(
+            block.chainid, address(vision), "CREATE_BATCH",
+            sourceB, cfgB, TICK_DURATION, LOCK_OFFSET, tooBig
+        ));
+        bytes memory sigB = signWithTestOracles(messageB);
+        vm.expectRevert(IVision.InvalidSettlementGrace.selector);
+        vision.createBatch(
+            sourceB, cfgB, TICK_DURATION, LOCK_OFFSET, tooBig,
+            sigB, REF_NONCE, SIGNERS_BITMASK
+        );
+    }
+
+    /// @notice The expiration view matches the formula: tick end + grace.
+    function test_batchExpirationTime_matchesFormula() public {
+        uint256 batchId = _createBatch();
+        IVision.Batch memory b = vision.getBatch(batchId);
+        uint256 expected = (b.createdAtTick + 1) * b.tickDuration + b.settlementGrace;
+        assertEq(vision.batchExpirationTime(batchId), expected, "expiration formula");
     }
 }

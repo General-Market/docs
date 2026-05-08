@@ -22,6 +22,8 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
     uint256 public constant BPS_DENOMINATOR = 10000;
     uint256 public constant MIN_TICK_DURATION = 60;       // 1 minute minimum
     uint256 public constant MAX_TICK_DURATION = 604800;   // 1 week maximum
+    uint256 public constant MIN_SETTLEMENT_GRACE = 60;    // 1 minute — the oracle gets at least one block of slack
+    uint256 public constant MAX_SETTLEMENT_GRACE = 86400; // 24 hours — past this, the protocol is hostage-taking
 
     // ============ IMMUTABLES ============
 
@@ -82,6 +84,13 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         if (_batches[batchId].tickDuration == 0) revert BatchNotFound();
     }
 
+    /// @notice Expiration timestamp — after this, settlement is illegal and
+    ///         refund is open. Anchored to the tick the batch belongs to, plus
+    ///         the per-batch grace window.
+    function _expirationTime(Batch storage b) internal view returns (uint256) {
+        return (b.createdAtTick + 1) * b.tickDuration + b.settlementGrace;
+    }
+
     // ============ BATCH MANAGEMENT ============
 
     /// @inheritdoc IVision
@@ -90,12 +99,13 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         bytes32 configHash,
         uint256 tickDuration,
         uint256 lockOffset,
+        uint256 settlementGrace,
         bytes calldata blsSignature,
         uint256 referenceNonce,
         uint256 signersBitmask
     ) external returns (uint256 batchId) {
         return _createBatch(
-            sourceId, configHash, tickDuration, lockOffset,
+            sourceId, configHash, tickDuration, lockOffset, settlementGrace,
             blsSignature, referenceNonce, signersBitmask
         );
     }
@@ -106,12 +116,16 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         bytes32 configHash,
         uint256 tickDuration,
         uint256 lockOffset,
+        uint256 settlementGrace,
         bytes calldata blsSignature,
         uint256 referenceNonce,
         uint256 signersBitmask
     ) internal returns (uint256 batchId) {
         if (tickDuration < MIN_TICK_DURATION || tickDuration > MAX_TICK_DURATION) revert InvalidTickDuration();
         if (lockOffset >= tickDuration) revert InvalidLockOffset();
+        if (settlementGrace < MIN_SETTLEMENT_GRACE || settlementGrace > MAX_SETTLEMENT_GRACE) {
+            revert InvalidSettlementGrace();
+        }
 
         bytes32 message = keccak256(abi.encode(
             block.chainid,
@@ -120,7 +134,8 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
             sourceId,
             configHash,
             tickDuration,
-            lockOffset
+            lockOffset,
+            settlementGrace
         ));
         _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
@@ -133,12 +148,13 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         b.configHash = configHash;
         b.tickDuration = tickDuration;
         b.lockOffset = lockOffset;
+        b.settlementGrace = settlementGrace;
         b.createdAtTick = block.timestamp / tickDuration;
         b.paused = false;
 
         latestBatchForSource[sourceId] = batchId;
 
-        emit BatchCreated(batchId, sourceId, msg.sender, configHash, tickDuration, lockOffset);
+        emit BatchCreated(batchId, sourceId, msg.sender, configHash, tickDuration, lockOffset, settlementGrace);
     }
 
     /// @inheritdoc IVision
@@ -353,6 +369,9 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         Batch storage b = _batches[batchId];
         if (b.tickDuration == 0) revert BatchNotFound();
         if (b.settled) revert BatchAlreadySettled();
+        // Hard cliff: once the grace window has passed, settlement is illegal.
+        // The refund window is now open and the oracle has lost the right to decide.
+        if (block.timestamp >= _expirationTime(b)) revert SettlementWindowClosed();
         if (players.length != payouts.length) revert InvalidArrayLength();
         if (players.length == 0) revert InvalidArrayLength();
 
@@ -404,5 +423,44 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
 
         b.settled = true;
         emit BatchSettled(batchId, players.length);
+    }
+
+    // ============ REFUND PATH ============
+
+    /// @inheritdoc IVision
+    function batchExpirationTime(uint256 batchId) external view returns (uint256) {
+        _requireBatchExists(batchId);
+        return _expirationTime(_batches[batchId]);
+    }
+
+    /// @inheritdoc IVision
+    function claimRefund(uint256 batchId) external nonReentrant {
+        _claimRefund(batchId, msg.sender);
+    }
+
+    /// @inheritdoc IVision
+    function claimRefundFor(uint256 batchId, address player) external nonReentrant {
+        _claimRefund(batchId, player);
+    }
+
+    /// @notice Per-player refund. Funds always go to `player`, regardless of caller.
+    ///         No protocol fee — the protocol earned nothing if it didn't deliver.
+    function _claimRefund(uint256 batchId, address player) internal {
+        Batch storage b = _batches[batchId];
+        if (b.tickDuration == 0) revert BatchNotFound();
+        if (b.settled) revert BatchAlreadySettled();
+        if (block.timestamp < _expirationTime(b)) revert NotYetRefundable();
+
+        PlayerPosition storage pos = _positions[batchId][player];
+        uint256 amount = pos.totalDeposited;
+        if (amount == 0) revert NotJoined();
+
+        // CEI: clear position before transfer. The deletion is the per-player
+        // sentinel that prevents double-refund and reentrancy at once.
+        delete _positions[batchId][player];
+
+        USDC.safeTransfer(player, amount);
+
+        emit PlayerRefunded(batchId, player, amount);
     }
 }

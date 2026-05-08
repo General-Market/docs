@@ -15,6 +15,7 @@ contract VisionBulkCreate {
         bytes32[] calldata configHashes,
         uint256[] calldata tickDurations,
         uint256[] calldata lockOffsets,
+        uint256[] calldata settlementGraces,
         bytes[] calldata blsSignatures,
         uint256 referenceNonce,
         uint256 signersBitmask
@@ -26,6 +27,7 @@ contract VisionBulkCreate {
                 configHashes[i],
                 tickDurations[i],
                 lockOffsets[i],
+                settlementGraces[i],
                 blsSignatures[i],
                 referenceNonce,
                 signersBitmask
@@ -92,12 +94,18 @@ contract DeployAllVisionBatches is DeployBLSHelper {
         // Version suffix to create fresh batches (bump when redeploying)
         string memory version = vm.envOr("BATCH_VERSION", string("v2"));
 
-        // Pre-compute sourceIds, configHashes, tickDurations, lockOffsets, and BLS signatures
+        // Pre-compute sourceIds, configHashes, tickDurations, lockOffsets,
+        // settlementGraces and BLS signatures
         bytes32[] memory sourceIds = new bytes32[](count);
         bytes32[] memory configHashes = new bytes32[](count);
         uint256[] memory tickDurations = new uint256[](count);
         uint256[] memory lockOffsets = new uint256[](count);
+        uint256[] memory settlementGraces = new uint256[](count);
         bytes[] memory blsSigs = new bytes[](count);
+
+        // Cap pulled from Vision.MAX_SETTLEMENT_GRACE — past 24h the protocol
+        // is hostage-taking, not waiting.
+        uint256 maxGrace = 86400;
 
         console.log("Signing", count, "batch creation messages...");
 
@@ -111,6 +119,18 @@ contract DeployAllVisionBatches is DeployBLSHelper {
             tickDurations[i] = vm.parseJsonUint(configJson, string.concat(basePath, ".tickDurationSecs"));
             lockOffsets[i] = vm.parseJsonUint(configJson, string.concat(basePath, ".lockOffsetSecs"));
 
+            // Settlement grace: read explicit value if the data-node provides
+            // one, otherwise default to 2 × tickDuration capped at maxGrace.
+            // The default gives the oracle the same time again to settle as
+            // the batch had to bet — generous enough that healthy oracles
+            // never see the cliff.
+            try vm.parseJsonUint(configJson, string.concat(basePath, ".settlementGraceSecs")) returns (uint256 g) {
+                settlementGraces[i] = g;
+            } catch {
+                uint256 dflt = tickDurations[i] * 2;
+                settlementGraces[i] = dflt > maxGrace ? maxGrace : dflt;
+            }
+
             // Compute BLS message hash (must match Vision._createBatch)
             bytes32 messageHash = keccak256(abi.encode(
                 block.chainid,
@@ -119,7 +139,8 @@ contract DeployAllVisionBatches is DeployBLSHelper {
                 sourceIds[i],
                 configHashes[i],
                 tickDurations[i],
-                lockOffsets[i]
+                lockOffsets[i],
+                settlementGraces[i]
             ));
 
             // Sign via FFI with test oracles (seeds 0,1,2)
@@ -142,16 +163,18 @@ contract DeployAllVisionBatches is DeployBLSHelper {
             bytes32[] memory hashes1 = new bytes32[](half);
             uint256[] memory tds1 = new uint256[](half);
             uint256[] memory los1 = new uint256[](half);
+            uint256[] memory sgs1 = new uint256[](half);
             bytes[] memory sigs1 = new bytes[](half);
             for (uint i = 0; i < half; i++) {
                 ids1[i] = sourceIds[i];
                 hashes1[i] = configHashes[i];
                 tds1[i] = tickDurations[i];
                 los1[i] = lockOffsets[i];
+                sgs1[i] = settlementGraces[i];
                 sigs1[i] = blsSigs[i];
             }
             bulk.createAll(
-                visionAddr, ids1, hashes1, tds1, los1, sigs1, refNonce, SIGNERS_BITMASK
+                visionAddr, ids1, hashes1, tds1, los1, sgs1, sigs1, refNonce, SIGNERS_BITMASK
             );
         }
 
@@ -163,16 +186,18 @@ contract DeployAllVisionBatches is DeployBLSHelper {
             bytes32[] memory hashes2 = new bytes32[](remaining);
             uint256[] memory tds2 = new uint256[](remaining);
             uint256[] memory los2 = new uint256[](remaining);
+            uint256[] memory sgs2 = new uint256[](remaining);
             bytes[] memory sigs2 = new bytes[](remaining);
             for (uint i = 0; i < remaining; i++) {
                 ids2[i] = sourceIds[half + i];
                 hashes2[i] = configHashes[half + i];
                 tds2[i] = tickDurations[half + i];
                 los2[i] = lockOffsets[half + i];
+                sgs2[i] = settlementGraces[half + i];
                 sigs2[i] = blsSigs[half + i];
             }
             bulk.createAll(
-                visionAddr, ids2, hashes2, tds2, los2, sigs2, refNonce, SIGNERS_BITMASK
+                visionAddr, ids2, hashes2, tds2, los2, sgs2, sigs2, refNonce, SIGNERS_BITMASK
             );
         }
 
@@ -196,7 +221,10 @@ contract DeployAllVisionBatches is DeployBLSHelper {
         }
 
         // Export batch mapping as JSON
-        _exportBatchMapping(sourceNames, batchIds, configHashes, tickDurations, lockOffsets, visionAddr);
+        _exportBatchMapping(
+            sourceNames, batchIds, configHashes,
+            tickDurations, lockOffsets, settlementGraces, visionAddr
+        );
     }
 
     function _exportBatchMapping(
@@ -205,6 +233,7 @@ contract DeployAllVisionBatches is DeployBLSHelper {
         bytes32[] memory configHashes,
         uint256[] memory tickDurations,
         uint256[] memory lockOffsets,
+        uint256[] memory settlementGraces,
         address visionAddr
     ) internal {
         // Build JSON manually (Forge doesn't have great JSON building)
@@ -224,6 +253,8 @@ contract DeployAllVisionBatches is DeployBLSHelper {
                 vm.toString(tickDurations[i]),
                 ', "lockOffset": ',
                 vm.toString(lockOffsets[i]),
+                ', "settlementGrace": ',
+                vm.toString(settlementGraces[i]),
                 ' }'
             );
             if (i < sourceNames.length - 1) {
