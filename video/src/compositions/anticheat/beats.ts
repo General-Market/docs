@@ -17,20 +17,21 @@
 export const MUSIC_START_FROM_AUDIO = 1931;
 
 // Beats that fall inside the music's playing window for the video.
-// 41 beats at BPM 69.8 (≈26 frames apart). Scene-relative ranges with
-// the current scene durations and transition lengths:
-//   Hook (0–254):       beats 0–9   (frames 17–248)
-//   Bars (236–365):     beats 9–13  (frames 248–351)
-//   Rigged (365–543):   beats 14–20 (frames 377–531)
-//   Stat (527–672):     beats 20–25 (frames 531–660)
-//   Solution (644–877): beats 25–33 (frames 660–866)
-//   Reassure (859–965): beats 34–36 (frames 866–943)
-//   Switch (947–1127):  beats 37–40 (frames 969–1046)
-//   EndCard (1103–end): no beats — the music is in its outro by then.
+// 42 beats at BPM 69.8 (≈26 frames apart), pulled directly from the
+// audio analysis and shifted by the new MUSIC_START_FROM_AUDIO. Scene
+// ranges with the current durations and transitions:
+//   Hook (0–254):       beats  0–9   (frames  24–230)
+//   Bars (236–365):     beats 10–14  (frames 256–359)
+//   Rigged (365–543):   beats 15–21  (frames 384–539)
+//   Stat (527–672):     beats 21–25  (frames 539–667)
+//   Solution (644–877): beats 26–33  (frames 667–873)
+//   Reassure (859–980): beats 34–37  (frames 873–976)
+//   Switch (962–1148):  beats 37–41  (frames 976–1079)
+//   EndCard (1124–end): no beats — the music is in its outro by then.
 export const VIDEO_BEATS: readonly number[] = [
-  17, 43, 69, 94, 120, 146, 172, 197, 223, 248, 274, 300, 326, 351, 377,
-  403, 429, 455, 480, 506, 531, 558, 583, 609, 634, 660, 686, 712, 737,
-  763, 789, 814, 840, 866, 891, 917, 943, 969, 994, 1020, 1046,
+  24, 50, 76, 102, 127, 153, 179, 205, 230, 256, 281, 307, 333, 359, 384,
+  410, 436, 462, 488, 513, 539, 564, 591, 616, 642, 667, 693, 719, 745,
+  770, 796, 822, 847, 873, 899, 924, 950, 976, 1002, 1027, 1053, 1079,
 ];
 
 export const beat = (i: number): number => {
