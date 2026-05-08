@@ -177,7 +177,7 @@ export const AntiCheatEndCard: React.FC = () => {
       </div>
       </AbsoluteFill>
 
-      {/* Apple footnote — bottom-anchored, no chrome */}
+      {/* Markdown footnote — code-fence inline style, sentence case, mono */}
       <div
         style={{
           position: "absolute",
@@ -186,16 +186,19 @@ export const AntiCheatEndCard: React.FC = () => {
           right: 0,
           textAlign: "center",
           fontFamily: monoFont,
-          fontSize: 54,
+          fontSize: 56,
           fontWeight: 500,
-          letterSpacing: "0.18em",
-          textTransform: "uppercase",
-          color: "rgba(255,255,255,0.65)",
+          letterSpacing: "-0.005em",
+          color: "rgba(255,255,255,0.92)",
           opacity: tertiaryOpacity,
           transform: `translateY(${tertiaryY * 0.5}px)`,
         }}
       >
-        ·&nbsp;&nbsp;Available only via trading bots&nbsp;&nbsp;·
+        <span style={{ color: "rgba(255,255,255,0.40)", marginRight: 14 }}>#</span>
+        Available only via{" "}
+        <span style={{ color: "rgba(255,255,255,0.55)" }}>`</span>
+        <span style={{ color: "#FFFFFF" }}>trading-bots</span>
+        <span style={{ color: "rgba(255,255,255,0.55)" }}>`</span>
       </div>
       </IdleZoom>
     </AbsoluteFill>

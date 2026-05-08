@@ -87,11 +87,116 @@ export const AntiCheatSwitch: React.FC = () => (
   >
     <IdleZoom durationInFrames={SCENE_FRAMES} from={1} to={1.022}>
       <DotGrid />
+      <ParticleField />
       <Stage />
       <DotGridVignette intensity={0.20} />
     </IdleZoom>
   </AbsoluteFill>
 );
+
+// ─── Particle field — drifting "+X%" tickers, GMBrand Scene03 pattern ─────
+// Adapted from PctParticleField but tinted accent blue and dimmed for the
+// AntiCheat light field. Fades in around the kicker beat so it amplifies
+// the "just by switching" punch instead of competing with the ledger.
+
+type PctParticle = {
+  id: number;
+  x: number;
+  y: number;
+  label: string;
+  fontSize: number;
+  baseOpacity: number;
+  noiseOffX: number;
+  noiseOffY: number;
+  driftAngle: number;
+  driftSpeed: number;
+};
+
+function seededRandom(seed: number) {
+  let s = seed % 2147483647;
+  if (s <= 0) s += 2147483646;
+  return () => {
+    s = (s * 16807) % 2147483647;
+    return (s - 1) / 2147483646;
+  };
+}
+
+function generatePctParticles(count: number, seed: number): PctParticle[] {
+  const rng = seededRandom(seed);
+  return Array.from({ length: count }, (_, i) => {
+    const r2 = rng();
+    const r3 = rng();
+    const r4 = rng();
+    const r5 = rng();
+    const r6 = rng();
+    const r7 = rng();
+    const value = (r2 * 25 + 0.1).toFixed(1);
+    let fontSize: number;
+    if (r3 < 0.7) fontSize = 14 + r4 * 4;
+    else if (r3 < 0.92) fontSize = 22 + r4 * 6;
+    else fontSize = 30 + r4 * 8;
+    return {
+      id: i,
+      x: r5 * W,
+      y: r6 * H,
+      label: `+${value}%`,
+      fontSize,
+      baseOpacity: 0.18 + r7 * 0.40,
+      noiseOffX: rng() * 1000,
+      noiseOffY: rng() * 1000,
+      driftAngle: rng() * Math.PI * 2,
+      driftSpeed: 0.3 + rng() * 1.5,
+    };
+  });
+}
+
+const ParticleField: React.FC = () => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const particles = useMemo(() => generatePctParticles(120, 1729), []);
+
+  // Fade up around the kicker, hold through the rest of the scene.
+  const fieldOp = interpolate(
+    frame,
+    [KICKER_AT - 24, KICKER_AT + 12, SCENE_FRAMES - 14, SCENE_FRAMES],
+    [0, 1, 1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  if (fieldOp < 0.005) return null;
+
+  return (
+    <AbsoluteFill style={{ pointerEvents: "none", opacity: fieldOp }}>
+      {particles.map((p) => {
+        const t = frame / fps;
+        const nx = noise2D("acpx" + p.id, t * 0.4 + p.noiseOffX, 0) * 36;
+        const ny = noise2D("acpy" + p.id, 0, t * 0.4 + p.noiseOffY) * 36;
+        const drift = t * p.driftSpeed * 22;
+        const px = p.x + Math.cos(p.driftAngle) * drift + nx;
+        const py = p.y + Math.sin(p.driftAngle) * drift * 0.5 - drift * 0.3 + ny;
+        const wrappedX = ((px % (W + 100)) + (W + 100)) % (W + 100) - 50;
+        const wrappedY = ((py % (H + 100)) + (H + 100)) % (H + 100) - 50;
+        return (
+          <span
+            key={p.id}
+            style={{
+              position: "absolute",
+              left: wrappedX,
+              top: wrappedY,
+              fontSize: p.fontSize,
+              fontFamily: monoFont,
+              fontWeight: 600,
+              color: colors.accent,
+              opacity: p.baseOpacity,
+              whiteSpace: "nowrap",
+            }}
+          >
+            {p.label}
+          </span>
+        );
+      })}
+    </AbsoluteFill>
+  );
+};
 
 // ─── Stage ────────────────────────────────────────────────────────────────────
 
@@ -586,6 +691,60 @@ const SettleOrb: React.FC<{ frame: number; fps: number }> = ({
   );
 };
 
+// ─── Kicker typing — GMBrand Scene02 "the next era" pattern ──────────────
+// Frame-driven typewriter: chars appear one by one at CHARS_PER_FRAME speed,
+// blinking cursor while typing, cursor fades after completion. The accent
+// half ("financial product") types in blue once the gray prefix lands.
+
+const KICKER_TEXT_PRE = "just by switching ";
+const KICKER_TEXT_HERO = "financial product";
+const KICKER_CHARS_PER_FRAME = 1.2;
+
+const KickerTyping: React.FC<{ startFrame: number }> = ({ startFrame }) => {
+  const frame = useCurrentFrame();
+  const elapsed = Math.max(0, frame - startFrame);
+  const totalChars = KICKER_TEXT_PRE.length + KICKER_TEXT_HERO.length;
+  const charsVisible = Math.min(
+    totalChars,
+    Math.floor(elapsed * KICKER_CHARS_PER_FRAME),
+  );
+  const preVisible = Math.min(KICKER_TEXT_PRE.length, charsVisible);
+  const heroVisible = Math.max(0, charsVisible - KICKER_TEXT_PRE.length);
+  const typingDone = charsVisible >= totalChars;
+  const completeAt = startFrame + totalChars / KICKER_CHARS_PER_FRAME;
+  const cursorOpacity = !typingDone
+    ? Math.sin(frame * 0.5) > -0.3
+      ? 0.85
+      : 0
+    : Math.max(0, 0.85 - Math.max(0, frame - completeAt) / 8);
+
+  return (
+    <span style={{ position: "relative", display: "inline-block" }}>
+      <span style={{ color: colors.fg }}>
+        {KICKER_TEXT_PRE.slice(0, preVisible)}
+      </span>
+      <span style={{ color: colors.accent }}>
+        {KICKER_TEXT_HERO.slice(0, heroVisible)}
+      </span>
+      {charsVisible > 0 && (
+        <span
+          style={{
+            display: "inline-block",
+            width: 4,
+            height: 92 * 0.7,
+            backgroundColor:
+              charsVisible > KICKER_TEXT_PRE.length ? colors.accent : colors.fg,
+            opacity: cursorOpacity,
+            marginLeft: 4,
+            verticalAlign: "baseline",
+            transform: "translateY(6px)",
+          }}
+        />
+      )}
+    </span>
+  );
+};
+
 // ─── Hero copy ────────────────────────────────────────────────────────────────
 
 const HeroCopy: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
@@ -641,25 +800,26 @@ const HeroCopy: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
         </span>
       </div>
 
-      {/* Bottom kicker — the action. Larger size and stronger color so
-       * it actually reads at full-frame distance. */}
+      {/* Bottom kicker — the action. GMBrand Scene02 typing animation,
+       * large size, hero-weight, accent-tinted. Reads at full-frame distance. */}
       <div
         style={{
           position: "absolute",
-          bottom: 128,
+          bottom: 144,
           left: 0,
           right: 0,
           textAlign: "center",
           fontFamily: font,
-          fontSize: 56,
-          fontWeight: 600,
-          letterSpacing: "-0.024em",
-          color: colors.fgSoft,
+          fontSize: 92,
+          fontWeight: 800,
+          letterSpacing: "-0.032em",
+          color: colors.fg,
+          lineHeight: 1.0,
           opacity: kickOp,
           transform: `translateY(${kickY.toFixed(2)}px)`,
         }}
       >
-        just by switching financial product
+        <KickerTyping startFrame={KICKER_AT} />
       </div>
 
       {/* Legal footnote — tiny, dim, defensible. Apple-style fine print. */}
