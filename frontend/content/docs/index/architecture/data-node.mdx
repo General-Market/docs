@@ -28,24 +28,7 @@ Ninety-one sources. One database. The world reduced to rows.
 
 Every source is an independent Tokio task. When one panics, `spawn_resilient` restarts it. The source does not know it died. All writes flow through a shared `BatchWriter` channel that coalesces inserts -- because PostgreSQL has limits, even if the world does not.
 
-```
-     Source APIs          spawn_resilient           BatchWriter          PostgreSQL
-    ┌───────────┐       ┌───────────────┐       ┌──────────────┐     ┌──────────┐
-    │ finnhub   │──────►│  SyncEngine   │──┐    │              │     │          │
-    │ earthquake│──────►│  SyncEngine   │──┤    │   Batched    │     │ market_  │
-    │ twitch    │──────►│  SyncEngine   │──┤    │   INSERT     │     │ prices   │
-    │ volcano   │──────►│  SyncEngine   │──┼───►│   Channel    │────►│          │
-    │ reddit    │──────►│  SyncEngine   │──┤    │              │     │ market_  │
-    │ steam     │──────►│  SyncEngine   │──┤    │  (mpsc +     │     │ prices_  │
-    │ ...       │──────►│  SyncEngine   │──┘    │   coalesce)  │     │ latest   │
-    └───────────┘       └───────┬───────┘       └──────┬───────┘     └──────────┘
-                                │                      │
-                                │                      ▼
-                                │               ┌──────────────┐
-                                │               │  Broadcast   │
-                                └──────────────►│  Hub (WS)    │
-                                                └──────────────┘
-```
+<DataNodeCollectorArchitecture />
 
 Each `SyncEngine` owns:
 - A source-specific client (HTTP, WebSocket, or gRPC)
@@ -78,33 +61,7 @@ Beyond the 91 external sources, the data node runs its own collectors -- polling
 
 Two chains, polled simultaneously. The results are cached in memory and served by the API. The chain is the source of truth; the cache is the speed.
 
-```
-    L3 Orbit Chain (111222333)              Settlement Chain
-    ┌──────────────────────────┐           ┌──────────────────┐
-    │  Index.sol               │           │  USDC balances   │
-    │  ├─ getITPState()        │           │  Allowances      │
-    │  ├─ getUserShares()      │           │  Morpho positions│
-    │  ├─ getOrder()           │           │  Bridge proxy    │
-    │  ├─ nextOrderId()        │           └──────────────────┘
-    │  ├─ FillConfirmed events │                    │
-    │  Oracle.sol              │                    │
-    │  ├─ currentPrice()       │                    │
-    │  ├─ lastCycleNumber()    │                    │
-    │  OracleRegistry          │                    │
-    │  ├─ oracle status        │                    │
-    └────────────┬─────────────┘                    │
-                 │                                  │
-                 ▼                                  ▼
-         ┌─────────────────────────────────────────────┐
-         │              ChainCache (in-memory)          │
-         │  NavSnapshot, UserBalances, UserOrders,      │
-         │  MorphoPositions, FillRecords, Oracles       │
-         └──────────────────────┬──────────────────────┘
-                                │
-                                ▼
-                          REST API serves
-                          cached chain state
-```
+<DataNodeChainPollers />
 
 ---
 
@@ -277,43 +234,7 @@ Every source has its own Rust client, config JSON, and SyncEngine. Sixteen categ
 
 Twenty-five migrations. Fifteen tables. Five groups. The schema is a fossil record of every feature that survived.
 
-```
-    ┌─────────────────────────────────────────────────────────────────────┐
-    │                        PostgreSQL Schema                            │
-    ├─────────────────────────────────────────────────────────────────────┤
-    │                                                                     │
-    │  MARKET DATA (Vision sources)           ITP / PORTFOLIO             │
-    │  ┌──────────────────────┐              ┌──────────────────────┐    │
-    │  │ market_prices        │              │ itp_snapshots        │    │
-    │  │   source, asset_id,  │              │   itp_id, nav,       │    │
-    │  │   value, change_pct, │              │   supply, weights    │    │
-    │  │   volume, fetched_at │              ├──────────────────────┤    │
-    │  ├──────────────────────┤              │ trades               │    │
-    │  │ market_prices_latest │              │   order fills,       │    │
-    │  │   (materialized      │              │   prices, amounts    │    │
-    │  │    latest per asset) │              ├──────────────────────┤    │
-    │  ├──────────────────────┤              │ klines               │    │
-    │  │ market_assets        │              │   OHLCV candles      │    │
-    │  │   (source registry)  │              ├──────────────────────┤    │
-    │  └──────────────────────┘              │ liquidity            │    │
-    │                                        │   orderbook depth    │    │
-    │  COINGECKO                             └──────────────────────┘    │
-    │  ┌──────────────────────┐                                          │
-    │  │ coingecko_market_caps│              DEFI LLAMA                  │
-    │  │ coingecko_categories │              ┌──────────────────────┐    │
-    │  │ bitget_listings      │              │ defillama_protocols  │    │
-    │  └──────────────────────┘              │ defillama_metrics    │    │
-    │                                        │ defillama_raises     │    │
-    │  SIMULATION & MISC                     └──────────────────────┘    │
-    │  ┌──────────────────────┐                                          │
-    │  │ simulations          │              SYSTEM                      │
-    │  │ fng_index             │              ┌──────────────────────┐    │
-    │  │ github_metrics       │              │ collector_cursors    │    │
-    │  │ batch_tables         │              │ oracle_health_snaps  │    │
-    │  └──────────────────────┘              └──────────────────────┘    │
-    │                                                                     │
-    └─────────────────────────────────────────────────────────────────────┘
-```
+<DataNodeSchema />
 
 ### Key Tables
 
@@ -456,19 +377,7 @@ Explorer endpoints require a `x-explorer-token` header. Authentication uses SHA-
 
 Subscribe to batch IDs. Receive prices as they arrive. Unsubscribe when you have had enough.
 
-```
-    Client                    Data Node                     Source Engines
-    ┌──────┐                 ┌──────────┐                  ┌──────────┐
-    │      │── subscribe ───►│          │                  │          │
-    │      │   [42, 77]      │  WS      │◄── broadcast ───│ SyncEng  │
-    │      │                 │  Handler  │    PriceBatch    │ (91x)   │
-    │      │◄── prices ─────│          │                  │          │
-    │      │   {batchId:42,  │          │                  │          │
-    │      │    markets:[..]}│          │                  │          │
-    │      │── unsubscribe ─►│          │                  │          │
-    │      │   [42]          │          │                  │          │
-    └──────┘                 └──────────┘                  └──────────┘
-```
+<DataNodeWebSocketFlow />
 
 **Protocol:**
 - Client sends `{"subscribe": [42, 77]}` to start receiving prices for batch IDs 42 and 77
@@ -490,23 +399,7 @@ Subscribe to batch IDs. Receive prices as they arrive. Unsubscribe when you have
 
 The `SimDataCache` loads into memory at startup and reloads every 24 hours. Everything the backtester needs, always warm:
 
-```
-    SimDataCache (in-memory)
-    ┌──────────────────────────────────────────┐
-    │  all_dates:        Vec<NaiveDate>        │
-    │  category_coins:   HashMap<cat, coins>   │
-    │  coin_symbol_map:  HashMap<id, symbol>   │
-    │  bitget_lookup:    HashMap<symbol, pair>  │
-    │  prices:           HashMap<(coin,date),f> │
-    │  mcap_rankings:    HashMap<date, ranks>   │
-    │  categories:       Vec<Category>          │
-    │  defi_metrics:     HashMap<proto, tvl>    │
-    │  defi_history:     HashMap<proto, ts>     │
-    │  fng_index:        HashMap<date, score>   │
-    │  btc_dominance:    HashMap<date, pct>     │
-    │  eth_dominance:    HashMap<date, pct>     │
-    └──────────────────────────────────────────┘
-```
+<DataNodeSimDataCache />
 
 ---
 

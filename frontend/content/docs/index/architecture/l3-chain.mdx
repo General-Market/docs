@@ -54,40 +54,7 @@ The L3 provides native precompiles for elliptic curve operations on BN254 (alt-b
 
 Everything that matters to the protocol runs here.
 
-```
-┌──────────────────────────────────────────────────────────┐
-│                    INDEX L3 (Chain 111222333)             │
-│                                                          │
-│  CORE PROTOCOL                                           │
-│  ┌──────────┐  ┌────────────────┐  ┌─────────────────┐  │
-│  │  Index    │  │  Governance    │  │  OracleRegistry │  │
-│  │  .sol     │  │  .sol          │  │  .sol           │  │
-│  └──────────┘  └────────────────┘  └─────────────────┘  │
-│                                                          │
-│  ITP ECOSYSTEM                                           │
-│  ┌──────────────────┐  ┌──────────────────────────────┐  │
-│  │  ITP Vaults       │  │  Bridged ITP Factory        │  │
-│  │  (ERC-4626)       │  │  (share token deployment)   │  │
-│  └──────────────────┘  └──────────────────────────────┘  │
-│                                                          │
-│  PREDICTION MARKETS                                      │
-│  ┌──────────────────────────────────────────────────┐    │
-│  │  Vision                                          │    │
-│  │  (batches, bitmaps, ticks, bot registry)         │    │
-│  └──────────────────────────────────────────────────┘    │
-│                                                          │
-│  LENDING                                                 │
-│  ┌──────────────────┐  ┌──────────────────────────────┐  │
-│  │  Morpho           │  │  ITP NAV Oracle             │  │
-│  │  (core protocol)  │  │  (collateral pricing)       │  │
-│  └──────────────────┘  └──────────────────────────────┘  │
-│                                                          │
-│  BRIDGE                                                  │
-│  ┌──────────────────┐  ┌──────────────────────────────┐  │
-│  │  L3BridgeCustody  │  │  L3BridgeProxy             │  │
-│  └──────────────────┘  └──────────────────────────────┘  │
-└──────────────────────────────────────────────────────────┘
-```
+<L3ChainTopology />
 
 - **Core protocol contracts** -- Index, Governance, OracleRegistry. The entry points for order management, DTF creation, and BLS key registration.
 - **Vision prediction markets** -- Batch creation, player operations, tick resolution, bot registry. All prediction market activity lives here.
