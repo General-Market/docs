@@ -14,7 +14,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 BRANDING_PATH = ROOT / "frontend" / "data" / "fund-branding.json"
-RECEIPT_PATH = ROOT / "scripts" / "vault-deploy-receipt.json"
+# active-deployment.json's sourceVaults is the merged source-of-truth (73
+# sources after the second deploy round). The receipt-only file lags behind
+# the script that just rewrites it on each invocation.
+DEPLOYMENT_PATH = ROOT / "envs" / "testnet" / "active-deployment.json"
 
 
 def main() -> int:
@@ -22,9 +25,9 @@ def main() -> int:
         data = json.load(f)
     funds = data["funds"]
 
-    with open(RECEIPT_PATH) as f:
-        receipt = json.load(f)
-    new_vaults_by_source: dict[str, list[str]] = receipt["source_vaults"]
+    with open(DEPLOYMENT_PATH) as f:
+        deployment = json.load(f)
+    new_vaults_by_source: dict[str, list[str]] = deployment["sourceVaults"]
 
     # Source renames: data-node retired some legacy aliases. Map to current names.
     rename = {

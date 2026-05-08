@@ -30,21 +30,21 @@ except ImportError:
 
 ROOT = Path(__file__).resolve().parent.parent
 TOML_PATH = ROOT / "vision-bot" / "funds.toml"
-RECEIPT_PATH = ROOT / "scripts" / "vault-deploy-receipt.json"
-DEPLOY_PATH = ROOT / "deployments" / "active-deployment.json"
+# Use envs/testnet/active-deployment.json for sourceVaults — it's the merged
+# 73-source map. The scripts/vault-deploy-receipt.json gets overwritten by
+# each --sources subset run and only reflects the last batch.
+DEPLOY_PATH = ROOT / "envs" / "testnet" / "active-deployment.json"
 
 
 def main() -> int:
     with open(TOML_PATH, "rb") as f:
         old = tomllib.load(f)
-    with open(RECEIPT_PATH) as f:
-        receipt = json.load(f)
     with open(DEPLOY_PATH) as f:
         deploy = json.load(f)
 
-    new_vaults_by_source: dict[str, list[str]] = receipt["source_vaults"]
-    factory_new = receipt["factory"]
+    new_vaults_by_source: dict[str, list[str]] = deploy["sourceVaults"]
     contracts = deploy["contracts"]
+    factory_new = contracts.get("VisionVaultFactory") or contracts.get("visionVaultFactory")
     vision_new = contracts["Vision"]
     usdc_new = contracts.get("L3_WUSDC") or contracts["USDC"]
     registry_new = contracts["OracleRegistry"]
