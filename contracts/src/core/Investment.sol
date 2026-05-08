@@ -125,7 +125,11 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
     /// @param itpId The ITP identifier
     /// @param vault The vault address
     function setITPVault(bytes32 itpId, address vault) external {
-        if (msg.sender != governance.admin()) {
+        // Permissionless when the slot is empty — closes the auto-listing chain
+        // for ITPs created via Index.createITP. Curator (or anyone) can register
+        // a freshly-deployed vault. Once set, only governance can re-link.
+        address current = itpVaults[itpId];
+        if (current != address(0) && msg.sender != governance.admin()) {
             revert ErrorsLib.E061_Unauthorized(msg.sender, governance.admin());
         }
         if (!_itpExists[itpId]) {
