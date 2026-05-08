@@ -18,7 +18,7 @@ import { IdleZoom, RevealChars } from "./vibe";
 // Reassure = 106f (3.53s). Reassure→Switch cut midpoint at frame 956.
 // SECOND_LINE_AT lands on scene-local beat 2 (frame 58 inside Reassure
 // = absolute beat 35, frame 917) so "but shielded" lands on a kick.
-const SCENE_FRAMES = 106;
+const SCENE_FRAMES = 121;
 const SCENE_SECONDS = SCENE_FRAMES / FPS;
 const SECOND_LINE_AT = 58;
 
@@ -231,7 +231,7 @@ const Headline: React.FC = () => {
           <span>&nbsp;</span>
           <span style={{ color: colors.accent }}>
             <RevealChars
-              text="anticheat"
+              text="Anti-Cheat"
               startFrame={SECOND_LINE_AT + toFrames(0.66)}
               stagger={1.6}
               duration={12}

@@ -10,11 +10,11 @@
 // frame round(T_audio * FPS - MUSIC_START_FROM_AUDIO).
 //
 // Locked invariant: the music's strongest energy plateau (audio frames
-// ~3079–3084, t≈102.6–102.8s) lands on the Switch→EndCard cut at
-// absolute video frame 1115 (37.17s). With MUSIC_START_FROM_AUDIO =
-// 1964, the audio plays from second 65.47 of the file onward — the
-// final, declarative section of the track.
-export const MUSIC_START_FROM_AUDIO = 1964;
+// ~3079–3084, t≈102.6–102.8s) lands on the Switch→EndCard cut. After
+// Reassure +0.5s (+15f) and Switch +0.6s (+18f) the cut moves from
+// frame 1115 to 1148 (38.27s); MUSIC_START_FROM_AUDIO drops by 33 to
+// keep the drum spike on the new cut. Audio now plays from second 64.37.
+export const MUSIC_START_FROM_AUDIO = 1931;
 
 // Beats that fall inside the music's playing window for the video.
 // 41 beats at BPM 69.8 (≈26 frames apart). Scene-relative ranges with

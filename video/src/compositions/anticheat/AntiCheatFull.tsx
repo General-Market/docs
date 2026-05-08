@@ -76,8 +76,9 @@ const MUSIC_END_FRAME = Math.min(
 const MUSIC_FADE_IN = Math.round(FPS * 0.5);
 const MUSIC_VOLUME = 0.55;
 // Fade-out lines up with the song's natural outro (audio second 104.63),
-// which now lands at video second 39.17 with the shifted MUSIC_START.
-const MUSIC_FADE_OUT_END = Math.round(39.17 * FPS);
+// which now lands at video second 40.27 with the shifted MUSIC_START
+// (Reassure +0.5s, Switch +0.6s extensions).
+const MUSIC_FADE_OUT_END = Math.round(40.27 * FPS);
 const MUSIC_FADE_OUT_DURATION = Math.round(FPS * 1.0);
 
 export const AntiCheatFull: React.FC = () => {

@@ -19,7 +19,7 @@ import { IdleZoom, RevealChars } from "./vibe";
 // Setup → pivot → knife. Three rows with proportional bars; the Blocks
 // row's "40%" doesn't crossfade out — it physically inflates from its
 // row slot into the centre of the frame, becoming the hero.
-const SCENE_FRAMES = toFrames(6.0);
+const SCENE_FRAMES = toFrames(6.6);
 
 const HEADLINE_AT = 0;
 const ROWS_AT = 22;
