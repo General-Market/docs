@@ -68,6 +68,7 @@ const EmberTypewriter: React.FC<{
   fontSize?: number;
   endColor?: string;
   typePower?: number;
+  align?: "center" | "bottom-right";
 }> = ({
   text,
   typeStart,
@@ -77,6 +78,7 @@ const EmberTypewriter: React.FC<{
   fontSize = 168,
   endColor = colors.fg,
   typePower = 2.8,
+  align = "center",
 }) => {
   const frame = useCurrentFrame();
   const len = text.length;
@@ -107,10 +109,18 @@ const EmberTypewriter: React.FC<{
 
   if (visibleEnd <= visibleStart) return null;
 
+  const containerStyle: React.CSSProperties =
+    align === "bottom-right"
+      ? {
+          display: "flex",
+          justifyContent: "flex-end",
+          alignItems: "flex-end",
+          padding: "0 120px 110px 0",
+        }
+      : { display: "flex", justifyContent: "center", alignItems: "center" };
+
   return (
-    <AbsoluteFill
-      style={{ display: "flex", justifyContent: "center", alignItems: "center" }}
-    >
+    <AbsoluteFill style={containerStyle}>
       <div
         style={{
           fontFamily: font,
@@ -177,22 +187,40 @@ const StatPanel: React.FC = () => {
     <AbsoluteFill>
       {/* Phase 1 — types in by beat 1, wipes out into the flip */}
       <EmberTypewriter
-        text="0.01% take 70%"
+        text="0.04% illegals takes 70%"
         typeStart={0}
         typeEnd={26}
         wipeStart={STAT_FLIP_AT - 6}
         wipeEnd={STAT_FLIP_AT}
-        fontSize={168}
+        fontSize={140}
         endColor={colors.fg}
+      />
+      <EmberTypewriter
+        text="of gains"
+        typeStart={0}
+        typeEnd={26}
+        wipeStart={STAT_FLIP_AT - 6}
+        wipeEnd={STAT_FLIP_AT}
+        fontSize={56}
+        endColor={colors.fg}
+        align="bottom-right"
       />
 
       {/* Phase 2 — flips on beat 2, types in by beat 3, holds to snap-zoom */}
       <EmberTypewriter
-        text="99.9% get 30%"
+        text="99.9% only get 30%"
         typeStart={STAT_FLIP_AT}
         typeEnd={STAT_FLIP_AT + 26}
-        fontSize={168}
+        fontSize={140}
         endColor={colors.fg}
+      />
+      <EmberTypewriter
+        text="of gains"
+        typeStart={STAT_FLIP_AT}
+        typeEnd={STAT_FLIP_AT + 26}
+        fontSize={56}
+        endColor={colors.fg}
+        align="bottom-right"
       />
     </AbsoluteFill>
   );

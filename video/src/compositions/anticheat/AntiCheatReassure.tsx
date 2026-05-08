@@ -235,7 +235,7 @@ const Headline: React.FC = () => {
         <span>&nbsp;</span>
         <span style={{ color: colors.accent }}>
           <RevealChars
-            text="shielded"
+            text="anti-cheat"
             startFrame={SECOND_LINE_AT + toFrames(0.34)}
             stagger={1.6}
             duration={12}
@@ -744,7 +744,7 @@ const ShieldStamp: React.FC = () => {
           strokeLinejoin="round"
         />
       </svg>
-      <span>Shielded</span>
+      <span>Anti-Cheat</span>
     </div>
   );
 };

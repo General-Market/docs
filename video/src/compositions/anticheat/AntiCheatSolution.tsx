@@ -101,19 +101,40 @@ const Headline: React.FC = () => {
               filter: "drop-shadow(0 8px 28px rgba(0, 82, 255, 0.30))",
             }}
           />
-          <span
+          <div
             style={{
-              fontFamily: font,
-              fontSize: 140,
-              fontWeight: 800,
-              letterSpacing: "-0.05em",
-              color: colors.fg,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-start",
               lineHeight: 0.95,
-              textShadow: "0 8px 28px rgba(0, 82, 255, 0.30)",
             }}
           >
-            General
-          </span>
+            <span
+              style={{
+                fontFamily: font,
+                fontSize: 140,
+                fontWeight: 800,
+                letterSpacing: "-0.05em",
+                color: colors.fg,
+                textShadow: "0 8px 28px rgba(0, 82, 255, 0.30)",
+              }}
+            >
+              General
+            </span>
+            <span
+              style={{
+                fontFamily: font,
+                fontSize: 56,
+                fontWeight: 700,
+                letterSpacing: "-0.025em",
+                color: colors.accent,
+                marginTop: 6,
+                textShadow: "0 4px 18px rgba(0, 82, 255, 0.35)",
+              }}
+            >
+              fights back
+            </span>
+          </div>
         </div>
       </AbsoluteFill>
       <AbsoluteFill
@@ -128,7 +149,7 @@ const Headline: React.FC = () => {
 const TERMINAL_LINES: { text: string; color: string; mode: "cmd" | "user" | "ok" }[] = [
   { text: "$ claude", color: "#9aa0a6", mode: "cmd" },
   { text: "> upgrade my bot to block-trading", color: "#f1f3f5", mode: "user" },
-  { text: "shielded", color: "#5B86FF", mode: "ok" },
+  { text: "anti-cheat", color: "#5B86FF", mode: "ok" },
 ];
 
 const ShieldIcon: React.FC<{ size: number; glow: number }> = ({ size, glow }) => (
