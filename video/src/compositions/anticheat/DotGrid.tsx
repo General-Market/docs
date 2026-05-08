@@ -28,12 +28,12 @@ const FINE_ALPHA = 0.22;
 // Reads as a swell passing through the lattice rather than a tile of dots.
 const WAVE_K1 = (2 * Math.PI) / 760;   // primary wavelength ~760px
 const WAVE_K2 = (2 * Math.PI) / 1180;  // secondary wavelength ~1180px
-const WAVE_OMEGA_1 = 1.05;             // primary phase speed (rad/sec)
-const WAVE_OMEGA_2 = 0.62;             // secondary phase speed
-const WAVE_RADIUS_MIN = 0.35;          // multiplier at trough
-const WAVE_RADIUS_MAX = 2.25;          // multiplier at crest
-const WAVE_ALPHA_MIN = 0.55;           // alpha multiplier at trough
-const WAVE_ALPHA_MAX = 1.55;           // alpha multiplier at crest
+const WAVE_OMEGA_1 = 1.75;             // primary phase speed (rad/sec)
+const WAVE_OMEGA_2 = 1.08;             // secondary phase speed
+const WAVE_RADIUS_MIN = 0.78;          // multiplier at trough
+const WAVE_RADIUS_MAX = 1.55;          // multiplier at crest
+const WAVE_ALPHA_MIN = 0.85;           // alpha multiplier at trough
+const WAVE_ALPHA_MAX = 1.25;           // alpha multiplier at crest
 
 const waveAt = (x: number, y: number, t: number) => {
   const w1 = Math.sin(WAVE_K1 * x + 0.32 * WAVE_K1 * y - WAVE_OMEGA_1 * t);
