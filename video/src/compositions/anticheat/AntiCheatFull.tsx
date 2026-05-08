@@ -27,19 +27,22 @@ import { MUSIC_START_FROM_AUDIO } from "./beats";
 // own (much smaller) magnitude. Variation per cut is in direction,
 // magnitude, and how the bg behaves relative to the fg.
 //
-//   Hook → Bars         snap-zoom in        26f   fg 1→1.45  bg 1→1.06
+// Tightened pass: shorter durations, smaller magnitudes, less blur.
+// Cuts now snap instead of swelling.
+//
+//   Hook → Bars         snap-zoom in        18f
 //   Bars → Rigged       HARD CUT
-//   Rigged → Stat       snap-zoom intense   24f   fg 1→1.65  bg pulls back
-//   Stat → Solution     snap-zoom out + veil 42f  fg 1→0.72
-//   Solution → Reassure soft snap           28f   fg 1→1.22  bg ~still
-//   Reassure → Bridge   soft snap           28f   fg 1→1.18  bg ~still
-//   Bridge → EndCard    long pull           34f   fg 1→0.82  bg ~still
-const T_HOOK_BARS = 26;
-const T_RIGGED_STAT = 24;
-const T_STAT_SOLUTION = 42;
-const T_SOLUTION_REASSURE = 28;
-const T_REASSURE_BRIDGE = 28;
-const T_BRIDGE_END = 34;
+//   Rigged → Stat       snap-zoom intense   16f
+//   Stat → Solution     snap-zoom out + veil 28f
+//   Solution → Reassure soft snap           18f
+//   Reassure → Bridge   soft snap           18f
+//   Bridge → EndCard    long pull           24f
+const T_HOOK_BARS = 18;
+const T_RIGGED_STAT = 16;
+const T_STAT_SOLUTION = 28;
+const T_SOLUTION_REASSURE = 18;
+const T_REASSURE_BRIDGE = 18;
+const T_BRIDGE_END = 24;
 
 const TRANSITION_FRAMES =
   T_HOOK_BARS +

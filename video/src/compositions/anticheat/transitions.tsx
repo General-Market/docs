@@ -210,77 +210,79 @@ export const BgLayer: React.FC<{
 // is direction (zoom in/out), magnitude, ease, and how the bg behaves
 // relative to the fg.
 
-// Snap-zoom in. fg whips through the cut: 1 → 1.45 then 0.65 → 1. The
-// geometric jump 1.45 → 0.65 is hidden by the blur peak. Bg breathes at
-// a tenth of the magnitude — atmospheric, not coupled.
+// Snap-zoom in. fg whips through the cut: 1 → 1.28 then 0.78 → 1. Lighter
+// magnitudes and less blur than before so the cut feels quick instead of
+// laden. Bg breathes at a tenth of the magnitude — atmospheric, not
+// coupled.
 export const snapZoomIn = () =>
   zoomThroughBlur({
-    fg: { exitFrom: 1.0, exitTo: 1.45, enterFrom: 0.65, enterTo: 1.0 },
-    bg: { exitFrom: 1.0, exitTo: 1.06, enterFrom: 0.95, enterTo: 1.0 },
-    maxBlur: 14,
-    exitEase: cubicOut,
-    enterEase: cubicOut,
-    flash: 0.15,
-    veil: 0,
-    veilColor: "#FFFFFF",
-    lightLeak: 0,
-  });
-
-// Snap-zoom intense. The verdict cut. Bigger fg jump (1.65 → 0.55) and
-// bg moves opposite — pulls back while fg lunges forward. The contrast
-// reads as the camera and the room moving against each other.
-export const snapZoomIntense = () =>
-  zoomThroughBlur({
-    fg: { exitFrom: 1.0, exitTo: 1.65, enterFrom: 0.55, enterTo: 1.0 },
-    bg: { exitFrom: 1.0, exitTo: 0.92, enterFrom: 1.08, enterTo: 1.0 },
-    maxBlur: 18,
-    exitEase: quartOut,
-    enterEase: quartOut,
-    flash: 0.22,
-    veil: 0,
-    veilColor: "#FFFFFF",
-    lightLeak: 0,
-  });
-
-// Snap-zoom out. fg pulls away through the cut: 1 → 0.7 then 1.5 → 1.
-// Bg pulls back at a much smaller magnitude. Used at the music-death
-// cut, with the amber light-leak crossing the swap.
-export const snapZoomOut = (veilColor = "#F0F2F4") =>
-  zoomThroughBlur({
-    fg: { exitFrom: 1.0, exitTo: 0.72, enterFrom: 1.42, enterTo: 1.0 },
-    bg: { exitFrom: 1.0, exitTo: 0.94, enterFrom: 1.05, enterTo: 1.0 },
-    maxBlur: 12,
-    exitEase: inOutQuad,
-    enterEase: inOutQuad,
-    flash: 0,
-    veil: 0.7,
-    veilColor,
-    lightLeak: 0.55,
-  });
-
-// Soft snap. Lower-magnitude push, smooth, almost no flash. For cuts
-// where continuity matters more than impact.
-export const snapZoomSoft = () =>
-  zoomThroughBlur({
-    fg: { exitFrom: 1.0, exitTo: 1.22, enterFrom: 0.84, enterTo: 1.0 },
-    bg: { exitFrom: 1.0, exitTo: 1.03, enterFrom: 0.98, enterTo: 1.0 },
+    fg: { exitFrom: 1.0, exitTo: 1.28, enterFrom: 0.78, enterTo: 1.0 },
+    bg: { exitFrom: 1.0, exitTo: 1.04, enterFrom: 0.97, enterTo: 1.0 },
     maxBlur: 8,
     exitEase: cubicOut,
     enterEase: cubicOut,
+    flash: 0.12,
+    veil: 0,
+    veilColor: "#FFFFFF",
+    lightLeak: 0,
+  });
+
+// Snap-zoom intense. The verdict cut. Bigger fg jump than the standard,
+// bg moves opposite — pulls back while fg lunges forward. The contrast
+// reads as the camera and the room moving against each other. Lightened
+// blur so the cut snaps instead of drags.
+export const snapZoomIntense = () =>
+  zoomThroughBlur({
+    fg: { exitFrom: 1.0, exitTo: 1.42, enterFrom: 0.7, enterTo: 1.0 },
+    bg: { exitFrom: 1.0, exitTo: 0.95, enterFrom: 1.05, enterTo: 1.0 },
+    maxBlur: 11,
+    exitEase: cubicOut,
+    enterEase: cubicOut,
+    flash: 0.18,
+    veil: 0,
+    veilColor: "#FFFFFF",
+    lightLeak: 0,
+  });
+
+// Snap-zoom out. fg pulls away through the cut. Less veil and lighter
+// leak than before — the cut still acts as the music-death pivot, but
+// stops feeling like a curtain drop.
+export const snapZoomOut = (veilColor = "#F0F2F4") =>
+  zoomThroughBlur({
+    fg: { exitFrom: 1.0, exitTo: 0.78, enterFrom: 1.3, enterTo: 1.0 },
+    bg: { exitFrom: 1.0, exitTo: 0.96, enterFrom: 1.04, enterTo: 1.0 },
+    maxBlur: 7,
+    exitEase: inOutQuad,
+    enterEase: inOutQuad,
+    flash: 0,
+    veil: 0.42,
+    veilColor,
+    lightLeak: 0.32,
+  });
+
+// Soft snap. Low-magnitude push, smooth, almost no flash. For cuts
+// where continuity matters more than impact.
+export const snapZoomSoft = () =>
+  zoomThroughBlur({
+    fg: { exitFrom: 1.0, exitTo: 1.14, enterFrom: 0.9, enterTo: 1.0 },
+    bg: { exitFrom: 1.0, exitTo: 1.02, enterFrom: 0.99, enterTo: 1.0 },
+    maxBlur: 4,
+    exitEase: cubicOut,
+    enterEase: cubicOut,
     flash: 0,
     veil: 0,
     veilColor: "#FFFFFF",
     lightLeak: 0,
   });
 
-// Long pull. The close. fg retreats to 0.82, the new scene rises from
-// 1.18 back to rest. Bg barely moves — almost stationary. No flash,
+// Long pull. The close. fg retreats slightly, the new scene rises from
+// just above rest. Bg barely moves — almost stationary. No flash,
 // no leak, the lowest blur in the set.
 export const pullLong = () =>
   zoomThroughBlur({
-    fg: { exitFrom: 1.0, exitTo: 0.82, enterFrom: 1.18, enterTo: 1.0 },
-    bg: { exitFrom: 1.0, exitTo: 0.97, enterFrom: 1.02, enterTo: 1.0 },
-    maxBlur: 6,
+    fg: { exitFrom: 1.0, exitTo: 0.88, enterFrom: 1.12, enterTo: 1.0 },
+    bg: { exitFrom: 1.0, exitTo: 0.98, enterFrom: 1.01, enterTo: 1.0 },
+    maxBlur: 3,
     exitEase: inOutCubic,
     enterEase: inOutCubic,
     flash: 0,

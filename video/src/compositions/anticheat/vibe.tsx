@@ -9,28 +9,35 @@ import { AbsoluteFill, interpolate, useCurrentFrame } from "remotion";
 
 // ─── IdleZoom ─────────────────────────────────────────────────────────────────
 //
-// Scale ramps from `from` to `to` over the scene's duration. Sub-perceptual
-// per-frame change, hypnotic at 3+ seconds. The eye reads it as a held
-// inhale.
+// Scale ramps from `from` to `to` over the scene's duration AND breathes
+// on a slow sinusoid. The ramp is the inhale. The breath is the pulse.
+// Net effect: the camera is never frozen — even on long holds the eye
+// gets sub-perceptual motion to lock onto. Set `breath={0}` to disable.
 
 export const IdleZoom: React.FC<{
   durationInFrames: number;
   from?: number;
   to?: number;
   origin?: string;
+  breath?: number;
+  breathPeriod?: number;
   children: React.ReactNode;
 }> = ({
   durationInFrames,
   from = 1,
   to = 1.035,
   origin = "50% 50%",
+  breath = 0.004,
+  breathPeriod = 72,
   children,
 }) => {
   const frame = useCurrentFrame();
-  const scale = interpolate(frame, [0, durationInFrames], [from, to], {
+  const ramp = interpolate(frame, [0, durationInFrames], [from, to], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
+  const pulse = breath * Math.sin((frame / breathPeriod) * Math.PI * 2);
+  const scale = ramp + pulse;
   return (
     <AbsoluteFill
       style={{
