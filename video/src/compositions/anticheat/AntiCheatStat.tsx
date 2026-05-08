@@ -3,14 +3,11 @@ import {
   AbsoluteFill,
   Easing,
   interpolate,
-  spring,
   useCurrentFrame,
-  useVideoConfig,
 } from "remotion";
 import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 import { DotGrid, DotGridVignette } from "./DotGrid";
-import { ParallaxText } from "./transitions";
 import { IdleZoom, RevealChars } from "./vibe";
 
 // Two compositions live in this file:
@@ -21,8 +18,6 @@ import { IdleZoom, RevealChars } from "./vibe";
 // Bars = 78f (2.6s) — its hard cut to Rigged lands on beat 11.
 const STAT_FRAMES = 145;
 const BARS_FRAMES = 78;
-const STAT_SECONDS = STAT_FRAMES / FPS;
-const BARS_SECONDS = BARS_FRAMES / FPS;
 // Hard-cut flip from 0.01%/take/70% to 99.9%/get/30% on scene-local
 // beat 2 (frame 51 inside Stat = absolute beat 19).
 const STAT_FLIP_AT = 51;
@@ -51,71 +46,153 @@ export const AntiCheatBars: React.FC = () => {
   );
 };
 
-// ─── Stat panel: 0.01% take 70% / 99.9% get 30% ──────────────────────────────
+// ─── Stat panel: Ember-style typewriter, two phases ──────────────────────────
+// Phase 1 (0–50)  types "0.01% take 70%", wipes out before the flip.
+// Phase 2 (51+)   types "99.9% get 30%" on beat 2 and holds to the
+//                 snap-zoom-out at the scene tail.
 
-const StatPanel: React.FC = () => {
+const ROSE = [254, 186, 189] as const;
+
+const easeIn = (t: number, power: number): number =>
+  Math.pow(Math.max(0, Math.min(1, t)), power);
+
+const EmberTypewriter: React.FC<{
+  text: string;
+  typeStart: number;
+  typeEnd: number;
+  wipeStart?: number;
+  wipeEnd?: number;
+  fontSize?: number;
+  endColor?: string;
+  typePower?: number;
+}> = ({
+  text,
+  typeStart,
+  typeEnd,
+  wipeStart,
+  wipeEnd,
+  fontSize = 168,
+  endColor = colors.fg,
+  typePower = 2.8,
+}) => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
+  const len = text.length;
+  const hasWipe = wipeStart !== undefined && wipeEnd !== undefined;
+  const wipeS = wipeStart ?? typeEnd + 1;
+  const wipeE = wipeEnd ?? wipeS + 1;
 
-  const enter = spring({
-    frame,
-    fps,
-    config: { damping: 22, stiffness: 110, mass: 0.7 },
-  });
-  const exit = spring({
-    frame: frame - (toFrames(STAT_SECONDS) - toFrames(0.4)),
-    fps,
-    config: { damping: 28, stiffness: 140, mass: 0.6 },
-  });
-  const opacity = interpolate(enter, [0, 1], [0, 1]) * (1 - exit);
+  if (frame < typeStart || (hasWipe && frame > wipeE)) return null;
 
-  const flipped = frame >= STAT_FLIP_AT;
+  let visibleStart = 0;
+  let visibleEnd = 0;
+  let phase: "typing" | "hold" | "wiping" = "hold";
 
-  // Pre-flip: count up 0.01% / 70% with the verb "take".
-  const countT = Math.min(1, Math.max(0, frame / toFrames(1.2)));
-  const eased = 1 - Math.pow(1 - countT, 3);
-  const preLeft = (0.01 * eased).toFixed(2);
-  const preRight = Math.round(70 * eased);
-  const takeT = interpolate(
-    frame,
-    [toFrames(0.4), toFrames(1.0)],
-    [0, 1],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
+  if (frame < typeEnd) {
+    phase = "typing";
+    const t = (frame - typeStart) / Math.max(1, typeEnd - typeStart);
+    visibleEnd = Math.min(len, Math.max(1, Math.round(len * easeIn(t, typePower))));
+  } else if (!hasWipe || frame < wipeS) {
+    phase = "hold";
+    visibleEnd = len;
+  } else {
+    phase = "wiping";
+    const t = (frame - wipeS) / Math.max(1, wipeE - wipeS);
+    const removed = Math.min(len, Math.round(len * easeIn(t, 2)));
+    visibleStart = removed;
+    visibleEnd = len;
+  }
+
+  if (visibleEnd <= visibleStart) return null;
 
   return (
-    <AbsoluteFill style={{ opacity }}>
+    <AbsoluteFill
+      style={{ display: "flex", justifyContent: "center", alignItems: "center" }}
+    >
+      <div
+        style={{
+          fontFamily: font,
+          fontSize,
+          fontWeight: 800,
+          letterSpacing: "-0.04em",
+          whiteSpace: "nowrap",
+          color: endColor,
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
+        {text.split("").map((ch, i) => {
+          if (i < visibleStart || i >= visibleEnd) return null;
+
+          if (phase === "typing") {
+            const currentT = (frame - typeStart) / Math.max(1, typeEnd - typeStart);
+            const charThreshold = i / len;
+            const age =
+              (easeIn(currentT, typePower) - charThreshold) *
+              Math.max(1, typeEnd - typeStart);
+            const colorT = interpolate(age, [0, 5], [0, 1], {
+              extrapolateLeft: "clamp",
+              extrapolateRight: "clamp",
+            });
+            const r = Math.round(interpolate(colorT, [0, 1], [ROSE[0], 10]));
+            const g = Math.round(interpolate(colorT, [0, 1], [ROSE[1], 10]));
+            const b = Math.round(interpolate(colorT, [0, 1], [ROSE[2], 12]));
+            const display = ch === " " ? " " : ch;
+            return (
+              <span key={i} style={{ color: `rgb(${r},${g},${b})` }}>
+                {display}
+              </span>
+            );
+          }
+
+          if (phase === "wiping") {
+            const dist = i - visibleStart;
+            const op = interpolate(dist, [0, 2], [0.18, 1], {
+              extrapolateLeft: "clamp",
+              extrapolateRight: "clamp",
+            });
+            const display = ch === " " ? " " : ch;
+            return (
+              <span key={i} style={{ color: endColor, opacity: op }}>
+                {display}
+              </span>
+            );
+          }
+
+          const display = ch === " " ? " " : ch;
+          return (
+            <span key={i} style={{ color: endColor }}>
+              {display}
+            </span>
+          );
+        })}
+      </div>
+    </AbsoluteFill>
+  );
+};
+
+const StatPanel: React.FC = () => {
+  return (
+    <AbsoluteFill>
       <Caption />
 
-      {flipped ? (
-        <StatRow
-          leftValue="99.9%"
-          leftSubtitle="of traders"
-          leftTint={colors.fg}
-          rightValue="30%"
-          rightSubtitle="of all profits"
-          rightTint={colors.accent}
-          verb="get"
-          verbT={1}
-          sizes={SIZES_PRIMARY}
-          topPercent={26}
-          rowOpacity={1}
-        />
-      ) : (
-        <StatRow
-          leftValue={`${preLeft}%`}
-          leftSubtitle="of traders"
-          leftTint={colors.fg}
-          rightValue={`${preRight}%`}
-          rightSubtitle="of all profits"
-          rightTint={colors.accent}
-          verb="take"
-          verbT={takeT}
-          sizes={SIZES_PRIMARY}
-          topPercent={26}
-          rowOpacity={1}
-        />
-      )}
+      {/* Phase 1 — types in by beat 1, wipes out into the flip */}
+      <EmberTypewriter
+        text="0.01% take 70%"
+        typeStart={0}
+        typeEnd={26}
+        wipeStart={STAT_FLIP_AT - 6}
+        wipeEnd={STAT_FLIP_AT}
+        fontSize={168}
+        endColor={colors.fg}
+      />
+
+      {/* Phase 2 — flips on beat 2, types in by beat 3, holds to snap-zoom */}
+      <EmberTypewriter
+        text="99.9% get 30%"
+        typeStart={STAT_FLIP_AT}
+        typeEnd={STAT_FLIP_AT + 26}
+        fontSize={168}
+        endColor={colors.fg}
+      />
     </AbsoluteFill>
   );
 };
@@ -149,153 +226,6 @@ const Caption: React.FC = () => (
     />
   </div>
 );
-
-// ─── StatRow — one balanced row: number / verb / number with subtitles. ──
-
-type StatSizes = {
-  number: number;
-  subtitle: number;
-  verb: number;
-  marginTop: number;
-  verbLift: number;
-};
-
-const SIZES_PRIMARY: StatSizes = {
-  number: 200,
-  subtitle: 64,
-  verb: 84,
-  marginTop: 18,
-  verbLift: 28,
-};
-
-const StatRow: React.FC<{
-  leftValue: string;
-  leftSubtitle: string;
-  leftTint: string;
-  rightValue: string;
-  rightSubtitle: string;
-  rightTint: string;
-  verb: string;
-  verbT: number;
-  sizes: StatSizes;
-  topPercent: number;
-  rowOpacity: number;
-}> = ({
-  leftValue,
-  leftSubtitle,
-  leftTint,
-  rightValue,
-  rightSubtitle,
-  rightTint,
-  verb,
-  verbT,
-  sizes,
-  topPercent,
-  rowOpacity,
-}) => {
-  return (
-    <div
-      style={{
-        position: "absolute",
-        top: `${topPercent}%`,
-        left: 0,
-        right: 0,
-        display: "grid",
-        gridTemplateColumns: "1fr auto 1fr",
-        alignItems: "baseline",
-        columnGap: 48,
-        padding: "0 220px",
-        opacity: rowOpacity,
-      }}
-    >
-      <BigNumber
-        value={leftValue}
-        subtitle={leftSubtitle}
-        tint={leftTint}
-        sizes={sizes}
-        align="end"
-      />
-      <Verb word={verb} t={verbT} sizes={sizes} />
-      <BigNumber
-        value={rightValue}
-        subtitle={rightSubtitle}
-        tint={rightTint}
-        sizes={sizes}
-        align="start"
-      />
-    </div>
-  );
-};
-
-const Verb: React.FC<{ word: string; t: number; sizes: StatSizes }> = ({
-  word,
-  t,
-  sizes,
-}) => (
-  <div
-    style={{
-      fontFamily: font,
-      fontSize: sizes.verb,
-      fontWeight: 500,
-      letterSpacing: "-0.01em",
-      color: colors.dim,
-      opacity: t,
-      transform: `translateY(${(1 - t) * 12}px)`,
-      // Pull up so the verb sits visually between digit centers,
-      // not on the subtitle's baseline.
-      paddingBottom: sizes.verbLift,
-    }}
-  >
-    {word}
-  </div>
-);
-
-const BigNumber: React.FC<{
-  value: string;
-  subtitle: string;
-  tint: string;
-  sizes: StatSizes;
-  align: "start" | "end";
-}> = ({ value, subtitle, tint, sizes, align }) => {
-  return (
-    <div
-      style={{
-        textAlign: align === "end" ? "right" : "left",
-        justifySelf: align,
-      }}
-    >
-      <ParallaxText>
-        <div
-          style={{
-            fontFamily: font,
-            fontSize: sizes.number,
-            fontWeight: 800,
-            letterSpacing: "-0.045em",
-            color: tint,
-            lineHeight: 0.95,
-            fontVariantNumeric: "tabular-nums",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {value}
-        </div>
-      </ParallaxText>
-      <div
-        style={{
-          marginTop: sizes.marginTop,
-          fontFamily: font,
-          fontSize: sizes.subtitle,
-          fontWeight: 600,
-          letterSpacing: "-0.01em",
-          color: colors.dim,
-          whiteSpace: "nowrap",
-        }}
-      >
-        {subtitle}
-      </div>
-    </div>
-  );
-};
 
 // ─── Extraction bars ──────────────────────────────────────────────────────────
 
@@ -645,7 +575,7 @@ const ZoomEchoText: React.FC<{
 export const antiCheatStatMeta = {
   id: "AntiCheatStat",
   component: AntiCheatStat,
-  durationInFrames: toFrames(STAT_SECONDS),
+  durationInFrames: STAT_FRAMES,
   fps: FPS,
   width: W,
   height: H,
@@ -654,7 +584,7 @@ export const antiCheatStatMeta = {
 export const antiCheatBarsMeta = {
   id: "AntiCheatBars",
   component: AntiCheatBars,
-  durationInFrames: toFrames(BARS_SECONDS),
+  durationInFrames: BARS_FRAMES,
   fps: FPS,
   width: W,
   height: H,

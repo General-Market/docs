@@ -4,14 +4,13 @@ import {
   Sequence,
   interpolate,
   spring,
-  staticFile,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
 import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 import { DotGrid, DotGridVignette } from "./DotGrid";
-import { IdleZoom, RevealChars } from "./vibe";
+import { IdleZoom } from "./vibe";
 
 // Solution = 233f (7.77s). Solution→Reassure transition starts on
 // beat 29 (frame 768 absolute). Terminal flies in on scene-local beat 3
@@ -38,28 +37,25 @@ export const AntiCheatSolution: React.FC = () => {
   );
 };
 
-// ─── Headline: "General changes this." ────────────────────────────────────────
+// ─── Headline: Ember-style zoom on "general fix this" ───────────────────────
+// Smooth scale 1 → 6 over beat 1 (frames 0–26). Same easing curve and zoom
+// magnitude as the "on" word in Ember-Replicate. The headline fades out
+// just before the terminal flies in at TERMINAL_AT.
 
 const Headline: React.FC = () => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
 
-  const t = spring({
-    frame,
-    fps,
-    config: { damping: 22, stiffness: 110, mass: 0.7 },
+  const t = interpolate(frame, [0, 26], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
   });
+  const smooth = t * t * (3 - 2 * t);
+  const scale = interpolate(smooth, [0, 1], [1, 6]);
 
-  const lift = interpolate(
+  const opacity = interpolate(
     frame,
-    [TERMINAL_AT - toFrames(0.3), TERMINAL_AT + toFrames(0.4)],
-    [0, -120],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-  const headlineOpacity = interpolate(
-    frame,
-    [TERMINAL_AT - toFrames(0.2), TERMINAL_AT + toFrames(0.5)],
-    [1, 0.18],
+    [0, 2, TERMINAL_AT - 8, TERMINAL_AT - 2],
+    [0, 1, 1, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
 
@@ -68,10 +64,8 @@ const Headline: React.FC = () => {
       style={{
         justifyContent: "center",
         alignItems: "center",
-        padding: "0 96px",
         textAlign: "center",
-        opacity: headlineOpacity,
-        transform: `translateY(${lift}px)`,
+        opacity,
       }}
     >
       <div
@@ -82,52 +76,11 @@ const Headline: React.FC = () => {
           letterSpacing: "-0.04em",
           color: colors.fg,
           lineHeight: 0.95,
-          display: "flex",
-          alignItems: "center",
-          gap: 36,
-          justifyContent: "center",
+          whiteSpace: "nowrap",
+          transform: `scale(${scale})`,
         }}
       >
-        <span>
-          <RevealChars
-            text="Introducing "
-            startFrame={0}
-            stagger={0.7}
-            duration={10}
-            y={16}
-            blur={4}
-          />
-          <span style={{ color: colors.accent }}>
-            <RevealChars
-              text="General"
-              startFrame={toFrames(0.36)}
-              stagger={1.0}
-              duration={11}
-              y={18}
-              blur={5}
-            />
-          </span>
-        </span>
-        <img
-          src={staticFile("gm-logo-black.svg")}
-          alt=""
-          style={{
-            width: 132,
-            height: 132,
-            display: "inline-block",
-            flexShrink: 0,
-            padding: 12,
-            border: `4px solid ${colors.fg}`,
-            borderRadius: 20,
-            boxSizing: "border-box",
-            opacity: interpolate(t, [0, 1], [0, 1]),
-            transform: `scale(${interpolate(t, [0, 1], [0.4, 1])}) rotate(${interpolate(
-              t,
-              [0, 1],
-              [-12, 0],
-            )}deg)`,
-          }}
-        />
+        <span style={{ color: colors.accent }}>general</span> fix this
       </div>
     </AbsoluteFill>
   );
