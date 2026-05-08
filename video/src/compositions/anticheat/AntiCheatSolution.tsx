@@ -1,6 +1,7 @@
 import React from "react";
 import {
   AbsoluteFill,
+  Easing,
   Sequence,
   interpolate,
   staticFile,
@@ -43,19 +44,20 @@ export const AntiCheatSolution: React.FC = () => {
 const Headline: React.FC = () => {
   const frame = useCurrentFrame();
 
-  // Continuous accelerating zoom: scale 1 → 2.2 across the pre-terminal
-  // window. Readable at frame 0, always growing, never holds.
-  const ZOOM_END = TERMINAL_AT - 2;
-  const t = interpolate(frame, [0, ZOOM_END], [0, 1], {
+  // Continuous zoom on a strong easeIn bezier — slow open, late surge —
+  // so the build mirrors the march's rising kick across the three beats
+  // of the pre-terminal window. By the end the wordmark has scaled past
+  // the frame: General is no longer legible, only its colour remains.
+  const ZOOM_END = TERMINAL_AT;
+  const scale = interpolate(frame, [0, ZOOM_END], [1, 10], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
+    easing: Easing.bezier(0.55, 0, 0.78, 0.2),
   });
-  const accel = Math.pow(t, 1.6);
-  const scale = interpolate(accel, [0, 1], [1, 2.2]);
 
   const opacity = interpolate(
     frame,
-    [0, 8, TERMINAL_AT - 10, TERMINAL_AT - 2],
+    [0, 8, TERMINAL_AT - 4, TERMINAL_AT],
     [0, 1, 1, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
