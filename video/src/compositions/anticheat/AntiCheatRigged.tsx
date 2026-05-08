@@ -461,7 +461,7 @@ const WideTreatment: React.FC<TreatmentProps> = ({ article, startFrame }) => {
   // Punch entry, then a slow continuous dolly in toward the exchange name
   // for the rest of the beat. The card grows from 1.04 → 1 (punch) → 1.16.
   const punchScale = interpolate(punchT, [0, 1], [1.04, 1]);
-  const dollyScale = interpolate(local, [4, 26], [1.0, 1.16], {
+  const dollyScale = interpolate(local, [4, 26], [1.0, 1.22], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -498,10 +498,11 @@ const ExtremeZoomTreatment: React.FC<TreatmentProps> = ({
   const local = frame - startFrame;
   const highlightReveal = Math.max(0, Math.min(1, (local - 2) / 6));
 
-  // Camera dollies in: starts at 1.6x already-zoomed, settles at 3.4x.
-  // The lens lives on the exchange name in the headline — that word is the
-  // whole point of the beat.
-  const zoom = interpolate(local, [0, 12, 26], [1.6, 3.0, 3.4], {
+  // Pulled back from the original 1.6 → 3.4 — that scale plus the
+  // AbsoluteFill takeover made robinhood the only beat anyone remembered.
+  // Now sits in a comparable register to magnifier and fullscreen so the
+  // other four exchanges still register.
+  const zoom = interpolate(local, [0, 12, 26], [1.4, 1.85, 2.0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -558,7 +559,7 @@ const CorkboardTreatment: React.FC<TreatmentProps> = ({
     extrapolateRight: "clamp",
   });
   // Slow dolly toward the exchange name after the card has settled.
-  const dollyScale = interpolate(local, [10, 26], [1.0, 1.14], {
+  const dollyScale = interpolate(local, [10, 26], [1.0, 1.20], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -647,9 +648,9 @@ const MagnifierTreatment: React.FC<TreatmentProps> = ({
 
   const IMPACT_AT = 6;
 
-  // Card dolly: 1.0 → 1.4 with origin on the exchange name. The whole card
+  // Card dolly: 1.0 → 1.55 with origin on the exchange name. The whole card
   // grows toward the box so the box becomes the centre of attention.
-  const cardZoom = interpolate(local - IMPACT_AT, [0, 10, 24], [1.0, 1.32, 1.40], {
+  const cardZoom = interpolate(local - IMPACT_AT, [0, 10, 24], [1.0, 1.42, 1.55], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -764,7 +765,7 @@ const WhipTreatment: React.FC<TreatmentProps> = ({ article, startFrame }) => {
   });
   const highlightReveal = Math.max(0, Math.min(1, (local - 8) / 8));
   // Post-landing dolly toward the exchange name.
-  const dollyScale = interpolate(local, [14, 26], [1.0, 1.14], {
+  const dollyScale = interpolate(local, [14, 26], [1.0, 1.20], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
