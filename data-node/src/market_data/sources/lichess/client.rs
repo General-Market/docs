@@ -1,15 +1,18 @@
 //! Lichess chess data source implementing MarketDataSource
 //!
-//! Tracks top player ratings, live TV channel ratings, tournament activity,
-//! and daily puzzle ratings from Lichess.org.
+//! Tracks top player ratings, live TV channel ratings, and tournament activity
+//! from Lichess.org. The daily puzzle metric was dropped: it changes once a day
+//! and sits frozen for the other 23h59m -- a flat asymptote masquerading as a
+//! price. TV channel ratings move every time the featured game ends and a new
+//! pair takes the seat (every few minutes); that is the live signal.
 //!
-//! Assets are static -- defined in config/lichess.json (32 feeds).
+//! Assets are static -- defined in config/lichess.json (32 entries; the puzzle
+//! row is retained but inactive for backward compatibility, leaving 31 active).
 //!
-//! Strategy: 4 API calls per sync cycle, each returning data for multiple feeds:
+//! Strategy: 3 API calls per sync cycle, each returning data for multiple feeds:
 //!   1. GET /api/player          → top player ratings (13 variants)
 //!   2. GET /api/tv/channels     → live TV channel ratings (16 channels)
 //!   3. GET /api/tournament      → running tournament count & total players
-//!   4. GET /api/puzzle/daily    → daily puzzle rating
 //!
 //! API: https://lichess.org/api
 //! Auth: None (public API), but User-Agent header is REQUIRED
@@ -43,7 +46,6 @@ const USER_AGENT: &str = "IndexDataNode/1.0 (https://generalmarket.io)";
 const LEADERBOARD_URL: &str = "https://lichess.org/api/player";
 const TV_CHANNELS_URL: &str = "https://lichess.org/api/tv/channels";
 const TOURNAMENT_URL: &str = "https://lichess.org/api/tournament";
-const PUZZLE_URL: &str = "https://lichess.org/api/puzzle/daily";
 
 // ============================================================================
 // API RESPONSE TYPES
@@ -88,18 +90,6 @@ struct TournamentResponse {
 #[serde(rename_all = "camelCase")]
 struct TournamentEntry {
     nb_players: i64,
-}
-
-// --- Puzzle ---
-
-#[derive(Debug, Deserialize)]
-struct PuzzleDailyResponse {
-    puzzle: PuzzleInfo,
-}
-
-#[derive(Debug, Deserialize)]
-struct PuzzleInfo {
-    rating: i64,
 }
 
 // ============================================================================
@@ -202,12 +192,6 @@ impl MarketDataSource for LichessMarketSource {
                 .map(|(r, _)| r.starts_with("tournaments_"))
                 .unwrap_or(false)
         });
-        let need_puzzle = asset_ids.iter().any(|id| {
-            ref_map
-                .get(id)
-                .map(|(r, _)| r == "puzzle_rating")
-                .unwrap_or(false)
-        });
 
         // Collect all values: api_ref → value
         let mut values: HashMap<String, i64> = HashMap::new();
@@ -271,20 +255,6 @@ impl MarketDataSource for LichessMarketSource {
                 }
                 Err(e) => {
                     warn!("Lichess: failed to fetch tournaments: {:?}", e);
-                }
-            }
-        }
-
-        // 4. Daily Puzzle — puzzle rating
-        if need_puzzle {
-            match self.http.get_json::<PuzzleDailyResponse>(PUZZLE_URL).await {
-                Ok(data) => {
-                    api_calls += 1;
-                    values.insert("puzzle_rating".to_string(), data.puzzle.rating);
-                    debug!("Lichess daily puzzle: rating {}", data.puzzle.rating);
-                }
-                Err(e) => {
-                    warn!("Lichess: failed to fetch daily puzzle: {:?}", e);
                 }
             }
         }
@@ -386,7 +356,7 @@ mod tests {
         assert_eq!(
             entries.len(),
             32,
-            "Expected exactly 32 feed entries, got {}",
+            "Expected exactly 32 feed entries (incl. retired puzzle), got {}",
             entries.len()
         );
     }
@@ -396,18 +366,23 @@ mod tests {
         let assets = load_assets_from_json(ASSET_JSON).unwrap();
         assert_eq!(
             assets.len(),
-            32,
-            "Expected exactly 32 active feed assets, got {}",
+            31,
+            "Expected exactly 31 active feed assets (puzzle retired), got {}",
             assets.len()
         );
     }
 
     #[test]
-    fn test_all_entries_active() {
+    fn test_puzzle_is_retired() {
         let entries = load_all_asset_entries(ASSET_JSON).unwrap();
-        for entry in &entries {
-            assert!(entry.active, "Entry {} should be active", entry.asset_id);
-        }
+        let puzzle = entries
+            .iter()
+            .find(|e| e.api_ref == "puzzle_rating")
+            .expect("puzzle entry kept for backward compat");
+        assert!(
+            !puzzle.active,
+            "puzzle_rating must remain inactive — daily metric, frozen 23h59m"
+        );
     }
 
     #[test]
@@ -497,7 +472,7 @@ mod tests {
         assert_eq!(top_count, 13, "Expected 13 top player feeds");
         assert_eq!(tv_count, 16, "Expected 16 TV channel feeds");
         assert_eq!(tournament_count, 2, "Expected 2 tournament feeds");
-        assert_eq!(puzzle_count, 1, "Expected 1 puzzle feed");
+        assert_eq!(puzzle_count, 1, "Puzzle row retained for back-compat (inactive)");
     }
 
     #[test]
@@ -557,14 +532,4 @@ mod tests {
         assert_eq!(total, 165);
     }
 
-    #[test]
-    fn test_parse_puzzle_response() {
-        let json = r#"{
-            "game": {"id": "abc"},
-            "puzzle": {"id": "xyz", "rating": 1977, "plays": 95088, "themes": ["endgame"]}
-        }"#;
-
-        let data: PuzzleDailyResponse = serde_json::from_str(json).unwrap();
-        assert_eq!(data.puzzle.rating, 1977);
-    }
 }

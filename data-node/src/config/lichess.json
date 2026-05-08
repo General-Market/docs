@@ -30,5 +30,5 @@
   {"asset_id":"lichess_tv_threeCheck","symbol":"LI/TV3","name":"Three-Check TV Rating","category":"sports","subcategory":"chess","api_ref":"tv_threeCheck","active":true},
   {"asset_id":"lichess_tournaments_running","symbol":"LI/TRN","name":"Running Tournaments","category":"sports","subcategory":"chess","api_ref":"tournaments_running","active":true},
   {"asset_id":"lichess_tournaments_players","symbol":"LI/TPL","name":"Tournament Players","category":"sports","subcategory":"chess","api_ref":"tournaments_players","active":true},
-  {"asset_id":"lichess_puzzle_rating","symbol":"LI/PZL","name":"Daily Puzzle Rating","category":"sports","subcategory":"chess","api_ref":"puzzle_rating","active":true}
+  {"asset_id":"lichess_puzzle_rating","symbol":"LI/PZL","name":"Daily Puzzle Rating","category":"sports","subcategory":"chess","api_ref":"puzzle_rating","active":false}
 ]
