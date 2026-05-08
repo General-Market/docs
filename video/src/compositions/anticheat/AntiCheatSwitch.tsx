@@ -106,8 +106,21 @@ const Stage: React.FC = () => {
   return (
     <AbsoluteFill>
       <Headline morphT={morphT} />
+      <SettleOrb frame={frame} fps={fps} />
       <SpecLedger frame={frame} fps={fps} morphT={morphT} />
       <MorphingForty frame={frame} fps={fps} morphT={morphT} />
+      <Streak
+        frame={frame}
+        startFromX={HERO_CENTER_X + 1100}
+        startFromY={HERO_CENTER_Y - 700}
+      />
+      <Streak
+        frame={frame}
+        startFromX={HERO_CENTER_X - 1100}
+        startFromY={HERO_CENTER_Y + 700}
+        delay={2}
+      />
+      <ImpactFlash frame={frame} />
       <HeroCopy frame={frame} fps={fps} />
     </AbsoluteFill>
   );
@@ -433,6 +446,142 @@ const MorphingForty: React.FC<{
   );
 };
 
+// ─── Impact burst ─────────────────────────────────────────────────────────────
+//
+// Two diagonal accent-blue capsules accelerate from off-screen into the
+// centre of the morphing 40%. Brief radial flash on impact. A soft
+// settle orb fades in behind the hero and holds. Reference: Apple's
+// "watched" reveal — adapted to single-color accent.
+
+const STREAK_START = 58;
+const STREAK_IMPACT = 73;
+const FLASH_END = 84;
+const SETTLE_START = 76;
+
+const Streak: React.FC<{
+  frame: number;
+  startFromX: number;
+  startFromY: number;
+  delay?: number;
+}> = ({ frame, startFromX, startFromY, delay = 0 }) => {
+  const startAt = STREAK_START + delay;
+  const local = frame - startAt;
+  const duration = STREAK_IMPACT - startAt;
+
+  if (local < -4 || frame >= STREAK_IMPACT + 1) return null;
+
+  const t = Math.max(0, Math.min(1, local / duration));
+  // Ease-in cubic — the streak accelerates into impact.
+  const eased = t * t * t;
+
+  const x = startFromX + (HERO_CENTER_X - startFromX) * eased;
+  const y = startFromY + (HERO_CENTER_Y - startFromY) * eased;
+
+  const dx = HERO_CENTER_X - startFromX;
+  const dy = HERO_CENTER_Y - startFromY;
+  const angleDeg = (Math.atan2(dy, dx) * 180) / Math.PI;
+
+  const fadeIn = Math.max(0, Math.min(1, (local + 4) / 8));
+  const opacity = fadeIn;
+
+  // Stretch the capsule as it accelerates — motion smearing.
+  const baseLength = 300;
+  const length = baseLength * (1 + eased * 0.7);
+  const thickness = 26;
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: x,
+        top: y,
+        width: length,
+        height: thickness,
+        transform: `translate(-50%, -50%) rotate(${angleDeg.toFixed(2)}deg)`,
+        transformOrigin: "center center",
+        borderRadius: thickness / 2,
+        background:
+          "linear-gradient(90deg, rgba(0,82,255,0) 0%, rgba(0,82,255,0.3) 28%, rgba(0,82,255,0.95) 72%, rgba(200,225,255,1) 92%, rgba(255,255,255,1) 100%)",
+        filter: "blur(2px)",
+        boxShadow:
+          "0 0 28px rgba(0,82,255,0.85), 0 0 72px rgba(0,82,255,0.5), 0 0 160px rgba(0,82,255,0.22)",
+        opacity,
+        willChange: "transform, opacity",
+        pointerEvents: "none",
+      }}
+    />
+  );
+};
+
+const ImpactFlash: React.FC<{ frame: number }> = ({ frame }) => {
+  const local = frame - STREAK_IMPACT;
+  if (local < -2 || local > FLASH_END - STREAK_IMPACT) return null;
+
+  // Spike → decay over ~10 frames.
+  const tIn = Math.max(0, Math.min(1, (local + 2) / 4));
+  const tOut = Math.max(
+    0,
+    Math.min(1, (local - 1) / (FLASH_END - STREAK_IMPACT - 1)),
+  );
+  const opacity = tIn * tIn * (1 - tOut * tOut * tOut);
+  const scale = 0.4 + 1.3 * Math.sqrt(Math.max(0.001, tIn * (1 - tOut * 0.6)));
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: HERO_CENTER_X,
+        top: HERO_CENTER_Y,
+        width: 800,
+        height: 800,
+        transform: `translate(-50%, -50%) scale(${scale.toFixed(3)})`,
+        borderRadius: "50%",
+        background:
+          "radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(200,225,255,0.92) 14%, rgba(0,82,255,0.72) 30%, rgba(0,82,255,0.22) 55%, rgba(0,82,255,0) 78%)",
+        filter: "blur(20px)",
+        opacity,
+        pointerEvents: "none",
+      }}
+    />
+  );
+};
+
+const SettleOrb: React.FC<{ frame: number; fps: number }> = ({
+  frame,
+  fps,
+}) => {
+  const t = spring({
+    frame: frame - SETTLE_START,
+    fps,
+    config: { damping: 22, stiffness: 90, mass: 0.8 },
+  });
+  if (t < 0.005) return null;
+
+  const sinceStart = Math.max(0, frame - SETTLE_START);
+  const breath = 1 + Math.sin(sinceStart / 36) * 0.035;
+  const scale = (0.88 + t * 0.12) * breath;
+  const opacity = t * 0.9;
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: HERO_CENTER_X,
+        top: HERO_CENTER_Y,
+        width: 1100,
+        height: 1100,
+        transform: `translate(-50%, -50%) scale(${scale.toFixed(3)})`,
+        borderRadius: "50%",
+        background:
+          "radial-gradient(circle, rgba(0,82,255,0.42) 0%, rgba(0,82,255,0.22) 25%, rgba(0,82,255,0.08) 50%, rgba(0,82,255,0) 78%)",
+        filter: "blur(60px)",
+        opacity,
+        pointerEvents: "none",
+      }}
+    />
+  );
+};
+
 // ─── Hero copy ────────────────────────────────────────────────────────────────
 
 const HeroCopy: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
@@ -498,9 +647,9 @@ const HeroCopy: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
           right: 0,
           textAlign: "center",
           fontFamily: font,
-          fontSize: 38,
-          fontWeight: 500,
-          letterSpacing: "-0.020em",
+          fontSize: 56,
+          fontWeight: 600,
+          letterSpacing: "-0.024em",
           color: colors.fgSoft,
           opacity: kickOp,
           transform: `translateY(${kickY.toFixed(2)}px)`,
