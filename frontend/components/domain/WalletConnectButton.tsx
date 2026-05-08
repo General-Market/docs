@@ -31,13 +31,11 @@ export function WalletConnectButton() {
   // Loading state during connection or reconnection
   const isLoading = isConnecting || isReconnecting || isPending
 
-  // Auto-switch to correct chain whenever connected but on wrong network
-  // NOTE: Must be called before any early return to satisfy Rules of Hooks
-  useEffect(() => {
-    if (isConnected && isWrongNetwork && !isSwitching) {
-      switchChain({ chainId: indexL3.id })
-    }
-  }, [isConnected, isWrongNetwork, isSwitching, switchChain])
+  // No auto-switch on mount: wagmi's injected connector silently restores
+  // prior connections, and an auto-fired switchChain would pop MetaMask on
+  // every page load when the wallet sits on a different chain. Switching is
+  // user-driven via handleSwitchNetwork below, and via ensureCorrectChain in
+  // useChainWrite at write-time.
 
   // Track wallet connection + identify user in PostHog
   useEffect(() => {
