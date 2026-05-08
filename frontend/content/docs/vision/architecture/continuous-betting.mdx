@@ -19,7 +19,7 @@ You bet on what happens next. Not what is happening now — that would be too ea
 
 ## Two-Slot Bitmap Model
 
-Each player in each batch has two slots. One is being resolved. One is being written to. They swap at every tick boundary. The simplicity is structural. The correctness depends on it.
+Each player in each block has two slots. One is being resolved. One is being written to. They swap at every tick boundary. The simplicity is structural. The correctness depends on it.
 
 <Frame>
   <img src="/images/vision/two-slot-bitmap.svg" alt="Two-slot bitmap engine — pending slot for next tick, active slot resolving now, with config-safe decoding using stored config_hash" />
@@ -72,9 +72,9 @@ Markets change. New sources appear. Dead markets get removed. The config orchest
 
 | Safeguard | Value | Purpose |
 |---|---|---|
-| **MAX_BATCHES** | 200 | On-chain cap prevents unbounded batch flooding |
+| **MAX_BLOCKES** | 200 | On-chain cap prevents unbounded block flooding |
 | **Rate limit** | 3 per hour | Prevents gas exhaustion from rapid auto-creation |
-| **Min healthy assets** | 5 | Only creates batches with sufficient live data |
+| **Min healthy assets** | 5 | Only creates blocks with sufficient live data |
 | **Follower verification** | 20% threshold tolerance | Prevents compromised leader from crafting adversarial configs |
 | **Config/bitmap decoupling** | Per-bitmap config_hash | Config updates never scramble active bitmaps |
 
@@ -88,11 +88,11 @@ The frontend has zero hardcoded source knowledge. Every source name, logo, categ
 | `source-categories.ts` | API categories field |
 | `market-categories.ts` (PREFIX_MAP) | API prefixes field |
 | `VisionMarketsGrid` CATEGORY_GROUPS | API categories + order |
-| `vision-batches.json` (frontend) | `GET /batches/signed` |
+| `vision-blocks.json` (frontend) | `GET /blocks/signed` |
 | Multiplier math (oracle) | Flat stakePerTick |
 | Lock window logic | `lockOffset = 0` |
 | `multiplier.rs` (entire file) | Deleted |
-| Manual batch registration | `BatchCreated` auto-detect |
+| Manual block registration | `BlockCreated` auto-detect |
 
 <Info>
   Adding a new source = data-node config only. Zero frontend deploys. The `useSourceRegistry()` hook caches aggressively (SWR, 5-minute revalidation). Source metadata changes rarely. The hook returns stale data while revalidating, so the grid never flashes empty.
@@ -136,7 +136,7 @@ The contract holds the money. The oracles compute the outcomes. Neither trusts t
 | **Tick resolution** | BLS consensus (2/3+) | Single oracle can't manipulate outcomes |
 | **Payouts** | BLS-signed proof on-chain | Fake payouts rejected by contract |
 | **Withdrawals** | On-chain, player wallet tx | Only player can withdraw their funds |
-| **Batch config** | configHash on-chain | Config data verifiable against on-chain hash |
+| **Block config** | configHash on-chain | Config data verifiable against on-chain hash |
 | **Sit-out** | No active bitmap = no risk | Absence is safe |
 
 <Warning>

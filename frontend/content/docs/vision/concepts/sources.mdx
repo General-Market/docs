@@ -250,7 +250,7 @@ If ninety-eight ways to measure the world are not enough, you can add more. See 
 3. Register the source in the Data Node startup
 4. Add a `VISION_SOURCES` entry in `frontend/lib/vision/sources.ts`
 5. Add prefix mapping in `frontend/lib/vision/market-categories.ts`
-6. Add batch deployment in `contracts/script/DeployAllVisionBatches.s.sol`
+6. Add block deployment in `contracts/script/DeployAllVisionBlocks.s.sol`
 
 ```
     ┌────────────────────────────────────────────────────────────────┐
@@ -262,7 +262,7 @@ If ninety-eight ways to measure the world are not enough, you can add more. See 
     │  [3] Source registration ... data-node/src/main.rs             │
     │  [4] Frontend source ....... frontend/lib/vision/sources.ts    │
     │  [5] Category mapping ...... frontend/lib/vision/market-cats.ts│
-    │  [6] Batch deployment ...... contracts/script/DeployAll...sol  │
+    │  [6] Block deployment ...... contracts/script/DeployAll...sol  │
     │                                                                │
     │  All 6 files must be updated. Miss one and markets won't       │
     │  show up correctly (or at all) in the UI.                      │

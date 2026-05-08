@@ -7,7 +7,7 @@ description: "Developer guide for adding new data sources to Vision — from API
 
 You want to add a new way to measure the world. Here is how. The world will not thank you.
 
-Every source follows the same pattern: implement a Rust trait, wire it into the data-node, deploy on-chain batch pools, register in the frontend. The wiring is mechanical. The hard part is deciding **what to track and how to split feeds** -- which numbers deserve to become markets, and which are better left unobserved.
+Every source follows the same pattern: implement a Rust trait, wire it into the data-node, deploy on-chain block pools, register in the frontend. The wiring is mechanical. The hard part is deciding **what to track and how to split feeds** -- which numbers deserve to become markets, and which are better left unobserved.
 
 ## Pipeline Overview
 
@@ -266,7 +266,7 @@ ${MY_SOURCE_API_KEY:+--my-source-api-key "$MY_SOURCE_API_KEY"}
 
 ## Step 4: Add to Deployment Script
 
-**File:** `contracts/script/DeployAllVisionBatches.s.sol`
+**File:** `contracts/script/DeployAllVisionBlocks.s.sol`
 
 Two changes:
 
@@ -276,16 +276,16 @@ Two changes:
 names[N] = "my_source";
 ```
 
-2. **Bump the array size** in both `_getSourceNames()` return type AND `_exportBatchMapping()` parameter:
+2. **Bump the array size** in both `_getSourceNames()` return type AND `_exportBlockMapping()` parameter:
 
 ```solidity
 // Both must match the new count
 function _getSourceNames() internal pure returns (string[OLD+1] memory names) {
 // ...
-function _exportBatchMapping(string[OLD+1] memory sourceNames, ...
+function _exportBlockMapping(string[OLD+1] memory sourceNames, ...
 ```
 
-Without this, the source will not get an on-chain batch pool and markets cannot trade.
+Without this, the source will not get an on-chain block pool and markets cannot trade.
 
 ---
 

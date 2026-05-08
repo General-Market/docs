@@ -8,10 +8,10 @@ Three machines sign your balance. If two agree, you can claim. Trust is a thresh
 ## Quick Start: Check Your Balance
 
 ```bash
-curl https://generalmarket.io/api/vision/balance/{batchId}/{playerAddress}
+curl https://generalmarket.io/api/vision/balance/{blockId}/{playerAddress}
 ```
 
-Response: `{ "batch_id": 1, "player": "0x...", "balance": "15000000", "stake_per_tick": "100000" }`
+Response: `{ "block_id": 1, "player": "0x...", "balance": "15000000", "stake_per_tick": "100000" }`
 
 To claim on-chain, you need BLS-signed proofs from 2/3+ oracles. See [Bot Lifecycle](/vision/bots/lifecycle) for the full claim flow.
 
@@ -37,14 +37,14 @@ The balance proof lifecycle follows 5 steps. Each step is a negotiation between 
 The player queries an oracle node for their current balance:
 
 ```bash
-GET /vision/balance/{batchId}/{playerAddress}
+GET /vision/balance/{blockId}/{playerAddress}
 ```
 
 **Response:**
 
 ```json
 {
-  "batch_id": 1,
+  "block_id": 1,
   "player": "0xAbC...123",
   "balance": "15000000",
   "stake_per_tick": "100000"
@@ -74,7 +74,7 @@ bytes32 message = keccak256(abi.encode(
     chainId,            // Chain ID (prevents cross-chain replay)
     contractAddress,    // Vision contract address
     "CLAIM",            // Action tag
-    batchId,            // Batch ID
+    blockId,            // Block ID
     playerAddress,      // Player's address
     fromTick,           // First tick in the claim range
     toTick,             // Last tick in the claim range
@@ -90,7 +90,7 @@ The player aggregates the partial BLS signatures into a single aggregated signat
 
 ```solidity
 function claimRewards(
-    uint256 batchId,
+    uint256 blockId,
     uint256 fromTick,
     uint256 toTick,
     uint256 newBalance,
@@ -130,23 +130,23 @@ Two doors out. One lets you take your winnings and stay. The other lets you take
 
 ### Claiming (Partial)
 
-`claimRewards` lets a player claim accumulated winnings while staying in the batch:
+`claimRewards` lets a player claim accumulated winnings while staying in the block:
 
 ```solidity
-claimRewards(batchId, fromTick, toTick, newBalance, blsSig)
+claimRewards(blockId, fromTick, toTick, newBalance, blsSig)
 ```
 
 - Pays out the difference between old and new balance (minus fees).
-- The player remains in the batch and continues playing.
+- The player remains in the block and continues playing.
 - `lastClaimedTick` is updated to prevent double-claims.
 
 ### Withdrawing (Full Exit)
 
-`withdraw` removes the player from the batch entirely:
+`withdraw` removes the player from the block entirely:
 
 ```solidity
 function withdraw(
-    uint256 batchId,
+    uint256 blockId,
     uint256 finalBalance,
     bytes calldata blsSignature
 ) external;
@@ -157,7 +157,7 @@ The BLS message for withdrawal uses the `"WITHDRAW"` action tag:
 ```solidity
 bytes32 message = keccak256(abi.encode(
     chainId, contractAddress, "WITHDRAW",
-    batchId, playerAddress, finalBalance
+    blockId, playerAddress, finalBalance
 ));
 ```
 
@@ -172,7 +172,7 @@ Oracles can force-withdraw a player via BLS consensus. This is the protocol's ve
 
 ```solidity
 function forceWithdraw(
-    uint256 batchId,
+    uint256 blockId,
     address player,
     uint256 finalBalance,
     bytes calldata blsSignature
@@ -187,7 +187,7 @@ The contract enforces several safety checks. Every guard is a lesson learned fro
 
 | Check | Error | Description |
 |-------|-------|-------------|
-| Player must have joined | `NotJoined` | `stakePerTick == 0` means not in batch |
+| Player must have joined | `NotJoined` | `stakePerTick == 0` means not in block |
 | No double-claiming | `TickAlreadyClaimed` | `fromTick` must be after `lastClaimedTick` |
 | Valid tick range | `InvalidTickRange` | `toTick >= fromTick` |
 | BLS signature valid | `InvalidBLSSignature` | Aggregated signature must verify |
@@ -201,24 +201,24 @@ Here is a complete example of requesting a balance proof and submitting a claim.
 import { ethers } from "ethers";
 
 const VISION_ABI = [
-  "function claimRewards(uint256 batchId, uint256 fromTick, uint256 toTick, uint256 newBalance, bytes blsSignature)",
-  "function getPosition(uint256 batchId, address player) view returns (tuple(bytes32 bitmapHash, uint256 stakePerTick, uint256 startTick, uint256 balance, uint256 lastClaimedTick, uint256 joinTimestamp, uint256 totalDeposited, uint256 totalClaimed))",
+  "function claimRewards(uint256 blockId, uint256 fromTick, uint256 toTick, uint256 newBalance, bytes blsSignature)",
+  "function getPosition(uint256 blockId, address player) view returns (tuple(bytes32 bitmapHash, uint256 stakePerTick, uint256 startTick, uint256 balance, uint256 lastClaimedTick, uint256 joinTimestamp, uint256 totalDeposited, uint256 totalClaimed))",
 ];
 
 async function claimRewards(
   visionContract: ethers.Contract,
-  batchId: number,
+  blockId: number,
   oracleUrls: string[],
   playerAddress: string
 ) {
   // 1. Get current position
-  const position = await visionContract.getPosition(batchId, playerAddress);
+  const position = await visionContract.getPosition(blockId, playerAddress);
   const lastClaimed = position.lastClaimedTick.toNumber();
 
   // 2. Request balance proof from oracles
   const proofs = await Promise.all(
     oracleUrls.map(async (url) => {
-      const resp = await fetch(`${url}/vision/balance/${batchId}/${playerAddress}`);
+      const resp = await fetch(`${url}/vision/balance/${blockId}/${playerAddress}`);
       return resp.json();
     })
   );
@@ -237,7 +237,7 @@ async function claimRewards(
   const newBalance = proofs[0].balance;
 
   const tx = await visionContract.claimRewards(
-    batchId, fromTick, toTick, newBalance, aggregatedSig
+    blockId, fromTick, toTick, newBalance, aggregatedSig
   );
   await tx.wait();
 

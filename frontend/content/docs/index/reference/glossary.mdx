@@ -15,15 +15,15 @@ An entity registered with the protocol that executes trades on centralized excha
 
 ### Balance Proof
 
-A BLS-signed message from the oracle network that attests to a player's current USDC balance in a Vision batch. Balance proofs are required to claim rewards or withdraw funds from Vision. The player submits the proof on-chain, and the Vision contract verifies the BLS signature before updating the player's balance.
+A BLS-signed message from the oracle network that attests to a player's current USDC balance in a Vision block. Balance proofs are required to claim rewards or withdraw funds from Vision. The player submits the proof on-chain, and the Vision contract verifies the BLS signature before updating the player's balance.
 
-### Batch (Vision)
+### Block (Vision)
 
-A group of markets in Vision that share a common pool, tick duration, and resolution configuration. Any user can create a batch by selecting markets, a tick duration (5 min to 1 day), and a resolution type per market. Players join batches by depositing USDC and submitting bitmap commitments.
+A group of markets in Vision that share a common pool, tick duration, and resolution configuration. Any user can create a block by selecting markets, a tick duration (5 min to 1 day), and a resolution type per market. Players join blocks by depositing USDC and submitting bitmap commitments.
 
 ### Bitmap
 
-A packed binary representation of a player's bets across all markets in a Vision batch. Each market gets exactly 1 bit: 1 = UP (price increases), 0 = DOWN (price decreases). Bitmaps use big-endian bit ordering. The bitmap is committed on-chain as a `keccak256` hash (sealed commitment) and later revealed to oracle nodes.
+A packed binary representation of a player's bets across all markets in a Vision block. Each market gets exactly 1 bit: 1 = UP (price increases), 0 = DOWN (price decreases). Bitmaps use big-endian bit ordering. The bitmap is committed on-chain as a `keccak256` hash (sealed commitment) and later revealed to oracle nodes.
 
 ### Bot Registry
 
@@ -71,7 +71,7 @@ A tokenized vault standard used for DTF share tokens. Each DTF's share token imp
 
 ### Explorer
 
-A frontend dashboard showing system health, consensus metrics, and source status. The Explorer displays oracle uptime, BLS signing rates, data source freshness, Vision batch activity, and DTF order pipeline status. Accessible from the main navigation.
+A frontend dashboard showing system health, consensus metrics, and source status. The Explorer displays oracle uptime, BLS signing rates, data source freshness, Vision block activity, and DTF order pipeline status. Accessible from the main navigation.
 
 ### Health Factor
 
@@ -79,7 +79,7 @@ A ratio representing the safety of a lending position, calculated as the value o
 
 ### Oracle
 
-A consensus node in the General Market network that batches pending orders, produces BLS signatures, and submits confirmed batches on-chain. Multiple oracles form the consensus layer. Their BLS public keys are registered in `OracleRegistry`, and a quorum of signatures is required to confirm any batch.
+A consensus node in the General Market network that blocks pending orders, produces BLS signatures, and submits confirmed blocks on-chain. Multiple oracles form the consensus layer. Their BLS public keys are registered in `OracleRegistry`, and a quorum of signatures is required to confirm any block.
 
 ### DTF (Dex Traded Fund)
 
@@ -125,11 +125,11 @@ where `qty[i]` is the fixed per-share quantity of asset `i` and `price[i]` is it
 
 ### Netting
 
-The process of combining offsetting buy and sell orders within a batch to reduce the total volume that APs need to execute on external markets. For example, if a batch contains $10,000 in buy orders and $7,000 in sell orders for the same DTF, only $3,000 net needs to be executed externally.
+The process of combining offsetting buy and sell orders within a block to reduce the total volume that APs need to execute on external markets. For example, if a block contains $10,000 in buy orders and $7,000 in sell orders for the same DTF, only $3,000 net needs to be executed externally.
 
 ### Resolution Type
 
-A configuration parameter for each market in a Vision batch that defines the price movement threshold for determining the winning outcome. There are 14 resolution types: UP_0 (any increase), UP_30 (≥0.30%), UP_X (≥custom), DOWN_0 (any decrease), DOWN_30 (≥0.30%), DOWN_X (≥custom), FLAT_0 (no change), FLAT_X (within custom range), UP_300 (≥3%), UP_3000 (≥30%), DOWN_300 (≥3% decrease), DOWN_3000 (≥30% decrease), FLAT_300 (within 3%), FLAT_3000 (within 30%). Types 0-7 are standard; types 8-13 are hardcoded convenience presets. See [Resolution Types](/index/reference/resolution-types) for the full reference.
+A configuration parameter for each market in a Vision block that defines the price movement threshold for determining the winning outcome. There are 14 resolution types: UP_0 (any increase), UP_30 (≥0.30%), UP_X (≥custom), DOWN_0 (any decrease), DOWN_30 (≥0.30%), DOWN_X (≥custom), FLAT_0 (no change), FLAT_X (within custom range), UP_300 (≥3%), UP_3000 (≥30%), DOWN_300 (≥3% decrease), DOWN_3000 (≥30% decrease), FLAT_300 (within 3%), FLAT_3000 (within 30%). Types 0-7 are standard; types 8-13 are hardcoded convenience presets. See [Resolution Types](/index/reference/resolution-types) for the full reference.
 
 ### Rebalance
 
@@ -163,7 +163,7 @@ USD Coin, the primary collateral and settlement token in the protocol. USDC uses
 
 ### Tick
 
-A single resolution interval within a Vision batch. At the end of each tick, oracle nodes fetch closing prices, resolve each market to a binary outcome, compare each player's bitmap against outcomes, and distribute the tick pool to winners. Tick durations range from 5 minutes to 1 day and are immutable once the batch is created.
+A single resolution interval within a Vision block. At the end of each tick, oracle nodes fetch closing prices, resolve each market to a binary outcome, compare each player's bitmap against outcomes, and distribute the tick pool to winners. Tick durations range from 5 minutes to 1 day and are immutable once the block is created.
 
 ### UUPS (Universal Upgradeable Proxy Standard)
 

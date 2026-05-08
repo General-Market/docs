@@ -1,39 +1,39 @@
 ---
-title: "Batch State"
-description: "Query the full state of a single prediction batch"
+title: "Block State"
+description: "Query the full state of a single prediction block"
 ---
 
-# Batch State
+# Block State
 
-The complete state of a single batch -- every player, every balance, every commitment. A snapshot of collective conviction at one moment in time.
+The complete state of a single block -- every player, every balance, every commitment. A snapshot of collective conviction at one moment in time.
 
 ---
 
-## Get Batch State
+## Get Block State
 
-`GET /vision/batch/{id}/state`
+`GET /vision/block/{id}/state`
 
 Returns every player's position, balance, and bitmap status. Live data from the in-memory tick scheduler -- the truth, as of right now.
 
 <ParamField path="id" type="number" required>
-  The batch ID to query. Must be a valid, existing batch.
+  The block ID to query. Must be a valid, existing block.
 </ParamField>
 
 <Tabs>
 <Tab title="cURL">
 ```bash
-curl https://generalmarket.io/api/vision/batch/1/state
+curl https://generalmarket.io/api/vision/block/1/state
 ```
 </Tab>
 <Tab title="Python">
 ```python
 import requests
 
-batch_id = 1
-response = requests.get(f"https://generalmarket.io/api/vision/batch/{batch_id}/state")
+block_id = 1
+response = requests.get(f"https://generalmarket.io/api/vision/block/{block_id}/state")
 state = response.json()
 
-print(f"Batch {state['id']}: {state['player_count']} players")
+print(f"Block {state['id']}: {state['player_count']} players")
 print(f"Next tick: {state['next_tick']}")
 for player in state["players"]:
     print(f"  {player['address']}: balance={player['balance']}, bitmap={player['has_bitmap']}")
@@ -41,11 +41,11 @@ for player in state["players"]:
 </Tab>
 <Tab title="TypeScript">
 ```typescript
-const batchId = 1;
-const res = await fetch(`https://generalmarket.io/api/vision/batch/${batchId}/state`);
+const blockId = 1;
+const res = await fetch(`https://generalmarket.io/api/vision/block/${blockId}/state`);
 const state = await res.json();
 
-console.log(`Batch ${state.id}: ${state.player_count} players`);
+console.log(`Block ${state.id}: ${state.player_count} players`);
 console.log(`Next tick: ${state.next_tick}`);
 for (const player of state.players) {
   console.log(`  ${player.address}: balance=${player.balance}, bitmap=${player.has_bitmap}`);
@@ -96,12 +96,12 @@ for (const player of state.players) {
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `id` | number | Batch ID |
-| `creator` | string | Ethereum address of the batch creator |
-| `market_ids` | string[] | Market identifiers in this batch |
+| `id` | number | Block ID |
+| `creator` | string | Ethereum address of the block creator |
+| `market_ids` | string[] | Market identifiers in this block |
 | `tick_duration` | number | Seconds between tick resolutions |
-| `created_at_tick` | number | The tick number when the batch was created |
-| `paused` | boolean | Whether the batch is paused |
+| `created_at_tick` | number | The tick number when the block was created |
+| `paused` | boolean | Whether the block is paused |
 | `player_count` | number | Number of active players |
 | `next_tick` | number | Unix timestamp of the next tick resolution |
 | `players` | object[] | Array of player positions (see below) |
@@ -112,7 +112,7 @@ for (const player of state.players) {
 |-------|------|-------------|
 | `address` | string | Player's Ethereum address |
 | `stake_per_tick` | string | Amount staked per tick per market, in wei |
-| `balance` | string | Current balance in the batch, in wei |
+| `balance` | string | Current balance in the block, in wei |
 | `start_tick` | number | The tick number when the player joined |
 | `has_bitmap` | boolean | Whether the player has submitted a bitmap for the current tick |
 
@@ -124,4 +124,4 @@ Players with `has_bitmap: false` forfeit their stake without participating in ou
 
 | Status | Condition |
 |--------|-----------|
-| `404` | Batch with the given ID does not exist |
+| `404` | Block with the given ID does not exist |

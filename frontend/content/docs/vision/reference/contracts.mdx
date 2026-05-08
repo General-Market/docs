@@ -15,9 +15,9 @@ Vision's on-chain layer consists of three contracts deployed on the Index L3 (Ch
  |                                                                     |
  |  Player Actions          BLS-Gated (Oracle Consensus)              |
  |  +------------------+   +---------------------------------------+  |
- |  | joinBatch()      |   | createBatch()      -- BLS sig check   |  |
- |  | updateBitmap()   |   | createBatchAndJoin() -- BLS sig check |  |
- |  | deposit()        |   | updateBatchConfig() -- BLS sig check  |  |
+ |  | joinBlock()      |   | createBlock()      -- BLS sig check   |  |
+ |  | updateBitmap()   |   | createBlockAndJoin() -- BLS sig check |  |
+ |  | deposit()        |   | updateBlockConfig() -- BLS sig check  |  |
  |  | depositBalance() |   | claimRewards()      -- BLS sig check  |  |
  |  +------------------+   | withdraw()          -- BLS sig check  |  |
  |                          | forceWithdraw()     -- BLS sig check  |  |
@@ -43,7 +43,7 @@ Vision's on-chain layer consists of three contracts deployed on the Index L3 (Ch
 
 | Contract | LOC | Role |
 |---|---|---|
-| **Vision.sol** | ~820 | Main prediction market. Batch lifecycle, player positions, dual-balance accounting, BLS-gated operations. |
+| **Vision.sol** | ~820 | Main prediction market. Block lifecycle, player positions, dual-balance accounting, BLS-gated operations. |
 | **BotRegistry.sol** | ~140 | Standalone registry for automated trading bots. Free registration, peer discovery. |
 | **BettingLib.sol** | ~33 | Pure library for bet hash generation and verification via `keccak256`. |
 | **VisionMerkleProof.sol** | ~277 | Merkle tree verification for P2P trade resolution. Supports up to 1M trades. |
@@ -52,7 +52,7 @@ Vision's on-chain layer consists of three contracts deployed on the Index L3 (Ch
 
 ## Vision.sol
 
-The main contract inherits from `ReentrancyGuard` and `BLSVerifier`. It manages the full lifecycle of prediction batches: creation, player entry, reward distribution, and withdrawal.
+The main contract inherits from `ReentrancyGuard` and `BLSVerifier`. It manages the full lifecycle of prediction blocks: creation, player entry, reward distribution, and withdrawal.
 
 ### Constants
 
@@ -63,12 +63,12 @@ The main contract inherits from `ReentrancyGuard` and `BLSVerifier`. It manages 
 | `BPS_DENOMINATOR` | `10000` | Basis points denominator |
 | `MAX_TICK_DURATION` | `30 days` | Maximum tick duration (2,592,000 seconds) |
 
-### Batch Lifecycle
+### Block Lifecycle
 
-A batch is a continuous prediction market tied to a real-world data source. Each batch operates on a tick-based clock -- predictions lock before each tick resolves. Time, sliced into intervals of judgment:
+A block is a continuous prediction market tied to a real-world data source. Each block operates on a tick-based clock -- predictions lock before each tick resolves. Time, sliced into intervals of judgment:
 
 ```
-  createBatch()                                       Time
+  createBlock()                                       Time
   [BLS-gated]                                          |
        |                                               |
        v                                               v
@@ -91,15 +91,15 @@ A batch is a continuous prediction market tied to a real-world data source. Each
   <-- tickDuration --> <-- tickDuration --> ...
 
   Lock window = last `lockOffset` seconds of each tick.
-  During lock: joinBatch(), updateBitmap(), updateBatchConfig() all revert TickLocked().
+  During lock: joinBlock(), updateBitmap(), updateBlockConfig() all revert TickLocked().
 ```
 
 ### Deferred Config Promotion
 
-Batch configuration updates do not take effect immediately. They are staged via `updateBatchConfig()` and promoted at the next tick boundary.
+Block configuration updates do not take effect immediately. They are staged via `updateBlockConfig()` and promoted at the next tick boundary.
 
 ```
-  updateBatchConfig()
+  updateBlockConfig()
   [BLS-gated]
        |
        v
@@ -143,42 +143,42 @@ Vision supports two types of balance, enabling deposits from both L3 and Settlem
   Winnings route back to the same pool that funded the position (SOL-2).
 ```
 
-### Batch Management Functions
+### Block Management Functions
 
-#### createBatch
+#### createBlock
 
-Creates a new batch for a data source. Idempotent -- if the `sourceId` already has a batch, returns the existing `batchId` without reverting.
+Creates a new block for a data source. Idempotent -- if the `sourceId` already has a block, returns the existing `blockId` without reverting.
 
 ```solidity
-function createBatch(
+function createBlock(
     bytes32 sourceId,        // keccak256(source_id_string)
-    bytes32 configHash,      // keccak256 of ABI-encoded batch config
+    bytes32 configHash,      // keccak256 of ABI-encoded block config
     uint256 tickDuration,    // seconds per tick (1 .. 2,592,000)
     uint256 lockOffset,      // seconds before tick end where betting closes
     bytes calldata blsSignature,
     uint256 referenceNonce,
     uint256 signersBitmask
-) external returns (uint256 batchId);
+) external returns (uint256 blockId);
 ```
 
-**BLS domain tag:** `"CREATE_BATCH"`
+**BLS domain tag:** `"CREATE_BLOCK"`
 
 **BLS message:**
 ```
 keccak256(abi.encode(
-    block.chainid, address(this), "CREATE_BATCH",
+    block.chainid, address(this), "CREATE_BLOCK",
     sourceId, configHash, tickDuration, lockOffset
 ))
 ```
 
 ---
 
-#### createBatchAndJoin
+#### createBlockAndJoin
 
 Atomic create-or-lookup + join in a single transaction. Solves the problem that callers cannot read return values from state-changing transactions.
 
 ```solidity
-function createBatchAndJoin(
+function createBlockAndJoin(
     bytes32 sourceId,
     bytes32 configHash,
     uint256 tickDuration,
@@ -189,18 +189,18 @@ function createBatchAndJoin(
     uint256 depositAmount,   // USDC to deposit
     uint256 stakePerTick,    // USDC staked per tick
     bytes32 bitmapHash       // keccak256 of prediction bitmap
-) external returns (uint256 batchId);
+) external returns (uint256 blockId);
 ```
 
 ---
 
-#### updateBatchConfig
+#### updateBlockConfig
 
 Stages a config update for the next tick. Takes effect after `_promoteConfigIfNeeded()` fires.
 
 ```solidity
-function updateBatchConfig(
-    uint256 batchId,
+function updateBlockConfig(
+    uint256 blockId,
     bytes32 configHash,      // new config hash
     uint256 lockOffset,      // new lock offset
     bytes calldata blsSignature,
@@ -209,19 +209,19 @@ function updateBatchConfig(
 ) external;
 ```
 
-**BLS domain tag:** `"UPDATE_BATCH_CONFIG"` (distinct from `CREATE_BATCH`)
+**BLS domain tag:** `"UPDATE_BLOCK_CONFIG"` (distinct from `CREATE_BLOCK`)
 
 ---
 
 ### Player Operations
 
-#### joinBatch
+#### joinBlock
 
-Join an existing batch with a deposit, stake rate, and prediction bitmap.
+Join an existing block with a deposit, stake rate, and prediction bitmap.
 
 ```solidity
-function joinBatch(
-    uint256 batchId,
+function joinBlock(
+    uint256 blockId,
     bytes32 configHash,      // must match active configHash
     uint256 depositAmount,   // >= stakePerTick
     uint256 stakePerTick,    // >= MIN_STAKE_PER_TICK (1e5)
@@ -235,11 +235,11 @@ function joinBatch(
 
 #### updateBitmap
 
-Change your prediction bitmap mid-batch. Enforces lock window.
+Change your prediction bitmap mid-block. Enforces lock window.
 
 ```solidity
 function updateBitmap(
-    uint256 batchId,
+    uint256 blockId,
     bytes32 configHash,      // must match active configHash
     bytes32 newBitmapHash
 ) external;
@@ -249,10 +249,10 @@ function updateBitmap(
 
 #### deposit
 
-Top up your position balance in an already-joined batch.
+Top up your position balance in an already-joined block.
 
 ```solidity
-function deposit(uint256 batchId, uint256 amount) external;
+function deposit(uint256 blockId, uint256 amount) external;
 ```
 
 ---
@@ -263,7 +263,7 @@ Claim winnings for a tick range. BLS-gated -- oracles sign the new balance.
 
 ```solidity
 function claimRewards(
-    uint256 batchId,
+    uint256 blockId,
     uint256 fromTick,        // first tick to claim
     uint256 toTick,          // last tick to claim
     uint256 newBalance,      // oracle-computed new balance
@@ -296,11 +296,11 @@ function claimRewards(
 
 #### withdraw
 
-Exit a batch entirely. BLS-gated -- oracles sign the final balance.
+Exit a block entirely. BLS-gated -- oracles sign the final balance.
 
 ```solidity
 function withdraw(
-    uint256 batchId,
+    uint256 blockId,
     uint256 finalBalance,    // oracle-computed final balance
     bytes calldata blsSignature,
     uint256 referenceNonce,
@@ -374,8 +374,8 @@ All oracle operations require BLS consensus.
 #### pause / unpause
 
 ```solidity
-function pause(uint256 batchId, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external;
-function unpause(uint256 batchId, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external;
+function pause(uint256 blockId, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external;
+function unpause(uint256 blockId, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external;
 ```
 
 **BLS domain tags:** `"PAUSE"`, `"UNPAUSE"`
@@ -388,7 +388,7 @@ Emergency withdrawal of a player's position by oracle consensus.
 
 ```solidity
 function forceWithdraw(
-    uint256 batchId,
+    uint256 blockId,
     address player,
     uint256 finalBalance,
     bytes calldata blsSignature,
@@ -431,10 +431,10 @@ function updateFeeCollector(
 ### View Functions
 
 ```solidity
-function getBatch(uint256 batchId) external view returns (Batch memory);
-function getBatchIdBySourceId(bytes32 sourceId) external view returns (uint256);
-function currentTickId(uint256 batchId) external view returns (uint256);
-function getPosition(uint256 batchId, address player) external view returns (PlayerPosition memory);
+function getBlock(uint256 blockId) external view returns (Block memory);
+function getBlockIdBySourceId(bytes32 sourceId) external view returns (uint256);
+function currentTickId(uint256 blockId) external view returns (uint256);
+function getPosition(uint256 blockId, address player) external view returns (PlayerPosition memory);
 function balanceOf(address user) external view returns (uint256);
 function realBalance(address user) external view returns (uint256);
 function virtualBalance(address user) external view returns (uint256);
@@ -449,11 +449,11 @@ function getAllActiveBots() external view returns (address[] memory, Bot[] memor
 
 ## Key Data Structures
 
-### Batch
+### Block
 
 ```solidity
-struct Batch {
-    address creator;           // address that created the batch
+struct Block {
+    address creator;           // address that created the block
     bytes32 sourceId;          // keccak256(source_id_string)
     bytes32 configHash;        // active config hash
     bytes32 nextConfigHash;    // pending config hash (promoted next tick)
@@ -467,11 +467,11 @@ struct Batch {
 ```
 
 ```
-  Batch struct layout:
+  Block struct layout:
   +---------------------+--------------------------------------------+
   | Field               | Bytes  | Notes                             |
   +---------------------+--------+-----------------------------------+
-  | creator             |   20   | first user who called createBatch |
+  | creator             |   20   | first user who called createBlock |
   | sourceId            |   32   | keccak256 of source ID string     |
   | configHash          |   32   | active config (off-chain detail)  |
   | nextConfigHash      |   32   | staged config (0x0 = none)        |
@@ -646,7 +646,7 @@ struct Trade {
 function verify(bytes32 leaf, bytes32[] memory proof, uint256 index, bytes32 root)
     internal pure returns (bool);
 
-// Verify multiple proofs in batch
+// Verify multiple proofs in block
 function verifyMultiple(bytes32[] memory leaves, bytes32[][] memory proofs,
     uint256[] memory indices, bytes32 root) internal pure returns (bool);
 
@@ -670,36 +670,36 @@ function resolveTradeOutcome(Trade memory trade, uint256 exitPrice)
 ```
   Event Flow:
 
-  createBatch()
-       |---> BatchCreated(batchId, sourceId, creator, configHash, tickDuration, lockOffset)
+  createBlock()
+       |---> BlockCreated(blockId, sourceId, creator, configHash, tickDuration, lockOffset)
 
-  updateBatchConfig()
-       |---> BatchConfigUpdated(batchId, nextConfigHash, nextLockOffset)
+  updateBlockConfig()
+       |---> BlockConfigUpdated(blockId, nextConfigHash, nextLockOffset)
 
   _promoteConfigIfNeeded()  [internal, fires lazily]
-       |---> BatchConfigPromoted(batchId, oldConfigHash, newConfigHash, atTick)
+       |---> BlockConfigPromoted(blockId, oldConfigHash, newConfigHash, atTick)
 
   pause() / unpause()
-       |---> BatchPausedEvent(batchId)
-       |---> BatchUnpaused(batchId)
+       |---> BlockPausedEvent(blockId)
+       |---> BlockUnpaused(blockId)
 
-  joinBatch()
-       |---> PlayerJoined(batchId, player, stakePerTick, bitmapHash, configHash)
+  joinBlock()
+       |---> PlayerJoined(blockId, player, stakePerTick, bitmapHash, configHash)
 
   deposit()
-       |---> PlayerDeposited(batchId, player, amount)
+       |---> PlayerDeposited(blockId, player, amount)
 
   updateBitmap()
-       |---> BitmapUpdated(batchId, player, newBitmapHash, configHash)
+       |---> BitmapUpdated(blockId, player, newBitmapHash, configHash)
 
   claimRewards()
-       |---> RewardsClaimed(batchId, player, amount)
+       |---> RewardsClaimed(blockId, player, amount)
 
   withdraw()
-       |---> PlayerWithdrawn(batchId, player, amount)
+       |---> PlayerWithdrawn(blockId, player, amount)
 
   forceWithdraw()
-       |---> ForceWithdrawn(batchId, player, amount)
+       |---> ForceWithdrawn(blockId, player, amount)
 
   creditBalance()
        |---> BalanceCredited(user, amount, depositId)
@@ -734,14 +734,14 @@ All errors are defined in `IVision.sol`. No `require()` strings -- custom errors
 
 | Error | Trigger |
 |---|---|
-| `BatchNotFound()` | Batch does not exist or config hash mismatch |
-| `BatchPaused()` | Batch is paused by oracle consensus |
-| `BatchAlreadyExists()` | sourceId already has a batch |
+| `BlockNotFound()` | Block does not exist or config hash mismatch |
+| `BlockPaused()` | Block is paused by oracle consensus |
+| `BlockAlreadyExists()` | sourceId already has a block |
 | `Unauthorized()` | Caller lacks permission |
 | `InsufficientDeposit()` | depositAmount < stakePerTick |
 | `StakeBelowMinimum()` | stakePerTick < MIN_STAKE_PER_TICK |
-| `AlreadyJoined()` | Player already has a position in this batch |
-| `NotJoined()` | Player has no position in this batch |
+| `AlreadyJoined()` | Player already has a position in this block |
+| `NotJoined()` | Player has no position in this block |
 | `TickAlreadyClaimed()` | fromTick overlaps with already-claimed range |
 | `InvalidTickRange()` | toTick < fromTick |
 | `InvalidTickDuration()` | tickDuration is 0 or exceeds MAX_TICK_DURATION |
@@ -770,17 +770,17 @@ For detailed error resolutions and fix suggestions, see the [Error Codes](/visio
   +-----------------------------+----------+-------------------------------------+
   | Function                    | BLS?     | Description                         |
   +-----------------------------+----------+-------------------------------------+
-  | createBatch()               | YES      | Create batch for a sourceId         |
-  | createBatchAndJoin()        | YES      | Atomic create + join                |
-  | updateBatchConfig()         | YES      | Stage config update for next tick   |
-  | joinBatch()                 | no       | Join a batch with deposit + bitmap  |
+  | createBlock()               | YES      | Create block for a sourceId         |
+  | createBlockAndJoin()        | YES      | Atomic create + join                |
+  | updateBlockConfig()         | YES      | Stage config update for next tick   |
+  | joinBlock()                 | no       | Join a block with deposit + bitmap  |
   | updateBitmap()              | no       | Change prediction bitmap            |
   | deposit()                   | no       | Top up position balance             |
   | claimRewards()              | YES      | Claim winnings for tick range       |
-  | withdraw()                  | YES      | Exit batch, receive final balance   |
+  | withdraw()                  | YES      | Exit block, receive final balance   |
   | forceWithdraw()             | YES      | Emergency exit by oracle consensus  |
-  | pause()                     | YES      | Pause a batch                       |
-  | unpause()                   | YES      | Unpause a batch                     |
+  | pause()                     | YES      | Pause a block                       |
+  | unpause()                   | YES      | Unpause a block                     |
   | creditBalance()             | YES      | Credit virtual balance (cross-chain)|
   | depositBalance()            | no       | Deposit L3 USDC to real balance     |
   | withdrawBalance()           | no       | Withdraw real balance to L3 wallet  |
@@ -798,10 +798,10 @@ For detailed error resolutions and fix suggestions, see the [Error Codes](/visio
   +-----------------------------+--------------------------------------------+
   | Function                    | Returns                                    |
   +-----------------------------+--------------------------------------------+
-  | getBatch(batchId)           | Batch struct                               |
-  | getBatchIdBySourceId(srcId) | uint256 batchId                            |
-  | currentTickId(batchId)      | uint256 current tick (with underflow guard)|
-  | getPosition(batchId, player)| PlayerPosition struct                      |
+  | getBlock(blockId)           | Block struct                               |
+  | getBlockIdBySourceId(srcId) | uint256 blockId                            |
+  | currentTickId(blockId)      | uint256 current tick (with underflow guard)|
+  | getPosition(blockId, player)| PlayerPosition struct                      |
   | balanceOf(user)             | uint256 (real + virtual)                   |
   | realBalance(user)           | uint256                                    |
   | virtualBalance(user)        | uint256                                    |
@@ -823,9 +823,9 @@ Every BLS-gated function uses a unique domain tag in its signed message to preve
   +------------------------+---------------------------+
   | Domain Tag             | Function                  |
   +------------------------+---------------------------+
-  | "CREATE_BATCH"         | createBatch()             |
-  |                        | createBatchAndJoin()      |
-  | "UPDATE_BATCH_CONFIG"  | updateBatchConfig()       |
+  | "CREATE_BLOCK"         | createBlock()             |
+  |                        | createBlockAndJoin()      |
+  | "UPDATE_BLOCK_CONFIG"  | updateBlockConfig()       |
   | "CLAIM"                | claimRewards()            |
   | "WITHDRAW"             | withdraw()                |
   | "FORCE_WITHDRAW"       | forceWithdraw()           |
@@ -847,7 +847,7 @@ Three invariants that must hold at all times. The contract's promises, expressed
 
 ```
   INVARIANT 1:  USDC.balanceOf(this) >= totalRealBalance
-                                      + sum(active batch deposits)
+                                      + sum(active block deposits)
                                       + accumulatedFees
 
   INVARIANT 2:  totalRealBalance == sum(realBalance[all users])
@@ -875,18 +875,18 @@ Virtual balances are backed by USDC locked in `SettlementBridgeCustody` on the S
                                     sign creditBalance() -------->  virtualBalance[user] += amount
                                     (BLS consensus)                 (no L3 USDC moves)
 
-  2. Join a batch
-     joinBatch(batchId, ...) ----------------------------------->  _debitBalance(user, deposit)
+  2. Join a block
+     joinBlock(blockId, ...) ----------------------------------->  _debitBalance(user, deposit)
                                                                    create PlayerPosition
                                                                    emit PlayerJoined
 
   3. Update predictions
-     updateBitmap(batchId, ...) -------------------------------->  update bitmapHash
+     updateBitmap(blockId, ...) -------------------------------->  update bitmapHash
                                                                    emit BitmapUpdated
 
   4. Claim rewards (per tick range)
                               <--- oracles compute new balance
-     claimRewards(batchId,         and sign BLS proof
+     claimRewards(blockId,         and sign BLS proof
        fromTick, toTick,      ----------------------------------->  verify BLS
        newBalance, blsSig)                                          update balance
                                                                     credit winnings to real/virtual
@@ -894,7 +894,7 @@ Virtual balances are backed by USDC locked in `SettlementBridgeCustody` on the S
 
   5. Withdraw
                               <--- oracles compute final balance
-     withdraw(batchId,             and sign BLS proof
+     withdraw(blockId,             and sign BLS proof
        finalBalance, blsSig)  ----------------------------------->  verify BLS
                                                                     delete position
                                                                     credit payout to real/virtual

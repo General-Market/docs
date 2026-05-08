@@ -146,7 +146,7 @@ print(f"Consensus success: {network['consensus_success_total']}")
 ```json
 {
   "network": {
-    "poll_batch_ts": "2026-03-14T12:00:00Z",
+    "poll_block_ts": "2026-03-14T12:00:00Z",
     "quorum_met": true,
     "worst_status": "healthy",
     "consensus_rounds_total": 1542,
@@ -172,7 +172,7 @@ print(f"Consensus success: {network['consensus_success_total']}")
 {
   "snapshots": [
     {
-      "poll_batch_ts": "2026-03-14T11:55:00Z",
+      "poll_block_ts": "2026-03-14T11:55:00Z",
       "quorum_met": true,
       "worst_status": "healthy",
       "consensus_rounds_total": 1540,
@@ -190,7 +190,7 @@ print(f"Consensus success: {network['consensus_success_total']}")
 **Whitelisted response fields** (all other fields are stripped server-side):
 
 ```
-  poll_batch_ts              Timestamp of the health poll
+  poll_block_ts              Timestamp of the health poll
   quorum_met                 Whether BLS quorum was achieved
   worst_status               Worst status across all oracles
   consensus_rounds_total     Total consensus rounds attempted

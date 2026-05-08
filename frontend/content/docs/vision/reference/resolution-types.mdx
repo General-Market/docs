@@ -1,6 +1,6 @@
 ---
 title: "Resolution Types"
-description: "Complete reference for Vision batch resolution types"
+description: "Complete reference for Vision block resolution types"
 ---
 
 # Resolution Types
@@ -39,7 +39,7 @@ These are hardcoded convenience presets for common volatility bands. They don't 
 
 ## Custom Thresholds
 
-Resolution types ending in `_X` (UP_X, DOWN_X, FLAT_X) accept a custom threshold in basis points. The threshold is set per market when creating the batch via the `customThresholds` array in `createBatch()`.
+Resolution types ending in `_X` (UP_X, DOWN_X, FLAT_X) accept a custom threshold in basis points. The threshold is set per market when creating the block via the `customThresholds` array in `createBlock()`.
 
 **1 basis point = 0.01%**
 
@@ -81,7 +81,7 @@ The outcome for each market is then determined by the resolution type:
 
 ## Storage
 
-Resolution types are stored as raw `uint8` values in the off-chain batch config (never stored on-chain). The oracle resolver interprets them at tick resolution time. The Solidity enum in `IVision.sol` defines the first 8 types for reference; types 8-13 are oracle-level extensions.
+Resolution types are stored as raw `uint8` values in the off-chain block config (never stored on-chain). The oracle resolver interprets them at tick resolution time. The Solidity enum in `IVision.sol` defines the first 8 types for reference; types 8-13 are oracle-level extensions.
 
 ## Choosing a Resolution Type
 
@@ -93,9 +93,9 @@ Resolution types are stored as raw `uint8` values in the off-chain batch config 
 | Range-bound markets | FLAT_X | Bet that the price stays within a band |
 | Exact stagnation bets | FLAT_0 | Extremely rare -- price must not move at all |
 
-## Example Batch Configuration
+## Example Block Configuration
 
-A batch with 3 markets using different resolution types:
+A block with 3 markets using different resolution types:
 
 ```json
 {

@@ -13,7 +13,7 @@ The contracts are the truth. Everything else is commentary.
 
 | Contract | Description |
 |---|---|
-| **Index.sol** | Central entry point for order submission, batch/fill confirmation, and Dex Traded Fund (DTF) management. Houses `createITP` (converts weights to fixed per-share quantities), `_getCurrentPrice` (computes NAV from inventory), and `updateWeights` (rebalance that preserves NAV). |
+| **Index.sol** | Central entry point for order submission, block/fill confirmation, and Dex Traded Fund (DTF) management. Houses `createITP` (converts weights to fixed per-share quantities), `_getCurrentPrice` (computes NAV from inventory), and `updateWeights` (rebalance that preserves NAV). |
 | **ITP.sol** | ERC-4626 vault wrapping each DTF's share token. Handles minting on buy, burning on sell, and exposes standard vault accounting. |
 | **BridgeProxy.sol** | Cross-chain order routing between Arbitrum L1/L2 and the L3. Relays user orders submitted on Arbitrum down to the Index contract on L3. |
 | **BridgedItpFactory.sol** | Factory that creates ERC-20 representations of DTF shares on Arbitrum, enabling L1/L2 composability without requiring users to interact with L3 directly. |
@@ -33,9 +33,9 @@ The contracts are the truth. Everything else is commentary.
 
 | Library | Purpose |
 |---|---|
-| **TypesLib.sol** | Shared struct definitions used across the protocol: `LimitOrder`, `Fill`, `ITP`, batch metadata, and more. |
+| **TypesLib.sol** | Shared struct definitions used across the protocol: `LimitOrder`, `Fill`, `ITP`, block metadata, and more. |
 | **ErrorsLib.sol** | Custom error definitions ranging from `E001` through `E069+`. Every revert in the protocol uses a typed error from `ErrorsLib`. |
-| **EventsLib.sol** | Event definitions emitted by core contracts -- `OrderSubmitted`, `BatchConfirmed`, `FillExecuted`, `ITPCreated`, `WeightsUpdated`, etc. |
+| **EventsLib.sol** | Event definitions emitted by core contracts -- `OrderSubmitted`, `BlockConfirmed`, `FillExecuted`, `ITPCreated`, `WeightsUpdated`, etc. |
 | **BLSLib.sol** | BLS signature verification using EVM precompiles on the BN254 curve. Called by every path that validates oracle node consensus. |
 
 ## Storage Layout
@@ -75,7 +75,7 @@ Every state change that matters requires cryptographic proof that the machines a
 - **Curve:** BN254 (alt_bn128) -- precompiles at `0x06`, `0x07`, `0x08`
 - **Threshold:** `ceil(2n/3)` of registered oracle nodes
 - **Key management:** Aggregated public key in `OracleRegistry.sol`, updated on join/leave/rotation
-- **Verification:** `BLSLib.verify(message, signature, aggregatedPubkey)` in `confirmBatch()`, before any state change
+- **Verification:** `BLSLib.verify(message, signature, aggregatedPubkey)` in `confirmBlock()`, before any state change
 
 ## DTF Order Lifecycle
 
@@ -87,5 +87,5 @@ Vision turns opinions into positions and positions into outcomes. Parimutuel -- 
 
 | Contract | Description |
 |---|---|
-| **Vision.sol** | Parimutuel prediction market contract. Manages batch creation, bet placement, outcome resolution, and payout distribution. Each batch defines a set of outcomes; users deposit USDC to back a chosen outcome, and winning bettors split the total pool proportionally. |
-| **BotRegistry.sol** | Manages automated bot registration for Vision. Bots register with a wallet address and can participate in Vision batches programmatically. BotRegistry tracks bot metadata and enforces registration requirements. |
+| **Vision.sol** | Parimutuel prediction market contract. Manages block creation, bet placement, outcome resolution, and payout distribution. Each block defines a set of outcomes; users deposit USDC to back a chosen outcome, and winning bettors split the total pool proportionally. |
+| **BotRegistry.sol** | Manages automated bot registration for Vision. Bots register with a wallet address and can participate in Vision blocks programmatically. BotRegistry tracks bot metadata and enforces registration requirements. |

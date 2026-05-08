@@ -7,7 +7,7 @@ description: "Architecture and concepts for building autonomous Vision predictio
 
 You are building a machine to make predictions about the future. The machine will be wrong. But it will be wrong faster than you, and that is enough.
 
-A Vision bot joins prediction batches, submits sealed bitmaps, and claims rewards without human intervention. Registration is free, requires no collateral. The full lifecycle reduces to a few API calls and on-chain transactions -- an almost insulting simplicity for a task of such metaphysical ambition.
+A Vision bot joins prediction blocks, submits sealed bitmaps, and claims rewards without human intervention. Registration is free, requires no collateral. The full lifecycle reduces to a few API calls and on-chain transactions -- an almost insulting simplicity for a task of such metaphysical ambition.
 
 ## Architecture
 
@@ -18,16 +18,16 @@ A Vision bot joins prediction batches, submits sealed bitmaps, and claims reward
 The lifecycle of a bot is the lifecycle of hope, compressed into code:
 
 1. **Registers** on the Vision contract (one-time, free, no collateral).
-2. **Polls** the oracle API for active batches.
-3. **Generates predictions** -- UP or DOWN for each market in a batch.
+2. **Polls** the oracle API for active blocks.
+3. **Generates predictions** -- UP or DOWN for each market in a block.
 4. **Encodes** predictions into a packed bitmap and hashes it with keccak256.
-5. **Joins** the batch on-chain with a USDC deposit and the sealed bitmap hash.
+5. **Joins** the block on-chain with a USDC deposit and the sealed bitmap hash.
 6. **Reveals** the actual bitmap bytes to oracle nodes off-chain.
 7. **Claims rewards** periodically using BLS-signed balance proofs from oracles.
-8. **Withdraws** remaining balance when exiting a batch.
+8. **Withdraws** remaining balance when exiting a block.
 
 <Info>
-Registration is **free**. Calling `registerBot()` costs only gas. No staking, no collateral. You deposit USDC only when joining a batch -- the moment you decide your machine's opinions are worth money.
+Registration is **free**. Calling `registerBot()` costs only gas. No staking, no collateral. You deposit USDC only when joining a block -- the moment you decide your machine's opinions are worth money.
 </Info>
 
 ## Environment Variables
@@ -38,9 +38,9 @@ Registration is **free**. Calling `registerBot()` costs only gas. No staking, no
 | `VISION_API_URL` | No | `https://generalmarket.io/api/vision` | Oracle Vision API base URL |
 | `BOT_PRIVATE_KEY` | Yes | -- | Wallet private key (controls USDC deposits) |
 | `VISION_ADDRESS` | No | `0x4F1BDD073932828bf2822F6dCAD1121Da41ED1Ef` | Vision contract address |
-| `DEPOSIT_AMOUNT` | No | `10` | USDC to deposit per batch (whole tokens) |
+| `DEPOSIT_AMOUNT` | No | `10` | USDC to deposit per block (whole tokens) |
 | `STAKE_PER_TICK` | No | `1` | USDC to stake per tick (whole tokens) |
-| `POLL_INTERVAL` | No | `30` | Seconds between batch polling cycles |
+| `POLL_INTERVAL` | No | `30` | Seconds between block polling cycles |
 
 <Warning>
 **WUSDC on Index L3 uses 18 decimals.** Multiply token amounts by `10^18`. 10 USDC = `10_000_000_000_000_000_000` (1e19). Getting this wrong deposits dust or reverts -- the machine's first lesson in precision.

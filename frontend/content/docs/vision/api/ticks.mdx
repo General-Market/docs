@@ -11,26 +11,26 @@ The past, dissected. Query historical tick results, view revealed bitmaps after 
 
 ## Get Tick History
 
-`GET /vision/batch/{id}/history`
+`GET /vision/block/{id}/history`
 
-Returns the most recent tick results for a batch (up to 100). Each entry: the outcomes, the participants, the volume matched. A ledger of settled arguments.
+Returns the most recent tick results for a block (up to 100). Each entry: the outcomes, the participants, the volume matched. A ledger of settled arguments.
 
 <ParamField path="id" type="number" required>
-  The batch ID to fetch tick history for.
+  The block ID to fetch tick history for.
 </ParamField>
 
 <Tabs>
 <Tab title="cURL">
 ```bash
-curl https://generalmarket.io/api/vision/batch/1/history
+curl https://generalmarket.io/api/vision/block/1/history
 ```
 </Tab>
 <Tab title="Python">
 ```python
 import requests
 
-batch_id = 1
-response = requests.get(f"https://generalmarket.io/api/vision/batch/{batch_id}/history")
+block_id = 1
+response = requests.get(f"https://generalmarket.io/api/vision/block/{block_id}/history")
 history = response.json()["history"]
 
 for tick in history:
@@ -39,8 +39,8 @@ for tick in history:
 </Tab>
 <Tab title="TypeScript">
 ```typescript
-const batchId = 1;
-const res = await fetch(`https://generalmarket.io/api/vision/batch/${batchId}/history`);
+const blockId = 1;
+const res = await fetch(`https://generalmarket.io/api/vision/block/${blockId}/history`);
 const { history } = await res.json();
 
 for (const tick of history) {
@@ -55,7 +55,7 @@ for (const tick of history) {
 {
   "history": [
     {
-      "batch_id": 1,
+      "block_id": 1,
       "tick_id": 142,
       "resolved_at": "2026-02-22T12:00:00",
       "player_count": 8,
@@ -69,7 +69,7 @@ for (const tick of history) {
       }
     },
     {
-      "batch_id": 1,
+      "block_id": 1,
       "tick_id": 141,
       "resolved_at": "2026-02-22T11:00:00",
       "player_count": 7,
@@ -85,8 +85,8 @@ for (const tick of history) {
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `batch_id` | number | The batch ID |
-| `tick_id` | number | Sequential tick number within the batch |
+| `block_id` | number | The block ID |
+| `tick_id` | number | Sequential tick number within the block |
 | `resolved_at` | string \| null | ISO 8601 timestamp when the tick was resolved |
 | `player_count` | number \| null | Number of players who participated in this tick |
 | `total_matched` | string \| null | Total volume matched between winners and losers, in wei |
@@ -102,12 +102,12 @@ for (const tick of history) {
 
 ## Get Revealed Bitmaps
 
-`GET /vision/reveal/{batch_id}/{tick_id}`
+`GET /vision/reveal/{block_id}/{tick_id}`
 
 Returns all player bitmaps for a completed tick. Bitmaps are only available **after the reveal window has expired** -- the sealed opinions of others, visible only after it is too late to act on them.
 
-<ParamField path="batch_id" type="number" required>
-  The batch ID to query reveals for.
+<ParamField path="block_id" type="number" required>
+  The block ID to query reveals for.
 </ParamField>
 
 <ParamField path="tick_id" type="number" required>
@@ -124,10 +124,10 @@ curl https://generalmarket.io/api/vision/reveal/1/142
 ```python
 import requests
 
-batch_id = 1
+block_id = 1
 tick_id = 142
 response = requests.get(
-    f"https://generalmarket.io/api/vision/reveal/{batch_id}/{tick_id}"
+    f"https://generalmarket.io/api/vision/reveal/{block_id}/{tick_id}"
 )
 data = response.json()
 
@@ -137,10 +137,10 @@ for bm in data["bitmaps"]:
 </Tab>
 <Tab title="TypeScript">
 ```typescript
-const batchId = 1;
+const blockId = 1;
 const tickId = 142;
 const res = await fetch(
-  `https://generalmarket.io/api/vision/reveal/${batchId}/${tickId}`
+  `https://generalmarket.io/api/vision/reveal/${blockId}/${tickId}`
 );
 const data = await res.json();
 
@@ -154,7 +154,7 @@ for (const bm of data.bitmaps) {
 <Expandable title="Response">
 ```json
 {
-  "batch_id": 1,
+  "block_id": 1,
   "tick_id": 142,
   "bitmaps": [
     {
@@ -176,7 +176,7 @@ for (const bm of data.bitmaps) {
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `batch_id` | number | The batch ID |
+| `block_id` | number | The block ID |
 | `tick_id` | number | The tick number |
 | `bitmaps` | object[] | Array of revealed player bitmaps |
 | `bitmaps[].player` | string | Player's Ethereum address |
@@ -188,7 +188,7 @@ for (const bm of data.bitmaps) {
 | Status | Condition |
 |--------|-----------|
 | `403` | The reveal window has not yet expired for this tick. The error message includes the deadline timestamp. |
-| `404` | Batch does not exist |
+| `404` | Block does not exist |
 
 <Warning>
 The reveal window is a configurable delay after a tick ends, during which bitmaps remain sealed. Request too early and you receive a `403` with the deadline -- a timestamp that says, in effect, "not yet."
@@ -204,8 +204,8 @@ Simulate a bitmap strategy against deterministic pseudo-random outcomes. Test yo
 
 The backtest engine uses a deterministic PRNG seeded from market IDs and tick numbers, producing a consistent 50/50 base distribution. A controlled hallucination of the past.
 
-<ParamField body="batch_id" type="number" required>
-  The batch ID to simulate against. The batch must exist so the engine knows which markets to simulate.
+<ParamField body="block_id" type="number" required>
+  The block ID to simulate against. The block must exist so the engine knows which markets to simulate.
 </ParamField>
 
 <ParamField body="bitmap_hex" type="string" required>
@@ -226,7 +226,7 @@ The backtest engine uses a deterministic PRNG seeded from market IDs and tick nu
 curl -X POST https://generalmarket.io/api/vision/backtest \
   -H "Content-Type: application/json" \
   -d '{
-    "batch_id": 1,
+    "block_id": 1,
     "bitmap_hex": "0xff00ab",
     "ticks": 100
   }'
@@ -239,7 +239,7 @@ import requests
 response = requests.post(
     "https://generalmarket.io/api/vision/backtest",
     json={
-        "batch_id": 1,
+        "block_id": 1,
         "bitmap_hex": "0xff00ab",
         "ticks": 100,
     },
@@ -257,7 +257,7 @@ const res = await fetch("https://generalmarket.io/api/vision/backtest", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
-    batch_id: 1,
+    block_id: 1,
     bitmap_hex: "0xff00ab",
     ticks: 100,
   }),
@@ -302,8 +302,8 @@ console.log(`Simulated ${result.pnl_curve.length} ticks`);
 |--------|-----------|
 | `400` | Missing `bitmap_hex` field |
 | `400` | Invalid hex encoding in `bitmap_hex` |
-| `400` | Batch has no markets configured |
-| `404` | Batch does not exist |
+| `400` | Block has no markets configured |
+| `404` | Block does not exist |
 
 <Info>
 The backtest is **deterministic** -- same inputs, same outputs, always. Useful for comparing strategies against each other. Useless for predicting the future -- but then, what isn't.

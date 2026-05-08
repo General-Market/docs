@@ -15,7 +15,7 @@ Reveal what you committed to. Submit your prediction bitmap to the oracle node. 
 
 Submits a player's prediction bitmap off-chain. The oracle verifies that:
 
-1. The player is registered in the specified batch.
+1. The player is registered in the specified block.
 2. `keccak256(bitmap_bytes)` matches the `expected_hash`.
 3. The `expected_hash` matches the player's on-chain bitmap commitment.
 
@@ -25,16 +25,16 @@ If all checks pass, the bitmap is stored in memory and used during the next tick
   The player's Ethereum address (checksummed, with `0x` prefix).
 </ParamField>
 
-<ParamField body="batch_id" type="number" required>
-  The batch ID this bitmap is for. The player must have already joined this batch on-chain.
+<ParamField body="block_id" type="number" required>
+  The block ID this bitmap is for. The player must have already joined this block on-chain.
 </ParamField>
 
 <ParamField body="bitmap_hex" type="string" required>
-  The raw prediction bitmap encoded as a hex string (with `0x` prefix). Each bit represents a UP (1) or DOWN (0) prediction for the corresponding market in the batch. See [Bitmap Encoding](/vision/bots/bitmap-encoding) for the full format.
+  The raw prediction bitmap encoded as a hex string (with `0x` prefix). Each bit represents a UP (1) or DOWN (0) prediction for the corresponding market in the block. See [Bitmap Encoding](/vision/bots/bitmap-encoding) for the full format.
 </ParamField>
 
 <ParamField body="expected_hash" type="string" required>
-  The keccak256 hash of the bitmap bytes (`0x`-prefixed, 66 characters). This must match the hash the player committed on-chain via `joinBatch` or `updateBitmapHash`.
+  The keccak256 hash of the bitmap bytes (`0x`-prefixed, 66 characters). This must match the hash the player committed on-chain via `joinBlock` or `updateBitmapHash`.
 </ParamField>
 
 <Tabs>
@@ -44,7 +44,7 @@ curl -X POST https://generalmarket.io/api/vision/bitmap \
   -H "Content-Type: application/json" \
   -d '{
     "player": "0xAbC123...def",
-    "batch_id": 1,
+    "block_id": 1,
     "bitmap_hex": "0xff00ab",
     "expected_hash": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
   }'
@@ -64,7 +64,7 @@ response = requests.post(
     "https://generalmarket.io/api/vision/bitmap",
     json={
         "player": "0xAbC123...def",
-        "batch_id": 1,
+        "block_id": 1,
         "bitmap_hex": "0x" + bitmap_bytes.hex(),
         "expected_hash": bitmap_hash,
     },
@@ -85,7 +85,7 @@ const res = await fetch("https://generalmarket.io/api/vision/bitmap", {
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
     player: "0xAbC123...def",
-    batch_id: 1,
+    block_id: 1,
     bitmap_hex: bitmapHex,
     expected_hash: expectedHash,
   }),
@@ -100,7 +100,7 @@ console.log(await res.json());
 ```json
 {
   "accepted": true,
-  "batch_id": 1,
+  "block_id": 1,
   "player": "0xAbC123...def"
 }
 ```
@@ -111,7 +111,7 @@ console.log(await res.json());
 | Field | Type | Description |
 |-------|------|-------------|
 | `accepted` | boolean | Whether the bitmap was accepted and stored |
-| `batch_id` | number | The batch ID the bitmap was stored for |
+| `block_id` | number | The block ID the bitmap was stored for |
 | `player` | string | The player's Ethereum address |
 
 ### Errors
@@ -121,14 +121,14 @@ console.log(await res.json());
 | `400` | Invalid player address, malformed bitmap hex, or invalid expected_hash format |
 | `400` | `expected_hash` does not match the player's on-chain commitment |
 | `400` | `keccak256(bitmap_bytes)` does not match `expected_hash` |
-| `404` | Player is not registered in the specified batch |
+| `404` | Player is not registered in the specified block |
 
 <Info>
 You must commit your bitmap hash on-chain **before** submitting the actual bitmap to this endpoint. The typical flow is:
 
 1. Encode your predictions into a bitmap (see [Bitmap Encoding](/vision/bots/bitmap-encoding))
-2. Call `joinBatch(batchId, deposit, stakePerTick, keccak256(bitmap))` on-chain
+2. Call `joinBlock(blockId, deposit, stakePerTick, keccak256(bitmap))` on-chain
 3. Submit the raw bitmap to `POST /vision/bitmap`
 
-If you need to update your predictions, call `updateBitmapHash(batchId, newHash)` on-chain first, then resubmit.
+If you need to update your predictions, call `updateBitmapHash(blockId, newHash)` on-chain first, then resubmit.
 </Info>

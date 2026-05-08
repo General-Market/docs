@@ -255,7 +255,7 @@ export function BotOverviewLifecycle() {
         </defs>
 
         <Subgraph x={botX} y={botY} w={botW} h={botH} label="Vision Bot" tone="tint-blue" />
-        <Box x={botBoxX} y={botY + 40} w={botBoxW} h={64} title="Poll /vision/batches" sub="HTTP every 30s" accent="blue" />
+        <Box x={botBoxX} y={botY + 40} w={botBoxW} h={64} title="Poll /vision/blocks" sub="HTTP every 30s" accent="blue" />
         <Box x={botBoxX} y={botY + 124} w={botBoxW} h={64} title="Generate predictions" sub="UP / DOWN per market" accent="blue" />
         <Box x={botBoxX} y={botY + 208} w={botBoxW} h={64} title="Encode bitmap" sub="big-endian bit packing" accent="blue" />
         <Box x={botBoxX} y={botY + 292} w={botBoxW} h={64} title="keccak256 hash" sub="commitment seal" accent="blue" />
@@ -323,12 +323,12 @@ export function BotOverviewLifecycle() {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   2. BatchLifecycleDiagram
+   2. BlockLifecycleDiagram
    File: vision/architecture/batch-lifecycle.mdx
    Source: linear flowchart TD A→B→...→J→C (loop back)
    ─────────────────────────────────────────────────────────── */
 
-export function BatchLifecycleDiagram() {
+export function BlockLifecycleDiagram() {
   const W = 760
   const stages = [
     { title: 'Data sources', sub: 'sync 60s – 7d', accent: 'gray' as Accent },
@@ -748,12 +748,12 @@ export function BitmapEncodingFlow() {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   8. BatchStateMachine
+   8. BlockStateMachine
    File: vision/concepts/batches.mdx
    Source: flowchart LR with self-loop (More Ticks?), Paused branch
    ─────────────────────────────────────────────────────────── */
 
-export function BatchStateMachine() {
+export function BlockStateMachine() {
   const W = 820
   const H = 280
 

@@ -7,7 +7,7 @@ description: "Register and run your first Vision bot"
 
 Register your bot. Fund it. Let it loose. Watch it learn that the future is unkind to algorithms too.
 
-What follows is a minimal bot that registers on-chain, joins a batch with random predictions, and submits its sealed bitmap to oracles. It will not outperform chance. That comes later -- if it comes at all.
+What follows is a minimal bot that registers on-chain, joins a block with random predictions, and submits its sealed bitmap to oracles. It will not outperform chance. That comes later -- if it comes at all.
 
 ## Prerequisites
 
@@ -35,7 +35,7 @@ export VISION_API_URL="https://generalmarket.io/api/vision"
 
 ```python Python
 #!/usr/bin/env python3
-"""Minimal Vision bot — joins one batch with random bets."""
+"""Minimal Vision bot — joins one block with random bets."""
 
 import os, random, time, requests
 from web3 import Web3
@@ -55,8 +55,8 @@ acct = w3.eth.account.from_key(PRIVATE_KEY)
 VISION_ABI = [
     {"name":"registerBot","type":"function","stateMutability":"nonpayable",
      "inputs":[{"name":"endpoint","type":"string"},{"name":"pubkeyHash","type":"bytes32"}],"outputs":[]},
-    {"name":"joinBatch","type":"function","stateMutability":"nonpayable",
-     "inputs":[{"name":"batchId","type":"uint256"},{"name":"depositAmount","type":"uint256"},
+    {"name":"joinBlock","type":"function","stateMutability":"nonpayable",
+     "inputs":[{"name":"blockId","type":"uint256"},{"name":"depositAmount","type":"uint256"},
                {"name":"stakePerTick","type":"uint256"},{"name":"bitmapHash","type":"bytes32"}],"outputs":[]},
 ]
 ERC20_ABI = [
@@ -94,13 +94,13 @@ try:
 except Exception as e:
     print(f"Registration skipped (may already be registered): {e}")
 
-# Step 2: Fetch active batches
-batches = requests.get(f"{API_URL}/vision/batches", timeout=10).json().get("batches", [])
-if not batches:
-    print("No active batches."); exit(0)
-batch = batches[0]
-batch_id, market_count = batch["id"], batch["market_count"]
-print(f"Joining batch {batch_id} ({market_count} markets)")
+# Step 2: Fetch active blocks
+blocks = requests.get(f"{API_URL}/vision/blocks", timeout=10).json().get("blocks", [])
+if not blocks:
+    print("No active blocks."); exit(0)
+block = blocks[0]
+block_id, market_count = block["id"], block["market_count"]
+print(f"Joining block {block_id} ({market_count} markets)")
 
 # Step 3: Generate random bets and encode bitmap
 bets = [random.choice(["UP", "DOWN"]) for _ in range(market_count)]
@@ -111,17 +111,17 @@ bitmap_hash = Web3.keccak(bitmap)
 send_tx(usdc.functions.approve(VISION_ADDR, DEPOSIT).build_transaction(
     {"from": acct.address, "gas": 100_000}))
 
-# Step 5: Join batch on-chain
-send_tx(vision.functions.joinBatch(
-    batch_id, DEPOSIT, STAKE, bitmap_hash
+# Step 5: Join block on-chain
+send_tx(vision.functions.joinBlock(
+    block_id, DEPOSIT, STAKE, bitmap_hash
 ).build_transaction({"from": acct.address, "gas": 500_000}))
-print(f"Joined batch {batch_id} on-chain.")
+print(f"Joined block {block_id} on-chain.")
 
 # Step 6: Wait for chain indexer, then submit bitmap to oracles
 time.sleep(6)
 resp = requests.post(f"{API_URL}/vision/bitmap", json={
     "player": acct.address,
-    "batch_id": batch_id,
+    "block_id": block_id,
     "bitmap_hex": "0x" + bitmap.hex(),
     "expected_hash": "0x" + bitmap_hash.hex(),
 }, timeout=10)
@@ -151,7 +151,7 @@ const client = createWalletClient({ account, chain: indexL3, transport: http(RPC
 
 const visionAbi = parseAbi([
   'function registerBot(string endpoint, bytes32 pubkeyHash)',
-  'function joinBatch(uint256 batchId, uint256 depositAmount, uint256 stakePerTick, bytes32 bitmapHash)',
+  'function joinBlock(uint256 blockId, uint256 depositAmount, uint256 stakePerTick, bytes32 bitmapHash)',
 ])
 const erc20Abi = parseAbi(['function approve(address spender, uint256 amount) returns (bool)'])
 
@@ -177,12 +177,12 @@ async function main() {
     console.log('Bot registered.')
   } catch (e) { console.log('Registration skipped (may already be registered)') }
 
-  // Step 2: Fetch active batches
-  const res = await fetch(`${API_URL}/vision/batches`)
-  const { batches } = await res.json() as { batches: { id: number; market_count: number }[] }
-  if (!batches.length) { console.log('No active batches.'); return }
-  const { id: batchId, market_count: marketCount } = batches[0]
-  console.log(`Joining batch ${batchId} (${marketCount} markets)`)
+  // Step 2: Fetch active blocks
+  const res = await fetch(`${API_URL}/vision/blocks`)
+  const { blocks } = await res.json() as { blocks: { id: number; market_count: number }[] }
+  if (!blocks.length) { console.log('No active blocks.'); return }
+  const { id: blockId, market_count: marketCount } = blocks[0]
+  console.log(`Joining block ${blockId} (${marketCount} markets)`)
 
   // Step 3: Generate random bets and encode bitmap
   const bets = Array.from({ length: marketCount }, () => Math.random() > 0.5 ? 'UP' : 'DOWN')
@@ -195,12 +195,12 @@ async function main() {
     functionName: 'approve', args: [VISION_ADDR, DEPOSIT],
   })
 
-  // Step 5: Join batch on-chain
+  // Step 5: Join block on-chain
   await client.writeContract({
     address: VISION_ADDR, abi: visionAbi,
-    functionName: 'joinBatch', args: [BigInt(batchId), DEPOSIT, STAKE, bitmapHash],
+    functionName: 'joinBlock', args: [BigInt(blockId), DEPOSIT, STAKE, bitmapHash],
   })
-  console.log(`Joined batch ${batchId} on-chain.`)
+  console.log(`Joined block ${blockId} on-chain.`)
 
   // Step 6: Wait for chain indexer, then submit bitmap to oracles
   await new Promise(r => setTimeout(r, 6000))
@@ -209,7 +209,7 @@ async function main() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       player: account.address,
-      batch_id: batchId,
+      block_id: blockId,
       bitmap_hex: toHex(bitmap),
       expected_hash: bitmapHash,
     }),
@@ -233,22 +233,22 @@ Call `registerBot(endpoint, pubkeyHash)` on the Vision contract. One transaction
 
 Registration is free. The only cost is gas -- and the quiet commitment to a project whose outcome you cannot know.
 
-### 2. Poll for Active Batches
+### 2. Poll for Active Blocks
 
 ```
-GET /vision/batches
+GET /vision/blocks
 ```
 
-Returns an array of `BatchSummary` objects. Each batch includes:
-- `id` -- batch ID to pass to `joinBatch`
+Returns an array of `BlockSummary` objects. Each block includes:
+- `id` -- block ID to pass to `joinBlock`
 - `market_count` -- number of markets (determines bitmap size)
 - `tick_duration` -- seconds per tick
 - `player_count` -- number of active players
-- `paused` -- skip paused batches
+- `paused` -- skip paused blocks
 
 ### 3. Generate Predictions
 
-For each market in the batch, decide UP or DOWN. The quickstart uses random bets -- the purest confession of ignorance. See [Example Strategies](/vision/bots/strategies) for approaches that disguise ignorance as method.
+For each market in the block, decide UP or DOWN. The quickstart uses random bets -- the purest confession of ignorance. See [Example Strategies](/vision/bots/strategies) for approaches that disguise ignorance as method.
 
 ### 4. Encode and Hash the Bitmap
 
@@ -258,7 +258,7 @@ Predictions are packed into a big-endian bitmap: bit 1 = UP, bit 0 = DOWN. The h
 
 Two transactions:
 1. `USDC.approve(visionAddress, depositAmount)` -- allow Vision to pull USDC
-2. `Vision.joinBatch(batchId, depositAmount, stakePerTick, bitmapHash)` -- join the batch
+2. `Vision.joinBlock(blockId, depositAmount, stakePerTick, bitmapHash)` -- join the block
 
 <Tip>
 Approve a larger amount once (e.g., `type(uint256).max`) to avoid repeated approvals. One act of trust, amortized across all future gambles.
@@ -272,7 +272,7 @@ After joining on-chain, wait six seconds. Six seconds -- the gap between commitm
 POST /vision/bitmap
 {
   "player": "0xYourAddress",
-  "batch_id": 42,
+  "block_id": 42,
   "bitmap_hex": "0xab01...",
   "expected_hash": "0x..."
 }
@@ -281,7 +281,7 @@ POST /vision/bitmap
 The oracle verifies that `keccak256(bitmap_bytes) == expected_hash == on-chain bitmapHash`. If verification passes, the bitmap is stored for tick resolution.
 
 <Warning>
-Skip the wait and the oracle will not yet know you exist. "Player not found in batch" -- a rejection both technical and existential.
+Skip the wait and the oracle will not yet know you exist. "Player not found in block" -- a rejection both technical and existential.
 </Warning>
 
 ## What Happens Next
@@ -290,7 +290,7 @@ Once your bitmap is accepted, the machine waits. That is most of what machines d
 
 - At each tick interval, oracles fetch real market prices and determine UP/DOWN outcomes.
 - Your bitmap is compared against reality. Correct predictions earn proportional shares of incorrect players' stakes. The universe redistributes conviction.
-- Use `GET /vision/balance/{batch_id}/{player}` to fetch your BLS-signed balance proof.
+- Use `GET /vision/balance/{block_id}/{player}` to fetch your BLS-signed balance proof.
 - Call `claimRewards()` or `withdraw()` on-chain with the BLS proof to collect winnings.
 
 See [Bot Lifecycle](/vision/bots/lifecycle) for the full claim and withdrawal flow.

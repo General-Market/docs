@@ -5,7 +5,7 @@ description: "The 14 resolution types that determine how Vision markets are sett
 
 How much must a price move to count as movement? This page answers that question. The market answers a different one -- whether anyone was right about the direction. The resolution type is the threshold between noise and signal, between a refund and a reckoning.
 
-A **resolution type** defines the win condition for a market within a batch. Each market in a batch has its own resolution type, stored as a `uint8` in the `resolutionTypes` array. The resolution type determines how much the price must move for a market to resolve as UP, DOWN, or FLAT.
+A **resolution type** defines the win condition for a market within a block. Each market in a block has its own resolution type, stored as a `uint8` in the `resolutionTypes` array. The resolution type determines how much the price must move for a market to resolve as UP, DOWN, or FLAT.
 
 ## Resolution Type Table
 
@@ -90,7 +90,7 @@ match resolution_type {
 
 ## Custom Thresholds
 
-Resolution types ending in `_X` (`UP_X`, `DOWN_X`, `FLAT_X`) use custom thresholds -- you define what counts as movement. This is a power that should be exercised with care, because the threshold you choose determines who wins, who loses, and how often everyone gets refunded. These are passed in the `customThresholds` array when creating a batch, stored as **basis points** (1/100th of a percent).
+Resolution types ending in `_X` (`UP_X`, `DOWN_X`, `FLAT_X`) use custom thresholds -- you define what counts as movement. This is a power that should be exercised with care, because the threshold you choose determines who wins, who loses, and how often everyone gets refunded. These are passed in the `customThresholds` array when creating a block, stored as **basis points** (1/100th of a percent).
 
 | Basis Points | Percentage |
 |-------------|------------|
@@ -102,7 +102,7 @@ Resolution types ending in `_X` (`UP_X`, `DOWN_X`, `FLAT_X`) use custom threshol
 
 The threshold is applied symmetrically: a threshold of 100 basis points (1%) means the price must move more than +1% for UP or more than -1% for DOWN.
 
-**Example:** Create a batch where BTC needs to move more than 1% and ETH needs to move more than 0.5%:
+**Example:** Create a block where BTC needs to move more than 1% and ETH needs to move more than 0.5%:
 
 ```javascript
 const marketIds = [
@@ -117,7 +117,7 @@ const customThresholds = [
   50,   // ETH: 0.50% threshold (50 basis points)
 ];
 
-await vision.createBatch(marketIds, resolutionTypes, tickDuration, customThresholds);
+await vision.createBlock(marketIds, resolutionTypes, tickDuration, customThresholds);
 ```
 
 <Warning>

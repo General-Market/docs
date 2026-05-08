@@ -1,11 +1,11 @@
 ---
 title: "Resolution Types"
-description: "Complete reference for Vision batch resolution types"
+description: "Complete reference for Vision block resolution types"
 ---
 
 # Resolution Types
 
-Each market in a Vision batch has a resolution type that determines how price movement is evaluated at the end of each tick. The resolution type defines the threshold a price must cross for the UP outcome to win.
+Each market in a Vision block has a resolution type that determines how price movement is evaluated at the end of each tick. The resolution type defines the threshold a price must cross for the UP outcome to win.
 
 ## Type Reference
 
@@ -35,7 +35,7 @@ Each market in a Vision batch has a resolution type that determines how price mo
 
 ## Custom Thresholds
 
-Resolution types ending in `_X` (UP_X, DOWN_X, FLAT_X) accept a custom threshold in basis points. The threshold is set per market when creating the batch via the `customThresholds` array in `createBatch()`.
+Resolution types ending in `_X` (UP_X, DOWN_X, FLAT_X) accept a custom threshold in basis points. The threshold is set per market when creating the block via the `customThresholds` array in `createBlock()`.
 
 **1 basis point = 0.01%**
 
@@ -75,7 +75,7 @@ The outcome for each market is then determined by the resolution type:
 
 ## Storage
 
-Resolution types are stored as raw `uint8` values in the off-chain batch config (never on-chain). The oracle resolver interprets them at tick resolution time.
+Resolution types are stored as raw `uint8` values in the off-chain block config (never on-chain). The oracle resolver interprets them at tick resolution time.
 
 ## Choosing a Resolution Type
 
@@ -87,9 +87,9 @@ Resolution types are stored as raw `uint8` values in the off-chain batch config 
 | Range-bound markets | FLAT_X | Bet that the price stays within a band |
 | Exact stagnation bets | FLAT_0 | Extremely rare — price must not move at all |
 
-## Example Batch Configuration
+## Example Block Configuration
 
-A batch with 3 markets using different resolution types:
+A block with 3 markets using different resolution types:
 
 ```json
 {

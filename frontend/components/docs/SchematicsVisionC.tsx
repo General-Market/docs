@@ -84,7 +84,7 @@ function TitleBox({
 
 /* ─── Batch lifecycle pipeline (DATA NODE → ORACLE → L3) ──────── */
 
-export function BatchPipelineSchematic() {
+export function BlockPipelineSchematic() {
   const w = 760
   const colW = 720
   const colX = 20
@@ -109,7 +109,7 @@ export function BatchPipelineSchematic() {
           <text x={colX + 18} y={top + 24} fontFamily={FONT_DISPLAY} fontSize="14" fontWeight="600" fill={T1}>Data Node</text>
           <g fontFamily={FONT_TEXT} fontSize="12" fill={T2}>
             <text x={colX + 18} y={top + 50}>100 Sources → SyncEngine → market_prices_latest</text>
-            <text x={colX + 18} y={top + 72}>BatchEngine (60s)</text>
+            <text x={colX + 18} y={top + 72}>BlockEngine (60s)</text>
             <text x={colX + 18} y={top + 94}>batch_configs (DB + memory)</text>
             <text x={colX + 18} y={top + 116} fill={T1} fontWeight="500">GET /batches/recommended</text>
           </g>
@@ -126,7 +126,7 @@ export function BatchPipelineSchematic() {
 
           <g fontFamily={FONT_TEXT} fontSize="11.5" fill={T1}>
             <text x={colX + 30} y={oracleY + 72} fontWeight="500">Create new batch</text>
-            <text x={colX + 200} y={oracleY + 72} fill={T2}>BLS consensus → createBatch on-chain</text>
+            <text x={colX + 200} y={oracleY + 72} fill={T2}>BLS consensus → createBlock on-chain</text>
 
             <text x={colX + 30} y={oracleY + 96} fontWeight="500">Resolve previous batch</text>
             <text x={colX + 48} y={oracleY + 116} fill={T2}>1. Fetch config + prices from data-node</text>
@@ -134,7 +134,7 @@ export function BatchPipelineSchematic() {
             <text x={colX + 48} y={oracleY + 152} fill={T2}>3. Per-market resolution (prices → outcome → matching)</text>
             <text x={colX + 48} y={oracleY + 170} fill={T2}>4. Compute settlement (deterministic payouts)</text>
             <text x={colX + 48} y={oracleY + 188} fill={T2}>5. BLS sign → aggregate in Postgres</text>
-            <text x={colX + 48} y={oracleY + 206} fill={T2}>6. Submit settleBatch when quorum reached</text>
+            <text x={colX + 48} y={oracleY + 206} fill={T2}>6. Submit settleBlock when quorum reached</text>
           </g>
         </g>
 
@@ -148,10 +148,10 @@ export function BatchPipelineSchematic() {
 
           <g fontFamily={FONT_TEXT} fontSize="12">
             <text x={colX + 18} y={l3Y + 50} fontWeight="600" fill={T1}>Vision.sol</text>
-            <text x={colX + 30} y={l3Y + 70} fill={T2}>createBatch() → BatchCreated</text>
-            <text x={colX + 30} y={l3Y + 88} fill={T2}>joinBatchDirect() → PlayerJoined</text>
+            <text x={colX + 30} y={l3Y + 70} fill={T2}>createBlock() → BlockCreated</text>
+            <text x={colX + 30} y={l3Y + 88} fill={T2}>joinBlockDirect() → PlayerJoined</text>
             <text x={colX + 30} y={l3Y + 106} fill={T2}>updateBitmap() → BitmapUpdated</text>
-            <text x={colX + 30} y={l3Y + 124} fill={T2}>settleBatch() → PlayerSettled + BatchSettled</text>
+            <text x={colX + 30} y={l3Y + 124} fill={T2}>settleBlock() → PlayerSettled + BlockSettled</text>
             <text x={colX + 30} y={l3Y + 142} fill={T2}>pause() / unpause()</text>
 
             <text x={colX + 18} y={l3Y + 170} fontWeight="600" fill={T1}>VisionReserve.sol</text>

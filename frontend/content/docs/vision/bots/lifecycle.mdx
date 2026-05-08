@@ -58,21 +58,21 @@ Check if your bot is already registered before calling `registerBot()`. You can 
 
 ---
 
-## Step 2: Poll Batches
+## Step 2: Poll Blocks
 
-Poll the oracle API for active batches on a loop. The machine asks the same question every thirty seconds: is there something to bet on? The answer is almost always yes.
+Poll the oracle API for active blocks on a loop. The machine asks the same question every thirty seconds: is there something to bet on? The answer is almost always yes.
 
 ```python
 import requests
 import time
 
-def poll_batches(api_url: str, poll_interval: int = 30) -> list[dict]:
+def poll_blocks(api_url: str, poll_interval: int = 30) -> list[dict]:
     while True:
         try:
-            resp = requests.get(f"{api_url}/vision/batches", timeout=10)
+            resp = requests.get(f"{api_url}/vision/blocks", timeout=10)
             if resp.ok:
-                batches = resp.json().get("batches", [])
-                active = [b for b in batches if not b.get("paused")]
+                blocks = resp.json().get("blocks", [])
+                active = [b for b in blocks if not b.get("paused")]
                 if active:
                     return active
         except requests.RequestException as e:
@@ -84,21 +84,21 @@ def poll_batches(api_url: str, poll_interval: int = 30) -> list[dict]:
 **API endpoint:**
 
 ```
-GET /vision/batches
+GET /vision/blocks
 ```
 
 **Response fields:**
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `id` | `u64` | Batch ID |
-| `creator` | `string` | Batch creator address |
+| `id` | `u64` | Block ID |
+| `creator` | `string` | Block creator address |
 | `market_ids` | `string[]` | Market identifiers |
 | `market_count` | `usize` | Number of markets |
 | `tick_duration` | `u64` | Seconds per tick |
 | `player_count` | `usize` | Current number of players |
 | `tvl` | `string` | Total value locked (raw USDC units) |
-| `paused` | `bool` | Whether the batch is paused |
+| `paused` | `bool` | Whether the block is paused |
 
 **Errors:**
 
@@ -106,7 +106,7 @@ GET /vision/batches
 |-------|-------|-----|
 | HTTP 500 | Database error on oracle | Retry after backoff |
 | Timeout | Oracle unreachable | Check `VISION_API_URL`, retry |
-| Empty `batches` array | No active batches exist | Sleep and retry |
+| Empty `blocks` array | No active blocks exist | Sleep and retry |
 
 ---
 
@@ -121,8 +121,8 @@ def generate_predictions(market_count: int) -> list[str]:
     """Random baseline. Replace with your strategy."""
     return [random.choice(["UP", "DOWN"]) for _ in range(market_count)]
 
-batch = active_batches[0]
-bets = generate_predictions(batch["market_count"])
+block = active_blocks[0]
+bets = generate_predictions(block["market_count"])
 ```
 
 **Key constraint:** The returned list must have exactly `market_count` elements. Missing entries default to DOWN when encoded.
@@ -144,14 +144,14 @@ def encode_bitmap(bets: list[str], market_count: int) -> bytes:
             bitmap[i // 8] |= 1 << (7 - i % 8)
     return bytes(bitmap)
 
-bitmap = encode_bitmap(bets, batch["market_count"])
+bitmap = encode_bitmap(bets, block["market_count"])
 bitmap_hash = Web3.keccak(bitmap)    # bytes32 commitment
 bitmap_hex = "0x" + bitmap.hex()     # for API submission
 ```
 
 **Verification invariant:**
 ```
-keccak256(bitmap_bytes) == bitmapHash passed to joinBatch()
+keccak256(bitmap_bytes) == bitmapHash passed to joinBlock()
 ```
 
 ---
@@ -191,14 +191,14 @@ approve_usdc(usdc, VISION_ADDRESS, DEPOSIT, account, w3)
 
 ---
 
-## Step 6: Join Batch
+## Step 6: Join Block
 
-Call `joinBatch` on the Vision contract to enter the batch with your sealed commitment.
+Call `joinBlock` on the Vision contract to enter the block with your sealed commitment.
 
 ```python
-def join_batch(vision_contract, batch_id, deposit, stake, bitmap_hash, account, w3):
-    tx = vision_contract.functions.joinBatch(
-        batch_id, deposit, stake, bitmap_hash
+def join_block(vision_contract, block_id, deposit, stake, bitmap_hash, account, w3):
+    tx = vision_contract.functions.joinBlock(
+        block_id, deposit, stake, bitmap_hash
     ).build_transaction({
         "from": account.address,
         "gas": 500_000,
@@ -211,14 +211,14 @@ def join_batch(vision_contract, batch_id, deposit, stake, bitmap_hash, account, 
     return receipt
 
 STAKE = 1 * 10**6   # 1 USDC per tick
-receipt = join_batch(vision, batch_id, DEPOSIT, STAKE, bitmap_hash, account, w3)
+receipt = join_block(vision, block_id, DEPOSIT, STAKE, bitmap_hash, account, w3)
 ```
 
 **Contract function:**
 
 ```solidity
-function joinBatch(
-    uint256 batchId,
+function joinBlock(
+    uint256 blockId,
     uint256 depositAmount,
     uint256 stakePerTick,
     bytes32 bitmapHash
@@ -231,9 +231,9 @@ function joinBatch(
 
 | Error | Cause | Fix |
 |-------|-------|-----|
-| `BatchNotFound` | Invalid batch ID | Re-fetch batches from API |
-| `BatchPaused` | Batch has been paused | Skip this batch |
-| `AlreadyJoined` | Already have a position in this batch | Skip or use `deposit()` to add more |
+| `BlockNotFound` | Invalid block ID | Re-fetch blocks from API |
+| `BlockPaused` | Block has been paused | Skip this block |
+| `AlreadyJoined` | Already have a position in this block | Skip or use `deposit()` to add more |
 | `StakeBelowMinimum` | `stakePerTick < 0.1 USDC` (100,000 raw) | Increase stake |
 | `InsufficientDeposit` | `depositAmount < stakePerTick` | Increase deposit |
 | ERC20 transfer failed | USDC approval insufficient or balance too low | Check approval and balance |
@@ -254,7 +254,7 @@ time.sleep(6)
 **Why 6 seconds?** The chain listener polls every 3-5 seconds. Six gives margin. In trading, as in life, the margin between working and not is narrower than one expects.
 
 <Info>
-If you submit the bitmap too early, the oracle responds with HTTP 404: "Player not found in batch." Retry after a few seconds.
+If you submit the bitmap too early, the oracle responds with HTTP 404: "Player not found in block." Retry after a few seconds.
 </Info>
 
 ---
@@ -264,14 +264,14 @@ If you submit the bitmap too early, the oracle responds with HTTP 404: "Player n
 Now reveal what you committed to. Submit the actual bitmap bytes to the oracle API. The oracle verifies `keccak256(bitmap) == on-chain bitmapHash`. The seal is broken. Your opinions are on the record.
 
 ```python
-def submit_bitmap(api_url, player, batch_id, bitmap_hex, expected_hash, retries=3):
+def submit_bitmap(api_url, player, block_id, bitmap_hex, expected_hash, retries=3):
     for attempt in range(retries):
         try:
             resp = requests.post(
                 f"{api_url}/vision/bitmap",
                 json={
                     "player": player,
-                    "batch_id": batch_id,
+                    "block_id": block_id,
                     "bitmap_hex": bitmap_hex,
                     "expected_hash": expected_hash,
                 },
@@ -290,7 +290,7 @@ def submit_bitmap(api_url, player, batch_id, bitmap_hex, expected_hash, retries=
 result = submit_bitmap(
     API_URL,
     account.address,
-    batch_id,
+    block_id,
     bitmap_hex,
     "0x" + bitmap_hash.hex(),
 )
@@ -307,7 +307,7 @@ POST /vision/bitmap
 ```json
 {
   "player": "0xYourAddress",
-  "batch_id": 42,
+  "block_id": 42,
   "bitmap_hex": "0xB280",
   "expected_hash": "0xabc123..."
 }
@@ -318,7 +318,7 @@ POST /vision/bitmap
 ```json
 {
   "accepted": true,
-  "batch_id": 42,
+  "block_id": 42,
   "player": "0xYourAddress"
 }
 ```
@@ -330,7 +330,7 @@ POST /vision/bitmap
 | 400 | Invalid player address | Malformed address string | Check hex format |
 | 400 | Invalid bitmap hex | Not valid hex | Ensure `0x` prefix and even length |
 | 400 | Hash mismatch | `keccak256(bitmap) != expected_hash` | Recompute hash |
-| 400 | expected_hash != on-chain | Hash doesn't match `PlayerPosition.bitmapHash` | Ensure you submitted the same hash in `joinBatch` |
+| 400 | expected_hash != on-chain | Hash doesn't match `PlayerPosition.bitmapHash` | Ensure you submitted the same hash in `joinBlock` |
 | 404 | Player not found | Indexer hasn't seen `PlayerJoined` yet | Wait longer (step 7) and retry |
 
 ---
@@ -340,10 +340,10 @@ POST /vision/bitmap
 You can change your mind. Update the on-chain hash and resubmit the bitmap. The blockchain accommodates indecision, for a gas fee.
 
 ```python
-def update_bitmap(vision_contract, batch_id, new_bitmap_hash, account, w3):
+def update_bitmap(vision_contract, block_id, new_bitmap_hash, account, w3):
     """Update sealed commitment on-chain."""
     tx = vision_contract.functions.updateBitmap(
-        batch_id, new_bitmap_hash
+        block_id, new_bitmap_hash
     ).build_transaction({
         "from": account.address,
         "gas": 100_000,
@@ -360,16 +360,16 @@ new_bitmap = encode_bitmap(new_bets, market_count)
 new_hash = Web3.keccak(new_bitmap)
 
 # Update on-chain, then resubmit to oracles
-update_bitmap(vision, batch_id, new_hash, account, w3)
+update_bitmap(vision, block_id, new_hash, account, w3)
 time.sleep(6)
-submit_bitmap(API_URL, account.address, batch_id,
+submit_bitmap(API_URL, account.address, block_id,
               "0x" + new_bitmap.hex(), "0x" + new_hash.hex())
 ```
 
 **Contract function:**
 
 ```solidity
-function updateBitmap(uint256 batchId, bytes32 newBitmapHash) external;
+function updateBitmap(uint256 blockId, bytes32 newBitmapHash) external;
 ```
 
 **On-chain effect:** Overwrites `PlayerPosition.bitmapHash` with the new hash. The old bitmap is discarded by oracles when the new one is submitted.
@@ -378,7 +378,7 @@ function updateBitmap(uint256 batchId, bytes32 newBitmapHash) external;
 
 | Error | Cause | Fix |
 |-------|-------|-----|
-| `NotJoined` | No position in this batch | Join first with `joinBatch()` |
+| `NotJoined` | No position in this block | Join first with `joinBlock()` |
 
 <Tip>
 The update only takes effect for the next tick -- the current tick uses the previously submitted bitmap. The past is immutable. Only the next mistake can be corrected.
@@ -391,10 +391,10 @@ The update only takes effect for the next tick -- the current tick uses the prev
 Periodically claim rewards using BLS-signed balance proofs from oracles. The machine was right. Collect the proof of it.
 
 ```python
-def claim_rewards(vision_contract, batch_id, from_tick, to_tick,
+def claim_rewards(vision_contract, block_id, from_tick, to_tick,
                   new_balance, bls_signature, account, w3):
     tx = vision_contract.functions.claimRewards(
-        batch_id, from_tick, to_tick, new_balance, bls_signature
+        block_id, from_tick, to_tick, new_balance, bls_signature
     ).build_transaction({
         "from": account.address,
         "gas": 500_000,
@@ -410,24 +410,24 @@ def claim_rewards(vision_contract, batch_id, from_tick, to_tick,
 **Getting the balance proof:**
 
 ```python
-def get_balance_proof(api_url, batch_id, player):
+def get_balance_proof(api_url, block_id, player):
     resp = requests.get(
-        f"{api_url}/vision/balance/{batch_id}/{player}",
+        f"{api_url}/vision/balance/{block_id}/{player}",
         timeout=10,
     )
     if not resp.ok:
         raise RuntimeError(f"Balance query failed: {resp.text}")
     return resp.json()
 
-proof = get_balance_proof(API_URL, batch_id, account.address)
-# proof = { batch_id, player, balance, stake_per_tick, bls_signature }
+proof = get_balance_proof(API_URL, block_id, account.address)
+# proof = { block_id, player, balance, stake_per_tick, bls_signature }
 ```
 
 **Contract function:**
 
 ```solidity
 function claimRewards(
-    uint256 batchId,
+    uint256 blockId,
     uint256 fromTick,
     uint256 toTick,
     uint256 newBalance,
@@ -445,7 +445,7 @@ function claimRewards(
 
 | Error | Cause | Fix |
 |-------|-------|-----|
-| `NotJoined` | No position in this batch | Cannot claim without joining |
+| `NotJoined` | No position in this block | Cannot claim without joining |
 | `TickAlreadyClaimed` | `fromTick <= lastClaimedTick` | Use a later `fromTick` |
 | `InvalidTickRange` | `toTick < fromTick` | Fix tick ordering |
 | `InvalidBLSSignature` | Bad or insufficient BLS signatures | Re-fetch proof from oracles |
@@ -455,13 +455,13 @@ function claimRewards(
 
 ## Step 11: Withdraw
 
-Exit a batch entirely. Recover what remains. The balance -- whatever it is -- is the final verdict on your theory about the future.
+Exit a block entirely. Recover what remains. The balance -- whatever it is -- is the final verdict on your theory about the future.
 
 ```python
-def withdraw(vision_contract, batch_id, final_balance,
+def withdraw(vision_contract, block_id, final_balance,
              bls_signature, account, w3):
     tx = vision_contract.functions.withdraw(
-        batch_id, final_balance, bls_signature
+        block_id, final_balance, bls_signature
     ).build_transaction({
         "from": account.address,
         "gas": 500_000,
@@ -474,8 +474,8 @@ def withdraw(vision_contract, batch_id, final_balance,
     return receipt
 
 # Get final balance proof, then withdraw
-proof = get_balance_proof(API_URL, batch_id, account.address)
-withdraw(vision, batch_id, int(proof["balance"]),
+proof = get_balance_proof(API_URL, block_id, account.address)
+withdraw(vision, block_id, int(proof["balance"]),
          bytes.fromhex(proof["bls_signature"][2:]), account, w3)
 ```
 
@@ -483,7 +483,7 @@ withdraw(vision, batch_id, int(proof["balance"]),
 
 ```solidity
 function withdraw(
-    uint256 batchId,
+    uint256 blockId,
     uint256 finalBalance,
     bytes calldata blsSignature
 ) external;
@@ -493,7 +493,7 @@ function withdraw(
 - BLS signature verified.
 - Fee (0.05%) charged on profit only: if `finalBalance > totalDeposited`, fee is on the difference.
 - Remaining balance (after fee) transferred to player.
-- Position is deleted (`delete _positions[batchId][player]`).
+- Position is deleted (`delete _positions[blockId][player]`).
 
 **Errors:**
 
@@ -515,7 +515,7 @@ import time
 class VisionBot:
     def __init__(self):
         # ... initialize web3, contracts, account ...
-        self.joined_batches = set()
+        self.joined_blocks = set()
 
     def run(self):
         # One-time registration
@@ -523,37 +523,37 @@ class VisionBot:
 
         while True:
             try:
-                batches = self.fetch_batches()
-                for batch in batches:
-                    batch_id = batch["id"]
-                    if batch_id in self.joined_batches:
+                blocks = self.fetch_blocks()
+                for block in blocks:
+                    block_id = block["id"]
+                    if block_id in self.joined_blocks:
                         continue
-                    if batch.get("paused"):
+                    if block.get("paused"):
                         continue
 
                     # Check if already joined on-chain
-                    position = self.get_position(batch_id)
+                    position = self.get_position(block_id)
                     if position["balance"] > 0:
-                        self.joined_batches.add(batch_id)
+                        self.joined_blocks.add(block_id)
                         continue
 
                     # Full join flow
-                    bets = self.generate_predictions(batch["market_count"])
-                    bitmap = encode_bitmap(bets, batch["market_count"])
+                    bets = self.generate_predictions(block["market_count"])
+                    bitmap = encode_bitmap(bets, block["market_count"])
                     bitmap_hash = Web3.keccak(bitmap)
 
                     self.approve_usdc(DEPOSIT)
-                    self.join_batch(batch_id, DEPOSIT, STAKE, bitmap_hash)
+                    self.join_block(block_id, DEPOSIT, STAKE, bitmap_hash)
                     time.sleep(6)
-                    self.submit_bitmap(batch_id, bitmap, bitmap_hash)
-                    self.joined_batches.add(batch_id)
+                    self.submit_bitmap(block_id, bitmap, bitmap_hash)
+                    self.joined_blocks.add(block_id)
 
-                # Periodically claim rewards for all joined batches
-                for batch_id in list(self.joined_batches):
+                # Periodically claim rewards for all joined blocks
+                for block_id in list(self.joined_blocks):
                     try:
-                        self.claim_if_profitable(batch_id)
+                        self.claim_if_profitable(block_id)
                     except Exception as e:
-                        print(f"Claim error for batch {batch_id}: {e}")
+                        print(f"Claim error for block {block_id}: {e}")
 
             except Exception as e:
                 print(f"Loop error: {e}")
@@ -562,7 +562,7 @@ class VisionBot:
 ```
 
 <Info>
-The bot maintains a local `joined_batches` set to avoid duplicate joins. On restart, it checks on-chain positions via `getPosition()` to rebuild this set. The machine remembers where it has already placed its faith.
+The bot maintains a local `joined_blocks` set to avoid duplicate joins. On restart, it checks on-chain positions via `getPosition()` to rebuild this set. The machine remembers where it has already placed its faith.
 </Info>
 
 ## Deposit Additional USDC
@@ -570,12 +570,12 @@ The bot maintains a local `joined_batches` set to avoid duplicate joins. On rest
 You can add more USDC to an active position without changing your bitmap:
 
 ```python
-def deposit_more(vision_contract, batch_id, amount, account, w3):
+def deposit_more(vision_contract, block_id, amount, account, w3):
     # Approve first
     approve_usdc(usdc, VISION_ADDRESS, amount, account, w3)
 
     tx = vision_contract.functions.deposit(
-        batch_id, amount
+        block_id, amount
     ).build_transaction({
         "from": account.address,
         "gas": 200_000,
@@ -590,7 +590,7 @@ def deposit_more(vision_contract, batch_id, amount, account, w3):
 **Contract function:**
 
 ```solidity
-function deposit(uint256 batchId, uint256 amount) external;
+function deposit(uint256 blockId, uint256 amount) external;
 ```
 
 ---
@@ -601,7 +601,7 @@ function deposit(uint256 batchId, uint256 amount) external;
 |------|---------------|----------|
 | Register | `BotAlreadyRegistered` | Skip (idempotent) |
 | Poll | Network timeout | Retry with backoff |
-| Join | `AlreadyJoined` | Skip batch, track in `joined_batches` |
+| Join | `AlreadyJoined` | Skip block, track in `joined_blocks` |
 | Join | `InsufficientDeposit` | Fund wallet, retry |
 | Submit bitmap | 404 Player not found | Wait longer, retry |
 | Submit bitmap | 400 Hash mismatch | Recompute bitmap and hash |

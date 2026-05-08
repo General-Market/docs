@@ -1,44 +1,44 @@
 ---
-title: "Batches & Markets"
-description: "List active batches and supported markets"
+title: "Blocks & Markets"
+description: "List active blocks and supported markets"
 ---
 
-# Batches & Markets
+# Blocks & Markets
 
 What is there to bet on, and who is already betting. Two endpoints, two answers.
 
 ---
 
-## List Batches
+## List Blocks
 
-`GET /vision/batches`
+`GET /vision/blocks`
 
-Returns all active batches with live player counts and TVL. Ordered by batch ID descending, capped at 100. The arena, enumerated.
+Returns all active blocks with live player counts and TVL. Ordered by block ID descending, capped at 100. The arena, enumerated.
 
 <Tabs>
 <Tab title="cURL">
 ```bash
-curl https://generalmarket.io/api/vision/batches
+curl https://generalmarket.io/api/vision/blocks
 ```
 </Tab>
 <Tab title="Python">
 ```python
 import requests
 
-response = requests.get("https://generalmarket.io/api/vision/batches")
+response = requests.get("https://generalmarket.io/api/vision/blocks")
 data = response.json()
 
-for batch in data["batches"]:
-    print(f"Batch {batch['id']}: {batch['player_count']} players, TVL: {batch['tvl']}")
+for block in data["blocks"]:
+    print(f"Block {block['id']}: {block['player_count']} players, TVL: {block['tvl']}")
 ```
 </Tab>
 <Tab title="TypeScript">
 ```typescript
-const res = await fetch("https://generalmarket.io/api/vision/batches");
-const { batches } = await res.json();
+const res = await fetch("https://generalmarket.io/api/vision/blocks");
+const { blocks } = await res.json();
 
-for (const batch of batches) {
-  console.log(`Batch ${batch.id}: ${batch.player_count} players, TVL: ${batch.tvl}`);
+for (const block of blocks) {
+  console.log(`Block ${block.id}: ${block.player_count} players, TVL: ${block.tvl}`);
 }
 ```
 </Tab>
@@ -47,7 +47,7 @@ for (const batch of batches) {
 <Expandable title="Response">
 ```json
 {
-  "batches": [
+  "blocks": [
     {
       "id": 1,
       "creator": "0xAbC123...def",
@@ -77,14 +77,14 @@ for (const batch of batches) {
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `id` | number | Unique batch identifier |
-| `creator` | string | Ethereum address of the batch creator |
-| `market_ids` | string[] | List of market identifiers included in the batch |
-| `market_count` | number | Number of markets in the batch |
+| `id` | number | Unique block identifier |
+| `creator` | string | Ethereum address of the block creator |
+| `market_ids` | string[] | List of market identifiers included in the block |
+| `market_count` | number | Number of markets in the block |
 | `tick_duration` | number | Seconds between tick resolutions |
 | `player_count` | number | Current number of active players (from live in-memory state) |
 | `tvl` | string | Total value locked across all players, in wei |
-| `paused` | boolean | Whether the batch is currently paused by oracle consensus |
+| `paused` | boolean | Whether the block is currently paused by oracle consensus |
 
 ---
 

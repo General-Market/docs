@@ -7,7 +7,7 @@ Every ten minutes, the world is measured. Prices move or they do not. Winners ar
 
 ## What Happens Every Tick
 
-Every tick, the system resolves all markets in a batch. It is a small reckoning, repeated endlessly:
+Every tick, the system resolves all markets in a block. It is a small reckoning, repeated endlessly:
 
 1. Fetch start/end prices for each market
 2. Determine outcome (UP / DOWN / FLAT)
@@ -15,18 +15,18 @@ Every tick, the system resolves all markets in a batch. It is a small reckoning,
 4. Update player balances
 5. BLS-sign results across oracles
 
-Check your balance after resolution: `GET /vision/balance/{batchId}/{playerAddress}`
+Check your balance after resolution: `GET /vision/balance/{blockId}/{playerAddress}`
 
 ## What Is a Tick?
 
-A tick is a discrete time window -- a unit of waiting. The batch's `tickDuration` defines how long each window lasts. Tick numbering starts from `createdAtTick` (the tick number when the batch was created). Time is sliced into intervals, and in each interval, reality delivers its verdict.
+A tick is a discrete time window -- a unit of waiting. The block's `tickDuration` defines how long each window lasts. Tick numbering starts from `createdAtTick` (the tick number when the block was created). Time is sliced into intervals, and in each interval, reality delivers its verdict.
 
 ```
 Tick N starts at: (createdAtTick + N) * tickDuration
 Tick N ends at:   (createdAtTick + N + 1) * tickDuration
 ```
 
-For a batch created at tick 1000 with `tickDuration = 600` (10 minutes):
+For a block created at tick 1000 with `tickDuration = 600` (10 minutes):
 
 | Tick | Starts At | Ends At |
 |------|-----------|---------|
@@ -35,7 +35,7 @@ For a batch created at tick 1000 with `tickDuration = 600` (10 minutes):
 | 2 | 601,200 | 601,800 |
 
 <Info>
-Tick numbers are computed from Unix timestamps: `currentTick = block.timestamp / tickDuration`. The `createdAtTick` anchors the batch's tick numbering to the blockchain's time.
+Tick numbers are computed from Unix timestamps: `currentTick = block.timestamp / tickDuration`. The `createdAtTick` anchors the block's tick numbering to the blockchain's time.
 </Info>
 
 ## Resolution Cycle
@@ -46,7 +46,7 @@ When a tick becomes due for resolution, the oracle engine runs its pipeline. It 
 
 ### Step by Step
 
-**1. Check due batches.** The tick scheduler polls at regular intervals (default: 1 second) and identifies batches whose current tick has ended plus the reveal window has elapsed.
+**1. Check due blocks.** The tick scheduler polls at regular intervals (default: 1 second) and identifies blocks whose current tick has ended plus the reveal window has elapsed.
 
 **2. Filter active players.** Only players with a non-zero balance participate. Zero-balance players are skipped.
 
@@ -54,7 +54,7 @@ When a tick becomes due for resolution, the oracle engine runs its pipeline. It 
 
 **4. Compute multipliers.** Each revealed player gets an early multiplier and a commitment multiplier applied to their stake. See [Multipliers](#multipliers) below.
 
-**5. Resolve each market.** For every market in the batch:
+**5. Resolve each market.** For every market in the block:
    - Fetch the start price (from the previous tick's end price) and end price (current snapshot).
    - Check that price data is not stale (older than the configured threshold, default 300 seconds).
    - Compute the percentage change: `(end - start) / start * 100`.
@@ -184,7 +184,7 @@ If a player does not reveal their bitmap before the reveal window closes, they a
 After the reveal window expires, bitmaps become public and can be queried via the API:
 
 ```
-GET /vision/reveal/{batch_id}/{tick_id}
+GET /vision/reveal/{block_id}/{tick_id}
 ```
 
 This only returns data after the reveal deadline has passed. Before that, the endpoint returns `403 Forbidden`. Some things are not yet ready to be known.

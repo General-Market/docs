@@ -26,7 +26,7 @@ Ninety-one sources. One database. The world reduced to rows.
 
 ## Collector Architecture
 
-Every source is an independent Tokio task. When one panics, `spawn_resilient` restarts it. The source does not know it died. All writes flow through a shared `BatchWriter` channel that coalesces inserts -- because PostgreSQL has limits, even if the world does not.
+Every source is an independent Tokio task. When one panics, `spawn_resilient` restarts it. The source does not know it died. All writes flow through a shared `BlockWriter` channel that coalesces inserts -- because PostgreSQL has limits, even if the world does not.
 
 <DataNodeCollectorArchitecture />
 
@@ -55,7 +55,7 @@ Beyond the 91 external sources, the data node runs its own collectors -- polling
 | **Listing Sync** | `listing_sync.rs` | Bitget listing/delisting dates | 24h |
 | **Chain Pollers** | `chain_pollers.rs` | L3 + Settlement chain state (balances, orders, Morpho) | 30s |
 | **Chain Event Scanner** | `chain_event_scanner.rs` | Historical event scanning (fills, deposits) | On-demand |
-| **Batch Engine** | `batch_engine.rs` | Vision batch lifecycle management | Continuous |
+| **Block Engine** | `block_engine.rs` | Vision block lifecycle management | Continuous |
 
 ### Chain Pollers Detail
 
@@ -257,7 +257,7 @@ Twenty-five migrations. Fifteen tables. Five groups. The schema is a fossil reco
 | `fng_index` | 019 | Fear & Greed Index history |
 | `github_metrics` | 020 | GitHub repo star/commit counts |
 | `collector_cursors` | 023 | Last processed block per chain collector |
-| `batch_tables` | 024 | Vision batch state and lifecycle |
+| `block_tables` | 024 | Vision block state and lifecycle |
 
 ---
 
@@ -309,7 +309,7 @@ Axum. 50+ endpoints. Six groups. CORS and gzip via Tower middleware. The API ret
 | `/market/assets/:source` | GET | All tracked assets for a source |
 | `/market/stats` | GET | Bulk health stats across all sources |
 | `/market/stats/:source` | GET | Health stats for one source |
-| `/market/batch-history` | GET | Batch-level price history |
+| `/market/block-history` | GET | Block-level price history |
 
 ### Simulation (Backtester)
 
@@ -332,11 +332,11 @@ Axum. 50+ endpoints. Six groups. CORS and gzip via Tower middleware. The API ret
 |---|---|---|
 | `/vision/snapshot` | GET | Current Vision system state |
 | `/vision/markets/active` | GET | Active Vision markets with prices |
-| `/vision/batch/:batch_id/history` | GET | Price history for a batch |
+| `/vision/block/:block_id/history` | GET | Price history for a block |
 | `/vision/ws` | GET | WebSocket upgrade for live prices |
-| `/batches/recommended` | GET | Recommended batches for new users |
-| `/batches/config/:hash` | GET | Batch configuration by content hash |
-| `/batches/signed` | GET | Signed batch attestations |
+| `/blocks/recommended` | GET | Recommended blocks for new users |
+| `/blocks/config/:hash` | GET | Block configuration by content hash |
+| `/blocks/signed` | GET | Signed block attestations |
 
 ### CoinGecko & DeFi Llama
 
@@ -375,14 +375,14 @@ Explorer endpoints require a `x-explorer-token` header. Authentication uses SHA-
 
 ## WebSocket Support
 
-Subscribe to batch IDs. Receive prices as they arrive. Unsubscribe when you have had enough.
+Subscribe to block IDs. Receive prices as they arrive. Unsubscribe when you have had enough.
 
 <DataNodeWebSocketFlow />
 
 **Protocol:**
-- Client sends `{"subscribe": [42, 77]}` to start receiving prices for batch IDs 42 and 77
-- Client sends `{"unsubscribe": [42]}` to stop receiving prices for batch 42
-- Server pushes `{"type": "prices", "batchId": 42, "ts": "...", "markets": [...]}` on each source tick
+- Client sends `{"subscribe": [42, 77]}` to start receiving prices for block IDs 42 and 77
+- Client sends `{"unsubscribe": [42]}` to stop receiving prices for block 42
+- Server pushes `{"type": "prices", "blockId": 42, "ts": "...", "markets": [...]}` on each source tick
 
 ---
 

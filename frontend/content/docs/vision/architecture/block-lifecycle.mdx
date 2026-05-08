@@ -1,13 +1,13 @@
 ---
-title: "Batch Lifecycle"
-description: "The complete journey of a Vision batch — from raw market data through oracle consensus, player resolution, and on-chain settlement"
+title: "Block Lifecycle"
+description: "The complete journey of a Vision block — from raw market data through oracle consensus, player resolution, and on-chain settlement"
 ---
 
-# Batch Lifecycle
+# Block Lifecycle
 
-A batch is born from data, consecrated by consensus, inhabited by strangers, and dissolved by mathematics. Nine phases. Three machines that must agree. One contract that trusts none of them. This is the full ceremony, end to end.
+A block is born from data, consecrated by consensus, inhabited by strangers, and dissolved by mathematics. Nine phases. Three machines that must agree. One contract that trusts none of them. This is the full ceremony, end to end.
 
-<BatchLifecycleDiagram />
+<BlockLifecycleDiagram />
 
 ---
 
@@ -24,17 +24,17 @@ A fourth data-node, read-only, serves the frontend and bot APIs. It holds no sig
 
 ---
 
-## Phase 2: Batch Config Generation
+## Phase 2: Block Config Generation
 
-Every 60 seconds, the `BatchEngine` wakes and builds a recommended config for each source. The work is threshold calibration — computing the price-change boundary that splits outcomes 50/50.
+Every 60 seconds, the `BlockEngine` wakes and builds a recommended config for each source. The work is threshold calibration — computing the price-change boundary that splits outcomes 50/50.
 
 ### Three-Stage Threshold Computation
 
 The engine wants a threshold where half of future ticks resolve UP and half resolve DOWN. It tries three methods, falling through on failure:
 
-**Stage 1 — Median of Past Settlements.** Query the `batch_settlements` table for the last N actual price changes per asset. Take the median (`PERCENTILE_CONT(0.5)`). The median is 50/50 by construction: half of future values should exceed it, half should not. This is the primary method, and when data exists, it is remarkably accurate.
+**Stage 1 — Median of Past Settlements.** Query the `block_settlements` table for the last N actual price changes per asset. Take the median (`PERCENTILE_CONT(0.5)`). The median is 50/50 by construction: half of future values should exceed it, half should not. This is the primary method, and when data exists, it is remarkably accurate.
 
-**Stage 2 — Last Settlement Change.** If no settlement history exists, use the most recent batch's actual price change and apply volatility bands:
+**Stage 2 — Last Settlement Change.** If no settlement history exists, use the most recent block's actual price change and apply volatility bands:
 
 | Change | Resolution | Threshold |
 |--------|-----------|-----------|
@@ -54,7 +54,7 @@ Not every asset makes the cut. The engine queries `market_prices_latest` for ass
 - A value greater than zero
 - Sorted by `asset_id` for deterministic ordering
 
-Maximum 8,192 markets per batch (the on-chain bitmap is 1,024 bytes).
+Maximum 8,192 markets per block (the on-chain bitmap is 1,024 bytes).
 
 ### Config Hash
 
@@ -74,11 +74,11 @@ This hash is what the oracles sign. Any difference in market selection, ordering
 
 The oracle's lifecycle manager runs a per-source heartbeat, staggered across sources to prevent thundering herd. Each heartbeat:
 
-1. **Fetches** the latest recommended config from `GET /batches/recommended`
+1. **Fetches** the latest recommended config from `GET /blocks/recommended`
 2. **Extracts** the `config_hash`, `tick_duration`, `lock_offset`, and full market list
-3. **Records** intent in the `vision_batch_lifecycle` Postgres table
+3. **Records** intent in the `vision_block_lifecycle` Postgres table
 
-The previous batch — the one that was active during the last heartbeat — now becomes the batch to resolve. A new batch creation is attempted simultaneously. The system breathes in two directions: creating the next round while settling the last.
+The previous block — the one that was active during the last heartbeat — now becomes the block to resolve. A new block creation is attempted simultaneously. The system breathes in two directions: creating the next round while settling the last.
 
 ---
 
@@ -93,7 +93,7 @@ Only the leader oracle (node index 0) submits on-chain. The others co-sign.
    message = keccak256(abi.encode(
        chainId,
        visionAddress,
-       "CREATE_BATCH",
+       "CREATE_BLOCK",
        sourceId,
        configHash,
        tickDuration,
@@ -103,7 +103,7 @@ Only the leader oracle (node index 0) submits on-chain. The others co-sign.
 
 2. **Sign** with the leader's BLS private key.
 
-3. **Broadcast** a `VisionCreateBatchProposal` via P2P to all followers.
+3. **Broadcast** a `VisionCreateBlockProposal` via P2P to all followers.
 
 4. **Collect co-signs.** Wait up to 30 seconds. Each follower verifies the proposal independently — same config hash, same parameters — and sends back a BLS signature. The leader collects them until the threshold is met: `ceil(2n/3)`. With three oracles, that is two signatures.
 
@@ -111,26 +111,26 @@ Only the leader oracle (node index 0) submits on-chain. The others co-sign.
 
 6. **Submit on-chain:**
    ```solidity
-   vision.createBatch(
+   vision.createBlock(
        sourceId, configHash, tickDuration, lockOffset,
        blsSignature, referenceNonce, signersBitmask
    )
    ```
 
-7. **Parse receipt.** The `BatchCreated` event in the transaction receipt contains the on-chain `batchId` — the batch's permanent identity.
+7. **Parse receipt.** The `BlockCreated` event in the transaction receipt contains the on-chain `blockId` — the block's permanent identity.
 
 ### Follower Flow
 
-Followers do not submit. They receive the leader's P2P proposal, verify it against their own data-node's recommended config, sign if it matches, and send the signature back. After the leader submits, each follower's chain listener detects the `BatchCreated` event on L3 and registers the batch in its local scheduler.
+Followers do not submit. They receive the leader's P2P proposal, verify it against their own data-node's recommended config, sign if it matches, and send the signature back. After the leader submits, each follower's chain listener detects the `BlockCreated` event on L3 and registers the block in its local scheduler.
 
 ---
 
 ## Phase 5: Players Join
 
-A player calls `joinBatchDirect` on the Vision contract:
+A player calls `joinBlockDirect` on the Vision contract:
 
 ```solidity
-vision.joinBatchDirect(batchId, configHash, depositAmount, stakePerTick, bitmapHash)
+vision.joinBlockDirect(blockId, configHash, depositAmount, stakePerTick, bitmapHash)
 ```
 
 - USDC is transferred from the player's wallet to the contract
@@ -141,7 +141,7 @@ The oracle's chain listener detects the `PlayerJoined` event and registers the p
 
 ### Two-Slot Bitmap Model
 
-Each player has two bitmap slots per batch:
+Each player has two bitmap slots per block:
 
 | Slot | Purpose |
 |------|---------|
@@ -156,17 +156,17 @@ Each bitmap carries a `config_hash`. This ensures that a config update between s
 
 ## Phase 6: Tick Resolution
 
-When the heartbeat fires and a `previous_batch_id` is ready for resolution, the oracle runs a deterministic pipeline.
+When the heartbeat fires and a `previous_block_id` is ready for resolution, the oracle runs a deterministic pipeline.
 
 ### Step 1: Gather State
 
 ```rust
-scheduler.get_batch_state(batch_id) → (Batch, Vec<PlayerPosition>)
+scheduler.get_block_state(block_id) → (Block, Vec<PlayerPosition>)
 ```
 
 ### Step 2: Fetch Prices
 
-The oracle queries the data-node for the market config (`GET /batches/config/:hash`) and a price snapshot (`GET /vision/snapshot`). For each market:
+The oracle queries the data-node for the market config (`GET /blocks/config/:hash`) and a price snapshot (`GET /vision/snapshot`). For each market:
 
 - **End price**: the latest value from the snapshot, scaled to 18 decimals
 - **Start price**: derived from `change_pct`: `start = end / (1 + change_pct / 100)`
@@ -175,14 +175,14 @@ The oracle queries the data-node for the market config (`GET /batches/config/:ha
 ### Step 3: Bitmap Flip
 
 ```rust
-bitmap_store.flip(batch_id)
+bitmap_store.flip(block_id)
 ```
 
 Pending bitmaps merge into active. Players with new submissions get updated predictions. Players without submissions keep their previous bitmap.
 
 ### Step 4: Per-Market Resolution
 
-For each market in the batch:
+For each market in the block:
 
 1. **Compute percent change** from start to end price (integer basis points)
 2. **Apply resolution type** + threshold to determine outcome: Up, Down, Flat, or Cancelled
@@ -220,7 +220,7 @@ Per-player payouts and refunds are summed across all markets. Players are sorted
 
 ```rust
 RoundSettlement {
-    batch_id: u64,
+    block_id: u64,
     players: Vec<Address>,      // sorted ascending
     payouts: Vec<U256>,         // 18-decimal L3 USDC
     deposits: Vec<U256>,        // per-player original deposit
@@ -245,8 +245,8 @@ Each oracle signs the settlement independently and contributes to a shared aggre
    message_hash = keccak256(abi.encode(
        chainId,
        visionAddress,
-       "SETTLE_BATCH",
-       batchId,
+       "SETTLE_BLOCK",
+       blockId,
        payoutsHash
    ))
    ```
@@ -254,11 +254,11 @@ Each oracle signs the settlement independently and contributes to a shared aggre
 2. **Sign** with the oracle's BLS private key.
 
 3. **Shared DB aggregation** (`vision_settlement_proofs` table, `SELECT FOR UPDATE`):
-   - First oracle to arrive: inserts `(batch_id, players_hash, bls_sig, bitmap = 1 << node_index)`
+   - First oracle to arrive: inserts `(block_id, players_hash, bls_sig, bitmap = 1 << node_index)`
    - Subsequent oracles: verify `players_hash` matches, aggregate the BLS signature, update the signer bitmap
 
-4. **Check quorum.** When `popcount(bitmap) >= threshold` and the batch has not yet been submitted:
-   - Execute `settleBatch` on-chain
+4. **Check quorum.** When `popcount(bitmap) >= threshold` and the block has not yet been submitted:
+   - Execute `settleBlock` on-chain
    - Mark `submitted = true`
 
 The `players_hash` check is a guard against divergence. If two oracles computed different payouts — different prices, different bitmap sets, different resolution — their hashes will not match. The second oracle skips signing rather than corrupt the aggregated signature. Silence, in cryptography, is a form of honesty.
@@ -270,8 +270,8 @@ The `players_hash` check is a guard against divergence. If two oracles computed 
 The oracle with quorum calls:
 
 ```solidity
-vision.settleBatch(
-    batchId,
+vision.settleBlock(
+    blockId,
     players[],       // sorted ascending by address
     payouts[],       // 18-decimal USDC
     blsSignature,
@@ -284,14 +284,14 @@ The contract validates:
 - BLS signature against the aggregated public key in `OracleRegistry`
 - Solvency: `sum(payouts) <= sum(deposits)`
 - Player array is strictly ascending by address
-- Batch has not already been settled
+- Block has not already been settled
 
 On success:
 - 0.05% protocol fee deducted from **profit only** (not from deposits)
 - USDC transferred directly to each player's wallet
 - `PlayerSettled` event emitted per player
-- `BatchSettled` event emitted for the batch
-- `batch.settled = true` — prevents double settlement
+- `BlockSettled` event emitted for the block
+- `block.settled = true` — prevents double settlement
 
 ---
 
@@ -300,7 +300,7 @@ On success:
 After resolution, the oracle sends outcomes back to the data-node:
 
 ```
-POST /batches/settlement
+POST /blocks/settlement
 ```
 
 ```json
@@ -314,7 +314,7 @@ POST /batches/settlement
 }
 ```
 
-These records land in the `batch_settlements` table. The next time the `BatchEngine` runs (within 60 seconds), it reads the median of accumulated settlements and recalibrates thresholds for the next batch.
+These records land in the `block_settlements` table. The next time the `BlockEngine` runs (within 60 seconds), it reads the median of accumulated settlements and recalibrates thresholds for the next block.
 
 The loop closes. Outcomes inform future thresholds. Thresholds shape future outcomes. The system learns what 50/50 means for each asset — not through theory, but through the accumulated evidence of what actually happened. Empiricism, running on a 60-second cycle.
 
@@ -322,7 +322,7 @@ The loop closes. Outcomes inform future thresholds. Thresholds shape future outc
 
 ## The Complete Pipeline
 
-<BatchPipelineSchematic />
+<BlockPipelineSchematic />
 
 ---
 
@@ -334,9 +334,9 @@ The loop closes. Outcomes inform future thresholds. Thresholds shape future outc
 | **Zero-sum** | Total payouts = total deposits. No USDC created or destroyed |
 | **BLS threshold** | `ceil(2n/3)` signatures required for every state-changing operation |
 | **Solvency** | Contract rejects any settlement where `sum(payouts) > sum(deposits)` |
-| **Idempotency** | `batch.settled` flag prevents double settlement |
+| **Idempotency** | `block.settled` flag prevents double settlement |
 | **Config integrity** | Per-bitmap `config_hash` ensures market-order consistency across config updates |
-| **Player sorting** | `settleBatch` requires strictly ascending addresses — contract enforced |
+| **Player sorting** | `settleBlock` requires strictly ascending addresses — contract enforced |
 | **Self-calibrating** | Threshold feedback loop drives outcomes toward 50/50 over time |
 
 ---
@@ -349,22 +349,22 @@ The loop closes. Outcomes inform future thresholds. Thresholds shape future outc
 |-------|---------|-----------|
 | `market_prices` | Complete price history | 365 days |
 | `market_prices_latest` | Live snapshot per (source, asset) | Current state |
-| `batch_configs` | Recommended configs | Signed: forever. Unsigned: 2 hours |
-| `signed_batch_configs` | BLS-signed configs (source, hash, sig, nonce) | Forever |
-| `batch_settlements` | Actual outcomes per (source, asset) | Forever |
+| `block_configs` | Recommended configs | Signed: forever. Unsigned: 2 hours |
+| `signed_block_configs` | BLS-signed configs (source, hash, sig, nonce) | Forever |
+| `block_settlements` | Actual outcomes per (source, asset) | Forever |
 
 ### Oracle
 
 | Table | Content | Retention |
 |-------|---------|-----------|
-| `vision_batches` | Batch metadata (id, source, config, state) | Forever |
-| `vision_positions` | Player deposits per batch | Forever |
-| `vision_batch_lifecycle` | Intent + timing (start, end, deadline) | Forever |
+| `vision_blocks` | Block metadata (id, source, config, state) | Forever |
+| `vision_positions` | Player deposits per block | Forever |
+| `vision_block_lifecycle` | Intent + timing (start, end, deadline) | Forever |
 | `vision_round_players` | Per-player settlement results | Forever |
 | `vision_settlement_proofs` | BLS aggregation state (hash, sig, bitmap, submitted) | Forever |
-| `vision_bitmaps` | Bitmap storage (batch, player, bytes, hash) | Forever |
+| `vision_bitmaps` | Bitmap storage (block, player, bytes, hash) | Forever |
 
-On crash recovery, the oracle loads all non-settled batches and all positions with balance > 0 from these tables. The in-memory state is rebuilt from Postgres. The machine forgets nothing that matters.
+On crash recovery, the oracle loads all non-settled blocks and all positions with balance > 0 from these tables. The in-memory state is rebuilt from Postgres. The machine forgets nothing that matters.
 
 ---
 
@@ -373,10 +373,10 @@ On crash recovery, the oracle loads all non-settled batches and all positions wi
 | Event | Interval |
 |-------|----------|
 | Price fetching | Per source (60s to 604,800s) |
-| Batch config generation | Every 60 seconds |
+| Block config generation | Every 60 seconds |
 | Oracle heartbeat | Per source, staggered across sources |
-| BLS co-sign collection | Up to 30 seconds per batch creation |
+| BLS co-sign collection | Up to 30 seconds per block creation |
 | Tick duration | Configurable per source (60s to 2,592,000s) |
 | Lock window | Final `lockOffset` seconds of each tick |
 | Settlement feedback | Immediately after resolution |
-| Threshold recalibration | Next BatchEngine cycle (within 60s) |
+| Threshold recalibration | Next BlockEngine cycle (within 60s) |

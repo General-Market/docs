@@ -92,15 +92,15 @@ class MyStrategy(Strategy):
         return ["UP" if m["price"] > 100 else "DOWN" for m in markets]
 ```
 
-**RiskCheck** enforces two limits: maximum concurrent batches and maximum total USDC exposure.
+**RiskCheck** enforces two limits: maximum concurrent blocks and maximum total USDC exposure.
 
 ```python
 from framework.core import RiskCheck
 
-risk = RiskCheck(max_batches=10, max_exposure=500 * 10**18)
+risk = RiskCheck(max_blocks=10, max_exposure=500 * 10**18)
 risk.can_join(deposit=50 * 10**18)   # True if under limits
-risk.record_join(batch_id=1, deposit=50 * 10**18)
-risk.record_exit(batch_id=1)
+risk.record_join(block_id=1, deposit=50 * 10**18)
+risk.record_exit(block_id=1)
 ```
 
 ### chain.py -- Executor and On-Chain Interaction
@@ -114,8 +114,8 @@ The `Executor` class wraps all contract calls behind a clean interface. One wall
     |  READ methods:             WRITE methods:         |
     |  .usdc_balance()           .approve_usdc()        |
     |  .get_position()           .deposit_balance()     |
-    |  .get_batch_info()         .join_batch()           |
-    |  .next_batch_id()          .register_bot()        |
+    |  .get_block_info()         .join_block()           |
+    |  .next_block_id()          .register_bot()        |
     |  .vision_balance()         .claim_rewards()       |
     |                            .withdraw()            |
     |                            .update_bitmap()       |
@@ -138,10 +138,10 @@ Key chain functions beyond the Executor:
 
 | Function | Purpose |
 |----------|---------|
-| `fetch_batches(api_url)` | Get active batches (oracle API -> vision-batches.json fallback -> on-chain scan) |
-| `fetch_batch_config(data_node_url, config_hash)` | Fetch market list for a batch from the data-node |
+| `fetch_blocks(api_url)` | Get active blocks (oracle API -> vision-blocks.json fallback -> on-chain scan) |
+| `fetch_block_config(data_node_url, config_hash)` | Fetch market list for a block from the data-node |
 | `fetch_markets(data_node_url, market_ids)` | Get price snapshots for specific markets |
-| `submit_bitmap(oracle_urls, player, batch_id, bitmap, bitmap_hash)` | POST bitmap to all oracles with retry |
+| `submit_bitmap(oracle_urls, player, block_id, bitmap, bitmap_hash)` | POST bitmap to all oracles with retry |
 | `discover_oracles(mode, static_urls, w3)` | Resolve oracle endpoints (static list or on-chain registry) |
 
 ### feed.py -- Real-Time Price Feed
@@ -155,7 +155,7 @@ Key chain functions beyond the Executor:
     |  .subscribe()    | <-- price messages ---  |            |
     |  .prices("1")    |                        +------+-----+
     |  .history("1",   |       HTTP fallback           |
-    |     "bitcoin")   | ---GET /vision/batch/1/----> |
+    |     "bitcoin")   | ---GET /vision/block/1/----> |
     |  .unsubscribe()  |        history?days=7         |
     |  .close()        |                               |
     +------------------+                               |
@@ -191,7 +191,7 @@ The `Tracker` monitors all active positions each poll cycle. It fetches balances
     |
     |  For each active position:
     |
-    +---> GET /vision/balance/{batch_id}/{player}
+    +---> GET /vision/balance/{block_id}/{player}
     |         from oracle API
     |
     +---> Update balance + PnL
@@ -232,10 +232,10 @@ Poll. Predict. Join. Monitor. Claim. Sleep. Repeat. The main loop in `bot.py` ca
     |    +--------+     +----------+     +--------+              |
     |        |               |               |                   |
     |        |  fetch_       |  strategy     |  1. approve USDC  |
-    |        |  batches()    |  .predict()   |  2. depositBalance|
-    |        |               |               |  3. joinBatch()   |
+    |        |  blocks()    |  .predict()   |  2. depositBalance|
+    |        |               |               |  3. joinBlock()   |
     |        |  fetch_       |  encode_      |  4. submit_bitmap |
-    |        |  batch_config |  bitmap()     |     to oracles    |
+    |        |  block_config |  bitmap()     |     to oracles    |
     |        |               |               |                   |
     |        |  feed.        |  hash_        |  tracker          |
     |        |  subscribe()  |  bitmap()     |  .on_join()       |
@@ -260,21 +260,21 @@ Poll. Predict. Join. Monitor. Claim. Sleep. Repeat. The main loop in `bot.py` ca
 
 Each cycle begins with the question: what is there to bet on? The framework tries three sources in order:
 
-1. **Oracle API** -- `GET /vision/batches`
-2. **vision-batches.json** -- static file from contract deployment
-3. **On-chain scan** -- read `nextBatchId()` and iterate
+1. **Oracle API** -- `GET /vision/blocks`
+2. **vision-blocks.json** -- static file from contract deployment
+3. **On-chain scan** -- read `nextBlockId()` and iterate
 
-Batches are filtered by:
+Blocks are filtered by:
 - Already joined (`tracker.active_ids`)
 - Already joined on-chain (previous run)
-- Batch paused
-- `batch_ids` allowlist (if set)
-- `min_batch_id` floor
-- `max_batches` capacity
+- Block paused
+- `block_ids` allowlist (if set)
+- `min_block_id` floor
+- `max_blocks` capacity
 
 ### Phase 2: Predict
 
-The moment of truth -- or rather, the moment of opinion. For each eligible batch, the framework fetches the market list, subscribes to the WebSocket feed for live prices, and calls `strategy.predict(markets)`.
+The moment of truth -- or rather, the moment of opinion. For each eligible block, the framework fetches the market list, subscribes to the WebSocket feed for live prices, and calls `strategy.predict(markets)`.
 
 The returned `["UP", "DOWN", ...]` list is encoded into a bitmap and hashed. Your theory about the future, compressed into bits.
 
@@ -289,8 +289,8 @@ Joining requires four transactions -- the bureaucracy of commitment, all handled
     Vision.depositBalance(amount)    <-- credits your Vision balance
          |
          v
-    Vision.joinBatch(                <-- locks deposit + records bitmap hash
-        batchId, configHash,
+    Vision.joinBlock(                <-- locks deposit + records bitmap hash
+        blockId, configHash,
         depositAmount, stakePerTick,
         bitmapHash
     )
@@ -430,7 +430,7 @@ class HistoryStrategy(Strategy):
         bets = []
         for m in markets:
             if self.feed:
-                hist = self.feed.history("current_batch", m["id"])
+                hist = self.feed.history("current_block", m["id"])
                 if len(hist) > 10:
                     avg = sum(p["price"] for p in hist[-10:]) / 10
                     bets.append("UP" if m["price"] < avg else "DOWN")
@@ -450,11 +450,11 @@ The framework loads configuration from `config.toml` with environment variable o
 strategy = "momentum"         # Name of strategy class to load
 
 # Deposit sizing
-deposit = 10                   # USDC per batch (whole tokens, scaled to 18 dec internally)
+deposit = 10                   # USDC per block (whole tokens, scaled to 18 dec internally)
 stake = 1                      # USDC staked per tick
 
 # Risk limits
-max_batches = 50               # Max concurrent batch positions
+max_blocks = 50               # Max concurrent block positions
 max_exposure = 1000            # Max total USDC across all positions
 
 # Polling
@@ -479,8 +479,8 @@ oracle_urls = [
     "http://localhost:10003",
 ]
 
-# Batch filtering
-batch_ids = []                 # Empty = join any batch. [1, 3, 7] = only these.
+# Block filtering
+block_ids = []                 # Empty = join any block. [1, 3, 7] = only these.
 
 # Persistence
 pnl_file = "pnl.json"
@@ -496,7 +496,7 @@ Every config key can be overridden with an environment variable:
     | strategy = "random"   | <---- | STRATEGY=momentum       |
     | deposit = 10          | <---- | DEPOSIT_AMOUNT=25       |
     | stake = 1             | <---- | STAKE_PER_TICK=2        |
-    | max_batches = 50      | <---- | MAX_BATCHES=10          |
+    | max_blocks = 50      | <---- | MAX_BLOCKES=10          |
     | max_exposure = 1000   | <---- | MAX_EXPOSURE=200        |
     | poll_interval = 30    | <---- | POLL_INTERVAL=60        |
     | rpc_url = "..."       | <---- | L3_RPC_URL=https://...  |
@@ -508,8 +508,8 @@ Every config key can be overridden with an environment variable:
     Special env vars (no config.toml equivalent):
     +----------------------------+
     | BOT_PRIVATE_KEY=0x...      |  Required. Wallet private key.
-    | BATCH_IDS=1,3,7            |  Comma-separated batch filter.
-    | MIN_BATCH_ID=10            |  Skip batches below this ID.
+    | BLOCK_IDS=1,3,7            |  Comma-separated block filter.
+    | MIN_BLOCK_ID=10            |  Skip blocks below this ID.
     +----------------------------+
 ```
 
@@ -517,7 +517,7 @@ Env vars always win over config.toml values.
 
 ### markets.json
 
-The `markets.json` file maps sources to their market configurations. It is consumed by the deployment scripts and data-node, not directly by the bot. The bot fetches market lists dynamically via `fetch_batch_config()`.
+The `markets.json` file maps sources to their market configurations. It is consumed by the deployment scripts and data-node, not directly by the bot. The bot fetches market lists dynamically via `fetch_block_config()`.
 
 ```json
 {
@@ -547,46 +547,46 @@ The `RiskCheck` class enforces two hard limits that cannot be bypassed:
     RiskCheck
     +--------------------------------------------------+
     |                                                  |
-    |   max_batches = 10        max_exposure = 500     |
+    |   max_blocks = 10        max_exposure = 500     |
     |                                                  |
     |   .can_join(deposit) checks:                     |
-    |     1. active_count < max_batches?               |
+    |     1. active_count < max_blocks?               |
     |     2. total_exposure + deposit <= max_exposure?  |
     |                                                  |
-    |   Both must pass. Otherwise the batch is skipped.|
+    |   Both must pass. Otherwise the block is skipped.|
     |                                                  |
     +--------------------------------------------------+
     |   Active positions:                              |
     |   +--------+----------+                          |
-    |   |Batch ID| Deposit  |                          |
+    |   |Block ID| Deposit  |                          |
     |   +--------+----------+                          |
     |   |   1    | 50 USDC  |                          |
     |   |   3    | 50 USDC  |                          |
     |   |   7    | 50 USDC  |                          |
     |   +--------+----------+                          |
     |   Total: 150 / 500 USDC                          |
-    |   Count: 3 / 10 batches                          |
+    |   Count: 3 / 10 blocks                          |
     +--------------------------------------------------+
 ```
 
 ### Additional Safety Checks in bot.py
 
-Beyond `RiskCheck`, the main loop applies several more guards before joining a batch:
+Beyond `RiskCheck`, the main loop applies several more guards before joining a block:
 
 ```
-    New batch candidate
+    New block candidate
          |
          v
-    +-- batch_id < min_batch_id? -----> SKIP
+    +-- block_id < min_block_id? -----> SKIP
     |
-    +-- batch_id in tracker.active? --> SKIP (already tracking)
+    +-- block_id in tracker.active? --> SKIP (already tracking)
     |
-    +-- batch_ids set and batch_id
+    +-- block_ids set and block_id
     |   not in allowlist? ------------> SKIP
     |
-    +-- batch.paused? ----------------> SKIP
+    +-- block.paused? ----------------> SKIP
     |
-    +-- tracker.active >= max_batches?-> SKIP (at capacity)
+    +-- tracker.active >= max_blocks?-> SKIP (at capacity)
     |
     +-- Already joined on-chain? -----> SKIP (previous run)
     |
@@ -609,7 +609,7 @@ For a new bot with limited capital -- which is to say, a bot whose failures you 
 ```toml
 deposit = 5            # Small deposits while testing
 stake = 1              # Minimum viable stake
-max_batches = 3        # Few concurrent positions
+max_blocks = 3        # Few concurrent positions
 max_exposure = 50      # Hard cap on total exposure
 auto_claim = true      # Take profits automatically
 auto_withdraw = true   # Exit losing positions
@@ -622,7 +622,7 @@ For a production bot with a proven strategy (a phrase one should utter with appr
 ```toml
 deposit = 50
 stake = 5
-max_batches = 20
+max_blocks = 20
 max_exposure = 2000
 auto_claim = true
 auto_withdraw = true
@@ -660,7 +660,7 @@ When the bot starts, it logs all active configuration:
 12:00:00 [INFO]   RPC:          https://rpc.generalmarket.io/
 12:00:00 [INFO]   Deposit:      10 USDC
 12:00:00 [INFO]   Stake/tick:   1 USDC
-12:00:00 [INFO]   Max batches:  50
+12:00:00 [INFO]   Max blocks:  50
 12:00:00 [INFO]   Chain ID:     111222333
 12:00:00 [INFO]   USDC balance: 500
 ```
@@ -685,7 +685,7 @@ When the bot starts, it logs all active configuration:
     |          |             |            load_config     | |
     |          +------------>+----------------------------+ |
     |                        | chain.py   Executor        | |
-    |  config.toml --------->|            fetch_batches   | |
+    |  config.toml --------->|            fetch_blocks   | |
     |                        |            submit_bitmap   | |
     |  bot.py (main loop) <--+----------------------------+ |
     |          |             | feed.py    VisionFeed      | |
@@ -704,7 +704,7 @@ When the bot starts, it logs all active configuration:
     | L3 Chain        |     | Data Node         |
     | Vision.sol      |     | /vision/ws        |
     | L3_WUSDC        |     | /vision/snapshot   |
-    +-----------------+     | /batches/config/   |
+    +-----------------+     | /blocks/config/   |
               ^             +-------------------+
               |                      ^
               |  BLS proofs          |  price data

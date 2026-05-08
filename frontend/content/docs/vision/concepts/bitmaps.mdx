@@ -40,7 +40,7 @@ Bitmaps are committed on-chain as a **keccak256 hash** before the actual bitmap 
 
 1. **Player constructs bitmap** locally (array of UP/DOWN predictions).
 2. **Player computes hash**: `bitmapHash = keccak256(bitmap)`.
-3. **Player commits hash on-chain** by calling `joinBatch(batchId, deposit, stakePerTick, bitmapHash)` or `updateBitmap(batchId, newBitmapHash)`.
+3. **Player commits hash on-chain** by calling `joinBlock(blockId, deposit, stakePerTick, bitmapHash)` or `updateBitmap(blockId, newBitmapHash)`.
 4. **Player reveals bitmap off-chain** by sending the actual bytes to oracles via `POST /vision/bitmap`.
 
 ```solidity
@@ -66,7 +66,7 @@ curl -X POST https://oracle.example.com/vision/bitmap \
   -H "Content-Type: application/json" \
   -d '{
     "player": "0xYourAddress",
-    "batch_id": 1,
+    "block_id": 1,
     "bitmap_hex": "0xb0",
     "expected_hash": "0x..."
   }'
@@ -74,7 +74,7 @@ curl -X POST https://oracle.example.com/vision/bitmap \
 
 The oracle verifies:
 
-1. The player exists in the batch (checked against the on-chain scheduler state).
+1. The player exists in the block (checked against the on-chain scheduler state).
 2. The `expected_hash` matches the player's on-chain `bitmapHash` commitment.
 3. `keccak256(bitmap_bytes) == expected_hash` (the bitmap is authentic).
 
@@ -85,11 +85,11 @@ If all checks pass, the bitmap is stored in memory for tick resolution.
 After a tick ends, there is a configurable **reveal window** (default: 600 seconds) before bitmaps are made public. During this window, oracles use the bitmaps for resolution but do not expose them via the API. After the window expires, anyone can query revealed bitmaps:
 
 ```
-GET /vision/reveal/{batch_id}/{tick_id}
+GET /vision/reveal/{block_id}/{tick_id}
 ```
 
 <Tip>
-Players can update their bitmap at any time by calling `updateBitmap(batchId, newBitmapHash)` on-chain, then revealing the new bitmap to oracles. The new bitmap takes effect starting from the next tick.
+Players can update their bitmap at any time by calling `updateBitmap(blockId, newBitmapHash)` on-chain, then revealing the new bitmap to oracles. The new bitmap takes effect starting from the next tick.
 </Tip>
 
 ## Technical Details
@@ -109,7 +109,7 @@ Byte 1:  [bit8][bit9][bit10][bit11][bit12][bit13][bit14][bit15]
 ...
 ```
 
-Each bit maps to one market in the batch's `marketIds` array:
+Each bit maps to one market in the block's `marketIds` array:
 
 | Bit Value | Meaning |
 |-----------|---------|
@@ -120,7 +120,7 @@ The bitmap size is `ceil(marketCount / 8)` bytes.
 
 #### Visual Example
 
-For a batch with 5 markets where a player predicts UP, DOWN, UP, UP, DOWN:
+For a block with 5 markets where a player predicts UP, DOWN, UP, UP, DOWN:
 
 ```
 Markets:     [BTC] [ETH] [SOL] [AVAX] [MATIC]
@@ -211,7 +211,7 @@ Every system has edges. The interesting question is what happens when you reach 
 
 If the number of markets does not fill the last byte, unused bits are padded with `0`. These unused bits are ignored during resolution -- they do not count as DOWN predictions.
 
-For example, a batch with 3 markets only uses bits 0-2 of byte 0. Bits 3-7 are ignored regardless of their value. Silence is not an opinion.
+For example, a block with 3 markets only uses bits 0-2 of byte 0. Bits 3-7 are ignored regardless of their value. Silence is not an opinion.
 
 #### Unrevealed Bitmaps
 
@@ -223,6 +223,6 @@ If a player commits a bitmap hash on-chain but fails to reveal the actual bytes 
 
 The voided player is the person who raises their hand in class but has nothing to say. The protocol notes their presence and moves on.
 
-#### Empty Batch
+#### Empty Block
 
-If a batch has zero markets (`marketIds` is empty), the bitmap is 0 bytes. This is a valid but degenerate case -- no markets resolve and all players' balances remain unchanged. A game with no questions has no losers, which is also a way of having no winners.
+If a block has zero markets (`marketIds` is empty), the bitmap is 0 bytes. This is a valid but degenerate case -- no markets resolve and all players' balances remain unchanged. A game with no questions has no losers, which is also a way of having no winners.

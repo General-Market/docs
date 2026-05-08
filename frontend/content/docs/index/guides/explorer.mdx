@@ -7,7 +7,7 @@ description: "Monitor system health, data source status, consensus metrics, and 
 
 The explorer shows you what the system is doing. Most of the time, it is working. When it is not, you will know before anyone tells you.
 
-Real-time consensus health, order throughput, peer-to-peer connectivity, DTF fund metrics, Vision batch activity, and chain performance -- all in one place. The dashboard does not interpret. It reports.
+Real-time consensus health, order throughput, peer-to-peer connectivity, DTF fund metrics, Vision block activity, and chain performance -- all in one place. The dashboard does not interpret. It reports.
 
 ```
 +-----------------------------------------------------------------------+
@@ -335,11 +335,11 @@ NAV starts at $1.00 at creation. A NAV of $1.05 means the basket gained 5%. A NA
 
 ## Vision Tab
 
-The prediction market engine. Batches open. Players enter. Markets resolve. This tab shows the machinery behind it.
+The prediction market engine. Blocks open. Players enter. Markets resolve. This tab shows the machinery behind it.
 
 ```
 +-------------------------------+-------------------------------+
-|      BATCH VOLUME             |     BATCH POOL STATS          |
+|      BLOCK VOLUME             |     BLOCK POOL STATS          |
 |                               |                               |
 |  +--------+ +------+ +-----+ |  Total TVL         Avg Players|
 |  | Active | |Paused| |Total| |  $15.2K               3.2    |
@@ -347,11 +347,11 @@ The prediction market engine. Batches open. Players enter. Markets resolve. This
 |  |        | |      | | 128 | |  [===== Ryanair =====]  $4.1K|
 |  +--------+ +------+ +-----+ |  [==== TfL ====]        $3.2K|
 |                               |  [=== UEFA ===]         $2.8K|
-|  45 total batches             |       horizontal bar chart    |
+|  45 total blocks             |       horizontal bar chart    |
 |  [====== Active 93% ======]  |                               |
 |  [= Paused 7% =]             |                               |
 +-------------------------------+-------------------------------+
-|      BATCHES BY SOURCE        |     NETWORK ACTIVITY          |
+|      BLOCKES BY SOURCE        |     NETWORK ACTIVITY          |
 |                               |                               |
 |  [======= Ryanair =======] 8 |       ___/---\___/---          |
 |  [====== TfL ======]       6 |       area chart               |
@@ -361,17 +361,17 @@ The prediction market engine. Batches open. Players enter. Markets resolve. This
 +-------------------------------+-------------------------------+
 ```
 
-### Batch Volume
+### Block Volume
 
-Active vs paused batches. Total player count. The ratio tells you how alive the prediction market is.
+Active vs paused blocks. Total player count. The ratio tells you how alive the prediction market is.
 
-### Batch Pool Stats
+### Block Pool Stats
 
-Total TVL across all Vision pools. Average players per batch. A horizontal bar chart ranks the top 5 data sources by TVL. The money concentrates where the conviction is.
+Total TVL across all Vision pools. Average players per block. A horizontal bar chart ranks the top 5 data sources by TVL. The money concentrates where the conviction is.
 
-### Batches by Source
+### Blocks by Source
 
-How many batches each data source runs. Sources with more batches have more active markets. Popularity is not equally distributed. It never is.
+How many blocks each data source runs. Sources with more blocks have more active markets. Popularity is not equally distributed. It never is.
 
 ### Network Activity
 
@@ -499,7 +499,7 @@ Each aggregated snapshot contains exactly these fields:
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `poll_batch_ts` | string | Timestamp of this snapshot |
+| `poll_block_ts` | string | Timestamp of this snapshot |
 | `quorum_met` | boolean | Whether 2/3+ oracles are online |
 | `worst_status` | string | `healthy`, `degraded`, or `unhealthy` |
 | `consensus_rounds_total` | number | Cumulative consensus rounds (counter) |
@@ -581,4 +581,4 @@ You do not need to watch the Explorer. But when your order is taking longer than
 | Consensus duration spike | Prices may update slightly slower. Not a problem unless sustained above 5 seconds. |
 | Peer count drops | Reduced redundancy. If it drops to quorum threshold, one more failure means orders halt. |
 | Failed rounds increasing | Some consensus attempts are failing. Orders still process on successful rounds, just slower. |
-| Vision batch paused | That specific prediction market is not accepting new entries. Other markets are unaffected. |
+| Vision block paused | That specific prediction market is not accepting new entries. Other markets are unaffected. |

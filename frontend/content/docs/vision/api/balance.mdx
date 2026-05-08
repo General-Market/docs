@@ -5,18 +5,18 @@ description: "Query player balances and BLS-signed withdrawal proofs"
 
 # Balance & Proofs
 
-What remains. A player's current balance within a batch -- the arithmetic verdict on their predictions. In production, this endpoint also returns a BLS-signed proof that enables on-chain withdrawals.
+What remains. A player's current balance within a block -- the arithmetic verdict on their predictions. In production, this endpoint also returns a BLS-signed proof that enables on-chain withdrawals.
 
 ---
 
 ## Get Player Balance
 
-`GET /vision/balance/{batch_id}/{player}`
+`GET /vision/balance/{block_id}/{player}`
 
 Returns the player's current balance and stake configuration. The balance reflects all tick resolutions processed so far -- wins, losses, and fees. A running tally of how well your machine understood the world.
 
-<ParamField path="batch_id" type="number" required>
-  The batch ID to query the balance for.
+<ParamField path="block_id" type="number" required>
+  The block ID to query the balance for.
 </ParamField>
 
 <ParamField path="player" type="string" required>
@@ -33,11 +33,11 @@ curl https://generalmarket.io/api/vision/balance/1/0xAbC123def456789AbC123def456
 ```python
 import requests
 
-batch_id = 1
+block_id = 1
 player = "0xAbC123def456789AbC123def456789AbC123def4"
 
 response = requests.get(
-    f"https://generalmarket.io/api/vision/balance/{batch_id}/{player}"
+    f"https://generalmarket.io/api/vision/balance/{block_id}/{player}"
 )
 data = response.json()
 
@@ -48,11 +48,11 @@ print(f"Stake per tick: {data['stake_per_tick']}")
 </Tab>
 <Tab title="TypeScript">
 ```typescript
-const batchId = 1;
+const blockId = 1;
 const player = "0xAbC123def456789AbC123def456789AbC123def4";
 
 const res = await fetch(
-  `https://generalmarket.io/api/vision/balance/${batchId}/${player}`
+  `https://generalmarket.io/api/vision/balance/${blockId}/${player}`
 );
 const data = await res.json();
 
@@ -66,7 +66,7 @@ console.log(`Stake per tick: ${data.stake_per_tick}`);
 <Expandable title="Response">
 ```json
 {
-  "batch_id": 1,
+  "block_id": 1,
   "player": "0xAbC123def456789AbC123def456789AbC123def4",
   "balance": "5000000000000000000",
   "stake_per_tick": "100000000000000000"
@@ -78,10 +78,10 @@ console.log(`Stake per tick: ${data.stake_per_tick}`);
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `batch_id` | number | The batch ID |
+| `block_id` | number | The block ID |
 | `player` | string | The player's Ethereum address |
 | `balance` | string | Current balance in wei. This is the total amount the player can claim or continue staking. |
-| `stake_per_tick` | string | The amount risked per tick per market, in wei. Set when the player joins the batch. |
+| `stake_per_tick` | string | The amount risked per tick per market, in wei. Set when the player joins the block. |
 
 <Info>
 In the production release, this endpoint will also return BLS signature fields for on-chain withdrawal proofs:
@@ -98,5 +98,5 @@ Players aggregate signatures from 2/3+ oracles and submit them on-chain to withd
 | Status | Condition |
 |--------|-----------|
 | `400` | Invalid player address format |
-| `404` | Batch does not exist |
-| `404` | Player is not registered in the specified batch |
+| `404` | Block does not exist |
+| `404` | Player is not registered in the specified block |

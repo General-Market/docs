@@ -12,7 +12,7 @@ Vision draws from 90+ real-world data sources spanning 10 categories. The Source
 There are two main pages:
 
 - **Sources listing** (`/`) -- grid of all source cards, filterable by category
-- **Source detail** (`/source/[sourceId]`) -- individual source with live markets, price charts, batch info, and leaderboard
+- **Source detail** (`/source/[sourceId]`) -- individual source with live markets, price charts, block info, and leaderboard
 
 <BrowserOverview />
 
@@ -66,7 +66,7 @@ Each card displays:
 | **Markets** | Total number of individual assets/markets in this source |
 | **Type** | The value label -- what the source measures (Price, Viewers, Magnitude, etc.) |
 | **Updated** | How recently the data was refreshed (e.g., "2m ago", "1h ago") |
-| **Action buttons** | Markets, Batch, Details -- all link to the source detail page |
+| **Action buttons** | Markets, Block, Details -- all link to the source detail page |
 
 ### Hover Overlay
 
@@ -84,7 +84,7 @@ You can **click to toggle** a market between UP, DOWN, and empty. You can also *
 
 ## The Source Detail Page
 
-Click any source card (or the Markets/Batch/Details buttons) to reach the dedicated source page at `/source/[sourceId]`.
+Click any source card (or the Markets/Block/Details buttons) to reach the dedicated source page at `/source/[sourceId]`.
 
 <SourceDetailLayout />
 
@@ -97,16 +97,16 @@ The top banner shows the source identity at a glance:
 - **Source name** and full description
 - **Brand logo** on a colored background
 
-### Batch Tick Bar
+### Block Tick Bar
 
-A horizontal bar below the hero shows the live state of the active batch for this source:
+A horizontal bar below the hero shows the live state of the active block for this source:
 
-<BatchTickBar />
+<BlockTickBar />
 
 | Field | Meaning |
 |-------|---------|
 | **Tick** | Current tick number (increments each resolution cycle) |
-| **Players** | Active players in this batch |
+| **Players** | Active players in this block |
 | **Pool** | Total USDC staked across all players |
 | **Progress bar** | Visual fill showing how far through the current tick. Turns red when locked (no more bets accepted) |
 | **Multiplier** | Current reward multiplier -- increases as the tick progresses, incentivizing early bets |
@@ -132,9 +132,9 @@ Clicking on a market row expands an inline **price history chart** showing the l
 The value label and unit vary by source. A CoinGecko market shows "Price (USD)". A Deutsche Bahn market shows "Avg Delay (min)". A McBroken market shows "% Broken (%)". This is all configured in the source registry.
 </Tip>
 
-### Batch Entry Panel
+### Block Entry Panel
 
-On the right side (sticky on desktop), the batch entry panel lets you join the batch directly from the source detail page:
+On the right side (sticky on desktop), the block entry panel lets you join the block directly from the source detail page:
 
 1. Review your UP/DOWN selections across all markets
 2. Set your deposit amount and stake per tick
@@ -143,7 +143,7 @@ On the right side (sticky on desktop), the batch entry panel lets you join the b
 
 ### Top Players Leaderboard
 
-Below the markets table, a leaderboard shows the top-performing players in this source's batch, ranked by cumulative profit.
+Below the markets table, a leaderboard shows the top-performing players in this source's block, ranked by cumulative profit.
 
 ## Finding Specific Markets
 
@@ -192,7 +192,7 @@ The same resolution logic applies to everything. The universe makes no distincti
 - Bitcoin price went UP $459 --> UP wins
 - Berlin Hauptbahnhof average delay went DOWN 2 minutes --> DOWN wins
 - McDonald's ice cream broken percentage went UP 3% --> UP wins
-- USGS earthquake magnitude stayed FLAT --> resolved based on batch rules
+- USGS earthquake magnitude stayed FLAT --> resolved based on block rules
 
 ## Source Health Monitoring
 

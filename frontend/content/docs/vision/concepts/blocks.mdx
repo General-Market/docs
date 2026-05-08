@@ -1,48 +1,48 @@
 ---
-title: "Batches"
-description: "How prediction market batches work in Vision"
+title: "Blocks"
+description: "How prediction market blocks work in Vision"
 ---
 
-A batch groups markets together. Like a parlay. Like a prayer -- multiple requests, one outcome, usually disappointing. And yet people create them, join them, fund them with real money. The persistence of hope in the face of arithmetic is the most human thing about this protocol.
+A block groups markets together. Like a parlay. Like a prayer -- multiple requests, one outcome, usually disappointing. And yet people create them, join them, fund them with real money. The persistence of hope in the face of arithmetic is the most human thing about this protocol.
 
-## Quick Start: Join a Batch
+## Quick Start: Join a Block
 
-Fetch active batches and join one with a USDC deposit:
+Fetch active blocks and join one with a USDC deposit:
 
 ```bash
-# 1. List active batches
-curl https://generalmarket.io/api/vision/batches
+# 1. List active blocks
+curl https://generalmarket.io/api/vision/blocks
 
 # 2. Join on-chain (Solidity)
-vision.joinBatch(batchId, depositAmount, stakePerTick, bitmapHash)
+vision.joinBlock(blockId, depositAmount, stakePerTick, bitmapHash)
 ```
 
 See [Bot Quickstart](/vision/bots/quickstart) for a full working example.
 
-## Batch Lifecycle
+## Block Lifecycle
 
-<BatchStateMachine />
+<BlockStateMachine />
 
-## What Is a Batch?
+## What Is a Block?
 
-A batch groups multiple markets (e.g., BTC-USD, ETH-USD, SOL-USD) into a single prediction game. Every tick, all markets in the batch resolve simultaneously, and players win or lose based on how many markets they predicted correctly.
+A block groups multiple markets (e.g., BTC-USD, ETH-USD, SOL-USD) into a single prediction game. Every tick, all markets in the block resolve simultaneously, and players win or lose based on how many markets they predicted correctly.
 
 You pick UP or DOWN for each market. Your payout depends on how your picks compare to other players' picks across all markets. It is a contest of opinions, settled by reality, which is indifferent to both sides.
 
-## Creating a Batch
+## Creating a Block
 
-Anyone can create a batch. This is a freedom that carries weight -- you are constructing a small arena where strangers will lose money to each other, and you are responsible for choosing the terms. Call `createBatch`:
+Anyone can create a block. This is a freedom that carries weight -- you are constructing a small arena where strangers will lose money to each other, and you are responsible for choosing the terms. Call `createBlock`:
 
 ```solidity
-function createBatch(
+function createBlock(
     bytes32[] calldata marketIds,
     uint8[] calldata resolutionTypes,
     uint256 tickDuration,
     uint256[] calldata customThresholds
-) external returns (uint256 batchId);
+) external returns (uint256 blockId);
 ```
 
-**Example:** Create a batch with 3 crypto markets, 10-minute ticks, using basic UP/DOWN resolution:
+**Example:** Create a block with 3 crypto markets, 10-minute ticks, using basic UP/DOWN resolution:
 
 ```javascript
 const marketIds = [
@@ -55,7 +55,7 @@ const resolutionTypes = [0, 0, 0]; // UP_0 for all markets
 const tickDuration = 600;          // 10 minutes
 const customThresholds = [];       // Not needed for UP_0
 
-const tx = await vision.createBatch(
+const tx = await vision.createBlock(
   marketIds, resolutionTypes, tickDuration, customThresholds
 );
 ```
@@ -80,45 +80,45 @@ The tick duration controls how often the world is measured and judgment is passe
 `tickDuration` must be greater than 0 and at most `MAX_TICK_DURATION` (30 days = 2,592,000 seconds). Passing 0 or exceeding the maximum reverts with `InvalidTickDuration`.
 </Warning>
 
-## Batch States
+## Block States
 
-A batch moves through states, as all things do. Unlike most things, its states are well-defined:
+A block moves through states, as all things do. Unlike most things, its states are well-defined:
 
 ```
 Created --> Running --> Paused (optional) --> Running
 ```
 
-1. **Created**: The batch is registered on-chain. Players can immediately join.
+1. **Created**: The block is registered on-chain. Players can immediately join.
 2. **Running**: Ticks resolve at every `tickDuration` interval. Players can join, deposit, update bitmaps, and claim rewards.
-3. **Paused**: Oracles can pause a batch via BLS consensus (e.g., if a price feed is unreliable). While paused, no new players can join. Existing players retain their positions.
-4. **Unpaused**: Oracles unpause the batch via BLS consensus. Normal operation resumes.
+3. **Paused**: Oracles can pause a block via BLS consensus (e.g., if a price feed is unreliable). While paused, no new players can join. Existing players retain their positions.
+4. **Unpaused**: Oracles unpause the block via BLS consensus. Normal operation resumes.
 
 <Info>
-Pausing and unpausing require BLS signatures from 2/3+ of registered oracles. This prevents any single party from disrupting a batch.
+Pausing and unpausing require BLS signatures from 2/3+ of registered oracles. This prevents any single party from disrupting a block.
 </Info>
 
 ## Updating Markets
 
-A batch creator can change which markets are included, but not unilaterally. Altering the rules of a game that people have already entered requires BLS oracle consensus -- the closest thing to democratic oversight a smart contract can offer:
+A block creator can change which markets are included, but not unilaterally. Altering the rules of a game that people have already entered requires BLS oracle consensus -- the closest thing to democratic oversight a smart contract can offer:
 
 ```solidity
-function updateBatchMarkets(
-    uint256 batchId,
+function updateBlockMarkets(
+    uint256 blockId,
     bytes32[] calldata marketIds,
     uint8[] calldata resolutionTypes,
     bytes calldata blsSig
 ) external;
 ```
 
-The BLS signature must cover the batch ID, new market IDs, new resolution types, and the current tick number. This ensures oracles have reviewed and approved the change.
+The BLS signature must cover the block ID, new market IDs, new resolution types, and the current tick number. This ensures oracles have reviewed and approved the change.
 
-## Joining a Batch
+## Joining a Block
 
 To join is to commit -- money and opinion, simultaneously. Players deposit USDC and commit a bitmap hash:
 
 ```solidity
-function joinBatch(
-    uint256 batchId,
+function joinBlock(
+    uint256 blockId,
     uint256 depositAmount,    // Initial USDC deposit
     uint256 stakePerTick,     // Amount risked per tick per market
     bytes32 bitmapHash        // keccak256 of the player's bitmap
@@ -133,39 +133,39 @@ See [Bitmaps](/vision/concepts/bitmaps) for how to construct and commit predicti
 
 ## Technical Details
 
-### Batch Struct
+### Block Struct
 
-On-chain, a batch is stored as the following struct. Every field is a constraint. Every constraint is a promise the protocol makes to strangers who will never meet:
+On-chain, a block is stored as the following struct. Every field is a constraint. Every constraint is a promise the protocol makes to strangers who will never meet:
 
 ```solidity
-struct Batch {
-    address creator;           // Wallet that created the batch
+struct Block {
+    address creator;           // Wallet that created the block
     bytes32[] marketIds;       // keccak256 hashes of asset IDs (e.g., keccak256("BTC-USD"))
     uint8[] resolutionTypes;   // How each market is resolved (see Resolution Types)
     uint256 tickDuration;      // Seconds between resolutions
     uint256[] customThresholds; // Custom thresholds in basis points (for _X types)
     uint256 createdAtTick;     // block.timestamp / tickDuration at creation
-    bool paused;               // Whether the batch is currently paused
+    bool paused;               // Whether the block is currently paused
 }
 ```
 
 | Field | Description |
 |-------|-------------|
-| `creator` | The address that called `createBatch`. Only the creator can set metadata and update markets. |
+| `creator` | The address that called `createBlock`. Only the creator can set metadata and update markets. |
 | `marketIds` | Array of `bytes32` market identifiers. Each is `keccak256(assetId)` where `assetId` is a UTF-8 string like `"BTC-USD"`. |
 | `resolutionTypes` | Parallel array to `marketIds`. Each entry is a `uint8` from the `ResolutionType` enum (0-7). See [Resolution Types](/vision/concepts/resolution-types). |
-| `tickDuration` | How often the batch resolves, in seconds. Must be between 1 second and 30 days (`MAX_TICK_DURATION`). |
+| `tickDuration` | How often the block resolves, in seconds. Must be between 1 second and 30 days (`MAX_TICK_DURATION`). |
 | `customThresholds` | Parallel array for resolution types that use custom thresholds (`UP_X`, `DOWN_X`, `FLAT_X`). Values are in basis points. |
-| `createdAtTick` | The tick number when the batch was created, computed as `block.timestamp / tickDuration`. |
+| `createdAtTick` | The tick number when the block was created, computed as `block.timestamp / tickDuration`. |
 | `paused` | When `true`, no new players can join. Requires a BLS-signed oracle consensus to pause or unpause. |
 
-### Batch Metadata
+### Block Metadata
 
-Batch creators can attach metadata to make their batch discoverable. A name, a description, an image -- the small vanities that make a contract feel inhabited:
+Block creators can attach metadata to make their block discoverable. A name, a description, an image -- the small vanities that make a contract feel inhabited:
 
 ```solidity
-function setBatchMetadata(
-    uint256 batchId,
+function setBlockMetadata(
+    uint256 blockId,
     string calldata name,          // max 64 bytes
     string calldata description,   // max 280 bytes
     string calldata websiteUrl,    // max 128 bytes
@@ -174,7 +174,7 @@ function setBatchMetadata(
 ) external;
 ```
 
-Only the batch creator can set metadata. Exceeding any string length limit reverts with `StringTooLong`.
+Only the block creator can set metadata. Exceeding any string length limit reverts with `StringTooLong`.
 
 Creators can also set a display name for themselves:
 

@@ -1,11 +1,11 @@
 ---
 title: "Leaderboard"
-description: "Player rankings across all Vision batches"
+description: "Player rankings across all Vision blocks"
 ---
 
 # Leaderboard
 
-Who has been least wrong. The global player leaderboard, ranked by PnL across all Vision batches.
+Who has been least wrong. The global player leaderboard, ranked by PnL across all Vision blocks.
 
 ---
 
@@ -13,7 +13,7 @@ Who has been least wrong. The global player leaderboard, ranked by PnL across al
 
 `GET /vision/leaderboard`
 
-Returns player rankings aggregated across all active batches. Ranked by total PnL -- current balance minus initial deposit. The hierarchy of those who have, so far, been more right than wrong.
+Returns player rankings aggregated across all active blocks. Ranked by total PnL -- current balance minus initial deposit. The hierarchy of those who have, so far, been more right than wrong.
 
 <Tabs>
 <Tab title="cURL">
@@ -102,10 +102,10 @@ for (const entry of data.leaderboard.slice(0, 10)) {
 | `pnl` | number | Total profit/loss in USDC (current balance minus initial deposit) |
 | `winRate` | number | Fraction of market bets won (0.0 to 1.0). Currently `0.0` while per-player win tracking is being implemented. |
 | `roi` | number | Return on investment as a percentage (PnL / total deposited * 100) |
-| `totalVolume` | number | Total USDC deposited across all batches |
-| `portfolioBets` | number | Number of batches the player has joined |
-| `avgPortfolioSize` | number | Average number of markets across joined batches |
-| `largestPortfolio` | number | Largest number of markets in any single batch the player joined |
+| `totalVolume` | number | Total USDC deposited across all blocks |
+| `portfolioBets` | number | Number of blocks the player has joined |
+| `avgPortfolioSize` | number | Average number of markets across joined blocks |
+| `largestPortfolio` | number | Largest number of markets in any single block the player joined |
 
 <Info>
 Computed in real-time from in-memory positions and Postgres deposit records. Rankings update after every tick resolution. Fame is transient -- one bad tick can rearrange the hierarchy.

@@ -163,7 +163,7 @@ POST /vision/backtest
 
 ```json
 {
-  "batch_id": 42,
+  "block_id": 42,
   "bitmap_hex": "0xB280",
   "ticks": 100
 }
@@ -171,7 +171,7 @@ POST /vision/backtest
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `batch_id` | `u64` | Yes | Batch to simulate against |
+| `block_id` | `u64` | Yes | Block to simulate against |
 | `bitmap_hex` | `string` | Yes | 0x-prefixed hex bitmap |
 | `ticks` | `u64` | No | Number of ticks to simulate (default: 50, max: 200) |
 
@@ -201,14 +201,14 @@ POST /vision/backtest
 import requests
 from web3 import Web3
 
-def backtest_bitmap(batch_id: int, bets: list[str], market_count: int) -> dict:
+def backtest_bitmap(block_id: int, bets: list[str], market_count: int) -> dict:
     """Backtest a set of bets against historical outcomes."""
     bitmap = encode_bitmap(bets, market_count)
 
     resp = requests.post(
         "https://generalmarket.io/api/vision/backtest",
         json={
-            "batch_id": batch_id,
+            "block_id": block_id,
             "bitmap_hex": "0x" + bitmap.hex(),
             "ticks": 100,
         },
@@ -223,7 +223,7 @@ for name, strategy_fn in [
     ("Mean Reversion", lambda n: mean_reversion_strategy(market_ids[:n])),
 ]:
     bets = strategy_fn(market_count)
-    result = backtest_bitmap(batch_id, bets, market_count)
+    result = backtest_bitmap(block_id, bets, market_count)
     print(f"{name:20s} | win_rate: {result['win_rate']:.2%} | pnl: {result['total_pnl']:+.2f}")
 ```
 
@@ -239,7 +239,7 @@ A strategy function takes market metadata and returns a list of bets. The interf
 def my_strategy(market_ids: list[str], market_count: int, **kwargs) -> list[str]:
     """
     Args:
-        market_ids: List of market IDs in the batch.
+        market_ids: List of market IDs in the block.
         market_count: Total number of markets.
 
     Returns:
@@ -259,7 +259,7 @@ Plug the result into the standard pipeline:
 bets = my_strategy(market_ids, market_count)
 bitmap = encode_bitmap(bets, market_count)
 bitmap_hash = Web3.keccak(bitmap)
-# → joinBatch(batchId, deposit, stake, bitmap_hash)
+# → joinBlock(blockId, deposit, stake, bitmap_hash)
 # → POST /vision/bitmap { bitmap_hex, expected_hash }
 ```
 

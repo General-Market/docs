@@ -82,7 +82,7 @@ If `newBalance <= oldBalance`, the player lost money over the claim period. No f
 
 ### On Withdrawal
 
-When a player calls `withdraw` to exit a batch, the fee is computed on **total profit** over the lifetime of the position:
+When a player calls `withdraw` to exit a block, the fee is computed on **total profit** over the lifetime of the position:
 
 ```solidity
 uint256 totalDeposited = position.totalDeposited;
@@ -119,7 +119,7 @@ Fees are never applied to your deposited principal, only to gains above it. The 
 
 ## Minimum Stake
 
-To join a batch, the player's `stakePerTick` must be at least `MIN_STAKE_PER_TICK`. Ten cents. The price of admission to a prediction market. The price of having an opinion and backing it with something other than words:
+To join a block, the player's `stakePerTick` must be at least `MIN_STAKE_PER_TICK`. Ten cents. The price of admission to a prediction market. The price of having an opinion and backing it with something other than words:
 
 ```solidity
 uint256 public constant MIN_STAKE_PER_TICK = 1e5; // 0.1 USDC (6 decimals)
@@ -134,7 +134,7 @@ uint256 public constant MIN_STAKE_PER_TICK = 1e5; // 0.1 USDC (6 decimals)
 This minimum prevents dust attacks and ensures each player has a meaningful stake in the game.
 
 <Warning>
-If `stakePerTick` is less than `MIN_STAKE_PER_TICK`, the `joinBatch` call reverts with `StakeBelowMinimum`. If the initial deposit is less than `stakePerTick`, it reverts with `InsufficientDeposit`.
+If `stakePerTick` is less than `MIN_STAKE_PER_TICK`, the `joinBlock` call reverts with `StakeBelowMinimum`. If the initial deposit is less than `stakePerTick`, it reverts with `InsufficientDeposit`.
 </Warning>
 
 ## Fee Collection

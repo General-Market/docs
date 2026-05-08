@@ -42,7 +42,7 @@ A high `stakePerTick` relative to your deposit burns capital in hours. Start wit
 
 ### Correlated Markets
 
-Many markets in a batch move together -- BTC and ETH, for instance, share the same moods. Bet all-UP on a correlated batch and watch the market drop: you lose on nearly every market simultaneously. Diversification is harder than it looks when everything is secretly the same thing.
+Many markets in a block move together -- BTC and ETH, for instance, share the same moods. Bet all-UP on a correlated block and watch the market drop: you lose on nearly every market simultaneously. Diversification is harder than it looks when everything is secretly the same thing.
 
 ---
 
@@ -52,15 +52,15 @@ The ways your machine can fail you. These are not market risks -- these are engi
 
 ### Bitmap Not Submitted
 
-If your bot joins a batch but fails to submit the bitmap to oracles, your predictions are never revealed. You lose `stakePerTick` per tick -- punished not for bad predictions but for having no predictions at all. This is the single most common bot failure.
+If your bot joins a block but fails to submit the bitmap to oracles, your predictions are never revealed. You lose `stakePerTick` per tick -- punished not for bad predictions but for having no predictions at all. This is the single most common bot failure.
 
 **Fix:** Always verify `{"accepted": true}`. Implement retries with a 3-second backoff.
 
 ### Indexer Lag
 
-After calling `joinBatch()` on-chain, the oracle needs ~6 seconds to detect the `PlayerJoined` event. Submitting the bitmap too early returns `404: Player not found`.
+After calling `joinBlock()` on-chain, the oracle needs ~6 seconds to detect the `PlayerJoined` event. Submitting the bitmap too early returns `404: Player not found`.
 
-**Fix:** Wait at least 6 seconds between `joinBatch()` and `POST /vision/bitmap`. Retry on 404.
+**Fix:** Wait at least 6 seconds between `joinBlock()` and `POST /vision/bitmap`. Retry on 404.
 
 ### Nonce Collisions
 
@@ -70,9 +70,9 @@ If your bot sends multiple transactions in rapid succession without tracking non
 
 ### RPC Failures
 
-The Arbitrum RPC endpoint can be temporarily unreachable. A single failed transaction mid-cycle can leave the bot in an inconsistent state (e.g., USDC approved but batch not joined).
+The Arbitrum RPC endpoint can be temporarily unreachable. A single failed transaction mid-cycle can leave the bot in an inconsistent state (e.g., USDC approved but block not joined).
 
-**Fix:** Wrap every on-chain call in retry logic. On restart, check on-chain state (has the bot already joined this batch?) before re-attempting.
+**Fix:** Wrap every on-chain call in retry logic. On restart, check on-chain state (has the bot already joined this block?) before re-attempting.
 
 ### Gas Exhaustion
 
@@ -122,15 +122,15 @@ Run through this before starting a bot or placing your first bet. Preparation wi
   </Step>
 
   <Step title="Test with Minimum Stake">
-    Join one batch with the minimum: 0.1 USDC deposit, 0.1 USDC stake. Verify the full cycle works (join → submit bitmap → claim) before scaling up.
+    Join one block with the minimum: 0.1 USDC deposit, 0.1 USDC stake. Verify the full cycle works (join → submit bitmap → claim) before scaling up.
   </Step>
 
   <Step title="Validate Bitmap Submission">
-    After `joinBatch()`, confirm you receive `{"accepted": true}` from the bitmap endpoint. Check the oracle API: `GET /vision/balance/{batch_id}/{your_address}` — it should show your position.
+    After `joinBlock()`, confirm you receive `{"accepted": true}` from the bitmap endpoint. Check the oracle API: `GET /vision/balance/{block_id}/{your_address}` — it should show your position.
   </Step>
 
   <Step title="Set Exposure Limits">
-    Decide your max total exposure across all batches. The reference bot uses `max_exposure` and `max_batches` config fields for this.
+    Decide your max total exposure across all blocks. The reference bot uses `max_exposure` and `max_blocks` config fields for this.
   </Step>
 
   <Step title="Monitor Claim Cycle">
@@ -158,7 +158,7 @@ For running a bot in production. The machine does not care about its own surviva
   </Step>
 
   <Step title="State Recovery on Restart">
-    On restart, the bot should check which batches it has already joined on-chain (via `getPosition()`) and rebuild its `joined_batches` set. Never duplicate-join.
+    On restart, the bot should check which blocks it has already joined on-chain (via `getPosition()`) and rebuild its `joined_blocks` set. Never duplicate-join.
   </Step>
 
   <Step title="Periodic Withdrawal">
@@ -181,15 +181,15 @@ For running a bot in production. The machine does not care about its own surviva
 | Failure | Symptom | Recovery |
 |---------|---------|----------|
 | Bitmap not submitted | Balance decreases every tick despite good predictions | Check bitmap submission logs, verify `accepted: true` |
-| Submitted too early | `404 Player not found` | Wait 6+ seconds after `joinBatch()`, retry |
-| Wrong bitmap hash | `400 Hash mismatch` | Recompute: `keccak256(bitmap_bytes)` must match `joinBatch(bitmapHash)` |
+| Submitted too early | `404 Player not found` | Wait 6+ seconds after `joinBlock()`, retry |
+| Wrong bitmap hash | `400 Hash mismatch` | Recompute: `keccak256(bitmap_bytes)` must match `joinBlock(bitmapHash)` |
 | Nonce collision | Transaction reverts | Track nonces locally, don't rely solely on `get_transaction_count` |
 | Out of gas (ETH) | All txns fail | Top up ETH, set balance alert at 0.01 ETH |
-| Out of USDC | `InsufficientDeposit` revert | Top up USDC, reduce `max_batches` |
+| Out of USDC | `InsufficientDeposit` revert | Top up USDC, reduce `max_blocks` |
 | Oracle unreachable | Bitmap submission timeout | Retry other oracle URLs, check network |
 | Stale BLS proof | `InvalidBLSSignature` on claim | Re-fetch proof from oracle API |
 | Bot already registered | `BotAlreadyRegistered` revert | Skip registration (idempotent, catch error) |
-| Batch paused | `BatchPaused` revert | Filter out paused batches in poll loop |
+| Block paused | `BlockPaused` revert | Filter out paused blocks in poll loop |
 
 ---
 

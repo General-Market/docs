@@ -30,16 +30,16 @@ A fourth data-node, read-only, serves the frontend and bot APIs. It holds no sig
 Three contracts. Clear separation. The money never touches the logic.
 
 <Frame>
-  <img src="/images/vision/contracts.svg" alt="L3 contract architecture — Vision.sol for batch logic, VisionReserve for USDC custody, OracleRegistry for BLS key management" />
+  <img src="/images/vision/contracts.svg" alt="L3 contract architecture — Vision.sol for block logic, VisionReserve for USDC custody, OracleRegistry for BLS key management" />
 </Frame>
 
 <Warning>
-  `VisionReserve` is the only contract that holds USDC. Vision.sol cannot move funds directly -- it calls the reserve, which verifies the caller. The separation exists to ensure a bug in batch logic cannot drain the treasury. Paranoia, in contract design, is a virtue.
+  `VisionReserve` is the only contract that holds USDC. Vision.sol cannot move funds directly -- it calls the reserve, which verifies the caller. The separation exists to ensure a bug in block logic cannot drain the treasury. Paranoia, in contract design, is a virtue.
 </Warning>
 
 ## BLS Consensus Model
 
-Nothing happens without agreement. Tick resolution, config updates, balance proofs, batch creation — every protocol action requires an aggregated BLS signature from a quorum of oracles. The threshold is `ceil(2n/3)`. With three oracles, that means two must agree. A single dissenter blocks nothing. Two dissenters block everything.
+Nothing happens without agreement. Tick resolution, config updates, balance proofs, block creation — every protocol action requires an aggregated BLS signature from a quorum of oracles. The threshold is `ceil(2n/3)`. With three oracles, that means two must agree. A single dissenter blocks nothing. Two dissenters block everything.
 
 <Frame>
   <img src="/images/vision/bls-consensus.svg" alt="BLS consensus flow — three oracles sign independently, signatures aggregate, Vision.sol verifies against registered pubkeys" />
@@ -57,14 +57,14 @@ Trust is not a feeling. It is a line drawn between what you control and what you
 
 | Module | Responsibility |
 |---|---|
-| **Vision.sol** | Batch registry, bitmap commits, config hashes, claim verification |
+| **Vision.sol** | Block registry, bitmap commits, config hashes, claim verification |
 | **VisionReserve.sol** | USDC custody — deposits, withdrawals, reward transfers |
 | **OracleRegistry.sol** | BLS public key management, aggregated pubkey, threshold |
-| **Tick Engine** | Per-batch tick scheduling, resolution, bitmap flip |
+| **Tick Engine** | Per-block tick scheduling, resolution, bitmap flip |
 | **Resolver** | Price comparison, parimutuel matching, PnL computation |
 | **Config Orchestrator** | Data-node polling, config proposals, BLS consensus on updates |
-| **Chain Listener** | L3 event monitoring — new batches, bitmap updates, deposits |
-| **Bitmap Store** | Two-slot (pending/active) bitmap management per player per batch |
+| **Chain Listener** | L3 event monitoring — new blocks, bitmap updates, deposits |
+| **Bitmap Store** | Two-slot (pending/active) bitmap management per player per block |
 | **BLS Signer** | Private key operations, signature aggregation |
 | **Data Node** | 98-source collection, PostgreSQL storage, REST + WS + SSE serving |
 

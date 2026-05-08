@@ -7,7 +7,7 @@ description: "Vision prediction market REST API reference"
 
 The API is public. No authentication. No rate limiting. We trust you. This may be a mistake.
 
-Use it to list batches, submit bitmaps, query balances, backtest strategies, and read tick history. Everything the prediction market knows, it will tell you.
+Use it to list blocks, submit bitmaps, query balances, backtest strategies, and read tick history. Everything the prediction market knows, it will tell you.
 
 ## Architecture
 
@@ -18,7 +18,7 @@ Vision API routes are split across two proxy targets depending on the type of da
                             |   Next.js API Routes         |
                             |   /api/vision/*              |
      +----------+           |                              |
-     |          |  HTTPS    |  /batches ----+              |
+     |          |  HTTPS    |  /blocks ----+              |
      | Browser  +---------->+  /leaderboard |              |
      |          |           |  /bitmap -----+-- fan-out    |
      +----------+           |               |              |
@@ -26,7 +26,7 @@ Vision API routes are split across two proxy targets depending on the type of da
                             |     +---------+---------+    |
                             |     | Oracle API        |    |
                             |     | (port 10001)      |    |
-                            |     | Batch state,      |    |
+                            |     | Block state,      |    |
                             |     | player balances,   |    |
                             |     | bitmap processing  |    |
                             |     +-------------------+    |
@@ -77,13 +77,13 @@ None. The Vision API is **public**. Player identity is determined by Ethereum ad
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | [`/vision/batches`](/vision/api/batches#list-batches) | List all active batches |
-| `GET` | [`/vision/markets`](/vision/api/batches#list-markets) | List supported markets |
-| `GET` | [`/vision/batch/{id}/state`](/vision/api/state#get-batch-state) | Full state for a single batch |
+| `GET` | [`/vision/blocks`](/vision/api/blocks#list-blocks) | List all active blocks |
+| `GET` | [`/vision/markets`](/vision/api/blocks#list-markets) | List supported markets |
+| `GET` | [`/vision/block/{id}/state`](/vision/api/state#get-block-state) | Full state for a single block |
 | `POST` | [`/vision/bitmap`](/vision/api/bitmap#submit-bitmap) | Submit a prediction bitmap (fan-out to all oracles) |
-| `GET` | [`/vision/balance/{batch_id}/{player}`](/vision/api/balance#get-player-balance) | Player balance with BLS proof |
-| `GET` | [`/vision/batch/{id}/history`](/vision/api/ticks#get-tick-history) | Tick result history for a batch |
-| `GET` | [`/vision/reveal/{batch_id}/{tick_id}`](/vision/api/ticks#get-revealed-bitmaps) | Revealed bitmaps after tick closes |
+| `GET` | [`/vision/balance/{block_id}/{player}`](/vision/api/balance#get-player-balance) | Player balance with BLS proof |
+| `GET` | [`/vision/block/{id}/history`](/vision/api/ticks#get-tick-history) | Tick result history for a block |
+| `GET` | [`/vision/reveal/{block_id}/{tick_id}`](/vision/api/ticks#get-revealed-bitmaps) | Revealed bitmaps after tick closes |
 | `POST` | [`/vision/backtest`](/vision/api/ticks#backtest-a-strategy) | Backtest a bitmap strategy |
 | `GET` | [`/vision/leaderboard`](/vision/api/leaderboard#get-leaderboard) | Player rankings by PnL |
 | `GET` | [`/vision/snapshot`](/vision/api/snapshot#get-market-snapshot) | Market price snapshot for all or one source |
@@ -101,7 +101,7 @@ balance_usdc = int(balance_wei) / 1e18  # 5.0 USDC (L3 uses 18 decimals)
 ```
 
 <Warning>
-  L3 USDC uses **18 decimals**, not 6. This applies to all Vision balances, TVL, PnL, and batch pool values.
+  L3 USDC uses **18 decimals**, not 6. This applies to all Vision balances, TVL, PnL, and block pool values.
 </Warning>
 
 ### Error Responses
@@ -121,7 +121,7 @@ Common HTTP status codes:
 | `200` | Success |
 | `400` | Bad request (invalid parameters, malformed bitmap, etc.) |
 | `403` | Forbidden (e.g., reveal window not yet expired) |
-| `404` | Resource not found (batch or player does not exist) |
+| `404` | Resource not found (block or player does not exist) |
 | `500` | Internal server error (database failure) |
 | `502` | Upstream service (oracle or data-node) unavailable |
 
@@ -135,30 +135,30 @@ There are currently no rate limits. Generosity, or negligence -- the distinction
 
 ## Quick Start
 
-Fetch all active batches:
+Fetch all active blocks:
 
 <Tabs>
 <Tab title="cURL">
 ```bash
-curl https://generalmarket.io/api/vision/batches
+curl https://generalmarket.io/api/vision/blocks
 ```
 </Tab>
 <Tab title="Python">
 ```python
 import requests
 
-response = requests.get("https://generalmarket.io/api/vision/batches")
-batches = response.json()["batches"]
-for batch in batches:
-    print(f"Batch {batch['id']}: {batch['market_count']} markets, {batch['player_count']} players")
+response = requests.get("https://generalmarket.io/api/vision/blocks")
+blocks = response.json()["blocks"]
+for block in blocks:
+    print(f"Block {block['id']}: {block['market_count']} markets, {block['player_count']} players")
 ```
 </Tab>
 <Tab title="TypeScript">
 ```typescript
-const res = await fetch("https://generalmarket.io/api/vision/batches");
-const { batches } = await res.json();
-batches.forEach((b: any) =>
-  console.log(`Batch ${b.id}: ${b.market_count} markets, ${b.player_count} players`)
+const res = await fetch("https://generalmarket.io/api/vision/blocks");
+const { blocks } = await res.json();
+blocks.forEach((b: any) =>
+  console.log(`Block ${b.id}: ${b.market_count} markets, ${b.player_count} players`)
 );
 ```
 </Tab>

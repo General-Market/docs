@@ -67,7 +67,7 @@ Selling is the buy flow in reverse — except the money must cross a chain bound
 
 ### Sell Flow — Full Infrastructure Diagram
 
-<img src="/images/index/sell-flow.svg" alt="Sell flow infrastructure diagram — DTF shares escrowed on L3, oracle BLS consensus batches order, AP sells on Bitget, USDC returned to Settlement custody, completeSellOrder pays user, confirmFills burns shares on L3" />
+<img src="/images/index/sell-flow.svg" alt="Sell flow infrastructure diagram — DTF shares escrowed on L3, oracle BLS consensus blocks order, AP sells on Bitget, USDC returned to Settlement custody, completeSellOrder pays user, confirmFills burns shares on L3" />
 
 <Info>
 The sell flow touches two chains and requires four BLS consensus rounds. The USDC arrives on Settlement, not on L3. If you deposited from Settlement, this is where you expect it. If you traded natively on L3, the bridge handles the conversion. See the [Bridge Architecture](/index/architecture/bridge) for the full cross-chain diagram.
@@ -82,25 +82,25 @@ One second. Five phases. The oracle nodes run this cycle continuously, without p
 | Phase | Duration | What Happens |
 |-------|----------|--------------|
 | **COLLECT** | 200ms | Oracle nodes scan for new pending orders on-chain |
-| **PROPOSE** | 200ms | Leader proposes a batch of collected orders |
-| **SIGN_SUBMIT** | 200ms | Peer oracle nodes validate and BLS-sign the batch; leader aggregates and submits |
-| **CONFIRM** | 200ms | Batch confirmation transaction is processed on-chain |
+| **PROPOSE** | 200ms | Leader proposes a block of collected orders |
+| **SIGN_SUBMIT** | 200ms | Peer oracle nodes validate and BLS-sign the block; leader aggregates and submits |
+| **CONFIRM** | 200ms | Block confirmation transaction is processed on-chain |
 | **REBALANCE** | 200ms | Any pending rebalance operations are executed |
 
 <Info>
-An order is batched within 1-2 seconds. Full settlement, including exchange execution, completes in under 10 seconds. Fast enough that you cannot change your mind. Which is, perhaps, the point.
+An order is blocked within 1-2 seconds. Full settlement, including exchange execution, completes in under 10 seconds. Fast enough that you cannot change your mind. Which is, perhaps, the point.
 </Info>
 
 ## Order States
 
-Four states. An order is born, batched, filled, or abandoned. There is no fifth state. There is no ambiguity.
+Four states. An order is born, blocked, filled, or abandoned. There is no fifth state. There is no ambiguity.
 
 <OrderStateMachine />
 
 | State | Description |
 |-------|-------------|
 | `PENDING` | Order submitted and USDC/tokens escrowed. Waiting for next cycle. |
-| `BATCHED` | Included in a confirmed batch with valid BLS signature. AP is executing. |
+| `BLOCKED` | Included in a confirmed block with valid BLS signature. AP is executing. |
 | `FILLED` | AP reported fills, tokens minted/burned, settlement complete. |
 | `TIMEOUT` | Order was not filled within 60 seconds. Retried up to 3 times before escrowed funds are returned. |
 
@@ -110,7 +110,7 @@ What stands between your money and catastrophe.
 
 ### BLS Consensus
 
-Every batch requires a supermajority: `ceil(2n/3)` of registered oracles. Three nodes, at least two must sign. Twenty nodes, at least fourteen. The math is simple. The discipline is not.
+Every block requires a supermajority: `ceil(2n/3)` of registered oracles. Three nodes, at least two must sign. Twenty nodes, at least fourteen. The math is simple. The discipline is not.
 
 <Warning>
 BLS verification is **never bypassed**. Not in production. Not in testing. Not in local development. There is no test mode. There is no override. This is the one rule the protocol will not negotiate.

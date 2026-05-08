@@ -419,7 +419,7 @@ export function SourceDetailLayout() {
 }
 
 /* 6. Batch tick bar — long pill row */
-export function BatchTickBar() {
+export function BlockTickBar() {
   const cells = [
     { l: 'TICK', v: '#1,247' },
     { l: 'PLAYERS', v: '42' },

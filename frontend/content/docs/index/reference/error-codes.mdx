@@ -41,15 +41,15 @@ Errors raised during DTF creation, configuration, and weight management.
 | `E018` | `ZeroAssetAddress` | Zero address not allowed for an asset. |
 | `E051` | `TooManyAssets` | DTF has too many assets (exceeds maximum). |
 
-## Batch and Fill Errors (E019 - E024, E036 - E037)
+## Block and Fill Errors (E019 - E024, E036 - E037)
 
-Errors raised during batch construction, signature verification, fill processing, and confirmation.
+Errors raised during block construction, signature verification, fill processing, and confirmation.
 
 | Code | Name | Description |
 |------|------|-------------|
 | `E019` | `CycleAlreadyProcessed` | The cycle has already been processed. |
 | `E020` | `InvalidBLSSignature` | BLS signature verification failed. |
-| `E021` | `OrderAlreadyBatched` | Order has already been batched or processed. |
+| `E021` | `OrderAlreadyBlocked` | Order has already been blocked or processed. |
 | `E022` | `OrderNotFound` | The specified order ID was not found. |
 | `E023` | `FillExceedsOrder` | Fill amount exceeds the original order amount. |
 | `E024` | `InvalidOrderStatus` | Order is not in the correct status for this operation. |
@@ -273,13 +273,13 @@ Errors raised when setting DTF descriptions, URLs, and deployer names.
 
 ## Security Audit Errors (E128 - E130)
 
-Errors added during security audits for cycle confirmation, order ownership, and batch timeout enforcement.
+Errors added during security audits for cycle confirmation, order ownership, and block timeout enforcement.
 
 | Code | Name | Description |
 |------|------|-------------|
 | `E128` | `CycleNotConfirmed` | Cycle has not been confirmed yet. |
 | `E129` | `NotOrderOwner` | Caller is not the order owner. |
-| `E130` | `BatchedTimeoutNotReached` | Batched timeout has not been reached (cannot force-cancel yet). |
+| `E130` | `BlockedTimeoutNotReached` | Blocked timeout has not been reached (cannot force-cancel yet). |
 
 ## Vision Deposit/Withdraw Errors (E131 - E134)
 

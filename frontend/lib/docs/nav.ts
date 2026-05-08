@@ -25,7 +25,7 @@ export const DOCS_NAV: DocTab[] = [
       {
         title: 'Concepts',
         pages: [
-          'vision/concepts/batches',
+          'vision/concepts/blocks',
           'vision/concepts/bitmaps',
           'vision/concepts/ticks',
           'vision/concepts/resolution-types',
@@ -54,7 +54,7 @@ export const DOCS_NAV: DocTab[] = [
         title: 'API Reference',
         pages: [
           'vision/api/overview',
-          'vision/api/batches',
+          'vision/api/blocks',
           'vision/api/state',
           'vision/api/bitmap',
           'vision/api/balance',
@@ -67,7 +67,7 @@ export const DOCS_NAV: DocTab[] = [
         title: 'Architecture',
         pages: [
           'vision/architecture/overview',
-          'vision/architecture/batch-lifecycle',
+          'vision/architecture/block-lifecycle',
           'vision/architecture/continuous-betting',
         ],
       },
