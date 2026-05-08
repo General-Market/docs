@@ -118,15 +118,20 @@ type Props = {
   speed?: number;
 };
 
-// Snaps a fractional canvas y to the nearest grid row center.
+// Snap helpers honour Layer 1's lattice — fine-grid dots live at
+// `ry * SPACING - SPACING/2`, not at multiples of SPACING. Without the
+// half-spacing bias, bands floated half a row off the lattice.
 const snapToGridY = (frac: number) => {
   const px = frac * H;
-  return Math.round(px / FINE_SPACING_Y) * FINE_SPACING_Y;
+  return (
+    Math.round((px + FINE_SPACING_Y / 2) / FINE_SPACING_Y) * FINE_SPACING_Y -
+    FINE_SPACING_Y / 2
+  );
 };
 
-// Snaps a px x to the nearest grid column.
 const snapToGridX = (px: number) =>
-  Math.round(px / FINE_SPACING_X) * FINE_SPACING_X;
+  Math.round((px + FINE_SPACING_X / 2) / FINE_SPACING_X) * FINE_SPACING_X -
+  FINE_SPACING_X / 2;
 
 // Acceleration profile. Bands' effective travel distance grows as
 // t * (1 + t * RAMP) instead of plain t. Result: at scene start they drift
@@ -299,10 +304,12 @@ const V_BANDS: VBand[] = [
 ];
 
 const snapToGridXPx = (px: number) =>
-  Math.round(px / FINE_SPACING_X) * FINE_SPACING_X;
+  Math.round((px + FINE_SPACING_X / 2) / FINE_SPACING_X) * FINE_SPACING_X -
+  FINE_SPACING_X / 2;
 
 const snapToGridYPx = (px: number) =>
-  Math.round(px / FINE_SPACING_Y) * FINE_SPACING_Y;
+  Math.round((px + FINE_SPACING_Y / 2) / FINE_SPACING_Y) * FINE_SPACING_Y -
+  FINE_SPACING_Y / 2;
 
 const snapToGridXFrac = (frac: number) => snapToGridXPx(frac * W);
 
