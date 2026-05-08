@@ -3,6 +3,7 @@ import {
   AbsoluteFill,
   Sequence,
   interpolate,
+  staticFile,
   useCurrentFrame,
 } from "remotion";
 import { font, monoFont } from "../../common/fonts";
@@ -35,29 +36,23 @@ export const AntiCheatSolution: React.FC = () => {
   );
 };
 
-// ─── Headline: continuous accelerating zoom on "general fix this" ───────────
-// Starts readable (fontSize 80 at scale 1), accelerates outward to scale 2.5
-// across the whole pre-terminal window. Always growing — never holds — then
-// fades out as the terminal flies in at TERMINAL_AT.
+// ─── Headline: end-screen wordmark — logo on the left, "General" right ──────
+// Mirrors the EndCard layout. Soft fade in at the start of the scene, fades
+// out into the terminal fly-in at TERMINAL_AT.
 
 const Headline: React.FC = () => {
   const frame = useCurrentFrame();
 
-  // Accelerating progression: slow start, fast finish.
-  const ZOOM_END = TERMINAL_AT - 2;
-  const t = interpolate(frame, [0, ZOOM_END], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const accel = Math.pow(t, 1.6);
-  const scale = interpolate(accel, [0, 1], [1, 2.5]);
-
   const opacity = interpolate(
     frame,
-    [0, 2, TERMINAL_AT - 10, TERMINAL_AT - 2],
+    [0, 8, TERMINAL_AT - 10, TERMINAL_AT - 2],
     [0, 1, 1, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
+  const lift = interpolate(frame, [0, 8], [14, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
 
   return (
     <AbsoluteFill
@@ -70,18 +65,29 @@ const Headline: React.FC = () => {
     >
       <div
         style={{
-          fontFamily: font,
-          fontSize: 80,
-          fontWeight: 800,
-          letterSpacing: "-0.035em",
-          color: colors.fg,
-          lineHeight: 1.0,
-          whiteSpace: "nowrap",
-          transform: `scale(${scale})`,
-          transformOrigin: "center center",
+          display: "flex",
+          alignItems: "center",
+          gap: 30,
+          transform: `translateY(${lift}px)`,
         }}
       >
-        <span style={{ color: colors.accent }}>general</span> fix this
+        <img
+          src={staticFile("gm-logo-black.svg")}
+          alt=""
+          style={{ width: 200, height: 200, flexShrink: 0 }}
+        />
+        <span
+          style={{
+            fontFamily: font,
+            fontSize: 220,
+            fontWeight: 800,
+            letterSpacing: "-0.05em",
+            color: colors.fg,
+            lineHeight: 0.95,
+          }}
+        >
+          General
+        </span>
       </div>
     </AbsoluteFill>
   );
@@ -178,14 +184,15 @@ const Terminal: React.FC = () => {
   );
   const glow = Math.max(punch * 1.6, glowSustain);
 
-  // CTA: per-char reveal accelerating from the left.
-  // First char lands at scene-local 103 (= 22.20s absolute = beat 4 in
-  // Solution); intervals shrink as the line progresses (sqrt curve gives
-  // slow start, fast finish). Each char slides in from -80px with a
-  // 6-frame fade.
+  // CTA: per-char reveal, last letter first, working back to the first.
+  // Each char slides in from off-screen left (-1920px) and fades over 4f.
+  // Reveal completes in 30 frames — one beat — for a fast, punchy entry.
+  // Wrap allowed so the line stays on two lines.
+  // First char fires at scene-local 103 (= 22.20s absolute = beat 4 in
+  // Solution).
   const CTA_TEXT = "Shield your pnl from bad actors";
   const CTA_START = 26; // Terminal-local
-  const CTA_REVEAL = 52;
+  const CTA_REVEAL = 30;
 
   return (
     <AbsoluteFill
@@ -312,29 +319,43 @@ const Terminal: React.FC = () => {
           fontSize: 120,
           letterSpacing: "-0.025em",
           lineHeight: 1.08,
-          whiteSpace: "nowrap",
         }}
       >
-        {CTA_TEXT.split("").map((ch, i) => {
-          const startFrame =
-            CTA_START + CTA_REVEAL * Math.sqrt(i / CTA_TEXT.length);
-          const local = frame - startFrame;
-          const op = Math.max(0, Math.min(1, local / 6));
-          const x = (1 - op) * -80;
-          const isShield = i < 6;
+        {CTA_TEXT.split(" ").map((word, wi, words) => {
+          const wordStart = words
+            .slice(0, wi)
+            .reduce((n, w) => n + w.length + 1, 0);
           return (
-            <span
-              key={i}
-              style={{
-                display: "inline-block",
-                opacity: op,
-                transform: `translateX(${x}px)`,
-                color: isShield ? colors.accent : colors.fg,
-                fontWeight: isShield ? 800 : 700,
-              }}
-            >
-              {ch === " " ? " " : ch}
-            </span>
+            <React.Fragment key={wi}>
+              <span style={{ display: "inline-block", whiteSpace: "nowrap" }}>
+                {word.split("").map((ch, ci) => {
+                  const i = wordStart + ci;
+                  const order = CTA_TEXT.length - 1 - i;
+                  const startFrame =
+                    CTA_START +
+                    CTA_REVEAL * Math.sqrt(order / CTA_TEXT.length);
+                  const local = frame - startFrame;
+                  const op = Math.max(0, Math.min(1, local / 4));
+                  const x = (1 - op) * -1920;
+                  const isShield = i < 6;
+                  return (
+                    <span
+                      key={ci}
+                      style={{
+                        display: "inline-block",
+                        opacity: op,
+                        transform: `translateX(${x}px)`,
+                        color: isShield ? colors.accent : colors.fg,
+                        fontWeight: isShield ? 800 : 700,
+                      }}
+                    >
+                      {ch}
+                    </span>
+                  );
+                })}
+              </span>
+              {wi < words.length - 1 ? " " : null}
+            </React.Fragment>
           );
         })}
       </div>
