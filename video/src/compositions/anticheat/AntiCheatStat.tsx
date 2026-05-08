@@ -238,10 +238,19 @@ const Caption: React.FC = () => (
 // give the caption a beat to land, then begin.
 const REVEAL_AT = toFrames(0.4);
 
-// Headline loses its trailing "..." — the cards below take that role.
-const TOUCHED_WORDS = ["every", "market", "you", "touched"];
+// Below-carousel headline + flanking hero words. "Extracted" sits on
+// the left of the ring, "From You" on the right; together with the
+// rotating cards they read as a single sentence: EXTRACTED [cards]
+// FROM YOU. The headline below names what those cards are.
+const TOUCHED_WORDS = ["every", "markets", "you", "trade"];
 const TOUCHED_WORD_STAGGER = toFrames(0.07);
 const TOUCHED_WORD_FADE = toFrames(0.28);
+
+// Flanking hero word entrance — slide-in + char cascade
+const SIDE_WORD_ENTER_STAGGER = toFrames(0.045);
+const SIDE_WORD_ENTER_FADE = toFrames(0.45);
+const SIDE_WORD_LEFT_DELAY = toFrames(0.0);
+const SIDE_WORD_RIGHT_DELAY = toFrames(0.18);
 
 // 3D rotating ring of category cards — Carousel3D ported, Apple-light.
 // Each card carries the bar-chart datum it replaces: category name + the
@@ -294,39 +303,12 @@ const expoOut = (t: number): number => (t === 1 ? 1 : 1 - Math.pow(2, -10 * t));
 const expoIn = (t: number): number => (t === 0 ? 0 : Math.pow(2, 10 * t - 10));
 const power2InOut = (t: number): number =>
   t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-const power3 = (t: number): number => t * t * t;
 const sineInOut = (t: number): number => -(Math.cos(Math.PI * t) - 1) / 2;
 
-// REVEAL_AT no longer means "bar chart finishes" — it now means "the
-// carousel + headline take the stage." Caption holds at the top.
+// The bars + caption are gone. The scene is now the carousel + flanking
+// hero words ("Extracted" / "From You") + a single headline below.
 const ExtractionBars: React.FC = () => (
   <AbsoluteFill>
-    <div
-      style={{
-        position: "absolute",
-        top: "7%",
-        left: 0,
-        right: 0,
-        textAlign: "center",
-        fontFamily: monoFont,
-        fontSize: 32,
-        fontWeight: 500,
-        letterSpacing: "0.22em",
-        textTransform: "uppercase",
-        color: colors.dim,
-      }}
-    >
-      <RevealChars
-        text="% extracted by unfair trading"
-        startFrame={0}
-        stagger={0.5}
-        duration={8}
-        y={10}
-        blur={2}
-        scale={0.97}
-      />
-    </div>
-
     <TouchedLine />
   </AbsoluteFill>
 );
@@ -338,31 +320,137 @@ const TouchedLine: React.FC = () => {
   if (local < 0) return null;
 
   return (
-    <AbsoluteFill
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        pointerEvents: "none",
-      }}
-    >
-      <CategoryCarousel local={local} />
-      {/* Headline overlays the ring — Codrops Paris layout. */}
+    <AbsoluteFill style={{ pointerEvents: "none" }}>
+      {/* Hero word — left flank */}
+      <SideHeroWord
+        text="Extracted"
+        side="left"
+        delay={SIDE_WORD_LEFT_DELAY}
+        local={local}
+      />
+
+      {/* Carousel — centered */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <CategoryCarousel local={local} />
+      </div>
+
+      {/* Hero word — right flank */}
+      <SideHeroWord
+        text="From You"
+        side="right"
+        delay={SIDE_WORD_RIGHT_DELAY}
+        local={local}
+      />
+
+      {/* Headline below the ring */}
       <div
         style={{
           position: "absolute",
           zIndex: 20,
-          top: "82%",
+          top: "84%",
           left: 0,
           right: 0,
           display: "flex",
           justifyContent: "center",
-          pointerEvents: "none",
         }}
       >
         <TouchedHeadline local={local} />
       </div>
     </AbsoluteFill>
+  );
+};
+
+// ─── Side hero words — flanking the carousel ────────────────────────────────
+//
+// "EXTRACTED" left, "FROM YOU" right. SF Pro Display, weight 800,
+// near-black, tight letter-spacing. Each glyph cascades in: slight
+// rise + fade with a short stagger across characters. Both words ride
+// out via the same letter-wave-out as the headline below.
+
+const SideHeroWord: React.FC<{
+  text: string;
+  side: "left" | "right";
+  delay: number;
+  local: number;
+}> = ({ text, side, delay, local }) => {
+  const exitLocal = local - TOUCHED_EXIT_AT;
+  const chars = Array.from(text);
+  const center = (chars.length - 1) / 2;
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: "50%",
+        [side]: 80,
+        transform: "translateY(-50%)",
+        fontFamily: font,
+        fontSize: 168,
+        fontWeight: 800,
+        letterSpacing: "-0.045em",
+        color: colors.fg,
+        lineHeight: 0.95,
+        whiteSpace: "nowrap",
+      }}
+    >
+      {chars.map((ch, i) => {
+        // Entry — char-by-char cascade
+        const enterStart = delay + i * SIDE_WORD_ENTER_STAGGER;
+        const enterT = Math.max(
+          0,
+          Math.min(1, (local - enterStart) / SIDE_WORD_ENTER_FADE),
+        );
+        const enterEased = expoOut(enterT);
+        const enterY = (1 - enterEased) * 26;
+        const enterOp = enterEased;
+        const enterBlur = (1 - enterEased) * 8;
+
+        // Exit — letter wave outward (TextTrail hide pattern)
+        const dist = Math.abs(i - center);
+        const exitStart = dist * LETTER_EXIT_STAGGER;
+        const exitT = Math.max(
+          0,
+          Math.min(1, (exitLocal - exitStart) / LETTER_EXIT_FADE),
+        );
+        const exitEased = expoIn(exitT);
+        // Push outward from word's center (same as headline)
+        const sign = i < center ? -1 : 1;
+        const exitX = sign * dist * LETTER_EXIT_DRIFT * exitEased;
+        const exitOp = 1 - exitT;
+        const exitScale = 1 - exitEased * 0.18;
+
+        if (ch === " ") {
+          return (
+            <span key={i} style={{ display: "inline-block", whiteSpace: "pre" }}>
+              {" "}
+            </span>
+          );
+        }
+
+        return (
+          <span
+            key={i}
+            style={{
+              display: "inline-block",
+              opacity: enterOp * exitOp,
+              transform: `translate3d(${exitX.toFixed(2)}px, ${enterY.toFixed(2)}px, 0) scale(${exitScale.toFixed(3)})`,
+              filter: enterBlur > 0.05 ? `blur(${enterBlur.toFixed(2)}px)` : undefined,
+              willChange: "transform, opacity, filter",
+            }}
+          >
+            {ch}
+          </span>
+        );
+      })}
+    </div>
   );
 };
 
@@ -453,12 +541,18 @@ const TouchedHeadline: React.FC<{ local: number }> = ({ local }) => {
 
 // ─── Category carousel — Carousel3D 3D ring, double-sided cards ──────────────
 //
-// Spiral-in → scroll −180° → hold → explode. Each cell carries front +
-// back faces (Codrops trick) — the back face is rendered with rotateY
-// (180deg) inside the cell, so when the cell rotates to face away, the
-// back face's content presents itself to the camera. backfaceVisibility
-// hidden suppresses each face's inert side. Net: every card always
-// shows. The 4-on-a-360°-ring "back card vanishes" issue is gone.
+// Spiral-in → continuous rotation → explode. The ring never stops:
+// once the spiral lands, rotation accrues at a constant velocity and
+// keeps accruing through what used to be a "hold" and through the
+// explode. The explode adds its own extra spin on top, so the camera
+// catches a ring that is *still turning* as it tips forward and rushes
+// past. No frozen frame, no dead beat.
+//
+// Each cell carries front + back faces (Codrops trick) — the back face
+// is rendered with rotateY(180deg) inside the cell, so when the cell
+// rotates to face away, the back face's content presents itself. With
+// backfaceVisibility: hidden on each face, exactly one side ever paints.
+// All four cards are always readable, including launchpads.
 
 const CategoryCarousel: React.FC<{ local: number }> = ({ local }) => {
   // Spiral-in (frames 0…CAROUSEL_SPIRAL_IN)
@@ -468,14 +562,20 @@ const CategoryCarousel: React.FC<{ local: number }> = ({ local }) => {
   const spiralRotYAdd = interpolate(spiralEased, [0, 1], [-720, 0]);
   const spiralOpacity = spiralT;
 
-  // Scroll phase (frames CAROUSEL_SPIRAL_IN…CAROUSEL_ENTRY_FULL)
-  const scrollLocal = local - CAROUSEL_SPIRAL_IN;
-  const scrollT = Math.max(0, Math.min(1, scrollLocal / CAROUSEL_SCROLL));
-  const scrollRotY = interpolate(scrollT, [0, 1], [0, -180]);
-  const tiltT = sineInOut(scrollT);
+  // Continuous rotation — once the spiral lands, the ring keeps turning
+  // at a constant rate (-180° per CAROUSEL_SCROLL frames). Unbounded;
+  // it accrues straight through hold and explode without pausing.
+  const rotateSpeedDegPerFrame = -180 / CAROUSEL_SCROLL;
+  const rotationFrames = Math.max(0, local - CAROUSEL_SPIRAL_IN);
+  const continuousRotY = rotateSpeedDegPerFrame * rotationFrames;
+
+  // Tilt + card-tilt are still tied to a normalized scroll progress so
+  // they peak around the original scroll-end and ease through.
+  const scrollT01 = Math.max(0, Math.min(1, rotationFrames / CAROUSEL_SCROLL));
+  const tiltT = sineInOut(scrollT01);
   const ringRotX = interpolate(tiltT, [0, 1], [3, -3]);
   const ringRotZ = interpolate(tiltT, [0, 1], [3, -3]);
-  const cardTiltZ = interpolate(scrollT, [0, 1], [10, -10]);
+  const cardTiltZ = interpolate(scrollT01, [0, 1], [10, -10]);
 
   // Explode (frames CAROUSEL_ENTRY_FULL+HOLD…end)
   const explodeStart = CAROUSEL_ENTRY_FULL + CAROUSEL_HOLD;
@@ -485,8 +585,9 @@ const CategoryCarousel: React.FC<{ local: number }> = ({ local }) => {
   );
   const explodeEased = power2InOut(explodeT);
   const explodeRotX = interpolate(explodeEased, [0, 0.4, 1], [0, 90, 90]);
-  // The Codrops original adds (−360 + 180) on top of the −180 scrolled.
-  const explodeRotYAdd = interpolate(explodeEased, [0, 1], [0, -180]);
+  // Explode adds an extra full spin on top of the continuous rotation —
+  // the ring's already-turning energy carries straight into the camera.
+  const explodeRotYAdd = interpolate(explodeEased, [0, 1], [0, -360]);
   const explodeZ = interpolate(
     explodeEased,
     [0, 0.3, 1],
@@ -499,12 +600,8 @@ const CategoryCarousel: React.FC<{ local: number }> = ({ local }) => {
   const cardOpacity =
     explodeT > 0.8 ? interpolate(explodeT, [0.8, 1], [1, 0]) : 1;
 
-  // Brightness ramp — cards are white on a light field, so we keep the
-  // sweep gentle (110 → 96) to avoid washing them out.
-  const brightness = interpolate(power3(scrollT), [0, 1], [110, 96]);
-
   const finalZ = local < explodeStart ? spiralZ : explodeZ;
-  const finalRotY = scrollRotY + spiralRotYAdd + explodeRotYAdd;
+  const finalRotY = continuousRotY + spiralRotYAdd + explodeRotYAdd;
   const finalRotX = ringRotX + explodeRotX;
   const finalRotZ = ringRotZ + explodeRotZAdd;
 
@@ -546,7 +643,6 @@ const CategoryCarousel: React.FC<{ local: number }> = ({ local }) => {
             cat={cat}
             cellRotateY={i * step}
             cardRotateZ={cardTiltZ}
-            brightness={brightness}
             cardOpacity={cardOpacity}
           />
         ))}
@@ -567,9 +663,8 @@ const CarouselCell: React.FC<{
   cat: Category;
   cellRotateY: number;
   cardRotateZ: number;
-  brightness: number;
   cardOpacity: number;
-}> = ({ cat, cellRotateY, cardRotateZ, brightness, cardOpacity }) => (
+}> = ({ cat, cellRotateY, cardRotateZ, cardOpacity }) => (
   <div
     style={{
       position: "absolute",
@@ -581,6 +676,11 @@ const CarouselCell: React.FC<{
       transform: `rotateY(${cellRotateY}deg) translateZ(${CAROUSEL_RADIUS}px)`,
     }}
   >
+    {/*
+     * No `filter` on a 3D ancestor — `filter` creates a stacking
+     * context that flattens descendants in WebKit/Blink, which is what
+     * was eating the launchpads card. Tilt + opacity only.
+     */}
     <div
       style={{
         position: "relative",
@@ -588,7 +688,6 @@ const CarouselCell: React.FC<{
         height: "100%",
         transformStyle: "preserve-3d",
         transform: `rotateZ(${cardRotateZ}deg)`,
-        filter: `brightness(${brightness}%)`,
         opacity: cardOpacity,
       }}
     >
