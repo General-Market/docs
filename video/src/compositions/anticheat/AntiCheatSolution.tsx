@@ -86,7 +86,7 @@ const Headline: React.FC = () => {
             alignItems: "center",
             gap: 26,
             padding: "60px 90px",
-            background: "#FFFFFF",
+            background: "transparent",
             transform: `scale(${scale})`,
             transformOrigin: "center center",
           }}
@@ -94,7 +94,12 @@ const Headline: React.FC = () => {
           <img
             src={staticFile("gm-logo.svg")}
             alt=""
-            style={{ width: 130, height: 130, flexShrink: 0 }}
+            style={{
+              width: 130,
+              height: 130,
+              flexShrink: 0,
+              filter: "drop-shadow(0 8px 28px rgba(0, 82, 255, 0.30))",
+            }}
           />
           <span
             style={{
@@ -104,6 +109,7 @@ const Headline: React.FC = () => {
               letterSpacing: "-0.05em",
               color: colors.fg,
               lineHeight: 0.95,
+              textShadow: "0 8px 28px rgba(0, 82, 255, 0.30)",
             }}
           >
             General

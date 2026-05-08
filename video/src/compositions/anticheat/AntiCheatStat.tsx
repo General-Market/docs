@@ -7,7 +7,7 @@ import {
 import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 import { DotGrid, DotGridVignette } from "./DotGrid";
-import { IdleZoom, RevealChars } from "./vibe";
+import { IdleZoom } from "./vibe";
 
 // Two compositions live in this file:
 //   AntiCheatStat — primary number 0.01%/70% then hard-cut to 99.9%/30%
@@ -175,8 +175,6 @@ const EmberTypewriter: React.FC<{
 const StatPanel: React.FC = () => {
   return (
     <AbsoluteFill>
-      <Caption />
-
       {/* Phase 1 — types in by beat 1, wipes out into the flip */}
       <EmberTypewriter
         text="0.01% take 70%"
@@ -200,36 +198,6 @@ const StatPanel: React.FC = () => {
   );
 };
 
-// ─── Caption — sets the frame, monospace, dim, anchors the slide. ────────
-
-const Caption: React.FC = () => (
-  <div
-    style={{
-      position: "absolute",
-      top: "9%",
-      left: 0,
-      right: 0,
-      textAlign: "center",
-      fontFamily: monoFont,
-      fontSize: 32,
-      fontWeight: 500,
-      letterSpacing: "0.22em",
-      textTransform: "uppercase",
-      color: colors.dim,
-    }}
-  >
-    <RevealChars
-      text="who captures the profits"
-      startFrame={0}
-      stagger={0.5}
-      duration={8}
-      y={8}
-      blur={1.5}
-      scale={0.97}
-    />
-  </div>
-);
-
 // ─── Extraction bars (retired) — data inherited by the carousel cards ────────
 //
 // The horizontal bar chart used to live here. We dropped it; the same
@@ -238,13 +206,9 @@ const Caption: React.FC = () => (
 // give the caption a beat to land, then begin.
 const REVEAL_AT = toFrames(0.4);
 
-// Below-carousel headline + flanking hero words. "Extracted" sits on
-// the left of the ring, "From You" on the right; together with the
-// rotating cards they read as a single sentence: EXTRACTED [cards]
-// FROM YOU. The headline below names what those cards are.
-const TOUCHED_WORDS = ["every", "markets", "you", "trade"];
-const TOUCHED_WORD_STAGGER = toFrames(0.07);
-const TOUCHED_WORD_FADE = toFrames(0.28);
+// Flanking hero words. "Extracted" sits on the left of the ring,
+// "From You" on the right; together with the rotating cards they read
+// as a single sentence: EXTRACTED [cards] FROM YOU.
 
 // Flanking hero word entrance — slide-in + char cascade
 const SIDE_WORD_ENTER_STAGGER = toFrames(0.045);
@@ -349,21 +313,6 @@ const TouchedLine: React.FC = () => {
         delay={SIDE_WORD_RIGHT_DELAY}
         local={local}
       />
-
-      {/* Headline below the ring */}
-      <div
-        style={{
-          position: "absolute",
-          zIndex: 20,
-          top: "84%",
-          left: 0,
-          right: 0,
-          display: "flex",
-          justifyContent: "center",
-        }}
-      >
-        <TouchedHeadline local={local} />
-      </div>
     </AbsoluteFill>
   );
 };
@@ -447,91 +396,6 @@ const SideHeroWord: React.FC<{
             }}
           >
             {ch}
-          </span>
-        );
-      })}
-    </div>
-  );
-};
-
-const TouchedHeadline: React.FC<{ local: number }> = ({ local }) => {
-  // Per-letter exit ride: each letter waits its turn (stagger from center
-  // outward), drifts away from center, fades. The text appears word-by-word
-  // on entry; on exit it disintegrates from the inside out.
-  const exitLocal = local - TOUCHED_EXIT_AT;
-
-  // Build glyph list with word boundaries so spacing survives.
-  type Glyph = { ch: string; isSpace: boolean; wordIdx: number };
-  const glyphs: Glyph[] = [];
-  TOUCHED_WORDS.forEach((word, wi) => {
-    if (wi > 0) glyphs.push({ ch: " ", isSpace: true, wordIdx: wi });
-    for (const ch of word) glyphs.push({ ch, isSpace: false, wordIdx: wi });
-  });
-
-  const center = (glyphs.length - 1) / 2;
-
-  return (
-    <div
-      style={{
-        textAlign: "center",
-        fontFamily: font,
-        fontSize: 96,
-        fontWeight: 800,
-        letterSpacing: "-0.035em",
-        color: colors.fg,
-        lineHeight: 0.95,
-        whiteSpace: "nowrap",
-      }}
-    >
-      {glyphs.map((g, i) => {
-        // Entry — staggered by word, glyph rides up + fades in.
-        const wLocal = local - g.wordIdx * TOUCHED_WORD_STAGGER;
-        const enterOp = interpolate(
-          wLocal,
-          [0, TOUCHED_WORD_FADE],
-          [0, 1],
-          { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-        );
-        const enterY = interpolate(
-          wLocal,
-          [0, TOUCHED_WORD_FADE],
-          [26, 0],
-          { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-        );
-
-        // Exit — wave outward from the center.
-        const dist = Math.abs(i - center);
-        const exitStart = dist * LETTER_EXIT_STAGGER;
-        const exitT = Math.max(
-          0,
-          Math.min(1, (exitLocal - exitStart) / LETTER_EXIT_FADE),
-        );
-        const exitEased = expoIn(exitT);
-        const sign = i < center ? -1 : 1;
-        const exitX = sign * dist * LETTER_EXIT_DRIFT * exitEased;
-        const exitY = -exitEased * 18;
-        const exitOp = 1 - exitT;
-        const exitScale = 1 - exitEased * 0.18;
-
-        if (g.isSpace) {
-          return (
-            <span key={i} style={{ display: "inline-block", whiteSpace: "pre" }}>
-              {" "}
-            </span>
-          );
-        }
-
-        return (
-          <span
-            key={i}
-            style={{
-              display: "inline-block",
-              opacity: enterOp * exitOp,
-              transform: `translate3d(${exitX.toFixed(2)}px, ${(enterY + exitY).toFixed(2)}px, 0) scale(${exitScale.toFixed(3)})`,
-              willChange: "transform, opacity",
-            }}
-          >
-            {g.ch}
           </span>
         );
       })}

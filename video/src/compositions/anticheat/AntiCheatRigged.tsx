@@ -34,15 +34,17 @@ const GLITCH_LEN = 6;
 type Highlight = { x: number; y: number; w: number; h: number };
 
 // Flat fill that hides a logo on the article photo. Coords are
-// fractions of the rendered image (cx, cy = center; size = side/diameter
-// as a fraction of image width). Square supports rotation in degrees.
+// fractions of the rendered image (cx, cy = center; size in width units).
+// `rect` accepts independent width and height so a tilted bar can hug a
+// wordmark without spilling into the surrounding non-screen area.
 type LogoMask =
   | { kind: "circle"; cx: number; cy: number; size: number; color?: string }
   | {
-      kind: "square";
+      kind: "rect";
       cx: number;
       cy: number;
-      size: number;
+      width: number;
+      height: number;
       rotate: number;
       color?: string;
     };
@@ -79,10 +81,11 @@ const ARTICLES: ArticleProof[] = [
     highlights: [{ x: 0.4119, y: 0.1968, w: 0.2831, h: 0.042 }],
     exchangeBox: { x: 0.1625, y: 0.1433, w: 0.2065, h: 0.0331 },
     logoMask: {
-      kind: "square",
+      kind: "rect",
       cx: 0.54,
       cy: 0.69,
-      size: 0.48,
+      width: 0.50,
+      height: 0.16,
       rotate: -8,
       color: "#ffffff",
     },
@@ -207,7 +210,7 @@ export const AntiCheatRigged: React.FC = () => {
 const GlitchVerdict: React.FC<{ glitch: number }> = ({ glitch }) => {
   const baseStyle: React.CSSProperties = {
     fontFamily: font,
-    fontSize: 232,
+    fontSize: 168,
     fontWeight: 800,
     letterSpacing: "-0.05em",
     lineHeight: 0.92,
@@ -219,7 +222,7 @@ const GlitchVerdict: React.FC<{ glitch: number }> = ({ glitch }) => {
     <>
       <div>
         <RevealChars
-          text="is"
+          text="Everyone"
           startFrame={TITLE_IN}
           stagger={2.0}
           duration={9}
@@ -230,8 +233,19 @@ const GlitchVerdict: React.FC<{ glitch: number }> = ({ glitch }) => {
       </div>
       <div>
         <RevealChars
-          text="rigged"
+          text="is"
           startFrame={TITLE_IN + 6}
+          stagger={2.0}
+          duration={9}
+          y={26}
+          blur={6}
+          scale={0.82}
+        />
+      </div>
+      <div>
+        <RevealChars
+          text="rigged"
+          startFrame={TITLE_IN + 12}
           stagger={2.0}
           duration={9}
           y={26}
@@ -392,22 +406,19 @@ const SourceCitation: React.FC<{ url: string }> = ({ url }) => (
 // square stays square regardless of the image's native aspect.
 
 const LogoBlackout: React.FC<{ mask: LogoMask }> = ({ mask }) => {
-  const baseStyle: React.CSSProperties = {
-    position: "absolute",
-    left: `${mask.cx * 100}%`,
-    top: `${mask.cy * 100}%`,
-    width: `${mask.size * 100}%`,
-    aspectRatio: "1 / 1",
-    background: mask.color ?? "#000",
-    pointerEvents: "none",
-  };
   if (mask.kind === "circle") {
     return (
       <div
         style={{
-          ...baseStyle,
+          position: "absolute",
+          left: `${mask.cx * 100}%`,
+          top: `${mask.cy * 100}%`,
+          width: `${mask.size * 100}%`,
+          aspectRatio: "1 / 1",
+          background: mask.color ?? "#000",
           borderRadius: "50%",
           transform: "translate(-50%, -50%)",
+          pointerEvents: "none",
         }}
       />
     );
@@ -415,8 +426,14 @@ const LogoBlackout: React.FC<{ mask: LogoMask }> = ({ mask }) => {
   return (
     <div
       style={{
-        ...baseStyle,
+        position: "absolute",
+        left: `${mask.cx * 100}%`,
+        top: `${mask.cy * 100}%`,
+        width: `${mask.width * 100}%`,
+        height: `${mask.height * 100}%`,
+        background: mask.color ?? "#000",
         transform: `translate(-50%, -50%) rotate(${mask.rotate}deg)`,
+        pointerEvents: "none",
       }}
     />
   );
