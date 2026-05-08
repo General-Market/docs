@@ -22,6 +22,28 @@ const FINE_SPACING_Y = 14;
 const FINE_RADIUS = 1.6;
 const FINE_ALPHA = 0.22;
 
+// ─── Layer 1 wave field ──────────────────────────────────────────────────────
+// Two crossed low-frequency sines drift across the canvas. Their sum
+// modulates dot radius and opacity — crests bloom, troughs nearly vanish.
+// Reads as a swell passing through the lattice rather than a tile of dots.
+const WAVE_K1 = (2 * Math.PI) / 760;   // primary wavelength ~760px
+const WAVE_K2 = (2 * Math.PI) / 1180;  // secondary wavelength ~1180px
+const WAVE_OMEGA_1 = 1.05;             // primary phase speed (rad/sec)
+const WAVE_OMEGA_2 = 0.62;             // secondary phase speed
+const WAVE_RADIUS_MIN = 0.35;          // multiplier at trough
+const WAVE_RADIUS_MAX = 2.25;          // multiplier at crest
+const WAVE_ALPHA_MIN = 0.55;           // alpha multiplier at trough
+const WAVE_ALPHA_MAX = 1.55;           // alpha multiplier at crest
+
+const waveAt = (x: number, y: number, t: number) => {
+  const w1 = Math.sin(WAVE_K1 * x + 0.32 * WAVE_K1 * y - WAVE_OMEGA_1 * t);
+  const w2 = Math.sin(
+    0.62 * WAVE_K2 * x + 0.95 * WAVE_K2 * y - WAVE_OMEGA_2 * t + 1.37,
+  );
+  return ((w1 + w2) * 0.5 + 1) * 0.5; // 0..1
+};
+const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+
 // ─── Layer 2 — moving bands ──────────────────────────────────────────────────
 
 type Band = {
@@ -113,21 +135,28 @@ export const DotGrid: React.FC<Props> = ({ intensity = 1, speed = 1.5 }) => {
         willChange: "transform",
       }}
     >
-      {/* Layer 1 — uniform fine grid */}
-      <g opacity={FINE_ALPHA * intensity}>
+      {/* Layer 1 — fine grid with travelling wave field */}
+      <g>
         {Array.from({ length: fineRows }).map((_, ry) => {
           const y = ry * FINE_SPACING_Y - FINE_SPACING_Y / 2;
           return (
             <g key={`r${ry}`}>
               {Array.from({ length: fineCols }).map((_, rx) => {
                 const x = rx * FINE_SPACING_X - FINE_SPACING_X / 2;
+                const w = waveAt(x, y, t);
+                const r = FINE_RADIUS * lerp(WAVE_RADIUS_MIN, WAVE_RADIUS_MAX, w);
+                const a =
+                  FINE_ALPHA *
+                  intensity *
+                  Math.min(1, lerp(WAVE_ALPHA_MIN, WAVE_ALPHA_MAX, w));
                 return (
                   <circle
                     key={`r${ry}c${rx}`}
                     cx={x}
                     cy={y}
-                    r={FINE_RADIUS}
+                    r={r}
                     fill={colors.accent}
+                    opacity={a}
                   />
                 );
               })}
@@ -277,21 +306,28 @@ export const VerticalDotGrid: React.FC<Props> = ({
         willChange: "transform",
       }}
     >
-      {/* Layer 1 — uniform fine grid */}
-      <g opacity={FINE_ALPHA * intensity}>
+      {/* Layer 1 — fine grid with travelling wave field */}
+      <g>
         {Array.from({ length: fineRows }).map((_, ry) => {
           const y = ry * FINE_SPACING_Y - FINE_SPACING_Y / 2;
           return (
             <g key={`r${ry}`}>
               {Array.from({ length: fineCols }).map((_, rx) => {
                 const x = rx * FINE_SPACING_X - FINE_SPACING_X / 2;
+                const w = waveAt(x, y, t);
+                const r = FINE_RADIUS * lerp(WAVE_RADIUS_MIN, WAVE_RADIUS_MAX, w);
+                const a =
+                  FINE_ALPHA *
+                  intensity *
+                  Math.min(1, lerp(WAVE_ALPHA_MIN, WAVE_ALPHA_MAX, w));
                 return (
                   <circle
                     key={`r${ry}c${rx}`}
                     cx={x}
                     cy={y}
-                    r={FINE_RADIUS}
+                    r={r}
                     fill={colors.accent}
+                    opacity={a}
                   />
                 );
               })}
