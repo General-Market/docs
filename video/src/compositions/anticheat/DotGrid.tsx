@@ -23,24 +23,47 @@ const FINE_RADIUS = 1.6;
 const FINE_ALPHA = 0.22;
 
 // ─── Layer 1 wave field ──────────────────────────────────────────────────────
-// Two crossed low-frequency sines drift across the canvas. Their sum
-// modulates dot radius and opacity — crests bloom, troughs nearly vanish.
-// Reads as a swell passing through the lattice rather than a tile of dots.
-const WAVE_K1 = (2 * Math.PI) / 760;   // primary wavelength ~760px
-const WAVE_K2 = (2 * Math.PI) / 1180;  // secondary wavelength ~1180px
-const WAVE_OMEGA_1 = 1.75;             // primary phase speed (rad/sec)
-const WAVE_OMEGA_2 = 1.08;             // secondary phase speed
-const WAVE_RADIUS_MIN = 0.78;          // multiplier at trough
-const WAVE_RADIUS_MAX = 1.55;          // multiplier at crest
-const WAVE_ALPHA_MIN = 0.85;           // alpha multiplier at trough
-const WAVE_ALPHA_MAX = 1.25;           // alpha multiplier at crest
+// Domain-warped interference field. Coords are first twisted by a slow
+// low-frequency perturbation, then fed through a product of two sines
+// (which yields lobed crests, not stripes) and combined with a radial
+// pulse emitted from a wandering centre. tanh softens the peaks. Result
+// reads as a writhing organic field rather than parallel waves.
+const WAVE_K1 = (2 * Math.PI) / 760;
+const WAVE_K2 = (2 * Math.PI) / 1180;
+const WAVE_OMEGA_1 = 4.4;              // primary phase speed (rad/sec)
+const WAVE_OMEGA_2 = 2.7;              // secondary phase speed
+const WAVE_WARP_AMP = 220;             // px of coord perturbation
+const WAVE_WARP_OMEGA_1 = 1.85;
+const WAVE_WARP_OMEGA_2 = 1.45;
+const WAVE_RADIAL_K = 0.0115;          // radial wavelength ~ 2π/0.0115 ≈ 545px
+const WAVE_RADIAL_OMEGA = 3.4;
+const WAVE_CENTRE_OMEGA_X = 0.78;
+const WAVE_CENTRE_OMEGA_Y = 0.95;
+const WAVE_RADIUS_MIN = 0.78;
+const WAVE_RADIUS_MAX = 1.55;
+const WAVE_ALPHA_MIN = 0.85;
+const WAVE_ALPHA_MAX = 1.25;
 
 const waveAt = (x: number, y: number, t: number) => {
-  const w1 = Math.sin(WAVE_K1 * x + 0.32 * WAVE_K1 * y - WAVE_OMEGA_1 * t);
-  const w2 = Math.sin(
-    0.62 * WAVE_K2 * x + 0.95 * WAVE_K2 * y - WAVE_OMEGA_2 * t + 1.37,
+  const wx = Math.sin(0.0036 * x + 0.0021 * y + WAVE_WARP_OMEGA_1 * t);
+  const wy = Math.cos(0.0027 * x - 0.0033 * y + WAVE_WARP_OMEGA_2 * t + 1.7);
+  const xw = x + WAVE_WARP_AMP * wx;
+  const yw = y + WAVE_WARP_AMP * wy;
+
+  const a = Math.sin(WAVE_K1 * xw + 0.32 * WAVE_K1 * yw - WAVE_OMEGA_1 * t);
+  const b = Math.sin(
+    0.62 * WAVE_K2 * xw + 0.95 * WAVE_K2 * yw - WAVE_OMEGA_2 * t + 1.37,
   );
-  return ((w1 + w2) * 0.5 + 1) * 0.5; // 0..1
+
+  const cx = W * 0.5 + 0.28 * W * Math.sin(WAVE_CENTRE_OMEGA_X * t);
+  const cy = H * 0.5 + 0.32 * H * Math.cos(WAVE_CENTRE_OMEGA_Y * t + 0.7);
+  const dx = x - cx;
+  const dy = y - cy;
+  const r = Math.sqrt(dx * dx + dy * dy);
+  const radial = Math.sin(WAVE_RADIAL_K * r - WAVE_RADIAL_OMEGA * t);
+
+  const raw = 1.6 * a * b + 0.7 * radial;
+  return (Math.tanh(raw * 0.85) + 1) * 0.5;
 };
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
