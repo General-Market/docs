@@ -43,16 +43,22 @@ export const AntiCheatSolution: React.FC = () => {
 const Headline: React.FC = () => {
   const frame = useCurrentFrame();
 
+  // Continuous accelerating zoom: scale 1 → 2.2 across the pre-terminal
+  // window. Readable at frame 0, always growing, never holds.
+  const ZOOM_END = TERMINAL_AT - 2;
+  const t = interpolate(frame, [0, ZOOM_END], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const accel = Math.pow(t, 1.6);
+  const scale = interpolate(accel, [0, 1], [1, 2.2]);
+
   const opacity = interpolate(
     frame,
     [0, 8, TERMINAL_AT - 10, TERMINAL_AT - 2],
     [0, 1, 1, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
-  const lift = interpolate(frame, [0, 8], [14, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
 
   return (
     <AbsoluteFill
@@ -68,7 +74,8 @@ const Headline: React.FC = () => {
           display: "flex",
           alignItems: "center",
           gap: 30,
-          transform: `translateY(${lift}px)`,
+          transform: `scale(${scale})`,
+          transformOrigin: "center center",
         }}
       >
         <img
