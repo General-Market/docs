@@ -44,23 +44,22 @@ export const AntiCheatSolution: React.FC = () => {
 const Headline: React.FC = () => {
   const frame = useCurrentFrame();
 
-  // Continuous zoom on a strong easeIn bezier — slow open, late surge —
-  // so the build mirrors the march's rising kick across the three beats
-  // of the pre-terminal window. By the end the wordmark has scaled past
-  // the frame: General is no longer legible, only its colour remains.
+  // Aggressive zoom on a strong easeIn bezier — slow open, late surge —
+  // mirroring the march's rising kick across the three beats of the
+  // pre-terminal window. The wordmark sits on a white card that scales
+  // with it, so by the end the screen is solid white, not the empty
+  // grey of the field. No fade-out: the zoom is the exit.
   const ZOOM_END = TERMINAL_AT;
-  const scale = interpolate(frame, [0, ZOOM_END], [1, 10], {
+  const scale = interpolate(frame, [0, ZOOM_END], [1, 22], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
-    easing: Easing.bezier(0.55, 0, 0.78, 0.2),
+    easing: Easing.bezier(0.5, 0, 0.7, 0.25),
   });
 
-  const opacity = interpolate(
-    frame,
-    [0, 8, TERMINAL_AT - 4, TERMINAL_AT],
-    [0, 1, 1, 0],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
+  const opacity = interpolate(frame, [0, 6], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
 
   return (
     <AbsoluteFill
@@ -76,6 +75,8 @@ const Headline: React.FC = () => {
           display: "flex",
           alignItems: "center",
           gap: 30,
+          padding: "80px 120px",
+          background: "#FFFFFF",
           transform: `scale(${scale})`,
           transformOrigin: "center center",
         }}
