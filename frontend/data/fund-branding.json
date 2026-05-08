@@ -625,6 +625,54 @@
       "vault": "0xA611E54db41c21C1B5Df80b13EAC01e2ccC66E1C"
     },
     {
+      "name": "Lockflow",
+      "symbol": "LOCK",
+      "source": "defi",
+      "strategy": "momentum",
+      "params": {},
+      "tagline": "DeFi TVL moves slowly and with conviction. Lockflow bets when TVL shifts, ignoring the noise between.",
+      "color": "#1B1B1B",
+      "fee": 500,
+      "category": "Crypto",
+      "vault": "0x8ca7797bB22A2EB60d5e05A4Af7DD18a9E2A9890"
+    },
+    {
+      "name": "Unlock",
+      "symbol": "ULCK",
+      "source": "defi",
+      "strategy": "contrarian",
+      "params": {},
+      "tagline": "Every TVL surge gets withdrawn. Unlock fades the deposits, because yield farmers are constitutionally incapable of patience.",
+      "color": "#1B1B1B",
+      "fee": 500,
+      "category": "Crypto",
+      "vault": "0x5F1F88ce5F60B41F589da22B9D49B911f97fF17a"
+    },
+    {
+      "name": "Yield",
+      "symbol": "YILD",
+      "source": "defi",
+      "strategy": "mean_reversion",
+      "params": {},
+      "tagline": "APYs oscillate around equilibrium. High yields attract capital that compresses them. Yield bets on the convergence.",
+      "color": "#1B1B1B",
+      "fee": 500,
+      "category": "Crypto",
+      "vault": "0x8CA8b0955a9f8648ef77333Ca720aD0FC45ed6A4"
+    },
+    {
+      "name": "Exploit",
+      "symbol": "XPLT",
+      "source": "defi",
+      "strategy": "volatility_fade",
+      "params": {},
+      "tagline": "DeFi volatility follows exploit cycles. Every hack creates panic that subsides. Exploit bets on the normalization after protocol drama.",
+      "color": "#1B1B1B",
+      "fee": 500,
+      "category": "Crypto",
+      "vault": "0xA27F6855Ce6f03d48c68EB53f57A62938a1c3eCd"
+    },
+    {
       "name": "Aftershock",
       "symbol": "AFTR",
       "source": "earthquake",
@@ -821,6 +869,18 @@
       "fee": 500,
       "category": "Finance",
       "vault": "0xa8cE1D1bDd59D37FfBa31988789d29c7B431C0A8"
+    },
+    {
+      "name": "Squeeze",
+      "symbol": "SQZE",
+      "source": "finra_short_vol",
+      "strategy": "momentum",
+      "params": {},
+      "tagline": "Rising short interest compounds. When bears pile in, the squeeze potential builds tick over tick. Squeeze rides the buildup.",
+      "color": "#1A3C6E",
+      "fee": 500,
+      "category": "finance",
+      "vault": "0xa376E54168e93795acee019DC2A49660A9Ba1512"
     },
     {
       "name": "Noise",
@@ -1443,6 +1503,56 @@
       "fee": 500,
       "category": "Leisure",
       "vault": "0x0f28bfe6e1c11b6b000aF5fF0a6b94c85471Cf5b"
+    },
+    {
+      "name": "Deadline",
+      "symbol": "DDLN",
+      "source": "sec_13f",
+      "strategy": "momentum",
+      "params": {},
+      "tagline": "SEC filings cluster around quarterly deadlines. Filing volume builds tick-over-tick during disclosure windows. Deadline rides the surge.",
+      "color": "#0A3055",
+      "fee": 500,
+      "category": "Finance",
+      "vault": "0x6b559059fC5775aADB5bea1A85fab711eF63f3B5"
+    },
+    {
+      "name": "Disclosure",
+      "symbol": "DSCL",
+      "source": "sec_13f",
+      "strategy": "contrarian",
+      "params": {},
+      "tagline": "Markets overreact to every 13F drop. Disclosure fades the initial move, because institutional positions are already priced in.",
+      "color": "#0A3055",
+      "fee": 500,
+      "category": "Finance",
+      "vault": "0x882aDc8623e2d3A29bCA11C50ae9ff3ff004fF3B"
+    },
+    {
+      "name": "Insider",
+      "symbol": "INSD",
+      "source": "sec_13f",
+      "strategy": "momentum_threshold",
+      "params": {
+        "min_change_pct": 3
+      },
+      "tagline": "Minor filing volume changes are administrative. Insider only trades when activity surges 3% or more, signaling real institutional movement.",
+      "color": "#0A3055",
+      "fee": 500,
+      "category": "Finance",
+      "vault": "0x9aFFa4cf32047e755f02A2AE5a157256EA1BeEB9"
+    },
+    {
+      "name": "Holdings",
+      "symbol": "HLDG",
+      "source": "sec_13f",
+      "strategy": "regime",
+      "params": {},
+      "tagline": "Institutional allocation operates in risk-on and risk-off regimes. Holdings detects the shift from 13F filing patterns.",
+      "color": "#0A3055",
+      "fee": 500,
+      "category": "Finance",
+      "vault": "0x859C448C56197Ac19016dD1241b72b279b847c1a"
     },
     {
       "name": "Aurora",
