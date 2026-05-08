@@ -17,7 +17,7 @@ import { IdleZoom, RevealChars } from "./vibe";
 // accent emphasis, dot grid, mono eyebrows). The asymmetry between a
 // dense ledger of seven and a single hero word does the work — no
 // strikethroughs, no slide-deck affordances.
-const SCENE_SECONDS = 6.5;
+const SCENE_SECONDS = 6.0;
 const SCENE_FRAMES = toFrames(SCENE_SECONDS);
 
 const HEADLINE_AT = 0;
@@ -27,7 +27,9 @@ const LEFT_STAGGER = toFrames(0.13);
 const OR_AT = toFrames(2.6);
 const RIGHT_EYEBROW_AT = toFrames(2.95);
 const RIGHT_ANSWER_AT = toFrames(3.35);
-const SUBTITLE_AT = toFrames(4.6);
+// Subtitle moved earlier so it has room to breathe in the shorter
+// 6.0s window — lands on the tf 915 beat, exits before cut6.
+const SUBTITLE_AT = toFrames(4.2);
 
 const PREDATORS = [
   "Liquidation hunting",

@@ -16,8 +16,11 @@ import { IdleZoom, RevealChars } from "./vibe";
 //   line 2 — "is rigged." (red, hero size; constant)
 // Articles flash hard-cut on the RIGHT, much larger than before, with the
 // original yellow highlighter restored on the article phrase.
-const SCENE_SECONDS = 5.0;
-const SCENE_FRAMES = Math.round(SCENE_SECONDS * FPS);
+// 6.43s — runs from cut2 (tf 349, hard cut on the kick) to cut3
+// (tf 530, snap-zoom intense lands ~3 frames after the tf 530 beat).
+// The third glitch detonates on the tf 477 energy peak.
+const SCENE_SECONDS = 193 / FPS;
+const SCENE_FRAMES = 193;
 
 const TITLE_IN = 0;
 const ARTICLES_AT = toFrames(0.35);
