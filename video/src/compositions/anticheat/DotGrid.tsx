@@ -39,10 +39,10 @@ const WAVE_RADIAL_K = 0.0115;          // radial wavelength ~ 2π/0.0115 ≈ 545
 const WAVE_RADIAL_OMEGA = 3.4;
 const WAVE_CENTRE_OMEGA_X = 0.78;
 const WAVE_CENTRE_OMEGA_Y = 0.95;
-const WAVE_RADIUS_MIN = 0.78;
-const WAVE_RADIUS_MAX = 1.55;
-const WAVE_ALPHA_MIN = 0.85;
-const WAVE_ALPHA_MAX = 1.25;
+const WAVE_RADIUS_MIN = 0.79;          // 1.8× less amplitude than before
+const WAVE_RADIUS_MAX = 1.21;          // centered on the original 1.0× radius
+const WAVE_ALPHA_MIN = 0.89;
+const WAVE_ALPHA_MAX = 1.11;
 
 const waveAt = (x: number, y: number, t: number) => {
   const wx = Math.sin(0.0036 * x + 0.0021 * y + WAVE_WARP_OMEGA_1 * t);
