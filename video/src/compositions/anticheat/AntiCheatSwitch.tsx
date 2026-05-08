@@ -24,17 +24,23 @@ const SCENE_FRAMES = toFrames(6.6);
 const HEADLINE_AT = 0;
 const ROWS_AT = 22;
 const ROW_STAGGER = 5;
-const PIVOT_AT = 47;
-const COPY_AT = 73;
+// Hold the bar chart 1s longer so the viewer can actually read the three
+// percentages. Meteor + morph + settle all shift by the same +30f, so the
+// streak still lands exactly on the morph. Hero+kicker phase loses that
+// second. SCENE_FRAMES stays at 198 — EndCard lands on schedule.
+const PIVOT_AT = 77;
+const COPY_AT = 103;
 const KICKER_AT = toFrames(4.4);
 
 type Row = { label: string; pct: number; accent: boolean };
+// Order: Blocks first as the dominant bar — descending stair, matching
+// the reference's IVV-leads composition.
 const ROWS: Row[] = [
-  { label: "Perps", pct: 20, accent: false },
-  { label: "Options", pct: 25, accent: false },
   { label: "Blocks", pct: 40, accent: true },
+  { label: "Options", pct: 25, accent: false },
+  { label: "Perps", pct: 20, accent: false },
 ];
-const HERO_INDEX = 2;
+const HERO_INDEX = 0;
 
 // ─── Bar-chart geometry — outlined 3D boxes, cavalier oblique projection ────
 //
@@ -48,23 +54,49 @@ const HERO_INDEX = 2;
 const BAR_WIDTH = 170;
 const BAR_GAP = 200;
 const BAR_BASELINE_Y = 870;
-const BAR_MAX_HEIGHT = 380; // Blocks (40%) sets the cap
+const BAR_MAX_HEIGHT = 400; // Blocks (40%) sets the cap
 const BAR_DEPTH = 24;
-const BAR_DEPTH_ANGLE_DEG = 30;
-const BAR_DX = BAR_DEPTH * Math.cos((BAR_DEPTH_ANGLE_DEG * Math.PI) / 180);
-const BAR_DY = BAR_DEPTH * Math.sin((BAR_DEPTH_ANGLE_DEG * Math.PI) / 180);
 const BAR_STROKE = 3;
+
+// Visual amplification: heights map through (pct/40)^HEIGHT_POWER instead
+// of linearly. With power 1.6 the displayed percentages stay legit
+// (20 / 25 / 40) but Blocks reads ~3× Perps visually against the real 2×
+// ratio. The chart should make you feel Blocks isn't just bigger — it's
+// the answer.
+const HEIGHT_POWER = 1.6;
+
+// Pseudo-perspective. Each bar's depth direction points toward a single
+// vanishing point off-frame to the upper-right. The leftmost bar (Blocks)
+// shows a flatter, more horizontal right face; the rightmost bar (Perps)
+// tilts more toward the VP — its top face opens up while its right face
+// narrows. Camera isn't head-on; the chart isn't a flat parallel-
+// projection cliché.
+const VP_X = W * 1.4; // 2688 — well off the right edge
+const VP_Y = -500;    // above the frame
 
 const CHART_TOTAL_WIDTH = 3 * BAR_WIDTH + 2 * BAR_GAP;
 const CHART_LEFT = (W - CHART_TOTAL_WIDTH) / 2;
 
 const barX = (i: number) => CHART_LEFT + i * (BAR_WIDTH + BAR_GAP);
-const barTargetH = (pct: number) => (BAR_MAX_HEIGHT * pct) / 40;
+const barTargetH = (pct: number) =>
+  BAR_MAX_HEIGHT * Math.pow(pct / 40, HEIGHT_POWER);
 const barCenterX = (i: number) => barX(i) + BAR_WIDTH / 2;
 
-// Labels float above each bar's FINAL top, so they don't bob as the bar
-// grows. Two lines: name (smaller) and pct (larger). The hero row's pct
-// is rendered transparently here; MorphingForty paints over it.
+const barDepth = (i: number, pct: number) => {
+  const cx = barCenterX(i);
+  const top = BAR_BASELINE_Y - barTargetH(pct);
+  const vx = VP_X - cx;
+  const vy = top - VP_Y;
+  const len = Math.hypot(vx, vy);
+  return {
+    dx: (vx / len) * BAR_DEPTH,
+    dy: (vy / len) * BAR_DEPTH,
+  };
+};
+
+// Labels float above each bar's FINAL back-top edge, so they don't bob as
+// the bar grows. Two lines: name (smaller) and pct (larger). The hero
+// row's pct is rendered transparently here; MorphingForty paints over it.
 const LABEL_NAME_FONT = 44;
 const LABEL_NAME_LH = 1.1;
 const LABEL_VALUE_FONT = 68;
@@ -76,14 +108,18 @@ const LABEL_BLOCK_HEIGHT =
   LABEL_INTERLINE_GAP +
   LABEL_VALUE_FONT * LABEL_VALUE_LH;
 
-const labelTopY = (pct: number) =>
-  BAR_BASELINE_Y - barTargetH(pct) - LABEL_BAR_GAP - LABEL_BLOCK_HEIGHT;
+const labelTopY = (i: number, pct: number) => {
+  const { dy } = barDepth(i, pct);
+  return (
+    BAR_BASELINE_Y - barTargetH(pct) - dy - LABEL_BAR_GAP - LABEL_BLOCK_HEIGHT
+  );
+};
 
 // Hero source position for the morphing 40% — centred on the Blocks
 // bar's front face, at the value-line midpoint.
 const SRC_PCT_CX = barCenterX(HERO_INDEX);
 const SRC_PCT_CY =
-  labelTopY(40) +
+  labelTopY(HERO_INDEX, 40) +
   LABEL_NAME_FONT * LABEL_NAME_LH +
   LABEL_INTERLINE_GAP +
   (LABEL_VALUE_FONT * LABEL_VALUE_LH) / 2;
@@ -134,7 +170,7 @@ const ParticleField: React.FC = () => {
   // very tail so the EndCard transition starts clean.
   const fieldOp = interpolate(
     frame,
-    [40, 70, SCENE_FRAMES - 18, SCENE_FRAMES],
+    [70, 100, SCENE_FRAMES - 18, SCENE_FRAMES],
     [0, 1, 1, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
@@ -319,13 +355,14 @@ const Bar3D: React.FC<{
   const yBottom = BAR_BASELINE_Y;
   const yTop = yBottom - currentH;
   const xR = x + BAR_WIDTH;
+  const { dx, dy } = barDepth(index, row.pct);
 
-  const bTLx = x + BAR_DX;
-  const bTLy = yTop - BAR_DY;
-  const bTRx = xR + BAR_DX;
-  const bTRy = yTop - BAR_DY;
-  const bBRx = xR + BAR_DX;
-  const bBRy = yBottom - BAR_DY;
+  const bTLx = x + dx;
+  const bTLy = yTop - dy;
+  const bTRx = xR + dx;
+  const bTRy = yTop - dy;
+  const bBRx = xR + dx;
+  const bBRy = yBottom - dy;
 
   // Outer silhouette traced counter-clockwise: front-bottom-left → front-
   // top-left → back-top-left → back-top-right → back-bottom-right →
@@ -422,7 +459,7 @@ const BarLabel: React.FC<{
       style={{
         position: "absolute",
         left: barCenterX(index),
-        top: labelTopY(row.pct),
+        top: labelTopY(index, row.pct),
         transform: `translate(-50%, 0) translateY(${(enterY + exitY).toFixed(2)}px)`,
         textAlign: "center",
         opacity: enterOp * exitOp,
@@ -559,10 +596,10 @@ const MorphingForty: React.FC<{
 // settle orb fades in behind the hero and holds. Reference: Apple's
 // "watched" reveal — adapted to single-color accent.
 
-const STREAK_START = 29;
-const STREAK_IMPACT = 46;
-const FLASH_END = 57;
-const SETTLE_START = 49;
+const STREAK_START = 59;
+const STREAK_IMPACT = 76;
+const FLASH_END = 87;
+const SETTLE_START = 79;
 
 const Streak: React.FC<{
   frame: number;
