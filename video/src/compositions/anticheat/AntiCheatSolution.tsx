@@ -44,76 +44,76 @@ export const AntiCheatSolution: React.FC = () => {
 const Headline: React.FC = () => {
   const frame = useCurrentFrame();
 
-  // Hold legible for the first beat, then surge through the back half so
-  // the white card fills the frame by the time the terminal mounts. Strong
-  // easeIn bezier — slow open, late kick — mirroring the march's rising
-  // pulse. The mark and wordmark fade to 0 over the second half so the
-  // last beats land on pure white, not on huge black letterforms.
+  // Beat 0 is a hold — half a second at scale 1 so the wordmark lands
+  // small and legible. Beat 1 onwards: full-blast accelerating bezier.
+  // End scale is huge (88) so the white card unmistakably exits the
+  // frame; a fullscreen white wash fades in over the last beat to
+  // erase the close-up letterforms entirely.
+  const HOLD_END = 15; // ≈0.5s at 30fps
   const ZOOM_END = TERMINAL_AT;
-  const scale = interpolate(frame, [0, ZOOM_END], [1, 22], {
+  const zoomT = interpolate(frame, [HOLD_END, ZOOM_END], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
-    easing: Easing.bezier(0.72, 0, 0.88, 0.35),
+    easing: Easing.bezier(0.7, 0, 0.84, 0.3),
   });
+  const scale = interpolate(zoomT, [0, 1], [1, 88]);
 
   const opacity = interpolate(frame, [0, 6], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  // Fade the black letterforms out before the zoom finishes — keeps the
-  // exit on solid white instead of close-up letter geometry.
-  const innerOpacity = interpolate(
+  // White wash. Lifts in over the back of the surge and lands solid
+  // before the terminal mounts.
+  const wash = interpolate(
     frame,
-    [0, 38, ZOOM_END - 12],
-    [1, 1, 0],
+    [ZOOM_END - 22, ZOOM_END - 4],
+    [0, 1],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
 
   return (
-    <AbsoluteFill
-      style={{
-        justifyContent: "center",
-        alignItems: "center",
-        textAlign: "center",
-        opacity,
-      }}
-    >
-      <div
+    <AbsoluteFill style={{ opacity }}>
+      <AbsoluteFill
         style={{
-          display: "flex",
+          justifyContent: "center",
           alignItems: "center",
-          gap: 30,
-          padding: "80px 120px",
-          background: "#FFFFFF",
-          transform: `scale(${scale})`,
-          transformOrigin: "center center",
+          textAlign: "center",
         }}
       >
-        <img
-          src={staticFile("gm-logo-black.svg")}
-          alt=""
+        <div
           style={{
-            width: 200,
-            height: 200,
-            flexShrink: 0,
-            opacity: innerOpacity,
-          }}
-        />
-        <span
-          style={{
-            fontFamily: font,
-            fontSize: 220,
-            fontWeight: 800,
-            letterSpacing: "-0.05em",
-            color: colors.fg,
-            lineHeight: 0.95,
-            opacity: innerOpacity,
+            display: "flex",
+            alignItems: "center",
+            gap: 26,
+            padding: "60px 90px",
+            background: "#FFFFFF",
+            transform: `scale(${scale})`,
+            transformOrigin: "center center",
           }}
         >
-          General
-        </span>
-      </div>
+          <img
+            src={staticFile("gm-logo-black.svg")}
+            alt=""
+            style={{ width: 130, height: 130, flexShrink: 0 }}
+          />
+          <span
+            style={{
+              fontFamily: font,
+              fontSize: 140,
+              fontWeight: 800,
+              letterSpacing: "-0.05em",
+              color: colors.fg,
+              lineHeight: 0.95,
+            }}
+          >
+            General
+          </span>
+        </div>
+      </AbsoluteFill>
+      <AbsoluteFill
+        style={{ background: "#FFFFFF", opacity: wash, pointerEvents: "none" }}
+      />
     </AbsoluteFill>
   );
 };
