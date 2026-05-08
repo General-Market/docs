@@ -76,6 +76,8 @@ const MUSIC_END_FRAME = Math.min(
 );
 const MUSIC_FADE_IN = Math.round(FPS * 0.5);
 const MUSIC_VOLUME = 0.55;
+const MUSIC_FADE_OUT_END = Math.round(35.08 * FPS);
+const MUSIC_FADE_OUT_DURATION = Math.round(FPS * 1.0);
 
 export const AntiCheatFull: React.FC = () => {
   return (
@@ -84,14 +86,24 @@ export const AntiCheatFull: React.FC = () => {
         <Audio
           src={staticFile("music/twitter/Dagored - The Dead Man's March (freetouse.com).mp3")}
           startFrom={MUSIC_START_FROM_AUDIO}
-          volume={(frame) =>
-            interpolate(
+          volume={(frame) => {
+            const fadeIn = interpolate(
               frame,
               [0, MUSIC_FADE_IN],
               [0, MUSIC_VOLUME],
               { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-            )
-          }
+            );
+            const fadeOut = interpolate(
+              frame,
+              [
+                MUSIC_FADE_OUT_END - MUSIC_FADE_OUT_DURATION,
+                MUSIC_FADE_OUT_END,
+              ],
+              [MUSIC_VOLUME, 0],
+              { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+            );
+            return Math.min(fadeIn, fadeOut);
+          }}
         />
       </Sequence>
       <TransitionSeries>
