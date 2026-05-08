@@ -158,16 +158,25 @@ function CameraRig({ distance }: { distance: number }) {
   return null
 }
 
+type Tuning = {
+  xo: number
+  yo: number
+  zo: number
+  debug: boolean
+}
+
 function PhoneScene({
   tilt,
   responsive,
   leaving,
+  tuning,
   onReady,
   onLinkClick,
 }: {
   tilt: TiltRef
   responsive: Responsive
   leaving: LeaveRef
+  tuning: Tuning
   onReady: () => void
   onLinkClick: (e: React.MouseEvent, href: string, external: boolean, style: LinktreeIcon) => void
 }) {
@@ -176,6 +185,7 @@ function PhoneScene({
   const [screenFit, setScreenFit] = useState<{
     position: [number, number, number]
     scale: number
+    target: [number, number, number]
   } | null>(null)
 
   useEffect(() => {
@@ -208,7 +218,7 @@ function PhoneScene({
     const isIOS = /iPad|iPhone|iPod/.test(ua) && !(window as { MSStream?: unknown }).MSStream
 
     const screenMesh = findPhoneScreenMesh(iphone)
-    let fit: { position: [number, number, number]; scale: number }
+    let fit: { position: [number, number, number]; scale: number; target: [number, number, number] }
     if (screenMesh) {
       if (!screenMesh.geometry.boundingBox) screenMesh.geometry.computeBoundingBox()
       const box = screenMesh.geometry.boundingBox!
@@ -219,25 +229,24 @@ function PhoneScene({
       box.getCenter(center)
       box.getSize(size)
       const htmlScale = (size.x * HTML_TRANSFORM_DIVISOR) / LINK_MENU_CSS_WIDTH
-      // X locked at +0.32. Y +0.12 wasn't enough — the avatar still
-      // sits below where the dynamic island lives — so doubled it.
-      // Z nudge moves the menu a hair more in front of the screen
-      // glass (the rotation flip puts +Z = away from camera in the
-      // post-rotation frame, so subtract more).
-      const xOffset = isIOS ? 0.32 : 0
-      const yOffset = isIOS ? 0.25 : 0
-      const zOffset = isIOS ? -0.005 : -0.001
+      // iOS-only offsets, overridable via ?xo=&yo=&zo= so a real
+      // device can be tuned live. The defaults below are the last
+      // known-good values; URL params win.
+      const xOffset = isIOS ? tuning.xo : 0
+      const yOffset = isIOS ? tuning.yo : 0
+      const zOffset = isIOS ? tuning.zo : -0.001
       fit = {
         position: [center.x + xOffset, center.y + yOffset, center.z + zOffset],
         scale: htmlScale,
+        target: [center.x, center.y, center.z],
       }
     } else {
-      fit = { position: [0, 0, -0.001], scale: 0.178 }
+      fit = { position: [0, 0, -0.001], scale: 0.178, target: [0, 0, 0] }
     }
     setScreenFit(fit)
 
     onReady()
-  }, [gltf, onReady])
+  }, [gltf, onReady, tuning.xo, tuning.yo, tuning.zo])
 
   useFrame(({ clock }) => {
     const g = groupRef.current
@@ -293,17 +302,28 @@ function PhoneScene({
         far={4}
       />
       {screenFit && (
-        <Html
-          transform
-          position={screenFit.position}
-          rotation={[0, Math.PI, 0]}
-          scale={screenFit.scale}
-          occlude={false}
-          zIndexRange={[1, 0]}
-          wrapperClass="lt-html-wrapper"
-        >
-          <LinkMenu onLinkClick={onLinkClick} />
-        </Html>
+        <>
+          <Html
+            transform
+            position={screenFit.position}
+            rotation={[0, Math.PI, 0]}
+            scale={screenFit.scale}
+            occlude={false}
+            zIndexRange={[1, 0]}
+            wrapperClass="lt-html-wrapper"
+          >
+            <LinkMenu onLinkClick={onLinkClick} />
+          </Html>
+          {/* Calibration mark — red sphere at the measured screen-mesh
+              centre. Visible only with ?debug=1. Use to read off the
+              gap between target and where the menu actually lands. */}
+          {tuning.debug && (
+            <mesh position={screenFit.target}>
+              <sphereGeometry args={[0.06, 16, 16]} />
+              <meshBasicMaterial color="#ff2d55" />
+            </mesh>
+          )}
+        </>
       )}
     </group>
   )
@@ -321,6 +341,21 @@ export function PhoneLinktree() {
   const leaving: LeaveRef = useRef(null)
   const [responsive, setResponsive] = useState<Responsive>(() => readResponsive())
   const [ready, setReady] = useState(false)
+  const [tuning, setTuning] = useState<Tuning>({ xo: 0.32, yo: 0.32, zo: 0, debug: false })
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const num = (key: string, fallback: number) => {
+      const v = parseFloat(params.get(key) ?? '')
+      return Number.isFinite(v) ? v : fallback
+    }
+    setTuning({
+      xo: num('xo', 0.32),
+      yo: num('yo', 0.32),
+      zo: num('zo', 0),
+      debug: params.get('debug') === '1',
+    })
+  }, [])
 
   const handleLinkClick = useCallback(
     (e: React.MouseEvent, href: string, external: boolean, style: LinktreeIcon) => {
@@ -495,6 +530,36 @@ export function PhoneLinktree() {
         }
       `}</style>
 
+      {tuning.debug && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 16,
+            left: 16,
+            zIndex: 100,
+            background: 'rgba(0,0,0,0.82)',
+            color: '#fff',
+            padding: '10px 12px',
+            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+            fontSize: 12,
+            lineHeight: 1.5,
+            borderRadius: 8,
+            maxWidth: 260,
+          }}
+        >
+          <div style={{ fontWeight: 700, marginBottom: 4 }}>iOS calibration</div>
+          xo = {tuning.xo}
+          <br />
+          yo = {tuning.yo}
+          <br />
+          zo = {tuning.zo}
+          <br />
+          <span style={{ opacity: 0.7 }}>
+            Red dot = screen-mesh centre. Tune via{' '}
+            <code>?xo=&yo=&zo=&debug=1</code>
+          </span>
+        </div>
+      )}
       <div className="lt-stage">
         <Canvas
           dpr={[1, 2]}
@@ -513,6 +578,7 @@ export function PhoneLinktree() {
               tilt={tilt}
               responsive={responsive}
               leaving={leaving}
+              tuning={tuning}
               onReady={() => setReady(true)}
               onLinkClick={handleLinkClick}
             />
