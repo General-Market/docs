@@ -33,12 +33,27 @@ const GLITCH_LEN = 6;
 
 type Highlight = { x: number; y: number; w: number; h: number };
 
+// Flat fill that hides a logo on the article photo. Coords are
+// fractions of the rendered image (cx, cy = center; size = side/diameter
+// as a fraction of image width). Square supports rotation in degrees.
+type LogoMask =
+  | { kind: "circle"; cx: number; cy: number; size: number; color?: string }
+  | {
+      kind: "square";
+      cx: number;
+      cy: number;
+      size: number;
+      rotate: number;
+      color?: string;
+    };
+
 type ArticleProof = {
   exchange: string;
   image: string;
   source: string;                // canonical URL — printed under the card
   highlights: Highlight[];       // yellow body highlight (insider-trading phrases)
   exchangeBox?: Highlight;       // green underline on the exchange name in title
+  logoMask?: LogoMask;           // black blackout over a brand logo
 };
 
 // `exchangeBox` coords were eyeballed from each article PNG. Two articles
@@ -54,6 +69,7 @@ const ARTICLES: ArticleProof[] = [
       "theblock.co/post/381752/binance-confirm-insider-trading-year-yellow-fruit-meme-token-higher",
     highlights: [{ x: 0.5737, y: 0.1383, w: 0.3183, h: 0.0453 }],
     exchangeBox: { x: 0.0131, y: 0.1383, w: 0.1759, h: 0.0352 },
+    logoMask: { kind: "circle", cx: 0.499, cy: 0.738, size: 0.42 },
   },
   {
     exchange: "robinhood",
@@ -62,6 +78,14 @@ const ARTICLES: ArticleProof[] = [
       "pymnts.com/markets/2026/robinhood-blocks-some-prediction-markets-over-insider-trading-worries",
     highlights: [{ x: 0.4119, y: 0.1968, w: 0.2831, h: 0.042 }],
     exchangeBox: { x: 0.1625, y: 0.1433, w: 0.2065, h: 0.0331 },
+    logoMask: {
+      kind: "square",
+      cx: 0.54,
+      cy: 0.69,
+      size: 0.48,
+      rotate: -8,
+      color: "#ffffff",
+    },
   },
   {
     exchange: "polymarket",
@@ -321,6 +345,7 @@ const ArticleFlash: React.FC<{
               borderRadius: 4,
             }}
           />
+          {article.logoMask && <LogoBlackout mask={article.logoMask} />}
           <YellowHighlightLayer
             highlights={article.highlights}
             reveal={highlightReveal}
@@ -359,6 +384,43 @@ const SourceCitation: React.FC<{ url: string }> = ({ url }) => (
     source — {url}
   </div>
 );
+
+// ─── Logo blackout — flat black shape that covers a brand mark ───────────────
+//
+// Sized as a fraction of image width and centered on (cx, cy). aspect-ratio:1
+// keeps the shape square in display pixels so the circle stays round and the
+// square stays square regardless of the image's native aspect.
+
+const LogoBlackout: React.FC<{ mask: LogoMask }> = ({ mask }) => {
+  const baseStyle: React.CSSProperties = {
+    position: "absolute",
+    left: `${mask.cx * 100}%`,
+    top: `${mask.cy * 100}%`,
+    width: `${mask.size * 100}%`,
+    aspectRatio: "1 / 1",
+    background: mask.color ?? "#000",
+    pointerEvents: "none",
+  };
+  if (mask.kind === "circle") {
+    return (
+      <div
+        style={{
+          ...baseStyle,
+          borderRadius: "50%",
+          transform: "translate(-50%, -50%)",
+        }}
+      />
+    );
+  }
+  return (
+    <div
+      style={{
+        ...baseStyle,
+        transform: `translate(-50%, -50%) rotate(${mask.rotate}deg)`,
+      }}
+    />
+  );
+};
 
 // Marker-stroke only — multiply + screen passes that sit over the text,
 // mirroring the yellow highlighter's body. No hard kick line beneath.
