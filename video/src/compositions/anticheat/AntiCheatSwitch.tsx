@@ -108,7 +108,6 @@ const Stage: React.FC = () => {
       <Headline morphT={morphT} />
       <SettleOrb frame={frame} fps={fps} />
       <SpecLedger frame={frame} fps={fps} morphT={morphT} />
-      <MorphingForty frame={frame} fps={fps} morphT={morphT} />
       <Streak
         frame={frame}
         startFromX={HERO_CENTER_X + 1100}
@@ -121,6 +120,7 @@ const Stage: React.FC = () => {
         delay={2}
       />
       <ImpactFlash frame={frame} />
+      <MorphingForty frame={frame} fps={fps} morphT={morphT} />
       <HeroCopy frame={frame} fps={fps} />
     </AbsoluteFill>
   );
@@ -453,10 +453,10 @@ const MorphingForty: React.FC<{
 // settle orb fades in behind the hero and holds. Reference: Apple's
 // "watched" reveal — adapted to single-color accent.
 
-const STREAK_START = 58;
-const STREAK_IMPACT = 73;
-const FLASH_END = 84;
-const SETTLE_START = 76;
+const STREAK_START = 33;
+const STREAK_IMPACT = 75;
+const FLASH_END = 86;
+const SETTLE_START = 78;
 
 const Streak: React.FC<{
   frame: number;
@@ -481,7 +481,9 @@ const Streak: React.FC<{
   const dy = HERO_CENTER_Y - startFromY;
   const angleDeg = (Math.atan2(dy, dx) * 180) / Math.PI;
 
-  const fadeIn = Math.max(0, Math.min(1, (local + 4) / 8));
+  // Longer fade-in window now that the travel is 42 frames; keeps the
+  // streaks faint while the rows are still settling.
+  const fadeIn = Math.max(0, Math.min(1, local / 14));
   const opacity = fadeIn;
 
   // Stretch the capsule as it accelerates — motion smearing.
