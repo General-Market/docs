@@ -22,8 +22,8 @@ const STAT_FRAMES = 145;
 // article cadence still hits beats 13–18 within ±1f — negligible drift.
 const BARS_FRAMES = 129;
 // Hard-cut flip from 0.01%/take/70% to 99.9%/get/30% on scene-local
-// beat 2 (frame 51 inside Stat = absolute beat 19).
-const STAT_FLIP_AT = 51;
+// beat 2 (frame 56 inside Stat = absolute beat 22, frame 583).
+const STAT_FLIP_AT = 56;
 
 export const AntiCheatStat: React.FC = () => {
   return (

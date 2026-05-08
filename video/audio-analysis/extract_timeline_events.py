@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
 """Map music events to timeline frames for AntiCheatFull.
 
-Audio plays from file-second 66.4 (= file-frame 1992) onward. Timeline
-frame 0 = audio file-frame 1992. Mapping:
+Audio plays from file-second 65.47 (= file-frame 1964) onward. Timeline
+frame 0 = audio file-frame 1964. Mapping:
 
-  timeline_frame T  <->  audio_seconds (T + 1992) / 30
-  audio_seconds S   ->   timeline_frame round(S * 30) - 1992
+  timeline_frame T  <->  audio_seconds (T + 1964) / 30
+  audio_seconds S   ->   timeline_frame round(S * 30) - 1964
 """
 import json
 import os
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-WINDOW_START_S = 66.4
-WINDOW_END_S = 106.83
+WINDOW_START_S = 65.47
+WINDOW_END_S = 106.73
 FPS = 30
-START_FROM_FILE_FRAME = 1992  # = WINDOW_START_S * 30
+START_FROM_FILE_FRAME = 1964  # = round(WINDOW_START_S * 30)
 
 
 def to_tf(audio_s: float) -> int:
@@ -52,7 +52,7 @@ def main():
             print(f"  {e['time']:6.1f}s  tf={tf:4d}  e={e['energy']:.3f}  {bar}")
 
     # Spike anchor verification
-    SPIKE_FILE_FRAME = 3087
+    SPIKE_FILE_FRAME = 3079
     spike_audio_s = SPIKE_FILE_FRAME / FPS
     spike_tf = to_tf(spike_audio_s)
     print(f"\nMusic spike at file-frame {SPIKE_FILE_FRAME} = {spike_audio_s:.3f}s -> tf {spike_tf}")

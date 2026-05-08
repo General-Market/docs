@@ -15,12 +15,12 @@ import { FPS, H, W, colors, toFrames } from "./theme";
 import { DotGrid, DotGridVignette } from "./DotGrid";
 import { IdleZoom, RevealChars } from "./vibe";
 
-// Reassure = 106f (3.53s). Reassure→Bridge transition starts on beat 32
-// (frame 846 absolute). SECOND_LINE_AT moved to scene-local beat 2
-// (frame 52) so "but shielded" lands on a kick.
+// Reassure = 106f (3.53s). Reassure→Switch cut midpoint at frame 956.
+// SECOND_LINE_AT lands on scene-local beat 2 (frame 58 inside Reassure
+// = absolute beat 35, frame 917) so "but shielded" lands on a kick.
 const SCENE_FRAMES = 106;
 const SCENE_SECONDS = SCENE_FRAMES / FPS;
-const SECOND_LINE_AT = 52;
+const SECOND_LINE_AT = 58;
 
 // UI panel geometry — asset is 2000×984 (logged-in homepage).
 const UI_SRC_W = 2000;
@@ -37,16 +37,18 @@ const BTN_X = (BTN_SRC_X / UI_SRC_W) * UI_W;
 const BTN_Y = (BTN_SRC_Y / UI_SRC_H) * UI_H;
 
 // Cursor flight path — enters from off-panel bottom-right. Click lands
-// on scene-local beat 1 (frame 26 = absolute beat 30). The cursor races
-// in over ~22 frames so the click hits the kick.
+// on scene-local beat 1 (frame 32 inside Reassure = absolute beat 34,
+// frame 891). The cursor races in over ~22 frames so the click hits
+// the kick.
 const CURSOR_FROM_X = UI_W * 0.82;
 const CURSOR_FROM_Y = UI_H * 1.05;
-const CURSOR_MOVE_START = 4;
-const CURSOR_MOVE_END = 23;
-const CLICK_AT = 26;
+const CURSOR_MOVE_START = 10;
+const CURSOR_MOVE_END = 29;
+const CLICK_AT = 32;
 
-// Panel exit on scene-local beat 3 (frame 78). Pulls left out of frame.
-const PANEL_EXIT_AT = 78;
+// Panel exit on scene-local beat 3 (frame 84 inside Reassure = absolute
+// beat 36, frame 943). Pulls left out of frame.
+const PANEL_EXIT_AT = 84;
 const PANEL_EXIT_END = SCENE_FRAMES - toFrames(0.1);
 
 // Emoji burst — bursts from the click, the same vocabulary as
@@ -793,7 +795,7 @@ const ShieldStamp: React.FC = () => {
 
 const Subtitle: React.FC = () => {
   const frame = useCurrentFrame();
-  // Fades in on scene-local beat 3 (frame 78 = absolute beat 31), the
+  // Fades in on scene-local beat 3 (frame 84 = absolute beat 36), the
   // same kick that triggers the panel exit. Subtitle solidifies as the
   // product slides off — one motion, two layers.
   const FADE_AT = PANEL_EXIT_AT;

@@ -30,20 +30,20 @@ const PAIRS = [
 ] as const;
 
 // All major moments locked to absolute video beats (see beats.ts).
-// Hook covers beats 0–8 (frames 23–228). Scene-local frames below.
-//   beat 0  → frame 23 — header in
-//   beat 1  → frame 49 — split begins
-//   beat 3  → frame 100 — pair 1
-//   beat 4  → frame 125 — pair 2
-//   beat 5  → frame 151 — pair 3
-//   beat 6  → frame 177 — verdict reveal
-//   beat 8  → frame 228 — Bars overlays
-const HEADER_IN = 23;
-const SPLIT_AT = 49;
+// Hook covers beats 0–8 (frames 17–223). Scene-local frames below.
+//   beat 0  → frame 17  — header in
+//   beat 1  → frame 43  — split begins
+//   beat 3  → frame 94  — pair 1
+//   beat 4  → frame 120 — pair 2
+//   beat 5  → frame 146 — pair 3
+//   beat 6  → frame 172 — verdict reveal
+//   beat 8  → frame 223 — Bars overlays
+const HEADER_IN = 17;
+const SPLIT_AT = 43;
 // Three pairs — each lands on its own beat. Beats 3/4/5 don't sit on a
 // uniform step (25, 26), so spell them out instead of stepping.
-const PAIR_FRAMES = [100, 125, 151];
-const REVEAL_AT = 177;
+const PAIR_FRAMES = [94, 120, 146];
+const REVEAL_AT = 172;
 
 const HOOK_DURATION = 254;
 
@@ -162,11 +162,11 @@ export const AntiCheatHook: React.FC = () => {
 
 const FADE = toFrames(0.27); // 8 frames at 30fps
 
-// Clip cuts ride on beats 2 and 5 (frames 74 and 151). The first cut
-// minecraft→cs2 lands at 74; the second cs2→valorant at 151. Durations
+// Clip cuts ride on beats 2 and 5 (frames 69 and 146). The first cut
+// minecraft→cs2 lands at 69; the second cs2→valorant at 146. Durations
 // include the fade overlap so the visible cut sits on the beat.
-const CLIP_1 = 74;
-const CLIP_2 = 151 - 74; // 77
+const CLIP_1 = 69;
+const CLIP_2 = 146 - 69; // 77
 
 const CheaterBrollSequence: React.FC = () => {
   return (

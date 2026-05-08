@@ -12,13 +12,13 @@ import { FPS, H, W, colors, toFrames } from "./theme";
 import { DotGrid, DotGridVignette } from "./DotGrid";
 import { IdleZoom } from "./vibe";
 
-// Solution = 233f (7.77s). Solution→Reassure transition starts on
-// beat 29 (frame 768 absolute). Terminal flies in on scene-local beat 3
-// (absolute beat 24, frame 640) — gives the headline 2.5s before the
-// terminal arrives, then ~3s of terminal + CTA.
+// Solution = 233f (7.77s). Solution→Reassure transition midpoint sits
+// near beat 33 (frame 866 absolute). Terminal flies in on scene-local
+// beat 3 (absolute beat 28, frame 737) — gives the headline ~3.1s
+// before the terminal arrives, then ~4.7s of terminal + CTA.
 const SCENE_FRAMES = 233;
 const SCENE_SECONDS = SCENE_FRAMES / FPS;
-const TERMINAL_AT = 77;
+const TERMINAL_AT = 93;
 
 export const AntiCheatSolution: React.FC = () => {
   return (
@@ -48,7 +48,7 @@ const Headline: React.FC = () => {
   // The blast collapses into the third beat — bezier surge, then a fast
   // white wash that erases the close-up letterforms before the terminal
   // mounts. Read first, blast last.
-  const HOLD_END = 51; // beat 2 — ≈1.7s of stillness
+  const HOLD_END = 68; // beat 2 — ≈2.3s of stillness
   const ZOOM_END = TERMINAL_AT;
   const zoomT = interpolate(frame, [HOLD_END, ZOOM_END], [0, 1], {
     extrapolateLeft: "clamp",
@@ -234,8 +234,8 @@ const Terminal: React.FC = () => {
   // Each char slides in from off-screen left (-1920px) and fades over 4f.
   // Reveal completes in 30 frames — one beat — for a fast, punchy entry.
   // Wrap allowed so the line stays on two lines.
-  // First char fires at scene-local 103 (= 22.20s absolute = beat 4 in
-  // Solution).
+  // First char fires at scene-local 119 (= 25.43s absolute = beat 4 in
+  // Solution, frame 763).
   const CTA_TEXT = "Shield your pnl from bad actors";
   const CTA_START = 26; // Terminal-local
   const CTA_REVEAL = 30;

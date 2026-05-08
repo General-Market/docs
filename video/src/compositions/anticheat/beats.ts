@@ -8,22 +8,29 @@
 // Source data: video/audio-analysis/dagored-march.json (BPM 69.8, 116
 // beats over 113.14s). Each beat at audio time T_audio maps to video
 // frame round(T_audio * FPS - MUSIC_START_FROM_AUDIO).
-export const MUSIC_START_FROM_AUDIO = 2087;
+//
+// Locked invariant: the music's strongest energy plateau (audio frames
+// ~3079–3084, t≈102.6–102.8s) lands on the Switch→EndCard cut at
+// absolute video frame 1115 (37.17s). With MUSIC_START_FROM_AUDIO =
+// 1964, the audio plays from second 65.47 of the file onward — the
+// final, declarative section of the track.
+export const MUSIC_START_FROM_AUDIO = 1964;
 
 // Beats that fall inside the music's playing window for the video.
-// 36 beats, scene-relative ranges:
-//   Hook (0–254):   beats 0–8
-//   Bars (228–306): beat 9
-//   Rigged (306–484): beats 11–17
-//   Stat (460–605): beats 17–21
-//   Solution (563–796): beats 21–30
-//   Reassure (768–874): beats 29–32
-//   Bridge (846–1026): beats 32–35
-//   EndCard (>992): no beats — music has tailed out by then.
+// 41 beats at BPM 69.8 (≈26 frames apart). Scene-relative ranges with
+// the current scene durations and transition lengths:
+//   Hook (0–254):       beats 0–9   (frames 17–248)
+//   Bars (236–365):     beats 9–13  (frames 248–351)
+//   Rigged (365–543):   beats 14–20 (frames 377–531)
+//   Stat (527–672):     beats 20–25 (frames 531–660)
+//   Solution (644–877): beats 25–33 (frames 660–866)
+//   Reassure (859–965): beats 34–36 (frames 866–943)
+//   Switch (947–1127):  beats 37–40 (frames 969–1046)
+//   EndCard (1103–end): no beats — the music is in its outro by then.
 export const VIDEO_BEATS: readonly number[] = [
-  23, 49, 74, 100, 125, 151, 177, 203, 228, 254, 280, 306, 332, 357, 383,
-  408, 435, 460, 486, 511, 537, 563, 589, 614, 640, 666, 691, 717, 743,
-  768, 794, 820, 846, 871, 897, 923,
+  17, 43, 69, 94, 120, 146, 172, 197, 223, 248, 274, 300, 326, 351, 377,
+  403, 429, 455, 480, 506, 531, 558, 583, 609, 634, 660, 686, 712, 737,
+  763, 789, 814, 840, 866, 891, 917, 943, 969, 994, 1020, 1046,
 ];
 
 export const beat = (i: number): number => {

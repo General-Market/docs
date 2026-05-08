@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   AbsoluteFill,
   interpolate,
@@ -6,13 +6,15 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
+import { noise2D } from "@remotion/noise";
 import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 import { DotGrid, DotGridVignette } from "./DotGrid";
 import { IdleZoom, RevealChars } from "./vibe";
 
-// Same slot the Bridge used to occupy: 180 frames, beat 32 absolute.
-// Scene-local beats: 0 (headline), 25 (rows), 51 (pivot), 77 (hero).
+// 180 frames, opens at absolute frame 947 (just after the Reassure→Switch
+// snap). Scene-local beats inside Switch land at frames 22, 47, 73, 99
+// (absolute beats 37–40, frames 969 / 994 / 1020 / 1046).
 //
 // Setup → pivot → knife. Three rows with proportional bars; the Blocks
 // row's "40%" doesn't crossfade out — it physically inflates from its
@@ -20,10 +22,10 @@ import { IdleZoom, RevealChars } from "./vibe";
 const SCENE_FRAMES = toFrames(6.0);
 
 const HEADLINE_AT = 0;
-const ROWS_AT = 25;
+const ROWS_AT = 22;
 const ROW_STAGGER = 5;
-const PIVOT_AT = 51;
-const COPY_AT = 78;
+const PIVOT_AT = 47;
+const COPY_AT = 73;
 const KICKER_AT = toFrames(4.4);
 
 type Row = { label: string; pct: number; accent: boolean };
@@ -453,10 +455,10 @@ const MorphingForty: React.FC<{
 // settle orb fades in behind the hero and holds. Reference: Apple's
 // "watched" reveal — adapted to single-color accent.
 
-const STREAK_START = 33;
-const STREAK_IMPACT = 75;
-const FLASH_END = 86;
-const SETTLE_START = 78;
+const STREAK_START = 29;
+const STREAK_IMPACT = 71;
+const FLASH_END = 82;
+const SETTLE_START = 74;
 
 const Streak: React.FC<{
   frame: number;

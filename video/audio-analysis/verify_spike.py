@@ -14,26 +14,26 @@ ROOT = HERE.parent / "src" / "compositions" / "anticheat"
 # resolves to). If a scene file changes, update these. Keep in sync
 # with the meta exports.
 SCENES = {
-    "Hook":      255,  # toFrames(8.5)
-    "Bars":      120,  # toFrames(4.0)
-    "Rigged":    193,  # 193/FPS
-    "Stat":      135,  # toFrames(4.5)
-    "Solution":  240,  # toFrames(8.0)
-    "Reassure":  137,  # 137/FPS
-    "Bridge":    180,  # toFrames(6.0)
+    "Hook":      254,
+    "Bars":      129,
+    "Rigged":    178,
+    "Stat":      145,
+    "Solution":  233,
+    "Reassure":  106,
+    "Switch":    180,  # toFrames(6.0)
     "EndCard":   135,  # toFrames(4.5)
 }
 
 T = {
-    "T_HOOK_BARS":        26,
-    "T_RIGGED_STAT":      24,
-    "T_STAT_SOLUTION":    42,
-    "T_SOLUTION_REASSURE": 28,
-    "T_REASSURE_BRIDGE":  28,
-    "T_BRIDGE_END":       34,
+    "T_HOOK_BARS":        18,
+    "T_RIGGED_STAT":      16,
+    "T_STAT_SOLUTION":    28,
+    "T_SOLUTION_REASSURE": 18,
+    "T_REASSURE_SWITCH":  18,
+    "T_SWITCH_END":       24,
 }
 
-AUDIO_SPIKE_IN_FILE = 3087
+AUDIO_SPIKE_IN_FILE = 3079
 FPS = 30
 
 
@@ -41,7 +41,7 @@ def main():
     scene_sum = sum(SCENES.values())
     transition_sum = sum(T.values())
     total = scene_sum - transition_sum
-    spike_lands_at = total - SCENES["EndCard"] + round(T["T_BRIDGE_END"] / 2)
+    spike_lands_at = total - SCENES["EndCard"] + round(T["T_SWITCH_END"] / 2)
     music_start = max(0, AUDIO_SPIKE_IN_FILE - spike_lands_at)
     print("Per-scene durations (frames):")
     for k, v in SCENES.items():
@@ -49,7 +49,7 @@ def main():
     print(f"Sum scenes:        {scene_sum}")
     print(f"Sum transitions:   {transition_sum}")
     print(f"TOTAL_FRAMES:      {total} ({total / FPS:.3f}s)")
-    print(f"SPIKE_LANDS_AT:    {spike_lands_at}")
+    print(f"SPIKE_LANDS_AT:    {spike_lands_at} ({spike_lands_at / FPS:.3f}s)")
     print(f"MUSIC_START_FROM_AUDIO: {music_start} (audio second {music_start / FPS:.3f})")
 
     # Cuts
@@ -67,9 +67,9 @@ def main():
     pos.append(("Solution end", p))
     p += SCENES["Reassure"] - T["T_SOLUTION_REASSURE"]
     pos.append(("Reassure end", p))
-    p += SCENES["Bridge"] - T["T_REASSURE_BRIDGE"]
-    pos.append(("Bridge end", p))
-    p += SCENES["EndCard"] - T["T_BRIDGE_END"]
+    p += SCENES["Switch"] - T["T_REASSURE_SWITCH"]
+    pos.append(("Switch end", p))
+    p += SCENES["EndCard"] - T["T_SWITCH_END"]
     pos.append(("EndCard end (TOTAL)", p))
 
     print("\nCumulative ends:")
@@ -78,13 +78,13 @@ def main():
 
     print("\nCut midpoints (where the eye sees the cut):")
     cuts = [
-        ("cut1 Hook->Bars", SCENES["Hook"] - T["T_HOOK_BARS"] // 2, 246),
-        ("cut2 Bars->Rigged (hard)", pos[1][1], 349),
-        ("cut3 Rigged->Stat",  pos[2][1] - T["T_RIGGED_STAT"] // 2, 530),
-        ("cut4 Stat->Solution", pos[3][1] - T["T_STAT_SOLUTION"] // 2, 632),
-        ("cut5 Solution->Reassure", pos[4][1] - T["T_SOLUTION_REASSURE"] // 2, 838),
-        ("cut6 Reassure->Bridge", pos[5][1] - T["T_REASSURE_BRIDGE"] // 2, 941),
-        ("cut7 Bridge->EndCard (LOCKED)", pos[6][1] - T["T_BRIDGE_END"] // 2, 1095),
+        ("cut1 Hook->Bars", SCENES["Hook"] - T["T_HOOK_BARS"] // 2, 245),
+        ("cut2 Bars->Rigged (hard)", pos[1][1], 365),
+        ("cut3 Rigged->Stat",  pos[2][1] - T["T_RIGGED_STAT"] // 2, 535),
+        ("cut4 Stat->Solution", pos[3][1] - T["T_STAT_SOLUTION"] // 2, 658),
+        ("cut5 Solution->Reassure", pos[4][1] - T["T_SOLUTION_REASSURE"] // 2, 868),
+        ("cut6 Reassure->Switch", pos[5][1] - T["T_REASSURE_SWITCH"] // 2, 956),
+        ("cut7 Switch->EndCard (LOCKED)", pos[6][1] - T["T_SWITCH_END"] // 2, 1115),
     ]
     for name, frame, target in cuts:
         delta = frame - target
@@ -92,13 +92,13 @@ def main():
         print(f"  {name:34s} tf {frame:4d}  target {target:4d}  Δ {delta:+3d}  {ok}")
 
     # Sanity
-    expected_total = 1213
-    expected_spike = 1095
-    expected_music_start = 1992
+    expected_total = 1238
+    expected_spike = 1115
+    expected_music_start = 1964
     print("\nLocked invariants:")
-    print(f"  TOTAL_FRAMES == 1213:           {total == expected_total}")
-    print(f"  SPIKE_LANDS_AT == 1095:          {spike_lands_at == expected_spike}")
-    print(f"  MUSIC_START_FROM_AUDIO == 1992:  {music_start == expected_music_start}")
+    print(f"  TOTAL_FRAMES == 1238:            {total == expected_total}")
+    print(f"  SPIKE_LANDS_AT == 1115 (37.17s): {spike_lands_at == expected_spike}")
+    print(f"  MUSIC_START_FROM_AUDIO == 1964:  {music_start == expected_music_start}")
 
 
 if __name__ == "__main__":
