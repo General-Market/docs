@@ -122,3 +122,7 @@ vps.md
 
 # Source audit snapshots — large per-run dumps, not source of truth
 audit-data/
+
+# Invite codes — generated locally, never committed
+waitlist-codes.txt
+waitlist-codes.sql
