@@ -10,7 +10,7 @@
       "color": "#2C3E50",
       "fee": 500,
       "category": "Economic",
-      "vault": "0x281DBE8b2cd90d357B7e8119F7aF9dfBe9b3c192"
+      "vault": "0x81e80c465F7775f7f556792342B8478a03Ceb376"
     },
     {
       "name": "Layoff",
@@ -22,7 +22,7 @@
       "color": "#2C3E50",
       "fee": 500,
       "category": "Economic",
-      "vault": "0xb598543f68CD4B757A87d511232522808755f44f"
+      "vault": "0x2C74ac225329E78b1C126B07Be4319e3A0AE3107"
     },
     {
       "name": "Demand",
@@ -36,7 +36,7 @@
       "color": "#2C3E50",
       "fee": 500,
       "category": "Economic",
-      "vault": "0x8dbF56Fd3823003D6f949203376D371393e23BD1"
+      "vault": "0x0ce59C5945FeA7708913A0Af12550D7Bfc2A71ed"
     },
     {
       "name": "Headcount",
@@ -48,7 +48,7 @@
       "color": "#2C3E50",
       "fee": 500,
       "category": "Economic",
-      "vault": "0xCdFB7bf167783D3C88145210A56b5b7b824DDB61"
+      "vault": "0xa2295Adb8b3Fa64760E4d142dE7C33988A195f41"
     },
     {
       "name": "Clearsky",
@@ -60,7 +60,7 @@
       "color": "#3498DB",
       "fee": 500,
       "category": "Environment",
-      "vault": "0x68d953BE01617Fdb5Db1E444995e2b31496974EF"
+      "vault": "0xc38D57e506E1414acbe37cec7A9D9eB12df3Af0f"
     },
     {
       "name": "Smog",
@@ -72,7 +72,7 @@
       "color": "#3498DB",
       "fee": 500,
       "category": "Environment",
-      "vault": "0x8bDcc2fd04CE59833d8e087dc5Dc832532D5BF46"
+      "vault": "0x69263C482c10aC03D6edB0182A762e7b6dFFFD67"
     },
     {
       "name": "Breeze",
@@ -86,7 +86,7 @@
       "color": "#3498DB",
       "fee": 500,
       "category": "Environment",
-      "vault": "0x8982C7AC859B9572b3C856144be208Abb0C003E6"
+      "vault": "0x4597A892ED478FF1578cC8994a96d857fb586025"
     },
     {
       "name": "Inhalant",
@@ -98,7 +98,7 @@
       "color": "#3498DB",
       "fee": 500,
       "category": "Environment",
-      "vault": "0x7e7C186D745b4b36a29099f9f941E486180a6aa0"
+      "vault": "0xF04446279b9Bb245B268aF619360e7264B8333b0"
     },
     {
       "name": "Season",
@@ -110,7 +110,7 @@
       "color": "#152232",
       "fee": 500,
       "category": "Entertainment",
-      "vault": "0x51dDe64884196507f84391Ac25CA474D9f270a2C"
+      "vault": "0xCF70F59aE5350123B298965D1a0Fb7Ee4D42F249"
     },
     {
       "name": "Filler",
@@ -122,7 +122,7 @@
       "color": "#152232",
       "fee": 500,
       "category": "Entertainment",
-      "vault": "0xD26DBE97c5a96352b15Ab49753977e440179de3e"
+      "vault": "0xCE9d73D5b1a4118eb261cF5183650b3c94400050"
     },
     {
       "name": "Simulcast",
@@ -134,7 +134,7 @@
       "color": "#152232",
       "fee": 500,
       "category": "Entertainment",
-      "vault": "0x5C2f2aA592476515837EAa2BD777645c38E50773"
+      "vault": "0x12337f083c6ED4e810eFDB5cdB6B001dE5dbc499"
     },
     {
       "name": "Canon",
@@ -146,7 +146,7 @@
       "color": "#152232",
       "fee": 500,
       "category": "Entertainment",
-      "vault": "0x8188e543cb0E6c5A9c13b10c5b003255a7ACaf06"
+      "vault": "0x1fc0ce35353CBb3dc6fEfd9AEE429e32991a2C8C"
     },
     {
       "name": "Safari",
@@ -158,7 +158,7 @@
       "color": "#4A7C59",
       "fee": 500,
       "category": "Nature",
-      "vault": "0x1280dF962164c7C3cA38d2Ea58798A29F4a0EF00"
+      "vault": "0x212459093F015E881ED154CC70117E87a8E195F8"
     },
     {
       "name": "Hibernate",
@@ -170,7 +170,7 @@
       "color": "#4A7C59",
       "fee": 500,
       "category": "Nature",
-      "vault": "0x4A02D6e615EDDF6e102aD05170671DDD967E80f5"
+      "vault": "0x72e56935AC8B3E48208ec4526F07be932E369Db2"
     },
     {
       "name": "Biome",
@@ -182,7 +182,7 @@
       "color": "#4A7C59",
       "fee": 500,
       "category": "Nature",
-      "vault": "0x137870EEB9eFf390627F8A72a0a2a6a65F584C54"
+      "vault": "0xC8fd2565EEFB14Bfb61C2f0ABCA03bF9ce6E29c0"
     },
     {
       "name": "Nocturne",
@@ -194,7 +194,7 @@
       "color": "#4A7C59",
       "fee": 500,
       "category": "Nature",
-      "vault": "0xaD7Fb454E60Bc4E44104DF0f6eEF407c2Af37e0F"
+      "vault": "0xC9A8a234E3f94f37C3dd8D8b754e83Caf6154869"
     },
     {
       "name": "Unusual",
@@ -206,7 +206,7 @@
       "color": "#363636",
       "fee": 500,
       "category": "Gaming",
-      "vault": "0x2Fab0da56FF398a8643Dd2a194f3C9e533082e4E"
+      "vault": "0x366EE08cC9f9b59a893c13AA6FC70E7EA2b010b9"
     },
     {
       "name": "Uncrate",
@@ -218,7 +218,7 @@
       "color": "#363636",
       "fee": 500,
       "category": "Gaming",
-      "vault": "0x1A6fFEE6182aB154b0B618414c0ee629203BCC19"
+      "vault": "0x2E3aBB8550322F77b97e39e3794cA4aCCe070890"
     },
     {
       "name": "Vintage",
@@ -230,7 +230,7 @@
       "color": "#363636",
       "fee": 500,
       "category": "Gaming",
-      "vault": "0x89cf251C8152cD6dC7069b1261209526f6EF4ea7"
+      "vault": "0x4f1354e2D1f47bF06D4827c62f085B76d997332A"
     },
     {
       "name": "Hashrate",
@@ -242,7 +242,7 @@
       "color": "#F7931A",
       "fee": 500,
       "category": "Crypto",
-      "vault": "0xa6d58FbcC4444Ebb8B066daEA6979e980FD2D8E3"
+      "vault": "0x0351CDeBe3AAdcb5b40bB5ba606B7aDa70B52B43"
     },
     {
       "name": "Halving",
@@ -254,7 +254,7 @@
       "color": "#F7931A",
       "fee": 500,
       "category": "Crypto",
-      "vault": "0x4D1919a19AB722Ecd1fae0891876C07423797199"
+      "vault": "0x1305E8151605a989006085f2b27a3FF0D8b36bd1"
     },
     {
       "name": "Satoshi",
@@ -266,7 +266,7 @@
       "color": "#F7931A",
       "fee": 500,
       "category": "Crypto",
-      "vault": "0xa8206632Dfbd3fBDf073737B9e75Dba4337EB3f4"
+      "vault": "0x598fd31afD9744c8Af1E423A221b73BEb03086A1"
     },
     {
       "name": "Mempool",
@@ -278,7 +278,7 @@
       "color": "#F7931A",
       "fee": 500,
       "category": "Crypto",
-      "vault": "0x0A0f5B8E2d4B072aC158928F101BeA9b278b5265"
+      "vault": "0x87EaAb41b1A655322b62E1C825e0C69eE92ab10E"
     },
     {
       "name": "Markdown",
@@ -290,7 +290,7 @@
       "color": "#0046BE",
       "fee": 500,
       "category": "Retail",
-      "vault": "0xDb15D63769b80de6F63b905D7aC8CD1A42000943"
+      "vault": "0x399cb078F565458694AA7Ad43b61Cc4fcba25982"
     },
     {
       "name": "Bounce",
@@ -302,7 +302,7 @@
       "color": "#0046BE",
       "fee": 500,
       "category": "Retail",
-      "vault": "0xBc9DCAb1C124149b6eD8d61ED8e41f19A8d651A6"
+      "vault": "0x0542c3d824eCb5CDcD2EE3AB8ad02Db0Aa7a9bE8"
     },
     {
       "name": "Doorbuster",
@@ -316,7 +316,7 @@
       "color": "#0046BE",
       "fee": 500,
       "category": "Retail",
-      "vault": "0xD039f318d93DDE2a0000DB61A3F91cd8eE70a02b"
+      "vault": "0x6D73348C52a01d2208E767cf2A50e8598f0D4cF7"
     },
     {
       "name": "Clearance",
@@ -328,7 +328,7 @@
       "color": "#0046BE",
       "fee": 500,
       "category": "Retail",
-      "vault": "0xD49fd882c8c786F7C1D8e03daA42fB1AcEC3b087"
+      "vault": "0x8630267C94048CFeD21E794591f8155Fb4cFEF47"
     },
     {
       "name": "Payroll",
@@ -340,7 +340,7 @@
       "color": "#2C3E50",
       "fee": 500,
       "category": "Economic",
-      "vault": "0x000C56Ea0DA81067A43b354dF511150830B14c14"
+      "vault": "0xC3996351e875edF50760888395Fd5195f53AdA3a"
     },
     {
       "name": "Nonfarm",
@@ -352,7 +352,7 @@
       "color": "#2C3E50",
       "fee": 500,
       "category": "Economic",
-      "vault": "0xC2F8b365c8F6B7d5C242c43979E2e6DE77edb2E5"
+      "vault": "0x09fa5c3EfbF557b25DD083dAb019F998d0045a88"
     },
     {
       "name": "Wage",
@@ -366,7 +366,7 @@
       "color": "#2C3E50",
       "fee": 500,
       "category": "Economic",
-      "vault": "0x38a2C4BAE81d08B05628F7965160F846050ba07D"
+      "vault": "0xfc9eA12Cf30A8ba80b61EcAFe0d8a2836B48623E"
     },
     {
       "name": "Underemployed",
@@ -380,69 +380,7 @@
       "color": "#2C3E50",
       "fee": 500,
       "category": "Economic",
-      "vault": "0x46809d536B497BE5124178612AC97376110C408f"
-    },
-    {
-      "name": "Coupon",
-      "symbol": "CUPN",
-      "source": "treasury",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "Yield curves trend for months. Coupon follows the direction of rates because the bond market is slow but relentless.",
-      "color": "#0057B7",
-      "fee": 500,
-      "category": "Finance",
-      "vault": "0x4b4FBbC66B85a6f3e4c7554656EA22BAbd142029"
-    },
-    {
-      "name": "Inversion",
-      "symbol": "INVR",
-      "source": "treasury",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "Yield spikes attract buyers. Inversion fades extreme moves, betting that bonds always find their natural level.",
-      "color": "#0057B7",
-      "fee": 500,
-      "category": "Finance",
-      "vault": "0xaBE9A42b9844FeB9d09775Ce2d28E83C28474E98"
-    },
-    {
-      "name": "Duration",
-      "symbol": "DURN",
-      "source": "treasury",
-      "strategy": "momentum_threshold",
-      "params": {
-        "min_change_pct": 0.5
-      },
-      "tagline": "Most daily yield changes are noise. Duration only acts when rates shift by half a percent, following real policy moves.",
-      "color": "#0057B7",
-      "fee": 500,
-      "category": "Finance",
-      "vault": "0xA2e771d53dE190171E1637Bf80a1E200B01a22FE"
-    },
-    {
-      "name": "Maturity",
-      "symbol": "MTRT",
-      "source": "treasury",
-      "strategy": "regime",
-      "params": {},
-      "tagline": "Bond markets operate in regimes. Maturity detects the shift between risk-on and risk-off and positions accordingly.",
-      "color": "#0057B7",
-      "fee": 500,
-      "category": "Finance",
-      "vault": "0x24394d7D73698148d5199Be4bc71351DdE87BC14"
-    },
-    {
-      "name": "Par",
-      "symbol": "PARR",
-      "source": "treasury",
-      "strategy": "mean_reversion",
-      "params": {},
-      "tagline": "Bond prices oscillate around par value. Every premium compresses, every discount narrows. Par bets on the gravitational pull of face value.",
-      "color": "#0057B7",
-      "fee": 500,
-      "category": "Finance",
-      "vault": "0xdEeBC21d9436b870D9D48A8E2B121CbF803CBF9f"
+      "vault": "0x196b0f736DDA8DCcaeA017BD065a567D9297d63B"
     },
     {
       "name": "After Dark",
@@ -454,7 +392,7 @@
       "color": "#F47321",
       "fee": 500,
       "category": "Entertainment",
-      "vault": "0xe5D417Eb3188d50573F8f200CCe8D070a887DCbA"
+      "vault": "0x58afd45Ed7440FCed40408CA6f877e6D65D39e78"
     },
     {
       "name": "Intermission",
@@ -466,7 +404,7 @@
       "color": "#F47321",
       "fee": 500,
       "category": "Entertainment",
-      "vault": "0x41eda003896c628F07B2aa0C62e4ED07D5cC176D"
+      "vault": "0x1B01b641E80F0D0044A1311588796e73d1fDAc1A"
     },
     {
       "name": "Nocturnal",
@@ -478,7 +416,7 @@
       "color": "#F47321",
       "fee": 500,
       "category": "Entertainment",
-      "vault": "0xE90C3c35f5cFf4600cCF53Fe1e5D6c8117861196"
+      "vault": "0x0091A0D6ce65134273858aD1A316183182643415"
     },
     {
       "name": "Peakhour",
@@ -490,7 +428,7 @@
       "color": "#F47321",
       "fee": 500,
       "category": "Entertainment",
-      "vault": "0xAFdd260Fc2BE01879E817D575b04FEb678A147E3"
+      "vault": "0xf81DA1c5611D45c3c76B4bf6ed12D048F150CCC4"
     },
     {
       "name": "Spoke",
@@ -502,7 +440,7 @@
       "color": "#1A1A1A",
       "fee": 500,
       "category": "Transport",
-      "vault": "0xc07Ddf4B74B029a9A749A2B94521eD9A470A796A"
+      "vault": "0x746a3412cE3D9b82Cf1704E50574aDC247566A62"
     },
     {
       "name": "Pedal",
@@ -514,7 +452,7 @@
       "color": "#1A1A1A",
       "fee": 500,
       "category": "Transport",
-      "vault": "0x41c43aB5844108C7164742d345c5a9025F1aB24E"
+      "vault": "0x192D88600F6dCd5c860121ce461B8F7FDeD00A11"
     },
     {
       "name": "Freewheel",
@@ -526,7 +464,7 @@
       "color": "#1A1A1A",
       "fee": 500,
       "category": "Transport",
-      "vault": "0x934543718c1Ef3F5Bb0dD4D42dC43483b299552b"
+      "vault": "0xceA4c70A99B30D1413aE309A281ca075b22eB3c3"
     },
     {
       "name": "Dockless",
@@ -538,7 +476,7 @@
       "color": "#1A1A1A",
       "fee": 500,
       "category": "Transport",
-      "vault": "0xfca4aB6A00105E89670a9D0B7d6bF214d149Edb3"
+      "vault": "0xD33d02Fa6dcEBB8Cc25dE8DD56ED5fb825Ee5C27"
     },
     {
       "name": "Traffic",
@@ -550,7 +488,7 @@
       "color": "#F38020",
       "fee": 500,
       "category": "Technology",
-      "vault": "0x64335998CB2B227AFB7220d88EdE3677b05E4c06"
+      "vault": "0xc1b623E953C7550C6Da8eec1E8dF8c24f0A422BE"
     },
     {
       "name": "Darknet",
@@ -562,7 +500,7 @@
       "color": "#F38020",
       "fee": 500,
       "category": "Technology",
-      "vault": "0x9A14E3346CFDd06cE6B36282B61AF1132D2E9545"
+      "vault": "0x89beda85a0837EC1ca25C14Fa7474676C7A95B17"
     },
     {
       "name": "Crawl",
@@ -574,7 +512,7 @@
       "color": "#F38020",
       "fee": 500,
       "category": "Technology",
-      "vault": "0xAD21beE6D3f63cBC870C0FD8d5f6E980a53c0c05"
+      "vault": "0x4968f27Da0AFBFF6e060bD572F683B3FC24309a4"
     },
     {
       "name": "Outage",
@@ -586,7 +524,7 @@
       "color": "#F38020",
       "fee": 500,
       "category": "Technology",
-      "vault": "0xCB64524C8861bC7bb6679C4085129fB4D10a86ac"
+      "vault": "0x2fFc02f3BFd762e156750aaCAE4C72598d2F065f"
     },
     {
       "name": "Session",
@@ -598,7 +536,7 @@
       "color": "#1A2744",
       "fee": 500,
       "category": "Government",
-      "vault": "0xC18777732760fcf80BC66efE3F6879ac90047c05"
+      "vault": "0x4d7AADED1234ACb868e4CD6cb1eb5e9b2b6c8F9e"
     },
     {
       "name": "Recess",
@@ -610,7 +548,7 @@
       "color": "#1A2744",
       "fee": 500,
       "category": "Government",
-      "vault": "0xAa02dbaD266a9065Ce6021BA8445B1EC4523B67C"
+      "vault": "0xBaF127171c55a1f53F9e23C5eA7633Bd344c7FBD"
     },
     {
       "name": "Filibuster",
@@ -622,7 +560,7 @@
       "color": "#1A2744",
       "fee": 500,
       "category": "Government",
-      "vault": "0xa3BF6dC22259Ba6d39259E4C8aCFc56d941e93a1"
+      "vault": "0xb633027C8Af616Fa4785B425e309EFf30D29b1da"
     },
     {
       "name": "Bipartisan",
@@ -634,7 +572,7 @@
       "color": "#1A2744",
       "fee": 500,
       "category": "Government",
-      "vault": "0xbB0Ac41D079a27cf73ECE03a717BAa1A7198ae48"
+      "vault": "0xa71ce614874982C8285b4A71a94575ef1fD0dc59"
     },
     {
       "name": "Citation",
@@ -646,7 +584,7 @@
       "color": "#2A6496",
       "fee": 500,
       "category": "Academic",
-      "vault": "0xD7f908ce938287C64240A4e821DEe5868231B668"
+      "vault": "0xE5105cd298cfF97382A74c3b32CC6FE998Ced3de"
     },
     {
       "name": "Retraction",
@@ -658,7 +596,7 @@
       "color": "#2A6496",
       "fee": 500,
       "category": "Academic",
-      "vault": "0x912780B71C7Be2aB05C8FcfeE4A84a432187bf1b"
+      "vault": "0xdabA6a51ba660E76B64d1dAaE87f2f0C585Fa849"
     },
     {
       "name": "Index",
@@ -670,7 +608,7 @@
       "color": "#2A6496",
       "fee": 500,
       "category": "Academic",
-      "vault": "0x36eF0b5B4227b675E36B0eD1C77534A3fa100867"
+      "vault": "0x56Dd87cf597D88e6584a0877C776d8E161619bCB"
     },
     {
       "name": "Impact",
@@ -684,55 +622,7 @@
       "color": "#2A6496",
       "fee": 500,
       "category": "Academic",
-      "vault": "0xDf00187d348359A4050cBe2E396D0548fD2818b6"
-    },
-    {
-      "name": "Lockflow",
-      "symbol": "LOCK",
-      "source": "defillama",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "DeFi TVL moves slowly and with conviction. Lockflow bets when TVL shifts, ignoring the noise between.",
-      "color": "#1B1B1B",
-      "fee": 500,
-      "category": "Crypto",
-      "vault": "0xae3caeA2C32D1E42822a5504ACB0D35D80Dfa513"
-    },
-    {
-      "name": "Unlock",
-      "symbol": "ULCK",
-      "source": "defillama",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "Every TVL surge gets withdrawn. Unlock fades the deposits, because yield farmers are constitutionally incapable of patience.",
-      "color": "#1B1B1B",
-      "fee": 500,
-      "category": "Crypto",
-      "vault": "0x22aeBE197B8cF03eB9e3AfC5b47EACEbcC18A31E"
-    },
-    {
-      "name": "Yield",
-      "symbol": "YILD",
-      "source": "defillama",
-      "strategy": "mean_reversion",
-      "params": {},
-      "tagline": "APYs oscillate around equilibrium. High yields attract capital that compresses them. Yield bets on the convergence.",
-      "color": "#1B1B1B",
-      "fee": 500,
-      "category": "Crypto",
-      "vault": "0x938F554eb2E190db53E7Ac4d3B21E8b97Ba0637F"
-    },
-    {
-      "name": "Exploit",
-      "symbol": "XPLT",
-      "source": "defillama",
-      "strategy": "volatility_fade",
-      "params": {},
-      "tagline": "DeFi volatility follows exploit cycles. Every hack creates panic that subsides. Exploit bets on the normalization after protocol drama.",
-      "color": "#1B1B1B",
-      "fee": 500,
-      "category": "Crypto",
-      "vault": "0x647C2fba71a9F092275e707F23997fB36Fac8f2b"
+      "vault": "0xA611E54db41c21C1B5Df80b13EAC01e2ccC66E1C"
     },
     {
       "name": "Aftershock",
@@ -744,7 +634,7 @@
       "color": "#C0392B",
       "fee": 500,
       "category": "Geophysical",
-      "vault": "0xbE637996A8Db3AC5FA446F14975D3b56f9870FB9"
+      "vault": "0x24EF60fF1abEB87dA736e3BDE9C5DC6C8eAc4c5c"
     },
     {
       "name": "Dormant",
@@ -756,7 +646,7 @@
       "color": "#C0392B",
       "fee": 500,
       "category": "Geophysical",
-      "vault": "0xA73D716971137125c1Ef9A549Df27f4288CBb377"
+      "vault": "0xf3e1Db0447E83136489692E5F6De7E5371bBa505"
     },
     {
       "name": "Epicenter",
@@ -768,7 +658,7 @@
       "color": "#C0392B",
       "fee": 500,
       "category": "Geophysical",
-      "vault": "0x008E3Bc8F86284B5a587c01753f31529BE94cF4c"
+      "vault": "0x755C25F4ac3Cd4Ad50dfeE6B976C74ACF2F3eA3e"
     },
     {
       "name": "Richter",
@@ -782,7 +672,7 @@
       "color": "#C0392B",
       "fee": 500,
       "category": "Geophysical",
-      "vault": "0xd998fCB8d4a509bE72045BcE4C0AAf385F11Fee6"
+      "vault": "0xc9936b524298cE724974F782f270EB04871268bE"
     },
     {
       "name": "Euro",
@@ -794,7 +684,7 @@
       "color": "#003399",
       "fee": 500,
       "category": "Economic",
-      "vault": "0xF6CCBb600064cb971f19D71FC02206d5F320f3a0"
+      "vault": "0x92539684f68950C97729422A4B89421Fe42Ee59F"
     },
     {
       "name": "Parity",
@@ -806,7 +696,7 @@
       "color": "#003399",
       "fee": 500,
       "category": "Economic",
-      "vault": "0x8C96950FAd168689D778a2D975377417b054556d"
+      "vault": "0xDA1Cc052F56714073F722774e7d15923F5eE19C8"
     },
     {
       "name": "Draghi",
@@ -820,7 +710,7 @@
       "color": "#003399",
       "fee": 500,
       "category": "Economic",
-      "vault": "0xd85A6307F6B8bC989D8cFaA6d9e0FAcB248F8517"
+      "vault": "0x3F20715311282ffEe92A58bb7Cd3AF05AF35e3b0"
     },
     {
       "name": "Austerity",
@@ -832,7 +722,7 @@
       "color": "#003399",
       "fee": 500,
       "category": "Economic",
-      "vault": "0x9A08bb58053e92d80De84A1120ee4e634ADBE2c0"
+      "vault": "0xf3Fc4eE40B675e8db115187a4688e795442204da"
     },
     {
       "name": "Pipeline",
@@ -844,7 +734,7 @@
       "color": "#00526E",
       "fee": 500,
       "category": "Energy",
-      "vault": "0x7033Af7C9b53534358Bf4A1C32F37604508fcb6f"
+      "vault": "0x743cD5675b9205E89EF84c6576F3D7906e0b85FA"
     },
     {
       "name": "Surplus",
@@ -856,7 +746,7 @@
       "color": "#00526E",
       "fee": 500,
       "category": "Energy",
-      "vault": "0x37c73d1763c276784C549721a12446b4715D5695"
+      "vault": "0x816dA8b3794F89E1A09d51Ee50A256297f06b464"
     },
     {
       "name": "Joule",
@@ -868,7 +758,7 @@
       "color": "#00526E",
       "fee": 500,
       "category": "Energy",
-      "vault": "0xdC7C2c381Bd3929c42AE0b9364884463924d5391"
+      "vault": "0x358a27b26a5383Ef73D082405238D69b5a83A2D3"
     },
     {
       "name": "Reserve",
@@ -880,7 +770,7 @@
       "color": "#00526E",
       "fee": 500,
       "category": "Energy",
-      "vault": "0xfd51bc4cB8C4eeCdD1b1aEE49609b8adcEe24B7C"
+      "vault": "0x5Cb445481711bb3a91Af1F0AC4D55136CDa5e97A"
     },
     {
       "name": "Crowd",
@@ -892,7 +782,7 @@
       "color": "#0A3055",
       "fee": 500,
       "category": "Finance",
-      "vault": "0x4a2c54A5bd4C5f5694Eac8BA9027D9FE53357924"
+      "vault": "0xFb372D85Bef3dc187e9Cfb9Bfecb7ee335179641"
     },
     {
       "name": "Unwind",
@@ -904,7 +794,7 @@
       "color": "#0A3055",
       "fee": 500,
       "category": "Finance",
-      "vault": "0xdA61f3B0D1FAF5d20c9c63029E05D08DA33020f4"
+      "vault": "0x938531303C6E13557cF8B0c90411cce8e5Da8Ab2"
     },
     {
       "name": "Spike",
@@ -918,7 +808,7 @@
       "color": "#0A3055",
       "fee": 500,
       "category": "Finance",
-      "vault": "0x0843FCbC7856235d1c4ae533ab97aC1dE421Bbef"
+      "vault": "0x28ABaBfa2dd68970DeC49219c2a67512ea5D460d"
     },
     {
       "name": "Pressure",
@@ -930,7 +820,7 @@
       "color": "#0A3055",
       "fee": 500,
       "category": "Finance",
-      "vault": "0x9FE26eC9c951828fD78142fdBcA473e37F971142"
+      "vault": "0xa8cE1D1bDd59D37FfBa31988789d29c7B431C0A8"
     },
     {
       "name": "Noise",
@@ -942,7 +832,7 @@
       "color": "#3D5C3D",
       "fee": 500,
       "category": "Social",
-      "vault": "0x2283c848817178B82eE808fc38EC5852e66bc948"
+      "vault": "0x2C3aa9D1AdB0526561B8fA377A6B0a8ECc8b6DA3"
     },
     {
       "name": "Raid",
@@ -954,7 +844,7 @@
       "color": "#3D5C3D",
       "fee": 500,
       "category": "Social",
-      "vault": "0x032F8296431c664b27402458e68a869f71130262"
+      "vault": "0x4b284BB6e3237652d5e2E46D4F560Db6B47939a5"
     },
     {
       "name": "Sage",
@@ -966,7 +856,7 @@
       "color": "#3D5C3D",
       "fee": 500,
       "category": "Social",
-      "vault": "0x447D59Ee8DaCdeC7fF3c2B2688a398F0c6BFAc06"
+      "vault": "0x541Fd12852ABa9eAA39da0969B9e676338E1F9B4"
     },
     {
       "name": "Anon",
@@ -978,55 +868,7 @@
       "color": "#3D5C3D",
       "fee": 500,
       "category": "Social",
-      "vault": "0x8dfaD6c30020fDEE6F07a52f9347091E66acd999"
-    },
-    {
-      "name": "Cascade",
-      "symbol": "CSCD",
-      "source": "gtfs_rt",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "Transit disruptions cascade. One stuck train creates thirty delayed ones. Cascade bets that disruption persists once it starts.",
-      "color": "#0039A6",
-      "fee": 500,
-      "category": "Transport",
-      "vault": "0xB636396D6c6F63d8473BE22E11905b0bAD3aB91A"
-    },
-    {
-      "name": "Terminal",
-      "symbol": "TRMN",
-      "source": "gtfs_rt",
-      "strategy": "mean_reversion",
-      "params": {},
-      "tagline": "Schedules recover. The system was designed to return to normal. Terminal bets on the self-healing property of timetables.",
-      "color": "#0039A6",
-      "fee": 500,
-      "category": "Transport",
-      "vault": "0x46CBd565305A768B6587955C2435338dA9f53c55"
-    },
-    {
-      "name": "Timetable",
-      "symbol": "TMTB",
-      "source": "gtfs_rt",
-      "strategy": "time_of_day",
-      "params": {},
-      "tagline": "Rush hour is rush hour. Peak service runs on a clock that hasn't changed in decades. Timetable trades the certainty.",
-      "color": "#0039A6",
-      "fee": 500,
-      "category": "Transport",
-      "vault": "0x816091E7E8Ca4F4508C24791E95748aB2AFA704f"
-    },
-    {
-      "name": "Delay",
-      "symbol": "DLAY",
-      "source": "gtfs_rt",
-      "strategy": "cluster",
-      "params": {},
-      "tagline": "Transit delays cluster by line and time. One failure cascades to connecting routes. Delay trades the contagion of lateness.",
-      "color": "#0039A6",
-      "fee": 500,
-      "category": "Transport",
-      "vault": "0x6f83fF924De24142f325c86B15528adb0b68A32D"
+      "vault": "0x98e84b9816251B075b752eFF3789C0f4666532De"
     },
     {
       "name": "Frontpage",
@@ -1038,7 +880,7 @@
       "color": "#F66A0A",
       "fee": 500,
       "category": "Social",
-      "vault": "0xd07850A60339303bcccE13A6755092517Fc1FD43"
+      "vault": "0xa88b0096E4a9e4d33b23986446a08a45Ac73d456"
     },
     {
       "name": "Decay",
@@ -1050,7 +892,7 @@
       "color": "#F66A0A",
       "fee": 500,
       "category": "Social",
-      "vault": "0x132014076B4e5A0DE0032927Ca714D593b73f1A0"
+      "vault": "0x5326D777F59d4d5C8AeB959F72920e5D5BcbDABf"
     },
     {
       "name": "Flagged",
@@ -1062,7 +904,7 @@
       "color": "#F66A0A",
       "fee": 500,
       "category": "Social",
-      "vault": "0x07B6A62f277080f3E4800F55704a8dd0F19CD131"
+      "vault": "0x22aD84D39ee74D7FfE144Cd8A86ba54d071419c8"
     },
     {
       "name": "Show",
@@ -1074,7 +916,7 @@
       "color": "#F66A0A",
       "fee": 500,
       "category": "Social",
-      "vault": "0x9cc36Baf767CAfdCccd26Bb8Ba5b0a2c5E82deE9"
+      "vault": "0x0551843B3eDD3a25D0fF34C9a72fC4aDF9728229"
     },
     {
       "name": "Orbit",
@@ -1086,7 +928,7 @@
       "color": "#0C0A1A",
       "fee": 500,
       "category": "Space",
-      "vault": "0x0F698Dd4FF9335d74f191228720472F03B2124ac"
+      "vault": "0xA9aDe4742F36c62B52d1E5408D94F6D392C94dbc"
     },
     {
       "name": "Reentry",
@@ -1098,7 +940,7 @@
       "color": "#0C0A1A",
       "fee": 500,
       "category": "Space",
-      "vault": "0xe5ce83c002DE7F96bc165542819248d94eB274Ee"
+      "vault": "0x483d34360884246e4DAC07023C96816B09b27DCB"
     },
     {
       "name": "Microgravity",
@@ -1110,7 +952,7 @@
       "color": "#0C0A1A",
       "fee": 500,
       "category": "Space",
-      "vault": "0xFe0bb3C6b97D2cD4718F2505237CE34c7E33C627"
+      "vault": "0x37c47d6d31Be1f01aA28cEBF1fC52d76DCEFDe7f"
     },
     {
       "name": "Docking",
@@ -1124,7 +966,7 @@
       "color": "#0C0A1A",
       "fee": 500,
       "category": "Space",
-      "vault": "0xc19AE9701699C5d543B16a2954Ea2dE1a54cEA28"
+      "vault": "0xC614F0dB715A42D3D6B746400aA9452723B54773"
     },
     {
       "name": "Sortie",
@@ -1136,7 +978,7 @@
       "color": "#1A2332",
       "fee": 500,
       "category": "Defense",
-      "vault": "0x6Ed79E5A599D6F51C4824d865C594C14C6F3DDd8"
+      "vault": "0x6C3eF66ee8E01748B1CcDa0ec7E1707b5B39454F"
     },
     {
       "name": "Standdown",
@@ -1148,7 +990,7 @@
       "color": "#1A2332",
       "fee": 500,
       "category": "Defense",
-      "vault": "0xa75973e78Da625040E382020c9E9503f6922f15A"
+      "vault": "0x0F40015864151c6c6e9316eA4E06E2A301D01b2C"
     },
     {
       "name": "Overwatch",
@@ -1160,7 +1002,7 @@
       "color": "#1A2332",
       "fee": 500,
       "category": "Defense",
-      "vault": "0xda175F3e16025aaD4DaB88dcc2428a5B17bdd9f6"
+      "vault": "0xE5661fa4c39AD44270B9D232AB2b351700B02060"
     },
     {
       "name": "Scramble",
@@ -1174,7 +1016,7 @@
       "color": "#1A2332",
       "fee": 500,
       "category": "Defense",
-      "vault": "0xdA6cD50BFD97A8eaAdB51FA8eE6a8D748E54CFd5"
+      "vault": "0x60C3DB5Dadf6c6A88966f7877FF0f319f630775b"
     },
     {
       "name": "Metro",
@@ -1186,7 +1028,7 @@
       "color": "#0039A6",
       "fee": 500,
       "category": "Transport",
-      "vault": "0xF9C19cDe2B65920089B5cf094eC1e537bbA0F4E4"
+      "vault": "0x600759ec228a47A714f04710a70b3eEAF00c7AC0"
     },
     {
       "name": "Express",
@@ -1198,7 +1040,7 @@
       "color": "#0039A6",
       "fee": 500,
       "category": "Transport",
-      "vault": "0xe4eC0C6C070F3f1AB415e8Dd18ea0841D2468Ec6"
+      "vault": "0xb666e61446a2bCf0cA58bC3Cb8C8d1c4F88dfBE2"
     },
     {
       "name": "Transfer",
@@ -1210,7 +1052,7 @@
       "color": "#0039A6",
       "fee": 500,
       "category": "Transport",
-      "vault": "0x22aF12D5f6006f39371727030A1Bc2f1C86cA4D6"
+      "vault": "0x664dA40B8E3253FD967f0c152957356a95c44Cd8"
     },
     {
       "name": "Turnstile",
@@ -1222,7 +1064,7 @@
       "color": "#0039A6",
       "fee": 500,
       "category": "Transport",
-      "vault": "0xd328239567897C1Fed7Ae8D08364ca553c74D6C6"
+      "vault": "0x8d31858c7242d5E99ab59255aEd0084c6E69684e"
     },
     {
       "name": "Swell",
@@ -1234,7 +1076,7 @@
       "color": "#1ABC9C",
       "fee": 500,
       "category": "Ocean",
-      "vault": "0xA6a672D4C395dAf71Ee5567c0eA190c49236b580"
+      "vault": "0xA42198a47aEe06783B007dE647F73111Cb131c88"
     },
     {
       "name": "Calm",
@@ -1246,7 +1088,7 @@
       "color": "#1ABC9C",
       "fee": 500,
       "category": "Ocean",
-      "vault": "0x953DfC94aA622F27b5d240F0472A537d4B8435d1"
+      "vault": "0x513584D3eb6Cdc3Dc7211a70Ec8A62B08Bf7b0D4"
     },
     {
       "name": "Riptide",
@@ -1258,7 +1100,7 @@
       "color": "#1ABC9C",
       "fee": 500,
       "category": "Ocean",
-      "vault": "0x8994a4f1630f51eB6F4F557f915657B5A950D476"
+      "vault": "0x83cC2c26a6B4F53c0dF120727e8d56BCdc458E66"
     },
     {
       "name": "Anomaly",
@@ -1270,7 +1112,7 @@
       "color": "#2C3E50",
       "fee": 500,
       "category": "Weather",
-      "vault": "0x396c6661Ba212933DE068f651bA04BA652dAEd07"
+      "vault": "0x27eDeFfEd3678c5C143928Af0C40fCBD1ee1a61c"
     },
     {
       "name": "Lull",
@@ -1282,7 +1124,7 @@
       "color": "#2C3E50",
       "fee": 500,
       "category": "Weather",
-      "vault": "0x5B74B3Eca5C3A730f385Ca64f5c19bE113e7Cd81"
+      "vault": "0x198b65542563Fa4E933f98306ad9c581A3C0ebeD"
     },
     {
       "name": "Barometer",
@@ -1296,7 +1138,7 @@
       "color": "#2C3E50",
       "fee": 500,
       "category": "Weather",
-      "vault": "0xc9644059114D5d3f3AC51421fD1a54F5dca34CEF"
+      "vault": "0x07498851caaA638b6c94f2E071e3C59Bd775a924"
     },
     {
       "name": "Tideline",
@@ -1308,7 +1150,7 @@
       "color": "#16A085",
       "fee": 500,
       "category": "Ocean",
-      "vault": "0x3bA04354e7Fa9539aCfDA24A3b3da4f2a033B7fE"
+      "vault": "0x54E1c1199551FD4be63E06A55873c75FA96D2785"
     },
     {
       "name": "Surge",
@@ -1320,7 +1162,7 @@
       "color": "#16A085",
       "fee": 500,
       "category": "Ocean",
-      "vault": "0x9C9fC9DB6B91de32B2bF2e19B207fec87c8DE313"
+      "vault": "0x0978e92B2D15293e1E9b7AB510601dd2A99592E4"
     },
     {
       "name": "Neap",
@@ -1332,7 +1174,7 @@
       "color": "#16A085",
       "fee": 500,
       "category": "Ocean",
-      "vault": "0x46b58EeD8aA0D5eE3dfB42f21159E7C6199Ee517"
+      "vault": "0x5c2A064EE483157E254BEc8b07D36fD0f95C672C"
     },
     {
       "name": "Flood",
@@ -1344,7 +1186,7 @@
       "color": "#2980B9",
       "fee": 500,
       "category": "Weather",
-      "vault": "0xF3C1a359bf23d78a5172131cCf73473bACa24d11"
+      "vault": "0x0B966E8DB5B3cF6687bF80085460c3267fE87a94"
     },
     {
       "name": "Snowbank",
@@ -1356,7 +1198,7 @@
       "color": "#2980B9",
       "fee": 500,
       "category": "Weather",
-      "vault": "0x2a66eD00E57503F1Dd1EFde08f6929fAbC77e384"
+      "vault": "0x411Bfc053fa04D40452B9c2c1B433160808Ae3ec"
     },
     {
       "name": "Crest",
@@ -1368,7 +1210,7 @@
       "color": "#2980B9",
       "fee": 500,
       "category": "Weather",
-      "vault": "0x085E7ffAa5E31642b3176F7336872D705c405a1d"
+      "vault": "0x399af8FF184F1A2379d07d6D59C2800134220113"
     },
     {
       "name": "Valet",
@@ -1380,7 +1222,7 @@
       "color": "#5C6BC0",
       "fee": 500,
       "category": "Transport",
-      "vault": "0x2C3A153203068A217c77eF8174421e9190f8e400"
+      "vault": "0x545098BA2dc8dE24BD70d99fef3c03C73B3c1d67"
     },
     {
       "name": "Garage",
@@ -1392,7 +1234,7 @@
       "color": "#5C6BC0",
       "fee": 500,
       "category": "Transport",
-      "vault": "0x6d42573fcb0Bd27196963b2D57c9A6a4e6B38cF5"
+      "vault": "0x420E5E7826648CFb9E4E5f3Ccd5a9510e82A0B78"
     },
     {
       "name": "Meter",
@@ -1404,7 +1246,7 @@
       "color": "#5C6BC0",
       "fee": 500,
       "category": "Transport",
-      "vault": "0x0c7aa3d4d4d436Ae762e6d33391499c1282eB12c"
+      "vault": "0x861A66aED8B8C420bD10a9a51FbB35543b86cc09"
     },
     {
       "name": "Double Park",
@@ -1416,7 +1258,7 @@
       "color": "#5C6BC0",
       "fee": 500,
       "category": "Transport",
-      "vault": "0x206fdf5D315a63003844ec02B653fbd0d3864f84"
+      "vault": "0x97f37a106C7906468C1de6Dad6F4cC2d0Ee32022"
     },
     {
       "name": "Oracle",
@@ -1428,7 +1270,7 @@
       "color": "#1B1B1B",
       "fee": 500,
       "category": "Prediction",
-      "vault": "0x061756334b104f82A8cA850d34A32Cb2f71D4995"
+      "vault": "0x9509913E86D577AE076Dc72fd76135E20C9F63C3"
     },
     {
       "name": "Longshot",
@@ -1440,7 +1282,7 @@
       "color": "#1B1B1B",
       "fee": 500,
       "category": "Prediction",
-      "vault": "0x6218Dc54718Fe4630bd46c9585411049ec91629F"
+      "vault": "0x4Bc62Bf1bC8a2dFfa7b199356F179e83A07DE1D9"
     },
     {
       "name": "Consensus",
@@ -1454,7 +1296,7 @@
       "color": "#1B1B1B",
       "fee": 500,
       "category": "Prediction",
-      "vault": "0xf3595e192cF4572Db4FC49e447fAb29D6E07638e"
+      "vault": "0xE19CdF8402d7aE554d0a46340AE8C0573a87fFd9"
     },
     {
       "name": "Arbitrage",
@@ -1466,7 +1308,7 @@
       "color": "#1B1B1B",
       "fee": 500,
       "category": "Prediction",
-      "vault": "0x488dF6846Ab2Dd02e983E87AaDf66C3867CE4FD1"
+      "vault": "0x930f69867A29C606416c5be016197AB51D52cb4b"
     },
     {
       "name": "Preprint",
@@ -1478,7 +1320,7 @@
       "color": "#326599",
       "fee": 500,
       "category": "Academic",
-      "vault": "0x16dA26498F2Ac98BeC8D931B94fAA05952DCB0cE"
+      "vault": "0x32Ca2e5ffAb892EcBF71B224A395A90968a8d233"
     },
     {
       "name": "Placebo",
@@ -1490,7 +1332,7 @@
       "color": "#326599",
       "fee": 500,
       "category": "Academic",
-      "vault": "0xA1590540c159B280D942270d741089eE77DC1132"
+      "vault": "0x78198A204411390a8926908cd2a13E18Af77A94b"
     },
     {
       "name": "Peer",
@@ -1502,7 +1344,7 @@
       "color": "#326599",
       "fee": 500,
       "category": "Academic",
-      "vault": "0x36859a5544fddD5D276a0A36534e2D3830d1030a"
+      "vault": "0xEEE6032848E58801408B1f97c355626cEc747A55"
     },
     {
       "name": "Trial",
@@ -1514,7 +1356,7 @@
       "color": "#326599",
       "fee": 500,
       "category": "Academic",
-      "vault": "0xC4509C6467F595B480DA01B47Be2499d3666857e"
+      "vault": "0xab555c7439349e4Aa7dA1387a862603Be254929b"
     },
     {
       "name": "Degenerator",
@@ -1526,7 +1368,7 @@
       "color": "#00D18C",
       "fee": 500,
       "category": "Crypto",
-      "vault": "0xC63e737c771Fd198cf7D514b5ce56c7DE206a524"
+      "vault": "0x186FcD3478c8899B3a62F34Cb6fc5C4574B69adA"
     },
     {
       "name": "Rugpull",
@@ -1538,7 +1380,7 @@
       "color": "#00D18C",
       "fee": 500,
       "category": "Crypto",
-      "vault": "0x85cD5Fc98d3a9196Bf33fDf3C253DedaA368ea07"
+      "vault": "0xBe5a21b79Dd1465071394C4EAe4E94fab6e3993c"
     },
     {
       "name": "Diagnosis",
@@ -1550,7 +1392,7 @@
       "color": "#00D18C",
       "fee": 500,
       "category": "Crypto",
-      "vault": "0xC7658755bB91b082a583f4EdDEd31d5bb64900aE"
+      "vault": "0x8b0b25CD51d62220d55eed3EBddb0502e949f2E9"
     },
     {
       "name": "Bonding",
@@ -1564,7 +1406,7 @@
       "color": "#00D18C",
       "fee": 500,
       "category": "Crypto",
-      "vault": "0xdbdf61E57cCbb5a0729fa15eF665AE67b71C0c21"
+      "vault": "0x0860389CF8871Ca3e0Fdcf78BE8FC70583aD614F"
     },
     {
       "name": "Fastpass",
@@ -1576,7 +1418,7 @@
       "color": "#1A1A2E",
       "fee": 500,
       "category": "Leisure",
-      "vault": "0xA0bdCbbFfF615BB6b4bfe78AEB52A5bd1F58E2F0"
+      "vault": "0xddA415F94B261F03f877331F2542EBF5d429D129"
     },
     {
       "name": "Rush",
@@ -1588,7 +1430,7 @@
       "color": "#1A1A2E",
       "fee": 500,
       "category": "Leisure",
-      "vault": "0x420a9f6104a252E3Fb641f8D524B3509A4Cb326A"
+      "vault": "0xC5983757724ACD11451116958f74a6097ACd3257"
     },
     {
       "name": "Cluster",
@@ -1600,109 +1442,7 @@
       "color": "#1A1A2E",
       "fee": 500,
       "category": "Leisure",
-      "vault": "0xba3d14A9D417035C04445D43a903C9D4Ea52Aaaa"
-    },
-    {
-      "name": "Hawkish",
-      "symbol": "HAWK",
-      "source": "fred",
-      "strategy": "momentum",
-      "params": {
-        "min_change_pct": 0.5
-      },
-      "tagline": "Central banks move in cycles. A rate shift this tick predicts another. Hawkish rides the policy direction until the rhetoric turns.",
-      "color": "#003366",
-      "fee": 500,
-      "category": "Finance",
-      "vault": "0x4B02DCc924e4D5C71b7C4228A02D3c3773A44d59"
-    },
-    {
-      "name": "Dovish",
-      "symbol": "DOVE",
-      "source": "fred",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "Rate expectations overshoot after every meeting. Dovish fades the market's overreaction to every basis point.",
-      "color": "#003366",
-      "fee": 500,
-      "category": "Finance",
-      "vault": "0x9C26e94C1c72eE441f934305B102Ce13710b9361"
-    },
-    {
-      "name": "Tighten",
-      "symbol": "TITE",
-      "source": "fred",
-      "strategy": "regime",
-      "params": {},
-      "tagline": "Monetary policy operates in regimes. Tighten detects the shift between easing and tightening cycles and positions accordingly.",
-      "color": "#003366",
-      "fee": 500,
-      "category": "Finance",
-      "vault": "0x29DF6915e4ebDA28a2F973B35b1c61f220D2DB2E"
-    },
-    {
-      "name": "Basis",
-      "symbol": "BASS",
-      "source": "fred",
-      "strategy": "momentum_threshold",
-      "params": {
-        "min_change_pct": 0.25
-      },
-      "tagline": "Quarter-point moves are the minimum signal in rates markets. Basis filters noise below 25bps, trading only deliberate policy shifts.",
-      "color": "#003366",
-      "fee": 500,
-      "category": "Finance",
-      "vault": "0xAAb8f6335dAb156c9023C323EFE2D741D9d3e295"
-    },
-    {
-      "name": "Deadline",
-      "symbol": "DDLN",
-      "source": "sec",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "SEC filings cluster around quarterly deadlines. Filing volume builds tick-over-tick during disclosure windows. Deadline rides the surge.",
-      "color": "#0A3055",
-      "fee": 500,
-      "category": "Finance",
-      "vault": "0x49002702E7c58a56aC9D46d74fb3624CD5f8C8f2"
-    },
-    {
-      "name": "Disclosure",
-      "symbol": "DSCL",
-      "source": "sec",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "Markets overreact to every 13F drop. Disclosure fades the initial move, because institutional positions are already priced in.",
-      "color": "#0A3055",
-      "fee": 500,
-      "category": "Finance",
-      "vault": "0x5f8Af4d99F0e0cA4D8C66F18AF8bC59806B657ba"
-    },
-    {
-      "name": "Insider",
-      "symbol": "INSD",
-      "source": "sec",
-      "strategy": "momentum_threshold",
-      "params": {
-        "min_change_pct": 3
-      },
-      "tagline": "Minor filing volume changes are administrative. Insider only trades when activity surges 3% or more, signaling real institutional movement.",
-      "color": "#0A3055",
-      "fee": 500,
-      "category": "Finance",
-      "vault": "0x4c83cBddAcD714b90e1b7075307E585c63B00CF5"
-    },
-    {
-      "name": "Holdings",
-      "symbol": "HLDG",
-      "source": "sec",
-      "strategy": "regime",
-      "params": {},
-      "tagline": "Institutional allocation operates in risk-on and risk-off regimes. Holdings detects the shift from 13F filing patterns.",
-      "color": "#0A3055",
-      "fee": 500,
-      "category": "Finance",
-      "vault": "0x2Bbf3eD96C59A2BeccDf1FeC301f8836269fD7FF"
+      "vault": "0x0f28bfe6e1c11b6b000aF5fF0a6b94c85471Cf5b"
     },
     {
       "name": "Aurora",
@@ -1714,7 +1454,7 @@
       "color": "#8E44AD",
       "fee": 500,
       "category": "Space",
-      "vault": "0x6e6485981B00494E048699c6251A0Ab8CD2f066b"
+      "vault": "0xB16EE7A826e2f80B4418b2961F380708c121984E"
     },
     {
       "name": "Solstice",
@@ -1726,7 +1466,7 @@
       "color": "#8E44AD",
       "fee": 500,
       "category": "Space",
-      "vault": "0x3f8d8cCAf0CF7e92908A785d144b12Af81C3E59a"
+      "vault": "0x69d26Cd0Bc97a97F9F23d0E038d93ab17346bc30"
     },
     {
       "name": "Sunspot",
@@ -1738,7 +1478,7 @@
       "color": "#8E44AD",
       "fee": 500,
       "category": "Space",
-      "vault": "0x7C42d136D494C91d7177762fEa627A0ae04e380a"
+      "vault": "0xE095574729Af0F9aE5512bAda365df26E019F4Ab"
     },
     {
       "name": "Corona",
@@ -1750,7 +1490,7 @@
       "color": "#8E44AD",
       "fee": 500,
       "category": "Space",
-      "vault": "0x1519baeBA0D71f2d5F25DbF328F384958dcd140A"
+      "vault": "0x85868911cf4810fD2201E8A84cE710CfF7aa7b86"
     },
     {
       "name": "Homecourt",
@@ -1762,7 +1502,7 @@
       "color": "#1B1B1B",
       "fee": 500,
       "category": "Sports",
-      "vault": "0xE01A79d5644C8DC3E9Ea564966334fD95B3e1FAd"
+      "vault": "0xdAe7AF481027786A840cf732B5406c386B9cC5Bf"
     },
     {
       "name": "Streak",
@@ -1774,7 +1514,7 @@
       "color": "#1B1B1B",
       "fee": 500,
       "category": "Sports",
-      "vault": "0x3ebF6C70AC70D1E8Ac0241F60619AfceB4E01c7A"
+      "vault": "0xa3A77443623D95a533305fA41b37A05E9145ea5d"
     },
     {
       "name": "Upset",
@@ -1786,7 +1526,7 @@
       "color": "#1B1B1B",
       "fee": 500,
       "category": "Sports",
-      "vault": "0x66BA74abc668a6Cf8FA955E5375bf58606d37131"
+      "vault": "0xe18eD1d9790dB06B1275b04E026D10C8d1bdFD90"
     },
     {
       "name": "Overtime",
@@ -1798,7 +1538,7 @@
       "color": "#1B1B1B",
       "fee": 500,
       "category": "Sports",
-      "vault": "0x7521C16ed551D09e7ecB7d12382a6f0E01fD7f55"
+      "vault": "0x2D09AfeA7DffEfe61368573D822beC5589faBa1d"
     },
     {
       "name": "Weekend",
@@ -1810,7 +1550,7 @@
       "color": "#171A21",
       "fee": 500,
       "category": "Gaming",
-      "vault": "0xd1B05d975eE067cCf378A4Cd14A1A3ebc3dAA221"
+      "vault": "0x580582762a8203e36E0F6A31E71965AFC36F4E59"
     },
     {
       "name": "Lobby",
@@ -1822,7 +1562,7 @@
       "color": "#171A21",
       "fee": 500,
       "category": "Gaming",
-      "vault": "0x928c1db9ae832A241ce2C9b30a0cF6cfa5A40742"
+      "vault": "0x92129A82eb47f33597731b412779aB65aB69ED51"
     },
     {
       "name": "Ragequit",
@@ -1834,7 +1574,7 @@
       "color": "#171A21",
       "fee": 500,
       "category": "Gaming",
-      "vault": "0x2b345aA57705Ae45D9391Aa9261C6F390D8f8383"
+      "vault": "0xB6950399C46Cfa9B41E41318707Eb9BD0B832ee4"
     },
     {
       "name": "Patch",
@@ -1846,7 +1586,7 @@
       "color": "#171A21",
       "fee": 500,
       "category": "Gaming",
-      "vault": "0xc9d8b90BEe9Ab0b2148a69C318D6D97113e65efd"
+      "vault": "0xEcDfc6dDe60948990569a66Cc8f7A935f329F76a"
     },
     {
       "name": "Prime Time",
@@ -1858,7 +1598,7 @@
       "color": "#9146FF",
       "fee": 500,
       "category": "Entertainment",
-      "vault": "0x0A3B9D1145DE895736170ec366D60E1d0B0eD402"
+      "vault": "0xBb31bD1E82C68725cA4cb84c027328d099e06B3B"
     },
     {
       "name": "Offline",
@@ -1870,7 +1610,7 @@
       "color": "#9146FF",
       "fee": 500,
       "category": "Entertainment",
-      "vault": "0x4b76f99e1fE5517fF34593639CA55615E3ac3168"
+      "vault": "0x1108Ab4Bab7444b44ce3F3d09a3dDE344377437e"
     },
     {
       "name": "Subscribe",
@@ -1882,7 +1622,7 @@
       "color": "#9146FF",
       "fee": 500,
       "category": "Entertainment",
-      "vault": "0x7e45D3967736aE66AB2e62822eab676da58C0447"
+      "vault": "0x99EfE3C13352c892cC39121B797aC9f90F2e9333"
     },
     {
       "name": "Host",
@@ -1894,7 +1634,7 @@
       "color": "#9146FF",
       "fee": 500,
       "category": "Entertainment",
-      "vault": "0xf4EC8cAd81efbcEF8259992140BF489dba8B90e6"
+      "vault": "0xaa41fb30E9544076Bdf9f334369b29437F38Ea62"
     },
     {
       "name": "Stimulus",
@@ -1906,7 +1646,7 @@
       "color": "#112E51",
       "fee": 500,
       "category": "Government",
-      "vault": "0x0C390fd08A0EB66403B28f10b10465dE7AB71dEA"
+      "vault": "0xd8283Ed1Eb3dd0A1f1aBaF8DA471aec4076910fB"
     },
     {
       "name": "Sequester",
@@ -1918,7 +1658,7 @@
       "color": "#112E51",
       "fee": 500,
       "category": "Government",
-      "vault": "0xdFCE141ad410804BFE4eAF5F47B13F2527cE4c02"
+      "vault": "0x9F37578A824964137CcE5D92567293cE9414A603"
     },
     {
       "name": "Deficit",
@@ -1930,7 +1670,7 @@
       "color": "#112E51",
       "fee": 500,
       "category": "Government",
-      "vault": "0xD168dd32dCc4ad87AfF86746b5BB7CC71E3a47ED"
+      "vault": "0x2d82214c8e8C1c182F5E0a2C4d6ADa558FF034eF"
     },
     {
       "name": "Earmark",
@@ -1942,7 +1682,7 @@
       "color": "#112E51",
       "fee": 500,
       "category": "Government",
-      "vault": "0x997af88f3B2C5C81f09DD56E00882f61D38B1E9E"
+      "vault": "0x07925D5d07a3FeD23220762a3fcaDd9deaD01490"
     },
     {
       "name": "Torrent",
@@ -1954,7 +1694,7 @@
       "color": "#2980B9",
       "fee": 500,
       "category": "Environment",
-      "vault": "0xC61d86844e23f275E365F7AB8304486c5866CdE0"
+      "vault": "0x317FdcDb75D084dE10a817759348F3A03bE6cBF7"
     },
     {
       "name": "Drought",
@@ -1966,7 +1706,7 @@
       "color": "#2980B9",
       "fee": 500,
       "category": "Environment",
-      "vault": "0xE67F991603Dc6F7C305c6209E2ff8AAA186d9636"
+      "vault": "0x40CF93cA7ECcdCCa5F5A411FBc959D2b0BAc90C3"
     },
     {
       "name": "Watershed",
@@ -1978,7 +1718,7 @@
       "color": "#2980B9",
       "fee": 500,
       "category": "Environment",
-      "vault": "0x227B6E4780dC19E1b5499b912Da50145EA6f4F62"
+      "vault": "0x121A3Fb2CC6Df39B30c5B9167b80d627F8a7d9dd"
     },
     {
       "name": "Baseflow",
@@ -1990,7 +1730,7 @@
       "color": "#2980B9",
       "fee": 500,
       "category": "Environment",
-      "vault": "0xA73625084e217597Dc44ec8D131c35f5DDf9aFEF"
+      "vault": "0x83C2cDbb96BAdB3A5915A4d9a612CA53CD9AFE71"
     },
     {
       "name": "Weatherfront",
@@ -2002,7 +1742,7 @@
       "color": "#2ECC71",
       "fee": 500,
       "category": "Weather",
-      "vault": "0xEF8ef41607D68d5FC8E394023F47bFBAf9D57fd6"
+      "vault": "0xadD533b5d1e93730435AbB70Ec7fc37353216922"
     },
     {
       "name": "Revert",
@@ -2014,7 +1754,7 @@
       "color": "#2ECC71",
       "fee": 500,
       "category": "Weather",
-      "vault": "0x7fa86Ee1E346873Acb0B8fecc466aD3d37ac6725"
+      "vault": "0xCE0efE66702E1745c9Ec4fae0C0A734726A48ce2"
     },
     {
       "name": "Seasonal",
@@ -2026,7 +1766,7 @@
       "color": "#2ECC71",
       "fee": 500,
       "category": "Weather",
-      "vault": "0x6CDaD910f42c8Ec31d7c85EeEAE25e7F157Eefc4"
+      "vault": "0xC6834AD44487e2F74587DC14D656BaDf35Ca0119"
     },
     {
       "name": "Heatwave",
@@ -2040,7 +1780,7 @@
       "color": "#2ECC71",
       "fee": 500,
       "category": "Weather",
-      "vault": "0x68C3dA44Bf598f87178b948e92f2cAC3883A7df2"
+      "vault": "0x270Ea24ab2a23F175f30BdFd64baa6313A5Fe9eb"
     },
     {
       "name": "Stormwatch",
@@ -2052,7 +1792,7 @@
       "color": "#E65100",
       "fee": 500,
       "category": "Weather",
-      "vault": "0x4EcBbeac38EB229584b49c18E63FD534F5646c13"
+      "vault": "0x9d761cF139Ab3EBBf46d57Fc2269959c532623c9"
     },
     {
       "name": "All Clear",
@@ -2064,7 +1804,7 @@
       "color": "#E65100",
       "fee": 500,
       "category": "Weather",
-      "vault": "0x0f37E1548b19a601f2b93e7cebf6de2C9D57C678"
+      "vault": "0xdb982B7E39e81A54F1e47ee1EDa056c13d7B1872"
     },
     {
       "name": "Tornado",
@@ -2076,7 +1816,7 @@
       "color": "#E65100",
       "fee": 500,
       "category": "Weather",
-      "vault": "0xacac25d5190d0f153f022eBa054a4F34cb2a9eDE"
+      "vault": "0x8695a927e5c6c3d22D9dC4b7a4bc94a85bbEA732"
     },
     {
       "name": "Bunker",
@@ -2088,7 +1828,7 @@
       "color": "#E65100",
       "fee": 500,
       "category": "Weather",
-      "vault": "0x9065fE3515ed0020B373Da9B20A528c552c73a1C"
+      "vault": "0x3256157CFEFBE9305fc66173dfd3961Bfc6eBb8D"
     },
     {
       "name": "Ember",
@@ -2100,7 +1840,7 @@
       "color": "#E67E22",
       "fee": 500,
       "category": "Environment",
-      "vault": "0xE1122305A3bCf008b11299289BaBF925CF0B387b"
+      "vault": "0x57A9896025D99950053c1F6f44d7b322FA8F8FEE"
     },
     {
       "name": "Contained",
@@ -2112,7 +1852,7 @@
       "color": "#E67E22",
       "fee": 500,
       "category": "Environment",
-      "vault": "0x139E77BFB8D73b84502e593023790A0587702b72"
+      "vault": "0x766340dA491a40a30F01B3D807C1fe552DDEDDb8"
     },
     {
       "name": "Tinder",
@@ -2124,7 +1864,7 @@
       "color": "#E67E22",
       "fee": 500,
       "category": "Environment",
-      "vault": "0x040231BBa7843d0317eCaBa77b8552f2dE8E6947"
+      "vault": "0x955F44F66050364D4c5558D0AE4386aAf7470190"
     },
     {
       "name": "Firebreak",
@@ -2136,7 +1876,7 @@
       "color": "#E67E22",
       "fee": 500,
       "category": "Environment",
-      "vault": "0xAB85BB4bc95Be7d854f09BB23110cA46F3f9576a"
+      "vault": "0x92011F6b0F5117f36d660dA473f4283d9dDB08f6"
     },
     {
       "name": "Glacier",
@@ -2150,7 +1890,7 @@
       "color": "#002244",
       "fee": 500,
       "category": "Economic",
-      "vault": "0xD900dbDd555B84656dB6aa5B00219B7739cb9541"
+      "vault": "0x108D5e0Af10D089809AfaaE19AD2B5aE99A2D752"
     },
     {
       "name": "Convergence",
@@ -2162,7 +1902,7 @@
       "color": "#002244",
       "fee": 500,
       "category": "Economic",
-      "vault": "0x79cb827FD12922874E09582376bD4a3064994E21"
+      "vault": "0x07df8a5D3769DeBd3e843e735C16190F11248613"
     },
     {
       "name": "Emergence",
@@ -2174,7 +1914,7 @@
       "color": "#002244",
       "fee": 500,
       "category": "Economic",
-      "vault": "0xCDD6691Dc4903b4e30d7D47635dB4f6C08e64563"
+      "vault": "0x3c0a3343d5aAaC0fAd4cdB7bee592aA4deEbb01d"
     },
     {
       "name": "Stagnation",
@@ -2186,7 +1926,7 @@
       "color": "#002244",
       "fee": 500,
       "category": "Economic",
-      "vault": "0x0f6C0B50341e75e5DcE759eD40c26C135f6Fc3fA"
+      "vault": "0xB1Ca8860A5BeC64616b6aA20b6F985e52ad13186"
     },
     {
       "name": "Foundation",
@@ -2198,7 +1938,7 @@
       "color": "#006AFF",
       "fee": 500,
       "category": "Real Estate",
-      "vault": "0xd6Bf520e4f145c970608A661Bf24DfACAf5cC0fe"
+      "vault": "0xc69B68aff3ed3d8d73ddFf397c4871D673b3e6a8"
     },
     {
       "name": "Overshoot",
@@ -2210,7 +1950,7 @@
       "color": "#006AFF",
       "fee": 500,
       "category": "Real Estate",
-      "vault": "0x8940A48b07733f358138548fa1eB5ffE2315c8e9"
+      "vault": "0xD44290E89B167F2eE3A3C7547e8d2dB269B0A345"
     },
     {
       "name": "Shelter",
@@ -2222,7 +1962,7 @@
       "color": "#006AFF",
       "fee": 500,
       "category": "Real Estate",
-      "vault": "0xcb31440b184E592c3A1d1f4aE7dAC7792f886bbb"
+      "vault": "0x81018c397a1CcC401ec18F2402BA5Ca97b7FE196"
     },
     {
       "name": "Appraisal",
@@ -2234,1837 +1974,7 @@
       "color": "#006AFF",
       "fee": 500,
       "category": "Real Estate",
-      "vault": "0x4f92c53bEE49b57685227d882df01C93436AAF5D"
-    },
-    {
-      "name": "Herd",
-      "symbol": "HERD",
-      "source": "coingecko",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "Crypto trends persist because the crowd reinforces itself. Herd rides the wave until it breaks.",
-      "color": "#F7931A",
-      "fee": 500,
-      "category": "finance",
-      "vault": "0x81d24440DfB9505ea40d5d834672d3FcFe9Eaefb"
-    },
-    {
-      "name": "Washout",
-      "symbol": "WASH",
-      "source": "coingecko",
-      "strategy": "contrarian",
-      "params": {
-        "min_change_pct": 3.0
-      },
-      "tagline": "Every pump gets sold, every dump gets bought. Washout bets on the overcorrection after every move larger than 3%.",
-      "color": "#E74C3C",
-      "fee": 500,
-      "category": "finance",
-      "vault": "0x7a277bF35820543598d9c3ab3B41C840A7Df372b"
-    },
-    {
-      "name": "Bullrun",
-      "symbol": "BULL",
-      "source": "coingecko",
-      "strategy": "bullish",
-      "params": {},
-      "tagline": "Crypto has a structural upward bias across cycles. Bullrun leans into it with the patience of someone who has seen the chart.",
-      "color": "#27AE60",
-      "fee": 500,
-      "category": "finance",
-      "vault": "0x07Cf352b2546212DF41BE9E9fA2a2A2aC42E9383"
-    },
-    {
-      "name": "Ticker",
-      "symbol": "TIKR",
-      "source": "finnhub",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "Stock momentum persists across sessions. A gapping stock keeps gapping. Ticker follows the tape.",
-      "color": "#000000",
-      "fee": 500,
-      "category": "finance",
-      "vault": "0x6B7DDeb7c096Aaf5ecA0CEb4bDe18FE9b8b50F3d"
-    },
-    {
-      "name": "Reversion",
-      "symbol": "RVRS",
-      "source": "finnhub",
-      "strategy": "contrarian",
-      "params": {
-        "min_change_pct": 2.0
-      },
-      "tagline": "Equities overreact to news within a single tick. Reversion fades moves beyond 2%, betting the market always second-guesses itself.",
-      "color": "#1A237E",
-      "fee": 500,
-      "category": "finance",
-      "vault": "0x683Bf9704514CAB79427dD62Dded141dDA6e643d"
-    },
-    {
-      "name": "Alpha",
-      "symbol": "ALFA",
-      "source": "finnhub",
-      "strategy": "bullish",
-      "params": {},
-      "tagline": "Equities drift upward over time. Alpha accepts this ancient truth and leans long, because betting against capitalism requires more than conviction.",
-      "color": "#1B5E20",
-      "fee": 500,
-      "category": "finance",
-      "vault": "0x0E47b3dc4d2012708B19e398dD83fBd73E990Abb"
-    },
-    {
-      "name": "Squeeze",
-      "symbol": "SQZE",
-      "source": "finra",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "Rising short interest compounds. When bears pile in, the squeeze potential builds tick over tick. Squeeze rides the buildup.",
-      "color": "#1A3C6E",
-      "fee": 500,
-      "category": "finance",
-      "vault": "0xE37Bd9faA2C39666BDAd77F0c182f9Bf2eFb6c7e"
-    },
-    {
-      "name": "Cover",
-      "symbol": "COVR",
-      "source": "finra",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "Every short position eventually covers. Cover bets that extreme short interest reverts as bears lose nerve.",
-      "color": "#4FC3F7",
-      "fee": 500,
-      "category": "finance",
-      "vault": "0x85A10638D95259Cb10c4Bac765f82c5a701969b7"
-    },
-    {
-      "name": "Pressure",
-      "symbol": "PRSS",
-      "source": "finra",
-      "strategy": "momentum_threshold",
-      "params": {
-        "min_change_pct": 2.0
-      },
-      "tagline": "Small short interest changes are noise. Pressure only acts when short volume shifts by more than 2%, following conviction.",
-      "color": "#1565C0",
-      "fee": 500,
-      "category": "finance",
-      "vault": "0x3a0eE32F4735059b58A38c6584bB24F743e55f91"
-    },
-    {
-      "name": "Barrel",
-      "symbol": "BRRL",
-      "source": "futures",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "Futures trend in regimes. When production shifts or demand surges, the effect persists. Barrel follows the supply-demand narrative.",
-      "color": "#2C3E50",
-      "fee": 500,
-      "category": "finance",
-      "vault": "0x6E90275879971E7F3D9E04D37c9114ff11B25a31"
-    },
-    {
-      "name": "Rebalance",
-      "symbol": "RBAL",
-      "source": "futures",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "Futures overshoot on roll dates and report days. Rebalance fades the overreaction, betting on mean reversion in every contract.",
-      "color": "#1ABC9C",
-      "fee": 500,
-      "category": "finance",
-      "vault": "0x10B92C67174976dA8357CdE53f0a7Dd4E42D9d13"
-    },
-    {
-      "name": "Contango",
-      "symbol": "CTGO",
-      "source": "futures",
-      "strategy": "bullish",
-      "params": {},
-      "tagline": "Commodity demand grows with population and industry. Contango rides the long-term upward drift in real assets.",
-      "color": "#16A085",
-      "fee": 500,
-      "category": "finance",
-      "vault": "0x73B41F50cA8a7b66fb9c6C82acD26cdf64fC5e26"
-    },
-    {
-      "name": "Espresso",
-      "symbol": "ESPR",
-      "source": "yahoo_drinks",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "Commodity prices trend in seasons. When coffee rallies, the supply deficit persists for months. Espresso rides the bean.",
-      "color": "#6F4E37",
-      "fee": 500,
-      "category": "finance",
-      "vault": "0xd5e8128b59A333B0356a279394e20C8A811A91f8"
-    },
-    {
-      "name": "Raincheck",
-      "symbol": "RAIN",
-      "source": "yahoo_drinks",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "Every commodity spike exhausts itself. Raincheck fades the panic in soft commodities, because harvests eventually arrive.",
-      "color": "#8D6E63",
-      "fee": 500,
-      "category": "finance",
-      "vault": "0x9C913a1fE5b9E9009dE727328055F407C9408FA5"
-    },
-    {
-      "name": "Roast",
-      "symbol": "ROST",
-      "source": "yahoo_drinks",
-      "strategy": "momentum_threshold",
-      "params": {
-        "min_change_pct": 2.0
-      },
-      "tagline": "Minor price twitches in beverages are noise. Roast acts only when the move exceeds 2%, distinguishing weather events from static.",
-      "color": "#4E342E",
-      "fee": 500,
-      "category": "finance",
-      "vault": "0x4Eb855dACca6bD4A4a82262Fcc7e204e391578ec"
-    },
-    {
-      "name": "Taipei",
-      "symbol": "TPEI",
-      "source": "twse",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "Taiwanese equities trend with semiconductor demand. Taipei follows the chip cycle wherever it leads.",
-      "color": "#C80815",
-      "fee": 500,
-      "category": "finance",
-      "vault": "0xB2ec666da78EaE724d37e846A19eD9E833C48510"
-    },
-    {
-      "name": "Strait",
-      "symbol": "STRT",
-      "source": "twse",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "TWSE corrections are sharp but brief. Strait bets on recovery, because the island's export engine does not stop easily.",
-      "color": "#D32F2F",
-      "fee": 500,
-      "category": "finance",
-      "vault": "0xF2c2C1E18377AB4867443Eb4fc993F79d218EFa7"
-    },
-    {
-      "name": "Pacific",
-      "symbol": "PCFC",
-      "source": "twse",
-      "strategy": "bullish",
-      "params": {},
-      "tagline": "Taiwan's tech sector grows relentlessly. Pacific leans long on the world's most consequential foundry.",
-      "color": "#B71C1C",
-      "fee": 500,
-      "category": "finance",
-      "vault": "0x8e72735286eEf5a66AdB98e85f4E650e60f23228"
-    },
-    {
-      "name": "Sovereign",
-      "symbol": "SVRN",
-      "source": "imf",
-      "strategy": "momentum",
-      "params": {
-        "min_change_pct": 1.0
-      },
-      "tagline": "IMF metrics move like continents: invisible daily, unmistakable over quarters. Sovereign follows the drift that matters.",
-      "color": "#002244",
-      "fee": 500,
-      "category": "economic",
-      "vault": "0xfEc498B5D34Dc717ea0BDeB51438BeF14856d376"
-    },
-    {
-      "name": "Bailout",
-      "symbol": "BAIL",
-      "source": "imf",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "Every crisis receives intervention. Bailout bets on the institutional reflex to stabilize, because the IMF exists precisely for this.",
-      "color": "#1A237E",
-      "fee": 500,
-      "category": "economic",
-      "vault": "0x1A8b50406Bb91027e15BF4fa3003A3Fab54f579e"
-    },
-    {
-      "name": "Reserve",
-      "symbol": "RESV",
-      "source": "imf",
-      "strategy": "bullish",
-      "params": {},
-      "tagline": "Global reserves trend upward as central banks accumulate. Reserve rides the structural hoarding instinct of sovereign wealth.",
-      "color": "#004D40",
-      "fee": 500,
-      "category": "economic",
-      "vault": "0x948E45F911fe48C319fA02D72840826631ab10d8"
-    },
-    {
-      "name": "Crude",
-      "symbol": "CRUD",
-      "source": "opec",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "OPEC production cuts and increases ripple through markets for months. Crude follows the cartel's direction with algorithmic patience.",
-      "color": "#005FA3",
-      "fee": 500,
-      "category": "economic",
-      "vault": "0xd0C3A005F9113cf2f0987aF5bBeeB7a24ee4aD2D"
-    },
-    {
-      "name": "Glut",
-      "symbol": "GLUT",
-      "source": "opec",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "Every supply squeeze invites cheating and overproduction. Glut bets that OPEC discipline always cracks eventually.",
-      "color": "#01579B",
-      "fee": 500,
-      "category": "economic",
-      "vault": "0x61830100026d4831bda1995dC800c7a2a52dAAff"
-    },
-    {
-      "name": "Benzene",
-      "symbol": "BNZN",
-      "source": "opec",
-      "strategy": "momentum_threshold",
-      "params": {
-        "min_change_pct": 2.0
-      },
-      "tagline": "Minor OPEC basket price changes are noise. Benzene only trades when the basket shifts 2% or more, following real supply events.",
-      "color": "#002171",
-      "fee": 500,
-      "category": "economic",
-      "vault": "0x1EfdcdDA82A60f9560A8484a208b9d9Ec7c6E7a6"
-    },
-    {
-      "name": "Speculator",
-      "symbol": "SPEC",
-      "source": "cftc",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "When speculators pile into one side of the market, they keep piling. Speculator follows the leveraged crowd.",
-      "color": "#1B4332",
-      "fee": 500,
-      "category": "economic",
-      "vault": "0x535644a56b76a6EaF33BD342eC11b2870fc8d185"
-    },
-    {
-      "name": "Hedger",
-      "symbol": "HDGR",
-      "source": "cftc",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "Extreme speculative positioning always unwinds. Hedger fades the crowd, siding with the commercials who actually need the commodity.",
-      "color": "#2E7D32",
-      "fee": 500,
-      "category": "economic",
-      "vault": "0xdeaD0A4d9B5126a3c898303CA7992efcc7787c10"
-    },
-    {
-      "name": "Commitment",
-      "symbol": "CMIT",
-      "source": "cftc",
-      "strategy": "momentum_threshold",
-      "params": {
-        "min_change_pct": 3.0
-      },
-      "tagline": "Small position changes are rebalancing noise. Commitment only acts when the shift exceeds 3%, following genuine conviction.",
-      "color": "#004D40",
-      "fee": 500,
-      "category": "economic",
-      "vault": "0xE9B82AFce214A4452d1951fB22FcA91efCeFf9cD"
-    },
-    {
-      "name": "Docket",
-      "symbol": "DKCT",
-      "source": "courtlistener",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "Court filings cluster. When a major case triggers motions, the cascade persists. Docket follows the legal momentum.",
-      "color": "#5C4033",
-      "fee": 500,
-      "category": "regulatory",
-      "vault": "0x6c4AF64b3D91381027f9A86701520672B884b6a9"
-    },
-    {
-      "name": "Verdict",
-      "symbol": "VRDT",
-      "source": "courtlistener",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "Filing surges resolve. Courts have finite bandwidth and filing spikes always normalize. Verdict bets on the judicial mean.",
-      "color": "#3E2723",
-      "fee": 500,
-      "category": "regulatory",
-      "vault": "0xC8d524312bC5370dBb4188dC473f90Cb739A0d2C"
-    },
-    {
-      "name": "Subpoena",
-      "symbol": "SBPN",
-      "source": "courtlistener",
-      "strategy": "momentum_threshold",
-      "params": {
-        "min_change_pct": 3.0
-      },
-      "tagline": "Routine filings are noise. Subpoena only acts when court activity spikes 3% or more, chasing the cases that actually matter.",
-      "color": "#4E342E",
-      "fee": 500,
-      "category": "regulatory",
-      "vault": "0x2d315E5599C83D513aB607588379EBA021a71F41"
-    },
-    {
-      "name": "Trending",
-      "symbol": "TRND",
-      "source": "github",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "GitHub stars spike when a repo gets attention. The spike sustains for several ticks before decay. Trending rides the first wave.",
-      "color": "#24292E",
-      "fee": 500,
-      "category": "tech",
-      "vault": "0xf2c4Cd5f6268428E557fB7d368e6Aef1833aFeD4"
-    },
-    {
-      "name": "Burnout",
-      "symbol": "BRNT",
-      "source": "github",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "Every viral repo peaks and decays. Burnout fades the star surge, betting that developer attention spans are mercifully short.",
-      "color": "#6A1B9A",
-      "fee": 500,
-      "category": "tech",
-      "vault": "0x67b1f011d73C58984731471f76375d2B8705Bc29"
-    },
-    {
-      "name": "Stargazer",
-      "symbol": "STAR",
-      "source": "github",
-      "strategy": "bullish",
-      "params": {},
-      "tagline": "Open source grows. More repos, more stars, more contributors. Stargazer leans long on the expanding commons.",
-      "color": "#1B5E20",
-      "fee": 500,
-      "category": "tech",
-      "vault": "0xC604cecad9946bC4F26b4b94f0D05a709dA48fbb"
-    },
-    {
-      "name": "Adoption",
-      "symbol": "ADPT",
-      "source": "npm",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "Package downloads follow adoption S-curves. Rising downloads keep rising; network effects in the dependency graph compound.",
-      "color": "#CB3837",
-      "fee": 500,
-      "category": "tech",
-      "vault": "0xf2AbB95d4F538F4001BF94255a9c4C0fFEE247f1"
-    },
-    {
-      "name": "Deprecation",
-      "symbol": "DPRC",
-      "source": "npm",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "Every hot package cools. Deprecation fades download surges, betting that yesterday's framework becomes tomorrow's technical debt.",
-      "color": "#B71C1C",
-      "fee": 500,
-      "category": "tech",
-      "vault": "0x61608a269Be6fb9581023a96540143DAD5A8ba9C"
-    },
-    {
-      "name": "Install",
-      "symbol": "INST",
-      "source": "npm",
-      "strategy": "bullish",
-      "params": {},
-      "tagline": "npm downloads grow because JavaScript grows. Install bets on the monotonic expansion of node_modules.",
-      "color": "#D32F2F",
-      "fee": 500,
-      "category": "tech",
-      "vault": "0xB2a03923383cCf350E9C1C19FF0f36F442959C75"
-    },
-    {
-      "name": "Import",
-      "symbol": "IMPT",
-      "source": "pypi",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "Python package downloads accelerate with AI adoption. Import follows the ecosystem's expansion as ML devours everything.",
-      "color": "#006DAD",
-      "fee": 500,
-      "category": "tech",
-      "vault": "0xF762d39695BC1907C47E748B9c1E2291B53a5394"
-    },
-    {
-      "name": "Unmaintained",
-      "symbol": "UNMT",
-      "source": "pypi",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "Every PyPI darling gets abandoned. Unmaintained fades download peaks, because the Python ecosystem reinvents its tools every two years.",
-      "color": "#01579B",
-      "fee": 500,
-      "category": "tech",
-      "vault": "0x5F1Ae6f997499cA0Eb9C0000708E8347f38C7e71"
-    },
-    {
-      "name": "Pip",
-      "symbol": "PPIP",
-      "source": "pypi",
-      "strategy": "bullish",
-      "params": {},
-      "tagline": "Python is eating the world. Pip leans long on the language that became mandatory for anyone who touches data.",
-      "color": "#0277BD",
-      "fee": 500,
-      "category": "tech",
-      "vault": "0xbeacD97EBfb5d666728446d201b32F487C9705F3"
-    },
-    {
-      "name": "Oxidize",
-      "symbol": "OXDZ",
-      "source": "crates_io",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "Rust adoption accelerates. When a crate gains downloads, more follow as the ecosystem expands. Oxidize follows the ferrous wave.",
-      "color": "#173D13",
-      "fee": 500,
-      "category": "tech",
-      "vault": "0x0674595D6FEF7De6e5510e593A06e636F99cADa8"
-    },
-    {
-      "name": "Borrow",
-      "symbol": "BORW",
-      "source": "crates_io",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "Download spikes in niche languages always normalize. Borrow fades the hype, because most Rust rewrites take longer than estimated.",
-      "color": "#2E7D32",
-      "fee": 500,
-      "category": "tech",
-      "vault": "0x54Ee4a3a9E123cC24C9C5DcE183ED93711b7546E"
-    },
-    {
-      "name": "Cargo",
-      "symbol": "CRGO",
-      "source": "crates_io",
-      "strategy": "bullish",
-      "params": {},
-      "tagline": "Systems programming is eating infrastructure. Cargo bets on the structural migration from C++ to Rust across every domain.",
-      "color": "#1B5E20",
-      "fee": 500,
-      "category": "tech",
-      "vault": "0x526A7c78E46fbb8D4fb85a75B50F2A8329293F5E"
-    },
-    {
-      "name": "Overflow",
-      "symbol": "OFLW",
-      "source": "stackexchange",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "When a technology gains questions, it gains adopters. More questions mean more developers. Overflow rides the flywheel.",
-      "color": "#F48024",
-      "fee": 500,
-      "category": "tech",
-      "vault": "0x495521bC2cFBd0381684f85F9FC1d0F4a07D3081"
-    },
-    {
-      "name": "Answered",
-      "symbol": "ANSD",
-      "source": "stackexchange",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "Question surges subside as documentation improves. Answered bets that developer confusion is temporary.",
-      "color": "#FF6F00",
-      "fee": 500,
-      "category": "tech",
-      "vault": "0x857E003a1Ed7279684f0d21e0F77AAEe3d978bac"
-    },
-    {
-      "name": "Unanswered",
-      "symbol": "UNSR",
-      "source": "stackexchange",
-      "strategy": "bearish",
-      "params": {},
-      "tagline": "Question volume declines as AI replaces StackOverflow. Unanswered bets on the structural decay of the Q&A model.",
-      "color": "#BF360C",
-      "fee": 500,
-      "category": "tech",
-      "vault": "0x9ADd3f5B1821B987dD3149f9845F64F567EE82d0"
-    },
-    {
-      "name": "Resilience",
-      "symbol": "RSLN",
-      "source": "ioda",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "Internet outages resolve. Infrastructure teams fix things. Resilience bets on recovery; connectivity always comes back.",
-      "color": "#1A1A2E",
-      "fee": 500,
-      "category": "tech",
-      "vault": "0xcf1aB578DBdbF099D57B996c61E68D3a4540cA32"
-    },
-    {
-      "name": "Blackout",
-      "symbol": "BLKO",
-      "source": "ioda",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "Outages cascade across providers. When connectivity drops, the degradation spreads before it heals. Blackout follows the cascading failure.",
-      "color": "#4A148C",
-      "fee": 500,
-      "category": "tech",
-      "vault": "0xaFAD9F3f728cAD7327409b3416C7b620D9ac03d8"
-    },
-    {
-      "name": "Uptime",
-      "symbol": "UPTM",
-      "source": "ioda",
-      "strategy": "bullish",
-      "params": {},
-      "tagline": "Internet connectivity trends toward 100% everywhere. Uptime bets on the structural improvement of global infrastructure.",
-      "color": "#1A237E",
-      "fee": 500,
-      "category": "tech",
-      "vault": "0xf81ad267c7a855eA8D35E61eE821f51b4836256f"
-    },
-    {
-      "name": "Publish",
-      "symbol": "PUBL",
-      "source": "openalex",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "Research output clusters around grant cycles and conference deadlines. Publish rides the academic rhythm that never changes.",
-      "color": "#2E7D32",
-      "fee": 500,
-      "category": "academic",
-      "vault": "0xFa4763Eb0F31A69b13f98A9F618073310776619C"
-    },
-    {
-      "name": "Sabbatical",
-      "symbol": "SABT",
-      "source": "openalex",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "Every publishing surge ends in exhaustion. Sabbatical fades the peak, betting that academics rest before they write again.",
-      "color": "#1B5E20",
-      "fee": 500,
-      "category": "academic",
-      "vault": "0xF427ed0df27a948995BBEb82A23ebC1C71a83D54"
-    },
-    {
-      "name": "Tenure",
-      "symbol": "TNRE",
-      "source": "openalex",
-      "strategy": "bullish",
-      "params": {},
-      "tagline": "Science produces more papers every year. Tenure leans long on the publish-or-perish machine that never sleeps.",
-      "color": "#004D40",
-      "fee": 500,
-      "category": "academic",
-      "vault": "0x282dE35043A06546895BB0A059c80023a207d4Be"
-    },
-    {
-      "name": "Premiere",
-      "symbol": "PREM",
-      "source": "tmdb",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "Movie popularity surges at release and sustains for weeks. Premiere follows the opening weekend momentum.",
-      "color": "#032551",
-      "fee": 500,
-      "category": "entertainment",
-      "vault": "0xC0ff1D0A10d67958c87c3dee6228Be5f8E82B40B"
-    },
-    {
-      "name": "Sequel",
-      "symbol": "SQEL",
-      "source": "tmdb",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "Every blockbuster fades. Sequel bets that today's trending title is next month's forgotten content.",
-      "color": "#1A237E",
-      "fee": 500,
-      "category": "entertainment",
-      "vault": "0x023aA3D6Bf1EFF5814D57Da4f12B993fab2D4BF2"
-    },
-    {
-      "name": "Binge",
-      "symbol": "BNGE",
-      "source": "tmdb",
-      "strategy": "bullish",
-      "params": {},
-      "tagline": "More content, more viewers, more data points. Binge leans long on the insatiable appetite for entertainment.",
-      "color": "#0D47A1",
-      "fee": 500,
-      "category": "entertainment",
-      "vault": "0xf44594291b3F4FB10F584c0d76e8ed79Eb1003D0"
-    },
-    {
-      "name": "Anthem",
-      "symbol": "ANTM",
-      "source": "lastfm",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "Listener counts compound. When an artist trends, the algorithm amplifies it tick over tick. Anthem rides the musical wave.",
-      "color": "#D51007",
-      "fee": 500,
-      "category": "entertainment",
-      "vault": "0x91768e2530197A50Cd711Bf56e313E9487cc16aa"
-    },
-    {
-      "name": "B-Side",
-      "symbol": "BSDE",
-      "source": "lastfm",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "Every viral song fades. B-Side bets on the normalization of listener counts after the TikTok moment passes.",
-      "color": "#C62828",
-      "fee": 500,
-      "category": "entertainment",
-      "vault": "0x4DaA0420957d72Bfc594e8c616d9d79e68138Eb3"
-    },
-    {
-      "name": "Encore",
-      "symbol": "ENCR",
-      "source": "lastfm",
-      "strategy": "bullish",
-      "params": {},
-      "tagline": "Music consumption grows. More streams, more listeners, more data. Encore leans long on humanity's oldest addiction.",
-      "color": "#B71C1C",
-      "fee": 500,
-      "category": "entertainment",
-      "vault": "0xa1829FB429736394B906974C84515BEfa41C1594"
-    },
-    {
-      "name": "Hivemind",
-      "symbol": "HIVE",
-      "source": "reddit",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "Subreddit growth is viral. Once a community starts gaining subscribers, network effects accelerate it. Hivemind rides the viral phase.",
-      "color": "#FF4500",
-      "fee": 500,
-      "category": "entertainment",
-      "vault": "0x02158875902d0CC351B1a7999Ae2C7DB4E8ddCDE"
-    },
-    {
-      "name": "Downvote",
-      "symbol": "DNVT",
-      "source": "reddit",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "Subreddit activity spikes always normalize. Downvote fades the engagement surge, because every controversy burns out.",
-      "color": "#D84315",
-      "fee": 500,
-      "category": "entertainment",
-      "vault": "0x4E800C309a5BE5518BA3D5f14F4A86c777b268E7"
-    },
-    {
-      "name": "Upvote",
-      "symbol": "UPVT",
-      "source": "reddit",
-      "strategy": "bullish",
-      "params": {},
-      "tagline": "Reddit grows. More users, more subreddits, more engagement. Upvote leans long on the world's largest forum.",
-      "color": "#BF360C",
-      "fee": 500,
-      "category": "entertainment",
-      "vault": "0x5a474A9d54186a05A5B24f7C2Cd54c432f7B9A00"
-    },
-    {
-      "name": "Hotness",
-      "symbol": "HOTS",
-      "source": "bgg",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "Board game trends persist through convention season and holiday releases. Hotness follows the BGG community's attention span.",
-      "color": "#6D4C41",
-      "fee": 500,
-      "category": "entertainment",
-      "vault": "0x55595b02280A6CCaC116a68433168a40C482Ff2e"
-    },
-    {
-      "name": "Shelf Life",
-      "symbol": "SHLF",
-      "source": "bgg",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "Every hot board game cools. Shelf Life fades the hype, because most games get played twice then stored indefinitely.",
-      "color": "#4E342E",
-      "fee": 500,
-      "category": "entertainment",
-      "vault": "0x0ee4B00C9CDCffE0B4066d8191F9A115709F2861"
-    },
-    {
-      "name": "Tabletop",
-      "symbol": "TABL",
-      "source": "bgg",
-      "strategy": "bullish",
-      "params": {},
-      "tagline": "Board gaming grows. Kickstarter campaigns, game cafes, pandemic-era adoption. Tabletop leans long on analog entertainment.",
-      "color": "#3E2723",
-      "fee": 500,
-      "category": "entertainment",
-      "vault": "0x1C1957a295D861a63AD64c4Ee94Cd1A02Dda0F64"
-    },
-    {
-      "name": "Arena",
-      "symbol": "ARNA",
-      "source": "pandascore",
-      "strategy": "home_field",
-      "params": {},
-      "tagline": "Home advantage exists in esports: lower ping, familiar setups, crowd energy. Arena bets on the local advantage in competitive gaming.",
-      "color": "#E53935",
-      "fee": 500,
-      "category": "entertainment",
-      "vault": "0x0C02C3A67f157F6dd86F1320da22Cd2BC38Ddf26"
-    },
-    {
-      "name": "Clutch",
-      "symbol": "CLCH",
-      "source": "pandascore",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "Esports momentum is real. Teams on a winning streak play with confidence. Clutch follows the hot hand in competitive gaming.",
-      "color": "#D32F2F",
-      "fee": 500,
-      "category": "entertainment",
-      "vault": "0x3D2b2a7B6e4b69705eA00F3586CD78447e416EA7"
-    },
-    {
-      "name": "Tilt",
-      "symbol": "TILT",
-      "source": "pandascore",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "Every esports dynasty falters. Tilt fades the dominant team, betting that form reverts and underdogs find their moment.",
-      "color": "#B71C1C",
-      "fee": 500,
-      "category": "entertainment",
-      "vault": "0x84C9Ea59225652405d69cB868c0490f208178bFd"
-    },
-    {
-      "name": "Magma",
-      "symbol": "MGMA",
-      "source": "volcano",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "Volcanic activity escalates gradually. Rising alert levels predict further increases. Magma follows the geological crescendo.",
-      "color": "#B71C1C",
-      "fee": 500,
-      "category": "geophysical",
-      "vault": "0xCEde5Aadf410b1b88Eac120bC73Ea56Ac698f08e"
-    },
-    {
-      "name": "Caldera",
-      "symbol": "CLDR",
-      "source": "volcano",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "Every eruption subsides. Caldera bets on the inevitable return to background levels, because volcanoes rest more than they roar.",
-      "color": "#D32F2F",
-      "fee": 500,
-      "category": "geophysical",
-      "vault": "0x4bf5E7835706B2B7b4B21E0E67dcFEfd45C0918A"
-    },
-    {
-      "name": "Plume",
-      "symbol": "PLUM",
-      "source": "volcano",
-      "strategy": "momentum_threshold",
-      "params": {
-        "min_change_pct": 1.0
-      },
-      "tagline": "Minor alert level changes are noise. Plume only acts when volcanic activity genuinely escalates, following the rare real signal.",
-      "color": "#C62828",
-      "fee": 500,
-      "category": "geophysical",
-      "vault": "0xeC770fFBD261443DD778b724C4D7C93230a2A380"
-    },
-    {
-      "name": "Reactor",
-      "symbol": "RCTO",
-      "source": "nrc_nuclear",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "Nuclear power output follows maintenance schedules and seasonal demand. Reactor follows the grid's steady consumption patterns.",
-      "color": "#FFC107",
-      "fee": 500,
-      "category": "geophysical",
-      "vault": "0x29edc87546a074C11bf4264C2F81c749f921c834"
-    },
-    {
-      "name": "Cooldown",
-      "symbol": "COOL",
-      "source": "nrc_nuclear",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "Every reactor outage ends. Cooldown bets on the return to full power, because nuclear plants refuel and restart on schedule.",
-      "color": "#F9A825",
-      "fee": 500,
-      "category": "geophysical",
-      "vault": "0x5Af064DAa7F8CF11FD88e4d88563a33d1105637c"
-    },
-    {
-      "name": "Fission",
-      "symbol": "FISN",
-      "source": "nrc_nuclear",
-      "strategy": "bullish",
-      "params": {},
-      "tagline": "Nuclear capacity trends upward as the world rediscovers the atom. Fission leans long on baseload power's inevitable comeback.",
-      "color": "#FF8F00",
-      "fee": 500,
-      "category": "geophysical",
-      "vault": "0x5d58C8c72bc8894FD49218FDc9F20a7EC7d55672"
-    },
-    {
-      "name": "Contagion",
-      "symbol": "CTGN",
-      "source": "epidemic",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "Epidemics grow exponentially before intervention. Contagion follows the case count curve during the acceleration phase.",
-      "color": "#8E24AA",
-      "fee": 500,
-      "category": "geophysical",
-      "vault": "0x644397B74D7f6CB3bcf291786FA0E7F74603467e"
-    },
-    {
-      "name": "Remission",
-      "symbol": "RMSN",
-      "source": "epidemic",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "Every outbreak peaks and subsides. Remission bets on the decline, because populations develop immunity and behavior changes.",
-      "color": "#6A1B9A",
-      "fee": 500,
-      "category": "geophysical",
-      "vault": "0xb96e50D09c84fc8707c70820089F196e0a96845A"
-    },
-    {
-      "name": "Vaccine",
-      "symbol": "VCNE",
-      "source": "epidemic",
-      "strategy": "bearish",
-      "params": {},
-      "tagline": "Case counts trend downward over time as interventions take hold. Vaccine bets on the structural decline of active outbreaks.",
-      "color": "#4A148C",
-      "fee": 500,
-      "category": "geophysical",
-      "vault": "0x376e1562084891ca48D1BD73FA0Cd9D92a8542e9"
-    },
-    {
-      "name": "Brownout",
-      "symbol": "BRWN",
-      "source": "power_outages",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "Power outages cascade as grid sections overload. When customers lose power, more follow as the system fails. The cascade persists.",
-      "color": "#FF6F00",
-      "fee": 500,
-      "category": "geophysical",
-      "vault": "0x1bc6D665Bf4a8F2c20199cA0f85578FABF19Ff1D"
-    },
-    {
-      "name": "Restore",
-      "symbol": "RSTR",
-      "source": "power_outages",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "Utility crews fix things. Every outage gets restored, usually within hours. Restore bets on the grid's self-healing capacity.",
-      "color": "#FF8F00",
-      "fee": 500,
-      "category": "geophysical",
-      "vault": "0x068cF9BA8E150D2E97762B94a497e63CCC539631"
-    },
-    {
-      "name": "Surge Protect",
-      "symbol": "SPRT",
-      "source": "power_outages",
-      "strategy": "momentum_threshold",
-      "params": {
-        "min_change_pct": 5.0
-      },
-      "tagline": "Minor outage fluctuations are routine maintenance. Surge Protect only trades when affected customers spike 5% or more.",
-      "color": "#E65100",
-      "fee": 500,
-      "category": "geophysical",
-      "vault": "0x42E05E5f9EFeDc319Aa6e1A407E2d4233798FfDf"
-    },
-    {
-      "name": "Holding",
-      "symbol": "HOLD",
-      "source": "flights",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "Flight counts trend with time of day and season. When aviation activity builds, it sustains for hours. Holding follows the traffic.",
-      "color": "#2C3E50",
-      "fee": 500,
-      "category": "transport",
-      "vault": "0xde6d19a931BCfB9289F1D8454f6d78e4D9D90e5a"
-    },
-    {
-      "name": "Tailwind",
-      "symbol": "TAIL",
-      "source": "flights",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "Flight disruptions resolve. The system recovers by next cycle. Tailwind bets on normalization after every delay cascade.",
-      "color": "#34495E",
-      "fee": 500,
-      "category": "transport",
-      "vault": "0x395f317541616347Fe62edb6a720da6c7C5fEDa4"
-    },
-    {
-      "name": "Liftoff",
-      "symbol": "LIFT",
-      "source": "flights",
-      "strategy": "bullish",
-      "params": {},
-      "tagline": "Aviation grows. More routes, more passengers, more flights. Liftoff leans long on humanity's refusal to stay grounded.",
-      "color": "#1A2332",
-      "fee": 500,
-      "category": "transport",
-      "vault": "0x740010FA579E8E7f61D8f3af2A187422D558b264"
-    },
-    {
-      "name": "Rush Hour",
-      "symbol": "RSHH",
-      "source": "tomtom_traffic",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "Rush hour traffic builds on itself. Congestion this tick will be worse next tick. The commute only deepens.",
-      "color": "#34495E",
-      "fee": 500,
-      "category": "transport",
-      "vault": "0xa8BA9397413b95aEb0c321209717Be1e14BbbD6A"
-    },
-    {
-      "name": "Clearway",
-      "symbol": "CLWY",
-      "source": "tomtom_traffic",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "Every traffic jam clears. Clearway bets on the inevitable dissolution of congestion, because roads empty after peak hours.",
-      "color": "#455A64",
-      "fee": 500,
-      "category": "transport",
-      "vault": "0x94E3e24F77e165339AD80963B2156e024EA5B17F"
-    },
-    {
-      "name": "Bottleneck",
-      "symbol": "BTNK",
-      "source": "tomtom_traffic",
-      "strategy": "momentum_threshold",
-      "params": {
-        "min_change_pct": 3.0
-      },
-      "tagline": "Minor congestion changes are routine. Bottleneck only trades when traffic ratios spike 3% or more, following real gridlock events.",
-      "color": "#263238",
-      "fee": 500,
-      "category": "transport",
-      "vault": "0x8666DA5276Bf39FDE7900914B7597d7b98e16d47"
-    },
-    {
-      "name": "Charger",
-      "symbol": "CHRG",
-      "source": "tomtom_evcharge",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "EV charging demand builds through the day. As commuters arrive, available connectors drop. Charger follows the depletion curve.",
-      "color": "#43A047",
-      "fee": 500,
-      "category": "transport",
-      "vault": "0xcB424c75C8bbef67E0859F7C185963a95B6d690C"
-    },
-    {
-      "name": "Topoff",
-      "symbol": "TPOF",
-      "source": "tomtom_evcharge",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "Charging stations free up overnight. Topoff bets on the nightly recovery, because EVs don't charge forever.",
-      "color": "#2E7D32",
-      "fee": 500,
-      "category": "transport",
-      "vault": "0xaF0609bAE83FA8d7104aF901Ff40a825619e5E1F"
-    },
-    {
-      "name": "Range",
-      "symbol": "RNGE",
-      "source": "tomtom_evcharge",
-      "strategy": "bullish",
-      "params": {},
-      "tagline": "EV adoption grows. More chargers, more demand, more data. Range leans long on the electric transition.",
-      "color": "#1B5E20",
-      "fee": 500,
-      "category": "transport",
-      "vault": "0x75Fb03B533e45D953a4E58452794e91Bf6e286f4"
-    },
-    {
-      "name": "Crossing",
-      "symbol": "XING",
-      "source": "cbp_border",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "Border waits compound. When lines form, more cars arrive, fewer get processed. Crossing bets that long waits get longer.",
-      "color": "#1A2744",
-      "fee": 500,
-      "category": "transport",
-      "vault": "0xf44CaBeF6C6D315bd0a880CC59C8478d89B95d9D"
-    },
-    {
-      "name": "Customs",
-      "symbol": "CSTM",
-      "source": "cbp_border",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "Border lines clear. Staffing adjusts, traffic ebbs, lanes open. Customs bets on the eventual normalization of every bottleneck.",
-      "color": "#2D4A7A",
-      "fee": 500,
-      "category": "transport",
-      "vault": "0xb6bbd4F769F72c7192495Ac92394E39Bf4e69279"
-    },
-    {
-      "name": "Checkpoint",
-      "symbol": "CHKP",
-      "source": "cbp_border",
-      "strategy": "momentum_threshold",
-      "params": {
-        "min_change_pct": 5.0
-      },
-      "tagline": "Minor wait time changes are routine. Checkpoint only acts when border delays shift 5% or more, following genuine congestion events.",
-      "color": "#0D1B2A",
-      "fee": 500,
-      "category": "transport",
-      "vault": "0xB8b6e11fc1A31ef77103E0ea726A626aA918Ba9b"
-    },
-    {
-      "name": "Grounded",
-      "symbol": "GRND",
-      "source": "faa_delays",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "Airport delays cascade through the system. When one hub goes red, connecting flights fall like dominoes. Grounded follows the cascade.",
-      "color": "#1A237E",
-      "fee": 500,
-      "category": "transport",
-      "vault": "0x55ef18fBc5fda5A618f70Dd146800e70581E34d9"
-    },
-    {
-      "name": "Cleared",
-      "symbol": "CLRD",
-      "source": "faa_delays",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "Delays resolve. ATC gets creative, weather passes, runways reopen. Cleared bets on the system's engineered recovery.",
-      "color": "#283593",
-      "fee": 500,
-      "category": "transport",
-      "vault": "0x233D09E91709aC147e1eD2F38c4B379cda74e348"
-    },
-    {
-      "name": "Turbulence",
-      "symbol": "TRBL",
-      "source": "faa_delays",
-      "strategy": "momentum_threshold",
-      "params": {
-        "min_change_pct": 2.0
-      },
-      "tagline": "Minor delay fluctuations are normal operations. Turbulence only trades when the delay count shifts meaningfully.",
-      "color": "#1A237E",
-      "fee": 500,
-      "category": "transport",
-      "vault": "0x42fEdC24a74b8Ac44596dB3b30b97f97B8f0BDa8"
-    },
-    {
-      "name": "Verspatung",
-      "symbol": "VSPT",
-      "source": "db_trains",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "German trains are late and they stay late. When delay averages rise, the cascading effect persists. Verspatung follows the obvious.",
-      "color": "#EC0016",
-      "fee": 500,
-      "category": "transport",
-      "vault": "0x219676c8322BDa7a198598867644D4938C499474"
-    },
-    {
-      "name": "Punktlich",
-      "symbol": "PNKT",
-      "source": "db_trains",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "Even Deutsche Bahn recovers eventually. Punktlich bets on the return to schedule, however aspirational that sounds.",
-      "color": "#D32F2F",
-      "fee": 500,
-      "category": "transport",
-      "vault": "0xC4C9ec7a662DF963573fC63Bd4034ffB4FC0e2a9"
-    },
-    {
-      "name": "Gleis",
-      "symbol": "GLIS",
-      "source": "db_trains",
-      "strategy": "bearish",
-      "params": {},
-      "tagline": "German rail punctuality declines structurally. Aging infrastructure, growing demand, shrinking budget. Gleis bets on the trend.",
-      "color": "#B71C1C",
-      "fee": 500,
-      "category": "transport",
-      "vault": "0xb854fd33Fe8188D293816D29DEb23a07Df8998ca"
-    },
-    {
-      "name": "Bastille",
-      "symbol": "BSTL",
-      "source": "paris_metro",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "Parisian metro disruptions ripple through the network. Bastille follows the spreading delays across interconnected lines.",
-      "color": "#003B80",
-      "fee": 500,
-      "category": "transport",
-      "vault": "0xdbCBd8c8Abdc96B32a62766Cf87572a4383918EB"
-    },
-    {
-      "name": "Detour",
-      "symbol": "DTUR",
-      "source": "paris_metro",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "Metro disruptions resolve as operations normalize. Detour bets on the return to service, because Paris demands its trains.",
-      "color": "#1A237E",
-      "fee": 500,
-      "category": "transport",
-      "vault": "0x7E5dcC697b55168295fFE41a14f3b314DB5f14b7"
-    },
-    {
-      "name": "Greve",
-      "symbol": "GREV",
-      "source": "paris_metro",
-      "strategy": "momentum_threshold",
-      "params": {
-        "min_change_pct": 2.0
-      },
-      "tagline": "Minor disruptions are routine. Greve only acts when service degradation exceeds 2%, tracking real strikes and system failures.",
-      "color": "#0D47A1",
-      "fee": 500,
-      "category": "transport",
-      "vault": "0x16d54a4A5c8127AE9A8ca91D3134D650A30B1532"
-    },
-    {
-      "name": "Budget",
-      "symbol": "BDGT",
-      "source": "ryanair",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "Ryanair delays compound. When one flight is late, the turnaround delays cascade. Budget follows Europe's least apologetic airline.",
-      "color": "#073590",
-      "fee": 500,
-      "category": "transport",
-      "vault": "0xCC7E349c47BB2F21977bEe7CA4981bcBf67bC113"
-    },
-    {
-      "name": "Standby",
-      "symbol": "STBY",
-      "source": "ryanair",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "Even Ryanair catches up. Standby bets on the overnight schedule reset, because tomorrow's flights start on time. Usually.",
-      "color": "#1565C0",
-      "fee": 500,
-      "category": "transport",
-      "vault": "0x0688D6dA102265175F5328FB752CDf76e85Bcd57"
-    },
-    {
-      "name": "Overhead",
-      "symbol": "OVHD",
-      "source": "ryanair",
-      "strategy": "bearish",
-      "params": {},
-      "tagline": "Budget airline punctuality worsens as they squeeze more rotations from each aircraft. Overhead bets on the structural decline.",
-      "color": "#0D47A1",
-      "fee": 500,
-      "category": "transport",
-      "vault": "0x590D423f96C3016d325Aa2985F1f7b3BCEd7C6B9"
-    },
-    {
-      "name": "Mind Gap",
-      "symbol": "MGAP",
-      "source": "tfl_tube",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "Tube disruptions cascade through the network. Mind Gap follows the spreading delays across the oldest metro system on Earth.",
-      "color": "#E32017",
-      "fee": 500,
-      "category": "transport",
-      "vault": "0x4a08b6d929c09F267E3E76CC114b57F9830c3019"
-    },
-    {
-      "name": "Oyster",
-      "symbol": "OYTR",
-      "source": "tfl_tube",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "Every signal failure gets fixed. Oyster bets on TfL's ability to restore service, which is better than the Tube's reputation suggests.",
-      "color": "#C62828",
-      "fee": 500,
-      "category": "transport",
-      "vault": "0x93041D5455a6E40E0A65BdAD930A7BeBd3298e1D"
-    },
-    {
-      "name": "Piccadilly",
-      "symbol": "PICD",
-      "source": "tfl_tube",
-      "strategy": "bearish",
-      "params": {},
-      "tagline": "The Tube is 160 years old and it shows. Piccadilly bets on increasing disruption frequency as infrastructure ages faster than it's replaced.",
-      "color": "#B71C1C",
-      "fee": 500,
-      "category": "transport",
-      "vault": "0x3005835E973b4dc3fe357CECAe98a7cc02977654"
-    },
-    {
-      "name": "Convoy",
-      "symbol": "CNVY",
-      "source": "aisstream",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "Shipping traffic trends with trade patterns. When vessel counts rise in a corridor, more follow. Convoy rides the maritime momentum.",
-      "color": "#00838F",
-      "fee": 500,
-      "category": "transport",
-      "vault": "0x9B8dA94b802a805b1f02019e78E9666331c47c66"
-    },
-    {
-      "name": "Anchorage",
-      "symbol": "ANCH",
-      "source": "aisstream",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "Port congestion resolves as ships get processed. Anchorage bets on the normalization of vessel queues.",
-      "color": "#006064",
-      "fee": 500,
-      "category": "transport",
-      "vault": "0x556EB05d992bAFda31b057Feb5B3C655028aF38D"
-    },
-    {
-      "name": "Passage",
-      "symbol": "PASS",
-      "source": "aisstream",
-      "strategy": "bullish",
-      "params": {},
-      "tagline": "Global shipping volume grows with trade. Passage leans long on the vessels that carry 90% of everything you own.",
-      "color": "#004D40",
-      "fee": 500,
-      "category": "transport",
-      "vault": "0x8729a4276263F3bdEFE2a3C7Efe5Ca7a3B4584d0"
-    },
-    {
-      "name": "Berth",
-      "symbol": "BRTH",
-      "source": "maritime",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "Port traffic builds with seasonal trade cycles. Berth follows the accumulation of vessels during peak shipping periods.",
-      "color": "#1A5276",
-      "fee": 500,
-      "category": "transport",
-      "vault": "0xaAf55508E1d2C457E656499f15393CB350DFF687"
-    },
-    {
-      "name": "Slack Tide",
-      "symbol": "SLTD",
-      "source": "maritime",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "Port congestion clears between shipping seasons. Slack Tide fades the traffic peak, betting on the cyclical lull.",
-      "color": "#1B4F72",
-      "fee": 500,
-      "category": "transport",
-      "vault": "0x64E98A08FE9c734012579757cF34bC685798f669"
-    },
-    {
-      "name": "Manifest",
-      "symbol": "MNFT",
-      "source": "maritime",
-      "strategy": "bullish",
-      "params": {},
-      "tagline": "Global trade grows. More goods, more ships, more port calls. Manifest leans long on the maritime infrastructure of commerce.",
-      "color": "#154360",
-      "fee": 500,
-      "category": "transport",
-      "vault": "0xdd09a80d20431bF6a6Bf9f67B6625cA8ccd879B8"
-    },
-    {
-      "name": "Migration",
-      "symbol": "MIGR",
-      "source": "ebird",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "Birds migrate on schedule. When sightings start increasing, they accelerate for many ticks. Migration bets on the biological clock.",
-      "color": "#4CAF50",
-      "fee": 500,
-      "category": "nature",
-      "vault": "0xBe89CfAf050dB2f8ac4794206a62601aBbE925c7"
-    },
-    {
-      "name": "Dormancy",
-      "symbol": "DORM",
-      "source": "ebird",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "Observation surges subside between migration peaks. Dormancy fades the sighting wave, betting on seasonal quiet.",
-      "color": "#388E3C",
-      "fee": 500,
-      "category": "nature",
-      "vault": "0xC3Dbb84768d8E81b623cE90A367548E573225257"
-    },
-    {
-      "name": "Rookery",
-      "symbol": "ROOK",
-      "source": "ebird",
-      "strategy": "bullish",
-      "params": {},
-      "tagline": "Citizen science grows. More birders, more observations, more data. Rookery leans long on the expanding birdwatching community.",
-      "color": "#2E7D32",
-      "fee": 500,
-      "category": "nature",
-      "vault": "0xA69159a238d6F58A3bD66e55D342530E65A5a38A"
-    },
-    {
-      "name": "Flyway",
-      "symbol": "FLWY",
-      "source": "movebank",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "Migration paths are predictable. When GPS tracks show movement, the flock follows for weeks. Flyway rides the ancient routes.",
-      "color": "#558B2F",
-      "fee": 500,
-      "category": "nature",
-      "vault": "0x5Ebbf424c7451688f5eb232a10aAe107bB634454"
-    },
-    {
-      "name": "Roost",
-      "symbol": "RSTP",
-      "source": "movebank",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "Migration pauses at staging areas. Roost bets on the resting periods between the epic journeys.",
-      "color": "#33691E",
-      "fee": 500,
-      "category": "nature",
-      "vault": "0x6197E8e0e9E88B362Bac4E84D4E271058DC94858"
-    },
-    {
-      "name": "Telemetry",
-      "symbol": "TLMT",
-      "source": "movebank",
-      "strategy": "momentum_threshold",
-      "params": {
-        "min_change_pct": 3.0
-      },
-      "tagline": "Minor GPS location changes are daily foraging. Telemetry only acts when movement patterns shift significantly, tracking real migration events.",
-      "color": "#1B5E20",
-      "fee": 500,
-      "category": "nature",
-      "vault": "0xFd5e8C11e88E450ED44407De6778BE2a866f9a94"
-    },
-    {
-      "name": "Intake",
-      "symbol": "INTK",
-      "source": "shelter",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "Shelter intakes surge after holidays and during kitten season. Intake follows the predictable waves of abandoned animals.",
-      "color": "#F4511E",
-      "fee": 500,
-      "category": "nature",
-      "vault": "0xA03FA99eE41D811bFFB6fc45D3052B70cB0c0B3a"
-    },
-    {
-      "name": "Adopted",
-      "symbol": "ADOP",
-      "source": "shelter",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "Shelter populations clear through adoption drives and seasonal demand. Adopted bets on the heartwarming part of the cycle.",
-      "color": "#E64A19",
-      "fee": 500,
-      "category": "nature",
-      "vault": "0xE735be1c4c8dC65c0C6F0979D263f8C7764Abd82"
-    },
-    {
-      "name": "Foster",
-      "symbol": "FSTR",
-      "source": "shelter",
-      "strategy": "bearish",
-      "params": {},
-      "tagline": "Shelter intake trends downward as spay/neuter programs work. Foster bets on the slow structural decline of stray populations.",
-      "color": "#BF360C",
-      "fee": 500,
-      "category": "nature",
-      "vault": "0x10a7Dd260E9c03341976750C42CBA4f285F98e71"
-    },
-    {
-      "name": "Sterling",
-      "symbol": "STLG",
-      "source": "boe",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "Sterling moves in decades-long cycles. Every Brexit, every Bank rate, every gilt auction leaves a footprint. Sterling follows the trend.",
-      "color": "#004B87",
-      "fee": 500,
-      "category": "Finance",
-      "vault": "0x99C7aFB4F111e2311B898fe7863DB3859223b695"
-    },
-    {
-      "name": "Threadneedle",
-      "symbol": "THRD",
-      "source": "boe",
-      "strategy": "mean_reversion",
-      "params": {},
-      "tagline": "FX pairs oscillate around fair value. Threadneedle fades the overreaction whenever rate expectations outrun reality.",
-      "color": "#004B87",
-      "fee": 500,
-      "category": "Finance",
-      "vault": "0xa2bBCa06F08262Bacf66F721415b13eF13199824"
-    },
-    {
-      "name": "Gilt",
-      "symbol": "GILT",
-      "source": "boe",
-      "strategy": "regime",
-      "params": {},
-      "tagline": "Gilt detects the shift between easing and tightening regimes. Monetary policy operates on doctrine, not taste.",
-      "color": "#004B87",
-      "fee": 500,
-      "category": "Finance",
-      "vault": "0xb4cC8FDB7ab2D3e52748633303a4C4BE575BCD65"
-    },
-    {
-      "name": "Opening",
-      "symbol": "OPNG",
-      "source": "lichess",
-      "strategy": "time_of_day",
-      "params": {},
-      "tagline": "Chess traffic peaks on European evenings. Opening trades the certainty of when millions sit down to play.",
-      "color": "#629923",
-      "fee": 500,
-      "category": "Entertainment",
-      "vault": "0x5688391CE620d206f89c34f024E61A6154F42Ce8"
-    },
-    {
-      "name": "Endgame",
-      "symbol": "ENDG",
-      "source": "lichess",
-      "strategy": "mean_reversion",
-      "params": {},
-      "tagline": "Rating inflation recovers. Elo trends correct themselves because the system was designed to. Endgame fades the swing.",
-      "color": "#629923",
-      "fee": 500,
-      "category": "Entertainment",
-      "vault": "0xE61bBfAdfCf60A6FCf2Ad39ACFe930201caFdB49"
-    },
-    {
-      "name": "Blitz",
-      "symbol": "BLTZ",
-      "source": "lichess",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "Online chess activity cascades. A new streamer, a new tournament, one viral game creates a wave. Blitz rides it.",
-      "color": "#629923",
-      "fee": 500,
-      "category": "Entertainment",
-      "vault": "0x505e0C585C5c8F10Db7ACd8954202A7ef5D807B4"
-    },
-    {
-      "name": "Brokenness",
-      "symbol": "BRKN",
-      "source": "mcbroken",
-      "strategy": "regime",
-      "params": {},
-      "tagline": "Ice cream machines fail in regimes. Summer outages cluster, winter outages scatter. Brokenness detects the shift.",
-      "color": "#FFC72C",
-      "fee": 500,
-      "category": "Entertainment",
-      "vault": "0xc65d8a6c70Bd402b461206787bf1D6ad7e7c0031"
-    },
-    {
-      "name": "Serve",
-      "symbol": "SRVE",
-      "source": "mcbroken",
-      "strategy": "momentum_threshold",
-      "params": {},
-      "tagline": "Most daily outages are background noise. Serve only trades when the national failure rate shifts by more than a full percent.",
-      "color": "#FFC72C",
-      "fee": 500,
-      "category": "Entertainment",
-      "vault": "0x2547600C1CB160c8aF3d96F2DcF7D3b9c4019dCF"
-    },
-    {
-      "name": "Sundae",
-      "symbol": "SNDE",
-      "source": "mcbroken",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "Outage spikes attract repair crews. Sundae fades every surge, because franchises do not enjoy empty freezer cases.",
-      "color": "#FFC72C",
-      "fee": 500,
-      "category": "Entertainment",
-      "vault": "0xAA0Ab55b89846f42C87BD2FD2B3a22F0616Eae77"
-    },
-    {
-      "name": "Composite",
-      "symbol": "CMPS",
-      "source": "nasdaq",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "Index composition trends. IPOs arrive, delistings depart, and Composite follows the direction because inclusion begets inclusion.",
-      "color": "#0092D0",
-      "fee": 500,
-      "category": "Finance",
-      "vault": "0xb712BE67270Dc065FEc77126739C3963610b5A6F"
-    },
-    {
-      "name": "Listing",
-      "symbol": "LSTG",
-      "source": "nasdaq",
-      "strategy": "cluster",
-      "params": {},
-      "tagline": "Listings cluster by sector and cycle. One AI IPO invites a dozen. Listing trades the contagion of ambition.",
-      "color": "#0092D0",
-      "fee": 500,
-      "category": "Finance",
-      "vault": "0xb638646a26B6628a47fAB8761b381cA4C1Fb50DF"
-    },
-    {
-      "name": "Delist",
-      "symbol": "DLST",
-      "source": "nasdaq",
-      "strategy": "bearish",
-      "params": {},
-      "tagline": "Delistings compound in downturns. Delist wagers on the direction no one wants to name out loud.",
-      "color": "#0092D0",
-      "fee": 500,
-      "category": "Finance",
-      "vault": "0x50f95D35AD703F5eD35659c6285F1C21DfbEeb85"
-    },
-    {
-      "name": "Grievance",
-      "symbol": "GRVN",
-      "source": "nyc311",
-      "strategy": "cluster",
-      "params": {},
-      "tagline": "Complaints cluster by borough and weather. One broken boiler invites fifty. Grievance trades the contagion of complaint.",
-      "color": "#002D72",
-      "fee": 500,
-      "category": "Regulatory",
-      "vault": "0x0E43c44Dc561c483F9275a8d31BB76F2938e1942"
-    },
-    {
-      "name": "Borough",
-      "symbol": "BORO",
-      "source": "nyc311",
-      "strategy": "time_of_day",
-      "params": {},
-      "tagline": "Civic grievance peaks at rush hour. Borough trades the clockwork of frustration.",
-      "color": "#002D72",
-      "fee": 500,
-      "category": "Regulatory",
-      "vault": "0x9112Dc540CED90943A0E77b8c7c3a940970Df39D"
-    },
-    {
-      "name": "Dispatch",
-      "symbol": "DSPT",
-      "source": "nyc311",
-      "strategy": "mean_reversion",
-      "params": {},
-      "tagline": "Call volume returns to baseline. The city was built to absorb surges. Dispatch bets on the return.",
-      "color": "#002D72",
-      "fee": 500,
-      "category": "Regulatory",
-      "vault": "0x6Fa1195e37172559C63d8B11cbb30717913597C1"
-    },
-    {
-      "name": "Isobar",
-      "symbol": "ISBR",
-      "source": "openmeteo",
-      "strategy": "regime",
-      "params": {},
-      "tagline": "Weather operates in regimes \u2014 high pressure, low pressure, nothing between. Isobar detects the transition.",
-      "color": "#6FA8DC",
-      "fee": 500,
-      "category": "Geophysical",
-      "vault": "0x3CAE7b3fD3cEECA9E5c0a7c81fE0C9f3C83ea982"
-    },
-    {
-      "name": "Gradient",
-      "symbol": "GRAD",
-      "source": "openmeteo",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "Pressure gradients predict wind. Wind predicts weather. Gradient follows the cascade the atmosphere has already committed to.",
-      "color": "#6FA8DC",
-      "fee": 500,
-      "category": "Geophysical",
-      "vault": "0x5CE647ef05A0C2336A114e08e2Ada43Baa2BAb00"
-    },
-    {
-      "name": "Squall",
-      "symbol": "SQLL",
-      "source": "openmeteo",
-      "strategy": "momentum_threshold",
-      "params": {},
-      "tagline": "Microclimate noise is noise. Squall only trades when a weather system crosses a meaningful threshold.",
-      "color": "#6FA8DC",
-      "fee": 500,
-      "category": "Geophysical",
-      "vault": "0xcc80ffCA91d7EaC98499466aD4c99e26E26eD299"
-    },
-    {
-      "name": "Scroll",
-      "symbol": "SCRL",
-      "source": "tubes",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "Trending rankings cascade. One upload gains heat and the rest follow. Scroll rides the algorithm.",
-      "color": "#FF9A00",
-      "fee": 500,
-      "category": "Entertainment",
-      "vault": "0xeD4b3C4dF01CeE213D83f43cE489295Dea76B551"
-    },
-    {
-      "name": "Rotation",
-      "symbol": "ROTN",
-      "source": "tubes",
-      "strategy": "time_of_day",
-      "params": {},
-      "tagline": "Viewership peaks on weekends after midnight. Rotation trades the clockwork of idle hours.",
-      "color": "#FF9A00",
-      "fee": 500,
-      "category": "Entertainment",
-      "vault": "0x172e6144A0DA9113f8c800A45284d24594899935"
-    },
-    {
-      "name": "Archive",
-      "symbol": "ARCV",
-      "source": "tubes",
-      "strategy": "mean_reversion",
-      "params": {},
-      "tagline": "Every viral upload decays into the archive. Archive fades the spike, because attention is a finite resource.",
-      "color": "#FF9A00",
-      "fee": 500,
-      "category": "Entertainment",
-      "vault": "0x18c8b54F8212EeF7DA04b256eC2069401655f4dF"
-    },
-    {
-      "name": "Crypto Fund 1",
-      "symbol": "CRYPTO1",
-      "source": "crypto",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "Crypto rides the wave. When momentum builds, it follows.",
-      "color": "#F7931A",
-      "fee": 1000,
-      "category": "Crypto",
-      "vault": "0x8A71a2e9363042396347355Ee3fc292A1e671853"
-    },
-    {
-      "name": "Crypto Fund 2",
-      "symbol": "CRYPTO2",
-      "source": "crypto",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "When the herd runs one way, this fund walks the other. The crowd is usually wrong at extremes.",
-      "color": "#F7931A",
-      "fee": 1000,
-      "category": "Crypto",
-      "vault": "0xCe7e94E315956A681FDee750eC31f279605C5d87"
-    },
-    {
-      "name": "Crypto Fund 3",
-      "symbol": "CRYPTO3",
-      "source": "crypto",
-      "strategy": "mean_reversion",
-      "params": {},
-      "tagline": "Every spike returns to the mean. This fund waits for the snap-back.",
-      "color": "#F7931A",
-      "fee": 1000,
-      "category": "Crypto",
-      "vault": "0x9FB7fbE1D33661D014B9E8b8Ad30F083f26c6974"
-    },
-    {
-      "name": "Stocks Fund 1",
-      "symbol": "STOCKS1",
-      "source": "stocks",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "A stock that moves keeps moving. The trend is a contract that markets honor more often than not.",
-      "color": "#1F77B4",
-      "fee": 1000,
-      "category": "Equities",
-      "vault": "0x507303923d5550a3Bdc5782dC35088D778Ca3a9c"
-    },
-    {
-      "name": "Stocks Fund 2",
-      "symbol": "STOCKS2",
-      "source": "stocks",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "Every breakout has its faders. This fund pays the bill when conviction outruns reality.",
-      "color": "#1F77B4",
-      "fee": 1000,
-      "category": "Equities",
-      "vault": "0x96c89D128e97d954b22423daAf48328aF48058A1"
-    },
-    {
-      "name": "Stocks Fund 3",
-      "symbol": "STOCKS3",
-      "source": "stocks",
-      "strategy": "time_of_day",
-      "params": {},
-      "tagline": "Markets have moods. Open is restless, close is decisive. This fund trades the clock.",
-      "color": "#1F77B4",
-      "fee": 1000,
-      "category": "Equities",
-      "vault": "0xf3e6E2C9CDcc56B55F36bf9D8af562372b37f501"
-    },
-    {
-      "name": "Esports Fund 1",
-      "symbol": "ESPORTS1",
-      "source": "esports",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "Streaks compound. A team that won yesterday will likely win today. Esports has memory.",
-      "color": "#9467BD",
-      "fee": 1000,
-      "category": "Sports",
-      "vault": "0x392c14F4e1f1E879Aa062A7a7f2fFee94137255f"
-    },
-    {
-      "name": "Esports Fund 2",
-      "symbol": "ESPORTS2",
-      "source": "esports",
-      "strategy": "contrarian",
-      "params": {},
-      "tagline": "Favorites get punished by their own legend. This fund bets against the obvious.",
-      "color": "#9467BD",
-      "fee": 1000,
-      "category": "Sports",
-      "vault": "0xBF076EFb4d2436DaBa087c677EC0685464ADc44a"
-    },
-    {
-      "name": "Esports Fund 3",
-      "symbol": "ESPORTS3",
-      "source": "esports",
-      "strategy": "home_field",
-      "params": {},
-      "tagline": "Crowds move outcomes. Matches at home shift the line. This fund trades that shift.",
-      "color": "#9467BD",
-      "fee": 1000,
-      "category": "Sports",
-      "vault": "0x155563f07EF1E94D6736DdC7DFCcAD201C803B1D"
+      "vault": "0xe7875282689B68153aCe9f41cC24e2b3fd149D46"
     }
   ]
 }
