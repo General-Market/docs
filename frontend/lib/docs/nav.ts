@@ -42,7 +42,6 @@ export const DOCS_NAV: DocTab[] = [
           'vision/bots/development',
           'vision/bots/bitmap-encoding',
           'vision/bots/strategies',
-          'vision/bots/lifecycle',
         ],
       },
       {
@@ -113,9 +112,7 @@ export const DOCS_NAV: DocTab[] = [
           'index/guides/create-itp',
           'index/guides/rebalancing',
           'index/guides/backtesting',
-          'index/guides/lending',
           'index/guides/settlement',
-          'index/guides/explorer',
           'index/guides/risks',
         ],
       },
