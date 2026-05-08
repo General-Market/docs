@@ -1,5 +1,6 @@
-// Auto-generated ITP page content for 107 ITPs
-// Maps ticker -> { whyPoints, objective, label }
+// ITP page content for the current 97-ITP roster.
+// Maps ticker -> { whyPoints, objective, label }. The lookup chain is:
+// itpId (hex) -> itp-id-names.json -> ticker -> this file.
 
 export const ITP_PAGE_CONTENT: Record<string, {
   whyPoints: string[]
@@ -7,1073 +8,973 @@ export const ITP_PAGE_CONTENT: Record<string, {
   label: string
 }> = {
   BRDG: {
-    label: "TradFi Index",
+    label: "Sector Index",
     whyPoints: [
-      "Every new L2 and L1 deployment increases demand for cross-chain asset transfer. Bridge protocols collect tolls on this traffic. As the multi-chain thesis matures, these tolls compound.",
-      "Market-cap weighted across 10 cross-chain communication tokens, rebalanced monthly. Larger protocols earn higher weight, reflecting the market's capital allocation to proven infrastructure.",
-      "Unlike holding a single bridge token, the index rotates into whichever interoperability solution the market currently values most. Concentration risk drops; sector exposure stays.",
+      "Every new chain creates demand for the rails between chains. Bridge protocols collect a toll on every asset that has to move from one place to another. The toll grows with fragmentation.",
+      "Market-cap weighted across the top cross-chain communication tokens. The largest protocols earn proportionally larger weight because depositor capital is the only honest signal of trust.",
+      "Picking one bridge means picking one bet on which messaging standard wins. The basket lets the market pick. The right answer changes; the index changes with it.",
     ],
     objective:
-      "Tracks the top 10 cross-chain communication protocols by market cap. Monthly rebalancing tilts toward whichever bridge or messaging protocol leads in market valuation, capturing the toll economics of multi-chain asset movement.",
+      "Tracks the leading cross-chain communication protocols by market cap. Captures the toll economics of multi-chain asset movement without committing to any single messaging standard.",
   },
-  PRIV: {
-    label: "TradFi Index",
+  RWA: {
+    label: "Sector Index",
     whyPoints: [
-      "Financial privacy is a permanent demand. Regulated institutions need compliant privacy layers, and the protocols building them remain structurally underpriced relative to their addressable market.",
-      "Equal weighting across 5 privacy tokens prevents single-project dominance, giving balanced exposure to ZK proofs, MPC, and confidential computing approaches. Rebalanced every 60 days.",
-      "Privacy infrastructure is fragmented across competing technical approaches. An equal-weight basket diversifies across paradigms rather than betting on one cryptographic method.",
+      "Tokenization sits at the seam between two markets that historically refused to speak. The protocols stitching them together are pricing infrastructure that has not yet been priced.",
+      "Market-cap weighted across the top RWA protocols. Concentration in issuance and infrastructure leaders, with tail exposure to the platforms that have not yet won.",
+      "Buying a single RWA token is betting on one corner of the migration. The basket buys the migration itself.",
     ],
     objective:
-      "Provides diversified exposure to privacy-preserving blockchain infrastructure by equally weighting the top 5 privacy tokens. Rebalances every 60 days, rotating into whichever privacy approaches the market supports.",
+      "Holds the top RWA tokenization protocols by market cap. Captures the slow movement of treasuries, credit, and real estate from off-chain custody to on-chain rails.",
   },
-  RWAI: {
-    label: "TradFi Index",
+  MEMES: {
+    label: "Sector Index",
     whyPoints: [
-      "RWA tokenization sits at the convergence of TradFi and DeFi. The protocols enabling tokenized treasuries, real estate, and credit are building rails between two markets worth hundreds of trillions.",
-      "Market-cap weighted across 10 RWA protocols, rebalanced monthly. Natural concentration in infrastructure and issuance leaders while maintaining tail exposure to emerging platforms.",
-      "Buying individual RWA tokens requires picking winners in a nascent sector. The index abstracts that decision, holding the full stack from data feeds to issuance platforms.",
+      "Memes are the only asset class where attention is the fundamental. Cap-weighted memecoins concentrate in the jokes that have already survived the first laugh.",
+      "Market-cap weighting is honest about meme economics. The biggest memes already escaped extinction; the small ones mostly will not. Survivor bias is the strategy.",
+      "Memecoins follow extreme power laws. A concentrated cap-weighted basket captures the head of the distribution and rotates as the cultural winners change.",
     ],
     objective:
-      "Tracks the top 10 RWA tokenization protocols by market cap, rebalanced monthly. Captures the growth of tokenized treasuries, credit, and real-estate infrastructure as traditional assets migrate to blockchain rails.",
+      "Holds the largest memecoins by market cap. Bets that meme survival is path-dependent and that the biggest jokes today will outlast tomorrow's newcomers.",
   },
-  RWATVL: {
-    label: "Macro Index",
+  L1S: {
+    label: "Sector Index",
     whyPoints: [
-      "TVL-weighted RWA exposure means capital follows actual deposits, not speculation. Where real money sits is a stronger signal than where narratives point.",
-      "Weighting by total value locked surfaces the RWA protocols with genuine institutional adoption. The methodology naturally tilts toward tokenized commodities and stablecoins where deposits are deepest.",
-      "Among all RWA approaches, TVL weighting produces the lowest drawdowns because real backing creates real price floors. The index buys what institutions actually hold, not what they discuss.",
+      "Layer-one chains are the substrate every application sits on. Owning the top L1s is owning the floor under the entire industry.",
+      "Market-cap weighting reflects where settlement actually happens. The chain with the most economic activity earns the most weight; everything else is opinion.",
+      "Application-layer winners change every cycle. The base layer changes more slowly. The basket holds the slow-moving part of the stack.",
     ],
     objective:
-      "Tracks tokenized real-world assets weighted by total value locked, capturing where institutional capital actually deposits rather than where speculation flows. Monthly rebalancing adjusts to shifts in deposit allocation across RWA protocols.",
+      "Tracks the leading layer-one settlement chains by market cap. Captures the structural economics of the chains where applications choose to live.",
   },
-  LSTKTVL: {
-    label: "Yield Index",
+  MOVE: {
+    label: "Strategy Index",
     whyPoints: [
-      "Liquid staking is the base layer of DeFi yield. Every ETH and SOL staked through these protocols generates fees that accrue to governance token holders. The demand is structural.",
-      "TVL weighting reflects the actual market structure of liquid staking. Dominant platforms earn proportionally higher weight because depositor preference is the strongest endorsement.",
-      "Rather than picking a single staking provider, the index holds the full landscape weighted by where capital chooses to stake. Monthly rebalancing tracks shifts in depositor loyalty.",
+      "The simplest momentum signal: hold what just moved. Performance over the trailing window does the selection; conviction comes later.",
+      "Top movers by trailing return, rebalanced often enough to catch rotation. The strategy is willing to look stupid right before it looks smart.",
+      "Momentum works because attention is sticky. The tokens the market has just rewarded keep being rewarded — until they suddenly do not.",
     ],
     objective:
-      "Holds the top 10 liquid staking protocol tokens weighted by staked TVL. Naturally concentrates in dominant staking platforms, rebalancing monthly to track shifts in depositor preference.",
+      "Selects the top trailing-return tokens and rebalances on a short cycle. Captures the persistence in price momentum that survives even when the names change.",
   },
-  CLVL60: {
+  DEFI: {
+    label: "Sector Index",
+    whyPoints: [
+      "DeFi is the one part of crypto where the cash flows are visible. Fee revenue, TVL, lending volume — the protocols print receipts.",
+      "Market-cap weighted across the leading DeFi blue chips. The weighting follows where capital has already chosen to settle.",
+      "Picking a single DeFi winner means picking a single primitive. The basket holds the primitives — exchanges, lenders, derivatives — together.",
+    ],
+    objective:
+      "Holds the leading DeFi protocols by market cap, rebalanced on a regular cycle. Captures the on-chain financial system as a sector rather than as a series of single bets.",
+  },
+  PERP: {
+    label: "Sector Index",
+    whyPoints: [
+      "Perpetual futures are the highest-volume product in crypto. The DEXes that host them collect a fee on every flip of leverage.",
+      "Market-cap weighting concentrates in the perp DEXes that already hold market share. Volume is the moat; the moat compounds.",
+      "Centralized exchanges keep the bulk of perp volume — for now. The on-chain venues are taking it back, basis point by basis point.",
+    ],
+    objective:
+      "Tracks the leading on-chain perpetual futures DEXes by market cap. Captures the slow migration of leverage from centralized order books to permissionless ones.",
+  },
+  STDY: {
     label: "Risk Index",
     whyPoints: [
-      "Low-volatility factor investing, applied to crypto. The 20 least volatile tokens over 60 days are selected, producing smoother equity curves than broad market exposure.",
-      "The 60-day lookback smooths regime changes compared to shorter windows. The selection gravitates toward large caps and stablecoins during turbulence — exactly what low-vol should do.",
-      "In equities, the low-volatility anomaly has persisted for decades. This index tests whether the same factor premium exists in crypto, where volatility dispersion is far wider.",
+      "Selecting the lowest-volatility tokens in a market that worships volatility. The factor premium that worked in equities for decades has not been tested here.",
+      "The bottom of the volatility distribution gravitates toward stablecoins, large caps, and yield-bearing wrappers. The selection is defensive by construction.",
+      "Crypto rewards conviction in violent assets. The index does the opposite — and gets paid for the discomfort.",
     ],
     objective:
-      "Selects the 20 least volatile tokens from the entire market over a 60-day lookback window, rebalanced monthly. Systematically avoids drawdown-heavy assets, producing smoother returns than broad market exposure.",
-  },
-  CDMOM60: {
-    label: "Momentum Index",
-    whyPoints: [
-      "Dual momentum combines absolute and relative strength. Only tokens trending up on both axes make the cut, filtering out mean-reversion traps that catch single-factor momentum strategies.",
-      "The 60-day window provides longer trend confirmation with fewer whipsaws. Fewer false signals means lower turnover and higher conviction per position.",
-      "Compared to simpler momentum approaches, dual momentum avoids buying tokens that are rising only because the entire market is rising. The relative filter demands genuine outperformance.",
-    ],
-    objective:
-      "Applies dual momentum scoring across all tokens, selecting the top 15 by combined absolute and relative performance over 60 days. Monthly rebalancing rotates into confirmed trends while exiting fading ones.",
-  },
-  FANS: {
-    label: "Culture Index",
-    whyPoints: [
-      "Fan tokens capture the loyalty economy of professional sports. Clubs with hundreds of millions of fans create recurring engagement cycles tied to matchdays, transfers, and tournaments.",
-      "Equal weighting across 10 fan tokens ensures no single club dominates. Each sports season creates volume independent of broader crypto sentiment, making this a genuine diversifier.",
-      "Sports engagement is seasonal, recurring, and largely uncorrelated to crypto market cycles. The index captures a demand pattern that exists outside the usual BTC-driven correlation structure.",
-    ],
-    objective:
-      "Provides equal-weighted exposure to the top 10 sports fan tokens, rebalanced monthly. Captures the intersection of crypto and professional sports, where engagement is seasonal, recurring, and largely uncorrelated to broader crypto markets.",
-  },
-  MEME5: {
-    label: "Culture Index",
-    whyPoints: [
-      "The top 5 AI meme tokens by market cap. The Lindy effect in meme culture is real: tokens that survive the initial hype cycle gain cultural gravity that newcomers cannot replicate.",
-      "Market-cap weighting concentrates in the memes that achieved escape velocity. Biweekly rebalancing catches rotation fast, dropping fading memes and adding new survivors.",
-      "Meme tokens follow extreme power laws. A 5-token concentrated basket captures the head of that distribution while monthly rotation prevents holding yesterday's joke.",
-    ],
-    objective:
-      "Holds the 5 largest AI meme tokens by market cap, rebalanced every 14 days. Bets that the biggest memes survive while smaller ones die, capturing the power law of meme culture through systematic market-cap selection.",
-  },
-  CDPMOM: {
-    label: "Momentum Index",
-    whyPoints: [
-      "CDP stablecoin protocols are the commercial banks of DeFi. Momentum weighting captures which lending protocols are gaining adoption in the stablecoin wars.",
-      "30-day momentum applied to the top 5 lending protocols, rebalanced biweekly. The strategy exits losers fast and concentrates in growth, treating market share shifts as the signal.",
-      "Unlike static allocation to lending, momentum weighting adapts to which stablecoin issuer is winning this cycle. DeFi lending leadership changes; the index follows the change.",
-    ],
-    objective:
-      "Applies 30-day momentum weighting to the top 5 lending protocols, rebalanced every 14 days. Systematically rotates into whichever stablecoin or lending platform is gaining market share.",
-  },
-  RWADEF: {
-    label: "Risk Index",
-    whyPoints: [
-      "Minimum variance weighting across RWA protocols produces the lowest-volatility macro exposure available in crypto. The optimizer tilts toward the least correlated tokenized assets.",
-      "The min-var approach naturally gravitates toward tokenized commodities and stablecoins, producing a defensive allocation that conventional market-cap weighting cannot replicate.",
-      "For portfolios that need crypto exposure without crypto-grade volatility, defensive RWA construction offers a middle ground. The covariance matrix decides the allocation, not a committee.",
-    ],
-    objective:
-      "Applies minimum variance optimization to the top 10 RWA protocols, rebalanced monthly. Minimizes portfolio volatility by overweighting the least correlated tokenized assets, producing a naturally defensive allocation.",
-  },
-  MSEC: {
-    label: "Tech Index",
-    whyPoints: [
-      "Shared security marketplaces let new chains bootstrap validators without starting from zero. The restaking thesis turns existing staked capital into a scalable resource.",
-      "TVL weighting reflects where the market deposits capital for restaking. Dominant platforms earn proportional allocation because validator trust is not distributed evenly.",
-      "Modular security is an infrastructure bet: as the number of chains grows, the demand for shared validation grows with it. The index captures this structural tailwind.",
-    ],
-    objective:
-      "Tracks liquid restaking governance tokens weighted by TVL, rebalanced monthly. Captures the shared security marketplace thesis by concentrating in protocols where the most capital has been deposited for restaking.",
-  },
-  VCFUND: {
-    label: "Tech Index",
-    whyPoints: [
-      "VC-funded protocols tend to have the longest runways and most aggressive builder teams. Smart money leads; this index follows the signal.",
-      "The VC overlay filters the top 20 DeFi protocols by TVL, then weights by market cap. Only projects with verified venture backing qualify, combining fundamental scale with institutional endorsement.",
-      "Venture-backed DeFi protocols survive bear markets at higher rates because their treasuries are designed for multi-year runways. The filter selects for survival.",
-    ],
-    objective:
-      "Selects the top 20 DeFi protocols by TVL, filtered by VC funding status and weighted by market cap. Rebalances monthly, systematically tracking where institutional venture capital flows in DeFi.",
-  },
-  VCVAL: {
-    label: "Tech Index",
-    whyPoints: [
-      "Highest VC valuation reflects maximum institutional conviction. The index admits only protocols that top venture firms valued highly enough to write large checks.",
-      "The valuation overlay selects for protocols that attracted the largest round sizes, filtering out projects with small or no institutional backing. Round size is a proxy for due diligence depth.",
-      "By combining VC valuation filtering with market-cap weighting, the index captures both institutional pre-market conviction and post-launch market validation.",
-    ],
-    objective:
-      "Holds the top 20 DeFi protocols by TVL filtered by VC valuation, weighted by market cap and rebalanced monthly. Captures the subset of DeFi that institutional investors valued most highly.",
-  },
-  TOPYLD: {
-    label: "Yield Index",
-    whyPoints: [
-      "Yield is DeFi's gravity. Capital flows to the best returns, and this index weights by native protocol yield to track exactly where that gravity pulls hardest.",
-      "Yield-weighted selection across 15 protocols means the highest-paying platforms carry the basket. Biweekly rebalancing captures yield regime shifts as they happen.",
-      "Most DeFi users rotate yield farms manually. This index automates the rotation, systematically overweighting wherever yields are richest without the operational overhead.",
-    ],
-    objective:
-      "Selects the 15 highest-yielding DeFi protocols and weights them by native yield, rebalanced every 14 days. Automates the yield-farming rotation that most DeFi users do manually.",
-  },
-  YLDTVL: {
-    label: "Yield Index",
-    whyPoints: [
-      "TVL-weighted yield protocols capture where capital actually deposits for returns. Deposit volume is a trust signal that yield percentage alone cannot provide.",
-      "Pure yield chasing rewards unsustainable rates. TVL weighting anchors to deposit volumes, concentrating in platforms where yield-seekers have placed the most capital over time.",
-      "The divergence between high-yield and high-TVL protocols reveals sustainability. This index bets on the latter — the platforms that keep deposits, not just attract them.",
-    ],
-    objective:
-      "Tracks the top 15 yield protocols weighted by total value locked, rebalanced biweekly. Capital allocation by depositors serves as the weighting signal, concentrating in protocols where yield-seekers have placed the most trust.",
-  },
-  LENDREV: {
-    label: "Yield Index",
-    whyPoints: [
-      "Lending protocols weighted by interest revenue. The DeFi equivalent of buying commercial banks by net interest margin — revenue proves demand, not just speculation.",
-      "Revenue weighting selects for lending platforms that actually generate income, not just attract speculative TVL. Protocols earning the most spread income get the highest allocation.",
-      "Interest revenue is the hardest metric to fake in DeFi. Unlike TVL, which can be inflated by incentives, revenue reflects genuine borrowing demand.",
-    ],
-    objective:
-      "Holds the top 10 lending protocols weighted by interest revenue, rebalanced monthly. Systematically overweights the platforms generating the most spread income from borrowing and lending activity.",
-  },
-  BRDGREV: {
-    label: "Macro Index",
-    whyPoints: [
-      "Every cross-chain swap pays a toll. Revenue-weighted bridge tokens capture the protocols earning the most from inter-chain traffic, not just the ones with the loudest narrative.",
-      "Equal weighting across 5 bridge tokens provides balanced exposure to different bridging approaches and fee models. Revenue qualification ensures each one actually generates income.",
-      "Bridge revenue correlates with multi-chain adoption. As L2 proliferation continues, the protocols collecting transfer fees become infrastructure tollbooths with recurring income.",
-    ],
-    objective:
-      "Tracks cross-chain bridge protocols weighted by transfer fee revenue, rebalanced monthly. Captures the toll economics of multi-chain asset movement by overweighting bridges that generate the most transaction fees.",
-  },
-  YLDSQRT: {
-    label: "Yield Index",
-    whyPoints: [
-      "Square root of TVL weighting balances established protocols with emerging yield sources. The sqrt function compresses the gap between dominant and mid-tier platforms.",
-      "Pure TVL weighting creates extreme concentration. The sqrt transform gives mid-tier yield sources a meaningful allocation without abandoning the capital-trust signal of TVL.",
-      "For yield-seekers who want diversification beyond the single largest protocol, sqrt weighting is a mathematical compromise between equal weight and pure TVL concentration.",
-    ],
-    objective:
-      "Applies square-root TVL weighting to the top 15 yield protocols, rebalanced biweekly. The square-root function reduces the dominance of the largest protocol while still respecting the capital-allocation signal of TVL.",
-  },
-  GAME5: {
-    label: "Culture Index",
-    whyPoints: [
-      "Maximum conviction in gaming infrastructure winners. Top 5 by market cap concentrates capital in the platforms most likely to capture any blockchain gaming adoption wave.",
-      "Concentrated 5-token exposure amplifies any gaming adoption curve. The thesis is binary: if on-chain gaming works, market-cap leaders absorb the majority of the upside.",
-      "Blockchain gaming has underperformed broadly. A concentrated index accepts that binary risk explicitly — either the sector inflects, or it does not. No middle ground.",
-    ],
-    objective:
-      "Holds the 5 largest gaming tokens by market cap, rebalanced monthly. Provides maximum-conviction exposure to blockchain gaming infrastructure, betting that market-cap leaders will capture the largest share of any gaming adoption wave.",
-  },
-  M2E: {
-    label: "Culture Index",
-    whyPoints: [
-      "Fitness meets crypto. Move-to-earn and play-to-earn protocols reward physical activity and engagement with tokens, creating a mass adoption vector through lifestyle gamification.",
-      "Equal weighting provides diversified exposure across the play-to-earn and move-to-earn ecosystem. No single game or fitness protocol dominates the allocation.",
-      "The lifestyle gamification thesis targets users who would never buy crypto directly. Token rewards for physical activity lower the barrier to entry for an entirely new demographic.",
-    ],
-    objective:
-      "Provides equal-weighted exposure to the top 5 play-to-earn and move-to-earn tokens, rebalanced monthly. Captures the lifestyle gamification thesis where physical activity and gaming generate token rewards.",
-  },
-  LOVOL: {
-    label: "Risk Index",
-    whyPoints: [
-      "The low-volatility anomaly — assets with lower volatility delivering superior risk-adjusted returns — is one of the most persistent factors in equity markets. This index tests it in crypto.",
-      "30-day low-volatility lookback with biweekly rebalancing selects the 20 calmest tokens. The selection gravitates toward large caps and stablecoins during turbulence, which is correct behavior.",
-      "Shorter lookback windows react faster to regime changes than the 60-day variant. Biweekly rebalancing keeps the portfolio aligned with the current volatility regime.",
-    ],
-    objective:
-      "Selects the 20 least volatile tokens over a 30-day window, rebalanced biweekly. Applies the low-volatility anomaly from equity markets to crypto, systematically avoiding high-drawdown assets.",
-  },
-  ORAMV: {
-    label: "Risk Index",
-    whyPoints: [
-      "Minimum variance optimization applied to data infrastructure tokens. The covariance matrix allocates weight, producing the lowest-volatility portfolio possible from this sector.",
-      "The min-var optimizer distributes weight across 10 data-feed and analytics tokens based on their co-movement patterns. Correlation structure, not market cap, drives the allocation.",
-      "Data infrastructure is critical to every blockchain application. A minimum-variance construction captures the sector while explicitly minimizing portfolio-level drawdowns.",
-    ],
-    objective:
-      "Applies minimum variance optimization to the top 10 analytics and data-feed tokens, rebalanced every 60 days. Constructs the lowest-volatility portfolio possible from blockchain data infrastructure tokens.",
+      "Selects the lowest-volatility tokens across the market over a trailing window, rebalanced regularly. Tests whether the low-volatility anomaly survives in an asset class built for the opposite.",
   },
   DCOUP: {
-    label: "Contrarian Index",
+    label: "Risk Index",
     whyPoints: [
-      "Tokens whose correlation to BTC drops below 0.3 have independent demand catalysts. This index hunts decoupling events — assets moving on their own fundamentals, not BTC gravity.",
-      "Inverse-volatility weighting concentrates in the calmest decoupled assets. The methodology favors stability over magnitude, seeking uncorrelated calm rather than uncorrelated chaos.",
-      "During high-correlation regimes, most crypto portfolios move as one. This index systematically exits that co-movement, providing genuine diversification when other holdings correlate.",
+      "Crypto correlations collapse to one in stress. The tokens that hold their independence are the ones worth holding when everything else moves together.",
+      "Selection by trailing correlation to BTC, lowest first. The basket tilts toward DePIN, prediction markets, and niche infrastructure where the price has its own reasons.",
+      "A portfolio with one source of variance is one bet. This is the part of crypto that does not move when BTC moves.",
     ],
     objective:
-      "Tracks tokens with low Bitcoin correlation, weighted by inverse volatility and rebalanced biweekly. Captures independent demand catalysts by overweighting assets that move on their own fundamentals rather than following BTC.",
+      "Selects tokens with the lowest trailing correlation to BTC, rebalanced monthly. Captures the part of the market that has decoupled from the dominant cycle.",
   },
-  NFTPH: {
-    label: "Culture Index",
+  BUILD: {
+    label: "Founder Index",
     whyPoints: [
-      "NFT marketplace infrastructure has declined dramatically, but NFTs as technology keep expanding into gaming, identity, and ticketing. The picks-and-shovels play at maximum narrative despair.",
-      "Equal weighting across NFT marketplace tokens provides balanced exposure to the recovery thesis without concentrating in any single platform's execution risk.",
-      "Contrarian positioning at narrative lows creates maximum asymmetry. The downside from current levels is bounded by how far the sector has already fallen.",
+      "Repeat founders compound. The second protocol benefits from every mistake the first one made — and from the operator network the first one built.",
+      "Filter to projects whose founders have shipped before. Market-cap weighted within the filter. The cohort is small; the cohort is also where most of the survivorship happens.",
+      "Founders without a track record are a coin flip. Founders with one have a distribution skewed toward the right. The basket buys the skew.",
     ],
     objective:
-      "Equally weights the top 10 NFT marketplace tokens, rebalanced monthly. A contrarian bet on NFT infrastructure recovery, positioned at maximum narrative despair where any adoption surprise creates outsized returns.",
+      "Holds protocols whose founders have shipped previous projects, weighted by market cap. Captures the structural advantage of operators who have already failed and learned.",
   },
-  METAB: {
-    label: "Culture Index",
+  MSEC: {
+    label: "Sector Index",
     whyPoints: [
-      "Metaverse tokens at maximum narrative despair. Any corporate metaverse announcement creates volume spikes in these tokens. The asymmetry between current prices and potential catalysts is the thesis.",
-      "Equal weighting across 10 metaverse tokens provides broad exposure to the virtual worlds narrative at distressed valuations. No single project dominates the downside risk.",
-      "The underlying technology — 3D rendering, spatial computing, virtual economies — continues to develop regardless of token prices. The index captures the gap between progress and price.",
+      "Restaking turns staked capital into a market. The chains that need security can rent it; the validators that have it can sell it.",
+      "TVL-weighted across liquid restaking governance tokens. The market deposits where it trusts; the index follows the deposits.",
+      "Modular chains will keep multiplying. Each one needs validators it cannot afford to recruit alone. The shared-security thesis is structural, not narrative.",
     ],
     objective:
-      "Equally weights 10 metaverse tokens, rebalanced monthly. Captures the extreme asymmetry of metaverse infrastructure at narrative lows, where tokens have declined sharply but the underlying technology continues to develop.",
+      "Tracks liquid restaking governance tokens weighted by TVL, rebalanced monthly. Captures the marketplace forming around shared validation as modular chains proliferate.",
   },
-  PREDCON: {
-    label: "Culture Index",
+  SELF: {
+    label: "Founder Index",
     whyPoints: [
-      "Prediction market infrastructure during narrative valleys, with a Fear & Greed contrarian overlay. Information markets are permanently valuable; the sentiment cycles around them are temporary.",
-      "The FNG overlay accumulates during market panic and reduces during euphoria. It treats prediction market tokens as a structural asset class distorted by short-term fear.",
-      "Prediction markets are one of the few crypto applications with clear, non-speculative utility. The contrarian overlay buys that utility when others are selling it.",
+      "Self-taught founders did not have the option of risk aversion. The protocols they ship carry the urgency of people who had no fallback.",
+      "Filter to founders without formal CS degrees, market-cap weighted within. The selection skews toward DeFi and infrastructure — the parts of crypto built before the curriculum existed.",
+      "Credentials predict average outcomes. They predict the tails poorly. The tails are where compounding lives.",
     ],
     objective:
-      "Equally weights 5 derivatives and prediction market protocols with a Fear & Greed contrarian overlay, rebalanced every 60 days. Accumulates prediction market exposure during fear and reduces during greed.",
+      "Holds protocols whose founders are self-taught engineers without formal computer-science degrees, weighted by market cap. Tests whether the absence of credentials is the signal credentialed allocators consistently miss.",
   },
-  DMOM60: {
-    label: "Momentum Index",
+  PRED: {
+    label: "Sector Index",
     whyPoints: [
-      "60-day dual momentum across the top 20 tokens provides broad trend exposure with longer confirmation windows. The extended lookback reduces false signals compared to 30-day alternatives.",
-      "The dual filter requires both absolute and relative strength. Tokens must be trending up in isolation and outperforming the field. Marginal trends get rejected.",
-      "Broader than the concentrated 5-token variant, the 20-token selection balances momentum concentration with diversification. Enough positions to capture multiple sector trends simultaneously.",
+      "Prediction markets price truth in a way polls cannot. The protocols that host them collect a fee on every disagreement.",
+      "Market-cap weighted across the leading prediction-market platforms. Volume on these venues lives in cycles — election years, sports seasons, regulatory inflections.",
+      "The category was a graveyard for a decade. Then it worked. Owning the survivors is owning the lesson.",
     ],
     objective:
-      "Applies 60-day dual momentum scoring to the top 20 tokens across all categories, rebalanced biweekly. The extended lookback reduces false signals and increases conviction per position.",
+      "Tracks the leading prediction-market protocols by market cap. Captures the venue economics of platforms that turned binary disagreement into a tradeable asset.",
   },
-  AIDMOM: {
-    label: "Momentum Index",
+  BUILD2: {
+    label: "Founder Index",
     whyPoints: [
-      "Dual momentum on AI tokens with weekly rebalancing captures the intersection of the AI narrative and trend-following discipline. The AI sector moves fast; weekly rotation keeps pace.",
-      "30-day dual momentum applied specifically to DeFAI tokens. The AI narrative in crypto is noisy — momentum filtering separates genuine adoption trends from announcement-driven spikes.",
-      "AI tokens have high narrative beta. Momentum weighting harnesses that volatility rather than suffering from it, riding confirmed trends and exiting reversals quickly.",
+      "A second basket of repeat-founder protocols, deeper than the first cut. Reaches into projects whose founders shipped less televised wins.",
+      "Wider filter, longer rebalance cycle. The thesis is identical to the first cohort; the bench is broader.",
+      "Repeat founders below the headline tier. The compounding still applies; the visibility lags.",
     ],
     objective:
-      "Applies 30-day dual momentum to the top 10 DeFAI tokens, rebalanced weekly. Rides the AI narrative in crypto by holding only tokens trending up on both absolute and relative axes.",
+      "A second cohort of protocols led by repeat founders, broader than the headline basket. Captures the long tail of operators whose track record has not yet been priced.",
   },
-  GAMM60: {
-    label: "Momentum Index",
+  CSCH: {
+    label: "Education Index",
     whyPoints: [
-      "60-day gaming momentum captures sustained game launch adoption curves rather than short-lived hype spikes. Longer windows filter the noise that dominates gaming token price action.",
-      "15 gaming tokens scored by 60-day momentum, rebalanced biweekly. Sustained gaming adoption is rare and concentrated — the methodology surfaces it when it appears.",
-      "Gaming tokens are driven by launch cycles and player adoption curves. 60-day momentum aligns with the typical timeline of a game gaining traction after release.",
+      "Top computer-science programs cluster certain kinds of engineering taste. The protocols that emerge from them carry that taste in their codebases.",
+      "Filter to founders from the leading CS programs, market-cap weighted within. The selection tilts toward infrastructure and language-design heavy projects.",
+      "The school is a proxy for an early peer network — the early hires, the technical advisors, the first round of capital. The proxy holds longer than it should.",
     ],
     objective:
-      "Ranks the top 15 gaming tokens by 60-day price momentum, rebalanced biweekly. Filters short-term noise to identify games and gaming infrastructure with sustained adoption curves.",
+      "Holds protocols whose founders graduated from leading computer-science programs, weighted by market cap. Captures the structural advantage of early peer networks formed in dense engineering environments.",
   },
-  GAMDM: {
-    label: "Momentum Index",
+  STDY2: {
+    label: "Risk Index",
     whyPoints: [
-      "Dual momentum on gaming selects only tokens trending up on both absolute and relative basis. Most gaming tokens fail both tests most of the time — the strategy is maximally selective.",
-      "Weekly rebalancing with 30-day dual momentum exits failing games fast. In a sector with high attrition, speed of exit matters as much as entry timing.",
-      "The dual filter is particularly valuable in gaming, where narrative hype can push prices up without genuine adoption. Relative momentum demands outperformance, not just a rising tide.",
+      "A second pass at the low-volatility factor — different lookback, deeper basket. The smoother equity curve at the cost of slower regime switches.",
+      "Selection extended further down the volatility distribution. The constituent set leans more conservative than the headline cohort.",
+      "Volatility is path-dependent in crypto. A second basket with different parameters is a hedge against the choice of parameters.",
     ],
     objective:
-      "Applies 30-day dual momentum to the top 10 gaming tokens, rebalanced weekly. Holds only gaming tokens simultaneously trending up in absolute terms and outperforming the broader market.",
+      "A second cohort of low-volatility tokens with a deeper basket and longer lookback. Tests whether parameter choice matters more than the factor itself.",
   },
-  DFIMFNG: {
-    label: "Momentum Index",
+  AINT: {
+    label: "Sector Index",
     whyPoints: [
-      "Smart contract platform momentum with an FNG trigger. The FNG overlay exits to cash during extreme fear, preserving gains through crashes that would destroy raw momentum strategies.",
-      "The fear exit mechanism accounts for most of the improvement over raw momentum. One simple rule — go to cash during panic — transforms the risk profile of trend-following.",
-      "L1 tokens have the highest beta in crypto. Momentum captures their upside; the FNG trigger limits the downside. The combination produces a fundamentally different return distribution.",
+      "Crypto×AI is the rare narrative where the underlying technology is moving faster than the speculation. The infrastructure tokens are pricing a future the spot market has not finished imagining.",
+      "Market-cap weighted across the leading AI-related crypto tokens. The basket spans compute, data, and agent infrastructure.",
+      "Half of these projects will not exist in two years. The other half will be the floor of the category. The basket survives the half-life.",
     ],
     objective:
-      "Applies 30-day momentum to the top 10 smart contract platforms with a Fear & Greed trigger overlay, rebalanced weekly. During extreme fear, the strategy exits to cash. During neutral or greedy markets, it rides the strongest L1 trends.",
+      "Tracks the leading AI-adjacent crypto protocols by market cap, rebalanced monthly. Captures the convergence of crypto incentives and AI compute, training, and agent infrastructure.",
   },
-  TVLMPP: {
-    label: "Momentum Index",
+  SELF2: {
+    label: "Founder Index",
     whyPoints: [
-      "Perp DEX protocols ranked by TVL momentum. Open interest growth signals the on-chain derivatives migration — capital flowing into perp platforms faster than it flows out.",
-      "TVL momentum captures protocols attracting new deposits, not just experiencing price appreciation. Deposit growth is a leading indicator of trading volume and fee revenue.",
-      "The on-chain derivatives thesis is structural: as trust in CEXes erodes, trading volume migrates to transparent venues. TVL momentum identifies which venues are winning that migration.",
+      "A second cohort of self-taught founders, reaching deeper into the long tail. Names that have shipped without the credential filter and without the headline coverage.",
+      "Wider filter, smaller average market cap. The asymmetric upside lives below the headline tier.",
+      "The first basket has the survivors. This one has the compounders that have not yet been recognized.",
     ],
     objective:
-      "Tracks the top 10 perpetual DEX protocols ranked by 30-day TVL momentum, rebalanced weekly. Captures the on-chain derivatives migration by overweighting platforms experiencing the fastest deposit growth.",
+      "A second cohort of self-taught founder protocols, deeper than the headline basket. Captures the long tail of uncredentialed engineers building systems credentialed allocators have not yet read.",
   },
-  MOM5FNG: {
-    label: "Momentum Index",
+  PEAK: {
+    label: "Founder Index",
     whyPoints: [
-      "Top 5 momentum tokens with an FNG trigger. Concentrated positions amplify both the momentum signal and the fear exit. The simplest high-conviction systematic strategy in the catalog.",
-      "The FNG trigger transforms the drawdown profile. Raw momentum loses catastrophically in bear markets; the fear exit converts those drawdowns into flat periods.",
-      "Five positions is aggressive concentration. The trade-off is intentional: fewer holdings mean each momentum signal carries maximum weight, and the FNG trigger manages the tail risk.",
+      "The peak entrepreneurial age sits in the mid-thirties to mid-forties. Founders in that window have enough scar tissue to avoid the easy mistakes and enough energy to make the hard ones.",
+      "Filter to founders within the peak-age window, market-cap weighted. The basket selects against both inexperience and burnout.",
+      "Both ends of the age distribution underperform. The middle is where execution lives. The middle is where the basket lives.",
     ],
     objective:
-      "Holds the top 5 tokens by 30-day momentum with a Fear & Greed trigger, rebalanced weekly. Combines concentrated trend-following with a systematic fear exit.",
+      "Holds protocols whose founders fall within the peak entrepreneurial age window, weighted by market cap. Captures the structural advantage of operators who have learned but not yet tired.",
   },
-  TVLMOM: {
-    label: "Momentum Index",
+  STLTH: {
+    label: "Founder Index",
     whyPoints: [
-      "TVL leaders filtered by price momentum. A hybrid fundamental-technical approach: start with protocols that have real deposits, then weight by which ones are trending.",
-      "20 tokens from the highest-TVL DeFi protocols, weighted by 30-day momentum and rebalanced biweekly. The TVL base provides stability; the momentum overlay provides timing.",
-      "Pure TVL weighting ignores price trends. Pure momentum ignores fundamentals. This index takes the intersection — large protocols with positive price action.",
+      "Stealth-mode protocols are priced before the marketing arrives. The tokens are illiquid, the documentation is partial, and the asymmetry is real.",
+      "Filter to projects still in stealth or pre-public phase, market-cap weighted within. The basket carries explicit information risk in exchange for time premium.",
+      "Most stealth projects fail. The ones that emerge tend to emerge violently. The basket is built for the tails.",
     ],
     objective:
-      "Selects the top 20 DeFi protocols by TVL, then weights them by 30-day price momentum and rebalances biweekly. Combines the stability of large TVL protocols with the timing advantage of momentum selection.",
+      "Holds protocols still in stealth or pre-public development, weighted by market cap. Captures the asymmetric returns of early-cycle exposure at the cost of explicit information risk.",
   },
-  ROTATE: {
-    label: "Momentum Index",
+  CATEC: {
+    label: "Geographic Index",
     whyPoints: [
-      "Cross-sector momentum rotation across 50 tokens. Captures which crypto sector is leading this cycle without requiring a view on which sector that will be.",
-      "50 tokens weighted by 30-day momentum, rebalanced weekly. The broadest momentum strategy in the catalog, rotating through L1s, DeFi, stablecoins, and memes as leadership shifts.",
-      "Sector rotation is the defining feature of crypto cycles. This index automates the rotation that active traders attempt manually, with consistent methodology and no emotional drag.",
+      "Canadian tech runs on cheap engineering talent and a weaker currency than its capital sources. The cost structure produces protocols that survive longer per dollar raised.",
+      "Filter to Canadian-headquartered crypto projects, market-cap weighted within. The basket overlaps strongly with Toronto, Vancouver, and Montreal engineering ecosystems.",
+      "Canada's regulatory regime is friendlier than the United States and stricter than Europe. The middle path produces protocols built for both.",
     ],
     objective:
-      "Applies 30-day momentum to 50 tokens across every crypto category, rebalanced weekly. A pure sector-rotation strategy that systematically overweights whichever corner of crypto is trending strongest.",
+      "Holds protocols led by Canadian-based founding teams, weighted by market cap. Captures the cost-structure advantage of teams building from a high-quality, lower-capital ecosystem.",
   },
-  BRMFNG: {
-    label: "Momentum Index",
+  IMMIG: {
+    label: "Founder Index",
     whyPoints: [
-      "Bridge protocol momentum with an FNG trigger. The fear exit matters here because bridge tokens are among the most volatile in crypto — they amplify both directions.",
-      "30-day momentum across 10 bridge tokens, rebalanced biweekly. The strategy rides cross-chain infrastructure trends while the FNG overlay manages regime risk.",
-      "Bridge tokens move sharply on adoption events and security incidents. Momentum captures the adoption moves; the FNG trigger limits exposure during market-wide panic.",
+      "Immigrant founders self-select for tolerance to displacement. The protocols they ship inherit the same comfort with the uncertain.",
+      "Filter to founders building outside their country of origin, market-cap weighted within. The cohort overlaps with global teams but is selected on the founder, not the team.",
+      "The decision to immigrate is itself a startup. The second startup tends to feel familiar.",
     ],
     objective:
-      "Applies 30-day momentum to the top 10 bridge tokens with a Fear & Greed trigger overlay, rebalanced biweekly. Rides cross-chain infrastructure trends while exiting to cash during extreme market fear.",
+      "Holds protocols whose founders are immigrants — building outside their country of origin — weighted by market cap. Captures the founder selection effect of voluntary displacement.",
   },
-  ZKMVC: {
-    label: "Momentum Index",
+  VET: {
+    label: "Founder Index",
     whyPoints: [
-      "Zero-knowledge proofs are the endgame for blockchain scaling and privacy. The VC filter ensures only venture-backed ZK projects qualify, selecting for teams with multi-year runway.",
-      "30-day momentum across 10 ZK tokens, rebalanced biweekly. ZK technology has a long development cycle — momentum identifies which projects are breaking through commercially.",
-      "The intersection of ZK technology and venture backing narrows the field to projects with both technical ambition and institutional support. Momentum then selects the current leaders.",
+      "Veteran founders have shipped through more than one cycle. The protocols they build assume the cycle exists; the design reflects the assumption.",
+      "Filter to founders with a decade or more of operating experience, market-cap weighted within. The basket skews toward infrastructure and against narrative.",
+      "Experience does not predict the next product. It predicts how the team handles the moments when the product is wrong.",
     ],
     objective:
-      "Applies 30-day momentum to the top 10 zero-knowledge tokens, filtered by VC funding status and rebalanced biweekly. Captures the ZK scaling narrative through venture-validated projects showing price momentum.",
+      "Holds protocols led by founders with extensive prior operating experience, weighted by market cap. Captures the structural advantage of teams that have already lived through a market they expected to end.",
   },
-  MODMVC: {
-    label: "Momentum Index",
+  GLOBE: {
+    label: "Founder Index",
     whyPoints: [
-      "Modular blockchain momentum with a VC overlay. Data availability layers are the newest infrastructure thesis — venture backing validates which DA projects have institutional credibility.",
-      "Few modular projects pass both the VC and momentum filters simultaneously. Extreme selectivity is a feature: the index holds positions only when conviction signals align.",
-      "The modular stack thesis requires patience. VC filtering selects for funded patience; momentum confirms when the market begins to agree.",
+      "Globally distributed teams hire from outside the salary bands of any single market. The cost-to-quality ratio is structurally better than concentrated teams can match.",
+      "Filter to teams with no dominant geographic concentration, market-cap weighted within. The basket overlaps with remote-first DeFi and infrastructure projects.",
+      "Distributed teams ship slowly until they ship fast. The asynchronous coordination tax disappears once the team learns to pay it.",
     ],
     objective:
-      "Applies 30-day momentum to the top 10 data availability tokens, filtered by VC funding and rebalanced biweekly. Captures the modular blockchain thesis through the intersection of venture validation and price trend.",
+      "Holds protocols built by globally distributed founding teams, weighted by market cap. Captures the cost-structure and time-zone arbitrage of teams that do not share an office.",
   },
-  CDM5: {
-    label: "Momentum Index",
+  BROAD: {
+    label: "Strategy Index",
     whyPoints: [
-      "Top 5 by dual momentum, rebalanced weekly. Maximum concentration in the strongest combined absolute and relative signals across the entire market.",
-      "Dual momentum in a 5-token basket means each position passed two independent trend tests. The concentration amplifies conviction — and risk — by design.",
-      "When broad market trends are strong, the selection gravitates toward large caps. When trends are narrow, it concentrates in sector leaders. The behavior adapts to the regime.",
+      "Broad-market exposure is the default position. Owning the whole market is the bet that no specific sector wins this cycle.",
+      "Market-cap weighted across the largest tokens. The composition tracks where capital has already settled.",
+      "Active selection adds risk. Passive selection accepts the market's current consensus. Both have a place; this is the one that does not require an opinion.",
     ],
     objective:
-      "Holds the top 5 tokens by 30-day dual momentum, rebalanced weekly. Combines maximum concentration with the dual momentum signal, holding only assets trending up both in absolute and relative terms.",
+      "Holds the broad cap-weighted market, rebalanced monthly. Captures the average return of the asset class without requiring any specific thesis to be correct.",
   },
-  DTVMVC: {
-    label: "Momentum Index",
+  SELFV: {
+    label: "Founder Index",
     whyPoints: [
-      "DeFi TVL momentum with a VC overlay. Three signals must align before capital is allocated: high TVL, growing deposits, and venture backing. Triple confirmation.",
-      "The VC filter ensures only institutionally-validated DeFi protocols enter the portfolio. TVL momentum ensures they are gaining adoption, not coasting on legacy deposits.",
-      "Each additional filter narrows the universe. The trade-off is intentional — fewer holdings with higher conviction, backed by three independent validation signals.",
+      "Self-taught founders against Ivy-credentialed ones. The spread captures the cost of credentials in a market where credentials never had to matter.",
+      "Long basket selects self-taught founder protocols, weighted equally. The construction is comparative — the index reads as a vote on what background still rewards.",
+      "If credentials predict outcomes the way they used to, the spread compresses. If they no longer do, it widens. The basket is the wager.",
     ],
     objective:
-      "Selects the top 10 DeFi protocols by TVL momentum with a VC funding filter, rebalanced weekly. Requires triple confirmation: high TVL, growing deposits, and institutional venture backing.",
+      "A spread-style index pairing self-taught founder protocols against Ivy-credentialed ones. Captures the relative outcome of background as a long-term selection signal in crypto.",
   },
-  LNMVC: {
+  IVY: {
+    label: "Education Index",
+    whyPoints: [
+      "Ivy-League founders carry concentrated peer networks worth more than the degree. The first hires, the first cap table, the first introductions — all priced into the network and not the diploma.",
+      "Filter to founders from Ivy schools, market-cap weighted within. The basket skews toward fintech-adjacent and institutional protocols.",
+      "Pedigree compresses fundraising cycles. Compression is alpha when capital is the bottleneck.",
+    ],
+    objective:
+      "Holds protocols whose founders graduated from Ivy League institutions, weighted by market cap. Captures the structural fundraising and network advantage of concentrated alumni circles.",
+  },
+  MOVE2: {
+    label: "Strategy Index",
+    whyPoints: [
+      "A second momentum cohort with a longer lookback. The window selects against noise; the basket runs cooler.",
+      "Top movers by 60-day trailing return, rebalanced less often than the headline cohort. Lower turnover, higher conviction per name.",
+      "Short momentum catches the move; long momentum catches the trend. The two basket types coexist because they answer different questions.",
+    ],
+    objective:
+      "Selects the top trailing performers over a longer lookback window, rebalanced on a slower cadence. Captures persistent trend rather than short-term thrust.",
+  },
+  FACE: {
+    label: "Founder Index",
+    whyPoints: [
+      "Public-facing founders trade reputation for liquidity. The protocols they front carry implicit guarantees that anonymous teams cannot offer.",
+      "Filter to founders with active public personas, market-cap weighted. The basket skews toward consumer-facing crypto where trust is the product.",
+      "A public founder cannot disappear quietly. The constraint is itself a feature.",
+    ],
+    objective:
+      "Holds protocols led by founders with prominent public personas, weighted by market cap. Captures the implicit guarantee that comes with reputational stake.",
+  },
+  BUILD3: {
+    label: "Founder Index",
+    whyPoints: [
+      "A third cohort of repeat founders, reaching past the obvious names and the secondary names into the late-cycle bench.",
+      "Smallest of the three repeat-founder baskets. Higher dispersion, longer odds, larger asymmetric upside per position.",
+      "The first basket already knew it would compound. The third does not yet know. That is the entire reason it is interesting.",
+    ],
+    objective:
+      "A third cohort of repeat-founder protocols, the smallest and most asymmetric of the three. Captures the late-cycle bench of operators whose compounding has not yet been televised.",
+  },
+  PEAK2: {
+    label: "Founder Index",
+    whyPoints: [
+      "A second peak-age cohort with a tighter window — narrowing further onto the optimal entrepreneurial decade.",
+      "Filter to founders in a tighter age band, market-cap weighted. The basket selects more aggressively against both ends of the distribution.",
+      "Sharper window, smaller basket, fewer compromises. The cost is concentration risk; the benefit is honest selection.",
+    ],
+    objective:
+      "A second peak-age founder cohort with a tighter age window. Captures a more concentrated version of the same age-as-execution-signal thesis.",
+  },
+  GLOBE2: {
+    label: "Founder Index",
+    whyPoints: [
+      "A second basket of globally distributed teams, broader than the headline cohort. Includes teams with looser distribution thresholds.",
+      "Filter is wider; market-cap weighting still concentrates in the largest distributed protocols. The basket is more representative than selective.",
+      "The thesis does not change with size. The conviction does.",
+    ],
+    objective:
+      "A broader second cohort of globally distributed teams, with looser distribution thresholds than the headline basket. Captures the thesis at higher breadth and lower concentration.",
+  },
+  BROAD2: {
+    label: "Strategy Index",
+    whyPoints: [
+      "A second broad-market cohort with deeper basket size. Captures more of the long tail at the cost of more dispersion.",
+      "Market-cap weighted across a wider name set. The smaller positions add idiosyncratic exposure rather than systemic.",
+      "Owning more names does not mean owning more market. The marginal token contributes very little to the average.",
+    ],
+    objective:
+      "A broader cohort of cap-weighted market exposure, reaching deeper into the long tail. Captures average market return with explicit small-cap exposure.",
+  },
+  DFLED: {
+    label: "Sector Index",
+    whyPoints: [
+      "DeFi leaders by some combination of TVL, fees, and time on chain. The basket buys the protocols that have already proven they survive.",
+      "Filter to DeFi blue chips that have outlived at least one prior cycle, market-cap weighted within. Survivor bias is intentional.",
+      "Most DeFi protocols die. The ones that don't are an unusually durable cohort. The basket buys the durability.",
+    ],
+    objective:
+      "Holds DeFi leadership protocols filtered by survival across cycles, weighted by market cap. Captures the cohort of DeFi infrastructure that has demonstrated multi-cycle durability.",
+  },
+  VET2: {
+    label: "Founder Index",
+    whyPoints: [
+      "A second veteran-founder cohort, broader than the headline cut. Includes operators with shorter but still substantial track records.",
+      "Filter relaxed to founders with five-plus years operating experience, market-cap weighted. Wider basket, lower average bar.",
+      "The first basket is the most experienced. This one is the most representative.",
+    ],
+    objective:
+      "A second cohort of experienced founder protocols with a relaxed experience filter. Captures the broader cohort of operators with substantial — if not maximal — track records.",
+  },
+  CSCH2: {
+    label: "Education Index",
+    whyPoints: [
+      "A second computer-science school cohort, reaching past the headline programs into adjacent strong technical schools.",
+      "Filter widened beyond the top tier. Market-cap weighted within. The basket overlaps with hard-engineering protocols building outside the headline brand schools.",
+      "The headline schools concentrate capital. The next tier concentrates underpriced talent.",
+    ],
+    objective:
+      "A broader cohort of protocols led by founders from strong computer-science programs beyond the headline tier. Captures the technical-school selection effect at lower price.",
+  },
+  SELF3: {
+    label: "Founder Index",
+    whyPoints: [
+      "A third cohort of self-taught founders — the smallest of three, reaching into the deepest part of the long tail.",
+      "Filter is the loosest; basket size is the smallest. The construction surfaces names the headline cohorts miss entirely.",
+      "Compounding lives in the names nobody is watching. The third basket is the bet on that.",
+    ],
+    objective:
+      "A third self-taught founder cohort, the smallest and deepest of the three. Captures the names the headline baskets pass over.",
+  },
+  YIELD: {
     label: "Yield Index",
     whyPoints: [
-      "Lending momentum with a VC overlay. Only venture-backed lending protocols showing price momentum qualify — smart money endorsement combined with market trend confirmation.",
-      "The VC filter narrows the lending universe to institutionally-validated platforms. Momentum weighting then ranks the survivors by current market performance.",
-      "Lending is the most commoditized sector in DeFi. VC backing selects for differentiation; momentum selects for market recognition of that differentiation.",
+      "Yield protocols compete to deliver the highest sustainable real return. The basket holds the ones that are still standing after the unsustainable ones imploded.",
+      "Market-cap weighted across yield-bearing protocols — staking, lending, vaults, real-yield mechanisms. The selection is method-agnostic; the survival is the filter.",
+      "Most yield is fictional. The yield that compounds is the yield that pays out of revenue. The basket selects for the latter.",
     ],
     objective:
-      "Applies 30-day momentum to the top 10 lending protocols filtered by VC funding status, rebalanced biweekly. Captures lending sector growth through the intersection of institutional validation and price trend.",
+      "Tracks the leading yield-generating protocols by market cap, rebalanced monthly. Captures the cohort of yield mechanisms that produce returns from cash flow rather than emissions.",
   },
-  YTMVC: {
+  USA: {
+    label: "Geographic Index",
+    whyPoints: [
+      "American founders raise the most capital, ship to the most regulated market, and operate under the most legal scrutiny. The friction is real; the survivors are durable.",
+      "Filter to United States-headquartered crypto protocols, market-cap weighted within. The basket skews toward institutional infrastructure and compliant DeFi.",
+      "Building from the US in crypto is harder than building from anywhere else. The protocols that do it carry the cost of doing it.",
+    ],
+    objective:
+      "Holds protocols led by United States-based founders, weighted by market cap. Captures the cohort that built under the heaviest regulatory friction and survived it.",
+  },
+  YIELD2: {
     label: "Yield Index",
     whyPoints: [
-      "Yield TVL momentum with a VC overlay. Three filters ensure only the strongest yield platforms qualify: growing deposits, venture backing, and sustained momentum.",
-      "TVL momentum in yield protocols means capital is flowing in faster than it is leaving. The VC overlay confirms institutional confidence in the platform's sustainability.",
-      "Yield-chasing without filters leads to rugs and unsustainable APYs. Triple-signal confirmation selects for yield platforms that are both growing and institutionally vetted.",
+      "A second yield cohort with a longer holding period and deeper basket. Slower turnover, broader exposure.",
+      "Filter relaxed to include emerging yield mechanisms with shorter histories. Market-cap weighted, monthly rebalance.",
+      "The first yield basket is conservative. The second includes the experiments. Some of them will not survive; the survivors will be the next first basket.",
     ],
     objective:
-      "Tracks the top 10 yield protocols by TVL momentum with a VC funding filter, rebalanced weekly. Automates yield-farm selection through capital flow momentum validated by institutional backing.",
+      "A second yield cohort that includes emerging yield mechanisms alongside established ones. Captures both the proven cohort and the experiments competing to join it.",
   },
-  PPVCFNG: {
-    label: "Momentum Index",
-    whyPoints: [
-      "Perp DEX momentum with VC backing and FNG trigger. Three overlays on one strategy: venture validation selects credible platforms, momentum captures trends, and the FNG trigger exits during panic.",
-      "The triple-overlay approach means capital is only deployed when venture-backed perp platforms are trending up in non-fearful markets. Maximum selectivity by design.",
-      "Perpetual DEX tokens have high narrative beta. Three independent filters dampen that noise, deploying capital only when structural, technical, and sentiment signals agree.",
-    ],
-    objective:
-      "Applies 30-day momentum to the top 10 perpetual DEX tokens with VC funding filter and Fear & Greed trigger, rebalanced weekly. Requires three confirmations: venture backing, price momentum, and neutral-to-greedy market sentiment.",
-  },
-  GMVCFNG: {
-    label: "Momentum Index",
-    whyPoints: [
-      "Gaming momentum with VC backing and FNG trigger. Triple-filtered gaming exposure that only deploys capital when structural, technical, and sentiment signals align.",
-      "The FNG trigger exits during fear, which matters in gaming where sentiment crashes are severe. The VC overlay ensures the studios have runway to survive those crashes.",
-      "Gaming is the highest-attrition sector in crypto. Three filters exist because the base rate of failure is high — only multiply-validated projects deserve capital.",
-    ],
-    objective:
-      "Applies 30-day momentum to the top 10 gaming tokens with VC funding filter and Fear & Greed trigger, rebalanced weekly. Captures gaming infrastructure momentum only when backed by venture capital and deployed in favorable sentiment.",
-  },
-  L1MFFD: {
-    label: "Momentum Index",
-    whyPoints: [
-      "The most engineered L1 strategy in the catalog. Multi-factor scoring, FNG trigger, and BTC dominance switching work together to navigate the most complex sector in crypto.",
-      "BTC dominance switching rotates between BTC-heavy and alt-heavy exposure based on the dominance regime. The FNG trigger exits during panic. Multi-factor selects the best risk-reward L1s.",
-      "Three systematic overlays with zero discretionary decisions. Each overlay addresses a different failure mode: factor scoring handles selection, FNG handles sentiment, dominance handles regime.",
-    ],
-    objective:
-      "Applies multi-factor scoring to the top 10 L1 tokens with Fear & Greed trigger and BTC dominance switching, rebalanced biweekly. Combines factor investing with regime awareness and sentiment protection.",
-  },
-  GOV15EQ: {
-    label: "Macro Index",
-    whyPoints: [
-      "Top 15 governance tokens equally weighted, rebalanced quarterly. Patient allocation to the DAO ecosystem with 90-day holding periods that match the pace of governance participation.",
-      "Quarterly rebalancing reduces turnover and trading costs. Equal weighting prevents concentration in any single DAO, distributing risk across the governance landscape.",
-      "Governance tokens derive value from protocol revenue, voting power, and treasury claims. The quarterly cadence aligns with DAO budget cycles and proposal timelines.",
-    ],
-    objective:
-      "Equally weights the top 15 liquid staking governance tokens, rebalanced every 90 days. Provides broad DAO ecosystem exposure with low turnover, matching the patient timeframe of governance participation.",
-  },
-  LND10FEB: {
-    label: "Yield Index",
-    whyPoints: [
-      "Fee efficiency weighting selects the most capital-efficient lenders. The protocols generating the most revenue per unit of locked capital get the highest weight.",
-      "Biweekly rebalancing across 10 lending protocols ranked by fee efficiency. The methodology rewards lean operations and strong pricing power over raw size.",
-      "TVL and revenue tell different stories. Fee efficiency — the ratio between them — tells the most important one: which platforms extract the most value from each deposited unit.",
-    ],
-    objective:
-      "Weights the top 10 lending protocols by fee efficiency, rebalanced every 14 days. Systematically overweights the most capital-efficient lenders, favoring protocols that generate the most interest revenue per unit of locked capital.",
-  },
-  CDP5TQ: {
-    label: "Macro Index",
-    whyPoints: [
-      "Top 5 CDP protocols by TVL, rebalanced quarterly. Stablecoin issuance infrastructure with patient 90-day holding periods that reduce trading friction.",
-      "Quarterly rebalancing in a concentrated basket means low turnover. The strategy holds through volatility rather than trading through it, aligning with the slow-moving nature of stablecoin infrastructure.",
-      "CDP protocols are the central banks of DeFi. A concentrated TVL-weighted basket owns the institutions that issue the money supply, not the money itself.",
-    ],
-    objective:
-      "Holds the top 5 lending protocols by TVL, rebalanced every 90 days. Provides concentrated stablecoin infrastructure exposure with patient quarterly rebalancing that reduces transaction costs.",
-  },
-  VCF10MF: {
-    label: "Momentum Index",
-    whyPoints: [
-      "Top 10 VC-funded protocols ranked by multi-factor score. Combines momentum, volatility, and value signals, filtered by institutional venture backing for quality assurance.",
-      "Multi-factor scoring provides diversified alpha sources beyond simple momentum. The VC overlay ensures the portfolio only contains protocols with institutional runway and validation.",
-      "Single-factor strategies are fragile. Multi-factor construction hedges against any one signal failing, while the VC filter provides an independent quality gate.",
-    ],
-    objective:
-      "Applies multi-factor scoring to the top 10 DeFi protocols filtered by VC funding, rebalanced biweekly. Combines quantitative factor signals with institutional venture validation.",
-  },
-  VLDM: {
-    label: "Momentum Index",
-    whyPoints: [
-      "Volume leaders with dual momentum. High-activity protocols that are also trending up on both absolute and relative axes — liquidity depth confirmed by price trend.",
-      "Dual momentum on the highest-volume DeFi protocols filters for projects with both trading activity and genuine price appreciation. The intersection is small and selective.",
-      "Volume without momentum is stagnation. Momentum without volume is fragile. This index demands both, selecting protocols where depth and trend converge.",
-    ],
-    objective:
-      "Applies 30-day dual momentum to the top 15 DeFi protocols by TVL, rebalanced weekly. Selects protocols that combine high trading activity with confirmed upward trends on both absolute and relative measures.",
-  },
-  DPULTRA: {
-    label: "Macro Index",
-    whyPoints: [
-      "DePIN revenue-weighted with all three overlays: FNG trigger, BTC dominance switching, and VC filter. The maximum-systematic approach to decentralized physical infrastructure.",
-      "Revenue weighting ensures only DePIN protocols generating real income qualify. Storage, bandwidth, and compute revenue represent genuine demand for decentralized resources.",
-      "Three protective overlays on a revenue base. The strategy deploys capital into physical infrastructure only when venture-backed, momentum-positive, and in favorable market conditions.",
-    ],
-    objective:
-      "Weights the top 10 DePIN protocols by revenue with FNG trigger, BTC dominance switching, and VC filter, rebalanced biweekly. Captures real infrastructure revenue from storage, bandwidth, and compute with maximum systematic protection.",
-  },
-  LNRVVC: {
-    label: "Yield Index",
-    whyPoints: [
-      "Lending revenue with FNG trigger and VC filter. Only venture-backed, revenue-generating lending protocols that pass sentiment screening qualify. The most conservative lending approach.",
-      "Triple filtering means capital is only allocated to lending platforms generating real interest income, backed by institutional investors, during non-fearful market conditions.",
-      "Each filter addresses a different risk: revenue screens for sustainability, VC screens for quality, FNG screens for regime. Together they produce the most selective lending exposure available.",
-    ],
-    objective:
-      "Weights the top 10 lending protocols by revenue with FNG trigger and VC funding filter, rebalanced biweekly. Applies three layers of filtering to lending exposure: revenue generation, institutional backing, and sentiment protection.",
-  },
-  DX10VFD: {
-    label: "Macro Index",
-    whyPoints: [
-      "DEX volume weighting with FNG trigger and BTC dominance switching. Captures the most-traded decentralized exchanges while managing exposure through sentiment and BTC regime awareness.",
-      "Volume weighting selects DEXes that are actually being used for trading, not just holding idle liquidity. The protective overlays add timing discipline.",
-      "DEX volume is a real-time measure of decentralized trading adoption. The FNG and dominance overlays prevent deploying capital during hostile market regimes.",
-    ],
-    objective:
-      "Weights the top 10 DEX tokens by trading volume with FNG trigger and BTC dominance switching, rebalanced weekly. Captures DEX activity leaders while managing exposure through sentiment and BTC regime awareness.",
-  },
-  PP10ULTRA: {
-    label: "Macro Index",
-    whyPoints: [
-      "Perp DEX revenue with all three overlays. The most systematic approach to on-chain derivatives exposure: revenue base validates demand, three overlays manage timing and risk.",
-      "Revenue weighting ensures only fee-generating perp platforms qualify. Three overlays filter the timing, deploying capital only when multiple signals confirm favorable conditions.",
-      "The on-chain derivatives migration is a multi-year structural trend. Maximum systematic filtering ensures participation only under the most favorable convergence of signals.",
-    ],
-    objective:
-      "Weights the top 10 perpetual DEX tokens by revenue with FNG trigger, BTC dominance switching, and VC filter, rebalanced weekly. Captures on-chain derivatives revenue through the most heavily filtered strategy in the catalog.",
-  },
-  YLD10ULTRA: {
-    label: "Yield Index",
-    whyPoints: [
-      "Yield TVL momentum with all three overlays. The maximum-systematic yield strategy requiring four independent signals to align before capital is deployed.",
-      "TVL must be growing, the protocol must be venture-backed, fear must not be extreme, and BTC dominance must favor alts. Quadruple confirmation eliminates the majority of yield-chasing mistakes.",
-      "Most yield strategies fail because they deploy capital indiscriminately. This one deploys capital rarely, only when structural, institutional, technical, and sentiment signals converge.",
-    ],
-    objective:
-      "Tracks the top 10 yield protocols by TVL momentum with FNG trigger, BTC dominance switching, and VC filter, rebalanced weekly. Deploys capital into yield only when four independent signals align.",
-  },
-  B100SM: {
-    label: "Macro Index",
-    whyPoints: [
-      "The broadest index in the catalog. 100 tokens with sqrt market-cap weighting, which compresses the gap between large and small tokens. Mid-caps get real allocation.",
-      "Sqrt market cap reduces the dominance of the top two tokens while still respecting relative size. The result is 100 holdings with meaningful weight in the long tail.",
-      "For broad crypto market exposure without extreme large-cap concentration, sqrt weighting offers a mathematical middle ground between equal weight and pure market-cap dominance.",
-    ],
-    objective:
-      "Holds 100 tokens weighted by the square root of market cap, rebalanced monthly. The sqrt function tilts allocation toward mid-caps, producing a more diversified index than pure market-cap weighting while still respecting relative size.",
-  },
-  B100CQ: {
-    label: "Macro Index",
-    whyPoints: [
-      "Maximum diversification with no single-token dominance. 100 tokens capped at a maximum individual weight, rebalanced quarterly. True broad market exposure.",
-      "The cap forces diversification beyond the largest two tokens. Tokens that hit the cap are trimmed; the remainder is distributed by market cap. Concentration risk is bounded by construction.",
-      "Quarterly rebalancing minimizes turnover across 100 positions, keeping trading costs low while maintaining broad representation of the entire crypto market.",
-    ],
-    objective:
-      "Holds 100 tokens with market-cap weighting capped at 10% per token, rebalanced quarterly. The cap prevents concentration while quarterly rebalancing minimizes turnover, producing broad crypto market exposure with controlled risk.",
-  },
-  MEGAMOM: {
-    label: "Momentum Index",
-    whyPoints: [
-      "The mega-system: 50 tokens, 60-day dual momentum, FNG trigger, and BTC dominance switching. The broadest and most heavily overlaid momentum strategy in the catalog.",
-      "Three overlays working together: momentum selects trends, FNG exits during panic, dominance switching rotates between BTC-heavy and alt-heavy regimes. No single overlay can accomplish what three do together.",
-      "50 tokens provide broad sector coverage. Three overlays provide disciplined risk management. The combination captures trend across the entire market with regime-aware protection.",
-    ],
-    objective:
-      "Applies 60-day dual momentum to 50 tokens with FNG trigger and BTC dominance switching, rebalanced weekly. The broadest and most heavily overlaid momentum strategy, combining trend selection with regime and sentiment awareness across the entire crypto market.",
-  },
-  YF30M: {
+  GLOBE3: {
     label: "Founder Index",
     whyPoints: [
-      "Founders under 30 build with urgency the market discounts as inexperience. Young builders gravitate toward AI and DeFi infrastructure — the sectors with the highest technical velocity.",
-      "Momentum weighting across under-30 founder tokens, rebalanced biweekly. The methodology captures which young founders are winning now, not which ones exist.",
-      "Age as a selection signal is unconventional. The thesis: founders in their twenties have fewer priors, iterate faster, and build for the current paradigm rather than the last one.",
+      "A third globally distributed cohort, reaching the smallest and most decentralized teams. The basket is intentionally weak in the headline names.",
+      "Filter selects only teams with no geographic concentration above a strict threshold. Smaller basket, sharper construction.",
+      "The third basket is the purest expression of the thesis. Whether that purity rewards or punishes is the question the basket exists to answer.",
     ],
     objective:
-      "Applies 30-day momentum to tokens from founders aged under 30 at founding, rebalanced biweekly. Captures the urgency and technical velocity of young builder projects through systematic momentum selection.",
+      "A third globally distributed cohort with the strictest geographic dispersion threshold. Captures the most decentralized expression of the thesis at the cost of basket size.",
   },
-  PB34: {
+  MBA: {
     label: "Founder Index",
     whyPoints: [
-      "The 30-34 age bracket is the consensus sweet spot for crypto founding. These builders reach market recognition fastest, reflecting the age the market already trusts most.",
-      "Equal weighting across 13 tokens from 30-34 founders ensures broad exposure to the bracket without concentrating in any single project. Monthly rebalancing keeps allocation current.",
-      "The strength of this bracket — market trust — is also its limitation. The thesis is priced in more than any other age cohort. The index captures the consensus, not the edge.",
+      "MBA-credentialed founders bring institutional fundraising and operational discipline. The protocols they ship tend to scale where engineering-only teams stall.",
+      "Filter to founders with MBAs from accredited programs, market-cap weighted within. The basket skews toward go-to-market-heavy projects.",
+      "MBAs are mocked in crypto and overrepresented in the survivors. The mockery is the alpha.",
     ],
     objective:
-      "Equally weights 13 tokens from founders aged 30-34 at founding, rebalanced monthly. Captures the age bracket with the fastest time to market recognition, reflecting the market's consensus view of peak builder productivity.",
+      "Holds protocols whose founders hold MBAs, weighted by market cap. Captures the operational-discipline selection effect of teams led by formally trained operators.",
   },
-  PB34M: {
+  STLTH2: {
     label: "Founder Index",
     whyPoints: [
-      "Market-cap weighted 30-34 bracket. Cap weighting naturally concentrates in the largest protocol from this age cohort, making it effectively a single-asset bet with diversified tail exposure.",
-      "The 30-34 bracket produced several of the most valuable protocols in crypto. Market-cap weighting lets the market's valuation hierarchy determine the allocation.",
-      "For investors who believe the peak-builder age thesis but want market-proportional exposure rather than equal weight, this is the cap-weighted expression of that conviction.",
+      "A second stealth cohort with a wider definition of pre-public. Captures projects further along but still pre-marketing.",
+      "Filter relaxed to include early-public projects with limited liquidity. Market-cap weighted within. Information risk is lower than the first basket but still elevated.",
+      "Stealth ends the moment the marketing begins. The basket sits in the seam between the two phases.",
     ],
     objective:
-      "Weights 13 tokens from 30-34 founders by market cap, rebalanced monthly. The largest protocol from this age cohort dominates, making this effectively a concentrated bet with diversified exposure to the 30-34 age cohort.",
-  },
-  EF39: {
-    label: "Founder Index",
-    whyPoints: [
-      "35-39 founders have survived at least one crash and built through it. The bracket where scar tissue meets remaining ambition — enough experience to navigate bear markets, enough drive to keep shipping.",
-      "Equal weighting across 20 tokens provides the broadest founder-age basket, diversified across chains, DeFi, and infrastructure categories.",
-      "Experience is an asset in crypto precisely because most participants lack it. Founders who have seen a cycle build differently than those who have not.",
-    ],
-    objective:
-      "Equally weights 20 tokens from founders aged 35-39 at founding, rebalanced monthly. Captures the balance point where builders have enough cycle experience to navigate downturns and enough drive to keep building.",
-  },
-  VF44: {
-    label: "Founder Index",
-    whyPoints: [
-      "Second-act founders. The 40-44 bracket includes people who left traditional finance, sold a startup, or had a full career before entering crypto. Domain expertise from a prior life.",
-      "Equal weighting across 8 tokens ensures no single second-act founder dominates. The basket spans smart contracts, meme culture, L1 infrastructure, and DeFi lending.",
-      "Late entry into crypto correlates with strong prior-domain expertise. These founders do not build for the ecosystem's approval — they build what they already know is missing.",
-    ],
-    objective:
-      "Equally weights 8 tokens from founders aged 40-44 at founding, rebalanced monthly. Captures second-act founders who entered crypto with prior career experience in finance, technology, or entrepreneurship.",
-  },
-  ES45: {
-    label: "Founder Index",
-    whyPoints: [
-      "45+ founders build infrastructure that lasts. The protocols built by people who remember life before the internet tend toward resilience over novelty.",
-      "Equal weighting across 19 tokens. The bracket includes some of the most valuable assets in crypto, built by veteran technologists the market systematically underestimates.",
-      "The market discounts older founders because crypto culture worships youth. The data disagrees. Veteran builders produce surprisingly resilient protocols.",
-    ],
-    objective:
-      "Equally weights 19 tokens from founders aged 45 or older at founding, rebalanced monthly. Holds the protocols built by veteran technologists, capturing a demographic bracket the market consistently underestimates.",
-  },
-  ES45M: {
-    label: "Founder Index",
-    whyPoints: [
-      "Market-cap weighted elders. The oldest founder in crypto built the most valuable protocol. Cap weighting makes this effectively a single-asset index with tail exposure to other veteran-founded projects.",
-      "The 45+ bracket has produced the market's most valuable assets. Cap weighting lets that fact express itself fully in the allocation.",
-      "For investors who believe in the elder-founder thesis but want exposure proportional to market valuation, this is the cap-weighted expression of veteran-builder conviction.",
-    ],
-    objective:
-      "Weights 19 tokens from 45+ founders by market cap, rebalanced monthly. The largest protocol dominates, making this effectively a concentrated bet that adds exposure to other elder-founded protocols.",
-  },
-  USAM: {
-    label: "Founder Index",
-    whyPoints: [
-      "Silicon Valley crypto. American-founded protocols benefit from US market access, regulatory familiarity, and proximity to the deepest capital pools in the world.",
-      "Market-cap weighting concentrates in the largest American-founded protocols. The thesis is straightforward: US market access and technical talent create structural advantages.",
-      "Geographic founder selection is a proxy for regulatory arbitrage, talent access, and market proximity. The US corridor dominates crypto founding for the same reasons it dominates tech.",
-    ],
-    objective:
-      "Weights tokens from American founders by market cap, rebalanced monthly. Captures the Silicon Valley crypto corridor, concentrating in protocols with US market access and regulatory familiarity.",
-  },
-  ASIF: {
-    label: "Founder Index",
-    whyPoints: [
-      "Asian founding teams bring different market access and regulatory arbitrage. They historically reach ATH faster than any other geographic cohort, reflecting the speed of Asian crypto retail markets.",
-      "Equal weighting across 11 tokens provides broad exposure to Asian-founded projects spanning L1 infrastructure, cross-chain protocols, and privacy solutions.",
-      "The fastest-moving crypto retail markets are in Asia. Founders with native access to these markets build with a speed and feedback loop that Western founders cannot replicate.",
-    ],
-    objective:
-      "Equally weights 11 tokens from Asian founders, rebalanced monthly. Captures the market access and speed advantages of Asian founding teams, who historically reach peak market recognition faster than any other geographic cohort.",
-  },
-  EURF: {
-    label: "Founder Index",
-    whyPoints: [
-      "European founders build under regulatory pressure that forces patience and rigor. In crypto, patience means building well — the protocols that survive regulation tend to outlast the ones that avoid it.",
-      "Equal weighting across 17 tokens spanning L1s, DeFi, and infrastructure. European founders are distributed across more categories than any other geographic cohort.",
-      "Regulation teaches discipline. European founders build more slowly but the resulting protocols tend to have stronger legal foundations and institutional credibility.",
-    ],
-    objective:
-      "Equally weights 17 tokens from European founders, rebalanced monthly. Captures the regulatory patience advantage of European teams, who build more slowly but historically produce strong market performance.",
-  },
-  GBRF: {
-    label: "Founder Index",
-    whyPoints: [
-      "The smallest national basket in the catalog. British-founded protocols are few but deeply ambitious — concentrated in storage, compute, and parachain infrastructure.",
-      "Equal weighting across 4 tokens. The concentration is a feature: each position represents a distinct infrastructure thesis from the British engineering tradition.",
-      "Four tokens is not diversification. It is a concentrated bet on a specific engineering culture that produces infrastructure projects with multi-decade technical ambition.",
-    ],
-    objective:
-      "Equally weights 4 tokens from British founders, rebalanced monthly. The most concentrated national founder basket, holding infrastructure projects built with the persistence that British engineering culture selects for.",
-  },
-  STAN: {
-    label: "Founder Index",
-    whyPoints: [
-      "Stanford produces crypto founders prolifically. The quantity, however, may dilute the edge — too many Stanford-pedigreed projects compete against each other for the same narrative space.",
-      "6 tokens equally weighted from the Stanford pipeline. The basket spans data availability, identity, storage, and cross-chain infrastructure.",
-      "The credential premium is an empirical question. This index tests whether Stanford's network effect compounds or dilutes when applied to a market that rewards differentiation.",
-    ],
-    objective:
-      "Equally weights 6 tokens from Stanford-affiliated founders, rebalanced monthly. Tests the Ivy League founder premium hypothesis in a market where oversupply of similarly-pedigreed projects may dilute the credential edge.",
-  },
-  MITX: {
-    label: "Founder Index",
-    whyPoints: [
-      "MIT founders tilt toward cryptography and formal methods. The institution selects for mathematical rigor, producing protocols with technically sound foundations.",
-      "5 tokens equally weighted from MIT alumni. The basket spans consensus algorithms, marketplace infrastructure, and privacy solutions — all areas where formal training provides an edge.",
-      "Rigor does not guarantee returns. But in a market where most protocols fail on technical fundamentals, MIT's selection for mathematical precision is a meaningful quality signal.",
-    ],
-    objective:
-      "Equally weights 5 tokens from MIT-affiliated founders, rebalanced monthly. Captures the intersection of cryptographic rigor and blockchain infrastructure, holding protocols built by founders with formal training in the mathematics underlying crypto.",
-  },
-  HVRD: {
-    label: "Founder Index",
-    whyPoints: [
-      "Harvard founders in crypto are rarer than expected. The institution's strengths — finance, governance, policy — produce fewer protocol builders but strong DeFi architects.",
-      "The smallest Ivy basket. Harvard's network effect is real in TradFi but its translation to crypto is limited by the institution's distance from systems engineering.",
-      "An honest test of whether Harvard's institutional prestige translates to crypto protocol value. The data is sparse enough that the answer remains genuinely uncertain.",
-    ],
-    objective:
-      "Equally weights 3 tokens from Harvard-affiliated founders, rebalanced monthly. The leanest university basket, testing whether Harvard's institutional prestige translates to crypto protocol value.",
-  },
-  IVYX: {
-    label: "Founder Index",
-    whyPoints: [
-      "11 tokens from Ivy League founders. The Ivy premium in crypto is real but modest — enough to outperform random selection, not enough to dominate.",
-      "Equal weighting across Ivy-founded tokens spanning smart contracts, payments, rendering, DeFi, and infrastructure. The traditional prestige pipeline applied to a non-traditional market.",
-      "Credentials provide network access and credibility in fundraising. Whether those advantages compound into protocol value is the question this index continuously answers.",
-    ],
-    objective:
-      "Equally weights 11 tokens from Ivy League-affiliated founders, rebalanced monthly. Captures the modest but real Ivy premium in crypto, where institutional networks provide a small systematic edge.",
-  },
-  IVYM: {
-    label: "Founder Index",
-    whyPoints: [
-      "Market-cap weighted Ivy founders. Cap weighting reveals that the Ivy premium concentrates in a few outsized winners rather than distributing evenly across the cohort.",
-      "The largest Ivy-founded protocol dominates the allocation. The remaining tokens provide tail exposure but minimal weight — the power law in Ivy crypto is extreme.",
-      "Equal weight vs. cap weight tells different stories about the same cohort. Cap weight reveals concentration; equal weight reveals breadth. This index chooses concentration.",
-    ],
-    objective:
-      "Weights 11 tokens from Ivy League founders by market cap, rebalanced monthly. Reveals that the Ivy premium in crypto concentrates in a few outsized winners rather than distributing evenly.",
-  },
-  CSFI: {
-    label: "Founder Index",
-    whyPoints: [
-      "Founders from Stanford, MIT, CMU, Berkeley, Caltech, Georgia Tech, and Waterloo. The institutions that teach systems engineering produce founders who build protocol-level infrastructure.",
-      "Equal weighting across 16 tokens spanning every chain category. The broadest academic basket, testing whether elite CS education produces a measurable founder quality signal.",
-      "Systems engineering training translates directly to blockchain architecture. The index captures this translation across the full spectrum of top CS programs.",
-    ],
-    objective:
-      "Equally weights 16 tokens from founders affiliated with top computer science programs, rebalanced monthly. Captures the engineering rigor that elite CS education provides, applied as a systematic founder quality signal.",
-  },
-  CSMM: {
-    label: "Founder Index",
-    whyPoints: [
-      "Momentum weighting across CS school alumni projects. Ride the technically sound winners among the academic pipeline — the projects built with rigor that the market is currently rewarding.",
-      "30-day momentum across 16 CS-alumni tokens, rebalanced biweekly. The momentum filter identifies which academically rigorous projects are breaking through commercially right now.",
-      "Quality without timing is patience. Momentum without quality is gambling. This index demands both — technical founder pedigree confirmed by current market trend.",
-    ],
-    objective:
-      "Applies 30-day momentum to 16 tokens from top CS school founders, rebalanced biweekly. Combines the quality signal of elite CS education with momentum timing, riding the academically rigorous projects currently trending.",
-  },
-  WATO: {
-    label: "Founder Index",
-    whyPoints: [
-      "The Waterloo-Toronto research corridor produced the most valuable crypto asset and continues to generate high-impact blockchain projects. Geographic clustering in research creates compounding talent effects.",
-      "5 tokens equally weighted from the Waterloo-Toronto pipeline. The corridor's output spans smart contracts, L1 infrastructure, AI, identity, and cross-chain protocols.",
-      "Academic research corridors produce disproportionate innovation in specific fields. For crypto, the Waterloo-Toronto axis is the most productive corridor per capita.",
-    ],
-    objective:
-      "Equally weights 5 tokens from Waterloo and Toronto-affiliated founders, rebalanced monthly. Captures the research corridor that produced Ethereum and continues to generate high-impact blockchain projects.",
+      "A second cohort of pre-public and early-public protocols, broader than the strict stealth basket. Captures the asymmetric returns of the pre-marketing phase at slightly reduced information risk.",
   },
   CRNL: {
-    label: "Founder Index",
+    label: "Education Index",
     whyPoints: [
-      "Cornell's IC3 lab shaped the theoretical foundations of DeFi and MEV research. The academic-industrial pipeline translates directly into protocol design.",
-      "4 tokens equally weighted from Cornell-affiliated founders. The institution's blockchain research program has influenced protocol architecture across the industry.",
-      "Academic labs that produce both papers and founders create a rare feedback loop. Cornell's IC3 is the clearest example of this loop in crypto.",
+      "Cornell's blockchain program produced an unusually concentrated alumni network in crypto. The protocols they ship reflect a shared technical vocabulary.",
+      "Filter to Cornell-affiliated founders, market-cap weighted within. The basket includes both undergraduate and graduate alumni.",
+      "Concentrated alumni networks compound fundraising and recruiting advantages. Cornell's crypto presence is small enough to be coherent and large enough to matter.",
     ],
     objective:
-      "Equally weights 4 tokens from Cornell-affiliated founders, rebalanced monthly. Captures the academic-industrial pipeline from Cornell's IC3 lab, which shaped the theoretical foundations of DeFi and MEV research.",
+      "Holds protocols whose founders are Cornell University alumni, weighted by market cap. Captures the cohesion of one of the most concentrated single-school crypto alumni networks.",
   },
-  DROP: {
+  IMMIG2: {
     label: "Founder Index",
     whyPoints: [
-      "No-degree founders return the highest multiples of any education bracket. Dropouts and autodidacts build with nothing to fall back on. That desperation is the alpha.",
-      "35 tokens equally weighted — the broadest founder basket in the catalog. Autodidacts build in every category because no curriculum directed them elsewhere.",
-      "The anti-credential thesis is empirically supported. The data shows no-degree founders outperform Ivy League founders, likely because the absence of a safety net selects for conviction.",
+      "A second immigrant-founder cohort with broader filter. Includes founders who moved decades ago alongside recent immigrants.",
+      "Wider definition of immigration, deeper basket, lower average concentration. Market-cap weighted within.",
+      "The first cohort is the urgent immigrants. The second is the settled ones. Both retain the founder selection effect of the original move.",
     ],
     objective:
-      "Equally weights 35 tokens from founders without traditional degrees, rebalanced monthly. Captures the highest-returning education bracket in crypto, where the absence of institutional safety nets selects for builders who ship under pressure.",
+      "A second immigrant-founder cohort with a broader temporal filter. Captures the longer arc of founders whose original migration shaped their selection into entrepreneurship.",
   },
-  DRMO: {
+  DEFEC: {
     label: "Founder Index",
     whyPoints: [
-      "Momentum among no-degree founders. The autodidacts who are winning right now, not just the ones who exist. Momentum separates active shipping from historical presence.",
-      "30-day momentum across 35 no-degree tokens, rebalanced biweekly. The broadest momentum universe in the founder catalog, applied to the highest-performing education bracket.",
-      "The no-degree bracket is large enough that momentum filtering adds genuine signal. 35 tokens provide enough selection pressure for trend-following to separate winners from survivors.",
+      "Founders who left FAANG carry the engineering rigor and the risk tolerance to leave. The combination is rarer than either trait alone.",
+      "Filter to founders with senior FAANG experience, market-cap weighted within. The basket skews toward infrastructure and developer tooling.",
+      "Leaving Google to work on crypto is irrational by every conventional metric. The irrationality is itself the selection signal.",
     ],
     objective:
-      "Applies 30-day momentum to 35 tokens from no-degree founders, rebalanced biweekly. Combines the structural alpha of the dropout bracket with systematic trend selection, identifying which autodidact-built projects the market currently rewards.",
-  },
-  NVIY: {
-    label: "Founder Index",
-    whyPoints: [
-      "The anti-prestige trade. No-degree founders outperform Ivy League teams by a significant margin to ATH. The gap is wide enough to be investable, not just anecdotal.",
-      "20 no-degree tokens equally weighted, rebalanced biweekly. The basket includes some of the most valuable assets in crypto, built by founders who never graduated.",
-      "Credentials are a liability when the market rewards speed and conviction over institutional approval. This index bets on that structural disadvantage of prestige.",
-    ],
-    objective:
-      "Equally weights 20 tokens from no-degree founders, rebalanced biweekly. The investable expression of the anti-prestige thesis, where dropout-founded projects systematically outperform Ivy League ones.",
-  },
-  DENG: {
-    label: "Founder Index",
-    whyPoints: [
-      "German-founded protocols share a characteristic precision in their technical architecture. Three tokens spanning payments, data indexing, and modular infrastructure.",
-      "Equal weighting across 3 tokens. The small basket size means each position represents a distinct infrastructure thesis from a culture that values engineering discipline.",
-      "Engineering culture matters in protocol design. German founding teams tend toward infrastructure that prioritizes correctness over speed to market — a trade-off that compounds over years.",
-    ],
-    objective:
-      "Equally weights 3 tokens from German-affiliated founders, rebalanced monthly. Captures the engineering culture of precision and rigor applied to blockchain infrastructure across payments, data indexing, and modular architecture.",
-  },
-  CNFI: {
-    label: "Founder Index",
-    whyPoints: [
-      "Chinese founders reach ATH faster than any other nationality. The efficiency of a market that does not wait, applied to protocol founding.",
-      "Equal weighting across 5 tokens spanning infrastructure for the most active crypto retail market in the world. Chinese founding teams build for speed and scale.",
-      "Speed to market recognition is a measurable advantage. Chinese founders achieve it consistently, suggesting a structural edge in market access and execution velocity.",
-    ],
-    objective:
-      "Equally weights 5 tokens from Chinese founders, rebalanced monthly. Captures the speed and efficiency of Chinese founding teams, who historically reach peak market recognition faster than any other nationality.",
-  },
-  BERK: {
-    label: "Founder Index",
-    whyPoints: [
-      "Berkeley's crypto researchers have influenced consensus algorithms, staking infrastructure, and payments protocols. The public university that rivals any Ivy for protocol-level impact.",
-      "Equal weighting across 3 Berkeley-affiliated tokens. The basket spans consensus, staking, and payments — all areas where Berkeley's research program has produced foundational work.",
-      "Public university research creates open intellectual commons that private institutions cannot. Berkeley's contributions to crypto are disproportionate to its visibility in founder narratives.",
-    ],
-    objective:
-      "Equally weights 3 tokens from UC Berkeley-affiliated founders, rebalanced monthly. Captures the public university's outsized influence on crypto infrastructure, from consensus research to staking and payments protocols.",
-  },
-  OZFI: {
-    label: "Founder Index",
-    whyPoints: [
-      "The Australian contribution to crypto is eclectic, controversial, and entertaining. Three tokens spanning Bitcoin forks, meme culture, and gaming infrastructure.",
-      "Equal weighting across 3 Australian-founded tokens. The diversity of the basket reflects Australia's position as a crypto market large enough to produce founders but small enough to force global ambition.",
-      "Australian founders build for export by necessity. A small domestic market means every project must compete globally from day one — a selection pressure that shapes the resulting protocols.",
-    ],
-    objective:
-      "Equally weights 3 tokens from Australian founders, rebalanced monthly. Captures the eclectic range of Australian contributions to crypto, from Bitcoin forks to meme culture to blockchain gaming.",
-  },
-  CANF: {
-    label: "Founder Index",
-    whyPoints: [
-      "Canadian founders span privacy-first browsing, L1 consensus innovation, and decentralized AI. Three tokens from a country that produces fewer crypto projects but invests deeply in technical ambition.",
-      "Equal weighting across 3 tokens. Canada's contribution to crypto is narrow but technically deep, concentrated in areas where research intensity matters more than market speed.",
-      "The Canadian corridor produces founders who prioritize technical correctness. In infrastructure categories, that priority translates to protocols that age well.",
-    ],
-    objective:
-      "Equally weights 3 tokens from Canadian founders, rebalanced monthly. Captures the Canadian corridor's technical ambition across privacy-first browsing, L1 consensus innovation, and decentralized AI.",
-  },
-  AGSP: {
-    label: "Founder Index",
-    whyPoints: [
-      "Teams with wide age spreads between co-founders produce the highest ATH multiplier of any demographic signal in the research. Intergenerational teams combine veteran wisdom with youthful urgency.",
-      "The FNG quality rotation overlay shifts between equal weight and quality-tilted allocation during fear. Sentiment awareness applied to the strongest demographic signal available.",
-      "Age diversity in founding teams is an unconventional selection criterion. The data supports it strongly enough to build an index around it — wisdom and urgency are complementary, not competing.",
-    ],
-    objective:
-      "Holds tokens from founding teams with 10-19 year age spreads, with FNG quality rotation overlay and monthly rebalancing. Captures the highest demographic signal in the research: intergenerational teams that combine veteran wisdom with youthful urgency.",
-  },
-  NDFQ: {
-    label: "Founder Index",
-    whyPoints: [
-      "No-degree founders with FNG quality rotation. When fear strikes, the strategy concentrates in the highest-quality dropout-founded projects — the blue chips of the anti-credential thesis.",
-      "The FNG rotation shifts allocation during fear because autodidacts keep building through downturns. They have no safety net to retreat to, which is both their vulnerability and their strength.",
-      "Quality rotation adds a defensive layer to the no-degree thesis. During greed, broad exposure captures the full bracket. During fear, concentration in proven survivors preserves capital.",
-    ],
-    objective:
-      "Holds 35 tokens from no-degree founders with Fear & Greed quality rotation, rebalanced biweekly. During fear, concentrates in the highest-quality dropout-founded projects; during greed, spreads across the full universe.",
-  },
-  SERI: {
-    label: "Founder Index",
-    whyPoints: [
-      "Founders who built and sold before. Repeat founders apply pattern recognition from prior exits to new protocol design. Experience compounds in crypto as everywhere else.",
-      "Equal weighting across 33 serial-founder tokens — the broadest professional-experience basket. Serial founders build in every category because their edge is process, not domain.",
-      "The repeat-founder premium exists because building a protocol is less about technical novelty and more about execution under uncertainty. Second-time founders have calibrated their judgment.",
-    ],
-    objective:
-      "Equally weights 33 tokens from repeat founders, rebalanced monthly. Captures the experience premium of serial entrepreneurs who have built and exited before, applying pattern recognition to blockchain projects.",
-  },
-  SEMO: {
-    label: "Founder Index",
-    whyPoints: [
-      "Momentum among serial founders. Ride the winners from people who have won before — the intersection of experience and current market validation.",
-      "30-day momentum across 33 serial-founder tokens, rebalanced biweekly. The momentum filter identifies which repeat builders are shipping products the market currently values.",
-      "Serial founders who are also trending up represent a double signal: proven execution ability meeting current market demand. The combination is selective and powerful.",
-    ],
-    objective:
-      "Applies 30-day momentum to 33 tokens from serial founders, rebalanced biweekly. Combines the quality signal of repeat entrepreneurship with systematic trend selection, overweighting the serial builders whose projects the market currently rewards.",
-  },
-  STLM: {
-    label: "Founder Index",
-    whyPoints: [
-      "Stealth founders weighted by market cap. The protocols that grew without a founder publicity tour, where the product spoke before the founder did.",
-      "Cap weighting means the biggest stealth-founded protocols dominate. The information asymmetry advantage of building in obscurity compounds once the market discovers the product.",
-      "Low founder visibility correlates with product-first development culture. The market eventually finds these protocols, and cap weighting captures the ones it has valued most.",
-    ],
-    objective:
-      "Weights 36 tokens from low-visibility founders by market cap, rebalanced monthly. Captures the information asymmetry advantage of protocols that grew without founder publicity, where market attention arrives after the product is built.",
-  },
-  STMO: {
-    label: "Founder Index",
-    whyPoints: [
-      "Momentum among stealth founders. When a protocol from an invisible founder starts moving, the information asymmetry is maximum — the market is discovering something others have not noticed.",
-      "30-day momentum across 36 stealth-founder tokens, rebalanced biweekly. Momentum applied to low-visibility projects captures the discovery phase before consensus forms.",
-      "Stealth plus momentum equals surprise. The combination identifies protocols at the moment they transition from obscurity to recognition — the highest-alpha window in any asset's lifecycle.",
-    ],
-    objective:
-      "Applies 30-day momentum to 36 tokens from low-visibility founders, rebalanced biweekly. Exploits the information asymmetry of stealth-built protocols by detecting when unknown projects start trending before the market pays full attention.",
-  },
-  HIVI: {
-    label: "Founder Index",
-    whyPoints: [
-      "Founders with sustained public presence. The names that move markets through podcast appearances, conference keynotes, and media visibility. Narrative amplification as an investable signal.",
-      "Equal weighting across 9 high-visibility tokens. The protocols whose founders have earned market attention through consistent public engagement over years, not viral moments.",
-      "Founder visibility sustains community engagement and market attention. In crypto, where narratives drive price cycles, sustained visibility is a structural advantage.",
-    ],
-    objective:
-      "Equally weights 9 tokens from founders with high public visibility, rebalanced monthly. Captures the narrative amplification effect of high-profile founders, where sustained public presence sustains community engagement.",
-  },
-  GOOG: {
-    label: "Founder Index",
-    whyPoints: [
-      "Ex-Googlers who left to build decentralized systems. Google trains you to think in systems at scale — that training transfers directly to blockchain infrastructure design.",
-      "Equal weighting across tokens from Google alumni. The basket concentrates in protocol-level infrastructure and AI because Google's engineering culture produces systems thinkers, not application builders.",
-      "Big-tech alumni bring operational discipline and scale mentality. The trade-off: they sometimes over-engineer for a market that rewards shipping speed over architectural elegance.",
-    ],
-    objective:
-      "Equally weights tokens from founders who worked at Google, rebalanced monthly. Captures the systems-thinking discipline that Google engineering culture instills, applied to decentralized infrastructure and AI protocols.",
+      "Holds protocols led by founders who left FAANG-tier technology companies, weighted by market cap. Captures the career-risk premium of operators who walked away from optimal compensation.",
   },
   META: {
     label: "Founder Index",
     whyPoints: [
-      "The Diem diaspora. Engineers who tried to build crypto inside Facebook and now build it outside. They carried their technology — particularly the Move language — out the door.",
-      "Equal weighting across 4 ex-Meta tokens. The Move language ecosystem dominates because the Diem team's technical contributions outlived the corporate project.",
-      "Corporate crypto projects fail. But the engineers who built them carry institutional knowledge about scale, compliance, and user experience that independent founders lack.",
+      "Ex-Meta founders bring scaled-product experience and the operational scars of one of crypto's most public failed bets — Diem.",
+      "Filter to founders with prior Meta tenure, market-cap weighted within. The basket includes both Diem alumni and broader Meta engineering exits.",
+      "Meta tried to enter crypto from above and failed publicly. The engineers who lived through the failure are now building from below.",
     ],
     objective:
-      "Equally weights 4 tokens from founders who worked at Meta, rebalanced monthly. Captures the Diem diaspora: engineers who built Libra/Diem inside Facebook and now apply that experience to independent blockchain projects.",
+      "Holds protocols led by founders with prior Meta tenure, weighted by market cap. Captures the cohort that built crypto adjacent at Meta and is now building it independently.",
   },
-  PHDI: {
+  EURO: {
+    label: "Geographic Index",
+    whyPoints: [
+      "European founders operate under MiCA — the most explicit crypto regulatory regime on the planet. Compliance is built into the protocol design.",
+      "Filter to European-headquartered crypto teams, market-cap weighted within. The basket overlaps strongly with Switzerland, Germany, and the United Kingdom.",
+      "Europe lost the consumer internet decisively. It is competing in crypto on better terms — clearer rules, cheaper engineering, deeper academic networks.",
+    ],
+    objective:
+      "Holds protocols led by European-based founders, weighted by market cap. Captures the cohort building under the most explicit regulatory regime in crypto.",
+  },
+  CHINA: {
+    label: "Geographic Index",
+    whyPoints: [
+      "Chinese founders ship from a domestic regulatory environment that bans most of what they build. The diaspora that results is unusually motivated.",
+      "Filter to founders of Chinese origin, market-cap weighted within. Many founding teams operate from Singapore, Dubai, or the United States.",
+      "The Chinese crypto diaspora overlaps with most of the largest exchanges, the largest mining operations, and a disproportionate share of the protocol layer.",
+    ],
+    objective:
+      "Holds protocols led by founders of Chinese origin, weighted by market cap. Captures the diaspora cohort that built crypto from outside the regulatory perimeter of their home market.",
+  },
+  DEX: {
+    label: "Sector Index",
+    whyPoints: [
+      "Spot decentralized exchanges are the most basic primitive in DeFi. The basket holds the venues where price discovery actually happens on-chain.",
+      "Market-cap weighted across the leading spot DEXes. Volume concentrates in a few names; the weighting reflects the concentration.",
+      "Centralized exchanges still hold most spot volume. The DEX share grows every cycle. The trend is older than crypto's memory of it.",
+    ],
+    objective:
+      "Tracks the leading spot decentralized exchanges by market cap. Captures the slow migration of spot volume from order books to AMMs.",
+  },
+  MOVE3: {
+    label: "Strategy Index",
+    whyPoints: [
+      "A third momentum cohort with a different ranking metric — risk-adjusted rather than absolute return.",
+      "Selection by Sharpe-like ratio rather than raw performance, smaller basket, slower rebalance. The construction punishes volatile winners.",
+      "Two of the four momentum baskets pick the loudest movers. This one picks the quiet ones. Both kinds of momentum exist; both kinds work, in different regimes.",
+    ],
+    objective:
+      "A risk-adjusted momentum cohort selecting tokens by trailing Sharpe-like measures. Captures persistent quality momentum rather than amplitude momentum.",
+  },
+  MOD: {
+    label: "Sector Index",
+    whyPoints: [
+      "Modular blockchains separate consensus, execution, and data availability into distinct markets. Each market has its own protocol economics.",
+      "Market-cap weighted across modular-stack tokens — DA layers, sequencers, settlement, execution environments. The basket spans the entire modular thesis.",
+      "Monolithic chains made one bet. Modular chains make several. The basket holds all of the modular bets.",
+    ],
+    objective:
+      "Tracks the leading modular blockchain protocols by market cap. Captures the unbundling of the chain stack into independent markets for consensus, execution, and data availability.",
+  },
+  MOVE4: {
+    label: "Strategy Index",
+    whyPoints: [
+      "A fourth momentum variant — relative strength against a benchmark rather than absolute return. Selection rewards outperformance over participation.",
+      "Top movers by trailing relative strength versus a market benchmark, rebalanced monthly. The basket exits names rising only because the market is rising.",
+      "Three of the four momentum baskets pick winners. This one picks outperformers. The distinction matters most in trending markets where everything rises.",
+    ],
+    objective:
+      "Selects tokens by trailing relative strength against a benchmark, rebalanced monthly. Captures the momentum that survives even when the market average is moving with it.",
+  },
+  EXP: {
     label: "Founder Index",
     whyPoints: [
-      "PhD teams build infrastructure that lasts decades. Doctorate holders gravitate toward consensus algorithms and cryptographic primitives — the deepest layers of the stack.",
-      "Equal weighting across 8 PhD-founded tokens. The basket is heavy on L1 infrastructure because PhDs solve the hardest problems, which happen to live at the protocol layer.",
-      "PhDs may not produce the fastest returns. But the protocols they build tend to survive because the underlying mathematics is correct, not merely functional.",
+      "Experience-weighted founder cohort — not filtered by years, weighted by them. The protocols led by the most experienced operators receive the largest weights.",
+      "Construction is monotonic in operating tenure. The largest weights go to founders with the deepest track records, regardless of underlying market cap.",
+      "Most baskets weight by what the market has decided. This one weights by what experience has decided. The two should agree more often than they do.",
     ],
     objective:
-      "Equally weights 8 tokens from PhD-holding founders, rebalanced monthly. Captures the durability premium of academically rigorous infrastructure, where protocols built by researchers with formal cryptographic training tend to survive longer.",
+      "Holds founder protocols weighted by founder operating experience rather than market capitalization. Captures the structural premium of cumulative tenure as a portfolio construction signal.",
   },
-  MBAM: {
+  VOL: {
+    label: "Strategy Index",
+    whyPoints: [
+      "Volume is the most honest signal in crypto. Tokens with the most volume have the most adversarial price discovery.",
+      "Market-cap weighted within a filter on trailing trading volume. The basket selects against illiquid tokens regardless of nominal market cap.",
+      "Liquidity is its own asset class. The tokens that have it are tradeable; the ones that do not are theoretical.",
+    ],
+    objective:
+      "Holds the leading tokens by trailing trading volume, weighted by market cap. Captures the cohort with the deepest liquidity and the most adversarial price formation.",
+  },
+  STABL: {
+    label: "Sector Index",
+    whyPoints: [
+      "Stablecoin issuers earn yield on their float. The float grows with adoption, and adoption grows with each new chain that needs dollars.",
+      "Market-cap weighted across stablecoin issuer governance tokens. The basket excludes the stablecoins themselves and holds the protocols behind them.",
+      "Stablecoin economics are bank economics with better margins. The basket buys the banks.",
+    ],
+    objective:
+      "Tracks the leading stablecoin issuer governance tokens by market cap. Captures the float economics of the protocols that issue dollar exposure rather than the dollar exposure itself.",
+  },
+  ORCL: {
+    label: "Sector Index",
+    whyPoints: [
+      "Oracles are the bridge between off-chain truth and on-chain logic. Every smart contract that depends on a price depends on an oracle.",
+      "Market-cap weighted across the leading oracle protocols. The basket overlaps with cross-chain messaging where the two roles converge.",
+      "Oracle protocols are infrastructure that becomes invisible when it works. The basket pays for the parts of the stack nobody talks about until they fail.",
+    ],
+    objective:
+      "Tracks the leading oracle protocols by market cap. Captures the infrastructure layer that connects on-chain logic to off-chain reality.",
+  },
+  ROT: {
+    label: "Strategy Index",
+    whyPoints: [
+      "Sector rotation moves capital between crypto sectors based on relative momentum. The strategy buys the sector that just outperformed and sells the one that just lagged.",
+      "Construction picks the top-performing sector by trailing return and concentrates exposure there. Monthly rebalance, single-sector concentration.",
+      "Most portfolios diversify against the rotation. This one rides it. The trade-off is concentration risk in exchange for timing-the-cycle exposure.",
+    ],
+    objective:
+      "Rotates monthly into the top-performing crypto sector by trailing return. Captures sector momentum at the cost of explicit concentration in whichever theme just led.",
+  },
+  MIX: {
     label: "Founder Index",
     whyPoints: [
-      "MBA founders weighted by market cap. The protocols built by founders who read balance sheets and think in unit economics. Business acumen as a founder selection signal.",
-      "Cap weighting concentrates in the largest MBA-founded smart contract platforms. MBA founders tend to build for adoption and revenue, not just technical elegance.",
-      "The MBA premium is real but specific: it shows up in protocols that require business model innovation, not just cryptographic novelty. Cap weighting reveals where that premium concentrates.",
+      "Mixed-generation founding teams pair veteran operators with younger engineers. The pairing produces both shipping speed and judgment.",
+      "Filter to teams with explicit cross-generational composition, market-cap weighted within. The basket selects against monoculture in either direction.",
+      "Veteran-only teams ship slowly. Young-only teams ship recklessly. Mixed teams ship at a pace that survives the next cycle.",
     ],
     objective:
-      "Weights 11 tokens from MBA-holding founders by market cap, rebalanced monthly. Captures the business acumen premium, concentrating in protocols built by founders who combine technical understanding with financial and operational training.",
+      "Holds protocols built by mixed-generation founding teams, weighted by market cap. Captures the structural advantage of cross-generational composition over either age extreme.",
   },
-  MILF: {
+  ASIA: {
+    label: "Geographic Index",
+    whyPoints: [
+      "Asian crypto markets trade earlier than the Western world wakes up. The protocols built for them carry the rhythm of a different attention cycle.",
+      "Filter to founders of Asian origin or Asia-headquartered teams, market-cap weighted within. The basket overlaps with Korean, Japanese, and Southeast Asian ecosystems.",
+      "Most crypto narratives are Western by default. The Asian markets price the same assets differently — and frequently first.",
+    ],
+    objective:
+      "Holds protocols led by founders of Asian origin or based in Asia, weighted by market cap. Captures the time-zone and narrative arbitrage of markets that trade ahead of the Western news cycle.",
+  },
+  IVY2: {
+    label: "Education Index",
+    whyPoints: [
+      "A second Ivy-League cohort with a wider filter — includes Ivy-adjacent elite schools alongside the strict Ivy eight.",
+      "Filter widened to schools commonly grouped with Ivies in selectivity and capital access. Market-cap weighted within.",
+      "The first basket is strict. The second admits the schools that operate like Ivies without the brand. Capital allocators do not always distinguish.",
+    ],
+    objective:
+      "A broader Ivy-tier alumni cohort that includes Ivy-adjacent elite institutions. Captures the capital-access selection effect at a broader credentialing radius.",
+  },
+  YOUNG: {
     label: "Founder Index",
     whyPoints: [
-      "Founders with military or intelligence backgrounds bring discipline, operational security, and comfort with controlled chaos. Skills that translate directly to protocol design under adversarial conditions.",
-      "Equal weighting across 14 tokens. The broadest professional-background basket, spanning L1s, DeFi, AI, and meme culture — military founders build across the full spectrum.",
-      "Operational discipline is undervalued in a market that celebrates improvisation. Founders who planned operations under uncertainty apply that same rigor to protocol architecture.",
+      "Young founders — late-twenties and earlier — operate without the mortgage, the family, or the cumulative loss aversion of their older peers.",
+      "Filter to founders below a strict age threshold, market-cap weighted within. The basket skews toward consumer-facing crypto and fast-moving infrastructure.",
+      "The young cohort is the highest-variance. The right tail is where the asymmetric returns live; the left tail is where most of the cohort lives.",
     ],
     objective:
-      "Equally weights 14 tokens from founders with military or intelligence backgrounds, rebalanced monthly. Captures the operational discipline and security mindset that military training instills, applied across the full spectrum of crypto infrastructure.",
+      "Holds protocols led by founders below a strict age threshold, weighted by market cap. Captures the highest-variance founder cohort and its asymmetric distribution of outcomes.",
   },
-  MNAT: {
+  RWA2: {
+    label: "Sector Index",
+    whyPoints: [
+      "A second RWA cohort with broader filter — includes RWA-adjacent infrastructure like compliant settlement and tokenized credit.",
+      "Wider definition, deeper basket, longer rebalance window. Market-cap weighted within. The basket reaches further into early-stage RWA infrastructure.",
+      "The first basket holds the RWA leaders. The second holds the cohort competing to join them.",
+    ],
+    objective:
+      "A broader RWA cohort that includes adjacent compliant infrastructure and emerging tokenization protocols. Captures the wider perimeter of the tokenization thesis.",
+  },
+  ALL: {
+    label: "Strategy Index",
+    whyPoints: [
+      "All markets, equal-weighted. The construction makes no claim about which sector or theme deserves more capital.",
+      "Equal-weighted across the entire investable universe, monthly rebalance. The smallest names contribute proportionally to the largest.",
+      "Cap weighting concentrates in winners. Equal weighting concentrates in everything. The two construction methods produce different conclusions about the same market.",
+    ],
+    objective:
+      "Holds the entire investable token universe equal-weighted, rebalanced monthly. Captures the average return of the asset class on egalitarian construction.",
+  },
+  BRDG2: {
+    label: "Sector Index",
+    whyPoints: [
+      "A second cross-chain cohort with a wider filter — includes messaging-only protocols alongside asset bridges.",
+      "Broader definition of cross-chain communication, deeper basket. Market-cap weighted within. The basket spans both bridge tokens and messaging-layer governance.",
+      "The first basket holds the asset-movement layer. The second adds the message-passing layer underneath it.",
+    ],
+    objective:
+      "A second cross-chain communication cohort that includes both asset bridges and pure messaging protocols. Captures the entire interoperability stack rather than only its asset-movement layer.",
+  },
+  LEND: {
+    label: "Sector Index",
+    whyPoints: [
+      "Lending protocols are the commercial banks of crypto. They earn the spread between deposit yield and borrow rate, scaled by leverage demand.",
+      "Market-cap weighted across the leading lending protocols. The basket includes both pooled lending markets and isolated CDP issuers.",
+      "Lending demand is procyclical. The protocols compound during expansion and survive during contraction. The basket captures both halves of the cycle.",
+    ],
+    objective:
+      "Tracks the leading lending protocols by market cap. Captures the spread economics of on-chain credit across both pooled and isolated lending models.",
+  },
+  CAN: {
+    label: "Geographic Index",
+    whyPoints: [
+      "Canadian-based crypto founders operate from a regulatory regime that took longer to clarify than Europe and longer than crypto patience can usually sustain. The teams that survived the wait are durable.",
+      "Filter to Canadian-based founders, market-cap weighted within. The basket overlaps with the Toronto and Vancouver tech ecosystems.",
+      "Canada is small enough that founders know each other. The tight network compounds fundraising and recruiting in ways larger ecosystems cannot replicate.",
+    ],
+    objective:
+      "Holds protocols led by Canadian-based founders, weighted by market cap. Captures the cohort that built through prolonged regulatory ambiguity in a small but tightly networked ecosystem.",
+  },
+  RWADF: {
+    label: "Risk Index",
+    whyPoints: [
+      "Defensive RWA construction applies minimum-variance optimization to the tokenized real-world assets cohort. The optimizer tilts toward whichever RWAs are least correlated with each other.",
+      "The min-variance approach concentrates in tokenized commodities, treasuries, and the most stable credit products. The construction is defensive by definition.",
+      "Most crypto exposure carries crypto-grade volatility. This is the part of crypto that does not.",
+    ],
+    objective:
+      "Applies minimum-variance optimization to the RWA cohort, rebalanced monthly. Captures the lowest-volatility expression of tokenized real-world asset exposure.",
+  },
+  YIELD3: {
+    label: "Yield Index",
+    whyPoints: [
+      "A third yield cohort focused on the most aggressive yield mechanisms — leveraged staking, looped lending, and structured strategies.",
+      "Filter widened to include synthetic and leveraged yield protocols. Market-cap weighted within. Higher yields, higher risk of mechanism failure.",
+      "The first two yield baskets aim for sustainability. The third aims for yield. The two goals frequently disagree.",
+    ],
+    objective:
+      "A third yield cohort that includes leveraged and structured yield mechanisms. Captures the highest-yield, highest-risk segment of on-chain return generation.",
+  },
+  ZKNW: {
+    label: "Sector Index",
+    whyPoints: [
+      "Zero-knowledge proofs collapse computation costs by orders of magnitude. The protocols that ship them are pricing infrastructure that has not yet been needed at scale.",
+      "Market-cap weighted across zero-knowledge proof, ZK-rollup, and ZK-application tokens. The basket spans both proving-system tokens and the rollups that consume them.",
+      "ZK is the rare technology where the math is older than the market. The protocols catch up to the math one cycle at a time.",
+    ],
+    objective:
+      "Tracks the leading zero-knowledge proof and rollup protocols by market cap. Captures the maturation of cryptographic infrastructure that has been theoretically possible for decades.",
+  },
+  DEPIN: {
+    label: "Sector Index",
+    whyPoints: [
+      "Decentralized physical infrastructure tokens incentivize hardware deployment — wireless coverage, storage, compute, mapping. The token funds the build that capital markets refuse to fund.",
+      "Market-cap weighted across DePIN protocols. The basket spans wireless, storage, compute, and energy projects.",
+      "Most DePIN deployments will not produce sustainable demand. The ones that do will be the only physical infrastructure in their category that nobody had to convince a board to build.",
+    ],
+    objective:
+      "Tracks the leading decentralized physical infrastructure protocols by market cap. Captures the cohort funding hardware deployment through token-incentivized supply.",
+  },
+  LST: {
+    label: "Sector Index",
+    whyPoints: [
+      "Liquid staking turns staked capital into a tradeable asset. Every ETH and SOL staked through these protocols compounds for the holder while remaining liquid.",
+      "Market-cap weighted across liquid staking governance tokens. The protocols compete for depositor share; the basket holds whoever is winning.",
+      "Liquid staking is the base layer of DeFi yield. The base layer compounds; the basket compounds with it.",
+    ],
+    objective:
+      "Tracks the leading liquid staking governance tokens by market cap. Captures the base layer of on-chain yield as it competes for depositor share across staking primitives.",
+  },
+  GOV: {
+    label: "Sector Index",
+    whyPoints: [
+      "Governance tokens accrue value through whatever the protocol decides to direct toward them — fees, buybacks, emissions cuts. The decision-making power is the asset.",
+      "Market-cap weighted across DeFi governance tokens. The basket holds the cohort with active treasury or fee-direction power.",
+      "Most governance is theatre. The minority that is not produces real cash flows. The basket holds the minority weighted by market cap.",
+    ],
+    objective:
+      "Tracks the leading DeFi governance tokens by market cap. Captures the cohort whose token holders direct real economic value through protocol decision-making.",
+  },
+  VET3: {
     label: "Founder Index",
     whyPoints: [
-      "Founding teams with 2+ nationalities consistently outperform homogeneous ones. Diversity of geographic perspective creates compound advantages in regulatory arbitrage and market access.",
-      "Equal weighting across 20 multinational tokens — the most geographically diverse founder basket in the catalog. Different regulatory experiences and market access stack multiplicatively.",
-      "Multinational teams are not a diversity thesis. They are an information advantage thesis. Each nationality on the team opens a market, a regulatory path, and a talent pool.",
+      "A third veteran-founder cohort with the most demanding experience filter — twenty-plus years operating tenure across multiple companies.",
+      "Strictest filter, smallest basket. The selection skews heavily toward repeat founders with prior public company exits.",
+      "Twenty years of operating experience produces one of two outcomes: deep judgment or deep cynicism. The basket bets on the former.",
     ],
     objective:
-      "Equally weights 20 tokens from multinational founding teams, rebalanced monthly. Captures the ATH multiplier advantage of teams with diverse geographic backgrounds, where different regulatory experiences and market access create compound advantages.",
+      "A third veteran-founder cohort with the strictest experience threshold. Captures the smallest, most experienced subset of the founder universe.",
   },
-  USIN: {
-    label: "Founder Index",
+  HVRD: {
+    label: "Education Index",
     whyPoints: [
-      "American founders paired with international co-founders. US market access combined with global technical talent — the partnership thesis where distribution meets engineering.",
-      "Equal weighting across 12 tokens. The basket captures the specific synergy of American regulatory familiarity and fundraising access combined with international technical depth.",
-      "Neither purely American nor purely international teams produce this combination. The partnership structure creates advantages that homogeneous teams on either side cannot replicate.",
+      "Harvard alumni in crypto carry the most concentrated capital network of any single institution. The first call is always answered.",
+      "Filter to Harvard-affiliated founders, market-cap weighted within. Includes both undergraduate and graduate alumni.",
+      "Harvard's crypto presence is small relative to its alumni base. Concentration is what makes the network valuable.",
     ],
     objective:
-      "Equally weights 12 tokens from founding teams combining American and international founders, rebalanced monthly. Captures the partnership premium where US market access and regulatory familiarity combine with global technical depth.",
+      "Holds protocols whose founders are Harvard alumni, weighted by market cap. Captures the most concentrated single-school capital network in the founder cohort.",
   },
-  IMMG: {
-    label: "Founder Index",
+  BRG: {
+    label: "Sector Index",
     whyPoints: [
-      "Founders building outside their home country. Immigration selects for risk tolerance, and risk tolerance selects for crypto founders. The most personal founder signal in the catalog.",
-      "Equal weighting across 14 immigrant-founded tokens. Crossing borders before crossing industries selects for the willingness to bet on the unknown — a trait crypto demands.",
-      "The immigrant founder premium is not about geography. It is about self-selection. People who uproot their lives to build in a foreign country have already demonstrated the conviction that crypto requires.",
+      "Pure bridge tokens — protocols whose only function is moving assets between chains. The category is narrower than cross-chain communication broadly.",
+      "Market-cap weighted across the leading asset-movement bridges. The basket excludes messaging protocols and pure interoperability layers.",
+      "Bridges have been hacked for more capital than any other category in crypto. The protocols still standing are the ones whose security models survived the audit by adversary.",
     ],
     objective:
-      "Equally weights 14 tokens from founders who built outside their home country, rebalanced monthly. Captures the risk tolerance premium of immigrant founders, where crossing borders before crossing industries selects for willingness to bet on the unknown.",
+      "Tracks the leading pure bridge protocols by market cap. Captures the asset-movement layer of the cross-chain stack at its narrowest definition.",
   },
-  IMMM: {
-    label: "Founder Index",
+  LEND2: {
+    label: "Sector Index",
     whyPoints: [
-      "Immigrant founders by market cap. The immigrant premium concentrates in a few giants — cap weighting reveals the extreme power law within this cohort.",
-      "The largest immigrant-founded protocol dominates the allocation. The remaining tokens provide tail exposure but minimal weight, revealing how concentrated the immigrant success story is.",
-      "For investors who believe in the immigrant founder thesis but want market-proportional expression, cap weighting lets the market's valuation hierarchy determine allocation.",
+      "A second lending cohort with a wider filter — includes isolated lending markets, undercollateralized lending, and emerging credit primitives.",
+      "Broader basket, longer rebalance window, market-cap weighted within. The basket reaches into experimental credit mechanisms.",
+      "The first basket holds the proven lending protocols. The second holds the experiments. Some will become the next first basket.",
     ],
     objective:
-      "Weights 14 tokens from immigrant founders by market cap, rebalanced monthly. Reveals that the immigrant founder premium concentrates in a few outsized winners rather than distributing evenly across the cohort.",
+      "A second lending cohort that includes isolated and experimental credit protocols. Captures the wider perimeter of on-chain credit beyond the proven pooled markets.",
+  },
+  META2: {
+    label: "Sector Index",
+    whyPoints: [
+      "Metaverse tokens fund virtual worlds, in-world economies, and the infrastructure between them. The category survived its own hype cycle and emerged smaller and more focused.",
+      "Market-cap weighted across virtual world and metaverse infrastructure tokens. The basket holds the survivors of a category that consumed billions in capital.",
+      "Most metaverses will remain empty. The ones with persistent users will become the only category-survivors anyone remembers.",
+    ],
+    objective:
+      "Tracks the leading metaverse and virtual world tokens by market cap. Captures the survivors of a category whose hype cycle ended and whose infrastructure remains.",
+  },
+  PRIV: {
+    label: "Sector Index",
+    whyPoints: [
+      "Financial privacy is permanent demand. The protocols building privacy infrastructure operate in regulatory uncertainty, which is itself a moat.",
+      "Market-cap weighted across privacy protocols — ZK proofs, MPC, mixing, confidential computing. The basket diversifies across cryptographic approaches.",
+      "Privacy infrastructure is fragmented because no single approach has won. Holding the basket avoids the bet on which paradigm becomes dominant.",
+    ],
+    objective:
+      "Tracks the leading privacy-preserving blockchain protocols by market cap. Captures structural demand for financial privacy diversified across competing cryptographic approaches.",
+  },
+  FANS: {
+    label: "Sector Index",
+    whyPoints: [
+      "Fan tokens monetize sports loyalty. Each club issues a token; each token's volume tracks matchdays, transfers, and tournaments.",
+      "Market-cap weighted across the leading sports fan tokens. The basket spans European football, Formula 1, and other top-tier sports.",
+      "Sports engagement is seasonal and largely uncorrelated with crypto cycles. The basket is a genuine diversifier from the rest of the asset class.",
+    ],
+    objective:
+      "Tracks the leading sports fan tokens by market cap. Captures a sector whose engagement cycle runs on sports calendars rather than crypto cycles.",
+  },
+  BERK: {
+    label: "Education Index",
+    whyPoints: [
+      "Berkeley produced the largest concentration of cryptography researchers in academia. The crypto founders from Berkeley carry both the technical depth and the bay-area network.",
+      "Filter to Berkeley alumni, market-cap weighted within. The basket includes both undergraduate and graduate program alumni.",
+      "Berkeley's research culture rewards public collaboration. The crypto founders that emerge from it tend to ship in public from day one.",
+    ],
+    objective:
+      "Holds protocols whose founders are Berkeley alumni, weighted by market cap. Captures the cohort emerging from one of the densest cryptography research environments in academia.",
   },
   TRFI: {
     label: "Founder Index",
     whyPoints: [
-      "Alumni of major banks who defected to crypto. They know what they are replacing — the domain expertise of insiders who understood the financial system's flaws from within.",
-      "Equal weighting across 3 ex-TradFi tokens. The smallest professional-background basket, concentrated in infrastructure that bridges traditional and decentralized finance.",
-      "TradFi defectors build differently than crypto natives. They optimize for compliance, institutional adoption, and interoperability with existing financial infrastructure.",
+      "Ex-Wall Street founders bring institutional sales discipline and a familiarity with the regulatory environment that pure-crypto teams lack.",
+      "Filter to founders with prior tenure at investment banks, hedge funds, or quantitative trading firms. Market-cap weighted within.",
+      "Wall Street defectors built crypto's institutional infrastructure. The basket holds the cohort that brought TradFi rigor across the bridge.",
     ],
     objective:
-      "Equally weights 3 tokens from founders who left traditional finance, rebalanced monthly. Captures the domain expertise of bankers and traders who understood the financial system's flaws from inside and now build its replacement.",
+      "Holds protocols led by founders with prior Wall Street tenure, weighted by market cap. Captures the institutional-discipline selection effect of operators trained inside traditional finance.",
   },
-  SRFQ: {
+  M2E: {
+    label: "Sector Index",
+    whyPoints: [
+      "Move-to-earn tokens incentivize physical activity through token rewards. The category survived its initial hype collapse with a small but persistent user base.",
+      "Market-cap weighted across move-to-earn protocols. The basket holds the survivors of a category that consumed billions and produced one breakout product.",
+      "The category teaches a lesson about token incentives applied to physical behavior. The lesson is mostly cautionary; the survivors learned it first.",
+    ],
+    objective:
+      "Tracks the leading move-to-earn protocols by market cap. Captures the cohort that survived a hype-and-collapse cycle and continues to operate with persistent users.",
+  },
+  GAME: {
+    label: "Sector Index",
+    whyPoints: [
+      "Gaming tokens fund in-game economies, item ownership, and player-to-player markets. The category requires both an economy and a game — most projects ship only one.",
+      "Market-cap weighted across crypto gaming infrastructure and major titles. The basket spans both engines and games built on them.",
+      "Crypto gaming has predicted its own breakthrough every cycle. The breakthrough has not yet arrived. The basket holds the cohort still building toward it.",
+    ],
+    objective:
+      "Tracks the leading crypto gaming protocols and infrastructure tokens by market cap. Captures the cohort building toward a breakthrough the category has predicted for itself five times.",
+  },
+  PHD: {
     label: "Founder Index",
     whyPoints: [
-      "Serial entrepreneurs with FNG quality rotation. The strongest combined founder-sentiment strategy. During fear, the quality rotation concentrates in proven serial-founder projects.",
-      "The FNG overlay trusts serial founders' survival instinct. Repeat builders who have navigated downturns before conserve capital instinctively — the rotation mirrors that instinct.",
-      "Quality rotation adds a defensive dimension to the serial-founder thesis. Broad exposure during greed captures upside; concentration during fear preserves it.",
+      "PhD founders bring depth in cryptography, distributed systems, or financial economics. The protocols they ship tend to have research papers underneath them.",
+      "Filter to founders with completed PhDs in relevant technical fields. Market-cap weighted within. The basket skews toward zero-knowledge and consensus research.",
+      "Most PhDs do not become founders. The ones that do carry both the academic credentialing and the willingness to leave the academy. Both are selection signals.",
     ],
     objective:
-      "Holds 33 tokens from serial founders with Fear & Greed quality rotation, rebalanced biweekly. During fear, concentrates in the highest-quality serial-founder projects; during greed, spreads across the full universe of repeat-builder tokens.",
+      "Holds protocols led by founders with PhDs in technical fields, weighted by market cap. Captures the cohort that brings academic depth into commercial protocol design.",
   },
-  FDMO: {
+  MIL: {
     label: "Founder Index",
     whyPoints: [
-      "Ex-FAANG founders with momentum. These founders left the most comfortable jobs in tech. When their protocols gain momentum, the market validates the leap they took.",
-      "30-day momentum across 11 ex-FAANG tokens, rebalanced biweekly. The career-risk premium: founders who sacrificed FAANG compensation to build in crypto carry a different intensity.",
-      "Big-tech defectors bring institutional engineering discipline. Momentum confirms when that discipline produces a product the market recognizes — the validation phase of the career bet.",
+      "Ex-military founders carry operational discipline and a tolerance for hierarchy that pure-tech teams often lack. The protocols they build tend to ship under duress.",
+      "Filter to founders with prior military service, market-cap weighted within. The basket overlaps with security-focused and infrastructure protocols.",
+      "Military service teaches how to operate when the plan fails. The skill is unfashionable in tech and indispensable in crypto.",
     ],
     objective:
-      "Applies 30-day momentum to 11 tokens from ex-FAANG founders, rebalanced biweekly. Captures the career-risk premium of founders who left secure big-tech positions, overweighting the ones whose protocols the market currently validates.",
+      "Holds protocols led by founders with prior military service, weighted by market cap. Captures the operational-discipline selection effect of teams trained to function under failure.",
   },
-  MNMO: {
+  GOOG: {
     label: "Founder Index",
     whyPoints: [
-      "Multinational teams riding momentum. Global teams ship globally, and when they move, the move is cross-market. Momentum captures the moment multinational coordination produces results.",
-      "30-day momentum across 20 multinational tokens, rebalanced biweekly. The geographic diversity of the founding teams creates multiple market catalysts that can trigger momentum independently.",
-      "Multinational teams access multiple markets simultaneously. When momentum confirms, the price action reflects adoption across geographies rather than a single market's enthusiasm.",
+      "Ex-Google founders bring distributed systems experience at scale that almost no other employer can match. The infrastructure protocols they ship reflect the scaling experience.",
+      "Filter to founders with senior Google tenure, market-cap weighted within. The basket skews heavily toward L1, infrastructure, and developer tooling protocols.",
+      "Google trained more distributed-systems engineers than any other company. Crypto absorbed a disproportionate share of the best ones.",
     ],
     objective:
-      "Applies 30-day momentum to 20 tokens from multinational founding teams, rebalanced biweekly. Combines the ATH multiplier advantage of diverse teams with systematic trend selection, overweighting multinational projects gaining market traction.",
+      "Holds protocols led by founders with prior Google tenure, weighted by market cap. Captures the distributed-systems training pipeline that produced a disproportionate share of crypto's infrastructure.",
+  },
+  NFT: {
+    label: "Sector Index",
+    whyPoints: [
+      "NFT infrastructure tokens fund the marketplaces, royalty enforcement, and metadata standards that underlie the category. The infrastructure outlasts any individual collection.",
+      "Market-cap weighted across NFT marketplace and infrastructure protocols. The basket excludes individual NFT collections and holds the protocols beneath them.",
+      "Most NFT collections lose value. The infrastructure that hosted them keeps earning fees regardless. The basket buys the venue, not the merchandise.",
+    ],
+    objective:
+      "Tracks the leading NFT infrastructure protocols by market cap. Captures the venue economics of NFT trading independent of whether any specific collection retains value.",
+  },
+  GER: {
+    label: "Geographic Index",
+    whyPoints: [
+      "German founders operate from one of the most explicit crypto regulatory regimes in the world — BaFin oversight, MiCA compliance, and a deep institutional banking sector willing to engage.",
+      "Filter to German-headquartered crypto teams, market-cap weighted within. The basket overlaps with Berlin, Munich, and Frankfurt ecosystems.",
+      "Germany's crypto stance is severe and predictable. Both qualities favor protocols built for institutional use rather than retail volume.",
+    ],
+    objective:
+      "Holds protocols led by German-based founders, weighted by market cap. Captures the cohort building under one of the strictest and most institutionally-aligned regulatory regimes in crypto.",
+  },
+  STABL2: {
+    label: "Sector Index",
+    whyPoints: [
+      "A second stablecoin issuer cohort that includes algorithmic, partially-collateralized, and emerging stablecoin issuers alongside the proven cohort.",
+      "Wider filter, deeper basket. Market-cap weighted within. The construction includes mechanisms that the first basket excludes on the basis of model risk.",
+      "Algorithmic stablecoins die spectacularly when they fail. The ones that have not yet failed are either correct or about to be wrong.",
+    ],
+    objective:
+      "A second stablecoin issuer cohort that includes algorithmic and emerging mechanisms alongside fully-collateralized issuers. Captures the broader perimeter of the issuance category at higher mechanism risk.",
+  },
+  BRG2: {
+    label: "Sector Index",
+    whyPoints: [
+      "A second pure-bridge cohort with a wider filter — includes intent-based bridges and newer security models alongside the established cohort.",
+      "Broader definition, deeper basket, market-cap weighted within. The construction reaches into bridges with novel security architectures.",
+      "Bridge security models are still being invented. The next basket of survivors will look different from this one.",
+    ],
+    objective:
+      "A second cohort of pure bridge protocols with broader inclusion of intent-based and novel security architectures. Captures the next-generation bridge cohort competing with the established names.",
+  },
+  MIT: {
+    label: "Education Index",
+    whyPoints: [
+      "MIT alumni in crypto cluster around the Digital Currency Initiative and the Computer Science department. The network is small, technical, and unusually well-capitalized.",
+      "Filter to MIT-affiliated founders, market-cap weighted within. The basket skews heavily toward infrastructure and cryptography-heavy protocols.",
+      "MIT's crypto presence is older than most of crypto. The continuity is itself an advantage that newer institutional networks cannot replicate.",
+    ],
+    objective:
+      "Holds protocols whose founders are MIT alumni, weighted by market cap. Captures one of the longest-running and most technically-concentrated single-institution alumni networks in crypto.",
+  },
+  GAME2: {
+    label: "Sector Index",
+    whyPoints: [
+      "A second crypto gaming cohort with a broader filter — includes mobile-first games, casual gaming, and gambling-adjacent protocols alongside the headline AAA cohort.",
+      "Wider definition, deeper basket. Market-cap weighted within. The basket selects against the bias toward AAA gaming that dominates the headline cohort.",
+      "Crypto gaming's eventual breakthrough may come from mobile or casual rather than AAA. The second basket holds the cohort that bet differently.",
+    ],
+    objective:
+      "A second crypto gaming cohort that includes mobile, casual, and gambling-adjacent protocols. Captures the segments of gaming that diverge from the AAA-focused headline cohort.",
+  },
+  GAME3: {
+    label: "Sector Index",
+    whyPoints: [
+      "Top gaming — the smallest gaming basket, concentrated on the protocols with proven user bases and recurring engagement metrics.",
+      "Filter to gaming protocols with verifiable persistent player counts, market-cap weighted within. The basket excludes pre-launch and dormant projects.",
+      "Most crypto games have no players. The ones that do are an unusually durable cohort. The basket holds the cohort.",
+    ],
+    objective:
+      "Holds the crypto gaming protocols with proven persistent player bases, weighted by market cap. Captures the durable subset of a category whose breakthrough has been predicted longer than it has been delivered.",
+  },
+  STAN: {
+    label: "Education Index",
+    whyPoints: [
+      "Stanford alumni in crypto sit at the intersection of computer science depth and the densest venture capital network in the world. The combination compounds in fundraising.",
+      "Filter to Stanford-affiliated founders, market-cap weighted within. The basket spans both undergraduate and graduate alumni across CS, MBA, and engineering.",
+      "Stanford's network compresses the time between idea and first round to its theoretical minimum. The compression is alpha when capital is scarce and time is not.",
+    ],
+    objective:
+      "Holds protocols whose founders are Stanford alumni, weighted by market cap. Captures the alumni cohort with the deepest combined access to both technical depth and venture capital.",
+  },
+  GBR: {
+    label: "Geographic Index",
+    whyPoints: [
+      "British founders operate from a regulatory regime that has been deliberately permissive toward crypto since 2022 — the Financial Services and Markets Act framed the UK as an explicit competitor to MiCA.",
+      "Filter to UK-based crypto teams, market-cap weighted within. The basket overlaps with London-based DeFi and institutional protocols.",
+      "Post-Brexit Britain chose crypto-friendliness as a deliberate competitive strategy. The protocols built under that policy reflect the choice.",
+    ],
+    objective:
+      "Holds protocols led by British-based founders, weighted by market cap. Captures the cohort built under the UK's deliberately competitive post-Brexit crypto regulatory framework.",
+  },
+  AUS: {
+    label: "Geographic Index",
+    whyPoints: [
+      "Australian founders operate from a small but technically deep ecosystem with regulatory clarity earlier than most of the developed world. The protocols ship from a base that lacks both density and dilution.",
+      "Filter to Australian-based crypto teams, market-cap weighted within. The basket overlaps with Sydney and Melbourne ecosystems.",
+      "Australia's crypto founders are isolated from both US and European regulatory cycles. The isolation produces protocols that are quieter and more deliberate than louder ecosystems.",
+    ],
+    objective:
+      "Holds protocols led by Australian-based founders, weighted by market cap. Captures the cohort built from a small, technically dense, and regulatorily-clear ecosystem.",
   },
 }
