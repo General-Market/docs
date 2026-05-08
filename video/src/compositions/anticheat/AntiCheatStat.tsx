@@ -16,12 +16,11 @@ import { IdleZoom, RevealChars } from "./vibe";
 // number cuts to its inverse on a beat partway through.
 // Bars = 78f (2.6s) — its hard cut to Rigged lands on beat 11.
 const STAT_FRAMES = 145;
-// Bars 104f (3.47s) — extended from 78f to give the touched-line beat
-// time to play its letter-wave exit and the 3D category cards. Hard cut
-// to Rigged lands on beat 12 (332) instead of beat 11 (306). Rigged's
-// internal article cadence (ARTICLE_FRAMES) drifts ~1f against beats —
-// negligible.
-const BARS_FRAMES = 104;
+// Bars 129f (4.3s) — extended from 78f. The bar chart is gone; the room
+// goes to a screen-filling Carousel3D ring of category cards. Hard cut
+// to Rigged lands on beat 13 (357) instead of beat 11 (306). Rigged's
+// article cadence still hits beats 13–18 within ±1f — negligible drift.
+const BARS_FRAMES = 129;
 // Hard-cut flip from 0.01%/take/70% to 99.9%/get/30% on scene-local
 // beat 2 (frame 51 inside Stat = absolute beat 19).
 const STAT_FLIP_AT = 51;
@@ -231,187 +230,105 @@ const Caption: React.FC = () => (
   </div>
 );
 
-// ─── Extraction bars ──────────────────────────────────────────────────────────
+// ─── Extraction bars (retired) — data inherited by the carousel cards ────────
+//
+// The horizontal bar chart used to live here. We dropped it; the same
+// percentages now live on the carousel cards (see CATEGORIES below).
+// REVEAL_AT only governs when the carousel + headline take the stage:
+// give the caption a beat to land, then begin.
+const REVEAL_AT = toFrames(0.4);
 
-type Bar = {
-  label: string;
-  value: number;
-  displayValue: string;
-};
-
-const BARS: Bar[] = [
-  { label: "perps", value: 80, displayValue: "80%" },
-  { label: "options", value: 90, displayValue: "90%" },
-  { label: "predictions", value: 71, displayValue: "71%" },
-  { label: "launchpads", value: 87, displayValue: "87%" },
-];
-
-const MAX_VALUE = Math.max(...BARS.map((b) => b.value));
-const BAR_STAGGER = toFrames(0.26);
-const BAR_GROW = toFrames(0.5);
-const REVEAL_AT =
-  BAR_STAGGER * (BARS.length - 1) + BAR_GROW + toFrames(0.3);
-
-// Headline loses its trailing "..." — the categories below take that role.
+// Headline loses its trailing "..." — the cards below take that role.
 const TOUCHED_WORDS = ["every", "market", "you", "touched"];
 const TOUCHED_WORD_STAGGER = toFrames(0.07);
 const TOUCHED_WORD_FADE = toFrames(0.28);
-const TOUCHED_ENTRY_FULL =
-  TOUCHED_WORD_STAGGER * (TOUCHED_WORDS.length - 1) + TOUCHED_WORD_FADE;
 
-// 3D rotating ring of category cards — Carousel3D scroll phase, ported.
-// Six categories arranged in a circle, the whole ring rotates Y while
-// each card carries its own rotateZ tilt and brightness sweep.
-type Category = { label: string; gradient: string };
+// 3D rotating ring of category cards — Carousel3D ported, Apple-light.
+// Each card carries the bar-chart datum it replaces: category name + the
+// % extracted by unfair trading. White surface, near-black type, accent
+// blue %, soft drop shadow. Same data as the old bar chart, prouder form.
+type Category = { label: string; pct: number };
 const CATEGORIES: Category[] = [
-  {
-    label: "stocks",
-    gradient: "linear-gradient(135deg, #0a3a8c 0%, #061f4d 55%, #02112e 100%)",
-  },
-  {
-    label: "crypto",
-    gradient: "linear-gradient(135deg, #4a2010 0%, #2c1208 55%, #15080a 100%)",
-  },
-  {
-    label: "sports",
-    gradient: "linear-gradient(135deg, #0f3a2a 0%, #062418 55%, #04140e 100%)",
-  },
-  {
-    label: "predictions",
-    gradient: "linear-gradient(135deg, #2f1456 0%, #190a32 55%, #0c0518 100%)",
-  },
-  {
-    label: "options",
-    gradient: "linear-gradient(135deg, #0a3a4c 0%, #062028 55%, #03121a 100%)",
-  },
-  {
-    label: "perps",
-    gradient: "linear-gradient(135deg, #4a0a2a 0%, #28051a 55%, #14020e 100%)",
-  },
+  { label: "perps", pct: 80 },
+  { label: "options", pct: 90 },
+  { label: "predictions", pct: 71 },
+  { label: "launchpads", pct: 87 },
 ];
 
-// Carousel cell geometry — scaled-down from Carousel3D. Six cards in a
-// 360° ring, large enough to read the labels at this composition's scale.
-const CAROUSEL_W = 280;
-const CAROUSEL_H = 360;
-const CARD_W = 240;
-const CARD_H = 320;
-const CAROUSEL_RADIUS = 260;
-const CAROUSEL_PERSPECTIVE = 1100;
+// Carousel cell geometry — full-stage. Cards are big enough that one
+// faces the camera at a readable size during scroll + hold.
+const CAROUSEL_W = 440;
+const CAROUSEL_H = 560;
+const CARD_W = 400;
+const CARD_H = 520;
+const CAROUSEL_RADIUS = 380;
+const CAROUSEL_PERSPECTIVE = 1400;
 
-const CAROUSEL_SPIRAL_IN = toFrames(0.42);
-const CAROUSEL_SPIRAL_HOLD_AFTER = toFrames(0.04);
-// After spiral-in completes, the ring scrolls −180° — different cards
-// rotate forward. Compressed to fit the available window.
-const CAROUSEL_SCROLL = toFrames(0.80);
+const CAROUSEL_SPIRAL_IN = toFrames(0.55);
+const CAROUSEL_SPIRAL_HOLD_AFTER = toFrames(0.05);
+// Scroll −180° so the back two cards rotate to the front. Slow enough to
+// read the labels as they pass.
+const CAROUSEL_SCROLL = toFrames(1.10);
+// Carousel3D explode phase, ported. The ring tips forward 90° while it
+// spins -360° on Y and rushes the camera (Z -460 → -1800 → +1500), then
+// rotateZ +270. Aligned so its last frame lands on the hard cut to Rigged
+// — the next scene catches the ring mid-spin instead of after a fade.
+const CAROUSEL_EXPLODE = toFrames(0.85);
 const CAROUSEL_ENTRY_FULL =
   CAROUSEL_SPIRAL_IN + CAROUSEL_SPIRAL_HOLD_AFTER + CAROUSEL_SCROLL;
+// Hold sized so the explode ends at BARS_FRAMES. Computed in Bars-local
+// frames: REVEAL_AT + ENTRY + HOLD + EXPLODE = BARS_FRAMES.
+const CAROUSEL_HOLD = BARS_FRAMES - REVEAL_AT - CAROUSEL_ENTRY_FULL - CAROUSEL_EXPLODE;
 
-// Hold both before the wave-out begins.
-const TOUCHED_HOLD = toFrames(0.18);
-const TOUCHED_EXIT_AT =
-  Math.max(TOUCHED_ENTRY_FULL, CAROUSEL_ENTRY_FULL) + TOUCHED_HOLD;
+// Hold the headline alongside the carousel hold; the explode begins after.
+const TOUCHED_EXIT_AT = CAROUSEL_ENTRY_FULL + CAROUSEL_HOLD;
 
-// Per-letter wave-out: each letter exits with a stagger from the center
-// outward, drifting away from center while it fades. TextTrail hide()
-// pattern — wave radiates, then nothing remains.
+// Per-letter wave-out for the headline — TextTrail hide() pattern. The
+// letters drift outward from center while the carousel explodes.
 const LETTER_EXIT_STAGGER = 1.4;
 const LETTER_EXIT_FADE = toFrames(0.34);
-const LETTER_EXIT_DRIFT = 22; // px per unit of distance from center
-
-// Carousel exit — explode away in Z, fade out.
-const CAROUSEL_EXIT_DURATION = toFrames(0.36);
+const LETTER_EXIT_DRIFT = 22;
 
 const expoOut = (t: number): number => (t === 1 ? 1 : 1 - Math.pow(2, -10 * t));
 const expoIn = (t: number): number => (t === 0 ? 0 : Math.pow(2, 10 * t - 10));
+const power2InOut = (t: number): number =>
+  t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 const power3 = (t: number): number => t * t * t;
 const sineInOut = (t: number): number => -(Math.cos(Math.PI * t) - 1) / 2;
 
-// Bars + caption fade out as the touched line / carousel takes the stage.
-// The fade starts a hair before REVEAL_AT so the carousel arrives onto a
-// dimmed canvas instead of competing with the chart.
-const BARS_FADE_START = REVEAL_AT - toFrames(0.1);
-const BARS_FADE_DURATION = toFrames(0.32);
+// REVEAL_AT no longer means "bar chart finishes" — it now means "the
+// carousel + headline take the stage." Caption holds at the top.
+const ExtractionBars: React.FC = () => (
+  <AbsoluteFill>
+    <div
+      style={{
+        position: "absolute",
+        top: "7%",
+        left: 0,
+        right: 0,
+        textAlign: "center",
+        fontFamily: monoFont,
+        fontSize: 32,
+        fontWeight: 500,
+        letterSpacing: "0.22em",
+        textTransform: "uppercase",
+        color: colors.dim,
+      }}
+    >
+      <RevealChars
+        text="% extracted by unfair trading"
+        startFrame={0}
+        stagger={0.5}
+        duration={8}
+        y={10}
+        blur={2}
+        scale={0.97}
+      />
+    </div>
 
-const ExtractionBars: React.FC = () => {
-  const frame = useCurrentFrame();
-  const barsOpacity = interpolate(
-    frame,
-    [BARS_FADE_START, BARS_FADE_START + BARS_FADE_DURATION],
-    [1, 0.18],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-  const barsBlur = interpolate(
-    frame,
-    [BARS_FADE_START, BARS_FADE_START + BARS_FADE_DURATION],
-    [0, 4],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-
-  return (
-    <AbsoluteFill>
-      <AbsoluteFill
-        style={{
-          opacity: barsOpacity,
-          filter: barsBlur > 0.05 ? `blur(${barsBlur.toFixed(2)}px)` : undefined,
-          willChange: "opacity, filter",
-        }}
-      >
-        <div
-          style={{
-            position: "absolute",
-            top: "8%",
-            left: 0,
-            right: 0,
-            textAlign: "center",
-            fontFamily: monoFont,
-            fontSize: 36,
-            fontWeight: 500,
-            letterSpacing: "0.22em",
-            textTransform: "uppercase",
-            color: colors.dim,
-          }}
-        >
-          <RevealChars
-            text="% extracted by unfair trading"
-            startFrame={0}
-            stagger={0.5}
-            duration={8}
-            y={10}
-            blur={2}
-            scale={0.97}
-          />
-        </div>
-
-        <div
-          style={{
-            position: "absolute",
-            top: "20%",
-            bottom: "22%",
-            left: 0,
-            right: 0,
-            padding: "0 200px",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            gap: 36,
-          }}
-        >
-          {BARS.map((bar, i) => (
-            <BarRow
-              key={bar.label}
-              bar={bar}
-              maxValue={MAX_VALUE}
-              delayFrames={i * BAR_STAGGER}
-            />
-          ))}
-        </div>
-      </AbsoluteFill>
-
-      <TouchedLine />
-    </AbsoluteFill>
-  );
-};
+    <TouchedLine />
+  </AbsoluteFill>
+);
 
 const TouchedLine: React.FC = () => {
   const frame = useCurrentFrame();
@@ -521,20 +438,20 @@ const TouchedHeadline: React.FC<{ local: number }> = ({ local }) => {
   );
 };
 
-// ─── Category carousel — Carousel3D scroll phase, ported in miniature ────────
+// ─── Category carousel — Carousel3D ported in full ───────────────────────────
 //
-// A six-card 3D ring. Spiral-in lands it at the resting Z, then it scrolls
-// 180° so the user sees half the categories rotate forward. Each card
-// carries its own rotateZ tilt (10° → −10° across the scroll) and a
-// brightness ramp (250% → 80%) that quotes the original effect's "glare"
-// without overwhelming the bar chart behind it. On exit, the ring
-// retreats in Z and dissolves.
+// Spiral-in → scroll −180° → hold → explode. The explode phase is the
+// same one Carousel3D plays at frame 110 of its Paris scene: rotateX →
+// 90, rotateY adds another −360, Z plunges to -1800 then rushes through
+// to +1500, rotateZ spins +270. Cards opacity collapses past explode
+// progress 0.8. Aligned with the hard cut to Rigged so the cut catches
+// the ring mid-spin instead of after a fade.
 
 const CategoryCarousel: React.FC<{ local: number }> = ({ local }) => {
   // Spiral-in (frames 0…CAROUSEL_SPIRAL_IN)
   const spiralT = Math.max(0, Math.min(1, local / CAROUSEL_SPIRAL_IN));
   const spiralEased = expoOut(spiralT);
-  const spiralZ = interpolate(spiralEased, [0, 1], [-1500, -CAROUSEL_RADIUS - 60]);
+  const spiralZ = interpolate(spiralEased, [0, 1], [-1500, -CAROUSEL_RADIUS - 80]);
   const spiralRotYAdd = interpolate(spiralEased, [0, 1], [-720, 0]);
   const spiralOpacity = spiralT;
 
@@ -546,22 +463,37 @@ const CategoryCarousel: React.FC<{ local: number }> = ({ local }) => {
   const ringRotX = interpolate(tiltT, [0, 1], [3, -3]);
   const ringRotZ = interpolate(tiltT, [0, 1], [3, -3]);
   const cardTiltZ = interpolate(scrollT, [0, 1], [10, -10]);
-  const brightness = interpolate(power3(scrollT), [0, 1], [200, 95]);
 
-  // Exit — fade + retreat.
-  const exitT = Math.max(
+  // Explode phase — Carousel3D activatePreviewFromCarousel ported.
+  const explodeStart = CAROUSEL_ENTRY_FULL + CAROUSEL_HOLD;
+  const explodeT = Math.max(
     0,
-    Math.min(1, (local - TOUCHED_EXIT_AT) / CAROUSEL_EXIT_DURATION),
+    Math.min(1, (local - explodeStart) / CAROUSEL_EXPLODE),
   );
-  const exitEased = expoIn(exitT);
-  const exitZAdd = -exitEased * 900;
-  const exitRotZAdd = exitEased * 80;
-  const exitOpacity = 1 - exitT;
+  const explodeEased = power2InOut(explodeT);
+  const explodeRotX = interpolate(explodeEased, [0, 0.4, 1], [0, 90, 90]);
+  const explodeRotYAdd = interpolate(explodeEased, [0, 1], [0, -360 - -180]);
+  const explodeZ = interpolate(
+    explodeEased,
+    [0, 0.3, 1],
+    [-CAROUSEL_RADIUS - 80, -1800, 1500],
+  );
+  const explodeRotZAdd = interpolate(explodeEased, [0.3, 1], [0, 270], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const cardOpacity = explodeT > 0.8 ? interpolate(explodeT, [0.8, 1], [1, 0]) : 1;
 
-  const finalZ = spiralZ + exitZAdd;
-  const finalRotY = scrollRotY + spiralRotYAdd;
-  const finalRotZ = ringRotZ + exitRotZAdd;
-  const opacity = spiralOpacity * exitOpacity;
+  // Pre-explode uses the spiral Z; during/after explode uses explodeZ.
+  const finalZ = local < explodeStart ? spiralZ : explodeZ;
+  const finalRotY = scrollRotY + spiralRotYAdd + explodeRotYAdd;
+  const finalRotX = ringRotX + explodeRotX;
+  const finalRotZ = ringRotZ + explodeRotZAdd;
+
+  // Brightness — fixed at the Codrops scroll-end value during scroll, then
+  // ride down further during explode for a darkroom-flash feel.
+  const baseBrightness = interpolate(power3(scrollT), [0, 1], [200, 95]);
+  const brightness = interpolate(explodeT, [0, 1], [baseBrightness, 130]);
 
   const step = 360 / CATEGORIES.length;
 
@@ -571,7 +503,7 @@ const CategoryCarousel: React.FC<{ local: number }> = ({ local }) => {
         width: CAROUSEL_W,
         height: CAROUSEL_H,
         perspective: CAROUSEL_PERSPECTIVE,
-        opacity,
+        opacity: spiralOpacity,
         willChange: "transform, opacity",
       }}
     >
@@ -581,7 +513,7 @@ const CategoryCarousel: React.FC<{ local: number }> = ({ local }) => {
           width: "100%",
           height: "100%",
           transformStyle: "preserve-3d",
-          transform: `translateZ(${finalZ.toFixed(1)}px) rotateY(${finalRotY.toFixed(2)}deg) rotateX(${ringRotX.toFixed(2)}deg) rotateZ(${finalRotZ.toFixed(2)}deg)`,
+          transform: `translateZ(${finalZ.toFixed(1)}px) rotateY(${finalRotY.toFixed(2)}deg) rotateX(${finalRotX.toFixed(2)}deg) rotateZ(${finalRotZ.toFixed(2)}deg)`,
         }}
       >
         {CATEGORIES.map((cat, i) => (
@@ -591,6 +523,7 @@ const CategoryCarousel: React.FC<{ local: number }> = ({ local }) => {
             cellRotateY={i * step}
             cardRotateZ={cardTiltZ}
             brightness={brightness}
+            cardOpacity={cardOpacity}
           />
         ))}
       </div>
@@ -598,12 +531,20 @@ const CategoryCarousel: React.FC<{ local: number }> = ({ local }) => {
   );
 };
 
+// ─── Apple-light card — white surface, near-black type, accent % ────────────
+//
+// Eyebrow ("market" mono caps, dim) ▸ category name (SF Pro Display, 800,
+// near-black) ▸ % (SF Pro Display, 800, accent blue, tabular nums) ▸
+// caption ("extracted" mono small, dim). Soft shadow, 24px radius. Same
+// vocabulary as the apple.com hero cards and the homepage in the frontend.
+
 const CarouselCell: React.FC<{
   cat: Category;
   cellRotateY: number;
   cardRotateZ: number;
   brightness: number;
-}> = ({ cat, cellRotateY, cardRotateZ, brightness }) => (
+  cardOpacity: number;
+}> = ({ cat, cellRotateY, cardRotateZ, brightness, cardOpacity }) => (
   <div
     style={{
       position: "absolute",
@@ -622,243 +563,103 @@ const CarouselCell: React.FC<{
         height: CARD_H,
         marginLeft: (CAROUSEL_W - CARD_W) / 2,
         marginTop: (CAROUSEL_H - CARD_H) / 2,
-        borderRadius: 6,
-        background: cat.gradient,
+        borderRadius: 24,
+        background: colors.surface,
         filter: `brightness(${brightness}%)`,
         transform: `rotateZ(${cardRotateZ}deg)`,
-        boxShadow: "0 24px 48px rgba(0, 0, 0, 0.35)",
+        boxShadow:
+          "0 1px 0 rgba(255,255,255,0.6) inset, 0 30px 60px rgba(8, 14, 28, 0.18), 0 8px 16px rgba(8, 14, 28, 0.10)",
+        border: `1px solid ${colors.rule}`,
         overflow: "hidden",
         backfaceVisibility: "hidden",
+        opacity: cardOpacity,
       }}
     >
-      {/* Subtle scan-line / sheen for depth */}
+      {/* Top eyebrow */}
       <div
         style={{
           position: "absolute",
-          inset: 0,
-          background:
-            "linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 35%, rgba(0,0,0,0.18) 100%)",
-        }}
-      />
-      {/* Eyebrow */}
-      <div
-        style={{
-          position: "absolute",
-          top: 18,
-          left: 22,
+          top: 28,
+          left: 32,
           fontFamily: monoFont,
-          fontSize: 12,
+          fontSize: 18,
           fontWeight: 500,
           letterSpacing: "0.22em",
           textTransform: "uppercase",
-          color: "rgba(255, 255, 255, 0.55)",
+          color: colors.dim,
         }}
       >
         market
       </div>
-      {/* Hero label */}
+
+      {/* Category name */}
       <div
         style={{
           position: "absolute",
-          left: 22,
-          right: 22,
-          bottom: 22,
+          top: 84,
+          left: 32,
+          right: 32,
           fontFamily: font,
-          fontSize: 44,
+          fontSize: 64,
           fontWeight: 800,
-          letterSpacing: "-0.025em",
-          color: "#ffffff",
-          lineHeight: 0.95,
+          letterSpacing: "-0.022em",
+          color: colors.fg,
+          lineHeight: 1.0,
         }}
       >
         {cat.label}
       </div>
+
+      {/* Big percentage */}
+      <div
+        style={{
+          position: "absolute",
+          left: 32,
+          right: 32,
+          bottom: 92,
+          fontFamily: font,
+          fontSize: 168,
+          fontWeight: 800,
+          letterSpacing: "-0.04em",
+          color: colors.accent,
+          lineHeight: 0.92,
+          fontVariantNumeric: "tabular-nums",
+          textAlign: "left",
+        }}
+      >
+        {cat.pct}
+        <span
+          style={{
+            fontSize: 96,
+            color: colors.accent,
+            marginLeft: 4,
+            letterSpacing: "-0.02em",
+          }}
+        >
+          %
+        </span>
+      </div>
+
+      {/* Caption */}
+      <div
+        style={{
+          position: "absolute",
+          left: 32,
+          right: 32,
+          bottom: 36,
+          fontFamily: monoFont,
+          fontSize: 18,
+          fontWeight: 500,
+          letterSpacing: "0.18em",
+          textTransform: "uppercase",
+          color: colors.dim,
+        }}
+      >
+        extracted by unfair trading
+      </div>
     </div>
   </div>
 );
-
-const LABEL_COL = 360;
-const VALUE_COL = 240;
-
-const BarRow: React.FC<{
-  bar: Bar;
-  maxValue: number;
-  delayFrames: number;
-}> = ({ bar, maxValue, delayFrames }) => {
-  const frame = useCurrentFrame();
-  const local = frame - delayFrames;
-
-  const labelOpacity = interpolate(
-    local,
-    [0, toFrames(0.25)],
-    [0, 1],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-  const labelX = interpolate(
-    local,
-    [0, toFrames(0.3)],
-    [-24, 0],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-
-  const growT = Math.max(0, Math.min(1, (local - toFrames(0.15)) / BAR_GROW));
-  const easedGrow = 1 - Math.pow(1 - growT, 3);
-  const widthPct = (bar.value / maxValue) * 100 * easedGrow;
-
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 32,
-        height: 84,
-      }}
-    >
-      <div
-        style={{
-          width: LABEL_COL,
-          flexShrink: 0,
-          fontFamily: monoFont,
-          fontSize: 56,
-          fontWeight: 500,
-          letterSpacing: "0.02em",
-          color: colors.fgSoft,
-          textAlign: "right",
-          opacity: labelOpacity,
-          transform: `translateX(${labelX}px)`,
-        }}
-      >
-        {bar.label}
-      </div>
-
-      <div
-        style={{
-          flex: 1,
-          height: 36,
-          position: "relative",
-          background: colors.accentTint,
-          borderRadius: 2,
-          overflow: "hidden",
-        }}
-      >
-        <div
-          style={{
-            position: "absolute",
-            top: 0,
-            bottom: 0,
-            left: 0,
-            width: `${widthPct}%`,
-            background: colors.accent,
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            top: -6,
-            bottom: -6,
-            left: `calc(${widthPct}% - 1px)`,
-            width: 2,
-            background: colors.fg,
-            opacity: easedGrow * 0.85,
-          }}
-        />
-      </div>
-
-      <div
-        style={{
-          width: VALUE_COL,
-          flexShrink: 0,
-          textAlign: "left",
-          fontFamily: font,
-          fontSize: 80,
-          fontWeight: 800,
-          letterSpacing: "-0.03em",
-          color: colors.fg,
-          fontVariantNumeric: "tabular-nums",
-        }}
-      >
-        <ZoomEchoText
-          text={bar.displayValue}
-          delayFrames={Math.round(BAR_GROW * 0.55)}
-          containerLocalFrame={local}
-        />
-      </div>
-    </div>
-  );
-};
-
-// ─── Zoom-echo text: number emerges with trailing depth-clones ────────────────
-
-const ECHO_COUNT = 5;
-const ECHO_GAP_FRAMES = 1.6;
-const ZOOM_DURATION = toFrames(0.55);
-
-const ZoomEchoText: React.FC<{
-  text: string;
-  delayFrames: number;
-  containerLocalFrame: number;
-}> = ({ text, delayFrames, containerLocalFrame }) => {
-  const local = containerLocalFrame - delayFrames;
-
-  if (local < 0) {
-    return (
-      <span style={{ display: "inline-block", visibility: "hidden" }}>
-        {text}
-      </span>
-    );
-  }
-
-  const echoFade = interpolate(
-    local,
-    [
-      ZOOM_DURATION + ECHO_COUNT * ECHO_GAP_FRAMES + toFrames(0.05),
-      ZOOM_DURATION + ECHO_COUNT * ECHO_GAP_FRAMES + toFrames(0.35),
-    ],
-    [1, 0],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-
-  return (
-    <span style={{ position: "relative", display: "inline-block" }}>
-      <span style={{ visibility: "hidden" }}>{text}</span>
-
-      {Array.from({ length: ECHO_COUNT + 1 }).map((_, i) => {
-        const f = local - i * ECHO_GAP_FRAMES;
-        if (f < 0) return null;
-
-        const t = Math.max(0, Math.min(1, f / ZOOM_DURATION));
-        const eased = 1 - Math.pow(1 - t, 4);
-
-        const scale = interpolate(eased, [0, 1], [3.6, 1]);
-        const dim = i === 0 ? 1 : Math.pow(0.5, i) * echoFade;
-        const op = eased * dim;
-
-        const tint = i === 0 ? colors.fg : i % 2 === 0 ? colors.fg : colors.accent;
-
-        return (
-          <span
-            key={i}
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              textAlign: "left",
-              transform: `scale(${scale})`,
-              transformOrigin: "left center",
-              opacity: op,
-              color: tint,
-              pointerEvents: "none",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {text}
-          </span>
-        );
-      })}
-    </span>
-  );
-};
 
 export const antiCheatStatMeta = {
   id: "AntiCheatStat",
