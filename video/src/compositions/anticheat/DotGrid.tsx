@@ -207,10 +207,13 @@ export const DotGrid: React.FC<Props> = ({ intensity = 1, speed = 1.5 }) => {
           const fadePx = lenPx * FADE_FRACTION;
           const cols = Math.max(2, Math.round((x1 - x0) / FINE_SPACING_X) + 1);
 
-          // Stack `rows` rows, centered vertically on yCenterPx.
+          // Stack `rows` rows aligned to the grid lattice. Even row counts
+          // bias upward by one row so every stacked dot still lands on a
+          // grid line instead of between rows.
           const rowOffsets: number[] = [];
+          const rowAnchor = Math.floor((band.rows - 1) / 2);
           for (let r = 0; r < band.rows; r++) {
-            rowOffsets.push((r - (band.rows - 1) / 2) * FINE_SPACING_Y);
+            rowOffsets.push((r - rowAnchor) * FINE_SPACING_Y);
           }
 
           return (
@@ -380,8 +383,9 @@ export const VerticalDotGrid: React.FC<Props> = ({
           const rows = Math.max(2, Math.round((y1 - y0) / FINE_SPACING_Y) + 1);
 
           const colOffsets: number[] = [];
+          const colAnchor = Math.floor((band.cols - 1) / 2);
           for (let r = 0; r < band.cols; r++) {
-            colOffsets.push((r - (band.cols - 1) / 2) * FINE_SPACING_X);
+            colOffsets.push((r - colAnchor) * FINE_SPACING_X);
           }
 
           return (
