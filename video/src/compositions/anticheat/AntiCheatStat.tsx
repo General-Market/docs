@@ -446,7 +446,7 @@ const StatPanel: React.FC = () => {
     <AbsoluteFill>
       {/* Phase 1 — types in by beat 1, wipes out into the flip */}
       <EmberTypewriter
-        text="0.04% illegally extract 70%*"
+        text="0.04% rig the table take 70%*"
         typeStart={0}
         typeEnd={28}
         wipeStart={STAT_FLIP_AT - 6}

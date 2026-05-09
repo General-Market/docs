@@ -358,16 +358,16 @@ const PairList: React.FC<{
   );
 };
 
-// Both lines land in lockstep at frame 0; inside each line the words
-// pop in word-by-word with a tight stagger. The whole pair exits
-// together too — opposite drift directions, same exitAt.
-// RevealLines is gated behind a Sequence at REVEAL_AT (172), so all
-// frame numbers below are scene-local. 7.5s absolute = 225 - 172 = 53.
-const WORD_STAGGER = 2;
-const WORD_ENTER_DURATION = 4;
-const LINES_LAND = 12; // tail end of the word cascade — used for the screen shake
-const LINE_EXIT_AT = 53; // 7.5s
-const LINE_EXIT_DURATION = 8;
+// Both lines fly in together as whole lines (depth-flash). The exit is
+// the snappy bit: word-by-word stagger, opposite drift directions per
+// line, both lines starting their exit on the same frame. RevealLines
+// is gated behind a Sequence at REVEAL_AT (183), so frame numbers
+// below are scene-local. 7.5s absolute = 225 - 183 = 42.
+const LINE1_LAND = 7;
+const LINE2_LAND = 7;
+const LINE_EXIT_AT = 42;
+const WORD_EXIT_STAGGER = 2;
+const WORD_EXIT_DURATION = 5;
 const SHAKE_FRAMES = 5;
 const SHAKE_AMP = 9;
 
@@ -379,7 +379,7 @@ const RevealLines: React.FC = () => {
     if (since < 0 || since >= SHAKE_FRAMES) return 0;
     return (1 - since / SHAKE_FRAMES) * SHAKE_AMP;
   };
-  const amp = shakeAt(LINES_LAND);
+  const amp = Math.max(shakeAt(LINE1_LAND), shakeAt(LINE2_LAND));
   const shakeX = amp ? (pseudo(frame * 7.31) - 0.5) * 2 * amp : 0;
   const shakeY = amp ? (pseudo(frame * 11.7 + 1) - 0.5) * 2 * amp : 0;
 
@@ -436,43 +436,58 @@ const DepthLine: React.FC<{
 }> = ({ text, startAt, exitAt, exitDir, frame, color, marginTop }) => {
   const words = text.split(" ");
 
-  // Line-level exit. The whole line drifts to its side, softens.
-  const exitT = clamp01((frame - exitAt) / LINE_EXIT_DURATION);
-  const exitEased = exitT * exitT;
-  const exitX = (exitDir === "left" ? -1 : 1) * exitEased * 240;
-  const exitOp = 1 - exitT;
-  const exitScale = 1 - exitEased * 0.18;
-  const exitBlur = exitEased * 7;
+  // Line-level entry — whole-line depth flash (huge + blurry → land).
+  const t = frame - startAt;
+  const enterScale = interpolate(t, [0, 7], [2.4, 1.0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const enterBlur = interpolate(t, [0, 7], [16, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const enterOp = interpolate(t, [0, 5], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
 
   return (
     <div
       style={{
-        transform: `translateX(${exitX.toFixed(2)}px) scale(${exitScale.toFixed(3)})`,
+        transform: `scale(${enterScale.toFixed(3)})`,
         transformOrigin: "50% 50%",
-        filter: exitBlur > 0.05 ? `blur(${exitBlur.toFixed(2)}px)` : "none",
-        opacity: exitOp,
+        filter: enterBlur > 0.05 ? `blur(${enterBlur.toFixed(2)}px)` : "none",
+        opacity: enterOp,
         color: color ?? "#f5f5f5",
         marginTop: marginTop ?? 0,
         willChange: "transform, opacity, filter",
       }}
     >
       {words.map((word, i) => {
-        const wordStart = startAt + i * WORD_STAGGER;
-        const wt = clamp01((frame - wordStart) / WORD_ENTER_DURATION);
-        // Ease-out cubic — snappy land, no slow ramp.
-        const wEased = 1 - Math.pow(1 - wt, 3);
-        const wScale = interpolate(wEased, [0, 1], [2.0, 1.0]);
-        const wBlur = (1 - wEased) * 10;
-        const wOp = wt;
+        // Per-word exit, snappy. Each word drifts to its line's
+        // assigned side and fades, with a tight 2-frame stagger
+        // between words.
+        const wordExitStart = exitAt + i * WORD_EXIT_STAGGER;
+        const wExitT = clamp01(
+          (frame - wordExitStart) / WORD_EXIT_DURATION,
+        );
+        const wExitEased = wExitT * wExitT;
+        const wExitX = (exitDir === "left" ? -1 : 1) * wExitEased * 220;
+        const wExitOp = 1 - wExitT;
+        const wExitScale = 1 - wExitEased * 0.22;
+        const wExitBlur = wExitEased * 7;
         return (
           <React.Fragment key={i}>
             <span
               style={{
                 display: "inline-block",
-                transform: `scale(${wScale.toFixed(3)})`,
+                transform: `translateX(${wExitX.toFixed(2)}px) scale(${wExitScale.toFixed(3)})`,
                 transformOrigin: "50% 50%",
-                filter: wBlur > 0.05 ? `blur(${wBlur.toFixed(2)}px)` : "none",
-                opacity: wOp,
+                filter:
+                  wExitBlur > 0.05
+                    ? `blur(${wExitBlur.toFixed(2)}px)`
+                    : "none",
+                opacity: wExitOp,
                 willChange: "transform, opacity, filter",
               }}
             >

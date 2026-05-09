@@ -42,19 +42,18 @@ const BEVELS_SCALE = new THREE.Vector3(0.27471, 0.27471, 0.27471);
 const PHONE_SCREEN_ASPECT = 9 / 19.5;
 const LAPTOP_SCREEN_ASPECT = 16 / 10;
 
-// World layout. Laptop sits at GLB origin (its native pose). Phone
-// floats at world x=-5.6, y matched to camera target so its center
-// projects to canvas vertical center. Negative-x maps to canvas-right
-// (lookAt's right-hand convention with the camera at z=-7), so this
-// keeps about three-quarters of the phone on canvas with the rest
-// bleeding off the right.
-const PHONE_POS = new THREE.Vector3(-5.6, 2.2, 0);
+// World layout. Laptop sits at GLB origin (its native pose). The
+// camera + target sit ≈1.3 world-units higher than before so the
+// laptop body reads ~20% lower in the frame; the phone keeps its
+// y matched to the camera target (vertical canvas-center) and is
+// pushed further canvas-left on the x.
+const PHONE_POS = new THREE.Vector3(-4, 3.5, 0);
 
-// Camera between the two devices, looking forward into +z. Slightly
-// above the device plane so we read the laptop's lid face and the
-// phone's screen face without lying flat on the deck.
-const CAMERA_POS: [number, number, number] = [-1.5, 3.2, -7];
-const CAMERA_TARGET: [number, number, number] = [-1.5, 2.2, 0];
+// Camera between the two devices, looking forward into +z. Higher
+// y than before (4.5 / 3.5 instead of 3.2 / 2.2) so the laptop drops
+// down in frame; the camera direction is unchanged.
+const CAMERA_POS: [number, number, number] = [-1.5, 4.5, -7];
+const CAMERA_TARGET: [number, number, number] = [-1.5, 3.5, 0];
 
 // Subtle yaw drift over the first 7 seconds — the phone slowly turns
 // further toward canvas-center while the hook plays, just enough that

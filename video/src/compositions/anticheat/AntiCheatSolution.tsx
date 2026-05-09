@@ -163,7 +163,7 @@ const Headline: React.FC = () => {
               textShadow: "0 8px 28px rgba(0, 82, 255, 0.30)",
             }}
           >
-            fights back
+            is the safe table
           </span>
         </div>
       </AbsoluteFill>
