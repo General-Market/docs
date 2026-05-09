@@ -80,6 +80,10 @@ import {
 import { Launch30 } from "./compositions/launch/Launch30";
 import { OgCardGM } from "./compositions/launch/OgCardGM";
 import { OgBannerGM } from "./compositions/launch/OgBannerGM";
+import { OgBannerGMSeal } from "./compositions/launch/OgBannerGMSeal";
+import { OgBannerGMRedacted } from "./compositions/launch/OgBannerGMRedacted";
+import { OgBannerGMVault } from "./compositions/launch/OgBannerGMVault";
+import { OgBannerGMType } from "./compositions/launch/OgBannerGMType";
 import { OgBannerNS } from "./compositions/launch/OgBannerNS";
 import {
   TOTAL_FRAMES as LAUNCH_DURATION,
@@ -623,6 +627,38 @@ export const RemotionRoot: React.FC = () => {
         <Composition
           id="OgBannerGM"
           component={OgBannerGM}
+          durationInFrames={1}
+          fps={30}
+          width={1500}
+          height={500}
+        />
+        <Composition
+          id="OgBannerGMSeal"
+          component={OgBannerGMSeal}
+          durationInFrames={1}
+          fps={30}
+          width={1500}
+          height={500}
+        />
+        <Composition
+          id="OgBannerGMRedacted"
+          component={OgBannerGMRedacted}
+          durationInFrames={1}
+          fps={30}
+          width={1500}
+          height={500}
+        />
+        <Composition
+          id="OgBannerGMVault"
+          component={OgBannerGMVault}
+          durationInFrames={1}
+          fps={30}
+          width={1500}
+          height={500}
+        />
+        <Composition
+          id="OgBannerGMType"
+          component={OgBannerGMType}
           durationInFrames={1}
           fps={30}
           width={1500}
