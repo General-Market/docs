@@ -1,5 +1,13 @@
 import type { Metadata } from 'next'
+import { Caveat } from 'next/font/google'
 import WaitlistForm from '@/components/marketing/WaitlistForm'
+
+const caveat = Caveat({
+  subsets: ['latin'],
+  weight: ['700'],
+  variable: '--font-caveat',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   title: 'Waitlist — GeneralMarket',
@@ -10,5 +18,9 @@ export const metadata: Metadata = {
 }
 
 export default function WaitlistPage() {
-  return <WaitlistForm />
+  return (
+    <div className={caveat.variable}>
+      <WaitlistForm />
+    </div>
+  )
 }

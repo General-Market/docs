@@ -1,16 +1,17 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import {
-  AnimatePresence,
-  motion,
-  useMotionValue,
-  useReducedMotion,
-  useSpring,
-  useTransform,
-} from 'framer-motion'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { springs } from '@/components/ui/spring'
-import { ShineOverlay } from '@/components/domain/home/ShineOverlay'
+import { DotGridBg } from '@/components/marketing/waitlist/DotGridBg'
+import { CaveatArrow } from '@/components/marketing/waitlist/CaveatArrow'
+
+const ACCENT = '#0052FF'
+const FG = '#0A0A0A'
+const FG_SOFT = '#1F1F24'
+const DIM = '#6E727A'
+const RULE = 'rgba(10,10,12,0.10)'
+const SHEET_BG = '#FFFFFF'
 
 type Choice = { value: string; label: string }
 
@@ -46,10 +47,10 @@ const STEPS: Step[] = [
   {
     type: 'welcome',
     id: 'welcome',
-    title: 'Be the first to have your pnl shielded from insider trading.',
-    body: 'Join the waitlist — early access, lower fees, and referral rewards. Takes ~45 seconds.',
-    cta: 'Start',
-    takes: 'Takes ~45 seconds',
+    title: 'Your pnl. Shielded.',
+    body: 'Insiders, front-runners, orderflow buyers — none of them get to see your trade. Join the waitlist for early access, lower fees, and referral rewards.',
+    cta: 'Begin',
+    takes: '~45 seconds',
   },
   {
     type: 'text',
@@ -75,7 +76,7 @@ const STEPS: Step[] = [
   {
     type: 'choice',
     id: 'protection_from',
-    label: 'Against who your pnl need protection from',
+    label: 'Against who your pnl needs protection',
     multiple: true,
     options: [
       { value: 'insider', label: 'Insider Traders' },
@@ -89,21 +90,21 @@ const STEPS: Step[] = [
     id: 'invite',
     label: 'Do you have an invite code?',
     description:
-      'Entering a code gives you access to trading fee rakeback. Don’t worry — if you don’t have one, you can add it later.',
-    placeholder: 'Type your answer here...',
+      'A code earns you trading-fee rakeback. If you don’t have one, leave it blank — you can add one later.',
+    placeholder: 'XXXX-XXXX-XXXX-XXXX',
   },
   {
     type: 'text',
     id: 'volume',
-    label: 'Roughly how much do you trade per month on volume?',
-    description: 'Example: $5k - $10k',
+    label: 'Roughly how much do you trade per month?',
+    description: 'Example: $5k – $10k',
     placeholder: 'Type your answer here...',
   },
   {
     type: 'choice',
     id: 'affiliate',
     label: 'Do you want to become an affiliate?',
-    description: 'Becoming an affiliate lets you earn by referring other traders and projects.',
+    description: 'Affiliates earn by referring traders and projects.',
     options: [
       { value: 'yes', label: 'Yes' },
       { value: 'no', label: 'No' },
@@ -112,14 +113,15 @@ const STEPS: Step[] = [
   {
     type: 'text',
     id: 'reach',
-    label: 'Awesome! How big is your reach?',
-    description: 'e.g. “5K Twitter followers”, “500 newsletter subs”, “active in 3 Discord communities”, etc.',
+    label: 'How big is your reach?',
+    description:
+      'e.g. “5K Twitter followers”, “500 newsletter subs”, “active in 3 Discord communities”.',
     placeholder: 'Type your answer here...',
   },
   {
     type: 'text',
     id: 'notes',
-    label: 'Is there anything you’d like us to know?',
+    label: 'Anything you’d like us to know?',
     placeholder: 'Type your answer here...',
   },
 ]
@@ -140,7 +142,8 @@ function isValid(
   if (step.type === 'choice') {
     if (step.required) {
       if (step.multiple) {
-        if (!Array.isArray(value) || value.length === 0) return { ok: false, reason: 'Pick at least one.' }
+        if (!Array.isArray(value) || value.length === 0)
+          return { ok: false, reason: 'Pick at least one.' }
       } else if (typeof value !== 'string' || !value) {
         return { ok: false, reason: 'Pick one.' }
       }
@@ -156,221 +159,85 @@ function isValid(
   return { ok: true }
 }
 
-// ── Aurora — five drifting blobs, big blur, hue creep ─────
-type Blob = {
-  size: number
-  color: string
-  top: string
-  left: string
-  duration: number
-  path: { x: number[]; y: number[]; scale: number[] }
+function pad2(n: number): string {
+  return n < 10 ? `0${n}` : `${n}`
 }
 
-const BLOBS: Blob[] = [
-  {
-    size: 720,
-    color: 'rgba(99,102,241,0.55)', // indigo
-    top: '-12%',
-    left: '-8%',
-    duration: 26,
-    path: { x: [0, 220, 80, -60, 0], y: [0, 120, 240, 80, 0], scale: [1, 1.18, 0.92, 1.08, 1] },
-  },
-  {
-    size: 640,
-    color: 'rgba(236,72,153,0.45)', // pink
-    top: '8%',
-    left: '62%',
-    duration: 32,
-    path: { x: [0, -180, -60, 100, 0], y: [0, 80, 200, 100, 0], scale: [1, 0.95, 1.2, 1, 1] },
-  },
-  {
-    size: 820,
-    color: 'rgba(34,211,238,0.42)', // cyan
-    top: '55%',
-    left: '12%',
-    duration: 38,
-    path: { x: [0, 160, 60, -120, 0], y: [0, -100, -220, -60, 0], scale: [1, 1.1, 0.88, 1.15, 1] },
-  },
-  {
-    size: 560,
-    color: 'rgba(167,139,250,0.50)', // violet
-    top: '32%',
-    left: '40%',
-    duration: 22,
-    path: { x: [0, -120, 140, 60, 0], y: [0, 140, -80, -40, 0], scale: [1, 1.25, 0.9, 1.05, 1] },
-  },
-  {
-    size: 480,
-    color: 'rgba(56,189,248,0.38)', // sky
-    top: '70%',
-    left: '70%',
-    duration: 30,
-    path: { x: [0, -200, 40, 120, 0], y: [0, -160, -60, 80, 0], scale: [1, 1.08, 1.22, 0.95, 1] },
-  },
-]
-
-function Aurora() {
-  const reduced = useReducedMotion()
-  return (
-    <>
-      <div
-        aria-hidden
-        className="pointer-events-none fixed inset-0 -z-30"
-        style={{
-          background: 'linear-gradient(180deg, #F5F5F7 0%, #ECECF1 100%)',
-        }}
-      />
-      <motion.div
-        aria-hidden
-        className="pointer-events-none fixed inset-0 -z-20 overflow-hidden"
-        animate={reduced ? undefined : { filter: ['hue-rotate(0deg) blur(70px)', 'hue-rotate(18deg) blur(70px)', 'hue-rotate(-12deg) blur(70px)', 'hue-rotate(0deg) blur(70px)'] }}
-        transition={{ duration: 48, repeat: Infinity, ease: 'easeInOut' }}
-        style={{ filter: 'blur(70px)' }}
-      >
-        {BLOBS.map((b, i) => (
-          <motion.div
-            key={i}
-            className="absolute rounded-full"
-            style={{
-              top: b.top,
-              left: b.left,
-              width: b.size,
-              height: b.size,
-              background: `radial-gradient(circle at 50% 50%, ${b.color} 0%, transparent 65%)`,
-              willChange: 'transform',
-            }}
-            initial={{ x: 0, y: 0, scale: 1 }}
-            animate={
-              reduced
-                ? undefined
-                : { x: b.path.x, y: b.path.y, scale: b.path.scale }
-            }
-            transition={{
-              duration: b.duration,
-              repeat: Infinity,
-              ease: 'easeInOut',
-              times: [0, 0.25, 0.5, 0.75, 1],
-            }}
-          />
-        ))}
-      </motion.div>
-      <motion.div
-        aria-hidden
-        className="pointer-events-none fixed inset-0 -z-10"
-        animate={reduced ? undefined : { opacity: [0.6, 1, 0.7, 1, 0.6] }}
-        transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut' }}
-        style={{
-          background:
-            'radial-gradient(1400px 900px at 50% -10%, rgba(255,255,255,0.45), transparent 60%)',
-        }}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none fixed inset-0 -z-10 opacity-[0.35]"
-        style={{
-          backgroundImage: 'radial-gradient(rgba(0,0,0,0.5) 1px, transparent 1px)',
-          backgroundSize: '3px 3px',
-          mixBlendMode: 'overlay',
-        }}
-      />
-    </>
-  )
+function normalizeHandle(s: string): string {
+  return s.trim().replace(/^@+/, '').replace(/\s+/g, '')
 }
 
-// ── Tilt — subtle parallax, matches the homepage shine pattern ──
-function Tilt({
-  children,
-  max = 4,
-  className,
+// ── Step transition: snap-zoom-soft, mirrors transitions.tsx ──
+const stepVariants = {
+  enter: { opacity: 0, scale: 0.96, filter: 'blur(8px)' },
+  center: { opacity: 1, scale: 1, filter: 'blur(0px)' },
+  exit: { opacity: 0, scale: 0.98, filter: 'blur(6px)' },
+}
+
+const StepNumber = ({ n, total }: { n: number; total: number }) => (
+  <div
+    className="font-mono text-[12px] uppercase tracking-[0.14em]"
+    style={{ color: DIM }}
+  >
+    {pad2(n)} <span style={{ color: 'rgba(110,114,122,0.4)' }}>/</span> {pad2(total)}
+  </div>
+)
+
+// Avatar pill — top-right, surfaces when we have a handle and unavatar resolves.
+function HandleBadge({
+  handle,
+  pfpUrl,
 }: {
-  children: ReactNode
-  max?: number
-  className?: string
+  handle: string
+  pfpUrl: string | null
 }) {
-  const reduced = useReducedMotion()
-  const ref = useRef<HTMLDivElement | null>(null)
-  const mx = useMotionValue(0.5)
-  const my = useMotionValue(0.5)
-  const sx = useSpring(mx, { stiffness: 140, damping: 22, mass: 0.9 })
-  const sy = useSpring(my, { stiffness: 140, damping: 22, mass: 0.9 })
-  const ry = useTransform(sx, [0, 1], [-max, max])
-  const rx = useTransform(sy, [0, 1], [max * 0.7, -max * 0.7])
+  const [loaded, setLoaded] = useState(false)
+  const [failed, setFailed] = useState(false)
 
   useEffect(() => {
-    const el = ref.current
-    if (!el || reduced) return
-    if (typeof window !== 'undefined' && window.matchMedia('(hover: none)').matches) return
-    const onMove = (e: MouseEvent) => {
-      const r = el.getBoundingClientRect()
-      mx.set((e.clientX - r.left) / r.width)
-      my.set((e.clientY - r.top) / r.height)
-    }
-    const onLeave = () => {
-      mx.set(0.5)
-      my.set(0.5)
-    }
-    el.addEventListener('mousemove', onMove)
-    el.addEventListener('mouseleave', onLeave)
-    return () => {
-      el.removeEventListener('mousemove', onMove)
-      el.removeEventListener('mouseleave', onLeave)
-    }
-  }, [mx, my, reduced])
-
-  if (reduced) return <div className={className}>{children}</div>
+    setLoaded(false)
+    setFailed(false)
+  }, [pfpUrl])
 
   return (
-    <motion.div
-      ref={ref}
-      className={className}
-      style={{
-        perspective: 1400,
-        transformStyle: 'preserve-3d',
-        rotateX: rx,
-        rotateY: ry,
-      }}
-    >
-      {children}
-    </motion.div>
+    <AnimatePresence>
+      {handle && (
+        <motion.div
+          initial={{ opacity: 0, y: -8, scale: 0.96 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -8, scale: 0.96 }}
+          transition={springs.entrance}
+          className="fixed right-5 top-5 z-30 flex items-center gap-2.5 rounded-full bg-white/90 px-3 py-1.5 shadow-[0_2px_8px_rgba(10,10,12,0.06)] backdrop-blur sm:right-7 sm:top-7"
+          style={{ border: `1px solid ${RULE}` }}
+        >
+          <div className="relative h-7 w-7 overflow-hidden rounded-full" style={{ background: '#E6E8EC' }}>
+            {pfpUrl && !failed && (
+              <img
+                src={pfpUrl}
+                alt=""
+                width={28}
+                height={28}
+                referrerPolicy="no-referrer"
+                onLoad={() => setLoaded(true)}
+                onError={() => setFailed(true)}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  opacity: loaded ? 1 : 0,
+                  transition: 'opacity 240ms ease',
+                }}
+              />
+            )}
+          </div>
+          <span className="pr-1 font-mono text-[12px] tabular-nums" style={{ color: FG_SOFT }}>
+            @{handle}
+          </span>
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }
-
-// ── Step transitions — spring slide ───────────────────────
-const stepVariants = {
-  enter: (dir: 1 | -1) => ({ opacity: 0, x: dir * 28, filter: 'blur(6px)' }),
-  center: { opacity: 1, x: 0, filter: 'blur(0px)' },
-  exit: (dir: 1 | -1) => ({ opacity: 0, x: -dir * 28, filter: 'blur(6px)' }),
-}
-
-const NumberBadge = ({ n }: { n: number }) => (
-  <motion.span
-    key={n}
-    initial={{ scale: 0.6, opacity: 0 }}
-    animate={{ scale: 1, opacity: 1 }}
-    transition={springs.indicator}
-    aria-hidden
-    className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[7px] bg-[#1D4ED8] text-[14px] font-semibold tabular-nums text-white shadow-[0_6px_18px_rgba(29,78,216,0.45)]"
-    style={{ marginTop: 6 }}
-  >
-    {n}
-  </motion.span>
-)
-
-const LetterChip = ({ ch, selected }: { ch: string; selected?: boolean }) => (
-  <motion.span
-    aria-hidden
-    animate={selected ? { scale: 1.05 } : { scale: 1 }}
-    transition={springs.hover}
-    className={[
-      'inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[7px] border text-[13px] font-semibold uppercase',
-      selected
-        ? 'border-[#1D4ED8] bg-[#1D4ED8] text-white shadow-[0_4px_12px_rgba(29,78,216,0.4)]'
-        : 'border-[#C7D2FE] bg-white/80 text-[#1D4ED8] backdrop-blur',
-    ].join(' ')}
-  >
-    {ch}
-  </motion.span>
-)
 
 export default function WaitlistForm() {
   const [idx, setIdx] = useState(0)
@@ -382,7 +249,7 @@ export default function WaitlistForm() {
   const inputRef = useRef<HTMLInputElement | null>(null)
 
   const step = STEPS[idx]
-  const total = STEPS.length - 1 // exclude welcome
+  const totalQuestions = STEPS.length - 1
   const visibleQuestionIndex = useMemo(() => {
     let n = 0
     for (let i = 1; i < idx; i++) {
@@ -393,9 +260,19 @@ export default function WaitlistForm() {
     return n + 1
   }, [idx, answers])
 
+  const handle = useMemo(() => {
+    const raw = typeof answers.twitter === 'string' ? answers.twitter : ''
+    return normalizeHandle(raw)
+  }, [answers.twitter])
+
+  const pfpUrl = useMemo(() => {
+    if (!handle) return null
+    return `https://unavatar.io/x/${encodeURIComponent(handle)}?fallback=false`
+  }, [handle])
+
   useEffect(() => {
     if (step.type === 'text' || step.type === 'email') {
-      const t = setTimeout(() => inputRef.current?.focus(), 320)
+      const t = setTimeout(() => inputRef.current?.focus(), 220)
       return () => clearTimeout(t)
     }
   }, [step])
@@ -470,7 +347,7 @@ export default function WaitlistForm() {
     const newAnswers = { ...answers, [step.id]: v }
     setAnswers(newAnswers)
     setError(null)
-    setTimeout(() => void advance(newAnswers), 240)
+    setTimeout(() => void advance(newAnswers), 200)
   }
 
   const onToggleMulti = (v: string) => {
@@ -482,219 +359,194 @@ export default function WaitlistForm() {
     setAnswer(step.id, arr)
   }
 
-  const progress = step.type === 'welcome' ? 0 : visibleQuestionIndex / total
+  const progress = step.type === 'welcome' ? 0 : visibleQuestionIndex / totalQuestions
 
   if (submitted) {
-    return (
-      <div className="relative flex min-h-[100dvh] flex-col items-center justify-center text-[#1D1D1F]">
-        <Aurora />
-        <main className="flex w-full max-w-2xl items-center px-6 py-24 sm:px-10">
-          <Tilt max={3} className="w-full">
-            <motion.div
-              initial={{ opacity: 0, y: 24, filter: 'blur(8px)', scale: 0.97 }}
-              animate={{ opacity: 1, y: 0, filter: 'blur(0px)', scale: 1 }}
-              transition={springs.entrance}
-              className="glass-panel relative overflow-hidden rounded-[28px] p-10 text-center sm:p-14"
-            >
-              <ShineOverlay intensity={0.1} size={520} color="255, 255, 255" />
-              <motion.h1
-                initial={{ opacity: 0, y: 14, filter: 'blur(4px)' }}
-                animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                transition={{ ...springs.entrance, delay: 0.1 }}
-                className="text-[clamp(28px,4.2vw,44px)] font-semibold leading-[1.15] tracking-[-0.022em]"
-              >
-                Thanks! You’re now on the waitlist 🔥
-              </motion.h1>
-              <motion.p
-                initial={{ opacity: 0, y: 14, filter: 'blur(4px)' }}
-                animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                transition={{ ...springs.entrance, delay: 0.2 }}
-                className="mx-auto mt-6 max-w-[680px] text-[clamp(20px,2.6vw,28px)] leading-[1.35] tracking-[-0.01em] text-[#1D1D1F]"
-              >
-                We’ll notify you the second we go live.
-              </motion.p>
-            </motion.div>
-          </Tilt>
-        </main>
-      </div>
-    )
+    return <Verdict handle={handle} pfpUrl={pfpUrl} />
   }
 
   return (
-    <div className="relative flex min-h-[100dvh] flex-col items-center text-[#1D1D1F]">
-      <Aurora />
+    <div className="relative flex min-h-[100dvh] flex-col items-center" style={{ color: FG }}>
+      <DotGridBg />
+      <HandleBadge handle={handle} pfpUrl={pfpUrl} />
 
-      <div className="fixed left-0 right-0 top-0 z-30 h-[3px]" aria-hidden>
+      <div className="fixed left-0 right-0 top-0 z-20 h-[2px]" aria-hidden>
         <motion.div
-          className="h-full origin-left bg-gradient-to-r from-[#1D4ED8] via-[#6366F1] to-[#A855F7]"
+          className="h-full origin-left"
+          style={{ background: ACCENT, transformOrigin: 'left' }}
           animate={{ scaleX: progress }}
           initial={false}
           transition={springs.expand}
-          style={{ transformOrigin: 'left' }}
         />
       </div>
 
-      <main className="flex w-full max-w-2xl flex-1 items-center px-6 py-20 sm:px-10">
-        <Tilt max={4} className="w-full">
-          <div className="glass-panel relative overflow-hidden rounded-[28px] p-7 sm:p-10">
-            <ShineOverlay intensity={0.08} size={560} color="255, 255, 255" />
+      <main className="flex w-full flex-1 items-center justify-center px-6 py-20 sm:px-10">
+        <div className="relative w-full max-w-[734px]">
+          <AnimatePresence initial={false} mode="wait" custom={direction}>
+            <motion.div
+              key={step.id}
+              custom={direction}
+              variants={stepVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.22, ease: [0.4, 0, 0.6, 1] }}
+            >
+              {step.type === 'welcome' ? (
+                <Welcome step={step} onStart={() => void advance()} />
+              ) : (
+                <Sheet>
+                  <div className="mb-7 flex items-center justify-between">
+                    <StepNumber n={visibleQuestionIndex} total={totalQuestions} />
+                    {step.required && (
+                      <span
+                        className="font-mono text-[11px] uppercase tracking-[0.14em]"
+                        style={{ color: DIM }}
+                      >
+                        Required
+                      </span>
+                    )}
+                  </div>
+                  {(step.type === 'text' || step.type === 'email') && (
+                    <TextQuestion
+                      step={step}
+                      value={typeof answers[step.id] === 'string' ? (answers[step.id] as string) : ''}
+                      onChange={(v) => setAnswer(step.id, v)}
+                      onKeyDown={onKeyDown}
+                      inputRef={inputRef}
+                    />
+                  )}
+                  {step.type === 'choice' && (
+                    <ChoiceQuestion
+                      step={step}
+                      value={answers[step.id]}
+                      onSelectSingle={onSelectSingle}
+                      onToggleMulti={onToggleMulti}
+                    />
+                  )}
+                </Sheet>
+              )}
+            </motion.div>
+          </AnimatePresence>
 
-            <AnimatePresence initial={false} mode="wait" custom={direction}>
-              <motion.div
-                key={step.id}
-                custom={direction}
-                variants={stepVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                transition={springs.entrance}
-                className="relative"
-              >
-                {step.type === 'welcome' && <Welcome step={step} onStart={() => void advance()} />}
-                {(step.type === 'text' || step.type === 'email') && (
-                  <TextQuestion
-                    step={step}
-                    index={visibleQuestionIndex}
-                    value={typeof answers[step.id] === 'string' ? (answers[step.id] as string) : ''}
-                    onChange={(v) => setAnswer(step.id, v)}
-                    onKeyDown={onKeyDown}
-                    inputRef={inputRef}
-                  />
-                )}
-                {step.type === 'choice' && (
-                  <ChoiceQuestion
-                    step={step}
-                    index={visibleQuestionIndex}
-                    value={answers[step.id]}
-                    onSelectSingle={onSelectSingle}
-                    onToggleMulti={onToggleMulti}
-                  />
-                )}
-              </motion.div>
-            </AnimatePresence>
-          </div>
-        </Tilt>
+          {/* Marginalia — invite step, desktop gutter */}
+          {step.type === 'text' && step.id === 'invite' && (
+            <CaveatArrow
+              key="invite-margin"
+              text="rakeback is real."
+              direction="left-up"
+              delay={0.35}
+              className="pointer-events-none absolute -right-[180px] top-24 hidden xl:block"
+            />
+          )}
+        </div>
       </main>
 
       {step.type !== 'welcome' && (
-        <motion.footer
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ ...springs.entrance, delay: 0.15 }}
-          className="sticky bottom-0 z-20 w-full px-4 pb-4 sm:px-6"
-        >
-          <div className="glass-popover mx-auto flex w-full max-w-2xl items-center justify-between gap-4 rounded-2xl px-4 py-3 sm:px-5">
-            <div className="text-[13px] text-[#6E6E73]">
-              <AnimatePresence mode="wait">
-                <motion.span
-                  key={error ?? 'hint'}
-                  initial={{ opacity: 0, y: 4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -4 }}
-                  transition={{ duration: 0.18 }}
-                  className="inline-block"
-                >
-                  {error ? (
-                    <span className="text-[#DC2626]">{error}</span>
-                  ) : (
-                    <>
-                      Press{' '}
-                      <kbd className="mx-1 rounded border border-[#D2D2D7] bg-white/70 px-1.5 py-0.5 text-[11px] font-medium">
-                        Enter
-                      </kbd>{' '}
-                      to continue
-                    </>
-                  )}
-                </motion.span>
-              </AnimatePresence>
-            </div>
-            <div className="flex items-center gap-2">
-              <motion.button
-                whileTap={{ scale: 0.94 }}
-                transition={springs.press}
-                onClick={back}
-                className="rounded-full border border-black/10 bg-white/60 px-4 py-2 text-[13px] font-medium text-[#1D1D1F] backdrop-blur transition hover:bg-white/80"
-                type="button"
-              >
-                Back
-              </motion.button>
-              <motion.button
-                whileTap={{ scale: 0.94 }}
-                whileHover={{ y: -1 }}
-                transition={springs.press}
-                onClick={() => void advance()}
-                disabled={submitting}
-                className="rounded-full bg-[#1D4ED8] px-5 py-2 text-[13px] font-semibold text-white shadow-[0_8px_24px_rgba(29,78,216,0.35)] transition hover:bg-[#1E40AF] disabled:opacity-60"
-                type="button"
-              >
-                {submitting ? 'Sending…' : 'OK'}
-              </motion.button>
-            </div>
-          </div>
-        </motion.footer>
+        <Dock
+          error={error}
+          submitting={submitting}
+          onBack={back}
+          onContinue={() => void advance()}
+          isFinal={findNext(idx, 1, answers) === idx}
+        />
       )}
     </div>
   )
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// Sheet — the white card, hairline border, no glass.
+// ─────────────────────────────────────────────────────────────────────
+function Sheet({ children }: { children: ReactNode }) {
+  return (
+    <div
+      className="relative rounded-[18px] px-7 py-9 sm:px-10 sm:py-11"
+      style={{
+        background: SHEET_BG,
+        border: `1px solid ${RULE}`,
+        boxShadow:
+          '0 1px 2px rgba(10,10,12,0.04), 0 24px 60px -20px rgba(10,10,12,0.10)',
+      }}
+    >
+      {children}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Welcome — no sheet, hero on the dot grid.
+// ─────────────────────────────────────────────────────────────────────
 function Welcome({ step, onStart }: { step: WelcomeStep; onStart: () => void }) {
   return (
-    <div className="text-center">
+    <div className="flex flex-col items-center text-center">
+      <motion.div
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: [0.4, 0, 0.6, 1], delay: 0.05 }}
+        className="font-mono text-[12px] uppercase tracking-[0.18em]"
+        style={{ color: ACCENT }}
+      >
+        Early Access
+      </motion.div>
       <motion.h1
-        initial={{ opacity: 0, y: 16, filter: 'blur(6px)' }}
+        initial={{ opacity: 0, y: 14, filter: 'blur(6px)' }}
         animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-        transition={{ ...springs.entrance, delay: 0.05 }}
-        className="mx-auto max-w-[820px] text-[clamp(28px,4.2vw,44px)] font-semibold leading-[1.12] tracking-[-0.022em]"
+        transition={{ duration: 0.55, ease: [0.4, 0, 0.6, 1], delay: 0.12 }}
+        className="mt-5 max-w-[860px] font-semibold leading-[1.05]"
+        style={{
+          color: FG,
+          fontSize: 'clamp(44px, 7.2vw, 96px)',
+          letterSpacing: '-0.034em',
+        }}
       >
         {step.title}
       </motion.h1>
       <motion.p
-        initial={{ opacity: 0, y: 14, filter: 'blur(4px)' }}
-        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-        transition={{ ...springs.entrance, delay: 0.18 }}
-        className="mx-auto mt-7 max-w-[760px] text-[clamp(18px,2.4vw,24px)] leading-[1.35] tracking-[-0.01em] text-[#1D1D1F]"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, ease: [0.4, 0, 0.6, 1], delay: 0.28 }}
+        className="mx-auto mt-6 max-w-[640px] leading-[1.4]"
+        style={{
+          color: FG_SOFT,
+          fontSize: 'clamp(18px, 1.9vw, 22px)',
+          letterSpacing: '-0.012em',
+        }}
       >
         {step.body}
       </motion.p>
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ ...springs.entrance, delay: 0.32 }}
-        className="mt-10 flex flex-col items-center gap-3"
+        transition={{ duration: 0.45, ease: [0.4, 0, 0.6, 1], delay: 0.42 }}
+        className="mt-12 w-full max-w-[420px]"
       >
-        <motion.button
-          whileHover={{ y: -2, scale: 1.02 }}
-          whileTap={{ scale: 0.96 }}
-          transition={springs.press}
-          onClick={onStart}
-          autoFocus
-          className="rounded-[12px] bg-[#1D4ED8] px-7 py-3 text-[20px] font-medium text-white shadow-[0_12px_36px_rgba(29,78,216,0.45)] focus:outline-none focus:ring-4 focus:ring-[#1D4ED8]/20"
-          type="button"
-        >
+        <PrimaryButton onClick={onStart} autoFocus>
           {step.cta}
-        </motion.button>
-        <span className="inline-flex items-center gap-1.5 text-[13px] text-[#6E6E73]">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+        </PrimaryButton>
+        <div className="mt-3 flex items-center justify-center gap-1.5 font-mono text-[12px]" style={{ color: DIM }}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
             <circle cx="12" cy="12" r="9" />
             <path d="M12 7v5l3 2" strokeLinecap="round" />
           </svg>
-          {step.takes}
-        </span>
+          <span className="uppercase tracking-[0.14em]">{step.takes}</span>
+        </div>
       </motion.div>
     </div>
   )
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// TextQuestion — large headline, bottom-ruled input.
+// ─────────────────────────────────────────────────────────────────────
 function TextQuestion({
   step,
-  index,
   value,
   onChange,
   onKeyDown,
   inputRef,
 }: {
   step: TextStep
-  index: number
   value: string
   onChange: (v: string) => void
   onKeyDown: (e: React.KeyboardEvent) => void
@@ -702,35 +554,35 @@ function TextQuestion({
 }) {
   return (
     <div>
-      <div className="flex items-start gap-3">
-        <NumberBadge n={index} />
-        <div className="flex-1">
-          <motion.h2
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ ...springs.entrance, delay: 0.05 }}
-            className="text-[clamp(24px,3.2vw,34px)] font-semibold leading-[1.2] tracking-[-0.02em]"
-          >
-            {step.label}
-            {step.required && <span aria-hidden className="ml-1 align-baseline text-[#1D1D1F]">*</span>}
-          </motion.h2>
-          {step.description && (
-            <motion.p
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ ...springs.entrance, delay: 0.12 }}
-              className="mt-2 text-[17px] leading-[1.5] text-[#1D1D1F]/85"
-            >
-              {step.description}
-            </motion.p>
-          )}
-        </div>
-      </div>
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
+      <motion.h2
+        initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ ...springs.entrance, delay: 0.2 }}
-        className="mt-10 pl-0 sm:pl-10"
+        transition={{ duration: 0.3, ease: [0.4, 0, 0.6, 1] }}
+        className="font-semibold leading-[1.15]"
+        style={{
+          color: FG,
+          fontSize: 'clamp(26px, 3.2vw, 36px)',
+          letterSpacing: '-0.022em',
+        }}
+      >
+        {step.label}
+      </motion.h2>
+      {step.description && (
+        <motion.p
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: [0.4, 0, 0.6, 1], delay: 0.06 }}
+          className="mt-3 leading-[1.5]"
+          style={{ color: FG_SOFT, fontSize: 17, letterSpacing: '-0.01em' }}
+        >
+          {step.description}
+        </motion.p>
+      )}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.32, ease: [0.4, 0, 0.6, 1], delay: 0.12 }}
+        className="mt-9"
       >
         <input
           ref={inputRef}
@@ -741,22 +593,49 @@ function TextQuestion({
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={onKeyDown}
           placeholder={step.placeholder}
-          className="w-full border-b border-black/15 bg-transparent pb-2 text-[clamp(22px,2.8vw,30px)] font-light leading-[1.3] tracking-[-0.01em] text-[#1D1D1F] placeholder:text-[#A5B4FC] focus:border-[#1D4ED8] focus:outline-none"
+          className="w-full bg-transparent pb-3 font-light leading-[1.25] focus:outline-none"
+          style={{
+            color: FG,
+            fontSize: 'clamp(22px, 2.6vw, 30px)',
+            letterSpacing: '-0.012em',
+            borderBottom: `1.5px solid ${RULE}`,
+            transition: 'border-color 180ms ease',
+          }}
+          onFocus={(e) => {
+            e.currentTarget.style.borderBottomColor = ACCENT
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.borderBottomColor = RULE
+          }}
         />
       </motion.div>
+
+      {/* Mobile marginalia — invite step only */}
+      {step.id === 'invite' && (
+        <CaveatArrow
+          text="rakeback is real."
+          direction="right-up"
+          delay={0.4}
+          className="mt-6 xl:hidden"
+          width={140}
+          height={90}
+          fontSize={20}
+        />
+      )}
     </div>
   )
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// ChoiceQuestion — option rows on the dot-grid theme.
+// ─────────────────────────────────────────────────────────────────────
 function ChoiceQuestion({
   step,
-  index,
   value,
   onSelectSingle,
   onToggleMulti,
 }: {
   step: ChoiceStep
-  index: number
   value: AnswerValue | undefined
   onSelectSingle: (v: string) => void
   onToggleMulti: (v: string) => void
@@ -768,92 +647,344 @@ function ChoiceQuestion({
 
   return (
     <div>
-      <div className="flex items-start gap-3">
-        <NumberBadge n={index} />
-        <div className="flex-1">
-          <motion.h2
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ ...springs.entrance, delay: 0.05 }}
-            className="text-[clamp(24px,3.2vw,34px)] font-semibold leading-[1.2] tracking-[-0.02em]"
-          >
-            {step.label}
-          </motion.h2>
-          {step.description && (
-            <motion.p
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ ...springs.entrance, delay: 0.12 }}
-              className="mt-2 text-[17px] leading-[1.5] text-[#1D1D1F]/85"
-            >
-              {step.description}
-            </motion.p>
-          )}
-          {step.multiple && (
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ ...springs.entrance, delay: 0.2 }}
-              className="mt-1 text-[13px] text-[#86868B]"
-            >
-              Choose as many as you like.
-            </motion.p>
-          )}
-        </div>
-      </div>
-      <ul className="mt-8 flex flex-col gap-2 pl-0 sm:pl-10">
+      <motion.h2
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: [0.4, 0, 0.6, 1] }}
+        className="font-semibold leading-[1.15]"
+        style={{
+          color: FG,
+          fontSize: 'clamp(26px, 3.2vw, 36px)',
+          letterSpacing: '-0.022em',
+        }}
+      >
+        {step.label}
+      </motion.h2>
+      {step.description && (
+        <motion.p
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: [0.4, 0, 0.6, 1], delay: 0.06 }}
+          className="mt-3 leading-[1.5]"
+          style={{ color: FG_SOFT, fontSize: 17, letterSpacing: '-0.01em' }}
+        >
+          {step.description}
+        </motion.p>
+      )}
+      {step.multiple && (
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3, delay: 0.1 }}
+          className="mt-2 font-mono text-[12px] uppercase tracking-[0.14em]"
+          style={{ color: DIM }}
+        >
+          Choose any
+        </motion.p>
+      )}
+      <ul className="mt-7 flex flex-col gap-2">
         {step.options.map((opt, i) => {
           const letter = String.fromCharCode(65 + i)
           const selected = selectedSet.has(opt.value)
           return (
             <motion.li
               key={opt.value}
-              initial={{ opacity: 0, y: 10, filter: 'blur(4px)' }}
-              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-              transition={{ ...springs.entrance, delay: 0.18 + i * 0.06 }}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, ease: [0.4, 0, 0.6, 1], delay: 0.12 + i * 0.05 }}
             >
               <motion.button
                 type="button"
-                whileHover={{ y: -2, scale: 1.012 }}
-                whileTap={{ scale: 0.985 }}
-                transition={springs.hover}
-                onClick={() => (step.multiple ? onToggleMulti(opt.value) : onSelectSingle(opt.value))}
-                className={[
-                  'group relative w-full overflow-hidden rounded-2xl border px-3 py-3 text-left',
-                  selected
-                    ? 'border-[#1D4ED8] bg-[#EEF2FF]/80 shadow-[0_10px_30px_rgba(29,78,216,0.18)] backdrop-blur'
-                    : 'border-white/60 bg-white/55 shadow-[0_4px_18px_rgba(15,23,42,0.06)] backdrop-blur hover:border-[#C7D2FE] hover:bg-white/70',
-                ].join(' ')}
+                whileTap={{ scale: 0.99 }}
+                transition={springs.press}
+                onClick={() =>
+                  step.multiple ? onToggleMulti(opt.value) : onSelectSingle(opt.value)
+                }
+                className="group relative flex w-full items-center gap-4 rounded-[12px] px-4 py-3.5 text-left transition-colors"
+                style={{
+                  background: selected ? 'rgba(0,82,255,0.06)' : '#FCFCFD',
+                  border: `1px solid ${selected ? ACCENT : RULE}`,
+                  color: FG,
+                }}
               >
-                <ShineOverlay
-                  intensity={0.22}
-                  size={320}
-                  color={selected ? '99, 102, 241' : '148, 163, 255'}
-                />
-                <span className="relative z-[1] flex items-center gap-3">
-                  <LetterChip ch={letter} selected={selected} />
-                  <span className="text-[clamp(18px,2vw,22px)] font-normal text-[#1D4ED8]">
-                    {opt.label}
-                  </span>
-                  {step.multiple && selected && (
-                    <motion.span
-                      aria-hidden
-                      initial={{ scale: 0, rotate: -90 }}
-                      animate={{ scale: 1, rotate: 0 }}
-                      transition={springs.indicator}
-                      className="ml-auto text-[#1D4ED8]"
-                    >
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    </motion.span>
-                  )}
+                <span
+                  className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[7px] font-mono text-[13px] font-semibold uppercase"
+                  style={{
+                    background: selected ? ACCENT : 'transparent',
+                    color: selected ? '#FFFFFF' : ACCENT,
+                    border: selected ? '1px solid transparent' : `1px solid ${ACCENT}33`,
+                  }}
+                >
+                  {letter}
                 </span>
+                <span
+                  className="flex-1"
+                  style={{
+                    fontSize: 'clamp(17px, 1.9vw, 21px)',
+                    letterSpacing: '-0.012em',
+                    color: FG_SOFT,
+                  }}
+                >
+                  {opt.label}
+                </span>
+                {step.multiple && selected && (
+                  <motion.span
+                    aria-hidden
+                    initial={{ scale: 0, rotate: -90 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={springs.indicator}
+                    style={{ color: ACCENT }}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </motion.span>
+                )}
               </motion.button>
             </motion.li>
           )
         })}
       </ul>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Dock — sticky bottom bar with full-width primary CTA.
+// ─────────────────────────────────────────────────────────────────────
+function Dock({
+  error,
+  submitting,
+  onBack,
+  onContinue,
+  isFinal,
+}: {
+  error: string | null
+  submitting: boolean
+  onBack: () => void
+  onContinue: () => void
+  isFinal: boolean
+}) {
+  return (
+    <motion.footer
+      initial={{ opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ ...springs.entrance, delay: 0.12 }}
+      className="sticky bottom-0 z-20 w-full px-4 pb-4 pt-3 sm:px-6 sm:pb-6"
+      style={{
+        background:
+          'linear-gradient(to top, rgba(240,242,244,0.95) 0%, rgba(240,242,244,0.85) 60%, rgba(240,242,244,0) 100%)',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
+      }}
+    >
+      <div className="mx-auto w-full max-w-[734px]">
+        <div className="mb-2.5 flex items-center justify-between gap-4 px-1">
+          <div className="font-mono text-[12px] tabular-nums" style={{ color: DIM }}>
+            <AnimatePresence mode="wait">
+              <motion.span
+                key={error ?? 'hint'}
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.18 }}
+              >
+                {error ? (
+                  <span style={{ color: '#DC2626' }}>{error}</span>
+                ) : (
+                  <span className="uppercase tracking-[0.14em]">
+                    Press <Kbd>Enter</Kbd> to continue
+                  </span>
+                )}
+              </motion.span>
+            </AnimatePresence>
+          </div>
+          <button
+            type="button"
+            onClick={onBack}
+            className="font-mono text-[12px] uppercase tracking-[0.14em] transition-colors"
+            style={{ color: DIM }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = FG)}
+            onMouseLeave={(e) => (e.currentTarget.style.color = DIM)}
+          >
+            ← Back
+          </button>
+        </div>
+        <PrimaryButton onClick={onContinue} disabled={submitting}>
+          {submitting ? 'Sending…' : isFinal ? 'Submit' : 'Continue'}
+        </PrimaryButton>
+      </div>
+    </motion.footer>
+  )
+}
+
+function PrimaryButton({
+  children,
+  onClick,
+  disabled,
+  autoFocus,
+}: {
+  children: ReactNode
+  onClick: () => void
+  disabled?: boolean
+  autoFocus?: boolean
+}) {
+  const reduced = useReducedMotion()
+  return (
+    <motion.button
+      type="button"
+      onClick={onClick}
+      autoFocus={autoFocus}
+      disabled={disabled}
+      whileTap={reduced ? undefined : { scale: 0.985 }}
+      transition={springs.press}
+      className="w-full rounded-[14px] font-medium focus:outline-none focus:ring-4 focus:ring-[rgba(0,82,255,0.22)] disabled:opacity-60"
+      style={{
+        background: ACCENT,
+        color: '#FFFFFF',
+        height: 60,
+        fontSize: 17,
+        letterSpacing: '-0.011em',
+        boxShadow:
+          '0 1px 0 rgba(255,255,255,0.18) inset, 0 10px 28px -8px rgba(0,82,255,0.55), 0 2px 6px rgba(0,82,255,0.25)',
+      }}
+    >
+      {children}
+    </motion.button>
+  )
+}
+
+function Kbd({ children }: { children: ReactNode }) {
+  return (
+    <kbd
+      className="mx-1 inline-block rounded px-1.5 py-0.5 font-mono text-[11px] font-medium"
+      style={{
+        background: '#FFFFFF',
+        border: `1px solid ${RULE}`,
+        color: FG_SOFT,
+      }}
+    >
+      {children}
+    </kbd>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Verdict — end screen. Big avatar, @handle, Caveat "← You" arrow.
+// ─────────────────────────────────────────────────────────────────────
+function Verdict({ handle, pfpUrl }: { handle: string; pfpUrl: string | null }) {
+  const [pfpLoaded, setPfpLoaded] = useState(false)
+  const [pfpFailed, setPfpFailed] = useState(false)
+
+  const showAvatar = Boolean(pfpUrl) && !pfpFailed
+
+  return (
+    <div className="relative flex min-h-[100dvh] flex-col items-center justify-center px-6 py-24" style={{ color: FG }}>
+      <DotGridBg />
+      <main className="flex w-full max-w-[734px] flex-col items-center text-center">
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: [0.4, 0, 0.6, 1] }}
+          className="font-mono text-[12px] uppercase tracking-[0.18em]"
+          style={{ color: ACCENT }}
+        >
+          Verdict
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, scale: 0.94, filter: 'blur(8px)' }}
+          animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+          transition={{ duration: 0.55, ease: [0.4, 0, 0.6, 1], delay: 0.15 }}
+          className="relative mt-9"
+        >
+          <div
+            className="overflow-hidden rounded-full"
+            style={{
+              width: 144,
+              height: 144,
+              border: `1px solid ${RULE}`,
+              background: '#E6E8EC',
+              boxShadow:
+                '0 1px 2px rgba(10,10,12,0.05), 0 22px 50px -16px rgba(10,10,12,0.18)',
+            }}
+          >
+            {showAvatar && pfpUrl && (
+              <img
+                src={pfpUrl}
+                alt={handle ? `@${handle}` : ''}
+                width={144}
+                height={144}
+                referrerPolicy="no-referrer"
+                onLoad={() => setPfpLoaded(true)}
+                onError={() => setPfpFailed(true)}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  opacity: pfpLoaded ? 1 : 0,
+                  transition: 'opacity 320ms ease',
+                }}
+              />
+            )}
+          </div>
+
+          {/* Caveat "← You" — points UP-RIGHT at the avatar from below-left */}
+          <CaveatArrow
+            text="← You"
+            direction="right-up"
+            delay={0.65}
+            width={150}
+            height={100}
+            fontSize={26}
+            className="pointer-events-none absolute -bottom-[68px] -left-[150px]"
+          />
+        </motion.div>
+
+        {handle && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, ease: [0.4, 0, 0.6, 1], delay: 0.35 }}
+            className="mt-9 font-mono"
+            style={{
+              color: FG,
+              fontSize: 'clamp(22px, 2.4vw, 28px)',
+              letterSpacing: '-0.014em',
+            }}
+          >
+            @{handle}
+          </motion.div>
+        )}
+
+        <motion.h1
+          initial={{ opacity: 0, y: 12, filter: 'blur(6px)' }}
+          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+          transition={{ duration: 0.55, ease: [0.4, 0, 0.6, 1], delay: 0.5 }}
+          className="mt-7 font-semibold leading-[1.06]"
+          style={{
+            color: FG,
+            fontSize: 'clamp(36px, 5.6vw, 68px)',
+            letterSpacing: '-0.028em',
+          }}
+        >
+          You’re on the list.
+        </motion.h1>
+
+        <motion.p
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, ease: [0.4, 0, 0.6, 1], delay: 0.7 }}
+          className="mx-auto mt-5 max-w-[520px] leading-[1.4]"
+          style={{
+            color: FG_SOFT,
+            fontSize: 'clamp(17px, 1.8vw, 20px)',
+            letterSpacing: '-0.011em',
+          }}
+        >
+          We’ll notify you the second we go live. The cheat is structural. The fix is too.
+        </motion.p>
+      </main>
     </div>
   )
 }
