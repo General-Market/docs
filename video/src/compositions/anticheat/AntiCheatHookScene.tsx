@@ -29,11 +29,9 @@ useGLTF.preload(MODEL_URL);
 
 // ── Laptop / phone constants pulled from DeviceBroll so this component
 //    is self-contained.
-// Phone scaled to read almost full canvas-height while keeping a clean
-// right-edge clip rather than overflowing the top + bottom too. A
-// little smaller than before so the phone feels less "in front" of
-// the laptop.
-const PHONE_BASE_SCALE = 34;
+// Phone base scale dialed back ≈20% (was 34) so it reads less "in
+// front of" the laptop and gives the trading chart room to breathe.
+const PHONE_BASE_SCALE = 27;
 const LID_OPEN = new THREE.Quaternion(-0.78333, 0, 0, 0.62161);
 const LID_CLOSED = new THREE.Quaternion(0, 0, 0, 1);
 const BEVELS_POS = new THREE.Vector3(-0.00012, 0.00824, -0.10401);
@@ -42,18 +40,17 @@ const BEVELS_SCALE = new THREE.Vector3(0.27471, 0.27471, 0.27471);
 const PHONE_SCREEN_ASPECT = 9 / 19.5;
 const LAPTOP_SCREEN_ASPECT = 16 / 10;
 
-// World layout. Laptop sits at GLB origin (its native pose). The
-// camera + target sit ≈1.3 world-units higher than before so the
-// laptop body reads ~20% lower in the frame; the phone keeps its
-// y matched to the camera target (vertical canvas-center) and is
-// pushed further canvas-left on the x.
-const PHONE_POS = new THREE.Vector3(-4, 3.5, 0);
+// World layout. Laptop sits at GLB origin (its native pose). Camera +
+// target dropped 0.6 world-units (≈10% of frame height) so the laptop
+// reads higher; the phone is shoved 1.5 units further canvas-right
+// (≈30%) and its y stays matched to the target so it sits at vertical
+// canvas-center.
+const PHONE_POS = new THREE.Vector3(-5.5, 2.9, 0);
 
-// Camera between the two devices, looking forward into +z. Higher
-// y than before (4.5 / 3.5 instead of 3.2 / 2.2) so the laptop drops
-// down in frame; the camera direction is unchanged.
-const CAMERA_POS: [number, number, number] = [-1.5, 4.5, -7];
-const CAMERA_TARGET: [number, number, number] = [-1.5, 3.5, 0];
+// Camera between the two devices, looking forward into +z. Lower y
+// than the previous pass so the laptop body climbs back up the frame.
+const CAMERA_POS: [number, number, number] = [-1.5, 3.9, -7];
+const CAMERA_TARGET: [number, number, number] = [-1.5, 2.9, 0];
 
 // Subtle yaw drift over the first 7 seconds — the phone slowly turns
 // further toward canvas-center while the hook plays, just enough that
@@ -380,25 +377,22 @@ const Scene: React.FC<{
           { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
         );
 
-  // Beat-driven warping. The base curves above set the macro framing;
-  // every Hook kick (scene-local 3, 29, 54, 80, 106, 132, 157, 183,
-  // 209, 235) punches the camera a touch forward and nudges the phone
-  // toward canvas-center, then releases back into the slow drift.
-  // Attack 2 / decay 22 — sharp on the way in so the zoom *snaps*,
-  // soft on the way out so it eases back. Damped after the spin
-  // starts so the closing animation isn't competing with kicks.
+  // Beat-driven warping. Base curves above set the macro framing;
+  // every Hook kick adds a *whisper* of forward push and a hairline
+  // yaw nudge — enough that the cameras feel alive on the rhythm,
+  // not enough that anyone notices the rhythm. Linear attack/decay,
+  // wider window so the breath overlaps between beats. Damped after
+  // the closing spin so the lid-slam isn't competing with kicks.
   const exitDamp = 1 - clamp01((frame - PHONE_SPIN_START + 8) / 12);
-  const beatRaw = beatPulseScene(frame, "Hook", 2, 22) * exitDamp;
-  const beatKick = Math.pow(beatRaw, 1.4);
+  const beatKick = beatPulseScene(frame, "Hook", 4, 26) * exitDamp;
 
-  const laptopZoom = laptopZoomBase + beatKick * 0.028;
-  const phoneZoom = phoneZoomBase + beatKick * 0.020;
+  const laptopZoom = laptopZoomBase + beatKick * 0.010;
+  const phoneZoom = phoneZoomBase + beatKick * 0.007;
   const phoneZoomCorrection = phoneZoom / laptopZoom;
 
   // Phone yaw: existing slow drift + per-beat micro-turn toward
-  // canvas-center (≈ -0.8°). Reads as the device "leaning in" with
-  // each kick.
-  const yawKick = beatKick * -0.014;
+  // canvas-center (≈ -0.3°). Just enough to register as movement.
+  const yawKick = beatKick * -0.005;
   const yawDrift = PHONE_YAW_DRIFT_AMOUNT * driftEased + yawKick;
 
   const iphone = sceneClone.getObjectByName("iphone");
