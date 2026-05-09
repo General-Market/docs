@@ -133,7 +133,7 @@ export function GeneralLoaderInline() {
           alt=""
           width={LOGO_SIZE}
           height={LOGO_SIZE}
-          style={{ borderRadius: 7, display: 'block' }}
+          style={{ display: 'block' }}
           priority
         />
       </div>
