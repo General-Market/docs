@@ -46,12 +46,18 @@ const PAIRS = [
 //   120 — pair 2
 //   146 — pair 3
 //   172 — verdict reveal
+//   187 — panel labels start riding off (6.22s; bottom-up, line by line)
 //   254 — hook ends
 const HEADER_IN = 17;
 const SPLIT_AT = 43;
 const PAIR_FRAMES = [94, 120, 146];
 const REVEAL_AT = 172;
+const PANEL_EXIT_AT = 187;
+const PANEL_EXIT_DURATION = 14;
+const PANEL_EXIT_STAGGER = 5;
 const HOOK_DURATION = 254;
+
+const clamp01 = (t: number) => (t < 0 ? 0 : t > 1 ? 1 : t);
 
 export const AntiCheatHook: React.FC = () => {
   const frame = useCurrentFrame();
@@ -207,7 +213,16 @@ const PanelLabel: React.FC<{
     config: { damping: 22, stiffness: 110, mass: 0.7 },
   });
   const y = interpolate(t, [0, 1], [24, 0]);
-  const opacity = interpolate(t, [0, 1], [0, 1]);
+  const enterOp = interpolate(t, [0, 1], [0, 1]);
+
+  // Eyebrows exit last — after all three pairs have left the frame.
+  const exitT = clamp01(
+    (frame - PANEL_EXIT_AT - PANEL_EXIT_STAGGER * 3) / PANEL_EXIT_DURATION,
+  );
+  const exitEased = exitT * exitT;
+  const exitX = (align === "left" ? -1 : 1) * exitEased * 360;
+  const exitOp = 1 - exitT;
+  const exitBlur = exitEased * 6;
 
   return (
     <div
@@ -218,8 +233,10 @@ const PanelLabel: React.FC<{
         right: 0,
         textAlign: align === "left" ? "left" : "right",
         padding: "0 96px",
-        opacity,
-        transform: `translateY(${y}px)`,
+        opacity: enterOp * exitOp,
+        transform: `translate(${exitX.toFixed(2)}px, ${y}px)`,
+        filter: exitBlur > 0.05 ? `blur(${exitBlur.toFixed(2)}px)` : undefined,
+        willChange: "transform, opacity, filter",
       }}
     >
       <div
@@ -271,19 +288,32 @@ const PairList: React.FC<{
           fps,
           config: { damping: 22, stiffness: 90, mass: 0.8 },
         });
-        const opacity = interpolate(xT, [0.05, 0.45], [0, 1], {
+        const enterOp = interpolate(xT, [0.05, 0.45], [0, 1], {
           extrapolateLeft: "clamp",
           extrapolateRight: "clamp",
         });
         const initialX = align === "left" ? 480 : -480;
-        const x = interpolate(xT, [0, 1], [initialX, 0]);
+        const enterX = interpolate(xT, [0, 1], [initialX, 0]);
+
+        // Exit, bottom-up. Pair 3 (last in) leaves first; pair 1 last.
+        const exitDelay = (pairs.length - 1 - i) * PANEL_EXIT_STAGGER;
+        const exitT = clamp01(
+          (frame - PANEL_EXIT_AT - exitDelay) / PANEL_EXIT_DURATION,
+        );
+        const exitEased = exitT * exitT;
+        const exitX = (align === "left" ? -1 : 1) * exitEased * 420;
+        const exitOp = 1 - exitT;
+        const exitBlur = exitEased * 5;
 
         return (
           <div
             key={i}
             style={{
-              transform: `translateX(${x}px)`,
-              opacity,
+              transform: `translateX(${(enterX + exitX).toFixed(2)}px)`,
+              opacity: enterOp * exitOp,
+              filter:
+                exitBlur > 0.05 ? `blur(${exitBlur.toFixed(2)}px)` : undefined,
+              willChange: "transform, opacity, filter",
               fontFamily: font,
               fontSize: 76,
               fontWeight: 700,

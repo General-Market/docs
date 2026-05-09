@@ -29,7 +29,7 @@ useGLTF.preload(MODEL_URL);
 //    is self-contained.
 // Phone scaled up + pushed further to canvas-right so it stands ~80%
 // of frame height with its right quarter clipped off the canvas edge.
-const PHONE_BASE_SCALE = 35;
+const PHONE_BASE_SCALE = 40;
 const LID_OPEN = new THREE.Quaternion(-0.78333, 0, 0, 0.62161);
 const LID_CLOSED = new THREE.Quaternion(0, 0, 0, 1);
 const BEVELS_POS = new THREE.Vector3(-0.00012, 0.00824, -0.10401);
@@ -39,17 +39,28 @@ const PHONE_SCREEN_ASPECT = 9 / 19.5;
 const LAPTOP_SCREEN_ASPECT = 16 / 10;
 
 // World layout. Laptop sits at GLB origin (its native pose). Phone
-// floats at world x=-5.2 (more negative than before): with the camera
+// floats at world x=-7.4 (more negative than before): with the camera
 // looking down +z, three.js's lookAt makes negative-x map to the
 // RIGHT of the canvas, so pushing phone further right clips part of
 // it off the right edge.
-const PHONE_POS = new THREE.Vector3(-5.2, 2.5, 0);
+const PHONE_POS = new THREE.Vector3(-7.4, 2.5, 0);
 
 // Camera between the two devices, looking forward into +z. Slightly
 // above the device plane so we read the laptop's lid face and the
 // phone's screen face without lying flat on the deck.
 const CAMERA_POS: [number, number, number] = [-1.5, 3.2, -7];
 const CAMERA_TARGET: [number, number, number] = [-1.5, 2.2, 0];
+
+// Yaw the phone so its screen faces the camera dead-on even though
+// the phone is offset hard to canvas-right. Without this the phone
+// reads as oddly tilted because perspective slices across its plane.
+//   Three.js Y rotation by θ takes the local -Z axis (the screen
+//   normal) to (-sinθ, 0, -cosθ); set θ so that direction equals
+//   (camera - phone) projected onto XZ.
+const PHONE_YAW = Math.atan2(
+  PHONE_POS.x - CAMERA_POS[0],
+  PHONE_POS.z - CAMERA_POS[2],
+);
 
 // Closing-act animation — the lid slams shut while the phone whirls
 // off-frame to the right. 7.28s = frame 218 at 30fps.
@@ -309,9 +320,11 @@ const Scene: React.FC<{
   const spinEased = spinT * spinT;
   const phoneRotY = spinEased * Math.PI * 2 * PHONE_SPIN_REVOLUTIONS;
   const phoneSlideX = spinEased * PHONE_SLIDE_OFFSET;
+  // Compose: base yaw (faces camera) + spin around world Y. Since both
+  // rotations are on the same axis, just add the angles.
   const phoneQuat = new THREE.Quaternion().setFromAxisAngle(
     Y_AXIS,
-    phoneRotY,
+    PHONE_YAW + phoneRotY,
   );
 
   const iphone = sceneClone.getObjectByName("iphone");

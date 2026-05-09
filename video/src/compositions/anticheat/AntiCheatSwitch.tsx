@@ -38,8 +38,8 @@ type Row = { label: string; pct: number; accent: boolean };
 // the reference's IVV-leads composition.
 const ROWS: Row[] = [
   { label: "Blocks", pct: 40, accent: true },
-  { label: "Options", pct: 25, accent: false },
-  { label: "Perps", pct: 20, accent: false },
+  { label: "Perps", pct: 25, accent: false },
+  { label: "Options", pct: 20, accent: false },
 ];
 const HERO_INDEX = 0;
 
@@ -879,7 +879,7 @@ const HeroCopy: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
           opacity: kickOp,
         }}
       >
-        *Indicative comparison under favorable market conditions. Net of fees and slippage. Past performance does not guarantee future returns.
+        *Based on General Market testnet data. Indicative comparison under favorable market conditions. Net of fees and slippage. Past performance does not guarantee future returns.
       </div>
     </>
   );
