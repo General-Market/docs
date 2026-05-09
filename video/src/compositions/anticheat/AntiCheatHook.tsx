@@ -22,8 +22,13 @@ const HOOK_DURATION = SCENE_A_DURATION + SCENE_B_DURATION - T_SCROLL;
 
 const BROLL = {
   // Wall-hack broll reads as "wall hackers" instantly — the only cheat
-  // footage the new hook needs.
+  // footage the laptop scene needs.
   valorant: staticFile("cheat-broll/valorant-wallhack.mp4"),
+  // Binance positions screen with the "14000$ profit" overlay painted
+  // out in a dark-navy box so only the trading UI reads. Source is a
+  // YouTube short pre-processed at 3× speed via ffmpeg. Plays on the
+  // phone's screen instead of the hand-drawn chart.
+  insiderTrading: staticFile("cheat-broll/insider-trading-clean.mp4"),
 };
 
 export type BrollSegment = {
@@ -33,7 +38,14 @@ export type BrollSegment = {
   startFrom: number;
 };
 
-const PHONE_SEGMENTS: BrollSegment[] = [];
+const PHONE_SEGMENTS: BrollSegment[] = [
+  {
+    url: BROLL.insiderTrading,
+    from: 0,
+    durationInFrames: SCENE_A_DURATION,
+    startFrom: 0,
+  },
+];
 const LAPTOP_SEGMENTS: BrollSegment[] = [
   {
     url: BROLL.valorant,
@@ -55,7 +67,8 @@ export const AntiCheatHook: React.FC = () => {
             devicePosition="right"
             question="Why trading against insider traders"
             questionTint="#E03B4A"
-            laptopSegments={PHONE_SEGMENTS}
+            segments={PHONE_SEGMENTS}
+          brollAspect={1080 / 1920}
           />
         </TransitionSeries.Sequence>
 
@@ -69,7 +82,7 @@ export const AntiCheatHook: React.FC = () => {
             device="laptop"
             devicePosition="left"
             question="When gaming Anti-Cheats ban wall hackers"
-            laptopSegments={LAPTOP_SEGMENTS}
+            segments={LAPTOP_SEGMENTS}
           />
         </TransitionSeries.Sequence>
       </TransitionSeries>
@@ -84,13 +97,15 @@ const QuestionScene: React.FC<{
   devicePosition: "left" | "right";
   question: string;
   questionTint?: string;
-  laptopSegments: BrollSegment[];
+  segments: BrollSegment[];
+  brollAspect?: number;
 }> = ({
   device,
   devicePosition,
   question,
   questionTint,
-  laptopSegments,
+  segments,
+  brollAspect = 16 / 9,
 }) => {
   // useCurrentFrame is read for animation parity with the hook's
   // beat grid — components beneath read it via context.
@@ -134,8 +149,8 @@ const QuestionScene: React.FC<{
       >
         <AntiCheatHookHalfScene
           device={device}
-          laptopSegments={laptopSegments}
-          laptopBrollAspect={16 / 9}
+          segments={segments}
+          brollAspect={brollAspect}
           width={W / 2}
           height={H}
           emissiveIntensity={0.7}

@@ -42,15 +42,20 @@ const LID_OPEN = new THREE.Quaternion(-0.78333, 0, 0, 0.62161);
 const BEVELS_POS = new THREE.Vector3(-0.00012, 0.00824, -0.10401);
 const BEVELS_SCALE = new THREE.Vector3(0.27471, 0.27471, 0.27471);
 const LAPTOP_SCREEN_ASPECT = 16 / 10;
+// Modern iPhone screen ratio — matches the PhoneChart canvas (720×1560)
+// so video broll cover-fits to the phone bezel without a vertical seam.
+const PHONE_SCREEN_ASPECT = 720 / 1560;
 
 // Camera centred on the canvas — each half puts its device at world origin.
-// Phone sits high in its viewport (PHONE_WORLD_Y = 4.5) so the slide-down
-// transition carries the whole device into and out of frame: at 50% slide
-// progress, only the upper half of Scene A is on canvas, and the phone is
-// in that upper half, fully visible.
+// Phone settles centred (PHONE_WORLD_Y_CENTER) for the first beat of the
+// scene, then drifts up to PHONE_WORLD_Y_RAISED before the scroll so the
+// transition carries the whole device through the visible top half.
 const CAMERA_POS: [number, number, number] = [0, 3.9, -7];
 const CAMERA_TARGET: [number, number, number] = [0, 2.9, 0];
-const PHONE_WORLD_Y = 4.5;
+const PHONE_WORLD_Y_CENTER = 2.9;
+const PHONE_WORLD_Y_RAISED = 4.5;
+const PHONE_RISE_START = 30;
+const PHONE_RISE_END = 49;
 
 const PHONE_YAW_DRIFT_END = 60;
 const PHONE_YAW_DRIFT_AMOUNT = -0.09;
@@ -74,17 +79,17 @@ type DeviceKey = "laptop" | "phone";
 
 const HalfScene: React.FC<{
   device: DeviceKey;
-  laptopSegments: BrollSegment[];
-  laptopBrollAspect: number;
-  laptopVideoRef: React.RefObject<HTMLVideoElement | null>;
+  segments: BrollSegment[];
+  brollAspect: number;
+  videoRef: React.RefObject<HTMLVideoElement | null>;
   emissiveIntensity: number;
   lightingIntensity: number;
   frame: number;
 }> = ({
   device,
-  laptopSegments,
-  laptopBrollAspect,
-  laptopVideoRef,
+  segments,
+  brollAspect,
+  videoRef,
   emissiveIntensity,
   lightingIntensity,
   frame,
@@ -194,12 +199,18 @@ const HalfScene: React.FC<{
   if (device === "phone") {
     const iphone = sceneClone.getObjectByName("iphone");
     if (iphone) {
-      iphone.position.set(0, PHONE_WORLD_Y, 0);
+      const phoneY = interpolate(
+        frame,
+        [PHONE_RISE_START, PHONE_RISE_END],
+        [PHONE_WORLD_Y_CENTER, PHONE_WORLD_Y_RAISED],
+        { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+      );
+      iphone.position.set(0, phoneY, 0);
       iphone.scale.setScalar(PHONE_BASE_SCALE);
       const cameraForward = new THREE.Vector3(...CAMERA_TARGET)
         .sub(new THREE.Vector3(...CAMERA_POS))
         .normalize();
-      const phoneLookTarget = new THREE.Vector3(0, PHONE_WORLD_Y, 0)
+      const phoneLookTarget = new THREE.Vector3(0, phoneY, 0)
         .addScaledVector(cameraForward, 50);
       iphone.lookAt(phoneLookTarget);
       iphone.rotateY(yawDrift);
@@ -217,44 +228,48 @@ const HalfScene: React.FC<{
     <>
       <primitive object={sceneClone} />
       <React.Suspense fallback={null}>
-        {device === "laptop" &&
-          (env.isRendering
-            ? laptopSegments.map((seg, i) => (
-                <Sequence
-                  key={`l-${i}`}
-                  from={seg.from - seg.startFrom}
-                  durationInFrames={seg.durationInFrames + seg.startFrom}
-                  layout="none"
-                >
-                  <RenderedScreen
-                    mesh={laptopScreen}
-                    broll={seg.url}
-                    brollAspect={laptopBrollAspect}
-                    screenAspect={LAPTOP_SCREEN_ASPECT}
-                    emissiveIntensity={emissiveIntensity}
-                    brightness={1}
-                  />
-                </Sequence>
+        {segments.length > 0
+          ? (env.isRendering
+              ? segments.map((seg, i) => (
+                  <Sequence
+                    key={`s-${i}`}
+                    from={seg.from - seg.startFrom}
+                    durationInFrames={seg.durationInFrames + seg.startFrom}
+                    layout="none"
+                  >
+                    <RenderedScreen
+                      mesh={device === "laptop" ? laptopScreen : phoneScreen}
+                      broll={seg.url}
+                      brollAspect={brollAspect}
+                      screenAspect={
+                        device === "laptop"
+                          ? LAPTOP_SCREEN_ASPECT
+                          : PHONE_SCREEN_ASPECT
+                      }
+                      emissiveIntensity={emissiveIntensity}
+                      brightness={1}
+                    />
+                  </Sequence>
+                ))
+              : (
+                <PreviewScreen
+                  mesh={device === "laptop" ? laptopScreen : phoneScreen}
+                  videoRef={videoRef}
+                  canvasW={device === "laptop" ? 1280 : 720}
+                  canvasH={device === "laptop" ? 800 : 1560}
+                  emissiveIntensity={emissiveIntensity}
+                  brightness={1}
+                  frame={frame}
+                />
               ))
-            : (
-              <PreviewScreen
-                mesh={laptopScreen}
-                videoRef={laptopVideoRef}
-                canvasW={1280}
-                canvasH={800}
+          : device === "phone" && (
+              <PhoneChart
+                mesh={phoneScreen}
                 emissiveIntensity={emissiveIntensity}
                 brightness={1}
                 frame={frame}
               />
-            ))}
-        {device === "phone" && (
-          <PhoneChart
-            mesh={phoneScreen}
-            emissiveIntensity={emissiveIntensity}
-            brightness={1}
-            frame={frame}
-          />
-        )}
+            )}
       </React.Suspense>
       <Environment
         preset="apartment"
@@ -281,8 +296,8 @@ const HalfScene: React.FC<{
 
 export type AntiCheatHookHalfSceneProps = {
   device: DeviceKey;
-  laptopSegments: BrollSegment[];
-  laptopBrollAspect?: number;
+  segments: BrollSegment[];
+  brollAspect?: number;
   width?: number;
   height?: number;
   emissiveIntensity?: number;
@@ -291,26 +306,26 @@ export type AntiCheatHookHalfSceneProps = {
 
 export const AntiCheatHookHalfScene: React.FC<AntiCheatHookHalfSceneProps> = ({
   device,
-  laptopSegments,
-  laptopBrollAspect = 16 / 9,
+  segments,
+  brollAspect = 16 / 9,
   width = 960,
   height = 1080,
   emissiveIntensity = 1.6,
   lightingIntensity = 0.85,
 }) => {
   const frame = useCurrentFrame();
-  const laptopVideoRef = useRef<HTMLVideoElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const env = useRemotionEnvironment();
 
   return (
     <AbsoluteFill style={{ width, height, background: "transparent" }}>
-      {!env.isRendering && device === "laptop" && (
+      {!env.isRendering && segments.length > 0 && (
         <>
-          {laptopSegments.map((seg, i) => (
+          {segments.map((seg, i) => (
             <PreviewVideo
-              key={`l-${i}`}
+              key={`s-${i}`}
               segment={seg}
-              videoRef={laptopVideoRef}
+              videoRef={videoRef}
             />
           ))}
         </>
@@ -336,9 +351,9 @@ export const AntiCheatHookHalfScene: React.FC<AntiCheatHookHalfSceneProps> = ({
         <React.Suspense fallback={null}>
           <HalfScene
             device={device}
-            laptopSegments={laptopSegments}
-            laptopBrollAspect={laptopBrollAspect}
-            laptopVideoRef={laptopVideoRef}
+            segments={segments}
+            brollAspect={brollAspect}
+            videoRef={videoRef}
             emissiveIntensity={emissiveIntensity}
             lightingIntensity={lightingIntensity}
             frame={frame}
