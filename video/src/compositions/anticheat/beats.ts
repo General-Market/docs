@@ -9,29 +9,32 @@
 // beats over 113.14s). Each beat at audio time T_audio maps to video
 // frame round(T_audio * FPS - MUSIC_START_FROM_AUDIO).
 //
-// Locked invariant: the music's strongest energy plateau (audio frames
-// ~3079–3084, t≈102.6–102.8s) lands on the Switch→EndCard cut. After
-// Reassure +0.5s (+15f) and Switch +0.6s (+18f) the cut moves from
-// frame 1115 to 1148 (38.27s); MUSIC_START_FROM_AUDIO drops by 33 to
-// keep the drum spike on the new cut. Audio now plays from second 64.37.
-export const MUSIC_START_FROM_AUDIO = 1931;
+// Locked invariant: the music's strongest energy plateau (audio
+// t≈102.52s, the climax drum spike) lands at video time 39.15s
+// (frame 1175). With the previous start (1931) the spike fell at
+// 38.15s; user wanted it pushed +1s to coincide with the EndCard
+// underline completion. MUSIC_START_FROM_AUDIO drops by 30 so the
+// audio plays from second 63.37 — the spike now lands ~27f INSIDE
+// EndCard rather than on the Switch→EndCard cut at frame 1148.
+export const MUSIC_START_FROM_AUDIO = 1901;
 
 // Beats that fall inside the music's playing window for the video.
-// 42 beats at BPM 69.8 (≈26 frames apart), pulled directly from the
-// audio analysis and shifted by the new MUSIC_START_FROM_AUDIO. Scene
-// ranges with the current durations and transitions:
-//   Hook (0–254):       beats  0–9   (frames  24–230)
-//   Bars (236–365):     beats 10–14  (frames 256–359)
-//   Rigged (365–543):   beats 15–21  (frames 384–539)
-//   Stat (527–672):     beats 21–25  (frames 539–667)
-//   Solution (644–877): beats 26–33  (frames 667–873)
-//   Reassure (859–980): beats 34–37  (frames 873–976)
-//   Switch (962–1148):  beats 37–41  (frames 976–1079)
-//   EndCard (1124–end): no beats — the music is in its outro by then.
+// 44 beats at BPM 69.8 (≈26 frames apart), pulled from the audio
+// analysis and shifted by MUSIC_START_FROM_AUDIO. Two extra early
+// beats now fit because the music starts 30f sooner.
+//   Hook (0–254):       beats  0–9   (frames   3–235)
+//   Bars (236–365):     beats 10–13  (frames 260–337)
+//   Rigged (365–543):   beats 14–20  (frames 363–518)
+//   Stat (527–672):     beats 20–25  (frames 518–646)
+//   Solution (644–877): beats 25–32  (frames 646–852)
+//   Reassure (859–980): beats 33–37  (frames 877–980)
+//   Switch (962–1148):  beats 38–42  (frames 1006–1109)
+//   EndCard (1148–end): spike at frame 1175; music outro at 41.27s.
 export const VIDEO_BEATS: readonly number[] = [
-  24, 50, 76, 102, 127, 153, 179, 205, 230, 256, 281, 307, 333, 359, 384,
-  410, 436, 462, 488, 513, 539, 564, 591, 616, 642, 667, 693, 719, 745,
-  770, 796, 822, 847, 873, 899, 924, 950, 976, 1002, 1027, 1053, 1079,
+  3, 29, 54, 80, 106, 132, 157, 183, 209, 235, 260, 286, 311, 337, 363,
+  389, 414, 440, 466, 492, 518, 543, 569, 594, 621, 646, 672, 697, 723,
+  749, 775, 800, 826, 852, 877, 903, 929, 954, 980, 1006, 1032, 1057,
+  1083, 1109,
 ];
 
 export const beat = (i: number): number => {

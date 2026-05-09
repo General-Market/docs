@@ -64,10 +64,10 @@ const TOTAL_FRAMES =
   TRANSITION_FRAMES;
 
 // Music timing — MUSIC_START_FROM_AUDIO is hardcoded in beats.ts so the
-// beat grid stays stable across scene-duration changes. With the current
-// scene plan the drum spike (audio frames ~3079–3084) lands on the
-// Switch→EndCard cut at video frame 1115 (37.17s) — the climax cut and
-// the climax of the music align by construction.
+// beat grid stays stable across scene-duration changes. The drum spike
+// (audio t≈102.52s) now lands at video frame 1175 (39.15s) — 27f inside
+// EndCard rather than on the Switch→EndCard cut at frame 1148. The
+// EndCard underline completes around then; sync hooks read off VIDEO_BEATS.
 const AUDIO_FILE_FRAMES = Math.floor(113.142857 * FPS); // Dagored — Dead Man's March
 const MUSIC_END_FRAME = Math.min(
   TOTAL_FRAMES,
@@ -76,9 +76,8 @@ const MUSIC_END_FRAME = Math.min(
 const MUSIC_FADE_IN = Math.round(FPS * 0.5);
 const MUSIC_VOLUME = 0.55;
 // Fade-out lines up with the song's natural outro (audio second 104.63),
-// which now lands at video second 40.27 with the shifted MUSIC_START
-// (Reassure +0.5s, Switch +0.6s extensions).
-const MUSIC_FADE_OUT_END = Math.round(40.27 * FPS);
+// which now lands at video second 41.27 with MUSIC_START_FROM_AUDIO=1901.
+const MUSIC_FADE_OUT_END = Math.round(41.27 * FPS);
 const MUSIC_FADE_OUT_DURATION = Math.round(FPS * 1.0);
 
 export const AntiCheatFull: React.FC = () => {
