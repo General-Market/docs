@@ -100,18 +100,18 @@ function readResponsive(): Responsive {
   // The phone fills the page like a real linktree page does — generously
   // sized on every device, with just a faint scroll-driven slide.
   if (typeof window === 'undefined') {
-    return { distance: 7.6, topOffset: 0, scrollTravel: 0.5, ambient: false }
+    return { distance: 6.44, topOffset: 0, scrollTravel: 0.5, ambient: false }
   }
   const aspect = window.innerWidth / Math.max(1, window.innerHeight)
   // Touch devices have no mouse parallax — gyroscope (or sine) takes over.
   const ambient = window.matchMedia('(hover: none), (pointer: coarse)').matches
   if (aspect >= 1.2) {
-    return { distance: 7.6, topOffset: 0, scrollTravel: 0.5, ambient }
+    return { distance: 6.44, topOffset: 0, scrollTravel: 0.5, ambient }
   }
   if (aspect >= 0.7) {
-    return { distance: 7.8, topOffset: 0, scrollTravel: 0.45, ambient }
+    return { distance: 6.61, topOffset: 0, scrollTravel: 0.45, ambient }
   }
-  return { distance: 8.0, topOffset: 0, scrollTravel: 0.4, ambient }
+  return { distance: 6.78, topOffset: 0, scrollTravel: 0.4, ambient }
 }
 
 type LeaveRef = React.MutableRefObject<{
