@@ -54,70 +54,95 @@ export const AntiCheatStat: React.FC = () => {
 //                Appears at scene-local frame 73 (= 20s absolute) and
 //                holds through the snap-zoom-out.
 //
-// The percentage glyphs sit at the left edge of each centered string;
-// the arrows therefore land on screen-x ≈ 425 (left of canvas center).
+// Each annotation paints itself on in a fast cascade: body curve strokes
+// on first, then the two arrowhead wings stroke on with a one-frame
+// stagger, then the Caveat label wipes in left-to-right like
+// handwriting. ~16 frames end-to-end (≈ 0.5s).
 const StatAnnotations: React.FC = () => {
   const frame = useCurrentFrame();
 
   // Phase 1 — "Not You"
   const NY_APPEAR = 13;
-  const NY_DRAW_DONE = 30;
+  const NY_BODY_END = 21;
+  const NY_WING1_START = 19;
+  const NY_WING1_END = 22;
+  const NY_WING2_START = 21;
+  const NY_WING2_END = 24;
+  const NY_LABEL_START = 24;
+  const NY_LABEL_END = 30;
   const NY_FADE_OUT = 50;
-  const notYouOp = interpolate(
+
+  const notYouFade = interpolate(
     frame,
-    [NY_APPEAR, NY_APPEAR + 6, NY_FADE_OUT - 4, NY_FADE_OUT],
-    [0, 1, 1, 0],
+    [NY_FADE_OUT - 4, NY_FADE_OUT],
+    [1, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
-  const notYouDraw = interpolate(
+  const notYouBodyDraw = interpolate(
     frame,
-    [NY_APPEAR, NY_DRAW_DONE],
+    [NY_APPEAR, NY_BODY_END],
     [800, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
-  const notYouHeadOp = interpolate(
+  const notYouWing1 = interpolate(
     frame,
-    [NY_DRAW_DONE - 3, NY_DRAW_DONE, NY_FADE_OUT - 4, NY_FADE_OUT],
-    [0, 1, 1, 0],
+    [NY_WING1_START, NY_WING1_END],
+    [50, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
-  const notYouLabelOp = interpolate(
+  const notYouWing2 = interpolate(
     frame,
-    [NY_DRAW_DONE - 1, NY_DRAW_DONE + 6, NY_FADE_OUT - 4, NY_FADE_OUT],
-    [0, 1, 1, 0],
+    [NY_WING2_START, NY_WING2_END],
+    [50, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const notYouLabelClip = interpolate(
+    frame,
+    [NY_LABEL_START, NY_LABEL_END],
+    [0, 1],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
 
   // Phase 2 — "You"
   const Y_APPEAR = 73;
-  const Y_DRAW_DONE = 90;
-  const youOp = interpolate(
+  const Y_BODY_END = 81;
+  const Y_WING1_START = 79;
+  const Y_WING1_END = 82;
+  const Y_WING2_START = 81;
+  const Y_WING2_END = 84;
+  const Y_LABEL_START = 84;
+  const Y_LABEL_END = 90;
+
+  const youBodyDraw = interpolate(
     frame,
-    [Y_APPEAR, Y_APPEAR + 6],
-    [0, 1],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-  const youDraw = interpolate(
-    frame,
-    [Y_APPEAR, Y_DRAW_DONE],
+    [Y_APPEAR, Y_BODY_END],
     [800, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
-  const youHeadOp = interpolate(
+  const youWing1 = interpolate(
     frame,
-    [Y_DRAW_DONE - 3, Y_DRAW_DONE],
-    [0, 1],
+    [Y_WING1_START, Y_WING1_END],
+    [50, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
-  const youLabelOp = interpolate(
+  const youWing2 = interpolate(
     frame,
-    [Y_DRAW_DONE - 1, Y_DRAW_DONE + 6],
+    [Y_WING2_START, Y_WING2_END],
+    [50, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const youLabelClip = interpolate(
+    frame,
+    [Y_LABEL_START, Y_LABEL_END],
     [0, 1],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
 
   const ink = colors.accent;
   const stroke = 7;
+  const wingDash = 50;
+  const showNotYou = frame >= NY_APPEAR && frame <= NY_FADE_OUT;
+  const showYou = frame >= Y_APPEAR;
 
   return (
     <AbsoluteFill style={{ pointerEvents: "none" }}>
@@ -127,25 +152,36 @@ const StatAnnotations: React.FC = () => {
         viewBox={`0 0 ${W} ${H}`}
         style={{ position: "absolute", inset: 0 }}
       >
+        <defs>
+          <clipPath id="ny-label-clip" clipPathUnits="objectBoundingBox">
+            <rect x="0" y="0" width={notYouLabelClip} height="1" />
+          </clipPath>
+          <clipPath id="y-label-clip" clipPathUnits="objectBoundingBox">
+            <rect x="0" y="0" width={youLabelClip} height="1" />
+          </clipPath>
+        </defs>
+
         {/* "Not You" — sweeps up from lower-right to point at 0.04% */}
-        <g opacity={notYouOp}>
-          <path
-            d="M 600 800 C 545 760 505 705 470 660 C 450 638 435 622 420 608"
-            stroke={ink}
-            strokeWidth={stroke}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            fill="none"
-            strokeDasharray={800}
-            strokeDashoffset={notYouDraw}
-          />
-          <g opacity={notYouHeadOp}>
+        {showNotYou && (
+          <g opacity={notYouFade}>
+            <path
+              d="M 600 800 C 545 760 505 705 470 660 C 450 638 435 622 420 608"
+              stroke={ink}
+              strokeWidth={stroke}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
+              strokeDasharray={800}
+              strokeDashoffset={notYouBodyDraw}
+            />
             <path
               d="M 420 608 L 451 622"
               stroke={ink}
               strokeWidth={stroke}
               strokeLinecap="round"
               fill="none"
+              strokeDasharray={wingDash}
+              strokeDashoffset={notYouWing1}
             />
             <path
               d="M 420 608 L 432 640"
@@ -153,41 +189,46 @@ const StatAnnotations: React.FC = () => {
               strokeWidth={stroke}
               strokeLinecap="round"
               fill="none"
+              strokeDasharray={wingDash}
+              strokeDashoffset={notYouWing2}
             />
+            <g transform="rotate(-3 520 855)">
+              <text
+                x={520}
+                y={870}
+                clipPath="url(#ny-label-clip)"
+                fontFamily={caveatFont}
+                fontSize={104}
+                fontWeight={700}
+                fill={ink}
+              >
+                Not You
+              </text>
+            </g>
           </g>
-          <text
-            x={520}
-            y={870}
-            opacity={notYouLabelOp}
-            fontFamily={caveatFont}
-            fontSize={104}
-            fontWeight={700}
-            fill={ink}
-            transform="rotate(-3, 600, 855)"
-          >
-            Not You
-          </text>
-        </g>
+        )}
 
         {/* "You" — sweeps down from upper-right to point at 99.96% */}
-        <g opacity={youOp}>
-          <path
-            d="M 620 290 C 555 330 510 375 470 420 C 450 442 438 460 430 478"
-            stroke={ink}
-            strokeWidth={stroke}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            fill="none"
-            strokeDasharray={800}
-            strokeDashoffset={youDraw}
-          />
-          <g opacity={youHeadOp}>
+        {showYou && (
+          <g>
+            <path
+              d="M 620 290 C 555 330 510 375 470 420 C 450 442 438 460 430 478"
+              stroke={ink}
+              strokeWidth={stroke}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
+              strokeDasharray={800}
+              strokeDashoffset={youBodyDraw}
+            />
             <path
               d="M 430 478 L 462 462"
               stroke={ink}
               strokeWidth={stroke}
               strokeLinecap="round"
               fill="none"
+              strokeDasharray={wingDash}
+              strokeDashoffset={youWing1}
             />
             <path
               d="M 430 478 L 442 446"
@@ -195,21 +236,24 @@ const StatAnnotations: React.FC = () => {
               strokeWidth={stroke}
               strokeLinecap="round"
               fill="none"
+              strokeDasharray={wingDash}
+              strokeDashoffset={youWing2}
             />
+            <g transform="rotate(-3 560 230)">
+              <text
+                x={560}
+                y={245}
+                clipPath="url(#y-label-clip)"
+                fontFamily={caveatFont}
+                fontSize={120}
+                fontWeight={700}
+                fill={ink}
+              >
+                You
+              </text>
+            </g>
           </g>
-          <text
-            x={560}
-            y={245}
-            opacity={youLabelOp}
-            fontFamily={caveatFont}
-            fontSize={120}
-            fontWeight={700}
-            fill={ink}
-            transform="rotate(-3, 620, 230)"
-          >
-            You
-          </text>
-        </g>
+        )}
       </svg>
     </AbsoluteFill>
   );
