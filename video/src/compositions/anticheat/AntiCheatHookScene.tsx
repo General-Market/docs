@@ -39,11 +39,11 @@ const PHONE_SCREEN_ASPECT = 9 / 19.5;
 const LAPTOP_SCREEN_ASPECT = 16 / 10;
 
 // World layout. Laptop sits at GLB origin (its native pose). Phone
-// floats at world x=-5: with the camera looking down +z, three.js's
+// floats at world x=-5.6: with the camera looking down +z, three.js's
 // lookAt makes negative-x map to the RIGHT of the canvas, so this
 // keeps about three-quarters of the phone on canvas with the rest
 // bleeding off the right.
-const PHONE_POS = new THREE.Vector3(-5, 2.5, 0);
+const PHONE_POS = new THREE.Vector3(-5.6, 2.5, 0);
 
 // Camera between the two devices, looking forward into +z. Slightly
 // above the device plane so we read the laptop's lid face and the
@@ -57,7 +57,18 @@ const CAMERA_TARGET: [number, number, number] = [-1.5, 2.2, 0];
 const PHONE_YAW_DRIFT_END = 210; // 7s at 30fps
 const PHONE_YAW_DRIFT_AMOUNT = -0.09; // ≈ -5°, more negative = toward center
 
-const CAMERA_VEC = new THREE.Vector3(...CAMERA_POS);
+// Phone faces the *view plane*, not the camera position. Pointing the
+// phone at the camera position made it tilt up to meet the camera's
+// y-offset, which read as a backward lean. Aligning its screen normal
+// with -camera_forward instead makes the phone parallel to the view
+// plane — perfectly rectangular under projection regardless of
+// horizontal offset.
+const CAMERA_FORWARD = new THREE.Vector3(...CAMERA_TARGET)
+  .sub(new THREE.Vector3(...CAMERA_POS))
+  .normalize();
+const PHONE_LOOK_TARGET = new THREE.Vector3()
+  .copy(PHONE_POS)
+  .addScaledVector(CAMERA_FORWARD, 50);
 
 // Closing-act animation — the lid slams shut while the phone whirls
 // off-frame to the right. 7.28s = frame 218 at 30fps.
@@ -331,7 +342,7 @@ const Scene: React.FC<{
     // shows the apple logo. Add π to the local-Y rotation to flip the
     // phone front-to-back so the screen faces the camera, then layer
     // the drift and the exit spin on top.
-    iphone.lookAt(CAMERA_VEC);
+    iphone.lookAt(PHONE_LOOK_TARGET);
     iphone.rotateY(Math.PI + yawDrift + phoneRotY);
   }
 
