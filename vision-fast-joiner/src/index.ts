@@ -254,7 +254,14 @@ function takeNonce(): number {
   return n
 }
 
+// Debug-only: which sources to trace verbosely. Comma-sep env DEBUG_SOURCES.
+const DEBUG_SOURCES = new Set((process.env.DEBUG_SOURCES || 'defi').split(',').map((s) => s.trim()).filter(Boolean))
+function dbg(source: string, msg: string) {
+  if (DEBUG_SOURCES.has(source)) console.log(`[dbg] source=${source} ${msg}`)
+}
+
 async function processSource(source: string) {
+  dbg(source, 'enter')
   const sourceId = keccak256(stringToHex(`${source}_${VAULT_VERSION}`))
   let batchId: bigint
   try {
@@ -264,9 +271,11 @@ async function processSource(source: string) {
       functionName: 'latestBatchForSource',
       args: [sourceId],
     })
-  } catch {
+  } catch (e) {
+    dbg(source, `latestBatchForSource error: ${e instanceof Error ? e.message : e}`)
     return
   }
+  dbg(source, `latestBatch=${batchId}`)
   if (batchId === 0n) return
 
   const vaults = VAULTS_BY_SOURCE[source]
@@ -294,7 +303,10 @@ async function processSource(source: string) {
   // participants from joined vaults, so we want all five visible.
   for (const vault of vaults) {
     const key = `${source}:${batchId}:${vault.toLowerCase()}`
-    if (attempted.has(key)) continue
+    if (attempted.has(key)) {
+      dbg(source, `vault=${vault} already attempted`)
+      continue
+    }
 
     try {
       const pos = await publicClient.readContract({
@@ -304,10 +316,13 @@ async function processSource(source: string) {
         args: [batchId, vault],
       })
       if (pos.totalDeposited > 0n) {
+        dbg(source, `vault=${vault} already has position deposit=${pos.totalDeposited}`)
         attempted.add(key)
         continue
       }
-    } catch {}
+    } catch (e) {
+      dbg(source, `vault=${vault} getPosition error: ${e instanceof Error ? e.message.slice(0, 80) : e}`)
+    }
     try {
       const idle = await publicClient.readContract({
         address: vault,
@@ -315,15 +330,18 @@ async function processSource(source: string) {
         functionName: 'idleUSDC',
       })
       if (idle < DEPOSIT_WEI) {
+        dbg(source, `vault=${vault} insufficient idle=${idle}`)
         attempted.add(key)
         continue
       }
-    } catch {
+    } catch (e) {
+      dbg(source, `vault=${vault} idleUSDC error: ${e instanceof Error ? e.message.slice(0, 80) : e}`)
       continue
     }
 
     attempted.add(key)
     pendingWrites.push({ source, batchId, vault, configHash })
+    dbg(source, `vault=${vault} queued`)
   }
 }
 
