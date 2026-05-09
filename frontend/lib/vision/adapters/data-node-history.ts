@@ -80,7 +80,7 @@ export interface PickOptions {
   limit?: number
   /** Sort key — `'value'` (default) for star/viewer/player counts, `'volume24h'` for prediction markets. */
   rankBy?: 'value' | 'volume24h'
-  /** Pin a specific asset by id; if it has history, win. Else fall back to ranking. */
+  /** Pin a specific asset by id; if it has history AND moves, win. Else fall back to ranking. */
   preferredAssetId?: string
   /** Minimum number of history points required for a candidate to win. */
   minPoints?: number
@@ -88,16 +88,46 @@ export interface PickOptions {
   maxSeriesPoints?: number
   /** Filter assets before ranking. Skip ones with bad shape. */
   filter?: (asset: DataNodeAsset) => boolean
+  /**
+   * Number of candidates to probe in parallel for history. Higher = better
+   * chance of finding a non-flat one, more bandwidth at cache-miss. Default 8.
+   */
+  probeLimit?: number
+  /**
+   * Reject series whose liveliness score is below this. Liveliness =
+   * sum(|diff|) / max(|max|, |min|) — total path length normalized by scale.
+   * A flat line scores 0; a monotone climb scores ~range/scale; a wiggly
+   * mean-reverting series scores far higher. Default 0.01 (1%).
+   */
+  minLiveliness?: number
+}
+
+/** Total path traveled relative to scale. Captures both "moves" and "wiggles". */
+function liveliness(series: number[]): number {
+  if (series.length < 2) return 0
+  let path = 0
+  let min = series[0]
+  let max = series[0]
+  for (let i = 1; i < series.length; i++) {
+    path += Math.abs(series[i] - series[i - 1])
+    if (series[i] < min) min = series[i]
+    if (series[i] > max) max = series[i]
+  }
+  const scale = Math.max(Math.abs(max), Math.abs(min))
+  if (scale < 1e-12) return 0
+  return path / scale
 }
 
 /**
  * Pick a representative asset from a data-node source and return its history.
  *
- * Strategy: rank candidates by the chosen key (descending), walk the list,
- * accept the first one whose history has at least `minPoints` real values.
- * The data-node ranking is pre-sorted alphabetically by assetId, so we sort
- * client-side. Top by value/volume isn't always the most-watched, but it's
- * legible to the user and stable across page renders.
+ * Strategy: rank candidates by the chosen key (descending), probe several in
+ * parallel for history, then pick the most *alive* one — most path traveled
+ * per unit scale. Flat lines (no movement) and slow monotone drifts both
+ * score low; mean-reverting volatile series score high. Pinned assets
+ * (AAPL, CS2) only win when they actually move; otherwise the ranker takes
+ * over. If every candidate is flat, fall back to the top-ranked one with
+ * enough depth — better a flat real chart than an empty card.
  */
 export async function pickSourceSeries(
   source: string,
@@ -110,6 +140,8 @@ export async function pickSourceSeries(
     minPoints = 8,
     maxSeriesPoints = 64,
     filter,
+    probeLimit = 8,
+    minLiveliness = 0.01,
   } = opts
 
   const base = getAaDataNodeUrl()
@@ -141,23 +173,58 @@ export async function pickSourceSeries(
     candidates = [pinnedAsset, ...candidates.filter((c) => c.assetId !== pinnedAsset.assetId)]
   }
 
-  // Probe up to 6 candidates; stop on the first with usable history.
-  const probeLimit = Math.min(candidates.length, 6)
-  for (let i = 0; i < probeLimit; i++) {
-    const c = candidates[i]
-    const hist = await fetchJson<HistoryResponse>(
-      `${base}/market/prices/${encodeURIComponent(source)}/${encodeURIComponent(c.assetId)}/history`,
-    )
-    const pts = (hist?.prices ?? [])
-      .map((p) => toNumber(p.value))
-      .filter((v): v is number => v !== null && v > 0)
-    if (pts.length >= minPoints) {
-      const series = pts.slice(-maxSeriesPoints)
-      const last = series[series.length - 1] ?? null
-      return { asset: c, series, last, total: list?.total ?? candidates.length }
-    }
+  const probed = candidates.slice(0, Math.min(candidates.length, probeLimit))
+  const probes = await Promise.allSettled(
+    probed.map(async (c) => {
+      const hist = await fetchJson<HistoryResponse>(
+        `${base}/market/prices/${encodeURIComponent(source)}/${encodeURIComponent(c.assetId)}/history`,
+      )
+      const pts = (hist?.prices ?? [])
+        .map((p) => toNumber(p.value))
+        .filter((v): v is number => v !== null && v > 0)
+      return { c, pts }
+    }),
+  )
+
+  type Accepted = {
+    asset: DataNodeAsset
+    series: number[]
+    last: number | null
+    score: number
+    rankIndex: number
   }
-  return null
+  const accepted: Accepted[] = []
+  probes.forEach((r, i) => {
+    if (r.status !== 'fulfilled') return
+    const { c, pts } = r.value
+    if (pts.length < minPoints) return
+    const series = pts.slice(-maxSeriesPoints)
+    const last = series[series.length - 1] ?? null
+    accepted.push({
+      asset: c,
+      series,
+      last,
+      score: liveliness(series),
+      rankIndex: i,
+    })
+  })
+
+  if (accepted.length === 0) return null
+
+  // Prefer alive ones (score >= floor); among those, take the highest score.
+  // If every probed candidate is flat, fall back to the top-ranked one so we
+  // never regress to an empty card.
+  const alive = accepted.filter((a) => a.score >= minLiveliness)
+  const winner = alive.length > 0
+    ? alive.reduce((best, a) => (a.score > best.score ? a : best))
+    : accepted.reduce((best, a) => (a.rankIndex < best.rankIndex ? a : best))
+
+  return {
+    asset: winner.asset,
+    series: winner.series,
+    last: winner.last,
+    total: list?.total ?? candidates.length,
+  }
 }
 
 export function formatBigNumber(n: number): string {
