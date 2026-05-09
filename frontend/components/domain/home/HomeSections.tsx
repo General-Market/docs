@@ -95,7 +95,13 @@ function SectionHeader({
   )
 }
 
-export function HomeDashboard({ feeds }: { feeds: FeedMap }) {
+export function HomeDashboard({
+  feeds,
+  liveSourceIds,
+}: {
+  feeds: FeedMap
+  liveSourceIds?: ReadonlySet<string>
+}) {
   const heroRotation = HERO_ROTATION_IDS.map((id) => {
     const f = pick(feeds, id)
     return {
@@ -111,6 +117,11 @@ export function HomeDashboard({ feeds }: { feeds: FeedMap }) {
   })
   const side = SIDE_RAIL_IDS.map((id) => pick(feeds, id))
   const topMarkets = TOP_MARKETS_IDS.map((id) => pick(feeds, id))
+  // The hardcoded SOON list ages quickly — once a source ships it shouldn't
+  // keep parading as upcoming. Filter against the live registry.
+  const soonFeeds = liveSourceIds
+    ? SOON_FEEDS.filter((f) => !liveSourceIds.has(f.sourceId))
+    : SOON_FEEDS
 
   return (
     <div className="px-6 py-8 md:px-8 lg:px-10 lg:py-10">
@@ -152,21 +163,23 @@ export function HomeDashboard({ feeds }: { feeds: FeedMap }) {
         </ScrollRow>
       </section>
 
-      <section className="mt-12 mb-4">
-        <SectionHeader title="Coming soon" href="/explorer" />
-        <ScrollRow>
-          {SOON_FEEDS.map((feed) => (
-            <AssetCard
-              key={feed.sourceId}
-              sourceId={feed.sourceId}
-              displayName={feed.displayName}
-              meta={feed.meta}
-              series={feed.series}
-              coverage={feed.coverage}
-            />
-          ))}
-        </ScrollRow>
-      </section>
+      {soonFeeds.length > 0 && (
+        <section className="mt-12 mb-4">
+          <SectionHeader title="Coming soon" href="/explorer" />
+          <ScrollRow>
+            {soonFeeds.map((feed) => (
+              <AssetCard
+                key={feed.sourceId}
+                sourceId={feed.sourceId}
+                displayName={feed.displayName}
+                meta={feed.meta}
+                series={feed.series}
+                coverage={feed.coverage}
+              />
+            ))}
+          </ScrollRow>
+        </section>
+      )}
     </div>
   )
 }

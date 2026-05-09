@@ -48,7 +48,6 @@ const WINDOW_OPTIONS: { hours: WindowHours; label: string; settleLimit: number }
   { hours: 168, label: '7d', settleLimit: 400 },
   { hours: 1176, label: '7w', settleLimit: 500 },
 ]
-const BANKROLL_COLOR = 'rgb(0,122,255)'
 type ChartMode = 'settlement' | 'time'
 
 function shortAddr(a: string): string {
@@ -322,11 +321,6 @@ export function AssetActivityCard({
     )
   }, [columns, points])
 
-  // Always-Up bankroll absolute series (one entry per settlement).
-  const bankUpAbs = useMemo<number[]>(() => {
-    return simulateBankroll(columns, 'Up').series.slice(1)
-  }, [columns])
-
   // Pick a baseline index — leftmost *visible* column when in settlement mode,
   // first valid value when in time mode (whole window).
   const baseIdx = useMemo(() => {
@@ -344,42 +338,36 @@ export function AssetActivityCard({
   }, [seriesValues, leftIdx, chartMode])
 
   const baseAsset = seriesValues[baseIdx]
-  const baseBank = bankUpAbs[baseIdx] ?? 1
 
-  // Both series rebased to 1.0 at baseIdx.
+  // Asset rebased to 1.0 at baseIdx.
   const assetRatios = useMemo<(number | null)[]>(() => {
     if (baseAsset == null || baseAsset === 0) return seriesValues.map(() => null)
     return seriesValues.map(v => (v == null ? null : v / baseAsset))
   }, [seriesValues, baseAsset])
 
-  const bankUpRatios = useMemo<number[]>(() => {
-    if (!baseBank) return bankUpAbs.map(() => 1)
-    return bankUpAbs.map(v => v / baseBank)
-  }, [bankUpAbs, baseBank])
-
-  // Combined Y-range across both lines plus a fallback to raw points.
+  // Y-range driven by the asset alone now that the bankroll line is gone —
+  // letting the price reclaim the chart instead of being squashed against
+  // the top by the always-bet simulation.
   const yMin = useMemo(() => {
     const all: number[] = []
     for (const r of assetRatios) if (r != null) all.push(r)
-    for (const r of bankUpRatios) all.push(r)
     if (all.length === 0 && points.length > 0) {
       const v0 = points[0].value
       if (v0 !== 0) for (const p of points) all.push(p.value / v0)
     }
     if (all.length === 0) return 0.95
     return Math.min(...all, 1.0)
-  }, [assetRatios, bankUpRatios, points])
+  }, [assetRatios, points])
   const yMax = useMemo(() => {
     const all: number[] = []
     for (const r of assetRatios) if (r != null) all.push(r)
-    for (const r of bankUpRatios) all.push(r)
     if (all.length === 0 && points.length > 0) {
       const v0 = points[0].value
       if (v0 !== 0) for (const p of points) all.push(p.value / v0)
     }
     if (all.length === 0) return 1.05
     return Math.max(...all, 1.0)
-  }, [assetRatios, bankUpRatios, points])
+  }, [assetRatios, points])
   const ySpan = Math.max(1e-12, yMax - yMin)
 
   const lineColor = useMemo(() => {
@@ -434,18 +422,6 @@ export function AssetActivityCard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [assetRatios, yMin, yMax, ySpan, colCount])
 
-  // Always-Up bankroll line (already a ratio, starts at 1.0).
-  const bankPath = useMemo(() => {
-    if (bankUpRatios.length === 0) return ''
-    const segs: string[] = []
-    bankUpRatios.forEach((r, i) => {
-      const x = xForIdx(i)
-      const y = yForRatio(r)
-      segs.push(`${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`)
-    })
-    return segs.join(' ')
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bankUpRatios, yMin, yMax, ySpan, colCount])
 
   // Time-linear fallback when there are no settlements yet.
   const fallbackPath = useMemo(() => {
@@ -574,10 +550,7 @@ export function AssetActivityCard({
           <div style={{ flex: 1 }}>
             <TimeChart
               points={points}
-              columns={columns}
-              bankUpAbs={bankUpAbs}
               baseAsset={baseAsset}
-              baseBank={baseBank}
               yMin={yMin}
               yMax={yMax}
               ySpan={ySpan}
@@ -747,17 +720,6 @@ export function AssetActivityCard({
                   fill="none"
                 />
               ) : null}
-              {/* Always-Up bankroll line */}
-              {bankPath ? (
-                <path
-                  d={bankPath}
-                  stroke={BANKROLL_COLOR}
-                  strokeWidth={1.5}
-                  fill="none"
-                  strokeDasharray="0"
-                  opacity={0.85}
-                />
-              ) : null}
               {/* Settlement dots */}
               {assetRatios.map((r, i) => {
                 if (r == null) return null
@@ -868,20 +830,14 @@ export function AssetActivityCard({
 
 function TimeChart({
   points,
-  columns,
-  bankUpAbs,
   baseAsset,
-  baseBank,
   yMin,
   yMax,
   ySpan,
   lineColor,
 }: {
   points: PricePoint[]
-  columns: BatchCol[]
-  bankUpAbs: number[]
   baseAsset: number | null | undefined
-  baseBank: number
   yMin: number
   yMax: number
   ySpan: number
@@ -921,7 +877,6 @@ function TimeChart({
     padTop + (1 - (r - yMin) / ySpan) * usable
 
   const v0 = baseAsset != null && baseAsset !== 0 ? baseAsset : points[0].value
-  const baseB = baseBank || 1
 
   const assetPath = points
     .map((p, i) => {
@@ -929,22 +884,6 @@ function TimeChart({
       return `${i === 0 ? 'M' : 'L'} ${xForTime(p.ts).toFixed(1)} ${yForRatio(r).toFixed(1)}`
     })
     .join(' ')
-
-  // Bankroll line: one point per settlement timestamp.
-  const bankPoints = columns.map((c, i) => ({
-    ts: new Date(c.batch.settledAt).getTime(),
-    r: (bankUpAbs[i] ?? baseB) / baseB,
-  }))
-  const bankPath =
-    bankPoints.length > 1
-      ? bankPoints
-          .map((b, i) => {
-            const x = xForTime(Math.max(tMin, Math.min(tMax, b.ts)))
-            const y = yForRatio(b.r)
-            return `${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`
-          })
-          .join(' ')
-      : ''
 
   const baselineY = yForRatio(1.0)
 
@@ -967,16 +906,6 @@ function TimeChart({
         />
       ) : null}
       <path d={assetPath} stroke={lineColor} strokeWidth={1.5} fill="none" vectorEffect="non-scaling-stroke" />
-      {bankPath ? (
-        <path
-          d={bankPath}
-          stroke={BANKROLL_COLOR}
-          strokeWidth={1.5}
-          fill="none"
-          vectorEffect="non-scaling-stroke"
-          opacity={0.85}
-        />
-      ) : null}
     </svg>
   )
 }
@@ -1364,7 +1293,6 @@ function Header({
         }}
       >
         <LegendDot color="rgb(52,199,89)" label="price" />
-        <LegendDot color={BANKROLL_COLOR} label="always ▲ 1%" />
         {showLegend ? <span>▲ ▼ · faded = lost · winner pays</span> : null}
       </div>
     </header>
