@@ -61,12 +61,16 @@ const LAPTOP_SEGMENTS: BrollSegment[] = [
   },
 ];
 
+// Phone broll also has a dark intro before the trading chart appears.
+// Skip ~2s so the chart is on screen at frame 0.
+const PHONE_BROLL_START_FROM = 60;
+
 const PHONE_SEGMENTS: BrollSegment[] = [
   {
     url: PHONE_BROLL,
     from: 0,
     durationInFrames: 254,
-    startFrom: 0,
+    startFrom: PHONE_BROLL_START_FROM,
   },
 ];
 
