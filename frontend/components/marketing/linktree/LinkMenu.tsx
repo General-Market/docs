@@ -64,11 +64,13 @@ type LinkMenuProps = {
   onLinkClick?: (e: React.MouseEvent, href: string, external: boolean, icon: LinktreeIcon) => void
   /** When true the menu fades out instantly — used while the phone flies off. */
   hidden?: boolean
+  /** Touch overlay mode — flat 2D, viewport-relative size, no CSS3D matrix. */
+  flat?: boolean
 }
 
-export function LinkMenu({ onLinkClick, hidden = false }: LinkMenuProps = {}) {
+export function LinkMenu({ onLinkClick, hidden = false, flat = false }: LinkMenuProps = {}) {
   return (
-    <div className={`lt-menu${hidden ? ' lt-menu--hidden' : ''}`}>
+    <div className={`lt-menu${hidden ? ' lt-menu--hidden' : ''}${flat ? ' lt-menu--flat' : ''}`}>
       <style>{`
         .lt-menu {
           width: 360px;
@@ -100,6 +102,18 @@ export function LinkMenu({ onLinkClick, hidden = false }: LinkMenuProps = {}) {
           opacity: 0;
           pointer-events: none;
         }
+        /* Flat-2D mode used on touch devices. Sized to the viewport so
+           every row is reachable without scrolling inside the menu, and
+           rendered as plain DOM (no matrix3d) so iOS Safari's hit-test
+           lands on the row the user actually tapped. */
+        .lt-menu--flat {
+          width: min(360px, 92vw);
+          height: auto;
+          max-height: 88dvh;
+          padding: 56px 22px 40px;
+        }
+        .lt-menu--flat .lt-list { gap: 10px; }
+        .lt-menu--flat .lt-avatar { width: 80px; height: 80px; margin-top: 4px; }
         /* Subtle inner rim — a pane-of-glass edge highlight, no big
            tinted sheen this time. The cool blue overlay was reading
            as a runaway animation, killed it. */
@@ -226,6 +240,9 @@ export function LinkMenu({ onLinkClick, hidden = false }: LinkMenuProps = {}) {
           border: 1px solid rgba(0,0,0,0.04);
           position: relative;
           overflow: hidden;
+          /* Suppress the 300 ms tap-delay so the click event fires on
+             touchend, not after iOS Safari's double-tap timeout. */
+          touch-action: manipulation;
         }
         .lt-row:hover {
           background: #ececef;
