@@ -266,7 +266,7 @@ function PhoneScene({
     onReady()
   }, [gltf, onReady, tuning.xo, tuning.yo, tuning.zo])
 
-  useFrame(({ clock }) => {
+  useFrame(() => {
     const g = groupRef.current
     if (!g) return
 
@@ -287,19 +287,21 @@ function PhoneScene({
       return
     }
 
-    // Tilt source: gyroscope when granted on touch devices, sine wave
-    // as ambient fallback for touch-without-gyro, mouse parallax on desktop.
-    const tNow = clock.getElapsedTime()
-    let tiltYaw = tilt.current.yaw
-    let tiltPitch = tilt.current.pitch
-    if (tilt.current.gyroActive) {
-      tiltYaw = tilt.current.gyroYaw
-      tiltPitch = tilt.current.gyroPitch
-    } else if (responsive.ambient) {
-      tiltYaw = Math.sin(tNow * 0.45) * 0.09
-      tiltPitch = Math.sin(tNow * 0.32 + 1.1) * 0.05
+    // Touch devices: freeze the phone group at identity. iOS Safari's
+    // hit-testing on <Html transform> children drifts whenever the
+    // parent's matrix3d updates per frame — gyro, ambient sine, and
+    // scroll-driven Y slide all conspire to land taps on the wrong
+    // row. A static parent transform locks the hit areas to where
+    // the user actually sees the rows.
+    if (responsive.ambient) {
+      g.position.set(0, responsive.topOffset, 0)
+      g.rotation.set(0, 0, 0)
+      return
     }
 
+    // Desktop: mouse parallax + scroll-driven slide.
+    const tiltYaw = tilt.current.yaw
+    const tiltPitch = tilt.current.pitch
     const targetY = responsive.topOffset + tilt.current.scrollProgress * responsive.scrollTravel
     g.position.y = THREE.MathUtils.lerp(g.position.y, targetY, 0.12)
     g.position.x = THREE.MathUtils.lerp(g.position.x, 0, 0.18)

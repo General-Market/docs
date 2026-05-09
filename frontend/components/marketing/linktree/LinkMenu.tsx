@@ -226,6 +226,10 @@ export function LinkMenu({ onLinkClick, hidden = false }: LinkMenuProps = {}) {
           border: 1px solid rgba(0,0,0,0.04);
           position: relative;
           overflow: hidden;
+          /* Suppress the synthesized double-tap-to-zoom delay so the
+             click event fires at touchend, not after iOS Safari has
+             time to drift the matrix3d hit-test. */
+          touch-action: manipulation;
         }
         .lt-row:hover {
           background: #ececef;
