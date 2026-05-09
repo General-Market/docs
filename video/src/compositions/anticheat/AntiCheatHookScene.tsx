@@ -29,7 +29,7 @@ useGLTF.preload(MODEL_URL);
 //    is self-contained.
 // Phone scaled to read almost full canvas-height while keeping a clean
 // right-edge clip rather than overflowing the top + bottom too.
-const PHONE_BASE_SCALE = 30;
+const PHONE_BASE_SCALE = 38;
 const LID_OPEN = new THREE.Quaternion(-0.78333, 0, 0, 0.62161);
 const LID_CLOSED = new THREE.Quaternion(0, 0, 0, 1);
 const BEVELS_POS = new THREE.Vector3(-0.00012, 0.00824, -0.10401);
@@ -342,8 +342,12 @@ const Scene: React.FC<{
     // shows the apple logo. Add π to the local-Y rotation to flip the
     // phone front-to-back so the screen faces the camera, then layer
     // the drift and the exit spin on top.
+    // After lookAt(PHONE_LOOK_TARGET), local -Z aligns with camera-
+    // forward, which means local +Z (the GLB's screen face) already
+    // points back at the viewer — no π flip needed here. Drift + spin
+    // compose around the phone's own Y axis.
     iphone.lookAt(PHONE_LOOK_TARGET);
-    iphone.rotateY(Math.PI + yawDrift + phoneRotY);
+    iphone.rotateY(yawDrift + phoneRotY);
   }
 
   // Screen power-on. Phone wakes from black; laptop wakes from a
