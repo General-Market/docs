@@ -831,10 +831,55 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
         // On the leader, resolve_l3_order_ids uses stored mappings.
         // On followers, it falls back to settlement IDs (but followers don't create proposals —
         // they receive L3 IDs from the leader's P2P broadcast and sign those).
-        let l3_order_ids = {
+        let mut l3_order_ids = {
             let o = orchestrator.read().await;
             o.resolve_l3_order_ids(&submitted_orders).await
         };
+
+        // Re-check L3 on-chain status with the resolved L3 IDs. The earlier filter
+        // (line ~786) checks via settlement IDs, which silently fails on ABI
+        // mismatches and lets terminal-status orders survive into confirmFills,
+        // where they revert with E024_InvalidOrderStatus. All three oracles see
+        // the same L3 chain state, so no leader-silence wedge: empty after the
+        // filter is empty for everyone, and consensus stays in lockstep.
+        if !l3_order_ids.is_empty() {
+            let pre = submitted_orders.len();
+            let mut keep_settlement: Vec<ethers::types::U256> = Vec::with_capacity(pre);
+            let mut keep_l3: Vec<ethers::types::U256> = Vec::with_capacity(pre);
+            for (settlement_id, l3_id) in submitted_orders.iter().zip(l3_order_ids.iter()) {
+                match chain_reader.get_order_on_chain_status(*l3_id).await {
+                    Some(0) => {
+                        keep_settlement.push(*settlement_id);
+                        keep_l3.push(*l3_id);
+                    }
+                    Some(s) => info!(
+                        l3_order_id = %l3_id,
+                        settlement_order_id = %settlement_id,
+                        on_chain_status = s,
+                        "Dropping non-PENDING L3 order from batch (post-resolve)"
+                    ),
+                    None => {
+                        keep_settlement.push(*settlement_id);
+                        keep_l3.push(*l3_id);
+                    }
+                }
+            }
+            if keep_settlement.len() < pre {
+                info!(
+                    before = pre,
+                    after = keep_settlement.len(),
+                    "Filtered terminal-status L3 orders post-resolve"
+                );
+                submitted_orders = keep_settlement;
+                l3_order_ids = keep_l3;
+            }
+        }
+
+        if submitted_orders.is_empty() {
+            debug!("All L3 orders filtered as terminal — nothing to confirm");
+            return;
+        }
+
         // Reverse lookup: L3 ID → Settlement ID (for post-fill operations that need Settlement IDs)
         let l3_to_settlement: std::collections::HashMap<ethers::types::U256, ethers::types::U256> =
             l3_order_ids.iter().zip(submitted_orders.iter()).map(|(l3, settlement)| (*l3, *settlement)).collect();
