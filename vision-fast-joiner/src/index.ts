@@ -263,12 +263,8 @@ async function processSource(source: string) {
   }
   if (batchId === 0n) return
 
-  const key = `${source}:${batchId}`
-  if (attempted.has(key)) return
-
   const vaults = VAULTS_BY_SOURCE[source]
   if (!vaults || vaults.length === 0) return
-  const vault = vaults[Number(batchId % BigInt(vaults.length))]
 
   let configHash: Hex
   let expiration: bigint
@@ -279,83 +275,81 @@ async function processSource(source: string) {
       functionName: 'getBatch',
       args: [batchId],
     })
-    if (batch.settled || batch.paused) {
-      attempted.add(key)
-      return
-    }
+    if (batch.settled || batch.paused) return
     configHash = batch.configHash
     expiration = (batch.createdAtTick + 1n) * batch.tickDuration + batch.settlementGrace
   } catch {
     return
   }
   const nowSec = BigInt(Math.floor(Date.now() / 1000))
-  if (nowSec >= expiration) {
-    attempted.add(key)
-    return
-  }
-  try {
-    const pos = await publicClient.readContract({
-      address: VISION,
-      abi: VISION_ABI,
-      functionName: 'getPosition',
-      args: [batchId, vault],
-    })
-    if (pos.totalDeposited > 0n) {
-      attempted.add(key)
-      return
-    }
-  } catch {}
-  try {
-    const idle = await publicClient.readContract({
-      address: vault,
-      abi: VAULT_ABI,
-      functionName: 'idleUSDC',
-    })
-    if (idle < DEPOSIT_WEI) {
-      attempted.add(key)
-      return
-    }
-  } catch {
-    return
-  }
+  if (nowSec >= expiration) return
 
-  attempted.add(key)
-  const { bitmap, hash: bitmapHash } = newBitmap()
+  // Try every vault for this source on this batch — markets only show
+  // participants from joined vaults, so we want all five visible.
+  for (const vault of vaults) {
+    const key = `${source}:${batchId}:${vault.toLowerCase()}`
+    if (attempted.has(key)) continue
 
-  // Serialize the actual write through the nonce queue, with manually
-  // tracked nonces so concurrent in-flight txs don't collide.
-  nonceQueue = nonceQueue.then(async () => {
-    let nonce: number | undefined
     try {
-      nonce = await nextNonce()
-      const txHash = await walletClient.writeContract({
+      const pos = await publicClient.readContract({
+        address: VISION,
+        abi: VISION_ABI,
+        functionName: 'getPosition',
+        args: [batchId, vault],
+      })
+      if (pos.totalDeposited > 0n) {
+        attempted.add(key)
+        continue
+      }
+    } catch {}
+    try {
+      const idle = await publicClient.readContract({
         address: vault,
         abi: VAULT_ABI,
-        functionName: 'joinBatch',
-        args: [batchId, configHash, DEPOSIT_WEI, bitmapHash],
-        nonce,
+        functionName: 'idleUSDC',
       })
-      health.joinedTotal += 1
-      health.joinedThisRun += 1
-      console.log(`[join] source=${source} batch=${batchId} vault=${vault} nonce=${nonce} tx=${txHash}`)
-      // Fire-and-forget bitmap submission outside the nonce queue — oracle's
-      // chain_listener has a polling delay before it sees PlayerJoined, so
-      // submitBitmapToOracles retries with backoff. Don't block the next
-      // join's nonce slot waiting for that.
-      submitBitmapToOracles(vault, batchId, bitmap, bitmapHash).then((accepted) => {
-        console.log(`[bitmap] source=${source} batch=${batchId} accepted=${accepted}/${ORACLE_URLS.length}`)
-      }).catch((e) => {
-        console.warn(`[bitmap-fail] source=${source} batch=${batchId} ${e instanceof Error ? e.message : String(e)}`)
-      })
-    } catch (err) {
-      const msg = err instanceof Error ? err.message.slice(0, 140) : String(err).slice(0, 140)
-      health.lastError = `${source}/${batchId}: ${msg}`
-      console.warn(`[skip] source=${source} batch=${batchId} nonce=${nonce} ${msg}`)
-      if (msg.includes('nonce') || msg.includes('Nonce')) {
-        nonceFloor = 0
+      if (idle < DEPOSIT_WEI) {
+        attempted.add(key)
+        continue
       }
+    } catch {
+      continue
     }
-  })
+
+    attempted.add(key)
+    const { bitmap, hash: bitmapHash } = newBitmap()
+    const vaultRef = vault
+
+    // Serialize each write through the nonce queue.
+    nonceQueue = nonceQueue.then(async () => {
+      let nonce: number | undefined
+      try {
+        nonce = await nextNonce()
+        const txHash = await walletClient.writeContract({
+          address: vaultRef,
+          abi: VAULT_ABI,
+          functionName: 'joinBatch',
+          args: [batchId, configHash, DEPOSIT_WEI, bitmapHash],
+          nonce,
+        })
+        health.joinedTotal += 1
+        health.joinedThisRun += 1
+        console.log(`[join] source=${source} batch=${batchId} vault=${vaultRef} nonce=${nonce} tx=${txHash}`)
+        submitBitmapToOracles(vaultRef, batchId, bitmap, bitmapHash).then((accepted) => {
+          console.log(`[bitmap] source=${source} batch=${batchId} vault=${vaultRef} accepted=${accepted}/${ORACLE_URLS.length}`)
+        }).catch((e) => {
+          console.warn(`[bitmap-fail] source=${source} batch=${batchId} vault=${vaultRef} ${e instanceof Error ? e.message : String(e)}`)
+        })
+      } catch (err) {
+        const msg = err instanceof Error ? err.message.slice(0, 140) : String(err).slice(0, 140)
+        health.lastError = `${source}/${batchId}/${vaultRef}: ${msg}`
+        console.warn(`[skip] source=${source} batch=${batchId} vault=${vaultRef} nonce=${nonce} ${msg}`)
+        if (msg.includes('nonce') || msg.includes('Nonce')) {
+          nonceFloor = 0
+        }
+      }
+    })
+  }
 }
 
 async function tick() {
