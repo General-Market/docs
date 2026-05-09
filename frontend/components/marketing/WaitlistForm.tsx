@@ -41,7 +41,14 @@ type ChoiceStep = {
   multiple?: boolean
 }
 
-type Step = WelcomeStep | TextStep | ChoiceStep
+type WalletStep = {
+  type: 'wallet'
+  id: 'wallet'
+  label: string
+  description?: string
+}
+
+type Step = WelcomeStep | TextStep | ChoiceStep | WalletStep
 
 const STEPS: Step[] = [
   {
@@ -86,11 +93,20 @@ const STEPS: Step[] = [
     ],
   },
   {
+    type: 'choice',
+    id: 'has_invite',
+    label: 'Do you have an invite code?',
+    description: 'A code earns you trading-fee rakeback. No code? Add one later — same waitlist either way.',
+    required: true,
+    options: [
+      { value: 'yes', label: 'Yes' },
+      { value: 'no', label: 'No' },
+    ],
+  },
+  {
     type: 'text',
     id: 'invite',
-    label: 'Do you have an invite code?',
-    description:
-      'A code earns you trading-fee rakeback. If you don’t have one, leave it blank — you can add one later.',
+    label: 'Enter your invite code',
     placeholder: 'XXXX-XXXX-XXXX-XXXX',
   },
   {
@@ -124,6 +140,13 @@ const STEPS: Step[] = [
     label: 'Anything you’d like us to know?',
     placeholder: 'Type your answer here...',
   },
+  {
+    type: 'wallet',
+    id: 'wallet',
+    label: 'Connect a wallet',
+    description:
+      'Optional. If you entered an invite code, connecting now whitelists this wallet on submit. No code, no commitment — connect later from any page.',
+  },
 ]
 
 type AnswerValue = string | string[]
@@ -131,6 +154,7 @@ type Answers = Record<string, AnswerValue>
 
 function shouldSkip(step: Step, answers: Answers): boolean {
   if (step.type === 'text' && step.id === 'reach' && answers.affiliate !== 'yes') return true
+  if (step.type === 'text' && step.id === 'invite' && answers.has_invite !== 'yes') return true
   return false
 }
 
@@ -139,6 +163,12 @@ function isValid(
   value: AnswerValue,
 ): { ok: true } | { ok: false; reason: string } {
   if (step.type === 'welcome') return { ok: true }
+  if (step.type === 'wallet') {
+    if (typeof value !== 'string' || !value) return { ok: true }
+    const ok = /^0x[a-fA-F0-9]{40}$/.test(value.trim())
+    if (!ok) return { ok: false, reason: 'That doesn’t look like an Ethereum address.' }
+    return { ok: true }
+  }
   if (step.type === 'choice') {
     if (step.required) {
       if (step.multiple) {
@@ -165,6 +195,73 @@ function pad2(n: number): string {
 
 function normalizeHandle(s: string): string {
   return s.trim().replace(/^@+/, '').replace(/\s+/g, '')
+}
+
+// ── Audio chirp — Web Audio, programmatic. No asset shipped. ──
+// AudioContext can only be created/resumed inside a user gesture, so
+// we instantiate lazily inside the play handlers.
+function useChirp() {
+  const reduced = useReducedMotion()
+  const ctxRef = useRef<AudioContext | null>(null)
+
+  function ensureCtx(): AudioContext | null {
+    if (typeof window === 'undefined') return null
+    if (!ctxRef.current) {
+      const Ctor =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext?: typeof AudioContext })
+          .webkitAudioContext
+      if (!Ctor) return null
+      try {
+        ctxRef.current = new Ctor()
+      } catch {
+        return null
+      }
+    }
+    if (ctxRef.current.state === 'suspended') void ctxRef.current.resume()
+    return ctxRef.current
+  }
+
+  function tick() {
+    if (reduced) return
+    const ctx = ensureCtx()
+    if (!ctx) return
+    const t0 = ctx.currentTime
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.type = 'triangle'
+    osc.frequency.setValueAtTime(2400, t0)
+    osc.frequency.exponentialRampToValueAtTime(1700, t0 + 0.05)
+    gain.gain.setValueAtTime(0.0001, t0)
+    gain.gain.exponentialRampToValueAtTime(0.045, t0 + 0.005)
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.09)
+    osc.connect(gain).connect(ctx.destination)
+    osc.start(t0)
+    osc.stop(t0 + 0.11)
+  }
+
+  function chime() {
+    if (reduced) return
+    const ctx = ensureCtx()
+    if (!ctx) return
+    const t0 = ctx.currentTime
+    const notes = [880, 1320, 1760]
+    notes.forEach((freq, i) => {
+      const start = t0 + i * 0.055
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.type = 'sine'
+      osc.frequency.value = freq
+      gain.gain.setValueAtTime(0.0001, start)
+      gain.gain.exponentialRampToValueAtTime(0.06, start + 0.01)
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.45)
+      osc.connect(gain).connect(ctx.destination)
+      osc.start(start)
+      osc.stop(start + 0.5)
+    })
+  }
+
+  return { tick, chime }
 }
 
 // ── Step transition: snap-zoom-soft, mirrors transitions.tsx ──
@@ -240,11 +337,13 @@ function HandleBadge({
 }
 
 export default function WaitlistForm() {
+  const { tick, chime } = useChirp()
   const [idx, setIdx] = useState(0)
   const [answers, setAnswers] = useState<Answers>({})
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [whitelisted, setWhitelisted] = useState(false)
   const [direction, setDirection] = useState<1 | -1>(1)
   const inputRef = useRef<HTMLInputElement | null>(null)
 
@@ -267,7 +366,11 @@ export default function WaitlistForm() {
 
   const pfpUrl = useMemo(() => {
     if (!handle) return null
-    return `https://unavatar.io/x/${encodeURIComponent(handle)}?fallback=false`
+    // Drop ?fallback=false: unavatar 404s many real handles (Twitter
+    // blocks scraping). Without the flag, unavatar returns the real
+    // PFP when it can resolve it, and a generated initials avatar
+    // otherwise. Either way the user sees something.
+    return `https://unavatar.io/x/${encodeURIComponent(handle)}`
   }, [handle])
 
   useEffect(() => {
@@ -288,16 +391,19 @@ export default function WaitlistForm() {
   async function submit(finalAnswers: Answers) {
     setSubmitting(true)
     try {
-      await fetch('/api/waitlist', {
+      const res = await fetch('/api/waitlist', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(finalAnswers),
       })
+      const data = await res.json().catch(() => ({}))
+      if (data?.whitelisted) setWhitelisted(true)
     } catch {
       // user shouldn't pay for our backend
     } finally {
       setSubmitting(false)
       setSubmitted(true)
+      chime()
     }
   }
 
@@ -344,6 +450,7 @@ export default function WaitlistForm() {
   }
 
   const onSelectSingle = (v: string) => {
+    tick()
     const newAnswers = { ...answers, [step.id]: v }
     setAnswers(newAnswers)
     setError(null)
@@ -351,6 +458,7 @@ export default function WaitlistForm() {
   }
 
   const onToggleMulti = (v: string) => {
+    tick()
     const current = answers[step.id]
     const arr = Array.isArray(current) ? current.slice() : []
     const i = arr.indexOf(v)
@@ -362,7 +470,7 @@ export default function WaitlistForm() {
   const progress = step.type === 'welcome' ? 0 : visibleQuestionIndex / totalQuestions
 
   if (submitted) {
-    return <Verdict handle={handle} pfpUrl={pfpUrl} />
+    return <Verdict handle={handle} pfpUrl={pfpUrl} whitelisted={whitelisted} />
   }
 
   return (
@@ -396,9 +504,12 @@ export default function WaitlistForm() {
                 <Welcome step={step} onStart={() => void advance()} />
               ) : (
                 <Sheet>
-                  <div className="mb-7 flex items-center justify-between">
-                    <StepNumber n={visibleQuestionIndex} total={totalQuestions} />
-                    {step.required && (
+                  <div className="mb-7 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <BackChip onClick={back} />
+                      <StepNumber n={visibleQuestionIndex} total={totalQuestions} />
+                    </div>
+                    {'required' in step && step.required && (
                       <span
                         className="font-mono text-[11px] uppercase tracking-[0.14em]"
                         style={{ color: DIM }}
@@ -424,13 +535,21 @@ export default function WaitlistForm() {
                       onToggleMulti={onToggleMulti}
                     />
                   )}
+                  {step.type === 'wallet' && (
+                    <WalletQuestion
+                      step={step}
+                      value={typeof answers[step.id] === 'string' ? (answers[step.id] as string) : ''}
+                      hasInviteCode={typeof answers.invite === 'string' && answers.invite.trim().length >= 3}
+                      onChange={(v) => setAnswer(step.id, v)}
+                    />
+                  )}
                 </Sheet>
               )}
             </motion.div>
           </AnimatePresence>
 
-          {/* Marginalia — invite step, desktop gutter */}
-          {step.type === 'text' && step.id === 'invite' && (
+          {/* Marginalia — invite-question step, desktop gutter */}
+          {step.type === 'choice' && step.id === 'has_invite' && (
             <CaveatArrow
               key="invite-margin"
               text="rakeback is real."
@@ -610,18 +729,6 @@ function TextQuestion({
         />
       </motion.div>
 
-      {/* Mobile marginalia — invite step only */}
-      {step.id === 'invite' && (
-        <CaveatArrow
-          text="rakeback is real."
-          direction="right-up"
-          delay={0.4}
-          className="mt-6 xl:hidden"
-          width={140}
-          height={90}
-          fontSize={20}
-        />
-      )}
     </div>
   )
 }
@@ -870,9 +977,112 @@ function Kbd({ children }: { children: ReactNode }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// Verdict — end screen. Big avatar, @handle, Caveat "← You" arrow.
+// BackChip — visible back affordance, lives at the top of every Sheet.
 // ─────────────────────────────────────────────────────────────────────
-function Verdict({ handle, pfpUrl }: { handle: string; pfpUrl: string | null }) {
+function BackChip({ onClick }: { onClick: () => void }) {
+  return (
+    <motion.button
+      type="button"
+      onClick={onClick}
+      whileTap={{ scale: 0.96 }}
+      transition={springs.press}
+      className="group inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.14em] transition-colors"
+      style={{
+        color: DIM,
+        border: `1px solid ${RULE}`,
+        background: '#FCFCFD',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.color = FG
+        e.currentTarget.style.borderColor = 'rgba(10,10,12,0.20)'
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.color = DIM
+        e.currentTarget.style.borderColor = RULE
+      }}
+      aria-label="Go back to previous question"
+    >
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <polyline points="15 18 9 12 15 6" />
+      </svg>
+      Back
+    </motion.button>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// WalletQuestion — placeholder for the wallet-connect step.
+// Renders the prompt + a connect-button stub. Actual wallet wiring
+// is owned by the parallel agent; this just keeps the build green
+// and the user able to advance.
+// ─────────────────────────────────────────────────────────────────────
+function WalletQuestion({
+  step,
+  value,
+  hasInviteCode,
+  onChange,
+}: {
+  step: { id: string; label: string; description?: string }
+  value: string
+  hasInviteCode: boolean
+  onChange: (v: string) => void
+}) {
+  void value
+  void onChange
+  return (
+    <div>
+      <motion.h2
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: [0.4, 0, 0.6, 1] }}
+        className="font-semibold leading-[1.15]"
+        style={{
+          color: FG,
+          fontSize: 'clamp(26px, 3.2vw, 36px)',
+          letterSpacing: '-0.022em',
+        }}
+      >
+        {step.label}
+      </motion.h2>
+      {step.description && (
+        <motion.p
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: [0.4, 0, 0.6, 1], delay: 0.06 }}
+          className="mt-3 leading-[1.5]"
+          style={{ color: FG_SOFT, fontSize: 17, letterSpacing: '-0.01em' }}
+        >
+          {step.description}
+        </motion.p>
+      )}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.32, ease: [0.4, 0, 0.6, 1], delay: 0.14 }}
+        className="mt-9 font-mono text-[12px] uppercase tracking-[0.14em]"
+        style={{ color: DIM }}
+      >
+        {hasInviteCode
+          ? 'Wallet connection wires up shortly. For now, hit submit — your code is enough.'
+          : 'Optional. Skip with submit; you can connect any wallet later.'}
+      </motion.div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Verdict — end screen. Big avatar, @handle, Caveat "You" arrow.
+// ─────────────────────────────────────────────────────────────────────
+function Verdict({
+  handle,
+  pfpUrl,
+  whitelisted,
+}: {
+  handle: string
+  pfpUrl: string | null
+  whitelisted?: boolean
+}) {
+  void whitelisted
   const [pfpLoaded, setPfpLoaded] = useState(false)
   const [pfpFailed, setPfpFailed] = useState(false)
 
@@ -929,9 +1139,10 @@ function Verdict({ handle, pfpUrl }: { handle: string; pfpUrl: string | null }) 
             )}
           </div>
 
-          {/* Caveat "← You" — points UP-RIGHT at the avatar from below-left */}
+          {/* Caveat "You" — points UP-RIGHT at the avatar from below-left.
+              The SVG draws its own arrowhead; no need to repeat it in the text. */}
           <CaveatArrow
-            text="← You"
+            text="You"
             direction="right-up"
             delay={0.65}
             width={150}
@@ -968,7 +1179,7 @@ function Verdict({ handle, pfpUrl }: { handle: string; pfpUrl: string | null }) 
             letterSpacing: '-0.028em',
           }}
         >
-          You’re on the list.
+          You’re on the list
         </motion.h1>
 
         <motion.p
