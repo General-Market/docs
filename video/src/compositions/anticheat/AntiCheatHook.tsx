@@ -88,8 +88,8 @@ export const AntiCheatHook: React.FC = () => {
           phoneBrollAspect={720 / 1560}
           width={W}
           height={H}
-          emissiveIntensity={1.6}
-          lightingIntensity={0.85}
+          emissiveIntensity={1.0}
+          lightingIntensity={0.6}
         />
 
         {/* ── Left panel overlay: text + tint, no canvas ── */}

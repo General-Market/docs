@@ -322,11 +322,9 @@ const Scene: React.FC<{
         intensity={2.5 * lightingIntensity}
         castShadow
       />
-      <directionalLight
-        position={[-4, 4, 3]}
-        intensity={0.6 * lightingIntensity}
-        color="#c0d0e8"
-      />
+      {/* Cool fill removed — it painted a blue cast on the screens. The
+          studio environment + the warm key alone keep the bodies
+          legible without tinting the broll. */}
       <ContactShadows
         position={[0, -0.01, 0]}
         opacity={0.4}
