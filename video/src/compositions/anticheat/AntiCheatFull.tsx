@@ -12,6 +12,7 @@ import { antiCheatSolutionMeta } from "./AntiCheatSolution";
 import { antiCheatReassureMeta } from "./AntiCheatReassure";
 import { antiCheatSwitchMeta } from "./AntiCheatSwitch";
 import { antiCheatEndCardMeta } from "./AntiCheatEndCard";
+import { slide } from "@remotion/transitions/slide";
 import {
   snapZoomIntense,
   snapZoomOut,
@@ -36,9 +37,10 @@ import { MUSIC_START_FROM_AUDIO } from "./beats";
 //   Solution → Reassure soft snap           18f
 //   Reassure → Bridge   soft snap           18f
 //   Bridge → EndCard    long pull           24f
-// Hook → Bars is now a hard cut — the laptop's CSS travel up-right at the
-// end of Scene B is the transition. No TransitionSeries.Transition between
-// them.
+// Hook → Bars is a vertical scroll: the laptop scene slides out the
+// bottom while Bars slides in from the top, like both lived stacked
+// on the same canvas.
+const T_HOOK_BARS = 15;
 const T_RIGGED_STAT = 16;
 const T_STAT_SOLUTION = 28;
 const T_SOLUTION_REASSURE = 18;
@@ -46,6 +48,7 @@ const T_REASSURE_BRIDGE = 18;
 const T_BRIDGE_END = 24;
 
 const TRANSITION_FRAMES =
+  T_HOOK_BARS +
   T_RIGGED_STAT +
   T_STAT_SOLUTION +
   T_SOLUTION_REASSURE +
@@ -114,9 +117,10 @@ export const AntiCheatFull: React.FC = () => {
           <antiCheatHookMeta.component />
         </TransitionSeries.Sequence>
 
-        {/* Hook → Bars: hard cut. Laptop travels up-right out of frame
-            during Scene B's last 15 frames; the bars land in the void
-            it leaves behind. */}
+        <TransitionSeries.Transition
+          presentation={slide({ direction: "from-top" })}
+          timing={linearTiming({ durationInFrames: T_HOOK_BARS })}
+        />
 
         <TransitionSeries.Sequence
           durationInFrames={antiCheatBarsMeta.durationInFrames}

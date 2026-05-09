@@ -1,32 +1,24 @@
 import React from "react";
-import {
-  AbsoluteFill,
-  Sequence,
-  staticFile,
-  useCurrentFrame,
-} from "remotion";
+import { AbsoluteFill, staticFile, useCurrentFrame } from "remotion";
+import { TransitionSeries, linearTiming } from "@remotion/transitions";
+import { slide } from "@remotion/transitions/slide";
 import { font } from "../../common/fonts";
 import { AntiCheatHookHalfScene } from "./AntiCheatHookHalfScene";
 import { DotGrid } from "./DotGrid";
 import { FPS, H, W, colors } from "./theme";
 
-// Two sequential half-canvas mini-scenes form the hook now. Each holds
-// a single device + a single question. Everything reads as already-
-// settled from frame 0 — no entry animations — so the viewer lands on
-// the question, not on its arrival.
+// Two half-canvas mini-scenes form the hook. They live on the same
+// vertical canvas — the transition is a scroll: the first scene slides
+// out the bottom while the second slides in from the top, like a
+// channel change. Frame 0 is already settled (no entry animation),
+// so the viewer lands on the question, not on its arrival.
 //
-//   Scene A  0…63   phone right  · "Why do you trade against insider traders ?"
-//   Scene B  64…126 laptop left  · "If you use an anti-cheat against wall hackers ?"
+//   Scene A  64f   phone right  · "Why trading against insider traders"
+//   Scene B  63f   laptop left  · "When gaming Anti-Cheats ban wall hackers"
 const SCENE_A_DURATION = 64;
 const SCENE_B_DURATION = 63;
-const HOOK_DURATION = SCENE_A_DURATION + SCENE_B_DURATION;
-
-// Last 15 frames of each scene the device flies up-right out of frame
-// — the CSS slide is the transition into the next scene, no separate
-// TransitionSeries presentation between Hook and Bars.
-const EXIT_FRAMES = 15;
-const EXIT_X_FRACTION = 0.85;
-const EXIT_Y_FRACTION = -0.95;
+const T_SCROLL = 15;
+const HOOK_DURATION = SCENE_A_DURATION + SCENE_B_DURATION - T_SCROLL;
 
 const BROLL = {
   // Wall-hack broll reads as "wall hackers" instantly — the only cheat
@@ -51,37 +43,36 @@ const LAPTOP_SEGMENTS: BrollSegment[] = [
   },
 ];
 
-const clamp01 = (t: number) => (t < 0 ? 0 : t > 1 ? 1 : t);
-
 export const AntiCheatHook: React.FC = () => {
   return (
     <AbsoluteFill style={{ backgroundColor: colors.bg, fontFamily: font }}>
       <DotGrid />
 
-      <Sequence from={0} durationInFrames={SCENE_A_DURATION} layout="none">
-        <QuestionScene
-          device="phone"
-          devicePosition="right"
-          question={"Why do you trade against insider traders ?"}
-          questionTint="#E03B4A"
-          laptopSegments={PHONE_SEGMENTS}
-          sceneDuration={SCENE_A_DURATION}
-        />
-      </Sequence>
+      <TransitionSeries>
+        <TransitionSeries.Sequence durationInFrames={SCENE_A_DURATION}>
+          <QuestionScene
+            device="phone"
+            devicePosition="right"
+            question="Why trading against insider traders"
+            questionTint="#E03B4A"
+            laptopSegments={PHONE_SEGMENTS}
+          />
+        </TransitionSeries.Sequence>
 
-      <Sequence
-        from={SCENE_A_DURATION}
-        durationInFrames={SCENE_B_DURATION}
-        layout="none"
-      >
-        <QuestionScene
-          device="laptop"
-          devicePosition="left"
-          question={"If you use an anti-cheat against wall hackers ?"}
-          laptopSegments={LAPTOP_SEGMENTS}
-          sceneDuration={SCENE_B_DURATION}
+        <TransitionSeries.Transition
+          presentation={slide({ direction: "from-top" })}
+          timing={linearTiming({ durationInFrames: T_SCROLL })}
         />
-      </Sequence>
+
+        <TransitionSeries.Sequence durationInFrames={SCENE_B_DURATION}>
+          <QuestionScene
+            device="laptop"
+            devicePosition="left"
+            question="When gaming Anti-Cheats ban wall hackers"
+            laptopSegments={LAPTOP_SEGMENTS}
+          />
+        </TransitionSeries.Sequence>
+      </TransitionSeries>
     </AbsoluteFill>
   );
 };
@@ -94,26 +85,17 @@ const QuestionScene: React.FC<{
   question: string;
   questionTint?: string;
   laptopSegments: BrollSegment[];
-  sceneDuration: number;
 }> = ({
   device,
   devicePosition,
   question,
   questionTint,
   laptopSegments,
-  sceneDuration,
 }) => {
-  const frame = useCurrentFrame();
+  // useCurrentFrame is read for animation parity with the hook's
+  // beat grid — components beneath read it via context.
+  useCurrentFrame();
   const isDeviceRight = devicePosition === "right";
-
-  // Device exit — last EXIT_FRAMES travel up-right. ease-in cubic so the
-  // device loiters in frame, then accelerates off into the next scene.
-  const exitT = clamp01(
-    (frame - (sceneDuration - EXIT_FRAMES)) / EXIT_FRAMES,
-  );
-  const exitEased = exitT * exitT;
-  const exitX = exitEased * (W * EXIT_X_FRACTION);
-  const exitY = exitEased * (H * EXIT_Y_FRACTION);
 
   return (
     <AbsoluteFill
@@ -148,8 +130,6 @@ const QuestionScene: React.FC<{
           height: H,
           position: "relative",
           order: isDeviceRight ? 1 : 0,
-          transform: `translate(${exitX.toFixed(2)}px, ${exitY.toFixed(2)}px)`,
-          willChange: "transform",
         }}
       >
         <AntiCheatHookHalfScene

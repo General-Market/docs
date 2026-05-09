@@ -59,12 +59,8 @@ const PHONE_INITIAL_ZOOM = 0.98;
 const PHONE_END_ZOOM = SETTLED_ZOOM * 1.02;
 const HOOK_DURATION_FRAMES = 64;
 
-// Phone exits in-canvas with a fast Y-axis spin during the last 15 frames
-// of Scene A. The translation up-right is applied as a CSS transform on
-// the wrapping div in AntiCheatHook — three.js only carries the spin.
-const PHONE_SPIN_START = 49;
-const PHONE_SPIN_END = 63;
-const PHONE_SPIN_REVOLUTIONS = 3;
+// Phone has no in-3D exit animation — the scroll-down transition in
+// AntiCheatHook carries it off-canvas as the new scene scrolls in.
 
 const clamp01 = (t: number) => (t < 0 ? 0 : t > 1 ? 1 : t);
 
@@ -147,14 +143,8 @@ const HalfScene: React.FC<{
     sceneClone.position.set(0, 0, 0);
   }
 
-  // Phone exit spin — fast revolution in the last 15 frames. The slide
-  // up-right is a CSS transform on the wrapping div in AntiCheatHook;
-  // three.js only carries the rotation.
-  const spinT = clamp01(
-    (frame - PHONE_SPIN_START) / (PHONE_SPIN_END - PHONE_SPIN_START),
-  );
-  const spinEased = spinT * spinT;
-  const phoneRotY = spinEased * Math.PI * 2 * PHONE_SPIN_REVOLUTIONS;
+  // Phone keeps a slow yaw drift over the first second so the device
+  // feels alive without ever reading as overt animation.
   const driftT = clamp01(frame / PHONE_YAW_DRIFT_END);
   const driftEased = (1 - Math.cos(driftT * Math.PI)) * 0.5;
 
@@ -189,8 +179,7 @@ const HalfScene: React.FC<{
           { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
         );
 
-  const exitDamp = 1 - clamp01((frame - PHONE_SPIN_START + 8) / 12);
-  const beatKick = beatPulseScene(frame, "Hook", 4, 26) * exitDamp;
+  const beatKick = beatPulseScene(frame, "Hook", 4, 26);
   const laptopZoom = laptopZoomBase + beatKick * 0.01;
   const phoneZoom = phoneZoomBase + beatKick * 0.007;
   const activeZoom = device === "laptop" ? laptopZoom : phoneZoom;
@@ -209,7 +198,7 @@ const HalfScene: React.FC<{
       const phoneLookTarget = new THREE.Vector3(0, PHONE_WORLD_Y, 0)
         .addScaledVector(cameraForward, 50);
       iphone.lookAt(phoneLookTarget);
-      iphone.rotateY(yawDrift + phoneRotY);
+      iphone.rotateY(yawDrift);
     }
   }
 
