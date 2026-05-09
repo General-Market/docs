@@ -85,6 +85,12 @@ export function HeaderBalanceBar({ isDark }: Props) {
 
   const zero = balance === 0n
 
+  const label =
+    state === 'loading' ? 'Minting…'
+      : state === 'done' ? '1,000 USDC sent'
+      : state === 'error' ? 'Retry'
+      : 'Get USDC'
+
   return (
     <span className="hidden sm:inline-flex items-center gap-2">
       {zero ? (
@@ -92,19 +98,46 @@ export function HeaderBalanceBar({ isDark }: Props) {
           <button
             onClick={handleFaucet}
             disabled={state === 'loading'}
-            className={`inline-flex items-center gap-1 text-[11px] font-semibold font-mono tabular-nums px-2 py-1 rounded transition-colors ${
-              isDark
-                ? 'text-color-up hover:bg-white/10'
-                : 'text-color-up hover:bg-surface'
+            title="Claim 1,000 test USDC"
+            className={`group inline-flex items-center gap-2 h-9 px-4 rounded-full text-[13px] font-semibold tracking-[-0.005em] transition-all duration-200 active:scale-[0.97] disabled:cursor-not-allowed ${
+              state === 'done'
+                ? 'bg-emerald-500/15 text-emerald-600 ring-1 ring-emerald-500/30'
+                : state === 'error'
+                  ? 'bg-red-500/10 text-red-600 ring-1 ring-red-500/30 hover:bg-red-500/15'
+                  : isDark
+                    ? 'bg-white/8 text-white ring-1 ring-white/15 hover:bg-white/12 hover:ring-white/25'
+                    : 'bg-zinc-900 text-white ring-1 ring-black/10 hover:bg-zinc-800 shadow-[0_1px_0_rgba(255,255,255,0.08)_inset,0_2px_6px_rgba(0,0,0,0.06)]'
             }`}
-            title="Claim test USDC"
           >
-            <span>
-              {state === 'loading' ? 'Minting…'
-                : state === 'done' ? '1K sent'
-                : state === 'error' ? 'Retry'
-                : 'Get USDC'}
+            <span
+              aria-hidden
+              className={`inline-flex h-5 w-5 items-center justify-center rounded-full ${
+                state === 'done'
+                  ? 'bg-emerald-500/20'
+                  : state === 'error'
+                    ? 'bg-red-500/20'
+                    : 'bg-white/10'
+              }`}
+            >
+              {state === 'loading' ? (
+                <span className="h-3 w-3 rounded-full border-[1.5px] border-current border-t-transparent animate-spin" />
+              ) : state === 'done' ? (
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              ) : state === 'error' ? (
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="8" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12" y2="17" />
+                </svg>
+              ) : (
+                // Droplet glyph — testnet faucet, dripping
+                <svg width="11" height="13" viewBox="0 0 24 28" fill="currentColor" aria-hidden>
+                  <path d="M12 2 C6 10, 4 14, 4 18 a8 8 0 0 0 16 0 c0-4-2-8-8-16z" />
+                </svg>
+              )}
             </span>
+            <span className="font-mono tabular-nums">{label}</span>
           </button>
         ) : (
           <a

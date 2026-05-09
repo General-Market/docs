@@ -87,7 +87,22 @@ export function WaitlistModal({ onClose, onRedeemed, onWalletConnected }: Props)
   if (!mounted || typeof document === 'undefined') return null
 
   const node = (
-    <SpringBackdrop className={glass.backdrop} onClick={success ? undefined : onClose}>
+    <SpringBackdrop
+      className={glass.backdrop}
+      onClick={success ? undefined : onClose}
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 100,
+        padding: 16,
+      }}
+    >
       <SpringModal className={`${glass.modal} max-w-[640px] w-full p-8 sm:p-10 relative`}>
         {!success && (
           <div className="absolute top-4 right-4">
