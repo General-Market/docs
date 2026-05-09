@@ -8,7 +8,7 @@ oracle_registry_address = "0xd4c6b4a1A3579150993EdD6B5f46aA45d395480b"
 vision_api = "http://localhost:10001"
 data_node = "http://localhost:8200"
 poll_interval = 30
-allocation_bps = 10
+allocation_bps = 100
 oracle_discovery = "static"
 oracle_urls = ["http://localhost:10001", "http://localhost:10002", "http://localhost:10003"]
 
