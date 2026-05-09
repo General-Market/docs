@@ -83,6 +83,10 @@ import { OgBannerGM } from "./compositions/launch/OgBannerGM";
 import { OgBannerGMSeal } from "./compositions/launch/OgBannerGMSeal";
 import { OgBannerGMRedacted } from "./compositions/launch/OgBannerGMRedacted";
 import { OgBannerGMVault } from "./compositions/launch/OgBannerGMVault";
+import { OgBannerGMVaultRing } from "./compositions/launch/OgBannerGMVaultRing";
+import { OgBannerGMVaultMonolith } from "./compositions/launch/OgBannerGMVaultMonolith";
+import { OgBannerGMVaultOrb } from "./compositions/launch/OgBannerGMVaultOrb";
+import { OgBannerGMVaultBeam } from "./compositions/launch/OgBannerGMVaultBeam";
 import { OgBannerGMType } from "./compositions/launch/OgBannerGMType";
 import { OgBannerNS } from "./compositions/launch/OgBannerNS";
 import {
@@ -651,6 +655,38 @@ export const RemotionRoot: React.FC = () => {
         <Composition
           id="OgBannerGMVault"
           component={OgBannerGMVault}
+          durationInFrames={1}
+          fps={30}
+          width={1500}
+          height={500}
+        />
+        <Composition
+          id="OgBannerGMVaultRing"
+          component={OgBannerGMVaultRing}
+          durationInFrames={1}
+          fps={30}
+          width={1500}
+          height={500}
+        />
+        <Composition
+          id="OgBannerGMVaultMonolith"
+          component={OgBannerGMVaultMonolith}
+          durationInFrames={1}
+          fps={30}
+          width={1500}
+          height={500}
+        />
+        <Composition
+          id="OgBannerGMVaultOrb"
+          component={OgBannerGMVaultOrb}
+          durationInFrames={1}
+          fps={30}
+          width={1500}
+          height={500}
+        />
+        <Composition
+          id="OgBannerGMVaultBeam"
+          component={OgBannerGMVaultBeam}
           durationInFrames={1}
           fps={30}
           width={1500}
