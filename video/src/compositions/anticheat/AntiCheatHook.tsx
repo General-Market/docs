@@ -332,10 +332,15 @@ const PairList: React.FC<{
 };
 
 // Each line flies forward from depth — starts huge and motion-blurred,
-// snaps to scale 1.0 with focus pull.
+// snaps to scale 1.0 with focus pull. RevealLines is gated behind a
+// Sequence at REVEAL_AT (172), so all frame numbers below are
+// scene-local within RevealLines. 7.5s absolute = 225 - 172 = 53.
 const LINE1_LAND = 7;
 const LINE2_START = 6;
 const LINE2_LAND = LINE2_START + 7;
+const LINE1_EXIT_AT = 53; // 7.5s
+const LINE2_EXIT_AT = 59; // 7.7s — one beat after line 1
+const LINE_EXIT_DURATION = 8;
 const SHAKE_FRAMES = 5;
 const SHAKE_AMP = 9;
 
@@ -375,11 +380,15 @@ const RevealLines: React.FC = () => {
         <DepthLine
           text="The cheaters behind your rage in games"
           startAt={0}
+          exitAt={LINE1_EXIT_AT}
+          exitDir="left"
           frame={frame}
         />
         <DepthLine
           text="are behind your losses in trading"
           startAt={LINE2_START}
+          exitAt={LINE2_EXIT_AT}
+          exitDir="right"
           frame={frame}
           color="#ff3b3b"
           marginTop={16}
@@ -392,32 +401,50 @@ const RevealLines: React.FC = () => {
 const DepthLine: React.FC<{
   text: string;
   startAt: number;
+  exitAt: number;
+  exitDir: "left" | "right";
   frame: number;
   color?: string;
   marginTop?: number;
-}> = ({ text, startAt, frame, color, marginTop }) => {
+}> = ({ text, startAt, exitAt, exitDir, frame, color, marginTop }) => {
   const t = frame - startAt;
-  const scale = interpolate(t, [0, 7], [2.4, 1.0], {
+  const enterScale = interpolate(t, [0, 7], [2.4, 1.0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const blurPx = interpolate(t, [0, 7], [16, 0], {
+  const enterBlur = interpolate(t, [0, 7], [16, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const opacity = interpolate(t, [0, 5], [0, 1], {
+  const enterOp = interpolate(t, [0, 5], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
+
+  // Exit, ease-in cubic. Each line drifts to its assigned side and
+  // softens; the staggered exitAt makes the two lines leave one after
+  // the other rather than as a pair.
+  const exitT = clamp01((frame - exitAt) / LINE_EXIT_DURATION);
+  const exitEased = exitT * exitT;
+  const exitX = (exitDir === "left" ? -1 : 1) * exitEased * 220;
+  const exitOp = 1 - exitT;
+  const exitScale = 1 - exitEased * 0.18;
+  const exitBlur = exitEased * 7;
+
+  const scale = enterScale * exitScale;
+  const blurPx = enterBlur + exitBlur;
+  const opacity = enterOp * exitOp;
+
   return (
     <div
       style={{
-        transform: `scale(${scale})`,
+        transform: `translateX(${exitX.toFixed(2)}px) scale(${scale.toFixed(3)})`,
         transformOrigin: "50% 50%",
-        filter: blurPx > 0.05 ? `blur(${blurPx}px)` : "none",
+        filter: blurPx > 0.05 ? `blur(${blurPx.toFixed(2)}px)` : "none",
         opacity,
         color: color ?? "#f5f5f5",
         marginTop: marginTop ?? 0,
+        willChange: "transform, opacity, filter",
       }}
     >
       {text}

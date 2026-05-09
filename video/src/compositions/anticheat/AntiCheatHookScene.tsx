@@ -39,11 +39,12 @@ const PHONE_SCREEN_ASPECT = 9 / 19.5;
 const LAPTOP_SCREEN_ASPECT = 16 / 10;
 
 // World layout. Laptop sits at GLB origin (its native pose). Phone
-// floats at world x=-5.6: with the camera looking down +z, three.js's
-// lookAt makes negative-x map to the RIGHT of the canvas, so this
+// floats at world x=-5.6, y matched to camera target so its center
+// projects to canvas vertical center. Negative-x maps to canvas-right
+// (lookAt's right-hand convention with the camera at z=-7), so this
 // keeps about three-quarters of the phone on canvas with the rest
 // bleeding off the right.
-const PHONE_POS = new THREE.Vector3(-5.6, 2.5, 0);
+const PHONE_POS = new THREE.Vector3(-5.6, 2.2, 0);
 
 // Camera between the two devices, looking forward into +z. Slightly
 // above the device plane so we read the laptop's lid face and the
@@ -79,9 +80,9 @@ const PHONE_SPIN_END = 234;
 const PHONE_SPIN_REVOLUTIONS = 2.25;
 const PHONE_SLIDE_OFFSET = -4.5; // extra world-x push during the spin
 
-// Screens powering on. Phone wakes from a true black; laptop wakes
-// from a half-lit state — the boot vibe the user asked for.
-const SCREEN_ON_PHONE = 24;
+// Screens powering on. Phone is lit from frame 0 (the trading chart
+// reads from the very first frame); the laptop still wakes from a
+// half-lit state and ramps to full.
 const SCREEN_ON_LAPTOP = 18;
 const LAPTOP_INITIAL_BRIGHTNESS = 0.45;
 
@@ -350,14 +351,9 @@ const Scene: React.FC<{
     iphone.rotateY(yawDrift + phoneRotY);
   }
 
-  // Screen power-on. Phone wakes from black; laptop wakes from a
-  // half-bright state so frame 0 already shows a partial picture.
-  const phoneBrightness = clamp01(
-    interpolate(frame, [0, SCREEN_ON_PHONE], [0, 1], {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-    }),
-  );
+  // Screen brightness. Phone lit from frame 0 so the trading chart
+  // reads immediately; laptop wakes from a half-bright state.
+  const phoneBrightness = 1;
   const laptopBrightness = clamp01(
     interpolate(
       frame,
