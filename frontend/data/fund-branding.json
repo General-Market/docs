@@ -673,6 +673,18 @@
       "vault": "0xA27F6855Ce6f03d48c68EB53f57A62938a1c3eCd"
     },
     {
+      "name": "Drift",
+      "symbol": "DRFT",
+      "source": "defillama",
+      "strategy": "momentum",
+      "params": {},
+      "tagline": "TVL drifts before it breaks. Drift rides the slow current — the trend most traders dismiss as noise until it isn't.",
+      "color": "#1B1B1B",
+      "fee": 500,
+      "category": "Crypto",
+      "vault": "0x434e1aF90681e645E7902ec82cf1B13A1754e20c"
+    },
+    {
       "name": "Aftershock",
       "symbol": "AFTR",
       "source": "earthquake",

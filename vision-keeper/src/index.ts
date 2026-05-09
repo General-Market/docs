@@ -85,6 +85,48 @@ function eventByName(name: string) {
   return ev;
 }
 
+async function filterStuckBatches(
+  client: PublicClient,
+  cfg: KeeperConfig,
+  rows: BatchRow[],
+  headTs: bigint,
+): Promise<BatchRow[]> {
+  const CHUNK = 64;
+  const stuck: BatchRow[] = [];
+  for (let i = 0; i < rows.length; i += CHUNK) {
+    const slice = rows.slice(i, i + CHUNK);
+    const reads = await Promise.allSettled(
+      slice.flatMap((row) => [
+        client.readContract({
+          address: cfg.visionAddress,
+          abi: VISION_ABI,
+          functionName: 'getBatch',
+          args: [row.batchId],
+        }),
+        client.readContract({
+          address: cfg.visionAddress,
+          abi: VISION_ABI,
+          functionName: 'batchExpirationTime',
+          args: [row.batchId],
+        }),
+      ]),
+    );
+    for (let j = 0; j < slice.length; j++) {
+      const row = slice[j];
+      const batchRes = reads[j * 2];
+      const expRes = reads[j * 2 + 1];
+      if (!row || !batchRes || !expRes) continue;
+      if (batchRes.status !== 'fulfilled' || expRes.status !== 'fulfilled') continue;
+      const batch = batchRes.value as { settled: boolean };
+      const expirationTime = expRes.value as bigint;
+      if (batch.settled) continue;
+      if (headTs < expirationTime) continue;
+      stuck.push(row);
+    }
+  }
+  return stuck;
+}
+
 async function findBatchCreatedRange(
   client: PublicClient,
   cfg: KeeperConfig,
@@ -255,31 +297,18 @@ async function tick(
   const batches = await findBatchCreatedRange(publicClient, cfg, headBlock, headTs);
   console.log(`[tick] head=${headBlock} ts=${headTs} candidates=${batches.length}`);
 
-  for (const row of batches) {
-    let batch: { settled: boolean };
-    let expirationTime: bigint;
-    try {
-      batch = (await publicClient.readContract({
-        address: cfg.visionAddress,
-        abi: VISION_ABI,
-        functionName: 'getBatch',
-        args: [row.batchId],
-      })) as { settled: boolean };
-      expirationTime = (await publicClient.readContract({
-        address: cfg.visionAddress,
-        abi: VISION_ABI,
-        functionName: 'batchExpirationTime',
-        args: [row.batchId],
-      })) as bigint;
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.warn(`[skip] batch=${row.batchId} read-fail: ${msg}`);
-      continue;
-    }
+  // Pre-filter in parallel. The serial version did 2 sequential reads per batch
+  // → with thousands of candidates each tick took minutes, refundable rounds
+  // languished. Parallel chunks of 64 reads each let us drain the queue in
+  // seconds without melting the RPC.
+  const filtered = await filterStuckBatches(publicClient, cfg, batches, headTs);
+  if (filtered.length === 0) {
+    state.lastTickAt = Math.floor(Date.now() / 1000);
+    return;
+  }
+  console.log(`[tick] stuck-candidates=${filtered.length}`);
 
-    if (batch.settled) continue;
-    if (headTs < expirationTime) continue;
-
+  for (const row of filtered) {
     // Stuck. Enumerate players who joined and subtract those already refunded.
     const fromBlock = row.createdBlock;
     const joinedLogs = await fetchLogsChunked(
@@ -322,7 +351,7 @@ async function tick(
     }
 
     if (players.length === 0) continue;
-    console.log(`[stuck] batch=${row.batchId} players=${players.length} expired=${expirationTime}`);
+    console.log(`[stuck] batch=${row.batchId} players=${players.length}`);
 
     for (const player of players) {
       await rescueOne(publicClient, walletClient, cfg, state, row.batchId, player);

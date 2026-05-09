@@ -243,7 +243,7 @@ function RoundsTable({ rows, onRefunded }: { rows: RoundRow[]; onRefunded: () =>
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: '0.7fr 1fr 1fr 1fr 1fr 1fr 1fr',
+          gridTemplateColumns: GRID_COLUMNS,
           gap: 0,
           padding: '10px 16px',
           background: 'var(--apple-surface)',
@@ -285,7 +285,7 @@ function RoundRowView({
     <div
       style={{
         display: 'grid',
-        gridTemplateColumns: '0.8fr 1fr 1fr 1fr 1fr 1.2fr',
+        gridTemplateColumns: GRID_COLUMNS,
         gap: 0,
         padding: '12px 16px',
         borderBottom: isLast ? 'none' : '1px solid var(--apple-line)',
@@ -501,6 +501,11 @@ function Summary({
     </div>
   )
 }
+
+// Header and rows share the same 7-column track. The previous mismatch
+// (header 7-fr, row 6-fr) collapsed the When column under Status, which
+// is why timestamps disappeared from the rendered table.
+const GRID_COLUMNS = '0.7fr 1fr 1.1fr 1fr 1fr 1fr 1fr'
 
 const cellRight: React.CSSProperties = { textAlign: 'right', color: 'var(--apple-text)' }
 
