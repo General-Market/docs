@@ -10,6 +10,7 @@ import {
   AbsoluteFill,
   Sequence,
   Video,
+  interpolate,
   staticFile,
   useCurrentFrame,
   useRemotionEnvironment,
@@ -59,6 +60,18 @@ const CAMERA_TARGET: [number, number, number] = [-1.5, 2.2, 0];
 // the brain registers movement without reading as overt animation.
 const PHONE_YAW_DRIFT_END = 210; // 7s at 30fps
 const PHONE_YAW_DRIFT_AMOUNT = -0.09; // ≈ -5°, more negative = toward center
+
+// Camera zoom — applied via three.js camera.zoom, so only the 3D
+// devices scale; text overlays stay put. Hard zoom-in to a 1.30
+// framing by frame 60, then a slow drift to ~1.39 by scene end. The
+// phone has its own gentler curve and is counter-scaled on the mesh.
+const ZOOM_IN_END = 60;
+const SETTLED_ZOOM = 1.3;
+const LAPTOP_INITIAL_ZOOM = 1.45;
+const LAPTOP_END_ZOOM = SETTLED_ZOOM * 1.07; // ≈ 1.39
+const PHONE_INITIAL_ZOOM = 1.2;
+const PHONE_END_ZOOM = SETTLED_ZOOM * 1.02; // ≈ 1.33
+const HOOK_DURATION_FRAMES = 254;
 
 // Phone faces the *view plane*, not the camera position. Pointing the
 // phone at the camera position made it tilt up to meet the camera's
@@ -273,7 +286,6 @@ const Scene: React.FC<{
   phoneVideoRef: React.RefObject<HTMLVideoElement | null>;
   emissiveIntensity: number;
   lightingIntensity: number;
-  phoneZoomCorrection: number;
   frame: number;
 }> = ({
   laptopSegments,
@@ -284,7 +296,6 @@ const Scene: React.FC<{
   phoneVideoRef,
   emissiveIntensity,
   lightingIntensity,
-  phoneZoomCorrection,
   frame,
 }) => {
   const { camera: threeCam } = useThree();
@@ -341,13 +352,40 @@ const Scene: React.FC<{
   const driftEased = (1 - Math.cos(driftT * Math.PI)) * 0.5;
   const yawDrift = PHONE_YAW_DRIFT_AMOUNT * driftEased;
 
+  // Per-device zoom curves. camera.zoom drives the laptop curve so
+  // the entire 3D scene grows proportionally; the phone gets a
+  // counter-scale so its effective zoom follows its own (gentler)
+  // curve regardless of the camera.
+  const laptopZoom =
+    frame < ZOOM_IN_END
+      ? interpolate(frame, [0, ZOOM_IN_END], [LAPTOP_INITIAL_ZOOM, SETTLED_ZOOM], {
+          extrapolateLeft: "clamp",
+          extrapolateRight: "clamp",
+        })
+      : interpolate(
+          frame,
+          [ZOOM_IN_END, HOOK_DURATION_FRAMES],
+          [SETTLED_ZOOM, LAPTOP_END_ZOOM],
+          { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+        );
+  const phoneZoom =
+    frame < ZOOM_IN_END
+      ? interpolate(frame, [0, ZOOM_IN_END], [PHONE_INITIAL_ZOOM, SETTLED_ZOOM], {
+          extrapolateLeft: "clamp",
+          extrapolateRight: "clamp",
+        })
+      : interpolate(
+          frame,
+          [ZOOM_IN_END, HOOK_DURATION_FRAMES],
+          [SETTLED_ZOOM, PHONE_END_ZOOM],
+          { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+        );
+  const phoneZoomCorrection = phoneZoom / laptopZoom;
+
   const iphone = sceneClone.getObjectByName("iphone");
   if (iphone) {
     iphone.position.copy(PHONE_POS);
     iphone.position.x += phoneSlideX;
-    // Counter-scale the phone against the CSS-level zoom so the phone
-    // ends up running its own (gentler) zoom curve while the rest of
-    // the scene rides the laptop curve.
     iphone.scale.setScalar(PHONE_BASE_SCALE * phoneZoomCorrection);
     // lookAt aligns the object's local -Z with the camera. This GLB
     // has the screen on local +Z (the back is on -Z), so naive lookAt
@@ -367,12 +405,13 @@ const Scene: React.FC<{
   const phoneBrightness = 1;
   const laptopBrightness = 1;
 
-  // Camera
+  // Camera. zoom carries the laptop zoom curve — only the 3D devices
+  // grow with it, the text overlays in the parent stay put.
   const perspCam = threeCam as THREE.PerspectiveCamera;
   perspCam.position.set(...CAMERA_POS);
   perspCam.lookAt(...CAMERA_TARGET);
   perspCam.fov = 50;
-  perspCam.zoom = 1;
+  perspCam.zoom = laptopZoom;
   perspCam.updateProjectionMatrix();
 
   return (
@@ -470,7 +509,6 @@ export type AntiCheatSceneProps = {
   height?: number;
   emissiveIntensity?: number;
   lightingIntensity?: number;
-  phoneZoomCorrection?: number;
 };
 
 const PreviewVideo: React.FC<{
@@ -509,7 +547,6 @@ export const AntiCheatHookScene: React.FC<AntiCheatSceneProps> = ({
   height = 1080,
   emissiveIntensity = 1.6,
   lightingIntensity = 0.85,
-  phoneZoomCorrection = 1,
 }) => {
   const frame = useCurrentFrame();
   const laptopVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -564,7 +601,6 @@ export const AntiCheatHookScene: React.FC<AntiCheatSceneProps> = ({
             phoneVideoRef={phoneVideoRef}
             emissiveIntensity={emissiveIntensity}
             lightingIntensity={lightingIntensity}
-            phoneZoomCorrection={phoneZoomCorrection}
             frame={frame}
           />
         </React.Suspense>

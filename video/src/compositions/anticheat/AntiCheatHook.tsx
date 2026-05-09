@@ -114,43 +114,14 @@ export const AntiCheatHook: React.FC = () => {
     extrapolateRight: "clamp",
   });
 
-  // Open with a hard zoom-in that resolves by frame 60 (2s), then a
-  // slow drift to a 1.07 final. The CSS zoom drives the whole scene;
-  // the phone gets its own (gentler) curve and the difference is
-  // passed to AntiCheatHookScene as a counter-scale on the phone mesh
-  // so its effective zoom is independent.
-  const ZOOM_IN_END = 60;
-  const laptopZoom =
-    frame < ZOOM_IN_END
-      ? interpolate(frame, [0, ZOOM_IN_END], [1.45, 1.0], {
-          extrapolateLeft: "clamp",
-          extrapolateRight: "clamp",
-        })
-      : interpolate(frame, [ZOOM_IN_END, HOOK_DURATION], [1.0, 1.07], {
-          extrapolateLeft: "clamp",
-          extrapolateRight: "clamp",
-        });
-  const phoneZoom =
-    frame < ZOOM_IN_END
-      ? interpolate(frame, [0, ZOOM_IN_END], [1.18, 1.0], {
-          extrapolateLeft: "clamp",
-          extrapolateRight: "clamp",
-        })
-      : interpolate(frame, [ZOOM_IN_END, HOOK_DURATION], [1.0, 1.02], {
-          extrapolateLeft: "clamp",
-          extrapolateRight: "clamp",
-        });
-  const zoomScale = laptopZoom;
-  const phoneZoomCorrection = phoneZoom / laptopZoom;
+  // Zoom is now driven inside AntiCheatHookScene via camera.zoom for
+  // the laptop curve and a counter-scale on the phone mesh for its
+  // own. No CSS transform on the wrapper, so the text overlays don't
+  // scale with the devices.
 
   return (
     <AbsoluteFill style={{ backgroundColor: "#0a0a0a", fontFamily: font }}>
-      <AbsoluteFill
-        style={{
-          transform: `scale(${zoomScale})`,
-          transformOrigin: "50% 50%",
-        }}
-      >
+      <AbsoluteFill>
         {/* ── Single dual-device 3D scene underneath everything ── */}
         <AntiCheatHookScene
           laptopSegments={LAPTOP_SEGMENTS}
@@ -161,7 +132,6 @@ export const AntiCheatHook: React.FC = () => {
           height={H}
           emissiveIntensity={0.7}
           lightingIntensity={0.7}
-          phoneZoomCorrection={phoneZoomCorrection}
         />
 
         {/* ── Left panel overlay: text + tint, no canvas ── */}
