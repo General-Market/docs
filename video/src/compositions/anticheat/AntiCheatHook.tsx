@@ -9,41 +9,27 @@ import {
   useVideoConfig,
 } from "remotion";
 import { font } from "../../common/fonts";
-import { DeviceBroll } from "../../lib/DeviceBroll";
+import { AntiCheatHookScene } from "./AntiCheatHookScene";
 import { FPS, H, W } from "./theme";
 
 const BROLL = {
-  minecraft: staticFile("cheat-broll/minecraft-killaura.mp4"),
+  // minecraft-killaura-clean has the opening + disclaimer strip removed
+  // via ffmpeg; the original mp4 bakes a yellow "I am NOT sponsored"
+  // banner across the bottom that no CSS overlay can hide once the
+  // texture is wrapped onto the laptop screen mesh.
+  minecraft: staticFile("cheat-broll/minecraft-killaura-clean.mp4"),
   cs2: staticFile("cheat-broll/cs2-spinbot.mp4"),
   valorant: staticFile("cheat-broll/valorant-wallhack.mp4"),
 };
 
-// Cheat clips are 3-5s each; cycle them across the hook on the original
-// beats — minecraft → cs2 at frame 69, cs2 → valorant at frame 146.
+// Cycle order: spinbot → wallhack → kill aura. Beat boundaries inherit
+// the original cuts (frames 69 and 146).
 const LAPTOP_CLIP_CUTS = { mid: 69, late: 146 } as const;
 function laptopBrollFor(frame: number): string {
-  if (frame < LAPTOP_CLIP_CUTS.mid) return BROLL.minecraft;
-  if (frame < LAPTOP_CLIP_CUTS.late) return BROLL.cs2;
-  return BROLL.valorant;
+  if (frame < LAPTOP_CLIP_CUTS.mid) return BROLL.cs2;
+  if (frame < LAPTOP_CLIP_CUTS.late) return BROLL.valorant;
+  return BROLL.minecraft;
 }
-
-// Tighter framing on the laptop. Default angle (looking down at the
-// screen face) — only push zoom higher so the screen fills the panel.
-const LAPTOP_CAMERA = {
-  position: [3.031, 4.096, -6.179] as [number, number, number],
-  target: [3.001, 2.780, 0.829] as [number, number, number],
-  fov: 50,
-  zoom: 1.7,
-};
-
-// Phone keeps its natural floating pose; tighter zoom so the screen
-// dominates the right panel.
-const PHONE_CAMERA = {
-  position: [-2.8, 2.375, -4.44] as [number, number, number],
-  target: [-2.921, 2.475, -1.564] as [number, number, number],
-  fov: 50,
-  zoom: 1.5,
-};
 
 const PHONE_BROLL = staticFile("cheat-broll/phone-trading.mp4");
 
@@ -94,7 +80,19 @@ export const AntiCheatHook: React.FC = () => {
           transformOrigin: "50% 50%",
         }}
       >
-        {/* ── Left panel: PLAY — laptop with cheat broll on its screen ── */}
+        {/* ── Single dual-device 3D scene underneath everything ── */}
+        <AntiCheatHookScene
+          laptopBroll={laptopBrollFor(frame)}
+          phoneBroll={PHONE_BROLL}
+          laptopBrollAspect={16 / 9}
+          phoneBrollAspect={720 / 1560}
+          width={W}
+          height={H}
+          emissiveIntensity={1.6}
+          lightingIntensity={0.85}
+        />
+
+        {/* ── Left panel overlay: text + tint, no canvas ── */}
         <div
           style={{
             position: "absolute",
@@ -104,19 +102,9 @@ export const AntiCheatHook: React.FC = () => {
             right: `${splitOffset}px`,
             overflow: "hidden",
             borderRight: `1px solid ${"#1f1f1f"}`,
+            pointerEvents: "none",
           }}
         >
-          <DeviceBroll
-            device="laptop"
-            broll={laptopBrollFor(frame)}
-            brollAspect={16 / 9}
-            width={W}
-            height={H}
-            camera={LAPTOP_CAMERA}
-            lightingIntensity={0.7}
-            emissiveIntensity={1.6}
-            background="#0a0a0a"
-          />
           <StripDarken />
           <PanelLabel
             eyebrow="When you play"
@@ -135,7 +123,7 @@ export const AntiCheatHook: React.FC = () => {
           />
         </div>
 
-        {/* ── Right panel: TRADE — phone playing the chart on its screen ── */}
+        {/* ── Right panel overlay: text + tint ── */}
         <div
           style={{
             position: "absolute",
@@ -145,19 +133,9 @@ export const AntiCheatHook: React.FC = () => {
             right: 0,
             overflow: "hidden",
             borderLeft: `1px solid ${"#1f1f1f"}`,
+            pointerEvents: "none",
           }}
         >
-          <DeviceBroll
-            device="phone"
-            broll={PHONE_BROLL}
-            brollAspect={720 / 1560}
-            width={W}
-            height={H}
-            camera={PHONE_CAMERA}
-            lightingIntensity={0.7}
-            emissiveIntensity={1.6}
-            background="#0a0a0a"
-          />
           <StripDarken tint={"#ff3b3b"} />
           <PanelLabel
             eyebrow="When you trade"
