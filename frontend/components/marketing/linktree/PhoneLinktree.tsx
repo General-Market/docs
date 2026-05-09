@@ -379,6 +379,22 @@ export function PhoneLinktree() {
 
   const handleLinkClick = useCallback(
     (e: React.MouseEvent, href: string, external: boolean, style: LinktreeIcon) => {
+      // Touch devices: drei <Html transform> hit-testing on iOS Safari is
+      // unreliable enough that taps occasionally land on the wrong link
+      // row. Skip the animation, let the underlying <a> follow its href
+      // exactly. Desktop keeps the spin-and-fly.
+      const isTouch =
+        typeof window !== 'undefined' &&
+        window.matchMedia('(pointer: coarse), (hover: none)').matches
+      if (isTouch) {
+        if (external) {
+          // Default <a target="_blank"> handles this; nothing to do.
+          return
+        }
+        // Internal link: let the anchor navigate. Don't preventDefault.
+        return
+      }
+
       e.preventDefault()
       if (leaving.current) return
       leaving.current = { startMs: performance.now(), href, external, style }
