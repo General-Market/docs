@@ -86,7 +86,7 @@ export const AntiCheatHook: React.FC = () => {
           <QuestionScene
             device="laptop"
             devicePosition="left"
-            question="When in 2026 gaming Anti-Cheats ban wall hackers"
+            question="When in 2026 Anti-Cheats ban wall hackers"
             segments={LAPTOP_SEGMENTS}
             sceneDuration={SCENE_B_DURATION}
           />
