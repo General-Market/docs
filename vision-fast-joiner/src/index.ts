@@ -21,12 +21,13 @@
  *   DEPOSIT_USDC       default 10  — USDC per join, in human units
  *   FAST_JOINER_HEALTH_PORT  default 9202
  */
-import { createPublicClient, createWalletClient, http, parseUnits, getAddress, keccak256, stringToHex, type Hex } from 'viem'
+import { createPublicClient, createWalletClient, http, parseUnits, getAddress, keccak256, stringToHex, bytesToHex, type Hex } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { readFileSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createServer } from 'node:http'
+import { randomBytes } from 'node:crypto'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -37,6 +38,8 @@ const POLL_INTERVAL_MS = parseInt(process.env.POLL_INTERVAL_MS || '3000', 10)
 const DEPOSIT_USDC = parseFloat(process.env.DEPOSIT_USDC || '10')
 const HEALTH_PORT = parseInt(process.env.FAST_JOINER_HEALTH_PORT || '9202', 10)
 const VAULT_VERSION = process.env.BATCH_VERSION || 'v2'
+const ORACLE_URLS = (process.env.ORACLE_URLS || 'http://localhost:10001,http://localhost:10002,http://localhost:10003').split(',').map((s) => s.trim()).filter(Boolean)
+const MAX_BITMAP_BYTES = 1024 // matches vision-bot/framework/core.py
 
 if (!PK) {
   console.error('[fatal] MANAGER_PRIVATE_KEY not set')
@@ -182,7 +185,43 @@ console.log(`[boot] manager=${account.address} vision=${VISION} sources=${SOURCE
 const attempted = new Set<string>()
 
 const DEPOSIT_WEI = parseUnits(DEPOSIT_USDC.toString(), 18)
-const ZERO_BITMAP_HASH = keccak256(stringToHex('fast-joiner')) as Hex
+
+// Build a fresh random bitmap + its keccak hash. The full 1024-byte buffer
+// gets posted to oracles so they have actual predictions to settle against;
+// the hash goes on chain as the player's commitment. Random bits give the
+// oracle an honest "I bet on a coin flip" — payouts move the vault NAV in
+// tiny amounts on every settlement instead of zero-PnL break-evens.
+function newBitmap(): { bitmap: Uint8Array; hash: Hex } {
+  const bitmap = new Uint8Array(MAX_BITMAP_BYTES)
+  bitmap.set(randomBytes(MAX_BITMAP_BYTES))
+  return { bitmap, hash: keccak256(bytesToHex(bitmap)) }
+}
+
+async function submitBitmapToOracles(player: `0x${string}`, batchId: bigint, bitmap: Uint8Array, hash: Hex): Promise<number> {
+  const payload = {
+    player,
+    batch_id: Number(batchId),
+    bitmap_hex: bytesToHex(bitmap),
+    expected_hash: hash,
+  }
+  let accepted = 0
+  await Promise.all(
+    ORACLE_URLS.map(async (url) => {
+      try {
+        const res = await fetch(`${url}/vision/bitmap`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(payload),
+          signal: AbortSignal.timeout(5_000),
+        })
+        if (res.ok) accepted += 1
+      } catch {
+        // best effort — oracle may be down or restarting
+      }
+    }),
+  )
+  return accepted
+}
 
 // Reads run in parallel across sources. Writes serialize through one queue
 // AND we refetch pending nonce per write — fund-manager + keeper share the
@@ -272,6 +311,8 @@ async function processSource(source: string) {
   }
 
   attempted.add(key)
+  const { bitmap, hash: bitmapHash } = newBitmap()
+
   // Serialize the actual write through the nonce queue, with manually
   // tracked nonces so concurrent in-flight txs don't collide.
   nonceQueue = nonceQueue.then(async () => {
@@ -282,17 +323,20 @@ async function processSource(source: string) {
         address: vault,
         abi: VAULT_ABI,
         functionName: 'joinBatch',
-        args: [batchId, configHash, DEPOSIT_WEI, ZERO_BITMAP_HASH],
+        args: [batchId, configHash, DEPOSIT_WEI, bitmapHash],
         nonce,
       })
       health.joinedTotal += 1
       health.joinedThisRun += 1
-      console.log(`[join] source=${source} batch=${batchId} vault=${vault} nonce=${nonce} tx=${txHash}`)
+      // Fire-and-forget bitmap submission. If oracles reject, that's logged
+      // but we don't unwind the on-chain join — vault is in the batch either
+      // way; without bitmap the player just settles to a default payout.
+      const accepted = await submitBitmapToOracles(vault, batchId, bitmap, bitmapHash)
+      console.log(`[join] source=${source} batch=${batchId} vault=${vault} nonce=${nonce} tx=${txHash} bitmap_accepted=${accepted}/${ORACLE_URLS.length}`)
     } catch (err) {
       const msg = err instanceof Error ? err.message.slice(0, 140) : String(err).slice(0, 140)
       health.lastError = `${source}/${batchId}: ${msg}`
       console.warn(`[skip] source=${source} batch=${batchId} nonce=${nonce} ${msg}`)
-      // On nonce drift, drop the floor so the next pending fetch wins.
       if (msg.includes('nonce') || msg.includes('Nonce')) {
         nonceFloor = 0
       }
