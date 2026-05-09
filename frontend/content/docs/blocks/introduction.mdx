@@ -1,43 +1,122 @@
 ---
 title: "Introduction"
-description: "Vision — sealed parimutuel prediction markets across 90+ real-world data sources"
+description: "Blocks — sealed bets across 90+ data sources. Predators excluded by construction."
 ---
 
-# Vision
+# Blocks
 
-You are about to bet on whether German trains will be late. They will be. The question is whether enough other people agree with you. This is Vision.
+You think a German train will be late. It will be. The question is whether the seal holds long enough for you to be right alone. Welcome to Blocks.
 
-<VisionHero />
+Blocks is a sealed-bet venue. Pick a number, pick a side, seal the commitment. Nobody sees the bet until the market closes. Nobody can run ahead of it. Nobody can fade it on entry. Nobody can buy your decision off your broker. The mechanism is older than electricity. The novelty is having one that still works.
 
-Vision is a **sealed parimutuel prediction market**. Players bet on whether values move UP or DOWN over fixed time intervals. The subject matter is almost comically vast -- **90+ real-world data sources** spanning earthquakes, ice cream machines, train delays, npm downloads, Twitch viewership, nuclear reactor output, and hundreds more. The universe reduced to a binary wager, repeated every ten minutes, across four hundred thousand markets.
+```
+  ┌──────────────────────────────────────────────────────────────────────────────┐
+  │                                                                              │
+  │                       B   L   O   C   K   S                                  │
+  │                                                                              │
+  │            Sealed bets. Eight predators excluded by design.                  │
+  │                                                                              │
+  │   ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐     │
+  │   │  Crypto  │  │ Weather  │  │  Trains  │  │  Quakes  │  │  GitHub  │     │
+  │   │  9,963   │  │ 161,125  │  │  1,200   │  │   300    │  │  1,500   │     │
+  │   │  blocks  │  │  blocks  │  │  blocks  │  │  blocks  │  │  blocks  │     │
+  │   └──────────┘  └──────────┘  └──────────┘  └──────────┘  └──────────┘     │
+  │   ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐     │
+  │   │   npm    │  │  Twitch  │  │  Movies  │  │  Steam   │  │  Flights │     │
+  │   │  9,183   │  │  57,523  │  │  37,502  │  │  5,000   │  │  2,400   │     │
+  │   │  blocks  │  │  blocks  │  │  blocks  │  │  blocks  │  │  blocks  │     │
+  │   └──────────┘  └──────────┘  └──────────┘  └──────────┘  └──────────┘     │
+  │   ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐     │
+  │   │  Stocks  │  │  Reddit  │  │  DeFi    │  │  Buoys   │  │ Nuclear  │     │
+  │   │  3,200   │  │  4,800   │  │  2,100   │  │   850    │  │    63    │     │
+  │   │  blocks  │  │  blocks  │  │  blocks  │  │  blocks  │  │  blocks  │     │
+  │   └──────────┘  └──────────┘  └──────────┘  └──────────┘  └──────────┘     │
+  │                                                                              │
+  │       90+ Sources   *   400,000+ Blocks   *   Sealed Commitments             │
+  │                                                                              │
+  └──────────────────────────────────────────────────────────────────────────────┘
+```
 
-Winners split the losers' stakes, minus a 0.05% fee. All commitments are sealed on-chain to prevent front-running. Every claim is verified with BLS aggregate signatures. The mechanism is elegant. Whether the participants deserve elegance is another question entirely.
+## Each market thins the predators
 
-## How It Works
+Spot is the open field. Every extraction works there. Cross-venue arbitrage, frontrunning, stop hunting, orderflow buying, spoofing, latency races, insider trading, toxic-flow making — eight strategies, all profitable, all at the expense of someone who showed up to take a directional view.
+
+Perpetuals refuse one of them. Options refuse two more. Blocks refuses all of them. Not by policy — by construction.
+
+```
+                          SPOT      PERPS     OPTIONS    BLOCKS
+                          ~~~~      ~~~~~     ~~~~~~~    ~~~~~~
+
+  Cross-venue arb         ████        —         —          —
+  Stop & liq hunt         ████      ████        —          —
+  Orderflow purchase      ████      ████      ████         —
+  Frontrunning / MEV      ████      ████      ████         —
+  Insider trading         ████      ████      ████         —
+  Latency arbitrage       ████      ████      ████         —
+  Spoofing & layering     ████      ████      ████         —
+  Toxic-flow MM           ████      ████      ████         —
+  Directional bets        ████      ████      ████        ████
+
+                       Eight ways to lose. One bet that still works.
+```
+
+The bets are sealed before they exist on-chain. There is no orderbook to spoof, no mempool to scan, no broker to pay for the flow. Resolution comes from external data verified by an oracle network with BLS aggregate signatures. Winners split the losers' stakes minus a 0.05% fee. The pool is parimutuel. There is no counterparty to fade you, because there is no counterparty.
+
+## How a block resolves
 
 Four steps separate you from the consequences of your convictions.
 
-<FourStepsFlow />
+```
+    ┌─────────────────────────────────────────────────────────────────────────┐
+    │                         THE FOUR STEPS                                  │
+    └─────────────────────────────────────────────────────────────────────────┘
+
+    STEP 1                 STEP 2                 STEP 3                 STEP 4
+    Browse                 Seal                   Resolve                Claim
+    ~~~~~~                 ~~~~                   ~~~~~~~                ~~~~~
+
+    ┌─────────────┐       ┌─────────────┐       ┌─────────────┐       ┌─────────────┐
+    │             │       │             │       │             │       │             │
+    │  Pick a     │       │  Bet UP or  │       │  Tick ends  │       │  Withdraw   │
+    │  batch from │──────>│  DOWN per   │──────>│  Oracles    │──────>│  winnings   │
+    │  90+ source │       │  market.    │       │  fetch real │       │  with BLS   │
+    │  categories │       │  Sealed as  │       │  data and   │       │  verified   │
+    │             │       │  hash on-   │       │  resolve    │       │  balance    │
+    │  Crypto?    │       │  chain.     │       │  outcomes.  │       │  proof.     │
+    │  Weather?   │       │             │       │             │       │             │
+    │  Trains?    │       │  keccak256  │       │  Winners    │       │  Claim any  │
+    │  Quakes?    │       │  (bitmap)   │       │  split the  │       │  time. No   │
+    │             │       │             │       │  losers'    │       │  lockup.    │
+    │             │       │  No one can │       │  stakes.    │       │             │
+    │             │       │  see your   │       │             │       │             │
+    │             │       │  block.     │       │  2/3+       │       │             │
+    │             │       │             │       │  consensus. │       │             │
+    └─────────────┘       └─────────────┘       └─────────────┘       └─────────────┘
+         |                      |                      |                      |
+         v                      v                      v                      v
+    Browse active          Encode into a          Real numbers           BLS aggregate
+    batches across         compact bitmap         from external          signature from
+    all categories         and commit hash        APIs determine         oracle network.
+                                                  UP/DOWN.
+```
 
 <Info>
-Your predictions are **sealed** -- you submit a hash of your bitmap on-chain, then reveal the actual bytes to oracles off-chain. Nobody can see or copy your bets before the tick closes. Your folly is your own until the moment of reckoning.
+Your blocks are **sealed** — you submit a hash of your bitmap on-chain, then reveal the bytes to oracles off-chain after the tick closes. Nobody can see or copy your bets in advance. Your folly is your own until the moment of reckoning.
 </Info>
 
-## What Makes Vision Different
+## Why this and not the alternatives
 
-Most prediction markets let you bet on elections and football. Vision lets you bet on whether an ice cream machine in Chicago is broken. This is not a limitation of imagination but an excess of it.
-
-<VisionVsTypical />
+Most venues let you take a directional view and then quietly sell the right to copy it. Blocks does not — because the act of placing a block is encrypted. The architecture refuses the abuse, rather than promising not to commit it.
 
 <CardGroup cols={2}>
   <Card title="90+ Data Sources" icon="database">
-    Crypto, weather, earthquakes, train delays, Twitch streams, npm downloads, nuclear reactors, ice cream machines, military aircraft. The catalogue of measurable phenomena is vast. The catalogue of predictable ones is smaller. See the [full source directory](/vision/concepts/sources).
+    Crypto, weather, earthquakes, train delays, Twitch streams, npm downloads, nuclear reactors, ice cream machines, military aircraft. Anything that produces a number. See the [full source directory](/docs/blocks/concepts/sources).
   </Card>
   <Card title="Sealed Commitments" icon="lock">
-    Players submit `keccak256(bitmap)` on-chain before revealing actual predictions to oracles. No front-running, no copying. Your mistakes are at least original.
+    Players submit `keccak256(bitmap)` on-chain before revealing actual bets to oracles. No mempool exposure, no copying, no fading. Your mistakes are at least original.
   </Card>
   <Card title="Bot-Friendly" icon="robot">
-    Free registration with `registerBot()`. Poll for blocks, encode bitmaps, and join programmatically. Delegate your hubris to a machine -- it will lose money faster and without complaint.
+    Free registration with `registerBot()`. Poll for batches, encode bitmaps, and join programmatically. Delegate your hubris to a machine — it will lose money faster and without complaint.
   </Card>
   <Card title="Low Fees" icon="percent">
     0.05% fee on profits only. If you lose, you pay nothing extra. The protocol taxes fortune, not misfortune.
@@ -48,52 +127,150 @@ Most prediction markets let you bet on elections and football. Vision lets you b
   <Card title="Points (Season 1)" icon="star">
     Earn points for every tick you participate in. Season 1 is live. Points accrue for presence, not for being right. The protocol rewards those who show up.
   </Card>
-  <Card title="Flexible Blocks" icon="layer-group">
-    Anyone can create a block with custom market selections, tick durations (5 minutes to 30 days), and resolution types. The freedom to construct your own instrument of ruin.
+  <Card title="Flexible Batches" icon="layer-group">
+    Anyone can create a batch with custom market selections, tick durations (5 minutes to 30 days), and resolution types. The freedom to construct your own instrument of ruin.
   </Card>
   <Card title="Backtesting" icon="clock-rotate-left">
-    Test your prediction strategies against historical data before committing real USDC. The past is the only place where certainty exists, and even there it is debatable.
+    Test your strategies against historical data before committing real USDC. The past is the only place where certainty exists, and even there it is debatable.
   </Card>
 </CardGroup>
 
-## What Can You Predict?
+## What can you bet on?
 
-The breadth is the point. Anything that produces a number can become a wager. Here are some real markets live on Vision right now -- each one a small confession that someone, somewhere, believes they know what happens next:
+The breadth is the point. Anything that produces a number can become a block. Each one a small confession that someone, somewhere, believes they know what happens next:
 
-<MarketExamples />
+```
+    ┌──────────────────────────────────────────────────────────────────────┐
+    │                                                                      │
+    │   "Will Bitcoin be higher in 5 minutes?"          crypto_BTC-USD     │
+    │                                                                      │
+    │   "Will it rain more in Tokyo tomorrow?"          weather_tokyo      │
+    │                                                                      │
+    │   "Will an earthquake hit California?"            earthquake_calif   │
+    │                                                                      │
+    │   "Will the Northern Line have disruptions?"      tfl_tube_northern  │
+    │                                                                      │
+    │   "Will Counter-Strike 2 gain players?"           steam_cs2          │
+    │                                                                      │
+    │   "Will npm react downloads increase?"            npm_react          │
+    │                                                                      │
+    │   "Will McDonald's ice cream break in Chicago?"   mcbroken_chicago   │
+    │                                                                      │
+    │   "Will this GitHub repo get more stars?"         github_rust-lang   │
+    │                                                                      │
+    │   "Will Deutsche Bahn trains be late in Berlin?"  db_trains_berlin   │
+    │                                                                      │
+    │   "Will Palo Verde nuclear output change?"        nrc_palo-verde-1   │
+    │                                                                      │
+    │   "Will wave height increase at buoy 41002?"      ndbc_41002         │
+    │                                                                      │
+    │   "Will LA air quality worsen?"                   airnow_los-angeles │
+    │                                                                      │
+    └──────────────────────────────────────────────────────────────────────┘
+```
 
-Every market follows the same mechanic: a data source produces a number, you predict whether it goes UP or DOWN, and the outcome is resolved from real-world data. The universe does not care about your prediction. It moves, or it does not. You are paid accordingly.
+Every block follows the same mechanic. A data source produces a number. You bet UP or DOWN. The outcome is resolved from real-world data. The universe does not care about your block. It moves, or it does not. You are paid accordingly.
 
-## The Data Pipeline
+## The data pipeline
 
 Ninety-eight APIs feed numbers into a Rust process that feeds them into a database that feeds them into smart contracts that redistribute money between strangers. The architecture is sound. The premise is absurd. Both things are true.
 
-<DataPipelineIntro />
+```
+    External APIs (90+ sources)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        │         │         │         │         │
+        │ USGS    │ CoinGecko│ TFL    │ GitHub  │ ...
+        │         │         │         │         │
+        └────┬────┘    ┌────┘    ┌────┘    ┌────┘
+             │         │         │         │
+             ▼         ▼         ▼         ▼
+        ┌────────────────────────────────────────┐
+        │          DATA NODE  (Rust)             │
+        │                                        │
+        │   Collect ──> Validate ──> Store       │
+        │     HTTP       bounds      Postgres    │
+        │                staleness               │
+        └──────────────────┬─────────────────────┘
+                           │
+                           ▼
+        ┌────────────────────────────────────────┐
+        │            ORACLES (3x)                │
+        │                                        │
+        │   Read prices ──> Resolve ticks        │
+        │                ──> BLS sign            │
+        │                ──> 2/3+ consensus      │
+        └──────────────────┬─────────────────────┘
+                           │
+                           ▼
+        ┌────────────────────────────────────────┐
+        │          SMART CONTRACTS               │
+        │                                        │
+        │   VisionPool.sol  ──  sealed bitmaps   │
+        │   VisionClaim.sol ──  BLS claims       │
+        │   VisionReserve   ──  USDC custody     │
+        └──────────────────────────────────────── ┘
+```
 
-## Who Is Vision For?
+<Info>
+The on-chain contracts retain their original `Vision*` names from the protocol's earlier identity. The product is Blocks; the bytecode remembers.
+</Info>
+
+## Who is Blocks for?
 
 Everyone who has ever looked at a number and felt, with irrational certainty, that they knew which way it would go next.
 
-<AudienceTable />
+```
+    ┌────────────────────┬───────────────────────────────────────────────────┐
+    │  AUDIENCE          │  USE CASE                                         │
+    ├────────────────────┼───────────────────────────────────────────────────┤
+    │                    │                                                   │
+    │  Bot developers    │  Build automated block-betting strategies.        │
+    │                    │  Free registration, full API access,              │
+    │                    │  programmatic bitmap encoding and batch joining.  │
+    │                    │  Python framework included.                       │
+    │                    │                                                   │
+    ├────────────────────┼───────────────────────────────────────────────────┤
+    │                    │                                                   │
+    │  Manual traders    │  Browse batches in the web UI, pick UP/DOWN       │
+    │                    │  per market, and deposit USDC.                    │
+    │                    │  No coding required.                              │
+    │                    │                                                   │
+    ├────────────────────┼───────────────────────────────────────────────────┤
+    │                    │                                                   │
+    │  Quant researchers │  Backtest bitmap strategies against historical    │
+    │                    │  tick data across 90+ sources.                    │
+    │                    │  Validate edge before deploying capital.          │
+    │                    │                                                   │
+    ├────────────────────┼───────────────────────────────────────────────────┤
+    │                    │                                                   │
+    │  Refugees from     │  Anyone tired of paying the predator tax on       │
+    │  spot, perps,      │  every directional view they take.                │
+    │  options           │  The seal is the whole point.                     │
+    │                    │                                                   │
+    └────────────────────┴───────────────────────────────────────────────────┘
+```
 
-## Quick Links
+## Quick links
 
 You have read this far, which means either curiosity or recklessness. Both are welcome here.
 
 <CardGroup cols={2}>
-  <Card title="Getting Started" icon="rocket" href="/vision/getting-started">
-    Your first prediction. It will probably be wrong. All first predictions are.
+  <Card title="Getting Started" icon="rocket" href="/docs/blocks/getting-started">
+    Your first block. It will probably be wrong. All first blocks are.
   </Card>
-  <Card title="Data Sources" icon="database" href="/vision/concepts/sources">
+  <Card title="Data Sources" icon="database" href="/docs/blocks/concepts/sources">
     Ninety-eight ways to measure the world. The absurdity is the point.
   </Card>
-  <Card title="Blocks & Bitmaps" icon="book" href="/vision/concepts/blocks">
-    How markets are grouped, predictions encoded, and outcomes determined.
+  <Card title="Batches & Bitmaps" icon="book" href="/docs/blocks/concepts/blocks">
+    How markets are grouped, blocks encoded, and outcomes determined.
   </Card>
-  <Card title="Build a Bot" icon="robot" href="/vision/bots/quickstart">
+  <Card title="Build a Bot" icon="robot" href="/docs/blocks/bots/quickstart">
     Automate your strategy. The machine will not hesitate where you would.
   </Card>
-  <Card title="API Reference" icon="code" href="/vision/api/overview">
+  <Card title="API Reference" icon="code" href="/docs/blocks/api/overview">
     The full endpoint documentation, for those who prefer to commune with the protocol directly.
+  </Card>
+  <Card title="Index (ETFs)" icon="layer-group" href="/docs/index/introduction">
+    On-chain index products. Secondary line. The boring cousin of the family.
   </Card>
 </CardGroup>

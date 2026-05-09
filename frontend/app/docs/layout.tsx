@@ -7,9 +7,9 @@ import { flattenSlugs } from '@/lib/docs/nav'
 import './docs.css'
 
 export const metadata: Metadata = {
-  title: { default: 'Documentation · General Market', template: '%s · General Market Docs' },
+  title: { default: 'Blocks Documentation · General Market', template: '%s · General Market Docs' },
   description:
-    'Documentation for General Market — on-chain index products, prediction markets, and DeFi lending.',
+    'Blocks: sealed bets across 90+ data sources. Predators excluded by construction. Plus Index, on-chain ETFs.',
   alternates: { canonical: '/docs' },
   robots: { index: true, follow: true },
 }
@@ -34,8 +34,8 @@ function DocsTopbar() {
           <span className="docs-brand-suffix">Docs</span>
         </Link>
         <nav className="docs-tabs" aria-label="Sections">
-          <Link href="/docs/vision/introduction" className="docs-tab">
-            Vision
+          <Link href="/docs/blocks/introduction" className="docs-tab">
+            Blocks
           </Link>
           <Link href="/docs/index/introduction" className="docs-tab">
             Index

@@ -1720,7 +1720,7 @@ export function WelcomeHero() {
           className="mt-3"
         >
           <a
-            href="/docs/vision/introduction"
+            href="/docs/blocks/introduction"
             className="text-[11px] text-zinc-400 underline underline-offset-2 hover:text-zinc-600 transition-colors"
           >
             How it works

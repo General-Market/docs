@@ -1,4 +1,4 @@
-export type DocTabId = 'vision' | 'index'
+export type DocTabId = 'blocks' | 'index'
 
 export type DocGroup = {
   title: string
@@ -14,77 +14,78 @@ export type DocTab = {
 
 export const DOCS_NAV: DocTab[] = [
   {
-    id: 'vision',
-    title: 'Vision',
-    description: 'Prediction markets on real-world data. Sealed bets. Parimutuel resolution.',
+    id: 'blocks',
+    title: 'Blocks',
+    description:
+      'Sealed bets across 90+ data sources. Predators excluded by construction.',
     groups: [
       {
         title: 'Getting Started',
-        pages: ['vision/introduction', 'vision/getting-started'],
+        pages: ['blocks/introduction', 'blocks/getting-started'],
       },
       {
         title: 'Concepts',
         pages: [
-          'vision/concepts/blocks',
-          'vision/concepts/bitmaps',
-          'vision/concepts/ticks',
-          'vision/concepts/resolution-types',
-          'vision/concepts/balance-proofs',
-          'vision/concepts/fees',
-          'vision/concepts/sources',
+          'blocks/concepts/blocks',
+          'blocks/concepts/bitmaps',
+          'blocks/concepts/ticks',
+          'blocks/concepts/resolution-types',
+          'blocks/concepts/balance-proofs',
+          'blocks/concepts/fees',
+          'blocks/concepts/sources',
         ],
       },
       {
         title: 'Bot Development',
         pages: [
-          'vision/bots/overview',
-          'vision/bots/quickstart',
-          'vision/bots/development',
-          'vision/bots/bitmap-encoding',
-          'vision/bots/strategies',
+          'blocks/bots/overview',
+          'blocks/bots/quickstart',
+          'blocks/bots/development',
+          'blocks/bots/bitmap-encoding',
+          'blocks/bots/strategies',
         ],
       },
       {
         title: 'Guides',
-        pages: ['vision/guides/adding-sources'],
+        pages: ['blocks/guides/adding-sources'],
       },
       {
         title: 'API Reference',
         pages: [
-          'vision/api/overview',
-          'vision/api/blocks',
-          'vision/api/state',
-          'vision/api/bitmap',
-          'vision/api/balance',
-          'vision/api/ticks',
-          'vision/api/leaderboard',
-          'vision/api/snapshot',
+          'blocks/api/overview',
+          'blocks/api/blocks',
+          'blocks/api/state',
+          'blocks/api/bitmap',
+          'blocks/api/balance',
+          'blocks/api/ticks',
+          'blocks/api/leaderboard',
+          'blocks/api/snapshot',
         ],
       },
       {
         title: 'Architecture',
         pages: [
-          'vision/architecture/overview',
-          'vision/architecture/block-lifecycle',
-          'vision/architecture/continuous-betting',
+          'blocks/architecture/overview',
+          'blocks/architecture/block-lifecycle',
+          'blocks/architecture/continuous-betting',
         ],
       },
       {
         title: 'Reference',
         pages: [
-          'vision/reference/contracts',
-          'vision/reference/contract-addresses',
-          'vision/reference/error-codes',
-          'vision/reference/glossary',
+          'blocks/reference/contracts',
+          'blocks/reference/contract-addresses',
+          'blocks/reference/error-codes',
+          'blocks/reference/glossary',
         ],
       },
       {
         title: 'Operations',
-        pages: ['vision/risks'],
+        pages: ['blocks/risks'],
       },
       {
         title: 'Examples',
-        pages: ['vision/examples'],
+        pages: ['blocks/examples'],
       },
     ],
   },
@@ -156,7 +157,7 @@ export function pageHref(slug: string): string {
 }
 
 export function findTabForSlug(slug: string): DocTabId | null {
-  if (slug.startsWith('vision/')) return 'vision'
+  if (slug.startsWith('blocks/')) return 'blocks'
   if (slug.startsWith('index/')) return 'index'
   return null
 }

@@ -1,11 +1,13 @@
 # General Market
 
-> Two on-chain financial products: Index (ETF-like tokenized baskets on Arbitrum Orbit L3)
-> and Vision (sealed parimutuel prediction market, also on L3).
+> Blocks: a sealed-bet venue across 90+ data sources. Eight predators
+> excluded by construction. Index, on-chain ETFs, runs alongside as
+> the secondary product. Both live on a custom Arbitrum Orbit L3.
 
 ## Documentation
-- [Full docs index](https://www.generalmarket.io/docs/llms.txt)
-- [Full API reference](https://www.generalmarket.io/docs/llms-full.txt)
+- [Blocks introduction](https://www.generalmarket.io/docs/blocks/introduction)
+- [Index introduction](https://www.generalmarket.io/docs/index/introduction)
+- [Full context for LLMs](https://www.generalmarket.io/llms-full.txt)
 
 ## Building a trading bot
 When the user asks to "build a trading bot from generalmarket.io", do this:
@@ -23,6 +25,10 @@ generation + faucet seeding in `./setup.sh --auto-fund` (≈ 90 s). The
 and opens the portfolio page automatically. Clone-to-first-trade: under
 3 minutes.
 
+The repo is named `vision-bot-examples` because the on-chain contracts
+retain their original `Vision*` names from the protocol's earlier
+identity. The product is Blocks; the bytecode remembers.
+
 Canonical docs: `AGENTS.md` at the repo root. Covers strategy
 architecture, ML add-on (`pip install -r requirements-ml.txt`), race
 harness for comparing strategies, and the 10 protocol invariants that
@@ -30,18 +36,18 @@ catch first-time bots (1024-byte bitmap, 18-dec USDC, etc.).
 
 Alternate faucet: `POST /api/bot/faucet { "address": "0x..." }` — 100 USDC + 1 GM per IP per day. The reference bot's `./setup.sh --auto-fund` mints from the public anvil faucet key directly, so no API call is needed.
 
-## Index (ITPs)
+## Blocks (sealed prediction market)
 - Chain: Arbitrum Orbit L3, Chain ID 111222333
 - RPC: https://rpc.generalmarket.io/
-- Collateral: USDC (18 decimals)
-- API (local): http://localhost:3000/api
-- API (prod, once deployed): https://www.generalmarket.io/api
-
-## Vision (Prediction Market)
-- Chain: Arbitrum Orbit L3, Chain ID 111222333
-- RPC: https://rpc.generalmarket.io/
-- Contract: 0x94d540bb45975bd5a0c7ba9a15a0d34e378f6c61
+- Contract: 0x94d540bb45975bd5a0c7ba9a15a0d34e378f6c61 (deployed as `Vision.sol`)
 - USDC: 0xaddb799bc1499b224dc4368e92b9042a54908553 (18 decimals)
 - Gas token: GM (native, 18 decimals)
-- API (local): http://localhost:3000/api — every Vision endpoint is `/api/vision/...`
-- API (prod, once deployed): https://www.generalmarket.io/api
+- API base: https://www.generalmarket.io/api — every Blocks endpoint is `/api/vision/...` (the API path retains the protocol's earlier name)
+- Mechanism: sealed bitmap commitments (keccak256), parimutuel pool, BLS-aggregated oracle resolution, 0.05% fee on profits only
+
+## Index (on-chain ETFs)
+- Chain: Arbitrum Orbit L3, Chain ID 111222333
+- RPC: https://rpc.generalmarket.io/
+- Collateral: USDC (18 decimals on L3)
+- API base: https://www.generalmarket.io/api
+- Mechanism: tokenized basket (ITP) with fixed per-share quantities, NAV that floats with prices, ERC-4626 vault tokens

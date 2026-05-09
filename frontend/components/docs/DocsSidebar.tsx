@@ -17,7 +17,7 @@ function deriveTitle(slug: string): string {
 
 export function DocsSidebar({ titleMap }: { titleMap?: Record<string, string> }) {
   const pathname = usePathname() ?? ''
-  const activeTab: DocTabId = pathname.startsWith('/docs/index') ? 'index' : 'vision'
+  const activeTab: DocTabId = pathname.startsWith('/docs/index') ? 'index' : 'blocks'
   const tab = DOCS_NAV.find(t => t.id === activeTab) ?? DOCS_NAV[0]
   const title = (slug: string) => titleMap?.[slug] ?? deriveTitle(slug)
 

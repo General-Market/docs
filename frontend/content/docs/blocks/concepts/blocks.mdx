@@ -17,7 +17,7 @@ curl https://generalmarket.io/api/vision/blocks
 vision.joinBlock(blockId, depositAmount, stakePerTick, bitmapHash)
 ```
 
-See [Bot Quickstart](/vision/bots/quickstart) for a full working example.
+See [Bot Quickstart](/docs/blocks/bots/quickstart) for a full working example.
 
 ## Block Lifecycle
 
@@ -129,7 +129,7 @@ function joinBlock(
 `stakePerTick` must be at least `MIN_STAKE_PER_TICK` (0.1 USDC = 100,000 in 6-decimal USDC). The initial deposit must be at least equal to `stakePerTick`.
 </Tip>
 
-See [Bitmaps](/vision/concepts/bitmaps) for how to construct and commit predictions.
+See [Bitmaps](/docs/blocks/concepts/bitmaps) for how to construct and commit predictions.
 
 ## Technical Details
 
@@ -153,7 +153,7 @@ struct Block {
 |-------|-------------|
 | `creator` | The address that called `createBlock`. Only the creator can set metadata and update markets. |
 | `marketIds` | Array of `bytes32` market identifiers. Each is `keccak256(assetId)` where `assetId` is a UTF-8 string like `"BTC-USD"`. |
-| `resolutionTypes` | Parallel array to `marketIds`. Each entry is a `uint8` from the `ResolutionType` enum (0-7). See [Resolution Types](/vision/concepts/resolution-types). |
+| `resolutionTypes` | Parallel array to `marketIds`. Each entry is a `uint8` from the `ResolutionType` enum (0-7). See [Resolution Types](/docs/blocks/concepts/resolution-types). |
 | `tickDuration` | How often the block resolves, in seconds. Must be between 1 second and 30 days (`MAX_TICK_DURATION`). |
 | `customThresholds` | Parallel array for resolution types that use custom thresholds (`UP_X`, `DOWN_X`, `FLAT_X`). Values are in basis points. |
 | `createdAtTick` | The tick number when the block was created, computed as `block.timestamp / tickDuration`. |

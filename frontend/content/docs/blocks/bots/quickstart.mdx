@@ -248,11 +248,11 @@ Returns an array of `BlockSummary` objects. Each block includes:
 
 ### 3. Generate Predictions
 
-For each market in the block, decide UP or DOWN. The quickstart uses random bets -- the purest confession of ignorance. See [Example Strategies](/vision/bots/strategies) for approaches that disguise ignorance as method.
+For each market in the block, decide UP or DOWN. The quickstart uses random bets -- the purest confession of ignorance. See [Example Strategies](/docs/blocks/bots/strategies) for approaches that disguise ignorance as method.
 
 ### 4. Encode and Hash the Bitmap
 
-Predictions are packed into a big-endian bitmap: bit 1 = UP, bit 0 = DOWN. The hash (`keccak256(bitmap)`) is your on-chain commitment. See [Bitmap Encoding](/vision/bots/bitmap-encoding) for the full spec.
+Predictions are packed into a big-endian bitmap: bit 1 = UP, bit 0 = DOWN. The hash (`keccak256(bitmap)`) is your on-chain commitment. See [Bitmap Encoding](/docs/blocks/bots/bitmap-encoding) for the full spec.
 
 ### 5. Approve USDC and Join
 
@@ -293,7 +293,7 @@ Once your bitmap is accepted, the machine waits. That is most of what machines d
 - Use `GET /vision/balance/{block_id}/{player}` to fetch your BLS-signed balance proof.
 - Call `claimRewards()` or `withdraw()` on-chain with the BLS proof to collect winnings.
 
-See [Bot Development](/vision/bots/development) for the full claim and withdrawal flow.
+See [Bot Development](/docs/blocks/bots/development) for the full claim and withdrawal flow.
 
 ## Try It Yourself
 

@@ -70,6 +70,14 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      // Vision was the protocol's earlier identity; the product is now Blocks.
+      // The bytecode remembers, but the URLs do not.
+      { source: '/docs/vision', destination: '/docs/blocks/introduction', permanent: true },
+      { source: '/docs/vision/:path*', destination: '/docs/blocks/:path*', permanent: true },
+    ]
+  },
   // All backend/data-node/oracle/vision/rpc proxies are now handled by
   // catch-all route handlers under app/api/. Docs are now served natively
   // from app/docs (was previously proxied to Mintlify at docs.generalmarket.io).

@@ -58,7 +58,7 @@ When a tick becomes due for resolution, the oracle engine runs its pipeline. It 
    - Fetch the start price (from the previous tick's end price) and end price (current snapshot).
    - Check that price data is not stale (older than the configured threshold, default 300 seconds).
    - Compute the percentage change: `(end - start) / start * 100`.
-   - Determine the outcome using the market's resolution type. See [Resolution Types](/vision/concepts/resolution-types).
+   - Determine the outcome using the market's resolution type. See [Resolution Types](/docs/blocks/concepts/resolution-types).
    - Decode each player's bitmap bit for this market index (1 = UP, 0 = DOWN).
    - Run parimutuel side matching to compute payouts.
 

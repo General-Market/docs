@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { MDXRemote } from 'next-mdx-remote/rsc'
@@ -6,7 +6,7 @@ import remarkGfm from 'remark-gfm'
 import rehypeHighlight from 'rehype-highlight'
 import { loadDoc } from '@/lib/docs/mdx'
 import { mdxComponents } from '@/components/docs/MdxComponents'
-import { DOCS_NAV, adjacentPages, flattenSlugs, pageHref } from '@/lib/docs/nav'
+import { adjacentPages, flattenSlugs, pageHref } from '@/lib/docs/nav'
 
 type Params = { slug?: string[] }
 
@@ -24,9 +24,9 @@ export async function generateMetadata({
   const slugStr = (slug ?? []).join('/')
   if (!slugStr) {
     return {
-      title: 'Documentation',
+      title: 'Blocks Documentation · General Market',
       description:
-        'Documentation for General Market — on-chain index products, prediction markets, and DeFi lending.',
+        'Blocks: sealed bets across 90+ data sources. Predators excluded by construction. Plus Index, on-chain ETFs.',
       alternates: { canonical: '/docs' },
     }
   }
@@ -44,7 +44,7 @@ export default async function DocsPage({ params }: { params: Promise<Params> }) 
   const slugStr = (slug ?? []).join('/')
 
   if (!slugStr) {
-    return <DocsLanding />
+    redirect('/docs/blocks/introduction')
   }
 
   const doc = await loadDoc(slugStr)
@@ -107,27 +107,4 @@ function prettyTitle(slug: string): string {
     .replace(/\bItp\b/, 'ITP')
     .replace(/\bItps\b/, 'ITPs')
     .replace(/\bNav\b/, 'NAV')
-}
-
-function DocsLanding() {
-  return (
-    <div className="docs-landing">
-      <p className="docs-landing-eyebrow">Documentation</p>
-      <h1>Two protocols. One docs.</h1>
-      <p className="docs-landing-lede">
-        Index covers on-chain ETF mechanics, NAV pricing, oracle consensus, and lending.
-        Vision covers sealed-bet prediction markets across 90+ real-world data sources. Both
-        run on a custom Arbitrum Orbit L3.
-      </p>
-      <div className="docs-landing-cards">
-        {DOCS_NAV.map(tab => (
-          <Link key={tab.id} href={pageHref(tab.groups[0].pages[0])} className="docs-landing-card">
-            <h2>{tab.title}</h2>
-            <p>{tab.description}</p>
-            <span className="docs-landing-card-arrow">Read the docs →</span>
-          </Link>
-        ))}
-      </div>
-    </div>
-  )
 }

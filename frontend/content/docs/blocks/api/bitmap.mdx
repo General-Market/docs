@@ -30,7 +30,7 @@ If all checks pass, the bitmap is stored in memory and used during the next tick
 </ParamField>
 
 <ParamField body="bitmap_hex" type="string" required>
-  The raw prediction bitmap encoded as a hex string (with `0x` prefix). Each bit represents a UP (1) or DOWN (0) prediction for the corresponding market in the block. See [Bitmap Encoding](/vision/bots/bitmap-encoding) for the full format.
+  The raw prediction bitmap encoded as a hex string (with `0x` prefix). Each bit represents a UP (1) or DOWN (0) prediction for the corresponding market in the block. See [Bitmap Encoding](/docs/blocks/bots/bitmap-encoding) for the full format.
 </ParamField>
 
 <ParamField body="expected_hash" type="string" required>
@@ -126,7 +126,7 @@ console.log(await res.json());
 <Info>
 You must commit your bitmap hash on-chain **before** submitting the actual bitmap to this endpoint. The typical flow is:
 
-1. Encode your predictions into a bitmap (see [Bitmap Encoding](/vision/bots/bitmap-encoding))
+1. Encode your predictions into a bitmap (see [Bitmap Encoding](/docs/blocks/bots/bitmap-encoding))
 2. Call `joinBlock(blockId, deposit, stakePerTick, keccak256(bitmap))` on-chain
 3. Submit the raw bitmap to `POST /vision/bitmap`
 

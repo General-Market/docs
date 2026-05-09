@@ -77,17 +77,17 @@ None. The Vision API is **public**. Player identity is determined by Ethereum ad
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | [`/vision/blocks`](/vision/api/blocks#list-blocks) | List all active blocks |
-| `GET` | [`/vision/markets`](/vision/api/blocks#list-markets) | List supported markets |
-| `GET` | [`/vision/block/{id}/state`](/vision/api/state#get-block-state) | Full state for a single block |
-| `POST` | [`/vision/bitmap`](/vision/api/bitmap#submit-bitmap) | Submit a prediction bitmap (fan-out to all oracles) |
-| `GET` | [`/vision/balance/{block_id}/{player}`](/vision/api/balance#get-player-balance) | Player balance with BLS proof |
-| `GET` | [`/vision/block/{id}/history`](/vision/api/ticks#get-tick-history) | Tick result history for a block |
-| `GET` | [`/vision/reveal/{block_id}/{tick_id}`](/vision/api/ticks#get-revealed-bitmaps) | Revealed bitmaps after tick closes |
-| `POST` | [`/vision/backtest`](/vision/api/ticks#backtest-a-strategy) | Backtest a bitmap strategy |
-| `GET` | [`/vision/leaderboard`](/vision/api/leaderboard#get-leaderboard) | Player rankings by PnL |
-| `GET` | [`/vision/snapshot`](/vision/api/snapshot#get-market-snapshot) | Market price snapshot for all or one source |
-| `GET` | [`/vision/snapshot/meta`](/vision/api/snapshot#get-source-metadata) | Source health, asset counts, sync status |
+| `GET` | [`/vision/blocks`](/docs/blocks/api/blocks#list-blocks) | List all active blocks |
+| `GET` | [`/vision/markets`](/docs/blocks/api/blocks#list-markets) | List supported markets |
+| `GET` | [`/vision/block/{id}/state`](/docs/blocks/api/state#get-block-state) | Full state for a single block |
+| `POST` | [`/vision/bitmap`](/docs/blocks/api/bitmap#submit-bitmap) | Submit a prediction bitmap (fan-out to all oracles) |
+| `GET` | [`/vision/balance/{block_id}/{player}`](/docs/blocks/api/balance#get-player-balance) | Player balance with BLS proof |
+| `GET` | [`/vision/block/{id}/history`](/docs/blocks/api/ticks#get-tick-history) | Tick result history for a block |
+| `GET` | [`/vision/reveal/{block_id}/{tick_id}`](/docs/blocks/api/ticks#get-revealed-bitmaps) | Revealed bitmaps after tick closes |
+| `POST` | [`/vision/backtest`](/docs/blocks/api/ticks#backtest-a-strategy) | Backtest a bitmap strategy |
+| `GET` | [`/vision/leaderboard`](/docs/blocks/api/leaderboard#get-leaderboard) | Player rankings by PnL |
+| `GET` | [`/vision/snapshot`](/docs/blocks/api/snapshot#get-market-snapshot) | Market price snapshot for all or one source |
+| `GET` | [`/vision/snapshot/meta`](/docs/blocks/api/snapshot#get-source-metadata) | Source health, asset counts, sync status |
 
 ## Common Patterns
 
