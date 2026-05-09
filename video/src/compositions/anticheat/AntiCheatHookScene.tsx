@@ -27,9 +27,10 @@ useGLTF.preload(MODEL_URL);
 
 // ── Laptop / phone constants pulled from DeviceBroll so this component
 //    is self-contained.
-// Phone scaled up + pushed further to canvas-right so it stands ~80%
-// of frame height with its right quarter clipped off the canvas edge.
-const PHONE_BASE_SCALE = 40;
+// Phone scaled up + offset to canvas-right so it stands large with its
+// right quarter clipped off the canvas edge. Last pass had it nearly
+// fully off-frame; this dial keeps ~75% of the phone visible.
+const PHONE_BASE_SCALE = 38;
 const LID_OPEN = new THREE.Quaternion(-0.78333, 0, 0, 0.62161);
 const LID_CLOSED = new THREE.Quaternion(0, 0, 0, 1);
 const BEVELS_POS = new THREE.Vector3(-0.00012, 0.00824, -0.10401);
@@ -39,11 +40,11 @@ const PHONE_SCREEN_ASPECT = 9 / 19.5;
 const LAPTOP_SCREEN_ASPECT = 16 / 10;
 
 // World layout. Laptop sits at GLB origin (its native pose). Phone
-// floats at world x=-7.4 (more negative than before): with the camera
-// looking down +z, three.js's lookAt makes negative-x map to the
-// RIGHT of the canvas, so pushing phone further right clips part of
-// it off the right edge.
-const PHONE_POS = new THREE.Vector3(-7.4, 2.5, 0);
+// floats at world x=-5: with the camera looking down +z, three.js's
+// lookAt makes negative-x map to the RIGHT of the canvas, so this
+// keeps about three-quarters of the phone on canvas with the rest
+// bleeding off the right.
+const PHONE_POS = new THREE.Vector3(-5, 2.5, 0);
 
 // Camera between the two devices, looking forward into +z. Slightly
 // above the device plane so we read the laptop's lid face and the
@@ -61,6 +62,12 @@ const PHONE_YAW = Math.atan2(
   PHONE_POS.x - CAMERA_POS[0],
   PHONE_POS.z - CAMERA_POS[2],
 );
+
+// Subtle yaw drift over the first 7 seconds — the phone slowly turns
+// further toward canvas-center while the hook plays, just enough that
+// the brain registers movement without reading as overt animation.
+const PHONE_YAW_DRIFT_END = 210; // 7s at 30fps
+const PHONE_YAW_DRIFT_AMOUNT = -0.09; // ≈ -5°, more negative = toward center
 
 // Closing-act animation — the lid slams shut while the phone whirls
 // off-frame to the right. 7.28s = frame 218 at 30fps.
@@ -320,11 +327,17 @@ const Scene: React.FC<{
   const spinEased = spinT * spinT;
   const phoneRotY = spinEased * Math.PI * 2 * PHONE_SPIN_REVOLUTIONS;
   const phoneSlideX = spinEased * PHONE_SLIDE_OFFSET;
-  // Compose: base yaw (faces camera) + spin around world Y. Since both
-  // rotations are on the same axis, just add the angles.
+  // Pre-spin yaw drift — sine ease so the motion is invisibly continuous,
+  // not linearly mechanical. Caps at PHONE_YAW_DRIFT_END (7s).
+  const driftT = clamp01(frame / PHONE_YAW_DRIFT_END);
+  const driftEased = (1 - Math.cos(driftT * Math.PI)) * 0.5;
+  const yawDrift = PHONE_YAW_DRIFT_AMOUNT * driftEased;
+  // Compose: base yaw (faces camera) + slow drift toward center +
+  // spin around world Y. All three rotations are on the same axis so
+  // we just add the angles.
   const phoneQuat = new THREE.Quaternion().setFromAxisAngle(
     Y_AXIS,
-    PHONE_YAW + phoneRotY,
+    PHONE_YAW + yawDrift + phoneRotY,
   );
 
   const iphone = sceneClone.getObjectByName("iphone");
