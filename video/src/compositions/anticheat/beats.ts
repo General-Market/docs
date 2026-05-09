@@ -10,30 +10,30 @@
 // frame round(T_audio * FPS - MUSIC_START_FROM_AUDIO).
 //
 // Locked invariant: the music's strongest energy plateau (audio
-// t≈102.52s, the climax drum spike) lands at video time 35.02s
-// (frame 1051), which is 9f INSIDE EndCard — same SPIKE_ENDCARD_LOCAL
-// it always was. The Hook was halved (254→112f) and T_HOOK_BARS was
-// killed, so every scene from Bars onward shifted 124f earlier. Music
-// start moves +124f into the audio file (1901→2025) to cancel the
-// drift. Audio now plays from second 67.50.
-export const MUSIC_START_FROM_AUDIO = 2025;
+// t≈102.52s, the climax drum spike) lands at video time 34.53s
+// (frame 1036), which is 9f INSIDE EndCard — same SPIKE_ENDCARD_LOCAL
+// it always was. The Hook was halved (254→112f) and T_HOOK_BARS dropped
+// from 18→15, shifting every scene from Bars onward 139f earlier. Music
+// start moves +139f into the audio file (1901→2040) to cancel the
+// drift. Audio now plays from second 68.00.
+export const MUSIC_START_FROM_AUDIO = 2040;
 
 // Beats that fall inside the music's playing window for the video.
-// 39 beats at BPM 69.8 (≈26 frames apart), pulled from the audio
-// analysis and shifted by MUSIC_START_FROM_AUDIO. Five early beats
-// dropped off the front because the music now starts 124f deeper.
-//   Hook (0–112):       beats 0–4    (frames   8–111)
-//   Bars (112–241):     beats 5–9    (frames 136–239)
-//   Rigged (241–419):   beats 10–15  (frames 265–394)
-//   Stat (403–548):     beats 15–20  (frames 394–522)
-//   Solution (520–753): beats 21–28  (frames 522–728)
-//   Reassure (735–856): beats 29–33  (frames 753–856)
-//   Switch (838–1024):  beats 34–38  (frames 856–985)
-//   EndCard (1042–end): spike at frame 1051; music outro at 37.13s.
+// 38 beats at BPM 69.8 (≈26 frames apart), pulled from the audio
+// analysis and shifted by MUSIC_START_FROM_AUDIO. Six early beats
+// dropped off the front because the music now starts 139f deeper.
+//   Hook (0–112):        beats 0–4    (frames  18–96)
+//   Bars (97–226):       beats 5–9    (frames 121–224)
+//   Rigged (226–404):    beats 10–14  (frames 250–379)
+//   Stat (388–533):      beats 15–20  (frames 404–533)
+//   Solution (505–738):  beats 21–28  (frames 507–713)
+//   Reassure (720–841):  beats 29–32  (frames 738–841)
+//   Switch (823–1027):   beats 33–37  (frames 841–944)
+//   EndCard (1027–end):  spike at frame 1036; music outro at 36.63s.
 export const VIDEO_BEATS: readonly number[] = [
-  8, 33, 59, 85, 111, 136, 162, 187, 213, 239, 265, 290, 316, 342, 368,
-  394, 419, 445, 470, 497, 522, 548, 573, 599, 625, 651, 676, 702, 728,
-  753, 779, 805, 830, 856, 882, 908, 933, 959, 985,
+  18, 44, 70, 96, 121, 147, 172, 198, 224, 250, 275, 301, 327, 353, 379,
+  404, 430, 455, 482, 507, 533, 558, 584, 610, 636, 661, 687, 713, 738,
+  764, 790, 815, 841, 867, 893, 918, 944, 970,
 ];
 
 export const beat = (i: number): number => {
@@ -78,13 +78,13 @@ export const beatLocal = (absoluteBeat: number, sceneStart: number): number =>
 // useCurrentFrame() without knowing their parent offset.
 export const SCENE_STARTS = {
   Hook: 0,
-  Bars: 112,
-  Rigged: 241,
-  Stat: 403,
-  Solution: 520,
-  Reassure: 735,
-  Switch: 838,
-  EndCard: 1042,
+  Bars: 97,
+  Rigged: 226,
+  Stat: 388,
+  Solution: 505,
+  Reassure: 720,
+  Switch: 823,
+  EndCard: 1027,
 } as const;
 
 export type SceneName = keyof typeof SCENE_STARTS;
