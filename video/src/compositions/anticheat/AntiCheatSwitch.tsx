@@ -19,7 +19,7 @@ import { IdleZoom, RevealChars } from "./vibe";
 // Setup → pivot → knife. Three rows with proportional bars; the Blocks
 // row's "40%" doesn't crossfade out — it physically inflates from its
 // row slot into the centre of the frame, becoming the hero.
-const SCENE_FRAMES = toFrames(7.2);
+const SCENE_FRAMES = toFrames(7.6);
 
 const HEADLINE_AT = 0;
 const ROWS_AT = 18;
@@ -260,8 +260,8 @@ const Headline: React.FC<{ morphT: number }> = ({ morphT }) => {
         textAlign: "center",
         fontFamily: font,
         fontSize: 140,
-        fontWeight: 700,
-        letterSpacing: "-0.036em",
+        fontWeight: 800,
+        letterSpacing: "-0.04em",
         color: colors.fg,
         lineHeight: 1.0,
         opacity: exitOp,
@@ -821,7 +821,7 @@ const HeroCopy: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
           transform: `translateY(${claimY.toFixed(2)}px)`,
         }}
       >
-        Up to 2× more
+        Earn up to 2x more
         <span
           style={{
             fontFamily: monoFont,
