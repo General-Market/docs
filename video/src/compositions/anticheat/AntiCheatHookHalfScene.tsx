@@ -34,11 +34,11 @@ useGLTF.preload(MODEL_URL);
 // ── Layout — single device, centered for half-canvas viewport ───────────────
 //
 // Both halves share the same camera / lid / spin tuning so timing matches
-// the original dual-device version. The active device is the only thing
-// in the scene tree; the other branch is hidden via `visible = false`.
-const PHONE_BASE_SCALE = 27;
+// the dual-device version. The active device is the only thing in the
+// scene tree; the other branch is hidden via `visible = false`.
+const PHONE_BASE_SCALE = 31; // +15% over the dual-scene tuning
+const LAPTOP_Y_SHIFT = 0.5; // ≈8% canvas-up — laptop sits higher in frame
 const LID_OPEN = new THREE.Quaternion(-0.78333, 0, 0, 0.62161);
-const LID_CLOSED = new THREE.Quaternion(0, 0, 0, 1);
 const BEVELS_POS = new THREE.Vector3(-0.00012, 0.00824, -0.10401);
 const BEVELS_SCALE = new THREE.Vector3(0.27471, 0.27471, 0.27471);
 const LAPTOP_SCREEN_ASPECT = 16 / 10;
@@ -48,23 +48,23 @@ const CAMERA_POS: [number, number, number] = [0, 3.9, -7];
 const CAMERA_TARGET: [number, number, number] = [0, 2.9, 0];
 const PHONE_WORLD_Y = 2.9;
 
-const PHONE_YAW_DRIFT_END = 210;
+const PHONE_YAW_DRIFT_END = 60;
 const PHONE_YAW_DRIFT_AMOUNT = -0.09;
 
-const ZOOM_IN_END = 60;
+const ZOOM_IN_END = 18;
 const SETTLED_ZOOM = 1.05;
 const LAPTOP_INITIAL_ZOOM = 1.18;
 const LAPTOP_END_ZOOM = SETTLED_ZOOM * 1.07;
 const PHONE_INITIAL_ZOOM = 0.98;
 const PHONE_END_ZOOM = SETTLED_ZOOM * 1.02;
-const HOOK_DURATION_FRAMES = 254;
+const HOOK_DURATION_FRAMES = 64;
 
-const LID_CLOSE_START = 218;
-const LID_CLOSE_END = 232;
-const PHONE_SPIN_START = 218;
-const PHONE_SPIN_END = 234;
-const PHONE_SPIN_REVOLUTIONS = 2.25;
-const PHONE_SLIDE_OFFSET = -4.5;
+// Phone exits in-canvas with a fast Y-axis spin during the last 15 frames
+// of Scene A. The translation up-right is applied as a CSS transform on
+// the wrapping div in AntiCheatHook — three.js only carries the spin.
+const PHONE_SPIN_START = 49;
+const PHONE_SPIN_END = 63;
+const PHONE_SPIN_REVOLUTIONS = 3;
 
 const clamp01 = (t: number) => (t < 0 ? 0 : t > 1 ? 1 : t);
 
@@ -133,32 +133,28 @@ const HalfScene: React.FC<{
     }
   }, [device, sceneClone]);
 
-  // Lid pose — laptop only.
-  const lidT = clamp01(
-    (frame - LID_CLOSE_START) / (LID_CLOSE_END - LID_CLOSE_START),
-  );
-  const lidEased = lidT * lidT * lidT;
-  const lidQuat = new THREE.Quaternion().slerpQuaternions(
-    LID_OPEN,
-    LID_CLOSED,
-    lidEased,
-  );
+  // Lid stays open the whole scene now — there's no closing slam in the
+  // 64-frame hook. Bevels still need their hero pose locked in once.
   if (device === "laptop") {
     const bevels = sceneClone.getObjectByName("Bevels_2");
     if (bevels) {
       bevels.position.copy(BEVELS_POS);
-      bevels.quaternion.copy(lidQuat);
+      bevels.quaternion.copy(LID_OPEN);
       bevels.scale.copy(BEVELS_SCALE);
     }
+    sceneClone.position.set(0, LAPTOP_Y_SHIFT, 0);
+  } else {
+    sceneClone.position.set(0, 0, 0);
   }
 
-  // Phone exit spin + slow yaw drift — phone only.
+  // Phone exit spin — fast revolution in the last 15 frames. The slide
+  // up-right is a CSS transform on the wrapping div in AntiCheatHook;
+  // three.js only carries the rotation.
   const spinT = clamp01(
     (frame - PHONE_SPIN_START) / (PHONE_SPIN_END - PHONE_SPIN_START),
   );
   const spinEased = spinT * spinT;
   const phoneRotY = spinEased * Math.PI * 2 * PHONE_SPIN_REVOLUTIONS;
-  const phoneSlideX = spinEased * PHONE_SLIDE_OFFSET;
   const driftT = clamp01(frame / PHONE_YAW_DRIFT_END);
   const driftEased = (1 - Math.cos(driftT * Math.PI)) * 0.5;
 
@@ -205,7 +201,7 @@ const HalfScene: React.FC<{
   if (device === "phone") {
     const iphone = sceneClone.getObjectByName("iphone");
     if (iphone) {
-      iphone.position.set(phoneSlideX, PHONE_WORLD_Y, 0);
+      iphone.position.set(0, PHONE_WORLD_Y, 0);
       iphone.scale.setScalar(PHONE_BASE_SCALE);
       const cameraForward = new THREE.Vector3(...CAMERA_TARGET)
         .sub(new THREE.Vector3(...CAMERA_POS))

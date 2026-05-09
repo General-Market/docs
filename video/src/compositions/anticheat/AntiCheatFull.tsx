@@ -13,7 +13,6 @@ import { antiCheatReassureMeta } from "./AntiCheatReassure";
 import { antiCheatSwitchMeta } from "./AntiCheatSwitch";
 import { antiCheatEndCardMeta } from "./AntiCheatEndCard";
 import {
-  snapZoomIn,
   snapZoomIntense,
   snapZoomOut,
   snapZoomSoft,
@@ -37,7 +36,9 @@ import { MUSIC_START_FROM_AUDIO } from "./beats";
 //   Solution → Reassure soft snap           18f
 //   Reassure → Bridge   soft snap           18f
 //   Bridge → EndCard    long pull           24f
-const T_HOOK_BARS = 18;
+// Hook → Bars is now a hard cut — the laptop's CSS travel up-right at the
+// end of Scene B is the transition. No TransitionSeries.Transition between
+// them.
 const T_RIGGED_STAT = 16;
 const T_STAT_SOLUTION = 28;
 const T_SOLUTION_REASSURE = 18;
@@ -45,7 +46,6 @@ const T_REASSURE_BRIDGE = 18;
 const T_BRIDGE_END = 24;
 
 const TRANSITION_FRAMES =
-  T_HOOK_BARS +
   T_RIGGED_STAT +
   T_STAT_SOLUTION +
   T_SOLUTION_REASSURE +
@@ -114,10 +114,9 @@ export const AntiCheatFull: React.FC = () => {
           <antiCheatHookMeta.component />
         </TransitionSeries.Sequence>
 
-        <TransitionSeries.Transition
-          presentation={snapZoomIn()}
-          timing={linearTiming({ durationInFrames: T_HOOK_BARS })}
-        />
+        {/* Hook → Bars: hard cut. Laptop travels up-right out of frame
+            during Scene B's last 15 frames; the bars land in the void
+            it leaves behind. */}
 
         <TransitionSeries.Sequence
           durationInFrames={antiCheatBarsMeta.durationInFrames}

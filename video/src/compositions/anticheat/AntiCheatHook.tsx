@@ -2,11 +2,8 @@ import React from "react";
 import {
   AbsoluteFill,
   Sequence,
-  interpolate,
-  spring,
   staticFile,
   useCurrentFrame,
-  useVideoConfig,
 } from "remotion";
 import { font } from "../../common/fonts";
 import { AntiCheatHookHalfScene } from "./AntiCheatHookHalfScene";
@@ -14,19 +11,26 @@ import { DotGrid } from "./DotGrid";
 import { FPS, H, W, colors } from "./theme";
 
 // Two sequential half-canvas mini-scenes form the hook now. Each holds
-// a single device + a single question; the viewer reads one, then the
-// other, then the rest of the film answers them. No pair lists, no
-// reveal slab — the questions are the slab.
+// a single device + a single question. Everything reads as already-
+// settled from frame 0 — no entry animations — so the viewer lands on
+// the question, not on its arrival.
 //
-//   Scene A  0…126   phone right  · "Why do you trade against insider traders?"
-//   Scene B  127…253 laptop left  · "If you use an anti-cheat against wall hackers?"
-const HOOK_DURATION = 254;
-const SCENE_A_DURATION = 127;
-const SCENE_B_DURATION = HOOK_DURATION - SCENE_A_DURATION;
+//   Scene A  0…63   phone right  · "Why do you trade against insider traders ?"
+//   Scene B  64…126 laptop left  · "If you use an anti-cheat against wall hackers ?"
+const SCENE_A_DURATION = 64;
+const SCENE_B_DURATION = 63;
+const HOOK_DURATION = SCENE_A_DURATION + SCENE_B_DURATION;
+
+// Last 15 frames of each scene the device flies up-right out of frame
+// — the CSS slide is the transition into the next scene, no separate
+// TransitionSeries presentation between Hook and Bars.
+const EXIT_FRAMES = 15;
+const EXIT_X_FRACTION = 0.85;
+const EXIT_Y_FRACTION = -0.95;
 
 const BROLL = {
   // Wall-hack broll reads as "wall hackers" instantly — the only cheat
-  // footage the new hook needs. cs2 / minecraft are retired here.
+  // footage the new hook needs.
   valorant: staticFile("cheat-broll/valorant-wallhack.mp4"),
 };
 
@@ -47,6 +51,8 @@ const LAPTOP_SEGMENTS: BrollSegment[] = [
   },
 ];
 
+const clamp01 = (t: number) => (t < 0 ? 0 : t > 1 ? 1 : t);
+
 export const AntiCheatHook: React.FC = () => {
   return (
     <AbsoluteFill style={{ backgroundColor: colors.bg, fontFamily: font }}>
@@ -56,9 +62,10 @@ export const AntiCheatHook: React.FC = () => {
         <QuestionScene
           device="phone"
           devicePosition="right"
-          question="Why do you trade against insider traders ?"
+          question={"Why do you trade against insider traders ?"}
           questionTint="#E03B4A"
           laptopSegments={PHONE_SEGMENTS}
+          sceneDuration={SCENE_A_DURATION}
         />
       </Sequence>
 
@@ -70,8 +77,9 @@ export const AntiCheatHook: React.FC = () => {
         <QuestionScene
           device="laptop"
           devicePosition="left"
-          question="If you use an anti-cheat against wall hackers ?"
+          question={"If you use an anti-cheat against wall hackers ?"}
           laptopSegments={LAPTOP_SEGMENTS}
+          sceneDuration={SCENE_B_DURATION}
         />
       </Sequence>
     </AbsoluteFill>
@@ -86,10 +94,26 @@ const QuestionScene: React.FC<{
   question: string;
   questionTint?: string;
   laptopSegments: BrollSegment[];
-}> = ({ device, devicePosition, question, questionTint, laptopSegments }) => {
+  sceneDuration: number;
+}> = ({
+  device,
+  devicePosition,
+  question,
+  questionTint,
+  laptopSegments,
+  sceneDuration,
+}) => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
   const isDeviceRight = devicePosition === "right";
+
+  // Device exit — last EXIT_FRAMES travel up-right. ease-in cubic so the
+  // device loiters in frame, then accelerates off into the next scene.
+  const exitT = clamp01(
+    (frame - (sceneDuration - EXIT_FRAMES)) / EXIT_FRAMES,
+  );
+  const exitEased = exitT * exitT;
+  const exitX = exitEased * (W * EXIT_X_FRACTION);
+  const exitY = exitEased * (H * EXIT_Y_FRACTION);
 
   return (
     <AbsoluteFill
@@ -108,15 +132,13 @@ const QuestionScene: React.FC<{
           display: "flex",
           alignItems: "center",
           justifyContent: isDeviceRight ? "flex-end" : "flex-start",
-          padding: "0 112px",
+          padding: "0 56px",
         }}
       >
         <QuestionText
           text={question}
           align={isDeviceRight ? "right" : "left"}
           tint={questionTint}
-          frame={frame}
-          fps={fps}
         />
       </div>
 
@@ -125,8 +147,9 @@ const QuestionScene: React.FC<{
           width: W / 2,
           height: H,
           position: "relative",
-          overflow: "hidden",
           order: isDeviceRight ? 1 : 0,
+          transform: `translate(${exitX.toFixed(2)}px, ${exitY.toFixed(2)}px)`,
+          willChange: "transform",
         }}
       >
         <AntiCheatHookHalfScene
@@ -149,31 +172,17 @@ const QuestionText: React.FC<{
   text: string;
   align: "left" | "right";
   tint?: string;
-  frame: number;
-  fps: number;
-}> = ({ text, align, tint, frame, fps }) => {
-  const t = spring({
-    frame,
-    fps,
-    config: { damping: 22, stiffness: 110, mass: 0.7 },
-  });
-  const opacity = interpolate(t, [0, 1], [0, 1]);
-  const y = interpolate(t, [0, 1], [28, 0]);
-
+}> = ({ text, align, tint }) => {
   return (
     <div
       style={{
-        opacity,
-        transform: `translateY(${y.toFixed(2)}px)`,
-        willChange: "transform, opacity",
         textAlign: align,
-        maxWidth: 760,
         fontFamily: font,
-        fontSize: 100,
+        fontSize: 124,
         fontWeight: 800,
         letterSpacing: "-0.035em",
         color: tint ?? colors.fg,
-        lineHeight: 1.04,
+        lineHeight: 1.02,
       }}
     >
       {text}
