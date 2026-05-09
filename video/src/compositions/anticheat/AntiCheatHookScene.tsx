@@ -105,7 +105,7 @@ const clamp01 = (t: number) => (t < 0 ? 0 : t > 1 ? 1 : t);
 
 // ── Mesh identification (lifted from DeviceBroll). ───────────────────────────
 
-function findPhoneScreenMesh(root: THREE.Object3D): THREE.Mesh | null {
+export function findPhoneScreenMesh(root: THREE.Object3D): THREE.Mesh | null {
   let found: THREE.Mesh | null = null;
   root.traverse((child) => {
     if (found) return;
@@ -121,7 +121,7 @@ function findPhoneScreenMesh(root: THREE.Object3D): THREE.Mesh | null {
   return found;
 }
 
-function findLaptopScreenMesh(lidRoot: THREE.Object3D): THREE.Mesh | null {
+export function findLaptopScreenMesh(lidRoot: THREE.Object3D): THREE.Mesh | null {
   let found: THREE.Mesh | null = null;
   lidRoot.traverse((child) => {
     if (found) return;
@@ -206,7 +206,7 @@ function coverDrawToCanvas(
 
 // ── Screen binding components. ───────────────────────────────────────────────
 
-const RenderedScreen: React.FC<{
+export const RenderedScreen: React.FC<{
   mesh: THREE.Mesh | null;
   broll: string;
   brollAspect: number;
@@ -222,7 +222,7 @@ const RenderedScreen: React.FC<{
   return null;
 };
 
-const PreviewScreen: React.FC<{
+export const PreviewScreen: React.FC<{
   mesh: THREE.Mesh | null;
   videoRef: React.RefObject<HTMLVideoElement | null>;
   canvasW: number;
@@ -447,7 +447,7 @@ function drawPhoneChart(
   );
 }
 
-const PhoneChart: React.FC<{
+export const PhoneChart: React.FC<{
   mesh: THREE.Mesh | null;
   emissiveIntensity: number;
   brightness: number;
@@ -718,7 +718,7 @@ export type AntiCheatSceneProps = {
   lightingIntensity?: number;
 };
 
-const PreviewVideo: React.FC<{
+export const PreviewVideo: React.FC<{
   segment: BrollSegment;
   videoRef: React.RefObject<HTMLVideoElement | null>;
 }> = ({ segment, videoRef }) => (

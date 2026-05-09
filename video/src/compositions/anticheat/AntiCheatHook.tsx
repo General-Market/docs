@@ -9,7 +9,7 @@ import {
   useVideoConfig,
 } from "remotion";
 import { font } from "../../common/fonts";
-import { AntiCheatHookScene } from "./AntiCheatHookScene";
+import { AntiCheatHookHalfScene } from "./AntiCheatHookHalfScene";
 import { DotGrid } from "./DotGrid";
 import { FPS, H, W, colors } from "./theme";
 
@@ -88,24 +88,27 @@ const HOOK_DURATION = 254;
 
 const clamp01 = (t: number) => (t < 0 ? 0 : t > 1 ? 1 : t);
 
+// Right half wakes up at SPLIT_AT — the spring carries the panel in from
+// canvas-right while the laptop side has been talking on its own. Once
+// both halves are home, each owns its half of the screen as an
+// independent mini-canvas; nothing bleeds across the divider.
 export const AntiCheatHook: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  const splitProgress = spring({
+  const rightProgress = spring({
     frame: frame - SPLIT_AT,
     fps,
     config: { damping: 18, stiffness: 90, mass: 0.9 },
   });
-  const splitOffset = interpolate(splitProgress, [0, 1], [0, W / 2], {
+  const rightSlide = interpolate(rightProgress, [0, 1], [W / 2, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-
-  // Zoom is now driven inside AntiCheatHookScene via camera.zoom for
-  // the laptop curve and a counter-scale on the phone mesh for its
-  // own. No CSS transform on the wrapper, so the text overlays don't
-  // scale with the devices.
+  const rightOpacity = interpolate(rightProgress, [0, 0.4], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
 
   return (
     <AbsoluteFill style={{ backgroundColor: colors.bg, fontFamily: font }}>
@@ -113,76 +116,89 @@ export const AntiCheatHook: React.FC = () => {
         {/* ── Background dot field, matches Solution / Reassure ── */}
         <DotGrid />
 
-        {/* ── Single dual-device 3D scene underneath everything ── */}
-        <AntiCheatHookScene
-          laptopSegments={LAPTOP_SEGMENTS}
-          laptopBrollAspect={16 / 9}
-          width={W}
-          height={H}
-          emissiveIntensity={0.7}
-          lightingIntensity={0.7}
-        />
-
-        {/* ── Left panel overlay: text + tint, no canvas ── */}
+        {/* ── Two half-canvas mini-scenes, side by side ── */}
         <div
           style={{
             position: "absolute",
-            top: 0,
-            bottom: 0,
-            left: 0,
-            right: `${splitOffset}px`,
-            overflow: "hidden",
-            borderRight: `1px solid ${"#1f1f1f"}`,
-            pointerEvents: "none",
+            inset: 0,
+            display: "flex",
+            flexDirection: "row",
           }}
         >
-          <PanelLabel
-            eyebrow="When you play"
-            showFrom={HEADER_IN}
-            align="left"
-            frame={frame}
-            fps={fps}
-          />
-          <PairList
-            pairs={PAIRS}
-            field="game"
-            align="left"
-            frames={PAIR_FRAMES}
-            frame={frame}
-            fps={fps}
-          />
-        </div>
+          {/* Left half — laptop + game cheats */}
+          <div
+            style={{
+              position: "relative",
+              width: W / 2,
+              height: H,
+              overflow: "hidden",
+              borderRight: `1px solid ${"#1f1f1f"}`,
+            }}
+          >
+            <AntiCheatHookHalfScene
+              device="laptop"
+              laptopSegments={LAPTOP_SEGMENTS}
+              laptopBrollAspect={16 / 9}
+              width={W / 2}
+              height={H}
+              emissiveIntensity={0.7}
+              lightingIntensity={0.7}
+            />
+            <PanelLabel
+              eyebrow="When you play"
+              showFrom={HEADER_IN}
+              align="left"
+              frame={frame}
+              fps={fps}
+            />
+            <PairList
+              pairs={PAIRS}
+              field="game"
+              align="left"
+              frames={PAIR_FRAMES}
+              frame={frame}
+              fps={fps}
+            />
+          </div>
 
-        {/* ── Right panel overlay: text + tint ── */}
-        <div
-          style={{
-            position: "absolute",
-            top: 0,
-            bottom: 0,
-            left: `${W - splitOffset}px`,
-            right: 0,
-            overflow: "hidden",
-            borderLeft: `1px solid ${"#1f1f1f"}`,
-            pointerEvents: "none",
-          }}
-        >
-          <PanelLabel
-            eyebrow="When you trade"
-            showFrom={SPLIT_AT}
-            align="right"
-            frame={frame}
-            fps={fps}
-            tint={"#ff3b3b"}
-          />
-          <PairList
-            pairs={PAIRS}
-            field="trade"
-            align="right"
-            frames={PAIR_FRAMES}
-            frame={frame}
-            fps={fps}
-            tint={"#ff3b3b"}
-          />
+          {/* Right half — phone + trading equivalents */}
+          <div
+            style={{
+              position: "relative",
+              width: W / 2,
+              height: H,
+              overflow: "hidden",
+              transform: `translateX(${rightSlide.toFixed(2)}px)`,
+              opacity: rightOpacity,
+              willChange: "transform, opacity",
+            }}
+          >
+            <AntiCheatHookHalfScene
+              device="phone"
+              laptopSegments={LAPTOP_SEGMENTS}
+              width={W / 2}
+              height={H}
+              emissiveIntensity={0.7}
+              lightingIntensity={0.7}
+            />
+            <PanelLabel
+              eyebrow="When you trade"
+              showFrom={SPLIT_AT}
+              align="right"
+              frame={frame}
+              fps={fps}
+              tint={"#ff3b3b"}
+            />
+            <PairList
+              pairs={PAIRS}
+              field="trade"
+              align="right"
+              frames={PAIR_FRAMES}
+              frame={frame}
+              fps={fps}
+              tint={"#ff3b3b"}
+            />
+          </div>
         </div>
 
         {/* ── Reveal lines ── */}
