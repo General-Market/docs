@@ -185,8 +185,30 @@ const DEPOSIT_WEI = parseUnits(DEPOSIT_USDC.toString(), 18)
 const ZERO_BITMAP_HASH = keccak256(stringToHex('fast-joiner')) as Hex
 
 // Reads run in parallel across sources (one slow RPC can't block the others).
-// Writes serialize through a single nonce queue to avoid "nonce too low".
+// Writes serialize through a single nonce queue and we track nonce manually —
+// viem's per-tx getTransactionCount races against pending tx propagation and
+// throws "nonce too low" when several writes land in the same block.
 let nonceQueue: Promise<unknown> = Promise.resolve()
+let currentNonce: number | null = null
+async function nextNonce(): Promise<number> {
+  if (currentNonce === null) {
+    currentNonce = Number(
+      await publicClient.getTransactionCount({ address: account.address, blockTag: 'pending' }),
+    )
+  }
+  const n = currentNonce
+  currentNonce += 1
+  return n
+}
+async function resyncNonceFromChain() {
+  try {
+    currentNonce = Number(
+      await publicClient.getTransactionCount({ address: account.address, blockTag: 'pending' }),
+    )
+  } catch {
+    currentNonce = null
+  }
+}
 
 async function processSource(source: string) {
   const sourceId = keccak256(stringToHex(`${source}_${VAULT_VERSION}`))
@@ -260,22 +282,31 @@ async function processSource(source: string) {
   }
 
   attempted.add(key)
-  // Serialize the actual write through the nonce queue.
+  // Serialize the actual write through the nonce queue, with manually
+  // tracked nonces so concurrent in-flight txs don't collide.
   nonceQueue = nonceQueue.then(async () => {
+    let nonce: number | undefined
     try {
+      nonce = await nextNonce()
       const txHash = await walletClient.writeContract({
         address: vault,
         abi: VAULT_ABI,
         functionName: 'joinBatch',
         args: [batchId, configHash, DEPOSIT_WEI, ZERO_BITMAP_HASH],
+        nonce,
       })
       health.joinedTotal += 1
       health.joinedThisRun += 1
-      console.log(`[join] source=${source} batch=${batchId} vault=${vault} tx=${txHash}`)
+      console.log(`[join] source=${source} batch=${batchId} vault=${vault} nonce=${nonce} tx=${txHash}`)
     } catch (err) {
       const msg = err instanceof Error ? err.message.slice(0, 140) : String(err).slice(0, 140)
       health.lastError = `${source}/${batchId}: ${msg}`
-      console.warn(`[skip] source=${source} batch=${batchId} ${msg}`)
+      console.warn(`[skip] source=${source} batch=${batchId} nonce=${nonce} ${msg}`)
+      // If chain rejected the nonce (e.g. another signer used the same key
+      // out-of-band), resync from chain so the next attempt picks up cleanly.
+      if (msg.includes('nonce') || msg.includes('Nonce')) {
+        await resyncNonceFromChain()
+      }
     }
   })
 }
