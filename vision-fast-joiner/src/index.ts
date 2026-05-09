@@ -184,83 +184,84 @@ const attempted = new Set<string>()
 const DEPOSIT_WEI = parseUnits(DEPOSIT_USDC.toString(), 18)
 const ZERO_BITMAP_HASH = keccak256(stringToHex('fast-joiner')) as Hex
 
-async function tick() {
-  health.lastTickAt = Date.now()
-  for (const source of SOURCES) {
-    const sourceId = keccak256(stringToHex(`${source}_${VAULT_VERSION}`))
-    let batchId: bigint
-    try {
-      batchId = await publicClient.readContract({
-        address: VISION,
-        abi: VISION_ABI,
-        functionName: 'latestBatchForSource',
-        args: [sourceId],
-      })
-    } catch (e) {
-      continue
-    }
-    if (batchId === 0n) continue
+// Reads run in parallel across sources (one slow RPC can't block the others).
+// Writes serialize through a single nonce queue to avoid "nonce too low".
+let nonceQueue: Promise<unknown> = Promise.resolve()
 
-    const key = `${source}:${batchId}`
-    if (attempted.has(key)) continue
+async function processSource(source: string) {
+  const sourceId = keccak256(stringToHex(`${source}_${VAULT_VERSION}`))
+  let batchId: bigint
+  try {
+    batchId = await publicClient.readContract({
+      address: VISION,
+      abi: VISION_ABI,
+      functionName: 'latestBatchForSource',
+      args: [sourceId],
+    })
+  } catch {
+    return
+  }
+  if (batchId === 0n) return
 
-    const vaults = VAULTS_BY_SOURCE[source]
-    if (!vaults || vaults.length === 0) continue
-    const vault = vaults[Number(batchId % BigInt(vaults.length))]
+  const key = `${source}:${batchId}`
+  if (attempted.has(key)) return
 
-    let configHash: Hex
-    let expiration: bigint
-    try {
-      const batch = await publicClient.readContract({
-        address: VISION,
-        abi: VISION_ABI,
-        functionName: 'getBatch',
-        args: [batchId],
-      })
-      if (batch.settled || batch.paused) {
-        attempted.add(key)
-        continue
-      }
-      configHash = batch.configHash
-      expiration = (batch.createdAtTick + 1n) * batch.tickDuration + batch.settlementGrace
-    } catch {
-      continue
-    }
-    const nowSec = BigInt(Math.floor(Date.now() / 1000))
-    if (nowSec >= expiration) {
+  const vaults = VAULTS_BY_SOURCE[source]
+  if (!vaults || vaults.length === 0) return
+  const vault = vaults[Number(batchId % BigInt(vaults.length))]
+
+  let configHash: Hex
+  let expiration: bigint
+  try {
+    const batch = await publicClient.readContract({
+      address: VISION,
+      abi: VISION_ABI,
+      functionName: 'getBatch',
+      args: [batchId],
+    })
+    if (batch.settled || batch.paused) {
       attempted.add(key)
-      continue
+      return
     }
-    // Already joined? Skip.
-    try {
-      const pos = await publicClient.readContract({
-        address: VISION,
-        abi: VISION_ABI,
-        functionName: 'getPosition',
-        args: [batchId, vault],
-      })
-      if (pos.totalDeposited > 0n) {
-        attempted.add(key)
-        continue
-      }
-    } catch {}
-
-    // Idle USDC check.
-    try {
-      const idle = await publicClient.readContract({
-        address: vault,
-        abi: VAULT_ABI,
-        functionName: 'idleUSDC',
-      })
-      if (idle < DEPOSIT_WEI) {
-        attempted.add(key)
-        continue
-      }
-    } catch {
-      continue
-    }
-
+    configHash = batch.configHash
+    expiration = (batch.createdAtTick + 1n) * batch.tickDuration + batch.settlementGrace
+  } catch {
+    return
+  }
+  const nowSec = BigInt(Math.floor(Date.now() / 1000))
+  if (nowSec >= expiration) {
     attempted.add(key)
+    return
+  }
+  try {
+    const pos = await publicClient.readContract({
+      address: VISION,
+      abi: VISION_ABI,
+      functionName: 'getPosition',
+      args: [batchId, vault],
+    })
+    if (pos.totalDeposited > 0n) {
+      attempted.add(key)
+      return
+    }
+  } catch {}
+  try {
+    const idle = await publicClient.readContract({
+      address: vault,
+      abi: VAULT_ABI,
+      functionName: 'idleUSDC',
+    })
+    if (idle < DEPOSIT_WEI) {
+      attempted.add(key)
+      return
+    }
+  } catch {
+    return
+  }
+
+  attempted.add(key)
+  // Serialize the actual write through the nonce queue.
+  nonceQueue = nonceQueue.then(async () => {
     try {
       const txHash = await walletClient.writeContract({
         address: vault,
@@ -274,10 +275,15 @@ async function tick() {
     } catch (err) {
       const msg = err instanceof Error ? err.message.slice(0, 140) : String(err).slice(0, 140)
       health.lastError = `${source}/${batchId}: ${msg}`
-      // Don't unblock on error — usually nonce/gas/already-joined; future ticks can retry once expiration changes.
       console.warn(`[skip] source=${source} batch=${batchId} ${msg}`)
     }
-  }
+  })
+}
+
+async function tick() {
+  health.lastTickAt = Date.now()
+  // Reads parallel; one stuck source can't block the others.
+  await Promise.allSettled(SOURCES.map((s) => processSource(s)))
 }
 
 async function loop() {
