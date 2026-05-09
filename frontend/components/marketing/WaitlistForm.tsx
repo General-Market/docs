@@ -554,6 +554,12 @@ export default function WaitlistForm() {
     <div className="relative flex min-h-[100dvh] flex-col items-center" style={{ color: FG }}>
       <DotGridBg />
       <HandleBadge handle={handle} pfpUrl={pfpUrl} />
+      {step.type === 'choice' && step.id === 'protection_from' && (
+        <EnemyStack
+          selected={Array.isArray(answers.protection_from) ? answers.protection_from : []}
+          hasUserBadge={Boolean(handle)}
+        />
+      )}
 
       <div className="fixed left-0 right-0 top-0 z-20 h-[2px]" aria-hidden>
         <motion.div
