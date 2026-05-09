@@ -57,6 +57,30 @@ export async function isWhitelisted(address: string): Promise<boolean> {
   return res.rowCount! > 0
 }
 
+export type CheckResult =
+  | { ok: true }
+  | { ok: false; reason: 'unconfigured' | 'invalid' | 'exhausted' | 'expired' }
+
+export async function checkInviteCode(rawCode: string): Promise<CheckResult> {
+  const pool = getWaitlistPool()
+  if (!pool) return { ok: false, reason: 'unconfigured' }
+  await ensureSchema(pool)
+  const code = normalizeCode(rawCode)
+  const row = await pool.query<{
+    max_uses: number; used_count: number; expires_at: Date | null
+  }>(
+    `SELECT max_uses, used_count, expires_at FROM invite_codes WHERE code = $1`,
+    [code],
+  )
+  if (row.rowCount === 0) return { ok: false, reason: 'invalid' }
+  const r = row.rows[0]
+  if (r.expires_at && r.expires_at.getTime() < Date.now()) {
+    return { ok: false, reason: 'expired' }
+  }
+  if (r.used_count >= r.max_uses) return { ok: false, reason: 'exhausted' }
+  return { ok: true }
+}
+
 export type RedeemResult =
   | { ok: true; alreadyWhitelisted: boolean }
   | { ok: false; reason: 'unconfigured' | 'invalid' | 'exhausted' | 'expired' | 'wallet_taken' }

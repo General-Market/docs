@@ -240,7 +240,34 @@ function useChirp() {
     })
   }
 
-  return { tick, chime }
+  // Two-note rising mini-chime — fires on Continue. Distinct from the
+  // multi-choice tick so the user feels the difference between toggling
+  // and committing. Short, bright, dopaminergic.
+  function step() {
+    if (reduced) return
+    const ctx = ensureCtx()
+    if (!ctx) return
+    const t0 = ctx.currentTime
+    const notes: Array<[number, number]> = [
+      [660, 0],
+      [990, 0.04],
+    ]
+    for (const [freq, dt] of notes) {
+      const start = t0 + dt
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.type = 'triangle'
+      osc.frequency.value = freq
+      gain.gain.setValueAtTime(0.0001, start)
+      gain.gain.exponentialRampToValueAtTime(0.06, start + 0.008)
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.18)
+      osc.connect(gain).connect(ctx.destination)
+      osc.start(start)
+      osc.stop(start + 0.2)
+    }
+  }
+
+  return { tick, chime, step }
 }
 
 // ── Step transition: snap-zoom-soft, mirrors transitions.tsx ──
@@ -407,7 +434,7 @@ function EnemyStack({
 }
 
 export default function WaitlistForm() {
-  const { tick, chime } = useChirp()
+  const { tick, chime, step: stepSound } = useChirp()
   const [idx, setIdx] = useState(0)
   const [answers, setAnswers] = useState<Answers>({})
   const [error, setError] = useState<string | null>(null)
@@ -584,7 +611,7 @@ export default function WaitlistForm() {
               transition={{ duration: 0.22, ease: [0.4, 0, 0.6, 1] }}
             >
               {step.type === 'welcome' ? (
-                <Welcome step={step} onStart={() => void advance()} />
+                <Welcome step={step} onStart={() => { stepSound(); void advance() }} />
               ) : (
                 <Sheet>
                   <div className="mb-7 flex items-center justify-between gap-3">
@@ -619,10 +646,15 @@ export default function WaitlistForm() {
                     />
                   )}
                   {(step.type === 'text' || step.type === 'email') && step.id === 'invite' && (
-                    <WalletForCode
-                      value={typeof answers.wallet === 'string' ? (answers.wallet as string) : ''}
-                      onChange={(v) => setAnswer('wallet', v)}
-                    />
+                    <>
+                      <InviteCodeStatus
+                        code={typeof answers.invite === 'string' ? (answers.invite as string) : ''}
+                      />
+                      <WalletForCode
+                        value={typeof answers.wallet === 'string' ? (answers.wallet as string) : ''}
+                        onChange={(v) => setAnswer('wallet', v)}
+                      />
+                    </>
                   )}
                 </Sheet>
               )}
@@ -647,7 +679,7 @@ export default function WaitlistForm() {
           error={error}
           submitting={submitting}
           onBack={back}
-          onContinue={() => void advance()}
+          onContinue={() => { stepSound(); void advance() }}
           isFinal={findNext(idx, 1, answers) === idx}
         />
       )}
@@ -1088,6 +1120,114 @@ function BackChip({ onClick }: { onClick: () => void }) {
       </svg>
       Back
     </motion.button>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// InviteCodeStatus — debounced live check against /api/waitlist/check-code.
+// The endpoint is read-only (no consumption), rate-limited per IP. We
+// abort in-flight requests on every keystroke so only the most recent
+// check resolves. Empty input renders nothing.
+// ─────────────────────────────────────────────────────────────────────
+function InviteCodeStatus({ code }: { code: string }) {
+  const trimmed = code.trim()
+  const [state, setState] = useState<
+    | { kind: 'idle' }
+    | { kind: 'checking' }
+    | { kind: 'valid' }
+    | { kind: 'wrong'; reason: 'invalid' | 'exhausted' | 'expired' | 'error' }
+  >({ kind: 'idle' })
+
+  useEffect(() => {
+    if (!trimmed) {
+      setState({ kind: 'idle' })
+      return
+    }
+    if (!/^[A-Za-z0-9_-]{3,64}$/.test(trimmed)) {
+      setState({ kind: 'idle' })
+      return
+    }
+    const ctrl = new AbortController()
+    setState({ kind: 'checking' })
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `/api/waitlist/check-code?code=${encodeURIComponent(trimmed)}`,
+          { signal: ctrl.signal },
+        )
+        const data = (await res.json().catch(() => ({}))) as
+          | { ok?: boolean; reason?: string }
+        if (data.ok) {
+          setState({ kind: 'valid' })
+        } else {
+          const r = data.reason
+          const reason: 'invalid' | 'exhausted' | 'expired' | 'error' =
+            r === 'exhausted' || r === 'expired' ? r : r === 'invalid' ? 'invalid' : 'error'
+          setState({ kind: 'wrong', reason })
+        }
+      } catch (e) {
+        if ((e as { name?: string })?.name === 'AbortError') return
+        setState({ kind: 'wrong', reason: 'error' })
+      }
+    }, 400)
+    return () => {
+      clearTimeout(t)
+      ctrl.abort()
+    }
+  }, [trimmed])
+
+  if (state.kind === 'idle') return null
+
+  const message =
+    state.kind === 'checking'
+      ? 'Checking…'
+      : state.kind === 'valid'
+        ? 'Code validated'
+        : state.reason === 'exhausted'
+          ? 'Code already used'
+          : state.reason === 'expired'
+            ? 'Code expired'
+            : state.reason === 'invalid'
+              ? 'Code wrong'
+              : 'Couldn’t check — try again in a moment'
+
+  const color =
+    state.kind === 'valid' ? '#10B981' : state.kind === 'checking' ? DIM : '#DC2626'
+
+  return (
+    <motion.div
+      key={state.kind + ('reason' in state ? state.reason : '')}
+      initial={{ opacity: 0, y: 4 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2, ease: [0.4, 0, 0.6, 1] }}
+      className="mt-3 inline-flex items-center gap-2 text-[13px]"
+      style={{ color, letterSpacing: '-0.005em' }}
+    >
+      {state.kind === 'checking' ? (
+        <span
+          aria-hidden
+          className="animate-spin"
+          style={{
+            width: 10,
+            height: 10,
+            borderRadius: 999,
+            border: `1.5px solid ${DIM}`,
+            borderTopColor: 'transparent',
+            display: 'inline-block',
+          }}
+        />
+      ) : state.kind === 'valid' ? (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      ) : (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <line x1="6" y1="6" x2="18" y2="18" />
+          <line x1="6" y1="18" x2="18" y2="6" />
+        </svg>
+      )}
+      <span>{message}</span>
+    </motion.div>
   )
 }
 
