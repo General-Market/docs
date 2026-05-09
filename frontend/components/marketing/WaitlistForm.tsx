@@ -340,16 +340,17 @@ function HandleBadge({
 
 type Enemy = { handle: string; label: string }
 const ENEMIES: Record<string, Enemy> = {
-  insider:   { handle: 'NancyPelosi', label: 'Insider trader' },
-  frontrun:  { handle: 'kengriffin',  label: 'Front runner' },
-  manip:     { handle: 'SBF_FTX',     label: 'Market manipulator' },
-  orderflow: { handle: 'vladtenev',   label: 'Orderflow buyer' },
+  insider:   { handle: 'NancyPelosi',   label: 'Insider trader' },
+  // Ken Griffin doesn't tweet; Citadel Securities does.
+  frontrun:  { handle: 'CitSecurities', label: 'Front runner' },
+  manip:     { handle: 'SBF_FTX',       label: 'Market manipulator' },
+  orderflow: { handle: 'vladtenev',     label: 'Orderflow buyer' },
 }
 
 function EnemyPill({ enemy }: { enemy: Enemy }) {
   const [loaded, setLoaded] = useState(false)
   const [failed, setFailed] = useState(false)
-  const src = `https://unavatar.io/x/${encodeURIComponent(enemy.handle)}`
+  const src = `/api/waitlist/avatar?handle=${encodeURIComponent(enemy.handle)}`
   const showAvatar = !failed && loaded
 
   return (
@@ -489,11 +490,9 @@ export default function WaitlistForm() {
 
   const pfpUrl = useMemo(() => {
     if (!handle) return null
-    // Drop ?fallback=false: unavatar 404s many real handles (Twitter
-    // blocks scraping). Without the flag, unavatar returns the real
-    // PFP when it can resolve it, and a generated initials avatar
-    // otherwise. Either way the user sees something.
-    return `https://unavatar.io/x/${encodeURIComponent(handle)}`
+    // Server proxy with in-process cache. Browser + edge cache the
+    // response so unavatar.io's 429 cliff stops being our problem.
+    return `/api/waitlist/avatar?handle=${encodeURIComponent(handle)}`
   }, [handle])
 
   useEffect(() => {
