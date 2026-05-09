@@ -184,8 +184,8 @@ export const AntiCheatRigged: React.FC = () => {
       : 1;
 
   return (
-    <AbsoluteFill style={{ backgroundColor: colors.bg, fontFamily: font }}>
-      <VerticalDotGrid />
+    <AbsoluteFill style={{ backgroundColor: colors.accent, fontFamily: font }}>
+      <VerticalDotGrid tone="white" />
       <IdleZoom durationInFrames={SCENE_FRAMES} from={1} to={1.025}>
         {/* Left — exchange name (line 1) + "is rigged." (line 2) */}
         <div
@@ -221,12 +221,12 @@ export const AntiCheatRigged: React.FC = () => {
           />
         )}
 
-        {/* Light-field vignette — corners fade to bg, not to black */}
+        {/* Inverted vignette — corners deepen toward navy on the blue field */}
         <AbsoluteFill
           style={{
             pointerEvents: "none",
             background:
-              "radial-gradient(ellipse at center, rgba(240,242,244,0) 50%, rgba(240,242,244,0.30) 100%)",
+              "radial-gradient(ellipse at center, rgba(0,18,80,0) 50%, rgba(0,18,80,0.35) 100%)",
           }}
         />
       </IdleZoom>
@@ -237,7 +237,7 @@ export const AntiCheatRigged: React.FC = () => {
         <SceneSourceCitation
           url={currentArticle.source}
           startFrame={articleStartFrame}
-          dark={currentArticle.treatment === "fullscreen"}
+          dark
         />
       )}
     </AbsoluteFill>
@@ -381,7 +381,7 @@ const GlitchVerdict: React.FC<{ glitch: number }> = ({ glitch }) => {
       <div
         style={{
           ...baseStyle,
-          color: colors.accent,
+          color: "#FFFFFF",
           position: "relative",
         }}
       >
@@ -821,7 +821,7 @@ const SpeedLines: React.FC<{ local: number }> = ({ local }) => {
             width: 380 - i * 60,
             height: 6,
             background:
-              "linear-gradient(90deg, rgba(10,12,18,0) 0%, rgba(10,12,18,0.55) 100%)",
+              "linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.7) 100%)",
             top: -120 + i * 120,
             right: 0,
             borderRadius: 3,

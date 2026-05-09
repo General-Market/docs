@@ -116,6 +116,7 @@ const FADE_FRACTION = 0.18;
 type Props = {
   intensity?: number;
   speed?: number;
+  tone?: "accent" | "white";
 };
 
 // Snap helpers honour Layer 1's lattice — fine-grid dots live at
@@ -316,10 +317,12 @@ const snapToGridXFrac = (frac: number) => snapToGridXPx(frac * W);
 export const VerticalDotGrid: React.FC<Props> = ({
   intensity = 1,
   speed = 1.5,
+  tone = "accent",
 }) => {
   const frame = useCurrentFrame();
   const t = frame / FPS;
   const cycleH = H * 1.6;
+  const dotFill = tone === "white" ? "#FFFFFF" : colors.accent;
 
   const fineCols = Math.ceil(W / FINE_SPACING_X) + 2;
   const fineRows = Math.ceil(H / FINE_SPACING_Y) + 2;
@@ -359,7 +362,7 @@ export const VerticalDotGrid: React.FC<Props> = ({
                     cx={x}
                     cy={y}
                     r={r}
-                    fill={colors.accent}
+                    fill={dotFill}
                     opacity={a}
                   />
                 );
@@ -416,7 +419,7 @@ export const VerticalDotGrid: React.FC<Props> = ({
                         cx={xCenterPx + xOff}
                         cy={y}
                         r={FINE_RADIUS}
-                        fill={colors.accent}
+                        fill={dotFill}
                         opacity={band.alpha * alphaScale * intensity}
                       />
                     );
