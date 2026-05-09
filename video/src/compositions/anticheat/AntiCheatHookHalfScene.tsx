@@ -44,9 +44,13 @@ const BEVELS_SCALE = new THREE.Vector3(0.27471, 0.27471, 0.27471);
 const LAPTOP_SCREEN_ASPECT = 16 / 10;
 
 // Camera centred on the canvas — each half puts its device at world origin.
+// Phone sits high in its viewport (PHONE_WORLD_Y = 4.5) so the slide-down
+// transition carries the whole device into and out of frame: at 50% slide
+// progress, only the upper half of Scene A is on canvas, and the phone is
+// in that upper half, fully visible.
 const CAMERA_POS: [number, number, number] = [0, 3.9, -7];
 const CAMERA_TARGET: [number, number, number] = [0, 2.9, 0];
-const PHONE_WORLD_Y = 2.9;
+const PHONE_WORLD_Y = 4.5;
 
 const PHONE_YAW_DRIFT_END = 60;
 const PHONE_YAW_DRIFT_AMOUNT = -0.09;
