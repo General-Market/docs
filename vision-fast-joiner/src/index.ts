@@ -55,8 +55,11 @@ const deployment = JSON.parse(readFileSync(DEPLOYMENT_JSON, 'utf8')) as {
 const VISION = getAddress(deployment.contracts.Vision)
 const USDC = getAddress(deployment.contracts.L3_WUSDC || deployment.contracts.USDC || '0x0')
 const SOURCES = Object.keys(deployment.sourceVaults)
+// `vs.map(getAddress)` passes the array index as second arg, which viem
+// treats as a chainId for EIP-1191 — produces a different case-checksum per
+// position. Wrap to single-arg so EIP-55 (chain-agnostic) wins.
 const VAULTS_BY_SOURCE: Record<string, `0x${string}`[]> = Object.fromEntries(
-  Object.entries(deployment.sourceVaults).map(([s, vs]) => [s, vs.map(getAddress)]),
+  Object.entries(deployment.sourceVaults).map(([s, vs]) => [s, vs.map((v) => getAddress(v))]),
 )
 // sourceId is keccak256("<name>_<version>") per DeployAllVisionBatches.s.sol
 const SOURCE_ID_TO_NAME: Record<string, string> = Object.fromEntries(
