@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Anti-Cheat — General Market</title>
+<meta name="description" content="Trading has eight named exploits. Video games solved all of them between 1992 and 2020. We did the embarrassing thing — we read the literature.">
+<meta property="og:title" content="The Anti-Cheat — General Market">
+<meta property="og:description" content="Counter-Strike beat MEV in 1999. We are twenty-seven years late.">
+<meta property="og:type" content="article">
+<style>
+:root {
+  --ink: #1D1D1F;
+  --ink-2: #424245;
+  --ink-3: #6E6E73;
+  --paper: #FFFFFF;
+  --paper-2: #FBFBFD;
+  --rule: #D2D2D7;
+  --blue: #0071E3;
+  --red: #DD0426;
+  --citron: #C9D743;
+  --citron-deep: #B0BD33;
+  --night: #0B0C0E;
+  --serif: "New York", "Times New Roman", Georgia, serif;
+  --display: "SF Pro Display", "Inter", "Helvetica Neue", -apple-system, BlinkMacSystemFont, sans-serif;
+  --text: "SF Pro Text", "Inter", "Helvetica Neue", -apple-system, BlinkMacSystemFont, sans-serif;
+  --mono: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, monospace;
+  --ease: cubic-bezier(0.4, 0, 0.6, 1);
+  --ease-out: cubic-bezier(0.25, 0.1, 0.3, 1);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--text);
+  font-size: 17px;
+  line-height: 1.47;
+  letter-spacing: -0.022em;
+  color: var(--ink);
+  background: var(--paper);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.wrap {
+  max-width: 734px;
+  margin: 0 auto;
+  padding: 0 22px;
+}
+
+.wrap-wide {
+  max-width: 1068px;
+  margin: 0 auto;
+  padding: 0 22px;
+}
+
+/* HERO */
+.hero {
+  padding: 120px 0 80px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.kicker {
+  font-family: var(--text);
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 28px;
+  font-weight: 500;
+}
+
+.hero h1 {
+  font-family: var(--display);
+  font-size: clamp(48px, 7vw, 88px);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1.02;
+  color: var(--ink);
+  margin-bottom: 28px;
+}
+
+.hero h1 em {
+  font-style: italic;
+  font-family: var(--serif);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+
+.dek {
+  font-family: var(--display);
+  font-size: clamp(20px, 2vw, 24px);
+  line-height: 1.35;
+  letter-spacing: -0.018em;
+  color: var(--ink-2);
+  max-width: 640px;
+  font-weight: 400;
+}
+
+.byline {
+  margin-top: 48px;
+  font-size: 13px;
+  color: var(--ink-3);
+  letter-spacing: 0.01em;
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.byline span { display: inline-flex; align-items: center; gap: 6px; }
+.byline .dot { width: 3px; height: 3px; border-radius: 50%; background: var(--ink-3); }
+
+/* PROSE */
+.prose { padding: 64px 0; }
+.prose + .prose { padding-top: 0; }
+
+.prose h2 {
+  font-family: var(--display);
+  font-size: clamp(34px, 4vw, 48px);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.08;
+  margin-bottom: 36px;
+  color: var(--ink);
+}
+
+.prose h2 .num {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+  vertical-align: super;
+  font-weight: 400;
+  margin-right: 10px;
+  position: relative;
+  top: -8px;
+}
+
+.prose h3 {
+  font-family: var(--display);
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin: 56px 0 18px;
+  color: var(--ink);
+}
+
+.prose h3 .yr {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: var(--citron-deep);
+  margin-left: 8px;
+  vertical-align: middle;
+  background: rgba(176, 189, 51, 0.14);
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.prose h4 {
+  font-family: var(--display);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin: 24px 0 12px;
+}
+
+.prose p {
+  margin-bottom: 22px;
+  color: var(--ink-2);
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+.prose p strong { color: var(--ink); font-weight: 600; }
+.prose p em { font-style: italic; }
+.prose p code {
+  font-family: var(--mono);
+  font-size: 14px;
+  background: rgba(0,0,0,0.04);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.lede {
+  font-family: var(--display);
+  font-size: 24px !important;
+  line-height: 1.4 !important;
+  letter-spacing: -0.018em;
+  color: var(--ink) !important;
+  margin-bottom: 40px !important;
+  font-weight: 400;
+  border-left: 3px solid var(--citron);
+  padding-left: 24px;
+}
+
+.prose ul {
+  list-style: none;
+  margin: 24px 0;
+  padding: 0;
+}
+
+.prose li {
+  font-size: 17px;
+  color: var(--ink-2);
+  padding: 14px 0 14px 28px;
+  border-bottom: 1px solid var(--rule);
+  position: relative;
+}
+
+.prose li:last-child { border-bottom: none; }
+
+.prose li::before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  color: var(--citron-deep);
+  font-weight: 600;
+}
+
+.prose li strong { color: var(--ink); }
+
+/* STATS BLOCK */
+.stats {
+  margin: 48px 0;
+  padding: 0;
+  border-top: 1px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+}
+
+.stat-row {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 24px;
+  padding: 24px 0;
+  border-bottom: 1px solid var(--rule);
+  align-items: baseline;
+}
+
+.stat-row:last-child { border-bottom: none; }
+
+.stat-num {
+  font-family: var(--display);
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--ink);
+  line-height: 1;
+}
+
+.stat-num .sub {
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  color: var(--ink-3);
+  display: block;
+  margin-top: 6px;
+}
+
+.stat-desc {
+  font-size: 16px;
+  color: var(--ink-2);
+  line-height: 1.5;
+}
+
+@media (max-width: 600px) {
+  .stat-row { grid-template-columns: 1fr; gap: 6px; }
+  .stat-num { font-size: 28px; }
+}
+
+/* PULLQUOTE */
+.pull {
+  font-family: var(--serif);
+  font-size: clamp(28px, 3.6vw, 40px);
+  line-height: 1.18;
+  letter-spacing: -0.018em;
+  color: var(--ink);
+  font-weight: 400;
+  font-style: italic;
+  padding: 60px 0;
+  margin: 60px 0;
+  border-top: 1px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+  text-align: center;
+}
+
+/* SYSTEM SECTION */
+.system {
+  padding: 56px 0;
+  border-top: 1px solid var(--rule);
+}
+
+.system:first-of-type { border-top: 1px solid var(--ink); }
+
+.system-head {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 32px;
+  align-items: start;
+  margin-bottom: 36px;
+}
+
+@media (max-width: 600px) {
+  .system-head { grid-template-columns: 1fr; gap: 12px; }
+}
+
+.system-num {
+  font-family: var(--display);
+  font-size: 64px;
+  font-weight: 200;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  line-height: 0.9;
+  font-feature-settings: "tnum" 1;
+}
+
+.system-title {
+  font-family: var(--display);
+  font-size: clamp(28px, 3.4vw, 38px);
+  font-weight: 700;
+  letter-spacing: -0.024em;
+  line-height: 1.1;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.system-meta {
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+  font-family: var(--mono);
+}
+
+.system-meta .pipe { color: var(--rule); margin: 0 8px; }
+
+.act {
+  margin-top: 28px;
+  padding-left: 28px;
+  border-left: 2px solid var(--rule);
+}
+
+.act-label {
+  font-family: var(--display);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+.act-gaming .act-label { color: var(--citron-deep); }
+.act-trading .act-label { color: var(--blue); }
+
+.act-gaming { border-left-color: var(--citron); }
+.act-trading { border-left-color: var(--blue); }
+
+/* SHARE CARDS — green frame social media style */
+.share-card {
+  margin: 80px auto;
+  max-width: 720px;
+  background: var(--citron);
+  padding: 24px;
+  border-radius: 28px;
+}
+
+.share-card-inner {
+  background: var(--paper);
+  border-radius: 12px;
+  padding: 56px 44px;
+  position: relative;
+}
+
+.share-card.dark .share-card-inner {
+  background: var(--night);
+  color: #FFF;
+}
+
+.share-card .signature {
+  position: absolute;
+  bottom: 18px;
+  right: 24px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  letter-spacing: 0.05em;
+}
+
+.share-card.dark .signature { color: rgba(255,255,255,0.5); }
+
+.share-card h3 {
+  font-family: var(--display);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.022em;
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+/* VOCAB CARD */
+.vocab-grid {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 24px;
+  margin-top: 24px;
+  align-items: stretch;
+}
+
+.vocab-col h4 {
+  font-family: var(--display);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.vocab-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.vocab-list li {
+  font-size: 16px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--rule);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.vocab-list li:last-child { border-bottom: none; }
+
+.vocab-trading li { color: var(--ink); }
+.vocab-gaming li { color: var(--ink); font-family: var(--mono); font-size: 14px; }
+
+.vocab-divider {
+  width: 1px;
+  background: var(--ink);
+  margin: 30px 0 0;
+}
+
+@media (max-width: 600px) {
+  .vocab-grid { grid-template-columns: 1fr; }
+  .vocab-divider { width: auto; height: 1px; margin: 12px 0; }
+}
+
+/* QUADRANT CARD */
+.quadrant {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  max-width: 600px;
+  margin: 36px auto 0;
+}
+
+.quadrant svg { width: 100%; height: 100%; }
+
+.q-axis-label {
+  font-family: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+  fill: var(--ink-2);
+  letter-spacing: -0.01em;
+}
+
+.q-axis-end {
+  font-family: var(--text);
+  font-size: 11px;
+  fill: var(--ink-3);
+  letter-spacing: 0.02em;
+}
+
+.q-pin-label {
+  font-family: var(--display);
+  font-size: 17px;
+  font-weight: 700;
+  fill: var(--ink);
+  letter-spacing: -0.018em;
+}
+
+.q-pin-sub {
+  font-family: var(--text);
+  font-size: 11px;
+  fill: var(--ink-3);
+  letter-spacing: 0;
+}
+
+.q-pin-gm-label {
+  font-family: var(--display);
+  font-size: 19px;
+  font-weight: 800;
+  fill: #FFF;
+  letter-spacing: -0.022em;
+}
+
+.q-pin-gm-sub {
+  font-family: var(--text);
+  font-size: 11px;
+  fill: rgba(255,255,255,0.85);
+}
+
+/* MAPPING CARD */
+.mapping {
+  margin-top: 32px;
+}
+
+.map-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr;
+  gap: 14px;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.map-row:last-child { border-bottom: none; }
+
+.map-row .arrow {
+  font-family: var(--mono);
+  color: var(--ink-3);
+  font-size: 14px;
+}
+
+.map-trading {
+  font-family: var(--display);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.map-gaming {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--red);
+  letter-spacing: 0.02em;
+  text-decoration: line-through;
+  text-decoration-color: rgba(221, 4, 38, 0.5);
+}
+
+.map-killer {
+  font-family: var(--display);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-2);
+  letter-spacing: -0.01em;
+}
+
+@media (max-width: 700px) {
+  .map-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+    padding: 16px 0;
+  }
+  .map-row .arrow { display: none; }
+  .map-trading { font-size: 16px; }
+  .map-gaming { font-size: 12px; opacity: 0.8; }
+  .map-killer { font-size: 14px; padding-top: 4px; }
+}
+
+/* CLOSER CARD */
+.closer .share-card-inner {
+  text-align: center;
+  padding: 80px 40px;
+}
+
+.closer h3 {
+  font-family: var(--display);
+  font-size: clamp(34px, 5vw, 56px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  margin-bottom: 28px;
+  color: #FFF;
+}
+
+.closer .yr {
+  display: block;
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 0.18em;
+  color: var(--citron);
+  text-transform: uppercase;
+  margin-bottom: 24px;
+}
+
+.closer .late {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 22px;
+  color: rgba(255,255,255,0.8);
+  letter-spacing: -0.01em;
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+/* KNIFE */
+.knife {
+  background: var(--ink);
+  color: #FFF;
+  padding: 96px 0;
+  margin: 80px -22px 0;
+  padding-left: 22px;
+  padding-right: 22px;
+}
+
+.knife .wrap { max-width: 734px; }
+
+.knife h2 {
+  color: #FFF;
+  font-family: var(--display);
+  font-size: clamp(36px, 4.5vw, 54px);
+  font-weight: 700;
+  letter-spacing: -0.028em;
+  line-height: 1.05;
+  margin-bottom: 32px;
+}
+
+.knife p {
+  color: rgba(255,255,255,0.78);
+  font-size: 19px;
+  line-height: 1.55;
+  margin-bottom: 22px;
+}
+
+.knife p strong { color: #FFF; }
+
+.knife .final {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 28px;
+  color: var(--citron);
+  margin-top: 48px;
+  letter-spacing: -0.015em;
+  line-height: 1.3;
+}
+
+/* FOOTER */
+footer.foot {
+  padding: 80px 0 100px;
+  text-align: center;
+  border-top: 1px solid var(--rule);
+}
+
+footer.foot .mark {
+  font-family: var(--display);
+  font-size: 14px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+footer.foot .tagline {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 18px;
+  color: var(--ink-3);
+  margin-top: 14px;
+  letter-spacing: -0.01em;
+}
+
+footer.foot .meta {
+  margin-top: 44px;
+  font-size: 12px;
+  color: var(--ink-3);
+  letter-spacing: 0.04em;
+  font-family: var(--mono);
+}
+
+/* SECTION DIVIDERS */
+.divide {
+  height: 1px;
+  background: var(--rule);
+  margin: 0;
+  border: none;
+}
+
+.divide-thick {
+  height: 1px;
+  background: var(--ink);
+  margin: 80px 0;
+  border: none;
+}
+
+/* SMALL TYPE */
+.small {
+  font-family: var(--text);
+  font-size: 13px;
+  color: var(--ink-3);
+  letter-spacing: 0;
+  line-height: 1.5;
+  margin-top: 12px;
+}
+
+/* MOBILE */
+@media (max-width: 600px) {
+  .hero { padding: 80px 0 60px; }
+  .prose { padding: 48px 0; }
+  .system { padding: 44px 0; }
+  .share-card { margin: 56px 0; padding: 16px; border-radius: 18px; }
+  .share-card-inner { padding: 32px 22px; }
+  .pull { padding: 40px 0; margin: 40px 0; }
+  .knife { margin: 56px -22px 0; padding: 64px 22px; }
+  .knife .final { font-size: 22px; }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- ============ HERO ============ -->
+  <header class="hero">
+    <div class="kicker">CASE STUDY № 002 · GENERAL MARKET</div>
+    <h1>The <em>Anti-Cheat</em>.</h1>
+    <p class="dek">Trading has eight named exploits. Video games solved all of them between 1992 and 2020. We did the embarrassing thing — we read the literature.</p>
+    <div class="byline">
+      <span>11 min read</span>
+      <span class="dot"></span>
+      <span>By the General Market team</span>
+      <span class="dot"></span>
+      <span>2026</span>
+    </div>
+  </header>
+
+  <!-- ============ STAKES ============ -->
+  <section class="prose">
+    <p class="lede">Markets are the largest competitive multiplayer game on earth. They have never had an anti-cheat.</p>
+
+    <p>For three decades, video games and financial markets faced an identical question: how do you let two adversaries play a fair game over a network where one of them is lying?</p>
+
+    <p>Games answered the question. Markets answered around it.</p>
+
+    <p>The cost of that asymmetry has a number, and the number is large.</p>
+
+    <div class="stats">
+      <div class="stat-row">
+        <div class="stat-num">$1.5B<span class="sub">since 2020</span></div>
+        <div class="stat-desc">Extracted from Ethereum users by MEV bots — front-running, sandwich attacks, liquidation racing. The mempool is public. The bot reads. The bot wins.</div>
+      </div>
+      <div class="stat-row">
+        <div class="stat-num">$3.8B<span class="sub">per year</span></div>
+        <div class="stat-desc">Paid to retail brokers by market makers in exchange for routing your order. You think the broker works for you. The broker works for whoever bid for your flow.</div>
+      </div>
+      <div class="stat-row">
+        <div class="stat-num">$920M<span class="sub">single fine</span></div>
+        <div class="stat-desc">JPMorgan's 2020 settlement for spoofing precious metals and treasuries. Place orders. Cancel before they fill. Move the price. Profit. The bank did this for eight years.</div>
+      </div>
+      <div class="stat-row">
+        <div class="stat-num">$1T<span class="sub">in 36 minutes</span></div>
+        <div class="stat-desc">Market cap evaporated during the 2010 Flash Crash, attributed in part to a single trader spoofing E-mini futures from a London bedroom. He kept doing it for five more years before anyone caught him.</div>
+      </div>
+      <div class="stat-row">
+        <div class="stat-num">$50B+<span class="sub">2024 alone</span></div>
+        <div class="stat-desc">Crypto liquidations, most cascading off coordinated stop-hunting on thinly-protected venues. The hunter sees the stops. The stops cannot see the hunter.</div>
+      </div>
+      <div class="stat-row">
+        <div class="stat-num">$25B<span class="sub">industry</span></div>
+        <div class="stat-desc">Annual revenue of high-frequency trading firms whose entire edge is microsecond co-location. They are not smarter. They are closer to the wire. The race ends one foot from the matching engine.</div>
+      </div>
+    </div>
+
+    <p>These numbers are the visible cost. The invisible cost is bigger: the retail trader who lost the trade and never knew why. The market maker who quit because the toxic flow was structural. The protocol that died because the bots got there first. The trust that never accumulated because the game was rigged in ways the player could not see.</p>
+
+    <p>Regulators have been writing rules against this since the Securities Exchange Act of 1934. Ninety-two years. The exploits multiplied. The names changed. The mechanism never did.</p>
+
+    <p class="pull">"You cannot fix a competitive game by writing more rules. You fix it by changing the rules of the game itself."</p>
+
+    <p>Video games figured this out by 1998.</p>
+
+    <p>They had to. A multiplayer game with cheaters has no players. Six months of unchecked aimbots and the lobby is empty. The economics of gaming made anti-cheat existential. The economics of trading made it optional.</p>
+
+    <p>So gaming built the anti-cheat. Six architectural primitives, between 1992 and 2020. Each one solved a class of cheating. Together they made competitive online gaming possible.</p>
+
+    <p>We took those six primitives and pointed them at trading.</p>
+  </section>
+
+  <hr class="divide-thick">
+
+  <!-- ============ VOCAB SHARE CARD ============ -->
+</div>
+
+<figure class="share-card">
+  <div class="share-card-inner">
+    <h3>Same eight problems. Different industries.</h3>
+    <div class="vocab-grid">
+      <div class="vocab-col">
+        <h4>Trading vocabulary</h4>
+        <ul class="vocab-list vocab-trading">
+          <li>Frontrunning / MEV</li>
+          <li>Latency arbitrage</li>
+          <li>Insider trading</li>
+          <li>Stop & liquidation hunting</li>
+          <li>Spoofing & layering</li>
+          <li>Orderflow purchase (PFOF)</li>
+          <li>Toxic-flow market making</li>
+          <li>Cross-venue divergence</li>
+        </ul>
+      </div>
+      <div class="vocab-divider"></div>
+      <div class="vocab-col">
+        <h4>Gaming vocabulary</h4>
+        <ul class="vocab-list vocab-gaming">
+          <li>Wallhack</li>
+          <li>Ping advantage</li>
+          <li>Aimbot</li>
+          <li>Spawn camping</li>
+          <li>Rage-cancel exploit</li>
+          <li>Pay-to-win</li>
+          <li>Smurfing</li>
+          <li>Region-hopping</li>
+        </ul>
+      </div>
+    </div>
+    <div class="signature">@generalmarket</div>
+  </div>
+</figure>
+
+<div class="wrap">
+
+  <!-- ============ THE SIX PRIMITIVES ============ -->
+  <section class="prose">
+    <h2><span class="num">02</span>The six primitives</h2>
+    <p>Each one was invented to solve a specific class of cheating in games. Each one is a complete solution to a specific class of exploit in trading. They were built decades apart, by people who never spoke to each other. Read in order, they describe the architecture of any fair competitive system.</p>
+  </section>
+
+  <!-- SYSTEM 1: FOG OF WAR -->
+  <section class="system">
+    <div class="system-head">
+      <div class="system-num">01</div>
+      <div>
+        <h3 class="system-title">Fog of War</h3>
+        <div class="system-meta">DUNE II<span class="pipe">·</span>WESTWOOD STUDIOS<span class="pipe">·</span>1992</div>
+      </div>
+    </div>
+
+    <div class="act act-gaming">
+      <div class="act-label">In gaming</div>
+      <p>Real-time strategy games face a structural problem: the server simulates a map, but each player is supposed to see only their own corner of it. If you can see your opponent's base, you know what they are building, and the strategic guessing game collapses into mechanical execution.</p>
+      <p>Westwood Studios solved it by refusing to send the data. The server holds the full map. Each client receives only the cells visible to that player's units. Areas outside vision are not "hidden" in the UI — they are <strong>not transmitted at all</strong>. A "maphack" cheat that reads the client's memory finds nothing because there is nothing there to find.</p>
+      <p>Every RTS since has shipped this. Every FPS server-side fog system descends from it. It is the difference between obscuring information and refusing to leak it.</p>
+    </div>
+
+    <div class="act act-trading">
+      <div class="act-label">In trading</div>
+      <p>Public mempools and order books are the opposite architecture. The order is broadcast, hashed, gossiped, watched, and front-run before it reaches the matching engine. Every front-running bot is a maphack on a system that put its map in the address space of every player.</p>
+      <p>General Market's blocks apply Westwood's rule. The order is committed as a cryptographic hash during the submit phase. The plaintext bet is never on the wire. Other traders, MEV bots, and the protocol itself read the hash and find an opaque commitment. The reveal phase publishes the plaintext only after the submission window has closed and the price is no longer movable. <strong>Wallhacks read memory. The memory contains nothing.</strong></p>
+    </div>
+  </section>
+
+  <!-- SYSTEM 2: SERVER-AUTHORITATIVE -->
+  <section class="system">
+    <div class="system-head">
+      <div class="system-num">02</div>
+      <div>
+        <h3 class="system-title">Server-Authoritative Resolution</h3>
+        <div class="system-meta">QUAKE<span class="pipe">·</span>id SOFTWARE / CARMACK<span class="pipe">·</span>1996</div>
+      </div>
+    </div>
+
+    <div class="act act-gaming">
+      <div class="act-label">In gaming</div>
+      <p>Early multiplayer FPS games trusted the client. The client said "I shot the enemy" and the server believed it. Players cheated in obvious ways: aimbots claimed perfect hits, speedhacks claimed impossible movement, packet editors claimed kills that never happened. The server had no recourse.</p>
+      <p>John Carmack's Quake architecture inverted the trust direction. The server became the source of truth. The client was reduced to a viewer that submitted inputs and rendered the response. The client could lie about what it intended; it could not lie about what occurred. If the client claimed a hit but the server simulation showed a miss, the miss was the truth. Counter-Strike 2's "sub-tick" architecture is the latest descendant of this — even fractional-frame inputs are validated server-side.</p>
+      <p>This single architectural decision killed an entire generation of cheats and made every modern competitive game possible.</p>
+    </div>
+
+    <div class="act act-trading">
+      <div class="act-label">In trading</div>
+      <p>Trading has the equivalent of a client-trusted FPS. Wallets sign messages claiming to have sent transactions. Brokers claim to have routed orders fairly. Exchanges claim to have matched at the best price. The participants police themselves under regulatory paperwork that arrives years after the harm.</p>
+      <p>On General Market, the chain is the server and the trader is the client. The trader proposes a bet. The chain decides whether it was submitted in the window, sealed correctly, committed before the cutoff, and resolved against the consensus oracle's price. The trader cannot lie about any of this — not because the protocol catches the lie afterward, but because the lie is structurally impossible to express. The oracle settles the price. <strong>The client proposes. The server disposes.</strong></p>
+    </div>
+  </section>
+
+  <!-- SYSTEM 3: LOCKSTEP -->
+  <section class="system">
+    <div class="system-head">
+      <div class="system-num">03</div>
+      <div>
+        <h3 class="system-title">Lockstep Simulation</h3>
+        <div class="system-meta">STARCRAFT<span class="pipe">·</span>BLIZZARD ENTERTAINMENT<span class="pipe">·</span>1998</div>
+      </div>
+    </div>
+
+    <div class="act act-gaming">
+      <div class="act-label">In gaming</div>
+      <p>StarCraft tournaments have decided millions of dollars over thirty years. The game ran over 56k modems. Every keystroke from every player had to feel simultaneous on every screen. Naively, this is impossible — packets travel at finite speed, latencies vary, the player on the slower connection should always lose.</p>
+      <p>Blizzard's answer was lockstep. The game proceeds in fixed ticks. For tick N to advance, every player must submit their input for tick N. The slowest player gates the simulation. When all inputs are received, all of them resolve <strong>simultaneously</strong>. There is no "first" — the order in which packets arrived inside the tick window is discarded. Every machine in the game runs the identical deterministic simulation, so any divergence means cheating, and cheating becomes a desync the game can detect.</p>
+      <p>This is what made competitive RTS playable across continents. It is also why StarCraft replays are perfectly reproducible — same inputs, same outcome, on every machine, forever.</p>
+    </div>
+
+    <div class="act act-trading">
+      <div class="act-label">In trading</div>
+      <p>Modern trading is the inverse. Latency is currency. The matching engine processes orders in arrival order, so every microsecond of physical proximity to the engine is dollars. Citadel and Virtu lease floor space inside exchange data centers. The race is not won by being right. It is won by being closer.</p>
+      <p>A General Market block runs a tick. Every order submitted during the submit phase is collected and resolved <strong>simultaneously</strong> at reveal. Arriving in the first millisecond of the window is mathematically identical to arriving in the last. Co-location buys nothing. The slow connection and the fiber connection settle on the same line. Latency arbitrage is not policed. <strong>It does not exist as a category.</strong></p>
+    </div>
+  </section>
+
+  <!-- SYSTEM 4: ROLLBACK -->
+  <section class="system">
+    <div class="system-head">
+      <div class="system-num">04</div>
+      <div>
+        <h3 class="system-title">Rollback Netcode</h3>
+        <div class="system-meta">GGPO<span class="pipe">·</span>TONY CANNON<span class="pipe">·</span>2006</div>
+      </div>
+    </div>
+
+    <div class="act act-gaming">
+      <div class="act-label">In gaming</div>
+      <p>Fighting games are the cruelest test of fair networking. The combos are frame-perfect. A two-frame delay can mean the difference between champion and bystander. The first generation of online fighting games used "delay-based" netcode — every player ate input lag equal to the round-trip time. Nobody could play. The genre nearly died on the move from arcades to the internet.</p>
+      <p>Tony Cannon's GGPO library, released in 2006, replaced delay with prediction. Each client predicts the opponent's next input, simulates forward, and rolls back the simulation if the prediction was wrong when the real input arrives. The local game feels lag-free. The network catches up invisibly.</p>
+      <p>The crucial constraint: <strong>once an input is committed for a frame, it cannot be retracted.</strong> Not on lag. Not on a crash. Not on a regret. The input is the input, and the simulation will accept it whether or not the player still wants it. Every modern fighting game (Street Fighter 6, Guilty Gear Strive, Tekken 8, Smash) ships rollback. Without it, the genre would not have an esports scene.</p>
+    </div>
+
+    <div class="act act-trading">
+      <div class="act-label">In trading</div>
+      <p>Spoofing is the trading-world equivalent of input retraction. Place a large buy order. Watch the market react. Cancel the order before it fills. Place the real, opposite order at the better price. JPMorgan paid $920 million for doing this. Navinder Sarao crashed the S&P 500 from his parents' house doing this. The exploit lives in the gap between "expressing intent" and "committing to it."</p>
+      <p>General Market closes the gap. The submit phase accepts a sealed bet. The reveal phase opens it. Once revealed, <strong>the bet cannot be cancelled, modified, retracted, or apologized for.</strong> There is no order-pull, no last-look, no rage-cancel. The trader who placed the bet is the trader who took the risk. Spoofing is a feature of order-book architectures. Blocks do not have one.</p>
+    </div>
+  </section>
+
+  <!-- SYSTEM 5: MEMORY ENCRYPTION -->
+  <section class="system">
+    <div class="system-head">
+      <div class="system-num">05</div>
+      <div>
+        <h3 class="system-title">Memory-Encrypted Client State</h3>
+        <div class="system-meta">EAC / BATTLEYE<span class="pipe">·</span>2014</div>
+      </div>
+    </div>
+
+    <div class="act act-gaming">
+      <div class="act-label">In gaming</div>
+      <p>Modern competitive shooters cannot rely on fog of war alone. Some game state has to live on the client — sound positions, animation skeletons, hit volumes. A determined cheat reads that memory and reconstructs enemy positions through walls.</p>
+      <p>Easy Anti-Cheat and BattlEye, the two dominant kernel-level anti-cheats, encrypt sensitive client memory at runtime. The data is in RAM, but it is illegible without keys the cheat does not have. The wallhack reads the memory and finds entropy. To defeat the encryption, the cheat would have to compromise the kernel itself — and at that point the operating system has bigger problems than your game.</p>
+      <p>Used by: Fortnite, Apex Legends, Rust, Tarkov, Elden Ring, every game where competitive integrity is a business requirement.</p>
+    </div>
+
+    <div class="act act-trading">
+      <div class="act-label">In trading</div>
+      <p>Sometimes the trade has to be visible to someone before settlement. The exchange has to see it. The clearing house has to see it. The brokerage has to see it. Each of these "trusted" intermediaries is a memory-leak surface. Information sold to HFTs as "order flow." Front-runs by employees with privileged access. Insider tip-offs from inside the trusted layer.</p>
+      <p>The block's commitment hash is the trading-world equivalent of memory encryption. The bet is "in the system" — committed, signed, on chain — but its plaintext is not legible to anyone, including General Market itself, until the reveal phase. <strong>We cannot front-run a bet we cannot read.</strong> Neither can the chain. Neither can the validator. The trade exists in a sealed envelope until the envelope is opened, and the envelope can only be opened on schedule.</p>
+    </div>
+  </section>
+
+  <!-- SYSTEM 6: BEHAVIORAL DETECTION -->
+  <section class="system">
+    <div class="system-head">
+      <div class="system-num">06</div>
+      <div>
+        <h3 class="system-title">Behavioral Statistical Detection</h3>
+        <div class="system-meta">FACEIT ANTI-CHEAT<span class="pipe">·</span>2016</div>
+      </div>
+    </div>
+
+    <div class="act act-gaming">
+      <div class="act-label">In gaming</div>
+      <p>FACEIT runs the most respected third-party Counter-Strike league. Their anti-cheat is feared because it does not bother trying to catch the cheat itself. It catches the <strong>shape of the result</strong>.</p>
+      <p>Honest players exhibit a distribution: their reaction times follow a curve, their tracking smoothness has noise, their headshot rates correlate with rank. A cheater's distribution is different — sub-150ms reactions across thousands of rounds, kill-ratios that no human in the player's bracket has ever produced. FACEIT bans on the statistical signature, even when they cannot identify the exploit. The argument is simple: if no honest player produces this distribution, the player is not honest.</p>
+      <p>This works because the structure of competitive games makes cheating measurable. The cheat has to express itself somewhere. The structure makes that somewhere visible.</p>
+    </div>
+
+    <div class="act act-trading">
+      <div class="act-label">In trading</div>
+      <p>Insider trading is invisible on a single perp trade. Someone bets long ETH thirty minutes before an ETF approval announcement. Either they got lucky or they got a tip. The SEC investigates for years. Sometimes they win. Often they don't.</p>
+      <p>General Market makes insider information statistically futile by structure. Each block bundles 100 markets — BTC up, ETH down, SOL up, HYPE down, and 96 others. To "win" the block, the trader has to predict all 100 outcomes correctly. Insider information on one market gives them a 100% edge on that one bet. The other 99 markets are random. The math gives the insider a winrate of 0.1%.</p>
+      <p>This is the FACEIT principle, parameterized: <strong>we can scale the bundle.</strong> Want it harder? Add more markets per block. The insider's edge on a 100-market block is 1%. On a 1,000-market block, it's 0.1%. On a 10,000-market block, it is statistically indistinguishable from random. The defense has a knob, and we control the knob.</p>
+    </div>
+  </section>
+
+  <!-- SYSTEM 7: KERNEL INTEGRITY -->
+  <section class="system">
+    <div class="system-head">
+      <div class="system-num">07</div>
+      <div>
+        <h3 class="system-title">Kernel-Level Pre-Game Integrity</h3>
+        <div class="system-meta">RIOT VANGUARD · VALORANT<span class="pipe">·</span>2020</div>
+      </div>
+    </div>
+
+    <div class="act act-gaming">
+      <div class="act-label">In gaming</div>
+      <p>Every anti-cheat before Vanguard had the same fundamental flaw: it loaded after the operating system, sometimes after the cheat itself. A determined cheater could install a rootkit at boot, the rootkit would load before the anti-cheat, and from that privileged position it could lie to every check the anti-cheat ran.</p>
+      <p>Riot Games' answer was Vanguard. It loads as a kernel driver at system boot. It is running before any user-space process exists, before any cheat can load, before the game has even started. From the kernel, it watches every signed driver, every memory access, every system call. The verifier is structurally <strong>below</strong> the player.</p>
+      <p>Players hated it. The cheaters hated it more. Valorant has the lowest cheater rate of any modern shooter. The trade is consensual: a fair game requires a verifier that the player cannot reach.</p>
+    </div>
+
+    <div class="act act-trading">
+      <div class="act-label">In trading</div>
+      <p>Trading has the inverse architecture. The trader is the kernel. They sign their own transactions, choose their own counterparties, audit their own behavior. The "verifier" is a regulator who arrives years later with a subpoena. By the time the verification runs, the exploit has finished, the money has moved, and the harm is permanent.</p>
+      <p>The chain is General Market's Vanguard. It runs before every trade, sees every order in its committed form, sequences them in deterministic batches, and settles them under oracle consensus. The trader cannot reach below it. They can submit, reveal, and accept the outcome. They cannot reorder, censor, or front-run, because the layer that does the reordering is structurally inaccessible to them. <strong>The verifier sits below the player.</strong> Riot got there in 2020. We got there because they did.</p>
+    </div>
+  </section>
+
+  <hr class="divide-thick">
+</div>
+
+<!-- ============ QUADRANT CARD ============ -->
+<figure class="share-card">
+  <div class="share-card-inner">
+    <h3>Where each venue stands.</h3>
+    <div class="quadrant">
+      <svg viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+        <!-- Axes -->
+        <line x1="60" y1="540" x2="560" y2="540" stroke="#1D1D1F" stroke-width="1.5"/>
+        <line x1="60" y1="60" x2="60" y2="540" stroke="#1D1D1F" stroke-width="1.5"/>
+        <!-- Arrowheads -->
+        <polygon points="560,540 552,535 552,545" fill="#1D1D1F"/>
+        <polygon points="60,60 55,68 65,68" fill="#1D1D1F"/>
+
+        <!-- Axis labels -->
+        <text x="310" y="585" text-anchor="middle" class="q-axis-label">cheat resistance →</text>
+        <text x="55" y="50" text-anchor="end" class="q-axis-label" transform="rotate(-90 55 50)" style="text-anchor: middle;">↑ financial stakes</text>
+
+        <!-- Axis endpoints -->
+        <text x="70" y="555" class="q-axis-end">leaks</text>
+        <text x="555" y="555" text-anchor="end" class="q-axis-end">sealed</text>
+        <text x="50" y="540" text-anchor="end" class="q-axis-end">play money</text>
+        <text x="50" y="70" text-anchor="end" class="q-axis-end">real money</text>
+
+        <!-- Quadrant background highlight (top-right where GM lives) -->
+        <rect x="310" y="60" width="250" height="240" fill="#C9D743" opacity="0.18"/>
+
+        <!-- PIN: Polymarket (low stakes-real, low cheat resistance) -->
+        <circle cx="170" cy="200" r="10" fill="#0071E3"/>
+        <text x="170" y="240" text-anchor="middle" class="q-pin-label">Polymarket</text>
+        <text x="170" y="258" text-anchor="middle" class="q-pin-sub">public mempool · MEV</text>
+
+        <!-- PIN: Sportsbooks (medium-high stakes, medium cheat-resistance — they have decent server-side, but PFOF-equivalent + line-shading) -->
+        <circle cx="240" cy="320" r="10" fill="#1D1D1F"/>
+        <text x="240" y="360" text-anchor="middle" class="q-pin-label">Sportsbooks</text>
+        <text x="240" y="378" text-anchor="middle" class="q-pin-sub">books shade against you</text>
+
+        <!-- PIN: CEX / Perps (high stakes, low cheat-resistance) -->
+        <circle cx="180" cy="120" r="10" fill="#DD0426"/>
+        <text x="180" y="100" text-anchor="middle" class="q-pin-label">CEX Perps</text>
+        <text x="180" y="82" text-anchor="middle" class="q-pin-sub">stop hunting · liquidation cascades</text>
+
+        <!-- PIN: TradFi (highest stakes, low cheat-resistance — PFOF, HFT, spoofing) -->
+        <circle cx="220" cy="160" r="10" fill="#424245"/>
+        <text x="280" y="155" class="q-pin-label">TradFi equities</text>
+        <text x="280" y="173" class="q-pin-sub">$3.8B/yr PFOF · co-location</text>
+
+        <!-- PIN: StarCraft / esports (low stakes-money, very high cheat resistance) -->
+        <circle cx="470" cy="450" r="10" fill="#1D1D1F"/>
+        <text x="470" y="490" text-anchor="middle" class="q-pin-label">Esports / StarCraft</text>
+        <text x="470" y="508" text-anchor="middle" class="q-pin-sub">lockstep + replay-deterministic</text>
+
+        <!-- PIN: Valorant (low stakes-money, very high cheat resistance) -->
+        <circle cx="500" cy="380" r="10" fill="#1D1D1F"/>
+        <text x="500" y="365" text-anchor="middle" class="q-pin-label">Valorant</text>
+        <text x="500" y="347" text-anchor="middle" class="q-pin-sub">Vanguard kernel</text>
+
+        <!-- PIN: GENERAL MARKET (highest stakes, highest cheat resistance) — highlighted -->
+        <circle cx="475" cy="140" r="22" fill="#1D1D1F"/>
+        <circle cx="475" cy="140" r="32" fill="none" stroke="#C9D743" stroke-width="3"/>
+        <circle cx="475" cy="140" r="42" fill="none" stroke="#C9D743" stroke-width="1.5" opacity="0.5"/>
+        <text x="475" y="146" text-anchor="middle" class="q-pin-gm-label">GM</text>
+        <text x="475" y="200" text-anchor="middle" class="q-pin-label">General Market</text>
+        <text x="475" y="218" text-anchor="middle" class="q-pin-sub">all six primitives, real money</text>
+      </svg>
+    </div>
+    <div class="signature">@generalmarket</div>
+  </div>
+</figure>
+
+<div class="wrap">
+
+  <!-- ============ WHAT DISAPPEARS ============ -->
+  <section class="prose">
+    <h2><span class="num">03</span>What disappears</h2>
+    <p>Apply the six primitives to a market and the eight named exploits do not get harder. They become structurally absent. There is no spoofing because there is no order to retract. There is no front-running because there is no plaintext to read. There is no latency arbitrage because the tick erases time within the window.</p>
+    <p>The cheats are not punished. They have nothing to do.</p>
+  </section>
+
+  <hr class="divide">
+</div>
+
+<!-- ============ MAPPING CARD ============ -->
+<figure class="share-card">
+  <div class="share-card-inner">
+    <h3>Eight exploits. One architecture. All gone.</h3>
+    <div class="mapping">
+      <div class="map-row">
+        <div class="map-trading">Frontrunning / MEV</div>
+        <div class="arrow">≡</div>
+        <div class="map-gaming">wallhack</div>
+        <div class="arrow">→</div>
+        <div class="map-killer">Sealed bets · fog of war</div>
+      </div>
+      <div class="map-row">
+        <div class="map-trading">Latency arbitrage</div>
+        <div class="arrow">≡</div>
+        <div class="map-gaming">ping advantage</div>
+        <div class="arrow">→</div>
+        <div class="map-killer">Lockstep tick · simultaneous resolve</div>
+      </div>
+      <div class="map-row">
+        <div class="map-trading">Insider trading</div>
+        <div class="arrow">≡</div>
+        <div class="map-gaming">aimbot</div>
+        <div class="arrow">→</div>
+        <div class="map-killer">100-market bundle · 0.1% winrate (scalable)</div>
+      </div>
+      <div class="map-row">
+        <div class="map-trading">Stop & liquidation hunting</div>
+        <div class="arrow">≡</div>
+        <div class="map-gaming">spawn camping</div>
+        <div class="arrow">→</div>
+        <div class="map-killer">No leverage · no stops to hunt</div>
+      </div>
+      <div class="map-row">
+        <div class="map-trading">Spoofing & layering</div>
+        <div class="arrow">≡</div>
+        <div class="map-gaming">rage-cancel</div>
+        <div class="arrow">→</div>
+        <div class="map-killer">Reveal lock · no retraction</div>
+      </div>
+      <div class="map-row">
+        <div class="map-trading">Orderflow purchase (PFOF)</div>
+        <div class="arrow">≡</div>
+        <div class="map-gaming">pay-to-win</div>
+        <div class="arrow">→</div>
+        <div class="map-killer">Direct submission · no broker layer</div>
+      </div>
+      <div class="map-row">
+        <div class="map-trading">Toxic-flow market making</div>
+        <div class="arrow">≡</div>
+        <div class="map-gaming">smurfing</div>
+        <div class="arrow">→</div>
+        <div class="map-killer">Parimutuel · no MM, all symmetric</div>
+      </div>
+      <div class="map-row">
+        <div class="map-trading">Cross-venue divergence</div>
+        <div class="arrow">≡</div>
+        <div class="map-gaming">region-hopping</div>
+        <div class="arrow">→</div>
+        <div class="map-killer">Single chain · single batch</div>
+      </div>
+    </div>
+    <div class="signature">@generalmarket</div>
+  </div>
+</figure>
+
+<!-- ============ KNIFE ============ -->
+<div class="knife">
+  <div class="wrap">
+    <h2>The knife.</h2>
+    <p>Counter-Strike has been playable since 1999. Street Fighter since 1991. StarCraft tournaments have decided millions of dollars for three decades.</p>
+    <p>None of these systems leak inputs. None allow front-running. None allow rage-cancel. The engineers who built them were clear about the rules of their craft: <strong>a competitive game where the server can be fooled is not a game.</strong></p>
+    <p>Trading was never engineered with that constraint. It was patched, regulated, lobbied, and litigated. The exploits stayed because the exploits paid the lobbyists. Ninety-two years of rule-writing produced a market where retail orders are sold by the broker who collects them, where bots see your trade before you do, where the same firm that fines you for spoofing employs the spoofers.</p>
+    <p>We did not invent any of the answers. The answers existed. We did the embarrassing thing.</p>
+    <p>We read the literature.</p>
+    <p class="final">Counter-Strike beat MEV in 1999. We are twenty-seven years late.</p>
+  </div>
+</div>
+
+<!-- ============ CLOSER CARD ============ -->
+<figure class="share-card dark closer">
+  <div class="share-card-inner">
+    <span class="yr">QUAKE 1996 · STARCRAFT 1998 · GGPO 2006 · VANGUARD 2020</span>
+    <h3>The anti-cheat existed.<br>Trading just never installed it.</h3>
+    <div class="late">General Market, finally, does.</div>
+    <div class="signature">@generalmarket</div>
+  </div>
+</figure>
+
+<!-- ============ FOOTER ============ -->
+<div class="wrap">
+  <footer class="foot">
+    <div class="mark">GENERAL MARKET</div>
+    <div class="tagline">Trading with the anti-cheat finally on.</div>
+    <div class="meta">CASE STUDY № 002 · ANTICHEAT · 2026</div>
+  </footer>
+</div>
+
+</body>
+</html>
