@@ -1614,23 +1614,23 @@ where
             P2PMessage::PriceProposal { .. } | P2PMessage::PriceVote { .. }
         );
 
-        let (cycle_number, phase) = if is_price_msg {
+        let (cycle_number, phase, has_local_round) = if is_price_msg {
             let state = self.price_state.read().await;
             if let Some(round) = state.current_round() {
-                (round.cycle_number, round.phase)
+                (round.cycle_number, round.phase, true)
             } else {
                 let msg_cycle = message_cycle_number(&message).unwrap_or(0);
-                (msg_cycle, ConsensusPhase::Idle)
+                (msg_cycle, ConsensusPhase::Idle, false)
             }
         } else {
             let state = self.state.read().await;
             if let Some(round) = state.current_round() {
-                (round.cycle_number, round.phase)
+                (round.cycle_number, round.phase, true)
             } else {
                 // Use message's cycle number instead of 0 when local state
                 // isn't initialized (e.g. during simultaneous startup)
                 let msg_cycle = message_cycle_number(&message).unwrap_or(0);
-                (msg_cycle, ConsensusPhase::Idle)
+                (msg_cycle, ConsensusPhase::Idle, false)
             }
         };
 
@@ -1639,7 +1639,14 @@ where
 
         // Equivocation detection: for vote/sign messages, check if this peer
         // already sent a *different* payload for the same (cycle, phase, msg_type).
-        if is_vote_or_sign(&message) {
+        //
+        // Gated on `has_local_round`: without a real (cycle, phase) anchor from
+        // local state, every message buckets under the synthetic (0, Idle) key and
+        // false-positives against itself. During simultaneous-startup windows that
+        // collapse drove three peers below -50 score within ~105s and split the
+        // cluster. Genuine equivocation is still detectable from the next cycle
+        // forward; what we lose is a window where we couldn't prove it anyway.
+        if is_vote_or_sign(&message) && has_local_round {
             let hash = content_hash(&message);
             let variant = msg_variant_tag(&message);
             if self.equivocation_detector.check(&from, cycle_number, phase, variant, round_type, hash) {
