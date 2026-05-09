@@ -47,9 +47,9 @@ const STEPS: Step[] = [
   {
     type: 'welcome',
     id: 'welcome',
-    title: 'Your pnl, shielded',
-    body: 'Insiders, front-runners, orderflow buyers — none of them get to see your trade — join the waitlist for early access, lower fees, and referral rewards',
-    cta: 'Begin',
+    title: 'Be the first to have your pnl shielded from insider trading',
+    body: 'Join the waitlist — early access, lower fees, and referral rewards',
+    cta: 'Start',
     takes: '~90 seconds',
   },
   {
