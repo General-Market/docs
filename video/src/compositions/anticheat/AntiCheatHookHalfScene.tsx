@@ -47,15 +47,11 @@ const LAPTOP_SCREEN_ASPECT = 16 / 10;
 const PHONE_SCREEN_ASPECT = 720 / 1560;
 
 // Camera centred on the canvas — each half puts its device at world origin.
-// Phone settles centred (PHONE_WORLD_Y_CENTER) for the first beat of the
-// scene, then drifts up to PHONE_WORLD_Y_RAISED before the scroll so the
-// transition carries the whole device through the visible top half.
+// Phone stays centred for the entire scene; its exit is the spin + the
+// CSS slide-right applied by AntiCheatHook on the wrapping div.
 const CAMERA_POS: [number, number, number] = [0, 3.9, -7];
 const CAMERA_TARGET: [number, number, number] = [0, 2.9, 0];
 const PHONE_WORLD_Y_CENTER = 2.9;
-const PHONE_WORLD_Y_RAISED = 4.5;
-const PHONE_RISE_START = 30;
-const PHONE_RISE_END = 49;
 
 const PHONE_YAW_DRIFT_END = 60;
 const PHONE_YAW_DRIFT_AMOUNT = -0.09;
@@ -68,8 +64,11 @@ const PHONE_INITIAL_ZOOM = 0.98;
 const PHONE_END_ZOOM = SETTLED_ZOOM * 1.02;
 const HOOK_DURATION_FRAMES = 64;
 
-// Phone has no in-3D exit animation — the scroll-down transition in
-// AntiCheatHook carries it off-canvas as the new scene scrolls in.
+// Phone exit spin — when AntiCheatHook signals the exit window via
+// exitProgress, the phone rotates fast on its Y axis (3 revolutions
+// over the window) while the wrapping div translates it off the
+// right edge in CSS.
+const PHONE_EXIT_SPIN_REVOLUTIONS = 3;
 
 const clamp01 = (t: number) => (t < 0 ? 0 : t > 1 ? 1 : t);
 
@@ -85,6 +84,7 @@ const HalfScene: React.FC<{
   emissiveIntensity: number;
   lightingIntensity: number;
   frame: number;
+  exitProgress: number;
 }> = ({
   device,
   segments,
@@ -93,6 +93,7 @@ const HalfScene: React.FC<{
   emissiveIntensity,
   lightingIntensity,
   frame,
+  exitProgress,
 }) => {
   const { camera: threeCam } = useThree();
   const gltf = useGLTF(MODEL_URL);
@@ -199,21 +200,19 @@ const HalfScene: React.FC<{
   if (device === "phone") {
     const iphone = sceneClone.getObjectByName("iphone");
     if (iphone) {
-      const phoneY = interpolate(
-        frame,
-        [PHONE_RISE_START, PHONE_RISE_END],
-        [PHONE_WORLD_Y_CENTER, PHONE_WORLD_Y_RAISED],
-        { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-      );
-      iphone.position.set(0, phoneY, 0);
+      iphone.position.set(0, PHONE_WORLD_Y_CENTER, 0);
       iphone.scale.setScalar(PHONE_BASE_SCALE);
       const cameraForward = new THREE.Vector3(...CAMERA_TARGET)
         .sub(new THREE.Vector3(...CAMERA_POS))
         .normalize();
-      const phoneLookTarget = new THREE.Vector3(0, phoneY, 0)
+      const phoneLookTarget = new THREE.Vector3(0, PHONE_WORLD_Y_CENTER, 0)
         .addScaledVector(cameraForward, 50);
       iphone.lookAt(phoneLookTarget);
-      iphone.rotateY(yawDrift);
+      // Slow yaw drift during the scene + fast spin on exit. exitProgress
+      // squared eases the spin in (loiters, then whips).
+      const exitSpin =
+        exitProgress * exitProgress * Math.PI * 2 * PHONE_EXIT_SPIN_REVOLUTIONS;
+      iphone.rotateY(yawDrift + exitSpin);
     }
   }
 
@@ -302,6 +301,8 @@ export type AntiCheatHookHalfSceneProps = {
   height?: number;
   emissiveIntensity?: number;
   lightingIntensity?: number;
+  /** 0..1 — drives the phone's exit spin in 3D. 0 = idle, 1 = end of spin. */
+  exitProgress?: number;
 };
 
 export const AntiCheatHookHalfScene: React.FC<AntiCheatHookHalfSceneProps> = ({
@@ -312,6 +313,7 @@ export const AntiCheatHookHalfScene: React.FC<AntiCheatHookHalfSceneProps> = ({
   height = 1080,
   emissiveIntensity = 1.6,
   lightingIntensity = 0.85,
+  exitProgress = 0,
 }) => {
   const frame = useCurrentFrame();
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -357,6 +359,7 @@ export const AntiCheatHookHalfScene: React.FC<AntiCheatHookHalfSceneProps> = ({
             emissiveIntensity={emissiveIntensity}
             lightingIntensity={lightingIntensity}
             frame={frame}
+            exitProgress={exitProgress}
           />
         </React.Suspense>
       </ThreeCanvas>
