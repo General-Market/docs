@@ -28,8 +28,10 @@ useGLTF.preload(MODEL_URL);
 // ── Laptop / phone constants pulled from DeviceBroll so this component
 //    is self-contained.
 // Phone scaled to read almost full canvas-height while keeping a clean
-// right-edge clip rather than overflowing the top + bottom too.
-const PHONE_BASE_SCALE = 38;
+// right-edge clip rather than overflowing the top + bottom too. A
+// little smaller than before so the phone feels less "in front" of
+// the laptop.
+const PHONE_BASE_SCALE = 34;
 const LID_OPEN = new THREE.Quaternion(-0.78333, 0, 0, 0.62161);
 const LID_CLOSED = new THREE.Quaternion(0, 0, 0, 1);
 const BEVELS_POS = new THREE.Vector3(-0.00012, 0.00824, -0.10401);
@@ -271,6 +273,7 @@ const Scene: React.FC<{
   phoneVideoRef: React.RefObject<HTMLVideoElement | null>;
   emissiveIntensity: number;
   lightingIntensity: number;
+  phoneZoomCorrection: number;
   frame: number;
 }> = ({
   laptopSegments,
@@ -281,6 +284,7 @@ const Scene: React.FC<{
   phoneVideoRef,
   emissiveIntensity,
   lightingIntensity,
+  phoneZoomCorrection,
   frame,
 }) => {
   const { camera: threeCam } = useThree();
@@ -341,7 +345,10 @@ const Scene: React.FC<{
   if (iphone) {
     iphone.position.copy(PHONE_POS);
     iphone.position.x += phoneSlideX;
-    iphone.scale.setScalar(PHONE_BASE_SCALE);
+    // Counter-scale the phone against the CSS-level zoom so the phone
+    // ends up running its own (gentler) zoom curve while the rest of
+    // the scene rides the laptop curve.
+    iphone.scale.setScalar(PHONE_BASE_SCALE * phoneZoomCorrection);
     // lookAt aligns the object's local -Z with the camera. This GLB
     // has the screen on local +Z (the back is on -Z), so naive lookAt
     // shows the apple logo. Add π to the local-Y rotation to flip the
@@ -463,6 +470,7 @@ export type AntiCheatSceneProps = {
   height?: number;
   emissiveIntensity?: number;
   lightingIntensity?: number;
+  phoneZoomCorrection?: number;
 };
 
 const PreviewVideo: React.FC<{
@@ -501,6 +509,7 @@ export const AntiCheatHookScene: React.FC<AntiCheatSceneProps> = ({
   height = 1080,
   emissiveIntensity = 1.6,
   lightingIntensity = 0.85,
+  phoneZoomCorrection = 1,
 }) => {
   const frame = useCurrentFrame();
   const laptopVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -555,6 +564,7 @@ export const AntiCheatHookScene: React.FC<AntiCheatSceneProps> = ({
             phoneVideoRef={phoneVideoRef}
             emissiveIntensity={emissiveIntensity}
             lightingIntensity={lightingIntensity}
+            phoneZoomCorrection={phoneZoomCorrection}
             frame={frame}
           />
         </React.Suspense>
