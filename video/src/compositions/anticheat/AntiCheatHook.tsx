@@ -1,20 +1,18 @@
 import React from "react";
-import {
-  AbsoluteFill,
-  Sequence,
-  staticFile,
-  useCurrentFrame,
-} from "remotion";
+import { AbsoluteFill, staticFile, useCurrentFrame } from "remotion";
+import { TransitionSeries, linearTiming } from "@remotion/transitions";
+import { slide } from "@remotion/transitions/slide";
 import { font } from "../../common/fonts";
 import { AntiCheatHookHalfScene } from "./AntiCheatHookHalfScene";
 import { DotGrid } from "./DotGrid";
 import { FPS, H, W, colors } from "./theme";
 
-// Two half-canvas mini-scenes form the hook. Scene A's phone exits by
-// flying right and spinning fast on itself — three.js carries the spin
-// while CSS carries the translate. Scene B slides in from above, covering
-// Scene A's leftover text on the left as it lands. Frame 0 is already
-// settled (no entry anim) so the viewer hits the question immediately.
+// Two half-canvas mini-scenes form the hook. Scene B slides in from above
+// while Scene A scrolls out the bottom — the standard channel-change
+// transition. Inside that scroll, the phone executes a roll evasion: it
+// counter-translates Y to ignore the scroll, banks right with a fast Y-
+// axis spin (barrel roll), and clears the frame independently of the
+// rest of Scene A. The text and dot-field still ride the scroll.
 //
 //   Scene A  64f   phone right  · "Why trading against insider traders ?"
 //   Scene B  63f   laptop left  · "When gaming Anti-Cheats ban wall hackers"
@@ -22,7 +20,6 @@ const SCENE_A_DURATION = 64;
 const SCENE_B_DURATION = 63;
 const T_TRANSITION = 15;
 const HOOK_DURATION = SCENE_A_DURATION + SCENE_B_DURATION - T_TRANSITION;
-const TRANSITION_START = SCENE_A_DURATION - T_TRANSITION; // 49
 
 const BROLL = {
   // Wall-hack broll reads as "wall hackers" instantly — the only cheat
@@ -66,40 +63,46 @@ export const AntiCheatHook: React.FC = () => {
     <AbsoluteFill style={{ backgroundColor: colors.bg, fontFamily: font }}>
       <DotGrid />
 
-      <Sequence from={0} durationInFrames={SCENE_A_DURATION} layout="none">
-        <QuestionScene
-          device="phone"
-          devicePosition="right"
-          question="Why trading against insider traders ?"
-          questionTint="#E03B4A"
-          segments={PHONE_SEGMENTS}
-          brollAspect={1080 / 1920}
-          exitWindowStart={TRANSITION_START}
-        />
-      </Sequence>
+      <TransitionSeries>
+        <TransitionSeries.Sequence durationInFrames={SCENE_A_DURATION}>
+          <QuestionScene
+            device="phone"
+            devicePosition="right"
+            question="Why trading against insider traders ?"
+            questionTint="#E03B4A"
+            segments={PHONE_SEGMENTS}
+            brollAspect={1080 / 1920}
+            sceneDuration={SCENE_A_DURATION}
+            evadeOnExit
+          />
+        </TransitionSeries.Sequence>
 
-      <Sequence
-        from={TRANSITION_START}
-        durationInFrames={SCENE_B_DURATION}
-        layout="none"
-      >
-        <QuestionScene
-          device="laptop"
-          devicePosition="left"
-          question="When gaming Anti-Cheats ban wall hackers"
-          segments={LAPTOP_SEGMENTS}
-          entryWindow={T_TRANSITION}
+        <TransitionSeries.Transition
+          presentation={slide({ direction: "from-top" })}
+          timing={linearTiming({ durationInFrames: T_TRANSITION })}
         />
-      </Sequence>
+
+        <TransitionSeries.Sequence durationInFrames={SCENE_B_DURATION}>
+          <QuestionScene
+            device="laptop"
+            devicePosition="left"
+            question="When gaming Anti-Cheats ban wall hackers"
+            segments={LAPTOP_SEGMENTS}
+            sceneDuration={SCENE_B_DURATION}
+          />
+        </TransitionSeries.Sequence>
+      </TransitionSeries>
     </AbsoluteFill>
   );
 };
 
 // ─── Question scene — half device, half question ───────────────────────────────
-// `exitWindowStart` (phone scene): scene-local frame at which the phone
-//   begins flying right and spinning. Defaults to never.
-// `entryWindow` (laptop scene): number of scene-local frames the whole
-//   scene takes to slide in from above. Defaults to 0 (instant).
+//
+// `evadeOnExit` (phone scene only): during the final T_TRANSITION frames
+// of the scene, the device div counter-translates Y to negate the slide
+// presentation's downward push, banks right, and the device itself spins
+// fast on its Y axis in three.js. The text and bg ride the scroll
+// normally; only the device peels off.
 
 const QuestionScene: React.FC<{
   device: "laptop" | "phone";
@@ -108,8 +111,8 @@ const QuestionScene: React.FC<{
   questionTint?: string;
   segments: BrollSegment[];
   brollAspect?: number;
-  exitWindowStart?: number;
-  entryWindow?: number;
+  sceneDuration: number;
+  evadeOnExit?: boolean;
 }> = ({
   device,
   devicePosition,
@@ -117,33 +120,29 @@ const QuestionScene: React.FC<{
   questionTint,
   segments,
   brollAspect = 16 / 9,
-  exitWindowStart,
-  entryWindow = 0,
+  sceneDuration,
+  evadeOnExit = false,
 }) => {
   const frame = useCurrentFrame();
   const isDeviceRight = devicePosition === "right";
 
-  const exitT =
-    exitWindowStart !== undefined
-      ? clamp01((frame - exitWindowStart) / T_TRANSITION)
-      : 0;
+  const exitT = evadeOnExit
+    ? clamp01((frame - (sceneDuration - T_TRANSITION)) / T_TRANSITION)
+    : 0;
   const exitEased = exitT * exitT;
-  const phoneExitX = exitEased * (W * 1.0); // flies fully off the right edge
-  const phoneExitOpacity = 1 - exitT * 0.3;
 
-  const entryT =
-    entryWindow > 0 ? clamp01(frame / entryWindow) : 1;
-  // smoothstep so the slide eases in
-  const entryEased = entryT * entryT * (3 - 2 * entryT);
-  const sceneSlideY = (1 - entryEased) * -H;
+  // Counter-translate Y to neutralize the slide presentation pushing the
+  // whole scene down by `exitT * 100%`. With this counter on the device
+  // div alone, the device stays put vertically while the rest of Scene A
+  // (text, bg) scrolls out the bottom normally.
+  const counterY = -exitT * 100; // percent of own height
+  const exitX = exitEased * W * 1.05; // overshoot a touch off the right edge
 
   return (
     <AbsoluteFill
       style={{
         display: "flex",
         flexDirection: "row",
-        transform: `translateY(${sceneSlideY.toFixed(2)}px)`,
-        willChange: "transform",
       }}
     >
       <div
@@ -172,9 +171,10 @@ const QuestionScene: React.FC<{
           height: H,
           position: "relative",
           order: isDeviceRight ? 1 : 0,
-          transform: `translateX(${phoneExitX.toFixed(2)}px)`,
-          opacity: phoneExitOpacity,
-          willChange: "transform, opacity",
+          transform: evadeOnExit
+            ? `translate(${exitX.toFixed(2)}px, ${counterY.toFixed(2)}%)`
+            : undefined,
+          willChange: evadeOnExit ? "transform" : undefined,
         }}
       >
         <AntiCheatHookHalfScene
@@ -224,4 +224,3 @@ export const antiCheatHookMeta = {
   width: W,
   height: H,
 };
-
