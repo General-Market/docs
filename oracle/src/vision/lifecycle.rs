@@ -1382,6 +1382,30 @@ impl BatchLifecycleManager {
                             return Ok(());
                         }
 
+                        // SettlementWindowClosed (selector 0xb4e6a84c) — the contract has
+                        // crossed its expiration cliff. Settlement is permanently illegal;
+                        // the refund window is open and there is nothing more to decide.
+                        if err_str.contains("SettlementWindowClosed") || err_str.contains("0xb4e6a84c") {
+                            warn!(
+                                batch_id,
+                                "Settlement recovery: window closed — abandoning batch, refund window open"
+                            );
+                            let _ = sqlx::query(
+                                "UPDATE vision_settlement_proofs SET abandoned = true, submitted = false, last_error = $1, last_retry_at = NOW() WHERE batch_id = $2"
+                            )
+                            .bind(&err_str)
+                            .bind(batch_id as i64)
+                            .execute(&self.pool)
+                            .await;
+                            if let Err(e) = self.scheduler.mark_settled(&self.pool, batch_id).await {
+                                error!(batch_id, error = %e, "Settlement recovery: mark_settled failed (abandoned path)");
+                            }
+                            if let Err(e) = self.bitmap_store.purge_batch_from_db(&self.pool, batch_id).await {
+                                error!(batch_id, error = %e, "Settlement recovery: purge_batch_from_db failed (abandoned path)");
+                            }
+                            return Ok(());
+                        }
+
                         error!(
                             batch_id,
                             error = %err_str,
@@ -1977,6 +2001,7 @@ impl BatchLifecycleManager {
             "SELECT batch_id, bls_sig, signer_bitmap, players_json, payouts_json, retry_count
              FROM vision_settlement_proofs
              WHERE submitted = false
+               AND abandoned = false
                AND players_json IS NOT NULL
                AND retry_count < $1
                AND created_at > NOW() - INTERVAL '24 hours'
@@ -2137,6 +2162,26 @@ impl BatchLifecycleManager {
                             // Still reconcile vaults — batch was settled but vaults may not have been reconciled.
                             // Pass payouts for PnL accuracy (we have them from the proof DB even if we didn't submit).
                             writer.reconcile_vaults(batch_id_u64, &players_for_reconcile, &payouts_for_reconcile).await;
+                        } else if err_str.contains("SettlementWindowClosed") || err_str.contains("0xb4e6a84c") {
+                            // The expiration cliff has passed. The contract will never accept
+                            // this batch again; the refund window is open. Stop retrying.
+                            warn!(
+                                batch_id = batch_id_u64,
+                                "Settlement recovery: window closed — abandoning batch, refund window open"
+                            );
+                            let _ = sqlx::query(
+                                "UPDATE vision_settlement_proofs SET abandoned = true, submitted = false, last_error = $2, last_retry_at = NOW() WHERE batch_id = $1"
+                            )
+                            .bind(*batch_id)
+                            .bind(&err_str)
+                            .execute(&self.pool)
+                            .await;
+                            if let Err(e) = self.scheduler.mark_settled(&self.pool, batch_id_u64).await {
+                                error!(batch_id = batch_id_u64, error = %e, "Settlement recovery: mark_settled failed (abandoned path)");
+                            }
+                            if let Err(e) = self.bitmap_store.purge_batch_from_db(&self.pool, batch_id_u64).await {
+                                error!(batch_id = batch_id_u64, error = %e, "Settlement recovery: purge_batch_from_db failed (abandoned path)");
+                            }
                         } else {
                             warn!(
                                 batch_id = batch_id_u64,
