@@ -310,25 +310,28 @@ async function tick(
 
   for (const row of filtered) {
     // Stuck. Enumerate players who joined and subtract those already refunded.
+    // The two log scans are independent — fetch them concurrently.
     const fromBlock = row.createdBlock;
-    const joinedLogs = await fetchLogsChunked(
-      publicClient,
-      cfg.visionAddress,
-      eventByName('PlayerJoined'),
-      fromBlock,
-      headBlock,
-      cfg.logEventChunk,
-      { batchId: row.batchId },
-    );
-    const refundedLogs = await fetchLogsChunked(
-      publicClient,
-      cfg.visionAddress,
-      eventByName('PlayerRefunded'),
-      fromBlock,
-      headBlock,
-      cfg.logEventChunk,
-      { batchId: row.batchId },
-    );
+    const [joinedLogs, refundedLogs] = await Promise.all([
+      fetchLogsChunked(
+        publicClient,
+        cfg.visionAddress,
+        eventByName('PlayerJoined'),
+        fromBlock,
+        headBlock,
+        cfg.logEventChunk,
+        { batchId: row.batchId },
+      ),
+      fetchLogsChunked(
+        publicClient,
+        cfg.visionAddress,
+        eventByName('PlayerRefunded'),
+        fromBlock,
+        headBlock,
+        cfg.logEventChunk,
+        { batchId: row.batchId },
+      ),
+    ]);
 
     const refunded = new Set<Address>();
     for (const log of refundedLogs) {
