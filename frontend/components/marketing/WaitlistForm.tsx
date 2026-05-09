@@ -78,6 +78,7 @@ const STEPS: Step[] = [
     id: 'protection_from',
     label: 'Against who your pnl needs protection',
     multiple: true,
+    required: true,
     options: [
       { value: 'insider', label: 'Insider Traders' },
       { value: 'frontrun', label: 'Front Runners' },
@@ -340,11 +341,11 @@ function HandleBadge({
 
 type Enemy = { handle: string; label: string }
 const ENEMIES: Record<string, Enemy> = {
-  insider:   { handle: 'NancyPelosi',   label: 'Insider trader' },
-  // Ken Griffin doesn't tweet; Citadel Securities does.
-  frontrun:  { handle: 'CitSecurities', label: 'Front runner' },
-  manip:     { handle: 'SBF_FTX',       label: 'Market manipulator' },
-  orderflow: { handle: 'vladtenev',     label: 'Orderflow buyer' },
+  insider:   { handle: 'NancyPelosi', label: 'Insider trader' },
+  // Bill Ackman, Pershing Square — most famous hedge fund face on Twitter.
+  frontrun:  { handle: 'BillAckman',  label: 'Front runner' },
+  manip:     { handle: 'SBF_FTX',     label: 'Market manipulator' },
+  orderflow: { handle: 'vladtenev',   label: 'Orderflow buyer' },
 }
 
 function EnemyPill({ enemy }: { enemy: Enemy }) {
