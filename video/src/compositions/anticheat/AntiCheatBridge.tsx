@@ -32,8 +32,8 @@ const RIGHT_EYEBROW_AT = 90;
 const RIGHT_ANSWER_AT = 102;
 const PREDATORS = [
   "Liquidation hunting",
-  "Orderflow purchase",
-  "Frontrunning",
+  "Order-flow purchase",
+  "Front-running",
   "Insider trading",
   "Toxic-flow market making",
   "Spoofing & layering",

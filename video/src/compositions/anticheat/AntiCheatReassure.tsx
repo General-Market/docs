@@ -193,7 +193,7 @@ const Headline: React.FC = () => {
         }}
       >
         <RevealChars
-          text="Trade all the same assets"
+          text="Trade 500k markets you already trade"
           startFrame={0}
           stagger={0.7}
           duration={9}

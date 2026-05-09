@@ -457,7 +457,7 @@ const StatPanel: React.FC = () => {
 
       {/* Phase 2 — flips on beat 2, types in by beat 3, holds to snap-zoom */}
       <EmberTypewriter
-        text="99.96% battle royal for 30%*"
+        text="99.96% battle royale for 30%*"
         typeStart={STAT_FLIP_AT}
         typeEnd={STAT_FLIP_AT + 28}
         fontSize={120}

@@ -271,7 +271,7 @@ const Terminal: React.FC = () => {
   // Wrap allowed so the line stays on two lines.
   // First char fires at scene-local 119 (= 25.43s absolute = beat 4 in
   // Solution, frame 763).
-  const CTA_TEXT = "Shield your pnl from bad actors";
+  const CTA_TEXT = "Shield your PnL from bad actors";
   const CTA_START = 26; // Terminal-local
   const CTA_REVEAL = 30;
 
