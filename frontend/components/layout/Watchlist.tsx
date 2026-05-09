@@ -3,13 +3,13 @@
 import { useEffect, useState } from 'react'
 import { Link } from '@/i18n/routing'
 
-const ROWS: Array<{ id: string; name: string; img: string }> = [
-  { id: 'polymarket', name: 'Polymarket', img: '/source-imgs/crop-polymarket.webp' },
-  { id: 'defillama', name: 'DefiLlama', img: '/source-imgs/crop-defillama.webp' },
-  { id: 'equities', name: 'NYSE', img: '/source-imgs/crop-nasdaq.webp' },
-  { id: 'sports', name: 'Sports', img: '/source-imgs/crop-espn.webp' },
-  { id: 'twitch', name: 'Twitch', img: '/source-imgs/crop-twitch.webp' },
-  { id: 'github', name: 'GitHub', img: '/source-imgs/crop-github.webp' },
+const ROWS: Array<{ id: string; name: string; iconId: string }> = [
+  { id: 'polymarket', name: 'Polymarket', iconId: 'polymarket' },
+  { id: 'defillama', name: 'DefiLlama', iconId: 'defillama' },
+  { id: 'equities', name: 'NYSE', iconId: 'nasdaq' },
+  { id: 'sports', name: 'Sports', iconId: 'sports' },
+  { id: 'twitch', name: 'Twitch', iconId: 'twitch' },
+  { id: 'github', name: 'GitHub', iconId: 'github' },
 ]
 
 export function Watchlist() {
@@ -89,9 +89,10 @@ function WatchRow({
   item,
   fresh,
 }: {
-  item: { id: string; name: string; img: string }
+  item: { id: string; name: string; iconId: string }
   fresh: boolean
 }) {
+  const [broken, setBroken] = useState(false)
   return (
     <Link
       href={`/source/${item.id}` as never}
@@ -107,23 +108,39 @@ function WatchRow({
       }}
     >
       <span
-        className="relative shrink-0 overflow-hidden"
+        className="relative shrink-0 inline-flex items-center justify-center overflow-hidden"
         style={{
           width: 24,
           height: 24,
           borderRadius: 999,
-          background: 'rgba(0,0,0,0.04)',
+          background: '#f5f5f7',
         }}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={item.img}
-          alt=""
-          width={24}
-          height={24}
-          loading="lazy"
-          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-        />
+        {!broken ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={`/source-imgs/icons/${item.iconId}.png`}
+            alt=""
+            width={24}
+            height={24}
+            loading="lazy"
+            onError={() => setBroken(true)}
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+        ) : (
+          <span
+            aria-hidden
+            style={{
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: 11,
+              fontWeight: 600,
+              color: 'var(--apple-text)',
+              lineHeight: 1,
+            }}
+          >
+            {item.name.charAt(0).toUpperCase()}
+          </span>
+        )}
       </span>
       <span className="flex-1 truncate">{item.name}</span>
       {fresh && (

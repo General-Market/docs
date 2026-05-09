@@ -111,6 +111,7 @@ export function SourceDetailV2({ sourceId, initialSource, hideSidebar }: SourceD
       <div className="px-4 sm:px-6 lg:px-10 py-6 lg:py-10 flex flex-col gap-10 lg:gap-12">
         {/* Identity — renders synchronously from initialSource so the brand greets you before any data. */}
         <SourceIdentityCard
+          sourceId={source.id}
           name={source.name}
           description={source.description}
           category={source.category}
@@ -177,12 +178,14 @@ export function SourceDetailV2({ sourceId, initialSource, hideSidebar }: SourceD
  * introduces itself before the SSE has the courtesy to arrive.
  */
 function SourceIdentityCard({
+  sourceId,
   name,
   description,
   category,
   logo,
   brandBg,
 }: {
+  sourceId: string
   name: string
   description: string
   category: string
@@ -190,6 +193,7 @@ function SourceIdentityCard({
   brandBg: string
 }) {
   const [logoBroken, setLogoBroken] = useState(false)
+  const [iconBroken, setIconBroken] = useState(false)
   const hasLogo = !!logo && !logoBroken
 
   return (
@@ -201,9 +205,45 @@ function SourceIdentityCard({
         borderRadius: 'var(--apple-r-card)',
       }}
     >
+      {/* Mobile: round icon. Apple's circle treatment matches the search bar and watchlist. */}
+      <div
+        className="sm:hidden relative shrink-0 inline-flex items-center justify-center overflow-hidden"
+        style={{
+          width: 48,
+          height: 48,
+          background: '#f5f5f7',
+          borderRadius: 999,
+        }}
+        aria-hidden
+      >
+        {!iconBroken ? (
+          <Image
+            src={`/source-imgs/icons/${sourceId}.png`}
+            alt=""
+            width={48}
+            height={48}
+            className="object-cover"
+            unoptimized
+            onError={() => setIconBroken(true)}
+          />
+        ) : (
+          <span
+            style={{
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: 18,
+              fontWeight: 600,
+              color: 'var(--apple-text)',
+              lineHeight: 1,
+            }}
+          >
+            {name.charAt(0).toUpperCase()}
+          </span>
+        )}
+      </div>
+      {/* Desktop: brand-bg tile with the wide brand mark. */}
       {hasLogo && (
         <div
-          className="relative shrink-0 flex items-center justify-center overflow-hidden"
+          className="hidden sm:flex relative shrink-0 items-center justify-center overflow-hidden"
           style={{
             width: 64,
             height: 64,
