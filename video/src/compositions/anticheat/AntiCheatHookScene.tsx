@@ -37,15 +37,20 @@ const LID_CLOSED = new THREE.Quaternion(0, 0, 0, 1);
 const BEVELS_POS = new THREE.Vector3(-0.00012, 0.00824, -0.10401);
 const BEVELS_SCALE = new THREE.Vector3(0.27471, 0.27471, 0.27471);
 
-const PHONE_SCREEN_ASPECT = 9 / 19.5;
 const LAPTOP_SCREEN_ASPECT = 16 / 10;
 
-// World layout. Laptop sits at GLB origin (its native pose). Camera +
-// target dropped 0.6 world-units (≈10% of frame height) so the laptop
-// reads higher; the phone is shoved 1.5 units further canvas-right
-// (≈30%) and its y stays matched to the target so it sits at vertical
-// canvas-center.
-const PHONE_POS = new THREE.Vector3(-5.5, 2.9, 0);
+// World layout. Laptop sits at GLB origin natively; we wrap the whole
+// GLB clone in a Three group translated by LAPTOP_GROUP_OFFSET so the
+// laptop slides ~40% of canvas-width canvas-right while the camera
+// frame stays put (which keeps lighting and shadows undisturbed).
+// PHONE_POS is the phone's intended *world* position; iphone.position
+// is set to PHONE_POS minus the group offset so the phone ends up at
+// the same world spot regardless of the laptop shift.
+//
+// −0.71 nudge on PHONE_POS.x bumps the phone ≈8% canvas-left from the
+// previous pass.
+const LAPTOP_GROUP_OFFSET: [number, number, number] = [-3.56, 0, 0];
+const PHONE_POS = new THREE.Vector3(-4.79, 2.9, 0);
 
 // Camera between the two devices, looking forward into +z. Lower y
 // than the previous pass so the laptop body climbs back up the frame.
@@ -265,6 +270,215 @@ const PreviewScreen: React.FC<{
   return null;
 };
 
+// ── Phone chart — hand-drawn candlesticks. ─────────────────────────────────
+// Replaces the old phone broll video, which jittered frame-to-frame in a
+// way no real chart does. Light bg + Base-blue dot grid match the visual
+// language of the rest of the film. Pre-baked OHLC sequence with a deep
+// dump at index 11; the y-axis auto-fits the visible window and lerps
+// between candle-aligned states so the rescale never twitches. Each new
+// candle slides in from the right edge over CANDLE_PERIOD frames.
+
+type Candle = { o: number; h: number; l: number; c: number };
+
+const CHART_CANDLES: Candle[] = [
+  { o: 100.0, h: 101.5, l: 99.4, c: 101.0 },
+  { o: 101.0, h: 102.1, l: 100.2, c: 100.7 },
+  { o: 100.7, h: 101.8, l: 100.1, c: 101.6 },
+  { o: 101.6, h: 102.8, l: 101.2, c: 102.4 },
+  { o: 102.4, h: 102.7, l: 100.9, c: 101.1 },
+  { o: 101.1, h: 102.0, l: 100.4, c: 101.8 },
+  { o: 101.8, h: 102.5, l: 101.4, c: 101.6 },
+  { o: 101.6, h: 102.2, l: 100.5, c: 100.8 },
+  { o: 100.8, h: 101.4, l: 100.1, c: 101.0 },
+  { o: 101.0, h: 101.6, l: 100.2, c: 100.4 },
+  { o: 100.4, h: 100.6, l: 97.8, c: 98.2 }, // first crack
+  { o: 98.2, h: 98.8, l: 90.6, c: 91.2 }, // BIG DUMP
+  { o: 91.2, h: 93.4, l: 90.1, c: 92.9 },
+  { o: 92.9, h: 95.0, l: 92.4, c: 94.6 },
+  { o: 94.6, h: 95.4, l: 93.6, c: 93.9 },
+  { o: 93.9, h: 95.0, l: 93.2, c: 94.8 },
+  { o: 94.8, h: 96.4, l: 94.5, c: 96.1 },
+];
+
+const CHART_VISIBLE = 9;
+const CANDLE_PERIOD = 16; // frames per new candle — ~0.53s
+const CHART_W = 720;
+const CHART_H = 1560;
+
+const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+
+function chartRange(start: number, end: number) {
+  let lo = Infinity;
+  let hi = -Infinity;
+  for (let i = start; i < end; i++) {
+    if (i < 0 || i >= CHART_CANDLES.length) continue;
+    const c = CHART_CANDLES[i];
+    if (c.l < lo) lo = c.l;
+    if (c.h > hi) hi = c.h;
+  }
+  if (!isFinite(lo)) {
+    lo = CHART_CANDLES[0].l;
+    hi = CHART_CANDLES[0].h;
+  }
+  return { lo, hi };
+}
+
+function drawDotGrid(ctx: CanvasRenderingContext2D, w: number, h: number) {
+  const spacing = 24;
+  ctx.fillStyle = "rgba(0, 82, 255, 0.18)";
+  for (let y = spacing / 2; y < h; y += spacing) {
+    for (let x = spacing / 2; x < w; x += spacing) {
+      ctx.beginPath();
+      ctx.arc(x, y, 1.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+}
+
+function drawPhoneChart(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  frame: number,
+) {
+  // Background — light field that matches the rest of the film.
+  ctx.fillStyle = "#F0F2F4";
+  ctx.fillRect(0, 0, w, h);
+  drawDotGrid(ctx, w, h);
+
+  const t = frame / CANDLE_PERIOD;
+  const newest = Math.min(Math.floor(t), CHART_CANDLES.length - 1);
+  const slide = Math.min(1, Math.max(0, t - newest));
+
+  // Y-range auto-fit, smoothed by lerping between window-N and
+  // window-(N+1) so the rescale during the dump animates rather than
+  // snaps. With slide running 0→1 over CANDLE_PERIOD, the chart
+  // squeezes vertically *as* the new candle slides in.
+  const a = chartRange(newest - CHART_VISIBLE + 1, newest + 1);
+  const b = chartRange(newest - CHART_VISIBLE + 2, newest + 2);
+  const lo = lerp(a.lo, b.lo, slide);
+  const hi = lerp(a.hi, b.hi, slide);
+  const pad = (hi - lo) * 0.12;
+  const yMin = lo - pad;
+  const yMax = hi + pad;
+
+  // Header
+  ctx.fillStyle = "#0A0A0A";
+  ctx.font = "600 56px -apple-system, system-ui, sans-serif";
+  ctx.textAlign = "left";
+  ctx.fillText("BTC", 40, 110);
+  const last =
+    CHART_CANDLES[Math.min(newest, CHART_CANDLES.length - 1)].c;
+  const prev =
+    newest > 0
+      ? CHART_CANDLES[newest - 1].c
+      : CHART_CANDLES[0].o;
+  const isUp = last >= prev;
+  ctx.fillStyle = isUp ? "#0052FF" : "#E03B4A";
+  ctx.font = "700 64px ui-monospace, SFMono-Regular, monospace";
+  ctx.textAlign = "right";
+  ctx.fillText(last.toFixed(2), w - 40, 110);
+
+  // Chart area
+  const chartTop = 200;
+  const chartBottom = h - 220;
+  const chartLeft = 40;
+  const chartRight = w - 40;
+  const chartW = chartRight - chartLeft;
+  const chartH = chartBottom - chartTop;
+  const slotW = chartW / CHART_VISIBLE;
+  const candleW = slotW * 0.62;
+  const priceToY = (p: number) =>
+    chartTop + (1 - (p - yMin) / (yMax - yMin)) * chartH;
+
+  // Faint baseline at the first visible candle's open — gives the eye
+  // an anchor without clutter.
+  const baselineIdx = Math.max(0, newest - CHART_VISIBLE + 1);
+  const baselineY = priceToY(CHART_CANDLES[baselineIdx].o);
+  ctx.strokeStyle = "rgba(10, 10, 12, 0.10)";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(chartLeft, baselineY);
+  ctx.lineTo(chartRight, baselineY);
+  ctx.stroke();
+
+  // Candles. Each slot 0..VISIBLE-1 holds candle (newest - VISIBLE + 1 + slot).
+  // The whole row shifts left by `slide * slotW` so the newest candle
+  // enters from the right and the oldest exits left in lockstep.
+  for (let s = 0; s < CHART_VISIBLE + 1; s++) {
+    const idx = newest - CHART_VISIBLE + 1 + s;
+    if (idx < 0 || idx >= CHART_CANDLES.length) continue;
+    const c = CHART_CANDLES[idx];
+    const x = chartLeft + (s - slide + 0.5) * slotW;
+    if (x < chartLeft - candleW || x > chartRight + candleW) continue;
+
+    const yO = priceToY(c.o);
+    const yC = priceToY(c.c);
+    const yH = priceToY(c.h);
+    const yL = priceToY(c.l);
+    const isGreen = c.c >= c.o;
+    const color = isGreen ? "#0052FF" : "#E03B4A";
+
+    // Wick
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x, yH);
+    ctx.lineTo(x, yL);
+    ctx.stroke();
+
+    // Body
+    const bodyTop = Math.min(yO, yC);
+    const bodyH = Math.max(2, Math.abs(yC - yO));
+    ctx.fillStyle = color;
+    ctx.fillRect(x - candleW / 2, bodyTop, candleW, bodyH);
+  }
+
+  // Footer ticker — current change %
+  const changePct = ((last - CHART_CANDLES[0].o) / CHART_CANDLES[0].o) * 100;
+  ctx.fillStyle = changePct >= 0 ? "#0052FF" : "#E03B4A";
+  ctx.font = "600 40px ui-monospace, SFMono-Regular, monospace";
+  ctx.textAlign = "left";
+  ctx.fillText(
+    `${changePct >= 0 ? "+" : ""}${changePct.toFixed(2)}%`,
+    40,
+    h - 80,
+  );
+}
+
+const PhoneChart: React.FC<{
+  mesh: THREE.Mesh | null;
+  emissiveIntensity: number;
+  brightness: number;
+  frame: number;
+}> = ({ mesh, emissiveIntensity, brightness, frame }) => {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const textureRef = useRef<THREE.CanvasTexture | null>(null);
+
+  if (!canvasRef.current) {
+    const c = document.createElement("canvas");
+    c.width = CHART_W;
+    c.height = CHART_H;
+    canvasRef.current = c;
+    const tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    textureRef.current = tex;
+  }
+
+  useEffect(() => {
+    if (!mesh || !textureRef.current) return;
+    bindTexture(mesh, textureRef.current, emissiveIntensity, brightness);
+  }, [mesh, emissiveIntensity, brightness]);
+
+  const ctx = canvasRef.current.getContext("2d");
+  if (ctx) {
+    drawPhoneChart(ctx, CHART_W, CHART_H, frame);
+    if (textureRef.current) textureRef.current.needsUpdate = true;
+  }
+
+  return null;
+};
+
 // ── Main scene ───────────────────────────────────────────────────────────────
 
 export type BrollSegment = {
@@ -276,21 +490,15 @@ export type BrollSegment = {
 
 const Scene: React.FC<{
   laptopSegments: BrollSegment[];
-  phoneSegments: BrollSegment[];
   laptopBrollAspect: number;
-  phoneBrollAspect: number;
   laptopVideoRef: React.RefObject<HTMLVideoElement | null>;
-  phoneVideoRef: React.RefObject<HTMLVideoElement | null>;
   emissiveIntensity: number;
   lightingIntensity: number;
   frame: number;
 }> = ({
   laptopSegments,
-  phoneSegments,
   laptopBrollAspect,
-  phoneBrollAspect,
   laptopVideoRef,
-  phoneVideoRef,
   emissiveIntensity,
   lightingIntensity,
   frame,
@@ -397,7 +605,13 @@ const Scene: React.FC<{
 
   const iphone = sceneClone.getObjectByName("iphone");
   if (iphone) {
-    iphone.position.copy(PHONE_POS);
+    // Counter-translate against LAPTOP_GROUP_OFFSET so the phone ends
+    // up at world PHONE_POS regardless of the laptop's group shift.
+    iphone.position.set(
+      PHONE_POS.x - LAPTOP_GROUP_OFFSET[0],
+      PHONE_POS.y - LAPTOP_GROUP_OFFSET[1],
+      PHONE_POS.z - LAPTOP_GROUP_OFFSET[2],
+    );
     iphone.position.x += phoneSlideX;
     iphone.scale.setScalar(PHONE_BASE_SCALE * phoneZoomCorrection);
     // lookAt aligns the object's local -Z with the camera. This GLB
@@ -429,7 +643,9 @@ const Scene: React.FC<{
 
   return (
     <>
-      <primitive object={sceneClone} />
+      <group position={LAPTOP_GROUP_OFFSET}>
+        <primitive object={sceneClone} />
+      </group>
       <React.Suspense fallback={null}>
         {env.isRendering
           ? laptopSegments.map((seg, i) => (
@@ -460,35 +676,14 @@ const Scene: React.FC<{
               frame={frame}
             />
           )}
-        {env.isRendering
-          ? phoneSegments.map((seg, i) => (
-              <Sequence
-                key={`p-${i}`}
-                from={seg.from - seg.startFrom}
-                durationInFrames={seg.durationInFrames + seg.startFrom}
-                layout="none"
-              >
-                <RenderedScreen
-                  mesh={phoneScreen}
-                  broll={seg.url}
-                  brollAspect={phoneBrollAspect}
-                  screenAspect={PHONE_SCREEN_ASPECT}
-                  emissiveIntensity={emissiveIntensity}
-                  brightness={phoneBrightness}
-                />
-              </Sequence>
-            ))
-          : (
-            <PreviewScreen
-              mesh={phoneScreen}
-              videoRef={phoneVideoRef}
-              canvasW={720}
-              canvasH={1560}
-              emissiveIntensity={emissiveIntensity}
-              brightness={phoneBrightness}
-              frame={frame}
-            />
-          )}
+        {/* Phone screen draws a hand-rendered candle chart instead of a
+         * broll video — fixes the per-frame jitter the source had. */}
+        <PhoneChart
+          mesh={phoneScreen}
+          emissiveIntensity={emissiveIntensity}
+          brightness={phoneBrightness}
+          frame={frame}
+        />
       </React.Suspense>
       {/* Apartment preset is warmer + softer than studio. Combined with
           a gentler key light and a lower exposure pass, the screens
@@ -515,9 +710,7 @@ const Scene: React.FC<{
 
 export type AntiCheatSceneProps = {
   laptopSegments: BrollSegment[];
-  phoneSegments: BrollSegment[];
   laptopBrollAspect?: number;
-  phoneBrollAspect?: number;
   width?: number;
   height?: number;
   emissiveIntensity?: number;
@@ -553,9 +746,7 @@ const PreviewVideo: React.FC<{
 
 export const AntiCheatHookScene: React.FC<AntiCheatSceneProps> = ({
   laptopSegments,
-  phoneSegments,
   laptopBrollAspect = 16 / 9,
-  phoneBrollAspect = 720 / 1560,
   width = 1920,
   height = 1080,
   emissiveIntensity = 1.6,
@@ -563,7 +754,6 @@ export const AntiCheatHookScene: React.FC<AntiCheatSceneProps> = ({
 }) => {
   const frame = useCurrentFrame();
   const laptopVideoRef = useRef<HTMLVideoElement | null>(null);
-  const phoneVideoRef = useRef<HTMLVideoElement | null>(null);
   const env = useRemotionEnvironment();
 
   return (
@@ -575,13 +765,6 @@ export const AntiCheatHookScene: React.FC<AntiCheatSceneProps> = ({
               key={`l-${i}`}
               segment={seg}
               videoRef={laptopVideoRef}
-            />
-          ))}
-          {phoneSegments.map((seg, i) => (
-            <PreviewVideo
-              key={`p-${i}`}
-              segment={seg}
-              videoRef={phoneVideoRef}
             />
           ))}
         </>
@@ -607,11 +790,8 @@ export const AntiCheatHookScene: React.FC<AntiCheatSceneProps> = ({
         <React.Suspense fallback={null}>
           <Scene
             laptopSegments={laptopSegments}
-            phoneSegments={phoneSegments}
             laptopBrollAspect={laptopBrollAspect}
-            phoneBrollAspect={phoneBrollAspect}
             laptopVideoRef={laptopVideoRef}
-            phoneVideoRef={phoneVideoRef}
             emissiveIntensity={emissiveIntensity}
             lightingIntensity={lightingIntensity}
             frame={frame}

@@ -31,8 +31,6 @@ const LAPTOP_CLIP_CUTS = { mid: 69, late: 146 } as const;
 // in action.
 const LAPTOP_CS2_START_FROM = 45;
 
-const PHONE_BROLL = staticFile("cheat-broll/phone-trading.mp4");
-
 export type BrollSegment = {
   url: string;
   from: number; // composition frame at which this segment owns the screen
@@ -58,19 +56,6 @@ const LAPTOP_SEGMENTS: BrollSegment[] = [
     from: LAPTOP_CLIP_CUTS.late,
     durationInFrames: 254 - LAPTOP_CLIP_CUTS.late,
     startFrom: 0,
-  },
-];
-
-// Phone broll also has a dark intro before the trading chart appears.
-// Skip ~2s so the chart is on screen at frame 0.
-const PHONE_BROLL_START_FROM = 60;
-
-const PHONE_SEGMENTS: BrollSegment[] = [
-  {
-    url: PHONE_BROLL,
-    from: 0,
-    durationInFrames: 254,
-    startFrom: PHONE_BROLL_START_FROM,
   },
 ];
 
@@ -127,9 +112,7 @@ export const AntiCheatHook: React.FC = () => {
         {/* ── Single dual-device 3D scene underneath everything ── */}
         <AntiCheatHookScene
           laptopSegments={LAPTOP_SEGMENTS}
-          phoneSegments={PHONE_SEGMENTS}
           laptopBrollAspect={16 / 9}
-          phoneBrollAspect={720 / 1560}
           width={W}
           height={H}
           emissiveIntensity={0.7}
