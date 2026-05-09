@@ -9,7 +9,10 @@
 //   · Color: movement-driven. Up = system green (#34c759) at 0.85 alpha. Down = system red (#ff3b30).
 //     Flat/fallback = muted slate. Caller can override with explicit stroke/fill.
 //   · Right-edge dot: 3px filled circle, same color as line, no border
-//   · Curve: quadratic Bézier midpoint smoothing — clean, no overshoot, no library
+//   · Curve: Fritsch-Carlson monotone cubic spline — same algorithm as the
+//     full NavChart. Preserves local extrema, doesn't overshoot, and the
+//     shape matches between the source page sparkline and the vault detail
+//     chart for identical data.
 //   · Baseline: invisible — axis is implied, not drawn (Apple HIG: "omit axis lines on sparklines")
 //   · Padding: 12px top + bottom so curves never kiss the SVG edges
 //   · Gradient id: encode stroke + dimensions to avoid collision when multiple instances share a DOM
@@ -27,24 +30,55 @@ type SparklineProps = {
 }
 
 /**
- * Build a smooth path through points using quadratic Bezier curves.
- * Each segment ends at the midpoint between successive points — the classic
- * Apple Stocks smoothing. Clean, no overshoot, no library.
+ * Fritsch-Carlson monotone cubic spline. Identical to the algorithm in
+ * NavChart so the source-page sparkline and the vault-detail chart trace
+ * the same curve through the same points.
  */
 function smoothPath(pts: ReadonlyArray<readonly [number, number]>): string {
   if (pts.length === 0) return ''
   if (pts.length === 1) return `M${pts[0][0]} ${pts[0][1]}`
-  let d = `M${pts[0][0]} ${pts[0][1]}`
-  for (let i = 1; i < pts.length - 1; i++) {
-    const [x0, y0] = pts[i]
-    const [x1, y1] = pts[i + 1]
-    const mx = (x0 + x1) / 2
-    const my = (y0 + y1) / 2
-    d += ` Q${x0} ${y0} ${mx} ${my}`
+  if (pts.length === 2) return `M${pts[0][0]},${pts[0][1]}L${pts[1][0]},${pts[1][1]}`
+  const n = pts.length
+  const dx: number[] = []
+  const dy: number[] = []
+  const m: number[] = []
+  for (let i = 0; i < n - 1; i++) {
+    dx.push(pts[i + 1][0] - pts[i][0])
+    dy.push(pts[i + 1][1] - pts[i][1])
+    m.push(dy[i] / (dx[i] || 1e-9))
   }
-  const last = pts[pts.length - 1]
-  d += ` T${last[0]} ${last[1]}`
-  return d
+  const tg: number[] = [m[0]]
+  for (let i = 1; i < n - 1; i++) {
+    tg.push(m[i - 1] * m[i] <= 0 ? 0 : (m[i - 1] + m[i]) / 2)
+  }
+  tg.push(m[n - 2])
+  for (let i = 0; i < n - 1; i++) {
+    if (Math.abs(m[i]) < 1e-6) {
+      tg[i] = 0
+      tg[i + 1] = 0
+      continue
+    }
+    const a = tg[i] / m[i]
+    const b = tg[i + 1] / m[i]
+    const s = a * a + b * b
+    if (s > 9) {
+      const t = 3 / Math.sqrt(s)
+      tg[i] = t * a * m[i]
+      tg[i + 1] = t * b * m[i]
+    }
+  }
+  const parts: string[] = [`M${pts[0][0].toFixed(2)},${pts[0][1].toFixed(2)}`]
+  for (let i = 0; i < n - 1; i++) {
+    const d = dx[i] / 3
+    const cp1x = (pts[i][0] + d).toFixed(2)
+    const cp1y = (pts[i][1] + tg[i] * d).toFixed(2)
+    const cp2x = (pts[i + 1][0] - d).toFixed(2)
+    const cp2y = (pts[i + 1][1] - tg[i + 1] * d).toFixed(2)
+    const ex = pts[i + 1][0].toFixed(2)
+    const ey = pts[i + 1][1].toFixed(2)
+    parts.push(`C${cp1x},${cp1y} ${cp2x},${cp2y} ${ex},${ey}`)
+  }
+  return parts.join(' ')
 }
 
 function buildPath(

@@ -11,11 +11,6 @@
  */
 
 import { useEffect, useMemo, useState, useCallback } from 'react'
-import { useAccount, useWriteContract } from 'wagmi'
-import { VISION_ABI } from '@/lib/contracts/vision-abi'
-import deployment from '@/lib/contracts/deployment.json'
-
-const VISION_ADDRESS = (deployment as any).contracts?.Vision as `0x${string}`
 
 type RoundStatus = 'pending' | 'settled' | 'refundable' | 'refunded'
 
@@ -221,7 +216,7 @@ export function VaultRoundHistory({ vaultAddress }: Props) {
       ) : sorted.length === 0 ? (
         <EmptyState text="No rounds in the lookback window." />
       ) : (
-        <RoundsTable rows={sorted.slice(0, 50)} onRefunded={fetchRounds} />
+        <RoundsTable rows={sorted.slice(0, 50)} />
       )}
 
       {sorted.length > 50 && (
@@ -231,7 +226,7 @@ export function VaultRoundHistory({ vaultAddress }: Props) {
   )
 }
 
-function RoundsTable({ rows, onRefunded }: { rows: RoundRow[]; onRefunded: () => void }) {
+function RoundsTable({ rows }: { rows: RoundRow[] }) {
   return (
     <div
       style={{
@@ -264,7 +259,6 @@ function RoundsTable({ rows, onRefunded }: { rows: RoundRow[]; onRefunded: () =>
           key={`${r.batchId}-${r.joinBlock}-${i}`}
           row={r}
           isLast={i === rows.length - 1}
-          onRefunded={onRefunded}
         />
       ))}
     </div>
@@ -274,11 +268,9 @@ function RoundsTable({ rows, onRefunded }: { rows: RoundRow[]; onRefunded: () =>
 function RoundRowView({
   row,
   isLast,
-  onRefunded,
 }: {
   row: RoundRow
   isLast: boolean
-  onRefunded: () => void
 }) {
   const pnl = fmtPnl(row.pnl)
   return (
@@ -321,7 +313,7 @@ function RoundRowView({
       </span>
       <span style={cellRight}>
         {row.status === 'refundable' ? (
-          <ClaimRefundButton batchId={row.batchId} onSuccess={onRefunded} />
+          <AutoClaimHint />
         ) : (
           <span style={{ color: 'var(--apple-text-tertiary)' }}>—</span>
         )}
@@ -372,65 +364,13 @@ function StatusPill({
   )
 }
 
-function ClaimRefundButton({ batchId, onSuccess }: { batchId: string; onSuccess: () => void }) {
-  const { isConnected } = useAccount()
-  const { writeContractAsync, isPending } = useWriteContract()
-  const [error, setError] = useState<string | null>(null)
-
-  const handleClick = useCallback(async () => {
-    setError(null)
-    try {
-      await writeContractAsync({
-        address: VISION_ADDRESS,
-        abi: VISION_ABI,
-        functionName: 'claimRefund',
-        args: [BigInt(batchId)],
-      })
-      // Give the indexer a moment, then refresh.
-      setTimeout(onSuccess, 2000)
-    } catch (e) {
-      setError(e instanceof Error ? e.message.slice(0, 80) : 'claim failed')
-    }
-  }, [batchId, writeContractAsync, onSuccess])
-
-  // Keeper auto-claims on its next poll cycle. The button is here as a
-  // fallback in case the keeper is slow or down — but no-wallet users see
-  // the keeper-status hint, not a useless prompt.
-  if (!isConnected) {
-    return (
-      <span
-        style={{ color: 'var(--apple-text-tertiary)', fontSize: 11 }}
-        title="The vision-keeper service auto-claims refundable rounds. This row will resolve on the next keeper poll cycle (~60s)."
-      >
-        Auto-claim pending
-      </span>
-    )
-  }
-
+function AutoClaimHint() {
   return (
-    <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
-      <button
-        type="button"
-        onClick={handleClick}
-        disabled={isPending}
-        style={{
-          fontFamily: 'var(--apple-font-text)',
-          fontSize: 12,
-          fontWeight: 600,
-          letterSpacing: 'var(--apple-track-tight)',
-          padding: '4px 12px',
-          borderRadius: 'var(--apple-r-pill,980px)',
-          border: '1px solid rgb(178,90,0)',
-          background: isPending ? 'rgba(255,159,10,0.10)' : 'rgb(255,159,10)',
-          color: isPending ? 'rgb(178,90,0)' : '#fff',
-          cursor: isPending ? 'wait' : 'pointer',
-        }}
-      >
-        {isPending ? 'Claiming…' : 'Claim refund'}
-      </button>
-      {error && (
-        <span style={{ color: 'rgb(255,59,48)', fontSize: 10 }}>{error}</span>
-      )}
+    <span
+      style={{ color: 'var(--apple-text-tertiary)', fontSize: 11 }}
+      title="The vision-keeper service auto-claims refundable rounds. This row will resolve on the next keeper poll cycle (~60s)."
+    >
+      Auto-claim pending
     </span>
   )
 }
