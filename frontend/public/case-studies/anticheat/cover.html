@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Cover · The Anti-Cheat</title>
+<style>
+:root {
+  --ink: #1D1D1F;
+  --ink-2: #424245;
+  --ink-3: #6E6E73;
+  --paper: #FFFFFF;
+  --rule: #D2D2D7;
+  --blue: #0071E3;
+  --display: "SF Pro Display", "Inter", "Helvetica Neue", -apple-system, BlinkMacSystemFont, sans-serif;
+  --serif: "New York", "Times New Roman", Georgia, serif;
+  --mono: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1200px; height: 675px; background: var(--paper); }
+body {
+  font-family: var(--display);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: var(--ink);
+  letter-spacing: -0.022em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.frame {
+  width: 1200px;
+  height: 675px;
+  background: var(--blue);
+  padding: 22px;
+}
+.inner {
+  width: 100%;
+  height: 100%;
+  background: var(--paper);
+  border-radius: 14px;
+  padding: 64px 72px;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  position: relative;
+  overflow: hidden;
+}
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 16px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--blue);
+  font-weight: 700;
+}
+.content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.pretitle {
+  font-family: var(--display);
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: -0.018em;
+  color: var(--ink-2);
+  margin-bottom: 16px;
+  line-height: 1.2;
+}
+.title {
+  font-family: var(--display);
+  font-size: 156px;
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  line-height: 0.92;
+  color: var(--ink);
+  margin-bottom: 24px;
+}
+.title em {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 500;
+  letter-spacing: -0.028em;
+  color: var(--blue);
+}
+.sub {
+  font-family: var(--display);
+  font-size: 24px;
+  font-weight: 500;
+  letter-spacing: -0.012em;
+  color: var(--ink-2);
+  line-height: 1.35;
+  max-width: 880px;
+}
+.foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.pills { display: flex; gap: 10px; }
+.pill {
+  font-family: var(--mono);
+  font-size: 14px;
+  letter-spacing: 0.12em;
+  color: var(--ink);
+  border: 1.5px solid var(--ink);
+  padding: 8px 16px;
+  border-radius: 980px;
+  font-weight: 600;
+}
+.arrow {
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--blue);
+  letter-spacing: -0.01em;
+}
+.signature {
+  position: absolute;
+  bottom: 18px;
+  right: 24px;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--ink-3);
+  letter-spacing: 0.05em;
+  font-weight: 500;
+}
+</style>
+</head>
+<body>
+<div class="frame">
+  <div class="inner">
+    <div class="eyebrow">GENERAL MARKET · CASE STUDY № 002</div>
+    <div class="content">
+      <div class="pretitle">Trading has 8 named exploits.</div>
+      <div class="title">The <em>Anti-Cheat</em>.</div>
+      <div class="sub">Video games solved all of them between 1992 and 2020. We did the embarrassing thing — we read the literature.</div>
+    </div>
+    <div class="foot">
+      <div class="pills">
+        <span class="pill">QUAKE 1996</span>
+        <span class="pill">STARCRAFT 1998</span>
+        <span class="pill">VANGUARD 2020</span>
+      </div>
+      <div class="arrow">read at generalmarket.io →</div>
+    </div>
+    <div class="signature">@generalmarket</div>
+  </div>
+</div>
+</body>
+</html>
