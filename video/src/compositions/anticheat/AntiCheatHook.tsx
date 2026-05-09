@@ -10,7 +10,7 @@ import {
 } from "remotion";
 import { font } from "../../common/fonts";
 import { AntiCheatHookScene } from "./AntiCheatHookScene";
-import { FPS, H, W } from "./theme";
+import { FPS, H, W, colors } from "./theme";
 
 const BROLL = {
   // minecraft-killaura-clean has the opening + disclaimer strip removed
@@ -107,7 +107,7 @@ export const AntiCheatHook: React.FC = () => {
   // scale with the devices.
 
   return (
-    <AbsoluteFill style={{ backgroundColor: "#0a0a0a", fontFamily: font }}>
+    <AbsoluteFill style={{ backgroundColor: colors.bg, fontFamily: font }}>
       <AbsoluteFill>
         {/* ── Single dual-device 3D scene underneath everything ── */}
         <AntiCheatHookScene
@@ -194,6 +194,10 @@ export const AntiCheatHook: React.FC = () => {
 
 // ─── Strip darkening — top + bottom edges, keeps text legible ──────────────────
 
+// Light-mode strip: top + bottom fade to the page background so the
+// dark headline / pair labels sit on a clean light field without the
+// 3D scene bleeding through behind them. Right-panel variant adds a
+// faint red tint so the "When you trade" half reads warmer.
 const StripDarken: React.FC<{ tint?: string }> = ({ tint }) => (
   <div
     style={{
@@ -201,8 +205,8 @@ const StripDarken: React.FC<{ tint?: string }> = ({ tint }) => (
       inset: 0,
       pointerEvents: "none",
       background: tint
-        ? `linear-gradient(180deg, rgba(10,10,10,0.82) 0%, rgba(10,10,10,0.0) 28%, rgba(10,10,10,0.0) 52%, rgba(10,10,10,0.78) 78%, rgba(10,10,10,0.94) 100%), linear-gradient(180deg, rgba(255,59,59,0.04), rgba(255,59,59,0.0))`
-        : `linear-gradient(180deg, rgba(10,10,10,0.82) 0%, rgba(10,10,10,0.0) 28%, rgba(10,10,10,0.0) 52%, rgba(10,10,10,0.78) 78%, rgba(10,10,10,0.94) 100%)`,
+        ? `linear-gradient(180deg, rgba(240,242,244,0.95) 0%, rgba(240,242,244,0.0) 28%, rgba(240,242,244,0.0) 52%, rgba(240,242,244,0.92) 78%, rgba(240,242,244,1.0) 100%), linear-gradient(180deg, rgba(224,59,74,0.06), rgba(224,59,74,0.0) 40%, rgba(224,59,74,0.0) 60%, rgba(224,59,74,0.06))`
+        : `linear-gradient(180deg, rgba(240,242,244,0.95) 0%, rgba(240,242,244,0.0) 28%, rgba(240,242,244,0.0) 52%, rgba(240,242,244,0.92) 78%, rgba(240,242,244,1.0) 100%)`,
     }}
   />
 );
@@ -255,9 +259,8 @@ const PanelLabel: React.FC<{
           fontSize: 124,
           fontWeight: 800,
           letterSpacing: "-0.04em",
-          color: tint ?? "#f5f5f5",
+          color: tint ?? colors.fg,
           lineHeight: 0.95,
-          textShadow: "0 4px 28px rgba(0,0,0,0.65)",
         }}
       >
         {eyebrow}
@@ -328,9 +331,9 @@ const PairList: React.FC<{
               fontSize: 76,
               fontWeight: 700,
               letterSpacing: "-0.03em",
-              color: tint ?? "#f5f5f5",
+              color: tint ?? colors.fg,
               textShadow:
-                "0 2px 6px rgba(0,0,0,0.95), 0 6px 22px rgba(0,0,0,0.8), 0 12px 40px rgba(0,0,0,0.55)",
+                "0 1px 0 rgba(255,255,255,0.7), 0 2px 18px rgba(240,242,244,0.65)",
             }}
           >
             {pair[field]}
@@ -371,7 +374,7 @@ const RevealLines: React.FC = () => {
       style={{
         justifyContent: "center",
         alignItems: "center",
-        background: "rgba(10,10,10,0.78)",
+        background: "rgba(240,242,244,0.88)",
         backdropFilter: "blur(2px)",
         transform: `translate(${shakeX}px, ${shakeY}px)`,
       }}
@@ -383,7 +386,7 @@ const RevealLines: React.FC = () => {
           fontSize: 100,
           letterSpacing: "-0.025em",
           textAlign: "center",
-          color: "#f5f5f5",
+          color: colors.fg,
           lineHeight: 1.12,
         }}
       >
@@ -400,7 +403,7 @@ const RevealLines: React.FC = () => {
           exitAt={LINE_EXIT_AT}
           exitDir="right"
           frame={frame}
-          color="#ff3b3b"
+          color="#E03B4A"
           marginTop={20}
         />
       </div>
@@ -441,7 +444,7 @@ const DepthLine: React.FC<{
         transformOrigin: "50% 50%",
         filter: enterBlur > 0.05 ? `blur(${enterBlur.toFixed(2)}px)` : "none",
         opacity: enterOp,
-        color: color ?? "#f5f5f5",
+        color: color ?? colors.fg,
         marginTop: marginTop ?? 0,
         willChange: "transform, opacity, filter",
       }}
