@@ -10,6 +10,7 @@ type Submission = {
   telegram?: string
   email?: string
   protection_from?: string | string[]
+  has_invite?: string
   invite?: string
   volume?: string
   affiliate?: string
@@ -32,6 +33,38 @@ function getPool(): Pool | null {
   _pool = new Pool({ connectionString: url, max: 4, idleTimeoutMillis: 30_000 })
   _pool.on('error', (err) => console.error('[waitlist] pg pool error', err))
   return _pool
+}
+
+// Schema converges to what the route inserts. CREATE IF NOT EXISTS is
+// the floor; ALTER lines backfill columns added after the table was
+// first provisioned (eg. has_invite, wallet).
+let _schemaReady = false
+async function ensureSchema(pool: Pool): Promise<void> {
+  if (_schemaReady) return
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS submissions (
+      id              BIGSERIAL PRIMARY KEY,
+      twitter         TEXT,
+      telegram        TEXT,
+      email           TEXT,
+      protection_from TEXT[] DEFAULT '{}'::TEXT[],
+      has_invite      TEXT,
+      invite          TEXT,
+      volume          TEXT,
+      affiliate       TEXT,
+      reach           TEXT,
+      notes           TEXT,
+      wallet          TEXT,
+      ip              TEXT,
+      ua              TEXT,
+      created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    ALTER TABLE submissions ADD COLUMN IF NOT EXISTS has_invite TEXT;
+    ALTER TABLE submissions ADD COLUMN IF NOT EXISTS wallet     TEXT;
+    CREATE UNIQUE INDEX IF NOT EXISTS submissions_email_lower_uniq
+      ON submissions ((lower(email)));
+  `)
+  _schemaReady = true
 }
 
 function clean(s: unknown): string {
@@ -79,11 +112,13 @@ export async function POST(req: NextRequest) {
     telegram: normalizeHandle(clean(body.telegram)),
     email: clean(body.email).toLowerCase(),
     protection_from: protection,
+    has_invite: clean(body.has_invite),
     invite: clean(body.invite),
     volume: clean(body.volume),
     affiliate: clean(body.affiliate),
     reach: clean(body.reach),
     notes: clean(body.notes),
+    wallet: clean(body.wallet),
   }
 
   if (!data.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
@@ -103,10 +138,11 @@ export async function POST(req: NextRequest) {
   const pool = getPool()
   try {
     if (pool) {
+      await ensureSchema(pool)
       const res = await pool.query(
         `INSERT INTO submissions
-           (twitter, telegram, email, protection_from, invite, volume, affiliate, reach, notes, ip, ua)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+           (twitter, telegram, email, protection_from, has_invite, invite, volume, affiliate, reach, notes, wallet, ip, ua)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
          ON CONFLICT (lower(email)) DO NOTHING
          RETURNING id`,
         [
@@ -114,11 +150,13 @@ export async function POST(req: NextRequest) {
           data.telegram,
           data.email,
           data.protection_from,
+          data.has_invite,
           data.invite,
           data.volume,
           data.affiliate,
           data.reach,
           data.notes,
+          data.wallet,
           ip,
           ua,
         ],

@@ -302,6 +302,10 @@ function HandleBadge({
     setFailed(false)
   }, [pfpUrl])
 
+  // Render the avatar only when the image actually loads. If it errors,
+  // the pill collapses to just the @handle — no empty grey ghost.
+  const showAvatar = Boolean(pfpUrl) && !failed && loaded
+
   return (
     <AnimatePresence>
       {handle && (
@@ -310,29 +314,21 @@ function HandleBadge({
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -8, scale: 0.96 }}
           transition={springs.entrance}
-          className="fixed right-5 top-5 z-30 flex items-center gap-2.5 rounded-full bg-white/90 px-3 py-1.5 shadow-[0_2px_8px_rgba(10,10,12,0.06)] backdrop-blur sm:right-7 sm:top-7"
+          className="fixed right-5 top-5 z-30 flex items-center gap-2 rounded-full bg-white/90 px-3 py-1.5 shadow-[0_2px_8px_rgba(10,10,12,0.06)] backdrop-blur sm:right-7 sm:top-7"
           style={{ border: `1px solid ${RULE}` }}
         >
-          <div className="relative h-7 w-7 overflow-hidden rounded-full" style={{ background: '#E6E8EC' }}>
-            {pfpUrl && !failed && (
-              <img
-                src={pfpUrl}
-                alt=""
-                width={28}
-                height={28}
-                referrerPolicy="no-referrer"
-                onLoad={() => setLoaded(true)}
-                onError={() => setFailed(true)}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                  opacity: loaded ? 1 : 0,
-                  transition: 'opacity 240ms ease',
-                }}
-              />
-            )}
-          </div>
+          {pfpUrl && !failed && (
+            <img
+              src={pfpUrl}
+              alt=""
+              width={28}
+              height={28}
+              referrerPolicy="no-referrer"
+              onLoad={() => setLoaded(true)}
+              onError={() => setFailed(true)}
+              className={showAvatar ? 'h-7 w-7 rounded-full object-cover' : 'hidden'}
+            />
+          )}
           <span className="pr-1 font-mono text-[12px] tabular-nums" style={{ color: FG_SOFT }}>
             @{handle}
           </span>
@@ -354,6 +350,8 @@ function EnemyPill({ enemy }: { enemy: Enemy }) {
   const [loaded, setLoaded] = useState(false)
   const [failed, setFailed] = useState(false)
   const src = `https://unavatar.io/x/${encodeURIComponent(enemy.handle)}`
+  const showAvatar = !failed && loaded
+
   return (
     <motion.div
       layout
@@ -365,26 +363,30 @@ function EnemyPill({ enemy }: { enemy: Enemy }) {
       style={{ border: `1px solid ${RULE}` }}
       title={`Shielded from ${enemy.label}`}
     >
-      <div className="relative h-6 w-6 overflow-hidden rounded-full" style={{ background: '#E6E8EC' }}>
-        {!failed && (
-          <img
-            src={src}
-            alt=""
-            width={24}
-            height={24}
-            referrerPolicy="no-referrer"
-            onLoad={() => setLoaded(true)}
-            onError={() => setFailed(true)}
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              opacity: loaded ? 1 : 0,
-              transition: 'opacity 220ms ease',
-            }}
-          />
-        )}
-      </div>
+      {!failed && (
+        <img
+          src={src}
+          alt=""
+          width={24}
+          height={24}
+          referrerPolicy="no-referrer"
+          onLoad={() => setLoaded(true)}
+          onError={() => setFailed(true)}
+          className={showAvatar ? 'h-6 w-6 rounded-full object-cover' : 'hidden'}
+        />
+      )}
+      <span
+        aria-hidden
+        className="inline-flex h-4 w-4 items-center justify-center rounded-full"
+        style={{
+          background: '#9A1F2D',
+          color: '#FFFFFF',
+        }}
+      >
+        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+          <path d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </span>
       <span
         className="font-mono text-[11px] tabular-nums"
         style={{
@@ -409,21 +411,19 @@ function EnemyStack({
 }) {
   const items = selected.map((k) => ENEMIES[k]).filter(Boolean)
   if (items.length === 0) return null
+  // The pill row only fits cleanly to the right of the form sheet on
+  // wide viewports — anywhere narrower than `lg` (1024px) and the pills
+  // collide with the question itself. Below that, the strikethrough on
+  // the option labels does the work.
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
-      className="fixed right-5 z-30 flex flex-col items-end gap-1.5 sm:right-7"
-      style={{ top: hasUserBadge ? 64 : 20 }}
+      className="fixed right-7 z-30 hidden flex-col items-end gap-1.5 lg:flex"
+      style={{ top: hasUserBadge ? 70 : 20 }}
     >
-      <div
-        className="font-mono text-[10px] uppercase tracking-[0.18em]"
-        style={{ color: DIM }}
-      >
-        Shielded from
-      </div>
       <AnimatePresence>
         {items.map((enemy) => (
           <EnemyPill key={enemy.handle} enemy={enemy} />
@@ -542,6 +542,7 @@ export default function WaitlistForm() {
   function onKeyDown(e: React.KeyboardEvent) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
+      stepSound()
       void advance()
     }
   }
@@ -1321,7 +1322,10 @@ function Verdict({
     return () => clearTimeout(t)
   }, [whitelisted])
 
-  const showAvatar = Boolean(pfpUrl) && !pfpFailed
+  // Only show the avatar circle when the image actually loaded.
+  // If unavatar can't resolve a real PFP and the image errors, we
+  // collapse the whole disc — the @handle below carries the identity.
+  const avatarReady = Boolean(pfpUrl) && !pfpFailed && pfpLoaded
 
   return (
     <div className="relative flex min-h-[100dvh] flex-col items-center justify-center px-6 py-24" style={{ color: FG }}>
@@ -1339,54 +1343,62 @@ function Verdict({
             : hasCode ? 'Code on file' : 'Verdict'}
         </motion.div>
 
+        {pfpUrl && !pfpFailed && (
+          <img
+            src={pfpUrl}
+            alt={handle ? `@${handle}` : ''}
+            width={144}
+            height={144}
+            referrerPolicy="no-referrer"
+            onLoad={() => setPfpLoaded(true)}
+            onError={() => setPfpFailed(true)}
+            className="hidden"
+          />
+        )}
+
         <motion.div
           initial={{ opacity: 0, scale: 0.94, filter: 'blur(8px)' }}
           animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
           transition={{ duration: 0.55, ease: [0.4, 0, 0.6, 1], delay: 0.15 }}
           className="relative mt-9"
         >
-          <div
-            className="overflow-hidden rounded-full"
-            style={{
-              width: 144,
-              height: 144,
-              border: `1px solid ${RULE}`,
-              background: '#E6E8EC',
-              boxShadow:
-                '0 1px 2px rgba(10,10,12,0.05), 0 22px 50px -16px rgba(10,10,12,0.18)',
-            }}
-          >
-            {showAvatar && pfpUrl && (
+          {avatarReady && pfpUrl && (
+            <div
+              className="overflow-hidden rounded-full"
+              style={{
+                width: 144,
+                height: 144,
+                border: `1px solid ${RULE}`,
+                background: '#E6E8EC',
+                boxShadow:
+                  '0 1px 2px rgba(10,10,12,0.05), 0 22px 50px -16px rgba(10,10,12,0.18)',
+              }}
+            >
               <img
                 src={pfpUrl}
                 alt={handle ? `@${handle}` : ''}
                 width={144}
                 height={144}
                 referrerPolicy="no-referrer"
-                onLoad={() => setPfpLoaded(true)}
-                onError={() => setPfpFailed(true)}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                  opacity: pfpLoaded ? 1 : 0,
-                  transition: 'opacity 320ms ease',
-                }}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Caveat "You" — points UP-RIGHT at the avatar from below-left.
-              The SVG draws its own arrowhead; no need to repeat it in the text. */}
-          <CaveatArrow
-            text="You"
-            direction="right-up"
-            delay={0.65}
-            width={150}
-            height={100}
-            fontSize={26}
-            className="pointer-events-none absolute -bottom-[68px] -left-[150px]"
-          />
+              When no avatar loaded, the arrow targets the @handle below
+              instead. */}
+          {avatarReady && (
+            <CaveatArrow
+              text="You"
+              direction="right-up"
+              delay={0.65}
+              width={150}
+              height={100}
+              fontSize={26}
+              className="pointer-events-none absolute -bottom-[68px] -left-[150px]"
+            />
+          )}
         </motion.div>
 
         {handle && (
@@ -1394,7 +1406,7 @@ function Verdict({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, ease: [0.4, 0, 0.6, 1], delay: 0.35 }}
-            className="mt-9 font-mono"
+            className="relative mt-9 font-mono"
             style={{
               color: FG,
               fontSize: 'clamp(22px, 2.4vw, 28px)',
@@ -1402,6 +1414,17 @@ function Verdict({
             }}
           >
             @{handle}
+            {!avatarReady && (
+              <CaveatArrow
+                text="You"
+                direction="right-up"
+                delay={0.55}
+                width={140}
+                height={90}
+                fontSize={24}
+                className="pointer-events-none absolute -bottom-[60px] -left-[140px] hidden sm:block"
+              />
+            )}
           </motion.div>
         )}
 
