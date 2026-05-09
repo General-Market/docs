@@ -10,6 +10,7 @@ import {
 } from "remotion";
 import { font } from "../../common/fonts";
 import { AntiCheatHookScene } from "./AntiCheatHookScene";
+import { DotGrid } from "./DotGrid";
 import { FPS, H, W, colors } from "./theme";
 
 const BROLL = {
@@ -109,6 +110,9 @@ export const AntiCheatHook: React.FC = () => {
   return (
     <AbsoluteFill style={{ backgroundColor: colors.bg, fontFamily: font }}>
       <AbsoluteFill>
+        {/* ── Background dot field, matches Solution / Reassure ── */}
+        <DotGrid />
+
         {/* ── Single dual-device 3D scene underneath everything ── */}
         <AntiCheatHookScene
           laptopSegments={LAPTOP_SEGMENTS}
@@ -132,7 +136,6 @@ export const AntiCheatHook: React.FC = () => {
             pointerEvents: "none",
           }}
         >
-          <StripDarken />
           <PanelLabel
             eyebrow="When you play"
             showFrom={HEADER_IN}
@@ -163,7 +166,6 @@ export const AntiCheatHook: React.FC = () => {
             pointerEvents: "none",
           }}
         >
-          <StripDarken tint={"#ff3b3b"} />
           <PanelLabel
             eyebrow="When you trade"
             showFrom={SPLIT_AT}
@@ -191,25 +193,6 @@ export const AntiCheatHook: React.FC = () => {
     </AbsoluteFill>
   );
 };
-
-// ─── Strip darkening — top + bottom edges, keeps text legible ──────────────────
-
-// Light-mode strip: top + bottom fade to the page background so the
-// dark headline / pair labels sit on a clean light field without the
-// 3D scene bleeding through behind them. Right-panel variant adds a
-// faint red tint so the "When you trade" half reads warmer.
-const StripDarken: React.FC<{ tint?: string }> = ({ tint }) => (
-  <div
-    style={{
-      position: "absolute",
-      inset: 0,
-      pointerEvents: "none",
-      background: tint
-        ? `linear-gradient(180deg, rgba(240,242,244,0.95) 0%, rgba(240,242,244,0.0) 28%, rgba(240,242,244,0.0) 52%, rgba(240,242,244,0.92) 78%, rgba(240,242,244,1.0) 100%), linear-gradient(180deg, rgba(224,59,74,0.06), rgba(224,59,74,0.0) 40%, rgba(224,59,74,0.0) 60%, rgba(224,59,74,0.06))`
-        : `linear-gradient(180deg, rgba(240,242,244,0.95) 0%, rgba(240,242,244,0.0) 28%, rgba(240,242,244,0.0) 52%, rgba(240,242,244,0.92) 78%, rgba(240,242,244,1.0) 100%)`,
-    }}
-  />
-);
 
 // ─── Text components ───────────────────────────────────────────────────────────
 

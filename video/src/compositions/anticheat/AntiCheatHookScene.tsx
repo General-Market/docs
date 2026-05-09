@@ -23,7 +23,6 @@ import { useThree } from "@react-three/fiber";
 import { useGLTF, Environment, ContactShadows } from "@react-three/drei";
 import * as THREE from "three";
 import { beatPulseScene } from "./beats";
-import { colors } from "./theme";
 
 const MODEL_URL = staticFile("models/tabletop_macbook_iphone.opt.glb");
 useGLTF.preload(MODEL_URL);
@@ -43,15 +42,15 @@ const LAPTOP_SCREEN_ASPECT = 16 / 10;
 // World layout. Laptop sits at GLB origin natively; we wrap the whole
 // GLB clone in a Three group translated by LAPTOP_GROUP_OFFSET so the
 // laptop slides canvas-right while the camera frame stays put (lighting
-// and shadows undisturbed). −2.67 ≈ 30% canvas-right (10% canvas-left
-// of the previous −3.56). The middle bar of the split panels now cuts
-// across the laptop body — the right half reads in the right panel,
-// the left half hides under the "When you play" panel.
+// and shadows undisturbed). −3.56 pushes the laptop another 10%
+// canvas-left so the middle bar of the split panels cuts deeper into
+// the body — only the right portion reads past the bar; the rest sits
+// under the "When you play" panel.
 //
 // PHONE_POS is the phone's intended *world* position; iphone.position
 // is set to PHONE_POS minus the group offset so the phone ends up at
 // the same world spot regardless of the laptop shift.
-const LAPTOP_GROUP_OFFSET: [number, number, number] = [-2.67, 0, 0];
+const LAPTOP_GROUP_OFFSET: [number, number, number] = [-3.56, 0, 0];
 const PHONE_POS = new THREE.Vector3(-4.79, 2.9, 0);
 
 // Camera between the two devices, looking forward into +z. Lower y
@@ -759,7 +758,7 @@ export const AntiCheatHookScene: React.FC<AntiCheatSceneProps> = ({
   const env = useRemotionEnvironment();
 
   return (
-    <AbsoluteFill style={{ width, height, background: colors.bg }}>
+    <AbsoluteFill style={{ width, height, background: "transparent" }}>
       {!env.isRendering && (
         <>
           {laptopSegments.map((seg, i) => (
