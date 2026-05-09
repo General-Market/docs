@@ -52,22 +52,13 @@ const PHONE_POS = new THREE.Vector3(-5, 2.5, 0);
 const CAMERA_POS: [number, number, number] = [-1.5, 3.2, -7];
 const CAMERA_TARGET: [number, number, number] = [-1.5, 2.2, 0];
 
-// Yaw the phone so its screen faces the camera dead-on even though
-// the phone is offset hard to canvas-right. Without this the phone
-// reads as oddly tilted because perspective slices across its plane.
-//   Three.js Y rotation by θ takes the local -Z axis (the screen
-//   normal) to (-sinθ, 0, -cosθ); set θ so that direction equals
-//   (camera - phone) projected onto XZ.
-const PHONE_YAW = Math.atan2(
-  PHONE_POS.x - CAMERA_POS[0],
-  PHONE_POS.z - CAMERA_POS[2],
-);
-
 // Subtle yaw drift over the first 7 seconds — the phone slowly turns
 // further toward canvas-center while the hook plays, just enough that
 // the brain registers movement without reading as overt animation.
 const PHONE_YAW_DRIFT_END = 210; // 7s at 30fps
 const PHONE_YAW_DRIFT_AMOUNT = -0.09; // ≈ -5°, more negative = toward center
+
+const CAMERA_VEC = new THREE.Vector3(...CAMERA_POS);
 
 // Closing-act animation — the lid slams shut while the phone whirls
 // off-frame to the right. 7.28s = frame 218 at 30fps.
@@ -83,8 +74,6 @@ const PHONE_SLIDE_OFFSET = -4.5; // extra world-x push during the spin
 const SCREEN_ON_PHONE = 24;
 const SCREEN_ON_LAPTOP = 18;
 const LAPTOP_INITIAL_BRIGHTNESS = 0.45;
-
-const Y_AXIS = new THREE.Vector3(0, 1, 0);
 
 const clamp01 = (t: number) => (t < 0 ? 0 : t > 1 ? 1 : t);
 
@@ -332,20 +321,18 @@ const Scene: React.FC<{
   const driftT = clamp01(frame / PHONE_YAW_DRIFT_END);
   const driftEased = (1 - Math.cos(driftT * Math.PI)) * 0.5;
   const yawDrift = PHONE_YAW_DRIFT_AMOUNT * driftEased;
-  // Compose: base yaw (faces camera) + slow drift toward center +
-  // spin around world Y. All three rotations are on the same axis so
-  // we just add the angles.
-  const phoneQuat = new THREE.Quaternion().setFromAxisAngle(
-    Y_AXIS,
-    PHONE_YAW + yawDrift + phoneRotY,
-  );
 
   const iphone = sceneClone.getObjectByName("iphone");
   if (iphone) {
     iphone.position.copy(PHONE_POS);
     iphone.position.x += phoneSlideX;
-    iphone.quaternion.copy(phoneQuat);
     iphone.scale.setScalar(PHONE_BASE_SCALE);
+    // lookAt uses both yaw and pitch to orient the object's -Z axis
+    // (the screen normal) at the camera, so the phone reads flat to
+    // the viewer regardless of how far it sits off-axis. Drift + spin
+    // then compose around the phone's own Y axis.
+    iphone.lookAt(CAMERA_VEC);
+    iphone.rotateY(yawDrift + phoneRotY);
   }
 
   // Screen power-on. Phone wakes from black; laptop wakes from a
