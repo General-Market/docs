@@ -257,14 +257,14 @@ function takeNonce(): number {
   return n
 }
 
-// Debug-only: which sources to trace verbosely. Comma-sep env DEBUG_SOURCES.
-const DEBUG_SOURCES = new Set((process.env.DEBUG_SOURCES || 'defi').split(',').map((s) => s.trim()).filter(Boolean))
+// Per-source verbose tracing for debugging. Set DEBUG_SOURCES=foo,bar to
+// enable; default off.
+const DEBUG_SOURCES = new Set((process.env.DEBUG_SOURCES || '').split(',').map((s) => s.trim()).filter(Boolean))
 function dbg(source: string, msg: string) {
   if (DEBUG_SOURCES.has(source)) console.log(`[dbg] source=${source} ${msg}`)
 }
 
 async function processSource(source: string) {
-  dbg(source, 'enter')
   const sourceId = keccak256(stringToHex(`${source}_${VAULT_VERSION}`))
   let batchId: bigint
   try {
@@ -278,7 +278,6 @@ async function processSource(source: string) {
     dbg(source, `latestBatchForSource error: ${e instanceof Error ? e.message : e}`)
     return
   }
-  dbg(source, `latestBatch=${batchId}`)
   if (batchId === 0n) return
 
   const vaults = VAULTS_BY_SOURCE[source]
