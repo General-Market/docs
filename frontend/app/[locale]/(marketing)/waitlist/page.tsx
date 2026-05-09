@@ -12,7 +12,7 @@ const caveat = Caveat({
 export const metadata: Metadata = {
   title: 'Waitlist — GeneralMarket',
   description:
-    'Be the first to have your pnl shielded from insider trading — early access, lower fees, referral rewards',
+    'Be the first to shield your pnl from insider trading, early access, lower fees, referral rewards',
   alternates: { canonical: '/waitlist' },
   robots: { index: true, follow: true },
 }

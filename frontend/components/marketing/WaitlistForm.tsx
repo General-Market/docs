@@ -47,10 +47,10 @@ const STEPS: Step[] = [
   {
     type: 'welcome',
     id: 'welcome',
-    title: 'Be the first to have your pnl shielded from insider trading',
-    body: 'Join the waitlist — early access, lower fees, and referral rewards',
+    title: 'Be the first to shield your pnl from insider trading',
+    body: 'Join the waitlist for early access, lower fees, and referral rewards',
     cta: 'Start',
-    takes: '~90 seconds',
+    takes: '90 seconds',
   },
   {
     type: 'text',
@@ -89,7 +89,7 @@ const STEPS: Step[] = [
     type: 'choice',
     id: 'has_invite',
     label: 'Do you have an invite code?',
-    description: 'A code earns you trading-fee rakeback — no code? add one later, same waitlist either way',
+    description: 'A code earns you trading-fee rakeback, no code? add one later, same waitlist either way',
     options: [
       { value: 'yes', label: 'Yes' },
       { value: 'no', label: 'No' },
@@ -314,7 +314,7 @@ function HandleBadge({
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -8, scale: 0.96 }}
           transition={springs.entrance}
-          className="fixed right-5 top-5 z-30 flex items-center gap-2 rounded-full bg-white/90 px-3 py-1.5 shadow-[0_2px_8px_rgba(10,10,12,0.06)] backdrop-blur sm:right-7 sm:top-7"
+          className="fixed right-7 top-7 z-30 hidden items-center gap-2 rounded-full bg-white/90 px-3 py-1.5 shadow-[0_2px_8px_rgba(10,10,12,0.06)] backdrop-blur lg:flex"
           style={{ border: `1px solid ${RULE}` }}
         >
           {pfpUrl && !failed && (
@@ -456,6 +456,159 @@ function EnemyStack({
           <EnemyPill key={enemy.handle} enemy={enemy} />
         ))}
       </AnimatePresence>
+    </motion.div>
+  )
+}
+
+// ── Mobile top bar — single horizontal row laid out as
+// [user] · 🛡 · [enemy] [enemy] [enemy] [enemy]. Below `lg` the
+// fixed right-side stack is hidden; this carries the metaphor in a
+// shape that fits a phone.
+function MobileTopBar({
+  handle,
+  pfpUrl,
+  selected,
+  show,
+}: {
+  handle: string
+  pfpUrl: string | null
+  selected: string[]
+  show: boolean
+}) {
+  const enemies = show ? selected.map((k) => ENEMIES[k]).filter(Boolean) : []
+  if (!handle) return null
+  return (
+    <div
+      className="fixed inset-x-0 top-0 z-30 flex items-center gap-1.5 overflow-x-auto px-3 py-2 lg:hidden"
+      style={{
+        background: 'rgba(240,242,244,0.96)',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
+        borderBottom: `1px solid ${RULE}`,
+      }}
+    >
+      <CompactSelfPill handle={handle} pfpUrl={pfpUrl} />
+      {enemies.length > 0 && <CompactShield />}
+      <AnimatePresence>
+        {enemies.map((e) => (
+          <CompactEnemyPill key={e.handle} enemy={e} />
+        ))}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+function CompactSelfPill({
+  handle,
+  pfpUrl,
+}: {
+  handle: string
+  pfpUrl: string | null
+}) {
+  const [loaded, setLoaded] = useState(false)
+  const [failed, setFailed] = useState(false)
+  const showAvatar = Boolean(pfpUrl) && !failed && loaded
+
+  useEffect(() => {
+    setLoaded(false)
+    setFailed(false)
+  }, [pfpUrl])
+
+  return (
+    <div
+      className="flex shrink-0 items-center gap-1.5 rounded-full bg-white px-2 py-0.5"
+      style={{ border: `1px solid ${RULE}` }}
+    >
+      {pfpUrl && !failed && (
+        <img
+          src={pfpUrl}
+          alt=""
+          width={20}
+          height={20}
+          referrerPolicy="no-referrer"
+          onLoad={() => setLoaded(true)}
+          onError={() => setFailed(true)}
+          className={showAvatar ? 'h-5 w-5 rounded-full object-cover' : 'hidden'}
+        />
+      )}
+      <span className="font-mono text-[11px] tabular-nums" style={{ color: FG_SOFT }}>
+        @{handle}
+      </span>
+    </div>
+  )
+}
+
+function CompactShield() {
+  return (
+    <div
+      className="flex shrink-0 items-center justify-center rounded-full"
+      style={{
+        width: 26,
+        height: 26,
+        background: ACCENT,
+        color: '#FFFFFF',
+        boxShadow: '0 4px 12px -4px rgba(0,82,255,0.45)',
+      }}
+      aria-label="Protected"
+      title="Protected"
+    >
+      <svg width="11" height="13" viewBox="0 0 24 28" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <path d="M12 2 L21 5 L21 13 C21 19 17 24 12 26 C7 24 3 19 3 13 L3 5 Z" />
+        <path d="M8.5 13.5 L11 16 L15.5 11" />
+      </svg>
+    </div>
+  )
+}
+
+function CompactEnemyPill({ enemy }: { enemy: Enemy }) {
+  const [loaded, setLoaded] = useState(false)
+  const [failed, setFailed] = useState(false)
+  const src = `/api/waitlist/avatar?handle=${encodeURIComponent(enemy.handle)}`
+  const showAvatar = !failed && loaded
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, scale: 0.94 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.94 }}
+      transition={springs.entrance}
+      className="flex shrink-0 items-center gap-1 rounded-full bg-white px-1.5 py-0.5"
+      style={{ border: `1px solid ${RULE}` }}
+      title={`Shielded from ${enemy.label}`}
+    >
+      {!failed && (
+        <img
+          src={src}
+          alt=""
+          width={20}
+          height={20}
+          referrerPolicy="no-referrer"
+          onLoad={() => setLoaded(true)}
+          onError={() => setFailed(true)}
+          className={showAvatar ? 'h-5 w-5 rounded-full object-cover' : 'hidden'}
+        />
+      )}
+      <span
+        aria-hidden
+        className="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full"
+        style={{ background: '#9A1F2D', color: '#FFFFFF' }}
+      >
+        <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round">
+          <path d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </span>
+      <span
+        className="font-mono text-[10px] tabular-nums"
+        style={{
+          color: '#9A1F2D',
+          textDecoration: 'line-through',
+          textDecorationThickness: '1.4px',
+          textDecorationColor: 'rgba(154,31,45,0.6)',
+        }}
+      >
+        @{enemy.handle}
+      </span>
     </motion.div>
   )
 }
@@ -613,6 +766,12 @@ export default function WaitlistForm() {
           hasUserBadge={Boolean(handle)}
         />
       )}
+      <MobileTopBar
+        handle={handle}
+        pfpUrl={pfpUrl}
+        selected={Array.isArray(answers.protection_from) ? answers.protection_from : []}
+        show={step.type === 'choice' && step.id === 'protection_from'}
+      />
 
       <div className="fixed left-0 right-0 top-0 z-20 h-[2px]" aria-hidden>
         <motion.div
@@ -751,11 +910,11 @@ function Welcome({ step, onStart }: { step: WelcomeStep; onStart: () => void }) 
         initial={{ opacity: 0, y: 14, filter: 'blur(6px)' }}
         animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
         transition={{ duration: 0.55, ease: [0.4, 0, 0.6, 1], delay: 0.12 }}
-        className="mt-5 max-w-[860px] font-semibold leading-[1.05]"
+        className="mt-5 max-w-[820px] font-semibold leading-[1.08]"
         style={{
           color: FG,
-          fontSize: 'clamp(44px, 7.2vw, 96px)',
-          letterSpacing: '-0.034em',
+          fontSize: 'clamp(34px, 4.4vw, 60px)',
+          letterSpacing: '-0.028em',
         }}
       >
         {step.title}
@@ -846,6 +1005,7 @@ function TextQuestion({
           ref={inputRef}
           type={step.type === 'email' ? 'email' : 'text'}
           inputMode={step.type === 'email' ? 'email' : 'text'}
+          enterKeyHint={step.id === 'notes' ? 'send' : 'next'}
           autoComplete="off"
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -1215,7 +1375,7 @@ function InviteCodeStatus({ code }: { code: string }) {
             ? 'Code expired'
             : state.reason === 'invalid'
               ? 'Code wrong'
-              : 'Couldn’t check — try again in a moment'
+              : 'Couldn’t check, try again in a moment'
 
   const color =
     state.kind === 'valid' ? '#10B981' : state.kind === 'checking' ? DIM : '#DC2626'
@@ -1482,10 +1642,10 @@ function Verdict({
         >
           {whitelisted
             ? armed
-              ? 'Wallet whitelisted — the faucet is yours, and the rest of the site too'
-              : 'Verifying your code — this takes a beat'
+              ? 'Wallet whitelisted, the faucet is yours, and the rest of the site too'
+              : 'Verifying your code, this takes a beat'
             : hasCode
-              ? 'Code received — add a wallet later from any locked page and the gate opens for you immediately'
+              ? 'Code received, add a wallet later from any locked page and the gate opens for you immediately'
               : 'We’ll notify you the second we go live'}
         </motion.p>
 
