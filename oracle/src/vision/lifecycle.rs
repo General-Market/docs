@@ -273,7 +273,7 @@ impl BatchLifecycleManager {
                     };
 
                     // Read state snapshot
-                    let (prev_batch_id, tick_duration_secs) = {
+                    let prev_batch_id = {
                         let source = src_lock.lock().await;
                         info!(
                             source = %source.source_name,
@@ -282,7 +282,7 @@ impl BatchLifecycleManager {
                             previous_batch = ?source.previous_batch_id,
                             "Lifecycle heartbeat"
                         );
-                        (source.previous_batch_id, source.tick_duration_secs)
+                        source.previous_batch_id
                     };
 
                     // Step 1: Resolve previous batch if its betting period has ended.
@@ -292,11 +292,19 @@ impl BatchLifecycleManager {
                     // PREVIOUS heartbeat is always safe — but we guard anyway for
                     // edge cases (oracle restart, delayed heartbeats).
                     if let Some(prev_id) = prev_batch_id {
+                        // Buffer is 60s, not tick_duration. The earlier formula
+                        // (betting_end + tick_duration) tied the wait to the tick
+                        // size, leaving short-tick sources (300s, 600s) with
+                        // effectively zero settlement window before the contract's
+                        // grace cliff at (createdAtTick+1)*tick + grace, where
+                        // grace defaults to 2*tick. A static 60s buffer is enough
+                        // to absorb the 30s pre-create heartbeat slack while
+                        // preserving most of the grace window for the resolve →
+                        // sign → submit pipeline.
                         let ready_to_settle: bool = sqlx::query_scalar::<_, bool>(
-                            "SELECT betting_end + make_interval(secs => $2) <= NOW() FROM vision_batch_lifecycle WHERE on_chain_batch_id = $1"
+                            "SELECT betting_end + make_interval(secs => 60) <= NOW() FROM vision_batch_lifecycle WHERE on_chain_batch_id = $1"
                         )
                         .bind(prev_id as i64)
-                        .bind(tick_duration_secs as f64)
                         .fetch_optional(&mgr.pool)
                         .await
                         .ok()
