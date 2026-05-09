@@ -172,26 +172,42 @@ async function rescueOne(
   const chain = walletClient.chain;
   if (!chain) throw new Error('walletClient has no chain');
 
-  let txHash: Hex;
-  try {
+  // Deployer key is shared with fund-manager + fast-joiner. Nonce drift
+  // happens. Refresh pending count and retry once on nonce-too-low.
+  const writeOnce = async (nonce?: number): Promise<Hex> => {
     if (isVault) {
-      txHash = await walletClient.writeContract({
+      return walletClient.writeContract({
         account,
         chain,
         address: player,
         abi: VISION_VAULT_ABI,
         functionName: 'refundStuckBatch',
         args: [batchId],
+        nonce,
       });
-    } else {
-      txHash = await walletClient.writeContract({
-        account,
-        chain,
-        address: cfg.visionAddress,
-        abi: VISION_ABI,
-        functionName: 'claimRefundFor',
-        args: [batchId, player],
-      });
+    }
+    return walletClient.writeContract({
+      account,
+      chain,
+      address: cfg.visionAddress,
+      abi: VISION_ABI,
+      functionName: 'claimRefundFor',
+      args: [batchId, player],
+      nonce,
+    });
+  };
+
+  let txHash: Hex;
+  try {
+    try {
+      txHash = await writeOnce();
+    } catch (e1) {
+      const m1 = e1 instanceof Error ? e1.message : String(e1);
+      if (!(m1.includes('nonce') || m1.includes('Nonce'))) throw e1;
+      const pending = Number(
+        await publicClient.getTransactionCount({ address: account.address, blockTag: 'pending' }),
+      );
+      txHash = await writeOnce(pending);
     }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

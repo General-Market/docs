@@ -52,7 +52,9 @@ type RoundStatus = 'pending' | 'settled' | 'refundable' | 'refunded'
 interface Round {
   batchId: string
   joinBlock: number
+  joinTime: number  // unix seconds — when the join landed on chain
   resolveBlock: number | null  // settle or refund block, or null if still in flight
+  resolveTime: number | null   // unix seconds — when settle/refund landed
   status: RoundStatus
   deposit: number
   payout: number | null
@@ -101,6 +103,25 @@ export async function GET(
         toBlock: head,
       }),
     ])
+
+    // Resolve block → unix timestamp by reading distinct block headers.
+    // Pull every relevant block once instead of per-row.
+    const blockNumbers = new Set<bigint>()
+    for (const log of [...joinedLogs, ...settledLogs, ...refundedLogs]) {
+      if (log.blockNumber != null) blockNumbers.add(log.blockNumber)
+    }
+    const blockTimes = new Map<bigint, number>()
+    if (blockNumbers.size > 0) {
+      const results = await Promise.allSettled(
+        Array.from(blockNumbers).map((bn) => client.getBlock({ blockNumber: bn })),
+      )
+      let i = 0
+      for (const bn of blockNumbers) {
+        const r = results[i++]
+        if (r.status === 'fulfilled') blockTimes.set(bn, Number(r.value.timestamp))
+      }
+    }
+    const tsForBlock = (bn: bigint | null) => (bn !== null ? blockTimes.get(bn) ?? 0 : 0)
 
     const settledByBatch = new Map<string, { payout: bigint; blockNumber: bigint }>()
     for (const log of settledLogs) {
@@ -155,6 +176,7 @@ export async function GET(
       const depositWei = log.args.deposit ?? 0n
       const deposit = parseFloat(formatUnits(depositWei, 18))
       const joinBlock = Number(log.blockNumber ?? 0n)
+      const joinTime = tsForBlock(log.blockNumber ?? null)
 
       const settled = settledByBatch.get(batchId)
       if (settled) {
@@ -162,7 +184,9 @@ export async function GET(
         rounds.push({
           batchId,
           joinBlock,
+          joinTime,
           resolveBlock: Number(settled.blockNumber),
+          resolveTime: tsForBlock(settled.blockNumber),
           status: 'settled',
           deposit,
           payout,
@@ -177,7 +201,9 @@ export async function GET(
         rounds.push({
           batchId,
           joinBlock,
+          joinTime,
           resolveBlock: Number(refunded.blockNumber),
+          resolveTime: tsForBlock(refunded.blockNumber),
           status: 'refunded',
           deposit,
           payout: parseFloat(formatUnits(refunded.amount, 18)),
@@ -193,7 +219,9 @@ export async function GET(
       rounds.push({
         batchId,
         joinBlock,
+        joinTime,
         resolveBlock: null,
+        resolveTime: null,
         status,
         deposit,
         payout: null,

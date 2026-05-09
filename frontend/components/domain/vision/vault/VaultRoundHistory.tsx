@@ -22,7 +22,9 @@ type RoundStatus = 'pending' | 'settled' | 'refundable' | 'refunded'
 interface RoundRow {
   batchId: string
   joinBlock: number
+  joinTime: number
   resolveBlock: number | null
+  resolveTime: number | null
   status: RoundStatus
   deposit: number
   payout: number | null
@@ -63,6 +65,16 @@ function fmtPnl(v: number | null): { text: string; tone: 'up' | 'down' | 'flat' 
   if (Math.abs(v) < 0.005) return { text: '$0.00', tone: 'flat' }
   const sign = v >= 0 ? '+' : '−'
   return { text: `${sign}$${Math.abs(v).toFixed(2)}`, tone: v >= 0 ? 'up' : 'down' }
+}
+
+function fmtRelTime(unixSec: number | null): string {
+  if (!unixSec) return '—'
+  const diff = Math.floor(Date.now() / 1000) - unixSec
+  if (diff < 0) return 'just now'
+  if (diff < 60) return `${diff}s ago`
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`
+  return `${Math.floor(diff / 86400)}d ago`
 }
 
 function sortRounds(rows: RoundRow[], key: SortKey): RoundRow[] {
@@ -231,7 +243,7 @@ function RoundsTable({ rows, onRefunded }: { rows: RoundRow[]; onRefunded: () =>
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: '0.8fr 1fr 1fr 1fr 1fr 1.2fr',
+          gridTemplateColumns: '0.7fr 1fr 1fr 1fr 1fr 1fr 1fr',
           gap: 0,
           padding: '10px 16px',
           background: 'var(--apple-surface)',
@@ -241,6 +253,7 @@ function RoundsTable({ rows, onRefunded }: { rows: RoundRow[]; onRefunded: () =>
       >
         <span>Round</span>
         <span>Status</span>
+        <span>When</span>
         <span style={{ textAlign: 'right' }}>Deposit</span>
         <span style={{ textAlign: 'right' }}>Payout</span>
         <span style={{ textAlign: 'right' }}>P&amp;L</span>
@@ -283,6 +296,15 @@ function RoundRowView({
     >
       <span style={{ color: 'var(--apple-text)', fontWeight: 500 }}>#{row.batchId}</span>
       <StatusPill status={row.status} expirationTime={row.expirationTime} />
+      <span
+        style={{ color: 'var(--apple-text-secondary)' }}
+        title={(() => {
+          const ts = row.resolveTime ?? row.joinTime
+          return ts ? new Date(ts * 1000).toLocaleString() : ''
+        })()}
+      >
+        {fmtRelTime(row.resolveTime ?? row.joinTime)}
+      </span>
       <span style={cellRight}>{fmtUsd(row.deposit)}</span>
       <span style={cellRight}>{row.payout !== null ? fmtUsd(row.payout) : '—'}</span>
       <span
@@ -371,8 +393,18 @@ function ClaimRefundButton({ batchId, onSuccess }: { batchId: string; onSuccess:
     }
   }, [batchId, writeContractAsync, onSuccess])
 
+  // Keeper auto-claims on its next poll cycle. The button is here as a
+  // fallback in case the keeper is slow or down — but no-wallet users see
+  // the keeper-status hint, not a useless prompt.
   if (!isConnected) {
-    return <span style={{ color: 'var(--apple-text-tertiary)', fontSize: 11 }}>Connect to claim</span>
+    return (
+      <span
+        style={{ color: 'var(--apple-text-tertiary)', fontSize: 11 }}
+        title="The vision-keeper service auto-claims refundable rounds. This row will resolve on the next keeper poll cycle (~60s)."
+      >
+        Auto-claim pending
+      </span>
+    )
   }
 
   return (
