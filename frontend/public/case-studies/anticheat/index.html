@@ -4,15 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>The Anti-Cheat — General Market</title>
-<meta name="description" content="Trading has eight named exploits and video games solved all of them between 1992 and 2020.">
+<meta name="description" content="Eight named exploits in modern trading, all of them solved by video games between 1992 and 2020.">
 <meta property="og:title" content="The Anti-Cheat — General Market">
-<meta property="og:description" content="Trading has eight named exploits and video games solved all of them between 1992 and 2020.">
+<meta property="og:description" content="Eight named exploits in modern trading, all of them solved by video games between 1992 and 2020.">
 <meta property="og:image" content="/case-studies/anticheat/cover.png">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://generalmarket.io/case-studies/anticheat/">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="The Anti-Cheat — General Market">
-<meta name="twitter:description" content="Trading has eight named exploits and video games solved all of them between 1992 and 2020.">
+<meta name="twitter:description" content="Eight named exploits in modern trading, all of them solved by video games between 1992 and 2020.">
 <meta name="twitter:image" content="/case-studies/anticheat/cover.png">
 <style>
 :root {
@@ -49,20 +49,45 @@ body {
 
 .wrap { max-width: 720px; margin: 0 auto; padding: 0 22px; }
 
-/* PAGE HERO with candles background */
+/* BRAND MARK — logo + General */
+.brand-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  --logo-bg: var(--ink);
+  --logo-pill: #FFF;
+  --name-color: var(--ink);
+}
+.brand-mark .lg {
+  display: block;
+  flex-shrink: 0;
+}
+.brand-mark .nm {
+  font-family: var(--display);
+  font-weight: 800;
+  letter-spacing: -0.022em;
+  color: var(--name-color);
+  line-height: 1;
+}
+.share-card.dark .brand-mark, .on-dark .brand-mark {
+  --logo-bg: #FFF;
+  --logo-pill: var(--ink);
+  --name-color: #FFF;
+}
+
+/* PAGE HERO — simpler */
 .page-hero {
   position: relative;
   background: var(--night) url('candles.png') center / cover no-repeat;
   color: #FFF;
-  padding: 96px 22px 80px;
-  text-align: left;
+  padding: 56px 22px 96px;
   overflow: hidden;
   border-bottom: 1px solid var(--ink);
 }
 .page-hero::before {
   content: '';
   position: absolute; inset: 0;
-  background: linear-gradient(135deg, rgba(11,12,14,0.92) 0%, rgba(11,12,14,0.6) 50%, rgba(11,12,14,0.85) 100%);
+  background: linear-gradient(135deg, rgba(11,12,14,0.92) 0%, rgba(11,12,14,0.58) 50%, rgba(11,12,14,0.85) 100%);
   z-index: 0;
 }
 .page-hero::after {
@@ -73,71 +98,74 @@ body {
   z-index: 1;
 }
 .page-hero-inner { position: relative; z-index: 2; max-width: 1080px; margin: 0 auto; }
-.brand-row { display: flex; align-items: center; gap: 14px; margin-bottom: 56px; }
-.brand-logo { width: 44px; height: 44px; border-radius: 10px; background: #FFF; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-.brand-logo img { width: 100%; height: 100%; object-fit: contain; }
-.brand-text { display: flex; flex-direction: column; gap: 2px; }
-.brand-name { font-family: var(--display); font-size: 13px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #FFF; }
-.brand-meta { font-family: var(--mono); font-size: 12px; color: var(--blue-tint); letter-spacing: 0.12em; }
-
-.kicker {
+.brand-row { margin-bottom: 80px; }
+.brand-row .nm { font-size: 22px; }
+.brand-row .lg rect:first-child { /* black box stays black */ }
+.page-hero h1 {
+  font-family: var(--display);
+  font-size: clamp(64px, 11vw, 156px);
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  line-height: 0.92;
+  color: #FFF;
+  margin-bottom: 28px;
+}
+.page-hero h1 em {
+  font-style: italic;
+  font-family: var(--serif);
+  font-weight: 500;
+  letter-spacing: -0.028em;
+  color: var(--blue-tint);
+}
+.page-hero .review-tag {
   display: inline-block;
   font-family: var(--mono);
   font-size: 13px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--blue-tint);
-  margin-bottom: 24px;
   font-weight: 700;
   padding: 8px 14px;
   border: 1.5px solid var(--blue-tint);
   border-radius: 980px;
 }
-.page-hero h1 {
-  font-family: var(--display);
-  font-size: clamp(56px, 9vw, 132px);
-  font-weight: 800;
-  letter-spacing: -0.045em;
-  line-height: 0.92;
-  color: #FFF;
-  margin-bottom: 32px;
-}
-.page-hero h1 em {
-  font-style: italic;
-  font-family: var(--serif);
-  font-weight: 500;
-  letter-spacing: -0.025em;
-  color: var(--blue-tint);
-}
-.dek {
+
+/* CONNECTOR */
+.connect {
+  text-align: center;
+  padding: 44px 0;
   font-family: var(--display);
   font-size: clamp(20px, 2.4vw, 26px);
   line-height: 1.4;
   letter-spacing: -0.018em;
-  color: rgba(255,255,255,0.85);
-  max-width: 720px;
-  font-weight: 400;
+  color: var(--ink);
+  font-weight: 500;
+  max-width: 680px;
+  margin: 0 auto;
 }
-.byline { margin-top: 56px; font-size: 13px; color: rgba(255,255,255,0.55); letter-spacing: 0.12em; font-family: var(--mono); text-transform: uppercase; }
-
-/* CONNECTOR PROSE */
-.connect { text-align: center; padding: 40px 0; font-family: var(--display); font-size: clamp(20px, 2.4vw, 24px); line-height: 1.4; letter-spacing: -0.018em; color: var(--ink); font-weight: 500; max-width: 640px; margin: 0 auto; }
 .connect p { margin-bottom: 0; }
-.connect p + p { margin-top: 12px; }
+.connect p + p { margin-top: 14px; }
 
-/* SHARE CARDS — blue frame */
+/* SHARE CARDS */
 .share-card { margin: 36px auto; max-width: 720px; background: var(--blue); padding: 22px; border-radius: 28px; position: relative; }
-.share-card-inner { background: var(--paper); border-radius: 14px; padding: 48px 40px 64px; position: relative; min-height: 480px; }
+.share-card-inner { background: var(--paper); border-radius: 14px; padding: 48px 40px 80px; position: relative; min-height: 480px; }
 .share-card.dark .share-card-inner { background: var(--night); color: #FFF; }
-.share-card .signature { position: absolute; bottom: 26px; right: 38px; font-family: var(--mono); font-size: 13px; color: var(--ink-3); letter-spacing: 0.05em; font-weight: 500; }
-.share-card.dark .signature { color: rgba(255,255,255,0.5); }
+.signature {
+  position: absolute;
+  bottom: 26px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+}
+.signature .brand-mark .nm { font-size: 16px; }
 
-/* COVER CARD — Twitter OG ratio with candles bg */
+/* COVER CARD */
 .cover-card { margin: 24px auto 64px; max-width: 1080px; background: var(--blue); padding: 18px; border-radius: 24px; }
 .cover-card .share-card-inner {
   background: var(--night) url('candles.png') center / cover no-repeat;
   border-radius: 12px;
-  padding: 56px 56px;
+  padding: 48px 56px 60px;
   min-height: 0;
   aspect-ratio: 1.91 / 1;
   display: grid;
@@ -148,21 +176,21 @@ body {
 .cover-card .share-card-inner::before {
   content: '';
   position: absolute; inset: 0;
-  background: linear-gradient(115deg, rgba(11,12,14,0.93) 0%, rgba(11,12,14,0.6) 55%, rgba(11,12,14,0.86) 100%);
+  background: linear-gradient(115deg, rgba(11,12,14,0.94) 0%, rgba(11,12,14,0.55) 55%, rgba(11,12,14,0.88) 100%);
   border-radius: 12px;
 }
 .cover-card > .share-card-inner > * { position: relative; z-index: 2; }
-.cover-top { display: flex; align-items: center; gap: 14px; }
-.cover-top .brand-logo { width: 38px; height: 38px; border-radius: 9px; background: #FFF; }
-.cover-eyebrow { font-family: var(--mono); font-size: clamp(12px, 1.1vw, 15px); letter-spacing: 0.22em; text-transform: uppercase; color: var(--blue-tint); font-weight: 700; }
+.cover-top { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.cover-top .brand-mark .nm { font-size: clamp(18px, 2vw, 24px); }
+.cover-eyebrow { font-family: var(--mono); font-size: clamp(11px, 1.1vw, 14px); letter-spacing: 0.22em; text-transform: uppercase; color: var(--blue-tint); font-weight: 700; }
 .cover-content { display: flex; flex-direction: column; justify-content: center; }
 .cover-pretitle { font-family: var(--display); font-size: clamp(20px, 2.4vw, 30px); font-weight: 600; letter-spacing: -0.018em; color: rgba(255,255,255,0.78); margin-bottom: 14px; line-height: 1.2; }
 .cover-title { font-family: var(--display); font-size: clamp(64px, 10vw, 144px); font-weight: 800; letter-spacing: -0.05em; line-height: 0.9; color: #FFF; margin-bottom: 22px; }
 .cover-title em { font-family: var(--serif); font-style: italic; font-weight: 500; letter-spacing: -0.028em; color: var(--blue-tint); }
-.cover-sub { font-family: var(--display); font-size: clamp(16px, 1.9vw, 22px); font-weight: 500; letter-spacing: -0.012em; color: rgba(255,255,255,0.82); line-height: 1.35; max-width: 760px; }
+.cover-sub { font-family: var(--display); font-size: clamp(16px, 1.9vw, 22px); font-weight: 500; letter-spacing: -0.012em; color: rgba(255,255,255,0.85); line-height: 1.35; max-width: 800px; }
 .cover-foot { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; margin-top: 22px; }
 .cover-pills { display: flex; gap: 10px; flex-wrap: wrap; }
-.cover-pill { font-family: var(--mono); font-size: clamp(11px, 1vw, 13px); letter-spacing: 0.12em; color: #FFF; border: 1.5px solid rgba(255,255,255,0.6); padding: 7px 14px; border-radius: 980px; font-weight: 600; backdrop-filter: blur(8px); }
+.cover-pill { font-family: var(--mono); font-size: clamp(11px, 1vw, 13px); letter-spacing: 0.12em; color: #FFF; border: 1.5px solid rgba(255,255,255,0.6); padding: 7px 14px; border-radius: 980px; font-weight: 600; }
 .cover-arrow { font-family: var(--display); font-size: clamp(13px, 1.3vw, 18px); font-weight: 700; color: var(--blue-tint); letter-spacing: -0.01em; }
 @media (max-width: 600px) {
   .cover-card { margin: 12px 14px 32px; padding: 12px; border-radius: 18px; max-width: none; }
@@ -185,9 +213,8 @@ body {
 .card-sub { text-align: center; font-family: var(--text); font-size: 17px; color: var(--ink-2); margin-top: 26px; letter-spacing: -0.01em; line-height: 1.5; }
 .share-card.dark .card-sub { color: rgba(255,255,255,0.7); }
 
-/* HERO CARD */
-.hero-card .card-h { font-size: clamp(30px, 4.4vw, 42px); letter-spacing: -0.028em; line-height: 1.18; }
-.hero-card .card-sub { font-size: 19px; margin-top: 32px; }
+.hero-card .card-h { font-size: clamp(28px, 4vw, 38px); letter-spacing: -0.026em; line-height: 1.2; }
+.hero-card .card-sub { font-size: 18px; margin-top: 28px; }
 
 /* STATS CARD */
 .stats-card .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0; margin-top: 16px; }
@@ -214,14 +241,10 @@ body {
 .vocab-gaming li { color: var(--blue-deep); font-family: var(--mono); font-size: 15px; font-weight: 600; }
 @media (max-width: 540px) { .vocab-grid { grid-template-columns: 1fr; } .vocab-divider { width: 100%; height: 1px; min-height: 0; } }
 
-/* LESSIG QUOTE CARD with photo */
-.quote-card .share-card-inner { padding: 0; background: var(--night); overflow: hidden; }
+/* MUNGER QUOTE CARD */
+.quote-card .share-card-inner { padding: 0; background: var(--night); overflow: hidden; padding-bottom: 80px; }
 .quote-card .article-head { padding: 40px 44px 24px; margin-bottom: 0; border-bottom-color: rgba(255,255,255,0.12); }
-.quote-grid {
-  display: grid;
-  grid-template-columns: 240px 1fr;
-  gap: 0;
-}
+.quote-grid { display: grid; grid-template-columns: 240px 1fr; gap: 0; }
 .quote-portrait {
   position: relative;
   background: linear-gradient(180deg, #1a1c20 0%, #0B0C0E 100%);
@@ -230,15 +253,15 @@ body {
   align-items: flex-end;
   justify-content: center;
   overflow: hidden;
-  min-height: 360px;
+  min-height: 380px;
 }
 .quote-portrait img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: grayscale(100%) contrast(1.05) brightness(0.92);
+  filter: grayscale(100%) contrast(1.05) brightness(0.94);
   mix-blend-mode: luminosity;
-  opacity: 0.92;
+  opacity: 0.95;
 }
 .quote-portrait::after {
   content: '';
@@ -246,20 +269,20 @@ body {
   background: linear-gradient(180deg, transparent 0%, rgba(11,12,14,0.85) 100%);
   pointer-events: none;
 }
-.quote-body-wrap { padding: 40px 44px 56px; }
+.quote-body-wrap { padding: 40px 44px 40px; }
 .quote-name { font-family: var(--display); font-size: 16px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--blue-tint); margin-bottom: 8px; }
 .quote-meta { font-family: var(--mono); font-size: 13px; color: rgba(255,255,255,0.55); margin-bottom: 32px; letter-spacing: 0.04em; }
-.quote-q { font-family: var(--serif); font-size: clamp(36px, 4.6vw, 52px); font-weight: 400; font-style: italic; line-height: 1.08; color: #FFF; margin-bottom: 28px; letter-spacing: -0.018em; }
+.quote-q { font-family: var(--serif); font-size: clamp(34px, 4.6vw, 48px); font-weight: 400; font-style: italic; line-height: 1.1; color: #FFF; margin-bottom: 28px; letter-spacing: -0.018em; }
 .quote-q span { color: var(--blue-tint); font-style: italic; }
 .quote-body { font-size: 17px; color: rgba(255,255,255,0.82); line-height: 1.55; letter-spacing: -0.005em; max-width: 480px; }
 @media (max-width: 600px) {
   .quote-grid { grid-template-columns: 1fr; }
   .quote-portrait { min-height: 280px; border-right: none; border-bottom: 1px solid rgba(255,255,255,0.08); }
-  .quote-body-wrap { padding: 32px 24px 48px; }
+  .quote-body-wrap { padding: 32px 24px 36px; }
 }
 
-/* BLOCK ARCHITECTURE CARD */
-.block-card .share-card-inner { padding: 48px 36px 64px; }
+/* BLOCK CARD */
+.block-card .share-card-inner { padding: 48px 36px 80px; }
 .block-diag { background: var(--paper-2); border: 1px solid var(--rule); border-radius: 12px; padding: 28px 22px; margin-top: 8px; }
 .block-diag-title { font-family: var(--display); font-size: 15px; font-weight: 700; letter-spacing: 0.06em; color: var(--ink-3); text-transform: uppercase; margin-bottom: 14px; text-align: center; }
 .block-grid-wrap { display: flex; justify-content: center; margin-bottom: 24px; }
@@ -278,14 +301,10 @@ body {
 .phase-state { font-family: var(--mono); font-size: 10px; margin-top: 8px; letter-spacing: 0.1em; font-weight: 600; opacity: 0.85; text-transform: uppercase; }
 .phase-arrow { position: absolute; right: -14px; top: 50%; transform: translateY(-50%); font-family: var(--mono); font-size: 16px; font-weight: 800; color: var(--ink-2); z-index: 2; }
 .phase:last-child .phase-arrow { display: none; }
-@media (max-width: 540px) {
-  .phase-row { grid-template-columns: 1fr; }
-  .phase-arrow { display: none; }
-  .block-grid { max-width: 280px; }
-}
+@media (max-width: 540px) { .phase-row { grid-template-columns: 1fr; } .phase-arrow { display: none; } .block-grid { max-width: 280px; } }
 
 /* PRIMITIVE CARD */
-.prim-card .share-card-inner { padding: 40px 32px 64px; }
+.prim-card .share-card-inner { padding: 40px 32px 80px; }
 .prim-head { display: grid; grid-template-columns: auto 1fr auto; gap: 22px; align-items: baseline; padding-bottom: 22px; border-bottom: 2px solid var(--ink); margin-bottom: 32px; }
 .prim-num { font-family: var(--display); font-size: 56px; font-weight: 200; letter-spacing: -0.04em; color: var(--blue); line-height: 0.85; }
 .prim-title { font-family: var(--display); font-size: clamp(24px, 3vw, 30px); font-weight: 800; letter-spacing: -0.024em; color: var(--ink); line-height: 1.05; }
@@ -299,7 +318,7 @@ body {
 .split-trading .split-label { color: var(--blue); }
 .split-art { background: var(--paper-2); border-radius: 12px; padding: 14px; height: 240px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--rule); }
 .split-art svg { width: 100%; height: 100%; }
-.split-cap { font-size: 16px; color: var(--ink-2); line-height: 1.4; text-align: center; letter-spacing: -0.008em; font-weight: 500; padding: 0 4px; }
+.split-cap { font-size: 16px; color: var(--ink-2); line-height: 1.45; text-align: center; letter-spacing: -0.008em; font-weight: 500; padding: 0 4px; }
 @media (max-width: 540px) { .split { grid-template-columns: 1fr; gap: 22px; } .split-divider { width: 100%; height: 1px; } .split-art { height: 220px; } }
 
 /* QUADRANT CARD */
@@ -322,71 +341,71 @@ body {
 @media (max-width: 540px) { .map-row { grid-template-columns: 1fr; gap: 4px; padding: 14px 0; } .map-row .arrow { display: none; } .map-trading { font-size: 17px; } .map-gaming { font-size: 13px; opacity: 0.85; } .map-killer { font-size: 15px; padding-top: 4px; } }
 
 /* CLOSER */
-.closer .share-card-inner { text-align: center; padding: 72px 36px; }
+.closer .share-card-inner { text-align: center; padding: 72px 36px 88px; }
 .closer .yr { display: block; font-family: var(--mono); font-size: 13px; letter-spacing: 0.18em; color: var(--blue-tint); text-transform: uppercase; margin-bottom: 28px; font-weight: 600; }
 .closer h3 { font-family: var(--display); font-size: clamp(32px, 5vw, 48px); font-weight: 800; letter-spacing: -0.03em; line-height: 1.06; margin-bottom: 28px; color: #FFF; }
-.closer .late { font-family: var(--serif); font-style: italic; font-size: 22px; color: rgba(255,255,255,0.82); letter-spacing: -0.01em; font-weight: 400; line-height: 1.35; }
-.closer .motto { font-family: var(--display); font-size: 20px; font-weight: 700; color: var(--blue-tint); letter-spacing: -0.018em; margin-top: 22px; }
+.closer .motto { font-family: var(--display); font-size: 22px; font-weight: 700; color: var(--blue-tint); letter-spacing: -0.018em; margin-top: 14px; }
 
 /* FOOTER */
 footer.foot { padding: 80px 0 96px; text-align: center; }
-footer.foot .mark { font-family: var(--display); font-size: 15px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink); font-weight: 700; }
-footer.foot .tagline { font-family: var(--serif); font-style: italic; font-size: 20px; color: var(--ink); margin-top: 14px; letter-spacing: -0.012em; }
+footer.foot .brand-mark { display: inline-flex; }
+footer.foot .brand-mark .nm { font-size: 22px; }
+footer.foot .tagline { font-family: var(--serif); font-style: italic; font-size: 20px; color: var(--ink); margin-top: 18px; letter-spacing: -0.012em; }
 footer.foot .meta { margin-top: 36px; font-size: 13px; color: var(--ink-3); letter-spacing: 0.04em; font-family: var(--mono); }
 
 @media (max-width: 600px) {
-  .page-hero { padding: 64px 22px 56px; }
-  .brand-row { margin-bottom: 36px; }
+  .page-hero { padding: 36px 22px 64px; }
+  .brand-row { margin-bottom: 56px; }
   .share-card { margin: 22px 14px; padding: 14px; border-radius: 20px; max-width: none; }
-  .share-card-inner { padding: 32px 22px 48px; min-height: auto; border-radius: 10px; }
-  .share-card .signature { bottom: 22px; right: 24px; font-size: 12px; }
-  .prim-card .share-card-inner { padding: 28px 18px 48px; }
+  .share-card-inner { padding: 32px 22px 72px; min-height: auto; border-radius: 10px; }
+  .signature { bottom: 22px; }
+  .prim-card .share-card-inner { padding: 28px 18px 72px; }
   .prim-head { gap: 14px; padding-bottom: 16px; margin-bottom: 24px; }
   .prim-num { font-size: 42px; }
   .prim-title { font-size: 22px; }
   .prim-meta { font-size: 11px; }
   .quote-card .article-head { padding: 28px 24px 20px; }
-  .closer .share-card-inner { padding: 52px 22px; }
-  .connect { font-size: 18px; padding: 28px 0; }
+  .closer .share-card-inner { padding: 52px 22px 80px; }
+  .connect { font-size: 19px; padding: 32px 0; }
   .article-tag { font-size: 12px; }
   .stat-cell { padding: 22px 16px; }
   .vocab-list li { font-size: 16px; }
   .vocab-gaming li { font-size: 14px; }
-  .block-card .share-card-inner { padding: 30px 20px 48px; }
+  .block-card .share-card-inner { padding: 30px 20px 72px; }
   .block-diag { padding: 20px 14px; }
 }
 </style>
 </head>
 <body>
 
-<!-- ============ PAGE HERO with candles ============ -->
-<header class="page-hero">
+<!-- ============ PAGE HERO ============ -->
+<header class="page-hero on-dark">
   <div class="page-hero-inner">
     <div class="brand-row">
-      <div class="brand-logo"><img src="/download/general-logo.png" alt="General Market" onerror="this.onerror=null;this.src='/logo.svg';"></div>
-      <div class="brand-text">
-        <span class="brand-name">General Market</span>
-        <span class="brand-meta">TECHNICAL REVIEW № 001</span>
-      </div>
+      <span class="brand-mark">
+        <svg class="lg" width="34" height="34" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" style="fill: var(--logo-bg)"/><rect x="6.5" y="14" width="19" height="4" rx="2" style="fill: var(--logo-pill)"/></svg>
+        <span class="nm">General</span>
+      </span>
     </div>
-    <div class="kicker">FIRST TECHNICAL REVIEW</div>
     <h1>The <em>Anti-Cheat</em></h1>
-    <p class="dek">Trading has eight named exploits and video games solved all of them between 1992 and 2020, so we did the embarrassing thing and read the literature.</p>
-    <div class="byline">11 MIN READ · 2026</div>
+    <span class="review-tag">Technical Review № 001</span>
   </div>
 </header>
 
-<!-- ============ COVER (Twitter OG image) ============ -->
-<figure class="share-card cover-card" id="cover">
+<!-- ============ COVER ============ -->
+<figure class="share-card cover-card on-dark" id="cover">
   <div class="share-card-inner">
     <div class="cover-top">
-      <div class="brand-logo"><img src="/download/general-logo.png" alt="General Market" onerror="this.onerror=null;this.src='/logo.svg';"></div>
-      <div class="cover-eyebrow">GENERAL MARKET · TECHNICAL REVIEW № 001</div>
+      <span class="brand-mark">
+        <svg class="lg" width="30" height="30" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" style="fill: var(--logo-bg)"/><rect x="6.5" y="14" width="19" height="4" rx="2" style="fill: var(--logo-pill)"/></svg>
+        <span class="nm">General</span>
+      </span>
+      <span class="cover-eyebrow">TECHNICAL REVIEW № 001</span>
     </div>
     <div class="cover-content">
       <div class="cover-pretitle">Trading has 8 named exploits.</div>
       <div class="cover-title">The <em>Anti-Cheat</em></div>
-      <div class="cover-sub">Video games solved all of them between 1992 and 2020, so we did the embarrassing thing and read the literature.</div>
+      <div class="cover-sub">Video games solved every one of them between 1992 and 2020 while trading wrote rules onto an architecture too proud to listen.</div>
     </div>
     <div class="cover-foot">
       <div class="cover-pills">
@@ -405,15 +424,15 @@ footer.foot .meta { margin-top: 36px; font-size: 13px; color: var(--ink-3); lett
     <div class="article-head">
       <div class="article-tag">PART I</div>
       <div class="article-title">The <em>Thesis</em></div>
-      <div class="article-dek">A multiplayer game without an anti-cheat is not a game.</div>
+      <div class="article-dek">A multiplayer game without an anti-cheat is not a game, only a habit.</div>
     </div>
-    <div class="card-h">Markets are the largest competitive multiplayer game on earth, and they have never had an anti-cheat.</div>
-    <div class="card-sub">Three decades of fixes for video games, zero applied to trading, until now.</div>
-    <div class="signature">@generalmarket</div>
+    <div class="card-h">Markets are the largest competitive multiplayer game on earth, and the most curious thing about them is that no one ever bothered to install an anti-cheat.</div>
+    <div class="card-sub">Three decades of fixes were patiently catalogued for video games while none were borrowed for trading, on the polite assumption that real money is too dignified to need the same protection as a deathmatch.</div>
+    <div class="signature"><span class="brand-mark"><svg class="lg" width="22" height="22" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" style="fill: var(--logo-bg)"/><rect x="6.5" y="14" width="19" height="4" rx="2" style="fill: var(--logo-pill)"/></svg><span class="nm">General</span></span></div>
   </div>
 </figure>
 
-<div class="wrap"><div class="connect"><p>The cost of that asymmetry has a number, and the number is large.</p></div></div>
+<div class="wrap"><div class="connect"><p>The asymmetry has a number, and like everything paid in the long run, the number is patient and enormous.</p></div></div>
 
 <!-- STATS CARD : THE LOSSES -->
 <figure class="share-card stats-card">
@@ -421,21 +440,21 @@ footer.foot .meta { margin-top: 36px; font-size: 13px; color: var(--ink-3); lett
     <div class="article-head">
       <div class="article-tag">PART II</div>
       <div class="article-title">The <em>Losses</em></div>
-      <div class="article-dek">What ninety-two years of "regulation" delivered to the people who actually trade.</div>
+      <div class="article-dek">What ninety-two years of writing rules onto a defenseless architecture have actually delivered.</div>
     </div>
     <div class="stats-grid">
       <div class="stat-cell"><div class="stat-num">$1.5B<span class="sub">MEV since 2020</span></div><div class="stat-desc">Extracted from Ethereum users by mempool front-running.</div></div>
       <div class="stat-cell"><div class="stat-num">$3.8B<span class="sub">PFOF, per year</span></div><div class="stat-desc">Paid to brokers for routing your order against you.</div></div>
-      <div class="stat-cell"><div class="stat-num">$920M<span class="sub">JPM, single fine</span></div><div class="stat-desc">2020 spoofing settlement, after eight years of doing it.</div></div>
-      <div class="stat-cell"><div class="stat-num">$1T<span class="sub">2010 Flash Crash</span></div><div class="stat-desc">Market cap erased in 36 minutes by a single spoofer.</div></div>
-      <div class="stat-cell"><div class="stat-num">$50B+<span class="sub">crypto liqs, 2024</span></div><div class="stat-desc">Cascades coordinated off visible stop levels.</div></div>
-      <div class="stat-cell"><div class="stat-num">$25B<span class="sub">HFT, annual</span></div><div class="stat-desc">An industry whose only product is being closer to the wire.</div></div>
+      <div class="stat-cell"><div class="stat-num">$920M<span class="sub">JPM, single fine</span></div><div class="stat-desc">2020 spoofing settlement, after eight uninterrupted years of doing it.</div></div>
+      <div class="stat-cell"><div class="stat-num">$1T<span class="sub">2010 Flash Crash</span></div><div class="stat-desc">Market cap erased in 36 minutes by a single spoofer in a London bedroom.</div></div>
+      <div class="stat-cell"><div class="stat-num">$50B+<span class="sub">crypto liqs, 2024</span></div><div class="stat-desc">Cascades coordinated off stop levels every wallet politely advertises.</div></div>
+      <div class="stat-cell"><div class="stat-num">$25B<span class="sub">HFT, annual</span></div><div class="stat-desc">An industry whose entire product is the privilege of being one foot closer to the wire.</div></div>
     </div>
-    <div class="signature">@generalmarket</div>
+    <div class="signature"><span class="brand-mark"><svg class="lg" width="22" height="22" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" style="fill: var(--logo-bg)"/><rect x="6.5" y="14" width="19" height="4" rx="2" style="fill: var(--logo-pill)"/></svg><span class="nm">General</span></span></div>
   </div>
 </figure>
 
-<div class="wrap"><div class="connect"><p>Trading lobbied while gaming engineered, and the same eight problems carry two different vocabularies.</p></div></div>
+<div class="wrap"><div class="connect"><p>Trading reached for lobbyists while gaming reached for engineers, and the eight problems they share now wear two different vocabularies as if vocabulary were a defense.</p></div></div>
 
 <!-- VOCAB CARD : THE TRANSLATION -->
 <figure class="share-card">
@@ -443,7 +462,7 @@ footer.foot .meta { margin-top: 36px; font-size: 13px; color: var(--ink-3); lett
     <div class="article-head">
       <div class="article-tag">PART III</div>
       <div class="article-title">The <em>Translation</em></div>
-      <div class="article-dek">Eight exploits, two vocabularies, one mechanism.</div>
+      <div class="article-dek">Eight exploits, two vocabularies, one identical mechanism underneath.</div>
     </div>
     <div class="vocab-grid">
       <div class="vocab-col"><h4>Trading vocabulary</h4>
@@ -454,13 +473,13 @@ footer.foot .meta { margin-top: 36px; font-size: 13px; color: var(--ink-3); lett
         <ul class="vocab-list vocab-gaming"><li>wallhack</li><li>ping advantage</li><li>aimbot</li><li>spawn camping</li><li>rage-cancel</li><li>pay-to-win</li><li>smurfing</li><li>region-hopping</li></ul>
       </div>
     </div>
-    <div class="signature">@generalmarket</div>
+    <div class="signature"><span class="brand-mark"><svg class="lg" width="22" height="22" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" style="fill: var(--logo-bg)"/><rect x="6.5" y="14" width="19" height="4" rx="2" style="fill: var(--logo-pill)"/></svg><span class="nm">General</span></span></div>
   </div>
 </figure>
 
-<div class="wrap"><div class="connect"><p>One legal scholar named the answer in 1999, before Counter-Strike had even shipped its first build.</p></div></div>
+<div class="wrap"><div class="connect"><p>Twelve years after Quake shipped, the man who runs the world's largest game store said one sentence about piracy that, transposed half a key, settles the entire trading question.</p></div></div>
 
-<!-- LESSIG QUOTE CARD : THE CITATION -->
+<!-- GABE NEWELL QUOTE CARD : THE CITATION -->
 <figure class="share-card dark quote-card">
   <div class="share-card-inner">
     <div class="article-head">
@@ -469,32 +488,32 @@ footer.foot .meta { margin-top: 36px; font-size: 13px; color: var(--ink-3); lett
     </div>
     <div class="quote-grid">
       <div class="quote-portrait">
-        <img src="lessig.png" alt="Lawrence Lessig">
+        <img src="gaben.jpg" alt="Gabe Newell">
       </div>
       <div class="quote-body-wrap">
-        <div class="quote-name">Lawrence Lessig</div>
-        <div class="quote-meta">Code and Other Laws of Cyberspace · 1999</div>
-        <div class="quote-q">"<span>Code</span> is law."</div>
-        <div class="quote-body">In cyberspace, the architecture is the regulator, so changing the code changes the rules of the game itself, while writing more law only stacks paragraphs on top of an architecture that was never built to listen.</div>
+        <div class="quote-name">Gabe Newell</div>
+        <div class="quote-meta">Valve · Steam · 2011</div>
+        <div class="quote-q">"Piracy is almost always a <span>service problem</span>, not a pricing problem."</div>
+        <div class="quote-body">Gaben was talking about people copying Half-Life, but the principle generalizes the way principles do, against everyone's intentions; cheating in markets is almost always an architecture problem and not a regulation problem, which is exactly why ninety-two years of writing regulations have failed to fix it.</div>
       </div>
     </div>
-    <div class="signature">@generalmarket</div>
+    <div class="signature"><span class="brand-mark"><svg class="lg" width="22" height="22" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" style="fill: var(--logo-bg)"/><rect x="6.5" y="14" width="19" height="4" rx="2" style="fill: var(--logo-pill)"/></svg><span class="nm">General</span></span></div>
   </div>
 </figure>
 
-<div class="wrap"><div class="connect"><p>Before the seven primitives, the architecture they fix: this is what a General Market block actually is.</p></div></div>
+<div class="wrap"><div class="connect"><p>Before describing the seven primitives, one ought to describe the object they protect, which is in itself an indictment of the order book.</p></div></div>
 
-<!-- BLOCK ARCHITECTURE CARD : PART V -->
+<!-- BLOCK ARCHITECTURE CARD -->
 <figure class="share-card block-card">
   <div class="share-card-inner">
     <div class="article-head">
       <div class="article-tag">PART V</div>
       <div class="article-title">The <em>Block</em></div>
-      <div class="article-dek">100 markets, 3 phases, 1 sealed envelope.</div>
+      <div class="article-dek">100 parimutuel prediction markets, three phases, one sealed envelope.</div>
     </div>
 
     <div class="block-diag">
-      <div class="block-diag-title">1 BLOCK = 100 BINARY MARKETS</div>
+      <div class="block-diag-title">1 BLOCK · 100 PARIMUTUEL PREDICTION MARKETS</div>
       <div class="block-grid-wrap">
         <div class="block-grid">
           <div class="block-cell up">▲</div><div class="block-cell down">▼</div><div class="block-cell up">▲</div><div class="block-cell up">▲</div><div class="block-cell down">▼</div><div class="block-cell up">▲</div><div class="block-cell down">▼</div><div class="block-cell up">▲</div><div class="block-cell up">▲</div><div class="block-cell down">▼</div>
@@ -509,7 +528,7 @@ footer.foot .meta { margin-top: 36px; font-size: 13px; color: var(--ink-3); lett
           <div class="block-cell up">▲</div><div class="block-cell up">▲</div><div class="block-cell down">▼</div><div class="block-cell up">▲</div><div class="block-cell up">▲</div><div class="block-cell down">▼</div><div class="block-cell up">▲</div><div class="block-cell up">▲</div><div class="block-cell down">▼</div><div class="block-cell up">▲</div>
         </div>
       </div>
-      <div class="block-meta">$1 BLOCK · <b>1¢ on each market</b> · BTC, ETH, SOL, HYPE, … · UP / DOWN only</div>
+      <div class="block-meta">$1 BLOCK · <b>1¢ on each market</b> · BTC, ETH, SOL, HYPE, … · UP / DOWN parimutuel</div>
 
       <div class="phase-row">
         <div class="phase active"><div class="phase-num">PHASE 01</div><div class="phase-name">SUBMIT</div><div class="phase-time">10 MIN</div><div class="phase-state">SEALED</div><div class="phase-arrow">→</div></div>
@@ -518,12 +537,12 @@ footer.foot .meta { margin-top: 36px; font-size: 13px; color: var(--ink-3); lett
       </div>
     </div>
 
-    <div class="card-sub" style="margin-top:32px;">Sealed during submit, locked at reveal, parimutuel at claim, and oracle consensus settles each market through BLS-verified prices. <strong>This is the architecture every primitive below describes.</strong></div>
-    <div class="signature">@generalmarket</div>
+    <div class="card-sub" style="margin-top:32px;">Sealed during submit, locked at reveal, parimutuel at claim, BLS-verified oracle consensus settling each price — the architecture every primitive below describes, already on the chain.</div>
+    <div class="signature"><span class="brand-mark"><svg class="lg" width="22" height="22" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" style="fill: var(--logo-bg)"/><rect x="6.5" y="14" width="19" height="4" rx="2" style="fill: var(--logo-pill)"/></svg><span class="nm">General</span></span></div>
   </div>
 </figure>
 
-<div class="wrap"><div class="connect"><p>Seven architectural primitives, each one killing a class of cheat that already lives inside the block.</p></div></div>
+<div class="wrap"><div class="connect"><p>Seven architectural primitives, each of them quietly putting an entire class of fraud out of work, all of them already inside the block.</p></div></div>
 
 <!-- PRIMITIVE 1: FOG OF WAR -->
 <figure class="share-card prim-card">
@@ -551,7 +570,7 @@ footer.foot .meta { margin-top: 36px; font-size: 13px; color: var(--ink-3); lett
             <text x="120" y="190" text-anchor="middle" fill="#1D1D1F" font-family="-apple-system, sans-serif" font-size="13" font-weight="700" letter-spacing="0.5">SERVER WITHHOLDS THE MAP</text>
           </svg>
         </div>
-        <div class="split-cap">The server holds the map and the client only receives what it should see.</div>
+        <div class="split-cap">The server holds the world and the client receives only the corner it is entitled to.</div>
       </div>
       <div class="split-divider"></div>
       <div class="split-col split-trading">
@@ -576,10 +595,10 @@ footer.foot .meta { margin-top: 36px; font-size: 13px; color: var(--ink-3); lett
             <text x="120" y="190" text-anchor="middle" fill="#1D1D1F" font-family="-apple-system, sans-serif" font-size="13" font-weight="700" letter-spacing="0.5">MEMPOOL READS HASH, NOT BET</text>
           </svg>
         </div>
-        <div class="split-cap">During submit the block holds 100 hashed bets, and the mempool sees commitments rather than the bet itself.</div>
+        <div class="split-cap">Inside the submit window the block carries one hundred hashed bets, and the mempool sees commitments where it expected to find prey.</div>
       </div>
     </div>
-    <div class="signature">@generalmarket</div>
+    <div class="signature"><span class="brand-mark"><svg class="lg" width="22" height="22" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" style="fill: var(--logo-bg)"/><rect x="6.5" y="14" width="19" height="4" rx="2" style="fill: var(--logo-pill)"/></svg><span class="nm">General</span></span></div>
   </div>
 </figure>
 
@@ -611,7 +630,7 @@ footer.foot .meta { margin-top: 36px; font-size: 13px; color: var(--ink-3); lett
             <text x="120" y="190" text-anchor="middle" fill="#1D1D1F" font-family="-apple-system, sans-serif" font-size="13" font-weight="700" letter-spacing="0.5">CLIENT IS A VIEWER</text>
           </svg>
         </div>
-        <div class="split-cap">The client proposes and the server decides, so the client cannot lie.</div>
+        <div class="split-cap">The client proposes and the server decides, and the client cannot lie about what occurred.</div>
       </div>
       <div class="split-divider"></div>
       <div class="split-col split-trading">
@@ -641,10 +660,10 @@ footer.foot .meta { margin-top: 36px; font-size: 13px; color: var(--ink-3); lett
             <text x="120" y="190" text-anchor="middle" fill="#1D1D1F" font-family="-apple-system, sans-serif" font-size="13" font-weight="700" letter-spacing="0.5">BLS-VERIFIED PRICE WINS</text>
           </svg>
         </div>
-        <div class="split-cap">Three oracles sign each price with BLS and consensus settles, so the wallet's claim never matters.</div>
+        <div class="split-cap">Three oracles sign each price with BLS and consensus settles around them, while the wallet's claim is registered, ignored, and forgotten.</div>
       </div>
     </div>
-    <div class="signature">@generalmarket</div>
+    <div class="signature"><span class="brand-mark"><svg class="lg" width="22" height="22" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" style="fill: var(--logo-bg)"/><rect x="6.5" y="14" width="19" height="4" rx="2" style="fill: var(--logo-pill)"/></svg><span class="nm">General</span></span></div>
   </div>
 </figure>
 
@@ -677,7 +696,7 @@ footer.foot .meta { margin-top: 36px; font-size: 13px; color: var(--ink-3); lett
             <text x="120" y="190" text-anchor="middle" fill="#1D1D1F" font-family="-apple-system, sans-serif" font-size="13" font-weight="700" letter-spacing="0.5">NO "FIRST" INSIDE THE TICK</text>
           </svg>
         </div>
-        <div class="split-cap">All inputs collected and the tick resolves them simultaneously.</div>
+        <div class="split-cap">All inputs collected, the tick advances only when everyone has committed, and the order in which packets arrived is forgotten.</div>
       </div>
       <div class="split-divider"></div>
       <div class="split-col split-trading">
@@ -707,10 +726,10 @@ footer.foot .meta { margin-top: 36px; font-size: 13px; color: var(--ink-3); lett
             <text x="120" y="190" text-anchor="middle" fill="#1D1D1F" font-family="-apple-system, sans-serif" font-size="13" font-weight="700" letter-spacing="0.5">CO-LOCATION BUYS NOTHING</text>
           </svg>
         </div>
-        <div class="split-cap">Every bet inside the 10-minute submit window resolves at the same instant, so latency cannot beat what cannot be beaten by speed.</div>
+        <div class="split-cap">Every bet inside the ten-minute submit window resolves at the same instant, and latency, the most expensive product on Wall Street, becomes the only one with a value of zero.</div>
       </div>
     </div>
-    <div class="signature">@generalmarket</div>
+    <div class="signature"><span class="brand-mark"><svg class="lg" width="22" height="22" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" style="fill: var(--logo-bg)"/><rect x="6.5" y="14" width="19" height="4" rx="2" style="fill: var(--logo-pill)"/></svg><span class="nm">General</span></span></div>
   </div>
 </figure>
 
@@ -737,7 +756,7 @@ footer.foot .meta { margin-top: 36px; font-size: 13px; color: var(--ink-3); lett
             <text x="120" y="184" text-anchor="middle" fill="#1D1D1F" font-family="-apple-system, sans-serif" font-size="13" font-weight="700" letter-spacing="0.5">NO TAKEBACKS · NO LAG-CANCEL</text>
           </svg>
         </div>
-        <div class="split-cap">The input is committed for the frame and cannot be retracted.</div>
+        <div class="split-cap">Once an input is committed for a frame it cannot be retracted, not on lag, not on a crash, not on regret.</div>
       </div>
       <div class="split-divider"></div>
       <div class="split-col split-trading">
@@ -751,7 +770,7 @@ footer.foot .meta { margin-top: 36px; font-size: 13px; color: var(--ink-3); lett
               <polygon points="-10,8 0,-10 10,8" fill="#0071E3"/>
               <text x="22" y="6" text-anchor="start" fill="#1D1D1F" font-family="-apple-system, sans-serif" font-size="18" font-weight="800">UP</text>
             </g>
-            <text x="120" y="104" text-anchor="middle" fill="#0071E3" font-family="ui-monospace, monospace" font-size="10" letter-spacing="1.5" font-weight="700">1¢ STAKE · BINARY</text>
+            <text x="120" y="104" text-anchor="middle" fill="#0071E3" font-family="ui-monospace, monospace" font-size="10" letter-spacing="1.5" font-weight="700">1¢ STAKE · PARIMUTUEL</text>
             <rect x="60" y="124" width="120" height="34" fill="#0071E3" rx="17"/>
             <text x="120" y="146" text-anchor="middle" fill="#FFF" font-family="-apple-system, sans-serif" font-size="14" font-weight="800" letter-spacing="2.5">LOCKED</text>
             <g transform="translate(28 56)"><rect x="-12" y="-12" width="24" height="24" fill="#FBFBFD" stroke="#DD0426" stroke-width="2" rx="4"/><line x1="-7" y1="-7" x2="7" y2="7" stroke="#DD0426" stroke-width="2.5"/><line x1="7" y1="-7" x2="-7" y2="7" stroke="#DD0426" stroke-width="2.5"/></g>
@@ -759,10 +778,10 @@ footer.foot .meta { margin-top: 36px; font-size: 13px; color: var(--ink-3); lett
             <text x="120" y="184" text-anchor="middle" fill="#1D1D1F" font-family="-apple-system, sans-serif" font-size="13" font-weight="700" letter-spacing="0.5">SPOOFING IS A FORMER PROBLEM</text>
           </svg>
         </div>
-        <div class="split-cap">Each binary bet locks at reveal and there is no order to cancel because the order book never existed.</div>
+        <div class="split-cap">Each parimutuel bet locks at reveal, and the spoofer goes looking for an order book that was never built in the first place.</div>
       </div>
     </div>
-    <div class="signature">@generalmarket</div>
+    <div class="signature"><span class="brand-mark"><svg class="lg" width="22" height="22" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" style="fill: var(--logo-bg)"/><rect x="6.5" y="14" width="19" height="4" rx="2" style="fill: var(--logo-pill)"/></svg><span class="nm">General</span></span></div>
   </div>
 </figure>
 
@@ -790,7 +809,7 @@ footer.foot .meta { margin-top: 36px; font-size: 13px; color: var(--ink-3); lett
             <text x="120" y="190" text-anchor="middle" fill="#1D1D1F" font-family="-apple-system, sans-serif" font-size="13" font-weight="700" letter-spacing="0.5">"ENEMY POS" — UNREADABLE</text>
           </svg>
         </div>
-        <div class="split-cap">The state lives in RAM but it is encrypted, so wallhacks read garbage.</div>
+        <div class="split-cap">The state lives in RAM but it is encrypted, and the cheat that reads it discovers entropy where it expected an enemy.</div>
       </div>
       <div class="split-divider"></div>
       <div class="split-col split-trading">
@@ -809,14 +828,14 @@ footer.foot .meta { margin-top: 36px; font-size: 13px; color: var(--ink-3); lett
             <text x="120" y="190" text-anchor="middle" fill="#1D1D1F" font-family="-apple-system, sans-serif" font-size="13" font-weight="700" letter-spacing="0.5">"BUY 100 ETH" — UNREADABLE</text>
           </svg>
         </div>
-        <div class="split-cap">100 commitments live on the L3 sealed, so front-runners read hashes rather than bets.</div>
+        <div class="split-cap">One hundred commitments live on the L3 sealed against curiosity, and the front-runner reads the chain to find a hash where there ought to have been a victim.</div>
       </div>
     </div>
-    <div class="signature">@generalmarket</div>
+    <div class="signature"><span class="brand-mark"><svg class="lg" width="22" height="22" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" style="fill: var(--logo-bg)"/><rect x="6.5" y="14" width="19" height="4" rx="2" style="fill: var(--logo-pill)"/></svg><span class="nm">General</span></span></div>
   </div>
 </figure>
 
-<!-- PRIMITIVE 6: BEHAVIORAL DETECTION -->
+<!-- PRIMITIVE 6: ADAPTIVE DIFFICULTY -->
 <figure class="share-card prim-card">
   <div class="share-card-inner">
     <div class="prim-head">
@@ -845,7 +864,7 @@ footer.foot .meta { margin-top: 36px; font-size: 13px; color: var(--ink-3); lett
             <text x="120" y="190" text-anchor="middle" fill="#1D1D1F" font-family="-apple-system, sans-serif" font-size="13" font-weight="700" letter-spacing="0.5">BAN BY DISTRIBUTION</text>
           </svg>
         </div>
-        <div class="split-cap">Honest distribution against cheater outlier, banned by shape.</div>
+        <div class="split-cap">Honest distribution against the cheater outlier, and the ban arrives by shape rather than confession.</div>
       </div>
       <div class="split-divider"></div>
       <div class="split-col split-trading">
@@ -858,9 +877,7 @@ footer.foot .meta { margin-top: 36px; font-size: 13px; color: var(--ink-3); lett
               <text x="29" y="14" text-anchor="middle" fill="#6E6E73" font-family="ui-monospace, monospace" font-size="9" font-weight="700">100</text>
               <g fill="#D2D2D7" transform="translate(8 20)"><rect x="0" y="0" width="6" height="6" rx="1"/><rect x="9" y="0" width="6" height="6" rx="1"/><rect x="18" y="0" width="6" height="6" rx="1"/><rect x="27" y="0" width="6" height="6" rx="1"/><rect x="36" y="0" width="6" height="6" rx="1"/><rect x="0" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/><rect x="18" y="9" width="6" height="6" rx="1"/><rect x="27" y="9" width="6" height="6" rx="1"/><rect x="36" y="9" width="6" height="6" rx="1"/><rect x="0" y="18" width="6" height="6" rx="1"/><rect x="9" y="18" width="6" height="6" rx="1"/><rect x="18" y="18" width="6" height="6" rx="1"/><rect x="27" y="18" width="6" height="6" rx="1"/><rect x="36" y="18" width="6" height="6" rx="1"/><rect x="0" y="27" width="6" height="6" rx="1"/><rect x="9" y="27" width="6" height="6" rx="1"/><rect x="18" y="27" width="6" height="6" rx="1"/><rect x="27" y="27" width="6" height="6" rx="1"/><rect x="36" y="27" width="6" height="6" rx="1"/></g>
               <text x="29" y="74" text-anchor="middle" fill="#0071E3" font-family="-apple-system, sans-serif" font-size="11" font-weight="800">0.1%</text>
-
               <text x="86" y="34" text-anchor="middle" fill="#1D1D1F" font-family="ui-monospace, monospace" font-size="14" font-weight="800">→</text>
-
               <rect x="100" y="0" width="58" height="58" fill="none" stroke="#1D1D1F" stroke-width="1.5" rx="4"/>
               <text x="129" y="14" text-anchor="middle" fill="#1D1D1F" font-family="ui-monospace, monospace" font-size="9" font-weight="700">200</text>
               <g fill="#A8A8AD" transform="translate(106 18)"><rect x="0" y="0" width="4" height="4" rx="0.5"/><rect x="6" y="0" width="4" height="4" rx="0.5"/><rect x="12" y="0" width="4" height="4" rx="0.5"/><rect x="18" y="0" width="4" height="4" rx="0.5"/><rect x="24" y="0" width="4" height="4" rx="0.5"/><rect x="30" y="0" width="4" height="4" rx="0.5"/><rect x="36" y="0" width="4" height="4" rx="0.5"/><rect x="42" y="0" width="4" height="4" rx="0.5"/><rect x="0" y="6" width="4" height="4" rx="0.5"/><rect x="6" y="6" width="4" height="4" rx="0.5"/><rect x="12" y="6" width="4" height="4" rx="0.5"/><rect x="18" y="6" width="4" height="4" rx="0.5"/><rect x="24" y="6" width="4" height="4" rx="0.5"/><rect x="30" y="6" width="4" height="4" rx="0.5"/><rect x="36" y="6" width="4" height="4" rx="0.5"/><rect x="42" y="6" width="4" height="4" rx="0.5"/><rect x="0" y="12" width="4" height="4" rx="0.5"/><rect x="6" y="12" width="4" height="4" rx="0.5"/><rect x="12" y="12" width="4" height="4" rx="0.5"/><rect x="18" y="12" width="4" height="4" rx="0.5"/><rect x="24" y="12" width="4" height="4" rx="0.5"/><rect x="30" y="12" width="4" height="4" rx="0.5"/><rect x="36" y="12" width="4" height="4" rx="0.5"/><rect x="42" y="12" width="4" height="4" rx="0.5"/><rect x="0" y="18" width="4" height="4" rx="0.5"/><rect x="6" y="18" width="4" height="4" rx="0.5"/><rect x="12" y="18" width="4" height="4" rx="0.5"/><rect x="18" y="18" width="4" height="4" rx="0.5"/><rect x="24" y="18" width="4" height="4" rx="0.5"/><rect x="30" y="18" width="4" height="4" rx="0.5"/><rect x="36" y="18" width="4" height="4" rx="0.5"/><rect x="42" y="18" width="4" height="4" rx="0.5"/><rect x="0" y="24" width="4" height="4" rx="0.5"/><rect x="6" y="24" width="4" height="4" rx="0.5"/><rect x="12" y="24" width="4" height="4" rx="0.5"/><rect x="18" y="24" width="4" height="4" rx="0.5"/><rect x="24" y="24" width="4" height="4" rx="0.5"/><rect x="30" y="24" width="4" height="4" rx="0.5"/><rect x="36" y="24" width="4" height="4" rx="0.5"/><rect x="42" y="24" width="4" height="4" rx="0.5"/><rect x="0" y="30" width="4" height="4" rx="0.5"/><rect x="6" y="30" width="4" height="4" rx="0.5"/><rect x="12" y="30" width="4" height="4" rx="0.5"/><rect x="18" y="30" width="4" height="4" rx="0.5"/><rect x="24" y="30" width="4" height="4" rx="0.5"/><rect x="30" y="30" width="4" height="4" rx="0.5"/><rect x="36" y="30" width="4" height="4" rx="0.5"/><rect x="42" y="30" width="4" height="4" rx="0.5"/></g>
@@ -874,10 +891,10 @@ footer.foot .meta { margin-top: 36px; font-size: 13px; color: var(--ink-3); lett
             <text x="120" y="190" text-anchor="middle" fill="#0071E3" font-family="-apple-system, sans-serif" font-size="13" font-weight="800" letter-spacing="0.5">DIFFICULTY IS A KNOB</text>
           </svg>
         </div>
-        <div class="split-cap">The block bundles 100 markets, and if a trader's hit-rate climbs above the curve we scale the bundle to 200, then 1,000, until the math swallows the edge.</div>
+        <div class="split-cap">The block bundles a hundred markets, and the day a trader's hit-rate climbs above the curve we scale the bundle to two hundred, then a thousand, until the math swallows the edge politely.</div>
       </div>
     </div>
-    <div class="signature">@generalmarket</div>
+    <div class="signature"><span class="brand-mark"><svg class="lg" width="22" height="22" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" style="fill: var(--logo-bg)"/><rect x="6.5" y="14" width="19" height="4" rx="2" style="fill: var(--logo-pill)"/></svg><span class="nm">General</span></span></div>
   </div>
 </figure>
 
@@ -906,7 +923,7 @@ footer.foot .meta { margin-top: 36px; font-size: 13px; color: var(--ink-3); lett
             <text x="120" y="190" text-anchor="middle" fill="#1D1D1F" font-family="-apple-system, sans-serif" font-size="13" font-weight="700" letter-spacing="0.5">VERIFIER LOADS FIRST</text>
           </svg>
         </div>
-        <div class="split-cap">The anti-cheat boots before the OS, so the cheat cannot reach below it.</div>
+        <div class="split-cap">The anti-cheat boots before the operating system, and from underneath, every cheat the player loads is already too late.</div>
       </div>
       <div class="split-divider"></div>
       <div class="split-col split-trading">
@@ -927,14 +944,14 @@ footer.foot .meta { margin-top: 36px; font-size: 13px; color: var(--ink-3); lett
             <text x="120" y="190" text-anchor="middle" fill="#1D1D1F" font-family="-apple-system, sans-serif" font-size="13" font-weight="700" letter-spacing="0.5">VERIFIER BELOW THE TRADER</text>
           </svg>
         </div>
-        <div class="split-cap">The L3 chain runs below the trader through BLS consensus and the sealed block, so each layer sits beyond reach.</div>
+        <div class="split-cap">The L3 chain runs underneath the trader through BLS consensus and a sealed block, and at each level the verifier sits where the cheater's hand cannot arrive.</div>
       </div>
     </div>
-    <div class="signature">@generalmarket</div>
+    <div class="signature"><span class="brand-mark"><svg class="lg" width="22" height="22" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" style="fill: var(--logo-bg)"/><rect x="6.5" y="14" width="19" height="4" rx="2" style="fill: var(--logo-pill)"/></svg><span class="nm">General</span></span></div>
   </div>
 </figure>
 
-<div class="wrap"><div class="connect"><p>Stack the seven primitives and look at where each venue actually lands.</p></div></div>
+<div class="wrap"><div class="connect"><p>Stack the seven primitives and look honestly at where each venue lands; the picture is unflattering for everyone who has ever charged a fee for the privilege of being cheated.</p></div></div>
 
 <!-- QUADRANT CARD : THE MAP -->
 <figure class="share-card">
@@ -942,7 +959,7 @@ footer.foot .meta { margin-top: 36px; font-size: 13px; color: var(--ink-3); lett
     <div class="article-head">
       <div class="article-tag">PART VI</div>
       <div class="article-title">The <em>Map</em></div>
-      <div class="article-dek">Cheat-resistance × financial stakes.</div>
+      <div class="article-dek">Cheat-resistance against financial stakes, with the venues honestly placed.</div>
     </div>
     <div class="quadrant">
       <svg viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
@@ -983,7 +1000,7 @@ footer.foot .meta { margin-top: 36px; font-size: 13px; color: var(--ink-3); lett
         <text x="475" y="224" text-anchor="middle" class="q-pin-sub">all seven · real money</text>
       </svg>
     </div>
-    <div class="signature">@generalmarket</div>
+    <div class="signature"><span class="brand-mark"><svg class="lg" width="22" height="22" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" style="fill: var(--logo-bg)"/><rect x="6.5" y="14" width="19" height="4" rx="2" style="fill: var(--logo-pill)"/></svg><span class="nm">General</span></span></div>
   </div>
 </figure>
 
@@ -995,7 +1012,7 @@ footer.foot .meta { margin-top: 36px; font-size: 13px; color: var(--ink-3); lett
     <div class="article-head">
       <div class="article-tag">PART VII</div>
       <div class="article-title">The <em>Kill List</em></div>
-      <div class="article-dek">What disappears when the architecture changes.</div>
+      <div class="article-dek">What disappears the moment you stop pretending an order book is mandatory.</div>
     </div>
     <div class="mapping">
       <div class="map-row"><div class="map-trading">Frontrunning / MEV</div><div class="arrow">≡</div><div class="map-gaming">wallhack</div><div class="arrow">→</div><div class="map-killer">sealed bets</div></div>
@@ -1007,11 +1024,11 @@ footer.foot .meta { margin-top: 36px; font-size: 13px; color: var(--ink-3); lett
       <div class="map-row"><div class="map-trading">Toxic-flow MM</div><div class="arrow">≡</div><div class="map-gaming">smurfing</div><div class="arrow">→</div><div class="map-killer">parimutuel</div></div>
       <div class="map-row"><div class="map-trading">Cross-venue divergence</div><div class="arrow">≡</div><div class="map-gaming">region-hopping</div><div class="arrow">→</div><div class="map-killer">single chain</div></div>
     </div>
-    <div class="signature">@generalmarket</div>
+    <div class="signature"><span class="brand-mark"><svg class="lg" width="22" height="22" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" style="fill: var(--logo-bg)"/><rect x="6.5" y="14" width="19" height="4" rx="2" style="fill: var(--logo-pill)"/></svg><span class="nm">General</span></span></div>
   </div>
 </figure>
 
-<div class="wrap"><div class="connect"><p>Counter-Strike has been playable since 1999, and in three decades not one of these systems has ever leaked inputs, allowed front-running, or permitted rage-cancel.</p><p>Trading was patched, regulated, and lobbied, and the exploits stayed.</p><p>We did the embarrassing thing, which is to say we read the literature.</p></div></div>
+<div class="wrap"><div class="connect"><p>Counter-Strike has been playable since 1999, and in twenty-seven years no one has ever front-run a Counter-Strike match, while every trade you ever placed was front-run by something you never saw; trading received law, the cheapest of the four modalities, and asked for nothing else, and we did the embarrassing thing, which is to say we read what gaming had already written down.</p></div></div>
 
 <!-- CLOSER CARD : THE VERDICT -->
 <figure class="share-card dark closer">
@@ -1023,13 +1040,16 @@ footer.foot .meta { margin-top: 36px; font-size: 13px; color: var(--ink-3); lett
     <span class="yr">QUAKE 1996 · STARCRAFT 1998 · GGPO 2006 · VANGUARD 2020</span>
     <h3>The anti-cheat existed, and trading just never installed it.</h3>
     <div class="motto">Trading is easy with an Anti-Cheat.</div>
-    <div class="signature">@generalmarket</div>
+    <div class="signature"><span class="brand-mark"><svg class="lg" width="22" height="22" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" style="fill: var(--logo-bg)"/><rect x="6.5" y="14" width="19" height="4" rx="2" style="fill: var(--logo-pill)"/></svg><span class="nm">General</span></span></div>
   </div>
 </figure>
 
 <div class="wrap">
   <footer class="foot">
-    <div class="mark">GENERAL MARKET</div>
+    <span class="brand-mark">
+      <svg class="lg" width="32" height="32" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" style="fill: var(--logo-bg)"/><rect x="6.5" y="14" width="19" height="4" rx="2" style="fill: var(--logo-pill)"/></svg>
+      <span class="nm">General</span>
+    </span>
     <div class="tagline">Trading is easy with an Anti-Cheat.</div>
     <div class="meta">TECHNICAL REVIEW № 001 · 2026</div>
   </footer>
