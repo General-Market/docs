@@ -11,7 +11,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, RwLock};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::sync::watch;
-use tokio::time::interval;
+use tokio::time::{interval, Instant as TokioInstant};
 use tracing::{error, info, warn};
 
 /// Configuration for the cycle manager.
@@ -401,6 +401,17 @@ impl CycleManager {
             "CycleManager starting (demand-driven wall-clock)"
         );
 
+        // Heartbeat anchor: a monotonic deadline that survives WorkDriven iterations.
+        // Aligned to the next wall-clock boundary on entry and advanced by exactly
+        // one cycle each time heartbeat fires, so consensus pacing cannot be starved
+        // by a hot work signal.
+        let mut next_heartbeat_at = {
+            let now_ms = Self::unix_timestamp_ms();
+            let next_unix_ms = ((now_ms / max_cycle_ms) + 1) * max_cycle_ms;
+            let initial_delay_ms = next_unix_ms.saturating_sub(now_ms).max(1);
+            TokioInstant::now() + Duration::from_millis(initial_delay_ms)
+        };
+
         loop {
             if shutdown.load(Ordering::Relaxed) {
                 info!(
@@ -411,21 +422,28 @@ impl CycleManager {
                 break;
             }
 
-            let now_ms = Self::unix_timestamp_ms();
-            let next_heartbeat_ms = ((now_ms / max_cycle_ms) + 1) * max_cycle_ms;
-            let sleep_until_heartbeat = next_heartbeat_ms.saturating_sub(now_ms).max(1);
-
-            // Wait for: heartbeat timer OR work signal from consensus
+            // Wait for: heartbeat deadline OR work signal from consensus.
+            // `biased;` polls heartbeat first when both are ready; `sleep_until`
+            // is anchored to the persistent deadline, not recomputed each iteration.
             let trigger = if let Some(ref mut work_rx) = self.work_rx {
                 tokio::select! {
-                    _ = tokio::time::sleep(Duration::from_millis(sleep_until_heartbeat)) => {
+                    biased;
+                    _ = tokio::time::sleep_until(next_heartbeat_at) => {
+                        next_heartbeat_at += Duration::from_millis(max_cycle_ms);
                         CycleTrigger::Heartbeat
                     }
                     result = work_rx.recv() => {
                         match result {
                             Some(true) => {
-                                // Has pending work → fast cycle after min gap
-                                tokio::time::sleep(Duration::from_millis(min_gap_ms)).await;
+                                // Fast cycle after min gap, but never past the next
+                                // heartbeat — gap is capped to whatever time remains.
+                                let remaining = next_heartbeat_at
+                                    .saturating_duration_since(TokioInstant::now());
+                                let gap = std::cmp::min(
+                                    Duration::from_millis(min_gap_ms),
+                                    remaining,
+                                );
+                                tokio::time::sleep(gap).await;
                                 CycleTrigger::WorkDriven
                             }
                             Some(false) | None => {
@@ -437,7 +455,8 @@ impl CycleManager {
                 }
             } else {
                 // No work channel → legacy fixed-time mode (heartbeat only)
-                tokio::time::sleep(Duration::from_millis(sleep_until_heartbeat)).await;
+                tokio::time::sleep_until(next_heartbeat_at).await;
+                next_heartbeat_at += Duration::from_millis(max_cycle_ms);
                 CycleTrigger::Heartbeat
             };
 
@@ -563,13 +582,21 @@ impl CycleManager {
             "CycleManager starting (demand-driven wall-clock, channel shutdown)"
         );
 
-        loop {
+        // Heartbeat anchor: see `start_wall_clock` for rationale. Persists across
+        // iterations so a hot work signal cannot starve consensus pacing.
+        let mut next_heartbeat_at = {
             let now_ms = Self::unix_timestamp_ms();
-            let next_heartbeat_ms = ((now_ms / max_cycle_ms) + 1) * max_cycle_ms;
-            let sleep_until_heartbeat = next_heartbeat_ms.saturating_sub(now_ms).max(1);
+            let next_unix_ms = ((now_ms / max_cycle_ms) + 1) * max_cycle_ms;
+            let initial_delay_ms = next_unix_ms.saturating_sub(now_ms).max(1);
+            TokioInstant::now() + Duration::from_millis(initial_delay_ms)
+        };
 
-            // Wait for: shutdown, heartbeat timer, or work signal
+        loop {
+            // Wait for: shutdown, heartbeat deadline, or work signal.
+            // `biased;` polls in declared order — shutdown first, heartbeat second,
+            // work third — so heartbeat cannot be starved by a hot work channel.
             let trigger = tokio::select! {
+                biased;
                 _ = &mut shutdown_rx => {
                     info!(
                         cycle_number = self.state.get_current_cycle(),
@@ -577,6 +604,10 @@ impl CycleManager {
                         "CycleManager received shutdown signal"
                     );
                     break;
+                }
+                _ = tokio::time::sleep_until(next_heartbeat_at) => {
+                    next_heartbeat_at += Duration::from_millis(max_cycle_ms);
+                    CycleTrigger::Heartbeat
                 }
                 result = async {
                     if let Some(ref mut work_rx) = self.work_rx {
@@ -588,14 +619,17 @@ impl CycleManager {
                 } => {
                     match result {
                         Some(true) => {
-                            tokio::time::sleep(Duration::from_millis(min_gap_ms)).await;
+                            let remaining = next_heartbeat_at
+                                .saturating_duration_since(TokioInstant::now());
+                            let gap = std::cmp::min(
+                                Duration::from_millis(min_gap_ms),
+                                remaining,
+                            );
+                            tokio::time::sleep(gap).await;
                             CycleTrigger::WorkDriven
                         }
                         Some(false) | None => continue,
                     }
-                }
-                _ = tokio::time::sleep(Duration::from_millis(sleep_until_heartbeat)) => {
-                    CycleTrigger::Heartbeat
                 }
             };
 
