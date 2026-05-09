@@ -266,7 +266,7 @@ function PhoneScene({
     onReady()
   }, [gltf, onReady, tuning.xo, tuning.yo, tuning.zo])
 
-  useFrame(() => {
+  useFrame(({ clock }) => {
     const g = groupRef.current
     if (!g) return
 
@@ -287,17 +287,17 @@ function PhoneScene({
       return
     }
 
-    // Tilt source: mouse parallax on desktop, frozen on touch. The
-    // touch-flat menu lives outside the parent matrix3d, so a
-    // wobbling bezel behind a static menu would visibly desync.
-    let tiltYaw: number
-    let tiltPitch: number
-    if (responsive.ambient) {
-      tiltYaw = 0
-      tiltPitch = 0
-    } else {
-      tiltYaw = tilt.current.yaw
-      tiltPitch = tilt.current.pitch
+    // Tilt source: gyroscope when granted on touch devices, sine wave
+    // as ambient fallback for touch-without-gyro, mouse parallax on desktop.
+    const tNow = clock.getElapsedTime()
+    let tiltYaw = tilt.current.yaw
+    let tiltPitch = tilt.current.pitch
+    if (tilt.current.gyroActive) {
+      tiltYaw = tilt.current.gyroYaw
+      tiltPitch = tilt.current.gyroPitch
+    } else if (responsive.ambient) {
+      tiltYaw = Math.sin(tNow * 0.45) * 0.09
+      tiltPitch = Math.sin(tNow * 0.32 + 1.1) * 0.05
     }
 
     const targetY = responsive.topOffset + tilt.current.scrollProgress * responsive.scrollTravel
@@ -321,34 +321,17 @@ function PhoneScene({
       />
       {screenFit && (
         <>
-          {responsive.ambient ? (
-            // Touch devices: flat <Html> (no `transform`) renders the
-            // menu as plain DOM positioned at the projected pixel of
-            // the screen-mesh anchor. No CSS3D matrix3d, so iOS Safari
-            // hit-tests against the visual rectangle of each row —
-            // taps land where the user expects them to.
-            <Html
-              position={screenFit.position}
-              center
-              occlude={false}
-              zIndexRange={[1, 0]}
-              wrapperClass="lt-html-wrapper"
-            >
-              <LinkMenu onLinkClick={onLinkClick} hidden={isLeaving} flat />
-            </Html>
-          ) : (
-            <Html
-              transform
-              position={screenFit.position}
-              rotation={[0, Math.PI, 0]}
-              scale={screenFit.scale}
-              occlude={false}
-              zIndexRange={[1, 0]}
-              wrapperClass="lt-html-wrapper"
-            >
-              <LinkMenu onLinkClick={onLinkClick} hidden={isLeaving} />
-            </Html>
-          )}
+          <Html
+            transform
+            position={screenFit.position}
+            rotation={[0, Math.PI, 0]}
+            scale={screenFit.scale}
+            occlude={false}
+            zIndexRange={[1, 0]}
+            wrapperClass="lt-html-wrapper"
+          >
+            <LinkMenu onLinkClick={onLinkClick} hidden={isLeaving} />
+          </Html>
           {/* Calibration mark — red sphere at the measured screen-mesh
               centre. Visible only with ?debug=1. Use to read off the
               gap between target and where the menu actually lands. */}
