@@ -320,21 +320,37 @@ async function processSource(source: string) {
     const { bitmap, hash: bitmapHash } = newBitmap()
     const vaultRef = vault
 
-    // Serialize each write through the nonce queue.
+    // Serialize each write through the nonce queue, with one retry on nonce
+    // drift. The deployer key is shared with fund-manager + keeper, so even
+    // serialized writes from this daemon collide with other signers' pending
+    // txs occasionally. Retry once with a fresh pending fetch and we usually
+    // land.
     nonceQueue = nonceQueue.then(async () => {
-      let nonce: number | undefined
-      try {
-        nonce = await nextNonce()
-        const txHash = await walletClient.writeContract({
+      const tryWrite = async (): Promise<string> => {
+        const nonce = await nextNonce()
+        return walletClient.writeContract({
           address: vaultRef,
           abi: VAULT_ABI,
           functionName: 'joinBatch',
           args: [batchId, configHash, DEPOSIT_WEI, bitmapHash],
           nonce,
         })
+      }
+      try {
+        let txHash: string
+        try {
+          txHash = await tryWrite()
+        } catch (e1) {
+          const m1 = e1 instanceof Error ? e1.message : String(e1)
+          if (!(m1.includes('nonce') || m1.includes('Nonce'))) throw e1
+          // Drop floor + small backoff so the next pending fetch wins.
+          nonceFloor = 0
+          await new Promise((r) => setTimeout(r, 500))
+          txHash = await tryWrite()
+        }
         health.joinedTotal += 1
         health.joinedThisRun += 1
-        console.log(`[join] source=${source} batch=${batchId} vault=${vaultRef} nonce=${nonce} tx=${txHash}`)
+        console.log(`[join] source=${source} batch=${batchId} vault=${vaultRef} tx=${txHash}`)
         submitBitmapToOracles(vaultRef, batchId, bitmap, bitmapHash).then((accepted) => {
           console.log(`[bitmap] source=${source} batch=${batchId} vault=${vaultRef} accepted=${accepted}/${ORACLE_URLS.length}`)
         }).catch((e) => {
@@ -343,7 +359,7 @@ async function processSource(source: string) {
       } catch (err) {
         const msg = err instanceof Error ? err.message.slice(0, 140) : String(err).slice(0, 140)
         health.lastError = `${source}/${batchId}/${vaultRef}: ${msg}`
-        console.warn(`[skip] source=${source} batch=${batchId} vault=${vaultRef} nonce=${nonce} ${msg}`)
+        console.warn(`[skip] source=${source} batch=${batchId} vault=${vaultRef} ${msg}`)
         if (msg.includes('nonce') || msg.includes('Nonce')) {
           nonceFloor = 0
         }
