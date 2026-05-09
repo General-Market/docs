@@ -204,22 +204,31 @@ async function submitBitmapToOracles(player: `0x${string}`, batchId: bigint, bit
     bitmap_hex: bytesToHex(bitmap),
     expected_hash: hash,
   }
+  // Oracle's chain_listener has a polling delay before it sees PlayerJoined.
+  // Bitmap submissions before that fail with "Player ... not found in batch".
+  // Retry with backoff: 2s, 4s, 8s — gives the listener time to catch up.
+  const delays = [2_000, 4_000, 8_000]
   let accepted = 0
-  await Promise.all(
-    ORACLE_URLS.map(async (url) => {
-      try {
-        const res = await fetch(`${url}/vision/bitmap`, {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify(payload),
-          signal: AbortSignal.timeout(5_000),
-        })
-        if (res.ok) accepted += 1
-      } catch {
-        // best effort — oracle may be down or restarting
-      }
-    }),
-  )
+  for (const delay of delays) {
+    await new Promise((r) => setTimeout(r, delay))
+    accepted = 0
+    await Promise.all(
+      ORACLE_URLS.map(async (url) => {
+        try {
+          const res = await fetch(`${url}/vision/bitmap`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify(payload),
+            signal: AbortSignal.timeout(5_000),
+          })
+          if (res.ok) accepted += 1
+        } catch {
+          // best effort — oracle may be down or restarting
+        }
+      }),
+    )
+    if (accepted >= 2) return accepted // BFT quorum reached, no need to retry
+  }
   return accepted
 }
 
@@ -328,11 +337,16 @@ async function processSource(source: string) {
       })
       health.joinedTotal += 1
       health.joinedThisRun += 1
-      // Fire-and-forget bitmap submission. If oracles reject, that's logged
-      // but we don't unwind the on-chain join — vault is in the batch either
-      // way; without bitmap the player just settles to a default payout.
-      const accepted = await submitBitmapToOracles(vault, batchId, bitmap, bitmapHash)
-      console.log(`[join] source=${source} batch=${batchId} vault=${vault} nonce=${nonce} tx=${txHash} bitmap_accepted=${accepted}/${ORACLE_URLS.length}`)
+      console.log(`[join] source=${source} batch=${batchId} vault=${vault} nonce=${nonce} tx=${txHash}`)
+      // Fire-and-forget bitmap submission outside the nonce queue — oracle's
+      // chain_listener has a polling delay before it sees PlayerJoined, so
+      // submitBitmapToOracles retries with backoff. Don't block the next
+      // join's nonce slot waiting for that.
+      submitBitmapToOracles(vault, batchId, bitmap, bitmapHash).then((accepted) => {
+        console.log(`[bitmap] source=${source} batch=${batchId} accepted=${accepted}/${ORACLE_URLS.length}`)
+      }).catch((e) => {
+        console.warn(`[bitmap-fail] source=${source} batch=${batchId} ${e instanceof Error ? e.message : String(e)}`)
+      })
     } catch (err) {
       const msg = err instanceof Error ? err.message.slice(0, 140) : String(err).slice(0, 140)
       health.lastError = `${source}/${batchId}: ${msg}`
