@@ -8,8 +8,8 @@
 import React, { useEffect, useMemo, useRef } from "react";
 import {
   AbsoluteFill,
+  Sequence,
   Video,
-  interpolate,
   staticFile,
   useCurrentFrame,
   useRemotionEnvironment,
@@ -80,11 +80,8 @@ const PHONE_SPIN_END = 234;
 const PHONE_SPIN_REVOLUTIONS = 2.25;
 const PHONE_SLIDE_OFFSET = -4.5; // extra world-x push during the spin
 
-// Screens powering on. Phone is lit from frame 0 (the trading chart
-// reads from the very first frame); the laptop still wakes from a
-// half-lit state and ramps to full.
-const SCREEN_ON_LAPTOP = 18;
-const LAPTOP_INITIAL_BRIGHTNESS = 0.45;
+// Both screens are lit from frame 0 — the trading chart and the
+// cheat broll read from the very first frame, no wake-up animation.
 
 const clamp01 = (t: number) => (t < 0 ? 0 : t > 1 ? 1 : t);
 
@@ -258,9 +255,16 @@ const PreviewScreen: React.FC<{
 
 // ── Main scene ───────────────────────────────────────────────────────────────
 
+export type BrollSegment = {
+  url: string;
+  from: number;
+  durationInFrames: number;
+  startFrom: number;
+};
+
 const Scene: React.FC<{
-  laptopBroll: string;
-  phoneBroll: string;
+  laptopSegments: BrollSegment[];
+  phoneSegments: BrollSegment[];
   laptopBrollAspect: number;
   phoneBrollAspect: number;
   laptopVideoRef: React.RefObject<HTMLVideoElement | null>;
@@ -269,8 +273,8 @@ const Scene: React.FC<{
   lightingIntensity: number;
   frame: number;
 }> = ({
-  laptopBroll,
-  phoneBroll,
+  laptopSegments,
+  phoneSegments,
   laptopBrollAspect,
   phoneBrollAspect,
   laptopVideoRef,
@@ -351,17 +355,10 @@ const Scene: React.FC<{
     iphone.rotateY(yawDrift + phoneRotY);
   }
 
-  // Screen brightness. Phone lit from frame 0 so the trading chart
-  // reads immediately; laptop wakes from a half-bright state.
+  // Screen brightness. Both screens lit from frame 0 — the trading
+  // chart and the cheat broll read immediately.
   const phoneBrightness = 1;
-  const laptopBrightness = clamp01(
-    interpolate(
-      frame,
-      [0, SCREEN_ON_LAPTOP],
-      [LAPTOP_INITIAL_BRIGHTNESS, 1],
-      { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-    ),
-  );
+  const laptopBrightness = 1;
 
   // Camera
   const perspCam = threeCam as THREE.PerspectiveCamera;
@@ -375,27 +372,25 @@ const Scene: React.FC<{
     <>
       <primitive object={sceneClone} />
       <React.Suspense fallback={null}>
-        {env.isRendering ? (
-          <>
-            <RenderedScreen
-              mesh={laptopScreen}
-              broll={laptopBroll}
-              brollAspect={laptopBrollAspect}
-              screenAspect={LAPTOP_SCREEN_ASPECT}
-              emissiveIntensity={emissiveIntensity}
-              brightness={laptopBrightness}
-            />
-            <RenderedScreen
-              mesh={phoneScreen}
-              broll={phoneBroll}
-              brollAspect={phoneBrollAspect}
-              screenAspect={PHONE_SCREEN_ASPECT}
-              emissiveIntensity={emissiveIntensity}
-              brightness={phoneBrightness}
-            />
-          </>
-        ) : (
-          <>
+        {env.isRendering
+          ? laptopSegments.map((seg, i) => (
+              <Sequence
+                key={`l-${i}`}
+                from={seg.from - seg.startFrom}
+                durationInFrames={seg.durationInFrames + seg.startFrom}
+                layout="none"
+              >
+                <RenderedScreen
+                  mesh={laptopScreen}
+                  broll={seg.url}
+                  brollAspect={laptopBrollAspect}
+                  screenAspect={LAPTOP_SCREEN_ASPECT}
+                  emissiveIntensity={emissiveIntensity}
+                  brightness={laptopBrightness}
+                />
+              </Sequence>
+            ))
+          : (
             <PreviewScreen
               mesh={laptopScreen}
               videoRef={laptopVideoRef}
@@ -405,6 +400,26 @@ const Scene: React.FC<{
               brightness={laptopBrightness}
               frame={frame}
             />
+          )}
+        {env.isRendering
+          ? phoneSegments.map((seg, i) => (
+              <Sequence
+                key={`p-${i}`}
+                from={seg.from - seg.startFrom}
+                durationInFrames={seg.durationInFrames + seg.startFrom}
+                layout="none"
+              >
+                <RenderedScreen
+                  mesh={phoneScreen}
+                  broll={seg.url}
+                  brollAspect={phoneBrollAspect}
+                  screenAspect={PHONE_SCREEN_ASPECT}
+                  emissiveIntensity={emissiveIntensity}
+                  brightness={phoneBrightness}
+                />
+              </Sequence>
+            ))
+          : (
             <PreviewScreen
               mesh={phoneScreen}
               videoRef={phoneVideoRef}
@@ -414,8 +429,7 @@ const Scene: React.FC<{
               brightness={phoneBrightness}
               frame={frame}
             />
-          </>
-        )}
+          )}
       </React.Suspense>
       {/* Apartment preset is warmer + softer than studio. Combined with
           a gentler key light and a lower exposure pass, the screens
@@ -441,8 +455,8 @@ const Scene: React.FC<{
 // ── Wrapper ──────────────────────────────────────────────────────────────────
 
 export type AntiCheatSceneProps = {
-  laptopBroll: string;
-  phoneBroll: string;
+  laptopSegments: BrollSegment[];
+  phoneSegments: BrollSegment[];
   laptopBrollAspect?: number;
   phoneBrollAspect?: number;
   width?: number;
@@ -451,9 +465,36 @@ export type AntiCheatSceneProps = {
   lightingIntensity?: number;
 };
 
+const PreviewVideo: React.FC<{
+  segment: BrollSegment;
+  videoRef: React.RefObject<HTMLVideoElement | null>;
+}> = ({ segment, videoRef }) => (
+  <Sequence
+    from={segment.from - segment.startFrom}
+    durationInFrames={segment.durationInFrames + segment.startFrom}
+    layout="none"
+  >
+    <Video
+      ref={videoRef}
+      src={segment.url}
+      muted
+      loop
+      playsInline
+      preload="auto"
+      style={{
+        position: "absolute",
+        width: 1,
+        height: 1,
+        opacity: 0,
+        pointerEvents: "none",
+      }}
+    />
+  </Sequence>
+);
+
 export const AntiCheatHookScene: React.FC<AntiCheatSceneProps> = ({
-  laptopBroll,
-  phoneBroll,
+  laptopSegments,
+  phoneSegments,
   laptopBrollAspect = 16 / 9,
   phoneBrollAspect = 720 / 1560,
   width = 1920,
@@ -470,36 +511,20 @@ export const AntiCheatHookScene: React.FC<AntiCheatSceneProps> = ({
     <AbsoluteFill style={{ width, height, background: "#0a0a0a" }}>
       {!env.isRendering && (
         <>
-          <Video
-            ref={laptopVideoRef}
-            src={laptopBroll}
-            muted
-            loop
-            playsInline
-            preload="auto"
-            style={{
-              position: "absolute",
-              width: 1,
-              height: 1,
-              opacity: 0,
-              pointerEvents: "none",
-            }}
-          />
-          <Video
-            ref={phoneVideoRef}
-            src={phoneBroll}
-            muted
-            loop
-            playsInline
-            preload="auto"
-            style={{
-              position: "absolute",
-              width: 1,
-              height: 1,
-              opacity: 0,
-              pointerEvents: "none",
-            }}
-          />
+          {laptopSegments.map((seg, i) => (
+            <PreviewVideo
+              key={`l-${i}`}
+              segment={seg}
+              videoRef={laptopVideoRef}
+            />
+          ))}
+          {phoneSegments.map((seg, i) => (
+            <PreviewVideo
+              key={`p-${i}`}
+              segment={seg}
+              videoRef={phoneVideoRef}
+            />
+          ))}
         </>
       )}
       <ThreeCanvas
@@ -522,8 +547,8 @@ export const AntiCheatHookScene: React.FC<AntiCheatSceneProps> = ({
       >
         <React.Suspense fallback={null}>
           <Scene
-            laptopBroll={laptopBroll}
-            phoneBroll={phoneBroll}
+            laptopSegments={laptopSegments}
+            phoneSegments={phoneSegments}
             laptopBrollAspect={laptopBrollAspect}
             phoneBrollAspect={phoneBrollAspect}
             laptopVideoRef={laptopVideoRef}

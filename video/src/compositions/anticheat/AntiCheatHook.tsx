@@ -25,13 +25,50 @@ const BROLL = {
 // Cycle order: spinbot → wallhack → kill aura. Beat boundaries inherit
 // the original cuts (frames 69 and 146).
 const LAPTOP_CLIP_CUTS = { mid: 69, late: 146 } as const;
-function laptopBrollFor(frame: number): string {
-  if (frame < LAPTOP_CLIP_CUTS.mid) return BROLL.cs2;
-  if (frame < LAPTOP_CLIP_CUTS.late) return BROLL.valorant;
-  return BROLL.minecraft;
-}
+
+// CS:GO source has a long lead-in before the spinbot becomes visible.
+// Skip the first 1.5s of the file so frame 0 already shows the cheat
+// in action.
+const LAPTOP_CS2_START_FROM = 45;
 
 const PHONE_BROLL = staticFile("cheat-broll/phone-trading.mp4");
+
+export type BrollSegment = {
+  url: string;
+  from: number; // composition frame at which this segment owns the screen
+  durationInFrames: number;
+  startFrom: number; // skip this many frames at the head of the source
+};
+
+const LAPTOP_SEGMENTS: BrollSegment[] = [
+  {
+    url: BROLL.cs2,
+    from: 0,
+    durationInFrames: LAPTOP_CLIP_CUTS.mid,
+    startFrom: LAPTOP_CS2_START_FROM,
+  },
+  {
+    url: BROLL.valorant,
+    from: LAPTOP_CLIP_CUTS.mid,
+    durationInFrames: LAPTOP_CLIP_CUTS.late - LAPTOP_CLIP_CUTS.mid,
+    startFrom: 0,
+  },
+  {
+    url: BROLL.minecraft,
+    from: LAPTOP_CLIP_CUTS.late,
+    durationInFrames: 254 - LAPTOP_CLIP_CUTS.late,
+    startFrom: 0,
+  },
+];
+
+const PHONE_SEGMENTS: BrollSegment[] = [
+  {
+    url: PHONE_BROLL,
+    from: 0,
+    durationInFrames: 254,
+    startFrom: 0,
+  },
+];
 
 const PAIRS = [
   { game: "Spin-bots", trade: "Insider traders" },
@@ -99,8 +136,8 @@ export const AntiCheatHook: React.FC = () => {
       >
         {/* ── Single dual-device 3D scene underneath everything ── */}
         <AntiCheatHookScene
-          laptopBroll={laptopBrollFor(frame)}
-          phoneBroll={PHONE_BROLL}
+          laptopSegments={LAPTOP_SEGMENTS}
+          phoneSegments={PHONE_SEGMENTS}
           laptopBrollAspect={16 / 9}
           phoneBrollAspect={720 / 1560}
           width={W}
