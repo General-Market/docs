@@ -67,10 +67,21 @@ export const AntiCheatHook: React.FC = () => {
     extrapolateRight: "clamp",
   });
 
-  const zoomScale = interpolate(frame, [0, HOOK_DURATION], [1, 1.05], {
+  // Open with a hard zoom-in that resolves to the framing the rest of
+  // the scene uses by frame 60 (2s); after that, the original slow drift
+  // continues to scale 1.05 by the end of the scene.
+  const ZOOM_IN_END = 60;
+  const zoomIn = interpolate(frame, [0, ZOOM_IN_END], [1.45, 1.0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
+  const zoomDrift = interpolate(
+    frame,
+    [ZOOM_IN_END, HOOK_DURATION],
+    [1.0, 1.05],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const zoomScale = frame < ZOOM_IN_END ? zoomIn : zoomDrift;
 
   return (
     <AbsoluteFill style={{ backgroundColor: "#0a0a0a", fontFamily: font }}>
@@ -88,8 +99,8 @@ export const AntiCheatHook: React.FC = () => {
           phoneBrollAspect={720 / 1560}
           width={W}
           height={H}
-          emissiveIntensity={1.0}
-          lightingIntensity={0.6}
+          emissiveIntensity={0.7}
+          lightingIntensity={0.7}
         />
 
         {/* ── Left panel overlay: text + tint, no canvas ── */}

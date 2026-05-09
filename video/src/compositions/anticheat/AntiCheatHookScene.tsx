@@ -9,6 +9,7 @@ import React, { useEffect, useMemo, useRef } from "react";
 import {
   AbsoluteFill,
   Video,
+  interpolate,
   staticFile,
   useCurrentFrame,
   useRemotionEnvironment,
@@ -26,8 +27,11 @@ useGLTF.preload(MODEL_URL);
 
 // ── Laptop / phone constants pulled from DeviceBroll so this component
 //    is self-contained.
-const PHONE_BASE_SCALE = 22.486;
+// Phone scaled up + pushed further to canvas-right so it stands ~80%
+// of frame height with its right quarter clipped off the canvas edge.
+const PHONE_BASE_SCALE = 35;
 const LID_OPEN = new THREE.Quaternion(-0.78333, 0, 0, 0.62161);
+const LID_CLOSED = new THREE.Quaternion(0, 0, 0, 1);
 const BEVELS_POS = new THREE.Vector3(-0.00012, 0.00824, -0.10401);
 const BEVELS_SCALE = new THREE.Vector3(0.27471, 0.27471, 0.27471);
 
@@ -35,18 +39,36 @@ const PHONE_SCREEN_ASPECT = 9 / 19.5;
 const LAPTOP_SCREEN_ASPECT = 16 / 10;
 
 // World layout. Laptop sits at GLB origin (its native pose). Phone
-// stays at its native floating pose (-3, 2.5, 0). Counter-intuitive
-// but correct: with the camera looking down +z, three.js's lookAt
-// produces camera_right = -world_x, so a point at world -x projects
-// to the RIGHT of the canvas. Phone (world x=-3) → canvas right;
-// laptop (world x=0) → canvas left.
-const PHONE_POS = new THREE.Vector3(-3, 2.5, 0);
+// floats at world x=-5.2 (more negative than before): with the camera
+// looking down +z, three.js's lookAt makes negative-x map to the
+// RIGHT of the canvas, so pushing phone further right clips part of
+// it off the right edge.
+const PHONE_POS = new THREE.Vector3(-5.2, 2.5, 0);
 
 // Camera between the two devices, looking forward into +z. Slightly
 // above the device plane so we read the laptop's lid face and the
 // phone's screen face without lying flat on the deck.
 const CAMERA_POS: [number, number, number] = [-1.5, 3.2, -7];
 const CAMERA_TARGET: [number, number, number] = [-1.5, 2.2, 0];
+
+// Closing-act animation — the lid slams shut while the phone whirls
+// off-frame to the right. 7.28s = frame 218 at 30fps.
+const LID_CLOSE_START = 218;
+const LID_CLOSE_END = 232;
+const PHONE_SPIN_START = 218;
+const PHONE_SPIN_END = 234;
+const PHONE_SPIN_REVOLUTIONS = 2.25;
+const PHONE_SLIDE_OFFSET = -4.5; // extra world-x push during the spin
+
+// Screens powering on. Phone wakes from a true black; laptop wakes
+// from a half-lit state — the boot vibe the user asked for.
+const SCREEN_ON_PHONE = 24;
+const SCREEN_ON_LAPTOP = 18;
+const LAPTOP_INITIAL_BRIGHTNESS = 0.45;
+
+const Y_AXIS = new THREE.Vector3(0, 1, 0);
+
+const clamp01 = (t: number) => (t < 0 ? 0 : t > 1 ? 1 : t);
 
 // ── Mesh identification (lifted from DeviceBroll). ───────────────────────────
 
@@ -107,15 +129,20 @@ function bindTexture(
   mesh: THREE.Mesh,
   texture: THREE.Texture,
   emissiveIntensity: number,
+  brightness: number,
 ) {
   const mat = mesh.material as THREE.MeshStandardMaterial;
-  if (mat.map === texture && mat.emissiveMap === texture) return;
-  mat.map = texture;
-  mat.color = new THREE.Color(0xffffff);
-  mat.emissive = new THREE.Color(0xffffff);
-  mat.emissiveMap = texture;
-  mat.emissiveIntensity = emissiveIntensity;
-  mat.needsUpdate = true;
+  const alreadyBound = mat.map === texture && mat.emissiveMap === texture;
+  if (!alreadyBound) {
+    mat.map = texture;
+    mat.emissive = new THREE.Color(0xffffff);
+    mat.emissiveMap = texture;
+    mat.needsUpdate = true;
+  }
+  // Brightness multiplier runs every frame so the screens can fade up
+  // from black at the start of the scene.
+  mat.color = new THREE.Color(brightness, brightness, brightness);
+  mat.emissiveIntensity = emissiveIntensity * brightness;
 }
 
 function coverDrawToCanvas(
@@ -152,11 +179,12 @@ const RenderedScreen: React.FC<{
   brollAspect: number;
   screenAspect: number;
   emissiveIntensity: number;
-}> = ({ mesh, broll, brollAspect, screenAspect, emissiveIntensity }) => {
+  brightness: number;
+}> = ({ mesh, broll, brollAspect, screenAspect, emissiveIntensity, brightness }) => {
   const texture = useOffthreadVideoTexture({ src: broll });
   if (mesh && texture) {
     applyCoverFitUV(texture, brollAspect, screenAspect);
-    bindTexture(mesh, texture, emissiveIntensity);
+    bindTexture(mesh, texture, emissiveIntensity, brightness);
   }
   return null;
 };
@@ -167,8 +195,9 @@ const PreviewScreen: React.FC<{
   canvasW: number;
   canvasH: number;
   emissiveIntensity: number;
+  brightness: number;
   frame: number;
-}> = ({ mesh, videoRef, canvasW, canvasH, emissiveIntensity, frame }) => {
+}> = ({ mesh, videoRef, canvasW, canvasH, emissiveIntensity, brightness, frame }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const textureRef = useRef<THREE.CanvasTexture | null>(null);
 
@@ -189,8 +218,8 @@ const PreviewScreen: React.FC<{
 
   useEffect(() => {
     if (!mesh || !textureRef.current) return;
-    bindTexture(mesh, textureRef.current, emissiveIntensity);
-  }, [mesh, emissiveIntensity]);
+    bindTexture(mesh, textureRef.current, emissiveIntensity, brightness);
+  }, [mesh, emissiveIntensity, brightness]);
 
   const ctx = canvasRef.current.getContext("2d");
   const video = videoRef.current;
@@ -251,19 +280,64 @@ const Scene: React.FC<{
     return iphone ? findPhoneScreenMesh(iphone) : null;
   }, [sceneClone]);
 
-  // Pose: lid open on the laptop, phone translated right.
+  // Pose. Lid opens by default; closes hard at LID_CLOSE_START. Phone
+  // sits in its hero pose; at PHONE_SPIN_START it whirls to the right
+  // and translates further off-frame so it leaves the canvas as the
+  // scene exits.
+  const lidT = clamp01(
+    (frame - LID_CLOSE_START) / (LID_CLOSE_END - LID_CLOSE_START),
+  );
+  // Ease-in cubic — the lid loiters open then snaps shut.
+  const lidEased = lidT * lidT * lidT;
+  const lidQuat = new THREE.Quaternion().slerpQuaternions(
+    LID_OPEN,
+    LID_CLOSED,
+    lidEased,
+  );
+
   const bevels = sceneClone.getObjectByName("Bevels_2");
   if (bevels) {
     bevels.position.copy(BEVELS_POS);
-    bevels.quaternion.copy(LID_OPEN);
+    bevels.quaternion.copy(lidQuat);
     bevels.scale.copy(BEVELS_SCALE);
   }
+
+  const spinT = clamp01(
+    (frame - PHONE_SPIN_START) / (PHONE_SPIN_END - PHONE_SPIN_START),
+  );
+  // Ease-in cubic on the spin too — it snaps loose like a hand flick.
+  const spinEased = spinT * spinT;
+  const phoneRotY = spinEased * Math.PI * 2 * PHONE_SPIN_REVOLUTIONS;
+  const phoneSlideX = spinEased * PHONE_SLIDE_OFFSET;
+  const phoneQuat = new THREE.Quaternion().setFromAxisAngle(
+    Y_AXIS,
+    phoneRotY,
+  );
+
   const iphone = sceneClone.getObjectByName("iphone");
   if (iphone) {
     iphone.position.copy(PHONE_POS);
-    iphone.quaternion.set(0, 0, 0, 1);
+    iphone.position.x += phoneSlideX;
+    iphone.quaternion.copy(phoneQuat);
     iphone.scale.setScalar(PHONE_BASE_SCALE);
   }
+
+  // Screen power-on. Phone wakes from black; laptop wakes from a
+  // half-bright state so frame 0 already shows a partial picture.
+  const phoneBrightness = clamp01(
+    interpolate(frame, [0, SCREEN_ON_PHONE], [0, 1], {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    }),
+  );
+  const laptopBrightness = clamp01(
+    interpolate(
+      frame,
+      [0, SCREEN_ON_LAPTOP],
+      [LAPTOP_INITIAL_BRIGHTNESS, 1],
+      { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+    ),
+  );
 
   // Camera
   const perspCam = threeCam as THREE.PerspectiveCamera;
@@ -285,6 +359,7 @@ const Scene: React.FC<{
               brollAspect={laptopBrollAspect}
               screenAspect={LAPTOP_SCREEN_ASPECT}
               emissiveIntensity={emissiveIntensity}
+              brightness={laptopBrightness}
             />
             <RenderedScreen
               mesh={phoneScreen}
@@ -292,6 +367,7 @@ const Scene: React.FC<{
               brollAspect={phoneBrollAspect}
               screenAspect={PHONE_SCREEN_ASPECT}
               emissiveIntensity={emissiveIntensity}
+              brightness={phoneBrightness}
             />
           </>
         ) : (
@@ -302,6 +378,7 @@ const Scene: React.FC<{
               canvasW={1280}
               canvasH={800}
               emissiveIntensity={emissiveIntensity}
+              brightness={laptopBrightness}
               frame={frame}
             />
             <PreviewScreen
@@ -310,26 +387,27 @@ const Scene: React.FC<{
               canvasW={720}
               canvasH={1560}
               emissiveIntensity={emissiveIntensity}
+              brightness={phoneBrightness}
               frame={frame}
             />
           </>
         )}
       </React.Suspense>
-      <Environment preset="studio" environmentIntensity={1.8 * lightingIntensity} />
-      <ambientLight intensity={0.3 * lightingIntensity} />
+      {/* Apartment preset is warmer + softer than studio. Combined with
+          a gentler key light and a lower exposure pass, the screens
+          stop reading as a CRT glare. */}
+      <Environment preset="apartment" environmentIntensity={1.4 * lightingIntensity} />
+      <ambientLight intensity={0.45 * lightingIntensity} />
       <directionalLight
         position={[5, 8, -5]}
-        intensity={2.5 * lightingIntensity}
+        intensity={1.6 * lightingIntensity}
         castShadow
       />
-      {/* Cool fill removed — it painted a blue cast on the screens. The
-          studio environment + the warm key alone keep the bodies
-          legible without tinting the broll. */}
       <ContactShadows
         position={[0, -0.01, 0]}
-        opacity={0.4}
+        opacity={0.45}
         scale={14}
-        blur={1.5}
+        blur={1.8}
         far={5}
       />
     </>
@@ -414,7 +492,7 @@ export const AntiCheatHookScene: React.FC<AntiCheatSceneProps> = ({
           alpha: true,
           powerPreference: "high-performance",
           toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.0,
+          toneMappingExposure: 0.9,
         }}
         style={{ background: "transparent" }}
       >
