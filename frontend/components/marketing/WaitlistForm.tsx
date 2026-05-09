@@ -1011,10 +1011,10 @@ function BackChip({ onClick }: { onClick: () => void }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// WalletQuestion — placeholder for the wallet-connect step.
-// Renders the prompt + a connect-button stub. Actual wallet wiring
-// is owned by the parallel agent; this just keeps the build green
-// and the user able to advance.
+// WalletQuestion — connect or paste an Ethereum address.
+// Marketing pages don't have wagmi providers in scope, so we talk to
+// window.ethereum directly. One-shot, no reconnect logic — the form
+// is disposable and the address is the only output we care about.
 // ─────────────────────────────────────────────────────────────────────
 function WalletQuestion({
   step,
@@ -1022,13 +1022,41 @@ function WalletQuestion({
   hasInviteCode,
   onChange,
 }: {
-  step: { id: string; label: string; description?: string }
+  step: WalletStep
   value: string
   hasInviteCode: boolean
   onChange: (v: string) => void
 }) {
-  void value
-  void onChange
+  const [connecting, setConnecting] = useState(false)
+  const [connectError, setConnectError] = useState<string | null>(null)
+
+  async function connect() {
+    setConnectError(null)
+    const eth = (typeof window !== 'undefined' ? (window as unknown as { ethereum?: { request: (a: { method: string; params?: unknown[] }) => Promise<string[]> } }).ethereum : null)
+    if (!eth) {
+      setConnectError('No wallet detected. Install MetaMask or paste your address below.')
+      return
+    }
+    setConnecting(true)
+    try {
+      const accounts = await eth.request({ method: 'eth_requestAccounts' })
+      const addr = Array.isArray(accounts) && accounts[0] ? String(accounts[0]) : ''
+      if (addr && /^0x[a-fA-F0-9]{40}$/.test(addr)) {
+        onChange(addr)
+      } else {
+        setConnectError('Couldn’t read an address from that wallet.')
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Connection refused.'
+      setConnectError(msg.includes('reject') ? 'Connection rejected. No problem.' : msg)
+    } finally {
+      setConnecting(false)
+    }
+  }
+
+  const isAddrValid = /^0x[a-fA-F0-9]{40}$/.test(value.trim())
+  const truncated = isAddrValid ? `${value.slice(0, 6)}…${value.slice(-4)}` : ''
+
   return (
     <div>
       <motion.h2
@@ -1036,11 +1064,7 @@ function WalletQuestion({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, ease: [0.4, 0, 0.6, 1] }}
         className="font-semibold leading-[1.15]"
-        style={{
-          color: FG,
-          fontSize: 'clamp(26px, 3.2vw, 36px)',
-          letterSpacing: '-0.022em',
-        }}
+        style={{ color: FG, fontSize: 'clamp(26px, 3.2vw, 36px)', letterSpacing: '-0.022em' }}
       >
         {step.label}
       </motion.h2>
@@ -1055,16 +1079,98 @@ function WalletQuestion({
           {step.description}
         </motion.p>
       )}
+      {hasInviteCode && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: [0.4, 0, 0.6, 1], delay: 0.1 }}
+          className="mt-5 inline-flex items-center gap-2 rounded-full px-3.5 py-1.5"
+          style={{
+            background: 'rgba(0,82,255,0.08)',
+            color: ACCENT,
+            border: '1px solid rgba(0,82,255,0.18)',
+            fontSize: 13,
+            letterSpacing: '-0.005em',
+          }}
+        >
+          <span style={{ width: 6, height: 6, borderRadius: 999, background: ACCENT, display: 'inline-block' }} />
+          Code on file — connect to claim instantly.
+        </motion.div>
+      )}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.32, ease: [0.4, 0, 0.6, 1], delay: 0.14 }}
-        className="mt-9 font-mono text-[12px] uppercase tracking-[0.14em]"
-        style={{ color: DIM }}
+        transition={{ duration: 0.32, ease: [0.4, 0, 0.6, 1], delay: 0.12 }}
+        className="mt-9 flex flex-col gap-4"
       >
-        {hasInviteCode
-          ? 'Wallet connection wires up shortly. For now, hit submit — your code is enough.'
-          : 'Optional. Skip with submit; you can connect any wallet later.'}
+        {!isAddrValid ? (
+          <button
+            type="button"
+            onClick={connect}
+            disabled={connecting}
+            className="inline-flex h-14 items-center justify-center rounded-[14px] font-medium focus:outline-none focus:ring-4 focus:ring-[rgba(0,82,255,0.22)] disabled:opacity-60"
+            style={{
+              background: '#0A0A0A',
+              color: '#FFFFFF',
+              fontSize: 17,
+              letterSpacing: '-0.011em',
+              boxShadow: '0 1px 0 rgba(255,255,255,0.10) inset, 0 8px 22px -10px rgba(10,10,12,0.45)',
+            }}
+          >
+            {connecting ? 'Connecting…' : 'Connect Wallet'}
+          </button>
+        ) : (
+          <div
+            className="flex items-center justify-between rounded-[14px] px-5 py-4"
+            style={{ background: 'rgba(10,10,12,0.04)', border: `1px solid ${RULE}` }}
+          >
+            <div className="flex items-center gap-3">
+              <span
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: 999,
+                  background: '#10B981',
+                  boxShadow: '0 0 0 4px rgba(16,185,129,0.15)',
+                  display: 'inline-block',
+                }}
+              />
+              <span className="font-mono tabular-nums" style={{ color: FG, fontSize: 15 }}>
+                {truncated}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => onChange('')}
+              className="text-[13px] underline underline-offset-4"
+              style={{ color: DIM }}
+            >
+              Disconnect
+            </button>
+          </div>
+        )}
+        <div className="text-center text-[12px]" style={{ color: DIM }}>or paste an address</div>
+        <input
+          type="text"
+          autoComplete="off"
+          spellCheck={false}
+          value={value}
+          onChange={(e) => onChange(e.target.value.trim())}
+          placeholder="0x…"
+          className="w-full bg-transparent pb-3 font-mono leading-[1.25] focus:outline-none"
+          style={{
+            color: FG,
+            fontSize: 'clamp(15px, 1.6vw, 17px)',
+            letterSpacing: '-0.005em',
+            borderBottom: `1.5px solid ${RULE}`,
+            transition: 'border-color 180ms ease',
+          }}
+          onFocus={(e) => { e.currentTarget.style.borderBottomColor = ACCENT }}
+          onBlur={(e) => { e.currentTarget.style.borderBottomColor = RULE }}
+        />
+        {connectError && (
+          <p className="text-[13px]" style={{ color: '#B91C1C' }}>{connectError}</p>
+        )}
       </motion.div>
     </div>
   )
@@ -1082,9 +1188,18 @@ function Verdict({
   pfpUrl: string | null
   whitelisted?: boolean
 }) {
-  void whitelisted
   const [pfpLoaded, setPfpLoaded] = useState(false)
   const [pfpFailed, setPfpFailed] = useState(false)
+  const [armed, setArmed] = useState(false)
+
+  // When whitelisted, hold the "verifying" beat for ~1.6s before
+  // flipping to "you're in" — gives the user a moment to feel the
+  // gate open instead of a teleport.
+  useEffect(() => {
+    if (!whitelisted) return
+    const t = setTimeout(() => setArmed(true), 1600)
+    return () => clearTimeout(t)
+  }, [whitelisted])
 
   const showAvatar = Boolean(pfpUrl) && !pfpFailed
 
@@ -1099,7 +1214,7 @@ function Verdict({
           className="font-mono text-[12px] uppercase tracking-[0.18em]"
           style={{ color: ACCENT }}
         >
-          Verdict
+          {whitelisted ? (armed ? 'Whitelisted' : 'Verifying…') : 'Verdict'}
         </motion.div>
 
         <motion.div
@@ -1179,7 +1294,7 @@ function Verdict({
             letterSpacing: '-0.028em',
           }}
         >
-          You’re on the list
+          {whitelisted ? (armed ? 'You’re in.' : 'Almost there…') : 'You’re on the list'}
         </motion.h1>
 
         <motion.p
@@ -1193,8 +1308,31 @@ function Verdict({
             letterSpacing: '-0.011em',
           }}
         >
-          We’ll notify you the second we go live. The cheat is structural. The fix is too.
+          {whitelisted
+            ? armed
+              ? 'Wallet whitelisted. The faucet is yours, and the rest of the site too.'
+              : 'Verifying your code. This takes a beat.'
+            : 'We’ll notify you the second we go live. The cheat is structural. The fix is too.'}
         </motion.p>
+
+        {whitelisted && armed && (
+          <motion.a
+            href="/"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: [0.4, 0, 0.6, 1], delay: 0.2 }}
+            className="mt-9 inline-flex h-12 items-center justify-center rounded-full px-7 font-medium"
+            style={{
+              background: '#0A0A0A',
+              color: '#FFFFFF',
+              fontSize: 15,
+              letterSpacing: '-0.011em',
+              boxShadow: '0 1px 0 rgba(255,255,255,0.10) inset, 0 10px 28px -10px rgba(10,10,12,0.45)',
+            }}
+          >
+            Enter the site →
+          </motion.a>
+        )}
       </main>
     </div>
   )

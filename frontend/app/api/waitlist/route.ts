@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Pool } from 'pg'
+import { redeemInviteCode } from '@/lib/waitlist-db'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -14,6 +15,7 @@ type Submission = {
   affiliate?: string
   reach?: string
   notes?: string
+  wallet?: string
 }
 
 const memStore: { rows: unknown[]; emails: Set<string>; twitters: Set<string> } = {
@@ -38,6 +40,24 @@ function clean(s: unknown): string {
 
 function normalizeHandle(s: string): string {
   return s.toLowerCase().replace(/^@/, '')
+}
+
+async function maybeRedeem(
+  body: Submission,
+  ip: string,
+  ua: string,
+): Promise<boolean> {
+  const wallet = (body.wallet || '').trim()
+  const code = (body.invite || '').trim()
+  if (!/^0x[a-fA-F0-9]{40}$/.test(wallet)) return false
+  if (!/^[A-Za-z0-9_-]{3,64}$/.test(code)) return false
+  try {
+    const result = await redeemInviteCode(wallet, code, { ip, ua })
+    return result.ok
+  } catch (err) {
+    console.error('[waitlist] auto-redeem failed', err)
+    return false
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -103,15 +123,18 @@ export async function POST(req: NextRequest) {
           ua,
         ],
       )
-      return NextResponse.json({ ok: true, dedup: res.rowCount === 0 })
+      const whitelisted = await maybeRedeem(body, ip, ua)
+      return NextResponse.json({ ok: true, dedup: res.rowCount === 0, whitelisted })
     }
     if (memStore.emails.has(data.email) || (data.twitter && memStore.twitters.has(data.twitter))) {
-      return NextResponse.json({ ok: true, dedup: true })
+      const whitelisted = await maybeRedeem(body, ip, ua)
+      return NextResponse.json({ ok: true, dedup: true, whitelisted })
     }
     memStore.rows.push({ ...data, ip, ua, at: new Date().toISOString() })
     memStore.emails.add(data.email)
     if (data.twitter) memStore.twitters.add(data.twitter)
-    return NextResponse.json({ ok: true })
+    const whitelisted = await maybeRedeem(body, ip, ua)
+    return NextResponse.json({ ok: true, whitelisted })
   } catch (err) {
     console.error('[waitlist] storage error', err)
     return NextResponse.json({ error: 'storage unavailable' }, { status: 503 })

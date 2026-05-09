@@ -80,10 +80,12 @@ export function WaitlistModal({ onClose, onRedeemed, onWalletConnected }: Props)
           </div>
 
           <h2 className="text-[24px] sm:text-[28px] font-semibold tracking-[-0.022em] text-text-primary leading-tight">
-            Whitelist required
+            {isConnected ? 'This wallet is not whitelisted' : 'Whitelist required'}
           </h2>
           <p className="mt-2 text-[15px] text-text-muted max-w-[440px]">
-            The faucet is closed to the curious and open to the chosen. Connect your wallet, enter a code.
+            {isConnected
+              ? 'Enter the invite code you were given, or apply on the waitlist if you don\'t have one.'
+              : 'The faucet is closed to the curious and open to the chosen. Connect your wallet, enter a code.'}
           </p>
 
           {!isConnected ? (
@@ -119,6 +121,13 @@ export function WaitlistModal({ onClose, onRedeemed, onWalletConnected }: Props)
               )}
             </form>
           )}
+
+          <a
+            href="/waitlist"
+            className="mt-5 text-[13px] text-text-muted hover:text-text-primary underline underline-offset-4 decoration-black/20 hover:decoration-black/60 transition-colors"
+          >
+            Don&apos;t have a code? Apply on the waitlist →
+          </a>
         </div>
 
         <div className="mt-10 pt-8 border-t border-black/[0.08]">
