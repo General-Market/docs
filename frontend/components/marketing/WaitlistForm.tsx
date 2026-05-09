@@ -41,23 +41,16 @@ type ChoiceStep = {
   multiple?: boolean
 }
 
-type WalletStep = {
-  type: 'wallet'
-  id: 'wallet'
-  label: string
-  description?: string
-}
-
-type Step = WelcomeStep | TextStep | ChoiceStep | WalletStep
+type Step = WelcomeStep | TextStep | ChoiceStep
 
 const STEPS: Step[] = [
   {
     type: 'welcome',
     id: 'welcome',
-    title: 'Your pnl. Shielded.',
-    body: 'Insiders, front-runners, orderflow buyers — none of them get to see your trade. Join the waitlist for early access, lower fees, and referral rewards.',
+    title: 'Your pnl, shielded',
+    body: 'Insiders, front-runners, orderflow buyers — none of them get to see your trade — join the waitlist for early access, lower fees, and referral rewards',
     cta: 'Begin',
-    takes: '~45 seconds',
+    takes: '~90 seconds',
   },
   {
     type: 'text',
@@ -96,8 +89,7 @@ const STEPS: Step[] = [
     type: 'choice',
     id: 'has_invite',
     label: 'Do you have an invite code?',
-    description: 'A code earns you trading-fee rakeback. No code? Add one later — same waitlist either way.',
-    required: true,
+    description: 'A code earns you trading-fee rakeback — no code? add one later, same waitlist either way',
     options: [
       { value: 'yes', label: 'Yes' },
       { value: 'no', label: 'No' },
@@ -114,13 +106,13 @@ const STEPS: Step[] = [
     id: 'volume',
     label: 'Roughly how much do you trade per month?',
     description: 'Example: $5k – $10k',
-    placeholder: 'Type your answer here...',
+    placeholder: 'Type your answer here…',
   },
   {
     type: 'choice',
     id: 'affiliate',
     label: 'Do you want to become an affiliate?',
-    description: 'Affiliates earn by referring traders and projects.',
+    description: 'Affiliates earn by referring traders and projects',
     options: [
       { value: 'yes', label: 'Yes' },
       { value: 'no', label: 'No' },
@@ -131,21 +123,14 @@ const STEPS: Step[] = [
     id: 'reach',
     label: 'How big is your reach?',
     description:
-      'e.g. “5K Twitter followers”, “500 newsletter subs”, “active in 3 Discord communities”.',
-    placeholder: 'Type your answer here...',
+      'eg “5K Twitter followers”, “500 newsletter subs”, “active in 3 Discord communities”',
+    placeholder: 'Type your answer here…',
   },
   {
     type: 'text',
     id: 'notes',
     label: 'Anything you’d like us to know?',
-    placeholder: 'Type your answer here...',
-  },
-  {
-    type: 'wallet',
-    id: 'wallet',
-    label: 'Connect a wallet',
-    description:
-      'Optional. If you entered an invite code, connecting now whitelists this wallet on submit. No code, no commitment — connect later from any page.',
+    placeholder: 'Type your answer here…',
   },
 ]
 
@@ -163,28 +148,22 @@ function isValid(
   value: AnswerValue,
 ): { ok: true } | { ok: false; reason: string } {
   if (step.type === 'welcome') return { ok: true }
-  if (step.type === 'wallet') {
-    if (typeof value !== 'string' || !value) return { ok: true }
-    const ok = /^0x[a-fA-F0-9]{40}$/.test(value.trim())
-    if (!ok) return { ok: false, reason: 'That doesn’t look like an Ethereum address.' }
-    return { ok: true }
-  }
   if (step.type === 'choice') {
     if (step.required) {
       if (step.multiple) {
         if (!Array.isArray(value) || value.length === 0)
-          return { ok: false, reason: 'Pick at least one.' }
+          return { ok: false, reason: 'Pick at least one' }
       } else if (typeof value !== 'string' || !value) {
-        return { ok: false, reason: 'Pick one.' }
+        return { ok: false, reason: 'Pick one' }
       }
     }
     return { ok: true }
   }
   const trimmed = typeof value === 'string' ? value.trim() : ''
-  if (step.required && !trimmed) return { ok: false, reason: 'Required.' }
+  if (step.required && !trimmed) return { ok: false, reason: 'Required' }
   if (step.type === 'email' && trimmed) {
     const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)
-    if (!ok) return { ok: false, reason: 'That doesn’t look like an email.' }
+    if (!ok) return { ok: false, reason: 'That doesn’t look like an email' }
   }
   return { ok: true }
 }
@@ -336,6 +315,97 @@ function HandleBadge({
   )
 }
 
+type Enemy = { handle: string; label: string }
+const ENEMIES: Record<string, Enemy> = {
+  insider:   { handle: 'NancyPelosi', label: 'Insider trader' },
+  frontrun:  { handle: 'kengriffin',  label: 'Front runner' },
+  manip:     { handle: 'SBF_FTX',     label: 'Market manipulator' },
+  orderflow: { handle: 'vladtenev',   label: 'Orderflow buyer' },
+}
+
+function EnemyPill({ enemy }: { enemy: Enemy }) {
+  const [loaded, setLoaded] = useState(false)
+  const [failed, setFailed] = useState(false)
+  const src = `https://unavatar.io/x/${encodeURIComponent(enemy.handle)}`
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, x: 18, scale: 0.94 }}
+      animate={{ opacity: 1, x: 0, scale: 1 }}
+      exit={{ opacity: 0, x: 18, scale: 0.94 }}
+      transition={springs.entrance}
+      className="flex items-center gap-2 rounded-full bg-white/95 px-2.5 py-1 shadow-[0_2px_8px_rgba(10,10,12,0.06)] backdrop-blur"
+      style={{ border: `1px solid ${RULE}` }}
+      title={`Shielded from ${enemy.label}`}
+    >
+      <div className="relative h-6 w-6 overflow-hidden rounded-full" style={{ background: '#E6E8EC' }}>
+        {!failed && (
+          <img
+            src={src}
+            alt=""
+            width={24}
+            height={24}
+            referrerPolicy="no-referrer"
+            onLoad={() => setLoaded(true)}
+            onError={() => setFailed(true)}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              opacity: loaded ? 1 : 0,
+              transition: 'opacity 220ms ease',
+            }}
+          />
+        )}
+      </div>
+      <span
+        className="font-mono text-[11px] tabular-nums"
+        style={{
+          color: '#9A1F2D',
+          textDecoration: 'line-through',
+          textDecorationThickness: '1.5px',
+          textDecorationColor: 'rgba(154,31,45,0.55)',
+        }}
+      >
+        @{enemy.handle}
+      </span>
+    </motion.div>
+  )
+}
+
+function EnemyStack({
+  selected,
+  hasUserBadge,
+}: {
+  selected: string[]
+  hasUserBadge: boolean
+}) {
+  const items = selected.map((k) => ENEMIES[k]).filter(Boolean)
+  if (items.length === 0) return null
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      className="fixed right-5 z-30 flex flex-col items-end gap-1.5 sm:right-7"
+      style={{ top: hasUserBadge ? 64 : 20 }}
+    >
+      <div
+        className="font-mono text-[10px] uppercase tracking-[0.18em]"
+        style={{ color: DIM }}
+      >
+        Shielded from
+      </div>
+      <AnimatePresence>
+        {items.map((enemy) => (
+          <EnemyPill key={enemy.handle} enemy={enemy} />
+        ))}
+      </AnimatePresence>
+    </motion.div>
+  )
+}
+
 export default function WaitlistForm() {
   const { tick, chime } = useChirp()
   const [idx, setIdx] = useState(0)
@@ -470,7 +540,14 @@ export default function WaitlistForm() {
   const progress = step.type === 'welcome' ? 0 : visibleQuestionIndex / totalQuestions
 
   if (submitted) {
-    return <Verdict handle={handle} pfpUrl={pfpUrl} whitelisted={whitelisted} />
+    return (
+      <Verdict
+        handle={handle}
+        pfpUrl={pfpUrl}
+        whitelisted={whitelisted}
+        hasCode={typeof answers.invite === 'string' && answers.invite.trim().length >= 3}
+      />
+    )
   }
 
   return (
@@ -535,12 +612,10 @@ export default function WaitlistForm() {
                       onToggleMulti={onToggleMulti}
                     />
                   )}
-                  {step.type === 'wallet' && (
-                    <WalletQuestion
-                      step={step}
-                      value={typeof answers[step.id] === 'string' ? (answers[step.id] as string) : ''}
-                      hasInviteCode={typeof answers.invite === 'string' && answers.invite.trim().length >= 3}
-                      onChange={(v) => setAnswer(step.id, v)}
+                  {(step.type === 'text' || step.type === 'email') && step.id === 'invite' && (
+                    <WalletForCode
+                      value={typeof answers.wallet === 'string' ? (answers.wallet as string) : ''}
+                      onChange={(v) => setAnswer('wallet', v)}
                     />
                   )}
                 </Sheet>
@@ -552,7 +627,7 @@ export default function WaitlistForm() {
           {step.type === 'choice' && step.id === 'has_invite' && (
             <CaveatArrow
               key="invite-margin"
-              text="rakeback is real."
+              text="rakeback is real"
               direction="left-up"
               delay={0.35}
               className="pointer-events-none absolute -right-[180px] top-24 hidden xl:block"
@@ -1011,170 +1086,67 @@ function BackChip({ onClick }: { onClick: () => void }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// WalletQuestion — connect or paste an Ethereum address.
-// Marketing pages don't have wagmi providers in scope, so we talk to
-// window.ethereum directly. One-shot, no reconnect logic — the form
-// is disposable and the address is the only output we care about.
+// WalletForCode — paste field rendered under the invite code input.
+// No wallet-connect UX, no window.ethereum. The user already has the
+// address they want to whitelist; we don't need to negotiate for it.
 // ─────────────────────────────────────────────────────────────────────
-function WalletQuestion({
-  step,
+function WalletForCode({
   value,
-  hasInviteCode,
   onChange,
 }: {
-  step: WalletStep
   value: string
-  hasInviteCode: boolean
   onChange: (v: string) => void
 }) {
-  const [connecting, setConnecting] = useState(false)
-  const [connectError, setConnectError] = useState<string | null>(null)
-
-  async function connect() {
-    setConnectError(null)
-    const eth = (typeof window !== 'undefined' ? (window as unknown as { ethereum?: { request: (a: { method: string; params?: unknown[] }) => Promise<string[]> } }).ethereum : null)
-    if (!eth) {
-      setConnectError('No wallet detected. Install MetaMask or paste your address below.')
-      return
-    }
-    setConnecting(true)
-    try {
-      const accounts = await eth.request({ method: 'eth_requestAccounts' })
-      const addr = Array.isArray(accounts) && accounts[0] ? String(accounts[0]) : ''
-      if (addr && /^0x[a-fA-F0-9]{40}$/.test(addr)) {
-        onChange(addr)
-      } else {
-        setConnectError('Couldn’t read an address from that wallet.')
-      }
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Connection refused.'
-      setConnectError(msg.includes('reject') ? 'Connection rejected. No problem.' : msg)
-    } finally {
-      setConnecting(false)
-    }
-  }
-
-  const isAddrValid = /^0x[a-fA-F0-9]{40}$/.test(value.trim())
-  const truncated = isAddrValid ? `${value.slice(0, 6)}…${value.slice(-4)}` : ''
+  const trimmed = value.trim()
+  const isAddrValid = /^0x[a-fA-F0-9]{40}$/.test(trimmed)
+  const showError = trimmed.length > 0 && !isAddrValid
 
   return (
-    <div>
-      <motion.h2
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, ease: [0.4, 0, 0.6, 1] }}
-        className="font-semibold leading-[1.15]"
-        style={{ color: FG, fontSize: 'clamp(26px, 3.2vw, 36px)', letterSpacing: '-0.022em' }}
-      >
-        {step.label}
-      </motion.h2>
-      {step.description && (
-        <motion.p
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, ease: [0.4, 0, 0.6, 1], delay: 0.06 }}
-          className="mt-3 leading-[1.5]"
-          style={{ color: FG_SOFT, fontSize: 17, letterSpacing: '-0.01em' }}
-        >
-          {step.description}
-        </motion.p>
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.32, ease: [0.4, 0, 0.6, 1], delay: 0.18 }}
+      className="mt-9"
+    >
+      <div className="font-mono text-[12px] uppercase tracking-[0.14em]" style={{ color: DIM }}>
+        Wallet to whitelist this code for
+      </div>
+      <input
+        type="text"
+        autoComplete="off"
+        spellCheck={false}
+        value={value}
+        onChange={(e) => onChange(e.target.value.trim())}
+        placeholder="0x…"
+        className="mt-3 w-full bg-transparent pb-3 font-mono leading-[1.25] focus:outline-none"
+        style={{
+          color: FG,
+          fontSize: 'clamp(15px, 1.6vw, 17px)',
+          letterSpacing: '-0.005em',
+          borderBottom: `1.5px solid ${showError ? '#DC2626' : RULE}`,
+          transition: 'border-color 180ms ease',
+        }}
+        onFocus={(e) => {
+          if (!showError) e.currentTarget.style.borderBottomColor = ACCENT
+        }}
+        onBlur={(e) => {
+          e.currentTarget.style.borderBottomColor = showError ? '#DC2626' : RULE
+        }}
+      />
+      {showError && (
+        <p className="mt-2 text-[12px]" style={{ color: '#DC2626' }}>
+          That doesn’t look like an Ethereum address.
+        </p>
       )}
-      {hasInviteCode && (
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, ease: [0.4, 0, 0.6, 1], delay: 0.1 }}
-          className="mt-5 inline-flex items-center gap-2 rounded-full px-3.5 py-1.5"
-          style={{
-            background: 'rgba(0,82,255,0.08)',
-            color: ACCENT,
-            border: '1px solid rgba(0,82,255,0.18)',
-            fontSize: 13,
-            letterSpacing: '-0.005em',
-          }}
-        >
-          <span style={{ width: 6, height: 6, borderRadius: 999, background: ACCENT, display: 'inline-block' }} />
-          Code on file — connect to claim instantly.
-        </motion.div>
+      {isAddrValid && (
+        <p className="mt-2 text-[12px]" style={{ color: ACCENT }}>
+          On submit, this wallet gets whitelisted.
+        </p>
       )}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.32, ease: [0.4, 0, 0.6, 1], delay: 0.12 }}
-        className="mt-9 flex flex-col gap-4"
-      >
-        {!isAddrValid ? (
-          <button
-            type="button"
-            onClick={connect}
-            disabled={connecting}
-            className="inline-flex h-14 items-center justify-center rounded-[14px] font-medium focus:outline-none focus:ring-4 focus:ring-[rgba(0,82,255,0.22)] disabled:opacity-60"
-            style={{
-              background: '#0A0A0A',
-              color: '#FFFFFF',
-              fontSize: 17,
-              letterSpacing: '-0.011em',
-              boxShadow: '0 1px 0 rgba(255,255,255,0.10) inset, 0 8px 22px -10px rgba(10,10,12,0.45)',
-            }}
-          >
-            {connecting ? 'Connecting…' : 'Connect Wallet'}
-          </button>
-        ) : (
-          <div
-            className="flex items-center justify-between rounded-[14px] px-5 py-4"
-            style={{ background: 'rgba(10,10,12,0.04)', border: `1px solid ${RULE}` }}
-          >
-            <div className="flex items-center gap-3">
-              <span
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: 999,
-                  background: '#10B981',
-                  boxShadow: '0 0 0 4px rgba(16,185,129,0.15)',
-                  display: 'inline-block',
-                }}
-              />
-              <span className="font-mono tabular-nums" style={{ color: FG, fontSize: 15 }}>
-                {truncated}
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={() => onChange('')}
-              className="text-[13px] underline underline-offset-4"
-              style={{ color: DIM }}
-            >
-              Disconnect
-            </button>
-          </div>
-        )}
-        <div className="text-center text-[12px]" style={{ color: DIM }}>or paste an address</div>
-        <input
-          type="text"
-          autoComplete="off"
-          spellCheck={false}
-          value={value}
-          onChange={(e) => onChange(e.target.value.trim())}
-          placeholder="0x…"
-          className="w-full bg-transparent pb-3 font-mono leading-[1.25] focus:outline-none"
-          style={{
-            color: FG,
-            fontSize: 'clamp(15px, 1.6vw, 17px)',
-            letterSpacing: '-0.005em',
-            borderBottom: `1.5px solid ${RULE}`,
-            transition: 'border-color 180ms ease',
-          }}
-          onFocus={(e) => { e.currentTarget.style.borderBottomColor = ACCENT }}
-          onBlur={(e) => { e.currentTarget.style.borderBottomColor = RULE }}
-        />
-        {connectError && (
-          <p className="text-[13px]" style={{ color: '#B91C1C' }}>{connectError}</p>
-        )}
-      </motion.div>
-    </div>
+    </motion.div>
   )
 }
+
 
 // ─────────────────────────────────────────────────────────────────────
 // Verdict — end screen. Big avatar, @handle, Caveat "You" arrow.
@@ -1183,10 +1155,12 @@ function Verdict({
   handle,
   pfpUrl,
   whitelisted,
+  hasCode,
 }: {
   handle: string
   pfpUrl: string | null
   whitelisted?: boolean
+  hasCode?: boolean
 }) {
   const [pfpLoaded, setPfpLoaded] = useState(false)
   const [pfpFailed, setPfpFailed] = useState(false)
@@ -1214,7 +1188,9 @@ function Verdict({
           className="font-mono text-[12px] uppercase tracking-[0.18em]"
           style={{ color: ACCENT }}
         >
-          {whitelisted ? (armed ? 'Whitelisted' : 'Verifying…') : 'Verdict'}
+          {whitelisted
+            ? armed ? 'Whitelisted' : 'Verifying…'
+            : hasCode ? 'Code on file' : 'Verdict'}
         </motion.div>
 
         <motion.div
@@ -1294,7 +1270,9 @@ function Verdict({
             letterSpacing: '-0.028em',
           }}
         >
-          {whitelisted ? (armed ? 'You’re in.' : 'Almost there…') : 'You’re on the list'}
+          {whitelisted
+            ? armed ? 'You’re in.' : 'Almost there…'
+            : hasCode ? 'You jumped the line.' : 'You’re on the list'}
         </motion.h1>
 
         <motion.p
@@ -1310,9 +1288,11 @@ function Verdict({
         >
           {whitelisted
             ? armed
-              ? 'Wallet whitelisted. The faucet is yours, and the rest of the site too.'
-              : 'Verifying your code. This takes a beat.'
-            : 'We’ll notify you the second we go live. The cheat is structural. The fix is too.'}
+              ? 'Wallet whitelisted — the faucet is yours, and the rest of the site too.'
+              : 'Verifying your code — this takes a beat.'
+            : hasCode
+              ? 'Code received. Add a wallet later from any locked page and the gate opens for you immediately.'
+              : 'We’ll notify you the second we go live. The cheat is structural. The fix is too.'}
         </motion.p>
 
         {whitelisted && armed && (
