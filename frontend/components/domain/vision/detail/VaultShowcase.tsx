@@ -176,7 +176,10 @@ function VaultTiltCard({ fund, vault, index, userPosition, href }: {
   const hasPosition = !!userPosition && (userPosition.shares > 0n || userPosition.pending > 0n)
   const pendingOnly = hasPosition && userPosition!.shares === 0n && userPosition!.pending > 0n
 
-  const { snapshots } = useVaultHistory(vault.address)
+  // Match the vault detail page's '1d' default so the source-card sparkline
+  // and the deep-page chart trace the same curve. The 'all' range returns a
+  // handful of sparse points the spline rounds into a synthetic shape.
+  const { snapshots } = useVaultHistory(vault.address, '1d')
   const navData = useMemo(() => snapshots.map(s => s.nav), [snapshots])
   // Perf-driven hue. Apple system green for up, system red for down.
   // Black-on-everything was the previous default — three identical strokes

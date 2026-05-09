@@ -2929,7 +2929,7 @@
     {
       "name": "Stocks Fund 1",
       "symbol": "STOCKS1",
-      "source": "stocks",
+      "source": "nasdaq",
       "strategy": "momentum",
       "params": {},
       "tagline": "A stock that moves keeps moving. The trend is a contract that markets honor more often than not.",
@@ -2941,7 +2941,7 @@
     {
       "name": "Stocks Fund 2",
       "symbol": "STOCKS2",
-      "source": "stocks",
+      "source": "nasdaq",
       "strategy": "contrarian",
       "params": {},
       "tagline": "Every breakout has its faders. This fund pays the bill when conviction outruns reality.",
@@ -2953,7 +2953,7 @@
     {
       "name": "Stocks Fund 3",
       "symbol": "STOCKS3",
-      "source": "stocks",
+      "source": "nasdaq",
       "strategy": "time_of_day",
       "params": {},
       "tagline": "Markets have moods. Open is restless, close is decisive. This fund trades the clock.",

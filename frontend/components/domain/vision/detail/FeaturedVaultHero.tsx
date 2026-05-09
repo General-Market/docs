@@ -359,8 +359,10 @@ export function FeaturedVaultHero({ sourceId }: FeaturedVaultHeroProps) {
 
   const vaultAddress = featuredFund?.vault as string | undefined
 
-  // History for sparkline.
-  const { snapshots } = useVaultHistory(vaultAddress ?? '')
+  // History for sparkline. Use the same '1d' default as the vault detail page so
+  // both surfaces draw the same dense curve through real points — 'all' returns
+  // a handful of sparse snapshots that the spline smears into a synthetic look.
+  const { snapshots } = useVaultHistory(vaultAddress ?? '', '1d')
   const navData = useMemo(() => snapshots.map(s => s.nav), [snapshots])
 
   // User position: does the wallet hold shares in the featured vault?

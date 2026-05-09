@@ -58,40 +58,22 @@
       "batchEligible": true
     },
     {
-      "sourceId": "finnhub",
-      "internalIds": [
-        "stocks"
-      ],
-      "name": "Finnhub Stocks",
-      "description": "Real-time stock market data \u2014 US equities, forex, and crypto with company fundamentals.",
-      "category": "finance",
-      "logo": "/source-imgs/new-finnhub.webp",
-      "brandBg": "#000000",
-      "prefixes": [
-        "stock_",
-        "stocks_"
-      ],
-      "valueLabel": "Price",
-      "valueUnit": "USD",
-      "isPrice": true,
-      "syncIntervalSecs": 600,
-      "batchEligible": true
-    },
-    {
       "sourceId": "nasdaq",
-      "name": "Nasdaq Listings",
-      "description": "Official Nasdaq exchange data \u2014 listed securities, ETFs, and index constituents.",
+      "name": "Nasdaq",
+      "description": "Listed equities \u2014 US stocks, ETFs, and index constituents, priced in real time via Finnhub.",
       "category": "finance",
       "logo": "/source-imgs/new-nasdaq.svg",
       "brandBg": "#f5f5f5",
       "prefixes": [
+        "stock_",
+        "stocks_",
         "nasdaq_"
       ],
       "valueLabel": "Price",
       "valueUnit": "USD",
       "isPrice": true,
       "internalIds": [
-        "nasdaq"
+        "stocks"
       ],
       "syncIntervalSecs": 600,
       "batchEligible": true
