@@ -170,6 +170,7 @@ function PhoneScene({
   tilt,
   responsive,
   leaving,
+  isLeaving,
   tuning,
   onReady,
   onLinkClick,
@@ -177,6 +178,7 @@ function PhoneScene({
   tilt: TiltRef
   responsive: Responsive
   leaving: LeaveRef
+  isLeaving: boolean
   tuning: Tuning
   onReady: () => void
   onLinkClick: (e: React.MouseEvent, href: string, external: boolean, style: LinktreeIcon) => void
@@ -328,7 +330,7 @@ function PhoneScene({
             zIndexRange={[1, 0]}
             wrapperClass="lt-html-wrapper"
           >
-            <LinkMenu onLinkClick={onLinkClick} />
+            <LinkMenu onLinkClick={onLinkClick} hidden={isLeaving} />
           </Html>
           {/* Calibration mark — red sphere at the measured screen-mesh
               centre. Visible only with ?debug=1. Use to read off the
@@ -357,6 +359,7 @@ export function PhoneLinktree() {
   const leaving: LeaveRef = useRef(null)
   const [responsive, setResponsive] = useState<Responsive>(() => readResponsive())
   const [ready, setReady] = useState(false)
+  const [isLeaving, setIsLeaving] = useState(false)
   const [tuning, setTuning] = useState<Tuning>({ xo: 0.32, yo: 0.32, zo: null, debug: false })
 
   useEffect(() => {
@@ -379,6 +382,7 @@ export function PhoneLinktree() {
       e.preventDefault()
       if (leaving.current) return
       leaving.current = { startMs: performance.now(), href, external, style }
+      setIsLeaving(true)
 
       // At t = LEAVE_DURATION_MS the phone is at its off-screen extreme —
       // navigate exactly here. Internal: replace the page. External: open
@@ -395,6 +399,7 @@ export function PhoneLinktree() {
       if (external) {
         window.setTimeout(() => {
           leaving.current = null
+          setIsLeaving(false)
         }, LEAVE_DURATION_MS + RETURN_AFTER_LEAVE_MS)
       }
     },
@@ -596,6 +601,7 @@ export function PhoneLinktree() {
               tilt={tilt}
               responsive={responsive}
               leaving={leaving}
+              isLeaving={isLeaving && responsive.ambient}
               tuning={tuning}
               onReady={() => setReady(true)}
               onLinkClick={handleLinkClick}

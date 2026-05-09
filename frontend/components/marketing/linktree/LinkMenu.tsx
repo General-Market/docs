@@ -62,11 +62,13 @@ const Icon = ({ kind }: { kind: LinktreeIcon }) => {
 
 type LinkMenuProps = {
   onLinkClick?: (e: React.MouseEvent, href: string, external: boolean, icon: LinktreeIcon) => void
+  /** When true the menu fades out instantly — used while the phone flies off. */
+  hidden?: boolean
 }
 
-export function LinkMenu({ onLinkClick }: LinkMenuProps = {}) {
+export function LinkMenu({ onLinkClick, hidden = false }: LinkMenuProps = {}) {
   return (
-    <div className="lt-menu">
+    <div className={`lt-menu${hidden ? ' lt-menu--hidden' : ''}`}>
       <style>{`
         .lt-menu {
           width: 360px;
@@ -89,6 +91,14 @@ export function LinkMenu({ onLinkClick }: LinkMenuProps = {}) {
           /* Match the iPhone screen's rounded corners so the menu clips
              inside the display, not over the bezel. */
           border-radius: 44px;
+          transition: opacity 180ms cubic-bezier(0.4, 0, 0.6, 1);
+        }
+        /* While the phone flies away, hide the CSS3D plane — it desyncs
+           from the WebGL canvas during fast rotations and visibly tears
+           off the screen otherwise. */
+        .lt-menu--hidden {
+          opacity: 0;
+          pointer-events: none;
         }
         /* Subtle inner rim — a pane-of-glass edge highlight, no big
            tinted sheen this time. The cool blue overlay was reading
