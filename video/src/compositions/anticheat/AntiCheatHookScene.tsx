@@ -22,6 +22,7 @@ import {
 import { useThree } from "@react-three/fiber";
 import { useGLTF, Environment, ContactShadows } from "@react-three/drei";
 import * as THREE from "three";
+import { beatPulseScene } from "./beats";
 
 const MODEL_URL = staticFile("models/tabletop_macbook_iphone.opt.glb");
 useGLTF.preload(MODEL_URL);
@@ -350,13 +351,12 @@ const Scene: React.FC<{
   // not linearly mechanical. Caps at PHONE_YAW_DRIFT_END (7s).
   const driftT = clamp01(frame / PHONE_YAW_DRIFT_END);
   const driftEased = (1 - Math.cos(driftT * Math.PI)) * 0.5;
-  const yawDrift = PHONE_YAW_DRIFT_AMOUNT * driftEased;
 
   // Per-device zoom curves. camera.zoom drives the laptop curve so
   // the entire 3D scene grows proportionally; the phone gets a
   // counter-scale so its effective zoom follows its own (gentler)
   // curve regardless of the camera.
-  const laptopZoom =
+  const laptopZoomBase =
     frame < ZOOM_IN_END
       ? interpolate(frame, [0, ZOOM_IN_END], [LAPTOP_INITIAL_ZOOM, SETTLED_ZOOM], {
           extrapolateLeft: "clamp",
@@ -368,7 +368,7 @@ const Scene: React.FC<{
           [SETTLED_ZOOM, LAPTOP_END_ZOOM],
           { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
         );
-  const phoneZoom =
+  const phoneZoomBase =
     frame < ZOOM_IN_END
       ? interpolate(frame, [0, ZOOM_IN_END], [PHONE_INITIAL_ZOOM, SETTLED_ZOOM], {
           extrapolateLeft: "clamp",
@@ -380,7 +380,27 @@ const Scene: React.FC<{
           [SETTLED_ZOOM, PHONE_END_ZOOM],
           { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
         );
+
+  // Beat-driven warping. The base curves above set the macro framing;
+  // every Hook kick (scene-local 3, 29, 54, 80, 106, 132, 157, 183,
+  // 209, 235) punches the camera a touch forward and nudges the phone
+  // toward canvas-center, then releases back into the slow drift.
+  // Attack 2 / decay 22 — sharp on the way in so the zoom *snaps*,
+  // soft on the way out so it eases back. Damped after the spin
+  // starts so the closing animation isn't competing with kicks.
+  const exitDamp = 1 - clamp01((frame - PHONE_SPIN_START + 8) / 12);
+  const beatRaw = beatPulseScene(frame, "Hook", 2, 22) * exitDamp;
+  const beatKick = Math.pow(beatRaw, 1.4);
+
+  const laptopZoom = laptopZoomBase + beatKick * 0.028;
+  const phoneZoom = phoneZoomBase + beatKick * 0.020;
   const phoneZoomCorrection = phoneZoom / laptopZoom;
+
+  // Phone yaw: existing slow drift + per-beat micro-turn toward
+  // canvas-center (≈ -0.8°). Reads as the device "leaning in" with
+  // each kick.
+  const yawKick = beatKick * -0.014;
+  const yawDrift = PHONE_YAW_DRIFT_AMOUNT * driftEased + yawKick;
 
   const iphone = sceneClone.getObjectByName("iphone");
   if (iphone) {
