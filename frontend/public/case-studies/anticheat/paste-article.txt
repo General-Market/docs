@@ -1,0 +1,83 @@
+The Anti-Cheat
+
+Technical Review № 001 — General Market
+
+
+[IMAGE 01 — cover.png]
+
+
+Markets are the largest competitive multiplayer game on earth, and the most curious thing about them is that no one ever bothered to install an anti-cheat.
+
+
+[IMAGE 02 — part-1-thesis.png]
+
+
+The asymmetry has a number, and like everything paid in the long run, the number is patient and enormous.
+
+
+[IMAGE 03 — part-2-losses.png]
+
+
+Trading reached for lobbyists while gaming reached for engineers, and the eight problems they share now wear two different vocabularies as if vocabulary were a defense.
+
+
+[IMAGE 04 — part-3-translation.png]
+
+
+The man who runs the world's largest game store has been studying cheaters longer than most regulators have been alive, and the rule he arrived at is shorter than any paragraph in the Securities Exchange Act.
+
+
+[IMAGE 05 — part-4-citation.png]
+
+
+Before describing the seven primitives, one ought to describe the object they protect, which is in itself an indictment of the order book.
+
+
+[IMAGE 06 — part-5-block.png]
+
+
+Seven architectural primitives, each of them quietly putting an entire class of fraud out of work, all of them already inside the block.
+
+
+[IMAGE 07 — primitive-01-fog-of-war.png]
+
+
+[IMAGE 08 — primitive-02-server-authoritative.png]
+
+
+[IMAGE 09 — primitive-03-lockstep.png]
+
+
+[IMAGE 10 — primitive-04-rollback.png]
+
+
+[IMAGE 11 — primitive-05-encrypted-state.png]
+
+
+[IMAGE 12 — primitive-06-adaptive-difficulty.png]
+
+
+[IMAGE 13 — primitive-07-verifier-below.png]
+
+
+Stack the seven primitives and look honestly at where each venue lands; the picture is unflattering for everyone who has ever charged a fee for the privilege of being cheated.
+
+
+[IMAGE 14 — part-6-map.png]
+
+
+Eight exploits, one architecture, all gone.
+
+
+[IMAGE 15 — part-7-kill-list.png]
+
+
+Counter-Strike has been playable since 1999, and in twenty-seven years no one has ever front-run a Counter-Strike match, while every trade you ever placed was front-run by something you never saw; trading received law, the cheapest of the four modalities, and asked for nothing else, and we did the embarrassing thing, which is to say we read what gaming had already written down.
+
+
+[IMAGE 16 — part-8-verdict.png]
+
+
+Trading is easy with an Anti-Cheat.
+
+— General Market, Technical Review № 001, 2026.
