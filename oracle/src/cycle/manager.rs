@@ -460,24 +460,16 @@ impl CycleManager {
                 CycleTrigger::Heartbeat
             };
 
-            // Advance cycle number
+            // Advance cycle number — strictly wall-clock derived. WorkDriven is
+            // now a wakeup hint, not a cycle advance: previously it incremented
+            // cycle_number locally (+1, capped at wall_clock+2), which let nodes
+            // diverge by 1–2 cycles under bursty bridge work and made every leader
+            // PriceProposal arrive Stale at the followers. Cross-node agreement is
+            // worth more than the few hundred ms WorkDriven would shave off bridge
+            // latency: heartbeat fires every cycle_duration_ms, so the worst-case
+            // wait is one tick.
             let wall_clock_cycle = Self::unix_timestamp_ms() / max_cycle_ms;
-            match trigger {
-                CycleTrigger::Heartbeat => {
-                    // Heartbeat: ALWAYS use wall-clock for cross-node agreement
-                    cycle_number = wall_clock_cycle;
-                }
-                CycleTrigger::WorkDriven => {
-                    // WorkDriven: prefer wall-clock, but cap at wall_clock + 2 to prevent
-                    // runaway cycle numbers during rapid bursts (which would cause Heartbeat
-                    // drops that stall the main loop).
-                    cycle_number = if wall_clock_cycle > cycle_number {
-                        wall_clock_cycle
-                    } else {
-                        std::cmp::min(cycle_number + 1, wall_clock_cycle + 2)
-                    };
-                }
-            }
+            cycle_number = wall_clock_cycle;
 
             self.state.set_cycle_and_phase(cycle_number, CyclePhase::SignSubmit);
             self.state.set_trigger(trigger);
@@ -633,20 +625,10 @@ impl CycleManager {
                 }
             };
 
-            // Same cycle advancement logic as start_wall_clock
+            // Same cycle advancement logic as start_wall_clock — strictly
+            // wall-clock; WorkDriven no longer advances cycle locally.
             let wall_clock_cycle = Self::unix_timestamp_ms() / max_cycle_ms;
-            match trigger {
-                CycleTrigger::Heartbeat => {
-                    cycle_number = wall_clock_cycle;
-                }
-                CycleTrigger::WorkDriven => {
-                    cycle_number = if wall_clock_cycle > cycle_number {
-                        wall_clock_cycle
-                    } else {
-                        std::cmp::min(cycle_number + 1, wall_clock_cycle + 2)
-                    };
-                }
-            }
+            cycle_number = wall_clock_cycle;
 
             self.state.set_cycle_and_phase(cycle_number, CyclePhase::SignSubmit);
             self.state.set_trigger(trigger);
