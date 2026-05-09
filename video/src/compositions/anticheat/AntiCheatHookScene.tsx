@@ -27,10 +27,9 @@ useGLTF.preload(MODEL_URL);
 
 // ── Laptop / phone constants pulled from DeviceBroll so this component
 //    is self-contained.
-// Phone scaled up + offset to canvas-right so it stands large with its
-// right quarter clipped off the canvas edge. Last pass had it nearly
-// fully off-frame; this dial keeps ~75% of the phone visible.
-const PHONE_BASE_SCALE = 38;
+// Phone scaled to read almost full canvas-height while keeping a clean
+// right-edge clip rather than overflowing the top + bottom too.
+const PHONE_BASE_SCALE = 30;
 const LID_OPEN = new THREE.Quaternion(-0.78333, 0, 0, 0.62161);
 const LID_CLOSED = new THREE.Quaternion(0, 0, 0, 1);
 const BEVELS_POS = new THREE.Vector3(-0.00012, 0.00824, -0.10401);
@@ -327,12 +326,13 @@ const Scene: React.FC<{
     iphone.position.copy(PHONE_POS);
     iphone.position.x += phoneSlideX;
     iphone.scale.setScalar(PHONE_BASE_SCALE);
-    // lookAt uses both yaw and pitch to orient the object's -Z axis
-    // (the screen normal) at the camera, so the phone reads flat to
-    // the viewer regardless of how far it sits off-axis. Drift + spin
-    // then compose around the phone's own Y axis.
+    // lookAt aligns the object's local -Z with the camera. This GLB
+    // has the screen on local +Z (the back is on -Z), so naive lookAt
+    // shows the apple logo. Add π to the local-Y rotation to flip the
+    // phone front-to-back so the screen faces the camera, then layer
+    // the drift and the exit spin on top.
     iphone.lookAt(CAMERA_VEC);
-    iphone.rotateY(yawDrift + phoneRotY);
+    iphone.rotateY(Math.PI + yawDrift + phoneRotY);
   }
 
   // Screen power-on. Phone wakes from black; laptop wakes from a
