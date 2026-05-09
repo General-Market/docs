@@ -402,6 +402,31 @@ function EnemyPill({ enemy }: { enemy: Enemy }) {
   )
 }
 
+function ShieldDivider() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.94 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.94 }}
+      transition={springs.entrance}
+      className="flex items-center gap-1.5 rounded-full px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.18em]"
+      style={{
+        background: ACCENT,
+        color: '#FFFFFF',
+        boxShadow:
+          '0 1px 0 rgba(255,255,255,0.18) inset, 0 6px 16px -6px rgba(0,82,255,0.45)',
+      }}
+      title="Your pnl is shielded from these accounts"
+    >
+      <svg width="11" height="13" viewBox="0 0 24 28" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <path d="M12 2 L21 5 L21 13 C21 19 17 24 12 26 C7 24 3 19 3 13 L3 5 Z" />
+        <path d="M8.5 13.5 L11 16 L15.5 11" />
+      </svg>
+      Protected
+    </motion.div>
+  )
+}
+
 function EnemyStack({
   selected,
   hasUserBadge,
@@ -422,8 +447,9 @@ function EnemyStack({
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
       className="fixed right-7 z-30 hidden flex-col items-end gap-1.5 lg:flex"
-      style={{ top: hasUserBadge ? 70 : 20 }}
+      style={{ top: hasUserBadge ? 64 : 20 }}
     >
+      <ShieldDivider />
       <AnimatePresence>
         {items.map((enemy) => (
           <EnemyPill key={enemy.handle} enemy={enemy} />
@@ -1417,12 +1443,12 @@ function Verdict({
             {!avatarReady && (
               <CaveatArrow
                 text="You"
-                direction="right-up"
+                direction="right-down"
                 delay={0.55}
-                width={140}
-                height={90}
+                width={150}
+                height={100}
                 fontSize={24}
-                className="pointer-events-none absolute -bottom-[60px] -left-[140px] hidden sm:block"
+                className="pointer-events-none absolute -top-[100px] -left-[170px] hidden sm:block"
               />
             )}
           </motion.div>
@@ -1457,11 +1483,11 @@ function Verdict({
         >
           {whitelisted
             ? armed
-              ? 'Wallet whitelisted — the faucet is yours, and the rest of the site too.'
-              : 'Verifying your code — this takes a beat.'
+              ? 'Wallet whitelisted — the faucet is yours, and the rest of the site too'
+              : 'Verifying your code — this takes a beat'
             : hasCode
-              ? 'Code received. Add a wallet later from any locked page and the gate opens for you immediately.'
-              : 'We’ll notify you the second we go live. The cheat is structural. The fix is too.'}
+              ? 'Code received — add a wallet later from any locked page and the gate opens for you immediately'
+              : 'We’ll notify you the second we go live'}
         </motion.p>
 
         {whitelisted && armed && (
