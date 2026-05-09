@@ -4,11 +4,17 @@ import {
   interpolate,
   useCurrentFrame,
 } from "remotion";
+import { loadFont as loadCaveat } from "@remotion/google-fonts/Caveat";
 import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 import { DotGrid, DotGridVignette } from "./DotGrid";
 import { IdleZoom } from "./vibe";
 import { VIDEO_BEATS } from "./beats";
+
+const { fontFamily: caveatFont } = loadCaveat("normal", {
+  subsets: ["latin"],
+  weights: ["700"],
+});
 
 // Two compositions live in this file:
 //   AntiCheatStat — primary number 0.01%/70% then hard-cut to 99.9%/30%
@@ -32,9 +38,179 @@ export const AntiCheatStat: React.FC = () => {
       <IdleZoom durationInFrames={STAT_FRAMES} from={1} to={1.04}>
         <DotGrid />
         <StatPanel />
+        <StatAnnotations />
         <StatFootnote />
         <DotGridVignette intensity={0.22} />
       </IdleZoom>
+    </AbsoluteFill>
+  );
+};
+
+// Hand-drawn arrows annotating the two phases of StatPanel.
+//   "Not You" → swoops up from below to point at "0.04%" (Phase 1).
+//                Appears at scene-local frame 13 (= 18s absolute,
+//                Stat starts at frame 527). Holds until the wipe at 50.
+//   "You"     → swoops down from above to point at "99.96%" (Phase 2).
+//                Appears at scene-local frame 73 (= 20s absolute) and
+//                holds through the snap-zoom-out.
+//
+// The percentage glyphs sit at the left edge of each centered string;
+// the arrows therefore land on screen-x ≈ 425 (left of canvas center).
+const StatAnnotations: React.FC = () => {
+  const frame = useCurrentFrame();
+
+  // Phase 1 — "Not You"
+  const NY_APPEAR = 13;
+  const NY_DRAW_DONE = 30;
+  const NY_FADE_OUT = 50;
+  const notYouOp = interpolate(
+    frame,
+    [NY_APPEAR, NY_APPEAR + 6, NY_FADE_OUT - 4, NY_FADE_OUT],
+    [0, 1, 1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const notYouDraw = interpolate(
+    frame,
+    [NY_APPEAR, NY_DRAW_DONE],
+    [800, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const notYouHeadOp = interpolate(
+    frame,
+    [NY_DRAW_DONE - 3, NY_DRAW_DONE, NY_FADE_OUT - 4, NY_FADE_OUT],
+    [0, 1, 1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const notYouLabelOp = interpolate(
+    frame,
+    [NY_DRAW_DONE - 1, NY_DRAW_DONE + 6, NY_FADE_OUT - 4, NY_FADE_OUT],
+    [0, 1, 1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+
+  // Phase 2 — "You"
+  const Y_APPEAR = 73;
+  const Y_DRAW_DONE = 90;
+  const youOp = interpolate(
+    frame,
+    [Y_APPEAR, Y_APPEAR + 6],
+    [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const youDraw = interpolate(
+    frame,
+    [Y_APPEAR, Y_DRAW_DONE],
+    [800, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const youHeadOp = interpolate(
+    frame,
+    [Y_DRAW_DONE - 3, Y_DRAW_DONE],
+    [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const youLabelOp = interpolate(
+    frame,
+    [Y_DRAW_DONE - 1, Y_DRAW_DONE + 6],
+    [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+
+  const ink = colors.accent;
+  const stroke = 7;
+
+  return (
+    <AbsoluteFill style={{ pointerEvents: "none" }}>
+      <svg
+        width="100%"
+        height="100%"
+        viewBox={`0 0 ${W} ${H}`}
+        style={{ position: "absolute", inset: 0 }}
+      >
+        {/* "Not You" — sweeps up from lower-right to point at 0.04% */}
+        <g opacity={notYouOp}>
+          <path
+            d="M 600 800 C 545 760 505 705 470 660 C 450 638 435 622 420 608"
+            stroke={ink}
+            strokeWidth={stroke}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+            strokeDasharray={800}
+            strokeDashoffset={notYouDraw}
+          />
+          <g opacity={notYouHeadOp}>
+            <path
+              d="M 420 608 L 451 622"
+              stroke={ink}
+              strokeWidth={stroke}
+              strokeLinecap="round"
+              fill="none"
+            />
+            <path
+              d="M 420 608 L 432 640"
+              stroke={ink}
+              strokeWidth={stroke}
+              strokeLinecap="round"
+              fill="none"
+            />
+          </g>
+          <text
+            x={520}
+            y={870}
+            opacity={notYouLabelOp}
+            fontFamily={caveatFont}
+            fontSize={104}
+            fontWeight={700}
+            fill={ink}
+            transform="rotate(-3, 600, 855)"
+          >
+            Not You
+          </text>
+        </g>
+
+        {/* "You" — sweeps down from upper-right to point at 99.96% */}
+        <g opacity={youOp}>
+          <path
+            d="M 620 290 C 555 330 510 375 470 420 C 450 442 438 460 430 478"
+            stroke={ink}
+            strokeWidth={stroke}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+            strokeDasharray={800}
+            strokeDashoffset={youDraw}
+          />
+          <g opacity={youHeadOp}>
+            <path
+              d="M 430 478 L 462 462"
+              stroke={ink}
+              strokeWidth={stroke}
+              strokeLinecap="round"
+              fill="none"
+            />
+            <path
+              d="M 430 478 L 442 446"
+              stroke={ink}
+              strokeWidth={stroke}
+              strokeLinecap="round"
+              fill="none"
+            />
+          </g>
+          <text
+            x={560}
+            y={245}
+            opacity={youLabelOp}
+            fontFamily={caveatFont}
+            fontSize={120}
+            fontWeight={700}
+            fill={ink}
+            transform="rotate(-3, 620, 230)"
+          >
+            You
+          </text>
+        </g>
+      </svg>
     </AbsoluteFill>
   );
 };
