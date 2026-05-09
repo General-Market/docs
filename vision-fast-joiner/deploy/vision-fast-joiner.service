@@ -1,0 +1,19 @@
+[Unit]
+Description=Vision Fast Joiner — event-driven batch participation
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/home/max/index/vision-fast-joiner
+EnvironmentFile=/home/max/index/vision-fast-joiner/.env
+ExecStart=/usr/bin/node /home/max/index/vision-fast-joiner/dist/index.js
+Restart=always
+RestartSec=10
+LimitNOFILE=65536
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
