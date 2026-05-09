@@ -11,6 +11,7 @@ import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 import { DotGrid, DotGridVignette } from "./DotGrid";
 import { IdleZoom } from "./vibe";
+import { beatPulseScene } from "./beats";
 
 // Solution = 233f (7.77s). Solution→Reassure transition midpoint sits
 // near beat 33 (frame 866 absolute). Terminal flies in on scene-local
@@ -71,8 +72,42 @@ const Headline: React.FC = () => {
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
 
+  // Beat-driven halo behind the wordmark. Pulses on every Solution
+  // beat (scene-local 2, 28, 53, 79) — the room behind the brand
+  // breathes with the kick. Visible during the held window only;
+  // collapses ahead of the surge so the wash reads clean.
+  const haloPulse = beatPulseScene(frame, "Solution", 3, 18);
+  const haloVis = interpolate(
+    frame,
+    [0, 8, HOLD_END + 6, ZOOM_END - 14],
+    [0, 1, 1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const haloAmt = haloPulse * haloVis;
+  const haloScale = 0.92 + haloAmt * 0.18 + Math.sin(frame * 0.08) * 0.012;
+
   return (
     <AbsoluteFill style={{ opacity }}>
+      <AbsoluteFill
+        style={{
+          justifyContent: "center",
+          alignItems: "center",
+          pointerEvents: "none",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            width: 1500,
+            height: 760,
+            transform: `scale(${haloScale.toFixed(3)})`,
+            transformOrigin: "center center",
+            background: `radial-gradient(ellipse at center, rgba(0,82,255,${(0.55 * haloAmt + 0.06).toFixed(3)}) 0%, rgba(0,82,255,${(0.22 * haloAmt + 0.03).toFixed(3)}) 32%, rgba(0,82,255,0) 68%)`,
+            filter: "blur(70px)",
+            mixBlendMode: "screen",
+          }}
+        />
+      </AbsoluteFill>
       <AbsoluteFill
         style={{
           justifyContent: "center",

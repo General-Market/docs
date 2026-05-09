@@ -73,6 +73,49 @@ export const nearestBeatBefore = (frame: number): number | null => {
 export const beatLocal = (absoluteBeat: number, sceneStart: number): number =>
   absoluteBeat - sceneStart;
 
+// Absolute start frame of every scene in AntiCheatFull. Derived from
+// scene durations and TransitionSeries overlaps; recompute if either
+// changes. Lets scene components drive beat-pulse FX from
+// useCurrentFrame() without knowing their parent offset.
+export const SCENE_STARTS = {
+  Hook: 0,
+  Bars: 236,
+  Rigged: 365,
+  Stat: 527,
+  Solution: 644,
+  Reassure: 859,
+  Switch: 962,
+  EndCard: 1166,
+} as const;
+
+export type SceneName = keyof typeof SCENE_STARTS;
+
+// The drum spike — strongest energy plateau in the audio (t≈102.52s).
+// Lands inside EndCard at scene-local frame 9. Visual climax anchor.
+export const SPIKE_ENDCARD_LOCAL = 9;
+
+// Max beat envelope across every beat that falls inside a scene's
+// window, expressed in scene-local frames. Pass useCurrentFrame()
+// directly. Returns 0..1 — peaks on each beat, decays in between.
+export const beatPulseScene = (
+  localFrame: number,
+  scene: SceneName,
+  attack = 4,
+  decay = 14,
+): number => {
+  const start = SCENE_STARTS[scene];
+  let max = 0;
+  for (const b of VIDEO_BEATS) {
+    const sceneLocalBeat = b - start;
+    const delta = localFrame - sceneLocalBeat;
+    if (delta < -attack || delta > decay) continue;
+    const env =
+      delta <= 0 ? (delta + attack) / attack : 1 - delta / decay;
+    if (env > max) max = env;
+  }
+  return max;
+};
+
 // Triangular envelope around a beat. Returns 0..1.
 //   peak (1.0) at the beat frame.
 //   ramps up linearly over `attack` frames before the beat.

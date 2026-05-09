@@ -80,20 +80,22 @@ const PAIRS = [
   { game: "Kill aura", trade: "Order-flow buyers" },
 ] as const;
 
-// Beat grid (frames):
-//   17  — header in
-//   43  — split begins
-//   94  — pair 1
-//   120 — pair 2
-//   146 — pair 3
-//   172 — verdict reveal
-//   187 — panel labels start riding off (6.22s; bottom-up, line by line)
+// Beat grid (frames) — snapped to VIDEO_BEATS (Hook scene-local: 3, 29,
+// 54, 80, 106, 132, 157, 183, 209, 235). Every reveal now lands on a
+// kick instead of drifting 11–14f off it.
+//   29  — header in (was 17, +12 to beat 1)
+//   54  — split begins (was 43, +11 to beat 2)
+//   106 — pair 1 (was 94, +12 to beat 4)
+//   132 — pair 2 (was 120, +12 to beat 5)
+//   157 — pair 3 (was 146, +11 to beat 6)
+//   183 — verdict reveal (was 172, +11 to beat 7)
+//   209 — panel labels start riding off (was 187, +22 to beat 8)
 //   254 — hook ends
-const HEADER_IN = 17;
-const SPLIT_AT = 43;
-const PAIR_FRAMES = [94, 120, 146];
-const REVEAL_AT = 172;
-const PANEL_EXIT_AT = 187;
+const HEADER_IN = 29;
+const SPLIT_AT = 54;
+const PAIR_FRAMES = [106, 132, 157];
+const REVEAL_AT = 183;
+const PANEL_EXIT_AT = 209;
 const PANEL_EXIT_DURATION = 14;
 const PANEL_EXIT_STAGGER = 5;
 const HOOK_DURATION = 254;

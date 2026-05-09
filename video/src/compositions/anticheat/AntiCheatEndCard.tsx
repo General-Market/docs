@@ -10,6 +10,7 @@ import { font } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 import { ParallaxText } from "./transitions";
 import { IdleZoom, RevealChars } from "./vibe";
+import { SPIKE_ENDCARD_LOCAL } from "./beats";
 
 const SCENE_SECONDS = 4.5;
 const SUBLINE_AT = toFrames(0.7);
@@ -42,14 +43,38 @@ export const AntiCheatEndCard: React.FC = () => {
     fps,
     config: { damping: 9, stiffness: 220, mass: 0.55 },
   });
-  const wordmarkPunch =
-    1 + Math.sin(Math.min(1, Math.max(0, punch)) * Math.PI) * 0.06;
 
+  // Drum-spike anchor — the climax of the music lands at scene-local
+  // frame 9. A scale impulse on the wordmark + a white halo burst land
+  // exactly with the kick. Pre-attack (3f) eases in so the impact reads
+  // as inevitable, decay (24f) releases slowly so the wordmark settles
+  // back into its resting punch.
+  const spikeDelta = frame - SPIKE_ENDCARD_LOCAL;
+  const spikeImpulse =
+    spikeDelta < -3
+      ? 0
+      : spikeDelta <= 0
+        ? (spikeDelta + 3) / 3
+        : Math.max(0, 1 - spikeDelta / 24);
+  const spikeKick = Math.pow(spikeImpulse, 1.6); // sharper attack curve
+
+  const wordmarkPunch =
+    1 +
+    Math.sin(Math.min(1, Math.max(0, punch)) * Math.PI) * 0.06 +
+    spikeKick * 0.085;
+
+  // Underline rides the spike — accelerates so it completes RIGHT at
+  // the kick rather than 0.7s later. Reads as the brand asserting
+  // itself in time with the music.
   const underlineT = interpolate(
     frame,
-    [toFrames(0.4), toFrames(1.1)],
+    [toFrames(0.18), SPIKE_ENDCARD_LOCAL + 2],
     [0, 1],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: (t) => 1 - Math.pow(1 - t, 2.4),
+    },
   );
 
   const sublineLocal = frame - SUBLINE_AT;
@@ -96,6 +121,23 @@ export const AntiCheatEndCard: React.FC = () => {
         }}
       >
       <WhiteDotGrid />
+      {/* Spike-anchored halo burst. White-on-blue: blooms with the kick,
+       * radiates out behind the wordmark, settles to nothing by frame 35. */}
+      <div
+        style={{
+          position: "absolute",
+          left: "50%",
+          top: "50%",
+          width: 1700,
+          height: 1700,
+          transform: `translate(-50%, -50%) scale(${(0.55 + spikeKick * 0.55).toFixed(3)})`,
+          background: `radial-gradient(circle at center, rgba(255,255,255,${(0.55 * spikeKick).toFixed(3)}) 0%, rgba(255,255,255,${(0.18 * spikeKick).toFixed(3)}) 22%, rgba(255,255,255,0) 58%)`,
+          filter: "blur(40px)",
+          opacity: spikeImpulse,
+          mixBlendMode: "screen",
+          pointerEvents: "none",
+        }}
+      />
       <div
         style={{
           textAlign: "center",
