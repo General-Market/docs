@@ -29,8 +29,11 @@ def main() -> int:
         deployment = json.load(f)
     new_vaults_by_source: dict[str, list[str]] = deployment["sourceVaults"]
 
-    # Source renames: data-node retired some legacy aliases. Map to current names.
-    rename = {
+    # Source renames: data-node retired some legacy aliases (defillama→defi, etc).
+    # The frontend URL slug is the original name (matches sources-display.json),
+    # so we keep `fund.source` as the user-facing name AND also use it to look
+    # up vaults via the alias map.
+    alias = {
         "defillama": "defi",
         "finra": "finra_short_vol",
         "sec": "sec_13f",
@@ -41,15 +44,24 @@ def main() -> int:
         src = fund.get("source")
         if not src:
             continue
-        src = rename.get(src, src)
-        fund["source"] = src
+        # Keep fund.source as-is (frontend reads it for URL matching).
+        # Use the aliased name only as the vault-map key.
         by_source.setdefault(src, []).append(fund)
+
+    # Build a lookup that handles aliases: when we ask for "defillama",
+    # check both that key and "defi".
+    def vaults_for(src: str) -> list[str]:
+        if src in new_vaults_by_source:
+            return new_vaults_by_source[src]
+        if src in alias and alias[src] in new_vaults_by_source:
+            return new_vaults_by_source[alias[src]]
+        return []
 
     new_funds: list[dict] = []
     dropped_no_source = 0
     dropped_overflow = 0
     for source, fund_list in by_source.items():
-        new_vaults = new_vaults_by_source.get(source, [])
+        new_vaults = vaults_for(source)
         if not new_vaults:
             dropped_no_source += len(fund_list)
             continue

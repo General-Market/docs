@@ -627,7 +627,7 @@
     {
       "name": "Lockflow",
       "symbol": "LOCK",
-      "source": "defi",
+      "source": "defillama",
       "strategy": "momentum",
       "params": {},
       "tagline": "DeFi TVL moves slowly and with conviction. Lockflow bets when TVL shifts, ignoring the noise between.",
@@ -639,7 +639,7 @@
     {
       "name": "Unlock",
       "symbol": "ULCK",
-      "source": "defi",
+      "source": "defillama",
       "strategy": "contrarian",
       "params": {},
       "tagline": "Every TVL surge gets withdrawn. Unlock fades the deposits, because yield farmers are constitutionally incapable of patience.",
@@ -651,7 +651,7 @@
     {
       "name": "Yield",
       "symbol": "YILD",
-      "source": "defi",
+      "source": "defillama",
       "strategy": "mean_reversion",
       "params": {},
       "tagline": "APYs oscillate around equilibrium. High yields attract capital that compresses them. Yield bets on the convergence.",
@@ -663,7 +663,7 @@
     {
       "name": "Exploit",
       "symbol": "XPLT",
-      "source": "defi",
+      "source": "defillama",
       "strategy": "volatility_fade",
       "params": {},
       "tagline": "DeFi volatility follows exploit cycles. Every hack creates panic that subsides. Exploit bets on the normalization after protocol drama.",
@@ -869,18 +869,6 @@
       "fee": 500,
       "category": "Finance",
       "vault": "0xa8cE1D1bDd59D37FfBa31988789d29c7B431C0A8"
-    },
-    {
-      "name": "Squeeze",
-      "symbol": "SQZE",
-      "source": "finra_short_vol",
-      "strategy": "momentum",
-      "params": {},
-      "tagline": "Rising short interest compounds. When bears pile in, the squeeze potential builds tick over tick. Squeeze rides the buildup.",
-      "color": "#1A3C6E",
-      "fee": 500,
-      "category": "finance",
-      "vault": "0xa376E54168e93795acee019DC2A49660A9Ba1512"
     },
     {
       "name": "Noise",
@@ -1507,7 +1495,7 @@
     {
       "name": "Deadline",
       "symbol": "DDLN",
-      "source": "sec_13f",
+      "source": "sec",
       "strategy": "momentum",
       "params": {},
       "tagline": "SEC filings cluster around quarterly deadlines. Filing volume builds tick-over-tick during disclosure windows. Deadline rides the surge.",
@@ -1519,7 +1507,7 @@
     {
       "name": "Disclosure",
       "symbol": "DSCL",
-      "source": "sec_13f",
+      "source": "sec",
       "strategy": "contrarian",
       "params": {},
       "tagline": "Markets overreact to every 13F drop. Disclosure fades the initial move, because institutional positions are already priced in.",
@@ -1531,7 +1519,7 @@
     {
       "name": "Insider",
       "symbol": "INSD",
-      "source": "sec_13f",
+      "source": "sec",
       "strategy": "momentum_threshold",
       "params": {
         "min_change_pct": 3
@@ -1545,7 +1533,7 @@
     {
       "name": "Holdings",
       "symbol": "HLDG",
-      "source": "sec_13f",
+      "source": "sec",
       "strategy": "regime",
       "params": {},
       "tagline": "Institutional allocation operates in risk-on and risk-off regimes. Holdings detects the shift from 13F filing patterns.",
@@ -2085,6 +2073,44 @@
       "fee": 500,
       "category": "Real Estate",
       "vault": "0xe7875282689B68153aCe9f41cC24e2b3fd149D46"
+    },
+    {
+      "name": "Squeeze",
+      "symbol": "SQZE",
+      "source": "finra",
+      "strategy": "momentum",
+      "params": {},
+      "tagline": "Rising short interest compounds. When bears pile in, the squeeze potential builds tick over tick. Squeeze rides the buildup.",
+      "color": "#1A3C6E",
+      "fee": 500,
+      "category": "finance",
+      "vault": "0xFb372D85Bef3dc187e9Cfb9Bfecb7ee335179641"
+    },
+    {
+      "name": "Cover",
+      "symbol": "COVR",
+      "source": "finra",
+      "strategy": "contrarian",
+      "params": {},
+      "tagline": "Every short position eventually covers. Cover bets that extreme short interest reverts as bears lose nerve.",
+      "color": "#4FC3F7",
+      "fee": 500,
+      "category": "finance",
+      "vault": "0x938531303C6E13557cF8B0c90411cce8e5Da8Ab2"
+    },
+    {
+      "name": "Pressure",
+      "symbol": "PRSS",
+      "source": "finra",
+      "strategy": "momentum_threshold",
+      "params": {
+        "min_change_pct": 2.0
+      },
+      "tagline": "Small short interest changes are noise. Pressure only acts when short volume shifts by more than 2%, following conviction.",
+      "color": "#1565C0",
+      "fee": 500,
+      "category": "finance",
+      "vault": "0x28ABaBfa2dd68970DeC49219c2a67512ea5D460d"
     },
     {
       "name": "Espresso",
