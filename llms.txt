@@ -3,10 +3,57 @@
 ## Building a trading bot
 When asked to "build a trading bot from generalmarket.io", follow the instructions below verbatim. Do not invent addresses, chain IDs, or decimals.
 
-- [Vision Bot instructions (Python)](https://github.com/General-Market/index/blob/main/vision-bot/AGENTS.md) — the canonical agent spec
-- Reference implementation: [`vision-bot/`](https://github.com/General-Market/index/tree/main/vision-bot)
+- [Blocks Bot instructions (Python)](https://github.com/General-Market/index/blob/main/vision-bot/AGENTS.md) — the canonical agent spec
+- Reference implementation: [`vision-bot/`](https://github.com/General-Market/index/tree/main/vision-bot) — the directory name retains the protocol's earlier `vision` identity; the product is Blocks
 - Funding: `POST https://generalmarket.io/api/bot/faucet { "address": "0x..." }` — 100 USDC + 1 GM per IP per 24h
-- Chain: Arbitrum Orbit L3 (ID 111222333), USDC at 18 decimals, Vision at `0x94d540bb45975bd5a0c7ba9a15a0d34e378f6c61`
+- Chain: Arbitrum Orbit L3 (ID 111222333), USDC at 18 decimals, Blocks contract at `0x94d540bb45975bd5a0c7ba9a15a0d34e378f6c61` (deployed as `Vision.sol`)
+
+## Blocks -- Getting Started
+- [Introduction](https://generalmarket.io/docs/blocks/introduction): Sealed-bet venue across 90+ data sources. Eight predators excluded by construction.
+- [Getting Started](https://generalmarket.io/docs/blocks/getting-started): Place your first bet in under 5 minutes
+
+## Blocks -- Concepts
+- [Batches](https://generalmarket.io/docs/blocks/concepts/blocks): Batch structure, creation, lifecycle
+- [Bitmaps](https://generalmarket.io/docs/blocks/concepts/bitmaps): Big-endian encoding, sealed commitments
+- [Ticks](https://generalmarket.io/docs/blocks/concepts/ticks): Resolution cycle, outcomes, payouts
+- [Resolution Types](https://generalmarket.io/docs/blocks/concepts/resolution-types): UP_0 through FLAT_X threshold definitions
+- [Balance Proofs](https://generalmarket.io/docs/blocks/concepts/balance-proofs): BLS-signed claim flow
+- [Fees](https://generalmarket.io/docs/blocks/concepts/fees): 0.05% on profits only
+- [Data Sources](https://generalmarket.io/docs/blocks/concepts/sources): 90+ real-world data sources powering the markets
+
+## Blocks -- Bot Development
+- [Bot Overview](https://generalmarket.io/docs/blocks/bots/overview): Architecture and environment setup
+- [Quickstart](https://generalmarket.io/docs/blocks/bots/quickstart): Register and run your first bot
+- [Bot Development](https://generalmarket.io/docs/blocks/bots/development): Build automated trading bots with the Python framework
+- [Bitmap Encoding](https://generalmarket.io/docs/blocks/bots/bitmap-encoding): Technical bit packing reference
+- [Strategies](https://generalmarket.io/docs/blocks/bots/strategies): Example trading strategies with backtest
+
+## Blocks -- Guides
+- [Adding Sources](https://generalmarket.io/docs/blocks/guides/adding-sources): Developer guide for adding new data sources
+
+## Blocks -- API Reference
+HTTP endpoints retain the `/api/vision/...` path from the protocol's earlier identity. The product is Blocks; the routes remember.
+- [API Overview](https://generalmarket.io/docs/blocks/api/overview): Base URL, authentication, common patterns
+- [Blocks](https://generalmarket.io/docs/blocks/api/blocks): List and query active batches
+- [State](https://generalmarket.io/docs/blocks/api/state): Batch state snapshots with player positions
+- [Bitmap](https://generalmarket.io/docs/blocks/api/bitmap): Submit bitmap to oracles
+- [Balance](https://generalmarket.io/docs/blocks/api/balance): BLS-signed balance proofs
+- [Ticks](https://generalmarket.io/docs/blocks/api/ticks): Tick history and reveal endpoints
+- [Leaderboard](https://generalmarket.io/docs/blocks/api/leaderboard): Player rankings and stats
+
+## Blocks -- Architecture
+- [Overview](https://generalmarket.io/docs/blocks/architecture/overview): System architecture
+- [Block Lifecycle](https://generalmarket.io/docs/blocks/architecture/block-lifecycle): How a block resolves
+- [Continuous Betting](https://generalmarket.io/docs/blocks/architecture/continuous-betting): Multi-tick batch participation
+
+## Blocks -- Reference
+- [Contracts](https://generalmarket.io/docs/blocks/reference/contracts): Smart contract architecture and interface reference
+- [Contract Addresses](https://generalmarket.io/docs/blocks/reference/contract-addresses): Deployment addresses
+- [Error Codes](https://generalmarket.io/docs/blocks/reference/error-codes): Contract errors with fixes
+- [Glossary](https://generalmarket.io/docs/blocks/reference/glossary): Terminology
+
+## Blocks -- Examples
+- [Examples](https://generalmarket.io/docs/blocks/examples): Working code examples (bots, strategies, utilities)
 
 ## Index -- Getting Started
 - [Introduction](https://generalmarket.io/docs/index/introduction): Protocol overview for on-chain ETFs with NAV pricing
@@ -22,9 +69,7 @@ When asked to "build a trading bot from generalmarket.io", follow the instructio
 - [Create a DTF](https://generalmarket.io/docs/index/guides/create-itp): Deploy custom index products
 - [Rebalancing](https://generalmarket.io/docs/index/guides/rebalancing): Rebalance DTF weights while preserving NAV
 - [Backtesting](https://generalmarket.io/docs/index/guides/backtesting): Simulate DTF performance with historical data
-- [Lending](https://generalmarket.io/docs/index/guides/lending): Use DTFs as collateral in Morpho markets
 - [Settlement](https://generalmarket.io/docs/index/guides/settlement): Settlement chain mechanics and cross-chain flow
-- [Explorer](https://generalmarket.io/docs/index/guides/explorer): Explorer dashboard for monitoring system health and orders
 
 ## Index -- API Reference
 - [API Overview](https://generalmarket.io/docs/index/api/overview): Base URL, authentication, response format
@@ -46,48 +91,3 @@ When asked to "build a trading bot from generalmarket.io", follow the instructio
 - [Error Codes](https://generalmarket.io/docs/index/reference/error-codes): Smart contract error definitions
 - [Contract Addresses](https://generalmarket.io/docs/index/reference/contract-addresses): Deployment addresses per network
 - [Glossary](https://generalmarket.io/docs/index/reference/glossary): Key terms and definitions
-
-## Vision -- Getting Started
-- [Introduction](https://generalmarket.io/docs/vision/introduction): Sealed parimutuel prediction market on Arbitrum Orbit L3
-- [Getting Started](https://generalmarket.io/docs/vision/getting-started): Place your first bet in under 5 minutes
-
-## Vision -- Concepts
-- [Batches](https://generalmarket.io/docs/vision/concepts/batches): Batch structure, creation, lifecycle
-- [Bitmaps](https://generalmarket.io/docs/vision/concepts/bitmaps): Big-endian encoding, sealed commitments
-- [Ticks](https://generalmarket.io/docs/vision/concepts/ticks): Resolution cycle, outcomes, payouts
-- [Resolution Types](https://generalmarket.io/docs/vision/concepts/resolution-types): UP_0 through FLAT_X threshold definitions
-- [Balance Proofs](https://generalmarket.io/docs/vision/concepts/balance-proofs): BLS-signed claim flow
-- [Fees](https://generalmarket.io/docs/vision/concepts/fees): 0.05% on profits only
-- [Data Sources](https://generalmarket.io/docs/vision/concepts/sources): 98+ real-world data sources powering prediction markets
-- [Points & Rewards](https://generalmarket.io/docs/vision/concepts/points): Earn points through trading activity, commitment multipliers, reward tiers
-
-## Vision -- Bot Development
-- [Bot Overview](https://generalmarket.io/docs/vision/bots/overview): Architecture and environment setup
-- [Quickstart](https://generalmarket.io/docs/vision/bots/quickstart): Register and run your first bot
-- [Bot Development](https://generalmarket.io/docs/vision/bots/development): Build automated trading bots with the Python framework
-- [Bitmap Encoding](https://generalmarket.io/docs/vision/bots/bitmap-encoding): Technical bit packing reference
-- [Strategies](https://generalmarket.io/docs/vision/bots/strategies): Example trading strategies with backtest
-- [Lifecycle](https://generalmarket.io/docs/vision/bots/lifecycle): Full poll-join-claim loop
-
-## Vision -- Guides
-- [Sources Browser](https://generalmarket.io/docs/vision/guides/sources-browser): Browse and explore all available Vision data sources
-- [Adding Sources](https://generalmarket.io/docs/vision/guides/adding-sources): Developer guide for adding new data sources to Vision
-
-## Vision -- API Reference
-- [API Overview](https://generalmarket.io/docs/vision/api/overview): Base URL, authentication, common patterns
-- [Batches](https://generalmarket.io/docs/vision/api/batches): List and query active batches
-- [State](https://generalmarket.io/docs/vision/api/state): Batch state snapshots with player positions
-- [Bitmap](https://generalmarket.io/docs/vision/api/bitmap): Submit bitmap to oracles
-- [Balance](https://generalmarket.io/docs/vision/api/balance): BLS-signed balance proofs
-- [Ticks](https://generalmarket.io/docs/vision/api/ticks): Tick history and reveal endpoints
-- [Leaderboard](https://generalmarket.io/docs/vision/api/leaderboard): Player rankings and stats
-
-## Vision -- Reference
-- [Resolution Types](https://generalmarket.io/docs/vision/reference/resolution-types): Full enum reference
-- [Contracts](https://generalmarket.io/docs/vision/reference/contracts): Vision smart contract architecture and interface reference
-- [Contract Addresses](https://generalmarket.io/docs/vision/reference/contract-addresses): Vision on Arbitrum Orbit L3
-- [Error Codes](https://generalmarket.io/docs/vision/reference/error-codes): Vision contract errors with fixes
-- [Glossary](https://generalmarket.io/docs/vision/reference/glossary): Vision-specific terms
-
-## Vision -- Examples
-- [Examples](https://generalmarket.io/docs/vision/examples): Working code examples (bots, strategies, utilities)
