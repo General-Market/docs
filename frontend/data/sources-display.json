@@ -54,7 +54,7 @@
       "valueLabel": "TVL",
       "valueUnit": "USD",
       "isPrice": true,
-      "syncIntervalSecs": 120,
+      "syncIntervalSecs": 600,
       "batchEligible": true
     },
     {
@@ -801,7 +801,7 @@
       "internalIds": [
         "twitch"
       ],
-      "syncIntervalSecs": 60,
+      "syncIntervalSecs": 600,
       "batchEligible": true
     },
     {
@@ -934,7 +934,7 @@
       "internalIds": [
         "tubes"
       ],
-      "syncIntervalSecs": 120,
+      "syncIntervalSecs": 600,
       "batchEligible": true
     },
     {
@@ -1390,7 +1390,7 @@
       "valueLabel": "Delay",
       "valueUnit": "min",
       "isPrice": false,
-      "syncIntervalSecs": 120,
+      "syncIntervalSecs": 600,
       "batchEligible": true
     },
     {
@@ -1618,7 +1618,7 @@
       "internalIds": [
         "aisstream"
       ],
-      "syncIntervalSecs": 60,
+      "syncIntervalSecs": 600,
       "batchEligible": true
     },
     {
