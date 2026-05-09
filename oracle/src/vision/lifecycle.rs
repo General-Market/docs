@@ -1449,7 +1449,15 @@ impl BatchLifecycleManager {
         market_count: usize,
     ) -> Result<u64, Box<dyn std::error::Error + Send + Sync>> {
         let now = chrono::Utc::now();
-        let betting_end = now + chrono::Duration::seconds(tick_duration as i64);
+        // betting_end must match the contract's on-chain tick boundary, which
+        // is `(createdAtTick + 1) * tick_duration`. Anchoring to `now + tick`
+        // was wrong: a batch created 1 second before the next tick boundary
+        // got a betting_end one full tick into the future, and the settle
+        // gate slid past the contract grace cliff. Round to the next tick.
+        let now_secs = now.timestamp() as u64;
+        let next_tick_boundary = ((now_secs / tick_duration) + 1) * tick_duration;
+        let betting_end = chrono::DateTime::<chrono::Utc>::from_timestamp(next_tick_boundary as i64, 0)
+            .unwrap_or(now + chrono::Duration::seconds(tick_duration as i64));
         let settlement_deadline = betting_end + chrono::Duration::seconds(tick_duration as i64);
 
         // Magic number — chosen once, used only here. The lock is transaction
