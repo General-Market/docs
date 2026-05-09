@@ -356,15 +356,15 @@ const PairList: React.FC<{
   );
 };
 
-// Each line flies forward from depth — starts huge and motion-blurred,
-// snaps to scale 1.0 with focus pull. RevealLines is gated behind a
-// Sequence at REVEAL_AT (172), so all frame numbers below are
-// scene-local within RevealLines. 7.5s absolute = 225 - 172 = 53.
-const LINE1_LAND = 7;
-const LINE2_START = 6;
-const LINE2_LAND = LINE2_START + 7;
-const LINE1_EXIT_AT = 53; // 7.5s
-const LINE2_EXIT_AT = 59; // 7.7s — one beat after line 1
+// Both lines land in lockstep at frame 0; inside each line the words
+// pop in word-by-word with a tight stagger. The whole pair exits
+// together too — opposite drift directions, same exitAt.
+// RevealLines is gated behind a Sequence at REVEAL_AT (172), so all
+// frame numbers below are scene-local. 7.5s absolute = 225 - 172 = 53.
+const WORD_STAGGER = 2;
+const WORD_ENTER_DURATION = 4;
+const LINES_LAND = 12; // tail end of the word cascade — used for the screen shake
+const LINE_EXIT_AT = 53; // 7.5s
 const LINE_EXIT_DURATION = 8;
 const SHAKE_FRAMES = 5;
 const SHAKE_AMP = 9;
@@ -377,7 +377,7 @@ const RevealLines: React.FC = () => {
     if (since < 0 || since >= SHAKE_FRAMES) return 0;
     return (1 - since / SHAKE_FRAMES) * SHAKE_AMP;
   };
-  const amp = Math.max(shakeAt(LINE1_LAND), shakeAt(LINE2_LAND));
+  const amp = shakeAt(LINES_LAND);
   const shakeX = amp ? (pseudo(frame * 7.31) - 0.5) * 2 * amp : 0;
   const shakeY = amp ? (pseudo(frame * 11.7 + 1) - 0.5) * 2 * amp : 0;
 
@@ -395,28 +395,28 @@ const RevealLines: React.FC = () => {
         style={{
           fontFamily: font,
           fontWeight: 700,
-          fontSize: 84,
+          fontSize: 100,
           letterSpacing: "-0.025em",
           textAlign: "center",
           color: "#f5f5f5",
-          lineHeight: 1.15,
+          lineHeight: 1.12,
         }}
       >
         <DepthLine
-          text="The cheaters behind your rage in games"
+          text="The cheaters in your games"
           startAt={0}
-          exitAt={LINE1_EXIT_AT}
+          exitAt={LINE_EXIT_AT}
           exitDir="left"
           frame={frame}
         />
         <DepthLine
-          text="are behind your losses in trading"
-          startAt={LINE2_START}
-          exitAt={LINE2_EXIT_AT}
+          text="Stole you also in your trades"
+          startAt={0}
+          exitAt={LINE_EXIT_AT}
           exitDir="right"
           frame={frame}
           color="#ff3b3b"
-          marginTop={16}
+          marginTop={20}
         />
       </div>
     </AbsoluteFill>
@@ -432,47 +432,54 @@ const DepthLine: React.FC<{
   color?: string;
   marginTop?: number;
 }> = ({ text, startAt, exitAt, exitDir, frame, color, marginTop }) => {
-  const t = frame - startAt;
-  const enterScale = interpolate(t, [0, 7], [2.4, 1.0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const enterBlur = interpolate(t, [0, 7], [16, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const enterOp = interpolate(t, [0, 5], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
+  const words = text.split(" ");
 
-  // Exit, ease-in cubic. Each line drifts to its assigned side and
-  // softens; the staggered exitAt makes the two lines leave one after
-  // the other rather than as a pair.
+  // Line-level exit. The whole line drifts to its side, softens.
   const exitT = clamp01((frame - exitAt) / LINE_EXIT_DURATION);
   const exitEased = exitT * exitT;
-  const exitX = (exitDir === "left" ? -1 : 1) * exitEased * 220;
+  const exitX = (exitDir === "left" ? -1 : 1) * exitEased * 240;
   const exitOp = 1 - exitT;
   const exitScale = 1 - exitEased * 0.18;
   const exitBlur = exitEased * 7;
 
-  const scale = enterScale * exitScale;
-  const blurPx = enterBlur + exitBlur;
-  const opacity = enterOp * exitOp;
-
   return (
     <div
       style={{
-        transform: `translateX(${exitX.toFixed(2)}px) scale(${scale.toFixed(3)})`,
+        transform: `translateX(${exitX.toFixed(2)}px) scale(${exitScale.toFixed(3)})`,
         transformOrigin: "50% 50%",
-        filter: blurPx > 0.05 ? `blur(${blurPx.toFixed(2)}px)` : "none",
-        opacity,
+        filter: exitBlur > 0.05 ? `blur(${exitBlur.toFixed(2)}px)` : "none",
+        opacity: exitOp,
         color: color ?? "#f5f5f5",
         marginTop: marginTop ?? 0,
         willChange: "transform, opacity, filter",
       }}
     >
-      {text}
+      {words.map((word, i) => {
+        const wordStart = startAt + i * WORD_STAGGER;
+        const wt = clamp01((frame - wordStart) / WORD_ENTER_DURATION);
+        // Ease-out cubic — snappy land, no slow ramp.
+        const wEased = 1 - Math.pow(1 - wt, 3);
+        const wScale = interpolate(wEased, [0, 1], [2.0, 1.0]);
+        const wBlur = (1 - wEased) * 10;
+        const wOp = wt;
+        return (
+          <React.Fragment key={i}>
+            <span
+              style={{
+                display: "inline-block",
+                transform: `scale(${wScale.toFixed(3)})`,
+                transformOrigin: "50% 50%",
+                filter: wBlur > 0.05 ? `blur(${wBlur.toFixed(2)}px)` : "none",
+                opacity: wOp,
+                willChange: "transform, opacity, filter",
+              }}
+            >
+              {word}
+            </span>
+            {i < words.length - 1 ? " " : null}
+          </React.Fragment>
+        );
+      })}
     </div>
   );
 };
