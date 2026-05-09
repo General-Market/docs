@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useAccount, useConnect } from 'wagmi'
 import { SpringBackdrop, SpringModal, glass, ModalClose } from '@/components/ui/spring'
 import { indexL3 } from '@/lib/wagmi'
@@ -28,10 +29,27 @@ export function WaitlistModal({ onClose, onRedeemed, onWalletConnected }: Props)
   const [code, setCode] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+    return () => setMounted(false)
+  }, [])
 
   useEffect(() => {
     if (isConnected && address) onWalletConnected?.()
   }, [isConnected, address, onWalletConnected])
+
+  // Lock body scroll while the modal is open — without this, the page
+  // behind the backdrop scrolls and the modal feels detached from the
+  // user's gaze.
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = prev }
+  }, [])
 
   const handleConnect = () => {
     if (!injectedConnector) return
@@ -51,7 +69,8 @@ export function WaitlistModal({ onClose, onRedeemed, onWalletConnected }: Props)
       })
       const data = await res.json().catch(() => ({}))
       if (res.ok && data.ok) {
-        onRedeemed()
+        setSuccess(true)
+        setTimeout(() => onRedeemed(), 1400)
         return
       }
       const reason = data?.reason as RedeemReason | undefined
@@ -65,13 +84,43 @@ export function WaitlistModal({ onClose, onRedeemed, onWalletConnected }: Props)
 
   const canSubmit = isConnected && code.trim().length >= 3 && !submitting
 
-  return (
-    <SpringBackdrop className={glass.backdrop} onClick={onClose}>
-      <SpringModal className={`${glass.modal} max-w-[640px] w-full p-8 sm:p-10 relative`}>
-        <div className="absolute top-4 right-4">
-          <ModalClose onClick={onClose} />
-        </div>
+  if (!mounted || typeof document === 'undefined') return null
 
+  const node = (
+    <SpringBackdrop className={glass.backdrop} onClick={success ? undefined : onClose}>
+      <SpringModal className={`${glass.modal} max-w-[640px] w-full p-8 sm:p-10 relative`}>
+        {!success && (
+          <div className="absolute top-4 right-4">
+            <ModalClose onClick={onClose} />
+          </div>
+        )}
+
+        {success ? (
+          <div className="flex flex-col items-center text-center py-8 sm:py-12">
+            <div
+              className="w-16 h-16 rounded-full flex items-center justify-center mb-6"
+              style={{
+                background: 'rgba(16,185,129,0.10)',
+                border: '1px solid rgba(16,185,129,0.30)',
+                boxShadow: '0 0 0 6px rgba(16,185,129,0.06)',
+              }}
+            >
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+            <h2 className="text-[26px] sm:text-[30px] font-semibold tracking-[-0.022em] text-text-primary leading-tight">
+              Welcome aboard.
+            </h2>
+            <p className="mt-3 text-[15px] text-text-muted max-w-[440px]">
+              Your wallet is whitelisted. The faucet is yours, and the rest of the site too.
+            </p>
+            <p className="mt-5 text-[12px] uppercase tracking-[0.16em] text-text-muted">
+              Returning you to what you were doing…
+            </p>
+          </div>
+        ) : (
+        <>
         <div className="flex flex-col items-center text-center pt-2">
           <div className="w-14 h-14 rounded-full bg-black/5 border border-black/10 flex items-center justify-center mb-5">
             <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" aria-hidden="true">
@@ -162,9 +211,13 @@ export function WaitlistModal({ onClose, onRedeemed, onWalletConnected }: Props)
             />
           </div>
         </div>
+        </>
+        )}
       </SpringModal>
     </SpringBackdrop>
   )
+
+  return createPortal(node, document.body)
 }
 
 function SoonCard({ title, caption, icon }: { title: string; caption: string; icon: React.ReactNode }) {
