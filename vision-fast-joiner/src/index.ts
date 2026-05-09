@@ -184,30 +184,20 @@ const attempted = new Set<string>()
 const DEPOSIT_WEI = parseUnits(DEPOSIT_USDC.toString(), 18)
 const ZERO_BITMAP_HASH = keccak256(stringToHex('fast-joiner')) as Hex
 
-// Reads run in parallel across sources (one slow RPC can't block the others).
-// Writes serialize through a single nonce queue and we track nonce manually —
-// viem's per-tx getTransactionCount races against pending tx propagation and
-// throws "nonce too low" when several writes land in the same block.
+// Reads run in parallel across sources. Writes serialize through one queue
+// AND we refetch pending nonce per write — fund-manager + keeper share the
+// deployer key, so any cached nonce drifts under us.
 let nonceQueue: Promise<unknown> = Promise.resolve()
-let currentNonce: number | null = null
+// Local floor so we don't reuse a nonce inside the same JS task even if
+// pending hasn't propagated through every RPC node yet.
+let nonceFloor = 0
 async function nextNonce(): Promise<number> {
-  if (currentNonce === null) {
-    currentNonce = Number(
-      await publicClient.getTransactionCount({ address: account.address, blockTag: 'pending' }),
-    )
-  }
-  const n = currentNonce
-  currentNonce += 1
+  const pending = Number(
+    await publicClient.getTransactionCount({ address: account.address, blockTag: 'pending' }),
+  )
+  const n = Math.max(pending, nonceFloor)
+  nonceFloor = n + 1
   return n
-}
-async function resyncNonceFromChain() {
-  try {
-    currentNonce = Number(
-      await publicClient.getTransactionCount({ address: account.address, blockTag: 'pending' }),
-    )
-  } catch {
-    currentNonce = null
-  }
 }
 
 async function processSource(source: string) {
@@ -302,10 +292,9 @@ async function processSource(source: string) {
       const msg = err instanceof Error ? err.message.slice(0, 140) : String(err).slice(0, 140)
       health.lastError = `${source}/${batchId}: ${msg}`
       console.warn(`[skip] source=${source} batch=${batchId} nonce=${nonce} ${msg}`)
-      // If chain rejected the nonce (e.g. another signer used the same key
-      // out-of-band), resync from chain so the next attempt picks up cleanly.
+      // On nonce drift, drop the floor so the next pending fetch wins.
       if (msg.includes('nonce') || msg.includes('Nonce')) {
-        await resyncNonceFromChain()
+        nonceFloor = 0
       }
     }
   })
