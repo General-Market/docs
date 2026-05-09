@@ -232,19 +232,25 @@ async function submitBitmapToOracles(player: `0x${string}`, batchId: bigint, bit
   return accepted
 }
 
-// Reads run in parallel across sources. Writes serialize through one queue
-// AND we refetch pending nonce per write — fund-manager + keeper share the
-// deployer key, so any cached nonce drifts under us.
-let nonceQueue: Promise<unknown> = Promise.resolve()
-// Local floor so we don't reuse a nonce inside the same JS task even if
-// pending hasn't propagated through every RPC node yet.
+// Both reads AND writes run in parallel. Nonces are pre-allocated from a
+// single counter so concurrent writes get N, N+1, N+2... in order; the chain
+// processes them in nonce order regardless of submission order. The deployer
+// key is shared with fund-manager/keeper, so we refresh from pending count
+// once per tick before allocating that tick's writes.
 let nonceFloor = 0
-async function nextNonce(): Promise<number> {
-  const pending = Number(
-    await publicClient.getTransactionCount({ address: account.address, blockTag: 'pending' }),
-  )
-  const n = Math.max(pending, nonceFloor)
-  nonceFloor = n + 1
+async function refreshNonceFloor(): Promise<void> {
+  try {
+    const pending = Number(
+      await publicClient.getTransactionCount({ address: account.address, blockTag: 'pending' }),
+    )
+    if (pending > nonceFloor) nonceFloor = pending
+  } catch {
+    // keep current floor on RPC error
+  }
+}
+function takeNonce(): number {
+  const n = nonceFloor
+  nonceFloor += 1
   return n
 }
 
@@ -317,61 +323,59 @@ async function processSource(source: string) {
     }
 
     attempted.add(key)
-    const { bitmap, hash: bitmapHash } = newBitmap()
-    const vaultRef = vault
+    pendingWrites.push({ source, batchId, vault, configHash })
+  }
+}
 
-    // Serialize each write through the nonce queue, with one retry on nonce
-    // drift. The deployer key is shared with fund-manager + keeper, so even
-    // serialized writes from this daemon collide with other signers' pending
-    // txs occasionally. Retry once with a fresh pending fetch and we usually
-    // land.
-    nonceQueue = nonceQueue.then(async () => {
-      const tryWrite = async (): Promise<string> => {
-        const nonce = await nextNonce()
-        return walletClient.writeContract({
-          address: vaultRef,
+interface PendingWrite {
+  source: string
+  batchId: bigint
+  vault: `0x${string}`
+  configHash: Hex
+}
+const pendingWrites: PendingWrite[] = []
+
+async function flushWrites() {
+  if (pendingWrites.length === 0) return
+  await refreshNonceFloor()
+  const batch = pendingWrites.splice(0, pendingWrites.length)
+  // Allocate sequential nonces, fire all writes in parallel. Chain orders
+  // them by nonce. Bitmap submission is fire-and-forget.
+  await Promise.allSettled(
+    batch.map(async ({ source, batchId, vault, configHash }) => {
+      const { bitmap, hash: bitmapHash } = newBitmap()
+      const nonce = takeNonce()
+      try {
+        const txHash = await walletClient.writeContract({
+          address: vault,
           abi: VAULT_ABI,
           functionName: 'joinBatch',
           args: [batchId, configHash, DEPOSIT_WEI, bitmapHash],
           nonce,
         })
-      }
-      try {
-        let txHash: string
-        try {
-          txHash = await tryWrite()
-        } catch (e1) {
-          const m1 = e1 instanceof Error ? e1.message : String(e1)
-          if (!(m1.includes('nonce') || m1.includes('Nonce'))) throw e1
-          // Drop floor + small backoff so the next pending fetch wins.
-          nonceFloor = 0
-          await new Promise((r) => setTimeout(r, 500))
-          txHash = await tryWrite()
-        }
         health.joinedTotal += 1
         health.joinedThisRun += 1
-        console.log(`[join] source=${source} batch=${batchId} vault=${vaultRef} tx=${txHash}`)
-        submitBitmapToOracles(vaultRef, batchId, bitmap, bitmapHash).then((accepted) => {
-          console.log(`[bitmap] source=${source} batch=${batchId} vault=${vaultRef} accepted=${accepted}/${ORACLE_URLS.length}`)
-        }).catch((e) => {
-          console.warn(`[bitmap-fail] source=${source} batch=${batchId} vault=${vaultRef} ${e instanceof Error ? e.message : String(e)}`)
-        })
+        console.log(`[join] source=${source} batch=${batchId} vault=${vault} nonce=${nonce} tx=${txHash}`)
+        submitBitmapToOracles(vault, batchId, bitmap, bitmapHash)
+          .then((accepted) => {
+            console.log(`[bitmap] source=${source} batch=${batchId} vault=${vault} accepted=${accepted}/${ORACLE_URLS.length}`)
+          })
+          .catch((e) => {
+            console.warn(`[bitmap-fail] source=${source} batch=${batchId} vault=${vault} ${e instanceof Error ? e.message : String(e)}`)
+          })
       } catch (err) {
         const msg = err instanceof Error ? err.message.slice(0, 140) : String(err).slice(0, 140)
-        health.lastError = `${source}/${batchId}/${vaultRef}: ${msg}`
-        console.warn(`[skip] source=${source} batch=${batchId} vault=${vaultRef} ${msg}`)
-        if (msg.includes('nonce') || msg.includes('Nonce')) {
-          nonceFloor = 0
-        }
+        health.lastError = `${source}/${batchId}/${vault}: ${msg}`
+        console.warn(`[skip] source=${source} batch=${batchId} vault=${vault} nonce=${nonce} ${msg}`)
       }
-    })
-  }
+    }),
+  )
 }
 
 async function tick() {
   health.lastTickAt = Date.now()
-  // Reads parallel; one stuck source can't block the others.
   await Promise.allSettled(SOURCES.map((s) => processSource(s)))
+  await flushWrites()
 }
 
 async function loop() {
