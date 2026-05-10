@@ -145,7 +145,7 @@ export const OgBannerGMMottoGlass: React.FC = () => {
           justifyContent: "space-between",
         }}
       >
-        <div>
+        <div style={{ textAlign: "right" }}>
           <div
             style={{
               fontFamily: font,
@@ -156,7 +156,7 @@ export const OgBannerGMMottoGlass: React.FC = () => {
               lineHeight: 1.0714,
             }}
           >
-            Trade easily.
+            Trade easily
           </div>
           <div
             style={{
@@ -169,7 +169,7 @@ export const OgBannerGMMottoGlass: React.FC = () => {
               marginTop: 2,
             }}
           >
-            With an anti-cheat.
+            With an anti-cheat
           </div>
         </div>
 
@@ -179,6 +179,7 @@ export const OgBannerGMMottoGlass: React.FC = () => {
             flexWrap: "wrap",
             gap: 8,
             marginTop: 14,
+            justifyContent: "flex-end",
           }}
         >
           <FilterPill label="Front-running" />
