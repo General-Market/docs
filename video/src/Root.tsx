@@ -88,6 +88,10 @@ import { OgBannerGMVaultMonolith } from "./compositions/launch/OgBannerGMVaultMo
 import { OgBannerGMVaultOrb } from "./compositions/launch/OgBannerGMVaultOrb";
 import { OgBannerGMVaultBeam } from "./compositions/launch/OgBannerGMVaultBeam";
 import { OgBannerGMType } from "./compositions/launch/OgBannerGMType";
+import { OgBannerGMMottoType } from "./compositions/launch/OgBannerGMMottoType";
+import { OgBannerGMMottoSplit } from "./compositions/launch/OgBannerGMMottoSplit";
+import { OgBannerGMMottoGlass } from "./compositions/launch/OgBannerGMMottoGlass";
+import { OgBannerGMMottoDark } from "./compositions/launch/OgBannerGMMottoDark";
 import { OgBannerNS } from "./compositions/launch/OgBannerNS";
 import {
   TOTAL_FRAMES as LAUNCH_DURATION,
@@ -695,6 +699,38 @@ export const RemotionRoot: React.FC = () => {
         <Composition
           id="OgBannerGMType"
           component={OgBannerGMType}
+          durationInFrames={1}
+          fps={30}
+          width={1500}
+          height={500}
+        />
+        <Composition
+          id="OgBannerGMMottoType"
+          component={OgBannerGMMottoType}
+          durationInFrames={1}
+          fps={30}
+          width={1500}
+          height={500}
+        />
+        <Composition
+          id="OgBannerGMMottoSplit"
+          component={OgBannerGMMottoSplit}
+          durationInFrames={1}
+          fps={30}
+          width={1500}
+          height={500}
+        />
+        <Composition
+          id="OgBannerGMMottoGlass"
+          component={OgBannerGMMottoGlass}
+          durationInFrames={1}
+          fps={30}
+          width={1500}
+          height={500}
+        />
+        <Composition
+          id="OgBannerGMMottoDark"
+          component={OgBannerGMMottoDark}
           durationInFrames={1}
           fps={30}
           width={1500}
