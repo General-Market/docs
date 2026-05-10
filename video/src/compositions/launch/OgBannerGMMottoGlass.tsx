@@ -3,28 +3,57 @@ import { AbsoluteFill, Img, staticFile } from "remotion";
 import { font } from "../../common/fonts";
 
 const TEXT = "#1D1D1F";
-const TEXT_SECONDARY = "#6E6E73";
 const ACCENT = "#0071E3";
+const RED = "#DC2626";
+const RED_DARK = "#991B1B";
 
-const Pill: React.FC<{ label: string }> = ({ label }) => (
+const StruckPill: React.FC<{ label: string }> = ({ label }) => (
   <div
     style={{
       display: "inline-flex",
       alignItems: "center",
-      padding: "10px 18px",
+      gap: 8,
+      padding: "8px 14px 8px 10px",
       borderRadius: 980,
-      background: "rgba(255,255,255,0.7)",
+      background: "rgba(255,255,255,0.72)",
       backdropFilter: "saturate(180%) blur(12px)",
       WebkitBackdropFilter: "saturate(180%) blur(12px)",
       border: "1px solid rgba(15,23,42,0.08)",
-      fontFamily: font,
-      fontSize: 15,
-      fontWeight: 600,
-      color: TEXT,
-      letterSpacing: "-0.014em",
     }}
   >
-    {label}
+    <div
+      style={{
+        width: 18,
+        height: 18,
+        borderRadius: "50%",
+        background: `radial-gradient(circle at 35% 30%, #EF4444 0%, ${RED} 55%, ${RED_DARK} 100%)`,
+        color: "#FFFFFF",
+        fontFamily: font,
+        fontSize: 11,
+        fontWeight: 800,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        boxShadow: "inset 0 -1px 1px rgba(0,0,0,0.18)",
+      }}
+    >
+      ✕
+    </div>
+    <div
+      style={{
+        fontFamily: font,
+        fontSize: 14,
+        fontWeight: 600,
+        color: RED_DARK,
+        letterSpacing: "-0.014em",
+        textDecoration: "line-through",
+        textDecorationColor: RED,
+        textDecorationThickness: 1.5,
+        whiteSpace: "nowrap",
+      }}
+    >
+      {label}
+    </div>
   </div>
 );
 
@@ -93,31 +122,12 @@ export const OgBannerGMMottoGlass: React.FC = () => {
       <div
         style={{
           position: "absolute",
-          right: 64,
-          top: 50,
-          textAlign: "right",
-          fontFamily: font,
-          fontSize: 13,
-          fontWeight: 600,
-          color: TEXT_SECONDARY,
-          letterSpacing: "0.18em",
-          textTransform: "uppercase",
-        }}
-      >
-        Anti-Cheat
-        <br />
-        Prediction Markets
-      </div>
-
-      <div
-        style={{
-          position: "absolute",
           left: 64,
           right: 64,
-          top: 130,
-          bottom: 50,
+          top: 110,
+          bottom: 40,
           borderRadius: 28,
-          padding: "40px 52px",
+          padding: "36px 48px 32px",
           background: "rgba(250,250,252,0.78)",
           backdropFilter: "saturate(180%) blur(20px)",
           WebkitBackdropFilter: "saturate(180%) blur(20px)",
@@ -133,7 +143,7 @@ export const OgBannerGMMottoGlass: React.FC = () => {
           <div
             style={{
               fontFamily: font,
-              fontSize: 92,
+              fontSize: 88,
               fontWeight: 600,
               color: TEXT,
               letterSpacing: "-0.025em",
@@ -145,7 +155,7 @@ export const OgBannerGMMottoGlass: React.FC = () => {
           <div
             style={{
               fontFamily: font,
-              fontSize: 92,
+              fontSize: 88,
               fontWeight: 600,
               color: ACCENT,
               letterSpacing: "-0.025em",
@@ -157,10 +167,20 @@ export const OgBannerGMMottoGlass: React.FC = () => {
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 10 }}>
-          <Pill label="No front-running" />
-          <Pill label="No insider trading" />
-          <Pill label="No MEV" />
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 8,
+            marginTop: 14,
+          }}
+        >
+          <StruckPill label="Front-running" />
+          <StruckPill label="Insider trading" />
+          <StruckPill label="Stop hunting" />
+          <StruckPill label="Spoofing" />
+          <StruckPill label="PFOF" />
+          <StruckPill label="Latency arb" />
         </div>
       </div>
     </AbsoluteFill>
