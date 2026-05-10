@@ -477,14 +477,18 @@ impl BatchLifecycleManager {
                 });
             }
 
-            // Detach the spawned tasks — do NOT wait for them before the next
-            // poll. If we wait, the slowest task gates the loop: poll cadence
-            // collapses to per-iteration work time, sources accumulate stagger
-            // debt, and the next poll fires a burst of every source whose
-            // stagger has elapsed. The semaphore (max_concurrent_sources)
-            // provides backpressure; the JoinSet was effectively serializing
-            // the entire scheduler behind one slow heartbeat.
-            join_set.detach_all();
+            // Await all spawned source tasks before next poll. The JoinSet
+            // is the natural backpressure of the system: if a heartbeat is
+            // slow because Postgres is overloaded, polling slows down too,
+            // and we don't pile new heartbeats on top of in-flight ones.
+            // Detaching here was tempting (smoother heartbeat cadence) but
+            // it removed the only mechanism preventing concurrent waves
+            // from saturating the data-node's connection pool.
+            while let Some(result) = join_set.join_next().await {
+                if let Err(e) = result {
+                    error!(error = %e, "Source lifecycle task panicked");
+                }
+            }
         }
 
         info!("BatchLifecycleManager shutting down");
