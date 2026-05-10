@@ -1957,6 +1957,7 @@ name = "Crates_io 1"
 symbol = "CRATES1"
 vault = "0x807615E801B1f12cA39E61739c82F8b519FCC4d4"
 sources = ["crates_io"]
+allocation_multiplier = 5.0
 strategy = "momentum"
 [funds.params]
 
@@ -1965,6 +1966,7 @@ name = "Crates_io 2"
 symbol = "CRATES2"
 vault = "0xCEe3Af14DDCC1B386Cf5474044De6124CC84BA4C"
 sources = ["crates_io"]
+allocation_multiplier = 5.0
 strategy = "momentum"
 [funds.params]
 
@@ -1973,6 +1975,7 @@ name = "Crates_io 3"
 symbol = "CRATES3"
 vault = "0x1604373a897dB481d8ef3e40B88396b864f6E746"
 sources = ["crates_io"]
+allocation_multiplier = 5.0
 strategy = "momentum"
 [funds.params]
 
@@ -1981,6 +1984,7 @@ name = "Crates_io 4"
 symbol = "CRATES4"
 vault = "0xb6166dd3f5913274D91bD70e6E4dFc11023bBE53"
 sources = ["crates_io"]
+allocation_multiplier = 5.0
 strategy = "momentum"
 [funds.params]
 
@@ -1989,6 +1993,7 @@ name = "Crates_io 5"
 symbol = "CRATES5"
 vault = "0x0026E55F79743f0D44b8bCb16fB143219873D2B7"
 sources = ["crates_io"]
+allocation_multiplier = 5.0
 strategy = "momentum"
 [funds.params]
 
@@ -2149,6 +2154,7 @@ name = "Flights 1"
 symbol = "FLIGHT1"
 vault = "0x5C58732bBa92671026459f29475aF510fbfA3829"
 sources = ["flights"]
+allocation_multiplier = 5.0
 strategy = "momentum"
 [funds.params]
 
@@ -2157,6 +2163,7 @@ name = "Flights 2"
 symbol = "FLIGHT2"
 vault = "0xF5802C00ca1bBa014b7b67d4a9e3De3103B6035A"
 sources = ["flights"]
+allocation_multiplier = 5.0
 strategy = "momentum"
 [funds.params]
 
@@ -2165,6 +2172,7 @@ name = "Flights 3"
 symbol = "FLIGHT3"
 vault = "0xf3B1f6566dEdf6b4906bd1Ab8f1d56ffE3Fa3c36"
 sources = ["flights"]
+allocation_multiplier = 5.0
 strategy = "momentum"
 [funds.params]
 
@@ -2173,6 +2181,7 @@ name = "Flights 4"
 symbol = "FLIGHT4"
 vault = "0x460Def54d941DeB46da129DBc81406ee5B827c3e"
 sources = ["flights"]
+allocation_multiplier = 5.0
 strategy = "momentum"
 [funds.params]
 
@@ -2181,6 +2190,7 @@ name = "Flights 5"
 symbol = "FLIGHT5"
 vault = "0x0aeC99160453b9F02e67273014DBdc752e48CE0f"
 sources = ["flights"]
+allocation_multiplier = 5.0
 strategy = "momentum"
 [funds.params]
 
@@ -2189,6 +2199,7 @@ name = "Github 1"
 symbol = "GITHUB1"
 vault = "0x0ABdf2D7289127478FD89A4ae1e8F3aF49f248C3"
 sources = ["github"]
+allocation_multiplier = 10.0
 strategy = "momentum"
 [funds.params]
 
@@ -2197,6 +2208,7 @@ name = "Github 2"
 symbol = "GITHUB2"
 vault = "0x4aEcA750896e26713a57340c704ab33A2218adB4"
 sources = ["github"]
+allocation_multiplier = 10.0
 strategy = "momentum"
 [funds.params]
 
@@ -2205,6 +2217,7 @@ name = "Github 3"
 symbol = "GITHUB3"
 vault = "0x00FFc646e17c5C782353A3f015183a178Ce1FDdd"
 sources = ["github"]
+allocation_multiplier = 10.0
 strategy = "momentum"
 [funds.params]
 
@@ -2213,6 +2226,7 @@ name = "Github 4"
 symbol = "GITHUB4"
 vault = "0x81aB4903d63058d9d1e727A241a21858670db24e"
 sources = ["github"]
+allocation_multiplier = 10.0
 strategy = "momentum"
 [funds.params]
 
@@ -2221,6 +2235,7 @@ name = "Github 5"
 symbol = "GITHUB5"
 vault = "0x59E5FdD65B8aaf067E8BDA6B0312676E1fB9C8d7"
 sources = ["github"]
+allocation_multiplier = 10.0
 strategy = "momentum"
 [funds.params]
 

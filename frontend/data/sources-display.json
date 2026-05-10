@@ -35,7 +35,7 @@
       "internalIds": [
         "pumpfun"
       ],
-      "syncIntervalSecs": 300,
+      "syncIntervalSecs": 600,
       "batchEligible": true
     },
     {
@@ -399,7 +399,7 @@
       "internalIds": [
         "adzuna"
       ],
-      "syncIntervalSecs": 1800,
+      "syncIntervalSecs": 3600,
       "batchEligible": true
     },
     {
@@ -574,7 +574,7 @@
       "internalIds": [
         "github"
       ],
-      "syncIntervalSecs": 600,
+      "syncIntervalSecs": 86400,
       "batchEligible": true
     },
     {
@@ -631,7 +631,7 @@
       "internalIds": [
         "crates_io"
       ],
-      "syncIntervalSecs": 600,
+      "syncIntervalSecs": 3600,
       "batchEligible": true
     },
     {
@@ -669,7 +669,7 @@
       "internalIds": [
         "hackernews"
       ],
-      "syncIntervalSecs": 300,
+      "syncIntervalSecs": 600,
       "batchEligible": true
     },
     {
@@ -688,7 +688,7 @@
       "internalIds": [
         "cloudflare"
       ],
-      "syncIntervalSecs": 600,
+      "syncIntervalSecs": 1200,
       "batchEligible": true
     },
     {
@@ -745,7 +745,7 @@
       "internalIds": [
         "crossref"
       ],
-      "syncIntervalSecs": 600,
+      "syncIntervalSecs": 1200,
       "batchEligible": true
     },
     {
@@ -1049,7 +1049,7 @@
       "internalIds": [
         "mcbroken"
       ],
-      "syncIntervalSecs": 600,
+      "syncIntervalSecs": 1200,
       "batchEligible": true
     },
     {
@@ -1068,7 +1068,7 @@
       "internalIds": [
         "earthquake"
       ],
-      "syncIntervalSecs": 300,
+      "syncIntervalSecs": 600,
       "batchEligible": true
     },
     {
@@ -1296,7 +1296,7 @@
       "internalIds": [
         "wildfire"
       ],
-      "syncIntervalSecs": 1800,
+      "syncIntervalSecs": 3600,
       "batchEligible": true
     },
     {
@@ -1315,7 +1315,7 @@
       "internalIds": [
         "epidemic"
       ],
-      "syncIntervalSecs": 1800,
+      "syncIntervalSecs": 3600,
       "batchEligible": true
     },
     {
@@ -1353,7 +1353,7 @@
       "internalIds": [
         "flights"
       ],
-      "syncIntervalSecs": 600,
+      "syncIntervalSecs": 3600,
       "batchEligible": true
     },
     {
@@ -1486,7 +1486,7 @@
       "internalIds": [
         "faa_delays"
       ],
-      "syncIntervalSecs": 600,
+      "syncIntervalSecs": 1200,
       "batchEligible": true
     },
     {
@@ -1524,7 +1524,7 @@
       "internalIds": [
         "mta_subway"
       ],
-      "syncIntervalSecs": 300,
+      "syncIntervalSecs": 600,
       "batchEligible": true
     },
     {
@@ -1562,7 +1562,7 @@
       "internalIds": [
         "ryanair"
       ],
-      "syncIntervalSecs": 600,
+      "syncIntervalSecs": 1200,
       "batchEligible": true
     },
     {
@@ -1733,7 +1733,7 @@
       "internalIds": [
         "iss"
       ],
-      "syncIntervalSecs": 600,
+      "syncIntervalSecs": 1200,
       "batchEligible": true
     },
     {
@@ -1771,7 +1771,7 @@
       "internalIds": [
         "lichess"
       ],
-      "syncIntervalSecs": 300,
+      "syncIntervalSecs": 600,
       "batchEligible": true
     }
   ],

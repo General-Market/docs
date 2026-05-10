@@ -10,6 +10,36 @@
 export const HIDDEN_SOURCE_IDS = new Set<string>([
   'tubes',
   'chaturbate',
+  // Bucket A — feed dead, no recovery path
+  'pypi',
+  'weather',
+  'tomtom_evcharge',
+  'tomtom_traffic',
+  'npm',
+  // Bucket C — registry empty / not started
+  'aisstream',
+  'bgg',
+  'cbp_border',
+  'cftc',
+  'courtlistener',
+  'ebird',
+  'futures',
+  'imf',
+  'ioda',
+  'maritime',
+  'movebank',
+  'nasdaq',
+  'finra',
+  'nrc_nuclear',
+  'opec',
+  'openmeteo',
+  'paris_metro',
+  'reddit',
+  'shelter',
+  'stackexchange',
+  // Bucket D outliers — feed fresh, vault never joins
+  'yahoo_drinks',
+  'usa_spending',
 ])
 
 export function isHiddenSourceId(id: unknown): boolean {

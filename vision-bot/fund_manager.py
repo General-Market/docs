@@ -178,6 +178,13 @@ class FundState:
         self.sources = set(fund_cfg.get("sources", []))
         self.vault = vault_executor
         self.strategy = strategy
+        # Per-fund allocation multiplier. Multiplies the manager-level
+        # allocation_bps. Default 1.0 — vaults that should bet more (e.g.
+        # daily-tick vaults that get one shot per day) override this.
+        try:
+            self.allocation_multiplier = float(fund_cfg.get("allocation_multiplier", 1.0))
+        except (TypeError, ValueError):
+            self.allocation_multiplier = 1.0
         self.active_batches: dict[int, int] = {}   # batch_id -> deposit_wei
         self.joined_batch_ids: set[int] = set()
         self.joined_total: int = 0
@@ -759,7 +766,8 @@ def run_cycle(
             continue
 
         # Filter by idle capital — each fund bets alloc_bps% of its total assets,
-        # floored at MIN_DEPOSIT_WEI so the contract doesn't reject the deposit.
+        # scaled by the per-fund allocation_multiplier (1.0 by default), floored
+        # at MIN_DEPOSIT_WEI so the contract doesn't reject the deposit.
         # Use the per-cycle cached info AND subtract any joins already queued
         # in the same cycle so two batches don't double-spend the same balance.
         def has_idle(f):
@@ -768,7 +776,8 @@ def run_cycle(
                 return False
             idle = info.get("idle_usdc", 0) - f._pending_join_amount
             total = info.get("total_assets", 0)
-            deposit = max((total * alloc_bps) // 10000, MIN_DEPOSIT_WEI)
+            effective_bps = int(alloc_bps * f.allocation_multiplier)
+            deposit = max((total * effective_bps) // 10000, MIN_DEPOSIT_WEI)
             return idle >= deposit
 
         matched_funds = [f for f in matched_funds if has_idle(f)]
@@ -861,13 +870,15 @@ def run_cycle(
             bitmap = encode_bitmap(bets, market_count)
             bm_hash = hash_bitmap(bitmap)
 
-            # Compute deposit: alloc_bps% of current total assets, floored at the
-            # contract minimum. Reuse the cached info — no extra RPC roundtrip.
+            # Compute deposit: alloc_bps × per-fund multiplier of current total
+            # assets, floored at the contract minimum. Reuse the cached info —
+            # no extra RPC roundtrip.
             info = _read_vault_info_cached(fund, vault_info_cache)
             if not info:
                 continue
             total = info.get("total_assets", 0)
-            deposit_wei = max((total * alloc_bps) // 10000, MIN_DEPOSIT_WEI)
+            effective_bps = int(alloc_bps * fund.allocation_multiplier)
+            deposit_wei = max((total * effective_bps) // 10000, MIN_DEPOSIT_WEI)
             if deposit_wei <= 0:
                 continue
 
