@@ -120,6 +120,10 @@ import {
   pitchMeta,
   pitchSceneMetas,
 } from "./compositions/pitch/PitchComposition";
+import {
+  ycPitchMeta,
+  ycPitchSceneMetas,
+} from "./compositions/yc-pitch/YCPitchComposition";
 import { antiCheatHookMeta } from "./compositions/anticheat/AntiCheatHook";
 import {
   antiCheatStatMeta,
@@ -213,6 +217,29 @@ export const RemotionRoot: React.FC = () => {
       />
       <Folder name="Pitch-Slides">
         {pitchSceneMetas.map((meta) => (
+          <Composition
+            key={meta.id}
+            id={meta.id}
+            component={meta.component}
+            durationInFrames={meta.durationInFrames}
+            fps={meta.fps}
+            width={meta.width}
+            height={meta.height}
+          />
+        ))}
+      </Folder>
+
+      {/* ═══ YC PITCH — blank Apple-style YC deck, 12 slides ═══ */}
+      <Composition
+        id={ycPitchMeta.id}
+        component={ycPitchMeta.component}
+        durationInFrames={ycPitchMeta.durationInFrames}
+        fps={ycPitchMeta.fps}
+        width={ycPitchMeta.width}
+        height={ycPitchMeta.height}
+      />
+      <Folder name="YCPitch-Slides">
+        {ycPitchSceneMetas.map((meta) => (
           <Composition
             key={meta.id}
             id={meta.id}
