@@ -27,6 +27,7 @@ export interface KeeperConfig {
   healthPort: number;
   vaultRefreshMs: number;
   logEventChunk: bigint;
+  refundConcurrency: number;
 }
 
 function findDeploymentJson(): DeploymentJson {
@@ -85,5 +86,6 @@ export function loadConfig(): KeeperConfig {
     healthPort: Number(process.env.KEEPER_HEALTH_PORT ?? '9201'),
     vaultRefreshMs: Number(process.env.VAULT_REFRESH_SECS ?? '900') * 1000,
     logEventChunk: BigInt(process.env.LOG_EVENT_CHUNK ?? '5000'),
+    refundConcurrency: Math.max(1, Number(process.env.REFUND_CONCURRENCY ?? '6')),
   };
 }

@@ -189,93 +189,119 @@ async function refreshVaults(
   console.log(`[vaults] ${state.knownVaults.size} registered`);
 }
 
-async function rescueOne(
-  publicClient: PublicClient,
+function sendRefundTx(
   walletClient: WalletClient,
   cfg: KeeperConfig,
   state: KeeperState,
   batchId: bigint,
   player: Address,
-): Promise<boolean> {
-  // Idempotency: re-read totalDeposited at the head before sending.
-  const position = (await publicClient.readContract({
-    address: cfg.visionAddress,
-    abi: VISION_ABI,
-    functionName: 'getPosition',
-    args: [batchId, player],
-  })) as { totalDeposited: bigint };
-  if (position.totalDeposited === 0n) {
-    return false;
-  }
-
+  nonce: number,
+): Promise<Hex> {
   const isVault = state.knownVaults.has(lower(player));
   const account = walletClient.account;
   if (!account) throw new Error('walletClient has no account');
   const chain = walletClient.chain;
   if (!chain) throw new Error('walletClient has no chain');
-
-  // Deployer key is shared with fund-manager + fast-joiner. Nonce drift
-  // happens. Refresh pending count and retry once on nonce-too-low.
-  const writeOnce = async (nonce?: number): Promise<Hex> => {
-    if (isVault) {
-      return walletClient.writeContract({
-        account,
-        chain,
-        address: player,
-        abi: VISION_VAULT_ABI,
-        functionName: 'refundStuckBatch',
-        args: [batchId],
-        nonce,
-      });
-    }
+  if (isVault) {
     return walletClient.writeContract({
       account,
       chain,
-      address: cfg.visionAddress,
-      abi: VISION_ABI,
-      functionName: 'claimRefundFor',
-      args: [batchId, player],
+      address: player,
+      abi: VISION_VAULT_ABI,
+      functionName: 'refundStuckBatch',
+      args: [batchId],
       nonce,
     });
-  };
-
-  let txHash: Hex;
-  try {
-    try {
-      txHash = await writeOnce();
-    } catch (e1) {
-      const m1 = e1 instanceof Error ? e1.message : String(e1);
-      if (!(m1.includes('nonce') || m1.includes('Nonce'))) throw e1;
-      const pending = Number(
-        await publicClient.getTransactionCount({ address: account.address, blockTag: 'pending' }),
-      );
-      txHash = await writeOnce(pending);
-    }
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error(`[refund-fail] batch=${batchId} player=${player} kind=${isVault ? 'vault' : 'direct'} err=${msg}`);
-    state.lastError = msg;
-    return false;
   }
+  return walletClient.writeContract({
+    account,
+    chain,
+    address: cfg.visionAddress,
+    abi: VISION_ABI,
+    functionName: 'claimRefundFor',
+    args: [batchId, player],
+    nonce,
+  });
+}
 
-  try {
-    const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash, timeout: 120_000 });
-    if (receipt.status !== 'success') {
-      console.error(`[refund-revert] batch=${batchId} player=${player} tx=${txHash}`);
-      state.lastError = `tx ${txHash} reverted`;
-      return false;
-    }
-    console.log(
-      `[refunded] batch=${batchId} player=${player} kind=${isVault ? 'vault' : 'direct'} tx=${txHash} gasUsed=${receipt.gasUsed}`,
+async function rescueBatch(
+  publicClient: PublicClient,
+  walletClient: WalletClient,
+  cfg: KeeperConfig,
+  state: KeeperState,
+  batchId: bigint,
+  players: Address[],
+): Promise<void> {
+  // Idempotency: re-read totalDeposited at head, drop any already-zero.
+  const positions = await Promise.allSettled(
+    players.map((player) =>
+      publicClient.readContract({
+        address: cfg.visionAddress,
+        abi: VISION_ABI,
+        functionName: 'getPosition',
+        args: [batchId, player],
+      }),
+    ),
+  );
+  const pending: Address[] = [];
+  for (let i = 0; i < players.length; i++) {
+    const player = players[i];
+    if (!player) continue;
+    const res = positions[i];
+    if (!res || res.status !== 'fulfilled') continue;
+    const pos = res.value as { totalDeposited: bigint };
+    if (pos.totalDeposited === 0n) continue;
+    pending.push(player);
+  }
+  if (pending.length === 0) return;
+
+  const account = walletClient.account;
+  if (!account) throw new Error('walletClient has no account');
+
+  // Submit refunds in parallel chunks. Explicit nonces let viem skip its
+  // own per-call nonce read — the keeper key is shared with fund-manager
+  // + fast-joiner so we resync per chunk to swallow drift.
+  for (let i = 0; i < pending.length; i += cfg.refundConcurrency) {
+    const chunk = pending.slice(i, i + cfg.refundConcurrency);
+    const baseNonce = Number(
+      await publicClient.getTransactionCount({ address: account.address, blockTag: 'pending' }),
     );
-    state.rescuedThisRun += 1;
-    state.rescuedTotal += 1;
-    return true;
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error(`[refund-receipt] batch=${batchId} player=${player} tx=${txHash} err=${msg}`);
-    state.lastError = msg;
-    return false;
+
+    const sends = await Promise.allSettled(
+      chunk.map((player, idx) => sendRefundTx(walletClient, cfg, state, batchId, player, baseNonce + idx)),
+    );
+
+    const receiptWaits = sends.map(async (sent, idx) => {
+      const player = chunk[idx]!;
+      const isVault = state.knownVaults.has(lower(player));
+      if (sent.status !== 'fulfilled') {
+        const msg = sent.reason instanceof Error ? sent.reason.message : String(sent.reason);
+        console.error(
+          `[refund-fail] batch=${batchId} player=${player} kind=${isVault ? 'vault' : 'direct'} err=${msg}`,
+        );
+        state.lastError = msg;
+        return;
+      }
+      const txHash = sent.value;
+      try {
+        const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash, timeout: 120_000 });
+        if (receipt.status !== 'success') {
+          console.error(`[refund-revert] batch=${batchId} player=${player} tx=${txHash}`);
+          state.lastError = `tx ${txHash} reverted`;
+          return;
+        }
+        console.log(
+          `[refunded] batch=${batchId} player=${player} kind=${isVault ? 'vault' : 'direct'} tx=${txHash} gasUsed=${receipt.gasUsed}`,
+        );
+        state.rescuedThisRun += 1;
+        state.rescuedTotal += 1;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error(`[refund-receipt] batch=${batchId} player=${player} tx=${txHash} err=${msg}`);
+        state.lastError = msg;
+      }
+    });
+    await Promise.all(receiptWaits);
   }
 }
 
@@ -356,9 +382,7 @@ async function tick(
     if (players.length === 0) continue;
     console.log(`[stuck] batch=${row.batchId} players=${players.length}`);
 
-    for (const player of players) {
-      await rescueOne(publicClient, walletClient, cfg, state, row.batchId, player);
-    }
+    await rescueBatch(publicClient, walletClient, cfg, state, row.batchId, players);
   }
 
   state.lastTickAt = Math.floor(Date.now() / 1000);
