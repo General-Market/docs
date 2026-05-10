@@ -209,22 +209,13 @@ impl BatchLifecycleManager {
                 let batch_version = std::env::var("BATCH_VERSION").unwrap_or_else(|_| "v2".to_string());
                 let versioned = format!("{}_{}", name, batch_version);
                 let source_id = H256::from(keccak256(versioned.as_bytes()));
-                // Backdate last_heartbeat so the first poll fires immediately for every
-                // source whose tick has already passed since the last restart. Without
-                // this, even a 5-minute source goes silent for 5 minutes after every
-                // bounce, and a 1-week source for a week. Subtract one week — covers all
-                // tick durations except the lone worldbank (≥1w), which can wait.
-                let backdate = std::time::Duration::from_secs(7 * 24 * 60 * 60);
-                let last_heartbeat = std::time::Instant::now()
-                    .checked_sub(backdate)
-                    .unwrap_or_else(std::time::Instant::now);
                 Arc::new(tokio::sync::Mutex::new(SourceState {
                     source_name: name.clone(),
                     source_id,
                     tick_duration_secs: 0, // populated on first config fetch
                     current_batch_id: None,
                     previous_batch_id: None,
-                    last_heartbeat,
+                    last_heartbeat: std::time::Instant::now(),
                     stagger_offset: std::time::Duration::from_secs(
                         SOURCE_STAGGER_SECS * i as u64,
                     ),
@@ -240,6 +231,25 @@ impl BatchLifecycleManager {
         // Fetch initial tick durations from data-node recommended configs
         if let Err(e) = self.populate_tick_durations(&sources).await {
             warn!(error = %e, "Failed to fetch initial tick durations — will retry");
+        }
+
+        // Backdate last_heartbeat per source by its own tick. The heartbeat
+        // condition is `elapsed >= tick + stagger_offset`. Without this, on
+        // every restart each source has elapsed=0 and waits a full tick before
+        // its first heartbeat — silencing the lifecycle for up to a week.
+        // With this, elapsed=tick at startup and the first heartbeat fires
+        // after only `stagger_offset`, preserving the original spread across
+        // the source list and avoiding the thundering herd that crashes
+        // settlement throughput when 73 sources fire at once.
+        let now_init = std::time::Instant::now();
+        for source_lock in &sources {
+            let mut source = source_lock.lock().await;
+            if source.tick_duration_secs > 0 {
+                let backdate = std::time::Duration::from_secs(source.tick_duration_secs);
+                source.last_heartbeat = now_init
+                    .checked_sub(backdate)
+                    .unwrap_or(now_init);
+            }
         }
 
         // Semaphore: limit concurrent source processing to avoid thundering herd.
