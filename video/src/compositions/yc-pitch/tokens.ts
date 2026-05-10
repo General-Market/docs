@@ -9,7 +9,7 @@ export const FPS = 30;
 export const W = 1920;
 export const H = 1080;
 export const SLIDE_FRAMES = FPS * 4;
-export const SLIDE_COUNT = 12;
+export const SLIDE_COUNT = 13;
 
 export const COLOR = {
   bg: "#FBFBFD",

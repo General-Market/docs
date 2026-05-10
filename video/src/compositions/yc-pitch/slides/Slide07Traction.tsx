@@ -2,9 +2,9 @@ import React from "react";
 import { SlideFrame, SlideTitle, SlideSubtitle, Placeholder } from "../SlideFrame";
 import { SLIDE_COUNT } from "../tokens";
 
-export const Slide06Traction: React.FC = () => {
+export const Slide07Traction: React.FC = () => {
   return (
-    <SlideFrame eyebrow="Traction" pageNumber={6} pageTotal={SLIDE_COUNT}>
+    <SlideFrame eyebrow="Traction" pageNumber={7} pageTotal={SLIDE_COUNT}>
       <SlideTitle>Numbers.</SlideTitle>
       <SlideSubtitle maxWidth={1200}>
         Revenue, users, growth, retention. One chart that points up and right.

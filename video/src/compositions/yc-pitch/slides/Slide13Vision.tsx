@@ -2,10 +2,10 @@ import React from "react";
 import { SlideFrame } from "../SlideFrame";
 import { COLOR, FONT, SLIDE_COUNT } from "../tokens";
 
-export const Slide12Vision: React.FC = () => {
+export const Slide13Vision: React.FC = () => {
   return (
     <SlideFrame
-      pageNumber={12}
+      pageNumber={13}
       pageTotal={SLIDE_COUNT}
       hideChrome
       align="center"

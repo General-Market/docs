@@ -2,9 +2,9 @@ import React from "react";
 import { SlideFrame, SlideTitle, SlideSubtitle, Placeholder } from "../SlideFrame";
 import { SLIDE_COUNT } from "../tokens";
 
-export const Slide07Product: React.FC = () => {
+export const Slide08Product: React.FC = () => {
   return (
-    <SlideFrame eyebrow="Product" pageNumber={7} pageTotal={SLIDE_COUNT}>
+    <SlideFrame eyebrow="Product" pageNumber={8} pageTotal={SLIDE_COUNT}>
       <SlideTitle>How it works.</SlideTitle>
       <SlideSubtitle maxWidth={1200}>
         Three screenshots. The magic moment, not the settings page.
