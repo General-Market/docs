@@ -2,9 +2,9 @@ import React from "react";
 import { SlideFrame, SlideTitle, SlideSubtitle, Placeholder } from "../SlideFrame";
 import { SLIDE_COUNT } from "../tokens";
 
-export const Slide11Team: React.FC = () => {
+export const Slide10Team: React.FC = () => {
   return (
-    <SlideFrame eyebrow="Team" pageNumber={11} pageTotal={SLIDE_COUNT}>
+    <SlideFrame eyebrow="Team" pageNumber={10} pageTotal={SLIDE_COUNT}>
       <SlideTitle>The humans.</SlideTitle>
       <SlideSubtitle maxWidth={1200}>
         Why these specific people solve this specific problem.
