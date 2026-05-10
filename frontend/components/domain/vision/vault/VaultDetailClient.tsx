@@ -23,6 +23,7 @@ import { useVaultStats } from '@/hooks/vaults/useVaultStats'
 import { NavChart } from '@/components/domain/vaults/NavChart'
 import { VaultActionsPanel } from './VaultActionsPanel'
 import { VaultRoundHistory } from './VaultRoundHistory'
+import sourcesDisplay from '@/data/sources-display.json'
 
 type FundEntry = {
   name: string
@@ -58,12 +59,39 @@ const STRATEGY_LABEL: Record<string, string> = {
   home_field: 'Home field',
 }
 
-const RANGE_LABELS: { key: '1d' | '1w' | '1m' | 'all'; label: string }[] = [
-  { key: '1d', label: '1D' },
-  { key: '1w', label: '1W' },
-  { key: '1m', label: '1M' },
-  { key: 'all', label: 'All' },
+const ALL_RANGES: { key: '1d' | '1w' | '1m' | 'all'; label: string; minTickSecs: number }[] = [
+  // Each range needs at least ~6 NAV points to draw something useful. A daily-tick
+  // vault has 1 point per day, so '1d' shows a single dot — useless. Filter ranges
+  // by tick: 1d needs tick ≤ 4h, 1w needs tick ≤ 1d.
+  { key: '1d', label: '1D', minTickSecs: 14_400 },
+  { key: '1w', label: '1W', minTickSecs: 86_400 },
+  { key: '1m', label: '1M', minTickSecs: 604_800 },
+  { key: 'all', label: 'All', minTickSecs: Infinity },
 ]
+
+function rangesForTick(tickSecs: number): { key: '1d' | '1w' | '1m' | 'all'; label: string }[] {
+  const useable = ALL_RANGES.filter(r => tickSecs <= r.minTickSecs)
+  const fallback = { key: 'all' as const, label: 'All' }
+  return useable.length > 0
+    ? useable.map(r => ({ key: r.key, label: r.label }))
+    : [fallback]
+}
+
+function formatTick(secs: number): string {
+  if (secs <= 0) return '—'
+  if (secs < 60) return `${secs}s`
+  if (secs < 3600) return `${Math.round(secs / 60)}m`
+  if (secs < 86400) return `${Math.round(secs / 3600)}h`
+  if (secs < 604800) return `${Math.round(secs / 86400)}d`
+  if (secs < 2592000) return `${Math.round(secs / 604800)}w`
+  return `${Math.round(secs / 2592000)}mo`
+}
+
+function lookupTickSecs(sourceId: string): number {
+  const reg = (sourcesDisplay as { sources?: Array<{ sourceId: string; internalIds?: string[]; syncIntervalSecs?: number }> }).sources ?? []
+  const found = reg.find(s => s.sourceId === sourceId || s.internalIds?.includes(sourceId))
+  return found?.syncIntervalSecs ?? 600
+}
 
 function formatTvl(tvl: number) {
   if (tvl >= 1_000_000) return `$${(tvl / 1_000_000).toFixed(2)}M`
@@ -207,7 +235,20 @@ export function VaultDetailClient({ vaultAddress, sourceId, fund, fallbackName }
   }, [userPos])
 
   // ---- chart history --------------------------------------------------
-  const [range, setRange] = useState<VaultHistoryRange>('1d')
+  // Restrict the range buttons to ones that produce a usable density of points
+  // for this source's tick. A 1d-tick vault has ~1 point per day — '1D' shows
+  // a single dot, so we drop it.
+  const tickSecs = useMemo(() => lookupTickSecs(sourceId), [sourceId])
+  const rangeOptions = useMemo(() => rangesForTick(tickSecs), [tickSecs])
+  const defaultRange: VaultHistoryRange = rangeOptions[0]?.key ?? '1d'
+  const [range, setRange] = useState<VaultHistoryRange>(defaultRange)
+  // If the tick changes (different vault) and the current range is no longer
+  // valid, snap back to the first allowed range. Avoids stale '1D' selection
+  // on a daily vault.
+  useMemo(() => {
+    if (!rangeOptions.find(r => r.key === range)) setRange(defaultRange)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tickSecs])
   const { snapshots: rangeSnapshots } = useVaultHistory(lower, range)
 
   const liveTick: VaultSnapshot | null = useMemo(() => {
@@ -291,6 +332,7 @@ export function VaultDetailClient({ vaultAddress, sourceId, fund, fallbackName }
         feePercent={feePercent}
         isPositive={isPositive}
         hasPosition={hasPosition}
+        roundLabel={formatTick(tickSecs)}
       />
 
       {/* INVESTMENT THESIS */}
@@ -371,7 +413,7 @@ export function VaultDetailClient({ vaultAddress, sourceId, fund, fallbackName }
                   gap: 2,
                 }}
               >
-                {RANGE_LABELS.map(({ key, label }) => (
+                {rangeOptions.map(({ key, label }) => (
                   <button
                     key={key}
                     type="button"
@@ -476,7 +518,7 @@ export function VaultDetailClient({ vaultAddress, sourceId, fund, fallbackName }
 function VaultHeroCard({
   eyebrow, strategyLabel, title, tagline,
   nav, perf, tvl, feePercent, isPositive,
-  hasPosition,
+  hasPosition, roundLabel,
 }: {
   eyebrow: string
   strategyLabel: string | null
@@ -488,6 +530,7 @@ function VaultHeroCard({
   feePercent: number
   isPositive: boolean
   hasPosition: boolean
+  roundLabel: string
 }) {
   return (
     <section
@@ -573,6 +616,7 @@ function VaultHeroCard({
           tone={isPositive ? 'up' : 'down'}
         />
         <Stat label="TVL" value={formatTvl(tvl)} />
+        <Stat label="Round" value={roundLabel} />
         <Stat label="Performance fee" value={`${feePercent.toFixed(0)}%`} />
       </div>
     </section>
