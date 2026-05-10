@@ -94,6 +94,7 @@ import { OgBannerGMMottoGlass } from "./compositions/launch/OgBannerGMMottoGlass
 import { OgBannerGMMottoDark } from "./compositions/launch/OgBannerGMMottoDark";
 import { OgBannerGMMottoApple } from "./compositions/launch/OgBannerGMMottoApple";
 import { OgBannerNS } from "./compositions/launch/OgBannerNS";
+import { OgBannerNSMottoDark } from "./compositions/launch/OgBannerNSMottoDark";
 import {
   TOTAL_FRAMES as LAUNCH_DURATION,
   FPS as LAUNCH_FPS,
@@ -748,6 +749,14 @@ export const RemotionRoot: React.FC = () => {
         <Composition
           id="OgBannerNS"
           component={OgBannerNS}
+          durationInFrames={1}
+          fps={30}
+          width={1500}
+          height={500}
+        />
+        <Composition
+          id="OgBannerNSMottoDark"
+          component={OgBannerNSMottoDark}
           durationInFrames={1}
           fps={30}
           width={1500}
