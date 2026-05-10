@@ -154,24 +154,52 @@ impl BatchLifecycleManager {
     /// loop took hours. Each source's resolve+create now runs in its own
     /// spawned task, gated by a semaphore.
     pub async fn run(self: Arc<Self>) {
-        // Discover sources from data-node recommended batches (all sources are round-based)
-        let source_names: Vec<String> = match batch_config_orchestrator::fetch_recommended(&self.config.data_node_url).await {
-            Ok(batches) => {
-                let mut names: Vec<String> = batches.iter().map(|b| b.source_id.clone()).collect();
-                names.sort();
-                names.dedup();
-                names
-            }
-            Err(e) => {
-                warn!(error = %e, "Failed to fetch sources from data-node — lifecycle manager cannot start");
+        // Discover sources from data-node recommended batches.
+        //
+        // Retry forever (until shutdown). The previous version exited the
+        // lifecycle thread on either an HTTP error or an empty response —
+        // and the data-node, on a co-restart with the oracle, takes a few
+        // seconds to warm its BatchEngine. The race silently killed vision
+        // batch creation across all 73 sources for an entire restart cycle.
+        // Now: log loudly, sleep, try again. The world becomes non-empty
+        // eventually; the oracle waits.
+        let mut attempt: u32 = 0;
+        let source_names: Vec<String> = loop {
+            if self.shutdown.load(Ordering::Relaxed) {
+                info!("BatchLifecycleManager: shutdown received during source discovery");
                 return;
             }
+            attempt += 1;
+            match batch_config_orchestrator::fetch_recommended(&self.config.data_node_url).await {
+                Ok(batches) if !batches.is_empty() => {
+                    let mut names: Vec<String> = batches.iter().map(|b| b.source_id.clone()).collect();
+                    names.sort();
+                    names.dedup();
+                    if attempt > 1 {
+                        info!(
+                            attempt,
+                            source_count = names.len(),
+                            "BatchLifecycleManager: sources discovered after retry"
+                        );
+                    }
+                    break names;
+                }
+                Ok(_) => {
+                    warn!(
+                        attempt,
+                        "BatchLifecycleManager: data-node returned empty sources — retrying in 5s"
+                    );
+                }
+                Err(e) => {
+                    warn!(
+                        attempt,
+                        error = %e,
+                        "BatchLifecycleManager: failed to fetch sources from data-node — retrying in 5s"
+                    );
+                }
+            }
+            tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
         };
-
-        if source_names.is_empty() {
-            info!("BatchLifecycleManager: no sources found from data-node, exiting");
-            return;
-        }
 
         // Build per-source state, each wrapped in Arc<Mutex> for independent mutation
         let sources: Vec<Arc<tokio::sync::Mutex<SourceState>>> = source_names
