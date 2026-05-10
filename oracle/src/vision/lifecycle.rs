@@ -477,12 +477,14 @@ impl BatchLifecycleManager {
                 });
             }
 
-            // Await all spawned source tasks before next poll
-            while let Some(result) = join_set.join_next().await {
-                if let Err(e) = result {
-                    error!(error = %e, "Source lifecycle task panicked");
-                }
-            }
+            // Detach the spawned tasks — do NOT wait for them before the next
+            // poll. If we wait, the slowest task gates the loop: poll cadence
+            // collapses to per-iteration work time, sources accumulate stagger
+            // debt, and the next poll fires a burst of every source whose
+            // stagger has elapsed. The semaphore (max_concurrent_sources)
+            // provides backpressure; the JoinSet was effectively serializing
+            // the entire scheduler behind one slow heartbeat.
+            join_set.detach_all();
         }
 
         info!("BatchLifecycleManager shutting down");
