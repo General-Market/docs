@@ -181,13 +181,22 @@ impl BatchLifecycleManager {
                 let batch_version = std::env::var("BATCH_VERSION").unwrap_or_else(|_| "v2".to_string());
                 let versioned = format!("{}_{}", name, batch_version);
                 let source_id = H256::from(keccak256(versioned.as_bytes()));
+                // Backdate last_heartbeat so the first poll fires immediately for every
+                // source whose tick has already passed since the last restart. Without
+                // this, even a 5-minute source goes silent for 5 minutes after every
+                // bounce, and a 1-week source for a week. Subtract one week — covers all
+                // tick durations except the lone worldbank (≥1w), which can wait.
+                let backdate = std::time::Duration::from_secs(7 * 24 * 60 * 60);
+                let last_heartbeat = std::time::Instant::now()
+                    .checked_sub(backdate)
+                    .unwrap_or_else(std::time::Instant::now);
                 Arc::new(tokio::sync::Mutex::new(SourceState {
                     source_name: name.clone(),
                     source_id,
                     tick_duration_secs: 0, // populated on first config fetch
                     current_batch_id: None,
                     previous_batch_id: None,
-                    last_heartbeat: std::time::Instant::now(),
+                    last_heartbeat,
                     stagger_offset: std::time::Duration::from_secs(
                         SOURCE_STAGGER_SECS * i as u64,
                     ),
