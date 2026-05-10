@@ -3,52 +3,39 @@ import { AbsoluteFill, Img, staticFile } from "remotion";
 import { font } from "../../common/fonts";
 
 const TEXT = "#1D1D1F";
+const TEXT_SECONDARY = "#6E6E73";
 const ACCENT = "#0071E3";
-const RED = "#DC2626";
-const RED_DARK = "#991B1B";
+const SYSTEM_RED = "#FF3B30";
 
-const StruckPill: React.FC<{ label: string }> = ({ label }) => (
+const FilterPill: React.FC<{ label: string }> = ({ label }) => (
   <div
     style={{
       display: "inline-flex",
       alignItems: "center",
       gap: 8,
-      padding: "8px 14px 8px 10px",
+      padding: "9px 16px 9px 12px",
       borderRadius: 980,
-      background: "rgba(255,255,255,0.72)",
+      background: "rgba(255,255,255,0.78)",
       backdropFilter: "saturate(180%) blur(12px)",
       WebkitBackdropFilter: "saturate(180%) blur(12px)",
-      border: "1px solid rgba(15,23,42,0.08)",
+      border: "1px solid rgba(15,23,42,0.06)",
     }}
   >
-    <div
-      style={{
-        width: 18,
-        height: 18,
-        borderRadius: "50%",
-        background: `radial-gradient(circle at 35% 30%, #EF4444 0%, ${RED} 55%, ${RED_DARK} 100%)`,
-        color: "#FFFFFF",
-        fontFamily: font,
-        fontSize: 11,
-        fontWeight: 800,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        boxShadow: "inset 0 -1px 1px rgba(0,0,0,0.18)",
-      }}
-    >
-      ✕
-    </div>
+    <svg width="13" height="13" viewBox="0 0 13 13" style={{ display: "block" }}>
+      <path
+        d="M3.25 3.25 L9.75 9.75 M9.75 3.25 L3.25 9.75"
+        stroke={SYSTEM_RED}
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
     <div
       style={{
         fontFamily: font,
         fontSize: 14,
-        fontWeight: 600,
-        color: RED_DARK,
+        fontWeight: 500,
+        color: TEXT,
         letterSpacing: "-0.014em",
-        textDecoration: "line-through",
-        textDecorationColor: RED,
-        textDecorationThickness: 1.5,
         whiteSpace: "nowrap",
       }}
     >
@@ -122,9 +109,28 @@ export const OgBannerGMMottoGlass: React.FC = () => {
       <div
         style={{
           position: "absolute",
+          right: 64,
+          top: 50,
+          textAlign: "right",
+          fontFamily: font,
+          fontSize: 13,
+          fontWeight: 600,
+          color: TEXT_SECONDARY,
+          letterSpacing: "0.18em",
+          textTransform: "uppercase",
+        }}
+      >
+        The new baseline
+        <br />
+        for finance
+      </div>
+
+      <div
+        style={{
+          position: "absolute",
           left: 64,
           right: 64,
-          top: 110,
+          top: 130,
           bottom: 40,
           borderRadius: 28,
           padding: "36px 48px 32px",
@@ -175,12 +181,12 @@ export const OgBannerGMMottoGlass: React.FC = () => {
             marginTop: 14,
           }}
         >
-          <StruckPill label="Front-running" />
-          <StruckPill label="Insider trading" />
-          <StruckPill label="Stop hunting" />
-          <StruckPill label="Spoofing" />
-          <StruckPill label="PFOF" />
-          <StruckPill label="Latency arb" />
+          <FilterPill label="Front-running" />
+          <FilterPill label="Insider trading" />
+          <FilterPill label="Stop hunting" />
+          <FilterPill label="Spoofing" />
+          <FilterPill label="PFOF" />
+          <FilterPill label="Latency arb" />
         </div>
       </div>
     </AbsoluteFill>
