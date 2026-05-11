@@ -2449,7 +2449,7 @@ services:
     command:
       - "serve"
       - "--database-url"
-      - "postgres://max@localhost/index_prices"
+      - "postgres://max:m_f310f8cc478d54483105863917900d31@localhost:6432/index_prices"
       - "--symbol-map"
       - "/app/data/symbol-map.json"
       - "--rpc-url"
@@ -2638,7 +2638,7 @@ CMD
       - "--vision-address"
       - "$VISION_ADDR"
       - "--vision-database-url"
-      - "postgres://max@localhost/index_prices"
+      - "postgres://max:m_f310f8cc478d54483105863917900d31@localhost:6432/index_prices"
       - "--vision-data-node-url"
       - "http://localhost:$DATA_NODE_PORT"
       - "--vision-rpc-ws-url"

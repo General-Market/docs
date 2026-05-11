@@ -1,18 +1,28 @@
 use chrono::{DateTime, Timelike, Utc};
-use sqlx::postgres::PgPoolOptions;
+use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
 use sqlx::PgPool;
+use std::str::FromStr;
 use tracing::info;
 
 pub async fn create_pool(database_url: &str) -> Result<PgPool, sqlx::Error> {
-    // Postgres `max_connections` is 100 on VPS 1; the data-node fans out into
-    // ~12 collectors plus the API. At 30 the pool starves under any real load —
-    // ITP snapshot writes time out and the collector cursor never advances,
-    // which is why every chart on the frontend renders empty.
+    // PgBouncer in transaction mode (port 6432) is in front of Postgres now.
+    // statement_cache_capacity(0) is required: transaction pooling moves
+    // sessions across server connections on every transaction boundary;
+    // sqlx's per-connection prepared statement cache fails the second the
+    // session lands on a different backend. Disable it.
+    //
+    // application_name surfaces this service in pg_stat_activity for
+    // verification (otherwise every row shows '').
+    //
+    // max_connections dropped from 70 → 30 — PgBouncer absorbs burst.
+    let opts = PgConnectOptions::from_str(database_url)?
+        .application_name("data-node")
+        .statement_cache_capacity(0);
     PgPoolOptions::new()
-        .max_connections(70)
+        .max_connections(30)
         .acquire_timeout(std::time::Duration::from_secs(10))
         .idle_timeout(std::time::Duration::from_secs(300))
-        .connect(database_url)
+        .connect_with(opts)
         .await
 }
 

@@ -617,11 +617,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 });
             }
 
-            // Initialize Postgres pool, chain listener, and API routes
+            // Initialize Postgres pool, chain listener, and API routes.
+            // PgBouncer (transaction mode) sits in front: statement_cache_capacity(0)
+            // and application_name set explicitly. Pool dropped 15→8 since
+            // PgBouncer absorbs burst.
+            use std::str::FromStr;
+            let pool_opts = match sqlx::postgres::PgConnectOptions::from_str(&vision_cfg.database_url) {
+                Ok(o) => o.application_name(&format!("oracle-{}", node_id)).statement_cache_capacity(0),
+                Err(e) => {
+                    error!(error = %e, "Failed to parse vision database URL: {}", e);
+                    std::process::exit(1);
+                }
+            };
             match sqlx::postgres::PgPoolOptions::new()
-                .max_connections(15)
+                .max_connections(8)
                 .idle_timeout(std::time::Duration::from_secs(300))
-                .connect(&vision_cfg.database_url).await {
+                .connect_with(pool_opts).await {
                 Ok(pool) => {
                     // Restore scheduler state from DB (crash recovery)
                     if let Err(e) = scheduler.load_from_db(&pool).await {
