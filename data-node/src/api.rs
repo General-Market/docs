@@ -420,6 +420,10 @@ pub struct AppState {
     /// Refreshed every 30s. The underlying data lives in batch_engine.configs
     /// already, but serialization + lock acquisition add up under load.
     pub recommended_cache: RwLock<Option<(Instant, serde_json::Value)>>,
+    /// 30s TTL cache for /market/prices/{source}. Frontend polling repeatedly
+    /// hammered the underlying market_prices_latest query and exhausted the
+    /// pool. Cache key includes source + symbols + category + page + limit.
+    pub market_prices_cache: DashMap<String, (Instant, serde_json::Value)>,
 }
 
 /// In-memory TTL cache for hot endpoints.
@@ -5441,6 +5445,8 @@ struct MarketPricesQuery {
     limit: Option<u32>,
 }
 
+const MARKET_PRICES_TTL: Duration = Duration::from_secs(30);
+
 async fn market_prices(
     State(state): State<Arc<AppState>>,
     AxumPath(source): AxumPath<String>,
@@ -5450,18 +5456,40 @@ async fn market_prices(
     let limit = params.limit.unwrap_or(100);
     let category = params.category.as_deref();
 
-    let symbols_vec: Vec<&str> = params
+    let mut symbols_vec: Vec<&str> = params
         .symbols
         .as_deref()
         .map(|s| s.split(',').collect())
         .unwrap_or_default();
+    symbols_vec.sort();
     let symbols_filter = if symbols_vec.is_empty() {
         None
     } else {
         Some(symbols_vec.as_slice())
     };
 
-    match crate::market_data::queries::get_market_prices(
+    // 30s TTL cache. Source of today's outage was 65 simultaneous calls
+    // exhausting the pool; this absorbs the polling load.
+    let cache_disabled = std::env::var("DISABLE_MARKET_CACHE").map(|v| v == "1").unwrap_or(false);
+    let cache_key = format!(
+        "{}|{}|{}|{}|{}",
+        source,
+        category.unwrap_or(""),
+        page,
+        limit,
+        symbols_vec.join(",")
+    );
+
+    if !cache_disabled {
+        if let Some(entry) = state.market_prices_cache.get(&cache_key) {
+            let (ts, val) = entry.value();
+            if ts.elapsed() < MARKET_PRICES_TTL {
+                return Ok(Json(val.clone()));
+            }
+        }
+    }
+
+    let response = match crate::market_data::queries::get_market_prices(
         &state.pool,
         &source,
         symbols_filter,
@@ -5471,15 +5499,34 @@ async fn market_prices(
     )
     .await
     {
-        Ok((prices, total)) => Ok(Json(serde_json::json!({
+        Ok((prices, total)) => serde_json::json!({
             "source": source,
             "prices": prices,
             "total": total,
             "page": page,
             "limit": limit,
-        }))),
-        Err(e) => Err(internal_error(e)),
+        }),
+        Err(e) => return Err(internal_error(e)),
+    };
+
+    if !cache_disabled {
+        state.market_prices_cache.insert(cache_key, (Instant::now(), response.clone()));
+        // Hard cap: walk + drop oldest 20% if map exceeds 10K. Without it,
+        // paginated symbol-filter cardinality can grow the map until OOM.
+        if state.market_prices_cache.len() > 10_000 {
+            let mut entries: Vec<(String, Instant)> = state
+                .market_prices_cache
+                .iter()
+                .map(|e| (e.key().clone(), e.value().0))
+                .collect();
+            entries.sort_by_key(|(_, ts)| *ts);
+            for (k, _) in entries.into_iter().take(2_000) {
+                state.market_prices_cache.remove(&k);
+            }
+        }
     }
+
+    Ok(Json(response))
 }
 
 // ---- /market/prices/{source}/{asset_id} ----

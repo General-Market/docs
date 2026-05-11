@@ -2549,6 +2549,7 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
         chain_event_lag_total: std::sync::atomic::AtomicU64::new(0),
         config_hash_cache: dashmap::DashMap::new(),
         recommended_cache: tokio::sync::RwLock::new(None),
+        market_prices_cache: dashmap::DashMap::new(),
     });
 
     // Eagerly load nextOrderId before pollers start, so ghost orders from
