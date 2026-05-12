@@ -70,6 +70,13 @@ pub struct VisionConfig {
     /// to per-player calls.
     #[serde(default)]
     pub vision_reconciler_address: String,
+
+    /// Enable single-aggregated-BLS bundle path (settleBatchesSingle). OFF by
+    /// default — only activate after the on-chain Vision contract has the
+    /// `settleBatchesSingle` selector. Without the contract upgrade, bundle
+    /// submissions revert and tagged per-batch proofs stay un-claimable.
+    #[serde(default)]
+    pub bundle_single_sig_enabled: bool,
 }
 
 impl Default for VisionConfig {
@@ -100,6 +107,7 @@ impl Default for VisionConfig {
             // Round-based lifecycle
             oracle_registry_address: String::new(),
             vision_reconciler_address: String::new(),
+            bundle_single_sig_enabled: false,
         }
     }
 }

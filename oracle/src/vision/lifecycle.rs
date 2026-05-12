@@ -1922,20 +1922,27 @@ impl BatchLifecycleManager {
             // ── Phase 1: Co-sign pending settlements (ALL oracles) ──
             self.co_sign_pending_settlements().await;
 
-            // ── Phase 1b: Single-aggregated-BLS bundles ──
+            // ── Phase 1b: Single-aggregated-BLS bundles (opt-in) ──
             // Leader composes new bundles from quorum-reached per-batch proofs.
             // Every oracle co-signs existing bundles whose composition matches
-            // its own per-batch state.
-            if is_leader {
-                self.create_pending_bundles().await;
+            // its own per-batch state. Gated on `bundle_single_sig_enabled`
+            // because the on-chain Vision contract is non-upgradeable: without
+            // its `settleBatchesSingle` selector, bundle submissions revert and
+            // tagged per-batch proofs become un-claimable.
+            if self.config.bundle_single_sig_enabled {
+                if is_leader {
+                    self.create_pending_bundles().await;
+                }
+                self.co_sign_pending_bundles().await;
             }
-            self.co_sign_pending_bundles().await;
 
             // ── Phase 2: Retry on-chain submission (leader only, every 60s) ──
             if is_leader && last_recovery.elapsed().as_secs() >= RECOVERY_INTERVAL_SECS {
                 last_recovery = std::time::Instant::now();
                 self.retry_unsubmitted_settlements(MAX_RETRIES).await;
-                self.submit_quorum_bundles().await;
+                if self.config.bundle_single_sig_enabled {
+                    self.submit_quorum_bundles().await;
+                }
             }
         }
 
