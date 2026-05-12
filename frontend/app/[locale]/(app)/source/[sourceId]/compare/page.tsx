@@ -76,7 +76,7 @@ export default async function ComparePage({ params }: Props) {
         <div className="flex flex-col">
           <SourceTabNav sourceId={sourceId} activeTab="compare" />
           <div className="px-4 sm:px-6 lg:px-10 py-6 lg:py-10 pb-16">
-            <header className="mb-6 max-w-[734px]">
+            <header className="mb-8">
               <h1
                 style={{
                   fontFamily: 'var(--apple-font-display)',
@@ -88,10 +88,10 @@ export default async function ComparePage({ params }: Props) {
                   margin: 0,
                 }}
               >
-                Same window. Different leverage.
+                Compare
               </h1>
               <p
-                className="mt-3"
+                className="mt-2 max-w-[680px]"
                 style={{
                   fontFamily: 'var(--apple-font-text)',
                   fontSize: 'var(--apple-fs-17)',
@@ -101,8 +101,7 @@ export default async function ComparePage({ params }: Props) {
                   margin: 0,
                 }}
               >
-                The same Polymarket questions. The five minutes you would have spent waiting. On one side, prices that
-                barely flinched. On the other, multipliers Vision paid out before the round closed.
+                The same Polymarket questions, the same five minutes. Prices on one side, payouts on the other.
               </p>
             </header>
             <PolymarketComparison />
