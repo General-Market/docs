@@ -1,0 +1,134 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 520" width="980" height="520" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGradS" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="cardShadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="10" flood-opacity="0.05"/>
+    </filter>
+    <marker id="arrowHead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0A0A0A" fill-opacity="0.35"/>
+    </marker>
+  </defs>
+
+  <rect width="980" height="520" fill="white"/>
+
+  <!-- Decorative -->
+  <circle cx="80" cy="460" r="160" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="900" cy="60" r="160" fill="#0A0A0A" opacity="0.02"/>
+
+  <!-- Title -->
+  <text x="490" y="50" text-anchor="middle" fill="#0A0A0A" font-size="12" font-weight="700" letter-spacing="3.6" opacity="0.45">THE FOUR STEPS</text>
+  <text x="490" y="80" text-anchor="middle" fill="#0A0A0A" font-size="14" opacity="0.4">Four steps separate you from the consequences of your convictions.</text>
+
+  <!-- Cards: x=40, 273, 506, 739 — width 200 — y=112, height=320 -->
+  <g filter="url(#cardShadow)">
+    <rect x="40"  y="112" width="200" height="320" rx="16" fill="white" stroke="#0A0A0A" stroke-opacity="0.08"/>
+    <rect x="273" y="112" width="200" height="320" rx="16" fill="white" stroke="#0A0A0A" stroke-opacity="0.08"/>
+    <rect x="506" y="112" width="200" height="320" rx="16" fill="white" stroke="#0A0A0A" stroke-opacity="0.08"/>
+    <rect x="739" y="112" width="200" height="320" rx="16" fill="white" stroke="#0A0A0A" stroke-opacity="0.08"/>
+  </g>
+
+  <!-- Arrow connectors (between cards) -->
+  <line x1="247" y1="272" x2="266" y2="272" stroke="#0A0A0A" stroke-opacity="0.35" stroke-width="1.5" marker-end="url(#arrowHead)"/>
+  <line x1="480" y1="272" x2="499" y2="272" stroke="#0A0A0A" stroke-opacity="0.35" stroke-width="1.5" marker-end="url(#arrowHead)"/>
+  <line x1="713" y1="272" x2="732" y2="272" stroke="#0A0A0A" stroke-opacity="0.35" stroke-width="1.5" marker-end="url(#arrowHead)"/>
+
+  <!-- =========== CARD 1: BROWSE =========== -->
+  <!-- Step pill -->
+  <rect x="60" y="132" width="64" height="22" rx="11" fill="url(#darkGradS)"/>
+  <text x="92" y="148" text-anchor="middle" fill="white" font-size="10" font-weight="700" letter-spacing="2">STEP 01</text>
+  <!-- Title -->
+  <text x="60" y="194" fill="#0A0A0A" font-size="26" font-weight="700">Browse</text>
+  <line x1="60" y1="210" x2="220" y2="210" stroke="#0A0A0A" stroke-opacity="0.08"/>
+  <!-- Body -->
+  <text x="60" y="234" fill="#0A0A0A" font-size="12" opacity="0.7">Pick a batch from</text>
+  <text x="60" y="252" fill="#0A0A0A" font-size="12" opacity="0.7">90+ source categories.</text>
+  <!-- Examples -->
+  <g font-family="ui-monospace, SF Mono, Menlo, monospace">
+    <rect x="60"  y="272" width="64" height="22" rx="6" fill="#0A0A0A" fill-opacity="0.05"/>
+    <text x="92"  y="287" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.7">Crypto</text>
+    <rect x="132" y="272" width="64" height="22" rx="6" fill="#0A0A0A" fill-opacity="0.05"/>
+    <text x="164" y="287" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.7">Weather</text>
+    <rect x="60"  y="300" width="64" height="22" rx="6" fill="#0A0A0A" fill-opacity="0.05"/>
+    <text x="92"  y="315" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.7">Trains</text>
+    <rect x="132" y="300" width="64" height="22" rx="6" fill="#0A0A0A" fill-opacity="0.05"/>
+    <text x="164" y="315" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.7">Quakes</text>
+  </g>
+  <!-- Footer caption -->
+  <text x="60" y="395" fill="#0A0A0A" font-size="10" opacity="0.4">Browse active batches</text>
+  <text x="60" y="411" fill="#0A0A0A" font-size="10" opacity="0.4">across every category.</text>
+
+  <!-- =========== CARD 2: SEAL =========== -->
+  <rect x="293" y="132" width="64" height="22" rx="11" fill="url(#darkGradS)"/>
+  <text x="325" y="148" text-anchor="middle" fill="white" font-size="10" font-weight="700" letter-spacing="2">STEP 02</text>
+
+  <text x="293" y="194" fill="#0A0A0A" font-size="26" font-weight="700">Seal</text>
+  <line x1="293" y1="210" x2="453" y2="210" stroke="#0A0A0A" stroke-opacity="0.08"/>
+
+  <text x="293" y="234" fill="#0A0A0A" font-size="12" opacity="0.7">Bet UP or DOWN per</text>
+  <text x="293" y="252" fill="#0A0A0A" font-size="12" opacity="0.7">market. Sealed as a hash</text>
+  <text x="293" y="270" fill="#0A0A0A" font-size="12" opacity="0.7">on-chain.</text>
+
+  <!-- keccak hash chip -->
+  <rect x="293" y="288" width="160" height="28" rx="6" fill="url(#darkGradS)"/>
+  <text x="373" y="306" text-anchor="middle" fill="white" font-size="10" font-weight="600" font-family="ui-monospace, SF Mono, Menlo, monospace">keccak256(bitmap)</text>
+
+  <text x="293" y="343" fill="#0A0A0A" font-size="11" font-weight="600" opacity="0.6">No one can see your block</text>
+  <text x="293" y="361" fill="#0A0A0A" font-size="11" opacity="0.45">until the tick closes.</text>
+
+  <text x="293" y="395" fill="#0A0A0A" font-size="10" opacity="0.4">Encode into a compact</text>
+  <text x="293" y="411" fill="#0A0A0A" font-size="10" opacity="0.4">bitmap, commit the hash.</text>
+
+  <!-- =========== CARD 3: RESOLVE =========== -->
+  <rect x="526" y="132" width="64" height="22" rx="11" fill="url(#darkGradS)"/>
+  <text x="558" y="148" text-anchor="middle" fill="white" font-size="10" font-weight="700" letter-spacing="2">STEP 03</text>
+
+  <text x="526" y="194" fill="#0A0A0A" font-size="26" font-weight="700">Resolve</text>
+  <line x1="526" y1="210" x2="686" y2="210" stroke="#0A0A0A" stroke-opacity="0.08"/>
+
+  <text x="526" y="234" fill="#0A0A0A" font-size="12" opacity="0.7">Tick ends. Oracles fetch</text>
+  <text x="526" y="252" fill="#0A0A0A" font-size="12" opacity="0.7">real data and resolve</text>
+  <text x="526" y="270" fill="#0A0A0A" font-size="12" opacity="0.7">outcomes.</text>
+
+  <!-- Consensus chip -->
+  <g>
+    <circle cx="536" cy="302" r="8" fill="#10B981"/>
+    <circle cx="556" cy="302" r="8" fill="#10B981"/>
+    <circle cx="576" cy="302" r="8" fill="#0A0A0A" fill-opacity="0.12"/>
+    <text x="596" y="306" fill="#0A0A0A" font-size="11" font-weight="600">2 / 3+ consensus</text>
+  </g>
+
+  <text x="526" y="343" fill="#0A0A0A" font-size="11" font-weight="600" opacity="0.6">Winners split</text>
+  <text x="526" y="361" fill="#0A0A0A" font-size="11" opacity="0.45">the losers' stakes.</text>
+
+  <text x="526" y="395" fill="#0A0A0A" font-size="10" opacity="0.4">Real numbers from external</text>
+  <text x="526" y="411" fill="#0A0A0A" font-size="10" opacity="0.4">APIs determine UP/DOWN.</text>
+
+  <!-- =========== CARD 4: CLAIM =========== -->
+  <rect x="759" y="132" width="64" height="22" rx="11" fill="url(#darkGradS)"/>
+  <text x="791" y="148" text-anchor="middle" fill="white" font-size="10" font-weight="700" letter-spacing="2">STEP 04</text>
+
+  <text x="759" y="194" fill="#0A0A0A" font-size="26" font-weight="700">Claim</text>
+  <line x1="759" y1="210" x2="919" y2="210" stroke="#0A0A0A" stroke-opacity="0.08"/>
+
+  <text x="759" y="234" fill="#0A0A0A" font-size="12" opacity="0.7">Withdraw winnings with</text>
+  <text x="759" y="252" fill="#0A0A0A" font-size="12" opacity="0.7">a BLS-verified balance</text>
+  <text x="759" y="270" fill="#0A0A0A" font-size="12" opacity="0.7">proof.</text>
+
+  <!-- BLS pill -->
+  <rect x="759" y="288" width="120" height="28" rx="6" fill="#10B981" fill-opacity="0.12" stroke="#10B981" stroke-opacity="0.4"/>
+  <path d="M773,302 l5,5 l10,-10" stroke="#059669" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="795" y="306" fill="#059669" font-size="11" font-weight="700" letter-spacing="1">BLS VERIFIED</text>
+
+  <text x="759" y="343" fill="#0A0A0A" font-size="11" font-weight="600" opacity="0.6">Claim any time.</text>
+  <text x="759" y="361" fill="#0A0A0A" font-size="11" opacity="0.45">No lockup. No counterparty.</text>
+
+  <text x="759" y="395" fill="#0A0A0A" font-size="10" opacity="0.4">BLS aggregate signature</text>
+  <text x="759" y="411" fill="#0A0A0A" font-size="10" opacity="0.4">from the oracle network.</text>
+
+  <!-- Bottom rule -->
+  <rect x="40" y="460" width="900" height="42" rx="14" fill="#0A0A0A" fill-opacity="0.03"/>
+  <text x="490" y="486" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.5" letter-spacing="0.6">Commit a hash. Reveal a bitmap. Receive a verdict. Withdraw the consequence.</text>
+</svg>

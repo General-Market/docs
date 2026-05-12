@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 720" width="980" height="720" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGradQ" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="980" height="720" fill="white"/>
+
+  <!-- Decorative -->
+  <circle cx="60" cy="680" r="200" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="930" cy="40" r="160" fill="#0A0A0A" opacity="0.02"/>
+
+  <!-- Header -->
+  <text x="490" y="54" text-anchor="middle" fill="#0A0A0A" font-size="12" font-weight="700" letter-spacing="3.6" opacity="0.45">TWELVE QUESTIONS</text>
+  <text x="490" y="84" text-anchor="middle" fill="#0A0A0A" font-size="14" opacity="0.4">Each one a small confession that someone believes they know what happens next.</text>
+
+  <!-- Column header strip -->
+  <rect x="40" y="108" width="900" height="36" rx="10" fill="url(#darkGradQ)"/>
+  <text x="64" y="131" fill="white" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.5">QUESTION</text>
+  <text x="916" y="131" text-anchor="end" fill="white" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.5">SOURCE</text>
+
+  <!-- Rows. y_top = 160; row height 44. Row centers at 182, 226, 270, ... -->
+  <!-- Subtle row separators every 44px -->
+  <g stroke="#0A0A0A" stroke-opacity="0.06">
+    <line x1="40" y1="204" x2="940" y2="204"/>
+    <line x1="40" y1="248" x2="940" y2="248"/>
+    <line x1="40" y1="292" x2="940" y2="292"/>
+    <line x1="40" y1="336" x2="940" y2="336"/>
+    <line x1="40" y1="380" x2="940" y2="380"/>
+    <line x1="40" y1="424" x2="940" y2="424"/>
+    <line x1="40" y1="468" x2="940" y2="468"/>
+    <line x1="40" y1="512" x2="940" y2="512"/>
+    <line x1="40" y1="556" x2="940" y2="556"/>
+    <line x1="40" y1="600" x2="940" y2="600"/>
+    <line x1="40" y1="644" x2="940" y2="644"/>
+  </g>
+
+  <!-- Helper styling for slug pills:
+       Pill: rounded rect, light gray fill, monospace text. Right-anchored at x=916. -->
+
+  <!-- Row 1 -->
+  <circle cx="58" cy="182" r="4" fill="#F59E0B"/>
+  <text x="76" y="187" fill="#0A0A0A" font-size="14" font-weight="500">Will Bitcoin be higher in 5 minutes?</text>
+  <rect x="740" y="170" width="180" height="24" rx="6" fill="#0A0A0A" fill-opacity="0.05"/>
+  <text x="830" y="187" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="600" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.75">crypto_BTC-USD</text>
+
+  <!-- Row 2 -->
+  <circle cx="58" cy="226" r="4" fill="#3B82F6"/>
+  <text x="76" y="231" fill="#0A0A0A" font-size="14" font-weight="500">Will it rain more in Tokyo tomorrow?</text>
+  <rect x="740" y="214" width="180" height="24" rx="6" fill="#0A0A0A" fill-opacity="0.05"/>
+  <text x="830" y="231" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="600" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.75">weather_tokyo</text>
+
+  <!-- Row 3 -->
+  <circle cx="58" cy="270" r="4" fill="#EF4444"/>
+  <text x="76" y="275" fill="#0A0A0A" font-size="14" font-weight="500">Will an earthquake hit California?</text>
+  <rect x="740" y="258" width="180" height="24" rx="6" fill="#0A0A0A" fill-opacity="0.05"/>
+  <text x="830" y="275" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="600" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.75">earthquake_calif</text>
+
+  <!-- Row 4 -->
+  <circle cx="58" cy="314" r="4" fill="#8B5CF6"/>
+  <text x="76" y="319" fill="#0A0A0A" font-size="14" font-weight="500">Will the Northern Line have disruptions?</text>
+  <rect x="740" y="302" width="180" height="24" rx="6" fill="#0A0A0A" fill-opacity="0.05"/>
+  <text x="830" y="319" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="600" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.75">tfl_tube_northern</text>
+
+  <!-- Row 5 -->
+  <circle cx="58" cy="358" r="4" fill="#06B6D4"/>
+  <text x="76" y="363" fill="#0A0A0A" font-size="14" font-weight="500">Will Counter-Strike 2 gain players?</text>
+  <rect x="740" y="346" width="180" height="24" rx="6" fill="#0A0A0A" fill-opacity="0.05"/>
+  <text x="830" y="363" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="600" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.75">steam_cs2</text>
+
+  <!-- Row 6 -->
+  <circle cx="58" cy="402" r="4" fill="#EC4899"/>
+  <text x="76" y="407" fill="#0A0A0A" font-size="14" font-weight="500">Will npm react downloads increase?</text>
+  <rect x="740" y="390" width="180" height="24" rx="6" fill="#0A0A0A" fill-opacity="0.05"/>
+  <text x="830" y="407" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="600" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.75">npm_react</text>
+
+  <!-- Row 7 -->
+  <circle cx="58" cy="446" r="4" fill="#F97316"/>
+  <text x="76" y="451" fill="#0A0A0A" font-size="14" font-weight="500">Will McDonald's ice cream break in Chicago?</text>
+  <rect x="740" y="434" width="180" height="24" rx="6" fill="#0A0A0A" fill-opacity="0.05"/>
+  <text x="830" y="451" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="600" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.75">mcbroken_chicago</text>
+
+  <!-- Row 8 -->
+  <circle cx="58" cy="490" r="4" fill="#10B981"/>
+  <text x="76" y="495" fill="#0A0A0A" font-size="14" font-weight="500">Will this GitHub repo get more stars?</text>
+  <rect x="740" y="478" width="180" height="24" rx="6" fill="#0A0A0A" fill-opacity="0.05"/>
+  <text x="830" y="495" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="600" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.75">github_rust-lang</text>
+
+  <!-- Row 9 -->
+  <circle cx="58" cy="534" r="4" fill="#EAB308"/>
+  <text x="76" y="539" fill="#0A0A0A" font-size="14" font-weight="500">Will Deutsche Bahn trains be late in Berlin?</text>
+  <rect x="740" y="522" width="180" height="24" rx="6" fill="#0A0A0A" fill-opacity="0.05"/>
+  <text x="830" y="539" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="600" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.75">db_trains_berlin</text>
+
+  <!-- Row 10 -->
+  <circle cx="58" cy="578" r="4" fill="#A855F7"/>
+  <text x="76" y="583" fill="#0A0A0A" font-size="14" font-weight="500">Will Palo Verde nuclear output change?</text>
+  <rect x="740" y="566" width="180" height="24" rx="6" fill="#0A0A0A" fill-opacity="0.05"/>
+  <text x="830" y="583" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="600" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.75">nrc_palo-verde-1</text>
+
+  <!-- Row 11 -->
+  <circle cx="58" cy="622" r="4" fill="#0EA5E9"/>
+  <text x="76" y="627" fill="#0A0A0A" font-size="14" font-weight="500">Will wave height increase at buoy 41002?</text>
+  <rect x="740" y="610" width="180" height="24" rx="6" fill="#0A0A0A" fill-opacity="0.05"/>
+  <text x="830" y="627" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="600" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.75">ndbc_41002</text>
+
+  <!-- Row 12 -->
+  <circle cx="58" cy="666" r="4" fill="#84CC16"/>
+  <text x="76" y="671" fill="#0A0A0A" font-size="14" font-weight="500">Will LA air quality worsen?</text>
+  <rect x="740" y="654" width="180" height="24" rx="6" fill="#0A0A0A" fill-opacity="0.05"/>
+  <text x="830" y="671" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="600" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.75">airnow_los-angeles</text>
+
+  <!-- Footer note -->
+  <text x="490" y="708" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.4">Anything that produces a number can become a block.</text>
+</svg>

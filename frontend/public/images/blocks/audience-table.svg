@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 560" width="980" height="560" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGradA" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="cardShadowA">
+      <feDropShadow dx="0" dy="2" stdDeviation="10" flood-opacity="0.04"/>
+    </filter>
+  </defs>
+
+  <rect width="980" height="560" fill="white"/>
+
+  <!-- Decorative -->
+  <circle cx="60" cy="500" r="180" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="930" cy="40"  r="160" fill="#0A0A0A" opacity="0.02"/>
+
+  <!-- Title -->
+  <text x="490" y="50" text-anchor="middle" fill="#0A0A0A" font-size="12" font-weight="700" letter-spacing="3.6" opacity="0.45">WHO IS BLOCKS FOR</text>
+  <text x="490" y="78" text-anchor="middle" fill="#0A0A0A" font-size="14" opacity="0.4">Everyone who has ever looked at a number and felt they knew which way it would go next.</text>
+
+  <!-- Header strip -->
+  <rect x="40" y="100" width="900" height="44" rx="12" fill="url(#darkGradA)"/>
+  <line x1="320" y1="110" x2="320" y2="134" stroke="white" stroke-opacity="0.12"/>
+  <text x="68"  y="128" fill="white" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.55">AUDIENCE</text>
+  <text x="344" y="128" fill="white" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.55">USE CASE</text>
+
+  <!-- Container card behind rows -->
+  <g filter="url(#cardShadowA)">
+    <rect x="40" y="156" width="900" height="372" rx="16" fill="white" stroke="#0A0A0A" stroke-opacity="0.08"/>
+  </g>
+
+  <!-- Row dividers -->
+  <g stroke="#0A0A0A" stroke-opacity="0.06">
+    <line x1="56" y1="249" x2="924" y2="249"/>
+    <line x1="56" y1="342" x2="924" y2="342"/>
+    <line x1="56" y1="435" x2="924" y2="435"/>
+    <line x1="320" y1="172" x2="320" y2="512"/>
+  </g>
+
+  <!-- =========== ROW 1: Bot developers =========== -->
+  <!-- icon -->
+  <g transform="translate(72, 188)">
+    <rect x="0" y="0" width="36" height="36" rx="10" fill="#0A0A0A" fill-opacity="0.05"/>
+    <rect x="8" y="10" width="20" height="14" rx="3" fill="none" stroke="#0A0A0A" stroke-width="1.4"/>
+    <circle cx="14" cy="17" r="1.4" fill="#0A0A0A"/>
+    <circle cx="22" cy="17" r="1.4" fill="#0A0A0A"/>
+    <line x1="14" y1="6" x2="14" y2="10" stroke="#0A0A0A" stroke-width="1.4"/>
+    <line x1="22" y1="6" x2="22" y2="10" stroke="#0A0A0A" stroke-width="1.4"/>
+  </g>
+  <text x="120" y="208" fill="#0A0A0A" font-size="16" font-weight="700">Bot developers</text>
+  <text x="120" y="226" fill="#0A0A0A" font-size="11" opacity="0.45">free registration · full API access</text>
+
+  <text x="340" y="200" fill="#0A0A0A" font-size="13" opacity="0.75">Build automated block-betting strategies.</text>
+  <text x="340" y="220" fill="#0A0A0A" font-size="13" opacity="0.75">Programmatic bitmap encoding, batch joining,</text>
+  <text x="340" y="240" fill="#0A0A0A" font-size="13" opacity="0.75">Python framework included. Delegate the hubris.</text>
+
+  <!-- =========== ROW 2: Manual traders =========== -->
+  <g transform="translate(72, 281)">
+    <rect x="0" y="0" width="36" height="36" rx="10" fill="#0A0A0A" fill-opacity="0.05"/>
+    <circle cx="18" cy="14" r="5" fill="none" stroke="#0A0A0A" stroke-width="1.4"/>
+    <path d="M8 30 Q18 22, 28 30" fill="none" stroke="#0A0A0A" stroke-width="1.4" stroke-linecap="round"/>
+  </g>
+  <text x="120" y="301" fill="#0A0A0A" font-size="16" font-weight="700">Manual traders</text>
+  <text x="120" y="319" fill="#0A0A0A" font-size="11" opacity="0.45">no coding required</text>
+
+  <text x="340" y="293" fill="#0A0A0A" font-size="13" opacity="0.75">Browse batches in the web UI, pick UP / DOWN</text>
+  <text x="340" y="313" fill="#0A0A0A" font-size="13" opacity="0.75">per market, deposit USDC. Click the buttons,</text>
+  <text x="340" y="333" fill="#0A0A0A" font-size="13" opacity="0.75">close the laptop, accept what comes.</text>
+
+  <!-- =========== ROW 3: Quant researchers =========== -->
+  <g transform="translate(72, 374)">
+    <rect x="0" y="0" width="36" height="36" rx="10" fill="#0A0A0A" fill-opacity="0.05"/>
+    <polyline points="6,28 14,18 20,22 30,8" fill="none" stroke="#0A0A0A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    <line x1="6" y1="28" x2="30" y2="28" stroke="#0A0A0A" stroke-width="1.4" stroke-linecap="round"/>
+  </g>
+  <text x="120" y="394" fill="#0A0A0A" font-size="16" font-weight="700">Quant researchers</text>
+  <text x="120" y="412" fill="#0A0A0A" font-size="11" opacity="0.45">historical tick data · 90+ sources</text>
+
+  <text x="340" y="386" fill="#0A0A0A" font-size="13" opacity="0.75">Backtest bitmap strategies against historical</text>
+  <text x="340" y="406" fill="#0A0A0A" font-size="13" opacity="0.75">tick data. Validate edge before committing</text>
+  <text x="340" y="426" fill="#0A0A0A" font-size="13" opacity="0.75">capital. Confirm the suspicion, then risk it.</text>
+
+  <!-- =========== ROW 4: Refugees =========== -->
+  <g transform="translate(72, 467)">
+    <rect x="0" y="0" width="36" height="36" rx="10" fill="#0A0A0A" fill-opacity="0.05"/>
+    <path d="M10 18 L26 18" stroke="#0A0A0A" stroke-width="1.4" stroke-linecap="round"/>
+    <path d="M20 12 L26 18 L20 24" fill="none" stroke="#0A0A0A" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="120" y="487" fill="#0A0A0A" font-size="16" font-weight="700">Refugees</text>
+  <text x="120" y="505" fill="#0A0A0A" font-size="11" opacity="0.45">from spot · perps · options</text>
+
+  <text x="340" y="479" fill="#0A0A0A" font-size="13" opacity="0.75">Anyone tired of paying the predator tax on</text>
+  <text x="340" y="499" fill="#0A0A0A" font-size="13" opacity="0.75">every directional view they take.</text>
+  <text x="340" y="519" fill="#0A0A0A" font-size="13" opacity="0.75" font-weight="600">The seal is the whole point.</text>
+</svg>
