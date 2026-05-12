@@ -2,7 +2,7 @@
 
 import { Link, usePathname } from '@/i18n/routing'
 
-export type SourceTab = 'overview' | 'markets' | 'activity' | 'leaderboard'
+export type SourceTab = 'overview' | 'markets' | 'activity' | 'leaderboard' | 'compare'
 
 interface Tab {
   id: SourceTab
@@ -16,14 +16,20 @@ interface SourceTabNavProps {
   activeTab?: SourceTab
 }
 
+const COMPARE_SOURCES = new Set(['polymarket'])
+
 function buildTabs(sourceId: string): Tab[] {
   const base = `/source/${sourceId}`
-  return [
+  const tabs: Tab[] = [
     { id: 'overview',     label: 'Overview',     href: base },
     { id: 'markets',      label: 'Markets',      href: `${base}/markets` },
     { id: 'activity',     label: 'Activity',     href: `${base}/activity` },
     { id: 'leaderboard',  label: 'Leaderboard',  href: `${base}/leaderboard` },
   ]
+  if (COMPARE_SOURCES.has(sourceId)) {
+    tabs.push({ id: 'compare', label: 'Compare', href: `${base}/compare` })
+  }
+  return tabs
 }
 
 function deriveActiveTab(pathname: string, sourceId: string): SourceTab {
@@ -32,6 +38,7 @@ function deriveActiveTab(pathname: string, sourceId: string): SourceTab {
   if (pathname.startsWith(`${base}/markets`)) return 'markets'
   if (pathname.startsWith(`${base}/activity`)) return 'activity'
   if (pathname.startsWith(`${base}/leaderboard`)) return 'leaderboard'
+  if (pathname.startsWith(`${base}/compare`)) return 'compare'
   return 'overview'
 }
 
