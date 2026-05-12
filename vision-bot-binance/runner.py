@@ -25,10 +25,20 @@ SOURCE_ID = os.environ["SOURCE_ID"]
 VAULT_ADDRESS = Web3.to_checksum_address(os.environ["VAULT_ADDRESS"])
 MANAGER_PRIVATE_KEY = os.environ["MANAGER_PRIVATE_KEY"]
 L3_RPC_URL = os.environ["L3_RPC_URL"]
+VISION_ADDRESS = Web3.to_checksum_address(os.environ["VISION_ADDRESS"])
+BATCH_VERSION = os.environ.get("BATCH_VERSION", "binance-v1")
 DEPOSIT_BPS = int(os.environ.get("DEPOSIT_BPS", "500"))
 POLL_SECS = int(os.environ.get("POLL_SECS", "30"))
 DATA_NODE_BASE = os.environ.get("DATA_NODE_BASE", "https://api.generalmarket.io")
 DRY_RUN = os.environ.get("DRY_RUN", "0") == "1"
+
+VISION_ABI = [
+    {"type": "function", "name": "latestBatchForSource",
+     "inputs": [{"name": "sourceId", "type": "bytes32"}],
+     "outputs": [{"name": "", "type": "uint256"}],
+     "stateMutability": "view"},
+]
+SOURCE_ID_BYTES32 = Web3.keccak(text=f"{SOURCE_ID}_{BATCH_VERSION}")
 
 
 # -- ABI (joinBatch, totalAssets, idleUSDC) -----------------------------------
@@ -58,6 +68,7 @@ strategy_mod = importlib.import_module(f"strategies.{STRATEGY}")
 w3 = Web3(Web3.HTTPProvider(L3_RPC_URL))
 account = Account.from_key(MANAGER_PRIVATE_KEY)
 vault = w3.eth.contract(address=VAULT_ADDRESS, abi=VISION_VAULT_ABI)
+vision = w3.eth.contract(address=VISION_ADDRESS, abi=VISION_ABI)
 
 
 def encode_bitmap(bets: list[bool]) -> bytes:
@@ -88,16 +99,27 @@ def send_tx(fn_call) -> str:
 
 
 def fetch_active_batch() -> dict | None:
+    """Combine on-chain Vision.latestBatchForSource with the data-node config."""
     try:
+        batch_id = vision.functions.latestBatchForSource(SOURCE_ID_BYTES32).call()
+        if batch_id == 0:
+            return None
         r = requests.get(
-            f"{DATA_NODE_BASE}/vision/batches/active",
-            params={"source_id": SOURCE_ID},
+            f"{DATA_NODE_BASE}/batches/source/{SOURCE_ID}/config",
             timeout=10,
         )
         if not r.ok:
             return None
-        return r.json()
-    except requests.RequestException:
+        cfg = r.json()
+        markets = cfg.get("markets") or []
+        market_ids = [m["assetId"] if isinstance(m, dict) else m for m in markets]
+        return {
+            "batchId": batch_id,
+            "configHash": cfg.get("configHash"),
+            "market_ids": market_ids,
+        }
+    except Exception as e:
+        print(f"[fetch_err] {type(e).__name__}: {e}", flush=True)
         return None
 
 
