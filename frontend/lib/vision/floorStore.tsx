@@ -223,10 +223,13 @@ export function FloorProvider({ children }: FloorProviderProps) {
   // Synth derivative — fold useBatches + useRounds deltas into tape/flow.
   // Runs every time the upstream queries refresh. Reads previous snapshot
   // from a ref so no extra renders.
+  const firstPollRef = useRef(true)
   useEffect(() => {
     if (batches.length === 0) return
     const now = Date.now()
     const prev = prevSnapshotRef.current
+    const isFirstPoll = firstPollRef.current
+    firstPollRef.current = false
     const roundByKey = new Map<string, (typeof rounds)[number]>()
     for (const r of rounds) roundByKey.set(`${r.sourceId}-${r.batchId}`, r)
 
@@ -242,7 +245,48 @@ export function FloorProvider({ children }: FloorProviderProps) {
       }
       const before = prev.get(b.sourceId)
       prev.set(b.sourceId, cur)
-      if (!before) continue
+      // On the very first poll, soft-seed: treat the current TVL as a delta
+      // from zero so the flow pane wakes up immediately instead of waiting
+      // for the next round of activity. Skip batches with no TVL.
+      if (!before) {
+        if (isFirstPoll && cur.tvl > 0n) {
+          const seed: PrevSnapshot = {
+            batchId: cur.batchId,
+            tvl: 0n,
+            status: cur.status,
+            marketCount: cur.marketCount,
+          }
+          // Fall through with the soft baseline
+          const synthBefore = seed
+          const delta = cur.tvl - synthBefore.tvl
+          if (delta > 0n) {
+            const n = Math.min(
+              MAX_SYNTH_FLOW_PER_DELTA,
+              Math.max(1, Number(delta / AVG_BET_USDC) || 1),
+            )
+            const perRow = delta / BigInt(n)
+            for (let i = 0; i < n; i++) {
+              synthSeqRef.current += 1
+              const upRatio = 40 + Math.floor(Math.random() * 21)
+              const up = (perRow * BigInt(upRatio)) / 100n
+              const down = perRow - up
+              newFlow.push({
+                id: `synth-flow-${b.sourceId}-${b.id}-${synthSeqRef.current}`,
+                batchId: b.id,
+                sourceId: b.sourceId,
+                assetId: '·',
+                upStakeStr: up.toString(),
+                downStakeStr: down.toString(),
+                pctChangeBps: 0,
+                outcome: Math.random() > 0.5 ? 'Up' : 'Down',
+                displayedAt: 0,
+                synthetic: true,
+              })
+            }
+          }
+        }
+        continue
+      }
 
       // Batch rolled forward → previous one settled. Emit a synthetic tape row.
       if (before.batchId !== cur.batchId) {
