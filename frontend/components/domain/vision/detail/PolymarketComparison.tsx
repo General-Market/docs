@@ -134,6 +134,7 @@ export function PolymarketComparison() {
 
   const [sortKey, setSortKey] = useState<SortKey>('leverageGap')
   const [winnerOnly, setWinnerOnly] = useState(true)
+  const now = useNow(data?.generatedAt ?? null)
 
   const rows = useMemo(() => {
     if (!data?.markets) return []
@@ -174,7 +175,6 @@ export function PolymarketComparison() {
   }
 
   const { batch, summary } = data
-  const now = useNow(data.generatedAt)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
