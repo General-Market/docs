@@ -3008,7 +3008,7 @@
       "color": "#F0B90B",
       "fee": 1000,
       "category": "Crypto",
-      "vault": "0x9559F4c326dB2587F21A27406ae566D6176938F3"
+      "vault": "0xA060331cECBC546d940a9372264B644256c6574C"
     },
     {
       "name": "Binance Spot Reversion 5",
@@ -3020,7 +3020,7 @@
       "color": "#F0B90B",
       "fee": 1000,
       "category": "Crypto",
-      "vault": "0xCF33EF8faac308BB2c83D7B1601DABD93Bc3aFAC"
+      "vault": "0xdA22bfd4781b84900949e38B090F30aC4d044f99"
     },
     {
       "name": "Binance Spot Momentum 20",
@@ -3032,7 +3032,7 @@
       "color": "#F0B90B",
       "fee": 1000,
       "category": "Crypto",
-      "vault": "0xeDe37625a58095b09ca4DD176a33fDec663Ca14A"
+      "vault": "0xE3034595dC7f20C9073bdDBb40e2f590e8F10c0B"
     },
     {
       "name": "Binance Spot Reversion 20",
@@ -3044,7 +3044,7 @@
       "color": "#F0B90B",
       "fee": 1000,
       "category": "Crypto",
-      "vault": "0x7C0291bF7D7a3370e4B3a73ff5472c5394Ef935c"
+      "vault": "0x3303288675E02463307983EAABf338556839e8E2"
     },
     {
       "name": "Binance Funding Reversion",
@@ -3056,7 +3056,7 @@
       "color": "#F0B90B",
       "fee": 1000,
       "category": "Crypto",
-      "vault": "0xE51d3aa074499346aA0924041487e8d29fFE3c36"
+      "vault": "0xF0373C3cCb1C847F1a985bD097d9b6eBC1a61791"
     },
     {
       "name": "Binance Funding Continuation",
@@ -3068,7 +3068,7 @@
       "color": "#F0B90B",
       "fee": 1000,
       "category": "Crypto",
-      "vault": "0x16823e49EeD18b9093Be60931DBBb3839abD2908"
+      "vault": "0x1dca99FB7aEdcC83a6Dca21DB94DEbF09fc985C1"
     },
     {
       "name": "Binance Funding Sign Flip",
@@ -3080,7 +3080,7 @@
       "color": "#F0B90B",
       "fee": 1000,
       "category": "Crypto",
-      "vault": "0xfDF9221C149039aA66E706046E12bfedc8BB08A0"
+      "vault": "0xd7ba442A3E593652452e5E76ffC11e8177574ba4"
     },
     {
       "name": "Binance Funding Extreme",
@@ -3092,7 +3092,7 @@
       "color": "#F0B90B",
       "fee": 1000,
       "category": "Crypto",
-      "vault": "0x65B1473BEd6863636E0f554B96743127170517bd"
+      "vault": "0x35459f84D905511AD9Fee5eC2fD696d5FF52EC30"
     },
     {
       "name": "Binance Options Momentum All",
@@ -3104,7 +3104,7 @@
       "color": "#F0B90B",
       "fee": 1000,
       "category": "Crypto",
-      "vault": "0x67424A872f1A27Ac48d55EE90f8f7218e2317251"
+      "vault": "0x7999208C85283A81498EBec2C5d77f3580936569"
     },
     {
       "name": "Binance Options Reversion All",
@@ -3116,7 +3116,7 @@
       "color": "#F0B90B",
       "fee": 1000,
       "category": "Crypto",
-      "vault": "0x208a74D487123E35668f9BdE72C25dd35A2FafAE"
+      "vault": "0x37Fd6C653a898813dA2502a109b4522dE6C67139"
     },
     {
       "name": "Binance Options Calls Momentum",
@@ -3128,7 +3128,7 @@
       "color": "#F0B90B",
       "fee": 1000,
       "category": "Crypto",
-      "vault": "0x809A471DF3CE95163e8953d589B4fF1aC8b25518"
+      "vault": "0xaC69dA53f54Dc3BCBaD381648cec9D3681BE0f3A"
     },
     {
       "name": "Binance Options Puts Momentum",
@@ -3140,7 +3140,7 @@
       "color": "#F0B90B",
       "fee": 1000,
       "category": "Crypto",
-      "vault": "0xa0777dcc284f12C5aCE8d70b8402C1A6eEE6B4ae"
+      "vault": "0xC57853C7B0CEE30048639ddB832916d917DA4210"
     }
   ]
 }
