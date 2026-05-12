@@ -25,7 +25,8 @@
     "SettlementBridgeProxy": "0x19d9F7A778A30f8a73158Be5028C19571D9102d5",
     "SettlementOracleRegistry": "0x4AD1A55078075ae4551eb2105b1f3dB9729c2f6a",
     "SettlementBridgedItpFactory": "0xC7f7A091201e613d24A185166846fB2f3cfbC410",
-    "L3BridgeProxy": "0x9395cDfbb0ff99d2400471c4515B1893e6699CFB"
+    "L3BridgeProxy": "0x9395cDfbb0ff99d2400471c4515B1893e6699CFB",
+    "VisionReconciler": "0xfee75222Bb00337135341ce543D5612B31FE20c6"
   },
   "accounts": {
     "admin": "0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4",
