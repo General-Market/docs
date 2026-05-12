@@ -1,0 +1,121 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 600" width="980" height="600" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-opacity="0.03"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="980" height="600" fill="white"/>
+
+  <!-- Decorative circles -->
+  <circle cx="90" cy="540" r="170" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="920" cy="100" r="150" fill="#0A0A0A" opacity="0.02"/>
+
+  <!-- ==================== LANE HEADERS ==================== -->
+  <!-- Player pill -->
+  <rect x="40" y="28" width="280" height="40" rx="14" fill="#0A0A0A" fill-opacity="0.03"/>
+  <text x="180" y="53" text-anchor="middle" fill="#0A0A0A" font-size="12" font-weight="600">PLAYER</text>
+
+  <!-- Vision.sol pill — warm -->
+  <rect x="350" y="28" width="280" height="40" rx="14" fill="#FFFBEB"/>
+  <text x="490" y="53" text-anchor="middle" fill="#92400E" font-size="12" font-weight="600">VISION.SOL</text>
+
+  <!-- Oracles pill — dark -->
+  <rect x="660" y="28" width="280" height="40" rx="14" fill="url(#darkGrad)"/>
+  <text x="800" y="53" text-anchor="middle" fill="white" font-size="12" font-weight="600">ORACLES (3×)</text>
+
+  <!-- Vertical lane lines -->
+  <line x1="180" y1="76" x2="180" y2="470" stroke="#0A0A0A" stroke-opacity="0.06" stroke-width="1" stroke-dasharray="4,4"/>
+  <line x1="490" y1="76" x2="490" y2="470" stroke="#0A0A0A" stroke-opacity="0.06" stroke-width="1" stroke-dasharray="4,4"/>
+  <line x1="800" y1="76" x2="800" y2="470" stroke="#0A0A0A" stroke-opacity="0.06" stroke-width="1" stroke-dasharray="4,4"/>
+
+  <!-- ==================== ROW 1 — ENCODE ==================== -->
+  <!-- Card 1: Choose -->
+  <rect x="68" y="90" width="224" height="36" rx="8" fill="#0A0A0A" fill-opacity="0.03"/>
+  <text x="180" y="113" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.5">Choose UP/DOWN per market</text>
+
+  <!-- Curved connector between cards -->
+  <path d="M180,126 C180,136 180,136 180,146" stroke="#0A0A0A" stroke-opacity="0.12" stroke-width="1" fill="none"/>
+  <circle cx="180" cy="136" r="2" fill="#0A0A0A" opacity="0.15"/>
+
+  <!-- Card 2: Encode -->
+  <rect x="68" y="146" width="224" height="50" rx="8" fill="#0A0A0A" fill-opacity="0.03"/>
+  <text x="180" y="167" text-anchor="middle" fill="#0A0A0A" font-size="12" font-weight="600">Encode bitmap</text>
+  <text x="180" y="184" text-anchor="middle" fill="#0A0A0A" font-size="10" font-family="'SF Mono', 'Fira Code', monospace" opacity="0.4">hash = keccak256(bitmap)</text>
+
+  <!-- ==================== ROW 2 — COMMIT ==================== -->
+  <!-- Curved horizontal arrow: Player → Vision.sol -->
+  <path d="M292,220 C360,220 380,220 420,220" stroke="#0A0A0A" stroke-opacity="0.12" stroke-width="1.2" fill="none"/>
+  <circle cx="292" cy="220" r="3" fill="#0A0A0A" opacity="0.2"/>
+  <path d="M416,216 L424,220 L416,224" fill="#0A0A0A" opacity="0.15"/>
+
+  <!-- Floating label on arrow -->
+  <text x="356" y="212" text-anchor="middle" fill="#0A0A0A" font-size="9" font-family="'SF Mono', 'Fira Code', monospace" opacity="0.3">updateBitmap(hash)</text>
+
+  <!-- Vision.sol lane card — warm -->
+  <rect x="428" y="206" width="224" height="36" rx="8" fill="#FFFBEB"/>
+  <text x="540" y="229" text-anchor="middle" fill="#92400E" font-size="11">Hash stored immutably on-chain</text>
+
+  <!-- Far right annotation -->
+  <text x="920" y="228" text-anchor="end" fill="#0A0A0A" font-size="10" opacity="0.25">Bets remain hidden</text>
+
+  <!-- ==================== ROW 3 — REVEAL ==================== -->
+  <!-- Curved arrow: Player → Oracles -->
+  <path d="M292,290 C480,290 580,290 730,290" stroke="#0A0A0A" stroke-opacity="0.12" stroke-width="1.2" fill="none"/>
+  <circle cx="292" cy="290" r="3" fill="#0A0A0A" opacity="0.2"/>
+  <path d="M726,286 L734,290 L726,294" fill="#0A0A0A" opacity="0.15"/>
+
+  <!-- Label on arrow -->
+  <text x="510" y="282" text-anchor="middle" fill="#0A0A0A" font-size="9" font-family="'SF Mono', 'Fira Code', monospace" opacity="0.3">POST /vision/bitmap</text>
+
+  <!-- Player lane: small encode reminder card -->
+  <rect x="68" y="272" width="224" height="36" rx="8" fill="#0A0A0A" fill-opacity="0.02"/>
+  <text x="180" y="295" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.35">Reveals raw bitmap</text>
+
+  <!-- Oracles lane card -->
+  <rect x="688" y="270" width="224" height="50" rx="8" fill="#0A0A0A" fill-opacity="0.03"/>
+  <text x="800" y="291" text-anchor="middle" fill="#0A0A0A" font-size="12" font-weight="600">Verify:</text>
+  <text x="800" y="308" text-anchor="middle" fill="#0A0A0A" font-size="10" font-family="'SF Mono', 'Fira Code', monospace" opacity="0.5">keccak256(revealed) == on-chain hash</text>
+
+  <!-- ==================== ROW 4 — OUTCOMES ==================== -->
+  <!-- Single curved line down from verify card -->
+  <path d="M800,320 C800,340 800,345 800,355" stroke="#0A0A0A" stroke-opacity="0.12" stroke-width="1" fill="none"/>
+
+  <!-- Match card — emerald border -->
+  <rect x="688" y="355" width="224" height="46" rx="8" fill="white" stroke="#10B981" stroke-width="1.5" filter="url(#shadow)"/>
+  <circle cx="706" cy="373" r="3" fill="#10B981"/>
+  <text x="718" y="377" fill="#10B981" font-size="12" font-weight="600">Match</text>
+  <text x="718" y="393" fill="#0A0A0A" font-size="11" opacity="0.5">Stored in PENDING slot</text>
+
+  <!-- Line between match/mismatch -->
+  <path d="M800,401 C800,410 800,412 800,418" stroke="#0A0A0A" stroke-opacity="0.08" stroke-width="1" fill="none"/>
+
+  <!-- Mismatch card — red border -->
+  <rect x="688" y="418" width="224" height="46" rx="8" fill="white" stroke="#EF4444" stroke-width="1.5" filter="url(#shadow)"/>
+  <!-- Red × -->
+  <line x1="703" y1="433" x2="709" y2="439" stroke="#EF4444" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="709" y1="433" x2="703" y2="439" stroke="#EF4444" stroke-width="1.5" stroke-linecap="round"/>
+  <text x="718" y="440" fill="#EF4444" font-size="12" font-weight="600">Mismatch</text>
+  <text x="718" y="456" fill="#0A0A0A" font-size="11" opacity="0.5">Rejected</text>
+
+  <!-- ==================== BOTTOM SECTION ==================== -->
+  <line x1="40" y1="490" x2="940" y2="490" stroke="#0A0A0A" stroke-opacity="0.06" stroke-width="1"/>
+
+  <!-- Frontend Strategy card -->
+  <rect x="40" y="510" width="420" height="60" rx="12" fill="#0A0A0A" fill-opacity="0.03" filter="url(#shadow)"/>
+  <text x="60" y="536" fill="#0A0A0A" font-size="13" font-weight="600">Frontend Strategy</text>
+  <text x="60" y="554" fill="#0A0A0A" font-size="11" opacity="0.5">Commit + reveal immediately. Simpler UX.</text>
+
+  <!-- Bot Strategy card -->
+  <rect x="484" y="510" width="420" height="60" rx="12" fill="#0A0A0A" fill-opacity="0.03" filter="url(#shadow)"/>
+  <text x="504" y="536" fill="#0A0A0A" font-size="13" font-weight="600">Bot Strategy</text>
+  <text x="504" y="554" fill="#0A0A0A" font-size="11" opacity="0.5">Commit early, reveal near boundary. Max privacy.</text>
+
+  <!-- Center note -->
+  <text x="490" y="590" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.3">Both equally secure — hash locks commitment</text>
+</svg>

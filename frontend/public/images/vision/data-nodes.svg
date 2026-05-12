@@ -1,0 +1,140 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="600" viewBox="0 0 960 600">
+  <defs>
+    <linearGradient id="darkGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="subtleShadow" x="-4%" y="-4%" width="108%" height="112%">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-color="#000" flood-opacity="0.03"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="960" height="600" fill="#FFFFFF"/>
+
+  <!-- ============================================ -->
+  <!-- EXTERNAL DATA SOURCES -->
+  <!-- ============================================ -->
+  <rect x="50" y="28" width="860" height="80" rx="12" fill="#0A0A0A" fill-opacity="0.03" filter="url(#subtleShadow)"/>
+  <text x="80" y="56" font-family="Inter, system-ui, sans-serif" font-size="10" font-weight="600" fill="#0A0A0A" opacity="0.4" letter-spacing="2">EXTERNAL DATA SOURCES</text>
+  <text x="80" y="80" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="400" fill="#0A0A0A" opacity="0.5">98+ APIs — CoinGecko  ·  Finnhub  ·  USGS  ·  NOAA  ·  TFL  ·  GitHub  ·  Steam</text>
+
+  <!-- 40px gap. Four thin lines with circle endpoints -->
+  <circle cx="155" cy="108" r="3" fill="#0A0A0A" opacity="0.15"/>
+  <line x1="155" y1="111" x2="155" y2="152" stroke="#0A0A0A" stroke-opacity="0.12" stroke-width="1"/>
+  <circle cx="155" cy="152" r="3" fill="#0A0A0A" opacity="0.15"/>
+
+  <circle cx="365" cy="108" r="3" fill="#0A0A0A" opacity="0.15"/>
+  <line x1="365" y1="111" x2="365" y2="152" stroke="#0A0A0A" stroke-opacity="0.12" stroke-width="1"/>
+  <circle cx="365" cy="152" r="3" fill="#0A0A0A" opacity="0.15"/>
+
+  <circle cx="575" cy="108" r="3" fill="#0A0A0A" opacity="0.15"/>
+  <line x1="575" y1="111" x2="575" y2="152" stroke="#0A0A0A" stroke-opacity="0.12" stroke-width="1"/>
+  <circle cx="575" cy="152" r="3" fill="#0A0A0A" opacity="0.15"/>
+
+  <circle cx="785" cy="108" r="3" fill="#0A0A0A" opacity="0.15"/>
+  <line x1="785" y1="111" x2="785" y2="152" stroke="#0A0A0A" stroke-opacity="0.12" stroke-width="1"/>
+  <circle cx="785" cy="152" r="3" fill="#0A0A0A" opacity="0.15"/>
+
+  <!-- ============================================ -->
+  <!-- DATA NODE ROW — four pill-shaped boxes -->
+  <!-- ============================================ -->
+
+  <!-- DN-1 — emerald accent -->
+  <rect x="50" y="160" width="190" height="60" rx="14" fill="#0A0A0A" fill-opacity="0.03"/>
+  <rect x="50" y="174" width="3" height="32" rx="1.5" fill="#10B981"/>
+  <text x="155" y="186" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="600" fill="#0A0A0A">DN-1</text>
+  <text x="155" y="206" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="10" font-weight="400" fill="#0A0A0A" opacity="0.4">Rust / PostgreSQL</text>
+
+  <!-- DN-2 — emerald accent -->
+  <rect x="260" y="160" width="190" height="60" rx="14" fill="#0A0A0A" fill-opacity="0.03"/>
+  <rect x="260" y="174" width="3" height="32" rx="1.5" fill="#10B981"/>
+  <text x="365" y="186" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="600" fill="#0A0A0A">DN-2</text>
+  <text x="365" y="206" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="10" font-weight="400" fill="#0A0A0A" opacity="0.4">Rust / PostgreSQL</text>
+
+  <!-- DN-3 — emerald accent -->
+  <rect x="470" y="160" width="190" height="60" rx="14" fill="#0A0A0A" fill-opacity="0.03"/>
+  <rect x="470" y="174" width="3" height="32" rx="1.5" fill="#10B981"/>
+  <text x="575" y="186" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="600" fill="#0A0A0A">DN-3</text>
+  <text x="575" y="206" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="10" font-weight="400" fill="#0A0A0A" opacity="0.4">Rust / PostgreSQL</text>
+
+  <!-- DN-Frontend — no emerald, slightly different fill -->
+  <rect x="680" y="160" width="230" height="60" rx="14" fill="#0A0A0A" fill-opacity="0.02"/>
+  <text x="785" y="186" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="600" fill="#0A0A0A">DN-Frontend</text>
+  <text x="785" y="206" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="10" font-weight="400" fill="#0A0A0A" opacity="0.4">Read-only</text>
+
+  <!-- 40px gap. Four lines with circle endpoints -->
+  <circle cx="155" cy="220" r="3" fill="#0A0A0A" opacity="0.15"/>
+  <line x1="155" y1="223" x2="155" y2="268" stroke="#0A0A0A" stroke-opacity="0.12" stroke-width="1"/>
+  <circle cx="155" cy="268" r="3" fill="#0A0A0A" opacity="0.15"/>
+
+  <circle cx="365" cy="220" r="3" fill="#0A0A0A" opacity="0.15"/>
+  <line x1="365" y1="223" x2="365" y2="268" stroke="#0A0A0A" stroke-opacity="0.12" stroke-width="1"/>
+  <circle cx="365" cy="268" r="3" fill="#0A0A0A" opacity="0.15"/>
+
+  <circle cx="575" cy="220" r="3" fill="#0A0A0A" opacity="0.15"/>
+  <line x1="575" y1="223" x2="575" y2="268" stroke="#0A0A0A" stroke-opacity="0.12" stroke-width="1"/>
+  <circle cx="575" cy="268" r="3" fill="#0A0A0A" opacity="0.15"/>
+
+  <circle cx="785" cy="220" r="3" fill="#0A0A0A" opacity="0.15"/>
+  <line x1="785" y1="223" x2="785" y2="268" stroke="#0A0A0A" stroke-opacity="0.12" stroke-width="1"/>
+  <circle cx="785" cy="268" r="3" fill="#0A0A0A" opacity="0.15"/>
+
+  <!-- ============================================ -->
+  <!-- DESTINATION ROW — four boxes -->
+  <!-- ============================================ -->
+
+  <!-- Oracle 1 -->
+  <rect x="50" y="276" width="190" height="60" rx="12" fill="#0A0A0A" fill-opacity="0.03"/>
+  <text x="155" y="302" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="600" fill="#0A0A0A">Oracle 1</text>
+  <text x="155" y="322" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="10" font-weight="400" fill="#0A0A0A" opacity="0.4">Rust / BLS signer</text>
+
+  <!-- Oracle 2 -->
+  <rect x="260" y="276" width="190" height="60" rx="12" fill="#0A0A0A" fill-opacity="0.03"/>
+  <text x="365" y="302" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="600" fill="#0A0A0A">Oracle 2</text>
+  <text x="365" y="322" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="10" font-weight="400" fill="#0A0A0A" opacity="0.4">Rust / BLS signer</text>
+
+  <!-- Oracle 3 -->
+  <rect x="470" y="276" width="190" height="60" rx="12" fill="#0A0A0A" fill-opacity="0.03"/>
+  <text x="575" y="302" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="600" fill="#0A0A0A">Oracle 3</text>
+  <text x="575" y="322" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="10" font-weight="400" fill="#0A0A0A" opacity="0.4">Rust / BLS signer</text>
+
+  <!-- Frontend + Bots -->
+  <rect x="680" y="276" width="230" height="60" rx="12" fill="#0A0A0A" fill-opacity="0.03"/>
+  <text x="785" y="302" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="600" fill="#0A0A0A">Frontend + Bots</text>
+  <text x="785" y="322" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="10" font-weight="400" fill="#0A0A0A" opacity="0.4">Next.js / Python</text>
+
+  <!-- 40px gap. Three curved lines from oracles converge to center -->
+  <!-- Left oracle curve -->
+  <path d="M155,336 Q155,380 365,394" stroke="#0A0A0A" stroke-opacity="0.12" stroke-width="1" fill="none"/>
+  <!-- Center oracle straight down -->
+  <line x1="365" y1="336" x2="365" y2="394" stroke="#0A0A0A" stroke-opacity="0.12" stroke-width="1"/>
+  <!-- Right oracle curve -->
+  <path d="M575,336 Q575,380 365,394" stroke="#0A0A0A" stroke-opacity="0.12" stroke-width="1" fill="none"/>
+
+  <!-- Convergence dot -->
+  <circle cx="365" cy="394" r="4" fill="#0A0A0A" opacity="0.2"/>
+
+  <!-- ============================================ -->
+  <!-- BLS AGGREGATE SIGNATURE — emerald pill (accent use) -->
+  <!-- ============================================ -->
+  <rect x="270" y="406" width="210" height="32" rx="16" fill="#10B981"/>
+  <text x="375" y="427" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="10" font-weight="600" fill="#FFFFFF" letter-spacing="2">BLS AGGREGATE SIGNATURE</text>
+
+  <!-- Curved line down to Vision.sol -->
+  <path d="M375,438 Q375,456 375,468" stroke="#0A0A0A" stroke-opacity="0.12" stroke-width="1" fill="none"/>
+  <circle cx="375" cy="468" r="3" fill="#0A0A0A" opacity="0.2"/>
+
+  <!-- ============================================ -->
+  <!-- VISION.SOL — dark gradient box -->
+  <!-- ============================================ -->
+  <rect x="225" y="476" width="300" height="68" rx="12" fill="url(#darkGrad)"/>
+  <text x="375" y="506" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="16" font-weight="700" fill="#FFFFFF">Vision.sol</text>
+  <text x="375" y="528" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="400" fill="#FFFFFF" opacity="0.5">L3 Orbit  ·  On-chain settlement</text>
+
+  <!-- ============================================ -->
+  <!-- Footer -->
+  <!-- ============================================ -->
+  <text x="480" y="580" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="10" font-weight="400" fill="#0A0A0A" opacity="0.3">Each data node polls sources independently. Byzantine fault tolerance: 2/3 must agree.</text>
+
+</svg>
