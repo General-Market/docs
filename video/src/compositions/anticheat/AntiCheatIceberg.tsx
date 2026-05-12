@@ -79,15 +79,25 @@ const LAST = N - 1;
 // without an external asset. Order goes from the smallest device to the
 // most institutional setting; the active tier on the iceberg lights up
 // the matching card on the right.
-type TradingTier = { glyph: string; label: string };
+// Each tier has an imageSrc (path under /public, resolved via staticFile)
+// and a glyph fallback that renders if the image is missing. Images are
+// pulled from Wikimedia Commons (CC BY / CC BY-SA / CC0 / public domain)
+// and Pexels (free-use). Credits live in CREDITS.md.
+type TradingTier = { imageSrc: string; glyph: string; label: string };
 
 const TRADING_TIERS: TradingTier[] = [
-  { glyph: "📱", label: "you, on your phone" },
-  { glyph: "💻", label: "prosumer at the desk" },
-  { glyph: "🖥️", label: "prop firm" },
-  { glyph: "🏛️", label: "trading floor" },
-  { glyph: "🏦", label: "hedge fund" },
-  { glyph: "🏢", label: "investment bank" },
+  // T0 — smartphone with stock chart, Pexels, by StockRadars Co.
+  { imageSrc: "anticheat-imgs/trader-0.jpg", glyph: "📱", label: "you, on your phone" },
+  // T1 — Bloomberg Terminal + keyboard, Wikimedia, CC0
+  { imageSrc: "anticheat-imgs/trader-1.jpg", glyph: "💻", label: "prosumer at the desk" },
+  // T2 — Satori Traders LLC trade desk, Wikimedia, CC BY-SA 4.0
+  { imageSrc: "anticheat-imgs/trader-2.png", glyph: "🖥️", label: "prop firm" },
+  // T3 — NYSE Advanced Trading Floor, Wikimedia, CC BY-SA 3.0
+  { imageSrc: "anticheat-imgs/trader-3.jpg", glyph: "🏛️", label: "trading floor" },
+  // T4 — A1 Houston Office oil traders, Wikimedia, public domain
+  { imageSrc: "anticheat-imgs/trader-4.jpg", glyph: "🏦", label: "hedge fund" },
+  // T5 — NYSE building exterior, Wikimedia, CC BY 3.0 (Jean-Christophe BENOIST)
+  { imageSrc: "anticheat-imgs/trader-5.jpg", glyph: "🏢", label: "investment bank" },
 ];
 
 const EASE_OUT = Easing.bezier(0.25, 0.1, 0.3, 1);
@@ -331,33 +341,45 @@ const TradingTierStrip: React.FC<{
                 ? "0 12px 36px rgba(0,0,0,0.6), 0 0 28px rgba(255,255,255,0.18)"
                 : "0 6px 16px rgba(0,0,0,0.45)",
               background: "rgba(8, 12, 22, 0.82)",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "8px 10px",
-              gap: 6,
+              overflow: "hidden",
+              position: "relative",
             }}
           >
-            <div
+            {/* Photograph fills the card; label rides on a gradient strip
+                across the bottom so it stays readable. Glyph is kept in
+                the data as a fallback but isn't rendered when the image
+                loads — Remotion's <Img> errors loudly if the file is
+                missing, so an absent asset is visible immediately. */}
+            <Img
+              src={staticFile(tt.imageSrc)}
               style={{
-                fontSize: 52,
-                lineHeight: 1,
-                filter: isActive ? "none" : "saturate(0.7)",
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                filter: isActive
+                  ? "saturate(1.05)"
+                  : "saturate(0.75) brightness(0.8)",
               }}
-            >
-              {tt.glyph}
-            </div>
+            />
             <div
               style={{
+                position: "absolute",
+                left: 0,
+                right: 0,
+                bottom: 0,
+                padding: "16px 12px 8px",
+                background:
+                  "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.86) 100%)",
                 fontFamily: font,
                 fontSize: 14,
                 fontWeight: 600,
-                color: isActive ? "#FFFFFF" : "rgba(255,255,255,0.72)",
+                color: isActive ? "#FFFFFF" : "rgba(255,255,255,0.82)",
                 letterSpacing: "-0.01em",
                 textAlign: "center",
                 lineHeight: 1.2,
-                textShadow: "0 1px 4px rgba(0,0,0,0.85)",
+                textShadow: "0 1px 4px rgba(0,0,0,0.95)",
               }}
             >
               {tt.label}
