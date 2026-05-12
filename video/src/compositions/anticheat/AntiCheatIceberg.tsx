@@ -75,6 +75,21 @@ export const TIERS: Tier[] = [
 const N = TIERS.length;
 const LAST = N - 1;
 
+// Galaxy-brain trading-tier strip — emoji glyphs so every card renders
+// without an external asset. Order goes from the smallest device to the
+// most institutional setting; the active tier on the iceberg lights up
+// the matching card on the right.
+type TradingTier = { glyph: string; label: string };
+
+const TRADING_TIERS: TradingTier[] = [
+  { glyph: "📱", label: "you, on your phone" },
+  { glyph: "💻", label: "prosumer at the desk" },
+  { glyph: "🖥️", label: "prop firm" },
+  { glyph: "🏛️", label: "trading floor" },
+  { glyph: "🏦", label: "hedge fund" },
+  { glyph: "🏢", label: "investment bank" },
+];
+
 const EASE_OUT = Easing.bezier(0.25, 0.1, 0.3, 1);
 const EASE_DEFAULT = Easing.bezier(0.4, 0, 0.6, 1);
 
@@ -230,12 +245,146 @@ export const AntiCheatIceberg: React.FC = () => {
         />
       )}
 
+      {/* Trading-tier strip — galaxy-brain progression of who's on the
+          other side of each trade. Floats on the right of the frame and
+          fades in once the zoom-out completes. */}
+      <TradingTierStrip activeTier={activeTier} state={state} />
+
       {/* Source citation — bottom-left, mono, only if the active tier has
           a `source`. */}
       {activeTier >= 0 && TIERS[activeTier].source && (
         <SourceCitation url={TIERS[activeTier].source!} state={state} />
       )}
     </AbsoluteFill>
+  );
+};
+
+// ─── Trading-tier strip ───────────────────────────────────────────────────────
+//
+// Six emoji-glyph cards stacked vertically on the right edge of the frame,
+// overlaying the iceberg's dark water/sky margin. Active card scales up,
+// brightens, and gains a white border + glow.
+
+const STRIP_RIGHT_INSET = 40;
+const STRIP_WIDTH = 240;
+const STRIP_TOP = 40;
+const STRIP_BOTTOM = 1040;
+const STRIP_HEIGHT = STRIP_BOTTOM - STRIP_TOP;
+const CARD_GAP = 8;
+const CARD_HEIGHT = (STRIP_HEIGHT - (N - 1) * CARD_GAP) / N;
+
+const TradingTierStrip: React.FC<{
+  activeTier: number;
+  state: State;
+}> = ({ activeTier, state }) => {
+  // Strip fades in over the first half of T0's anim window so it doesn't
+  // compete with the zoom-out.
+  let stripOpacity = 0;
+  if (state.phase === "tier") {
+    if (state.tier === 0 && state.sub === "anim") {
+      stripOpacity = interpolate(state.t, [0, 1], [0, 1], {
+        easing: EASE_OUT,
+        extrapolateLeft: "clamp",
+        extrapolateRight: "clamp",
+      });
+    } else {
+      stripOpacity = 1;
+    }
+  }
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        right: STRIP_RIGHT_INSET,
+        top: STRIP_TOP,
+        width: STRIP_WIDTH,
+        height: STRIP_HEIGHT,
+        opacity: stripOpacity,
+        display: "flex",
+        flexDirection: "column",
+        gap: CARD_GAP,
+        pointerEvents: "none",
+        willChange: "opacity",
+      }}
+    >
+      {TRADING_TIERS.map((tt, i) => {
+        const isActive = i === activeTier;
+        const isPassed = activeTier > i;
+        const cardScale = isActive ? 1.04 : 0.94;
+        const cardOpacity = isActive ? 1 : isPassed ? 0.62 : 0.42;
+        return (
+          <div
+            key={i}
+            style={{
+              width: "100%",
+              height: CARD_HEIGHT,
+              transform: `scale(${cardScale})`,
+              transformOrigin: "right center",
+              opacity: cardOpacity,
+              transition: "transform 120ms ease, opacity 120ms ease",
+              borderRadius: 14,
+              border: isActive
+                ? "2px solid rgba(255,255,255,0.85)"
+                : "1px solid rgba(255,255,255,0.18)",
+              boxShadow: isActive
+                ? "0 12px 36px rgba(0,0,0,0.6), 0 0 28px rgba(255,255,255,0.18)"
+                : "0 6px 16px rgba(0,0,0,0.45)",
+              background: "rgba(8, 12, 22, 0.82)",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "8px 10px",
+              gap: 6,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 52,
+                lineHeight: 1,
+                filter: isActive ? "none" : "saturate(0.7)",
+              }}
+            >
+              {tt.glyph}
+            </div>
+            <div
+              style={{
+                fontFamily: font,
+                fontSize: 14,
+                fontWeight: 600,
+                color: isActive ? "#FFFFFF" : "rgba(255,255,255,0.72)",
+                letterSpacing: "-0.01em",
+                textAlign: "center",
+                lineHeight: 1.2,
+                textShadow: "0 1px 4px rgba(0,0,0,0.85)",
+              }}
+            >
+              {tt.label}
+            </div>
+            {isActive && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: 6,
+                  right: 8,
+                  fontFamily: monoFont,
+                  fontSize: 10,
+                  letterSpacing: "0.14em",
+                  textTransform: "uppercase",
+                  color: "rgba(255,255,255,0.86)",
+                  background: "rgba(0,0,0,0.5)",
+                  padding: "2px 6px",
+                  borderRadius: 3,
+                }}
+              >
+                ↑ smarter
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
   );
 };
 
