@@ -7,6 +7,7 @@ import {
 import { FPS, H, W, colors } from "./theme";
 import { antiCheatHookMeta } from "./AntiCheatHook";
 import { antiCheatStatMeta, antiCheatBarsMeta } from "./AntiCheatStat";
+import { antiCheatIcebergMeta } from "./AntiCheatIceberg";
 import { antiCheatRiggedMeta } from "./AntiCheatRigged";
 import { antiCheatSolutionMeta } from "./AntiCheatSolution";
 import { antiCheatReassureMeta } from "./AntiCheatReassure";
@@ -30,8 +31,9 @@ import { MUSIC_START_FROM_AUDIO } from "./beats";
 // Tightened pass: shorter durations, smaller magnitudes, less blur.
 // Cuts now snap instead of swelling.
 //
-//   Hook → Bars         snap-zoom in        18f
-//   Bars → Rigged       HARD CUT
+//   Hook → Bars         snap-zoom in        15f
+//   Bars → Iceberg      soft snap           18f
+//   Iceberg → Rigged    snap-zoom intense   16f
 //   Rigged → Stat       snap-zoom intense   16f
 //   Stat → Solution     snap-zoom out + veil 28f
 //   Solution → Reassure soft snap           18f
@@ -41,6 +43,8 @@ import { MUSIC_START_FROM_AUDIO } from "./beats";
 // bottom while Bars slides in from the top, like both lived stacked
 // on the same canvas.
 const T_HOOK_BARS = 15;
+const T_BARS_ICEBERG = 18;
+const T_ICEBERG_RIGGED = 16;
 const T_RIGGED_STAT = 16;
 const T_STAT_SOLUTION = 28;
 const T_SOLUTION_REASSURE = 18;
@@ -49,6 +53,8 @@ const T_BRIDGE_END = 24;
 
 const TRANSITION_FRAMES =
   T_HOOK_BARS +
+  T_BARS_ICEBERG +
+  T_ICEBERG_RIGGED +
   T_RIGGED_STAT +
   T_STAT_SOLUTION +
   T_SOLUTION_REASSURE +
@@ -58,6 +64,7 @@ const TRANSITION_FRAMES =
 const TOTAL_FRAMES =
   antiCheatHookMeta.durationInFrames +
   antiCheatBarsMeta.durationInFrames +
+  antiCheatIcebergMeta.durationInFrames +
   antiCheatRiggedMeta.durationInFrames +
   antiCheatStatMeta.durationInFrames +
   antiCheatSolutionMeta.durationInFrames +
@@ -128,7 +135,25 @@ export const AntiCheatFull: React.FC = () => {
           <antiCheatBarsMeta.component />
         </TransitionSeries.Sequence>
 
-        {/* Bars → Rigged: held hard cut. The bars are the verdict. */}
+        {/* Bars → Iceberg: soft snap into the descent. The verdict landed,
+            now we descend through the reasons. */}
+        <TransitionSeries.Transition
+          presentation={snapZoomSoft()}
+          timing={linearTiming({ durationInFrames: T_BARS_ICEBERG })}
+        />
+
+        <TransitionSeries.Sequence
+          durationInFrames={antiCheatIcebergMeta.durationInFrames}
+        >
+          <antiCheatIcebergMeta.component />
+        </TransitionSeries.Sequence>
+
+        {/* Iceberg → Rigged: snap-zoom intense. "Insider traders" hits
+            red, then "Everyone is rigged" lands as the evidence. */}
+        <TransitionSeries.Transition
+          presentation={snapZoomIntense()}
+          timing={linearTiming({ durationInFrames: T_ICEBERG_RIGGED })}
+        />
 
         <TransitionSeries.Sequence
           durationInFrames={antiCheatRiggedMeta.durationInFrames}

@@ -130,6 +130,7 @@ import {
   antiCheatBarsMeta,
 } from "./compositions/anticheat/AntiCheatStat";
 import { antiCheatRiggedMeta } from "./compositions/anticheat/AntiCheatRigged";
+import { antiCheatIcebergMeta } from "./compositions/anticheat/AntiCheatIceberg";
 import { antiCheatSolutionMeta } from "./compositions/anticheat/AntiCheatSolution";
 import { antiCheatReassureMeta } from "./compositions/anticheat/AntiCheatReassure";
 import { antiCheatBridgeMeta } from "./compositions/anticheat/AntiCheatBridge";
@@ -166,6 +167,7 @@ export const RemotionRoot: React.FC = () => {
         {[
           antiCheatHookMeta,
           antiCheatBarsMeta,
+          antiCheatIcebergMeta,
           antiCheatRiggedMeta,
           antiCheatStatMeta,
           antiCheatSolutionMeta,
