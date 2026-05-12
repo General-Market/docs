@@ -1,6 +1,6 @@
 {
-  "vision": "0x94d540bb45975bd5a0c7ba9a15a0d34e378f6c61",
-  "batchCount": 47,
+  "vision": "0x36a28967544c301a3C66dcFB6c6c90e548412693",
+  "batchCount": 50,
   "batches": {
     "defi": {
       "batchId": 0,
@@ -283,6 +283,27 @@
       "configHash": "0x32f6ae549d62f34082a680773ae10dbc49817c9169753558bafce37e958fb687",
       "tickDuration": 300,
       "lockOffset": 0
+    },
+    "binance_spot": {
+      "batchId": 23027,
+      "configHash": "0x6a1845901b1b4193eb2029908e725a0ef59b86499d90c5e76d56e84d13c0b0c7",
+      "tickDuration": 300,
+      "lockOffset": 0,
+      "settlementGrace": 600
+    },
+    "binance_futures_funding": {
+      "batchId": 23028,
+      "configHash": "0x750ba3ec2d29f23dc5cd8acfae81f4eb3d717703efbea3018acda58e2116422f",
+      "tickDuration": 300,
+      "lockOffset": 0,
+      "settlementGrace": 600
+    },
+    "binance_options": {
+      "batchId": 23029,
+      "configHash": "0xb66b5a79e03118dc3eec4d58d8b1049e6020271f277c351191a8fe68e86b1cb8",
+      "tickDuration": 300,
+      "lockOffset": 0,
+      "settlementGrace": 600
     }
   }
 }
