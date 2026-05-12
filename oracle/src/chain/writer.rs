@@ -77,6 +77,18 @@ pub type SignerClient = SignerMiddleware<Provider<Http>, LocalWallet>;
 /// - Nonce management for concurrent submissions
 /// - Gas estimation with configurable multiplier
 /// - Retry logic with exponential backoff
+/// One unit of a `settleBatches` bundle. Each item carries its own BLS proof
+/// so on-chain consensus semantics match the per-batch path exactly.
+#[derive(Debug, Clone)]
+pub struct SettleBatchItem {
+    pub batch_id: u64,
+    pub players: Vec<Address>,
+    pub payouts: Vec<U256>,
+    pub bls_sig: Vec<u8>,
+    pub ref_nonce: u64,
+    pub signers_bitmask: U256,
+}
+
 pub struct EthersChainWriter {
     /// Signer middleware (provider + wallet)
     client: Arc<SignerClient>,
@@ -678,6 +690,119 @@ impl EthersChainWriter {
 
         let tx = self.build_settle_batch_tx(batch_id, &players, &payouts, &bls_sig, ref_nonce, signers_bitmask);
         self.submit_tx(tx, "settle_batch").await
+    }
+
+    /// Build a settleBatches transaction.
+    ///
+    /// Encodes: Vision.settleBatches(uint256[], address[][], uint256[][], bytes[],
+    ///                               uint256[], uint256[])
+    fn build_settle_batches_tx(&self, items: &[SettleBatchItem]) -> TypedTransaction {
+        let function = ethers::abi::Function {
+            name: "settleBatches".to_string(),
+            inputs: vec![
+                ethers::abi::Param {
+                    name: "batchIds".to_string(),
+                    kind: ethers::abi::ParamType::Array(Box::new(ethers::abi::ParamType::Uint(256))),
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "players".to_string(),
+                    kind: ethers::abi::ParamType::Array(Box::new(
+                        ethers::abi::ParamType::Array(Box::new(ethers::abi::ParamType::Address)),
+                    )),
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "payouts".to_string(),
+                    kind: ethers::abi::ParamType::Array(Box::new(
+                        ethers::abi::ParamType::Array(Box::new(ethers::abi::ParamType::Uint(256))),
+                    )),
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "blsSignatures".to_string(),
+                    kind: ethers::abi::ParamType::Array(Box::new(ethers::abi::ParamType::Bytes)),
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "referenceNonces".to_string(),
+                    kind: ethers::abi::ParamType::Array(Box::new(ethers::abi::ParamType::Uint(256))),
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "signersBitmasks".to_string(),
+                    kind: ethers::abi::ParamType::Array(Box::new(ethers::abi::ParamType::Uint(256))),
+                    internal_type: None,
+                },
+            ],
+            outputs: vec![],
+            #[allow(deprecated)]
+            constant: None,
+            state_mutability: ethers::abi::StateMutability::NonPayable,
+        };
+
+        let batch_ids = ethers::abi::Token::Array(
+            items.iter().map(|i| ethers::abi::Token::Uint(U256::from(i.batch_id))).collect(),
+        );
+        let players = ethers::abi::Token::Array(
+            items
+                .iter()
+                .map(|i| {
+                    ethers::abi::Token::Array(
+                        i.players.iter().map(|&a| ethers::abi::Token::Address(a)).collect(),
+                    )
+                })
+                .collect(),
+        );
+        let payouts = ethers::abi::Token::Array(
+            items
+                .iter()
+                .map(|i| {
+                    ethers::abi::Token::Array(
+                        i.payouts.iter().map(|&p| ethers::abi::Token::Uint(p)).collect(),
+                    )
+                })
+                .collect(),
+        );
+        let sigs = ethers::abi::Token::Array(
+            items
+                .iter()
+                .map(|i| ethers::abi::Token::Bytes(i.bls_sig.clone()))
+                .collect(),
+        );
+        let ref_nonces = ethers::abi::Token::Array(
+            items.iter().map(|i| ethers::abi::Token::Uint(U256::from(i.ref_nonce))).collect(),
+        );
+        let bitmasks = ethers::abi::Token::Array(
+            items.iter().map(|i| ethers::abi::Token::Uint(i.signers_bitmask)).collect(),
+        );
+
+        let calldata = function
+            .encode_input(&[batch_ids, players, payouts, sigs, ref_nonces, bitmasks])
+            .expect("ABI encoding should not fail");
+
+        Eip1559TransactionRequest::new()
+            .to(self.config.contracts.vision)
+            .data(calldata)
+            .into()
+    }
+
+    /// Submit a settleBatches transaction to Vision.sol on L3.
+    ///
+    /// One nonce, one tx header, N sub-settlements. Each item keeps its own BLS
+    /// signature — consensus protocol unchanged. The caller is responsible for
+    /// chunking by block gas; the contract enforces no upper bound on `items.len()`.
+    pub async fn settle_batches(&self, items: Vec<SettleBatchItem>) -> Result<TxHash, Error> {
+        if items.is_empty() {
+            return Err(Error::InvalidArgument("settle_batches: empty items".to_string()));
+        }
+        debug!(
+            count = items.len(),
+            batch_ids = ?items.iter().map(|i| i.batch_id).collect::<Vec<_>>(),
+            "Building settleBatches transaction"
+        );
+        let tx = self.build_settle_batches_tx(&items);
+        self.submit_tx(tx, "settle_batches").await
     }
 
     /// Call `VisionVault.reconcile(batchId, settlementPayout)` on each player address.

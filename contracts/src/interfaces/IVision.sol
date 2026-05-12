@@ -211,6 +211,19 @@ interface IVision {
         uint256 signersBitmask
     ) external;
 
+    /// @notice Bundle of `settleBatch` calls in one transaction.
+    /// @dev Each sub-settlement keeps its own BLS signature, reference nonce, and
+    ///      signers bitmask. Reverts on the first sub-failure — chunking is the
+    ///      caller's responsibility. One reentrancy guard covers the bundle.
+    function settleBatches(
+        uint256[] calldata batchIds,
+        address[][] calldata players,
+        uint256[][] calldata payouts,
+        bytes[] calldata blsSignatures,
+        uint256[] calldata referenceNonces,
+        uint256[] calldata signersBitmasks
+    ) external;
+
     /// @notice Timestamp after which the batch's settlement window closes and
     ///         deposits become refundable. Equals `(createdAtTick + 1) *
     ///         tickDuration + settlementGrace`.

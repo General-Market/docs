@@ -366,6 +366,56 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         uint256 referenceNonce,
         uint256 signersBitmask
     ) external nonReentrant {
+        _settleOne(batchId, players, payouts, blsSignature, referenceNonce, signersBitmask);
+    }
+
+    /// @inheritdoc IVision
+    /// @dev Bundles N settlements into one transaction. Each sub-settlement keeps
+    ///      its own BLS signature, refNonce, and signersBitmask — consensus is
+    ///      unchanged. The caller bears responsibility for chunking by block gas.
+    ///      One `nonReentrant` covers the whole bundle; sub-calls go through the
+    ///      same `_settleOne` path as `settleBatch`.
+    function settleBatches(
+        uint256[] calldata batchIds,
+        address[][] calldata players,
+        uint256[][] calldata payouts,
+        bytes[] calldata blsSignatures,
+        uint256[] calldata referenceNonces,
+        uint256[] calldata signersBitmasks
+    ) external nonReentrant {
+        uint256 n = batchIds.length;
+        if (n == 0) revert InvalidArrayLength();
+        if (
+            players.length != n
+            || payouts.length != n
+            || blsSignatures.length != n
+            || referenceNonces.length != n
+            || signersBitmasks.length != n
+        ) revert InvalidArrayLength();
+
+        for (uint256 i = 0; i < n; ++i) {
+            _settleOne(
+                batchIds[i],
+                players[i],
+                payouts[i],
+                blsSignatures[i],
+                referenceNonces[i],
+                signersBitmasks[i]
+            );
+        }
+    }
+
+    /// @notice Single-batch settle body. Verifies BLS once, validates solvency,
+    ///         transfers USDC, deletes positions. Shared by `settleBatch` and
+    ///         `settleBatches`. The outer entry holds the reentrancy guard.
+    function _settleOne(
+        uint256 batchId,
+        address[] calldata players,
+        uint256[] calldata payouts,
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
+    ) internal {
         Batch storage b = _batches[batchId];
         if (b.tickDuration == 0) revert BatchNotFound();
         if (b.settled) revert BatchAlreadySettled();

@@ -2093,6 +2093,54 @@ impl BatchLifecycleManager {
 
         info!(count = rows.len(), "Settlement recovery: found unsubmitted settlements");
 
+        // ── Bundled fast path ──────────────────────────────────────────────
+        // Parse every eligible row into a SettleBatchItem and try one
+        // `settleBatches` tx. On success we drain all of them in a single L3
+        // nonce. On failure (any sub-batch reverting causes the whole bundle
+        // to revert) we fall through to the per-batch loop below, which still
+        // handles AlreadySettled / WindowClosed / generic-retry per row.
+        if rows.len() >= 2 {
+            if let Some((items, metadata)) = self.parse_bundle_items(&rows, threshold as u32).await {
+                let ref_nonce = self.read_last_snapshot_nonce().await.unwrap_or(0);
+                let items_with_nonce: Vec<crate::chain::SettleBatchItem> = items
+                    .into_iter()
+                    .map(|mut it| { it.ref_nonce = ref_nonce; it })
+                    .collect();
+                let count = items_with_nonce.len();
+                info!(count, "Settlement recovery: attempting bundled settleBatches");
+                match writer.settle_batches(items_with_nonce).await {
+                    Ok(tx_hash) => {
+                        info!(count, tx = %tx_hash, "Settlement recovery: settleBatches succeeded");
+                        for (batch_id_u64, players, payouts) in metadata {
+                            let _ = sqlx::query(
+                                "UPDATE vision_settlement_proofs SET submitted = true, last_retry_at = NOW() WHERE batch_id = $1"
+                            )
+                            .bind(batch_id_u64 as i64)
+                            .execute(&self.pool)
+                            .await;
+                            if let Err(e) = self.scheduler.mark_settled(&self.pool, batch_id_u64).await {
+                                error!(batch_id = batch_id_u64, error = %e, "Settlement recovery (bundled): mark_settled failed");
+                            }
+                            if let Err(e) = self.bitmap_store.purge_batch_from_db(&self.pool, batch_id_u64).await {
+                                error!(batch_id = batch_id_u64, error = %e, "Settlement recovery (bundled): purge_batch_from_db failed");
+                            }
+                            writer.reconcile_vaults(batch_id_u64, &players, &payouts).await;
+                        }
+                        return;
+                    }
+                    Err(e) => {
+                        // Bundle reverted — fall through to per-batch retries so
+                        // each row gets its individual classification.
+                        warn!(
+                            count,
+                            error = %e,
+                            "Settlement recovery: bundled settleBatches failed — falling back to per-batch path"
+                        );
+                    }
+                }
+            }
+        }
+
         for (batch_id, bls_sig, signer_bitmap, players_json, payouts_json, retry_count) in &rows {
                 let batch_id_u64 = *batch_id as u64;
                 let popcount = signer_bitmap.count_ones();
@@ -2272,6 +2320,81 @@ impl BatchLifecycleManager {
                 // Small delay between retries to avoid nonce contention
                 tokio::time::sleep(std::time::Duration::from_secs(2)).await;
             }
+    }
+
+    /// Parse the retry-sweep rows into a vector of `SettleBatchItem`s for the
+    /// bundled fast path. Returns `None` if zero rows are eligible. Rows that
+    /// individually fail to parse are dropped from the bundle — they remain
+    /// in the DB and will be picked up by the per-batch loop on the next sweep.
+    ///
+    /// `ref_nonce` on each item is left at zero; the caller refreshes it once
+    /// for the whole bundle from `lastSnapshotNonce()`.
+    async fn parse_bundle_items(
+        &self,
+        rows: &[(i64, Vec<u8>, i64, serde_json::Value, serde_json::Value, i32)],
+        threshold: u32,
+    ) -> Option<(
+        Vec<crate::chain::SettleBatchItem>,
+        Vec<(u64, Vec<Address>, Vec<U256>)>,
+    )> {
+        let mut items = Vec::with_capacity(rows.len());
+        let mut metadata = Vec::with_capacity(rows.len());
+
+        for (batch_id, bls_sig, signer_bitmap, players_json, payouts_json, _retry_count) in rows {
+            let batch_id_u64 = *batch_id as u64;
+            let popcount = signer_bitmap.count_ones();
+            if (popcount as usize) < threshold as usize {
+                continue;
+            }
+
+            let players: Vec<Address> = match players_json.as_array() {
+                Some(arr) => {
+                    let parsed: Option<Vec<Address>> = arr
+                        .iter()
+                        .map(|v| v.as_str().and_then(|s| s.parse::<Address>().ok()))
+                        .collect();
+                    match parsed {
+                        Some(v) => v,
+                        None => continue,
+                    }
+                }
+                None => continue,
+            };
+
+            let payouts: Vec<U256> = match payouts_json.as_array() {
+                Some(arr) => {
+                    let parsed: Option<Vec<U256>> = arr
+                        .iter()
+                        .map(|v| v.as_str().and_then(|s| U256::from_dec_str(s).ok()))
+                        .collect();
+                    match parsed {
+                        Some(v) => v,
+                        None => continue,
+                    }
+                }
+                None => continue,
+            };
+
+            if players.len() != payouts.len() || players.is_empty() {
+                continue;
+            }
+
+            metadata.push((batch_id_u64, players.clone(), payouts.clone()));
+            items.push(crate::chain::SettleBatchItem {
+                batch_id: batch_id_u64,
+                players,
+                payouts,
+                bls_sig: bls_sig.clone(),
+                ref_nonce: 0, // filled in by caller
+                signers_bitmask: U256::from(*signer_bitmap as u64),
+            });
+        }
+
+        if items.len() < 2 {
+            None
+        } else {
+            Some((items, metadata))
+        }
     }
 }
 
