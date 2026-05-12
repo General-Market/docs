@@ -10,105 +10,97 @@ import {
 import { font } from "../../common/fonts";
 import { FPS, H, W, colors } from "./theme";
 
-// The "I lost because of …" iceberg. Camera descends through six tiers of
-// the meme. The prefix is anchored to screen center; the suffix snaps to
-// each tier as we cross it. Pink tier guides on the source asset give the
-// camera something to magnet onto.
+// The "I lost because of …" iceberg. Camera descends through six tiers.
+// Suffix words are painted onto the iceberg at each tier's natural Y and
+// scroll with it — they stay anchored. The prefix is a single element
+// that magnets onto each active tier, moving down the frame as we descend.
 
-// Asset: public/iceberg-tiers.webp (1265 × 2238 native, chibi column stripped).
-// Display at 1100w × 1946h on the left half so width is a clean ~0.87x — no
-// upscaling, no softness. Right 820px is the text panel.
 const IMG_W = 1100;
-const IMG_NATIVE_RATIO = 2238 / 1265; // ~1.769
+const IMG_NATIVE_RATIO = 2238 / 1265;
 const IMG_H = Math.round(IMG_W * IMG_NATIVE_RATIO); // 1946
-const SCROLL_RANGE = IMG_H - H; // 866
+const IMG_LEFT = Math.round((W - IMG_W) / 2);       // 410 — centered
+const SCROLL_RANGE = IMG_H - H;                     // 866
 
-type TierContent = {
-  prefix: string;
-  lines: string[];           // suffix, optionally split onto two lines
-  emphasis?: boolean;        // last tier hits in red
-};
+// Natural tier centres in displayed image coordinates, derived from the
+// pink guide lines on the source asset (scaled 1265/1265). One Y per tier.
+const TIER_Y = [82, 286, 600, 928, 1248, 1672];
 
-const PREFIX = "I lost because of";
+// Horizontal anchor for tier labels — sits in the dark right margin of the
+// iceberg silhouette, off the ice itself, so type stays legible against a
+// uniform dark backdrop.
+const LABEL_X = 760;
 
-const TIERS: TierContent[] = [
-  { prefix: PREFIX, lines: ["strategy"] },
-  { prefix: PREFIX, lines: ["fees"] },
-  { prefix: PREFIX, lines: ["liquidation", "hunters"] },
-  { prefix: PREFIX, lines: ["front", "runners"] },
-  { prefix: PREFIX, lines: ["orderbook", "spoofers"] },
-  { prefix: PREFIX, lines: ["insider", "traders"], emphasis: true },
+const SUFFIXES = [
+  "strategy",
+  "fees",
+  "liquidation hunters",
+  "front runners",
+  "orderbook spoofers",
+  "insider traders",
 ];
 
-// Timing in frames @ 30fps.
-//   INTRO    fade in + first tier settle
-//   HOLD     each tier holds before the next snap
-//   SNAP     scroll + suffix swap between tiers
-//   FINAL    extra hold on tier 6 — the punchline lands
+const N = SUFFIXES.length;
+const LAST = N - 1;
+
+// Timing — tight. Every tier crosses screen quickly; the punchline holds.
+//   INTRO    open on the top of the iceberg, brief settle
+//   HOLD     read the active tier
+//   SNAP     scroll + prefix magnet to the next tier
+//   FINAL    extra hold on "insider traders"
 //   OUTRO    fade out
-const INTRO = 18;
-const HOLD = 50;
-const SNAP = 16;
-const FINAL = 60;
-const OUTRO = 22;
+const INTRO = 6;
+const HOLD = 14;
+const SNAP = 8;
+const FINAL = 28;
+const OUTRO = 12;
 
-const N = TIERS.length;
-const tierStartFrame = (i: number) => INTRO + i * (HOLD + SNAP);
-const SCENE_FRAMES =
-  tierStartFrame(N - 1) + HOLD + FINAL + OUTRO;
-// 18 + 5*(50+16) + 50 + 60 + 22 = 18 + 330 + 132 = 480
+const tierStart = (i: number) => INTRO + i * (HOLD + SNAP);
+const SCENE_FRAMES = tierStart(LAST) + HOLD + FINAL + OUTRO;
+// 6 + 5*(14+8) + 14 + 28 + 12 = 6 + 110 + 54 = 170
 
-const scrollAtTier = (i: number) =>
-  -(SCROLL_RANGE / (N - 1)) * i;
+// Iceberg scroll per tier — linear across full image range.
+const scrollAtTier = (i: number) => -(SCROLL_RANGE / LAST) * i;
 
-// Two-phase ease per snap: accelerate out, decelerate in. Cubic in-out gives
-// the "magnetic catch" feel — slow at the tier, fast between.
-const snapEase = Easing.bezier(0.55, 0, 0.25, 1);
+const snapEase = Easing.bezier(0.45, 0, 0.2, 1);
 
-const computeScroll = (frame: number): number => {
-  // Before first tier: snap-zoom in from the same scroll the first tier sits
-  // at — gives the entry a hair of motion, not a static reveal.
-  if (frame < INTRO) {
-    const t = interpolate(frame, [0, INTRO], [0, 1], {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-      easing: Easing.out(Easing.cubic),
-    });
-    return scrollAtTier(0) - 24 * (1 - t);
-  }
-  for (let i = 0; i < N - 1; i++) {
-    const holdStart = tierStartFrame(i);
-    const snapStart = holdStart + HOLD;
-    const snapEnd = snapStart + SNAP;
-    if (frame < snapStart) return scrollAtTier(i);
-    if (frame < snapEnd) {
-      const t = (frame - snapStart) / SNAP;
-      const eased = snapEase(t);
-      return scrollAtTier(i) + (scrollAtTier(i + 1) - scrollAtTier(i)) * eased;
-    }
-  }
-  return scrollAtTier(N - 1);
-};
+type TierState = { index: number; phase: "hold" | "snap"; t: number };
 
-const activeTierAt = (frame: number): { index: number; phase: "hold" | "snap"; t: number } => {
+const tierAt = (frame: number): TierState => {
   if (frame < INTRO) return { index: 0, phase: "hold", t: 0 };
-  for (let i = 0; i < N - 1; i++) {
-    const holdStart = tierStartFrame(i);
+  for (let i = 0; i < LAST; i++) {
+    const holdStart = tierStart(i);
     const snapStart = holdStart + HOLD;
     const snapEnd = snapStart + SNAP;
     if (frame < snapStart) return { index: i, phase: "hold", t: 0 };
     if (frame < snapEnd)
       return { index: i, phase: "snap", t: (frame - snapStart) / SNAP };
   }
-  return { index: N - 1, phase: "hold", t: 0 };
+  return { index: LAST, phase: "hold", t: 0 };
+};
+
+const computeScroll = (state: TierState): number => {
+  if (state.phase === "hold") return scrollAtTier(state.index);
+  const a = scrollAtTier(state.index);
+  const b = scrollAtTier(state.index + 1);
+  return a + (b - a) * snapEase(state.t);
+};
+
+// Prefix content-Y — magnets between active tiers. Sits the suffix label
+// at the prefix's right hand, both at the same Y on the iceberg.
+const computePrefixY = (state: TierState): number => {
+  if (state.phase === "hold") return TIER_Y[state.index];
+  const a = TIER_Y[state.index];
+  const b = TIER_Y[state.index + 1];
+  return a + (b - a) * snapEase(state.t);
 };
 
 export const AntiCheatIceberg: React.FC = () => {
   const frame = useCurrentFrame();
-  const scrollY = computeScroll(frame);
-  const tier = activeTierAt(frame);
+  const state = tierAt(frame);
+  const scrollY = computeScroll(state);
+  const prefixY = computePrefixY(state);
 
-  const introOpacity = interpolate(frame, [0, INTRO * 0.7], [0, 1], {
+  const introOpacity = interpolate(frame, [0, INTRO * 0.8], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -120,9 +112,6 @@ export const AntiCheatIceberg: React.FC = () => {
   );
   const sceneOpacity = Math.min(introOpacity, outroOpacity);
 
-  // Sub-perceptual horizontal sway — the camera isn't on a tripod.
-  const sway = Math.sin((frame / 84) * Math.PI * 2) * 4;
-
   return (
     <AbsoluteFill
       style={{
@@ -132,15 +121,16 @@ export const AntiCheatIceberg: React.FC = () => {
         overflow: "hidden",
       }}
     >
-      {/* Iceberg, scrolling. Anchored left, slight x sway. */}
+      {/* Scrolling wrapper — iceberg + suffix labels + prefix all live here.
+          One translateY moves the whole world. */}
       <div
         style={{
           position: "absolute",
-          left: 0,
+          left: IMG_LEFT,
           top: 0,
           width: IMG_W,
           height: IMG_H,
-          transform: `translate3d(${sway.toFixed(2)}px, ${scrollY.toFixed(2)}px, 0)`,
+          transform: `translate3d(0, ${scrollY.toFixed(2)}px, 0)`,
           willChange: "transform",
         }}
       >
@@ -152,44 +142,35 @@ export const AntiCheatIceberg: React.FC = () => {
             display: "block",
           }}
         />
+
+        {/* Caustic shimmer over the underwater section. */}
+        <CausticShimmer />
+
+        {/* Six suffix labels, anchored to natural tier Y. They stay. */}
+        {SUFFIXES.map((word, i) => (
+          <SuffixLabel
+            key={i}
+            word={word}
+            y={TIER_Y[i]}
+            active={state.index === i}
+            passed={state.index > i}
+            emphasis={i === LAST}
+          />
+        ))}
+
+        {/* Prefix — magnets to active tier inside the wrapper, so it scrolls
+            with the iceberg between snaps. */}
+        <PrefixLabel y={prefixY} state={state} />
       </div>
 
-      {/* Caustic shimmer on the underwater section — drifts independently of
-          the scroll so the ice never feels frozen on long holds. */}
-      <CausticShimmer scrollY={scrollY} />
+      {/* Tier counter — pinned to the frame, not the scroll. */}
+      <TierCounter index={state.index} />
 
-      {/* Soft right-edge falloff into the text panel. Keeps the iceberg from
-          competing with type. */}
-      <div
-        style={{
-          position: "absolute",
-          left: IMG_W - 200,
-          top: 0,
-          width: 280,
-          height: H,
-          background:
-            "linear-gradient(90deg, rgba(4,6,12,0) 0%, rgba(4,6,12,0.55) 55%, rgba(4,6,12,0.92) 100%)",
-          pointerEvents: "none",
-        }}
-      />
-
-      {/* Active-tier indicator: a thin horizontal accent line on the right
-          edge of the iceberg, pinned to screen center. Reads as the head of
-          the magnet. */}
-      <TierMarker tierIndex={tier.index} snapT={tier.phase === "snap" ? tier.t : 0} />
-
-      {/* Text panel — anchored to the screen, never moves vertically.
-          Prefix is constant; suffix swaps with a magnet snap each tier. */}
-      <TextPanel tier={tier} />
-
-      {/* Tier counter — small mono ticker in the bottom-right. */}
-      <TierCounter tierIndex={tier.index} />
-
-      {/* Edge vignette — pulls focus to the centre band on long holds. */}
+      {/* Edge vignette — pulls focus to the band where the prefix is. */}
       <AbsoluteFill
         style={{
           background:
-            "radial-gradient(ellipse at 35% 50%, rgba(0,0,0,0) 40%, rgba(0,0,0,0.55) 95%)",
+            "radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0) 50%, rgba(0,0,0,0.45) 100%)",
           pointerEvents: "none",
         }}
       />
@@ -197,225 +178,93 @@ export const AntiCheatIceberg: React.FC = () => {
   );
 };
 
-// ─── Text panel ───────────────────────────────────────────────────────────────
+// ─── Prefix label ─────────────────────────────────────────────────────────────
+//
+// One element, content-Y animates between tier rows. During snap it briefly
+// scales — the "catch" frame — so the magnet reads as a physical jolt.
 
-const TextPanel: React.FC<{ tier: ReturnType<typeof activeTierAt> }> = ({
-  tier,
-}) => {
-  const current = TIERS[tier.index];
-  const next = TIERS[Math.min(tier.index + 1, N - 1)];
+const PrefixLabel: React.FC<{ y: number; state: TierState }> = ({ y, state }) => {
+  const pulse =
+    state.phase === "snap" ? Math.sin(state.t * Math.PI) : 0;
+  const scale = 1 + pulse * 0.04;
 
   return (
     <div
       style={{
         position: "absolute",
-        left: IMG_W,
-        top: 0,
-        width: W - IMG_W,
-        height: H,
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "flex-start",
-        paddingLeft: 64,
-        paddingRight: 56,
+        left: 40,
+        top: y,
+        transform: `translateY(-50%) scale(${scale.toFixed(3)})`,
+        transformOrigin: "left center",
+        fontSize: 44,
+        color: "rgba(255,255,255,0.78)",
+        fontWeight: 500,
+        letterSpacing: "-0.018em",
+        lineHeight: 1,
+        whiteSpace: "nowrap",
+        textShadow:
+          "0 2px 12px rgba(0,0,0,0.85), 0 0 32px rgba(0,0,0,0.6)",
+        willChange: "transform, top",
+        pointerEvents: "none",
       }}
     >
-      {/* Prefix — sticky. Sits a hair above true centre so the suffix sits
-          on the centerline. */}
-      <div
-        style={{
-          fontSize: 46,
-          color: "rgba(255,255,255,0.62)",
-          fontWeight: 500,
-          letterSpacing: "-0.018em",
-          lineHeight: 1.1,
-          marginBottom: 22,
-          whiteSpace: "nowrap",
-        }}
-      >
-        {current.prefix}
-      </div>
-
-      {/* Suffix — magnet snap. Old word leaves up; new word arrives from
-          below with an overshoot landing. */}
-      <Suffix tier={tier} current={current} next={next} />
+      I lost because of
     </div>
   );
 };
 
-// ─── Suffix renderer ──────────────────────────────────────────────────────────
+// ─── Suffix label ─────────────────────────────────────────────────────────────
 //
-// The suffix can be one or two lines (e.g. "insider" / "traders"). The two
-// lines move as a unit during the snap so the silhouette stays cohesive.
+// Anchored to its tier on the iceberg. Three visual states:
+//   passed  — already crossed; muted but present (it stays)
+//   active  — current tier; full opacity, accent colour
+//   pending — not yet reached; dim, smaller
+//
+// "Insider traders" runs red regardless of state — the punchline is loaded.
 
-const suffixFontSize = (lines: string[]): number => {
-  // Two-line suffixes get a hair more room per line; one-line stays huge.
-  if (lines.length === 1) {
-    const w = lines[0].length;
-    if (w <= 5) return 168;
-    if (w <= 9) return 140;
-    return 116;
-  }
-  // Two-line: each line gets its own size based on its own length.
-  return 0; // computed per line
-};
-
-const lineSize = (line: string): number => {
-  if (line.length <= 5) return 144;
-  if (line.length <= 8) return 132;
-  return 116;
-};
-
-const Suffix: React.FC<{
-  tier: ReturnType<typeof activeTierAt>;
-  current: TierContent;
-  next: TierContent;
-}> = ({ tier, current, next }) => {
-  if (tier.phase === "hold") {
-    return <SuffixStack tier={current} y={0} opacity={1} scale={1} />;
-  }
-  // Snap phase — old leaves up, new arrives from below with overshoot.
-  const t = tier.t;
-  const oldY = interpolate(t, [0, 1], [0, -64]);
-  const oldOpacity = interpolate(t, [0, 0.45], [1, 0], {
-    extrapolateRight: "clamp",
-  });
-  const newY = interpolate(t, [0, 1], [88, 0]);
-  const newOpacity = interpolate(t, [0.35, 0.8], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  // Magnet overshoot — slight squash-stretch on arrival so the word "lands"
-  // instead of "stops".
-  const newScale = interpolate(t, [0.5, 0.82, 1], [0.96, 1.05, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  return (
-    <div style={{ position: "relative", height: 320, width: "100%" }}>
-      <SuffixStack tier={current} y={oldY} opacity={oldOpacity} scale={1} absolute />
-      <SuffixStack tier={next} y={newY} opacity={newOpacity} scale={newScale} absolute />
-    </div>
-  );
-};
-
-const SuffixStack: React.FC<{
-  tier: TierContent;
+const SuffixLabel: React.FC<{
+  word: string;
   y: number;
-  opacity: number;
-  scale: number;
-  absolute?: boolean;
-}> = ({ tier, y, opacity, scale, absolute }) => {
-  const color = tier.emphasis ? "#FF3A4F" : "#FFFFFF";
-  const shadow = tier.emphasis
-    ? "0 0 24px rgba(255, 58, 79, 0.45)"
-    : "0 4px 18px rgba(0, 0, 0, 0.55)";
-  const oneLineSize = suffixFontSize(tier.lines);
+  active: boolean;
+  passed: boolean;
+  emphasis: boolean;
+}> = ({ word, y, active, passed, emphasis }) => {
+  const baseSize =
+    word.length <= 5 ? 116 : word.length <= 9 ? 96 : word.length <= 14 ? 82 : 72;
+  const size = active ? baseSize : baseSize * 0.92;
+  const opacity = active ? 1 : passed ? 0.55 : 0.42;
+  const color = emphasis ? "#FF3A4F" : "#FFFFFF";
+  const shadow = emphasis
+    ? "0 0 28px rgba(255,58,79,0.5), 0 2px 12px rgba(0,0,0,0.85)"
+    : "0 2px 14px rgba(0,0,0,0.85), 0 0 38px rgba(0,0,0,0.65)";
 
   return (
     <div
       style={{
-        position: absolute ? "absolute" : "relative",
-        top: 0,
-        left: 0,
-        transform: `translateY(${y.toFixed(2)}px) scale(${scale.toFixed(3)})`,
-        transformOrigin: "left center",
+        position: "absolute",
+        left: LABEL_X,
+        top: y,
+        transform: `translateY(-50%)`,
+        fontSize: size,
+        fontWeight: 800,
+        color,
+        letterSpacing: "-0.04em",
+        lineHeight: 1,
+        whiteSpace: "nowrap",
+        textShadow: shadow,
         opacity,
-        willChange: "transform, opacity",
+        transition: "opacity 80ms ease, font-size 80ms ease",
+        pointerEvents: "none",
       }}
     >
-      {tier.lines.map((line, idx) => {
-        const size = tier.lines.length === 1 ? oneLineSize : lineSize(line);
-        return (
-          <div
-            key={idx}
-            style={{
-              fontSize: size,
-              fontWeight: 800,
-              color,
-              letterSpacing: "-0.045em",
-              lineHeight: 0.94,
-              textShadow: shadow,
-              whiteSpace: "nowrap",
-            }}
-          >
-            {line}
-          </div>
-        );
-      })}
+      {word}
     </div>
-  );
-};
-
-// ─── Tier marker ──────────────────────────────────────────────────────────────
-//
-// A small accent line on the right edge of the iceberg image, pinned to the
-// screen center. Reads as "the magnet": it's where the current tier label
-// snaps to. Drops a tick during the snap to sell the catch.
-
-const TierMarker: React.FC<{ tierIndex: number; snapT: number }> = ({
-  tierIndex,
-  snapT,
-}) => {
-  // Pulse during snap.
-  const pulse = snapT > 0 ? Math.sin(snapT * Math.PI) : 0;
-  const width = 56 + pulse * 36;
-  const tickOpacity = 0.55 + pulse * 0.35;
-
-  return (
-    <>
-      <div
-        style={{
-          position: "absolute",
-          left: IMG_W - 28,
-          top: H / 2 - 1,
-          width,
-          height: 2,
-          background: colors.accent,
-          boxShadow: `0 0 ${10 + pulse * 18}px ${colors.accent}`,
-          opacity: tickOpacity,
-          pointerEvents: "none",
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          left: IMG_W - 30,
-          top: H / 2 - 4,
-          width: 8,
-          height: 8,
-          borderRadius: "50%",
-          background: colors.accent,
-          boxShadow: `0 0 16px ${colors.accent}`,
-          opacity: 0.9,
-          pointerEvents: "none",
-        }}
-      />
-      {/* Tiny tier count on the marker — 1 of 6, etc. */}
-      <div
-        style={{
-          position: "absolute",
-          left: IMG_W + 36,
-          top: H / 2 - 32,
-          fontFamily: font,
-          fontSize: 18,
-          letterSpacing: "0.16em",
-          color: "rgba(255,255,255,0.42)",
-          textTransform: "uppercase",
-          pointerEvents: "none",
-        }}
-      >
-        Tier {tierIndex + 1} / {N}
-      </div>
-    </>
   );
 };
 
 // ─── Tier counter ─────────────────────────────────────────────────────────────
 
-const TierCounter: React.FC<{ tierIndex: number }> = ({ tierIndex }) => {
+const TierCounter: React.FC<{ index: number }> = ({ index }) => {
   return (
     <div
       style={{
@@ -427,22 +276,22 @@ const TierCounter: React.FC<{ tierIndex: number }> = ({ tierIndex }) => {
         pointerEvents: "none",
       }}
     >
-      {TIERS.map((_, i) => (
+      {SUFFIXES.map((_, i) => (
         <div
           key={i}
           style={{
-            width: i === tierIndex ? 36 : 16,
+            width: i === index ? 36 : 16,
             height: 4,
             borderRadius: 2,
             background:
-              i === tierIndex
+              i === index
                 ? colors.accent
-                : i < tierIndex
+                : i < index
                 ? "rgba(255,255,255,0.42)"
                 : "rgba(255,255,255,0.16)",
             boxShadow:
-              i === tierIndex ? `0 0 12px ${colors.accent}` : "none",
-            transition: "all 120ms ease",
+              i === index ? `0 0 12px ${colors.accent}` : "none",
+            transition: "all 90ms ease",
           }}
         />
       ))}
@@ -451,16 +300,11 @@ const TierCounter: React.FC<{ tierIndex: number }> = ({ tierIndex }) => {
 };
 
 // ─── Caustic shimmer ──────────────────────────────────────────────────────────
-//
-// Two soft, slowly-drifting radial highlights on the underwater section.
-// Keeps the ice "alive" during the long holds on each tier.
 
-const CausticShimmer: React.FC<{ scrollY: number }> = ({ scrollY }) => {
+const CausticShimmer: React.FC = () => {
   const frame = useCurrentFrame();
-  const drift1 = (Math.sin(frame / 60) + 1) / 2;
-  const drift2 = (Math.cos(frame / 84) + 1) / 2;
-  const opacity1 = 0.06 + 0.04 * drift1;
-  const opacity2 = 0.05 + 0.03 * drift2;
+  const d1 = (Math.sin(frame / 50) + 1) / 2;
+  const d2 = (Math.cos(frame / 72) + 1) / 2;
   return (
     <div
       style={{
@@ -469,7 +313,6 @@ const CausticShimmer: React.FC<{ scrollY: number }> = ({ scrollY }) => {
         top: 0,
         width: IMG_W,
         height: IMG_H,
-        transform: `translateY(${scrollY.toFixed(2)}px)`,
         pointerEvents: "none",
         mixBlendMode: "screen",
       }}
@@ -477,27 +320,27 @@ const CausticShimmer: React.FC<{ scrollY: number }> = ({ scrollY }) => {
       <div
         style={{
           position: "absolute",
-          left: `${20 + drift1 * 30}%`,
+          left: `${20 + d1 * 30}%`,
           top: "38%",
           width: 460,
           height: 460,
           borderRadius: "50%",
           background:
             "radial-gradient(circle, rgba(120,210,255,0.5) 0%, rgba(120,210,255,0) 70%)",
-          opacity: opacity1,
+          opacity: 0.06 + 0.04 * d1,
         }}
       />
       <div
         style={{
           position: "absolute",
-          left: `${55 + drift2 * 18}%`,
-          top: "58%",
+          left: `${55 + d2 * 18}%`,
+          top: "62%",
           width: 540,
           height: 540,
           borderRadius: "50%",
           background:
             "radial-gradient(circle, rgba(180,230,255,0.5) 0%, rgba(180,230,255,0) 70%)",
-          opacity: opacity2,
+          opacity: 0.05 + 0.03 * d2,
         }}
       />
     </div>
