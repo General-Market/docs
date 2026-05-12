@@ -12,6 +12,8 @@ import { FPS, H, W, colors, toFrames } from "./theme";
 import { DotGrid, DotGridVignette } from "./DotGrid";
 import { IdleZoom } from "./vibe";
 import { beatPulseScene } from "./beats";
+import { AntiCheatHookHalfScene } from "./AntiCheatHookHalfScene";
+import type { BrollSegment } from "./AntiCheatHookScene";
 
 // Solution = 233f (7.77s). Solution→Reassure transition midpoint sits
 // near beat 33 (frame 866 absolute). Terminal flies in on scene-local
@@ -28,12 +30,137 @@ export const AntiCheatSolution: React.FC = () => {
         <DotGrid />
         <Headline />
 
+        <Sequence
+          from={FLOAT_PHONE_MOUNT}
+          durationInFrames={FLOAT_PHONE_TOTAL}
+        >
+          <FloatingPhoneCorner />
+        </Sequence>
+
         <Sequence from={TERMINAL_AT}>
           <Terminal />
         </Sequence>
 
         <DotGridVignette intensity={0.18} />
       </IdleZoom>
+    </AbsoluteFill>
+  );
+};
+
+// ─── Floating phone corner — bottom-right, banks out before the wash ────────
+//
+// Scene-local frame 30 (≈24.0s absolute) the phone enters from the right,
+// settles tilted up-and-right, drifts on a slow yaw, then peels off with
+// the same Y-axis spin used in the Hook scene's evade. A shield icon
+// rises above it one second in — that's the punctuation the headline
+// has been hinting at.
+const FLOAT_PHONE_MOUNT = 30;
+const FLOAT_PHONE_ENTER = 12;
+const FLOAT_PHONE_HOLD = 30;          // 1.0s floating before the shield
+const FLOAT_PHONE_SHIELD_INTRO = 10;  // shield fade-in
+const FLOAT_PHONE_SHIELD_HOLD = 8;    // beat of co-existence
+const FLOAT_PHONE_EXIT = 16;
+const FLOAT_PHONE_TOTAL =
+  FLOAT_PHONE_ENTER +
+  FLOAT_PHONE_HOLD +
+  FLOAT_PHONE_SHIELD_INTRO +
+  FLOAT_PHONE_SHIELD_HOLD +
+  FLOAT_PHONE_EXIT;
+
+const FLOATING_PHONE_SEGMENTS: BrollSegment[] = [
+  {
+    url: staticFile("cheat-broll/insider-trading-clean.mp4"),
+    from: 0,
+    durationInFrames: FLOAT_PHONE_TOTAL,
+    startFrom: 0,
+  },
+];
+
+const clamp01 = (t: number) => (t < 0 ? 0 : t > 1 ? 1 : t);
+
+const FloatingPhoneCorner: React.FC = () => {
+  const frame = useCurrentFrame();
+
+  const enterT = clamp01(frame / FLOAT_PHONE_ENTER);
+  const enterEased = 1 - (1 - enterT) * (1 - enterT);
+
+  const shieldStart = FLOAT_PHONE_ENTER + FLOAT_PHONE_HOLD;
+  const shieldT = clamp01(
+    (frame - shieldStart) / FLOAT_PHONE_SHIELD_INTRO,
+  );
+
+  const exitStart =
+    FLOAT_PHONE_ENTER +
+    FLOAT_PHONE_HOLD +
+    FLOAT_PHONE_SHIELD_INTRO +
+    FLOAT_PHONE_SHIELD_HOLD;
+  const exitT = clamp01((frame - exitStart) / FLOAT_PHONE_EXIT);
+  const exitEased = exitT * exitT;
+
+  // Slow yaw drift + gentle vertical float. Periods are deliberately
+  // long so the motion reads as "alive" rather than animated.
+  const slowYawDeg = Math.sin(frame * 0.045) * 6;
+  const slowPitchDeg = Math.cos(frame * 0.038) * 2.4;
+  const bobPx = Math.sin(frame * 0.085) * 10;
+
+  const baseRotY = -28; // banked so the right edge faces the viewer
+  const baseRotX = -10; // top tipped toward the camera — "up"
+
+  const enterX = (1 - enterEased) * 280;
+  const exitX = exitEased * 1600;
+  const tx = enterX + exitX;
+
+  const opacity =
+    enterEased * (1 - clamp01((exitT - 0.6) / 0.4));
+
+  return (
+    <AbsoluteFill style={{ pointerEvents: "none" }}>
+      <div
+        style={{
+          position: "absolute",
+          right: 140,
+          bottom: 110,
+          width: 320,
+          height: 580,
+          perspective: 1600,
+        }}
+      >
+        <div
+          style={{
+            width: "100%",
+            height: "100%",
+            transformStyle: "preserve-3d",
+            transformOrigin: "center center",
+            transform: `translate(${tx.toFixed(2)}px, ${bobPx.toFixed(2)}px) rotateX(${(baseRotX + slowPitchDeg).toFixed(2)}deg) rotateY(${(baseRotY + slowYawDeg).toFixed(2)}deg)`,
+            opacity,
+            filter: `drop-shadow(0 40px 70px rgba(0,82,255,${(0.18 * enterEased).toFixed(3)})) drop-shadow(0 12px 24px rgba(10,12,18,${(0.22 * enterEased).toFixed(3)}))`,
+          }}
+        >
+          <AntiCheatHookHalfScene
+            device="phone"
+            segments={FLOATING_PHONE_SEGMENTS}
+            brollAspect={1080 / 1920}
+            width={320}
+            height={580}
+            emissiveIntensity={1.1}
+            lightingIntensity={0.9}
+            exitProgress={exitT}
+          />
+        </div>
+
+        <div
+          style={{
+            position: "absolute",
+            top: -110,
+            left: "50%",
+            transform: `translate(-50%, ${(-shieldT * 14).toFixed(2)}px) scale(${(0.6 + shieldT * 0.5).toFixed(3)})`,
+            opacity: shieldT * (1 - exitEased * 0.7),
+            pointerEvents: "none",
+          }}
+        >
+          <ShieldIcon size={108} glow={shieldT} />
+        </div>
+      </div>
     </AbsoluteFill>
   );
 };
