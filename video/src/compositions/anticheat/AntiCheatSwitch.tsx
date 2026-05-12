@@ -120,17 +120,16 @@ const labelTopY = (i: number, pct: number) => {
   );
 };
 
-// Hero sizing. The "2×" in the copy below borrows the old 40%'s 320px
-// scale. HERO_CENTER_Y is the impact point for the burst — pushed high
-// in the frame so the explosion sits above the copy, not under it.
+// Hero sizing. The "2×" in the copy borrows the old 40%'s 320px scale.
+// HERO_CENTER_Y is the impact point for the burst AND the vertical
+// centre of the hero line — the orb glow halos the copy instead of
+// floating above it like two unrelated panels.
 const HERO_FONT = 320;
 const HERO_CENTER_X = W / 2;
-const HERO_CENTER_Y = 280;
+const HERO_CENTER_Y = 480;
 
-// Hero copy anchors — the "Earn up to 2× more*" line sits roughly at
-// frame centre; the kicker prints just beneath it.
-const HERO_LINE_CENTER_Y = 620;
-const KICKER_TOP_Y = 820;
+const HERO_LINE_CENTER_Y = HERO_CENTER_Y;
+const KICKER_TOP_Y = 720;
 
 export const AntiCheatSwitch: React.FC = () => (
   <AbsoluteFill
