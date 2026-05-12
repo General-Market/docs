@@ -1,0 +1,142 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 600" width="980" height="600" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGradV" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <linearGradient id="emeraldGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#10B981"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+    <filter id="softShadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-opacity="0.04"/>
+    </filter>
+  </defs>
+
+  <rect width="980" height="600" fill="white"/>
+
+  <!-- Decorative circles -->
+  <circle cx="60" cy="540" r="180" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="930" cy="40"  r="160" fill="#0A0A0A" opacity="0.02"/>
+
+  <!-- COLUMN HEADERS — dark gradient strip -->
+  <rect x="40" y="40" width="900" height="48" rx="12" fill="url(#darkGradV)"/>
+  <!-- Separators inside header -->
+  <line x1="320" y1="50" x2="320" y2="78" stroke="white" stroke-opacity="0.1"/>
+  <line x1="470" y1="50" x2="470" y2="78" stroke="white" stroke-opacity="0.1"/>
+  <line x1="620" y1="50" x2="620" y2="78" stroke="white" stroke-opacity="0.1"/>
+  <line x1="770" y1="50" x2="770" y2="78" stroke="white" stroke-opacity="0.1"/>
+  <!-- Header labels -->
+  <text x="180" y="69" text-anchor="middle" fill="white" font-size="11" font-weight="600" letter-spacing="2.4" opacity="0.5">STRATEGY</text>
+  <text x="395" y="69" text-anchor="middle" fill="white" font-size="12" font-weight="700" letter-spacing="2.4">SPOT</text>
+  <text x="545" y="69" text-anchor="middle" fill="white" font-size="12" font-weight="700" letter-spacing="2.4">PERPS</text>
+  <text x="695" y="69" text-anchor="middle" fill="white" font-size="12" font-weight="700" letter-spacing="2.4">OPTIONS</text>
+  <text x="845" y="69" text-anchor="middle" fill="white" font-size="12" font-weight="700" letter-spacing="2.4">BLOCKS</text>
+
+  <!-- Data rows. Row height 42. Start y=104, label y at +27 -->
+  <!-- Row separators -->
+  <g stroke="#0A0A0A" stroke-opacity="0.06">
+    <line x1="40" y1="125" x2="940" y2="125"/>
+    <line x1="40" y1="167" x2="940" y2="167"/>
+    <line x1="40" y1="209" x2="940" y2="209"/>
+    <line x1="40" y1="251" x2="940" y2="251"/>
+    <line x1="40" y1="293" x2="940" y2="293"/>
+    <line x1="40" y1="335" x2="940" y2="335"/>
+    <line x1="40" y1="377" x2="940" y2="377"/>
+    <line x1="40" y1="419" x2="940" y2="419"/>
+    <line x1="40" y1="461" x2="940" y2="461"/>
+  </g>
+
+  <!-- Column dividers (subtle vertical lines through data area) -->
+  <g stroke="#0A0A0A" stroke-opacity="0.05">
+    <line x1="320" y1="104" x2="320" y2="503"/>
+    <line x1="470" y1="104" x2="470" y2="503"/>
+    <line x1="620" y1="104" x2="620" y2="503"/>
+    <line x1="770" y1="104" x2="770" y2="503"/>
+  </g>
+
+  <!-- Highlight column for BLOCKS (subtle emerald wash) -->
+  <rect x="770" y="104" width="170" height="399" fill="#10B981" fill-opacity="0.025"/>
+
+  <!-- Pills:
+       Vulnerable: 56×22 dark pill at (cx-28, ry-11)
+       Excluded: em-dash glyph
+       Honest (row 9): emerald pill -->
+
+  <!-- Helper: row centers y = 125, 167, 209, 251, 293, 335, 377, 419, 461 minus 21 = 104 .. -->
+  <!-- Actually row 1 occupies y=104..146, center=125. So pill y = 114 (center-11). -->
+
+  <!-- Row 1: Cross-venue arbitrage -->
+  <text x="64" y="131" fill="#0A0A0A" font-size="13" font-weight="600">Cross-venue arbitrage</text>
+  <rect x="367" y="114" width="56" height="22" rx="11" fill="url(#darkGradV)"/>
+  <text x="545" y="131" text-anchor="middle" fill="#0A0A0A" font-size="14" opacity="0.25">—</text>
+  <text x="695" y="131" text-anchor="middle" fill="#0A0A0A" font-size="14" opacity="0.25">—</text>
+  <text x="845" y="131" text-anchor="middle" fill="#0A0A0A" font-size="14" opacity="0.25">—</text>
+
+  <!-- Row 2: Stop & liquidation hunting -->
+  <text x="64" y="173" fill="#0A0A0A" font-size="13" font-weight="600">Stop &amp; liquidation hunting</text>
+  <rect x="367" y="156" width="56" height="22" rx="11" fill="url(#darkGradV)"/>
+  <rect x="517" y="156" width="56" height="22" rx="11" fill="url(#darkGradV)"/>
+  <text x="695" y="173" text-anchor="middle" fill="#0A0A0A" font-size="14" opacity="0.25">—</text>
+  <text x="845" y="173" text-anchor="middle" fill="#0A0A0A" font-size="14" opacity="0.25">—</text>
+
+  <!-- Row 3: Orderflow purchase -->
+  <text x="64" y="215" fill="#0A0A0A" font-size="13" font-weight="600">Orderflow purchase</text>
+  <rect x="367" y="198" width="56" height="22" rx="11" fill="url(#darkGradV)"/>
+  <rect x="517" y="198" width="56" height="22" rx="11" fill="url(#darkGradV)"/>
+  <rect x="667" y="198" width="56" height="22" rx="11" fill="url(#darkGradV)"/>
+  <text x="845" y="215" text-anchor="middle" fill="#0A0A0A" font-size="14" opacity="0.25">—</text>
+
+  <!-- Row 4: Frontrunning / MEV -->
+  <text x="64" y="257" fill="#0A0A0A" font-size="13" font-weight="600">Frontrunning / MEV</text>
+  <rect x="367" y="240" width="56" height="22" rx="11" fill="url(#darkGradV)"/>
+  <rect x="517" y="240" width="56" height="22" rx="11" fill="url(#darkGradV)"/>
+  <rect x="667" y="240" width="56" height="22" rx="11" fill="url(#darkGradV)"/>
+  <text x="845" y="257" text-anchor="middle" fill="#0A0A0A" font-size="14" opacity="0.25">—</text>
+
+  <!-- Row 5: Insider trading -->
+  <text x="64" y="299" fill="#0A0A0A" font-size="13" font-weight="600">Insider trading</text>
+  <rect x="367" y="282" width="56" height="22" rx="11" fill="url(#darkGradV)"/>
+  <rect x="517" y="282" width="56" height="22" rx="11" fill="url(#darkGradV)"/>
+  <rect x="667" y="282" width="56" height="22" rx="11" fill="url(#darkGradV)"/>
+  <text x="845" y="299" text-anchor="middle" fill="#0A0A0A" font-size="14" opacity="0.25">—</text>
+
+  <!-- Row 6: Latency arbitrage -->
+  <text x="64" y="341" fill="#0A0A0A" font-size="13" font-weight="600">Latency arbitrage</text>
+  <rect x="367" y="324" width="56" height="22" rx="11" fill="url(#darkGradV)"/>
+  <rect x="517" y="324" width="56" height="22" rx="11" fill="url(#darkGradV)"/>
+  <rect x="667" y="324" width="56" height="22" rx="11" fill="url(#darkGradV)"/>
+  <text x="845" y="341" text-anchor="middle" fill="#0A0A0A" font-size="14" opacity="0.25">—</text>
+
+  <!-- Row 7: Spoofing & layering -->
+  <text x="64" y="383" fill="#0A0A0A" font-size="13" font-weight="600">Spoofing &amp; layering</text>
+  <rect x="367" y="366" width="56" height="22" rx="11" fill="url(#darkGradV)"/>
+  <rect x="517" y="366" width="56" height="22" rx="11" fill="url(#darkGradV)"/>
+  <rect x="667" y="366" width="56" height="22" rx="11" fill="url(#darkGradV)"/>
+  <text x="845" y="383" text-anchor="middle" fill="#0A0A0A" font-size="14" opacity="0.25">—</text>
+
+  <!-- Row 8: Toxic-flow market making -->
+  <text x="64" y="425" fill="#0A0A0A" font-size="13" font-weight="600">Toxic-flow market making</text>
+  <rect x="367" y="408" width="56" height="22" rx="11" fill="url(#darkGradV)"/>
+  <rect x="517" y="408" width="56" height="22" rx="11" fill="url(#darkGradV)"/>
+  <rect x="667" y="408" width="56" height="22" rx="11" fill="url(#darkGradV)"/>
+  <text x="845" y="425" text-anchor="middle" fill="#0A0A0A" font-size="14" opacity="0.25">—</text>
+
+  <!-- Row 9: Directional bets (the honest row) -->
+  <text x="64" y="467" fill="#0A0A0A" font-size="13" font-weight="700">Directional bets</text>
+  <text x="64" y="483" fill="#0A0A0A" font-size="10" opacity="0.4">the only honest activity</text>
+  <rect x="367" y="450" width="56" height="22" rx="11" fill="url(#emeraldGrad)"/>
+  <rect x="517" y="450" width="56" height="22" rx="11" fill="url(#emeraldGrad)"/>
+  <rect x="667" y="450" width="56" height="22" rx="11" fill="url(#emeraldGrad)"/>
+  <rect x="817" y="450" width="56" height="22" rx="11" fill="url(#emeraldGrad)"/>
+
+  <!-- LEGEND -->
+  <rect x="40" y="520" width="900" height="42" rx="14" fill="#0A0A0A" fill-opacity="0.03"/>
+  <rect x="72"  y="532" width="20" height="14" rx="7" fill="url(#darkGradV)"/>
+  <text x="100" y="544" fill="#0A0A0A" font-size="11" opacity="0.55">predator works here</text>
+  <text x="260" y="544" fill="#0A0A0A" font-size="11" opacity="0.55">—</text>
+  <text x="280" y="544" fill="#0A0A0A" font-size="11" opacity="0.55">excluded by construction</text>
+  <rect x="480" y="532" width="20" height="14" rx="7" fill="url(#emeraldGrad)"/>
+  <text x="508" y="544" fill="#0A0A0A" font-size="11" opacity="0.55">honest directional view possible</text>
+  <text x="930" y="544" text-anchor="end" fill="#0A0A0A" font-size="11" font-weight="600" opacity="0.7">Eight ways to lose. One bet that still works.</text>
+</svg>
