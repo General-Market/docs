@@ -660,6 +660,9 @@ fn get_sender_id(message: &P2PMessage) -> Option<PeerId> {
         // completeBuyOrder BLS consensus
         P2PMessage::CompleteBuyOrderProposal { leader_id, .. } => Some(*leader_id),
         P2PMessage::CompleteBuyOrderSign { signer_id, .. } => Some(*signer_id),
+        // completeBuyOrders bundle (single-aggregated-BLS)
+        P2PMessage::CompleteBuyOrdersBundleProposal { leader_id, .. } => Some(*leader_id),
+        P2PMessage::CompleteBuyOrdersBundleSign { signer_id, .. } => Some(*signer_id),
         // Rebalance NAV consensus: setItpNav
         P2PMessage::SetItpNavProposal { leader_id, .. } => Some(*leader_id),
         P2PMessage::SetItpNavSign { signer_id, .. } => Some(*signer_id),

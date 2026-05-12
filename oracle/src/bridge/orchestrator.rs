@@ -166,6 +166,12 @@ pub struct BridgeOrchestrator {
     confirmed_complete_buy: RwLock<HashMap<u64, bool>>,
     /// Notify for completeBuyOrder signature collection
     pub complete_buy_notify: Arc<Notify>,
+    /// Signature manager for completeBuyOrdersBundle proposals (single-aggregated-BLS).
+    complete_buy_bundle_sigs: SignatureCollectionManager<u64>,
+    /// Confirmed completeBuyOrdersBundle by cycle (dedup).
+    confirmed_complete_buy_bundle: RwLock<HashMap<u64, bool>>,
+    /// Notify for completeBuyOrdersBundle signature collection.
+    pub complete_buy_bundle_notify: Arc<Notify>,
     /// Generic signature manager for setItpNav proposals (rebalance NAV consensus)
     nav_sigs: SignatureCollectionManager<H256>,
     /// Signature manager for NavOracle proposals (keyed by itp_address as H256)
@@ -234,6 +240,9 @@ impl BridgeOrchestrator {
             complete_buy_sigs: SignatureCollectionManager::new("complete_buy"),
             confirmed_complete_buy: RwLock::new(HashMap::new()),
             complete_buy_notify: Arc::new(Notify::new()),
+            complete_buy_bundle_sigs: SignatureCollectionManager::new("complete_buy_bundle"),
+            confirmed_complete_buy_bundle: RwLock::new(HashMap::new()),
+            complete_buy_bundle_notify: Arc::new(Notify::new()),
             nav_sigs: SignatureCollectionManager::new("nav"),
             nav_oracle_sigs: SignatureCollectionManager::new("nav_oracle"),
             mirror_sync_sigs: SignatureCollectionManager::new("mirror_sync"),
@@ -5331,6 +5340,121 @@ impl BridgeOrchestrator {
 
     pub async fn get_complete_buy_order_signature_count(&self, cycle_number: u64) -> Option<usize> {
         self.complete_buy_sigs.get_signature_count(&cycle_number).await
+    }
+
+    // ──────────────────────────────────────────────────────────────────
+    // completeBuyOrdersBundle (single-aggregated-BLS)
+    // ──────────────────────────────────────────────────────────────────
+
+    /// Build the bundle proposal: leader signs the bundle hash; on-chain
+    /// the contract recomputes it from (chainid, custody, "completeBuyOrdersSingle",
+    /// order_ids, vault) and verifies with one `_verifyBLS`.
+    pub fn propose_complete_buy_orders_bundle(
+        &self,
+        cycle_number: u64,
+        order_ids: &[U256],
+        vault: Address,
+    ) -> Result<(H256, BLSSignature), BridgeError> {
+        let message_hash = crate::bridge::types::build_complete_buy_orders_bundle_hash(
+            self.config.settlement_chain_id,
+            self.config.settlement_custody_address,
+            order_ids,
+            vault,
+        );
+        let hash_bytes: [u8; 32] = message_hash.into();
+        let leader_signature = self
+            .bls_signer
+            .sign_message_hash(&self.bls_keypair, &hash_bytes)
+            .map_err(|e| ConsensusError::BlsSigningError {
+                reason: e.to_string(),
+            })?;
+        info!(
+            cycle_number,
+            count = order_ids.len(),
+            vault = ?vault,
+            message_hash = ?message_hash,
+            "CompleteBuyOrdersBundle proposal created"
+        );
+        Ok((message_hash, leader_signature))
+    }
+
+    /// Follower verification: recompute the bundle hash from the leader's
+    /// `order_ids` and `vault`, sign it. The follower is implicitly trusting
+    /// the leader's list — invalid orders will revert on-chain.
+    pub fn sign_complete_buy_orders_bundle_proposal(
+        &self,
+        cycle_number: u64,
+        order_ids: &[U256],
+        vault: Address,
+    ) -> Result<(H256, BLSSignature), BridgeError> {
+        let expected_hash = crate::bridge::types::build_complete_buy_orders_bundle_hash(
+            self.config.settlement_chain_id,
+            self.config.settlement_custody_address,
+            order_ids,
+            vault,
+        );
+        let hash_bytes: [u8; 32] = expected_hash.into();
+        let signature = self
+            .bls_signer
+            .sign_message_hash(&self.bls_keypair, &hash_bytes)
+            .map_err(|e| ConsensusError::BlsSigningError {
+                reason: e.to_string(),
+            })?;
+        let _ = cycle_number;
+        Ok((expected_hash, signature))
+    }
+
+    pub async fn start_complete_buy_orders_bundle_signature_collection(
+        &self,
+        cycle_number: u64,
+        leader_signature: BLSSignature,
+    ) {
+        self.complete_buy_bundle_sigs
+            .start_collection(cycle_number, self.node_index, leader_signature)
+            .await;
+    }
+
+    pub async fn add_complete_buy_orders_bundle_signature(
+        &self,
+        cycle_number: u64,
+        signer_index: u8,
+        signature: BLSSignature,
+    ) -> Result<Option<CompleteBuyOrderResult>, BridgeError> {
+        let result = self.complete_buy_bundle_sigs
+            .add_follower_signature(
+                &cycle_number,
+                signer_index,
+                signature,
+                self.config.min_signatures,
+                &self.bls_signer,
+            )
+            .await?;
+
+        if result.is_some() {
+            self.complete_buy_bundle_notify.notify_waiters();
+        }
+        Ok(result)
+    }
+
+    pub async fn check_complete_buy_orders_bundle_threshold(
+        &self,
+        cycle_number: u64,
+    ) -> Option<CompleteBuyOrderResult> {
+        self.complete_buy_bundle_sigs
+            .check_threshold(&cycle_number, self.config.min_signatures, &self.bls_signer)
+            .await
+    }
+
+    pub async fn is_complete_buy_orders_bundle_confirmed(&self, cycle_number: u64) -> bool {
+        self.confirmed_complete_buy_bundle.read().await.contains_key(&cycle_number)
+    }
+
+    pub async fn mark_complete_buy_orders_bundle_confirmed(&self, cycle_number: u64) {
+        self.confirmed_complete_buy_bundle.write().await.insert(cycle_number, true);
+    }
+
+    pub async fn get_complete_buy_orders_bundle_signature_count(&self, cycle_number: u64) -> Option<usize> {
+        self.complete_buy_bundle_sigs.get_signature_count(&cycle_number).await
     }
 
     /// Mark orders as SharesBridged (Step 8 complete)

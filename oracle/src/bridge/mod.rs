@@ -65,6 +65,7 @@ pub use types::{
     // Cross-chain buy completion
     build_complete_buy_order_hash, CompleteBuyOrderResult,
     CompleteBuyOrderProposal,
+    build_complete_buy_orders_bundle_hash,
     // 8-step bridge: RecordCollateralMove + MintBridgedShares
     build_record_collateral_move_hash, build_record_collateral_move_calldata,
     RecordCollateralMoveProposal, RecordCollateralMoveResult,

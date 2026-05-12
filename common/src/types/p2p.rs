@@ -652,6 +652,26 @@ pub enum P2PMessage {
         signature: BLSSignature,
     },
 
+    /// Leader proposes one bundle of completeBuyOrders signed by one
+    /// aggregated BLS signature. Followers verify the cycle's order list
+    /// matches their local state and sign the bundle hash.
+    CompleteBuyOrdersBundleProposal {
+        leader_id: PeerId,
+        cycle_number: u64,
+        order_ids: Vec<U256>,
+        vault: Address,
+        reference_nonce: u64,
+        leader_signature: BLSSignature,
+    },
+
+    /// Follower signature for a CompleteBuyOrdersBundleProposal.
+    CompleteBuyOrdersBundleSign {
+        signer_id: PeerId,
+        signer_index: u8,
+        cycle_number: u64,
+        signature: BLSSignature,
+    },
+
     /// Leader proposes setItpNav before rebalance
     /// Timeout: 500ms, Retry: 1
     /// Rebalance NAV consensus

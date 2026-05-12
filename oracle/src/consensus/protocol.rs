@@ -2870,6 +2870,103 @@ where
                     }
                 }
             }
+            // completeBuyOrdersBundle (single-aggregated-BLS) messages
+            MessageHandleResult::ProcessCompleteBuyOrdersBundleProposal {
+                from,
+                leader_id,
+                cycle_number: msg_cycle,
+                order_ids,
+                vault,
+                leader_signature,
+            } => {
+                debug!(
+                    ?leader_id,
+                    cycle_number = msg_cycle,
+                    count = order_ids.len(),
+                    "Received CompleteBuyOrdersBundleProposal — validating and signing"
+                );
+
+                let bridge_orch_guard = self.bridge_orchestrator.read().await;
+                let bridge_orch = match bridge_orch_guard.as_ref() {
+                    Some(orch) => orch,
+                    None => {
+                        warn!(code = "INFRA-008", cycle_number = msg_cycle, "BridgeOrchestrator not configured");
+                        return Ok(());
+                    }
+                };
+
+                let orch = bridge_orch.read().await;
+                let config = orch.config().clone();
+                if vault != config.bitget_vault {
+                    warn!(
+                        code = "INFRA-007",
+                        cycle_number = msg_cycle,
+                        expected = ?config.bitget_vault,
+                        received = ?vault,
+                        "CompleteBuyOrdersBundle proposal rejected: vault mismatch"
+                    );
+                    return Ok(());
+                }
+                drop(orch);
+
+                let message_hash = crate::bridge::build_complete_buy_orders_bundle_hash(
+                    config.settlement_chain_id,
+                    config.settlement_custody_address,
+                    &order_ids,
+                    vault,
+                );
+
+                self.verify_leader_bls(&leader_id, &message_hash, &leader_signature, "complete_buy_orders_bundle")?;
+
+                let hash_bytes: [u8; 32] = message_hash.into();
+                let signature = self
+                    .bls_signer
+                    .sign_message_hash(&self.bls_keypair, &hash_bytes)
+                    .map_err(|e| Error::BlsVerification(format!("Failed to sign CompleteBuyOrdersBundle: {}", e)))?;
+
+                drop(bridge_orch_guard);
+
+                let message = P2PMessage::CompleteBuyOrdersBundleSign {
+                    signer_id: self.config.peer_id,
+                    signer_index: self.runtime_config.oracle_registry_index(),
+                    cycle_number: msg_cycle,
+                    signature,
+                };
+                self.p2p.send_to(from, message).await?;
+            }
+            MessageHandleResult::ProcessCompleteBuyOrdersBundleSign {
+                from: signer_id,
+                signer_index,
+                cycle_number: msg_cycle,
+                signature,
+            } => {
+                debug!(
+                    ?signer_id,
+                    signer_index,
+                    cycle_number = msg_cycle,
+                    "Received CompleteBuyOrdersBundleSign — adding to collector"
+                );
+
+                let bridge_orch_guard = self.bridge_orchestrator.read().await;
+                if let Some(bridge_orch) = bridge_orch_guard.as_ref() {
+                    let orch = bridge_orch.write().await;
+                    match orch.add_complete_buy_orders_bundle_signature(
+                        msg_cycle,
+                        signer_index,
+                        BLSSignature(signature.0),
+                    ).await {
+                        Ok(Some(result)) => {
+                            info!(cycle_number = msg_cycle, signature_count = result.signature_count, "CompleteBuyOrdersBundle threshold reached");
+                        }
+                        Ok(None) => {
+                            debug!(cycle_number = msg_cycle, signer_index, "CompleteBuyOrdersBundle signature added, waiting for more");
+                        }
+                        Err(e) => {
+                            warn!(cycle_number = msg_cycle, error = %e, "Failed to add CompleteBuyOrdersBundle signature");
+                        }
+                    }
+                }
+            }
             // Rebalance NAV consensus: setItpNav
             MessageHandleResult::ProcessSetItpNavProposal {
                 from,
@@ -7595,6 +7692,116 @@ where
         collect_sigs_loop!(self, timeout_ms, |orch| {
             check: orch.check_complete_buy_order_threshold(cycle_number).await,
             count: orch.get_complete_buy_order_signature_count(cycle_number).await.unwrap_or(0),
+        })
+    }
+
+    /// Run the single-aggregated-BLS bundle phase for completeBuyOrders.
+    /// Leader composes the bundle (the cycle's submitted order_ids), proposes
+    /// it, collects co-signatures from followers, returns the aggregate.
+    /// Followers return an empty `CompleteBuyOrderResult` — they trust the
+    /// leader will submit if quorum is reached.
+    pub async fn run_complete_buy_orders_bundle_phase(
+        &self,
+        cycle_number: u64,
+        order_ids: Vec<U256>,
+        vault: Address,
+        am_leader: bool,
+    ) -> Result<CompleteBuyOrderResult, BridgeError> {
+        if order_ids.is_empty() {
+            return Err(BridgeError::ProposalMismatch {
+                field: "order_ids (empty bundle)".to_string(),
+            });
+        }
+        info!(
+            cycle_number,
+            count = order_ids.len(),
+            vault = ?vault,
+            am_leader,
+            "Starting CompleteBuyOrdersBundle consensus"
+        );
+
+        let bridge_orch_guard = self.bridge_orchestrator.read().await;
+        let _ = bridge_orch_guard.as_ref().ok_or_else(|| ConsensusError::ChainWriterError {
+            reason: "BridgeOrchestrator not configured".to_string(),
+        })?;
+
+        if am_leader {
+            drop(bridge_orch_guard);
+            self.run_complete_buy_orders_bundle_as_leader(cycle_number, order_ids, vault).await
+        } else {
+            drop(bridge_orch_guard);
+            Ok(CompleteBuyOrderResult {
+                aggregated_signature: BLSSignature(vec![]),
+                signer_bitmap: U256::zero(),
+                signature_count: 0,
+            })
+        }
+    }
+
+    async fn run_complete_buy_orders_bundle_as_leader(
+        &self,
+        cycle_number: u64,
+        order_ids: Vec<U256>,
+        vault: Address,
+    ) -> Result<CompleteBuyOrderResult, BridgeError> {
+        let ref_nonce = self.key_registry.settlement_registry_nonce();
+        let bridge_orch_guard = self.bridge_orchestrator.read().await;
+        let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| ConsensusError::ChainWriterError {
+            reason: "BridgeOrchestrator not configured".to_string(),
+        })?;
+
+        let leader_signature = {
+            let orch = bridge_orch.read().await;
+            let (_, sig) = orch.propose_complete_buy_orders_bundle(cycle_number, &order_ids, vault)?;
+            sig
+        };
+
+        {
+            let orch = bridge_orch.write().await;
+            orch.start_complete_buy_orders_bundle_signature_collection(cycle_number, leader_signature.clone()).await;
+        }
+
+        let message = P2PMessage::CompleteBuyOrdersBundleProposal {
+            leader_id: self.config.peer_id,
+            cycle_number,
+            order_ids: order_ids.clone(),
+            vault,
+            leader_signature,
+            reference_nonce: ref_nonce,
+        };
+
+        let config = {
+            let orch = bridge_orch.read().await;
+            orch.config().clone()
+        };
+        drop(bridge_orch_guard);
+
+        self.p2p.broadcast(message).await.map_err(|e| ConsensusError::ChainWriterError {
+            reason: format!("Failed to broadcast CompleteBuyOrdersBundle proposal: {}", e),
+        })?;
+
+        let timeout_ms = config.sign_timeout_ms;
+        let result = self.collect_complete_buy_orders_bundle_signatures(cycle_number, timeout_ms).await?;
+
+        info!(cycle_number, signer_count = result.signature_count, "Leader: CompleteBuyOrdersBundle threshold reached");
+
+        let bridge_orch_guard = self.bridge_orchestrator.read().await;
+        if let Some(bridge_orch) = bridge_orch_guard.as_ref() {
+            let orch = bridge_orch.write().await;
+            orch.mark_complete_buy_orders_bundle_confirmed(cycle_number).await;
+        }
+
+        Ok(result)
+    }
+
+    async fn collect_complete_buy_orders_bundle_signatures(
+        &self,
+        cycle_number: u64,
+        timeout_ms: u64,
+    ) -> Result<CompleteBuyOrderResult, BridgeError> {
+        collect_sigs_loop!(self, timeout_ms, |orch| {
+            check: orch.check_complete_buy_orders_bundle_threshold(cycle_number).await,
+            count: orch.get_complete_buy_orders_bundle_signature_count(cycle_number).await.unwrap_or(0),
         })
     }
 

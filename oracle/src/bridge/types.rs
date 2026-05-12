@@ -1025,6 +1025,29 @@ pub fn build_mint_bridged_shares_hash(
     hash
 }
 
+/// Build message hash for `completeBuyOrdersSingle` consensus.
+///
+/// Matches: keccak256(abi.encode(chainid, settlementCustody,
+///                                "completeBuyOrdersSingle", orderIds, vault))
+/// One BLS signature over this hash settles N orders on-chain.
+pub fn build_complete_buy_orders_bundle_hash(
+    chain_id: u64,
+    settlement_custody: Address,
+    order_ids: &[U256],
+    vault: Address,
+) -> H256 {
+    use ethers::abi::{encode, Token};
+    use ethers::utils::keccak256;
+    let tokens = vec![
+        Token::Uint(U256::from(chain_id)),
+        Token::Address(settlement_custody),
+        Token::String("completeBuyOrdersSingle".to_string()),
+        Token::Array(order_ids.iter().map(|o| Token::Uint(*o)).collect()),
+        Token::Address(vault),
+    ];
+    H256::from_slice(&keccak256(encode(&tokens)))
+}
+
 /// Build message hash for completeBuyOrder consensus
 ///
 /// Matches: keccak256(abi.encode(chainid, settlementCustody, "completeBuyOrder", orderId, vault))

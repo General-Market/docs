@@ -1024,6 +1024,61 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                 let vault = orchestrator.read().await.config().bitget_vault;
                 let mut confirmed = Vec::new();
 
+                // ── Single-aggregated-BLS fast path (Phase 7) ──────────────
+                // One BLS signature covers all orders. Followers verify the
+                // cycle's order list matches their local state and co-sign
+                // the bundle hash. On success: one submitCompleteBuyOrdersSingle
+                // tx; on failure: fall through to the per-item bundle path
+                // (Phase 3) which re-collects per-order signatures.
+                let mut single_sig_succeeded = false;
+                if submitted_orders.len() >= 2 {
+                    match tokio::time::timeout(
+                        std::time::Duration::from_secs(20),
+                        protocol.run_complete_buy_orders_bundle_phase(
+                            current_cycle, submitted_orders.clone(), vault, batch_am_leader,
+                        ),
+                    ).await {
+                        Ok(Ok(result)) => {
+                            if !batch_am_leader {
+                                // Followers trust leader will submit. Mark all confirmed.
+                                info!(cycle = current_cycle, count = submitted_orders.len(), "CBO bundle (single-sig): follower passthrough");
+                                confirmed.extend(submitted_orders.iter().copied());
+                                single_sig_succeeded = true;
+                            } else if !result.aggregated_signature.0.is_empty() {
+                                let ref_nonce = protocol.settlement_registry_nonce();
+                                info!(cycle = current_cycle, count = submitted_orders.len(), "Submitting completeBuyOrdersSingle");
+                                match settlement_writer.complete_buy_orders_single(
+                                    submitted_orders.clone(),
+                                    vault,
+                                    result.aggregated_signature.0.clone(),
+                                    ref_nonce,
+                                    result.signer_bitmap,
+                                ).await {
+                                    Ok(tx_hash) => {
+                                        const BUNDLE_RECEIPT_TIMEOUT_SECS: u64 = 30;
+                                        match settlement_writer.wait_for_receipt(tx_hash, BUNDLE_RECEIPT_TIMEOUT_SECS).await {
+                                            Ok(receipt) => {
+                                                let success = receipt.status.map(|s| s.as_u64() == 1).unwrap_or(false);
+                                                if success {
+                                                    info!(?tx_hash, count = submitted_orders.len(), "completeBuyOrdersSingle CONFIRMED");
+                                                    confirmed.extend(submitted_orders.iter().copied());
+                                                    single_sig_succeeded = true;
+                                                } else {
+                                                    warn!(?tx_hash, "completeBuyOrdersSingle REVERTED — falling through to per-item bundle");
+                                                }
+                                            }
+                                            Err(e) => warn!(error = %e, "completeBuyOrdersSingle receipt timeout — fallback"),
+                                        }
+                                    }
+                                    Err(e) => warn!(error = %e, "completeBuyOrdersSingle submit failed — fallback"),
+                                }
+                            }
+                        }
+                        Ok(Err(e)) => warn!(cycle = current_cycle, error = %e, "CBO bundle consensus failed — fallback"),
+                        Err(_) => warn!(cycle = current_cycle, "CBO bundle consensus timed out — fallback"),
+                    }
+                }
+
                 // ── Bundled fast path ────────────────────────────────────────
                 // Run consensus per order, accumulate leader-signed items, try
                 // one `completeBuyOrders` tx. On revert we fall through to the
@@ -1042,9 +1097,9 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                 let mut cached: Vec<CboCached> = Vec::new();
                 let mut follower_passthrough: Vec<ethers::types::U256> = Vec::new();
                 let mut consensus_failed: Vec<ethers::types::U256> = Vec::new();
-                let mut return_cbo_via_bundle = false;
+                let mut return_cbo_via_bundle = single_sig_succeeded;
 
-                if submitted_orders.len() >= 2 {
+                if !single_sig_succeeded && submitted_orders.len() >= 2 {
                     for order_id in &submitted_orders {
                         match tokio::time::timeout(
                             std::time::Duration::from_secs(20),

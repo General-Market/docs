@@ -154,6 +154,18 @@ interface ISettlementBridgeCustody {
         uint256[] calldata signersBitmasks
     ) external;
 
+    /// @notice Single-aggregated-BLS bundle for `completeBuyOrder`.
+    /// @dev One signature covers all orders in the bundle. The on-chain
+    ///      message is `keccak256(chainid, custody, "completeBuyOrdersSingle",
+    ///      orderIds, vault)`. Saves N× BLS verification gas.
+    function completeBuyOrdersSingle(
+        uint256[] calldata orderIds,
+        address vault,
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
+    ) external;
+
     /// @notice Emitted when a buy order is completed (USDC sent to vault)
     event BuyOrderCompleted(uint256 indexed orderId, address indexed vault, uint256 usdcAmount);
 

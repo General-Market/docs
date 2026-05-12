@@ -345,6 +345,49 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
         }
     }
 
+    /// @inheritdoc ISettlementBridgeCustody
+    function completeBuyOrdersSingle(
+        uint256[] calldata orderIds,
+        address vault,
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
+    ) external override {
+        uint256 n = orderIds.length;
+        if (n == 0) revert BundleLengthMismatch();
+
+        bytes32 message = keccak256(abi.encode(
+            block.chainid, address(this), "completeBuyOrdersSingle", orderIds, vault
+        ));
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
+
+        for (uint256 i = 0; i < n; ++i) {
+            _completeBuyOrderOneSkipBls(orderIds[i], vault);
+        }
+    }
+
+    /// @notice Same body as `_completeBuyOrderOne` without the per-item BLS
+    ///         verification. Only callable from `completeBuyOrdersSingle`
+    ///         after the bundle signature is verified once.
+    function _completeBuyOrderOneSkipBls(uint256 orderId, address vault) internal {
+        TypesLib.CrossChainOrder storage order = crossChainOrders[orderId];
+        if (order.user == address(0)) revert ErrorsLib.E125_BuyOrderNotFound(orderId);
+
+        pendingMints[orderId] = TypesLib.PendingMint({
+            itpId: order.itpId,
+            user: order.user,
+            amount: order.amount
+        });
+
+        uint256 internalAmount = order.amount;
+        delete crossChainOrders[orderId];
+
+        uint256 usdcAmount = DecimalLib.toUsdc(internalAmount);
+        if (usdcAmount > 0) usdc.safeTransfer(vault, usdcAmount);
+
+        emit BuyOrderCompleted(orderId, vault, usdcAmount);
+    }
+
     /// @notice Single-order body. Shared by `completeBuyOrder` and
     ///         `completeBuyOrders`. Each sub-call verifies its own BLS proof.
     function _completeBuyOrderOne(
