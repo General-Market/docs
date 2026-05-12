@@ -255,10 +255,22 @@ export const AntiCheatIceberg: React.FC = () => {
         />
       )}
 
-      {/* Trading-tier strip — galaxy-brain progression of who's on the
-          other side of each trade. Floats on the right of the frame and
-          fades in once the zoom-out completes. */}
-      <TradingTierStrip activeTier={activeTier} state={state} />
+      {/* Per-tier image cards — one per tier, anchored to its line on
+          the iceberg. They scroll with the iceberg and stay once
+          revealed. Each card is grey until its tier becomes active, then
+          clears to full colour and gets a white border + glow. */}
+      {TRADING_TIERS.map((tt, i) =>
+        state.phase === "tier" && i <= state.tier ? (
+          <TierImage
+            key={i}
+            tier={tt}
+            index={i}
+            scrollY={scrollY}
+            isActive={i === state.tier}
+            state={state}
+          />
+        ) : null,
+      )}
 
       {/* Source citation — bottom-left, mono, only if the active tier has
           a `source`. */}
@@ -269,143 +281,122 @@ export const AntiCheatIceberg: React.FC = () => {
   );
 };
 
-// ─── Trading-tier strip ───────────────────────────────────────────────────────
+// ─── Per-tier image ──────────────────────────────────────────────────────────
 //
-// Six emoji-glyph cards stacked vertically on the right edge of the frame,
-// overlaying the iceberg's dark water/sky margin. Active card scales up,
-// brightens, and gains a white border + glow.
+// One photograph per tier, sitting on the right side of the iceberg at the
+// tier's natural Y. The card scrolls WITH the iceberg (its top tracks the
+// scroll offset) so it stays glued to its line — like an annotation on a
+// real iceberg meme. Inactive tiers render in greyscale; the active tier
+// clears to full colour.
 
-const STRIP_RIGHT_INSET = 40;
-const STRIP_WIDTH = 240;
-const STRIP_TOP = 40;
-const STRIP_BOTTOM = 1040;
-const STRIP_HEIGHT = STRIP_BOTTOM - STRIP_TOP;
-const CARD_GAP = 8;
-const CARD_HEIGHT = (STRIP_HEIGHT - (N - 1) * CARD_GAP) / N;
+const IMG_RIGHT_INSET = 56;
+const IMG_W_PX = 280;
+const IMG_H_PX = 180;
 
-const TradingTierStrip: React.FC<{
-  activeTier: number;
+const TierImage: React.FC<{
+  tier: TradingTier;
+  index: number;
+  scrollY: number;
+  isActive: boolean;
   state: State;
-}> = ({ activeTier, state }) => {
-  // Strip fades in over the first half of T0's anim window so it doesn't
-  // compete with the zoom-out.
-  let stripOpacity = 0;
-  if (state.phase === "tier") {
-    if (state.tier === 0 && state.sub === "anim") {
-      stripOpacity = interpolate(state.t, [0, 1], [0, 1], {
-        easing: EASE_OUT,
+}> = ({ tier, index, scrollY, isActive, state }) => {
+  // The card's Y in frame coords — its centre rides the tier's natural Y.
+  const y = TIER_Y_FILL[index] + scrollY;
+  if (y < -IMG_H_PX || y > H + IMG_H_PX) return null;
+
+  // When a tier first becomes active, the card slides in from the right
+  // and the colour blooms from greyscale.
+  const isJustEntering = isActive && state.phase === "tier" && state.sub === "anim";
+  const enterT = isJustEntering ? state.t : 1;
+  const slideX = isJustEntering
+    ? interpolate(enterT, [0, 1], [40, 0], { easing: EASE_OUT })
+    : 0;
+  const fadeIn = isJustEntering
+    ? interpolate(enterT, [0.2, 0.9], [0, 1], {
         extrapolateLeft: "clamp",
         extrapolateRight: "clamp",
-      });
-    } else {
-      stripOpacity = 1;
-    }
-  }
+      })
+    : 1;
 
   return (
     <div
       style={{
         position: "absolute",
-        right: STRIP_RIGHT_INSET,
-        top: STRIP_TOP,
-        width: STRIP_WIDTH,
-        height: STRIP_HEIGHT,
-        opacity: stripOpacity,
-        display: "flex",
-        flexDirection: "column",
-        gap: CARD_GAP,
+        right: IMG_RIGHT_INSET - slideX,
+        top: y,
+        width: IMG_W_PX,
+        height: IMG_H_PX,
+        transform: "translateY(-50%)",
+        opacity: fadeIn,
+        borderRadius: 14,
+        overflow: "hidden",
+        border: isActive
+          ? "2px solid rgba(255,255,255,0.9)"
+          : "1px solid rgba(255,255,255,0.22)",
+        boxShadow: isActive
+          ? "0 16px 44px rgba(0,0,0,0.62), 0 0 32px rgba(255,255,255,0.2)"
+          : "0 8px 22px rgba(0,0,0,0.5)",
+        background: "rgba(8, 12, 22, 0.82)",
         pointerEvents: "none",
-        willChange: "opacity",
+        willChange: "right, top, opacity",
       }}
     >
-      {TRADING_TIERS.map((tt, i) => {
-        const isActive = i === activeTier;
-        const isPassed = activeTier > i;
-        const cardScale = isActive ? 1.04 : 0.94;
-        const cardOpacity = isActive ? 1 : isPassed ? 0.62 : 0.42;
-        return (
-          <div
-            key={i}
-            style={{
-              width: "100%",
-              height: CARD_HEIGHT,
-              transform: `scale(${cardScale})`,
-              transformOrigin: "right center",
-              opacity: cardOpacity,
-              transition: "transform 120ms ease, opacity 120ms ease",
-              borderRadius: 14,
-              border: isActive
-                ? "2px solid rgba(255,255,255,0.85)"
-                : "1px solid rgba(255,255,255,0.18)",
-              boxShadow: isActive
-                ? "0 12px 36px rgba(0,0,0,0.6), 0 0 28px rgba(255,255,255,0.18)"
-                : "0 6px 16px rgba(0,0,0,0.45)",
-              background: "rgba(8, 12, 22, 0.82)",
-              overflow: "hidden",
-              position: "relative",
-            }}
-          >
-            {/* Photograph fills the card; label rides on a gradient strip
-                across the bottom so it stays readable. Glyph is kept in
-                the data as a fallback but isn't rendered when the image
-                loads — Remotion's <Img> errors loudly if the file is
-                missing, so an absent asset is visible immediately. */}
-            <Img
-              src={staticFile(tt.imageSrc)}
-              style={{
-                position: "absolute",
-                inset: 0,
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-                filter: isActive
-                  ? "saturate(1.05)"
-                  : "saturate(0.75) brightness(0.8)",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                left: 0,
-                right: 0,
-                bottom: 0,
-                padding: "16px 12px 8px",
-                background:
-                  "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.86) 100%)",
-                fontFamily: font,
-                fontSize: 14,
-                fontWeight: 600,
-                color: isActive ? "#FFFFFF" : "rgba(255,255,255,0.82)",
-                letterSpacing: "-0.01em",
-                textAlign: "center",
-                lineHeight: 1.2,
-                textShadow: "0 1px 4px rgba(0,0,0,0.95)",
-              }}
-            >
-              {tt.label}
-            </div>
-            {isActive && (
-              <div
-                style={{
-                  position: "absolute",
-                  top: 6,
-                  right: 8,
-                  fontFamily: monoFont,
-                  fontSize: 10,
-                  letterSpacing: "0.14em",
-                  textTransform: "uppercase",
-                  color: "rgba(255,255,255,0.86)",
-                  background: "rgba(0,0,0,0.5)",
-                  padding: "2px 6px",
-                  borderRadius: 3,
-                }}
-              >
-                ↑ smarter
-              </div>
-            )}
-          </div>
-        );
-      })}
+      <Img
+        src={staticFile(tier.imageSrc)}
+        style={{
+          position: "absolute",
+          inset: 0,
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          filter: isActive
+            ? "saturate(1.08) brightness(1)"
+            : "grayscale(1) brightness(0.72)",
+          transition: "filter 220ms ease",
+        }}
+      />
+      {/* Label strip across the bottom. */}
+      <div
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          padding: "20px 14px 10px",
+          background:
+            "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.88) 100%)",
+          fontFamily: font,
+          fontSize: 16,
+          fontWeight: 600,
+          color: isActive ? "#FFFFFF" : "rgba(255,255,255,0.66)",
+          letterSpacing: "-0.012em",
+          textAlign: "left",
+          lineHeight: 1.2,
+          textShadow: "0 1px 6px rgba(0,0,0,0.95)",
+        }}
+      >
+        {tier.label}
+      </div>
+      {/* "↑ smarter" chip — only on the current line. */}
+      {isActive && (
+        <div
+          style={{
+            position: "absolute",
+            top: 10,
+            right: 12,
+            fontFamily: monoFont,
+            fontSize: 11,
+            letterSpacing: "0.16em",
+            textTransform: "uppercase",
+            color: "rgba(255,255,255,0.92)",
+            background: "rgba(0,0,0,0.55)",
+            padding: "3px 8px",
+            borderRadius: 4,
+          }}
+        >
+          ↑ smarter
+        </div>
+      )}
     </div>
   );
 };
