@@ -1,0 +1,104 @@
+version: "3.8"
+
+x-bot: &bot
+  build:
+    context: ../../../vision-bot-binance
+  restart: always
+  env_file: .env
+
+services:
+  bot-spot-mom-5:
+    <<: *bot
+    environment:
+      STRATEGY: spot_mom_5
+      SOURCE_ID: binance_spot
+      VAULT_ADDRESS: "${V_SPOT_MOM_5}"
+      MANAGER_PRIVATE_KEY: "${K_SPOT_MOM_5}"
+
+  bot-spot-rev-5:
+    <<: *bot
+    environment:
+      STRATEGY: spot_rev_5
+      SOURCE_ID: binance_spot
+      VAULT_ADDRESS: "${V_SPOT_REV_5}"
+      MANAGER_PRIVATE_KEY: "${K_SPOT_REV_5}"
+
+  bot-spot-mom-20:
+    <<: *bot
+    environment:
+      STRATEGY: spot_mom_20
+      SOURCE_ID: binance_spot
+      VAULT_ADDRESS: "${V_SPOT_MOM_20}"
+      MANAGER_PRIVATE_KEY: "${K_SPOT_MOM_20}"
+
+  bot-spot-rev-20:
+    <<: *bot
+    environment:
+      STRATEGY: spot_rev_20
+      SOURCE_ID: binance_spot
+      VAULT_ADDRESS: "${V_SPOT_REV_20}"
+      MANAGER_PRIVATE_KEY: "${K_SPOT_REV_20}"
+
+  bot-fund-rev:
+    <<: *bot
+    environment:
+      STRATEGY: fund_rev
+      SOURCE_ID: binance_futures_funding
+      VAULT_ADDRESS: "${V_FUND_REV}"
+      MANAGER_PRIVATE_KEY: "${K_FUND_REV}"
+
+  bot-fund-mom:
+    <<: *bot
+    environment:
+      STRATEGY: fund_mom
+      SOURCE_ID: binance_futures_funding
+      VAULT_ADDRESS: "${V_FUND_MOM}"
+      MANAGER_PRIVATE_KEY: "${K_FUND_MOM}"
+
+  bot-fund-flip:
+    <<: *bot
+    environment:
+      STRATEGY: fund_flip
+      SOURCE_ID: binance_futures_funding
+      VAULT_ADDRESS: "${V_FUND_FLIP}"
+      MANAGER_PRIVATE_KEY: "${K_FUND_FLIP}"
+
+  bot-fund-extreme:
+    <<: *bot
+    environment:
+      STRATEGY: fund_extreme
+      SOURCE_ID: binance_futures_funding
+      VAULT_ADDRESS: "${V_FUND_EXTREME}"
+      MANAGER_PRIVATE_KEY: "${K_FUND_EXTREME}"
+
+  bot-opt-mom-all:
+    <<: *bot
+    environment:
+      STRATEGY: opt_mom_all
+      SOURCE_ID: binance_options
+      VAULT_ADDRESS: "${V_OPT_MOM_ALL}"
+      MANAGER_PRIVATE_KEY: "${K_OPT_MOM_ALL}"
+
+  bot-opt-rev-all:
+    <<: *bot
+    environment:
+      STRATEGY: opt_rev_all
+      SOURCE_ID: binance_options
+      VAULT_ADDRESS: "${V_OPT_REV_ALL}"
+      MANAGER_PRIVATE_KEY: "${K_OPT_REV_ALL}"
+
+  bot-opt-mom-calls:
+    <<: *bot
+    environment:
+      STRATEGY: opt_mom_calls
+      SOURCE_ID: binance_options
+      VAULT_ADDRESS: "${V_OPT_MOM_CALLS}"
+      MANAGER_PRIVATE_KEY: "${K_OPT_MOM_CALLS}"
+
+  bot-opt-mom-puts:
+    <<: *bot
+    environment:
+      STRATEGY: opt_mom_puts
+      SOURCE_ID: binance_options
+      VAULT_ADDRESS: "${V_OPT_MOM_PUTS}"
+      MANAGER_PRIVATE_KEY: "${K_OPT_MOM_PUTS}"
