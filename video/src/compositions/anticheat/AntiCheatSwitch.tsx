@@ -12,121 +12,23 @@ import { FPS, H, W, colors, toFrames } from "./theme";
 import { DotGrid, DotGridVignette } from "./DotGrid";
 import { IdleZoom, RevealChars } from "./vibe";
 
-// 180 frames, opens at absolute frame 947 (just after the Reassure→Switch
-// snap). Scene-local beats inside Switch land at frames 22, 47, 73, 99
-// (absolute beats 37–40, frames 969 / 994 / 1020 / 1046).
+// 228 frames (7.6s). Opens after the Reassure→Switch snap. The 40%
+// proof-bars were excised — the two lines now carry the scene on their
+// own. Beat anchors (PIVOT_AT = 107, KICKER_AT = 156) preserved so the
+// music sync inherited from the bars version still lands.
 //
-// Setup → pivot → knife. Three rows with proportional bars; the Blocks
-// row's "40%" doesn't crossfade out — it physically inflates from its
-// row slot into the centre of the frame, becoming the hero.
+// Setup → pivot → knife:
+//   "Same strategy."           opens the setup
+//   "Earn up to 2× more*"      lands as the hero on PIVOT_AT
+//   "just by switching         types in as the knife
+//    financial product"
 const SCENE_FRAMES = toFrames(7.6);
 
 const HEADLINE_AT = 0;
-const ROWS_AT = 18;
-const ROW_STAGGER = 3;
-// Hold the bar chart long enough to read three percentages before the
-// morph fires; streak + morph + settle share the pivot anchor so the
-// impact still lands on the morph. Scene extended +0.6s so the post-
-// kicker hold is long enough to read "just by switching financial
-// product" — EndCard + its pullLong transition shift 18f later.
 const PIVOT_AT = 107;
-const COPY_AT = 130;
+const HERO_AT = 110;
 const KICKER_AT = 156;
 
-type Row = { label: string; pct: number; accent: boolean };
-// Order: Blocks first as the dominant bar — descending stair, matching
-// the reference's IVV-leads composition.
-const ROWS: Row[] = [
-  { label: "Blocks", pct: 40, accent: true },
-  { label: "Perps", pct: 25, accent: false },
-  { label: "Options", pct: 20, accent: false },
-];
-const HERO_INDEX = 0;
-
-// ─── Bar-chart geometry — outlined 3D boxes, cavalier oblique projection ────
-//
-// Three vertical wireframe bars over the bg. Heights scale linearly with
-// pct so Blocks reads exactly twice Perps — the visual is the proof of
-// "Up to 2× more". Each bar is one silhouette polygon (6 outer edges,
-// filled with bg) plus three internal strokes (front-top, front-right,
-// top-right fold); drawing it that way avoids double strokes at shared
-// joins.
-
-const BAR_WIDTH = 240;
-const BAR_GAP = 150;
-const BAR_BASELINE_Y = 1020;
-const BAR_MAX_HEIGHT = 520; // Blocks (40%) sets the cap
-const BAR_DEPTH = 30;
-const BAR_STROKE = 4;
-
-// Visual amplification: heights map through (pct/40)^HEIGHT_POWER instead
-// of linearly. With power 1.6 the displayed percentages stay legit
-// (20 / 25 / 40) but Blocks reads ~3× Perps visually against the real 2×
-// ratio. The chart should make you feel Blocks isn't just bigger — it's
-// the answer.
-const HEIGHT_POWER = 1.6;
-
-// Pseudo-perspective. Each bar's depth direction points toward a single
-// vanishing point off-frame to the upper-right. The leftmost bar (Blocks)
-// shows a flatter, more horizontal right face; the rightmost bar (Perps)
-// tilts more toward the VP — its top face opens up while its right face
-// narrows. Camera isn't head-on; the chart isn't a flat parallel-
-// projection cliché.
-const VP_X = W * 1.4; // 2688 — well off the right edge
-const VP_Y = -500;    // above the frame
-
-const CHART_TOTAL_WIDTH = 3 * BAR_WIDTH + 2 * BAR_GAP;
-const CHART_LEFT = (W - CHART_TOTAL_WIDTH) / 2;
-
-const barX = (i: number) => CHART_LEFT + i * (BAR_WIDTH + BAR_GAP);
-const barTargetH = (pct: number) =>
-  BAR_MAX_HEIGHT * Math.pow(pct / 40, HEIGHT_POWER);
-const barCenterX = (i: number) => barX(i) + BAR_WIDTH / 2;
-
-const barDepth = (i: number, pct: number) => {
-  const cx = barCenterX(i);
-  const top = BAR_BASELINE_Y - barTargetH(pct);
-  const vx = VP_X - cx;
-  const vy = top - VP_Y;
-  const len = Math.hypot(vx, vy);
-  return {
-    dx: (vx / len) * BAR_DEPTH,
-    dy: (vy / len) * BAR_DEPTH,
-  };
-};
-
-// Labels float above each bar's FINAL back-top edge, so they don't bob as
-// the bar grows. Two lines: name (smaller) and pct (larger). The hero
-// row's pct is rendered transparently here; MorphingForty paints over it.
-const LABEL_NAME_FONT = 80;
-const LABEL_NAME_LH = 1.05;
-const LABEL_VALUE_FONT = 40;
-const LABEL_VALUE_LH = 1.0;
-const LABEL_INTERLINE_GAP = 8;
-const LABEL_BAR_GAP = 14;
-const LABEL_BLOCK_HEIGHT =
-  LABEL_NAME_FONT * LABEL_NAME_LH +
-  LABEL_INTERLINE_GAP +
-  LABEL_VALUE_FONT * LABEL_VALUE_LH;
-
-const labelTopY = (i: number, pct: number) => {
-  const { dy } = barDepth(i, pct);
-  return (
-    BAR_BASELINE_Y - barTargetH(pct) - dy - LABEL_BAR_GAP - LABEL_BLOCK_HEIGHT
-  );
-};
-
-// Hero source position for the morphing 40% — centred on the Blocks
-// bar's front face, at the value-line midpoint.
-const SRC_PCT_CX = barCenterX(HERO_INDEX);
-const SRC_PCT_CY =
-  labelTopY(HERO_INDEX, 40) +
-  LABEL_NAME_FONT * LABEL_NAME_LH +
-  LABEL_INTERLINE_GAP +
-  (LABEL_VALUE_FONT * LABEL_VALUE_LH) / 2;
-
-// Hero sizing.
-const HERO_FONT = 320;
 const HERO_CENTER_X = W / 2;
 const HERO_CENTER_Y = H / 2 - 24;
 
@@ -149,10 +51,9 @@ export const AntiCheatSwitch: React.FC = () => (
 
 // ─── Particle field — soft drifting dots, GMBrand SegSupercharge pattern ──
 //
-// Adapted from Scene03's "Built to maximize your edge" supercharge segment:
-// noise-driven dots at varied sizes, fade in around the impact moment and
-// hold through the rest of the scene. Tinted to the accent-blue family so
-// they augment the hero glow without competing with the ledger.
+// Noise-driven dots tinted to the accent-blue family, fading in around the
+// impact and holding through the hero state. They augment the orb's glow
+// without competing with the type.
 
 const PARTICLE_COUNT = 32;
 const PARTICLE_COLORS = [
@@ -167,8 +68,6 @@ const ParticleField: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  // Fade in around the impact, hold through the hero state, retreat at the
-  // very tail so the EndCard transition starts clean.
   const fieldOp = interpolate(
     frame,
     [100, 130, SCENE_FRAMES - 18, SCENE_FRAMES],
@@ -214,7 +113,8 @@ const Stage: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  const morphT = spring({
+  // Pivot drives the headline's exit AND the hero's arrival blur/scale.
+  const pivotT = spring({
     frame: frame - PIVOT_AT,
     fps,
     config: { damping: 18, stiffness: 100, mass: 0.85 },
@@ -222,9 +122,8 @@ const Stage: React.FC = () => {
 
   return (
     <AbsoluteFill>
-      <Headline morphT={morphT} />
+      <Headline pivotT={pivotT} />
       <SettleOrb frame={frame} fps={fps} />
-      <BarChart3D frame={frame} fps={fps} morphT={morphT} />
       <Streak
         frame={frame}
         startFromX={HERO_CENTER_X + 1100}
@@ -237,18 +136,19 @@ const Stage: React.FC = () => {
         delay={2}
       />
       <ImpactFlash frame={frame} />
-      <MorphingForty frame={frame} fps={fps} morphT={morphT} />
-      <HeroCopy frame={frame} fps={fps} />
+      <Hero frame={frame} fps={fps} />
+      <Kicker frame={frame} fps={fps} />
+      <Footnote frame={frame} fps={fps} />
     </AbsoluteFill>
   );
 };
 
-// ─── Headline ─────────────────────────────────────────────────────────────────
+// ─── Headline — "Same strategy." opens, exits on the pivot ────────────────────
 
-const Headline: React.FC<{ morphT: number }> = ({ morphT }) => {
-  const exitY = -morphT * 38;
-  const exitOp = 1 - morphT;
-  const exitBlur = morphT * 8;
+const Headline: React.FC<{ pivotT: number }> = ({ pivotT }) => {
+  const exitY = -pivotT * 38;
+  const exitOp = 1 - pivotT;
+  const exitBlur = pivotT * 8;
 
   return (
     <div
@@ -282,309 +182,59 @@ const Headline: React.FC<{ morphT: number }> = ({ morphT }) => {
   );
 };
 
-// ─── Bar chart — outlined 3D boxes ────────────────────────────────────────────
+// ─── Hero — "Earn up to 2× more*" ─────────────────────────────────────────────
 
-const BarChart3D: React.FC<{
-  frame: number;
-  fps: number;
-  morphT: number;
-}> = ({ frame, fps, morphT }) => (
-  <>
-    <svg
-      width={W}
-      height={H}
-      viewBox={`0 0 ${W} ${H}`}
-      style={{
-        position: "absolute",
-        left: 0,
-        top: 0,
-        pointerEvents: "none",
-      }}
-    >
-      {ROWS.map((row, i) => (
-        <Bar3D
-          key={row.label}
-          row={row}
-          index={i}
-          frame={frame}
-          morphT={morphT}
-        />
-      ))}
-    </svg>
-    {ROWS.map((row, i) => (
-      <BarLabel
-        key={row.label}
-        row={row}
-        index={i}
-        frame={frame}
-        fps={fps}
-        morphT={morphT}
-      />
-    ))}
-  </>
-);
+const HERO_FONT = 200;
 
-const Bar3D: React.FC<{
-  row: Row;
-  index: number;
-  frame: number;
-  morphT: number;
-}> = ({ row, index, frame, morphT }) => {
-  const start = ROWS_AT + index * ROW_STAGGER + 2;
-  const local = frame - start;
-
-  const enterOp = interpolate(local, [0, 6], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  // Height growth: ease-cubic-out over 9 frames — bars snap up, no slow fade.
-  const countT = Math.max(0, Math.min(1, local / 9));
-  const countEased = 1 - Math.pow(1 - countT, 3);
-
-  const isHero = index === HERO_INDEX;
-  const exitOp = 1 - morphT;
-  // Hero retracts a touch faster so the 40% flies free without leaving a
-  // phantom bar trailing behind it.
-  const heightFactor = isHero
-    ? Math.max(0, 1 - morphT * 1.4)
-    : 1 - morphT;
-  const currentH = barTargetH(row.pct) * countEased * heightFactor;
-  if (currentH < 0.5) return null;
-
-  const x = barX(index);
-  const yBottom = BAR_BASELINE_Y;
-  const yTop = yBottom - currentH;
-  const xR = x + BAR_WIDTH;
-  const { dx, dy } = barDepth(index, row.pct);
-
-  const bTLx = x + dx;
-  const bTLy = yTop - dy;
-  const bTRx = xR + dx;
-  const bTRy = yTop - dy;
-  const bBRx = xR + dx;
-  const bBRy = yBottom - dy;
-
-  // Outer silhouette traced counter-clockwise: front-bottom-left → front-
-  // top-left → back-top-left → back-top-right → back-bottom-right →
-  // front-bottom-right. Six visible edges. Filled with bg to mask the dot
-  // grid behind the box.
-  const silhouette = [
-    `${x},${yBottom}`,
-    `${x},${yTop}`,
-    `${bTLx},${bTLy}`,
-    `${bTRx},${bTRy}`,
-    `${bBRx},${bBRy}`,
-    `${xR},${yBottom}`,
-  ].join(" ");
-
-  return (
-    <g opacity={enterOp * exitOp}>
-      <polygon
-        points={silhouette}
-        fill={colors.bg}
-        stroke={colors.fg}
-        strokeWidth={BAR_STROKE}
-        strokeLinejoin="round"
-      />
-      {/* Front-top edge */}
-      <line
-        x1={x}
-        y1={yTop}
-        x2={xR}
-        y2={yTop}
-        stroke={colors.fg}
-        strokeWidth={BAR_STROKE}
-        strokeLinecap="round"
-      />
-      {/* Front-right edge */}
-      <line
-        x1={xR}
-        y1={yTop}
-        x2={xR}
-        y2={yBottom}
-        stroke={colors.fg}
-        strokeWidth={BAR_STROKE}
-        strokeLinecap="round"
-      />
-      {/* Top-right fold (front-top-right → back-top-right) */}
-      <line
-        x1={xR}
-        y1={yTop}
-        x2={bTRx}
-        y2={bTRy}
-        stroke={colors.fg}
-        strokeWidth={BAR_STROKE}
-        strokeLinecap="round"
-      />
-    </g>
-  );
-};
-
-const BarLabel: React.FC<{
-  row: Row;
-  index: number;
-  frame: number;
-  fps: number;
-  morphT: number;
-}> = ({ row, index, frame, fps, morphT }) => {
-  const start = ROWS_AT + index * ROW_STAGGER + 2;
-  const local = frame - start;
-
-  const enterOp = interpolate(local, [0, 6], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const enterBlur = interpolate(local, [0, 6], [4, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
+const Hero: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
   const enter = spring({
-    frame: local,
+    frame: frame - HERO_AT,
     fps,
-    config: { damping: 20, stiffness: 180, mass: 0.6 },
+    config: { damping: 20, stiffness: 110, mass: 0.85 },
   });
-  const enterY = interpolate(enter, [0, 1], [12, 0]);
+  const opacity = interpolate(enter, [0, 1], [0, 1]);
+  const baseScale = interpolate(enter, [0, 1], [0.78, 1]);
+  const blur = interpolate(enter, [0, 1], [10, 0]);
 
-  const countT = Math.max(0, Math.min(1, local / 9));
-  const countEased = 1 - Math.pow(1 - countT, 3);
-  const value = Math.round(row.pct * countEased);
-
-  const isHero = index === HERO_INDEX;
-  const exitOp = 1 - morphT;
-  const exitY = isHero ? morphT * 4 : morphT * 56;
-  const exitBlur = isHero ? morphT * 2 : morphT * 10;
-
-  return (
-    <div
-      style={{
-        position: "absolute",
-        left: barCenterX(index),
-        top: labelTopY(index, row.pct),
-        transform: `translate(-50%, 0) translateY(${(enterY + exitY).toFixed(2)}px)`,
-        textAlign: "center",
-        opacity: enterOp * exitOp,
-        filter:
-          enterBlur + exitBlur > 0.05
-            ? `blur(${(enterBlur + exitBlur).toFixed(2)}px)`
-            : undefined,
-        willChange: "transform, opacity, filter",
-        whiteSpace: "nowrap",
-      }}
-    >
-      <div
-        style={{
-          fontFamily: font,
-          fontSize: LABEL_NAME_FONT,
-          lineHeight: LABEL_NAME_LH,
-          fontWeight: 600,
-          letterSpacing: "-0.022em",
-          color: row.accent ? colors.fg : colors.fgSoft,
-        }}
-      >
-        {row.label}
-      </div>
-      <div style={{ height: LABEL_INTERLINE_GAP }} />
-      {/* Hero pct rendered transparently — MorphingForty paints the visible
-       * "40%" over the same spot. */}
-      <div
-        aria-hidden={isHero}
-        style={{
-          fontFamily: font,
-          fontSize: LABEL_VALUE_FONT,
-          lineHeight: LABEL_VALUE_LH,
-          fontWeight: 700,
-          letterSpacing: "-0.028em",
-          fontVariantNumeric: "tabular-nums",
-          color: isHero ? "transparent" : colors.dim,
-        }}
-      >
-        {isHero ? `${row.pct}%` : `${value}%`}
-      </div>
-    </div>
-  );
-};
-
-// ─── Morphing 40% ─────────────────────────────────────────────────────────────
-
-const MorphingForty: React.FC<{
-  frame: number;
-  fps: number;
-  morphT: number;
-}> = ({ frame, fps, morphT }) => {
-  const revealStart = ROWS_AT + HERO_INDEX * ROW_STAGGER + 2;
-  const revealLocal = frame - revealStart;
-  const revealOp = interpolate(revealLocal, [0, 6], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const revealBlur = interpolate(revealLocal, [0, 6], [4, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const enter = spring({
-    frame: revealLocal,
-    fps,
-    config: { damping: 20, stiffness: 180, mass: 0.6 },
-  });
-  const enterY = interpolate(enter, [0, 1], [12, 0]);
-
-  const countT = Math.max(0, Math.min(1, revealLocal / 9));
-  const countEased = 1 - Math.pow(1 - countT, 3);
-  const value = morphT > 0.05 ? 40 : Math.round(40 * countEased);
-
-  const cx = SRC_PCT_CX + (HERO_CENTER_X - SRC_PCT_CX) * morphT;
-  const cy = SRC_PCT_CY + (HERO_CENTER_Y - SRC_PCT_CY) * morphT;
-  const scale = 1 + (HERO_FONT / LABEL_VALUE_FONT - 1) * morphT;
-
-  const sinceLand = Math.max(0, frame - PIVOT_AT - 22);
+  const sinceLand = Math.max(0, frame - HERO_AT - 22);
   const breath = 1 + Math.sin(sinceLand / 32) * 0.006;
-  const finalScale = scale * breath;
-
-  const bloom = morphT;
-  const weight = morphT > 0.5 ? 800 : 700;
+  const scale = baseScale * breath;
 
   return (
     <div
       style={{
         position: "absolute",
-        left: cx,
-        top: cy,
-        transform: `translate(-50%, -50%) translateY(${enterY.toFixed(2)}px) scale(${finalScale.toFixed(4)})`,
+        left: HERO_CENTER_X,
+        top: HERO_CENTER_Y,
+        transform: `translate(-50%, -50%) scale(${scale.toFixed(4)})`,
         transformOrigin: "center center",
+        textAlign: "center",
         fontFamily: font,
-        fontSize: LABEL_VALUE_FONT,
-        fontWeight: weight,
+        fontSize: HERO_FONT,
+        fontWeight: 800,
         letterSpacing: "-0.045em",
-        lineHeight: 1,
+        color: colors.fg,
+        lineHeight: 1.0,
         whiteSpace: "nowrap",
-        color: colors.accent,
-        fontVariantNumeric: "tabular-nums",
-        opacity: revealOp,
-        filter: revealBlur > 0.05 ? `blur(${revealBlur.toFixed(2)}px)` : undefined,
+        opacity,
+        filter: blur > 0.05 ? `blur(${blur.toFixed(2)}px)` : undefined,
         willChange: "transform, opacity, filter",
       }}
     >
-      <div
-        aria-hidden
-        style={{
-          position: "absolute",
-          inset: -120,
-          background: `radial-gradient(ellipse at center, rgba(0,82,255,${(0.34 * bloom).toFixed(3)}), transparent 65%)`,
-          filter: "blur(50px)",
-          zIndex: -1,
-          pointerEvents: "none",
-        }}
-      />
-      {value}
+      Earn up to{" "}
+      <span style={{ color: colors.accent }}>2× more</span>
       <span
         style={{
-          fontSize: LABEL_VALUE_FONT * 0.62,
-          marginLeft: 4,
-          letterSpacing: "-0.02em",
+          fontFamily: monoFont,
+          fontSize: HERO_FONT * 0.32,
+          color: colors.dim,
+          marginLeft: 8,
+          verticalAlign: "super",
+          fontWeight: 500,
+          letterSpacing: 0,
         }}
       >
-        %
+        *
       </span>
     </div>
   );
@@ -592,10 +242,9 @@ const MorphingForty: React.FC<{
 
 // ─── Impact burst ─────────────────────────────────────────────────────────────
 //
-// Two diagonal accent-blue capsules accelerate from off-screen into the
-// centre of the morphing 40%. Brief radial flash on impact. A soft
-// settle orb fades in behind the hero and holds. Reference: Apple's
-// "watched" reveal — adapted to single-color accent.
+// Two diagonal accent-blue capsules accelerate into the centre of the
+// hero text. Brief radial flash on impact. A soft settle orb fades in
+// behind the hero and holds.
 
 const STREAK_START = 89;
 const STREAK_IMPACT = 106;
@@ -615,7 +264,6 @@ const Streak: React.FC<{
   if (local < -4 || frame >= STREAK_IMPACT + 1) return null;
 
   const t = Math.max(0, Math.min(1, local / duration));
-  // Ease-in cubic — the streak accelerates into impact.
   const eased = t * t * t;
 
   const x = startFromX + (HERO_CENTER_X - startFromX) * eased;
@@ -625,12 +273,9 @@ const Streak: React.FC<{
   const dy = HERO_CENTER_Y - startFromY;
   const angleDeg = (Math.atan2(dy, dx) * 180) / Math.PI;
 
-  // Longer fade-in window now that the travel is 42 frames; keeps the
-  // streaks faint while the rows are still settling.
   const fadeIn = Math.max(0, Math.min(1, local / 14));
   const opacity = fadeIn;
 
-  // Stretch the capsule as it accelerates — motion smearing.
   const baseLength = 300;
   const length = baseLength * (1 + eased * 0.7);
   const thickness = 26;
@@ -663,7 +308,6 @@ const ImpactFlash: React.FC<{ frame: number }> = ({ frame }) => {
   const local = frame - STREAK_IMPACT;
   if (local < -2 || local > FLASH_END - STREAK_IMPACT) return null;
 
-  // Spike → decay over ~10 frames.
   const tIn = Math.max(0, Math.min(1, (local + 2) / 4));
   const tOut = Math.max(
     0,
@@ -782,17 +426,9 @@ const KickerTyping: React.FC<{ startFrame: number }> = ({ startFrame }) => {
   );
 };
 
-// ─── Hero copy ────────────────────────────────────────────────────────────────
+// ─── Kicker block ─────────────────────────────────────────────────────────────
 
-const HeroCopy: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
-  const claimT = spring({
-    frame: frame - COPY_AT,
-    fps,
-    config: { damping: 22, stiffness: 130, mass: 0.7 },
-  });
-  const claimOp = interpolate(claimT, [0, 1], [0, 1]);
-  const claimY = interpolate(claimT, [0, 1], [16, 0]);
-
+const Kicker: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
   const kickT = spring({
     frame: frame - KICKER_AT,
     fps,
@@ -802,86 +438,59 @@ const HeroCopy: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
   const kickY = interpolate(kickT, [0, 1], [12, 0]);
 
   return (
-    <>
-      {/* Below the hero number — the implication. Bigger, no period. */}
-      <div
-        style={{
-          position: "absolute",
-          top: HERO_CENTER_Y + HERO_FONT * 0.55,
-          left: 0,
-          right: 0,
-          textAlign: "center",
-          fontFamily: font,
-          fontSize: 96,
-          fontWeight: 700,
-          letterSpacing: "-0.032em",
-          color: colors.fg,
-          lineHeight: 1.0,
-          opacity: claimOp,
-          transform: `translateY(${claimY.toFixed(2)}px)`,
-        }}
-      >
-        Earn up to 2x more
-        <span
-          style={{
-            fontFamily: monoFont,
-            fontSize: 32,
-            color: colors.dim,
-            marginLeft: 4,
-            verticalAlign: "super",
-            fontWeight: 500,
-            letterSpacing: 0,
-          }}
-        >
-          *
-        </span>
-      </div>
+    <div
+      style={{
+        position: "absolute",
+        top: HERO_CENTER_Y - HERO_FONT * 0.85,
+        left: 0,
+        right: 0,
+        textAlign: "center",
+        fontFamily: font,
+        fontSize: 96,
+        fontWeight: 700,
+        letterSpacing: "-0.032em",
+        color: colors.fg,
+        lineHeight: 1.0,
+        opacity: kickOp,
+        transform: `translateY(${kickY.toFixed(2)}px)`,
+      }}
+    >
+      <KickerTyping startFrame={KICKER_AT} />
+    </div>
+  );
+};
 
-      {/* Top kicker — the action, matched in size + weight to "Up to 2× more"
-       * so the two read as twins. Sits where the headline used to live; now
-       * that "Same strategy." has exited it owns the top of the frame. */}
-      <div
-        style={{
-          position: "absolute",
-          top: 156,
-          left: 0,
-          right: 0,
-          textAlign: "center",
-          fontFamily: font,
-          fontSize: 96,
-          fontWeight: 700,
-          letterSpacing: "-0.032em",
-          color: colors.fg,
-          lineHeight: 1.0,
-          opacity: kickOp,
-          transform: `translateY(${kickY.toFixed(2)}px)`,
-        }}
-      >
-        <KickerTyping startFrame={KICKER_AT} />
-      </div>
+// ─── Footnote — legal fine print under the asterisk ───────────────────────────
 
-      {/* Legal footnote — tiny, dim, defensible. Apple-style fine print. */}
-      <div
-        style={{
-          position: "absolute",
-          bottom: 56,
-          left: 0,
-          right: 0,
-          textAlign: "center",
-          fontFamily: font,
-          fontSize: 18,
-          fontWeight: 400,
-          letterSpacing: "-0.005em",
-          color: colors.dim,
-          lineHeight: 1.35,
-          maxWidth: 1240,
-          margin: "0 auto",
-          opacity: kickOp,
-        }}
-      >
-        *Based on General Market testnet data. Indicative comparison under favorable market conditions. Net of fees and slippage. Past performance does not guarantee future returns.
-      </div>
-    </>
+const Footnote: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
+  const kickT = spring({
+    frame: frame - KICKER_AT,
+    fps,
+    config: { damping: 22, stiffness: 130, mass: 0.7 },
+  });
+  const op = interpolate(kickT, [0, 1], [0, 1]);
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        bottom: 56,
+        left: 0,
+        right: 0,
+        textAlign: "center",
+        fontFamily: font,
+        fontSize: 18,
+        fontWeight: 400,
+        letterSpacing: "-0.005em",
+        color: colors.dim,
+        lineHeight: 1.35,
+        maxWidth: 1240,
+        margin: "0 auto",
+        opacity: op,
+      }}
+    >
+      *Based on General Market testnet data. Indicative comparison under favorable market conditions. Net of fees and slippage. Past performance does not guarantee future returns.
+    </div>
   );
 };
 
