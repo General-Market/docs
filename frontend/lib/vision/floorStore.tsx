@@ -111,6 +111,20 @@ function sumStakes(markets: MarketRatio[]): { up: bigint; down: bigint } {
   return { up, down }
 }
 
+/**
+ * Rounds API returns bettingEnd as an ISO date string like
+ * "2026-05-12T22:00:00+00:00". Older code might emit unix seconds.
+ * Accept either, return unix seconds.
+ */
+function parseBettingEnd(s: string | null | undefined): number | null {
+  if (!s) return null
+  const parsed = Date.parse(s)
+  if (!isNaN(parsed)) return Math.floor(parsed / 1000)
+  const n = Number(s)
+  if (!isNaN(n) && n > 0) return n
+  return null
+}
+
 function shuffle<T>(arr: T[]): T[] {
   const out = arr.slice()
   for (let i = out.length - 1; i > 0; i--) {
@@ -231,12 +245,17 @@ export function FloorProvider({ children }: FloorProviderProps) {
   const floorBatches = useMemo<FloorBatch[]>(() => {
     if (batches.length === 0) return []
     const sourceMap = new Map(sources.map(s => [s.sourceId, s]))
-    const roundMap = new Map(rounds.map(r => [`${r.sourceId}-${r.batchId}`, r]))
+    // Match rounds by sourceId — keep the highest-batchId round per source
+    // (mirrors the dedup in useBatches). The two endpoints don't always
+    // share the same batchId for the same source.
+    const roundMap = new Map<string, (typeof rounds)[number]>()
+    for (const r of rounds.slice().sort((a, b) => b.batchId - a.batchId)) {
+      if (!roundMap.has(r.sourceId)) roundMap.set(r.sourceId, r)
+    }
     return batches.map(b => {
       const src = sourceMap.get(b.sourceId)
-      const round = roundMap.get(`${b.sourceId}-${b.id}`)
-      const bettingEndStr = round?.bettingEnd
-      const bettingEnd = bettingEndStr ? Number(bettingEndStr) : null
+      const round = roundMap.get(b.sourceId)
+      const bettingEnd = parseBettingEnd(round?.bettingEnd)
       return {
         sourceId: b.sourceId,
         sourceName: src?.name ?? b.sourceId,
