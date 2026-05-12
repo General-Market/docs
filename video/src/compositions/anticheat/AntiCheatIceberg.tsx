@@ -18,18 +18,32 @@ import { FPS, H, W } from "./theme";
 // with a soft magnet catch. Tiers never write in advance — a word doesn't
 // exist on the iceberg until we've crossed it.
 
+// Re-cropped asset: 1265 × 1670 (bottom two pink guides + dark void removed).
+// Native pink lines at y = 269, 539, 857, 1141, 1430 in cropped coordinates.
+// Six section centres → six tier anchor points.
 const IMG_W = 1100;
-const IMG_NATIVE_RATIO = 2238 / 1265;
-const IMG_H = Math.round(IMG_W * IMG_NATIVE_RATIO); // 1946
+const IMG_NATIVE_H = 1670;
+const IMG_NATIVE_W = 1265;
+const IMG_SCALE = IMG_W / IMG_NATIVE_W;                       // ~0.8696
+const IMG_H = Math.round(IMG_NATIVE_H * IMG_SCALE);           // 1452
 const IMG_LEFT = 0;
-const SCROLL_RANGE = IMG_H - H;                     // 866
+const SCROLL_RANGE = IMG_H - H;                               // 372
 
-// Tier centres in displayed image coordinates, from the pink guides.
-const TIER_Y = [82, 286, 600, 928, 1248, 1672];
+// Tier centres in displayed coordinates — geometric midpoint of each band
+// between adjacent pink lines, scaled to the displayed image.
+const TIER_Y = [
+  Math.round(((0 + 269) / 2) * IMG_SCALE),       // 117 — sky / above tip
+  Math.round(((269 + 539) / 2) * IMG_SCALE),     // 351 — tip + waterline
+  Math.round(((539 + 857) / 2) * IMG_SCALE),     // 607 — upper underwater
+  Math.round(((857 + 1141) / 2) * IMG_SCALE),    // 869 — mid underwater
+  Math.round(((1141 + 1430) / 2) * IMG_SCALE),   // 1118 — lower iceberg
+  Math.round(((1430 + 1670) / 2) * IMG_SCALE),   // 1348 — depths
+];
 
-// Where settled (past) labels rest on the iceberg's right shoulder — in the
-// dark margin past the silhouette. Keeps type off the white ice.
-const SETTLED_X = 760;
+// Where settled (past) labels rest on the iceberg — right-aligned to a fixed
+// inset from the image's right edge, so type sits in the same column at every
+// tier and doesn't fight the varying silhouette.
+const SETTLED_RIGHT_INSET = 56;
 
 const SUFFIXES = [
   "strategy",
@@ -208,24 +222,32 @@ const SettledLabel: React.FC<{
     <div
       style={{
         position: "absolute",
-        left: SETTLED_X,
+        right: SETTLED_RIGHT_INSET,
         top: tierY,
         transform: `translateY(calc(-50% + ${rise.toFixed(2)}px))`,
-        fontFamily: SF_DISPLAY,
-        fontSize: 38,
-        fontWeight: 500,
-        color: "rgba(245, 245, 247, 0.78)",
-        letterSpacing: "-0.022em",
-        lineHeight: 1,
-        whiteSpace: "nowrap",
-        textShadow:
-          "0 1px 8px rgba(0,0,0,0.9), 0 0 24px rgba(0,0,0,0.55)",
         opacity: appear,
         willChange: "transform, opacity",
         pointerEvents: "none",
       }}
     >
-      {word}
+      <div
+        style={{
+          fontFamily: SF_DISPLAY,
+          fontSize: 34,
+          fontWeight: 500,
+          color: "rgba(245, 245, 247, 0.95)",
+          letterSpacing: "-0.022em",
+          lineHeight: 1,
+          whiteSpace: "nowrap",
+          padding: "10px 22px",
+          borderRadius: 980,
+          background: "rgba(12, 18, 30, 0.62)",
+          boxShadow:
+            "0 1px 0 rgba(255,255,255,0.06) inset, 0 8px 24px rgba(0,0,0,0.45)",
+        }}
+      >
+        {word}
+      </div>
     </div>
   );
 };
