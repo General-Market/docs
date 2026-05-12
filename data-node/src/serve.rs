@@ -1206,6 +1206,78 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
         });
     }
 
+    // Binance Spot (USDT pairs, 5-min tick)
+    {
+        let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
+        let pw = price_writer.clone();
+        spawn_resilient("binance_spot", pw.clone(), move || {
+            let pool_c = pool_c.clone();
+            let bh = bh.clone();
+            let pw = pw.clone();
+            async move {
+                match crate::market_data::sources::binance_spot::BinanceSpotMarketSource::from_env() {
+                    Ok(source) => {
+                        let engine = crate::market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw);
+                        engine.run().await;
+                    }
+                    Err(e) => {
+                        tracing::error!("Binance Spot init failed: {e}");
+                        tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                    }
+                }
+            }
+        });
+    }
+
+    // Binance Futures Funding (USDT perpetual funding rates, scaled ×10_000)
+    {
+        let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
+        let pw = price_writer.clone();
+        spawn_resilient("binance_futures_funding", pw.clone(), move || {
+            let pool_c = pool_c.clone();
+            let bh = bh.clone();
+            let pw = pw.clone();
+            async move {
+                match crate::market_data::sources::binance_futures_funding::BinanceFuturesFundingMarketSource::from_env() {
+                    Ok(source) => {
+                        let engine = crate::market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw);
+                        engine.run().await;
+                    }
+                    Err(e) => {
+                        tracing::error!("Binance Funding init failed: {e}");
+                        tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                    }
+                }
+            }
+        });
+    }
+
+    // Binance Options (BTC/ETH/SOL/BNB sub-30d contracts, mark prices)
+    {
+        let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
+        let pw = price_writer.clone();
+        spawn_resilient("binance_options", pw.clone(), move || {
+            let pool_c = pool_c.clone();
+            let bh = bh.clone();
+            let pw = pw.clone();
+            async move {
+                match crate::market_data::sources::binance_options::BinanceOptionsMarketSource::from_env() {
+                    Ok(source) => {
+                        let engine = crate::market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw);
+                        engine.run().await;
+                    }
+                    Err(e) => {
+                        tracing::error!("Binance Options init failed: {e}");
+                        tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                    }
+                }
+            }
+        });
+    }
+
     // DefiLlama (chain TVL, protocol TVL, DEX volumes)
     {
         let pool_c = pool.clone();

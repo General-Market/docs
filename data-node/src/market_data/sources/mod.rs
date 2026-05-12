@@ -10,6 +10,9 @@ pub mod oauth;
 // Prod sources (29)
 pub mod anilist;
 pub mod backpacktf;
+pub mod binance_futures_funding;
+pub mod binance_options;
+pub mod binance_spot;
 pub mod bls;
 pub mod boe;
 pub mod cloudflare;
@@ -107,6 +110,9 @@ pub mod sec_insider;
 // Re-exports — prod sources
 pub use anilist::AniListMarketSource;
 pub use backpacktf::BackpackTfMarketSource;
+pub use binance_futures_funding::BinanceFuturesFundingMarketSource;
+pub use binance_options::BinanceOptionsMarketSource;
+pub use binance_spot::BinanceSpotMarketSource;
 pub use bls::BlsMarketSource;
 pub use boe::BoeMarketSource;
 pub use cloudflare::CloudflareRadarMarketSource;
