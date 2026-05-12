@@ -95,6 +95,9 @@ const SOURCE_META: Record<string, SourceMeta> = {
   // ── Financial ──
   crypto: { valueLabel: 'Price', unit: 'USD' },
   pumpfun: { valueLabel: 'Price', unit: 'USD' },
+  binance_spot: { valueLabel: 'Price', unit: 'USDT' },
+  binance_futures_funding: { valueLabel: 'Funding', unit: 'bp×10' },
+  binance_options: { valueLabel: 'Mark', unit: 'USDT' },
   stocks: { valueLabel: 'Price', unit: 'USD' },
   defi: { valueLabel: 'TVL', unit: 'USD' },
   polymarket: { valueLabel: 'Probability', unit: '', assetUnit: () => '%' },

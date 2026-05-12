@@ -1773,6 +1773,48 @@
       ],
       "syncIntervalSecs": 600,
       "batchEligible": true
+    },
+    {
+      "sourceId": "binance_spot",
+      "name": "Binance Spot",
+      "description": "Spot prices for every USDT-quoted token trading on Binance.",
+      "category": "crypto",
+      "logo": "/source-imgs/new-binance-spot.svg",
+      "brandBg": "#0B0E11",
+      "prefixes": [
+        "binancespot_"
+      ],
+      "valueLabel": "Price",
+      "valueUnit": "USDT",
+      "isPrice": true
+    },
+    {
+      "sourceId": "binance_futures_funding",
+      "name": "Binance Futures Funding",
+      "description": "Last funding rate for every USDT-margined perpetual on Binance Futures. Scaled to basis points × 10 — positive means longs pay shorts.",
+      "category": "crypto",
+      "logo": "/source-imgs/new-binance-futures.svg",
+      "brandBg": "#0B0E11",
+      "prefixes": [
+        "binancefunding_"
+      ],
+      "valueLabel": "Funding",
+      "valueUnit": "bp×10",
+      "isPrice": false
+    },
+    {
+      "sourceId": "binance_options",
+      "name": "Binance Options",
+      "description": "Mark price for every BTC, ETH, SOL, and BNB option expiring in the next 30 days.",
+      "category": "crypto",
+      "logo": "/source-imgs/new-binance-options.svg",
+      "brandBg": "#0B0E11",
+      "prefixes": [
+        "binanceoptions_"
+      ],
+      "valueLabel": "Mark",
+      "valueUnit": "USDT",
+      "isPrice": true
     }
   ],
   "categories": [
@@ -1825,6 +1867,11 @@
       "key": "space",
       "label": "Science & Space",
       "order": 9
+    },
+    {
+      "key": "crypto",
+      "label": "Crypto",
+      "order": 10
     }
   ]
 }

@@ -26,6 +26,7 @@ export interface MarketCategory {
 // Simple prefix-based categorization. Categories loosely map source prefixes
 // to human-readable groups. With no static registry, we derive from asset ID patterns.
 const PREFIX_CATEGORIES: [RegExp, string, string][] = [
+  [/^(binancespot_|binancefunding_|binanceoptions_)/i, 'crypto', 'Crypto'],
   [/^(btc|eth|sol|bnb|ada|xrp|dot|avax|matic|link|uni|aave|comp|mkr|crv|snx|sushi|yfi|1inch|bal|ren|lrc|enj|mana|sand|axs|gala|ilv|chr|alice|tlm|gmt|ape|imx|ldo|rpl|frax|spell|cvx|fxs|ohm|joe|time|wmemo|mim|crv|spell)/i, 'crypto', 'Crypto'],
   [/^(stocks?_|equity_|share_|nasdaq_|nyse_|sp500_|dowjones_|finnhub_)/i, 'stocks', 'Stocks'],
   [/^(defi_|tvl_|protocol_|chain_tvl|dex_)/i, 'defi', 'DeFi'],
