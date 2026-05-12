@@ -263,6 +263,27 @@ const Headline: React.FC = () => {
 
   return (
     <AbsoluteFill style={{ opacity }}>
+      {/* Backdrop scrim — lifts the wordmark off the blue safety-masked phone
+          wall so "is the safe table" never blends into the chart tint. Page
+          bg color radiating from center, heavily feathered. */}
+      <AbsoluteFill
+        style={{
+          justifyContent: "center",
+          alignItems: "center",
+          pointerEvents: "none",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            width: 1760,
+            height: 920,
+            background:
+              "radial-gradient(ellipse at center, rgba(240,242,244,0.95) 0%, rgba(240,242,244,0.86) 26%, rgba(240,242,244,0.55) 52%, rgba(240,242,244,0.18) 72%, rgba(240,242,244,0) 86%)",
+            filter: "blur(36px)",
+          }}
+        />
+      </AbsoluteFill>
       <AbsoluteFill
         style={{
           justifyContent: "center",
@@ -277,9 +298,9 @@ const Headline: React.FC = () => {
             height: 760,
             transform: `scale(${haloScale.toFixed(3)})`,
             transformOrigin: "center center",
-            background: `radial-gradient(ellipse at center, rgba(0,82,255,${(0.55 * haloAmt + 0.06).toFixed(3)}) 0%, rgba(0,82,255,${(0.22 * haloAmt + 0.03).toFixed(3)}) 32%, rgba(0,82,255,0) 68%)`,
-            filter: "blur(70px)",
-            mixBlendMode: "screen",
+            background: `radial-gradient(ellipse at center, rgba(0,82,255,${(0.45 * haloAmt + 0.04).toFixed(3)}) 0%, rgba(0,82,255,${(0.18 * haloAmt + 0.02).toFixed(3)}) 32%, rgba(0,82,255,0) 68%)`,
+            filter: "blur(80px)",
+            mixBlendMode: "multiply",
           }}
         />
       </AbsoluteFill>
@@ -335,7 +356,8 @@ const Headline: React.FC = () => {
               letterSpacing: "-0.05em",
               color: colors.accent,
               lineHeight: 0.95,
-              textShadow: "0 8px 28px rgba(0, 82, 255, 0.30)",
+              textShadow:
+                "0 0 18px rgba(255,255,255,0.85), 0 0 6px rgba(255,255,255,0.95), 0 4px 14px rgba(10,10,12,0.22)",
             }}
           >
             is the safe table
