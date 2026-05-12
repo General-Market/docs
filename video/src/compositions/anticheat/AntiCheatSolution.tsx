@@ -2,6 +2,7 @@ import React from "react";
 import {
   AbsoluteFill,
   Easing,
+  OffthreadVideo,
   Sequence,
   interpolate,
   staticFile,
@@ -12,8 +13,6 @@ import { FPS, H, W, colors, toFrames } from "./theme";
 import { DotGrid, DotGridVignette } from "./DotGrid";
 import { IdleZoom } from "./vibe";
 import { beatPulseScene } from "./beats";
-import { AntiCheatHookHalfScene } from "./AntiCheatHookHalfScene";
-import type { BrollSegment } from "./AntiCheatHookScene";
 
 // Solution = 233f (7.77s). Solution→Reassure transition midpoint sits
 // near beat 33 (frame 866 absolute). Terminal flies in on scene-local
@@ -28,14 +27,12 @@ export const AntiCheatSolution: React.FC = () => {
     <AbsoluteFill style={{ backgroundColor: colors.bg, fontFamily: font }}>
       <IdleZoom durationInFrames={SCENE_FRAMES} from={1} to={1.04}>
         <DotGrid />
-        <Headline />
 
-        <Sequence
-          from={FLOAT_PHONE_MOUNT}
-          durationInFrames={FLOAT_PHONE_TOTAL}
-        >
-          <FloatingPhoneCorner />
+        <Sequence from={0} durationInFrames={WALL_TOTAL}>
+          <PhoneWall />
         </Sequence>
+
+        <Headline />
 
         <Sequence from={TERMINAL_AT}>
           <Terminal />
@@ -47,120 +44,171 @@ export const AntiCheatSolution: React.FC = () => {
   );
 };
 
-// ─── Floating phone corner — bottom-right, banks out before the wash ────────
+// ─── Phone wall — 4 columns of 3 flat phones, scrolling, masked safe ────────
 //
-// Scene-local frame 30 (≈24.0s absolute) the phone enters from the right,
-// settles tilted up-and-right, drifts on a slow yaw, then peels off with
-// the same Y-axis spin used in the Hook scene's evade. A shield icon
-// rises above it one second in — that's the punctuation the headline
-// has been hinting at.
-const FLOAT_PHONE_MOUNT = 30;
-const FLOAT_PHONE_ENTER = 12;
-const FLOAT_PHONE_HOLD = 30;          // 1.0s floating before the shield
-const FLOAT_PHONE_SHIELD_INTRO = 10;  // shield fade-in
-const FLOAT_PHONE_SHIELD_HOLD = 8;    // beat of co-existence
-const FLOAT_PHONE_EXIT = 16;
-const FLOAT_PHONE_TOTAL =
-  FLOAT_PHONE_ENTER +
-  FLOAT_PHONE_HOLD +
-  FLOAT_PHONE_SHIELD_INTRO +
-  FLOAT_PHONE_SHIELD_HOLD +
-  FLOAT_PHONE_EXIT;
+// Pops in with the headline. Each column scrolls in alternating directions —
+// outer columns up, inner columns down — so the eye reads "many feeds, one
+// table". Each phone plays the insider-trading broll at a distinct frame
+// offset; no two charts sit at the same moment. A blue safety mask washes
+// over every phone halfway through, then the column gets sucked into the
+// "General is the safe table" zoom as the headline blasts forward.
+const BROLL_URL = staticFile("cheat-broll/insider-trading-clean.mp4");
+const BROLL_LEN_FRAMES = 200; // source is 206f — keep a safety margin
 
-const FLOATING_PHONE_SEGMENTS: BrollSegment[] = [
-  {
-    url: staticFile("cheat-broll/insider-trading-clean.mp4"),
-    from: 0,
-    durationInFrames: FLOAT_PHONE_TOTAL,
-    startFrom: 0,
-  },
+const PHONE_W = 260;
+const PHONE_H = 540;
+const STRIDE = 580;
+const SCROLL_SPEED = 1.9;
+const PHONES_PER_COL = 3;
+
+// 4 columns equally spaced — outer two go up, inner two go down.
+const COLS: { x: number; dir: -1 | 1 }[] = [
+  { x: 180, dir: -1 },
+  { x: 620, dir: +1 },
+  { x: 1060, dir: +1 },
+  { x: 1500, dir: -1 },
 ];
+
+const WALL_ENTER = 8;
+// Phones exit on the same frame the headline begins its zoom (HOLD_END=68
+// in Headline). Keeps the two motions on the same downbeat.
+const WALL_HOLD_END = 68;
+const WALL_EXIT = 16;
+const WALL_TOTAL = WALL_HOLD_END + WALL_EXIT;
 
 const clamp01 = (t: number) => (t < 0 ? 0 : t > 1 ? 1 : t);
 
-const FloatingPhoneCorner: React.FC = () => {
-  const frame = useCurrentFrame();
-
-  const enterT = clamp01(frame / FLOAT_PHONE_ENTER);
-  const enterEased = 1 - (1 - enterT) * (1 - enterT);
-
-  const shieldStart = FLOAT_PHONE_ENTER + FLOAT_PHONE_HOLD;
-  const shieldT = clamp01(
-    (frame - shieldStart) / FLOAT_PHONE_SHIELD_INTRO,
-  );
-
-  const exitStart =
-    FLOAT_PHONE_ENTER +
-    FLOAT_PHONE_HOLD +
-    FLOAT_PHONE_SHIELD_INTRO +
-    FLOAT_PHONE_SHIELD_HOLD;
-  const exitT = clamp01((frame - exitStart) / FLOAT_PHONE_EXIT);
-  const exitEased = exitT * exitT;
-
-  // Slow yaw drift + gentle vertical float. Periods are deliberately
-  // long so the motion reads as "alive" rather than animated.
-  const slowYawDeg = Math.sin(frame * 0.045) * 6;
-  const slowPitchDeg = Math.cos(frame * 0.038) * 2.4;
-  const bobPx = Math.sin(frame * 0.085) * 10;
-
-  const baseRotY = -28; // banked so the right edge faces the viewer
-  const baseRotX = -10; // top tipped toward the camera — "up"
-
-  const enterX = (1 - enterEased) * 280;
-  const exitX = exitEased * 1600;
-  const tx = enterX + exitX;
-
-  const opacity =
-    enterEased * (1 - clamp01((exitT - 0.6) / 0.4));
-
+const FlatPhone: React.FC<{
+  x: number;
+  y: number;
+  brollStart: number;
+  safetyMask: number;
+}> = ({ x, y, brollStart, safetyMask }) => {
+  const RADIUS = 26;
+  const BEZEL = 7;
+  const innerW = PHONE_W - BEZEL * 2;
+  const innerH = PHONE_H - BEZEL * 2;
   return (
-    <AbsoluteFill style={{ pointerEvents: "none" }}>
+    <div
+      style={{
+        position: "absolute",
+        left: x,
+        top: y,
+        width: PHONE_W,
+        height: PHONE_H,
+        borderRadius: RADIUS,
+        background: "#08080c",
+        boxShadow:
+          "0 24px 48px rgba(10,12,18,0.32), 0 6px 14px rgba(10,12,18,0.22), inset 0 0 0 1px rgba(255,255,255,0.05)",
+        overflow: "hidden",
+        willChange: "transform",
+      }}
+    >
       <div
         style={{
           position: "absolute",
-          right: 140,
-          bottom: 110,
-          width: 320,
-          height: 580,
-          perspective: 1600,
+          left: BEZEL,
+          top: BEZEL,
+          width: innerW,
+          height: innerH,
+          borderRadius: RADIUS - BEZEL,
+          overflow: "hidden",
+          background: "#000",
         }}
       >
-        <div
+        <OffthreadVideo
+          src={BROLL_URL}
+          startFrom={brollStart}
+          muted
           style={{
             width: "100%",
             height: "100%",
-            transformStyle: "preserve-3d",
-            transformOrigin: "center center",
-            transform: `translate(${tx.toFixed(2)}px, ${bobPx.toFixed(2)}px) rotateX(${(baseRotX + slowPitchDeg).toFixed(2)}deg) rotateY(${(baseRotY + slowYawDeg).toFixed(2)}deg)`,
-            opacity,
-            filter: `drop-shadow(0 40px 70px rgba(0,82,255,${(0.18 * enterEased).toFixed(3)})) drop-shadow(0 12px 24px rgba(10,12,18,${(0.22 * enterEased).toFixed(3)}))`,
+            objectFit: "cover",
           }}
-        >
-          <AntiCheatHookHalfScene
-            device="phone"
-            segments={FLOATING_PHONE_SEGMENTS}
-            brollAspect={1080 / 1920}
-            width={320}
-            height={580}
-            emissiveIntensity={1.1}
-            lightingIntensity={0.9}
-            exitProgress={exitT}
-          />
-        </div>
-
+        />
+        {/* Safety mask: blue tint + faint shield watermark. The mask is the
+            visual punctuation of "General is the safe table" — chart action
+            stays underneath, protocol washes over it. */}
         <div
           style={{
             position: "absolute",
-            top: -110,
-            left: "50%",
-            transform: `translate(-50%, ${(-shieldT * 14).toFixed(2)}px) scale(${(0.6 + shieldT * 0.5).toFixed(3)})`,
-            opacity: shieldT * (1 - exitEased * 0.7),
+            inset: 0,
+            background: `linear-gradient(180deg, rgba(0,82,255,${(safetyMask * 0.32).toFixed(3)}) 0%, rgba(91,134,255,${(safetyMask * 0.55).toFixed(3)}) 100%)`,
+            mixBlendMode: "screen",
+            opacity: safetyMask,
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            opacity: safetyMask * 0.55,
             pointerEvents: "none",
           }}
         >
-          <ShieldIcon size={108} glow={shieldT} />
+          <ShieldIcon size={Math.round(innerW * 0.5)} glow={safetyMask * 0.6} />
         </div>
       </div>
+    </div>
+  );
+};
+
+const PhoneWall: React.FC = () => {
+  const frame = useCurrentFrame();
+
+  const enterT = clamp01(frame / WALL_ENTER);
+  const enterEased = 1 - (1 - enterT) * (1 - enterT);
+
+  const exitT = clamp01((frame - WALL_HOLD_END) / WALL_EXIT);
+  const exitEased = exitT * exitT;
+
+  const opacity = enterEased * (1 - exitT);
+  // As the headline zooms forward, the wall shrinks and dims — as if it's
+  // being absorbed by the wordmark blast.
+  const wallScale = 1 - exitEased * 0.22;
+
+  // Safety mask sweeps in once the headline has been read.
+  const safetyMask = interpolate(
+    frame,
+    [28, 46, WALL_HOLD_END, WALL_HOLD_END + WALL_EXIT],
+    [0, 1, 1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+
+  return (
+    <AbsoluteFill
+      style={{
+        opacity,
+        transform: `scale(${wallScale.toFixed(3)})`,
+        transformOrigin: "center center",
+        pointerEvents: "none",
+      }}
+    >
+      {COLS.map((col, ci) => {
+        const scroll = frame * SCROLL_SPEED * col.dir;
+        return (
+          <React.Fragment key={ci}>
+            {Array.from({ length: PHONES_PER_COL }).map((_, pi) => {
+              const baseY = (H - PHONE_H) / 2 + (pi - 1) * STRIDE;
+              const y = baseY + scroll;
+              const brollStart =
+                (ci * 47 + pi * 31 + 11) % BROLL_LEN_FRAMES;
+              return (
+                <FlatPhone
+                  key={pi}
+                  x={col.x}
+                  y={y}
+                  brollStart={brollStart}
+                  safetyMask={safetyMask}
+                />
+              );
+            })}
+          </React.Fragment>
+        );
+      })}
     </AbsoluteFill>
   );
 };
