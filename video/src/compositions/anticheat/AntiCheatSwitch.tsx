@@ -13,24 +13,28 @@ import { DotGrid, DotGridVignette } from "./DotGrid";
 import { IdleZoom, RevealChars } from "./vibe";
 
 // 228 frames (7.6s). Opens after the Reassure→Switch snap. The 40%
-// proof-bars were excised — the two lines now carry the scene on their
-// own. Beat anchors (PIVOT_AT = 107, KICKER_AT = 156) preserved so the
-// music sync inherited from the bars version still lands.
+// proof-bars were excised; the two lines and their original positions
+// stay exactly where they were. The centre — once occupied by the
+// morphing hero — is now held by the SettleOrb glow and the impact
+// flash. Beat anchors (PIVOT 107, KICKER 156) preserved for audio sync.
 //
 // Setup → pivot → knife:
 //   "Same strategy."           opens the setup
-//   "Earn up to 2× more*"      lands as the hero on PIVOT_AT
 //   "just by switching         types in as the knife
 //    financial product"
+//   "Earn up to 2× more*"      closes the frame
 const SCENE_FRAMES = toFrames(7.6);
 
 const HEADLINE_AT = 0;
 const PIVOT_AT = 107;
-const HERO_AT = 110;
+const COPY_AT = 130;
 const KICKER_AT = 156;
 
+// Canonical anchors. Kept identical to the bar version so the
+// composition keeps its original triangle even with the centre empty.
 const HERO_CENTER_X = W / 2;
 const HERO_CENTER_Y = H / 2 - 24;
+const CLAIM_TOP_OFFSET = 176; // = old HERO_FONT (320) * 0.55
 
 export const AntiCheatSwitch: React.FC = () => (
   <AbsoluteFill
@@ -51,8 +55,8 @@ export const AntiCheatSwitch: React.FC = () => (
 
 // ─── Particle field — soft drifting dots, GMBrand SegSupercharge pattern ──
 //
-// Noise-driven dots tinted to the accent-blue family, fading in around the
-// impact and holding through the hero state. They augment the orb's glow
+// Noise-driven dots tinted to the accent-blue family. Fades in around the
+// impact and holds through the hero state. They augment the orb's glow
 // without competing with the type.
 
 const PARTICLE_COUNT = 32;
@@ -113,7 +117,6 @@ const Stage: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  // Pivot drives the headline's exit AND the hero's arrival blur/scale.
   const pivotT = spring({
     frame: frame - PIVOT_AT,
     fps,
@@ -136,9 +139,7 @@ const Stage: React.FC = () => {
         delay={2}
       />
       <ImpactFlash frame={frame} />
-      <Hero frame={frame} fps={fps} />
-      <Kicker frame={frame} fps={fps} />
-      <Footnote frame={frame} fps={fps} />
+      <HeroCopy frame={frame} fps={fps} />
     </AbsoluteFill>
   );
 };
@@ -182,69 +183,10 @@ const Headline: React.FC<{ pivotT: number }> = ({ pivotT }) => {
   );
 };
 
-// ─── Hero — "Earn up to 2× more*" ─────────────────────────────────────────────
-
-const HERO_FONT = 200;
-
-const Hero: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
-  const enter = spring({
-    frame: frame - HERO_AT,
-    fps,
-    config: { damping: 20, stiffness: 110, mass: 0.85 },
-  });
-  const opacity = interpolate(enter, [0, 1], [0, 1]);
-  const baseScale = interpolate(enter, [0, 1], [0.78, 1]);
-  const blur = interpolate(enter, [0, 1], [10, 0]);
-
-  const sinceLand = Math.max(0, frame - HERO_AT - 22);
-  const breath = 1 + Math.sin(sinceLand / 32) * 0.006;
-  const scale = baseScale * breath;
-
-  return (
-    <div
-      style={{
-        position: "absolute",
-        left: HERO_CENTER_X,
-        top: HERO_CENTER_Y,
-        transform: `translate(-50%, -50%) scale(${scale.toFixed(4)})`,
-        transformOrigin: "center center",
-        textAlign: "center",
-        fontFamily: font,
-        fontSize: HERO_FONT,
-        fontWeight: 800,
-        letterSpacing: "-0.045em",
-        color: colors.fg,
-        lineHeight: 1.0,
-        whiteSpace: "nowrap",
-        opacity,
-        filter: blur > 0.05 ? `blur(${blur.toFixed(2)}px)` : undefined,
-        willChange: "transform, opacity, filter",
-      }}
-    >
-      Earn up to{" "}
-      <span style={{ color: colors.accent }}>2× more</span>
-      <span
-        style={{
-          fontFamily: monoFont,
-          fontSize: HERO_FONT * 0.32,
-          color: colors.dim,
-          marginLeft: 8,
-          verticalAlign: "super",
-          fontWeight: 500,
-          letterSpacing: 0,
-        }}
-      >
-        *
-      </span>
-    </div>
-  );
-};
-
 // ─── Impact burst ─────────────────────────────────────────────────────────────
 //
-// Two diagonal accent-blue capsules accelerate into the centre of the
-// hero text. Brief radial flash on impact. A soft settle orb fades in
-// behind the hero and holds.
+// Two diagonal accent-blue capsules accelerate into the centre. Brief
+// radial flash on impact. A soft settle orb fades in behind it and holds.
 
 const STREAK_START = 89;
 const STREAK_IMPACT = 106;
@@ -426,9 +368,17 @@ const KickerTyping: React.FC<{ startFrame: number }> = ({ startFrame }) => {
   );
 };
 
-// ─── Kicker block ─────────────────────────────────────────────────────────────
+// ─── Hero copy ────────────────────────────────────────────────────────────────
 
-const Kicker: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
+const HeroCopy: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
+  const claimT = spring({
+    frame: frame - COPY_AT,
+    fps,
+    config: { damping: 22, stiffness: 130, mass: 0.7 },
+  });
+  const claimOp = interpolate(claimT, [0, 1], [0, 1]);
+  const claimY = interpolate(claimT, [0, 1], [16, 0]);
+
   const kickT = spring({
     frame: frame - KICKER_AT,
     fps,
@@ -438,59 +388,84 @@ const Kicker: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
   const kickY = interpolate(kickT, [0, 1], [12, 0]);
 
   return (
-    <div
-      style={{
-        position: "absolute",
-        top: HERO_CENTER_Y - HERO_FONT * 0.85,
-        left: 0,
-        right: 0,
-        textAlign: "center",
-        fontFamily: font,
-        fontSize: 96,
-        fontWeight: 700,
-        letterSpacing: "-0.032em",
-        color: colors.fg,
-        lineHeight: 1.0,
-        opacity: kickOp,
-        transform: `translateY(${kickY.toFixed(2)}px)`,
-      }}
-    >
-      <KickerTyping startFrame={KICKER_AT} />
-    </div>
-  );
-};
+    <>
+      {/* Claim — sits in its canonical slot below centre. */}
+      <div
+        style={{
+          position: "absolute",
+          top: HERO_CENTER_Y + CLAIM_TOP_OFFSET,
+          left: 0,
+          right: 0,
+          textAlign: "center",
+          fontFamily: font,
+          fontSize: 96,
+          fontWeight: 700,
+          letterSpacing: "-0.032em",
+          color: colors.fg,
+          lineHeight: 1.0,
+          opacity: claimOp,
+          transform: `translateY(${claimY.toFixed(2)}px)`,
+        }}
+      >
+        Earn up to 2× more
+        <span
+          style={{
+            fontFamily: monoFont,
+            fontSize: 32,
+            color: colors.dim,
+            marginLeft: 4,
+            verticalAlign: "super",
+            fontWeight: 500,
+            letterSpacing: 0,
+          }}
+        >
+          *
+        </span>
+      </div>
 
-// ─── Footnote — legal fine print under the asterisk ───────────────────────────
+      {/* Kicker — replaces the headline at the top of the frame. */}
+      <div
+        style={{
+          position: "absolute",
+          top: 156,
+          left: 0,
+          right: 0,
+          textAlign: "center",
+          fontFamily: font,
+          fontSize: 96,
+          fontWeight: 700,
+          letterSpacing: "-0.032em",
+          color: colors.fg,
+          lineHeight: 1.0,
+          opacity: kickOp,
+          transform: `translateY(${kickY.toFixed(2)}px)`,
+        }}
+      >
+        <KickerTyping startFrame={KICKER_AT} />
+      </div>
 
-const Footnote: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
-  const kickT = spring({
-    frame: frame - KICKER_AT,
-    fps,
-    config: { damping: 22, stiffness: 130, mass: 0.7 },
-  });
-  const op = interpolate(kickT, [0, 1], [0, 1]);
-
-  return (
-    <div
-      style={{
-        position: "absolute",
-        bottom: 56,
-        left: 0,
-        right: 0,
-        textAlign: "center",
-        fontFamily: font,
-        fontSize: 18,
-        fontWeight: 400,
-        letterSpacing: "-0.005em",
-        color: colors.dim,
-        lineHeight: 1.35,
-        maxWidth: 1240,
-        margin: "0 auto",
-        opacity: op,
-      }}
-    >
-      *Based on General Market testnet data. Indicative comparison under favorable market conditions. Net of fees and slippage. Past performance does not guarantee future returns.
-    </div>
+      {/* Legal footnote — tiny, dim, defensible. Apple-style fine print. */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: 56,
+          left: 0,
+          right: 0,
+          textAlign: "center",
+          fontFamily: font,
+          fontSize: 18,
+          fontWeight: 400,
+          letterSpacing: "-0.005em",
+          color: colors.dim,
+          lineHeight: 1.35,
+          maxWidth: 1240,
+          margin: "0 auto",
+          opacity: kickOp,
+        }}
+      >
+        *Based on General Market testnet data. Indicative comparison under favorable market conditions. Net of fees and slippage. Past performance does not guarantee future returns.
+      </div>
+    </>
   );
 };
 
