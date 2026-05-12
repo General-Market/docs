@@ -18,10 +18,11 @@ const SOURCE_ID = 'polymarket'
 const MAX_MARKETS = 250
 const HISTORY_CONCURRENCY = 24
 const HISTORY_PAD_MS = 60_000
-// Polymarket samples each market every few minutes, so a 5-minute betting
-// window often catches zero movement. Walk back one hour from the betting
-// window's end so the comparison shows real drift instead of a flat line.
-const POLY_LOOKBACK_MS = 60 * 60 * 1000
+// Polymarket implied probabilities are slow-moving. A five-minute or one-hour
+// window catches almost no drift on most markets. Walk back 24 hours so the
+// comparison reflects what a Polymarket user would actually see on their
+// dashboard, then put Vision's five-minute payout next to it.
+const POLY_LOOKBACK_MS = 24 * 60 * 60 * 1000
 
 interface BatchHistoryItem {
   batchId: number

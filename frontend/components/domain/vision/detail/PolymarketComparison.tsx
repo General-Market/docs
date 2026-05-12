@@ -248,8 +248,8 @@ function ContrastHero({ batch, summary, now }: { batch: BatchMeta; summary: Summ
           margin: 0,
           maxWidth: '52ch',
         }}>
-          Same questions, different time horizons. Polymarket prices over the trailing hour. Vision multipliers from the
-          five minutes inside it.
+          Same questions, different time horizons. Polymarket prices over the trailing 24 hours. Vision multipliers from
+          the five minutes inside it.
         </p>
         <p className="mt-1" style={{ ...EYEBROW, fontSize: 11, letterSpacing: 'var(--apple-track-loose)', color: 'var(--apple-text-tertiary)', fontWeight: 500, textTransform: 'none' }}>
           {tagline} · {batch.playerCount} players · {fmtUsd(batch.totalPool)} pool · {batch.activeMarketCount} markets
@@ -358,7 +358,7 @@ function ListCard({
         }}
       >
         <span style={EYEBROW}>Market</span>
-        <span style={{ ...EYEBROW, textAlign: 'right' }}>Poly · 1h move</span>
+        <span style={{ ...EYEBROW, textAlign: 'right' }}>Poly · 24h move</span>
         <span style={{ ...EYEBROW, textAlign: 'right' }}>Vision · payout</span>
         <span style={{ ...EYEBROW, textAlign: 'right' }}>Gap</span>
       </div>
@@ -576,9 +576,9 @@ function Footnote({ batchId, generatedAt, now }: { batchId: number; generatedAt:
         margin: 0,
       }}
     >
-      Polymarket move: change in the question’s implied probability across the hour ending when Vision batch #{batchId}
-      settled. Vision payout: the parimutuel multiplier paid to the winning side of the same round, expressed as net
-      gain. Generated {fmtRelativeAt(generatedAt, now)}.
+      Polymarket move: change in the question’s implied probability over the 24 hours ending when Vision batch
+      #{batchId} settled. Vision payout: the parimutuel multiplier paid to the winning side of that five-minute round,
+      expressed as net gain. Generated {fmtRelativeAt(generatedAt, now)}.
     </p>
   )
 }
