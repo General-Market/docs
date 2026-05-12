@@ -5186,3 +5186,23 @@ Decision: amputate, but not in the Part A window. The cut spans `P2PMessage::Nav
 
 ### Verification verdict
 End-to-end ITP order test: **NOT ATTEMPTED**. L3 sequencer dead. Cost of attempting would be zero informational value — no block = no tx. Reported honestly rather than faked.
+
+## Session 20260512-1130-bnce — three Binance Vision sources + twelve vaults live
+
+[DECISION] Binance vault matrix — 3 sources × 4 strategies = 12 vaults — exhaustive coverage of momentum/reversion/sign-flip per source
+[DECISION] Options pre-filter at 30d expiry, BTC/ETH/SOL/BNB only — full Binance options universe was >1600 contracts at first sync, filtered to 806
+[DECISION] Funding rate scaled ×10000 at the data-node — display reads cleaner than raw 0.0001 decimals; sign preserved for direction bets
+[DECISION] Shared bot image vision-bot-binance/, twelve services parameterized by STRATEGY env — one Dockerfile, twelve copies via docker compose
+[DECISION] Bot reads on-chain Vision.latestBatchForSource(keccak256(source_id + "_" + version)) for batchId — data-node /batches/source/.../config has only the config not the live batchId
+[DECISION] Bots target http://172.17.0.1:8200 (Docker host gateway), not https://api.generalmarket.io — nginx /data-node/ ACL denies VPS 1's own IP
+
+[FAILED] Bot agent's runner.py initially called /vision/batches/active which doesn't exist — the data-node has /batches/source/:source_id/config + on-chain Vision.latestBatchForSource. Fixed by patching the runner.
+[FAILED] data-node restart hung on pg_advisory_lock(42) — zombie postgres backend from OOM-killed prior instance, kept alive by pgbouncer pool, retained session-level lock. Fixed with pg_terminate_backend on direct :5432 connection. Pattern: pgbouncer + advisory_lock + crash = stale lock.
+[FAILED] Frontend agent's sources-display.json entries missed internalIds/syncIntervalSecs/batchEligible — batch_engine silently skipped them. Patched and re-uploaded to VPS 1.
+[FAILED] forge DeployAllVisionBatches.s.sol OVERWROTE vision-batches.json (only wrote the 3 binance entries, lost the prior 47). Recovered from git HEAD and merged.
+[FAILED] cast wallet new --json returns an ARRAY not an object — deploy script needed objects. Re-flattened with jq '.[0]'.
+
+[REFERENCE] L3 USDC is mintable by deployer. cast send mint(address,uint256). Used to top up 200k to deployer for vault seeding.
+[REFERENCE] Vision batches deployed with BATCH_VERSION=binance-v1: sourceIds = keccak256("binance_spot_binance-v1") etc.
+[REFERENCE] On-chain batchIds: binance_spot=22641, binance_futures_funding=22642, binance_options=22643. Vision contract 0x36a28967544c301a3c66dcfb6c6c90e548412693.
+[REFERENCE] 12 manager keys at envs/testnet/keys/binance-*.json (gitignored). 12 vault addresses at envs/testnet/active-deployment.json#sourceVaults.binance_*.
