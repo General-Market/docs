@@ -18,6 +18,10 @@ const SOURCE_ID = 'polymarket'
 const MAX_MARKETS = 250
 const HISTORY_CONCURRENCY = 24
 const HISTORY_PAD_MS = 60_000
+// Polymarket samples each market every few minutes, so a 5-minute betting
+// window often catches zero movement. Walk back one hour from the betting
+// window's end so the comparison shows real drift instead of a flat line.
+const POLY_LOOKBACK_MS = 60 * 60 * 1000
 
 interface BatchHistoryItem {
   batchId: number
@@ -258,8 +262,12 @@ export async function GET(request: Request) {
     .sort((a, b) => (a.total > b.total ? -1 : a.total < b.total ? 1 : 0))
     .slice(0, limit)
 
-  const fromIso = new Date(bettingStartMs - HISTORY_PAD_MS).toISOString()
-  const toIso = new Date(bettingEndMs + HISTORY_PAD_MS).toISOString()
+  // Pull a 1h baseline ending at the batch settlement. We compare value at
+  // (bettingEnd - 1h) against value at the end of the betting window.
+  const polyStartTargetMs = bettingEndMs - POLY_LOOKBACK_MS
+  const polyEndTargetMs = bettingEndMs
+  const fromIso = new Date(polyStartTargetMs - HISTORY_PAD_MS).toISOString()
+  const toIso = new Date(polyEndTargetMs + HISTORY_PAD_MS).toISOString()
 
   const histories = await runWithConcurrency(active, HISTORY_CONCURRENCY, async ({ m }) => {
     const r = await fetchJson<{ prices: HistoryPoint[] }>(
@@ -272,8 +280,8 @@ export async function GET(request: Request) {
   const markets: ComparisonMarket[] = active.map((entry, i) => {
     const { m, up, down, total } = entry
     const points = histories[i] ?? []
-    const startPt = pickPointNear(points, bettingStartMs, 'before')
-    const endPt = pickPointNear(points, bettingEndMs, 'after')
+    const startPt = pickPointNear(points, polyStartTargetMs, 'before')
+    const endPt = pickPointNear(points, polyEndTargetMs, 'after')
     const polyStart = toNumber(startPt?.value)
     const polyEnd = toNumber(endPt?.value)
     const polyChangePct = polyStart != null && polyEnd != null && polyStart > 0

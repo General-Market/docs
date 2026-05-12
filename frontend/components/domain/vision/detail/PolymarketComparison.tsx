@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { cn } from '@/lib/utils/cn'
 
 type Outcome = 'Up' | 'Down' | 'Flat' | 'Cancelled' | 'AllSameSide' | 'AllLosers'
 
@@ -59,8 +58,34 @@ const SORT_LABEL: Record<SortKey, string> = {
   pool: 'Pool size',
 }
 
-const GRID = 'grid grid-cols-[1fr_120px_140px_72px] md:grid-cols-[1fr_160px_180px_92px] gap-2 items-center'
+// ─── Apple chrome tokens ─────────────────────────────────────────
+const CARD_CLASS = 'rounded-[var(--apple-r-card)] border overflow-hidden'
+const CARD_STYLE: React.CSSProperties = {
+  borderColor: 'var(--apple-line)',
+  background: 'var(--apple-panel)',
+}
 
+const APPLE_BLUE = '#0071E3'
+const APPLE_GREEN = 'rgb(52, 199, 89)'
+const APPLE_RED = 'rgb(255, 59, 48)'
+
+const EYEBROW: React.CSSProperties = {
+  fontFamily: 'var(--apple-font-text)',
+  fontSize: 11,
+  letterSpacing: 'var(--apple-track-loose)',
+  color: 'var(--apple-text-tertiary)',
+  fontWeight: 600,
+  textTransform: 'uppercase',
+}
+
+const NUM_DISPLAY: React.CSSProperties = {
+  fontFamily: 'var(--apple-font-display)',
+  letterSpacing: 'var(--apple-track-tighter)',
+  fontVariantNumeric: 'tabular-nums',
+  fontWeight: 500,
+}
+
+// ─── Formatters ──────────────────────────────────────────────────
 function fmtPct(v: number | null | undefined, signed = true, digits = 2): string {
   if (v == null || !Number.isFinite(v)) return '—'
   const abs = Math.abs(v)
@@ -126,6 +151,7 @@ function sortVal(m: ComparisonMarket, k: SortKey): number | null {
   }
 }
 
+// ─── Component ───────────────────────────────────────────────────
 export function PolymarketComparison() {
   const { data, isLoading, isError } = useQuery<ComparisonResponse | null>({
     queryKey: ['polymarket-comparison', 150],
@@ -157,14 +183,18 @@ export function PolymarketComparison() {
     return list
   }, [data, sortKey, winnerOnly])
 
-  if (isLoading || (!data && !isError)) {
-    return <ComparisonSkeleton />
-  }
+  if (isLoading || (!data && !isError)) return <ComparisonSkeleton />
 
   if (!data || data.source === 'empty' || !data.batch) {
     return (
-      <div className="bg-white border border-border-light px-5 py-8 text-center">
-        <p className="text-[13px] text-text-muted">
+      <div className={CARD_CLASS} style={{ ...CARD_STYLE, padding: 28 }}>
+        <p style={{
+          fontFamily: 'var(--apple-font-text)',
+          fontSize: 'var(--apple-fs-17)',
+          color: 'var(--apple-text-secondary)',
+          letterSpacing: 'var(--apple-track-tight)',
+          margin: 0,
+        }}>
           No settled batch yet. The first round will tell you what you suspected already.
         </p>
       </div>
@@ -174,166 +204,224 @@ export function PolymarketComparison() {
   const { batch, summary } = data
 
   return (
-    <div className="flex flex-col gap-6">
-      <Card>
-        <DarkHeader
-          tagline={`Batch #${batch.id} · ${fmtTimeWindow(batch.bettingStart, batch.bettingEnd)} · settled ${fmtRelativeAt(batch.settledAt, now)}`}
-          title="Polymarket vs Vision"
-          right={
-            <div className="flex items-center gap-4 text-[11px] font-mono tabular-nums text-white/55">
-              <span>{batch.playerCount} players</span>
-              <span>{fmtUsd(batch.totalPool)} pool</span>
-              <span>{data.markets.length} markets</span>
-            </div>
-          }
-        />
-        <SummaryStrip summary={summary} />
-        <Toolbar
-          sortKey={sortKey}
-          onSortChange={setSortKey}
-          winnerOnly={winnerOnly}
-          onWinnerOnlyChange={setWinnerOnly}
-        />
-        <div className={cn(GRID, 'px-4 py-2 bg-[var(--surface)] border-y border-border-light text-[10px] font-bold uppercase tracking-[0.08em] text-text-muted')}>
-          <div>Market</div>
-          <div className="text-right">Poly · 5-min</div>
-          <div className="text-right">Vision · payout</div>
-          <div className="text-right">Gap</div>
-        </div>
-        {rows.length === 0 ? (
-          <div className="bg-white px-5 py-8 text-center">
-            <p className="text-[13px] text-text-muted">
-              No markets with both sides covered in this round. Try toggling the winner filter.
-            </p>
-          </div>
-        ) : (
-          <div className="bg-white">
-            {rows.map((m) => <Row key={m.assetId} m={m} />)}
-          </div>
-        )}
-      </Card>
+    <div className="flex flex-col gap-5">
+      <ContrastHero batch={batch} summary={summary} now={now} />
+      <ListCard
+        rows={rows}
+        sortKey={sortKey}
+        onSortChange={setSortKey}
+        winnerOnly={winnerOnly}
+        onWinnerOnlyChange={setWinnerOnly}
+      />
       <Footnote batchId={batch.id} generatedAt={data.generatedAt} now={now} />
     </div>
   )
 }
 
-function Card({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="bg-white border border-border-light overflow-hidden">
-      {children}
-    </div>
-  )
-}
+// ─── Hero card: identity + four-number contrast ──────────────────
+function ContrastHero({ batch, summary, now }: { batch: BatchMeta; summary: Summary; now: number }) {
+  const tagline = `Batch #${batch.id} · ${fmtTimeWindow(batch.bettingStart, batch.bettingEnd)} · settled ${fmtRelativeAt(batch.settledAt, now)}`
 
-function DarkHeader({
-  tagline,
-  title,
-  right,
-}: {
-  tagline: string
-  title: string
-  right?: React.ReactNode
-}) {
   return (
-    <div className="flex items-start sm:items-center justify-between gap-4 px-5 py-3 bg-terminal-dark flex-wrap sm:flex-nowrap">
-      <div className="min-w-0">
-        <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-white/35">
-          {tagline}
-        </div>
-        <h3 className="text-[15px] font-bold text-white">{title}</h3>
+    <div className={CARD_CLASS} style={{ ...CARD_STYLE, padding: 28 }}>
+      <div className="flex flex-col gap-1">
+        <span className="apple-pill apple-pill--external self-start" style={{ textTransform: 'uppercase' }}>
+          last settled batch
+        </span>
+        <h2 className="mt-3" style={{
+          fontFamily: 'var(--apple-font-display)',
+          fontSize: 'var(--apple-fs-28)',
+          letterSpacing: 'var(--apple-track-tighter)',
+          lineHeight: 1.1428,
+          fontWeight: 600,
+          color: 'var(--apple-text)',
+          margin: 0,
+        }}>
+          Polymarket prices vs Vision payouts
+        </h2>
+        <p className="mt-1.5" style={{
+          fontFamily: 'var(--apple-font-text)',
+          fontSize: 'var(--apple-fs-17)',
+          letterSpacing: 'var(--apple-track-tight)',
+          color: 'var(--apple-text-secondary)',
+          lineHeight: 1.47,
+          margin: 0,
+          maxWidth: '52ch',
+        }}>
+          Same questions, different time horizons. Polymarket prices over the trailing hour. Vision multipliers from the
+          five minutes inside it.
+        </p>
+        <p className="mt-1" style={{ ...EYEBROW, fontSize: 11, letterSpacing: 'var(--apple-track-loose)', color: 'var(--apple-text-tertiary)', fontWeight: 500, textTransform: 'none' }}>
+          {tagline} · {batch.playerCount} players · {fmtUsd(batch.totalPool)} pool · {batch.activeMarketCount} markets
+        </p>
       </div>
-      {right}
+
+      <div
+        className="mt-5 grid"
+        style={{
+          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+          gap: 18,
+          padding: '18px 0 0',
+          borderTop: '1px solid var(--apple-line)',
+        }}
+      >
+        <ContrastTile label="Avg Polymarket move" value={fmtPct(summary.avgPolyChangePct, false, 2)} tone="quiet" />
+        <ContrastTile label="Avg Vision payout" value={fmtPct(summary.avgVisionGainPct, true, 1)} tone="loud" />
+        <ContrastTile label="Biggest payout" value={fmtPct(summary.biggestVisionGainPct, true, 0)} tone="loud" />
+        <ContrastTile label="Widest gap" value={fmtPct(summary.biggestLeverageGap, false, 0)} tone="loud" />
+      </div>
     </div>
   )
 }
 
-function SummaryStrip({ summary }: { summary: Summary }) {
-  const tiles: Array<{ label: string; value: string; loud?: boolean }> = [
-    { label: 'Avg Polymarket move', value: fmtPct(summary.avgPolyChangePct, false, 2) },
-    { label: 'Avg Vision payout', value: fmtPct(summary.avgVisionGainPct, true, 1), loud: true },
-    { label: 'Biggest payout', value: fmtPct(summary.biggestVisionGainPct, true, 0), loud: true },
-    { label: 'Widest gap', value: fmtPct(summary.biggestLeverageGap, false, 0), loud: true },
-  ]
+function ContrastTile({ label, value, tone }: { label: string; value: string; tone: 'quiet' | 'loud' }) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 border-b border-border-light">
-      {tiles.map((t, i) => (
-        <div
-          key={t.label}
-          className={cn(
-            'px-5 py-4',
-            i > 0 && 'border-l border-border-light',
-            i === 2 && 'border-l-0 md:border-l border-t md:border-t-0 border-border-light',
-            i === 3 && 'border-t md:border-t-0',
-          )}
-        >
-          <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-text-muted">
-            {t.label}
-          </div>
-          <div className={cn(
-            'mt-1 text-[22px] leading-none font-mono tabular-nums font-semibold',
-            t.loud ? 'text-[color:rgb(0,113,227)]' : 'text-black',
-          )}>
-            {t.value}
-          </div>
-        </div>
-      ))}
+    <div>
+      <div style={EYEBROW}>{label}</div>
+      <div
+        className="mt-1"
+        style={{
+          ...NUM_DISPLAY,
+          fontSize: 'var(--apple-fs-32, 32px)',
+          color: tone === 'loud' ? APPLE_BLUE : 'var(--apple-text)',
+          lineHeight: 1.1,
+        }}
+      >
+        {value}
+      </div>
     </div>
   )
 }
 
-function Toolbar({
+// ─── List card: sort/filter toolbar + rows ───────────────────────
+function ListCard({
+  rows,
   sortKey,
   onSortChange,
   winnerOnly,
   onWinnerOnlyChange,
 }: {
+  rows: ComparisonMarket[]
   sortKey: SortKey
   onSortChange: (k: SortKey) => void
   winnerOnly: boolean
   onWinnerOnlyChange: (v: boolean) => void
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-2 px-4 py-2.5 bg-[var(--surface)] border-b border-border-light">
-      <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-text-muted mr-1">
-        Sort
-      </span>
-      {(Object.keys(SORT_LABEL) as SortKey[]).map((k) => (
-        <button
-          key={k}
-          type="button"
-          onClick={() => onSortChange(k)}
-          aria-pressed={sortKey === k}
-          className={cn(
-            'h-7 px-3 text-[11px] font-medium tracking-wide rounded-sm border transition-colors',
-            sortKey === k
-              ? 'bg-black text-white border-black'
-              : 'bg-white text-text-muted border-border-light hover:text-black hover:border-black/40',
-          )}
+    <div className={CARD_CLASS} style={CARD_STYLE}>
+      <div
+        className="flex flex-wrap items-center gap-2"
+        style={{
+          padding: '16px 20px',
+          borderBottom: '1px solid var(--apple-line)',
+        }}
+      >
+        <span style={{ ...EYEBROW, marginRight: 4 }}>Sort</span>
+        {(Object.keys(SORT_LABEL) as SortKey[]).map((k) => (
+          <SortPill key={k} active={sortKey === k} onClick={() => onSortChange(k)}>
+            {SORT_LABEL[k]}
+          </SortPill>
+        ))}
+        <div className="flex-1" />
+        <label
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            fontFamily: 'var(--apple-font-text)',
+            fontSize: 13,
+            letterSpacing: 'var(--apple-track-tight)',
+            color: 'var(--apple-text-secondary)',
+            cursor: 'pointer',
+            userSelect: 'none',
+          }}
         >
-          {SORT_LABEL[k]}
-        </button>
-      ))}
-      <div className="flex-1" />
-      <label className="inline-flex items-center gap-2 text-[11px] text-text-muted cursor-pointer select-none">
-        <input
-          type="checkbox"
-          checked={winnerOnly}
-          onChange={(e) => onWinnerOnlyChange(e.target.checked)}
-          className="accent-black"
-        />
-        Winner only
-      </label>
+          <input
+            type="checkbox"
+            checked={winnerOnly}
+            onChange={(e) => onWinnerOnlyChange(e.target.checked)}
+            style={{ accentColor: APPLE_BLUE }}
+          />
+          Winner only
+        </label>
+      </div>
+
+      <div
+        role="row"
+        className="grid"
+        style={{
+          gridTemplateColumns: '1fr 160px 200px 100px',
+          gap: 12,
+          padding: '12px 20px',
+          background: 'var(--apple-surface, transparent)',
+          borderBottom: '1px solid var(--apple-line)',
+        }}
+      >
+        <span style={EYEBROW}>Market</span>
+        <span style={{ ...EYEBROW, textAlign: 'right' }}>Poly · 1h move</span>
+        <span style={{ ...EYEBROW, textAlign: 'right' }}>Vision · payout</span>
+        <span style={{ ...EYEBROW, textAlign: 'right' }}>Gap</span>
+      </div>
+
+      {rows.length === 0 ? (
+        <div style={{ padding: 28 }}>
+          <p style={{
+            fontFamily: 'var(--apple-font-text)',
+            fontSize: 'var(--apple-fs-17)',
+            color: 'var(--apple-text-secondary)',
+            margin: 0,
+          }}>
+            No markets with both sides covered in this round. Try toggling the winner filter.
+          </p>
+        </div>
+      ) : (
+        rows.map((m) => <Row key={m.assetId} m={m} />)
+      )}
     </div>
   )
 }
 
+function SortPill({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean
+  onClick: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      style={{
+        padding: '6px 12px',
+        borderRadius: 'var(--apple-r-pill)',
+        border: '1px solid ' + (active ? 'var(--apple-text)' : 'var(--apple-line)'),
+        background: active ? 'var(--apple-text)' : 'transparent',
+        color: active ? '#fff' : 'var(--apple-text-secondary)',
+        fontFamily: 'var(--apple-font-text)',
+        fontSize: 13,
+        letterSpacing: 'var(--apple-track-tight)',
+        fontWeight: active ? 500 : 400,
+        cursor: 'pointer',
+        transition: 'all 200ms var(--apple-ease-default)',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {children}
+    </button>
+  )
+}
+
 function outcomeChip(m: ComparisonMarket): { glyph: string; label: string; color: string } {
-  if (m.visionWinSide === 'Up') return { glyph: '▲', label: 'Up', color: 'rgb(34, 139, 78)' }
-  if (m.visionWinSide === 'Down') return { glyph: '▼', label: 'Down', color: 'rgb(196, 50, 50)' }
-  if (m.visionOutcome === 'Flat') return { glyph: '·', label: 'flat', color: 'var(--text-muted)' }
-  if (m.visionOutcome === 'AllSameSide') return { glyph: '·', label: 'one-side', color: 'var(--text-muted)' }
-  if (m.visionOutcome === 'AllLosers') return { glyph: '·', label: 'no win', color: 'var(--text-muted)' }
-  return { glyph: '·', label: 'cancelled', color: 'var(--text-muted)' }
+  if (m.visionWinSide === 'Up') return { glyph: '▲', label: 'Up', color: APPLE_GREEN }
+  if (m.visionWinSide === 'Down') return { glyph: '▼', label: 'Down', color: APPLE_RED }
+  if (m.visionOutcome === 'Flat') return { glyph: '·', label: 'flat', color: 'var(--apple-text-tertiary)' }
+  if (m.visionOutcome === 'AllSameSide') return { glyph: '·', label: 'one-side', color: 'var(--apple-text-tertiary)' }
+  if (m.visionOutcome === 'AllLosers') return { glyph: '·', label: 'no win', color: 'var(--apple-text-tertiary)' }
+  return { glyph: '·', label: 'cancelled', color: 'var(--apple-text-tertiary)' }
 }
 
 function Row({ m }: { m: ComparisonMarket }) {
@@ -344,68 +432,130 @@ function Row({ m }: { m: ComparisonMarket }) {
     : null
   const out = outcomeChip(m)
 
-  const polyChangeClass = m.polyChangePct == null
-    ? 'text-text-muted'
+  const polyColor = m.polyChangePct == null
+    ? 'var(--apple-text-tertiary)'
     : m.polyChangePct > 0
-    ? 'text-[color:rgb(34,139,78)]'
+    ? APPLE_GREEN
     : m.polyChangePct < 0
-    ? 'text-[color:rgb(196,50,50)]'
-    : 'text-text-muted'
+    ? APPLE_RED
+    : 'var(--apple-text-secondary)'
 
   return (
-    <div className={cn(GRID, 'px-4 py-2.5 border-b border-border-light last:border-b-0 hover:bg-[var(--surface)] transition-colors')}>
-      <div className="min-w-0">
+    <div
+      role="row"
+      className="grid"
+      style={{
+        gridTemplateColumns: '1fr 160px 200px 100px',
+        gap: 12,
+        padding: '16px 20px',
+        alignItems: 'center',
+        borderBottom: '1px solid var(--apple-line)',
+        transition: 'background-color 160ms var(--apple-ease-default)',
+      }}
+    >
+      <div style={{ minWidth: 0 }}>
         {polyUrl ? (
           <a
             href={polyUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="block text-[12px] text-black font-medium truncate hover:underline"
+            style={{
+              display: 'block',
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: 'var(--apple-fs-15, 15px)',
+              letterSpacing: 'var(--apple-track-tight)',
+              color: 'var(--apple-text)',
+              textDecoration: 'none',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              fontWeight: 500,
+            }}
             title={m.name}
           >
             {truncate(displayName, 110)}
           </a>
         ) : (
-          <span className="block text-[12px] text-text-muted truncate" title={m.assetId}>
+          <span
+            style={{
+              display: 'block',
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: 'var(--apple-fs-15, 15px)',
+              color: 'var(--apple-text-tertiary)',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+            title={m.assetId}
+          >
             {displayName}
           </span>
         )}
-        <div className="mt-0.5 text-[10px] font-mono tabular-nums text-text-muted">
+        <div
+          className="mt-1"
+          style={{
+            fontFamily: 'var(--apple-font-text)',
+            fontSize: 12,
+            color: 'var(--apple-text-tertiary)',
+            letterSpacing: '+0.007em',
+            fontVariantNumeric: 'tabular-nums',
+          }}
+        >
           {m.polyVolume24h ? `${fmtUsd(m.polyVolume24h)} 24h` : 'no volume'}
-          {' · '}
-          implied {fmtImpliedProb(m.polyCurrent)}
+          {' · implied '}
+          {fmtImpliedProb(m.polyCurrent)}
         </div>
       </div>
 
-      <div className="text-right">
-        <div className={cn('text-[14px] font-mono tabular-nums font-semibold', polyChangeClass)}>
+      <div style={{ textAlign: 'right' }}>
+        <div style={{ ...NUM_DISPLAY, fontSize: 19, color: polyColor }}>
           {fmtPct(m.polyChangePct, true, 2)}
         </div>
-        <div className="mt-0.5 text-[10px] font-mono tabular-nums text-text-muted">
+        <div
+          className="mt-0.5"
+          style={{
+            fontFamily: 'var(--apple-font-text)',
+            fontSize: 11,
+            color: 'var(--apple-text-tertiary)',
+            fontVariantNumeric: 'tabular-nums',
+          }}
+        >
           {m.polyStart != null && m.polyEnd != null
-            ? `${fmtImpliedProb(m.polyStart)}→${fmtImpliedProb(m.polyEnd)}`
+            ? `${fmtImpliedProb(m.polyStart)} → ${fmtImpliedProb(m.polyEnd)}`
             : '—'}
         </div>
       </div>
 
-      <div className="text-right">
-        <div className={cn(
-          'text-[14px] font-mono tabular-nums font-semibold',
-          m.visionGainPct != null ? 'text-[color:rgb(0,113,227)]' : 'text-text-muted',
-        )}>
+      <div style={{ textAlign: 'right' }}>
+        <div style={{ ...NUM_DISPLAY, fontSize: 19, color: m.visionGainPct != null ? APPLE_BLUE : 'var(--apple-text-tertiary)' }}>
           {fmtPct(m.visionGainPct, true, 0)}
         </div>
-        <div className="mt-0.5 text-[10px] font-mono tabular-nums text-text-muted flex items-center gap-1 justify-end">
+        <div
+          className="mt-0.5"
+          style={{
+            display: 'inline-flex',
+            justifyContent: 'flex-end',
+            gap: 6,
+            fontFamily: 'var(--apple-font-text)',
+            fontSize: 11,
+            color: 'var(--apple-text-tertiary)',
+            fontVariantNumeric: 'tabular-nums',
+          }}
+        >
           <span style={{ color: out.color }}>{out.glyph}</span>
           <span>{fmtMult(m.visionMultiplier)}</span>
-          <span className="text-text-muted/70">· {out.label}</span>
+          <span>· {out.label}</span>
         </div>
       </div>
 
-      <div className={cn(
-        'text-right text-[12px] font-mono tabular-nums font-semibold',
-        m.leverageGap != null ? 'text-black' : 'text-text-muted',
-      )}>
+      <div
+        style={{
+          textAlign: 'right',
+          ...NUM_DISPLAY,
+          fontSize: 17,
+          color: m.leverageGap != null ? 'var(--apple-text)' : 'var(--apple-text-tertiary)',
+        }}
+      >
         {fmtPct(m.leverageGap, false, 0)}
       </div>
     </div>
@@ -414,50 +564,85 @@ function Row({ m }: { m: ComparisonMarket }) {
 
 function Footnote({ batchId, generatedAt, now }: { batchId: number; generatedAt: string; now: number }) {
   return (
-    <p className="text-[11px] text-text-muted leading-relaxed max-w-[680px]">
-      Polymarket move: change in the question’s implied probability between the start and end of Vision batch #{batchId}’s
-      betting window. Vision payout: the parimutuel multiplier paid to the winning side of the same round, expressed as net
-      gain. The gap is the simple subtraction. Five minutes either way. Generated {fmtRelativeAt(generatedAt, now)}.
+    <p
+      className="mt-1"
+      style={{
+        fontFamily: 'var(--apple-font-text)',
+        fontSize: 12,
+        color: 'var(--apple-text-tertiary)',
+        letterSpacing: '+0.007em',
+        lineHeight: 1.5,
+        maxWidth: '68ch',
+        margin: 0,
+      }}
+    >
+      Polymarket move: change in the question’s implied probability across the hour ending when Vision batch #{batchId}
+      settled. Vision payout: the parimutuel multiplier paid to the winning side of the same round, expressed as net
+      gain. Generated {fmtRelativeAt(generatedAt, now)}.
     </p>
   )
 }
 
+// ─── Skeleton ────────────────────────────────────────────────────
 function ComparisonSkeleton() {
-  const bar = (w: string) => (
-    <span className={cn('skeleton inline-block h-[12px] rounded', w)} />
+  const bar = (w: number) => (
+    <div
+      style={{
+        height: 12,
+        width: w,
+        borderRadius: 4,
+        background: 'var(--apple-line)',
+        opacity: 0.6,
+      }}
+    />
   )
   return (
-    <div className="flex flex-col gap-6" aria-busy="true">
-      <div className="bg-white border border-border-light overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-3 bg-terminal-dark">
-          <div>
-            <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-white/35">
-              Last settled batch
-            </div>
-            <h3 className="text-[15px] font-bold text-white">Polymarket vs Vision</h3>
-          </div>
+    <div className="flex flex-col gap-5" aria-busy="true">
+      <div className={CARD_CLASS} style={{ ...CARD_STYLE, padding: 28 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {bar(120)}
+          {bar(360)}
+          {bar(280)}
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 border-b border-border-light">
+        <div
+          className="mt-5 grid"
+          style={{
+            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+            gap: 18,
+            paddingTop: 18,
+            borderTop: '1px solid var(--apple-line)',
+          }}
+        >
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className={cn('px-5 py-4', i > 0 && 'border-l border-border-light')}>
-              {bar('w-24')}
-              <div className="mt-2">{bar('w-16')}</div>
+            <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {bar(110)}
+              {bar(90)}
             </div>
           ))}
         </div>
-        <div className={cn(GRID, 'px-4 py-2 bg-[var(--surface)] border-y border-border-light')}>
-          {bar('w-12')}<div className="text-right">{bar('w-16')}</div><div className="text-right">{bar('w-20')}</div><div className="text-right">{bar('w-10')}</div>
-        </div>
-        <div className="bg-white">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className={cn(GRID, 'px-4 py-2.5 border-b border-border-light last:border-b-0')}>
-              <div>{bar('w-3/4')}<div className="mt-1">{bar('w-1/2')}</div></div>
-              <div className="text-right">{bar('w-14')}</div>
-              <div className="text-right">{bar('w-16')}</div>
-              <div className="text-right">{bar('w-10')}</div>
+      </div>
+      <div className={CARD_CLASS} style={CARD_STYLE}>
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div
+            key={i}
+            className="grid"
+            style={{
+              gridTemplateColumns: '1fr 160px 200px 100px',
+              gap: 12,
+              padding: '16px 20px',
+              borderBottom: i < 7 ? '1px solid var(--apple-line)' : 'none',
+              alignItems: 'center',
+            }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {bar(280)}
+              {bar(140)}
             </div>
-          ))}
-        </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>{bar(70)}</div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>{bar(90)}</div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>{bar(40)}</div>
+          </div>
+        ))}
       </div>
     </div>
   )
