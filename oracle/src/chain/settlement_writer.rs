@@ -52,6 +52,16 @@ pub type SettlementSignerClient = SignerMiddleware<Provider<Http>, LocalWallet>;
 /// - Nonce management for concurrent submissions
 /// - Gas estimation with configurable multiplier
 /// - Retry logic with exponential backoff
+/// One unit of a `completeBuyOrders` bundle. Each item carries its own BLS
+/// proof so on-chain consensus semantics match the per-order path exactly.
+#[derive(Debug, Clone)]
+pub struct CompleteBuyOrderItem {
+    pub order_id: U256,
+    pub bls_signature: Vec<u8>,
+    pub reference_nonce: u64,
+    pub signers_bitmask: U256,
+}
+
 pub struct SettlementChainWriter {
     /// Signer middleware (provider + wallet)
     client: Arc<SettlementSignerClient>,
@@ -1442,6 +1452,176 @@ impl SettlementChainWriter {
 
         Err(SettlementWriterError::RetryExhausted(format!(
             "Max attempts ({}) exceeded for completeBuyOrder",
+            max_attempts
+        )))
+    }
+
+    /// Build a completeBuyOrders bundled transaction.
+    ///
+    /// Encodes: SettlementBridgeCustody.completeBuyOrders(
+    ///   uint256[] orderIds, address vault, bytes[] sigs, uint256[] refNonces, uint256[] bitmasks)
+    fn build_complete_buy_orders_tx(
+        &self,
+        items: &[CompleteBuyOrderItem],
+        vault: Address,
+    ) -> TypedTransaction {
+        let function = ethers::abi::Function {
+            name: "completeBuyOrders".to_string(),
+            inputs: vec![
+                ethers::abi::Param {
+                    name: "orderIds".to_string(),
+                    kind: ethers::abi::ParamType::Array(Box::new(ethers::abi::ParamType::Uint(256))),
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "vault".to_string(),
+                    kind: ethers::abi::ParamType::Address,
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "blsSignatures".to_string(),
+                    kind: ethers::abi::ParamType::Array(Box::new(ethers::abi::ParamType::Bytes)),
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "referenceNonces".to_string(),
+                    kind: ethers::abi::ParamType::Array(Box::new(ethers::abi::ParamType::Uint(256))),
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "signersBitmasks".to_string(),
+                    kind: ethers::abi::ParamType::Array(Box::new(ethers::abi::ParamType::Uint(256))),
+                    internal_type: None,
+                },
+            ],
+            outputs: vec![],
+            #[allow(deprecated)]
+            constant: None,
+            state_mutability: ethers::abi::StateMutability::NonPayable,
+        };
+
+        let order_ids = ethers::abi::Token::Array(
+            items.iter().map(|i| ethers::abi::Token::Uint(i.order_id)).collect(),
+        );
+        let sigs = ethers::abi::Token::Array(
+            items.iter().map(|i| ethers::abi::Token::Bytes(i.bls_signature.clone())).collect(),
+        );
+        let ref_nonces = ethers::abi::Token::Array(
+            items.iter().map(|i| ethers::abi::Token::Uint(U256::from(i.reference_nonce))).collect(),
+        );
+        let bitmasks = ethers::abi::Token::Array(
+            items.iter().map(|i| ethers::abi::Token::Uint(i.signers_bitmask)).collect(),
+        );
+
+        let call_data = function
+            .encode_input(&[order_ids, ethers::abi::Token::Address(vault), sigs, ref_nonces, bitmasks])
+            .expect("ABI encoding should not fail");
+
+        let mut tx = TypedTransaction::default();
+        tx.set_to(self.config.settlement_custody_address);
+        tx.set_data(call_data.into());
+        tx.set_chain_id(self.config.chain_id);
+        tx
+    }
+
+    /// Submit a `completeBuyOrders` bundle. Same shared `vault` for every item;
+    /// each item keeps its own BLS proof. One nonce, one receipt wait.
+    ///
+    /// Mirrors the retry / nonce-resync loop in `complete_buy_order`.
+    pub async fn complete_buy_orders(
+        &self,
+        items: Vec<CompleteBuyOrderItem>,
+        vault: Address,
+    ) -> Result<H256, SettlementWriterError> {
+        if items.is_empty() {
+            return Err(SettlementWriterError::TransactionError(
+                "complete_buy_orders: empty items".to_string(),
+            ));
+        }
+        info!(
+            count = items.len(),
+            vault = ?vault,
+            "Submitting completeBuyOrders bundle"
+        );
+
+        self.check_gas_available().await?;
+
+        let max_attempts = self.config.retry_config.max_retries + 1;
+
+        for attempt in 0..max_attempts {
+            if let Err(e) = self.nonce_manager.resync().await {
+                debug!(attempt, error = %e, "Nonce resync failed, using cached value");
+            }
+
+            let tx_nonce = U256::from(self.nonce_manager.current_nonce());
+            let _ = self.nonce_manager.get_next_nonce().await;
+
+            let mut tx = self.build_complete_buy_orders_tx(&items, vault);
+            tx.set_nonce(tx_nonce);
+
+            let gas = match self.gas_estimator.estimate_gas(&tx).await {
+                Ok(g) => g,
+                Err(e) => {
+                    if attempt < max_attempts - 1 {
+                        debug!(attempt, error = %e, "Gas estimation failed, retrying");
+                        let delay = self.config.retry_config.delay_for_attempt(attempt);
+                        tokio::time::sleep(delay).await;
+                        continue;
+                    }
+                    return Err(SettlementWriterError::GasEstimationError(e.to_string()));
+                }
+            };
+            tx.set_gas(gas);
+
+            let gas_price = self
+                .gas_estimator
+                .get_gas_price()
+                .await
+                .map_err(|e| SettlementWriterError::GasEstimationError(e.to_string()))?;
+
+            if let TypedTransaction::Eip1559(ref mut eip1559_tx) = tx {
+                gas_price.apply_to_tx(eip1559_tx);
+            }
+
+            debug!(
+                attempt,
+                nonce = %tx_nonce,
+                gas_limit = %gas,
+                "Attempting completeBuyOrders bundle submission"
+            );
+
+            match self.client.send_transaction(tx, None).await {
+                Ok(pending_tx) => {
+                    let tx_hash = pending_tx.tx_hash();
+                    info!(
+                        tx_hash = ?tx_hash,
+                        count = items.len(),
+                        tx_nonce = %tx_nonce,
+                        attempt,
+                        "completeBuyOrders bundle submitted"
+                    );
+                    self.nonce_manager.track_pending(tx_nonce, tx_hash);
+                    return Ok(tx_hash);
+                }
+                Err(e) => {
+                    let err_str = e.to_string().to_lowercase();
+                    let is_nonce_error = err_str.contains("nonce too low")
+                        || err_str.contains("nonce has already been used")
+                        || err_str.contains("replacement transaction underpriced");
+
+                    if is_nonce_error && attempt < max_attempts - 1 {
+                        debug!(attempt, error = %e, "Nonce-related error, will resync and retry");
+                        let delay = self.config.retry_config.delay_for_attempt(attempt);
+                        tokio::time::sleep(delay).await;
+                        continue;
+                    }
+                    return Err(SettlementWriterError::TransactionError(e.to_string()));
+                }
+            }
+        }
+
+        Err(SettlementWriterError::RetryExhausted(format!(
+            "Max attempts ({}) exceeded for completeBuyOrders",
             max_attempts
         )))
     }

@@ -22,6 +22,9 @@ import "../interfaces/IBridgeProxy.sol";
 contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, ISettlementBridgeCustody {
     using SafeERC20 for IERC20;
 
+    /// @notice Thrown when bundled-call array lengths disagree or are empty.
+    error BundleLengthMismatch();
+
     /// @notice Legacy Vision deposit struct (was in TypesLib, moved here after purge)
     struct VisionDeposit {
         address user;
@@ -312,6 +315,45 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
         uint256 referenceNonce,
         uint256 signersBitmask
     ) external override {
+        _completeBuyOrderOne(orderId, vault, blsSignature, referenceNonce, signersBitmask);
+    }
+
+    /// @inheritdoc ISettlementBridgeCustody
+    function completeBuyOrders(
+        uint256[] calldata orderIds,
+        address vault,
+        bytes[] calldata blsSignatures,
+        uint256[] calldata referenceNonces,
+        uint256[] calldata signersBitmasks
+    ) external override {
+        uint256 n = orderIds.length;
+        if (n == 0) revert BundleLengthMismatch();
+        if (
+            blsSignatures.length != n
+            || referenceNonces.length != n
+            || signersBitmasks.length != n
+        ) revert BundleLengthMismatch();
+
+        for (uint256 i = 0; i < n; ++i) {
+            _completeBuyOrderOne(
+                orderIds[i],
+                vault,
+                blsSignatures[i],
+                referenceNonces[i],
+                signersBitmasks[i]
+            );
+        }
+    }
+
+    /// @notice Single-order body. Shared by `completeBuyOrder` and
+    ///         `completeBuyOrders`. Each sub-call verifies its own BLS proof.
+    function _completeBuyOrderOne(
+        uint256 orderId,
+        address vault,
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
+    ) internal {
         TypesLib.CrossChainOrder storage order = crossChainOrders[orderId];
         if (order.user == address(0)) revert ErrorsLib.E125_BuyOrderNotFound(orderId);
 

@@ -1023,7 +1023,120 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
             } else {
                 let vault = orchestrator.read().await.config().bitget_vault;
                 let mut confirmed = Vec::new();
+
+                // ── Bundled fast path ────────────────────────────────────────
+                // Run consensus per order, accumulate leader-signed items, try
+                // one `completeBuyOrders` tx. On revert we fall through to the
+                // existing per-order loop, which re-runs the full error
+                // classification per row (NonceFuture, SnapshotTooOld, etc.).
+                // The per-order loop also re-runs consensus on the fallback —
+                // wasteful but rare; bundle reverts are deterministic protocol
+                // errors, not chain congestion.
+                #[derive(Clone)]
+                struct CboCached {
+                    order_id: ethers::types::U256,
+                    sig: Vec<u8>,
+                    ref_nonce: u64,
+                    bitmask: ethers::types::U256,
+                }
+                let mut cached: Vec<CboCached> = Vec::new();
+                let mut follower_passthrough: Vec<ethers::types::U256> = Vec::new();
+                let mut consensus_failed: Vec<ethers::types::U256> = Vec::new();
+                let mut return_cbo_via_bundle = false;
+
+                if submitted_orders.len() >= 2 {
+                    for order_id in &submitted_orders {
+                        match tokio::time::timeout(
+                            std::time::Duration::from_secs(20),
+                            protocol.run_complete_buy_order_phase(
+                                current_cycle, *order_id, vault, batch_am_leader,
+                            ),
+                        ).await {
+                            Ok(Ok(cbo_result)) => {
+                                if batch_am_leader && !cbo_result.aggregated_signature.0.is_empty() {
+                                    cached.push(CboCached {
+                                        order_id: *order_id,
+                                        sig: cbo_result.aggregated_signature.0.clone(),
+                                        ref_nonce: protocol.settlement_registry_nonce(),
+                                        bitmask: cbo_result.signer_bitmap,
+                                    });
+                                } else if !batch_am_leader {
+                                    follower_passthrough.push(*order_id);
+                                }
+                            }
+                            Ok(Err(e)) => {
+                                warn!(error = %e, order_id = %order_id, "CompleteBuyOrder consensus failed (bundle prep)");
+                                consensus_failed.push(*order_id);
+                            }
+                            Err(_) => {
+                                warn!(order_id = %order_id, "CompleteBuyOrder consensus timed out (bundle prep)");
+                                consensus_failed.push(*order_id);
+                            }
+                        }
+                    }
+
+                    // Mark consensus-failed orders permanently failed.
+                    if !consensus_failed.is_empty() {
+                        let orch = orchestrator.write().await;
+                        orch.mark_orders_failed(&consensus_failed).await;
+                        drop(orch);
+                    }
+                    // Followers trust consensus — already confirmed.
+                    confirmed.extend(follower_passthrough.iter().copied());
+
+                    // Leader: try one bundled tx for everything we signed.
+                    let mut bundle_succeeded = false;
+                    if batch_am_leader && cached.len() >= 2 {
+                        let items: Vec<oracle::CompleteBuyOrderItem> = cached
+                            .iter()
+                            .map(|c| oracle::CompleteBuyOrderItem {
+                                order_id: c.order_id,
+                                bls_signature: c.sig.clone(),
+                                reference_nonce: c.ref_nonce,
+                                signers_bitmask: c.bitmask,
+                            })
+                            .collect();
+                        info!(count = items.len(), "Attempting bundled completeBuyOrders");
+                        match settlement_writer.complete_buy_orders(items, vault).await {
+                            Ok(tx_hash) => {
+                                const BUNDLE_RECEIPT_TIMEOUT_SECS: u64 = 30;
+                                match settlement_writer.wait_for_receipt(tx_hash, BUNDLE_RECEIPT_TIMEOUT_SECS).await {
+                                    Ok(receipt) => {
+                                        let success = receipt.status.map(|s| s.as_u64() == 1).unwrap_or(false);
+                                        if success {
+                                            info!(?tx_hash, count = cached.len(), "completeBuyOrders bundle CONFIRMED");
+                                            for c in &cached { confirmed.push(c.order_id); }
+                                            bundle_succeeded = true;
+                                        } else {
+                                            warn!(?tx_hash, "completeBuyOrders bundle REVERTED — per-order fallback");
+                                        }
+                                    }
+                                    Err(e) => {
+                                        warn!(error = %e, "completeBuyOrders receipt timeout — per-order fallback");
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                warn!(error = %e, "completeBuyOrders submit failed — per-order fallback");
+                            }
+                        }
+                    } else if batch_am_leader {
+                        // Only one signed item — skip bundle, fall through to per-order.
+                    }
+
+                    if bundle_succeeded {
+                        // Skip the per-order loop entirely.
+                        return_cbo_via_bundle = true;
+                    }
+                }
+
+                // Per-order loop: original path, unchanged. Runs when the
+                // bundle wasn't attempted, didn't apply, or reverted.
+                if !return_cbo_via_bundle {
                 for order_id in &submitted_orders {
+                    // Bundle path already handled follower passthroughs and consensus failures.
+                    if follower_passthrough.contains(order_id) { continue; }
+                    if consensus_failed.contains(order_id) { continue; }
                     info!(order_id = %order_id, "Starting order processing");
                     let order_result = tokio::time::timeout(
                         std::time::Duration::from_secs(20),
@@ -1133,6 +1246,7 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                         }
                     }
                 }
+                } // end if !return_cbo_via_bundle
                 confirmed
             };
 

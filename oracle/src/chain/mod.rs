@@ -25,7 +25,7 @@ pub use settlement_reader::{
 };
 pub use data_node_settlement_reader::DataNodeSettlementReader;
 pub use settlement_trait::{SettlementOrderReader, SettlementReader};
-pub use settlement_writer::{SettlementChainWriter, SettlementChainWriterConfig, SettlementWriterError};
+pub use settlement_writer::{CompleteBuyOrderItem, SettlementChainWriter, SettlementChainWriterConfig, SettlementWriterError};
 pub use custody_writer::{CustodyWriter, CustodyWriterConfig, CustodyWriterError};
 pub use events::{
     CrossChainOrder, CrossChainOrderData, CrossChainOrderEvent, CrossChainOrderParseError,

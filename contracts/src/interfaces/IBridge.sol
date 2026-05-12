@@ -141,6 +141,19 @@ interface ISettlementBridgeCustody {
     /// @param blsSignature Aggregated BLS signature
     function completeBuyOrder(uint256 orderId, address vault, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external;
 
+    /// @notice Bundle of `completeBuyOrder` calls in one transaction.
+    /// @dev Each sub-call keeps its own BLS signature, reference nonce, and
+    ///      signers bitmask. Reverts on the first sub-failure — chunking is the
+    ///      caller's responsibility. `vault` is shared across all items because
+    ///      every order in a cycle settles to the same vault.
+    function completeBuyOrders(
+        uint256[] calldata orderIds,
+        address vault,
+        bytes[] calldata blsSignatures,
+        uint256[] calldata referenceNonces,
+        uint256[] calldata signersBitmasks
+    ) external;
+
     /// @notice Emitted when a buy order is completed (USDC sent to vault)
     event BuyOrderCompleted(uint256 indexed orderId, address indexed vault, uint256 usdcAmount);
 
