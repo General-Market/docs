@@ -18,6 +18,9 @@ import {ErrorsLib} from "../libraries/ErrorsLib.sol";
 /// @notice UUPS upgradeable proxy on Settlement for bridged ITP creation
 /// @custom:security-contact security@indexprotocol.com
 contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, PausableUpgradeable, BLSVerifier, IBridgeProxy {
+    /// @notice Thrown when bundled-call array lengths disagree or are empty.
+    error BundleLengthMismatch();
+
     // ============ CONSTANTS ============
 
     uint256 public constant override MAX_ASSETS = 1000;
@@ -405,6 +408,57 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         uint256 referenceNonce,
         uint256 signersBitmask
     ) external override whenNotPaused {
+        _mintBridgedSharesOne(itpId, user, amount, orderId, blsSignature, referenceNonce, signersBitmask);
+    }
+
+    /// @notice Bundle of `mintBridgedShares` calls in one transaction.
+    /// @dev Each item keeps its own BLS signature, reference nonce, and signers
+    ///      bitmask. Reverts on the first sub-failure — chunking is the caller's
+    ///      responsibility. One pause-check covers the bundle.
+    function mintBridgedSharesMany(
+        bytes32[] calldata itpIds,
+        address[] calldata users,
+        uint256[] calldata amounts,
+        uint256[] calldata orderIds,
+        bytes[] calldata blsSignatures,
+        uint256[] calldata referenceNonces,
+        uint256[] calldata signersBitmasks
+    ) external whenNotPaused {
+        uint256 n = orderIds.length;
+        if (n == 0) revert BundleLengthMismatch();
+        if (
+            itpIds.length != n
+            || users.length != n
+            || amounts.length != n
+            || blsSignatures.length != n
+            || referenceNonces.length != n
+            || signersBitmasks.length != n
+        ) revert BundleLengthMismatch();
+
+        for (uint256 i = 0; i < n; ++i) {
+            _mintBridgedSharesOne(
+                itpIds[i],
+                users[i],
+                amounts[i],
+                orderIds[i],
+                blsSignatures[i],
+                referenceNonces[i],
+                signersBitmasks[i]
+            );
+        }
+    }
+
+    /// @notice Single-mint body. Shared by `mintBridgedShares` and the bundled
+    ///         variant. The outer entry holds the `whenNotPaused` modifier.
+    function _mintBridgedSharesOne(
+        bytes32 itpId,
+        address user,
+        uint256 amount,
+        uint256 orderId,
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
+    ) internal {
         address bridgedItp = orbitToSettlement[itpId];
         if (bridgedItp == address(0)) revert ErrorsLib.E099_BridgeItpNotFound(itpId);
         if (amount == 0) revert ErrorsLib.E106_ZeroAddressNotAllowed();

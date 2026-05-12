@@ -198,6 +198,19 @@ interface IBridgeProxy {
         uint256 signersBitmask
     ) external;
 
+    /// @notice Bundle of `mintBridgedShares` calls in one transaction.
+    /// @dev Each item keeps its own BLS signature, reference nonce, and bitmask.
+    ///      Reverts on the first sub-failure — chunking is the caller's job.
+    function mintBridgedSharesMany(
+        bytes32[] calldata itpIds,
+        address[] calldata users,
+        uint256[] calldata amounts,
+        uint256[] calldata orderIds,
+        bytes[] calldata blsSignatures,
+        uint256[] calldata referenceNonces,
+        uint256[] calldata signersBitmasks
+    ) external;
+
     /// @notice Burn BridgedITP shares (e.g., after sell order completion)
     /// @param itpId The L3 ITP identifier
     /// @param from Address holding the BridgedITP tokens

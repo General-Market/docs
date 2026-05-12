@@ -1565,6 +1565,97 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                             if should_mint
                             {
                                 let bridge_proxy = orchestrator.read().await.config().bridge_proxy;
+
+                                // ── Bundled fast path ────────────────────
+                                // Run consensus per fill, accumulate signed
+                                // items, try one mintBridgedSharesMany. On
+                                // revert fall through to the per-fill loop
+                                // for full error classification.
+                                #[derive(Clone)]
+                                struct MintCached {
+                                    settlement_id: ethers::types::U256,
+                                    itp_id: ethers::types::H256,
+                                    user: ethers::types::Address,
+                                    shares: ethers::types::U256,
+                                    sig: Vec<u8>,
+                                    ref_nonce: u64,
+                                    bitmask: ethers::types::U256,
+                                }
+                                let mut mint_cached: Vec<MintCached> = Vec::new();
+                                let mut bundle_handled = false;
+
+                                if remaining_fills.len() >= 2 && batch_am_leader {
+                                    for fill in &remaining_fills {
+                                        let settlement_id = l3_to_settlement.get(&fill.order_id).copied().unwrap_or(fill.order_id);
+                                        let order_itp = orchestrator.read().await.get_order_itp_id(&settlement_id).await
+                                            .unwrap_or_else(|| itp_id_for_task.parse::<ethers::types::H256>().unwrap_or_default());
+                                        let mapping = resolve_or_rebuild_mapping(&orchestrator, &settlement_reader, settlement_id, fill.order_id).await;
+                                        let mapping = match mapping {
+                                            Some(m) => m,
+                                            None => continue, // L3-direct, skip
+                                        };
+                                        let shares = if fill.fill_price > ethers::types::U256::zero() {
+                                            (fill.fill_amount * ethers::types::U256::exp10(18)) / fill.fill_price
+                                        } else {
+                                            fill.fill_amount
+                                        };
+                                        match protocol.run_mint_bridged_shares_phase(
+                                            current_cycle, order_itp, mapping.original_user, shares, bridge_proxy, settlement_id, batch_am_leader,
+                                        ).await {
+                                            Ok(mint_result) => {
+                                                if !mint_result.aggregated_signature.0.is_empty() {
+                                                    mint_cached.push(MintCached {
+                                                        settlement_id,
+                                                        itp_id: order_itp,
+                                                        user: mapping.original_user,
+                                                        shares,
+                                                        sig: mint_result.aggregated_signature.0.clone(),
+                                                        ref_nonce: protocol.settlement_registry_nonce(),
+                                                        bitmask: mint_result.signer_bitmap,
+                                                    });
+                                                }
+                                            }
+                                            Err(e) => warn!(cycle = current_cycle, error = %e, "MintBridgedShares consensus failed (bundle prep)"),
+                                        }
+                                    }
+
+                                    if mint_cached.len() >= 2 {
+                                        let items: Vec<oracle::MintBridgedSharesItem> = mint_cached.iter().map(|c| oracle::MintBridgedSharesItem {
+                                            itp_id: c.itp_id,
+                                            user: c.user,
+                                            amount: c.shares,
+                                            order_id: c.settlement_id,
+                                            bls_signature: c.sig.clone(),
+                                            reference_nonce: c.ref_nonce,
+                                            signers_bitmask: c.bitmask,
+                                        }).collect();
+                                        info!(count = items.len(), "Attempting bundled mintBridgedSharesMany");
+                                        match settlement_writer.mint_bridged_shares_many(items).await {
+                                            Ok(tx_hash) => {
+                                                const BUNDLE_RECEIPT_TIMEOUT_SECS: u64 = 60;
+                                                match settlement_writer.wait_for_receipt(tx_hash, BUNDLE_RECEIPT_TIMEOUT_SECS).await {
+                                                    Ok(receipt) => {
+                                                        let success = receipt.status.map(|s| s.as_u64() == 1).unwrap_or(false);
+                                                        if success {
+                                                            info!(?tx_hash, count = mint_cached.len(), "mintBridgedSharesMany bundle CONFIRMED");
+                                                            let ids: Vec<ethers::types::U256> = mint_cached.iter().map(|c| c.settlement_id).collect();
+                                                            let orch = orchestrator.write().await;
+                                                            orch.mark_orders_shares_bridged(&ids).await;
+                                                            drop(orch);
+                                                            bundle_handled = true;
+                                                        } else {
+                                                            warn!(?tx_hash, "mintBridgedSharesMany bundle REVERTED — per-fill fallback");
+                                                        }
+                                                    }
+                                                    Err(e) => warn!(error = %e, "mintBridgedSharesMany receipt timeout — per-fill fallback"),
+                                                }
+                                            }
+                                            Err(e) => warn!(error = %e, "mintBridgedSharesMany submit failed — per-fill fallback"),
+                                        }
+                                    }
+                                }
+
+                                if !bundle_handled {
                                 for fill in &remaining_fills {
                                     let settlement_id = l3_to_settlement.get(&fill.order_id).copied().unwrap_or(fill.order_id);
                                     let order_itp = orchestrator.read().await.get_order_itp_id(&settlement_id).await
@@ -1633,6 +1724,7 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                                         debug!(order_id = %fill.order_id, "No order mapping — skipping bridge mint post-fills (L3-direct order)");
                                     }
                                 }
+                                } // end if !bundle_handled
                             }
                         } else if is_fill_error && retry_count >= MAX_FILL_RETRIES {
                             // Exhausted retries — mark all remaining as failed

@@ -27,11 +27,11 @@ pub mod state;
 
 pub use batcher::{BatchResult, OrderBatcher, PauseState, ValidationResult, DEFAULT_MAX_BATCH_SIZE};
 pub use chain::{
-    CompleteBuyOrderItem, SettlementChainReader, SettlementChainReaderConfig, SettlementChainWriter,
-    SettlementChainWriterConfig, SettlementReader, SettlementReaderError, SettlementWriterError,
-    ChainReaderConfig, ChainWriterConfig, ContractAddresses, CustodyWriter, CustodyWriterConfig,
-    CustodyWriterError, EthersChainReader, EthersChainWriter, GasConfig, ItpCreationRequest,
-    NonceManager, RetryConfig, SettleBatchItem, WriterContractAddresses,
+    CompleteBuyOrderItem, MintBridgedSharesItem, SettlementChainReader, SettlementChainReaderConfig,
+    SettlementChainWriter, SettlementChainWriterConfig, SettlementReader, SettlementReaderError,
+    SettlementWriterError, ChainReaderConfig, ChainWriterConfig, ContractAddresses, CustodyWriter,
+    CustodyWriterConfig, CustodyWriterError, EthersChainReader, EthersChainWriter, GasConfig,
+    ItpCreationRequest, NonceManager, RetryConfig, SettleBatchItem, WriterContractAddresses,
 };
 pub use common;
 pub use config::{ConfigBuilder, ConfigError, OracleConfig};

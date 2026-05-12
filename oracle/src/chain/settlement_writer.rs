@@ -62,6 +62,19 @@ pub struct CompleteBuyOrderItem {
     pub signers_bitmask: U256,
 }
 
+/// One unit of a `mintBridgedSharesMany` bundle. Same per-item BLS sig
+/// semantics as the per-fill `mintBridgedShares` path.
+#[derive(Debug, Clone)]
+pub struct MintBridgedSharesItem {
+    pub itp_id: H256,
+    pub user: Address,
+    pub amount: U256,
+    pub order_id: U256,
+    pub bls_signature: Vec<u8>,
+    pub reference_nonce: u64,
+    pub signers_bitmask: U256,
+}
+
 pub struct SettlementChainWriter {
     /// Signer middleware (provider + wallet)
     client: Arc<SettlementSignerClient>,
@@ -1734,6 +1747,178 @@ impl SettlementChainWriter {
 
         Err(SettlementWriterError::RetryExhausted(format!(
             "Max attempts ({}) exceeded for mintBridgedShares",
+            max_attempts
+        )))
+    }
+
+    /// Build a `mintBridgedSharesMany` transaction. Per-item BLS verified
+    /// on-chain — caller passes already-signed items.
+    fn build_mint_bridged_shares_many_tx(&self, items: &[MintBridgedSharesItem]) -> TypedTransaction {
+        let function = ethers::abi::Function {
+            name: "mintBridgedSharesMany".to_string(),
+            inputs: vec![
+                ethers::abi::Param {
+                    name: "itpIds".to_string(),
+                    kind: ethers::abi::ParamType::Array(Box::new(ethers::abi::ParamType::FixedBytes(32))),
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "users".to_string(),
+                    kind: ethers::abi::ParamType::Array(Box::new(ethers::abi::ParamType::Address)),
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "amounts".to_string(),
+                    kind: ethers::abi::ParamType::Array(Box::new(ethers::abi::ParamType::Uint(256))),
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "orderIds".to_string(),
+                    kind: ethers::abi::ParamType::Array(Box::new(ethers::abi::ParamType::Uint(256))),
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "blsSignatures".to_string(),
+                    kind: ethers::abi::ParamType::Array(Box::new(ethers::abi::ParamType::Bytes)),
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "referenceNonces".to_string(),
+                    kind: ethers::abi::ParamType::Array(Box::new(ethers::abi::ParamType::Uint(256))),
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "signersBitmasks".to_string(),
+                    kind: ethers::abi::ParamType::Array(Box::new(ethers::abi::ParamType::Uint(256))),
+                    internal_type: None,
+                },
+            ],
+            outputs: vec![],
+            #[allow(deprecated)]
+            constant: None,
+            state_mutability: ethers::abi::StateMutability::NonPayable,
+        };
+
+        let itp_ids = ethers::abi::Token::Array(
+            items.iter()
+                .map(|i| ethers::abi::Token::FixedBytes(i.itp_id.as_bytes().to_vec()))
+                .collect(),
+        );
+        let users = ethers::abi::Token::Array(
+            items.iter().map(|i| ethers::abi::Token::Address(i.user)).collect(),
+        );
+        let amounts = ethers::abi::Token::Array(
+            items.iter().map(|i| ethers::abi::Token::Uint(i.amount)).collect(),
+        );
+        let order_ids = ethers::abi::Token::Array(
+            items.iter().map(|i| ethers::abi::Token::Uint(i.order_id)).collect(),
+        );
+        let sigs = ethers::abi::Token::Array(
+            items.iter().map(|i| ethers::abi::Token::Bytes(i.bls_signature.clone())).collect(),
+        );
+        let ref_nonces = ethers::abi::Token::Array(
+            items.iter().map(|i| ethers::abi::Token::Uint(U256::from(i.reference_nonce))).collect(),
+        );
+        let bitmasks = ethers::abi::Token::Array(
+            items.iter().map(|i| ethers::abi::Token::Uint(i.signers_bitmask)).collect(),
+        );
+
+        let calldata = function
+            .encode_input(&[itp_ids, users, amounts, order_ids, sigs, ref_nonces, bitmasks])
+            .expect("ABI encoding should not fail");
+
+        let mut tx: TypedTransaction = Eip1559TransactionRequest::new()
+            .to(self.config.bridge_proxy_address)
+            .data(calldata)
+            .chain_id(self.config.chain_id)
+            .into();
+        tx
+    }
+
+    /// Submit a `mintBridgedSharesMany` bundle. One nonce, one receipt wait.
+    /// Mirrors the retry / nonce-resync loop of `mint_bridged_shares`.
+    pub async fn mint_bridged_shares_many(
+        &self,
+        items: Vec<MintBridgedSharesItem>,
+    ) -> Result<H256, SettlementWriterError> {
+        if items.is_empty() {
+            return Err(SettlementWriterError::TransactionError(
+                "mint_bridged_shares_many: empty items".to_string(),
+            ));
+        }
+        info!(count = items.len(), "Submitting mintBridgedSharesMany bundle");
+
+        self.check_gas_available().await?;
+
+        let max_attempts = self.config.retry_config.max_retries + 1;
+
+        for attempt in 0..max_attempts {
+            if let Err(e) = self.nonce_manager.resync().await {
+                debug!(attempt, error = %e, "Nonce resync failed, using cached value");
+            }
+
+            let tx_nonce = U256::from(self.nonce_manager.current_nonce());
+            let _ = self.nonce_manager.get_next_nonce().await;
+
+            let mut tx = self.build_mint_bridged_shares_many_tx(&items);
+            tx.set_nonce(tx_nonce);
+
+            let gas = match self.gas_estimator.estimate_gas(&tx).await {
+                Ok(g) => g,
+                Err(e) => {
+                    if attempt < max_attempts - 1 {
+                        debug!(attempt, error = %e, "Gas estimation failed, retrying");
+                        let delay = self.config.retry_config.delay_for_attempt(attempt);
+                        tokio::time::sleep(delay).await;
+                        continue;
+                    }
+                    return Err(SettlementWriterError::GasEstimationError(e.to_string()));
+                }
+            };
+            tx.set_gas(gas);
+
+            let gas_price = self
+                .gas_estimator
+                .get_gas_price()
+                .await
+                .map_err(|e| SettlementWriterError::GasEstimationError(e.to_string()))?;
+
+            if let TypedTransaction::Eip1559(ref mut eip1559_tx) = tx {
+                gas_price.apply_to_tx(eip1559_tx);
+            }
+
+            match self.client.send_transaction(tx, None).await {
+                Ok(pending_tx) => {
+                    let tx_hash = pending_tx.tx_hash();
+                    info!(
+                        tx_hash = ?tx_hash,
+                        count = items.len(),
+                        tx_nonce = %tx_nonce,
+                        attempt,
+                        "mintBridgedSharesMany bundle submitted"
+                    );
+                    self.nonce_manager.track_pending(tx_nonce, tx_hash);
+                    return Ok(tx_hash);
+                }
+                Err(e) => {
+                    let err_str = e.to_string().to_lowercase();
+                    let is_nonce_error = err_str.contains("nonce too low")
+                        || err_str.contains("nonce has already been used")
+                        || err_str.contains("replacement transaction underpriced");
+
+                    if is_nonce_error && attempt < max_attempts - 1 {
+                        debug!(attempt, error = %e, "Nonce-related error, will resync and retry");
+                        let delay = self.config.retry_config.delay_for_attempt(attempt);
+                        tokio::time::sleep(delay).await;
+                        continue;
+                    }
+                    return Err(SettlementWriterError::TransactionError(e.to_string()));
+                }
+            }
+        }
+
+        Err(SettlementWriterError::RetryExhausted(format!(
+            "Max attempts ({}) exceeded for mintBridgedSharesMany",
             max_attempts
         )))
     }
