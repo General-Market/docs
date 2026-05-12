@@ -106,7 +106,10 @@ export function SettlementTape() {
         <div className="absolute inset-0 overflow-y-auto">
           {rows.length === 0 ? (
             <div className="flex h-full items-center justify-center">
-              <p className="text-[12px] text-[#86868b]">Listening for the next settlement.</p>
+              <p className="text-[12px] text-[#86868b]">
+                <span className="floor-breathe inline-block align-middle">·</span>
+                <span className="ml-2 align-middle">Listening for the next settlement.</span>
+              </p>
             </div>
           ) : (
             <AnimatePresence initial={false}>

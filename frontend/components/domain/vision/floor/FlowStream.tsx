@@ -97,7 +97,10 @@ export function FlowStream() {
         <div className="absolute inset-0 overflow-y-auto">
           {rows.length === 0 ? (
             <div className="flex h-full items-center justify-center px-4 text-center">
-              <p className="text-[12px] text-[#86868b]">Markets resolve here as batches settle.</p>
+              <p className="text-[12px] text-[#86868b]">
+                <span className="floor-breathe inline-block align-middle">·</span>
+                <span className="ml-2 align-middle">Markets resolve here as batches settle.</span>
+              </p>
             </div>
           ) : (
             <AnimatePresence initial={false}>

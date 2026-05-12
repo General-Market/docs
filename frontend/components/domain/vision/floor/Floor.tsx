@@ -64,6 +64,14 @@ export function Floor() {
           0%, 100% { box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 0 0 0 rgba(0,113,227,0.0); }
           50%      { box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 0 0 6px rgba(0,113,227,0.10); }
         }
+        @keyframes floorBreathe {
+          0%, 100% { opacity: 0.3; transform: scale(1); }
+          50%      { opacity: 0.9; transform: scale(1.25); }
+        }
+        .floor-breathe {
+          animation: floorBreathe 2.4s ease-in-out infinite;
+          color: #0071e3;
+        }
       `}</style>
       <div
         className="relative flex h-screen w-screen flex-col overflow-hidden bg-[#f5f5f7]"
