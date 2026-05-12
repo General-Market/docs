@@ -304,7 +304,7 @@ const BAND_BOUNDS = BAND_BOUNDS_NATIVE.map((b) => ({
 }));
 
 const BAND_RIGHT_INSET = 0;
-const BAND_WIDTH = 360;
+const BAND_WIDTH = 540;
 const BAND_VERTICAL_PADDING = 0;
 
 const TierImage: React.FC<{
@@ -357,7 +357,7 @@ const TierImage: React.FC<{
         style={{
           position: "absolute",
           left: 0,
-          right: 360,
+          right: 540,
           bottom: 0,
           padding: "22px 16px 12px",
           background:
@@ -448,7 +448,7 @@ const ActiveRow: React.FC<{
         style={{
           position: "absolute",
           left: 0,
-          right: 360,
+          right: 540,
           top: activeFrameY,
           transform: `translateY(calc(-100% - ${
             sizes.totalHeight / 2 + (HAS_ICON ? 84 : 12)
@@ -497,7 +497,7 @@ const ActiveRow: React.FC<{
         style={{
           position: "absolute",
           left: 0,
-          right: 360,
+          right: 540,
           top: activeFrameY + suffixSlide,
           transform: `translateY(-50%) scale(${suffixScale.toFixed(3)})`,
           transformOrigin: "center center",
@@ -647,7 +647,7 @@ const PastSuffix: React.FC<{
       style={{
         position: "absolute",
         left: 0,
-        right: 360,
+        right: 540,
         top: y,
         transform: "translateY(-50%)",
         textAlign: "center",
