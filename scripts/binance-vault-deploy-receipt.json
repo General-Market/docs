@@ -1,0 +1,107 @@
+{
+  "timestamp": "2026-05-12T09:52:29Z",
+  "deployer": "0xC0D3Cb0c97CbF87F103a9901100D8f6D3e94D42A",
+  "factory": "0xe54DB21b61FD50d5F1191C3BCb70AD184F4D58D0",
+  "fee_bps": 1000,
+  "seed_amount_usdc": 10000,
+  "total_deployed": 12,
+  "total_funded": 12,
+  "vaults": [
+    {
+      "label": "spot-mom-5",
+      "source": "binance_spot",
+      "name": "Binance Spot Momentum 5",
+      "symbol": "vBSPOT-M5",
+      "manager": "0xC7EAd431618Bf3aD9dc53968560C570A5DE142b8",
+      "vault": "0x9559F4c326dB2587F21A27406ae566D6176938F3"
+    },
+    {
+      "label": "spot-rev-5",
+      "source": "binance_spot",
+      "name": "Binance Spot Reversion 5",
+      "symbol": "vBSPOT-R5",
+      "manager": "0xe8C38c4A98A26C64E752791DE8A0c5ABa910299D",
+      "vault": "0xCF33EF8faac308BB2c83D7B1601DABD93Bc3aFAC"
+    },
+    {
+      "label": "spot-mom-20",
+      "source": "binance_spot",
+      "name": "Binance Spot Momentum 20",
+      "symbol": "vBSPOT-M20",
+      "manager": "0xccf64e213Ae5D5E5F14deb7dEdf155C9E1533fee",
+      "vault": "0xeDe37625a58095b09ca4DD176a33fDec663Ca14A"
+    },
+    {
+      "label": "spot-rev-20",
+      "source": "binance_spot",
+      "name": "Binance Spot Reversion 20",
+      "symbol": "vBSPOT-R20",
+      "manager": "0xd9CE526D412f51b13750bf31bF261f8e3B63aa5c",
+      "vault": "0x7C0291bF7D7a3370e4B3a73ff5472c5394Ef935c"
+    },
+    {
+      "label": "fund-rev",
+      "source": "binance_futures_funding",
+      "name": "Binance Funding Reversion",
+      "symbol": "vBFUND-R",
+      "manager": "0x49ee510DFCEA03a1323E7a7a878BC523a9e8cF38",
+      "vault": "0xE51d3aa074499346aA0924041487e8d29fFE3c36"
+    },
+    {
+      "label": "fund-mom",
+      "source": "binance_futures_funding",
+      "name": "Binance Funding Continuation",
+      "symbol": "vBFUND-M",
+      "manager": "0x410Bd44DD78c30C973CDC15a23aeEd8216E28c9E",
+      "vault": "0x16823e49EeD18b9093Be60931DBBb3839abD2908"
+    },
+    {
+      "label": "fund-flip",
+      "source": "binance_futures_funding",
+      "name": "Binance Funding Sign Flip",
+      "symbol": "vBFUND-F",
+      "manager": "0x1DBC7e358b2F0f6adE277155bb679832de8376Ea",
+      "vault": "0xfDF9221C149039aA66E706046E12bfedc8BB08A0"
+    },
+    {
+      "label": "fund-extreme",
+      "source": "binance_futures_funding",
+      "name": "Binance Funding Extreme",
+      "symbol": "vBFUND-X",
+      "manager": "0x694e376931bBB0209F16FeaC0B9E6Ba26c1d9478",
+      "vault": "0x65B1473BEd6863636E0f554B96743127170517bd"
+    },
+    {
+      "label": "opt-mom-all",
+      "source": "binance_options",
+      "name": "Binance Options Momentum All",
+      "symbol": "vBOPT-MA",
+      "manager": "0x89b736800Af076Ee5A2C39cbCE560A2aAcfd1F51",
+      "vault": "0x67424A872f1A27Ac48d55EE90f8f7218e2317251"
+    },
+    {
+      "label": "opt-rev-all",
+      "source": "binance_options",
+      "name": "Binance Options Reversion All",
+      "symbol": "vBOPT-RA",
+      "manager": "0xE74cA016adEa692678B039851B8fbB4686e4AEF2",
+      "vault": "0x208a74D487123E35668f9BdE72C25dd35A2FafAE"
+    },
+    {
+      "label": "opt-mom-calls",
+      "source": "binance_options",
+      "name": "Binance Options Calls Momentum",
+      "symbol": "vBOPT-MC",
+      "manager": "0x77396031dAaFbf30A1338c6e72BDba5FD54Bdd6A",
+      "vault": "0x809A471DF3CE95163e8953d589B4fF1aC8b25518"
+    },
+    {
+      "label": "opt-mom-puts",
+      "source": "binance_options",
+      "name": "Binance Options Puts Momentum",
+      "symbol": "vBOPT-MP",
+      "manager": "0xB0CBd1A8eb1709Cb8622Fc4FC6C27F9a6ea80988",
+      "vault": "0xa0777dcc284f12C5aCE8d70b8402C1A6eEE6B4ae"
+    }
+  ]
+}
