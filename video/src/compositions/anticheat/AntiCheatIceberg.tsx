@@ -255,22 +255,20 @@ export const AntiCheatIceberg: React.FC = () => {
         />
       )}
 
-      {/* Per-tier image cards — one per tier, anchored to its line on
-          the iceberg. They scroll with the iceberg and stay once
-          revealed. Each card is grey until its tier becomes active, then
-          clears to full colour and gets a white border + glow. */}
-      {TRADING_TIERS.map((tt, i) =>
-        state.phase === "tier" && i <= state.tier ? (
-          <TierImage
-            key={i}
-            tier={tt}
-            index={i}
-            scrollY={scrollY}
-            isActive={i === state.tier}
-            state={state}
-          />
-        ) : null,
-      )}
+      {/* Per-tier image bands — one per tier, anchored to its band on
+          the iceberg. All six render from the start in greyscale; the
+          active band clears to full colour. Each card fills the full
+          height of its band on the iceberg, scrolling with the camera —
+          like annotations painted onto an iceberg meme. */}
+      {TRADING_TIERS.map((tt, i) => (
+        <TierImage
+          key={i}
+          tier={tt}
+          index={i}
+          scrollY={scrollY}
+          isActive={state.phase === "tier" && i === state.tier}
+        />
+      ))}
 
       {/* Source citation — bottom-left, mono, only if the active tier has
           a `source`. */}
@@ -281,64 +279,65 @@ export const AntiCheatIceberg: React.FC = () => {
   );
 };
 
-// ─── Per-tier image ──────────────────────────────────────────────────────────
+// ─── Per-tier image band ──────────────────────────────────────────────────────
 //
-// One photograph per tier, sitting on the right side of the iceberg at the
-// tier's natural Y. The card scrolls WITH the iceberg (its top tracks the
-// scroll offset) so it stays glued to its line — like an annotation on a
-// real iceberg meme. Inactive tiers render in greyscale; the active tier
-// clears to full colour.
+// One photograph per tier, sitting on the right side of the iceberg and
+// filling the full height of its band (the slice of iceberg between two
+// pink guide lines). The cards scroll WITH the iceberg, so each photo
+// stays glued to its band — like annotations painted onto an iceberg
+// meme. All six render from the start in greyscale; the active band
+// blooms to full colour as its tier becomes active.
 
-const IMG_RIGHT_INSET = 56;
-const IMG_W_PX = 280;
-const IMG_H_PX = 180;
+const BAND_BOUNDS_NATIVE: { top: number; bottom: number }[] = [
+  { top: 0,    bottom: 269 },   // T0 — sky / strategy
+  { top: 269,  bottom: 539 },   // T1 — tip / fees
+  { top: 539,  bottom: 857 },   // T2 — upper underwater / liquidation hunters
+  { top: 857,  bottom: 1141 },  // T3 — mid / front runners
+  { top: 1141, bottom: 1430 },  // T4 — lower / orderbook spoofers
+  { top: 1430, bottom: 1670 },  // T5 — depths / insider traders
+];
+
+const BAND_BOUNDS = BAND_BOUNDS_NATIVE.map((b) => ({
+  top: b.top * FILL_SCALE,
+  bottom: b.bottom * FILL_SCALE,
+  height: (b.bottom - b.top) * FILL_SCALE,
+}));
+
+const BAND_RIGHT_INSET = 48;
+const BAND_WIDTH = 320;
+const BAND_VERTICAL_PADDING = 4;
 
 const TierImage: React.FC<{
   tier: TradingTier;
   index: number;
   scrollY: number;
   isActive: boolean;
-  state: State;
-}> = ({ tier, index, scrollY, isActive, state }) => {
-  // The card's Y in frame coords — its centre rides the tier's natural Y.
-  const y = TIER_Y_FILL[index] + scrollY;
-  if (y < -IMG_H_PX || y > H + IMG_H_PX) return null;
+}> = ({ tier, index, scrollY, isActive }) => {
+  const band = BAND_BOUNDS[index];
+  const top = band.top + scrollY + BAND_VERTICAL_PADDING;
+  const height = band.height - BAND_VERTICAL_PADDING * 2;
 
-  // When a tier first becomes active, the card slides in from the right
-  // and the colour blooms from greyscale.
-  const isJustEntering = isActive && state.phase === "tier" && state.sub === "anim";
-  const enterT = isJustEntering ? state.t : 1;
-  const slideX = isJustEntering
-    ? interpolate(enterT, [0, 1], [40, 0], { easing: EASE_OUT })
-    : 0;
-  const fadeIn = isJustEntering
-    ? interpolate(enterT, [0.2, 0.9], [0, 1], {
-        extrapolateLeft: "clamp",
-        extrapolateRight: "clamp",
-      })
-    : 1;
+  if (top + height < -120 || top > H + 120) return null;
 
   return (
     <div
       style={{
         position: "absolute",
-        right: IMG_RIGHT_INSET - slideX,
-        top: y,
-        width: IMG_W_PX,
-        height: IMG_H_PX,
-        transform: "translateY(-50%)",
-        opacity: fadeIn,
+        right: BAND_RIGHT_INSET,
+        top,
+        width: BAND_WIDTH,
+        height,
         borderRadius: 14,
         overflow: "hidden",
         border: isActive
           ? "2px solid rgba(255,255,255,0.9)"
-          : "1px solid rgba(255,255,255,0.22)",
+          : "1px solid rgba(255,255,255,0.16)",
         boxShadow: isActive
-          ? "0 16px 44px rgba(0,0,0,0.62), 0 0 32px rgba(255,255,255,0.2)"
-          : "0 8px 22px rgba(0,0,0,0.5)",
+          ? "0 16px 44px rgba(0,0,0,0.62), 0 0 36px rgba(255,255,255,0.22)"
+          : "0 6px 18px rgba(0,0,0,0.48)",
         background: "rgba(8, 12, 22, 0.82)",
         pointerEvents: "none",
-        willChange: "right, top, opacity",
+        willChange: "top",
       }}
     >
       <Img
@@ -351,24 +350,23 @@ const TierImage: React.FC<{
           objectFit: "cover",
           filter: isActive
             ? "saturate(1.08) brightness(1)"
-            : "grayscale(1) brightness(0.72)",
+            : "grayscale(1) brightness(0.6)",
           transition: "filter 220ms ease",
         }}
       />
-      {/* Label strip across the bottom. */}
       <div
         style={{
           position: "absolute",
           left: 0,
           right: 0,
           bottom: 0,
-          padding: "20px 14px 10px",
+          padding: "22px 16px 12px",
           background:
             "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.88) 100%)",
           fontFamily: font,
-          fontSize: 16,
+          fontSize: 18,
           fontWeight: 600,
-          color: isActive ? "#FFFFFF" : "rgba(255,255,255,0.66)",
+          color: isActive ? "#FFFFFF" : "rgba(255,255,255,0.62)",
           letterSpacing: "-0.012em",
           textAlign: "left",
           lineHeight: 1.2,
@@ -377,15 +375,14 @@ const TierImage: React.FC<{
       >
         {tier.label}
       </div>
-      {/* "↑ smarter" chip — only on the current line. */}
       {isActive && (
         <div
           style={{
             position: "absolute",
-            top: 10,
-            right: 12,
+            top: 12,
+            right: 14,
             fontFamily: monoFont,
-            fontSize: 11,
+            fontSize: 12,
             letterSpacing: "0.16em",
             textTransform: "uppercase",
             color: "rgba(255,255,255,0.92)",
