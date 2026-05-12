@@ -421,6 +421,8 @@ impl OracleConfig {
                         // Round-based lifecycle
                         oracle_registry_address: std::env::var("ORACLE_ORACLE_REGISTRY_ADDRESS")
                             .unwrap_or_default(),
+                        vision_reconciler_address: std::env::var("ORACLE_VISION_RECONCILER_ADDRESS")
+                            .unwrap_or_default(),
                     })
                 } else {
                     None
@@ -881,10 +883,16 @@ impl OracleConfig {
             _ => Address::zero(),
         };
 
+        let vision_reconciler = match self.vision.as_ref().map(|v| v.vision_reconciler_address.as_str()) {
+            Some(addr) if !addr.is_empty() => Self::parse_address("vision_reconciler", addr)?,
+            _ => Address::zero(),
+        };
+
         Ok(crate::WriterContractAddresses {
             index,
             l3_bridge_custody,
             vision,
+            vision_reconciler,
         })
     }
 

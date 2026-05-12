@@ -65,6 +65,11 @@ pub struct VisionConfig {
     /// OracleRegistry contract address on L3.
     #[serde(default)]
     pub oracle_registry_address: String,
+
+    /// VisionReconciler helper for bundled vault reconciles. Empty falls back
+    /// to per-player calls.
+    #[serde(default)]
+    pub vision_reconciler_address: String,
 }
 
 impl Default for VisionConfig {
@@ -94,6 +99,7 @@ impl Default for VisionConfig {
             deposit_auto_refund_timeout_secs: 7200,
             // Round-based lifecycle
             oracle_registry_address: String::new(),
+            vision_reconciler_address: String::new(),
         }
     }
 }

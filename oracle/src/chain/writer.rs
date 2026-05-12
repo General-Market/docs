@@ -29,6 +29,9 @@ pub struct WriterContractAddresses {
     pub l3_bridge_custody: Address,
     /// Vision.sol contract address for Vision prediction market operations
     pub vision: Address,
+    /// VisionReconciler.sol helper — bundled vault reconciles. `Address::zero()`
+    /// falls back to the per-player loop.
+    pub vision_reconciler: Address,
 }
 
 impl Default for WriterContractAddresses {
@@ -37,6 +40,7 @@ impl Default for WriterContractAddresses {
             index: Address::zero(),
             l3_bridge_custody: Address::zero(),
             vision: Address::zero(),
+            vision_reconciler: Address::zero(),
         }
     }
 }
@@ -810,6 +814,19 @@ impl EthersChainWriter {
     /// Payouts are the GROSS amounts from settleBatch — net payout after Vision's
     /// protocol fee is slightly lower, but close enough for PnL reporting.
     pub async fn reconcile_vaults(&self, batch_id: u64, players: &[Address], payouts: &[U256]) {
+        // Bundled path: one tx through VisionReconciler.reconcileMany when wired.
+        if self.config.contracts.vision_reconciler != Address::zero() {
+            if let Err(e) = self.reconcile_vaults_bundled(batch_id, players, payouts).await {
+                warn!(
+                    batch_id,
+                    error = %e,
+                    "Bundled vault reconcile failed — falling back to per-player loop"
+                );
+            } else {
+                return;
+            }
+        }
+
         // reconcile(uint256,uint256) selector = keccak256("reconcile(uint256,uint256)")[:4]
         let selector: [u8; 4] = [0x49, 0xe2, 0x7d, 0x69];
 
@@ -846,6 +863,77 @@ impl EthersChainWriter {
                 }
             }
         }
+    }
+
+    /// One tx through VisionReconciler.reconcileMany — fan-out happens inside
+    /// the helper contract. Per-vault failures are swallowed by the contract
+    /// (the loop is `(bool ok, ) = vault.call(...)`); EOAs and already-reconciled
+    /// vaults remain harmless. Returns the bundle tx hash on success.
+    async fn reconcile_vaults_bundled(
+        &self,
+        batch_id: u64,
+        players: &[Address],
+        payouts: &[U256],
+    ) -> Result<TxHash, Error> {
+        if players.is_empty() {
+            return Err(Error::InvalidArgument("reconcile_vaults_bundled: empty players".to_string()));
+        }
+        // Pad payouts to match players length — older callers may pass a shorter slice.
+        let padded_payouts: Vec<U256> = (0..players.len())
+            .map(|i| if i < payouts.len() { payouts[i] } else { U256::zero() })
+            .collect();
+
+        let function = ethers::abi::Function {
+            name: "reconcileMany".to_string(),
+            inputs: vec![
+                ethers::abi::Param {
+                    name: "vaults".to_string(),
+                    kind: ethers::abi::ParamType::Array(Box::new(ethers::abi::ParamType::Address)),
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "batchId".to_string(),
+                    kind: ethers::abi::ParamType::Uint(256),
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "payouts".to_string(),
+                    kind: ethers::abi::ParamType::Array(Box::new(ethers::abi::ParamType::Uint(256))),
+                    internal_type: None,
+                },
+            ],
+            outputs: vec![],
+            #[allow(deprecated)]
+            constant: None,
+            state_mutability: ethers::abi::StateMutability::NonPayable,
+        };
+
+        let tokens = vec![
+            ethers::abi::Token::Array(
+                players.iter().map(|&a| ethers::abi::Token::Address(a)).collect(),
+            ),
+            ethers::abi::Token::Uint(U256::from(batch_id)),
+            ethers::abi::Token::Array(
+                padded_payouts.iter().map(|&p| ethers::abi::Token::Uint(p)).collect(),
+            ),
+        ];
+
+        let calldata = function.encode_input(&tokens).expect("ABI encoding should not fail");
+
+        let tx: TypedTransaction = Eip1559TransactionRequest::new()
+            .to(self.config.contracts.vision_reconciler)
+            .data(calldata)
+            .into();
+
+        let tx_hash = self.submit_tx(tx, "vault_reconcile_bundled").await?;
+        info!(
+            batch_id,
+            count = players.len(),
+            tx = %tx_hash,
+            reconciler = %self.config.contracts.vision_reconciler,
+            "Vault reconciles bundled in one tx"
+        );
+        Ok(tx_hash)
     }
 
     /// Submit a transaction with nonce management, gas estimation, and retry logic.
