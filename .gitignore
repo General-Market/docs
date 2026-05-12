@@ -50,6 +50,9 @@ Thumbs.db
 # Allow versioned per-env configs in envs/
 !envs/
 !envs/**
+# Manager keys live in envs/<env>/keys/ — never commit
+envs/*/keys/
+envs/*/keys/**
 
 # Node modules
 node_modules/
