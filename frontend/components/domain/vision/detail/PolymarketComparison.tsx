@@ -15,6 +15,8 @@ interface ComparisonMarket {
   polyVolume24h: number | null
   visionOutcome: Outcome
   visionWinSide: 'Up' | 'Down' | null
+  visionPctChangeBps: number
+  visionTieBroken: boolean
   visionUpPool: number
   visionDownPool: number
   visionTotalPool: number
@@ -165,13 +167,15 @@ export function PolymarketComparison() {
   })
 
   const [sortKey, setSortKey] = useState<SortKey>('leverageGap')
-  const [winnerOnly, setWinnerOnly] = useState(true)
+  const [realMovesOnly, setRealMovesOnly] = useState(true)
   const now = useNow(data?.generatedAt ?? null)
 
   const rows = useMemo(() => {
     if (!data?.markets) return []
     let list = data.markets.slice()
-    if (winnerOnly) list = list.filter((m) => m.visionWinSide !== null)
+    if (realMovesOnly) {
+      list = list.filter((m) => m.visionWinSide !== null && !m.visionTieBroken)
+    }
     list.sort((a, b) => {
       const av = sortVal(a, sortKey)
       const bv = sortVal(b, sortKey)
@@ -181,7 +185,7 @@ export function PolymarketComparison() {
       return bv - av
     })
     return list
-  }, [data, sortKey, winnerOnly])
+  }, [data, sortKey, realMovesOnly])
 
   if (isLoading || (!data && !isError)) return <ComparisonSkeleton />
 
@@ -210,8 +214,8 @@ export function PolymarketComparison() {
         rows={rows}
         sortKey={sortKey}
         onSortChange={setSortKey}
-        winnerOnly={winnerOnly}
-        onWinnerOnlyChange={setWinnerOnly}
+        realMovesOnly={realMovesOnly}
+        onRealMovesOnlyChange={setRealMovesOnly}
       />
       <Footnote batchId={batch.id} generatedAt={data.generatedAt} now={now} />
     </div>
@@ -298,14 +302,14 @@ function ListCard({
   rows,
   sortKey,
   onSortChange,
-  winnerOnly,
-  onWinnerOnlyChange,
+  realMovesOnly,
+  onRealMovesOnlyChange,
 }: {
   rows: ComparisonMarket[]
   sortKey: SortKey
   onSortChange: (k: SortKey) => void
-  winnerOnly: boolean
-  onWinnerOnlyChange: (v: boolean) => void
+  realMovesOnly: boolean
+  onRealMovesOnlyChange: (v: boolean) => void
 }) {
   return (
     <div className={CARD_CLASS} style={CARD_STYLE}>
@@ -338,11 +342,11 @@ function ListCard({
         >
           <input
             type="checkbox"
-            checked={winnerOnly}
-            onChange={(e) => onWinnerOnlyChange(e.target.checked)}
+            checked={realMovesOnly}
+            onChange={(e) => onRealMovesOnlyChange(e.target.checked)}
             style={{ accentColor: APPLE_BLUE }}
           />
-          Winner only
+          Real moves only
         </label>
       </div>
 
@@ -371,7 +375,8 @@ function ListCard({
             color: 'var(--apple-text-secondary)',
             margin: 0,
           }}>
-            No markets with both sides covered in this round. Try toggling the winner filter.
+            No markets that actually moved on both sides in this round. Turn off the filter to include
+            tie-broken rounds.
           </p>
         </div>
       ) : (
@@ -416,6 +421,7 @@ function SortPill({
 }
 
 function outcomeChip(m: ComparisonMarket): { glyph: string; label: string; color: string } {
+  if (m.visionTieBroken) return { glyph: '∼', label: 'tiebreak', color: 'var(--apple-text-tertiary)' }
   if (m.visionWinSide === 'Up') return { glyph: '▲', label: 'Up', color: APPLE_GREEN }
   if (m.visionWinSide === 'Down') return { glyph: '▼', label: 'Down', color: APPLE_RED }
   if (m.visionOutcome === 'Flat') return { glyph: '·', label: 'flat', color: 'var(--apple-text-tertiary)' }
@@ -527,7 +533,15 @@ function Row({ m }: { m: ComparisonMarket }) {
       </div>
 
       <div style={{ textAlign: 'right' }}>
-        <div style={{ ...NUM_DISPLAY, fontSize: 19, color: m.visionGainPct != null ? APPLE_BLUE : 'var(--apple-text-tertiary)' }}>
+        <div style={{
+          ...NUM_DISPLAY,
+          fontSize: 19,
+          color: m.visionGainPct == null
+            ? 'var(--apple-text-tertiary)'
+            : m.visionTieBroken
+            ? 'var(--apple-text-tertiary)'
+            : APPLE_BLUE,
+        }}>
           {fmtPct(m.visionGainPct, true, 0)}
         </div>
         <div

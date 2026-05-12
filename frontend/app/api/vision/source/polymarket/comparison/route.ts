@@ -82,6 +82,12 @@ interface ComparisonMarket {
   visionOutcome: RatioMarket['outcome']
   /** Pool side that won, if any. */
   visionWinSide: 'Up' | 'Down' | null
+  /** % change of the underlying asset across the Vision betting window, in basis points
+   *  (1 bp = 0.01%). When zero, the oracle resolved Up/Down on a tiebreak — the
+   *  market did not actually move. */
+  visionPctChangeBps: number
+  /** True when Vision called a winner but the underlying did not move (pctChangeBps=0). */
+  visionTieBroken: boolean
   /** Pool size on Up side, in human USDC (L3 18-dec). */
   visionUpPool: number
   /** Pool size on Down side, in human USDC (L3 18-dec). */
@@ -300,6 +306,8 @@ export async function GET(request: Request) {
     const winnerPool = winSide === 'Up' ? up : winSide === 'Down' ? down : 0n
     const visionMultiplier = winSide && winnerPool > 0n ? Number((total * 10000n) / winnerPool) / 10000 : null
     const visionGainPct = visionMultiplier != null ? (visionMultiplier - 1) * 100 : null
+    const visionPctChangeBps = Number(m.pctChangeBps ?? 0)
+    const visionTieBroken = winSide !== null && visionPctChangeBps === 0
     const leverageGap = visionGainPct != null && polyChangePct != null ? Math.abs(visionGainPct - polyChangePct) : null
 
     return {
@@ -312,6 +320,8 @@ export async function GET(request: Request) {
       polyVolume24h,
       visionOutcome: m.outcome,
       visionWinSide: winSide,
+      visionPctChangeBps,
+      visionTieBroken,
       visionUpPool: upNum,
       visionDownPool: downNum,
       visionTotalPool: totalNum,
@@ -321,19 +331,24 @@ export async function GET(request: Request) {
     }
   })
 
-  // Headline aggregates — only over markets where we have both sides.
-  const withBoth = markets.filter((r) => r.polyChangePct != null && r.visionGainPct != null)
-  const avgPolyChangePct = withBoth.length > 0
-    ? withBoth.reduce((s, r) => s + Math.abs(r.polyChangePct!), 0) / withBoth.length
+  // Headline aggregates — restrict to markets where the underlying actually
+  // moved on both sides. Tiebreaks where pctChangeBps=0 inflate Vision payouts
+  // for what was, on the chain, a non-event. Excluding them keeps the marquee
+  // numbers honest.
+  const real = markets.filter(
+    (r) => r.polyChangePct != null && r.visionGainPct != null && !r.visionTieBroken,
+  )
+  const avgPolyChangePct = real.length > 0
+    ? real.reduce((s, r) => s + Math.abs(r.polyChangePct!), 0) / real.length
     : null
-  const avgVisionGainPct = withBoth.length > 0
-    ? withBoth.reduce((s, r) => s + r.visionGainPct!, 0) / withBoth.length
+  const avgVisionGainPct = real.length > 0
+    ? real.reduce((s, r) => s + r.visionGainPct!, 0) / real.length
     : null
-  const biggestVisionGainPct = markets.reduce<number | null>((max, r) => {
+  const biggestVisionGainPct = real.reduce<number | null>((max, r) => {
     if (r.visionGainPct == null) return max
     return max == null || r.visionGainPct > max ? r.visionGainPct : max
   }, null)
-  const biggestLeverageGap = markets.reduce<number | null>((max, r) => {
+  const biggestLeverageGap = real.reduce<number | null>((max, r) => {
     if (r.leverageGap == null) return max
     return max == null || r.leverageGap > max ? r.leverageGap : max
   }, null)
