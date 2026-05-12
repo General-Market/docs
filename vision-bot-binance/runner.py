@@ -51,6 +51,16 @@ VISION_ABI = [
          {"name": "settled", "type": "bool"},
      ], "name": "", "type": "tuple"}],
      "stateMutability": "view"},
+    {"type": "function", "name": "getPosition",
+     "inputs": [{"name": "batchId", "type": "uint256"},
+                {"name": "player", "type": "address"}],
+     "outputs": [{"components": [
+         {"name": "bitmapHash", "type": "bytes32"},
+         {"name": "configHash", "type": "bytes32"},
+         {"name": "joinTimestamp", "type": "uint256"},
+         {"name": "totalDeposited", "type": "uint256"},
+     ], "name": "", "type": "tuple"}],
+     "stateMutability": "view"},
 ]
 SOURCE_ID_BYTES32 = Web3.keccak(text=f"{SOURCE_ID}_{BATCH_VERSION}")
 
@@ -176,6 +186,16 @@ def main():
                 continue
 
             if batch_id == last_batch_id:
+                time.sleep(POLL_SECS)
+                continue
+
+            # On-chain check: skip if the vault already joined this batch.
+            # In-memory last_batch_id resets on container restart; this guard
+            # survives restarts.
+            position = vision.functions.getPosition(int(batch_id), VAULT_ADDRESS).call()
+            if position[3] != 0:  # totalDeposited != 0
+                print(f"[skip {batch_id}] vault already joined (deposited={position[3]})", flush=True)
+                last_batch_id = batch_id
                 time.sleep(POLL_SECS)
                 continue
 
