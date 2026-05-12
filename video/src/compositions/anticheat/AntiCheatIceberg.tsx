@@ -7,67 +7,73 @@ import {
   staticFile,
   useCurrentFrame,
 } from "remotion";
+import { font } from "../../common/fonts";
 import { FPS, H, W } from "./theme";
 
 // The "I lost because of …" iceberg.
 //
-// Iceberg fills the frame width edge to edge — no side margins, no
-// columns, no panels. The camera opens with a soft pull-back (scale
-// 1.9 → 1.518) and then scrolls down through six tiers. Each suffix
-// magnets into place at the same screen Y; past suffixes scroll up
-// with the iceberg.
+// Iceberg fills the frame width edge to edge. Opens with a hard zoom-out
+// from a close-up on the tip (scale 2.6 → ~1.518), then the camera scrolls
+// down through six tiers. The scroll clamps when the iceberg's bottom hits
+// the frame's bottom — past that, the camera just sits, and the last two
+// tiers land lower in the frame because there's nowhere left to go.
+//
+// Typography matches the rest of AntiCheat — heavy weight, tight tracking,
+// hero size, centred. No glass pills.
 
 const IMG_NATIVE_W = 1265;
 const IMG_NATIVE_H = 1670;
 
-// FILL_SCALE puts the iceberg's full width across the frame.
 const FILL_SCALE = W / IMG_NATIVE_W;                // ~1.518
+const FILL_H = IMG_NATIVE_H * FILL_SCALE;           // ~2535
 
-// Opening close-up — image overflows horizontally; the pull-back lets it
-// settle into the frame.
-const ZOOM_START_SCALE = 1.9;
+// Scroll never goes below this — the image's bottom rests on the frame's
+// bottom and we stop.
+const MAX_SCROLL = -(FILL_H - H);                   // ~-1455
 
-// Pink-line positions in native asset coordinates.
+// Initial close-up — tip filling the frame width, top of image at top of
+// frame. Zooms out to FILL_SCALE.
+const ZOOM_START_SCALE = 2.6;
+
 const TIER_Y_NATIVE = [269, 539, 857, 1141, 1430, 1550];
-// And the same in FILL_SCALE display coordinates.
 const TIER_Y_FILL = TIER_Y_NATIVE.map((y) => y * FILL_SCALE);
 // → [408, 818, 1301, 1732, 2171, 2353]
 
-// Where the active suffix sits in the frame — the upper pink line position
-// at scrollY = 0. Every other tier scrolls TO this Y when it's active.
-const ACTIVE_FRAME_Y = TIER_Y_FILL[0];              // ~408
+// Where each active suffix lands in the frame: the upper-line Y for tiers
+// 0–3, then wherever the clamp drops it for tiers 4 & 5.
+const PRIMARY_ACTIVE_Y = TIER_Y_FILL[0];            // 408
 
-const scrollAtTier = (i: number): number => ACTIVE_FRAME_Y - TIER_Y_FILL[i];
+const rawScrollAtTier = (i: number) => PRIMARY_ACTIVE_Y - TIER_Y_FILL[i];
+const scrollAtTier = (i: number) => Math.max(rawScrollAtTier(i), MAX_SCROLL);
+// T0: 0, T1: -410, T2: -893, T3: -1324, T4: -1455 (clamped), T5: -1455 (clamped)
 
-const SUFFIXES = [
-  "strategy",
-  "fees",
-  "liquidation hunters",
-  "front runners",
-  "orderbook spoofers",
-  "insider traders",
+// Active row frame Y per tier — T0–T3: 408, T4: 716, T5: 898 — derived from
+// TIER_Y_FILL[i] + scrollAtTier(i) at render time.
+
+const SUFFIXES: { lines: string[] }[] = [
+  { lines: ["strategy"] },
+  { lines: ["fees"] },
+  { lines: ["liquidation", "hunters"] },
+  { lines: ["front", "runners"] },
+  { lines: ["orderbook", "spoofers"] },
+  { lines: ["insider", "traders"] },
 ];
 const N = SUFFIXES.length;
 const LAST = N - 1;
-
-const SF_DISPLAY = `"SF Pro Display", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Inter, sans-serif`;
-const SF_TEXT = `"SF Pro Text", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Inter, sans-serif`;
 
 const EASE_OUT = Easing.bezier(0.25, 0.1, 0.3, 1);
 const EASE_DEFAULT = Easing.bezier(0.4, 0, 0.6, 1);
 
 // Pacing.
-const ZOOM_OUT = 22;
+const ZOOM_OUT = 26;
 const TIER_ANIM = 11;
-const TIER_HOLD = 12;
-const FINAL_HOLD = 40;
+const TIER_HOLD = 14;
+const FINAL_HOLD = 44;
 const OUTRO = 14;
 
-const tierAnimStart = (i: number) =>
-  ZOOM_OUT + i * (TIER_ANIM + TIER_HOLD);
-const SCENE_FRAMES =
-  tierAnimStart(LAST) + TIER_ANIM + FINAL_HOLD + OUTRO;
-// 22 + 5*(11+12) + 11 + 40 + 14 = 22 + 115 + 65 = 202
+const tierAnimStart = (i: number) => ZOOM_OUT + i * (TIER_ANIM + TIER_HOLD);
+const SCENE_FRAMES = tierAnimStart(LAST) + TIER_ANIM + FINAL_HOLD + OUTRO;
+// 26 + 5*(11+14) + 11 + 44 + 14 = 26 + 125 + 69 = 220
 
 type State =
   | { phase: "zoom"; t: number }
@@ -105,8 +111,10 @@ const computeScrollY = (state: State): number => {
   return a + (b - a) * EASE_OUT(state.t);
 };
 
-// Label right inset from the frame's right edge.
-const LABEL_RIGHT_INSET = 96;
+// Heavy text shadow — buys readability on any iceberg shade without resorting
+// to pills.
+const HERO_SHADOW =
+  "0 4px 28px rgba(0,0,0,0.95), 0 2px 10px rgba(0,0,0,0.9), 0 0 56px rgba(0,0,0,0.55)";
 
 export const AntiCheatIceberg: React.FC = () => {
   const frame = useCurrentFrame();
@@ -116,22 +124,20 @@ export const AntiCheatIceberg: React.FC = () => {
 
   const activeTier = state.phase === "tier" ? state.tier : -1;
 
-  // Prefix tracks the active suffix's frame Y exactly — both scroll together.
-  const PREFIX_OFFSET = -48;
-  const prefixY =
-    activeTier >= 0
-      ? TIER_Y_FILL[activeTier] + scrollY + PREFIX_OFFSET
-      : ACTIVE_FRAME_Y + PREFIX_OFFSET;
+  // Where the active row (prefix + suffix) sits in the frame.
+  const activeFrameY =
+    activeTier >= 0 ? TIER_Y_FILL[activeTier] + scrollY : PRIMARY_ACTIVE_Y;
 
+  // Magnet pulse on the prefix during each tier transition.
   const prefixPulse =
     state.phase === "tier" && state.sub === "anim"
-      ? Math.sin(state.t * Math.PI) * 0.045
+      ? Math.sin(state.t * Math.PI) * 0.04
       : 0;
 
   let prefixOpacity = 0;
   if (state.phase === "tier") {
     if (state.tier === 0 && state.sub === "anim") {
-      prefixOpacity = interpolate(state.t, [0.3, 0.9], [0, 1], {
+      prefixOpacity = interpolate(state.t, [0.25, 0.85], [0, 1], {
         extrapolateLeft: "clamp",
         extrapolateRight: "clamp",
         easing: EASE_OUT,
@@ -141,7 +147,7 @@ export const AntiCheatIceberg: React.FC = () => {
     }
   }
 
-  const introOpacity = interpolate(frame, [0, ZOOM_OUT * 0.35], [0, 1], {
+  const introOpacity = interpolate(frame, [0, ZOOM_OUT * 0.3], [0, 1], {
     easing: EASE_OUT,
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
@@ -158,13 +164,12 @@ export const AntiCheatIceberg: React.FC = () => {
     <AbsoluteFill
       style={{
         backgroundColor: "#000000",
-        fontFamily: SF_TEXT,
+        fontFamily: font,
         opacity: sceneOpacity,
         overflow: "hidden",
       }}
     >
-      {/* Iceberg — full-width, scrolling. Top-centre origin so the zoom
-          and scroll both feel like the camera moving down through it. */}
+      {/* Iceberg — full-width, scrolling, top-centre origin. */}
       <div
         style={{
           position: "absolute",
@@ -183,133 +188,183 @@ export const AntiCheatIceberg: React.FC = () => {
         />
       </div>
 
-      {/* Tier labels — frame coordinates that already account for scroll
-          and per-tier slide-in. Render only once a tier has been reached. */}
-      {SUFFIXES.map((word, i) => (
-        <TierLabel
-          key={i}
-          word={word}
-          index={i}
-          state={state}
-          scrollY={scrollY}
-        />
-      ))}
+      {/* Past tier suffixes — settled on the iceberg, scrolling with it. */}
+      {SUFFIXES.map((s, i) =>
+        state.phase === "tier" && i < state.tier ? (
+          <PastSuffix key={i} lines={s.lines} index={i} scrollY={scrollY} />
+        ) : null,
+      )}
 
-      {/* Prefix — single element, magnets to the active suffix. Disappears
-          before the zoom-out completes. */}
+      {/* Active row — prefix above the suffix, centred. */}
       {activeTier >= 0 && (
-        <div
-          style={{
-            position: "absolute",
-            right: LABEL_RIGHT_INSET,
-            top: prefixY,
-            transform: `translateY(-100%) scale(${(1 + prefixPulse).toFixed(3)})`,
-            transformOrigin: "right bottom",
-            opacity: prefixOpacity,
-            pointerEvents: "none",
-            willChange: "transform, top",
-          }}
-        >
-          <div
-            style={{
-              fontFamily: SF_TEXT,
-              fontSize: 26,
-              fontWeight: 400,
-              color: "rgba(245, 245, 247, 0.82)",
-              letterSpacing: "-0.012em",
-              lineHeight: 1,
-              whiteSpace: "nowrap",
-              textShadow: "0 1px 8px rgba(0,0,0,0.95)",
-              paddingBottom: 12,
-            }}
-          >
-            I lost because of
-          </div>
-        </div>
+        <ActiveRow
+          state={state}
+          tier={activeTier}
+          activeFrameY={activeFrameY}
+          prefixOpacity={prefixOpacity}
+          prefixPulse={prefixPulse}
+        />
       )}
     </AbsoluteFill>
   );
 };
 
-// ─── Tier label ───────────────────────────────────────────────────────────────
+// ─── Active row (prefix + suffix) ─────────────────────────────────────────────
 
-const TierLabel: React.FC<{
-  word: string;
-  index: number;
+const ActiveRow: React.FC<{
   state: State;
-  scrollY: number;
-}> = ({ word, index, state, scrollY }) => {
-  if (state.phase !== "tier") return null;
-  if (state.tier < index) return null;
+  tier: number;
+  activeFrameY: number;
+  prefixOpacity: number;
+  prefixPulse: number;
+}> = ({ state, tier, activeFrameY, prefixOpacity, prefixPulse }) => {
+  const s = SUFFIXES[tier];
+  const isAnim = state.phase === "tier" && state.sub === "anim";
 
-  const isActive = state.tier === index;
-  const isAnimEnter = isActive && state.sub === "anim";
-
-  // The label's natural Y in frame coordinates. As scrollY changes, all
-  // tier labels move together — settled past tiers ride up with the
-  // iceberg, the active tier lands at ACTIVE_FRAME_Y.
-  let labelY = TIER_Y_FILL[index] + scrollY;
-  let opacity = 1;
-  let scale = 1;
-
-  if (isAnimEnter) {
+  let suffixSlide = 0;
+  let suffixOpacity = 1;
+  let suffixScale = 1;
+  if (isAnim) {
     const t = state.t;
-    const slideY = interpolate(t, [0, 1], [56, 0], { easing: EASE_OUT });
-    labelY += slideY;
-    opacity = interpolate(t, [0.35, 0.85], [0, 1], {
+    suffixSlide = interpolate(t, [0, 1], [70, 0], { easing: EASE_OUT });
+    suffixOpacity = interpolate(t, [0.35, 0.85], [0, 1], {
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
     });
-    scale = interpolate(t, [0.55, 0.85, 1], [0.96, 1.05, 1], {
+    suffixScale = interpolate(t, [0.55, 0.85, 1], [0.96, 1.05, 1], {
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
       easing: EASE_DEFAULT,
     });
   }
 
-  // Skip far-off-screen labels so they don't cost paint.
-  if (labelY < -160 || labelY > H + 160) return null;
+  const sizes = suffixSizing(s.lines);
 
-  const fontSize = (() => {
-    if (word.length <= 5) return 68;
-    if (word.length <= 9) return 58;
-    if (word.length <= 14) return 50;
-    return 44;
-  })();
+  return (
+    <>
+      {/* Prefix — small, centred, directly above the suffix. */}
+      <div
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          top: activeFrameY,
+          transform: `translateY(calc(-100% - ${sizes.totalHeight / 2 + 12}px)) scale(${(1 + prefixPulse).toFixed(3)})`,
+          transformOrigin: "center bottom",
+          opacity: prefixOpacity,
+          textAlign: "center",
+          fontFamily: font,
+          fontSize: 38,
+          fontWeight: 500,
+          color: "rgba(255,255,255,0.82)",
+          letterSpacing: "-0.018em",
+          lineHeight: 1,
+          whiteSpace: "nowrap",
+          textShadow: HERO_SHADOW,
+          pointerEvents: "none",
+          willChange: "transform, top, opacity",
+        }}
+      >
+        I lost because of
+      </div>
+
+      {/* Suffix — hero size, centred, slides in from below. */}
+      <div
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          top: activeFrameY + suffixSlide,
+          transform: `translateY(-50%) scale(${suffixScale.toFixed(3)})`,
+          transformOrigin: "center center",
+          opacity: suffixOpacity,
+          textAlign: "center",
+          fontFamily: font,
+          color: "#FFFFFF",
+          letterSpacing: "-0.04em",
+          lineHeight: 0.94,
+          textShadow: HERO_SHADOW,
+          pointerEvents: "none",
+          willChange: "transform, top, opacity",
+        }}
+      >
+        {s.lines.map((line, idx) => (
+          <div
+            key={idx}
+            style={{
+              fontSize: sizes.perLine[idx],
+              fontWeight: 800,
+              whiteSpace: "nowrap",
+            }}
+          >
+            {line}
+          </div>
+        ))}
+      </div>
+    </>
+  );
+};
+
+// ─── Past suffix — sits on the iceberg, dim, no prefix ────────────────────────
+
+const PastSuffix: React.FC<{
+  lines: string[];
+  index: number;
+  scrollY: number;
+}> = ({ lines, index, scrollY }) => {
+  const y = TIER_Y_FILL[index] + scrollY;
+  if (y < -160 || y > H + 160) return null;
+  const sizes = suffixSizing(lines, 0.72); // smaller for past tiers
 
   return (
     <div
       style={{
         position: "absolute",
-        right: LABEL_RIGHT_INSET,
-        top: labelY,
-        transform: `translateY(-50%) scale(${scale.toFixed(3)})`,
-        transformOrigin: "right center",
-        opacity,
+        left: 0,
+        right: 0,
+        top: y,
+        transform: "translateY(-50%)",
+        textAlign: "center",
+        fontFamily: font,
+        color: "rgba(255,255,255,0.62)",
+        letterSpacing: "-0.04em",
+        lineHeight: 0.94,
+        textShadow: HERO_SHADOW,
         pointerEvents: "none",
-        willChange: "transform, top",
       }}
     >
-      <div
-        style={{
-          fontFamily: SF_DISPLAY,
-          fontSize,
-          fontWeight: 600,
-          color: "rgba(245, 245, 247, 0.98)",
-          letterSpacing: "-0.024em",
-          lineHeight: 1,
-          whiteSpace: "nowrap",
-          padding: "14px 28px",
-          borderRadius: 980,
-          background: "rgba(10, 14, 26, 0.62)",
-          boxShadow:
-            "0 1px 0 rgba(255,255,255,0.06) inset, 0 12px 32px rgba(0,0,0,0.55)",
-        }}
-      >
-        {word}
-      </div>
+      {lines.map((line, idx) => (
+        <div
+          key={idx}
+          style={{
+            fontSize: sizes.perLine[idx],
+            fontWeight: 800,
+            whiteSpace: "nowrap",
+          }}
+        >
+          {line}
+        </div>
+      ))}
     </div>
   );
+};
+
+// ─── Sizing helpers ───────────────────────────────────────────────────────────
+
+const lineSize = (line: string, mult: number): number => {
+  if (line.length <= 5) return Math.round(150 * mult);
+  if (line.length <= 8) return Math.round(130 * mult);
+  return Math.round(110 * mult);
+};
+
+const suffixSizing = (
+  lines: string[],
+  mult = 1,
+): { perLine: number[]; totalHeight: number } => {
+  const perLine = lines.map((l) => lineSize(l, mult));
+  // line-height 0.94 means each line takes ~0.94 * fontSize of vertical space.
+  const totalHeight = perLine.reduce((sum, s) => sum + s * 0.94, 0);
+  return { perLine, totalHeight };
 };
 
 export const antiCheatIcebergMeta = {
