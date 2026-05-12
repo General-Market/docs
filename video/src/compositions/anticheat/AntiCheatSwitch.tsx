@@ -27,7 +27,7 @@ const ROW_STAGGER = 3;
 // Hold the bar chart long enough to read three percentages before the
 // morph fires; streak + morph + settle share the pivot anchor so the
 // impact still lands on the morph. Scene extended +0.6s so the post-
-// kicker hold is long enough to read "just by upgrading a financial
+// kicker hold is long enough to read "simply by trading the same
 // product" — EndCard + its pullLong transition shift 18f later.
 const PIVOT_AT = 107;
 const COPY_AT = 130;
@@ -645,10 +645,10 @@ const SettleOrb: React.FC<{ frame: number; fps: number }> = ({
 // ─── Kicker typing — GMBrand Scene02 "the next era" pattern ──────────────
 // Frame-driven typewriter: chars appear one by one at CHARS_PER_FRAME speed,
 // blinking cursor while typing, cursor fades after completion. The accent
-// half ("financial product") types in blue once the gray prefix lands.
+// half ("the same markets") types in blue once the gray prefix lands.
 
-const KICKER_TEXT_PRE = "just by upgrading a ";
-const KICKER_TEXT_HERO = "financial product";
+const KICKER_TEXT_PRE = "simply by trading ";
+const KICKER_TEXT_HERO = "the same markets";
 const KICKER_CHARS_PER_FRAME = 1.2;
 
 const KickerTyping: React.FC<{ startFrame: number }> = ({ startFrame }) => {
