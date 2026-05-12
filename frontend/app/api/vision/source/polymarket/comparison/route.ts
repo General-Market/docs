@@ -16,7 +16,10 @@ import { getDataNodeServer, getIssuerVisionUrl } from '@/lib/config'
 
 const SOURCE_ID = 'polymarket'
 const MAX_MARKETS = 250
-const HISTORY_CONCURRENCY = 24
+// The data-node tolerates ~8 concurrent connections cleanly. Higher counts
+// surface as partial responses where some markets get empty history under
+// connection-pool pressure.
+const HISTORY_CONCURRENCY = 8
 const HISTORY_PAD_MS = 60_000
 // Polymarket implied probabilities are slow-moving. A five-minute or one-hour
 // window catches almost no drift on most markets. Walk back 24 hours so the
@@ -279,7 +282,7 @@ export async function GET(request: Request) {
   const histories = await runWithConcurrency(active, HISTORY_CONCURRENCY, async ({ m }) => {
     const r = await fetchJson<{ prices: HistoryPoint[] }>(
       `${dataNodeBase}/market/prices/${SOURCE_ID}/${encodeURIComponent(m.assetId)}/history?from=${encodeURIComponent(fromIso)}&to=${encodeURIComponent(toIso)}`,
-      6_000,
+      15_000,
     )
     return r?.prices ?? []
   })
