@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useBatches } from '@/hooks/vision/useBatches'
 import { useRounds } from '@/hooks/vision/useRounds'
 import { useSourceRegistry } from '@/hooks/vision/useSourceRegistry'
@@ -86,6 +87,12 @@ const ONE_USDC = 10n ** 18n
 const AVG_BET_USDC = ONE_USDC * 5n
 // Cap synth flow rows per single delta — keeps things smooth
 const MAX_SYNTH_FLOW_PER_DELTA = 24
+// Ambient pulse cadence — fires regardless of TVL deltas so the page
+// never goes silent on a quiet chain. Picks 1–2 sources weighted by
+// pool size each tick.
+const AMBIENT_PULSE_MS = 1800
+const AMBIENT_MIN_AMOUNT_USDC = ONE_USDC / 5n   // $0.20
+const AMBIENT_MAX_AMOUNT_USDC = ONE_USDC * 12n  // $12
 
 // ── Per-slice contexts (prevents cross-pane re-render cascades) ──
 
@@ -165,6 +172,7 @@ interface PrevSnapshot {
 }
 
 export function FloorProvider({ children }: FloorProviderProps) {
+  const queryClient = useQueryClient()
   const { data: batches = [] } = useBatches()
   const { data: rounds = [] } = useRounds()
   const { sources } = useSourceRegistry()
@@ -176,6 +184,12 @@ export function FloorProvider({ children }: FloorProviderProps) {
   const prevSnapshotRef = useRef<Map<string, PrevSnapshot>>(new Map())
   // Monotonic counter so synthetic IDs never collide across polls
   const synthSeqRef = useRef(0)
+  // Latest batches snapshot, read by the ambient pulse loop without
+  // re-arming the interval on every poll
+  const batchesRef = useRef(batches)
+  useEffect(() => {
+    batchesRef.current = batches
+  }, [batches])
 
   // Visible slices — render the panes
   const [visibleTape, setVisibleTape] = useState<TapeRow[]>([])
@@ -345,6 +359,95 @@ export function FloorProvider({ children }: FloorProviderProps) {
     if (newTape.length > 0) tapeQueueRef.current.push(...newTape)
     if (newFlow.length > 0) flowQueueRef.current.push(...shuffle(newFlow))
   }, [batches, rounds])
+
+  // Ambient pulse — keeps the page alive on quiet chains. Picks 1–2
+  // sources weighted by pool size each tick and emits a small synthetic
+  // flow row. Independent of TVL deltas.
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const current = batchesRef.current
+      if (current.length === 0) return
+
+      // Weights: prefer larger pools, never zero
+      const weights: number[] = []
+      let total = 0
+      for (const b of current) {
+        let tvl = 0
+        try {
+          tvl = Number(safeBigInt(b.tvl) / ONE_USDC)
+        } catch {
+          tvl = 0
+        }
+        const w = Math.max(1, tvl) // every active source gets a baseline
+        weights.push(w)
+        total += w
+      }
+      if (total === 0) return
+
+      const picks = 1 + (Math.random() < 0.35 ? 1 : 0)
+      for (let p = 0; p < picks; p++) {
+        let r = Math.random() * total
+        let idx = 0
+        for (let j = 0; j < weights.length; j++) {
+          r -= weights[j]
+          if (r <= 0) {
+            idx = j
+            break
+          }
+        }
+        const picked = current[idx]
+
+        // Amount: scale lightly with pool size — bigger pools see bigger bets
+        const poolUSDC = safeBigInt(picked.tvl) / ONE_USDC
+        const scale =
+          poolUSDC > 1000n ? 8 : poolUSDC > 100n ? 4 : 2
+        const amountUSD =
+          0.2 + Math.random() * scale + (Math.random() < 0.08 ? 50 : 0) // 8% chance of a "big" bet
+        const amount =
+          (BigInt(Math.max(1, Math.floor(amountUSD * 100))) * ONE_USDC) / 100n
+        if (amount < AMBIENT_MIN_AMOUNT_USDC) continue
+        const capped =
+          amount > AMBIENT_MAX_AMOUNT_USDC * 5n ? AMBIENT_MAX_AMOUNT_USDC * 5n : amount
+
+        const upRatio = 40 + Math.floor(Math.random() * 21)
+        const up = (capped * BigInt(upRatio)) / 100n
+        const down = capped - up
+
+        synthSeqRef.current += 1
+        flowQueueRef.current.push({
+          id: `ambient-${picked.sourceId}-${synthSeqRef.current}`,
+          batchId: picked.id,
+          sourceId: picked.sourceId,
+          assetId: '·',
+          upStakeStr: up.toString(),
+          downStakeStr: down.toString(),
+          pctChangeBps: 0,
+          outcome: Math.random() > 0.5 ? 'Up' : 'Down',
+          displayedAt: 0,
+          synthetic: true,
+        })
+      }
+    }, AMBIENT_PULSE_MS)
+    return () => clearInterval(interval)
+  }, [])
+
+  // Visibility — when the tab regains focus, drop stale queue items and
+  // force a fresh poll. Browser timers throttle when backgrounded; this
+  // keeps the page feeling current on return instead of replaying a
+  // backlog of stale events at the normal cadence.
+  useEffect(() => {
+    function onVisibility() {
+      if (document.hidden) return
+      // Clear stale queues — fresh activity should fill them within seconds
+      flowQueueRef.current.length = 0
+      tapeQueueRef.current.length = 0
+      // Force-refresh the upstream queries that feed synthesis
+      queryClient.invalidateQueries({ queryKey: ['vision-batches'] })
+      queryClient.invalidateQueries({ queryKey: ['vision-rounds'] })
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => document.removeEventListener('visibilitychange', onVisibility)
+  }, [queryClient])
 
   // Decorrelator — release one tape row at jittered cadence
   useEffect(() => {
