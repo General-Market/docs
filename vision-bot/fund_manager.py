@@ -881,6 +881,11 @@ def run_cycle(
             deposit_wei = max((total * effective_bps) // 10000, MIN_DEPOSIT_WEI)
             if deposit_wei <= 0:
                 continue
+            log.info(
+                "[%s] sizing batch %d: total=%.2f USDC bps=%d (mult=%.2f) → deposit=%.4f USDC",
+                fund.name, batch_id, total / 1e18, effective_bps,
+                fund.allocation_multiplier, deposit_wei / 1e18,
+            )
 
             # Pre-check on chain. In-memory joined_batch_ids drifts on
             # restart and after reconcile races; without this guard we burn
