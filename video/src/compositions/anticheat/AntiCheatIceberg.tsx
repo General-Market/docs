@@ -7,7 +7,7 @@ import {
   staticFile,
   useCurrentFrame,
 } from "remotion";
-import { font } from "../../common/fonts";
+import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W } from "./theme";
 
 // The "I lost because of …" iceberg.
@@ -57,15 +57,42 @@ const scrollAtTier = (i: number) => Math.max(rawScrollAtTier(i), MAX_SCROLL);
 
 // ─── Tier content ─────────────────────────────────────────────────────────────
 //
-// Add emotional weight by filling any of the optional fields. The renderer
-// stacks them: icon → suffix → caption → image. Leave them empty for the
-// stripped-down version.
+// Each tier can lean on any combination of these adornments. Pick the one
+// that does the most work for the tier's emotional beat — leave the rest
+// off so the slide stays clean.
+//
+//   icon      — emoji or single glyph, sits above the prefix
+//   stat      — large secondary number underneath the suffix, e.g. "$2.4B"
+//   statUnit  — small unit beside the stat, e.g. "annual MEV"
+//   accent    — hex colour for the suffix; default is #FFFFFF (warm-tints
+//               the punchline tier or any tier you want to load up)
+//   pullQuote — italic single-line quote underneath, like a footnote that
+//               speaks ("the house always knows first")
+//   caption   — neutral subtitle underneath the suffix (no italics, no
+//               quotes); use for plain qualifiers
+//   imageSrc  — optional thumbnail asset under /public, scaled to fit
+//   source    — small mono citation pinned bottom-left of the frame,
+//               same treatment as AntiCheatRigged's source line
+//
+// Examples (paste any onto a tier to see it in action):
+//
+//   { word: ["fees"], stat: "−$2.4B", statUnit: "annual MEV (Flashbots)" }
+//   { word: ["liquidation", "hunters"], pullQuote: "stop-hunted at 3am" }
+//   { word: ["insider", "traders"], accent: "#FF3A4F",
+//     source: "sec.gov/news/press-release/2022-127" }
+//   { word: ["front", "runners"], icon: "⚡",
+//     imageSrc: "anticheat-imgs/hft-racks.png" }
 
 type Tier = {
-  word: string[];          // suffix, split onto N lines for sizing
-  icon?: string;           // emoji or single glyph — sits above the suffix
-  caption?: string;        // single short line beneath the suffix
-  imageSrc?: string;       // optional thumbnail asset under /public
+  word: string[];
+  icon?: string;
+  stat?: string;
+  statUnit?: string;
+  accent?: string;
+  pullQuote?: string;
+  caption?: string;
+  imageSrc?: string;
+  source?: string;
 };
 
 export const TIERS: Tier[] = [
@@ -239,6 +266,13 @@ export const AntiCheatIceberg: React.FC = () => {
           prefixPulse={prefixPulse}
         />
       )}
+
+      {/* Source citation — bottom-left, mono, pinned to the frame. Same
+          treatment as AntiCheatRigged's source line. Only renders if the
+          active tier has a `source`. */}
+      {activeTier >= 0 && TIERS[activeTier].source && (
+        <SourceCitation url={TIERS[activeTier].source!} state={state} />
+      )}
     </AbsoluteFill>
   );
 };
@@ -274,11 +308,28 @@ const ActiveRow: React.FC<{
 
   const sizes = suffixSizing(t.word);
 
-  // Vertical stack offsets — measure each optional element so the suffix
-  // stays centred on activeFrameY regardless of what's around it.
+  // Adornment presence flags. The renderer stacks them around the suffix;
+  // each is independent and can be combined or left empty.
   const HAS_ICON = !!t.icon;
+  const HAS_STAT = !!t.stat;
+  const HAS_QUOTE = !!t.pullQuote;
   const HAS_CAPTION = !!t.caption;
   const HAS_IMAGE = !!t.imageSrc;
+
+  // Suffix colour — defaults to white, can be tinted per tier.
+  const suffixColor = t.accent ?? "#FFFFFF";
+
+  // Stacking below the suffix: stat first (closest to suffix), then quote,
+  // then caption, then image. Each block adds its height to the running
+  // offset so successive blocks land below the previous one.
+  let stackBelow = sizes.totalHeight / 2 + 14;
+  const statY = stackBelow;
+  if (HAS_STAT) stackBelow += 96; // stat ~64px + gap
+  const quoteY = stackBelow;
+  if (HAS_QUOTE) stackBelow += 56;
+  const captionY = stackBelow;
+  if (HAS_CAPTION) stackBelow += 48;
+  const imageY = stackBelow + 8;
 
   return (
     <>
@@ -332,7 +383,7 @@ const ActiveRow: React.FC<{
         </div>
       )}
 
-      {/* Suffix — hero type, slides in from below. */}
+      {/* Suffix — hero type, slides in from below. Accent colour optional. */}
       <div
         style={{
           position: "absolute",
@@ -344,10 +395,12 @@ const ActiveRow: React.FC<{
           opacity: suffixOpacity,
           textAlign: "center",
           fontFamily: font,
-          color: "#FFFFFF",
+          color: suffixColor,
           letterSpacing: "-0.04em",
           lineHeight: 0.94,
-          textShadow: HERO_SHADOW,
+          textShadow: t.accent
+            ? `${HERO_SHADOW}, 0 0 48px ${t.accent}55`
+            : HERO_SHADOW,
           pointerEvents: "none",
           willChange: "transform, top, opacity",
         }}
@@ -366,7 +419,81 @@ const ActiveRow: React.FC<{
         ))}
       </div>
 
-      {/* Optional caption below the suffix. */}
+      {/* Optional stat block — large number + small unit, below the suffix. */}
+      {HAS_STAT && (
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: activeFrameY,
+            transform: `translateY(${statY}px)`,
+            opacity: suffixOpacity,
+            textAlign: "center",
+            fontFamily: font,
+            lineHeight: 1,
+            pointerEvents: "none",
+          }}
+        >
+          <div
+            style={{
+              fontSize: 68,
+              fontWeight: 700,
+              color: t.accent ?? "rgba(255,255,255,0.95)",
+              letterSpacing: "-0.03em",
+              textShadow: HERO_SHADOW,
+              whiteSpace: "nowrap",
+            }}
+          >
+            {t.stat}
+          </div>
+          {t.statUnit && (
+            <div
+              style={{
+                marginTop: 6,
+                fontSize: 22,
+                fontWeight: 500,
+                color: "rgba(255,255,255,0.6)",
+                letterSpacing: "0.02em",
+                textTransform: "uppercase",
+                whiteSpace: "nowrap",
+                textShadow: HERO_SHADOW,
+              }}
+            >
+              {t.statUnit}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Optional pull quote — italic, narrow, smaller than the suffix. */}
+      {HAS_QUOTE && (
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: activeFrameY,
+            transform: `translateY(${quoteY}px)`,
+            opacity: suffixOpacity,
+            textAlign: "center",
+            fontFamily: font,
+            fontSize: 30,
+            fontStyle: "italic",
+            fontWeight: 400,
+            color: "rgba(255,255,255,0.78)",
+            letterSpacing: "-0.012em",
+            lineHeight: 1.25,
+            whiteSpace: "nowrap",
+            textShadow: HERO_SHADOW,
+            pointerEvents: "none",
+          }}
+        >
+          &ldquo;{t.pullQuote}&rdquo;
+        </div>
+      )}
+
+      {/* Optional caption — neutral subtitle. */}
       {HAS_CAPTION && (
         <div
           style={{
@@ -374,13 +501,13 @@ const ActiveRow: React.FC<{
             left: 0,
             right: 0,
             top: activeFrameY,
-            transform: `translateY(calc(${sizes.totalHeight / 2}px + 18px))`,
+            transform: `translateY(${captionY}px)`,
             opacity: suffixOpacity,
             textAlign: "center",
             fontFamily: font,
-            fontSize: 28,
+            fontSize: 26,
             fontWeight: 500,
-            color: "rgba(255,255,255,0.74)",
+            color: "rgba(255,255,255,0.7)",
             letterSpacing: "-0.012em",
             lineHeight: 1.25,
             whiteSpace: "nowrap",
@@ -392,7 +519,7 @@ const ActiveRow: React.FC<{
         </div>
       )}
 
-      {/* Optional image below the caption. */}
+      {/* Optional image — thumbnail, sits below everything else. */}
       {HAS_IMAGE && (
         <div
           style={{
@@ -400,9 +527,7 @@ const ActiveRow: React.FC<{
             left: 0,
             right: 0,
             top: activeFrameY,
-            transform: `translateY(calc(${sizes.totalHeight / 2}px + ${
-              HAS_CAPTION ? 76 : 24
-            }px))`,
+            transform: `translateY(${imageY}px)`,
             opacity: suffixOpacity,
             display: "flex",
             justifyContent: "center",
@@ -421,6 +546,50 @@ const ActiveRow: React.FC<{
         </div>
       )}
     </>
+  );
+};
+
+// ─── Source citation ──────────────────────────────────────────────────────────
+//
+// Pinned to the bottom-left of the frame in mono, matching AntiCheatRigged's
+// treatment. Fades in once a tier carrying a `source` becomes active.
+
+const SourceCitation: React.FC<{ url: string; state: State }> = ({
+  url,
+  state,
+}) => {
+  const opacity =
+    state.phase === "tier" && state.sub === "anim"
+      ? interpolate(state.t, [0.35, 0.85], [0, 1], {
+          extrapolateLeft: "clamp",
+          extrapolateRight: "clamp",
+          easing: EASE_OUT,
+        })
+      : 1;
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: 56,
+        bottom: 48,
+        maxWidth: 960,
+        fontFamily: monoFont,
+        fontSize: 22,
+        lineHeight: 1.35,
+        color: "rgba(255,255,255,0.78)",
+        letterSpacing: "0.01em",
+        wordBreak: "break-all",
+        opacity,
+        textShadow: "0 1px 2px rgba(0,0,0,0.85)",
+        pointerEvents: "none",
+        zIndex: 10,
+      }}
+    >
+      <span style={{ color: "rgba(255,255,255,0.5)", marginRight: 8 }}>
+        source —
+      </span>
+      {url}
+    </div>
   );
 };
 
