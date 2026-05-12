@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 540" width="980" height="540" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-opacity="0.04"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="980" height="540" fill="white"/>
+
+  <!-- Decorative circles -->
+  <circle cx="80" cy="500" r="200" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="900" cy="60" r="180" fill="#0A0A0A" opacity="0.02"/>
+
+  <!-- Title -->
+  <text x="490" y="62" text-anchor="middle" fill="#0A0A0A" font-size="28" font-weight="700" letter-spacing="14">BLOCKS</text>
+  <text x="490" y="92" text-anchor="middle" fill="#0A0A0A" font-size="13" opacity="0.45" letter-spacing="0.4">Sealed bets. Eight predators excluded by design.</text>
+
+  <!-- Tile grid: 5 cols × 3 rows. Tile 168×84, gap 16. Start x=40, y=128. -->
+  <!-- Row 1 -->
+  <g filter="url(#shadow)">
+    <rect x="40"  y="128" width="168" height="84" rx="14" fill="url(#darkGrad)"/>
+    <rect x="224" y="128" width="168" height="84" rx="14" fill="url(#darkGrad)"/>
+    <rect x="408" y="128" width="168" height="84" rx="14" fill="url(#darkGrad)"/>
+    <rect x="592" y="128" width="168" height="84" rx="14" fill="url(#darkGrad)"/>
+    <rect x="776" y="128" width="168" height="84" rx="14" fill="url(#darkGrad)"/>
+  </g>
+  <text x="124" y="160" text-anchor="middle" fill="white" font-size="12" font-weight="600" letter-spacing="1.6" opacity="0.55">CRYPTO</text>
+  <text x="124" y="186" text-anchor="middle" fill="white" font-size="20" font-weight="700">9,963</text>
+  <text x="124" y="202" text-anchor="middle" fill="white" font-size="10" opacity="0.4">blocks</text>
+
+  <text x="308" y="160" text-anchor="middle" fill="white" font-size="12" font-weight="600" letter-spacing="1.6" opacity="0.55">WEATHER</text>
+  <text x="308" y="186" text-anchor="middle" fill="white" font-size="20" font-weight="700">161,125</text>
+  <text x="308" y="202" text-anchor="middle" fill="white" font-size="10" opacity="0.4">blocks</text>
+
+  <text x="492" y="160" text-anchor="middle" fill="white" font-size="12" font-weight="600" letter-spacing="1.6" opacity="0.55">TRAINS</text>
+  <text x="492" y="186" text-anchor="middle" fill="white" font-size="20" font-weight="700">1,200</text>
+  <text x="492" y="202" text-anchor="middle" fill="white" font-size="10" opacity="0.4">blocks</text>
+
+  <text x="676" y="160" text-anchor="middle" fill="white" font-size="12" font-weight="600" letter-spacing="1.6" opacity="0.55">QUAKES</text>
+  <text x="676" y="186" text-anchor="middle" fill="white" font-size="20" font-weight="700">300</text>
+  <text x="676" y="202" text-anchor="middle" fill="white" font-size="10" opacity="0.4">blocks</text>
+
+  <text x="860" y="160" text-anchor="middle" fill="white" font-size="12" font-weight="600" letter-spacing="1.6" opacity="0.55">GITHUB</text>
+  <text x="860" y="186" text-anchor="middle" fill="white" font-size="20" font-weight="700">1,500</text>
+  <text x="860" y="202" text-anchor="middle" fill="white" font-size="10" opacity="0.4">blocks</text>
+
+  <!-- Row 2 -->
+  <g filter="url(#shadow)">
+    <rect x="40"  y="228" width="168" height="84" rx="14" fill="#0A0A0A" fill-opacity="0.04" stroke="#0A0A0A" stroke-opacity="0.08"/>
+    <rect x="224" y="228" width="168" height="84" rx="14" fill="#0A0A0A" fill-opacity="0.04" stroke="#0A0A0A" stroke-opacity="0.08"/>
+    <rect x="408" y="228" width="168" height="84" rx="14" fill="#0A0A0A" fill-opacity="0.04" stroke="#0A0A0A" stroke-opacity="0.08"/>
+    <rect x="592" y="228" width="168" height="84" rx="14" fill="#0A0A0A" fill-opacity="0.04" stroke="#0A0A0A" stroke-opacity="0.08"/>
+    <rect x="776" y="228" width="168" height="84" rx="14" fill="#0A0A0A" fill-opacity="0.04" stroke="#0A0A0A" stroke-opacity="0.08"/>
+  </g>
+  <text x="124" y="260" text-anchor="middle" fill="#0A0A0A" font-size="12" font-weight="600" letter-spacing="1.6" opacity="0.5">NPM</text>
+  <text x="124" y="286" text-anchor="middle" fill="#0A0A0A" font-size="20" font-weight="700">9,183</text>
+  <text x="124" y="302" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.4">blocks</text>
+
+  <text x="308" y="260" text-anchor="middle" fill="#0A0A0A" font-size="12" font-weight="600" letter-spacing="1.6" opacity="0.5">TWITCH</text>
+  <text x="308" y="286" text-anchor="middle" fill="#0A0A0A" font-size="20" font-weight="700">57,523</text>
+  <text x="308" y="302" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.4">blocks</text>
+
+  <text x="492" y="260" text-anchor="middle" fill="#0A0A0A" font-size="12" font-weight="600" letter-spacing="1.6" opacity="0.5">MOVIES</text>
+  <text x="492" y="286" text-anchor="middle" fill="#0A0A0A" font-size="20" font-weight="700">37,502</text>
+  <text x="492" y="302" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.4">blocks</text>
+
+  <text x="676" y="260" text-anchor="middle" fill="#0A0A0A" font-size="12" font-weight="600" letter-spacing="1.6" opacity="0.5">STEAM</text>
+  <text x="676" y="286" text-anchor="middle" fill="#0A0A0A" font-size="20" font-weight="700">5,000</text>
+  <text x="676" y="302" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.4">blocks</text>
+
+  <text x="860" y="260" text-anchor="middle" fill="#0A0A0A" font-size="12" font-weight="600" letter-spacing="1.6" opacity="0.5">FLIGHTS</text>
+  <text x="860" y="286" text-anchor="middle" fill="#0A0A0A" font-size="20" font-weight="700">2,400</text>
+  <text x="860" y="302" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.4">blocks</text>
+
+  <!-- Row 3 -->
+  <g filter="url(#shadow)">
+    <rect x="40"  y="328" width="168" height="84" rx="14" fill="#0A0A0A" fill-opacity="0.04" stroke="#0A0A0A" stroke-opacity="0.08"/>
+    <rect x="224" y="328" width="168" height="84" rx="14" fill="#0A0A0A" fill-opacity="0.04" stroke="#0A0A0A" stroke-opacity="0.08"/>
+    <rect x="408" y="328" width="168" height="84" rx="14" fill="#0A0A0A" fill-opacity="0.04" stroke="#0A0A0A" stroke-opacity="0.08"/>
+    <rect x="592" y="328" width="168" height="84" rx="14" fill="#0A0A0A" fill-opacity="0.04" stroke="#0A0A0A" stroke-opacity="0.08"/>
+    <rect x="776" y="328" width="168" height="84" rx="14" fill="#0A0A0A" fill-opacity="0.04" stroke="#0A0A0A" stroke-opacity="0.08"/>
+  </g>
+  <text x="124" y="360" text-anchor="middle" fill="#0A0A0A" font-size="12" font-weight="600" letter-spacing="1.6" opacity="0.5">STOCKS</text>
+  <text x="124" y="386" text-anchor="middle" fill="#0A0A0A" font-size="20" font-weight="700">3,200</text>
+  <text x="124" y="402" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.4">blocks</text>
+
+  <text x="308" y="360" text-anchor="middle" fill="#0A0A0A" font-size="12" font-weight="600" letter-spacing="1.6" opacity="0.5">REDDIT</text>
+  <text x="308" y="386" text-anchor="middle" fill="#0A0A0A" font-size="20" font-weight="700">4,800</text>
+  <text x="308" y="402" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.4">blocks</text>
+
+  <text x="492" y="360" text-anchor="middle" fill="#0A0A0A" font-size="12" font-weight="600" letter-spacing="1.6" opacity="0.5">DEFI</text>
+  <text x="492" y="386" text-anchor="middle" fill="#0A0A0A" font-size="20" font-weight="700">2,100</text>
+  <text x="492" y="402" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.4">blocks</text>
+
+  <text x="676" y="360" text-anchor="middle" fill="#0A0A0A" font-size="12" font-weight="600" letter-spacing="1.6" opacity="0.5">BUOYS</text>
+  <text x="676" y="386" text-anchor="middle" fill="#0A0A0A" font-size="20" font-weight="700">850</text>
+  <text x="676" y="402" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.4">blocks</text>
+
+  <text x="860" y="360" text-anchor="middle" fill="#0A0A0A" font-size="12" font-weight="600" letter-spacing="1.6" opacity="0.5">NUCLEAR</text>
+  <text x="860" y="386" text-anchor="middle" fill="#0A0A0A" font-size="20" font-weight="700">63</text>
+  <text x="860" y="402" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.4">blocks</text>
+
+  <!-- Footer pill -->
+  <rect x="180" y="464" width="620" height="46" rx="23" fill="#0A0A0A" fill-opacity="0.04"/>
+  <text x="490" y="492" text-anchor="middle" fill="#0A0A0A" font-size="12" font-weight="500" letter-spacing="2" opacity="0.55">90+ SOURCES&#160;&#160;·&#160;&#160;400,000+ BLOCKS&#160;&#160;·&#160;&#160;SEALED COMMITMENTS</text>
+</svg>
