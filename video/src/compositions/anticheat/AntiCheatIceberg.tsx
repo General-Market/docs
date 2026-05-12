@@ -303,9 +303,9 @@ const BAND_BOUNDS = BAND_BOUNDS_NATIVE.map((b) => ({
   height: (b.bottom - b.top) * FILL_SCALE,
 }));
 
-const BAND_RIGHT_INSET = 48;
-const BAND_WIDTH = 320;
-const BAND_VERTICAL_PADDING = 4;
+const BAND_RIGHT_INSET = 0;
+const BAND_WIDTH = 360;
+const BAND_VERTICAL_PADDING = 0;
 
 const TierImage: React.FC<{
   tier: TradingTier;
@@ -327,14 +327,13 @@ const TierImage: React.FC<{
         top,
         width: BAND_WIDTH,
         height,
-        borderRadius: 14,
         overflow: "hidden",
-        border: isActive
-          ? "2px solid rgba(255,255,255,0.9)"
-          : "1px solid rgba(255,255,255,0.16)",
+        borderLeft: isActive
+          ? "3px solid rgba(255,255,255,0.92)"
+          : "1px solid rgba(255,255,255,0.14)",
         boxShadow: isActive
-          ? "0 16px 44px rgba(0,0,0,0.62), 0 0 36px rgba(255,255,255,0.22)"
-          : "0 6px 18px rgba(0,0,0,0.48)",
+          ? "-12px 0 36px rgba(0,0,0,0.55), inset 0 0 36px rgba(255,255,255,0.18)"
+          : "-6px 0 16px rgba(0,0,0,0.45)",
         background: "rgba(8, 12, 22, 0.82)",
         pointerEvents: "none",
         willChange: "top",
@@ -358,7 +357,7 @@ const TierImage: React.FC<{
         style={{
           position: "absolute",
           left: 0,
-          right: 0,
+          right: 360,
           bottom: 0,
           padding: "22px 16px 12px",
           background:
@@ -449,7 +448,7 @@ const ActiveRow: React.FC<{
         style={{
           position: "absolute",
           left: 0,
-          right: 0,
+          right: 360,
           top: activeFrameY,
           transform: `translateY(calc(-100% - ${
             sizes.totalHeight / 2 + (HAS_ICON ? 84 : 12)
@@ -498,7 +497,7 @@ const ActiveRow: React.FC<{
         style={{
           position: "absolute",
           left: 0,
-          right: 0,
+          right: 360,
           top: activeFrameY + suffixSlide,
           transform: `translateY(-50%) scale(${suffixScale.toFixed(3)})`,
           transformOrigin: "center center",
@@ -648,7 +647,7 @@ const PastSuffix: React.FC<{
       style={{
         position: "absolute",
         left: 0,
-        right: 0,
+        right: 360,
         top: y,
         transform: "translateY(-50%)",
         textAlign: "center",
