@@ -37,6 +37,20 @@ VISION_ABI = [
      "inputs": [{"name": "sourceId", "type": "bytes32"}],
      "outputs": [{"name": "", "type": "uint256"}],
      "stateMutability": "view"},
+    {"type": "function", "name": "getBatch",
+     "inputs": [{"name": "batchId", "type": "uint256"}],
+     "outputs": [{"components": [
+         {"name": "creator", "type": "address"},
+         {"name": "sourceId", "type": "bytes32"},
+         {"name": "configHash", "type": "bytes32"},
+         {"name": "tickDuration", "type": "uint256"},
+         {"name": "lockOffset", "type": "uint256"},
+         {"name": "settlementGrace", "type": "uint256"},
+         {"name": "createdAtTick", "type": "uint256"},
+         {"name": "paused", "type": "bool"},
+         {"name": "settled", "type": "bool"},
+     ], "name": "", "type": "tuple"}],
+     "stateMutability": "view"},
 ]
 SOURCE_ID_BYTES32 = Web3.keccak(text=f"{SOURCE_ID}_{BATCH_VERSION}")
 
@@ -101,23 +115,34 @@ def send_tx(fn_call) -> str:
 
 
 def fetch_active_batch() -> dict | None:
-    """Combine on-chain Vision.latestBatchForSource with the data-node config."""
+    """Read batchId + configHash from on-chain Vision. Markets come from the
+    data-node's lookup-by-hash endpoint, which returns the exact market list
+    bound to that configHash at batch creation time. Anything else drifts."""
     try:
         batch_id = vision.functions.latestBatchForSource(SOURCE_ID_BYTES32).call()
         if batch_id == 0:
             return None
+        batch = vision.functions.getBatch(batch_id).call()
+        # tuple order: creator, sourceId, configHash, tickDuration, lockOffset,
+        # settlementGrace, createdAtTick, paused, settled
+        config_hash_bytes = batch[2]
+        settled = batch[8]
+        if settled:
+            return None
+        config_hash_hex = "0x" + config_hash_bytes.hex()
         r = requests.get(
-            f"{DATA_NODE_BASE}/batches/source/{SOURCE_ID}/config",
+            f"{DATA_NODE_BASE}/batches/config/{config_hash_hex}",
             timeout=10,
         )
         if not r.ok:
+            print(f"[fetch_err] /batches/config/{config_hash_hex} → {r.status_code}", flush=True)
             return None
         cfg = r.json()
         markets = cfg.get("markets") or []
         market_ids = [m["assetId"] if isinstance(m, dict) else m for m in markets]
         return {
             "batchId": batch_id,
-            "configHash": cfg.get("configHash"),
+            "configHash": config_hash_hex,
             "market_ids": market_ids,
         }
     except Exception as e:
