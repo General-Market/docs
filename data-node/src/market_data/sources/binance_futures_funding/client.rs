@@ -1,11 +1,11 @@
-//! Binance USDT-margined perpetual funding rates.
-//!
-//! Raw funding rates are tiny decimals (0.0001 = 0.01%). We scale by 10_000 so a 0.01%
-//! rate reads as 1.0 in the betting market — preserves sign, keeps thresholds legible.
+//! Binance USDT-margined perpetual funding — uses the LIVE premium index, not the
+//! 8-hour-static `lastFundingRate`. The premium is `(markPrice - indexPrice) / indexPrice`,
+//! continuously refreshed by Binance and the strongest forward signal of the next funding
+//! settlement. Scaled ×10_000 so 0.01% reads as 1.0 in the betting market.
 //!
 //! Two endpoints:
 //! - `/fapi/v1/exchangeInfo` → discover PERPETUAL USDT contracts that are TRADING.
-//! - `/fapi/v1/premiumIndex` → all funding rates + mark prices in one call.
+//! - `/fapi/v1/premiumIndex` → markPrice + indexPrice + lastFundingRate per symbol.
 
 use anyhow::Result;
 use chrono::Utc;
@@ -46,9 +46,12 @@ struct SymbolInfo {
 #[serde(rename_all = "camelCase")]
 struct PremiumIndex {
     symbol: String,
-    last_funding_rate: String,
+    #[serde(default)]
+    last_funding_rate: Option<String>,
     #[serde(default)]
     mark_price: Option<String>,
+    #[serde(default)]
+    index_price: Option<String>,
 }
 
 pub struct BinanceFuturesFundingMarketSource {
@@ -87,6 +90,18 @@ impl BinanceFuturesFundingMarketSource {
     fn scale_funding(raw: &str) -> Option<Decimal> {
         let decimal = Decimal::from_str(raw).ok()?;
         Some(decimal * Decimal::from(FUNDING_SCALE))
+    }
+
+    /// Live mark premium = (markPrice - indexPrice) / indexPrice, scaled ×10_000.
+    /// This refreshes every Binance tick, unlike `lastFundingRate` which only
+    /// updates at the 8-hour funding boundaries.
+    fn premium_bps(mark: &str, index: &str) -> Option<Decimal> {
+        let m = Decimal::from_str(mark).ok()?;
+        let i = Decimal::from_str(index).ok()?;
+        if i.is_zero() {
+            return None;
+        }
+        Some((m - i) / i * Decimal::from(FUNDING_SCALE))
     }
 }
 
@@ -174,21 +189,34 @@ impl MarketDataSource for BinanceFuturesFundingMarketSource {
                 None => continue,
             };
 
-            let value = match Self::scale_funding(&entry.last_funding_rate) {
-                Some(v) => v,
-                None => {
-                    warn!(
-                        "Binance Funding: bad rate for {} ({})",
-                        asset_id, entry.last_funding_rate
-                    );
-                    continue;
+            let mark_str = entry.mark_price.as_deref();
+            let index_str = entry.index_price.as_deref();
+            let value = match (mark_str, index_str) {
+                (Some(m), Some(i)) => match Self::premium_bps(m, i) {
+                    Some(v) => v,
+                    None => {
+                        warn!(
+                            "Binance Funding: bad premium for {} (mark={}, index={})",
+                            asset_id, m, i
+                        );
+                        continue;
+                    }
+                },
+                _ => {
+                    // Fall back to lastFundingRate if mark/index missing — keeps the
+                    // pair listed even on stripped responses.
+                    let fallback = entry.last_funding_rate.as_deref().and_then(Self::scale_funding);
+                    match fallback {
+                        Some(v) => v,
+                        None => {
+                            warn!("Binance Funding: no usable premium or rate for {}", asset_id);
+                            continue;
+                        }
+                    }
                 }
             };
 
-            let mark = entry
-                .mark_price
-                .as_deref()
-                .and_then(|s| Decimal::from_str(s).ok());
+            let mark = mark_str.and_then(|s| Decimal::from_str(s).ok());
 
             out.push(PriceUpdate {
                 asset_id: asset_id.clone(),
@@ -230,5 +258,23 @@ mod tests {
     #[test]
     fn scaling_rejects_garbage() {
         assert!(BinanceFuturesFundingMarketSource::scale_funding("not_a_number").is_none());
+    }
+
+    #[test]
+    fn premium_bps_computes_percentage_premium() {
+        // mark $100.01, index $100.00 → premium = 0.0001 → ×10000 = 1.0
+        let p = BinanceFuturesFundingMarketSource::premium_bps("100.01", "100.00").unwrap();
+        assert_eq!(p.to_string(), "1.000000");
+
+        // mark $99.99, index $100.00 → premium = -0.0001 → ×10000 = -1.0
+        let n = BinanceFuturesFundingMarketSource::premium_bps("99.99", "100.00").unwrap();
+        assert_eq!(n.to_string(), "-1.000000");
+
+        // mark == index → 0
+        let z = BinanceFuturesFundingMarketSource::premium_bps("100", "100").unwrap();
+        assert!(z.is_zero());
+
+        // index = 0 → None (avoid divide-by-zero)
+        assert!(BinanceFuturesFundingMarketSource::premium_bps("1.0", "0").is_none());
     }
 }
