@@ -7,28 +7,29 @@ import {
   staticFile,
   useCurrentFrame,
 } from "remotion";
-import { font } from "../../common/fonts";
-import { FPS, H, W, colors } from "./theme";
+import { FPS, H, W } from "./theme";
 
-// The "I lost because of …" iceberg. Camera descends through six tiers.
-// Suffix words are painted onto the iceberg at each tier's natural Y and
-// scroll with it — they stay anchored. The prefix is a single element
-// that magnets onto each active tier, moving down the frame as we descend.
+// The "I lost because of …" iceberg, Apple-styled.
+//
+// Layout: iceberg on the left, type panel on the right. The prefix is fixed
+// to the right panel's centre. The active suffix sits below it. On each
+// snap, the active suffix slides down toward the iceberg and settles onto
+// its tier — staying there. The next suffix climbs into the prefix's slot
+// with a soft magnet catch. Tiers never write in advance — a word doesn't
+// exist on the iceberg until we've crossed it.
 
 const IMG_W = 1100;
 const IMG_NATIVE_RATIO = 2238 / 1265;
 const IMG_H = Math.round(IMG_W * IMG_NATIVE_RATIO); // 1946
-const IMG_LEFT = Math.round((W - IMG_W) / 2);       // 410 — centered
+const IMG_LEFT = 0;
 const SCROLL_RANGE = IMG_H - H;                     // 866
 
-// Natural tier centres in displayed image coordinates, derived from the
-// pink guide lines on the source asset (scaled 1265/1265). One Y per tier.
+// Tier centres in displayed image coordinates, from the pink guides.
 const TIER_Y = [82, 286, 600, 928, 1248, 1672];
 
-// Horizontal anchor for tier labels — sits in the dark right margin of the
-// iceberg silhouette, off the ice itself, so type stays legible against a
-// uniform dark backdrop.
-const LABEL_X = 760;
+// Where settled (past) labels rest on the iceberg's right shoulder — in the
+// dark margin past the silhouette. Keeps type off the white ice.
+const SETTLED_X = 760;
 
 const SUFFIXES = [
   "strategy",
@@ -42,28 +43,29 @@ const SUFFIXES = [
 const N = SUFFIXES.length;
 const LAST = N - 1;
 
-// Timing — tight. Every tier crosses screen quickly; the punchline holds.
-//   INTRO    open on the top of the iceberg, brief settle
-//   HOLD     read the active tier
-//   SNAP     scroll + prefix magnet to the next tier
-//   FINAL    extra hold on "insider traders"
-//   OUTRO    fade out
-const INTRO = 6;
-const HOLD = 14;
-const SNAP = 8;
-const FINAL = 28;
+// Apple type stack.
+const SF_DISPLAY = `"SF Pro Display", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Inter, sans-serif`;
+const SF_TEXT = `"SF Pro Text", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Inter, sans-serif`;
+
+// Apple easing curves — these are the production values from apple.com CSS.
+const EASE_OUT = Easing.bezier(0.25, 0.1, 0.3, 1);
+const EASE_DEFAULT = Easing.bezier(0.4, 0, 0.6, 1);
+
+// Pacing — much faster than the first cut. 220 frames ≈ 7.3 s.
+const INTRO = 8;
+const HOLD = 18;
+const SNAP = 12;
+const FINAL = 32;     // extra hold on the punchline
 const OUTRO = 12;
 
 const tierStart = (i: number) => INTRO + i * (HOLD + SNAP);
 const SCENE_FRAMES = tierStart(LAST) + HOLD + FINAL + OUTRO;
-// 6 + 5*(14+8) + 14 + 28 + 12 = 6 + 110 + 54 = 170
+// 8 + 5*(18+12) + 18 + 32 + 12 = 8 + 150 + 62 = 220
 
-// Iceberg scroll per tier — linear across full image range.
 const scrollAtTier = (i: number) => -(SCROLL_RANGE / LAST) * i;
 
-const snapEase = Easing.bezier(0.45, 0, 0.2, 1);
-
-type TierState = { index: number; phase: "hold" | "snap"; t: number };
+type Phase = "hold" | "snap";
+type TierState = { index: number; phase: Phase; t: number };
 
 const tierAt = (frame: number): TierState => {
   if (frame < INTRO) return { index: 0, phase: "hold", t: 0 };
@@ -82,47 +84,37 @@ const computeScroll = (state: TierState): number => {
   if (state.phase === "hold") return scrollAtTier(state.index);
   const a = scrollAtTier(state.index);
   const b = scrollAtTier(state.index + 1);
-  return a + (b - a) * snapEase(state.t);
-};
-
-// Prefix content-Y — magnets between active tiers. Sits the suffix label
-// at the prefix's right hand, both at the same Y on the iceberg.
-const computePrefixY = (state: TierState): number => {
-  if (state.phase === "hold") return TIER_Y[state.index];
-  const a = TIER_Y[state.index];
-  const b = TIER_Y[state.index + 1];
-  return a + (b - a) * snapEase(state.t);
+  return a + (b - a) * EASE_OUT(state.t);
 };
 
 export const AntiCheatIceberg: React.FC = () => {
   const frame = useCurrentFrame();
   const state = tierAt(frame);
   const scrollY = computeScroll(state);
-  const prefixY = computePrefixY(state);
 
-  const introOpacity = interpolate(frame, [0, INTRO * 0.8], [0, 1], {
+  const introOpacity = interpolate(frame, [0, INTRO], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
+    easing: EASE_OUT,
   });
   const outroOpacity = interpolate(
     frame,
     [SCENE_FRAMES - OUTRO, SCENE_FRAMES],
     [1, 0],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: EASE_OUT },
   );
   const sceneOpacity = Math.min(introOpacity, outroOpacity);
 
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: "#04060C",
-        fontFamily: font,
+        backgroundColor: "#000000",
+        fontFamily: SF_TEXT,
         opacity: sceneOpacity,
         overflow: "hidden",
       }}
     >
-      {/* Scrolling wrapper — iceberg + suffix labels + prefix all live here.
-          One translateY moves the whole world. */}
+      {/* Iceberg + past tier labels — one wrapper, one translate. */}
       <div
         style={{
           position: "absolute",
@@ -136,41 +128,44 @@ export const AntiCheatIceberg: React.FC = () => {
       >
         <Img
           src={staticFile("iceberg-tiers.webp")}
-          style={{
-            width: IMG_W,
-            height: IMG_H,
-            display: "block",
-          }}
+          style={{ width: IMG_W, height: IMG_H, display: "block" }}
         />
 
-        {/* Caustic shimmer over the underwater section. */}
-        <CausticShimmer />
-
-        {/* Six suffix labels, anchored to natural tier Y. They stay. */}
+        {/* Past tiers settle here. Never rendered before they've been
+            reached — the iceberg starts unlabelled below the surface. */}
         {SUFFIXES.map((word, i) => (
-          <SuffixLabel
+          <SettledLabel
             key={i}
             word={word}
-            y={TIER_Y[i]}
-            active={state.index === i}
-            passed={state.index > i}
-            emphasis={i === LAST}
+            tierY={TIER_Y[i]}
+            state={state}
+            tierIndex={i}
           />
         ))}
-
-        {/* Prefix — magnets to active tier inside the wrapper, so it scrolls
-            with the iceberg between snaps. */}
-        <PrefixLabel y={prefixY} state={state} />
       </div>
 
-      {/* Tier counter — pinned to the frame, not the scroll. */}
-      <TierCounter index={state.index} />
+      {/* Soft right-edge falloff into the type panel. */}
+      <div
+        style={{
+          position: "absolute",
+          left: IMG_W - 220,
+          top: 0,
+          width: 280,
+          height: H,
+          background:
+            "linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.65) 70%, rgba(0,0,0,0.92) 100%)",
+          pointerEvents: "none",
+        }}
+      />
 
-      {/* Edge vignette — pulls focus to the band where the prefix is. */}
+      {/* Right-side type panel — prefix is fixed, active suffix swaps. */}
+      <TypePanel state={state} />
+
+      {/* Subtle bottom-edge vignette so deep tiers don't sit on a hard line. */}
       <AbsoluteFill
         style={{
           background:
-            "radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0) 50%, rgba(0,0,0,0.45) 100%)",
+            "radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0) 55%, rgba(0,0,0,0.35) 100%)",
           pointerEvents: "none",
         }}
       />
@@ -178,82 +173,55 @@ export const AntiCheatIceberg: React.FC = () => {
   );
 };
 
-// ─── Prefix label ─────────────────────────────────────────────────────────────
+// ─── Settled labels ───────────────────────────────────────────────────────────
 //
-// One element, content-Y animates between tier rows. During snap it briefly
-// scales — the "catch" frame — so the magnet reads as a physical jolt.
+// A label exists on the iceberg only once its tier has been visited. While
+// the tier is being snapped INTO, the label fades in at its anchor — the
+// "depositing" moment after the active card slides off the type panel.
 
-const PrefixLabel: React.FC<{ y: number; state: TierState }> = ({ y, state }) => {
-  const pulse =
-    state.phase === "snap" ? Math.sin(state.t * Math.PI) : 0;
-  const scale = 1 + pulse * 0.04;
+const SettledLabel: React.FC<{
+  word: string;
+  tierY: number;
+  state: TierState;
+  tierIndex: number;
+}> = ({ word, tierY, state, tierIndex }) => {
+  // Render decision:
+  //   tierIndex < state.index            → fully settled
+  //   tierIndex === state.index, snap    → still settling (fade in)
+  //   otherwise                          → does not exist yet
+  if (tierIndex > state.index) return null;
+  if (tierIndex === state.index && state.phase === "hold") return null;
+
+  let appear = 1;
+  if (tierIndex === state.index && state.phase === "snap") {
+    appear = interpolate(state.t, [0.5, 1], [0, 1], {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: EASE_OUT,
+    });
+  }
+
+  // Apple-style settle: a small upward arrival + opacity climb.
+  const rise = (1 - appear) * 14;
 
   return (
     <div
       style={{
         position: "absolute",
-        left: 40,
-        top: y,
-        transform: `translateY(-50%) scale(${scale.toFixed(3)})`,
-        transformOrigin: "left center",
-        fontSize: 44,
-        color: "rgba(255,255,255,0.78)",
+        left: SETTLED_X,
+        top: tierY,
+        transform: `translateY(calc(-50% + ${rise.toFixed(2)}px))`,
+        fontFamily: SF_DISPLAY,
+        fontSize: 38,
         fontWeight: 500,
-        letterSpacing: "-0.018em",
+        color: "rgba(245, 245, 247, 0.78)",
+        letterSpacing: "-0.022em",
         lineHeight: 1,
         whiteSpace: "nowrap",
         textShadow:
-          "0 2px 12px rgba(0,0,0,0.85), 0 0 32px rgba(0,0,0,0.6)",
-        willChange: "transform, top",
-        pointerEvents: "none",
-      }}
-    >
-      I lost because of
-    </div>
-  );
-};
-
-// ─── Suffix label ─────────────────────────────────────────────────────────────
-//
-// Anchored to its tier on the iceberg. Three visual states:
-//   passed  — already crossed; muted but present (it stays)
-//   active  — current tier; full opacity, accent colour
-//   pending — not yet reached; dim, smaller
-//
-// "Insider traders" runs red regardless of state — the punchline is loaded.
-
-const SuffixLabel: React.FC<{
-  word: string;
-  y: number;
-  active: boolean;
-  passed: boolean;
-  emphasis: boolean;
-}> = ({ word, y, active, passed, emphasis }) => {
-  const baseSize =
-    word.length <= 5 ? 116 : word.length <= 9 ? 96 : word.length <= 14 ? 82 : 72;
-  const size = active ? baseSize : baseSize * 0.92;
-  const opacity = active ? 1 : passed ? 0.55 : 0.42;
-  const color = emphasis ? "#FF3A4F" : "#FFFFFF";
-  const shadow = emphasis
-    ? "0 0 28px rgba(255,58,79,0.5), 0 2px 12px rgba(0,0,0,0.85)"
-    : "0 2px 14px rgba(0,0,0,0.85), 0 0 38px rgba(0,0,0,0.65)";
-
-  return (
-    <div
-      style={{
-        position: "absolute",
-        left: LABEL_X,
-        top: y,
-        transform: `translateY(-50%)`,
-        fontSize: size,
-        fontWeight: 800,
-        color,
-        letterSpacing: "-0.04em",
-        lineHeight: 1,
-        whiteSpace: "nowrap",
-        textShadow: shadow,
-        opacity,
-        transition: "opacity 80ms ease, font-size 80ms ease",
+          "0 1px 8px rgba(0,0,0,0.9), 0 0 24px rgba(0,0,0,0.55)",
+        opacity: appear,
+        willChange: "transform, opacity",
         pointerEvents: "none",
       }}
     >
@@ -262,87 +230,165 @@ const SuffixLabel: React.FC<{
   );
 };
 
-// ─── Tier counter ─────────────────────────────────────────────────────────────
+// ─── Type panel ───────────────────────────────────────────────────────────────
+//
+// Fixed to the right side of the frame. Prefix is permanent; suffix swaps
+// with each snap.
 
-const TierCounter: React.FC<{ index: number }> = ({ index }) => {
+const TypePanel: React.FC<{ state: TierState }> = ({ state }) => {
   return (
     <div
       style={{
         position: "absolute",
-        right: 56,
-        bottom: 48,
+        left: IMG_W,
+        top: 0,
+        width: W - IMG_W,
+        height: H,
         display: "flex",
-        gap: 10,
-        pointerEvents: "none",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "flex-start",
+        paddingLeft: 80,
+        paddingRight: 56,
       }}
     >
-      {SUFFIXES.map((_, i) => (
-        <div
-          key={i}
-          style={{
-            width: i === index ? 36 : 16,
-            height: 4,
-            borderRadius: 2,
-            background:
-              i === index
-                ? colors.accent
-                : i < index
-                ? "rgba(255,255,255,0.42)"
-                : "rgba(255,255,255,0.16)",
-            boxShadow:
-              i === index ? `0 0 12px ${colors.accent}` : "none",
-            transition: "all 90ms ease",
-          }}
-        />
-      ))}
+      <div
+        style={{
+          fontFamily: SF_TEXT,
+          fontSize: 24,
+          fontWeight: 400,
+          color: "rgba(245, 245, 247, 0.55)",
+          letterSpacing: "-0.016em",
+          lineHeight: 1.2,
+          marginBottom: 28,
+          whiteSpace: "nowrap",
+        }}
+      >
+        I lost because of
+      </div>
+
+      <ActiveSuffix state={state} />
     </div>
   );
 };
 
-// ─── Caustic shimmer ──────────────────────────────────────────────────────────
+// ─── Active suffix ────────────────────────────────────────────────────────────
+//
+// Hold: a single suffix sits in place.
+// Snap: outgoing slides down out of the panel (heading for the iceberg).
+//       Incoming climbs up from below with a small magnet overshoot.
 
-const CausticShimmer: React.FC = () => {
-  const frame = useCurrentFrame();
-  const d1 = (Math.sin(frame / 50) + 1) / 2;
-  const d2 = (Math.cos(frame / 72) + 1) / 2;
+const ActiveSuffix: React.FC<{ state: TierState }> = ({ state }) => {
+  const current = SUFFIXES[state.index];
+  const next = state.index < LAST ? SUFFIXES[state.index + 1] : null;
+
+  if (state.phase === "hold") {
+    return (
+      <div style={{ position: "relative", height: 230, width: "100%" }}>
+        <SuffixWord word={current} y={0} opacity={1} scale={1} absolute />
+      </div>
+    );
+  }
+
+  const t = state.t;
+  // Outgoing — slides DOWN (toward the iceberg below the panel), fades.
+  const outY = interpolate(t, [0, 1], [0, 72], { easing: EASE_DEFAULT });
+  const outOpacity = interpolate(t, [0, 0.55], [1, 0], {
+    extrapolateRight: "clamp",
+  });
+  // Incoming — climbs up, slight overshoot for the magnet catch.
+  const inY = interpolate(t, [0, 1], [92, 0], { easing: EASE_OUT });
+  const inOpacity = interpolate(t, [0.4, 0.85], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const inScale = interpolate(t, [0.55, 0.88, 1], [0.97, 1.035, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: EASE_DEFAULT,
+  });
+
+  return (
+    <div style={{ position: "relative", height: 230, width: "100%" }}>
+      <SuffixWord word={current} y={outY} opacity={outOpacity} scale={1} absolute />
+      {next && (
+        <SuffixWord word={next} y={inY} opacity={inOpacity} scale={inScale} absolute />
+      )}
+    </div>
+  );
+};
+
+// ─── Suffix word ──────────────────────────────────────────────────────────────
+//
+// Two-word phrases split onto two lines, San-Francisco display-style. One-
+// word phrases stay big and single-line. Apple weight 600 (semibold) — not
+// the extra-bold the meme convention reaches for.
+
+const SuffixWord: React.FC<{
+  word: string;
+  y: number;
+  opacity: number;
+  scale: number;
+  absolute?: boolean;
+}> = ({ word, y, opacity, scale, absolute }) => {
+  const parts = word.split(" ");
+  const twoLines = parts.length === 2;
+
+  const oneLineSize = (() => {
+    if (word.length <= 5) return 156;
+    if (word.length <= 9) return 128;
+    return 100;
+  })();
+  const lineSize = (line: string) => {
+    if (line.length <= 5) return 124;
+    if (line.length <= 8) return 116;
+    return 100;
+  };
+
   return (
     <div
       style={{
-        position: "absolute",
-        left: 0,
+        position: absolute ? "absolute" : "relative",
         top: 0,
-        width: IMG_W,
-        height: IMG_H,
-        pointerEvents: "none",
-        mixBlendMode: "screen",
+        left: 0,
+        transform: `translateY(${y.toFixed(2)}px) scale(${scale.toFixed(3)})`,
+        transformOrigin: "left center",
+        opacity,
+        willChange: "transform, opacity",
       }}
     >
-      <div
-        style={{
-          position: "absolute",
-          left: `${20 + d1 * 30}%`,
-          top: "38%",
-          width: 460,
-          height: 460,
-          borderRadius: "50%",
-          background:
-            "radial-gradient(circle, rgba(120,210,255,0.5) 0%, rgba(120,210,255,0) 70%)",
-          opacity: 0.06 + 0.04 * d1,
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          left: `${55 + d2 * 18}%`,
-          top: "62%",
-          width: 540,
-          height: 540,
-          borderRadius: "50%",
-          background:
-            "radial-gradient(circle, rgba(180,230,255,0.5) 0%, rgba(180,230,255,0) 70%)",
-          opacity: 0.05 + 0.03 * d2,
-        }}
-      />
+      {twoLines ? (
+        parts.map((line, idx) => (
+          <div
+            key={idx}
+            style={{
+              fontFamily: SF_DISPLAY,
+              fontSize: lineSize(line),
+              fontWeight: 600,
+              color: "#F5F5F7",
+              letterSpacing: "-0.028em",
+              lineHeight: 0.94,
+              whiteSpace: "nowrap",
+            }}
+          >
+            {line}
+          </div>
+        ))
+      ) : (
+        <div
+          style={{
+            fontFamily: SF_DISPLAY,
+            fontSize: oneLineSize,
+            fontWeight: 600,
+            color: "#F5F5F7",
+            letterSpacing: "-0.028em",
+            lineHeight: 0.94,
+            whiteSpace: "nowrap",
+          }}
+        >
+          {word}
+        </div>
+      )}
     </div>
   );
 };
