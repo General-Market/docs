@@ -39,6 +39,7 @@ type Row = { label: string; pct: number; accent: boolean };
 const ROWS: Row[] = [
   { label: "Blocks", pct: 40, accent: true },
   { label: "Perps", pct: 25, accent: false },
+  { label: "Predictions", pct: 25, accent: false },
   { label: "Options", pct: 20, accent: false },
 ];
 const HERO_INDEX = 0;
@@ -53,7 +54,9 @@ const HERO_INDEX = 0;
 // joins.
 
 const BAR_WIDTH = 240;
-const BAR_GAP = 150;
+// Gap widened from 150 to 200 to accommodate the longer "Predictions"
+// label without colliding with "Options".
+const BAR_GAP = 200;
 const BAR_BASELINE_Y = 1020;
 const BAR_MAX_HEIGHT = 520; // Blocks (40%) sets the cap
 const BAR_DEPTH = 30;
@@ -75,7 +78,8 @@ const HEIGHT_POWER = 1.6;
 const VP_X = W * 1.4; // 2688 — well off the right edge
 const VP_Y = -500;    // above the frame
 
-const CHART_TOTAL_WIDTH = 3 * BAR_WIDTH + 2 * BAR_GAP;
+const CHART_TOTAL_WIDTH =
+  ROWS.length * BAR_WIDTH + (ROWS.length - 1) * BAR_GAP;
 const CHART_LEFT = (W - CHART_TOTAL_WIDTH) / 2;
 
 const barX = (i: number) => CHART_LEFT + i * (BAR_WIDTH + BAR_GAP);
@@ -116,11 +120,17 @@ const labelTopY = (i: number, pct: number) => {
   );
 };
 
-// Hero sizing. HERO_FONT survives only as the offset reference for the
-// claim copy below centre — the morphing 40% that used to sit here is gone.
+// Hero sizing. The "2×" in the copy below borrows the old 40%'s 320px
+// scale. HERO_CENTER_Y is the impact point for the burst — pushed high
+// in the frame so the explosion sits above the copy, not under it.
 const HERO_FONT = 320;
 const HERO_CENTER_X = W / 2;
-const HERO_CENTER_Y = H / 2 - 24;
+const HERO_CENTER_Y = 280;
+
+// Hero copy anchors — the "Earn up to 2× more*" line sits roughly at
+// frame centre; the kicker prints just beneath it.
+const HERO_LINE_CENTER_Y = 620;
+const KICKER_TOP_Y = 820;
 
 export const AntiCheatSwitch: React.FC = () => (
   <AbsoluteFill
@@ -708,47 +718,84 @@ const HeroCopy: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
 
   return (
     <>
-      {/* Below the hero number — the implication. Bigger, no period. */}
+      {/* Hero line: "Earn up to 2× more*" — one row, "2×" sized at the old
+       * 40%'s 320px scale and lit in accent. The smaller words ride the
+       * baseline so the multiplier looms over them. */}
       <div
         style={{
           position: "absolute",
-          top: HERO_CENTER_Y + HERO_FONT * 0.55,
+          top: HERO_LINE_CENTER_Y,
           left: 0,
           right: 0,
           textAlign: "center",
           fontFamily: font,
-          fontSize: 96,
-          fontWeight: 700,
-          letterSpacing: "-0.032em",
           color: colors.fg,
-          lineHeight: 1.0,
           opacity: claimOp,
-          transform: `translateY(${claimY.toFixed(2)}px)`,
+          transform: `translate(0, -50%) translateY(${claimY.toFixed(2)}px)`,
+          whiteSpace: "nowrap",
         }}
       >
-        Earn up to 2x more
         <span
           style={{
-            fontFamily: monoFont,
-            fontSize: 32,
-            color: colors.dim,
-            marginLeft: 4,
-            verticalAlign: "super",
-            fontWeight: 500,
-            letterSpacing: 0,
+            display: "inline-flex",
+            alignItems: "baseline",
+            justifyContent: "center",
+            gap: 24,
           }}
         >
-          *
+          <span
+            style={{
+              fontSize: 140,
+              fontWeight: 700,
+              letterSpacing: "-0.032em",
+              lineHeight: 1.0,
+            }}
+          >
+            Earn up to
+          </span>
+          <span
+            style={{
+              fontSize: HERO_FONT,
+              fontWeight: 800,
+              letterSpacing: "-0.045em",
+              lineHeight: 1.0,
+              color: colors.accent,
+            }}
+          >
+            2×
+          </span>
+          <span
+            style={{
+              fontSize: 140,
+              fontWeight: 700,
+              letterSpacing: "-0.032em",
+              lineHeight: 1.0,
+            }}
+          >
+            more
+            <span
+              style={{
+                fontFamily: monoFont,
+                fontSize: 44,
+                color: colors.dim,
+                marginLeft: 4,
+                verticalAlign: "super",
+                fontWeight: 500,
+                letterSpacing: 0,
+              }}
+            >
+              *
+            </span>
+          </span>
         </span>
       </div>
 
-      {/* Top kicker — the action, matched in size + weight to "Up to 2× more"
-       * so the two read as twins. Sits where the headline used to live; now
-       * that "Same strategy." has exited it owns the top of the frame. */}
+      {/* Kicker — sits below the hero line. Types in once the hero has
+       * landed so the eye reads top-down: setup, claim, cause. */}
       <div
         style={{
           position: "absolute",
-          top: 156,
+          top: KICKER_TOP_Y,
           left: 0,
           right: 0,
           textAlign: "center",
