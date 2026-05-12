@@ -1,53 +1,356 @@
 {
   "vision": "0x36a28967544c301a3C66dcFB6c6c90e548412693",
-  "batchCount": 47,
+  "batchCount": 50,
   "batches": {
-    "defi": { "batchId": 0, "configHash": "0xbdb8ad2871c37ad2f9880a986165c0e5799637546aed5d32b45152b4969d9476", "tickDuration": 120, "lockOffset": 0, "settlementGrace": 240 },
-    "rates": { "batchId": 1, "configHash": "0xed5f6f718e654a76bc5faca5ac4585fe4c2b8a3753adb3e41c844a6f0154d3f8", "tickDuration": 86400, "lockOffset": 0, "settlementGrace": 86400 },
-    "bls": { "batchId": 2, "configHash": "0xf8a8a4416eca594423821205870b9db07cc66a55a6093234ba1cae73dd475ad3", "tickDuration": 86400, "lockOffset": 0, "settlementGrace": 86400 },
-    "worldbank": { "batchId": 3, "configHash": "0xee78d7a856dc7bb2978706a39c85a4e0985a73ccdd13d8d0d46781655f58879a", "tickDuration": 604800, "lockOffset": 0, "settlementGrace": 86400 },
-    "eia": { "batchId": 4, "configHash": "0xcf77e7f27c174e9a7956fab7ab59fc144ecf75fbf4be5e6721929fbb4a230bcf", "tickDuration": 86400, "lockOffset": 0, "settlementGrace": 86400 },
-    "ecb": { "batchId": 5, "configHash": "0x287060346fd181f933c1eeca0ab2bcacbccfa6eb66d2fc27f13d63c1214751c0", "tickDuration": 86400, "lockOffset": 0, "settlementGrace": 86400 },
-    "weather": { "batchId": 6, "configHash": "0x6a35b6524f767b3e64cf0c9c737d8d29324fd9f33f5ab29845edee0d595060cd", "tickDuration": 3600, "lockOffset": 0, "settlementGrace": 7200 },
-    "sec_13f": { "batchId": 7, "configHash": "0xd5c0a148802cb3f05fb1758c3d06f9f66b3be4104b6e5ac91c8367c2f3a7d6d1", "tickDuration": 21600, "lockOffset": 0, "settlementGrace": 43200 },
-    "finra_short_vol": { "batchId": 8, "configHash": "0x6e7f4043bdddf388fe9e3a9a81a54863496c374b514c493e492a93d768774072", "tickDuration": 86400, "lockOffset": 0, "settlementGrace": 86400 },
-    "congress": { "batchId": 9, "configHash": "0xfc437b48c01088c73338187d5a6e08f768443c0ad51ab7e9a29baee2d9a1bb2b", "tickDuration": 86400, "lockOffset": 0, "settlementGrace": 86400 },
-    "bchain": { "batchId": 10, "configHash": "0xb3a0e724c9ced0ae3767fcd242860333c7a3dc4935caf165db2ed6e0abeb2cdf", "tickDuration": 86400, "lockOffset": 0, "settlementGrace": 86400 },
-    "bonds": { "batchId": 11, "configHash": "0xabc34e4ed7e73ab9a0a63d54bf9db78f52942f2136e7545cd542631476bb19a9", "tickDuration": 86400, "lockOffset": 0, "settlementGrace": 86400 },
-    "anilist": { "batchId": 12, "configHash": "0xb776ced6f12c94c48b2341839ff4d4f63d9de5df83c2ebd61824751ed896e1fb", "tickDuration": 600, "lockOffset": 0, "settlementGrace": 1200 },
-    "backpacktf": { "batchId": 13, "configHash": "0x50df87669c08aeb22ed00e8b360887c89b0a4cf0f679740f085cff3d572512f3", "tickDuration": 600, "lockOffset": 0, "settlementGrace": 1200 },
-    "cloudflare": { "batchId": 14, "configHash": "0xddd915af6b7c2a3b235174cc178e3b29b49badc35f2d0d3e872c91508ed8d3f3", "tickDuration": 600, "lockOffset": 0, "settlementGrace": 1200 },
-    "fourchan": { "batchId": 15, "configHash": "0x3eba9a54885626fe2ae4447518a49fa412047ad88f0648c59d0c2e3c855481e2", "tickDuration": 600, "lockOffset": 0, "settlementGrace": 1200 },
-    "hackernews": { "batchId": 16, "configHash": "0xbc48591f83366f706401afff6615902711b7a296319efe915fa4727166794ea4", "tickDuration": 300, "lockOffset": 0, "settlementGrace": 600 },
-    "polymarket": { "batchId": 17, "configHash": "0xbc832988b4867fa31a458c3df70338401ba5ea441873052b0dbf668561193e0d", "tickDuration": 300, "lockOffset": 0, "settlementGrace": 600 },
-    "steam": { "batchId": 18, "configHash": "0x01dd053200710e4bc79c6e080189c33c96bce2acba9f78393030db7ef7a11566", "tickDuration": 600, "lockOffset": 0, "settlementGrace": 1200 },
-    "twitch": { "batchId": 19, "configHash": "0xfd29023c5dbd8633d08c4a9508e016fd8441c2144f33fd8a1cee9a24d7829977", "tickDuration": 60, "lockOffset": 0, "settlementGrace": 120 },
-    "zillow": { "batchId": 20, "configHash": "0xb2ffe0b93702a09549404e58c20028748770366767c5d8ee82a9cfcc96e11cc8", "tickDuration": 86400, "lockOffset": 0, "settlementGrace": 86400 },
-    "earthquake": { "batchId": 21, "configHash": "0xce96b45683b5579b84bc887eb74bd1f7f3a7449142e3257e0aef93fe1df9c926", "tickDuration": 300, "lockOffset": 0, "settlementGrace": 600 },
-    "spaceweather": { "batchId": 22, "configHash": "0x71b305181c167e80896aea2cea8c473122b608a80dea438fdba60376b4f7e6e9", "tickDuration": 600, "lockOffset": 0, "settlementGrace": 1200 },
-    "wildfire": { "batchId": 23, "configHash": "0x5725822928e967cb116abd1ee59d39f7dffde4ddd7d8fe7735033495ebf85e69", "tickDuration": 1800, "lockOffset": 0, "settlementGrace": 3600 },
-    "mil_aircraft": { "batchId": 24, "configHash": "0xa67e87333e9712834b8f7be7a9b8e100e8b10c77080da52b2ed9758aed88a447", "tickDuration": 600, "lockOffset": 0, "settlementGrace": 1200 },
-    "sports": { "batchId": 25, "configHash": "0x8568eb3b5ab73e2fea967b1710007988a67cb48a09a0cc18a9c522b06b08b2b9", "tickDuration": 600, "lockOffset": 0, "settlementGrace": 1200 },
-    "iss": { "batchId": 26, "configHash": "0x865b4d7fd491ac96f12cb5c59a2976c68a3522c2353690b1a0b1fff340c4b691", "tickDuration": 600, "lockOffset": 0, "settlementGrace": 1200 },
-    "weather_alerts": { "batchId": 27, "configHash": "0x22e61084aa4249a1cb49f5047ab520c9a6f9bcefe3b0aa480d55672139f3acbe", "tickDuration": 300, "lockOffset": 0, "settlementGrace": 600 },
-    "animals": { "batchId": 28, "configHash": "0xe2e9d2fd8aa78a1084e81924cd1151a2978e9834a37f1105494c9708c6df86e0", "tickDuration": 600, "lockOffset": 0, "settlementGrace": 1200 },
-    "gtfs_transit": { "batchId": 29, "configHash": "0xae7e62ec5c047fb8d2b2ee51c3c381f9f6a17fa41ab92e7c46394bbce3c258f1", "tickDuration": 120, "lockOffset": 0, "settlementGrace": 240 },
-    "usa_spending": { "batchId": 30, "configHash": "0xd5b9bfb79d79d32c2efd4c096d68defac3186ce3f7e7f6e511f48da42b5d4f3e", "tickDuration": 3600, "lockOffset": 0, "settlementGrace": 7200 },
-    "pumpfun": { "batchId": 31, "configHash": "0x7ca8dd1ce99ed8b5651c883e20a8a42377d2b59ed83d1e7f072aeeb0e04ba397", "tickDuration": 300, "lockOffset": 0, "settlementGrace": 600 },
-    "usgs_water": { "batchId": 32, "configHash": "0xa7df9599bbdd6835fbefdba683e512d8930cc1cfd7a7986d41983d773eabb9cf", "tickDuration": 600, "lockOffset": 0, "settlementGrace": 1200 },
-    "chaturbate": { "batchId": 33, "configHash": "0x99738c534f942aa1d12155ba7bbdc48e3b50a7552f9221abd93ec021ff241cf9", "tickDuration": 600, "lockOffset": 0, "settlementGrace": 1200 },
-    "noaa_tides": { "batchId": 34, "configHash": "0x0dc66f1bf3de6c0b30c277e3b81900a358ed88aafbc76eb22379d9d1d47a1cd2", "tickDuration": 900, "lockOffset": 0, "settlementGrace": 1800 },
-    "citybikes": { "batchId": 35, "configHash": "0x53b645e6e67ef3321187bf826a6d2b200be4ebbc7de25c6241eaebe6607bfbd2", "tickDuration": 600, "lockOffset": 0, "settlementGrace": 1200 },
-    "ndbc": { "batchId": 36, "configHash": "0x77e771b33f71bc42ef4c1b1ac82529bfbb8bc6a4e93caed7af28b99be6ff9356", "tickDuration": 600, "lockOffset": 0, "settlementGrace": 1200 },
-    "noaa_met": { "batchId": 37, "configHash": "0x81284a33629563680aa8a0310c4b71fc42841b64bd1d1248d1245bad44759346", "tickDuration": 600, "lockOffset": 0, "settlementGrace": 1200 },
-    "nwps": { "batchId": 38, "configHash": "0x0e8df1cd35e23bd3f0d5f77bbd6dce44c644bc9c7df0c4e0bc3de44baed98928", "tickDuration": 600, "lockOffset": 0, "settlementGrace": 1200 },
-    "airnow": { "batchId": 39, "configHash": "0x42a65994befc29ce2fb80af3635012bfebc20ad339e420a74b662c445c5af4a9", "tickDuration": 600, "lockOffset": 0, "settlementGrace": 1200 },
-    "crossref": { "batchId": 40, "configHash": "0x059376d6d93f58524e16379494db14274762bffa8302ad6e823d6338823628ef", "tickDuration": 600, "lockOffset": 0, "settlementGrace": 1200 },
-    "pubmed": { "batchId": 41, "configHash": "0xa40cb9cb409ba5f2a83384adcf2e64976dc1a3eb1dc03705590c3aa15f8f548d", "tickDuration": 600, "lockOffset": 0, "settlementGrace": 1200 },
-    "parking": { "batchId": 42, "configHash": "0x4c4950dd5e1093315f71b43d41ac547b3f4891537e3792122829f62fe2c6d908", "tickDuration": 600, "lockOffset": 0, "settlementGrace": 1200 },
-    "bestbuy": { "batchId": 43, "configHash": "0x6ab09e58b1ed330208234bf131db6a6387d1e780e82f96737071d56e52c71f5c", "tickDuration": 600, "lockOffset": 0, "settlementGrace": 1200 },
-    "adzuna": { "batchId": 44, "configHash": "0x513c3bf20ead38ad455cd943b6e49c77155946c63e5a11c92a67c70211dad4e7", "tickDuration": 1800, "lockOffset": 0, "settlementGrace": 3600 },
-    "queue_times": { "batchId": 45, "configHash": "0x155763cd2069ffd3d84d6d65a692da10344ab02337acc83f053f17cb61eee765", "tickDuration": 600, "lockOffset": 0, "settlementGrace": 1200 },
-    "mta_subway": { "batchId": 46, "configHash": "0x32f6ae549d62f34082a680773ae10dbc49817c9169753558bafce37e958fb687", "tickDuration": 300, "lockOffset": 0, "settlementGrace": 600 }
+    "defi": {
+      "batchId": 0,
+      "configHash": "0xbdb8ad2871c37ad2f9880a986165c0e5799637546aed5d32b45152b4969d9476",
+      "tickDuration": 120,
+      "lockOffset": 0,
+      "settlementGrace": 240
+    },
+    "rates": {
+      "batchId": 1,
+      "configHash": "0xed5f6f718e654a76bc5faca5ac4585fe4c2b8a3753adb3e41c844a6f0154d3f8",
+      "tickDuration": 86400,
+      "lockOffset": 0,
+      "settlementGrace": 86400
+    },
+    "bls": {
+      "batchId": 2,
+      "configHash": "0xf8a8a4416eca594423821205870b9db07cc66a55a6093234ba1cae73dd475ad3",
+      "tickDuration": 86400,
+      "lockOffset": 0,
+      "settlementGrace": 86400
+    },
+    "worldbank": {
+      "batchId": 3,
+      "configHash": "0xee78d7a856dc7bb2978706a39c85a4e0985a73ccdd13d8d0d46781655f58879a",
+      "tickDuration": 604800,
+      "lockOffset": 0,
+      "settlementGrace": 86400
+    },
+    "eia": {
+      "batchId": 4,
+      "configHash": "0xcf77e7f27c174e9a7956fab7ab59fc144ecf75fbf4be5e6721929fbb4a230bcf",
+      "tickDuration": 86400,
+      "lockOffset": 0,
+      "settlementGrace": 86400
+    },
+    "ecb": {
+      "batchId": 5,
+      "configHash": "0x287060346fd181f933c1eeca0ab2bcacbccfa6eb66d2fc27f13d63c1214751c0",
+      "tickDuration": 86400,
+      "lockOffset": 0,
+      "settlementGrace": 86400
+    },
+    "weather": {
+      "batchId": 6,
+      "configHash": "0x6a35b6524f767b3e64cf0c9c737d8d29324fd9f33f5ab29845edee0d595060cd",
+      "tickDuration": 3600,
+      "lockOffset": 0,
+      "settlementGrace": 7200
+    },
+    "sec_13f": {
+      "batchId": 7,
+      "configHash": "0xd5c0a148802cb3f05fb1758c3d06f9f66b3be4104b6e5ac91c8367c2f3a7d6d1",
+      "tickDuration": 21600,
+      "lockOffset": 0,
+      "settlementGrace": 43200
+    },
+    "finra_short_vol": {
+      "batchId": 8,
+      "configHash": "0x6e7f4043bdddf388fe9e3a9a81a54863496c374b514c493e492a93d768774072",
+      "tickDuration": 86400,
+      "lockOffset": 0,
+      "settlementGrace": 86400
+    },
+    "congress": {
+      "batchId": 9,
+      "configHash": "0xfc437b48c01088c73338187d5a6e08f768443c0ad51ab7e9a29baee2d9a1bb2b",
+      "tickDuration": 86400,
+      "lockOffset": 0,
+      "settlementGrace": 86400
+    },
+    "bchain": {
+      "batchId": 10,
+      "configHash": "0xb3a0e724c9ced0ae3767fcd242860333c7a3dc4935caf165db2ed6e0abeb2cdf",
+      "tickDuration": 86400,
+      "lockOffset": 0,
+      "settlementGrace": 86400
+    },
+    "bonds": {
+      "batchId": 11,
+      "configHash": "0xabc34e4ed7e73ab9a0a63d54bf9db78f52942f2136e7545cd542631476bb19a9",
+      "tickDuration": 86400,
+      "lockOffset": 0,
+      "settlementGrace": 86400
+    },
+    "anilist": {
+      "batchId": 12,
+      "configHash": "0xb776ced6f12c94c48b2341839ff4d4f63d9de5df83c2ebd61824751ed896e1fb",
+      "tickDuration": 600,
+      "lockOffset": 0,
+      "settlementGrace": 1200
+    },
+    "backpacktf": {
+      "batchId": 13,
+      "configHash": "0x50df87669c08aeb22ed00e8b360887c89b0a4cf0f679740f085cff3d572512f3",
+      "tickDuration": 600,
+      "lockOffset": 0,
+      "settlementGrace": 1200
+    },
+    "cloudflare": {
+      "batchId": 14,
+      "configHash": "0xddd915af6b7c2a3b235174cc178e3b29b49badc35f2d0d3e872c91508ed8d3f3",
+      "tickDuration": 600,
+      "lockOffset": 0,
+      "settlementGrace": 1200
+    },
+    "fourchan": {
+      "batchId": 15,
+      "configHash": "0x3eba9a54885626fe2ae4447518a49fa412047ad88f0648c59d0c2e3c855481e2",
+      "tickDuration": 600,
+      "lockOffset": 0,
+      "settlementGrace": 1200
+    },
+    "hackernews": {
+      "batchId": 16,
+      "configHash": "0xbc48591f83366f706401afff6615902711b7a296319efe915fa4727166794ea4",
+      "tickDuration": 300,
+      "lockOffset": 0,
+      "settlementGrace": 600
+    },
+    "polymarket": {
+      "batchId": 17,
+      "configHash": "0xbc832988b4867fa31a458c3df70338401ba5ea441873052b0dbf668561193e0d",
+      "tickDuration": 300,
+      "lockOffset": 0,
+      "settlementGrace": 600
+    },
+    "steam": {
+      "batchId": 18,
+      "configHash": "0x01dd053200710e4bc79c6e080189c33c96bce2acba9f78393030db7ef7a11566",
+      "tickDuration": 600,
+      "lockOffset": 0,
+      "settlementGrace": 1200
+    },
+    "twitch": {
+      "batchId": 19,
+      "configHash": "0xfd29023c5dbd8633d08c4a9508e016fd8441c2144f33fd8a1cee9a24d7829977",
+      "tickDuration": 60,
+      "lockOffset": 0,
+      "settlementGrace": 120
+    },
+    "zillow": {
+      "batchId": 20,
+      "configHash": "0xb2ffe0b93702a09549404e58c20028748770366767c5d8ee82a9cfcc96e11cc8",
+      "tickDuration": 86400,
+      "lockOffset": 0,
+      "settlementGrace": 86400
+    },
+    "earthquake": {
+      "batchId": 21,
+      "configHash": "0xce96b45683b5579b84bc887eb74bd1f7f3a7449142e3257e0aef93fe1df9c926",
+      "tickDuration": 300,
+      "lockOffset": 0,
+      "settlementGrace": 600
+    },
+    "spaceweather": {
+      "batchId": 22,
+      "configHash": "0x71b305181c167e80896aea2cea8c473122b608a80dea438fdba60376b4f7e6e9",
+      "tickDuration": 600,
+      "lockOffset": 0,
+      "settlementGrace": 1200
+    },
+    "wildfire": {
+      "batchId": 23,
+      "configHash": "0x5725822928e967cb116abd1ee59d39f7dffde4ddd7d8fe7735033495ebf85e69",
+      "tickDuration": 1800,
+      "lockOffset": 0,
+      "settlementGrace": 3600
+    },
+    "mil_aircraft": {
+      "batchId": 24,
+      "configHash": "0xa67e87333e9712834b8f7be7a9b8e100e8b10c77080da52b2ed9758aed88a447",
+      "tickDuration": 600,
+      "lockOffset": 0,
+      "settlementGrace": 1200
+    },
+    "sports": {
+      "batchId": 25,
+      "configHash": "0x8568eb3b5ab73e2fea967b1710007988a67cb48a09a0cc18a9c522b06b08b2b9",
+      "tickDuration": 600,
+      "lockOffset": 0,
+      "settlementGrace": 1200
+    },
+    "iss": {
+      "batchId": 26,
+      "configHash": "0x865b4d7fd491ac96f12cb5c59a2976c68a3522c2353690b1a0b1fff340c4b691",
+      "tickDuration": 600,
+      "lockOffset": 0,
+      "settlementGrace": 1200
+    },
+    "weather_alerts": {
+      "batchId": 27,
+      "configHash": "0x22e61084aa4249a1cb49f5047ab520c9a6f9bcefe3b0aa480d55672139f3acbe",
+      "tickDuration": 300,
+      "lockOffset": 0,
+      "settlementGrace": 600
+    },
+    "animals": {
+      "batchId": 28,
+      "configHash": "0xe2e9d2fd8aa78a1084e81924cd1151a2978e9834a37f1105494c9708c6df86e0",
+      "tickDuration": 600,
+      "lockOffset": 0,
+      "settlementGrace": 1200
+    },
+    "gtfs_transit": {
+      "batchId": 29,
+      "configHash": "0xae7e62ec5c047fb8d2b2ee51c3c381f9f6a17fa41ab92e7c46394bbce3c258f1",
+      "tickDuration": 120,
+      "lockOffset": 0,
+      "settlementGrace": 240
+    },
+    "usa_spending": {
+      "batchId": 30,
+      "configHash": "0xd5b9bfb79d79d32c2efd4c096d68defac3186ce3f7e7f6e511f48da42b5d4f3e",
+      "tickDuration": 3600,
+      "lockOffset": 0,
+      "settlementGrace": 7200
+    },
+    "pumpfun": {
+      "batchId": 31,
+      "configHash": "0x7ca8dd1ce99ed8b5651c883e20a8a42377d2b59ed83d1e7f072aeeb0e04ba397",
+      "tickDuration": 300,
+      "lockOffset": 0,
+      "settlementGrace": 600
+    },
+    "usgs_water": {
+      "batchId": 32,
+      "configHash": "0xa7df9599bbdd6835fbefdba683e512d8930cc1cfd7a7986d41983d773eabb9cf",
+      "tickDuration": 600,
+      "lockOffset": 0,
+      "settlementGrace": 1200
+    },
+    "chaturbate": {
+      "batchId": 33,
+      "configHash": "0x99738c534f942aa1d12155ba7bbdc48e3b50a7552f9221abd93ec021ff241cf9",
+      "tickDuration": 600,
+      "lockOffset": 0,
+      "settlementGrace": 1200
+    },
+    "noaa_tides": {
+      "batchId": 34,
+      "configHash": "0x0dc66f1bf3de6c0b30c277e3b81900a358ed88aafbc76eb22379d9d1d47a1cd2",
+      "tickDuration": 900,
+      "lockOffset": 0,
+      "settlementGrace": 1800
+    },
+    "citybikes": {
+      "batchId": 35,
+      "configHash": "0x53b645e6e67ef3321187bf826a6d2b200be4ebbc7de25c6241eaebe6607bfbd2",
+      "tickDuration": 600,
+      "lockOffset": 0,
+      "settlementGrace": 1200
+    },
+    "ndbc": {
+      "batchId": 36,
+      "configHash": "0x77e771b33f71bc42ef4c1b1ac82529bfbb8bc6a4e93caed7af28b99be6ff9356",
+      "tickDuration": 600,
+      "lockOffset": 0,
+      "settlementGrace": 1200
+    },
+    "noaa_met": {
+      "batchId": 37,
+      "configHash": "0x81284a33629563680aa8a0310c4b71fc42841b64bd1d1248d1245bad44759346",
+      "tickDuration": 600,
+      "lockOffset": 0,
+      "settlementGrace": 1200
+    },
+    "nwps": {
+      "batchId": 38,
+      "configHash": "0x0e8df1cd35e23bd3f0d5f77bbd6dce44c644bc9c7df0c4e0bc3de44baed98928",
+      "tickDuration": 600,
+      "lockOffset": 0,
+      "settlementGrace": 1200
+    },
+    "airnow": {
+      "batchId": 39,
+      "configHash": "0x42a65994befc29ce2fb80af3635012bfebc20ad339e420a74b662c445c5af4a9",
+      "tickDuration": 600,
+      "lockOffset": 0,
+      "settlementGrace": 1200
+    },
+    "crossref": {
+      "batchId": 40,
+      "configHash": "0x059376d6d93f58524e16379494db14274762bffa8302ad6e823d6338823628ef",
+      "tickDuration": 600,
+      "lockOffset": 0,
+      "settlementGrace": 1200
+    },
+    "pubmed": {
+      "batchId": 41,
+      "configHash": "0xa40cb9cb409ba5f2a83384adcf2e64976dc1a3eb1dc03705590c3aa15f8f548d",
+      "tickDuration": 600,
+      "lockOffset": 0,
+      "settlementGrace": 1200
+    },
+    "parking": {
+      "batchId": 42,
+      "configHash": "0x4c4950dd5e1093315f71b43d41ac547b3f4891537e3792122829f62fe2c6d908",
+      "tickDuration": 600,
+      "lockOffset": 0,
+      "settlementGrace": 1200
+    },
+    "bestbuy": {
+      "batchId": 43,
+      "configHash": "0x6ab09e58b1ed330208234bf131db6a6387d1e780e82f96737071d56e52c71f5c",
+      "tickDuration": 600,
+      "lockOffset": 0,
+      "settlementGrace": 1200
+    },
+    "adzuna": {
+      "batchId": 44,
+      "configHash": "0x513c3bf20ead38ad455cd943b6e49c77155946c63e5a11c92a67c70211dad4e7",
+      "tickDuration": 1800,
+      "lockOffset": 0,
+      "settlementGrace": 3600
+    },
+    "queue_times": {
+      "batchId": 45,
+      "configHash": "0x155763cd2069ffd3d84d6d65a692da10344ab02337acc83f053f17cb61eee765",
+      "tickDuration": 600,
+      "lockOffset": 0,
+      "settlementGrace": 1200
+    },
+    "mta_subway": {
+      "batchId": 46,
+      "configHash": "0x32f6ae549d62f34082a680773ae10dbc49817c9169753558bafce37e958fb687",
+      "tickDuration": 300,
+      "lockOffset": 0,
+      "settlementGrace": 600
+    },
+    "binance_spot": {
+      "batchId": 22641,
+      "configHash": "0x6a1845901b1b4193eb2029908e725a0ef59b86499d90c5e76d56e84d13c0b0c7",
+      "tickDuration": 300,
+      "lockOffset": 0,
+      "settlementGrace": 600
+    },
+    "binance_futures_funding": {
+      "batchId": 22642,
+      "configHash": "0x750ba3ec2d29f23dc5cd8acfae81f4eb3d717703efbea3018acda58e2116422f",
+      "tickDuration": 300,
+      "lockOffset": 0,
+      "settlementGrace": 600
+    },
+    "binance_options": {
+      "batchId": 22643,
+      "configHash": "0xb66b5a79e03118dc3eec4d58d8b1049e6020271f277c351191a8fe68e86b1cb8",
+      "tickDuration": 300,
+      "lockOffset": 0,
+      "settlementGrace": 600
+    }
   }
 }

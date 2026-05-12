@@ -1,286 +1,460 @@
 {
   "configs": {
-    "defi": {
-      "configHash": "0xbdb8ad2871c37ad2f9880a986165c0e5799637546aed5d32b45152b4969d9476",
-      "tickDurationSecs": 120,
+    "pumpfun": {
+      "configHash": "0x40470caf917e0231d116abc61e71a95ed831e47194cea0fbbedb1095af95dae5",
+      "tickDurationSecs": 600,
       "lockOffsetSecs": 0,
-      "marketCount": 256
+      "marketCount": 25
     },
-    "rates": {
-      "configHash": "0xed5f6f718e654a76bc5faca5ac4585fe4c2b8a3753adb3e41c844a6f0154d3f8",
+    "defi": {
+      "configHash": "0x3e39a8d95d59ed18e1854cf26a000121a1eebb831f2cf0990bb0287ca3be8763",
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 0,
+      "marketCount": 8192
+    },
+    "stocks": {
+      "configHash": "0x7ad5ac09f2c0df475136fc5fef5238c4eadd62f00eb089ac2865194b46706767",
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 0,
+      "marketCount": 54
+    },
+    "zillow": {
+      "configHash": "0xd1fe81a26547e32fafd542de927005e673666b82fcd961af8de4b4a51ffa8f67",
       "tickDurationSecs": 86400,
       "lockOffsetSecs": 0,
-      "marketCount": 15
+      "marketCount": 4
     },
-    "bls": {
-      "configHash": "0xf8a8a4416eca594423821205870b9db07cc66a55a6093234ba1cae73dd475ad3",
+    "polymarket": {
+      "configHash": "0x9ea5d887880a992ea92e6b7bb345bb4b413939e2de127ba3176550f800fd4724",
+      "tickDurationSecs": 300,
+      "lockOffsetSecs": 0,
+      "marketCount": 8192
+    },
+    "finra_short_vol": {
+      "configHash": "0xce7e735ba1f09f095beece21a6d1a3b00d0d31d00dcadac8582da01ecd92711e",
+      "tickDurationSecs": 86400,
+      "lockOffsetSecs": 0,
+      "marketCount": 5
+    },
+    "bchain": {
+      "configHash": "0x09a411822bb9edc91eb50015babe0d1b1567eb7d221162c896d4fa331230d3ed",
       "tickDurationSecs": 86400,
       "lockOffsetSecs": 0,
       "marketCount": 9
     },
-    "worldbank": {
-      "configHash": "0xee78d7a856dc7bb2978706a39c85a4e0985a73ccdd13d8d0d46781655f58879a",
-      "tickDurationSecs": 604800,
+    "yahoo_drinks": {
+      "configHash": "0xc2c11c7b6b67d536531a2cc6492f3c7c211cc61c5ea3d0d65f614acc8cb5b834",
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 0,
+      "marketCount": 12
+    },
+    "bestbuy": {
+      "configHash": "0xad58bc222b744eab4670c5c985b78c7037965427d7b35f09a96b9b74d6f6c3cf",
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 0,
+      "marketCount": 2
+    },
+    "rates": {
+      "configHash": "0x2ef2a4ae9ed3b4af627687c699eb34cf2a13202af4939647e8171feb89d9a1d4",
+      "tickDurationSecs": 86400,
       "lockOffsetSecs": 0,
       "marketCount": 19
     },
     "eia": {
-      "configHash": "0xcf77e7f27c174e9a7956fab7ab59fc144ecf75fbf4be5e6721929fbb4a230bcf",
+      "configHash": "0xd3019aeb14b00220a4d4eeeb129555397e315db0a6e98152be5b49b19ddc79c3",
       "tickDurationSecs": 86400,
       "lockOffsetSecs": 0,
-      "marketCount": 1
+      "marketCount": 9
+    },
+    "bonds": {
+      "configHash": "0xa3ccfa963dcdfb9d49d3df9e961031753ad3ab16f0971e1a87eb56df02f3066a",
+      "tickDurationSecs": 86400,
+      "lockOffsetSecs": 0,
+      "marketCount": 22
     },
     "ecb": {
-      "configHash": "0x287060346fd181f933c1eeca0ab2bcacbccfa6eb66d2fc27f13d63c1214751c0",
+      "configHash": "0xf3472045e6a395980174c155c4dac4af503f6da010009b4a10b139447775e20c",
       "tickDurationSecs": 86400,
       "lockOffsetSecs": 0,
-      "marketCount": 1
+      "marketCount": 6
     },
-    "weather": {
-      "configHash": "0x6a35b6524f767b3e64cf0c9c737d8d29324fd9f33f5ab29845edee0d595060cd",
+    "boe": {
+      "configHash": "0x8d1d67fa000fa7c32344d55c42d3c5c909466f4b67549eb4c0c3c5a662bb99a7",
+      "tickDurationSecs": 86400,
+      "lockOffsetSecs": 0,
+      "marketCount": 27
+    },
+    "worldbank": {
+      "configHash": "0x0a0f5a507037f9d5b30ec8b0295d7202575d259c21752bdcd25edcc8da5fa18d",
+      "tickDurationSecs": 604800,
+      "lockOffsetSecs": 0,
+      "marketCount": 20
+    },
+    "bls": {
+      "configHash": "0x562c959792bc2703b50b280234b8fc78792351c34b1cfdd7c866aa3def7c46ba",
+      "tickDurationSecs": 86400,
+      "lockOffsetSecs": 0,
+      "marketCount": 9
+    },
+    "adzuna": {
+      "configHash": "0x5cc4273d51ad17884d6cef2a31cfa08e419514d34f4ded610f0b5193fd3dc3c7",
       "tickDurationSecs": 3600,
       "lockOffsetSecs": 0,
-      "marketCount": 256
+      "marketCount": 8
+    },
+    "usa_spending": {
+      "configHash": "0x91661626627bb32d511f0c78d29e696565951692db36b2c159f4c210b0b2032c",
+      "tickDurationSecs": 3600,
+      "lockOffsetSecs": 0,
+      "marketCount": 12
+    },
+    "sec_efts": {
+      "configHash": "0xb5ea223e5e15b05d392d557cd0aaa5e96d06ac28c0536e0b5b4d8574f5a1d7d2",
+      "tickDurationSecs": 21600,
+      "lockOffsetSecs": 0,
+      "marketCount": 22
+    },
+    "sec_insider": {
+      "configHash": "0x9765e298bc99922777b7b1aeb83ffa066b8cb0b002068fb6b05d9aa5d106c892",
+      "tickDurationSecs": 21600,
+      "lockOffsetSecs": 0,
+      "marketCount": 157
+    },
+    "congress": {
+      "configHash": "0x2218c5a7efb3360635880a15bc7b5a91e36ba62fd01f5869d3a397dced539a21",
+      "tickDurationSecs": 86400,
+      "lockOffsetSecs": 0,
+      "marketCount": 10
+    },
+    "nyc311": {
+      "configHash": "0xc7a66f406083f5b014e6ca3178e1e7f91d4d8c1f806eb600c2fc84097bcdb9c8",
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 0,
+      "marketCount": 19
+    },
+    "github": {
+      "configHash": "0x31bcef28488bef9a5717fba0e98919830a89b13244fd39f0b08edc43c0ef33b5",
+      "tickDurationSecs": 86400,
+      "lockOffsetSecs": 0,
+      "marketCount": 325
+    },
+    "hackernews": {
+      "configHash": "0x800e633979af94144bd606835c36847d0e89c21849f72c2ed3b925d09749d602",
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 0,
+      "marketCount": 315
+    },
+    "cloudflare": {
+      "configHash": "0xf39ece167385c7334541d3243007a6f4a88bab40afbbc6c3ea9d341dceaed457",
+      "tickDurationSecs": 1200,
+      "lockOffsetSecs": 0,
+      "marketCount": 193
+    },
+    "openalex": {
+      "configHash": "0x53c1890f231023ddca2cc9ed500b92e5406ab4de00b212114414e71b15c0f84e",
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 0,
+      "marketCount": 26
+    },
+    "crossref": {
+      "configHash": "0x87e7af7946dab1eef8553c7c9705270d497a1a323d85fdcda1000fd861beb75c",
+      "tickDurationSecs": 1200,
+      "lockOffsetSecs": 0,
+      "marketCount": 12
+    },
+    "pubmed": {
+      "configHash": "0x75dd14824f2dc8b3707f1f15a397e9576f0dc642dab50cbed97522da33a28a61",
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 0,
+      "marketCount": 25
+    },
+    "twitch": {
+      "configHash": "0xf57e677baf98efc673a24f97df4aedaeccde5aeabd8fdddadae3707c5b8b59fb",
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 0,
+      "marketCount": 2751
+    },
+    "tmdb": {
+      "configHash": "0x8353b9696e9c88b7d3e78f13d7c136ff7537a9c33c1728e0953d6b1d18b8f031",
+      "tickDurationSecs": 300,
+      "lockOffsetSecs": 0,
+      "marketCount": 382
+    },
+    "lastfm": {
+      "configHash": "0xb6d9bac6d20450ac903b13a55fceabb692e98bf2863b95d0fbf97737a126f159",
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 0,
+      "marketCount": 998
+    },
+    "anilist": {
+      "configHash": "0xa5aa8c248ac2bf101e5ddbbf51dee8b45d5a8f4e2ce99cb44bbf858bca4e42dd",
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 0,
+      "marketCount": 1285
+    },
+    "chaturbate": {
+      "configHash": "0x2f09612198c1402c28ac75f67d66c201ee8f3b8735bd075c9c325e9b24430479",
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 0,
+      "marketCount": 7216
+    },
+    "backpacktf": {
+      "configHash": "0x433f9c1f469232931ccb1cd81d2e3d5d8c74906360938135e62174269af2ac67",
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 0,
+      "marketCount": 2379
+    },
+    "fourchan": {
+      "configHash": "0x27ff4b2c433de767ffdce856616ee61c0e3dc2ac47367d250a4d860adf8e32e5",
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 0,
+      "marketCount": 100
+    },
+    "sports": {
+      "configHash": "0xe92a3d9996bb7fb37fe89cabee0c3f2975e5586b17ab37b0aaffa9e654c80b1d",
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 0,
+      "marketCount": 114
+    },
+    "esports": {
+      "configHash": "0xbea454739fb9e8b732f781ccaa483fe98a7e218cb6ebd6e6921f47e39584a96e",
+      "tickDurationSecs": 300,
+      "lockOffsetSecs": 0,
+      "marketCount": 1341
+    },
+    "queue_times": {
+      "configHash": "0xee507c28982de1a06c5ee2f95d6097342bf2d5a846dffc6c7029ba470e96a811",
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 0,
+      "marketCount": 30
+    },
+    "mcbroken": {
+      "configHash": "0x95df2646becf5516b9e106c8927e6b657f302270ac552038a2e229b6050f155a",
+      "tickDurationSecs": 1200,
+      "lockOffsetSecs": 0,
+      "marketCount": 9
+    },
+    "earthquake": {
+      "configHash": "0x3f1c0691f1cc034ef93837d64e4ee622e8389f76b963fcd60714f02d27bcb682",
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 0,
+      "marketCount": 20
+    },
+    "volcano": {
+      "configHash": "0x0cb134b8a2b1b29809d02b13a574e87348e75d6599318f30946c98484875756d",
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 0,
+      "marketCount": 10
+    },
+    "weather_alerts": {
+      "configHash": "0x22fe79ab49ec0f619c60366ad60a1d11b3e493afd32e0adac4564d4e9180a428",
+      "tickDurationSecs": 300,
+      "lockOffsetSecs": 0,
+      "marketCount": 20
+    },
+    "airnow": {
+      "configHash": "0x3c8ac94fef61a9591144202664a63bc3e4980d7dec35fa3e6be18c07d05132f6",
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 0,
+      "marketCount": 300
+    },
+    "usgs_water": {
+      "configHash": "0xa988d47b057001d3e0cf15f490aef7362c0c74f0c81d9c511f3dca5561879465",
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 0,
+      "marketCount": 2710
+    },
+    "noaa_met": {
+      "configHash": "0x786bb514cbaa8f3d530302ae0a2883b798f01ccdbce6b23e288657495fe42615",
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 0,
+      "marketCount": 82
+    },
+    "noaa_tides": {
+      "configHash": "0xa907ddbe645998fd9a580cf4f15e4de9631e4751a98e6546c16832d1dd026267",
+      "tickDurationSecs": 900,
+      "lockOffsetSecs": 0,
+      "marketCount": 57
+    },
+    "ndbc": {
+      "configHash": "0x88773cd54bf0c88b104c0a7132388626e5534d911e8ba0b5e42db1b0b304949a",
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 0,
+      "marketCount": 219
+    },
+    "nwps": {
+      "configHash": "0xed7026931a18947d0c3c15eef50c64e0c5c345a83a434efd4fbb81244e2adae2",
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 0,
+      "marketCount": 22
+    },
+    "epidemic": {
+      "configHash": "0x0276f9e5ac88215c3559cb0f98ed4caa55e58d0c7e40e79aa863847bc41f1e83",
+      "tickDurationSecs": 3600,
+      "lockOffsetSecs": 0,
+      "marketCount": 34
+    },
+    "power_outages": {
+      "configHash": "0xaed69135aceec92ca6eb98ee4c82dae57c4cc553c398f7d167e24d8d3f97d094",
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 0,
+      "marketCount": 51
+    },
+    "gtfs_transit": {
+      "configHash": "0xd3a9d0fb62276ca6c3ab2fb170309f98d306ddd2784e2333172af437f029d1d1",
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 0,
+      "marketCount": 13
+    },
+    "parking": {
+      "configHash": "0x5ac56a795afe917e70e443efa3f998f824c29a920f47224eeadb72244393caa2",
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 0,
+      "marketCount": 20
+    },
+    "tomtom_traffic": {
+      "configHash": "0xf98ab3b9a3cd33d89922abf4a1bb4eade2db32cad31167101b237bea8e7510b7",
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 0,
+      "marketCount": 18
+    },
+    "tomtom_evcharge": {
+      "configHash": "0xe23034ae00a260b78c7d683cceaf6a0f784cbcfcb48c1160af3129dc70821123",
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 0,
+      "marketCount": 11
+    },
+    "faa_delays": {
+      "configHash": "0x359a4e1a78b8feb079f2de11dfdf08fd34b1aa6ffffb739903de2af538b0b34d",
+      "tickDurationSecs": 1200,
+      "lockOffsetSecs": 0,
+      "marketCount": 30
+    },
+    "db_trains": {
+      "configHash": "0x4c8b37d235a58d5cb3c51a530ca9905f47693e716707ad16b6abdd043d22d835",
+      "tickDurationSecs": 300,
+      "lockOffsetSecs": 0,
+      "marketCount": 58
+    },
+    "mta_subway": {
+      "configHash": "0x06a4da39ae459780ccb1f92e280ff6e080808358e2cd7b3c4c2c3393d6a5fa30",
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 0,
+      "marketCount": 25
+    },
+    "tfl_tube": {
+      "configHash": "0x9d63be04fdd7fdbd3be0e3f73b464ddcdaf59a36cdcfb8060ee719698546b772",
+      "tickDurationSecs": 300,
+      "lockOffsetSecs": 0,
+      "marketCount": 11
+    },
+    "animals": {
+      "configHash": "0x159cc15ad2b6e93a85a8dffed3bfc5098728eea9d63aa5826c21e2d519d63024",
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 0,
+      "marketCount": 24
+    },
+    "spaceweather": {
+      "configHash": "0xf48c859f58fc9e9a1dfb8778d6c0d991e03425768f84c07afea13915ca12dde0",
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 0,
+      "marketCount": 9
+    },
+    "iss": {
+      "configHash": "0xe48b82d8ed1546b5f05244f2ec658f902def49960e1075d8127aecf140c5d5ce",
+      "tickDurationSecs": 1200,
+      "lockOffsetSecs": 0,
+      "marketCount": 3
+    },
+    "mil_aircraft": {
+      "configHash": "0xfc6199309e8d902127edec28bad9ae3808dff8f51121855153db6b0308f23045",
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 0,
+      "marketCount": 60
+    },
+    "lichess": {
+      "configHash": "0x09162e9d49f0b36fe7ef9a0dbdd0b02493a643019b5a9c2f1a7a3a9090d49c1e",
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 0,
+      "marketCount": 31
+    },
+    "binance_spot": {
+      "configHash": "0x6a1845901b1b4193eb2029908e725a0ef59b86499d90c5e76d56e84d13c0b0c7",
+      "tickDurationSecs": 300,
+      "lockOffsetSecs": 0,
+      "marketCount": 430
+    },
+    "binance_futures_funding": {
+      "configHash": "0x750ba3ec2d29f23dc5cd8acfae81f4eb3d717703efbea3018acda58e2116422f",
+      "tickDurationSecs": 300,
+      "lockOffsetSecs": 0,
+      "marketCount": 529
+    },
+    "binance_options": {
+      "configHash": "0xb66b5a79e03118dc3eec4d58d8b1049e6020271f277c351191a8fe68e86b1cb8",
+      "tickDurationSecs": 300,
+      "lockOffsetSecs": 0,
+      "marketCount": 806
+    },
+    "twse": {
+      "configHash": "0xfb44e9daa06c93f10c09491157f0d2f3d50e1a7506402c0098b018b0443f6795",
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 0,
+      "marketCount": 1031
     },
     "sec_13f": {
       "configHash": "0xd5c0a148802cb3f05fb1758c3d06f9f66b3be4104b6e5ac91c8367c2f3a7d6d1",
       "tickDurationSecs": 21600,
       "lockOffsetSecs": 0,
-      "marketCount": 30
+      "marketCount": 0
     },
-    "finra_short_vol": {
-      "configHash": "0x6e7f4043bdddf388fe9e3a9a81a54863496c374b514c493e492a93d768774072",
-      "tickDurationSecs": 86400,
-      "lockOffsetSecs": 0,
-      "marketCount": 5
-    },
-    "congress": {
-      "configHash": "0xfc437b48c01088c73338187d5a6e08f768443c0ad51ab7e9a29baee2d9a1bb2b",
-      "tickDurationSecs": 86400,
-      "lockOffsetSecs": 0,
-      "marketCount": 1
-    },
-    "bchain": {
-      "configHash": "0xb3a0e724c9ced0ae3767fcd242860333c7a3dc4935caf165db2ed6e0abeb2cdf",
-      "tickDurationSecs": 86400,
-      "lockOffsetSecs": 0,
-      "marketCount": 7
-    },
-    "bonds": {
-      "configHash": "0xabc34e4ed7e73ab9a0a63d54bf9db78f52942f2136e7545cd542631476bb19a9",
-      "tickDurationSecs": 86400,
-      "lockOffsetSecs": 0,
-      "marketCount": 16
-    },
-    "anilist": {
-      "configHash": "0xb776ced6f12c94c48b2341839ff4d4f63d9de5df83c2ebd61824751ed896e1fb",
+    "pypi": {
+      "configHash": "0xd6f59c9557793bf6921f9dc70ef450d85f68e57c93178ea156850a7703de2d1e",
       "tickDurationSecs": 600,
       "lockOffsetSecs": 0,
-      "marketCount": 10
+      "marketCount": 79
     },
-    "backpacktf": {
-      "configHash": "0x50df87669c08aeb22ed00e8b360887c89b0a4cf0f679740f085cff3d572512f3",
-      "tickDurationSecs": 600,
-      "lockOffsetSecs": 0,
-      "marketCount": 6
-    },
-    "cloudflare": {
-      "configHash": "0xddd915af6b7c2a3b235174cc178e3b29b49badc35f2d0d3e872c91508ed8d3f3",
-      "tickDurationSecs": 600,
-      "lockOffsetSecs": 0,
-      "marketCount": 103
-    },
-    "fourchan": {
-      "configHash": "0x3eba9a54885626fe2ae4447518a49fa412047ad88f0648c59d0c2e3c855481e2",
-      "tickDurationSecs": 600,
-      "lockOffsetSecs": 0,
-      "marketCount": 61
-    },
-    "hackernews": {
-      "configHash": "0xbc48591f83366f706401afff6615902711b7a296319efe915fa4727166794ea4",
-      "tickDurationSecs": 300,
-      "lockOffsetSecs": 0,
-      "marketCount": 37
-    },
-    "polymarket": {
-      "configHash": "0xbc832988b4867fa31a458c3df70338401ba5ea441873052b0dbf668561193e0d",
-      "tickDurationSecs": 300,
-      "lockOffsetSecs": 0,
-      "marketCount": 256
-    },
-    "steam": {
-      "configHash": "0x01dd053200710e4bc79c6e080189c33c96bce2acba9f78393030db7ef7a11566",
-      "tickDurationSecs": 600,
-      "lockOffsetSecs": 0,
-      "marketCount": 256
-    },
-    "twitch": {
-      "configHash": "0xfd29023c5dbd8633d08c4a9508e016fd8441c2144f33fd8a1cee9a24d7829977",
-      "tickDurationSecs": 60,
-      "lockOffsetSecs": 0,
-      "marketCount": 256
-    },
-    "zillow": {
-      "configHash": "0xb2ffe0b93702a09549404e58c20028748770366767c5d8ee82a9cfcc96e11cc8",
-      "tickDurationSecs": 86400,
-      "lockOffsetSecs": 0,
-      "marketCount": 10
-    },
-    "earthquake": {
-      "configHash": "0xce96b45683b5579b84bc887eb74bd1f7f3a7449142e3257e0aef93fe1df9c926",
-      "tickDurationSecs": 300,
-      "lockOffsetSecs": 0,
-      "marketCount": 2
-    },
-    "spaceweather": {
-      "configHash": "0x71b305181c167e80896aea2cea8c473122b608a80dea438fdba60376b4f7e6e9",
-      "tickDurationSecs": 600,
-      "lockOffsetSecs": 0,
-      "marketCount": 4
-    },
-    "wildfire": {
-      "configHash": "0x5725822928e967cb116abd1ee59d39f7dffde4ddd7d8fe7735033495ebf85e69",
-      "tickDurationSecs": 1800,
-      "lockOffsetSecs": 0,
-      "marketCount": 4
-    },
-    "mil_aircraft": {
-      "configHash": "0xa67e87333e9712834b8f7be7a9b8e100e8b10c77080da52b2ed9758aed88a447",
-      "tickDurationSecs": 600,
-      "lockOffsetSecs": 0,
-      "marketCount": 26
-    },
-    "sports": {
-      "configHash": "0x8568eb3b5ab73e2fea967b1710007988a67cb48a09a0cc18a9c522b06b08b2b9",
-      "tickDurationSecs": 600,
-      "lockOffsetSecs": 0,
-      "marketCount": 115
-    },
-    "iss": {
-      "configHash": "0x865b4d7fd491ac96f12cb5c59a2976c68a3522c2353690b1a0b1fff340c4b691",
-      "tickDurationSecs": 600,
-      "lockOffsetSecs": 0,
-      "marketCount": 2
-    },
-    "weather_alerts": {
-      "configHash": "0x22e61084aa4249a1cb49f5047ab520c9a6f9bcefe3b0aa480d55672139f3acbe",
-      "tickDurationSecs": 300,
-      "lockOffsetSecs": 0,
-      "marketCount": 2
-    },
-    "animals": {
-      "configHash": "0xe2e9d2fd8aa78a1084e81924cd1151a2978e9834a37f1105494c9708c6df86e0",
-      "tickDurationSecs": 600,
-      "lockOffsetSecs": 0,
-      "marketCount": 3
-    },
-    "gtfs_transit": {
-      "configHash": "0xae7e62ec5c047fb8d2b2ee51c3c381f9f6a17fa41ab92e7c46394bbce3c258f1",
-      "tickDurationSecs": 120,
-      "lockOffsetSecs": 0,
-      "marketCount": 8
-    },
-    "usa_spending": {
-      "configHash": "0xd5b9bfb79d79d32c2efd4c096d68defac3186ce3f7e7f6e511f48da42b5d4f3e",
+    "crates_io": {
+      "configHash": "0xea3609eca7fc004afbc369d7e46fd1b74d6d59c72f4b8d066959c768dcd4655c",
       "tickDurationSecs": 3600,
       "lockOffsetSecs": 0,
-      "marketCount": 3
+      "marketCount": 8192
     },
-    "pumpfun": {
-      "configHash": "0x7ca8dd1ce99ed8b5651c883e20a8a42377d2b59ed83d1e7f072aeeb0e04ba397",
-      "tickDurationSecs": 300,
-      "lockOffsetSecs": 0,
-      "marketCount": 26
-    },
-    "usgs_water": {
-      "configHash": "0xa7df9599bbdd6835fbefdba683e512d8930cc1cfd7a7986d41983d773eabb9cf",
+    "steam": {
+      "configHash": "0xaa26305f87ddfe6220711e7f6680801c7b47cd7657a04facab1eb3df3a5d73f7",
       "tickDurationSecs": 600,
       "lockOffsetSecs": 0,
-      "marketCount": 256
+      "marketCount": 500
     },
-    "chaturbate": {
-      "configHash": "0x99738c534f942aa1d12155ba7bbdc48e3b50a7552f9221abd93ec021ff241cf9",
-      "tickDurationSecs": 600,
+    "weather": {
+      "configHash": "0xf43ab8d8c0194d08424c2cb96bef43d76818ca7529cfef2c621edeb8e4a98296",
+      "tickDurationSecs": 3600,
       "lockOffsetSecs": 0,
-      "marketCount": 256
+      "marketCount": 8000
     },
-    "noaa_tides": {
-      "configHash": "0x0dc66f1bf3de6c0b30c277e3b81900a358ed88aafbc76eb22379d9d1d47a1cd2",
-      "tickDurationSecs": 900,
+    "wildfire": {
+      "configHash": "0x5b8bd9d445f82bca61da32ac663ed608f6998fd19440c108270032c9172d5e5a",
+      "tickDurationSecs": 3600,
       "lockOffsetSecs": 0,
-      "marketCount": 56
+      "marketCount": 20
+    },
+    "flights": {
+      "configHash": "0x5a32b428fa1cf19663fb3274dfc50bfacb7bd84d460606b877ff7d1166fc556e",
+      "tickDurationSecs": 3600,
+      "lockOffsetSecs": 0,
+      "marketCount": 25
     },
     "citybikes": {
-      "configHash": "0x53b645e6e67ef3321187bf826a6d2b200be4ebbc7de25c6241eaebe6607bfbd2",
+      "configHash": "0xb417c28332451a89ba5ba7d7a82b57db9946bfdee7e2f98aa0a5864c53fb772d",
       "tickDurationSecs": 600,
       "lockOffsetSecs": 0,
       "marketCount": 17
     },
-    "ndbc": {
-      "configHash": "0x77e771b33f71bc42ef4c1b1ac82529bfbb8bc6a4e93caed7af28b99be6ff9356",
-      "tickDurationSecs": 600,
+    "ryanair": {
+      "configHash": "0x28b784c20053e2be2d73bce599e6253d43c60e891aab74fc6dadda110ba4fe99",
+      "tickDurationSecs": 1200,
       "lockOffsetSecs": 0,
-      "marketCount": 49
-    },
-    "noaa_met": {
-      "configHash": "0x81284a33629563680aa8a0310c4b71fc42841b64bd1d1248d1245bad44759346",
-      "tickDurationSecs": 600,
-      "lockOffsetSecs": 0,
-      "marketCount": 41
-    },
-    "nwps": {
-      "configHash": "0x0e8df1cd35e23bd3f0d5f77bbd6dce44c644bc9c7df0c4e0bc3de44baed98928",
-      "tickDurationSecs": 600,
-      "lockOffsetSecs": 0,
-      "marketCount": 5
-    },
-    "airnow": {
-      "configHash": "0x42a65994befc29ce2fb80af3635012bfebc20ad339e420a74b662c445c5af4a9",
-      "tickDurationSecs": 600,
-      "lockOffsetSecs": 0,
-      "marketCount": 92
-    },
-    "crossref": {
-      "configHash": "0x059376d6d93f58524e16379494db14274762bffa8302ad6e823d6338823628ef",
-      "tickDurationSecs": 600,
-      "lockOffsetSecs": 0,
-      "marketCount": 7
-    },
-    "pubmed": {
-      "configHash": "0xa40cb9cb409ba5f2a83384adcf2e64976dc1a3eb1dc03705590c3aa15f8f548d",
-      "tickDurationSecs": 600,
-      "lockOffsetSecs": 0,
-      "marketCount": 25
-    },
-    "parking": {
-      "configHash": "0x4c4950dd5e1093315f71b43d41ac547b3f4891537e3792122829f62fe2c6d908",
-      "tickDurationSecs": 600,
-      "lockOffsetSecs": 0,
-      "marketCount": 5
-    },
-    "bestbuy": {
-      "configHash": "0x6ab09e58b1ed330208234bf131db6a6387d1e780e82f96737071d56e52c71f5c",
-      "tickDurationSecs": 600,
-      "lockOffsetSecs": 0,
-      "marketCount": 1
-    },
-    "adzuna": {
-      "configHash": "0x513c3bf20ead38ad455cd943b6e49c77155946c63e5a11c92a67c70211dad4e7",
-      "tickDurationSecs": 1800,
-      "lockOffsetSecs": 0,
-      "marketCount": 7
-    },
-    "queue_times": {
-      "configHash": "0x155763cd2069ffd3d84d6d65a692da10344ab02337acc83f053f17cb61eee765",
-      "tickDurationSecs": 600,
-      "lockOffsetSecs": 0,
-      "marketCount": 3
-    },
-    "mta_subway": {
-      "configHash": "0x32f6ae549d62f34082a680773ae10dbc49817c9169753558bafce37e958fb687",
-      "tickDurationSecs": 300,
-      "lockOffsetSecs": 0,
-      "marketCount": 5
+      "marketCount": 37
     }
   }
 }
