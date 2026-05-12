@@ -2967,6 +2967,103 @@ where
                     }
                 }
             }
+            // mintBridgedSharesBundle (single-aggregated-BLS) messages
+            MessageHandleResult::ProcessMintBridgedSharesBundleProposal {
+                from,
+                leader_id,
+                cycle_number: msg_cycle,
+                itp_ids,
+                users,
+                amounts,
+                order_ids,
+                leader_signature,
+            } => {
+                debug!(
+                    ?leader_id,
+                    cycle_number = msg_cycle,
+                    count = order_ids.len(),
+                    "Received MintBridgedSharesBundleProposal — validating and signing"
+                );
+
+                let bridge_orch_guard = self.bridge_orchestrator.read().await;
+                let bridge_orch = match bridge_orch_guard.as_ref() {
+                    Some(orch) => orch,
+                    None => {
+                        warn!(code = "INFRA-008", cycle_number = msg_cycle, "BridgeOrchestrator not configured");
+                        return Ok(());
+                    }
+                };
+
+                let config = {
+                    let orch = bridge_orch.read().await;
+                    orch.config().clone()
+                };
+
+                if itp_ids.len() != order_ids.len() || users.len() != order_ids.len() || amounts.len() != order_ids.len() {
+                    warn!(cycle_number = msg_cycle, "MintBridgedSharesBundle proposal rejected: array length mismatch");
+                    return Ok(());
+                }
+
+                let message_hash = crate::bridge::build_mint_bridged_shares_bundle_hash(
+                    config.settlement_chain_id,
+                    config.bridge_proxy,
+                    &itp_ids,
+                    &users,
+                    &amounts,
+                    &order_ids,
+                );
+
+                self.verify_leader_bls(&leader_id, &message_hash, &leader_signature, "mint_bridged_shares_bundle")?;
+
+                let hash_bytes: [u8; 32] = message_hash.into();
+                let signature = self
+                    .bls_signer
+                    .sign_message_hash(&self.bls_keypair, &hash_bytes)
+                    .map_err(|e| Error::BlsVerification(format!("Failed to sign MintBridgedSharesBundle: {}", e)))?;
+
+                drop(bridge_orch_guard);
+
+                let message = P2PMessage::MintBridgedSharesBundleSign {
+                    signer_id: self.config.peer_id,
+                    signer_index: self.runtime_config.oracle_registry_index(),
+                    cycle_number: msg_cycle,
+                    signature,
+                };
+                self.p2p.send_to(from, message).await?;
+            }
+            MessageHandleResult::ProcessMintBridgedSharesBundleSign {
+                from: signer_id,
+                signer_index,
+                cycle_number: msg_cycle,
+                signature,
+            } => {
+                debug!(
+                    ?signer_id,
+                    signer_index,
+                    cycle_number = msg_cycle,
+                    "Received MintBridgedSharesBundleSign — adding to collector"
+                );
+
+                let bridge_orch_guard = self.bridge_orchestrator.read().await;
+                if let Some(bridge_orch) = bridge_orch_guard.as_ref() {
+                    let orch = bridge_orch.write().await;
+                    match orch.add_mint_bridged_shares_bundle_signature(
+                        msg_cycle,
+                        signer_index,
+                        BLSSignature(signature.0),
+                    ).await {
+                        Ok(Some(result)) => {
+                            info!(cycle_number = msg_cycle, signature_count = result.signature_count, "MintBridgedSharesBundle threshold reached");
+                        }
+                        Ok(None) => {
+                            debug!(cycle_number = msg_cycle, signer_index, "MintBridgedSharesBundle signature added, waiting for more");
+                        }
+                        Err(e) => {
+                            warn!(cycle_number = msg_cycle, error = %e, "Failed to add MintBridgedSharesBundle signature");
+                        }
+                    }
+                }
+            }
             // Rebalance NAV consensus: setItpNav
             MessageHandleResult::ProcessSetItpNavProposal {
                 from,
@@ -7802,6 +7899,127 @@ where
         collect_sigs_loop!(self, timeout_ms, |orch| {
             check: orch.check_complete_buy_orders_bundle_threshold(cycle_number).await,
             count: orch.get_complete_buy_orders_bundle_signature_count(cycle_number).await.unwrap_or(0),
+        })
+    }
+
+    /// Single-aggregated-BLS bundle phase for `mintBridgedShares`. Leader
+    /// composes the per-fill list, proposes it, collects co-signatures,
+    /// returns the aggregate. Followers receive an empty result (the leader
+    /// owns submission).
+    pub async fn run_mint_bridged_shares_bundle_phase(
+        &self,
+        cycle_number: u64,
+        itp_ids: Vec<H256>,
+        users: Vec<Address>,
+        amounts: Vec<U256>,
+        order_ids: Vec<U256>,
+        am_leader: bool,
+    ) -> Result<CompleteBuyOrderResult, BridgeError> {
+        if order_ids.is_empty() {
+            return Err(BridgeError::ProposalMismatch {
+                field: "order_ids (empty mint bundle)".to_string(),
+            });
+        }
+        if itp_ids.len() != order_ids.len() || users.len() != order_ids.len() || amounts.len() != order_ids.len() {
+            return Err(BridgeError::ProposalMismatch {
+                field: "mint bundle array lengths".to_string(),
+            });
+        }
+        info!(
+            cycle_number,
+            count = order_ids.len(),
+            am_leader,
+            "Starting MintBridgedSharesBundle consensus"
+        );
+
+        let bridge_orch_guard = self.bridge_orchestrator.read().await;
+        let _ = bridge_orch_guard.as_ref().ok_or_else(|| ConsensusError::ChainWriterError {
+            reason: "BridgeOrchestrator not configured".to_string(),
+        })?;
+
+        if am_leader {
+            drop(bridge_orch_guard);
+            self.run_mint_bridged_shares_bundle_as_leader(cycle_number, itp_ids, users, amounts, order_ids).await
+        } else {
+            drop(bridge_orch_guard);
+            Ok(CompleteBuyOrderResult {
+                aggregated_signature: BLSSignature(vec![]),
+                signer_bitmap: U256::zero(),
+                signature_count: 0,
+            })
+        }
+    }
+
+    async fn run_mint_bridged_shares_bundle_as_leader(
+        &self,
+        cycle_number: u64,
+        itp_ids: Vec<H256>,
+        users: Vec<Address>,
+        amounts: Vec<U256>,
+        order_ids: Vec<U256>,
+    ) -> Result<CompleteBuyOrderResult, BridgeError> {
+        let ref_nonce = self.key_registry.settlement_registry_nonce();
+        let bridge_orch_guard = self.bridge_orchestrator.read().await;
+        let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| ConsensusError::ChainWriterError {
+            reason: "BridgeOrchestrator not configured".to_string(),
+        })?;
+
+        let leader_signature = {
+            let orch = bridge_orch.read().await;
+            let (_, sig) = orch.propose_mint_bridged_shares_bundle(
+                cycle_number, &itp_ids, &users, &amounts, &order_ids,
+            )?;
+            sig
+        };
+
+        {
+            let orch = bridge_orch.write().await;
+            orch.start_mint_bridged_shares_bundle_signature_collection(cycle_number, leader_signature.clone()).await;
+        }
+
+        let message = P2PMessage::MintBridgedSharesBundleProposal {
+            leader_id: self.config.peer_id,
+            cycle_number,
+            itp_ids: itp_ids.clone(),
+            users: users.clone(),
+            amounts: amounts.clone(),
+            order_ids: order_ids.clone(),
+            reference_nonce: ref_nonce,
+            leader_signature,
+        };
+
+        let config = {
+            let orch = bridge_orch.read().await;
+            orch.config().clone()
+        };
+        drop(bridge_orch_guard);
+
+        self.p2p.broadcast(message).await.map_err(|e| ConsensusError::ChainWriterError {
+            reason: format!("Failed to broadcast MintBridgedSharesBundle proposal: {}", e),
+        })?;
+
+        let timeout_ms = config.sign_timeout_ms;
+        let result = self.collect_mint_bridged_shares_bundle_signatures(cycle_number, timeout_ms).await?;
+
+        info!(cycle_number, signer_count = result.signature_count, "Leader: MintBridgedSharesBundle threshold reached");
+
+        let bridge_orch_guard = self.bridge_orchestrator.read().await;
+        if let Some(bridge_orch) = bridge_orch_guard.as_ref() {
+            let orch = bridge_orch.write().await;
+            orch.mark_mint_bridged_shares_bundle_confirmed(cycle_number).await;
+        }
+
+        Ok(result)
+    }
+
+    async fn collect_mint_bridged_shares_bundle_signatures(
+        &self,
+        cycle_number: u64,
+        timeout_ms: u64,
+    ) -> Result<CompleteBuyOrderResult, BridgeError> {
+        collect_sigs_loop!(self, timeout_ms, |orch| {
+            check: orch.check_mint_bridged_shares_bundle_threshold(cycle_number).await,
+            count: orch.get_mint_bridged_shares_bundle_signature_count(cycle_number).await.unwrap_or(0),
         })
     }
 

@@ -1982,6 +1982,168 @@ impl SettlementChainWriter {
         tx
     }
 
+    /// Build a `mintBridgedSharesManySingle` transaction (single-aggregated-BLS).
+    fn build_mint_bridged_shares_many_single_tx(
+        &self,
+        itp_ids: &[H256],
+        users: &[Address],
+        amounts: &[U256],
+        order_ids: &[U256],
+        bls_signature: Vec<u8>,
+        reference_nonce: u64,
+        signers_bitmask: U256,
+    ) -> TypedTransaction {
+        let function = ethers::abi::Function {
+            name: "mintBridgedSharesManySingle".to_string(),
+            inputs: vec![
+                ethers::abi::Param {
+                    name: "itpIds".to_string(),
+                    kind: ethers::abi::ParamType::Array(Box::new(ethers::abi::ParamType::FixedBytes(32))),
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "users".to_string(),
+                    kind: ethers::abi::ParamType::Array(Box::new(ethers::abi::ParamType::Address)),
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "amounts".to_string(),
+                    kind: ethers::abi::ParamType::Array(Box::new(ethers::abi::ParamType::Uint(256))),
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "orderIds".to_string(),
+                    kind: ethers::abi::ParamType::Array(Box::new(ethers::abi::ParamType::Uint(256))),
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "blsSignature".to_string(),
+                    kind: ethers::abi::ParamType::Bytes,
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "referenceNonce".to_string(),
+                    kind: ethers::abi::ParamType::Uint(256),
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "signersBitmask".to_string(),
+                    kind: ethers::abi::ParamType::Uint(256),
+                    internal_type: None,
+                },
+            ],
+            outputs: vec![],
+            #[allow(deprecated)]
+            constant: None,
+            state_mutability: ethers::abi::StateMutability::NonPayable,
+        };
+
+        let tokens = vec![
+            ethers::abi::Token::Array(itp_ids.iter().map(|h| ethers::abi::Token::FixedBytes(h.as_bytes().to_vec())).collect()),
+            ethers::abi::Token::Array(users.iter().map(|a| ethers::abi::Token::Address(*a)).collect()),
+            ethers::abi::Token::Array(amounts.iter().map(|u| ethers::abi::Token::Uint(*u)).collect()),
+            ethers::abi::Token::Array(order_ids.iter().map(|o| ethers::abi::Token::Uint(*o)).collect()),
+            ethers::abi::Token::Bytes(bls_signature),
+            ethers::abi::Token::Uint(U256::from(reference_nonce)),
+            ethers::abi::Token::Uint(signers_bitmask),
+        ];
+
+        let call_data = function.encode_input(&tokens).expect("ABI encoding should not fail");
+
+        let mut tx = TypedTransaction::default();
+        tx.set_to(self.config.bridge_proxy_address);
+        tx.set_data(call_data.into());
+        tx.set_chain_id(self.config.chain_id);
+        tx
+    }
+
+    /// Submit a `mintBridgedSharesManySingle` bundle — one aggregated BLS
+    /// signature covers all items.
+    pub async fn mint_bridged_shares_many_single(
+        &self,
+        itp_ids: Vec<H256>,
+        users: Vec<Address>,
+        amounts: Vec<U256>,
+        order_ids: Vec<U256>,
+        bls_signature: Vec<u8>,
+        reference_nonce: u64,
+        signers_bitmask: U256,
+    ) -> Result<H256, SettlementWriterError> {
+        if order_ids.is_empty() {
+            return Err(SettlementWriterError::TransactionError(
+                "mint_bridged_shares_many_single: empty order_ids".to_string(),
+            ));
+        }
+        info!(count = order_ids.len(), "Submitting mintBridgedSharesManySingle");
+
+        self.check_gas_available().await?;
+
+        let max_attempts = self.config.retry_config.max_retries + 1;
+
+        for attempt in 0..max_attempts {
+            if let Err(e) = self.nonce_manager.resync().await {
+                debug!(attempt, error = %e, "Nonce resync failed, using cached value");
+            }
+
+            let tx_nonce = U256::from(self.nonce_manager.current_nonce());
+            let _ = self.nonce_manager.get_next_nonce().await;
+
+            let mut tx = self.build_mint_bridged_shares_many_single_tx(
+                &itp_ids, &users, &amounts, &order_ids,
+                bls_signature.clone(), reference_nonce, signers_bitmask,
+            );
+            tx.set_nonce(tx_nonce);
+
+            let gas = match self.gas_estimator.estimate_gas(&tx).await {
+                Ok(g) => g,
+                Err(e) => {
+                    if attempt < max_attempts - 1 {
+                        let delay = self.config.retry_config.delay_for_attempt(attempt);
+                        tokio::time::sleep(delay).await;
+                        continue;
+                    }
+                    return Err(SettlementWriterError::GasEstimationError(e.to_string()));
+                }
+            };
+            tx.set_gas(gas);
+
+            let gas_price = self.gas_estimator.get_gas_price().await
+                .map_err(|e| SettlementWriterError::GasEstimationError(e.to_string()))?;
+            if let TypedTransaction::Eip1559(ref mut eip1559_tx) = tx {
+                gas_price.apply_to_tx(eip1559_tx);
+            }
+
+            match self.client.send_transaction(tx, None).await {
+                Ok(pending_tx) => {
+                    let tx_hash = pending_tx.tx_hash();
+                    info!(
+                        tx_hash = ?tx_hash, count = order_ids.len(), tx_nonce = %tx_nonce, attempt,
+                        "mintBridgedSharesManySingle submitted"
+                    );
+                    self.nonce_manager.track_pending(tx_nonce, tx_hash);
+                    return Ok(tx_hash);
+                }
+                Err(e) => {
+                    let err_str = e.to_string().to_lowercase();
+                    let is_nonce_error = err_str.contains("nonce too low")
+                        || err_str.contains("nonce has already been used")
+                        || err_str.contains("replacement transaction underpriced");
+                    if is_nonce_error && attempt < max_attempts - 1 {
+                        let delay = self.config.retry_config.delay_for_attempt(attempt);
+                        tokio::time::sleep(delay).await;
+                        continue;
+                    }
+                    return Err(SettlementWriterError::TransactionError(e.to_string()));
+                }
+            }
+        }
+
+        Err(SettlementWriterError::RetryExhausted(format!(
+            "Max attempts ({}) exceeded for mintBridgedSharesManySingle",
+            max_attempts
+        )))
+    }
+
     /// Submit a `mintBridgedSharesMany` bundle. One nonce, one receipt wait.
     /// Mirrors the retry / nonce-resync loop of `mint_bridged_shares`.
     pub async fn mint_bridged_shares_many(

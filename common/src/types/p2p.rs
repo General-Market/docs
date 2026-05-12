@@ -672,6 +672,28 @@ pub enum P2PMessage {
         signature: BLSSignature,
     },
 
+    /// Leader proposes one bundle of `mintBridgedShares` covered by a single
+    /// aggregated BLS signature. Followers verify the per-fill data matches
+    /// their local cycle state and sign the bundle hash.
+    MintBridgedSharesBundleProposal {
+        leader_id: PeerId,
+        cycle_number: u64,
+        itp_ids: Vec<H256>,
+        users: Vec<Address>,
+        amounts: Vec<U256>,
+        order_ids: Vec<U256>,
+        reference_nonce: u64,
+        leader_signature: BLSSignature,
+    },
+
+    /// Follower signature for a MintBridgedSharesBundleProposal.
+    MintBridgedSharesBundleSign {
+        signer_id: PeerId,
+        signer_index: u8,
+        cycle_number: u64,
+        signature: BLSSignature,
+    },
+
     /// Leader proposes setItpNav before rebalance
     /// Timeout: 500ms, Retry: 1
     /// Rebalance NAV consensus

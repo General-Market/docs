@@ -198,6 +198,19 @@ interface IBridgeProxy {
         uint256 signersBitmask
     ) external;
 
+    /// @notice Single-aggregated-BLS bundle of `mintBridgedShares`.
+    /// @dev One signature covers all items. Hash: keccak256(chainid, bridge,
+    ///      "mintBridgedSharesManySingle", itpIds, users, amounts, orderIds).
+    function mintBridgedSharesManySingle(
+        bytes32[] calldata itpIds,
+        address[] calldata users,
+        uint256[] calldata amounts,
+        uint256[] calldata orderIds,
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
+    ) external;
+
     /// @notice Bundle of `mintBridgedShares` calls in one transaction.
     /// @dev Each item keeps its own BLS signature, reference nonce, and bitmask.
     ///      Reverts on the first sub-failure — chunking is the caller's job.

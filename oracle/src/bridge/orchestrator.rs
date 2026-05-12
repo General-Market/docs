@@ -172,6 +172,12 @@ pub struct BridgeOrchestrator {
     confirmed_complete_buy_bundle: RwLock<HashMap<u64, bool>>,
     /// Notify for completeBuyOrdersBundle signature collection.
     pub complete_buy_bundle_notify: Arc<Notify>,
+    /// Signature manager for mintBridgedSharesBundle proposals (single-aggregated-BLS).
+    mint_shares_bundle_sigs: SignatureCollectionManager<u64>,
+    /// Confirmed mintBridgedSharesBundle by cycle (dedup).
+    confirmed_mint_shares_bundle: RwLock<HashMap<u64, bool>>,
+    /// Notify for mintBridgedSharesBundle signature collection.
+    pub mint_shares_bundle_notify: Arc<Notify>,
     /// Generic signature manager for setItpNav proposals (rebalance NAV consensus)
     nav_sigs: SignatureCollectionManager<H256>,
     /// Signature manager for NavOracle proposals (keyed by itp_address as H256)
@@ -243,6 +249,9 @@ impl BridgeOrchestrator {
             complete_buy_bundle_sigs: SignatureCollectionManager::new("complete_buy_bundle"),
             confirmed_complete_buy_bundle: RwLock::new(HashMap::new()),
             complete_buy_bundle_notify: Arc::new(Notify::new()),
+            mint_shares_bundle_sigs: SignatureCollectionManager::new("mint_shares_bundle"),
+            confirmed_mint_shares_bundle: RwLock::new(HashMap::new()),
+            mint_shares_bundle_notify: Arc::new(Notify::new()),
             nav_sigs: SignatureCollectionManager::new("nav"),
             nav_oracle_sigs: SignatureCollectionManager::new("nav_oracle"),
             mirror_sync_sigs: SignatureCollectionManager::new("mirror_sync"),
@@ -5455,6 +5464,90 @@ impl BridgeOrchestrator {
 
     pub async fn get_complete_buy_orders_bundle_signature_count(&self, cycle_number: u64) -> Option<usize> {
         self.complete_buy_bundle_sigs.get_signature_count(&cycle_number).await
+    }
+
+    // ──────────────────────────────────────────────────────────────────
+    // mintBridgedSharesBundle (single-aggregated-BLS)
+    // ──────────────────────────────────────────────────────────────────
+
+    pub fn propose_mint_bridged_shares_bundle(
+        &self,
+        cycle_number: u64,
+        itp_ids: &[H256],
+        users: &[Address],
+        amounts: &[U256],
+        order_ids: &[U256],
+    ) -> Result<(H256, BLSSignature), BridgeError> {
+        let message_hash = crate::bridge::types::build_mint_bridged_shares_bundle_hash(
+            self.config.settlement_chain_id,
+            self.config.bridge_proxy,
+            itp_ids,
+            users,
+            amounts,
+            order_ids,
+        );
+        let hash_bytes: [u8; 32] = message_hash.into();
+        let leader_signature = self
+            .bls_signer
+            .sign_message_hash(&self.bls_keypair, &hash_bytes)
+            .map_err(|e| ConsensusError::BlsSigningError {
+                reason: e.to_string(),
+            })?;
+        info!(
+            cycle_number,
+            count = order_ids.len(),
+            message_hash = ?message_hash,
+            "MintBridgedSharesBundle proposal created"
+        );
+        Ok((message_hash, leader_signature))
+    }
+
+    pub async fn start_mint_bridged_shares_bundle_signature_collection(
+        &self,
+        cycle_number: u64,
+        leader_signature: BLSSignature,
+    ) {
+        self.mint_shares_bundle_sigs
+            .start_collection(cycle_number, self.node_index, leader_signature)
+            .await;
+    }
+
+    pub async fn add_mint_bridged_shares_bundle_signature(
+        &self,
+        cycle_number: u64,
+        signer_index: u8,
+        signature: BLSSignature,
+    ) -> Result<Option<CompleteBuyOrderResult>, BridgeError> {
+        let result = self.mint_shares_bundle_sigs
+            .add_follower_signature(
+                &cycle_number,
+                signer_index,
+                signature,
+                self.config.min_signatures,
+                &self.bls_signer,
+            )
+            .await?;
+        if result.is_some() {
+            self.mint_shares_bundle_notify.notify_waiters();
+        }
+        Ok(result)
+    }
+
+    pub async fn check_mint_bridged_shares_bundle_threshold(
+        &self,
+        cycle_number: u64,
+    ) -> Option<CompleteBuyOrderResult> {
+        self.mint_shares_bundle_sigs
+            .check_threshold(&cycle_number, self.config.min_signatures, &self.bls_signer)
+            .await
+    }
+
+    pub async fn mark_mint_bridged_shares_bundle_confirmed(&self, cycle_number: u64) {
+        self.confirmed_mint_shares_bundle.write().await.insert(cycle_number, true);
+    }
+
+    pub async fn get_mint_bridged_shares_bundle_signature_count(&self, cycle_number: u64) -> Option<usize> {
+        self.mint_shares_bundle_sigs.get_signature_count(&cycle_number).await
     }
 
     /// Mark orders as SharesBridged (Step 8 complete)

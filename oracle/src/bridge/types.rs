@@ -1025,6 +1025,33 @@ pub fn build_mint_bridged_shares_hash(
     hash
 }
 
+/// Build message hash for `mintBridgedSharesManySingle` consensus.
+///
+/// Matches: keccak256(abi.encode(chainid, bridgeProxy,
+///                                "mintBridgedSharesManySingle",
+///                                itpIds, users, amounts, orderIds))
+pub fn build_mint_bridged_shares_bundle_hash(
+    chain_id: u64,
+    bridge_proxy: Address,
+    itp_ids: &[H256],
+    users: &[Address],
+    amounts: &[U256],
+    order_ids: &[U256],
+) -> H256 {
+    use ethers::abi::{encode, Token};
+    use ethers::utils::keccak256;
+    let tokens = vec![
+        Token::Uint(U256::from(chain_id)),
+        Token::Address(bridge_proxy),
+        Token::String("mintBridgedSharesManySingle".to_string()),
+        Token::Array(itp_ids.iter().map(|h| Token::FixedBytes(h.as_bytes().to_vec())).collect()),
+        Token::Array(users.iter().map(|a| Token::Address(*a)).collect()),
+        Token::Array(amounts.iter().map(|u| Token::Uint(*u)).collect()),
+        Token::Array(order_ids.iter().map(|o| Token::Uint(*o)).collect()),
+    ];
+    H256::from_slice(&keccak256(encode(&tokens)))
+}
+
 /// Build message hash for `completeBuyOrdersSingle` consensus.
 ///
 /// Matches: keccak256(abi.encode(chainid, settlementCustody,

@@ -70,6 +70,8 @@ fn msg_variant_name(msg: &P2PMessage) -> &'static str {
         P2PMessage::CompleteBuyOrderSign { .. } => "CompleteBuyOrderSign",
         P2PMessage::CompleteBuyOrdersBundleProposal { .. } => "CompleteBuyOrdersBundleProposal",
         P2PMessage::CompleteBuyOrdersBundleSign { .. } => "CompleteBuyOrdersBundleSign",
+        P2PMessage::MintBridgedSharesBundleProposal { .. } => "MintBridgedSharesBundleProposal",
+        P2PMessage::MintBridgedSharesBundleSign { .. } => "MintBridgedSharesBundleSign",
         P2PMessage::SetItpNavProposal { .. } => "SetItpNavProposal",
         P2PMessage::SetItpNavSign { .. } => "SetItpNavSign",
         P2PMessage::ArbitrationPriceProposal { .. } => "ArbitrationPriceProposal",

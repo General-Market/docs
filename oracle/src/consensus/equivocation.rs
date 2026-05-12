@@ -833,6 +833,43 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             h.update(cycle_number.to_le_bytes());
         }
 
+        // ── mintBridgedSharesBundle (single-aggregated-BLS) ─────
+        P2PMessage::MintBridgedSharesBundleProposal {
+            leader_id,
+            cycle_number,
+            itp_ids,
+            users,
+            amounts,
+            order_ids,
+            reference_nonce: _,
+            leader_signature: _,
+        } => {
+            h.update(b"MintBridgedSharesBundleProposal");
+            h.update(leader_id);
+            h.update(cycle_number.to_le_bytes());
+            h.update((order_ids.len() as u32).to_le_bytes());
+            for ((iid, user), (amt, oid)) in itp_ids.iter().zip(users.iter()).zip(amounts.iter().zip(order_ids.iter())) {
+                h.update(iid.as_bytes());
+                h.update(user.as_bytes());
+                let mut buf = [0u8; 32];
+                amt.to_little_endian(&mut buf);
+                h.update(buf);
+                oid.to_little_endian(&mut buf);
+                h.update(buf);
+            }
+        }
+        P2PMessage::MintBridgedSharesBundleSign {
+            signer_id,
+            signer_index,
+            cycle_number,
+            signature: _,
+        } => {
+            h.update(b"MintBridgedSharesBundleSign");
+            h.update(signer_id);
+            h.update([*signer_index]);
+            h.update(cycle_number.to_le_bytes());
+        }
+
         // ── setItpNav (pre-rebalance) ───────────────────────────
         P2PMessage::SetItpNavProposal {
             leader_id,
@@ -1291,6 +1328,8 @@ pub fn msg_variant_tag(msg: &P2PMessage) -> &'static str {
         P2PMessage::CompleteBuyOrderSign { .. } => "CompleteBuyOrderSign",
         P2PMessage::CompleteBuyOrdersBundleProposal { .. } => "CompleteBuyOrdersBundleProposal",
         P2PMessage::CompleteBuyOrdersBundleSign { .. } => "CompleteBuyOrdersBundleSign",
+        P2PMessage::MintBridgedSharesBundleProposal { .. } => "MintBridgedSharesBundleProposal",
+        P2PMessage::MintBridgedSharesBundleSign { .. } => "MintBridgedSharesBundleSign",
         P2PMessage::SetItpNavProposal { .. } => "SetItpNavProposal",
         P2PMessage::SetItpNavSign { .. } => "SetItpNavSign",
         P2PMessage::Heartbeat { .. } => "Heartbeat",

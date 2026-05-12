@@ -889,6 +889,55 @@ impl ConsensusMessageHandler {
                     signature,
                 }
             }
+            // mintBridgedSharesBundle (single-aggregated-BLS)
+            P2PMessage::MintBridgedSharesBundleProposal {
+                leader_id,
+                cycle_number,
+                itp_ids,
+                users,
+                amounts,
+                order_ids,
+                reference_nonce: _,
+                leader_signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?leader_id,
+                    cycle_number,
+                    count = order_ids.len(),
+                    "Received MintBridgedSharesBundleProposal"
+                );
+                MessageHandleResult::ProcessMintBridgedSharesBundleProposal {
+                    from,
+                    leader_id,
+                    cycle_number,
+                    itp_ids,
+                    users,
+                    amounts,
+                    order_ids,
+                    leader_signature,
+                }
+            }
+            P2PMessage::MintBridgedSharesBundleSign {
+                signer_id,
+                signer_index,
+                cycle_number,
+                signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?signer_id,
+                    signer_index,
+                    cycle_number,
+                    "Received MintBridgedSharesBundleSign"
+                );
+                MessageHandleResult::ProcessMintBridgedSharesBundleSign {
+                    from: signer_id,
+                    signer_index,
+                    cycle_number,
+                    signature,
+                }
+            }
             // Rebalance NAV consensus: setItpNav
             P2PMessage::SetItpNavProposal {
                 leader_id,
@@ -1964,6 +2013,24 @@ pub enum MessageHandleResult {
         cycle_number: u64,
         signature: P2PBLSSignature,
     },
+    /// mintBridgedSharesBundle proposal from the leader.
+    ProcessMintBridgedSharesBundleProposal {
+        from: PeerId,
+        leader_id: PeerId,
+        cycle_number: u64,
+        itp_ids: Vec<H256>,
+        users: Vec<Address>,
+        amounts: Vec<U256>,
+        order_ids: Vec<U256>,
+        leader_signature: P2PBLSSignature,
+    },
+    /// mintBridgedSharesBundle signature from a follower.
+    ProcessMintBridgedSharesBundleSign {
+        from: PeerId,
+        signer_index: u8,
+        cycle_number: u64,
+        signature: P2PBLSSignature,
+    },
     /// Process a setItpNav proposal from the leader (rebalance NAV consensus)
     ProcessSetItpNavProposal {
         from: PeerId,
@@ -2169,6 +2236,7 @@ impl MessageHandleResult {
             Self::ProcessMintBridgedSharesProposal { from, .. } => Some(*from),
             Self::ProcessCompleteBuyOrderProposal { from, .. } => Some(*from),
             Self::ProcessCompleteBuyOrdersBundleProposal { from, .. } => Some(*from),
+            Self::ProcessMintBridgedSharesBundleProposal { from, .. } => Some(*from),
             Self::ProcessSetItpNavProposal { from, .. } => Some(*from),
             Self::ProcessNavOracleProposal { from, .. } => Some(*from),
             Self::ProcessMirrorSyncProposal { from, .. } => Some(*from),

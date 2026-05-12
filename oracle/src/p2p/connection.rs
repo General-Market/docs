@@ -663,6 +663,9 @@ fn get_sender_id(message: &P2PMessage) -> Option<PeerId> {
         // completeBuyOrders bundle (single-aggregated-BLS)
         P2PMessage::CompleteBuyOrdersBundleProposal { leader_id, .. } => Some(*leader_id),
         P2PMessage::CompleteBuyOrdersBundleSign { signer_id, .. } => Some(*signer_id),
+        // mintBridgedShares bundle (single-aggregated-BLS)
+        P2PMessage::MintBridgedSharesBundleProposal { leader_id, .. } => Some(*leader_id),
+        P2PMessage::MintBridgedSharesBundleSign { signer_id, .. } => Some(*signer_id),
         // Rebalance NAV consensus: setItpNav
         P2PMessage::SetItpNavProposal { leader_id, .. } => Some(*leader_id),
         P2PMessage::SetItpNavSign { signer_id, .. } => Some(*signer_id),

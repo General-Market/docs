@@ -411,6 +411,63 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         _mintBridgedSharesOne(itpId, user, amount, orderId, blsSignature, referenceNonce, signersBitmask);
     }
 
+    /// @notice Single-aggregated-BLS bundle for `mintBridgedShares`.
+    /// @dev One signature covers all items in the bundle. The on-chain
+    ///      message is `keccak256(chainid, bridge, "mintBridgedSharesManySingle",
+    ///      itpIds, users, amounts, orderIds)`. Saves N× BLS gas.
+    function mintBridgedSharesManySingle(
+        bytes32[] calldata itpIds,
+        address[] calldata users,
+        uint256[] calldata amounts,
+        uint256[] calldata orderIds,
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
+    ) external whenNotPaused {
+        uint256 n = orderIds.length;
+        if (n == 0) revert BundleLengthMismatch();
+        if (
+            itpIds.length != n
+            || users.length != n
+            || amounts.length != n
+        ) revert BundleLengthMismatch();
+
+        bytes32 message = keccak256(abi.encode(
+            block.chainid,
+            address(this),
+            "mintBridgedSharesManySingle",
+            itpIds,
+            users,
+            amounts,
+            orderIds
+        ));
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
+
+        for (uint256 i = 0; i < n; ++i) {
+            _mintBridgedSharesOneSkipBls(itpIds[i], users[i], amounts[i], orderIds[i]);
+        }
+    }
+
+    /// @notice Single-mint body without BLS verification. Reached only via
+    ///         `mintBridgedSharesManySingle` after the bundle proof is verified.
+    function _mintBridgedSharesOneSkipBls(
+        bytes32 itpId,
+        address user,
+        uint256 amount,
+        uint256 orderId
+    ) internal {
+        address bridgedItp = orbitToSettlement[itpId];
+        if (bridgedItp == address(0)) revert ErrorsLib.E099_BridgeItpNotFound(itpId);
+        if (amount == 0) revert ErrorsLib.E106_ZeroAddressNotAllowed();
+        if (mintProcessed[orderId]) revert ErrorsLib.E139_MintAlreadyProcessed(orderId);
+
+        mintProcessed[orderId] = true;
+
+        IBridgedITP(bridgedItp).mint(user, amount);
+
+        emit BridgedSharesMinted(itpId, user, amount);
+    }
+
     /// @notice Bundle of `mintBridgedShares` calls in one transaction.
     /// @dev Each item keeps its own BLS signature, reference nonce, and signers
     ///      bitmask. Reverts on the first sub-failure — chunking is the caller's

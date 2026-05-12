@@ -70,5 +70,6 @@ pub use types::{
     build_record_collateral_move_hash, build_record_collateral_move_calldata,
     RecordCollateralMoveProposal, RecordCollateralMoveResult,
     build_mint_bridged_shares_hash, build_mint_bridged_shares_calldata,
+    build_mint_bridged_shares_bundle_hash,
     MintBridgedSharesProposal, MintBridgedSharesResult,
 };
