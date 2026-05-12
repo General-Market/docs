@@ -6,7 +6,6 @@ import { SourceSidebarApple } from '@/components/domain/vision/detail/SourceSide
 import { SourceTabNav } from '@/components/domain/vision/detail/SourceTabNav'
 import { PolymarketComparison } from '@/components/domain/vision/detail/PolymarketComparison'
 import { getSourceDisplayServer } from '@/lib/vision/sources-server'
-import { getIssuerVisionUrl, getDataNodeServer } from '@/lib/config'
 
 export const revalidate = 20
 
@@ -44,43 +43,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-async function fetchInitialData(origin: string) {
-  // Server-side prefetch via the same route the client will refetch.
-  // Falls back to a direct issuer/data-node call would duplicate the logic,
-  // so we hit our own route — it cache-controls itself.
-  try {
-    const res = await fetch(`${origin}/api/vision/source/polymarket/comparison?limit=150`, {
-      next: { revalidate: 20 },
-      signal: AbortSignal.timeout(15_000),
-    })
-    if (!res.ok) return null
-    return await res.json()
-  } catch {
-    return null
-  }
-}
-
 export default async function ComparePage({ params }: Props) {
   const { sourceId } = await params
   if (sourceId !== SUPPORTED_SOURCE) notFound()
 
   const source = await getSourceDisplayServer(sourceId)
-
-  // Resolve origin for the internal prefetch — Vercel / Dokploy reachable
-  // by HOST + protocol headers in production; localhost otherwise.
-  const host =
-    process.env.VERCEL_URL ||
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    'http://localhost:3001'
-  const origin = host.startsWith('http') ? host : `https://${host}`
-  const initial = await fetchInitialData(origin)
-
-  // Warn quietly during local dev when env vars are missing so the page
-  // still renders with a clear empty state.
-  if (!initial) {
-    void getIssuerVisionUrl()
-    void getDataNodeServer()
-  }
 
   const jsonLd = source
     ? [
@@ -138,7 +105,7 @@ export default async function ComparePage({ params }: Props) {
                 barely flinched. On the other, multipliers Vision paid out before the round closed.
               </p>
             </header>
-            <PolymarketComparison initial={initial} />
+            <PolymarketComparison />
           </div>
         </div>
       </AppShell>

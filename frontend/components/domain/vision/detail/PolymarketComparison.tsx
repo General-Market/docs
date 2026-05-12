@@ -51,10 +51,6 @@ interface ComparisonResponse {
 
 type SortKey = 'leverageGap' | 'visionGain' | 'polyChange' | 'pool'
 
-interface Props {
-  initial: ComparisonResponse | null
-}
-
 const SORT_LABEL: Record<SortKey, string> = {
   leverageGap: 'Leverage gap',
   visionGain: 'Vision payout',
@@ -124,15 +120,14 @@ function truncate(s: string, n: number): string {
   return s.length <= n ? s : s.slice(0, n - 1) + '…'
 }
 
-export function PolymarketComparison({ initial }: Props) {
-  const { data } = useQuery<ComparisonResponse | null>({
+export function PolymarketComparison() {
+  const { data, isLoading, isError } = useQuery<ComparisonResponse | null>({
     queryKey: ['polymarket-comparison', 150],
     queryFn: async () => {
       const res = await fetch('/api/vision/source/polymarket/comparison?limit=150')
       if (!res.ok) return null
       return res.json()
     },
-    initialData: initial,
     refetchInterval: 30_000,
     staleTime: 15_000,
   })
@@ -154,6 +149,10 @@ export function PolymarketComparison({ initial }: Props) {
     })
     return list
   }, [data, sortKey, winnerOnly])
+
+  if (isLoading || (!data && !isError)) {
+    return <ComparisonSkeleton />
+  }
 
   if (!data || data.source === 'empty' || !data.batch) {
     return (
@@ -283,6 +282,72 @@ export function PolymarketComparison({ initial }: Props) {
       </div>
 
       <Footnote batch={batch} generatedAt={data.generatedAt} now={now} />
+    </div>
+  )
+}
+
+function ComparisonSkeleton() {
+  const bar = (w: number) => (
+    <div
+      style={{
+        height: 12,
+        width: w,
+        borderRadius: 4,
+        background: 'var(--apple-line)',
+        opacity: 0.6,
+      }}
+    />
+  )
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }} aria-busy="true">
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+          gap: 12,
+          padding: 18,
+          border: '1px solid var(--apple-line)',
+          borderRadius: 12,
+          background: 'var(--apple-panel)',
+        }}
+      >
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {bar(64)}
+            {bar(110)}
+          </div>
+        ))}
+      </div>
+      <div
+        style={{
+          border: '1px solid var(--apple-line)',
+          borderRadius: 12,
+          background: 'var(--surface, #fff)',
+          overflow: 'hidden',
+        }}
+      >
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div
+            key={i}
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 180px 220px 120px',
+              gap: 12,
+              padding: '14px 16px',
+              borderBottom: '1px solid var(--apple-line)',
+              alignItems: 'center',
+            }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {bar(260)}
+              {bar(120)}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>{bar(70)}</div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>{bar(90)}</div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>{bar(40)}</div>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
