@@ -34,6 +34,8 @@ log = logging.getLogger("fund-manager")
 DECIMALS = 18
 # Mirror of Vision.MIN_STAKE_PER_TICK — joins below this revert.
 MIN_DEPOSIT_WEI = 10**17  # 0.1 USDC
+# Mirror of VisionVault.MAX_BATCH_BPS — anything above this reverts.
+MAX_BATCH_BPS = 500  # 5% of totalAssets per batch
 
 STATE_FILE = os.environ.get("STATE_FILE", "/app/pnl-data/fund-manager-state.json")
 VISION_DB_URL = os.environ.get("VISION_DB_URL", "")
@@ -776,7 +778,7 @@ def run_cycle(
                 return False
             idle = info.get("idle_usdc", 0) - f._pending_join_amount
             total = info.get("total_assets", 0)
-            effective_bps = int(alloc_bps * f.allocation_multiplier)
+            effective_bps = min(int(alloc_bps * f.allocation_multiplier), MAX_BATCH_BPS)
             deposit = max((total * effective_bps) // 10000, MIN_DEPOSIT_WEI)
             return idle >= deposit
 
@@ -877,7 +879,7 @@ def run_cycle(
             if not info:
                 continue
             total = info.get("total_assets", 0)
-            effective_bps = int(alloc_bps * fund.allocation_multiplier)
+            effective_bps = min(int(alloc_bps * fund.allocation_multiplier), MAX_BATCH_BPS)
             deposit_wei = max((total * effective_bps) // 10000, MIN_DEPOSIT_WEI)
             if deposit_wei <= 0:
                 continue
