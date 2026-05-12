@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { FloorProvider, useFloorDebug } from '@/hooks/vision/useFloorStream'
 import { SourceBatchGrid } from './SourceBatchGrid'
-import { SettlementTape } from './SettlementTape'
+import { PulseFeed } from './PulseFeed'
 import { FlowStream } from './FlowStream'
 import { FloorBackground } from './FloorBackground'
 
@@ -71,7 +71,7 @@ function FloorPanes() {
         <SourceBatchGrid />
       </aside>
       <section style={{ background: 'var(--apple-page-bg)' }}>
-        <SettlementTape />
+        <PulseFeed />
       </section>
       <aside
         className="overflow-hidden"
