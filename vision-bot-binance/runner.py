@@ -94,7 +94,9 @@ def send_tx(fn_call) -> str:
     signed = account.sign_transaction(tx)
     raw = getattr(signed, "raw_transaction", None) or signed.rawTransaction
     tx_hash = w3.eth.send_raw_transaction(raw)
-    w3.eth.wait_for_transaction_receipt(tx_hash)
+    receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+    if receipt.status != 1:
+        raise RuntimeError(f"tx reverted: {tx_hash.hex()} (gasUsed={receipt.gasUsed})")
     return tx_hash.hex()
 
 
