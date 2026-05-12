@@ -211,6 +211,19 @@ interface IVision {
         uint256 signersBitmask
     ) external;
 
+    /// @notice Single-aggregated-BLS bundle. One signature covers all batches.
+    /// @dev Oracles co-sign `keccak256(chainid, vision, "SETTLE_BATCHES_SINGLE_V1",
+    ///      batchIds, payoutsHashes)`. Saves N× BLS verification gas vs
+    ///      `settleBatches`.
+    function settleBatchesSingle(
+        uint256[] calldata batchIds,
+        address[][] calldata players,
+        uint256[][] calldata payouts,
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
+    ) external;
+
     /// @notice Bundle of `settleBatch` calls in one transaction.
     /// @dev Each sub-settlement keeps its own BLS signature, reference nonce, and
     ///      signers bitmask. Reverts on the first sub-failure — chunking is the

@@ -1922,10 +1922,20 @@ impl BatchLifecycleManager {
             // ── Phase 1: Co-sign pending settlements (ALL oracles) ──
             self.co_sign_pending_settlements().await;
 
+            // ── Phase 1b: Single-aggregated-BLS bundles ──
+            // Leader composes new bundles from quorum-reached per-batch proofs.
+            // Every oracle co-signs existing bundles whose composition matches
+            // its own per-batch state.
+            if is_leader {
+                self.create_pending_bundles().await;
+            }
+            self.co_sign_pending_bundles().await;
+
             // ── Phase 2: Retry on-chain submission (leader only, every 60s) ──
             if is_leader && last_recovery.elapsed().as_secs() >= RECOVERY_INTERVAL_SECS {
                 last_recovery = std::time::Instant::now();
                 self.retry_unsubmitted_settlements(MAX_RETRIES).await;
+                self.submit_quorum_bundles().await;
             }
         }
 
@@ -2052,6 +2062,466 @@ impl BatchLifecycleManager {
         }
     }
 
+    // ────────────────────────────────────────────────────────────────────
+    // Single-aggregated-BLS bundles (Phase 6)
+    // ────────────────────────────────────────────────────────────────────
+
+    /// Leader-only: compose new bundles from per-batch proofs that have
+    /// reached quorum and are not yet bundled or submitted. Each bundle
+    /// covers up to `MAX_BUNDLE_SIZE` batches (caller-chosen, bounded by
+    /// L3 block gas — one BLS verify + N settle bodies).
+    async fn create_pending_bundles(&self) {
+        const MIN_BUNDLE_SIZE: usize = 2;
+        const MAX_BUNDLE_SIZE: usize = 16;
+
+        let bls_keypair = match &self.bls_keypair {
+            Some(kp) => kp.clone(),
+            None => return,
+        };
+        let vision_address: Address = match self.config.vision_address.parse() {
+            Ok(a) => a,
+            Err(_) => return,
+        };
+        let chain_id = self.config.chain_id;
+        let node_index = self.config.node_index;
+        let num_oracles = self.config.num_oracles;
+        let threshold = (num_oracles / 2) + 1;
+        let my_bit: i64 = 1i64 << node_index;
+
+        let rows: Vec<(i64, Vec<u8>, i64, serde_json::Value, serde_json::Value)> = match sqlx::query_as(
+            "SELECT batch_id, bls_sig, signer_bitmap, players_json, payouts_json
+             FROM vision_settlement_proofs
+             WHERE submitted = false
+               AND abandoned = false
+               AND bundle_hash IS NULL
+               AND players_json IS NOT NULL
+               AND payouts_json IS NOT NULL
+               AND created_at > NOW() - INTERVAL '24 hours'
+             ORDER BY batch_id ASC
+             LIMIT $1"
+        )
+        .bind(MAX_BUNDLE_SIZE as i64)
+        .fetch_all(&self.pool)
+        .await {
+            Ok(r) => r,
+            Err(e) => {
+                warn!(error = %e, "Bundle creator: query failed");
+                return;
+            }
+        };
+
+        // Need quorum on each batch we include, otherwise the on-chain
+        // bundle would still revert (no aggregated proof valid for that
+        // batch). Defer un-quorum'd batches to a future sweep.
+        let eligible: Vec<&(i64, Vec<u8>, i64, serde_json::Value, serde_json::Value)> = rows
+            .iter()
+            .filter(|(_, _, bitmap, _, _)| (bitmap.count_ones() as usize) >= threshold as usize)
+            .filter(|(_, _, bitmap, _, _)| (bitmap & my_bit) != 0) // we must have signed it
+            .collect();
+
+        if eligible.len() < MIN_BUNDLE_SIZE {
+            return;
+        }
+
+        // Parse payouts hashes for each batch.
+        let mut batch_ids: Vec<u64> = Vec::with_capacity(eligible.len());
+        let mut payouts_hashes: Vec<[u8; 32]> = Vec::with_capacity(eligible.len());
+        let mut all_players: Vec<Vec<Address>> = Vec::with_capacity(eligible.len());
+        let mut all_payouts: Vec<Vec<U256>> = Vec::with_capacity(eligible.len());
+        let mut payouts_hash_hex: Vec<String> = Vec::with_capacity(eligible.len());
+
+        for (batch_id, _sig, _bm, players_json, payouts_json) in &eligible {
+            let players: Vec<Address> = match players_json.as_array() {
+                Some(arr) => {
+                    let parsed: Option<Vec<Address>> = arr
+                        .iter()
+                        .map(|v| v.as_str().and_then(|s| s.parse::<Address>().ok()))
+                        .collect();
+                    match parsed { Some(v) => v, None => return }
+                }
+                None => return,
+            };
+            let payouts: Vec<U256> = match payouts_json.as_array() {
+                Some(arr) => {
+                    let parsed: Option<Vec<U256>> = arr
+                        .iter()
+                        .map(|v| v.as_str().and_then(|s| U256::from_dec_str(s).ok()))
+                        .collect();
+                    match parsed { Some(v) => v, None => return }
+                }
+                None => return,
+            };
+            let ph = super::settle_signer::compute_payouts_hash(&players, &payouts);
+            batch_ids.push(*batch_id as u64);
+            payouts_hashes.push(ph);
+            payouts_hash_hex.push(format!("0x{}", hex::encode(ph)));
+            all_players.push(players);
+            all_payouts.push(payouts);
+        }
+
+        let bundle_hash_bytes = super::settle_signer::compute_settle_batches_single_hash(
+            chain_id, vision_address, &batch_ids, &payouts_hashes,
+        );
+        let bundle_hash_hex = format!("0x{}", hex::encode(bundle_hash_bytes));
+
+        let signature = match super::settle_signer::sign_settle_batches_bundle(
+            &bls_keypair, chain_id, vision_address, &batch_ids, &payouts_hashes,
+        ) {
+            Ok(s) => s,
+            Err(e) => {
+                warn!(error = %e, "Bundle creator: BLS signing failed");
+                return;
+            }
+        };
+
+        let batch_ids_json = serde_json::to_value(
+            batch_ids.iter().map(|b| b.to_string()).collect::<Vec<_>>()
+        ).unwrap_or_default();
+        let payouts_hashes_json = serde_json::to_value(payouts_hash_hex).unwrap_or_default();
+
+        let mut tx = match self.pool.begin().await {
+            Ok(t) => t,
+            Err(e) => { warn!(error = %e, "Bundle creator: begin tx failed"); return; }
+        };
+
+        let res = sqlx::query(
+            "INSERT INTO vision_settlement_bundles (bundle_hash, batch_ids, payouts_hashes, bls_sig, signer_bitmap)
+             VALUES ($1, $2, $3, $4, $5)
+             ON CONFLICT (bundle_hash) DO NOTHING"
+        )
+        .bind(&bundle_hash_hex)
+        .bind(&batch_ids_json)
+        .bind(&payouts_hashes_json)
+        .bind(&signature.0[..])
+        .bind(my_bit)
+        .execute(&mut *tx)
+        .await;
+        if let Err(e) = res {
+            warn!(error = %e, bundle_hash = %bundle_hash_hex, "Bundle creator: insert failed");
+            return;
+        }
+
+        // Mark the per-batch proofs as belonging to this bundle so the
+        // per-batch retry sweep skips them.
+        let batch_id_i64: Vec<i64> = batch_ids.iter().map(|b| *b as i64).collect();
+        if let Err(e) = sqlx::query(
+            "UPDATE vision_settlement_proofs
+             SET bundle_hash = $1
+             WHERE batch_id = ANY($2) AND bundle_hash IS NULL"
+        )
+        .bind(&bundle_hash_hex)
+        .bind(&batch_id_i64)
+        .execute(&mut *tx)
+        .await {
+            warn!(error = %e, "Bundle creator: tagging proofs failed");
+            return;
+        }
+
+        if let Err(e) = tx.commit().await {
+            warn!(error = %e, "Bundle creator: commit failed");
+            return;
+        }
+
+        info!(
+            bundle_hash = %bundle_hash_hex,
+            count = batch_ids.len(),
+            "Bundle created and signed by leader"
+        );
+    }
+
+    /// Every oracle: co-sign existing bundles whose composition matches our
+    /// per-batch state. Bundles where any batch is unknown or has a
+    /// mismatching payouts_hash are skipped — safer to leave the bundle
+    /// stuck than to sign an invalid aggregate.
+    async fn co_sign_pending_bundles(&self) {
+        let bls_keypair = match &self.bls_keypair {
+            Some(kp) => kp.clone(),
+            None => return,
+        };
+        let vision_address: Address = match self.config.vision_address.parse() {
+            Ok(a) => a,
+            Err(_) => return,
+        };
+        let chain_id = self.config.chain_id;
+        let node_index = self.config.node_index;
+        let my_bit: i64 = 1i64 << node_index;
+
+        let bundles: Vec<(String, serde_json::Value, serde_json::Value, Vec<u8>, i64)> = match sqlx::query_as(
+            "SELECT bundle_hash, batch_ids, payouts_hashes, bls_sig, signer_bitmap
+             FROM vision_settlement_bundles
+             WHERE submitted = false
+               AND abandoned = false
+               AND (signer_bitmap & $1) = 0
+               AND created_at > NOW() - INTERVAL '24 hours'
+             ORDER BY created_at ASC
+             LIMIT 10"
+        )
+        .bind(my_bit)
+        .fetch_all(&self.pool)
+        .await {
+            Ok(r) => r,
+            Err(e) => { warn!(error = %e, "Bundle co-sign: query failed"); return; }
+        };
+
+        for (bundle_hash_hex, batch_ids_json, payouts_hashes_json, existing_sig, existing_bitmap) in &bundles {
+            let batch_ids: Vec<u64> = match batch_ids_json.as_array() {
+                Some(arr) => arr.iter()
+                    .filter_map(|v| v.as_str().and_then(|s| s.parse::<u64>().ok()))
+                    .collect(),
+                None => continue,
+            };
+            let leader_hashes: Vec<[u8; 32]> = match payouts_hashes_json.as_array() {
+                Some(arr) => {
+                    let parsed: Option<Vec<[u8; 32]>> = arr.iter()
+                        .map(|v| v.as_str().and_then(|s| {
+                            let s = s.strip_prefix("0x").unwrap_or(s);
+                            hex::decode(s).ok().and_then(|b| <[u8; 32]>::try_from(b.as_slice()).ok())
+                        }))
+                        .collect();
+                    match parsed { Some(v) => v, None => continue }
+                }
+                None => continue,
+            };
+            if batch_ids.len() != leader_hashes.len() || batch_ids.is_empty() {
+                continue;
+            }
+
+            // Verify each batch's per-batch row exists locally and the
+            // payouts hash matches. If any mismatch, skip — we won't sign
+            // an aggregate whose composition we can't fully verify.
+            let mut all_ok = true;
+            for (batch_id, leader_hash) in batch_ids.iter().zip(leader_hashes.iter()) {
+                let row: Option<(serde_json::Value, serde_json::Value)> = match sqlx::query_as(
+                    "SELECT players_json, payouts_json FROM vision_settlement_proofs
+                     WHERE batch_id = $1 AND (signer_bitmap & $2) <> 0"
+                )
+                .bind(*batch_id as i64)
+                .bind(my_bit)
+                .fetch_optional(&self.pool)
+                .await {
+                    Ok(r) => r,
+                    Err(_) => { all_ok = false; break; }
+                };
+                let (players_json, payouts_json) = match row {
+                    Some(r) => r,
+                    None => { all_ok = false; break; }
+                };
+                let players: Vec<Address> = match players_json.as_array() {
+                    Some(arr) => {
+                        let parsed: Option<Vec<Address>> = arr.iter()
+                            .map(|v| v.as_str().and_then(|s| s.parse::<Address>().ok()))
+                            .collect();
+                        match parsed { Some(v) => v, None => { all_ok = false; break; } }
+                    }
+                    None => { all_ok = false; break; }
+                };
+                let payouts: Vec<U256> = match payouts_json.as_array() {
+                    Some(arr) => {
+                        let parsed: Option<Vec<U256>> = arr.iter()
+                            .map(|v| v.as_str().and_then(|s| U256::from_dec_str(s).ok()))
+                            .collect();
+                        match parsed { Some(v) => v, None => { all_ok = false; break; } }
+                    }
+                    None => { all_ok = false; break; }
+                };
+                let my_hash = super::settle_signer::compute_payouts_hash(&players, &payouts);
+                if my_hash != *leader_hash {
+                    warn!(
+                        batch_id,
+                        bundle_hash = %bundle_hash_hex,
+                        "Bundle co-sign: payouts hash mismatch — refusing to sign"
+                    );
+                    all_ok = false;
+                    break;
+                }
+            }
+            if !all_ok {
+                continue;
+            }
+
+            // All batches verified. Sign the bundle hash.
+            let signature = match super::settle_signer::sign_settle_batches_bundle(
+                &bls_keypair, chain_id, vision_address, &batch_ids, &leader_hashes,
+            ) {
+                Ok(s) => s,
+                Err(e) => {
+                    warn!(error = %e, "Bundle co-sign: BLS signing failed");
+                    continue;
+                }
+            };
+
+            // Aggregate with existing signature and update.
+            let signer = Bn254BLSSigner::new();
+            let merged_sig = if existing_sig.is_empty() {
+                signature.0
+            } else {
+                match signer.aggregate_signatures(vec![
+                    BLSSignature(existing_sig.clone()),
+                    signature,
+                ]) {
+                    Ok(a) => a.0,
+                    Err(e) => {
+                        warn!(error = %e, "Bundle co-sign: aggregation failed");
+                        continue;
+                    }
+                }
+            };
+            let merged_bitmap = existing_bitmap | my_bit;
+
+            if let Err(e) = sqlx::query(
+                "UPDATE vision_settlement_bundles
+                 SET bls_sig = $1, signer_bitmap = $2
+                 WHERE bundle_hash = $3 AND submitted = false"
+            )
+            .bind(&merged_sig[..])
+            .bind(merged_bitmap)
+            .bind(bundle_hash_hex)
+            .execute(&self.pool)
+            .await {
+                warn!(error = %e, "Bundle co-sign: update failed");
+                continue;
+            }
+
+            info!(
+                bundle_hash = %bundle_hash_hex,
+                signers = merged_bitmap.count_ones(),
+                "Bundle co-signed"
+            );
+        }
+    }
+
+    /// Leader-only: submit bundles that have reached quorum.
+    async fn submit_quorum_bundles(&self) {
+        let writer = match &self.chain_writer {
+            Some(w) => w.clone(),
+            None => return,
+        };
+        let threshold = (self.config.num_oracles / 2) + 1;
+
+        let bundles: Vec<(String, serde_json::Value, Vec<u8>, i64)> = match sqlx::query_as(
+            "SELECT bundle_hash, batch_ids, bls_sig, signer_bitmap
+             FROM vision_settlement_bundles
+             WHERE submitted = false
+               AND abandoned = false
+               AND created_at > NOW() - INTERVAL '24 hours'
+             ORDER BY created_at ASC
+             LIMIT 5"
+        )
+        .fetch_all(&self.pool)
+        .await {
+            Ok(r) => r,
+            Err(e) => { warn!(error = %e, "Bundle submit: query failed"); return; }
+        };
+
+        for (bundle_hash_hex, batch_ids_json, bls_sig, signer_bitmap) in &bundles {
+            if (signer_bitmap.count_ones() as usize) < threshold as usize {
+                continue;
+            }
+
+            let batch_ids: Vec<u64> = match batch_ids_json.as_array() {
+                Some(arr) => arr.iter()
+                    .filter_map(|v| v.as_str().and_then(|s| s.parse::<u64>().ok()))
+                    .collect(),
+                None => continue,
+            };
+
+            // Re-load players/payouts for each batch (need the actual arrays for the on-chain call).
+            let mut all_players: Vec<Vec<Address>> = Vec::with_capacity(batch_ids.len());
+            let mut all_payouts: Vec<Vec<U256>> = Vec::with_capacity(batch_ids.len());
+            let mut load_ok = true;
+            for bid in &batch_ids {
+                let row: Option<(serde_json::Value, serde_json::Value)> = match sqlx::query_as(
+                    "SELECT players_json, payouts_json FROM vision_settlement_proofs WHERE batch_id = $1"
+                )
+                .bind(*bid as i64)
+                .fetch_optional(&self.pool)
+                .await {
+                    Ok(r) => r,
+                    Err(_) => { load_ok = false; break; }
+                };
+                let (pjson, ojson) = match row { Some(r) => r, None => { load_ok = false; break; } };
+                let players: Vec<Address> = pjson.as_array()
+                    .and_then(|arr| arr.iter()
+                        .map(|v| v.as_str().and_then(|s| s.parse::<Address>().ok()))
+                        .collect())
+                    .unwrap_or_default();
+                let payouts: Vec<U256> = ojson.as_array()
+                    .and_then(|arr| arr.iter()
+                        .map(|v| v.as_str().and_then(|s| U256::from_dec_str(s).ok()))
+                        .collect())
+                    .unwrap_or_default();
+                if players.is_empty() || players.len() != payouts.len() {
+                    load_ok = false;
+                    break;
+                }
+                all_players.push(players);
+                all_payouts.push(payouts);
+            }
+            if !load_ok { continue; }
+
+            let ref_nonce = self.read_last_snapshot_nonce().await.unwrap_or(0);
+            match writer.settle_batches_single(
+                batch_ids.clone(),
+                all_players.clone(),
+                all_payouts.clone(),
+                bls_sig.clone(),
+                ref_nonce,
+                U256::from(*signer_bitmap as u64),
+            ).await {
+                Ok(tx_hash) => {
+                    info!(
+                        bundle_hash = %bundle_hash_hex,
+                        tx = %tx_hash,
+                        count = batch_ids.len(),
+                        "settleBatchesSingle submitted on-chain"
+                    );
+                    let _ = sqlx::query(
+                        "UPDATE vision_settlement_bundles SET submitted = true, submitted_at = NOW() WHERE bundle_hash = $1"
+                    ).bind(bundle_hash_hex).execute(&self.pool).await;
+                    let batch_id_i64: Vec<i64> = batch_ids.iter().map(|b| *b as i64).collect();
+                    let _ = sqlx::query(
+                        "UPDATE vision_settlement_proofs SET submitted = true WHERE batch_id = ANY($1)"
+                    ).bind(&batch_id_i64).execute(&self.pool).await;
+                    for (bid, players, payouts) in batch_ids.iter().zip(all_players.iter()).zip(all_payouts.iter())
+                        .map(|((a, b), c)| (a, b, c))
+                    {
+                        if let Err(e) = self.scheduler.mark_settled(&self.pool, *bid).await {
+                            error!(batch_id = bid, error = %e, "Bundle submit: mark_settled failed");
+                        }
+                        if let Err(e) = self.bitmap_store.purge_batch_from_db(&self.pool, *bid).await {
+                            error!(batch_id = bid, error = %e, "Bundle submit: purge_batch_from_db failed");
+                        }
+                        writer.reconcile_vaults(*bid, players, payouts).await;
+                    }
+                }
+                Err(e) => {
+                    let err_str = format!("{}", e);
+                    warn!(
+                        bundle_hash = %bundle_hash_hex,
+                        error = %err_str,
+                        "settleBatchesSingle submission failed — bundle stays pending"
+                    );
+                    let _ = sqlx::query(
+                        "UPDATE vision_settlement_bundles SET retry_count = retry_count + 1, last_error = $1, last_retry_at = NOW() WHERE bundle_hash = $2"
+                    ).bind(&err_str).bind(bundle_hash_hex).execute(&self.pool).await;
+                    // If the window closed for the batches, abandon the bundle —
+                    // the per-batch retry sweep will see un-submitted proofs and refund.
+                    if err_str.contains("SettlementWindowClosed") || err_str.contains("0xb4e6a84c") {
+                        warn!(bundle_hash = %bundle_hash_hex, "Bundle window closed — abandoning");
+                        let _ = sqlx::query(
+                            "UPDATE vision_settlement_bundles SET abandoned = true WHERE bundle_hash = $1"
+                        ).bind(bundle_hash_hex).execute(&self.pool).await;
+                        let batch_id_i64: Vec<i64> = batch_ids.iter().map(|b| *b as i64).collect();
+                        // Un-tag the per-batch proofs so the per-batch refund window can claim them.
+                        let _ = sqlx::query(
+                            "UPDATE vision_settlement_proofs SET bundle_hash = NULL WHERE batch_id = ANY($1)"
+                        ).bind(&batch_id_i64).execute(&self.pool).await;
+                    }
+                }
+            }
+        }
+    }
+
     /// Retry on-chain submission for proofs that have quorum but haven't been submitted.
     async fn retry_unsubmitted_settlements(&self, max_retries: i32) {
         let writer = match &self.chain_writer {
@@ -2071,6 +2541,7 @@ impl BatchLifecycleManager {
              FROM vision_settlement_proofs
              WHERE submitted = false
                AND abandoned = false
+               AND bundle_hash IS NULL
                AND players_json IS NOT NULL
                AND retry_count < $1
                AND created_at > NOW() - INTERVAL '24 hours'

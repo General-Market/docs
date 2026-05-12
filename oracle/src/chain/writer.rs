@@ -791,6 +791,136 @@ impl EthersChainWriter {
             .into()
     }
 
+    /// Build a settleBatchesSingle transaction (single-aggregated-BLS bundle).
+    /// One signature covers the whole bundle; on-chain the contract computes
+    /// the bundle hash from `batchIds` + per-batch payouts hashes and runs
+    /// exactly one `_verifyBLS`.
+    fn build_settle_batches_single_tx(
+        &self,
+        batch_ids: &[u64],
+        players: &[Vec<Address>],
+        payouts: &[Vec<U256>],
+        bls_sig: &[u8],
+        ref_nonce: u64,
+        signers_bitmask: U256,
+    ) -> TypedTransaction {
+        let function = ethers::abi::Function {
+            name: "settleBatchesSingle".to_string(),
+            inputs: vec![
+                ethers::abi::Param {
+                    name: "batchIds".to_string(),
+                    kind: ethers::abi::ParamType::Array(Box::new(ethers::abi::ParamType::Uint(256))),
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "players".to_string(),
+                    kind: ethers::abi::ParamType::Array(Box::new(
+                        ethers::abi::ParamType::Array(Box::new(ethers::abi::ParamType::Address)),
+                    )),
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "payouts".to_string(),
+                    kind: ethers::abi::ParamType::Array(Box::new(
+                        ethers::abi::ParamType::Array(Box::new(ethers::abi::ParamType::Uint(256))),
+                    )),
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "blsSignature".to_string(),
+                    kind: ethers::abi::ParamType::Bytes,
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "referenceNonce".to_string(),
+                    kind: ethers::abi::ParamType::Uint(256),
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "signersBitmask".to_string(),
+                    kind: ethers::abi::ParamType::Uint(256),
+                    internal_type: None,
+                },
+            ],
+            outputs: vec![],
+            #[allow(deprecated)]
+            constant: None,
+            state_mutability: ethers::abi::StateMutability::NonPayable,
+        };
+
+        let batch_ids_tok = ethers::abi::Token::Array(
+            batch_ids.iter().map(|b| ethers::abi::Token::Uint(U256::from(*b))).collect(),
+        );
+        let players_tok = ethers::abi::Token::Array(
+            players
+                .iter()
+                .map(|inner| {
+                    ethers::abi::Token::Array(
+                        inner.iter().map(|&a| ethers::abi::Token::Address(a)).collect(),
+                    )
+                })
+                .collect(),
+        );
+        let payouts_tok = ethers::abi::Token::Array(
+            payouts
+                .iter()
+                .map(|inner| {
+                    ethers::abi::Token::Array(
+                        inner.iter().map(|&p| ethers::abi::Token::Uint(p)).collect(),
+                    )
+                })
+                .collect(),
+        );
+
+        let calldata = function
+            .encode_input(&[
+                batch_ids_tok,
+                players_tok,
+                payouts_tok,
+                ethers::abi::Token::Bytes(bls_sig.to_vec()),
+                ethers::abi::Token::Uint(U256::from(ref_nonce)),
+                ethers::abi::Token::Uint(signers_bitmask),
+            ])
+            .expect("ABI encoding should not fail");
+
+        Eip1559TransactionRequest::new()
+            .to(self.config.contracts.vision)
+            .data(calldata)
+            .into()
+    }
+
+    /// Submit a settleBatchesSingle transaction. One aggregated BLS signature
+    /// covers the bundle; the contract runs one `_verifyBLS` instead of N.
+    pub async fn settle_batches_single(
+        &self,
+        batch_ids: Vec<u64>,
+        players: Vec<Vec<Address>>,
+        payouts: Vec<Vec<U256>>,
+        bls_sig: Vec<u8>,
+        ref_nonce: u64,
+        signers_bitmask: U256,
+    ) -> Result<TxHash, Error> {
+        if batch_ids.is_empty() {
+            return Err(Error::InvalidArgument(
+                "settle_batches_single: empty batch_ids".to_string(),
+            ));
+        }
+        if players.len() != batch_ids.len() || payouts.len() != batch_ids.len() {
+            return Err(Error::InvalidArgument(
+                "settle_batches_single: array length mismatch".to_string(),
+            ));
+        }
+        debug!(
+            count = batch_ids.len(),
+            batch_ids = ?batch_ids,
+            "Building settleBatchesSingle transaction"
+        );
+        let tx = self.build_settle_batches_single_tx(
+            &batch_ids, &players, &payouts, &bls_sig, ref_nonce, signers_bitmask,
+        );
+        self.submit_tx(tx, "settle_batches_single").await
+    }
+
     /// Submit a settleBatches transaction to Vision.sol on L3.
     ///
     /// One nonce, one tx header, N sub-settlements. Each item keeps its own BLS

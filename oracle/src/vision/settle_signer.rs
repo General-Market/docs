@@ -35,6 +35,58 @@ pub fn compute_settle_batch_hash(
     ]))
 }
 
+/// Compute the per-batch payouts hash. Same as the inner hash inside
+/// `compute_settle_batch_hash` — exposed so the bundle hash can be built
+/// from a list of already-computed payouts hashes without rehashing
+/// players + payouts repeatedly.
+pub fn compute_payouts_hash(players: &[Address], payouts: &[U256]) -> [u8; 32] {
+    let player_tokens: Vec<Token> = players.iter().map(|a| Token::Address(*a)).collect();
+    let payout_tokens: Vec<Token> = payouts.iter().map(|p| Token::Uint(*p)).collect();
+    keccak256(&encode(&[
+        Token::Array(player_tokens),
+        Token::Array(payout_tokens),
+    ]))
+}
+
+/// Compute the bundle hash matching Vision.settleBatchesSingle:
+///   keccak256(chainId, vision, "SETTLE_BATCHES_SINGLE_V1", batchIds, payoutsHashes)
+/// Caller must pre-compute `payouts_hashes[i] = compute_payouts_hash(players[i], payouts[i])`.
+pub fn compute_settle_batches_single_hash(
+    chain_id: u64,
+    vision_address: Address,
+    batch_ids: &[u64],
+    payouts_hashes: &[[u8; 32]],
+) -> [u8; 32] {
+    let batch_id_tokens: Vec<Token> =
+        batch_ids.iter().map(|b| Token::Uint(U256::from(*b))).collect();
+    let payouts_hash_tokens: Vec<Token> = payouts_hashes
+        .iter()
+        .map(|h| Token::FixedBytes(h.to_vec()))
+        .collect();
+    keccak256(&encode(&[
+        Token::Uint(U256::from(chain_id)),
+        Token::Address(vision_address),
+        Token::String("SETTLE_BATCHES_SINGLE_V1".to_string()),
+        Token::Array(batch_id_tokens),
+        Token::Array(payouts_hash_tokens),
+    ]))
+}
+
+/// Sign a settle-batches bundle. Returns the BLS signature over the bundle hash.
+pub fn sign_settle_batches_bundle(
+    keypair: &BLSKeyPair,
+    chain_id: u64,
+    vision_address: Address,
+    batch_ids: &[u64],
+    payouts_hashes: &[[u8; 32]],
+) -> Result<BLSSignature, String> {
+    let hash = compute_settle_batches_single_hash(chain_id, vision_address, batch_ids, payouts_hashes);
+    let signer = Bn254BLSSigner::new();
+    signer
+        .sign_message_hash(keypair, &hash)
+        .map_err(|e| format!("{e}"))
+}
+
 /// Sign a settlement for a batch. Returns the BLS signature.
 pub fn sign_settlement(
     keypair: &BLSKeyPair,

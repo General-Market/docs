@@ -370,6 +370,98 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
     }
 
     /// @inheritdoc IVision
+    /// @dev Single-aggregated-BLS bundle. One signature covers the whole
+    ///      bundle: all oracles co-sign `keccak256(chainid, vision,
+    ///      "SETTLE_BATCHES_SINGLE_V1", batchIds, payoutsHashes)`. Saves
+    ///      ~100k gas × N compared to `settleBatches`, which verifies each
+    ///      sub-item separately. The caller bears responsibility for chunking
+    ///      by block gas.
+    function settleBatchesSingle(
+        uint256[] calldata batchIds,
+        address[][] calldata players,
+        uint256[][] calldata payouts,
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
+    ) external nonReentrant {
+        uint256 n = batchIds.length;
+        if (n == 0) revert InvalidArrayLength();
+        if (players.length != n || payouts.length != n) revert InvalidArrayLength();
+
+        // Build the bundle hash: per-batch payouts hashes packed in batch_id order.
+        // Each `payoutsHashes[i]` matches what `settleBatch` would compute for
+        // batchIds[i], so an oracle's per-batch sign code path can be reused
+        // off-chain to derive the bundle hash deterministically.
+        bytes32[] memory payoutsHashes = new bytes32[](n);
+        for (uint256 i = 0; i < n; ++i) {
+            payoutsHashes[i] = keccak256(abi.encode(players[i], payouts[i]));
+        }
+        bytes32 message = keccak256(abi.encode(
+            block.chainid,
+            address(this),
+            "SETTLE_BATCHES_SINGLE_V1",
+            batchIds,
+            payoutsHashes
+        ));
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
+
+        // Now settle each batch without re-verifying BLS — the bundle proof
+        // covers all of them. Per-batch state checks (already-settled,
+        // window-closed, players-exist, zero-sum) still apply inside
+        // `_settleOneSkipBls`.
+        for (uint256 i = 0; i < n; ++i) {
+            _settleOneSkipBls(batchIds[i], players[i], payouts[i]);
+        }
+    }
+
+    /// @notice Single-batch body without BLS verification. Used by the
+    ///         single-aggregated-BLS bundle path where one signature covers
+    ///         the whole bundle. NEVER call from an external entry without
+    ///         verifying a bundle signature first.
+    function _settleOneSkipBls(
+        uint256 batchId,
+        address[] calldata players,
+        uint256[] calldata payouts
+    ) internal {
+        Batch storage b = _batches[batchId];
+        if (b.tickDuration == 0) revert BatchNotFound();
+        if (b.settled) revert BatchAlreadySettled();
+        if (block.timestamp >= _expirationTime(b)) revert SettlementWindowClosed();
+        if (players.length != payouts.length) revert InvalidArrayLength();
+        if (players.length == 0) revert InvalidArrayLength();
+
+        uint256 totalPayouts;
+        uint256 totalDeposits;
+        for (uint256 i = 0; i < players.length; i++) {
+            if (i > 0 && uint160(players[i]) <= uint160(players[i - 1])) revert InvalidArrayLength();
+            PlayerPosition storage pos = _positions[batchId][players[i]];
+            if (pos.totalDeposited == 0) revert NotJoined();
+            totalPayouts += payouts[i];
+            totalDeposits += pos.totalDeposited;
+        }
+        if (totalPayouts != totalDeposits) revert NonZeroSum();
+
+        for (uint256 i = 0; i < players.length; i++) {
+            PlayerPosition storage pos = _positions[batchId][players[i]];
+
+            uint256 payout = payouts[i];
+            uint256 profit = payout > pos.totalDeposited ? payout - pos.totalDeposited : 0;
+            uint256 fee = (profit * PROTOCOL_FEE_BPS) / BPS_DENOMINATOR;
+            uint256 netPayout = payout - fee;
+
+            delete _positions[batchId][players[i]];
+            accumulatedRealFees += fee;
+            if (netPayout > 0) {
+                USDC.safeTransfer(players[i], netPayout);
+            }
+            emit PlayerSettled(batchId, players[i], netPayout, fee);
+        }
+
+        b.settled = true;
+        emit BatchSettled(batchId, players.length);
+    }
+
+    /// @inheritdoc IVision
     /// @dev Bundles N settlements into one transaction. Each sub-settlement keeps
     ///      its own BLS signature, refNonce, and signersBitmask — consensus is
     ///      unchanged. The caller bears responsibility for chunking by block gas.
