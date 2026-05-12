@@ -14,17 +14,21 @@ export function SourceBatchGrid() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-baseline justify-between border-b border-black/[0.06] px-4 py-3">
-        <h2 className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#86868b]">
-          Sources
-        </h2>
-        <span className="tabular-nums text-[10px] text-[#86868b]">{sorted.length}</span>
+      <div
+        className="flex items-baseline justify-between px-5 py-4"
+        style={{ borderBottom: '1px solid var(--apple-border)' }}
+      >
+        <h2 className="floor-pane-header">Sources</h2>
+        <span className="tabular-nums text-[11px] text-[#86868b]">{sorted.length}</span>
       </div>
       <div className="relative flex-1 overflow-y-auto px-3 py-3">
         {sorted.length === 0 ? (
           <div className="flex h-full items-center justify-center px-3 text-center">
-            <p className="text-[12px] tracking-[-0.01em] text-[#86868b]">
-              <span className="floor-breathe inline-block align-middle">·</span>
+            <p
+              className="text-[13px] tracking-[-0.014em] text-[#6e6e73]"
+              style={{ fontFamily: 'var(--apple-font-text)' }}
+            >
+              <span className="floor-breathe align-middle">·</span>
               <span className="ml-2 align-middle">Waiting for batches.</span>
             </p>
           </div>

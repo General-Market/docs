@@ -7,29 +7,51 @@ import { SettlementTape } from './SettlementTape'
 import { FlowStream } from './FlowStream'
 import { FloorBackground } from './FloorBackground'
 
+function StatChip({ label, value }: { label: string; value: number | string }) {
+  return (
+    <span className="inline-flex items-baseline gap-1.5 tabular-nums">
+      <span className="text-[13px] font-medium text-[#1d1d1f]">{value}</span>
+      <span className="text-[11px] text-[#86868b]">{label}</span>
+    </span>
+  )
+}
+
 function FloorTopBar() {
   const { sseConnected, batches, visibleTape, visibleFlow } = useFloorDebug()
   return (
-    <header className="relative z-10 flex h-12 items-center justify-between border-b border-black/[0.06] bg-white/80 px-5 backdrop-blur-md">
-      <Link href="/" className="flex items-baseline gap-3">
+    <header
+      className="apple-glass relative z-10 flex h-14 items-center justify-between px-6"
+      style={{ borderBottom: '1px solid var(--apple-border)' }}
+    >
+      <Link href="/" className="group flex items-baseline gap-3">
         <span
-          className="text-[15px] font-semibold tracking-[-0.014em] text-[#1d1d1f]"
+          className="text-[19px] font-semibold tracking-[-0.022em] text-[#1d1d1f] transition-opacity group-hover:opacity-70"
           style={{ fontFamily: 'var(--apple-font-display)' }}
         >
           The Floor
         </span>
-        <span className="text-[11px] text-[#86868b]">Vision</span>
+        <span
+          className="text-[13px] text-[#6e6e73]"
+          style={{ fontFamily: 'var(--apple-font-text)' }}
+        >
+          Vision
+        </span>
       </Link>
-      <div className="flex items-center gap-4 text-[10px] tabular-nums text-[#86868b]">
-        <span>{batches} sources</span>
-        <span>{visibleTape} tape</span>
-        <span>{visibleFlow} flow</span>
-        <span className="flex items-center gap-1.5">
+      <div className="flex items-center gap-6">
+        <StatChip label="sources" value={batches} />
+        <StatChip label="tape" value={visibleTape} />
+        <StatChip label="flow" value={visibleFlow} />
+        <span
+          className="inline-flex items-center gap-1.5 rounded-[980px] border border-black/[0.06] bg-white/60 px-2.5 py-1 text-[11px] tracking-[0.011em] text-[#6e6e73]"
+        >
           <span
             className="inline-block h-1.5 w-1.5 rounded-full"
-            style={{ background: sseConnected ? '#0071e3' : '#86868b' }}
+            style={{
+              background: sseConnected ? '#0071e3' : '#86868b',
+              boxShadow: sseConnected ? '0 0 0 3px rgba(0,113,227,0.18)' : 'none',
+            }}
           />
-          {sseConnected ? 'live' : 'offline'}
+          {sseConnected ? 'Live' : 'Idle'}
         </span>
       </div>
     </header>
@@ -38,14 +60,26 @@ function FloorTopBar() {
 
 function FloorPanes() {
   return (
-    <main className="relative z-10 grid flex-1 grid-cols-[280px_1fr_320px] overflow-hidden">
-      <aside className="border-r border-black/[0.06] bg-[#fbfbfd]">
+    <main className="relative z-10 grid flex-1 grid-cols-[300px_1fr_340px] overflow-hidden">
+      <aside
+        className="overflow-hidden"
+        style={{
+          background: 'var(--apple-panel-2)',
+          borderRight: '1px solid var(--apple-border)',
+        }}
+      >
         <SourceBatchGrid />
       </aside>
-      <section className="bg-[#f5f5f7]">
+      <section style={{ background: 'var(--apple-page-bg)' }}>
         <SettlementTape />
       </section>
-      <aside className="border-l border-black/[0.06] bg-[#fbfbfd]">
+      <aside
+        className="overflow-hidden"
+        style={{
+          background: 'var(--apple-panel-2)',
+          borderLeft: '1px solid var(--apple-border)',
+        }}
+      >
         <FlowStream />
       </aside>
     </main>
@@ -68,17 +102,47 @@ export function Floor() {
           0%, 100% { opacity: 0.3; transform: scale(1); }
           50%      { opacity: 0.9; transform: scale(1.25); }
         }
+        @keyframes floorShimmer {
+          0%   { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
         .floor-breathe {
+          display: inline-block;
           animation: floorBreathe 2.4s ease-in-out infinite;
-          color: #0071e3;
+          color: var(--apple-accent);
+        }
+        .floor-empty-shimmer {
+          position: relative;
+          overflow: hidden;
+        }
+        .floor-empty-shimmer::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(
+            110deg,
+            transparent 35%,
+            rgba(0,113,227,0.05) 50%,
+            transparent 65%
+          );
+          animation: floorShimmer 6s ease-in-out infinite;
+        }
+        .floor-pane-header {
+          font-family: var(--apple-font-text);
+          font-size: 11px;
+          font-weight: 600;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          color: var(--apple-text-tertiary);
         }
       `}</style>
       <div
-        className="relative flex h-screen w-screen flex-col overflow-hidden bg-[#f5f5f7]"
+        className="relative flex h-screen w-screen flex-col overflow-hidden"
         style={{
+          background: 'var(--apple-page-bg)',
           fontFamily: 'var(--apple-font-text)',
           letterSpacing: '-0.022em',
-          color: '#1d1d1f',
+          color: 'var(--apple-text)',
         }}
       >
         <FloorBackground />

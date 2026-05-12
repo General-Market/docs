@@ -8,8 +8,39 @@ interface Props {
   batch: FloorBatch
 }
 
-const RING_RADIUS = 17
+const RING_RADIUS = 19
 const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS
+
+function formatPool(weiStr: string): string {
+  try {
+    const n = Number(formatUnits(BigInt(weiStr || '0'), 18))
+    if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`
+    if (n >= 10_000) return `$${(n / 1_000).toFixed(0)}k`
+    if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}k`
+    return `$${n.toFixed(0)}`
+  } catch {
+    return '$0'
+  }
+}
+
+function statusLabel(status: FloorBatch['status']): string {
+  if (status === 'betting') return 'Open'
+  if (status === 'locked') return 'Locked'
+  if (status === 'settling') return 'Settling'
+  if (status === 'settled') return 'Settled'
+  return '·'
+}
+
+function statusTint(status: FloorBatch['status']): {
+  bg: string
+  fg: string
+} {
+  if (status === 'betting') return { bg: 'rgba(0,113,227,0.10)', fg: '#0071e3' }
+  if (status === 'locked' || status === 'settling')
+    return { bg: 'rgba(0,0,0,0.06)', fg: '#6e6e73' }
+  if (status === 'settled') return { bg: 'rgba(0,0,0,0.04)', fg: '#86868b' }
+  return { bg: 'rgba(0,0,0,0.04)', fg: '#86868b' }
+}
 
 export function SourceBatchCard({ batch }: Props) {
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000))
@@ -27,48 +58,35 @@ export function SourceBatchCard({ batch }: Props) {
   const sec = remaining % 60
   const countdownText = batch.bettingEnd ? `${min}:${String(sec).padStart(2, '0')}` : '—:—'
 
-  const tvlNum = (() => {
-    try {
-      return Number(formatUnits(BigInt(batch.tvlStr || '0'), 18))
-    } catch {
-      return 0
-    }
-  })()
-  const tvlText =
-    tvlNum >= 1_000_000
-      ? `$${(tvlNum / 1_000_000).toFixed(1)}M`
-      : tvlNum >= 1_000
-        ? `$${(tvlNum / 1_000).toFixed(1)}k`
-        : `$${tvlNum.toFixed(0)}`
-
+  const pool = formatPool(batch.tvlStr)
   const pulsing = remaining > 0 && remaining <= 10
   const pulseDuration = remaining <= 1 ? '0.5s' : remaining <= 5 ? '0.8s' : '1.2s'
-
-  const isSettling = batch.status === 'settling' || batch.status === 'locked'
+  const status = statusLabel(batch.status)
+  const tint = statusTint(batch.status)
 
   return (
     <div
-      className="relative flex items-center gap-3 rounded-2xl border border-black/[0.06] bg-white px-3 py-2.5 transition-shadow"
+      className="group relative flex items-center gap-3 rounded-[14px] bg-white px-3 py-2.5"
       style={{
+        border: '1px solid var(--apple-border)',
         animation: pulsing ? `floorCardPulse ${pulseDuration} ease-in-out infinite` : undefined,
-        boxShadow: isSettling
-          ? '0 1px 2px rgba(0,0,0,0.04), 0 4px 16px rgba(0,113,227,0.12)'
-          : '0 1px 2px rgba(0,0,0,0.04)',
+        boxShadow: 'var(--apple-shadow-card)',
+        transition: 'transform 240ms cubic-bezier(0.25,0.1,0.3,1), box-shadow 240ms cubic-bezier(0.25,0.1,0.3,1)',
       }}
     >
-      <div className="relative h-10 w-10 shrink-0">
-        <svg className="absolute inset-0" viewBox="0 0 40 40" aria-hidden>
+      <div className="relative h-11 w-11 shrink-0">
+        <svg className="absolute inset-0" viewBox="0 0 44 44" aria-hidden>
           <circle
-            cx="20"
-            cy="20"
+            cx="22"
+            cy="22"
             r={RING_RADIUS}
             fill="none"
             stroke="rgba(0,0,0,0.06)"
             strokeWidth="2"
           />
           <circle
-            cx="20"
-            cy="20"
+            cx="22"
+            cy="22"
             r={RING_RADIUS}
             fill="none"
             stroke={batch.sourceBrandBg || '#1d1d1f'}
@@ -76,7 +94,7 @@ export function SourceBatchCard({ batch }: Props) {
             strokeLinecap="round"
             strokeDasharray={RING_CIRCUMFERENCE}
             strokeDashoffset={dashOffset}
-            transform="rotate(-90 20 20)"
+            transform="rotate(-90 22 22)"
             style={{ transition: 'stroke-dashoffset 1s linear' }}
           />
         </svg>
@@ -85,11 +103,11 @@ export function SourceBatchCard({ batch }: Props) {
           <img
             src={batch.sourceLogo}
             alt=""
-            className="absolute left-1/2 top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 rounded-full object-cover"
+            className="absolute left-1/2 top-1/2 h-7 w-7 -translate-x-1/2 -translate-y-1/2 rounded-full object-cover"
           />
         ) : (
           <div
-            className="absolute left-1/2 top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 rounded-full"
+            className="absolute left-1/2 top-1/2 h-7 w-7 -translate-x-1/2 -translate-y-1/2 rounded-full"
             style={{ background: batch.sourceBrandBg || '#1d1d1f' }}
           />
         )}
@@ -97,15 +115,26 @@ export function SourceBatchCard({ batch }: Props) {
 
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-2">
-          <span className="truncate text-[13px] font-medium tracking-[-0.01em] text-[#1d1d1f]">
+          <span
+            className="truncate text-[14px] font-medium tracking-[-0.014em] text-[#1d1d1f]"
+            style={{ fontFamily: 'var(--apple-font-text)' }}
+          >
             {batch.sourceName}
           </span>
-          <span className="shrink-0 tabular-nums text-[11px] text-[#86868b]">{countdownText}</span>
+          <span
+            className="shrink-0 tabular-nums text-[12px] text-[#6e6e73]"
+            style={{ fontVariantNumeric: 'tabular-nums' }}
+          >
+            {countdownText}
+          </span>
         </div>
-        <div className="mt-0.5 flex items-baseline justify-between gap-2">
-          <span className="tabular-nums text-[12px] font-medium text-[#1d1d1f]">{tvlText}</span>
-          <span className="shrink-0 text-[10px] uppercase tracking-[0.06em] text-[#86868b]">
-            {batch.status === 'unknown' ? '·' : batch.status}
+        <div className="mt-1 flex items-center justify-between gap-2">
+          <span className="tabular-nums text-[13px] font-medium text-[#1d1d1f]">{pool}</span>
+          <span
+            className="inline-flex items-center rounded-[980px] px-2 py-[2px] text-[10px] font-semibold tracking-[0.04em]"
+            style={{ background: tint.bg, color: tint.fg }}
+          >
+            {status}
           </span>
         </div>
       </div>

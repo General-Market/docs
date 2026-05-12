@@ -30,6 +30,7 @@ export interface TapeRow {
   netDirection: 'up' | 'down' | 'flat'
   receivedAt: number
   displayedAt: number
+  synthetic?: boolean
 }
 
 export interface FlowRow {
@@ -42,6 +43,7 @@ export interface FlowRow {
   pctChangeBps: number
   outcome: string
   displayedAt: number
+  synthetic?: boolean
 }
 
 export interface FloorBatch {
@@ -77,6 +79,13 @@ const TAPE_RELEASE_FAST_MAX_MS = 800
 const TAPE_QUEUE_OVERFLOW = 30
 const FLOW_BUCKET_MS = 80
 const FLOW_BUCKET_TAKE = 3
+
+// One unit of L3 USDC (18 decimals)
+const ONE_USDC = 10n ** 18n
+// Average bet size — used to size synthetic flow rows from TVL deltas
+const AVG_BET_USDC = ONE_USDC * 5n
+// Cap synth flow rows per single delta — keeps things smooth
+const MAX_SYNTH_FLOW_PER_DELTA = 24
 
 // ── Per-slice contexts (prevents cross-pane re-render cascades) ──
 
@@ -134,10 +143,25 @@ function shuffle<T>(arr: T[]): T[] {
   return out
 }
 
+function safeBigInt(s: string): bigint {
+  try {
+    return BigInt(s || '0')
+  } catch {
+    return 0n
+  }
+}
+
 // ── Provider ──
 
 interface FloorProviderProps {
   children: ReactNode
+}
+
+interface PrevSnapshot {
+  batchId: number
+  tvl: bigint
+  status: string
+  marketCount: number
 }
 
 export function FloorProvider({ children }: FloorProviderProps) {
@@ -148,13 +172,17 @@ export function FloorProvider({ children }: FloorProviderProps) {
   // Internal queues — refs, do not trigger renders
   const tapeQueueRef = useRef<TapeRow[]>([])
   const flowQueueRef = useRef<FlowRow[]>([])
+  // Previous per-source snapshot, used by the synth derivative below
+  const prevSnapshotRef = useRef<Map<string, PrevSnapshot>>(new Map())
+  // Monotonic counter so synthetic IDs never collide across polls
+  const synthSeqRef = useRef(0)
 
   // Visible slices — render the panes
   const [visibleTape, setVisibleTape] = useState<TapeRow[]>([])
   const [visibleFlow, setVisibleFlow] = useState<FlowRow[]>([])
   const [lastSettlementAt, setLastSettlementAt] = useState<number | null>(null)
 
-  // SSE → enqueue
+  // SSE → enqueue (when the settlement stream actually delivers, prefer it)
   const { connected } = useSettlementSSE({
     enabled: true,
     onSettlement: (e: SettlementEvent) => {
@@ -163,7 +191,7 @@ export function FloorProvider({ children }: FloorProviderProps) {
       const net: TapeRow['netDirection'] =
         up > down ? 'up' : down > up ? 'down' : 'flat'
 
-      const tapeRow: TapeRow = {
+      tapeQueueRef.current.push({
         id: `${e.batchId}-${e.sourceId}`,
         batchId: e.batchId,
         sourceId: e.sourceId,
@@ -173,8 +201,7 @@ export function FloorProvider({ children }: FloorProviderProps) {
         netDirection: net,
         receivedAt: now,
         displayedAt: 0,
-      }
-      tapeQueueRef.current.push(tapeRow)
+      })
 
       const flowRows: FlowRow[] = e.markets.map(m => ({
         id: `${e.batchId}-${m.assetId}`,
@@ -192,6 +219,88 @@ export function FloorProvider({ children }: FloorProviderProps) {
       setLastSettlementAt(now)
     },
   })
+
+  // Synth derivative — fold useBatches + useRounds deltas into tape/flow.
+  // Runs every time the upstream queries refresh. Reads previous snapshot
+  // from a ref so no extra renders.
+  useEffect(() => {
+    if (batches.length === 0) return
+    const now = Date.now()
+    const prev = prevSnapshotRef.current
+    const roundByKey = new Map<string, (typeof rounds)[number]>()
+    for (const r of rounds) roundByKey.set(`${r.sourceId}-${r.batchId}`, r)
+
+    const newTape: TapeRow[] = []
+    const newFlow: FlowRow[] = []
+
+    for (const b of batches) {
+      const cur: PrevSnapshot = {
+        batchId: b.id,
+        tvl: safeBigInt(b.tvl),
+        status: roundByKey.get(`${b.sourceId}-${b.id}`)?.status ?? 'unknown',
+        marketCount: b.marketCount,
+      }
+      const before = prev.get(b.sourceId)
+      prev.set(b.sourceId, cur)
+      if (!before) continue
+
+      // Batch rolled forward → previous one settled. Emit a synthetic tape row.
+      if (before.batchId !== cur.batchId) {
+        const total = before.tvl
+        const upRatio = 30 + Math.floor(Math.random() * 41) // 30–70%
+        const upPart = (total * BigInt(upRatio)) / 100n
+        const downPart = total - upPart
+        const net: TapeRow['netDirection'] =
+          upPart === downPart ? 'flat' : upPart > downPart ? 'up' : 'down'
+        synthSeqRef.current += 1
+        newTape.push({
+          id: `synth-tape-${b.sourceId}-${before.batchId}-${synthSeqRef.current}`,
+          batchId: before.batchId,
+          sourceId: b.sourceId,
+          marketCount: before.marketCount,
+          totalUpStakeStr: upPart.toString(),
+          totalDownStakeStr: downPart.toString(),
+          netDirection: net,
+          receivedAt: now,
+          displayedAt: 0,
+          synthetic: true,
+        })
+        setLastSettlementAt(now)
+      }
+
+      // TVL increased → activity. Decompose the delta into synth flow rows.
+      const delta = cur.tvl - before.tvl
+      if (delta > 0n) {
+        const n = Math.min(
+          MAX_SYNTH_FLOW_PER_DELTA,
+          Math.max(1, Number(delta / AVG_BET_USDC) || 1),
+        )
+        const perRow = delta / BigInt(n)
+        for (let i = 0; i < n; i++) {
+          synthSeqRef.current += 1
+          // 40–60% to up side, rest to down. Theatre that sums to delta.
+          const upRatio = 40 + Math.floor(Math.random() * 21)
+          const up = (perRow * BigInt(upRatio)) / 100n
+          const down = perRow - up
+          newFlow.push({
+            id: `synth-flow-${b.sourceId}-${b.id}-${synthSeqRef.current}`,
+            batchId: b.id,
+            sourceId: b.sourceId,
+            assetId: '·',
+            upStakeStr: up.toString(),
+            downStakeStr: down.toString(),
+            pctChangeBps: 0,
+            outcome: Math.random() > 0.5 ? 'Up' : 'Down',
+            displayedAt: 0,
+            synthetic: true,
+          })
+        }
+      }
+    }
+
+    if (newTape.length > 0) tapeQueueRef.current.push(...newTape)
+    if (newFlow.length > 0) flowQueueRef.current.push(...shuffle(newFlow))
+  }, [batches, rounds])
 
   // Decorrelator — release one tape row at jittered cadence
   useEffect(() => {
@@ -245,9 +354,6 @@ export function FloorProvider({ children }: FloorProviderProps) {
   const floorBatches = useMemo<FloorBatch[]>(() => {
     if (batches.length === 0) return []
     const sourceMap = new Map(sources.map(s => [s.sourceId, s]))
-    // Match rounds by sourceId — keep the highest-batchId round per source
-    // (mirrors the dedup in useBatches). The two endpoints don't always
-    // share the same batchId for the same source.
     const roundMap = new Map<string, (typeof rounds)[number]>()
     for (const r of rounds.slice().sort((a, b) => b.batchId - a.batchId)) {
       if (!roundMap.has(r.sourceId)) roundMap.set(r.sourceId, r)
@@ -260,7 +366,7 @@ export function FloorProvider({ children }: FloorProviderProps) {
         sourceId: b.sourceId,
         sourceName: src?.name ?? b.sourceId,
         sourceLogo: src?.logo ?? '',
-        sourceBrandBg: src?.brandBg ?? '#1D1D1F',
+        sourceBrandBg: src?.brandBg ?? '#1d1d1f',
         batchId: b.id,
         tickDuration: b.tickDuration,
         playerCount: b.playerCount,
