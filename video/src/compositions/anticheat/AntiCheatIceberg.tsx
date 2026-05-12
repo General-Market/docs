@@ -7,36 +7,29 @@ import {
   staticFile,
   useCurrentFrame,
 } from "remotion";
+import { CameraMotionBlur } from "@remotion/motion-blur";
 import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W } from "./theme";
 import { Specular } from "./fx/Specular";
+import { Volumetrics } from "./fx/Volumetrics";
+import { Wash } from "./fx/Wash";
 import { VIDEO_BEATS } from "./beats";
 
 // The "I lost because of …" iceberg.
 //
-// Iceberg fills the frame width edge to edge. Opens with a zoom-out from a
-// close-up on the tip (scale 2.6 → 1.518) then scrolls down through six
-// bands. The scroll clamps when the iceberg's bottom hits the frame's
-// bottom — past that, the last two tiers descend toward the floor instead
-// of pulling into a void.
-//
-// Tier 0 (strategy) sits in the sky band above the upper pink line; every
-// other tier shifts up one slot.
-//
-// The descent has weather. Above tier 1 the air is warm and lit. At T1
-// the camera crosses the waterline (a single sweep). From there a deep
-// blue gradient and rising bubble particulate take over; the iceberg
-// image cools per tier; the climax at "insider traders" lands with a
-// specular flash, a chromatic split, and a solarised NYSE. The tier
-// reveals are pinned to the music's beat grid — every stamp lands on a
-// drum.
+// Camera descends through six tiers. The clamp on scroll has been
+// removed — at T4 and T5 the iceberg's bottom rises into the frame,
+// revealing abyss below. Surface god rays at T0–T2. Waterline sweep
+// at T1. Underwater takes hold afterward: caustic shimmer, three
+// bubble depth layers, motion-blur on the scroll. The climax at
+// "insider traders" gets specular sweep, chromatic split, NYSE
+// solarise, red bloom, and a Wash vignette. Tier stamps are pinned
+// to VIDEO_BEATS.
 
 const IMG_NATIVE_W = 1265;
 const IMG_NATIVE_H = 1670;
 
 const FILL_SCALE = W / IMG_NATIVE_W;        // ~1.518
-const FILL_H = IMG_NATIVE_H * FILL_SCALE;   // ~2535
-const MAX_SCROLL = -(FILL_H - H);           // ~-1455 — image bottom on frame bottom
 
 const ZOOM_START_SCALE = 2.6;
 
@@ -50,10 +43,25 @@ const TIER_Y_NATIVE = [
 ];
 const TIER_Y_FILL = TIER_Y_NATIVE.map((y) => y * FILL_SCALE);
 
+// Pink guide lines baked into the source webp at these native y values.
+// Painted over at runtime so the colour grade doesn't bleed red.
+const GUIDE_LINES_NATIVE = [269, 539, 857, 1141, 1430];
+
 const PRIMARY_ACTIVE_Y = TIER_Y_FILL[0];
 
-const rawScrollAtTier = (i: number) => PRIMARY_ACTIVE_Y - TIER_Y_FILL[i];
-const scrollAtTier = (i: number) => Math.max(rawScrollAtTier(i), MAX_SCROLL);
+// Camera target screen-y per tier. T0–T3 sit at the top sixth of frame.
+// T4 holds the iceberg high so the abyss opens below. T5 plunges
+// further — only the depth tier shows, the rest of the frame is
+// emptiness.
+const SCREEN_TARGET_Y = (i: number) => {
+  if (i === 5) return 240;
+  if (i === 4) return 220;
+  return PRIMARY_ACTIVE_Y;
+};
+
+// No clamp. The iceberg's bottom may rise above the bottom of the
+// frame — that's the point.
+const scrollAtTier = (i: number) => SCREEN_TARGET_Y(i) - TIER_Y_FILL[i];
 
 type Tier = {
   word: string[];
@@ -91,11 +99,8 @@ const TRADING_TIERS: TradingTier[] = [
 const EASE_OUT = Easing.bezier(0.25, 0.1, 0.3, 1);
 const EASE_DEFAULT = Easing.bezier(0.4, 0, 0.6, 1);
 
-// Beat-locked tier stamps. Iceberg's master-frame window is [111, 331].
-// Local beats inside the window: 10, 36, 61, 87, 113, 139, 164, 190, 216.
-// The first beat falls during the opening zoom-out — drop it. The next
-// six become the six tier stamps. Stamp peaks at animStart + 9 (suffix
-// scale apex), so each animStart = beat - 9.
+// Beat-locked tier stamps. Iceberg master window [111, 331].
+// Local beats: 10, 36, 61, 87, 113, 139, 164, 190, 216.
 const TIER_STAMP_LOCAL = [36, 61, 87, 113, 139, 164] as const;
 const STAMP_OFFSET_FROM_ANIM = 9;
 const TIER_ANIM = 11;
@@ -114,8 +119,6 @@ const tierHoldEnd = (i: number) =>
 const SCENE_FRAMES =
   tierAnimStart(LAST) + TIER_ANIM + FINAL_HOLD + OUTRO; // 220
 
-// The waterline crossing — single sweep at the moment the camera enters
-// tier 1 (the tip). Six frames. After that the world is underwater.
 const WATERLINE_START = tierAnimStart(1);
 const WATERLINE_DUR = 6;
 const WATERLINE_FADE = 18;
@@ -147,8 +150,7 @@ const computeScale = (state: State): number => {
     });
   if (state.sub === "hold") {
     const pulse = Math.sin(state.t * Math.PI) * 0.008;
-    // Climax frame: extra linear push during T5 hold.
-    const climaxPush = state.tier === LAST ? state.t * 0.06 : 0;
+    const climaxPush = state.tier === LAST ? state.t * 0.05 : 0;
     return FILL_SCALE * (1 + pulse + climaxPush);
   }
   return FILL_SCALE;
@@ -163,20 +165,19 @@ const computeScrollY = (state: State): number => {
   return a + (b - a) * EASE_OUT(state.t);
 };
 
-// Per-tier colour grade for the iceberg image. Cameron's Titanic move —
-// warm at the surface, cold in the deep.
+// Per-tier colour grade. Hue-rotate kept narrow so the iceberg's
+// blue stays believable. Brightness drops with depth.
 const computeIcebergFilter = (state: State): string => {
   const d =
     state.phase === "tier"
       ? (state.tier + (state.sub === "anim" ? state.t : 1)) / N
       : 0;
-  const hue = interpolate(d, [0, 0.45, 1], [-10, 0, 15]);
-  const sat = interpolate(d, [0, 0.5, 1], [1.1, 1.0, 1.18]);
-  const bright = interpolate(d, [0, 0.5, 1], [1.1, 1.0, 0.72]);
-  return `hue-rotate(${hue.toFixed(2)}deg) saturate(${sat.toFixed(3)}) brightness(${bright.toFixed(3)})`;
+  const sat = interpolate(d, [0, 0.5, 1], [1.05, 0.95, 1.15]);
+  const bright = interpolate(d, [0, 0.5, 1], [1.08, 0.92, 0.62]);
+  const contrast = interpolate(d, [0, 1], [1.0, 1.18]);
+  return `saturate(${sat.toFixed(3)}) brightness(${bright.toFixed(3)}) contrast(${contrast.toFixed(3)})`;
 };
 
-// Depth gauge readings per tier. The iceberg metaphor needs a yardstick.
 const DEPTH_METERS = [-5, -15, -65, -160, -260, -340] as const;
 
 const interpDepth = (state: State): number => {
@@ -188,9 +189,6 @@ const interpDepth = (state: State): number => {
   return a + (b - a) * EASE_OUT(state.t);
 };
 
-// Deterministic bubble field — rises at speed 0.6-1.6 px/frame, wraps
-// around the bottom. Wobble adds slight horizontal sway. Only visible
-// after the waterline crossing.
 type Bubble = { x: number; baseY: number; size: number; speed: number; phase: number };
 
 const seeded = (i: number, m = 233280) => {
@@ -198,22 +196,22 @@ const seeded = (i: number, m = 233280) => {
   return s / m;
 };
 
-const BUBBLES: Bubble[] = Array.from({ length: 36 }, (_, i) => ({
-  x: seeded(i) * W,
-  baseY: seeded(i + 100) * H * 1.5,
-  size: 4 + Math.round(seeded(i + 200) * 14),
-  speed: 0.55 + seeded(i + 300) * 1.1,
-  phase: seeded(i + 400) * Math.PI * 2,
-}));
+const makeField = (count: number, seedBase: number, sizeBase: number, sizeRange: number, speedBase: number, speedRange: number): Bubble[] =>
+  Array.from({ length: count }, (_, i) => ({
+    x: seeded(i + seedBase) * W,
+    baseY: seeded(i + seedBase + 100) * H * 1.6,
+    size: sizeBase + Math.round(seeded(i + seedBase + 200) * sizeRange),
+    speed: speedBase + seeded(i + seedBase + 300) * speedRange,
+    phase: seeded(i + seedBase + 400) * Math.PI * 2,
+  }));
 
-// Suspended particulate — slower, mid-depth plane, parallaxes at 0.6×.
-const PARTICULATE: Bubble[] = Array.from({ length: 22 }, (_, i) => ({
-  x: seeded(i + 500) * W,
-  baseY: seeded(i + 600) * H * 1.5,
-  size: 2 + Math.round(seeded(i + 700) * 4),
-  speed: 0.2 + seeded(i + 800) * 0.3,
-  phase: seeded(i + 900) * Math.PI * 2,
-}));
+// Three depth layers — far/blurred/slow, mid/sharp/medium, near/large/fast.
+const BUBBLES_FAR = makeField(28, 500, 2, 3, 0.15, 0.25);
+const BUBBLES_MID = makeField(22, 1000, 5, 6, 0.5, 0.8);
+const BUBBLES_NEAR = makeField(14, 2000, 12, 18, 1.0, 1.3);
+
+// Bioluminescent sparkle field in the abyss.
+const SPARKS = makeField(24, 3000, 1, 2, 0, 0);
 
 const HERO_SHADOW =
   "0 4px 28px rgba(0,0,0,0.95), 0 2px 10px rgba(0,0,0,0.9), 0 0 56px rgba(0,0,0,0.55)";
@@ -227,7 +225,7 @@ export const AntiCheatIceberg: React.FC = () => {
 
   const activeTier = state.phase === "tier" ? state.tier : -1;
   const activeFrameY =
-    activeTier >= 0 ? TIER_Y_FILL[activeTier] + scrollY : PRIMARY_ACTIVE_Y;
+    activeTier >= 0 ? TIER_Y_FILL[activeTier] + scrollY * 1 : PRIMARY_ACTIVE_Y;
 
   const prefixPulse =
     state.phase === "tier" && state.sub === "anim"
@@ -262,9 +260,8 @@ export const AntiCheatIceberg: React.FC = () => {
 
   const descentProgress =
     state.phase === "tier" ? state.tier / LAST : 0;
-  const vignetteAlpha = 0.18 + 0.32 * descentProgress;
+  const vignetteAlpha = 0.22 + 0.4 * descentProgress;
 
-  // Underwater takes hold after the sweep.
   const underwaterT = interpolate(
     frame,
     [WATERLINE_START, WATERLINE_START + WATERLINE_DUR + WATERLINE_FADE],
@@ -272,8 +269,42 @@ export const AntiCheatIceberg: React.FC = () => {
     { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: EASE_OUT },
   );
 
-  // Deep gradient bg — drifts up slowly as we descend, cools with tier.
+  // Camera-in-water sway. Subtle horizontal drift on the iceberg layer
+  // sells "we are submerged."
+  const swayX =
+    underwaterT > 0 ? Math.sin(frame / 32) * 6 * underwaterT : 0;
+  const swayY = underwaterT > 0 ? Math.cos(frame / 47) * 3 * underwaterT : 0;
+
+  // Caustic light position drift — two animated radial gradients overlap
+  // and translate independently. Reads as shimmering water light on top
+  // of the iceberg.
+  const causticT = frame;
+  const caustic1X = 30 + Math.sin(causticT / 36) * 22;
+  const caustic1Y = 20 + Math.cos(causticT / 48) * 14;
+  const caustic2X = 70 + Math.cos(causticT / 42) * 18;
+  const caustic2Y = 15 + Math.sin(causticT / 58) * 12;
+
+  // Background gradient — surface light fades, abyss takes over.
   const bgScroll = scrollY * 0.3;
+
+  // Climax housekeeping.
+  const isClimax = state.phase === "tier" && state.tier === LAST;
+  const t5HoldT =
+    isClimax && state.sub === "hold" ? state.t : isClimax ? 0 : 0;
+
+  // Past suffixes fade out during the climax — the field has earned the
+  // right to be empty by the time "insider traders" lands.
+  const pastFade = isClimax
+    ? interpolate(state.sub === "hold" ? state.t : 0, [0, 0.4], [0.62, 0], {
+        extrapolateLeft: "clamp",
+        extrapolateRight: "clamp",
+      })
+    : 1;
+
+  // Whether the scroll between tiers is currently in motion. Motion blur
+  // kicks in for those frames only.
+  const scrollMoving =
+    state.phase === "tier" && state.sub === "anim" && state.tier > 0;
 
   return (
     <AbsoluteFill
@@ -284,15 +315,16 @@ export const AntiCheatIceberg: React.FC = () => {
         overflow: "hidden",
       }}
     >
-      {/* Far-back parallax gradient — surface light on top, abyss below.
-          Slowly migrates with the camera. */}
+      {/* Far-back atmosphere — surface light up top, abyss below. The
+          deepest descent eats the gradient entirely. */}
       <AbsoluteFill
         style={{
           background: `
-            radial-gradient(120% 80% at 50% ${-10 + descentProgress * 30}%,
-              rgba(120, 168, 220, ${0.28 * (1 - underwaterT * 0.4)}) 0%,
-              rgba(20, 38, 70, ${0.85 * underwaterT}) 35%,
-              rgba(4, 10, 22, ${0.96 * underwaterT}) 100%
+            radial-gradient(140% 90% at 50% ${-15 + descentProgress * 40}%,
+              rgba(140, 188, 240, ${0.32 * (1 - underwaterT * 0.5)}) 0%,
+              rgba(38, 78, 128, ${0.78 * underwaterT}) 28%,
+              rgba(12, 26, 52, ${0.94 * underwaterT}) 60%,
+              rgba(2, 6, 14, ${0.98 * underwaterT}) 100%
             )
           `,
           transform: `translateY(${bgScroll.toFixed(2)}px)`,
@@ -300,69 +332,166 @@ export const AntiCheatIceberg: React.FC = () => {
         }}
       />
 
-      {/* Mid-depth particulate — slower than camera, debris suspended in
-          the column. Renders only once the water has us. */}
-      {underwaterT > 0.05 && (
+      {/* Far depth — slow, blurred particulate, parallaxes at 0.4×. */}
+      {underwaterT > 0.03 && (
         <Particles
-          field={PARTICULATE}
+          field={BUBBLES_FAR}
           frame={frame}
-          parallax={0.6 * scrollY}
-          colour={`rgba(180, 210, 240, ${0.16 * underwaterT})`}
-          blur={1.5}
+          parallax={0.4 * scrollY}
+          colour={`rgba(170, 200, 235, ${0.18 * underwaterT})`}
+          blur={2}
         />
       )}
 
-      {/* Iceberg — full-width, scrolling, top-centre origin. Per-tier
-          colour grade. */}
-      <div
-        style={{
-          position: "absolute",
-          left: "50%",
-          top: scrollY,
-          width: IMG_NATIVE_W,
-          height: IMG_NATIVE_H,
-          transform: `translate(-50%, 0) scale(${scale.toFixed(4)})`,
-          transformOrigin: "top center",
-          willChange: "transform, top",
-          filter: icebergFilter,
-        }}
-      >
-        <Img
-          src={staticFile("iceberg-tiers.webp")}
-          style={{ width: IMG_NATIVE_W, height: IMG_NATIVE_H, display: "block" }}
+      {/* Surface god rays — peak at the waterline crossing, decay as we
+          descend. Light from above-frame. */}
+      <Volumetrics
+        peakFrame={WATERLINE_START - 4}
+        attack={14}
+        decay={70}
+        cx="50%"
+        cy="-8%"
+        color="rgba(140, 200, 255, 0.6)"
+        coreColor="rgba(220, 240, 255, 0.85)"
+        intensity={Math.max(0, 1 - descentProgress * 1.4)}
+        rays={26}
+        rayWidth={0.9}
+        blur={2.4}
+        reach="85%"
+        streak={false}
+      />
+
+      {/* Iceberg layer — wrapped in motion blur during scroll transitions.
+          Caustic shimmer + per-tier colour grade live inside this layer
+          so they ride the iceberg. */}
+      <ConditionalMotionBlur active={scrollMoving} shutter={140}>
+        <div
+          style={{
+            position: "absolute",
+            left: "50%",
+            top: scrollY + swayY,
+            width: IMG_NATIVE_W,
+            height: IMG_NATIVE_H,
+            transform: `translate(${(-50).toFixed(0)}%, 0) translateX(${swayX.toFixed(2)}px) scale(${scale.toFixed(4)})`,
+            transformOrigin: "top center",
+            willChange: "transform, top",
+            filter: icebergFilter,
+          }}
+        >
+          <Img
+            src={staticFile("iceberg-tiers.webp")}
+            style={{ width: IMG_NATIVE_W, height: IMG_NATIVE_H, display: "block" }}
+          />
+
+          {/* Mask the pink guide lines baked into the source. Each strip
+              fades to transparent on the edges so it looks like a natural
+              shadow groove rather than a painted bar. */}
+          {GUIDE_LINES_NATIVE.map((y) => (
+            <div
+              key={y}
+              style={{
+                position: "absolute",
+                left: -IMG_NATIVE_W * 0.05,
+                top: y - 7,
+                width: IMG_NATIVE_W * 1.1,
+                height: 14,
+                background:
+                  "linear-gradient(180deg, rgba(8,18,38,0) 0%, rgba(8,18,38,0.92) 50%, rgba(8,18,38,0) 100%)",
+                pointerEvents: "none",
+                mixBlendMode: "multiply",
+              }}
+            />
+          ))}
+
+          {/* Caustic light shimmer — two drifting radials. Only above the
+              waterline (native y < 539, the upper iceberg). */}
+          {underwaterT < 0.95 && (
+            <div
+              style={{
+                position: "absolute",
+                left: 0,
+                top: 0,
+                width: IMG_NATIVE_W,
+                height: 539,
+                background: `
+                  radial-gradient(ellipse 30% 18% at ${caustic1X}% ${caustic1Y}%, rgba(220,240,255,${0.28 * (1 - underwaterT)}) 0%, transparent 60%),
+                  radial-gradient(ellipse 24% 14% at ${caustic2X}% ${caustic2Y}%, rgba(190,220,250,${0.22 * (1 - underwaterT)}) 0%, transparent 60%)
+                `,
+                mixBlendMode: "screen",
+                pointerEvents: "none",
+              }}
+            />
+          )}
+
+          {/* Underwater caustic — broader, slower, on the submerged
+              portion. Fades in with descent. */}
+          {underwaterT > 0.1 && (
+            <div
+              style={{
+                position: "absolute",
+                left: 0,
+                top: 539,
+                width: IMG_NATIVE_W,
+                height: IMG_NATIVE_H - 539,
+                background: `
+                  radial-gradient(ellipse 40% 22% at ${100 - caustic1X}% ${20 + caustic1Y * 0.5}%, rgba(120,180,235,${0.22 * underwaterT}) 0%, transparent 65%),
+                  radial-gradient(ellipse 35% 18% at ${100 - caustic2X}% ${30 + caustic2Y * 0.4}%, rgba(90,150,210,${0.18 * underwaterT}) 0%, transparent 65%)
+                `,
+                mixBlendMode: "screen",
+                pointerEvents: "none",
+              }}
+            />
+          )}
+        </div>
+      </ConditionalMotionBlur>
+
+      {/* Mid-depth bubbles between the iceberg and the foreground. */}
+      {underwaterT > 0.08 && (
+        <Particles
+          field={BUBBLES_MID}
+          frame={frame}
+          parallax={0.7 * scrollY}
+          colour={`rgba(195, 220, 245, ${0.34 * underwaterT})`}
+          ring
         />
-      </div>
+      )}
 
       {/* Specular sweep across the iceberg surface — climax marker on
-          tier 5 only. Sits above the iceberg, below the type. */}
-      {state.phase === "tier" && state.tier === LAST && (
+          tier 5 only. Above iceberg, below type. */}
+      {isClimax && (
         <Specular
           startFrame={tierAnimStart(LAST)}
-          duration={24}
+          duration={28}
           angle={108}
-          intensity={1.1}
-          color="rgba(255, 86, 110, 0.85)"
-          bandWidth={0.22}
+          intensity={1.2}
+          color="rgba(255, 92, 116, 0.92)"
+          bandWidth={0.24}
           blendMode="screen"
         />
       )}
 
-      {/* Atmospheric vignette that deepens as we descend. */}
+      {/* Atmospheric vignette deepens as we descend. */}
       <AbsoluteFill
         style={{
-          background: `radial-gradient(ellipse at 50% 45%, rgba(0,0,0,0) 35%, rgba(0,0,0,${vignetteAlpha.toFixed(3)}) 100%)`,
+          background: `radial-gradient(ellipse at 50% 35%, rgba(0,0,0,0) 30%, rgba(0,0,0,${vignetteAlpha.toFixed(3)}) 100%)`,
           pointerEvents: "none",
         }}
       />
 
-      {/* Past tier suffixes — settled on the iceberg, scroll with it. */}
+      {/* Past tier suffixes — fade out during the climax. */}
       {TIERS.map((tier, i) =>
         state.phase === "tier" && i < state.tier ? (
-          <PastSuffix key={i} tier={tier} index={i} scrollY={scrollY} />
+          <PastSuffix
+            key={i}
+            tier={tier}
+            index={i}
+            scrollY={scrollY}
+            opacity={pastFade}
+          />
         ) : null,
       )}
 
-      {/* Active row — prefix + suffix + optional adornments. */}
+      {/* Active row. */}
       {activeTier >= 0 && (
         <ActiveRow
           state={state}
@@ -387,31 +516,75 @@ export const AntiCheatIceberg: React.FC = () => {
         />
       ))}
 
-      {/* Foreground bubble column — rises through the frame after the
-          waterline crossing. Parallaxes faster than the camera. */}
-      {underwaterT > 0.05 && (
-        <Particles
-          field={BUBBLES}
+      {/* Bioluminescent sparkle in the abyss — only when the iceberg has
+          retreated and the bottom of the frame is mostly dark. */}
+      {state.phase === "tier" && state.tier >= 4 && (
+        <SparkField
+          field={SPARKS}
           frame={frame}
-          parallax={1.3 * scrollY}
-          colour={`rgba(220, 235, 250, ${0.32 * underwaterT})`}
-          ring
+          intensity={interpolate(state.tier - 4 + (state.sub === "anim" ? state.t : 1), [0, 2], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })}
         />
       )}
 
-      {/* The waterline crossing — one sweep, then a thin persistent line
-          that scrolls with the surface position. */}
+      {/* Foreground bubble column — fastest, largest, most blurred. */}
+      {underwaterT > 0.05 && (
+        <Particles
+          field={BUBBLES_NEAR}
+          frame={frame}
+          parallax={1.4 * scrollY}
+          colour={`rgba(230, 240, 250, ${0.42 * underwaterT})`}
+          ring
+          blur={0.5}
+        />
+      )}
+
+      {/* The waterline crossing — single sweep, then a thin persistent
+          line that scrolls with the surface. */}
       <Waterline frame={frame} scrollY={scrollY} />
 
-      {/* Depth gauge — bottom-left, mono. Ticks as we descend. */}
-      <DepthGauge state={state} frame={frame} />
+      {/* Climax wash — periphery darkens and a cool tint scrim wraps the
+          frame. Holds through T5 hold + outro. */}
+      {isClimax && (
+        <Wash
+          startFrame={tierAnimStart(LAST) - 4}
+          inFrames={14}
+          hold={FINAL_HOLD + 8}
+          outFrames={OUTRO}
+          cx="34%"
+          cy="50%"
+          holeSize="22%"
+          holeSoftness="68%"
+          vignette={0.55}
+          vignetteColor="rgba(4, 8, 18, 1)"
+          tint="rgba(80, 24, 48, 1)"
+          tintOpacity={0.18}
+          blendMode="multiply"
+        />
+      )}
 
-      {/* Source citation — bottom-left, only when the active tier has a
-          source. Shifts up to make room for the depth gauge. */}
+      {/* Depth gauge — bigger and lower during T5 climax. */}
+      <DepthGauge state={state} frame={frame} isClimax={isClimax} climaxT={t5HoldT} />
+
+      {/* Source citation. */}
       {activeTier >= 0 && TIERS[activeTier].source && (
         <SourceCitation url={TIERS[activeTier].source!} state={state} />
       )}
     </AbsoluteFill>
+  );
+};
+
+// ─── Conditional motion blur ──────────────────────────────────────────────────
+
+const ConditionalMotionBlur: React.FC<{
+  active: boolean;
+  shutter: number;
+  children: React.ReactNode;
+}> = ({ active, shutter, children }) => {
+  if (!active) return <>{children}</>;
+  return (
+    <CameraMotionBlur shutterAngle={Math.min(180, shutter)} samples={2}>
+      {children}
+    </CameraMotionBlur>
   );
 };
 
@@ -431,7 +604,7 @@ const Particles: React.FC<{
         const period = H + 200;
         const raw = b.baseY - frame * b.speed + parallax;
         const wrapped = ((raw % period) + period) % period - 100;
-        const wobble = Math.sin(frame / 26 + b.phase) * 6;
+        const wobble = Math.sin(frame / 26 + b.phase) * 7;
         const x = b.x + wobble;
         return (
           <div
@@ -447,8 +620,46 @@ const Particles: React.FC<{
               border: ring ? `1px solid ${colour}` : "none",
               boxShadow: ring
                 ? `inset 0 0 ${b.size}px ${colour}, 0 0 ${b.size * 1.5}px ${colour}`
-                : "none",
+                : `0 0 ${b.size}px ${colour}`,
               filter: blur ? `blur(${blur}px)` : undefined,
+            }}
+          />
+        );
+      })}
+    </AbsoluteFill>
+  );
+};
+
+// ─── Sparkle field ────────────────────────────────────────────────────────────
+
+const SparkField: React.FC<{
+  field: Bubble[];
+  frame: number;
+  intensity: number;
+}> = ({ field, frame, intensity }) => {
+  if (intensity <= 0) return null;
+  return (
+    <AbsoluteFill style={{ pointerEvents: "none" }}>
+      {field.map((s, i) => {
+        const phase = (frame / 18 + s.phase) % (Math.PI * 2);
+        const twinkle = Math.max(0, Math.sin(phase));
+        const opacity = twinkle * intensity * 0.95;
+        // Constrain to lower half of frame so sparkles read as deep-water.
+        const y = (H * 0.45) + s.baseY * 0.35;
+        return (
+          <div
+            key={i}
+            style={{
+              position: "absolute",
+              left: s.x,
+              top: y,
+              width: 3,
+              height: 3,
+              borderRadius: "50%",
+              background: "rgba(180, 220, 255, 1)",
+              boxShadow:
+                "0 0 8px rgba(180,220,255,0.95), 0 0 18px rgba(120,180,240,0.6)",
+              opacity,
             }}
           />
         );
@@ -465,9 +676,6 @@ const Waterline: React.FC<{ frame: number; scrollY: number }> = ({
 }) => {
   if (frame < WATERLINE_START) return null;
 
-  // Sweep window: a wide luminous bar that expands from centre to full
-  // width over WATERLINE_DUR frames. After it, a thin persistent line
-  // marks the surface and scrolls with the iceberg.
   const sweepLocal = frame - WATERLINE_START;
   const sweepT = Math.min(1, sweepLocal / WATERLINE_DUR);
   const sweepWidth = EASE_OUT(sweepT) * W;
@@ -475,10 +683,9 @@ const Waterline: React.FC<{ frame: number; scrollY: number }> = ({
     ? 1
     : Math.max(0, 1 - (sweepLocal - WATERLINE_DUR) / WATERLINE_FADE);
 
-  // Persistent surface line. Anchored to T1's band top in iceberg-space,
-  // moves with scrollY.
   const surfaceY = 269 * FILL_SCALE + scrollY;
-  const lineOpacity = Math.max(0, Math.min(1, (sweepLocal - WATERLINE_DUR) / WATERLINE_FADE)) * 0.7;
+  const lineOpacity =
+    Math.max(0, Math.min(1, (sweepLocal - WATERLINE_DUR) / WATERLINE_FADE)) * 0.62;
 
   return (
     <>
@@ -540,7 +747,6 @@ const BAND_BOUNDS = BAND_BOUNDS_NATIVE.map((b) => ({
 
 const BAND_RIGHT_INSET = 0;
 const BAND_WIDTH = 360;
-const BAND_VERTICAL_PADDING = 0;
 
 const TierImage: React.FC<{
   tier: TradingTier;
@@ -551,29 +757,36 @@ const TierImage: React.FC<{
   frame: number;
 }> = ({ tier, index, scrollY, isActive, state, frame }) => {
   const band = BAND_BOUNDS[index];
-  const top = band.top + scrollY + BAND_VERTICAL_PADDING;
-  const height = band.height - BAND_VERTICAL_PADDING * 2;
+  const top = band.top + scrollY;
+  const height = band.height;
 
   if (top + height < -120 || top > H + 120) return null;
 
-  // NYSE (tier 5) solarises for 4 frames at the climax stamp.
   const solariseStart = tierAnimStart(LAST) + 5;
   const isSolarising =
     index === LAST &&
     frame >= solariseStart &&
     frame < solariseStart + 4;
 
-  // Ken Burns push on the active photo during hold.
   const kenBurns =
     isActive && state.phase === "tier" && state.sub === "hold"
-      ? 1 + state.t * 0.04
+      ? 1 + state.t * 0.05
       : 1;
 
   const filter = isSolarising
     ? "invert(1) saturate(0.4) hue-rotate(180deg)"
     : isActive
-      ? "saturate(1.08) brightness(1)"
-      : "grayscale(1) brightness(0.55) blur(1px)";
+      ? "saturate(1.1) brightness(1)"
+      : "grayscale(1) brightness(0.45) blur(1.5px)";
+
+  const borderColor =
+    index === LAST
+      ? "rgba(255,86,110,0.95)"
+      : "rgba(255,255,255,0.92)";
+  const glowColor =
+    index === LAST
+      ? "rgba(255,86,110,0.55)"
+      : "rgba(255,255,255,0.25)";
 
   return (
     <div
@@ -585,9 +798,7 @@ const TierImage: React.FC<{
         height,
         overflow: "hidden",
         boxShadow: isActive
-          ? index === LAST
-            ? "inset 0 0 0 3px rgba(255,86,110,0.95), inset 0 0 60px rgba(255,86,110,0.35)"
-            : "inset 0 0 0 3px rgba(255,255,255,0.92), inset 0 0 38px rgba(255,255,255,0.2)"
+          ? `inset 0 0 0 3px ${borderColor}, inset 0 0 60px ${glowColor}`
           : "none",
         background: "#000000",
         pointerEvents: "none",
@@ -616,11 +827,11 @@ const TierImage: React.FC<{
           bottom: 0,
           padding: "22px 16px 12px",
           background:
-            "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.88) 100%)",
+            "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.92) 100%)",
           fontFamily: font,
           fontSize: 18,
           fontWeight: 600,
-          color: isActive ? "#FFFFFF" : "rgba(255,255,255,0.62)",
+          color: isActive ? "#FFFFFF" : "rgba(255,255,255,0.55)",
           letterSpacing: "-0.012em",
           textAlign: "left",
           lineHeight: 1.2,
@@ -656,14 +867,28 @@ const ActiveRow: React.FC<{
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
     });
-    suffixScale = interpolate(at, [0.55, 0.85, 1], [0.96, 1.05, 1], {
+    suffixScale = interpolate(at, [0.55, 0.85, 1], [0.96, 1.08, 1], {
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
       easing: EASE_DEFAULT,
     });
   }
 
-  const sizes = suffixSizing(t.word);
+  // Climax suffix breathes — beat-pulses on local 164, 190, 216.
+  const isClimax = tier === LAST;
+  let climaxBreath = 0;
+  if (isClimax) {
+    const beats = [164, 190, 216];
+    for (const b of beats) {
+      const d = frame - b;
+      if (d >= -3 && d <= 18) {
+        const env = d <= 0 ? (d + 3) / 3 : 1 - d / 18;
+        if (env > climaxBreath) climaxBreath = env;
+      }
+    }
+  }
+
+  const sizes = suffixSizing(t.word, isClimax ? 1.12 : 1);
   const suffixColor = t.accent ?? "#FFFFFF";
 
   const HAS_ICON = !!t.icon;
@@ -678,10 +903,9 @@ const ActiveRow: React.FC<{
   if (HAS_QUOTE) stackBelow += 56;
   const captionY = stackBelow;
 
-  // Climax chromatic split — only on tier 5, two-frame window at stamp.
   const stampFrame = tierAnimStart(LAST) + STAMP_OFFSET_FROM_ANIM;
   const chromaticDelta = frame - stampFrame;
-  const chromaticOn = tier === LAST && chromaticDelta >= 0 && chromaticDelta < 3;
+  const chromaticOn = isClimax && chromaticDelta >= 0 && chromaticDelta < 3;
   const chromaticIntensity = chromaticOn ? 1 - chromaticDelta / 3 : 0;
 
   const suffixContent = (
@@ -701,12 +925,16 @@ const ActiveRow: React.FC<{
     </>
   );
 
+  const climaxGlow = isClimax
+    ? `, 0 0 ${28 + climaxBreath * 80}px rgba(255,68,90,${0.55 + climaxBreath * 0.45}), 0 0 ${60 + climaxBreath * 120}px rgba(255,86,110,${0.35 + climaxBreath * 0.4})`
+    : "";
+
   const suffixBase: React.CSSProperties = {
     position: "absolute",
     left: 0,
     right: 360,
     top: activeFrameY + suffixSlide,
-    transform: `translateY(-50%) scale(${suffixScale.toFixed(3)})`,
+    transform: `translateY(-50%) scale(${(suffixScale * (1 + climaxBreath * 0.02)).toFixed(3)})`,
     transformOrigin: "center center",
     opacity: suffixOpacity,
     textAlign: "center",
@@ -715,7 +943,7 @@ const ActiveRow: React.FC<{
     letterSpacing: "-0.04em",
     lineHeight: 0.94,
     textShadow: t.accent
-      ? `${HERO_SHADOW}, 0 0 48px ${t.accent}55`
+      ? `${HERO_SHADOW}, 0 0 48px ${t.accent}55${climaxGlow}`
       : HERO_SHADOW,
     pointerEvents: "none",
     willChange: "transform, top, opacity",
@@ -723,7 +951,6 @@ const ActiveRow: React.FC<{
 
   return (
     <>
-      {/* Prefix above the icon (if any) or directly above the suffix. */}
       <div
         style={{
           position: "absolute",
@@ -771,8 +998,6 @@ const ActiveRow: React.FC<{
         </div>
       )}
 
-      {/* Suffix — hero type. On tier 5 the stamp moment fires a chromatic
-          split: two ghosted duplicates offset in red and cyan. */}
       {chromaticIntensity > 0 && (
         <>
           <div
@@ -909,10 +1134,12 @@ const PastSuffix: React.FC<{
   tier: Tier;
   index: number;
   scrollY: number;
-}> = ({ tier, index, scrollY }) => {
+  opacity: number;
+}> = ({ tier, index, scrollY, opacity }) => {
   const y = TIER_Y_FILL[index] + scrollY;
-  if (y < -200 || y > H + 200) return null;
-  const sizes = suffixSizing(tier.word, 0.72);
+  if (y < -260 || y > H + 200) return null;
+  if (opacity <= 0.02) return null;
+  const sizes = suffixSizing(tier.word, 0.7);
 
   return (
     <div
@@ -924,11 +1151,12 @@ const PastSuffix: React.FC<{
         transform: "translateY(-50%)",
         textAlign: "center",
         fontFamily: font,
-        color: "rgba(255,255,255,0.58)",
+        color: `rgba(255,255,255,${0.58 * opacity})`,
         letterSpacing: "-0.04em",
         lineHeight: 0.94,
         textShadow: HERO_SHADOW,
         pointerEvents: "none",
+        opacity,
       }}
     >
       {tier.word.map((line, idx) => (
@@ -949,38 +1177,53 @@ const PastSuffix: React.FC<{
 
 // ─── Depth gauge ──────────────────────────────────────────────────────────────
 
-const DepthGauge: React.FC<{ state: State; frame: number }> = ({
-  state,
-  frame,
-}) => {
+const DepthGauge: React.FC<{
+  state: State;
+  frame: number;
+  isClimax: boolean;
+  climaxT: number;
+}> = ({ state, frame, isClimax, climaxT }) => {
   if (state.phase !== "tier") return null;
   const depth = interpDepth(state);
   const ticking =
     state.phase === "tier" && state.sub === "anim";
-  // Sonar ping window — three frames after each tier stamp.
   const lastStamp = TIER_STAMP_LOCAL[state.tier] ?? 0;
   const pingDelta = frame - lastStamp;
-  const pingT = pingDelta >= 0 && pingDelta < 14 ? pingDelta / 14 : -1;
+  const pingT = pingDelta >= 0 && pingDelta < 18 ? pingDelta / 18 : -1;
+
+  // Climax: move to centre-bottom in the abyss and grow.
+  const scale = isClimax
+    ? interpolate(climaxT, [0, 0.3], [1, 1.45], {
+        extrapolateLeft: "clamp",
+        extrapolateRight: "clamp",
+      })
+    : 1;
 
   return (
     <div
       style={{
         position: "absolute",
-        right: 384,
+        right: isClimax ? "auto" : 388,
+        left: isClimax ? "50%" : "auto",
         bottom: 56,
+        transform: isClimax
+          ? `translateX(-50%) scale(${scale.toFixed(3)})`
+          : `scale(${scale.toFixed(3)})`,
+        transformOrigin: isClimax ? "center bottom" : "right bottom",
         fontFamily: monoFont,
-        color: "rgba(220,235,250,0.92)",
+        color: "rgba(220,235,250,0.95)",
         textShadow: "0 1px 6px rgba(0,0,0,0.95), 0 0 18px rgba(120,180,240,0.35)",
         pointerEvents: "none",
         zIndex: 12,
+        textAlign: isClimax ? "center" : "left",
       }}
     >
       <div
         style={{
           fontSize: 14,
-          letterSpacing: "0.22em",
+          letterSpacing: "0.24em",
           textTransform: "uppercase",
-          color: "rgba(180,210,240,0.7)",
+          color: "rgba(180,210,240,0.78)",
           marginBottom: 6,
         }}
       >
@@ -1000,15 +1243,17 @@ const DepthGauge: React.FC<{ state: State; frame: number }> = ({
       {pingT >= 0 && (
         <div
           style={{
-            marginTop: 8,
+            marginTop: 10,
             height: 2,
-            width: 180,
+            width: 200,
+            marginLeft: isClimax ? "auto" : 0,
+            marginRight: isClimax ? "auto" : 0,
             background: `linear-gradient(90deg,
               rgba(180,220,255,${0.9 * (1 - pingT)}) 0%,
               rgba(180,220,255,${0.9 * (1 - pingT)}) ${pingT * 100}%,
               rgba(180,220,255,0.06) ${pingT * 100}%,
               rgba(180,220,255,0.06) 100%)`,
-            boxShadow: `0 0 ${12 * (1 - pingT)}px rgba(180,220,255,${0.6 * (1 - pingT)})`,
+            boxShadow: `0 0 ${14 * (1 - pingT)}px rgba(180,220,255,${0.65 * (1 - pingT)})`,
           }}
         />
       )}
@@ -1074,7 +1319,6 @@ const suffixSizing = (
   return { perLine, totalHeight };
 };
 
-// Sanity check: keep imports honest.
 void VIDEO_BEATS;
 
 export const antiCheatIcebergMeta = {
