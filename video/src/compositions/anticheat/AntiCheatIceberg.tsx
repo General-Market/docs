@@ -10,78 +10,45 @@ import {
 import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W } from "./theme";
 
-// The "I lost because of …" iceberg.
+// The "I lost because of …" iceberg, side-by-side with a "smarter and
+// smarter" trading-tier strip on the right.
 //
-// Six tiers, each riding the geometric middle of an iceberg band — never on
-// a pink guide line. Opens with a zoom-out from a tight shot of the tip
-// (scale 2.6 → 1.518) then scrolls down through the bands. The scroll
-// clamps when the iceberg's bottom hits the frame's bottom; the last two
-// tiers descend toward the floor instead of scrolling into a void.
+// Opens with a zoom-out from a tight shot on the iceberg's tip (scale 1.0,
+// image overflowing the bottom of the frame) to FIT_SCALE (~0.647) — full
+// iceberg visible, left-aligned. The right strip fades in once the iceberg
+// has settled.
 //
-// Typography matches the rest of AntiCheat — project font, weight 800,
-// hero size, centred, heavy shadow.
-//
-// Each tier supports optional adornment: emoji `icon`, small `caption`,
-// or an `imageSrc` for a thumbnail. Slots are off by default — populate
-// only where a tier needs the extra emotional beat.
+// No scrolling. All six tier slots sit on the iceberg simultaneously; the
+// prefix is the only element that magnets between them. Past suffixes stay
+// dim; the active suffix lands with a magnet-snap.
 
 const IMG_NATIVE_W = 1265;
 const IMG_NATIVE_H = 1670;
 
-const FILL_SCALE = W / IMG_NATIVE_W;        // ~1.518
-const FILL_H = IMG_NATIVE_H * FILL_SCALE;   // ~2535
-const MAX_SCROLL = -(FILL_H - H);           // ~-1455 — image bottom on frame bottom
+// FIT_SCALE puts the iceberg's full height across the frame. Image becomes
+// IMG_NATIVE_W × FIT_SCALE wide — leaves room for the right strip.
+const FIT_SCALE = H / IMG_NATIVE_H;                 // ~0.647
+const ICEBERG_DISPLAY_W = IMG_NATIVE_W * FIT_SCALE; // ~819
+const ICEBERG_LEFT = 0;                              // flush with the left edge
 
-const ZOOM_START_SCALE = 2.6;
+// Opening close-up — image at native size, overflowing the frame bottom.
+const ZOOM_START_SCALE = 1.0;
 
-// Pink-line positions in native asset coords (detected): 269, 539, 857,
-// 1141, 1430. Tier centres ride the midpoint between adjacent lines, with
-// the depths band below line 5 split into two for the last two tiers.
+// Tier centres in NATIVE asset coordinates. Strategy now sits in the sky
+// band (above the upper line); every other tier shifts up one slot.
 const TIER_Y_NATIVE = [
-  Math.round((269 + 539) / 2),     // 404  — between line 1 & 2 (tip)
-  Math.round((539 + 857) / 2),     // 698  — between line 2 & 3
-  Math.round((857 + 1141) / 2),    // 999  — between line 3 & 4
-  Math.round((1141 + 1430) / 2),   // 1285 — between line 4 & 5
-  Math.round((1430 + 1550) / 2),   // 1490 — depths, upper
-  Math.round((1550 + 1670) / 2),   // 1610 — depths, lower
+  Math.round((0 + 269) / 2),       // 134  — sky / above line 1
+  Math.round((269 + 539) / 2),     // 404  — tip
+  Math.round((539 + 857) / 2),     // 698  — upper underwater
+  Math.round((857 + 1141) / 2),    // 999  — mid underwater
+  Math.round((1141 + 1430) / 2),   // 1285 — lower iceberg
+  Math.round((1430 + 1670) / 2),   // 1550 — depths
 ];
-const TIER_Y_FILL = TIER_Y_NATIVE.map((y) => y * FILL_SCALE);
+// Tier centres in FRAME coordinates at FIT_SCALE.
+const TIER_Y = TIER_Y_NATIVE.map((y) => Math.round(y * FIT_SCALE));
+// → [87, 262, 452, 647, 832, 1003]
 
-// Where T0 lands in the frame at scroll = 0. Every subsequent tier scrolls
-// so its centre aligns here too, until the floor clamp kicks in.
-const PRIMARY_ACTIVE_Y = TIER_Y_FILL[0]; // ~613
-
-const rawScrollAtTier = (i: number) => PRIMARY_ACTIVE_Y - TIER_Y_FILL[i];
-const scrollAtTier = (i: number) => Math.max(rawScrollAtTier(i), MAX_SCROLL);
-// T0: 0, T1: -447, T2: -903, T3: -1338, T4: -1455 (clamped), T5: -1455
-
-// ─── Tier content ─────────────────────────────────────────────────────────────
-//
-// Each tier can lean on any combination of these adornments. Pick the one
-// that does the most work for the tier's emotional beat — leave the rest
-// off so the slide stays clean.
-//
-//   icon      — emoji or single glyph, sits above the prefix
-//   stat      — large secondary number underneath the suffix, e.g. "$2.4B"
-//   statUnit  — small unit beside the stat, e.g. "annual MEV"
-//   accent    — hex colour for the suffix; default is #FFFFFF (warm-tints
-//               the punchline tier or any tier you want to load up)
-//   pullQuote — italic single-line quote underneath, like a footnote that
-//               speaks ("the house always knows first")
-//   caption   — neutral subtitle underneath the suffix (no italics, no
-//               quotes); use for plain qualifiers
-//   imageSrc  — optional thumbnail asset under /public, scaled to fit
-//   source    — small mono citation pinned bottom-left of the frame,
-//               same treatment as AntiCheatRigged's source line
-//
-// Examples (paste any onto a tier to see it in action):
-//
-//   { word: ["fees"], stat: "−$2.4B", statUnit: "annual MEV (Flashbots)" }
-//   { word: ["liquidation", "hunters"], pullQuote: "stop-hunted at 3am" }
-//   { word: ["insider", "traders"], accent: "#FF3A4F",
-//     source: "sec.gov/news/press-release/2022-127" }
-//   { word: ["front", "runners"], icon: "⚡",
-//     imageSrc: "anticheat-imgs/hft-racks.png" }
+// ─── Iceberg tiers ────────────────────────────────────────────────────────────
 
 type Tier = {
   word: string[];
@@ -91,7 +58,6 @@ type Tier = {
   accent?: string;
   pullQuote?: string;
   caption?: string;
-  imageSrc?: string;
   source?: string;
 };
 
@@ -106,26 +72,63 @@ export const TIERS: Tier[] = [
 const N = TIERS.length;
 const LAST = N - 1;
 
+// ─── Trading tier strip ───────────────────────────────────────────────────────
+//
+// Galaxy-brain-style progression on the right: who's on the other side of
+// each trade. Smallest at top (retail), biggest at bottom (institution).
+// `imageSrc` is a path under /public — drop your CC-licensed photos there
+// or paste a remote URL into `remoteUrl` instead.
+//
+// Suggested sources (all Wikimedia Commons, CC BY or CC BY-SA):
+//   • retail / phone trader   — search "smartphone trader" or "Robinhood app"
+//   • dual-monitor / prosumer — search "stock trader desk"
+//   • prop firm / day traders — search "day trading office"
+//   • trading floor           — "Chicago Board of Trade" or "NYSE floor"
+//   • hedge fund / pit        — "trading floor hedge fund"
+//   • investment bank tower   — "Goldman Sachs Tower" or "JPMorgan Chase Tower"
+//
+// Save them to /public/anticheat-imgs/trader-{0..5}.jpg and the paths below
+// will resolve. Until they exist, the renderer falls back to a labelled
+// dark card so the layout still makes sense.
+
+type TradingTier = {
+  label: string;
+  imageSrc?: string;
+};
+
+const TRADING_TIERS: TradingTier[] = [
+  { label: "you, on your phone", imageSrc: "anticheat-imgs/trader-0.jpg" },
+  { label: "prosumer at the desk", imageSrc: "anticheat-imgs/trader-1.jpg" },
+  { label: "prop firm", imageSrc: "anticheat-imgs/trader-2.jpg" },
+  { label: "trading floor", imageSrc: "anticheat-imgs/trader-3.jpg" },
+  { label: "hedge fund", imageSrc: "anticheat-imgs/trader-4.jpg" },
+  { label: "investment bank", imageSrc: "anticheat-imgs/trader-5.jpg" },
+];
+
 const EASE_OUT = Easing.bezier(0.25, 0.1, 0.3, 1);
 const EASE_DEFAULT = Easing.bezier(0.4, 0, 0.6, 1);
 
-// Pacing.
 const ZOOM_OUT = 26;
+const PANEL_FADE_IN = 12;
 const TIER_ANIM = 11;
 const TIER_HOLD = 14;
 const FINAL_HOLD = 44;
 const OUTRO = 14;
 
-const tierAnimStart = (i: number) => ZOOM_OUT + i * (TIER_ANIM + TIER_HOLD);
+const PRE_TIERS = ZOOM_OUT + PANEL_FADE_IN;
+const tierAnimStart = (i: number) => PRE_TIERS + i * (TIER_ANIM + TIER_HOLD);
 const SCENE_FRAMES = tierAnimStart(LAST) + TIER_ANIM + FINAL_HOLD + OUTRO;
-// 26 + 5*(11+14) + 11 + 44 + 14 = 220
+// 26 + 12 + 5*(11+14) + 11 + 44 + 14 = 38 + 125 + 69 = 232
 
 type State =
   | { phase: "zoom"; t: number }
+  | { phase: "panel"; t: number }
   | { phase: "tier"; tier: number; sub: "anim" | "hold"; t: number };
 
 const stateAt = (frame: number): State => {
   if (frame < ZOOM_OUT) return { phase: "zoom", t: frame / ZOOM_OUT };
+  if (frame < PRE_TIERS)
+    return { phase: "panel", t: (frame - ZOOM_OUT) / PANEL_FADE_IN };
   for (let i = 0; i < N; i++) {
     const animStart = tierAnimStart(i);
     const holdStart = animStart + TIER_ANIM;
@@ -139,42 +142,31 @@ const stateAt = (frame: number): State => {
   return { phase: "tier", tier: LAST, sub: "hold", t: 1 };
 };
 
-const computeScale = (state: State): number => {
+const computeIcebergScale = (state: State): number => {
   if (state.phase === "zoom")
-    return interpolate(state.t, [0, 1], [ZOOM_START_SCALE, FILL_SCALE], {
+    return interpolate(state.t, [0, 1], [ZOOM_START_SCALE, FIT_SCALE], {
       easing: EASE_OUT,
     });
-  // Subtle hold-pulse so the camera isn't dead between snaps. ±0.8 %.
-  if (state.sub === "hold") {
-    const pulse = Math.sin(state.t * Math.PI) * 0.008;
-    return FILL_SCALE * (1 + pulse);
-  }
-  return FILL_SCALE;
+  return FIT_SCALE;
 };
 
-const computeScrollY = (state: State): number => {
-  if (state.phase === "zoom") return 0;
-  if (state.sub === "hold") return scrollAtTier(state.tier);
-  if (state.tier === 0) return 0;
-  const a = scrollAtTier(state.tier - 1);
-  const b = scrollAtTier(state.tier);
-  return a + (b - a) * EASE_OUT(state.t);
-};
-
-// Heavy multi-layer shadow — buys legibility on any iceberg shade without
-// glass pills.
 const HERO_SHADOW =
   "0 4px 28px rgba(0,0,0,0.95), 0 2px 10px rgba(0,0,0,0.9), 0 0 56px rgba(0,0,0,0.55)";
 
 export const AntiCheatIceberg: React.FC = () => {
   const frame = useCurrentFrame();
   const state = stateAt(frame);
-  const scale = computeScale(state);
-  const scrollY = computeScrollY(state);
+  const icebergScale = computeIcebergScale(state);
 
   const activeTier = state.phase === "tier" ? state.tier : -1;
-  const activeFrameY =
-    activeTier >= 0 ? TIER_Y_FILL[activeTier] + scrollY : PRIMARY_ACTIVE_Y;
+
+  // Prefix Y — magnets between active tier centres in iceberg-display coords.
+  let prefixYTarget = activeTier >= 0 ? TIER_Y[activeTier] : TIER_Y[0];
+  let prefixYStart = activeTier > 0 ? TIER_Y[activeTier - 1] : prefixYTarget;
+  let prefixY = prefixYTarget;
+  if (state.phase === "tier" && state.sub === "anim" && state.tier > 0) {
+    prefixY = prefixYStart + (prefixYTarget - prefixYStart) * EASE_OUT(state.t);
+  }
 
   const prefixPulse =
     state.phase === "tier" && state.sub === "anim"
@@ -194,6 +186,12 @@ export const AntiCheatIceberg: React.FC = () => {
     }
   }
 
+  // Panel opacity — fades in after zoom-out completes.
+  let panelOpacity = 0;
+  if (state.phase === "panel")
+    panelOpacity = interpolate(state.t, [0, 1], [0, 1], { easing: EASE_OUT });
+  if (state.phase === "tier") panelOpacity = 1;
+
   const introOpacity = interpolate(frame, [0, ZOOM_OUT * 0.3], [0, 1], {
     easing: EASE_OUT,
     extrapolateLeft: "clamp",
@@ -207,8 +205,6 @@ export const AntiCheatIceberg: React.FC = () => {
   );
   const sceneOpacity = Math.min(introOpacity, outroOpacity);
 
-  // Vignette intensifies as we descend — emotion through atmosphere, not
-  // chrome. Scale [0..1] from the first tier to the last.
   const descentProgress =
     state.phase === "tier" ? state.tier / LAST : 0;
   const vignetteAlpha = 0.18 + 0.32 * descentProgress;
@@ -222,17 +218,17 @@ export const AntiCheatIceberg: React.FC = () => {
         overflow: "hidden",
       }}
     >
-      {/* Iceberg — full-width, scrolling, top-centre origin. */}
+      {/* Iceberg — left-aligned, fits frame height after zoom-out. */}
       <div
         style={{
           position: "absolute",
-          left: "50%",
-          top: scrollY,
+          left: ICEBERG_LEFT,
+          top: 0,
           width: IMG_NATIVE_W,
           height: IMG_NATIVE_H,
-          transform: `translate(-50%, 0) scale(${scale.toFixed(4)})`,
-          transformOrigin: "top center",
-          willChange: "transform, top",
+          transform: `scale(${icebergScale.toFixed(4)})`,
+          transformOrigin: "top left",
+          willChange: "transform",
         }}
       >
         <Img
@@ -241,35 +237,38 @@ export const AntiCheatIceberg: React.FC = () => {
         />
       </div>
 
-      {/* Atmospheric vignette that deepens as we descend. */}
+      {/* Vignette deepens with descent. */}
       <AbsoluteFill
         style={{
-          background: `radial-gradient(ellipse at 50% 45%, rgba(0,0,0,0) 35%, rgba(0,0,0,${vignetteAlpha.toFixed(3)}) 100%)`,
+          background: `radial-gradient(ellipse at 25% 50%, rgba(0,0,0,0) 35%, rgba(0,0,0,${vignetteAlpha.toFixed(3)}) 100%)`,
           pointerEvents: "none",
         }}
       />
 
-      {/* Past tier suffixes — settled on the iceberg, scrolling with it. */}
+      {/* Past tier suffixes — all six are placed on the iceberg, but only
+          those whose tier has been reached actually render. */}
       {TIERS.map((tier, i) =>
         state.phase === "tier" && i < state.tier ? (
-          <PastSuffix key={i} tier={tier} index={i} scrollY={scrollY} />
+          <PastSuffix key={i} tier={tier} index={i} />
         ) : null,
       )}
 
-      {/* Active row — prefix + suffix + any optional adornments. */}
+      {/* Active row — prefix + suffix on the iceberg. */}
       {activeTier >= 0 && (
         <ActiveRow
           state={state}
           tier={activeTier}
-          activeFrameY={activeFrameY}
+          activeY={TIER_Y[activeTier]}
+          prefixY={prefixY}
           prefixOpacity={prefixOpacity}
           prefixPulse={prefixPulse}
         />
       )}
 
-      {/* Source citation — bottom-left, mono, pinned to the frame. Same
-          treatment as AntiCheatRigged's source line. Only renders if the
-          active tier has a `source`. */}
+      {/* Right strip — galaxy-brain progression of trading entities. */}
+      <TradingTierStrip activeTier={activeTier} opacity={panelOpacity} />
+
+      {/* Optional source citation from the active tier. */}
       {activeTier >= 0 && TIERS[activeTier].source && (
         <SourceCitation url={TIERS[activeTier].source!} state={state} />
       )}
@@ -278,14 +277,18 @@ export const AntiCheatIceberg: React.FC = () => {
 };
 
 // ─── Active row ───────────────────────────────────────────────────────────────
+//
+// Prefix + suffix, anchored to the iceberg's left side (centred within the
+// iceberg's displayed width, not the frame's).
 
 const ActiveRow: React.FC<{
   state: State;
   tier: number;
-  activeFrameY: number;
+  activeY: number;
+  prefixY: number;
   prefixOpacity: number;
   prefixPulse: number;
-}> = ({ state, tier, activeFrameY, prefixOpacity, prefixPulse }) => {
+}> = ({ state, tier, activeY, prefixY, prefixOpacity, prefixPulse }) => {
   const t = TIERS[tier];
   const isAnim = state.phase === "tier" && state.sub === "anim";
 
@@ -294,7 +297,7 @@ const ActiveRow: React.FC<{
   let suffixScale = 1;
   if (isAnim) {
     const at = state.t;
-    suffixSlide = interpolate(at, [0, 1], [70, 0], { easing: EASE_OUT });
+    suffixSlide = interpolate(at, [0, 1], [56, 0], { easing: EASE_OUT });
     suffixOpacity = interpolate(at, [0.35, 0.85], [0, 1], {
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
@@ -307,47 +310,23 @@ const ActiveRow: React.FC<{
   }
 
   const sizes = suffixSizing(t.word);
-
-  // Adornment presence flags. The renderer stacks them around the suffix;
-  // each is independent and can be combined or left empty.
-  const HAS_ICON = !!t.icon;
-  const HAS_STAT = !!t.stat;
-  const HAS_QUOTE = !!t.pullQuote;
-  const HAS_CAPTION = !!t.caption;
-  const HAS_IMAGE = !!t.imageSrc;
-
-  // Suffix colour — defaults to white, can be tinted per tier.
   const suffixColor = t.accent ?? "#FFFFFF";
-
-  // Stacking below the suffix: stat first (closest to suffix), then quote,
-  // then caption, then image. Each block adds its height to the running
-  // offset so successive blocks land below the previous one.
-  let stackBelow = sizes.totalHeight / 2 + 14;
-  const statY = stackBelow;
-  if (HAS_STAT) stackBelow += 96; // stat ~64px + gap
-  const quoteY = stackBelow;
-  if (HAS_QUOTE) stackBelow += 56;
-  const captionY = stackBelow;
-  if (HAS_CAPTION) stackBelow += 48;
-  const imageY = stackBelow + 8;
 
   return (
     <>
-      {/* Prefix above the icon (or the suffix if no icon). */}
+      {/* Prefix above the suffix. */}
       <div
         style={{
           position: "absolute",
-          left: 0,
-          right: 0,
-          top: activeFrameY,
-          transform: `translateY(calc(-100% - ${
-            sizes.totalHeight / 2 + (HAS_ICON ? 84 : 12)
-          }px)) scale(${(1 + prefixPulse).toFixed(3)})`,
+          left: ICEBERG_LEFT,
+          top: prefixY,
+          width: ICEBERG_DISPLAY_W,
+          textAlign: "center",
+          transform: `translateY(calc(-100% - ${sizes.totalHeight / 2 + 8}px)) scale(${(1 + prefixPulse).toFixed(3)})`,
           transformOrigin: "center bottom",
           opacity: prefixOpacity,
-          textAlign: "center",
           fontFamily: font,
-          fontSize: 38,
+          fontSize: 28,
           fontWeight: 500,
           color: "rgba(255,255,255,0.82)",
           letterSpacing: "-0.018em",
@@ -361,19 +340,18 @@ const ActiveRow: React.FC<{
         I lost because of
       </div>
 
-      {/* Optional icon — emoji or glyph above the suffix. */}
-      {HAS_ICON && (
+      {/* Optional icon above the prefix. */}
+      {t.icon && (
         <div
           style={{
             position: "absolute",
-            left: 0,
-            right: 0,
-            top: activeFrameY,
-            transform: `translateY(calc(-100% - ${sizes.totalHeight / 2 + 16}px))`,
-            transformOrigin: "center bottom",
-            opacity: suffixOpacity,
+            left: ICEBERG_LEFT,
+            top: prefixY,
+            width: ICEBERG_DISPLAY_W,
             textAlign: "center",
-            fontSize: 72,
+            transform: `translateY(calc(-100% - ${sizes.totalHeight / 2 + 72}px))`,
+            opacity: suffixOpacity,
+            fontSize: 56,
             lineHeight: 1,
             textShadow: HERO_SHADOW,
             pointerEvents: "none",
@@ -383,23 +361,23 @@ const ActiveRow: React.FC<{
         </div>
       )}
 
-      {/* Suffix — hero type, slides in from below. Accent colour optional. */}
+      {/* Suffix. */}
       <div
         style={{
           position: "absolute",
-          left: 0,
-          right: 0,
-          top: activeFrameY + suffixSlide,
+          left: ICEBERG_LEFT,
+          top: activeY + suffixSlide,
+          width: ICEBERG_DISPLAY_W,
+          textAlign: "center",
           transform: `translateY(-50%) scale(${suffixScale.toFixed(3)})`,
           transformOrigin: "center center",
           opacity: suffixOpacity,
-          textAlign: "center",
           fontFamily: font,
           color: suffixColor,
           letterSpacing: "-0.04em",
           lineHeight: 0.94,
           textShadow: t.accent
-            ? `${HERO_SHADOW}, 0 0 48px ${t.accent}55`
+            ? `${HERO_SHADOW}, 0 0 36px ${t.accent}55`
             : HERO_SHADOW,
           pointerEvents: "none",
           willChange: "transform, top, opacity",
@@ -419,17 +397,17 @@ const ActiveRow: React.FC<{
         ))}
       </div>
 
-      {/* Optional stat block — large number + small unit, below the suffix. */}
-      {HAS_STAT && (
+      {/* Optional stat + unit beneath the suffix. */}
+      {t.stat && (
         <div
           style={{
             position: "absolute",
-            left: 0,
-            right: 0,
-            top: activeFrameY,
-            transform: `translateY(${statY}px)`,
-            opacity: suffixOpacity,
+            left: ICEBERG_LEFT,
+            top: activeY,
+            width: ICEBERG_DISPLAY_W,
             textAlign: "center",
+            transform: `translateY(${sizes.totalHeight / 2 + 14}px)`,
+            opacity: suffixOpacity,
             fontFamily: font,
             lineHeight: 1,
             pointerEvents: "none",
@@ -437,7 +415,7 @@ const ActiveRow: React.FC<{
         >
           <div
             style={{
-              fontSize: 68,
+              fontSize: 52,
               fontWeight: 700,
               color: t.accent ?? "rgba(255,255,255,0.95)",
               letterSpacing: "-0.03em",
@@ -451,7 +429,7 @@ const ActiveRow: React.FC<{
             <div
               style={{
                 marginTop: 6,
-                fontSize: 22,
+                fontSize: 18,
                 fontWeight: 500,
                 color: "rgba(255,255,255,0.6)",
                 letterSpacing: "0.02em",
@@ -466,19 +444,19 @@ const ActiveRow: React.FC<{
         </div>
       )}
 
-      {/* Optional pull quote — italic, narrow, smaller than the suffix. */}
-      {HAS_QUOTE && (
+      {/* Optional pull quote. */}
+      {t.pullQuote && (
         <div
           style={{
             position: "absolute",
-            left: 0,
-            right: 0,
-            top: activeFrameY,
-            transform: `translateY(${quoteY}px)`,
-            opacity: suffixOpacity,
+            left: ICEBERG_LEFT,
+            top: activeY,
+            width: ICEBERG_DISPLAY_W,
             textAlign: "center",
+            transform: `translateY(${sizes.totalHeight / 2 + (t.stat ? 110 : 14)}px)`,
+            opacity: suffixOpacity,
             fontFamily: font,
-            fontSize: 30,
+            fontSize: 24,
             fontStyle: "italic",
             fontWeight: 400,
             color: "rgba(255,255,255,0.78)",
@@ -493,19 +471,21 @@ const ActiveRow: React.FC<{
         </div>
       )}
 
-      {/* Optional caption — neutral subtitle. */}
-      {HAS_CAPTION && (
+      {/* Optional caption. */}
+      {t.caption && (
         <div
           style={{
             position: "absolute",
-            left: 0,
-            right: 0,
-            top: activeFrameY,
-            transform: `translateY(${captionY}px)`,
-            opacity: suffixOpacity,
+            left: ICEBERG_LEFT,
+            top: activeY,
+            width: ICEBERG_DISPLAY_W,
             textAlign: "center",
+            transform: `translateY(${
+              sizes.totalHeight / 2 + (t.stat ? 110 : 14) + (t.pullQuote ? 44 : 0)
+            }px)`,
+            opacity: suffixOpacity,
             fontFamily: font,
-            fontSize: 26,
+            fontSize: 22,
             fontWeight: 500,
             color: "rgba(255,255,255,0.7)",
             letterSpacing: "-0.012em",
@@ -518,105 +498,28 @@ const ActiveRow: React.FC<{
           {t.caption}
         </div>
       )}
-
-      {/* Optional image — thumbnail, sits below everything else. */}
-      {HAS_IMAGE && (
-        <div
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            top: activeFrameY,
-            transform: `translateY(${imageY}px)`,
-            opacity: suffixOpacity,
-            display: "flex",
-            justifyContent: "center",
-            pointerEvents: "none",
-          }}
-        >
-          <Img
-            src={staticFile(t.imageSrc!)}
-            style={{
-              maxWidth: 360,
-              maxHeight: 180,
-              borderRadius: 12,
-              filter: "drop-shadow(0 8px 24px rgba(0,0,0,0.6))",
-            }}
-          />
-        </div>
-      )}
     </>
   );
 };
 
-// ─── Source citation ──────────────────────────────────────────────────────────
-//
-// Pinned to the bottom-left of the frame in mono, matching AntiCheatRigged's
-// treatment. Fades in once a tier carrying a `source` becomes active.
-
-const SourceCitation: React.FC<{ url: string; state: State }> = ({
-  url,
-  state,
-}) => {
-  const opacity =
-    state.phase === "tier" && state.sub === "anim"
-      ? interpolate(state.t, [0.35, 0.85], [0, 1], {
-          extrapolateLeft: "clamp",
-          extrapolateRight: "clamp",
-          easing: EASE_OUT,
-        })
-      : 1;
-  return (
-    <div
-      style={{
-        position: "absolute",
-        left: 56,
-        bottom: 48,
-        maxWidth: 960,
-        fontFamily: monoFont,
-        fontSize: 22,
-        lineHeight: 1.35,
-        color: "rgba(255,255,255,0.78)",
-        letterSpacing: "0.01em",
-        wordBreak: "break-all",
-        opacity,
-        textShadow: "0 1px 2px rgba(0,0,0,0.85)",
-        pointerEvents: "none",
-        zIndex: 10,
-      }}
-    >
-      <span style={{ color: "rgba(255,255,255,0.5)", marginRight: 8 }}>
-        source —
-      </span>
-      {url}
-    </div>
-  );
-};
-
 // ─── Past suffix ──────────────────────────────────────────────────────────────
-//
-// Sits on the iceberg at its tier centre, scrolls with it, no prefix.
 
-const PastSuffix: React.FC<{
-  tier: Tier;
-  index: number;
-  scrollY: number;
-}> = ({ tier, index, scrollY }) => {
-  const y = TIER_Y_FILL[index] + scrollY;
-  if (y < -200 || y > H + 200) return null;
+const PastSuffix: React.FC<{ tier: Tier; index: number }> = ({
+  tier,
+  index,
+}) => {
   const sizes = suffixSizing(tier.word, 0.72);
-
   return (
     <div
       style={{
         position: "absolute",
-        left: 0,
-        right: 0,
-        top: y,
-        transform: "translateY(-50%)",
+        left: ICEBERG_LEFT,
+        top: TIER_Y[index],
+        width: ICEBERG_DISPLAY_W,
         textAlign: "center",
+        transform: "translateY(-50%)",
         fontFamily: font,
-        color: "rgba(255,255,255,0.58)",
+        color: "rgba(255,255,255,0.55)",
         letterSpacing: "-0.04em",
         lineHeight: 0.94,
         textShadow: HERO_SHADOW,
@@ -639,12 +542,207 @@ const PastSuffix: React.FC<{
   );
 };
 
+// ─── Trading-tier strip ───────────────────────────────────────────────────────
+//
+// Six small image cards stacked on the right side of the frame, in the
+// space the iceberg doesn't claim. Active card scales up, brightens, and
+// glows. Inactive cards stay small and muted.
+
+const STRIP_LEFT = 920;
+const STRIP_RIGHT = 1880;
+const STRIP_WIDTH = STRIP_RIGHT - STRIP_LEFT;            // 960
+const STRIP_TOP = 40;
+const STRIP_BOTTOM = 1040;
+const STRIP_HEIGHT = STRIP_BOTTOM - STRIP_TOP;           // 1000
+
+const CARD_HEIGHT = (STRIP_HEIGHT - 5 * 12) / N;         // ~157
+const CARD_WIDTH = Math.min(STRIP_WIDTH, 360);
+
+const TradingTierStrip: React.FC<{
+  activeTier: number;
+  opacity: number;
+}> = ({ activeTier, opacity }) => {
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: STRIP_LEFT,
+        top: STRIP_TOP,
+        width: STRIP_WIDTH,
+        height: STRIP_HEIGHT,
+        opacity,
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+        alignItems: "center",
+        pointerEvents: "none",
+        willChange: "opacity",
+      }}
+    >
+      {TRADING_TIERS.map((tt, i) => {
+        const isActive = i === activeTier;
+        const cardScale = isActive ? 1.04 : 0.9;
+        const cardOpacity = activeTier < 0 ? 0.5 : isActive ? 1 : 0.42;
+        return (
+          <div
+            key={i}
+            style={{
+              width: CARD_WIDTH,
+              height: CARD_HEIGHT,
+              transform: `scale(${cardScale})`,
+              opacity: cardOpacity,
+              transition: "transform 120ms ease, opacity 120ms ease",
+              position: "relative",
+              borderRadius: 12,
+              overflow: "hidden",
+              border: isActive
+                ? "2px solid rgba(255,255,255,0.85)"
+                : "1px solid rgba(255,255,255,0.18)",
+              boxShadow: isActive
+                ? "0 12px 40px rgba(0,0,0,0.6), 0 0 32px rgba(255,255,255,0.18)"
+                : "0 6px 18px rgba(0,0,0,0.45)",
+              background: "rgba(8, 12, 22, 0.78)",
+            }}
+          >
+            {tt.imageSrc ? (
+              <Img
+                src={staticFile(tt.imageSrc)}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  display: "block",
+                  opacity: isActive ? 1 : 0.85,
+                }}
+              />
+            ) : (
+              <PlaceholderCard label={tt.label} />
+            )}
+
+            {/* Caption strip across the bottom of the card. */}
+            <div
+              style={{
+                position: "absolute",
+                left: 0,
+                right: 0,
+                bottom: 0,
+                padding: "8px 14px",
+                background:
+                  "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.78) 100%)",
+                fontFamily: font,
+                fontSize: 18,
+                fontWeight: 600,
+                color: isActive ? "#FFFFFF" : "rgba(255,255,255,0.78)",
+                letterSpacing: "-0.012em",
+                textShadow: "0 2px 6px rgba(0,0,0,0.9)",
+                textAlign: "left",
+              }}
+            >
+              {tt.label}
+            </div>
+
+            {/* "Smarter →" arrow on the active card. */}
+            {isActive && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: 8,
+                  right: 10,
+                  fontFamily: monoFont,
+                  fontSize: 14,
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  color: "rgba(255,255,255,0.86)",
+                  textShadow: "0 1px 4px rgba(0,0,0,0.85)",
+                  padding: "2px 8px",
+                  borderRadius: 4,
+                  background: "rgba(0,0,0,0.45)",
+                }}
+              >
+                ↑ smarter
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+const PlaceholderCard: React.FC<{ label: string }> = ({ label }) => {
+  return (
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background:
+          "linear-gradient(135deg, rgba(20,28,48,0.92) 0%, rgba(8,12,22,0.96) 100%)",
+        fontFamily: monoFont,
+        fontSize: 13,
+        color: "rgba(255,255,255,0.42)",
+        textAlign: "center",
+        padding: "0 12px",
+      }}
+    >
+      drop image at /public/anticheat-imgs/trader-…
+      <br />— {label} —
+    </div>
+  );
+};
+
+// ─── Source citation ──────────────────────────────────────────────────────────
+
+const SourceCitation: React.FC<{ url: string; state: State }> = ({
+  url,
+  state,
+}) => {
+  const opacity =
+    state.phase === "tier" && state.sub === "anim"
+      ? interpolate(state.t, [0.35, 0.85], [0, 1], {
+          extrapolateLeft: "clamp",
+          extrapolateRight: "clamp",
+          easing: EASE_OUT,
+        })
+      : 1;
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: 56,
+        bottom: 48,
+        maxWidth: 700,
+        fontFamily: monoFont,
+        fontSize: 18,
+        lineHeight: 1.35,
+        color: "rgba(255,255,255,0.78)",
+        letterSpacing: "0.01em",
+        wordBreak: "break-all",
+        opacity,
+        textShadow: "0 1px 2px rgba(0,0,0,0.85)",
+        pointerEvents: "none",
+        zIndex: 10,
+      }}
+    >
+      <span style={{ color: "rgba(255,255,255,0.5)", marginRight: 8 }}>
+        source —
+      </span>
+      {url}
+    </div>
+  );
+};
+
 // ─── Sizing helpers ───────────────────────────────────────────────────────────
+//
+// Smaller hero sizes than the full-width version — the iceberg only owns
+// ~819px of horizontal real estate now.
 
 const lineSize = (line: string, mult: number): number => {
-  if (line.length <= 5) return Math.round(150 * mult);
-  if (line.length <= 8) return Math.round(130 * mult);
-  return Math.round(110 * mult);
+  if (line.length <= 5) return Math.round(96 * mult);
+  if (line.length <= 8) return Math.round(86 * mult);
+  return Math.round(70 * mult);
 };
 
 const suffixSizing = (

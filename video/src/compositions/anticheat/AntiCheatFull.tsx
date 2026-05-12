@@ -5,7 +5,6 @@ import {
   linearTiming,
 } from "@remotion/transitions";
 import { FPS, H, W, colors } from "./theme";
-import { antiCheatHookMeta } from "./AntiCheatHook";
 import { antiCheatStatMeta, antiCheatBarsMeta } from "./AntiCheatStat";
 import { antiCheatIcebergMeta } from "./AntiCheatIceberg";
 import { antiCheatRiggedMeta } from "./AntiCheatRigged";
@@ -13,7 +12,6 @@ import { antiCheatSolutionMeta } from "./AntiCheatSolution";
 import { antiCheatReassureMeta } from "./AntiCheatReassure";
 import { antiCheatSwitchMeta } from "./AntiCheatSwitch";
 import { antiCheatEndCardMeta } from "./AntiCheatEndCard";
-import { slide } from "@remotion/transitions/slide";
 import {
   snapZoomIntense,
   snapZoomOut,
@@ -31,7 +29,6 @@ import { MUSIC_START_FROM_AUDIO } from "./beats";
 // Tightened pass: shorter durations, smaller magnitudes, less blur.
 // Cuts now snap instead of swelling.
 //
-//   Hook → Bars         snap-zoom in        15f
 //   Bars → Iceberg      soft snap           18f
 //   Iceberg → Rigged    snap-zoom intense   16f
 //   Rigged → Stat       snap-zoom intense   16f
@@ -39,10 +36,8 @@ import { MUSIC_START_FROM_AUDIO } from "./beats";
 //   Solution → Reassure soft snap           18f
 //   Reassure → Bridge   soft snap           18f
 //   Bridge → EndCard    long pull           24f
-// Hook → Bars is a vertical scroll: the laptop scene slides out the
-// bottom while Bars slides in from the top, like both lived stacked
-// on the same canvas.
-const T_HOOK_BARS = 15;
+// The Hook (3D laptop / phone scene, ~3.7s) was removed — video now opens
+// on Bars directly.
 const T_BARS_ICEBERG = 18;
 const T_ICEBERG_RIGGED = 16;
 const T_RIGGED_STAT = 16;
@@ -52,7 +47,6 @@ const T_REASSURE_BRIDGE = 18;
 const T_BRIDGE_END = 24;
 
 const TRANSITION_FRAMES =
-  T_HOOK_BARS +
   T_BARS_ICEBERG +
   T_ICEBERG_RIGGED +
   T_RIGGED_STAT +
@@ -62,7 +56,6 @@ const TRANSITION_FRAMES =
   T_BRIDGE_END;
 
 const TOTAL_FRAMES =
-  antiCheatHookMeta.durationInFrames +
   antiCheatBarsMeta.durationInFrames +
   antiCheatIcebergMeta.durationInFrames +
   antiCheatRiggedMeta.durationInFrames +
@@ -118,17 +111,6 @@ export const AntiCheatFull: React.FC = () => {
         />
       </Sequence>
       <TransitionSeries>
-        <TransitionSeries.Sequence
-          durationInFrames={antiCheatHookMeta.durationInFrames}
-        >
-          <antiCheatHookMeta.component />
-        </TransitionSeries.Sequence>
-
-        <TransitionSeries.Transition
-          presentation={slide({ direction: "from-top" })}
-          timing={linearTiming({ durationInFrames: T_HOOK_BARS })}
-        />
-
         <TransitionSeries.Sequence
           durationInFrames={antiCheatBarsMeta.durationInFrames}
         >
