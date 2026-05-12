@@ -21,11 +21,9 @@ const MAX_MARKETS = 250
 // connection-pool pressure.
 const HISTORY_CONCURRENCY = 8
 const HISTORY_PAD_MS = 60_000
-// Polymarket implied probabilities are slow-moving. A five-minute or one-hour
-// window catches almost no drift on most markets. Walk back 24 hours so the
-// comparison reflects what a Polymarket user would actually see on their
-// dashboard, then put Vision's five-minute payout next to it.
-const POLY_LOOKBACK_MS = 24 * 60 * 60 * 1000
+// Match Vision's window exactly — apples-to-apples on time. Most Polymarket
+// markets will read flat over five minutes because Polymarket samples slower
+// than that. That zero, next to Vision's multiplier, is the comparison.
 
 interface BatchHistoryItem {
   batchId: number
@@ -272,9 +270,11 @@ export async function GET(request: Request) {
     .sort((a, b) => (a.total > b.total ? -1 : a.total < b.total ? 1 : 0))
     .slice(0, limit)
 
-  // Pull a 1h baseline ending at the batch settlement. We compare value at
-  // (bettingEnd - 1h) against value at the end of the betting window.
-  const polyStartTargetMs = bettingEndMs - POLY_LOOKBACK_MS
+  // Vision's betting window itself. We sample Polymarket implied probability
+  // at the same start and end and compute the delta. A small pad either side
+  // gives the nearest-point picker something to grab when Polymarket's last
+  // tick sits just outside the window.
+  const polyStartTargetMs = bettingStartMs
   const polyEndTargetMs = bettingEndMs
   const fromIso = new Date(polyStartTargetMs - HISTORY_PAD_MS).toISOString()
   const toIso = new Date(polyEndTargetMs + HISTORY_PAD_MS).toISOString()
