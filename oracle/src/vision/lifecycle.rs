@@ -71,6 +71,11 @@ const SOURCE_STAGGER_SECS: u64 = 2;
 /// A 2-minute source settles after 2 minutes. A 10-minute source, after 10.
 
 /// Per-source tracking state for round rotation.
+///
+/// Sourced from `vision_source_state` in Postgres — the heartbeat loop reads
+/// due rows directly. Kept as a value type for reads; mutation happens through
+/// targeted UPDATEs inside per-source transactions.
+#[allow(dead_code)]
 struct SourceState {
     /// Human-readable source name (e.g. "crypto", "sports").
     source_name: String,
@@ -82,10 +87,6 @@ struct SourceState {
     current_batch_id: Option<u64>,
     /// Previous batch ID (being resolved / settled).
     previous_batch_id: Option<u64>,
-    /// Last time this source's heartbeat fired.
-    last_heartbeat: std::time::Instant,
-    /// Stagger offset so sources don't all fire simultaneously.
-    stagger_offset: std::time::Duration,
 }
 
 /// Manages the lifecycle of round-based prediction market batches.
@@ -201,55 +202,50 @@ impl BatchLifecycleManager {
             tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
         };
 
-        // Build per-source state, each wrapped in Arc<Mutex> for independent mutation
-        let sources: Vec<Arc<tokio::sync::Mutex<SourceState>>> = source_names
-            .iter()
-            .enumerate()
-            .map(|(i, name)| {
-                let batch_version = std::env::var("BATCH_VERSION").unwrap_or_else(|_| "v2".to_string());
-                let versioned = format!("{}_{}", name, batch_version);
-                let source_id = H256::from(keccak256(versioned.as_bytes()));
-                Arc::new(tokio::sync::Mutex::new(SourceState {
-                    source_name: name.clone(),
-                    source_id,
-                    tick_duration_secs: 0, // populated on first config fetch
-                    current_batch_id: None,
-                    previous_batch_id: None,
-                    last_heartbeat: std::time::Instant::now(),
-                    stagger_offset: std::time::Duration::from_secs(
-                        SOURCE_STAGGER_SECS * i as u64,
-                    ),
-                }))
-            })
-            .collect();
+        // Persist baseline rows for each discovered source. Existing rows survive
+        // restarts — current_batch_id / previous_batch_id / tick_duration_secs
+        // are reloaded from disk instead of being rebuilt from scratch.
+        //
+        // First insert backdates last_heartbeat_at by tick_duration_secs so the
+        // initial heartbeat fires after stagger_offset only. tick_duration_secs
+        // is unknown on first discovery (populate_tick_durations runs next), so
+        // we defer the backdate to that step.
+        let batch_version = std::env::var("BATCH_VERSION").unwrap_or_else(|_| "v2".to_string());
+        for (i, name) in source_names.iter().enumerate() {
+            let versioned = format!("{}_{}", name, batch_version);
+            let source_id_bytes = keccak256(versioned.as_bytes());
+            let stagger_ms = (SOURCE_STAGGER_SECS as i64) * (i as i64) * 1000;
+
+            if let Err(e) = sqlx::query(
+                "INSERT INTO vision_source_state \
+                   (source_name, source_id, tick_duration_secs, stagger_offset_ms, last_heartbeat_at) \
+                 VALUES ($1, $2, 0, $3, NOW()) \
+                 ON CONFLICT (source_name) DO UPDATE SET \
+                   source_id = EXCLUDED.source_id, \
+                   stagger_offset_ms = EXCLUDED.stagger_offset_ms, \
+                   updated_at = NOW()",
+            )
+            .bind(name)
+            .bind(&source_id_bytes[..])
+            .bind(stagger_ms)
+            .execute(&self.pool)
+            .await
+            {
+                error!(source = %name, error = %e, "Failed to upsert vision_source_state row");
+            }
+        }
 
         info!(
             source_count = source_names.len(),
-            "BatchLifecycleManager starting — all sources are round-based (concurrent)"
+            "BatchLifecycleManager starting — all sources are round-based (concurrent, postgres-backed)"
         );
 
-        // Fetch initial tick durations from data-node recommended configs
-        if let Err(e) = self.populate_tick_durations(&sources).await {
+        // Fetch initial tick durations from data-node recommended configs and
+        // backdate last_heartbeat_at so the first heartbeat fires after the
+        // stagger offset only — not after a full tick. Without this, every
+        // restart silences vision for one full tick per source (up to a week).
+        if let Err(e) = self.populate_tick_durations(&source_names).await {
             warn!(error = %e, "Failed to fetch initial tick durations — will retry");
-        }
-
-        // Backdate last_heartbeat per source by its own tick. The heartbeat
-        // condition is `elapsed >= tick + stagger_offset`. Without this, on
-        // every restart each source has elapsed=0 and waits a full tick before
-        // its first heartbeat — silencing the lifecycle for up to a week.
-        // With this, elapsed=tick at startup and the first heartbeat fires
-        // after only `stagger_offset`, preserving the original spread across
-        // the source list and avoiding the thundering herd that crashes
-        // settlement throughput when 73 sources fire at once.
-        let now_init = std::time::Instant::now();
-        for source_lock in &sources {
-            let mut source = source_lock.lock().await;
-            if source.tick_duration_secs > 0 {
-                let backdate = std::time::Duration::from_secs(source.tick_duration_secs);
-                source.last_heartbeat = now_init
-                    .checked_sub(backdate)
-                    .unwrap_or(now_init);
-            }
         }
 
         // Semaphore: limit concurrent source processing to avoid thundering herd.
@@ -269,7 +265,6 @@ impl BatchLifecycleManager {
         while !self.shutdown.load(Ordering::Relaxed) {
             interval.tick().await;
 
-            let now_instant = std::time::Instant::now();
             let mut join_set: JoinSet<()> = JoinSet::new();
 
             // Only the leader (node_index == 0) drives the lifecycle.
@@ -279,38 +274,52 @@ impl BatchLifecycleManager {
                 continue;
             }
 
-            for source_lock in &sources {
-                // Quick check under lock: is this source due?
-                let due_info = {
-                    let mut source = source_lock.lock().await;
+            // Pick up due rows in a single transactional sweep. Each row is
+            // claimed atomically: SELECT FOR UPDATE → bump last_heartbeat_at →
+            // commit. Rows already claimed by an in-flight task are SKIPped so
+            // we don't double-fire a heartbeat for the same source.
+            let due_rows: Vec<(String, Vec<u8>, i64, Option<i64>, Option<i64>)> = match sqlx::query_as::<_, (String, Vec<u8>, i32, Option<i64>, Option<i64>)>(
+                "WITH due AS ( \
+                    SELECT source_name FROM vision_source_state \
+                    WHERE tick_duration_secs > 0 \
+                      AND last_heartbeat_at \
+                          + make_interval(secs => tick_duration_secs) \
+                          + (stagger_offset_ms * interval '1 millisecond') \
+                          <= NOW() \
+                    FOR UPDATE SKIP LOCKED \
+                 ) \
+                 UPDATE vision_source_state s \
+                 SET last_heartbeat_at = NOW(), \
+                     stagger_offset_ms = 0, \
+                     updated_at = NOW() \
+                 FROM due \
+                 WHERE s.source_name = due.source_name \
+                 RETURNING s.source_name, s.source_id, s.tick_duration_secs, \
+                           s.current_batch_id, s.previous_batch_id",
+            )
+            .fetch_all(&self.pool)
+            .await
+            {
+                Ok(rows) => rows
+                    .into_iter()
+                    .map(|(name, sid, td, cur, prev)| (name, sid, td as i64, cur, prev))
+                    .collect(),
+                Err(e) => {
+                    warn!(error = %e, "Failed to query due vision sources from postgres");
+                    Vec::new()
+                }
+            };
 
-                    if source.tick_duration_secs == 0 {
-                        None
-                    } else {
-                        let elapsed = now_instant.duration_since(source.last_heartbeat);
-                        let required = std::time::Duration::from_secs(source.tick_duration_secs)
-                            + source.stagger_offset;
-
-                        if elapsed < required {
-                            None
-                        } else {
-                            // Mark heartbeat now so the next poll won't re-fire
-                            source.last_heartbeat = now_instant;
-                            source.stagger_offset = std::time::Duration::ZERO;
-                            Some((source.source_name.clone(), source.source_id))
-                        }
-                    }
-                };
-
-                let (source_name, source_id) = match due_info {
-                    Some(info) => info,
-                    None => continue,
-                };
+            for (source_name, source_id_bytes, tick_duration, current_batch_id, previous_batch_id) in due_rows {
+                if source_id_bytes.len() != 32 {
+                    warn!(source = %source_name, "Skipping source — source_id bytes wrong length");
+                    continue;
+                }
+                let source_id = H256::from_slice(&source_id_bytes);
 
                 // Spawn a task for this source's heartbeat
                 let mgr = Arc::clone(&self);
                 let sem = Arc::clone(&semaphore);
-                let src_lock = Arc::clone(source_lock);
 
                 join_set.spawn(async move {
                     // Acquire semaphore permit — blocks if MAX_CONCURRENT_SOURCES active
@@ -319,18 +328,15 @@ impl BatchLifecycleManager {
                         Err(_) => return, // semaphore closed
                     };
 
-                    // Read state snapshot
-                    let prev_batch_id = {
-                        let source = src_lock.lock().await;
-                        info!(
-                            source = %source.source_name,
-                            tick_duration = source.tick_duration_secs,
-                            current_batch = ?source.current_batch_id,
-                            previous_batch = ?source.previous_batch_id,
-                            "Lifecycle heartbeat"
-                        );
-                        source.previous_batch_id
-                    };
+                    info!(
+                        source = %source_name,
+                        tick_duration,
+                        current_batch = ?current_batch_id,
+                        previous_batch = ?previous_batch_id,
+                        "Lifecycle heartbeat"
+                    );
+
+                    let prev_batch_id: Option<u64> = previous_batch_id.map(|v| v as u64);
 
                     // Step 1: Resolve previous batch if its betting period has ended.
                     // With PRE_CREATE overlap the heartbeat fires 30s early, so the
@@ -417,30 +423,65 @@ impl BatchLifecycleManager {
                         }
                         // Always clear previous_batch_id to unblock rotation.
                         // Failed settlements are retried by the periodic sweep, not the heartbeat.
-                        src_lock.lock().await.previous_batch_id = None;
+                        if let Err(e) = sqlx::query(
+                            "UPDATE vision_source_state \
+                             SET previous_batch_id = NULL, updated_at = NOW() \
+                             WHERE source_name = $1",
+                        )
+                        .bind(&source_name)
+                        .execute(&mgr.pool)
+                        .await
+                        {
+                            error!(source = %source_name, error = %e, "Failed to clear previous_batch_id");
+                        }
                         } // else ready_to_settle
                     }
 
-                    // Step 2: Rotate current → previous (only if previous slot is free)
+                    // Step 2: Rotate current → previous (only if previous slot is free).
+                    // Reload state in one query so the conditional uses fresh DB values.
+                    let post_rotate: Option<(Option<i64>, Option<i64>)> = match sqlx::query_as::<_, (Option<i64>, Option<i64>)>(
+                        "UPDATE vision_source_state \
+                         SET previous_batch_id = CASE \
+                                 WHEN previous_batch_id IS NULL THEN current_batch_id \
+                                 ELSE previous_batch_id \
+                             END, \
+                             current_batch_id = CASE \
+                                 WHEN previous_batch_id IS NULL THEN NULL \
+                                 ELSE current_batch_id \
+                             END, \
+                             updated_at = NOW() \
+                         WHERE source_name = $1 \
+                         RETURNING current_batch_id, previous_batch_id",
+                    )
+                    .bind(&source_name)
+                    .fetch_optional(&mgr.pool)
+                    .await
                     {
-                        let mut source = src_lock.lock().await;
-                        if source.previous_batch_id.is_none() {
-                            source.previous_batch_id = source.current_batch_id.take();
-                        } else {
-                            // Previous batch still pending resolution (deferred above).
-                            // Skip rotation — current stays current for one more cycle.
-                            debug!(
-                                source = %source.source_name,
-                                previous = ?source.previous_batch_id,
-                                current = ?source.current_batch_id,
-                                "Skipping rotation — previous batch still pending resolution"
-                            );
+                        Ok(row) => row,
+                        Err(e) => {
+                            error!(source = %source_name, error = %e, "Failed to rotate batch ids");
+                            None
                         }
+                    };
+
+                    let (cur_after, prev_after) = post_rotate.unwrap_or((current_batch_id, previous_batch_id));
+
+                    if cur_after.is_some() {
+                        debug!(
+                            source = %source_name,
+                            previous = ?prev_after,
+                            current = ?cur_after,
+                            "Skipping rotation — previous batch still pending resolution"
+                        );
                     }
 
-                    // Step 3: Create new batch (only if rotation happened — current slot is empty)
-                    let should_create = src_lock.lock().await.current_batch_id.is_none();
-                    if !should_create {
+                    // Step 3: Create new batch (only if rotation happened — current slot is empty).
+                    // When legacy_drain_only is set we resolve existing batches but never mint
+                    // new ones — used to drain the legacy contract before cutover.
+                    let should_create = cur_after.is_none() && !mgr.config.legacy_drain_only;
+                    if mgr.config.legacy_drain_only {
+                        debug!(source = %source_name, "legacy_drain_only — skipping batch creation");
+                    } else if !should_create {
                         debug!(source = %source_name, "Skipping batch creation — current batch still active");
                     } else {
                     match mgr.create_new_round(&source_name).await {
@@ -458,7 +499,18 @@ impl BatchLifecycleManager {
                                         on_chain_batch_id = id,
                                         "New round created — on-chain batch resolved"
                                     );
-                                    src_lock.lock().await.current_batch_id = Some(id);
+                                    if let Err(e) = sqlx::query(
+                                        "UPDATE vision_source_state \
+                                         SET current_batch_id = $2, updated_at = NOW() \
+                                         WHERE source_name = $1",
+                                    )
+                                    .bind(&source_name)
+                                    .bind(id as i64)
+                                    .execute(&mgr.pool)
+                                    .await
+                                    {
+                                        error!(source = %source_name, error = %e, "Failed to persist current_batch_id");
+                                    }
                                 }
                                 None => {
                                     warn!(
@@ -495,27 +547,54 @@ impl BatchLifecycleManager {
     }
 
     /// Fetch recommended configs from data-node to populate tick durations.
+    ///
+    /// Writes the resolved tick into Postgres and backdates last_heartbeat_at
+    /// so the first heartbeat fires after stagger_offset only. Rows whose
+    /// tick_duration_secs is already set survive untouched — restarts reuse
+    /// the persisted cadence instead of resetting the heartbeat clock.
     async fn populate_tick_durations(
         &self,
-        sources: &[Arc<tokio::sync::Mutex<SourceState>>],
+        source_names: &[String],
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let recommended =
             batch_config_orchestrator::fetch_recommended(&self.config.data_node_url).await?;
 
-        for source_lock in sources {
-            let mut source = source_lock.lock().await;
-            // Match by source name (data-node uses raw names, not hashes)
-            if let Some(batch) = recommended.iter().find(|b| b.source_id == source.source_name) {
-                source.tick_duration_secs = batch.tick_duration_secs;
-                info!(
-                    source = %source.source_name,
-                    tick_duration = batch.tick_duration_secs,
-                    markets = batch.markets.len(),
-                    "Populated tick duration from recommended config"
-                );
+        for name in source_names {
+            if let Some(batch) = recommended.iter().find(|b| b.source_id == *name) {
+                let tick_secs = batch.tick_duration_secs as i32;
+                let res = sqlx::query(
+                    "UPDATE vision_source_state \
+                     SET tick_duration_secs = $2, \
+                         last_heartbeat_at = NOW() - make_interval(secs => $2), \
+                         updated_at = NOW() \
+                     WHERE source_name = $1 \
+                       AND tick_duration_secs = 0",
+                )
+                .bind(name)
+                .bind(tick_secs)
+                .execute(&self.pool)
+                .await;
+
+                match res {
+                    Ok(r) if r.rows_affected() > 0 => {
+                        info!(
+                            source = %name,
+                            tick_duration = batch.tick_duration_secs,
+                            markets = batch.markets.len(),
+                            "Populated tick duration from recommended config (backdated)"
+                        );
+                    }
+                    Ok(_) => {
+                        // Row already had a tick_duration — keep its existing heartbeat clock.
+                        debug!(source = %name, "Tick duration already set — leaving heartbeat untouched");
+                    }
+                    Err(e) => {
+                        warn!(source = %name, error = %e, "Failed to persist tick duration");
+                    }
+                }
             } else {
                 warn!(
-                    source = %source.source_name,
+                    source = %name,
                     "No recommended config found — source will remain dormant"
                 );
             }

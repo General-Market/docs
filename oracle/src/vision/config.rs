@@ -77,6 +77,12 @@ pub struct VisionConfig {
     /// submissions revert and tagged per-batch proofs stay un-claimable.
     #[serde(default)]
     pub bundle_single_sig_enabled: bool,
+
+    /// When set, lifecycle resolves existing batches but does NOT create new ones.
+    /// Used to drain the legacy Vision contract before cutting over to Vision v4
+    /// without orphaning batches mid-tick.
+    #[serde(default)]
+    pub legacy_drain_only: bool,
 }
 
 impl Default for VisionConfig {
@@ -108,6 +114,7 @@ impl Default for VisionConfig {
             oracle_registry_address: String::new(),
             vision_reconciler_address: String::new(),
             bundle_single_sig_enabled: false,
+            legacy_drain_only: false,
         }
     }
 }

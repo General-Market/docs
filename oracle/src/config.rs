@@ -424,6 +424,10 @@ impl OracleConfig {
                         vision_reconciler_address: std::env::var("ORACLE_VISION_RECONCILER_ADDRESS")
                             .unwrap_or_default(),
                         bundle_single_sig_enabled: parse_env_var("ORACLE_VISION_BUNDLE_SINGLE_SIG_ENABLED").unwrap_or(false),
+                        legacy_drain_only: std::env::var("ORACLE_VISION_LEGACY_DRAIN_ONLY")
+                            .ok()
+                            .and_then(|v| v.parse().ok())
+                            .unwrap_or(false),
                     })
                 } else {
                     None
