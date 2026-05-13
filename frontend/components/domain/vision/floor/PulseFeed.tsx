@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { memo, useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { formatUnits } from 'viem'
 import {
@@ -99,15 +99,15 @@ function HotRow({ row, sourceName, sourceBrandBg }: HotRowProps) {
 interface PoolBarProps {
   batch: FloorBatch
   maxTvl: bigint
-  activeAt: number
 }
 
-function PoolBar({ batch, maxTvl, activeAt }: PoolBarProps) {
+// Memoized so it only rerenders when its own props change. Without this,
+// the ambient pulse causes the parent to rerender ~1 Hz, and every bar
+// in the list re-evaluates its motion animation → flashing.
+const PoolBar = memo(function PoolBar({ batch, maxTvl }: PoolBarProps) {
   const tvl = safeBigInt(batch.tvlStr)
   const widthPct = maxTvl > 0n ? Number((tvl * 1000n) / maxTvl) / 10 : 0
   const tvlStr = formatUSD(batch.tvlStr)
-  const sinceActive = activeAt > 0 ? Date.now() - activeAt : Infinity
-  const glowing = sinceActive < 1500
 
   return (
     <div className="relative">
@@ -128,20 +128,22 @@ function PoolBar({ batch, maxTvl, activeAt }: PoolBarProps) {
         </span>
       </div>
       <div className="relative h-[6px] overflow-hidden rounded-full bg-black/[0.04]">
-        <motion.div
+        {/* CSS transition rather than framer-motion: width changes only
+            re-animate when the value actually moves, eliminating the
+            per-render flicker the user reported. */}
+        <div
           className="absolute inset-y-0 left-0 rounded-full"
           style={{
             background: batch.sourceBrandBg,
             opacity: 0.85,
-            boxShadow: glowing ? `0 0 0 2px ${batch.sourceBrandBg}33` : 'none',
+            width: `${widthPct}%`,
+            transition: 'width 0.9s cubic-bezier(0.25,0.1,0.3,1)',
           }}
-          animate={{ width: `${widthPct}%` }}
-          transition={{ duration: 0.9, ease: [0.25, 0.1, 0.3, 1] }}
         />
       </div>
     </div>
   )
-}
+})
 
 export function PulseFeed() {
   const flow = useFloorFlow()
@@ -185,15 +187,6 @@ export function PulseFeed() {
   const hot = flow.slice(0, 6)
 
   // ── Top pools — bars ──
-  const lastActivityAt = useMemo(() => {
-    const map = new Map<string, number>()
-    for (const r of flow.slice(0, 60)) {
-      const cur = map.get(r.sourceId) ?? 0
-      if (r.displayedAt > cur) map.set(r.sourceId, r.displayedAt)
-    }
-    return map
-  }, [flow])
-
   const top = useMemo(() => {
     return batches
       .slice()
@@ -296,12 +289,7 @@ export function PulseFeed() {
           </div>
           <div className="space-y-2.5 px-8 pb-8">
             {top.map(b => (
-              <PoolBar
-                key={`${b.sourceId}-${b.batchId}`}
-                batch={b}
-                maxTvl={maxTopTvl}
-                activeAt={lastActivityAt.get(b.sourceId) ?? 0}
-              />
+              <PoolBar key={`${b.sourceId}-${b.batchId}`} batch={b} maxTvl={maxTopTvl} />
             ))}
           </div>
         </section>

@@ -1,11 +1,15 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
+import { useState } from 'react'
 import { FloorProvider, useFloorDebug } from '@/hooks/vision/useFloorStream'
 import { SourceBatchGrid } from './SourceBatchGrid'
 import { PulseFeed } from './PulseFeed'
 import { FlowStream } from './FlowStream'
 import { FloorBackground } from './FloorBackground'
+
+type Tab = 'sources' | 'pulse' | 'flow'
 
 function StatChip({ label, value }: { label: string; value: number | string }) {
   return (
@@ -16,34 +20,59 @@ function StatChip({ label, value }: { label: string; value: number | string }) {
   )
 }
 
+function Brand() {
+  return (
+    <Link href="/" className="flex items-center gap-2">
+      <Image
+        src="/logo.svg"
+        alt="General"
+        width={26}
+        height={26}
+        style={{ borderRadius: 6 }}
+        priority
+      />
+      <span
+        className="hidden font-semibold sm:inline"
+        style={{
+          fontFamily: 'var(--apple-font-display)',
+          fontSize: 19,
+          letterSpacing: 'var(--apple-track-tight)',
+          color: 'var(--apple-text)',
+        }}
+      >
+        General
+      </span>
+      <span
+        className="hidden items-center gap-1 rounded-full px-2 py-0.5 font-semibold sm:inline-flex"
+        style={{
+          fontSize: 10,
+          letterSpacing: '0.04em',
+          textTransform: 'uppercase',
+          background: '#0071e3',
+          color: '#ffffff',
+        }}
+      >
+        Vision · Floor
+      </span>
+    </Link>
+  )
+}
+
 function FloorTopBar() {
   const { sseConnected, batches, visibleTape, visibleFlow } = useFloorDebug()
   return (
     <header
-      className="apple-glass relative z-10 flex h-14 items-center justify-between px-6"
+      className="apple-glass relative z-20 flex h-14 items-center justify-between gap-3 px-4 md:px-6"
       style={{ borderBottom: '1px solid var(--apple-border)' }}
     >
-      <Link href="/" className="group flex items-baseline gap-3">
-        <span
-          className="text-[19px] font-semibold tracking-[-0.022em] text-[#1d1d1f] transition-opacity group-hover:opacity-70"
-          style={{ fontFamily: 'var(--apple-font-display)' }}
-        >
-          The Floor
-        </span>
-        <span
-          className="text-[13px] text-[#6e6e73]"
-          style={{ fontFamily: 'var(--apple-font-text)' }}
-        >
-          Vision
-        </span>
-      </Link>
-      <div className="flex items-center gap-6">
-        <StatChip label="sources" value={batches} />
-        <StatChip label="tape" value={visibleTape} />
-        <StatChip label="flow" value={visibleFlow} />
-        <span
-          className="inline-flex items-center gap-1.5 rounded-[980px] border border-black/[0.06] bg-white/60 px-2.5 py-1 text-[11px] tracking-[0.011em] text-[#6e6e73]"
-        >
+      <Brand />
+      <div className="flex items-center gap-3 md:gap-6">
+        <div className="hidden items-center gap-6 md:flex">
+          <StatChip label="sources" value={batches} />
+          <StatChip label="tape" value={visibleTape} />
+          <StatChip label="flow" value={visibleFlow} />
+        </div>
+        <span className="inline-flex items-center gap-1.5 rounded-[980px] border border-black/[0.06] bg-white/60 px-2.5 py-1 text-[11px] tracking-[0.011em] text-[#6e6e73]">
           <span
             className="inline-block h-1.5 w-1.5 rounded-full"
             style={{
@@ -58,11 +87,11 @@ function FloorTopBar() {
   )
 }
 
-function FloorPanes() {
+function FloorPanes({ tab }: { tab: Tab }) {
   return (
-    <main className="relative z-10 grid flex-1 grid-cols-[300px_1fr_340px] overflow-hidden">
+    <main className="relative z-10 flex-1 overflow-hidden md:grid md:grid-cols-[280px_1fr_320px]">
       <aside
-        className="overflow-hidden"
+        className={`overflow-hidden md:block ${tab === 'sources' ? 'block' : 'hidden'}`}
         style={{
           background: 'var(--apple-panel-2)',
           borderRight: '1px solid var(--apple-border)',
@@ -70,11 +99,14 @@ function FloorPanes() {
       >
         <SourceBatchGrid />
       </aside>
-      <section style={{ background: 'var(--apple-page-bg)' }}>
+      <section
+        className={`overflow-hidden md:block ${tab === 'pulse' ? 'block' : 'hidden'}`}
+        style={{ background: 'var(--apple-page-bg)' }}
+      >
         <PulseFeed />
       </section>
       <aside
-        className="overflow-hidden"
+        className={`overflow-hidden md:block ${tab === 'flow' ? 'block' : 'hidden'}`}
         style={{
           background: 'var(--apple-panel-2)',
           borderLeft: '1px solid var(--apple-border)',
@@ -86,7 +118,46 @@ function FloorPanes() {
   )
 }
 
+function FloorTabs({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void }) {
+  const items: { key: Tab; label: string }[] = [
+    { key: 'sources', label: 'Sources' },
+    { key: 'pulse', label: 'Pulse' },
+    { key: 'flow', label: 'Flow' },
+  ]
+  return (
+    <nav
+      className="relative z-20 grid h-14 grid-cols-3 md:hidden"
+      style={{
+        background: 'var(--apple-glass-bg-light)',
+        backdropFilter: 'var(--apple-glass-filter)',
+        WebkitBackdropFilter: 'var(--apple-glass-filter)',
+        borderTop: '1px solid var(--apple-border)',
+      }}
+    >
+      {items.map(it => {
+        const active = tab === it.key
+        return (
+          <button
+            key={it.key}
+            type="button"
+            onClick={() => setTab(it.key)}
+            className="flex items-center justify-center text-[13px] font-medium"
+            style={{
+              color: active ? '#0071e3' : '#6e6e73',
+              fontFamily: 'var(--apple-font-text)',
+              letterSpacing: '-0.014em',
+            }}
+          >
+            {it.label}
+          </button>
+        )
+      })}
+    </nav>
+  )
+}
+
 export function Floor() {
+  const [tab, setTab] = useState<Tab>('pulse')
   return (
     <FloorProvider>
       <style>{`
@@ -147,7 +218,8 @@ export function Floor() {
       >
         <FloorBackground />
         <FloorTopBar />
-        <FloorPanes />
+        <FloorPanes tab={tab} />
+        <FloorTabs tab={tab} setTab={setTab} />
       </div>
     </FloorProvider>
   )

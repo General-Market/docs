@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import { formatUnits } from 'viem'
 import type { FloorBatch } from '@/hooks/vision/useFloorStream'
 
@@ -31,15 +32,56 @@ function statusLabel(status: FloorBatch['status']): string {
   return '·'
 }
 
-function statusTint(status: FloorBatch['status']): {
-  bg: string
-  fg: string
-} {
+function statusTint(status: FloorBatch['status']): { bg: string; fg: string } {
   if (status === 'betting') return { bg: 'rgba(0,113,227,0.10)', fg: '#0071e3' }
   if (status === 'locked' || status === 'settling')
     return { bg: 'rgba(0,0,0,0.06)', fg: '#6e6e73' }
   if (status === 'settled') return { bg: 'rgba(0,0,0,0.04)', fg: '#86868b' }
   return { bg: 'rgba(0,0,0,0.04)', fg: '#86868b' }
+}
+
+/**
+ * Source logo. Mirrors the treatment used in the homepage search bar:
+ * tries /source-imgs/icons/{id}.png, falls back to a first-letter chip.
+ * Keeps both UIs visually consistent.
+ */
+function SourceLogo({
+  sourceId,
+  name,
+  brand,
+}: {
+  sourceId: string
+  name: string
+  brand: string
+}) {
+  const [broken, setBroken] = useState(false)
+  if (!broken) {
+    return (
+      <Image
+        src={`/source-imgs/icons/${sourceId}.png`}
+        alt=""
+        width={28}
+        height={28}
+        className="absolute left-1/2 top-1/2 h-7 w-7 -translate-x-1/2 -translate-y-1/2 rounded-full object-cover"
+        unoptimized
+        onError={() => setBroken(true)}
+      />
+    )
+  }
+  return (
+    <span
+      className="absolute left-1/2 top-1/2 flex h-7 w-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full font-semibold"
+      style={{
+        background: '#f5f5f7',
+        color: brand || '#1d1d1f',
+        fontSize: 12,
+        letterSpacing: '-0.01em',
+      }}
+      aria-hidden
+    >
+      {(name || sourceId).charAt(0).toUpperCase()}
+    </span>
+  )
 }
 
 export function SourceBatchCard({ batch }: Props) {
@@ -71,7 +113,8 @@ export function SourceBatchCard({ batch }: Props) {
         border: '1px solid var(--apple-border)',
         animation: pulsing ? `floorCardPulse ${pulseDuration} ease-in-out infinite` : undefined,
         boxShadow: 'var(--apple-shadow-card)',
-        transition: 'transform 240ms cubic-bezier(0.25,0.1,0.3,1), box-shadow 240ms cubic-bezier(0.25,0.1,0.3,1)',
+        transition:
+          'transform 240ms cubic-bezier(0.25,0.1,0.3,1), box-shadow 240ms cubic-bezier(0.25,0.1,0.3,1)',
       }}
     >
       <div className="relative h-11 w-11 shrink-0">
@@ -98,19 +141,11 @@ export function SourceBatchCard({ batch }: Props) {
             style={{ transition: 'stroke-dashoffset 1s linear' }}
           />
         </svg>
-        {batch.sourceLogo ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={batch.sourceLogo}
-            alt=""
-            className="absolute left-1/2 top-1/2 h-7 w-7 -translate-x-1/2 -translate-y-1/2 rounded-full object-cover"
-          />
-        ) : (
-          <div
-            className="absolute left-1/2 top-1/2 h-7 w-7 -translate-x-1/2 -translate-y-1/2 rounded-full"
-            style={{ background: batch.sourceBrandBg || '#1d1d1f' }}
-          />
-        )}
+        <SourceLogo
+          sourceId={batch.sourceId}
+          name={batch.sourceName}
+          brand={batch.sourceBrandBg}
+        />
       </div>
 
       <div className="min-w-0 flex-1">

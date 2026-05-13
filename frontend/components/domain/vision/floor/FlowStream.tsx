@@ -25,6 +25,15 @@ function formatStake(weiStr: string): string {
   }
 }
 
+function formatTime(ms: number): string {
+  if (!ms) return '--:--'
+  const d = new Date(ms)
+  const h = String(d.getHours()).padStart(2, '0')
+  const m = String(d.getMinutes()).padStart(2, '0')
+  const s = String(d.getSeconds()).padStart(2, '0')
+  return `${h}:${m}:${s}`
+}
+
 interface FlowRowViewProps {
   row: FlowRow
   sourceName: string
@@ -35,6 +44,7 @@ function FlowRowView({ row, sourceName, sourceBrandBg }: FlowRowViewProps) {
   const isUp = row.outcome === 'Up' || row.outcome === 'AllSameSide'
   const isDown = row.outcome === 'Down'
   const dirColor = isUp ? '#0071e3' : isDown ? '#ff3b30' : '#86868b'
+  const dirGlyph = isUp ? '▲' : isDown ? '▼' : '·'
 
   let totalStr = '$0'
   try {
@@ -52,19 +62,19 @@ function FlowRowView({ row, sourceName, sourceBrandBg }: FlowRowViewProps) {
       initial={{ opacity: 0, x: 6 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.16, ease: [0.25, 0.1, 0.3, 1] }}
-      className="flex items-baseline gap-2 px-4 py-1.5"
+      className="grid grid-cols-[10px_auto_1fr_56px] items-baseline gap-2 px-4 py-1.5"
     >
       <span
-        className="h-1.5 w-1.5 shrink-0 self-center rounded-full"
-        style={{ background: dirColor }}
+        className="h-1.5 w-1.5 self-center justify-self-center rounded-full"
+        style={{ background: sourceBrandBg }}
         aria-hidden
       />
-      <span className="tabular-nums text-[13px] font-medium text-[#1d1d1f]">{totalStr}</span>
-      <span
-        className="inline-flex h-1.5 w-1.5 shrink-0 self-center rounded-full"
-        style={{ background: sourceBrandBg, opacity: 0.7 }}
-        aria-hidden
-      />
+      <span className="flex items-baseline gap-1 tabular-nums text-[13px] font-medium text-[#1d1d1f]">
+        <span style={{ color: dirColor }} aria-hidden>
+          {dirGlyph}
+        </span>
+        {totalStr}
+      </span>
       <span className="truncate text-[12px] text-[#6e6e73]">
         {sourceName}
         {assetLabel && (
@@ -74,21 +84,10 @@ function FlowRowView({ row, sourceName, sourceBrandBg }: FlowRowViewProps) {
           </>
         )}
       </span>
+      <span className="justify-self-end tabular-nums text-[10px] text-[#86868b]">
+        {formatTime(row.displayedAt)}
+      </span>
     </motion.div>
-  )
-}
-
-function GhostFlowRow({ delay }: { delay: number }) {
-  return (
-    <div
-      className="floor-empty-shimmer flex items-baseline gap-2 px-4 py-1.5"
-      style={{ animationDelay: `${delay}s` }}
-    >
-      <span className="h-1.5 w-1.5 shrink-0 self-center rounded-full bg-black/[0.05]" />
-      <span className="h-2 w-10 shrink-0 rounded-[2px] bg-black/[0.04]" />
-      <span className="h-1.5 w-1.5 shrink-0 self-center rounded-full bg-black/[0.05]" />
-      <span className="h-2 w-[110px] shrink-0 rounded-[2px] bg-black/[0.04]" />
-    </div>
   )
 }
 
@@ -113,24 +112,12 @@ export function FlowStream() {
       <div className="relative flex-1 overflow-hidden">
         <div className="absolute inset-0 overflow-y-auto py-2">
           {rows.length === 0 ? (
-            <>
-              <GhostFlowRow delay={0} />
-              <GhostFlowRow delay={0.4} />
-              <GhostFlowRow delay={0.9} />
-              <GhostFlowRow delay={1.6} />
-              <GhostFlowRow delay={2.1} />
-              <GhostFlowRow delay={2.8} />
-              <GhostFlowRow delay={3.5} />
-              <div className="px-5 pt-8 text-center">
-                <p
-                  className="text-[13px] tracking-[-0.014em] text-[#6e6e73]"
-                  style={{ fontFamily: 'var(--apple-font-text)' }}
-                >
-                  <span className="floor-breathe align-middle">·</span>
-                  <span className="ml-2 align-middle">Stake flows here in real time.</span>
-                </p>
-              </div>
-            </>
+            <div className="flex h-full items-center justify-center px-4 text-center">
+              <p className="text-[12px] tracking-[-0.014em] text-[#6e6e73]">
+                <span className="floor-breathe align-middle">·</span>
+                <span className="ml-2 align-middle">Stake flows here in real time.</span>
+              </p>
+            </div>
           ) : (
             <AnimatePresence initial={false}>
               {rows.map(r => {
@@ -150,8 +137,7 @@ export function FlowStream() {
         <div
           className="pointer-events-none absolute inset-x-0 bottom-0 h-16"
           style={{
-            background:
-              'linear-gradient(to top, var(--apple-panel-2), rgba(251,251,253,0))',
+            background: 'linear-gradient(to top, var(--apple-panel-2), rgba(251,251,253,0))',
           }}
         />
       </div>
