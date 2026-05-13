@@ -333,12 +333,40 @@ async fn get_all_last_settlement_changes(
         .collect())
 }
 
+/// Per-source TTL cache for 24h change history.
+///
+/// The underlying query is a `WITH ranked AS (...)` over `market_prices` (130 GB,
+/// 264 M rows). A cold pass burns IO/CPU for ~100 s. The data it returns —
+/// "approx pct change over the last 24 h" — does not move appreciably second by
+/// second. A 60 s TTL drops query load to once per minute per source while
+/// preserving fallback-tier calibration quality. Cache lives behind an
+/// `OnceLock<Mutex<...>>` so multiple concurrent callers share the same store.
+static TWENTY_FOUR_H_CACHE: OnceLock<std::sync::Mutex<HashMap<String, (Instant, HashMap<String, f64>)>>> = OnceLock::new();
+
+fn twenty_four_h_cache() -> &'static std::sync::Mutex<HashMap<String, (Instant, HashMap<String, f64>)>> {
+    TWENTY_FOUR_H_CACHE.get_or_init(|| std::sync::Mutex::new(HashMap::new()))
+}
+
+const TWENTY_FOUR_H_CACHE_TTL_SECS: u64 = 60;
+
 /// Get 24h price change % for ALL assets of a source in one query.
 /// Returns HashMap<asset_id, change_pct>.
+///
+/// Result is cached per-source with a 60s TTL — see TWENTY_FOUR_H_CACHE above.
 async fn get_all_24h_changes(
     pool: &PgPool,
     source_id: &str,
 ) -> Result<HashMap<String, f64>, sqlx::Error> {
+    // Cache lookup first.
+    {
+        let guard = twenty_four_h_cache().lock().unwrap();
+        if let Some((stored_at, value)) = guard.get(source_id) {
+            if stored_at.elapsed().as_secs() < TWENTY_FOUR_H_CACHE_TTL_SECS {
+                return Ok(value.clone());
+            }
+        }
+    }
+
     let rows: Vec<(String, Decimal, Decimal)> = sqlx::query_as(
         r#"
         WITH ranked AS (
@@ -366,7 +394,7 @@ async fn get_all_24h_changes(
     .fetch_all(pool)
     .await?;
 
-    Ok(rows
+    let result: HashMap<String, f64> = rows
         .into_iter()
         .map(|(id, latest, earliest)| {
             let pct = if earliest.is_zero() {
@@ -379,7 +407,14 @@ async fn get_all_24h_changes(
             };
             (id, pct)
         })
-        .collect())
+        .collect();
+
+    {
+        let mut guard = twenty_four_h_cache().lock().unwrap();
+        guard.insert(source_id.to_string(), (Instant::now(), result.clone()));
+    }
+
+    Ok(result)
 }
 
 // median_lookback_ticks removed — strategies now live in each source's

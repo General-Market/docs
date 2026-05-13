@@ -262,26 +262,43 @@ impl BatchLifecycleManager {
         let poll_interval = tokio::time::Duration::from_secs(1);
         let mut interval = tokio::time::interval(poll_interval);
 
+        // Per-source deterministic ownership.
+        //
+        // Today every oracle drives the lifecycle, but each owns only the sources
+        // whose hash maps to its node_index. The remaining oracles co-sign incoming
+        // proposals — they don't propose themselves. This swap replaces the old
+        // "node_index == 0 drives everything" model: row-lock racing meant other
+        // nodes could grab a source the leader was still working on, producing
+        // duplicated heartbeats. With ownership pre-computed at the SQL level no
+        // two oracles claim the same source, ever.
+        //
+        // Failover is out of scope: if an oracle is down, its sources block until
+        // it returns. That's acceptable for the current refund-rate window.
+        let node_index = self.config.node_index as i64;
+        let num_oracles = self.config.num_oracles as i64;
+        info!(
+            node_index = self.config.node_index,
+            num_oracles = self.config.num_oracles,
+            "Vision lifecycle owns sources where hashtext(source_name) % num_oracles == node_index"
+        );
+
         while !self.shutdown.load(Ordering::Relaxed) {
             interval.tick().await;
 
             let mut join_set: JoinSet<()> = JoinSet::new();
 
-            // Only the leader (node_index == 0) drives the lifecycle.
-            // Followers stay in this loop solely to keep the P2P heartbeat alive
-            // and respond to co-sign requests via the channel listener.
-            if self.config.node_index != 0 {
-                continue;
-            }
-
             // Pick up due rows in a single transactional sweep. Each row is
             // claimed atomically: SELECT FOR UPDATE → bump last_heartbeat_at →
             // commit. Rows already claimed by an in-flight task are SKIPped so
-            // we don't double-fire a heartbeat for the same source.
+            // we don't double-fire a heartbeat for the same source. The ownership
+            // filter `((hashtext % N) + N) % N == node_index` keeps each source
+            // pinned to exactly one oracle — hashtext is signed, the double-mod
+            // forces a non-negative remainder.
             let due_rows: Vec<(String, Vec<u8>, i64, Option<i64>, Option<i64>)> = match sqlx::query_as::<_, (String, Vec<u8>, i32, Option<i64>, Option<i64>)>(
                 "WITH due AS ( \
                     SELECT source_name FROM vision_source_state \
                     WHERE tick_duration_secs > 0 \
+                      AND ((hashtext(source_name)::bigint % $1) + $1) % $1 = $2 \
                       AND last_heartbeat_at \
                           + make_interval(secs => tick_duration_secs) \
                           + (stagger_offset_ms * interval '1 millisecond') \
@@ -297,6 +314,8 @@ impl BatchLifecycleManager {
                  RETURNING s.source_name, s.source_id, s.tick_duration_secs, \
                            s.current_batch_id, s.previous_batch_id",
             )
+            .bind(num_oracles)
+            .bind(node_index)
             .fetch_all(&self.pool)
             .await
             {
@@ -1071,8 +1090,11 @@ impl BatchLifecycleManager {
             warn!(source = %source_name, error = %e, "Failed to save start price snapshot (non-fatal)");
         }
 
-        // Only leader submits on-chain. Followers detect via BatchCreated events.
-        let is_leader = self.config.node_index == 0;
+        // Per-source ownership: the heartbeat SQL pre-filtered this source to us,
+        // so by construction we own it and act as the leader for THIS createBatch.
+        // The legacy "node_index == 0" gate is replaced by the SQL filter —
+        // followers for the same source never enter this code path.
+        let is_leader = true;
 
         if is_leader {
             if let Some(ref writer) = self.chain_writer {
@@ -1228,8 +1250,30 @@ impl BatchLifecycleManager {
                         source = %source_name,
                         collected = collected_sigs.len(),
                         threshold,
-                        "Insufficient co-signs for createBatch — aborting on-chain submission"
+                        "Insufficient co-signs for createBatch — enqueuing for sweeper retry"
                     );
+                    // Persist the proposal so the sweeper can replay it later.
+                    // The lifecycle row keeps on_chain_batch_id = NULL; nothing else
+                    // points at it until the sweep succeeds or the row is reaped.
+                    if let Err(e) = sqlx::query(
+                        "INSERT INTO vision_pending_creates \
+                           (lifecycle_id, source_name, source_id, config_hash, \
+                            tick_duration, lock_offset, settlement_grace, ref_nonce) \
+                         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) \
+                         ON CONFLICT (lifecycle_id) DO NOTHING"
+                    )
+                    .bind(lifecycle_id as i64)
+                    .bind(source_name)
+                    .bind(source_id.as_bytes())
+                    .bind(config_hash.as_bytes())
+                    .bind(tick_duration as i64)
+                    .bind(lock_offset as i64)
+                    .bind(settlement_grace as i64)
+                    .bind(ref_nonce as i64)
+                    .execute(&self.pool)
+                    .await {
+                        warn!(source = %source_name, lifecycle_id, error = %e, "Failed to enqueue pending create");
+                    }
                     return Ok(lifecycle_id);
                 }
 
@@ -3014,3 +3058,275 @@ impl BatchLifecycleManager {
 
 // parse_resolution_type is now in shared.rs
 use super::shared::parse_resolution_type;
+
+impl BatchLifecycleManager {
+    /// Sweeper for createBatch proposals that ran out of cosigns.
+    ///
+    /// Each batch_lifecycle row whose first createBatch sweep failed lives in
+    /// `vision_pending_creates`. Every 10s the leader picks the oldest five,
+    /// rebuilds the BLS message, re-broadcasts the proposal, collects cosigns,
+    /// and submits on-chain. On success: clear the row, set `on_chain_batch_id`
+    /// on the lifecycle row. On failure: bump `retry_count` and stamp
+    /// `last_attempt_at`. After 20 retries (~3.5 minutes) the row is reaped
+    /// and its lifecycle peer with it — no players ever joined, no refunds
+    /// are owed, no point keeping a corpse around.
+    pub async fn run_pending_creates_sweep(self: Arc<Self>) {
+        const SWEEP_INTERVAL_SECS: u64 = 10;
+        const MAX_RETRIES: i32 = 20;
+        const BATCH_LIMIT: i64 = 5;
+
+        if self.chain_writer.is_none() {
+            info!("Pending-creates sweep: no chain_writer — sleeping");
+            return;
+        }
+        if self.bls_keypair.is_none() {
+            info!("Pending-creates sweep: no BLS keypair — sleeping");
+            return;
+        }
+
+        let node_index = self.config.node_index as i64;
+        let num_oracles = self.config.num_oracles as i64;
+        info!(
+            interval_secs = SWEEP_INTERVAL_SECS,
+            max_retries = MAX_RETRIES,
+            node_index = self.config.node_index,
+            num_oracles = self.config.num_oracles,
+            "Pending-creates sweep loop starting (owns sources where hashtext % num_oracles == node_index)"
+        );
+
+        let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(SWEEP_INTERVAL_SECS));
+        while !self.shutdown.load(Ordering::Relaxed) {
+            interval.tick().await;
+
+            // Pick due rows. NULL last_attempt_at means "never tried since enqueue"
+            // and should run before older retries.
+            let rows: Vec<(i64, String, Vec<u8>, Vec<u8>, i64, i64, i64, i64, i32)> = match sqlx::query_as(
+                "SELECT lifecycle_id, source_name, source_id, config_hash, \
+                        tick_duration, lock_offset, settlement_grace, ref_nonce, retry_count \
+                 FROM vision_pending_creates \
+                 WHERE ((hashtext(source_name)::bigint % $1) + $1) % $1 = $2 \
+                   AND (last_attempt_at IS NULL \
+                        OR last_attempt_at < NOW() - INTERVAL '10 seconds') \
+                 ORDER BY created_at ASC \
+                 LIMIT $3"
+            )
+            .bind(num_oracles)
+            .bind(node_index)
+            .bind(BATCH_LIMIT)
+            .fetch_all(&self.pool)
+            .await {
+                Ok(r) => r,
+                Err(e) => {
+                    warn!(error = %e, "Pending-creates sweep: failed to query");
+                    continue;
+                }
+            };
+
+            if rows.is_empty() {
+                continue;
+            }
+
+            for (lifecycle_id, source_name, source_id_bytes, config_hash_bytes,
+                 tick_duration, lock_offset, settlement_grace, ref_nonce, retry_count) in rows {
+                if source_id_bytes.len() != 32 || config_hash_bytes.len() != 32 {
+                    warn!(source = %source_name, lifecycle_id, "Pending-creates sweep: malformed id/hash — reaping");
+                    let _ = sqlx::query("DELETE FROM vision_pending_creates WHERE lifecycle_id = $1")
+                        .bind(lifecycle_id).execute(&self.pool).await;
+                    let _ = sqlx::query("DELETE FROM vision_batch_lifecycle WHERE batch_id = $1 AND on_chain_batch_id IS NULL")
+                        .bind(lifecycle_id).execute(&self.pool).await;
+                    continue;
+                }
+
+                // Reap after MAX_RETRIES — batch is permanently lost.
+                if retry_count >= MAX_RETRIES {
+                    info!(
+                        source = %source_name,
+                        lifecycle_id,
+                        retry_count,
+                        "Pending-creates sweep: max retries reached — reaping batch (no players ever joined)"
+                    );
+                    let _ = sqlx::query("DELETE FROM vision_pending_creates WHERE lifecycle_id = $1")
+                        .bind(lifecycle_id).execute(&self.pool).await;
+                    let _ = sqlx::query("DELETE FROM vision_batch_lifecycle WHERE batch_id = $1 AND on_chain_batch_id IS NULL")
+                        .bind(lifecycle_id).execute(&self.pool).await;
+                    continue;
+                }
+
+                let source_id = H256::from_slice(&source_id_bytes);
+                let config_hash = H256::from_slice(&config_hash_bytes);
+
+                let succeeded = self.replay_pending_create(
+                    &source_name,
+                    source_id,
+                    config_hash,
+                    tick_duration as u64,
+                    lock_offset as u64,
+                    settlement_grace as u64,
+                    ref_nonce as u64,
+                    lifecycle_id as u64,
+                ).await;
+
+                if succeeded {
+                    info!(source = %source_name, lifecycle_id, "Pending-creates sweep: replay succeeded — clearing row");
+                    let _ = sqlx::query("DELETE FROM vision_pending_creates WHERE lifecycle_id = $1")
+                        .bind(lifecycle_id).execute(&self.pool).await;
+                } else {
+                    let _ = sqlx::query(
+                        "UPDATE vision_pending_creates \
+                         SET retry_count = retry_count + 1, last_attempt_at = NOW() \
+                         WHERE lifecycle_id = $1"
+                    )
+                    .bind(lifecycle_id)
+                    .execute(&self.pool)
+                    .await;
+                }
+            }
+        }
+
+        info!("Pending-creates sweep loop shutting down");
+    }
+
+    /// Replay a stored createBatch proposal: rebuild BLS message, broadcast,
+    /// collect cosigns, submit on-chain. Returns true iff submission succeeded.
+    ///
+    /// Mirrors the cosign-collection block in `create_new_round` — the BLS
+    /// message is constructed identically, signatures are aggregated the same
+    /// way, and the same `submit_create_batch` helper handles the on-chain leg.
+    #[allow(clippy::too_many_arguments)]
+    async fn replay_pending_create(
+        &self,
+        source_name: &str,
+        source_id: H256,
+        config_hash: H256,
+        tick_duration: u64,
+        lock_offset: u64,
+        settlement_grace: u64,
+        ref_nonce: u64,
+        lifecycle_id: u64,
+    ) -> bool {
+        let writer = match &self.chain_writer {
+            Some(w) => w,
+            None => return false,
+        };
+        let bls_keypair = match &self.bls_keypair {
+            Some(kp) => kp,
+            None => return false,
+        };
+
+        let vision_address: Address = self.config.vision_address.parse().unwrap_or_default();
+        let bls_message = keccak256(encode(&[
+            Token::Uint(U256::from(self.config.chain_id)),
+            Token::Address(vision_address),
+            Token::String("CREATE_BATCH".to_string()),
+            Token::FixedBytes(source_id.as_bytes().to_vec()),
+            Token::FixedBytes(config_hash.as_bytes().to_vec()),
+            Token::Uint(U256::from(tick_duration)),
+            Token::Uint(U256::from(lock_offset)),
+            Token::Uint(U256::from(settlement_grace)),
+        ]));
+        let message_hash = H256::from(bls_message);
+
+        let leader_sig = {
+            let signer = Bn254BLSSigner::new();
+            match signer.sign_message_hash(bls_keypair, &bls_message) {
+                Ok(sig) => BLSSignature(sig.0),
+                Err(e) => {
+                    warn!(source = %source_name, lifecycle_id, error = %e, "Replay: BLS signing failed");
+                    return false;
+                }
+            }
+        };
+
+        let node_index = self.config.node_index;
+        let num_oracles = self.config.num_oracles;
+        let threshold = compute_threshold(num_oracles);
+
+        let mut collected_sigs: Vec<(u8, BLSSignature)> = vec![(node_index, BLSSignature(leader_sig.0.clone()))];
+        let mut signer_bits = 1u64 << node_index;
+
+        if num_oracles > 1 {
+            let broadcast_tx = match &self.broadcast_tx {
+                Some(tx) => tx,
+                None => {
+                    warn!(source = %source_name, lifecycle_id, "Replay: no broadcast channel — cannot reach quorum");
+                    return false;
+                }
+            };
+
+            let (sign_tx, mut sign_rx) = mpsc::channel::<IncomingCreateBatchSign>(8);
+            self.cosign_router.insert(source_id, sign_tx);
+
+            let proposal = P2PMessage::VisionCreateBatchProposal {
+                leader_id: self.peer_id,
+                source_name: source_name.to_string(),
+                source_id,
+                config_hash,
+                tick_duration,
+                lock_offset,
+                settlement_grace,
+                message_hash,
+                leader_signature: common::types::BLSSignature(leader_sig.0.clone()),
+                reference_nonce: ref_nonce,
+            };
+
+            let per_attempt_secs = cosign_timeout_secs().max(5).min(30);
+            for attempt in 0..3u32 {
+                if collected_sigs.len() >= threshold { break; }
+                if attempt > 0 {
+                    debug!(source = %source_name, lifecycle_id, attempt, "Replay: re-broadcasting createBatch");
+                }
+                if let Err(e) = broadcast_tx.send(proposal.clone()).await {
+                    warn!(source = %source_name, lifecycle_id, attempt, error = %e, "Replay: broadcast send failed");
+                    break;
+                }
+
+                let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(per_attempt_secs);
+                loop {
+                    if collected_sigs.len() >= threshold { break; }
+                    let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
+                    if remaining.is_zero() { break; }
+                    match tokio::time::timeout(remaining, sign_rx.recv()).await {
+                        Ok(Some(cosign)) => {
+                            if cosign.message_hash != message_hash { continue; }
+                            if collected_sigs.iter().any(|(idx, _)| *idx == cosign.signer_index) { continue; }
+                            signer_bits |= 1u64 << cosign.signer_index;
+                            collected_sigs.push((cosign.signer_index, cosign.signature));
+                        }
+                        Ok(None) => break,
+                        Err(_) => break,
+                    }
+                }
+            }
+
+            self.cosign_router.remove(&source_id);
+        }
+
+        if collected_sigs.len() < threshold {
+            debug!(
+                source = %source_name,
+                lifecycle_id,
+                collected = collected_sigs.len(),
+                threshold,
+                "Replay: still short of threshold — will retry next sweep"
+            );
+            return false;
+        }
+
+        let bls_signer = Bn254BLSSigner::new();
+        let sigs_only: Vec<BLSSignature> = collected_sigs.iter().map(|(_, s)| s.clone()).collect();
+        let aggregated = match bls_signer.aggregate_signatures(sigs_only) {
+            Ok(agg) => agg,
+            Err(e) => {
+                warn!(source = %source_name, lifecycle_id, error = %e, "Replay: BLS aggregation failed");
+                return false;
+            }
+        };
+
+        let signers_bitmask = U256::from(signer_bits);
+        self.submit_create_batch(
+            source_name, writer, source_id, config_hash,
+            tick_duration, lock_offset, settlement_grace, aggregated.0,
+            ref_nonce, signers_bitmask, lifecycle_id,
+        ).await.is_some()
+    }
+}
