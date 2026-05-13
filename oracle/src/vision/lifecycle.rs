@@ -406,20 +406,49 @@ impl BatchLifecycleManager {
                                     total_markets = settlement.total_markets,
                                     "Round settled"
                                 );
-                                if let Err(e) = mgr.record_settlement(&settlement).await {
-                                    error!(batch_id = prev_id, error = %e, "Failed to record settlement in DB");
-                                }
-                                if let Err(e) = mgr.record_market_ratios(&tick_result).await {
-                                    error!(batch_id = prev_id, error = %e, "Failed to record market ratios");
-                                }
+
+                                // Fast SSE broadcast — in-memory, no I/O.
                                 mgr.broadcast_settlement_event(prev_id, &source_name, &tick_result);
-                                super::shared::record_settlements(
-                                    &mgr.config.data_node_url,
-                                    mgr.config.data_node_token.as_deref().unwrap_or(""),
-                                    &source_name,
-                                    &tick_result,
-                                    &config_hash,
-                                ).await;
+
+                                // Mark settled_at on the lifecycle row INLINE so the refund metric
+                                // updates immediately. The per-player + market-ratio inserts
+                                // (which can run hundreds to thousands of single-row INSERTs against
+                                // the 260M-row settlement table) get spawned below so they do not
+                                // block the on-chain submit race against the grace-window cliff.
+                                if let Err(e) = sqlx::query(
+                                    "UPDATE vision_batch_lifecycle SET settled_at = NOW() WHERE on_chain_batch_id = $1",
+                                )
+                                .bind(prev_id as i64)
+                                .execute(&mgr.pool)
+                                .await
+                                {
+                                    error!(batch_id = prev_id, error = %e, "Failed to mark settled_at on lifecycle row");
+                                }
+
+                                // Spawn the slow writes. record_settlement re-issues the UPDATE
+                                // above (idempotent); record_market_ratios is the heavy one.
+                                {
+                                    let mgr_bg = Arc::clone(&mgr);
+                                    let settlement_bg = settlement.clone();
+                                    let tick_result_bg = tick_result.clone();
+                                    let source_name_bg = source_name.clone();
+                                    let config_hash_bg = config_hash.clone();
+                                    tokio::spawn(async move {
+                                        if let Err(e) = mgr_bg.record_settlement(&settlement_bg).await {
+                                            error!(batch_id = prev_id, error = %e, "Background: record_settlement failed");
+                                        }
+                                        if let Err(e) = mgr_bg.record_market_ratios(&tick_result_bg).await {
+                                            error!(batch_id = prev_id, error = %e, "Background: record_market_ratios failed");
+                                        }
+                                        super::shared::record_settlements(
+                                            &mgr_bg.config.data_node_url,
+                                            mgr_bg.config.data_node_token.as_deref().unwrap_or(""),
+                                            &source_name_bg,
+                                            &tick_result_bg,
+                                            &config_hash_bg,
+                                        ).await;
+                                    });
+                                }
 
                                 // In-heartbeat retry: up to 3 attempts with exponential backoff (3s/6s/12s).
                                 // The first attempt failing was the dominant cause of missed settlements —
