@@ -137,8 +137,12 @@ import { antiCheatBridgeMeta } from "./compositions/anticheat/AntiCheatBridge";
 import { antiCheatEndCardMeta } from "./compositions/anticheat/AntiCheatEndCard";
 import { antiCheatFullMeta } from "./compositions/anticheat/AntiCheatFull";
 import { tradingScreenPortraitMeta } from "./compositions/anticheat/TradingScreenPortrait";
+import { proposal01ColdOpenMeta } from "./compositions/anticheat/proposals/Proposal01ColdOpen";
+import { proposal02PhoneMeta } from "./compositions/anticheat/proposals/Proposal02Phone";
+import { proposal03CourseMeta } from "./compositions/anticheat/proposals/Proposal03Course";
 import { blockTradingExileMeta } from "./compositions/block-trading/BlockTradingExile";
 import { marketAnatomyMeta } from "./compositions/market-anatomy/MarketAnatomy";
+import { icebergDataMeta } from "./compositions/iceberg-data/IcebergData";
 
 const SHOW_SCENES = process.env.REMOTION_SHOW_SCENES === "1";
 
@@ -175,6 +179,9 @@ export const RemotionRoot: React.FC = () => {
           antiCheatBridgeMeta,
           antiCheatEndCardMeta,
           tradingScreenPortraitMeta,
+          proposal01ColdOpenMeta,
+          proposal02PhoneMeta,
+          proposal03CourseMeta,
         ].map((meta) => (
           <Composition
             key={meta.id}
@@ -187,6 +194,16 @@ export const RemotionRoot: React.FC = () => {
           />
         ))}
       </Folder>
+
+      {/* ═══ ICEBERG DATA — standalone "why traders really lost" ═══ */}
+      <Composition
+        id={icebergDataMeta.id}
+        component={icebergDataMeta.component}
+        durationInFrames={icebergDataMeta.durationInFrames}
+        fps={icebergDataMeta.fps}
+        width={icebergDataMeta.width}
+        height={icebergDataMeta.height}
+      />
 
       {/* ═══ BLOCK TRADING — single-slide kill-list explainer ═══ */}
       <Composition
