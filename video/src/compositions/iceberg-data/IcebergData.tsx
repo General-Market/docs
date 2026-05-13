@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import {
   AbsoluteFill,
   Easing,
-  continueRender,
-  delayRender,
+  Img,
   interpolate,
   spring,
   staticFile,
@@ -14,22 +13,19 @@ import { font } from "../../common/fonts";
 import { colors } from "../anticheat/theme";
 import { DotGrid } from "../anticheat/DotGrid";
 
-// IcebergData — cartoon iceberg, but rendered as a Base-blue dot mosaic
-// over the AntiCheat DotGrid background. Cards use the body-scene
-// aesthetic (white surface, Base blue accent). Rhythm is borrowed from
-// AntiCheatIceberg: zoom-out intro then beat-locked tier reveals.
+// IcebergData — cartoon iceberg on top of the AntiCheat DotGrid backdrop.
+// Card aesthetic, camera plan, and beat rhythm all borrowed from the rest
+// of AntiCheatFull.
 
 const W = 1920;
 const H = 1080;
 const FPS = 30;
 
-// ── Iceberg image (cartoon) — used as a luminance source for dot sampling ─
 const IMG_NATIVE_W = 1280;
 const IMG_NATIVE_H = 720;
-const IMG_AR = IMG_NATIVE_W / IMG_NATIVE_H; // 16:9 exact
-const SAMPLE_SPACING = 14; // matches DotGrid's FINE_SPACING
+const IMG_AR = IMG_NATIVE_W / IMG_NATIVE_H;
 
-// ── Beat rhythm — verbatim from AntiCheatIceberg ──────────────────────────
+// ── Beat rhythm — verbatim from AntiCheatIceberg ───────────────────────────
 const TIERS_COUNT = 6;
 const LAST = TIERS_COUNT - 1;
 const TIER_STAMP_LOCAL = [36, 61, 87, 113, 139, 164] as const;
@@ -47,7 +43,7 @@ const easeInOut = (t: number) =>
   t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
-// ── Camera ────────────────────────────────────────────────────────────────
+// ── Camera ─────────────────────────────────────────────────────────────────
 type Cam = { fy: number; scale: number };
 const CAM_INTRO_START: Cam = { fy: 0.42, scale: 1.18 };
 const CAM_FULL: Cam = { fy: 0.50, scale: 1.05 };
@@ -95,104 +91,32 @@ const resolveGeom = (frame: number): Geom => {
   return { imgLeft, imgTop, imgW, imgH };
 };
 
-// ── DotIceberg — samples the cartoon image once, renders it as Base-blue
-// dots. The white iceberg body shows up bright; sky and water fade away
-// so the AntiCheat DotGrid behind them is the actual background.
-type Sample = { x: number; y: number; intensity: number };
-
-const useIcebergSamples = (): Sample[] | null => {
-  const [samples, setSamples] = useState<Sample[] | null>(null);
-  const [handle] = useState(() => delayRender("iceberg-samples"));
-
-  useEffect(() => {
-    let cancelled = false;
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      if (cancelled) return;
-      const cols = Math.ceil(IMG_NATIVE_W / SAMPLE_SPACING);
-      const rows = Math.ceil(IMG_NATIVE_H / SAMPLE_SPACING);
-      const canvas = document.createElement("canvas");
-      canvas.width = cols;
-      canvas.height = rows;
-      const ctx = canvas.getContext("2d", { willReadFrequently: true });
-      if (!ctx) {
-        continueRender(handle);
-        return;
-      }
-      ctx.drawImage(img, 0, 0, cols, rows);
-      const data = ctx.getImageData(0, 0, cols, rows).data;
-      const result: Sample[] = [];
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          const i = (r * cols + c) * 4;
-          const rR = data[i] / 255;
-          const gG = data[i + 1] / 255;
-          const bB = data[i + 2] / 255;
-          const lum = 0.2126 * rR + 0.7152 * gG + 0.0722 * bB;
-          const maxC = Math.max(rR, gG, bB);
-          const minC = Math.min(rR, gG, bB);
-          const sat = maxC === 0 ? 0 : (maxC - minC) / maxC;
-          // Iceberg body: bright AND desaturated (i.e. white/light grey).
-          const bright = Math.max(0, (lum - 0.55) / 0.45); // 0 at 0.55, 1 at 1.0
-          const desat = Math.max(0, 1 - sat * 2.4);
-          const intensity = Math.max(0, Math.min(1, bright * desat));
-          if (intensity < 0.05) continue; // cull sky + water
-          result.push({
-            x: (c + 0.5) * SAMPLE_SPACING,
-            y: (r + 0.5) * SAMPLE_SPACING,
-            intensity,
-          });
-        }
-      }
-      setSamples(result);
-      continueRender(handle);
-    };
-    img.onerror = () => {
-      continueRender(handle);
-    };
-    img.src = staticFile("iceberg-data.webp");
-    return () => {
-      cancelled = true;
-    };
-  }, [handle]);
-
-  return samples;
-};
-
-const DotIceberg: React.FC<{ geom: Geom; samples: Sample[] | null }> = ({
-  geom,
-  samples,
-}) => {
-  if (!samples) return null;
-  return (
-    <svg
-      width={geom.imgW}
-      height={geom.imgH}
-      viewBox={`0 0 ${IMG_NATIVE_W} ${IMG_NATIVE_H}`}
-      preserveAspectRatio="none"
+// ── Iceberg image — sits on top of the dot grid, mix-blends with it so the
+// dots breathe through the blue ocean and sky.
+const IcebergImage: React.FC<{ geom: Geom }> = ({ geom }) => (
+  <div
+    style={{
+      position: "absolute",
+      left: geom.imgLeft,
+      top: geom.imgTop,
+      width: geom.imgW,
+      height: geom.imgH,
+      mixBlendMode: "multiply",
+    }}
+  >
+    <Img
+      src={staticFile("iceberg-data.webp")}
       style={{
-        position: "absolute",
-        left: geom.imgLeft,
-        top: geom.imgTop,
-        pointerEvents: "none",
+        width: "100%",
+        height: "100%",
+        display: "block",
+        filter: "saturate(0.85) contrast(1.05)",
       }}
-    >
-      {samples.map((s, i) => (
-        <circle
-          key={i}
-          cx={s.x}
-          cy={s.y}
-          r={1.6 + s.intensity * 3.0}
-          fill={colors.accent}
-          opacity={0.55 + s.intensity * 0.45}
-        />
-      ))}
-    </svg>
-  );
-};
+    />
+  </div>
+);
 
-// ── Tiers + image-space anchors ──────────────────────────────────────────
+// ── Tiers + anchors ────────────────────────────────────────────────────────
 type Tier = {
   label: string;
   pctX: number;
@@ -367,12 +291,10 @@ const Headline: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
-// ── Outer composition ────────────────────────────────────────────────────
 export const IcebergData: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const geom = resolveGeom(frame);
-  const samples = useIcebergSamples();
 
   const introOpacity = interpolate(frame, [0, ZOOM_OUT * 0.3], [0, 1], {
     easing: EASE_OUT,
@@ -395,13 +317,14 @@ export const IcebergData: React.FC = () => {
         fontFamily: font,
       }}
     >
-      {/* Backdrop — DotGrid, same as the other AntiCheat scenes */}
+      {/* AntiCheat DotGrid backdrop — Base-blue dots on light field. */}
       <DotGrid intensity={1} speed={0.6} />
 
-      {/* Iceberg, rendered as a Base-blue dot mosaic. Image-anchored. */}
-      <DotIceberg geom={geom} samples={samples} />
+      {/* The cartoon iceberg. Mix-blend-multiply lets the dot grid show
+          through, so the iceberg feels native to the pattern instead of
+          pasted on top. */}
+      <IcebergImage geom={geom} />
 
-      {/* Six cards */}
       {TIERS.map((tier, i) => (
         <TierCard
           key={tier.label}
