@@ -338,7 +338,7 @@ export const IcebergData: React.FC = () => {
 
       {/* ── ABOVE: 2 tiles, screen-fixed at top ─────────────────────────── */}
       <Eyebrow
-        text="What traders blame"
+        text="Why traders think they lost"
         y={68}
         enterAt={sec(0.2)}
         fps={fps}
@@ -381,7 +381,7 @@ export const IcebergData: React.FC = () => {
       </div>
 
       <Eyebrow
-        text="What actually empties the account"
+        text="Why traders really lost"
         y={H - 60}
         enterAt={sec(6.6)}
         fps={fps}
