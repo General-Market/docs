@@ -1,5 +1,5 @@
 import React from "react";
-import { AbsoluteFill } from "remotion";
+import { AbsoluteFill, useCurrentFrame } from "remotion";
 import type {
   TransitionPresentation,
   TransitionPresentationComponentProps,
@@ -175,6 +175,42 @@ const zoomThroughBlur = (
   component: ZoomThroughBlurInner,
   props,
 });
+
+// ─── Red light sweep ─────────────────────────────────────────────────────────
+//
+// Post-cut punctuation. The cut fires clean; this overlay rides on the
+// ENTERING scene and travels left → right starting 0.5s after arrival.
+// Renders nothing outside its window. Drop into any scene root:
+//
+//   <RedLightSweep onsetFrames={15} durationFrames={25} />
+//
+// At 30fps: onset 15 = 0.5s; duration 25 ≈ 0.83s.
+export const RedLightSweep: React.FC<{
+  onsetFrames?: number;
+  durationFrames?: number;
+  intensity?: number;
+}> = ({ onsetFrames = 15, durationFrames = 25, intensity = 0.55 }) => {
+  // useCurrentFrame is imported below at the call site; transitions.tsx
+  // already has remotion in scope via the imports up top.
+  const frame = useCurrentFrame();
+  const local = frame - onsetFrames;
+  if (local < 0 || local > durationFrames) return null;
+  const t = local / durationFrames;
+  const cx = -0.15 + t * 1.3;
+  const dist = Math.abs(t - 0.5) * 2;
+  const op = intensity * Math.max(0, 1 - Math.pow(dist, 1.4));
+  return (
+    <AbsoluteFill
+      style={{
+        pointerEvents: "none",
+        background: `radial-gradient(ellipse 48% 88% at ${(cx * 100).toFixed(2)}% 50%, rgba(255,38,38,${(0.78 * op).toFixed(3)}) 0%, rgba(232,30,30,${(0.42 * op).toFixed(3)}) 32%, rgba(180,20,20,${(0.18 * op).toFixed(3)}) 56%, rgba(200,20,20,0) 75%)`,
+        mixBlendMode: "screen",
+        filter: "blur(2px)",
+        zIndex: 60,
+      }}
+    />
+  );
+};
 
 // ─── BgLayer ──────────────────────────────────────────────────────────────────
 //

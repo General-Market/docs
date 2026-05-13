@@ -48,19 +48,13 @@ const TIER_Y_FILL = TIER_Y_NATIVE.map((y) => y * FILL_SCALE);
 const GUIDE_LINES_NATIVE = [269, 539, 857, 1141, 1430];
 
 const PRIMARY_ACTIVE_Y = TIER_Y_FILL[0];
+const FRAME_CENTRE_Y = H / 2;
 
-// Camera target screen-y per tier. T0–T3 sit at the top sixth of frame.
-// T4 holds the iceberg high so the abyss opens below. T5 plunges
-// further — only the depth tier shows, the rest of the frame is
-// emptiness.
-const SCREEN_TARGET_Y = (i: number) => {
-  if (i === 5) return 240;
-  if (i === 4) return 220;
-  return PRIMARY_ACTIVE_Y;
-};
+// Camera target screen-y per tier. T0 (sky / strategy) can't centre —
+// nothing exists above the asset's top edge to fill the empty space.
+// Every later tier lands dead-centre so the eye doesn't hunt.
+const SCREEN_TARGET_Y = (i: number) => (i === 0 ? PRIMARY_ACTIVE_Y : FRAME_CENTRE_Y);
 
-// No clamp. The iceberg's bottom may rise above the bottom of the
-// frame — that's the point.
 const scrollAtTier = (i: number) => SCREEN_TARGET_Y(i) - TIER_Y_FILL[i];
 
 type Tier = {
@@ -88,12 +82,12 @@ const LAST = N - 1;
 type TradingTier = { imageSrc: string; glyph: string; label: string };
 
 const TRADING_TIERS: TradingTier[] = [
-  { imageSrc: "anticheat-imgs/trader-0.jpg", glyph: "📱", label: "you, on your phone" },
-  { imageSrc: "anticheat-imgs/trader-1.jpg", glyph: "💻", label: "prosumer at the desk" },
+  { imageSrc: "anticheat-imgs/trader-0.png", glyph: "📱", label: "you, on your phone" },
+  { imageSrc: "anticheat-imgs/trader-1.png", glyph: "💻", label: "the digital nomad" },
   { imageSrc: "anticheat-imgs/trader-2.png", glyph: "🖥️", label: "prop firm" },
-  { imageSrc: "anticheat-imgs/trader-3.jpg", glyph: "🏛️", label: "trading floor" },
-  { imageSrc: "anticheat-imgs/trader-4.jpg", glyph: "🏦", label: "hedge fund" },
-  { imageSrc: "anticheat-imgs/trader-5.jpg", glyph: "🏢", label: "investment bank" },
+  { imageSrc: "anticheat-imgs/trader-3.png", glyph: "🏛️", label: "trading floor" },
+  { imageSrc: "anticheat-imgs/trader-4.png", glyph: "🏦", label: "wall street" },
+  { imageSrc: "anticheat-imgs/trader-5.png", glyph: "🏛️", label: "u.s. congress" },
 ];
 
 const EASE_OUT = Easing.bezier(0.25, 0.1, 0.3, 1);
@@ -101,11 +95,13 @@ const EASE_DEFAULT = Easing.bezier(0.4, 0, 0.6, 1);
 
 // Beat-locked tier stamps. Iceberg master window [111, 331].
 // Local beats: 10, 36, 61, 87, 113, 139, 164, 190, 216.
+// Anim window is six frames — launch video, no time to dawdle. The
+// motion blur on the iceberg layer carries the eye across the gap.
 const TIER_STAMP_LOCAL = [36, 61, 87, 113, 139, 164] as const;
-const STAMP_OFFSET_FROM_ANIM = 9;
-const TIER_ANIM = 11;
-const ZOOM_OUT = TIER_STAMP_LOCAL[0] - STAMP_OFFSET_FROM_ANIM; // 27
-const FINAL_HOLD = 40;
+const STAMP_OFFSET_FROM_ANIM = 5;
+const TIER_ANIM = 6;
+const ZOOM_OUT = TIER_STAMP_LOCAL[0] - STAMP_OFFSET_FROM_ANIM; // 31
+const FINAL_HOLD = 41;
 const OUTRO = 14;
 
 const tierAnimStart = (i: number) =>
@@ -178,15 +174,32 @@ const computeIcebergFilter = (state: State): string => {
   return `saturate(${sat.toFixed(3)}) brightness(${bright.toFixed(3)}) contrast(${contrast.toFixed(3)})`;
 };
 
-const DEPTH_METERS = [-5, -15, -65, -160, -260, -340] as const;
+// Loss tiers — dollars extracted from retail at each unit of time.
+// Anchor: HFT industry revenue $5B/year across 26 firms (Brogaard et al. 2014,
+// JFE; cross-checked against insider/ESTIMATES.md in this repo). The yearly
+// figure scales down by seconds/year to get each tier:
+//   T1 sec   = $5B / 31,536,000  ≈ $159
+//   T2 min   = T1 × 60           ≈ $9,513
+//   T3 hour  = T2 × 60           ≈ $570,776
+//   T4 day   = T3 × 24           ≈ $13,698,630
+//   T5 year  = $5,000,000,000
+const LOSS_MILESTONES = [0, 159, 9_513, 570_776, 13_698_630, 5_000_000_000] as const;
+const LOSS_UNIT_LABELS = ["", "per second", "per minute", "per hour", "per day", "per year"] as const;
 
-const interpDepth = (state: State): number => {
-  if (state.phase === "zoom") return DEPTH_METERS[0];
-  if (state.sub === "hold") return DEPTH_METERS[state.tier];
-  if (state.tier === 0) return DEPTH_METERS[0];
-  const a = DEPTH_METERS[state.tier - 1];
-  const b = DEPTH_METERS[state.tier];
+const interpLoss = (state: State): number => {
+  if (state.phase === "zoom") return LOSS_MILESTONES[0];
+  if (state.sub === "hold") return LOSS_MILESTONES[state.tier];
+  if (state.tier === 0) return LOSS_MILESTONES[0];
+  const a = LOSS_MILESTONES[state.tier - 1];
+  const b = LOSS_MILESTONES[state.tier];
   return a + (b - a) * EASE_OUT(state.t);
+};
+
+const formatLoss = (n: number): string => {
+  if (n >= 1_000_000_000) return `$${(n / 1_000_000_000).toFixed(1).replace(/\.0$/, "")}B`;
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
+  if (n >= 1_000) return `$${Math.round(n).toLocaleString("en-US")}`;
+  return `$${Math.round(n).toLocaleString("en-US")}`;
 };
 
 type Bubble = { x: number; baseY: number; size: number; speed: number; phase: number };
@@ -383,22 +396,21 @@ export const AntiCheatIceberg: React.FC = () => {
             style={{ width: IMG_NATIVE_W, height: IMG_NATIVE_H, display: "block" }}
           />
 
-          {/* Mask the pink guide lines baked into the source. Each strip
-              fades to transparent on the edges so it looks like a natural
-              shadow groove rather than a painted bar. */}
+          {/* Mask the pink guide lines baked into the source. Opaque
+              dark blue strips with feathered edges — multiply blend let
+              the pink leak through, this doesn't. */}
           {GUIDE_LINES_NATIVE.map((y) => (
             <div
               key={y}
               style={{
                 position: "absolute",
-                left: -IMG_NATIVE_W * 0.05,
-                top: y - 7,
-                width: IMG_NATIVE_W * 1.1,
-                height: 14,
+                left: -IMG_NATIVE_W * 0.06,
+                top: y - 10,
+                width: IMG_NATIVE_W * 1.12,
+                height: 20,
                 background:
-                  "linear-gradient(180deg, rgba(8,18,38,0) 0%, rgba(8,18,38,0.92) 50%, rgba(8,18,38,0) 100%)",
+                  "linear-gradient(180deg, rgba(10,22,42,0) 0%, rgba(10,22,42,1) 35%, rgba(10,22,42,1) 65%, rgba(10,22,42,0) 100%)",
                 pointerEvents: "none",
-                mixBlendMode: "multiply",
               }}
             />
           ))}
@@ -457,15 +469,17 @@ export const AntiCheatIceberg: React.FC = () => {
       )}
 
       {/* Specular sweep across the iceberg surface — climax marker on
-          tier 5 only. Above iceberg, below type. */}
+          tier 5 only. Starts 0.5s after the stamp so it carries the eye
+          into the Iceberg→Rigged transition rather than landing with
+          the suffix. The light passes, then we cut. */}
       {isClimax && (
         <Specular
-          startFrame={tierAnimStart(LAST)}
-          duration={28}
+          startFrame={tierAnimStart(LAST) + 15}
+          duration={30}
           angle={108}
-          intensity={1.2}
-          color="rgba(255, 92, 116, 0.92)"
-          bandWidth={0.24}
+          intensity={1.25}
+          color="rgba(255, 92, 116, 0.95)"
+          bandWidth={0.26}
           blendMode="screen"
         />
       )}
@@ -562,8 +576,8 @@ export const AntiCheatIceberg: React.FC = () => {
         />
       )}
 
-      {/* Depth gauge — bigger and lower during T5 climax. */}
-      <DepthGauge state={state} frame={frame} isClimax={isClimax} climaxT={t5HoldT} />
+      {/* Loss counter — bigger and lower during T5 climax. */}
+      <LossCounter state={state} frame={frame} isClimax={isClimax} climaxT={t5HoldT} />
 
       {/* Source citation. */}
       {activeTier >= 0 && TIERS[activeTier].source && (
@@ -1175,16 +1189,22 @@ const PastSuffix: React.FC<{
   );
 };
 
-// ─── Depth gauge ──────────────────────────────────────────────────────────────
+// ─── Loss counter ─────────────────────────────────────────────────────────────
+//
+// Replaces the old DepthGauge. Same animation shape (interpolated between
+// tier milestones), but the number is dollars extracted from retail rather
+// than metres. Anchor: HFT industry $5B/year across 26 firms — Brogaard et
+// al. 2014, JFE. See insider/ESTIMATES.md.
 
-const DepthGauge: React.FC<{
+const LossCounter: React.FC<{
   state: State;
   frame: number;
   isClimax: boolean;
   climaxT: number;
 }> = ({ state, frame, isClimax, climaxT }) => {
   if (state.phase !== "tier") return null;
-  const depth = interpDepth(state);
+  const loss = interpLoss(state);
+  const unit = LOSS_UNIT_LABELS[state.tier];
   const ticking =
     state.phase === "tier" && state.sub === "anim";
   const lastStamp = TIER_STAMP_LOCAL[state.tier] ?? 0;
@@ -1227,7 +1247,7 @@ const DepthGauge: React.FC<{
           marginBottom: 6,
         }}
       >
-        depth
+        taken from retail
       </div>
       <div
         style={{
@@ -1235,11 +1255,24 @@ const DepthGauge: React.FC<{
           fontWeight: 600,
           letterSpacing: "-0.02em",
           lineHeight: 1,
-          color: ticking ? "rgba(180,220,255,1)" : "rgba(220,235,250,0.95)",
+          color: ticking ? "rgba(255,138,138,1)" : "rgba(255,196,196,0.95)",
         }}
       >
-        {Math.round(depth)} m
+        {formatLoss(loss)}
       </div>
+      {unit ? (
+        <div
+          style={{
+            marginTop: 6,
+            fontSize: 14,
+            letterSpacing: "0.24em",
+            textTransform: "uppercase",
+            color: "rgba(255,170,170,0.82)",
+          }}
+        >
+          {unit}
+        </div>
+      ) : null}
       {pingT >= 0 && (
         <div
           style={{
