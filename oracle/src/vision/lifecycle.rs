@@ -338,24 +338,49 @@ impl BatchLifecycleManager {
 
                     let prev_batch_id: Option<u64> = previous_batch_id.map(|v| v as u64);
 
-                    // Step 1: Resolve previous batch if its betting period has ended.
-                    // With PRE_CREATE overlap the heartbeat fires 30s early, so the
-                    // batch rotated into `previous` during the CURRENT heartbeat still
-                    // has betting time left. The one already in `previous` from the
-                    // PREVIOUS heartbeat is always safe — but we guard anyway for
-                    // edge cases (oracle restart, delayed heartbeats).
-                    if let Some(prev_id) = prev_batch_id {
-                        // Buffer is 60s, not tick_duration. The earlier formula
-                        // (betting_end + tick_duration) tied the wait to the tick
-                        // size, leaving short-tick sources (300s, 600s) with
-                        // effectively zero settlement window before the contract's
-                        // grace cliff at (createdAtTick+1)*tick + grace, where
-                        // grace defaults to 2*tick. A static 60s buffer is enough
-                        // to absorb the 30s pre-create heartbeat slack while
-                        // preserving most of the grace window for the resolve →
-                        // sign → submit pipeline.
+                    // Step 1: Rotate current → previous BEFORE settle.
+                    // Order matters: rotating first lets the SAME heartbeat settle the
+                    // batch whose betting period just closed, saving a full tick of
+                    // architectural lag. With the old order (settle, then rotate, then
+                    // create) batch A created at heartbeat N settled at heartbeat N+2 —
+                    // for short-tick sources that pushed settle past the on-chain grace
+                    // cliff. Now A settles at heartbeat N+1.
+                    let _ = prev_batch_id; // pre-rotation value retained only for logging; unused post-refactor.
+                    let post_rotate: Option<(Option<i64>, Option<i64>)> = match sqlx::query_as::<_, (Option<i64>, Option<i64>)>(
+                        "UPDATE vision_source_state \
+                         SET previous_batch_id = CASE \
+                                 WHEN previous_batch_id IS NULL THEN current_batch_id \
+                                 ELSE previous_batch_id \
+                             END, \
+                             current_batch_id = CASE \
+                                 WHEN previous_batch_id IS NULL THEN NULL \
+                                 ELSE current_batch_id \
+                             END, \
+                             updated_at = NOW() \
+                         WHERE source_name = $1 \
+                         RETURNING current_batch_id, previous_batch_id",
+                    )
+                    .bind(&source_name)
+                    .fetch_optional(&mgr.pool)
+                    .await
+                    {
+                        Ok(row) => row,
+                        Err(e) => {
+                            error!(source = %source_name, error = %e, "Failed to rotate batch ids");
+                            None
+                        }
+                    };
+
+                    let (cur_after, prev_after) = post_rotate.unwrap_or((current_batch_id, previous_batch_id));
+
+                    // Step 2: Settle the post-rotation previous batch (if any).
+                    // Buffer dropped 60s → 10s. The 60s buffer was sized for a stale
+                    // "PRE_CREATE 30s early" heartbeat behavior that no longer exists —
+                    // heartbeats now fire at or after the tick boundary. 10s absorbs
+                    // chain_listener event indexing lag and timing jitter, nothing more.
+                    if let Some(prev_id) = prev_after.map(|v| v as u64) {
                         let ready_to_settle: bool = sqlx::query_scalar::<_, bool>(
-                            "SELECT betting_end + make_interval(secs => 60) <= NOW() FROM vision_batch_lifecycle WHERE on_chain_batch_id = $1"
+                            "SELECT betting_end + make_interval(secs => 10) <= NOW() FROM vision_batch_lifecycle WHERE on_chain_batch_id = $1"
                         )
                         .bind(prev_id as i64)
                         .fetch_optional(&mgr.pool)
@@ -388,9 +413,6 @@ impl BatchLifecycleManager {
                                     error!(batch_id = prev_id, error = %e, "Failed to record market ratios");
                                 }
                                 mgr.broadcast_settlement_event(prev_id, &source_name, &tick_result);
-                                // Feed settlement data back to data-node for threshold recalibration.
-                                // Without this, batch_settlements stays empty and the settlement
-                                // distribution endpoint returns count:0 for every source.
                                 super::shared::record_settlements(
                                     &mgr.config.data_node_url,
                                     mgr.config.data_node_token.as_deref().unwrap_or(""),
@@ -398,16 +420,46 @@ impl BatchLifecycleManager {
                                     &tick_result,
                                     &config_hash,
                                 ).await;
-                                let bls_ok = match mgr.sign_and_aggregate_settlement(&settlement).await {
-                                    Ok(()) => true,
-                                    Err(e) => {
-                                        error!(batch_id = prev_id, error = %e, "Settlement BLS signing/submission failed — retry sweep will recover");
-                                        false
+
+                                // In-heartbeat retry: up to 3 attempts with exponential backoff (3s/6s/12s).
+                                // The first attempt failing was the dominant cause of missed settlements —
+                                // by the time the periodic recovery sweep retried, the contract's grace
+                                // window had closed. Retrying inline keeps every attempt inside the window.
+                                let mut bls_ok = false;
+                                let mut last_err: Option<String> = None;
+                                for attempt in 0..3u32 {
+                                    match mgr.sign_and_aggregate_settlement(&settlement).await {
+                                        Ok(()) => { bls_ok = true; break; }
+                                        Err(e) => {
+                                            let es = e.to_string();
+                                            // Terminal errors — don't retry, the on-chain state already settled or refuses.
+                                            if es.to_lowercase().contains("already settled")
+                                                || es.contains("SettlementWindowClosed")
+                                                || es.contains("0xb4e6a84c")
+                                            {
+                                                warn!(batch_id = prev_id, error = %es, "Settlement terminal error — not retrying");
+                                                last_err = Some(es);
+                                                break;
+                                            }
+                                            last_err = Some(es);
+                                            if attempt < 2 {
+                                                let delay_s = 3u64 << attempt; // 3, 6, 12
+                                                warn!(
+                                                    batch_id = prev_id,
+                                                    attempt = attempt + 1,
+                                                    delay_s,
+                                                    "Settlement attempt failed — retrying"
+                                                );
+                                                tokio::time::sleep(std::time::Duration::from_secs(delay_s)).await;
+                                            }
+                                        }
                                     }
-                                };
-                                // Only mark settled + purge bitmaps if on-chain submission succeeded.
-                                // Failed submissions are recovered by the retry sweep — the proof row
-                                // (submitted=false) persists in vision_settlement_proofs with the full payload.
+                                }
+                                if !bls_ok {
+                                    if let Some(e) = last_err {
+                                        error!(batch_id = prev_id, error = %e, "Settlement failed after retries — recovery sweep is backstop");
+                                    }
+                                }
                                 if bls_ok {
                                     if let Err(e) = mgr.scheduler.mark_settled(&mgr.pool, prev_id).await {
                                         error!(batch_id = prev_id, error = %e, "mark_settled failed");
@@ -421,8 +473,10 @@ impl BatchLifecycleManager {
                                 warn!(source = %source_name, batch_id = prev_id, error = %e, "Failed to resolve previous round");
                             }
                         }
-                        // Always clear previous_batch_id to unblock rotation.
-                        // Failed settlements are retried by the periodic sweep, not the heartbeat.
+                        // Always clear previous_batch_id after the attempt (whether the in-heartbeat
+                        // retries succeeded or exhausted). Stuck `previous_batch_id` would block the
+                        // next rotation forever. The settlement_proofs row persists with submitted=false
+                        // if all retries failed — the recovery sweep is the final backstop.
                         if let Err(e) = sqlx::query(
                             "UPDATE vision_source_state \
                              SET previous_batch_id = NULL, updated_at = NOW() \
@@ -436,35 +490,6 @@ impl BatchLifecycleManager {
                         }
                         } // else ready_to_settle
                     }
-
-                    // Step 2: Rotate current → previous (only if previous slot is free).
-                    // Reload state in one query so the conditional uses fresh DB values.
-                    let post_rotate: Option<(Option<i64>, Option<i64>)> = match sqlx::query_as::<_, (Option<i64>, Option<i64>)>(
-                        "UPDATE vision_source_state \
-                         SET previous_batch_id = CASE \
-                                 WHEN previous_batch_id IS NULL THEN current_batch_id \
-                                 ELSE previous_batch_id \
-                             END, \
-                             current_batch_id = CASE \
-                                 WHEN previous_batch_id IS NULL THEN NULL \
-                                 ELSE current_batch_id \
-                             END, \
-                             updated_at = NOW() \
-                         WHERE source_name = $1 \
-                         RETURNING current_batch_id, previous_batch_id",
-                    )
-                    .bind(&source_name)
-                    .fetch_optional(&mgr.pool)
-                    .await
-                    {
-                        Ok(row) => row,
-                        Err(e) => {
-                            error!(source = %source_name, error = %e, "Failed to rotate batch ids");
-                            None
-                        }
-                    };
-
-                    let (cur_after, prev_after) = post_rotate.unwrap_or((current_batch_id, previous_batch_id));
 
                     if cur_after.is_some() {
                         debug!(
