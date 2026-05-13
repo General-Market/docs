@@ -2025,8 +2025,8 @@ impl BatchLifecycleManager {
     ///
     /// Runs every 15 seconds for co-signing, every 60 seconds for recovery.
     pub async fn run_settlement_recovery(self: Arc<Self>) {
-        const COSIGN_INTERVAL_SECS: u64 = 15;
-        const RECOVERY_INTERVAL_SECS: u64 = 60;
+        const COSIGN_INTERVAL_SECS: u64 = 5;
+        const RECOVERY_INTERVAL_SECS: u64 = 5;
         const MAX_RETRIES: i32 = 10;
 
         let has_bls = self.bls_keypair.is_some();
