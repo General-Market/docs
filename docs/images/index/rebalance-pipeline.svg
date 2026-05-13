@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 720" width="980" height="720" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGradPp" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadowPp">
+      <feDropShadow dx="0" dy="2" stdDeviation="10" flood-opacity="0.04"/>
+    </filter>
+    <marker id="aPp" viewBox="0 0 10 10" refX="5" refY="9" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,0 L5,9 z" fill="#0A0A0A" fill-opacity="0.45"/>
+    </marker>
+  </defs>
+
+  <rect width="980" height="720" fill="white"/>
+  <circle cx="50" cy="60" r="160" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="940" cy="660" r="180" fill="#0A0A0A" opacity="0.02"/>
+
+  <text x="490" y="44" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="3.6" opacity="0.45">REBALANCE PIPELINE</text>
+
+  <!-- Steps -->
+  <g font-size="13" font-weight="600">
+    <!-- Step 1 -->
+    <rect x="240" y="76" width="500" height="56" rx="12" fill="white" stroke="#0A0A0A" stroke-opacity="0.08" filter="url(#shadowPp)"/>
+    <circle cx="270" cy="104" r="14" fill="#0A0A0A" fill-opacity="0.06"/>
+    <text x="270" y="109" text-anchor="middle" fill="#0A0A0A" font-size="12" font-weight="700">1</text>
+    <text x="296" y="100" fill="#0A0A0A">Deployer calls requestRebalance()</text>
+    <text x="296" y="118" fill="#0A0A0A" font-size="11" opacity="0.5" font-weight="400">Settlement chain · MetaMask transaction</text>
+
+    <line x1="490" y1="138" x2="490" y2="158" stroke="#0A0A0A" stroke-opacity="0.4" stroke-width="1.2" marker-end="url(#aPp)"/>
+
+    <!-- Step 2 -->
+    <rect x="240" y="166" width="500" height="48" rx="12" fill="#0A0A0A" fill-opacity="0.03"/>
+    <text x="270" y="195" fill="#0A0A0A" font-weight="500">RebalanceRequested event emitted</text>
+
+    <line x1="490" y1="220" x2="490" y2="240" stroke="#0A0A0A" stroke-opacity="0.4" stroke-width="1.2" marker-end="url(#aPp)"/>
+
+    <!-- Step 3 — dark, oracles -->
+    <rect x="240" y="248" width="500" height="56" rx="12" fill="url(#darkGradPp)" filter="url(#shadowPp)"/>
+    <circle cx="270" cy="276" r="14" fill="#10B981" fill-opacity="0.18"/>
+    <text x="270" y="281" text-anchor="middle" fill="#10B981" font-size="12" font-weight="700">2</text>
+    <text x="296" y="272" fill="white">Oracle nodes detect the event</text>
+    <text x="296" y="290" fill="white" font-size="11" opacity="0.5" font-weight="400">verify deployer · fetch prices · validate weights</text>
+
+    <line x1="490" y1="310" x2="490" y2="330" stroke="#0A0A0A" stroke-opacity="0.4" stroke-width="1.2" marker-end="url(#aPp)"/>
+
+    <!-- Step 4 — BLS consensus -->
+    <rect x="240" y="338" width="500" height="48" rx="12" fill="#10B981" fill-opacity="0.08" stroke="#10B981" stroke-opacity="0.3"/>
+    <text x="270" y="367" fill="#059669" font-weight="600">BLS consensus among oracles</text>
+
+    <line x1="490" y1="392" x2="490" y2="412" stroke="#0A0A0A" stroke-opacity="0.4" stroke-width="1.2" marker-end="url(#aPp)"/>
+
+    <!-- Step 5 -->
+    <rect x="240" y="420" width="500" height="56" rx="12" fill="url(#darkGradPp)" filter="url(#shadowPp)"/>
+    <circle cx="270" cy="448" r="14" fill="#10B981" fill-opacity="0.18"/>
+    <text x="270" y="453" text-anchor="middle" fill="#10B981" font-size="12" font-weight="700">3</text>
+    <text x="296" y="444" fill="white">rebalance() called on L3</text>
+    <text x="296" y="462" fill="white" font-size="11" opacity="0.5" font-weight="400">aggregated BLS signature attached</text>
+
+    <line x1="490" y1="482" x2="490" y2="502" stroke="#0A0A0A" stroke-opacity="0.4" stroke-width="1.2" marker-end="url(#aPp)"/>
+
+    <!-- Step 6 -->
+    <rect x="240" y="510" width="500" height="56" rx="12" fill="white" stroke="#0A0A0A" stroke-opacity="0.08" filter="url(#shadowPp)"/>
+    <circle cx="270" cy="538" r="14" fill="#0A0A0A" fill-opacity="0.06"/>
+    <text x="270" y="543" text-anchor="middle" fill="#0A0A0A" font-size="12" font-weight="700">4</text>
+    <text x="296" y="534" fill="#0A0A0A">On-chain: new quantities computed + stored</text>
+    <text x="296" y="552" fill="#0A0A0A" font-size="11" opacity="0.5" font-weight="400">AssetTradeRequest events emitted for each delta</text>
+
+    <line x1="490" y1="572" x2="490" y2="592" stroke="#0A0A0A" stroke-opacity="0.4" stroke-width="1.2" marker-end="url(#aPp)"/>
+
+    <!-- Step 7 -->
+    <rect x="240" y="600" width="500" height="56" rx="12" fill="white" stroke="#0A0A0A" stroke-opacity="0.08" filter="url(#shadowPp)"/>
+    <rect x="240" y="600" width="3" height="56" rx="1.5" fill="#10B981"/>
+    <circle cx="270" cy="628" r="14" fill="#10B981" fill-opacity="0.18"/>
+    <text x="270" y="633" text-anchor="middle" fill="#10B981" font-size="12" font-weight="700">5</text>
+    <text x="296" y="624" fill="#0A0A0A">AP executes trades to match new inventory</text>
+    <text x="296" y="642" fill="#0A0A0A" font-size="11" opacity="0.5" font-weight="400">physical backing aligns with on-chain weights</text>
+  </g>
+
+  <text x="490" y="692" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.45">The event is heard by machines. They do not hesitate.</text>
+</svg>

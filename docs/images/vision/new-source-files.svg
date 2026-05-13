@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 460" width="980" height="460" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="10" flood-opacity="0.04"/>
+    </filter>
+  </defs>
+
+  <rect width="980" height="460" fill="white"/>
+  <circle cx="60" cy="400" r="160" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="920" cy="60" r="140" fill="#0A0A0A" opacity="0.02"/>
+
+  <text x="490" y="44" text-anchor="middle" fill="#0A0A0A" font-size="12" font-weight="700" letter-spacing="3" opacity="0.45">NEW SOURCE FILES</text>
+  <text x="490" y="66" text-anchor="middle" fill="#0A0A0A" font-size="13" opacity="0.4">Six files. Miss one and the market does not appear.</text>
+
+  <!-- 6 rows, each a step. Numbered circle + label + file path. -->
+  <g>
+    <!-- Step 1 -->
+    <g transform="translate(60, 100)">
+      <circle cx="22" cy="22" r="20" fill="url(#darkGrad)"/>
+      <text x="22" y="28" text-anchor="middle" fill="white" font-size="14" font-weight="700">1</text>
+      <text x="60" y="20" fill="#0A0A0A" font-size="13" font-weight="600">Config JSON</text>
+      <text x="60" y="38" fill="#0A0A0A" font-size="11" opacity="0.5" font-family="ui-monospace, SF Mono, Menlo, monospace">data-node/src/config/yoursource.json</text>
+    </g>
+    <line x1="40" y1="148" x2="940" y2="148" stroke="#0A0A0A" stroke-opacity="0.05"/>
+
+    <!-- Step 2 -->
+    <g transform="translate(60, 156)">
+      <circle cx="22" cy="22" r="20" fill="url(#darkGrad)"/>
+      <text x="22" y="28" text-anchor="middle" fill="white" font-size="14" font-weight="700">2</text>
+      <text x="60" y="20" fill="#0A0A0A" font-size="13" font-weight="600">Rust client</text>
+      <text x="60" y="38" fill="#0A0A0A" font-size="11" opacity="0.5" font-family="ui-monospace, SF Mono, Menlo, monospace">data-node/src/market_data/sources/yoursource/client.rs</text>
+    </g>
+    <line x1="40" y1="204" x2="940" y2="204" stroke="#0A0A0A" stroke-opacity="0.05"/>
+
+    <!-- Step 3 -->
+    <g transform="translate(60, 212)">
+      <circle cx="22" cy="22" r="20" fill="url(#darkGrad)"/>
+      <text x="22" y="28" text-anchor="middle" fill="white" font-size="14" font-weight="700">3</text>
+      <text x="60" y="20" fill="#0A0A0A" font-size="13" font-weight="600">Source registration</text>
+      <text x="60" y="38" fill="#0A0A0A" font-size="11" opacity="0.5" font-family="ui-monospace, SF Mono, Menlo, monospace">data-node/src/main.rs</text>
+    </g>
+    <line x1="40" y1="260" x2="940" y2="260" stroke="#0A0A0A" stroke-opacity="0.05"/>
+
+    <!-- Step 4 -->
+    <g transform="translate(60, 268)">
+      <circle cx="22" cy="22" r="20" fill="url(#darkGrad)"/>
+      <text x="22" y="28" text-anchor="middle" fill="white" font-size="14" font-weight="700">4</text>
+      <text x="60" y="20" fill="#0A0A0A" font-size="13" font-weight="600">Frontend source entry</text>
+      <text x="60" y="38" fill="#0A0A0A" font-size="11" opacity="0.5" font-family="ui-monospace, SF Mono, Menlo, monospace">frontend/lib/vision/sources.ts</text>
+    </g>
+    <line x1="40" y1="316" x2="940" y2="316" stroke="#0A0A0A" stroke-opacity="0.05"/>
+
+    <!-- Step 5 -->
+    <g transform="translate(60, 324)">
+      <circle cx="22" cy="22" r="20" fill="url(#darkGrad)"/>
+      <text x="22" y="28" text-anchor="middle" fill="white" font-size="14" font-weight="700">5</text>
+      <text x="60" y="20" fill="#0A0A0A" font-size="13" font-weight="600">Category mapping</text>
+      <text x="60" y="38" fill="#0A0A0A" font-size="11" opacity="0.5" font-family="ui-monospace, SF Mono, Menlo, monospace">frontend/lib/vision/market-categories.ts</text>
+    </g>
+    <line x1="40" y1="372" x2="940" y2="372" stroke="#0A0A0A" stroke-opacity="0.05"/>
+
+    <!-- Step 6 -->
+    <g transform="translate(60, 380)">
+      <circle cx="22" cy="22" r="20" fill="#10B981"/>
+      <text x="22" y="28" text-anchor="middle" fill="white" font-size="14" font-weight="700">6</text>
+      <text x="60" y="20" fill="#0A0A0A" font-size="13" font-weight="600">Batch deployment</text>
+      <text x="60" y="38" fill="#0A0A0A" font-size="11" opacity="0.5" font-family="ui-monospace, SF Mono, Menlo, monospace">contracts/script/DeployAllVisionBatches.s.sol</text>
+    </g>
+  </g>
+
+  <!-- Footer pill -->
+  <rect x="40" y="430" width="900" height="20" rx="10" fill="#0A0A0A" fill-opacity="0.03"/>
+  <text x="490" y="445" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.45">All six. Skip one and the source registers but does not display.</text>
+</svg>

@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 320" width="980" height="320" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <filter id="shadowCs">
+      <feDropShadow dx="0" dy="2" stdDeviation="10" flood-opacity="0.04"/>
+    </filter>
+  </defs>
+
+  <rect width="980" height="320" fill="white"/>
+  <circle cx="50" cy="50" r="140" fill="#0A0A0A" opacity="0.02"/>
+
+  <text x="490" y="44" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="3.6" opacity="0.45">CURRENT STATE · BEFORE REBALANCE</text>
+
+  <g filter="url(#shadowCs)">
+    <rect x="80" y="78" width="820" height="220" rx="14" fill="white" stroke="#0A0A0A" stroke-opacity="0.08"/>
+  </g>
+
+  <!-- Header row -->
+  <g font-family="ui-monospace, SF Mono, Menlo, monospace" font-size="11">
+    <text x="120" y="118" fill="#0A0A0A" opacity="0.45" letter-spacing="1.6">ASSET</text>
+    <text x="320" y="118" fill="#0A0A0A" opacity="0.45" letter-spacing="1.6">PRICE</text>
+    <text x="520" y="118" fill="#0A0A0A" opacity="0.45" letter-spacing="1.6">QTY / SHARE</text>
+    <text x="780" y="118" fill="#0A0A0A" opacity="0.45" letter-spacing="1.6">$ VALUE</text>
+  </g>
+  <line x1="100" y1="128" x2="880" y2="128" stroke="#0A0A0A" stroke-opacity="0.08"/>
+
+  <g font-family="ui-monospace, SF Mono, Menlo, monospace" font-size="14">
+    <text x="120" y="158" fill="#0A0A0A" font-weight="600">BTC</text>
+    <text x="320" y="158" fill="#0A0A0A">$60,000</text>
+    <text x="520" y="158" fill="#0A0A0A">0.000006666</text>
+    <text x="780" y="158" fill="#0A0A0A">$0.3999</text>
+
+    <text x="120" y="190" fill="#0A0A0A" font-weight="600">ETH</text>
+    <text x="320" y="190" fill="#0A0A0A">$3,500</text>
+    <text x="520" y="190" fill="#0A0A0A">0.000111100</text>
+    <text x="780" y="190" fill="#0A0A0A">$0.3889</text>
+
+    <text x="120" y="222" fill="#0A0A0A" font-weight="600">SOL</text>
+    <text x="320" y="222" fill="#0A0A0A">$120</text>
+    <text x="520" y="222" fill="#0A0A0A">0.003334000</text>
+    <text x="780" y="222" fill="#0A0A0A">$0.4001</text>
+  </g>
+
+  <line x1="700" y1="244" x2="880" y2="244" stroke="#0A0A0A" stroke-opacity="0.15"/>
+  <text x="700" y="272" fill="#0A0A0A" font-size="12" opacity="0.5" font-family="ui-monospace, SF Mono, Menlo, monospace" letter-spacing="1.6">NAV</text>
+  <text x="780" y="272" fill="#0A0A0A" font-size="15" font-weight="700" font-family="ui-monospace, SF Mono, Menlo, monospace">$1.1889</text>
+</svg>

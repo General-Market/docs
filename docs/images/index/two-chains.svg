@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 720" width="980" height="720" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-opacity="0.04"/>
+    </filter>
+  </defs>
+
+  <rect width="980" height="720" fill="white"/>
+  <circle cx="80" cy="640" r="180" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="900" cy="80" r="160" fill="#0A0A0A" opacity="0.02"/>
+
+  <text x="490" y="40" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="3.6" opacity="0.45">TWO CHAINS, ONE PROTOCOL</text>
+  <text x="490" y="62" text-anchor="middle" fill="#0A0A0A" font-size="13" opacity="0.4">Each chain has a role. Each has its own decimals. Mixing them costs money.</text>
+
+  <!-- L3 panel -->
+  <g filter="url(#shadow)">
+    <rect x="60" y="90" width="860" height="240" rx="16" fill="url(#darkGrad)"/>
+  </g>
+  <text x="84" y="120" fill="white" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.55">INDEX L3 · ARBITRUM ORBIT</text>
+  <text x="84" y="150" fill="white" font-size="20" font-weight="700">Chain ID 111222333 · USDC 18 dec</text>
+  <text x="84" y="172" fill="white" font-size="12" opacity="0.5">Role: primary trading chain. Cheap, fast, custom.</text>
+
+  <!-- L3 contents grid -->
+  <g>
+    <rect x="84" y="194" width="260" height="120" rx="10" fill="white" fill-opacity="0.06" stroke="white" stroke-opacity="0.1"/>
+    <text x="100" y="216" fill="white" font-size="10" font-weight="700" letter-spacing="2" opacity="0.5">LIVES HERE</text>
+    <text x="100" y="238" fill="white" font-size="11" opacity="0.75">ITP creation · buying · selling</text>
+    <text x="100" y="256" fill="white" font-size="11" opacity="0.75">Vision batches and resolution</text>
+    <text x="100" y="274" fill="white" font-size="11" opacity="0.75">Bot registration · automated bets</text>
+    <text x="100" y="292" fill="white" font-size="11" opacity="0.75">Order batching · BLS confirmation</text>
+
+    <rect x="358" y="194" width="280" height="120" rx="10" fill="white" fill-opacity="0.06" stroke="white" stroke-opacity="0.1"/>
+    <text x="374" y="216" fill="white" font-size="10" font-weight="700" letter-spacing="2" opacity="0.5">ALSO HERE</text>
+    <text x="374" y="238" fill="white" font-size="11" opacity="0.75">Fee collection and distribution</text>
+    <text x="374" y="256" fill="white" font-size="11" opacity="0.75">Oracle registry · key management</text>
+    <text x="374" y="274" fill="white" font-size="11" opacity="0.75">Collateral custody (BLSCustody)</text>
+
+    <rect x="652" y="194" width="252" height="120" rx="10" fill="white" fill-opacity="0.06" stroke="white" stroke-opacity="0.1"/>
+    <text x="668" y="216" fill="white" font-size="10" font-weight="700" letter-spacing="2" opacity="0.5">CONTRACTS</text>
+    <text x="668" y="238" fill="white" font-size="11" opacity="0.65" font-family="ui-monospace, SF Mono, Menlo, monospace">Index · ITP · Vision</text>
+    <text x="668" y="256" fill="white" font-size="11" opacity="0.65" font-family="ui-monospace, SF Mono, Menlo, monospace">BotRegistry · OracleRegistry</text>
+    <text x="668" y="274" fill="white" font-size="11" opacity="0.65" font-family="ui-monospace, SF Mono, Menlo, monospace">FeeRegistry · BLSCustody</text>
+    <text x="668" y="292" fill="white" font-size="11" opacity="0.4" font-family="ui-monospace, SF Mono, Menlo, monospace">+ Governance, libraries</text>
+  </g>
+
+  <!-- Bridge layer between -->
+  <rect x="340" y="350" width="300" height="60" rx="14" fill="#0A0A0A" fill-opacity="0.04"/>
+  <text x="490" y="377" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.55">BRIDGE LAYER</text>
+  <text x="490" y="396" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.5">BridgeProxy relays orders and custody ops</text>
+
+  <!-- vertical guides -->
+  <line x1="490" y1="330" x2="490" y2="350" stroke="#0A0A0A" stroke-opacity="0.2" stroke-width="1" stroke-dasharray="4,4"/>
+  <line x1="490" y1="410" x2="490" y2="430" stroke="#0A0A0A" stroke-opacity="0.2" stroke-width="1" stroke-dasharray="4,4"/>
+
+  <!-- Settlement panel -->
+  <g filter="url(#shadow)">
+    <rect x="60" y="430" width="860" height="240" rx="16" fill="white" stroke="#0A0A0A" stroke-opacity="0.1"/>
+  </g>
+  <text x="84" y="460" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.5">SETTLEMENT · ARBITRUM</text>
+  <text x="84" y="490" fill="#0A0A0A" font-size="20" font-weight="700">Chain ID 14601 · USDC 6 dec</text>
+  <text x="84" y="512" fill="#0A0A0A" font-size="12" opacity="0.5">Role: composability. Standard Arbitrum fees, full DeFi reach.</text>
+
+  <g>
+    <rect x="84" y="534" width="260" height="120" rx="10" fill="#0A0A0A" fill-opacity="0.03" stroke="#0A0A0A" stroke-opacity="0.06"/>
+    <text x="100" y="556" fill="#0A0A0A" font-size="10" font-weight="700" letter-spacing="2" opacity="0.5">LIVES HERE</text>
+    <text x="100" y="578" fill="#0A0A0A" font-size="11" opacity="0.7">Bridge custody · cross-chain USDC</text>
+    <text x="100" y="596" fill="#0A0A0A" font-size="11" opacity="0.7">Bridged ITP shares (ERC-20)</text>
+    <text x="100" y="614" fill="#0A0A0A" font-size="11" opacity="0.7">ITP NAV oracle</text>
+    <text x="100" y="632" fill="#0A0A0A" font-size="11" opacity="0.7">Morpho lending integration</text>
+
+    <rect x="358" y="534" width="280" height="120" rx="10" fill="#0A0A0A" fill-opacity="0.03" stroke="#0A0A0A" stroke-opacity="0.06"/>
+    <text x="374" y="556" fill="#0A0A0A" font-size="10" font-weight="700" letter-spacing="2" opacity="0.5">ALSO HERE</text>
+    <text x="374" y="578" fill="#0A0A0A" font-size="11" opacity="0.7">BridgeProxy order submission</text>
+    <text x="374" y="596" fill="#0A0A0A" font-size="11" opacity="0.7">Users can trade from Arbitrum</text>
+    <text x="374" y="624" fill="#10B981" font-size="11" font-weight="600">DTF shares become Morpho collateral.</text>
+
+    <rect x="652" y="534" width="252" height="120" rx="10" fill="#0A0A0A" fill-opacity="0.03" stroke="#0A0A0A" stroke-opacity="0.06"/>
+    <text x="668" y="556" fill="#0A0A0A" font-size="10" font-weight="700" letter-spacing="2" opacity="0.5">CONTRACTS</text>
+    <text x="668" y="578" fill="#0A0A0A" font-size="11" opacity="0.65" font-family="ui-monospace, SF Mono, Menlo, monospace">BridgeProxy · BridgedITP</text>
+    <text x="668" y="596" fill="#0A0A0A" font-size="11" opacity="0.65" font-family="ui-monospace, SF Mono, Menlo, monospace">BridgedItpFactory</text>
+    <text x="668" y="614" fill="#0A0A0A" font-size="11" opacity="0.65" font-family="ui-monospace, SF Mono, Menlo, monospace">SettlementBridgeCustody</text>
+    <text x="668" y="632" fill="#0A0A0A" font-size="11" opacity="0.65" font-family="ui-monospace, SF Mono, Menlo, monospace">ITPNAVOracle · CuratorRateIRM</text>
+  </g>
+
+  <!-- Footer pill -->
+  <rect x="60" y="690" width="860" height="20" rx="10" fill="none"/>
+</svg>

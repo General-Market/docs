@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 580" width="980" height="580" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-opacity="0.03"/>
+    </filter>
+  </defs>
+
+  <rect width="980" height="580" fill="white"/>
+
+  <!-- Outer container: Index L3 -->
+  <rect x="30" y="30" width="920" height="520" rx="16" fill="url(#darkGrad)"/>
+  <circle cx="820" cy="80" r="200" fill="white" opacity="0.015"/>
+
+  <text x="490" y="76" text-anchor="middle" fill="white" font-size="22" font-weight="700" letter-spacing="-0.5">INDEX L3</text>
+  <text x="490" y="100" text-anchor="middle" fill="white" font-size="11" opacity="0.45" letter-spacing="2">ARBITRUM ORBIT · CHAIN 111222333</text>
+
+  <!-- Vision Contract — central card -->
+  <rect x="180" y="142" width="620" height="200" rx="12" fill="white" opacity="0.08"/>
+  <text x="490" y="178" text-anchor="middle" fill="white" font-size="18" font-weight="700">Vision Contract</text>
+  <line x1="220" y1="194" x2="760" y2="194" stroke="white" opacity="0.1"/>
+
+  <!-- Sub-modules -->
+  <g>
+    <rect x="220" y="216" width="160" height="100" rx="10" fill="white" opacity="0.06"/>
+    <text x="300" y="248" text-anchor="middle" fill="white" font-size="13" font-weight="600">Batches</text>
+    <text x="300" y="274" text-anchor="middle" fill="white" font-size="10" opacity="0.5">creation · lifecycle</text>
+    <text x="300" y="292" text-anchor="middle" fill="white" font-size="10" opacity="0.5">pause · settle</text>
+
+    <rect x="410" y="216" width="160" height="100" rx="10" fill="white" opacity="0.06"/>
+    <text x="490" y="248" text-anchor="middle" fill="white" font-size="13" font-weight="600">Players</text>
+    <text x="490" y="274" text-anchor="middle" fill="white" font-size="10" opacity="0.5">positions</text>
+    <text x="490" y="292" text-anchor="middle" fill="white" font-size="10" opacity="0.5">deposits · stakes</text>
+
+    <rect x="600" y="216" width="160" height="100" rx="10" fill="white" opacity="0.06"/>
+    <text x="680" y="248" text-anchor="middle" fill="white" font-size="13" font-weight="600">Bot registry</text>
+    <text x="680" y="274" text-anchor="middle" fill="white" font-size="10" opacity="0.5">endpoint</text>
+    <text x="680" y="292" text-anchor="middle" fill="white" font-size="10" opacity="0.5">pubkey hash</text>
+  </g>
+
+  <!-- Down-pointers -->
+  <line x1="320" y1="342" x2="320" y2="394" stroke="white" stroke-opacity="0.25" stroke-width="1"/>
+  <path d="M316,390 l4,6 l4,-6" fill="white" fill-opacity="0.4"/>
+  <line x1="660" y1="342" x2="660" y2="394" stroke="white" stroke-opacity="0.25" stroke-width="1"/>
+  <path d="M656,390 l4,6 l4,-6" fill="white" fill-opacity="0.4"/>
+
+  <!-- Two bottom cards -->
+  <rect x="180" y="396" width="280" height="120" rx="12" fill="white" opacity="0.08"/>
+  <text x="320" y="430" text-anchor="middle" fill="white" font-size="14" font-weight="700">L3 WUSDC</text>
+  <line x1="210" y1="444" x2="430" y2="444" stroke="white" stroke-opacity="0.08"/>
+  <text x="320" y="468" text-anchor="middle" fill="white" font-size="11" opacity="0.6">collateral</text>
+  <text x="320" y="492" text-anchor="middle" fill="white" font-size="12" font-weight="600" opacity="0.8">18 decimals</text>
+
+  <rect x="520" y="396" width="280" height="120" rx="12" fill="white" opacity="0.08"/>
+  <text x="660" y="430" text-anchor="middle" fill="white" font-size="14" font-weight="700">OracleRegistry</text>
+  <line x1="550" y1="444" x2="770" y2="444" stroke="white" stroke-opacity="0.08"/>
+  <text x="660" y="468" text-anchor="middle" fill="white" font-size="11" opacity="0.6">BLS pubkeys</text>
+  <text x="660" y="492" text-anchor="middle" fill="white" font-size="12" font-weight="600" opacity="0.8">threshold ⌈2n/3⌉</text>
+</svg>

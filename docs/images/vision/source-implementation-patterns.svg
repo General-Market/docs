@@ -1,0 +1,145 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 1020" width="980" height="1020" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-opacity="0.03"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0A0A0A" fill-opacity="0.45"/>
+    </marker>
+  </defs>
+
+  <rect width="980" height="1020" fill="white"/>
+  <circle cx="60" cy="960" r="180" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="930" cy="60" r="160" fill="#0A0A0A" opacity="0.02"/>
+
+  <text x="490" y="48" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="3" opacity="0.45">IMPLEMENTATION PATTERNS</text>
+
+  <!-- PATTERN A: Single call -> fan out -->
+  <g>
+    <rect x="40" y="80" width="900" height="140" rx="14" fill="white" stroke="#0A0A0A" stroke-opacity="0.08" filter="url(#shadow)"/>
+    <rect x="40" y="80" width="80" height="140" rx="14" fill="url(#darkGrad)"/>
+    <text x="80" y="124" text-anchor="middle" fill="white" font-size="22" font-weight="700">A</text>
+    <text x="80" y="148" text-anchor="middle" fill="white" font-size="9" letter-spacing="1.5" opacity="0.5">PATTERN</text>
+    <text x="140" y="112" fill="#0A0A0A" font-size="14" font-weight="700">Single call · fan out</text>
+    <text x="140" y="132" fill="#0A0A0A" font-size="11" opacity="0.5">One API call covers every asset. Split the bulk response.</text>
+    <text x="140" y="208" fill="#0A0A0A" font-size="10" opacity="0.4">Volcano · Flights · Weather alerts</text>
+
+    <!-- visual chain -->
+    <rect x="160" y="148" width="190" height="44" rx="10" fill="#0A0A0A" fill-opacity="0.04"/>
+    <text x="255" y="176" text-anchor="middle" fill="#0A0A0A" font-size="11" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.7">GET /api/all</text>
+    <line x1="354" y1="170" x2="420" y2="170" stroke="#0A0A0A" stroke-opacity="0.4" stroke-width="1.2" marker-end="url(#arrow)"/>
+    <rect x="428" y="148" width="160" height="44" rx="10" fill="#0A0A0A" fill-opacity="0.04"/>
+    <text x="508" y="176" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.7">1 response</text>
+    <line x1="592" y1="170" x2="658" y2="170" stroke="#0A0A0A" stroke-opacity="0.4" stroke-width="1.2" marker-end="url(#arrow)"/>
+    <rect x="666" y="148" width="180" height="44" rx="10" fill="#10B981" fill-opacity="0.08" stroke="#10B981" stroke-opacity="0.35"/>
+    <text x="756" y="176" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.85">split into N assets</text>
+  </g>
+
+  <!-- PATTERN B: Grouped fetches -->
+  <g>
+    <rect x="40" y="240" width="900" height="140" rx="14" fill="white" stroke="#0A0A0A" stroke-opacity="0.08" filter="url(#shadow)"/>
+    <rect x="40" y="240" width="80" height="140" rx="14" fill="url(#darkGrad)"/>
+    <text x="80" y="284" text-anchor="middle" fill="white" font-size="22" font-weight="700">B</text>
+    <text x="80" y="308" text-anchor="middle" fill="white" font-size="9" letter-spacing="1.5" opacity="0.5">PATTERN</text>
+    <text x="140" y="272" fill="#0A0A0A" font-size="14" font-weight="700">Grouped fetches</text>
+    <text x="140" y="292" fill="#0A0A0A" font-size="11" opacity="0.5">One request per group. Calls scale with groups, not assets.</text>
+    <text x="140" y="368" fill="#0A0A0A" font-size="10" opacity="0.4">Sports · 12 leagues = 12 calls covering 300 games</text>
+
+    <rect x="160" y="308" width="116" height="44" rx="10" fill="#0A0A0A" fill-opacity="0.04"/>
+    <text x="218" y="336" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.7">group 1</text>
+    <rect x="284" y="308" width="116" height="44" rx="10" fill="#0A0A0A" fill-opacity="0.04"/>
+    <text x="342" y="336" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.7">group 2</text>
+    <rect x="408" y="308" width="116" height="44" rx="10" fill="#0A0A0A" fill-opacity="0.04"/>
+    <text x="466" y="336" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.7">group 3</text>
+    <text x="546" y="336" fill="#0A0A0A" font-size="11" opacity="0.35">· · ·</text>
+    <line x1="586" y1="330" x2="650" y2="330" stroke="#0A0A0A" stroke-opacity="0.4" stroke-width="1.2" marker-end="url(#arrow)"/>
+    <rect x="658" y="308" width="188" height="44" rx="10" fill="#10B981" fill-opacity="0.08" stroke="#10B981" stroke-opacity="0.35"/>
+    <text x="752" y="336" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.85">parse items per group</text>
+  </g>
+
+  <!-- PATTERN C: Batch IDs -->
+  <g>
+    <rect x="40" y="400" width="900" height="140" rx="14" fill="white" stroke="#0A0A0A" stroke-opacity="0.08" filter="url(#shadow)"/>
+    <rect x="40" y="400" width="80" height="140" rx="14" fill="url(#darkGrad)"/>
+    <text x="80" y="444" text-anchor="middle" fill="white" font-size="22" font-weight="700">C</text>
+    <text x="80" y="468" text-anchor="middle" fill="white" font-size="9" letter-spacing="1.5" opacity="0.5">PATTERN</text>
+    <text x="140" y="432" fill="#0A0A0A" font-size="14" font-weight="700">Batch IDs</text>
+    <text x="140" y="452" fill="#0A0A0A" font-size="11" opacity="0.5">Chunk asset IDs. One request per chunk.</text>
+    <text x="140" y="528" fill="#0A0A0A" font-size="10" opacity="0.4">CoinGecko · npm · Twitch · 10,000 / 100 = 100 requests</text>
+
+    <rect x="160" y="468" width="380" height="44" rx="10" fill="#0A0A0A" fill-opacity="0.04"/>
+    <text x="350" y="496" text-anchor="middle" fill="#0A0A0A" font-size="11" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.7">GET /api/prices?ids=a,b,c,...</text>
+    <line x1="544" y1="490" x2="610" y2="490" stroke="#0A0A0A" stroke-opacity="0.4" stroke-width="1.2" marker-end="url(#arrow)"/>
+    <rect x="618" y="468" width="228" height="44" rx="10" fill="#10B981" fill-opacity="0.08" stroke="#10B981" stroke-opacity="0.35"/>
+    <text x="732" y="496" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.85">parse batch · loop next chunk</text>
+  </g>
+
+  <!-- PATTERN D: Rolling cursor -->
+  <g>
+    <rect x="40" y="560" width="900" height="160" rx="14" fill="white" stroke="#0A0A0A" stroke-opacity="0.08" filter="url(#shadow)"/>
+    <rect x="40" y="560" width="80" height="160" rx="14" fill="url(#darkGrad)"/>
+    <text x="80" y="614" text-anchor="middle" fill="white" font-size="22" font-weight="700">D</text>
+    <text x="80" y="638" text-anchor="middle" fill="white" font-size="9" letter-spacing="1.5" opacity="0.5">PATTERN</text>
+    <text x="140" y="592" fill="#0A0A0A" font-size="14" font-weight="700">Rolling cursor</text>
+    <text x="140" y="612" fill="#0A0A0A" font-size="11" opacity="0.5">Each sync grabs a slice. Cursor advances and wraps.</text>
+    <text x="140" y="708" fill="#0A0A0A" font-size="10" opacity="0.4">Finnhub · 780 stocks · 55 per batch · 5s interval</text>
+
+    <!-- 8 slot row -->
+    <g font-family="ui-monospace, SF Mono, Menlo, monospace" font-size="11" fill="#0A0A0A">
+      <rect x="160" y="636" width="56" height="44" rx="8" fill="#0A0A0A" fill-opacity="0.04"/>
+      <text x="188" y="664" text-anchor="middle" opacity="0.7">a</text>
+      <rect x="220" y="636" width="56" height="44" rx="8" fill="#10B981" fill-opacity="0.16" stroke="#10B981" stroke-opacity="0.4"/>
+      <text x="248" y="664" text-anchor="middle" opacity="0.9">b</text>
+      <rect x="280" y="636" width="56" height="44" rx="8" fill="#10B981" fill-opacity="0.16" stroke="#10B981" stroke-opacity="0.4"/>
+      <text x="308" y="664" text-anchor="middle" opacity="0.9">c</text>
+      <rect x="340" y="636" width="56" height="44" rx="8" fill="#10B981" fill-opacity="0.16" stroke="#10B981" stroke-opacity="0.4"/>
+      <text x="368" y="664" text-anchor="middle" opacity="0.9">d</text>
+      <rect x="400" y="636" width="56" height="44" rx="8" fill="#0A0A0A" fill-opacity="0.04"/>
+      <text x="428" y="664" text-anchor="middle" opacity="0.7">e</text>
+      <rect x="460" y="636" width="56" height="44" rx="8" fill="#0A0A0A" fill-opacity="0.04"/>
+      <text x="488" y="664" text-anchor="middle" opacity="0.7">f</text>
+      <rect x="520" y="636" width="56" height="44" rx="8" fill="#0A0A0A" fill-opacity="0.04"/>
+      <text x="548" y="664" text-anchor="middle" opacity="0.7">g</text>
+      <rect x="580" y="636" width="56" height="44" rx="8" fill="#0A0A0A" fill-opacity="0.04"/>
+      <text x="608" y="664" text-anchor="middle" opacity="0.7">h</text>
+    </g>
+    <!-- cursor arrow above b-d window -->
+    <path d="M308 622 L308 632" stroke="#10B981" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <text x="308" y="618" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.55">cursor · batch=3</text>
+  </g>
+
+  <!-- PATTERN E: Scheduled sync -->
+  <g>
+    <rect x="40" y="740" width="900" height="120" rx="14" fill="white" stroke="#0A0A0A" stroke-opacity="0.08" filter="url(#shadow)"/>
+    <rect x="40" y="740" width="80" height="120" rx="14" fill="url(#darkGrad)"/>
+    <text x="80" y="784" text-anchor="middle" fill="white" font-size="22" font-weight="700">E</text>
+    <text x="80" y="808" text-anchor="middle" fill="white" font-size="9" letter-spacing="1.5" opacity="0.5">PATTERN</text>
+    <text x="140" y="772" fill="#0A0A0A" font-size="14" font-weight="700">Scheduled sync</text>
+    <text x="140" y="792" fill="#0A0A0A" font-size="11" opacity="0.5">Sleep until next_fetch_time. Burst on event days.</text>
+    <text x="140" y="848" fill="#0A0A0A" font-size="10" opacity="0.4">FRED · ECB · BLS · drops at known UTC times</text>
+
+    <rect x="620" y="780" width="300" height="44" rx="10" fill="#10B981" fill-opacity="0.08" stroke="#10B981" stroke-opacity="0.35"/>
+    <text x="770" y="808" text-anchor="middle" fill="#0A0A0A" font-size="11" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.85">ScheduledSyncEngine</text>
+  </g>
+
+  <!-- PATTERN F: Full list re-fetch -->
+  <g>
+    <rect x="40" y="880" width="900" height="120" rx="14" fill="white" stroke="#0A0A0A" stroke-opacity="0.08" filter="url(#shadow)"/>
+    <rect x="40" y="880" width="80" height="120" rx="14" fill="url(#darkGrad)"/>
+    <text x="80" y="924" text-anchor="middle" fill="white" font-size="22" font-weight="700">F</text>
+    <text x="80" y="948" text-anchor="middle" fill="white" font-size="9" letter-spacing="1.5" opacity="0.5">PATTERN</text>
+    <text x="140" y="912" fill="#0A0A0A" font-size="14" font-weight="700">Full list re-fetch</text>
+    <text x="140" y="932" fill="#0A0A0A" font-size="11" opacity="0.5">The discovery endpoint is the price endpoint.</text>
+    <text x="140" y="988" fill="#0A0A0A" font-size="10" opacity="0.4">Polymarket · Esports · markets?status=active → hashmap</text>
+
+    <rect x="500" y="920" width="200" height="44" rx="10" fill="#0A0A0A" fill-opacity="0.04"/>
+    <text x="600" y="948" text-anchor="middle" fill="#0A0A0A" font-size="11" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.7">/markets?status=active</text>
+    <line x1="708" y1="942" x2="772" y2="942" stroke="#0A0A0A" stroke-opacity="0.4" stroke-width="1.2" marker-end="url(#arrow)"/>
+    <rect x="780" y="920" width="140" height="44" rx="10" fill="#10B981" fill-opacity="0.08" stroke="#10B981" stroke-opacity="0.35"/>
+    <text x="850" y="948" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.85">hashmap lookup</text>
+  </g>
+</svg>

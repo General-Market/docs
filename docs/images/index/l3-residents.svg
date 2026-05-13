@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 620" width="980" height="620" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-opacity="0.03"/>
+    </filter>
+  </defs>
+
+  <rect width="980" height="620" fill="white"/>
+  <circle cx="80" cy="560" r="180" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="900" cy="60" r="160" fill="#0A0A0A" opacity="0.02"/>
+
+  <!-- Dark header strip -->
+  <rect x="40" y="40" width="900" height="64" rx="14" fill="url(#darkGrad)"/>
+  <text x="64" y="72" fill="white" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.5">INDEX L3</text>
+  <text x="64" y="92" fill="white" font-size="18" font-weight="700">Chain ID 111222333</text>
+  <text x="920" y="80" text-anchor="end" fill="white" font-size="11" opacity="0.5">Arbitrum Orbit · BN254 · 49KB contract cap</text>
+
+  <!-- CORE PROTOCOL -->
+  <text x="40" y="140" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.45">CORE PROTOCOL</text>
+  <g filter="url(#shadow)">
+    <rect x="40" y="152" width="293" height="80" rx="12" fill="#0A0A0A" fill-opacity="0.03"/>
+    <rect x="343" y="152" width="294" height="80" rx="12" fill="#0A0A0A" fill-opacity="0.03"/>
+    <rect x="647" y="152" width="293" height="80" rx="12" fill="#0A0A0A" fill-opacity="0.03"/>
+  </g>
+  <text x="64" y="184" fill="#0A0A0A" font-size="14" font-weight="600">Index.sol</text>
+  <text x="64" y="206" fill="#0A0A0A" font-size="11" opacity="0.5">Order entry · DTF creation · NAV</text>
+  <text x="367" y="184" fill="#0A0A0A" font-size="14" font-weight="600">Governance.sol</text>
+  <text x="367" y="206" fill="#0A0A0A" font-size="11" opacity="0.5">Pause · roles · upgrades</text>
+  <text x="671" y="184" fill="#0A0A0A" font-size="14" font-weight="600">OracleRegistry.sol</text>
+  <text x="671" y="206" fill="#0A0A0A" font-size="11" opacity="0.5">BLS keys · aggregated pubkey</text>
+
+  <!-- ITP ECOSYSTEM -->
+  <text x="40" y="260" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.45">ITP ECOSYSTEM</text>
+  <g filter="url(#shadow)">
+    <rect x="40" y="272" width="445" height="80" rx="12" fill="#0A0A0A" fill-opacity="0.03"/>
+    <rect x="495" y="272" width="445" height="80" rx="12" fill="#0A0A0A" fill-opacity="0.03"/>
+  </g>
+  <text x="64" y="304" fill="#0A0A0A" font-size="14" font-weight="600">ITP Vaults</text>
+  <text x="64" y="326" fill="#0A0A0A" font-size="11" opacity="0.5">ERC-4626 · one per DTF</text>
+  <text x="519" y="304" fill="#0A0A0A" font-size="14" font-weight="600">Bridged ITP Factory</text>
+  <text x="519" y="326" fill="#0A0A0A" font-size="11" opacity="0.5">Share token deployment</text>
+
+  <!-- PREDICTION MARKETS -->
+  <text x="40" y="380" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.45">PREDICTION MARKETS</text>
+  <g filter="url(#shadow)">
+    <rect x="40" y="392" width="900" height="80" rx="12" fill="url(#darkGrad)"/>
+  </g>
+  <text x="64" y="424" fill="white" font-size="14" font-weight="600">Vision</text>
+  <text x="64" y="446" fill="white" font-size="11" opacity="0.5">Batches · bitmaps · ticks · bot registry</text>
+  <rect x="816" y="408" width="100" height="28" rx="14" fill="white" fill-opacity="0.08"/>
+  <circle cx="832" cy="422" r="3" fill="#10B981"/>
+  <text x="844" y="426" fill="white" font-size="11" font-weight="600">parimutuel</text>
+
+  <!-- LENDING + BRIDGE -->
+  <text x="40" y="500" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.45">LENDING</text>
+  <text x="495" y="500" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.45">BRIDGE</text>
+  <g filter="url(#shadow)">
+    <rect x="40" y="512" width="220" height="80" rx="12" fill="#0A0A0A" fill-opacity="0.03"/>
+    <rect x="270" y="512" width="215" height="80" rx="12" fill="#0A0A0A" fill-opacity="0.03"/>
+    <rect x="495" y="512" width="220" height="80" rx="12" fill="#0A0A0A" fill-opacity="0.03"/>
+    <rect x="725" y="512" width="215" height="80" rx="12" fill="#0A0A0A" fill-opacity="0.03"/>
+  </g>
+  <text x="64" y="544" fill="#0A0A0A" font-size="14" font-weight="600">Morpho</text>
+  <text x="64" y="566" fill="#0A0A0A" font-size="11" opacity="0.5">Core lending</text>
+  <text x="294" y="544" fill="#0A0A0A" font-size="14" font-weight="600">ITP NAV Oracle</text>
+  <text x="294" y="566" fill="#0A0A0A" font-size="11" opacity="0.5">Collateral pricing</text>
+  <text x="519" y="544" fill="#0A0A0A" font-size="14" font-weight="600">L3BridgeCustody</text>
+  <text x="519" y="566" fill="#0A0A0A" font-size="11" opacity="0.5">Cross-chain assets</text>
+  <text x="749" y="544" fill="#0A0A0A" font-size="14" font-weight="600">L3BridgeProxy</text>
+  <text x="749" y="566" fill="#0A0A0A" font-size="11" opacity="0.5">Message relay</text>
+</svg>

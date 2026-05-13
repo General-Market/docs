@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 280" width="980" height="280" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-opacity="0.03"/>
+    </filter>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0A0A0A" fill-opacity="0.45"/>
+    </marker>
+  </defs>
+
+  <rect width="980" height="280" fill="white"/>
+  <circle cx="60" cy="240" r="140" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="920" cy="40" r="120" fill="#0A0A0A" opacity="0.02"/>
+
+  <text x="40" y="44" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.45">HEALTH FACTOR</text>
+  <text x="40" y="68" fill="#0A0A0A" font-size="13" opacity="0.4">Below 1.0 the chain liquidates. Below 1.2 the curator screams.</text>
+
+  <!-- Axis line: from x=80 to x=920 -->
+  <line x1="80" y1="170" x2="920" y2="170" stroke="#0A0A0A" stroke-opacity="0.18" stroke-width="1" marker-end="url(#arr)"/>
+
+  <!-- Zones backgrounds -->
+  <!-- LIQ < 1.0 -->
+  <rect x="80" y="132" width="200" height="76" rx="8" fill="#0A0A0A" fill-opacity="0.14"/>
+  <!-- CRITICAL 1.0 - 1.2 -->
+  <rect x="280" y="132" width="240" height="76" rx="8" fill="#0A0A0A" fill-opacity="0.06"/>
+  <!-- HEALTHY >= 1.2 -->
+  <rect x="520" y="132" width="380" height="76" rx="8" fill="#10B981" fill-opacity="0.1"/>
+
+  <!-- Boundary ticks -->
+  <line x1="280" y1="160" x2="280" y2="220" stroke="#0A0A0A" stroke-opacity="0.4" stroke-width="1"/>
+  <line x1="520" y1="160" x2="520" y2="220" stroke="#0A0A0A" stroke-opacity="0.4" stroke-width="1"/>
+  <text x="280" y="240" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="600">1.0</text>
+  <text x="520" y="240" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="600">1.2</text>
+  <text x="900" y="240" text-anchor="end" fill="#0A0A0A" font-size="11" font-weight="600" opacity="0.5">∞</text>
+
+  <!-- Zone labels -->
+  <text x="180" y="160" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="1.6">LIQUIDATABLE</text>
+  <text x="180" y="184" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.55">immediate</text>
+
+  <text x="400" y="160" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="1.6">CRITICAL</text>
+  <text x="400" y="184" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.55">Telegram alert</text>
+
+  <text x="710" y="160" text-anchor="middle" fill="#059669" font-size="11" font-weight="700" letter-spacing="1.6">HEALTHY</text>
+  <text x="710" y="184" text-anchor="middle" fill="#059669" font-size="11" opacity="0.7">no action</text>
+
+  <text x="40" y="110" fill="#0A0A0A" font-size="10" font-weight="700" letter-spacing="2.4" opacity="0.45">HF →</text>
+</svg>

@@ -1,0 +1,118 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 480" width="980" height="480" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="10" flood-opacity="0.04"/>
+    </filter>
+  </defs>
+
+  <rect width="980" height="480" fill="white"/>
+  <circle cx="80" cy="420" r="160" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="900" cy="60" r="140" fill="#0A0A0A" opacity="0.02"/>
+
+  <text x="490" y="42" text-anchor="middle" fill="#0A0A0A" font-size="12" font-weight="700" letter-spacing="3" opacity="0.45">SOURCE MONITORING</text>
+  <text x="490" y="64" text-anchor="middle" fill="#0A0A0A" font-size="13" opacity="0.4">Live health of every source. The watchers, too, can fail.</text>
+
+  <!-- KPI strip -->
+  <rect x="40" y="92" width="900" height="80" rx="12" fill="url(#darkGrad)" filter="url(#shadow)"/>
+
+  <g font-size="10" letter-spacing="2" font-weight="600">
+    <text x="124" y="118" text-anchor="middle" fill="white" opacity="0.55">SOURCES</text>
+    <text x="124" y="148" text-anchor="middle" fill="white" font-size="22" font-weight="700">98</text>
+
+    <line x1="208" y1="106" x2="208" y2="158" stroke="white" stroke-opacity="0.1"/>
+
+    <text x="292" y="118" text-anchor="middle" fill="white" opacity="0.55">HEALTHY</text>
+    <text x="292" y="148" text-anchor="middle" fill="#10B981" font-size="22" font-weight="700">94</text>
+
+    <line x1="376" y1="106" x2="376" y2="158" stroke="white" stroke-opacity="0.1"/>
+
+    <text x="460" y="118" text-anchor="middle" fill="white" opacity="0.55">STALE</text>
+    <text x="460" y="148" text-anchor="middle" fill="#F59E0B" font-size="22" font-weight="700">3</text>
+
+    <line x1="544" y1="106" x2="544" y2="158" stroke="white" stroke-opacity="0.1"/>
+
+    <text x="628" y="118" text-anchor="middle" fill="white" opacity="0.55">DEAD</text>
+    <text x="628" y="148" text-anchor="middle" fill="#DC2626" font-size="22" font-weight="700">1</text>
+
+    <line x1="712" y1="106" x2="712" y2="158" stroke="white" stroke-opacity="0.1"/>
+
+    <text x="800" y="118" text-anchor="middle" fill="white" opacity="0.55">LIVE ASSETS</text>
+    <text x="800" y="148" text-anchor="middle" fill="white" font-size="18" font-weight="700">4,200 / 4,500</text>
+
+    <line x1="876" y1="106" x2="876" y2="158" stroke="white" stroke-opacity="0.1"/>
+
+    <text x="908" y="118" text-anchor="middle" fill="white" opacity="0.55">UPDATED</text>
+    <text x="908" y="148" text-anchor="middle" fill="white" font-size="14" font-weight="700">14:32</text>
+  </g>
+
+  <!-- Detail table -->
+  <rect x="40" y="192" width="900" height="232" rx="12" fill="white" stroke="#0A0A0A" stroke-opacity="0.06" filter="url(#shadow)"/>
+
+  <g font-size="10" letter-spacing="1.5" opacity="0.4">
+    <text x="64" y="218" fill="#0A0A0A">SOURCE</text>
+    <text x="280" y="218" fill="#0A0A0A">STATUS</text>
+    <text x="450" y="218" fill="#0A0A0A">ASSETS</text>
+    <text x="580" y="218" fill="#0A0A0A">STALE</text>
+    <text x="700" y="218" fill="#0A0A0A">ZERO</text>
+    <text x="840" y="218" fill="#0A0A0A">AGE</text>
+  </g>
+  <line x1="60" y1="228" x2="920" y2="228" stroke="#0A0A0A" stroke-opacity="0.06"/>
+
+  <!-- Row 1: coingecko OK -->
+  <g font-size="12">
+    <text x="64"  y="256" fill="#0A0A0A" font-family="ui-monospace, SF Mono, Menlo, monospace">coingecko</text>
+    <circle cx="288" cy="252" r="4" fill="#10B981"/>
+    <text x="300" y="256" fill="#0A0A0A" font-weight="600">OK</text>
+    <text x="450" y="256" fill="#0A0A0A" font-family="ui-monospace, SF Mono, Menlo, monospace">2,400</text>
+    <text x="580" y="256" fill="#0A0A0A" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.55">0</text>
+    <text x="700" y="256" fill="#0A0A0A" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.55">0</text>
+    <text x="840" y="256" fill="#0A0A0A" font-family="ui-monospace, SF Mono, Menlo, monospace">30s</text>
+  </g>
+  <line x1="60" y1="272" x2="920" y2="272" stroke="#0A0A0A" stroke-opacity="0.04"/>
+
+  <!-- Row 2: earthquake OK -->
+  <g font-size="12">
+    <text x="64"  y="298" fill="#0A0A0A" font-family="ui-monospace, SF Mono, Menlo, monospace">earthquake</text>
+    <circle cx="288" cy="294" r="4" fill="#10B981"/>
+    <text x="300" y="298" fill="#0A0A0A" font-weight="600">OK</text>
+    <text x="450" y="298" fill="#0A0A0A" font-family="ui-monospace, SF Mono, Menlo, monospace">12</text>
+    <text x="580" y="298" fill="#0A0A0A" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.55">0</text>
+    <text x="700" y="298" fill="#0A0A0A" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.55">0</text>
+    <text x="840" y="298" fill="#0A0A0A" font-family="ui-monospace, SF Mono, Menlo, monospace">45s</text>
+  </g>
+  <line x1="60" y1="314" x2="920" y2="314" stroke="#0A0A0A" stroke-opacity="0.04"/>
+
+  <!-- Row 3: steam STALE -->
+  <g font-size="12">
+    <text x="64"  y="340" fill="#0A0A0A" font-family="ui-monospace, SF Mono, Menlo, monospace">steam</text>
+    <circle cx="288" cy="336" r="4" fill="#F59E0B"/>
+    <text x="300" y="340" fill="#F59E0B" font-weight="600">STALE</text>
+    <text x="450" y="340" fill="#0A0A0A" font-family="ui-monospace, SF Mono, Menlo, monospace">85</text>
+    <text x="580" y="340" fill="#F59E0B" font-family="ui-monospace, SF Mono, Menlo, monospace" font-weight="600">3</text>
+    <text x="700" y="340" fill="#0A0A0A" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.55">0</text>
+    <text x="840" y="340" fill="#F59E0B" font-family="ui-monospace, SF Mono, Menlo, monospace" font-weight="600">25m</text>
+  </g>
+  <line x1="60" y1="356" x2="920" y2="356" stroke="#0A0A0A" stroke-opacity="0.04"/>
+
+  <!-- Row 4: ndbc DEAD -->
+  <g font-size="12">
+    <text x="64"  y="382" fill="#0A0A0A" font-family="ui-monospace, SF Mono, Menlo, monospace">ndbc</text>
+    <circle cx="288" cy="378" r="4" fill="#DC2626"/>
+    <text x="300" y="382" fill="#DC2626" font-weight="600">DEAD</text>
+    <text x="450" y="382" fill="#0A0A0A" font-family="ui-monospace, SF Mono, Menlo, monospace">38</text>
+    <text x="580" y="382" fill="#0A0A0A" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.55">0</text>
+    <text x="700" y="382" fill="#DC2626" font-family="ui-monospace, SF Mono, Menlo, monospace" font-weight="600">38</text>
+    <text x="840" y="382" fill="#DC2626" font-family="ui-monospace, SF Mono, Menlo, monospace" font-weight="600">3h 12m</text>
+  </g>
+  <line x1="60" y1="398" x2="920" y2="398" stroke="#0A0A0A" stroke-opacity="0.04"/>
+
+  <text x="64" y="416" fill="#0A0A0A" font-size="11" opacity="0.35">…</text>
+
+  <!-- Footer pill -->
+  <rect x="40" y="438" width="900" height="32" rx="14" fill="#0A0A0A" fill-opacity="0.03"/>
+  <text x="490" y="458" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.45">Public. Click a row for per-asset health and collection history. Transparency about the infrastructure's fragility.</text>
+</svg>

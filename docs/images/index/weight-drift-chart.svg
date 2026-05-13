@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 440" width="980" height="440" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGradDc" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadowDc">
+      <feDropShadow dx="0" dy="2" stdDeviation="10" flood-opacity="0.04"/>
+    </filter>
+  </defs>
+
+  <rect width="980" height="440" fill="white"/>
+  <circle cx="50" cy="50" r="140" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="940" cy="400" r="160" fill="#0A0A0A" opacity="0.02"/>
+
+  <text x="490" y="44" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="3.6" opacity="0.45">WEIGHT DRIFT OVER TIME</text>
+  <text x="490" y="64" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.45">Five months without rebalancing.</text>
+
+  <g filter="url(#shadowDc)">
+    <rect x="60" y="92" width="860" height="300" rx="14" fill="white" stroke="#0A0A0A" stroke-opacity="0.08"/>
+  </g>
+
+  <!-- Y axis labels -->
+  <g font-family="ui-monospace, SF Mono, Menlo, monospace" font-size="10" fill="#0A0A0A" opacity="0.55">
+    <text x="90" y="132" text-anchor="end">65%</text>
+    <text x="90" y="172" text-anchor="end">55%</text>
+    <text x="90" y="208" text-anchor="end">50%</text>
+    <text x="90" y="248" text-anchor="end">45%</text>
+    <text x="90" y="288" text-anchor="end">35%</text>
+    <text x="90" y="328" text-anchor="end">25%</text>
+  </g>
+
+  <!-- Grid lines -->
+  <g stroke="#0A0A0A" stroke-opacity="0.05">
+    <line x1="100" y1="128" x2="900" y2="128"/>
+    <line x1="100" y1="168" x2="900" y2="168"/>
+    <line x1="100" y1="248" x2="900" y2="248"/>
+    <line x1="100" y1="288" x2="900" y2="288"/>
+    <line x1="100" y1="328" x2="900" y2="328"/>
+  </g>
+
+  <!-- Target line (50%) -->
+  <line x1="100" y1="208" x2="900" y2="208" stroke="#0A0A0A" stroke-opacity="0.25" stroke-dasharray="4,4"/>
+  <text x="908" y="212" fill="#0A0A0A" font-size="10" opacity="0.45">target 50%</text>
+
+  <!-- BTC line (drifting up) -->
+  <path d="M100 208 L260 198 L420 178 L580 150 L740 132 L900 128" fill="none" stroke="#10B981" stroke-width="2"/>
+  <circle cx="100" cy="208" r="3" fill="#10B981"/>
+  <circle cx="260" cy="198" r="3" fill="#10B981"/>
+  <circle cx="420" cy="178" r="3" fill="#10B981"/>
+  <circle cx="580" cy="150" r="3" fill="#10B981"/>
+  <circle cx="740" cy="132" r="3" fill="#10B981"/>
+  <circle cx="900" cy="128" r="4" fill="#10B981"/>
+  <text x="912" y="132" fill="#10B981" font-size="11" font-weight="600">BTC</text>
+
+  <!-- ETH+SOL composite (drifting down) -->
+  <path d="M100 208 L260 224 L420 252 L580 288 L740 312 L900 328" fill="none" stroke="#0A0A0A" stroke-opacity="0.55" stroke-width="1.5"/>
+  <circle cx="100" cy="208" r="3" fill="#0A0A0A" opacity="0.55"/>
+  <circle cx="260" cy="224" r="3" fill="#0A0A0A" opacity="0.55"/>
+  <circle cx="420" cy="252" r="3" fill="#0A0A0A" opacity="0.55"/>
+  <circle cx="580" cy="288" r="3" fill="#0A0A0A" opacity="0.55"/>
+  <circle cx="740" cy="312" r="3" fill="#0A0A0A" opacity="0.55"/>
+  <circle cx="900" cy="328" r="3" fill="#0A0A0A" opacity="0.55"/>
+  <text x="912" y="332" fill="#0A0A0A" font-size="11" font-weight="600" opacity="0.6">ETH + SOL</text>
+
+  <!-- Rebalance trigger at M5 -->
+  <line x1="740" y1="92" x2="740" y2="372" stroke="#0A0A0A" stroke-opacity="0.2" stroke-dasharray="6,4"/>
+  <rect x="680" y="346" width="120" height="22" rx="6" fill="url(#darkGradDc)"/>
+  <text x="740" y="361" text-anchor="middle" fill="white" font-size="10" font-weight="700" letter-spacing="1.6">REBALANCE HERE</text>
+
+  <!-- X axis -->
+  <line x1="100" y1="356" x2="900" y2="356" stroke="#0A0A0A" stroke-opacity="0.15"/>
+  <g font-family="ui-monospace, SF Mono, Menlo, monospace" font-size="10" fill="#0A0A0A" opacity="0.55">
+    <text x="100" y="378" text-anchor="middle">M1</text>
+    <text x="260" y="378" text-anchor="middle">M2</text>
+    <text x="420" y="378" text-anchor="middle">M3</text>
+    <text x="580" y="378" text-anchor="middle">M4</text>
+    <text x="740" y="378" text-anchor="middle">M5</text>
+  </g>
+
+  <text x="490" y="420" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.45">Drift exceeded threshold. Discipline finally answered.</text>
+</svg>

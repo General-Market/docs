@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 580" width="980" height="580" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGradWc" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadowWc">
+      <feDropShadow dx="0" dy="2" stdDeviation="10" flood-opacity="0.04"/>
+    </filter>
+  </defs>
+
+  <rect width="980" height="580" fill="white"/>
+  <circle cx="50" cy="50" r="140" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="940" cy="540" r="160" fill="#0A0A0A" opacity="0.02"/>
+
+  <g filter="url(#shadowWc)">
+    <rect x="40" y="40" width="900" height="64" rx="14" fill="url(#darkGradWc)"/>
+  </g>
+  <text x="490" y="68" text-anchor="middle" fill="white" font-size="11" font-weight="700" letter-spacing="3.6" opacity="0.55">WHICH CHAIN DO I NEED?</text>
+  <text x="490" y="90" text-anchor="middle" fill="white" font-size="12" opacity="0.55">The app will ask you. This is what it knows.</text>
+
+  <!-- Column headers -->
+  <text x="380" y="138" fill="#0A0A0A" font-size="10" font-weight="700" letter-spacing="2.4" opacity="0.45">ACTION</text>
+  <text x="640" y="138" fill="#0A0A0A" font-size="10" font-weight="700" letter-spacing="2.4" opacity="0.45">CHAIN</text>
+  <text x="820" y="138" fill="#0A0A0A" font-size="10" font-weight="700" letter-spacing="2.4" opacity="0.45">WHY</text>
+  <line x1="40" y1="150" x2="940" y2="150" stroke="#0A0A0A" stroke-opacity="0.08"/>
+
+  <!-- L3 rows -->
+  <g font-size="13">
+    <text x="60" y="180" fill="#0A0A0A" font-weight="600">Buy / sell an ITP directly</text>
+    <rect x="610" y="164" width="74" height="24" rx="6" fill="#10B981" fill-opacity="0.12" stroke="#10B981" stroke-opacity="0.4"/>
+    <text x="647" y="181" text-anchor="middle" fill="#059669" font-size="11" font-weight="700">L3</text>
+    <text x="820" y="180" fill="#0A0A0A" opacity="0.6">core trading</text>
+
+    <text x="60" y="212" fill="#0A0A0A" font-weight="600">Place a Vision bet</text>
+    <rect x="610" y="196" width="74" height="24" rx="6" fill="#10B981" fill-opacity="0.12" stroke="#10B981" stroke-opacity="0.4"/>
+    <text x="647" y="213" text-anchor="middle" fill="#059669" font-size="11" font-weight="700">L3</text>
+    <text x="820" y="212" fill="#0A0A0A" opacity="0.6">markets live here</text>
+
+    <text x="60" y="244" fill="#0A0A0A" font-weight="600">Claim Vision winnings</text>
+    <rect x="610" y="228" width="74" height="24" rx="6" fill="#10B981" fill-opacity="0.12" stroke="#10B981" stroke-opacity="0.4"/>
+    <text x="647" y="245" text-anchor="middle" fill="#059669" font-size="11" font-weight="700">L3</text>
+    <text x="820" y="244" fill="#0A0A0A" opacity="0.6">payouts on L3</text>
+
+    <text x="60" y="276" fill="#0A0A0A" font-weight="600">View portfolio</text>
+    <rect x="610" y="260" width="74" height="24" rx="6" fill="#10B981" fill-opacity="0.12" stroke="#10B981" stroke-opacity="0.4"/>
+    <text x="647" y="277" text-anchor="middle" fill="#059669" font-size="11" font-weight="700">L3</text>
+    <text x="820" y="276" fill="#0A0A0A" opacity="0.6">holdings on L3</text>
+  </g>
+
+  <!-- Divider -->
+  <line x1="40" y1="300" x2="940" y2="300" stroke="#0A0A0A" stroke-opacity="0.06" stroke-dasharray="4,4"/>
+
+  <!-- Settlement rows -->
+  <g font-size="13">
+    <text x="60" y="334" fill="#0A0A0A" font-weight="600">Bridge-buy an ITP</text>
+    <rect x="600" y="318" width="94" height="24" rx="6" fill="url(#darkGradWc)"/>
+    <text x="647" y="335" text-anchor="middle" fill="white" font-size="11" font-weight="700" letter-spacing="1.2">SETTLEMENT</text>
+    <text x="820" y="334" fill="#0A0A0A" opacity="0.6">USDC deposited</text>
+
+    <text x="60" y="366" fill="#0A0A0A" font-weight="600">Bridge-sell an ITP</text>
+    <rect x="600" y="350" width="94" height="24" rx="6" fill="url(#darkGradWc)"/>
+    <text x="647" y="367" text-anchor="middle" fill="white" font-size="11" font-weight="700" letter-spacing="1.2">SETTLEMENT</text>
+    <text x="820" y="366" fill="#0A0A0A" opacity="0.6">BridgedITP sent</text>
+
+    <text x="60" y="398" fill="#0A0A0A" font-weight="600">Lend USDC (earn yield)</text>
+    <rect x="600" y="382" width="94" height="24" rx="6" fill="url(#darkGradWc)"/>
+    <text x="647" y="399" text-anchor="middle" fill="white" font-size="11" font-weight="700" letter-spacing="1.2">SETTLEMENT</text>
+    <text x="820" y="398" fill="#0A0A0A" opacity="0.6">Morpho lives here</text>
+
+    <text x="60" y="430" fill="#0A0A0A" font-weight="600">Borrow against ITP</text>
+    <rect x="600" y="414" width="94" height="24" rx="6" fill="url(#darkGradWc)"/>
+    <text x="647" y="431" text-anchor="middle" fill="white" font-size="11" font-weight="700" letter-spacing="1.2">SETTLEMENT</text>
+    <text x="820" y="430" fill="#0A0A0A" opacity="0.6">collateral here</text>
+
+    <text x="60" y="462" fill="#0A0A0A" font-weight="600">Deposit USDC for Vision</text>
+    <rect x="600" y="446" width="94" height="24" rx="6" fill="url(#darkGradWc)"/>
+    <text x="647" y="463" text-anchor="middle" fill="white" font-size="11" font-weight="700" letter-spacing="1.2">SETTLEMENT</text>
+    <text x="820" y="462" fill="#0A0A0A" opacity="0.6">deposits here</text>
+
+    <text x="60" y="494" fill="#0A0A0A" font-weight="600">Withdraw from Vision</text>
+    <rect x="600" y="478" width="94" height="24" rx="6" fill="url(#darkGradWc)"/>
+    <text x="647" y="495" text-anchor="middle" fill="white" font-size="11" font-weight="700" letter-spacing="1.2">SETTLEMENT</text>
+    <text x="820" y="494" fill="#0A0A0A" opacity="0.6">withdrawals here</text>
+  </g>
+
+  <text x="490" y="552" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.45">Most of life is on L3. Settlement only when the bridge demands it.</text>
+</svg>

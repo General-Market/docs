@@ -1,0 +1,135 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 1080" width="980" height="1080" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-opacity="0.03"/>
+    </filter>
+  </defs>
+
+  <rect width="980" height="1080" fill="white"/>
+  <circle cx="120" cy="980" r="180" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="860" cy="100" r="160" fill="#0A0A0A" opacity="0.02"/>
+
+  <!-- Centerline of nodes at x=350. Side panel at right around x=620-940 -->
+
+  <!-- Step 1 -->
+  <g>
+    <rect x="200" y="40" width="300" height="74" rx="12" fill="url(#darkGrad)" filter="url(#shadow)"/>
+    <text x="220" y="68" fill="white" font-size="10" font-weight="600" letter-spacing="2" opacity="0.5">STEP 01</text>
+    <text x="220" y="96" fill="white" font-size="15" font-weight="700">Register bot</text>
+    <text x="460" y="96" text-anchor="end" fill="white" font-size="10" opacity="0.45">one-time</text>
+  </g>
+  <line x1="350" y1="120" x2="350" y2="146" stroke="#0A0A0A" stroke-opacity="0.2" stroke-width="1"/>
+  <path d="M346,142 l4,6 l4,-6" fill="#0A0A0A" fill-opacity="0.4"/>
+
+  <!-- Step 2 -->
+  <g>
+    <rect x="200" y="148" width="300" height="74" rx="12" fill="#0A0A0A" fill-opacity="0.03" filter="url(#shadow)"/>
+    <text x="220" y="176" fill="#0A0A0A" font-size="10" font-weight="600" letter-spacing="2" opacity="0.4">STEP 02</text>
+    <text x="220" y="204" fill="#0A0A0A" font-size="15" font-weight="700">Poll batches</text>
+    <text x="460" y="204" text-anchor="end" fill="#0A0A0A" font-size="10" opacity="0.4">every 30s</text>
+  </g>
+  <!-- Branch out to "no batches" -->
+  <line x1="500" y1="185" x2="600" y2="185" stroke="#0A0A0A" stroke-opacity="0.15" stroke-width="1" stroke-dasharray="4,4"/>
+  <rect x="600" y="162" width="280" height="46" rx="10" fill="#0A0A0A" fill-opacity="0.02"/>
+  <text x="620" y="184" fill="#0A0A0A" font-size="12" opacity="0.55">no batches → sleep, retry</text>
+  <text x="620" y="200" fill="#0A0A0A" font-size="10" opacity="0.35">POLL_INTERVAL backoff</text>
+  <path d="M600,185 l-6,-3 l0,6 z" fill="#0A0A0A" fill-opacity="0.3"/>
+
+  <line x1="350" y1="228" x2="350" y2="254" stroke="#0A0A0A" stroke-opacity="0.2" stroke-width="1"/>
+  <path d="M346,250 l4,6 l4,-6" fill="#0A0A0A" fill-opacity="0.4"/>
+
+  <!-- Step 3 -->
+  <g>
+    <rect x="200" y="256" width="300" height="74" rx="12" fill="#0A0A0A" fill-opacity="0.03" filter="url(#shadow)"/>
+    <text x="220" y="284" fill="#0A0A0A" font-size="10" font-weight="600" letter-spacing="2" opacity="0.4">STEP 03</text>
+    <text x="220" y="312" fill="#0A0A0A" font-size="15" font-weight="700">Generate predictions</text>
+  </g>
+  <line x1="350" y1="336" x2="350" y2="362" stroke="#0A0A0A" stroke-opacity="0.2" stroke-width="1"/>
+  <path d="M346,358 l4,6 l4,-6" fill="#0A0A0A" fill-opacity="0.4"/>
+
+  <!-- Step 4 -->
+  <g>
+    <rect x="200" y="364" width="300" height="74" rx="12" fill="#0A0A0A" fill-opacity="0.03" filter="url(#shadow)"/>
+    <text x="220" y="392" fill="#0A0A0A" font-size="10" font-weight="600" letter-spacing="2" opacity="0.4">STEP 04</text>
+    <text x="220" y="420" fill="#0A0A0A" font-size="15" font-weight="700">Encode bitmap</text>
+    <text x="460" y="420" text-anchor="end" fill="#0A0A0A" font-size="10" font-family="JetBrains Mono, ui-monospace, monospace" opacity="0.35">keccak256</text>
+  </g>
+  <line x1="350" y1="444" x2="350" y2="470" stroke="#0A0A0A" stroke-opacity="0.2" stroke-width="1"/>
+  <path d="M346,466 l4,6 l4,-6" fill="#0A0A0A" fill-opacity="0.4"/>
+
+  <!-- Step 5 -->
+  <g>
+    <rect x="200" y="472" width="300" height="74" rx="12" fill="#0A0A0A" fill-opacity="0.03" filter="url(#shadow)"/>
+    <text x="220" y="500" fill="#0A0A0A" font-size="10" font-weight="600" letter-spacing="2" opacity="0.4">STEP 05</text>
+    <text x="220" y="528" fill="#0A0A0A" font-size="15" font-weight="700">Approve USDC</text>
+  </g>
+  <line x1="350" y1="552" x2="350" y2="578" stroke="#0A0A0A" stroke-opacity="0.2" stroke-width="1"/>
+  <path d="M346,574 l4,6 l4,-6" fill="#0A0A0A" fill-opacity="0.4"/>
+
+  <!-- Step 6 -->
+  <g>
+    <rect x="200" y="580" width="300" height="74" rx="12" fill="url(#darkGrad)" filter="url(#shadow)"/>
+    <text x="220" y="608" fill="white" font-size="10" font-weight="600" letter-spacing="2" opacity="0.5">STEP 06</text>
+    <text x="220" y="636" fill="white" font-size="15" font-weight="700">Join batch</text>
+    <text x="460" y="636" text-anchor="end" fill="white" font-size="10" font-family="JetBrains Mono, ui-monospace, monospace" opacity="0.45">joinBatch()</text>
+  </g>
+  <line x1="350" y1="660" x2="350" y2="686" stroke="#0A0A0A" stroke-opacity="0.2" stroke-width="1"/>
+  <path d="M346,682 l4,6 l4,-6" fill="#0A0A0A" fill-opacity="0.4"/>
+
+  <!-- Step 7 -->
+  <g>
+    <rect x="200" y="688" width="300" height="74" rx="12" fill="#0A0A0A" fill-opacity="0.03" filter="url(#shadow)"/>
+    <text x="220" y="716" fill="#0A0A0A" font-size="10" font-weight="600" letter-spacing="2" opacity="0.4">STEP 07</text>
+    <text x="220" y="744" fill="#0A0A0A" font-size="15" font-weight="700">Wait 6 seconds</text>
+    <text x="460" y="744" text-anchor="end" fill="#0A0A0A" font-size="10" opacity="0.4">indexer lag</text>
+  </g>
+  <line x1="350" y1="768" x2="350" y2="794" stroke="#0A0A0A" stroke-opacity="0.2" stroke-width="1"/>
+  <path d="M346,790 l4,6 l4,-6" fill="#0A0A0A" fill-opacity="0.4"/>
+
+  <!-- Step 8 -->
+  <g>
+    <rect x="200" y="796" width="300" height="74" rx="12" fill="#0A0A0A" fill-opacity="0.03" filter="url(#shadow)"/>
+    <text x="220" y="824" fill="#0A0A0A" font-size="10" font-weight="600" letter-spacing="2" opacity="0.4">STEP 08</text>
+    <text x="220" y="852" fill="#0A0A0A" font-size="15" font-weight="700">Submit bitmap</text>
+    <text x="460" y="852" text-anchor="end" fill="#0A0A0A" font-size="10" font-family="JetBrains Mono, ui-monospace, monospace" opacity="0.35">POST /vision/bitmap</text>
+  </g>
+  <line x1="350" y1="876" x2="350" y2="902" stroke="#0A0A0A" stroke-opacity="0.2" stroke-width="1" stroke-dasharray="4,4"/>
+  <path d="M346,898 l4,6 l4,-6" fill="#0A0A0A" fill-opacity="0.3"/>
+
+  <!-- Step 9 -->
+  <g>
+    <rect x="200" y="904" width="300" height="74" rx="12" fill="#0A0A0A" fill-opacity="0.02" stroke="#0A0A0A" stroke-opacity="0.12" stroke-dasharray="6,4" filter="url(#shadow)"/>
+    <text x="220" y="932" fill="#0A0A0A" font-size="10" font-weight="600" letter-spacing="2" opacity="0.4">STEP 09 · OPTIONAL</text>
+    <text x="220" y="960" fill="#0A0A0A" font-size="15" font-weight="700">Update bitmap</text>
+    <text x="460" y="960" text-anchor="end" fill="#0A0A0A" font-size="10" font-family="JetBrains Mono, ui-monospace, monospace" opacity="0.35">updateBitmap()</text>
+  </g>
+  <line x1="350" y1="984" x2="350" y2="1010" stroke="#0A0A0A" stroke-opacity="0.2" stroke-width="1"/>
+  <path d="M346,1006 l4,6 l4,-6" fill="#0A0A0A" fill-opacity="0.4"/>
+
+  <!-- Side panel: claim + withdraw stacked at right side (steps 10, 11) -->
+  <g>
+    <rect x="600" y="688" width="320" height="180" rx="14" fill="url(#darkGrad)" filter="url(#shadow)"/>
+    <text x="620" y="718" fill="white" font-size="10" font-weight="600" letter-spacing="2" opacity="0.5">PAYOUT</text>
+    <line x1="620" y1="732" x2="900" y2="732" stroke="white" stroke-opacity="0.1"/>
+
+    <text x="620" y="760" fill="white" font-size="10" font-weight="600" letter-spacing="2" opacity="0.45">STEP 10</text>
+    <text x="620" y="784" fill="white" font-size="15" font-weight="700">Claim rewards</text>
+    <text x="620" y="804" fill="white" font-size="11" opacity="0.55">BLS-signed balance proof</text>
+
+    <line x1="620" y1="820" x2="900" y2="820" stroke="white" stroke-opacity="0.08"/>
+
+    <text x="620" y="844" fill="white" font-size="10" font-weight="600" letter-spacing="2" opacity="0.45">STEP 11</text>
+    <text x="620" y="868" fill="white" font-size="15" font-weight="700">Withdraw</text>
+  </g>
+
+  <!-- Bottom: terminal -->
+  <rect x="200" y="1012" width="300" height="48" rx="14" fill="#0A0A0A" fill-opacity="0.06"/>
+  <path d="M226,1036 l5,5 l10,-10" stroke="#10B981" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="252" y="1041" fill="#0A0A0A" font-size="13" font-weight="600">Loop or exit</text>
+
+  <text x="490" y="1052" text-anchor="end" fill="#0A0A0A" font-size="10" opacity="0.35">poll · predict · join · monitor · claim · repeat</text>
+</svg>

@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 620" width="980" height="620" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-opacity="0.03"/>
+    </filter>
+  </defs>
+
+  <rect width="980" height="620" fill="white"/>
+  <circle cx="100" cy="540" r="180" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="880" cy="100" r="160" fill="#0A0A0A" opacity="0.02"/>
+
+  <!-- Title block -->
+  <rect x="40" y="32" width="900" height="100" rx="14" fill="url(#darkGrad)"/>
+  <text x="490" y="74" text-anchor="middle" fill="white" font-size="28" font-weight="700" letter-spacing="8">V I S I O N</text>
+  <text x="490" y="104" text-anchor="middle" fill="white" font-size="12" opacity="0.5" letter-spacing="2">PREDICT ANYTHING. WIN USDC.</text>
+
+  <!-- Grid: 5 columns × 3 rows -->
+  <!-- Row 1 -->
+  <g font-family="Inter, system-ui, sans-serif">
+    <rect x="40" y="156" width="172" height="92" rx="10" fill="#0A0A0A" fill-opacity="0.03" filter="url(#shadow)"/>
+    <text x="126" y="186" text-anchor="middle" fill="#0A0A0A" font-size="13" font-weight="600">Crypto</text>
+    <text x="126" y="214" text-anchor="middle" fill="#0A0A0A" font-size="20" font-weight="700">9,963</text>
+    <text x="126" y="234" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.4" letter-spacing="1">MARKETS</text>
+
+    <rect x="222" y="156" width="172" height="92" rx="10" fill="#0A0A0A" fill-opacity="0.03" filter="url(#shadow)"/>
+    <text x="308" y="186" text-anchor="middle" fill="#0A0A0A" font-size="13" font-weight="600">Weather</text>
+    <text x="308" y="214" text-anchor="middle" fill="#0A0A0A" font-size="20" font-weight="700">161,125</text>
+    <text x="308" y="234" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.4" letter-spacing="1">MARKETS</text>
+
+    <rect x="404" y="156" width="172" height="92" rx="10" fill="#0A0A0A" fill-opacity="0.03" filter="url(#shadow)"/>
+    <text x="490" y="186" text-anchor="middle" fill="#0A0A0A" font-size="13" font-weight="600">Trains</text>
+    <text x="490" y="214" text-anchor="middle" fill="#0A0A0A" font-size="20" font-weight="700">1,200</text>
+    <text x="490" y="234" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.4" letter-spacing="1">MARKETS</text>
+
+    <rect x="586" y="156" width="172" height="92" rx="10" fill="#0A0A0A" fill-opacity="0.03" filter="url(#shadow)"/>
+    <text x="672" y="186" text-anchor="middle" fill="#0A0A0A" font-size="13" font-weight="600">Quakes</text>
+    <text x="672" y="214" text-anchor="middle" fill="#0A0A0A" font-size="20" font-weight="700">300</text>
+    <text x="672" y="234" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.4" letter-spacing="1">MARKETS</text>
+
+    <rect x="768" y="156" width="172" height="92" rx="10" fill="#0A0A0A" fill-opacity="0.03" filter="url(#shadow)"/>
+    <text x="854" y="186" text-anchor="middle" fill="#0A0A0A" font-size="13" font-weight="600">GitHub</text>
+    <text x="854" y="214" text-anchor="middle" fill="#0A0A0A" font-size="20" font-weight="700">1,500</text>
+    <text x="854" y="234" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.4" letter-spacing="1">MARKETS</text>
+  </g>
+
+  <!-- Row 2 -->
+  <g font-family="Inter, system-ui, sans-serif">
+    <rect x="40" y="258" width="172" height="92" rx="10" fill="#0A0A0A" fill-opacity="0.03" filter="url(#shadow)"/>
+    <text x="126" y="288" text-anchor="middle" fill="#0A0A0A" font-size="13" font-weight="600">npm</text>
+    <text x="126" y="316" text-anchor="middle" fill="#0A0A0A" font-size="20" font-weight="700">9,183</text>
+    <text x="126" y="336" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.4" letter-spacing="1">MARKETS</text>
+
+    <rect x="222" y="258" width="172" height="92" rx="10" fill="#0A0A0A" fill-opacity="0.03" filter="url(#shadow)"/>
+    <text x="308" y="288" text-anchor="middle" fill="#0A0A0A" font-size="13" font-weight="600">Twitch</text>
+    <text x="308" y="316" text-anchor="middle" fill="#0A0A0A" font-size="20" font-weight="700">57,523</text>
+    <text x="308" y="336" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.4" letter-spacing="1">MARKETS</text>
+
+    <rect x="404" y="258" width="172" height="92" rx="10" fill="#0A0A0A" fill-opacity="0.03" filter="url(#shadow)"/>
+    <text x="490" y="288" text-anchor="middle" fill="#0A0A0A" font-size="13" font-weight="600">Movies</text>
+    <text x="490" y="316" text-anchor="middle" fill="#0A0A0A" font-size="20" font-weight="700">37,502</text>
+    <text x="490" y="336" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.4" letter-spacing="1">MARKETS</text>
+
+    <rect x="586" y="258" width="172" height="92" rx="10" fill="#0A0A0A" fill-opacity="0.03" filter="url(#shadow)"/>
+    <text x="672" y="288" text-anchor="middle" fill="#0A0A0A" font-size="13" font-weight="600">Steam</text>
+    <text x="672" y="316" text-anchor="middle" fill="#0A0A0A" font-size="20" font-weight="700">5,000</text>
+    <text x="672" y="336" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.4" letter-spacing="1">MARKETS</text>
+
+    <rect x="768" y="258" width="172" height="92" rx="10" fill="#0A0A0A" fill-opacity="0.03" filter="url(#shadow)"/>
+    <text x="854" y="288" text-anchor="middle" fill="#0A0A0A" font-size="13" font-weight="600">Flights</text>
+    <text x="854" y="316" text-anchor="middle" fill="#0A0A0A" font-size="20" font-weight="700">2,400</text>
+    <text x="854" y="336" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.4" letter-spacing="1">MARKETS</text>
+  </g>
+
+  <!-- Row 3 -->
+  <g font-family="Inter, system-ui, sans-serif">
+    <rect x="40" y="360" width="172" height="92" rx="10" fill="#0A0A0A" fill-opacity="0.03" filter="url(#shadow)"/>
+    <text x="126" y="390" text-anchor="middle" fill="#0A0A0A" font-size="13" font-weight="600">Stocks</text>
+    <text x="126" y="418" text-anchor="middle" fill="#0A0A0A" font-size="20" font-weight="700">3,200</text>
+    <text x="126" y="438" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.4" letter-spacing="1">MARKETS</text>
+
+    <rect x="222" y="360" width="172" height="92" rx="10" fill="#0A0A0A" fill-opacity="0.03" filter="url(#shadow)"/>
+    <text x="308" y="390" text-anchor="middle" fill="#0A0A0A" font-size="13" font-weight="600">Reddit</text>
+    <text x="308" y="418" text-anchor="middle" fill="#0A0A0A" font-size="20" font-weight="700">4,800</text>
+    <text x="308" y="438" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.4" letter-spacing="1">MARKETS</text>
+
+    <rect x="404" y="360" width="172" height="92" rx="10" fill="#0A0A0A" fill-opacity="0.03" filter="url(#shadow)"/>
+    <text x="490" y="390" text-anchor="middle" fill="#0A0A0A" font-size="13" font-weight="600">DeFi</text>
+    <text x="490" y="418" text-anchor="middle" fill="#0A0A0A" font-size="20" font-weight="700">2,100</text>
+    <text x="490" y="438" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.4" letter-spacing="1">MARKETS</text>
+
+    <rect x="586" y="360" width="172" height="92" rx="10" fill="#0A0A0A" fill-opacity="0.03" filter="url(#shadow)"/>
+    <text x="672" y="390" text-anchor="middle" fill="#0A0A0A" font-size="13" font-weight="600">Buoys</text>
+    <text x="672" y="418" text-anchor="middle" fill="#0A0A0A" font-size="20" font-weight="700">850</text>
+    <text x="672" y="438" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.4" letter-spacing="1">MARKETS</text>
+
+    <rect x="768" y="360" width="172" height="92" rx="10" fill="#0A0A0A" fill-opacity="0.03" filter="url(#shadow)"/>
+    <text x="854" y="390" text-anchor="middle" fill="#0A0A0A" font-size="13" font-weight="600">Nuclear</text>
+    <text x="854" y="418" text-anchor="middle" fill="#0A0A0A" font-size="20" font-weight="700">63</text>
+    <text x="854" y="438" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.4" letter-spacing="1">MARKETS</text>
+  </g>
+
+  <!-- Summary pills -->
+  <rect x="40" y="498" width="900" height="84" rx="14" fill="#0A0A0A" fill-opacity="0.03"/>
+  <line x1="340" y1="518" x2="340" y2="562" stroke="#0A0A0A" stroke-opacity="0.08"/>
+  <line x1="640" y1="518" x2="640" y2="562" stroke="#0A0A0A" stroke-opacity="0.08"/>
+
+  <text x="190" y="534" text-anchor="middle" fill="#0A0A0A" font-size="10" font-weight="600" letter-spacing="2" opacity="0.4">SOURCES</text>
+  <text x="190" y="562" text-anchor="middle" fill="#0A0A0A" font-size="22" font-weight="700">90+</text>
+
+  <text x="490" y="534" text-anchor="middle" fill="#0A0A0A" font-size="10" font-weight="600" letter-spacing="2" opacity="0.4">MARKETS</text>
+  <text x="490" y="562" text-anchor="middle" fill="#0A0A0A" font-size="22" font-weight="700">400,000+</text>
+
+  <text x="790" y="534" text-anchor="middle" fill="#0A0A0A" font-size="10" font-weight="600" letter-spacing="2" opacity="0.4">COMMITMENTS</text>
+  <text x="790" y="562" text-anchor="middle" fill="#0A0A0A" font-size="22" font-weight="700">Sealed</text>
+</svg>

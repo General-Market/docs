@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 560" width="980" height="560" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGradSc" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadowSc">
+      <feDropShadow dx="0" dy="2" stdDeviation="10" flood-opacity="0.04"/>
+    </filter>
+  </defs>
+
+  <rect width="980" height="560" fill="white"/>
+  <circle cx="50" cy="50" r="160" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="940" cy="520" r="180" fill="#0A0A0A" opacity="0.02"/>
+
+  <!-- Header -->
+  <g filter="url(#shadowSc)">
+    <rect x="40" y="32" width="900" height="60" rx="14" fill="url(#darkGradSc)"/>
+  </g>
+  <text x="64" y="60" fill="white" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.5">POSTGRESQL SCHEMA</text>
+  <text x="64" y="82" fill="white" font-size="12" opacity="0.55">25 migrations · 15 tables · 5 groups · the fossil record</text>
+
+  <!-- Group panels -->
+  <!-- Market Data -->
+  <g filter="url(#shadowSc)">
+    <rect x="40" y="120" width="290" height="200" rx="12" fill="white" stroke="#0A0A0A" stroke-opacity="0.08"/>
+  </g>
+  <rect x="40" y="120" width="3" height="40" rx="1.5" fill="#10B981"/>
+  <text x="60" y="148" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2" opacity="0.45">MARKET DATA</text>
+  <text x="60" y="166" fill="#0A0A0A" font-size="10" opacity="0.4">Vision sources</text>
+  <g font-family="ui-monospace, SF Mono, Menlo, monospace" font-size="11">
+    <text x="60" y="200" fill="#0A0A0A" font-weight="600">market_prices</text>
+    <text x="60" y="218" fill="#0A0A0A" opacity="0.5">source · asset_id · value · ts</text>
+    <text x="60" y="244" fill="#0A0A0A" font-weight="600">market_prices_latest</text>
+    <text x="60" y="262" fill="#0A0A0A" opacity="0.5">materialized · latest per asset</text>
+    <text x="60" y="288" fill="#0A0A0A" font-weight="600">market_assets</text>
+    <text x="60" y="306" fill="#0A0A0A" opacity="0.5">source registry</text>
+  </g>
+
+  <!-- ITP / Portfolio -->
+  <g filter="url(#shadowSc)">
+    <rect x="345" y="120" width="290" height="200" rx="12" fill="white" stroke="#0A0A0A" stroke-opacity="0.08"/>
+  </g>
+  <rect x="345" y="120" width="3" height="40" rx="1.5" fill="#10B981"/>
+  <text x="365" y="148" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2" opacity="0.45">ITP / PORTFOLIO</text>
+  <text x="365" y="166" fill="#0A0A0A" font-size="10" opacity="0.4">on-chain reads</text>
+  <g font-family="ui-monospace, SF Mono, Menlo, monospace" font-size="11">
+    <text x="365" y="194" fill="#0A0A0A" font-weight="600">itp_snapshots</text>
+    <text x="365" y="210" fill="#0A0A0A" opacity="0.5">nav · supply · weights</text>
+    <text x="365" y="232" fill="#0A0A0A" font-weight="600">trades</text>
+    <text x="365" y="248" fill="#0A0A0A" opacity="0.5">order fills · prices</text>
+    <text x="365" y="270" fill="#0A0A0A" font-weight="600">klines</text>
+    <text x="365" y="286" fill="#0A0A0A" opacity="0.5">OHLCV candles</text>
+    <text x="365" y="306" fill="#0A0A0A" font-weight="600">liquidity</text>
+  </g>
+
+  <!-- CoinGecko -->
+  <g filter="url(#shadowSc)">
+    <rect x="650" y="120" width="290" height="200" rx="12" fill="white" stroke="#0A0A0A" stroke-opacity="0.08"/>
+  </g>
+  <text x="670" y="148" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2" opacity="0.45">COINGECKO</text>
+  <text x="670" y="166" fill="#0A0A0A" font-size="10" opacity="0.4">market metadata</text>
+  <g font-family="ui-monospace, SF Mono, Menlo, monospace" font-size="11">
+    <text x="670" y="200" fill="#0A0A0A" font-weight="600">coingecko_market_caps</text>
+    <text x="670" y="218" fill="#0A0A0A" opacity="0.5">monthly snapshots</text>
+    <text x="670" y="244" fill="#0A0A0A" font-weight="600">coingecko_categories</text>
+    <text x="670" y="262" fill="#0A0A0A" opacity="0.5">category membership</text>
+    <text x="670" y="288" fill="#0A0A0A" font-weight="600">bitget_listings</text>
+    <text x="670" y="306" fill="#0A0A0A" opacity="0.5">listing / delisting dates</text>
+  </g>
+
+  <!-- DeFi Llama -->
+  <g filter="url(#shadowSc)">
+    <rect x="40" y="340" width="290" height="180" rx="12" fill="white" stroke="#0A0A0A" stroke-opacity="0.08"/>
+  </g>
+  <text x="60" y="368" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2" opacity="0.45">DEFI LLAMA</text>
+  <g font-family="ui-monospace, SF Mono, Menlo, monospace" font-size="11">
+    <text x="60" y="404" fill="#0A0A0A" font-weight="600">defillama_protocols</text>
+    <text x="60" y="422" fill="#0A0A0A" opacity="0.5">metadata</text>
+    <text x="60" y="446" fill="#0A0A0A" font-weight="600">defillama_metrics</text>
+    <text x="60" y="464" fill="#0A0A0A" opacity="0.5">TVL · fees · volume</text>
+    <text x="60" y="488" fill="#0A0A0A" font-weight="600">defillama_raises</text>
+  </g>
+
+  <!-- Simulation -->
+  <g filter="url(#shadowSc)">
+    <rect x="345" y="340" width="290" height="180" rx="12" fill="white" stroke="#0A0A0A" stroke-opacity="0.08"/>
+  </g>
+  <text x="365" y="368" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2" opacity="0.45">SIMULATION · MISC</text>
+  <g font-family="ui-monospace, SF Mono, Menlo, monospace" font-size="11">
+    <text x="365" y="404" fill="#0A0A0A" font-weight="600">simulations</text>
+    <text x="365" y="422" fill="#0A0A0A" opacity="0.5">cached backtest runs</text>
+    <text x="365" y="446" fill="#0A0A0A" font-weight="600">fng_index</text>
+    <text x="365" y="470" fill="#0A0A0A" font-weight="600">github_metrics</text>
+    <text x="365" y="494" fill="#0A0A0A" font-weight="600">batch_tables</text>
+  </g>
+
+  <!-- System -->
+  <g filter="url(#shadowSc)">
+    <rect x="650" y="340" width="290" height="180" rx="12" fill="url(#darkGradSc)"/>
+  </g>
+  <text x="670" y="368" fill="white" font-size="11" font-weight="700" letter-spacing="2" opacity="0.5">SYSTEM</text>
+  <text x="670" y="386" fill="white" font-size="10" opacity="0.4">the schema watches itself</text>
+  <g font-family="ui-monospace, SF Mono, Menlo, monospace" font-size="11" fill="white">
+    <text x="670" y="420" font-weight="600">collector_cursors</text>
+    <text x="670" y="438" opacity="0.55">last block per chain</text>
+    <text x="670" y="464" font-weight="600">oracle_health_snaps</text>
+    <text x="670" y="482" opacity="0.55">latency · consensus health</text>
+  </g>
+</svg>

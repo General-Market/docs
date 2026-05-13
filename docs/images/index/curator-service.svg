@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 460" width="980" height="460" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-opacity="0.03"/>
+    </filter>
+    <marker id="arrDn" viewBox="0 0 10 10" refX="5" refY="9" markerWidth="10" markerHeight="10" orient="auto">
+      <path d="M0,0 L10,0 L5,9 z" fill="#0A0A0A" fill-opacity="0.4"/>
+    </marker>
+  </defs>
+
+  <rect width="980" height="460" fill="white"/>
+  <circle cx="80" cy="400" r="160" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="900" cy="60" r="140" fill="#0A0A0A" opacity="0.02"/>
+
+  <!-- Container panel -->
+  <rect x="40" y="40" width="900" height="240" rx="16" fill="url(#darkGrad)" filter="url(#shadow)"/>
+  <text x="64" y="76" fill="white" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.5">CURATOR SERVICE</text>
+  <text x="64" y="100" fill="white" font-size="18" font-weight="700">Four jobs. One process. Silent until something goes wrong.</text>
+
+  <!-- 4 sub-cards -->
+  <g>
+    <rect x="64" y="128" width="200" height="136" rx="12" fill="white" fill-opacity="0.06" stroke="white" stroke-opacity="0.1"/>
+    <text x="164" y="156" text-anchor="middle" fill="white" font-size="13" font-weight="700">Oracle Collector</text>
+    <line x1="84" y1="168" x2="244" y2="168" stroke="white" stroke-opacity="0.08"/>
+    <text x="164" y="192" text-anchor="middle" fill="white" font-size="11" opacity="0.55">Collect NAV</text>
+    <text x="164" y="212" text-anchor="middle" fill="white" font-size="11" opacity="0.55">from oracles</text>
+    <text x="164" y="232" text-anchor="middle" fill="white" font-size="11" opacity="0.55">BLS aggregate</text>
+
+    <rect x="284" y="128" width="200" height="136" rx="12" fill="white" fill-opacity="0.06" stroke="white" stroke-opacity="0.1"/>
+    <text x="384" y="156" text-anchor="middle" fill="white" font-size="13" font-weight="700">Allocation Bot</text>
+    <line x1="304" y1="168" x2="464" y2="168" stroke="white" stroke-opacity="0.08"/>
+    <text x="384" y="192" text-anchor="middle" fill="white" font-size="11" opacity="0.55">Rebalance</text>
+    <text x="384" y="212" text-anchor="middle" fill="white" font-size="11" opacity="0.55">vault USDC</text>
+    <text x="384" y="232" text-anchor="middle" fill="white" font-size="11" opacity="0.55">across markets</text>
+
+    <rect x="504" y="128" width="200" height="136" rx="12" fill="white" fill-opacity="0.06" stroke="white" stroke-opacity="0.1"/>
+    <text x="604" y="156" text-anchor="middle" fill="white" font-size="13" font-weight="700">Health Monitor</text>
+    <line x1="524" y1="168" x2="684" y2="168" stroke="white" stroke-opacity="0.08"/>
+    <text x="604" y="192" text-anchor="middle" fill="white" font-size="11" opacity="0.55">Scan HF</text>
+    <text x="604" y="212" text-anchor="middle" fill="white" font-size="11" opacity="0.55">oracles</text>
+    <text x="604" y="232" text-anchor="middle" fill="white" font-size="11" opacity="0.55">positions</text>
+
+    <rect x="724" y="128" width="200" height="136" rx="12" fill="white" fill-opacity="0.06" stroke="white" stroke-opacity="0.1"/>
+    <text x="824" y="156" text-anchor="middle" fill="white" font-size="13" font-weight="700">Quote API</text>
+    <line x1="744" y1="168" x2="904" y2="168" stroke="white" stroke-opacity="0.08"/>
+    <text x="824" y="192" text-anchor="middle" fill="white" font-size="11" opacity="0.55">POST /quote</text>
+    <text x="824" y="212" text-anchor="middle" fill="white" font-size="11" opacity="0.55">SERM rates</text>
+    <text x="824" y="232" text-anchor="middle" fill="white" font-size="11" opacity="0.55">Bundler data</text>
+  </g>
+
+  <!-- Arrows down -->
+  <line x1="164" y1="284" x2="164" y2="320" stroke="#0A0A0A" stroke-opacity="0.4" stroke-width="1.5" marker-end="url(#arrDn)"/>
+  <line x1="384" y1="284" x2="384" y2="320" stroke="#0A0A0A" stroke-opacity="0.4" stroke-width="1.5" marker-end="url(#arrDn)"/>
+  <line x1="604" y1="284" x2="604" y2="320" stroke="#0A0A0A" stroke-opacity="0.4" stroke-width="1.5" marker-end="url(#arrDn)"/>
+  <line x1="824" y1="284" x2="824" y2="320" stroke="#0A0A0A" stroke-opacity="0.4" stroke-width="1.5" marker-end="url(#arrDn)"/>
+
+  <!-- Targets -->
+  <g>
+    <rect x="64" y="328" width="200" height="80" rx="12" fill="#0A0A0A" fill-opacity="0.03"/>
+    <text x="164" y="358" text-anchor="middle" fill="#0A0A0A" font-size="13" font-weight="600">ITPNAVOracle</text>
+    <text x="164" y="378" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.5">Settlement</text>
+
+    <rect x="284" y="328" width="200" height="80" rx="12" fill="#0A0A0A" fill-opacity="0.03"/>
+    <text x="384" y="358" text-anchor="middle" fill="#0A0A0A" font-size="13" font-weight="600">MetaMorpho Vault</text>
+    <text x="384" y="378" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.5">Settlement</text>
+
+    <rect x="504" y="328" width="200" height="80" rx="12" fill="#0A0A0A" fill-opacity="0.03"/>
+    <text x="604" y="358" text-anchor="middle" fill="#0A0A0A" font-size="13" font-weight="600">Telegram Bot</text>
+    <text x="604" y="378" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.5">Alerts</text>
+
+    <rect x="724" y="328" width="200" height="80" rx="12" fill="#0A0A0A" fill-opacity="0.03"/>
+    <text x="824" y="358" text-anchor="middle" fill="#0A0A0A" font-size="13" font-weight="600">CuratorRateIRM</text>
+    <text x="824" y="378" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.5">Settlement</text>
+  </g>
+
+  <rect x="40" y="428" width="900" height="14" rx="7" fill="#0A0A0A" fill-opacity="0.02"/>
+  <text x="490" y="437" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.4">Each task spawns under tokio with a shared shutdown signal.</text>
+</svg>

@@ -21,38 +21,7 @@ You will lose money here. Everyone does, everywhere. The difference is that here
 
 General Market is a protocol for **index products**, **prediction markets**, and **DeFi lending** — running on a custom Arbitrum Orbit L3 with sub-second finality and near-zero gas. It is 8 services, 29 smart contracts, 2 EVM chains, 90+ real-world data sources, and a bot framework. One does not build all this because it is wise. One builds it because the alternative — trusting someone else's spreadsheet — is worse.
 
-```text
- ┌─────────────────────────────────────────────────────────────────────────────┐
- │                                                                             │
- │                    THE  THREE  PILLARS                                      │
- │                                                                             │
- │    ┌───────────────────┐  ┌───────────────────┐  ┌───────────────────┐     │
- │    │                   │  │                   │  │                   │     │
- │    │   I N D E X       │  │  V I S I O N      │  │  L E N D I N G   │     │
- │    │                   │  │                   │  │                   │     │
- │    │  On-chain ETFs    │  │  Prediction       │  │  Morpho-powered  │     │
- │    │  (ITPs)           │  │  markets across   │  │  lending         │     │
- │    │                   │  │  90+ real-world   │  │                   │     │
- │    │  ┌─────────────┐  │  │  data sources     │  │  ┌─────────────┐ │     │
- │    │  │ BTC   12.5% │  │  │                   │  │  │ Supply USDC │ │     │
- │    │  │ ETH   10.0% │  │  │  ┌─────────────┐  │  │  │ to earn     │ │     │
- │    │  │ SOL    8.0% │  │  │  │ Will the    │  │  │  │ yield       │ │     │
- │    │  │ ...   69.5% │  │  │  │ Paris Metro │  │  │  │             │ │     │
- │    │  │ ═══════════ │  │  │  │ be late     │  │  │  │ Borrow USDC │ │     │
- │    │  │ NAV: $1.34  │  │  │  │ today?      │  │  │  │ against ITP │ │     │
- │    │  └─────────────┘  │  │  └─────────────┘  │  │  │ collateral  │ │     │
- │    │                   │  │                   │  │  └─────────────┘ │     │
- │    │  Up to 100 assets │  │  Sealed bets,     │  │                   │     │
- │    │  per basket.      │  │  parimutuel       │  │  ITP shares as   │     │
- │    │  Real exchange    │  │  payouts,          │  │  collateral on   │     │
- │    │  execution via    │  │  BLS-verified     │  │  Arbitrum.        │     │
- │    │  Bitget + BLS     │  │  resolution.      │  │  On-chain NAV    │     │
- │    │  consensus.       │  │                   │  │  oracle pricing. │     │
- │    │                   │  │                   │  │                   │     │
- │    └───────────────────┘  └───────────────────┘  └───────────────────┘     │
- │                                                                             │
- └─────────────────────────────────────────────────────────────────────────────┘
-```
+<img src="/images/index/three-pillars.svg" alt="Index, Vision, and Lending — the three product surfaces of General Market." />
 
 ---
 
@@ -74,39 +43,7 @@ General Market is a protocol for **index products**, **prediction markets**, and
 
 ## What Happens Here
 
-```text
-  YOU                          GENERAL MARKET                         REAL WORLD
-  ═══                          ══════════════                         ══════════
-
-   │                                │                                     │
-   │   "Buy the Top-100 ITP"       │                                     │
-   ├───────────────────────────────►│                                     │
-   │                                │  Oracle consensus (BLS, 1s cycle)   │
-   │                                │  ─────────────────────────────────  │
-   │                                │  3 nodes agree on price + batch     │
-   │                                │                                     │
-   │                                │         Execute on Bitget ─────────►│
-   │                                │◄──────────── Fill confirmed ────────│
-   │   ITP shares in your wallet    │                                     │
-   │◄───────────────────────────────│                                     │
-   │                                │                                     │
-   │   "Bet: RATP Line 13 late"    │                                     │
-   ├───────────────────────────────►│                                     │
-   │                                │  Sealed bet placed (nobody sees it) │
-   │                                │                                     │
-   │                                │◄──────── Actual delay data ─────────│
-   │                                │  BLS-verified tick resolution       │
-   │                                │                                     │
-   │   Payout if you were right     │                                     │
-   │◄───────────────────────────────│                                     │
-   │                                │                                     │
-   │   "Supply USDC to lending"    │                                     │
-   ├───────────────────────────────►│                                     │
-   │                                │  Morpho vault accepts deposit       │
-   │   Earn yield from borrowers    │                                     │
-   │◄───────────────────────────────│                                     │
-   │                                │                                     │
-```
+<img src="/images/index/user-lifecycle.svg" alt="Three user paths — buying an ITP, betting on Vision, supplying USDC — and what the protocol does between intent and outcome." />
 
 ---
 
@@ -139,53 +76,7 @@ Every system is an act of faith in its own plumbing. These are the pipes.
 
 ## Architecture
 
-```text
- ┌──────────────────────────────────────────────────────────────────────────────┐
- │                                                                              │
- │   USERS / BOTS                                                               │
- │       │                                                                      │
- │       ▼                                                                      │
- │   ┌──────────────────────────────────────────────┐                           │
- │   │            FRONTEND  (Next.js / Vercel)       │                           │
- │   │   Trading · Vision · Lending · Explorer       │                           │
- │   │   Points · Backtesting · Learning Content     │                           │
- │   └──────────┬───────────────────────┬────────────┘                           │
- │              │                       │                                        │
- │         SSE + REST              RPC calls                                    │
- │              │                       │                                        │
- │   ┌──────────▼──────────┐    ┌───────▼───────────────────────────────────┐   │
- │   │     DATA NODE        │    │              INDEX L3 (Orbit)             │   │
- │   │      (Rust)          │    │          Chain ID: 111222333              │   │
- │   │                      │    │                                           │   │
- │   │  90+ sources         │    │  Index.sol ── ITP trading                │   │
- │   │  PostgreSQL          │    │  Vision.sol ─ Prediction markets         │   │
- │   │  NAV engine          │    │  BotRegistry ─ Automated trading         │   │
- │   │  Backtesting         │    │  29 contracts total                      │   │
- │   └──────────┬───────────┘    └───────┬──────────────────┬───────────────┘   │
- │              │                        │                  │                    │
- │              │                   BLS-signed          Bridge                  │
- │              │                     txs                   │                    │
- │              │                        │                  │                    │
- │   ┌──────────▼───────┐    ┌──────────▼──────┐   ┌──────▼────────────────┐   │
- │   │  ORACLE NODES    │    │   AP / KEEPER    │   │    SETTLEMENT         │   │
- │   │  (3x Rust)       │    │    (Rust)        │   │    (Arbitrum)         │   │
- │   │                  │    │                  │   │                       │   │
- │   │  BLS consensus   │    │  Bitget trade    │   │  Morpho lending      │   │
- │   │  1s cycles       │    │  execution       │   │  Bridged ITP shares  │   │
- │   │  Round-robin     │    │  Bridge relay    │   │  NAV oracle          │   │
- │   └──────────────────┘    └──────────────────┘   └───────────────────────┘   │
- │                                                                              │
- │   ┌──────────────────┐    ┌──────────────────┐   ┌───────────────────────┐   │
- │   │   VISION BOT     │    │   SOCIAL BOT     │   │      CURATOR          │   │
- │   │   (Python)       │    │   (Python)       │   │      (Rust)           │   │
- │   │                  │    │                  │   │                       │   │
- │   │  Automated       │    │  Anomaly detect  │   │  NAV oracle updates  │   │
- │   │  prediction      │    │  98 sources      │   │  Morpho allocation   │   │
- │   │  market trading  │    │  Twitter / X     │   │  Health monitoring   │   │
- │   └──────────────────┘    └──────────────────┘   └───────────────────────┘   │
- │                                                                              │
- └──────────────────────────────────────────────────────────────────────────────┘
-```
+<img src="/images/index/system-architecture-overview.svg" alt="System architecture — frontend, data node, Index L3, oracles, AP, Settlement, and the satellite services around them." />
 
 <Info>
   The full architecture — contract inventory, data flows, infrastructure layout — lives on the [System Architecture](/index/architecture/overview) page. It is longer than this one. Most architectures are.
@@ -210,38 +101,7 @@ Every system is an act of faith in its own plumbing. These are the pipes.
 
 Every protocol is a set of opinions disguised as infrastructure. These are ours.
 
-```text
- ┌──────────────────────────────────────────────────────────────────┐
- │                                                                  │
- │  BLS CONSENSUS ON EVERYTHING                                    │
- │  ══════════════════════════                                     │
- │                                                                  │
- │  Every ITP trade, every Vision tick resolution, every            │
- │  bridge relay — verified by multi-party BLS signatures.          │
- │  No test modes. No owner overrides. No bypass flags.             │
- │                                                                  │
- │  REAL EXCHANGE EXECUTION                                        │
- │  ═══════════════════════                                        │
- │                                                                  │
- │  ITP orders are executed on Bitget by Authorized Participants.   │
- │  No AMM pools. No virtual liquidity. Real order books.           │
- │                                                                  │
- │  SEALED PARIMUTUEL BETTING                                      │
- │  ═════════════════════════                                      │
- │                                                                  │
- │  Vision bets are sealed — nobody sees what you bet until         │
- │  resolution. Parimutuel payouts: no house edge, winners          │
- │  split the pool proportionally.                                  │
- │                                                                  │
- │  90+ REAL-WORLD DATA SOURCES                                    │
- │  ════════════════════════════                                   │
- │                                                                  │
- │  Not just crypto. Transport delays across 4 countries,           │
- │  power outages, weather stations, GitHub repos, energy           │
- │  grids, sports, and more. All feeding into Vision markets.       │
- │                                                                  │
- └──────────────────────────────────────────────────────────────────┘
-```
+<img src="/images/index/convictions.svg" alt="Four convictions — BLS consensus, real execution, sealed parimutuel betting, and 90+ data sources." />
 
 ---
 

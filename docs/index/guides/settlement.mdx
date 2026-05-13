@@ -11,66 +11,13 @@ Most users interact exclusively with the **Index L3** chain. Certain operations 
 
 ## The Two Chains
 
-```text
-+=============================================+       +=============================================+
-|              INDEX L3 (Orbit)               |       |           SETTLEMENT (Sonic Testnet)         |
-|           Chain ID: 111222333               |       |             Chain ID: 14601                  |
-|          Native Token: GM                   |       |            Native Token: S                   |
-|          USDC: 18 decimals                  |       |            USDC: 6 decimals                  |
-|                                             |       |                                              |
-|   +-------------------------------------+   |       |   +--------------------------------------+   |
-|   | ITP Trading                         |   |       |   | Bridge Custody                       |   |
-|   |   - Buy / sell ITP shares           |   |       |   |   - USDC escrow for bridge buys      |   |
-|   |   - Order submission & matching     |   |       |   |   - BridgedITP escrow for sells      |   |
-|   |   - NAV computation                 |   |       |   +--------------------------------------+   |
-|   +-------------------------------------+   |       |                                              |
-|                                             |       |   +--------------------------------------+   |
-|   +-------------------------------------+   |       |   | BridgedITP Tokens                    |   |
-|   | Vision Prediction Markets           |   |       |   |   - ERC-20 replicas of L3 ITP shares |   |
-|   |   - Create & resolve markets        |   |       |   |   - Tradable on Settlement           |   |
-|   |   - Place bets                      |   |       |   |   - Usable as Morpho collateral      |   |
-|   |   - Claim winnings                  |   |       |   +--------------------------------------+   |
-|   +-------------------------------------+   |       |                                              |
-|                                             |       |   +--------------------------------------+   |
-|   +-------------------------------------+   |       |   | Morpho Lending                       |   |
-|   | Core Protocol                       |   |       |   |   - Supply USDC to earn yield        |   |
-|   |   - BLS consensus                   |   |       |   |   - Borrow USDC against BridgedITP   |   |
-|   |   - Batch / fill lifecycle          |   |       |   +--------------------------------------+   |
-|   |   - Oracle registry                 |   |       |                                              |
-|   +-------------------------------------+   |       |   +--------------------------------------+   |
-|                                             |       |   | Vision Deposits                      |   |
-|                                             |       |   |   - Deposit USDC for Vision betting   |   |
-|                                             |       |   |   - Withdraw USDC from Vision         |   |
-+=============================================+       |   +--------------------------------------+   |
-                                                      |                                              |
-                                                      +=============================================+
-```
+<img src="/images/index/two-chains-overview.svg" alt="The two chains side by side — L3 hosts trading, Vision, and core protocol; Settlement hosts the bridge, BridgedITP, Morpho, and Vision deposits." />
 
 ## When You Need Each Chain
 
 Most activity happens on L3. Settlement is required only for specific operations. You will know which chain you need because the app will ask you to switch. The architecture is complex. Your experience of it should not be.
 
-```text
-  +---------------------------------------------------------------+
-  |                  WHICH CHAIN DO I NEED?                       |
-  +---------------------------------------------------------------+
-  |                                                               |
-  |  "I want to..."              Chain         Why                |
-  |  ──────────────────────────  ───────────   ─────────────────  |
-  |  Buy/sell an ITP directly    L3             Core trading      |
-  |  Place a Vision bet          L3             Markets live here |
-  |  Claim Vision winnings       L3             Payouts on L3     |
-  |  View my portfolio           L3             Holdings on L3    |
-  |                                                               |
-  |  Bridge-buy an ITP           Settlement     USDC deposited    |
-  |  Bridge-sell an ITP          Settlement     BridgedITP sent   |
-  |  Lend USDC (earn yield)      Settlement     Morpho lives here |
-  |  Borrow against ITP          Settlement     Collateral here   |
-  |  Deposit USDC for Vision     Settlement     Deposits here     |
-  |  Withdraw from Vision        Settlement     Withdrawals here  |
-  |                                                               |
-  +---------------------------------------------------------------+
-```
+<img src="/images/index/which-chain.svg" alt="Which chain do I need — common actions mapped to L3 or Settlement." />
 
 <Tip>
 The app handles chain switching automatically. When an action requires Settlement, your wallet is prompted to switch. The two-chain architecture is a design decision you do not need to understand to use the protocol. But understanding it makes the wait times less mysterious.
@@ -117,30 +64,7 @@ The bridge converts between the two automatically. Never send raw USDC between c
 
 What 100 USDC looks like in raw token units on each chain:
 
-```text
-  100 USDC
-  ========
-
-  On Settlement (6 decimals):
-
-      100_000_000
-      ^^^^^^^^^^^
-      100 * 10^6
-
-  On L3 (18 decimals):
-
-      100_000_000_000_000_000_000
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-      100 * 10^18
-
-  Ratio: 1e12 difference
-  =======================
-
-  The bridge handles this conversion via DecimalLib:
-
-      Settlement --> L3:    toInternal()   (multiplies by 1e12)
-      L3 --> Settlement:    toUsdc()       (divides by 1e12)
-```
+<img src="/images/index/usdc-decimals.svg" alt="100 USDC in raw units — six decimals on Settlement, eighteen on L3, a 1e12 ratio handled by DecimalLib." />
 
 The bridge handles this conversion transparently. Deposit 100 USDC on Settlement, the protocol sees 100 USDC of value on L3. The decimal conversion is purely internal. You never see it. It never fails. These are two separate reassurances.
 
@@ -148,44 +72,7 @@ The bridge handles this conversion transparently. Deposit 100 USDC on Settlement
 
 When you buy a Dex Traded Fund (DTF) through the bridge, you end up with tokens on both chains. The same position, two representations. One real, one reflected.
 
-```text
-                     BRIDGE BUY
-                     ==========
-
-                  User deposits USDC
-                  on Settlement
-                        |
-                        v
-  +---------------------+---------------------+
-  |                                            |
-  v                                            v
-  SETTLEMENT                                   INDEX L3
-  ==========                                   ========
-
-  BridgedITP (ERC-20)                          ITP shares
-  - Replica of L3 shares                       - The "real" shares
-  - Mint/burn controlled                       - Minted by Index.sol
-    by BridgeProxy                             - Used for NAV tracking
-  - Usable as Morpho collateral                - Tradable on L3
-  - Same 18-decimal precision
-
-
-                     BRIDGE SELL
-                     ==========
-
-                  User sends BridgedITP
-                  on Settlement
-                        |
-                        v
-  +---------------------+---------------------+
-  |                                            |
-  v                                            v
-  SETTLEMENT                                   INDEX L3
-  ==========                                   ========
-
-  BridgedITP burned                            ITP shares burned
-  USDC returned to user                        Underlying assets sold
-```
+<img src="/images/index/bridge-buy-sell.svg" alt="Bridge buy and sell flows — what happens on Settlement and on L3 in each direction." />
 
 <Info>
 BridgedITP tokens are full ERC-20 tokens on Settlement. They represent the same position as the L3 shares and can be used as collateral in Morpho lending markets. Both exist simultaneously. The position is one. The representations are two. The bridge maintains the invariant that they are always equal.
@@ -231,28 +118,7 @@ BridgedITP tokens are full ERC-20 tokens on Settlement. They represent the same 
 
 ## Quick Reference
 
-```text
-  +------------------------------------------------------------------+
-  |                     QUICK REFERENCE CARD                         |
-  +------------------------------------------------------------------+
-  |                                                                  |
-  |  INDEX L3                        SETTLEMENT                      |
-  |  --------                        ----------                      |
-  |  Chain ID:  111222333            Chain ID:  14601                 |
-  |  RPC:       159.195.79.153       RPC:       rpc.testnet.sonic...  |
-  |  Native:    GM                   Native:    S                     |
-  |  USDC:      18 decimals          USDC:      6 decimals            |
-  |  Explorer:  --                   Explorer:  testnet.sonicscan.org |
-  |                                                                  |
-  |  WHAT LIVES HERE:               WHAT LIVES HERE:                 |
-  |  - ITP shares                   - BridgedITP (ERC-20 replicas)   |
-  |  - Vision markets               - Bridge custody contracts       |
-  |  - Core protocol (Index.sol)    - Morpho lending markets         |
-  |  - BLS consensus                - Vision USDC deposits           |
-  |  - Order matching               - Settlement USDC                |
-  |                                                                  |
-  +------------------------------------------------------------------+
-```
+<img src="/images/index/quick-reference.svg" alt="Quick reference card — chain IDs, RPCs, native tokens, USDC decimals, and what lives on each side." />
 
 ## What's Next
 

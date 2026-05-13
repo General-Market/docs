@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 460" width="980" height="460" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-opacity="0.03"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0A0A0A" fill-opacity="0.4"/>
+    </marker>
+  </defs>
+
+  <rect width="980" height="460" fill="white"/>
+  <circle cx="80" cy="400" r="180" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="920" cy="60" r="160" fill="#0A0A0A" opacity="0.02"/>
+
+  <text x="40" y="48" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.45">SYNC INTERVAL</text>
+  <text x="40" y="72" fill="#0A0A0A" font-size="14" opacity="0.5">How fast does the underlying data change.</text>
+
+  <!-- Rows: kind | arrow | cadence | engine -->
+  <g font-size="12">
+    <!-- row 1 -->
+    <rect x="40" y="100" width="280" height="44" rx="10" fill="#0A0A0A" fill-opacity="0.03"/>
+    <text x="60" y="120" fill="#0A0A0A" font-weight="600">Live · scores, streams</text>
+    <text x="60" y="136" fill="#0A0A0A" font-size="10" opacity="0.45">moves second by second</text>
+    <line x1="328" y1="122" x2="416" y2="122" stroke="#0A0A0A" stroke-opacity="0.35" stroke-width="1.2" marker-end="url(#arrow)"/>
+    <rect x="424" y="100" width="180" height="44" rx="10" fill="url(#darkGrad)"/>
+    <text x="514" y="128" text-anchor="middle" fill="white" font-weight="700">1 – 5 min</text>
+    <rect x="616" y="100" width="324" height="44" rx="10" fill="white" stroke="#0A0A0A" stroke-opacity="0.1"/>
+    <text x="636" y="128" fill="#0A0A0A" font-size="11" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.7">SyncEngine</text>
+
+    <!-- row 2 -->
+    <rect x="40" y="156" width="280" height="44" rx="10" fill="#0A0A0A" fill-opacity="0.03"/>
+    <text x="60" y="176" fill="#0A0A0A" font-weight="600">Market prices</text>
+    <text x="60" y="192" fill="#0A0A0A" font-size="10" opacity="0.45">tape arbitrage tolerates no delay</text>
+    <line x1="328" y1="178" x2="416" y2="178" stroke="#0A0A0A" stroke-opacity="0.35" stroke-width="1.2" marker-end="url(#arrow)"/>
+    <rect x="424" y="156" width="180" height="44" rx="10" fill="url(#darkGrad)"/>
+    <text x="514" y="184" text-anchor="middle" fill="white" font-weight="700">1 min</text>
+    <rect x="616" y="156" width="324" height="44" rx="10" fill="white" stroke="#0A0A0A" stroke-opacity="0.1"/>
+    <text x="636" y="184" fill="#0A0A0A" font-size="11" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.7">SyncEngine</text>
+
+    <!-- row 3 -->
+    <rect x="40" y="212" width="280" height="44" rx="10" fill="#0A0A0A" fill-opacity="0.03"/>
+    <text x="60" y="232" fill="#0A0A0A" font-weight="600">Periodic readings</text>
+    <text x="60" y="248" fill="#0A0A0A" font-size="10" opacity="0.45">sensors, buoys, weather</text>
+    <line x1="328" y1="234" x2="416" y2="234" stroke="#0A0A0A" stroke-opacity="0.35" stroke-width="1.2" marker-end="url(#arrow)"/>
+    <rect x="424" y="212" width="180" height="44" rx="10" fill="url(#darkGrad)"/>
+    <text x="514" y="240" text-anchor="middle" fill="white" font-weight="700">5 – 10 min</text>
+    <rect x="616" y="212" width="324" height="44" rx="10" fill="white" stroke="#0A0A0A" stroke-opacity="0.1"/>
+    <text x="636" y="240" fill="#0A0A0A" font-size="11" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.7">SyncEngine</text>
+
+    <!-- row 4 -->
+    <rect x="40" y="268" width="280" height="44" rx="10" fill="#0A0A0A" fill-opacity="0.03"/>
+    <text x="60" y="288" fill="#0A0A0A" font-weight="600">Daily or slow data</text>
+    <text x="60" y="304" fill="#0A0A0A" font-size="10" opacity="0.45">slow numbers, no point polling</text>
+    <line x1="328" y1="290" x2="416" y2="290" stroke="#0A0A0A" stroke-opacity="0.35" stroke-width="1.2" marker-end="url(#arrow)"/>
+    <rect x="424" y="268" width="180" height="44" rx="10" fill="url(#darkGrad)"/>
+    <text x="514" y="296" text-anchor="middle" fill="white" font-weight="700">30 – 60 min</text>
+    <rect x="616" y="268" width="324" height="44" rx="10" fill="white" stroke="#0A0A0A" stroke-opacity="0.1"/>
+    <text x="636" y="296" fill="#0A0A0A" font-size="11" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.7">SyncEngine</text>
+
+    <!-- row 5 -->
+    <rect x="40" y="324" width="280" height="44" rx="10" fill="#10B981" fill-opacity="0.08"/>
+    <text x="60" y="344" fill="#0A0A0A" font-weight="600">Known release schedule</text>
+    <text x="60" y="360" fill="#0A0A0A" font-size="10" opacity="0.45">FRED, ECB, BLS · scheduled drops</text>
+    <line x1="328" y1="346" x2="416" y2="346" stroke="#0A0A0A" stroke-opacity="0.35" stroke-width="1.2" marker-end="url(#arrow)"/>
+    <rect x="424" y="324" width="180" height="44" rx="10" fill="white" stroke="#10B981" stroke-opacity="0.5"/>
+    <text x="514" y="352" text-anchor="middle" fill="#0A0A0A" font-weight="700">sleep until drop</text>
+    <rect x="616" y="324" width="324" height="44" rx="10" fill="#10B981" fill-opacity="0.08" stroke="#10B981" stroke-opacity="0.4"/>
+    <text x="636" y="352" fill="#0A0A0A" font-size="11" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.85">ScheduledSyncEngine</text>
+  </g>
+
+  <!-- Budget check footer -->
+  <rect x="40" y="390" width="900" height="48" rx="12" fill="url(#darkGrad)"/>
+  <text x="60" y="412" fill="white" font-size="11" font-weight="700" letter-spacing="2" opacity="0.55">RATE BUDGET</text>
+  <text x="60" y="430" fill="white" font-size="11" opacity="0.7" font-family="ui-monospace, SF Mono, Menlo, monospace">requests_per_sync · syncs_per_hour  &lt;  80% of API hourly limit</text>
+  <text x="780" y="424" fill="white" font-size="11" opacity="0.5">Leave headroom or pay later.</text>
+</svg>

@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 280" width="980" height="280" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGradNq" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadowNq">
+      <feDropShadow dx="0" dy="2" stdDeviation="10" flood-opacity="0.05"/>
+    </filter>
+  </defs>
+
+  <rect width="980" height="280" fill="white"/>
+
+  <text x="490" y="40" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="3.6" opacity="0.45">COMPUTING NEW QUANTITIES</text>
+  <text x="490" y="62" text-anchor="middle" fill="#0A0A0A" font-size="12" opacity="0.45">New weights: BTC 50% · ETH 30% · SOL 20%</text>
+
+  <g filter="url(#shadowNq)">
+    <rect x="80" y="86" width="820" height="170" rx="14" fill="url(#darkGradNq)"/>
+  </g>
+
+  <g font-family="ui-monospace, SF Mono, Menlo, monospace" font-size="14" fill="white">
+    <text x="120" y="128">qty_new[BTC]</text>
+    <text x="310" y="128" opacity="0.5">=</text>
+    <text x="340" y="128">(0.50 × 1.1889) / 60000</text>
+    <text x="680" y="128" opacity="0.5">=</text>
+    <text x="710" y="128" font-weight="700">0.000009908</text>
+
+    <text x="120" y="172">qty_new[ETH]</text>
+    <text x="310" y="172" opacity="0.5">=</text>
+    <text x="340" y="172">(0.30 × 1.1889) / 3500</text>
+    <text x="680" y="172" opacity="0.5">=</text>
+    <text x="710" y="172" font-weight="700">0.000101906</text>
+
+    <text x="120" y="216">qty_new[SOL]</text>
+    <text x="310" y="216" opacity="0.5">=</text>
+    <text x="340" y="216">(0.20 × 1.1889) / 120</text>
+    <text x="680" y="216" opacity="0.5">=</text>
+    <text x="710" y="216" font-weight="700">0.001981500</text>
+  </g>
+</svg>

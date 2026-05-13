@@ -9,84 +9,7 @@ Eight services. Two chains. Twenty-nine contracts. Built by people who could not
 
 General Market is what happens when you refuse to depend on anyone else's infrastructure. Dex Traded Funds (DTFs) and prediction markets, vertically integrated from data ingestion to settlement, coordinated through BLS consensus because trust is a luxury the chain cannot afford.
 
-```text
-┌──────────────────────────────────────────────────────────────────────────────────────────┐
-│                                                                                          │
-│                          G E N E R A L   M A R K E T                                     │
-│                          System Architecture Overview                                    │
-│                                                                                          │
-│    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐                                 │
-│    │  Oracle #1   │◄──►│  Oracle #2   │◄──►│  Oracle #3   │   BLS Consensus Ring          │
-│    │    (Rust)    │    │    (Rust)    │    │    (Rust)    │   1s cycles, round-robin       │
-│    └──────┬───┬──┘    └──────┬───┬──┘    └──────┬───┬──┘   leader election               │
-│           │   │              │   │              │   │                                     │
-│           │   └──────────────┼───┼──────────────┘   │                                    │
-│           └──────────────────┼───┼──────────────────┘                                    │
-│                              │   │                                                       │
-│                    Prices    │   │  BLS-Signed Txs                                       │
-│                              │   │                                                       │
-│    ┌─────────────────────┐   │   │   ┌──────────────────────────────────────────────┐    │
-│    │     DATA NODE       │   │   │   │              INDEX L3 (Orbit)                │    │
-│    │      (Rust)         │◄──┘   └──►│         Chain ID: 111222333                  │    │
-│    │                     │           │            USDC: 18 dec                      │    │
-│    │  90+ data sources   │           │                                              │    │
-│    │  PostgreSQL         │           │  ┌──────────┐ ┌────────┐ ┌──────────────┐    │    │
-│    │  Backtesting        │     ┌────►│  │Index.sol │ │Vision  │ │BotRegistry   │    │    │
-│    │  REST + SSE API     │     │     │  │(ITP core)│ │.sol    │ │.sol          │    │    │
-│    │  Port 8200          │     │     │  └──────────┘ └────────┘ └──────────────┘    │    │
-│    └──────────┬──────────┘     │     │  ┌──────────┐ ┌────────┐ ┌──────────────┐    │    │
-│               │                │     │  │ITP.sol   │ │Oracle  │ │Fee           │    │    │
-│               │                │     │  │(ERC-4626)│ │Registry│ │Registry.sol  │    │    │
-│               │                │     │  └──────────┘ └────────┘ └──────────────┘    │    │
-│               │                │     │  ┌──────────┐ ┌────────────────────────┐     │    │
-│               │                │     │  │BLSLib.sol│ │  + 20 more contracts   │     │    │
-│               │                │     │  └──────────┘ └────────────────────────┘     │    │
-│               │                │     └────────────────────┬─────────────────────────┘    │
-│               │                │                          │                              │
-│               │                │                    Bridge │ (L3 ◄──► Settlement)        │
-│               │                │                          │                              │
-│               │                │     ┌────────────────────┴─────────────────────────┐    │
-│               │                │     │          SETTLEMENT (Arbitrum)                │    │
-│               │                │     │         Chain ID: 14601                       │    │
-│               │                │     │            USDC: 6 dec                        │    │
-│               │                │     │                                               │    │
-│               │                │     │  ┌───────────────┐  ┌───────────────────┐     │    │
-│               │                │     │  │BridgeProxy.sol│  │BridgedItpFactory  │     │    │
-│               │                │     │  └───────────────┘  │.sol               │     │    │
-│               │                │     │  ┌───────────────┐  └───────────────────┘     │    │
-│               │                │     │  │Settlement     │  ┌───────────────────┐     │    │
-│               │                │     │  │BridgeCustody  │  │ITPNAVOracle.sol   │     │    │
-│               │                │     │  └───────────────┘  └───────────────────┘     │    │
-│               │                │     └──────────────────────────────────────────────┘    │
-│               │                │                          ▲                              │
-│               │                │                          │                              │
-│    ┌──────────▼──────────┐     │     ┌────────────────────┴───────┐                      │
-│    │    NEXT.JS FRONTEND │     │     │    AP / KEEPER (Rust)      │                      │
-│    │                     │◄────┘     │                            │                      │
-│    │  Trading UI         │           │  Bitget trade execution    │                      │
-│    │  Explorer           │           │  Chain event monitoring    │                      │
-│    │  Points system      │           │  Fill confirmation         │                      │
-│    │  Vision betting     │           │  Bridge relay              │                      │
-│    │  Learning content   │           └────────────────────────────┘                      │
-│    │  Vercel deployment  │                                                               │
-│    └─────────────────────┘     ┌──────────────────────────────────┐                      │
-│                                │    CURATOR (Rust)                │                      │
-│    ┌─────────────────────┐     │                                  │                      │
-│    │   VISION BOT        │     │  Oracle NAV collection           │                      │
-│    │    (Python)         │     │  Morpho allocation bot           │──────► L3 + Morpho   │
-│    │                     │     │  Health monitoring               │                      │
-│    │  Automated Vision   │     └──────────────────────────────────┘                      │
-│    │  market trading     │                                                               │
-│    │  Strategy framework │     ┌──────────────────────────────────┐                      │
-│    └─────────────────────┘     │   SOCIAL BOT (Python)           │                      │
-│                                │                                  │                      │
-│                                │  Anomaly detection (98 sources)  │                      │
-│                                │  Twitter posting                 │──────► Twitter/X     │
-│                                │  Real-time monitoring            │                      │
-│                                └──────────────────────────────────┘                      │
-│                                                                                          │
-└──────────────────────────────────────────────────────────────────────────────────────────┘
-```
+<img src="/images/index/system-architecture.svg" alt="System architecture: oracle consensus ring, data node, L3 chain, settlement chain, AP, curator, frontend and bots." />
 
 ## Component Summary
 
@@ -123,57 +46,7 @@ General Market is what happens when you refuse to depend on anyone else's infras
 
 Two chains because one was not enough and three would have been vanity. Each chain has a role. Each chain has its own decimal convention. Mixing them up is the kind of mistake that costs money.
 
-```text
-    ┌─────────────────────────────────────────────────────────────────────┐
-    │                                                                     │
-    │                     INDEX L3 (Arbitrum Orbit)                        │
-    │                     Chain ID: 111222333                              │
-    │                                                                     │
-    │   Role: Primary trading chain                                       │
-    │   USDC: 18 decimals (GM token)                                      │
-    │                                                                     │
-    │   What lives here:                                                  │
-    │   ├── ITP creation, buying, selling                                 │
-    │   ├── Vision prediction market (batches, bets, resolution)          │
-    │   ├── Bot registration and automated trading                        │
-    │   ├── Order batching and BLS-verified confirmation                  │
-    │   ├── Fee collection and distribution                               │
-    │   ├── Oracle node registry and key management                       │
-    │   └── Collateral custody (BLSCustody.sol)                           │
-    │                                                                     │
-    │   Contracts: Index.sol, ITP.sol, Vision.sol, BotRegistry.sol,       │
-    │             OracleRegistry.sol, FeeRegistry.sol, BLSCustody.sol,    │
-    │             CollateralRegistry.sol, AssetPairRegistry.sol,          │
-    │             Governance.sol, BLSLib.sol, + libraries                 │
-    │                                                                     │
-    └──────────────────────────────┬──────────────────────────────────────┘
-                                   │
-                              Bridge Layer
-                         (BridgeProxy.sol relays
-                          orders and custody ops)
-                                   │
-    ┌──────────────────────────────┴──────────────────────────────────────┐
-    │                                                                     │
-    │                     SETTLEMENT (Arbitrum)                            │
-    │                     Chain ID: 14601                                  │
-    │                                                                     │
-    │   Role: Settlement and composability layer                          │
-    │   USDC: 6 decimals (standard)                                       │
-    │                                                                     │
-    │   What lives here:                                                  │
-    │   ├── Bridge custody for cross-chain USDC transfers                 │
-    │   ├── Bridged ITP share tokens (ERC-20 on Arbitrum)                 │
-    │   ├── ITP NAV oracle for DeFi composability                         │
-    │   ├── Morpho lending integration (ITP-collateralized borrowing)     │
-    │   └── Order submission via BridgeProxy (users can trade from Arb)   │
-    │                                                                     │
-    │   Contracts: BridgeProxy.sol, BridgedItpFactory.sol,                │
-    │             BridgedITP.sol, SettlementBridgeCustody.sol,             │
-    │             L3BridgeCustody.sol, ITPNAVOracle.sol,                   │
-    │             MirrorOracleRegistry.sol, CuratorRateIRM.sol            │
-    │                                                                     │
-    └─────────────────────────────────────────────────────────────────────┘
-```
+<img src="/images/index/two-chains.svg" alt="Index L3 and Settlement chain responsibilities, contracts, and bridge layer." />
 
 <Warning>
   **L3 and Settlement use different USDC decimals.** L3 uses 18-decimal USDC (GM token). Settlement uses standard 6-decimal USDC. Never assume 6 decimals everywhere -- always check which chain a value originates from.
@@ -196,71 +69,7 @@ L3 handles the operations that must be cheap -- order batching at 1-second cycle
 
 The world generates data. The protocol consumes it. What remains is a price.
 
-```text
-   EXTERNAL SOURCES                 DATA NODE                    CONSUMERS
-   ════════════════            ═══════════════════          ═══════════════════
-
-   ┌────────────┐
-   │ CoinGecko  │──┐
-   └────────────┘  │
-   ┌────────────┐  │         ┌─────────────────────────────────────────────┐
-   │  Binance   │──┤         │                DATA NODE                    │
-   │ (WebSocket)│  │         │                                             │
-   └────────────┘  │    ┌────┤  ┌───────────┐    ┌──────────┐             │
-   ┌────────────┐  ├───►│    │  │ Ingestion │───►│Validation│             │
-   │ Exchange   │──┤    │ 90+│  │  Layer    │    │  Layer   │             │
-   │   APIs     │  │    │src │  │           │    │          │             │
-   └────────────┘  │    │    │  │ Scheduled │    │ Outlier  │             │
-   ┌────────────┐  │    │    │  │ fetchers  │    │ detect,  │             │
-   │ 1inch DEX  │──┤    │    │  │ per asset │    │ staleness│             │
-   └────────────┘  │    └────┤  └───────────┘    └─────┬────┘             │
-   ┌────────────┐  │         │                         │                   │
-   │ GitHub     │──┤         │                    ┌────▼─────┐             │
-   │ (stars,    │  │         │                    │PostgreSQL│             │
-   │  commits)  │  │         │                    │          │             │
-   └────────────┘  │         │                    │ Price    │             │
-   ┌────────────┐  │         │                    │ history  │             │
-   │ Transport  │──┤         │                    │ Snapshots│             │
-   │ (RATP,TfL, │  │         │                    └────┬─────┘             │
-   │  MTA, DB)  │  │         │                         │                   │
-   └────────────┘  │         │                    ┌────▼─────┐             │
-   ┌────────────┐  │         │                    │   NAV    │             │
-   │ Weather /  │──┤         │                    │  Engine  │             │
-   │ Energy /   │  │         │                    │          │             │
-   │ Outages    │──┘         │                    │ qty * px │             │
-   └────────────┘            │                    │  / 1e18  │             │
-                             │                    └────┬─────┘             │
-                             │                         │                   │
-                             │              ┌──────────┴──────────┐       │
-                             │              │                     │       │
-                             │         ┌────▼───┐           ┌────▼───┐   │
-                             │         │REST API│           │  SSE   │   │
-                             │         │ :8200  │           │Streams │   │
-                             │         └────┬───┘           └────┬───┘   │
-                             └──────────────┼────────────────────┼───────┘
-                                            │                    │
-                           ┌────────────────┼────────────────────┼────────────┐
-                           │                │                    │            │
-                      ┌────▼─────┐    ┌─────▼──────┐    ┌───────▼──────┐    │
-                      │ Oracle   │    │  Frontend   │    │  Vision Bot  │    │
-                      │  Nodes   │    │  (Next.js)  │    │  (Python)    │    │
-                      │          │    │             │    │              │    │
-                      │ Price    │    │ Dashboard   │    │ Strategy     │    │
-                      │ consensus│    │ Portfolio   │    │ signals      │    │
-                      │ for NAV  │    │ Backtest    │    │              │    │
-                      └──────────┘    └─────────────┘    └──────────────┘    │
-                                                                             │
-                                            ┌───────────────────┐           │
-                                            │   Social Bot      │           │
-                                            │   (Python)        │◄──────────┘
-                                            │                   │
-                                            │ Anomaly detection │
-                                            │ from 98 sources   │
-                                            │       │           │
-                                            │       ▼           │
-                                            │  Twitter / X      │
-                                            └───────────────────┘
-```
+<img src="/images/index/data-flow.svg" alt="Data flow from 90+ external sources through data node ingestion, validation, Postgres, NAV engine, and out to oracles, frontend and bots." />
 
 <Info>
   The Data Node serves two masters with one database: crypto prices for the oracles (NAV computation), and real-world data (transport delays, power outages, weather) for Vision resolution and Social Bot anomaly detection.
@@ -272,63 +81,7 @@ The world generates data. The protocol consumes it. What remains is a price.
 
 A buy order passes through five hands before it becomes shares in a wallet. Each hand verifies the one before it. Trust no one -- verify everything.
 
-```text
-  USER                    L3 CHAIN                 ORACLE NODES            AP / KEEPER         BITGET
-  ════                    ════════                 ════════════            ═══════════         ══════
-
-   │                          │                         │                      │                 │
-   │   submitOrder(buy)       │                         │                      │                 │
-   ├─────────────────────────►│                         │                      │                 │
-   │                          │                         │                      │                 │
-   │                          │  OrderSubmitted event   │                      │                 │
-   │                          ├────────────────────────►│                      │                 │
-   │                          │                         │                      │                 │
-   │                          │              ┌──────────┴──────────┐           │                 │
-   │                          │              │   CONSENSUS CYCLE   │           │                 │
-   │                          │              │   (1 second)        │           │                 │
-   │                          │              │                     │           │                 │
-   │                          │              │ 0ms   ► COLLECT     │           │                 │
-   │                          │              │ 200ms ► PROPOSE     │           │                 │
-   │                          │              │ 400ms ► SIGN        │           │                 │
-   │                          │              │ 600ms ► CONFIRM     │           │                 │
-   │                          │              │ 800ms ► REBALANCE   │           │                 │
-   │                          │              └──────────┬──────────┘           │                 │
-   │                          │                         │                      │                 │
-   │                          │   confirmBatch(         │                      │                 │
-   │                          │     orders,             │                      │                 │
-   │                          │     blsSignature)       │                      │                 │
-   │                          │◄────────────────────────┤                      │                 │
-   │                          │                         │                      │                 │
-   │                          │   BLSLib.verify() ✓     │                      │                 │
-   │                          │                         │                      │                 │
-   │                          │   TradeRequest event    │                      │                 │
-   │                          ├───────────────────────────────────────────────►│                 │
-   │                          │                         │                      │                 │
-   │                          │                         │     ┌────────────────┤                 │
-   │                          │                         │     │ No direct link │                 │
-   │                          │                         │     │ (FR13: oracle  │                 │
-   │                          │                         │     │  -AP isolation)│                 │
-   │                          │                         │     └────────────────┤                 │
-   │                          │                         │                      │                 │
-   │                          │                         │                      │  market buy     │
-   │                          │                         │                      ├────────────────►│
-   │                          │                         │                      │                 │
-   │                          │                         │                      │  fill confirmed │
-   │                          │                         │                      │◄────────────────┤
-   │                          │                         │                      │                 │
-   │                          │   confirmFills(         │                      │                 │
-   │                          │     fills,              │                      │                 │
-   │                          │     blsSignature)       │                      │                 │
-   │                          │◄──────────────────────────────────────────────┤                 │
-   │                          │                         │                      │                 │
-   │                          │   BLSLib.verify() ✓     │                      │                 │
-   │                          │   ITP shares minted     │                      │                 │
-   │                          │   USDC settled          │                      │                 │
-   │                          │                         │                      │                 │
-   │   Shares in wallet       │                         │                      │                 │
-   │◄─────────────────────────┤                         │                      │                 │
-   │                          │                         │                      │                 │
-```
+<img src="/images/index/order-lifecycle.svg" alt="Buy order lifecycle across user, L3 chain, oracle consensus cycle, AP keeper and Bitget, with BLS verification at each handoff." />
 
 <Warning>
   **Oracle-AP isolation (FR13):** Oracle nodes cannot communicate directly with the AP. The AP discovers confirmed batches exclusively through on-chain `TradeRequest` events. This architectural boundary prevents collusion between consensus participants and the trade executor.
@@ -338,32 +91,7 @@ A buy order passes through five hands before it becomes shares in a wallet. Each
 
 When a user submits from Settlement instead of L3, the order crosses chains. The pipeline is the same. The geography is different.
 
-```text
-  USER (on Arbitrum)          SETTLEMENT                    L3
-  ══════════════════          ══════════                    ══
-
-   │                              │                          │
-   │  submitOrder(buy)            │                          │
-   ├─────────────────────────────►│                          │
-   │                              │                          │
-   │                     BridgeProxy.sol                     │
-   │                     relays order                        │
-   │                              │     cross-chain msg      │
-   │                              ├─────────────────────────►│
-   │                              │                          │
-   │                              │              Order enters same
-   │                              │              lifecycle as above
-   │                              │                          │
-   │                              │                          │  ◄── shares minted on L3
-   │                              │                          │
-   │                              │     bridge shares back   │
-   │                              │◄─────────────────────────┤
-   │                              │                          │
-   │  BridgedITP shares          │                          │
-   │  (ERC-20 on Arbitrum)        │                          │
-   │◄─────────────────────────────┤                          │
-   │                              │                          │
-```
+<img src="/images/index/bridge-order-flow.svg" alt="Bridge buy: user on Arbitrum submits to Settlement, BridgeProxy relays to L3, shares mint on L3 then bridge back as BridgedITP." />
 
 <Tip>
   Bridged DTF shares on Arbitrum are standard ERC-20 tokens. They can be used as collateral in Morpho lending markets via the `ITPNAVOracle` which provides on-chain NAV pricing.
@@ -375,46 +103,7 @@ When a user submits from Settlement instead of L3, the order crosses chains. The
 
 Vision is a parimutuel prediction market. Users stake opinions. The world resolves them. Winners take from losers. The protocol takes 0.05%.
 
-```text
-  DATA NODE              L3 CHAIN                ORACLES              SOCIAL BOT
-  ═════════              ════════                ═══════              ══════════
-
-   │                        │                       │                      │
-   │  Real-world data       │                       │                      │
-   │  (transport, weather,  │                       │                      │
-   │   energy, sports...)   │                       │                      │
-   │         │              │                       │                      │
-   │         ▼              │                       │                      │
-   │  ┌─────────────┐       │                       │                      │
-   │  │ Anomaly     │       │                       │                      │
-   │  │ detection   │───────┼───────────────────────┼─────────────────────►│
-   │  └──────┬──────┘       │                       │                      │
-   │         │              │                       │                      │  Post to
-   │         │              │                       │                      ├──► Twitter
-   │         ▼              │                       │                      │
-   │  Market data API       │                       │                      │
-   │         │              │                       │                      │
-   │         │              │   createBatch()        │                      │
-   │         │              │◄──────────────────────┤                      │
-   │         │              │                       │                      │
-   │         │              │   Batch active         │                      │
-   │         │              │   (users + bots bet)   │                      │
-   │         │              │                       │                      │
-   │         │              │   ┌────────────────┐  │                      │
-   │         │              │   │ Vision Bot     │  │                      │
-   │◄────────┼──────────────┼───┤ reads data,    │  │                      │
-   │  prices │              │   │ places bets    │  │                      │
-   │         │              │   └────────────────┘  │                      │
-   │         │              │                       │                      │
-   │  Tick data             │   resolveTick()       │                      │
-   │  (actual outcomes)     │◄──────────────────────┤                      │
-   │────────────────────────┼──────────────────────►│                      │
-   │         │              │   (BLS-signed)        │                      │
-   │         │              │                       │                      │
-   │         │              │   Payouts distributed  │                      │
-   │         │              │   to winners           │                      │
-   │         │              │                       │                      │
-```
+<img src="/images/index/vision-lifecycle.svg" alt="Vision market lifecycle: anomaly detection, batch creation, betting by users and bots, oracle resolution, payouts." />
 
 ---
 
@@ -422,46 +111,7 @@ Vision is a parimutuel prediction market. Users stake opinions. The world resolv
 
 Everything talks to everything else, through carefully constrained channels. The constraints are the architecture.
 
-```text
-                             ┌───────────────────────┐
-                             │      FRONTEND          │
-                             │      (Next.js)          │
-                             └───┬───────────┬────────┘
-                                 │           │
-                            SSE + REST    RPC calls
-                                 │           │
-                    ┌────────────▼──┐   ┌────▼──────────────────┐
-                    │   DATA NODE   │   │      L3 CHAIN          │
-                    │   (port 8200) │   │  (RPC: 159.195.79.153) │
-                    └─┬──────────┬──┘   └──┬──────┬──────┬──────┘
-                      │          │         │      │      │
-                 REST │     REST │    events│  tx │  tx  │
-                      │          │         │      │      │
-               ┌──────▼───┐  ┌──▼─────────▼─┐   │   ┌──▼──────────┐
-               │VISION BOT│  │ ORACLE NODES  │   │   │  CURATOR     │
-               │ (Python)  │  │  (3x Rust)    │   │   │  (Rust)      │
-               └───────────┘  └──────────────┘   │   └──────────────┘
-                                                  │
-                                           events │
-                                                  │
-                                           ┌──────▼──────┐
-                                           │ AP / KEEPER  │
-                                           │  (Rust)      │
-                                           └──────┬───────┘
-                                                  │
-                                             API calls
-                                                  │
-                                           ┌──────▼──────┐
-                                           │   BITGET     │
-                                           │  (Exchange)  │
-                                           └─────────────┘
-
-    ┌───────────────────────────────────────────────────────────────┐
-    │  SOCIAL BOT (Python)                                         │
-    │                                                               │
-    │  Data Node ──(REST)──► Anomaly Engine ──(API)──► Twitter/X   │
-    └───────────────────────────────────────────────────────────────┘
-```
+<img src="/images/index/service-connectivity.svg" alt="Service connectivity: frontend talks to data node and L3, oracles and curator write to L3, AP listens for events and trades on Bitget, social bot posts to Twitter/X." />
 
 ### Connection Types
 
@@ -491,49 +141,7 @@ Every arrow is a protocol. Every protocol is a boundary. Every boundary exists b
 
 One VPS runs everything that matters. Vercel serves the face. Mintlify serves the explanation. The machine does not care about your organizational chart.
 
-```text
-   ┌─────────────────────────────────────────────────────────────────┐
-   │                         VPS 1 (Backend)                         │
-   │                                                                 │
-   │   ┌──────────────┐  ┌──────────────┐  ┌──────────────┐        │
-   │   │  Oracle #1   │  │  Oracle #2   │  │  Oracle #3   │        │
-   │   │  (Docker)    │  │  (Docker)    │  │  (Docker)    │        │
-   │   └──────────────┘  └──────────────┘  └──────────────┘        │
-   │                                                                 │
-   │   ┌──────────────┐  ┌──────────────┐  ┌──────────────┐        │
-   │   │  AP / Keeper │  │   Curator    │  │  Data Node   │        │
-   │   │  (binary)    │  │  (binary)    │  │  (binary)    │        │
-   │   └──────────────┘  └──────────────┘  └──────┬───────┘        │
-   │                                               │                 │
-   │   ┌──────────────┐  ┌──────────────┐  ┌──────▼───────┐        │
-   │   │  Vision Bot  │  │  Social Bot  │  │  PostgreSQL  │        │
-   │   │  (Python)    │  │  (Python)    │  │  (Docker)    │        │
-   │   └──────────────┘  └──────────────┘  └──────────────┘        │
-   │                                                                 │
-   │   ┌──────────────────────────────────────────────────┐         │
-   │   │                  Nginx                            │         │
-   │   │     Reverse proxy, TLS termination, routing       │         │
-   │   └──────────────────────────────────────────────────┘         │
-   └─────────────────────────────────────────────────────────────────┘
-
-   ┌─────────────────────────────────────────────────────────────────┐
-   │                         Vercel                                  │
-   │                                                                 │
-   │   ┌──────────────────────────────────────────────────┐         │
-   │   │              Next.js Frontend                     │         │
-   │   │         www.generalmarket.io                      │         │
-   │   └──────────────────────────────────────────────────┘         │
-   └─────────────────────────────────────────────────────────────────┘
-
-   ┌─────────────────────────────────────────────────────────────────┐
-   │                         Mintlify                                │
-   │                                                                 │
-   │   ┌──────────────────────────────────────────────────┐         │
-   │   │              Documentation                        │         │
-   │   │         docs.generalmarket.io                     │         │
-   │   └──────────────────────────────────────────────────┘         │
-   └─────────────────────────────────────────────────────────────────┘
-```
+<img src="/images/index/infrastructure-layout.svg" alt="Infrastructure: VPS 1 runs oracles, AP, curator, data node, bots, Postgres and nginx; Vercel serves the frontend; Mintlify serves docs." />
 
 ---
 
@@ -563,32 +171,7 @@ Twenty-nine contracts. Eight modules. Two chains. The taxonomy exists for humans
 
 Four languages. Each chosen for what it does well. Rust for everything that must not fail. Solidity for everything that must not lie. Python for everything that must adapt. TypeScript for everything the user sees.
 
-```text
-    ┌──────────────────────────────────────────────────────────────┐
-    │                                                              │
-    │   LANGUAGE          SERVICE              DEPLOYMENT          │
-    │   ════════          ═══════              ══════════          │
-    │                                                              │
-    │   Rust ─────────── Oracle Nodes (3x) ── Docker (VPS)        │
-    │        │                                                     │
-    │        ├─────────── AP / Keeper ──────── Binary (VPS)        │
-    │        │                                                     │
-    │        ├─────────── Data Node ────────── Binary (VPS)        │
-    │        │                                                     │
-    │        └─────────── Curator ──────────── Binary (VPS)        │
-    │                                                              │
-    │   Python ──────── Vision Bot ─────────── VPS                 │
-    │          │                                                   │
-    │          └──────── Social Bot ─────────── VPS                │
-    │                                                              │
-    │   TypeScript ───── Frontend ──────────── Vercel              │
-    │                                                              │
-    │   Solidity ──────── Contracts ─────────── L3 + Settlement    │
-    │                                                              │
-    │   PostgreSQL ────── Price DB ──────────── Docker (VPS)       │
-    │                                                              │
-    └──────────────────────────────────────────────────────────────┘
-```
+<img src="/images/index/technology-stack.svg" alt="Technology stack: Rust for oracles, AP, data node and curator; Python for bots; TypeScript on Vercel; Solidity across L3 and Settlement; Postgres on VPS." />
 
 | Technology | Version / Detail |
 |---|---|

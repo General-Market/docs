@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 460" width="980" height="460" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-opacity="0.03"/>
+    </filter>
+  </defs>
+
+  <rect width="980" height="460" fill="white"/>
+  <circle cx="120" cy="380" r="180" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="860" cy="80" r="160" fill="#0A0A0A" opacity="0.02"/>
+
+  <!-- Header -->
+  <rect x="40" y="32" width="900" height="44" rx="12" fill="url(#darkGrad)"/>
+  <text x="490" y="60" text-anchor="middle" fill="white" font-size="12" font-weight="600" letter-spacing="4">THE FOUR STEPS</text>
+
+  <!-- Four cards -->
+  <g>
+    <!-- Step 1 -->
+    <rect x="40" y="108" width="200" height="240" rx="12" fill="#0A0A0A" fill-opacity="0.03" filter="url(#shadow)"/>
+    <text x="60" y="138" fill="#0A0A0A" font-size="10" font-weight="600" letter-spacing="2" opacity="0.4">STEP 01</text>
+    <text x="60" y="166" fill="#0A0A0A" font-size="20" font-weight="700">Browse</text>
+    <line x1="60" y1="180" x2="220" y2="180" stroke="#0A0A0A" stroke-opacity="0.08"/>
+    <text x="60" y="208" fill="#0A0A0A" font-size="12" opacity="0.6">Pick a batch.</text>
+    <text x="60" y="228" fill="#0A0A0A" font-size="12" opacity="0.6">Ninety sources.</text>
+    <text x="60" y="248" fill="#0A0A0A" font-size="12" opacity="0.6">Crypto. Weather.</text>
+    <text x="60" y="268" fill="#0A0A0A" font-size="12" opacity="0.6">Trains. Quakes.</text>
+    <text x="60" y="320" fill="#0A0A0A" font-size="10" opacity="0.35" letter-spacing="1">BROWSE ACTIVE BATCHES</text>
+
+    <!-- Arrow 1 -->
+    <line x1="250" y1="228" x2="278" y2="228" stroke="#0A0A0A" stroke-opacity="0.2" stroke-width="1"/>
+    <path d="M276,224 l6,4 l-6,4" fill="none" stroke="#0A0A0A" stroke-opacity="0.4" stroke-width="1"/>
+
+    <!-- Step 2 -->
+    <rect x="288" y="108" width="200" height="240" rx="12" fill="#0A0A0A" fill-opacity="0.03" filter="url(#shadow)"/>
+    <text x="308" y="138" fill="#0A0A0A" font-size="10" font-weight="600" letter-spacing="2" opacity="0.4">STEP 02</text>
+    <text x="308" y="166" fill="#0A0A0A" font-size="20" font-weight="700">Seal</text>
+    <line x1="308" y1="180" x2="468" y2="180" stroke="#0A0A0A" stroke-opacity="0.08"/>
+    <text x="308" y="208" fill="#0A0A0A" font-size="12" opacity="0.6">Predict UP or DOWN</text>
+    <text x="308" y="228" fill="#0A0A0A" font-size="12" opacity="0.6">per market.</text>
+    <text x="308" y="248" fill="#0A0A0A" font-size="12" opacity="0.6">Submit only the hash.</text>
+    <text x="308" y="268" fill="#0A0A0A" font-size="12" opacity="0.6">Nobody sees it.</text>
+    <text x="308" y="320" fill="#0A0A0A" font-size="10" opacity="0.35" letter-spacing="1">KECCAK256 ( BITMAP )</text>
+
+    <!-- Arrow 2 -->
+    <line x1="498" y1="228" x2="526" y2="228" stroke="#0A0A0A" stroke-opacity="0.2" stroke-width="1"/>
+    <path d="M524,224 l6,4 l-6,4" fill="none" stroke="#0A0A0A" stroke-opacity="0.4" stroke-width="1"/>
+
+    <!-- Step 3 -->
+    <rect x="536" y="108" width="200" height="240" rx="12" fill="#0A0A0A" fill-opacity="0.03" filter="url(#shadow)"/>
+    <text x="556" y="138" fill="#0A0A0A" font-size="10" font-weight="600" letter-spacing="2" opacity="0.4">STEP 03</text>
+    <text x="556" y="166" fill="#0A0A0A" font-size="20" font-weight="700">Resolve</text>
+    <line x1="556" y1="180" x2="716" y2="180" stroke="#0A0A0A" stroke-opacity="0.08"/>
+    <text x="556" y="208" fill="#0A0A0A" font-size="12" opacity="0.6">Tick ends.</text>
+    <text x="556" y="228" fill="#0A0A0A" font-size="12" opacity="0.6">Oracles read prices.</text>
+    <text x="556" y="248" fill="#0A0A0A" font-size="12" opacity="0.6">Winners split losers'</text>
+    <text x="556" y="268" fill="#0A0A0A" font-size="12" opacity="0.6">stakes.</text>
+    <text x="556" y="320" fill="#0A0A0A" font-size="10" opacity="0.35" letter-spacing="1">2/3+ CONSENSUS</text>
+
+    <!-- Arrow 3 -->
+    <line x1="746" y1="228" x2="774" y2="228" stroke="#0A0A0A" stroke-opacity="0.2" stroke-width="1"/>
+    <path d="M772,224 l6,4 l-6,4" fill="none" stroke="#0A0A0A" stroke-opacity="0.4" stroke-width="1"/>
+
+    <!-- Step 4 -->
+    <rect x="784" y="108" width="156" height="240" rx="12" fill="url(#darkGrad)" filter="url(#shadow)"/>
+    <text x="804" y="138" fill="white" font-size="10" font-weight="600" letter-spacing="2" opacity="0.5">STEP 04</text>
+    <text x="804" y="166" fill="white" font-size="20" font-weight="700">Claim</text>
+    <line x1="804" y1="180" x2="920" y2="180" stroke="white" stroke-opacity="0.1"/>
+    <text x="804" y="208" fill="white" font-size="12" opacity="0.7">Withdraw with</text>
+    <text x="804" y="228" fill="white" font-size="12" opacity="0.7">a BLS-verified</text>
+    <text x="804" y="248" fill="white" font-size="12" opacity="0.7">balance proof.</text>
+    <text x="804" y="268" fill="white" font-size="12" opacity="0.7">No lockup.</text>
+    <path d="M804,316 l5,5 l10,-10" stroke="#10B981" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="826" y="322" fill="white" font-size="10" opacity="0.6" letter-spacing="1">PAID OUT</text>
+  </g>
+
+  <!-- Footer -->
+  <rect x="40" y="378" width="900" height="44" rx="14" fill="#0A0A0A" fill-opacity="0.03"/>
+  <text x="490" y="406" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.45">Browse → seal → resolve → claim. The seal closes between you and your bets until the tick ends.</text>
+</svg>

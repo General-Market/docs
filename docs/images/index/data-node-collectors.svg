@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 480" width="980" height="480" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGradCo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadowCo">
+      <feDropShadow dx="0" dy="2" stdDeviation="10" flood-opacity="0.04"/>
+    </filter>
+    <marker id="aCo" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0A0A0A" fill-opacity="0.45"/>
+    </marker>
+  </defs>
+
+  <rect width="980" height="480" fill="white"/>
+  <circle cx="50" cy="50" r="160" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="940" cy="440" r="160" fill="#0A0A0A" opacity="0.02"/>
+
+  <text x="490" y="44" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="3.6" opacity="0.45">COLLECTOR ARCHITECTURE</text>
+  <text x="490" y="68" text-anchor="middle" fill="#0A0A0A" font-size="12" opacity="0.45">One task per source. spawn_resilient restarts what panics.</text>
+
+  <!-- Column headers -->
+  <text x="120" y="112" text-anchor="middle" fill="#0A0A0A" font-size="10" font-weight="700" letter-spacing="2.4" opacity="0.45">SOURCE APIs</text>
+  <text x="390" y="112" text-anchor="middle" fill="#0A0A0A" font-size="10" font-weight="700" letter-spacing="2.4" opacity="0.45">spawn_resilient</text>
+  <text x="640" y="112" text-anchor="middle" fill="#0A0A0A" font-size="10" font-weight="700" letter-spacing="2.4" opacity="0.45">BatchWriter</text>
+  <text x="860" y="112" text-anchor="middle" fill="#0A0A0A" font-size="10" font-weight="700" letter-spacing="2.4" opacity="0.45">POSTGRESQL</text>
+
+  <!-- Source list -->
+  <g font-family="ui-monospace, SF Mono, Menlo, monospace" font-size="11">
+    <rect x="40" y="128" width="160" height="244" rx="10" fill="#0A0A0A" fill-opacity="0.03" stroke="#0A0A0A" stroke-opacity="0.05"/>
+    <text x="56" y="154" fill="#0A0A0A">finnhub</text>
+    <text x="56" y="180" fill="#0A0A0A">earthquake</text>
+    <text x="56" y="206" fill="#0A0A0A">twitch</text>
+    <text x="56" y="232" fill="#0A0A0A">volcano</text>
+    <text x="56" y="258" fill="#0A0A0A">reddit</text>
+    <text x="56" y="284" fill="#0A0A0A">steam</text>
+    <text x="56" y="310" fill="#0A0A0A" opacity="0.45">...</text>
+  </g>
+
+  <!-- SyncEngines column -->
+  <g>
+    <rect x="310" y="128" width="160" height="38" rx="8" fill="white" stroke="#0A0A0A" stroke-opacity="0.08"/>
+    <text x="390" y="152" text-anchor="middle" fill="#0A0A0A" font-size="12">SyncEngine</text>
+    <rect x="310" y="174" width="160" height="38" rx="8" fill="white" stroke="#0A0A0A" stroke-opacity="0.08"/>
+    <text x="390" y="198" text-anchor="middle" fill="#0A0A0A" font-size="12">SyncEngine</text>
+    <rect x="310" y="220" width="160" height="38" rx="8" fill="white" stroke="#0A0A0A" stroke-opacity="0.08"/>
+    <text x="390" y="244" text-anchor="middle" fill="#0A0A0A" font-size="12">SyncEngine</text>
+    <rect x="310" y="266" width="160" height="38" rx="8" fill="white" stroke="#0A0A0A" stroke-opacity="0.08"/>
+    <text x="390" y="290" text-anchor="middle" fill="#0A0A0A" font-size="12">SyncEngine</text>
+    <rect x="310" y="312" width="160" height="38" rx="8" fill="white" stroke="#0A0A0A" stroke-opacity="0.08"/>
+    <text x="390" y="336" text-anchor="middle" fill="#0A0A0A" font-size="12">SyncEngine</text>
+  </g>
+
+  <!-- arrows source → engines -->
+  <g stroke="#0A0A0A" stroke-opacity="0.35" stroke-width="1.2">
+    <line x1="200" y1="148" x2="306" y2="148" marker-end="url(#aCo)"/>
+    <line x1="200" y1="174" x2="306" y2="192" marker-end="url(#aCo)"/>
+    <line x1="200" y1="200" x2="306" y2="238" marker-end="url(#aCo)"/>
+    <line x1="200" y1="226" x2="306" y2="284" marker-end="url(#aCo)"/>
+    <line x1="200" y1="252" x2="306" y2="330" marker-end="url(#aCo)"/>
+  </g>
+
+  <!-- BatchWriter panel -->
+  <g filter="url(#shadowCo)">
+    <rect x="520" y="128" width="240" height="228" rx="14" fill="url(#darkGradCo)"/>
+  </g>
+  <text x="540" y="160" fill="white" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.5">CHANNEL</text>
+  <text x="540" y="188" fill="white" font-size="16" font-weight="700">Batched INSERT</text>
+  <line x1="540" y1="206" x2="740" y2="206" stroke="white" stroke-opacity="0.1"/>
+  <text x="540" y="234" fill="white" font-size="11" opacity="0.6">mpsc channel</text>
+  <text x="540" y="254" fill="white" font-size="11" opacity="0.6">coalesce by table</text>
+  <text x="540" y="274" fill="white" font-size="11" opacity="0.6">rate-limited per source</text>
+  <rect x="540" y="296" width="200" height="42" rx="8" fill="white" fill-opacity="0.06" stroke="white" stroke-opacity="0.1"/>
+  <text x="640" y="322" text-anchor="middle" fill="white" font-size="11" font-weight="600">Broadcast Hub · WebSocket</text>
+
+  <!-- arrows engines → batchwriter -->
+  <g stroke="#0A0A0A" stroke-opacity="0.35" stroke-width="1.2">
+    <line x1="470" y1="148" x2="516" y2="220" marker-end="url(#aCo)"/>
+    <line x1="470" y1="192" x2="516" y2="232" marker-end="url(#aCo)"/>
+    <line x1="470" y1="238" x2="516" y2="240" marker-end="url(#aCo)"/>
+    <line x1="470" y1="284" x2="516" y2="252" marker-end="url(#aCo)"/>
+    <line x1="470" y1="330" x2="516" y2="260" marker-end="url(#aCo)"/>
+  </g>
+
+  <!-- Postgres -->
+  <rect x="780" y="128" width="160" height="106" rx="10" fill="white" stroke="#0A0A0A" stroke-opacity="0.08"/>
+  <text x="860" y="156" text-anchor="middle" fill="#0A0A0A" font-size="12" font-weight="700">market_prices</text>
+  <text x="860" y="178" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.55">time-series</text>
+  <line x1="800" y1="194" x2="920" y2="194" stroke="#0A0A0A" stroke-opacity="0.06"/>
+  <text x="860" y="216" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.55">batched commits</text>
+
+  <rect x="780" y="248" width="160" height="106" rx="10" fill="white" stroke="#0A0A0A" stroke-opacity="0.08"/>
+  <rect x="780" y="248" width="3" height="50" rx="1.5" fill="#10B981"/>
+  <text x="860" y="276" text-anchor="middle" fill="#0A0A0A" font-size="12" font-weight="700">market_prices_latest</text>
+  <text x="860" y="298" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.55">materialized view</text>
+  <line x1="800" y1="314" x2="920" y2="314" stroke="#0A0A0A" stroke-opacity="0.06"/>
+  <text x="860" y="336" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.55">fast lookups</text>
+
+  <line x1="760" y1="200" x2="776" y2="180" stroke="#0A0A0A" stroke-opacity="0.35" stroke-width="1.2" marker-end="url(#aCo)"/>
+  <line x1="760" y1="240" x2="776" y2="290" stroke="#0A0A0A" stroke-opacity="0.35" stroke-width="1.2" marker-end="url(#aCo)"/>
+
+  <!-- Footer bullets -->
+  <text x="40" y="412" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2" opacity="0.45">EACH SYNCENGINE OWNS</text>
+  <g font-size="11" fill="#0A0A0A" opacity="0.6">
+    <text x="40" y="436">· source client (HTTP / WS / gRPC)</text>
+    <text x="280" y="436">· config JSON · assets · schedule</text>
+    <text x="520" y="436">· per-API rate limiting</text>
+    <text x="720" y="436">· error tracking via ErrorTracker</text>
+    <text x="40" y="456">· SyncRegistry entry for health</text>
+  </g>
+</svg>

@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 400" width="980" height="400" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-opacity="0.03"/>
+    </filter>
+    <marker id="arrR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0A0A0A" fill-opacity="0.45"/>
+    </marker>
+  </defs>
+
+  <rect width="980" height="400" fill="white"/>
+  <circle cx="80" cy="340" r="160" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="900" cy="40" r="140" fill="#0A0A0A" opacity="0.02"/>
+
+  <text x="40" y="44" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.45">ALERTING</text>
+  <text x="40" y="68" fill="#0A0A0A" font-size="13" opacity="0.4">Fire on transition. Steady crisis announces itself once, then stops.</text>
+
+  <!-- HealthReport -->
+  <rect x="60" y="120" width="220" height="120" rx="14" fill="#0A0A0A" fill-opacity="0.04" filter="url(#shadow)"/>
+  <text x="80" y="148" fill="#0A0A0A" font-size="13" font-weight="700">HealthReport</text>
+  <line x1="80" y1="158" x2="260" y2="158" stroke="#0A0A0A" stroke-opacity="0.06"/>
+  <text x="80" y="182" fill="#0A0A0A" font-size="11" opacity="0.55">alerts[]</text>
+  <text x="80" y="202" fill="#0A0A0A" font-size="11" opacity="0.55">crisis_levels</text>
+
+  <line x1="280" y1="180" x2="340" y2="180" stroke="#0A0A0A" stroke-opacity="0.45" stroke-width="1.5" marker-end="url(#arrR)"/>
+
+  <!-- AlertDispatcher -->
+  <rect x="340" y="120" width="280" height="160" rx="14" fill="url(#darkGrad)" filter="url(#shadow)"/>
+  <text x="360" y="152" fill="white" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.5">DISPATCHER</text>
+  <text x="360" y="178" fill="white" font-size="15" font-weight="700">AlertDispatcher</text>
+  <line x1="360" y1="190" x2="600" y2="190" stroke="white" stroke-opacity="0.1"/>
+  <text x="360" y="214" fill="white" font-size="11" opacity="0.6">tracks previous levels</text>
+  <text x="360" y="234" fill="white" font-size="11" opacity="0.6">fires only on transitions</text>
+  <text x="360" y="254" fill="white" font-size="11" opacity="0.6">not on every scan</text>
+
+  <line x1="620" y1="180" x2="680" y2="180" stroke="#0A0A0A" stroke-opacity="0.45" stroke-width="1.5" marker-end="url(#arrR)"/>
+
+  <!-- Alerter trait branches -->
+  <rect x="680" y="120" width="240" height="64" rx="12" fill="#0A0A0A" fill-opacity="0.04" filter="url(#shadow)"/>
+  <text x="700" y="146" fill="#0A0A0A" font-size="13" font-weight="700">TelegramAlerter</text>
+  <text x="700" y="166" fill="#0A0A0A" font-size="11" opacity="0.55">api.telegram.org · bot + chat</text>
+
+  <rect x="680" y="196" width="240" height="64" rx="12" fill="#0A0A0A" fill-opacity="0.04" filter="url(#shadow)"/>
+  <text x="700" y="222" fill="#0A0A0A" font-size="13" font-weight="700">LogAlerter</text>
+  <text x="700" y="242" fill="#0A0A0A" font-size="11" opacity="0.55">tracing fallback — nothing is dropped</text>
+
+  <text x="490" y="332" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.4">An hour-long crisis does not need to announce itself every five minutes.</text>
+</svg>

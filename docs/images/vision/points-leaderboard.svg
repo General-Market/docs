@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 400" width="980" height="400" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-opacity="0.03"/>
+    </filter>
+  </defs>
+
+  <rect width="980" height="400" fill="white"/>
+  <circle cx="120" cy="340" r="180" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="860" cy="60" r="160" fill="#0A0A0A" opacity="0.02"/>
+
+  <!-- Header -->
+  <rect x="40" y="32" width="900" height="56" rx="12" fill="url(#darkGrad)"/>
+  <text x="64" y="66" fill="white" font-size="13" font-weight="700" letter-spacing="3">LEADERBOARD</text>
+  <text x="916" y="66" text-anchor="end" fill="white" font-size="11" opacity="0.5" letter-spacing="2">SEASON 01</text>
+
+  <!-- Column headers -->
+  <text x="80" y="118" fill="#0A0A0A" font-size="10" font-weight="600" letter-spacing="2" opacity="0.4">RANK</text>
+  <text x="180" y="118" fill="#0A0A0A" font-size="10" font-weight="600" letter-spacing="2" opacity="0.4">PLAYER</text>
+  <text x="500" y="118" text-anchor="end" fill="#0A0A0A" font-size="10" font-weight="600" letter-spacing="2" opacity="0.4">VISION</text>
+  <text x="640" y="118" text-anchor="end" fill="#0A0A0A" font-size="10" font-weight="600" letter-spacing="2" opacity="0.4">CREATOR</text>
+  <text x="780" y="118" text-anchor="end" fill="#0A0A0A" font-size="10" font-weight="600" letter-spacing="2" opacity="0.4">HOLDER</text>
+  <text x="916" y="118" text-anchor="end" fill="#0A0A0A" font-size="10" font-weight="600" letter-spacing="2" opacity="0.4">TOTAL</text>
+
+  <line x1="40" y1="128" x2="940" y2="128" stroke="#0A0A0A" stroke-opacity="0.08"/>
+
+  <!-- Row 1 -->
+  <rect x="40" y="148" width="900" height="56" rx="10" fill="#0A0A0A" fill-opacity="0.03"/>
+  <text x="80" y="182" fill="#0A0A0A" font-size="14" font-weight="700">1</text>
+  <text x="180" y="182" fill="#0A0A0A" font-size="13" font-family="JetBrains Mono, ui-monospace, monospace" opacity="0.8">0xA1b2…c3d4</text>
+  <text x="500" y="182" text-anchor="end" fill="#0A0A0A" font-size="13" opacity="0.7">5,200</text>
+  <text x="640" y="182" text-anchor="end" fill="#0A0A0A" font-size="13" opacity="0.7">2,400</text>
+  <text x="780" y="182" text-anchor="end" fill="#0A0A0A" font-size="13" opacity="0.7">1,800</text>
+  <text x="916" y="182" text-anchor="end" fill="#0A0A0A" font-size="15" font-weight="700">9,400</text>
+
+  <!-- Row 2 -->
+  <rect x="40" y="212" width="900" height="56" rx="10" fill="#0A0A0A" fill-opacity="0.02"/>
+  <text x="80" y="246" fill="#0A0A0A" font-size="14" font-weight="700">2</text>
+  <text x="180" y="246" fill="#0A0A0A" font-size="13" font-family="JetBrains Mono, ui-monospace, monospace" opacity="0.8">0xE5f6…g7h8</text>
+  <text x="500" y="246" text-anchor="end" fill="#0A0A0A" font-size="13" opacity="0.7">4,100</text>
+  <text x="640" y="246" text-anchor="end" fill="#0A0A0A" font-size="13" opacity="0.7">1,600</text>
+  <text x="780" y="246" text-anchor="end" fill="#0A0A0A" font-size="13" opacity="0.7">900</text>
+  <text x="916" y="246" text-anchor="end" fill="#0A0A0A" font-size="15" font-weight="700">6,600</text>
+
+  <!-- Row 3 -->
+  <rect x="40" y="276" width="900" height="56" rx="10" fill="#0A0A0A" fill-opacity="0.02"/>
+  <text x="80" y="310" fill="#0A0A0A" font-size="14" font-weight="700">3</text>
+  <text x="180" y="310" fill="#0A0A0A" font-size="13" font-family="JetBrains Mono, ui-monospace, monospace" opacity="0.8">0xI9j0…k1l2</text>
+  <text x="500" y="310" text-anchor="end" fill="#0A0A0A" font-size="13" opacity="0.7">2,800</text>
+  <text x="640" y="310" text-anchor="end" fill="#0A0A0A" font-size="13" opacity="0.4">0</text>
+  <text x="780" y="310" text-anchor="end" fill="#0A0A0A" font-size="13" opacity="0.7">1,200</text>
+  <text x="916" y="310" text-anchor="end" fill="#0A0A0A" font-size="15" font-weight="700">4,000</text>
+
+  <text x="490" y="370" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.35">Ranked by total. Each pool visible. Presence rewarded.</text>
+</svg>

@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 380" width="980" height="380" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-opacity="0.03"/>
+    </filter>
+  </defs>
+
+  <rect width="980" height="380" fill="white"/>
+  <circle cx="80" cy="320" r="160" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="900" cy="60" r="140" fill="#0A0A0A" opacity="0.02"/>
+
+  <text x="490" y="48" text-anchor="middle" fill="#0A0A0A" font-size="12" font-weight="700" letter-spacing="3" opacity="0.45">SOURCES BROWSER</text>
+  <text x="490" y="70" text-anchor="middle" fill="#0A0A0A" font-size="13" opacity="0.4">Two pages. One entry. One detail.</text>
+
+  <!-- Listing panel -->
+  <rect x="80" y="110" width="340" height="200" rx="12" fill="#0A0A0A" fill-opacity="0.03" filter="url(#shadow)"/>
+  <text x="100" y="142" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2" opacity="0.5">SOURCES LISTING</text>
+  <text x="100" y="160" fill="#0A0A0A" font-size="11" opacity="0.4" font-family="ui-monospace, SF Mono, Menlo, monospace">/</text>
+
+  <line x1="100" y1="174" x2="400" y2="174" stroke="#0A0A0A" stroke-opacity="0.06" stroke-width="1"/>
+
+  <text x="100" y="200" fill="#0A0A0A" font-size="12" opacity="0.7">Category nav bar</text>
+  <text x="100" y="222" fill="#0A0A0A" font-size="12" opacity="0.7">Sort bar</text>
+  <text x="100" y="244" fill="#0A0A0A" font-size="12" opacity="0.7">Source cards grid</text>
+  <text x="100" y="266" fill="#0A0A0A" font-size="12" opacity="0.7">Bitmap overlay</text>
+
+  <!-- Arrow -->
+  <line x1="430" y1="210" x2="538" y2="210" stroke="#0A0A0A" stroke-opacity="0.25" stroke-width="1.2"/>
+  <path d="M534,206 L542,210 L534,214" fill="#0A0A0A" opacity="0.25"/>
+  <text x="484" y="200" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.4" letter-spacing="1.5">CLICK</text>
+
+  <!-- Detail panel (dark) -->
+  <rect x="560" y="110" width="340" height="200" rx="12" fill="url(#darkGrad)" filter="url(#shadow)"/>
+  <text x="580" y="142" fill="white" font-size="11" font-weight="700" letter-spacing="2" opacity="0.7">SOURCE DETAIL</text>
+  <text x="580" y="160" fill="white" font-size="11" opacity="0.4" font-family="ui-monospace, SF Mono, Menlo, monospace">/source/coingecko</text>
+
+  <line x1="580" y1="174" x2="880" y2="174" stroke="white" stroke-opacity="0.08" stroke-width="1"/>
+
+  <text x="580" y="200" fill="white" font-size="12" opacity="0.7">Hero banner</text>
+  <text x="580" y="222" fill="white" font-size="12" opacity="0.7">Batch tick bar</text>
+  <text x="580" y="244" fill="white" font-size="12" opacity="0.7">Markets table</text>
+  <text x="580" y="266" fill="white" font-size="12" opacity="0.7">Price history charts</text>
+  <text x="740" y="200" fill="white" font-size="12" opacity="0.7">Top players board</text>
+  <text x="740" y="222" fill="white" font-size="12" opacity="0.7">Batch entry panel</text>
+
+  <!-- Footer pill -->
+  <rect x="40" y="332" width="900" height="32" rx="14" fill="#0A0A0A" fill-opacity="0.03"/>
+  <text x="490" y="352" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.45">Listing surveys. Detail commits.</text>
+</svg>

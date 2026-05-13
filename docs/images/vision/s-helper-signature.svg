@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 560" width="980" height="560" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-opacity="0.03"/>
+    </filter>
+  </defs>
+
+  <rect width="980" height="560" fill="white"/>
+  <circle cx="80" cy="500" r="180" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="920" cy="60" r="160" fill="#0A0A0A" opacity="0.02"/>
+
+  <text x="490" y="50" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="3" opacity="0.45">S( ) HELPER SIGNATURE</text>
+
+  <!-- Big signature -->
+  <rect x="40" y="80" width="900" height="80" rx="14" fill="url(#darkGrad)" filter="url(#shadow)"/>
+  <text x="490" y="128" text-anchor="middle" fill="white" font-size="18" font-family="ui-monospace, SF Mono, Menlo, monospace" font-weight="500">S(id, name, description, category, logo, brandBg, prefixes, valueLabel, valueUnit, isPrice?)</text>
+
+  <!-- Two-column param descriptions -->
+  <g font-size="12">
+    <!-- left column -->
+    <text x="60" y="208" fill="#10B981" font-size="11" font-family="ui-monospace, SF Mono, Menlo, monospace" font-weight="600">id</text>
+    <text x="180" y="208" fill="#0A0A0A" opacity="0.65">unique string · matches Rust source_id()</text>
+    <line x1="40" y1="222" x2="490" y2="222" stroke="#0A0A0A" stroke-opacity="0.06"/>
+
+    <text x="60" y="246" fill="#10B981" font-size="11" font-family="ui-monospace, SF Mono, Menlo, monospace" font-weight="600">name</text>
+    <text x="180" y="246" fill="#0A0A0A" opacity="0.65">display name in UI</text>
+    <line x1="40" y1="260" x2="490" y2="260" stroke="#0A0A0A" stroke-opacity="0.06"/>
+
+    <text x="60" y="284" fill="#10B981" font-size="11" font-family="ui-monospace, SF Mono, Menlo, monospace" font-weight="600">description</text>
+    <text x="180" y="284" fill="#0A0A0A" opacity="0.65">one-liner on source card</text>
+    <line x1="40" y1="298" x2="490" y2="298" stroke="#0A0A0A" stroke-opacity="0.06"/>
+
+    <text x="60" y="322" fill="#10B981" font-size="11" font-family="ui-monospace, SF Mono, Menlo, monospace" font-weight="600">category</text>
+    <text x="180" y="322" fill="#0A0A0A" opacity="0.65">finance · economic · regulatory · tech</text>
+    <text x="180" y="338" fill="#0A0A0A" opacity="0.45">entertainment · geophysical · transport</text>
+    <text x="180" y="354" fill="#0A0A0A" opacity="0.45">nature · space · academic</text>
+    <line x1="40" y1="370" x2="490" y2="370" stroke="#0A0A0A" stroke-opacity="0.06"/>
+
+    <text x="60" y="394" fill="#10B981" font-size="11" font-family="ui-monospace, SF Mono, Menlo, monospace" font-weight="600">logo</text>
+    <text x="180" y="394" fill="#0A0A0A" opacity="0.65">path under public/source-imgs/</text>
+
+    <!-- right column -->
+    <text x="510" y="208" fill="#10B981" font-size="11" font-family="ui-monospace, SF Mono, Menlo, monospace" font-weight="600">brandBg</text>
+    <text x="640" y="208" fill="#0A0A0A" opacity="0.65">hex color for card background</text>
+    <line x1="510" y1="222" x2="940" y2="222" stroke="#0A0A0A" stroke-opacity="0.06"/>
+
+    <text x="510" y="246" fill="#10B981" font-size="11" font-family="ui-monospace, SF Mono, Menlo, monospace" font-weight="600">prefixes</text>
+    <text x="640" y="246" fill="#0A0A0A" opacity="0.65">array · must match PREFIX_MAP</text>
+    <line x1="510" y1="260" x2="940" y2="260" stroke="#0A0A0A" stroke-opacity="0.06"/>
+
+    <text x="510" y="284" fill="#10B981" font-size="11" font-family="ui-monospace, SF Mono, Menlo, monospace" font-weight="600">valueLabel</text>
+    <text x="640" y="284" fill="#0A0A0A" opacity="0.65">column header · Price · Viewers · Mag.</text>
+    <line x1="510" y1="298" x2="940" y2="298" stroke="#0A0A0A" stroke-opacity="0.06"/>
+
+    <text x="510" y="322" fill="#10B981" font-size="11" font-family="ui-monospace, SF Mono, Menlo, monospace" font-weight="600">valueUnit</text>
+    <text x="640" y="322" fill="#0A0A0A" opacity="0.65">unit · USD · min · % · 0-9</text>
+    <line x1="510" y1="336" x2="940" y2="336" stroke="#0A0A0A" stroke-opacity="0.06"/>
+
+    <text x="510" y="360" fill="#10B981" font-size="11" font-family="ui-monospace, SF Mono, Menlo, monospace" font-weight="600">isPrice?</text>
+    <text x="640" y="360" fill="#0A0A0A" opacity="0.65">true → format with $ prefix</text>
+  </g>
+
+  <!-- Bottom note -->
+  <rect x="40" y="468" width="900" height="64" rx="14" fill="#0A0A0A" fill-opacity="0.03"/>
+  <text x="490" y="495" text-anchor="middle" fill="#0A0A0A" font-size="12" font-weight="600">Ten arguments. Each carries a contract.</text>
+  <text x="490" y="515" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.5">Get one wrong and the source lands under "Other" with no label.</text>
+</svg>

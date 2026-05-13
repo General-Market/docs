@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 540" width="980" height="540" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGradCp" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadowCp">
+      <feDropShadow dx="0" dy="2" stdDeviation="10" flood-opacity="0.04"/>
+    </filter>
+    <marker id="aCp" viewBox="0 0 10 10" refX="5" refY="9" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,0 L5,9 z" fill="#0A0A0A" fill-opacity="0.45"/>
+    </marker>
+  </defs>
+
+  <rect width="980" height="540" fill="white"/>
+  <circle cx="50" cy="500" r="160" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="940" cy="60" r="160" fill="#0A0A0A" opacity="0.02"/>
+
+  <text x="490" y="42" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="3.6" opacity="0.45">CHAIN POLLERS</text>
+  <text x="490" y="64" text-anchor="middle" fill="#0A0A0A" font-size="12" opacity="0.45">Two chains. One cache. Truth is on-chain. Speed is in memory.</text>
+
+  <!-- L3 panel -->
+  <g filter="url(#shadowCp)">
+    <rect x="40" y="92" width="440" height="232" rx="14" fill="url(#darkGradCp)"/>
+  </g>
+  <text x="64" y="124" fill="white" font-size="10" font-weight="700" letter-spacing="2.4" opacity="0.5">L3 ORBIT</text>
+  <text x="64" y="148" fill="white" font-size="18" font-weight="700">Index L3 (111222333)</text>
+  <line x1="64" y1="164" x2="456" y2="164" stroke="white" stroke-opacity="0.12"/>
+  <g font-family="ui-monospace, SF Mono, Menlo, monospace" font-size="11" fill="white">
+    <text x="64" y="190" font-weight="600">Index.sol</text>
+    <text x="84" y="208" opacity="0.6">getITPState · getUserShares</text>
+    <text x="84" y="226" opacity="0.6">getOrder · nextOrderId</text>
+    <text x="84" y="244" opacity="0.6">FillConfirmed events</text>
+    <text x="64" y="266" font-weight="600">Oracle.sol</text>
+    <text x="84" y="284" opacity="0.6">currentPrice · lastCycleNumber</text>
+    <text x="64" y="306" font-weight="600">OracleRegistry</text>
+  </g>
+
+  <!-- Settlement panel -->
+  <g filter="url(#shadowCp)">
+    <rect x="500" y="92" width="440" height="232" rx="14" fill="white" stroke="#0A0A0A" stroke-opacity="0.08"/>
+  </g>
+  <rect x="500" y="92" width="3" height="60" rx="1.5" fill="#10B981"/>
+  <text x="524" y="124" fill="#0A0A0A" font-size="10" font-weight="700" letter-spacing="2.4" opacity="0.45">SETTLEMENT</text>
+  <text x="524" y="148" fill="#0A0A0A" font-size="18" font-weight="700">Sonic (14601)</text>
+  <line x1="524" y1="164" x2="916" y2="164" stroke="#0A0A0A" stroke-opacity="0.08"/>
+  <g font-family="ui-monospace, SF Mono, Menlo, monospace" font-size="11" fill="#0A0A0A">
+    <text x="524" y="190" font-weight="600">USDC balances</text>
+    <text x="524" y="214" font-weight="600">Allowances</text>
+    <text x="524" y="238" font-weight="600">Morpho positions</text>
+    <text x="544" y="256" opacity="0.55">supply · borrow · health factor</text>
+    <text x="524" y="282" font-weight="600">Bridge proxy state</text>
+    <text x="544" y="300" opacity="0.55">cross-chain orders</text>
+  </g>
+
+  <!-- Arrows down to ChainCache -->
+  <line x1="260" y1="324" x2="260" y2="360" stroke="#0A0A0A" stroke-opacity="0.45" stroke-width="1.2" marker-end="url(#aCp)"/>
+  <line x1="720" y1="324" x2="720" y2="360" stroke="#0A0A0A" stroke-opacity="0.45" stroke-width="1.2" marker-end="url(#aCp)"/>
+
+  <!-- ChainCache -->
+  <rect x="120" y="368" width="740" height="76" rx="14" fill="#0A0A0A" fill-opacity="0.03" stroke="#0A0A0A" stroke-opacity="0.08"/>
+  <text x="144" y="396" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.45">CHAINCACHE · IN-MEMORY</text>
+  <text x="144" y="424" fill="#0A0A0A" font-size="12" opacity="0.65">NavSnapshot · UserBalances · UserOrders · MorphoPositions · FillRecords · Oracles</text>
+
+  <line x1="490" y1="444" x2="490" y2="476" stroke="#0A0A0A" stroke-opacity="0.45" stroke-width="1.2" marker-end="url(#aCp)"/>
+
+  <!-- REST -->
+  <rect x="320" y="482" width="340" height="44" rx="12" fill="url(#darkGradCp)"/>
+  <text x="490" y="510" text-anchor="middle" fill="white" font-size="13" font-weight="600">REST API · cached chain state</text>
+</svg>

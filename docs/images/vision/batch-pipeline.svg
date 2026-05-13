@@ -1,0 +1,121 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 940" width="980" height="940" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-opacity="0.03"/>
+    </filter>
+  </defs>
+
+  <rect width="980" height="940" fill="white"/>
+  <circle cx="100" cy="860" r="180" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="880" cy="100" r="160" fill="#0A0A0A" opacity="0.02"/>
+
+  <!-- DATA NODE panel -->
+  <rect x="40" y="40" width="900" height="220" rx="14" fill="#0A0A0A" fill-opacity="0.03" filter="url(#shadow)"/>
+  <text x="64" y="74" fill="#0A0A0A" font-size="10" font-weight="600" letter-spacing="3" opacity="0.4">DATA NODE</text>
+  <text x="64" y="106" fill="#0A0A0A" font-size="22" font-weight="700">100 sources. One snapshot.</text>
+  <line x1="64" y1="124" x2="916" y2="124" stroke="#0A0A0A" stroke-opacity="0.08"/>
+
+  <!-- Inner steps -->
+  <g>
+    <rect x="64" y="148" width="200" height="84" rx="10" fill="white" stroke="#0A0A0A" stroke-opacity="0.08"/>
+    <text x="164" y="178" text-anchor="middle" fill="#0A0A0A" font-size="13" font-weight="700">SyncEngine</text>
+    <text x="164" y="200" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.5">poll · validate · store</text>
+    <text x="164" y="218" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.35" letter-spacing="1">PER SOURCE</text>
+
+    <line x1="276" y1="190" x2="304" y2="190" stroke="#0A0A0A" stroke-opacity="0.2"/>
+    <path d="M302,186 l6,4 l-6,4" fill="#0A0A0A" fill-opacity="0.4"/>
+
+    <rect x="316" y="148" width="200" height="84" rx="10" fill="white" stroke="#0A0A0A" stroke-opacity="0.08"/>
+    <text x="416" y="178" text-anchor="middle" fill="#0A0A0A" font-size="13" font-weight="700">market_prices_latest</text>
+    <text x="416" y="200" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.5">deduplicated snapshot</text>
+    <text x="416" y="218" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.35" letter-spacing="1">POSTGRES</text>
+
+    <line x1="528" y1="190" x2="556" y2="190" stroke="#0A0A0A" stroke-opacity="0.2"/>
+    <path d="M554,186 l6,4 l-6,4" fill="#0A0A0A" fill-opacity="0.4"/>
+
+    <rect x="568" y="148" width="200" height="84" rx="10" fill="white" stroke="#0A0A0A" stroke-opacity="0.08"/>
+    <text x="668" y="178" text-anchor="middle" fill="#0A0A0A" font-size="13" font-weight="700">BatchEngine</text>
+    <text x="668" y="200" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.5">threshold calibration</text>
+    <text x="668" y="218" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.35" letter-spacing="1">EVERY 60S</text>
+
+    <line x1="780" y1="190" x2="808" y2="190" stroke="#0A0A0A" stroke-opacity="0.2"/>
+    <path d="M806,186 l6,4 l-6,4" fill="#0A0A0A" fill-opacity="0.4"/>
+
+    <rect x="820" y="148" width="96" height="84" rx="10" fill="white" stroke="#0A0A0A" stroke-opacity="0.08"/>
+    <text x="868" y="178" text-anchor="middle" fill="#0A0A0A" font-size="12" font-weight="700">REST</text>
+    <text x="868" y="200" text-anchor="middle" fill="#0A0A0A" font-size="9" opacity="0.5">/batches/</text>
+    <text x="868" y="214" text-anchor="middle" fill="#0A0A0A" font-size="9" opacity="0.5">recommended</text>
+  </g>
+
+  <!-- Dashed connector to ORACLES -->
+  <line x1="490" y1="262" x2="490" y2="308" stroke="#0A0A0A" stroke-opacity="0.15" stroke-width="1" stroke-dasharray="4,4"/>
+  <circle cx="490" cy="308" r="3" fill="#0A0A0A" opacity="0.3"/>
+
+  <!-- ORACLES dark panel -->
+  <rect x="40" y="316" width="900" height="320" rx="14" fill="url(#darkGrad)" filter="url(#shadow)"/>
+  <text x="64" y="350" fill="white" font-size="10" font-weight="600" letter-spacing="3" opacity="0.5">ORACLES — THREE NODES</text>
+  <text x="64" y="382" fill="white" font-size="22" font-weight="700">Heartbeat. Consensus. Settlement.</text>
+  <line x1="64" y1="400" x2="916" y2="400" stroke="white" stroke-opacity="0.1"/>
+
+  <!-- Two columns: create vs resolve -->
+  <g>
+    <text x="64" y="430" fill="white" font-size="10" font-weight="600" letter-spacing="2" opacity="0.45">CREATE BATCH</text>
+    <text x="64" y="460" fill="white" font-size="13" opacity="0.85">1. BLS consensus on config</text>
+    <text x="64" y="482" fill="white" font-size="13" opacity="0.85">2. Leader submits createBatch</text>
+    <text x="64" y="504" fill="white" font-size="13" opacity="0.85">3. BatchCreated event</text>
+    <text x="64" y="526" fill="white" font-size="13" opacity="0.85">4. Followers register the batch</text>
+
+    <line x1="490" y1="412" x2="490" y2="616" stroke="white" stroke-opacity="0.1"/>
+
+    <text x="510" y="430" fill="white" font-size="10" font-weight="600" letter-spacing="2" opacity="0.45">RESOLVE PREVIOUS BATCH</text>
+    <text x="510" y="460" fill="white" font-size="13" opacity="0.85">1. Fetch config + price snapshot</text>
+    <text x="510" y="482" fill="white" font-size="13" opacity="0.85">2. Flip bitmaps — pending → active</text>
+    <text x="510" y="504" fill="white" font-size="13" opacity="0.85">3. Per-market resolution</text>
+    <text x="510" y="526" fill="white" font-size="13" opacity="0.85">4. Compute settlement</text>
+    <text x="510" y="548" fill="white" font-size="13" opacity="0.85">5. BLS sign · aggregate in Postgres</text>
+    <text x="510" y="570" fill="white" font-size="13" opacity="0.85">6. Submit settleBatch at quorum</text>
+    <text x="510" y="592" fill="white" font-size="13" opacity="0.85">7. POST settlement feedback</text>
+  </g>
+
+  <text x="64" y="616" fill="white" font-size="11" opacity="0.4" letter-spacing="2">THRESHOLD ⌈2N/3⌉</text>
+
+  <!-- Dashed connector down -->
+  <line x1="490" y1="638" x2="490" y2="684" stroke="#0A0A0A" stroke-opacity="0.15" stroke-width="1" stroke-dasharray="4,4"/>
+  <circle cx="490" cy="684" r="3" fill="#0A0A0A" opacity="0.3"/>
+
+  <!-- L3 BLOCKCHAIN panel -->
+  <rect x="40" y="692" width="900" height="220" rx="14" fill="#0A0A0A" fill-opacity="0.03" filter="url(#shadow)"/>
+  <text x="64" y="726" fill="#0A0A0A" font-size="10" font-weight="600" letter-spacing="3" opacity="0.4">L3 BLOCKCHAIN — ORBIT</text>
+  <text x="64" y="758" fill="#0A0A0A" font-size="22" font-weight="700">Sealed. Verified. Settled.</text>
+  <line x1="64" y1="776" x2="916" y2="776" stroke="#0A0A0A" stroke-opacity="0.08"/>
+
+  <g>
+    <rect x="64" y="800" width="280" height="92" rx="10" fill="white" stroke="#0A0A0A" stroke-opacity="0.08"/>
+    <text x="80" y="824" fill="#0A0A0A" font-size="13" font-weight="700">Vision.sol</text>
+    <text x="80" y="846" fill="#0A0A0A" font-size="11" font-family="JetBrains Mono, ui-monospace, monospace" opacity="0.5">createBatch · joinBatchDirect</text>
+    <text x="80" y="864" fill="#0A0A0A" font-size="11" font-family="JetBrains Mono, ui-monospace, monospace" opacity="0.5">updateBitmap · settleBatch</text>
+    <text x="80" y="882" fill="#0A0A0A" font-size="11" font-family="JetBrains Mono, ui-monospace, monospace" opacity="0.5">pause · unpause</text>
+
+    <rect x="356" y="800" width="280" height="92" rx="10" fill="white" stroke="#0A0A0A" stroke-opacity="0.08"/>
+    <text x="372" y="824" fill="#0A0A0A" font-size="13" font-weight="700">VisionReserve.sol</text>
+    <text x="372" y="846" fill="#0A0A0A" font-size="11" opacity="0.55">USDC custody</text>
+    <text x="372" y="864" fill="#0A0A0A" font-size="11" opacity="0.55">deposits · payouts</text>
+    <text x="372" y="882" fill="#0A0A0A" font-size="11" opacity="0.55">reward transfers</text>
+
+    <rect x="648" y="800" width="268" height="92" rx="10" fill="white" stroke="#0A0A0A" stroke-opacity="0.08"/>
+    <text x="664" y="824" fill="#0A0A0A" font-size="13" font-weight="700">OracleRegistry.sol</text>
+    <text x="664" y="846" fill="#0A0A0A" font-size="11" opacity="0.55">BLS public keys</text>
+    <text x="664" y="864" fill="#0A0A0A" font-size="11" opacity="0.55">aggregated pubkey</text>
+    <text x="664" y="882" fill="#0A0A0A" font-size="11" opacity="0.55">threshold ⌈2n/3⌉</text>
+  </g>
+
+  <!-- Loopback arrow on the left edge: settlement → BatchEngine -->
+  <path d="M40,802 Q20,802 20,440 Q20,200 40,200" stroke="#10B981" stroke-opacity="0.35" stroke-width="1" fill="none" stroke-dasharray="3,4"/>
+  <circle cx="40" cy="802" r="3" fill="#10B981" opacity="0.6"/>
+  <circle cx="40" cy="200" r="3" fill="#10B981" opacity="0.6"/>
+  <text x="6" y="500" text-anchor="middle" fill="#10B981" font-size="9" opacity="0.5" letter-spacing="2" transform="rotate(-90, 6, 500)">FEEDBACK LOOP — RECALIBRATE</text>
+</svg>

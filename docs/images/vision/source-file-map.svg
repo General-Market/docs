@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 580" width="980" height="580" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-opacity="0.03"/>
+    </filter>
+  </defs>
+
+  <rect width="980" height="580" fill="white"/>
+  <circle cx="80" cy="520" r="180" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="920" cy="60" r="160" fill="#0A0A0A" opacity="0.02"/>
+
+  <!-- Title pill -->
+  <rect x="40" y="32" width="900" height="48" rx="12" fill="url(#darkGrad)"/>
+  <text x="490" y="61" text-anchor="middle" fill="white" font-size="12" font-weight="600" letter-spacing="3">FILES YOU WILL TOUCH</text>
+
+  <!-- Column 1: BACKEND -->
+  <rect x="40" y="100" width="300" height="464" rx="12" fill="#0A0A0A" fill-opacity="0.025" stroke="#0A0A0A" stroke-opacity="0.06"/>
+  <text x="60" y="132" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2.2" opacity="0.45">BACKEND · RUST</text>
+  <line x1="60" y1="144" x2="320" y2="144" stroke="#0A0A0A" stroke-opacity="0.08"/>
+
+  <text x="60" y="168" fill="#0A0A0A" font-size="11" font-weight="600">market_data/sources/{source}/</text>
+  <text x="74" y="186" fill="#0A0A0A" font-size="10" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.7">mod.rs</text>
+  <text x="170" y="186" fill="#0A0A0A" font-size="10" opacity="0.35">re-export struct</text>
+  <text x="74" y="202" fill="#0A0A0A" font-size="10" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.7">client.rs</text>
+  <text x="170" y="202" fill="#0A0A0A" font-size="10" opacity="0.35">trait impl</text>
+
+  <text x="60" y="236" fill="#0A0A0A" font-size="11" font-weight="600">config/{source}.json</text>
+  <text x="60" y="252" fill="#0A0A0A" font-size="10" opacity="0.35">static asset list or empty []</text>
+
+  <text x="60" y="286" fill="#0A0A0A" font-size="11" font-weight="600">market_data/sources/mod.rs</text>
+  <text x="60" y="302" fill="#0A0A0A" font-size="10" opacity="0.35">pub mod + pub use</text>
+
+  <text x="60" y="336" fill="#0A0A0A" font-size="11" font-weight="600">main.rs</text>
+  <text x="60" y="352" fill="#0A0A0A" font-size="10" opacity="0.35">spawn_resilient() inside run_serve()</text>
+
+  <text x="60" y="386" fill="#0A0A0A" font-size="11" font-weight="600">api.rs</text>
+  <text x="60" y="402" fill="#0A0A0A" font-size="10" opacity="0.35">SOURCE_META table entry</text>
+
+  <line x1="60" y1="424" x2="320" y2="424" stroke="#0A0A0A" stroke-opacity="0.08"/>
+  <text x="60" y="446" fill="#0A0A0A" font-size="10" font-weight="700" letter-spacing="1.6" opacity="0.4">IF API-KEY-GATED</text>
+
+  <text x="60" y="470" fill="#0A0A0A" font-size="11" font-weight="600">config.rs</text>
+  <text x="60" y="486" fill="#0A0A0A" font-size="10" opacity="0.35">CLI arg in ServeArgs</text>
+
+  <text x="60" y="514" fill="#0A0A0A" font-size="11" font-weight="600">start.sh</text>
+  <text x="60" y="530" fill="#0A0A0A" font-size="10" opacity="0.35">pass env var as flag</text>
+
+  <!-- Column 2: CONTRACTS -->
+  <rect x="356" y="100" width="268" height="200" rx="12" fill="#0A0A0A" fill-opacity="0.025" stroke="#0A0A0A" stroke-opacity="0.06"/>
+  <text x="376" y="132" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2.2" opacity="0.45">CONTRACTS · SOLIDITY</text>
+  <line x1="376" y1="144" x2="604" y2="144" stroke="#0A0A0A" stroke-opacity="0.08"/>
+
+  <text x="376" y="168" fill="#0A0A0A" font-size="11" font-weight="600">script/DeployAllVisionBatches.s.sol</text>
+  <text x="376" y="188" fill="#0A0A0A" font-size="10" opacity="0.45">_getSourceNames() array entry</text>
+  <text x="376" y="204" fill="#0A0A0A" font-size="10" opacity="0.45">bump array size constants</text>
+  <text x="376" y="220" fill="#0A0A0A" font-size="10" opacity="0.45">match in _exportBatchMapping()</text>
+
+  <rect x="376" y="240" width="228" height="48" rx="10" fill="#10B981" fill-opacity="0.08" stroke="#10B981" stroke-opacity="0.3"/>
+  <text x="490" y="259" text-anchor="middle" fill="#0A0A0A" font-size="10" font-weight="600" opacity="0.7">no batch pool = no markets</text>
+  <text x="490" y="276" text-anchor="middle" fill="#0A0A0A" font-size="9" opacity="0.4">bump both sizes or the deploy fails silently</text>
+
+  <!-- Column 3: FRONTEND -->
+  <rect x="356" y="316" width="584" height="248" rx="12" fill="#0A0A0A" fill-opacity="0.025" stroke="#0A0A0A" stroke-opacity="0.06"/>
+  <text x="376" y="348" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2.2" opacity="0.45">FRONTEND · TYPESCRIPT</text>
+  <line x1="376" y1="360" x2="920" y2="360" stroke="#0A0A0A" stroke-opacity="0.08"/>
+
+  <text x="376" y="384" fill="#0A0A0A" font-size="11" font-weight="600">lib/vision/sources.ts</text>
+  <text x="376" y="400" fill="#0A0A0A" font-size="10" opacity="0.35">VISION_SOURCES entry via S() helper</text>
+
+  <text x="376" y="430" fill="#0A0A0A" font-size="11" font-weight="600">lib/vision/market-categories.ts</text>
+  <text x="376" y="446" fill="#0A0A0A" font-size="10" opacity="0.35">PREFIX_MAP + CATEGORY_ORDER</text>
+
+  <text x="376" y="476" fill="#0A0A0A" font-size="11" font-weight="600">components/.../VisionMarketsGrid.tsx</text>
+  <text x="376" y="492" fill="#0A0A0A" font-size="10" opacity="0.35">CATEGORY_GROUPS slot</text>
+
+  <text x="660" y="384" fill="#0A0A0A" font-size="11" font-weight="600">components/.../SourceDetailModal.tsx</text>
+  <text x="660" y="400" fill="#0A0A0A" font-size="10" opacity="0.35">SOURCE_META mapping</text>
+
+  <text x="660" y="430" fill="#0A0A0A" font-size="11" font-weight="600">components/.../SourceHealthTable.tsx</text>
+  <text x="660" y="446" fill="#0A0A0A" font-size="10" opacity="0.35">API_KEY_LINKS · gated sources only</text>
+
+  <text x="660" y="476" fill="#0A0A0A" font-size="11" font-weight="600">public/source-imgs/new-{source}.svg</text>
+  <text x="660" y="492" fill="#0A0A0A" font-size="10" opacity="0.35">real company logo, never invent one</text>
+
+  <line x1="376" y1="514" x2="920" y2="514" stroke="#0A0A0A" stroke-opacity="0.08"/>
+  <text x="648" y="538" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.4">Backend ships data. Frontend ships clarity.</text>
+</svg>

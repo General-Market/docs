@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 700" width="980" height="700" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-opacity="0.04"/>
+    </filter>
+    <marker id="arrowR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0A0A0A" fill-opacity="0.5"/>
+    </marker>
+    <marker id="arrowL" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M10,0 L0,5 L10,10 z" fill="#0A0A0A" fill-opacity="0.5"/>
+    </marker>
+  </defs>
+
+  <rect width="980" height="700" fill="white"/>
+  <circle cx="80" cy="640" r="180" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="900" cy="80" r="160" fill="#0A0A0A" opacity="0.02"/>
+
+  <text x="490" y="40" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="3.6" opacity="0.45">VISION MARKET LIFECYCLE</text>
+  <text x="490" y="62" text-anchor="middle" fill="#0A0A0A" font-size="13" opacity="0.4">Users stake opinions. The world resolves them. Winners take from losers.</text>
+
+  <!-- Swimlanes -->
+  <rect x="40" y="88" width="220" height="40" rx="10" fill="url(#darkGrad)"/>
+  <text x="150" y="113" text-anchor="middle" fill="white" font-size="12" font-weight="700" letter-spacing="1.6">DATA NODE</text>
+
+  <rect x="280" y="88" width="220" height="40" rx="10" fill="url(#darkGrad)"/>
+  <text x="390" y="113" text-anchor="middle" fill="white" font-size="12" font-weight="700" letter-spacing="1.6">L3 CHAIN</text>
+
+  <rect x="520" y="88" width="220" height="40" rx="10" fill="url(#darkGrad)"/>
+  <text x="630" y="113" text-anchor="middle" fill="white" font-size="12" font-weight="700" letter-spacing="1.6">ORACLES</text>
+
+  <rect x="760" y="88" width="180" height="40" rx="10" fill="url(#darkGrad)"/>
+  <text x="850" y="113" text-anchor="middle" fill="white" font-size="12" font-weight="700" letter-spacing="1.6">SOCIAL BOT</text>
+
+  <g stroke="#0A0A0A" stroke-opacity="0.06" stroke-width="1" stroke-dasharray="4,4">
+    <line x1="150" y1="138" x2="150" y2="660"/>
+    <line x1="390" y1="138" x2="390" y2="660"/>
+    <line x1="630" y1="138" x2="630" y2="660"/>
+    <line x1="850" y1="138" x2="850" y2="660"/>
+  </g>
+
+  <!-- Real-world data card in Data Node lane -->
+  <rect x="60" y="156" width="180" height="80" rx="10" fill="white" stroke="#0A0A0A" stroke-opacity="0.1"/>
+  <text x="76" y="178" fill="#0A0A0A" font-size="10" font-weight="700" letter-spacing="1.6" opacity="0.5">REAL-WORLD DATA</text>
+  <text x="76" y="200" fill="#0A0A0A" font-size="11" opacity="0.7">transport · weather</text>
+  <text x="76" y="216" fill="#0A0A0A" font-size="11" opacity="0.7">energy · sports</text>
+
+  <!-- Anomaly detect chip -->
+  <rect x="60" y="252" width="180" height="44" rx="10" fill="#10B981" fill-opacity="0.12" stroke="#10B981" stroke-opacity="0.5"/>
+  <text x="150" y="270" text-anchor="middle" fill="#10B981" font-size="11" font-weight="700">Anomaly detection</text>
+  <text x="150" y="286" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.5">90+ sources, one cron</text>
+
+  <!-- Anomaly → Social Bot arrow -->
+  <line x1="240" y1="274" x2="850" y2="274" stroke="#0A0A0A" stroke-opacity="0.4" stroke-width="1.2" marker-end="url(#arrowR)"/>
+
+  <!-- Social Bot post chip -->
+  <rect x="770" y="302" width="160" height="40" rx="10" fill="white" stroke="#0A0A0A" stroke-opacity="0.1"/>
+  <text x="850" y="326" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.7">Post to Twitter/X</text>
+
+  <!-- Oracles createBatch → L3 -->
+  <line x1="630" y1="362" x2="390" y2="362" stroke="#0A0A0A" stroke-opacity="0.5" stroke-width="1.2" marker-end="url(#arrowL)"/>
+  <text x="510" y="354" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="600" font-family="ui-monospace, SF Mono, Menlo, monospace">createBatch()</text>
+
+  <!-- Batch active card -->
+  <rect x="300" y="378" width="180" height="60" rx="10" fill="url(#darkGrad)"/>
+  <text x="390" y="402" text-anchor="middle" fill="white" font-size="12" font-weight="700" letter-spacing="1.6">BATCH ACTIVE</text>
+  <text x="390" y="422" text-anchor="middle" fill="white" font-size="10" opacity="0.55">users + bots bet</text>
+
+  <!-- Vision Bot reads data arrow (data node ← L3 via bot) -->
+  <line x1="240" y1="468" x2="300" y2="468" stroke="#0A0A0A" stroke-opacity="0.3" stroke-width="1" stroke-dasharray="3,3"/>
+  <rect x="300" y="450" width="180" height="44" rx="10" fill="white" stroke="#0A0A0A" stroke-opacity="0.1"/>
+  <text x="390" y="468" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="600">Vision Bot bets</text>
+  <text x="390" y="484" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.5">reads data, places trades</text>
+
+  <!-- resolveTick (oracles → L3) -->
+  <line x1="630" y1="528" x2="390" y2="528" stroke="#0A0A0A" stroke-opacity="0.5" stroke-width="1.2" marker-end="url(#arrowL)"/>
+  <text x="510" y="520" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="600" font-family="ui-monospace, SF Mono, Menlo, monospace">resolveTick()</text>
+  <text x="510" y="544" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.5">BLS-signed outcomes</text>
+
+  <!-- Tick data: Data Node → Oracles -->
+  <line x1="240" y1="556" x2="630" y2="556" stroke="#0A0A0A" stroke-opacity="0.4" stroke-width="1.2" marker-end="url(#arrowR)"/>
+  <text x="430" y="572" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.6">tick data (actual outcomes)</text>
+
+  <!-- Payouts -->
+  <rect x="300" y="594" width="180" height="46" rx="10" fill="#10B981" fill-opacity="0.12" stroke="#10B981" stroke-opacity="0.5"/>
+  <text x="390" y="614" text-anchor="middle" fill="#10B981" font-size="11" font-weight="700">Payouts distributed</text>
+  <text x="390" y="630" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.5">winners take from losers</text>
+</svg>

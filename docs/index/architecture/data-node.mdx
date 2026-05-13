@@ -9,51 +9,7 @@ Ninety-one sources. One database. The world reduced to rows.
 
 76,000 lines of Rust that watch earthquakes, train delays, crypto prices, Congressional stock trades, and McDonald's ice cream machine outages -- then store the results in PostgreSQL and serve them through 50+ endpoints. Every price the protocol touches passes through this service. It is the single data backbone for frontend, oracles, Vision, and the explorer. If it stops, everything stops.
 
-```
- ╔══════════════════════════════════════════════════════════════════════════════╗
- ║                              DATA NODE                                      ║
- ║               91 Sources  •  REST  •  WebSocket  •  SSE                     ║
- ╠══════════════════════════════════════════════════════════════════════════════╣
- ║                                                                              ║
- ║  EXTERNAL DATA               COLLECTORS              STORAGE                ║
- ║  ┌─────────────┐         ┌────────────────┐      ┌────────────────────┐     ║
- ║  │ Earthquakes │────┐    │ Market Data    │─────►│ market_prices      │     ║
- ║  │ Weather     │────┤    │ (91 sources)   │      │ market_prices_     │     ║
- ║  │ Trains      │────┤    ├────────────────┤      │   latest           │     ║
- ║  │ Flights     │────┤    │ CoinGecko      │─────►│ coingecko_mcaps    │     ║
- ║  │ Crypto      │────┤    │ (mcap/cats)    │      │ coingecko_cats     │     ║
- ║  │ Stocks      │────┼───►├────────────────┤      ├────────────────────┤     ║
- ║  │ DeFi        │────┤    │ DeFi Llama     │─────►│ dl_protocols       │     ║
- ║  │ Esports     │────┤    │ (TVL/fees)     │      │ dl_metrics         │     ║
- ║  │ Reddit      │────┤    ├────────────────┤      ├────────────────────┤     ║
- ║  │ Steam       │────┤    │ Kline/OHLCV    │─────►│ klines             │     ║
- ║  │ Twitch      │────┤    ├────────────────┤      ├────────────────────┤     ║
- ║  │ Nuclear     │────┤    │ Trade          │─────►│ trades             │     ║
- ║  │ Volcanoes   │────┤    ├────────────────┤      ├────────────────────┤     ║
- ║  │ Space       │────┤    │ Liquidity      │─────►│ liquidity          │     ║
- ║  │ Animals     │────┤    ├────────────────┤      ├────────────────────┤     ║
- ║  │ ...87 more  │────┘    │ Chain Pollers  │─────►│ itp_snapshots      │     ║
- ║  └─────────────┘         │ (L3 + Settl.)  │      │ oracle_health      │     ║
- ║                          ├────────────────┤      ├────────────────────┤     ║
- ║                          │ FNG / Oracle   │─────►│ fng_index          │     ║
- ║                          │ Health / GitHub │      │ github_metrics     │     ║
- ║                          └────────────────┘      └─────────┬──────────┘     ║
- ║                                                            │                ║
- ║                                                            ▼                ║
- ║  CONSUMERS                                        ┌────────────────────┐    ║
- ║  ┌─────────────┐     ┌──────────────────┐         │     REST API       │    ║
- ║  │  Frontend   │◄────│  /price /prices   │◄────────│   50+ endpoints    │    ║
- ║  │  (Next.js)  │     │  /itp-price /nav  │         │   Axum + Tower     │    ║
- ║  ├─────────────┤     │  /portfolio       │         └────────────────────┘    ║
- ║  │  Oracles    │◄────│  /sim/run-stream  │                  │               ║
- ║  │  (Rust)     │     │  /vision/ws       │                  ▼               ║
- ║  ├─────────────┤     │  /market/prices   │         ┌────────────────────┐   ║
- ║  │  Explorer   │◄────│  /explorer/*      │         │  WebSocket + SSE   │   ║
- ║  │  Dashboard  │     │  /batches/*       │         │  Real-time streams │   ║
- ║  └─────────────┘     └──────────────────┘         └────────────────────┘   ║
- ║                                                                              ║
- ╚══════════════════════════════════════════════════════════════════════════════╝
-```
+<img src="/images/index/data-node-overview.svg" alt="Data Node — 91 sources funnel through Rust collectors into PostgreSQL, served by 50+ REST endpoints, WebSocket and SSE." />
 
 ## Configuration
 
@@ -72,24 +28,7 @@ Ninety-one sources. One database. The world reduced to rows.
 
 Every source is an independent Tokio task. When one panics, `spawn_resilient` restarts it. The source does not know it died. All writes flow through a shared `BatchWriter` channel that coalesces inserts -- because PostgreSQL has limits, even if the world does not.
 
-```
-     Source APIs          spawn_resilient           BatchWriter          PostgreSQL
-    ┌───────────┐       ┌───────────────┐       ┌──────────────┐     ┌──────────┐
-    │ finnhub   │──────►│  SyncEngine   │──┐    │              │     │          │
-    │ earthquake│──────►│  SyncEngine   │──┤    │   Batched    │     │ market_  │
-    │ twitch    │──────►│  SyncEngine   │──┤    │   INSERT     │     │ prices   │
-    │ volcano   │──────►│  SyncEngine   │──┼───►│   Channel    │────►│          │
-    │ reddit    │──────►│  SyncEngine   │──┤    │              │     │ market_  │
-    │ steam     │──────►│  SyncEngine   │──┤    │  (mpsc +     │     │ prices_  │
-    │ ...       │──────►│  SyncEngine   │──┘    │   coalesce)  │     │ latest   │
-    └───────────┘       └───────┬───────┘       └──────┬───────┘     └──────────┘
-                                │                      │
-                                │                      ▼
-                                │               ┌──────────────┐
-                                │               │  Broadcast   │
-                                └──────────────►│  Hub (WS)    │
-                                                └──────────────┘
-```
+<img src="/images/index/data-node-collectors.svg" alt="Source APIs feed SyncEngines through spawn_resilient. A shared BatchWriter coalesces inserts into PostgreSQL and broadcasts to WebSocket subscribers." />
 
 Each `SyncEngine` owns:
 - A source-specific client (HTTP, WebSocket, or gRPC)
@@ -122,33 +61,7 @@ Beyond the 91 external sources, the data node runs its own collectors -- polling
 
 Two chains, polled simultaneously. The results are cached in memory and served by the API. The chain is the source of truth; the cache is the speed.
 
-```
-    L3 Orbit Chain (111222333)              Settlement Chain
-    ┌──────────────────────────┐           ┌──────────────────┐
-    │  Index.sol               │           │  USDC balances   │
-    │  ├─ getITPState()        │           │  Allowances      │
-    │  ├─ getUserShares()      │           │  Morpho positions│
-    │  ├─ getOrder()           │           │  Bridge proxy    │
-    │  ├─ nextOrderId()        │           └──────────────────┘
-    │  ├─ FillConfirmed events │                    │
-    │  Oracle.sol              │                    │
-    │  ├─ currentPrice()       │                    │
-    │  ├─ lastCycleNumber()    │                    │
-    │  OracleRegistry          │                    │
-    │  ├─ oracle status        │                    │
-    └────────────┬─────────────┘                    │
-                 │                                  │
-                 ▼                                  ▼
-         ┌─────────────────────────────────────────────┐
-         │              ChainCache (in-memory)          │
-         │  NavSnapshot, UserBalances, UserOrders,      │
-         │  MorphoPositions, FillRecords, Oracles       │
-         └──────────────────────┬──────────────────────┘
-                                │
-                                ▼
-                          REST API serves
-                          cached chain state
-```
+<img src="/images/index/chain-pollers.svg" alt="L3 and Settlement chain reads collapse into a single in-memory ChainCache served by the REST API." />
 
 ---
 
@@ -321,43 +234,7 @@ Every source has its own Rust client, config JSON, and SyncEngine. Sixteen categ
 
 Twenty-five migrations. Fifteen tables. Five groups. The schema is a fossil record of every feature that survived.
 
-```
-    ┌─────────────────────────────────────────────────────────────────────┐
-    │                        PostgreSQL Schema                            │
-    ├─────────────────────────────────────────────────────────────────────┤
-    │                                                                     │
-    │  MARKET DATA (Vision sources)           ITP / PORTFOLIO             │
-    │  ┌──────────────────────┐              ┌──────────────────────┐    │
-    │  │ market_prices        │              │ itp_snapshots        │    │
-    │  │   source, asset_id,  │              │   itp_id, nav,       │    │
-    │  │   value, change_pct, │              │   supply, weights    │    │
-    │  │   volume, fetched_at │              ├──────────────────────┤    │
-    │  ├──────────────────────┤              │ trades               │    │
-    │  │ market_prices_latest │              │   order fills,       │    │
-    │  │   (materialized      │              │   prices, amounts    │    │
-    │  │    latest per asset) │              ├──────────────────────┤    │
-    │  ├──────────────────────┤              │ klines               │    │
-    │  │ market_assets        │              │   OHLCV candles      │    │
-    │  │   (source registry)  │              ├──────────────────────┤    │
-    │  └──────────────────────┘              │ liquidity            │    │
-    │                                        │   orderbook depth    │    │
-    │  COINGECKO                             └──────────────────────┘    │
-    │  ┌──────────────────────┐                                          │
-    │  │ coingecko_market_caps│              DEFI LLAMA                  │
-    │  │ coingecko_categories │              ┌──────────────────────┐    │
-    │  │ bitget_listings      │              │ defillama_protocols  │    │
-    │  └──────────────────────┘              │ defillama_metrics    │    │
-    │                                        │ defillama_raises     │    │
-    │  SIMULATION & MISC                     └──────────────────────┘    │
-    │  ┌──────────────────────┐                                          │
-    │  │ simulations          │              SYSTEM                      │
-    │  │ fng_index             │              ┌──────────────────────┐    │
-    │  │ github_metrics       │              │ collector_cursors    │    │
-    │  │ batch_tables         │              │ oracle_health_snaps  │    │
-    │  └──────────────────────┘              └──────────────────────┘    │
-    │                                                                     │
-    └─────────────────────────────────────────────────────────────────────┘
-```
+<img src="/images/index/postgres-schema.svg" alt="PostgreSQL schema — fifteen tables across five groups, the fossil record of every feature that survived." />
 
 ### Key Tables
 
@@ -500,19 +377,7 @@ Explorer endpoints require a `x-explorer-token` header. Authentication uses SHA-
 
 Subscribe to batch IDs. Receive prices as they arrive. Unsubscribe when you have had enough.
 
-```
-    Client                    Data Node                     Source Engines
-    ┌──────┐                 ┌──────────┐                  ┌──────────┐
-    │      │── subscribe ───►│          │                  │          │
-    │      │   [42, 77]      │  WS      │◄── broadcast ───│ SyncEng  │
-    │      │                 │  Handler  │    PriceBatch    │ (91x)   │
-    │      │◄── prices ─────│          │                  │          │
-    │      │   {batchId:42,  │          │                  │          │
-    │      │    markets:[..]}│          │                  │          │
-    │      │── unsubscribe ─►│          │                  │          │
-    │      │   [42]          │          │                  │          │
-    └──────┘                 └──────────┘                  └──────────┘
-```
+<img src="/images/index/websocket-subscribe.svg" alt="WebSocket subscribe / broadcast / unsubscribe handshake between client, Data Node, and the 91 source engines." />
 
 **Protocol:**
 - Client sends `{"subscribe": [42, 77]}` to start receiving prices for batch IDs 42 and 77

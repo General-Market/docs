@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 420" width="980" height="420" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGradQr" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadowQr">
+      <feDropShadow dx="0" dy="2" stdDeviation="10" flood-opacity="0.04"/>
+    </filter>
+  </defs>
+
+  <rect width="980" height="420" fill="white"/>
+  <circle cx="50" cy="50" r="140" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="940" cy="380" r="160" fill="#0A0A0A" opacity="0.02"/>
+
+  <text x="490" y="42" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="3.6" opacity="0.45">QUICK REFERENCE</text>
+
+  <!-- L3 column (dark) -->
+  <g filter="url(#shadowQr)">
+    <rect x="40" y="68" width="440" height="320" rx="14" fill="url(#darkGradQr)"/>
+  </g>
+  <text x="64" y="96" fill="white" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.5">INDEX L3</text>
+  <line x1="64" y1="108" x2="456" y2="108" stroke="white" stroke-opacity="0.1"/>
+
+  <g font-size="12">
+    <text x="64" y="136" fill="white" opacity="0.5">Chain ID</text>
+    <text x="240" y="136" fill="white" font-weight="700" font-family="ui-monospace, SF Mono, Menlo, monospace">111222333</text>
+
+    <text x="64" y="160" fill="white" opacity="0.5">RPC</text>
+    <text x="240" y="160" fill="white" font-weight="500" font-family="ui-monospace, SF Mono, Menlo, monospace" font-size="11">rpc.generalmarket.io</text>
+
+    <text x="64" y="184" fill="white" opacity="0.5">Native</text>
+    <text x="240" y="184" fill="white" font-weight="700">GM</text>
+
+    <text x="64" y="208" fill="white" opacity="0.5">USDC</text>
+    <text x="240" y="208" fill="white" font-weight="700">18 decimals</text>
+
+    <text x="64" y="232" fill="white" opacity="0.5">Explorer</text>
+    <text x="240" y="232" fill="white" opacity="0.55">—</text>
+  </g>
+
+  <line x1="64" y1="252" x2="456" y2="252" stroke="white" stroke-opacity="0.1"/>
+  <text x="64" y="278" fill="white" font-size="10" font-weight="700" letter-spacing="2" opacity="0.5">WHAT LIVES HERE</text>
+  <g font-size="11" fill="white" opacity="0.65">
+    <text x="64" y="302">· ITP shares</text>
+    <text x="64" y="322">· Vision markets</text>
+    <text x="64" y="342">· Core protocol · Index.sol</text>
+    <text x="64" y="362">· BLS consensus · order matching</text>
+  </g>
+
+  <!-- Settlement column (light) -->
+  <g filter="url(#shadowQr)">
+    <rect x="500" y="68" width="440" height="320" rx="14" fill="white" stroke="#0A0A0A" stroke-opacity="0.08"/>
+  </g>
+  <rect x="500" y="68" width="3" height="40" rx="1.5" fill="#10B981"/>
+  <text x="524" y="96" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.45">SETTLEMENT</text>
+  <line x1="524" y1="108" x2="916" y2="108" stroke="#0A0A0A" stroke-opacity="0.08"/>
+
+  <g font-size="12">
+    <text x="524" y="136" fill="#0A0A0A" opacity="0.5">Chain ID</text>
+    <text x="700" y="136" fill="#0A0A0A" font-weight="700" font-family="ui-monospace, SF Mono, Menlo, monospace">14601</text>
+
+    <text x="524" y="160" fill="#0A0A0A" opacity="0.5">RPC</text>
+    <text x="700" y="160" fill="#0A0A0A" font-weight="500" font-family="ui-monospace, SF Mono, Menlo, monospace" font-size="11">rpc.testnet.soniclabs.com</text>
+
+    <text x="524" y="184" fill="#0A0A0A" opacity="0.5">Native</text>
+    <text x="700" y="184" fill="#0A0A0A" font-weight="700">S</text>
+
+    <text x="524" y="208" fill="#0A0A0A" opacity="0.5">USDC</text>
+    <text x="700" y="208" fill="#0A0A0A" font-weight="700">6 decimals</text>
+
+    <text x="524" y="232" fill="#0A0A0A" opacity="0.5">Explorer</text>
+    <text x="700" y="232" fill="#0A0A0A" font-weight="500" font-family="ui-monospace, SF Mono, Menlo, monospace" font-size="11">testnet.sonicscan.org</text>
+  </g>
+
+  <line x1="524" y1="252" x2="916" y2="252" stroke="#0A0A0A" stroke-opacity="0.08"/>
+  <text x="524" y="278" fill="#0A0A0A" font-size="10" font-weight="700" letter-spacing="2" opacity="0.5">WHAT LIVES HERE</text>
+  <g font-size="11" fill="#0A0A0A" opacity="0.7">
+    <text x="524" y="302">· BridgedITP · ERC-20 replicas</text>
+    <text x="524" y="322">· Bridge custody contracts</text>
+    <text x="524" y="342">· Morpho lending markets</text>
+    <text x="524" y="362">· Vision USDC deposits</text>
+  </g>
+</svg>
