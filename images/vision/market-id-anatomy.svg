@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 440" width="980" height="440" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-opacity="0.03"/>
+    </filter>
+  </defs>
+
+  <rect width="980" height="440" fill="white"/>
+  <circle cx="80" cy="380" r="160" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="900" cy="40" r="140" fill="#0A0A0A" opacity="0.02"/>
+
+  <text x="490" y="42" text-anchor="middle" fill="#0A0A0A" font-size="12" font-weight="700" letter-spacing="3" opacity="0.45">MARKET ID ANATOMY</text>
+  <text x="490" y="64" text-anchor="middle" fill="#0A0A0A" font-size="13" opacity="0.4">Prefix decides the source. Asset decides the row.</text>
+
+  <!-- Four examples stacked. Each row: ~64 tall. Starts y=104. -->
+  <!-- Each: pill prefix + pill asset, with labels under -->
+
+  <!-- Row 1 -->
+  <g transform="translate(120, 100)">
+    <rect x="0"   y="0" width="120" height="44" rx="10" fill="#10B981" fill-opacity="0.12"/>
+    <text x="60"  y="29" text-anchor="middle" fill="#10B981" font-size="15" font-weight="600" font-family="ui-monospace, SF Mono, Menlo, monospace">crypto_</text>
+
+    <rect x="124" y="0" width="200" height="44" rx="10" fill="#0A0A0A" fill-opacity="0.05"/>
+    <text x="224" y="29" text-anchor="middle" fill="#0A0A0A" font-size="15" font-weight="600" font-family="ui-monospace, SF Mono, Menlo, monospace">BTC-USD</text>
+
+    <text x="60"  y="64" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.45" letter-spacing="1.5">PREFIX</text>
+    <text x="224" y="64" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.45" letter-spacing="1.5">ASSET</text>
+
+    <text x="560" y="29" fill="#0A0A0A" font-size="13" opacity="0.55">CoinGecko · cryptocurrency prices</text>
+  </g>
+
+  <line x1="80" y1="190" x2="900" y2="190" stroke="#0A0A0A" stroke-opacity="0.05"/>
+
+  <!-- Row 2 -->
+  <g transform="translate(120, 200)">
+    <rect x="0"   y="0" width="120" height="44" rx="10" fill="#10B981" fill-opacity="0.12"/>
+    <text x="60"  y="29" text-anchor="middle" fill="#10B981" font-size="15" font-weight="600" font-family="ui-monospace, SF Mono, Menlo, monospace">earthquake_</text>
+
+    <rect x="124" y="0" width="200" height="44" rx="10" fill="#0A0A0A" fill-opacity="0.05"/>
+    <text x="224" y="29" text-anchor="middle" fill="#0A0A0A" font-size="15" font-weight="600" font-family="ui-monospace, SF Mono, Menlo, monospace">california</text>
+
+    <text x="60"  y="64" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.45" letter-spacing="1.5">PREFIX</text>
+    <text x="224" y="64" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.45" letter-spacing="1.5">ASSET</text>
+
+    <text x="560" y="29" fill="#0A0A0A" font-size="13" opacity="0.55">USGS · regional seismic magnitude</text>
+  </g>
+
+  <line x1="80" y1="290" x2="900" y2="290" stroke="#0A0A0A" stroke-opacity="0.05"/>
+
+  <!-- Row 3 -->
+  <g transform="translate(120, 300)">
+    <rect x="0"   y="0" width="120" height="44" rx="10" fill="#10B981" fill-opacity="0.12"/>
+    <text x="60"  y="29" text-anchor="middle" fill="#10B981" font-size="15" font-weight="600" font-family="ui-monospace, SF Mono, Menlo, monospace">db_trains_</text>
+
+    <rect x="124" y="0" width="200" height="44" rx="10" fill="#0A0A0A" fill-opacity="0.05"/>
+    <text x="224" y="29" text-anchor="middle" fill="#0A0A0A" font-size="15" font-weight="600" font-family="ui-monospace, SF Mono, Menlo, monospace">berlin_hbf</text>
+
+    <text x="60"  y="64" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.45" letter-spacing="1.5">PREFIX</text>
+    <text x="224" y="64" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.45" letter-spacing="1.5">ASSET</text>
+
+    <text x="560" y="29" fill="#0A0A0A" font-size="13" opacity="0.55">Deutsche Bahn · average station delay</text>
+  </g>
+
+  <line x1="80" y1="390" x2="900" y2="390" stroke="#0A0A0A" stroke-opacity="0.05"/>
+
+  <!-- Row 4 -->
+  <g transform="translate(120, 400)">
+    <rect x="0"   y="0" width="120" height="36" rx="10" fill="#10B981" fill-opacity="0.12"/>
+    <text x="60"  y="25" text-anchor="middle" fill="#10B981" font-size="14" font-weight="600" font-family="ui-monospace, SF Mono, Menlo, monospace">mcbroken_</text>
+
+    <rect x="124" y="0" width="200" height="36" rx="10" fill="#0A0A0A" fill-opacity="0.05"/>
+    <text x="224" y="25" text-anchor="middle" fill="#0A0A0A" font-size="14" font-weight="600" font-family="ui-monospace, SF Mono, Menlo, monospace">chicago</text>
+
+    <text x="560" y="25" fill="#0A0A0A" font-size="13" opacity="0.55">McBroken · percent of ice cream machines broken</text>
+  </g>
+</svg>

@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 720" width="980" height="720" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-opacity="0.03"/>
+    </filter>
+  </defs>
+
+  <rect width="980" height="720" fill="white"/>
+  <circle cx="100" cy="640" r="180" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="880" cy="100" r="160" fill="#0A0A0A" opacity="0.02"/>
+
+  <!-- External APIs row -->
+  <text x="490" y="56" text-anchor="middle" fill="#0A0A0A" font-size="10" font-weight="600" letter-spacing="3" opacity="0.4">EXTERNAL APIS · 90+ SOURCES</text>
+
+  <g>
+    <rect x="80" y="76" width="140" height="56" rx="10" fill="#0A0A0A" fill-opacity="0.03" filter="url(#shadow)"/>
+    <text x="150" y="100" text-anchor="middle" fill="#0A0A0A" font-size="13" font-weight="600">USGS</text>
+    <text x="150" y="120" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.4">earthquakes</text>
+
+    <rect x="240" y="76" width="140" height="56" rx="10" fill="#0A0A0A" fill-opacity="0.03" filter="url(#shadow)"/>
+    <text x="310" y="100" text-anchor="middle" fill="#0A0A0A" font-size="13" font-weight="600">CoinGecko</text>
+    <text x="310" y="120" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.4">crypto prices</text>
+
+    <rect x="400" y="76" width="140" height="56" rx="10" fill="#0A0A0A" fill-opacity="0.03" filter="url(#shadow)"/>
+    <text x="470" y="100" text-anchor="middle" fill="#0A0A0A" font-size="13" font-weight="600">TFL</text>
+    <text x="470" y="120" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.4">tube delays</text>
+
+    <rect x="560" y="76" width="140" height="56" rx="10" fill="#0A0A0A" fill-opacity="0.03" filter="url(#shadow)"/>
+    <text x="630" y="100" text-anchor="middle" fill="#0A0A0A" font-size="13" font-weight="600">GitHub</text>
+    <text x="630" y="120" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.4">repos · stars</text>
+
+    <rect x="720" y="76" width="140" height="56" rx="10" fill="#0A0A0A" fill-opacity="0.03" filter="url(#shadow)"/>
+    <text x="790" y="100" text-anchor="middle" fill="#0A0A0A" font-size="13" font-weight="600">86 more</text>
+    <text x="790" y="120" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.4">weather, npm, …</text>
+  </g>
+
+  <!-- Funnel lines -->
+  <g stroke="#0A0A0A" stroke-opacity="0.12" stroke-width="1">
+    <line x1="150" y1="138" x2="490" y2="180"/>
+    <line x1="310" y1="138" x2="490" y2="180"/>
+    <line x1="470" y1="138" x2="490" y2="180"/>
+    <line x1="630" y1="138" x2="490" y2="180"/>
+    <line x1="790" y1="138" x2="490" y2="180"/>
+  </g>
+  <circle cx="490" cy="180" r="3" fill="#0A0A0A" opacity="0.3"/>
+  <line x1="490" y1="183" x2="490" y2="216" stroke="#0A0A0A" stroke-opacity="0.15" stroke-width="1"/>
+
+  <!-- DATA NODE -->
+  <rect x="180" y="216" width="620" height="120" rx="14" fill="#0A0A0A" fill-opacity="0.03" filter="url(#shadow)"/>
+  <text x="200" y="246" fill="#0A0A0A" font-size="10" font-weight="600" letter-spacing="2" opacity="0.4">DATA NODE — RUST</text>
+  <text x="200" y="276" fill="#0A0A0A" font-size="18" font-weight="700">Collect · validate · store</text>
+  <line x1="200" y1="290" x2="780" y2="290" stroke="#0A0A0A" stroke-opacity="0.08"/>
+  <text x="200" y="316" fill="#0A0A0A" font-size="11" opacity="0.55">HTTP polling</text>
+  <text x="370" y="316" fill="#0A0A0A" font-size="11" opacity="0.55">bounds · staleness</text>
+  <text x="600" y="316" fill="#0A0A0A" font-size="11" opacity="0.55">Postgres</text>
+
+  <line x1="490" y1="336" x2="490" y2="372" stroke="#0A0A0A" stroke-opacity="0.15" stroke-width="1" stroke-dasharray="4,4"/>
+  <circle cx="490" cy="372" r="3" fill="#0A0A0A" opacity="0.3"/>
+
+  <!-- ORACLES dark panel -->
+  <rect x="80" y="380" width="820" height="180" rx="14" fill="url(#darkGrad)" filter="url(#shadow)"/>
+  <text x="100" y="412" fill="white" font-size="10" font-weight="600" letter-spacing="2" opacity="0.5">ORACLES — THREE NODES</text>
+  <text x="100" y="442" fill="white" font-size="20" font-weight="700">Read prices. Resolve ticks. Sign.</text>
+
+  <g>
+    <rect x="100" y="466" width="240" height="76" rx="10" fill="white" fill-opacity="0.06"/>
+    <text x="220" y="494" text-anchor="middle" fill="white" font-size="13" font-weight="600">Oracle 1</text>
+    <text x="220" y="514" text-anchor="middle" fill="white" font-size="10" opacity="0.5">read · resolve · BLS sign</text>
+    <circle cx="220" cy="528" r="3" fill="#10B981"/>
+
+    <rect x="370" y="466" width="240" height="76" rx="10" fill="white" fill-opacity="0.06"/>
+    <text x="490" y="494" text-anchor="middle" fill="white" font-size="13" font-weight="600">Oracle 2</text>
+    <text x="490" y="514" text-anchor="middle" fill="white" font-size="10" opacity="0.5">read · resolve · BLS sign</text>
+    <circle cx="490" cy="528" r="3" fill="#10B981"/>
+
+    <rect x="640" y="466" width="240" height="76" rx="10" fill="white" fill-opacity="0.06"/>
+    <text x="760" y="494" text-anchor="middle" fill="white" font-size="13" font-weight="600">Oracle 3</text>
+    <text x="760" y="514" text-anchor="middle" fill="white" font-size="10" opacity="0.5">read · resolve · BLS sign</text>
+    <circle cx="760" cy="528" r="3" fill="#10B981"/>
+  </g>
+
+  <text x="490" y="554" text-anchor="middle" fill="white" font-size="10" opacity="0.4" letter-spacing="2">QUORUM ⌈2N/3⌉ · AGGREGATED SIGNATURE</text>
+
+  <line x1="490" y1="572" x2="490" y2="608" stroke="#0A0A0A" stroke-opacity="0.15" stroke-width="1" stroke-dasharray="4,4"/>
+  <circle cx="490" cy="608" r="3" fill="#0A0A0A" opacity="0.3"/>
+
+  <!-- SMART CONTRACTS -->
+  <rect x="180" y="616" width="620" height="84" rx="14" fill="#0A0A0A" fill-opacity="0.03" filter="url(#shadow)"/>
+  <text x="200" y="646" fill="#0A0A0A" font-size="10" font-weight="600" letter-spacing="2" opacity="0.4">SMART CONTRACTS</text>
+  <line x1="200" y1="658" x2="780" y2="658" stroke="#0A0A0A" stroke-opacity="0.08"/>
+  <text x="200" y="684" fill="#0A0A0A" font-size="12" opacity="0.7">Vision.sol</text>
+  <text x="296" y="684" fill="#0A0A0A" font-size="11" opacity="0.4">sealed bitmaps · BLS claims</text>
+  <text x="560" y="684" fill="#0A0A0A" font-size="12" opacity="0.7">VisionReserve</text>
+  <text x="672" y="684" fill="#0A0A0A" font-size="11" opacity="0.4">USDC custody</text>
+</svg>

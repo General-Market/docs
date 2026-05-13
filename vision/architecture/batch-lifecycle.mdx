@@ -334,55 +334,7 @@ The loop closes. Outcomes inform future thresholds. Thresholds shape future outc
 
 ## The Complete Pipeline
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                           DATA NODE                                     │
-│                                                                         │
-│  100 Sources ──► SyncEngine ──► market_prices_latest                    │
-│                                       │                                 │
-│                                BatchEngine (60s)                        │
-│                                       │                                 │
-│                            batch_configs (DB + memory)                  │
-│                                       │                                 │
-│                          GET /batches/recommended                       │
-└───────────────────────────────┬─────────────────────────────────────────┘
-                                │
-┌───────────────────────────────▼─────────────────────────────────────────┐
-│                           ORACLE (×3)                                   │
-│                                                                         │
-│  Lifecycle Manager (heartbeat per source)                               │
-│       │                                                                 │
-│       ├──► Create new batch (BLS consensus → createBatch on-chain)      │
-│       │                                                                 │
-│       └──► Resolve previous batch:                                      │
-│                1. Fetch config + prices from data-node                  │
-│                2. Flip bitmaps (pending → active)                       │
-│                3. Per-market resolution (prices → outcome → matching)   │
-│                4. Compute settlement (deterministic payouts)            │
-│                5. BLS sign → aggregate in Postgres                      │
-│                6. Submit settleBatch when quorum reached                │
-│                7. POST settlement outcomes back to data-node            │
-│                                                                         │
-└───────────────────────────────┬─────────────────────────────────────────┘
-                                │
-┌───────────────────────────────▼─────────────────────────────────────────┐
-│                         L3 BLOCKCHAIN                                   │
-│                                                                         │
-│  Vision.sol                                                             │
-│       ├── createBatch() → BatchCreated event                            │
-│       ├── joinBatchDirect() → PlayerJoined event                        │
-│       ├── updateBitmap() → BitmapUpdated event                          │
-│       ├── settleBatch() → PlayerSettled + BatchSettled events            │
-│       └── pause() / unpause()                                           │
-│                                                                         │
-│  VisionReserve.sol                                                      │
-│       └── USDC custody — deposits, withdrawals, reward transfers        │
-│                                                                         │
-│  OracleRegistry.sol                                                     │
-│       └── BLS public keys, aggregated pubkey, threshold                 │
-│                                                                         │
-└─────────────────────────────────────────────────────────────────────────┘
-```
+<img src="/images/vision/batch-pipeline.svg" alt="Complete batch pipeline — data-node, three oracles, and L3 contracts with feedback loop" />
 
 ---
 

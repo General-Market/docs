@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 420" width="980" height="420" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGradWs" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadowWs">
+      <feDropShadow dx="0" dy="2" stdDeviation="10" flood-opacity="0.04"/>
+    </filter>
+    <marker id="aWsR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0A0A0A" fill-opacity="0.45"/>
+    </marker>
+    <marker id="aWsL" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M10,0 L0,5 L10,10 z" fill="#0A0A0A" fill-opacity="0.45"/>
+    </marker>
+    <marker id="aWsGreen" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M10,0 L0,5 L10,10 z" fill="#10B981"/>
+    </marker>
+  </defs>
+
+  <rect width="980" height="420" fill="white"/>
+  <circle cx="50" cy="50" r="160" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="940" cy="380" r="160" fill="#0A0A0A" opacity="0.02"/>
+
+  <text x="490" y="44" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="3.6" opacity="0.45">WEBSOCKET</text>
+  <text x="490" y="66" text-anchor="middle" fill="#0A0A0A" font-size="12" opacity="0.45">Subscribe by batch id. Receive prices as they arrive.</text>
+
+  <!-- Three columns -->
+  <rect x="40" y="98" width="240" height="280" rx="14" fill="white" stroke="#0A0A0A" stroke-opacity="0.08" filter="url(#shadowWs)"/>
+  <text x="64" y="128" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.45">CLIENT</text>
+  <text x="64" y="156" fill="#0A0A0A" font-size="14" font-weight="700">Frontend · bot · dashboard</text>
+  <line x1="60" y1="172" x2="260" y2="172" stroke="#0A0A0A" stroke-opacity="0.08"/>
+  <text x="64" y="210" fill="#0A0A0A" font-size="11" opacity="0.55">opens /vision/ws</text>
+  <text x="64" y="244" fill="#0A0A0A" font-size="11" opacity="0.55">tracks N batches</text>
+  <text x="64" y="278" fill="#0A0A0A" font-size="11" opacity="0.55">unsubscribes when done</text>
+
+  <rect x="370" y="98" width="240" height="280" rx="14" fill="url(#darkGradWs)" filter="url(#shadowWs)"/>
+  <text x="394" y="128" fill="white" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.5">DATA NODE</text>
+  <text x="394" y="156" fill="white" font-size="14" font-weight="700">WS Handler</text>
+  <line x1="390" y1="172" x2="590" y2="172" stroke="white" stroke-opacity="0.12"/>
+  <text x="394" y="210" fill="white" font-size="11" opacity="0.6">routes subscriptions</text>
+  <text x="394" y="244" fill="white" font-size="11" opacity="0.6">fans out batches</text>
+  <text x="394" y="278" fill="white" font-size="11" opacity="0.6">drops stale clients</text>
+
+  <rect x="700" y="98" width="240" height="280" rx="14" fill="white" stroke="#0A0A0A" stroke-opacity="0.08" filter="url(#shadowWs)"/>
+  <rect x="700" y="98" width="3" height="60" rx="1.5" fill="#10B981"/>
+  <text x="724" y="128" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.45">SOURCE ENGINES</text>
+  <text x="724" y="156" fill="#0A0A0A" font-size="14" font-weight="700">SyncEngine · 91×</text>
+  <line x1="720" y1="172" x2="920" y2="172" stroke="#0A0A0A" stroke-opacity="0.08"/>
+  <text x="724" y="210" fill="#0A0A0A" font-size="11" opacity="0.55">poll source on schedule</text>
+  <text x="724" y="244" fill="#0A0A0A" font-size="11" opacity="0.55">broadcast PriceBatch</text>
+  <text x="724" y="278" fill="#0A0A0A" font-size="11" opacity="0.55">never block on consumers</text>
+
+  <!-- Arrows -->
+  <!-- subscribe -->
+  <line x1="284" y1="200" x2="366" y2="200" stroke="#0A0A0A" stroke-opacity="0.45" stroke-width="1.2" marker-end="url(#aWsR)"/>
+  <text x="325" y="194" text-anchor="middle" fill="#0A0A0A" font-size="10" font-weight="600" font-family="ui-monospace, SF Mono, Menlo, monospace">subscribe [42,77]</text>
+
+  <!-- broadcast -->
+  <line x1="696" y1="234" x2="614" y2="234" stroke="#0A0A0A" stroke-opacity="0.45" stroke-width="1.2" marker-end="url(#aWsL)"/>
+  <text x="655" y="228" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.55">broadcast</text>
+
+  <!-- prices to client -->
+  <line x1="366" y1="266" x2="284" y2="266" stroke="#10B981" stroke-width="1.2" marker-end="url(#aWsGreen)"/>
+  <text x="325" y="260" text-anchor="middle" fill="#10B981" font-size="10" font-weight="600" font-family="ui-monospace, SF Mono, Menlo, monospace">prices · batch 42</text>
+
+  <!-- unsubscribe -->
+  <line x1="284" y1="320" x2="366" y2="320" stroke="#0A0A0A" stroke-opacity="0.45" stroke-width="1.2" marker-end="url(#aWsR)"/>
+  <text x="325" y="314" text-anchor="middle" fill="#0A0A0A" font-size="10" font-weight="600" font-family="ui-monospace, SF Mono, Menlo, monospace">unsubscribe [42]</text>
+</svg>

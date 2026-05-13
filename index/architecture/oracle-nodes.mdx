@@ -124,15 +124,4 @@ The oracles and the AP do not talk. They cannot. This is not a limitation -- it 
   Oracle nodes **cannot communicate directly** with the AP. The AP discovers confirmed batches exclusively through on-chain `TradeRequest` events. This boundary exists because if the signers and the executor could coordinate off-chain, the system would have a single point of collusion.
 </Warning>
 
-```text
-  Oracle Nodes                L3 Chain                AP
-  ┌───────────┐         ┌──────────────┐        ┌─────────┐
-  │           │────tx──►│  Index.sol   │        │         │
-  │  Consensus│         │              │──event─►│ Execute │
-  │  + BLS    │         │ confirmBatch │        │  Fills  │
-  │           │         │  emits event │        │         │
-  └───────────┘         └──────────────┘        └─────────┘
-        ▲                                            │
-        │              No direct link                │
-        └────────────── ✕ ───────────────────────────┘
-```
+<img src="/images/index/ap-isolation.svg" alt="Oracles sign batches on-chain; the AP only learns of them through events." />

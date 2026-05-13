@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 420" width="980" height="420" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-opacity="0.03"/>
+    </filter>
+  </defs>
+
+  <rect width="980" height="420" fill="white"/>
+  <circle cx="120" cy="360" r="180" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="860" cy="60" r="160" fill="#0A0A0A" opacity="0.02"/>
+
+  <!-- Header strip -->
+  <rect x="40" y="32" width="900" height="48" rx="12" fill="url(#darkGrad)"/>
+  <text x="490" y="61" text-anchor="middle" fill="white" font-size="12" font-weight="600" letter-spacing="3">UNIFIED POINTS SYSTEM</text>
+
+  <!-- Three pool cards -->
+  <g>
+    <rect x="40" y="104" width="280" height="200" rx="12" fill="#0A0A0A" fill-opacity="0.03" filter="url(#shadow)"/>
+    <text x="64" y="138" fill="#0A0A0A" font-size="10" font-weight="600" letter-spacing="2" opacity="0.4">POOL 01</text>
+    <text x="64" y="166" fill="#0A0A0A" font-size="20" font-weight="700">Vision</text>
+    <line x1="64" y1="180" x2="296" y2="180" stroke="#0A0A0A" stroke-opacity="0.08"/>
+    <text x="64" y="208" fill="#0A0A0A" font-size="32" font-weight="700">5,000</text>
+    <text x="180" y="208" fill="#0A0A0A" font-size="11" opacity="0.4">pts / day</text>
+    <text x="64" y="252" fill="#0A0A0A" font-size="12" opacity="0.65">Deposit share in</text>
+    <text x="64" y="270" fill="#0A0A0A" font-size="12" opacity="0.65">settled rounds.</text>
+    <text x="64" y="288" fill="#0A0A0A" font-size="11" opacity="0.4">Accuracy is irrelevant.</text>
+
+    <rect x="350" y="104" width="280" height="200" rx="12" fill="#0A0A0A" fill-opacity="0.03" filter="url(#shadow)"/>
+    <text x="374" y="138" fill="#0A0A0A" font-size="10" font-weight="600" letter-spacing="2" opacity="0.4">POOL 02</text>
+    <text x="374" y="166" fill="#0A0A0A" font-size="20" font-weight="700">Index creator</text>
+    <line x1="374" y1="180" x2="606" y2="180" stroke="#0A0A0A" stroke-opacity="0.08"/>
+    <text x="374" y="208" fill="#0A0A0A" font-size="32" font-weight="700">2,500</text>
+    <text x="490" y="208" fill="#0A0A0A" font-size="11" opacity="0.4">pts / day</text>
+    <text x="374" y="252" fill="#0A0A0A" font-size="12" opacity="0.65">NAV growth of</text>
+    <text x="374" y="270" fill="#0A0A0A" font-size="12" opacity="0.65">your ITP.</text>
+    <text x="374" y="288" fill="#0A0A0A" font-size="11" opacity="0.4">0.7× decay across ranks.</text>
+
+    <rect x="660" y="104" width="280" height="200" rx="12" fill="url(#darkGrad)" filter="url(#shadow)"/>
+    <text x="684" y="138" fill="white" font-size="10" font-weight="600" letter-spacing="2" opacity="0.5">POOL 03</text>
+    <text x="684" y="166" fill="white" font-size="20" font-weight="700">Index holder</text>
+    <line x1="684" y1="180" x2="916" y2="180" stroke="white" stroke-opacity="0.1"/>
+    <text x="684" y="208" fill="white" font-size="32" font-weight="700">2,500</text>
+    <text x="800" y="208" fill="white" font-size="11" opacity="0.5">pts / day</text>
+    <text x="684" y="252" fill="white" font-size="12" opacity="0.75">Weighted portfolio</text>
+    <text x="684" y="270" fill="white" font-size="12" opacity="0.75">performance.</text>
+    <text x="684" y="288" fill="white" font-size="11" opacity="0.5">Patience accrues. Bad luck does not.</text>
+  </g>
+
+  <!-- Footer total -->
+  <rect x="40" y="328" width="900" height="56" rx="14" fill="#0A0A0A" fill-opacity="0.03"/>
+  <text x="64" y="362" fill="#0A0A0A" font-size="11" font-weight="600" letter-spacing="2" opacity="0.4">DAILY TOTAL</text>
+  <text x="916" y="362" text-anchor="end" fill="#0A0A0A" font-size="22" font-weight="700">10,000 pts</text>
+</svg>

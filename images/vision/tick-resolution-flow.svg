@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 480" width="980" height="480" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="10" flood-opacity="0.04"/>
+    </filter>
+    <linearGradient id="curveFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#10B981" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#10B981" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="980" height="480" fill="white"/>
+  <circle cx="80" cy="420" r="160" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="900" cy="60" r="140" fill="#0A0A0A" opacity="0.02"/>
+
+  <text x="490" y="42" text-anchor="middle" fill="#0A0A0A" font-size="12" font-weight="700" letter-spacing="3" opacity="0.45">TICK RESOLUTION</text>
+  <text x="490" y="64" text-anchor="middle" fill="#0A0A0A" font-size="13" opacity="0.4">The world moved, or it did not.</text>
+
+  <!-- Tick interval bracket -->
+  <text x="100" y="116" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2" opacity="0.5">TICK START</text>
+  <text x="880" y="116" text-anchor="end" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2" opacity="0.5">TICK END</text>
+
+  <!-- Start price card -->
+  <rect x="60" y="130" width="200" height="60" rx="12" fill="white" stroke="#0A0A0A" stroke-opacity="0.08" filter="url(#shadow)"/>
+  <text x="80" y="156" fill="#0A0A0A" font-size="11" opacity="0.45">BTC-USD</text>
+  <text x="80" y="178" fill="#0A0A0A" font-size="16" font-weight="700" font-family="ui-monospace, SF Mono, Menlo, monospace">$67,432.10</text>
+
+  <!-- End price card -->
+  <rect x="720" y="130" width="200" height="60" rx="12" fill="white" stroke="#0A0A0A" stroke-opacity="0.08" filter="url(#shadow)"/>
+  <text x="740" y="156" fill="#0A0A0A" font-size="11" opacity="0.45">BTC-USD</text>
+  <text x="740" y="178" fill="#0A0A0A" font-size="16" font-weight="700" font-family="ui-monospace, SF Mono, Menlo, monospace">$67,891.55</text>
+
+  <!-- Curve panel between -->
+  <rect x="280" y="120" width="420" height="120" rx="12" fill="#0A0A0A" fill-opacity="0.02"/>
+  <text x="296" y="142" fill="#0A0A0A" font-size="10" letter-spacing="1.5" opacity="0.4">TICK DURATION · 10 min</text>
+
+  <!-- Curve -->
+  <path d="M296,220 C340,212 380,206 420,202 C460,196 500,200 540,190 C580,180 620,176 660,170 C674,168 686,166 686,166 L686,232 L296,232 Z"
+        fill="url(#curveFill)"/>
+  <path d="M296,220 C340,212 380,206 420,202 C460,196 500,200 540,190 C580,180 620,176 660,170 C674,168 686,166 686,166"
+        fill="none" stroke="#10B981" stroke-width="1.6"/>
+
+  <!-- Connectors -->
+  <line x1="260" y1="160" x2="280" y2="160" stroke="#0A0A0A" stroke-opacity="0.2"/>
+  <line x1="700" y1="160" x2="720" y2="160" stroke="#0A0A0A" stroke-opacity="0.2"/>
+
+  <!-- Delta and result row -->
+  <rect x="60" y="270" width="860" height="64" rx="12" fill="url(#darkGrad)" filter="url(#shadow)"/>
+  <text x="84" y="294" fill="white" font-size="10" letter-spacing="2" opacity="0.5">DELTA</text>
+  <text x="84" y="320" fill="white" font-size="18" font-weight="700" font-family="ui-monospace, SF Mono, Menlo, monospace">+$459.45</text>
+
+  <line x1="280" y1="280" x2="280" y2="324" stroke="white" stroke-opacity="0.1"/>
+
+  <text x="304" y="294" fill="white" font-size="10" letter-spacing="2" opacity="0.5">RESULT</text>
+  <rect x="304" y="304" width="56" height="22" rx="11" fill="#10B981"/>
+  <text x="332" y="319" text-anchor="middle" fill="white" font-size="11" font-weight="700">UP</text>
+
+  <line x1="400" y1="280" x2="400" y2="324" stroke="white" stroke-opacity="0.1"/>
+
+  <text x="424" y="294" fill="white" font-size="10" letter-spacing="2" opacity="0.5">WINNERS</text>
+  <text x="424" y="318" fill="white" font-size="13" opacity="0.85">bets on UP</text>
+
+  <line x1="620" y1="280" x2="620" y2="324" stroke="white" stroke-opacity="0.1"/>
+
+  <text x="644" y="294" fill="white" font-size="10" letter-spacing="2" opacity="0.5">FEE</text>
+  <text x="644" y="318" fill="white" font-size="13" opacity="0.85">0.05% on profits</text>
+
+  <!-- Outcomes summary -->
+  <g>
+    <text x="60" y="372" fill="#0A0A0A" font-size="12" font-weight="600">UP wins</text>
+    <text x="160" y="372" fill="#0A0A0A" font-size="12" opacity="0.55">winners split losers' stakes</text>
+
+    <text x="60" y="394" fill="#0A0A0A" font-size="12" font-weight="600" opacity="0.7">DOWN loses</text>
+    <text x="160" y="394" fill="#0A0A0A" font-size="12" opacity="0.55">stake is forfeited</text>
+
+    <text x="60" y="416" fill="#0A0A0A" font-size="12" font-weight="600" opacity="0.7">FLAT</text>
+    <text x="160" y="416" fill="#0A0A0A" font-size="12" opacity="0.55">resolved by batch rules</text>
+  </g>
+
+  <!-- Footer pill -->
+  <rect x="40" y="442" width="900" height="24" rx="12" fill="#0A0A0A" fill-opacity="0.03"/>
+  <text x="490" y="458" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.45">The universe makes no distinction between asset classes. Neither does the protocol.</text>
+</svg>

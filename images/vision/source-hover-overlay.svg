@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 480" width="980" height="480" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="10" flood-opacity="0.05"/>
+    </filter>
+  </defs>
+
+  <rect width="980" height="480" fill="white"/>
+  <circle cx="80" cy="420" r="160" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="900" cy="60" r="140" fill="#0A0A0A" opacity="0.02"/>
+
+  <text x="490" y="42" text-anchor="middle" fill="#0A0A0A" font-size="12" font-weight="700" letter-spacing="3" opacity="0.45">HOVER OVERLAY</text>
+
+  <!-- Card frame -->
+  <g transform="translate(290, 70)">
+    <rect x="0" y="0" width="400" height="380" rx="16" fill="white" stroke="#0A0A0A" stroke-opacity="0.08" filter="url(#shadow)"/>
+
+    <!-- Header -->
+    <rect x="0" y="0" width="400" height="48" rx="16" fill="url(#darkGrad)"/>
+    <rect x="0" y="32" width="400" height="16" fill="url(#darkGrad)"/>
+    <text x="20" y="30" fill="white" font-size="13" font-weight="600">CoinGecko Crypto</text>
+    <text x="380" y="30" text-anchor="end" fill="white" font-size="11" opacity="0.5">2,400</text>
+
+    <!-- Market list -->
+    <g font-family="Inter, system-ui, -apple-system, sans-serif">
+      <!-- Row 1: BTC, UP (emerald) -->
+      <rect x="0" y="48" width="3" height="36" fill="#10B981"/>
+      <text x="20" y="71" fill="#0A0A0A" font-size="13" font-weight="500">Bitcoin</text>
+      <text x="380" y="71" text-anchor="end" fill="#0A0A0A" font-size="13" font-weight="600" font-family="ui-monospace, SF Mono, Menlo, monospace">$67,432.10</text>
+
+      <!-- Row 2: ETH, DOWN (red) -->
+      <rect x="0" y="84" width="3" height="36" fill="#DC2626"/>
+      <text x="20" y="107" fill="#0A0A0A" font-size="13" font-weight="500">Ethereum</text>
+      <text x="380" y="107" text-anchor="end" fill="#0A0A0A" font-size="13" font-weight="600" font-family="ui-monospace, SF Mono, Menlo, monospace">$3,891.55</text>
+
+      <!-- Row 3: SOL, UP -->
+      <rect x="0" y="120" width="3" height="36" fill="#10B981"/>
+      <text x="20" y="143" fill="#0A0A0A" font-size="13" font-weight="500">Solana</text>
+      <text x="380" y="143" text-anchor="end" fill="#0A0A0A" font-size="13" font-weight="600" font-family="ui-monospace, SF Mono, Menlo, monospace">$142.33</text>
+
+      <!-- Row 4: BNB, none -->
+      <text x="20" y="179" fill="#0A0A0A" font-size="13" font-weight="500">BNB</text>
+      <text x="380" y="179" text-anchor="end" fill="#0A0A0A" font-size="13" font-weight="600" font-family="ui-monospace, SF Mono, Menlo, monospace">$612.40</text>
+
+      <!-- Row 5: XRP, DOWN -->
+      <rect x="0" y="192" width="3" height="36" fill="#DC2626"/>
+      <text x="20" y="215" fill="#0A0A0A" font-size="13" font-weight="500">XRP</text>
+      <text x="380" y="215" text-anchor="end" fill="#0A0A0A" font-size="13" font-weight="600" font-family="ui-monospace, SF Mono, Menlo, monospace">$0.62</text>
+
+      <!-- Row 6: Doge, none -->
+      <text x="20" y="251" fill="#0A0A0A" font-size="13" font-weight="500">Dogecoin</text>
+      <text x="380" y="251" text-anchor="end" fill="#0A0A0A" font-size="13" font-weight="600" font-family="ui-monospace, SF Mono, Menlo, monospace">$0.15</text>
+
+      <!-- Row 7: Cardano, UP -->
+      <rect x="0" y="264" width="3" height="36" fill="#10B981"/>
+      <text x="20" y="287" fill="#0A0A0A" font-size="13" font-weight="500">Cardano</text>
+      <text x="380" y="287" text-anchor="end" fill="#0A0A0A" font-size="13" font-weight="600" font-family="ui-monospace, SF Mono, Menlo, monospace">$0.45</text>
+
+      <text x="200" y="320" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.35">+2,393 more</text>
+    </g>
+
+    <!-- Footer summary -->
+    <line x1="0" y1="336" x2="400" y2="336" stroke="#0A0A0A" stroke-opacity="0.06"/>
+    <g>
+      <circle cx="80" cy="358" r="4" fill="#10B981"/>
+      <text x="92" y="362" fill="#0A0A0A" font-size="12" font-weight="600">1,200</text>
+      <text x="132" y="362" fill="#0A0A0A" font-size="11" opacity="0.45">UP</text>
+
+      <circle cx="180" cy="358" r="4" fill="#DC2626"/>
+      <text x="192" y="362" fill="#0A0A0A" font-size="12" font-weight="600">1,200</text>
+      <text x="232" y="362" fill="#0A0A0A" font-size="11" opacity="0.45">DN</text>
+
+      <circle cx="280" cy="358" r="4" fill="#0A0A0A" opacity="0.2"/>
+      <text x="292" y="362" fill="#0A0A0A" font-size="12" font-weight="600">0</text>
+      <text x="312" y="362" fill="#0A0A0A" font-size="11" opacity="0.45">unset</text>
+    </g>
+  </g>
+
+  <!-- Legend -->
+  <g transform="translate(40, 90)">
+    <text x="0" y="0" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2" opacity="0.5">LEFT BORDER</text>
+
+    <rect x="0" y="20" width="3" height="24" fill="#10B981"/>
+    <text x="14" y="36" fill="#0A0A0A" font-size="12">set UP</text>
+
+    <rect x="0" y="56" width="3" height="24" fill="#DC2626"/>
+    <text x="14" y="72" fill="#0A0A0A" font-size="12">set DOWN</text>
+
+    <rect x="0" y="92" width="3" height="24" fill="#0A0A0A" opacity="0.1"/>
+    <text x="14" y="108" fill="#0A0A0A" font-size="12">unset</text>
+
+    <text x="0" y="156" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2" opacity="0.5">INPUT</text>
+    <text x="0" y="180" fill="#0A0A0A" font-size="12">Click to toggle.</text>
+    <text x="0" y="198" fill="#0A0A0A" font-size="12">Drag to paint.</text>
+  </g>
+</svg>

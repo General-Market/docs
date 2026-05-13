@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 440" width="980" height="440" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGradC" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadowC">
+      <feDropShadow dx="0" dy="2" stdDeviation="10" flood-opacity="0.04"/>
+    </filter>
+  </defs>
+
+  <rect width="980" height="440" fill="white"/>
+  <circle cx="40" cy="60" r="160" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="940" cy="400" r="180" fill="#0A0A0A" opacity="0.02"/>
+
+  <text x="490" y="48" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="3.6" opacity="0.45">CONVICTIONS</text>
+  <text x="490" y="72" text-anchor="middle" fill="#0A0A0A" font-size="12" opacity="0.4">Four opinions disguised as infrastructure.</text>
+
+  <!-- Card 1 — BLS -->
+  <g filter="url(#shadowC)">
+    <rect x="40" y="100" width="220" height="300" rx="14" fill="url(#darkGradC)"/>
+  </g>
+  <circle cx="70" cy="132" r="14" fill="#10B981" fill-opacity="0.18"/>
+  <text x="70" y="138" text-anchor="middle" fill="#10B981" font-size="13" font-weight="700">01</text>
+  <text x="58" y="184" fill="white" font-size="14" font-weight="700">BLS consensus</text>
+  <text x="58" y="204" fill="white" font-size="14" font-weight="700">on everything</text>
+  <line x1="58" y1="222" x2="242" y2="222" stroke="white" stroke-opacity="0.1"/>
+  <text x="58" y="252" fill="white" font-size="11" opacity="0.6">Every ITP trade.</text>
+  <text x="58" y="272" fill="white" font-size="11" opacity="0.6">Every tick resolution.</text>
+  <text x="58" y="292" fill="white" font-size="11" opacity="0.6">Every bridge relay.</text>
+  <text x="58" y="312" fill="white" font-size="11" opacity="0.6">Verified by multi-party</text>
+  <text x="58" y="328" fill="white" font-size="11" opacity="0.6">signatures.</text>
+  <text x="58" y="372" fill="white" font-size="10" opacity="0.4">No test modes.</text>
+  <text x="58" y="386" fill="white" font-size="10" opacity="0.4">No owner overrides.</text>
+
+  <!-- Card 2 — Real execution -->
+  <g filter="url(#shadowC)">
+    <rect x="280" y="100" width="220" height="300" rx="14" fill="white" stroke="#0A0A0A" stroke-opacity="0.08"/>
+  </g>
+  <circle cx="310" cy="132" r="14" fill="#0A0A0A" fill-opacity="0.06"/>
+  <text x="310" y="138" text-anchor="middle" fill="#0A0A0A" font-size="13" font-weight="700">02</text>
+  <text x="298" y="184" fill="#0A0A0A" font-size="14" font-weight="700">Real exchange</text>
+  <text x="298" y="204" fill="#0A0A0A" font-size="14" font-weight="700">execution</text>
+  <line x1="298" y1="222" x2="482" y2="222" stroke="#0A0A0A" stroke-opacity="0.06"/>
+  <text x="298" y="252" fill="#0A0A0A" font-size="11" opacity="0.55">ITP orders executed</text>
+  <text x="298" y="272" fill="#0A0A0A" font-size="11" opacity="0.55">on Bitget by Authorized</text>
+  <text x="298" y="292" fill="#0A0A0A" font-size="11" opacity="0.55">Participants.</text>
+  <text x="298" y="332" fill="#0A0A0A" font-size="11" opacity="0.55">No AMM pools.</text>
+  <text x="298" y="352" fill="#0A0A0A" font-size="11" opacity="0.55">No virtual liquidity.</text>
+  <text x="298" y="386" fill="#10B981" font-size="11" font-weight="600">Real order books.</text>
+
+  <!-- Card 3 — Sealed parimutuel -->
+  <g filter="url(#shadowC)">
+    <rect x="520" y="100" width="220" height="300" rx="14" fill="white" stroke="#0A0A0A" stroke-opacity="0.08"/>
+  </g>
+  <circle cx="550" cy="132" r="14" fill="#0A0A0A" fill-opacity="0.06"/>
+  <text x="550" y="138" text-anchor="middle" fill="#0A0A0A" font-size="13" font-weight="700">03</text>
+  <text x="538" y="184" fill="#0A0A0A" font-size="14" font-weight="700">Sealed parimutuel</text>
+  <text x="538" y="204" fill="#0A0A0A" font-size="14" font-weight="700">betting</text>
+  <line x1="538" y1="222" x2="722" y2="222" stroke="#0A0A0A" stroke-opacity="0.06"/>
+  <text x="538" y="252" fill="#0A0A0A" font-size="11" opacity="0.55">Vision bets are sealed.</text>
+  <text x="538" y="272" fill="#0A0A0A" font-size="11" opacity="0.55">Nobody sees them until</text>
+  <text x="538" y="292" fill="#0A0A0A" font-size="11" opacity="0.55">resolution.</text>
+  <text x="538" y="332" fill="#0A0A0A" font-size="11" opacity="0.55">No house edge.</text>
+  <text x="538" y="352" fill="#0A0A0A" font-size="11" opacity="0.55">Winners split the pool.</text>
+  <text x="538" y="386" fill="#10B981" font-size="11" font-weight="600">Cheating is structurally</text>
+
+  <!-- Card 4 — Sources -->
+  <g filter="url(#shadowC)">
+    <rect x="760" y="100" width="180" height="300" rx="14" fill="url(#darkGradC)"/>
+  </g>
+  <circle cx="790" cy="132" r="14" fill="#10B981" fill-opacity="0.18"/>
+  <text x="790" y="138" text-anchor="middle" fill="#10B981" font-size="13" font-weight="700">04</text>
+  <text x="778" y="184" fill="white" font-size="14" font-weight="700">90+ real-world</text>
+  <text x="778" y="204" fill="white" font-size="14" font-weight="700">data sources</text>
+  <line x1="778" y1="222" x2="922" y2="222" stroke="white" stroke-opacity="0.1"/>
+  <text x="778" y="252" fill="white" font-size="11" opacity="0.6">Not just crypto.</text>
+  <text x="778" y="272" fill="white" font-size="11" opacity="0.6">Transport, weather,</text>
+  <text x="778" y="292" fill="white" font-size="11" opacity="0.6">power grids, GitHub,</text>
+  <text x="778" y="312" fill="white" font-size="11" opacity="0.6">sports.</text>
+  <text x="778" y="372" fill="white" font-size="10" opacity="0.4">The world as feed.</text>
+  <text x="778" y="386" fill="white" font-size="10" opacity="0.4">Tradeable, all of it.</text>
+</svg>

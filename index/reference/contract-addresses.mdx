@@ -7,46 +7,7 @@ description: "Deployed contract addresses on Index L3 and Settlement"
 
 The addresses are the protocol. Everything else -- the code, the documentation, the diagrams -- is explanation. These are the facts on-chain, across two chains.
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                  INDEX L3 (Chain 111222333)              │
-│                                                         │
-│  ┌──────────┐  ┌────────────────┐  ┌─────────────────┐  │
-│  │  Index    │  │  Governance    │  │  OracleRegistry │  │
-│  └──────────┘  └────────────────┘  └─────────────────┘  │
-│  ┌──────────────────┐  ┌───────────────────────────┐    │
-│  │ CollateralRegistry│  │  BLSCustody              │    │
-│  └──────────────────┘  └───────────────────────────┘    │
-│  ┌──────────────────┐  ┌───────────────────────────┐    │
-│  │ L3BridgeCustody  │  │  L3BridgeProxy            │    │
-│  └──────────────────┘  └───────────────────────────┘    │
-│  ┌──────────────────┐  ┌───────────────────────────┐    │
-│  │ L3BridgedItpFact.│  │  Vision                   │    │
-│  └──────────────────┘  └───────────────────────────┘    │
-│  ┌──────────────────┐  ┌───────────────────────────┐    │
-│  │  ITP Vault #1    │  │  ITP Vault #2             │    │
-│  └──────────────────┘  └───────────────────────────┘    │
-│  ┌──────────────────┐                                   │
-│  │  L3 WUSDC (18d)  │                                   │
-│  └──────────────────┘                                   │
-│                          │                              │
-│                          │ Bridge                       │
-│                          │                              │
-├──────────────────────────┼──────────────────────────────┤
-│                          │                              │
-│              SETTLEMENT (Chain 14601)                   │
-│                                                         │
-│  ┌──────────────────────────┐  ┌──────────────────────┐ │
-│  │ SettlementBridgeProxy    │  │ SettlementBridgeCust.│ │
-│  └──────────────────────────┘  └──────────────────────┘ │
-│  ┌──────────────────────────┐  ┌──────────────────────┐ │
-│  │ SettlementBridgedItpFact.│  │ SettlementOracleReg. │ │
-│  └──────────────────────────┘  └──────────────────────┘ │
-│  ┌──────────────────────────┐                           │
-│  │ Settlement USDC (6d)     │                           │
-│  └──────────────────────────┘                           │
-└─────────────────────────────────────────────────────────┘
-```
+<img src="/images/index/contract-topology.svg" alt="Contract topology — which contracts live on L3, which live on Settlement, and the bridge that connects them." />
 
 <Warning>
   Contract addresses are loaded from `deployments/active-deployment.json` and may differ between

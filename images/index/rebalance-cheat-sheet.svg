@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 480" width="980" height="480" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGradCh" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadowCh">
+      <feDropShadow dx="0" dy="2" stdDeviation="10" flood-opacity="0.04"/>
+    </filter>
+  </defs>
+
+  <rect width="980" height="480" fill="white"/>
+  <circle cx="50" cy="50" r="140" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="940" cy="440" r="160" fill="#0A0A0A" opacity="0.02"/>
+
+  <g filter="url(#shadowCh)">
+    <rect x="40" y="40" width="900" height="64" rx="14" fill="url(#darkGradCh)"/>
+  </g>
+  <text x="64" y="70" fill="white" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.5">CHEAT SHEET</text>
+  <text x="64" y="92" fill="white" font-size="14" font-weight="500" opacity="0.85">Everything that matters about rebalancing on one page.</text>
+
+  <!-- Formula band -->
+  <rect x="40" y="124" width="900" height="84" rx="14" fill="#10B981" fill-opacity="0.06" stroke="#10B981" stroke-opacity="0.25"/>
+  <text x="64" y="152" fill="#059669" font-size="11" font-weight="700" letter-spacing="2.4">THE FORMULA</text>
+  <text x="490" y="186" text-anchor="middle" fill="#0A0A0A" font-size="20" font-weight="500" font-family="ui-monospace, SF Mono, Menlo, monospace">qty[i] = (weight[i] × NAV) / price[i]</text>
+
+  <!-- Two columns of facts -->
+  <g filter="url(#shadowCh)">
+    <rect x="40" y="228" width="440" height="220" rx="12" fill="white" stroke="#0A0A0A" stroke-opacity="0.08"/>
+  </g>
+  <text x="64" y="256" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.45">SEMANTICS</text>
+  <g font-size="13">
+    <text x="64" y="288" fill="#0A0A0A" opacity="0.5">Preserves</text>
+    <text x="240" y="288" fill="#0A0A0A" font-weight="600">NAV per share</text>
+
+    <text x="64" y="316" fill="#0A0A0A" opacity="0.5">Changes</text>
+    <text x="240" y="316" fill="#0A0A0A" font-weight="600">quantities · weights</text>
+
+    <text x="64" y="344" fill="#0A0A0A" opacity="0.5">Can also</text>
+    <text x="240" y="344" fill="#0A0A0A" font-weight="600">add · remove assets</text>
+
+    <text x="64" y="372" fill="#0A0A0A" opacity="0.5">Who</text>
+    <text x="240" y="372" fill="#0A0A0A" font-weight="600">ITP deployer only</text>
+
+    <text x="64" y="400" fill="#0A0A0A" opacity="0.5">How</text>
+    <text x="240" y="400" fill="#0A0A0A" font-weight="600">requestRebalance → BLS → rebalance</text>
+  </g>
+
+  <g filter="url(#shadowCh)">
+    <rect x="500" y="228" width="440" height="220" rx="12" fill="white" stroke="#0A0A0A" stroke-opacity="0.08"/>
+  </g>
+  <text x="524" y="256" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.45">LOCATION · LIMITS</text>
+  <g font-size="13">
+    <text x="524" y="288" fill="#0A0A0A" opacity="0.5">Contract</text>
+    <text x="700" y="288" fill="#0A0A0A" font-weight="600" font-family="ui-monospace, SF Mono, Menlo, monospace">RebalanceLib.sol</text>
+
+    <text x="524" y="316" fill="#0A0A0A" opacity="0.5">Entry</text>
+    <text x="700" y="316" fill="#0A0A0A" font-weight="600" font-family="ui-monospace, SF Mono, Menlo, monospace">Investment.rebalance()</text>
+
+    <text x="524" y="344" fill="#0A0A0A" opacity="0.5">Storage</text>
+    <text x="700" y="344" fill="#0A0A0A" font-weight="600" font-family="ui-monospace, SF Mono, Menlo, monospace">_itpInventory[itpId]</text>
+
+    <text x="524" y="372" fill="#0A0A0A" opacity="0.5">Min weight</text>
+    <text x="700" y="372" fill="#0A0A0A" font-weight="600">0.25% per asset</text>
+
+    <text x="524" y="400" fill="#0A0A0A" opacity="0.5">Max assets</text>
+    <text x="700" y="400" fill="#0A0A0A" font-weight="600">100 per ITP</text>
+  </g>
+</svg>

@@ -1,0 +1,194 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 760" width="980" height="760" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="10" flood-opacity="0.04"/>
+    </filter>
+  </defs>
+
+  <rect width="980" height="760" fill="white"/>
+  <circle cx="80" cy="700" r="180" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="900" cy="60" r="160" fill="#0A0A0A" opacity="0.02"/>
+
+  <text x="490" y="42" text-anchor="middle" fill="#0A0A0A" font-size="12" font-weight="700" letter-spacing="3" opacity="0.45">DATA SOURCE MAP</text>
+  <text x="490" y="64" text-anchor="middle" fill="#0A0A0A" font-size="13" opacity="0.4">Ten categories. Ninety-eight ways to measure the world.</text>
+
+  <!-- 3 columns × 3 rows of category cards. Card width 286, gap 14. Start x=40. -->
+  <!-- Row 1 starts y=92. height 200. -->
+
+  <!-- Card: FINANCE -->
+  <g>
+    <rect x="40" y="92" width="286" height="200" rx="12" fill="white" stroke="#0A0A0A" stroke-opacity="0.08" filter="url(#shadow)"/>
+    <rect x="40" y="92" width="3" height="200" fill="#10B981"/>
+    <text x="60" y="118" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2" opacity="0.55">FINANCE</text>
+    <text x="306" y="118" text-anchor="end" fill="#0A0A0A" font-size="13" font-weight="700" opacity="0.6">14</text>
+    <line x1="60" y1="128" x2="306" y2="128" stroke="#0A0A0A" stroke-opacity="0.06"/>
+
+    <g font-size="11" opacity="0.7" font-family="ui-monospace, SF Mono, Menlo, monospace">
+      <text x="60" y="148" fill="#0A0A0A">CoinGecko</text>
+      <text x="60" y="164" fill="#0A0A0A">Pump.fun</text>
+      <text x="60" y="180" fill="#0A0A0A">DefiLlama</text>
+      <text x="60" y="196" fill="#0A0A0A">Finnhub Stocks</text>
+      <text x="60" y="212" fill="#0A0A0A">Nasdaq</text>
+      <text x="60" y="228" fill="#0A0A0A">Zillow</text>
+      <text x="60" y="244" fill="#0A0A0A">Polymarket</text>
+      <text x="60" y="260" fill="#0A0A0A">FINRA · Futures</text>
+      <text x="60" y="276" fill="#0A0A0A" opacity="0.5">+ 5 more</text>
+    </g>
+  </g>
+
+  <!-- Card: ECONOMIC -->
+  <g>
+    <rect x="340" y="92" width="286" height="200" rx="12" fill="white" stroke="#0A0A0A" stroke-opacity="0.08" filter="url(#shadow)"/>
+    <text x="360" y="118" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2" opacity="0.55">ECONOMIC</text>
+    <text x="606" y="118" text-anchor="end" fill="#0A0A0A" font-size="13" font-weight="700" opacity="0.6">11</text>
+    <line x1="360" y1="128" x2="606" y2="128" stroke="#0A0A0A" stroke-opacity="0.06"/>
+
+    <g font-size="11" opacity="0.7" font-family="ui-monospace, SF Mono, Menlo, monospace">
+      <text x="360" y="148" fill="#0A0A0A">FRED Rates</text>
+      <text x="360" y="164" fill="#0A0A0A">EIA Energy</text>
+      <text x="360" y="180" fill="#0A0A0A">US Treasury</text>
+      <text x="360" y="196" fill="#0A0A0A">ECB Rates</text>
+      <text x="360" y="212" fill="#0A0A0A">World Bank</text>
+      <text x="360" y="228" fill="#0A0A0A">BLS · Adzuna</text>
+      <text x="360" y="244" fill="#0A0A0A">USA Spending</text>
+      <text x="360" y="260" fill="#0A0A0A">IMF · OPEC · CFTC</text>
+    </g>
+  </g>
+
+  <!-- Card: REGULATORY -->
+  <g>
+    <rect x="640" y="92" width="300" height="200" rx="12" fill="white" stroke="#0A0A0A" stroke-opacity="0.08" filter="url(#shadow)"/>
+    <text x="660" y="118" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2" opacity="0.55">REGULATORY</text>
+    <text x="920" y="118" text-anchor="end" fill="#0A0A0A" font-size="13" font-weight="700" opacity="0.6">4</text>
+    <line x1="660" y1="128" x2="920" y2="128" stroke="#0A0A0A" stroke-opacity="0.06"/>
+
+    <g font-size="11" opacity="0.7" font-family="ui-monospace, SF Mono, Menlo, monospace">
+      <text x="660" y="148" fill="#0A0A0A">SEC Filings</text>
+      <text x="660" y="164" fill="#0A0A0A">Congress Votes</text>
+      <text x="660" y="180" fill="#0A0A0A">Federal Courts</text>
+      <text x="660" y="196" fill="#0A0A0A">NYC 311</text>
+    </g>
+  </g>
+
+  <!-- Row 2: y=314 -->
+  <!-- Card: TECH -->
+  <g>
+    <rect x="40" y="314" width="286" height="200" rx="12" fill="white" stroke="#0A0A0A" stroke-opacity="0.08" filter="url(#shadow)"/>
+    <text x="60" y="340" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2" opacity="0.55">TECH</text>
+    <text x="306" y="340" text-anchor="end" fill="#0A0A0A" font-size="13" font-weight="700" opacity="0.6">8</text>
+    <line x1="60" y1="350" x2="306" y2="350" stroke="#0A0A0A" stroke-opacity="0.06"/>
+
+    <g font-size="11" opacity="0.7" font-family="ui-monospace, SF Mono, Menlo, monospace">
+      <text x="60" y="370" fill="#0A0A0A">GitHub</text>
+      <text x="60" y="386" fill="#0A0A0A">npm · PyPI · Crates</text>
+      <text x="60" y="402" fill="#0A0A0A">StackOverflow</text>
+      <text x="60" y="418" fill="#0A0A0A">Hacker News</text>
+      <text x="60" y="434" fill="#0A0A0A">Cloudflare</text>
+      <text x="60" y="450" fill="#0A0A0A">IODA Outages</text>
+    </g>
+  </g>
+
+  <!-- Card: ENTERTAINMENT -->
+  <g>
+    <rect x="340" y="314" width="286" height="200" rx="12" fill="white" stroke="#0A0A0A" stroke-opacity="0.08" filter="url(#shadow)"/>
+    <text x="360" y="340" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2" opacity="0.55">ENTERTAINMENT</text>
+    <text x="606" y="340" text-anchor="end" fill="#0A0A0A" font-size="13" font-weight="700" opacity="0.6">15</text>
+    <line x1="360" y1="350" x2="606" y2="350" stroke="#0A0A0A" stroke-opacity="0.06"/>
+
+    <g font-size="11" opacity="0.7" font-family="ui-monospace, SF Mono, Menlo, monospace">
+      <text x="360" y="370" fill="#0A0A0A">Twitch</text>
+      <text x="360" y="386" fill="#0A0A0A">TMDB · Last.fm</text>
+      <text x="360" y="402" fill="#0A0A0A">Steam · AniList</text>
+      <text x="360" y="418" fill="#0A0A0A">Reddit · 4chan</text>
+      <text x="360" y="434" fill="#0A0A0A">Sports · Esports</text>
+      <text x="360" y="450" fill="#0A0A0A">Theme Parks</text>
+      <text x="360" y="466" fill="#0A0A0A">Backpack.tf · BGG</text>
+      <text x="360" y="482" fill="#0A0A0A">McBroken · CB</text>
+    </g>
+  </g>
+
+  <!-- Card: GEOPHYSICAL -->
+  <g>
+    <rect x="640" y="314" width="300" height="200" rx="12" fill="url(#darkGrad)" filter="url(#shadow)"/>
+    <text x="660" y="340" fill="white" font-size="11" font-weight="700" letter-spacing="2" opacity="0.7">GEOPHYSICAL</text>
+    <text x="920" y="340" text-anchor="end" fill="white" font-size="13" font-weight="700">15</text>
+    <line x1="660" y1="350" x2="920" y2="350" stroke="white" stroke-opacity="0.1"/>
+
+    <g font-size="11" opacity="0.8" font-family="ui-monospace, SF Mono, Menlo, monospace">
+      <text x="660" y="370" fill="white">USGS Earthquakes</text>
+      <text x="660" y="386" fill="white">Volcanoes · Tides</text>
+      <text x="660" y="402" fill="white">NOAA Weather</text>
+      <text x="660" y="418" fill="white">Air Quality</text>
+      <text x="660" y="434" fill="white">USGS Water</text>
+      <text x="660" y="450" fill="white">NDBC Buoys</text>
+      <text x="660" y="466" fill="white">Wildfires · Disease</text>
+      <text x="660" y="482" fill="white">NRC Nuclear</text>
+      <text x="660" y="498" fill="white" opacity="0.6">+ 4 more</text>
+    </g>
+  </g>
+
+  <!-- Row 3: y=536 -->
+  <!-- Card: TRANSPORT -->
+  <g>
+    <rect x="40" y="536" width="286" height="200" rx="12" fill="white" stroke="#0A0A0A" stroke-opacity="0.08" filter="url(#shadow)"/>
+    <text x="60" y="562" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2" opacity="0.55">TRANSPORT</text>
+    <text x="306" y="562" text-anchor="end" fill="#0A0A0A" font-size="13" font-weight="700" opacity="0.6">16</text>
+    <line x1="60" y1="572" x2="306" y2="572" stroke="#0A0A0A" stroke-opacity="0.06"/>
+
+    <g font-size="11" opacity="0.7" font-family="ui-monospace, SF Mono, Menlo, monospace">
+      <text x="60" y="592" fill="#0A0A0A">Flights · Ryanair</text>
+      <text x="60" y="608" fill="#0A0A0A">Deutsche Bahn</text>
+      <text x="60" y="624" fill="#0A0A0A">NYC · Paris · TfL</text>
+      <text x="60" y="640" fill="#0A0A0A">CityBikes · GTFS</text>
+      <text x="60" y="656" fill="#0A0A0A">TomTom · EV</text>
+      <text x="60" y="672" fill="#0A0A0A">Border · Airports</text>
+      <text x="60" y="688" fill="#0A0A0A">Ships · Ports</text>
+    </g>
+  </g>
+
+  <!-- Card: NATURE -->
+  <g>
+    <rect x="340" y="536" width="286" height="200" rx="12" fill="white" stroke="#0A0A0A" stroke-opacity="0.08" filter="url(#shadow)"/>
+    <text x="360" y="562" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2" opacity="0.55">NATURE</text>
+    <text x="606" y="562" text-anchor="end" fill="#0A0A0A" font-size="13" font-weight="700" opacity="0.6">4</text>
+    <line x1="360" y1="572" x2="606" y2="572" stroke="#0A0A0A" stroke-opacity="0.06"/>
+
+    <g font-size="11" opacity="0.7" font-family="ui-monospace, SF Mono, Menlo, monospace">
+      <text x="360" y="592" fill="#0A0A0A">eBird</text>
+      <text x="360" y="608" fill="#0A0A0A">iNaturalist Wildlife</text>
+      <text x="360" y="624" fill="#0A0A0A">Animal Migration</text>
+      <text x="360" y="640" fill="#0A0A0A">Animal Shelters</text>
+    </g>
+  </g>
+
+  <!-- Card: ACADEMIC + SPACE (split) -->
+  <g>
+    <rect x="640" y="536" width="300" height="200" rx="12" fill="white" stroke="#0A0A0A" stroke-opacity="0.08" filter="url(#shadow)"/>
+    <text x="660" y="562" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2" opacity="0.55">ACADEMIC</text>
+    <text x="788" y="562" text-anchor="end" fill="#0A0A0A" font-size="13" font-weight="700" opacity="0.6">3</text>
+    <line x1="660" y1="572" x2="788" y2="572" stroke="#0A0A0A" stroke-opacity="0.06"/>
+
+    <g font-size="11" opacity="0.7" font-family="ui-monospace, SF Mono, Menlo, monospace">
+      <text x="660" y="592" fill="#0A0A0A">OpenAlex</text>
+      <text x="660" y="608" fill="#0A0A0A">Crossref</text>
+      <text x="660" y="624" fill="#0A0A0A">PubMed</text>
+    </g>
+
+    <!-- divider -->
+    <line x1="794" y1="552" x2="794" y2="720" stroke="#0A0A0A" stroke-opacity="0.06"/>
+
+    <text x="810" y="562" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2" opacity="0.55">SPACE</text>
+    <text x="920" y="562" text-anchor="end" fill="#0A0A0A" font-size="13" font-weight="700" opacity="0.6">3</text>
+    <line x1="810" y1="572" x2="920" y2="572" stroke="#0A0A0A" stroke-opacity="0.06"/>
+
+    <g font-size="11" opacity="0.7" font-family="ui-monospace, SF Mono, Menlo, monospace">
+      <text x="810" y="592" fill="#0A0A0A">Space Weather</text>
+      <text x="810" y="608" fill="#0A0A0A">ISS Tracker</text>
+      <text x="810" y="624" fill="#0A0A0A">Mil Aircraft</text>
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 540" width="980" height="540" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-opacity="0.03"/>
+    </filter>
+  </defs>
+
+  <rect width="980" height="540" fill="white"/>
+  <circle cx="120" cy="460" r="180" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="860" cy="80" r="160" fill="#0A0A0A" opacity="0.02"/>
+
+  <!-- Header strip -->
+  <rect x="40" y="32" width="900" height="48" rx="12" fill="url(#darkGrad)"/>
+  <text x="200" y="61" fill="white" font-size="11" font-weight="600" letter-spacing="3">AUDIENCE</text>
+  <line x1="320" y1="40" x2="320" y2="72" stroke="white" stroke-opacity="0.1"/>
+  <text x="340" y="61" fill="white" font-size="11" font-weight="600" letter-spacing="3">USE CASE</text>
+
+  <!-- Rows -->
+  <g font-family="Inter, system-ui, sans-serif">
+    <!-- Row 1 -->
+    <rect x="40" y="100" width="900" height="92" rx="12" fill="#0A0A0A" fill-opacity="0.02" filter="url(#shadow)"/>
+    <text x="64" y="138" fill="#0A0A0A" font-size="15" font-weight="700">Bot developers</text>
+    <text x="64" y="164" fill="#0A0A0A" font-size="11" opacity="0.4">Python framework</text>
+    <line x1="320" y1="116" x2="320" y2="176" stroke="#0A0A0A" stroke-opacity="0.08"/>
+    <text x="340" y="138" fill="#0A0A0A" font-size="13" opacity="0.7">Automated strategies. Free registration. Full API access.</text>
+    <text x="340" y="158" fill="#0A0A0A" font-size="13" opacity="0.7">Programmatic bitmap encoding and batch joining.</text>
+
+    <!-- Row 2 -->
+    <rect x="40" y="204" width="900" height="74" rx="12" fill="#0A0A0A" fill-opacity="0.02" filter="url(#shadow)"/>
+    <text x="64" y="240" fill="#0A0A0A" font-size="15" font-weight="700">Manual traders</text>
+    <text x="64" y="262" fill="#0A0A0A" font-size="11" opacity="0.4">Web UI · no code</text>
+    <line x1="320" y1="218" x2="320" y2="262" stroke="#0A0A0A" stroke-opacity="0.08"/>
+    <text x="340" y="240" fill="#0A0A0A" font-size="13" opacity="0.7">Browse batches. Pick UP or DOWN per market.</text>
+    <text x="340" y="260" fill="#0A0A0A" font-size="13" opacity="0.7">Deposit USDC. Wait for the tick.</text>
+
+    <!-- Row 3 -->
+    <rect x="40" y="290" width="900" height="74" rx="12" fill="#0A0A0A" fill-opacity="0.02" filter="url(#shadow)"/>
+    <text x="64" y="326" fill="#0A0A0A" font-size="15" font-weight="700">Quant researchers</text>
+    <text x="64" y="348" fill="#0A0A0A" font-size="11" opacity="0.4">Historical ticks</text>
+    <line x1="320" y1="304" x2="320" y2="348" stroke="#0A0A0A" stroke-opacity="0.08"/>
+    <text x="340" y="326" fill="#0A0A0A" font-size="13" opacity="0.7">Backtest bitmap strategies across 90+ sources.</text>
+    <text x="340" y="346" fill="#0A0A0A" font-size="13" opacity="0.7">Validate edge before deploying capital.</text>
+
+    <!-- Row 4 -->
+    <rect x="40" y="376" width="900" height="92" rx="12" fill="#0A0A0A" fill-opacity="0.02" filter="url(#shadow)"/>
+    <text x="64" y="414" fill="#0A0A0A" font-size="15" font-weight="700">Data enthusiasts</text>
+    <text x="64" y="440" fill="#0A0A0A" font-size="11" opacity="0.4">400,000+ feeds</text>
+    <line x1="320" y1="392" x2="320" y2="452" stroke="#0A0A0A" stroke-opacity="0.08"/>
+    <text x="340" y="414" fill="#0A0A0A" font-size="13" opacity="0.7">Ocean buoys. Bird observations. Nuclear output.</text>
+    <text x="340" y="434" fill="#0A0A0A" font-size="13" opacity="0.7">Find alpha where nobody else is looking.</text>
+  </g>
+
+  <text x="490" y="510" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.35">Anyone who has looked at a number and felt, with irrational certainty, that they knew which way it would go.</text>
+</svg>

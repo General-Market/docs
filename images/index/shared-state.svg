@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 460" width="980" height="460" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-opacity="0.03"/>
+    </filter>
+    <marker id="arrR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0A0A0A" fill-opacity="0.45"/>
+    </marker>
+  </defs>
+
+  <rect width="980" height="460" fill="white"/>
+  <circle cx="80" cy="400" r="160" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="900" cy="60" r="140" fill="#0A0A0A" opacity="0.02"/>
+
+  <text x="40" y="44" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.45">SHARED STATE</text>
+  <text x="40" y="68" fill="#0A0A0A" font-size="13" opacity="0.4">Arc&lt;RwLock&gt; — writers produce, readers consume, the lock mediates.</text>
+
+  <!-- WRITERS label -->
+  <text x="120" y="106" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.45">WRITERS</text>
+  <text x="858" y="106" text-anchor="end" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.45">READERS</text>
+
+  <!-- Center panel -->
+  <rect x="320" y="124" width="340" height="260" rx="16" fill="url(#darkGrad)" filter="url(#shadow)"/>
+  <text x="490" y="156" text-anchor="middle" fill="white" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.5">SHAREDCURATORSTATE</text>
+
+  <rect x="340" y="172" width="300" height="56" rx="10" fill="white" fill-opacity="0.06"/>
+  <text x="358" y="194" fill="white" font-size="12" font-weight="700">crisis_levels</text>
+  <text x="358" y="214" fill="white" font-size="10" opacity="0.55">{ market_id: Level }</text>
+
+  <rect x="340" y="236" width="300" height="56" rx="10" fill="white" fill-opacity="0.06"/>
+  <text x="358" y="258" fill="white" font-size="12" font-weight="700">asset_stress</text>
+  <text x="358" y="278" fill="white" font-size="10" opacity="0.55">{ asset_addr: score }</text>
+
+  <rect x="340" y="300" width="300" height="68" rx="10" fill="white" fill-opacity="0.06"/>
+  <text x="358" y="322" fill="white" font-size="12" font-weight="700">cached_bls</text>
+  <text x="358" y="342" fill="white" font-size="10" opacity="0.55">price · sig · cycle</text>
+  <text x="358" y="358" fill="white" font-size="10" opacity="0.55">bitmask · cached_at</text>
+
+  <!-- Writers (left) -->
+  <rect x="40" y="140" width="260" height="80" rx="12" fill="#0A0A0A" fill-opacity="0.04" filter="url(#shadow)"/>
+  <text x="60" y="168" fill="#0A0A0A" font-size="13" font-weight="700">Health Monitor</text>
+  <text x="60" y="190" fill="#0A0A0A" font-size="11" opacity="0.55">run_scan() writes</text>
+  <text x="60" y="206" fill="#0A0A0A" font-size="11" opacity="0.55">crisis_levels · asset_stress</text>
+
+  <rect x="40" y="276" width="260" height="80" rx="12" fill="#0A0A0A" fill-opacity="0.04" filter="url(#shadow)"/>
+  <text x="60" y="304" fill="#0A0A0A" font-size="13" font-weight="700">Oracle Collector</text>
+  <text x="60" y="326" fill="#0A0A0A" font-size="11" opacity="0.55">collect_all() writes</text>
+  <text x="60" y="342" fill="#0A0A0A" font-size="11" opacity="0.55">cached_bls</text>
+
+  <!-- Readers (right) -->
+  <rect x="680" y="140" width="260" height="80" rx="12" fill="#0A0A0A" fill-opacity="0.04" filter="url(#shadow)"/>
+  <text x="700" y="168" fill="#0A0A0A" font-size="13" font-weight="700">Quote API</text>
+  <text x="700" y="190" fill="#0A0A0A" font-size="11" opacity="0.55">reads crisis · stress · bls</text>
+  <text x="700" y="206" fill="#0A0A0A" font-size="11" opacity="0.55">enforces min HF</text>
+
+  <rect x="680" y="276" width="260" height="80" rx="12" fill="#0A0A0A" fill-opacity="0.04" filter="url(#shadow)"/>
+  <text x="700" y="304" fill="#0A0A0A" font-size="13" font-weight="700">Allocation Bot</text>
+  <text x="700" y="326" fill="#0A0A0A" font-size="11" opacity="0.55">reads crisis levels</text>
+  <text x="700" y="342" fill="#0A0A0A" font-size="11" opacity="0.55">stress-aware rebalancing</text>
+
+  <!-- Arrows write -->
+  <line x1="300" y1="180" x2="318" y2="200" stroke="#0A0A0A" stroke-opacity="0.45" stroke-width="1.5" marker-end="url(#arrR)"/>
+  <line x1="300" y1="316" x2="318" y2="330" stroke="#0A0A0A" stroke-opacity="0.45" stroke-width="1.5" marker-end="url(#arrR)"/>
+  <text x="310" y="156" fill="#0A0A0A" font-size="10" font-weight="700" letter-spacing="1.2" opacity="0.45">write</text>
+  <text x="310" y="384" fill="#0A0A0A" font-size="10" font-weight="700" letter-spacing="1.2" opacity="0.45">write</text>
+
+  <!-- Arrows read -->
+  <line x1="662" y1="200" x2="680" y2="180" stroke="#0A0A0A" stroke-opacity="0.45" stroke-width="1.5" marker-end="url(#arrR)"/>
+  <line x1="662" y1="330" x2="680" y2="316" stroke="#0A0A0A" stroke-opacity="0.45" stroke-width="1.5" marker-end="url(#arrR)"/>
+  <text x="670" y="156" fill="#0A0A0A" font-size="10" font-weight="700" letter-spacing="1.2" opacity="0.45">read</text>
+  <text x="670" y="384" fill="#0A0A0A" font-size="10" font-weight="700" letter-spacing="1.2" opacity="0.45">read</text>
+
+  <text x="490" y="430" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.4">Four tasks in one process. The lock is the contract between them.</text>
+</svg>

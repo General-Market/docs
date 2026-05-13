@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 700" width="980" height="700" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-opacity="0.03"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0A0A0A" fill-opacity="0.4"/>
+    </marker>
+  </defs>
+
+  <rect width="980" height="700" fill="white"/>
+  <circle cx="80" cy="640" r="180" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="920" cy="60" r="160" fill="#0A0A0A" opacity="0.02"/>
+
+  <!-- Column headers -->
+  <text x="160" y="48" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.45">EXTERNAL</text>
+  <text x="490" y="48" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.45">DATA NODE · RUST</text>
+  <text x="820" y="48" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.45">ON-CHAIN</text>
+
+  <!-- Column separators -->
+  <line x1="320" y1="68" x2="320" y2="640" stroke="#0A0A0A" stroke-opacity="0.06" stroke-width="1"/>
+  <line x1="660" y1="68" x2="660" y2="640" stroke="#0A0A0A" stroke-opacity="0.06" stroke-width="1"/>
+
+  <!-- EXTERNAL: API card -->
+  <rect x="60" y="100" width="200" height="92" rx="12" fill="#0A0A0A" fill-opacity="0.03" filter="url(#shadow)"/>
+  <text x="160" y="130" text-anchor="middle" fill="#0A0A0A" font-size="13" font-weight="700">Your API</text>
+  <text x="160" y="150" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.5">REST · JSON · XML</text>
+  <text x="160" y="172" text-anchor="middle" fill="#0A0A0A" font-size="10" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.4">GET /api/data</text>
+
+  <!-- Arrow EXTERNAL -> DATA NODE -->
+  <line x1="262" y1="146" x2="356" y2="146" stroke="#0A0A0A" stroke-opacity="0.4" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+  <!-- DATA NODE: trait impl panel -->
+  <rect x="360" y="100" width="260" height="180" rx="12" fill="url(#darkGrad)"/>
+  <text x="490" y="128" text-anchor="middle" fill="white" font-size="11" font-weight="700" letter-spacing="2" opacity="0.55">MARKETDATASOURCE</text>
+  <text x="490" y="148" text-anchor="middle" fill="white" font-size="13" font-weight="600" opacity="0.95">trait implementation</text>
+
+  <rect x="378" y="172" width="110" height="86" rx="10" fill="white" fill-opacity="0.08" stroke="white" stroke-opacity="0.12"/>
+  <text x="433" y="196" text-anchor="middle" fill="white" font-size="11" font-weight="700">fetch_assets</text>
+  <text x="433" y="220" text-anchor="middle" fill="white" font-size="10" opacity="0.55">what to</text>
+  <text x="433" y="234" text-anchor="middle" fill="white" font-size="10" opacity="0.55">track</text>
+
+  <rect x="494" y="172" width="110" height="86" rx="10" fill="white" fill-opacity="0.08" stroke="white" stroke-opacity="0.12"/>
+  <text x="549" y="196" text-anchor="middle" fill="white" font-size="11" font-weight="700">fetch_prices</text>
+  <text x="549" y="220" text-anchor="middle" fill="white" font-size="10" opacity="0.55">current</text>
+  <text x="549" y="234" text-anchor="middle" fill="white" font-size="10" opacity="0.55">values</text>
+
+  <!-- Arrows from trait fns to SyncEngine -->
+  <line x1="433" y1="280" x2="433" y2="312" stroke="#0A0A0A" stroke-opacity="0.35" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <line x1="549" y1="280" x2="549" y2="312" stroke="#0A0A0A" stroke-opacity="0.35" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+  <!-- SyncEngine -->
+  <rect x="360" y="318" width="260" height="100" rx="12" fill="#0A0A0A" fill-opacity="0.04" stroke="#0A0A0A" stroke-opacity="0.08"/>
+  <text x="490" y="346" text-anchor="middle" fill="#0A0A0A" font-size="13" font-weight="700">SyncEngine</text>
+  <text x="380" y="370" fill="#0A0A0A" font-size="11" opacity="0.5">fetch_assets() at startup</text>
+  <text x="380" y="388" fill="#0A0A0A" font-size="11" opacity="0.5">fetch_prices() every N seconds</text>
+  <text x="380" y="406" fill="#0A0A0A" font-size="11" opacity="0.5">deduplicates unchanged values</text>
+
+  <!-- Arrow to writers -->
+  <line x1="490" y1="420" x2="490" y2="450" stroke="#0A0A0A" stroke-opacity="0.35" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+  <!-- Writers row -->
+  <rect x="360" y="458" width="125" height="68" rx="10" fill="#0A0A0A" fill-opacity="0.04" stroke="#0A0A0A" stroke-opacity="0.08"/>
+  <text x="422" y="484" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="700">BatchWriter</text>
+  <text x="422" y="504" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.45">PostgreSQL</text>
+
+  <rect x="495" y="458" width="125" height="68" rx="10" fill="#0A0A0A" fill-opacity="0.04" stroke="#0A0A0A" stroke-opacity="0.08"/>
+  <text x="557" y="484" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="700">BroadcastHub</text>
+  <text x="557" y="504" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.45">WebSocket</text>
+
+  <!-- ON-CHAIN column: three consumer cards -->
+  <line x1="620" y1="492" x2="700" y2="492" stroke="#0A0A0A" stroke-opacity="0.35" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+  <rect x="710" y="116" width="220" height="76" rx="10" fill="white" stroke="#0A0A0A" stroke-opacity="0.1" filter="url(#shadow)"/>
+  <text x="820" y="142" text-anchor="middle" fill="#0A0A0A" font-size="12" font-weight="700">Vision API</text>
+  <text x="820" y="162" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.5" font-family="ui-monospace, SF Mono, Menlo, monospace">/api/vision/*</text>
+  <text x="820" y="178" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.35">reads from DB</text>
+
+  <rect x="710" y="280" width="220" height="92" rx="10" fill="url(#darkGrad)" filter="url(#shadow)"/>
+  <text x="820" y="308" text-anchor="middle" fill="white" font-size="12" font-weight="700">Oracle Nodes · 3×</text>
+  <text x="820" y="328" text-anchor="middle" fill="white" font-size="10" opacity="0.55">BLS-sign prices</text>
+  <text x="820" y="344" text-anchor="middle" fill="white" font-size="10" opacity="0.55">submit on-chain</text>
+  <circle cx="784" cy="358" r="3" fill="#10B981"/>
+  <circle cx="820" cy="358" r="3" fill="#10B981"/>
+  <circle cx="856" cy="358" r="3" fill="#10B981"/>
+
+  <rect x="710" y="460" width="220" height="76" rx="10" fill="white" stroke="#0A0A0A" stroke-opacity="0.1" filter="url(#shadow)"/>
+  <text x="820" y="486" text-anchor="middle" fill="#0A0A0A" font-size="12" font-weight="700">Frontend</text>
+  <text x="820" y="506" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.5" font-family="ui-monospace, SF Mono, Menlo, monospace">sources.ts · market-cats.ts</text>
+  <text x="820" y="522" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.35">category routing</text>
+
+  <!-- Fan-out lines to the three consumers -->
+  <path d="M660 492 Q686 492 686 154 L702 154" stroke="#0A0A0A" stroke-opacity="0.18" stroke-width="1" fill="none"/>
+  <path d="M660 492 Q686 492 686 320 L702 320" stroke="#0A0A0A" stroke-opacity="0.18" stroke-width="1" fill="none"/>
+  <path d="M660 492 Q686 492 686 498 L702 498" stroke="#0A0A0A" stroke-opacity="0.18" stroke-width="1" fill="none"/>
+
+  <!-- Footer pill -->
+  <rect x="40" y="638" width="900" height="42" rx="14" fill="#0A0A0A" fill-opacity="0.03"/>
+  <text x="490" y="664" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.45">One trait. One sync loop. One database. The rest is wiring.</text>
+</svg>

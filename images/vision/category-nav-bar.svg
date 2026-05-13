@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 260" width="980" height="260" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-opacity="0.03"/>
+    </filter>
+  </defs>
+
+  <rect width="980" height="260" fill="white"/>
+  <circle cx="80" cy="220" r="140" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="900" cy="40" r="120" fill="#0A0A0A" opacity="0.02"/>
+
+  <text x="490" y="44" text-anchor="middle" fill="#0A0A0A" font-size="12" font-weight="700" letter-spacing="3" opacity="0.45">CATEGORY NAV</text>
+
+  <!-- Row 1: All + 4 categories. -->
+  <!-- Pill "All 98" - emphasized -->
+  <rect x="60" y="74" width="78" height="36" rx="18" fill="#0A0A0A"/>
+  <text x="86" y="97" fill="white" font-size="12" font-weight="600">All</text>
+  <text x="120" y="97" text-anchor="middle" fill="white" font-size="11" opacity="0.55">98</text>
+
+  <!-- Other pills row 1 -->
+  <g>
+    <rect x="156" y="74" width="118" height="36" rx="18" fill="white" stroke="#0A0A0A" stroke-opacity="0.12"/>
+    <text x="174" y="97" fill="#0A0A0A" font-size="12" font-weight="500">Finance</text>
+    <text x="252" y="97" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.4">14</text>
+
+    <rect x="292" y="74" width="118" height="36" rx="18" fill="white" stroke="#0A0A0A" stroke-opacity="0.12"/>
+    <text x="310" y="97" fill="#0A0A0A" font-size="12" font-weight="500">Economic</text>
+    <text x="388" y="97" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.4">11</text>
+
+    <rect x="428" y="74" width="118" height="36" rx="18" fill="white" stroke="#0A0A0A" stroke-opacity="0.12"/>
+    <text x="446" y="97" fill="#0A0A0A" font-size="12" font-weight="500">Regulatory</text>
+    <text x="524" y="97" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.4">4</text>
+
+    <rect x="564" y="74" width="118" height="36" rx="18" fill="white" stroke="#0A0A0A" stroke-opacity="0.12"/>
+    <text x="582" y="97" fill="#0A0A0A" font-size="12" font-weight="500">Tech</text>
+    <text x="660" y="97" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.4">8</text>
+
+    <rect x="700" y="74" width="148" height="36" rx="18" fill="white" stroke="#0A0A0A" stroke-opacity="0.12"/>
+    <text x="718" y="97" fill="#0A0A0A" font-size="12" font-weight="500">Entertainment</text>
+    <text x="826" y="97" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.4">15</text>
+  </g>
+
+  <!-- Row 2 -->
+  <g>
+    <rect x="60"  y="126" width="118" height="36" rx="18" fill="white" stroke="#0A0A0A" stroke-opacity="0.12"/>
+    <text x="78"  y="149" fill="#0A0A0A" font-size="12" font-weight="500">Geophysical</text>
+    <text x="156" y="149" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.4">15</text>
+
+    <rect x="196" y="126" width="118" height="36" rx="18" fill="white" stroke="#0A0A0A" stroke-opacity="0.12"/>
+    <text x="214" y="149" fill="#0A0A0A" font-size="12" font-weight="500">Transport</text>
+    <text x="292" y="149" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.4">16</text>
+
+    <rect x="332" y="126" width="100" height="36" rx="18" fill="white" stroke="#0A0A0A" stroke-opacity="0.12"/>
+    <text x="350" y="149" fill="#0A0A0A" font-size="12" font-weight="500">Nature</text>
+    <text x="410" y="149" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.4">4</text>
+
+    <rect x="450" y="126" width="100" height="36" rx="18" fill="white" stroke="#0A0A0A" stroke-opacity="0.12"/>
+    <text x="468" y="149" fill="#0A0A0A" font-size="12" font-weight="500">Space</text>
+    <text x="528" y="149" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.4">3</text>
+
+    <rect x="568" y="126" width="118" height="36" rx="18" fill="white" stroke="#0A0A0A" stroke-opacity="0.12"/>
+    <text x="586" y="149" fill="#0A0A0A" font-size="12" font-weight="500">Regulatory</text>
+    <text x="664" y="149" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.4">4</text>
+
+    <rect x="704" y="126" width="118" height="36" rx="18" fill="white" stroke="#0A0A0A" stroke-opacity="0.12"/>
+    <text x="722" y="149" fill="#0A0A0A" font-size="12" font-weight="500">Academic</text>
+    <text x="800" y="149" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.4">3</text>
+  </g>
+
+  <!-- Active state marker -->
+  <text x="60" y="200" fill="#0A0A0A" font-size="11" opacity="0.45" letter-spacing="2">ACTIVE PILL</text>
+  <line x1="100" y1="92" x2="100" y2="200" stroke="#0A0A0A" stroke-opacity="0.08" stroke-dasharray="3,3"/>
+
+  <!-- Footer pill -->
+  <rect x="40" y="216" width="900" height="32" rx="14" fill="#0A0A0A" fill-opacity="0.03"/>
+  <text x="490" y="236" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.45">Each count is a count of windows into the world.</text>
+</svg>

@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 660" width="980" height="660" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-opacity="0.03"/>
+    </filter>
+  </defs>
+
+  <rect width="980" height="660" fill="white"/>
+  <circle cx="120" cy="580" r="180" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="860" cy="80" r="160" fill="#0A0A0A" opacity="0.02"/>
+
+  <rect x="40" y="32" width="900" height="48" rx="12" fill="url(#darkGrad)"/>
+  <text x="64" y="61" fill="white" font-size="12" font-weight="600" letter-spacing="2">LIVE QUESTIONS</text>
+  <text x="916" y="61" text-anchor="end" fill="white" font-size="11" opacity="0.5" letter-spacing="2">MARKET ID</text>
+
+  <g font-size="13">
+    <!-- Row template -->
+    <rect x="40" y="100" width="900" height="44" rx="8" fill="#0A0A0A" fill-opacity="0.02"/>
+    <text x="64" y="128" fill="#0A0A0A" opacity="0.8">Will Bitcoin be higher in 5 minutes?</text>
+    <text x="916" y="128" text-anchor="end" fill="#0A0A0A" font-size="11" font-family="JetBrains Mono, ui-monospace, monospace" opacity="0.4">crypto_BTC-USD</text>
+
+    <rect x="40" y="152" width="900" height="44" rx="8" fill="#0A0A0A" fill-opacity="0.02"/>
+    <text x="64" y="180" fill="#0A0A0A" opacity="0.8">Will it rain more in Tokyo tomorrow?</text>
+    <text x="916" y="180" text-anchor="end" fill="#0A0A0A" font-size="11" font-family="JetBrains Mono, ui-monospace, monospace" opacity="0.4">weather_tokyo</text>
+
+    <rect x="40" y="204" width="900" height="44" rx="8" fill="#0A0A0A" fill-opacity="0.02"/>
+    <text x="64" y="232" fill="#0A0A0A" opacity="0.8">Will an earthquake hit California?</text>
+    <text x="916" y="232" text-anchor="end" fill="#0A0A0A" font-size="11" font-family="JetBrains Mono, ui-monospace, monospace" opacity="0.4">earthquake_calif</text>
+
+    <rect x="40" y="256" width="900" height="44" rx="8" fill="#0A0A0A" fill-opacity="0.02"/>
+    <text x="64" y="284" fill="#0A0A0A" opacity="0.8">Will the Northern Line have disruptions?</text>
+    <text x="916" y="284" text-anchor="end" fill="#0A0A0A" font-size="11" font-family="JetBrains Mono, ui-monospace, monospace" opacity="0.4">tfl_tube_northern</text>
+
+    <rect x="40" y="308" width="900" height="44" rx="8" fill="#0A0A0A" fill-opacity="0.02"/>
+    <text x="64" y="336" fill="#0A0A0A" opacity="0.8">Will Counter-Strike 2 gain players?</text>
+    <text x="916" y="336" text-anchor="end" fill="#0A0A0A" font-size="11" font-family="JetBrains Mono, ui-monospace, monospace" opacity="0.4">steam_cs2</text>
+
+    <rect x="40" y="360" width="900" height="44" rx="8" fill="#0A0A0A" fill-opacity="0.02"/>
+    <text x="64" y="388" fill="#0A0A0A" opacity="0.8">Will npm react downloads increase?</text>
+    <text x="916" y="388" text-anchor="end" fill="#0A0A0A" font-size="11" font-family="JetBrains Mono, ui-monospace, monospace" opacity="0.4">npm_react</text>
+
+    <rect x="40" y="412" width="900" height="44" rx="8" fill="#0A0A0A" fill-opacity="0.02"/>
+    <text x="64" y="440" fill="#0A0A0A" opacity="0.8">Will McDonald's ice cream break in Chicago?</text>
+    <text x="916" y="440" text-anchor="end" fill="#0A0A0A" font-size="11" font-family="JetBrains Mono, ui-monospace, monospace" opacity="0.4">mcbroken_chicago</text>
+
+    <rect x="40" y="464" width="900" height="44" rx="8" fill="#0A0A0A" fill-opacity="0.02"/>
+    <text x="64" y="492" fill="#0A0A0A" opacity="0.8">Will this GitHub repo get more stars?</text>
+    <text x="916" y="492" text-anchor="end" fill="#0A0A0A" font-size="11" font-family="JetBrains Mono, ui-monospace, monospace" opacity="0.4">github_rust-lang</text>
+
+    <rect x="40" y="516" width="900" height="44" rx="8" fill="#0A0A0A" fill-opacity="0.02"/>
+    <text x="64" y="544" fill="#0A0A0A" opacity="0.8">Will Deutsche Bahn trains be late in Berlin?</text>
+    <text x="916" y="544" text-anchor="end" fill="#0A0A0A" font-size="11" font-family="JetBrains Mono, ui-monospace, monospace" opacity="0.4">db_trains_berlin</text>
+
+    <rect x="40" y="568" width="900" height="44" rx="8" fill="#0A0A0A" fill-opacity="0.02"/>
+    <text x="64" y="596" fill="#0A0A0A" opacity="0.8">Will wave height increase at buoy 41002?</text>
+    <text x="916" y="596" text-anchor="end" fill="#0A0A0A" font-size="11" font-family="JetBrains Mono, ui-monospace, monospace" opacity="0.4">ndbc_41002</text>
+  </g>
+
+  <text x="490" y="640" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.35">Anything that produces a number can become a wager.</text>
+</svg>

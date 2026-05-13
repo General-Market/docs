@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 480" width="980" height="480" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="logoGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1F1F1F"/>
+      <stop offset="100%" stop-color="#0A0A0A"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-opacity="0.04"/>
+    </filter>
+  </defs>
+
+  <rect width="980" height="480" fill="white"/>
+  <circle cx="80" cy="420" r="160" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="900" cy="60" r="140" fill="#0A0A0A" opacity="0.02"/>
+
+  <text x="490" y="42" text-anchor="middle" fill="#0A0A0A" font-size="12" font-weight="700" letter-spacing="3" opacity="0.45">SOURCE CARD ANATOMY</text>
+
+  <!-- The card itself, centered. Width 340, height 360. -->
+  <g transform="translate(80, 80)">
+    <rect x="0" y="0" width="340" height="360" rx="16" fill="white" stroke="#0A0A0A" stroke-opacity="0.08" filter="url(#shadow)"/>
+
+    <!-- Logo area -->
+    <rect x="0" y="0" width="340" height="160" rx="16" fill="url(#logoGrad)"/>
+    <!-- Mask the bottom corners -->
+    <rect x="0" y="140" width="340" height="20" fill="url(#logoGrad)"/>
+    <!-- Category badge -->
+    <rect x="252" y="16" width="74" height="22" rx="11" fill="white" fill-opacity="0.15"/>
+    <text x="289" y="31" text-anchor="middle" fill="white" font-size="10" font-weight="600" letter-spacing="1.5">FINANCE</text>
+    <!-- Logo placeholder -->
+    <circle cx="170" cy="80" r="34" fill="white" fill-opacity="0.06"/>
+    <text x="170" y="86" text-anchor="middle" fill="white" font-size="14" font-weight="600" opacity="0.6">logo</text>
+
+    <!-- Content area -->
+    <g>
+      <!-- Status dot -->
+      <circle cx="32" cy="194" r="4" fill="#10B981"/>
+      <text x="44" y="198" fill="#0A0A0A" font-size="11" opacity="0.55">Live</text>
+
+      <text x="20" y="226" fill="#0A0A0A" font-size="16" font-weight="700">CoinGecko Crypto</text>
+      <text x="20" y="248" fill="#0A0A0A" font-size="12" opacity="0.5">Cryptocurrency market data —</text>
+      <text x="20" y="264" fill="#0A0A0A" font-size="12" opacity="0.5">prices, volumes, market caps.</text>
+
+      <!-- Stats row -->
+      <line x1="20" y1="280" x2="320" y2="280" stroke="#0A0A0A" stroke-opacity="0.06"/>
+
+      <text x="56" y="298" text-anchor="middle" fill="#0A0A0A" font-size="9" letter-spacing="1.5" opacity="0.4">MARKETS</text>
+      <text x="56" y="316" text-anchor="middle" fill="#0A0A0A" font-size="14" font-weight="600">2,400</text>
+
+      <line x1="112" y1="288" x2="112" y2="320" stroke="#0A0A0A" stroke-opacity="0.06"/>
+
+      <text x="170" y="298" text-anchor="middle" fill="#0A0A0A" font-size="9" letter-spacing="1.5" opacity="0.4">TYPE</text>
+      <text x="170" y="316" text-anchor="middle" fill="#0A0A0A" font-size="14" font-weight="600">Price</text>
+
+      <line x1="228" y1="288" x2="228" y2="320" stroke="#0A0A0A" stroke-opacity="0.06"/>
+
+      <text x="284" y="298" text-anchor="middle" fill="#0A0A0A" font-size="9" letter-spacing="1.5" opacity="0.4">UPDATED</text>
+      <text x="284" y="316" text-anchor="middle" fill="#0A0A0A" font-size="14" font-weight="600">2m ago</text>
+
+      <line x1="20" y1="334" x2="320" y2="334" stroke="#0A0A0A" stroke-opacity="0.06"/>
+
+      <!-- Action row -->
+      <text x="56"  y="352" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="600" opacity="0.7">Markets</text>
+      <line x1="112" y1="338" x2="112" y2="360" stroke="#0A0A0A" stroke-opacity="0.06"/>
+      <text x="170" y="352" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="600" opacity="0.7">Batch</text>
+      <line x1="228" y1="338" x2="228" y2="360" stroke="#0A0A0A" stroke-opacity="0.06"/>
+      <text x="284" y="352" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="600" opacity="0.7">Details</text>
+    </g>
+  </g>
+
+  <!-- Annotations to the right -->
+  <g transform="translate(460, 80)">
+    <!-- Lines and labels pointing to card parts -->
+    <line x1="0" y1="40" x2="-40" y2="40" stroke="#0A0A0A" stroke-opacity="0.15"/>
+    <text x="8" y="36" fill="#0A0A0A" font-size="11" font-weight="600">Category badge</text>
+    <text x="8" y="52" fill="#0A0A0A" font-size="11" opacity="0.45">top-right of logo area</text>
+
+    <line x1="0" y1="118" x2="-40" y2="118" stroke="#0A0A0A" stroke-opacity="0.15"/>
+    <text x="8" y="114" fill="#0A0A0A" font-size="11" font-weight="600">Status dot</text>
+    <text x="8" y="130" fill="#0A0A0A" font-size="11" opacity="0.45">green live · yellow stale · grey dead</text>
+
+    <line x1="0" y1="180" x2="-40" y2="180" stroke="#0A0A0A" stroke-opacity="0.15"/>
+    <text x="8" y="176" fill="#0A0A0A" font-size="11" font-weight="600">Name and description</text>
+    <text x="8" y="192" fill="#0A0A0A" font-size="11" opacity="0.45">one line, no ornament</text>
+
+    <line x1="0" y1="240" x2="-40" y2="240" stroke="#0A0A0A" stroke-opacity="0.15"/>
+    <text x="8" y="236" fill="#0A0A0A" font-size="11" font-weight="600">Stats triplet</text>
+    <text x="8" y="252" fill="#0A0A0A" font-size="11" opacity="0.45">markets · type · last update</text>
+
+    <line x1="0" y1="290" x2="-40" y2="290" stroke="#0A0A0A" stroke-opacity="0.15"/>
+    <text x="8" y="286" fill="#0A0A0A" font-size="11" font-weight="600">Actions</text>
+    <text x="8" y="302" fill="#0A0A0A" font-size="11" opacity="0.45">three doors to the same room</text>
+  </g>
+</svg>

@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 360" width="980" height="360" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-opacity="0.03"/>
+    </filter>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0A0A0A" fill-opacity="0.45"/>
+    </marker>
+  </defs>
+
+  <rect width="980" height="360" fill="white"/>
+  <circle cx="80" cy="320" r="160" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="900" cy="60" r="140" fill="#0A0A0A" opacity="0.02"/>
+
+  <text x="40" y="44" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.45">AP ISOLATION</text>
+  <text x="40" y="68" fill="#0A0A0A" font-size="13" opacity="0.45">Oracles sign. AP executes. They never speak.</text>
+
+  <!-- Oracle Nodes panel -->
+  <g filter="url(#shadow)">
+    <rect x="40" y="104" width="260" height="156" rx="14" fill="url(#darkGrad)"/>
+  </g>
+  <text x="64" y="136" fill="white" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.5">ORACLE NODES</text>
+  <text x="64" y="166" fill="white" font-size="16" font-weight="600">Consensus + BLS</text>
+  <g>
+    <circle cx="84" cy="206" r="16" fill="white" fill-opacity="0.08" stroke="white" stroke-opacity="0.2"/>
+    <text x="84" y="210" text-anchor="middle" fill="white" font-size="11" font-weight="700">O₁</text>
+    <circle cx="124" cy="206" r="16" fill="white" fill-opacity="0.08" stroke="white" stroke-opacity="0.2"/>
+    <text x="124" y="210" text-anchor="middle" fill="white" font-size="11" font-weight="700">O₂</text>
+    <circle cx="164" cy="206" r="16" fill="white" fill-opacity="0.08" stroke="white" stroke-opacity="0.2"/>
+    <text x="164" y="210" text-anchor="middle" fill="white" font-size="11" font-weight="700">O₃</text>
+  </g>
+  <text x="64" y="244" fill="white" font-size="10" opacity="0.5">2/3+ threshold</text>
+
+  <!-- L3 Chain panel -->
+  <g filter="url(#shadow)">
+    <rect x="360" y="104" width="260" height="156" rx="14" fill="#0A0A0A" fill-opacity="0.04"/>
+  </g>
+  <text x="384" y="136" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.45">L3 CHAIN</text>
+  <text x="384" y="166" fill="#0A0A0A" font-size="16" font-weight="600">Index.sol</text>
+  <rect x="384" y="184" width="212" height="56" rx="10" fill="#0A0A0A" fill-opacity="0.04"/>
+  <text x="400" y="208" fill="#0A0A0A" font-size="12" font-weight="600">confirmBatch()</text>
+  <text x="400" y="226" fill="#0A0A0A" font-size="11" opacity="0.5">emits TradeRequest event</text>
+
+  <!-- AP panel -->
+  <g filter="url(#shadow)">
+    <rect x="680" y="104" width="260" height="156" rx="14" fill="#0A0A0A" fill-opacity="0.04"/>
+  </g>
+  <text x="704" y="136" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.45">AP</text>
+  <text x="704" y="166" fill="#0A0A0A" font-size="16" font-weight="600">Execute fills</text>
+  <text x="704" y="194" fill="#0A0A0A" font-size="11" opacity="0.5">Listens to chain events only.</text>
+  <text x="704" y="212" fill="#0A0A0A" font-size="11" opacity="0.5">No oracle endpoints.</text>
+  <text x="704" y="230" fill="#0A0A0A" font-size="11" opacity="0.5">No shared keys.</text>
+
+  <!-- Arrows -->
+  <line x1="300" y1="182" x2="358" y2="182" stroke="#0A0A0A" stroke-opacity="0.45" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="329" y="174" text-anchor="middle" fill="#0A0A0A" font-size="10" font-weight="600" letter-spacing="1.6" opacity="0.45">TX</text>
+  <line x1="620" y1="182" x2="678" y2="182" stroke="#0A0A0A" stroke-opacity="0.45" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="649" y="174" text-anchor="middle" fill="#0A0A0A" font-size="10" font-weight="600" letter-spacing="1.6" opacity="0.45">EVENT</text>
+
+  <!-- Forbidden direct link -->
+  <path d="M 170 270 Q 490 320 810 270" stroke="#0A0A0A" stroke-opacity="0.18" stroke-width="1" fill="none" stroke-dasharray="6,4"/>
+  <g transform="translate(490 305)">
+    <circle r="14" fill="white" stroke="#0A0A0A" stroke-opacity="0.25" stroke-width="1"/>
+    <line x1="-6" y1="-6" x2="6" y2="6" stroke="#0A0A0A" stroke-opacity="0.55" stroke-width="1.5"/>
+    <line x1="-6" y1="6" x2="6" y2="-6" stroke="#0A0A0A" stroke-opacity="0.55" stroke-width="1.5"/>
+  </g>
+  <text x="490" y="346" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.4">No direct link. Collusion costs the chain a transaction.</text>
+</svg>

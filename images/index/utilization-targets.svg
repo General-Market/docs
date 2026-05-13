@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 240" width="980" height="240" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-opacity="0.03"/>
+    </filter>
+  </defs>
+
+  <rect width="980" height="240" fill="white"/>
+  <circle cx="60" cy="200" r="140" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="920" cy="40" r="120" fill="#0A0A0A" opacity="0.02"/>
+
+  <text x="40" y="44" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.45">UTILIZATION TARGETS</text>
+  <text x="40" y="68" fill="#0A0A0A" font-size="13" opacity="0.4">The target zone is narrow. Outside it, capital moves.</text>
+
+  <!-- Bar background. 0% at x=60, 100% at x=920 -->
+  <rect x="60" y="120" width="860" height="34" rx="8" fill="#0A0A0A" fill-opacity="0.04" filter="url(#shadow)"/>
+
+  <!-- Segments: 0-50 critical low, 50-70 below target, 70-85 TARGET, 85-90 above target, 90-100 critical high -->
+  <!-- Critical low 0-50% : x=60..490 -->
+  <rect x="60" y="120" width="430" height="34" rx="8" fill="#0A0A0A" fill-opacity="0.04"/>
+  <!-- Target zone 70-85% : x=60+0.70*860=662 .. 60+0.85*860=791 -->
+  <rect x="662" y="120" width="129" height="34" fill="#10B981" fill-opacity="0.12"/>
+  <!-- Critical high 90-100% : x=60+0.9*860=834..920 -->
+  <rect x="834" y="120" width="86" height="34" rx="0" fill="#0A0A0A" fill-opacity="0.12"/>
+
+  <!-- Tick marks under bar -->
+  <g stroke="#0A0A0A" stroke-opacity="0.25" stroke-width="1">
+    <line x1="60" y1="156" x2="60" y2="162"/>
+    <line x1="490" y1="156" x2="490" y2="162"/>
+    <line x1="662" y1="156" x2="662" y2="162"/>
+    <line x1="791" y1="156" x2="791" y2="162"/>
+    <line x1="834" y1="156" x2="834" y2="162"/>
+    <line x1="920" y1="156" x2="920" y2="162"/>
+  </g>
+  <text x="60" y="180" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="600">0%</text>
+  <text x="490" y="180" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="600">50%</text>
+  <text x="662" y="180" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="600">70%</text>
+  <text x="791" y="180" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="600">85%</text>
+  <text x="834" y="180" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="600">90%</text>
+  <text x="920" y="180" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="600">100%</text>
+
+  <!-- Labels above each zone -->
+  <text x="275" y="110" text-anchor="middle" fill="#0A0A0A" font-size="10" font-weight="700" letter-spacing="1.6" opacity="0.45">CRITICAL LOW</text>
+  <text x="576" y="110" text-anchor="middle" fill="#0A0A0A" font-size="10" font-weight="700" letter-spacing="1.6" opacity="0.45">BELOW TARGET</text>
+  <text x="726" y="110" text-anchor="middle" fill="#059669" font-size="10" font-weight="700" letter-spacing="1.6">TARGET</text>
+  <text x="877" y="110" text-anchor="middle" fill="#0A0A0A" font-size="10" font-weight="700" letter-spacing="1.6" opacity="0.55">CRITICAL HIGH</text>
+
+  <!-- Action row -->
+  <text x="275" y="216" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.45">withdraw candidate</text>
+  <text x="576" y="216" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.45">drift</text>
+  <text x="726" y="216" text-anchor="middle" fill="#059669" font-size="11" opacity="0.7">hold</text>
+  <text x="877" y="216" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.55">priority supply</text>
+</svg>

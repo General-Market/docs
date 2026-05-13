@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 460" width="980" height="460" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-opacity="0.03"/>
+    </filter>
+  </defs>
+
+  <rect width="980" height="460" fill="white"/>
+  <circle cx="120" cy="400" r="180" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="860" cy="60" r="160" fill="#0A0A0A" opacity="0.02"/>
+
+  <!-- Header -->
+  <rect x="40" y="32" width="900" height="48" rx="12" fill="url(#darkGrad)"/>
+  <text x="64" y="61" fill="white" font-size="11" font-weight="600" letter-spacing="3">EXPONENTIAL DECAY · 0.7×</text>
+  <text x="916" y="61" text-anchor="end" fill="white" font-size="11" opacity="0.5">weight = 0.7 ^ (rank − 1)</text>
+
+  <!-- Column headers -->
+  <text x="80" y="118" fill="#0A0A0A" font-size="10" font-weight="600" letter-spacing="2" opacity="0.4">RANK</text>
+  <text x="160" y="118" fill="#0A0A0A" font-size="10" font-weight="600" letter-spacing="2" opacity="0.4">WEIGHT</text>
+  <text x="260" y="118" fill="#0A0A0A" font-size="10" font-weight="600" letter-spacing="2" opacity="0.4">SHARE</text>
+  <text x="360" y="118" fill="#0A0A0A" font-size="10" font-weight="600" letter-spacing="2" opacity="0.4">PTS / HR</text>
+  <text x="480" y="118" fill="#0A0A0A" font-size="10" font-weight="600" letter-spacing="2" opacity="0.4">DISTRIBUTION</text>
+
+  <line x1="40" y1="128" x2="940" y2="128" stroke="#0A0A0A" stroke-opacity="0.08"/>
+
+  <!-- Bars: max bar width ~440px (from x=480 to x=920) -->
+  <!-- Rank 1: 36.1% → ~440 -->
+  <g>
+    <text x="80" y="166" fill="#0A0A0A" font-size="14" font-weight="700">#1</text>
+    <text x="160" y="166" fill="#0A0A0A" font-size="13" opacity="0.7">1.000</text>
+    <text x="260" y="166" fill="#0A0A0A" font-size="13" opacity="0.7">36.1%</text>
+    <text x="360" y="166" fill="#0A0A0A" font-size="13" font-weight="700">37.6</text>
+    <rect x="480" y="152" width="440" height="20" rx="10" fill="url(#darkGrad)"/>
+  </g>
+  <!-- Rank 2: 25.2% → 0.252/0.361 * 440 = 307 -->
+  <g>
+    <text x="80" y="206" fill="#0A0A0A" font-size="14" font-weight="700">#2</text>
+    <text x="160" y="206" fill="#0A0A0A" font-size="13" opacity="0.7">0.700</text>
+    <text x="260" y="206" fill="#0A0A0A" font-size="13" opacity="0.7">25.2%</text>
+    <text x="360" y="206" fill="#0A0A0A" font-size="13" font-weight="700">26.3</text>
+    <rect x="480" y="192" width="307" height="20" rx="10" fill="#0A0A0A" fill-opacity="0.55"/>
+  </g>
+  <!-- Rank 3: 17.7% → 216 -->
+  <g>
+    <text x="80" y="246" fill="#0A0A0A" font-size="14" font-weight="700">#3</text>
+    <text x="160" y="246" fill="#0A0A0A" font-size="13" opacity="0.7">0.490</text>
+    <text x="260" y="246" fill="#0A0A0A" font-size="13" opacity="0.7">17.7%</text>
+    <text x="360" y="246" fill="#0A0A0A" font-size="13" font-weight="700">18.4</text>
+    <rect x="480" y="232" width="216" height="20" rx="10" fill="#0A0A0A" fill-opacity="0.4"/>
+  </g>
+  <!-- Rank 4: 12.4% → 151 -->
+  <g>
+    <text x="80" y="286" fill="#0A0A0A" font-size="14" font-weight="700">#4</text>
+    <text x="160" y="286" fill="#0A0A0A" font-size="13" opacity="0.7">0.343</text>
+    <text x="260" y="286" fill="#0A0A0A" font-size="13" opacity="0.7">12.4%</text>
+    <text x="360" y="286" fill="#0A0A0A" font-size="13" font-weight="700">12.9</text>
+    <rect x="480" y="272" width="151" height="20" rx="10" fill="#0A0A0A" fill-opacity="0.28"/>
+  </g>
+  <!-- Rank 5: 8.7% → 106 -->
+  <g>
+    <text x="80" y="326" fill="#0A0A0A" font-size="14" font-weight="700">#5</text>
+    <text x="160" y="326" fill="#0A0A0A" font-size="13" opacity="0.7">0.240</text>
+    <text x="260" y="326" fill="#0A0A0A" font-size="13" opacity="0.7">8.7%</text>
+    <text x="360" y="326" fill="#0A0A0A" font-size="13" font-weight="700">9.0</text>
+    <rect x="480" y="312" width="106" height="20" rx="10" fill="#0A0A0A" fill-opacity="0.18"/>
+  </g>
+
+  <line x1="40" y1="360" x2="940" y2="360" stroke="#0A0A0A" stroke-opacity="0.08"/>
+
+  <!-- Footer -->
+  <text x="80" y="394" fill="#0A0A0A" font-size="11" opacity="0.5">Only positive NAV growth qualifies.</text>
+  <text x="916" y="394" text-anchor="end" fill="#0A0A0A" font-size="11" opacity="0.45">2,500 ÷ 24 ≈ 104 pts / hr</text>
+  <text x="80" y="418" fill="#0A0A0A" font-size="11" opacity="0.3">The protocol pays the curve; the curve pays the patient.</text>
+</svg>

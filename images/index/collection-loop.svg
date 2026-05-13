@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 280" width="980" height="280" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-opacity="0.03"/>
+    </filter>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0A0A0A" fill-opacity="0.45"/>
+    </marker>
+  </defs>
+
+  <rect width="980" height="280" fill="white"/>
+  <circle cx="60" cy="240" r="140" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="920" cy="40" r="120" fill="#0A0A0A" opacity="0.02"/>
+
+  <text x="40" y="44" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.45">COLLECTION LOOP</text>
+  <text x="40" y="68" fill="#0A0A0A" font-size="13" opacity="0.4">Collect. Validate. Push. Sleep. Repeat until shutdown.</text>
+
+  <!-- Four boxes -->
+  <g filter="url(#shadow)">
+    <rect x="40" y="104" width="200" height="80" rx="12" fill="#0A0A0A" fill-opacity="0.04"/>
+    <rect x="270" y="104" width="200" height="80" rx="12" fill="#0A0A0A" fill-opacity="0.04"/>
+    <rect x="500" y="104" width="200" height="80" rx="12" fill="#0A0A0A" fill-opacity="0.04"/>
+    <rect x="730" y="104" width="200" height="80" rx="12" fill="#0A0A0A" fill-opacity="0.04"/>
+  </g>
+  <text x="140" y="138" text-anchor="middle" fill="#0A0A0A" font-size="13" font-weight="700">Collect</text>
+  <text x="140" y="160" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.5">all oracles</text>
+
+  <text x="370" y="138" text-anchor="middle" fill="#0A0A0A" font-size="13" font-weight="700">Validate</text>
+  <text x="370" y="160" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.5">consensus + aggregate</text>
+
+  <text x="600" y="138" text-anchor="middle" fill="#0A0A0A" font-size="13" font-weight="700">Push</text>
+  <text x="600" y="160" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.5">if cycle is newer</text>
+
+  <text x="830" y="138" text-anchor="middle" fill="#0A0A0A" font-size="13" font-weight="700">Sleep</text>
+  <text x="830" y="160" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.5">configured interval</text>
+
+  <!-- Arrows between -->
+  <line x1="240" y1="144" x2="268" y2="144" stroke="#0A0A0A" stroke-opacity="0.45" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="470" y1="144" x2="498" y2="144" stroke="#0A0A0A" stroke-opacity="0.45" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="700" y1="144" x2="728" y2="144" stroke="#0A0A0A" stroke-opacity="0.45" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- Return loop -->
+  <path d="M 830 184 Q 830 230 600 230 Q 140 230 140 184" stroke="#0A0A0A" stroke-opacity="0.3" stroke-width="1" fill="none" stroke-dasharray="6,4" marker-end="url(#arr)"/>
+  <text x="490" y="252" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.4">repeat until shutdown</text>
+</svg>

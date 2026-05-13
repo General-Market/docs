@@ -1,0 +1,121 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 380" width="980" height="380" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-opacity="0.03"/>
+    </filter>
+  </defs>
+
+  <rect width="980" height="380" fill="white"/>
+
+  <!-- Decorative circles -->
+  <circle cx="80" cy="320" r="160" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="900" cy="60" r="140" fill="#0A0A0A" opacity="0.02"/>
+
+  <!-- Title -->
+  <text x="490" y="48" text-anchor="middle" fill="#0A0A0A" font-size="12" font-weight="700" letter-spacing="3" opacity="0.45">BITMAP BIT LAYOUT</text>
+  <text x="490" y="72" text-anchor="middle" fill="#0A0A0A" font-size="13" opacity="0.4">Big-endian within each byte. Bit 0 is MSB of byte 0.</text>
+
+  <!-- Three byte panels. Each panel: 270 wide. gap 30. start x=70. -->
+  <!-- Byte 0 -->
+  <g>
+    <rect x="70" y="118" width="270" height="120" rx="12" fill="#0A0A0A" fill-opacity="0.025" filter="url(#shadow)"/>
+    <text x="205" y="146" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2" opacity="0.5">BYTE 0</text>
+
+    <!-- 8 cells, each 28 wide, gap 2, total 240. Start x=85. y=160. -->
+    <g font-family="ui-monospace, SF Mono, Menlo, monospace">
+      <rect x="85"  y="166" width="28" height="42" rx="4" fill="white" stroke="#0A0A0A" stroke-opacity="0.12"/>
+      <text x="99"  y="194" text-anchor="middle" fill="#0A0A0A" font-size="14" font-weight="600">0</text>
+      <rect x="115" y="166" width="28" height="42" rx="4" fill="white" stroke="#0A0A0A" stroke-opacity="0.12"/>
+      <text x="129" y="194" text-anchor="middle" fill="#0A0A0A" font-size="14" font-weight="600">1</text>
+      <rect x="145" y="166" width="28" height="42" rx="4" fill="white" stroke="#0A0A0A" stroke-opacity="0.12"/>
+      <text x="159" y="194" text-anchor="middle" fill="#0A0A0A" font-size="14" font-weight="600">2</text>
+      <rect x="175" y="166" width="28" height="42" rx="4" fill="white" stroke="#0A0A0A" stroke-opacity="0.12"/>
+      <text x="189" y="194" text-anchor="middle" fill="#0A0A0A" font-size="14" font-weight="600">3</text>
+      <rect x="205" y="166" width="28" height="42" rx="4" fill="white" stroke="#0A0A0A" stroke-opacity="0.12"/>
+      <text x="219" y="194" text-anchor="middle" fill="#0A0A0A" font-size="14" font-weight="600">4</text>
+      <rect x="235" y="166" width="28" height="42" rx="4" fill="white" stroke="#0A0A0A" stroke-opacity="0.12"/>
+      <text x="249" y="194" text-anchor="middle" fill="#0A0A0A" font-size="14" font-weight="600">5</text>
+      <rect x="265" y="166" width="28" height="42" rx="4" fill="white" stroke="#0A0A0A" stroke-opacity="0.12"/>
+      <text x="279" y="194" text-anchor="middle" fill="#0A0A0A" font-size="14" font-weight="600">6</text>
+      <rect x="295" y="166" width="28" height="42" rx="4" fill="white" stroke="#0A0A0A" stroke-opacity="0.12"/>
+      <text x="309" y="194" text-anchor="middle" fill="#0A0A0A" font-size="14" font-weight="600">7</text>
+    </g>
+
+    <text x="99"  y="226" text-anchor="middle" fill="#0A0A0A" font-size="9" opacity="0.35" letter-spacing="1">MSB</text>
+    <text x="309" y="226" text-anchor="middle" fill="#0A0A0A" font-size="9" opacity="0.35" letter-spacing="1">LSB</text>
+  </g>
+
+  <!-- Byte 1 -->
+  <g>
+    <rect x="370" y="118" width="270" height="120" rx="12" fill="#0A0A0A" fill-opacity="0.025" filter="url(#shadow)"/>
+    <text x="505" y="146" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2" opacity="0.5">BYTE 1</text>
+
+    <g font-family="ui-monospace, SF Mono, Menlo, monospace">
+      <rect x="385" y="166" width="28" height="42" rx="4" fill="white" stroke="#0A0A0A" stroke-opacity="0.12"/>
+      <text x="399" y="194" text-anchor="middle" fill="#0A0A0A" font-size="14" font-weight="600">8</text>
+      <rect x="415" y="166" width="28" height="42" rx="4" fill="white" stroke="#0A0A0A" stroke-opacity="0.12"/>
+      <text x="429" y="194" text-anchor="middle" fill="#0A0A0A" font-size="14" font-weight="600">9</text>
+      <rect x="445" y="166" width="28" height="42" rx="4" fill="white" stroke="#0A0A0A" stroke-opacity="0.12"/>
+      <text x="459" y="194" text-anchor="middle" fill="#0A0A0A" font-size="14" font-weight="600">10</text>
+      <rect x="475" y="166" width="28" height="42" rx="4" fill="white" stroke="#0A0A0A" stroke-opacity="0.12"/>
+      <text x="489" y="194" text-anchor="middle" fill="#0A0A0A" font-size="14" font-weight="600">11</text>
+      <rect x="505" y="166" width="28" height="42" rx="4" fill="white" stroke="#0A0A0A" stroke-opacity="0.12"/>
+      <text x="519" y="194" text-anchor="middle" fill="#0A0A0A" font-size="14" font-weight="600">12</text>
+      <rect x="535" y="166" width="28" height="42" rx="4" fill="white" stroke="#0A0A0A" stroke-opacity="0.12"/>
+      <text x="549" y="194" text-anchor="middle" fill="#0A0A0A" font-size="14" font-weight="600">13</text>
+      <rect x="565" y="166" width="28" height="42" rx="4" fill="white" stroke="#0A0A0A" stroke-opacity="0.12"/>
+      <text x="579" y="194" text-anchor="middle" fill="#0A0A0A" font-size="14" font-weight="600">14</text>
+      <rect x="595" y="166" width="28" height="42" rx="4" fill="white" stroke="#0A0A0A" stroke-opacity="0.12"/>
+      <text x="609" y="194" text-anchor="middle" fill="#0A0A0A" font-size="14" font-weight="600">15</text>
+    </g>
+
+    <text x="399" y="226" text-anchor="middle" fill="#0A0A0A" font-size="9" opacity="0.35" letter-spacing="1">MSB</text>
+    <text x="609" y="226" text-anchor="middle" fill="#0A0A0A" font-size="9" opacity="0.35" letter-spacing="1">LSB</text>
+  </g>
+
+  <!-- Byte 2 -->
+  <g>
+    <rect x="670" y="118" width="270" height="120" rx="12" fill="#0A0A0A" fill-opacity="0.025" filter="url(#shadow)"/>
+    <text x="805" y="146" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2" opacity="0.5">BYTE 2</text>
+
+    <g font-family="ui-monospace, SF Mono, Menlo, monospace">
+      <rect x="685" y="166" width="28" height="42" rx="4" fill="white" stroke="#0A0A0A" stroke-opacity="0.12"/>
+      <text x="699" y="194" text-anchor="middle" fill="#0A0A0A" font-size="14" font-weight="600">16</text>
+      <rect x="715" y="166" width="28" height="42" rx="4" fill="white" stroke="#0A0A0A" stroke-opacity="0.12"/>
+      <text x="729" y="194" text-anchor="middle" fill="#0A0A0A" font-size="14" font-weight="600">17</text>
+      <rect x="745" y="166" width="28" height="42" rx="4" fill="white" stroke="#0A0A0A" stroke-opacity="0.12"/>
+      <text x="759" y="194" text-anchor="middle" fill="#0A0A0A" font-size="14" font-weight="600">18</text>
+      <rect x="775" y="166" width="28" height="42" rx="4" fill="white" stroke="#0A0A0A" stroke-opacity="0.12"/>
+      <text x="789" y="194" text-anchor="middle" fill="#0A0A0A" font-size="14" font-weight="600">19</text>
+      <!-- Unused cells -->
+      <rect x="805" y="166" width="28" height="42" rx="4" fill="#0A0A0A" fill-opacity="0.04" stroke="#0A0A0A" stroke-opacity="0.06" stroke-dasharray="3,3"/>
+      <text x="819" y="194" text-anchor="middle" fill="#0A0A0A" font-size="13" opacity="0.25">0</text>
+      <rect x="835" y="166" width="28" height="42" rx="4" fill="#0A0A0A" fill-opacity="0.04" stroke="#0A0A0A" stroke-opacity="0.06" stroke-dasharray="3,3"/>
+      <text x="849" y="194" text-anchor="middle" fill="#0A0A0A" font-size="13" opacity="0.25">0</text>
+      <rect x="865" y="166" width="28" height="42" rx="4" fill="#0A0A0A" fill-opacity="0.04" stroke="#0A0A0A" stroke-opacity="0.06" stroke-dasharray="3,3"/>
+      <text x="879" y="194" text-anchor="middle" fill="#0A0A0A" font-size="13" opacity="0.25">0</text>
+      <rect x="895" y="166" width="28" height="42" rx="4" fill="#0A0A0A" fill-opacity="0.04" stroke="#0A0A0A" stroke-opacity="0.06" stroke-dasharray="3,3"/>
+      <text x="909" y="194" text-anchor="middle" fill="#0A0A0A" font-size="13" opacity="0.25">0</text>
+    </g>
+
+    <text x="699" y="226" text-anchor="middle" fill="#0A0A0A" font-size="9" opacity="0.35" letter-spacing="1">MSB</text>
+    <text x="909" y="226" text-anchor="middle" fill="#0A0A0A" font-size="9" opacity="0.35" letter-spacing="1">LSB</text>
+  </g>
+
+  <!-- Legend rows -->
+  <g>
+    <rect x="70" y="270" width="20" height="20" rx="4" fill="white" stroke="#0A0A0A" stroke-opacity="0.12"/>
+    <text x="100" y="285" fill="#0A0A0A" font-size="12" opacity="0.6">market index</text>
+
+    <rect x="240" y="270" width="20" height="20" rx="4" fill="#0A0A0A" fill-opacity="0.04" stroke="#0A0A0A" stroke-opacity="0.06" stroke-dasharray="3,3"/>
+    <text x="270" y="285" fill="#0A0A0A" font-size="12" opacity="0.6">unused, always 0</text>
+  </g>
+
+  <!-- Footer pill -->
+  <rect x="40" y="316" width="900" height="42" rx="14" fill="#0A0A0A" fill-opacity="0.03"/>
+  <text x="490" y="342" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.45">Twenty markets. Three bytes. Four bits wasted. The smallest possible opinion, padded to a byte boundary.</text>
+</svg>

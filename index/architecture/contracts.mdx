@@ -79,30 +79,7 @@ Every state change that matters requires cryptographic proof that the machines a
 
 ## DTF Order Lifecycle
 
-```text
-User submits order (L3 or via BridgeProxy)
-        │
-        ▼
-  Index.sol stores pending order
-        │
-        ▼
-  Oracle nodes batch orders off-chain
-        │
-        ▼
-  confirmBatch() called with BLS signature
-        │
-        ▼
-  BLSLib verifies aggregated signature
-        │
-        ▼
-  Batch confirmed → TradeRequest events emitted
-        │
-        ▼
-  Authorized Participant (AP) executes fills → confirmFills() with BLS signature
-        │
-        ▼
-  ITP shares minted/burned, collateral settled
-```
+<img src="/images/index/dtf-order-lifecycle.svg" alt="DTF order lifecycle from submission through batch confirmation to share minting." />
 
 ## Vision Prediction Market Contracts
 

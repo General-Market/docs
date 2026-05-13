@@ -14,25 +14,7 @@ There are two main pages:
 - **Sources listing** (`/`) -- grid of all source cards, filterable by category
 - **Source detail** (`/source/[sourceId]`) -- individual source with live markets, price charts, batch info, and leaderboard
 
-```
-    ┌─────────────────────────────────────────────────────────────────────────────┐
-    │                         SOURCES BROWSER OVERVIEW                           │
-    │                                                                             │
-    │    ┌──────────────────────────┐          ┌──────────────────────────┐       │
-    │    │                          │          │                          │       │
-    │    │    SOURCES LISTING       │  click   │    SOURCE DETAIL         │       │
-    │    │    /                     │ -------> │    /source/coingecko     │       │
-    │    │                          │          │                          │       │
-    │    │  - Category nav bar      │          │  - Hero banner           │       │
-    │    │  - Sort bar              │          │  - Batch tick bar        │       │
-    │    │  - Source cards grid     │          │  - Markets table         │       │
-    │    │  - Bitmap overlay        │          │  - Price history charts  │       │
-    │    │                          │          │  - Top players board     │       │
-    │    │                          │          │  - Batch entry panel     │       │
-    │    └──────────────────────────┘          └──────────────────────────┘       │
-    │                                                                             │
-    └─────────────────────────────────────────────────────────────────────────────┘
-```
+<img src="/images/vision/sources-browser-overview.svg" alt="Listing page on the left, detail page on the right, an arrow between them labeled CLICK." />
 
 ## The Sources Listing Page
 
@@ -42,22 +24,7 @@ When you land on the Vision home page, you see a grid of source cards. Each card
 
 A horizontal pill bar across the top lets you filter by category. Each pill shows the source count for that category.
 
-```
-    ┌─────────────────────────────────────────────────────────────────────────────┐
-    │                          CATEGORY NAV BAR                                   │
-    │                                                                             │
-    │   ┌─────────┐ ┌────────────┐ ┌──────────┐ ┌──────────┐ ┌───────────────┐   │
-    │   │ All  98 │ │Finance  14 │ │Econ.  11 │ │ Tech  8  │ │Entertain. 15 │   │
-    │   └─────────┘ └────────────┘ └──────────┘ └──────────┘ └───────────────┘   │
-    │                                                                             │
-    │   ┌──────────────┐ ┌──────────────┐ ┌───────────┐ ┌───────────┐             │
-    │   │Geophysic. 15 │ │Transport  16 │ │Nature  4  │ │ Space  3  │             │
-    │   └──────────────┘ └──────────────┘ └───────────┘ └───────────┘             │
-    │   ┌──────────────┐ ┌────────────────┐                                       │
-    │   │Regulatory  4 │ │ Academic  3    │                                       │
-    │   └──────────────┘ └────────────────┘                                       │
-    └─────────────────────────────────────────────────────────────────────────────┘
-```
+<img src="/images/vision/category-nav-bar.svg" alt="Ten category filter pills with counts, the All pill active." />
 
 The 10 categories are:
 
@@ -87,28 +54,7 @@ Below the category nav, a sort bar lets you reorder the source cards:
 
 Each source is rendered as a card in the grid. Here is what a single card looks like:
 
-```
-    ┌─────────────────────────────────────────┐
-    │                                         │
-    │          ┌───────────────────┐           │
-    │          │                   │           │
-    │          │   [ Source Logo ] │  FINANCE  │
-    │          │                   │           │
-    │          └───────────────────┘           │
-    │                                         │
-    ├─────────────────────────────────────────┤
-    │                                         │
-    │  CoinGecko Crypto             * Live    │
-    │  Cryptocurrency market data --          │
-    │  prices, volumes, market caps...        │
-    │                                         │
-    ├─────────────┬───────────┬───────────────┤
-    │  MARKETS    │  TYPE     │  UPDATED      │
-    │     2,400   │  Price    │  2m ago       │
-    ├─────────────┼───────────┼───────────────┤
-    │   MARKETS   │   BATCH   │    DETAILS    │
-    └─────────────┴───────────┴───────────────┘
-```
+<img src="/images/vision/source-card-anatomy.svg" alt="Source card with logo, category badge, status dot, description, stats triplet, and three action buttons." />
 
 Each card displays:
 
@@ -126,23 +72,7 @@ Each card displays:
 
 When you hover over a source card's logo area, a scrollable overlay slides in showing the actual market list with live values:
 
-```
-    ┌─────────────────────────────────────────┐
-    │  CoinGecko Crypto                 2400  │
-    ├─────────────────────────────────────────┤
-    │ | Bitcoin                    $67,432.10  │
-    │ | Ethereum                    $3,891.55  │
-    │ | Solana                        $142.33  │
-    │ | BNB                           $612.40  │
-    │ | XRP                             $0.62  │
-    │ | Dogecoin                        $0.15  │
-    │ | Cardano                         $0.45  │
-    │   ...                                   │
-    │              +2,393 more                 │
-    ├─────────────────────────────────────────┤
-    │  1,200 UP    1,200 DN    0 --           │
-    └─────────────────────────────────────────┘
-```
+<img src="/images/vision/source-hover-overlay.svg" alt="Hover overlay panel listing markets sorted by value, left borders color-coded UP, DOWN, or unset." />
 
 Markets are sorted by value (highest first), capped at 100 entries. The left border of each row is color-coded:
 
@@ -156,59 +86,7 @@ You can **click to toggle** a market between UP, DOWN, and empty. You can also *
 
 Click any source card (or the Markets/Batch/Details buttons) to reach the dedicated source page at `/source/[sourceId]`.
 
-```
-    ┌─────────────────────────────────────────────────────────────────────────────┐
-    │  CATEGORY NAV BAR                                                           │
-    │  [All 98] [Finance 14] [Economic 11] ... [Space 3]                         │
-    ├─────────────────────────────────────────────────────────────────────────────┤
-    │                                                                             │
-    │  ┌──────────────────────────────────┬──────────────────────────────────┐    │
-    │  │                                  │                                  │    │
-    │  │  FINANCE              * LIVE     │       ┌──────────────────┐       │    │
-    │  │                                  │       │                  │       │    │
-    │  │  CoinGecko Crypto                │       │  [ Source Logo ] │       │    │
-    │  │  Cryptocurrency market data --   │       │                  │       │    │
-    │  │  prices, volumes, market caps    │       └──────────────────┘       │    │
-    │  │  for thousands of tokens.        │                                  │    │
-    │  │                                  │                                  │    │
-    │  └──────────────────────────────────┴──────────────────────────────────┘    │
-    │                                          SOURCE HERO                        │
-    │                                                                             │
-    │  ┌─────────────────────────────────────────────────────────────────────┐    │
-    │  │  TICK      PLAYERS     POOL       [=====>        ]  MULT  SET  TMR │    │
-    │  │  #1,247    42          $12.5K     ███████░░░░░░░░  1.2x  18/24 4:32│    │
-    │  └─────────────────────────────────────────────────────────────────────┘    │
-    │                                          BATCH BAR                          │
-    │                                                                             │
-    │  ┌─────────────────────────────────────┐  ┌────────────────────────────┐    │
-    │  │                                     │  │                            │    │
-    │  │         MARKETS TABLE               │  │    BATCH ENTRY PANEL       │    │
-    │  │                                     │  │                            │    │
-    │  │  Asset      Value   24h    Bet      │  │    Set your predictions    │    │
-    │  │  ─────      ─────   ───    ───      │  │    and join the batch.     │    │
-    │  │  BTC-USD    $67.4K  +2.1%  [UP]     │  │                            │    │
-    │  │  ETH-USD    $3.8K   -0.5%  [DN]     │  │    Deposit: [____] USDC   │    │
-    │  │  SOL-USD    $142    +4.2%  [UP]     │  │    Stake/tick: [__] USDC  │    │
-    │  │  ...                                │  │                            │    │
-    │  │                                     │  │    [ Approve & Join ]      │    │
-    │  │  ┌─ Price History ───────────────┐  │  │                            │    │
-    │  │  │         .     ..              │  │  │                            │    │
-    │  │  │    .  .   . .    .            │  │  └────────────────────────────┘    │
-    │  │  │  .         .      . .  .      │  │                                    │
-    │  │  │ .                     ..      │  │                                    │
-    │  │  └───────────────────────────────┘  │                                    │
-    │  │                                     │                                    │
-    │  ├─────────────────────────────────────┤                                    │
-    │  │         TOP PLAYERS                 │                                    │
-    │  │                                     │                                    │
-    │  │  #1  0xAb..12   $1,240 profit       │                                    │
-    │  │  #2  0x7F..89   $890 profit         │                                    │
-    │  │  #3  0xCd..56   $654 profit         │                                    │
-    │  │  ...                                │                                    │
-    │  └─────────────────────────────────────┘                                    │
-    │                                                                             │
-    └─────────────────────────────────────────────────────────────────────────────┘
-```
+<img src="/images/vision/source-detail-layout.svg" alt="Full source detail page: category nav, hero, batch tick bar, markets table with chart, batch entry panel, leaderboard." />
 
 ### Source Hero
 
@@ -223,12 +101,7 @@ The top banner shows the source identity at a glance:
 
 A horizontal bar below the hero shows the live state of the active batch for this source:
 
-```
-    ┌────────┬─────────┬────────┬──────────────────────┬──────┬───────┬───────┐
-    │  TICK  │ PLAYERS │  POOL  │     PROGRESS BAR     │ MULT │  SET  │ TIMER │
-    │ #1,247 │   42    │$12.5K  │ ████████░░░░░░░░░░░  │ 1.2x │ 18/24│ 4:32  │
-    └────────┴─────────┴────────┴──────────────────────┴──────┴───────┴───────┘
-```
+<img src="/images/vision/batch-tick-bar.svg" alt="Batch status bar: tick number, player count, pool size, progress bar, multiplier, set count, countdown timer." />
 
 | Field | Meaning |
 |-------|---------|
@@ -244,24 +117,7 @@ A horizontal bar below the hero shows the live state of the active batch for thi
 
 The main content area lists every market (asset) in the source with:
 
-```
-    ┌──────────────────────────────────────────────────────────────────────┐
-    │   ASSET            VALUE         24H CHANGE       YOUR BET         │
-    ├──────────────────────────────────────────────────────────────────────┤
-    │   BTC-USD          $67,432.10    +2.14%           [UP]             │
-    │                                                                     │
-    │   ┌─ 24h Price History ──────────────────────────────────────────┐  │
-    │   │          .  . .                                              │  │
-    │   │     . .       .  .     .                                     │  │
-    │   │   .                . .   . . .                               │  │
-    │   │  .                          .  .   .  .                      │  │
-    │   └──────────────────────────────────────────────────────────────┘  │
-    │                                                                     │
-    ├──────────────────────────────────────────────────────────────────────┤
-    │   ETH-USD          $3,891.55     -0.52%           [DOWN]           │
-    │   ...                                                               │
-    └──────────────────────────────────────────────────────────────────────┘
-```
+<img src="/images/vision/markets-table.svg" alt="Markets table with one row expanded to reveal a 24-hour price history sparkline." />
 
 Each row shows:
 
@@ -303,27 +159,7 @@ Hover over source cards to preview their market lists without navigating away. M
 
 Every market has a predictable ID formed from a **source prefix** + **asset name**:
 
-```
-    ┌─────────────────────────────────────────────────────────────────┐
-    │                     MARKET ID ANATOMY                          │
-    │                                                                 │
-    │     crypto_BTC-USD                                              │
-    │     ├──────┤├───────┤                                           │
-    │      prefix  asset                                              │
-    │                                                                 │
-    │     earthquake_california                                       │
-    │     ├──────────┤├──────────┤                                    │
-    │       prefix      asset                                         │
-    │                                                                 │
-    │     db_trains_berlin_hbf                                        │
-    │     ├─────────┤├─────────┤                                      │
-    │       prefix      asset                                         │
-    │                                                                 │
-    │     mcbroken_chicago                                            │
-    │     ├────────┤├───────┤                                         │
-    │       prefix    asset                                           │
-    └─────────────────────────────────────────────────────────────────┘
-```
+<img src="/images/vision/market-id-anatomy.svg" alt="Four market IDs split into prefix and asset pills, each with a one-line description." />
 
 If you know the source prefix, you know where to find the market. The prefix determines the source, category, value label, and unit.
 
@@ -331,23 +167,7 @@ If you know the source prefix, you know where to find the market. The prefix det
 
 When you expand a market row in the markets table, the price history chart shows raw data points from the Data Node over the last 24 hours.
 
-```
-    ┌──────────────────────────────────────────────────────────────────┐
-    │  Price History: BTC-USD (24h)                                    │
-    │                                                                  │
-    │  $68,000 ─┤                                                      │
-    │           │              .  .                                    │
-    │  $67,500 ─┤         .  .      .  .                              │
-    │           │    . .                  .  .     .                   │
-    │  $67,000 ─┤  .                          . .   .  .              │
-    │           │ .                                     .  .          │
-    │  $66,500 ─┤                                           .         │
-    │           │                                                     │
-    │  $66,000 ─┤                                                     │
-    │           └──┬──────┬──────┬──────┬──────┬──────┬──────┬────    │
-    │            00:00  04:00  08:00  12:00  16:00  20:00  now       │
-    └──────────────────────────────────────────────────────────────────┘
-```
+<img src="/images/vision/price-history-chart.svg" alt="Twenty-four-hour BTC-USD price chart with axis labels and the latest value marked at the right edge." />
 
 Key things to know:
 
@@ -360,60 +180,13 @@ Key things to know:
 
 Different sources track fundamentally different things. The chart axis labels and formatting adapt automatically:
 
-```
-    ┌────────────────────┬──────────────┬─────────┬──────────────────────┐
-    │  Source             │  Value Label │  Unit   │  Example Value       │
-    ├────────────────────┼──────────────┼─────────┼──────────────────────┤
-    │  CoinGecko          │  Price       │  USD    │  $67,432.10          │
-    │  Finnhub Stocks     │  Price       │  USD    │  $189.52             │
-    │  Polymarket         │  Probability │  %      │  73.2%               │
-    │  USGS Earthquakes   │  Magnitude   │  M      │  4.2 M               │
-    │  Deutsche Bahn      │  Avg Delay   │  min    │  8.3 min             │
-    │  Steam Gaming       │  Players     │  online │  1.2M online         │
-    │  McBroken           │  % Broken    │  %      │  12.5%               │
-    │  GitHub             │  Stars       │  --     │  45.2K               │
-    │  NOAA Tides         │  Water Level │  ft     │  2.34 ft             │
-    │  London Underground │  Disruption  │  0-8    │  3                   │
-    │  Air Quality        │  AQI         │  0-500  │  42                  │
-    │  NRC Nuclear        │  Power       │  %      │  98.5%               │
-    │  Theme Park Waits   │  Avg Wait    │  min    │  45 min              │
-    │  Border Wait Times  │  Wait Time   │  min    │  32 min              │
-    └────────────────────┴──────────────┴─────────┴──────────────────────┘
-```
+<img src="/images/vision/value-types-by-source.svg" alt="Fourteen sources with their value label, unit, and an example value." />
 
 ## Market Resolution
 
 Each market resolves based on whether its value went **UP** or **DOWN** (or stayed **FLAT**) over the tick interval. The world moved, or it did not. The resolution is indifferent to your reasons for betting:
 
-```
-    ┌────────────────────────────────────────────────────────────────────┐
-    │                    TICK RESOLUTION FLOW                            │
-    │                                                                    │
-    │    Tick Start                              Tick End                │
-    │    ~~~~~~~~~~                              ~~~~~~~~                │
-    │                                                                    │
-    │    BTC-USD = $67,432.10                    BTC-USD = $67,891.55   │
-    │                                                                    │
-    │         ┌─────────────────────────────────────────┐                │
-    │         │          Tick Duration (e.g. 10 min)     │                │
-    │         │                                         │                │
-    │         │  $67.4K ─ . .                           │                │
-    │         │              . .                        │                │
-    │         │                  .                      │                │
-    │         │                    .  . .               │                │
-    │         │                          . .  . $67.9K  │                │
-    │         │                                         │                │
-    │         └─────────────────────────────────────────┘                │
-    │                                                                    │
-    │    Delta = +$459.45                                                │
-    │    Result = UP                                                     │
-    │                                                                    │
-    │    Players who bet UP --> win                                      │
-    │    Players who bet DOWN --> lose                                   │
-    │    Winners split losers' stakes (minus 0.05% fee on profits)      │
-    │                                                                    │
-    └────────────────────────────────────────────────────────────────────┘
-```
+<img src="/images/vision/tick-resolution-flow.svg" alt="Tick resolution: start price, end price, delta, UP result, and how winners split losers' stakes." />
 
 The same resolution logic applies to everything. The universe makes no distinction between asset classes:
 - Bitcoin price went UP $459 --> UP wins
@@ -425,26 +198,7 @@ The same resolution logic applies to everything. The universe makes no distincti
 
 There is also a monitoring page at `/sources` that shows health metrics for every source. A dashboard of the machinery that watches the world -- and a reminder that the watchers, too, can fail:
 
-```
-    ┌─────────────────────────────────────────────────────────────────────┐
-    │  SOURCE MONITORING                                                  │
-    │  Live health status of all data sources feeding market prices.      │
-    │                                                                     │
-    │  ┌──────────┬──────────┬──────────┬──────────┬───────────┬───────┐  │
-    │  │ SOURCES  │ HEALTHY  │  STALE   │   DEAD   │LIVE ASSETS│UPDATED│  │
-    │  │   98     │   94     │    3     │    1     │ 4,200/4,500│14:32 │  │
-    │  └──────────┴──────────┴──────────┴──────────┴───────────┴───────┘  │
-    │                                                                     │
-    │  ┌──────────────┬────────┬────────┬──────────┬──────────┬────────┐  │
-    │  │ Source        │ Status │ Assets │ Stale    │  Zero    │ Age    │  │
-    │  ├──────────────┼────────┼────────┼──────────┼──────────┼────────┤  │
-    │  │ coingecko     │ * OK   │ 2,400  │    0     │    0     │  30s  │  │
-    │  │ earthquake    │ * OK   │   12   │    0     │    0     │  45s  │  │
-    │  │ steam         │ ! STALE│   85   │    3     │    0     │  25m  │  │
-    │  │ ...           │        │        │          │          │       │  │
-    │  └──────────────┴────────┴────────┴──────────┴──────────┴────────┘  │
-    └─────────────────────────────────────────────────────────────────────┘
-```
+<img src="/images/vision/source-monitoring.svg" alt="Monitoring dashboard: KPI strip with totals and a per-source health table." />
 
 Publicly accessible. Click any row to open a detail modal with per-asset health data and collection history charts. Transparency about the infrastructure's fragility -- the most honest feature a system can offer.
 

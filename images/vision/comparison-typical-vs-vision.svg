@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 560" width="980" height="560" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-opacity="0.03"/>
+    </filter>
+  </defs>
+
+  <rect width="980" height="560" fill="white"/>
+  <circle cx="120" cy="480" r="180" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="860" cy="80" r="160" fill="#0A0A0A" opacity="0.02"/>
+
+  <!-- LEFT PANEL: TYPICAL -->
+  <rect x="40" y="40" width="440" height="480" rx="14" fill="#0A0A0A" fill-opacity="0.03" filter="url(#shadow)"/>
+  <text x="64" y="76" fill="#0A0A0A" font-size="10" font-weight="600" letter-spacing="3" opacity="0.4">TYPICAL PREDICTION MARKET</text>
+  <text x="64" y="108" fill="#0A0A0A" font-size="22" font-weight="700">Elsewhere</text>
+  <line x1="64" y1="124" x2="456" y2="124" stroke="#0A0A0A" stroke-opacity="0.08"/>
+
+  <text x="64" y="156" fill="#0A0A0A" font-size="11" font-weight="600" letter-spacing="2" opacity="0.4">CATEGORIES</text>
+  <text x="64" y="182" fill="#0A0A0A" font-size="13" opacity="0.7">Politics</text>
+  <text x="64" y="202" fill="#0A0A0A" font-size="13" opacity="0.7">Sports</text>
+  <text x="64" y="222" fill="#0A0A0A" font-size="13" opacity="0.7">Crypto (maybe)</text>
+
+  <line x1="64" y1="252" x2="456" y2="252" stroke="#0A0A0A" stroke-opacity="0.08"/>
+
+  <text x="64" y="284" fill="#0A0A0A" font-size="11" font-weight="600" letter-spacing="2" opacity="0.4">MARKETS</text>
+  <text x="64" y="316" fill="#0A0A0A" font-size="28" font-weight="700">~500</text>
+
+  <line x1="64" y1="348" x2="456" y2="348" stroke="#0A0A0A" stroke-opacity="0.08"/>
+
+  <text x="64" y="380" fill="#0A0A0A" font-size="13" opacity="0.5">Bets visible to all</text>
+  <text x="64" y="408" fill="#0A0A0A" font-size="13" opacity="0.5">Manual only</text>
+  <text x="64" y="436" fill="#0A0A0A" font-size="13" opacity="0.5">High fees</text>
+
+  <text x="64" y="492" fill="#0A0A0A" font-size="11" opacity="0.35">Predictable subject matter. Predictable returns.</text>
+
+  <!-- RIGHT PANEL: VISION -->
+  <rect x="500" y="40" width="440" height="480" rx="14" fill="url(#darkGrad)" filter="url(#shadow)"/>
+  <text x="524" y="76" fill="white" font-size="10" font-weight="600" letter-spacing="3" opacity="0.5">VISION</text>
+  <text x="524" y="108" fill="white" font-size="22" font-weight="700">Everything else</text>
+  <line x1="524" y1="124" x2="916" y2="124" stroke="white" stroke-opacity="0.1"/>
+
+  <text x="524" y="156" fill="white" font-size="11" font-weight="600" letter-spacing="2" opacity="0.5">CATEGORIES</text>
+  <g font-size="12" fill="white">
+    <text x="524" y="182" opacity="0.75">Finance · 14</text>
+    <text x="524" y="202" opacity="0.75">Economic · 11</text>
+    <text x="524" y="222" opacity="0.75">Tech · 8</text>
+    <text x="524" y="242" opacity="0.75">Entertainment · 14</text>
+    <text x="720" y="182" opacity="0.75">Geophysical · 15</text>
+    <text x="720" y="202" opacity="0.75">Transport · 16</text>
+    <text x="720" y="222" opacity="0.75">Regulatory · 4</text>
+    <text x="720" y="242" opacity="0.75">Nature, Academic, Space</text>
+  </g>
+
+  <line x1="524" y1="272" x2="916" y2="272" stroke="white" stroke-opacity="0.1"/>
+
+  <text x="524" y="304" fill="white" font-size="11" font-weight="600" letter-spacing="2" opacity="0.5">MARKETS</text>
+  <text x="524" y="336" fill="white" font-size="28" font-weight="700">400,000+</text>
+
+  <line x1="524" y1="368" x2="916" y2="368" stroke="white" stroke-opacity="0.1"/>
+
+  <g font-size="13" fill="white">
+    <circle cx="532" cy="396" r="3" fill="#10B981"/>
+    <text x="546" y="400" opacity="0.85">Sealed commitments</text>
+    <circle cx="532" cy="420" r="3" fill="#10B981"/>
+    <text x="546" y="424" opacity="0.85">Bot framework</text>
+    <circle cx="532" cy="444" r="3" fill="#10B981"/>
+    <text x="546" y="448" opacity="0.85">0.05% fee on profits only</text>
+  </g>
+
+  <text x="524" y="492" fill="white" font-size="11" opacity="0.4">The catalogue of measurable phenomena. The wager follows.</text>
+</svg>

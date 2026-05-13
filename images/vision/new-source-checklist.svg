@@ -1,0 +1,147 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 720" width="980" height="720" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-opacity="0.03"/>
+    </filter>
+  </defs>
+
+  <rect width="980" height="720" fill="white"/>
+  <circle cx="60" cy="660" r="180" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="930" cy="60" r="160" fill="#0A0A0A" opacity="0.02"/>
+
+  <!-- Title -->
+  <rect x="40" y="32" width="900" height="48" rx="12" fill="url(#darkGrad)"/>
+  <text x="490" y="61" text-anchor="middle" fill="white" font-size="12" font-weight="600" letter-spacing="3">NEW SOURCE CHECKLIST</text>
+
+  <!-- Two columns of sections -->
+  <!-- Helper rendering box-circle for checkbox -->
+
+  <!-- BACKEND section -->
+  <g>
+    <text x="40" y="116" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2.2" opacity="0.45">BACKEND</text>
+    <line x1="40" y1="128" x2="480" y2="128" stroke="#0A0A0A" stroke-opacity="0.08"/>
+
+    <g font-size="11">
+      <rect x="40" y="142" width="14" height="14" rx="3" fill="white" stroke="#0A0A0A" stroke-opacity="0.4"/>
+      <text x="64" y="154" fill="#0A0A0A" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.85">sources/{src}/client.rs</text>
+      <text x="280" y="154" fill="#0A0A0A" opacity="0.45">MarketDataSource impl</text>
+
+      <rect x="40" y="166" width="14" height="14" rx="3" fill="white" stroke="#0A0A0A" stroke-opacity="0.4"/>
+      <text x="64" y="178" fill="#0A0A0A" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.85">sources/{src}/mod.rs</text>
+      <text x="280" y="178" fill="#0A0A0A" opacity="0.45">pub mod + pub use</text>
+
+      <rect x="40" y="190" width="14" height="14" rx="3" fill="white" stroke="#0A0A0A" stroke-opacity="0.4"/>
+      <text x="64" y="202" fill="#0A0A0A" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.85">config/{src}.json</text>
+      <text x="280" y="202" fill="#0A0A0A" opacity="0.45">asset list or []</text>
+
+      <rect x="40" y="214" width="14" height="14" rx="3" fill="white" stroke="#0A0A0A" stroke-opacity="0.4"/>
+      <text x="64" y="226" fill="#0A0A0A" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.85">sources/mod.rs</text>
+      <text x="280" y="226" fill="#0A0A0A" opacity="0.45">module registration</text>
+
+      <rect x="40" y="238" width="14" height="14" rx="3" fill="white" stroke="#0A0A0A" stroke-opacity="0.4"/>
+      <text x="64" y="250" fill="#0A0A0A" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.85">main.rs</text>
+      <text x="280" y="250" fill="#0A0A0A" opacity="0.45">spawn_resilient()</text>
+
+      <rect x="40" y="262" width="14" height="14" rx="3" fill="white" stroke="#0A0A0A" stroke-opacity="0.4"/>
+      <text x="64" y="274" fill="#0A0A0A" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.85">api.rs</text>
+      <text x="280" y="274" fill="#0A0A0A" opacity="0.45">SOURCE_META entry</text>
+    </g>
+  </g>
+
+  <!-- API-KEY-GATED section -->
+  <g>
+    <text x="40" y="316" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2.2" opacity="0.45">IF API-KEY-GATED</text>
+    <line x1="40" y1="328" x2="480" y2="328" stroke="#0A0A0A" stroke-opacity="0.08"/>
+
+    <g font-size="11">
+      <rect x="40" y="342" width="14" height="14" rx="3" fill="white" stroke="#0A0A0A" stroke-opacity="0.4"/>
+      <text x="64" y="354" fill="#0A0A0A" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.85">config.rs</text>
+      <text x="280" y="354" fill="#0A0A0A" opacity="0.45">CLI arg in ServeArgs</text>
+
+      <rect x="40" y="366" width="14" height="14" rx="3" fill="white" stroke="#0A0A0A" stroke-opacity="0.4"/>
+      <text x="64" y="378" fill="#0A0A0A" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.85">main.rs</text>
+      <text x="280" y="378" fill="#0A0A0A" opacity="0.45">record_not_started()</text>
+
+      <rect x="40" y="390" width="14" height="14" rx="3" fill="white" stroke="#0A0A0A" stroke-opacity="0.4"/>
+      <text x="64" y="402" fill="#0A0A0A" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.85">start.sh</text>
+      <text x="280" y="402" fill="#0A0A0A" opacity="0.45">conditional --flag</text>
+    </g>
+  </g>
+
+  <!-- CONTRACTS section -->
+  <g>
+    <text x="40" y="448" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2.2" opacity="0.45">CONTRACTS</text>
+    <line x1="40" y1="460" x2="480" y2="460" stroke="#0A0A0A" stroke-opacity="0.08"/>
+
+    <g font-size="11">
+      <rect x="40" y="474" width="14" height="14" rx="3" fill="white" stroke="#10B981" stroke-opacity="0.6"/>
+      <text x="64" y="486" fill="#0A0A0A" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.85">DeployAllVisionBatches.s.sol</text>
+      <text x="64" y="504" fill="#0A0A0A" opacity="0.45">_getSourceNames() · bump both array sizes</text>
+    </g>
+  </g>
+
+  <!-- FRONTEND section -->
+  <g>
+    <text x="500" y="116" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2.2" opacity="0.45">FRONTEND</text>
+    <line x1="500" y1="128" x2="940" y2="128" stroke="#0A0A0A" stroke-opacity="0.08"/>
+
+    <g font-size="11">
+      <rect x="500" y="142" width="14" height="14" rx="3" fill="white" stroke="#0A0A0A" stroke-opacity="0.4"/>
+      <text x="524" y="154" fill="#0A0A0A" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.85">public/source-imgs/new-{src}.svg</text>
+      <text x="524" y="172" fill="#0A0A0A" opacity="0.45">real company logo · never invented</text>
+
+      <rect x="500" y="186" width="14" height="14" rx="3" fill="white" stroke="#0A0A0A" stroke-opacity="0.4"/>
+      <text x="524" y="198" fill="#0A0A0A" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.85">lib/vision/market-categories.ts</text>
+      <text x="524" y="216" fill="#0A0A0A" opacity="0.45">PREFIX_MAP + CATEGORY_ORDER</text>
+
+      <rect x="500" y="230" width="14" height="14" rx="3" fill="white" stroke="#0A0A0A" stroke-opacity="0.4"/>
+      <text x="524" y="242" fill="#0A0A0A" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.85">lib/vision/sources.ts</text>
+      <text x="524" y="260" fill="#0A0A0A" opacity="0.45">S() entry</text>
+
+      <rect x="500" y="274" width="14" height="14" rx="3" fill="white" stroke="#0A0A0A" stroke-opacity="0.4"/>
+      <text x="524" y="286" fill="#0A0A0A" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.85">VisionMarketsGrid.tsx</text>
+      <text x="524" y="304" fill="#0A0A0A" opacity="0.45">CATEGORY_GROUPS + COUNT_SOURCES</text>
+
+      <rect x="500" y="318" width="14" height="14" rx="3" fill="white" stroke="#0A0A0A" stroke-opacity="0.4"/>
+      <text x="524" y="330" fill="#0A0A0A" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.85">SourceDetailModal.tsx</text>
+      <text x="524" y="348" fill="#0A0A0A" opacity="0.45">SOURCE_META mapping</text>
+
+      <rect x="500" y="362" width="14" height="14" rx="3" fill="white" stroke="#0A0A0A" stroke-opacity="0.4"/>
+      <text x="524" y="374" fill="#0A0A0A" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.85">SourceHealthTable.tsx</text>
+      <text x="524" y="392" fill="#0A0A0A" opacity="0.45">API_KEY_LINKS · gated sources only</text>
+    </g>
+  </g>
+
+  <!-- VERIFY section (full width, accent) -->
+  <g>
+    <rect x="40" y="544" width="900" height="144" rx="14" fill="url(#darkGrad)" filter="url(#shadow)"/>
+    <text x="64" y="576" fill="white" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.55">VERIFY</text>
+    <line x1="64" y1="586" x2="916" y2="586" stroke="white" stroke-opacity="0.12"/>
+
+    <g font-size="11">
+      <rect x="64" y="606" width="14" height="14" rx="3" fill="white" fill-opacity="0.06" stroke="white" stroke-opacity="0.4"/>
+      <text x="88" y="618" fill="white" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.9">cargo check</text>
+      <text x="290" y="618" fill="white" opacity="0.5">backend compiles</text>
+
+      <rect x="64" y="628" width="14" height="14" rx="3" fill="white" fill-opacity="0.06" stroke="white" stroke-opacity="0.4"/>
+      <text x="88" y="640" fill="white" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.9">cargo test {src}</text>
+      <text x="290" y="640" fill="white" opacity="0.5">unit tests pass</text>
+
+      <rect x="64" y="650" width="14" height="14" rx="3" fill="white" fill-opacity="0.06" stroke="white" stroke-opacity="0.4"/>
+      <text x="88" y="662" fill="white" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.9">npx tsc --noEmit</text>
+      <text x="290" y="662" fill="white" opacity="0.5">frontend compiles</text>
+
+      <rect x="500" y="606" width="14" height="14" rx="3" fill="white" fill-opacity="0.06" stroke="#10B981" stroke-opacity="0.7"/>
+      <text x="524" y="618" fill="white" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.9">curl the real API</text>
+      <text x="524" y="636" fill="white" opacity="0.45">returns valid data under load</text>
+
+      <rect x="500" y="650" width="14" height="14" rx="3" fill="white" fill-opacity="0.06" stroke="#10B981" stroke-opacity="0.7"/>
+      <text x="524" y="662" fill="white" font-family="ui-monospace, SF Mono, Menlo, monospace" opacity="0.9">visit /sources locally</text>
+      <text x="524" y="680" fill="white" opacity="0.45">row exists · prefix is right</text>
+    </g>
+  </g>
+</svg>

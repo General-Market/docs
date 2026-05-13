@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 560" width="980" height="560" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="10" flood-opacity="0.04"/>
+    </filter>
+  </defs>
+
+  <rect width="980" height="560" fill="white"/>
+  <circle cx="60" cy="500" r="160" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="920" cy="60" r="140" fill="#0A0A0A" opacity="0.02"/>
+
+  <text x="490" y="44" text-anchor="middle" fill="#0A0A0A" font-size="12" font-weight="700" letter-spacing="3" opacity="0.45">MARKET ID CONVENTION</text>
+  <text x="490" y="66" text-anchor="middle" fill="#0A0A0A" font-size="13" opacity="0.4">prefix + asset = the full identifier.</text>
+
+  <!-- Header strip -->
+  <rect x="40" y="94" width="900" height="40" rx="10" fill="url(#darkGrad)"/>
+  <g font-size="11" letter-spacing="2" font-weight="600" fill="white">
+    <text x="68"  y="118">PREFIX</text>
+    <text x="284" y="118">ASSET</text>
+    <text x="540" y="118">FULL MARKET ID</text>
+  </g>
+
+  <!-- 10 rows, 38 tall, start y=140 -->
+  <g font-size="12" font-family="ui-monospace, SF Mono, Menlo, monospace">
+    <rect x="40" y="140" width="900" height="36" rx="6" fill="#0A0A0A" fill-opacity="0.02"/>
+    <text x="68"  y="164" fill="#10B981" font-weight="600">crypto_</text>
+    <text x="284" y="164" fill="#0A0A0A">BTC-USD</text>
+    <text x="540" y="164" fill="#0A0A0A" font-weight="600">crypto_BTC-USD</text>
+
+    <text x="68"  y="200" fill="#10B981" font-weight="600">earthquake_</text>
+    <text x="284" y="200" fill="#0A0A0A">california</text>
+    <text x="540" y="200" fill="#0A0A0A" font-weight="600">earthquake_california</text>
+
+    <rect x="40" y="214" width="900" height="36" rx="6" fill="#0A0A0A" fill-opacity="0.02"/>
+    <text x="68"  y="238" fill="#10B981" font-weight="600">tfl_tube_</text>
+    <text x="284" y="238" fill="#0A0A0A">northern</text>
+    <text x="540" y="238" fill="#0A0A0A" font-weight="600">tfl_tube_northern</text>
+
+    <text x="68"  y="274" fill="#10B981" font-weight="600">mcbroken_</text>
+    <text x="284" y="274" fill="#0A0A0A">chicago</text>
+    <text x="540" y="274" fill="#0A0A0A" font-weight="600">mcbroken_chicago</text>
+
+    <rect x="40" y="288" width="900" height="36" rx="6" fill="#0A0A0A" fill-opacity="0.02"/>
+    <text x="68"  y="312" fill="#10B981" font-weight="600">steam_</text>
+    <text x="284" y="312" fill="#0A0A0A">counter-strike-2</text>
+    <text x="540" y="312" fill="#0A0A0A" font-weight="600">steam_counter-strike-2</text>
+
+    <text x="68"  y="348" fill="#10B981" font-weight="600">defi_</text>
+    <text x="284" y="348" fill="#0A0A0A">aave</text>
+    <text x="540" y="348" fill="#0A0A0A" font-weight="600">defi_aave</text>
+
+    <rect x="40" y="362" width="900" height="36" rx="6" fill="#0A0A0A" fill-opacity="0.02"/>
+    <text x="68"  y="386" fill="#10B981" font-weight="600">db_trains_</text>
+    <text x="284" y="386" fill="#0A0A0A">berlin_hbf</text>
+    <text x="540" y="386" fill="#0A0A0A" font-weight="600">db_trains_berlin_hbf</text>
+
+    <text x="68"  y="422" fill="#10B981" font-weight="600">nrc_</text>
+    <text x="284" y="422" fill="#0A0A0A">palo-verde-1</text>
+    <text x="540" y="422" fill="#0A0A0A" font-weight="600">nrc_palo-verde-1</text>
+
+    <rect x="40" y="436" width="900" height="36" rx="6" fill="#0A0A0A" fill-opacity="0.02"/>
+    <text x="68"  y="460" fill="#10B981" font-weight="600">ndbc_</text>
+    <text x="284" y="460" fill="#0A0A0A">41002</text>
+    <text x="540" y="460" fill="#0A0A0A" font-weight="600">ndbc_41002</text>
+
+    <text x="68"  y="496" fill="#10B981" font-weight="600">airnow_</text>
+    <text x="284" y="496" fill="#0A0A0A">los-angeles</text>
+    <text x="540" y="496" fill="#0A0A0A" font-weight="600">airnow_los-angeles</text>
+  </g>
+
+  <line x1="40" y1="520" x2="940" y2="520" stroke="#0A0A0A" stroke-opacity="0.06"/>
+
+  <text x="490" y="544" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.45">The prefix decides the source, the category, the label, the unit.</text>
+</svg>

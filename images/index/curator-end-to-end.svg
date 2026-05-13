@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 780" width="980" height="780" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-opacity="0.03"/>
+    </filter>
+    <marker id="arrDn" viewBox="0 0 10 10" refX="5" refY="9" markerWidth="10" markerHeight="10" orient="auto">
+      <path d="M0,0 L10,0 L5,9 z" fill="#0A0A0A" fill-opacity="0.4"/>
+    </marker>
+    <marker id="arrR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0A0A0A" fill-opacity="0.45"/>
+    </marker>
+  </defs>
+
+  <rect width="980" height="780" fill="white"/>
+  <circle cx="80" cy="720" r="180" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="900" cy="60" r="160" fill="#0A0A0A" opacity="0.02"/>
+
+  <text x="490" y="42" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="3.6" opacity="0.45">END-TO-END DATA FLOW</text>
+  <text x="490" y="68" text-anchor="middle" fill="#0A0A0A" font-size="13" opacity="0.4">Every arrow is a dependency. Every dependency is a risk.</text>
+
+  <!-- Three oracles top -->
+  <g filter="url(#shadow)">
+    <rect x="60" y="100" width="260" height="76" rx="12" fill="#0A0A0A" fill-opacity="0.04"/>
+    <rect x="360" y="100" width="260" height="76" rx="12" fill="#0A0A0A" fill-opacity="0.04"/>
+    <rect x="660" y="100" width="260" height="76" rx="12" fill="#0A0A0A" fill-opacity="0.04"/>
+  </g>
+  <text x="80" y="128" fill="#0A0A0A" font-size="13" font-weight="700">Oracle 1</text>
+  <text x="80" y="150" fill="#0A0A0A" font-size="11" opacity="0.55">Compute NAV · BLS sign</text>
+  <text x="380" y="128" fill="#0A0A0A" font-size="13" font-weight="700">Oracle 2</text>
+  <text x="380" y="150" fill="#0A0A0A" font-size="11" opacity="0.55">Compute NAV · BLS sign</text>
+  <text x="680" y="128" fill="#0A0A0A" font-size="13" font-weight="700">Oracle 3</text>
+  <text x="680" y="150" fill="#0A0A0A" font-size="11" opacity="0.55">Compute NAV · BLS sign</text>
+
+  <!-- Funnel into curator -->
+  <g stroke="#0A0A0A" stroke-opacity="0.18" stroke-width="1">
+    <line x1="190" y1="178" x2="490" y2="206"/>
+    <line x1="490" y1="178" x2="490" y2="206"/>
+    <line x1="790" y1="178" x2="490" y2="206"/>
+  </g>
+  <line x1="490" y1="208" x2="490" y2="222" stroke="#0A0A0A" stroke-opacity="0.4" stroke-width="1.5" marker-end="url(#arrDn)"/>
+
+  <!-- Curator dark panel -->
+  <rect x="60" y="230" width="860" height="420" rx="16" fill="url(#darkGrad)" filter="url(#shadow)"/>
+  <text x="84" y="262" fill="white" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.5">CURATOR · UNIFIED</text>
+
+  <!-- NavCollector -->
+  <rect x="84" y="280" width="240" height="60" rx="10" fill="white" fill-opacity="0.06"/>
+  <text x="104" y="304" fill="white" font-size="13" font-weight="700">NavCollector</text>
+  <text x="104" y="324" fill="white" font-size="11" opacity="0.55">agg signatures</text>
+
+  <line x1="204" y1="342" x2="204" y2="362" stroke="white" stroke-opacity="0.4" stroke-width="1.2" marker-end="url(#arrDn)"/>
+
+  <rect x="84" y="368" width="240" height="60" rx="10" fill="white" fill-opacity="0.06"/>
+  <text x="104" y="392" fill="white" font-size="13" font-weight="700">OraclePusher</text>
+  <text x="104" y="412" fill="white" font-size="11" opacity="0.55">pushPrice</text>
+
+  <!-- SharedState block (middle) -->
+  <rect x="370" y="324" width="240" height="76" rx="10" fill="white" fill-opacity="0.1"/>
+  <text x="390" y="350" fill="white" font-size="13" font-weight="700">SharedState</text>
+  <text x="390" y="370" fill="white" font-size="11" opacity="0.55">crisis · stress · bls</text>
+
+  <!-- Connect pusher to shared -->
+  <line x1="324" y1="398" x2="370" y2="370" stroke="white" stroke-opacity="0.3" stroke-width="1.2" stroke-dasharray="4,4"/>
+
+  <!-- 3 consumers -->
+  <rect x="660" y="290" width="240" height="56" rx="10" fill="white" fill-opacity="0.06"/>
+  <text x="680" y="312" fill="white" font-size="13" font-weight="700">Quote API · SERM</text>
+  <text x="680" y="330" fill="white" font-size="11" opacity="0.55">→ CuratorRateIRM</text>
+
+  <rect x="660" y="356" width="240" height="56" rx="10" fill="white" fill-opacity="0.06"/>
+  <text x="680" y="378" fill="white" font-size="13" font-weight="700">Health Monitor</text>
+  <text x="680" y="396" fill="white" font-size="11" opacity="0.55">→ Telegram</text>
+
+  <rect x="660" y="422" width="240" height="56" rx="10" fill="white" fill-opacity="0.06"/>
+  <text x="680" y="444" fill="white" font-size="13" font-weight="700">Allocation Bot</text>
+  <text x="680" y="462" fill="white" font-size="11" opacity="0.55">→ MetaMorpho Vault</text>
+
+  <!-- Connect shared state to consumers -->
+  <line x1="610" y1="350" x2="660" y2="320" stroke="white" stroke-opacity="0.3" stroke-width="1.2" marker-end="url(#arrR)"/>
+  <line x1="610" y1="362" x2="660" y2="384" stroke="white" stroke-opacity="0.3" stroke-width="1.2" marker-end="url(#arrR)"/>
+  <line x1="610" y1="374" x2="660" y2="448" stroke="white" stroke-opacity="0.3" stroke-width="1.2" marker-end="url(#arrR)"/>
+
+  <!-- Bottom strip inside panel: outputs label -->
+  <text x="84" y="490" fill="white" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.5">OUTPUTS · SETTLEMENT CHAIN</text>
+  <line x1="84" y1="498" x2="900" y2="498" stroke="white" stroke-opacity="0.1"/>
+
+  <rect x="84" y="510" width="200" height="60" rx="10" fill="white" fill-opacity="0.06"/>
+  <text x="104" y="534" fill="white" font-size="12" font-weight="700">ITPNAVOracle.sol</text>
+  <text x="104" y="552" fill="white" font-size="10" opacity="0.55">Morpho reads price</text>
+
+  <rect x="304" y="510" width="200" height="60" rx="10" fill="white" fill-opacity="0.06"/>
+  <text x="324" y="534" fill="white" font-size="12" font-weight="700">CuratorRateIRM.sol</text>
+  <text x="324" y="552" fill="white" font-size="10" opacity="0.55">interest model</text>
+
+  <rect x="524" y="510" width="200" height="60" rx="10" fill="white" fill-opacity="0.06"/>
+  <text x="544" y="534" fill="white" font-size="12" font-weight="700">MetaMorpho Vault</text>
+  <text x="544" y="552" fill="white" font-size="10" opacity="0.55">reallocate</text>
+
+  <rect x="744" y="510" width="156" height="60" rx="10" fill="white" fill-opacity="0.06"/>
+  <text x="764" y="534" fill="white" font-size="12" font-weight="700">Telegram</text>
+  <text x="764" y="552" fill="white" font-size="10" opacity="0.55">alerts</text>
+
+  <!-- Footer pill -->
+  <text x="84" y="608" fill="white" font-size="11" opacity="0.55">Every minute the same dance: read, sign, push, read, decide, write.</text>
+  <text x="84" y="628" fill="white" font-size="11" opacity="0.55">It runs until it doesn't. That's all infrastructure is.</text>
+</svg>

@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 240" width="980" height="240" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="10" flood-opacity="0.04"/>
+    </filter>
+  </defs>
+
+  <rect width="980" height="240" fill="white"/>
+  <circle cx="80" cy="200" r="140" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="900" cy="40" r="120" fill="#0A0A0A" opacity="0.02"/>
+
+  <text x="490" y="42" text-anchor="middle" fill="#0A0A0A" font-size="12" font-weight="700" letter-spacing="3" opacity="0.45">BATCH TICK BAR</text>
+
+  <!-- Bar -->
+  <rect x="40" y="76" width="900" height="64" rx="14" fill="url(#darkGrad)" filter="url(#shadow)"/>
+
+  <g font-size="10" letter-spacing="1.5">
+    <!-- Tick -->
+    <text x="92" y="100" text-anchor="middle" fill="white" opacity="0.5" font-weight="600">TICK</text>
+    <text x="92" y="124" text-anchor="middle" fill="white" font-size="16" font-weight="700">#1,247</text>
+    <line x1="144" y1="86" x2="144" y2="130" stroke="white" stroke-opacity="0.1"/>
+
+    <!-- Players -->
+    <text x="208" y="100" text-anchor="middle" fill="white" opacity="0.5" font-weight="600">PLAYERS</text>
+    <text x="208" y="124" text-anchor="middle" fill="white" font-size="16" font-weight="700">42</text>
+    <line x1="272" y1="86" x2="272" y2="130" stroke="white" stroke-opacity="0.1"/>
+
+    <!-- Pool -->
+    <text x="328" y="100" text-anchor="middle" fill="white" opacity="0.5" font-weight="600">POOL</text>
+    <text x="328" y="124" text-anchor="middle" fill="white" font-size="16" font-weight="700">$12.5K</text>
+    <line x1="384" y1="86" x2="384" y2="130" stroke="white" stroke-opacity="0.1"/>
+
+    <!-- Progress bar -->
+    <text x="490" y="100" text-anchor="middle" fill="white" opacity="0.5" font-weight="600">PROGRESS</text>
+    <rect x="404" y="112" width="172" height="12" rx="6" fill="white" fill-opacity="0.08"/>
+    <rect x="404" y="112" width="112" height="12" rx="6" fill="#10B981"/>
+    <line x1="596" y1="86" x2="596" y2="130" stroke="white" stroke-opacity="0.1"/>
+
+    <!-- Mult -->
+    <text x="652" y="100" text-anchor="middle" fill="white" opacity="0.5" font-weight="600">MULT</text>
+    <text x="652" y="124" text-anchor="middle" fill="white" font-size="16" font-weight="700">1.2×</text>
+    <line x1="708" y1="86" x2="708" y2="130" stroke="white" stroke-opacity="0.1"/>
+
+    <!-- Set -->
+    <text x="772" y="100" text-anchor="middle" fill="white" opacity="0.5" font-weight="600">SET</text>
+    <text x="772" y="124" text-anchor="middle" fill="white" font-size="16" font-weight="700">18 / 24</text>
+    <line x1="836" y1="86" x2="836" y2="130" stroke="white" stroke-opacity="0.1"/>
+
+    <!-- Timer -->
+    <text x="888" y="100" text-anchor="middle" fill="white" opacity="0.5" font-weight="600">TIMER</text>
+    <text x="888" y="124" text-anchor="middle" fill="white" font-size="16" font-weight="700">4:32</text>
+  </g>
+
+  <!-- Footer pill -->
+  <rect x="40" y="170" width="900" height="42" rx="14" fill="#0A0A0A" fill-opacity="0.03"/>
+  <text x="490" y="196" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.45">Progress bar fills as the tick elapses. Red when locked. Time runs in one direction.</text>
+</svg>

@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 380" width="980" height="380" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGradRb" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadowRb">
+      <feDropShadow dx="0" dy="2" stdDeviation="10" flood-opacity="0.04"/>
+    </filter>
+    <marker id="aRb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0A0A0A" fill-opacity="0.45"/>
+    </marker>
+  </defs>
+
+  <rect width="980" height="380" fill="white"/>
+  <circle cx="50" cy="50" r="160" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="940" cy="340" r="160" fill="#0A0A0A" opacity="0.02"/>
+
+  <text x="490" y="44" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="3.6" opacity="0.45">REBALANCING IN ONE PICTURE</text>
+
+  <!-- BEFORE panel -->
+  <g filter="url(#shadowRb)">
+    <rect x="60" y="84" width="380" height="240" rx="14" fill="white" stroke="#0A0A0A" stroke-opacity="0.08"/>
+  </g>
+  <text x="80" y="112" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.45">BEFORE</text>
+
+  <!-- Header row -->
+  <g font-family="ui-monospace, SF Mono, Menlo, monospace" font-size="11">
+    <text x="80" y="146" fill="#0A0A0A" opacity="0.45">ASSET</text>
+    <text x="220" y="146" fill="#0A0A0A" opacity="0.45">WEIGHT</text>
+    <text x="320" y="146" fill="#0A0A0A" opacity="0.45">QTY</text>
+  </g>
+  <line x1="80" y1="154" x2="420" y2="154" stroke="#0A0A0A" stroke-opacity="0.06"/>
+
+  <g font-family="ui-monospace, SF Mono, Menlo, monospace" font-size="12">
+    <text x="80" y="180" fill="#0A0A0A" font-weight="600">BTC</text>
+    <text x="220" y="180" fill="#0A0A0A">33%</text>
+    <text x="320" y="180" fill="#0A0A0A" opacity="0.65">0.000007</text>
+
+    <text x="80" y="210" fill="#0A0A0A" font-weight="600">ETH</text>
+    <text x="220" y="210" fill="#0A0A0A">33%</text>
+    <text x="320" y="210" fill="#0A0A0A" opacity="0.65">0.000111</text>
+
+    <text x="80" y="240" fill="#0A0A0A" font-weight="600">SOL</text>
+    <text x="220" y="240" fill="#0A0A0A">34%</text>
+    <text x="320" y="240" fill="#0A0A0A" opacity="0.65">0.003334</text>
+  </g>
+  <line x1="80" y1="262" x2="420" y2="262" stroke="#0A0A0A" stroke-opacity="0.1"/>
+  <text x="80" y="292" fill="#0A0A0A" font-size="13" font-weight="700">NAV $1.19</text>
+
+  <!-- Arrow + call label -->
+  <line x1="455" y1="200" x2="525" y2="200" stroke="#0A0A0A" stroke-opacity="0.5" stroke-width="1.4" marker-end="url(#aRb)"/>
+  <text x="490" y="186" text-anchor="middle" fill="#0A0A0A" font-size="10" font-weight="700" letter-spacing="1.6" opacity="0.55" font-family="ui-monospace, SF Mono, Menlo, monospace">updateWeights</text>
+
+  <!-- AFTER panel (dark) -->
+  <g filter="url(#shadowRb)">
+    <rect x="540" y="84" width="380" height="240" rx="14" fill="url(#darkGradRb)"/>
+  </g>
+  <text x="560" y="112" fill="white" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.5">AFTER</text>
+
+  <g font-family="ui-monospace, SF Mono, Menlo, monospace" font-size="11">
+    <text x="560" y="146" fill="white" opacity="0.45">ASSET</text>
+    <text x="700" y="146" fill="white" opacity="0.45">WEIGHT</text>
+    <text x="800" y="146" fill="white" opacity="0.45">QTY</text>
+  </g>
+  <line x1="560" y1="154" x2="900" y2="154" stroke="white" stroke-opacity="0.12"/>
+
+  <g font-family="ui-monospace, SF Mono, Menlo, monospace" font-size="12" fill="white">
+    <text x="560" y="180" font-weight="600">BTC</text>
+    <text x="700" y="180">50%</text>
+    <text x="800" y="180" opacity="0.65">0.000010</text>
+
+    <text x="560" y="210" font-weight="600">ETH</text>
+    <text x="700" y="210">30%</text>
+    <text x="800" y="210" opacity="0.65">0.000102</text>
+
+    <text x="560" y="240" font-weight="600">SOL</text>
+    <text x="700" y="240">20%</text>
+    <text x="800" y="240" opacity="0.65">0.001982</text>
+  </g>
+  <line x1="560" y1="262" x2="900" y2="262" stroke="white" stroke-opacity="0.12"/>
+  <text x="560" y="292" fill="white" font-size="13" font-weight="700">NAV $1.19</text>
+  <circle cx="600" cy="287" r="0" fill="none"/>
+
+  <!-- Footer -->
+  <text x="490" y="354" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.5">Weights change. Quantities change. NAV stays.</text>
+</svg>

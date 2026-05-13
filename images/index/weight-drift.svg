@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 360" width="980" height="360" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGradWd" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadowWd">
+      <feDropShadow dx="0" dy="2" stdDeviation="10" flood-opacity="0.04"/>
+    </filter>
+    <marker id="aWd" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0A0A0A" fill-opacity="0.45"/>
+    </marker>
+  </defs>
+
+  <rect width="980" height="360" fill="white"/>
+  <circle cx="50" cy="320" r="160" fill="#0A0A0A" opacity="0.02"/>
+
+  <text x="490" y="44" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="3.6" opacity="0.45">WEIGHT DRIFT</text>
+
+  <!-- CREATION -->
+  <g filter="url(#shadowWd)">
+    <rect x="60" y="82" width="380" height="210" rx="14" fill="white" stroke="#0A0A0A" stroke-opacity="0.08"/>
+  </g>
+  <text x="80" y="110" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.45">CREATION</text>
+  <text x="80" y="128" fill="#0A0A0A" font-size="10" opacity="0.4">All prices = $1 · effective = target</text>
+
+  <g font-family="ui-monospace, SF Mono, Menlo, monospace" font-size="11">
+    <text x="80" y="170" fill="#0A0A0A" font-weight="600">BTC</text>
+    <rect x="120" y="158" width="160" height="14" rx="3" fill="#0A0A0A" fill-opacity="0.85"/>
+    <text x="296" y="170" fill="#0A0A0A">50%</text>
+
+    <text x="80" y="206" fill="#0A0A0A" font-weight="600">ETH</text>
+    <rect x="120" y="194" width="96" height="14" rx="3" fill="#0A0A0A" fill-opacity="0.6"/>
+    <text x="296" y="206" fill="#0A0A0A">30%</text>
+
+    <text x="80" y="242" fill="#0A0A0A" font-weight="600">SOL</text>
+    <rect x="120" y="230" width="64" height="14" rx="3" fill="#0A0A0A" fill-opacity="0.4"/>
+    <text x="296" y="242" fill="#0A0A0A">20%</text>
+  </g>
+
+  <!-- arrow between -->
+  <line x1="455" y1="186" x2="525" y2="186" stroke="#0A0A0A" stroke-opacity="0.45" stroke-width="1.2" marker-end="url(#aWd)"/>
+  <text x="490" y="174" text-anchor="middle" fill="#0A0A0A" font-size="10" opacity="0.5">6 months later</text>
+
+  <!-- LATER -->
+  <g filter="url(#shadowWd)">
+    <rect x="540" y="82" width="380" height="210" rx="14" fill="url(#darkGradWd)"/>
+  </g>
+  <text x="560" y="110" fill="white" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.5">DRIFT</text>
+  <text x="560" y="128" fill="white" font-size="10" opacity="0.5">BTC outperformed · weights diverged</text>
+
+  <g font-family="ui-monospace, SF Mono, Menlo, monospace" font-size="11">
+    <text x="560" y="170" fill="white" font-weight="600">BTC</text>
+    <rect x="600" y="158" width="200" height="14" rx="3" fill="#10B981" fill-opacity="0.85"/>
+    <text x="816" y="170" fill="white">62%</text>
+
+    <text x="560" y="206" fill="white" font-weight="600">ETH</text>
+    <rect x="600" y="194" width="80" height="14" rx="3" fill="white" fill-opacity="0.55"/>
+    <text x="816" y="206" fill="white">25%</text>
+
+    <text x="560" y="242" fill="white" font-weight="600">SOL</text>
+    <rect x="600" y="230" width="42" height="14" rx="3" fill="white" fill-opacity="0.35"/>
+    <text x="816" y="242" fill="white">13%</text>
+  </g>
+
+  <text x="490" y="334" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.5">The index you created stops being the index you intended.</text>
+</svg>

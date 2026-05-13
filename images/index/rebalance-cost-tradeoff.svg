@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 440" width="980" height="440" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="darkGradCt" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="100%" stop-color="#1F1F1F"/>
+    </linearGradient>
+    <filter id="shadowCt">
+      <feDropShadow dx="0" dy="2" stdDeviation="10" flood-opacity="0.04"/>
+    </filter>
+  </defs>
+
+  <rect width="980" height="440" fill="white"/>
+  <circle cx="50" cy="50" r="140" fill="#0A0A0A" opacity="0.02"/>
+  <circle cx="940" cy="400" r="160" fill="#0A0A0A" opacity="0.02"/>
+
+  <text x="490" y="44" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="3.6" opacity="0.45">REBALANCE COST TRADEOFF</text>
+
+  <!-- Headers -->
+  <text x="100" y="100" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2" opacity="0.45" font-family="ui-monospace, SF Mono, Menlo, monospace">METRIC</text>
+  <rect x="300" y="80" width="320" height="32" rx="980" fill="#0A0A0A"/>
+  <text x="460" y="100" text-anchor="middle" fill="white" font-size="11" font-weight="700" letter-spacing="2">TOO FREQUENT</text>
+  <rect x="640" y="80" width="280" height="32" rx="980" fill="#0A0A0A" fill-opacity="0.06" stroke="#0A0A0A" stroke-opacity="0.15"/>
+  <text x="780" y="100" text-anchor="middle" fill="#0A0A0A" font-size="11" font-weight="700" letter-spacing="2">TOO INFREQUENT</text>
+
+  <line x1="60" y1="128" x2="920" y2="128" stroke="#0A0A0A" stroke-opacity="0.08"/>
+
+  <!-- Rows -->
+  <g font-size="13">
+    <text x="100" y="160" fill="#0A0A0A" font-weight="600">Gas costs</text>
+    <text x="460" y="160" text-anchor="middle" fill="#0A0A0A">High · many transactions</text>
+    <text x="780" y="160" text-anchor="middle" fill="#10B981" font-weight="600">Low</text>
+
+    <line x1="60" y1="180" x2="920" y2="180" stroke="#0A0A0A" stroke-opacity="0.04"/>
+
+    <text x="100" y="212" fill="#0A0A0A" font-weight="600">Trade fees</text>
+    <text x="460" y="212" text-anchor="middle" fill="#0A0A0A">High · many trades</text>
+    <text x="780" y="212" text-anchor="middle" fill="#10B981" font-weight="600">Low</text>
+
+    <line x1="60" y1="232" x2="920" y2="232" stroke="#0A0A0A" stroke-opacity="0.04"/>
+
+    <text x="100" y="264" fill="#0A0A0A" font-weight="600">Weight drift</text>
+    <text x="460" y="264" text-anchor="middle" fill="#10B981" font-weight="600">Low · stays on target</text>
+    <text x="780" y="264" text-anchor="middle" fill="#0A0A0A">High · drifts</text>
+
+    <line x1="60" y1="284" x2="920" y2="284" stroke="#0A0A0A" stroke-opacity="0.04"/>
+
+    <text x="100" y="316" fill="#0A0A0A" font-weight="600">Tracking error</text>
+    <text x="460" y="316" text-anchor="middle" fill="#10B981" font-weight="600">Low</text>
+    <text x="780" y="316" text-anchor="middle" fill="#0A0A0A">High</text>
+  </g>
+
+  <!-- Conclusion bar -->
+  <g filter="url(#shadowCt)">
+    <rect x="60" y="354" width="860" height="60" rx="12" fill="url(#darkGradCt)"/>
+  </g>
+  <text x="490" y="378" text-anchor="middle" fill="white" font-size="11" font-weight="700" letter-spacing="2.4" opacity="0.55">SWEET SPOT</text>
+  <text x="490" y="400" text-anchor="middle" fill="white" font-size="13">Rebalance when drift is meaningful — not so often that costs eat returns.</text>
+</svg>

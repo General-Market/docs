@@ -11,65 +11,7 @@ Every step below includes the exact function call, expected behavior, and error 
 
 ## Lifecycle Diagram
 
-```
-┌──────────────────┐
-│  1. Register Bot │ ← One-time setup
-└────────┬─────────┘
-         │
-         ▼
-┌──────────────────┐     ┌─────────────────────┐
-│  2. Poll Batches │────►│  No batches? Sleep   │
-│     (every 30s)  │     │  POLL_INTERVAL, retry│
-└────────┬─────────┘     └─────────────────────┘
-         │ Found batch
-         ▼
-┌──────────────────┐
-│  3. Generate     │
-│     Predictions  │
-└────────┬─────────┘
-         │
-         ▼
-┌──────────────────┐
-│  4. Encode       │
-│     Bitmap       │
-└────────┬─────────┘
-         │
-         ▼
-┌──────────────────┐
-│  5. Approve USDC │
-└────────┬─────────┘
-         │
-         ▼
-┌──────────────────┐
-│  6. Join Batch   │  ← On-chain: joinBatch()
-└────────┬─────────┘
-         │
-         ▼
-┌──────────────────┐
-│  7. Wait 6s      │  ← Chain indexer lag
-└────────┬─────────┘
-         │
-         ▼
-┌──────────────────┐
-│  8. Submit Bitmap│  ← Off-chain: POST /vision/bitmap
-└────────┬─────────┘
-         │
-         ▼
-┌──────────────────────────────────┐
-│  9. Update Bitmap (optional)     │  ← On-chain: updateBitmap()
-│     + resubmit to oracles        │    + POST /vision/bitmap
-└────────┬─────────────────────────┘
-         │
-         ▼
-┌──────────────────┐
-│ 10. Claim Rewards│  ← On-chain: claimRewards() with BLS proof
-└────────┬─────────┘
-         │
-         ▼
-┌──────────────────┐
-│ 11. Withdraw     │  ← On-chain: withdraw() with BLS proof
-└──────────────────┘
-```
+<img src="/images/vision/bot-lifecycle-flow.svg" alt="Bot lifecycle — register, poll, predict, encode, join, submit, claim, withdraw" />
 
 ---
 
