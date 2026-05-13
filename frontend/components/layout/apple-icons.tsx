@@ -100,3 +100,20 @@ export function SearchIcon(p: IconProps) {
     </svg>
   )
 }
+
+export function PulseIcon(p: IconProps) {
+  return (
+    <svg {...baseProps} {...p}>
+      <path d="M3 12h4l2-6 4 12 2-8 2 4 4-2" />
+    </svg>
+  )
+}
+
+export function ArrowLeftIcon(p: IconProps) {
+  return (
+    <svg {...baseProps} {...p}>
+      <path d="M14 6l-6 6 6 6" />
+      <path d="M8 12h12" />
+    </svg>
+  )
+}

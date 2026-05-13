@@ -710,6 +710,7 @@
   },
   "source_sidebar": {
     "aria_label": "Source navigation",
+    "back_to_home": "ホーム",
     "group_for_you": "For you",
     "group_build": "Build",
     "group_more_sources": "More sources",
