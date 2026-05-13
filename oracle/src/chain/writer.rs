@@ -5,6 +5,7 @@
 //! and retry logic.
 
 use std::path::Path;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
 use async_trait::async_trait;
@@ -75,6 +76,34 @@ impl Default for ChainWriterConfig {
 /// Type alias for the signer middleware
 pub type SignerClient = SignerMiddleware<Provider<Http>, LocalWallet>;
 
+/// Parse a hex private key (with or without `0x`) into a `LocalWallet` bound to
+/// `chain_id`. Shared between the single-key and fleet constructors, and also
+/// used by `main.rs` when parsing `ORACLE_FLEET_KEYS`.
+pub fn parse_wallet(private_key: &str, chain_id: u64) -> Result<LocalWallet, Error> {
+    let key_hex = private_key.trim_start_matches("0x").trim();
+    let wallet: LocalWallet = key_hex
+        .parse::<LocalWallet>()
+        .map_err(|e| Error::ChainWrite(format!("Failed to parse private key: {}", e)))?
+        .with_chain_id(chain_id);
+    Ok(wallet)
+}
+
+/// Fold the leading 8 bytes of an `H256` into a `u64` for use as a shard hint.
+fn u64_from_h256(h: &H256) -> u64 {
+    let bytes = h.as_bytes();
+    let mut buf = [0u8; 8];
+    buf.copy_from_slice(&bytes[..8]);
+    u64::from_be_bytes(buf)
+}
+
+/// Fold the leading 8 bytes of an `Address` (20 bytes) into a `u64`.
+fn u64_from_address(addr: &Address) -> u64 {
+    let bytes = addr.as_bytes();
+    let mut buf = [0u8; 8];
+    buf.copy_from_slice(&bytes[..8]);
+    u64::from_be_bytes(buf)
+}
+
 /// ChainWriter implementation using ethers-rs
 ///
 /// Submits transactions to the Index L3 chain with:
@@ -94,18 +123,28 @@ pub struct SettleBatchItem {
 }
 
 pub struct EthersChainWriter {
-    /// Signer middleware (provider + wallet)
-    client: Arc<SignerClient>,
+    /// Signer middlewares — one per fleet wallet. Single-key mode populates len 1.
+    clients: Vec<Arc<SignerClient>>,
+    /// Parallel `Vec<Arc<NonceManager>>` — one per signer. Index `i` matches `clients[i]`.
+    /// Each broker is the process-wide singleton for its (chain_id, address) — see
+    /// `nonce::get_or_init_nonce_manager`. The fleet does not share nonce state.
+    nonce_managers: Vec<Arc<NonceManager>>,
+    /// Cached signer addresses, parallel to `clients`. `addresses()[0]` is the primary
+    /// (the one returned by `address()` for backwards compat).
+    signer_addresses: Vec<Address>,
+    /// Round-robin cursor for hint-less writes (faucet drips, mirror sync, etc.).
+    round_robin: AtomicU64,
     /// Configuration
     config: ChainWriterConfig,
-    /// Nonce manager — singleton per (chain_id, signer address) across the process.
-    nonce_manager: Arc<NonceManager>,
-    /// Gas estimator
+    /// Gas estimator — shares one provider; gas estimation never touches the signing key.
     gas_estimator: GasEstimator<SignerClient>,
 }
 
 impl EthersChainWriter {
-    /// Create a new EthersChainWriter
+    /// Create a new EthersChainWriter from a single private key.
+    ///
+    /// Fleet mode is just the same path with `Vec::len() == 1`. Use
+    /// [`Self::new_with_fleet`] when `ORACLE_FLEET_KEYS` is set.
     ///
     /// # Arguments
     /// * `config` - Configuration including RPC URL and contract addresses
@@ -114,45 +153,79 @@ impl EthersChainWriter {
     /// # Errors
     /// Returns error if unable to connect to RPC endpoint or parse private key
     pub fn new(config: ChainWriterConfig, private_key: &str) -> Result<Self, Error> {
+        let wallet = parse_wallet(private_key, config.chain_id)?;
+        Self::new_with_fleet(config, vec![wallet])
+    }
+
+    /// Create a new EthersChainWriter from a fleet of pre-parsed wallets.
+    ///
+    /// Each wallet gets its own `SignerMiddleware` and its own `NonceManager`
+    /// (fetched from the process-wide registry keyed by `(chain_id, address)`).
+    /// The single nonce queue on the leader EOA is no longer a ceiling.
+    ///
+    /// # Errors
+    /// Returns error if `wallets` is empty, if the RPC URL is malformed, or if
+    /// any wallet was constructed on a different chain id than `config.chain_id`.
+    pub fn new_with_fleet(
+        config: ChainWriterConfig,
+        wallets: Vec<LocalWallet>,
+    ) -> Result<Self, Error> {
+        if wallets.is_empty() {
+            return Err(Error::ChainWrite(
+                "EthersChainWriter::new_with_fleet: empty wallet fleet".to_string(),
+            ));
+        }
+
         let provider = Provider::<Http>::try_from(&config.rpc_url)
             .map_err(|e| Error::ChainWrite(format!("Failed to create provider: {}", e)))?
             .interval(std::time::Duration::from_millis(50)); // L3 has instant finality, poll fast
-
-        // Parse private key (handle both with and without 0x prefix)
-        let key_hex = private_key.trim_start_matches("0x");
-        let wallet: LocalWallet = key_hex
-            .parse::<LocalWallet>()
-            .map_err(|e| Error::ChainWrite(format!("Failed to parse private key: {}", e)))?
-            .with_chain_id(config.chain_id);
-
-        let address = wallet.address();
         let provider_arc = Arc::new(provider);
-        let client = SignerMiddleware::new((*provider_arc).clone(), wallet);
-        let client_arc = Arc::new(client);
 
-        // Fetch the singleton nonce manager for this (chain, address). Two
-        // writers built independently against the same key share one broker.
-        let nonce_manager = get_or_init_nonce_manager(config.chain_id, address, provider_arc);
+        let mut clients = Vec::with_capacity(wallets.len());
+        let mut nonce_managers = Vec::with_capacity(wallets.len());
+        let mut signer_addresses = Vec::with_capacity(wallets.len());
 
-        // Create gas estimator
-        let gas_estimator = GasEstimator::new(client_arc.clone(), config.gas_config.clone());
+        for wallet in wallets {
+            // Defensive: re-stamp the chain id in case the caller forgot.
+            let wallet = wallet.with_chain_id(config.chain_id);
+            let address = wallet.address();
+            let client = SignerMiddleware::new((*provider_arc).clone(), wallet);
+            let client_arc = Arc::new(client);
+
+            // Each (chain_id, address) gets the singleton broker. Different
+            // EOAs already get independent managers — that's the whole point.
+            let nonce_manager =
+                get_or_init_nonce_manager(config.chain_id, address, provider_arc.clone());
+
+            clients.push(client_arc);
+            nonce_managers.push(nonce_manager);
+            signer_addresses.push(address);
+        }
+
+        // Gas estimation only needs a provider. Reuse the first client; any
+        // would do — estimate_gas never signs.
+        let gas_estimator = GasEstimator::new(clients[0].clone(), config.gas_config.clone());
 
         info!(
-            address = ?address,
+            fleet_size = clients.len(),
+            primary = ?signer_addresses[0],
+            addresses = ?signer_addresses,
             rpc_url = %config.rpc_url,
             chain_id = config.chain_id,
             "EthersChainWriter initialized"
         );
 
         Ok(Self {
-            client: client_arc,
+            clients,
+            nonce_managers,
+            signer_addresses,
+            round_robin: AtomicU64::new(0),
             config,
-            nonce_manager,
             gas_estimator,
         })
     }
 
-    /// Create a new EthersChainWriter from a key file
+    /// Create a new EthersChainWriter from a key file (single-key fall-back).
     ///
     /// # Arguments
     /// * `config` - Configuration including RPC URL and contract addresses
@@ -170,9 +243,39 @@ impl EthersChainWriter {
         Self::new(config, private_key)
     }
 
-    /// Get the signer address
+    /// Get the primary signer address — the first wallet in the fleet.
+    ///
+    /// External callers (consensus, p2p bootstrap, balance checks) treat this
+    /// as the oracle's canonical identity. The other fleet keys are
+    /// implementation detail of the nonce pipeline.
     pub fn address(&self) -> Address {
-        self.client.address()
+        self.signer_addresses[0]
+    }
+
+    /// Every signer address in the fleet, in fleet order. `addresses()[0] == address()`.
+    pub fn addresses(&self) -> &[Address] {
+        &self.signer_addresses
+    }
+
+    /// Size of the fleet. 1 in single-key mode.
+    pub fn fleet_size(&self) -> usize {
+        self.clients.len()
+    }
+
+    /// Pick a signer index for the next tx.
+    ///
+    /// * `Some(hint)` — deterministic dispatch by `hint % fleet_size`. Callers
+    ///   thread a natural cycle / batch / order id so the same logical operation
+    ///   always lands on the same key, and parallel operations spread evenly.
+    /// * `None` — round-robin. Used when no natural shard key exists (faucet
+    ///   drips, mirror sync, generic `send_transaction`).
+    pub fn pick_signer(&self, hint: Option<u64>) -> usize {
+        let n = self.clients.len();
+        debug_assert!(n > 0, "fleet must be non-empty");
+        match hint {
+            Some(h) => (h as usize) % n,
+            None => (self.round_robin.fetch_add(1, Ordering::Relaxed) as usize) % n,
+        }
     }
 
     /// Get the configuration
@@ -193,7 +296,8 @@ impl EthersChainWriter {
         tx_hash: H256,
         timeout_secs: u64,
     ) -> Result<TransactionReceipt, Error> {
-        let pending = PendingTransaction::new(tx_hash, self.client.provider())
+        // Any client's provider works — receipts come from the chain, not the signer.
+        let pending = PendingTransaction::new(tx_hash, self.clients[0].provider())
             .interval(std::time::Duration::from_millis(50));
 
         tokio::time::timeout(
@@ -565,7 +669,12 @@ impl EthersChainWriter {
             source_id, config_hash, tick_duration, lock_offset, settlement_grace,
             &bls_sig, ref_nonce, signers_bitmask,
         );
-        let (tx_hash, receipt) = self.submit_tx_with_receipt(tx, "create_batch").await?;
+        // Shard by source_id: every batch from the same source lands on the
+        // same key, so per-source createBatch streams never collide on a queue.
+        let hint = u64_from_h256(&source_id);
+        let (tx_hash, receipt) = self
+            .submit_tx_with_receipt(tx, "create_batch", Some(hint))
+            .await?;
 
         // Parse on-chain batchId from BatchCreated event in receipt logs.
         // Event: BatchCreated(uint256 indexed batchId, bytes32 indexed sourceId, address indexed creator, ...)
@@ -693,7 +802,7 @@ impl EthersChainWriter {
         );
 
         let tx = self.build_settle_batch_tx(batch_id, &players, &payouts, &bls_sig, ref_nonce, signers_bitmask);
-        self.submit_tx(tx, "settle_batch").await
+        self.submit_tx(tx, "settle_batch", Some(batch_id)).await
     }
 
     /// Build a settleBatches transaction.
@@ -918,7 +1027,10 @@ impl EthersChainWriter {
         let tx = self.build_settle_batches_single_tx(
             &batch_ids, &players, &payouts, &bls_sig, ref_nonce, signers_bitmask,
         );
-        self.submit_tx(tx, "settle_batches_single").await
+        // Shard by the first batch id — bundles with the same lead batch
+        // always route to the same key.
+        let hint = batch_ids[0];
+        self.submit_tx(tx, "settle_batches_single", Some(hint)).await
     }
 
     /// Submit a settleBatches transaction to Vision.sol on L3.
@@ -936,7 +1048,8 @@ impl EthersChainWriter {
             "Building settleBatches transaction"
         );
         let tx = self.build_settle_batches_tx(&items);
-        self.submit_tx(tx, "settle_batches").await
+        let hint = items[0].batch_id;
+        self.submit_tx(tx, "settle_batches", Some(hint)).await
     }
 
     /// Call `VisionVault.reconcile(batchId, settlementPayout)` on each player address.
@@ -973,7 +1086,10 @@ impl EthersChainWriter {
                 .data(calldata)
                 .into();
 
-            match self.submit_tx(tx, "vault_reconcile").await {
+            // Spread per-player reconciles across the fleet, but pin each (batch, player)
+            // pair to a single key so retries land deterministically.
+            let hint = batch_id ^ u64_from_address(player) ^ (i as u64);
+            match self.submit_tx(tx, "vault_reconcile", Some(hint)).await {
                 Ok(tx_hash) => {
                     info!(
                         batch_id,
@@ -1055,7 +1171,9 @@ impl EthersChainWriter {
             .data(calldata)
             .into();
 
-        let tx_hash = self.submit_tx(tx, "vault_reconcile_bundled").await?;
+        let tx_hash = self
+            .submit_tx(tx, "vault_reconcile_bundled", Some(batch_id))
+            .await?;
         info!(
             batch_id,
             count = players.len(),
@@ -1068,11 +1186,22 @@ impl EthersChainWriter {
 
     /// Submit a transaction with nonce management, gas estimation, and retry logic.
     ///
+    /// `hint` selects a signer via [`Self::pick_signer`]. Callers with a
+    /// natural shard key (cycle / batch / order id) should pass it so the same
+    /// operation always routes to the same EOA — both for debuggability and so
+    /// parallel writes spread evenly across the fleet.
+    ///
     /// Includes nonce-level retry: when concurrent L3 operations cause "nonce too low",
-    /// resyncs the nonce manager and retries with a fresh nonce (up to 3 attempts).
-    /// This handles the case where bridge buy/sell/batch operations compete for nonces.
-    async fn submit_tx(&self, tx: TypedTransaction, operation: &str) -> Result<TxHash, Error> {
-        let (tx_hash, _receipt) = self.submit_tx_with_receipt(tx, operation).await?;
+    /// resyncs the picked signer's nonce manager and retries with a fresh nonce
+    /// (up to 3 attempts). Only the affected manager is resynced — the rest of
+    /// the fleet keeps flying.
+    async fn submit_tx(
+        &self,
+        tx: TypedTransaction,
+        operation: &str,
+        hint: Option<u64>,
+    ) -> Result<TxHash, Error> {
+        let (tx_hash, _receipt) = self.submit_tx_with_receipt(tx, operation, hint).await?;
         Ok(tx_hash)
     }
 
@@ -1082,8 +1211,14 @@ impl EthersChainWriter {
         &self,
         tx: TypedTransaction,
         operation: &str,
+        hint: Option<u64>,
     ) -> Result<(TxHash, TransactionReceipt), Error> {
         const MAX_NONCE_RETRIES: u32 = 3;
+
+        let signer_idx = self.pick_signer(hint);
+        let client = self.clients[signer_idx].clone();
+        let nonce_manager = self.nonce_managers[signer_idx].clone();
+        let signer_address = self.signer_addresses[signer_idx];
 
         for nonce_attempt in 0..=MAX_NONCE_RETRIES {
             let tx_start = std::time::Instant::now();
@@ -1095,10 +1230,13 @@ impl EthersChainWriter {
             let gas_est_ms = t0.elapsed().as_millis();
 
             // Get nonce (fresh on each attempt after resync)
-            let nonce = self.nonce_manager.get_next_nonce().await?;
+            let nonce = nonce_manager.get_next_nonce().await?;
             let mut tx_with_nonce = tx.clone();
             tx_with_nonce.set_nonce(nonce);
             tx_with_nonce.set_gas(gas);
+            // Pin the from-address so estimate-style middlewares don't pick the
+            // wrong signer when the fleet sits behind one provider.
+            tx_with_nonce.set_from(signer_address);
 
             // Get gas price
             let t1 = std::time::Instant::now();
@@ -1113,6 +1251,8 @@ impl EthersChainWriter {
                 nonce = ?nonce,
                 gas = ?gas,
                 nonce_attempt = nonce_attempt,
+                signer_idx = signer_idx,
+                signer = ?signer_address,
                 to = ?tx_with_nonce.to(),
                 gas_est_ms = gas_est_ms,
                 gas_price_ms = gas_price_ms,
@@ -1120,7 +1260,6 @@ impl EthersChainWriter {
             );
 
             // Submit with retry (handles transient errors like timeouts, 5xx)
-            let client = self.client.clone();
             let retry_config = self.config.retry_config.clone();
 
             let t2 = std::time::Instant::now();
@@ -1169,6 +1308,8 @@ impl EthersChainWriter {
 
             info!(
                 operation = operation,
+                signer_idx = signer_idx,
+                signer = ?signer_address,
                 gas_est_ms = gas_est_ms,
                 gas_price_ms = gas_price_ms,
                 submit_total_ms = submit_total_ms,
@@ -1179,7 +1320,7 @@ impl EthersChainWriter {
             match result {
                 Ok((tx_hash, receipt)) => {
                     // Track the pending transaction
-                    self.nonce_manager.track_pending(nonce, tx_hash);
+                    nonce_manager.track_pending(nonce, tx_hash);
 
                     if nonce_attempt > 0 {
                         info!(
@@ -1187,6 +1328,7 @@ impl EthersChainWriter {
                             tx_hash = ?tx_hash,
                             nonce = ?nonce,
                             nonce_attempt = nonce_attempt,
+                            signer_idx = signer_idx,
                             "Transaction submitted successfully after nonce retry"
                         );
                     } else {
@@ -1194,6 +1336,7 @@ impl EthersChainWriter {
                             operation = operation,
                             tx_hash = ?tx_hash,
                             nonce = ?nonce,
+                            signer_idx = signer_idx,
                             "Transaction submitted successfully"
                         );
                     }
@@ -1202,7 +1345,7 @@ impl EthersChainWriter {
                 }
                 Err(e) => {
                     let error_msg = e.to_string();
-                    self.nonce_manager.handle_failure(nonce, &error_msg).await?;
+                    nonce_manager.handle_failure(nonce, &error_msg).await?;
 
                     // Check if this is a nonce conflict from concurrent operations
                     // or local-counter drift after a reorg.
@@ -1219,6 +1362,7 @@ impl EthersChainWriter {
                             operation = operation,
                             nonce = ?nonce,
                             nonce_attempt = nonce_attempt,
+                            signer_idx = signer_idx,
                             "Nonce conflict (concurrent operations), retrying with fresh nonce"
                         );
                         continue;
@@ -1259,7 +1403,7 @@ impl ChainWriter for EthersChainWriter {
         );
 
         let tx = self.build_confirm_batch_tx(cycle_number, order_ids.clone(), bls_signature, reference_nonce, signers_bitmask);
-        self.submit_tx(tx, "submit_batch").await
+        self.submit_tx(tx, "submit_batch", Some(cycle_number)).await
     }
 
     async fn confirm_fills(
@@ -1280,7 +1424,7 @@ impl ChainWriter for EthersChainWriter {
         );
 
         let tx = self.build_confirm_fills_tx(cycle_number, fills, bls_signature, reference_nonce, signers_bitmask);
-        self.submit_tx(tx, "confirm_fills").await
+        self.submit_tx(tx, "confirm_fills", Some(cycle_number)).await
     }
 
     async fn submit_bridge(
@@ -1301,7 +1445,8 @@ impl ChainWriter for EthersChainWriter {
         );
 
         let tx = self.build_initiate_bridge_tx(dest_chain_id, amount, bls_signature, reference_nonce, signers_bitmask);
-        self.submit_tx(tx, "submit_bridge").await
+        // reference_nonce is unique per bridge attempt — good shard key.
+        self.submit_tx(tx, "submit_bridge", Some(reference_nonce)).await
     }
 
     async fn create_itp(
@@ -1327,7 +1472,8 @@ impl ChainWriter for EthersChainWriter {
             .data(Bytes::from(calldata))
             .value(value)
             .into();
-        self.submit_tx(tx, "send_transaction").await
+        // No natural shard key — round-robin keeps the fleet balanced.
+        self.submit_tx(tx, "send_transaction", None).await
     }
 
     async fn static_call(
@@ -1340,8 +1486,8 @@ impl ChainWriter for EthersChainWriter {
             .data(calldata)
             .into();
 
-        let result = self
-            .client
+        // Read-only call: any client's provider serves. Use the primary.
+        let result = self.clients[0]
             .call(&tx, None)
             .await
             .map_err(|e| Error::ChainWrite(format!("static_call failed: {}", e)))?;
@@ -1350,8 +1496,7 @@ impl ChainWriter for EthersChainWriter {
     }
 
     async fn get_block_timestamp(&self) -> Result<U256, Error> {
-        let block = self
-            .client
+        let block = self.clients[0]
             .get_block(ethers::types::BlockNumber::Latest)
             .await
             .map_err(|e| Error::ChainWrite(format!("get_block failed: {}", e)))?
@@ -1484,7 +1629,10 @@ impl EthersChainWriter {
         );
 
         let tx = self.build_create_itp_tx(name, symbol, weights, assets, prices, bridge_nonce);
-        let tx_hash = self.submit_tx(tx, "create_itp").await?;
+        // bridge_nonce uniquely identifies the cross-chain creation — same
+        // shard key on retries, even distribution across new creations.
+        let hint = bridge_nonce.low_u64();
+        let tx_hash = self.submit_tx(tx, "create_itp", Some(hint)).await?;
 
         // Wait for receipt with 30 second timeout
         let receipt = self.wait_for_receipt(tx_hash, 30).await?;
@@ -1530,7 +1678,7 @@ impl EthersChainWriter {
         let call_tx = Eip1559TransactionRequest::new()
             .to(self.config.contracts.index)
             .data(calldata);
-        match self.client.call(&call_tx.into(), None).await {
+        match self.clients[0].call(&call_tx.into(), None).await {
             Ok(result) if result.len() >= 32 => {
                 let itp_id = H256::from_slice(&result[..32]);
                 if itp_id != H256::zero() {
@@ -1589,7 +1737,8 @@ impl EthersChainWriter {
             reference_nonce,
             signer_bitmap,
         );
-        self.submit_tx(tx, "settle_bet").await
+        let hint = bet_id.low_u64();
+        self.submit_tx(tx, "settle_bet", Some(hint)).await
     }
 
     /// Build a settleBet transaction
@@ -1935,5 +2084,103 @@ mod tests {
 
         // Selector + 6 params (each offset or value = 32 bytes) at minimum
         assert!(calldata.len() > 4 + 32 * 6, "Calldata should contain encoded parameters");
+    }
+
+    // Two distinct anvil keys for fleet tests. The addresses they derive to
+    // are well-known and stable across ethers-rs versions.
+    const FLEET_KEY_A: &str =
+        "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+    const FLEET_KEY_B: &str =
+        "59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
+
+    #[test]
+    fn test_single_key_path_is_fleet_of_one() {
+        let writer = EthersChainWriter::new(ChainWriterConfig::default(), FLEET_KEY_A).unwrap();
+        assert_eq!(writer.fleet_size(), 1);
+        assert_eq!(writer.addresses().len(), 1);
+        // Backwards-compat: address() returns the primary signer.
+        assert_eq!(writer.address(), writer.addresses()[0]);
+    }
+
+    #[test]
+    fn test_fleet_construction_two_keys() {
+        let wallet_a = parse_wallet(FLEET_KEY_A, 111222333).unwrap();
+        let wallet_b = parse_wallet(FLEET_KEY_B, 111222333).unwrap();
+        let writer = EthersChainWriter::new_with_fleet(
+            ChainWriterConfig::default(),
+            vec![wallet_a, wallet_b],
+        )
+        .unwrap();
+
+        assert_eq!(writer.fleet_size(), 2);
+        let addrs = writer.addresses();
+        assert_ne!(addrs[0], addrs[1], "Distinct keys must produce distinct addresses");
+        // address() is still the primary (index 0).
+        assert_eq!(writer.address(), addrs[0]);
+    }
+
+    #[test]
+    fn test_fleet_construction_rejects_empty() {
+        let result = EthersChainWriter::new_with_fleet(ChainWriterConfig::default(), vec![]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_pick_signer_with_hint_is_deterministic() {
+        let wallet_a = parse_wallet(FLEET_KEY_A, 111222333).unwrap();
+        let wallet_b = parse_wallet(FLEET_KEY_B, 111222333).unwrap();
+        let writer = EthersChainWriter::new_with_fleet(
+            ChainWriterConfig::default(),
+            vec![wallet_a, wallet_b],
+        )
+        .unwrap();
+
+        // Same hint → same index, every time. That's the whole point of the
+        // hint: retries on the same logical op land on the same EOA.
+        for _ in 0..16 {
+            assert_eq!(writer.pick_signer(Some(7)), 7 % 2);
+            assert_eq!(writer.pick_signer(Some(42)), 42 % 2);
+            assert_eq!(writer.pick_signer(Some(0)), 0);
+        }
+    }
+
+    #[test]
+    fn test_pick_signer_round_robin_spreads() {
+        let wallet_a = parse_wallet(FLEET_KEY_A, 111222333).unwrap();
+        let wallet_b = parse_wallet(FLEET_KEY_B, 111222333).unwrap();
+        let writer = EthersChainWriter::new_with_fleet(
+            ChainWriterConfig::default(),
+            vec![wallet_a, wallet_b],
+        )
+        .unwrap();
+
+        // Hint-less calls march through the fleet in order. Over 100 picks,
+        // each signer should land roughly half — exact 50/50 since 100 is even.
+        let mut counts = [0usize; 2];
+        for _ in 0..100 {
+            counts[writer.pick_signer(None)] += 1;
+        }
+        assert_eq!(counts[0], 50);
+        assert_eq!(counts[1], 50);
+    }
+
+    #[test]
+    fn test_pick_signer_singleton_always_zero() {
+        let writer = EthersChainWriter::new(ChainWriterConfig::default(), FLEET_KEY_A).unwrap();
+        assert_eq!(writer.pick_signer(None), 0);
+        assert_eq!(writer.pick_signer(Some(123456)), 0);
+        assert_eq!(writer.pick_signer(Some(u64::MAX)), 0);
+    }
+
+    #[test]
+    fn test_parse_wallet_accepts_with_and_without_0x() {
+        let with = parse_wallet(&format!("0x{}", FLEET_KEY_A), 1).unwrap();
+        let without = parse_wallet(FLEET_KEY_A, 1).unwrap();
+        assert_eq!(with.address(), without.address());
+    }
+
+    #[test]
+    fn test_parse_wallet_rejects_garbage() {
+        assert!(parse_wallet("not a key", 1).is_err());
     }
 }

@@ -1,6 +1,7 @@
 //! Chain reader/writer builders
 
 use super::{BootstrapError, BootstrapParams, ChainComponents};
+use crate::chain::parse_wallet;
 use crate::{
     SettlementChainReader, SettlementChainReaderConfig, SettlementChainWriter,
     SettlementChainWriterConfig, SettlementReader, ChainReaderConfig, ChainWriterConfig,
@@ -11,9 +12,40 @@ use common::adapters::{DataNodeChainReader, DeploymentVerifier, VerifierError};
 use common::mocks::MockChainBuilder;
 use common::traits::ChainReader;
 use ethers::prelude::Middleware;
+use ethers::signers::LocalWallet;
 use ethers::types::Address;
 use std::sync::Arc;
 use tracing::{debug, error, info, warn};
+
+/// Parse `ORACLE_FLEET_KEYS` into a vector of `LocalWallet`s, one per
+/// comma-separated hex key. Empty / unset returns `Ok(vec![])` — the caller
+/// then falls back to the single-key path.
+///
+/// Whitespace and empty entries between commas are silently dropped, so an
+/// operator can `ORACLE_FLEET_KEYS="0xabc, 0xdef,, 0x123"` without surprise.
+pub(crate) fn parse_fleet_keys_env(chain_id: u64) -> Result<Vec<LocalWallet>, String> {
+    let raw = match std::env::var("ORACLE_FLEET_KEYS") {
+        Ok(v) => v,
+        Err(_) => return Ok(Vec::new()),
+    };
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let mut wallets = Vec::new();
+    for (idx, piece) in trimmed.split(',').enumerate() {
+        let p = piece.trim();
+        if p.is_empty() {
+            continue;
+        }
+        let wallet = parse_wallet(p, chain_id).map_err(|e| {
+            format!("ORACLE_FLEET_KEYS entry #{idx} invalid: {e}")
+        })?;
+        wallets.push(wallet);
+    }
+    Ok(wallets)
+}
 
 /// Refuse to boot if any of `contracts` resolves to an address with no code on
 /// the given chain. Configured addresses that point at empty accounts mean
@@ -227,17 +259,12 @@ impl<'a> ChainBuilder<'a> {
             return Ok(None);
         }
 
-        let private_key = match self.config.effective_private_key() {
-            Ok(Some(key)) => key,
-            Ok(None) => {
-                warn!(code = "INFRA-002", node_id, "No private key configured - ChainWriter unavailable");
-                return Ok(None);
-            }
-            Err(e) => {
-                warn!(code = "INFRA-002", node_id, error = %e, "Failed to load private key");
-                return Ok(None);
-            }
-        };
+        // ORACLE_FLEET_KEYS takes precedence when set. Otherwise we fall back to
+        // the legacy single-key path. The fleet path widens the L3 nonce queue
+        // from one EOA to N — every write to L3 used to serialize through a
+        // single signer, which was the morning's recurring bottleneck.
+        let fleet_wallets =
+            parse_fleet_keys_env(self.target_chain_id).map_err(BootstrapError::Chain)?;
 
         let writer_addresses = self.config.effective_writer_addresses()
             .map_err(|e| BootstrapError::Chain(e.to_string()))?;
@@ -257,9 +284,36 @@ impl<'a> ChainBuilder<'a> {
             ..Default::default()
         };
 
-        match EthersChainWriter::new(writer_config, &private_key) {
+        let writer_result = if !fleet_wallets.is_empty() {
+            info!(
+                node_id,
+                fleet_size = fleet_wallets.len(),
+                "ORACLE_FLEET_KEYS set — initializing multi-key writer fleet"
+            );
+            EthersChainWriter::new_with_fleet(writer_config, fleet_wallets)
+        } else {
+            let private_key = match self.config.effective_private_key() {
+                Ok(Some(key)) => key,
+                Ok(None) => {
+                    warn!(code = "INFRA-002", node_id, "No private key configured - ChainWriter unavailable");
+                    return Ok(None);
+                }
+                Err(e) => {
+                    warn!(code = "INFRA-002", node_id, error = %e, "Failed to load private key");
+                    return Ok(None);
+                }
+            };
+            EthersChainWriter::new(writer_config, &private_key)
+        };
+
+        match writer_result {
             Ok(writer) => {
-                info!(node_id, address = ?writer.address(), "EthersChainWriter initialized");
+                info!(
+                    node_id,
+                    fleet_size = writer.fleet_size(),
+                    addresses = ?writer.addresses(),
+                    "EthersChainWriter initialized"
+                );
                 self.check_signer_balance(&writer, rpc_url, node_id).await;
                 Ok(Some(Arc::new(writer)))
             }

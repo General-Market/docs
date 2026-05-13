@@ -47,4 +47,6 @@ pub use gas::{GasConfig, GasEstimator, GasPriceResult};
 pub use nonce::NonceManager;
 pub use reader::{ChainReaderConfig, ContractAddresses, EthersChainReader};
 pub use retry::{is_retryable_error, with_retry, RetryConfig, RetryError};
-pub use writer::{ChainWriterConfig, EthersChainWriter, SettleBatchItem, WriterContractAddresses};
+pub use writer::{
+    parse_wallet, ChainWriterConfig, EthersChainWriter, SettleBatchItem, WriterContractAddresses,
+};
