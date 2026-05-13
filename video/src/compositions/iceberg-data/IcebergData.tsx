@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   AbsoluteFill,
   Easing,
-  Img,
+  continueRender,
+  delayRender,
   interpolate,
   spring,
   staticFile,
@@ -11,19 +12,22 @@ import {
 } from "remotion";
 import { font } from "../../common/fonts";
 import { colors } from "../anticheat/theme";
+import { DotGrid } from "../anticheat/DotGrid";
 
-// IcebergData — cartoon iceberg with AntiCheatFull's body-scene aesthetic
-// (Base-style white cards, Base blue, hairline borders, layered shadows).
-// Rhythm from AntiCheatIceberg: zoom-out intro then beat-locked reveals.
+// IcebergData — cartoon iceberg, but rendered as a Base-blue dot mosaic
+// over the AntiCheat DotGrid background. Cards use the body-scene
+// aesthetic (white surface, Base blue accent). Rhythm is borrowed from
+// AntiCheatIceberg: zoom-out intro then beat-locked tier reveals.
 
 const W = 1920;
 const H = 1080;
 const FPS = 30;
 
-// ── Iceberg image ─────────────────────────────────────────────────────────
+// ── Iceberg image (cartoon) — used as a luminance source for dot sampling ─
 const IMG_NATIVE_W = 1280;
 const IMG_NATIVE_H = 720;
 const IMG_AR = IMG_NATIVE_W / IMG_NATIVE_H; // 16:9 exact
+const SAMPLE_SPACING = 14; // matches DotGrid's FINE_SPACING
 
 // ── Beat rhythm — verbatim from AntiCheatIceberg ──────────────────────────
 const TIERS_COUNT = 6;
@@ -43,13 +47,7 @@ const easeInOut = (t: number) =>
   t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
-// ── Camera plan — gentle. Cards must stay readable at every frame. ───────
-// Phase 1 (0–31)        zoom out 1.15 → 1.05 on the tip
-// Phase 2 (31–113)      hold full view (fy=0.5, scale=1.05) — Strategies,
-//                       Fees, then Liq hunters land
-// Phase 3 (113–164)     push down to the lower mass — Front runners,
-//                       Spoofers, Insiders land
-// Phase 4 (164–220)     hold + climax pulse + outro
+// ── Camera ────────────────────────────────────────────────────────────────
 type Cam = { fy: number; scale: number };
 const CAM_INTRO_START: Cam = { fy: 0.42, scale: 1.18 };
 const CAM_FULL: Cam = { fy: 0.50, scale: 1.05 };
@@ -97,10 +95,104 @@ const resolveGeom = (frame: number): Geom => {
   return { imgLeft, imgTop, imgW, imgH };
 };
 
-// ── Tier content + image-space anchors ────────────────────────────────────
-// Anchors stay inside the visible image envelope at every zoom level: at
-// CAM_LOWER (scale=1.24, fx=0.5), visible x range is 0.5 ± 0.5/1.24 =
-// 0.097–0.903 — anchors at 0.22 and 0.78 sit comfortably inside.
+// ── DotIceberg — samples the cartoon image once, renders it as Base-blue
+// dots. The white iceberg body shows up bright; sky and water fade away
+// so the AntiCheat DotGrid behind them is the actual background.
+type Sample = { x: number; y: number; intensity: number };
+
+const useIcebergSamples = (): Sample[] | null => {
+  const [samples, setSamples] = useState<Sample[] | null>(null);
+  const [handle] = useState(() => delayRender("iceberg-samples"));
+
+  useEffect(() => {
+    let cancelled = false;
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      if (cancelled) return;
+      const cols = Math.ceil(IMG_NATIVE_W / SAMPLE_SPACING);
+      const rows = Math.ceil(IMG_NATIVE_H / SAMPLE_SPACING);
+      const canvas = document.createElement("canvas");
+      canvas.width = cols;
+      canvas.height = rows;
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      if (!ctx) {
+        continueRender(handle);
+        return;
+      }
+      ctx.drawImage(img, 0, 0, cols, rows);
+      const data = ctx.getImageData(0, 0, cols, rows).data;
+      const result: Sample[] = [];
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const i = (r * cols + c) * 4;
+          const rR = data[i] / 255;
+          const gG = data[i + 1] / 255;
+          const bB = data[i + 2] / 255;
+          const lum = 0.2126 * rR + 0.7152 * gG + 0.0722 * bB;
+          const maxC = Math.max(rR, gG, bB);
+          const minC = Math.min(rR, gG, bB);
+          const sat = maxC === 0 ? 0 : (maxC - minC) / maxC;
+          // Iceberg body: bright AND desaturated (i.e. white/light grey).
+          const bright = Math.max(0, (lum - 0.55) / 0.45); // 0 at 0.55, 1 at 1.0
+          const desat = Math.max(0, 1 - sat * 2.4);
+          const intensity = Math.max(0, Math.min(1, bright * desat));
+          if (intensity < 0.05) continue; // cull sky + water
+          result.push({
+            x: (c + 0.5) * SAMPLE_SPACING,
+            y: (r + 0.5) * SAMPLE_SPACING,
+            intensity,
+          });
+        }
+      }
+      setSamples(result);
+      continueRender(handle);
+    };
+    img.onerror = () => {
+      continueRender(handle);
+    };
+    img.src = staticFile("iceberg-data.webp");
+    return () => {
+      cancelled = true;
+    };
+  }, [handle]);
+
+  return samples;
+};
+
+const DotIceberg: React.FC<{ geom: Geom; samples: Sample[] | null }> = ({
+  geom,
+  samples,
+}) => {
+  if (!samples) return null;
+  return (
+    <svg
+      width={geom.imgW}
+      height={geom.imgH}
+      viewBox={`0 0 ${IMG_NATIVE_W} ${IMG_NATIVE_H}`}
+      preserveAspectRatio="none"
+      style={{
+        position: "absolute",
+        left: geom.imgLeft,
+        top: geom.imgTop,
+        pointerEvents: "none",
+      }}
+    >
+      {samples.map((s, i) => (
+        <circle
+          key={i}
+          cx={s.x}
+          cy={s.y}
+          r={1.6 + s.intensity * 3.0}
+          fill={colors.accent}
+          opacity={0.55 + s.intensity * 0.45}
+        />
+      ))}
+    </svg>
+  );
+};
+
+// ── Tiers + image-space anchors ──────────────────────────────────────────
 type Tier = {
   label: string;
   pctX: number;
@@ -117,7 +209,6 @@ const TIERS: ReadonlyArray<Tier> = [
   { label: "Insider traders", pctX: 0.80, pctY: 0.85, emphasis: true },
 ];
 
-// ── Card — Base-style. Pinned to image-space anchor, screen-pixel sized. ─
 const CARD_WIDTH = 360;
 const CARD_HEIGHT = 116;
 
@@ -129,7 +220,6 @@ const TierCard: React.FC<{
   fps: number;
 }> = ({ tier, index, geom, frame, fps }) => {
   const animStart = tierAnimStart(index);
-
   const cx = geom.imgLeft + tier.pctX * geom.imgW;
   const cy = geom.imgTop + tier.pctY * geom.imgH;
   const left = cx - CARD_WIDTH / 2;
@@ -213,7 +303,6 @@ const TierCard: React.FC<{
   );
 };
 
-// ── Headline strip ───────────────────────────────────────────────────────
 const Headline: React.FC<{ frame: number }> = ({ frame }) => {
   const swapFrame = tierAnimStart(2);
   const firstO = interpolate(frame, [swapFrame - 6, swapFrame], [1, 0], {
@@ -278,11 +367,12 @@ const Headline: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
-// ── Outer composition ───────────────────────────────────────────────────
+// ── Outer composition ────────────────────────────────────────────────────
 export const IcebergData: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const geom = resolveGeom(frame);
+  const samples = useIcebergSamples();
 
   const introOpacity = interpolate(frame, [0, ZOOM_OUT * 0.3], [0, 1], {
     easing: EASE_OUT,
@@ -300,28 +390,18 @@ export const IcebergData: React.FC = () => {
   return (
     <AbsoluteFill
       style={{
-        background: "#8FCBE8",
+        background: colors.bg,
         opacity: sceneOpacity,
         fontFamily: font,
       }}
     >
-      {/* Iceberg image — always covers the viewport (no gradient overlay). */}
-      <div
-        style={{
-          position: "absolute",
-          left: geom.imgLeft,
-          top: geom.imgTop,
-          width: geom.imgW,
-          height: geom.imgH,
-        }}
-      >
-        <Img
-          src={staticFile("iceberg-data.webp")}
-          style={{ width: "100%", height: "100%", display: "block" }}
-        />
-      </div>
+      {/* Backdrop — DotGrid, same as the other AntiCheat scenes */}
+      <DotGrid intensity={1} speed={0.6} />
 
-      {/* Six cards — image-anchored */}
+      {/* Iceberg, rendered as a Base-blue dot mosaic. Image-anchored. */}
+      <DotIceberg geom={geom} samples={samples} />
+
+      {/* Six cards */}
       {TIERS.map((tier, i) => (
         <TierCard
           key={tier.label}
