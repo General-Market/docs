@@ -11,124 +11,147 @@ import {
 } from "remotion";
 import { font } from "../../common/fonts";
 
-// IcebergData — photoreal iceberg on the left, glass pills stacked on the
-// right. Two clusters: surface excuses above the waterline, the real
-// killers beneath. Camera drifts down so the reveal mirrors the sentence.
+// IcebergData — matches the Vercel reference's camera arc and cluster
+// swap. Three zoom states: TIP (close on the above-water tip), FULL (whole
+// iceberg, pulled back), DEEP (zoomed into the underwater section). Two
+// pill clusters, A exits before B enters.
 
 const W = 1920;
 const H = 1080;
 const FPS = 30;
 
-// Source image is portrait — we fit it to 1080 tall on the left side.
-const IMG_NATIVE_W = 1265;
-const IMG_NATIVE_H = 1670;
-const ICEBERG_FIT_H = 1080;
-const ICEBERG_FIT_W = Math.round(IMG_NATIVE_W * (ICEBERG_FIT_H / IMG_NATIVE_H)); // 818
-const ICEBERG_X = 40;
+// Iceberg viewport — left-anchored, portrait window. The cartoon asset is
+// landscape (1280×720); we render it with object-fit:cover so the centred
+// iceberg + sky + waterline fits the portrait window cleanly.
+const VP_W = 820;
+const VP_H = H;
+const VP_X = 40;
+const VP_Y = 0;
 
-// ── Beat rhythm — borrowed verbatim from AntiCheatIceberg ──────────────────
-const TIERS_COUNT = 6;
-const LAST = TIERS_COUNT - 1;
-const TIER_STAMP_LOCAL = [36, 61, 87, 113, 139, 164] as const;
-const STAMP_OFFSET = 5;
-const TIER_ANIM = 6;
-const FINAL_HOLD = 41;
+// ── Beat sheet ────────────────────────────────────────────────────────────
+const F_HEADER_A = 10;
+const F_STRATEGIES = 32;
+const F_FEES = 56;
+const F_A_EXIT = 82;
+const F_A_GONE = 102;
+
+const F_CAM_PULL = 78;
+const F_CAM_AT_FULL = 108;
+const F_CAM_DIVE = 116;
+const F_CAM_AT_DEEP = 146;
+
+const F_HEADER_B = 104;
+const F_LIQ = 128;
+const F_FRONT = 148;
+const F_ORDER = 168;
+const F_INSIDER = 188;
+
 const OUTRO = 14;
-const ZOOM_OUT = TIER_STAMP_LOCAL[0] - STAMP_OFFSET; // 31
-
-const tierAnimStart = (i: number) => TIER_STAMP_LOCAL[i] - STAMP_OFFSET;
-const SCENE_FRAMES = tierAnimStart(LAST) + TIER_ANIM + FINAL_HOLD + OUTRO; // 220
+const SCENE_FRAMES = 220;
+const F_OUTRO_START = SCENE_FRAMES - OUTRO;
 
 const EASE_OUT = Easing.bezier(0.25, 0.1, 0.3, 1);
 const easeInOut = (t: number) =>
   t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
-// ── Camera — vertical drift only. Starts looking high on the iceberg,
-// settles on the full reveal, then sinks toward the underwater section.
-type Cam = { scale: number; pan: number };
-const CAM_TOP: Cam = { scale: 1.18, pan: -0.18 };
-const CAM_FULL: Cam = { scale: 1.00, pan: 0.00 };
-const CAM_DEEP: Cam = { scale: 1.16, pan: 0.20 };
-
-const PHASE_2_END = 113;
-const PHASE_3_END = 164;
+// ── Camera ────────────────────────────────────────────────────────────────
+// focusY is the fractional y of the source image kept at viewport centre.
+type Cam = { scale: number; focusY: number };
+// focusY = fraction of viewport the zoom anchors on. TIP zooms in on the
+// tip + sky; FULL pulls back below 1.0 so the iceberg shrinks against the
+// backdrop; DEEP zooms into the underwater section.
+const CAM_TIP: Cam  = { scale: 2.2, focusY: 0.30 };
+const CAM_FULL: Cam = { scale: 0.90, focusY: 0.50 };
+const CAM_DEEP: Cam = { scale: 1.85, focusY: 0.74 };
 
 const resolveCam = (frame: number): Cam => {
-  if (frame < ZOOM_OUT) {
-    const t = easeInOut(frame / ZOOM_OUT);
+  if (frame < F_CAM_PULL) return CAM_TIP;
+  if (frame < F_CAM_AT_FULL) {
+    const t = easeInOut((frame - F_CAM_PULL) / (F_CAM_AT_FULL - F_CAM_PULL));
     return {
-      scale: lerp(CAM_TOP.scale, CAM_FULL.scale, t),
-      pan: lerp(CAM_TOP.pan, CAM_FULL.pan, t),
+      scale: lerp(CAM_TIP.scale, CAM_FULL.scale, t),
+      focusY: lerp(CAM_TIP.focusY, CAM_FULL.focusY, t),
     };
   }
-  if (frame < PHASE_2_END) return CAM_FULL;
-  if (frame < PHASE_3_END) {
-    const t = easeInOut((frame - PHASE_2_END) / (PHASE_3_END - PHASE_2_END));
+  if (frame < F_CAM_DIVE) return CAM_FULL;
+  if (frame < F_CAM_AT_DEEP) {
+    const t = easeInOut((frame - F_CAM_DIVE) / (F_CAM_AT_DEEP - F_CAM_DIVE));
     return {
       scale: lerp(CAM_FULL.scale, CAM_DEEP.scale, t),
-      pan: lerp(CAM_FULL.pan, CAM_DEEP.pan, t),
+      focusY: lerp(CAM_FULL.focusY, CAM_DEEP.focusY, t),
     };
   }
   return CAM_DEEP;
 };
 
-// ── Sky → waterline → ocean ────────────────────────────────────────────────
-const SkyOceanBackdrop: React.FC<{ frame: number }> = ({ frame }) => {
-  const drift = Math.sin(frame * 0.012) * 8;
-  // The waterline gradient stop matches the image's waterline at 32 % of
-  // the 1080 canvas — about y = 346.
-  return (
-    <div
-      style={{
-        position: "absolute",
-        inset: 0,
-        background: `linear-gradient(
-          to bottom,
-          #8AB6DA 0%,
-          #6394BB 18%,
-          #3F6E96 30%,
-          #2A547B 31.5%,
-          #1B416B 33%,
-          #14365B 48%,
-          #0A2444 75%,
-          #051630 100%
-        )`,
-        transform: `translateY(${drift}px)`,
-      }}
-    />
-  );
-};
+// ── Iceberg image — cartoon, sized + positioned manually so the camera
+// scale and pan apply predictably. Object-fit:cover does not compose
+// cleanly with transform: scale on the same element.
+const SRC_W = 1280;
+const SRC_H = 720;
+const COVER_SCALE = Math.max(VP_W / SRC_W, VP_H / SRC_H); // 1.5
+const COVER_W = SRC_W * COVER_SCALE; // 1920
+const COVER_H = SRC_H * COVER_SCALE; // 1080
+const COVER_LEFT = (VP_W - COVER_W) / 2;
+const COVER_TOP = (VP_H - COVER_H) / 2;
 
-// ── Iceberg image — anchored left, scaled by camera ───────────────────────
-const IcebergImage: React.FC<{ cam: Cam }> = ({ cam }) => {
-  const swayX = 0; // image is anchored, no horizontal sway
-  const baseH = ICEBERG_FIT_H * cam.scale;
-  const baseW = ICEBERG_FIT_W * cam.scale;
-  const top = Math.round((H - baseH) / 2 + cam.pan * baseH);
-  const left = ICEBERG_X + Math.round((ICEBERG_FIT_W - baseW) / 2) + swayX;
+const IcebergViewport: React.FC<{ cam: Cam }> = ({ cam }) => {
+  // Anchor the camera zoom on the iceberg's horizontal centre. focusY
+  // sweeps from the tip (0.28) to deep underwater (0.72) over the scene.
+  const originX = VP_W / 2 - COVER_LEFT;
+  const originY = cam.focusY * VP_H - COVER_TOP;
   return (
     <div
       style={{
         position: "absolute",
-        left,
-        top,
-        width: baseW,
-        height: baseH,
-        filter: "drop-shadow(0 30px 60px rgba(0, 20, 60, 0.35))",
+        left: VP_X,
+        top: VP_Y,
+        width: VP_W,
+        height: VP_H,
+        overflow: "hidden",
+        filter: "drop-shadow(0 24px 60px rgba(0, 18, 48, 0.4))",
       }}
     >
       <Img
-        src={staticFile("iceberg-tiers-clean.webp")}
-        style={{ width: "100%", height: "100%", display: "block" }}
+        src={staticFile("iceberg-data.webp")}
+        style={{
+          position: "absolute",
+          left: COVER_LEFT,
+          top: COVER_TOP,
+          width: COVER_W,
+          height: COVER_H,
+          transformOrigin: `${originX}px ${originY}px`,
+          transform: `scale(${cam.scale})`,
+          willChange: "transform",
+        }}
       />
     </div>
   );
 };
 
+// ── Sky → waterline → ocean backdrop — matches cartoon's flat palette ────
+const Backdrop: React.FC = () => (
+  <div
+    style={{
+      position: "absolute",
+      inset: 0,
+      background: `linear-gradient(
+        to bottom,
+        #8FD0EE 0%,
+        #8FD0EE 40%,
+        #5BB3DE 40.5%,
+        #3D9FD8 49%,
+        #2B86C2 60%,
+        #1F6FA8 78%,
+        #16578A 100%
+      )`,
+    }}
+  />
+);
+
 // ── Pill styling ──────────────────────────────────────────────────────────
 type PillKind = "header" | "leaf" | "leafRed";
-
 const pillStyle = (kind: PillKind): React.CSSProperties => {
   const isHeader = kind === "header";
   const isRed = kind === "leafRed";
@@ -139,21 +162,21 @@ const pillStyle = (kind: PillKind): React.CSSProperties => {
     padding: isHeader ? "14px 26px" : "11px 22px",
     borderRadius: 999,
     background: isRed
-      ? "rgba(120, 24, 40, 0.42)"
+      ? "rgba(120, 24, 40, 0.46)"
       : isHeader
-        ? "rgba(18, 34, 58, 0.42)"
-        : "rgba(24, 44, 72, 0.36)",
+        ? "rgba(18, 34, 58, 0.46)"
+        : "rgba(24, 44, 72, 0.40)",
     backdropFilter: "saturate(180%) blur(22px)",
     WebkitBackdropFilter: "saturate(180%) blur(22px)",
     border: isRed
-      ? "1px solid rgba(255, 120, 140, 0.42)"
+      ? "1px solid rgba(255, 120, 140, 0.46)"
       : "1px solid rgba(255, 255, 255, 0.22)",
     boxShadow: [
       "0 1px 0 rgba(255, 255, 255, 0.22) inset",
       isHeader
-        ? "0 24px 60px rgba(0, 20, 60, 0.35)"
-        : "0 14px 32px rgba(0, 20, 60, 0.28)",
-      "0 2px 8px rgba(0, 12, 36, 0.22)",
+        ? "0 24px 60px rgba(0, 18, 48, 0.40)"
+        : "0 14px 32px rgba(0, 18, 48, 0.32)",
+      "0 2px 8px rgba(0, 12, 36, 0.24)",
     ].join(", "),
     color: isRed ? "#FFD6DD" : "#FFFFFF",
     fontFamily: font,
@@ -165,200 +188,155 @@ const pillStyle = (kind: PillKind): React.CSSProperties => {
   };
 };
 
-// ── Reveal helper ──────────────────────────────────────────────────────────
-type Revealed = {
-  opacity: number;
-  translateY: number;
-  scale: number;
-};
+// ── Entry / exit motion ───────────────────────────────────────────────────
+type Motion = { opacity: number; translateY: number; scale: number };
 
-const computeReveal = (frame: number, animStart: number, fps: number): Revealed => {
-  const t = spring({
-    frame: frame - animStart,
+const computeMotion = (
+  frame: number,
+  fps: number,
+  entryFrame: number,
+  exitFrame: number | null,
+): Motion => {
+  const enter = spring({
+    frame: frame - entryFrame,
     fps,
     config: { damping: 18, stiffness: 160, mass: 0.85 },
   });
+  let exit = 0;
+  if (exitFrame !== null && frame >= exitFrame) {
+    exit = spring({
+      frame: frame - exitFrame,
+      fps,
+      config: { damping: 22, stiffness: 200, mass: 0.7 },
+    });
+  }
   return {
-    opacity: t,
-    translateY: (1 - t) * 14,
-    scale: 0.96 + 0.04 * t,
+    opacity: Math.max(0, enter * (1 - exit)),
+    translateY: (1 - enter) * 18 - exit * 26,
+    scale: 0.94 + 0.06 * enter - exit * 0.04,
   };
 };
 
-// ── Right column — two clusters of pills ──────────────────────────────────
-const COL_X = 980;
-const COL_W = W - COL_X - 60;
+const applyMotion = (m: Motion): React.CSSProperties => ({
+  opacity: m.opacity,
+  transform: `translateY(${m.translateY.toFixed(2)}px) scale(${m.scale.toFixed(4)})`,
+  willChange: "transform, opacity",
+});
 
-type Tier = { label: string; red?: boolean };
+// ── Right column ──────────────────────────────────────────────────────────
+const COL_X = 1000;
+const COL_W = W - COL_X - 80;
 
-const ABOVE_HEADER = "Why they think they lost";
-const BELOW_HEADER = "Why they actually lost";
+const Dot: React.FC<{ color: string }> = ({ color }) => (
+  <span
+    style={{
+      width: 10,
+      height: 10,
+      borderRadius: 999,
+      background: color,
+      boxShadow: `0 0 14px ${color}`,
+      flexShrink: 0,
+    }}
+  />
+);
 
-const ABOVE: ReadonlyArray<Tier> = [
-  { label: "Strategies" },
-  { label: "Fees" },
-];
+const Pill: React.FC<{
+  kind: PillKind;
+  motion: Motion;
+  children: React.ReactNode;
+}> = ({ kind, motion, children }) => (
+  <div style={applyMotion(motion)}>
+    <div style={pillStyle(kind)}>{children}</div>
+  </div>
+);
 
-const BELOW: ReadonlyArray<Tier> = [
-  { label: "Liquidation hunters" },
-  { label: "Front runners" },
-  { label: "Orderbook spoofers" },
-  { label: "Insider traders", red: true },
-];
+// ── Cluster A — "Why they think they lost" ────────────────────────────────
+const ClusterA: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
+  const headerM = computeMotion(frame, fps, F_HEADER_A, F_A_EXIT);
+  const stratM = computeMotion(frame, fps, F_STRATEGIES, F_A_EXIT + 4);
+  const feesM = computeMotion(frame, fps, F_FEES, F_A_EXIT + 8);
 
-const Cluster: React.FC<{
-  headerText: string;
-  headerStart: number;
-  tiers: ReadonlyArray<Tier>;
-  leafStartIndex: number;
-  top: number;
-  frame: number;
-  fps: number;
-  accent: "blue" | "red";
-}> = ({ headerText, headerStart, tiers, leafStartIndex, top, frame, fps, accent }) => {
-  const headerR = computeReveal(frame, headerStart, fps);
-  const dotColor = accent === "red" ? "#FF6B82" : "#7AB8FF";
+  if (frame > F_A_GONE) return null;
 
   return (
-    <div
-      style={{
-        position: "absolute",
-        top,
-        left: COL_X,
-        width: COL_W,
-      }}
-    >
-      <div
-        style={{
-          opacity: headerR.opacity,
-          transform: `translateY(${headerR.translateY}px) scale(${headerR.scale.toFixed(4)})`,
-          willChange: "transform, opacity",
-        }}
-      >
-        <div style={pillStyle("header")}>
-          <span
-            style={{
-              width: 10,
-              height: 10,
-              borderRadius: 999,
-              background: dotColor,
-              boxShadow: `0 0 14px ${dotColor}`,
-            }}
-          />
-          {headerText}
-        </div>
-      </div>
-
-      <div
-        style={{
-          marginTop: 22,
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 14,
-        }}
-      >
-        {tiers.map((tier, i) => {
-          const animStart = tierAnimStart(leafStartIndex + i);
-          const r = computeReveal(frame, animStart, fps);
-          const kind: PillKind = tier.red ? "leafRed" : "leaf";
-          return (
-            <div
-              key={tier.label}
-              style={{
-                opacity: r.opacity,
-                transform: `translateY(${r.translateY}px) scale(${r.scale.toFixed(4)})`,
-                willChange: "transform, opacity",
-              }}
-            >
-              <div style={pillStyle(kind)}>{tier.label}</div>
-            </div>
-          );
-        })}
+    <div style={{ position: "absolute", left: COL_X, top: 230, width: COL_W }}>
+      <Pill kind="header" motion={headerM}>
+        <Dot color="#7AB8FF" />
+        Why they think they lost
+      </Pill>
+      <div style={{ marginTop: 24, display: "flex", gap: 14, flexWrap: "wrap" }}>
+        <Pill kind="leaf" motion={stratM}>Strategies</Pill>
+        <Pill kind="leaf" motion={feesM}>Fees</Pill>
       </div>
     </div>
   );
 };
 
-// ── Waterline tick — quiet horizontal rule in the pill column ─────────────
-const WaterlineRule: React.FC<{ frame: number }> = ({ frame }) => {
-  const opacity = interpolate(frame, [ZOOM_OUT - 4, ZOOM_OUT + 8], [0, 0.7], {
-    easing: EASE_OUT,
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
+// ── Cluster B — "Why they actually lost" ──────────────────────────────────
+const ClusterB: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
+  if (frame < F_HEADER_B - 4) return null;
+
+  const headerM = computeMotion(frame, fps, F_HEADER_B, null);
+  const liqM = computeMotion(frame, fps, F_LIQ, null);
+  const frontM = computeMotion(frame, fps, F_FRONT, null);
+  const orderM = computeMotion(frame, fps, F_ORDER, null);
+  const insiderM = computeMotion(frame, fps, F_INSIDER, null);
+
   return (
-    <div
-      style={{
-        position: "absolute",
-        left: COL_X,
-        top: 410,
-        width: COL_W,
-        height: 1,
-        background:
-          "linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,0.45), rgba(255,255,255,0))",
-        opacity,
-      }}
-    />
+    <div style={{ position: "absolute", left: COL_X, top: 470, width: COL_W }}>
+      <Pill kind="header" motion={headerM}>
+        <Dot color="#FF6B82" />
+        Why they actually lost
+      </Pill>
+      <div
+        style={{
+          marginTop: 24,
+          display: "flex",
+          gap: 14,
+          flexWrap: "wrap",
+          maxWidth: COL_W,
+        }}
+      >
+        <Pill kind="leaf" motion={liqM}>Liquidation hunters</Pill>
+        <Pill kind="leaf" motion={frontM}>Front runners</Pill>
+        <Pill kind="leaf" motion={orderM}>Orderbook spoofers</Pill>
+        <Pill kind="leafRed" motion={insiderM}>Insider traders</Pill>
+      </div>
+    </div>
   );
 };
 
+// ── Composition ───────────────────────────────────────────────────────────
 export const IcebergData: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const cam = resolveCam(frame);
 
-  const introOpacity = interpolate(frame, [0, ZOOM_OUT * 0.3], [0, 1], {
+  const introOpacity = interpolate(frame, [0, 12], [0, 1], {
     easing: EASE_OUT,
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
   const outroOpacity = interpolate(
     frame,
-    [SCENE_FRAMES - OUTRO, SCENE_FRAMES],
+    [F_OUTRO_START, SCENE_FRAMES],
     [1, 0],
     { easing: EASE_OUT, extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
   const sceneOpacity = Math.min(introOpacity, outroOpacity);
 
-  // The "below" header lands a few frames before the first below-leaf, so
-  // the eye has somewhere to settle before the leaves stamp in.
-  const belowHeaderStart = tierAnimStart(2) - 8;
-  const aboveHeaderStart = 6;
-
   return (
     <AbsoluteFill
       style={{
-        background: "#051630",
+        background: "#03102A",
         opacity: sceneOpacity,
         fontFamily: font,
       }}
     >
-      <SkyOceanBackdrop frame={frame} />
-      <IcebergImage cam={cam} />
-
-      <Cluster
-        headerText={ABOVE_HEADER}
-        headerStart={aboveHeaderStart}
-        tiers={ABOVE}
-        leafStartIndex={0}
-        top={170}
-        frame={frame}
-        fps={fps}
-        accent="blue"
-      />
-
-      <WaterlineRule frame={frame} />
-
-      <Cluster
-        headerText={BELOW_HEADER}
-        headerStart={belowHeaderStart}
-        tiers={BELOW}
-        leafStartIndex={2}
-        top={470}
-        frame={frame}
-        fps={fps}
-        accent="red"
-      />
+      <Backdrop />
+      <IcebergViewport cam={cam} />
+      <ClusterA frame={frame} fps={fps} />
+      <ClusterB frame={frame} fps={fps} />
     </AbsoluteFill>
   );
 };
