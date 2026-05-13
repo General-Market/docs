@@ -374,13 +374,14 @@ impl BatchLifecycleManager {
                     let (cur_after, prev_after) = post_rotate.unwrap_or((current_batch_id, previous_batch_id));
 
                     // Step 2: Settle the post-rotation previous batch (if any).
-                    // Buffer dropped 60s → 10s. The 60s buffer was sized for a stale
-                    // "PRE_CREATE 30s early" heartbeat behavior that no longer exists —
-                    // heartbeats now fire at or after the tick boundary. 10s absorbs
-                    // chain_listener event indexing lag and timing jitter, nothing more.
+                    // No buffer. Heartbeats fire at the tick boundary, which is
+                    // exactly betting_end. Any positive buffer pushed settle to
+                    // the NEXT heartbeat — 1 tick of lag — for nothing. Bitmap
+                    // event indexing happens on a 1s poll, fast enough that the
+                    // resolve query sees recent events.
                     if let Some(prev_id) = prev_after.map(|v| v as u64) {
                         let ready_to_settle: bool = sqlx::query_scalar::<_, bool>(
-                            "SELECT betting_end + make_interval(secs => 10) <= NOW() FROM vision_batch_lifecycle WHERE on_chain_batch_id = $1"
+                            "SELECT betting_end <= NOW() FROM vision_batch_lifecycle WHERE on_chain_batch_id = $1"
                         )
                         .bind(prev_id as i64)
                         .fetch_optional(&mgr.pool)
@@ -410,23 +411,12 @@ impl BatchLifecycleManager {
                                 // Fast SSE broadcast — in-memory, no I/O.
                                 mgr.broadcast_settlement_event(prev_id, &source_name, &tick_result);
 
-                                // Mark settled_at on the lifecycle row INLINE so the refund metric
-                                // updates immediately. The per-player + market-ratio inserts
-                                // (which can run hundreds to thousands of single-row INSERTs against
-                                // the 260M-row settlement table) get spawned below so they do not
-                                // block the on-chain submit race against the grace-window cliff.
-                                if let Err(e) = sqlx::query(
-                                    "UPDATE vision_batch_lifecycle SET settled_at = NOW() WHERE on_chain_batch_id = $1",
-                                )
-                                .bind(prev_id as i64)
-                                .execute(&mgr.pool)
-                                .await
-                                {
-                                    error!(batch_id = prev_id, error = %e, "Failed to mark settled_at on lifecycle row");
-                                }
-
-                                // Spawn the slow writes. record_settlement re-issues the UPDATE
-                                // above (idempotent); record_market_ratios is the heavy one.
+                                // Spawn the slow writes off the heartbeat. record_settlement
+                                // and record_market_ratios issue up to ~22500 single-row INSERTs
+                                // against the 260M-row settlement table; running them inline
+                                // pushes the on-chain settleBatch past the grace cliff.
+                                // settled_at gets set in record_settlement (still inline-ish via
+                                // the spawn) ONLY after the on-chain submit succeeds — see below.
                                 {
                                     let mgr_bg = Arc::clone(&mgr);
                                     let settlement_bg = settlement.clone();
@@ -490,6 +480,19 @@ impl BatchLifecycleManager {
                                     }
                                 }
                                 if bls_ok {
+                                    // settled_at on the lifecycle row marks ON-CHAIN completion.
+                                    // Set here, not in record_settlement (which runs spawned and
+                                    // unconditionally). Without this guard, the refund metric
+                                    // counted failed-on-chain attempts as settles — a metric lie.
+                                    if let Err(e) = sqlx::query(
+                                        "UPDATE vision_batch_lifecycle SET settled_at = NOW() WHERE on_chain_batch_id = $1",
+                                    )
+                                    .bind(prev_id as i64)
+                                    .execute(&mgr.pool)
+                                    .await
+                                    {
+                                        error!(batch_id = prev_id, error = %e, "Failed to mark settled_at on lifecycle row");
+                                    }
                                     if let Err(e) = mgr.scheduler.mark_settled(&mgr.pool, prev_id).await {
                                         error!(batch_id = prev_id, error = %e, "mark_settled failed");
                                     }
@@ -1743,14 +1746,9 @@ impl BatchLifecycleManager {
         &self,
         settlement: &RoundSettlement,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        // Update lifecycle state (keyed by on-chain batch ID)
-        sqlx::query(
-            "UPDATE vision_batch_lifecycle SET settled_at = NOW()
-             WHERE on_chain_batch_id = $1",
-        )
-        .bind(settlement.batch_id as i64)
-        .execute(&self.pool)
-        .await?;
+        // settled_at is set in the heartbeat loop AFTER on-chain success, not here.
+        // record_settlement runs in a background spawn and would otherwise lie about
+        // on-chain status when sign_and_aggregate_settlement fails.
 
         // Record per-player results
         for (i, player) in settlement.players.iter().enumerate() {
