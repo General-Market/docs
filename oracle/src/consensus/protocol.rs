@@ -3247,17 +3247,76 @@ where
             } => {
                 debug!(batch_id, tick_id, signer_index, "VisionBalanceProofsBatch — ignored (round-only)");
             }
-            // Vision createBatch co-signing
+            // Vision createBatch co-signing — SPAWNED so a slow handle does not
+            // block subsequent consensus messages. Followers under cycle load
+            // (vault_reconcile, batch confirm, mirror sync) were starving the
+            // synchronous version, causing leader-side timeouts and broken
+            // createBatch quorum.
             MessageHandleResult::ProcessVisionCreateBatchProposal {
                 from: _, leader_id, source_name, source_id,
                 config_hash, tick_duration, lock_offset, settlement_grace,
                 message_hash, leader_signature: _, reference_nonce: _,
             } => {
-                if let Err(e) = self.handle_vision_create_batch_proposal(
-                    source_name, source_id, config_hash, tick_duration, lock_offset, settlement_grace, message_hash, leader_id,
-                ).await {
-                    warn!(error = %e, "Failed to handle VisionCreateBatchProposal");
-                }
+                let p2p = self.p2p.clone();
+                let bls_keypair = self.bls_keypair.clone();
+                let peer_id = self.config.peer_id;
+                let registry_index = self.runtime_config.oracle_registry_index();
+                tokio::spawn(async move {
+                    let vision_address_str = std::env::var("ORACLE_VISION_ADDRESS").unwrap_or_default();
+                    let vision_address: Address = match vision_address_str.parse() {
+                        Ok(a) => a,
+                        Err(_) => {
+                            warn!(%source_name, "Vision address not configured — cannot co-sign createBatch");
+                            return;
+                        }
+                    };
+                    let l3_chain_id: u64 = std::env::var("ORACLE_VISION_CHAIN_ID")
+                        .ok()
+                        .and_then(|s| s.parse().ok())
+                        .unwrap_or(111_222_333);
+
+                    let expected = ethers::utils::keccak256(ethers::abi::encode(&[
+                        ethers::abi::Token::Uint(U256::from(l3_chain_id)),
+                        ethers::abi::Token::Address(vision_address),
+                        ethers::abi::Token::String("CREATE_BATCH".to_string()),
+                        ethers::abi::Token::FixedBytes(source_id.as_bytes().to_vec()),
+                        ethers::abi::Token::FixedBytes(config_hash.as_bytes().to_vec()),
+                        ethers::abi::Token::Uint(U256::from(tick_duration)),
+                        ethers::abi::Token::Uint(U256::from(lock_offset)),
+                        ethers::abi::Token::Uint(U256::from(settlement_grace)),
+                    ]));
+                    let expected_hash = H256::from(expected);
+                    if expected_hash != message_hash {
+                        warn!(%source_name, ?message_hash, ?expected_hash,
+                            "VisionCreateBatchProposal message hash mismatch — rejecting");
+                        return;
+                    }
+
+                    let hash_bytes: [u8; 32] = message_hash.into();
+                    let signer = Bn254BLSSigner::new();
+                    let signature = match signer.sign_message_hash(&bls_keypair, &hash_bytes) {
+                        Ok(s) => s,
+                        Err(e) => {
+                            warn!(%source_name, error = %e, "BLS co-sign failed");
+                            return;
+                        }
+                    };
+
+                    let sign_msg = P2PMessage::VisionCreateBatchSign {
+                        signer_id: peer_id,
+                        signer_index: registry_index,
+                        source_id,
+                        message_hash,
+                        signature: common::types::BLSSignature(signature.0),
+                    };
+
+                    if let Err(e) = p2p.send_to(leader_id, sign_msg).await {
+                        warn!(%source_name, error = %e, "Failed to send VisionCreateBatchSign to leader");
+                    } else {
+                        info!(%source_name, signer_index = registry_index,
+                            "Signed and sent VisionCreateBatchSign to leader");
+                    }
+                });
             }
             MessageHandleResult::ProcessVisionCreateBatchSign {
                 from: _, signer_id: _, signer_index, source_id, message_hash, signature,
