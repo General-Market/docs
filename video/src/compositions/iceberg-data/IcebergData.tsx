@@ -10,47 +10,23 @@ import {
   useVideoConfig,
 } from "remotion";
 import { font } from "../../common/fonts";
+import { colors } from "../anticheat/theme";
 
-// IcebergData — a stripped fork of AntiCheatIceberg. Same iceberg, same
-// rhythm. Image bands replaced with text rectangles that ride the iceberg
-// as it scrolls. Headlines, no images inside the boxes.
+// IcebergData — cartoon iceberg, AntiCheatFull's *non-iceberg* visual
+// language (Base-style cards on a light field) and AntiCheatIceberg's
+// beat-locked rhythm.
 
 const W = 1920;
 const H = 1080;
 const FPS = 30;
 
-// ── Iceberg image (AntiCheatFull asset) ────────────────────────────────────
-const IMG_NATIVE_W = 1265;
-const IMG_NATIVE_H = 1670;
-const FILL_SCALE = W / IMG_NATIVE_W; // 1.518
+// ── Iceberg image (cartoon) ────────────────────────────────────────────────
+const IMG_NATIVE_W = 1280;
+const IMG_NATIVE_H = 720;
+const IMG_AR = IMG_NATIVE_W / IMG_NATIVE_H; // 16:9
+const IMG_WATERLINE_NORM = 305 / IMG_NATIVE_H; // ~0.424
 
-// Tier zones (image-space native). Same boundaries as AntiCheatIceberg.
-const BAND_BOUNDS_NATIVE: ReadonlyArray<{ top: number; bottom: number }> = [
-  { top: 0, bottom: 269 },
-  { top: 269, bottom: 539 },
-  { top: 539, bottom: 857 },
-  { top: 857, bottom: 1141 },
-  { top: 1141, bottom: 1430 },
-  { top: 1430, bottom: 1670 },
-];
-const BAND_BOUNDS = BAND_BOUNDS_NATIVE.map((b) => ({
-  top: b.top * FILL_SCALE,
-  bottom: b.bottom * FILL_SCALE,
-  height: (b.bottom - b.top) * FILL_SCALE,
-  centre: ((b.top + b.bottom) / 2) * FILL_SCALE,
-}));
-
-const TIER_Y_FILL = BAND_BOUNDS.map((b) => b.centre);
-const PRIMARY_ACTIVE_Y = TIER_Y_FILL[0];
-const FRAME_CENTRE_Y = H / 2;
-
-// Tier 0 sits up-high — there's nothing above the asset's top edge to fill
-// the space, so the first tier camera target is the band, not screen-centre.
-const screenTargetY = (i: number) =>
-  i === 0 ? PRIMARY_ACTIVE_Y : FRAME_CENTRE_Y;
-const scrollAtTier = (i: number) => screenTargetY(i) - TIER_Y_FILL[i];
-
-// ── Beat rhythm (same as AntiCheatIceberg) ─────────────────────────────────
+// ── Beat rhythm — verbatim from AntiCheatIceberg ───────────────────────────
 const TIERS_COUNT = 6;
 const LAST = TIERS_COUNT - 1;
 const TIER_STAMP_LOCAL = [36, 61, 87, 113, 139, 164] as const;
@@ -58,7 +34,6 @@ const STAMP_OFFSET = 5;
 const TIER_ANIM = 6;
 const FINAL_HOLD = 41;
 const OUTRO = 14;
-const ZOOM_START_SCALE = 2.6;
 const ZOOM_OUT = TIER_STAMP_LOCAL[0] - STAMP_OFFSET; // 31
 
 const tierAnimStart = (i: number) => TIER_STAMP_LOCAL[i] - STAMP_OFFSET;
@@ -70,215 +45,215 @@ const tierHoldEnd = (i: number) =>
 const SCENE_FRAMES = tierAnimStart(LAST) + TIER_ANIM + FINAL_HOLD + OUTRO; // 220
 
 const EASE_OUT = Easing.bezier(0.25, 0.1, 0.3, 1);
-const EASE = (t: number) => EASE_OUT(t);
+const easeInOut = (t: number) =>
+  t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
-type State =
-  | { phase: "zoom"; t: number }
-  | { phase: "tier"; tier: number; sub: "anim" | "hold"; t: number };
+// ── Camera phases ──────────────────────────────────────────────────────────
+//   Phase 1 (0–31)         zoom out from 1.9× → 1.4×, fy=0.30   (tip)
+//   Phase 2 (31–87)        hold tip                  (Strategies, Fees land)
+//   Phase 3 (87–113)       pull out → full           (Liq hunters lands)
+//   Phase 4 (113–164)      push down → lower mass    (the rest land)
+//   Phase 5 (164–220)      hold lower + climax + outro
+type Cam = { fy: number; scale: number };
+const CAM_TIP_TIGHT: Cam = { fy: 0.30, scale: 1.9 };
+const CAM_TIP: Cam = { fy: 0.30, scale: 1.4 };
+const CAM_FULL: Cam = { fy: 0.5, scale: 1.04 };
+const CAM_LOWER: Cam = { fy: 0.74, scale: 1.5 };
 
-const stateAt = (frame: number): State => {
-  if (frame < ZOOM_OUT) return { phase: "zoom", t: frame / ZOOM_OUT };
-  for (let i = 0; i < TIERS_COUNT; i++) {
-    const animStart = tierAnimStart(i);
-    const holdStart = animStart + TIER_ANIM;
-    const holdEnd = tierHoldEnd(i);
-    if (frame < holdStart) {
-      return {
-        phase: "tier",
-        tier: i,
-        sub: "anim",
-        t: (frame - animStart) / TIER_ANIM,
-      };
-    }
-    if (frame < holdEnd) {
-      const len = Math.max(1, holdEnd - holdStart);
-      return {
-        phase: "tier",
-        tier: i,
-        sub: "hold",
-        t: (frame - holdStart) / len,
-      };
-    }
+const PHASE_2_END = 87;
+const PHASE_3_END = 113;
+const PHASE_4_END = 164;
+
+const resolveCam = (frame: number): Cam => {
+  if (frame < ZOOM_OUT) {
+    const t = easeInOut(frame / ZOOM_OUT);
+    return {
+      fy: CAM_TIP_TIGHT.fy,
+      scale: lerp(CAM_TIP_TIGHT.scale, CAM_TIP.scale, t),
+    };
   }
-  return { phase: "tier", tier: LAST, sub: "hold", t: 1 };
-};
-
-const computeScale = (state: State): number => {
-  if (state.phase === "zoom") {
-    return interpolate(state.t, [0, 1], [ZOOM_START_SCALE, FILL_SCALE], {
-      easing: EASE,
-    });
+  if (frame < PHASE_2_END) return CAM_TIP;
+  if (frame < PHASE_3_END) {
+    const t = easeInOut((frame - PHASE_2_END) / (PHASE_3_END - PHASE_2_END));
+    return { fy: lerp(CAM_TIP.fy, CAM_FULL.fy, t), scale: lerp(CAM_TIP.scale, CAM_FULL.scale, t) };
   }
-  if (state.sub === "hold") {
-    const pulse = Math.sin(state.t * Math.PI) * 0.008;
-    const climaxPush = state.tier === LAST ? state.t * 0.05 : 0;
-    return FILL_SCALE * (1 + pulse + climaxPush);
+  if (frame < PHASE_4_END) {
+    const t = easeInOut((frame - PHASE_3_END) / (PHASE_4_END - PHASE_3_END));
+    return { fy: lerp(CAM_FULL.fy, CAM_LOWER.fy, t), scale: lerp(CAM_FULL.scale, CAM_LOWER.scale, t) };
   }
-  return FILL_SCALE;
+  return CAM_LOWER;
 };
 
-const computeScrollY = (state: State): number => {
-  if (state.phase === "zoom") return 0;
-  if (state.sub === "hold") return scrollAtTier(state.tier);
-  if (state.tier === 0) return 0;
-  const a = scrollAtTier(state.tier - 1);
-  const b = scrollAtTier(state.tier);
-  return a + (b - a) * EASE(state.t);
+type Geom = {
+  imgLeft: number;
+  imgTop: number;
+  imgW: number;
+  imgH: number;
+  scale: number;
 };
 
-// Per-tier colour grade — same descent feel.
-const computeIcebergFilter = (state: State): string => {
-  const d =
-    state.phase === "tier"
-      ? (state.tier + (state.sub === "anim" ? state.t : 1)) / TIERS_COUNT
-      : 0;
-  const sat = interpolate(d, [0, 0.5, 1], [1.05, 0.95, 1.15]);
-  const bright = interpolate(d, [0, 0.5, 1], [1.08, 0.92, 0.62]);
-  const contrast = interpolate(d, [0, 1], [1.0, 1.18]);
-  return `saturate(${sat.toFixed(3)}) brightness(${bright.toFixed(3)}) contrast(${contrast.toFixed(3)})`;
+const resolveGeom = (frame: number): Geom => {
+  const cam = resolveCam(frame);
+  const swayX = Math.sin(frame * 0.05) * 3.5 + Math.sin(frame * 0.02) * 1.2;
+  const swayY = Math.sin(frame * 0.038 + 1.1) * 2;
+  const imgH = H * cam.scale;
+  const imgW = imgH * IMG_AR;
+  let imgLeft = W / 2 - 0.5 * imgW + swayX;
+  let imgTop = H / 2 - cam.fy * imgH + swayY;
+  imgLeft = Math.min(0, Math.max(W - imgW, imgLeft));
+  imgTop = Math.min(0, Math.max(H - imgH, imgTop));
+  return { imgLeft, imgTop, imgW, imgH, scale: cam.scale };
 };
 
-// ── Tier labels — your words. ──────────────────────────────────────────────
-const TIERS: ReadonlyArray<{ label: string; emphasis?: boolean }> = [
-  { label: "Strategies" },
-  { label: "Fees" },
-  { label: "Liquidation hunters" },
-  { label: "Front runners" },
-  { label: "Orderbook spoofers" },
-  { label: "Insider traders", emphasis: true },
+// ── Tier content + anchors (image-space, normalised) ───────────────────────
+type Tier = {
+  label: string;
+  pctX: number;
+  pctY: number;
+  emphasis?: boolean;
+};
+
+const TIERS: ReadonlyArray<Tier> = [
+  { label: "Strategies", pctX: 0.16, pctY: 0.15 },
+  { label: "Fees", pctX: 0.84, pctY: 0.15 },
+  { label: "Liquidation hunters", pctX: 0.14, pctY: 0.56 },
+  { label: "Front runners", pctX: 0.86, pctY: 0.56 },
+  { label: "Orderbook spoofers", pctX: 0.14, pctY: 0.86 },
+  { label: "Insider traders", pctX: 0.86, pctY: 0.86, emphasis: true },
 ];
 
-// ── Per-tier text rectangle. Pinned to image-space top via scrollY.
-// Horizontal position + size are screen-fixed.
-const TIER_RECT_WIDTH = 460;
-const TIER_RECT_HEIGHT = 120;
-const TIER_RECT_RIGHT_INSET = 80;
+// ── Per-tier card — Base-style ─────────────────────────────────────────────
+// Pinned to image space (rides the camera). Constant screen-pixel size.
+const CARD_WIDTH = 380;
+const CARD_HEIGHT = 124;
 
-const TierRect: React.FC<{
+const TierCard: React.FC<{
+  tier: Tier;
   index: number;
-  state: State;
-  scrollY: number;
-  scale: number;
+  geom: Geom;
   frame: number;
   fps: number;
-}> = ({ index, state, scrollY, scale, frame, fps }) => {
-  const band = BAND_BOUNDS[index];
-  const tier = TIERS[index];
-
-  // Track image-space Y (band centre), translated by scrollY. Scale stretches
-  // the iceberg slightly during hold pulses — apply the same scale to the
-  // rectangle's vertical anchor so it stays glued.
-  const bandCentreScaled =
-    band.centre * (scale / FILL_SCALE);
-  const centreY = bandCentreScaled + scrollY;
-  const top = centreY - TIER_RECT_HEIGHT / 2;
-
-  // Cull if off-screen — keeps render cost low when the camera is far away.
-  if (top + TIER_RECT_HEIGHT < -40 || top > H + 40) return null;
-
-  const isActiveTier =
-    state.phase === "tier" &&
-    (state.tier === index || (state.tier > index && state.sub === "hold"));
-  const hasLanded =
-    state.phase === "tier" &&
-    (state.tier > index ||
-      (state.tier === index && (state.sub === "hold" || state.t >= 0.4)));
-
-  // Enter spring — driven by the tier's beat.
+}> = ({ tier, index, geom, frame, fps }) => {
   const animStart = tierAnimStart(index);
+
+  // Image-space anchor → screen pixel (map-pin model).
+  const cx = geom.imgLeft + tier.pctX * geom.imgW;
+  const cy = geom.imgTop + tier.pctY * geom.imgH;
+  const left = cx - CARD_WIDTH / 2;
+  const top = cy - CARD_HEIGHT / 2;
+
   const enter = spring({
     frame: frame - animStart,
     fps,
     config: { damping: 18, stiffness: 160, mass: 0.85 },
   });
 
-  // Active vs dim — dim everything that hasn't landed yet.
-  const intensity = hasLanded ? 1 : 0.32;
-
-  const isRed = !!tier.emphasis && hasLanded;
-  const borderColor = isRed ? "rgba(255,86,110,0.95)" : "rgba(255,255,255,0.92)";
-  const glowColor = isRed ? "rgba(255,86,110,0.55)" : "rgba(255,255,255,0.22)";
-  const textColor = isRed ? "#FF566E" : "#FFFFFF";
-
-  // Active tier breathes; climax tier pulses harder.
-  const breath = isActiveTier ? 1 + Math.sin(frame * 0.22) * 0.012 : 1;
-  const climaxBoost =
-    isRed && state.phase === "tier" && state.tier === LAST && state.sub === "hold"
-      ? 1 + Math.sin(frame * 0.4) * 0.018
+  const isRed = !!tier.emphasis;
+  const breath =
+    frame >= animStart + TIER_ANIM
+      ? 1 + Math.sin(frame * 0.16) * (isRed ? 0.018 : 0.006)
       : 1;
 
+  const borderColor = isRed ? "rgba(255,86,110,0.95)" : colors.rule;
+  const accent = isRed ? "#FF566E" : colors.accent;
+  const textColor = isRed ? "#B2243A" : colors.fg;
+
+  // Hairline accent stripe on the left edge — Coinbase-style row marker.
   return (
     <div
       style={{
         position: "absolute",
-        right: TIER_RECT_RIGHT_INSET,
+        left,
         top,
-        width: TIER_RECT_WIDTH,
-        height: TIER_RECT_HEIGHT,
-        borderRadius: 18,
-        background: "rgba(4,8,14,0.88)",
-        boxShadow: `inset 0 0 0 3px ${borderColor}, inset 0 0 80px ${glowColor}, 0 24px 56px rgba(0,0,0,0.55)`,
-        opacity: enter * intensity,
-        transform: `translateY(${(1 - enter) * 22}px) scale(${(breath * climaxBoost).toFixed(4)})`,
-        fontFamily: font,
+        width: CARD_WIDTH,
+        height: CARD_HEIGHT,
+        opacity: enter,
+        transform: `translateY(${(1 - enter) * 18}px) scale(${breath.toFixed(4)})`,
+        background: colors.surface,
+        borderRadius: 22,
+        border: `1px solid ${borderColor}`,
+        boxShadow:
+          "0 1px 0 rgba(255,255,255,0.6) inset, 0 24px 56px rgba(8,16,28,0.28), 0 2px 8px rgba(8,16,28,0.10)",
         display: "flex",
         alignItems: "center",
-        padding: "0 30px",
+        padding: "0 26px",
+        fontFamily: font,
         willChange: "transform, opacity",
       }}
     >
-      <span
+      {/* Left accent stripe */}
+      <div
         style={{
-          fontSize: 17,
-          fontWeight: 600,
-          color: isRed ? "rgba(255,86,110,0.7)" : "rgba(255,255,255,0.55)",
-          letterSpacing: "0.18em",
-          textTransform: "uppercase",
-          marginRight: 18,
-          fontFeatureSettings: '"tnum" 1',
+          position: "absolute",
+          left: 10,
+          top: 14,
+          bottom: 14,
+          width: 4,
+          borderRadius: 3,
+          background: accent,
         }}
-      >
-        {String(index + 1).padStart(2, "0")}
-      </span>
-      <span
-        style={{
-          fontSize: tier.label.length > 16 ? 30 : 36,
-          fontWeight: 800,
-          letterSpacing: "-0.018em",
-          color: textColor,
-          textShadow: "0 1px 8px rgba(0,0,0,0.95)",
-          lineHeight: 1.05,
-        }}
-      >
-        {tier.label}
-      </span>
+      />
+      <div style={{ marginLeft: 18, display: "flex", flexDirection: "column", gap: 6 }}>
+        <div
+          style={{
+            fontSize: 15,
+            fontWeight: 700,
+            color: isRed ? "rgba(255,86,110,0.85)" : colors.dim,
+            letterSpacing: "0.16em",
+            textTransform: "uppercase",
+            fontFeatureSettings: '"tnum" 1',
+          }}
+        >
+          {String(index + 1).padStart(2, "0")} {index < 2 ? "· Above" : "· Below"}
+        </div>
+        <div
+          style={{
+            fontSize: tier.label.length > 16 ? 28 : 34,
+            fontWeight: 800,
+            color: textColor,
+            letterSpacing: "-0.018em",
+            lineHeight: 1.05,
+          }}
+        >
+          {tier.label}
+        </div>
+      </div>
     </div>
   );
 };
 
-// ── Headline strip — screen-fixed at the top. Swaps mid-scene. ─────────────
-const Headline: React.FC<{
-  state: State;
-  frame: number;
-  fps: number;
-}> = ({ state, frame, fps }) => {
-  const showFirst =
-    state.phase === "zoom" ||
-    (state.phase === "tier" && state.tier <= 1);
-  const swapTier = 2; // when tier 2 lands, swap to second headline
-  const swapFrame = tierAnimStart(swapTier);
+// ── Headline (screen-fixed) ────────────────────────────────────────────────
+const Headline: React.FC<{ frame: number }> = ({ frame }) => {
+  const swapFrame = tierAnimStart(2); // when tier 2 (liq hunters) lands
+  const firstO = interpolate(frame, [swapFrame - 6, swapFrame], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const secondO = interpolate(frame, [swapFrame, swapFrame + 12], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
 
-  const firstOpacity = interpolate(
-    frame,
-    [swapFrame - 6, swapFrame],
-    [1, 0],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-  const secondOpacity = interpolate(
-    frame,
-    [swapFrame, swapFrame + 12],
-    [0, 1],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  const pill = (text: string, tone: "blue" | "red") => (
+    <div
+      style={{
+        display: "inline-block",
+        padding: "12px 28px",
+        borderRadius: 999,
+        background: colors.surface,
+        color: tone === "red" ? "#B2243A" : colors.accent,
+        fontSize: 22,
+        fontWeight: 700,
+        letterSpacing: "0.14em",
+        textTransform: "uppercase",
+        boxShadow:
+          "0 1px 0 rgba(255,255,255,0.6) inset, 0 12px 28px rgba(8,16,28,0.22), 0 2px 6px rgba(8,16,28,0.10)",
+        border: `1px solid ${tone === "red" ? "rgba(255,86,110,0.35)" : colors.rule}`,
+      }}
+    >
+      {text}
+    </div>
   );
 
   return (
@@ -288,58 +263,28 @@ const Headline: React.FC<{
           position: "absolute",
           left: 0,
           right: 0,
-          top: 64,
+          top: 60,
           textAlign: "center",
           fontFamily: font,
-          opacity: firstOpacity,
+          opacity: firstO,
           pointerEvents: "none",
         }}
       >
-        <div
-          style={{
-            display: "inline-block",
-            padding: "12px 28px",
-            borderRadius: 999,
-            background: "rgba(4,12,20,0.78)",
-            color: "#FFFFFF",
-            fontSize: 22,
-            fontWeight: 700,
-            letterSpacing: "0.14em",
-            textTransform: "uppercase",
-            boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.18)",
-          }}
-        >
-          Why traders think they lost
-        </div>
+        {pill("Why traders think they lost", "blue")}
       </div>
       <div
         style={{
           position: "absolute",
           left: 0,
           right: 0,
-          top: 64,
+          top: 60,
           textAlign: "center",
           fontFamily: font,
-          opacity: secondOpacity,
+          opacity: secondO,
           pointerEvents: "none",
         }}
       >
-        <div
-          style={{
-            display: "inline-block",
-            padding: "12px 28px",
-            borderRadius: 999,
-            background: "rgba(4,12,20,0.78)",
-            color: "#FF566E",
-            fontSize: 22,
-            fontWeight: 700,
-            letterSpacing: "0.14em",
-            textTransform: "uppercase",
-            boxShadow: "inset 0 0 0 1px rgba(255,86,110,0.35)",
-          }}
-        >
-          Why traders really lost
-        </div>
+        {pill("Why traders really lost", "red")}
       </div>
     </>
   );
@@ -349,13 +294,10 @@ const Headline: React.FC<{
 export const IcebergData: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const state = stateAt(frame);
-  const scale = computeScale(state);
-  const scrollY = computeScrollY(state);
-  const icebergFilter = computeIcebergFilter(state);
+  const geom = resolveGeom(frame);
 
   const introOpacity = interpolate(frame, [0, ZOOM_OUT * 0.3], [0, 1], {
-    easing: EASE,
+    easing: EASE_OUT,
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -363,73 +305,56 @@ export const IcebergData: React.FC = () => {
     frame,
     [SCENE_FRAMES - OUTRO, SCENE_FRAMES],
     [1, 0],
-    { easing: EASE, extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+    { easing: EASE_OUT, extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
   const sceneOpacity = Math.min(introOpacity, outroOpacity);
 
-  const descentProgress = state.phase === "tier" ? state.tier / LAST : 0;
-  const vignetteAlpha = 0.22 + 0.4 * descentProgress;
-
-  const imgDisplayedW = IMG_NATIVE_W * scale;
-  const imgDisplayedH = IMG_NATIVE_H * scale;
-  const imgLeft = (W - imgDisplayedW) / 2;
-  const imgTop = scrollY;
-
   return (
-    <AbsoluteFill style={{ background: "#02070F", opacity: sceneOpacity }}>
-      {/* Background gradient — surface to abyss */}
-      <AbsoluteFill
-        style={{
-          background:
-            "linear-gradient(180deg, #08182C 0%, #06121F 40%, #030814 100%)",
-        }}
-      />
-
-      {/* Iceberg image — scrolls vertically with scrollY */}
+    <AbsoluteFill
+      style={{
+        background: colors.bg,
+        opacity: sceneOpacity,
+        fontFamily: font,
+      }}
+    >
+      {/* Iceberg image — camera scrolls/zooms */}
       <div
         style={{
           position: "absolute",
-          left: imgLeft,
-          top: imgTop,
-          width: imgDisplayedW,
-          height: imgDisplayedH,
-          filter: icebergFilter,
-          willChange: "top, filter",
+          left: geom.imgLeft,
+          top: geom.imgTop,
+          width: geom.imgW,
+          height: geom.imgH,
+          willChange: "left, top, width, height",
         }}
       >
         <Img
-          src={staticFile("iceberg-tiers-clean.webp")}
-          style={{
-            width: "100%",
-            height: "100%",
-            display: "block",
-          }}
+          src={staticFile("iceberg-data.webp")}
+          style={{ width: "100%", height: "100%", display: "block" }}
         />
       </div>
 
-      {/* Vignette deepens as we descend */}
+      {/* Soft top/bottom fade to colors.bg so the cartoon's hard edges blend */}
       <AbsoluteFill
         style={{
-          background: `radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0) 38%, rgba(0,0,0,${vignetteAlpha.toFixed(3)}) 100%)`,
+          background: `linear-gradient(180deg, ${colors.bg} 0%, rgba(240,242,244,0) 12%, rgba(240,242,244,0) 88%, ${colors.bg} 100%)`,
           pointerEvents: "none",
         }}
       />
 
-      {/* 6 tier rectangles — pinned to image bands, screen-fixed horizontally */}
-      {TIERS.map((_, i) => (
-        <TierRect
-          key={i}
+      {/* 6 cards — pinned to image-space anchors, screen-pixel sized */}
+      {TIERS.map((tier, i) => (
+        <TierCard
+          key={tier.label}
+          tier={tier}
           index={i}
-          state={state}
-          scrollY={scrollY}
-          scale={scale}
+          geom={geom}
           frame={frame}
           fps={fps}
         />
       ))}
 
-      {/* Headline — swaps when we cross the waterline (tier 2 lands) */}
-      <Headline state={state} frame={frame} fps={fps} />
+      <Headline frame={frame} />
     </AbsoluteFill>
   );
 };
